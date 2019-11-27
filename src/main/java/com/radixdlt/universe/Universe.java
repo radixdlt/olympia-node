@@ -3,7 +3,7 @@ package com.radixdlt.universe;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.middleware.ImmutableAtom;
+import com.radixdlt.common.Atom;
 import com.radixdlt.common.EUID;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
@@ -37,7 +37,7 @@ public class Universe {
 		private Long timestamp;
 		private Long planck;
 		private ECPublicKey creator;
-		private final ImmutableList.Builder<ImmutableAtom> genesis = ImmutableList.builder();
+		private final ImmutableList.Builder<Atom> genesis = ImmutableList.builder();
 
 		private Builder() {
 			// Nothing to do here
@@ -137,7 +137,7 @@ public class Universe {
 		 * @param genesisAtom The atom to add to the genesis atom list.
 		 * @return A reference to {@code this} to allow method chaining.
 		 */
-		public Builder addAtom(ImmutableAtom genesisAtom) {
+		public Builder addAtom(Atom genesisAtom) {
 			Objects.requireNonNull(genesisAtom);
 			this.genesis.add(genesisAtom);
 			return this;
@@ -149,7 +149,7 @@ public class Universe {
 		 * @param genesisAtoms The atoms to add to the genesis atom list.
 		 * @return A reference to {@code this} to allow method chaining.
 		 */
-		public Builder addAtoms(Iterable<? extends ImmutableAtom> genesisAtoms) {
+		public Builder addAtoms(Iterable<? extends Atom> genesisAtoms) {
 			genesisAtoms.forEach(this::addAtom);
 			return this;
 		}
@@ -252,7 +252,7 @@ public class Universe {
 
 	@JsonProperty("genesis")
 	@DsonOutput(Output.ALL)
-	private ImmutableList<ImmutableAtom> genesis;
+	private ImmutableList<Atom> genesis;
 
 	private final Supplier<Hash> cachedHash = Suppliers.memoize(this::doGetHash);
 
@@ -381,7 +381,7 @@ public class Universe {
 	 *
 	 * @return
 	 */
-	public List<ImmutableAtom> getGenesis() {
+	public List<Atom> getGenesis() {
 		return genesis;
 	}
 

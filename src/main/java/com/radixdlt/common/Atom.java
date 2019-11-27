@@ -1,23 +1,21 @@
-package com.radixdlt.middleware;
+package com.radixdlt.common;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
-import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.common.AID;
-import com.radixdlt.common.EUID;
 import com.radixdlt.crypto.AtomAlreadySignedException;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.ECSignature;
 import com.radixdlt.crypto.Hash;
+import com.radixdlt.middleware.ParticleGroup;
+import com.radixdlt.middleware.SpunParticle;
 import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
@@ -35,29 +33,25 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-/**
- * Immutable Atom for Constraint Machine consumption (No mutable temporal proof).
- */
-@SerializerId2("radix.content")
-public class ImmutableAtom {
+@SerializerId2("radix.atom")
+public class Atom {
+
+	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
+	@DsonOutput(value = {DsonOutput.Output.API, DsonOutput.Output.WIRE, DsonOutput.Output.PERSIST})
+	SerializerDummy serializer = SerializerDummy.DUMMY;
+
 	public static final String METADATA_TIMESTAMP_KEY = "timestamp";
 	public static final String METADATA_POW_NONCE_KEY = "powNonce";
 
-	// Placeholder for the serializer ID
-	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
-	// TODO serializer id for atoms is temporarily excluded from hash for compatibility with abstract atom
-	@DsonOutput(value = {DsonOutput.Output.API, DsonOutput.Output.WIRE, DsonOutput.Output.PERSIST})
-	private SerializerDummy serializer = SerializerDummy.DUMMY;
-
 	@JsonProperty("version")
-	@DsonOutput(Output.ALL)
+	@DsonOutput(DsonOutput.Output.ALL)
 	private short version = 100;
 
 	/**
 	 * The particle groups and their spin
 	 */
 	@JsonProperty("particleGroups")
-	@DsonOutput(Output.ALL)
+	@DsonOutput(DsonOutput.Output.ALL)
 	protected final List<ParticleGroup> particleGroups = new ArrayList<>();
 
 	/**
@@ -75,22 +69,22 @@ public class ImmutableAtom {
 	private final Supplier<AID> cachedAID = Suppliers.memoize(this::doGetAID);
 	private final Supplier<Hash> cachedHash = Suppliers.memoize(this::doGetHash);
 
-	protected ImmutableAtom() {
+	public Atom() {
 		this.metaData = ImmutableMap.of();
 	}
 
-	protected ImmutableAtom(long timestamp) {
+	public Atom(long timestamp) {
 		this.metaData = ImmutableMap.of(METADATA_TIMESTAMP_KEY, String.valueOf(timestamp));
 	}
 
-	public ImmutableAtom(long timestamp, Map<String, String> metadata) {
+	public Atom(long timestamp, Map<String, String> metadata) {
 		this.metaData = ImmutableMap.<String, String>builder()
 			.put(METADATA_TIMESTAMP_KEY, String.valueOf(timestamp))
 			.putAll(metadata)
 			.build();
 	}
 
-	protected ImmutableAtom(List<ParticleGroup> particleGroups, Map<EUID, ECSignature> signatures) {
+	protected Atom(List<ParticleGroup> particleGroups, Map<EUID, ECSignature> signatures) {
 		Objects.requireNonNull(particleGroups, "particleGroups is required");
 		Objects.requireNonNull(signatures, "signatures is required");
 
@@ -99,7 +93,7 @@ public class ImmutableAtom {
 		this.metaData = ImmutableMap.of();
 	}
 
-	public ImmutableAtom(List<ParticleGroup> particleGroups, Map<EUID, ECSignature> signatures, Map<String, String> metaData) {
+	public Atom(List<ParticleGroup> particleGroups, Map<EUID, ECSignature> signatures, Map<String, String> metaData) {
 		Objects.requireNonNull(particleGroups, "particleGroups is required");
 		Objects.requireNonNull(signatures, "signatures is required");
 		Objects.requireNonNull(metaData, "metaData is required");
@@ -110,7 +104,7 @@ public class ImmutableAtom {
 	}
 
 	// copied from legacy Atom.java, temporary hack that will be fixed when ImmutableAtom becomes ImmutableContent
-	public ImmutableAtom copyExcludingMetadata(String... keysToExclude) {
+	public Atom copyExcludingMetadata(String... keysToExclude) {
 		Objects.requireNonNull(keysToExclude, "keysToRetain is required");
 
 		ImmutableSet<String> keysToExcludeSet = ImmutableSet.copyOf(keysToExclude);
@@ -118,11 +112,12 @@ public class ImmutableAtom {
 			.filter(metaDataEntry -> !keysToExcludeSet.contains(metaDataEntry.getKey()))
 			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-		return new ImmutableAtom(this.particleGroups, this.signatures, filteredMetaData);
+		return new Atom(this.particleGroups, this.signatures, filteredMetaData);
 	}
 
 	/**
 	 * Add a particle group to this atom
+	 *
 	 * @param particleGroup The particle group
 	 */
 	public void addParticleGroup(ParticleGroup particleGroup) {
@@ -133,8 +128,9 @@ public class ImmutableAtom {
 
 	/**
 	 * Add a singleton particle group to this atom containing the given particle and spin as a SpunParticle
+	 *
 	 * @param particle The particle
-	 * @param spin The spin
+	 * @param spin     The spin
 	 */
 	public void addParticleGroupWith(Particle particle, Spin spin) {
 		this.addParticleGroup(ParticleGroup.of(SpunParticle.of(particle, spin)));
@@ -143,10 +139,11 @@ public class ImmutableAtom {
 
 	/**
 	 * Add two particle groups to this atom
+	 *
 	 * @param particle0 The first particle
-	 * @param spin0 The spin of first particle
+	 * @param spin0     The spin of first particle
 	 * @param particle1 The second particle
-	 * @param spin1 The spin of second particle
+	 * @param spin1     The spin of second particle
 	 */
 	public void addParticleGroupWith(Particle particle0, Spin spin0, Particle particle1, Spin spin1) {
 		this.addParticleGroup(ParticleGroup.of(SpunParticle.of(particle0, spin0), SpunParticle.of(particle1, spin1)));
@@ -155,12 +152,13 @@ public class ImmutableAtom {
 
 	/**
 	 * Add three particle groups to this atom
+	 *
 	 * @param particle0 The first particle
-	 * @param spin0 The spin of first particle
+	 * @param spin0     The spin of first particle
 	 * @param particle1 The second particle
-	 * @param spin1 The spin of second particle
+	 * @param spin1     The spin of second particle
 	 * @param particle2 The third particle
-	 * @param spin2 The spin of third particle
+	 * @param spin2     The spin of third particle
 	 */
 	public void addParticleGroupWith(Particle particle0, Spin spin0, Particle particle1, Spin spin1, Particle particle2, Spin spin2) {
 		this.addParticleGroup(
@@ -182,7 +180,7 @@ public class ImmutableAtom {
 			throw new CryptoException("No signatures set, can not verify");
 		}
 
-		int  verified = 0;
+		int verified = 0;
 		Hash hash = this.getHash();
 		byte[] hashBytes = hash.toByteArray();
 		ECSignature signature = null;
@@ -341,12 +339,9 @@ public class ImmutableAtom {
 			.findFirst().orElse(null);
 	}
 
-	public SpunParticle getSpunParticle(DataPointer dp) {
-		return getParticleGroup(dp.getParticleGroupIndex()).getSpunParticle(dp.getParticleIndex());
-	}
-
 	/**
 	 * Get the metadata associated with the atom
+	 *
 	 * @return an immutable map of the metadata
 	 */
 	public Map<String, String> getMetaData() {
@@ -355,7 +350,7 @@ public class ImmutableAtom {
 
 	private Hash doGetHash() {
 		try {
-			return new Hash(Hash.hash256(Serialization.getDefault().toDson(this, Output.HASH)));
+			return new Hash(Hash.hash256(Serialization.getDefault().toDson(this, DsonOutput.Output.HASH)));
 		} catch (Exception e) {
 			throw new RuntimeException("Error generating hash: " + e, e);
 		}
@@ -366,7 +361,7 @@ public class ImmutableAtom {
 	}
 
 	@JsonProperty("hid")
-	@DsonOutput(Output.API)
+	@DsonOutput(DsonOutput.Output.API)
 	public final EUID getHID() {
 		return getHash().getID();
 	}
@@ -382,7 +377,7 @@ public class ImmutableAtom {
 			return true;
 		}
 
-		if (getClass().isInstance(o) && getHash().equals(((ImmutableAtom) o).getHash())) {
+		if (getClass().isInstance(o) && getHash().equals(((Atom) o).getHash())) {
 			return true;
 		}
 
@@ -397,7 +392,7 @@ public class ImmutableAtom {
 	// Property Signatures: 1 getter, 1 setter
 	// FIXME: better option would be to just serialize as an array.
 	@JsonProperty("signatures")
-	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
+	@DsonOutput(value = {DsonOutput.Output.API, DsonOutput.Output.WIRE, DsonOutput.Output.PERSIST})
 	private Map<String, ECSignature> getJsonSignatures() {
 		return this.signatures.entrySet().stream()
 			.collect(Collectors.toMap(e -> e.getKey().toString(), Map.Entry::getValue));
@@ -412,27 +407,13 @@ public class ImmutableAtom {
 	}
 
 	@JsonProperty("shards")
-	@DsonOutput(Output.API)
+	@DsonOutput(DsonOutput.Output.API)
 	private List<Long> getJsonShards() {
 		return Lists.newArrayList(getShards());
 	}
 
 	public boolean hasTimestamp() {
 		return this.metaData.containsKey(METADATA_TIMESTAMP_KEY);
-	}
-
-	/**
-	 * Convenience method to retrieve timestamp
-	 *
-	 * @return The timestamp in milliseconds since epoch
-	 */
-	public long getTimestamp() {
-		// TODO Not happy with this error handling as it moves some validation work into the atom data. See RLAU-951
-		try {
-			return Long.parseLong(this.metaData.get(METADATA_TIMESTAMP_KEY));
-		} catch (NumberFormatException e) {
-			return Long.MIN_VALUE;
-		}
 	}
 
 	@Override

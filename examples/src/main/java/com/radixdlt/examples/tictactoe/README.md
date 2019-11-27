@@ -470,9 +470,8 @@ public class TicTacToeRunner {
       .setParticleStaticCheck(cmAtomOS.buildParticleStaticCheck())
       .setParticleTransitionProcedures(cmAtomOS.buildTransitionProcedures())
       .build();
-    InMemoryEngineStore<BasicRadixEngineAtom> engineStore
-      = new InMemoryEngineStore<>();
-    RadixEngine<BasicRadixEngineAtom> engine = new RadixEngine<>(
+   EngineStore engineStore = new InMemoryEngineStore();
+   RadixEngine engine = new RadixEngine(
       cm,
       cmAtomOS.buildVirtualLayer(),
       engineStore
@@ -495,63 +494,57 @@ public class TicTacToeRunner {
 
 // ...
 
-  private static BasicRadixEngineAtom buildAtom(
-    String description,
-    TicTacToeBaseParticle prevBoard,
-    TicTacToeBaseParticle nextBoard,
-    ECKeyPair player
-  ) throws CryptoException {
-
-    // Program the board transition
-    ImmutableList.Builder<CMMicroInstruction> microInstructions
-      = ImmutableList.builder();
-    if (prevBoard != null) {
-      microInstructions.add(CMMicroInstruction.checkSpin(prevBoard, Spin.UP));
-      microInstructions.add(CMMicroInstruction.push(prevBoard));
-    }
-    microInstructions.add(CMMicroInstruction.checkSpin(nextBoard, Spin.NEUTRAL));
-    microInstructions.add(CMMicroInstruction.push(nextBoard));
-    microInstructions.add(CMMicroInstruction.particleGroup());
-
-    CMInstruction instruction = new CMInstruction(
-      microInstructions.build(),
-      Hash.ZERO_HASH,
-      ImmutableMap.of(player.getUID(), player.sign(Hash.ZERO_HASH))
-    );
-
-    return new BasicRadixEngineAtom(instruction, description);
-  }
+  private static Atom buildAtom(
+  		TicTacToeBaseParticle prevBoard,
+  		TicTacToeBaseParticle nextBoard,
+  		ECKeyPair player
+  	) throws CryptoException {
+  		List<SpunParticle> spunParticles = new ArrayList<>(2);
+  		if (prevBoard != null) {
+  			spunParticles.add(SpunParticle.down(prevBoard));
+  		}
+  		if (nextBoard != null) {
+  			spunParticles.add(SpunParticle.up(nextBoard));
+  		}
+  
+  		ParticleGroup particleGroup =  ParticleGroup.of(spunParticles);
+  		Atom atom = new Atom();
+  		atom.addParticleGroup(particleGroup);
+  		atom.sign(player);
+  
+  		return atom;
+  	}
 	
   public static void main(String[] args) throws CryptoException {
   
 // ...
 
-    BasicRadixEngineAtom atom = buildAtom(
-      "Legal Initial board",
+     //Legal Initial board
+    Atom atom = buildAtom(
       null,
       initialBoard,
       xPlayer
     );
     
-    engine.store(atom, new AtomEventListener<BasicRadixEngineAtom>() {
+    engine.store(atom, new AtomEventListener<Atom>() {
       @Override
-      public void onCMError(BasicRadixEngineAtom cmAtom, CMError error) {
-        System.out.println("ERROR:   " + cmAtom + " CM verification " + error);
+      public void onCMError(Atom tom, CMError error) {
+        System.out.println("ERROR:   " + atom + " CM verification " + error);
       }
 
       @Override
       public void onStateConflict(
-        BasicRadixEngineAtom cmAtom,
+        Atom atom,
         DataPointer issueParticle,
-        BasicRadixEngineAtom conflictingAtom
+        Atom conflictingAtom
       ) {
         System.out.println("ERROR:   " + cmAtom + " Conflict with atom "
           + conflictingAtom);
       }
 
       @Override
-      public void onStateStore(BasicRadixEngineAtom cmAtom) {
-        System.out.println("SUCCESS: " + cmAtom);
+      public void onStateStore(Atom atom) {
+        System.out.println("SUCCESS: " + atom);
       }
     });
   }
