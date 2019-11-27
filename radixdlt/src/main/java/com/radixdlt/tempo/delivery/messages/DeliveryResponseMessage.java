@@ -4,25 +4,25 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.tempo.TempoAtom;
+import com.radixdlt.ledger.LedgerEntry;
 import org.radix.network.messaging.Message;
 
 @SerializerId2("tempo.sync.delivery.response")
 public class DeliveryResponseMessage extends Message {
-	@JsonProperty("atom")
+	@JsonProperty("ledgerEntry")
 	@DsonOutput(Output.ALL)
-	private TempoAtom atom;
+	private LedgerEntry ledgerEntry;
 
 	DeliveryResponseMessage() {
 		// For serializer only
 	}
 
-	public DeliveryResponseMessage(TempoAtom atom) {
-		this.atom = atom;
+	public DeliveryResponseMessage(LedgerEntry ledgerEntry) {
+		this.ledgerEntry = ledgerEntry;
 	}
 
-	public TempoAtom getAtom() {
-		return atom;
+	public LedgerEntry getLedgerEntry() {
+		return ledgerEntry;
 	}
 
 	@Override

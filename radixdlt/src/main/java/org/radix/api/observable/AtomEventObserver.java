@@ -3,18 +3,17 @@ package org.radix.api.observable;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.radixdlt.common.AID;
+import com.radixdlt.common.Atom;
 import com.radixdlt.ledger.Ledger;
 import com.radixdlt.ledger.LedgerCursor;
 import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerSearchMode;
-import com.radixdlt.middleware.SimpleRadixEngineAtom;
-import com.radixdlt.middleware2.converters.SimpleRadixEngineAtomToEngineAtom;
+import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.middleware2.store.EngineAtomIndices;
-import com.radixdlt.tempo.LegacyUtils;
 
+import com.radixdlt.ledger.LedgerEntry;
 import org.radix.api.AtomQuery;
 import org.radix.api.observable.AtomEventDto.AtomEventType;
-import org.radix.atoms.Atom;
 import org.radix.atoms.events.AtomEventWithDestinations;
 import org.radix.atoms.events.AtomStoredEvent;
 import org.radix.logging.Logger;
@@ -22,6 +21,7 @@ import org.radix.logging.Logging;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -43,23 +43,24 @@ public class AtomEventObserver {
 	private CompletableFuture<?> firstRunnable;
 	private final ExecutorService executorService;
 	private final Ledger ledger;
+	private final AtomToBinaryConverter atomToBinaryConverter;
 
 	private final Object syncLock = new Object();
 	private boolean synced = false;
 	private final List<AtomEventDto> waitingQueue = Lists.newArrayList();
 
-	private final SimpleRadixEngineAtomToEngineAtom simpleRadixEngineAtomToEngineAtom = new SimpleRadixEngineAtomToEngineAtom();
-
 	public AtomEventObserver(
 		AtomQuery atomQuery,
 		Consumer<ObservedAtomEvents> onNext,
 		ExecutorService executorService,
-		Ledger ledger
+		Ledger ledger,
+		AtomToBinaryConverter atomToBinaryConverter
 	) {
 		this.atomQuery = atomQuery;
 		this.onNext = onNext;
 		this.executorService = executorService;
 		this.ledger = ledger;
+		this.atomToBinaryConverter = atomToBinaryConverter;
 	}
 
 	public boolean isDone() {
@@ -132,9 +133,13 @@ public class AtomEventObserver {
 				while (ledgerCursor != null && atoms.size() < BATCH_SIZE) {
 					AID aid = ledgerCursor.get();
 					processedAids.add(aid);
-					//potentially we could have performance issue here
-					SimpleRadixEngineAtom simpleRadixEngineAtom = simpleRadixEngineAtomToEngineAtom.convert(ledger.get(aid).get());
-					atoms.add(LegacyUtils.toLegacyAtom(simpleRadixEngineAtom));
+					Optional<LedgerEntry> ledgerEntry = ledger.get(aid);
+					ledgerEntry.ifPresent(
+						entry -> {
+							Atom atom = atomToBinaryConverter.toAtom(entry.getContent());
+							atoms.add(atom);
+						}
+					);
 					ledgerCursor = ledgerCursor.next();
 				}
 				if (!atoms.isEmpty()) {

@@ -13,10 +13,8 @@ public class AtomDependencyNotFoundException extends ValidationException
 {
 	private final ImmutableList<EUID> dependencies;
 
-	public AtomDependencyNotFoundException(String message, Set<EUID> dependencies, Atom atom)
-	{
+	public AtomDependencyNotFoundException(String message, Set<EUID> dependencies) {
 		super(message);
-
 		this.dependencies = ImmutableList.copyOf(dependencies);
 	}
 

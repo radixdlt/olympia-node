@@ -7,10 +7,10 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
+import com.radixdlt.ledger.LedgerEntry;
 import com.radixdlt.tempo.Resource;
-import com.radixdlt.tempo.store.TempoAtomStoreView;
+import com.radixdlt.tempo.store.LedgerEntryStoreView;
 import com.radixdlt.tempo.Scheduler;
-import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.tempo.delivery.messages.DeliveryRequestMessage;
 import com.radixdlt.tempo.delivery.messages.DeliveryResponseMessage;
 import org.radix.logging.Logger;
@@ -48,7 +48,7 @@ public final class LazyRequestDeliverer implements Resource, RequestDeliverer {
 
 	private final Scheduler scheduler;
 	private final MessageCentral messageCentral;
-	private final TempoAtomStoreView storeView;
+	private final LedgerEntryStoreView storeView;
 
 	private final BlockingQueue<AtomDeliveryRequest> requestQueue;
 	private final SimpleThreadPool<AtomDeliveryRequest> requestThreadPool;
@@ -57,7 +57,7 @@ public final class LazyRequestDeliverer implements Resource, RequestDeliverer {
 	public LazyRequestDeliverer(
 		Scheduler scheduler,
 		MessageCentral messageCentral,
-		TempoAtomStoreView storeView,
+		LedgerEntryStoreView storeView,
 		LazyRequestDelivererConfiguration configuration
 	) {
 		this.scheduler = Objects.requireNonNull(scheduler);
@@ -96,10 +96,10 @@ public final class LazyRequestDeliverer implements Resource, RequestDeliverer {
 
 	private void onResponse(Peer peer, DeliveryResponseMessage message) {
 		if (log.hasLevel(Logging.DEBUG)) {
-			log.debug("Received delivery of '" + message.getAtom().getAID() + "' from " + peer);
+			log.debug("Received delivery of '" + message.getLedgerEntry().getAID() + "' from " + peer);
 		}
-		TempoAtom atom = message.getAtom();
-		pendingDeliveries.complete(atom.getAID(), DeliveryResult.success(atom, peer));
+		LedgerEntry ledgerEntry = message.getLedgerEntry();
+		pendingDeliveries.complete(ledgerEntry.getAID(), DeliveryResult.success(ledgerEntry, peer));
 	}
 
 	@Override

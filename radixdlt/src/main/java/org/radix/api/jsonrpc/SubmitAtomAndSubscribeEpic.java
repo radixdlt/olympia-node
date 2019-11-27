@@ -1,8 +1,10 @@
 package org.radix.api.jsonrpc;
 
+import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
+import com.radixdlt.common.AID;
 import org.everit.json.schema.Schema;
 import org.json.JSONObject;
 import org.radix.api.services.AtomsService;
@@ -15,9 +17,6 @@ import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.validation.ConstraintMachineValidationException;
 
-import org.radix.atoms.Atom;
-import com.radixdlt.middleware.ParticleGroup;
-import com.radixdlt.middleware.SpunParticle;
 import com.radixdlt.serialization.Serialization;
 
 /**
@@ -92,17 +91,7 @@ public class SubmitAtomAndSubscribeEpic {
 			return;
 		}
 
-
-		final Atom atom;
-		try {
-			atom = serialization.fromJsonObject(jsonAtom, Atom.class);
-			callback.accept(JsonRpcUtil.simpleResponse(id, "success", true));
-		} catch (IllegalArgumentException e) {
-			callback.accept(JsonRpcUtil.errorResponse(id, -32000, e.getMessage()));
-			return;
-		}
-
-		atomsService.subscribeAtom(atom.getAID(), new SingleAtomListener() {
+		SingleAtomListener subscriber = new SingleAtomListener() {
 			@Override
 			public void onStored(boolean first) {
 				JSONObject data = new JSONObject();
@@ -112,15 +101,14 @@ public class SubmitAtomAndSubscribeEpic {
 			}
 
 			@Override
-			public void onError(Throwable e) {
+			public void onError(AID atomId, Throwable e) {
 				if (e instanceof ParticleConflictException) {
 					ParticleConflictException particleConflictException = (ParticleConflictException) e;
 					ParticleConflict conflict = particleConflictException.getConflict();
-					String particleConflictPointer = getParticleValidationPointer(conflict.getSpunParticle(), atom);
 					JSONObject data = new JSONObject();
-					data.put("pointerToIssue", particleConflictPointer);
+					data.put("pointerToIssue", conflict.getDataPointer().toString());
 					data.put("message",
-							conflict.getAtoms().stream().filter(a -> !a.equals(atom)).findAny().map(Atom::getAID).map(Object::toString).orElse(null));
+							conflict.getAtomIds().stream().filter(a -> !a.equals(atomId)).findAny().map(Object::toString).orElse(null));
 
 					sendAtomSubmissionState.accept(AtomSubmissionState.COLLISION, data);
 				} else if (e instanceof ValidationException) {
@@ -152,22 +140,12 @@ public class SubmitAtomAndSubscribeEpic {
 					sendAtomSubmissionState.accept(AtomSubmissionState.UNKNOWN_ERROR, data);
 				}
 			}
-		});
+		};
 
-		atomsService.submitAtom(atom);
-	}
-
-	private String getParticleValidationPointer(SpunParticle spunParticle, Atom atom) {
-		ParticleGroup particleGroup = atom.particleGroups()
-			.filter(pg -> pg.contains(spunParticle))
-			.findFirst()
-			.orElseThrow(() -> new IllegalStateException(String.format(
-				"Could not get validation pointer for %s in atom %s, no containing group found",
-				spunParticle.getParticle().getHID(), atom.getAID())));
-		int groupIndex = atom.indexOfParticleGroup(particleGroup);
-		int particleInGroupIndex = particleGroup.indexOfSpunParticle(spunParticle);
-
-		return String.format("#/particleGroups/%s/particles/%s",
-				groupIndex < 0 ? "?" : groupIndex, particleInGroupIndex < 0 ? "?" : particleInGroupIndex);
+		try {
+			atomsService.submitAtom(jsonAtom, subscriber);
+		} catch (IllegalArgumentException e) {
+			callback.accept(JsonRpcUtil.errorResponse(id, -32000, e.getMessage()));
+		}
 	}
 }

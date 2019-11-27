@@ -1,7 +1,6 @@
 package com.radixdlt.tempo.consensus;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.radixdlt.common.AID;
@@ -14,7 +13,7 @@ import com.radixdlt.tempo.consensus.messages.SampleRequestMessage;
 import com.radixdlt.tempo.consensus.messages.SampleResponseMessage;
 import com.radixdlt.tempo.discovery.AtomDiscoverer;
 import com.radixdlt.tempo.discovery.AtomDiscoveryListener;
-import com.radixdlt.tempo.store.TempoAtomStoreView;
+import com.radixdlt.tempo.store.LedgerEntryStoreView;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.network2.addressbook.Peer;
@@ -45,7 +44,7 @@ public final class SampleRetriever implements Closeable, AtomDiscoverer {
 	private static final int SAMPLE_REQUEST_TIMEOUT_MILLISECONDS = 1000;
 
 	private final Scheduler scheduler;
-	private final TempoAtomStoreView storeView;
+	private final LedgerEntryStoreView storeView;
 	private final MessageCentral messageCentral;
 
 	private final PendingSamplesState pendingSamples = new PendingSamplesState();
@@ -58,7 +57,7 @@ public final class SampleRetriever implements Closeable, AtomDiscoverer {
 	@Inject
 	public SampleRetriever(
 		Scheduler scheduler,
-		TempoAtomStoreView storeView,
+		LedgerEntryStoreView storeView,
 		MessageCentral messageCentral
 	) {
 		this.scheduler = Objects.requireNonNull(scheduler);

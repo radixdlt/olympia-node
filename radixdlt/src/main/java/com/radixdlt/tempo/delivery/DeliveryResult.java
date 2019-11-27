@@ -1,6 +1,6 @@
 package com.radixdlt.tempo.delivery;
 
-import com.radixdlt.tempo.TempoAtom;
+import com.radixdlt.ledger.LedgerEntry;
 import org.radix.network2.addressbook.Peer;
 
 import javax.annotation.Nullable;
@@ -15,33 +15,35 @@ public final class DeliveryResult {
 
 	private final Type type;
 	private final Peer peer;
-	private final TempoAtom atom;
+	private final LedgerEntry ledgerEntry;
 
-	private DeliveryResult(Type type, Peer peer, TempoAtom atom) {
+	private DeliveryResult(Type type, Peer peer, LedgerEntry ledgerEntry) {
 		this.type = type;
 		this.peer = peer;
-		this.atom = atom;
+		this.ledgerEntry = ledgerEntry;
 	}
 
 	public Type getType() {
 		return type;
 	}
 
-	public @Nullable Peer getPeer() {
+	public @Nullable
+	Peer getPeer() {
 		return peer;
 	}
 
-	public @Nullable TempoAtom getAtom() {
-		return atom;
+	public @Nullable
+	LedgerEntry getLedgerEntry() {
+		return ledgerEntry;
 	}
 
 	public boolean isSuccess() {
 		return type == Type.SUCCESS;
 	}
 
-	public static DeliveryResult success(TempoAtom atom, Peer peer) {
-		Objects.requireNonNull(atom);
-		return new DeliveryResult(Type.SUCCESS, peer, atom);
+	public static DeliveryResult success(LedgerEntry ledgerEntry, Peer peer) {
+		Objects.requireNonNull(ledgerEntry);
+		return new DeliveryResult(Type.SUCCESS, peer, ledgerEntry);
 	}
 
 	public static DeliveryResult alreadyStored() {

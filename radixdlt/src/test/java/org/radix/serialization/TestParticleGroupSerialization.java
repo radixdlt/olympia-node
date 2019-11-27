@@ -1,10 +1,10 @@
 package org.radix.serialization;
 
+import com.radixdlt.common.Atom;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.radix.atoms.Atom;
 import com.radixdlt.middleware.ParticleGroup;
 import com.radixdlt.serialization.DsonOutput.Output;
 
@@ -28,10 +28,9 @@ public class TestParticleGroupSerialization {
 		// "massive" must be greater length than (16000 / 4) - 4 = 3996
 		String massive = Strings.repeat('X', 4096);
 		ParticleGroup pg = ParticleGroup.builder().addMetaData("massive", massive).build();
-		atom.addParticleGroup(pg);
 
-		byte[] massiveBytes = serialization.toDson(massive, Output.HASH);
+		byte[] particleGroupBytes = serialization.toDson(pg, Output.HASH);
 
-		assertEquals(4099, massiveBytes.length);
+		assertEquals(4162, particleGroupBytes.length);
 	}
 }

@@ -5,6 +5,7 @@ import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenT
 import com.radixdlt.atommodel.tokens.TokenPermission;
 import java.util.Map;
 
+import com.radixdlt.common.Atom;
 import org.everit.json.schema.Schema;
 import org.everit.json.schema.ValidationException;
 import org.json.JSONObject;
@@ -15,7 +16,6 @@ import org.radix.modules.Modules;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atomos.RadixAddress;
-import org.radix.atoms.Atom;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;

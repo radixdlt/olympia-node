@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import com.radixdlt.common.Atom;
 import org.radix.atoms.events.AtomEvent;
 import org.radix.atoms.events.AtomListener;
 import org.radix.atoms.events.AtomStoredEvent;
@@ -26,7 +27,6 @@ import org.radix.universe.system.LocalSystem;
 import org.radix.utils.SystemMetaData;
 import org.radix.utils.SystemProfiler;
 
-import org.radix.atoms.Atom;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.Longs;
 import com.sleepycat.je.Cursor;
@@ -229,7 +229,7 @@ public class ShardChecksumStore extends DatabaseStore
 		return checksum;
 	}
 	
-	private final Queue<Atom> 	incrementQueue = new ConcurrentLinkedQueue<Atom>();
+	private final Queue<Atom> 	incrementQueue = new ConcurrentLinkedQueue<>();
 	private final Map<Long, Long> increments = new HashMap<Long, Long>();
 	private final Lock			incrementLock = new ReentrantLock();
 

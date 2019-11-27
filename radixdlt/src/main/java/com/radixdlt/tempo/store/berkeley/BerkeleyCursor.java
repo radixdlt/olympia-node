@@ -14,9 +14,9 @@ public class BerkeleyCursor implements LedgerCursor {
 	private final LedgerIndex.LedgerIndexType type;
 	private final byte[] primary;
 	private final byte[] index;
-	private final BerkeleyTempoAtomStore store;
+	private final BerkeleyLedgerEntryStore store;
 
-	BerkeleyCursor(BerkeleyTempoAtomStore store, LedgerIndex.LedgerIndexType type, byte[] primary, byte[] index) {
+	BerkeleyCursor(BerkeleyLedgerEntryStore store, LedgerIndex.LedgerIndexType type, byte[] primary, byte[] index) {
 		this.type = type;
 		this.primary = Arrays.clone(Objects.requireNonNull(primary));
 		this.index = Arrays.clone(Objects.requireNonNull(index));

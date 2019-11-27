@@ -4,7 +4,7 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.common.EUID;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.tempo.AtomGenerator;
+import com.radixdlt.tempo.LedgerEntryGenerator;
 import com.radixdlt.tempo.store.CommitmentStore;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.After;
@@ -24,7 +24,7 @@ public class CommitmentStoreTest extends RadixTestWithStores {
 
     private static final Logger LOGGER = Logging.getLogger("BerkeleyTempoAtomStoreTests");
 
-    private AtomGenerator atomGenerator = new AtomGenerator();
+    private LedgerEntryGenerator ledgerEntryGenerator = new LedgerEntryGenerator();
     private LocalSystem localSystem = LocalSystem.getInstance();
     private Serialization serialization = Serialization.getDefault();
     private SystemProfiler profiler = SystemProfiler.getInstance();

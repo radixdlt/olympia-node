@@ -1,21 +1,17 @@
 package org.radix.atoms.events;
 
-import org.radix.atoms.Atom;
+import com.radixdlt.common.AID;
 import org.radix.exceptions.ExceptionEvent;
 
-public class AtomExceptionEvent extends ExceptionEvent
-{
-	private final Atom atom;
-	
-	public AtomExceptionEvent(Throwable throwable, Atom atom)
-	{
+public class AtomExceptionEvent extends ExceptionEvent {
+	private final AID atomId;
+
+	public AtomExceptionEvent(Throwable throwable, AID atomId) {
 		super(throwable);
-		
-		this.atom = atom;
+		this.atomId = atomId;
 	}
 
-	public Atom getAtom()
-	{
-		return this.atom;
+	public AID getAtomId() {
+		return atomId;
 	}
 }

@@ -1,12 +1,14 @@
 package com.radixdlt.middleware2.store;
 
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.common.Atom;
 import com.radixdlt.common.EUID;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.engine.RadixEngineAtom;
 import com.radixdlt.ledger.LedgerIndex;
-import com.radixdlt.middleware.SimpleRadixEngineAtom;
+import com.radixdlt.middleware.RadixEngineUtils;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationUtils;
 import com.radixdlt.store.SpinStateMachine;
@@ -44,7 +46,13 @@ public class EngineAtomIndices {
 		this.duplicateIndices = duplicateIndices;
 	}
 
-	public static EngineAtomIndices from(SimpleRadixEngineAtom radixEngineAtom) {
+	public static EngineAtomIndices from(Atom atom) {
+		RadixEngineAtom radixEngineAtom;
+		try {
+			radixEngineAtom = RadixEngineUtils.toCMAtom(atom);
+		} catch (RadixEngineUtils.CMAtomConversionException e) {
+			throw new RuntimeException("EngineAtomIndices creation failed", e);
+		}
 		ImmutableSet.Builder<LedgerIndex> uniqueIndices = ImmutableSet.builder();
 		ImmutableSet.Builder<LedgerIndex> duplicateIndices = ImmutableSet.builder();
 

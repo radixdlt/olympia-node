@@ -6,10 +6,7 @@ import com.radixdlt.ledger.Ledger;
 import com.radixdlt.ledger.LedgerCursor;
 import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerSearchMode;
-import com.radixdlt.middleware2.converters.SimpleRadixEngineAtomToEngineAtom;
 import com.radixdlt.middleware2.store.EngineAtomIndices;
-import com.radixdlt.tempo.LegacyUtils;
-import org.radix.atoms.Atom;
 import com.radixdlt.engine.AtomStatus;
 import com.radixdlt.common.AID;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -67,8 +64,6 @@ public final class RadixJsonRpcServer {
 	 * Serialization mechanism
 	 */
 	private final Serialization serialization;
-
-	private final SimpleRadixEngineAtomToEngineAtom simpleRadixEngineAtomToEngineAtom = new SimpleRadixEngineAtomToEngineAtom();
 
 	public RadixJsonRpcServer(Serialization serialization, Ledger ledger, AtomsService atomsService, Schema atomSchema) {
 		this(serialization, ledger, atomsService, atomSchema, DEFAULT_MAX_REQUEST_SIZE);
@@ -142,13 +137,9 @@ public final class RadixJsonRpcServer {
 						}
 
 						String aidString = params.getString("aid");
-						// TODO remove legacy conversion
-						Optional<Atom> foundAtom = ledger.get(AID.from(aidString))
-							.map(atom -> simpleRadixEngineAtomToEngineAtom.convert(atom))
-							.map(LegacyUtils::toLegacyAtom);
-						if (foundAtom.isPresent()) {
-							result = foundAtom.get();
-						} else {
+						try {
+							result = atomsService.getAtomsByAtomId(AID.from(aidString));
+						} catch (RuntimeException e) {
 							return JsonRpcUtil.errorResponse(id, -32000, "Atom not found", new JSONObject());
 						}
 					}
@@ -206,11 +197,10 @@ public final class RadixJsonRpcServer {
 							return JsonRpcUtil.errorResponse(id, -32000, "Schema Error", e.toJSON());
 						}
 
-						final Atom atom = serialization.fromJsonObject(jsonAtom, Atom.class);
-						final AtomStatus atomStatus = atomsService.submitAtom(atom);
+						final AID atomId = atomsService.submitAtom(jsonAtom, null);
 						result = new JSONObject()
-							.put("status", atomStatus.toString())
-							.put("aid", atom.getAID())
+							.put("status", AtomStatus.PENDING_CM_VERIFICATION)
+							.put("aid", atomId)
 							.put("timestamp", System.currentTimeMillis());
 					}
 					break;

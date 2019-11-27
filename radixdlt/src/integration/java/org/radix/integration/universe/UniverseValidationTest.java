@@ -1,7 +1,7 @@
 package org.radix.integration.universe;
 
+import com.radixdlt.common.Atom;
 import org.junit.Test;
-import org.radix.atoms.Atom;
 import org.radix.integration.RadixTest;
 import org.radix.modules.Modules;
 import org.radix.properties.RuntimeProperties;

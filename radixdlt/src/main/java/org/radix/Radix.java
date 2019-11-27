@@ -6,6 +6,7 @@ import java.security.SecureRandom;
 import java.security.Security;
 
 import com.radixdlt.ledger.Ledger;
+import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.middleware2.processing.RadixEngineAtomProcessor;
 import com.radixdlt.tempo.Tempo;
 import org.apache.commons.cli.CommandLine;
@@ -62,6 +63,7 @@ public class Radix extends Plugin
 	public static final String 	AGENT 					= "/Radix:/"+AGENT_VERSION;
 
 	private RadixEngineAtomProcessor atomProcessor;
+	private AtomToBinaryConverter atomToBinaryConverter;
 	private Tempo ledger;
 
 	/**
@@ -311,6 +313,7 @@ public class Radix extends Plugin
 		try {
 			atomProcessor = globalInjector.getInjector().getInstance(RadixEngineAtomProcessor.class);
 			atomProcessor.start();
+			atomToBinaryConverter = globalInjector.getInjector().getInstance(AtomToBinaryConverter.class);
 		} catch (Exception e) {
 			throw new ModuleStartException("Failure setting up AtomProcessor", e, this);
 		}
@@ -320,7 +323,7 @@ public class Radix extends Plugin
 		 */
 		try
 		{
-			Modules.getInstance().start(new API(ledger, atomProcessor));
+			Modules.getInstance().start(new API(ledger, atomProcessor, atomToBinaryConverter));
 		}
 		catch (Exception ex)
 		{

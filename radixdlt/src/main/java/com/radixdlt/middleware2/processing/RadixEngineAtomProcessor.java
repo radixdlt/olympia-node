@@ -2,27 +2,27 @@ package com.radixdlt.middleware2.processing;
 
 import com.google.inject.Inject;
 import com.radixdlt.common.AID;
+import com.radixdlt.common.Atom;
 import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.DataPointer;
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.AtomEventListener;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.ledger.Ledger;
 import com.radixdlt.ledger.LedgerObservation;
-import com.radixdlt.middleware.ImmutableAtom;
-import com.radixdlt.middleware.RadixEngineUtils;
-import com.radixdlt.middleware.SimpleRadixEngineAtom;
-import com.radixdlt.middleware2.converters.SimpleRadixEngineAtomToEngineAtom;
-import com.radixdlt.tempo.LegacyUtils;
-import com.radixdlt.tempo.TempoAtom;
+import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
+import com.radixdlt.serialization.Serialization;
 import com.radixdlt.universe.Universe;
-import org.radix.atoms.Atom;
+import org.json.JSONObject;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.modules.Modules;
-import org.radix.validation.ConstraintMachineValidationException;
+import org.radix.shards.ShardSpace;
+import org.radix.universe.system.LocalSystem;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 public class RadixEngineAtomProcessor {
@@ -30,19 +30,22 @@ public class RadixEngineAtomProcessor {
 
 	private boolean interrupted;
 
-	private Ledger ledger;
-	private RadixEngine<SimpleRadixEngineAtom> radixEngine;
-	private SimpleRadixEngineAtomToEngineAtom atomConverter;
+	private final Ledger ledger;
+	private final RadixEngine radixEngine;
+	private final Serialization serialization;
+	private final AtomToBinaryConverter atomToBinaryConverter;
 
 	@Inject
 	public RadixEngineAtomProcessor(
 			Ledger ledger,
-			RadixEngine<SimpleRadixEngineAtom> radixEngine,
-			SimpleRadixEngineAtomToEngineAtom atomConverter
+			RadixEngine radixEngine,
+			Serialization serialization,
+			AtomToBinaryConverter atomToBinaryConverter
 			) {
 		this.ledger = ledger;
 		this.radixEngine = radixEngine;
-		this.atomConverter = atomConverter;
+		this.serialization = serialization;
+		this.atomToBinaryConverter = atomToBinaryConverter;
 	}
 
 	private void process() throws InterruptedException {
@@ -50,9 +53,8 @@ public class RadixEngineAtomProcessor {
 			LedgerObservation ledgerObservation = ledger.observe();
 			if (ledgerObservation.getType() == LedgerObservation.Type.ADOPT) {
 				try {
-					SimpleRadixEngineAtom simpleRadixEngineAtom = atomConverter.convert(ledgerObservation.getAtom());
-					simpleRadixEngineAtom = getSimpleRadixEngineAtomWithLegacyAtom(simpleRadixEngineAtom);
-					radixEngine.store(simpleRadixEngineAtom, new AtomEventListener() {
+					Atom atom = atomToBinaryConverter.toAtom(ledgerObservation.getEntry().getContent());
+					radixEngine.store(atom, new AtomEventListener() {
 					});
 				} catch (Exception e) {
 					log.error("Atom processing failed", e);
@@ -61,17 +63,22 @@ public class RadixEngineAtomProcessor {
 		}
 	}
 
-	public void process(Atom atom) {
-		//We have 2 conversion operation. Should be fixed when we will define clear Atom model
+	public AID process(JSONObject jsonAtom, Optional<ProcessorAtomEventListener> processorAtomEventListener) {
+		final Atom atom = serialization.fromJsonObject(jsonAtom, Atom.class);
+		processorAtomEventListener.ifPresent(listener -> listener.onDeserializationCompleted(atom.getAID()));
+		ShardSpace shardsSupported = LocalSystem.getInstance().getShards();
+		if (!shardsSupported.intersects(atom.getShards())) {
+			throw new RuntimeException(String.format("Not a suitable submission peer: " +
+				"atomShards(%s) shardsSupported(%s)", atom.getShards(), shardsSupported));
+		}
 		try {
-			TempoAtom tempoAtom = LegacyUtils.fromLegacyAtom(atom);
-			SimpleRadixEngineAtom simpleRadixEngineAtom = atomConverter.convert(tempoAtom);
-			simpleRadixEngineAtom = getSimpleRadixEngineAtomWithLegacyAtom(simpleRadixEngineAtom);
-			radixEngine.store(simpleRadixEngineAtom, new AtomEventListener() {
+			radixEngine.store(atom, new AtomEventListener() {
 			});
 		} catch (Exception e) {
+			processorAtomEventListener.ifPresent(listener -> listener.onError(e));
 			log.error("Engine processing exception ", e);
 		}
+		return atom.getAID();
 	}
 
 	public void start() {
@@ -89,54 +96,41 @@ public class RadixEngineAtomProcessor {
 		interrupted = true;
 	}
 
-	private static SimpleRadixEngineAtom getSimpleRadixEngineAtomWithLegacyAtom(SimpleRadixEngineAtom cmAtom) {
-		ImmutableAtom immutableAtom = cmAtom.getAtom();
-		Atom atom = new Atom(immutableAtom.getParticleGroups(), immutableAtom.getSignatures(), immutableAtom.getMetaData());
-		return new SimpleRadixEngineAtom(atom, cmAtom.getCMInstruction());
-	}
-
 	private void initGenesis() {
 		try {
 			LinkedList<AID> atomIds = new LinkedList<>();
-			for (ImmutableAtom immutableAtom : Modules.get(Universe.class).getGenesis()) {
-				if (!ledger.contains(immutableAtom.getAID())) {
-					final SimpleRadixEngineAtom cmAtom;
-					try {
-						cmAtom = RadixEngineUtils.toCMAtom(immutableAtom);
-					} catch (RadixEngineUtils.CMAtomConversionException e) {
-						throw new ConstraintMachineValidationException(immutableAtom, e.getMessage(), e.getDataPointer());
-					}
-
-					radixEngine.store(cmAtom,
-							new AtomEventListener<SimpleRadixEngineAtom>() {
+			for (Atom atom : Modules.get(Universe.class).getGenesis()) {
+				if (!ledger.contains(atom.getAID())) {
+					radixEngine.store(atom,
+							new AtomEventListener() {
 								@Override
-								public void onCMSuccess(SimpleRadixEngineAtom cmAtom) {
-									log.debug("Genesis Atom " + cmAtom.getAtom().getAID() + " stored to atom store");
+								public void onCMSuccess(Atom atom) {
+									log.debug("Genesis Atom " + atom.getAID() + " stored to atom store");
 								}
 
 								@Override
-								public void onCMError(SimpleRadixEngineAtom cmAtom, CMError error) {
+								public void onCMError(Atom atom, CMError error) {
 									log.fatal("Failed to process genesis Atom: " + error.getErrorCode() + " "
 											+ error.getErrMsg() + " " + error.getDataPointer() + "\n"
-											+ cmAtom.getAtom() + "\n"
+											+ atom + "\n"
 											+ error.getCmValidationState().toString());
 									System.exit(-1);
 								}
 
 								@Override
-								public void onVirtualStateConflict(SimpleRadixEngineAtom cmAtom, DataPointer dp) {
+								public void onVirtualStateConflict(Atom atom, DataPointer dp) {
 									log.fatal("Failed to process genesis Atom: Virtual State Conflict");
 									System.exit(-1);
 								}
 
 								@Override
-								public void onStateConflict(SimpleRadixEngineAtom cmAtom, DataPointer dp, SimpleRadixEngineAtom conflictAtom) {
+								public void onStateConflict(Atom atom, DataPointer dp, Atom conflictAtom) {
 									log.fatal("Failed to process genesis Atom: State Conflict");
 									System.exit(-1);
 								}
 
 								@Override
-								public void onStateMissingDependency(SimpleRadixEngineAtom cmAtom, DataPointer dp) {
+								public void onStateMissingDependency(AID atomId, Particle particle) {
 									log.fatal("Failed to process genesis Atom: Missing Dependency");
 									System.exit(-1);
 								}
@@ -155,6 +149,14 @@ public class RadixEngineAtomProcessor {
 			while (!ledger.contains(atomID)) {
 				TimeUnit.MILLISECONDS.sleep(100);
 			}
+		}
+	}
+
+	public interface ProcessorAtomEventListener {
+		default void onDeserializationCompleted(AID atomId) {
+		}
+
+		default void onError(Exception e) {
 		}
 	}
 }

@@ -21,7 +21,6 @@
     },
     "hid": { "$ref": "#/definitions/uid" },
     "aid": { "$ref": "#/definitions/aid" },
-    "temporalProof": { "$ref": "#/definitions/temporalProof" }
   },
   "required": [ "particleGroups", "serializer" ],
   "definitions": {
@@ -94,40 +93,6 @@
       },
       "description": "A signature."
     },
-    "temporalProof": {
-      "type": "object",
-      "properties": {
-        "serializer": {
-          "type": "string",
-          "enum": [ "tempo.temporal_proof" ]
-        },
-        "object": { "$ref": "#/definitions/hash" },
-        "vertices": {
-          "type": "array",
-          "items": { "$ref": "#/definitions/temporalProofVertex" }
-        }
-      },
-      "required": [ "serializer", "object" ]
-    },
-    "temporalProofVertex": {
-      "type": "object",
-      "properties": {
-        "owner": { "$ref": "#/definitions/nonEmptyBytes" },
-        "hid": { "$ref": "#/definitions/uid" },
-        "previous": { "$ref": "#/definitions/uid" },
-        "signature": { "$ref": "#/definitions/signature" },
-        "timestamps": { "type": "object" },
-        "commitment": { "$ref": "#/definitions/hash" },
-        "serializer": {
-          "type": "string",
-          "enum": [ "tempo.temporal_vertex" ]
-        },
-        "clock": {
-          "type": "integer"
-        }
-      }
-    },
-
     "tokenActionPermission": {
       "type": "string",
       "enum": [ ":str:token_creation_only", ":str:token_owner_only", ":str:none", ":str:all" ]

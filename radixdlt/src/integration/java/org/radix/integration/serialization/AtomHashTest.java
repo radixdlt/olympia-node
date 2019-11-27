@@ -1,10 +1,10 @@
 package org.radix.integration.serialization;
 
+import com.radixdlt.common.Atom;
 import com.radixdlt.universe.Universe;
 import org.junit.Test;
 import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.atomos.RRIParticle;
-import org.radix.atoms.Atom;
 import com.radixdlt.atomos.RRI;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECKeyPair;
