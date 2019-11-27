@@ -1,7 +1,7 @@
 package org.radix.atoms.events;
 
+import com.radixdlt.common.Atom;
 import com.radixdlt.common.EUID;
-import org.radix.atoms.Atom;
 
 import java.util.Set;
 import java.util.function.Supplier;

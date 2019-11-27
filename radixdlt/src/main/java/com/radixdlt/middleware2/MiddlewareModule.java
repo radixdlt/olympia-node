@@ -3,6 +3,8 @@ package com.radixdlt.middleware2;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
+import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
+import com.radixdlt.serialization.Serialization;
 import org.radix.modules.Modules;
 import org.radix.properties.RuntimeProperties;
 import org.radix.shards.ShardSpace;
@@ -21,8 +23,6 @@ import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.middleware.AtomCheckHook;
-import com.radixdlt.middleware.SimpleRadixEngineAtom;
-import com.radixdlt.middleware2.converters.SimpleRadixEngineAtomToEngineAtom;
 import com.radixdlt.middleware2.processing.EngineAtomEventListener;
 import com.radixdlt.middleware2.store.LedgerEngineStore;
 import com.radixdlt.store.CMStore;
@@ -55,16 +55,15 @@ public class MiddlewareModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private RadixEngine<SimpleRadixEngineAtom> getRadixEngine(
+	private RadixEngine getRadixEngine(
 			ConstraintMachine constraintMachine,
 			UnaryOperator<CMStore> virtualStoreLayer,
-			EngineStore<SimpleRadixEngineAtom> engineStore,
-			SimpleRadixEngineAtomToEngineAtom converter
+			EngineStore engineStore
 	) {
-		RadixEngine<SimpleRadixEngineAtom> radixEngine = new RadixEngine<>(
-				constraintMachine,
-				virtualStoreLayer,
-				engineStore
+		RadixEngine radixEngine = new RadixEngine(
+			constraintMachine,
+			virtualStoreLayer,
+			engineStore
 		);
 
 		final boolean skipAtomFeeCheck = Modules.isAvailable(RuntimeProperties.class)
@@ -92,9 +91,9 @@ public class MiddlewareModule extends AbstractModule {
 		bind(ConstraintMachine.class).toInstance(constraintMachine);
 		bind(new TypeLiteral<UnaryOperator<CMStore>>() {
 		}).toInstance(os.buildVirtualLayer());
-		bind(new TypeLiteral<EngineStore<SimpleRadixEngineAtom>>() {
-		}).to(LedgerEngineStore.class).in(Scopes.SINGLETON);
+		bind(EngineStore.class).to(LedgerEngineStore.class).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<Supplier<ShardSpace>>() {
 		}).toInstance(() -> LocalSystem.getInstance().getShards());
+		bind(AtomToBinaryConverter.class).toInstance(new AtomToBinaryConverter(Serialization.getDefault()));
 	}
 }

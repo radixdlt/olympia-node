@@ -1,15 +1,13 @@
 package com.radixdlt.middleware2.processing;
 
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.common.AID;
+import com.radixdlt.common.Atom;
 import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.DataPointer;
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.AtomEventListener;
-import com.radixdlt.middleware.ImmutableAtom;
-import com.radixdlt.middleware.SimpleRadixEngineAtom;
-import com.radixdlt.middleware.SpunParticle;
 import com.radixdlt.middleware2.store.EngineAtomIndices;
-import com.radixdlt.tempo.LegacyUtils;
-import org.radix.atoms.Atom;
 import org.radix.atoms.AtomDependencyNotFoundException;
 import org.radix.atoms.events.AtomExceptionEvent;
 import org.radix.atoms.events.AtomStoredEvent;
@@ -19,91 +17,61 @@ import org.radix.atoms.particles.conflict.events.ConflictDetectedEvent;
 import org.radix.events.Events;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.time.TemporalProofValidator;
 import org.radix.validation.ConstraintMachineValidationException;
 
 import java.util.Collections;
 import java.util.stream.Collectors;
 
-public class EngineAtomEventListener implements AtomEventListener<SimpleRadixEngineAtom> {
+public class EngineAtomEventListener implements AtomEventListener {
 	private static final Logger log = Logging.getLogger("middleware2.eventListener");
 
 	@Override
-	public void onCMError(SimpleRadixEngineAtom cmAtom, CMError error) {
-		ConstraintMachineValidationException ex = new ConstraintMachineValidationException(cmAtom.getAtom(), error.getErrMsg(), error.getDataPointer());
-		ImmutableAtom immutableAtom = cmAtom.getAtom();
-		org.radix.atoms.Atom legacyAtom = new org.radix.atoms.Atom(immutableAtom.getParticleGroups(), immutableAtom.getSignatures(), immutableAtom.getMetaData());
-		Events.getInstance().broadcast(new AtomExceptionEvent(ex, legacyAtom));
+	public void onCMError(Atom atom, CMError error) {
+		ConstraintMachineValidationException ex = new ConstraintMachineValidationException(atom, error.getErrMsg(), error.getDataPointer());
+		Events.getInstance().broadcast(new AtomExceptionEvent(ex, atom.getAID()));
 	}
 
 	@Override
-	public void onStateStore(SimpleRadixEngineAtom cmAtom) {
+	public void onStateStore(Atom atom) {
 		try {
-			Atom legacyAtom = LegacyUtils.toLegacyAtom(cmAtom);
-			EngineAtomIndices engineAtomIndices = EngineAtomIndices.from(cmAtom);
-			Events.getInstance().broadcastWithException(new AtomStoredEvent(legacyAtom, () ->
+			EngineAtomIndices engineAtomIndices = EngineAtomIndices.from(atom);
+			Events.getInstance().broadcastWithException(new AtomStoredEvent(atom, () ->
 					engineAtomIndices.getDuplicateIndices().stream().filter(e -> e.getPrefix() == EngineAtomIndices.IndexType.DESTINATION.getValue())
 					.map(e -> EngineAtomIndices.toEUID(e.asKey()))
 					.collect(Collectors.toSet()))
 			);
-
-			ImmutableAtom immutableAtom = cmAtom.getAtom();
-			Atom atom = new Atom(immutableAtom.getParticleGroups(), immutableAtom.getSignatures(), immutableAtom.getMetaData());
-
-			try {
-				TemporalProofValidator.validate(atom.getTemporalProof());
-			} catch (Exception e) {
-				log.error("TemporalProof Validation failed", e);
-				Events.getInstance().broadcast(new AtomExceptionEvent(e, atom));
-			}
 		} catch (Throwable e) {
 			log.error("Store of atom failed", e);
 		}
 	}
 
 	@Override
-	public void onVirtualStateConflict(SimpleRadixEngineAtom cmAtom, DataPointer issueParticle) {
-		ConstraintMachineValidationException e = new ConstraintMachineValidationException(cmAtom.getAtom(), "Virtual state conflict", issueParticle);
+	public void onVirtualStateConflict(Atom atom, DataPointer issueParticle) {
+		ConstraintMachineValidationException e = new ConstraintMachineValidationException(atom, "Virtual state conflict", issueParticle);
 		log.error(e);
-		ImmutableAtom immutableAtom = cmAtom.getAtom();
-		org.radix.atoms.Atom legacyAtom = new org.radix.atoms.Atom(immutableAtom.getParticleGroups(), immutableAtom.getSignatures(), immutableAtom.getMetaData());
-		Events.getInstance().broadcast(new AtomExceptionEvent(e, legacyAtom));
+		Events.getInstance().broadcast(new AtomExceptionEvent(e, atom.getAID()));
 	}
 
 	@Override
-	public void onStateConflict(SimpleRadixEngineAtom cmAtom, DataPointer dp, SimpleRadixEngineAtom conflictingAtom) {
-		ImmutableAtom cmAtomImmutableAtom = cmAtom.getAtom();
-		org.radix.atoms.Atom cmAtomLegacyAtom = new org.radix.atoms.Atom(cmAtomImmutableAtom.getParticleGroups(), cmAtomImmutableAtom.getSignatures(), cmAtomImmutableAtom.getMetaData());
-		ImmutableAtom conflictingAtomImmutableAtom = cmAtom.getAtom();
-		org.radix.atoms.Atom conflictingAtomLegacyAtom = new org.radix.atoms.Atom(conflictingAtomImmutableAtom.getParticleGroups(), conflictingAtomImmutableAtom.getSignatures(), conflictingAtomImmutableAtom.getMetaData());
-		SpunParticle cmAtomIssueParticle = cmAtomImmutableAtom.getSpunParticle(dp);
-
+	public void onStateConflict(Atom atom, DataPointer dp, Atom conflictingAtom) {
 		final ParticleConflictException conflict = new ParticleConflictException(
-				new ParticleConflict(
-						cmAtomIssueParticle,
-						ImmutableSet.of(cmAtomLegacyAtom, conflictingAtomLegacyAtom)
+				new ParticleConflict(dp, ImmutableSet.of(atom.getAID(), conflictingAtom.getAID())
 				));
-		AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(conflict, (Atom) cmAtom.getAtom());
+		AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(conflict, atom.getAID());
 		Events.getInstance().broadcast(atomExceptionEvent);
 		Events.getInstance().broadcast(new ConflictDetectedEvent(conflict.getConflict()));
 		log.error("Conflict: ", conflict);
 	}
 
 	@Override
-	public void onStateMissingDependency(SimpleRadixEngineAtom cmAtom, DataPointer dp) {
-		ImmutableAtom cmAtomImmutableAtom = cmAtom.getAtom();
-		org.radix.atoms.Atom cmAtomLegacyAtom = new org.radix.atoms.Atom(cmAtomImmutableAtom.getParticleGroups(), cmAtomImmutableAtom.getSignatures(), cmAtomImmutableAtom.getMetaData());
-
-		SpunParticle issueParticle = cmAtom.getAtom().getSpunParticle(dp);
-
+	public void onStateMissingDependency(AID atomId, Particle particle) {
 		final AtomDependencyNotFoundException notFoundException =
-				new AtomDependencyNotFoundException(
-						String.format("Atom has missing dependencies in transitions: %s", issueParticle.getParticle().getHID()),
-						Collections.singleton(issueParticle.getParticle().getHID()),
-						cmAtomLegacyAtom
-				);
+			new AtomDependencyNotFoundException(
+				String.format("Atom has missing dependencies in transitions: %s", particle.getHID()),
+				Collections.singleton(particle.getHID())
+			);
 
-		AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(notFoundException, cmAtomLegacyAtom);
+		AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(notFoundException, atomId);
 		Events.getInstance().broadcast(atomExceptionEvent);
 		log.error(notFoundException);
 	}

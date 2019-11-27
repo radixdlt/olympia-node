@@ -1,6 +1,6 @@
 package org.radix.exceptions;
 
-import org.radix.atoms.Atom;
+import com.radixdlt.common.Atom;
 
 public class AtomAlreadyStoredException extends IllegalStateException {
 	private final Atom atom;

@@ -1,8 +1,8 @@
 package org.radix.validation;
 
-import com.radixdlt.middleware.ImmutableAtom;
+import com.radixdlt.common.Atom;
+
 import java.util.Objects;
-import org.radix.atoms.Atom;
 import com.radixdlt.constraintmachine.DataPointer;
 import org.radix.exceptions.ValidationException;
 
@@ -10,10 +10,10 @@ import org.radix.exceptions.ValidationException;
  * An exception during validation of an {@link Atom}
  */
 public class ConstraintMachineValidationException extends ValidationException {
-	private final ImmutableAtom atom;
+	private final Atom atom;
 	private final DataPointer dataPointer;
 
-	public ConstraintMachineValidationException(ImmutableAtom atom, String message, DataPointer dataPointer) {
+	public ConstraintMachineValidationException(Atom atom, String message, DataPointer dataPointer) {
 		super(message);
 
 		Objects.requireNonNull(atom);
@@ -27,7 +27,7 @@ public class ConstraintMachineValidationException extends ValidationException {
 		return dataPointer.toString();
 	}
 
-	public ImmutableAtom getAtom() {
+	public Atom getAtom() {
 		return atom;
 	}
 }

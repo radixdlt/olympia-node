@@ -1,6 +1,5 @@
 package com.radixdlt.ledger;
 
-import com.radixdlt.Atom;
 import com.radixdlt.common.AID;
 import com.radixdlt.ledger.exceptions.LedgerException;
 import com.radixdlt.ledger.exceptions.LedgerIndexConflictException;
@@ -22,39 +21,39 @@ public interface Ledger {
 	LedgerObservation observe() throws InterruptedException;
 
 	/**
-	 * Gets the atom associated with a certain {@link AID}.
+	 * Gets the LedgerEntry associated with a certain {@link AID}.
 	 *
 	 * @param aid The {@link AID}
-	 * @return The atom associated with the given {@link AID}
+	 * @return The LedgerEntry associated with the given {@link AID}
 	 *
 	 * @throws LedgerException in case of internal errors
 	 */
-	Optional<Atom> get(AID aid);
+	Optional<LedgerEntry> get(AID aid);
 
 	/**
-	 * Stores an {@link Atom} with certain indices.
+	 * Stores an {@link LedgerEntry} with certain indices.
 	 *
-	 * @param atom The atom
+	 * @param ledgerEntry The ledgerEntry
 	 * @param uniqueIndices The unique indices
 	 * @param duplicateIndices The duplicate indices
 	 *
 	 * @throws LedgerIndexConflictException if the unique indices conflict with existing indices
 	 * @throws LedgerException in case of internal errors
 	 */
-	void store(Atom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices);
+	void store(LedgerEntry ledgerEntry, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices);
 
 	/**
-	 * Replaces a set of atoms with another atom in an atomic operation.
+	 * Replaces a set of ledgerEntries with another ledgerEntry in an atomic operation.
 	 *
 	 * @param aids The aids to delete
-	 * @param atom The new atom
+	 * @param ledgerEntry The new ledgerEntry
 	 * @param uniqueIndices The unique indices of that atom
 	 * @param duplicateIndices The duplicate indices of that atom
 	 *
 	 * @throws LedgerIndexConflictException if the unique indices conflict with existing indices
 	 * @throws LedgerException in case of internal errors
 	 */
-	void replace(Set<AID> aids, Atom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices);
+	void replace(Set<AID> aids, LedgerEntry ledgerEntry, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices);
 
 	/**
 	 * Searches for a certain index.
@@ -84,7 +83,7 @@ public interface Ledger {
 	 * Checks whether a certain index is contained in this ledger.
 	 *
 	 * @param aid
-	 * @return true if atom exists and false otherwise
+	 * @return true if ledgerEntry exists and false otherwise
 	 */
 	boolean contains(AID aid);
 }

@@ -1,36 +1,24 @@
 package org.radix.integration;
 
-import java.security.SecureRandom;
-import java.util.List;
-
+import com.radixdlt.serialization.Serialization;
+import com.radixdlt.universe.Universe;
 import org.apache.commons.cli.CommandLine;
 import org.json.JSONObject;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.radix.GenerateUniverses;
 import org.radix.Radix;
-
-import org.radix.atoms.Atom;
-import com.radixdlt.common.EUID;
-import com.radixdlt.crypto.Hash;
-import com.radixdlt.crypto.CryptoException;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
-
-import org.radix.exceptions.ValidationException;
 import org.radix.modules.Module;
 import org.radix.modules.Modules;
 import org.radix.modules.exceptions.ModuleException;
 import org.radix.properties.PersistedProperties;
 import org.radix.properties.RuntimeProperties;
-import com.radixdlt.serialization.Serialization;
 import org.radix.serialization.TestSetupUtils;
-import org.radix.time.TemporalProof;
-import org.radix.time.TemporalVertex;
 import org.radix.time.Time;
-import com.radixdlt.universe.Universe;
 import org.radix.universe.system.LocalSystem;
 import org.radix.utils.IOUtils;
+
+import java.security.SecureRandom;
 
 public class RadixTest
 {
@@ -89,18 +77,6 @@ public class RadixTest
 	private static void safelyStop(Module m) throws ModuleException {
 		if (m != null) {
 			Modules.getInstance().stop(m);
-		}
-	}
-
-	protected void addTemporalVertex(Atom atom) throws CryptoException, ValidationException {
-		TemporalProof proof = atom.getTemporalProof();
-		ECKeyPair nodeKey = LocalSystem.getInstance().getKeyPair();
-		ECPublicKey nodePublicKey = nodeKey.getPublicKey();
-		if (!proof.hasVertexByNID(nodePublicKey.getUID())) {
-			List<TemporalVertex> vertices = proof.getVertices();
-			EUID prev = vertices.isEmpty() ? EUID.ZERO : vertices.get(vertices.size() - 1).getHID();
-			TemporalVertex vertex = new TemporalVertex(nodePublicKey, clock++, System.currentTimeMillis(), Hash.ZERO_HASH, prev);
-			atom.getTemporalProof().add(vertex, nodeKey);
 		}
 	}
 }

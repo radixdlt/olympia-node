@@ -1,23 +1,10 @@
 package org.radix.routing;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
-import org.radix.atoms.events.AtomEvent;
-import org.radix.atoms.events.AtomListener;
-import org.radix.atoms.events.AtomStoreEvent;
 import com.radixdlt.common.EUID;
+import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.Offset;
+import org.radix.atoms.events.AtomEvent;
 import org.radix.common.executors.ScheduledExecutable;
-import com.radixdlt.crypto.ECPublicKey;
-
 import org.radix.database.exceptions.DatabaseException;
 import org.radix.events.Events;
 import org.radix.logging.Logger;
@@ -30,9 +17,16 @@ import org.radix.network.peers.events.PeerAvailableEvent;
 import org.radix.network.peers.events.PeerEvent;
 import org.radix.properties.RuntimeProperties;
 import org.radix.time.NtpService;
-import org.radix.time.TemporalVertex;
-import com.radixdlt.universe.Universe;
 import org.radix.universe.system.LocalSystem;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 public class RoutingHandler extends Service
 {
@@ -122,7 +116,6 @@ public class RoutingHandler extends Service
 		});
 
 		Events.getInstance().register(PeerEvent.class, this.peerListener);
-		Events.getInstance().register(AtomEvent.class, this.atomListener);
 	}
 
 	@Override
@@ -132,7 +125,6 @@ public class RoutingHandler extends Service
 			this.nidExecutable.terminate(true);
 			this.nidExecutable = null;
 		}
-		Events.getInstance().deregister(AtomEvent.class, this.atomListener);
 		Events.getInstance().deregister(PeerEvent.class, this.peerListener);
 	}
 
@@ -197,47 +189,6 @@ public class RoutingHandler extends Service
 				}
 
 				NIDs.add(event.getPeer().getNID());
-			}
-		}
-	};
-
-	// ATOM LISTENER //
-	private AtomListener atomListener = new AtomListener()
-	{
-		@Override
-		public void process(AtomEvent event)
-		{
-			if (event instanceof AtomStoreEvent)
-			{
-				if (!event.getAtom().getTemporalProof().isEmpty())
-				{
-					int planck = Modules.get(Universe.class).toPlanck(event.getAtom().getTimestamp(), Offset.NEXT);
-
-					try
-					{
-						Set<EUID> temporalNIDs = event.getAtom().getTemporalProof().getVerticesByNIDAssociations().stream()
-							.map(TemporalVertex::getOwner)
-							.map(ECPublicKey::getUID)
-							.collect(Collectors.toSet());
-
-						synchronized(RoutingHandler.this.NIDSets)
-						{
-							Set<EUID> NIDs = RoutingHandler.this.NIDSets.get(planck);
-
-							if (NIDs == null)
-							{
-								NIDs = Modules.get(RoutingStore.class).getNIDs(planck);
-								RoutingHandler.this.NIDSets.put(planck, NIDs);
-							}
-
-							NIDs.addAll(temporalNIDs);
-						}
-					}
-					catch (Exception ex)
-					{
-						log.error("Failed to update NIDs for RoutingTable in planck "+planck+" via Atom "+event.getAtom(), ex);
-					}
-				}
 			}
 		}
 	};

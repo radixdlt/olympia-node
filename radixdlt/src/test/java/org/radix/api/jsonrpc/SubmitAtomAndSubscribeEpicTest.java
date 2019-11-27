@@ -1,12 +1,13 @@
 package org.radix.api.jsonrpc;
 
+import com.radixdlt.common.AID;
+import com.radixdlt.common.Atom;
 import org.everit.json.schema.Schema;
 import org.json.JSONObject;
 import org.junit.Test;
 import org.mockito.InOrder;
 import org.radix.api.services.AtomsService;
 import org.radix.api.services.SingleAtomListener;
-import org.radix.atoms.Atom;
 import com.radixdlt.constraintmachine.DataPointer;
 import org.radix.validation.ConstraintMachineValidationException;
 import com.radixdlt.serialization.Serialization;
@@ -41,17 +42,14 @@ public class SubmitAtomAndSubscribeEpicTest {
 		when(serializer.fromJsonObject(eq(jsonAtom), eq(Atom.class))).thenReturn(atom);
 
 		doAnswer((invocation) -> {
-			((SingleAtomListener) invocation.getArguments()[1]).onError(new ConstraintMachineValidationException(atom, "", DataPointer.ofAtom()));
+			((SingleAtomListener) invocation.getArguments()[1]).onError(AID.ZERO, new ConstraintMachineValidationException(atom, "", DataPointer.ofAtom()));
 			return null;
-		}).when(atomsService).subscribeAtom(any(), any(SingleAtomListener.class));
+		}).when(atomsService).submitAtom(any(), any());
 
 		SubmitAtomAndSubscribeEpic epic = new SubmitAtomAndSubscribeEpic(atomsService, schema, serializer, callback);
 		epic.action(action);
 
 		InOrder inOrder = inOrder(callback);
-		inOrder.verify(callback, times(1)).accept(argThat(o ->
-			o.has("result") && o.getJSONObject("result").getBoolean("success")
-		));
 		inOrder.verify(callback, times(1)).accept(argThat(o ->
 			o.has("method") && o.has("params")
 				&& o.getString("method").equals("AtomSubmissionState.onNext")

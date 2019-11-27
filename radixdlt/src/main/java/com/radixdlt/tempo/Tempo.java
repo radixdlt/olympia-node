@@ -3,11 +3,11 @@ package com.radixdlt.tempo;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
-import com.radixdlt.Atom;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
 import com.radixdlt.ledger.Ledger;
 import com.radixdlt.ledger.LedgerCursor;
+import com.radixdlt.ledger.LedgerEntry;
 import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerIndex.LedgerIndexType;
 import com.radixdlt.ledger.LedgerObservation;
@@ -18,11 +18,11 @@ import com.radixdlt.tempo.consensus.Consensus;
 import com.radixdlt.tempo.consensus.ConsensusAction;
 import com.radixdlt.tempo.delivery.RequestDeliverer;
 import com.radixdlt.tempo.discovery.AtomDiscoverer;
-import com.radixdlt.tempo.store.AtomConflict;
-import com.radixdlt.tempo.store.AtomStoreResult;
+import com.radixdlt.tempo.store.LedgerEntryConflict;
+import com.radixdlt.tempo.store.LedgerEntryStoreResult;
 import com.radixdlt.tempo.store.CommitmentStore;
-import com.radixdlt.tempo.store.TempoAtomStore;
-import com.radixdlt.tempo.store.TempoAtomStoreView;
+import com.radixdlt.tempo.store.LedgerEntryStore;
+import com.radixdlt.tempo.store.LedgerEntryStoreView;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.modules.Modules;
@@ -44,7 +44,7 @@ public final class Tempo implements Ledger, Closeable {
 	private static final int INBOUND_QUEUE_CAPACITY = 16384;
 
 	private final EUID self;
-	private final TempoAtomStore atomStore;
+	private final LedgerEntryStore ledgerEntryStore;
 	private final CommitmentStore commitmentStore;
 	private final Consensus consensus;
 	private final Attestor attestor;
@@ -52,7 +52,7 @@ public final class Tempo implements Ledger, Closeable {
 	private final Set<Resource> ownedResources;
 	private final Set<AtomDiscoverer> atomDiscoverers;
 	private final RequestDeliverer requestDeliverer;
-	private final Set<AtomObserver> observers; // TODO external ledgerObservations and internal observers is ambiguous
+	private final Set<LedgerEntryObserver> observers; // TODO external ledgerObservations and internal observers is ambiguous
 
 	private final BlockingQueue<LedgerObservation> ledgerObservations;
 	private final SimpleThreadPool<ConsensusAction> consensusProcessor;
@@ -60,17 +60,17 @@ public final class Tempo implements Ledger, Closeable {
 	@Inject
 	public Tempo(
 		@Named("self") EUID self,
-		TempoAtomStore atomStore,
+		LedgerEntryStore ledgerEntryStore,
 		CommitmentStore commitmentStore,
 		Consensus consensus,
 		Attestor attestor,
 		@Owned Set<Resource> ownedResources,
 		Set<AtomDiscoverer> atomDiscoverers,
 		RequestDeliverer requestDeliverer,
-		Set<AtomObserver> observers
+		Set<LedgerEntryObserver> observers
 	) {
 		this.self = Objects.requireNonNull(self);
-		this.atomStore = Objects.requireNonNull(atomStore);
+		this.ledgerEntryStore = Objects.requireNonNull(ledgerEntryStore);
 		this.commitmentStore = Objects.requireNonNull(commitmentStore);
 		this.consensus = Objects.requireNonNull(consensus);
 		this.attestor = Objects.requireNonNull(attestor);
@@ -94,51 +94,48 @@ public final class Tempo implements Ledger, Closeable {
 	}
 
 	@Override
-	public Optional<Atom> get(AID aid) {
-		// cast to abstract atom
-		return atomStore.get(aid).map(atom -> atom);
+	public Optional<LedgerEntry> get(AID aid) {
+		return ledgerEntryStore.get(aid);
 	}
 
 	@Override
-	public void store(Atom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
-		preCheckStore(atom, uniqueIndices, duplicateIndices);
-		TempoAtom tempoAtom = convertToTempoAtom(atom);
-		AtomStoreResult status = atomStore.store(tempoAtom, uniqueIndices, duplicateIndices);
+	public void store(LedgerEntry ledgerEntry, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
+		preCheckStore(ledgerEntry, uniqueIndices, duplicateIndices);
+		LedgerEntryStoreResult status = ledgerEntryStore.store(ledgerEntry, uniqueIndices, duplicateIndices);
 		postCheckStore(status);
-		onAdopted(tempoAtom, uniqueIndices, duplicateIndices);
+		onAdopted(ledgerEntry, uniqueIndices, duplicateIndices);
 	}
 
 	@Override
-	public void replace(Set<AID> aids, Atom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
+	public void replace(Set<AID> aids, LedgerEntry ledgerEntry, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
 		Objects.requireNonNull(aids, "aids");
-		preCheckStore(atom, uniqueIndices, duplicateIndices);
+		preCheckStore(ledgerEntry, uniqueIndices, duplicateIndices);
 
-		TempoAtom tempoAtom = convertToTempoAtom(atom);
-		AtomStoreResult status = atomStore.replace(aids, tempoAtom, uniqueIndices, duplicateIndices);
+		LedgerEntryStoreResult status = ledgerEntryStore.replace(aids, ledgerEntry, uniqueIndices, duplicateIndices);
 		postCheckStore(status);
 		aids.forEach(this::onDeleted);
-		onAdopted(tempoAtom, uniqueIndices, duplicateIndices);
+		onAdopted(ledgerEntry, uniqueIndices, duplicateIndices);
 	}
 
-	private void preCheckStore(Atom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
-		Objects.requireNonNull(atom, "atom");
+	private void preCheckStore(LedgerEntry ledgerEntry, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
+		Objects.requireNonNull(ledgerEntry, "ledgerEntry");
 		Objects.requireNonNull(uniqueIndices, "uniqueIndices");
 		Objects.requireNonNull(duplicateIndices, "duplicateIndices");
 		if (uniqueIndices.isEmpty()) {
-			throw new TempoException("Atom '" + atom.getAID() + "' must have at least one unique index");
+			throw new TempoException("Atom '" + ledgerEntry.getAID() + "' must have at least one unique index");
 		}
-		if (atom.getShards().isEmpty()) {
-			throw new TempoException("Atom '" + atom.getAID() + "' must have at least one shard");
+		if (ledgerEntry.getShards().isEmpty()) {
+			throw new TempoException("Atom '" + ledgerEntry.getAID() + "' must have at least one shard");
 		}
-		if (atomStore.contains(atom.getAID())) {
-			throw new AtomAlreadyExistsException(atom);
+		if (ledgerEntryStore.contains(ledgerEntry.getAID())) {
+			throw new AtomAlreadyExistsException(ledgerEntry.getAID());
 		}
 	}
 
-	private void postCheckStore(AtomStoreResult status) {
+	private void postCheckStore(LedgerEntryStoreResult status) {
 		if (!status.isSuccess()) {
-			AtomConflict conflictInfo = status.getConflictInfo();
-			throw new LedgerIndexConflictException(conflictInfo.getAtom(), conflictInfo.getConflictingAtoms());
+			LedgerEntryConflict conflictInfo = status.getConflictInfo();
+			throw new LedgerIndexConflictException(conflictInfo.getLedgerEntry(), conflictInfo.getConflictingLedgerEntries());
 		}
 	}
 
@@ -149,7 +146,7 @@ public final class Tempo implements Ledger, Closeable {
 	private void onDiscovered(Set<AID> aids, Peer peer) {
 		requestDeliverer.deliver(aids, ImmutableSet.of(peer)).forEach((aid, future) -> future.thenAccept(result -> {
 			if (result.isSuccess()) {
-				injectObservation(LedgerObservation.adopt(result.getAtom()));
+				injectObservation(LedgerObservation.adopt(result.getLedgerEntry()));
 			}
 		}));
 	}
@@ -157,15 +154,16 @@ public final class Tempo implements Ledger, Closeable {
 	private void processConsensusAction(ConsensusAction action) {
 		if (action.getType() == ConsensusAction.Type.COMMIT) {
 			// TODO do something with commitment
-			TempoAtom preference = action.getPreference();
+			LedgerEntry preference = action.getPreference();
 			TemporalCommitment temporalCommitment = attestor.attestTo(preference.getAID());
 			log.info("Committing to '" + preference.getAID() + "' at " + temporalCommitment.getLogicalClock());
-			this.atomStore.commit(preference.getAID(), temporalCommitment.getLogicalClock());
+			this.ledgerEntryStore.commit(preference.getAID(), temporalCommitment.getLogicalClock());
 			this.commitmentStore.put(self, temporalCommitment.getLogicalClock(), temporalCommitment.getCommitment());
 			injectObservation(LedgerObservation.commit(preference));
 		} else if (action.getType() == ConsensusAction.Type.SWITCH_PREFERENCE) {
 			log.info("Switching preference from '" + action.getOldPreferences() + "' to '" + action.getPreference() + "'");
-			injectObservation(LedgerObservation.adopt(action.getOldPreferences(), action.getPreference()));
+			Set<? extends LedgerEntry> oldPreferences = action.getOldPreferences();
+			injectObservation(LedgerObservation.adopt(oldPreferences, action.getPreference()));
 		} else {
 			throw new IllegalStateException("Unknown consensus action type: " + action.getType());
 		}
@@ -178,52 +176,37 @@ public final class Tempo implements Ledger, Closeable {
 		}
 	}
 
-	private void onAdopted(TempoAtom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
-		observers.forEach(acceptor -> acceptor.onAdopted(atom, uniqueIndices, duplicateIndices));
+	private void onAdopted(LedgerEntry ledgerEntry, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
+		observers.forEach(acceptor -> acceptor.onAdopted(ledgerEntry, uniqueIndices, duplicateIndices));
 	}
 
 	@Override
 	public LedgerCursor search(LedgerIndexType type, LedgerIndex index, LedgerSearchMode mode) {
-		return atomStore.search(type, index, mode);
+		return ledgerEntryStore.search(type, index, mode);
 	}
 
 	@Override
 	public boolean contains(LedgerIndexType type, LedgerIndex index, LedgerSearchMode mode) {
-		return atomStore.contains(type, index, mode);
+		return ledgerEntryStore.contains(type, index, mode);
 	}
 
 	@Override
 	public boolean contains(AID aid) {
-		return atomStore.contains(aid);
+		return ledgerEntryStore.contains(aid);
 	}
 
 	public void start() {
 		this.consensusProcessor.start();
-		Modules.put(TempoAtomStoreView.class, this.atomStore);
+		Modules.put(LedgerEntryStoreView.class, this.ledgerEntryStore);
 	}
 
 	@Override
 	public void close() {
-		Modules.remove(TempoAtomStoreView.class);
+		Modules.remove(LedgerEntryStoreView.class);
 		this.ownedResources.forEach(Resource::close);
 	}
 
 	public void reset() {
 		this.ownedResources.forEach(Resource::reset);
-	}
-
-	private static TempoAtom convertToTempoAtom(Atom atom) {
-		if (atom instanceof TempoAtom) {
-			return (TempoAtom) atom;
-		} else {
-			if (log.hasLevel(Logging.DEBUG)) {
-				log.debug("Converting foreign atom '" + atom.getAID() + "' to Tempo atom");
-			}
-			return new TempoAtom(
-				atom.getContent(),
-				atom.getAID(),
-				atom.getShards()
-			);
-		}
 	}
 }

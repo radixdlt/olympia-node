@@ -1,13 +1,12 @@
 package com.radixdlt.ledger;
 
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.Atom;
 
 import java.util.Objects;
 import java.util.Set;
 
 /**
- * Observation of an {@link Atom} made in a {@link Ledger}
+ * Observation of an {@link LedgerEntry} made in a {@link Ledger}
  */
 public final class LedgerObservation {
 	public enum Type {
@@ -16,44 +15,44 @@ public final class LedgerObservation {
 	}
 
 	private final Type type;
-	private final Atom atom;
-	private final Set<? extends Atom> supersededAtoms;
+	private final LedgerEntry entry;
+	private final Set<? extends LedgerEntry> supersededLedgerEntries;
 
-	private LedgerObservation(Type type, Atom atom, Set<? extends Atom> supersededAtoms) {
+	private LedgerObservation(Type type, LedgerEntry entry, Set<? extends LedgerEntry> supersededLedgerEntries) {
 		this.type = type;
-		this.atom = atom;
-		this.supersededAtoms = supersededAtoms;
+		this.entry = entry;
+		this.supersededLedgerEntries = supersededLedgerEntries;
 	}
 
 	public Type getType() {
 		return type;
 	}
 
-	public Atom getAtom() {
-		return atom;
+	public LedgerEntry getEntry() {
+		return entry;
 	}
 
 	public boolean hasSupersededAtoms() {
-		return !supersededAtoms.isEmpty();
+		return !supersededLedgerEntries.isEmpty();
 	}
 
-	public Set<? extends Atom> getSupersededAtoms() {
-		return supersededAtoms;
+	public Set<? extends LedgerEntry> getSupersededEntries() {
+		return supersededLedgerEntries;
 	}
 
-	public static LedgerObservation adopt(Atom newAtom) {
-		Objects.requireNonNull(newAtom, "newAtom is required");
-		return new LedgerObservation(Type.ADOPT, newAtom, ImmutableSet.of());
+	public static LedgerObservation adopt(LedgerEntry entry) {
+		Objects.requireNonNull(entry, "newAtom is required");
+		return new LedgerObservation(Type.ADOPT, entry, ImmutableSet.of());
 	}
 
-	public static LedgerObservation adopt(Set<? extends Atom> supersededAtoms, Atom newAtom) {
-		Objects.requireNonNull(supersededAtoms, "supersededAtoms is required");
-		Objects.requireNonNull(newAtom, "newAtom is required");
-		return new LedgerObservation(Type.ADOPT, newAtom, supersededAtoms);
+	public static LedgerObservation adopt(Set<? extends LedgerEntry> supersededLedgerEntries, LedgerEntry entry) {
+		Objects.requireNonNull(supersededLedgerEntries, "supersededLedgerEntries is required");
+		Objects.requireNonNull(entry, "newAtom is required");
+		return new LedgerObservation(Type.ADOPT, entry, supersededLedgerEntries);
 	}
 
-	public static LedgerObservation commit(Atom atom) {
-		Objects.requireNonNull(atom, "atom is required");
-		return new LedgerObservation(Type.COMMIT, atom, ImmutableSet.of());
+	public static LedgerObservation commit(LedgerEntry entry) {
+		Objects.requireNonNull(entry, "atom is required");
+		return new LedgerObservation(Type.COMMIT, entry, ImmutableSet.of());
 	}
 }

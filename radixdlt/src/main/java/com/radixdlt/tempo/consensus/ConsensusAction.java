@@ -1,7 +1,7 @@
 package com.radixdlt.tempo.consensus;
 
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.tempo.TempoAtom;
+import com.radixdlt.ledger.LedgerEntry;
 
 import java.util.Objects;
 import java.util.Set;
@@ -13,10 +13,10 @@ public final class ConsensusAction {
 	}
 
 	private final Type type;
-	private final TempoAtom preference;
-	private final Set<TempoAtom> oldPreferences;
+	private final LedgerEntry preference;
+	private final Set<LedgerEntry> oldPreferences;
 
-	private ConsensusAction(Type type, TempoAtom preference, Set<TempoAtom> oldPreferences) {
+	private ConsensusAction(Type type, LedgerEntry preference, Set<LedgerEntry> oldPreferences) {
 		this.type = Objects.requireNonNull(type);
 		this.preference = Objects.requireNonNull(preference);
 		this.oldPreferences = Objects.requireNonNull(oldPreferences);
@@ -26,11 +26,11 @@ public final class ConsensusAction {
 		return type;
 	}
 
-	public TempoAtom getPreference() {
+	public LedgerEntry getPreference() {
 		return preference;
 	}
 
-	public Set<TempoAtom> getOldPreferences() {
+	public Set<LedgerEntry> getOldPreferences() {
 		return oldPreferences;
 	}
 
@@ -39,11 +39,11 @@ public final class ConsensusAction {
 		return String.format("%s %s", type, preference);
 	}
 
-	public static ConsensusAction commit(TempoAtom preference) {
+	public static ConsensusAction commit(LedgerEntry preference) {
 		return new ConsensusAction(Type.COMMIT, preference, ImmutableSet.of());
 	}
 
-	public static ConsensusAction changePreference(TempoAtom newPreference, Set<TempoAtom> oldPreferences) {
+	public static ConsensusAction changePreference(LedgerEntry newPreference, Set<LedgerEntry> oldPreferences) {
 		return new ConsensusAction(Type.SWITCH_PREFERENCE, newPreference, oldPreferences);
 	}
 }

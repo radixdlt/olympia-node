@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
+import com.radixdlt.common.Atom;
 import org.apache.commons.cli.CommandLine;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.json.JSONObject;
@@ -12,16 +13,12 @@ import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.atommodel.message.MessageParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
-import org.radix.atoms.Atom;
 import com.radixdlt.atomos.RRI;
 import org.radix.validation.ConstraintMachineValidationException;
 import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.common.EUID;
 import com.radixdlt.utils.Offset;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.keys.Keys;
-import com.radixdlt.crypto.CryptoException;
 import org.radix.exceptions.ValidationException;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
@@ -30,8 +27,6 @@ import org.radix.properties.PersistedProperties;
 import org.radix.properties.RuntimeProperties;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
-import org.radix.time.TemporalVertex;
-import org.radix.time.Timestamps;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.universe.Universe.UniverseType;
 import org.radix.utils.IOUtils;
@@ -121,9 +116,9 @@ public final class GenerateUniverses
 	}
 
 	private Universe buildUniverse(int port, String name, String description, UniverseType type, long timestamp, long planckPeriod) throws Exception {
+		LOGGER.info("------------------ Starting of Universe: " + type.toString() + " ------------------");
 		byte universeMagic = (byte) (Universe.computeMagic(universeKey.getPublicKey(), timestamp, port, type, planckPeriod) & 0xFF);
 		List<Atom> universeAtoms = createGenesisAtoms(universeMagic, timestamp, planckPeriod);
-		doTemporalProofs(timestamp, universeAtoms);
 
 		Universe universe = Universe.newBuilder()
 			.port(port)
@@ -141,11 +136,11 @@ public final class GenerateUniverses
 			throw new ValidationException("Signature failed for " + name + " universe");
 		}
 		if (standalone) {
-			System.out.println(serialization.toJsonObject(universe, Output.WIRE).toString(4));
+			LOGGER.info(serialization.toJsonObject(universe, Output.API).toString(4));
 			byte[] universeBytes = serialization.toDson(universe, Output.WIRE);
-			System.out.println("UNIVERSE - " + type + ": "+Bytes.toBase64String(universeBytes));
+			LOGGER.info("UNIVERSE - " + type + ": " + Bytes.toBase64String(universeBytes));
 		}
-
+		LOGGER.info("------------------ End of Universe: " + type.toString() + " ------------------");
 		return universe;
 	}
 
@@ -228,41 +223,6 @@ public final class GenerateUniverses
 			UInt256.ONE,
 			RADIX_ICON_URL
 		);
-	}
-
-	private void doTemporalProofs(long timestamp, List<Atom> genesis) throws ValidationException, CryptoException	{
-		String universeBootstrap = Modules.get(RuntimeProperties.class).get("universe.bootstrap", "").trim();
-		if (universeBootstrap.isEmpty()) {
-			String privKey = Bytes.toHexString(nodeKey.getPrivateKey());
-			LOGGER.info("WARNING: Universe bootstrap nodes are not defined or declared, using default " + privKey);
-			universeBootstrap = privKey;
-		}
-
-		long clock = 0L;
-		for (Atom atom : genesis)
-		{
-			clock += 1;
-			TemporalVertex temporalVertex = null;
-			for (String temporalProofNodeKey : universeBootstrap.split(","))
-			{
-				EUID prev = temporalVertex == null ? EUID.ZERO : temporalVertex.getHID();
-				byte[] key = Bytes.fromHexString(temporalProofNodeKey);
-				ECKeyPair bootstrapKey = new ECKeyPair(key);
-				temporalVertex = new TemporalVertex(bootstrapKey.getPublicKey(), clock++, timestamp, Hash.ZERO_HASH, prev);
-				// Make vertex timestamp match the rest of the universe
-				temporalVertex.setTimestamp(Timestamps.DEFAULT, timestamp);
-				atom.getTemporalProof().add(temporalVertex, bootstrapKey);
-			}
-
-			if (!atom.getTemporalProof().hasVertexByNID(nodeKey.getUID()))
-			{
-				EUID prev = temporalVertex == null ? EUID.ZERO : temporalVertex.getHID();
-				temporalVertex = new TemporalVertex(nodeKey.getPublicKey(), clock, timestamp, Hash.ZERO_HASH, prev);
-				// Make vertex timestamp match the rest of the universe
-				temporalVertex.setTimestamp(Timestamps.DEFAULT, timestamp);
-				atom.getTemporalProof().add(temporalVertex, nodeKey);
-			}
-		}
 	}
 
 	public static void main(String[] arguments) throws Exception {

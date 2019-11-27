@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
+import com.radixdlt.common.AID;
+import com.radixdlt.common.Atom;
 import org.json.JSONObject;
 import org.junit.Test;
 import org.mockito.InOrder;
@@ -14,7 +16,6 @@ import org.radix.api.observable.Observable;
 import org.radix.api.observable.ObservedAtomEvents;
 import org.radix.api.services.AtomsService;
 
-import org.radix.atoms.Atom;
 import com.radixdlt.serialization.Serialization;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -33,6 +34,7 @@ public class AtomsSubscribeEpicTest {
 		AtomsService atomsService = mock(AtomsService.class);
 		ObservedAtomEvents observedAtomEvents = mock(ObservedAtomEvents.class);
 		Atom atom = mock(Atom.class);
+		when(atom.getAID()).thenReturn(AID.ZERO);
 		AtomEventDto atomEventDto = mock(AtomEventDto.class);
 		when(atomEventDto.getAtom()).thenReturn(atom);
 		when(observedAtomEvents.atomEvents()).thenReturn(Stream.of(atomEventDto));

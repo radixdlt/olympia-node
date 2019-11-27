@@ -5,11 +5,11 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.radixdlt.common.AID;
 import com.radixdlt.ledger.LedgerIndex;
-import com.radixdlt.tempo.AtomObserver;
+import com.radixdlt.ledger.LedgerEntry;
+import com.radixdlt.tempo.LedgerEntryObserver;
 import com.radixdlt.tempo.Scheduler;
-import com.radixdlt.tempo.TempoAtom;
 import com.radixdlt.tempo.delivery.RequestDeliverer;
-import com.radixdlt.tempo.store.TempoAtomStoreView;
+import com.radixdlt.tempo.store.LedgerEntryStoreView;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.network2.addressbook.AddressBook;
@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
  * An implementation of random subsampling consensus.
  */
 @Singleton
-public final class RSSConsensus implements AtomObserver, Consensus {
+public final class RSSConsensus implements LedgerEntryObserver, Consensus {
 	private static final Logger log = Logging.getLogger("consensus");
 
 	// TODO extract to RSSConsensusConfiguration or similar
@@ -39,7 +39,7 @@ public final class RSSConsensus implements AtomObserver, Consensus {
 	private static final int CONSENSUS_ACTION_QUEUE_CAPACITY = 8192;
 
 	private final Scheduler scheduler;
-	private final TempoAtomStoreView storeView;
+	private final LedgerEntryStoreView storeView;
 	private final AtomConfidence atomConfidence;
 	private final SampleRetriever sampleRetriever;
 	private final RequestDeliverer requestDeliverer;
@@ -48,12 +48,12 @@ public final class RSSConsensus implements AtomObserver, Consensus {
 
 	private final BlockingQueue<ConsensusAction> actions;
 
-	private final PendingAtomState pendingAtoms = new PendingAtomState();
+	private final PendingLedgerEntryState pendingAtoms = new PendingLedgerEntryState();
 
 	@Inject
 	public RSSConsensus(
 		Scheduler scheduler,
-		TempoAtomStoreView storeView,
+		LedgerEntryStoreView storeView,
 		AtomConfidence atomConfidence,
 		SampleRetriever sampleRetriever,
 		RequestDeliverer requestDeliverer,
@@ -76,9 +76,9 @@ public final class RSSConsensus implements AtomObserver, Consensus {
 	private void start() {
 		Set<AID> pending = storeView.getPending();
 		for (AID aid : pending) {
-			Optional<TempoAtom> uncommittedAtom = storeView.get(aid);
-			if (uncommittedAtom.isPresent()) {
-				pendingAtoms.put(uncommittedAtom.get(), storeView.getUniqueIndices(aid));
+			Optional<LedgerEntry> uncommittedLedgerEntry = storeView.get(aid);
+			if (uncommittedLedgerEntry.isPresent()) {
+				pendingAtoms.put(uncommittedLedgerEntry.get(), storeView.getUniqueIndices(aid));
 			} else {
 				log.warn("Atom store contains pending atom '" + aid + "' which no longer exists, removing");
 				atomConfidence.reset(aid);
@@ -87,7 +87,7 @@ public final class RSSConsensus implements AtomObserver, Consensus {
 		pendingAtoms.forEachPending(this::beginRound);
 	}
 
-	private void beginRound(TempoAtom preference) {
+	private void beginRound(LedgerEntry preference) {
 		log.debug("Beginning consensus round for atom '" + preference.getAID() + "'");
 		List<Peer> samplePeers = sampleNodeSelector.selectNodes(addressBook.recentPeers(), preference, MAX_SAMPLE_NODES);
 		if (samplePeers.isEmpty()) {
@@ -101,7 +101,7 @@ public final class RSSConsensus implements AtomObserver, Consensus {
 			.thenAccept(samples -> endRound(preference, samplePeers, samples));
 	}
 
-	private void endRound(TempoAtom preference, List<Peer> samplePeers, Samples samples) {
+	private void endRound(LedgerEntry preference, List<Peer> samplePeers, Samples samples) {
 		log.debug("Ending consensus round for atom '" + preference.getAID() + "'");
 
 		if (!pendingAtoms.isPending(preference.getAID())) {
@@ -128,12 +128,12 @@ public final class RSSConsensus implements AtomObserver, Consensus {
 		}
 	}
 
-	private void notifyCommit(TempoAtom preference) {
+	private void notifyCommit(LedgerEntry preference) {
 		pendingAtoms.remove(preference.getAID());
 		notify(ConsensusAction.commit(preference));
 	}
 
-	private void notifySwitchToMajority(TempoAtom oldPreference, Samples samples) {
+	private void notifySwitchToMajority(LedgerEntry oldPreference, Samples samples) {
 		// TODO add cache for recent preferences?
 		AID newPreference = samples.getTopPreference();
 		samples.getPeersFor(newPreference).stream()
@@ -141,7 +141,7 @@ public final class RSSConsensus implements AtomObserver, Consensus {
 			.forEach(peer -> requestDeliverer.deliver(newPreference, peer)
 				.thenAccept(result -> {
 					if (result.isSuccess()) {
-						notify(ConsensusAction.changePreference(result.getAtom(), ImmutableSet.of(oldPreference)));
+						notify(ConsensusAction.changePreference(result.getLedgerEntry(), ImmutableSet.of(oldPreference)));
 					}
 				}));
 	}
@@ -153,7 +153,7 @@ public final class RSSConsensus implements AtomObserver, Consensus {
 	}
 
 	// TODO reconsider architecture, move decision elsewhere?
-	private ConsensusDecision decide(TempoAtom preference, Set<LedgerIndex> indices, Samples samples) {
+	private ConsensusDecision decide(LedgerEntry preference, Set<LedgerIndex> indices, Samples samples) {
 		int availableVotes = indices.size() * samples.getSamplePeerCount();
 		if (!samples.hasTopPreference() || samples.getTopPreferenceCount() < availableVotes * SAMPLE_SIGNIFICANCE_THRESHOLD) {
 			// reset confidence if there is no majority top preference, then begin another round
@@ -180,9 +180,9 @@ public final class RSSConsensus implements AtomObserver, Consensus {
 	}
 
 	@Override
-	public void onAdopted(TempoAtom atom, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
-		pendingAtoms.put(atom, uniqueIndices);
-		beginRound(atom);
+	public void onAdopted(LedgerEntry ledgerEntry, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
+		pendingAtoms.put(ledgerEntry, uniqueIndices);
+		beginRound(ledgerEntry);
 	}
 
 	@Override

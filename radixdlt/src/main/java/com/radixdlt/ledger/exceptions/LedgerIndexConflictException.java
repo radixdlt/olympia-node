@@ -2,49 +2,48 @@ package com.radixdlt.ledger.exceptions;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.Atom;
 import com.radixdlt.common.AID;
+import com.radixdlt.ledger.LedgerEntry;
 import com.radixdlt.ledger.LedgerIndex;
 
 import java.util.Objects;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
  * An exception thrown when a unique key constraint is violated
  */
 public class LedgerIndexConflictException extends LedgerException {
-	private final Atom atom;
-	private final ImmutableMap<LedgerIndex, Atom> conflictingAtoms;
+	private final LedgerEntry ledgerEntry;
+	private final ImmutableMap<LedgerIndex, LedgerEntry> conflictingLedgerEntries;
 
-	public LedgerIndexConflictException(Atom atom, ImmutableMap<LedgerIndex, Atom> conflictingAtoms) {
-		super(getMessage(atom, conflictingAtoms));
-		this.atom = Objects.requireNonNull(atom, "atom is required");
-		this.conflictingAtoms = conflictingAtoms;
+	public LedgerIndexConflictException(LedgerEntry ledgerEntry, ImmutableMap<LedgerIndex, LedgerEntry> conflictingLedgerEntries) {
+		super(getMessage(ledgerEntry, conflictingLedgerEntries));
+		this.ledgerEntry = Objects.requireNonNull(ledgerEntry, "ledgerEntry is required");
+		this.conflictingLedgerEntries = conflictingLedgerEntries;
 	}
 
-	private static String getMessage(Atom atom, ImmutableMap<LedgerIndex, Atom> conflictingAtoms) {
-		Objects.requireNonNull(conflictingAtoms, "conflictingAtoms is required");
-		return String.format("Atom '%s' violated key constraints: %s", atom.getAID(), conflictingAtoms);
+	private static String getMessage(LedgerEntry ledgerEntry, ImmutableMap<LedgerIndex, LedgerEntry> conflictingLedgerEntries) {
+		Objects.requireNonNull(conflictingLedgerEntries, "conflictingLedgerEntries is required");
+		return String.format("Atom '%s' violated key constraints: %s", ledgerEntry.getAID(), conflictingLedgerEntries);
 	}
 
-	public ImmutableMap<LedgerIndex, Atom> getConflictingAtoms() {
-		return conflictingAtoms;
+	public ImmutableMap<LedgerIndex, LedgerEntry> getConflictingLedgerEntries() {
+		return conflictingLedgerEntries;
 	}
 
-	public Atom getAtom() {
-		return atom;
+	public LedgerEntry getLedgerEntry() {
+		return ledgerEntry;
 	}
 
 	public ImmutableSet<AID> getConflictingAids() {
-		return conflictingAtoms.values().stream()
-			.map(Atom::getAID)
+		return conflictingLedgerEntries.values().stream()
+			.map(LedgerEntry::getAID)
 			.collect(ImmutableSet.toImmutableSet());
 	}
 
 	public ImmutableSet<AID> getAllAids() {
-		return Stream.concat(Stream.of(atom), conflictingAtoms.values().stream())
-			.map(Atom::getAID)
+		return Stream.concat(Stream.of(ledgerEntry), conflictingLedgerEntries.values().stream())
+			.map(LedgerEntry::getAID)
 			.collect(ImmutableSet.toImmutableSet());
 	}
 }

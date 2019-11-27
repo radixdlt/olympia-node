@@ -1,7 +1,7 @@
 package org.radix.api.services;
 
 import com.google.common.collect.EvictingQueue;
-import com.radixdlt.engine.AtomStatus;
+import com.radixdlt.common.Atom;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -9,6 +9,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -18,9 +19,12 @@ import com.radixdlt.ledger.Ledger;
 import com.radixdlt.ledger.LedgerCursor;
 import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerSearchMode;
-import com.radixdlt.middleware2.converters.SimpleRadixEngineAtomToEngineAtom;
+import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.middleware2.processing.RadixEngineAtomProcessor;
 import com.radixdlt.middleware2.store.EngineAtomIndices;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.Serialization;
+import com.radixdlt.ledger.LedgerEntry;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -32,20 +36,14 @@ import org.radix.api.observable.AtomEventObserver;
 import org.radix.api.observable.Disposable;
 import org.radix.api.observable.ObservedAtomEvents;
 import org.radix.api.observable.Observable;
-import org.radix.atoms.Atom;
 import org.radix.atoms.events.AtomEvent;
 import org.radix.atoms.events.AtomExceptionEvent;
-import org.radix.atoms.events.AtomStoreEvent;
 import org.radix.atoms.events.AtomStoredEvent;
 import com.radixdlt.common.AID;
 import org.radix.events.Events;
-import org.radix.exceptions.AtomAlreadyInProcessingException;
-import org.radix.exceptions.AtomAlreadyStoredException;
-import org.radix.shards.ShardSpace;
 import org.radix.shards.Shards;
-import org.radix.universe.system.LocalSystem;
 
-import static com.radixdlt.tempo.store.berkeley.TempoAtomIndices.SHARD_INDEX_PREFIX;
+import static com.radixdlt.tempo.store.berkeley.LedgerEntryIndices.SHARD_INDEX_PREFIX;
 
 public class AtomsService {
 	private static int  NUMBER_OF_THREADS = 8;
@@ -58,22 +56,23 @@ public class AtomsService {
 		new ThreadFactoryBuilder().setNameFormat("AtomsService-%d").build()
 	);
 
-	private final SimpleRadixEngineAtomToEngineAtom atomConverter = new SimpleRadixEngineAtomToEngineAtom();
-
 	private final Set<AtomEventObserver> atomEventObservers = Collections.newSetFromMap(new ConcurrentHashMap<>());
 	private final ConcurrentHashMap<AID, List<AtomStatusListener>> singleAtomObservers = new ConcurrentHashMap<>();
 	private final ConcurrentHashMap<AID, List<SingleAtomListener>> deleteOnEventSingleAtomObservers = new ConcurrentHashMap<>();
 
 	private final ConcurrentHashMap<AtomEventDto.AtomEventType, Long> atomEventCount = new ConcurrentHashMap<>();
+	private final Serialization serialization = Serialization.getDefault();
 
 	private final Object lock = new Object();
 	private final EvictingQueue<String> eventRingBuffer = EvictingQueue.create(64);
 	private final RadixEngineAtomProcessor radixEngineAtomProcessor;
+	private final AtomToBinaryConverter atomToBinaryConverter;
 	private final Ledger ledger;
 
-	public AtomsService(Ledger ledger, RadixEngineAtomProcessor radixEngineAtomProcessor) {
+	public AtomsService(Ledger ledger, RadixEngineAtomProcessor radixEngineAtomProcessor, AtomToBinaryConverter atomToBinaryConverter) {
 		this.radixEngineAtomProcessor = Objects.requireNonNull(radixEngineAtomProcessor);
 		this.ledger = Objects.requireNonNull(ledger);
+		this.atomToBinaryConverter = Objects.requireNonNull(atomToBinaryConverter);
 
 		Events.getInstance().register(AtomEvent.class, (event) -> {
 			executorService.submit(() -> {
@@ -109,8 +108,6 @@ public class AtomsService {
 					}
 
 					this.atomEventCount.merge(AtomEventType.STORE, 1L, Long::sum);
-				} else if (event instanceof AtomStoreEvent) {
-					eventName = "STORE";
 				} else {
 					eventName = "UNKNOWN";
 				}
@@ -124,20 +121,19 @@ public class AtomsService {
 		Events.getInstance().register(AtomExceptionEvent.class, event -> {
 			executorService.submit(() -> {
 				final AtomExceptionEvent exceptionEvent = (AtomExceptionEvent) event;
-				final Atom atom = exceptionEvent.getAtom();
 				synchronized (lock) {
 					eventRingBuffer.add(
-						System.currentTimeMillis() + " EXCEPTION " + exceptionEvent.getAtom().getAID()
+						System.currentTimeMillis() + " EXCEPTION " + exceptionEvent.getAtomId()
 							+ " " + exceptionEvent.getException().getClass().getName());
 				}
 
-				List<SingleAtomListener> subscribers = this.deleteOnEventSingleAtomObservers.remove(atom.getAID());
+				List<SingleAtomListener> subscribers = this.deleteOnEventSingleAtomObservers.remove(exceptionEvent.getAtomId());
 				if (subscribers != null) {
 					Throwable exception = exceptionEvent.getException();
-					subscribers.forEach(subscriber -> subscriber.onError(exception));
+					subscribers.forEach(subscriber -> subscriber.onError(exceptionEvent.getAtomId(), exception));
 				}
 
-				for (AtomStatusListener singleAtomListener : this.singleAtomObservers.getOrDefault(atom.getAID(), Collections.emptyList())) {
+				for (AtomStatusListener singleAtomListener : this.singleAtomObservers.getOrDefault(exceptionEvent.getAtomId(), Collections.emptyList())) {
 					Throwable exception = exceptionEvent.getException();
 					singleAtomListener.onError(exception);
 				}
@@ -159,21 +155,19 @@ public class AtomsService {
 		return Collections.unmodifiableMap(atomEventCount);
 	}
 
-	public AtomStatus submitAtom(Atom atom) {
-		ShardSpace shardsSupported = LocalSystem.getInstance().getShards();
-		if (!shardsSupported.intersects(atom.getShards())) {
-			throw new AtomShardsNotServedException(atom.getShards(), shardsSupported);
-		}
-
-		try {
-			radixEngineAtomProcessor.process(atom);
-		} catch (AtomAlreadyInProcessingException e) {
-			return AtomStatus.PENDING_CM_VERIFICATION;
-		} catch (AtomAlreadyStoredException e) {
-			return AtomStatus.STORED;
-		}
-
-		return AtomStatus.PENDING_CM_VERIFICATION;
+	public AID submitAtom(JSONObject atom, SingleAtomListener subscriber) {
+		return radixEngineAtomProcessor.process(atom, Optional.of(new RadixEngineAtomProcessor.ProcessorAtomEventListener() {
+			@Override
+			public void onDeserializationCompleted(AID atomId) {
+				if (subscriber != null) {
+					deleteOnEventSingleAtomObservers.compute(atomId, (hid, oldSubscribers) -> {
+						List<SingleAtomListener> subscribers = oldSubscribers == null ? new ArrayList<>() : oldSubscribers;
+						subscribers.add(subscriber);
+						return subscribers;
+					});
+				}
+			}
+		}));
 	}
 
 	public Disposable subscribeAtomStatusNotifications(AID aid, AtomStatusListener subscriber) {
@@ -186,24 +180,9 @@ public class AtomsService {
 		return () -> this.singleAtomObservers.get(aid).remove(subscriber);
 	}
 
-	public void subscribeAtom(AID aid, SingleAtomListener subscriber) {
-		this.deleteOnEventSingleAtomObservers.compute(aid, (hid, oldSubscribers) -> {
-			List<SingleAtomListener> subscribers = oldSubscribers == null ? new ArrayList<>() : oldSubscribers;
-			subscribers.add(subscriber);
-			return subscribers;
-		});
-	}
-
-	private static final class AtomShardsNotServedException extends RuntimeException {
-		private AtomShardsNotServedException(Set<Long> atomShards, ShardSpace supportedShards) {
-			super("Not a suitable submission peer: "
-				+ "atomShards(" + atomShards+ ") shardsSupported(" + supportedShards+ ")");
-		}
-	}
-
 	public Observable<ObservedAtomEvents> getAtomEvents(AtomQuery atomQuery) {
 		return observer -> {
-			final AtomEventObserver atomEventObserver = new AtomEventObserver(atomQuery, observer, executorService, ledger);
+			final AtomEventObserver atomEventObserver = new AtomEventObserver(atomQuery, observer, executorService, ledger, atomToBinaryConverter);
 			atomEventObserver.start();
 			this.atomEventObservers.add(atomEventObserver);
 
@@ -236,5 +215,15 @@ public class AtomsService {
 		}
 		result.put("hids", array);
 		return result;
+	}
+
+	public JSONObject getAtomsByAtomId(AID atomId) throws JSONException {
+		Optional<LedgerEntry> ledgerEntryOptional = ledger.get(atomId);
+		if (ledgerEntryOptional.isPresent()) {
+			LedgerEntry ledgerEntry = ledgerEntryOptional.get();
+			Atom atom = atomToBinaryConverter.toAtom(ledgerEntry.getContent());
+			return serialization.toJsonObject(atom, DsonOutput.Output.API);
+		}
+		throw new RuntimeException("Atom not found");
 	}
 }

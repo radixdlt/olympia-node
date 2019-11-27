@@ -9,7 +9,6 @@ import java.util.stream.Collectors;
 
 import org.radix.atoms.events.AtomEvent;
 import org.radix.atoms.events.AtomListener;
-import org.radix.atoms.events.AtomStoreEvent;
 import org.radix.atoms.events.AtomStoredEvent;
 import org.radix.common.executors.ScheduledExecutable;
 import org.radix.events.Events;
@@ -103,10 +102,6 @@ public class LocalAtomsProfiler extends Service implements AtomListener
 
 	@Override
 	public void process(AtomEvent event) {
-		if (event instanceof AtomStoreEvent) {
-			LocalAtomsProfiler.this.processed.incrementAndGet();
-		}
-
 		if (event instanceof AtomStoredEvent) {
 			LocalAtomsProfiler.this.storing.incrementAndGet();
 			LocalAtomsProfiler.this.storingPerShard.addAndGet(1.0 / event.getAtom().getShards().size());

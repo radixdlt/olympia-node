@@ -1,6 +1,6 @@
 package org.radix.serialization;
 
-import org.radix.atoms.Atom;
+import com.radixdlt.common.Atom;
 import org.radix.atoms.messages.AtomSubmitMessage;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.CryptoException;

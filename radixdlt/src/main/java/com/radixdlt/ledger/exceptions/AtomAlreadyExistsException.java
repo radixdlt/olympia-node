@@ -1,16 +1,16 @@
 package com.radixdlt.ledger.exceptions;
 
-import com.radixdlt.Atom;
+import com.radixdlt.common.AID;
 
 public class AtomAlreadyExistsException extends LedgerException {
-	private final Atom atom;
+	private final AID atomId;
 
-	public AtomAlreadyExistsException(Atom atom) {
-		super("Atom '" + atom.getAID() + "' already exists");
-		this.atom = atom;
+	public AtomAlreadyExistsException(AID atomId) {
+		super("Atom with ID: '" + atomId + "' already exists");
+		this.atomId = atomId;
 	}
 
-	public Atom getAtom() {
-		return atom;
+	public AID getAID() {
+		return atomId;
 	}
 }

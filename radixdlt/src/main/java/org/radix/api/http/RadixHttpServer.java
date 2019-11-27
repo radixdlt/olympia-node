@@ -3,8 +3,8 @@ package org.radix.api.http;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.Ledger;
+import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.middleware2.processing.RadixEngineAtomProcessor;
-import com.radixdlt.mock.MockAccessor;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.tempo.store.berkeley.BerkeleyCommitmentStore;
@@ -64,9 +64,9 @@ public final class RadixHttpServer {
     private final RadixJsonRpcServer jsonRpcServer;
     private final InternalService internalService;
 
-	public RadixHttpServer(Ledger ledger, RadixEngineAtomProcessor radixEngineAtomProcessor) {
+	public RadixHttpServer(Ledger ledger, RadixEngineAtomProcessor radixEngineAtomProcessor, AtomToBinaryConverter atomToBinaryConverter) {
 		this.peers = new ConcurrentHashMap<>();
-		this.atomsService = new AtomsService(ledger, radixEngineAtomProcessor);
+		this.atomsService = new AtomsService(ledger, radixEngineAtomProcessor, atomToBinaryConverter);
 		this.jsonRpcServer = new RadixJsonRpcServer(
 				Modules.get(Serialization.class),
 				ledger,
@@ -156,25 +156,6 @@ public final class RadixHttpServer {
 		    respond(commitmentsJson, exchange);
 	    }, handler);
 
-	    addGetRoute("/api/internal/mock/inject", exchange -> {
-		    if (Modules.isAvailable(MockAccessor.class)) {
-			    String atomCountStr = getParameter(exchange, "atoms").orElse("1");
-			    int atomCount = Integer.parseUnsignedInt(atomCountStr);
-			    Optional<String> optionalKeyStr = getParameter(exchange, "key");
-			    if (optionalKeyStr.isPresent()) {
-				    String keyStr = optionalKeyStr.orElse("0");
-				    int key = Integer.parseUnsignedInt(keyStr);
-				    respond("Injecting " + atomCount + " random mock atom(s) with key " + key, exchange);
-				    Modules.get(MockAccessor.class).inject(key, atomCount);
-			    } else {
-				    respond("Injecting " + atomCount + " random mock atom(s)", exchange);
-				    Modules.get(MockAccessor.class).inject(atomCount);
-			    }
-		    } else {
-			    respond("Mock application is unavailable", exchange);
-		    }
-	    }, handler);
-
         addGetRoute("/api/internal/spamathon", exchange -> {
             String iterations = getParameter(exchange, "iterations").orElse(null);
             String batching = getParameter(exchange, "batching").orElse(null);
@@ -182,21 +163,6 @@ public final class RadixHttpServer {
 
             respond(internalService.spamathon(iterations, batching, rate), exchange);
         }, handler);
-
-		addGetRoute("/api/internal/bulkpreparemessages", exchange -> {
-			String atomCount = getParameter(exchange, "atoms").orElse("100");
-			respond(internalService.prepareMessages(atomCount), exchange);
-		}, handler);
-		addGetRoute("/api/internal/bulkpreparetransfers", exchange -> {
-			String atomCount = getParameter(exchange, "atoms").orElse("100");
-			respond(internalService.prepareTransfers(atomCount), exchange);
-		}, handler);
-		addGetRoute("/api/internal/bulkstore", exchange -> {
-			respond(internalService.bulkstore(), exchange);
-		}, handler);
-		addGetRoute("/api/internal/ping", exchange -> {
-			respond(internalService.ping(), exchange);
-		}, handler);
 
 		addGetRoute("/api/test/newpeer", exchange -> {
 			String key = getParameter(exchange, "key").orElse(null);

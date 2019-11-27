@@ -4,7 +4,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import com.radixdlt.common.EUID;
-import com.radixdlt.tempo.TempoAtom;
+import com.radixdlt.ledger.LedgerEntry;
 import org.radix.network2.addressbook.Peer;
 
 import java.util.List;
@@ -21,7 +21,7 @@ public final class SimpleSampleNodeSelector implements SampleNodeSelector {
 	}
 
 	@Override
-	public List<Peer> selectNodes(Stream<Peer> peers, TempoAtom atom, int limit) {
+	public List<Peer> selectNodes(Stream<Peer> peers, LedgerEntry ledgerEntry, int limit) {
 		return peers
 			.filter(Peer::hasSystem)
 			.limit(limit)

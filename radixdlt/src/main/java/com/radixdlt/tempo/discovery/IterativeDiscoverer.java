@@ -10,7 +10,7 @@ import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.tempo.Resource;
-import com.radixdlt.tempo.store.TempoAtomStoreView;
+import com.radixdlt.tempo.store.LedgerEntryStoreView;
 import com.radixdlt.tempo.LogicalClockCursor;
 import com.radixdlt.tempo.Scheduler;
 import com.radixdlt.tempo.discovery.messages.IterativeDiscoveryRequestMessage;
@@ -63,7 +63,7 @@ public final class IterativeDiscoverer implements Resource, AtomDiscoverer {
 
 	private final LCCursorStore cursorStore;
 	private final CommitmentStore commitmentStore;
-	private final TempoAtomStoreView storeView;
+	private final LedgerEntryStoreView storeView;
 	private final Scheduler scheduler;
 	private final MessageCentral messageCentral;
 
@@ -75,7 +75,7 @@ public final class IterativeDiscoverer implements Resource, AtomDiscoverer {
 	@Inject
 	public IterativeDiscoverer(
 		@Named("self") EUID self,
-		TempoAtomStoreView storeView,
+		LedgerEntryStoreView storeView,
 		LCCursorStore cursorStore,
 		CommitmentStore commitmentStore,
 		Scheduler scheduler,

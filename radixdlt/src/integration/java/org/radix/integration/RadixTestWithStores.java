@@ -12,7 +12,7 @@ import com.radixdlt.tempo.TempoAttestor;
 import com.radixdlt.tempo.consensus.Consensus;
 import com.radixdlt.tempo.delivery.RequestDeliverer;
 import com.radixdlt.tempo.store.CommitmentStore;
-import com.radixdlt.tempo.store.TempoAtomStore;
+import com.radixdlt.tempo.store.LedgerEntryStore;
 import com.radixdlt.tempo.store.berkeley.BerkeleyStoreModule;
 import org.junit.After;
 import org.junit.Before;
@@ -57,7 +57,7 @@ public class RadixTestWithStores extends RadixTest
 				new BerkeleyStoreModule()
 		);
 
-		TempoAtomStore atomStore = injector.getInstance(TempoAtomStore.class);
+		LedgerEntryStore atomStore = injector.getInstance(LedgerEntryStore.class);
 		CommitmentStore commitmentStore = injector.getInstance(CommitmentStore.class);
 		Tempo tempo = new Tempo(
 				self,
@@ -71,7 +71,7 @@ public class RadixTestWithStores extends RadixTest
 				ImmutableSet.of()
 		);
 			Modules.put(Tempo.class, tempo);
-			Modules.put(TempoAtomStore.class, atomStore);
+			Modules.put(LedgerEntryStore.class, atomStore);
 	}
 
 	@After
@@ -82,7 +82,7 @@ public class RadixTestWithStores extends RadixTest
 		Modules.get(Tempo.class).close();
 		Modules.get(Tempo.class).reset();
 		Modules.remove(Tempo.class);
-		Modules.remove(TempoAtomStore.class);
+		Modules.remove(LedgerEntryStore.class);
 
 		safelyStop(Modules.get(DatabaseEnvironment.class));
 		Modules.remove(DatabaseEnvironment.class);

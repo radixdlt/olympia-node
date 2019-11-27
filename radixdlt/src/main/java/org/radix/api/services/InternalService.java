@@ -1,12 +1,16 @@
 package org.radix.api.services;
 
+import com.radixdlt.common.Atom;
 import com.radixdlt.ledger.Ledger;
 import com.radixdlt.middleware2.processing.RadixEngineAtomProcessor;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.Serialization;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.Bytes;
 
 import java.util.List;
 
+import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -15,7 +19,6 @@ import java.util.stream.Collectors;
 import org.json.JSONObject;
 import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.atomos.RRIParticle;
-import org.radix.atoms.Atom;
 import org.radix.atoms.messages.AtomSubmitMessage;
 
 import com.google.common.collect.ImmutableMap;
@@ -45,6 +48,7 @@ public class InternalService {
 	private Ledger ledger;
 	private RadixEngineAtomProcessor radixEngineAtomProcessor;
 	private static InternalService INTERNAL_SERVICE;
+	private static Serialization serialization = Serialization.getDefault();
 
 	public static InternalService getInstance(Ledger ledger, RadixEngineAtomProcessor radixEngineAtomProcessor) {
 		if (INTERNAL_SERVICE == null) {
@@ -135,8 +139,10 @@ public class InternalService {
 
 								atom.sign(this.owner);
 
+								JSONObject jsonAtom = serialization.toJsonObject(atom, DsonOutput.Output.WIRE);
+
 								if (LocalSystem.getInstance().getShards().intersects(atom.getShards()) == true) {
-									radixEngineAtomProcessor.process(atom);
+									radixEngineAtomProcessor.process(jsonAtom, Optional.empty());
 								} else {
 									List<Peer> peers = Modules.get(AddressBook.class).recentPeers().collect(Collectors.toList());
 									for (Peer peer : peers) {
@@ -220,70 +226,6 @@ public class InternalService {
 		} catch (CryptoException e) {
 			result.put("error", e.getMessage());
 		}
-
-		return result;
-	}
-
-	public JSONObject prepareMessages(String strAtomCount) {
-		JSONObject result = new JSONObject();
-
-		if (strAtomCount == null) {
-			throw new IllegalArgumentException("Atom count not supplied");
-		}
-		int atomCount = Integer.decode(strAtomCount);
-		if (atomCount < 1) {
-			throw new IllegalArgumentException("Atom count invalid: " + atomCount);
-		}
-
-		try {
-			ECKeyPair sourceKey = new ECKeyPair();
-			RadixAddress destination = RadixAddress.from(Modules.get(Universe.class), new ECKeyPair().getPublicKey());
-			executor.execute(() -> Loader.getInstance(ledger, radixEngineAtomProcessor).prepareMessages(sourceKey, destination, atomCount));
-			result.put("data", "OK");
-		} catch (CryptoException e) {
-			result.put("error", e.getMessage());
-		}
-
-		return result;
-	}
-
-	public JSONObject prepareTransfers(String strAtomCount) {
-		JSONObject result = new JSONObject();
-
-		if (strAtomCount == null) {
-			throw new IllegalArgumentException("Atom count not supplied");
-		}
-		int atomCount = Integer.decode(strAtomCount);
-		if (atomCount < 1) {
-			throw new IllegalArgumentException("Atom count invalid: " + atomCount);
-		}
-
-		try {
-			ECKeyPair sourceKey = new ECKeyPair();
-			RadixAddress destination = RadixAddress.from(Modules.get(Universe.class), new ECKeyPair().getPublicKey());
-			executor.execute(() -> Loader.getInstance(ledger, radixEngineAtomProcessor).prepareTransfers(sourceKey, destination, atomCount));
-			result.put("data", "OK");
-		} catch (CryptoException e) {
-			result.put("error", e.getMessage());
-		}
-
-		return result;
-	}
-
-	public JSONObject bulkstore() {
-		JSONObject result = new JSONObject();
-
-		executor.execute(Loader.getInstance(ledger, radixEngineAtomProcessor)::store);
-		result.put("data", "OK");
-
-		return result;
-	}
-
-	public JSONObject ping() {
-		JSONObject result = new JSONObject();
-
-		Loader.ping();
-		result.put("data", "pong");
 
 		return result;
 	}
