@@ -1,6 +1,7 @@
 package com.radixdlt.middleware;
 
 import com.radixdlt.atomos.Result;
+import com.radixdlt.common.Atom;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.CMSuccessHook;
 import com.radixdlt.universe.Universe;
@@ -10,7 +11,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
-public class AtomCheckHook implements CMSuccessHook<SimpleRadixEngineAtom> {
+public class AtomCheckHook implements CMSuccessHook {
 	private final boolean skipAtomFeeCheck;
 	private final Supplier<Universe> universeSupplier;
 	private final LongSupplier timestampSupplier;
@@ -30,7 +31,13 @@ public class AtomCheckHook implements CMSuccessHook<SimpleRadixEngineAtom> {
 	}
 
 	@Override
-	public Result hook(SimpleRadixEngineAtom cmAtom) {
+	public Result hook(Atom atom) {
+		SimpleRadixEngineAtom cmAtom;
+		try {
+			cmAtom = RadixEngineUtils.toCMAtom(atom);
+		} catch (RadixEngineUtils.CMAtomConversionException e) {
+			return Result.error("Can not create RadixEngineAtom");
+		}
 		if (cmAtom.getCMInstruction().getMicroInstructions().isEmpty()) {
 			return Result.error("atom has no instructions");
 		}
@@ -39,12 +46,12 @@ public class AtomCheckHook implements CMSuccessHook<SimpleRadixEngineAtom> {
 
 		// Atom has fee
 		if (!skipAtomFeeCheck) {
-			if (universeSupplier.get().getGenesis().stream().map(ImmutableAtom::getAID).noneMatch(cmAtom.getAtom().getAID()::equals)
+			if (universeSupplier.get().getGenesis().stream().map(Atom::getAID).noneMatch(cmAtom.getAtom().getAID()::equals)
 				&& !isMagic) {
 
-				String powNonceString = cmAtom.getAtom().getMetaData().get(ImmutableAtom.METADATA_POW_NONCE_KEY);
+				String powNonceString = cmAtom.getAtom().getMetaData().get(Atom.METADATA_POW_NONCE_KEY);
 				if (powNonceString == null) {
-					return Result.error("atom fee missing, metadata does not contain '" + ImmutableAtom.METADATA_POW_NONCE_KEY + "'");
+					return Result.error("atom fee missing, metadata does not contain '" + Atom.METADATA_POW_NONCE_KEY + "'");
 				}
 
 				final long powNonce;
@@ -54,7 +61,7 @@ public class AtomCheckHook implements CMSuccessHook<SimpleRadixEngineAtom> {
 					return Result.error("atom fee invalid, metadata contains invalid powNonce: " + powNonceString);
 				}
 
-				final Hash powFeeHash = cmAtom.getAtom().copyExcludingMetadata(ImmutableAtom.METADATA_POW_NONCE_KEY).getHash();
+				final Hash powFeeHash = cmAtom.getAtom().copyExcludingMetadata(Atom.METADATA_POW_NONCE_KEY).getHash();
 				POW pow = new POW(universeSupplier.get().getMagic(), powFeeHash, powNonce);
 				Result powResult = checkPow(pow, powFeeHash, DEFAULT_TARGET, universeSupplier.get().getMagic());
 				if (powResult.isError()) {
@@ -63,9 +70,9 @@ public class AtomCheckHook implements CMSuccessHook<SimpleRadixEngineAtom> {
 			}
 		}
 
-		String timestampString = cmAtom.getAtom().getMetaData().get(ImmutableAtom.METADATA_TIMESTAMP_KEY);
+		String timestampString = cmAtom.getAtom().getMetaData().get(Atom.METADATA_TIMESTAMP_KEY);
 		if (timestampString == null) {
-			return Result.error("atom metadata does not contain '" + ImmutableAtom.METADATA_TIMESTAMP_KEY + "'");
+			return Result.error("atom metadata does not contain '" + Atom.METADATA_TIMESTAMP_KEY + "'");
 		}
 		try {
 			long timestamp = Long.parseLong(timestampString);

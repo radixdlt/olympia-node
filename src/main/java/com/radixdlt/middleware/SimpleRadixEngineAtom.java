@@ -1,13 +1,14 @@
 package com.radixdlt.middleware;
 
+import com.radixdlt.common.Atom;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.engine.RadixEngineAtom;
 
 public final class SimpleRadixEngineAtom implements RadixEngineAtom {
 	private final CMInstruction	cmInstruction;
-	private final ImmutableAtom atom;
+	private final Atom atom;
 
-	public SimpleRadixEngineAtom(ImmutableAtom atom, CMInstruction cmInstruction) {
+	public SimpleRadixEngineAtom(Atom atom, CMInstruction cmInstruction) {
 		this.atom = atom;
 		this.cmInstruction = cmInstruction;
 	}
@@ -17,7 +18,7 @@ public final class SimpleRadixEngineAtom implements RadixEngineAtom {
 		return cmInstruction;
 	}
 
-	public ImmutableAtom getAtom() {
+	public Atom getAtom() {
 		return atom;
 	}
 }

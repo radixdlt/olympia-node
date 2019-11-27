@@ -1,6 +1,7 @@
 package com.radixdlt.engine;
 
 import com.radixdlt.atomos.Result;
+import com.radixdlt.common.Atom;
 import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
@@ -10,10 +11,15 @@ import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.CMMicroInstruction.CMMicroOp;
 import com.radixdlt.constraintmachine.ConstraintMachine;
+import com.radixdlt.middleware.RadixEngineUtils;
+import com.radixdlt.middleware.SimpleRadixEngineAtom;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.CMStores;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.SpinStateMachine;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
@@ -21,31 +27,29 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.UnaryOperator;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /**
  * Top Level Class for the Radix Engine, a real-time, shardable, distributed state machine.
  */
-public final class RadixEngine<T extends RadixEngineAtom> {
+public final class RadixEngine {
+
 	private static final Logger log = LoggerFactory.getLogger(RadixEngine.class);
 
-	private interface EngineAction<U extends RadixEngineAtom> {
+	private interface EngineAction {
 	}
 
-	private final class DeleteAtom<U extends RadixEngineAtom> implements EngineAction<U> {
-		private final U cmAtom;
-		DeleteAtom(U cmAtom) {
-			this.cmAtom = cmAtom;
+	private final class DeleteAtom implements EngineAction {
+		private final Atom atom;
+		DeleteAtom(Atom atom) {
+			this.atom = atom;
 		}
 	}
 
-	private final class StoreAtom<U extends RadixEngineAtom> implements EngineAction<U> {
-		private final U cmAtom;
-		private final AtomEventListener<U> listener;
+	private final class StoreAtom implements EngineAction {
+		private final Atom atom;
+		private final AtomEventListener listener;
 
-		StoreAtom(U cmAtom, AtomEventListener<U> listener) {
-			this.cmAtom = cmAtom;
+		StoreAtom(Atom atom, AtomEventListener listener) {
+			this.atom = atom;
 			this.listener = listener;
 		}
 	}
@@ -53,10 +57,10 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 	private final ConstraintMachine constraintMachine;
 	private final CMStore virtualizedCMStore;
 
-	private final EngineStore<T> engineStore;
-	private final CopyOnWriteArrayList<AtomEventListener<T>> atomEventListeners = new CopyOnWriteArrayList<>();
-	private final CopyOnWriteArrayList<CMSuccessHook<T>> cmSuccessHooks = new CopyOnWriteArrayList<>();
-	private	final BlockingQueue<EngineAction<T>> commitQueue = new LinkedBlockingQueue<>();
+	private final EngineStore engineStore;
+	private final CopyOnWriteArrayList<AtomEventListener> atomEventListeners = new CopyOnWriteArrayList<>();
+	private final CopyOnWriteArrayList<CMSuccessHook> cmSuccessHooks = new CopyOnWriteArrayList<>();
+	private	final BlockingQueue<EngineAction> commitQueue = new LinkedBlockingQueue<>();
 
 	private volatile boolean running = false;
 	private Thread stateUpdateThread = null;
@@ -65,7 +69,7 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 	public RadixEngine(
 		ConstraintMachine constraintMachine,
 		UnaryOperator<CMStore> virtualStoreLayer,
-		EngineStore<T> engineStore
+		EngineStore engineStore
 	) {
 		this.constraintMachine = constraintMachine;
 		// Remove cm virtual store
@@ -76,13 +80,13 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 	private void run() {
 		while (this.running) {
 			try {
-				final EngineAction<T> action = this.commitQueue.take();
+				final EngineAction action = this.commitQueue.take();
 				if (action instanceof StoreAtom) {
-					StoreAtom<T> storeAtom = (StoreAtom<T>) action;
+					StoreAtom storeAtom = (StoreAtom) action;
 					stateCheckAndStore(storeAtom);
 				} else if (action instanceof DeleteAtom) {
-					DeleteAtom<T> deleteAtom = (DeleteAtom<T>) action;
-					engineStore.deleteAtom(deleteAtom.cmAtom);
+					DeleteAtom deleteAtom = (DeleteAtom) action;
+					engineStore.deleteAtom(deleteAtom.atom.getAID());
 				} else {
 					// We don't want to stop processing future EngineActions,
 					// but we do want to flag this logic error.
@@ -103,8 +107,8 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 
 	/**
 	 * Start this instance of the Radix Engine processing incoming events.
-	 * Events are placed onto a queue by the {@link #delete(RadixEngineAtom)}
-	 * and {@link #store(RadixEngineAtom, AtomEventListener)} methods.
+	 * Events are placed onto a queue by the {@link #delete(Atom)}
+	 * and {@link #store(Atom, AtomEventListener)} methods.
 	 * <p>
 	 * In order to initially start the engine processing events, this method
 	 * needs to be called after instance creation.
@@ -160,48 +164,65 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 		}
 	}
 
-	public void addCMSuccessHook(CMSuccessHook<T> hook) {
+	public void addCMSuccessHook(CMSuccessHook hook) {
 		this.cmSuccessHooks.add(hook);
 	}
 
-	public void addAtomEventListener(AtomEventListener<T> acceptor) {
+	public void addAtomEventListener(AtomEventListener acceptor) {
 		this.atomEventListeners.add(acceptor);
 	}
 
-	public void delete(T cmAtom) {
-		this.commitQueue.add(new DeleteAtom<>(cmAtom));
+	public void delete(Atom atom) {
+		this.commitQueue.add(new DeleteAtom(atom));
 	}
 
 	// TODO use reactive interface
-	public void store(T cmAtom, AtomEventListener<T> atomEventListener) {
-		Objects.requireNonNull(cmAtom);
+	public void store(Atom atom, AtomEventListener atomEventListener) {
+		Objects.requireNonNull(atom);
 		Objects.requireNonNull(atomEventListener);
 
+		RadixEngineAtom cmAtom;
+		try {
+			cmAtom = RadixEngineUtils.toCMAtom(atom);
+		} catch (RadixEngineUtils.CMAtomConversionException e) {
+			log.error("Atom creation failed", e);
+			CMError cmError = new CMError(e.getDataPointer(), CMErrorCode.INVALID_PARTICLE, null);
+			atomEventListener.onCMError(atom, cmError);
+			this.atomEventListeners.forEach(acceptor -> acceptor.onCMError(atom, cmError));
+			return;
+		}
 		final Optional<CMError> error = constraintMachine.validate(cmAtom.getCMInstruction());
 		if (error.isPresent()) {
-			atomEventListener.onCMError(cmAtom, error.get());
-			this.atomEventListeners.forEach(acceptor -> acceptor.onCMError(cmAtom, error.get()));
+			log.error("Atom is not valid: {}", error.get());
+			atomEventListener.onCMError(atom, error.get());
+			this.atomEventListeners.forEach(acceptor -> acceptor.onCMError(atom, error.get()));
 			return;
 		}
 
-		for (CMSuccessHook<T> hook : cmSuccessHooks) {
-			Result hookResult = hook.hook(cmAtom);
+		for (CMSuccessHook hook : cmSuccessHooks) {
+			Result hookResult = hook.hook(atom);
 			if (hookResult.isError()) {
 				CMError cmError = new CMError(DataPointer.ofAtom(), CMErrorCode.HOOK_ERROR, null, hookResult.getErrorMessage());
-				atomEventListener.onCMError(cmAtom, cmError);
-				this.atomEventListeners.forEach(acceptor -> acceptor.onCMError(cmAtom, cmError));
+				atomEventListener.onCMError(atom, cmError);
+				this.atomEventListeners.forEach(acceptor -> acceptor.onCMError(atom, cmError));
 				return;
 			}
 		}
 
-		this.commitQueue.add(new StoreAtom<>(cmAtom, atomEventListener));
+		this.commitQueue.add(new StoreAtom(atom, atomEventListener));
 
-		atomEventListener.onCMSuccess(cmAtom);
-		this.atomEventListeners.forEach(acceptor -> acceptor.onCMSuccess(cmAtom));
+		atomEventListener.onCMSuccess(atom);
+		this.atomEventListeners.forEach(acceptor -> acceptor.onCMSuccess(atom));
 	}
 
-	private void stateCheckAndStore(StoreAtom<T> storeAtom) {
-		final T cmAtom = storeAtom.cmAtom;
+	private void stateCheckAndStore(StoreAtom storeAtom) {
+		final Atom atom = storeAtom.atom;
+		SimpleRadixEngineAtom cmAtom = null;
+		try {
+			cmAtom = RadixEngineUtils.toCMAtom(atom);
+		} catch (RadixEngineUtils.CMAtomConversionException e) {
+			log.error("Atom creation failed", e);
+		}
 		final CMInstruction cmInstruction = cmAtom.getCMInstruction();
 
 		int particleIndex = 0;
@@ -229,8 +250,8 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 			final Spin checkSpin = microInstruction.getCheckSpin();
 			final Spin virtualSpin = virtualizedCMStore.getSpin(particle);
 			if (SpinStateMachine.isBefore(checkSpin, virtualSpin)) {
-				storeAtom.listener.onVirtualStateConflict(cmAtom, dp);
-				atomEventListeners.forEach(listener -> listener.onVirtualStateConflict(cmAtom, dp));
+				storeAtom.listener.onVirtualStateConflict(atom, dp);
+				atomEventListeners.forEach(listener -> listener.onVirtualStateConflict(atom, dp));
 				return;
 			}
 
@@ -240,21 +261,21 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 			if (!SpinStateMachine.canTransition(currentSpin, nextSpin)) {
 				if (!SpinStateMachine.isBefore(currentSpin, nextSpin)) {
 					engineStore.getAtomContaining(particle, nextSpin == Spin.DOWN, conflictAtom -> {
-						storeAtom.listener.onStateConflict(cmAtom, dp, conflictAtom);
-						atomEventListeners.forEach(listener -> listener.onStateConflict(cmAtom, dp, conflictAtom));
+						storeAtom.listener.onStateConflict(atom, dp, conflictAtom);
+						atomEventListeners.forEach(listener -> listener.onStateConflict(atom, dp, conflictAtom));
 					});
 
 					return;
 				} else {
-					storeAtom.listener.onStateMissingDependency(cmAtom, dp);
-					atomEventListeners.forEach(listener -> listener.onStateMissingDependency(cmAtom, dp));
+					storeAtom.listener.onStateMissingDependency(atom.getAID(), particle);
+					atomEventListeners.forEach(listener -> listener.onStateMissingDependency(atom.getAID(), particle));
 					return;
 				}
 			}
 		}
 
-		engineStore.storeAtom(cmAtom);
-		storeAtom.listener.onStateStore(cmAtom);
-		atomEventListeners.forEach(listener -> listener.onStateStore(cmAtom));
+		engineStore.storeAtom(atom);
+		storeAtom.listener.onStateStore(atom);
+		atomEventListeners.forEach(listener -> listener.onStateStore(atom));
 	}
 }

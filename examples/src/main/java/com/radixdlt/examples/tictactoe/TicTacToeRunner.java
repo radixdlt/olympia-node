@@ -1,25 +1,28 @@
 package com.radixdlt.examples.tictactoe;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.RadixAddress;
+import com.radixdlt.common.Atom;
 import com.radixdlt.constraintmachine.CMError;
-import com.radixdlt.constraintmachine.CMInstruction;
-import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.DataPointer;
-import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.AtomEventListener;
 import com.radixdlt.engine.RadixEngine;
-
-import static com.radixdlt.examples.tictactoe.TicTacToeBaseParticle.TicTacToeSquareValue.*;
-
 import com.radixdlt.examples.tictactoe.TicTacToeConstraintScrypt.OToMoveParticle;
 import com.radixdlt.examples.tictactoe.TicTacToeConstraintScrypt.XToMoveParticle;
+import com.radixdlt.middleware.ParticleGroup;
+import com.radixdlt.middleware.SpunParticle;
+import com.radixdlt.store.EngineStore;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import static com.radixdlt.examples.tictactoe.TicTacToeBaseParticle.TicTacToeSquareValue.EMPTY;
+import static com.radixdlt.examples.tictactoe.TicTacToeBaseParticle.TicTacToeSquareValue.O;
+import static com.radixdlt.examples.tictactoe.TicTacToeBaseParticle.TicTacToeSquareValue.X;
 
 /**
  * Executable example showing how to use the Radix Engine with the TicTacToeConstraintScrypt
@@ -113,31 +116,25 @@ public class TicTacToeRunner {
 	/**
 	 * Builds an atom based on the transition from one board to another.
 	 */
-	private static BasicRadixEngineAtom buildAtom(
-		String description,
+	private static Atom buildAtom(
 		TicTacToeBaseParticle prevBoard,
 		TicTacToeBaseParticle nextBoard,
 		ECKeyPair player
 	) throws CryptoException {
-
-		// Program the board transition
-		ImmutableList.Builder<CMMicroInstruction> microInstructions = ImmutableList.builder();
+		List<SpunParticle> spunParticles = new ArrayList<>(2);
 		if (prevBoard != null) {
-			microInstructions.add(CMMicroInstruction.checkSpin(prevBoard, Spin.UP));
-			microInstructions.add(CMMicroInstruction.push(prevBoard));
+			spunParticles.add(SpunParticle.down(prevBoard));
 		}
-		microInstructions.add(CMMicroInstruction.checkSpin(nextBoard, Spin.NEUTRAL));
-		microInstructions.add(CMMicroInstruction.push(nextBoard));
-		microInstructions.add(CMMicroInstruction.particleGroup());
+		if (nextBoard != null) {
+			spunParticles.add(SpunParticle.up(nextBoard));
+		}
 
-		// The zero hash is a hack and just used to simply test for some signature
-		CMInstruction instruction = new CMInstruction(
-			microInstructions.build(),
-			Hash.ZERO_HASH,
-			ImmutableMap.of(player.getUID(), player.sign(Hash.ZERO_HASH))
-		);
+		ParticleGroup particleGroup =  ParticleGroup.of(spunParticles);
+		Atom atom = new Atom();
+		atom.addParticleGroup(particleGroup);
+		atom.sign(player);
 
-		return new BasicRadixEngineAtom(instruction, description);
+		return atom;
 	}
 
 	public static void main(String[] args) throws CryptoException {
@@ -149,8 +146,8 @@ public class TicTacToeRunner {
 			.setParticleStaticCheck(cmAtomOS.buildParticleStaticCheck())
 			.setParticleTransitionProcedures(cmAtomOS.buildTransitionProcedures())
 			.build();
-		InMemoryEngineStore<BasicRadixEngineAtom> engineStore = new InMemoryEngineStore<>();
-		RadixEngine<BasicRadixEngineAtom> engine = new RadixEngine<>(
+		EngineStore engineStore = new InMemoryEngineStore();
+		RadixEngine engine = new RadixEngine(
 			cm,
 			cmAtomOS.buildVirtualLayer(),
 			engineStore
@@ -171,59 +168,66 @@ public class TicTacToeRunner {
 		XToMoveParticle legalOMove = buildLegalOMove(xPlayer, oPlayer);
 
 		// Build out the atoms which represent transition events
-		ImmutableList<BasicRadixEngineAtom> atomsToTest = ImmutableList.of(
+		ImmutableList<Atom> atomsToTest = ImmutableList.of(
 			// [ , , ]
 			// [ , , ]
 			// [ , ]
-			buildAtom("Illegal Initial board", null, illegalInitialBoard, xPlayer),
+			//Illegal Initial board
+			buildAtom(null, illegalInitialBoard, xPlayer),
 
 			// [ , , ]
 			// [ , , ]
 			// [ , , ]
-			buildAtom("Legal Initial board", null, initialBoard, xPlayer),
+			//Legal Initial board
+			buildAtom(null, initialBoard, xPlayer),
 
 			// [ , , ]    [ , , ]
 			// [ , , ] => [ ,X, ]
 			// [ , , ]    [ , , ]
-			buildAtom("Legal first move", initialBoard, firstMove, xPlayer),
+			//Legal first move
+			buildAtom(initialBoard, firstMove, xPlayer),
 
 			// [ , , ]    [ , , ]
 			// [ , , ] => [ , , ]
 			// [ , , ]    [ , ,X]
-			buildAtom("Illegal takeback", initialBoard, illegalTakebackFirstMove, xPlayer),
+			//Illegal takeback
+			buildAtom(initialBoard, illegalTakebackFirstMove, xPlayer),
 
 			// [ , , ]    [ , , ]
 			// [ ,X, ] => [ ,O, ]
 			// [ , , ]    [ , , ]
-			buildAtom("Illegal overwrite", firstMove, illegalOMove, oPlayer),
+			//Illegal overwrite
+			buildAtom(firstMove, illegalOMove, oPlayer),
 
 			// [ , , ]    [ , , ]
 			// [ ,X, ] => [ ,X, ]
 			// [ , , ]    [ , ,O]
-			buildAtom("Illegal O move to O move", firstMove, illegalOtoMoveOtoMove, oPlayer),
+			//Illegal O move to O move
+			buildAtom(firstMove, illegalOtoMoveOtoMove, oPlayer),
 
 			// [ , , ]    [ , , ]
 			// [ ,X, ] => [ ,X, ]
 			// [ , , ]    [ , ,O]
-			buildAtom("Legal second move", firstMove, legalOMove, oPlayer)
+			//Legal second move
+			buildAtom(firstMove, legalOMove, oPlayer)
 		);
 
 		// Execute each atom on the engine and see what happens
-		for (BasicRadixEngineAtom atom : atomsToTest) {
-			engine.store(atom, new AtomEventListener<BasicRadixEngineAtom>() {
+		for (Atom atom : atomsToTest) {
+			engine.store(atom, new AtomEventListener() {
 				@Override
-				public void onCMError(BasicRadixEngineAtom cmAtom, CMError error) {
-					System.out.println("ERROR:   " + cmAtom + " CM verification " + error);
+				public void onCMError(Atom atom, CMError error) {
+					System.out.println("ERROR:   " + atom + " CM verification " + error);
 				}
 
 				@Override
-				public void onStateConflict(BasicRadixEngineAtom cmAtom, DataPointer issueParticle, BasicRadixEngineAtom conflictingAtom) {
-					System.out.println("ERROR:   " + cmAtom + " Conflict with atom " + conflictingAtom);
+				public void onStateConflict(Atom atom, DataPointer issueParticle, Atom conflictingAtom) {
+					System.out.println("ERROR:   " + atom + " Conflict with atom " + conflictingAtom);
 				}
 
 				@Override
-				public void onStateStore(BasicRadixEngineAtom cmAtom) {
-					System.out.println("SUCCESS: " + cmAtom);
+				public void onStateStore(Atom atom) {
+					System.out.println("SUCCESS: " + atom);
 				}
 			});
 		}

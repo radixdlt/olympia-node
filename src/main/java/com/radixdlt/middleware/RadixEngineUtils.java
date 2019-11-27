@@ -3,6 +3,7 @@ package com.radixdlt.middleware;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.ImmutableMap;
+import com.radixdlt.common.Atom;
 import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
@@ -72,7 +73,7 @@ public final class RadixEngineUtils {
 		return microInstructionsBuilder.build();
 	}
 
-	public static SimpleRadixEngineAtom toCMAtom(ImmutableAtom atom) throws CMAtomConversionException {
+	public static SimpleRadixEngineAtom toCMAtom(Atom atom) throws CMAtomConversionException {
 		final int computedSize;
 		try {
 			computedSize = Serialization.getDefault().toDson(atom, Output.PERSIST).length;
