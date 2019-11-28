@@ -13,6 +13,12 @@ class SHAHashHandler implements HashHandler {
 	SHAHashHandler() {
 	}
 
+	void reset() {
+		hash256DigesterInner.remove();
+		hash256DigesterOuter.remove();
+		hash512Digester.remove();
+	}
+
 	@Override
 	public byte[] hash256(byte[] data) {
 		return hash256(data, 0, data.length);

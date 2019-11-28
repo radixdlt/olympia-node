@@ -352,7 +352,7 @@ public class Atom {
 		try {
 			return new Hash(Hash.hash256(Serialization.getDefault().toDson(this, DsonOutput.Output.HASH)));
 		} catch (Exception e) {
-			throw new RuntimeException("Error generating hash: " + e, e);
+			throw new IllegalStateException("Error generating hash: " + e, e);
 		}
 	}
 
@@ -377,11 +377,7 @@ public class Atom {
 			return true;
 		}
 
-		if (getClass().isInstance(o) && getHash().equals(((Atom) o).getHash())) {
-			return true;
-		}
-
-		return false;
+		return getClass().isInstance(o) && getHash().equals(((Atom) o).getHash());
 	}
 
 	@Override
@@ -390,7 +386,6 @@ public class Atom {
 	}
 
 	// Property Signatures: 1 getter, 1 setter
-	// FIXME: better option would be to just serialize as an array.
 	@JsonProperty("signatures")
 	@DsonOutput(value = {DsonOutput.Output.API, DsonOutput.Output.WIRE, DsonOutput.Output.PERSIST})
 	private Map<String, ECSignature> getJsonSignatures() {

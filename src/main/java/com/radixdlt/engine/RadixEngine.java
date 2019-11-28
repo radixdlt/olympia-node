@@ -217,65 +217,64 @@ public final class RadixEngine {
 
 	private void stateCheckAndStore(StoreAtom storeAtom) {
 		final Atom atom = storeAtom.atom;
-		SimpleRadixEngineAtom cmAtom = null;
 		try {
-			cmAtom = RadixEngineUtils.toCMAtom(atom);
+			SimpleRadixEngineAtom cmAtom = RadixEngineUtils.toCMAtom(atom);
+			final CMInstruction cmInstruction = cmAtom.getCMInstruction();
+
+			int particleIndex = 0;
+			int particleGroupIndex = 0;
+			for (CMMicroInstruction microInstruction : cmInstruction.getMicroInstructions()) {
+				// Treat check spin as the first push for now
+				if (!microInstruction.isCheckSpin()) {
+					if (microInstruction.getMicroOp() == CMMicroOp.PARTICLE_GROUP) {
+						particleGroupIndex++;
+						particleIndex = 0;
+					} else {
+						particleIndex++;
+					}
+					continue;
+				}
+
+				final Particle particle = microInstruction.getParticle();
+				if (!engineStore.supports(particle.getDestinations())) {
+					continue;
+				}
+
+				final DataPointer dp = DataPointer.ofParticle(particleGroupIndex, particleIndex);
+
+				// First spun is the only one we need to check
+				final Spin checkSpin = microInstruction.getCheckSpin();
+				final Spin virtualSpin = virtualizedCMStore.getSpin(particle);
+				if (SpinStateMachine.isBefore(checkSpin, virtualSpin)) {
+					storeAtom.listener.onVirtualStateConflict(atom, dp);
+					atomEventListeners.forEach(listener -> listener.onVirtualStateConflict(atom, dp));
+					return;
+				}
+
+				final Spin nextSpin = SpinStateMachine.next(checkSpin);
+				final Spin physicalSpin = engineStore.getSpin(particle);
+				final Spin currentSpin = SpinStateMachine.isAfter(virtualSpin, physicalSpin) ? virtualSpin : physicalSpin;
+				if (!SpinStateMachine.canTransition(currentSpin, nextSpin)) {
+					if (!SpinStateMachine.isBefore(currentSpin, nextSpin)) {
+						engineStore.getAtomContaining(particle, nextSpin == Spin.DOWN, conflictAtom -> {
+							storeAtom.listener.onStateConflict(atom, dp, conflictAtom);
+							atomEventListeners.forEach(listener -> listener.onStateConflict(atom, dp, conflictAtom));
+						});
+
+						return;
+					} else {
+						storeAtom.listener.onStateMissingDependency(atom.getAID(), particle);
+						atomEventListeners.forEach(listener -> listener.onStateMissingDependency(atom.getAID(), particle));
+						return;
+					}
+				}
+			}
+
+			engineStore.storeAtom(atom);
+			storeAtom.listener.onStateStore(atom);
+			atomEventListeners.forEach(listener -> listener.onStateStore(atom));
 		} catch (RadixEngineUtils.CMAtomConversionException e) {
 			log.error("Atom creation failed", e);
 		}
-		final CMInstruction cmInstruction = cmAtom.getCMInstruction();
-
-		int particleIndex = 0;
-		int particleGroupIndex = 0;
-		for (CMMicroInstruction microInstruction : cmInstruction.getMicroInstructions()) {
-			// Treat check spin as the first push for now
-			if (!microInstruction.isCheckSpin()) {
-				if (microInstruction.getMicroOp() == CMMicroOp.PARTICLE_GROUP) {
-					particleGroupIndex++;
-					particleIndex = 0;
-				} else {
-					particleIndex++;
-				}
-				continue;
-			}
-
-			final Particle particle = microInstruction.getParticle();
-			if (!engineStore.supports(particle.getDestinations())) {
-				continue;
-			}
-
-			final DataPointer dp = DataPointer.ofParticle(particleGroupIndex, particleIndex);
-
-			// First spun is the only one we need to check
-			final Spin checkSpin = microInstruction.getCheckSpin();
-			final Spin virtualSpin = virtualizedCMStore.getSpin(particle);
-			if (SpinStateMachine.isBefore(checkSpin, virtualSpin)) {
-				storeAtom.listener.onVirtualStateConflict(atom, dp);
-				atomEventListeners.forEach(listener -> listener.onVirtualStateConflict(atom, dp));
-				return;
-			}
-
-			final Spin nextSpin = SpinStateMachine.next(checkSpin);
-			final Spin physicalSpin = engineStore.getSpin(particle);
-			final Spin currentSpin = SpinStateMachine.isAfter(virtualSpin, physicalSpin) ? virtualSpin : physicalSpin;
-			if (!SpinStateMachine.canTransition(currentSpin, nextSpin)) {
-				if (!SpinStateMachine.isBefore(currentSpin, nextSpin)) {
-					engineStore.getAtomContaining(particle, nextSpin == Spin.DOWN, conflictAtom -> {
-						storeAtom.listener.onStateConflict(atom, dp, conflictAtom);
-						atomEventListeners.forEach(listener -> listener.onStateConflict(atom, dp, conflictAtom));
-					});
-
-					return;
-				} else {
-					storeAtom.listener.onStateMissingDependency(atom.getAID(), particle);
-					atomEventListeners.forEach(listener -> listener.onStateMissingDependency(atom.getAID(), particle));
-					return;
-				}
-			}
-		}
-
-		engineStore.storeAtom(atom);
-		storeAtom.listener.onStateStore(atom);
-		atomEventListeners.forEach(listener -> listener.onStateStore(atom));
 	}
 }

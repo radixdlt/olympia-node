@@ -43,22 +43,21 @@ public class InMemoryEngineStore implements EngineStore {
 
 	@Override
 	public void storeAtom(Atom atom) {
-		RadixEngineAtom radixEngineAtom = null;
 		try {
-			radixEngineAtom = RadixEngineUtils.toCMAtom(atom);
+			RadixEngineAtom radixEngineAtom = RadixEngineUtils.toCMAtom(atom);
+			for (CMMicroInstruction microInstruction : radixEngineAtom.getCMInstruction().getMicroInstructions()) {
+				if (microInstruction.getMicroOp() == CMMicroOp.PUSH) {
+					storedParticles.put(
+						microInstruction.getParticle(),
+						Pair.of(
+							SpinStateMachine.next(getSpin(microInstruction.getParticle())),
+							atom
+						)
+					);
+				}
+			}
 		} catch (RadixEngineUtils.CMAtomConversionException e) {
 			e.printStackTrace();
-		}
-		for (CMMicroInstruction microInstruction : radixEngineAtom.getCMInstruction().getMicroInstructions()) {
-			if (microInstruction.getMicroOp() == CMMicroOp.PUSH) {
-				storedParticles.put(
-					microInstruction.getParticle(),
-					Pair.of(
-						SpinStateMachine.next(getSpin(microInstruction.getParticle())),
-						atom
-					)
-				);
-			}
 		}
 	}
 
