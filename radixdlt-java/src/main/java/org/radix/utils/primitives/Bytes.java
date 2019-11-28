@@ -138,7 +138,7 @@ public class Bytes {
 		while (index < s.length()) {
 			byte msn = fromHexNybble(s.charAt(index++));
 			byte lsn = fromHexNybble(s.charAt(index++));
-			bytes[offset++] = (byte) ((msn << 4) | lsn);
+			bytes[offset++] = (byte) ((msn << 4) | (lsn & 0xF));
 		}
 		return bytes;
 	}

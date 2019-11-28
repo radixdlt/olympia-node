@@ -550,7 +550,7 @@ public final class Int128 extends Number implements Comparable<Int128> {
 		// Note that it is not possible for this exponent to overflow a double
 		// (128 < 1023).
 		int shift = bitLength(h);
-		long exponent = Long.SIZE + shift - 1;
+		long exponent = Long.SIZE + shift - 1L;
 
 		// Merge all the bits into l, discarding lower bits
 		l >>>= shift;
