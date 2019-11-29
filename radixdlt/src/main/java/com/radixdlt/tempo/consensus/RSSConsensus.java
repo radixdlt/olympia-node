@@ -118,8 +118,7 @@ public final class RSSConsensus implements LedgerEntryObserver, Consensus {
 				return;
 			// TODO need to consider sharding here, what happens if the majority is outside our shard range?
 			case SWITCH_TO_MAJORITY:
-				notifySwitchToMajority(preference, samples);
-				// intentional fall-through, continue in both cases
+				throw new UnsupportedOperationException("Cannot switch to majority, no longer supported");
 			case CONTINUE:
 				beginRound(preference);
 				return;
@@ -131,19 +130,6 @@ public final class RSSConsensus implements LedgerEntryObserver, Consensus {
 	private void notifyCommit(LedgerEntry preference) {
 		pendingAtoms.remove(preference.getAID());
 		notify(ConsensusAction.commit(preference));
-	}
-
-	private void notifySwitchToMajority(LedgerEntry oldPreference, Samples samples) {
-		// TODO add cache for recent preferences?
-		AID newPreference = samples.getTopPreference();
-		samples.getPeersFor(newPreference).stream()
-			.map(addressBook::peer)
-			.forEach(peer -> requestDeliverer.deliver(newPreference, peer)
-				.thenAccept(result -> {
-					if (result.isSuccess()) {
-						notify(ConsensusAction.changePreference(result.getLedgerEntry(), ImmutableSet.of(oldPreference)));
-					}
-				}));
 	}
 
 	private void notify(ConsensusAction action) {
