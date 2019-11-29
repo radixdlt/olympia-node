@@ -12,10 +12,6 @@ import org.radix.network.messaging.Message;
 
 @SerializerId2("tempo.sync.discovery.iterative.response")
 public class IterativeDiscoveryResponseMessage extends Message {
-	@JsonProperty("commitments")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private ImmutableList<Hash> commitments;
-
 	@JsonProperty("aids")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private ImmutableList<AID> aids;
@@ -26,22 +22,16 @@ public class IterativeDiscoveryResponseMessage extends Message {
 
 	IterativeDiscoveryResponseMessage() {
 		// Serializer only
-		commitments = ImmutableList.of();
 		aids = ImmutableList.of();
 	}
 
-	public IterativeDiscoveryResponseMessage(ImmutableList<Hash> commitments, ImmutableList<AID> aids, LogicalClockCursor cursor) {
-		this.commitments = commitments;
+	public IterativeDiscoveryResponseMessage(ImmutableList<AID> aids, LogicalClockCursor cursor) {
 		this.aids = aids;
 		this.cursor = cursor;
 	}
 
 	public ImmutableList<AID> getAids() {
 		return aids;
-	}
-
-	public ImmutableList<Hash> getCommitments() {
-		return commitments;
 	}
 
 	public LogicalClockCursor getCursor() {

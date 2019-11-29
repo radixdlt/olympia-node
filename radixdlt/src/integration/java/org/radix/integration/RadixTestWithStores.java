@@ -11,7 +11,6 @@ import com.radixdlt.tempo.Tempo;
 import com.radixdlt.tempo.TempoAttestor;
 import com.radixdlt.tempo.consensus.Consensus;
 import com.radixdlt.tempo.delivery.RequestDeliverer;
-import com.radixdlt.tempo.store.CommitmentStore;
 import com.radixdlt.tempo.store.LedgerEntryStore;
 import com.radixdlt.tempo.store.berkeley.BerkeleyStoreModule;
 import org.junit.After;
@@ -58,14 +57,12 @@ public class RadixTestWithStores extends RadixTest
 		);
 
 		LedgerEntryStore atomStore = injector.getInstance(LedgerEntryStore.class);
-		CommitmentStore commitmentStore = injector.getInstance(CommitmentStore.class);
 		Tempo tempo = new Tempo(
 				self,
 				atomStore,
-				commitmentStore,
-				mock(Consensus.class),
+			mock(Consensus.class),
 				new TempoAttestor(LocalSystem.getInstance(), Serialization.getDefault(), System::currentTimeMillis),
-				ImmutableSet.of(atomStore, commitmentStore),
+				ImmutableSet.of(atomStore),
 				ImmutableSet.of(),
 				mock(RequestDeliverer.class),
 				ImmutableSet.of()

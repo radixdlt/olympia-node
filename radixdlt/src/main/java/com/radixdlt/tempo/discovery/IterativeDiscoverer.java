@@ -8,7 +8,6 @@ import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.tempo.Resource;
 import com.radixdlt.tempo.store.LedgerEntryStoreView;
 import com.radixdlt.tempo.LogicalClockCursor;
@@ -16,7 +15,6 @@ import com.radixdlt.tempo.Scheduler;
 import com.radixdlt.tempo.discovery.messages.IterativeDiscoveryRequestMessage;
 import com.radixdlt.tempo.discovery.messages.IterativeDiscoveryResponseMessage;
 import com.radixdlt.tempo.store.LCCursorStore;
-import com.radixdlt.tempo.store.CommitmentStore;
 import org.radix.common.Syncronicity;
 import org.radix.events.EventListener;
 import org.radix.events.Events;
@@ -62,7 +60,6 @@ public final class IterativeDiscoverer implements Resource, AtomDiscoverer {
 	final IterativeDiscoveryState discoveryState = new IterativeDiscoveryState();
 
 	private final LCCursorStore cursorStore;
-	private final CommitmentStore commitmentStore;
 	private final LedgerEntryStoreView storeView;
 	private final Scheduler scheduler;
 	private final MessageCentral messageCentral;
@@ -77,7 +74,6 @@ public final class IterativeDiscoverer implements Resource, AtomDiscoverer {
 		@Named("self") EUID self,
 		LedgerEntryStoreView storeView,
 		LCCursorStore cursorStore,
-		CommitmentStore commitmentStore,
 		Scheduler scheduler,
 		MessageCentral messageCentral,
 		Events events,
@@ -86,7 +82,6 @@ public final class IterativeDiscoverer implements Resource, AtomDiscoverer {
 		this.self = Objects.requireNonNull(self);
 		this.storeView = Objects.requireNonNull(storeView);
 		this.cursorStore = Objects.requireNonNull(cursorStore);
-		this.commitmentStore = Objects.requireNonNull(commitmentStore);
 		this.scheduler = Objects.requireNonNull(scheduler);
 		this.messageCentral = Objects.requireNonNull(messageCentral);
 
@@ -130,7 +125,6 @@ public final class IterativeDiscoverer implements Resource, AtomDiscoverer {
 	private void onResponse(Peer peer, IterativeDiscoveryResponseMessage message) {
 		EUID peerNid = peer.getNID();
 		notifyListeners(message.getAids(), peer);
-		commitmentStore.put(peerNid, message.getCommitments(), message.getCursor().getLcPosition());
 		discoveryState.removeRequest(peerNid, message.getCursor().getLcPosition());
 
 		boolean isLatest = updateCursor(peer, message.getCursor());
@@ -204,23 +198,16 @@ public final class IterativeDiscoverer implements Resource, AtomDiscoverer {
 
 	private IterativeDiscoveryResponseMessage fetchResponse(LogicalClockCursor cursor) {
 		long lcPosition = cursor.getLcPosition();
-		ImmutableList<Hash> commitments = commitmentStore.getNext(self, lcPosition, responseLimit);
 		ImmutableList<AID> aids = storeView.getNextCommitted(lcPosition, responseLimit);
 
-		// there should be at least as many commitments as aids, otherwise the stores are corrupt
-		if (commitments.size() < aids.size()) {
-			throw new IllegalStateException(String.format("Missing commitments at [%d, %d[ for %s",
-				lcPosition, lcPosition + aids.size(), aids.toString()));
-		}
-
-		long nextLcPosition = lcPosition + commitments.size();
+		long nextLcPosition = lcPosition + aids.size();
 		LogicalClockCursor nextCursor = null;
 		// only set next cursor if the cursor was actually advanced
 		if (nextLcPosition > lcPosition) {
 			nextCursor = new LogicalClockCursor(nextLcPosition, null);
 		}
 		LogicalClockCursor responseCursor = new LogicalClockCursor(lcPosition, nextCursor);
-		return new IterativeDiscoveryResponseMessage(commitments, aids, responseCursor);
+		return new IterativeDiscoveryResponseMessage(aids, responseCursor);
 	}
 
 	@Override

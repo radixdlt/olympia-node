@@ -17,7 +17,6 @@ import com.radixdlt.tempo.SingleThreadedScheduler;
 import com.radixdlt.tempo.Tempo;
 import com.radixdlt.tempo.TempoAttestor;
 import com.radixdlt.tempo.WallclockTimeSupplier;
-import com.radixdlt.tempo.store.CommitmentStore;
 import com.radixdlt.tempo.store.LCCursorStore;
 import com.radixdlt.tempo.store.LedgerEntryStore;
 import org.radix.modules.Modules;
@@ -42,7 +41,6 @@ public class TempoModule extends AbstractModule {
 		// TODO ugly way of assigning resource "ownership", should be cleaner
 		Multibinder<Resource> ownedResourcesBinder = Multibinder.newSetBinder(binder(), Resource.class, Owned.class);
 		ownedResourcesBinder.addBinding().to(LedgerEntryStore.class);
-		ownedResourcesBinder.addBinding().to(CommitmentStore.class);
 		ownedResourcesBinder.addBinding().to(LCCursorStore.class);
 
 		// dependencies

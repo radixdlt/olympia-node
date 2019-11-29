@@ -14,11 +14,10 @@ public interface LedgerEntryStore<T extends LedgerEntry> extends LedgerEntryStor
 	/**
 	 * Irreversibly commits this store to an atom with at a certain logical clock.
 	 * Once committed, an atom may no longer be deleted or replaced.
+	 *  @param aid The aid
 	 *
-	 * @param aid The aid
-	 * @param logicalClock The logical clock
 	 */
-	void commit(AID aid, long logicalClock);
+	void commit(AID aid);
 
 	/**
 	 * Stores a {@link LedgerEntry} with certain indices.

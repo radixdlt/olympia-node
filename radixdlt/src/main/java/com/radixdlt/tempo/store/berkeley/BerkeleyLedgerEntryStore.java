@@ -276,7 +276,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore<LedgerEntry> {
 	}
 
 	@Override
-	public void commit(AID aid, long logicalClock) {
+	public void commit(AID aid) {
 		// delete from pending and move to committed
 		long start = profiler.begin();
 
@@ -295,6 +295,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore<LedgerEntry> {
 			}
 			doRemovePending(aid, transaction);
 
+			long logicalClock = lcFromPKey(pKey.getData());
 			// transaction is aborted in doStore in case of conflict
 			LedgerEntryStoreResult result = doStore(PREFIX_COMMITTED, logicalClock, aid, value.getData(), indices, transaction);
 			if (result.isSuccess()) {
@@ -758,6 +759,10 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore<LedgerEntry> {
 		Longs.copyTo(logicalClock, pKey, 1);
 		System.arraycopy(aid.getBytes(), 0, pKey, Long.BYTES + 1, AID.BYTES);
 		return new DatabaseEntry(pKey);
+	}
+
+	private static long lcFromPKey(byte[] pKey) {
+		return Longs.fromByteArray(pKey, 1);
 	}
 
 	public static class AtomStorePackedPrimaryKeyComparator implements Comparator<byte[]> {

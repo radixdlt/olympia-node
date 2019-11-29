@@ -80,7 +80,7 @@ public class BerkeleyRadixLedgerEntryStoreTests extends RadixTestWithStores {
             softly.assertThat(tempoAtomStore.contains(ledgerEntries.get(0).getAID())).isTrue();
 
             // commit atom
-            tempoAtomStore.commit(ledgerEntries.get(0).getAID(), 1);
+            tempoAtomStore.commit(ledgerEntries.get(0).getAID());
 
             // committed atom is committed
             softly.assertThat(tempoAtomStore.getStatus(ledgerEntries.get(0).getAID())).isEqualTo(LedgerEntryStatus.COMMITTED);
@@ -225,7 +225,7 @@ public class BerkeleyRadixLedgerEntryStoreTests extends RadixTestWithStores {
                 int shard = i < ledgerEntries.size() / 2 ? 100 : 200;
                 LedgerIndex ledgerIndex = new LedgerIndex((byte) 200, Ints.toByteArray(shard));
                 softly.assertThat(tempoAtomStore.store(ledgerEntries.get(i), ImmutableSet.of(), ImmutableSet.of(ledgerIndex)).isSuccess()).isTrue();
-                tempoAtomStore.commit(ledgerEntries.get(i).getAID(), i);
+                tempoAtomStore.commit(ledgerEntries.get(i).getAID());
             }
         });
     }
