@@ -160,10 +160,6 @@ public final class Tempo implements Ledger, Closeable {
 			this.ledgerEntryStore.commit(preference.getAID(), temporalCommitment.getLogicalClock());
 			this.commitmentStore.put(self, temporalCommitment.getLogicalClock(), temporalCommitment.getCommitment());
 			injectObservation(LedgerObservation.commit(preference));
-		} else if (action.getType() == ConsensusAction.Type.SWITCH_PREFERENCE) {
-			log.info("Switching preference from '" + action.getOldPreferences() + "' to '" + action.getPreference() + "'");
-			Set<? extends LedgerEntry> oldPreferences = action.getOldPreferences();
-			injectObservation(LedgerObservation.adopt(oldPreferences, action.getPreference()));
 		} else {
 			throw new IllegalStateException("Unknown consensus action type: " + action.getType());
 		}
