@@ -10,6 +10,16 @@ Feature: Create Single Issuance Token Class
     When I submit a fixed-supply token-creation request with name "RLAU Test", symbol "RLAU", totalSupply 100000000 scaled and granularity 1 scaled
     Then I can observe the atom being accepted
 
+  Scenario: 1a: Creating a unique token with an empty name
+    Given I have access to a suitable Radix network
+    When I submit a fixed-supply token-creation request with name "", symbol "RLAU", totalSupply 100000000 scaled and granularity 1 scaled
+    Then I can observe the atom being accepted
+
+  Scenario: 1b: Creating a unique token with an empty description
+    Given I have access to a suitable Radix network
+    When I submit a fixed-supply token-creation request with name "RLAU Test", description "", symbol "RLAU", totalSupply 100000000 scaled and granularity 1 scaled
+    Then I can observe the atom being accepted
+
   Scenario: 2: Creating a conflicting token
     Given I have access to a suitable Radix network
     When I submit a fixed-supply token-creation request with symbol "RLAU"

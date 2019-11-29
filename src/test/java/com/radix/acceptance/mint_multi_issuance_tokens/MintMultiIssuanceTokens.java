@@ -131,8 +131,8 @@ public class MintMultiIssuanceTokens {
 		createToken(this.otherApi, TokenSupplyType.MUTABLE);
 		awaitAtomStatus(AtomStatus.STORED);
 		this.api.observeTokenDef(RRI.of(this.otherApi.getAddress(), symbol))
-			.firstOrError()
 			.timeout(15, TimeUnit.SECONDS)
+			.firstOrError()
 			.blockingGet();
 		d.dispose();
 
