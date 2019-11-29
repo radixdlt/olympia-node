@@ -1,6 +1,7 @@
 package com.radixdlt.atommodel.tokens;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.powermock.api.mockito.PowerMockito.when;
 
@@ -62,11 +63,41 @@ public class TokensConstraintScryptTest {
 	}
 
 	@Test
-	public void when_validating_token_class_particle_without_description__result_has_error() {
-		MutableSupplyTokenDefinitionParticle token = PowerMockito.mock(MutableSupplyTokenDefinitionParticle.class);
-		when(token.getRRI()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
-		assertThat(staticCheck.apply(token).getErrorMessage())
-			.contains("Description: no or empty provided");
+	public void when_validating_token_class_particle_without_description__result_is_success() {
+		RadixAddress addr = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
+		ImmutableMap<MutableSupplyTokenDefinitionParticle.TokenTransition, TokenPermission> perms = ImmutableMap.of(
+			MutableSupplyTokenDefinitionParticle.TokenTransition.MINT, TokenPermission.ALL,
+			MutableSupplyTokenDefinitionParticle.TokenTransition.BURN, TokenPermission.ALL
+		);
+		MutableSupplyTokenDefinitionParticle token = new MutableSupplyTokenDefinitionParticle(
+			addr,
+			"TOK",
+			null,
+			null,
+			UInt256.ONE,
+			null,
+			perms
+		);
+		assertTrue(staticCheck.apply(token).isSuccess());
+	}
+
+	@Test
+	public void when_validating_token_class_particle_with_empty_description__result_is_success() {
+		RadixAddress addr = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
+		ImmutableMap<MutableSupplyTokenDefinitionParticle.TokenTransition, TokenPermission> perms = ImmutableMap.of(
+			MutableSupplyTokenDefinitionParticle.TokenTransition.MINT, TokenPermission.ALL,
+			MutableSupplyTokenDefinitionParticle.TokenTransition.BURN, TokenPermission.ALL
+		);
+		MutableSupplyTokenDefinitionParticle token = new MutableSupplyTokenDefinitionParticle(
+			addr,
+			"TOK",
+			"",
+			"",
+			UInt256.ONE,
+			null,
+			perms
+		);
+		assertTrue(staticCheck.apply(token).isSuccess());
 	}
 
 	@Test

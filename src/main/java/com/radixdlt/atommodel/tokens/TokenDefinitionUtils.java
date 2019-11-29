@@ -74,11 +74,7 @@ public final class TokenDefinitionUtils {
 	}
 
 	static Result validateDescription(String description) {
-		if (description == null || description.isEmpty()) {
-			return Result.error("Description: no or empty provided.");
-		}
-
-		if (description.length() > MAX_DESCRIPTION_LENGTH) {
+		if (description != null && description.length() > MAX_DESCRIPTION_LENGTH) {
 			return Result.error("Description: invalid length, description must be shorter than or equal to "
 				+ MAX_DESCRIPTION_LENGTH + " but is " + description.length());
 		}
