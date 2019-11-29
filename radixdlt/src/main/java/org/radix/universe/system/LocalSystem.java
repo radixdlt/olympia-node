@@ -125,17 +125,12 @@ public final class LocalSystem extends RadixSystem
 	private int 	revertPlanck = 0;
 	private Hash 	revertCommitment = Hash.ZERO_HASH;
 
-	@JsonProperty("accumulator")
-	@DsonOutput(Output.PERSIST)
-	private CommitmentAccumulator accumulator;
-
 	@VisibleForTesting
 	LocalSystem() throws CryptoException
 	{
 		super();
 
 		this.keyPair = new ECKeyPair();
-		this.accumulator = new CommitmentAccumulator(Hash.BITS);
 	}
 
 	/*	public LocalSystem(ECKeyPair key, String agent, int agentVersion, int protocolVersion, ShardSpace shards, int port)
@@ -149,7 +144,6 @@ public final class LocalSystem extends RadixSystem
 	{
 		super(key.getPublicKey(), agent, agentVersion, protocolVersion, new ShardSpace(key.getUID().getShard(), shards), defaultTransports());
 		this.keyPair = key;
-		this.accumulator = new CommitmentAccumulator(Hash.BITS);
 	}
 
 	@Override
@@ -202,9 +196,6 @@ public final class LocalSystem extends RadixSystem
 		this.revertCommitment = getCommitment();
 
 		getClock().incrementAndGet();
-
-		this.accumulator.put(hash);
-		this.setCommitment(this.accumulator.getHash());
 
 		if (Modules.get(Universe.class).toPlanck(timestamp, Offset.NONE) > getPlanck())
 			setPlanck(Modules.get(Universe.class).toPlanck(timestamp, Offset.NONE));
