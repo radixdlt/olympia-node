@@ -45,7 +45,6 @@ public final class Tempo implements Ledger, Closeable {
 	private final EUID self;
 	private final LedgerEntryStore ledgerEntryStore;
 	private final Consensus consensus;
-	private final Attestor attestor;
 
 	private final Set<Resource> ownedResources;
 	private final Set<AtomDiscoverer> atomDiscoverers;
@@ -60,7 +59,6 @@ public final class Tempo implements Ledger, Closeable {
 		@Named("self") EUID self,
 		LedgerEntryStore ledgerEntryStore,
 		Consensus consensus,
-		Attestor attestor,
 		@Owned Set<Resource> ownedResources,
 		Set<AtomDiscoverer> atomDiscoverers,
 		RequestDeliverer requestDeliverer,
@@ -69,7 +67,6 @@ public final class Tempo implements Ledger, Closeable {
 		this.self = Objects.requireNonNull(self);
 		this.ledgerEntryStore = Objects.requireNonNull(ledgerEntryStore);
 		this.consensus = Objects.requireNonNull(consensus);
-		this.attestor = Objects.requireNonNull(attestor);
 		this.ownedResources = Objects.requireNonNull(ownedResources);
 		this.atomDiscoverers = Objects.requireNonNull(atomDiscoverers);
 		this.requestDeliverer = Objects.requireNonNull(requestDeliverer);
@@ -151,8 +148,7 @@ public final class Tempo implements Ledger, Closeable {
 		if (action.getType() == ConsensusAction.Type.COMMIT) {
 			// TODO do something with commitment
 			LedgerEntry preference = action.getPreference();
-			TemporalCommitment temporalCommitment = attestor.attestTo(preference.getAID());
-			log.info("Committing to '" + preference.getAID() + "' at " + temporalCommitment.getLogicalClock());
+			log.info("Committing to '" + preference.getAID());
 			this.ledgerEntryStore.commit(preference.getAID());
 			injectObservation(LedgerObservation.commit(preference));
 		} else {

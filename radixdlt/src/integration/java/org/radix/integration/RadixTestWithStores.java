@@ -6,9 +6,7 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.name.Names;
 import com.radixdlt.common.EUID;
-import com.radixdlt.serialization.Serialization;
 import com.radixdlt.tempo.Tempo;
-import com.radixdlt.tempo.TempoAttestor;
 import com.radixdlt.tempo.consensus.Consensus;
 import com.radixdlt.tempo.delivery.RequestDeliverer;
 import com.radixdlt.tempo.store.LedgerEntryStore;
@@ -61,8 +59,7 @@ public class RadixTestWithStores extends RadixTest
 				self,
 				atomStore,
 			mock(Consensus.class),
-				new TempoAttestor(LocalSystem.getInstance(), Serialization.getDefault(), System::currentTimeMillis),
-				ImmutableSet.of(atomStore),
+			ImmutableSet.of(atomStore),
 				ImmutableSet.of(),
 				mock(RequestDeliverer.class),
 				ImmutableSet.of()
