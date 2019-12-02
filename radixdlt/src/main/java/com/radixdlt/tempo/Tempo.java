@@ -84,56 +84,6 @@ public final class Tempo implements Ledger, Closeable {
 		return this.ledgerObservations.take();
 	}
 
-	@Override
-	public Optional<LedgerEntry> get(AID aid) {
-		return ledgerEntryStore.get(aid);
-	}
-
-	@Override
-	public void store(LedgerEntry ledgerEntry, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
-		preCheckStore(ledgerEntry, uniqueIndices, duplicateIndices);
-		LedgerEntryStoreResult status = ledgerEntryStore.store(ledgerEntry, uniqueIndices, duplicateIndices);
-		postCheckStore(status);
-		onAdopted(ledgerEntry, uniqueIndices, duplicateIndices);
-	}
-
-	@Override
-	public void replace(Set<AID> aids, LedgerEntry ledgerEntry, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
-		Objects.requireNonNull(aids, "aids");
-		preCheckStore(ledgerEntry, uniqueIndices, duplicateIndices);
-
-		LedgerEntryStoreResult status = ledgerEntryStore.replace(aids, ledgerEntry, uniqueIndices, duplicateIndices);
-		postCheckStore(status);
-		aids.forEach(this::onDeleted);
-		onAdopted(ledgerEntry, uniqueIndices, duplicateIndices);
-	}
-
-	private void preCheckStore(LedgerEntry ledgerEntry, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
-		Objects.requireNonNull(ledgerEntry, "ledgerEntry");
-		Objects.requireNonNull(uniqueIndices, "uniqueIndices");
-		Objects.requireNonNull(duplicateIndices, "duplicateIndices");
-		if (uniqueIndices.isEmpty()) {
-			throw new TempoException("Atom '" + ledgerEntry.getAID() + "' must have at least one unique index");
-		}
-		if (ledgerEntry.getShards().isEmpty()) {
-			throw new TempoException("Atom '" + ledgerEntry.getAID() + "' must have at least one shard");
-		}
-		if (ledgerEntryStore.contains(ledgerEntry.getAID())) {
-			throw new AtomAlreadyExistsException(ledgerEntry.getAID());
-		}
-	}
-
-	private void postCheckStore(LedgerEntryStoreResult status) {
-		if (!status.isSuccess()) {
-			LedgerEntryConflict conflictInfo = status.getConflictInfo();
-			throw new LedgerIndexConflictException(conflictInfo.getLedgerEntry(), conflictInfo.getConflictingLedgerEntries());
-		}
-	}
-
-	private void onDeleted(AID aid) {
-		observers.forEach(observer -> observer.onDeleted(aid));
-	}
-
 	private void onDiscovered(Set<AID> aids, Peer peer) {
 		requestDeliverer.deliver(aids, ImmutableSet.of(peer)).forEach((aid, future) -> future.thenAccept(result -> {
 			if (result.isSuccess()) {
@@ -147,25 +97,6 @@ public final class Tempo implements Ledger, Closeable {
 			// TODO more graceful queue full handling
 			log.error("Atom observations queue full");
 		}
-	}
-
-	private void onAdopted(LedgerEntry ledgerEntry, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
-		observers.forEach(acceptor -> acceptor.onAdopted(ledgerEntry, uniqueIndices, duplicateIndices));
-	}
-
-	@Override
-	public LedgerCursor search(LedgerIndexType type, LedgerIndex index, LedgerSearchMode mode) {
-		return ledgerEntryStore.search(type, index, mode);
-	}
-
-	@Override
-	public boolean contains(LedgerIndexType type, LedgerIndex index, LedgerSearchMode mode) {
-		return ledgerEntryStore.contains(type, index, mode);
-	}
-
-	@Override
-	public boolean contains(AID aid) {
-		return ledgerEntryStore.contains(aid);
 	}
 
 	public void start() {
