@@ -70,9 +70,6 @@ public final class LedgerEntryIndices {
 
 		// add internal indices
 		allUniqueIndices.add(new LedgerIndex(ENTRY_INDEX_PREFIX, ledgerEntry.getAID().getBytes()));
-		for (Long shard : ledgerEntry.getShards()) {
-			allDuplicateIndices.add(new LedgerIndex(SHARD_INDEX_PREFIX, Longs.toByteArray(shard)));
-		}
 
 		return new LedgerEntryIndices(allUniqueIndices.build(), allDuplicateIndices.build());
 	}

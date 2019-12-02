@@ -9,7 +9,6 @@ import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 
 import java.util.Objects;
-import java.util.Set;
 
 @SerializerId2("ledger.entry")
 public class LedgerEntry {
@@ -27,18 +26,13 @@ public class LedgerEntry {
 	@DsonOutput(value = {DsonOutput.Output.ALL})
 	private AID aid;
 
-	@JsonProperty("shards")
-	@DsonOutput(value = {DsonOutput.Output.ALL})
-	private ImmutableSet<Long> shards;
-
 	private LedgerEntry() {
 		// For serializer
 	}
 
-	public LedgerEntry(byte[] content, AID aid, Set<Long> shards) {
+	public LedgerEntry(byte[] content, AID aid) {
 		this.content = Objects.requireNonNull(content, "content is required");
 		this.aid = Objects.requireNonNull(aid, "aid is required");
-		this.shards = ImmutableSet.copyOf(shards);
 	}
 
 	public byte[] getContent() {
@@ -47,10 +41,6 @@ public class LedgerEntry {
 
 	public AID getAID() {
 		return this.aid;
-	}
-
-	public ImmutableSet<Long> getShards() {
-		return this.shards;
 	}
 
 	@Override
@@ -72,6 +62,6 @@ public class LedgerEntry {
 
 	@Override
 	public String toString() {
-		return String.format("RadixLedgerEntry{aid=%s, shards=%s}", aid, shards);
+		return String.format("LedgerEntry{aid=%s}", aid);
 	}
 }

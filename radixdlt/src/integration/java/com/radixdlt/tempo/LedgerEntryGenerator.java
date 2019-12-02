@@ -1,8 +1,6 @@
 package com.radixdlt.tempo;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
-import com.google.common.primitives.Longs;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.Atom;
 import com.radixdlt.crypto.ECKeyPair;
@@ -43,8 +41,7 @@ public class LedgerEntryGenerator {
         try {
             LedgerEntry ledgerEntry = new LedgerEntry(
                 Serialization.getDefault().toDson(atom, DsonOutput.Output.API),
-                AID.from(pKey),
-                ImmutableSet.of(Longs.fromByteArray(pKey))
+                AID.from(pKey)
             );
             return ledgerEntry;
         } catch (SerializationException e) {

@@ -59,7 +59,7 @@ public class LedgerEngineStore implements EngineStore {
     @Override
     public void storeAtom(Atom atom) {
         byte binaryAtom[] = atomToBinaryConverter.toLedgerEntryContent(atom);
-        LedgerEntry ledgerEntry = new LedgerEntry(binaryAtom,atom.getAID(),atom.getShards());
+        LedgerEntry ledgerEntry = new LedgerEntry(binaryAtom,atom.getAID());
         EngineAtomIndices engineAtomIndices = EngineAtomIndices.from(atom);
         store.store(ledgerEntry, engineAtomIndices.getUniqueIndices(), engineAtomIndices.getDuplicateIndices());
     }
