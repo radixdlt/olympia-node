@@ -146,7 +146,6 @@ public final class Tempo implements Ledger, Closeable {
 
 	private void processConsensusAction(ConsensusAction action) {
 		if (action.getType() == ConsensusAction.Type.COMMIT) {
-			// TODO do something with commitment
 			LedgerEntry preference = action.getPreference();
 			log.info("Committing to '" + preference.getAID());
 			this.ledgerEntryStore.commit(preference.getAID());

@@ -120,10 +120,6 @@ public final class LocalSystem extends RadixSystem
 	}
 
 	private ECKeyPair keyPair;
-	private long 	revertClock = 0;
-	private long 	revertTimestamp = 0;
-	private int 	revertPlanck = 0;
-	private Hash 	revertCommitment = Hash.ZERO_HASH;
 
 	@VisibleForTesting
 	LocalSystem() throws CryptoException
@@ -161,21 +157,8 @@ public final class LocalSystem extends RadixSystem
 		super.setKey(keyPair.getPublicKey());
 	}
 
-	public void revert()
-	{
-		setPlanck(this.revertPlanck);
-		setTimestamp(this.revertTimestamp);
-		setClock(this.revertClock);
-		setCommitment(this.revertCommitment);
-	}
-
 	public synchronized void set(long clock, Hash commitment, long timestamp)
 	{
-		this.revertPlanck = getPlanck();
-		this.revertTimestamp = getTimestamp();
-		this.revertClock = getClock().get();
-		this.revertCommitment = getCommitment();
-
 		getClock().set(clock);
 
 		// TODO commitment
@@ -190,11 +173,6 @@ public final class LocalSystem extends RadixSystem
 
 	public synchronized Pair<Long, Hash> update(AID hash, long timestamp)
 	{
-		this.revertPlanck = getPlanck();
-		this.revertClock = getClock().get();
-		this.revertTimestamp = getTimestamp();
-		this.revertCommitment = getCommitment();
-
 		getClock().incrementAndGet();
 
 		if (Modules.get(Universe.class).toPlanck(timestamp, Offset.NONE) > getPlanck())
