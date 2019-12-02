@@ -113,10 +113,6 @@ class MessageDispatcher {
 				SystemMessage systemMessage = (SystemMessage) message;
 				RadixSystem system = systemMessage.getSystem();
 
-				// TODO this feels dirty here
-				if (peer.hasSystem() && system.getClock().get() < peer.getSystem().getClock().get()) {
-					log.error("IMPLEMENT CLOCK MANIPULATION CHECK!");
-				}
 				peer = Modules.get(AddressBook.class).updatePeerSystem(peer, system);
 
 				if (system.getNID() == null || EUID.ZERO.equals(system.getNID())) {
