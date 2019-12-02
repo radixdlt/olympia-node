@@ -20,11 +20,6 @@ public class LazyRequestDelivererModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		// main target
-		bind(RequestDeliverer.class).to(LazyRequestDeliverer.class);
-
-		Multibinder<Resource> ownedResourcesBinder = Multibinder.newSetBinder(binder(), Resource.class, Owned.class);
-		ownedResourcesBinder.addBinding().to(LazyRequestDeliverer.class);
-
 		bind(LazyRequestDelivererConfiguration.class).toInstance(configuration);
 	}
 }

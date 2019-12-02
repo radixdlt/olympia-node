@@ -3,6 +3,7 @@ package com.radixdlt.tempo.delivery;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.radixdlt.common.AID;
@@ -34,7 +35,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 @Singleton
-public final class LazyRequestDeliverer implements Resource, RequestDeliverer {
+public final class LazyRequestDeliverer {
 	private static final Logger log = Logging.getLogger("deliverer.request");
 
 	private static final int DEFAULT_REQUEST_QUEUE_CAPACITY = 8192;
@@ -102,7 +103,27 @@ public final class LazyRequestDeliverer implements Resource, RequestDeliverer {
 		pendingDeliveries.complete(ledgerEntry.getAID(), DeliveryResult.success(ledgerEntry, peer));
 	}
 
-	@Override
+	/**
+	 * Attempt to deliver the atoms associated with the given AIDs.
+	 *
+	 * This method may not have any effect if the atoms have already been delivered,
+	 * the peer is unavailable or concurrent requests for the same AIDs are already pending.
+	 * @param peer The peer at which the aids are present
+	 * @return a future containing the result of this request
+	 */
+	public CompletableFuture<DeliveryResult> deliver(AID aid, Peer peer) {
+		return deliver(ImmutableSet.of(aid), ImmutableSet.of(peer)).get(aid);
+	}
+
+	/**
+	 * Attempt to deliver the atoms associated with the given AIDs.
+	 *
+	 * This method may not have any effect if the atoms have already been delivered,
+	 * the peer is unavailable or concurrent requests for the same AIDs are already pending.
+	 * @param aids The {@link AID}s to request
+	 * @param peers The peers at which the aids are present
+	 * @return a future containing the results of this request
+	 */
 	public Map<AID, CompletableFuture<DeliveryResult>> deliver(Set<AID> aids, Set<Peer> peers) {
 		// early out if there is nothing to do
 		if (aids.isEmpty()) {
@@ -179,12 +200,6 @@ public final class LazyRequestDeliverer implements Resource, RequestDeliverer {
 		retriesByNid.forEach((nid, aids) -> requestDelivery(aids, peersByNid.get(nid)));
 	}
 
-	@Override
-	public void reset() {
-		pendingDeliveries.reset();
-	}
-
-	@Override
 	public void close() {
 		requestThreadPool.stop();
 	}

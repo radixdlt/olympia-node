@@ -152,7 +152,6 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 		}
 	}
 
-	@Override
 	public void reset() {
 		Transaction transaction = null;
 		try {

@@ -8,11 +8,6 @@ import java.io.Closeable;
 // TODO figure out better scheme for resource allocation / ownership
 public interface Resource extends Closeable {
 	/**
-	 * Resets this resource and removes all contents.
-	 */
-	void reset();
-
-	/**
 	 * Closes any underlying resources.
 	 */
 	void close();

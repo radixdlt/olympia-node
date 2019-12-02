@@ -1,6 +1,5 @@
 package com.radixdlt.tempo.consensus;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.radixdlt.common.AID;
@@ -8,7 +7,7 @@ import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerEntry;
 import com.radixdlt.tempo.LedgerEntryObserver;
 import com.radixdlt.tempo.Scheduler;
-import com.radixdlt.tempo.delivery.RequestDeliverer;
+import com.radixdlt.tempo.delivery.LazyRequestDeliverer;
 import com.radixdlt.tempo.store.LedgerEntryStoreView;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
@@ -42,7 +41,7 @@ public final class RSSConsensus implements LedgerEntryObserver, Consensus {
 	private final LedgerEntryStoreView storeView;
 	private final AtomConfidence atomConfidence;
 	private final SampleRetriever sampleRetriever;
-	private final RequestDeliverer requestDeliverer;
+	private final LazyRequestDeliverer requestDeliverer;
 	private final SampleNodeSelector sampleNodeSelector;
 	private final AddressBook addressBook;
 
@@ -56,7 +55,7 @@ public final class RSSConsensus implements LedgerEntryObserver, Consensus {
 		LedgerEntryStoreView storeView,
 		AtomConfidence atomConfidence,
 		SampleRetriever sampleRetriever,
-		RequestDeliverer requestDeliverer,
+		LazyRequestDeliverer requestDeliverer,
 		SampleNodeSelector sampleNodeSelector,
 		AddressBook addressBook
 	) {

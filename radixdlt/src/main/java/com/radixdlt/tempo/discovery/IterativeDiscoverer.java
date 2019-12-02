@@ -28,6 +28,7 @@ import org.radix.network2.addressbook.PeersUpdatedEvent;
 import org.radix.network2.messaging.MessageCentral;
 import org.radix.utils.SimpleThreadPool;
 
+import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -42,7 +43,7 @@ import java.util.stream.Stream;
  * Discoverer which uses logical clocks as a cursor to iterate through all relevant {@link AID}s of known nodes
  */
 @Singleton
-public final class IterativeDiscoverer implements Resource, AtomDiscoverer {
+public final class IterativeDiscoverer implements AtomDiscoverer {
 	private static final Logger log = Logging.getLogger("discoverer.iterative");
 
 	private static final int DEFAULT_REQUEST_TIMEOUT_SECONDS = 5;
@@ -224,12 +225,6 @@ public final class IterativeDiscoverer implements Resource, AtomDiscoverer {
 		discoveryListeners.forEach(listener -> listener.accept(ImmutableSet.copyOf(aids), peer));
 	}
 
-	@Override
-	public void reset() {
-		discoveryState.reset();
-	}
-
-	@Override
 	public void close() {
 		requestThreadPool.stop();
 		messageCentral.removeListener(IterativeDiscoveryRequestMessage.class, this::onRequest);

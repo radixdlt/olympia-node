@@ -24,7 +24,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 @Singleton
-public final class BerkeleyLCCursorStore implements Resource, LCCursorStore {
+public final class BerkeleyLCCursorStore implements LCCursorStore {
 	private static final String LC_CURSOR_STORE_NAME = "tempo2.sync.iterative.cursors";
 	private static final Logger logger = Logging.getLogger("store.cursors");
 

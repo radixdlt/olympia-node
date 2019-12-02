@@ -41,4 +41,8 @@ public interface LedgerEntryStore extends LedgerEntryStoreView, Resource {
 	 * @return Whether all {@link AID}s were successfully deleted
 	 */
 	LedgerEntryStoreResult replace(Set<AID> aids, LedgerEntry ledgerEntry, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices);
+
+	void reset();
+
+	void close();
 }
