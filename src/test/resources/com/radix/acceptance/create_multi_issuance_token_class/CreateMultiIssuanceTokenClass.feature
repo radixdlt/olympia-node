@@ -10,6 +10,16 @@ Feature: Create Multi Issuance Token Class
     When I submit a mutable-supply token-creation request with name "RLAU Test", symbol "RLAU", initialSupply 1000000000 and granularity 1
     Then I can observe the atom being accepted
 
+  Scenario: 1a: Creating a unique token with blank name
+    Given I have access to a suitable Radix network
+    When I submit a mutable-supply token-creation request with name "", symbol "RLAU", initialSupply 1000000000 and granularity 1
+    Then I can observe the atom being accepted
+
+  Scenario: 1b: Creating a unique token with blank description
+    Given I have access to a suitable Radix network
+    When I submit a mutable-supply token-creation request with name "", description "", symbol "RLAU", initialSupply 1000000000 and granularity 1
+    Then I can observe the atom being accepted
+
   Scenario: 2: Creating a conflicting token
     Given I have access to a suitable Radix network
     When I submit a mutable-supply token-creation request with symbol "RLAU"

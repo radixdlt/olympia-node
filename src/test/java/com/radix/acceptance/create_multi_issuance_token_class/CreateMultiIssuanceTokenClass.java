@@ -97,6 +97,17 @@ public class CreateMultiIssuanceTokenClass {
 		createToken(CreateTokenAction.TokenSupplyType.MUTABLE);
 	}
 
+	@When("^I submit a mutable-supply token-creation request with name \"([^\"]*)\", description \"([^\"]*)\", symbol \"([^\"]*)\", initialSupply (\\d+) and granularity (\\d+)$")
+	public void i_submit_a_mutable_supply_token_creation_request_with_name_description_symbol_initialSupply_and_granularity(
+			String name, String description, String symbol, int initialSupply, int granularity) {
+		this.properties.put(NAME, name);
+		this.properties.put(DESCRIPTION, description);
+		this.properties.put(SYMBOL, symbol);
+		this.properties.put(INITIAL_SUPPLY, Long.toString(initialSupply));
+		this.properties.put(GRANULARITY, Long.toString(granularity));
+		createToken(CreateTokenAction.TokenSupplyType.MUTABLE);
+	}
+
 	@When("^I submit a mutable-supply token-creation request with symbol \"([^\"]*)\" and initialSupply (\\d+)$")
 	public void i_submit_a_mutable_supply_token_creation_request_with_symbol_and_initialSupply(String symbol, int initialSupply) {
 		this.properties.put(SYMBOL, symbol);

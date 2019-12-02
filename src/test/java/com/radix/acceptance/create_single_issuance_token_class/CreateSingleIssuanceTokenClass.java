@@ -85,6 +85,18 @@ public class CreateSingleIssuanceTokenClass {
 		createToken(CreateTokenAction.TokenSupplyType.FIXED);
 	}
 
+	@When("^I submit a fixed-supply token-creation request "
+			+ "with name \"([^\"]*)\", description \"([^\"]*)\", symbol \"([^\"]*)\", totalSupply (\\d+) scaled and granularity (\\d+) scaled$")
+	public void i_submit_a_fixed_supply_token_creation_request_with_name_description_symbol_totalSupply_scaled_and_granularity_scaled(
+			String name, String description, String symbol, int totalSupply, int granularity) {
+		this.properties.put(NAME, name);
+		this.properties.put(DESCRIPTION, description);
+		this.properties.put(SYMBOL, symbol);
+		this.properties.put(TOTAL_SUPPLY, Integer.toString(totalSupply));
+		this.properties.put(GRANULARITY, Integer.toString(granularity));
+		createToken(CreateTokenAction.TokenSupplyType.FIXED);
+	}
+
 	@When("^I submit a fixed-supply token-creation request with symbol \"([^\"]*)\" and totalSupply (\\d+) scaled$")
 	public void i_submit_a_fixed_supply_token_creation_request_with_symbol_totalSupply(String symbol, int totalSupply) {
 		this.properties.put(SYMBOL, symbol);
