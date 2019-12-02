@@ -7,7 +7,6 @@ import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.middleware2.processing.RadixEngineAtomProcessor;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.tempo.store.berkeley.BerkeleyCommitmentStore;
 import com.radixdlt.universe.Universe;
 import com.stijndewitt.undertow.cors.AllowAll;
 import com.stijndewitt.undertow.cors.Filter;
@@ -140,23 +139,7 @@ public final class RadixHttpServer {
     }
 
     private void addDevelopmentOnlyRoutesTo(RoutingHandler handler) {
-	    addGetRoute("/api/internal/tempo/commitments/next", exchange -> {
-	    	if (!Modules.isAvailable(BerkeleyCommitmentStore.class)) {
-	    		respond("Commitment store is unavailable", exchange);
-	    		return;
-		    }
-
-		    String positionStr = getParameter(exchange, "position").orElse("0");
-		    String limitStr = getParameter(exchange, "limit").orElse("10");
-		    long position = Long.parseLong(positionStr);
-		    int limit = Integer.parseInt(limitStr);
-
-		    ImmutableList<Hash> commitments = Modules.get(BerkeleyCommitmentStore.class).getNext(LocalSystem.getInstance().getNID(), position, limit);
-		    String commitmentsJson = Serialization.getDefault().toJson(commitments, DsonOutput.Output.ALL);
-		    respond(commitmentsJson, exchange);
-	    }, handler);
-
-        addGetRoute("/api/internal/spamathon", exchange -> {
+	    addGetRoute("/api/internal/spamathon", exchange -> {
             String iterations = getParameter(exchange, "iterations").orElse(null);
             String batching = getParameter(exchange, "batching").orElse(null);
             String rate = getParameter(exchange, "rate").orElse(null);

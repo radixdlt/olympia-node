@@ -2,7 +2,6 @@ package com.radixdlt.tempo.store.berkeley;
 
 import com.google.inject.AbstractModule;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.tempo.store.CommitmentStore;
 import com.radixdlt.tempo.store.LCCursorStore;
 import com.radixdlt.tempo.store.LedgerEntryStore;
 import com.radixdlt.tempo.store.LedgerEntryStoreView;
@@ -15,7 +14,6 @@ public class BerkeleyStoreModule extends AbstractModule {
 	protected void configure() {
 		bind(LedgerEntryStore.class).to(BerkeleyLedgerEntryStore.class);
 		bind(LedgerEntryStoreView.class).to(BerkeleyLedgerEntryStore.class);
-		bind(CommitmentStore.class).to(BerkeleyCommitmentStore.class);
 		bind(LCCursorStore.class).to(BerkeleyLCCursorStore.class);
 
 		// FIXME: remove static dependency on modules for DatabaseEnvironment

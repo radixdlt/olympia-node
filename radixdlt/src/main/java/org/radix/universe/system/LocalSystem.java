@@ -120,14 +120,6 @@ public final class LocalSystem extends RadixSystem
 	}
 
 	private ECKeyPair keyPair;
-	private long 	revertClock = 0;
-	private long 	revertTimestamp = 0;
-	private int 	revertPlanck = 0;
-	private Hash 	revertCommitment = Hash.ZERO_HASH;
-
-	@JsonProperty("accumulator")
-	@DsonOutput(Output.PERSIST)
-	private CommitmentAccumulator accumulator;
 
 	@VisibleForTesting
 	LocalSystem() throws CryptoException
@@ -135,21 +127,12 @@ public final class LocalSystem extends RadixSystem
 		super();
 
 		this.keyPair = new ECKeyPair();
-		this.accumulator = new CommitmentAccumulator(Hash.BITS);
 	}
-
-	/*	public LocalSystem(ECKeyPair key, String agent, int agentVersion, int protocolVersion, ShardSpace shards, int port)
-	{
-		super(key, agent, agentVersion, protocolVersion, shards, port);
-
-		this.accumulator = new CommitmentAccumulator(Hash.BITS);
-	}*/
 
 	public LocalSystem(ECKeyPair key, String agent, int agentVersion, int protocolVersion, long shards)
 	{
 		super(key.getPublicKey(), agent, agentVersion, protocolVersion, new ShardSpace(key.getUID().getShard(), shards), defaultTransports());
 		this.keyPair = key;
-		this.accumulator = new CommitmentAccumulator(Hash.BITS);
 	}
 
 	@Override
@@ -165,54 +148,6 @@ public final class LocalSystem extends RadixSystem
 	private void setKeyPair(ECKeyPair keyPair) {
 		this.keyPair = keyPair;
 		super.setKey(keyPair.getPublicKey());
-	}
-
-	public void revert()
-	{
-		setPlanck(this.revertPlanck);
-		setTimestamp(this.revertTimestamp);
-		setClock(this.revertClock);
-		setCommitment(this.revertCommitment);
-	}
-
-	public synchronized void set(long clock, Hash commitment, long timestamp)
-	{
-		this.revertPlanck = getPlanck();
-		this.revertTimestamp = getTimestamp();
-		this.revertClock = getClock().get();
-		this.revertCommitment = getCommitment();
-
-		getClock().set(clock);
-
-		// TODO commitment
-
-		if (Modules.get(Universe.class).toPlanck(timestamp, Offset.NONE) > getPlanck())
-			setPlanck(Modules.get(Universe.class).toPlanck(timestamp, Offset.NONE));
-
-
-		if (timestamp > getTimestamp())
-			setTimestamp(timestamp);
-	}
-
-	public synchronized Pair<Long, Hash> update(AID hash, long timestamp)
-	{
-		this.revertPlanck = getPlanck();
-		this.revertClock = getClock().get();
-		this.revertTimestamp = getTimestamp();
-		this.revertCommitment = getCommitment();
-
-		getClock().incrementAndGet();
-
-		this.accumulator.put(hash);
-		this.setCommitment(this.accumulator.getHash());
-
-		if (Modules.get(Universe.class).toPlanck(timestamp, Offset.NONE) > getPlanck())
-			setPlanck(Modules.get(Universe.class).toPlanck(timestamp, Offset.NONE));
-
-		if (timestamp > getTimestamp())
-			setTimestamp(timestamp);
-
-		return new Pair<>(getClock().get(), getCommitment());
 	}
 
 	// Property "ledger" - 1 getter

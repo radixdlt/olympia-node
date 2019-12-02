@@ -7,7 +7,6 @@ import com.google.inject.multibindings.Multibinder;
 import com.google.inject.name.Names;
 import com.radixdlt.common.EUID;
 import com.radixdlt.ledger.Ledger;
-import com.radixdlt.tempo.Attestor;
 import com.radixdlt.tempo.Owned;
 import com.radixdlt.tempo.PeerSupplier;
 import com.radixdlt.tempo.PeerSupplierAdapter;
@@ -15,9 +14,7 @@ import com.radixdlt.tempo.Resource;
 import com.radixdlt.tempo.Scheduler;
 import com.radixdlt.tempo.SingleThreadedScheduler;
 import com.radixdlt.tempo.Tempo;
-import com.radixdlt.tempo.TempoAttestor;
 import com.radixdlt.tempo.WallclockTimeSupplier;
-import com.radixdlt.tempo.store.CommitmentStore;
 import com.radixdlt.tempo.store.LCCursorStore;
 import com.radixdlt.tempo.store.LedgerEntryStore;
 import org.radix.modules.Modules;
@@ -42,13 +39,11 @@ public class TempoModule extends AbstractModule {
 		// TODO ugly way of assigning resource "ownership", should be cleaner
 		Multibinder<Resource> ownedResourcesBinder = Multibinder.newSetBinder(binder(), Resource.class, Owned.class);
 		ownedResourcesBinder.addBinding().to(LedgerEntryStore.class);
-		ownedResourcesBinder.addBinding().to(CommitmentStore.class);
 		ownedResourcesBinder.addBinding().to(LCCursorStore.class);
 
 		// dependencies
 		bind(MessageCentral.class).toInstance(Modules.get(MessageCentral.class));
 		bind(Scheduler.class).toProvider(SingleThreadedScheduler::new);
-		bind(Attestor.class).to(TempoAttestor.class);
 		bind(WallclockTimeSupplier.class).toInstance(Time::currentTimestamp);
 		bind(Ledger.class).to(Tempo.class).in(Scopes.SINGLETON);
 

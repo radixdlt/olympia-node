@@ -108,7 +108,7 @@ public class BerkeleyCursorTests extends RadixTestWithStores {
 		for (LedgerEntry ledgerEntry : ledgerEntries) {
 			LedgerIndex uniqueIndex = new LedgerIndex(ENTRY_INDEX_PREFIX, ledgerEntry.getAID().getBytes());
 			Modules.get(Tempo.class).store(ledgerEntry, ImmutableSet.of(uniqueIndex), ImmutableSet.of(index));
-			Modules.get(LedgerEntryStore.class).commit(ledgerEntry.getAID(), logicalClock++);
+			Modules.get(LedgerEntryStore.class).commit(ledgerEntry.getAID());
 		}
 
 		LedgerCursor cursor = Modules.get(Tempo.class).search(LedgerIndex.LedgerIndexType.DUPLICATE, index, LedgerSearchMode.EXACT);

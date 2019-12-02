@@ -38,17 +38,11 @@ public class RadixSystem extends BasicContainer
 	@DsonOutput(Output.ALL)
 	private int				planck;
 
-	@JsonProperty("commitment")
-	@DsonOutput(Output.ALL)
-	private Hash			commitment;
-
 	private String 			agent;
 
 	@JsonProperty("shards")
 	@DsonOutput(Output.ALL)
 	private ShardSpace		shards;
-
-	private LogicalClock	clock;
 
 	@JsonProperty("timestamp")
 	@DsonOutput(Output.ALL)
@@ -66,8 +60,6 @@ public class RadixSystem extends BasicContainer
 
 		this.agent = "unknown";
 		this.agentVersion = 0;
-		this.clock = new LogicalClock();
-		this.commitment = Hash.ZERO_HASH;
 		this.planck = 0;
 		this.protocolVersion = 0;
 		this.shards = new ShardSpace(0l, new ShardRange(0, 0));
@@ -82,8 +74,6 @@ public class RadixSystem extends BasicContainer
 
  		this.agent = system.getAgent();
  		this.agentVersion = system.getAgentVersion();
- 		this.clock = new LogicalClock(system.getClock().get());
- 		this.commitment = system.getCommitment();
 		this.planck = system.getPlanck();
 		this.protocolVersion = system.getProtocolVersion();
 		this.shards = new ShardSpace(system.getKey().getUID().getShard(), system.getShards().getRange());
@@ -193,26 +183,6 @@ public class RadixSystem extends BasicContainer
 		this.shards = shardSpace;
 	}
 
-	public LogicalClock getClock()
-	{
-		return clock;
-	}
-
-	void setClock(long clock)
-	{
-		this.clock.set(clock);
-	}
-
-	public Hash getCommitment()
-	{
-		return this.commitment;
-	}
-
-	void setCommitment(Hash commitment)
-	{
-		this.commitment = commitment;
-	}
-
 	public Stream<TransportInfo> supportedTransports() {
 		return transports.stream();
 	}
@@ -248,19 +218,6 @@ public class RadixSystem extends BasicContainer
 		this.agent = (String) props.get("name");
 		this.agentVersion = ((Number) props.get("version")).intValue();
 		this.protocolVersion = ((Number) props.get("protocol")).intValue();
-	}
-
-	// Property "clock" - 1 getter, 1 setter
-	// Better may be to make LogicalClock serializable
-	@JsonProperty("clock")
-	@DsonOutput(Output.ALL)
-	long getJsonClock() {
-		return this.clock.get();
-	}
-
-	@JsonProperty("clock")
-	void setJsonClock(long value) {
-		this.clock = new LogicalClock(value);
 	}
 
 	// Property "key" - 1 getter, 1 setter

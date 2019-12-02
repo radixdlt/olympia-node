@@ -20,7 +20,6 @@ import com.radixdlt.tempo.delivery.RequestDeliverer;
 import com.radixdlt.tempo.discovery.AtomDiscoverer;
 import com.radixdlt.tempo.store.LedgerEntryConflict;
 import com.radixdlt.tempo.store.LedgerEntryStoreResult;
-import com.radixdlt.tempo.store.CommitmentStore;
 import com.radixdlt.tempo.store.LedgerEntryStore;
 import com.radixdlt.tempo.store.LedgerEntryStoreView;
 import org.radix.logging.Logger;
@@ -45,9 +44,7 @@ public final class Tempo implements Ledger, Closeable {
 
 	private final EUID self;
 	private final LedgerEntryStore ledgerEntryStore;
-	private final CommitmentStore commitmentStore;
 	private final Consensus consensus;
-	private final Attestor attestor;
 
 	private final Set<Resource> ownedResources;
 	private final Set<AtomDiscoverer> atomDiscoverers;
@@ -61,9 +58,7 @@ public final class Tempo implements Ledger, Closeable {
 	public Tempo(
 		@Named("self") EUID self,
 		LedgerEntryStore ledgerEntryStore,
-		CommitmentStore commitmentStore,
 		Consensus consensus,
-		Attestor attestor,
 		@Owned Set<Resource> ownedResources,
 		Set<AtomDiscoverer> atomDiscoverers,
 		RequestDeliverer requestDeliverer,
@@ -71,9 +66,7 @@ public final class Tempo implements Ledger, Closeable {
 	) {
 		this.self = Objects.requireNonNull(self);
 		this.ledgerEntryStore = Objects.requireNonNull(ledgerEntryStore);
-		this.commitmentStore = Objects.requireNonNull(commitmentStore);
 		this.consensus = Objects.requireNonNull(consensus);
-		this.attestor = Objects.requireNonNull(attestor);
 		this.ownedResources = Objects.requireNonNull(ownedResources);
 		this.atomDiscoverers = Objects.requireNonNull(atomDiscoverers);
 		this.requestDeliverer = Objects.requireNonNull(requestDeliverer);
@@ -153,12 +146,9 @@ public final class Tempo implements Ledger, Closeable {
 
 	private void processConsensusAction(ConsensusAction action) {
 		if (action.getType() == ConsensusAction.Type.COMMIT) {
-			// TODO do something with commitment
 			LedgerEntry preference = action.getPreference();
-			TemporalCommitment temporalCommitment = attestor.attestTo(preference.getAID());
-			log.info("Committing to '" + preference.getAID() + "' at " + temporalCommitment.getLogicalClock());
-			this.ledgerEntryStore.commit(preference.getAID(), temporalCommitment.getLogicalClock());
-			this.commitmentStore.put(self, temporalCommitment.getLogicalClock(), temporalCommitment.getCommitment());
+			log.info("Committing to '" + preference.getAID());
+			this.ledgerEntryStore.commit(preference.getAID());
 			injectObservation(LedgerObservation.commit(preference));
 		} else {
 			throw new IllegalStateException("Unknown consensus action type: " + action.getType());
