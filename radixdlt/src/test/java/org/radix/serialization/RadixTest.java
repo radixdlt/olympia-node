@@ -6,6 +6,7 @@ import com.radixdlt.universe.Universe;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.mockito.stubbing.Answer;
 import org.radix.modules.Modules;
 import org.radix.properties.RuntimeProperties;
 import org.radix.shards.ShardSpace;
@@ -39,6 +40,8 @@ public abstract class RadixTest
 		when(systemMetaData.getUID()).thenReturn(new EUID(2));
 
 		final NtpService ntpService = mock(NtpService.class);
+		when(ntpService.getUTCTimeMS()).thenAnswer((Answer<Long>) invocation -> System.currentTimeMillis());
+
 		Serialization serialization = Serialization.getDefault();
 
 		final LocalSystem localSystem = mock(LocalSystem.class);

@@ -36,8 +36,6 @@ import org.radix.logging.Logging;
 import org.radix.modules.Modules;
 import org.radix.properties.RuntimeProperties;
 import org.radix.shards.ShardSpace;
-import org.radix.time.RTP.RTPService;
-import org.radix.time.RTP.RTPTimestamp;
 import org.radix.time.Time;
 import org.radix.universe.system.LocalSystem;
 
@@ -238,67 +236,10 @@ public final class RadixHttpServer {
             respond(result, exchange);
         }, handler);
 
-		// RTP
-        addGetRoute("/api/rtp", exchange -> {
-			JSONObject rtp = new JSONObject();
-			// fixme might not be a deviation available if NTP switched off
-			rtp.put("deviation", Modules.get(RTPService.class).getDeviation());
-			rtp.put("offset", Modules.get(RTPService.class).getOffset());
-			rtp.put("radix_time", Modules.get(RTPService.class).getUTCTimeMS());
-			rtp.put("last_group_size", Modules.get(RTPService.class).getLastGroupSize());
-			if(Modules.get(RuntimeProperties.class).get("rtp.naughty", false))
-				rtp.put("skew", Modules.get(RuntimeProperties.class).get("rtp.skew", 10));
-			else
-				rtp.put("skew", 0);
-			rtp.put("max_deviation", Modules.get(RTPService.class).getMaxDeviation());
-			rtp.put("min_deviation", Modules.get(RTPService.class).getMinDeviation());
-			rtp.put("max_offset", Modules.get(RTPService.class).getMaxOffset());
-			rtp.put("min_offset", Modules.get(RTPService.class).getMinOffset());
-			rtp.put("max_group_size", Modules.get(RTPService.class).getMaxGroupSize());
-			rtp.put("bad_rounds", Modules.get(RTPService.class).getBadRounds());
-			rtp.put("is_synchronized", Modules.get(RTPService.class).isSynchronized());
-			rtp.put("number_of_peers", Modules.get(RTPService.class).getNumberOfPeers());
-
-			respond(rtp, exchange);
-		}, handler);
-
         addGetRoute("/api/latest-events", exchange -> {
         	JSONArray events = new JSONArray();
         	atomsService.getEvents().forEach(events::put);
         	respond(events, exchange);
-		}, handler);
-
-        addGetRoute("/api/rtp/params", exchange -> {
-        	JSONObject rtp = new JSONObject();
-			rtp.put("rtp.interval", Modules.get(RTPService.class).getInterval());
-			rtp.put("rtp.age_threshold", Modules.get(RTPService.class).getAgeThreshold());
-			rtp.put("rtp.decay", Modules.get(RTPService.class).getDecay());
-			rtp.put("rtp.min_group_size", Modules.get(RTPService.class).getMinGroupSize());
-			rtp.put("rtp.max_group_size", Modules.get(RTPService.class).getGroupSize());
-			rtp.put("rtp.max_correction", Modules.get(RTPService.class).getMaxCorrection());
-			rtp.put("rtp.alpha_trim_factor", Modules.get(RTPService.class).getAlphaTrimFactor());
-			rtp.put("rtp.target_coupling", Modules.get(RTPService.class).getTargetCoupling());
-			rtp.put("rtp.min_offset", Modules.get(RTPService.class).getRtpMinOffset());
-			rtp.put("rtp.max_deviation", Modules.get(RTPService.class).getRtpMaxDeviation());
-			rtp.put("rtp.max_start_deviation", Modules.get(RTPService.class).getMaxStartDeviation());
-			rtp.put("rtp.test", Modules.get(RTPService.class).getTest());
-			rtp.put("rtp.naughty", Modules.get(RTPService.class).getNaughty());
-			rtp.put("rtp.skew", Modules.get(RTPService.class).getSkew());
-			rtp.put("rtp.clock_offset", Modules.get(RTPService.class).getClockOffset());
-
-			respond(rtp, exchange);
-		}, handler);
-
-        addGetRoute("/api/rtp/timestamp", exchange -> {
-			RTPTimestamp ts = Modules.get(RTPService.class).getRTPTimestamp();
-			JSONObject rtp = new JSONObject();
-			rtp.put("nid", ts.getNid().toString());
-			rtp.put("radix_time", ts.getRadixTime());
-			rtp.put("node_time", ts.getNodeTime());
-			rtp.put("isSynced", ts.isSynced());
-			rtp.put("ntp_deviation", ts.getNtpDeviation());
-
-			respond(rtp, exchange);
 		}, handler);
 
 		// keep-alive

@@ -38,7 +38,6 @@ import org.radix.routing.Routing;
 import com.radixdlt.serialization.Serialization;
 import org.radix.shards.Shards;
 import org.radix.time.Time;
-import org.radix.time.RTP.RTPService;
 import com.radixdlt.universe.Universe;
 import org.radix.universe.system.LocalSystem;
 import org.radix.utils.IOUtils;
@@ -214,20 +213,6 @@ public class Radix extends Plugin
 		 */
 		MessageCentral messageCentral = createMessageCentral(Modules.get(RuntimeProperties.class));
 		Modules.put(MessageCentral.class, messageCentral);
-
-		/*
-		 * RTP
-		 */
-		try
-		{
-			if (!Modules.get(RuntimeProperties.class).has("rtp.disable")) {
-				Modules.getInstance().start(new RTPService());
-			}
-		}
-		catch (Exception ex)
-		{
-			throw new ModuleStartException("Failure setting up RTP", ex, this);
-		}
 
 		/*
 		 * ROUTING
