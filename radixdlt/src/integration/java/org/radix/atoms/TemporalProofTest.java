@@ -13,7 +13,6 @@ import org.radix.exceptions.ValidationException;
 import org.radix.integration.RadixTest;
 import org.radix.time.TemporalProof;
 import org.radix.time.TemporalProofNotValidException;
-import org.radix.time.TemporalProofValidator;
 import org.radix.time.TemporalVertex;
 
 import java.util.List;
