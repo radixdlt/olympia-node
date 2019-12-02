@@ -20,7 +20,7 @@ public class LedgerEntryGenerator {
     public List<LedgerEntry> createLedgerEntries(ECKeyPair identity, int n) {
         Random r = new Random(); // SecureRandom not required for test
         // Super paranoid way of doing things
-        Map<AID, LedgerEntry> ledgerEntries = new LinkedHashMap(n);
+        Map<AID, LedgerEntry> ledgerEntries = new LinkedHashMap<>(n);
         while (ledgerEntries.size() < n) {
             LedgerEntry ledgerEntry = createLedgerEntry(identity, r);
             ledgerEntries.put(ledgerEntry.getAID(), ledgerEntry);
