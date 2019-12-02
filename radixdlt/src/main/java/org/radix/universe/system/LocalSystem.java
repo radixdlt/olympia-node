@@ -129,13 +129,6 @@ public final class LocalSystem extends RadixSystem
 		this.keyPair = new ECKeyPair();
 	}
 
-	/*	public LocalSystem(ECKeyPair key, String agent, int agentVersion, int protocolVersion, ShardSpace shards, int port)
-	{
-		super(key, agent, agentVersion, protocolVersion, shards, port);
-
-		this.accumulator = new CommitmentAccumulator(Hash.BITS);
-	}*/
-
 	public LocalSystem(ECKeyPair key, String agent, int agentVersion, int protocolVersion, long shards)
 	{
 		super(key.getPublicKey(), agent, agentVersion, protocolVersion, new ShardSpace(key.getUID().getShard(), shards), defaultTransports());
@@ -155,33 +148,6 @@ public final class LocalSystem extends RadixSystem
 	private void setKeyPair(ECKeyPair keyPair) {
 		this.keyPair = keyPair;
 		super.setKey(keyPair.getPublicKey());
-	}
-
-	public synchronized void set(long clock, Hash commitment, long timestamp)
-	{
-		getClock().set(clock);
-
-		// TODO commitment
-
-		if (Modules.get(Universe.class).toPlanck(timestamp, Offset.NONE) > getPlanck())
-			setPlanck(Modules.get(Universe.class).toPlanck(timestamp, Offset.NONE));
-
-
-		if (timestamp > getTimestamp())
-			setTimestamp(timestamp);
-	}
-
-	public synchronized Pair<Long, Hash> update(AID hash, long timestamp)
-	{
-		getClock().incrementAndGet();
-
-		if (Modules.get(Universe.class).toPlanck(timestamp, Offset.NONE) > getPlanck())
-			setPlanck(Modules.get(Universe.class).toPlanck(timestamp, Offset.NONE));
-
-		if (timestamp > getTimestamp())
-			setTimestamp(timestamp);
-
-		return new Pair<>(getClock().get(), getCommitment());
 	}
 
 	// Property "ledger" - 1 getter
