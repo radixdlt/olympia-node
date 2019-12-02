@@ -15,7 +15,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import com.radixdlt.ledger.Ledger;
 import com.radixdlt.ledger.LedgerCursor;
 import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerSearchMode;
@@ -25,6 +24,7 @@ import com.radixdlt.middleware2.store.EngineAtomIndices;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.ledger.LedgerEntry;
+import com.radixdlt.tempo.store.LedgerEntryStore;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -67,11 +67,11 @@ public class AtomsService {
 	private final EvictingQueue<String> eventRingBuffer = EvictingQueue.create(64);
 	private final RadixEngineAtomProcessor radixEngineAtomProcessor;
 	private final AtomToBinaryConverter atomToBinaryConverter;
-	private final Ledger ledger;
+	private final LedgerEntryStore store;
 
-	public AtomsService(Ledger ledger, RadixEngineAtomProcessor radixEngineAtomProcessor, AtomToBinaryConverter atomToBinaryConverter) {
+	public AtomsService(LedgerEntryStore store, RadixEngineAtomProcessor radixEngineAtomProcessor, AtomToBinaryConverter atomToBinaryConverter) {
 		this.radixEngineAtomProcessor = Objects.requireNonNull(radixEngineAtomProcessor);
-		this.ledger = Objects.requireNonNull(ledger);
+		this.store = Objects.requireNonNull(store);
 		this.atomToBinaryConverter = Objects.requireNonNull(atomToBinaryConverter);
 
 		Events.getInstance().register(AtomEvent.class, (event) -> {
@@ -182,7 +182,7 @@ public class AtomsService {
 
 	public Observable<ObservedAtomEvents> getAtomEvents(AtomQuery atomQuery) {
 		return observer -> {
-			final AtomEventObserver atomEventObserver = new AtomEventObserver(atomQuery, observer, executorService, ledger, atomToBinaryConverter);
+			final AtomEventObserver atomEventObserver = new AtomEventObserver(atomQuery, observer, executorService, store, atomToBinaryConverter);
 			atomEventObserver.start();
 			this.atomEventObservers.add(atomEventObserver);
 
@@ -207,7 +207,7 @@ public class AtomsService {
 				shard++
 		) {
 			LedgerIndex fromIndex = LedgerIndex.from(EngineAtomIndices.toByteArray(SHARD_INDEX_PREFIX, shard));
-			LedgerCursor searchResultCursor = ledger.search(LedgerIndex.LedgerIndexType.DUPLICATE, fromIndex, LedgerSearchMode.RANGE);
+			LedgerCursor searchResultCursor = store.search(LedgerIndex.LedgerIndexType.DUPLICATE, fromIndex, LedgerSearchMode.RANGE);
 			AID atomId;
 			while ((atomId = searchResultCursor.get()) != null) {
 				array.put(atomId.toString());
@@ -218,7 +218,7 @@ public class AtomsService {
 	}
 
 	public JSONObject getAtomsByAtomId(AID atomId) throws JSONException {
-		Optional<LedgerEntry> ledgerEntryOptional = ledger.get(atomId);
+		Optional<LedgerEntry> ledgerEntryOptional = store.get(atomId);
 		if (ledgerEntryOptional.isPresent()) {
 			LedgerEntry ledgerEntry = ledgerEntryOptional.get();
 			Atom atom = atomToBinaryConverter.toAtom(ledgerEntry.getContent());

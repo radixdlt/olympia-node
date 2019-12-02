@@ -6,6 +6,7 @@ import java.util.List;
 import com.radixdlt.ledger.Ledger;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.middleware2.processing.RadixEngineAtomProcessor;
+import com.radixdlt.tempo.store.LedgerEntryStore;
 import org.radix.RadixServer;
 import org.radix.api.http.RadixHttpServer;
 import org.radix.modules.Module;
@@ -18,13 +19,13 @@ import org.radix.modules.exceptions.ModuleStopException;
 public class API extends Service {
 
 	private RadixHttpServer radixHttpServer;
-	private Ledger ledger;
+	private LedgerEntryStore store;
 	private RadixEngineAtomProcessor radixEngineAtomProcessor;
 	private AtomToBinaryConverter atomToBinaryConverter;
 
-	public API(Ledger ledger, RadixEngineAtomProcessor radixEngineAtomProcessor, AtomToBinaryConverter atomToBinaryConverter) {
+	public API(LedgerEntryStore store, RadixEngineAtomProcessor radixEngineAtomProcessor, AtomToBinaryConverter atomToBinaryConverter) {
 		super();
-		this.ledger = ledger;
+		this.store = store;
 		this.radixEngineAtomProcessor = radixEngineAtomProcessor;
 		this.atomToBinaryConverter = atomToBinaryConverter;
 	}
@@ -35,11 +36,11 @@ public class API extends Service {
 
 	@Override
 	public void start_impl() throws ModuleException {
-		if (Modules.get(RadixServer.class) == null) {
+		if (!Modules.isAvailable(RadixServer.class)) {
 			throw new ModuleStartException("API is enabled but no RadixServer is available", this);
 		}
 
-		radixHttpServer = new RadixHttpServer(ledger, radixEngineAtomProcessor, atomToBinaryConverter);
+		radixHttpServer = new RadixHttpServer(store, radixEngineAtomProcessor, atomToBinaryConverter);
 		radixHttpServer.start();
 	}
 

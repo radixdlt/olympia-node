@@ -1,12 +1,9 @@
 package org.radix.api.http;
 
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.crypto.Hash;
-import com.radixdlt.ledger.Ledger;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.middleware2.processing.RadixEngineAtomProcessor;
-import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.tempo.store.LedgerEntryStore;
 import com.radixdlt.universe.Universe;
 import com.stijndewitt.undertow.cors.AllowAll;
 import com.stijndewitt.undertow.cors.Filter;
@@ -61,16 +58,16 @@ public final class RadixHttpServer {
     private final RadixJsonRpcServer jsonRpcServer;
     private final InternalService internalService;
 
-	public RadixHttpServer(Ledger ledger, RadixEngineAtomProcessor radixEngineAtomProcessor, AtomToBinaryConverter atomToBinaryConverter) {
+	public RadixHttpServer(LedgerEntryStore store, RadixEngineAtomProcessor radixEngineAtomProcessor, AtomToBinaryConverter atomToBinaryConverter) {
 		this.peers = new ConcurrentHashMap<>();
-		this.atomsService = new AtomsService(ledger, radixEngineAtomProcessor, atomToBinaryConverter);
+		this.atomsService = new AtomsService(store, radixEngineAtomProcessor, atomToBinaryConverter);
 		this.jsonRpcServer = new RadixJsonRpcServer(
 				Modules.get(Serialization.class),
-				ledger,
+				store,
 				atomsService,
 				AtomSchemas.get()
 		);
-		this.internalService = InternalService.getInstance(ledger, radixEngineAtomProcessor);
+		this.internalService = InternalService.getInstance(store, radixEngineAtomProcessor);
 	}
 
     private Undertow server;
