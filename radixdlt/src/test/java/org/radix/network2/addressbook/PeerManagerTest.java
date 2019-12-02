@@ -34,7 +34,6 @@ import org.radix.network2.transport.udp.UDPConstants;
 import org.radix.properties.RuntimeProperties;
 import org.radix.serialization.RadixTest;
 import org.radix.serialization.TestSetupUtils;
-import org.radix.time.RTP.RTPService;
 import org.radix.time.Timestamps;
 import org.radix.universe.system.LocalSystem;
 import org.radix.universe.system.RadixSystem;
@@ -103,10 +102,6 @@ public class PeerManagerTest extends RadixTest {
         Modules.put(Interfaces.class, interfaces);
         when(Modules.get(Universe.class).getPlanck()).thenReturn(10000L);
         RuntimeProperties properties = Modules.get(RuntimeProperties.class);
-
-        RTPService rtpService = mock(RTPService.class);
-        when(rtpService.getUTCTimeMS()).thenAnswer((Answer<Long>) invocation -> System.currentTimeMillis());
-        Modules.put(RTPService.class, rtpService);
 
         when(properties.get(eq("network.peers.heartbeat.delay"), any())).thenReturn(100);
         when(properties.get(eq("network.peers.heartbeat.interval"), any())).thenReturn(200);
@@ -193,7 +188,6 @@ public class PeerManagerTest extends RadixTest {
         peerManager.stop_impl();
         Modules.remove(MessageCentral.class);
         Modules.remove(Interfaces.class);
-        Modules.remove(RTPService.class);
     }
 
     @Test

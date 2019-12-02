@@ -5,15 +5,13 @@ import org.radix.modules.Modules;
 import org.radix.modules.Plugin;
 import org.radix.modules.exceptions.ModuleException;
 import org.radix.properties.RuntimeProperties;
-import org.radix.time.RTP.RTPService;
 
 public class Time extends Plugin
 {
 	public static final int MAXIMUM_DRIFT = 30;
 
 	public static long currentTimestamp() {
-		return Modules.isAvailable(RTPService.class) ? Modules.get(RTPService.class).getUTCTimeMS() :
-				Modules.isAvailable(NtpService.class) ? Modules.get(NtpService.class).getUTCTimeMS() : System.currentTimeMillis();
+		return Modules.isAvailable(NtpService.class) ? Modules.get(NtpService.class).getUTCTimeMS() : System.currentTimeMillis();
 
 	}
 
