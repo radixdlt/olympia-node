@@ -38,10 +38,6 @@ public class RadixSystem extends BasicContainer
 	@DsonOutput(Output.ALL)
 	private int				planck;
 
-	@JsonProperty("commitment")
-	@DsonOutput(Output.ALL)
-	private Hash			commitment;
-
 	private String 			agent;
 
 	@JsonProperty("shards")
@@ -67,7 +63,6 @@ public class RadixSystem extends BasicContainer
 		this.agent = "unknown";
 		this.agentVersion = 0;
 		this.clock = new LogicalClock();
-		this.commitment = Hash.ZERO_HASH;
 		this.planck = 0;
 		this.protocolVersion = 0;
 		this.shards = new ShardSpace(0l, new ShardRange(0, 0));
@@ -83,7 +78,6 @@ public class RadixSystem extends BasicContainer
  		this.agent = system.getAgent();
  		this.agentVersion = system.getAgentVersion();
  		this.clock = new LogicalClock(system.getClock().get());
- 		this.commitment = system.getCommitment();
 		this.planck = system.getPlanck();
 		this.protocolVersion = system.getProtocolVersion();
 		this.shards = new ShardSpace(system.getKey().getUID().getShard(), system.getShards().getRange());
@@ -201,16 +195,6 @@ public class RadixSystem extends BasicContainer
 	void setClock(long clock)
 	{
 		this.clock.set(clock);
-	}
-
-	public Hash getCommitment()
-	{
-		return this.commitment;
-	}
-
-	void setCommitment(Hash commitment)
-	{
-		this.commitment = commitment;
 	}
 
 	public Stream<TransportInfo> supportedTransports() {
