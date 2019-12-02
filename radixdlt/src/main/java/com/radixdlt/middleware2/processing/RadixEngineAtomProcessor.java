@@ -57,7 +57,15 @@ public class RadixEngineAtomProcessor {
 					radixEngine.store(atom, new AtomEventListener() {
 					});
 				} catch (Exception e) {
-					log.error("Atom processing failed", e);
+					log.error("Storing atom failed", e);
+				}
+			} else if (ledgerObservation.getType() == LedgerObservation.Type.COMMIT) {
+				try {
+					Atom atom = atomToBinaryConverter.toAtom(ledgerObservation.getEntry().getContent());
+					log.info("Committing to '" + ledgerObservation.getEntry().getAID());
+					// TODO actual commit mechanism stub
+				} catch (Exception e) {
+					log.error("Committing atom failed", e);
 				}
 			}
 		}

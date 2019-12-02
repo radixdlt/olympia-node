@@ -52,7 +52,6 @@ public final class Tempo implements Ledger, Closeable {
 	private final Set<LedgerEntryObserver> observers; // TODO external ledgerObservations and internal observers is ambiguous
 
 	private final BlockingQueue<LedgerObservation> ledgerObservations;
-	private final SimpleThreadPool<ConsensusAction> consensusProcessor;
 
 	@Inject
 	public Tempo(
@@ -73,7 +72,6 @@ public final class Tempo implements Ledger, Closeable {
 		this.observers = Objects.requireNonNull(observers);
 
 		this.ledgerObservations = new LinkedBlockingQueue<>(INBOUND_QUEUE_CAPACITY);
-		this.consensusProcessor = new SimpleThreadPool<>("Tempo consensus processing", 1, consensus::observe, this::processConsensusAction, log);
 
 		// hook up components
 		for (AtomDiscoverer atomDiscoverer : this.atomDiscoverers) {
@@ -144,17 +142,6 @@ public final class Tempo implements Ledger, Closeable {
 		}));
 	}
 
-	private void processConsensusAction(ConsensusAction action) {
-		if (action.getType() == ConsensusAction.Type.COMMIT) {
-			LedgerEntry preference = action.getPreference();
-			log.info("Committing to '" + preference.getAID());
-			this.ledgerEntryStore.commit(preference.getAID());
-			injectObservation(LedgerObservation.commit(preference));
-		} else {
-			throw new IllegalStateException("Unknown consensus action type: " + action.getType());
-		}
-	}
-
 	private void injectObservation(LedgerObservation observation) {
 		if (!this.ledgerObservations.add(observation)) {
 			// TODO more graceful queue full handling
@@ -182,7 +169,6 @@ public final class Tempo implements Ledger, Closeable {
 	}
 
 	public void start() {
-		this.consensusProcessor.start();
 		Modules.put(LedgerEntryStoreView.class, this.ledgerEntryStore);
 	}
 
