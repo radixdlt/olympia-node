@@ -2,12 +2,9 @@ package com.radixdlt.tempo;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
-import com.google.inject.name.Named;
 import com.radixdlt.common.AID;
-import com.radixdlt.common.EUID;
 import com.radixdlt.ledger.Ledger;
 import com.radixdlt.ledger.LedgerObservation;
-import com.radixdlt.tempo.consensus.Consensus;
 import com.radixdlt.tempo.delivery.LazyRequestDeliverer;
 import com.radixdlt.tempo.discovery.AtomDiscoverer;
 import com.radixdlt.tempo.store.LedgerEntryStore;
@@ -30,9 +27,7 @@ public final class Tempo implements Ledger, Closeable {
 	private static final Logger log = Logging.getLogger("tempo");
 	private static final int INBOUND_QUEUE_CAPACITY = 16384;
 
-	private final EUID self;
 	private final LedgerEntryStore ledgerEntryStore;
-	private final Consensus consensus;
 
 	private final Set<AtomDiscoverer> atomDiscoverers;
 	private final LazyRequestDeliverer requestDeliverer;
@@ -42,16 +37,12 @@ public final class Tempo implements Ledger, Closeable {
 
 	@Inject
 	public Tempo(
-		@Named("self") EUID self,
 		LedgerEntryStore ledgerEntryStore,
-		Consensus consensus,
 		Set<AtomDiscoverer> atomDiscoverers,
 		LazyRequestDeliverer requestDeliverer,
 		Set<LedgerEntryObserver> observers
 	) {
-		this.self = Objects.requireNonNull(self);
 		this.ledgerEntryStore = Objects.requireNonNull(ledgerEntryStore);
-		this.consensus = Objects.requireNonNull(consensus);
 		this.atomDiscoverers = Objects.requireNonNull(atomDiscoverers);
 		this.requestDeliverer = Objects.requireNonNull(requestDeliverer);
 		this.observers = Objects.requireNonNull(observers);
