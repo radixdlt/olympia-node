@@ -3,7 +3,6 @@ package org.radix.api;
 import java.util.Collections;
 import java.util.List;
 
-import com.radixdlt.ledger.Ledger;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.middleware2.processing.RadixEngineAtomProcessor;
 import com.radixdlt.tempo.store.LedgerEntryStore;

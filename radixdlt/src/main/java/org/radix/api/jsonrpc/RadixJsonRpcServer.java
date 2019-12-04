@@ -2,7 +2,6 @@ package org.radix.api.jsonrpc;
 
 import com.google.common.io.CharStreams;
 import com.radixdlt.atomos.RadixAddress;
-import com.radixdlt.ledger.Ledger;
 import com.radixdlt.ledger.LedgerCursor;
 import com.radixdlt.ledger.LedgerIndex;
 import com.radixdlt.ledger.LedgerSearchMode;
@@ -31,7 +30,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**

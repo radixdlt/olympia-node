@@ -1,11 +1,11 @@
 package com.radixdlt.tempo;
 
-import com.radixdlt.ledger.exceptions.LedgerException;
+import com.radixdlt.ledger.exceptions.ConsensusException;
 
 /**
  * A Tempo exception
  */
-public class TempoException extends LedgerException {
+public class TempoException extends ConsensusException {
 	public TempoException(String message) {
 		super(message);
 	}

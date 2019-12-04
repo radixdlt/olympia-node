@@ -3,9 +3,9 @@ package com.radixdlt.ledger;
 import java.util.Objects;
 
 /**
- * Observation of an {@link LedgerEntry} made in a {@link Ledger}
+ * Observation of an {@link LedgerEntry} made in {@link Consensus}
  */
-public final class LedgerObservation {
+public final class ConsensusObservation {
 	public enum Type {
 		ADOPT,
 		COMMIT
@@ -14,7 +14,7 @@ public final class LedgerObservation {
 	private final Type type;
 	private final LedgerEntry entry;
 
-	private LedgerObservation(Type type, LedgerEntry entry) {
+	private ConsensusObservation(Type type, LedgerEntry entry) {
 		this.type = type;
 		this.entry = entry;
 	}
@@ -27,13 +27,13 @@ public final class LedgerObservation {
 		return entry;
 	}
 
-	public static LedgerObservation adopt(LedgerEntry entry) {
+	public static ConsensusObservation adopt(LedgerEntry entry) {
 		Objects.requireNonNull(entry, "newAtom is required");
-		return new LedgerObservation(Type.ADOPT, entry);
+		return new ConsensusObservation(Type.ADOPT, entry);
 	}
 
-	public static LedgerObservation commit(LedgerEntry entry) {
+	public static ConsensusObservation commit(LedgerEntry entry) {
 		Objects.requireNonNull(entry, "atom is required");
-		return new LedgerObservation(Type.COMMIT, entry);
+		return new ConsensusObservation(Type.COMMIT, entry);
 	}
 }

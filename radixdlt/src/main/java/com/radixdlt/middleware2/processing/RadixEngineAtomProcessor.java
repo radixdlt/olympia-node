@@ -8,8 +8,8 @@ import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.AtomEventListener;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.ledger.Ledger;
-import com.radixdlt.ledger.LedgerObservation;
+import com.radixdlt.ledger.Consensus;
+import com.radixdlt.ledger.ConsensusObservation;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.tempo.store.LedgerEntryStore;
@@ -31,7 +31,7 @@ public class RadixEngineAtomProcessor {
 
 	private boolean interrupted;
 
-	private final Ledger ledger;
+	private final Consensus consensus;
 	private final LedgerEntryStore store;
 	private final RadixEngine radixEngine;
 	private final Serialization serialization;
@@ -39,13 +39,13 @@ public class RadixEngineAtomProcessor {
 
 	@Inject
 	public RadixEngineAtomProcessor(
-		Ledger ledger,
+		Consensus consensus,
 		LedgerEntryStore store,
 		RadixEngine radixEngine,
 		Serialization serialization,
 		AtomToBinaryConverter atomToBinaryConverter
 	) {
-		this.ledger = ledger;
+		this.consensus = consensus;
 		this.store = store;
 		this.radixEngine = radixEngine;
 		this.serialization = serialization;
@@ -54,19 +54,19 @@ public class RadixEngineAtomProcessor {
 
 	private void process() throws InterruptedException {
 		while (!interrupted) {
-			LedgerObservation ledgerObservation = ledger.observe();
-			if (ledgerObservation.getType() == LedgerObservation.Type.ADOPT) {
+			ConsensusObservation consensusObservation = consensus.observe();
+			if (consensusObservation.getType() == ConsensusObservation.Type.ADOPT) {
 				try {
-					Atom atom = atomToBinaryConverter.toAtom(ledgerObservation.getEntry().getContent());
+					Atom atom = atomToBinaryConverter.toAtom(consensusObservation.getEntry().getContent());
 					radixEngine.store(atom, new AtomEventListener() {
 					});
 				} catch (Exception e) {
 					log.error("Storing atom failed", e);
 				}
-			} else if (ledgerObservation.getType() == LedgerObservation.Type.COMMIT) {
+			} else if (consensusObservation.getType() == ConsensusObservation.Type.COMMIT) {
 				try {
-					Atom atom = atomToBinaryConverter.toAtom(ledgerObservation.getEntry().getContent());
-					log.info("Committing to '" + ledgerObservation.getEntry().getAID());
+					Atom atom = atomToBinaryConverter.toAtom(consensusObservation.getEntry().getContent());
+					log.info("Committing to '" + consensusObservation.getEntry().getAID());
 					// TODO actual commit mechanism stub
 				} catch (Exception e) {
 					log.error("Committing atom failed", e);

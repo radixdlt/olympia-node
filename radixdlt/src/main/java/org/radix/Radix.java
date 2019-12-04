@@ -5,7 +5,7 @@ import java.lang.reflect.Modifier;
 import java.security.SecureRandom;
 import java.security.Security;
 
-import com.radixdlt.ledger.Ledger;
+import com.radixdlt.ledger.Consensus;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.middleware2.processing.RadixEngineAtomProcessor;
 import com.radixdlt.tempo.Tempo;
@@ -278,7 +278,7 @@ public class Radix extends Plugin
 		/**
 		 * TEMPO
 		 */
-		ledger = (Tempo) globalInjector.getInjector().getInstance(Ledger.class);
+		ledger = (Tempo) globalInjector.getInjector().getInstance(Consensus.class);
 		ledger.start();
 
 		/*

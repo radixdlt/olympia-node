@@ -1,7 +1,6 @@
 package org.radix.api.services;
 
 import com.radixdlt.common.Atom;
-import com.radixdlt.ledger.Ledger;
 import com.radixdlt.middleware2.processing.RadixEngineAtomProcessor;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
