@@ -5,7 +5,7 @@ import java.util.List;
 
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.middleware2.processing.RadixEngineAtomProcessor;
-import com.radixdlt.tempo.store.LedgerEntryStore;
+import com.radixdlt.store.LedgerEntryStore;
 import org.radix.RadixServer;
 import org.radix.api.http.RadixHttpServer;
 import org.radix.modules.Module;

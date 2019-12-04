@@ -5,9 +5,9 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.radixdlt.TempoModule;
 import com.radixdlt.middleware2.MiddlewareModule;
-import com.radixdlt.tempo.delivery.LazyRequestDelivererModule;
-import com.radixdlt.tempo.discovery.IterativeDiscovererModule;
-import com.radixdlt.tempo.store.berkeley.BerkeleyStoreModule;
+import com.radixdlt.delivery.LazyRequestDelivererModule;
+import com.radixdlt.discovery.IterativeDiscovererModule;
+import com.radixdlt.store.berkeley.BerkeleyStoreModule;
 import org.radix.modules.Modules;
 import org.radix.properties.RuntimeProperties;
 

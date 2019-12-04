@@ -4,14 +4,14 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.Atom;
-import com.radixdlt.ledger.LedgerCursor;
-import com.radixdlt.ledger.LedgerIndex;
-import com.radixdlt.ledger.LedgerSearchMode;
+import com.radixdlt.store.SearchCursor;
+import com.radixdlt.store.StoreIndex;
+import com.radixdlt.store.LedgerSearchMode;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.middleware2.store.EngineAtomIndices;
 
-import com.radixdlt.ledger.LedgerEntry;
-import com.radixdlt.tempo.store.LedgerEntryStore;
+import com.radixdlt.store.LedgerEntry;
+import com.radixdlt.store.LedgerEntryStore;
 import org.radix.api.AtomQuery;
 import org.radix.api.observable.AtomEventDto.AtomEventType;
 import org.radix.atoms.events.AtomEventWithDestinations;
@@ -108,10 +108,10 @@ public class AtomEventObserver {
 
 		try {
 			long count = 0;
-			LedgerIndex destinationIndex = new LedgerIndex(EngineAtomIndices.IndexType.DESTINATION.getValue(), atomQuery.getDestination().toByteArray());
-			LedgerCursor ledgerCursor = store.search(LedgerIndex.LedgerIndexType.DUPLICATE, destinationIndex, LedgerSearchMode.EXACT);
+			StoreIndex destinationIndex = new StoreIndex(EngineAtomIndices.IndexType.DESTINATION.getValue(), atomQuery.getDestination().toByteArray());
+			SearchCursor cursor = store.search(StoreIndex.LedgerIndexType.DUPLICATE, destinationIndex, LedgerSearchMode.EXACT);
 			Set<AID> processedAids = Sets.newHashSet();
-			while (ledgerCursor != null) {
+			while (cursor != null) {
 				if (count >= 200) {
 					synchronized(this) {
 						this.currentRunnable = currentRunnable.thenRunAsync(() -> {
@@ -130,8 +130,8 @@ public class AtomEventObserver {
 				}
 
 				List<Atom> atoms = new ArrayList<>();
-				while (ledgerCursor != null && atoms.size() < BATCH_SIZE) {
-					AID aid = ledgerCursor.get();
+				while (cursor != null && atoms.size() < BATCH_SIZE) {
+					AID aid = cursor.get();
 					processedAids.add(aid);
 					Optional<LedgerEntry> ledgerEntry = store.get(aid);
 					ledgerEntry.ifPresent(
@@ -140,7 +140,7 @@ public class AtomEventObserver {
 							atoms.add(atom);
 						}
 					);
-					ledgerCursor = ledgerCursor.next();
+					cursor = cursor.next();
 				}
 				if (!atoms.isEmpty()) {
 					final Stream<AtomEventDto> atomEvents = atoms.stream()

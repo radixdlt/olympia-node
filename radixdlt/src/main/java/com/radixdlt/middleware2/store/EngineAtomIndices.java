@@ -7,7 +7,7 @@ import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.engine.RadixEngineAtom;
-import com.radixdlt.ledger.LedgerIndex;
+import com.radixdlt.store.StoreIndex;
 import com.radixdlt.middleware.RadixEngineUtils;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationUtils;
@@ -38,10 +38,10 @@ public class EngineAtomIndices {
 		}
 	}
 
-	private final Set<LedgerIndex> uniqueIndices;
-	private final Set<LedgerIndex> duplicateIndices;
+	private final Set<StoreIndex> uniqueIndices;
+	private final Set<StoreIndex> duplicateIndices;
 
-	public EngineAtomIndices(Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
+	public EngineAtomIndices(Set<StoreIndex> uniqueIndices, Set<StoreIndex> duplicateIndices) {
 		this.uniqueIndices = uniqueIndices;
 		this.duplicateIndices = duplicateIndices;
 	}
@@ -53,8 +53,8 @@ public class EngineAtomIndices {
 		} catch (RadixEngineUtils.CMAtomConversionException e) {
 			throw new RuntimeException("EngineAtomIndices creation failed", e);
 		}
-		ImmutableSet.Builder<LedgerIndex> uniqueIndices = ImmutableSet.builder();
-		ImmutableSet.Builder<LedgerIndex> duplicateIndices = ImmutableSet.builder();
+		ImmutableSet.Builder<StoreIndex> uniqueIndices = ImmutableSet.builder();
+		ImmutableSet.Builder<StoreIndex> duplicateIndices = ImmutableSet.builder();
 
 		Map<Particle, Spin> curSpins = radixEngineAtom.getCMInstruction().getMicroInstructions().stream()
 				.filter(CMMicroInstruction::isCheckSpin)
@@ -83,7 +83,7 @@ public class EngineAtomIndices {
 					}
 
 					final byte[] indexableBytes = toByteArray(indexType, i.getParticle().getHID());
-					uniqueIndices.add(new LedgerIndex(indexableBytes));
+					uniqueIndices.add(new StoreIndex(indexableBytes));
 				});
 
 
@@ -95,7 +95,7 @@ public class EngineAtomIndices {
 				.collect(ImmutableSet.toImmutableSet());
 
 		for (EUID euid : destinations) {
-			duplicateIndices.add(new LedgerIndex(toByteArray(IndexType.DESTINATION, euid)));
+			duplicateIndices.add(new StoreIndex(toByteArray(IndexType.DESTINATION, euid)));
 		}
 
 		radixEngineAtom.getCMInstruction().getMicroInstructions().stream().filter(CMMicroInstruction::isCheckSpin)
@@ -106,16 +106,16 @@ public class EngineAtomIndices {
 					final Serialization serialization = Modules.get(Serialization.class);
 					final String idForClass = serialization.getIdForClass(checkSpin.getParticle().getClass());
 					final EUID numericClassId = SerializationUtils.stringToNumericID(idForClass);
-					duplicateIndices.add(new LedgerIndex(IndexType.PARTICLE_CLASS.getValue(), toByteArray(IndexType.PARTICLE_CLASS, numericClassId)));
+					duplicateIndices.add(new StoreIndex(IndexType.PARTICLE_CLASS.getValue(), toByteArray(IndexType.PARTICLE_CLASS, numericClassId)));
 				});
 		return new EngineAtomIndices(uniqueIndices.build(), duplicateIndices.build());
 	}
 
-	public Set<LedgerIndex> getUniqueIndices() {
+	public Set<StoreIndex> getUniqueIndices() {
 		return uniqueIndices;
 	}
 
-	public Set<LedgerIndex> getDuplicateIndices() {
+	public Set<StoreIndex> getDuplicateIndices() {
 		return duplicateIndices;
 	}
 

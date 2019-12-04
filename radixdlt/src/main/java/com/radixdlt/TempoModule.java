@@ -2,18 +2,14 @@ package com.radixdlt;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
-import com.google.inject.Singleton;
 import com.google.inject.name.Names;
 import com.radixdlt.common.EUID;
-import com.radixdlt.ledger.Consensus;
-import com.radixdlt.tempo.PeerSupplier;
-import com.radixdlt.tempo.PeerSupplierAdapter;
-import com.radixdlt.tempo.Scheduler;
-import com.radixdlt.tempo.SingleThreadedScheduler;
-import com.radixdlt.tempo.Tempo;
-import com.radixdlt.tempo.WallclockTimeSupplier;
+import com.radixdlt.consensus.Consensus;
+import com.radixdlt.consensus.tempo.Scheduler;
+import com.radixdlt.consensus.tempo.SingleThreadedScheduler;
+import com.radixdlt.consensus.tempo.Tempo;
+import com.radixdlt.consensus.tempo.WallclockTimeSupplier;
 import org.radix.modules.Modules;
-import org.radix.network2.addressbook.AddressBook;
 import org.radix.network2.messaging.MessageCentral;
 import org.radix.time.Time;
 import org.radix.universe.system.LocalSystem;
@@ -36,7 +32,5 @@ public class TempoModule extends AbstractModule {
 		bind(Scheduler.class).toProvider(SingleThreadedScheduler::new);
 		bind(WallclockTimeSupplier.class).toInstance(Time::currentTimestamp);
 		bind(Consensus.class).to(Tempo.class).in(Scopes.SINGLETON);
-
-		bind(PeerSupplier.class).toProvider(() -> new PeerSupplierAdapter(() -> Modules.get(AddressBook.class))).in(Singleton.class);
 	}
 }

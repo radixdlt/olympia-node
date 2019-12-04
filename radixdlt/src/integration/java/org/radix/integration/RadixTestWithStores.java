@@ -6,10 +6,10 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.name.Names;
 import com.radixdlt.common.EUID;
-import com.radixdlt.tempo.Tempo;
-import com.radixdlt.tempo.delivery.LazyRequestDeliverer;
-import com.radixdlt.tempo.store.LedgerEntryStore;
-import com.radixdlt.tempo.store.berkeley.BerkeleyStoreModule;
+import com.radixdlt.consensus.tempo.Tempo;
+import com.radixdlt.delivery.LazyRequestDeliverer;
+import com.radixdlt.store.LedgerEntryStore;
+import com.radixdlt.store.berkeley.BerkeleyStoreModule;
 import org.junit.After;
 import org.junit.Before;
 import org.radix.database.DatabaseEnvironment;
@@ -57,8 +57,7 @@ public class RadixTestWithStores extends RadixTest
 		Tempo tempo = new Tempo(
 			atomStore,
 			ImmutableSet.of(),
-			mock(LazyRequestDeliverer.class),
-			ImmutableSet.of()
+			mock(LazyRequestDeliverer.class)
 		);
 			Modules.put(Tempo.class, tempo);
 			Modules.put(LedgerEntryStore.class, atomStore);

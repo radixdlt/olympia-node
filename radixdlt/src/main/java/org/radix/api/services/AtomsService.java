@@ -15,16 +15,16 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import com.radixdlt.ledger.LedgerCursor;
-import com.radixdlt.ledger.LedgerIndex;
-import com.radixdlt.ledger.LedgerSearchMode;
+import com.radixdlt.store.SearchCursor;
+import com.radixdlt.store.StoreIndex;
+import com.radixdlt.store.LedgerSearchMode;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.middleware2.processing.RadixEngineAtomProcessor;
 import com.radixdlt.middleware2.store.EngineAtomIndices;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.ledger.LedgerEntry;
-import com.radixdlt.tempo.store.LedgerEntryStore;
+import com.radixdlt.store.LedgerEntry;
+import com.radixdlt.store.LedgerEntryStore;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -43,7 +43,7 @@ import com.radixdlt.common.AID;
 import org.radix.events.Events;
 import org.radix.shards.Shards;
 
-import static com.radixdlt.tempo.store.berkeley.LedgerEntryIndices.SHARD_INDEX_PREFIX;
+import static com.radixdlt.store.berkeley.LedgerEntryIndices.SHARD_INDEX_PREFIX;
 
 public class AtomsService {
 	private static int  NUMBER_OF_THREADS = 8;
@@ -206,8 +206,8 @@ public class AtomsService {
 				shard < Shards.fromGroup(Integer.parseInt(to == null ? from : to), (1 << 20)).getHigh();
 				shard++
 		) {
-			LedgerIndex fromIndex = LedgerIndex.from(EngineAtomIndices.toByteArray(SHARD_INDEX_PREFIX, shard));
-			LedgerCursor searchResultCursor = store.search(LedgerIndex.LedgerIndexType.DUPLICATE, fromIndex, LedgerSearchMode.RANGE);
+			StoreIndex fromIndex = StoreIndex.from(EngineAtomIndices.toByteArray(SHARD_INDEX_PREFIX, shard));
+			SearchCursor searchResultCursor = store.search(StoreIndex.LedgerIndexType.DUPLICATE, fromIndex, LedgerSearchMode.RANGE);
 			AID atomId;
 			while ((atomId = searchResultCursor.get()) != null) {
 				array.put(atomId.toString());
