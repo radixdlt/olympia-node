@@ -7,11 +7,8 @@ import com.radixdlt.consensus.Consensus;
 import com.radixdlt.consensus.ConsensusObservation;
 import com.radixdlt.delivery.LazyRequestDeliverer;
 import com.radixdlt.discovery.AtomDiscoverer;
-import com.radixdlt.store.LedgerEntryStore;
-import com.radixdlt.store.LedgerEntryStoreView;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.modules.Modules;
 import org.radix.network2.addressbook.Peer;
 
 import java.io.Closeable;
@@ -27,27 +24,22 @@ public final class Tempo implements Consensus, Closeable {
 	private static final Logger log = Logging.getLogger("tempo");
 	private static final int INBOUND_QUEUE_CAPACITY = 16384;
 
-	private final LedgerEntryStore ledgerEntryStore;
-
-	private final Set<AtomDiscoverer> atomDiscoverers;
 	private final LazyRequestDeliverer requestDeliverer;
 
 	private final BlockingQueue<ConsensusObservation> consensusObservations;
 
 	@Inject
 	public Tempo(
-		LedgerEntryStore ledgerEntryStore,
 		Set<AtomDiscoverer> atomDiscoverers,
 		LazyRequestDeliverer requestDeliverer
 	) {
-		this.ledgerEntryStore = Objects.requireNonNull(ledgerEntryStore);
-		this.atomDiscoverers = Objects.requireNonNull(atomDiscoverers);
+		Objects.requireNonNull(atomDiscoverers);
 		this.requestDeliverer = Objects.requireNonNull(requestDeliverer);
 
 		this.consensusObservations = new LinkedBlockingQueue<>(INBOUND_QUEUE_CAPACITY);
 
 		// hook up components
-		for (AtomDiscoverer atomDiscoverer : this.atomDiscoverers) {
+		for (AtomDiscoverer atomDiscoverer : atomDiscoverers) {
 			atomDiscoverer.addListener(this::onDiscovered);
 		}
 	}
@@ -72,14 +64,8 @@ public final class Tempo implements Consensus, Closeable {
 		}
 	}
 
-	public void start() {
-		Modules.put(LedgerEntryStoreView.class, this.ledgerEntryStore);
-	}
-
 	@Override
 	public void close() {
-		Modules.remove(LedgerEntryStoreView.class);
-		this.ledgerEntryStore.close();
 		this.requestDeliverer.close();
 	}
 }

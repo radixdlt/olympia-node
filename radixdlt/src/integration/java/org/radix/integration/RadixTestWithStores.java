@@ -55,7 +55,6 @@ public class RadixTestWithStores extends RadixTest
 
 		LedgerEntryStore atomStore = injector.getInstance(LedgerEntryStore.class);
 		Tempo tempo = new Tempo(
-			atomStore,
 			ImmutableSet.of(),
 			mock(LazyRequestDeliverer.class)
 		);

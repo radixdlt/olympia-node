@@ -13,6 +13,7 @@ import com.radixdlt.consensus.ConsensusObservation;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.LedgerEntryStore;
+import com.radixdlt.store.LedgerEntryStoreView;
 import com.radixdlt.universe.Universe;
 import org.json.JSONObject;
 import org.radix.logging.Logger;
@@ -94,6 +95,8 @@ public class RadixEngineAtomProcessor {
 	}
 
 	public void start() {
+		Modules.put(LedgerEntryStoreView.class, this.store);
+
 		initGenesis();
 		new Thread(() -> {
 			try {
@@ -105,6 +108,8 @@ public class RadixEngineAtomProcessor {
 	}
 
 	public void stop() {
+		Modules.remove(LedgerEntryStoreView.class);
+		this.store.close();
 		interrupted = true;
 	}
 

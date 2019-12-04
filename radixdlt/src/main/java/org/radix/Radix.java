@@ -64,7 +64,7 @@ public class Radix extends Plugin
 
 	private RadixEngineAtomProcessor atomProcessor;
 	private AtomToBinaryConverter atomToBinaryConverter;
-	private Tempo ledger;
+	private Tempo consensus;
 
 	/**
 	 * @param args
@@ -278,8 +278,7 @@ public class Radix extends Plugin
 		/**
 		 * TEMPO
 		 */
-		ledger = (Tempo) globalInjector.getInjector().getInstance(Consensus.class);
-		ledger.start();
+		consensus = (Tempo) globalInjector.getInjector().getInstance(Consensus.class);
 
 		/*
 		 * CP
