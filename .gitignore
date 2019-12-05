@@ -32,6 +32,7 @@ RADIXDB/
 radixdlt/RADIXDB/
 radixdlt/default.config
 radixdlt/logger.config
+*.ks
 *.key
 *.wallet
 
