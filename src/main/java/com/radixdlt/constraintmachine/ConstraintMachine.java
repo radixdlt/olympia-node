@@ -306,8 +306,8 @@ public final class ConstraintMachine {
 	 * @return the first error found, otherwise an empty optional
 	 */
 	Optional<CMError> validateMicroInstructions(CMValidationState validationState, List<CMMicroInstruction> microInstructions) {
-		int particleGroupIndex = 0;
-		int particleIndex = 0;
+		long particleGroupIndex = 0;
+		long particleIndex = 0;
 
 		for (CMMicroInstruction cmMicroInstruction : microInstructions) {
 			final DataPointer dp = DataPointer.ofParticle(particleGroupIndex, particleIndex);
