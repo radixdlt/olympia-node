@@ -1,8 +1,10 @@
 package com.radixdlt.middleware2.processing;
 
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.Atom;
+import com.radixdlt.consensus.tempo.Application;
 import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.constraintmachine.Particle;
@@ -12,6 +14,7 @@ import com.radixdlt.consensus.Consensus;
 import com.radixdlt.consensus.ConsensusObservation;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.store.LedgerEntryStoreView;
 import com.radixdlt.universe.Universe;
@@ -24,10 +27,17 @@ import org.radix.universe.system.LocalSystem;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Queue;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
-public class RadixEngineAtomProcessor {
+@Singleton
+public class RadixEngineAtomProcessor implements Application {
 	private static final Logger log = Logging.getLogger("middleware2.atomProcessor");
 
 	private boolean interrupted;
@@ -37,6 +47,8 @@ public class RadixEngineAtomProcessor {
 	private final RadixEngine radixEngine;
 	private final Serialization serialization;
 	private final AtomToBinaryConverter atomToBinaryConverter;
+	private final BlockingDeque<Atom> parkedAtoms;
+	private final Map<Atom, ProcessorAtomEventListener> parkedListeners;
 
 	@Inject
 	public RadixEngineAtomProcessor(
@@ -51,6 +63,14 @@ public class RadixEngineAtomProcessor {
 		this.radixEngine = radixEngine;
 		this.serialization = serialization;
 		this.atomToBinaryConverter = atomToBinaryConverter;
+		this.parkedAtoms = new LinkedBlockingDeque<>();
+		this.parkedListeners = new ConcurrentHashMap<>();
+	}
+
+	@Override
+	public LedgerEntry takeNextEntry() throws InterruptedException {
+		Atom atom = parkedAtoms.take();
+		return new LedgerEntry(atomToBinaryConverter.toLedgerEntryContent(atom), atom.getAID());
 	}
 
 	private void process() throws InterruptedException {
@@ -61,7 +81,12 @@ public class RadixEngineAtomProcessor {
 				try {
 					radixEngine.store(atom, new AtomEventListener() {
 					});
+					parkedAtoms.remove(atom);
 				} catch (Exception e) {
+					parkedListeners.computeIfPresent(atom, (a, listener) -> {
+						listener.onError(e);
+						return null;
+					});
 					log.error("Storing atom failed", e);
 				}
 
@@ -80,8 +105,8 @@ public class RadixEngineAtomProcessor {
 				"atomShards(%s) shardsSupported(%s)", atom.getShards(), shardsSupported));
 		}
 		try {
-			radixEngine.store(atom, new AtomEventListener() {
-			});
+			processorAtomEventListener.ifPresent(listener -> parkedListeners.put(atom, listener));
+			parkedAtoms.add(atom);
 		} catch (Exception e) {
 			processorAtomEventListener.ifPresent(listener -> listener.onError(e));
 			log.error("Engine processing exception ", e);

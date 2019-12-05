@@ -6,6 +6,7 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.name.Names;
 import com.radixdlt.common.EUID;
+import com.radixdlt.consensus.tempo.Application;
 import com.radixdlt.consensus.tempo.Tempo;
 import com.radixdlt.delivery.LazyRequestDeliverer;
 import com.radixdlt.store.LedgerEntryStore;
@@ -55,9 +56,9 @@ public class RadixTestWithStores extends RadixTest
 
 		LedgerEntryStore atomStore = injector.getInstance(LedgerEntryStore.class);
 		Tempo tempo = new Tempo(
+			mock(Application.class),
 			ImmutableSet.of(),
-			mock(LazyRequestDeliverer.class)
-		);
+			mock(LazyRequestDeliverer.class));
 			Modules.put(Tempo.class, tempo);
 			Modules.put(LedgerEntryStore.class, atomStore);
 	}

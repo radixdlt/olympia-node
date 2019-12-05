@@ -5,10 +5,12 @@ import com.google.inject.Scopes;
 import com.google.inject.name.Names;
 import com.radixdlt.common.EUID;
 import com.radixdlt.consensus.Consensus;
+import com.radixdlt.consensus.tempo.Application;
 import com.radixdlt.consensus.tempo.Scheduler;
 import com.radixdlt.consensus.tempo.SingleThreadedScheduler;
 import com.radixdlt.consensus.tempo.Tempo;
 import com.radixdlt.consensus.tempo.WallclockTimeSupplier;
+import com.radixdlt.middleware2.processing.RadixEngineAtomProcessor;
 import org.radix.modules.Modules;
 import org.radix.network2.messaging.MessageCentral;
 import org.radix.time.Time;
@@ -32,5 +34,7 @@ public class TempoModule extends AbstractModule {
 		bind(Scheduler.class).toProvider(SingleThreadedScheduler::new);
 		bind(WallclockTimeSupplier.class).toInstance(Time::currentTimestamp);
 		bind(Consensus.class).to(Tempo.class).in(Scopes.SINGLETON);
+
+		bind(Application.class).to(RadixEngineAtomProcessor.class);
 	}
 }
