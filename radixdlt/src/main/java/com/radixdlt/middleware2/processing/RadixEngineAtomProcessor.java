@@ -36,7 +36,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
-@Singleton
 public class RadixEngineAtomProcessor implements Application {
 	private static final Logger log = Logging.getLogger("middleware2.atomProcessor");
 

@@ -23,6 +23,7 @@ import com.radixdlt.store.LedgerEntryStoreResult;
 import com.radixdlt.store.LedgerEntryStatus;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.utils.Longs;
+import com.sleepycat.je.Cursor;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
@@ -473,7 +474,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 	@Override
 	public ImmutableList<AID> getNextCommitted(long logicalClock, int limit) {
 		long start = profiler.begin();
-		try (com.sleepycat.je.Cursor cursor = this.atoms.openCursor(null, null)) {
+		try (Cursor cursor = this.atoms.openCursor(null, null)) {
 			ImmutableList.Builder<AID> aids = ImmutableList.builder();
 			DatabaseEntry search = toPKey(PREFIX_COMMITTED, logicalClock + 1);
 			OperationStatus status = cursor.getSearchKeyRange(search, null, LockMode.DEFAULT);

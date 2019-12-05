@@ -35,6 +35,6 @@ public class TempoModule extends AbstractModule {
 		bind(WallclockTimeSupplier.class).toInstance(Time::currentTimestamp);
 		bind(Consensus.class).to(Tempo.class).in(Scopes.SINGLETON);
 
-		bind(Application.class).to(RadixEngineAtomProcessor.class);
+		bind(Application.class).to(RadixEngineAtomProcessor.class).in(Scopes.SINGLETON);
 	}
 }

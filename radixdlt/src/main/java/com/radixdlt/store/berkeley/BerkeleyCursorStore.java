@@ -21,6 +21,7 @@ import org.radix.logging.Logging;
 
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalLong;
 
 @Singleton
 public final class BerkeleyCursorStore implements CursorStore {
@@ -116,25 +117,25 @@ public final class BerkeleyCursorStore implements CursorStore {
 	}
 
 	@Override
-	public Optional<Long> get(EUID nid) {
+	public OptionalLong get(EUID nid) {
 		try {
 			DatabaseEntry key = new DatabaseEntry(toPKey(nid));
 			DatabaseEntry value = new DatabaseEntry();
 
 			OperationStatus status = this.cursors.get(null, key, value, LockMode.DEFAULT);
 			if (status == OperationStatus.NOTFOUND) {
-				return Optional.empty();
+				return OptionalLong.empty();
 			} else if (status != OperationStatus.SUCCESS) {
 				fail("Database returned status " + status + " for get operation");
 			} else {
 				long cursor = Longs.fromByteArray(value.getData());
-				return Optional.of(cursor);
+				return OptionalLong.of(cursor);
 			}
 		} catch (Exception e) {
 			fail("Error while getting cursor for '" + nid + "'", e);
 		}
 
-		return Optional.empty();
+		return OptionalLong.empty();
 	}
 
 	private byte[] toPKey(EUID nid) {

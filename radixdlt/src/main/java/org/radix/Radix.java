@@ -64,7 +64,7 @@ public class Radix extends Plugin
 
 	private RadixEngineAtomProcessor atomProcessor;
 	private AtomToBinaryConverter atomToBinaryConverter;
-	private Tempo consensus;
+	private Consensus consensus;
 
 	/**
 	 * @param args
@@ -270,14 +270,8 @@ public class Radix extends Plugin
 			throw new ModuleStartException("Failure setting up Network", ex, this);
 		}
 
-		/*
-		 * Eventually modules should be created using Google Guice injector
-		 */
+		// TODO Eventually modules should be created using Google Guice injector
 		GlobalInjector globalInjector = new GlobalInjector();
-
-		/**
-		 * TEMPO
-		 */
 		consensus = (Tempo) globalInjector.getInjector().getInstance(Consensus.class);
 
 		/*
