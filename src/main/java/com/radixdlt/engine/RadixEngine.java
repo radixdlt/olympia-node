@@ -221,8 +221,8 @@ public final class RadixEngine {
 			SimpleRadixEngineAtom cmAtom = RadixEngineUtils.toCMAtom(atom);
 			final CMInstruction cmInstruction = cmAtom.getCMInstruction();
 
-			int particleIndex = 0;
-			int particleGroupIndex = 0;
+			long particleIndex = 0;
+			long particleGroupIndex = 0;
 			for (CMMicroInstruction microInstruction : cmInstruction.getMicroInstructions()) {
 				// Treat check spin as the first push for now
 				if (!microInstruction.isCheckSpin()) {

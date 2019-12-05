@@ -9,11 +9,11 @@ import java.util.function.Supplier;
  * TODO: cache objects as they are used often
  */
 public final class DataPointer {
-	private final int particleGroupIndex;
-	private final int particleIndex;
+	private final long particleGroupIndex;
+	private final long particleIndex;
 	private final Supplier<String> pointerToIssue;
 
-	DataPointer(int particleGroupIndex, int particleIndex) {
+	DataPointer(long particleGroupIndex, long particleIndex) {
 		if (particleGroupIndex < -1) {
 			throw new IllegalArgumentException("Particle group index must be >= -1.");
 		}
@@ -24,8 +24,8 @@ public final class DataPointer {
 
 		if (particleGroupIndex < 0) {
 			if (particleIndex >= 0) {
-			throw new IllegalArgumentException("Particle index must be included with a valid particle group index");
-		}
+				throw new IllegalArgumentException("Particle index must be included with a valid particle group index");
+			}
 		}
 
 		this.particleGroupIndex = particleGroupIndex;
@@ -47,11 +47,11 @@ public final class DataPointer {
 		});
 	}
 
-	public static DataPointer ofParticleGroup(int particleGroupIndex) {
+	public static DataPointer ofParticleGroup(long particleGroupIndex) {
 		return new DataPointer(particleGroupIndex, -1);
 	}
 
-	public static DataPointer ofParticle(int particleGroupIndex, int particleIndex) {
+	public static DataPointer ofParticle(long particleGroupIndex, long particleIndex) {
 		return new DataPointer(particleGroupIndex, particleIndex);
 	}
 
@@ -59,11 +59,11 @@ public final class DataPointer {
 		return new DataPointer(-1, -1);
 	}
 
-	public int getParticleGroupIndex() {
+	public long getParticleGroupIndex() {
 		return particleGroupIndex;
 	}
 
-	public int getParticleIndex() {
+	public long getParticleIndex() {
 		return particleIndex;
 	}
 
