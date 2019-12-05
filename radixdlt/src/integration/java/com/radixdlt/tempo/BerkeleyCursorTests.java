@@ -34,9 +34,9 @@ public class BerkeleyCursorTests extends RadixTestWithStores {
 
 		List<LedgerEntry> ledgerEntries = ledgerEntryGenerator.createLedgerEntries(identity, 1);
 		LedgerIndex uniqueIndex = new LedgerIndex(ENTRY_INDEX_PREFIX, ledgerEntries.get(0).getAID().getBytes());
-		Modules.get(Tempo.class).store(ledgerEntries.get(0), ImmutableSet.of(uniqueIndex), ImmutableSet.of());
+		Modules.get(LedgerEntryStore.class).store(ledgerEntries.get(0), ImmutableSet.of(uniqueIndex), ImmutableSet.of());
 
-		LedgerCursor cursor = Modules.get(Tempo.class).search(LedgerIndex.LedgerIndexType.UNIQUE, new LedgerIndex(ENTRY_INDEX_PREFIX, ledgerEntries.get(0).getAID().getBytes()), LedgerSearchMode.EXACT);
+		LedgerCursor cursor = Modules.get(LedgerEntryStore.class).search(LedgerIndex.LedgerIndexType.UNIQUE, new LedgerIndex(ENTRY_INDEX_PREFIX, ledgerEntries.get(0).getAID().getBytes()), LedgerSearchMode.EXACT);
 
 		Assert.assertNotNull(cursor);
 		Assert.assertEquals(ledgerEntries.get(0).getAID(), cursor.get());
@@ -46,9 +46,9 @@ public class BerkeleyCursorTests extends RadixTestWithStores {
 	public void create_two_atoms__store_single_atom__search_by_non_existing_unique_aid__fail() throws Exception {
 		List<LedgerEntry> ledgerEntries = ledgerEntryGenerator.createLedgerEntries(2);
 		LedgerIndex uniqueIndex = new LedgerIndex(ENTRY_INDEX_PREFIX, ledgerEntries.get(0).getAID().getBytes());
-		Modules.get(Tempo.class).store(ledgerEntries.get(0), ImmutableSet.of(uniqueIndex), ImmutableSet.of());
+		Modules.get(LedgerEntryStore.class).store(ledgerEntries.get(0), ImmutableSet.of(uniqueIndex), ImmutableSet.of());
 
-		LedgerCursor cursor = Modules.get(Tempo.class).search(LedgerIndex.LedgerIndexType.UNIQUE, new LedgerIndex(ENTRY_INDEX_PREFIX, ledgerEntries.get(1).getAID().getBytes()), LedgerSearchMode.EXACT);
+		LedgerCursor cursor = Modules.get(LedgerEntryStore.class).search(LedgerIndex.LedgerIndexType.UNIQUE, new LedgerIndex(ENTRY_INDEX_PREFIX, ledgerEntries.get(1).getAID().getBytes()), LedgerSearchMode.EXACT);
 		Assert.assertNull(cursor);
 	}
 
@@ -60,10 +60,10 @@ public class BerkeleyCursorTests extends RadixTestWithStores {
 		List<LedgerEntry> ledgerEntries = ledgerEntryGenerator.createLedgerEntries(identity, 2);
 		for (LedgerEntry ledgerEntry : ledgerEntries) {
 			LedgerIndex uniqueIndex = new LedgerIndex(ENTRY_INDEX_PREFIX, ledgerEntry.getAID().getBytes());
-			Modules.get(Tempo.class).store(ledgerEntry, ImmutableSet.of(uniqueIndex), ImmutableSet.of(index));
+			Modules.get(LedgerEntryStore.class).store(ledgerEntry, ImmutableSet.of(uniqueIndex), ImmutableSet.of(index));
 		}
 
-		LedgerCursor cursor = Modules.get(Tempo.class).search(LedgerIndex.LedgerIndexType.DUPLICATE, index, LedgerSearchMode.EXACT);
+		LedgerCursor cursor = Modules.get(LedgerEntryStore.class).search(LedgerIndex.LedgerIndexType.DUPLICATE, index, LedgerSearchMode.EXACT);
 		Assert.assertNotNull(cursor);
 		Assert.assertEquals(ledgerEntries.get(0).getAID(), cursor.get());
 
@@ -83,10 +83,10 @@ public class BerkeleyCursorTests extends RadixTestWithStores {
 		List<LedgerEntry> ledgerEntries = ledgerEntryGenerator.createLedgerEntries(identity, 2);
 		for (LedgerEntry ledgerEntry : ledgerEntries) {
 			LedgerIndex uniqueIndex = new LedgerIndex(ENTRY_INDEX_PREFIX, ledgerEntry.getAID().getBytes());
-			Modules.get(Tempo.class).store(ledgerEntry, ImmutableSet.of(uniqueIndex), ImmutableSet.of(index));
+			Modules.get(LedgerEntryStore.class).store(ledgerEntry, ImmutableSet.of(uniqueIndex), ImmutableSet.of(index));
 		}
 
-		LedgerCursor cursor = Modules.get(Tempo.class).search(LedgerIndex.LedgerIndexType.DUPLICATE, index, LedgerSearchMode.EXACT);
+		LedgerCursor cursor = Modules.get(LedgerEntryStore.class).search(LedgerIndex.LedgerIndexType.DUPLICATE, index, LedgerSearchMode.EXACT);
 		Assert.assertNotNull(cursor);
 		Assert.assertEquals(ledgerEntries.get(0).getAID(), cursor.get());
 
@@ -107,11 +107,11 @@ public class BerkeleyCursorTests extends RadixTestWithStores {
 		int logicalClock = 0;
 		for (LedgerEntry ledgerEntry : ledgerEntries) {
 			LedgerIndex uniqueIndex = new LedgerIndex(ENTRY_INDEX_PREFIX, ledgerEntry.getAID().getBytes());
-			Modules.get(Tempo.class).store(ledgerEntry, ImmutableSet.of(uniqueIndex), ImmutableSet.of(index));
+			Modules.get(LedgerEntryStore.class).store(ledgerEntry, ImmutableSet.of(uniqueIndex), ImmutableSet.of(index));
 			Modules.get(LedgerEntryStore.class).commit(ledgerEntry.getAID());
 		}
 
-		LedgerCursor cursor = Modules.get(Tempo.class).search(LedgerIndex.LedgerIndexType.DUPLICATE, index, LedgerSearchMode.EXACT);
+		LedgerCursor cursor = Modules.get(LedgerEntryStore.class).search(LedgerIndex.LedgerIndexType.DUPLICATE, index, LedgerSearchMode.EXACT);
 		Assert.assertNotNull(cursor);
 		Assert.assertEquals(ledgerEntries.get(0).getAID(), cursor.get());
 

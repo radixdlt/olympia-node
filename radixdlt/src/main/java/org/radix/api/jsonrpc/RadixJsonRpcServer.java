@@ -11,6 +11,7 @@ import com.radixdlt.engine.AtomStatus;
 import com.radixdlt.common.AID;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.tempo.store.LedgerEntryStore;
 import io.undertow.server.HttpServerExchange;
 
 import java.util.ArrayList;
@@ -57,7 +58,7 @@ public final class RadixJsonRpcServer {
 	/**
 	 * Store to query atoms from
 	 */
-    private final Ledger ledger;
+    private final LedgerEntryStore ledger;
 
 
 	/**
@@ -65,11 +66,11 @@ public final class RadixJsonRpcServer {
 	 */
 	private final Serialization serialization;
 
-	public RadixJsonRpcServer(Serialization serialization, Ledger ledger, AtomsService atomsService, Schema atomSchema) {
+	public RadixJsonRpcServer(Serialization serialization, LedgerEntryStore ledger, AtomsService atomsService, Schema atomSchema) {
 		this(serialization, ledger, atomsService, atomSchema, DEFAULT_MAX_REQUEST_SIZE);
 	}
 
-	public RadixJsonRpcServer(Serialization serialization, Ledger ledger, AtomsService atomsService, Schema atomSchema, long maxRequestSizeBytes) {
+	public RadixJsonRpcServer(Serialization serialization, LedgerEntryStore ledger, AtomsService atomsService, Schema atomSchema, long maxRequestSizeBytes) {
 		this.serialization = Objects.requireNonNull(serialization);
 		this.ledger = Objects.requireNonNull(ledger);
 		this.atomsService = Objects.requireNonNull(atomsService);

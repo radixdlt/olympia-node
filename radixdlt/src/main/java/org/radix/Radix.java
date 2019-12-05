@@ -9,6 +9,7 @@ import com.radixdlt.ledger.Ledger;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.middleware2.processing.RadixEngineAtomProcessor;
 import com.radixdlt.tempo.Tempo;
+import com.radixdlt.tempo.store.LedgerEntryStore;
 import org.apache.commons.cli.CommandLine;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.json.JSONObject;
@@ -308,7 +309,8 @@ public class Radix extends Plugin
 		 */
 		try
 		{
-			Modules.getInstance().start(new API(ledger, atomProcessor, atomToBinaryConverter));
+			LedgerEntryStore store = globalInjector.getInjector().getInstance(LedgerEntryStore.class);
+			Modules.getInstance().start(new API(store, atomProcessor, atomToBinaryConverter));
 		}
 		catch (Exception ex)
 		{

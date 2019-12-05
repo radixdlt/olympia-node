@@ -52,7 +52,6 @@ public final class Tempo implements Ledger, Closeable {
 	private final Set<LedgerEntryObserver> observers; // TODO external ledgerObservations and internal observers is ambiguous
 
 	private final BlockingQueue<LedgerObservation> ledgerObservations;
-	private final SimpleThreadPool<ConsensusAction> consensusProcessor;
 
 	@Inject
 	public Tempo(
@@ -73,7 +72,6 @@ public final class Tempo implements Ledger, Closeable {
 		this.observers = Objects.requireNonNull(observers);
 
 		this.ledgerObservations = new LinkedBlockingQueue<>(INBOUND_QUEUE_CAPACITY);
-		this.consensusProcessor = new SimpleThreadPool<>("Tempo consensus processing", 1, consensus::observe, this::processConsensusAction, log);
 
 		// hook up components
 		for (AtomDiscoverer atomDiscoverer : this.atomDiscoverers) {
@@ -86,73 +84,12 @@ public final class Tempo implements Ledger, Closeable {
 		return this.ledgerObservations.take();
 	}
 
-	@Override
-	public Optional<LedgerEntry> get(AID aid) {
-		return ledgerEntryStore.get(aid);
-	}
-
-	@Override
-	public void store(LedgerEntry ledgerEntry, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
-		preCheckStore(ledgerEntry, uniqueIndices, duplicateIndices);
-		LedgerEntryStoreResult status = ledgerEntryStore.store(ledgerEntry, uniqueIndices, duplicateIndices);
-		postCheckStore(status);
-		onAdopted(ledgerEntry, uniqueIndices, duplicateIndices);
-	}
-
-	@Override
-	public void replace(Set<AID> aids, LedgerEntry ledgerEntry, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
-		Objects.requireNonNull(aids, "aids");
-		preCheckStore(ledgerEntry, uniqueIndices, duplicateIndices);
-
-		LedgerEntryStoreResult status = ledgerEntryStore.replace(aids, ledgerEntry, uniqueIndices, duplicateIndices);
-		postCheckStore(status);
-		aids.forEach(this::onDeleted);
-		onAdopted(ledgerEntry, uniqueIndices, duplicateIndices);
-	}
-
-	private void preCheckStore(LedgerEntry ledgerEntry, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
-		Objects.requireNonNull(ledgerEntry, "ledgerEntry");
-		Objects.requireNonNull(uniqueIndices, "uniqueIndices");
-		Objects.requireNonNull(duplicateIndices, "duplicateIndices");
-		if (uniqueIndices.isEmpty()) {
-			throw new TempoException("Atom '" + ledgerEntry.getAID() + "' must have at least one unique index");
-		}
-		if (ledgerEntry.getShards().isEmpty()) {
-			throw new TempoException("Atom '" + ledgerEntry.getAID() + "' must have at least one shard");
-		}
-		if (ledgerEntryStore.contains(ledgerEntry.getAID())) {
-			throw new AtomAlreadyExistsException(ledgerEntry.getAID());
-		}
-	}
-
-	private void postCheckStore(LedgerEntryStoreResult status) {
-		if (!status.isSuccess()) {
-			LedgerEntryConflict conflictInfo = status.getConflictInfo();
-			throw new LedgerIndexConflictException(conflictInfo.getLedgerEntry(), conflictInfo.getConflictingLedgerEntries());
-		}
-	}
-
-	private void onDeleted(AID aid) {
-		observers.forEach(observer -> observer.onDeleted(aid));
-	}
-
 	private void onDiscovered(Set<AID> aids, Peer peer) {
 		requestDeliverer.deliver(aids, ImmutableSet.of(peer)).forEach((aid, future) -> future.thenAccept(result -> {
 			if (result.isSuccess()) {
 				injectObservation(LedgerObservation.adopt(result.getLedgerEntry()));
 			}
 		}));
-	}
-
-	private void processConsensusAction(ConsensusAction action) {
-		if (action.getType() == ConsensusAction.Type.COMMIT) {
-			LedgerEntry preference = action.getPreference();
-			log.info("Committing to '" + preference.getAID());
-			this.ledgerEntryStore.commit(preference.getAID());
-			injectObservation(LedgerObservation.commit(preference));
-		} else {
-			throw new IllegalStateException("Unknown consensus action type: " + action.getType());
-		}
 	}
 
 	private void injectObservation(LedgerObservation observation) {
@@ -162,27 +99,7 @@ public final class Tempo implements Ledger, Closeable {
 		}
 	}
 
-	private void onAdopted(LedgerEntry ledgerEntry, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices) {
-		observers.forEach(acceptor -> acceptor.onAdopted(ledgerEntry, uniqueIndices, duplicateIndices));
-	}
-
-	@Override
-	public LedgerCursor search(LedgerIndexType type, LedgerIndex index, LedgerSearchMode mode) {
-		return ledgerEntryStore.search(type, index, mode);
-	}
-
-	@Override
-	public boolean contains(LedgerIndexType type, LedgerIndex index, LedgerSearchMode mode) {
-		return ledgerEntryStore.contains(type, index, mode);
-	}
-
-	@Override
-	public boolean contains(AID aid) {
-		return ledgerEntryStore.contains(aid);
-	}
-
 	public void start() {
-		this.consensusProcessor.start();
 		Modules.put(LedgerEntryStoreView.class, this.ledgerEntryStore);
 	}
 

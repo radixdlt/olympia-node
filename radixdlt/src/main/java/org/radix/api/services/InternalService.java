@@ -5,6 +5,7 @@ import com.radixdlt.ledger.Ledger;
 import com.radixdlt.middleware2.processing.RadixEngineAtomProcessor;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.tempo.store.LedgerEntryStore;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.Bytes;
 
@@ -45,12 +46,12 @@ import org.radix.utils.SystemProfiler;
  */
 public class InternalService {
 	private static final Logger log = Logging.getLogger();
-	private Ledger ledger;
+	private LedgerEntryStore store;
 	private RadixEngineAtomProcessor radixEngineAtomProcessor;
 	private static InternalService INTERNAL_SERVICE;
 	private static Serialization serialization = Serialization.getDefault();
 
-	public static InternalService getInstance(Ledger ledger, RadixEngineAtomProcessor radixEngineAtomProcessor) {
+	public static InternalService getInstance(LedgerEntryStore ledger, RadixEngineAtomProcessor radixEngineAtomProcessor) {
 		if (INTERNAL_SERVICE == null) {
 			INTERNAL_SERVICE = new InternalService(ledger, radixEngineAtomProcessor);
 		}
@@ -62,8 +63,8 @@ public class InternalService {
 	// Executor for prepare/store
 	private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
-	private InternalService(Ledger ledger, RadixEngineAtomProcessor radixEngineAtomProcessor) {
-		this.ledger = ledger;
+	private InternalService(LedgerEntryStore store, RadixEngineAtomProcessor radixEngineAtomProcessor) {
+		this.store = store;
 		this.radixEngineAtomProcessor = radixEngineAtomProcessor;
 	}
 

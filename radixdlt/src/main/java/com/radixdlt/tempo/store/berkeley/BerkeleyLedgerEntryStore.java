@@ -62,7 +62,7 @@ import static com.radixdlt.tempo.store.berkeley.LedgerEntryIndices.ENTRY_INDEX_P
 import static com.radixdlt.tempo.store.berkeley.LedgerEntryIndices.SHARD_INDEX_PREFIX;
 
 @Singleton
-public class BerkeleyLedgerEntryStore implements LedgerEntryStore<LedgerEntry> {
+public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 	private static final Logger log = Logging.getLogger("store.atoms");
 
 	private static final String ATOM_INDICES_DB_NAME = "tempo2.atom_indices";

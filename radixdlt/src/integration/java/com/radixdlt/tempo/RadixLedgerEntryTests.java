@@ -3,6 +3,7 @@ package com.radixdlt.tempo;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.ledger.LedgerEntry;
+import com.radixdlt.tempo.store.LedgerEntryStore;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -26,9 +27,9 @@ public class RadixLedgerEntryTests extends RadixTestWithStores {
 		ECKeyPair identity = new ECKeyPair();
 
 		List<LedgerEntry> ledgerEntries = ledgerEntryGenerator.createLedgerEntries(identity, 1);
-		Tempo tempo = Modules.get(Tempo.class);
-		tempo.store(ledgerEntries.get(0), ImmutableSet.of(), ImmutableSet.of());
-		LedgerEntry actual = tempo.get(ledgerEntries.get(0).getAID()).get();
+		LedgerEntryStore store = Modules.get(LedgerEntryStore.class);
+		store.store(ledgerEntries.get(0), ImmutableSet.of(), ImmutableSet.of());
+		LedgerEntry actual = store.get(ledgerEntries.get(0).getAID()).get();
 		Assert.assertEquals(ledgerEntries.get(0), actual);
 
 		// TODO should check LocalSystem clocks once implemented
@@ -39,8 +40,8 @@ public class RadixLedgerEntryTests extends RadixTestWithStores {
 		ECKeyPair identity = new ECKeyPair();
 
 		List<LedgerEntry> ledgerEntries = ledgerEntryGenerator.createLedgerEntries(identity, 1);
-		Modules.get(Tempo.class).store(ledgerEntries.get(0), ImmutableSet.of(), ImmutableSet.of());
-		Modules.get(Tempo.class).store(ledgerEntries.get(0), ImmutableSet.of(), ImmutableSet.of());
+		Modules.get(LedgerEntryStore.class).store(ledgerEntries.get(0), ImmutableSet.of(), ImmutableSet.of());
+		Modules.get(LedgerEntryStore.class).store(ledgerEntries.get(0), ImmutableSet.of(), ImmutableSet.of());
 	}
 
 	@Test
@@ -48,13 +49,13 @@ public class RadixLedgerEntryTests extends RadixTestWithStores {
 		ECKeyPair identity = new ECKeyPair();
 
 		List<LedgerEntry> ledgerEntries = ledgerEntryGenerator.createLedgerEntries(identity, 2);
-		Modules.get(Tempo.class).store(ledgerEntries.get(0), ImmutableSet.of(), ImmutableSet.of());
-		Assert.assertEquals(ledgerEntries.get(0), Modules.get(Tempo.class).get(ledgerEntries.get(0).getAID()).get());
+		Modules.get(LedgerEntryStore.class).store(ledgerEntries.get(0), ImmutableSet.of(), ImmutableSet.of());
+		Assert.assertEquals(ledgerEntries.get(0), Modules.get(LedgerEntryStore.class).get(ledgerEntries.get(0).getAID()).get());
 
-		Modules.get(Tempo.class).replace(ImmutableSet.of(ledgerEntries.get(0).getAID()), ledgerEntries.get(1), ImmutableSet.of(), ImmutableSet.of());
+		Modules.get(LedgerEntryStore.class).replace(ImmutableSet.of(ledgerEntries.get(0).getAID()), ledgerEntries.get(1), ImmutableSet.of(), ImmutableSet.of());
 
-		Assert.assertTrue("New ledgerEntries is present", Modules.get(Tempo.class).get(ledgerEntries.get(1).getAID()).isPresent());
-		Assert.assertFalse("Replaced ledgerEntries is no longer present", Modules.get(Tempo.class).get(ledgerEntries.get(0).getAID()).isPresent());
+		Assert.assertTrue("New ledgerEntries is present", Modules.get(LedgerEntryStore.class).get(ledgerEntries.get(1).getAID()).isPresent());
+		Assert.assertFalse("Replaced ledgerEntries is no longer present", Modules.get(LedgerEntryStore.class).get(ledgerEntries.get(0).getAID()).isPresent());
 
 		// TODO should check LocalSystem clocks once implemented
 	}

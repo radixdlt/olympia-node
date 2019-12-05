@@ -12,6 +12,7 @@ import com.radixdlt.ledger.Ledger;
 import com.radixdlt.ledger.LedgerObservation;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.tempo.store.LedgerEntryStore;
 import com.radixdlt.universe.Universe;
 import org.json.JSONObject;
 import org.radix.logging.Logger;
@@ -31,18 +32,21 @@ public class RadixEngineAtomProcessor {
 	private boolean interrupted;
 
 	private final Ledger ledger;
+	private final LedgerEntryStore store;
 	private final RadixEngine radixEngine;
 	private final Serialization serialization;
 	private final AtomToBinaryConverter atomToBinaryConverter;
 
 	@Inject
 	public RadixEngineAtomProcessor(
-			Ledger ledger,
-			RadixEngine radixEngine,
-			Serialization serialization,
-			AtomToBinaryConverter atomToBinaryConverter
-			) {
+		Ledger ledger,
+		LedgerEntryStore store,
+		RadixEngine radixEngine,
+		Serialization serialization,
+		AtomToBinaryConverter atomToBinaryConverter
+	) {
 		this.ledger = ledger;
+		this.store = store;
 		this.radixEngine = radixEngine;
 		this.serialization = serialization;
 		this.atomToBinaryConverter = atomToBinaryConverter;
@@ -57,7 +61,15 @@ public class RadixEngineAtomProcessor {
 					radixEngine.store(atom, new AtomEventListener() {
 					});
 				} catch (Exception e) {
-					log.error("Atom processing failed", e);
+					log.error("Storing atom failed", e);
+				}
+			} else if (ledgerObservation.getType() == LedgerObservation.Type.COMMIT) {
+				try {
+					Atom atom = atomToBinaryConverter.toAtom(ledgerObservation.getEntry().getContent());
+					log.info("Committing to '" + ledgerObservation.getEntry().getAID());
+					// TODO actual commit mechanism stub
+				} catch (Exception e) {
+					log.error("Committing atom failed", e);
 				}
 			}
 		}
@@ -100,7 +112,7 @@ public class RadixEngineAtomProcessor {
 		try {
 			LinkedList<AID> atomIds = new LinkedList<>();
 			for (Atom atom : Modules.get(Universe.class).getGenesis()) {
-				if (!ledger.contains(atom.getAID())) {
+				if (!store.contains(atom.getAID())) {
 					radixEngine.store(atom,
 							new AtomEventListener() {
 								@Override
@@ -146,7 +158,7 @@ public class RadixEngineAtomProcessor {
 
 	private void waitForAtoms(List<AID> atomHashes) throws InterruptedException {
 		for (AID atomID : atomHashes) {
-			while (!ledger.contains(atomID)) {
+			while (!store.contains(atomID)) {
 				TimeUnit.MILLISECONDS.sleep(100);
 			}
 		}

@@ -12,6 +12,7 @@ import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.middleware2.store.EngineAtomIndices;
 
 import com.radixdlt.ledger.LedgerEntry;
+import com.radixdlt.tempo.store.LedgerEntryStore;
 import org.radix.api.AtomQuery;
 import org.radix.api.observable.AtomEventDto.AtomEventType;
 import org.radix.atoms.events.AtomEventWithDestinations;
@@ -42,7 +43,7 @@ public class AtomEventObserver {
 	private CompletableFuture<?> currentRunnable;
 	private CompletableFuture<?> firstRunnable;
 	private final ExecutorService executorService;
-	private final Ledger ledger;
+	private final LedgerEntryStore store;
 	private final AtomToBinaryConverter atomToBinaryConverter;
 
 	private final Object syncLock = new Object();
@@ -53,13 +54,13 @@ public class AtomEventObserver {
 		AtomQuery atomQuery,
 		Consumer<ObservedAtomEvents> onNext,
 		ExecutorService executorService,
-		Ledger ledger,
+		LedgerEntryStore store,
 		AtomToBinaryConverter atomToBinaryConverter
 	) {
 		this.atomQuery = atomQuery;
 		this.onNext = onNext;
 		this.executorService = executorService;
-		this.ledger = ledger;
+		this.store = store;
 		this.atomToBinaryConverter = atomToBinaryConverter;
 	}
 
@@ -109,7 +110,7 @@ public class AtomEventObserver {
 		try {
 			long count = 0;
 			LedgerIndex destinationIndex = new LedgerIndex(EngineAtomIndices.IndexType.DESTINATION.getValue(), atomQuery.getDestination().toByteArray());
-			LedgerCursor ledgerCursor = ledger.search(LedgerIndex.LedgerIndexType.DUPLICATE, destinationIndex, LedgerSearchMode.EXACT);
+			LedgerCursor ledgerCursor = store.search(LedgerIndex.LedgerIndexType.DUPLICATE, destinationIndex, LedgerSearchMode.EXACT);
 			Set<AID> processedAids = Sets.newHashSet();
 			while (ledgerCursor != null) {
 				if (count >= 200) {
@@ -133,7 +134,7 @@ public class AtomEventObserver {
 				while (ledgerCursor != null && atoms.size() < BATCH_SIZE) {
 					AID aid = ledgerCursor.get();
 					processedAids.add(aid);
-					Optional<LedgerEntry> ledgerEntry = ledger.get(aid);
+					Optional<LedgerEntry> ledgerEntry = store.get(aid);
 					ledgerEntry.ifPresent(
 						entry -> {
 							Atom atom = atomToBinaryConverter.toAtom(entry.getContent());

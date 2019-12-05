@@ -10,7 +10,7 @@ import java.util.Set;
 /**
  * An entry-point for manipulating the state of a Tempo ledger.
  */
-public interface LedgerEntryStore<T extends LedgerEntry> extends LedgerEntryStoreView, Resource {
+public interface LedgerEntryStore extends LedgerEntryStoreView, Resource {
 	/**
 	 * Irreversibly commits this store to an atom with at a certain logical clock.
 	 * Once committed, an atom may no longer be deleted or replaced.
@@ -28,7 +28,7 @@ public interface LedgerEntryStore<T extends LedgerEntry> extends LedgerEntryStor
 	 * @param duplicateIndices The duplicate indices
 	 * @return Whether the {@link LedgerEntry} was stored
 	 */
-	LedgerEntryStoreResult store(T ledgerEntry, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices);
+	LedgerEntryStoreResult store(LedgerEntry ledgerEntry, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices);
 
 	/**
 	 * Replaces a set of atoms with another atom in an atomic operation
@@ -40,5 +40,5 @@ public interface LedgerEntryStore<T extends LedgerEntry> extends LedgerEntryStor
 	 * @param duplicateIndices The duplicate indices of that atom
 	 * @return Whether all {@link AID}s were successfully deleted
 	 */
-	LedgerEntryStoreResult replace(Set<AID> aids, T ledgerEntry, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices);
+	LedgerEntryStoreResult replace(Set<AID> aids, LedgerEntry ledgerEntry, Set<LedgerIndex> uniqueIndices, Set<LedgerIndex> duplicateIndices);
 }
