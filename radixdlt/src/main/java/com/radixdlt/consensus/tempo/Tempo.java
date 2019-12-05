@@ -52,7 +52,7 @@ public final class Tempo implements Consensus, Closeable {
 	private void onDiscovered(Set<AID> aids, Peer peer) {
 		requestDeliverer.deliver(aids, ImmutableSet.of(peer)).forEach((aid, future) -> future.thenAccept(result -> {
 			if (result.isSuccess()) {
-				injectObservation(ConsensusObservation.adopt(result.getLedgerEntry()));
+				injectObservation(ConsensusObservation.commit(result.getLedgerEntry()));
 			}
 		}));
 	}

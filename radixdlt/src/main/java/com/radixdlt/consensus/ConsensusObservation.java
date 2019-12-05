@@ -9,7 +9,6 @@ import java.util.Objects;
  */
 public final class ConsensusObservation {
 	public enum Type {
-		ADOPT,
 		COMMIT
 	}
 
@@ -27,11 +26,6 @@ public final class ConsensusObservation {
 
 	public LedgerEntry getEntry() {
 		return entry;
-	}
-
-	public static ConsensusObservation adopt(LedgerEntry entry) {
-		Objects.requireNonNull(entry, "newAtom is required");
-		return new ConsensusObservation(Type.ADOPT, entry);
 	}
 
 	public static ConsensusObservation commit(LedgerEntry entry) {

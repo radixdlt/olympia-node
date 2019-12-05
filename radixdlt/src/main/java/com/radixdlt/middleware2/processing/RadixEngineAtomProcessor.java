@@ -56,22 +56,17 @@ public class RadixEngineAtomProcessor {
 	private void process() throws InterruptedException {
 		while (!interrupted) {
 			ConsensusObservation consensusObservation = consensus.observe();
-			if (consensusObservation.getType() == ConsensusObservation.Type.ADOPT) {
+			if (consensusObservation.getType() == ConsensusObservation.Type.COMMIT) {
+				Atom atom = atomToBinaryConverter.toAtom(consensusObservation.getEntry().getContent());
 				try {
-					Atom atom = atomToBinaryConverter.toAtom(consensusObservation.getEntry().getContent());
 					radixEngine.store(atom, new AtomEventListener() {
 					});
 				} catch (Exception e) {
 					log.error("Storing atom failed", e);
 				}
-			} else if (consensusObservation.getType() == ConsensusObservation.Type.COMMIT) {
-				try {
-					Atom atom = atomToBinaryConverter.toAtom(consensusObservation.getEntry().getContent());
-					log.info("Committing to '" + consensusObservation.getEntry().getAID());
-					// TODO actual commit mechanism stub
-				} catch (Exception e) {
-					log.error("Committing atom failed", e);
-				}
+
+				log.info("Committing to '" + consensusObservation.getEntry().getAID());
+				// TODO actual commit mechanism stub
 			}
 		}
 	}
