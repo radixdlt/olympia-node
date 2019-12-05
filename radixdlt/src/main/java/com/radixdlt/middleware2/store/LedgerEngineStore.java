@@ -6,13 +6,13 @@ import com.radixdlt.common.Atom;
 import com.radixdlt.common.EUID;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.ledger.LedgerCursor;
-import com.radixdlt.ledger.LedgerIndex;
-import com.radixdlt.ledger.LedgerSearchMode;
+import com.radixdlt.store.SearchCursor;
+import com.radixdlt.store.StoreIndex;
+import com.radixdlt.store.LedgerSearchMode;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.store.EngineStore;
-import com.radixdlt.ledger.LedgerEntry;
-import com.radixdlt.tempo.store.LedgerEntryStore;
+import com.radixdlt.store.LedgerEntry;
+import com.radixdlt.store.LedgerEntryStore;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.shards.ShardSpace;
@@ -47,7 +47,7 @@ public class LedgerEngineStore implements EngineStore {
 
     private Optional<Atom> getAtomByParticle(Particle particle, boolean isInput) {
         final byte[] indexableBytes = EngineAtomIndices.toByteArray(isInput ? EngineAtomIndices.IndexType.PARTICLE_DOWN : EngineAtomIndices.IndexType.PARTICLE_UP, particle.getHID());
-        LedgerCursor cursor = store.search(LedgerIndex.LedgerIndexType.UNIQUE, new LedgerIndex(indexableBytes), LedgerSearchMode.EXACT);
+        SearchCursor cursor = store.search(StoreIndex.LedgerIndexType.UNIQUE, new StoreIndex(indexableBytes), LedgerSearchMode.EXACT);
         if (cursor != null) {
             return store.get(cursor.get()).flatMap(ledgerEntry ->  Optional.of(atomToBinaryConverter.toAtom(ledgerEntry.getContent())));
         } else {
@@ -59,7 +59,7 @@ public class LedgerEngineStore implements EngineStore {
     @Override
     public void storeAtom(Atom atom) {
         byte binaryAtom[] = atomToBinaryConverter.toLedgerEntryContent(atom);
-        LedgerEntry ledgerEntry = new LedgerEntry(binaryAtom,atom.getAID(),atom.getShards());
+        LedgerEntry ledgerEntry = new LedgerEntry(binaryAtom,atom.getAID());
         EngineAtomIndices engineAtomIndices = EngineAtomIndices.from(atom);
         store.store(ledgerEntry, engineAtomIndices.getUniqueIndices(), engineAtomIndices.getDuplicateIndices());
     }

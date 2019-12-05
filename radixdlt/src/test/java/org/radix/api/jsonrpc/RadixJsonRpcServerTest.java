@@ -5,8 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.powermock.api.mockito.PowerMockito.when;
 
-import com.radixdlt.ledger.Ledger;
-import com.radixdlt.tempo.store.LedgerEntryStore;
+import com.radixdlt.store.LedgerEntryStore;
 import org.everit.json.schema.Schema;
 import org.json.JSONObject;
 import org.junit.Test;

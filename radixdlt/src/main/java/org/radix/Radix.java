@@ -5,11 +5,11 @@ import java.lang.reflect.Modifier;
 import java.security.SecureRandom;
 import java.security.Security;
 
-import com.radixdlt.ledger.Ledger;
+import com.radixdlt.consensus.Consensus;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.middleware2.processing.RadixEngineAtomProcessor;
-import com.radixdlt.tempo.Tempo;
-import com.radixdlt.tempo.store.LedgerEntryStore;
+import com.radixdlt.consensus.tempo.Tempo;
+import com.radixdlt.store.LedgerEntryStore;
 import org.apache.commons.cli.CommandLine;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.json.JSONObject;
@@ -64,7 +64,7 @@ public class Radix extends Plugin
 
 	private RadixEngineAtomProcessor atomProcessor;
 	private AtomToBinaryConverter atomToBinaryConverter;
-	private Tempo ledger;
+	private Consensus consensus;
 
 	/**
 	 * @param args
@@ -270,16 +270,9 @@ public class Radix extends Plugin
 			throw new ModuleStartException("Failure setting up Network", ex, this);
 		}
 
-		/*
-		 * Eventually modules should be created using Google Guice injector
-		 */
+		// TODO Eventually modules should be created using Google Guice injector
 		GlobalInjector globalInjector = new GlobalInjector();
-
-		/**
-		 * TEMPO
-		 */
-		ledger = (Tempo) globalInjector.getInjector().getInstance(Ledger.class);
-		ledger.start();
+		consensus = (Tempo) globalInjector.getInjector().getInstance(Consensus.class);
 
 		/*
 		 * CP

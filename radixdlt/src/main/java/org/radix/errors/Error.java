@@ -1,6 +1,5 @@
 package org.radix.errors;
 
-import org.radix.common.Criticality;
 import org.radix.containers.BasicContainer;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -14,10 +13,6 @@ public final class Error extends BasicContainer implements Chronologic
 {
 	@Override
 	public short VERSION() { return 100; }
-
-	@JsonProperty("criticality")
-	@DsonOutput(Output.ALL)
-	private Criticality	criticality = Criticality.NONE;
 
 	@JsonProperty("name")
 	@DsonOutput(Output.ALL)
@@ -127,8 +122,6 @@ public final class Error extends BasicContainer implements Chronologic
 			this.message = null;
 		}
 	}
-
-	public Criticality getCriticality() { return criticality; }
 
 	public boolean isDisplay() { return display; }
 

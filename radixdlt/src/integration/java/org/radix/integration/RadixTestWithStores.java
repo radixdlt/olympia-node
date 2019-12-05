@@ -6,11 +6,11 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.name.Names;
 import com.radixdlt.common.EUID;
-import com.radixdlt.tempo.Tempo;
-import com.radixdlt.tempo.consensus.Consensus;
-import com.radixdlt.tempo.delivery.RequestDeliverer;
-import com.radixdlt.tempo.store.LedgerEntryStore;
-import com.radixdlt.tempo.store.berkeley.BerkeleyStoreModule;
+import com.radixdlt.consensus.tempo.Application;
+import com.radixdlt.consensus.tempo.Tempo;
+import com.radixdlt.delivery.LazyRequestDeliverer;
+import com.radixdlt.store.LedgerEntryStore;
+import com.radixdlt.store.berkeley.BerkeleyStoreModule;
 import org.junit.After;
 import org.junit.Before;
 import org.radix.database.DatabaseEnvironment;
@@ -56,14 +56,9 @@ public class RadixTestWithStores extends RadixTest
 
 		LedgerEntryStore atomStore = injector.getInstance(LedgerEntryStore.class);
 		Tempo tempo = new Tempo(
-				self,
-				atomStore,
-			mock(Consensus.class),
-			ImmutableSet.of(atomStore),
-				ImmutableSet.of(),
-				mock(RequestDeliverer.class),
-				ImmutableSet.of()
-		);
+			mock(Application.class),
+			ImmutableSet.of(),
+			mock(LazyRequestDeliverer.class));
 			Modules.put(Tempo.class, tempo);
 			Modules.put(LedgerEntryStore.class, atomStore);
 	}
@@ -74,7 +69,6 @@ public class RadixTestWithStores extends RadixTest
 		safelyStop(Modules.get(RoutingStore.class));
 
 		Modules.get(Tempo.class).close();
-		Modules.get(Tempo.class).reset();
 		Modules.remove(Tempo.class);
 		Modules.remove(LedgerEntryStore.class);
 
