@@ -99,6 +99,10 @@ public final class ConstraintMachine {
 			return signature != null && publicKey.verify(witness, signature);
 		}
 
+		boolean has(Particle p) {
+			return currentSpins.containsKey(p);
+		}
+
 		boolean push(Particle p) {
 			final Spin curSpin = currentSpins.get(p);
 			final Spin nextSpin = SpinStateMachine.next(curSpin);
@@ -327,6 +331,10 @@ public final class ConstraintMachine {
 					break;
 				case PUSH:
 					final Particle nextParticle = cmMicroInstruction.getParticle();
+					if (!validationState.has(nextParticle)) {
+						return Optional.of(new CMError(dp, CMErrorCode.INVALID_INSTRUCTION_SEQUENCE, validationState));
+					}
+
 					final boolean isInput = validationState.push(nextParticle);
 					Optional<CMError> error = validateParticle(validationState, nextParticle, isInput, dp);
 					if (error.isPresent()) {
