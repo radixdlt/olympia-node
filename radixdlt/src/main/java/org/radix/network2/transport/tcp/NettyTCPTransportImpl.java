@@ -111,52 +111,52 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 		this.outboundBootstrap = new Bootstrap();
 		this.outboundBootstrap.group(workerGroup)
 			.channel(NioSocketChannel.class)
-            .option(ChannelOption.SO_KEEPALIVE, true)
+			.option(ChannelOption.SO_KEEPALIVE, true)
 			.handler(new ChannelInitializer<SocketChannel>() {
-                @Override
-                public void initChannel(SocketChannel ch) throws Exception {
-                	setupChannel(ch, messageSink);
-                }
-            });
+				@Override
+				public void initChannel(SocketChannel ch) throws Exception {
+					setupChannel(ch, messageSink);
+				}
+			});
 
-	    ServerBootstrap b = new ServerBootstrap();
-	    b.group(serverGroup, workerGroup)
-	    	.channel(NioServerSocketChannel.class)
-	    	.option(ChannelOption.SO_BACKLOG, BACKLOG_SIZE)
-	    	.childOption(ChannelOption.SO_KEEPALIVE, true)
-	    	.handler(new LoggingHandler(LogLevel.INFO))
-	        .childHandler(new ChannelInitializer<SocketChannel>() {
-	            @Override
-	            public void initChannel(SocketChannel ch) throws Exception {
-	            	setupChannel(ch, messageSink);
-	            }
-	        });
-	    try {
-	    	synchronized (channelLock) {
-	    		close();
-	    		this.channel = b.bind(this.bindAddress).sync().channel();
-	    	}
-	    } catch (InterruptedException e) {
-	    	// Abort!
-	    	Thread.currentThread().interrupt();
-	    } catch (IOException e) {
-	    	throw new UncheckedIOException("Error while opening channel", e);
+		ServerBootstrap b = new ServerBootstrap();
+		b.group(serverGroup, workerGroup)
+			.channel(NioServerSocketChannel.class)
+			.option(ChannelOption.SO_BACKLOG, BACKLOG_SIZE)
+			.childOption(ChannelOption.SO_KEEPALIVE, true)
+			.handler(new LoggingHandler(LogLevel.INFO))
+			.childHandler(new ChannelInitializer<SocketChannel>() {
+				@Override
+				public void initChannel(SocketChannel ch) throws Exception {
+					setupChannel(ch, messageSink);
+				}
+			});
+		try {
+			synchronized (channelLock) {
+				close();
+				this.channel = b.bind(this.bindAddress).sync().channel();
+			}
+		} catch (InterruptedException e) {
+			// Abort!
+			Thread.currentThread().interrupt();
+		} catch (IOException e) {
+			throw new UncheckedIOException("Error while opening channel", e);
 		}
 	}
 
 	private void setupChannel(SocketChannel ch, InboundMessageConsumer messageSink) {
-    	final int packetLength = TCPConstants.MAX_PACKET_LENGTH + TCPConstants.LENGTH_HEADER;
-    	final int headerLength = TCPConstants.LENGTH_HEADER;
-    	ch.config()
-    		.setReceiveBufferSize(RCV_BUF_SIZE)
-    		.setSendBufferSize(SND_BUF_SIZE)
-    		.setOption(ChannelOption.RCVBUF_ALLOCATOR, new FixedRecvByteBufAllocator(packetLength));
-        ch.pipeline()
-        	.addLast("connections", control.handler())
-        	.addLast("unpack", new LengthFieldBasedFrameDecoder(packetLength, 0, headerLength, 0, headerLength))
-        	.addLast("onboard", new TCPNettyMessageHandler(messageSink));
-        ch.pipeline()
-        	.addLast("pack", new LengthFieldPrepender(headerLength));
+		final int packetLength = TCPConstants.MAX_PACKET_LENGTH + TCPConstants.LENGTH_HEADER;
+		final int headerLength = TCPConstants.LENGTH_HEADER;
+		ch.config()
+			.setReceiveBufferSize(RCV_BUF_SIZE)
+			.setSendBufferSize(SND_BUF_SIZE)
+			.setOption(ChannelOption.RCVBUF_ALLOCATOR, new FixedRecvByteBufAllocator(packetLength));
+		ch.pipeline()
+			.addLast("connections", control.handler())
+			.addLast("unpack", new LengthFieldBasedFrameDecoder(packetLength, 0, headerLength, 0, headerLength))
+			.addLast("onboard", new TCPNettyMessageHandler(messageSink));
+		ch.pipeline()
+			.addLast("pack", new LengthFieldPrepender(headerLength));
 	}
 
 	@Override
@@ -166,13 +166,13 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 
 	@Override
 	public void close() throws IOException {
-    	synchronized (this.channelLock) {
-    		closeSafely(this.control);
-    		if (this.channel != null) {
-    			closeSafely(this.channel::close);
-    		}
-    		this.channel = null;
-    	}
+		synchronized (this.channelLock) {
+			closeSafely(this.control);
+			if (this.channel != null) {
+				closeSafely(this.channel::close);
+			}
+			this.channel = null;
+		}
 	}
 
 	@Override

@@ -18,13 +18,13 @@ public interface TransportControl extends Closeable {
 	CompletableFuture<TransportOutboundConnection> open(TransportMetadata endpointMetadata);
 
 	/**
-     * Closes this {@code TransportControl} and releases any system resources associated
-     * with it. If the {@code TransportControl} is already closed then invoking this
-     * method has no effect.
-     *
-     * @throws IOException if an I/O error occurs
-     */
+	 * Closes this {@code TransportControl} and releases any system resources associated
+	 * with it. If the {@code TransportControl} is already closed then invoking this
+	 * method has no effect.
+	 *
+	 * @throws IOException if an I/O error occurs
+	 */
 	@Override
-    void close() throws IOException;
+	void close() throws IOException;
 
 }
