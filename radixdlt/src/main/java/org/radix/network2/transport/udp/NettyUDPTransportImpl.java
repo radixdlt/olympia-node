@@ -114,7 +114,7 @@ final class NettyUDPTransportImpl implements Transport {
 	            		.setSendBufferSize(SND_BUF_SIZE)
 	            		.setOption(ChannelOption.RCVBUF_ALLOCATOR, new FixedRecvByteBufAllocator(MAX_DATAGRAM_SIZE));
 	                ch.pipeline()
-	                	.addLast("onboard", new NettyMessageHandler(natHandler, messageSink));
+	                	.addLast("onboard", new UDPNettyMessageHandler(natHandler, messageSink));
 	            }
 	        });
 	    try {

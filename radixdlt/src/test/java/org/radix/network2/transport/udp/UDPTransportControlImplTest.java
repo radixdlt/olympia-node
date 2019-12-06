@@ -4,6 +4,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.radix.network2.transport.TransportOutboundConnection;
 
+import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
@@ -24,9 +25,10 @@ public class UDPTransportControlImplTest {
     }
 
     @Test
-    public void open() throws ExecutionException, InterruptedException {
-        UDPTransportControlImpl udpTransportControl = new UDPTransportControlImpl(null, outboundFactory);
-        CompletableFuture<TransportOutboundConnection> result = udpTransportControl.open(null);
-        assertThat(result.get()).isEqualTo(transportOutboundConnection);
+    public void open() throws ExecutionException, InterruptedException, IOException {
+        try (UDPTransportControlImpl udpTransportControl = new UDPTransportControlImpl(null, outboundFactory)) {
+        	CompletableFuture<TransportOutboundConnection> result = udpTransportControl.open(null);
+        	assertThat(result.get()).isEqualTo(transportOutboundConnection);
+        }
     }
 }

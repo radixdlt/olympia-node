@@ -19,14 +19,14 @@ import io.netty.channel.socket.DatagramPacket;
 // but I think that would be problematic right now, as there is undoubtedly some
 // downstream blocking that will happen, and this has the potential to slow down
 // the whole inbound network pipeline.
-final class NettyMessageHandler extends SimpleChannelInboundHandler<DatagramPacket> {
+final class UDPNettyMessageHandler extends SimpleChannelInboundHandler<DatagramPacket> {
 	private static final Logger log = Logging.getLogger("transport.udp");
 
 	private final InboundMessageConsumer messageSink;
 	private final PublicInetAddress natHandler;
 
 
-	NettyMessageHandler(PublicInetAddress natHandler, InboundMessageConsumer messageSink) {
+	UDPNettyMessageHandler(PublicInetAddress natHandler, InboundMessageConsumer messageSink) {
 		this.messageSink = messageSink;
 		this.natHandler = natHandler;
 	}

@@ -17,6 +17,7 @@ import org.radix.modules.Modules;
 import org.radix.network2.transport.SendResult;
 import org.radix.network2.transport.TransportMetadata;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -91,44 +92,46 @@ public class UDPTransportOutboundConnectionTest {
     }
 
     @Test
-    public void sendTest() throws ExecutionException, InterruptedException {
-        UDPTransportOutboundConnection udpTransportOutboundConnection = new UDPTransportOutboundConnection(channel, metadata);
-        CompletableFuture<SendResult> completableFuture = udpTransportOutboundConnection.send(testMessage.getBytes());
+    public void sendTest() throws ExecutionException, InterruptedException, IOException {
+        try (UDPTransportOutboundConnection udpTransportOutboundConnection = new UDPTransportOutboundConnection(channel, metadata)) {
+        	CompletableFuture<SendResult> completableFuture = udpTransportOutboundConnection.send(testMessage.getBytes());
 
-        channelFuture.setSuccess();
+        	channelFuture.setSuccess();
 
-        SendResult result = completableFuture.get();
-        assertThat(result).isEqualTo(SendResult.complete());
+        	SendResult result = completableFuture.get();
+        	assertThat(result).isEqualTo(SendResult.complete());
 
-        DatagramPacket datagramPacket = datagramPacketArgumentCaptor.getValue();
-        byte[] actualMessage = new byte[datagramPacket.content().capacity()];
-        datagramPacket.content().getBytes(0, actualMessage);
+        	DatagramPacket datagramPacket = datagramPacketArgumentCaptor.getValue();
+        	byte[] actualMessage = new byte[datagramPacket.content().capacity()];
+        	datagramPacket.content().getBytes(0, actualMessage);
 
 
-        byte[] sourceAddress = PublicInetAddress.getInstance().get().getAddress();
-        byte[] destinationAddress = new InetSocketAddress(
-                metadata.get(UDPConstants.METADATA_UDP_HOST),
-                Integer.valueOf(metadata.get(UDPConstants.METADATA_UDP_PORT))
-        ).getAddress().getAddress();
-        byte[] data = testMessage.getBytes();
-        ByteBuffer expectedMessageBuffer = ByteBuffer.allocate(datagramPacket.content().capacity());
-        expectedMessageBuffer.put(addressFormatFlag);
-        expectedMessageBuffer.put(sourceAddress);
-        expectedMessageBuffer.put(destinationAddress);
-        expectedMessageBuffer.put(data);
-        byte[] expectedMessage = expectedMessageBuffer.array();
+        	byte[] sourceAddress = PublicInetAddress.getInstance().get().getAddress();
+        	byte[] destinationAddress = new InetSocketAddress(
+    			metadata.get(UDPConstants.METADATA_UDP_HOST),
+    			Integer.valueOf(metadata.get(UDPConstants.METADATA_UDP_PORT))
+			).getAddress().getAddress();
+        	byte[] data = testMessage.getBytes();
+        	ByteBuffer expectedMessageBuffer = ByteBuffer.allocate(datagramPacket.content().capacity());
+        	expectedMessageBuffer.put(addressFormatFlag);
+        	expectedMessageBuffer.put(sourceAddress);
+        	expectedMessageBuffer.put(destinationAddress);
+        	expectedMessageBuffer.put(data);
+        	byte[] expectedMessage = expectedMessageBuffer.array();
 
-        assertArrayEquals(actualMessage, expectedMessage);
+        	assertArrayEquals(actualMessage, expectedMessage);
+        }
     }
 
     @Test
-    public void sendFailureTest() throws ExecutionException, InterruptedException {
+    public void sendFailureTest() throws ExecutionException, InterruptedException, IOException {
         assumeTrue(exception != null);
-        UDPTransportOutboundConnection udpTransportOutboundConnection = new UDPTransportOutboundConnection(channel, metadata);
-        CompletableFuture<SendResult> completableFuture = udpTransportOutboundConnection.send(testMessage.getBytes());
-        channelFuture.setFailure(exception);
-        SendResult result = completableFuture.get();
-        assertThat(result.isComplete()).isEqualTo(false);
-        assertThat(result.getThrowable().getMessage()).isEqualTo(exception.getMessage());
+        try (UDPTransportOutboundConnection udpTransportOutboundConnection = new UDPTransportOutboundConnection(channel, metadata)) {
+        	CompletableFuture<SendResult> completableFuture = udpTransportOutboundConnection.send(testMessage.getBytes());
+        	channelFuture.setFailure(exception);
+        	SendResult result = completableFuture.get();
+        	assertThat(result.isComplete()).isEqualTo(false);
+        	assertThat(result.getThrowable().getMessage()).isEqualTo(exception.getMessage());
+        }
     }
 }
