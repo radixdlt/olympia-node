@@ -16,8 +16,8 @@ public enum CMErrorCode {
 	WITNESS_ERROR("Witness error"),
 	TRANSITION_PRECONDITION_FAILURE("Transition Precondition failure"),
 	TRANSITION_ERROR("Transition error"),
-	ARITHMETIC_ERROR("Arithmetic error");
-
+	ARITHMETIC_ERROR("Arithmetic error"),
+	INVALID_INSTRUCTION_SEQUENCE("Invalid instruction sequence");
 
 	private final String description;
 
