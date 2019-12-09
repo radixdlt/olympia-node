@@ -197,26 +197,6 @@ public class AtomsService {
 		return this.atomEventObservers.stream().map(AtomEventObserver::isDone).filter(done -> !done).count();
 	}
 
-	public JSONObject getAtomsByShardRange(String from, String to) throws JSONException {
-		JSONObject result = new JSONObject();
-
-		JSONArray array = new JSONArray();
-		for (
-				long shard = Shards.fromGroup(Integer.parseInt(from), (1 << 20)).getLow();
-				shard < Shards.fromGroup(Integer.parseInt(to == null ? from : to), (1 << 20)).getHigh();
-				shard++
-		) {
-			StoreIndex fromIndex = StoreIndex.from(EngineAtomIndices.toByteArray(SHARD_INDEX_PREFIX, shard));
-			SearchCursor searchResultCursor = store.search(StoreIndex.LedgerIndexType.DUPLICATE, fromIndex, LedgerSearchMode.RANGE);
-			AID atomId;
-			while ((atomId = searchResultCursor.get()) != null) {
-				array.put(atomId.toString());
-			}
-		}
-		result.put("hids", array);
-		return result;
-	}
-
 	public JSONObject getAtomsByAtomId(AID atomId) throws JSONException {
 		Optional<LedgerEntry> ledgerEntryOptional = store.get(atomId);
 		if (ledgerEntryOptional.isPresent()) {

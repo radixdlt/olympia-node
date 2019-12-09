@@ -196,12 +196,6 @@ public final class RadixHttpServer {
 			respond(AtomSchemas.getJsonSchemaString(4), exchange);
         }, handler);
 
-        addGetRoute("/api/atoms/byshard", exchange -> {
-			String from = getParameter(exchange, "from").orElse(null);
-			String to = getParameter(exchange, "to").orElse(null);
-			respond(atomsService.getAtomsByShardRange(from, to), exchange);
-		}, handler);
-
         addGetRoute("/api/events", exchange -> {
 			JSONObject eventCount = new JSONObject();
 			atomsService.getAtomEventCount().forEach((k, v) -> eventCount.put(k.name(), v));
