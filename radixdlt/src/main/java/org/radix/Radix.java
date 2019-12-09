@@ -65,6 +65,7 @@ public class Radix extends Plugin
 	private RadixEngineAtomProcessor atomProcessor;
 	private AtomToBinaryConverter atomToBinaryConverter;
 	private Consensus consensus;
+	private API api;
 
 	/**
 	 * @param args
@@ -249,43 +250,17 @@ public class Radix extends Plugin
 
 		// TODO Eventually modules should be created using Google Guice injector
 		GlobalInjector globalInjector = new GlobalInjector();
-		consensus = (Tempo) globalInjector.getInjector().getInstance(Consensus.class);
+		consensus = globalInjector.getInjector().getInstance(Consensus.class);
 
-		/*
-		 * CP
-		 */
-		try
-		{
-			Modules.getInstance().start(new RadixServer());
-		}
-		catch (Exception ex)
-		{
-			throw new ModuleStartException("Failure setting up CP", ex, this);
-		}
+		// middleware
+		atomProcessor = globalInjector.getInjector().getInstance(RadixEngineAtomProcessor.class);
+		atomProcessor.start();
+		atomToBinaryConverter = globalInjector.getInjector().getInstance(AtomToBinaryConverter.class);
 
-		/*
-		 * Middleware
-		 */
-		try {
-			atomProcessor = globalInjector.getInjector().getInstance(RadixEngineAtomProcessor.class);
-			atomProcessor.start();
-			atomToBinaryConverter = globalInjector.getInjector().getInstance(AtomToBinaryConverter.class);
-		} catch (Exception e) {
-			throw new ModuleStartException("Failure setting up AtomProcessor", e, this);
-		}
-
-		/*
-		 * API
-		 */
-		try
-		{
-			LedgerEntryStore store = globalInjector.getInjector().getInstance(LedgerEntryStore.class);
-			Modules.getInstance().start(new API(store, atomProcessor, atomToBinaryConverter));
-		}
-		catch (Exception ex)
-		{
-			throw new ModuleStartException("Failure setting up API", ex, this);
-		}
+		// API
+		LedgerEntryStore store = globalInjector.getInjector().getInstance(LedgerEntryStore.class);
+		api = new API(store, atomProcessor, atomToBinaryConverter);
+		api.start();
 
 		// START UP ALL SERVICES //
 		Modules.getInstance().start();
@@ -295,6 +270,8 @@ public class Radix extends Plugin
 
 	@Override
 	public void stop_impl() throws ModuleException {
+
+		api.stop();
 
 		/*
 		 * Middleware
