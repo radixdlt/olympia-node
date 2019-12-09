@@ -51,8 +51,6 @@ public class RadixTest
 		}
 		Modules.get(RuntimeProperties.class).set("db.location", dbLocation);
 
-		Modules.getInstance().start(new Time());
-
 		Universe universe = new GenerateUniverses().generateUniverses().stream().filter(Universe::isTest).findAny().get();
 		Modules.remove(Universe.class); // GenerateUniverses adds this
 		Modules.put(Universe.class, universe);
@@ -63,8 +61,6 @@ public class RadixTest
 
 	@AfterClass
 	public static void endRadixTest() throws ModuleException {
-		safelyStop(Modules.get(Time.class));
-
 		Modules.remove(Universe.class);
 		Modules.remove(Time.class);
 		Modules.remove(Serialization.class);

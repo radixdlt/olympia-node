@@ -37,6 +37,7 @@ import org.radix.network2.messaging.MessageCentralFactory;
 import org.radix.properties.PersistedProperties;
 import org.radix.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
+import org.radix.time.NtpService;
 import org.radix.time.Time;
 import com.radixdlt.universe.Universe;
 import org.radix.universe.system.LocalSystem;
@@ -163,7 +164,7 @@ public class Radix extends Plugin
 		 */
 		try
 		{
-			Modules.getInstance().start(new Time());
+			Modules.put(NtpService.class, new NtpService(null));
 		}
 		catch (Exception ex)
 		{
