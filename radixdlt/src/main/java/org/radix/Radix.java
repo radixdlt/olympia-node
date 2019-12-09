@@ -2,12 +2,14 @@ package org.radix;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.net.URISyntaxException;
 import java.security.SecureRandom;
 import java.security.Security;
 
 import com.radixdlt.consensus.Consensus;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.middleware2.processing.RadixEngineAtomProcessor;
+import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.store.LedgerEntryStore;
 import org.apache.commons.cli.CommandLine;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -30,6 +32,7 @@ import org.radix.network.Interfaces;
 import org.radix.network.discovery.BootstrapDiscovery;
 import org.radix.network2.addressbook.AddressBook;
 import org.radix.network2.addressbook.AddressBookFactory;
+import org.radix.network2.addressbook.PeerManager;
 import org.radix.network2.addressbook.PeerManagerFactory;
 import org.radix.network2.messaging.MessageCentral;
 import org.radix.network2.messaging.MessageCentralFactory;
@@ -120,149 +123,93 @@ public class Radix extends Plugin
 	@Override
 	public void start_impl() throws ModuleException
 	{
+		RuntimeProperties properties = Modules.get(RuntimeProperties.class);
+		dumpExecutionLocation();
+
+		// set up serialisation
 		Modules.put(Serialization.class, Serialization.getDefault());
 
-		try
-		{
-			// Setup execution information //
-			String jarFile = ClassLoader.getSystemClassLoader().loadClass("org.radix.Radix").getProtectionDomain().getCodeSource().getLocation().toURI().getPath();
-			java.lang.System.setProperty("radix.jar", jarFile);
+		// set up universe
+		Universe universe = extractUniverseFrom(properties);
+		Modules.put(Universe.class, universe);
 
-			String jarPath = jarFile;
+		// set up NTP service
+		Modules.put(NtpService.class, new NtpService(null));
 
-			if (jarPath.toLowerCase().endsWith(".jar"))
-				jarPath = jarPath.substring(0, jarPath.lastIndexOf("/"));
-			java.lang.System.setProperty("radix.jar.path", jarPath);
+		// start events
+		Events.getInstance();
 
-			log.debug("Execution file: "+java.lang.System.getProperty("radix.jar"));
-			log.debug("Execution path: "+java.lang.System.getProperty("radix.jar.path"));
-		}
-		catch (Exception ex)
-		{
-			throw new ModuleStartException("Could not set execution information", ex, this);
+		// start database environment
+		Modules.getInstance().startIfNeeded(DatabaseEnvironment.class);
+
+		if (Modules.get(CommandLine.class).hasOption("genesis")) {
+			System.exit(0);
 		}
 
-		/*
-		 * UNIVERSE
-		 */
-		try
-		{
-			byte[] bytes = Bytes.fromBase64String(Modules.get(RuntimeProperties.class).get("universe"));
-			Universe universe = Modules.get(Serialization.class).fromDson(bytes, Universe.class);
-			Modules.put(Universe.class, universe);
-		}
-		catch (Exception ex)
-		{
-			throw new ModuleStartException("Failure setting up Universe", ex, this);
-		}
+		// start profiling
+		Modules.getInstance().startIfNeeded(SystemMetaData.class);
+		Modules.getInstance().startIfNeeded(LocalAtomsProfiler.class);
+		Modules.getInstance().startIfNeeded(GlobalAtomsProfiler.class);
+		Modules.getInstance().startIfNeeded(EventProfiler.class);
+		Modules.getInstance().start(SystemProfiler.getInstance());
 
-		/*
-		 * TIME
-		 */
-		try
-		{
-			Modules.put(NtpService.class, new NtpService(null));
-		}
-		catch (Exception ex)
-		{
-			throw new ModuleStartException("Failure setting up Time", ex, this);
-		}
-
-		/*
-		 * EVENTS
-		 */
-		try
-		{
-			Events.getInstance();
-			Modules.getInstance().startIfNeeded(EventProfiler.class);
-		}
-		catch (Exception ex)
-		{
-			throw new ModuleStartException("Failure setting up Events", ex, this);
-		}
-
-		/*
-		 * DATABASE
-		 */
-		try
-		{
-			Modules.getInstance().startIfNeeded(DatabaseEnvironment.class);
-		}
-		catch (Exception ex)
-		{
-			throw new ModuleStartException("Failure setting up DB", ex, this);
-		}
-
-		/*
-		 * SYSTEM
-		 */
-		try
-		{
-			Modules.getInstance().startIfNeeded(SystemMetaData.class);
-			Modules.getInstance().start(SystemProfiler.getInstance());
-		}
-		catch (Exception ex)
-		{
-			throw new ModuleStartException("Failure setting up metrics and stats", ex, this);
-		}
-
-		/*
-		 * MESSAGES
-		 */
-		MessageCentral messageCentral = createMessageCentral(Modules.get(RuntimeProperties.class));
+		// set up networking
+		MessageCentral messageCentral = createMessageCentral(properties);
 		Modules.put(MessageCentral.class, messageCentral);
-
-		/*
-		 * ATOMS
-		 */
-		try
-		{
-			Modules.getInstance().startIfNeeded(LocalAtomsProfiler.class);
-			Modules.getInstance().startIfNeeded(GlobalAtomsProfiler.class);
-		}
-		catch (Exception ex)
-		{
-			throw new ModuleStartException("Failure setting up Atoms", ex, this);
-		}
-
-		if (Modules.get(CommandLine.class).hasOption("genesis"))
-			java.lang.System.exit(0);
-
-		/*
-		 * NETWORK
-		 */
-		try
-		{
-			Modules.getInstance().start(new Interfaces());
-			AddressBook addressBook = createAddressBook();
-			Modules.put(AddressBook.class, addressBook);
-			BootstrapDiscovery bootstrapDiscovery = BootstrapDiscovery.getInstance();
-			Modules.getInstance().start(createPeerManager(Modules.get(RuntimeProperties.class), addressBook, messageCentral, Events.getInstance(), bootstrapDiscovery));
-		}
-		catch (Exception ex)
-		{
-			throw new ModuleStartException("Failure setting up Network", ex, this);
-		}
+		Modules.put(Interfaces.class, new Interfaces());
+		AddressBook addressBook = createAddressBook();
+		Modules.put(AddressBook.class, addressBook);
+		BootstrapDiscovery bootstrapDiscovery = BootstrapDiscovery.getInstance();
+		PeerManager peerManager = createPeerManager(properties, addressBook, messageCentral, Events.getInstance(), bootstrapDiscovery);
+		Modules.getInstance().start(peerManager);
 
 		// TODO Eventually modules should be created using Google Guice injector
 		GlobalInjector globalInjector = new GlobalInjector();
 		Consensus consensus = globalInjector.getInjector().getInstance(Consensus.class);
 		// TODO use consensus for application construction (in our case, the engine middleware)
 
-		// middleware
+		// start middleware
 		atomProcessor = globalInjector.getInjector().getInstance(RadixEngineAtomProcessor.class);
 		atomProcessor.start();
 
-		// API
+		// start API services
 		AtomToBinaryConverter atomToBinaryConverter = globalInjector.getInjector().getInstance(AtomToBinaryConverter.class);
 		LedgerEntryStore store = globalInjector.getInjector().getInstance(LedgerEntryStore.class);
 		httpServer = new RadixHttpServer(store, atomProcessor, atomToBinaryConverter);
 		httpServer.start();
 
-		// START UP ALL SERVICES //
+		// start all services
 		Modules.getInstance().start();
 
-		log.info("Node '"+LocalSystem.getInstance().getNID()+"' started successfully");
+		log.info("Node '" + LocalSystem.getInstance().getNID() + "' started successfully");
+	}
+
+	private void dumpExecutionLocation() {
+		try {
+			String jarFile = ClassLoader.getSystemClassLoader().loadClass("org.radix.Radix").getProtectionDomain().getCodeSource().getLocation().toURI().getPath();
+			System.setProperty("radix.jar", jarFile);
+
+			String jarPath = jarFile;
+
+			if (jarPath.toLowerCase().endsWith(".jar")) {
+				jarPath = jarPath.substring(0, jarPath.lastIndexOf("/"));
+			}
+			System.setProperty("radix.jar.path", jarPath);
+
+			log.debug("Execution file: "+ System.getProperty("radix.jar"));
+			log.debug("Execution path: "+ System.getProperty("radix.jar.path"));
+		} catch (URISyntaxException | ClassNotFoundException e) {
+			throw new RuntimeException("while fetching execution location", e);
+		}
+	}
+
+	private Universe extractUniverseFrom(RuntimeProperties properties) {
+		try {
+			byte[] bytes = Bytes.fromBase64String(properties.get("universe"));
+			return Modules.get(Serialization.class).fromDson(bytes, Universe.class);
+		} catch (SerializationException e) {
+			throw new RuntimeException("while deserialising universe", e);
+		}
 	}
 
 	@Override
@@ -287,7 +234,7 @@ public class Radix extends Plugin
 		return new AddressBookFactory().createDefault();
 	}
 
-	private Module createPeerManager(RuntimeProperties properties, AddressBook addressBook, MessageCentral messageCentral, Events events, BootstrapDiscovery bootstrapDiscovery) {
+	private PeerManager createPeerManager(RuntimeProperties properties, AddressBook addressBook, MessageCentral messageCentral, Events events, BootstrapDiscovery bootstrapDiscovery) {
 		return new PeerManagerFactory().createDefault(properties, addressBook, messageCentral, events, bootstrapDiscovery);
 	}
 
