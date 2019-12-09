@@ -14,7 +14,8 @@ import org.apache.commons.cli.CommandLine;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.json.JSONObject;
 import org.radix.api.API;
-import org.radix.atoms.Atoms;
+import org.radix.atoms.GlobalAtomsProfiler;
+import org.radix.atoms.LocalAtomsProfiler;
 import org.radix.database.DatabaseEnvironment;
 import org.radix.events.EventProfiler;
 import org.radix.events.Events;
@@ -231,7 +232,8 @@ public class Radix extends Plugin
 		 */
 		try
 		{
-			Modules.getInstance().startIfNeeded(Atoms.class);
+			Modules.getInstance().startIfNeeded(LocalAtomsProfiler.class);
+			Modules.getInstance().startIfNeeded(GlobalAtomsProfiler.class);
 		}
 		catch (Exception ex)
 		{
