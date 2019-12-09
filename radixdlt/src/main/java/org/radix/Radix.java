@@ -142,10 +142,6 @@ public class Radix extends Plugin
 		// start database environment
 		Modules.getInstance().startIfNeeded(DatabaseEnvironment.class);
 
-		if (Modules.get(CommandLine.class).hasOption("genesis")) {
-			System.exit(0);
-		}
-
 		// start profiling
 		Modules.getInstance().startIfNeeded(SystemMetaData.class);
 		Modules.getInstance().startIfNeeded(LocalAtomsProfiler.class);
