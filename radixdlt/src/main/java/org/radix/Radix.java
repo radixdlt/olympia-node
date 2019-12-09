@@ -36,7 +36,6 @@ import org.radix.network2.messaging.MessageCentral;
 import org.radix.network2.messaging.MessageCentralFactory;
 import org.radix.properties.PersistedProperties;
 import org.radix.properties.RuntimeProperties;
-import org.radix.routing.Routing;
 import com.radixdlt.serialization.Serialization;
 import org.radix.time.Time;
 import com.radixdlt.universe.Universe;
@@ -214,18 +213,6 @@ public class Radix extends Plugin
 		 */
 		MessageCentral messageCentral = createMessageCentral(Modules.get(RuntimeProperties.class));
 		Modules.put(MessageCentral.class, messageCentral);
-
-		/*
-		 * ROUTING
-		 */
-		try
-		{
-			Modules.getInstance().startIfNeeded(Routing.class);
-		}
-		catch (Exception ex)
-		{
-			throw new ModuleStartException("Failure setting up Routing", ex, this);
-		}
 
 		/*
 		 * ATOMS

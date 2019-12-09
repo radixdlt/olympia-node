@@ -21,8 +21,6 @@ import org.radix.modules.exceptions.ModuleException;
 import org.radix.network2.messaging.MessageCentral;
 import org.radix.network2.messaging.MessageCentralFactory;
 import org.radix.properties.RuntimeProperties;
-import org.radix.routing.RoutingHandler;
-import org.radix.routing.RoutingStore;
 import org.radix.universe.system.LocalSystem;
 
 import java.io.IOException;
@@ -36,8 +34,6 @@ public class RadixTestWithStores extends RadixTest
 	@Before
 	public void beforeEachRadixTest() throws ModuleException {
 		Modules.getInstance().start(new DatabaseEnvironment());
-		Modules.getInstance().start(clean(new RoutingStore()));
-		Modules.getInstance().start(new RoutingHandler());
 
 		RuntimeProperties properties = Modules.get(RuntimeProperties.class);
 		MessageCentral messageCentral = new MessageCentralFactory().createDefault(properties);
@@ -65,9 +61,6 @@ public class RadixTestWithStores extends RadixTest
 
 	@After
 	public void afterEachRadixTest() throws ModuleException, IOException {
-		safelyStop(Modules.get(RoutingHandler.class));
-		safelyStop(Modules.get(RoutingStore.class));
-
 		Modules.get(Tempo.class).close();
 		Modules.remove(Tempo.class);
 		Modules.remove(LedgerEntryStore.class);

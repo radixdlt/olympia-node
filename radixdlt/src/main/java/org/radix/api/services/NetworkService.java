@@ -1,7 +1,5 @@
 package org.radix.api.services;
 
-import java.io.IOException;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -17,7 +15,6 @@ import com.radixdlt.common.EUID;
 import org.radix.modules.Modules;
 import org.radix.network2.addressbook.AddressBook;
 import org.radix.network2.addressbook.Peer;
-import org.radix.routing.RoutingHandler;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import org.radix.universe.system.LocalSystem;
