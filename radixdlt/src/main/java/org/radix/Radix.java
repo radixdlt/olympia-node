@@ -18,15 +18,12 @@ import org.radix.api.http.RadixHttpServer;
 import org.radix.atoms.GlobalAtomsProfiler;
 import org.radix.atoms.LocalAtomsProfiler;
 import org.radix.database.DatabaseEnvironment;
-import org.radix.events.EventProfiler;
 import org.radix.events.Events;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.modules.Module;
 import org.radix.modules.Modules;
 import org.radix.modules.Plugin;
 import org.radix.modules.exceptions.ModuleException;
-import org.radix.modules.exceptions.ModuleStartException;
 import org.radix.modules.exceptions.ModuleStopException;
 import org.radix.network.Interfaces;
 import org.radix.network.discovery.BootstrapDiscovery;
@@ -146,7 +143,6 @@ public class Radix extends Plugin
 		Modules.getInstance().startIfNeeded(SystemMetaData.class);
 		Modules.getInstance().startIfNeeded(LocalAtomsProfiler.class);
 		Modules.getInstance().startIfNeeded(GlobalAtomsProfiler.class);
-		Modules.getInstance().startIfNeeded(EventProfiler.class);
 		Modules.getInstance().start(SystemProfiler.getInstance());
 
 		// set up networking

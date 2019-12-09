@@ -159,8 +159,6 @@ public final class Events
 
 					try
 					{
-						Modules.ifAvailable(EventProfiler.class, a -> a.process(event));
-
 						if (event.isDone())
 							continue;
 
