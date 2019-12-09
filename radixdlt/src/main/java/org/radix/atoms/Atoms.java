@@ -7,7 +7,6 @@ import java.util.List;
 import org.radix.modules.Module;
 import org.radix.modules.Plugin;
 import org.radix.modules.exceptions.ModuleException;
-import org.radix.shards.Shards;
 
 public class Atoms extends Plugin
 {

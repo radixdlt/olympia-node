@@ -37,7 +37,6 @@ import org.radix.properties.PersistedProperties;
 import org.radix.properties.RuntimeProperties;
 import org.radix.routing.Routing;
 import com.radixdlt.serialization.Serialization;
-import org.radix.shards.Shards;
 import org.radix.time.Time;
 import com.radixdlt.universe.Universe;
 import org.radix.universe.system.LocalSystem;
