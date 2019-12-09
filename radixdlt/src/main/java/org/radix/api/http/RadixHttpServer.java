@@ -253,13 +253,6 @@ public final class RadixHttpServer {
         }, handler);
         addGetRoute("/api/network/peers/live", exchange
                 -> respond(NetworkService.getInstance().getLivePeers().toString(), exchange), handler);
-        addGetRoute("/api/network/nids/live", exchange -> {
-        	String planck = getParameter(exchange, "planck").orElse(null);
-			if (planck == null)
-				respond(NetworkService.getInstance().getLiveNIDS(), exchange);
-			else
-				respond(NetworkService.getInstance().getLiveNIDS(planck), exchange);
-		}, handler);
         addGetRoute("/api/network/peers", exchange
                 -> respond(NetworkService.getInstance().getPeers().toString(), exchange), handler);
         addGetRoute("/api/network/peers/{id}", exchange

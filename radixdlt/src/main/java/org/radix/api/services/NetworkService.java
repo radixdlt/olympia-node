@@ -79,17 +79,6 @@ public class NetworkService {
 		return new JSONObject().put("nids", NIDS);
 	}
 
-	public JSONObject getLiveNIDS(String planck) throws IOException {
-		List<EUID> NIDS = Modules.get(RoutingHandler.class).getNIDS(Integer.valueOf(planck));
-		Collections.sort(NIDS);
-
-		JSONObject json = new JSONObject().put("nids", new JSONArray());
-		for (EUID NID : NIDS)
-			json.getJSONArray("nids").put(NID.toString());
-
-		return json;
-	}
-
 	public List<JSONObject> getPeers() {
 		return Modules.get(AddressBook.class).peers()
 			.map(peer -> {
