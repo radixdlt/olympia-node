@@ -154,9 +154,7 @@ public final class RadixHttpServer {
 	}
 
     private void addTestRoutesTo(RoutingHandler handler) {
-    	addGetRoute("/api/internal/shards/dump", exchange -> {
-    		respond(internalService.dumpShardChunks(), exchange);
-    	}, handler);
+
     }
 
     private void addPostRoutesTo(RoutingHandler handler) {

@@ -39,7 +39,6 @@ public class Shards extends Plugin
 	public List<Class<? extends Module>> getDependsOn()
 	{
 		List<Class<? extends Module>> dependencies = new ArrayList<>();
-		dependencies.add(ShardChecksumStore.class);
 		return Collections.unmodifiableList(dependencies);
 	}
 	

@@ -34,7 +34,6 @@ import org.radix.network2.addressbook.AddressBook;
 import org.radix.network2.addressbook.Peer;
 import org.radix.network2.messaging.MessageCentral;
 import org.radix.properties.RuntimeProperties;
-import org.radix.shards.ShardChecksumStore;
 
 import org.radix.time.Time;
 import org.radix.universe.system.LocalSystem;
@@ -226,23 +225,6 @@ public class InternalService {
 		} catch (CryptoException e) {
 			result.put("error", e.getMessage());
 		}
-
-		return result;
-	}
-
-	public JSONObject dumpShardChunks() {
-		JSONObject result = new JSONObject();
-
-		try
-		{
-			Modules.get(ShardChecksumStore.class).dumpShardChunkChecksums();
-		}
-		catch (Exception e)
-		{
-			throw new RuntimeException(e);
-		}
-
-		result.put("data", "OK");
 
 		return result;
 	}
