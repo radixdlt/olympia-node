@@ -30,10 +30,13 @@ import static org.mockito.Mockito.mock;
 public class RadixTestWithStores extends RadixTest
 {
 	protected Injector injector;
+	private DatabaseEnvironment dbEnv;
 
 	@Before
 	public void beforeEachRadixTest() throws ModuleException {
-		Modules.getInstance().start(new DatabaseEnvironment());
+		this.dbEnv = new DatabaseEnvironment();
+		this.dbEnv.start();
+		Modules.put(DatabaseEnvironment.class, this.dbEnv);
 
 		RuntimeProperties properties = Modules.get(RuntimeProperties.class);
 		MessageCentral messageCentral = new MessageCentralFactory().createDefault(properties);
@@ -65,7 +68,7 @@ public class RadixTestWithStores extends RadixTest
 		Modules.remove(Tempo.class);
 		Modules.remove(LedgerEntryStore.class);
 
-		safelyStop(Modules.get(DatabaseEnvironment.class));
+		this.dbEnv.stop();
 		Modules.remove(DatabaseEnvironment.class);
 
 		MessageCentral messageCentral = Modules.get(MessageCentral.class);

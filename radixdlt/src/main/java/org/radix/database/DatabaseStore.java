@@ -29,15 +29,6 @@ public abstract class DatabaseStore extends Service //implements Flushable
 		this.buildPriority = buildPriority;
 	}
 
-	// SERVICE //
-	@Override
-	public List<Class<? extends Module>> getDependsOn()
-	{
-		List<Class<? extends Module>> dependencies = new ArrayList<Class<? extends Module>>();
-		dependencies.add(DatabaseEnvironment.class);
-		return Collections.unmodifiableList(dependencies);
-	}
-
 	@Override
 	public void start_impl() throws ModuleException
 	{

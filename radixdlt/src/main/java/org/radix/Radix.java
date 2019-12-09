@@ -44,6 +44,8 @@ import org.radix.utils.SystemMetaData;
 import org.radix.utils.SystemProfiler;
 import com.radixdlt.utils.Bytes;
 
+import javax.xml.crypto.Data;
+
 public class Radix extends Plugin
 {
 	static
@@ -137,7 +139,9 @@ public class Radix extends Plugin
 		Events.getInstance();
 
 		// start database environment
-		Modules.getInstance().startIfNeeded(DatabaseEnvironment.class);
+		DatabaseEnvironment dbEnv = new DatabaseEnvironment();
+		dbEnv.start();
+		Modules.put(DatabaseEnvironment.class, dbEnv);
 
 		// start profiling
 		Modules.getInstance().startIfNeeded(SystemMetaData.class);

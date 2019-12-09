@@ -9,6 +9,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.bouncycastle.util.Arrays;
 import org.radix.database.exceptions.DatabaseException;
@@ -33,13 +35,12 @@ import com.sleepycat.je.LockMode;
 import com.sleepycat.je.OperationStatus;
 import com.sleepycat.je.Transaction;
 
-public final class DatabaseEnvironment extends Service
+public final class DatabaseEnvironment
 {
 	private static final Logger log = Logging.getLogger();
-
 	private class CheckpointerTask implements Runnable {
-		private volatile boolean interrupted = false;
 
+		private volatile boolean interrupted = false;
 		void interrupt() {
 			// It appears that berkeley behaves quite badly when checkpoint thread
 			// is interrupted.  We use special magic here to make sure we exit in
@@ -75,8 +76,10 @@ public final class DatabaseEnvironment extends Service
 				}
 			}
 		}
+
 	}
 
+	private final ReentrantLock lock = new ReentrantLock(true);
 	private Database metaDatabase;
 
 	private Environment						environment = null;
@@ -87,8 +90,7 @@ public final class DatabaseEnvironment extends Service
 
     public DatabaseEnvironment() { super(); }
 
-	@Override
-	public void start_impl() throws ModuleException
+	public void start()
 	{
 		File dbhome = new File(Modules.get(RuntimeProperties.class).get("db.location", ".//RADIXDB"));
 		dbhome.mkdir();
@@ -131,7 +133,7 @@ public final class DatabaseEnvironment extends Service
 		}
         catch (Exception ex)
         {
-        	throw new ModuleStartException(ex, this);
+        	throw new RuntimeException("while opening database", ex);
 		}
 
 		this.checkpointTask = new CheckpointerTask();
@@ -141,8 +143,7 @@ public final class DatabaseEnvironment extends Service
 		this.checkpointThread.start();
 	}
 
-	@Override
-	public void stop_impl() throws ModuleException
+	public void stop()
 	{
 		Collection<DatabaseStore> allDatabases = new ArrayList<>(this.databases.values());
         for (DatabaseStore database : allDatabases)
@@ -177,10 +178,12 @@ public final class DatabaseEnvironment extends Service
        	this.environment = null;
 	}
 
-	@Override
-	public String getName()
-	{
-		return "Database Environment";
+	public void lock() {
+    	this.lock.lock();
+	}
+
+	public void unlock() {
+    	this.lock.unlock();
 	}
 
 	public Environment getEnvironment()
