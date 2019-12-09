@@ -8,12 +8,11 @@ import java.security.Security;
 import com.radixdlt.consensus.Consensus;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.middleware2.processing.RadixEngineAtomProcessor;
-import com.radixdlt.consensus.tempo.Tempo;
 import com.radixdlt.store.LedgerEntryStore;
 import org.apache.commons.cli.CommandLine;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.json.JSONObject;
-import org.radix.api.API;
+import org.radix.api.http.RadixHttpServer;
 import org.radix.atoms.GlobalAtomsProfiler;
 import org.radix.atoms.LocalAtomsProfiler;
 import org.radix.database.DatabaseEnvironment;
@@ -38,7 +37,6 @@ import org.radix.properties.PersistedProperties;
 import org.radix.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
 import org.radix.time.NtpService;
-import org.radix.time.Time;
 import com.radixdlt.universe.Universe;
 import org.radix.universe.system.LocalSystem;
 import org.radix.utils.IOUtils;
@@ -63,9 +61,7 @@ public class Radix extends Plugin
 	public static final String 	AGENT 					= "/Radix:/"+AGENT_VERSION;
 
 	private RadixEngineAtomProcessor atomProcessor;
-	private AtomToBinaryConverter atomToBinaryConverter;
-	private Consensus consensus;
-	private API api;
+	private RadixHttpServer httpServer;
 
 	/**
 	 * @param args
@@ -250,17 +246,18 @@ public class Radix extends Plugin
 
 		// TODO Eventually modules should be created using Google Guice injector
 		GlobalInjector globalInjector = new GlobalInjector();
-		consensus = globalInjector.getInjector().getInstance(Consensus.class);
+		Consensus consensus = globalInjector.getInjector().getInstance(Consensus.class);
+		// TODO use consensus for application construction (in our case, the engine middleware)
 
 		// middleware
 		atomProcessor = globalInjector.getInjector().getInstance(RadixEngineAtomProcessor.class);
 		atomProcessor.start();
-		atomToBinaryConverter = globalInjector.getInjector().getInstance(AtomToBinaryConverter.class);
 
 		// API
+		AtomToBinaryConverter atomToBinaryConverter = globalInjector.getInjector().getInstance(AtomToBinaryConverter.class);
 		LedgerEntryStore store = globalInjector.getInjector().getInstance(LedgerEntryStore.class);
-		api = new API(store, atomProcessor, atomToBinaryConverter);
-		api.start();
+		httpServer = new RadixHttpServer(store, atomProcessor, atomToBinaryConverter);
+		httpServer.start();
 
 		// START UP ALL SERVICES //
 		Modules.getInstance().start();
@@ -270,8 +267,7 @@ public class Radix extends Plugin
 
 	@Override
 	public void stop_impl() throws ModuleException {
-
-		api.stop();
+		httpServer.stop();
 
 		/*
 		 * Middleware
