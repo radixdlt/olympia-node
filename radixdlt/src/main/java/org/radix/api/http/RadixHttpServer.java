@@ -23,7 +23,6 @@ import org.radix.api.jsonrpc.RadixJsonRpcPeer;
 import org.radix.api.jsonrpc.RadixJsonRpcServer;
 import org.radix.api.services.AdminService;
 import org.radix.api.services.AtomsService;
-import org.radix.api.services.GraphService;
 import org.radix.api.services.InternalService;
 import org.radix.api.services.NetworkService;
 import org.radix.api.services.TestService;
@@ -33,8 +32,6 @@ import org.radix.logging.Logging;
 import org.radix.modules.Modules;
 import org.radix.properties.RuntimeProperties;
 import org.radix.shards.ShardSpace;
-import org.radix.time.Time;
-import org.radix.universe.system.LocalSystem;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -188,9 +185,6 @@ public final class RadixHttpServer {
         // Network routes
         addRestNetworkRoutesTo(handler);
 
-        // Graph routes
-        addRestGraphRoutesTo(handler);
-
         // Atom Model JSON schema
         addGetRoute("/schemas/atom.schema.json", exchange -> {
 			respond(AtomSchemas.getJsonSchemaString(4), exchange);
@@ -237,14 +231,6 @@ public final class RadixHttpServer {
                 new JSONObject().put("response", "pong").put("timestamp", System.currentTimeMillis()),
                 exchange),
             handler);
-    }
-
-    private void addRestGraphRoutesTo(RoutingHandler handler) {
-
-        addGetRoute("/api/graph/route", exchange -> {
-        	String timestamp = getParameter(exchange, "timestamp").orElseGet(() -> String.valueOf(Time.currentTimestamp()));
-			respond(GraphService.getInstance().getRoutingTable(LocalSystem.getInstance().getNID().toString(), timestamp), exchange);
-		}, handler);
     }
 
     private void addRestNetworkRoutesTo(RoutingHandler handler) {
