@@ -1,14 +1,6 @@
 package org.radix.shards;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
-import org.radix.modules.Module;
-import org.radix.modules.Plugin;
-import org.radix.modules.exceptions.ModuleException;
-
-public class Shards extends Plugin
+public class Shards
 {
 	public static int toGroup(long shard, int numGroups)
 	{
@@ -34,23 +26,5 @@ public class Shards extends Plugin
 
 		return new ShardRange(low > high ? high : low, low > high ? low : high);
 	}
-
-	@Override
-	public List<Class<? extends Module>> getDependsOn()
-	{
-		List<Class<? extends Module>> dependencies = new ArrayList<>();
-		return Collections.unmodifiableList(dependencies);
-	}
-	
-	@Override
-	public void start_impl() throws ModuleException
-	{ }
-
-	@Override
-	public void stop_impl() throws ModuleException
-	{ }
-
-	@Override
-	public String getName() { return "Shards"; }
 }
 

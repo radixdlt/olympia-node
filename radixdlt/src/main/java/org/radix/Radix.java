@@ -239,18 +239,6 @@ public class Radix extends Plugin
 			throw new ModuleStartException("Failure setting up Atoms", ex, this);
 		}
 
-		/*
-		 * SHARDS
-		 */
-		try
-		{
-			Modules.getInstance().startIfNeeded(Shards.class);
-		}
-		catch (Exception ex)
-		{
-			throw new ModuleStartException("Failure setting up Shards", ex, this);
-		}
-
 		if (Modules.get(CommandLine.class).hasOption("genesis"))
 			java.lang.System.exit(0);
 

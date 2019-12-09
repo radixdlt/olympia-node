@@ -15,7 +15,6 @@ public class Atoms extends Plugin
 	public List<Class<? extends Module>> getComponents()
 	{
 		List<Class<? extends Module>> dependencies = new ArrayList<>();
-		dependencies.add(Shards.class);
 		dependencies.add(LocalAtomsProfiler.class);
 		dependencies.add(GlobalAtomsProfiler.class);
 
