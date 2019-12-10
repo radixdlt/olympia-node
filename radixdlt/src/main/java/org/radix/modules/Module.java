@@ -17,7 +17,6 @@ import org.radix.common.ID.ID;
 import org.radix.common.executors.Executable;
 import org.radix.common.executors.Executor;
 import org.radix.common.executors.ScheduledExecutable;
-import org.radix.concurrency.ReadWriteLockable;
 import org.radix.events.Events;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
@@ -36,7 +35,7 @@ import org.radix.state.State;
 
 import com.google.common.collect.ImmutableMap;
 
-public abstract class Module implements ID, ReadWriteLockable, SingletonState
+public abstract class Module implements ID, SingletonState
 {
 	private static final Logger log = Logging.getLogger();
 
@@ -389,64 +388,5 @@ public abstract class Module implements ID, ReadWriteLockable, SingletonState
 	public String toString()
 	{
 		return getUID()+": "+getClass().getName()+" '"+getName()+"'";
-	}
-
-	// LOCKABLE //
-	public boolean isLocked(LockType lockType)
-	{
-		if (lockType.equals(LockType.WRITE))
-			return lock.isWriteLocked();
-		else
-			return lock.getReadLockCount() > 0;
-	}
-
-	@Override
-	public void lock()
-	{
-		lock.writeLock().lock();
-	}
-
-	@Override
-	public void lock(LockType lockType)
-	{
-		if (lockType.equals(LockType.READ))
-			lock.readLock().lock();
-		else
-			lock.writeLock().lock();
-	}
-
-	@Override
-	public void lock(LockType lockType, boolean monitorLongLocks)
-	{
-		lock(lockType);
-	}
-
-	@Override
-	public void unlock(LockType lockType)
-	{
-		try
-		{
-			if (lockType.equals(LockType.READ))
-				lock.readLock().unlock();
-			else
-				lock.writeLock().unlock();
-		}
-		catch (Exception ex)
-		{
-			log.error(lockType.name()+" lock not acquired by calling thread!", ex);
-		}
-	}
-
-	@Override
-	public void unlock()
-	{
-		try
-		{
-			lock.writeLock().unlock();
-		}
-		catch (Exception ex)
-		{
-			log.error("Lock not acquired by calling thread!", ex);
-		}
 	}
 }
