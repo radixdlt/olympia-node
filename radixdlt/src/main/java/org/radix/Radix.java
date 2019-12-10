@@ -15,8 +15,6 @@ import org.apache.commons.cli.CommandLine;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.json.JSONObject;
 import org.radix.api.http.RadixHttpServer;
-import org.radix.atoms.GlobalAtomsProfiler;
-import org.radix.atoms.LocalAtomsProfiler;
 import org.radix.database.DatabaseEnvironment;
 import org.radix.events.Events;
 import org.radix.logging.Logger;
@@ -43,8 +41,6 @@ import org.radix.utils.IOUtils;
 import org.radix.utils.SystemMetaData;
 import org.radix.utils.SystemProfiler;
 import com.radixdlt.utils.Bytes;
-
-import javax.xml.crypto.Data;
 
 public class Radix extends Plugin
 {
@@ -145,8 +141,6 @@ public class Radix extends Plugin
 
 		// start profiling
 		Modules.getInstance().startIfNeeded(SystemMetaData.class);
-		Modules.getInstance().startIfNeeded(LocalAtomsProfiler.class);
-		Modules.getInstance().startIfNeeded(GlobalAtomsProfiler.class);
 		Modules.getInstance().start(SystemProfiler.getInstance());
 
 		// set up networking
