@@ -26,7 +26,6 @@ import org.radix.api.services.AtomsService;
 import org.radix.api.services.InternalService;
 import org.radix.api.services.NetworkService;
 import org.radix.api.services.TestService;
-import org.radix.api.services.UniverseService;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.modules.Modules;
@@ -198,7 +197,7 @@ public final class RadixHttpServer {
         }, handler);
 
         addGetRoute("/api/universe", exchange
-                -> respond(UniverseService.getInstance().getUniverse(), exchange), handler);
+                -> respond(Modules.get(Serialization.class).toJsonObject(Modules.get(Universe.class), DsonOutput.Output.API), exchange), handler);
 
         addGetRoute("/api/system/modules/api/tasks-waiting", exchange
                 -> {
