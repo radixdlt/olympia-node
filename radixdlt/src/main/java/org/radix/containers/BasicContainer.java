@@ -3,7 +3,6 @@ package org.radix.containers;
 import com.radixdlt.common.EUID;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
-import org.radix.interfaces.Versioned;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.modules.Modules;
@@ -15,7 +14,7 @@ import com.radixdlt.serialization.SerializerDummy;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public abstract class BasicContainer implements Versioned, Cloneable, Comparable<Object>
+public abstract class BasicContainer implements Cloneable, Comparable<Object>
 {
 	private static final Logger log = Logging.getLogger ();
 
@@ -117,13 +116,13 @@ public abstract class BasicContainer implements Versioned, Cloneable, Comparable
 		return 0;
 	}
 
-	@Override
+	public abstract short VERSION();
+
 	public short getVersion()
 	{
 		return version;
 	}
 
-	@Override
 	public void setVersion(short version)
 	{
 		this.version = version;
