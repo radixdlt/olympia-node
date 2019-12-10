@@ -35,7 +35,7 @@ import org.radix.state.State;
 
 import com.google.common.collect.ImmutableMap;
 
-public abstract class Module implements ID, SingletonState
+public abstract class Module implements SingletonState
 {
 	private static final Logger log = Logging.getLogger();
 
@@ -49,7 +49,6 @@ public abstract class Module implements ID, SingletonState
 	private final Map<Long, Executable>		executables = new WeakHashMap<Long, Executable>();
 	private final Map<Class<? extends Message>, MessageListener<? extends Message>>	listeners = new HashMap<>();
 
-	@Override
 	public EUID getUID()
 	{
 		if (uid == null || uid == EUID.ZERO)
@@ -57,9 +56,6 @@ public abstract class Module implements ID, SingletonState
 
 		return uid;
 	}
-
-	@Override
-	public void setUID(EUID uid) { this.uid = uid; }
 
 	/**
 	 * Returns the current state of this module
