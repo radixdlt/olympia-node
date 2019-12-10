@@ -2,9 +2,8 @@ package org.radix.events;
 
 import org.radix.common.Syncronicity;
 import org.radix.events.Event.EventPriority;
-import org.radix.interfaces.Listener;
 
-public interface EventListener<T extends Event> extends Listener, Comparable<EventListener<?>>
+public interface EventListener<T extends Event> extends Comparable<EventListener<?>>
 {
 	public void process(T event) throws Throwable;
 
