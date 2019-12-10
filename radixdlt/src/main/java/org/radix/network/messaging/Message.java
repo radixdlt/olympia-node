@@ -16,7 +16,6 @@ import com.radixdlt.utils.WireIO;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
-import org.radix.time.Chronologic;
 import org.radix.time.Time;
 import org.radix.time.Timestamps;
 import com.radixdlt.universe.Universe;
@@ -26,7 +25,7 @@ import org.xerial.snappy.Snappy;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
 
-public abstract class Message extends BasicContainer implements Chronologic
+public abstract class Message extends BasicContainer
 {
 	public enum Direction {
 		OUTBOUND,
@@ -123,20 +122,16 @@ public abstract class Message extends BasicContainer implements Chronologic
 		return this.size;
 	}
 
-	// CHRONOLOGIC //
-	@Override
 	public long getTimestamp()
 	{
 		return this.timestamps.getOrDefault(Timestamps.DEFAULT, 0l);
 	}
 
-	@Override
 	public long getTimestamp(String type)
 	{
 		return this.timestamps.getOrDefault(type, 0l);
 	}
 
-	@Override
 	public void setTimestamp(String type, long timestamp)
 	{
 		this.timestamps.put(type, timestamp);
