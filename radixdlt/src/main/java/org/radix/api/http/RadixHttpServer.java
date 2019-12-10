@@ -2,6 +2,7 @@ package org.radix.api.http;
 
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.middleware2.processing.RadixEngineAtomProcessor;
+import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.universe.Universe;
@@ -21,7 +22,6 @@ import org.json.JSONObject;
 import org.radix.api.AtomSchemas;
 import org.radix.api.jsonrpc.RadixJsonRpcPeer;
 import org.radix.api.jsonrpc.RadixJsonRpcServer;
-import org.radix.api.services.AdminService;
 import org.radix.api.services.AtomsService;
 import org.radix.api.services.InternalService;
 import org.radix.api.services.NetworkService;
@@ -32,6 +32,7 @@ import org.radix.logging.Logging;
 import org.radix.modules.Modules;
 import org.radix.properties.RuntimeProperties;
 import org.radix.shards.ShardSpace;
+import org.radix.universe.system.LocalSystem;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -248,13 +249,7 @@ public final class RadixHttpServer {
 
     private void addRestSystemRoutesTo(RoutingHandler handler) {
         addGetRoute("/api/system", exchange
-                -> respond(AdminService.getInstance().getSystem(), exchange), handler);
-        addGetRoute("/api/system/profiler", exchange
-                -> respond(AdminService.getInstance().getProfiler(), exchange), handler);
-        addGetRoute("/api/system/modules", exchange
-                -> respond(AdminService.getInstance().getModules(), exchange), handler);
-        addGetRoute("/api/system/modules/atom-syncer", exchange
-                -> respond(AdminService.getInstance().getModules(), exchange), handler);
+                -> respond(Modules.get(Serialization.class).toJsonObject(LocalSystem.getInstance(), DsonOutput.Output.API), exchange), handler);
     }
 
     // helper methods for responding to an exchange with various objects for readability
