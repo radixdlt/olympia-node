@@ -2,12 +2,14 @@ package org.radix.serialization;
 
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerId2;
+
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 
-import org.radix.collections.WireableList;
 import com.radixdlt.common.EUID;
 import org.radix.containers.BasicContainer;
 import com.radixdlt.crypto.Hash;
@@ -60,7 +62,7 @@ public class DummyTestObject extends BasicContainer {
 
 	@JsonProperty("array")
 	@DsonOutput(Output.ALL)
-	private WireableList<EUID> array;
+	private List<EUID> array;
 
 	@JsonProperty("object")
 	@DsonOutput(Output.ALL)
@@ -79,7 +81,7 @@ public class DummyTestObject extends BasicContainer {
 			this.theHash = new Hash(Hash.hash256(randomData));
 			this.bytes = randomData.clone();
 			this.string = getClass().getName();
-			this.array = new WireableList<>(Collections.nCopies(10, id));
+			this.array = new ArrayList<>(Collections.nCopies(10, id));
 			this.object = new DummyTestObject2();
 		}
 	}
