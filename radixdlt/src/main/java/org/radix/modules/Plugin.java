@@ -12,10 +12,4 @@ import org.radix.logging.Logging;
 public abstract class Plugin extends Module
 {
 	private static final Logger log = Logging.getLogger();
-
-	@Override
-	public ModuleStatus getStatus()
-	{
-		return new ModuleStatus(ModuleStatus.Status.AVAILABLE);
-	}
 }

@@ -13,7 +13,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import com.radixdlt.common.EUID;
-import org.radix.common.ID.ID;
 import org.radix.common.executors.Executable;
 import org.radix.common.executors.Executor;
 import org.radix.common.executors.ScheduledExecutable;
@@ -373,12 +372,6 @@ public abstract class Module implements SingletonState
 	public Map<String, Object> getMetaData() {
 		return ImmutableMap.of();
 	}
-
-	/** Provides a current status overview of this module
-	 *
-	 * @return
-	 */
-	public abstract ModuleStatus getStatus();
 
 	@Override
 	public String toString()
