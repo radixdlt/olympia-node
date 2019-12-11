@@ -46,7 +46,6 @@ public abstract class Module implements SingletonState
 	private final Semaphore dependents = new Semaphore(0);
 	private final ReentrantReadWriteLock	lock = new ReentrantReadWriteLock(true);
 	private final Map<Long, Executable>		executables = new WeakHashMap<Long, Executable>();
-	private final Map<Class<? extends Message>, MessageListener<? extends Message>>	listeners = new HashMap<>();
 
 	public EUID getUID()
 	{
@@ -183,22 +182,6 @@ public abstract class Module implements SingletonState
 		return Collections.emptyList();
 	}
 
-	/**
-	 * Registers a message listener to this module.
-	 */
-	public <T extends Message> void register(Class<T> messageClass, MessageListener<T> listener) {
-		listeners.put(messageClass, listener);
-		Modules.get(MessageCentral.class).addListener(messageClass, listener);
-	}
-
-	/**
-	 * Unregisters a message listener registered to this module.
-	 */
-	public <T extends Message> void unregister(Class<T> messageClass) {
-		Modules.get(MessageCentral.class).removeListener(listeners.get(messageClass));
-		listeners.remove(messageClass);
-	}
-
 	protected final void start() throws ModuleException
 	{
 		try
@@ -300,12 +283,6 @@ public abstract class Module implements SingletonState
 					for (Executable executable : this.executables.values())
 						executable.terminate(true);
 				}
-
-				for (Class<? extends Message> messageClass : listeners.keySet()) {
-					Modules.get(MessageCentral.class).removeListener(listeners.get(messageClass));
-				}
-
-				listeners.clear();
 
 				for (Class<? extends Module> invokedClazz : getComponents())
 				{
