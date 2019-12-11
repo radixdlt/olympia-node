@@ -37,6 +37,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -54,12 +55,18 @@ public final class RadixHttpServer {
 	private final AtomsService atomsService;
     private final RadixJsonRpcServer jsonRpcServer;
     private final InternalService internalService;
+	private final Universe universe;
+	private final JSONObject apiSerializedUniverse;
+	private final Serialization serialization;
 
-	public RadixHttpServer(LedgerEntryStore store, RadixEngineAtomProcessor radixEngineAtomProcessor, AtomToBinaryConverter atomToBinaryConverter) {
+	public RadixHttpServer(LedgerEntryStore store, RadixEngineAtomProcessor radixEngineAtomProcessor, AtomToBinaryConverter atomToBinaryConverter, Universe universe, Serialization serialization) {
+		this.universe = Objects.requireNonNull(universe);
+		this.serialization = Objects.requireNonNull(serialization);
+		this.apiSerializedUniverse = serialization.toJsonObject(this.universe, DsonOutput.Output.API);
 		this.peers = new ConcurrentHashMap<>();
 		this.atomsService = new AtomsService(store, radixEngineAtomProcessor, atomToBinaryConverter);
 		this.jsonRpcServer = new RadixJsonRpcServer(
-				Modules.get(Serialization.class),
+				serialization,
 				store,
 				atomsService,
 				AtomSchemas.get()
@@ -78,7 +85,7 @@ public final class RadixHttpServer {
         return Collections.unmodifiableSet(peers.keySet());
     }
 
-    public final void start() {
+    public final void start(RuntimeProperties properties) {
         RoutingHandler handler = Handlers.routing(true); // add path params to query params with this flag
 
         // add all REST routes
@@ -106,14 +113,14 @@ public final class RadixHttpServer {
         });
 
         // if we are in a development universe, add the dev only routes (e.g. for spamathons)
-        if (Modules.get(Universe.class).isDevelopment()) {
+        if (this.universe.isDevelopment()) {
             addDevelopmentOnlyRoutesTo(handler);
         }
-        if (Modules.get(Universe.class).isDevelopment() || Modules.get(Universe.class).isTest()) {
+        if (this.universe.isDevelopment() || this.universe.isTest()) {
         	addTestRoutesTo(handler);
         }
 
-        Integer port = Modules.get(RuntimeProperties.class).get("cp.port", DEFAULT_PORT);
+        Integer port = properties.get("cp.port", DEFAULT_PORT);
         Filter corsFilter = new Filter(handler);
         // Disable INFO logging for CORS filter, as it's a bit distracting
         java.util.logging.Logger.getLogger(corsFilter.getClass().getName()).setLevel(java.util.logging.Level.WARNING);
@@ -197,7 +204,7 @@ public final class RadixHttpServer {
         }, handler);
 
         addGetRoute("/api/universe", exchange
-                -> respond(Modules.get(Serialization.class).toJsonObject(Modules.get(Universe.class), DsonOutput.Output.API), exchange), handler);
+                -> respond(this.apiSerializedUniverse, exchange), handler);
 
         addGetRoute("/api/system/modules/api/tasks-waiting", exchange
                 -> {
@@ -248,7 +255,7 @@ public final class RadixHttpServer {
 
     private void addRestSystemRoutesTo(RoutingHandler handler) {
         addGetRoute("/api/system", exchange
-                -> respond(Modules.get(Serialization.class).toJsonObject(LocalSystem.getInstance(), DsonOutput.Output.API), exchange), handler);
+                -> respond(this.serialization.toJsonObject(LocalSystem.getInstance(), DsonOutput.Output.API), exchange), handler);
     }
 
     // helper methods for responding to an exchange with various objects for readability

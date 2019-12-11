@@ -122,7 +122,8 @@ public class Radix extends Plugin
 		dumpExecutionLocation();
 
 		// set up serialisation
-		Modules.put(Serialization.class, Serialization.getDefault());
+		Serialization serialization = Serialization.getDefault();
+		Modules.put(Serialization.class, serialization);
 
 		// set up universe
 		Universe universe = extractUniverseFrom(properties);
@@ -165,8 +166,8 @@ public class Radix extends Plugin
 		// start API services
 		AtomToBinaryConverter atomToBinaryConverter = globalInjector.getInjector().getInstance(AtomToBinaryConverter.class);
 		LedgerEntryStore store = globalInjector.getInjector().getInstance(LedgerEntryStore.class);
-		httpServer = new RadixHttpServer(store, atomProcessor, atomToBinaryConverter);
-		httpServer.start();
+		httpServer = new RadixHttpServer(store, atomProcessor, atomToBinaryConverter, universe, serialization);
+		httpServer.start(properties);
 
 		// start all services
 		Modules.getInstance().start();

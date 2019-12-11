@@ -14,7 +14,7 @@ import com.radixdlt.serialization.SerializerDummy;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public abstract class BasicContainer implements Comparable<Object>
+public abstract class BasicContainer
 {
 	private static final Logger log = Logging.getLogger ();
 
@@ -98,15 +98,6 @@ public abstract class BasicContainer implements Comparable<Object>
 	public String toString()
 	{
 		return this.getClass().toString()+": "+getHID().toString();
-	}
-
-	@Override
-	public int compareTo(Object object)
-	{
-		if (object instanceof BasicContainer)
-			return getHID().compareTo(((BasicContainer)object).getHID());
-
-		return 0;
 	}
 
 	public abstract short VERSION();
