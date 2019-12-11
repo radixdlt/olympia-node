@@ -1,7 +1,6 @@
 package org.radix.network2.addressbook;
 
 import org.radix.events.Events;
-import org.radix.modules.Modules;
 import org.radix.modules.exceptions.ModuleException;
 
 import com.google.inject.AbstractModule;
@@ -35,7 +34,7 @@ final class AddressBookModule extends AbstractModule {
 	@Singleton
 	PeerPersistence addressBookPersistenceProvider(Serialization serialization) throws ModuleException {
 		AddressBookPersistence persistence = new AddressBookPersistence(serialization);
-		Modules.getInstance().start(persistence);
+		persistence.start();
 		return persistence;
 	}
 }

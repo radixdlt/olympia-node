@@ -40,7 +40,7 @@ public class AddressBookPersistence extends DatabaseStore implements PeerPersist
 	}
 
 	@Override
-	public void start_impl() {
+	public void start() {
 		DatabaseConfig config = new DatabaseConfig();
 		config.setAllowCreate(true);
 
@@ -50,11 +50,11 @@ public class AddressBookPersistence extends DatabaseStore implements PeerPersist
         	throw new RuntimeException("while opening database", ex);
 		}
 
-		super.start_impl();
+		super.start();
 	}
 
 	@Override
-	public void reset_impl() {
+	public void reset() {
 		Transaction transaction = null;
 
 		try {
@@ -75,27 +75,12 @@ public class AddressBookPersistence extends DatabaseStore implements PeerPersist
 	}
 
 	@Override
-	public void stop_impl() {
-		super.stop_impl();
+	public void stop() {
+		super.stop();
 		if (this.peersByNidDB != null) {
 			this.peersByNidDB.close();
 			this.peersByNidDB = null;
 		}
-	}
-
-	@Override
-	public void build() throws DatabaseException {
-		// Not used
-	}
-
-	@Override
-	public void maintenence() throws DatabaseException {
-		// Not used
-	}
-
-	@Override
-	public void integrity() throws DatabaseException {
-		// Not used
 	}
 
 	@Override

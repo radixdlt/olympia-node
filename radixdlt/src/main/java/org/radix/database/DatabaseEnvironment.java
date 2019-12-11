@@ -16,7 +16,6 @@ import org.radix.database.exceptions.DatabaseException;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.modules.Modules;
-import org.radix.modules.exceptions.ModuleException;
 import org.radix.properties.RuntimeProperties;
 
 import com.radixdlt.utils.RadixConstants;
@@ -147,9 +146,9 @@ public final class DatabaseEnvironment
         {
 			try
         	{
-				Modules.getInstance().stop(database);
+				database.stop();
 			}
-        	catch (ModuleException e)
+        	catch (Exception e)
 			{
         		log.error("Failure stopping database "+database.getClass().getName(), e);
 			}
@@ -195,43 +194,11 @@ public final class DatabaseEnvironment
         	database.flush();
 	}
 
-    public void build() {
-    	for (DatabaseStore database : this.getAll(true)) {
-			try {
-				database.build();
-			} catch (DatabaseException dex) {
-				log.error("Could not build database", dex);
-			}
-    	}
-	}
-
-	public void maintenence() {
-        for (DatabaseStore database : this.databases.values()) {
-			try {
-				database.maintenence();
-			} catch (DatabaseException dex) {
-				log.error("Could not maintain database: " + database.toString(), dex);
-			}
-        }
-	}
-
 	public void register(DatabaseStore database) throws DatabaseException
 	{
 		if (this.databases.containsKey(database.getClass()) == false)
 		{
 			this.databases.put(database.getClass(), database);
-
-/*			if (!ModuleManager.get(Universe.class).isProduction())
-			{
-	        	if (ModuleManager.get(SystemMetaData.class).opt("version", 0l) <= Radix.MAJOR_AGENT_VERSION  || clean)
-	        	{
-	        		clean = true;
-	        		plugin.clean();
-	                plugin.build();
-	        	}
-			}*/
-
-			database.build();
 		}
 	}
 

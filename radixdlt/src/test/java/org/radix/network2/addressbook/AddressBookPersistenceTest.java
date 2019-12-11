@@ -32,12 +32,12 @@ public class AddressBookPersistenceTest extends RadixTest {
 		this.dbEnv.start();
 		Modules.put(DatabaseEnvironment.class, this.dbEnv);
 		this.abp = new AddressBookPersistence(Serialization.getDefault());
-		this.abp.reset_impl();
+		this.abp.reset();
 	}
 
 	@After
 	public void tearDown() throws Exception {
-		this.abp.stop_impl();
+		this.abp.stop();
 		this.dbEnv.stop();
 		Modules.getInstance().remove(DatabaseEnvironment.class);
 		Modules.remove(DatabaseEnvironment.class);
@@ -46,57 +46,34 @@ public class AddressBookPersistenceTest extends RadixTest {
 	@Test
 	public void testStart() throws ModuleException {
 		// No exceptions, and should have a database when done
-		this.abp.start_impl();
+		this.abp.start();
 		assertNotNull(Whitebox.getInternalState(this.abp, "peersByNidDB"));
 	}
 
 	@Test
 	public void testStop() throws ModuleException {
 		// No exceptions, and should have no database when done
-		this.abp.start_impl();
+		this.abp.start();
 		assertNotNull(Whitebox.getInternalState(this.abp, "peersByNidDB"));
-		this.abp.stop_impl();
+		this.abp.stop();
 		assertNull(Whitebox.getInternalState(this.abp, "peersByNidDB"));
 	}
 
 	@Test
 	public void testReset() throws ModuleException {
-		this.abp.start_impl();
+		this.abp.start();
 		assertTrue(this.abp.savePeer(new PeerWithNid(EUID.ONE)));
 		AtomicInteger peercount1 = new AtomicInteger(0);
 		this.abp.forEachPersistedPeer(p -> peercount1.incrementAndGet());
 		assertEquals(1, peercount1.get());
 
-		this.abp.stop_impl();
-		this.abp.reset_impl();
+		this.abp.stop();
+		this.abp.reset();
 
-		this.abp.start_impl();
+		this.abp.start();
 		AtomicInteger peercount2 = new AtomicInteger(0);
 		this.abp.forEachPersistedPeer(p -> peercount2.incrementAndGet());
 		assertEquals(0, peercount2.get());
-	}
-
-	@Test
-	public void testGetName() {
-		assertEquals("Peer Address Book Persistence", this.abp.getName());
-	}
-
-	@Test
-	public void testBuild() {
-		// No exceptions
-		this.abp.build();
-	}
-
-	@Test
-	public void testMaintenence() {
-		// No exceptions
-		this.abp.maintenence();
-	}
-
-	@Test
-	public void testIntegrity() {
-		// No exceptions
-		this.abp.integrity();
 	}
 
 	@Test
@@ -107,7 +84,7 @@ public class AddressBookPersistenceTest extends RadixTest {
 
 	@Test
 	public void testSavePeer() throws ModuleException {
-		this.abp.start_impl();
+		this.abp.start();
 
 		PeerWithNid pwn = new PeerWithNid(EUID.ONE);
 		assertTrue(this.abp.savePeer(pwn));
@@ -134,7 +111,7 @@ public class AddressBookPersistenceTest extends RadixTest {
 
 	@Test
 	public void testDeletePeer() throws ModuleException {
-		this.abp.start_impl();
+		this.abp.start();
 
 		PeerWithNid pwn1 = new PeerWithNid(EUID.ONE);
 		assertTrue(this.abp.savePeer(pwn1));

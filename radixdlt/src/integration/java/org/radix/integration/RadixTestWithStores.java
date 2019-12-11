@@ -77,7 +77,7 @@ public class RadixTestWithStores extends RadixTest
 	}
 
 	private static DatabaseStore clean(DatabaseStore m) throws ModuleException {
-		m.reset_impl();
+		m.reset();
 		return m;
 	}
 

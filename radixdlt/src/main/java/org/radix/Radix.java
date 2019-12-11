@@ -34,7 +34,6 @@ import org.radix.network2.messaging.MessageCentralFactory;
 import org.radix.properties.PersistedProperties;
 import org.radix.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
-import org.radix.time.NtpService;
 import com.radixdlt.universe.Universe;
 import org.radix.time.Time;
 import org.radix.universe.system.LocalSystem;
@@ -142,8 +141,12 @@ public class Radix extends Plugin
 		Modules.put(DatabaseEnvironment.class, dbEnv);
 
 		// start profiling
-		Modules.getInstance().startIfNeeded(SystemMetaData.class);
-		Modules.getInstance().start(SystemProfiler.getInstance());
+		SystemMetaData systemMetaData = new SystemMetaData();
+		systemMetaData.start();
+		Modules.put(SystemMetaData.class, systemMetaData);
+		SystemProfiler systemProfiler = SystemProfiler.getInstance();
+		systemProfiler.start();
+		Modules.put(SystemProfiler.class, systemProfiler);
 
 		// set up networking
 		MessageCentral messageCentral = createMessageCentral(properties);

@@ -22,13 +22,10 @@ public abstract class DatabaseStore
 		this.buildPriority = buildPriority;
 	}
 
-	public void start_impl()
+	public void start()
 	{
 		try
 		{
-			if (System.getProperty("db.check_integrity", "1").equals("1"))
-				integrity();
-
 			if (Modules.get(DatabaseEnvironment.class).isRegistered(this) == false)
 				Modules.get(DatabaseEnvironment.class).register(this);
 		}
@@ -38,7 +35,7 @@ public abstract class DatabaseStore
 		}
 	}
 
-	public void stop_impl()
+	public void stop()
 	{
 		try
 		{
@@ -53,15 +50,9 @@ public abstract class DatabaseStore
 			Modules.get(DatabaseEnvironment.class).deregister(this);
 	}
 
-	public abstract void reset_impl();
+	public abstract void reset();
 
 	public int getBuildPriority() { return this.buildPriority; }
-
-	public abstract void build() throws DatabaseException;
-
-	public abstract void maintenence() throws DatabaseException;
-
-	public abstract void integrity() throws DatabaseException;
 
 	public abstract void flush() throws DatabaseException;
 }

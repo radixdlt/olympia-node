@@ -14,9 +14,6 @@ import org.radix.database.exceptions.DatabaseException;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.modules.Modules;
-import org.radix.modules.exceptions.ModuleException;
-import org.radix.modules.exceptions.ModuleResetException;
-import org.radix.modules.exceptions.ModuleStartException;
 import com.radixdlt.utils.Bytes;
 
 import com.radixdlt.utils.RadixConstants;
@@ -44,22 +41,13 @@ public final class SystemMetaData extends DatabaseStore
 	}
 
 	@Override
-	public void build() throws DatabaseException { }
-
-	@Override
-	public void maintenence() throws DatabaseException { }
-
-	@Override
-	public void integrity() throws DatabaseException { }
-
-	@Override
-	public void start_impl() {
+	public void start() {
 		DatabaseConfig config = new DatabaseConfig();
 		config.setAllowCreate(true);
 
 		this.systemMetaDataDB = Modules.get(DatabaseEnvironment.class).getEnvironment().openDatabase(null, "system_meta_data", config);
 
-		super.start_impl();
+		super.start();
 
 		try
 		{
@@ -85,7 +73,7 @@ public final class SystemMetaData extends DatabaseStore
 	}
 
 	@Override
-	public void reset_impl() {
+	public void reset() {
 		Transaction transaction = null;
 		try
 		{
@@ -111,12 +99,12 @@ public final class SystemMetaData extends DatabaseStore
 	}
 
 	@Override
-	public void stop_impl() {
+	public void stop() {
 		if (this.flush != null) {
 			this.flush.cancel(false);
 		}
 
-		super.stop_impl();
+		super.stop();
 
 		systemMetaDataDB.close();
 	}

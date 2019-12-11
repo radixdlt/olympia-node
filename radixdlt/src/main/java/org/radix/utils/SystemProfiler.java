@@ -14,8 +14,6 @@ import org.radix.database.DatabaseEnvironment;
 import org.radix.database.DatabaseStore;
 import org.radix.database.exceptions.DatabaseException;
 import org.radix.modules.Modules;
-import org.radix.modules.exceptions.ModuleException;
-import org.radix.modules.exceptions.ModuleResetException;
 import org.radix.properties.RuntimeProperties;
 
 import com.sleepycat.je.Database;
@@ -97,7 +95,7 @@ public class SystemProfiler extends DatabaseStore
 	}
 
 	@Override
-	public void start_impl() {
+	public void start() {
 		profilerRecords.clear();
 		profilerEnabled = Modules.get(RuntimeProperties.class).get("debug.profiler", false);
 		if (profilerEnabled) {
@@ -106,7 +104,7 @@ public class SystemProfiler extends DatabaseStore
 
 			systemProfilerDB = Modules.get(DatabaseEnvironment.class).getEnvironment().openDatabase(null, "system_profiler", config);
 
-			super.start_impl();
+			super.start();
 
 			// Set up flush task //
 			ScheduledExecutable flushExecutable = new ScheduledExecutable(10, 10, TimeUnit.SECONDS) {
@@ -124,7 +122,7 @@ public class SystemProfiler extends DatabaseStore
 	}
 
 	@Override
-	public void reset_impl() {
+	public void reset() {
 		if (profilerEnabled) {
 			Transaction transaction = null;
 			try
@@ -151,27 +149,12 @@ public class SystemProfiler extends DatabaseStore
 	}
 
 	@Override
-	public void stop_impl() {
-		super.stop_impl();
+	public void stop() {
+		super.stop();
 
 		if (profilerEnabled) {
 			systemProfilerDB.close();
 		}
-	}
-
-	@Override
-	public void build() throws DatabaseException {
-		// Nothing to do here.
-	}
-
-	@Override
-	public void maintenence() throws DatabaseException {
-		// Nothing to do here.
-	}
-
-	@Override
-	public void integrity() throws DatabaseException {
-		// Nothing to do here.
 	}
 
 	@Override

@@ -37,7 +37,6 @@ public abstract class RadixTest
 		when(universe.getMagic()).thenReturn(2);
 
 		final SystemMetaData systemMetaData = mock(SystemMetaData.class);
-		when(systemMetaData.getUID()).thenReturn(new EUID(2));
 
 		final NtpService ntpService = mock(NtpService.class);
 		when(ntpService.getUTCTimeMS()).thenAnswer((Answer<Long>) invocation -> System.currentTimeMillis());
