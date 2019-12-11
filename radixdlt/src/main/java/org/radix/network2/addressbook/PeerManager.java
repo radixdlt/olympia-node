@@ -14,8 +14,8 @@ import org.radix.common.executors.ScheduledExecutable;
 import org.radix.events.Events;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
+import org.radix.modules.Module;
 import org.radix.modules.Modules;
-import org.radix.modules.Plugin;
 import org.radix.modules.exceptions.ModuleException;
 import org.radix.network.discovery.BootstrapDiscovery;
 import org.radix.network.messages.GetPeersMessage;
@@ -33,7 +33,7 @@ import org.radix.universe.system.SystemMessage;
 
 // FIXME: static dependency on Modules.get(Universe.class).getPlanck()
 // FIXME: static dependency on LocalSystem.getInstance().getNID()
-public class PeerManager extends Plugin {
+public class PeerManager extends Module {
 	private static final Logger log = Logging.getLogger("peermanager");
 
 	private final Random rand = new Random(); // No need for cryptographically secure here
