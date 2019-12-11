@@ -176,8 +176,8 @@ public final class DatabaseEnvironment
 	}
 
 	public void withLock(Runnable runnable) {
+		this.lock.lock();
 		try {
-			this.lock.lock();
 			runnable.run();
 		} finally {
 			this.lock.unlock();
