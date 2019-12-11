@@ -10,16 +10,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.bouncycastle.util.Arrays;
 import org.radix.database.exceptions.DatabaseException;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.modules.Modules;
-import org.radix.modules.Service;
 import org.radix.modules.exceptions.ModuleException;
-import org.radix.modules.exceptions.ModuleStartException;
 import org.radix.properties.RuntimeProperties;
 
 import com.radixdlt.utils.RadixConstants;
@@ -178,12 +175,13 @@ public final class DatabaseEnvironment
        	this.environment = null;
 	}
 
-	public void lock() {
-    	this.lock.lock();
-	}
-
-	public void unlock() {
-    	this.lock.unlock();
+	public void withLock(Runnable runnable) {
+		try {
+			this.lock.lock();
+			runnable.run();
+		} finally {
+			this.lock.unlock();
+		}
 	}
 
 	public Environment getEnvironment()

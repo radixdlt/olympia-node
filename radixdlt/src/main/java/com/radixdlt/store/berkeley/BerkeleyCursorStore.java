@@ -67,27 +67,25 @@ public final class BerkeleyCursorStore implements CursorStore {
 
 	@Override
 	public void reset() {
-		Transaction transaction = null;
-		try {
-			dbEnv.lock();
-
-			Environment env = this.dbEnv.getEnvironment();
-			transaction = env.beginTransaction(null, new TransactionConfig().setReadUncommitted(true));
-			env.truncateDatabase(transaction, LC_CURSOR_STORE_NAME, false);
-			transaction.commit();
-		} catch (DatabaseNotFoundException e) {
-			if (transaction != null) {
-				transaction.abort();
+		dbEnv.withLock(() -> {
+			Transaction transaction = null;
+			try {
+				Environment env = this.dbEnv.getEnvironment();
+				transaction = env.beginTransaction(null, new TransactionConfig().setReadUncommitted(true));
+				env.truncateDatabase(transaction, LC_CURSOR_STORE_NAME, false);
+				transaction.commit();
+			} catch (DatabaseNotFoundException e) {
+				if (transaction != null) {
+					transaction.abort();
+				}
+				logger.warn("Error while resetting database, database not found", e);
+			} catch (Exception e) {
+				if (transaction != null) {
+					transaction.abort();
+				}
+				throw new TempoException("Error while resetting databases", e);
 			}
-			logger.warn("Error while resetting database, database not found", e);
-		} catch (Exception e) {
-			if (transaction != null) {
-				transaction.abort();
-			}
-			throw new TempoException("Error while resetting databases", e);
-		} finally {
-			dbEnv.unlock();
-		}
+		});
 	}
 
 	@Override

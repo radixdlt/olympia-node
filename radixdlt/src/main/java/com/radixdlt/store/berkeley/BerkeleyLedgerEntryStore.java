@@ -153,33 +153,31 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 	}
 
 	public void reset() {
-		Transaction transaction = null;
-		try {
-			dbEnv.lock();
+		dbEnv.withLock(() -> {
+			Transaction transaction = null;
+			try {
+				Environment env = this.dbEnv.getEnvironment();
+				transaction = env.beginTransaction(null, new TransactionConfig().setReadUncommitted(true));
+				env.truncateDatabase(transaction, ATOMS_DB_NAME, false);
+				env.truncateDatabase(transaction, UNIQUE_INDICES_DB_NAME, false);
+				env.truncateDatabase(transaction, DUPLICATE_INDICES_DB_NAME, false);
+				env.truncateDatabase(transaction, ATOM_INDICES_DB_NAME, false);
+				env.truncateDatabase(transaction, PENDING_DB_NAME, false);
+				transaction.commit();
+			} catch (DatabaseNotFoundException e) {
+				if (transaction != null) {
+					transaction.abort();
+				}
 
-			Environment env = this.dbEnv.getEnvironment();
-			transaction = env.beginTransaction(null, new TransactionConfig().setReadUncommitted(true));
-			env.truncateDatabase(transaction, ATOMS_DB_NAME, false);
-			env.truncateDatabase(transaction, UNIQUE_INDICES_DB_NAME, false);
-			env.truncateDatabase(transaction, DUPLICATE_INDICES_DB_NAME, false);
-			env.truncateDatabase(transaction, ATOM_INDICES_DB_NAME, false);
-			env.truncateDatabase(transaction, PENDING_DB_NAME, false);
-			transaction.commit();
-		} catch (DatabaseNotFoundException e) {
-			if (transaction != null) {
-				transaction.abort();
+				log.warn("Error while resetting database, database not found", e);
+			} catch (Exception e) {
+				if (transaction != null) {
+					transaction.abort();
+				}
+
+				throw new TempoException("Error while resetting databases", e);
 			}
-
-			log.warn("Error while resetting database, database not found", e);
-		} catch (Exception e) {
-			if (transaction != null) {
-				transaction.abort();
-			}
-
-			throw new TempoException("Error while resetting databases", e);
-		} finally {
-			dbEnv.unlock();
-		}
+		});
 	}
 
 	@Override
