@@ -77,11 +77,6 @@ public class Modules
 		return (T) Modules.modules.remove(clazz);
 	}
 
-	private	boolean	throwOnException = false;
-
-	public boolean isThrowOnException() { return throwOnException; }
-	public void setThrowOnException(boolean throwOnException) { this.throwOnException = throwOnException; }
-
 	private Modules()
 	{
 	}

@@ -9,7 +9,6 @@ import org.junit.Test;
 import org.powermock.reflect.Whitebox;
 import org.radix.database.DatabaseEnvironment;
 import org.radix.modules.Modules;
-import org.radix.modules.exceptions.ModuleException;
 import org.radix.network2.transport.StaticTransportMetadata;
 import org.radix.network2.transport.TransportInfo;
 import org.radix.serialization.RadixTest;
