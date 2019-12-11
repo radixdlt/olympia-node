@@ -1,7 +1,6 @@
 package org.radix.network2.addressbook;
 
 import org.radix.events.Events;
-import org.radix.modules.exceptions.ModuleException;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;

@@ -4,8 +4,6 @@ import org.radix.database.exceptions.DatabaseException;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.modules.Modules;
-import org.radix.modules.exceptions.ModuleStartException;
-import org.radix.modules.exceptions.ModuleStopException;
 
 public abstract class DatabaseStore
 {
