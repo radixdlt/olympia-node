@@ -1,9 +1,9 @@
 package org.radix.network.messages;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.radix.collections.WireableList;
 import org.radix.network.messaging.Message;
 import org.radix.network2.addressbook.Peer;
 
@@ -18,7 +18,7 @@ public final class PeersMessage extends Message
 {
 	@JsonProperty("peers")
 	@DsonOutput(Output.ALL)
-	private WireableList<Peer> peers = new WireableList<>();
+	private List<Peer> peers = new ArrayList<>();
 
 	public PeersMessage ()
 	{

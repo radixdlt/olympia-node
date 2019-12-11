@@ -3,8 +3,6 @@ package org.radix.containers;
 import com.radixdlt.common.EUID;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
-import org.radix.crypto.Hashable;
-import org.radix.interfaces.Versioned;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.modules.Modules;
@@ -16,13 +14,9 @@ import com.radixdlt.serialization.SerializerDummy;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public abstract class BasicContainer implements Hashable, Versioned, Cloneable, Comparable<Object>
+public abstract class BasicContainer
 {
 	private static final Logger log = Logging.getLogger ();
-
-	@JsonProperty("version")
-	@DsonOutput(Output.ALL)
-	private short	version;
 
 	// Placeholder for the serializer ID
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
@@ -34,8 +28,6 @@ public abstract class BasicContainer implements Hashable, Versioned, Cloneable, 
 	public BasicContainer()
 	{
 		super();
-
-		version = VERSION();
 	}
 
 	/**
@@ -44,7 +36,6 @@ public abstract class BasicContainer implements Hashable, Versioned, Cloneable, 
 	 */
 	public BasicContainer(BasicContainer copy) {
 		this();
-		this.version = copy.VERSION();
 		this.hash = copy.hash;
 	}
 
@@ -67,7 +58,6 @@ public abstract class BasicContainer implements Hashable, Versioned, Cloneable, 
 	}
 
 	// HASHABLE //
-	@Override
 	public synchronized Hash getHash()
 	{
 		try
@@ -110,24 +100,5 @@ public abstract class BasicContainer implements Hashable, Versioned, Cloneable, 
 		return this.getClass().toString()+": "+getHID().toString();
 	}
 
-	@Override
-	public int compareTo(Object object)
-	{
-		if (object instanceof BasicContainer)
-			return getHID().compareTo(((BasicContainer)object).getHID());
-
-		return 0;
-	}
-
-	@Override
-	public short getVersion()
-	{
-		return version;
-	}
-
-	@Override
-	public void setVersion(short version)
-	{
-		this.version = version;
-	}
+	public abstract short VERSION();
 }

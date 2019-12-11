@@ -17,7 +17,7 @@ import org.radix.logging.Logging;
 import org.radix.modules.Service;
 import org.radix.modules.exceptions.ModuleException;
 
-public class Interfaces extends Service
+public class Interfaces
 {
 	private static final Logger networklog = Logging.getLogger ("network");
 
@@ -38,27 +38,19 @@ public class Interfaces extends Service
 
 	private Map<Domain, Set<InetAddress>> addresses = new HashMap<Domain, Set<InetAddress>>();
 
-	public Interfaces() throws SocketException
+	public Interfaces()
 	{
-		super();
-
-		Enumeration<NetworkInterface> networkInterfaces = NetworkInterface.getNetworkInterfaces();
-		for (NetworkInterface networkInterface : Collections.list(networkInterfaces))
-		{
-			List<InetAddress> networkInterfaceAddresses = getInterfaceInformation(networkInterface);
-			for (InetAddress networkInterfaceAddress : networkInterfaceAddresses)
-				addInterfaceAddress(networkInterfaceAddress);
+		try {
+			Enumeration<NetworkInterface> networkInterfaces = NetworkInterface.getNetworkInterfaces();
+			for (NetworkInterface networkInterface : Collections.list(networkInterfaces))
+			{
+				List<InetAddress> networkInterfaceAddresses = getInterfaceInformation(networkInterface);
+				for (InetAddress networkInterfaceAddress : networkInterfaceAddresses)
+					addInterfaceAddress(networkInterfaceAddress);
+			}
+		} catch (SocketException e) {
+			throw new RuntimeException("while adding interfaces", e);
 		}
-	}
-
-	@Override
-	public void start_impl() throws ModuleException
-	{
-	}
-
-	@Override
-	public void stop_impl() throws ModuleException
-	{
 	}
 
 	public boolean isSelf(InetAddress address)

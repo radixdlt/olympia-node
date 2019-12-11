@@ -1,7 +1,5 @@
 package org.radix.api.services;
 
-import java.io.IOException;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -17,7 +15,6 @@ import com.radixdlt.common.EUID;
 import org.radix.modules.Modules;
 import org.radix.network2.addressbook.AddressBook;
 import org.radix.network2.addressbook.Peer;
-import org.radix.routing.RoutingHandler;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import org.radix.universe.system.LocalSystem;
@@ -77,17 +74,6 @@ public class NetworkService {
 		JSONArray NIDS = new JSONArray();
 		Modules.get(AddressBook.class).recentPeers().forEachOrdered(peer -> NIDS.put(peer.getNID().toString()));
 		return new JSONObject().put("nids", NIDS);
-	}
-
-	public JSONObject getLiveNIDS(String planck) throws IOException {
-		List<EUID> NIDS = Modules.get(RoutingHandler.class).getNIDS(Integer.valueOf(planck));
-		Collections.sort(NIDS);
-
-		JSONObject json = new JSONObject().put("nids", new JSONArray());
-		for (EUID NID : NIDS)
-			json.getJSONArray("nids").put(NID.toString());
-
-		return json;
 	}
 
 	public List<JSONObject> getPeers() {

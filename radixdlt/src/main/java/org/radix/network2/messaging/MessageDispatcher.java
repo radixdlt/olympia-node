@@ -17,7 +17,6 @@ import org.radix.modules.Modules;
 import org.radix.network.Interfaces;
 import org.radix.network.messaging.Message;
 import org.radix.network.messaging.Message.Direction;
-import org.radix.network.messaging.MessageProfiler;
 import org.radix.network.messaging.SignedMessage;
 import org.radix.network2.NetworkLegacyPatching;
 import org.radix.network2.TimeSupplier;
@@ -70,7 +69,6 @@ class MessageDispatcher {
 			return SendResult.failure(new IOException(msg));
 		}
 
-		Modules.ifAvailable(MessageProfiler.class, mp -> mp.process(message, peer));
 		message.setDirection(Direction.OUTBOUND);
 
 		try {
@@ -149,7 +147,6 @@ class MessageDispatcher {
 		long start = SystemProfiler.getInstance().begin();
 		try {
 			final Peer fp = peer; // Awkward
-			Modules.ifAvailable(MessageProfiler.class, mp -> mp.process(message, fp));
 			listeners.messageReceived(peer, message);
 			Modules.ifAvailable(SystemMetaData.class, a -> a.increment("messages.inbound.processed"));
 		} finally {

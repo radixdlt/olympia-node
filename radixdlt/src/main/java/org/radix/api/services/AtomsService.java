@@ -15,17 +15,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import com.radixdlt.store.SearchCursor;
-import com.radixdlt.store.StoreIndex;
-import com.radixdlt.store.LedgerSearchMode;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.middleware2.processing.RadixEngineAtomProcessor;
-import com.radixdlt.middleware2.store.EngineAtomIndices;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStore;
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -41,9 +36,6 @@ import org.radix.atoms.events.AtomExceptionEvent;
 import org.radix.atoms.events.AtomStoredEvent;
 import com.radixdlt.common.AID;
 import org.radix.events.Events;
-import org.radix.shards.Shards;
-
-import static com.radixdlt.store.berkeley.LedgerEntryIndices.SHARD_INDEX_PREFIX;
 
 public class AtomsService {
 	private static int  NUMBER_OF_THREADS = 8;
@@ -195,26 +187,6 @@ public class AtomsService {
 
 	public long getWaitingCount() {
 		return this.atomEventObservers.stream().map(AtomEventObserver::isDone).filter(done -> !done).count();
-	}
-
-	public JSONObject getAtomsByShardRange(String from, String to) throws JSONException {
-		JSONObject result = new JSONObject();
-
-		JSONArray array = new JSONArray();
-		for (
-				long shard = Shards.fromGroup(Integer.parseInt(from), (1 << 20)).getLow();
-				shard < Shards.fromGroup(Integer.parseInt(to == null ? from : to), (1 << 20)).getHigh();
-				shard++
-		) {
-			StoreIndex fromIndex = StoreIndex.from(EngineAtomIndices.toByteArray(SHARD_INDEX_PREFIX, shard));
-			SearchCursor searchResultCursor = store.search(StoreIndex.LedgerIndexType.DUPLICATE, fromIndex, LedgerSearchMode.RANGE);
-			AID atomId;
-			while ((atomId = searchResultCursor.get()) != null) {
-				array.put(atomId.toString());
-			}
-		}
-		result.put("hids", array);
-		return result;
 	}
 
 	public JSONObject getAtomsByAtomId(AID atomId) throws JSONException {

@@ -2,6 +2,7 @@ package org.radix.api.http;
 
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.middleware2.processing.RadixEngineAtomProcessor;
+import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.universe.Universe;
@@ -21,25 +22,22 @@ import org.json.JSONObject;
 import org.radix.api.AtomSchemas;
 import org.radix.api.jsonrpc.RadixJsonRpcPeer;
 import org.radix.api.jsonrpc.RadixJsonRpcServer;
-import org.radix.api.services.AdminService;
 import org.radix.api.services.AtomsService;
-import org.radix.api.services.GraphService;
 import org.radix.api.services.InternalService;
 import org.radix.api.services.NetworkService;
 import org.radix.api.services.TestService;
-import org.radix.api.services.UniverseService;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.modules.Modules;
 import org.radix.properties.RuntimeProperties;
 import org.radix.shards.ShardSpace;
-import org.radix.time.Time;
 import org.radix.universe.system.LocalSystem;
 
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -57,12 +55,18 @@ public final class RadixHttpServer {
 	private final AtomsService atomsService;
     private final RadixJsonRpcServer jsonRpcServer;
     private final InternalService internalService;
+	private final Universe universe;
+	private final JSONObject apiSerializedUniverse;
+	private final Serialization serialization;
 
-	public RadixHttpServer(LedgerEntryStore store, RadixEngineAtomProcessor radixEngineAtomProcessor, AtomToBinaryConverter atomToBinaryConverter) {
+	public RadixHttpServer(LedgerEntryStore store, RadixEngineAtomProcessor radixEngineAtomProcessor, AtomToBinaryConverter atomToBinaryConverter, Universe universe, Serialization serialization) {
+		this.universe = Objects.requireNonNull(universe);
+		this.serialization = Objects.requireNonNull(serialization);
+		this.apiSerializedUniverse = serialization.toJsonObject(this.universe, DsonOutput.Output.API);
 		this.peers = new ConcurrentHashMap<>();
 		this.atomsService = new AtomsService(store, radixEngineAtomProcessor, atomToBinaryConverter);
 		this.jsonRpcServer = new RadixJsonRpcServer(
-				Modules.get(Serialization.class),
+				serialization,
 				store,
 				atomsService,
 				AtomSchemas.get()
@@ -81,7 +85,7 @@ public final class RadixHttpServer {
         return Collections.unmodifiableSet(peers.keySet());
     }
 
-    public final void start() {
+    public final void start(RuntimeProperties properties) {
         RoutingHandler handler = Handlers.routing(true); // add path params to query params with this flag
 
         // add all REST routes
@@ -109,14 +113,14 @@ public final class RadixHttpServer {
         });
 
         // if we are in a development universe, add the dev only routes (e.g. for spamathons)
-        if (Modules.get(Universe.class).isDevelopment()) {
+        if (this.universe.isDevelopment()) {
             addDevelopmentOnlyRoutesTo(handler);
         }
-        if (Modules.get(Universe.class).isDevelopment() || Modules.get(Universe.class).isTest()) {
+        if (this.universe.isDevelopment() || this.universe.isTest()) {
         	addTestRoutesTo(handler);
         }
 
-        Integer port = Modules.get(RuntimeProperties.class).get("cp.port", DEFAULT_PORT);
+        Integer port = properties.get("cp.port", DEFAULT_PORT);
         Filter corsFilter = new Filter(handler);
         // Disable INFO logging for CORS filter, as it's a bit distracting
         java.util.logging.Logger.getLogger(corsFilter.getClass().getName()).setLevel(java.util.logging.Level.WARNING);
@@ -154,9 +158,7 @@ public final class RadixHttpServer {
 	}
 
     private void addTestRoutesTo(RoutingHandler handler) {
-    	addGetRoute("/api/internal/shards/dump", exchange -> {
-    		respond(internalService.dumpShardChunks(), exchange);
-    	}, handler);
+
     }
 
     private void addPostRoutesTo(RoutingHandler handler) {
@@ -190,19 +192,10 @@ public final class RadixHttpServer {
         // Network routes
         addRestNetworkRoutesTo(handler);
 
-        // Graph routes
-        addRestGraphRoutesTo(handler);
-
         // Atom Model JSON schema
         addGetRoute("/schemas/atom.schema.json", exchange -> {
 			respond(AtomSchemas.getJsonSchemaString(4), exchange);
         }, handler);
-
-        addGetRoute("/api/atoms/byshard", exchange -> {
-			String from = getParameter(exchange, "from").orElse(null);
-			String to = getParameter(exchange, "to").orElse(null);
-			respond(atomsService.getAtomsByShardRange(from, to), exchange);
-		}, handler);
 
         addGetRoute("/api/events", exchange -> {
 			JSONObject eventCount = new JSONObject();
@@ -211,7 +204,7 @@ public final class RadixHttpServer {
         }, handler);
 
         addGetRoute("/api/universe", exchange
-                -> respond(UniverseService.getInstance().getUniverse(), exchange), handler);
+                -> respond(this.apiSerializedUniverse, exchange), handler);
 
         addGetRoute("/api/system/modules/api/tasks-waiting", exchange
                 -> {
@@ -247,27 +240,12 @@ public final class RadixHttpServer {
             handler);
     }
 
-    private void addRestGraphRoutesTo(RoutingHandler handler) {
-
-        addGetRoute("/api/graph/route", exchange -> {
-        	String timestamp = getParameter(exchange, "timestamp").orElseGet(() -> String.valueOf(Time.currentTimestamp()));
-			respond(GraphService.getInstance().getRoutingTable(LocalSystem.getInstance().getNID().toString(), timestamp), exchange);
-		}, handler);
-    }
-
     private void addRestNetworkRoutesTo(RoutingHandler handler) {
         addGetRoute("/api/network", exchange -> {
             respond(NetworkService.getInstance().getNetwork(), exchange);
         }, handler);
         addGetRoute("/api/network/peers/live", exchange
                 -> respond(NetworkService.getInstance().getLivePeers().toString(), exchange), handler);
-        addGetRoute("/api/network/nids/live", exchange -> {
-        	String planck = getParameter(exchange, "planck").orElse(null);
-			if (planck == null)
-				respond(NetworkService.getInstance().getLiveNIDS(), exchange);
-			else
-				respond(NetworkService.getInstance().getLiveNIDS(planck), exchange);
-		}, handler);
         addGetRoute("/api/network/peers", exchange
                 -> respond(NetworkService.getInstance().getPeers().toString(), exchange), handler);
         addGetRoute("/api/network/peers/{id}", exchange
@@ -277,13 +255,7 @@ public final class RadixHttpServer {
 
     private void addRestSystemRoutesTo(RoutingHandler handler) {
         addGetRoute("/api/system", exchange
-                -> respond(AdminService.getInstance().getSystem(), exchange), handler);
-        addGetRoute("/api/system/profiler", exchange
-                -> respond(AdminService.getInstance().getProfiler(), exchange), handler);
-        addGetRoute("/api/system/modules", exchange
-                -> respond(AdminService.getInstance().getModules(), exchange), handler);
-        addGetRoute("/api/system/modules/atom-syncer", exchange
-                -> respond(AdminService.getInstance().getModules(), exchange), handler);
+                -> respond(this.serialization.toJsonObject(LocalSystem.getInstance(), DsonOutput.Output.API), exchange), handler);
     }
 
     // helper methods for responding to an exchange with various objects for readability

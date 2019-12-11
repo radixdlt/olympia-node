@@ -265,13 +265,6 @@ public class Modules implements ModuleListener
 		start(module);
 	}
 
-	// MODULEEVENT LISTENER //
-	@Override
-	public int getPriority()
-	{
-		return EventPriority.HIGH.priority();
-	}
-
 	@Override
 	public Syncronicity getSyncronicity()
 	{

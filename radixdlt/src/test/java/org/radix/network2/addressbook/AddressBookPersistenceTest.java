@@ -24,10 +24,13 @@ import static org.junit.Assert.*;
 public class AddressBookPersistenceTest extends RadixTest {
 
 	private AddressBookPersistence abp;
+	private DatabaseEnvironment dbEnv;
 
 	@Before
 	public void setUp() throws Exception {
-		Modules.getInstance().start(new DatabaseEnvironment());
+		this.dbEnv = new DatabaseEnvironment();
+		this.dbEnv.start();
+		Modules.put(DatabaseEnvironment.class, this.dbEnv);
 		this.abp = new AddressBookPersistence(Serialization.getDefault());
 		this.abp.reset_impl();
 	}
@@ -35,7 +38,8 @@ public class AddressBookPersistenceTest extends RadixTest {
 	@After
 	public void tearDown() throws Exception {
 		this.abp.stop_impl();
-		Modules.getInstance().stop(Modules.get(DatabaseEnvironment.class));
+		this.dbEnv.stop();
+		Modules.getInstance().remove(DatabaseEnvironment.class);
 		Modules.remove(DatabaseEnvironment.class);
 	}
 
