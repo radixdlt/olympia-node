@@ -105,6 +105,11 @@ public class MessagingDummyConfigurations {
         public TransportOutboundConnection getOut() {
             return out;
         }
+
+		@Override
+		public boolean canHandle(byte[] message) {
+			return true;
+		}
     }
 
     public static class DummyTransportOutboundConnection implements TransportOutboundConnection {

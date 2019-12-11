@@ -12,6 +12,9 @@ import org.radix.network2.messaging.InboundMessageConsumer;
 import org.radix.network2.transport.StaticTransportMetadata;
 import org.radix.network2.transport.TransportControl;
 import org.radix.network2.transport.TransportMetadata;
+import org.radix.network2.transport.netty.LogSink;
+import org.radix.network2.transport.netty.LoggingHandler;
+
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 
@@ -30,11 +33,12 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
-import io.netty.handler.logging.LogLevel;
-import io.netty.handler.logging.LoggingHandler;
 
 final class NettyTCPTransportImpl implements NettyTCPTransport {
 	private static final Logger log = Logging.getLogger("transport.tcp");
+
+	// Set this to true to see a dump of packet data
+	private static final boolean DEBUG_DATA = false;
 
 	// Default values if none specified in either localMetadata or config
 	private static final String DEFAULT_HOST = "0.0.0.0";
@@ -55,7 +59,6 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 
 	private Channel channel;
 	private Bootstrap outboundBootstrap;
-
 
 
 	@Inject
@@ -102,6 +105,11 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 	}
 
 	@Override
+	public boolean canHandle(byte[] message) {
+		return (message == null) || (message.length <= TCPConstants.MAX_PACKET_LENGTH);
+	}
+
+	@Override
 	public void start(InboundMessageConsumer messageSink) {
 		log.info(String.format("TCP transport %s, threads: %s", localAddress(), this.inboundProcessingThreads));
 
@@ -124,13 +132,16 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 			.channel(NioServerSocketChannel.class)
 			.option(ChannelOption.SO_BACKLOG, BACKLOG_SIZE)
 			.childOption(ChannelOption.SO_KEEPALIVE, true)
-			.handler(new LoggingHandler(LogLevel.INFO))
 			.childHandler(new ChannelInitializer<SocketChannel>() {
 				@Override
 				public void initChannel(SocketChannel ch) throws Exception {
 					setupChannel(ch, messageSink);
 				}
 			});
+		if (log.hasLevel(Logging.DEBUG)) {
+			LogSink ls = LogSink.forDebug(log);
+			b.handler(new LoggingHandler(ls, DEBUG_DATA));
+		}
 		try {
 			synchronized (channelLock) {
 				close();
@@ -151,6 +162,10 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 			.setReceiveBufferSize(RCV_BUF_SIZE)
 			.setSendBufferSize(SND_BUF_SIZE)
 			.setOption(ChannelOption.RCVBUF_ALLOCATOR, new FixedRecvByteBufAllocator(packetLength));
+		if (log.hasLevel(Logging.DEBUG)) {
+			LogSink ls = LogSink.forDebug(log);
+			ch.pipeline().addLast(new LoggingHandler(ls, DEBUG_DATA));
+		}
 		ch.pipeline()
 			.addLast("connections", control.handler())
 			.addLast("unpack", new LengthFieldBasedFrameDecoder(packetLength, 0, headerLength, 0, headerLength))

@@ -34,6 +34,12 @@ public interface Transport extends Closeable {
 	TransportMetadata localMetadata();
 
 	/**
+	 * Returns true if this transport can handle the provided
+	 * message.
+	 */
+	boolean canHandle(byte[] message);
+
+	/**
 	 * Starts the transport's listener with the provided message sink.
 	 * The listener is expected to call the message sink with each inbound
 	 * message received.

@@ -13,8 +13,7 @@ import java.util.stream.Stream;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.network2.messaging.TransportManager;
-import org.radix.network2.transport.udp.UDPConstants;
-
+import org.radix.network2.transport.tcp.TCPConstants;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 
@@ -46,6 +45,7 @@ public class FirstMatchTransportManager implements TransportManager {
 				.map(TransportInfo::name)
 				.map(transports::get)
 				.filter(Objects::nonNull)
+				.filter(t -> t.canHandle(bytes))
 				.findFirst()
 				.orElseGet(this::defaultTransport);
 		}
@@ -64,7 +64,7 @@ public class FirstMatchTransportManager implements TransportManager {
 	}
 
 	private Transport defaultTransport() {
-		return transports.get(UDPConstants.UDP_NAME);
+		return transports.get(TCPConstants.TCP_NAME);
 	}
 
 	private void closeSafely(Closeable c) {

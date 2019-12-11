@@ -2,18 +2,20 @@ package org.radix.network2.transport.tcp;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
+import org.radix.logging.Logger;
+import org.radix.logging.Logging;
 import org.radix.network2.transport.TransportMetadata;
 import org.radix.network2.transport.TransportOutboundConnection;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
@@ -23,8 +25,15 @@ import io.netty.channel.socket.SocketChannel;
 
 /**
  * A {@link TransportControl} interface for TCP transport.
+ * <p>
+ * Note that this interface only supports one "application" per IP address.
+ * The reasoning behind this is that it is not possible to determine whether
+ * an inbound connection (ie those in {@code channelMap}) are for the right
+ * "application" on the remote host, so we would therefore need to open an
+ * outbound connection regardless.
  */
 final class TCPTransportControlImpl implements TCPTransportControl {
+	private static final Logger log = Logging.getLogger("transport.tcp");
 
 	private static class TCPConnectionHandlerChannelInbound extends ChannelInboundHandlerAdapter {
 		private final Object lock = new Object();
@@ -42,19 +51,44 @@ final class TCPTransportControlImpl implements TCPTransportControl {
 		public void channelInactive(ChannelHandlerContext ctx) throws Exception {
 			Channel ch = ctx.channel();
 			if (ch instanceof SocketChannel) {
-				removeChannel((SocketChannel) ch);
+				synchronized (lock) {
+					cleanChannels("Remove");
+				}
 			}
 		}
 
-		SocketChannel findActiveChannel(String host) {
+		CompletableFuture<TransportOutboundConnection> findOrCreateActiveChannel(
+			TransportMetadata metadata,
+			NettyTCPTransport transport,
+			TCPTransportOutboundConnectionFactory outboundFactory
+		) {
+			String host = metadata.get(TCPConstants.METADATA_TCP_HOST);
 			synchronized (lock) {
-				cleanChannels();
+				cleanChannels("Clean");
 				LinkedList<SocketChannel> items = this.channelMap.get(host);
+
+				final SocketChannel channel;
 				if (items != null && !items.isEmpty()) {
-					return items.stream().filter(SocketChannel::isActive).findFirst().orElse(null);
+					channel = items.stream().filter(SocketChannel::isActive).findFirst().orElse(null);
+				} else {
+					channel = null;
 				}
+				if (channel == null) {
+					int port = Integer.parseInt(metadata.get(TCPConstants.METADATA_TCP_PORT));
+					ChannelFuture cf = transport.createChannel(host, port);
+					final CompletableFuture<TransportOutboundConnection> cfsr = new CompletableFuture<>();
+					cf.addListener(f -> {
+						Throwable cause = f.cause();
+						if (cause == null) {
+							cfsr.complete(outboundFactory.create(cf.channel(), metadata));
+						} else {
+							cfsr.completeExceptionally(cause);
+						}
+					});
+					return cfsr;
+				}
+				return CompletableFuture.completedFuture(outboundFactory.create(channel, metadata));
 			}
-			return null;
 		}
 
 		void closeAll() {
@@ -72,61 +106,53 @@ final class TCPTransportControlImpl implements TCPTransportControl {
 			String host = ch.remoteAddress().getAddress().getHostAddress();
 			synchronized (lock) {
 				this.channelMap.computeIfAbsent(host, k -> Lists.newLinkedList()).addFirst(ch);
-			}
-		}
-
-		private void removeChannel(SocketChannel ch) {
-			InetSocketAddress remoteAddr = ch.remoteAddress();
-			String host = remoteAddr.getAddress().getHostAddress();
-			synchronized (lock) {
-				cleanChannels();
-				LinkedList<SocketChannel> items = this.channelMap.get(host);
-				if (items != null) {
-					items.removeIf(c -> c.remoteAddress().equals(remoteAddr));
-					if (items.isEmpty()) {
-						// Avoid leaks from empty lists
-						this.channelMap.remove(host);
-					}
-				}
+				channelInfo("Add", ch);
 			}
 		}
 
 		// Requires "lock" to be held
-		private void cleanChannels() {
-			for (LinkedList<SocketChannel> channels : this.channelMap.values()) {
-				channels.removeIf(ch -> !ch.isOpen());
+		private void cleanChannels(String where) {
+			for (Iterator<Map.Entry<String, LinkedList<SocketChannel>>> i = this.channelMap.entrySet().iterator(); i.hasNext(); /* */) {
+				Map.Entry<String, LinkedList<SocketChannel>> entry = i.next();
+				for (Iterator<SocketChannel> j = entry.getValue().iterator(); j.hasNext(); /* */) {
+					SocketChannel ch = j.next();
+					if (!ch.isOpen()) {
+						channelInfo(where, ch);
+						j.remove();
+					}
+				}
+				if (entry.getValue().isEmpty()) {
+					// Remove dangling empty lists from map
+					i.remove();
+				}
 			}
+		}
+
+		private void channelInfo(String what, SocketChannel c) {
+			if (log.hasLevel(Logging.DEBUG)) {
+				log.debug(String.format("%s: %s channel from %s to %s",
+					System.identityHashCode(this), what, formatAddr(c.localAddress()), formatAddr(c.remoteAddress())));
+			}
+		}
+
+		private String formatAddr(InetSocketAddress addr) {
+			return String.format("%s:%s", addr.getAddress().getHostAddress(), addr.getPort());
 		}
 	}
 
-	private final TCPConnectionHandlerChannelInbound handler = new TCPConnectionHandlerChannelInbound();
+	private final TCPConnectionHandlerChannelInbound handler;
 	private final TCPTransportOutboundConnectionFactory outboundFactory;
 	private final NettyTCPTransport transport;
 
 	TCPTransportControlImpl(TCPTransportOutboundConnectionFactory outboundFactory, NettyTCPTransport transport) {
 		this.outboundFactory = outboundFactory;
 		this.transport = transport;
+		this.handler = new TCPConnectionHandlerChannelInbound();
 	}
 
 	@Override
 	public CompletableFuture<TransportOutboundConnection> open(TransportMetadata endpointMetadata) {
-		String host = endpointMetadata.get(TCPConstants.METADATA_TCP_HOST);
-		SocketChannel channel = this.handler.findActiveChannel(host);
-		if (channel == null) {
-			int port = Integer.parseInt(endpointMetadata.get(TCPConstants.METADATA_TCP_PORT));
-			ChannelFuture cf = this.transport.createChannel(host, port);
-			final CompletableFuture<TransportOutboundConnection> cfsr = new CompletableFuture<>();
-			cf.addListener(f -> {
-				Throwable cause = f.cause();
-				if (cause == null) {
-					cfsr.complete(this.outboundFactory.create(cf.channel(), endpointMetadata));
-				} else {
-					cfsr.completeExceptionally(cause);
-				}
-			});
-			return cfsr;
-		}
-		return CompletableFuture.completedFuture(this.outboundFactory.create(channel, endpointMetadata));
+		return this.handler.findOrCreateActiveChannel(endpointMetadata, this.transport, this.outboundFactory);
 	}
 
 	@Override

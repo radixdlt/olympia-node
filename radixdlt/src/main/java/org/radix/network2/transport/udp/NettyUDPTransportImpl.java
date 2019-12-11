@@ -14,6 +14,8 @@ import org.radix.network2.transport.Transport;
 import org.radix.network2.transport.TransportControl;
 import org.radix.network2.transport.TransportMetadata;
 import org.radix.network2.transport.TransportOutboundConnection;
+import org.radix.network2.transport.netty.LogSink;
+import org.radix.network2.transport.netty.LoggingHandler;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
@@ -29,6 +31,9 @@ import io.netty.channel.socket.nio.NioDatagramChannel;
 final class NettyUDPTransportImpl implements Transport {
 	private static final Logger log = Logging.getLogger("transport.udp");
 
+	// Set this to true to see a dump of packet data
+	protected static final boolean DEBUG_DATA = false;
+
 	// Default values if none specified in either localMetadata or config
 	private static final String DEFAULT_HOST = "0.0.0.0";
 	private static final int    DEFAULT_PORT = 30000;
@@ -36,6 +41,7 @@ final class NettyUDPTransportImpl implements Transport {
 	static final int MAX_DATAGRAM_SIZE = 65536;
 	static final int RCV_BUF_SIZE = MAX_DATAGRAM_SIZE * 4;
 	static final int SND_BUF_SIZE = MAX_DATAGRAM_SIZE * 4;
+
 
 	private final TransportMetadata localMetadata;
 	private final UDPTransportControlFactory controlFactory;
@@ -99,6 +105,11 @@ final class NettyUDPTransportImpl implements Transport {
 	}
 
 	@Override
+	public boolean canHandle(byte[] message) {
+		return (message == null) || (message.length <= UDPConstants.MAX_PACKET_LENGTH);
+	}
+
+	@Override
 	public void start(InboundMessageConsumer messageSink) {
 		log.info(String.format("UDP transport %s, threads: %s", localAddress(), inboundProcessingThreads));
 		MultithreadEventLoopGroup group = new NioEventLoopGroup(inboundProcessingThreads, this::createThread);
@@ -113,6 +124,10 @@ final class NettyUDPTransportImpl implements Transport {
 	            		.setReceiveBufferSize(RCV_BUF_SIZE)
 	            		.setSendBufferSize(SND_BUF_SIZE)
 	            		.setOption(ChannelOption.RCVBUF_ALLOCATOR, new FixedRecvByteBufAllocator(MAX_DATAGRAM_SIZE));
+	        		if (log.hasLevel(Logging.DEBUG)) {
+	        			LogSink ls = LogSink.forDebug(log);
+	        			ch.pipeline().addLast(new LoggingHandler(ls, DEBUG_DATA));
+	        		}
 	                ch.pipeline()
 	                	.addLast("onboard", new UDPNettyMessageHandler(natHandler, messageSink));
 	            }

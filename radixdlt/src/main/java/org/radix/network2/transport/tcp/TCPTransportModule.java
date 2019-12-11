@@ -37,7 +37,7 @@ public class TCPTransportModule extends AbstractModule {
 		// NettyTCPTransportImpl dependencies
 		bind(TCPConfiguration.class).toInstance(this.config);
 		bind(TransportMetadata.class).annotatedWith(Names.named("local")).toInstance(StaticTransportMetadata.empty()); // Use defaults
-		bind(TCPTransportOutboundConnectionFactory.class) .toProvider(this::tcpTransportOutboundConnectionFactoryProvider);
+		bind(TCPTransportOutboundConnectionFactory.class).toProvider(this::tcpTransportOutboundConnectionFactoryProvider);
 		bind(TCPTransportControlFactory.class).toProvider(this::tcpTransportControlFactoryProvider);
 	}
 
