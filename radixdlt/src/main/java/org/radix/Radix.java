@@ -164,13 +164,6 @@ public final class Radix
 		httpServer = new RadixHttpServer(store, atomProcessor, atomToBinaryConverter, universe, serialization);
 		httpServer.start(properties);
 
-		// start all services
-		try {
-			Modules.getInstance().start();
-		} catch (ModuleException e) {
-			throw new RuntimeException("while starting modules", e);
-		}
-
 		log.info("Node '" + LocalSystem.getInstance().getNID() + "' started successfully");
 	}
 

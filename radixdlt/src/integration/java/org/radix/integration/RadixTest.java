@@ -68,10 +68,4 @@ public class RadixTest
 		Modules.remove(RuntimeProperties.class);
 		Modules.remove(SecureRandom.class);
 	}
-
-	private static void safelyStop(Module m) throws ModuleException {
-		if (m != null) {
-			Modules.getInstance().stop(m);
-		}
-	}
 }

@@ -80,10 +80,4 @@ public class RadixTestWithStores extends RadixTest
 		m.reset();
 		return m;
 	}
-
-	public static void safelyStop(Module m) throws ModuleException {
-		if (m != null) {
-			Modules.getInstance().stop(m);
-		}
-	}
 }
