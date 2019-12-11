@@ -143,11 +143,7 @@ public final class Radix
 		Modules.put(AddressBook.class, addressBook);
 		BootstrapDiscovery bootstrapDiscovery = BootstrapDiscovery.getInstance();
 		PeerManager peerManager = createPeerManager(properties, addressBook, messageCentral, Events.getInstance(), bootstrapDiscovery);
-		try {
-			peerManager.start_impl();
-		} catch (ModuleException e) {
-			throw new RuntimeException("while starting peermanager", e);
-		}
+		peerManager.start();
 
 		// TODO Eventually modules should be created using Google Guice injector
 		GlobalInjector globalInjector = new GlobalInjector();

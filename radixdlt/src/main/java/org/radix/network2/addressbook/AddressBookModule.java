@@ -32,7 +32,7 @@ final class AddressBookModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	PeerPersistence addressBookPersistenceProvider(Serialization serialization) throws ModuleException {
+	PeerPersistence addressBookPersistenceProvider(Serialization serialization) {
 		AddressBookPersistence persistence = new AddressBookPersistence(serialization);
 		persistence.start();
 		return persistence;

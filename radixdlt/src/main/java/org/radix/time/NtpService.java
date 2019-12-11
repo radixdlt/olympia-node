@@ -21,7 +21,7 @@ public class NtpService
 	private int			attempts = 0;
 	private int			offset = 0;
 
-	public NtpService(String server) throws ModuleException
+	public NtpService(String server) 
 	{
 		this.server = server;
 
@@ -32,7 +32,7 @@ public class NtpService
 			initFromServer();
 	}
 
-	private void initFromServer() throws ModuleException
+	private void initFromServer() 
 	{
 		if (server != null)
 		{
@@ -79,7 +79,7 @@ public class NtpService
 				catch (Exception ex)
 				{
 					if (attempts >= 3)
-						throw new ModuleException(ex);
+						throw new RuntimeException("failed to start NTP service", ex);
 				}
 				finally
 				{
@@ -91,7 +91,7 @@ public class NtpService
 			}
 
 			if (!success)
-				throw new ModuleException("Unable to start NTP service using "+server);
+				throw new RuntimeException("Unable to start NTP service using "+server);
 		}
 	}
 

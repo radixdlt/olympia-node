@@ -17,7 +17,6 @@ import org.radix.events.Events;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.modules.Modules;
-import org.radix.modules.exceptions.ModuleException;
 import org.radix.network.Interfaces;
 import org.radix.network.discovery.BootstrapDiscovery;
 import org.radix.network.messages.GetPeersMessage;
@@ -184,27 +183,23 @@ public class PeerManagerTest extends RadixTest {
     }
 
     @After
-    public void tearDown() throws ModuleException {
-        peerManager.stop_impl();
+    public void tearDown() {
+        peerManager.stop();
         Modules.remove(MessageCentral.class);
         Modules.remove(Interfaces.class);
     }
 
     @Test
-    public void heartbeatPeersTest() throws ModuleException, InterruptedException {
+    public void heartbeatPeersTest() throws InterruptedException {
         when(addressBook.recentPeers()).thenAnswer((Answer<Stream<Peer>>) invocation -> Stream.of(peer1, peer2));
 
         Semaphore semaphore = new Semaphore(0);
         //allow peer manager to run 1 sec
-        peerManager.start_impl();
+        peerManager.start();
         new Timer().schedule(new TimerTask() {
             @Override
             public void run() {
-                try {
-                    peerManager.stop_impl();
-                } catch (ModuleException e) {
-                    log.error(e);
-                }
+                peerManager.stop();
                 semaphore.release();
             }
         }, 1000);
@@ -228,26 +223,22 @@ public class PeerManagerTest extends RadixTest {
     }
 
     @Test
-    public void peersHousekeepingTest() throws ModuleException, InterruptedException {
+    public void peersHousekeepingTest() throws InterruptedException {
         when(addressBook.recentPeers()).thenAnswer((Answer<Stream<Peer>>) invocation -> Stream.of(peer1, peer2));
         when(addressBook.peers()).thenAnswer((Answer<Stream<Peer>>) invocation -> Stream.of(peer1, peer2, peer3, peer4));
         getPeersMessageTest(peer1, peer2, false);
     }
 
     @Test
-    public void probeTaskTest() throws ModuleException, InterruptedException {
+    public void probeTaskTest() throws InterruptedException {
         when(addressBook.peers()).thenAnswer((Answer<Stream<Peer>>) invocation -> Stream.of(peer1, peer2));
         Semaphore semaphore = new Semaphore(0);
-        peerManager.start_impl();
+        peerManager.start();
         //allow peer manager to run 1 sec
         new Timer().schedule(new TimerTask() {
             @Override
             public void run() {
-                try {
-                    peerManager.stop_impl();
-                } catch (ModuleException e) {
-                    log.error(e);
-                }
+                peerManager.stop();
                 semaphore.release();
             }
         }, 1000);
@@ -284,22 +275,18 @@ public class PeerManagerTest extends RadixTest {
     }
 
     @Test
-    public void handleProbeTimeoutTest() throws ModuleException, InterruptedException {
+    public void handleProbeTimeoutTest() throws InterruptedException {
         when(addressBook.peers()).thenAnswer((Answer<Stream<Peer>>) invocation -> Stream.of(peer1, peer2));
         //start timeout handler immediately
         doReturn(0).when(config).networkPeersProbeTimeout(eq(20000));
         peerManager = spy(new PeerManager(config, addressBook, messageCentral, events, bootstrapDiscovery));
         Semaphore semaphore = new Semaphore(0);
-        peerManager.start_impl();
+        peerManager.start();
         //allow peer manager to run 1 sec
         new Timer().schedule(new TimerTask() {
             @Override
             public void run() {
-                try {
-                    peerManager.stop_impl();
-                } catch (ModuleException e) {
-                    log.error(e);
-                }
+                peerManager.stop();
                 semaphore.release();
             }
         }, 1000);
@@ -309,24 +296,20 @@ public class PeerManagerTest extends RadixTest {
     }
 
     @Test
-    public void discoverPeersTest() throws ModuleException, InterruptedException {
+    public void discoverPeersTest() throws InterruptedException {
         when(bootstrapDiscovery.discover(any())).thenReturn(ImmutableSet.of(transportInfo3, transportInfo4));
         when(addressBook.peers()).thenAnswer((Answer<Stream<Peer>>) invocation -> Stream.of(peer1, peer2, peer3, peer4));
         getPeersMessageTest(peer3, peer4, true);
     }
 
-    private void getPeersMessageTest(Peer peer1, Peer peer2, boolean probeAll) throws ModuleException, InterruptedException {
+    private void getPeersMessageTest(Peer peer1, Peer peer2, boolean probeAll) throws InterruptedException {
         Semaphore semaphore = new Semaphore(0);
-        peerManager.start_impl();
+        peerManager.start();
         //allow peer manager to run 1 sec
         new Timer().schedule(new TimerTask() {
             @Override
             public void run() {
-                try {
-                    peerManager.stop_impl();
-                } catch (ModuleException e) {
-                    log.error(e);
-                }
+                peerManager.stop();
                 semaphore.release();
             }
         }, 1000);

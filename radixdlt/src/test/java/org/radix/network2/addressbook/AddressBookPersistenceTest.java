@@ -27,7 +27,7 @@ public class AddressBookPersistenceTest extends RadixTest {
 	private DatabaseEnvironment dbEnv;
 
 	@Before
-	public void setUp() throws Exception {
+	public void setUp() {
 		this.dbEnv = new DatabaseEnvironment();
 		this.dbEnv.start();
 		Modules.put(DatabaseEnvironment.class, this.dbEnv);
@@ -36,7 +36,7 @@ public class AddressBookPersistenceTest extends RadixTest {
 	}
 
 	@After
-	public void tearDown() throws Exception {
+	public void tearDown() {
 		this.abp.stop();
 		this.dbEnv.stop();
 		Modules.getInstance().remove(DatabaseEnvironment.class);
@@ -44,14 +44,14 @@ public class AddressBookPersistenceTest extends RadixTest {
 	}
 
 	@Test
-	public void testStart() throws ModuleException {
+	public void testStart() {
 		// No exceptions, and should have a database when done
 		this.abp.start();
 		assertNotNull(Whitebox.getInternalState(this.abp, "peersByNidDB"));
 	}
 
 	@Test
-	public void testStop() throws ModuleException {
+	public void testStop() {
 		// No exceptions, and should have no database when done
 		this.abp.start();
 		assertNotNull(Whitebox.getInternalState(this.abp, "peersByNidDB"));
@@ -60,7 +60,7 @@ public class AddressBookPersistenceTest extends RadixTest {
 	}
 
 	@Test
-	public void testReset() throws ModuleException {
+	public void testReset() {
 		this.abp.start();
 		assertTrue(this.abp.savePeer(new PeerWithNid(EUID.ONE)));
 		AtomicInteger peercount1 = new AtomicInteger(0);
@@ -83,7 +83,7 @@ public class AddressBookPersistenceTest extends RadixTest {
 	}
 
 	@Test
-	public void testSavePeer() throws ModuleException {
+	public void testSavePeer() {
 		this.abp.start();
 
 		PeerWithNid pwn = new PeerWithNid(EUID.ONE);
@@ -110,7 +110,7 @@ public class AddressBookPersistenceTest extends RadixTest {
 	}
 
 	@Test
-	public void testDeletePeer() throws ModuleException {
+	public void testDeletePeer() {
 		this.abp.start();
 
 		PeerWithNid pwn1 = new PeerWithNid(EUID.ONE);

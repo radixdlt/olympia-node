@@ -33,7 +33,7 @@ public class RadixTestWithStores extends RadixTest
 	private DatabaseEnvironment dbEnv;
 
 	@Before
-	public void beforeEachRadixTest() throws ModuleException {
+	public void beforeEachRadixTest() {
 		this.dbEnv = new DatabaseEnvironment();
 		this.dbEnv.start();
 		Modules.put(DatabaseEnvironment.class, this.dbEnv);
@@ -63,7 +63,7 @@ public class RadixTestWithStores extends RadixTest
 	}
 
 	@After
-	public void afterEachRadixTest() throws ModuleException, IOException {
+	public void afterEachRadixTest() throws IOException {
 		Modules.get(Tempo.class).close();
 		Modules.remove(Tempo.class);
 		Modules.remove(LedgerEntryStore.class);
@@ -76,7 +76,7 @@ public class RadixTestWithStores extends RadixTest
 		Modules.remove(MessageCentral.class);
 	}
 
-	private static DatabaseStore clean(DatabaseStore m) throws ModuleException {
+	private static DatabaseStore clean(DatabaseStore m) {
 		m.reset();
 		return m;
 	}

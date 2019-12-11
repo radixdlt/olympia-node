@@ -144,7 +144,7 @@ public class PeerManager {
 		return executable.getFuture();
 	}
 
-	public void start_impl() throws ModuleException {
+	public void start() {
 		// Listen for messages
 		messageCentral.addListener(PeersMessage.class, this::handlePeersMessage);
 		messageCentral.addListener(GetPeersMessage.class, this::handleGetPeersMessage);
@@ -159,7 +159,7 @@ public class PeerManager {
 		discoverPeersFuture = schedule(discoverPeersDelayMs, discoverPeersIntervalMs, TimeUnit.MILLISECONDS, this::discoverPeers);
 	}
 
-	public void stop_impl() throws ModuleException {
+	public void stop() {
 		messageCentral.removeListener(PeersMessage.class, this::handlePeersMessage);
 		messageCentral.removeListener(GetPeersMessage.class, this::handleGetPeersMessage);
 		messageCentral.removeListener(PeerPingMessage.class, this::handlePeerPingMessage);

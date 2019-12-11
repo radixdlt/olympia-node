@@ -59,7 +59,7 @@ public class RadixTest
 
 
 	@AfterClass
-	public static void endRadixTest() throws ModuleException {
+	public static void endRadixTest() {
 		Modules.remove(Universe.class);
 		Modules.remove(Time.class);
 		Modules.remove(Serialization.class);
