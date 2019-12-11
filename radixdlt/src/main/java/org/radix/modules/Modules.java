@@ -1,6 +1,5 @@
 package org.radix.modules;
 
-import org.radix.common.Syncronicity;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 
