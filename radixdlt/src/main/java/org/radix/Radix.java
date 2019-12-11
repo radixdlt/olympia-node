@@ -1,17 +1,13 @@
 package org.radix;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
-import java.net.URISyntaxException;
-import java.security.SecureRandom;
-import java.security.Security;
-
 import com.radixdlt.consensus.Consensus;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.middleware2.processing.RadixEngineAtomProcessor;
+import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.store.LedgerEntryStore;
-import org.apache.commons.cli.CommandLine;
+import com.radixdlt.universe.Universe;
+import com.radixdlt.utils.Bytes;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.json.JSONObject;
 import org.radix.api.http.RadixHttpServer;
@@ -20,9 +16,7 @@ import org.radix.events.Events;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.modules.Modules;
-import org.radix.modules.Plugin;
 import org.radix.modules.exceptions.ModuleException;
-import org.radix.modules.exceptions.ModuleStopException;
 import org.radix.network.Interfaces;
 import org.radix.network.discovery.BootstrapDiscovery;
 import org.radix.network2.addressbook.AddressBook;
@@ -33,16 +27,19 @@ import org.radix.network2.messaging.MessageCentral;
 import org.radix.network2.messaging.MessageCentralFactory;
 import org.radix.properties.PersistedProperties;
 import org.radix.properties.RuntimeProperties;
-import com.radixdlt.serialization.Serialization;
-import com.radixdlt.universe.Universe;
 import org.radix.time.Time;
 import org.radix.universe.system.LocalSystem;
 import org.radix.utils.IOUtils;
 import org.radix.utils.SystemMetaData;
 import org.radix.utils.SystemProfiler;
-import com.radixdlt.utils.Bytes;
 
-public class Radix extends Plugin
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.net.URISyntaxException;
+import java.security.SecureRandom;
+import java.security.Security;
+
+public final class Radix
 {
 	static
 	{
@@ -61,21 +58,18 @@ public class Radix extends Plugin
 	private RadixEngineAtomProcessor atomProcessor;
 	private RadixHttpServer httpServer;
 
-	/**
-	 * @param args
-	 */
 	public static void main(String[] args)
 	{
 		try
 		{
 			JSONObject runtimeConfigurationJSON = new JSONObject();
-			if (Radix.class.getResourceAsStream("/runtime_options.json") != null)
+			if (Radix.class.getResourceAsStream("/runtime_options.json") != null) {
 				runtimeConfigurationJSON = new JSONObject(IOUtils.toString(Radix.class.getResourceAsStream("/runtime_options.json")));
+			}
 
 			RuntimeProperties runtimeProperties = new RuntimeProperties(runtimeConfigurationJSON, args);
 			Modules.put(RuntimeProperties.class, runtimeProperties);
 			Modules.put(PersistedProperties.class, runtimeProperties);
-			Modules.put(CommandLine.class, runtimeProperties.getCommandLine());
 
 			// Setup bouncy castle
 			// This is used when loading the node key below, so set it up now.
@@ -110,14 +104,7 @@ public class Radix extends Plugin
 		}
 	}
 
-	public Radix() throws ModuleException
-	{
-		start();
-	}
-
-	@Override
-	public void start_impl() throws ModuleException
-	{
+	public Radix() {
 		RuntimeProperties properties = Modules.get(RuntimeProperties.class);
 		dumpExecutionLocation();
 
@@ -156,7 +143,11 @@ public class Radix extends Plugin
 		Modules.put(AddressBook.class, addressBook);
 		BootstrapDiscovery bootstrapDiscovery = BootstrapDiscovery.getInstance();
 		PeerManager peerManager = createPeerManager(properties, addressBook, messageCentral, Events.getInstance(), bootstrapDiscovery);
-		Modules.getInstance().start(peerManager);
+		try {
+			peerManager.start_impl();
+		} catch (ModuleException e) {
+			throw new RuntimeException("while starting peermanager", e);
+		}
 
 		// TODO Eventually modules should be created using Google Guice injector
 		GlobalInjector globalInjector = new GlobalInjector();
@@ -174,7 +165,11 @@ public class Radix extends Plugin
 		httpServer.start(properties);
 
 		// start all services
-		Modules.getInstance().start();
+		try {
+			Modules.getInstance().start();
+		} catch (ModuleException e) {
+			throw new RuntimeException("while starting modules", e);
+		}
 
 		log.info("Node '" + LocalSystem.getInstance().getNID() + "' started successfully");
 	}
@@ -207,17 +202,13 @@ public class Radix extends Plugin
 		}
 	}
 
-	@Override
-	public void stop_impl() throws ModuleException {
+	public void stop() {
 		httpServer.stop();
 
-		/*
-		 * Middleware
-		 */
 		try {
 			atomProcessor.stop();
 		} catch (Exception e) {
-			throw new ModuleStopException("Failure turning off AtomProcessor", e, this);
+			throw new RuntimeException("Failure turning off AtomProcessor", e);
 		}
 	}
 

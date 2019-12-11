@@ -14,8 +14,6 @@ import java.util.Set;
 
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.modules.Service;
-import org.radix.modules.exceptions.ModuleException;
 
 public class Interfaces
 {

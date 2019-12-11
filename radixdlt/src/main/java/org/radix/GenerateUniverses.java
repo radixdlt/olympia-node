@@ -71,7 +71,6 @@ public final class GenerateUniverses
 				RuntimeProperties	runtimeProperties = new RuntimeProperties(runtimeConfigurationJSON, arguments);
 				Modules.put(RuntimeProperties.class, runtimeProperties);
 				Modules.put(PersistedProperties.class, runtimeProperties);
-				Modules.put(CommandLine.class, runtimeProperties.getCommandLine());
 			} catch (Exception ex) {
 				throw new IOException("Could not load runtime properties and set command ling arguments", ex);
 			}
