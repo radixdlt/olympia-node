@@ -1,20 +1,13 @@
 package org.radix.database;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 import org.radix.database.exceptions.DatabaseException;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.modules.Module;
 import org.radix.modules.Modules;
-import org.radix.modules.Service;
-import org.radix.modules.exceptions.ModuleException;
 import org.radix.modules.exceptions.ModuleStartException;
 import org.radix.modules.exceptions.ModuleStopException;
 
-public abstract class DatabaseStore extends Service //implements Flushable
+public abstract class DatabaseStore
 {
 	protected	static final Logger log = Logging.getLogger ();
 
@@ -29,8 +22,7 @@ public abstract class DatabaseStore extends Service //implements Flushable
 		this.buildPriority = buildPriority;
 	}
 
-	@Override
-	public void start_impl() throws ModuleException
+	public void start_impl()
 	{
 		try
 		{
@@ -42,12 +34,11 @@ public abstract class DatabaseStore extends Service //implements Flushable
 		}
 		catch (DatabaseException ex)
 		{
-			throw new ModuleStartException(ex, this);
+			throw new RuntimeException("Error while starting database");
 		}
 	}
 
-	@Override
-	public void stop_impl() throws ModuleException
+	public void stop_impl()
 	{
 		try
 		{
@@ -55,14 +46,15 @@ public abstract class DatabaseStore extends Service //implements Flushable
 		}
 		catch (DatabaseException e)
 		{
-			throw new ModuleStopException(e, this);
+			throw new RuntimeException("while flushing database", e);
 		}
 
 		if (Modules.get(DatabaseEnvironment.class).isRegistered(this) == true)
 			Modules.get(DatabaseEnvironment.class).deregister(this);
 	}
 
-	// DBPLUGIN BUILDER //
+	public abstract void reset_impl();
+
 	public int getBuildPriority() { return this.buildPriority; }
 
 	public abstract void build() throws DatabaseException;
@@ -72,7 +64,4 @@ public abstract class DatabaseStore extends Service //implements Flushable
 	public abstract void integrity() throws DatabaseException;
 
 	public abstract void flush() throws DatabaseException;
-
-	// DEFAULT FUNCTIONS //
-//	protected abstract Object get(DatabaseEntry entry, Class<?> type) throws DatabaseException;
 }

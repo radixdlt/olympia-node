@@ -6,6 +6,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.radix.common.executors.Executor;
 import org.radix.common.executors.ScheduledExecutable;
 import org.radix.database.DatabaseEnvironment;
 import org.radix.database.DatabaseStore;
@@ -52,8 +53,7 @@ public final class SystemMetaData extends DatabaseStore
 	public void integrity() throws DatabaseException { }
 
 	@Override
-	public void start_impl() throws ModuleException
-	{
+	public void start_impl() {
 		DatabaseConfig config = new DatabaseConfig();
 		config.setAllowCreate(true);
 
@@ -67,31 +67,26 @@ public final class SystemMetaData extends DatabaseStore
 		}
 		catch (DatabaseException e)
 		{
-			throw new ModuleStartException(e, this);
+			throw new RuntimeException("while opening database", e);
 		}
 
-		this.flush = scheduleWithFixedDelay(new ScheduledExecutable(1, 1, TimeUnit.SECONDS)
-		{
+		ScheduledExecutable flushExecutable = new ScheduledExecutable(1, 1, TimeUnit.SECONDS) {
 			@Override
-			public void execute()
-			{
-				try
-				{
+			public void execute() {
+				try {
 					flush();
-				}
-				catch (DatabaseException e)
-				{
+				} catch (DatabaseException e) {
 					log.error(e.getMessage(), e);
 				}
 			}
-		});
+		};
+		this.flush = flushExecutable.getFuture();
+		Executor.getInstance().scheduleWithFixedDelay(flushExecutable);
 	}
 
 	@Override
-	public void reset_impl() throws ModuleException
-	{
+	public void reset_impl() {
 		Transaction transaction = null;
-
 		try
 		{
 			transaction = Modules.get(DatabaseEnvironment.class).getEnvironment().beginTransaction(null, new TransactionConfig().setReadUncommitted(true));
@@ -111,13 +106,12 @@ public final class SystemMetaData extends DatabaseStore
 			if (transaction != null)
 				transaction.abort();
 
-			throw new ModuleResetException(ex, this);
+			throw new RuntimeException("while resetting database", ex);
 		}
 	}
 
 	@Override
-	public void stop_impl() throws ModuleException
-	{
+	public void stop_impl() {
 		if (this.flush != null) {
 			this.flush.cancel(false);
 		}
@@ -127,10 +121,6 @@ public final class SystemMetaData extends DatabaseStore
 		systemMetaDataDB.close();
 	}
 
-	@Override
-	public String getName() { return "System Meta Data DBPlugin"; }
-
-	// DBPLUGIN BUILDER //
 	@Override
 	public synchronized void flush() throws DatabaseException
 	{

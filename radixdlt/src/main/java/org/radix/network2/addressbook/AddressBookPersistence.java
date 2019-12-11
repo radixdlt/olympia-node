@@ -1,23 +1,9 @@
 package org.radix.network2.addressbook;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.util.Objects;
-import java.util.function.Consumer;
-import org.radix.database.DatabaseEnvironment;
-import org.radix.database.DatabaseStore;
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
-import org.radix.modules.Modules;
-import org.radix.modules.exceptions.ModuleException;
-import org.radix.modules.exceptions.ModuleResetException;
-import org.radix.modules.exceptions.ModuleStartException;
-
 import com.radixdlt.common.EUID;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
-
 import com.sleepycat.je.Cursor;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
@@ -28,6 +14,16 @@ import com.sleepycat.je.LockMode;
 import com.sleepycat.je.OperationStatus;
 import com.sleepycat.je.Transaction;
 import com.sleepycat.je.TransactionConfig;
+import org.radix.database.DatabaseEnvironment;
+import org.radix.database.DatabaseStore;
+import org.radix.logging.Logger;
+import org.radix.logging.Logging;
+import org.radix.modules.Modules;
+
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.util.Objects;
+import java.util.function.Consumer;
 
 /**
  * Persistence for peers.
@@ -44,21 +40,21 @@ public class AddressBookPersistence extends DatabaseStore implements PeerPersist
 	}
 
 	@Override
-	public void start_impl() throws ModuleException {
+	public void start_impl() {
 		DatabaseConfig config = new DatabaseConfig();
 		config.setAllowCreate(true);
 
 		try {
 			this.peersByNidDB = Modules.get(DatabaseEnvironment.class).getEnvironment().openDatabase(null, "peers_by_nid", config);
 		} catch (DatabaseException | IllegalArgumentException | IllegalStateException ex) {
-        	throw new ModuleStartException(ex, this);
+        	throw new RuntimeException("while opening database", ex);
 		}
 
 		super.start_impl();
 	}
 
 	@Override
-	public void reset_impl() throws ModuleException {
+	public void reset_impl() {
 		Transaction transaction = null;
 
 		try {
@@ -74,12 +70,12 @@ public class AddressBookPersistence extends DatabaseStore implements PeerPersist
 			if (transaction != null) {
 				transaction.abort();
 			}
-			throw new ModuleResetException(ex, this);
+			throw new RuntimeException("while resetting database", ex);
 		}
 	}
 
 	@Override
-	public void stop_impl() throws ModuleException {
+	public void stop_impl() {
 		super.stop_impl();
 		if (this.peersByNidDB != null) {
 			this.peersByNidDB.close();
@@ -105,11 +101,6 @@ public class AddressBookPersistence extends DatabaseStore implements PeerPersist
 	@Override
 	public void flush() throws DatabaseException  {
 		// Not used
-	}
-
-	@Override
-	public String getName() {
-		return "Peer Address Book Persistence";
 	}
 
 	@Override

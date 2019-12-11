@@ -8,6 +8,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.json.JSONObject;
+import org.radix.common.executors.Executor;
 import org.radix.common.executors.ScheduledExecutable;
 import org.radix.database.DatabaseEnvironment;
 import org.radix.database.DatabaseStore;
@@ -96,7 +97,7 @@ public class SystemProfiler extends DatabaseStore
 	}
 
 	@Override
-	public void start_impl() throws ModuleException {
+	public void start_impl() {
 		profilerRecords.clear();
 		profilerEnabled = Modules.get(RuntimeProperties.class).get("debug.profiler", false);
 		if (profilerEnabled) {
@@ -108,30 +109,24 @@ public class SystemProfiler extends DatabaseStore
 			super.start_impl();
 
 			// Set up flush task //
-			scheduleWithFixedDelay(new ScheduledExecutable(10, 10, TimeUnit.SECONDS)
-			{
+			ScheduledExecutable flushExecutable = new ScheduledExecutable(10, 10, TimeUnit.SECONDS) {
 				@Override
-				public void execute()
-				{
-					try
-					{
+				public void execute() {
+					try {
 						flushCounterWrites();
-					}
-					catch (Exception e)
-					{
+					} catch (Exception e) {
 						log.error("Unable to complete profiler flush", e);
 					}
 				}
-			});
+			};
+			Executor.getInstance().scheduleWithFixedDelay(flushExecutable);
 		}
 	}
 
 	@Override
-	public void reset_impl() throws ModuleException
-	{
+	public void reset_impl() {
 		if (profilerEnabled) {
 			Transaction transaction = null;
-
 			try
 			{
 				transaction = Modules.get(DatabaseEnvironment.class).getEnvironment().beginTransaction(null, new TransactionConfig().setReadUncommitted(true));
@@ -150,13 +145,13 @@ public class SystemProfiler extends DatabaseStore
 				if (transaction != null)
 					transaction.abort();
 
-				throw new ModuleResetException(ex, this);
+				throw new RuntimeException("while resetting database", ex);
 			}
 		}
 	}
 
 	@Override
-	public void stop_impl() throws ModuleException {
+	public void stop_impl() {
 		super.stop_impl();
 
 		if (profilerEnabled) {
@@ -182,11 +177,6 @@ public class SystemProfiler extends DatabaseStore
 	@Override
 	public void flush() throws DatabaseException {
 		// Nothing to do here.
-	}
-
-	@Override
-	public String getName() {
-		return "Statistics DBPlugin";
 	}
 
 	public double getAverage(String name) {
