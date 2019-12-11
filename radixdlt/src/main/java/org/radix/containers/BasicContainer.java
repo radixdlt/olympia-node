@@ -18,10 +18,6 @@ public abstract class BasicContainer implements Cloneable, Comparable<Object>
 {
 	private static final Logger log = Logging.getLogger ();
 
-	@JsonProperty("version")
-	@DsonOutput(Output.ALL)
-	private short	version;
-
 	// Placeholder for the serializer ID
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(Output.ALL)
@@ -32,8 +28,6 @@ public abstract class BasicContainer implements Cloneable, Comparable<Object>
 	public BasicContainer()
 	{
 		super();
-
-		version = VERSION();
 	}
 
 	/**
@@ -42,7 +36,6 @@ public abstract class BasicContainer implements Cloneable, Comparable<Object>
 	 */
 	public BasicContainer(BasicContainer copy) {
 		this();
-		this.version = copy.VERSION();
 		this.hash = copy.hash;
 	}
 
@@ -117,14 +110,4 @@ public abstract class BasicContainer implements Cloneable, Comparable<Object>
 	}
 
 	public abstract short VERSION();
-
-	public short getVersion()
-	{
-		return version;
-	}
-
-	public void setVersion(short version)
-	{
-		this.version = version;
-	}
 }
