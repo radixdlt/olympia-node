@@ -14,7 +14,7 @@ import com.radixdlt.serialization.SerializerDummy;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public abstract class BasicContainer implements Cloneable, Comparable<Object>
+public abstract class BasicContainer implements Comparable<Object>
 {
 	private static final Logger log = Logging.getLogger ();
 
