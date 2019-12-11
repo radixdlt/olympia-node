@@ -2,11 +2,11 @@ package org.radix.network2.addressbook;
 
 import com.radixdlt.common.EUID;
 import com.radixdlt.universe.Universe;
+import org.radix.common.executors.Executor;
 import org.radix.common.executors.ScheduledExecutable;
 import org.radix.events.Events;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.modules.Module;
 import org.radix.modules.Modules;
 import org.radix.modules.exceptions.ModuleException;
 import org.radix.network.discovery.BootstrapDiscovery;
@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
 
 // FIXME: static dependency on Modules.get(Universe.class).getPlanck()
 // FIXME: static dependency on LocalSystem.getInstance().getNID()
-public class PeerManager extends Module {
+public class PeerManager {
 	private static final Logger log = Logging.getLogger("peermanager");
 
 	private final Random rand = new Random(); // No need for cryptographically secure here
@@ -65,7 +65,6 @@ public class PeerManager extends Module {
 	private Future<?> peersBroadcastFuture;
 	private Future<?> peerProbeFuture;
 	private Future<?> discoverPeersFuture;
-
 
 	private class ProbeTask implements Runnable {
 		private LinkedList<Peer> peersToProbe = new LinkedList<>();
@@ -134,7 +133,17 @@ public class PeerManager extends Module {
 		));
 	}
 
-	@Override
+	private Future<?> schedule(long initialDelay, long recurrentDelay, TimeUnit units, Runnable runnable) {
+		ScheduledExecutable executable = new ScheduledExecutable(initialDelay, recurrentDelay, units) {
+			@Override
+			public void execute() {
+				runnable.run();
+			}
+		};
+		Executor.getInstance().scheduleWithFixedDelay(executable);
+		return executable.getFuture();
+	}
+
 	public void start_impl() throws ModuleException {
 		// Listen for messages
 		messageCentral.addListener(PeersMessage.class, this::handlePeersMessage);
@@ -144,13 +153,12 @@ public class PeerManager extends Module {
 		messageCentral.addListener(SystemMessage.class, this::handleHeartbeatPeersMessage);
 
 		// Tasks
-		heartbeatPeersFuture = scheduleAtFixedRate(scheduledExecutable(heartbeatPeersDelayMs, heartbeatPeersIntervalMs, TimeUnit.MILLISECONDS, this::heartbeatPeers));
-		peersBroadcastFuture = scheduleWithFixedDelay(scheduledExecutable(peersBroadcastDelayMs, peersBroadcastIntervalMs, TimeUnit.MILLISECONDS, this::peersHousekeeping));
-		peerProbeFuture = scheduleWithFixedDelay(scheduledExecutable(peerProbeDelayMs, peerProbeIntervalMs, TimeUnit.MILLISECONDS, new ProbeTask()));
-		discoverPeersFuture = scheduleWithFixedDelay(scheduledExecutable(discoverPeersDelayMs, discoverPeersIntervalMs, TimeUnit.MILLISECONDS, this::discoverPeers));
+		heartbeatPeersFuture = schedule(heartbeatPeersDelayMs, heartbeatPeersIntervalMs, TimeUnit.MILLISECONDS, this::heartbeatPeers);
+		peersBroadcastFuture = schedule(peersBroadcastDelayMs, peersBroadcastIntervalMs, TimeUnit.MILLISECONDS, this::peersHousekeeping);
+		peerProbeFuture = schedule(peerProbeDelayMs, peerProbeIntervalMs, TimeUnit.MILLISECONDS, new ProbeTask());
+		discoverPeersFuture = schedule(discoverPeersDelayMs, discoverPeersIntervalMs, TimeUnit.MILLISECONDS, this::discoverPeers);
 	}
 
-	@Override
 	public void stop_impl() throws ModuleException {
 		messageCentral.removeListener(PeersMessage.class, this::handlePeersMessage);
 		messageCentral.removeListener(GetPeersMessage.class, this::handleGetPeersMessage);
@@ -162,11 +170,6 @@ public class PeerManager extends Module {
 		peersBroadcastFuture.cancel(true);
 		peerProbeFuture.cancel(true);
 		discoverPeersFuture.cancel(true);
-	}
-
-	@Override
-	public String getName() {
-		return "Peer Manager";
 	}
 
 	private void heartbeatPeers() {
@@ -288,7 +291,7 @@ public class PeerManager extends Module {
 					long nonce = ping.getNonce();
 					if (peer.hasSystem()) {
 						this.probes.put(peer, nonce);
-						schedule(scheduledExecutable(peerProbeTimeoutMs, 0, TimeUnit.MILLISECONDS, () -> handleProbeTimeout(peer, nonce)));
+						schedule(peerProbeTimeoutMs, 0, TimeUnit.MILLISECONDS, () -> handleProbeTimeout(peer, nonce));
 						log.debug("Probing "+peer+" with nonce '"+nonce+"'");
 					} else {
 						log.debug("Nudging "+peer);
