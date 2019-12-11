@@ -1,29 +1,15 @@
 package org.radix.modules;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import org.radix.common.Syncronicity;
+import org.radix.logging.Logger;
+import org.radix.logging.Logging;
+
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
-import org.radix.common.Syncronicity;
-import org.radix.events.Event.EventPriority;
-import org.radix.events.Events;
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
-import org.radix.modules.events.ModuleEvent;
-import org.radix.modules.events.ModuleListener;
-import org.radix.modules.events.ModuleResetEvent;
-import org.radix.modules.events.ModuleStartedEvent;
-import org.radix.modules.events.ModuleStoppedEvent;
-import org.radix.modules.exceptions.ModuleException;
-import org.radix.state.State;
-
-public class Modules implements ModuleListener
+public class Modules
 {
 	private static final Logger log = Logging.getLogger();
 
@@ -99,34 +85,5 @@ public class Modules implements ModuleListener
 
 	private Modules()
 	{
-		Events.getInstance().register(ModuleEvent.class, this);
-	}
-
-	@Override
-	public Syncronicity getSyncronicity()
-	{
-		return Syncronicity.SYNCRONOUS;
-	}
-
-	@Override
-	public void process(ModuleEvent event)
-	{
-		if (event instanceof ModuleStartedEvent)
-		{
-			put(event.getModule().declaredClass(), event.getModule());
-			log.debug("Started module "+event.getModule());
-		}
-
-		if (event instanceof ModuleResetEvent)
-		{
-			remove(event.getModule().declaredClass());
-			log.debug("Reset module "+event.getModule());
-		}
-
-		if (event instanceof ModuleStoppedEvent)
-		{
-			remove(event.getModule().declaredClass());
-			log.debug("Stopped module "+event.getModule());
-		}
 	}
 }

@@ -3,7 +3,6 @@ package org.radix.modules;
 import java.awt.Image;
 import java.security.SecureRandom;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
@@ -16,19 +15,12 @@ import com.radixdlt.common.EUID;
 import org.radix.common.executors.Executable;
 import org.radix.common.executors.Executor;
 import org.radix.common.executors.ScheduledExecutable;
-import org.radix.events.Events;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.modules.events.ModuleResetEvent;
-import org.radix.modules.events.ModuleStartedEvent;
-import org.radix.modules.events.ModuleStoppedEvent;
 import org.radix.modules.exceptions.ModuleException;
 import org.radix.modules.exceptions.ModuleResetException;
 import org.radix.modules.exceptions.ModuleRestartException;
 import org.radix.modules.exceptions.ModuleStartException;
-import org.radix.network.messaging.Message;
-import org.radix.network2.messaging.MessageCentral;
-import org.radix.network2.messaging.MessageListener;
 import org.radix.state.SingletonState;
 import org.radix.state.State;
 
@@ -206,7 +198,6 @@ public abstract class Module implements SingletonState
 
 				setState(new State(State.STARTED));
 
-				Events.getInstance().broadcast(new ModuleStartedEvent(Module.this));
 			}
 		}
 		catch (ModuleException mex)
@@ -242,7 +233,6 @@ public abstract class Module implements SingletonState
 
 			reset_impl();
 
-			Events.getInstance().broadcast(new ModuleResetEvent(Module.this));
 		}
 		catch (ModuleException mex)
 		{
@@ -305,8 +295,6 @@ public abstract class Module implements SingletonState
 				setState(new State(State.STOPPING));
 				stop_impl();
 				setState(new State(State.STOPPED));
-
-				Events.getInstance().broadcast(new ModuleStoppedEvent(Module.this));
 			}
 		}
 		catch (ModuleException mex)
