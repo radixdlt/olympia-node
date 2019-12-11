@@ -36,6 +36,7 @@ import org.radix.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
 import org.radix.time.NtpService;
 import com.radixdlt.universe.Universe;
+import org.radix.time.Time;
 import org.radix.universe.system.LocalSystem;
 import org.radix.utils.IOUtils;
 import org.radix.utils.SystemMetaData;
@@ -129,8 +130,8 @@ public class Radix extends Plugin
 		Universe universe = extractUniverseFrom(properties);
 		Modules.put(Universe.class, universe);
 
-		// set up NTP service
-		Modules.put(NtpService.class, new NtpService(null));
+		// set up time services
+		Time.start(properties);
 
 		// start events
 		Events.getInstance();
