@@ -1,15 +1,7 @@
 package org.radix.network2.addressbook;
 
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Random;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import com.radixdlt.common.EUID;
+import com.radixdlt.universe.Universe;
 import org.radix.common.executors.ScheduledExecutable;
 import org.radix.events.Events;
 import org.radix.logging.Logger;
@@ -25,11 +17,20 @@ import org.radix.network.messages.PeersMessage;
 import org.radix.network.peers.events.PeerAvailableEvent;
 import org.radix.network2.messaging.MessageCentral;
 import org.radix.network2.transport.TransportException;
-import com.radixdlt.universe.Universe;
 import org.radix.time.Time;
 import org.radix.time.Timestamps;
 import org.radix.universe.system.LocalSystem;
 import org.radix.universe.system.SystemMessage;
+
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Random;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 // FIXME: static dependency on Modules.get(Universe.class).getPlanck()
 // FIXME: static dependency on LocalSystem.getInstance().getNID()
@@ -136,11 +137,11 @@ public class PeerManager extends Module {
 	@Override
 	public void start_impl() throws ModuleException {
 		// Listen for messages
-		register(PeersMessage.class, this::handlePeersMessage);
-		register(GetPeersMessage.class, this::handleGetPeersMessage);
-		register(PeerPingMessage.class, this::handlePeerPingMessage);
-		register(PeerPongMessage.class, this::handlePeerPongMessage);
-		register(SystemMessage.class, this::handleHeartbeatPeersMessage);
+		messageCentral.addListener(PeersMessage.class, this::handlePeersMessage);
+		messageCentral.addListener(GetPeersMessage.class, this::handleGetPeersMessage);
+		messageCentral.addListener(PeerPingMessage.class, this::handlePeerPingMessage);
+		messageCentral.addListener(PeerPongMessage.class, this::handlePeerPongMessage);
+		messageCentral.addListener(SystemMessage.class, this::handleHeartbeatPeersMessage);
 
 		// Tasks
 		heartbeatPeersFuture = scheduleAtFixedRate(scheduledExecutable(heartbeatPeersDelayMs, heartbeatPeersIntervalMs, TimeUnit.MILLISECONDS, this::heartbeatPeers));
@@ -151,11 +152,11 @@ public class PeerManager extends Module {
 
 	@Override
 	public void stop_impl() throws ModuleException {
-		unregister(PeersMessage.class);
-		unregister(GetPeersMessage.class);
-		unregister(PeerPingMessage.class);
-		unregister(PeerPongMessage.class);
-		unregister(SystemMessage.class);
+		messageCentral.removeListener(PeersMessage.class, this::handlePeersMessage);
+		messageCentral.removeListener(GetPeersMessage.class, this::handleGetPeersMessage);
+		messageCentral.removeListener(PeerPingMessage.class, this::handlePeerPingMessage);
+		messageCentral.removeListener(PeerPongMessage.class, this::handlePeerPongMessage);
+		messageCentral.removeListener(SystemMessage.class, this::handleHeartbeatPeersMessage);
 
 		heartbeatPeersFuture.cancel(true);
 		peersBroadcastFuture.cancel(true);
