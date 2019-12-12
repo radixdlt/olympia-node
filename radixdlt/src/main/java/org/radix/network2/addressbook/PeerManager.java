@@ -132,8 +132,30 @@ public class PeerManager {
 		));
 	}
 
-	private Future<?> schedule(long initialDelay, long recurrentDelay, TimeUnit units, Runnable runnable) {
-		ScheduledExecutable executable = new ScheduledExecutable(initialDelay, recurrentDelay, units) {
+	private Future<?> schedule(long initialDelayMillis, Runnable runnable) {
+		ScheduledExecutable executable = new ScheduledExecutable(initialDelayMillis, 0, TimeUnit.MILLISECONDS) {
+			@Override
+			public void execute() {
+				runnable.run();
+			}
+		};
+		Executor.getInstance().schedule(executable);
+		return executable.getFuture();
+	}
+
+	private Future<?> scheduleAtFixedRate(long initialDelayMillis, long recurrentDelayMillis, Runnable runnable) {
+		ScheduledExecutable executable = new ScheduledExecutable(initialDelayMillis, recurrentDelayMillis, TimeUnit.MILLISECONDS) {
+			@Override
+			public void execute() {
+				runnable.run();
+			}
+		};
+		Executor.getInstance().scheduleAtFixedRate(executable);
+		return executable.getFuture();
+	}
+
+	private Future<?> scheduleWithFixedDelay(long initialDelayMillis, long recurrentDelayMillis, Runnable runnable) {
+		ScheduledExecutable executable = new ScheduledExecutable(initialDelayMillis, recurrentDelayMillis, TimeUnit.MILLISECONDS) {
 			@Override
 			public void execute() {
 				runnable.run();
@@ -152,10 +174,10 @@ public class PeerManager {
 		messageCentral.addListener(SystemMessage.class, this::handleHeartbeatPeersMessage);
 
 		// Tasks
-		heartbeatPeersFuture = schedule(heartbeatPeersDelayMs, heartbeatPeersIntervalMs, TimeUnit.MILLISECONDS, this::heartbeatPeers);
-		peersBroadcastFuture = schedule(peersBroadcastDelayMs, peersBroadcastIntervalMs, TimeUnit.MILLISECONDS, this::peersHousekeeping);
-		peerProbeFuture = schedule(peerProbeDelayMs, peerProbeIntervalMs, TimeUnit.MILLISECONDS, new ProbeTask());
-		discoverPeersFuture = schedule(discoverPeersDelayMs, discoverPeersIntervalMs, TimeUnit.MILLISECONDS, this::discoverPeers);
+		heartbeatPeersFuture = scheduleAtFixedRate(heartbeatPeersDelayMs, heartbeatPeersIntervalMs, this::heartbeatPeers);
+		peersBroadcastFuture = scheduleWithFixedDelay(peersBroadcastDelayMs, peersBroadcastIntervalMs, this::peersHousekeeping);
+		peerProbeFuture = scheduleWithFixedDelay(peerProbeDelayMs, peerProbeIntervalMs, new ProbeTask());
+		discoverPeersFuture = scheduleWithFixedDelay(discoverPeersDelayMs, discoverPeersIntervalMs, this::discoverPeers);
 	}
 
 	public void stop() {
@@ -290,7 +312,7 @@ public class PeerManager {
 					long nonce = ping.getNonce();
 					if (peer.hasSystem()) {
 						this.probes.put(peer, nonce);
-						schedule(peerProbeTimeoutMs, 0, TimeUnit.MILLISECONDS, () -> handleProbeTimeout(peer, nonce));
+						schedule(peerProbeTimeoutMs, () -> handleProbeTimeout(peer, nonce));
 						log.debug("Probing "+peer+" with nonce '"+nonce+"'");
 					} else {
 						log.debug("Nudging "+peer);
