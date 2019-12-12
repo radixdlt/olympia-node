@@ -18,7 +18,7 @@ public class GlobalInjector {
 	public GlobalInjector() {
 		Module lazyRequestDelivererModule = new LazyRequestDelivererModule(Modules.get(RuntimeProperties.class));
 		Module iterativeDiscovererModule = new IterativeDiscovererModule(Modules.get(RuntimeProperties.class));
-		Module berkeleyStoreModule = new BerkeleyStoreModule();
+		Module berkeleyStoreModule = new BerkeleyStoreModule(dbEnv);
 		Module tempoModule = new TempoModule();
 		Module middlewareModule = new MiddlewareModule();
 

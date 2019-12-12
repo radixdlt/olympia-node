@@ -30,7 +30,7 @@ public class AddressBookPersistenceTest extends RadixTest {
 		this.dbEnv = new DatabaseEnvironment();
 		this.dbEnv.start();
 		Modules.put(DatabaseEnvironment.class, this.dbEnv);
-		this.abp = new AddressBookPersistence(Serialization.getDefault());
+		this.abp = new AddressBookPersistence(Serialization.getDefault(), dbEnv);
 		this.abp.reset();
 	}
 
@@ -73,12 +73,6 @@ public class AddressBookPersistenceTest extends RadixTest {
 		AtomicInteger peercount2 = new AtomicInteger(0);
 		this.abp.forEachPersistedPeer(p -> peercount2.incrementAndGet());
 		assertEquals(0, peercount2.get());
-	}
-
-	@Test
-	public void testFlush() {
-		// No exceptions
-		this.abp.flush();
 	}
 
 	@Test

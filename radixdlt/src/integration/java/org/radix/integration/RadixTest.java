@@ -38,7 +38,6 @@ public class RadixTest
 
 		RuntimeProperties	runtimeProperties = new RuntimeProperties(runtimeConfigurationJSON, null);
 		Modules.put(RuntimeProperties.class, runtimeProperties);
-		Modules.put(PersistedProperties.class, runtimeProperties);
 		Modules.put(Serialization.class, serialization);
 
 		Modules.get(RuntimeProperties.class).set("debug.nopow", true);

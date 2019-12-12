@@ -49,7 +49,7 @@ public class BerkeleyRadixLedgerEntryStoreTests extends RadixTestWithStores {
 
     @Before
     public void setup() throws CryptoException, ValidationException {
-        tempoAtomStore = new BerkeleyLedgerEntryStore(localSystem.getNID(), serialization, Modules.get(DatabaseEnvironment.class));
+        tempoAtomStore = new BerkeleyLedgerEntryStore(localSystem.getNID(), serialization, this.dbEnv);
 
         identity = new ECKeyPair();
         ledgerEntries = ledgerEntryGenerator.createLedgerEntries(identity, 5);

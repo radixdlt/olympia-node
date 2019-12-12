@@ -15,10 +15,8 @@ import com.sleepycat.je.OperationStatus;
 import com.sleepycat.je.Transaction;
 import com.sleepycat.je.TransactionConfig;
 import org.radix.database.DatabaseEnvironment;
-import org.radix.database.DatabaseStore;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.modules.Modules;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -28,38 +26,36 @@ import java.util.function.Consumer;
 /**
  * Persistence for peers.
  */
-public class AddressBookPersistence extends DatabaseStore implements PeerPersistence {
+public class AddressBookPersistence implements PeerPersistence {
 	private static final Logger log = Logging.getLogger("addressbook");
 
 	private final Serialization serialization;
+	private final DatabaseEnvironment dbEnv;
 	private Database peersByNidDB;
 
-	AddressBookPersistence(Serialization serialization) {
+	AddressBookPersistence(Serialization serialization, DatabaseEnvironment dbEnv) {
 		super();
 		this.serialization = Objects.requireNonNull(serialization);
+		this.dbEnv = Objects.requireNonNull(dbEnv);
 	}
 
-	@Override
 	public void start() {
 		DatabaseConfig config = new DatabaseConfig();
 		config.setAllowCreate(true);
 
 		try {
-			this.peersByNidDB = Modules.get(DatabaseEnvironment.class).getEnvironment().openDatabase(null, "peers_by_nid", config);
+			this.peersByNidDB = this.dbEnv.getEnvironment().openDatabase(null, "peers_by_nid", config);
 		} catch (DatabaseException | IllegalArgumentException | IllegalStateException ex) {
         	throw new RuntimeException("while opening database", ex);
 		}
-
-		super.start();
 	}
 
-	@Override
 	public void reset() {
 		Transaction transaction = null;
 
 		try {
-			transaction = Modules.get(DatabaseEnvironment.class).getEnvironment().beginTransaction(null, new TransactionConfig().setReadUncommitted(true));
-			Modules.get(DatabaseEnvironment.class).getEnvironment().truncateDatabase(transaction, "peers_by_nid", false);
+			transaction = this.dbEnv.getEnvironment().beginTransaction(null, new TransactionConfig().setReadUncommitted(true));
+			this.dbEnv.getEnvironment().truncateDatabase(transaction, "peers_by_nid", false);
 			transaction.commit();
 		} catch (DatabaseNotFoundException dsnfex) {
 			if (transaction != null) {
@@ -74,18 +70,11 @@ public class AddressBookPersistence extends DatabaseStore implements PeerPersist
 		}
 	}
 
-	@Override
 	public void stop() {
-		super.stop();
 		if (this.peersByNidDB != null) {
 			this.peersByNidDB.close();
 			this.peersByNidDB = null;
 		}
-	}
-
-	@Override
-	public void flush() throws DatabaseException  {
-		// Not used
 	}
 
 	@Override

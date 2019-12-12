@@ -24,7 +24,6 @@ import org.radix.network2.addressbook.PeerManager;
 import org.radix.network2.addressbook.PeerManagerFactory;
 import org.radix.network2.messaging.MessageCentral;
 import org.radix.network2.messaging.MessageCentralFactory;
-import org.radix.properties.PersistedProperties;
 import org.radix.properties.RuntimeProperties;
 import org.radix.time.Time;
 import org.radix.universe.system.LocalSystem;
@@ -67,7 +66,6 @@ public final class Radix
 
 			RuntimeProperties runtimeProperties = new RuntimeProperties(runtimeConfigurationJSON, args);
 			Modules.put(RuntimeProperties.class, runtimeProperties);
-			Modules.put(PersistedProperties.class, runtimeProperties);
 
 			// Setup bouncy castle
 			// This is used when loading the node key below, so set it up now.
@@ -126,7 +124,7 @@ public final class Radix
 		Modules.put(DatabaseEnvironment.class, dbEnv);
 
 		// start profiling
-		SystemMetaData systemMetaData = new SystemMetaData();
+		SystemMetaData systemMetaData = new SystemMetaData(dbEnv);
 		systemMetaData.start();
 		Modules.put(SystemMetaData.class, systemMetaData);
 

@@ -2,6 +2,7 @@ package org.radix.utils;
 
 import com.radixdlt.utils.Longs;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -9,7 +10,6 @@ import java.util.concurrent.TimeUnit;
 import org.radix.common.executors.Executor;
 import org.radix.common.executors.ScheduledExecutable;
 import org.radix.database.DatabaseEnvironment;
-import org.radix.database.DatabaseStore;
 import org.radix.database.exceptions.DatabaseException;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
@@ -27,27 +27,27 @@ import com.sleepycat.je.OperationStatus;
 import com.sleepycat.je.Transaction;
 import com.sleepycat.je.TransactionConfig;
 
-public final class SystemMetaData extends DatabaseStore
+public final class SystemMetaData
 {
 	private static final Logger log = Logging.getLogger();
 
+	private final DatabaseEnvironment dbEnv;
 	private Map<String, Object> systemMetaData = new ConcurrentHashMap<>();
 	private Database systemMetaDataDB = null;
 	private Future<?> flush;
 
-	public SystemMetaData()
+	public SystemMetaData(DatabaseEnvironment dbEnv)
 	{
 		super();
+		this.dbEnv = Objects.requireNonNull(dbEnv);
 	}
 
-	@Override
 	public void start() {
 		DatabaseConfig config = new DatabaseConfig();
 		config.setAllowCreate(true);
 
-		this.systemMetaDataDB = Modules.get(DatabaseEnvironment.class).getEnvironment().openDatabase(null, "system_meta_data", config);
+		this.systemMetaDataDB = this.dbEnv.getEnvironment().openDatabase(null, "system_meta_data", config);
 
-		super.start();
 
 		try
 		{
@@ -72,13 +72,12 @@ public final class SystemMetaData extends DatabaseStore
 		Executor.getInstance().scheduleWithFixedDelay(flushExecutable);
 	}
 
-	@Override
 	public void reset() {
 		Transaction transaction = null;
 		try
 		{
-			transaction = Modules.get(DatabaseEnvironment.class).getEnvironment().beginTransaction(null, new TransactionConfig().setReadUncommitted(true));
-			Modules.get(DatabaseEnvironment.class).getEnvironment().truncateDatabase(transaction, "system_meta_data", false);
+			transaction = this.dbEnv.getEnvironment().beginTransaction(null, new TransactionConfig().setReadUncommitted(true));
+			this.dbEnv.getEnvironment().truncateDatabase(transaction, "system_meta_data", false);
 			transaction.commit();
 			this.systemMetaData.clear();
 		}
@@ -98,18 +97,15 @@ public final class SystemMetaData extends DatabaseStore
 		}
 	}
 
-	@Override
 	public void stop() {
 		if (this.flush != null) {
 			this.flush.cancel(false);
 		}
 
-		super.stop();
 
 		systemMetaDataDB.close();
 	}
 
-	@Override
 	public synchronized void flush() throws DatabaseException
 	{
 		try

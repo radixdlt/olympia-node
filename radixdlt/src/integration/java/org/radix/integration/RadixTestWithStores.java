@@ -28,7 +28,7 @@ import static org.mockito.Mockito.mock;
 public class RadixTestWithStores extends RadixTest
 {
 	protected Injector injector;
-	private DatabaseEnvironment dbEnv;
+	protected DatabaseEnvironment dbEnv;
 
 	@Before
 	public void beforeEachRadixTest() {
@@ -48,7 +48,7 @@ public class RadixTestWithStores extends RadixTest
 						bind(EUID.class).annotatedWith(Names.named("self")).toInstance(self);
 					}
 				},
-				new BerkeleyStoreModule()
+				new BerkeleyStoreModule(dbEnv)
 		);
 
 		LedgerEntryStore atomStore = injector.getInstance(LedgerEntryStore.class);
