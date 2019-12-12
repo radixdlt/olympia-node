@@ -4,12 +4,12 @@ import com.radixdlt.TestSetupUtils;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.infra.Blackhole;
 import org.radix.logging.Logging;
-import org.radix.modules.Modules;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
 
 import org.radix.serialization.DummyTestObject;
+import org.radix.serialization.TestSetupUtils;
 
 /**
  * Some JMH driven benchmarks for testing serialisation performance of
@@ -49,8 +49,6 @@ public class CodecBenchmark {
 			TestSetupUtils.installBouncyCastleProvider();
 
 			serialization = Serialization.getDefault();
-
-			Modules.put(Serialization.class, serialization);
 
 			testObject = new DummyTestObject(true);
 

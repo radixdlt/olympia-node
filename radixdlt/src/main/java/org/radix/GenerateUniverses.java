@@ -61,7 +61,6 @@ public final class GenerateUniverses
 			Security.insertProviderAt(new BouncyCastleProvider(), 1);
 
 			Modules.put(SecureRandom.class, new SecureRandom());
-			Modules.put(Serialization.class, this.serialization);
 
 			try {
 				JSONObject runtimeConfigurationJSON = new JSONObject();

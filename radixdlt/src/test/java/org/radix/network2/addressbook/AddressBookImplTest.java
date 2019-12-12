@@ -60,7 +60,6 @@ public class AddressBookImplTest {
 		Universe universe = mock(Universe.class);
 		doReturn(86400L * 1000L).when(universe).getPlanck(); // 1 day
 		Modules.put(Universe.class, universe);
-		Modules.put(Serialization.class, Serialization.getDefault());
 	}
 
 	@After

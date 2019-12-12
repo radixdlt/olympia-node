@@ -106,7 +106,6 @@ public final class Radix
 
 		// set up serialisation
 		Serialization serialization = Serialization.getDefault();
-		Modules.put(Serialization.class, serialization);
 
 		// set up universe
 		Universe universe = extractUniverseFrom(properties, serialization);

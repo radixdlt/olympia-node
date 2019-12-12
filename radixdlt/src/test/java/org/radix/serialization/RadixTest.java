@@ -49,7 +49,6 @@ public abstract class RadixTest
 		when(localSystem.getShards()).thenReturn(new ShardSpace(10000, 20000));
 
 		Modules.put(RuntimeProperties.class, runtimeProperties);
-		Modules.put(Serialization.class, serialization);
 		Modules.put(SecureRandom.class, secureRandom);
 		Modules.put(Universe.class, universe);
 		Modules.put(SystemMetaData.class, systemMetaData);

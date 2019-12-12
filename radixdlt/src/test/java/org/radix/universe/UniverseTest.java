@@ -20,17 +20,6 @@ import org.junit.rules.ExpectedException;
 import org.radix.modules.Modules;
 
 public class UniverseTest {
-
-	@Before
-	public void setUp() {
-		Modules.put(Serialization.class, Serialization.getDefault());
-	}
-
-	@After
-	public void tearDown() {
-		Modules.remove(Serialization.class);
-	}
-
     @Rule
     public ExpectedException thrown = ExpectedException.none();
 
