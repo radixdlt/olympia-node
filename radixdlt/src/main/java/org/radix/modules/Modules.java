@@ -36,14 +36,6 @@ public class Modules
 		return value;
 	}
 
-	public static <T> T getOrElse(Class<? extends T> cls, Supplier<T> elseClause) {
-		Object o = Modules.modules.get(cls);
-		if (o != null) {
-			return (T) o;
-		}
-		return elseClause.get();
-	}
-
 	public static <T> void ifAvailable(Class<T> cls, Consumer<T> action) {
 		@SuppressWarnings("unchecked")
 		T value = (T) Modules.modules.get(cls);
