@@ -32,10 +32,8 @@ public class JsonSchemaTest extends RadixTest {
 
 	private static final int BILLION_POW_10 = 9;
 
-	private Serialization serialization = Modules.get(Serialization.class);
-
 	public void testAtomSchema(Atom atom) throws Exception {
-		JSONObject atomJsonObject = serialization.toJsonObject(atom, Output.WIRE);
+		JSONObject atomJsonObject = getSerialization().toJsonObject(atom, Output.WIRE);
 
 		try (InputStream inputStream = getClass().getResourceAsStream("/schemas/atom.schema.json")) {
 			JSONObject rawSchema = new JSONObject(new JSONTokener(inputStream));

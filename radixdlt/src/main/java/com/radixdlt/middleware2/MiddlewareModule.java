@@ -58,7 +58,8 @@ public class MiddlewareModule extends AbstractModule {
 	private RadixEngine getRadixEngine(
 			ConstraintMachine constraintMachine,
 			UnaryOperator<CMStore> virtualStoreLayer,
-			EngineStore engineStore
+			EngineStore engineStore,
+			Serialization serialization
 	) {
 		RadixEngine radixEngine = new RadixEngine(
 			constraintMachine,
@@ -78,7 +79,7 @@ public class MiddlewareModule extends AbstractModule {
 				)
 		);
 
-		radixEngine.addAtomEventListener(new EngineAtomEventListener());
+		radixEngine.addAtomEventListener(new EngineAtomEventListener(serialization));
 		radixEngine.start();
 		return radixEngine;
 	}

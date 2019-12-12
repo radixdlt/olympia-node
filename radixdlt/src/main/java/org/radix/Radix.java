@@ -109,7 +109,7 @@ public final class Radix
 		Modules.put(Serialization.class, serialization);
 
 		// set up universe
-		Universe universe = extractUniverseFrom(properties);
+		Universe universe = extractUniverseFrom(properties, serialization);
 		Modules.put(Universe.class, universe);
 
 		// set up time services
@@ -138,7 +138,7 @@ public final class Radix
 		peerManager.start();
 
 		// TODO Eventually modules should be created using Google Guice injector
-		GlobalInjector globalInjector = new GlobalInjector();
+		GlobalInjector globalInjector = new GlobalInjector(properties, dbEnv);
 		Consensus consensus = globalInjector.getInjector().getInstance(Consensus.class);
 		// TODO use consensus for application construction (in our case, the engine middleware)
 
@@ -174,10 +174,10 @@ public final class Radix
 		}
 	}
 
-	private Universe extractUniverseFrom(RuntimeProperties properties) {
+	private Universe extractUniverseFrom(RuntimeProperties properties, Serialization serialization) {
 		try {
 			byte[] bytes = Bytes.fromBase64String(properties.get("universe"));
-			return Modules.get(Serialization.class).fromDson(bytes, Universe.class);
+			return serialization.fromDson(bytes, Universe.class);
 		} catch (SerializationException e) {
 			throw new RuntimeException("while deserialising universe", e);
 		}

@@ -8,6 +8,7 @@ import com.radixdlt.middleware2.MiddlewareModule;
 import com.radixdlt.delivery.LazyRequestDelivererModule;
 import com.radixdlt.discovery.IterativeDiscovererModule;
 import com.radixdlt.store.berkeley.BerkeleyStoreModule;
+import org.radix.database.DatabaseEnvironment;
 import org.radix.modules.Modules;
 import org.radix.properties.RuntimeProperties;
 
@@ -15,9 +16,9 @@ public class GlobalInjector {
 
 	private Injector injector;
 
-	public GlobalInjector() {
-		Module lazyRequestDelivererModule = new LazyRequestDelivererModule(Modules.get(RuntimeProperties.class));
-		Module iterativeDiscovererModule = new IterativeDiscovererModule(Modules.get(RuntimeProperties.class));
+	public GlobalInjector(RuntimeProperties properties, DatabaseEnvironment dbEnv) {
+		Module lazyRequestDelivererModule = new LazyRequestDelivererModule(properties);
+		Module iterativeDiscovererModule = new IterativeDiscovererModule(properties);
 		Module berkeleyStoreModule = new BerkeleyStoreModule(dbEnv);
 		Module tempoModule = new TempoModule();
 		Module middlewareModule = new MiddlewareModule();

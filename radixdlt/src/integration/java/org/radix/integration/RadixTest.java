@@ -20,6 +20,7 @@ import java.security.SecureRandom;
 
 public class RadixTest
 {
+	private static Serialization serialization;
 	private static String dbLocation = null;
 
 	private long clock = 100L; // Arbitrary starting point. Must be larger than number of atoms in genesis.
@@ -28,7 +29,7 @@ public class RadixTest
 	public static void startRadixTest() throws Exception {
 		TestSetupUtils.installBouncyCastleProvider();
 
-		Serialization serialization = Serialization.getDefault();
+		serialization = Serialization.getDefault();
 
 		Modules.put(SecureRandom.class, new SecureRandom());
 
@@ -54,7 +55,6 @@ public class RadixTest
 		LocalSystem.getInstance(); // Load node.ks, after universe
 	}
 
-
 	@AfterClass
 	public static void endRadixTest() {
 		Modules.remove(Universe.class);
@@ -64,5 +64,9 @@ public class RadixTest
 		Modules.remove(PersistedProperties.class);
 		Modules.remove(RuntimeProperties.class);
 		Modules.remove(SecureRandom.class);
+	}
+
+	protected static Serialization getSerialization() {
+		return serialization;
 	}
 }

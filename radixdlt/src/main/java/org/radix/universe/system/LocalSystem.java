@@ -77,7 +77,7 @@ public final class LocalSystem extends RadixSystem
 			if (Modules.isAvailable(SystemMetaData.class) == true && Modules.get(SystemMetaData.class).has("system")) {
 				try {
 					byte[] systemBytes = Modules.get(SystemMetaData.class).get("system", Bytes.EMPTY_BYTES);
-					instance = Modules.get(Serialization.class).fromDson(systemBytes, LocalSystem.class);
+					instance = Serialization.getDefault().fromDson(systemBytes, LocalSystem.class);
 
 					if (LocalSystem.instance.getKeyPair().equals(nodeKey) == false) // TODO what happens if NODE_KEY has changed?  Dump loggables?  Dump DB?
 						log.warn("Node key has changed from "+instance.getKeyPair().getUID()+" to "+nodeKey.getUID());
@@ -105,7 +105,7 @@ public final class LocalSystem extends RadixSystem
 					{
 						Modules.ifAvailable(SystemMetaData.class, smc -> {
 							try {
-								byte[] systemBytes = Modules.get(Serialization.class).toDson(getInstance(), Output.PERSIST);
+								byte[] systemBytes = Serialization.getDefault().toDson(getInstance(), Output.PERSIST);
 								smc.put("system", systemBytes);
 							} catch (IOException e) {
 								log.error("Could not persist system state", e);

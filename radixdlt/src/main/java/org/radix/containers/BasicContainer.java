@@ -63,7 +63,7 @@ public abstract class BasicContainer
 		try
 		{
 			if (hash == null || hash.equals(Hash.ZERO_HASH)) {
-				byte[] hashBytes = Modules.get(Serialization.class).toDson(this, Output.HASH);
+				byte[] hashBytes = Serialization.getDefault().toDson(this, Output.HASH);
 				hash = new Hash(Hash.hash256(hashBytes));
 			}
 

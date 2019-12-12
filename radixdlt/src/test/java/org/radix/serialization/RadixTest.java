@@ -24,6 +24,8 @@ import static org.powermock.api.mockito.PowerMockito.when;
 
 public abstract class RadixTest
 {
+	private static Serialization serialization;
+
 	@BeforeClass
 	public static void startRadixTest() {
 		TestSetupUtils.installBouncyCastleProvider();
@@ -41,7 +43,7 @@ public abstract class RadixTest
 		final NtpService ntpService = mock(NtpService.class);
 		when(ntpService.getUTCTimeMS()).thenAnswer((Answer<Long>) invocation -> System.currentTimeMillis());
 
-		Serialization serialization = Serialization.getDefault();
+		serialization = Serialization.getDefault();
 
 		final LocalSystem localSystem = mock(LocalSystem.class);
 		when(localSystem.getShards()).thenReturn(new ShardSpace(10000, 20000));
@@ -66,4 +68,7 @@ public abstract class RadixTest
 		Modules.remove(LocalSystem.class);
 	}
 
+	public static Serialization getSerialization() {
+		return serialization;
+	}
 }

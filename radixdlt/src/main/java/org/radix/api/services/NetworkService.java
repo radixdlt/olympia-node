@@ -21,17 +21,15 @@ import org.radix.universe.system.LocalSystem;
 import org.radix.utils.SystemMetaData;
 
 public class NetworkService {
-	private NetworkService() {}
+	private final Serialization serialization;
 
-	private final static NetworkService instance = new NetworkService();
-
-	public static NetworkService getInstance() {
-		return instance;
+	public NetworkService(Serialization serialization) {
+		this.serialization = serialization;
 	}
 
- 	public JSONObject getSelf() {
+	public JSONObject getSelf() {
  		JSONObject self = new JSONObject();
-		self.put("system", Modules.get(Serialization.class).toJsonObject(LocalSystem.getInstance(), Output.WIRE));
+		self.put("system", serialization.toJsonObject(LocalSystem.getInstance(), Output.WIRE));
  		return self;
  	}
 
@@ -48,7 +46,7 @@ public class NetworkService {
 		for (Map.Entry<String, Set<Peer>> e : peersByTransport.entrySet()) {
 			JSONArray transportPeers = new JSONArray();
 			for (Peer peer : e.getValue()) {
-				transportPeers.put(Modules.get(Serialization.class).toJsonObject(peer, Output.API));
+				transportPeers.put(serialization.toJsonObject(peer, Output.API));
 			}
 			result.put(e.getKey(), transportPeers);
 		}
@@ -65,7 +63,7 @@ public class NetworkService {
 	public List<JSONObject> getLivePeers() {
 		return Modules.get(AddressBook.class).recentPeers()
 			.map(peer -> {
-				return Modules.get(Serialization.class).toJsonObject(peer, Output.WIRE);
+				return serialization.toJsonObject(peer, Output.WIRE);
 			})
 			.collect(Collectors.toList());
 	}
@@ -79,7 +77,7 @@ public class NetworkService {
 	public List<JSONObject> getPeers() {
 		return Modules.get(AddressBook.class).peers()
 			.map(peer -> {
-				return Modules.get(Serialization.class).toJsonObject(peer, Output.WIRE);
+				return serialization.toJsonObject(peer, Output.WIRE);
 			})
 			.collect(Collectors.toList());
 	}
@@ -91,7 +89,7 @@ public class NetworkService {
 			EUID euid = EUID.valueOf(id);
 			Peer peer = Modules.get(AddressBook.class).peer(euid);
 			if (peer != null) {
-				return Modules.get(Serialization.class).toJsonObject(peer, Output.API);
+				return serialization.toJsonObject(peer, Output.API);
 			}
 		} catch (NumberFormatException ex) {
 			// Ignore, return empty object

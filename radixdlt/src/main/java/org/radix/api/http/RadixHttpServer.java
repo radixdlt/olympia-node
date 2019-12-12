@@ -55,6 +55,8 @@ public final class RadixHttpServer {
 	private final AtomsService atomsService;
     private final RadixJsonRpcServer jsonRpcServer;
     private final InternalService internalService;
+    private final TestService testService;
+    private final NetworkService networkService;
 	private final Universe universe;
 	private final JSONObject apiSerializedUniverse;
 	private final Serialization serialization;
@@ -72,6 +74,8 @@ public final class RadixHttpServer {
 				AtomSchemas.get()
 		);
 		this.internalService = InternalService.getInstance(store, radixEngineAtomProcessor);
+		this.testService = new TestService(serialization);
+		this.networkService = new NetworkService(serialization);
 	}
 
     private Undertow server;
@@ -98,7 +102,7 @@ public final class RadixHttpServer {
         handler.add(
         	Methods.GET,
 			"/rpc",
-			Handlers.websocket(new RadixHttpWebsocketHandler( this, jsonRpcServer, peers, atomsService))
+			Handlers.websocket(new RadixHttpWebsocketHandler( this, jsonRpcServer, peers, atomsService, serialization))
 		);
 
         // add appropriate error handlers for meaningful error messages (undertow is silent by default)
@@ -153,7 +157,7 @@ public final class RadixHttpServer {
 			String low = getParameter(exchange, "low").orElse(String.valueOf(-ShardSpace.SHARD_CHUNK_RANGE));
 			String ip = getParameter(exchange, "ip").orElse(null);
 			String port = getParameter(exchange, "port").orElse("-1"); // Defaults to universe port
-			respond(TestService.getInstance().newPeer(key, anchor, high, low, ip, port), exchange);
+			respond(testService.newPeer(key, anchor, high, low, ip, port), exchange);
 		}, handler);
 	}
 
@@ -242,14 +246,14 @@ public final class RadixHttpServer {
 
     private void addRestNetworkRoutesTo(RoutingHandler handler) {
         addGetRoute("/api/network", exchange -> {
-            respond(NetworkService.getInstance().getNetwork(), exchange);
+            respond(this.networkService.getNetwork(), exchange);
         }, handler);
         addGetRoute("/api/network/peers/live", exchange
-                -> respond(NetworkService.getInstance().getLivePeers().toString(), exchange), handler);
+                -> respond(this.networkService.getLivePeers().toString(), exchange), handler);
         addGetRoute("/api/network/peers", exchange
-                -> respond(NetworkService.getInstance().getPeers().toString(), exchange), handler);
+                -> respond(this.networkService.getPeers().toString(), exchange), handler);
         addGetRoute("/api/network/peers/{id}", exchange
-                -> respond(NetworkService.getInstance().getPeer(getParameter(exchange, "id").orElse(null)), exchange), handler);
+                -> respond(this.networkService.getPeer(getParameter(exchange, "id").orElse(null)), exchange), handler);
 
     }
 

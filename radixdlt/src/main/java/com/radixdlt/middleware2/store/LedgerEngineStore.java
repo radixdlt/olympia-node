@@ -6,6 +6,7 @@ import com.radixdlt.common.Atom;
 import com.radixdlt.common.EUID;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.SearchCursor;
 import com.radixdlt.store.StoreIndex;
 import com.radixdlt.store.LedgerSearchMode;
@@ -26,12 +27,14 @@ import java.util.stream.Collectors;
 public class LedgerEngineStore implements EngineStore {
     private static final Logger log = Logging.getLogger("middleware2.store");
 
-    private LedgerEntryStore store;
+    private final Serialization serialization;
+    private final LedgerEntryStore store;
     private Supplier<ShardSpace> shardSpaceSupplier;
     private AtomToBinaryConverter atomToBinaryConverter;
 
     @Inject
-    public LedgerEngineStore(LedgerEntryStore store, Supplier<ShardSpace> shardSpaceSupplier, AtomToBinaryConverter atomToBinaryConverter) {
+    public LedgerEngineStore(LedgerEntryStore store, Supplier<ShardSpace> shardSpaceSupplier, AtomToBinaryConverter atomToBinaryConverter, Serialization serialization) {
+        this.serialization = serialization;
         this.store = store;
         this.shardSpaceSupplier = shardSpaceSupplier;
         this.atomToBinaryConverter = atomToBinaryConverter;
@@ -60,7 +63,7 @@ public class LedgerEngineStore implements EngineStore {
     public void storeAtom(Atom atom) {
         byte binaryAtom[] = atomToBinaryConverter.toLedgerEntryContent(atom);
         LedgerEntry ledgerEntry = new LedgerEntry(binaryAtom,atom.getAID());
-        EngineAtomIndices engineAtomIndices = EngineAtomIndices.from(atom);
+        EngineAtomIndices engineAtomIndices = EngineAtomIndices.from(atom, serialization);
         store.store(ledgerEntry, engineAtomIndices.getUniqueIndices(), engineAtomIndices.getDuplicateIndices());
     }
 

@@ -45,7 +45,7 @@ public abstract class Message extends BasicContainer
 	private static final AtomicLong instances = new AtomicLong();
 	public static final int MAX_MESSAGE_SIZE = (4096*1024);
 
-	public static Message parse(InputStream inputStream) throws IOException, BanException
+	public static Message parse(InputStream inputStream, Serialization serialization) throws IOException, BanException
 	{
 		WireIO.Reader reader = new WireIO.Reader(inputStream);
 
@@ -54,7 +54,7 @@ public abstract class Message extends BasicContainer
 		byte[] compressed = reader.readBytes(length);
 
 		byte[] bytes = Snappy.uncompress(compressed);
-		Message message = Modules.get(Serialization.class).fromDson(bytes, Message.class);
+		Message message = serialization.fromDson(bytes, Message.class);
 		if (message.getMagic() != Modules.get(Universe.class).getMagic()) {
 			throw new BanException("Wrong magic for this universe");
 		}
@@ -124,9 +124,9 @@ public abstract class Message extends BasicContainer
 		this.timestamps.put(type, timestamp);
 	}
 
-	public byte[] toByteArray() throws IOException
+	public byte[] toByteArray(Serialization serialization) throws IOException
 	{
-		byte[] bytes = Modules.get(Serialization.class).toDson(this, Output.WIRE);
+		byte[] bytes = serialization.toDson(this, Output.WIRE);
 		byte[] data = Snappy.compress(bytes);
 
 		ByteArrayOutputStream baos = new ByteArrayOutputStream(data.length+4);

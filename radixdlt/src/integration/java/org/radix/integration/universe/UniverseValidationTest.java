@@ -15,14 +15,14 @@ public class UniverseValidationTest extends RadixTest {
     @Test
     public void testLoadingUniverse() throws Exception {
         byte[] bytes = Bytes.fromBase64String(Modules.get(RuntimeProperties.class).get("universe"));
-        Universe universe = Modules.get(Serialization.class).fromDson(bytes, Universe.class);
+        Universe universe = getSerialization().fromDson(bytes, Universe.class);
         UniverseValidator.validate(universe);
     }
 
     @Test(expected = UnsupportedOperationException.class)
     public void testLoadingUniverseHasImmutableGenesis() throws Exception {
         byte[] bytes = Bytes.fromBase64String(Modules.get(RuntimeProperties.class).get("universe"));
-        Universe universe = Modules.get(Serialization.class).fromDson(bytes, Universe.class);
+        Universe universe = getSerialization().fromDson(bytes, Universe.class);
         universe.getGenesis().add(new Atom());
     }
 }

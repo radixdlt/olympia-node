@@ -11,7 +11,6 @@ import com.radixdlt.atomos.RadixAddress;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 
-import org.radix.modules.Modules;
 import com.radixdlt.serialization.Serialization;
 
 /**
@@ -40,15 +39,16 @@ public class RadixJsonRpcPeer {
 		RadixJsonRpcServer server,
 		AtomsService atomsService,
 		Schema atomSchema,
+		Serialization serialization,
 		BiConsumer<RadixJsonRpcPeer, String> callback
 	) {
 		this.server = server;
 		this.callback = callback;
 
 		this.atomStatusEpic = new AtomStatusEpic(atomsService, json -> callback.accept(this, json.toString()));
-		this.submitAtomAndSubscribeEpic = new SubmitAtomAndSubscribeEpic(atomsService, atomSchema, Modules.get(Serialization.class),
+		this.submitAtomAndSubscribeEpic = new SubmitAtomAndSubscribeEpic(atomsService, atomSchema, serialization,
 			atomJson -> callback.accept(this, atomJson.toString()));
-		this.atomsSubscribeEpic = new AtomsSubscribeEpic(atomsService, Modules.get(Serialization.class),
+		this.atomsSubscribeEpic = new AtomsSubscribeEpic(atomsService, serialization,
 			queryJson -> new AtomQuery(RadixAddress.from(queryJson.getString("address"))), atomJson -> callback.accept(this, atomJson.toString()));
 
 		callback.accept(this, JsonRpcUtil.notification("Radix.welcome", new JSONObject().put("message", "Hello!")).toString());

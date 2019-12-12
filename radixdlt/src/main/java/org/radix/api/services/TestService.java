@@ -45,25 +45,14 @@ public final class TestService {
 			"  }\n" +
 			"}";
 
-	static final class Holder {
-		static final TestService TEST_SERVICE = new TestService();
+	private final Serialization serialization;
+
+	public TestService(Serialization serialization) {
+		this.serialization = serialization;
 	}
 
 	/**
-	 * Returns the singleton instance, creating the object on first call.
-	 *
-	 * @return The singleton instance
-	 */
-	public static TestService getInstance() {
-		return Holder.TEST_SERVICE;
-	}
-
-	private TestService() {
-		// Nothing to do here
-	}
-
-	/**
-	 * Inject a {@link PeerMessage} into the inbound messaging queue based on
+	 * Inject a {@link PeersMessage} into the inbound messaging queue based on
 	 * the specified parameters.
 	 *
 	 * @param key The public key of the node, in hexadecimal
@@ -87,7 +76,7 @@ public final class TestService {
 
 			// Some special magic to avoid constructor range checks.
 			String json = String.format(SHARD_JSON_TEMPLATE, anchor, high, low);
-			ShardSpace shards = Modules.get(Serialization.class).fromJson(json, ShardSpace.class);
+			ShardSpace shards = serialization.fromJson(json, ShardSpace.class);
 
 			RadixSystem system = new RadixSystem(
 				keyValue.getPublicKey(),
