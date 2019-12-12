@@ -121,7 +121,6 @@ public final class Radix
 		// start database environment
 		DatabaseEnvironment dbEnv = new DatabaseEnvironment();
 		dbEnv.start();
-		Modules.put(DatabaseEnvironment.class, dbEnv);
 
 		// start profiling
 		SystemMetaData systemMetaData = new SystemMetaData(dbEnv);

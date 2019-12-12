@@ -33,7 +33,6 @@ public class RadixTestWithStores extends RadixTest
 	public void beforeEachRadixTest() {
 		this.dbEnv = new DatabaseEnvironment();
 		this.dbEnv.start();
-		Modules.put(DatabaseEnvironment.class, this.dbEnv);
 
 		RuntimeProperties properties = Modules.get(RuntimeProperties.class);
 		MessageCentral messageCentral = new MessageCentralFactory().createDefault(properties);
