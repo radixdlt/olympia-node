@@ -112,8 +112,6 @@ public final class SystemMetaData extends DatabaseStore
 	@Override
 	public synchronized void flush() throws DatabaseException
 	{
-		long start = SystemProfiler.getInstance().begin();
-
 		try
         {
 			for (Map.Entry<String, Object> e : this.systemMetaData.entrySet())
@@ -148,10 +146,6 @@ public final class SystemMetaData extends DatabaseStore
 		catch (Exception e)
 		{
 			throw new DatabaseException(e);
-		}
-		finally
-		{
-			SystemProfiler.getInstance().incrementFrom("SYSTEMMETRICS_FLUSH", start);
 		}
 	}
 
@@ -247,8 +241,6 @@ public final class SystemMetaData extends DatabaseStore
 	 */
 	private void load() throws DatabaseException
 	{
-		long start = SystemProfiler.getInstance().begin();
-
 		try (Cursor cursor = this.systemMetaDataDB.openCursor(null, null))
         {
 			DatabaseEntry key = new DatabaseEntry();
@@ -280,10 +272,6 @@ public final class SystemMetaData extends DatabaseStore
 		catch (Exception e)
 		{
 			throw new DatabaseException(e);
-		}
-		finally
-		{
-			SystemProfiler.getInstance().incrementFrom("SYSTEMMETRICS_GET_METRICS", start);
 		}
 	}
 

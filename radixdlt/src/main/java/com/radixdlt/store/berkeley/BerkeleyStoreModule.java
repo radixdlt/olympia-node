@@ -7,7 +7,6 @@ import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.store.LedgerEntryStoreView;
 import org.radix.database.DatabaseEnvironment;
 import org.radix.modules.Modules;
-import org.radix.utils.SystemProfiler;
 
 public class BerkeleyStoreModule extends AbstractModule {
 	@Override
@@ -20,7 +19,5 @@ public class BerkeleyStoreModule extends AbstractModule {
 		bind(DatabaseEnvironment.class).toProvider(() -> Modules.get(DatabaseEnvironment.class));
 		// FIXME: remove static dependency on modules for Serialization
 		bind(Serialization.class).toProvider(Serialization::getDefault);
-		// FIXME: remove static dependency on modules for SystemProfiler
-		bind(SystemProfiler.class).toProvider(SystemProfiler::getInstance);
 	}
 }

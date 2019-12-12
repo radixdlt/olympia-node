@@ -31,7 +31,6 @@ import org.radix.universe.system.LocalSystem;
 import org.radix.universe.system.RadixSystem;
 import org.radix.universe.system.SystemMessage;
 import org.radix.utils.SystemMetaData;
-import org.radix.utils.SystemProfiler;
 import org.xerial.snappy.Snappy;
 
 /*
@@ -58,7 +57,6 @@ class MessageDispatcher {
 	}
 
 	SendResult send(TransportManager transportManager, final MessageEvent outboundMessage) {
-		long start = SystemProfiler.getInstance().begin();
 		final Message message = outboundMessage.message();
 		final Peer peer = outboundMessage.peer();
 
@@ -88,8 +86,6 @@ class MessageDispatcher {
 			String msg = String.format("%s: Sending to  %s failed", message.getClass().getName(), peer);
 			log.error(msg, ex);
 			return SendResult.failure(new IOException(msg, ex));
-		} finally {
-			SystemProfiler.getInstance().incrementFrom("MESSAGING:SEND:"+message.getCommand(), start);
 		}
 	}
 
@@ -144,15 +140,9 @@ class MessageDispatcher {
 			return;
 		}
 
-		long start = SystemProfiler.getInstance().begin();
-		try {
-			final Peer fp = peer; // Awkward
-			listeners.messageReceived(peer, message);
-			Modules.ifAvailable(SystemMetaData.class, a -> a.increment("messages.inbound.processed"));
-		} finally {
-			SystemProfiler.getInstance().incrementFrom("MESSAGING:IN:" + message.getCommand(), start);
-			SystemProfiler.getInstance().incrementFrom("MESSAGING:IN", start);
-		}
+		final Peer fp = peer; // Awkward
+		listeners.messageReceived(peer, message);
+		Modules.ifAvailable(SystemMetaData.class, a -> a.increment("messages.inbound.processed"));
 	}
 
 	private SendResult updateStatistics(SendResult result) {

@@ -37,7 +37,6 @@ import org.radix.properties.RuntimeProperties;
 
 import org.radix.time.Time;
 import org.radix.universe.system.LocalSystem;
-import org.radix.utils.SystemProfiler;
 
 /**
  * API which is used for internal testing and should not be included in release to users
@@ -122,40 +121,31 @@ public class InternalService {
 						long sliceStart = System.currentTimeMillis();
 
 						for (int i = 0; i < this.rate; i++) {
-							long start = SystemProfiler.getInstance().begin();
+							Atom atom = new Atom(Time.currentTimestamp(), ImmutableMap.of("magic", "0xdeadbeef"));
 
-							try {
-								Atom atom = new Atom(Time.currentTimestamp(), ImmutableMap.of("magic", "0xdeadbeef"));
+							for (int b = 0; b < this.batching; b++) {
+								byte[] nonce = generateNonce(nonceBits);
+								String rriName = nonce != null ? Bytes.toHexString(nonce) : "hi";
+								RRI rri = RRI.of(this.account, rriName);
+								RRIParticle rriParticle = new RRIParticle(rri);
+								UniqueParticle unique = new UniqueParticle(rriName, this.account, getRandomLong());
+								atom.addParticleGroupWith(rriParticle, Spin.DOWN, unique, Spin.UP);
+							}
 
-								for (int b = 0; b < this.batching; b++) {
-									byte[] nonce = generateNonce(nonceBits);
-									String rriName = nonce != null ? Bytes.toHexString(nonce) : "hi";
-									RRI rri = RRI.of(this.account, rriName);
-									RRIParticle rriParticle = new RRIParticle(rri);
-									UniqueParticle unique = new UniqueParticle(rriName, this.account, getRandomLong());
-									atom.addParticleGroupWith(rriParticle, Spin.DOWN, unique, Spin.UP);
-								}
+							atom.sign(this.owner);
 
-								atom.sign(this.owner);
+							JSONObject jsonAtom = serialization.toJsonObject(atom, DsonOutput.Output.WIRE);
 
-								JSONObject jsonAtom = serialization.toJsonObject(atom, DsonOutput.Output.WIRE);
-
-								if (LocalSystem.getInstance().getShards().intersects(atom.getShards()) == true) {
-									radixEngineAtomProcessor.process(jsonAtom, Optional.empty());
-								} else {
-									List<Peer> peers = Modules.get(AddressBook.class).recentPeers().collect(Collectors.toList());
-									for (Peer peer : peers) {
-										if (peer.hasSystem() && !peer.getNID().equals(LocalSystem.getInstance().getNID()) && peer.getSystem().getShards().intersects(atom.getShards())) {
-//											if (!org.radix.universe.System.getInstance().isSynced(peer.getSystem())) // TODO put this back in
-//												continue;
-
-											Modules.get(MessageCentral.class).send(peer, new AtomSubmitMessage(atom));
-											break;
-										}
+							if (LocalSystem.getInstance().getShards().intersects(atom.getShards()) == true) {
+								radixEngineAtomProcessor.process(jsonAtom, Optional.empty());
+							} else {
+								List<Peer> peers = Modules.get(AddressBook.class).recentPeers().collect(Collectors.toList());
+								for (Peer peer : peers) {
+									if (peer.hasSystem() && !peer.getNID().equals(LocalSystem.getInstance().getNID()) && peer.getSystem().getShards().intersects(atom.getShards())) {
+										Modules.get(MessageCentral.class).send(peer, new AtomSubmitMessage(atom));
+										break;
 									}
 								}
-							} finally {
-								SystemProfiler.getInstance().incrementFrom("SPAMATHON:SUBMIT", start);
 							}
 
 							remainingIterations--;

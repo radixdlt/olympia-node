@@ -23,7 +23,6 @@ import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.modules.Modules;
 import org.radix.universe.system.LocalSystem;
-import org.radix.utils.SystemProfiler;
 
 import java.util.List;
 import java.util.function.Supplier;
@@ -37,7 +36,6 @@ public class BerkeleyRadixLedgerEntryStoreTests extends RadixTestWithStores {
     private LedgerEntryGenerator ledgerEntryGenerator = new LedgerEntryGenerator();
     private LocalSystem localSystem = LocalSystem.getInstance();
     private Serialization serialization = Serialization.getDefault();
-    private SystemProfiler profiler = SystemProfiler.getInstance();
     private BerkeleyLedgerEntryStore tempoAtomStore;
 
     private List<LedgerEntry> ledgerEntries;
@@ -51,7 +49,7 @@ public class BerkeleyRadixLedgerEntryStoreTests extends RadixTestWithStores {
 
     @Before
     public void setup() throws CryptoException, ValidationException {
-        tempoAtomStore = new BerkeleyLedgerEntryStore(localSystem.getNID(), serialization, profiler, Modules.get(DatabaseEnvironment.class));
+        tempoAtomStore = new BerkeleyLedgerEntryStore(localSystem.getNID(), serialization, Modules.get(DatabaseEnvironment.class));
 
         identity = new ECKeyPair();
         ledgerEntries = ledgerEntryGenerator.createLedgerEntries(identity, 5);

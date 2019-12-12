@@ -19,7 +19,6 @@ import com.radixdlt.serialization.Serialization;
 import org.radix.time.Time;
 import org.radix.time.Timestamps;
 import com.radixdlt.universe.Universe;
-import org.radix.utils.SystemProfiler;
 import org.xerial.snappy.Snappy;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -54,30 +53,18 @@ public abstract class Message extends BasicContainer
 		int length = reader.readInt();
 		byte[] compressed = reader.readBytes(length);
 
-		long start = java.lang.System.nanoTime();
-
-		try
-		{
-			byte[] bytes = Snappy.uncompress(compressed);
-			Message message = Modules.get(Serialization.class).fromDson(bytes, Message.class);
-			if (message.getMagic() != Modules.get(Universe.class).getMagic()) {
-				throw new BanException("Wrong magic for this universe");
-			}
-
-			message.setDirection(Direction.INBOUND);
-			message.setTimestamp(Timestamps.RECEIVED, Time.currentTimestamp());
-			message.setTimestamp(Timestamps.LATENCY, java.lang.System.nanoTime());
-			messaginglog.debug(message.toString()+" bytes "+length);
-
-//			if (message.getSignature() == null)
-//				throw new BanException("Message "+message.getCommand()+" doesnt not include signature");
-
-			return message;
+		byte[] bytes = Snappy.uncompress(compressed);
+		Message message = Modules.get(Serialization.class).fromDson(bytes, Message.class);
+		if (message.getMagic() != Modules.get(Universe.class).getMagic()) {
+			throw new BanException("Wrong magic for this universe");
 		}
-		finally
-		{
-			SystemProfiler.getInstance().incrementFrom("MESSAGE:PARSE", start);
-		}
+
+		message.setDirection(Direction.INBOUND);
+		message.setTimestamp(Timestamps.RECEIVED, Time.currentTimestamp());
+		message.setTimestamp(Timestamps.LATENCY, java.lang.System.nanoTime());
+		messaginglog.debug(message.toString()+" bytes "+length);
+
+		return message;
 	}
 
 	private long 		instance = Message.instances.incrementAndGet();

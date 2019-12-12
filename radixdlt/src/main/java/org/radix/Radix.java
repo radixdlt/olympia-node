@@ -30,7 +30,6 @@ import org.radix.time.Time;
 import org.radix.universe.system.LocalSystem;
 import org.radix.utils.IOUtils;
 import org.radix.utils.SystemMetaData;
-import org.radix.utils.SystemProfiler;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -130,9 +129,6 @@ public final class Radix
 		SystemMetaData systemMetaData = new SystemMetaData();
 		systemMetaData.start();
 		Modules.put(SystemMetaData.class, systemMetaData);
-		SystemProfiler systemProfiler = SystemProfiler.getInstance();
-		systemProfiler.start();
-		Modules.put(SystemProfiler.class, systemProfiler);
 
 		// set up networking
 		MessageCentral messageCentral = createMessageCentral(properties);

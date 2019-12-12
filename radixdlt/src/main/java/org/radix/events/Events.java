@@ -21,7 +21,6 @@ import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.modules.Modules;
 import org.radix.utils.SystemMetaData;
-import org.radix.utils.SystemProfiler;
 
 import com.google.common.collect.Maps;
 
@@ -167,9 +166,6 @@ public final class Events
 
 						try
 						{
-							SystemProfiler.getInstance().increment("EVENT:LATENCY:"+event.getClass().getName(), executed-event.getTimestamp());
-							SystemProfiler.getInstance().increment("EVENT:LATENCY", executed-event.getTimestamp());
-
 							this.listeners.clear();
 							synchronized(Events.this.listeners)
 							{
@@ -197,10 +193,6 @@ public final class Events
 									{
 										eventLog.error(t.getMessage(), t);
 									}
-									finally
-									{
-										SystemProfiler.getInstance().increment("EVENT_HANDLER:PROCESS:"+listener.toString()+" -> "+event.getClass().getName(), System.nanoTime()-listenerStart);
-									}
 								}
 							}
 
@@ -216,9 +208,6 @@ public final class Events
 							long duration = System.nanoTime() - start;
 							if (TimeUnit.NANOSECONDS.toMicros(duration) > 100_000)
 								eventLog.debug("Asynchronous processing of "+event.getClass()+" took "+TimeUnit.NANOSECONDS.toMicros(duration)+" micros");
-
-							SystemProfiler.getInstance().incrementFrom("EVENT_HANDLER:PROCESS:"+event.getClass().getName()+":", start);
-							SystemProfiler.getInstance().incrementFrom("EVENT_HANDLER:PROCESS", start);
 						}
 					}
 					catch (Exception ex)
