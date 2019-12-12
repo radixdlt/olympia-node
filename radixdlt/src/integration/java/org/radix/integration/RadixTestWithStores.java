@@ -14,7 +14,6 @@ import com.radixdlt.store.berkeley.BerkeleyStoreModule;
 import org.junit.After;
 import org.junit.Before;
 import org.radix.database.DatabaseEnvironment;
-import org.radix.database.DatabaseStore;
 import org.radix.modules.Modules;
 import org.radix.network2.messaging.MessageCentral;
 import org.radix.network2.messaging.MessageCentralFactory;
@@ -72,10 +71,5 @@ public class RadixTestWithStores extends RadixTest
 		MessageCentral messageCentral = Modules.get(MessageCentral.class);
 		messageCentral.close();
 		Modules.remove(MessageCentral.class);
-	}
-
-	private static DatabaseStore clean(DatabaseStore m) {
-		m.reset();
-		return m;
 	}
 }

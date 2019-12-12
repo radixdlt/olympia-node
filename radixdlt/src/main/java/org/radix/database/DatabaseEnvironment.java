@@ -81,7 +81,6 @@ public final class DatabaseEnvironment
 	private Environment						environment = null;
 	private CheckpointerTask checkpointTask;
 	private Thread 							checkpointThread = null;
-	private Map<Class<?>, DatabaseStore> 	databases = new HashMap<>();
 
 
     public DatabaseEnvironment() { super(); }
@@ -141,24 +140,6 @@ public final class DatabaseEnvironment
 
 	public void stop()
 	{
-		Collection<DatabaseStore> allDatabases = new ArrayList<>(this.databases.values());
-        for (DatabaseStore database : allDatabases)
-        {
-			try
-        	{
-				database.stop();
-			}
-        	catch (Exception e)
-			{
-        		log.error("Failure stopping database "+database.getClass().getName(), e);
-			}
-        }
-
-        try { flush(); } catch (DatabaseException dex)
-        {
-        	log.error("Flushing "+this.getClass().getName()+" on stop failed", dex);
-		}
-
         this.metaDatabase.close();
 		this.metaDatabase = null;
 
@@ -186,41 +167,6 @@ public final class DatabaseEnvironment
 	public Environment getEnvironment()
 	{
 		return this.environment;
-	}
-
-	public void flush() throws DatabaseException
-	{
-        for (DatabaseStore database : this.databases.values())
-        	database.flush();
-	}
-
-	public void register(DatabaseStore database) throws DatabaseException
-	{
-		if (this.databases.containsKey(database.getClass()) == false)
-		{
-			this.databases.put(database.getClass(), database);
-		}
-	}
-
-	public boolean isRegistered(DatabaseStore database) {
-		return this.databases.containsKey(database.getClass());
-	}
-
-	public void deregister(DatabaseStore database)
-	{
-		if (this.databases.containsKey(database.getClass()))
-			this.databases.remove(database.getClass());
-	}
-
-	public List<DatabaseStore> getAll(boolean byPriority)
-	{
-		List<DatabaseStore> allDatabases = new ArrayList<>(this.databases.values());
-
-		if (byPriority) {
-			Collections.sort(allDatabases, Comparator.comparingInt(DatabaseStore::getBuildPriority));
-		}
-
-		return allDatabases;
 	}
 
 	public OperationStatus put(Transaction transaction, String resource, String key, byte[] value)
