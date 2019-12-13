@@ -47,7 +47,8 @@ final class NettyUDPTransportImpl implements Transport {
 	private final UDPTransportControlFactory controlFactory;
 	private final UDPTransportOutboundConnectionFactory connectionFactory;
 
-	private final int inboundProcessingThreads;
+    private final int priority;
+    private final int inboundProcessingThreads;
 	private final AtomicInteger threadCounter = new AtomicInteger(0);
 	private final InetSocketAddress bindAddress;
 	private final PublicInetAddress natHandler;
@@ -77,7 +78,6 @@ final class NettyUDPTransportImpl implements Transport {
 		} else {
 			port = Integer.parseInt(portString);
 		}
-
 		this.localMetadata = StaticTransportMetadata.of(
 			UDPConstants.METADATA_UDP_HOST, providedHost,
 			UDPConstants.METADATA_UDP_PORT, String.valueOf(port)
@@ -85,6 +85,7 @@ final class NettyUDPTransportImpl implements Transport {
 		this.controlFactory = controlFactory;
 		this.connectionFactory = connectionFactory;
 		this.inboundProcessingThreads = config.processingThreads(1);
+		this.priority = config.priority(1000);
 		this.bindAddress = new InetSocketAddress(providedHost, port);
 		this.natHandler = natHandler;
 	}
@@ -107,6 +108,11 @@ final class NettyUDPTransportImpl implements Transport {
 	@Override
 	public boolean canHandle(byte[] message) {
 		return (message == null) || (message.length <= UDPConstants.MAX_PACKET_LENGTH);
+	}
+
+	@Override
+	public int priority() {
+		return this.priority;
 	}
 
 	@Override

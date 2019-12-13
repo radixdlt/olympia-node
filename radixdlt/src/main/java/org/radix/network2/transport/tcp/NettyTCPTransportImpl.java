@@ -50,7 +50,8 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 
 	private final TransportMetadata localMetadata;
 
-	private final int inboundProcessingThreads;
+    private final int priority;
+    private final int inboundProcessingThreads;
 	private final AtomicInteger threadCounter = new AtomicInteger(0);
 	private final InetSocketAddress bindAddress;
 	private final Object channelLock = new Object();
@@ -79,11 +80,11 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 		} else {
 			port = Integer.parseInt(portString);
 		}
-
 		this.localMetadata = StaticTransportMetadata.of(
 			TCPConstants.METADATA_TCP_HOST, providedHost,
 			TCPConstants.METADATA_TCP_PORT, String.valueOf(port)
 		);
+		this.priority = config.priority(0);
 		this.control = controlFactory.create(outboundFactory, this);
 		this.inboundProcessingThreads = config.processingThreads(1);
 		this.bindAddress = new InetSocketAddress(providedHost, port);
@@ -107,6 +108,11 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 	@Override
 	public boolean canHandle(byte[] message) {
 		return (message == null) || (message.length <= TCPConstants.MAX_PACKET_LENGTH);
+	}
+
+	@Override
+	public int priority() {
+		return this.priority;
 	}
 
 	@Override

@@ -1,11 +1,12 @@
 package org.radix.network2.messaging;
 
 import com.google.common.collect.ImmutableList;
+
+import org.radix.network2.addressbook.Peer;
 import org.radix.network2.transport.SendResult;
 import org.radix.network2.transport.StaticTransportMetadata;
 import org.radix.network2.transport.Transport;
 import org.radix.network2.transport.TransportControl;
-import org.radix.network2.transport.TransportInfo;
 import org.radix.network2.transport.TransportMetadata;
 import org.radix.network2.transport.TransportOutboundConnection;
 import org.radix.network2.transport.udp.UDPConstants;
@@ -15,7 +16,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
-import java.util.stream.Stream;
 
 public class MessagingDummyConfigurations {
     public static class DummyMessageCentralConfiguration implements MessageCentralConfiguration {
@@ -110,6 +110,11 @@ public class MessagingDummyConfigurations {
 		public boolean canHandle(byte[] message) {
 			return true;
 		}
+
+		@Override
+		public int priority() {
+			return 0;
+		}
     }
 
     public static class DummyTransportOutboundConnection implements TransportOutboundConnection {
@@ -170,7 +175,7 @@ public class MessagingDummyConfigurations {
         }
 
         @Override
-		public Transport findTransport(Stream<TransportInfo> peerTransports, byte[] bytes) {
+		public Transport findTransport(Peer peer, byte[] bytes) {
             return transport;
         }
     }

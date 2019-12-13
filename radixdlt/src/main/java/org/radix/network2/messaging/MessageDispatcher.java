@@ -177,7 +177,7 @@ class MessageDispatcher {
 	@SuppressWarnings("resource")
 	// Resource warning suppression OK here -> caller is responsible
 	private CompletableFuture<TransportOutboundConnection> findTransportAndOpenConnection(TransportManager transportManager, Peer peer, byte[] bytes) {
-		Transport transport = transportManager.findTransport(peer.supportedTransports(), bytes);
+		Transport transport = transportManager.findTransport(peer, bytes);
 		return transport.control().open(peer.connectionData(transport.name()));
 	}
 

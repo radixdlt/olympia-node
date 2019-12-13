@@ -34,10 +34,23 @@ public interface Transport extends Closeable {
 	TransportMetadata localMetadata();
 
 	/**
-	 * Returns true if this transport can handle the provided
+	 * Returns true if this transport can handle the specified
 	 * message.
+	 *
+	 * @return {@code true} if this transport can handle the specified
+	 *		message.
 	 */
 	boolean canHandle(byte[] message);
+
+	/**
+	 * Returns the priority this transport has.  Transports with a larger
+	 * numeric property will be used in preference to transports with a
+	 * lower numeric preference, assuming {@link #canHandle(byte[])}
+	 * also returns {@code true}.
+	 *
+	 * @return a numeric priority for this transport.
+	 */
+	int priority();
 
 	/**
 	 * Starts the transport's listener with the provided message sink.

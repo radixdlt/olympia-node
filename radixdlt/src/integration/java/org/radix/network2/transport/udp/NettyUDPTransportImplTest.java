@@ -141,6 +141,11 @@ public class NettyUDPTransportImplTest {
 			public int processingThreads(int defaultValue) {
 				return 1;
 			}
+
+			@Override
+			public int priority(int defaultValue) {
+				return 0;
+			}
 		};
 		Injector injector = Guice.createInjector(new UDPTransportModule(config));
 		return injector.getInstance(NettyUDPTransportImpl.class);

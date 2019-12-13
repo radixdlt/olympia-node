@@ -141,6 +141,11 @@ public class NettyTCPTransportTest {
 			public int processingThreads(int defaultValue) {
 				return 1;
 			}
+
+			@Override
+			public int priority(int defaultValue) {
+				return 0;
+			}
 		};
 		Injector injector = Guice.createInjector(new TCPTransportModule(config));
 		return injector.getInstance(NettyTCPTransport.class);

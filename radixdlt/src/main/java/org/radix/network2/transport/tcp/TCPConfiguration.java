@@ -32,6 +32,14 @@ public interface TCPConfiguration {
 	int processingThreads(int defaultValue);
 
 	/**
+	 * Get the priority of this transport.
+	 *
+	 * @param defaultValue a default value if no special configuration value is set
+	 * @return the priority of this transport
+	 */
+	int priority(int defaultValue);
+
+	/**
 	 * Create a configuration from specified {@link RuntimeProperties}.
 	 *
 	 * @param properties the properties to read the configuration from
@@ -52,6 +60,11 @@ public interface TCPConfiguration {
 			@Override
 			public int processingThreads(int defaultValue) {
 				return properties.get("network.tcp.threads", defaultValue);
+			}
+
+			@Override
+			public int priority(int defaultValue) {
+				return properties.get("network.tcp.priority", defaultValue);
 			}
 		};
 	}
