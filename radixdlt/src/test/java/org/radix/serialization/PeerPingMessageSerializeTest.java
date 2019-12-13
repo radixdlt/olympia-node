@@ -1,6 +1,9 @@
 package org.radix.serialization;
 
+import org.radix.modules.Modules;
 import org.radix.network.messages.PeerPingMessage;
+
+import java.security.SecureRandom;
 
 /**
  * Check serialization of PeerPingMessage
@@ -11,6 +14,6 @@ public class PeerPingMessageSerializeTest extends SerializeMessageObject<PeerPin
 	}
 
 	private static PeerPingMessage get() {
-		return new PeerPingMessage();
+		return new PeerPingMessage(17L);
 	}
 }

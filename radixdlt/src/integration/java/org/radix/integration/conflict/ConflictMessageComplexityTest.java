@@ -25,6 +25,7 @@ public class ConflictMessageComplexityTest extends RadixTest
 	private List<EUID> leaders;
 	private Map<EUID, Set<EUID>> requests;
 	private Map<EUID, Set<EUID>> data;
+	private SecureRandom rng;
 
 	@Before
 	public void setup() throws CryptoException
@@ -42,10 +43,12 @@ public class ConflictMessageComplexityTest extends RadixTest
 			data.put(NID, new HashSet<EUID>());
 		}
 
+		rng = new SecureRandom();
+		
 		Collections.shuffle(nodes);
 		leaders.addAll(nodes.subList(0, NUM_LEADERS));
 		for (EUID leader : leaders)
-			data.get(leader).add(new EUID(Modules.get(SecureRandom.class).nextLong()));
+			data.get(leader).add(new EUID(rng.nextLong()));
 	}
 
 	@Test
@@ -62,7 +65,7 @@ public class ConflictMessageComplexityTest extends RadixTest
 				if (data.get(leader).size() == NUM_LEADERS)
 					continue;
 
-				EUID leaderToAsk = leaders.get(Math.abs(Modules.get(SecureRandom.class).nextInt(NUM_LEADERS)));
+				EUID leaderToAsk = leaders.get(Math.abs(rng.nextInt(NUM_LEADERS)));
 
 				if (requests.get(leader).contains(leaderToAsk))
 					continue;
@@ -96,7 +99,7 @@ public class ConflictMessageComplexityTest extends RadixTest
 				if (data.get(node).size() == NUM_LEADERS)
 					continue;
 
-				EUID leaderToAsk = leaders.get(Math.abs(Modules.get(SecureRandom.class).nextInt(NUM_LEADERS)));
+				EUID leaderToAsk = leaders.get(Math.abs(rng.nextInt(NUM_LEADERS)));
 
 				if (requests.get(node).contains(leaderToAsk))
 					continue;

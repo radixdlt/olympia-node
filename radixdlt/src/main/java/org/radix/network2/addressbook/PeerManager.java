@@ -21,6 +21,7 @@ import org.radix.time.Timestamps;
 import org.radix.universe.system.LocalSystem;
 import org.radix.universe.system.SystemMessage;
 
+import java.security.SecureRandom;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -59,6 +60,8 @@ public class PeerManager {
 	private final long discoverPeersDelayMs;
 
 	private final int peerMessageBatchSize;
+
+	private final SecureRandom rng;
 
 	private Future<?> heartbeatPeersFuture;
 	private Future<?> peersBroadcastFuture;
@@ -120,6 +123,8 @@ public class PeerManager {
 		this.discoverPeersDelayMs = config.networkDiscoverPeersDelay(1000);
 
 		this.peerMessageBatchSize = config.networkPeersMessageBatchSize(64);
+
+		this.rng = new SecureRandom();
 
 		log.info(String.format("%s started, " +
 						"peersBroadcastInterval=%s, peersBroadcastDelay=%s, peersProbeInterval=%s, " +
@@ -306,7 +311,7 @@ public class PeerManager {
 					return false;
 				}
 				if (!this.probes.containsKey(peer)) {
-					PeerPingMessage ping = new PeerPingMessage();
+					PeerPingMessage ping = new PeerPingMessage(rng.nextLong());
 
 					// Only wait for response if peer has a system, otherwise peer will be upgraded by pong message
 					long nonce = ping.getNonce();

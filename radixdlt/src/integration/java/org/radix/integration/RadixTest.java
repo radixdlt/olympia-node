@@ -9,7 +9,6 @@ import org.junit.BeforeClass;
 import org.radix.GenerateUniverses;
 import org.radix.Radix;
 import org.radix.modules.Modules;
-import org.radix.properties.PersistedProperties;
 import org.radix.properties.RuntimeProperties;
 import org.radix.serialization.TestSetupUtils;
 import org.radix.time.Time;
@@ -30,8 +29,6 @@ public class RadixTest
 		TestSetupUtils.installBouncyCastleProvider();
 
 		serialization = Serialization.getDefault();
-
-		Modules.put(SecureRandom.class, new SecureRandom());
 
 		JSONObject runtimeConfigurationJSON = new JSONObject();
 		if (Radix.class.getResourceAsStream("/runtime_options.json") != null)
@@ -60,7 +57,6 @@ public class RadixTest
 		Modules.remove(Time.class);
 		Modules.remove(Serialization.class);
 		Modules.remove(CommandLine.class);
-		Modules.remove(PersistedProperties.class);
 		Modules.remove(RuntimeProperties.class);
 		Modules.remove(SecureRandom.class);
 	}

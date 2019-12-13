@@ -4,9 +4,6 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
 
-import java.security.SecureRandom;
-
-import org.radix.modules.Modules;
 import org.radix.universe.system.SystemMessage;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -18,10 +15,14 @@ public final class PeerPingMessage extends SystemMessage
 	@DsonOutput(Output.ALL)
 	private long nonce;
 
-	public PeerPingMessage()
+	private PeerPingMessage() {
+		this(0L);
+	}
+
+	public PeerPingMessage(long nonce)
 	{
 		super();
-		nonce = Modules.get(SecureRandom.class).nextLong();
+		this.nonce = nonce;
 	}
 
 	@Override
