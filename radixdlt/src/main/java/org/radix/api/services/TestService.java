@@ -20,6 +20,7 @@ import org.radix.network2.transport.TransportInfo;
 import org.radix.network2.transport.udp.UDPConstants;
 import org.radix.shards.ShardSpace;
 import org.radix.time.NtpService;
+import org.radix.time.Time;
 import org.radix.time.Timestamps;
 import org.radix.universe.system.RadixSystem;
 import com.radixdlt.utils.Bytes;
@@ -95,7 +96,7 @@ public final class TestService {
 			PeersMessage peersMessage = new PeersMessage();
 			peersMessage.setPeers(Collections.singletonList(peer));
 			peersMessage.setDirection(Direction.INBOUND);
-			peersMessage.setTimestamp(Timestamps.RECEIVED, Modules.get(NtpService.class).getUTCTimeMS());
+			peersMessage.setTimestamp(Timestamps.RECEIVED, Time.currentTimestamp());
 			peersMessage.setTimestamp(Timestamps.LATENCY, java.lang.System.nanoTime());
 			Modules.get(MessageCentral.class).inject(peer, peersMessage);
 			log.debug("Submitted peers message for NID " + keyValue.getUID().toString());

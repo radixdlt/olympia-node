@@ -22,6 +22,7 @@ import static org.powermock.api.mockito.PowerMockito.when;
 public abstract class RadixTest
 {
 	private static Serialization serialization;
+	private static NtpService ntpService;
 
 	@BeforeClass
 	public static void startRadixTest() {
@@ -38,7 +39,7 @@ public abstract class RadixTest
 		final SystemMetaData systemMetaData = mock(SystemMetaData.class);
 		SystemMetaData.set(systemMetaData);
 
-		final NtpService ntpService = mock(NtpService.class);
+		ntpService = mock(NtpService.class);
 		when(ntpService.getUTCTimeMS()).thenAnswer((Answer<Long>) invocation -> System.currentTimeMillis());
 
 		serialization = Serialization.getDefault();
@@ -49,7 +50,6 @@ public abstract class RadixTest
 		Modules.put(RuntimeProperties.class, runtimeProperties);
 		Modules.put(SecureRandom.class, secureRandom);
 		Modules.put(Universe.class, universe);
-		Modules.put(NtpService.class, ntpService);
 		Modules.put(LocalSystem.class, localSystem);
 	}
 
@@ -59,12 +59,15 @@ public abstract class RadixTest
 		Modules.remove(Serialization.class);
 		Modules.remove(SecureRandom.class);
 		Modules.remove(Universe.class);
-		Modules.remove(NtpService.class);
 		Modules.remove(LocalSystem.class);
 		SystemMetaData.clear();
 	}
 
 	public static Serialization getSerialization() {
 		return serialization;
+	}
+
+	public static NtpService getNtpService() {
+		return ntpService;
 	}
 }

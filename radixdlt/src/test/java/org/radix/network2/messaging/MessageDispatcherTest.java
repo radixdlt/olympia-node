@@ -54,7 +54,6 @@ public class MessageDispatcherTest extends RadixTest {
     private TransportManager transportManager;
     private TransportOutboundConnection transportOutboundConnection;
     private SystemMetaData systemMetaData;
-    private NtpService ntpService;
     private Peer peer1;
     private Peer peer2;
     private TransportInfo transportInfo;
@@ -63,8 +62,7 @@ public class MessageDispatcherTest extends RadixTest {
 
     @Before
     public void setup() {
-        ntpService = Modules.get(NtpService.class);
-        when(ntpService.getUTCTimeMS()).thenAnswer((Answer<Long>) invocation -> System.currentTimeMillis());
+        when(getNtpService().getUTCTimeMS()).thenAnswer((Answer<Long>) invocation -> System.currentTimeMillis());
         Serialization serialization = Serialization.getDefault();
         MessageCentralConfiguration conf = new MessagingDummyConfigurations.DummyMessageCentralConfiguration();
         messageDispatcher = new MessageDispatcher(conf, serialization, () -> 30_000);
