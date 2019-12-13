@@ -41,11 +41,6 @@ public class BerkeleyRadixLedgerEntryStoreTests extends RadixTestWithStores {
 
     private ECKeyPair identity;
 
-	@BeforeClass
-	public static void checkForTempo() {
-		assumeTrue(Modules.isAvailable(Tempo.class)); // Otherwise databases are not reset, and key conflicts occur and tests fail
-	}
-
     @Before
     public void setup() throws CryptoException, ValidationException {
         tempoAtomStore = new BerkeleyLedgerEntryStore(localSystem.getNID(), serialization, this.getDbEnv());

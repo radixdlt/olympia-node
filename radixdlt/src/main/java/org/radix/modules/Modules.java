@@ -6,7 +6,6 @@ import org.radix.logging.Logging;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 public class Modules
 {

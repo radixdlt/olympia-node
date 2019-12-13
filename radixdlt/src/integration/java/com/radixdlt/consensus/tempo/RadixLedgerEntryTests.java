@@ -17,11 +17,6 @@ import static org.junit.Assume.assumeTrue;
 public class RadixLedgerEntryTests extends RadixTestWithStores {
 	private LedgerEntryGenerator ledgerEntryGenerator = new LedgerEntryGenerator();
 
-	@BeforeClass
-	public static void checkTempoAvailable() {
-		assumeTrue("Tempo 2.0 must be available", Modules.isAvailable(Tempo.class));
-	}
-
 	@Test
 	public void store_atom() throws Exception {
 		ECKeyPair identity = new ECKeyPair();

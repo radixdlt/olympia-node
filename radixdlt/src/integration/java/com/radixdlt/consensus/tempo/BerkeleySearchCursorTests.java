@@ -23,11 +23,6 @@ public class BerkeleySearchCursorTests extends RadixTestWithStores {
 
 	private LedgerEntryGenerator ledgerEntryGenerator = new LedgerEntryGenerator();
 
-	@BeforeClass
-	public static void checkTempoAvailable() {
-		assumeTrue(Modules.isAvailable(Tempo.class));
-	}
-
 	@Test
 	public void store_single_atom__search_by_unique_aid_and_get() throws Exception {
 		ECKeyPair identity = new ECKeyPair();
