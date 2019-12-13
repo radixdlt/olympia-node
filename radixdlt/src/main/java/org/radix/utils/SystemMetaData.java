@@ -3,9 +3,11 @@ package org.radix.utils;
 import com.radixdlt.utils.Longs;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 import org.radix.common.executors.Executor;
 import org.radix.common.executors.ScheduledExecutable;
@@ -27,9 +29,50 @@ import com.sleepycat.je.OperationStatus;
 import com.sleepycat.je.Transaction;
 import com.sleepycat.je.TransactionConfig;
 
+// TODO Remove this horrible singleton with the particularly nasty set/unset/init lifecycle management.
 public final class SystemMetaData
 {
 	private static final Logger log = Logging.getLogger();
+
+	private static SystemMetaData instance;
+
+	public static void set(SystemMetaData instance) {
+		if (SystemMetaData.instance != null) {
+			throw new IllegalStateException("metadata instance is already initialised");
+		}
+		SystemMetaData.instance = instance;
+	}
+
+	public static void clear() {
+		if (instance != null) {
+			instance.stop();
+			instance = null;
+		}
+	}
+
+	public static void init(DatabaseEnvironment dbEnv) {
+		if (instance != null) {
+			throw new IllegalStateException("metadata instance is already initialised");
+		}
+		instance = new SystemMetaData(dbEnv);
+		instance.start();
+	}
+
+	public static void ifPresent(Consumer<SystemMetaData> consumer) {
+		getInstanceOptional().ifPresent(consumer);
+	}
+
+	public static Optional<SystemMetaData> getInstanceOptional() {
+		return Optional.ofNullable(instance);
+	}
+
+	public static SystemMetaData getInstance() {
+		if (instance == null) {
+			throw new RuntimeException("metadata instance has not been initialised");
+		}
+
+		return instance;
+	}
 
 	private final DatabaseEnvironment dbEnv;
 	private Map<String, Object> systemMetaData = new ConcurrentHashMap<>();

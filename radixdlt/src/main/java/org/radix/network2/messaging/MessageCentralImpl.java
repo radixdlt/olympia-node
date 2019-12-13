@@ -159,13 +159,13 @@ final class MessageCentralImpl implements MessageCentral {
 	}
 
 	private void inboundMessageProcessor(MessageEvent inbound) {
-		Modules.ifAvailable(SystemMetaData.class, a -> a.put("messages.inbound.pending", inboundQueue.size()));
+		SystemMetaData.ifPresent( a -> a.put("messages.inbound.pending", inboundQueue.size()));
 		MessageListenerList listeners = this.listeners.getOrDefault(inbound.message().getClass(), EMPTY_MESSAGE_LISTENER_LIST);
 		messageDispatcher.receive(listeners, inbound);
 	}
 
 	private void outboundMessageProcessor(MessageEvent outbound) {
-		Modules.ifAvailable(SystemMetaData.class, a -> a.put("messages.outbound.pending", outboundQueue.size()));
+		SystemMetaData.ifPresent( a -> a.put("messages.outbound.pending", outboundQueue.size()));
 		messageDispatcher.send(connectionManager, outbound);
 	}
 

@@ -1,9 +1,7 @@
 package org.radix.serialization;
 
-import com.radixdlt.common.EUID;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.universe.Universe;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.mockito.stubbing.Answer;
@@ -15,7 +13,6 @@ import org.radix.universe.system.LocalSystem;
 import org.radix.utils.SystemMetaData;
 
 import java.security.SecureRandom;
-import java.security.Security;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.powermock.api.mockito.PowerMockito.doAnswer;
@@ -39,6 +36,7 @@ public abstract class RadixTest
 		when(universe.getMagic()).thenReturn(2);
 
 		final SystemMetaData systemMetaData = mock(SystemMetaData.class);
+		SystemMetaData.set(systemMetaData);
 
 		final NtpService ntpService = mock(NtpService.class);
 		when(ntpService.getUTCTimeMS()).thenAnswer((Answer<Long>) invocation -> System.currentTimeMillis());
@@ -51,7 +49,6 @@ public abstract class RadixTest
 		Modules.put(RuntimeProperties.class, runtimeProperties);
 		Modules.put(SecureRandom.class, secureRandom);
 		Modules.put(Universe.class, universe);
-		Modules.put(SystemMetaData.class, systemMetaData);
 		Modules.put(NtpService.class, ntpService);
 		Modules.put(LocalSystem.class, localSystem);
 	}
@@ -62,9 +59,9 @@ public abstract class RadixTest
 		Modules.remove(Serialization.class);
 		Modules.remove(SecureRandom.class);
 		Modules.remove(Universe.class);
-		Modules.remove(SystemMetaData.class);
 		Modules.remove(NtpService.class);
 		Modules.remove(LocalSystem.class);
+		SystemMetaData.clear();
 	}
 
 	public static Serialization getSerialization() {

@@ -63,7 +63,7 @@ class MessageDispatcher {
 		if (timeSource.currentTime() - message.getTimestamp() > messageTtlMs) {
 			String msg = String.format("%s: TTL to %s has expired", message.getClass().getName(), peer);
 			log.warn(msg);
-			Modules.ifAvailable(SystemMetaData.class, a -> a.increment("messages.outbound.aborted"));
+			SystemMetaData.ifPresent( a -> a.increment("messages.outbound.aborted"));
 			return SendResult.failure(new IOException(msg));
 		}
 
@@ -95,10 +95,10 @@ class MessageDispatcher {
 
 		long currentTime = timeSource.currentTime();
 		peer.setTimestamp(Timestamps.ACTIVE, currentTime);
-		Modules.ifAvailable(SystemMetaData.class, a -> a.increment("messages.inbound.received"));
+		SystemMetaData.ifPresent(a -> a.increment("messages.inbound.received"));
 
 		if (currentTime - message.getTimestamp() > messageTtlMs) {
-			Modules.ifAvailable(SystemMetaData.class, a -> a.increment("messages.inbound.discarded"));
+			SystemMetaData.ifPresent(a -> a.increment("messages.inbound.discarded"));
 			return;
 		}
 
@@ -142,13 +142,13 @@ class MessageDispatcher {
 
 		final Peer fp = peer; // Awkward
 		listeners.messageReceived(peer, message);
-		Modules.ifAvailable(SystemMetaData.class, a -> a.increment("messages.inbound.processed"));
+		SystemMetaData.ifPresent( a -> a.increment("messages.inbound.processed"));
 	}
 
 	private SendResult updateStatistics(SendResult result) {
-		Modules.ifAvailable(SystemMetaData.class, a -> a.increment("messages.outbound.processed"));
+		SystemMetaData.ifPresent( a -> a.increment("messages.outbound.processed"));
 		if (result.isComplete()) {
-			Modules.ifAvailable(SystemMetaData.class, a -> a.increment("messages.outbound.sent"));
+			SystemMetaData.ifPresent( a -> a.increment("messages.outbound.sent"));
 		}
 		return result;
 	}

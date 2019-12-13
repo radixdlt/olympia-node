@@ -71,7 +71,7 @@ public class MessageDispatcherTest extends RadixTest {
         transportOutboundConnection = new MessagingDummyConfigurations.DummyTransportOutboundConnection();
         transport = new MessagingDummyConfigurations.DummyTransport(transportOutboundConnection);
         transportManager = new MessagingDummyConfigurations.DummyTransportManager(transport);
-        systemMetaData = Modules.get(SystemMetaData.class);
+        systemMetaData = SystemMetaData.getInstance();
         reset(systemMetaData);
 
         transportMetadata = mock(TransportMetadata.class);

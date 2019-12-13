@@ -198,7 +198,7 @@ public final class Events
 
 							event.setDone();
 
-							Modules.ifAvailable(SystemMetaData.class, a -> {
+							SystemMetaData.ifPresent( a -> {
 								a.increment("events.dequeued");
 								a.increment("events.processed.asynchronous");
 							});
@@ -240,7 +240,7 @@ public final class Events
 	public Map<String, Object> getMetaData()
 	{
 		final Map<String, Object> metaData = Maps.newHashMap();
-		Modules.ifAvailable(SystemMetaData.class, a -> {
+		SystemMetaData.ifPresent( a -> {
 			final Map<String, Object> processedMetaData = Maps.newHashMap();
 			processedMetaData.put("synchronous", a.get("events.processed.synchronous", 0L));
 			processedMetaData.put("asynchronous", a.get("events.processed.asynchronous", 0L));
@@ -268,7 +268,7 @@ public final class Events
 
 	public void broadcastWithException(final Event event) throws Throwable
 	{
-		Modules.ifAvailable(SystemMetaData.class, a -> a.increment("events.broadcast"));
+		SystemMetaData.ifPresent( a -> a.increment("events.broadcast"));
 
 		synchronized(this.reentrancy)
 		{
@@ -322,7 +322,7 @@ public final class Events
 						}
 					}
 
-					Modules.ifAvailable(SystemMetaData.class, a -> a.increment("events.processed.synchronous"));
+					SystemMetaData.ifPresent( a -> a.increment("events.processed.synchronous"));
 				}
 				finally
 				{
@@ -334,7 +334,7 @@ public final class Events
 			if (hasAsync == true)
 			{
 				this.eventQueueProcessors[Events.this.executorThreadFactory.cycle.incrementAndGet() % this.eventQueueProcessors.length].offer(event);
-				Modules.ifAvailable(SystemMetaData.class, a -> a.increment("events.queued"));
+				SystemMetaData.ifPresent( a -> a.increment("events.queued"));
 			}
 			else
 				event.setDone();

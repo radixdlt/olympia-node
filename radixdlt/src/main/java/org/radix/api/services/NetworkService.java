@@ -50,7 +50,7 @@ public class NetworkService {
 			}
 			result.put(e.getKey(), transportPeers);
 		}
-		Modules.ifAvailable(SystemMetaData.class, a -> result.put("nids", a.get("nids.count", 0)));
+		SystemMetaData.ifPresent( a -> result.put("nids", a.get("nids.count", 0)));
 
 		return result;
 	}

@@ -122,9 +122,7 @@ public final class Radix
 		dbEnv.start();
 
 		// start profiling
-		SystemMetaData systemMetaData = new SystemMetaData(dbEnv);
-		systemMetaData.start();
-		Modules.put(SystemMetaData.class, systemMetaData);
+		SystemMetaData.init(dbEnv);
 
 		// set up networking
 		MessageCentral messageCentral = createMessageCentral(properties);

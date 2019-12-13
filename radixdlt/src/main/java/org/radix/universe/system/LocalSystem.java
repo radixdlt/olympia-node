@@ -74,9 +74,9 @@ public final class LocalSystem extends RadixSystem
 				throw new IllegalStateException(ex);
 			}
 
-			if (Modules.isAvailable(SystemMetaData.class) == true && Modules.get(SystemMetaData.class).has("system")) {
+			if (SystemMetaData.getInstanceOptional().map(meta -> meta.has("system")).orElse(false)) {
 				try {
-					byte[] systemBytes = Modules.get(SystemMetaData.class).get("system", Bytes.EMPTY_BYTES);
+					byte[] systemBytes = SystemMetaData.getInstance().get("system", Bytes.EMPTY_BYTES);
 					instance = Serialization.getDefault().fromDson(systemBytes, LocalSystem.class);
 
 					if (LocalSystem.instance.getKeyPair().equals(nodeKey) == false) // TODO what happens if NODE_KEY has changed?  Dump loggables?  Dump DB?
@@ -103,7 +103,7 @@ public final class LocalSystem extends RadixSystem
 					@Override
 					public void execute()
 					{
-						Modules.ifAvailable(SystemMetaData.class, smc -> {
+						SystemMetaData.ifPresent( smc -> {
 							try {
 								byte[] systemBytes = Serialization.getDefault().toDson(getInstance(), Output.PERSIST);
 								smc.put("system", systemBytes);
@@ -155,7 +155,7 @@ public final class LocalSystem extends RadixSystem
 	@JsonProperty("ledger")
 	@DsonOutput(Output.API)
 	Map<String, Object> getJsonLedger() {
-		SystemMetaData smd = Modules.get(SystemMetaData.class);
+		SystemMetaData smd = SystemMetaData.getInstance();
 
 		Map<String, Object> latency = mapOf(
 			"path", smd.get("ledger.latency.path", 0),
@@ -188,9 +188,9 @@ public final class LocalSystem extends RadixSystem
 	@DsonOutput(Output.API)
 	Map<String, Object> getJsonGlobal() {
 		return mapOf(
-			"stored", Modules.get(SystemMetaData.class).get("ledger.network.stored", 0),
-			"processing", Modules.get(SystemMetaData.class).get("ledger.network.processing", 0),
-			"storing", Modules.get(SystemMetaData.class).get("ledger.network.storing", 0)
+			"stored", SystemMetaData.getInstance().get("ledger.network.stored", 0),
+			"processing", SystemMetaData.getInstance().get("ledger.network.processing", 0),
+			"storing", SystemMetaData.getInstance().get("ledger.network.storing", 0)
 		);
 	}
 
@@ -198,7 +198,7 @@ public final class LocalSystem extends RadixSystem
 	@JsonProperty("events")
 	@DsonOutput(Output.API)
 	Map<String, Object> getJsonEvents() {
-		SystemMetaData smd = Modules.get(SystemMetaData.class);
+		SystemMetaData smd = SystemMetaData.getInstance();
 
 		Map<String, Object> processed = mapOf(
 			"synchronous", smd.get("events.processed.synchronous", 0L),
@@ -220,15 +220,15 @@ public final class LocalSystem extends RadixSystem
 	@DsonOutput(Output.API)
 	Map<String, Object> getJsonMessages() {
 		Map<String, Object> outbound = mapOf(
-				"sent", Modules.get(SystemMetaData.class).get("messages.outbound.sent", 0),
-				"processed", Modules.get(SystemMetaData.class).get("messages.outbound.processed", 0),
-				"pending", Modules.get(SystemMetaData.class).get("messages.outbound.pending", 0),
-				"aborted", Modules.get(SystemMetaData.class).get("messages.outbound.aborted", 0));
+				"sent", SystemMetaData.getInstance().get("messages.outbound.sent", 0),
+				"processed", SystemMetaData.getInstance().get("messages.outbound.processed", 0),
+				"pending", SystemMetaData.getInstance().get("messages.outbound.pending", 0),
+				"aborted", SystemMetaData.getInstance().get("messages.outbound.aborted", 0));
 		Map<String, Object> inbound = mapOf(
-				"processed", Modules.get(SystemMetaData.class).get("messages.inbound.processed", 0),
-				"received", Modules.get(SystemMetaData.class).get("messages.inbound.received", 0),
-				"pending", Modules.get(SystemMetaData.class).get("messages.inbound.pending", 0),
-				"discarded", Modules.get(SystemMetaData.class).get("messages.inbound.discarded", 0));
+				"processed", SystemMetaData.getInstance().get("messages.inbound.processed", 0),
+				"received", SystemMetaData.getInstance().get("messages.inbound.received", 0),
+				"pending", SystemMetaData.getInstance().get("messages.inbound.pending", 0),
+				"discarded", SystemMetaData.getInstance().get("messages.inbound.discarded", 0));
 		return mapOf(
 				"inbound", inbound,
 				"outbound", outbound);
