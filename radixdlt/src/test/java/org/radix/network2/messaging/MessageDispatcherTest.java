@@ -8,6 +8,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.stubbing.Answer;
+import org.powermock.api.mockito.PowerMockito;
 import org.radix.Radix;
 import org.radix.modules.Modules;
 import org.radix.network.Interfaces;
@@ -22,7 +23,6 @@ import org.radix.network2.transport.TransportInfo;
 import org.radix.network2.transport.TransportMetadata;
 import org.radix.network2.transport.TransportOutboundConnection;
 import org.radix.serialization.RadixTest;
-import org.radix.time.NtpService;
 import org.radix.universe.system.LocalSystem;
 import org.radix.universe.system.RadixSystem;
 import org.radix.universe.system.SystemMessage;
@@ -38,6 +38,7 @@ import java.util.concurrent.TimeUnit;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -65,7 +66,7 @@ public class MessageDispatcherTest extends RadixTest {
         when(getNtpService().getUTCTimeMS()).thenAnswer((Answer<Long>) invocation -> System.currentTimeMillis());
         Serialization serialization = Serialization.getDefault();
         MessageCentralConfiguration conf = new MessagingDummyConfigurations.DummyMessageCentralConfiguration();
-        messageDispatcher = new MessageDispatcher(conf, serialization, () -> 30_000);
+        messageDispatcher = new MessageDispatcher(conf, serialization, () -> 30_000, interfaces);
         transportOutboundConnection = new MessagingDummyConfigurations.DummyTransportOutboundConnection();
         transport = new MessagingDummyConfigurations.DummyTransport(transportOutboundConnection);
         transportManager = new MessagingDummyConfigurations.DummyTransportManager(transport);
@@ -87,13 +88,12 @@ public class MessageDispatcherTest extends RadixTest {
         Modules.put(AddressBook.class, addressBook);
 
         interfaces = mock(Interfaces.class);
-        Modules.put(Interfaces.class, interfaces);
+        PowerMockito.when(interfaces.isSelf(any())).thenReturn(false);
     }
 
     @After
     public void teardown() {
         Modules.remove(AddressBook.class);
-        Modules.remove(Interfaces.class);
     }
 
     @Test

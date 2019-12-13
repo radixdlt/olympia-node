@@ -9,7 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.radix.events.Events;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.modules.Modules;
+import org.radix.network.Interfaces;
 import org.radix.network.messaging.Message;
 import org.radix.network2.NetworkLegacyPatching;
 import org.radix.network2.TimeSupplier;
@@ -70,7 +70,8 @@ final class MessageCentralImpl implements MessageCentral {
 		TransportManager transportManager,
 		Events events,
 		TimeSupplier timeSource,
-		EventQueueFactory<MessageEvent> eventQueueFactory
+		EventQueueFactory<MessageEvent> eventQueueFactory,
+		Interfaces interfaces
 	) {
 		this.inboundQueue = eventQueueFactory.createEventQueue(config.messagingInboundQueueMax(8192));
 		this.outboundQueue = eventQueueFactory.createEventQueue(config.messagingOutboundQueueMax(16384));
@@ -80,7 +81,7 @@ final class MessageCentralImpl implements MessageCentral {
 		this.events = Objects.requireNonNull(events);
 
 		Objects.requireNonNull(timeSource);
-		this.messageDispatcher = new MessageDispatcher(config, serialization, timeSource);
+		this.messageDispatcher = new MessageDispatcher(config, serialization, timeSource, interfaces);
 
 		this.transports = Lists.newArrayList(transportManager.transports());
 

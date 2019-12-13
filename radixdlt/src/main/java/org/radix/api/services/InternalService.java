@@ -43,29 +43,24 @@ import org.radix.universe.system.LocalSystem;
  */
 public class InternalService {
 	private static final Logger log = Logging.getLogger();
-	private LedgerEntryStore store;
-	private RadixEngineAtomProcessor radixEngineAtomProcessor;
-	private static InternalService INTERNAL_SERVICE;
-	private static Serialization serialization = Serialization.getDefault();
-
-	public static InternalService getInstance(LedgerEntryStore ledger, RadixEngineAtomProcessor radixEngineAtomProcessor) {
-		if (INTERNAL_SERVICE == null) {
-			INTERNAL_SERVICE = new InternalService(ledger, radixEngineAtomProcessor);
-		}
-		return INTERNAL_SERVICE;
-	}
+	private final MessageCentral messageCentral;
+	private final LedgerEntryStore store;
+	private final RadixEngineAtomProcessor radixEngineAtomProcessor;
+	private final Serialization serialization;
 
 	private static boolean spamming = false;
 
 	// Executor for prepare/store
 	private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
-	private InternalService(LedgerEntryStore store, RadixEngineAtomProcessor radixEngineAtomProcessor) {
+	public InternalService(MessageCentral messageCentral, LedgerEntryStore store, RadixEngineAtomProcessor radixEngineAtomProcessor, Serialization serialization) {
+		this.messageCentral = messageCentral;
 		this.store = store;
 		this.radixEngineAtomProcessor = radixEngineAtomProcessor;
+		this.serialization = serialization;
 	}
 
-	private static class Spammer implements Runnable {
+	private class Spammer implements Runnable {
 		private final int nonceBits = Modules.get(RuntimeProperties.class).get("test.nullatom.junk_size", 40);
 
 		private final RadixEngineAtomProcessor radixEngineAtomProcessor;
@@ -75,7 +70,7 @@ public class InternalService {
 		private final int     batching;
 		private final int     rate;
 
-		private static final Random random = new Random();
+		private final Random random = new Random();
 
 		public Spammer(RadixEngineAtomProcessor radixEngineAtomProcessor, ECKeyPair owner, int iterations, int batching, int rate) {
 			this.radixEngineAtomProcessor = radixEngineAtomProcessor;
@@ -142,7 +137,7 @@ public class InternalService {
 								List<Peer> peers = Modules.get(AddressBook.class).recentPeers().collect(Collectors.toList());
 								for (Peer peer : peers) {
 									if (peer.hasSystem() && !peer.getNID().equals(LocalSystem.getInstance().getNID()) && peer.getSystem().getShards().intersects(atom.getShards())) {
-										Modules.get(MessageCentral.class).send(peer, new AtomSubmitMessage(atom));
+										messageCentral.send(peer, new AtomSubmitMessage(atom));
 										break;
 									}
 								}

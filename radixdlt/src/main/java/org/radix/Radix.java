@@ -126,12 +126,11 @@ public final class Radix
 
 		// set up networking
 		MessageCentral messageCentral = createMessageCentral(properties);
-		Modules.put(MessageCentral.class, messageCentral);
-		Modules.put(Interfaces.class, new Interfaces());
+		Interfaces interfaces = new Interfaces();
 		AddressBook addressBook = createAddressBook();
 		Modules.put(AddressBook.class, addressBook);
 		BootstrapDiscovery bootstrapDiscovery = BootstrapDiscovery.getInstance();
-		PeerManager peerManager = createPeerManager(properties, addressBook, messageCentral, Events.getInstance(), bootstrapDiscovery);
+		PeerManager peerManager = createPeerManager(properties, addressBook, messageCentral, Events.getInstance(), bootstrapDiscovery, interfaces);
 		peerManager.start();
 
 		// TODO Eventually modules should be created using Google Guice injector
@@ -146,7 +145,7 @@ public final class Radix
 		// start API services
 		AtomToBinaryConverter atomToBinaryConverter = globalInjector.getInjector().getInstance(AtomToBinaryConverter.class);
 		LedgerEntryStore store = globalInjector.getInjector().getInstance(LedgerEntryStore.class);
-		httpServer = new RadixHttpServer(store, atomProcessor, atomToBinaryConverter, universe, serialization);
+		httpServer = new RadixHttpServer(store, atomProcessor, atomToBinaryConverter, universe, messageCentral, serialization);
 		httpServer.start(properties);
 
 		log.info("Node '" + LocalSystem.getInstance().getNID() + "' started successfully");
@@ -198,8 +197,8 @@ public final class Radix
 		return new AddressBookFactory().createDefault();
 	}
 
-	private PeerManager createPeerManager(RuntimeProperties properties, AddressBook addressBook, MessageCentral messageCentral, Events events, BootstrapDiscovery bootstrapDiscovery) {
-		return new PeerManagerFactory().createDefault(properties, addressBook, messageCentral, events, bootstrapDiscovery);
+	private PeerManager createPeerManager(RuntimeProperties properties, AddressBook addressBook, MessageCentral messageCentral, Events events, BootstrapDiscovery bootstrapDiscovery, Interfaces interfaces) {
+		return new PeerManagerFactory().createDefault(properties, addressBook, messageCentral, events, bootstrapDiscovery, interfaces);
 	}
 
 }

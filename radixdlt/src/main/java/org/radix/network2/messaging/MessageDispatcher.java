@@ -41,7 +41,6 @@ import org.xerial.snappy.Snappy;
 //FIXME: Optional dependency on Modules.get(SystemMetaData.class) for system metadata
 //FIXME: Optional dependency on Modules.get(MessageProfiler.class) for profiling
 //FIXME: Optional dependency on Modules.get(AddressBook.class) for profiling
-//FIXME: Optional dependency on Modules.get(Interfaces.class) for keeping track of network interfaces
 // FIXME: Dependency on LocalSystem.getInstance() for signing key
 class MessageDispatcher {
 	private static final Logger log = Logging.getLogger("messaging");
@@ -49,11 +48,13 @@ class MessageDispatcher {
 	private final long messageTtlMs;
 	private final Serialization serialization;
 	private final TimeSupplier timeSource;
+	private final Interfaces interfaces;
 
-	MessageDispatcher(MessageCentralConfiguration config, Serialization serialization, TimeSupplier timeSource) {
+	MessageDispatcher(MessageCentralConfiguration config, Serialization serialization, TimeSupplier timeSource, Interfaces interfaces) {
 		this.messageTtlMs = config.messagingTimeToLive(30) * 1000L;
 		this.serialization = serialization;
 		this.timeSource = timeSource;
+		this.interfaces = interfaces;
 	}
 
 	SendResult send(TransportManager transportManager, final MessageEvent outboundMessage) {
@@ -125,7 +126,7 @@ class MessageDispatcher {
 					if (ti != null) {
 						String host = ti.metadata().get("host");
 						if (host != null) {
-							Modules.ifAvailable(Interfaces.class, i -> addInterfaceAddress(i, host)); // TODO what about DNS lookups?
+							addInterfaceAddress(interfaces, host); // TODO what about DNS lookups?
 						}
 					}
 					return;

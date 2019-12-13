@@ -46,10 +46,11 @@ public final class StandardFilters {
 	 * </ul>
 	 *
 	 * @return {@code true} if all the criteria are met, {@code false} otherwise
+	 * @param interfaces the interfaces to test against
 	 */
-	public static PeerPredicate standardFilter() {
+	public static PeerPredicate standardFilter(Interfaces interfaces) {
 		return hasTransports()
-			.and(notLocalAddress())
+			.and(notLocalAddress(interfaces))
 			.and(isWhitelisted())
 			.and(notOurNID())
 			.and(acceptableProtocol())
@@ -69,9 +70,12 @@ public final class StandardFilters {
 	 * Returns {@code true} if none of the peer's transports point to a local address.
 	 *
 	 * @return {@code true} if none of the peer's transports use a local address, {@code false} otherwise
+	 * @param interfaces the interfaces to check against
 	 */
-	public static PeerPredicate notLocalAddress() {
-		return peer -> peer.supportedTransports().noneMatch(StandardFilters::isLocalAddress);
+	public static PeerPredicate notLocalAddress(Interfaces interfaces) {
+		return peer -> peer.supportedTransports().noneMatch((TransportInfo ti) -> {
+			return isLocalAddress(ti, interfaces);
+		});
 	}
 
 	/**
@@ -156,12 +160,12 @@ public final class StandardFilters {
 		return false;
 	}
 
-	private static boolean isLocalAddress(TransportInfo ti) {
+	private static boolean isLocalAddress(TransportInfo ti, Interfaces interfaces) {
 		try {
 			String host = ti.metadata().get("host");
 			if (host != null) {
 				InetAddress address = InetAddress.getByName(host);
-				if (Modules.get(Interfaces.class).isSelf(address)) {
+				if (interfaces.isSelf(address)) {
 					return true;
 				}
 			}

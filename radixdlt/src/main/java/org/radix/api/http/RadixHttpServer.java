@@ -28,7 +28,7 @@ import org.radix.api.services.NetworkService;
 import org.radix.api.services.TestService;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.modules.Modules;
+import org.radix.network2.messaging.MessageCentral;
 import org.radix.properties.RuntimeProperties;
 import org.radix.shards.ShardSpace;
 import org.radix.universe.system.LocalSystem;
@@ -61,7 +61,7 @@ public final class RadixHttpServer {
 	private final JSONObject apiSerializedUniverse;
 	private final Serialization serialization;
 
-	public RadixHttpServer(LedgerEntryStore store, RadixEngineAtomProcessor radixEngineAtomProcessor, AtomToBinaryConverter atomToBinaryConverter, Universe universe, Serialization serialization) {
+	public RadixHttpServer(LedgerEntryStore store, RadixEngineAtomProcessor radixEngineAtomProcessor, AtomToBinaryConverter atomToBinaryConverter, Universe universe, MessageCentral messageCentral, Serialization serialization) {
 		this.universe = Objects.requireNonNull(universe);
 		this.serialization = Objects.requireNonNull(serialization);
 		this.apiSerializedUniverse = serialization.toJsonObject(this.universe, DsonOutput.Output.API);
@@ -73,8 +73,8 @@ public final class RadixHttpServer {
 				atomsService,
 				AtomSchemas.get()
 		);
-		this.internalService = InternalService.getInstance(store, radixEngineAtomProcessor);
-		this.testService = new TestService(serialization);
+		this.internalService = new InternalService(messageCentral, store, radixEngineAtomProcessor, serialization);
+		this.testService = new TestService(serialization, messageCentral);
 		this.networkService = new NetworkService(serialization);
 	}
 

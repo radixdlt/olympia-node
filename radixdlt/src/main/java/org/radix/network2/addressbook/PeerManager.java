@@ -8,6 +8,7 @@ import org.radix.events.Events;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.modules.Modules;
+import org.radix.network.Interfaces;
 import org.radix.network.discovery.BootstrapDiscovery;
 import org.radix.network.messages.GetPeersMessage;
 import org.radix.network.messages.PeerPingMessage;
@@ -62,6 +63,7 @@ public class PeerManager {
 	private final int peerMessageBatchSize;
 
 	private final SecureRandom rng;
+	private final Interfaces interfaces;
 
 	private Future<?> heartbeatPeersFuture;
 	private Future<?> peersBroadcastFuture;
@@ -83,7 +85,7 @@ public class PeerManager {
 
 				if (peersToProbe.isEmpty()) {
 					addressbook.peers()
-						.filter(StandardFilters.standardFilter())
+						.filter(StandardFilters.standardFilter(interfaces))
 						.forEachOrdered(peersToProbe::add);
 					this.numPeers = peersToProbe.size();
 				}
@@ -100,13 +102,14 @@ public class PeerManager {
 		}
 	}
 
-	PeerManager(PeerManagerConfiguration config, AddressBook addressbook, MessageCentral messageCentral, Events events, BootstrapDiscovery bootstrapDiscovery) {
+	PeerManager(PeerManagerConfiguration config, AddressBook addressbook, MessageCentral messageCentral, Events events, BootstrapDiscovery bootstrapDiscovery, Interfaces interfaces) {
 		super();
 
 		this.addressbook = Objects.requireNonNull(addressbook);
 		this.messageCentral = Objects.requireNonNull(messageCentral);
 		this.events = Objects.requireNonNull(events);
 		this.bootstrapDiscovery = Objects.requireNonNull(bootstrapDiscovery);
+		this.interfaces = Objects.requireNonNull(interfaces);
 
 		this.peersBroadcastIntervalMs = config.networkPeersBroadcastInterval(30000);
 		this.peersBroadcastDelayMs = config.networkPeersBroadcastDelay(60000);
@@ -232,7 +235,7 @@ public class PeerManager {
 			PeersMessage peersMessage = new PeersMessage();
 			List<Peer> peers = addressbook.peers()
 				.filter(Peer::hasNID)
-				.filter(StandardFilters.standardFilter())
+				.filter(StandardFilters.standardFilter(interfaces))
 				.filter(StandardFilters.recentlyActive())
 				.collect(Collectors.toList());
 
@@ -347,7 +350,7 @@ public class PeerManager {
 	private void discoverPeers() {
 		// Probe all the bootstrap hosts so that they know about us
 		GetPeersMessage msg = new GetPeersMessage();
-		bootstrapDiscovery.discover(StandardFilters.standardFilter()).stream()
+		bootstrapDiscovery.discover(StandardFilters.standardFilter(interfaces)).stream()
 			.map(addressbook::peer)
 			.forEachOrdered(peer -> {
 				probe(peer);

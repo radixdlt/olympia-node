@@ -19,7 +19,6 @@ import org.radix.network2.transport.StaticTransportMetadata;
 import org.radix.network2.transport.TransportInfo;
 import org.radix.network2.transport.udp.UDPConstants;
 import org.radix.shards.ShardSpace;
-import org.radix.time.NtpService;
 import org.radix.time.Time;
 import org.radix.time.Timestamps;
 import org.radix.universe.system.RadixSystem;
@@ -47,9 +46,11 @@ public final class TestService {
 			"}";
 
 	private final Serialization serialization;
+	private final MessageCentral messageCentral;
 
-	public TestService(Serialization serialization) {
+	public TestService(Serialization serialization, MessageCentral messageCentral) {
 		this.serialization = serialization;
+		this.messageCentral = messageCentral;
 	}
 
 	/**
@@ -98,7 +99,7 @@ public final class TestService {
 			peersMessage.setDirection(Direction.INBOUND);
 			peersMessage.setTimestamp(Timestamps.RECEIVED, Time.currentTimestamp());
 			peersMessage.setTimestamp(Timestamps.LATENCY, java.lang.System.nanoTime());
-			Modules.get(MessageCentral.class).inject(peer, peersMessage);
+			messageCentral.inject(peer, peersMessage);
 			log.debug("Submitted peers message for NID " + keyValue.getUID().toString());
 			JSONObject result = new JSONObject();
 			result.put("nid", keyValue.getUID().toString());

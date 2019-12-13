@@ -30,6 +30,7 @@ public class RadixTestWithStores extends RadixTest
 	private DatabaseEnvironment dbEnv;
 	private LedgerEntryStore store;
 	private Tempo tempo;
+	private MessageCentral messageCentral;
 
 	@Before
 	public void beforeEachRadixTest() {
@@ -37,8 +38,7 @@ public class RadixTestWithStores extends RadixTest
 		this.dbEnv.start();
 
 		RuntimeProperties properties = Modules.get(RuntimeProperties.class);
-		MessageCentral messageCentral = new MessageCentralFactory().createDefault(properties);
-		Modules.put(MessageCentral.class, messageCentral);
+		messageCentral = new MessageCentralFactory().createDefault(properties);
 
 		EUID self = LocalSystem.getInstance().getNID();
 		injector = Guice.createInjector(
@@ -66,9 +66,7 @@ public class RadixTestWithStores extends RadixTest
 
 		this.dbEnv.stop();
 
-		MessageCentral messageCentral = Modules.get(MessageCentral.class);
 		messageCentral.close();
-		Modules.remove(MessageCentral.class);
 	}
 
 	protected DatabaseEnvironment getDbEnv() {
@@ -81,5 +79,9 @@ public class RadixTestWithStores extends RadixTest
 
 	protected Tempo getTempo() {
 		return tempo;
+	}
+
+	public MessageCentral getMessageCentral() {
+		return messageCentral;
 	}
 }
