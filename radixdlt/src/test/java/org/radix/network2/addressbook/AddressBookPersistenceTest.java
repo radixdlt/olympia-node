@@ -37,8 +37,6 @@ public class AddressBookPersistenceTest extends RadixTest {
 	public void tearDown() {
 		this.abp.stop();
 		this.dbEnv.stop();
-		Modules.getInstance().remove(DatabaseEnvironment.class);
-		Modules.remove(DatabaseEnvironment.class);
 	}
 
 	@Test

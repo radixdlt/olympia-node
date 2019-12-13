@@ -65,7 +65,6 @@ public class RadixTestWithStores extends RadixTest
 		store.reset();
 
 		this.dbEnv.stop();
-		Modules.remove(DatabaseEnvironment.class);
 
 		MessageCentral messageCentral = Modules.get(MessageCentral.class);
 		messageCentral.close();
