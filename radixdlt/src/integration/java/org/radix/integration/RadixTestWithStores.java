@@ -26,8 +26,9 @@ import static org.mockito.Mockito.mock;
 
 public class RadixTestWithStores extends RadixTest
 {
-	protected Injector injector;
-	protected DatabaseEnvironment dbEnv;
+	private Injector injector;
+	private DatabaseEnvironment dbEnv;
+	private LedgerEntryStore store;
 
 	@Before
 	public void beforeEachRadixTest() {
@@ -49,20 +50,17 @@ public class RadixTestWithStores extends RadixTest
 				new BerkeleyStoreModule(dbEnv)
 		);
 
-		LedgerEntryStore atomStore = injector.getInstance(LedgerEntryStore.class);
+		store = injector.getInstance(LedgerEntryStore.class);
 		Tempo tempo = new Tempo(
 			mock(Application.class),
 			ImmutableSet.of(),
 			mock(LazyRequestDeliverer.class));
-			Modules.put(Tempo.class, tempo);
-			Modules.put(LedgerEntryStore.class, atomStore);
 	}
 
 	@After
 	public void afterEachRadixTest() throws IOException {
 		Modules.get(Tempo.class).close();
 		Modules.remove(Tempo.class);
-		Modules.remove(LedgerEntryStore.class);
 
 		this.dbEnv.stop();
 		Modules.remove(DatabaseEnvironment.class);
@@ -70,5 +68,13 @@ public class RadixTestWithStores extends RadixTest
 		MessageCentral messageCentral = Modules.get(MessageCentral.class);
 		messageCentral.close();
 		Modules.remove(MessageCentral.class);
+	}
+
+	protected DatabaseEnvironment getDbEnv() {
+		return dbEnv;
+	}
+
+	protected LedgerEntryStore getStore() {
+		return store;
 	}
 }

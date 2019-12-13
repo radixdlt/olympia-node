@@ -114,8 +114,6 @@ public class RadixEngineAtomProcessor implements Application {
 	}
 
 	public void start() {
-		Modules.put(LedgerEntryStoreView.class, this.store);
-
 		initGenesis();
 		new Thread(() -> {
 			try {
@@ -127,7 +125,6 @@ public class RadixEngineAtomProcessor implements Application {
 	}
 
 	public void stop() {
-		Modules.remove(LedgerEntryStoreView.class);
 		this.store.close();
 		interrupted = true;
 	}

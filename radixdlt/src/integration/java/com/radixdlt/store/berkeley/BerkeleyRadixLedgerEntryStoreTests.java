@@ -16,7 +16,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.radix.database.DatabaseEnvironment;
 import org.radix.exceptions.ValidationException;
 import org.radix.integration.RadixTestWithStores;
 import org.radix.logging.Logger;
@@ -49,7 +48,7 @@ public class BerkeleyRadixLedgerEntryStoreTests extends RadixTestWithStores {
 
     @Before
     public void setup() throws CryptoException, ValidationException {
-        tempoAtomStore = new BerkeleyLedgerEntryStore(localSystem.getNID(), serialization, this.dbEnv);
+        tempoAtomStore = new BerkeleyLedgerEntryStore(localSystem.getNID(), serialization, this.getDbEnv());
 
         identity = new ECKeyPair();
         ledgerEntries = ledgerEntryGenerator.createLedgerEntries(identity, 5);
