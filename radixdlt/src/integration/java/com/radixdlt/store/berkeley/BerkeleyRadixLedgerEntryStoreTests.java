@@ -66,7 +66,7 @@ public class BerkeleyRadixLedgerEntryStoreTests extends RadixTestWithStores {
             softly.assertThat(tempoAtomStore.getStatus(ledgerEntries.get(0).getAID())).isEqualTo(LedgerEntryStatus.PENDING);
 
             // atom added to store should be in pending
-            softly.assertThat(tempoAtomStore.getPending()).containsExactly(ledgerEntries.get(0).getAID());
+            softly.assertThat(tempoAtomStore.getPending()).contains(ledgerEntries.get(0).getAID());
 
             //added atom is present in store
             softly.assertThat(tempoAtomStore.contains(ledgerEntries.get(0).getAID())).isTrue();

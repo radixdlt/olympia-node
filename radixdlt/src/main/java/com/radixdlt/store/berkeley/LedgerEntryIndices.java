@@ -35,6 +35,8 @@ public final class LedgerEntryIndices {
 
 	private LedgerEntryIndices() {
 		// For serializer
+		this.uniqueIndices = ImmutableSet.of();
+		this.duplicateIndices = ImmutableSet.of();
 	}
 
 	private LedgerEntryIndices(ImmutableSet<StoreIndex> uniqueIndices, ImmutableSet<StoreIndex> duplicateIndices) {

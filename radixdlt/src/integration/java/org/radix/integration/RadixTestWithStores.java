@@ -61,6 +61,8 @@ public class RadixTestWithStores extends RadixTest
 	@After
 	public void afterEachRadixTest() throws IOException {
 		tempo.close();
+		store.close();
+		store.reset();
 
 		this.dbEnv.stop();
 		Modules.remove(DatabaseEnvironment.class);
