@@ -21,38 +21,38 @@ import io.netty.util.concurrent.GenericFutureListener;
 
 public class TCPTransportControlImplTest {
 	private NettyTCPTransport transport;
-    private TCPTransportOutboundConnectionFactory outboundFactory;
-    private TransportOutboundConnection transportOutboundConnection;
+	private TCPTransportOutboundConnectionFactory outboundFactory;
+	private TransportOutboundConnection transportOutboundConnection;
 
-    @Before
-    public void setUp() {
-        transportOutboundConnection = mock(TransportOutboundConnection.class);
+	@Before
+	public void setUp() {
+		transportOutboundConnection = mock(TransportOutboundConnection.class);
 
-        outboundFactory = mock(TCPTransportOutboundConnectionFactory.class);
-        when(outboundFactory.create(any(), any())).thenReturn(transportOutboundConnection);
+		outboundFactory = mock(TCPTransportOutboundConnectionFactory.class);
+		when(outboundFactory.create(any(), any())).thenReturn(transportOutboundConnection);
 
-        Channel ch = mock(Channel.class);
-        ChannelFuture cf = mock(ChannelFuture.class);
-        when(cf.addListener(any())).thenAnswer(a -> {
-        	GenericFutureListener<Future<Void>> listener = a.getArgument(0);
-        	listener.operationComplete(cf);
-        	return cf;
-        });
-        when(cf.channel()).thenReturn(ch);
+		Channel ch = mock(Channel.class);
+		ChannelFuture cf = mock(ChannelFuture.class);
+		when(cf.addListener(any())).thenAnswer(a -> {
+			GenericFutureListener<Future<Void>> listener = a.getArgument(0);
+			listener.operationComplete(cf);
+			return cf;
+		});
+		when(cf.channel()).thenReturn(ch);
 
-        transport = mock(NettyTCPTransport.class);
-    	when(transport.createChannel(any(), anyInt())).thenReturn(cf);
-    }
+		transport = mock(NettyTCPTransport.class);
+		when(transport.createChannel(any(), anyInt())).thenReturn(cf);
+	}
 
-    @Test
-    public void open() throws ExecutionException, InterruptedException, IOException {
-        try (TCPTransportControlImpl tcpTransportControl = new TCPTransportControlImpl(outboundFactory, transport)) {
-        	TransportMetadata metadata = StaticTransportMetadata.of(
-        		TCPConstants.METADATA_TCP_HOST, "localhost",
-        		TCPConstants.METADATA_TCP_PORT, "443"
-        	);
-        	CompletableFuture<TransportOutboundConnection> result = tcpTransportControl.open(metadata);
-        	assertThat(result.get()).isEqualTo(transportOutboundConnection);
-        }
-    }
+	@Test
+	public void open() throws ExecutionException, InterruptedException, IOException {
+		try (TCPTransportControlImpl tcpTransportControl = new TCPTransportControlImpl(outboundFactory, transport)) {
+			TransportMetadata metadata = StaticTransportMetadata.of(
+				TCPConstants.METADATA_TCP_HOST, "localhost",
+				TCPConstants.METADATA_TCP_PORT, "443"
+			);
+			CompletableFuture<TransportOutboundConnection> result = tcpTransportControl.open(metadata);
+			assertThat(result.get()).isEqualTo(transportOutboundConnection);
+		}
+	}
 }

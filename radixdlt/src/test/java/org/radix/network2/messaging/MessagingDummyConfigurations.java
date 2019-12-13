@@ -18,93 +18,93 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 
 public class MessagingDummyConfigurations {
-    public static class DummyMessageCentralConfiguration implements MessageCentralConfiguration {
-        @Override
-        public int messagingInboundQueueMax(int defaultValue) {
-            return 10;
-        }
+	public static class DummyMessageCentralConfiguration implements MessageCentralConfiguration {
+		@Override
+		public int messagingInboundQueueMax(int defaultValue) {
+			return 10;
+		}
 
-        @Override
-        public int messagingOutboundQueueMax(int defaultValue) {
-            return 11;
-        }
+		@Override
+		public int messagingOutboundQueueMax(int defaultValue) {
+			return 11;
+		}
 
-        @Override
-        public int messagingTimeToLive(int defaultValue) {
-            return 10;
-        }
+		@Override
+		public int messagingTimeToLive(int defaultValue) {
+			return 10;
+		}
 
-        @Override
-        public int messagingInboundQueueThreads(int defaultValue) {
-            return 1;
-        }
+		@Override
+		public int messagingInboundQueueThreads(int defaultValue) {
+			return 1;
+		}
 
-        @Override
-        public int messagingOutboundQueueThreads(int defaultValue) {
-            return 1;
-        }
-    }
+		@Override
+		public int messagingOutboundQueueThreads(int defaultValue) {
+			return 1;
+		}
+	}
 
-    public static class DummyTransport implements Transport {
-        private InboundMessageConsumer messageSink = null;
-        private boolean isClosed = false;
+	public static class DummyTransport implements Transport {
+		private InboundMessageConsumer messageSink = null;
+		private boolean isClosed = false;
 
-        private final TransportOutboundConnection out;
+		private final TransportOutboundConnection out;
 
-        public DummyTransport(TransportOutboundConnection out) {
-            this.out = out;
-        }
+		public DummyTransport(TransportOutboundConnection out) {
+			this.out = out;
+		}
 
-        @Override
-        public void start(InboundMessageConsumer messageSink) {
-            this.messageSink = messageSink;
-        }
+		@Override
+		public void start(InboundMessageConsumer messageSink) {
+			this.messageSink = messageSink;
+		}
 
-        @Override
-        public void close() throws IOException {
-            this.isClosed = true;
-        }
+		@Override
+		public void close() throws IOException {
+			this.isClosed = true;
+		}
 
-        void inboundMessage(InboundMessage msg) {
-            messageSink.accept(msg);
-        }
+		void inboundMessage(InboundMessage msg) {
+			messageSink.accept(msg);
+		}
 
-        @Override
-        public String name() {
-            return UDPConstants.UDP_NAME;
-        }
+		@Override
+		public String name() {
+			return UDPConstants.UDP_NAME;
+		}
 
-        @Override
-        public TransportControl control() {
-            return new TransportControl() {
-                @Override
-                public CompletableFuture<TransportOutboundConnection> open(TransportMetadata ignored) {
-                    return CompletableFuture.completedFuture(out);
-                }
+		@Override
+		public TransportControl control() {
+			return new TransportControl() {
+				@Override
+				public CompletableFuture<TransportOutboundConnection> open(TransportMetadata ignored) {
+					return CompletableFuture.completedFuture(out);
+				}
 
-                @Override
-                public void close() throws IOException {
-                    // Nothing to do
-                }
-            };
-        }
+				@Override
+				public void close() throws IOException {
+					// Nothing to do
+				}
+			};
+		}
 
-        @Override
-        public TransportMetadata localMetadata() {
-            return StaticTransportMetadata.empty();
-        }
+		@Override
+		public TransportMetadata localMetadata() {
+			return StaticTransportMetadata.empty();
+		}
 
-        public InboundMessageConsumer getMessageSink() {
-            return messageSink;
-        }
+		public InboundMessageConsumer getMessageSink() {
+			return messageSink;
+		}
 
-        public boolean isClosed() {
-            return isClosed;
-        }
+		public boolean isClosed() {
+			return isClosed;
+		}
 
-        public TransportOutboundConnection getOut() {
-            return out;
-        }
+		public TransportOutboundConnection getOut() {
+			return out;
+		}
 
 		@Override
 		public boolean canHandle(byte[] message) {
@@ -115,69 +115,69 @@ public class MessagingDummyConfigurations {
 		public int priority() {
 			return 0;
 		}
-    }
+	}
 
-    public static class DummyTransportOutboundConnection implements TransportOutboundConnection {
-        private boolean sent = false;
+	public static class DummyTransportOutboundConnection implements TransportOutboundConnection {
+		private boolean sent = false;
 
-        private final List<byte[]> messages = new ArrayList<>();
-        private volatile CountDownLatch countDownLatch;
+		private final List<byte[]> messages = new ArrayList<>();
+		private volatile CountDownLatch countDownLatch;
 
-        public DummyTransportOutboundConnection() {
-            this.countDownLatch = new CountDownLatch(1);
-        }
+		public DummyTransportOutboundConnection() {
+			this.countDownLatch = new CountDownLatch(1);
+		}
 
-        @Override
-        public void close() throws IOException {
-            // Ignore for now
-        }
+		@Override
+		public void close() throws IOException {
+			// Ignore for now
+		}
 
-        @Override
-        public CompletableFuture<SendResult> send(byte[] data) {
-            sent = true;
-            messages.add(data);
-            countDownLatch.countDown();
-            return CompletableFuture.completedFuture(SendResult.complete());
-        }
+		@Override
+		public CompletableFuture<SendResult> send(byte[] data) {
+			sent = true;
+			messages.add(data);
+			countDownLatch.countDown();
+			return CompletableFuture.completedFuture(SendResult.complete());
+		}
 
-        public List<byte[]> getMessages() {
-            return messages;
-        }
+		public List<byte[]> getMessages() {
+			return messages;
+		}
 
-        public void setCountDownLatch(CountDownLatch countDownLatch) {
-            this.countDownLatch = countDownLatch;
-        }
+		public void setCountDownLatch(CountDownLatch countDownLatch) {
+			this.countDownLatch = countDownLatch;
+		}
 
-        public boolean isSent() {
-            return sent;
-        }
+		public boolean isSent() {
+			return sent;
+		}
 
-        public CountDownLatch getCountDownLatch() {
-            return countDownLatch;
-        }
-    }
+		public CountDownLatch getCountDownLatch() {
+			return countDownLatch;
+		}
+	}
 
-    public static class DummyTransportManager implements TransportManager {
-        private Transport transport;
+	public static class DummyTransportManager implements TransportManager {
+		private Transport transport;
 
-        public DummyTransportManager(Transport transport) {
-            this.transport = transport;
-        }
+		public DummyTransportManager(Transport transport) {
+			this.transport = transport;
+		}
 
-        @Override
-        public void close() throws IOException {
-            // Nothing
-        }
+		@Override
+		public void close() throws IOException {
+			// Nothing
+		}
 
-        @Override
-        public List<Transport> transports() {
-            return ImmutableList.of(transport);
-        }
+		@Override
+		public List<Transport> transports() {
+			return ImmutableList.of(transport);
+		}
 
-        @Override
+		@Override
 		public Transport findTransport(Peer peer, byte[] bytes) {
-            return transport;
-        }
-    }
+			return transport;
+		}
+	}
 
 }

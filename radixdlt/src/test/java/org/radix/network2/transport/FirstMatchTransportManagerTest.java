@@ -58,7 +58,7 @@ public class FirstMatchTransportManagerTest {
 	}
 
 	@Test
-	public void testFindTransportWithSelection1() {
+	public void testFindTransportWithSelectionHiPriority() {
 		byte[] dummyMessage = new byte[0];
 
 		TransportInfo dummyTransport = TransportInfo.of("DUMMY", StaticTransportMetadata.empty());
@@ -79,7 +79,7 @@ public class FirstMatchTransportManagerTest {
 	}
 
 	@Test
-	public void testFindTransportWithSelection2() {
+	public void testFindTransportWithSelectionLowPriority() {
 		byte[] dummyMessage = new byte[0];
 
 		TransportInfo udpTransport = TransportInfo.of(UDPConstants.UDP_NAME, StaticTransportMetadata.empty());

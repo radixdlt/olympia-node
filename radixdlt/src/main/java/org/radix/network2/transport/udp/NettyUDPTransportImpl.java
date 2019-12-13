@@ -47,8 +47,8 @@ final class NettyUDPTransportImpl implements Transport {
 	private final UDPTransportControlFactory controlFactory;
 	private final UDPTransportOutboundConnectionFactory connectionFactory;
 
-    private final int priority;
-    private final int inboundProcessingThreads;
+	private final int priority;
+	private final int inboundProcessingThreads;
 	private final AtomicInteger threadCounter = new AtomicInteger(0);
 	private final InetSocketAddress bindAddress;
 	private final PublicInetAddress natHandler;
