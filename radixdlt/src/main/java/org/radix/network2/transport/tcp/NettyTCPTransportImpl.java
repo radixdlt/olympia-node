@@ -50,8 +50,8 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 
 	private final TransportMetadata localMetadata;
 
-    private final int priority;
-    private final int inboundProcessingThreads;
+	private final int priority;
+	private final int inboundProcessingThreads;
 	private final AtomicInteger threadCounter = new AtomicInteger(0);
 	private final InetSocketAddress bindAddress;
 	private final Object channelLock = new Object();

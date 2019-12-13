@@ -42,7 +42,6 @@ final class NettyUDPTransportImpl implements Transport {
 	static final int RCV_BUF_SIZE = MAX_DATAGRAM_SIZE * 4;
 	static final int SND_BUF_SIZE = MAX_DATAGRAM_SIZE * 4;
 
-
 	private final TransportMetadata localMetadata;
 	private final UDPTransportControlFactory controlFactory;
 	private final UDPTransportOutboundConnectionFactory connectionFactory;
