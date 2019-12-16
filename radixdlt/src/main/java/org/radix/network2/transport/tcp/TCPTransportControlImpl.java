@@ -7,8 +7,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
-
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.network2.transport.TransportMetadata;
@@ -95,7 +93,9 @@ final class TCPTransportControlImpl implements TCPTransportControl {
 			final List<ChannelFuture> futures = Lists.newArrayList();
 			synchronized (lock) {
 				for (LinkedList<SocketChannel> channels : this.channelMap.values()) {
-					futures.addAll(channels.stream().map(Channel::close).collect(Collectors.toList()));
+					channels.stream()
+						.map(Channel::close)
+						.forEachOrdered(futures::add);
 					channels.clear();
 				}
 			}

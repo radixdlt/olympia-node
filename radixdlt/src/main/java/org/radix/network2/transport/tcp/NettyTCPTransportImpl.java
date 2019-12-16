@@ -26,7 +26,6 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.FixedRecvByteBufAllocator;
-import io.netty.channel.MultithreadEventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
@@ -87,6 +86,9 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 		this.priority = config.priority(0);
 		this.control = controlFactory.create(outboundFactory, this);
 		this.inboundProcessingThreads = config.processingThreads(1);
+		if (this.inboundProcessingThreads < 0) {
+			throw new IllegalStateException("Illegal number of TCP inbound threads: " + this.inboundProcessingThreads);
+		}
 		this.bindAddress = new InetSocketAddress(providedHost, port);
 	}
 
@@ -120,7 +122,7 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 		log.info(String.format("TCP transport %s, threads: %s", localAddress(), this.inboundProcessingThreads));
 
 		EventLoopGroup serverGroup = new NioEventLoopGroup(1);
-		MultithreadEventLoopGroup workerGroup = new NioEventLoopGroup(this.inboundProcessingThreads, this::createThread);
+		EventLoopGroup workerGroup = new NioEventLoopGroup(this.inboundProcessingThreads, this::createThread);
 
 		this.outboundBootstrap = new Bootstrap();
 		this.outboundBootstrap.group(workerGroup)

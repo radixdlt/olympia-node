@@ -25,6 +25,13 @@ public interface TCPConfiguration {
 
 	/**
 	 * Get the number of processing threads to use for messages.
+	 * <p>
+	 * The value must be greater than or equal to zero.  If zero is
+	 * specified, a default value will be used, typically 1.  Otherwise
+	 * the specified number of threads will be used.
+	 * <p>
+	 * Note that because the underlying I/O system is evented, there
+	 * should be no need to specify a number larger than 1.
 	 *
 	 * @param defaultValue a default value if no special configuration value is set
 	 * @return the number threads for processing messages
@@ -36,6 +43,7 @@ public interface TCPConfiguration {
 	 *
 	 * @param defaultValue a default value if no special configuration value is set
 	 * @return the priority of this transport
+	 * @see org.radix.network2.transport.Transport#priority()
 	 */
 	int priority(int defaultValue);
 

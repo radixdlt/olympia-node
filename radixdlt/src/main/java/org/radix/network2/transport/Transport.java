@@ -44,7 +44,7 @@ public interface Transport extends Closeable {
 
 	/**
 	 * Returns the priority this transport has.  Transports with a larger
-	 * numeric property will be used in preference to transports with a
+	 * numeric value will be used in preference to transports with a
 	 * lower numeric preference, assuming {@link #canHandle(byte[])}
 	 * also returns {@code true}.
 	 *

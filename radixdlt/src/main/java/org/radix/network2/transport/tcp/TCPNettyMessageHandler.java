@@ -10,6 +10,8 @@ import org.radix.network2.messaging.InboundMessageConsumer;
 import org.radix.network2.transport.StaticTransportMetadata;
 import org.radix.network2.transport.TransportInfo;
 
+import com.google.common.util.concurrent.RateLimiter;
+
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -23,6 +25,9 @@ final class TCPNettyMessageHandler extends SimpleChannelInboundHandler<ByteBuf> 
 	private static final Logger log = Logging.getLogger("transport.tcp");
 
 	private final InboundMessageConsumer messageSink;
+
+	// Limit rate at which bad SocketAddress type logs are produced
+	private final RateLimiter logRateLimiter = RateLimiter.create(1.0);
 
 
 	TCPNettyMessageHandler(InboundMessageConsumer messageSink) {
@@ -46,6 +51,10 @@ final class TCPNettyMessageHandler extends SimpleChannelInboundHandler<ByteBuf> 
 				)
 			);
 			messageSink.accept(InboundMessage.of(source, data));
+		} else if (logRateLimiter.tryAcquire()) {
+			String type = socketSender == null ? null : socketSender.getClass().getName();
+			String from = socketSender == null ? null : socketSender.toString();
+			log.error(String.format("Unknown SocketAddress of type %s from %s", type, from));
 		}
 	}
 

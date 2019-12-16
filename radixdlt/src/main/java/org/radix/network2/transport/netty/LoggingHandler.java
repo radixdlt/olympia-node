@@ -77,7 +77,7 @@ public class LoggingHandler extends ChannelDuplexHandler {
 
 	@Override
 	public void connect(ChannelHandlerContext ctx, SocketAddress remoteAddress, SocketAddress localAddress, ChannelPromise promise) throws Exception {
-			this.logger.log(format(ctx, "CONNECT", remoteAddress, localAddress));
+		this.logger.log(format(ctx, "CONNECT", remoteAddress, localAddress));
 		ctx.connect(remoteAddress, localAddress, promise);
 	}
 

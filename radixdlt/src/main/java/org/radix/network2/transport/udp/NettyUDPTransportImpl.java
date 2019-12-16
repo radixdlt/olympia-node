@@ -84,6 +84,9 @@ final class NettyUDPTransportImpl implements Transport {
 		this.controlFactory = controlFactory;
 		this.connectionFactory = connectionFactory;
 		this.inboundProcessingThreads = config.processingThreads(1);
+		if (this.inboundProcessingThreads < 0) {
+			throw new IllegalStateException("Illegal number of UDP inbound threads: " + this.inboundProcessingThreads);
+		}
 		this.priority = config.priority(1000);
 		this.bindAddress = new InetSocketAddress(providedHost, port);
 		this.natHandler = natHandler;
@@ -131,7 +134,8 @@ final class NettyUDPTransportImpl implements Transport {
 	            		.setOption(ChannelOption.RCVBUF_ALLOCATOR, new FixedRecvByteBufAllocator(MAX_DATAGRAM_SIZE));
 	        		if (log.hasLevel(Logging.DEBUG)) {
 	        			LogSink ls = LogSink.forDebug(log);
-	        			ch.pipeline().addLast(new LoggingHandler(ls, DEBUG_DATA));
+	        			ch.pipeline()
+	        				.addLast(new LoggingHandler(ls, DEBUG_DATA));
 	        		}
 	                ch.pipeline()
 	                	.addLast("onboard", new UDPNettyMessageHandler(natHandler, messageSink));
