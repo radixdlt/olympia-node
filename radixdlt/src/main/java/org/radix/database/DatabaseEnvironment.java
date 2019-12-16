@@ -1,22 +1,13 @@
 package org.radix.database;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
 import com.google.inject.Inject;
 import org.bouncycastle.util.Arrays;
-import org.radix.database.exceptions.DatabaseException;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.modules.Modules;
 import org.radix.properties.RuntimeProperties;
 
 import com.radixdlt.utils.RadixConstants;
@@ -84,8 +75,8 @@ public final class DatabaseEnvironment
 	private Thread 							checkpointThread = null;
 
 	@Inject
-    public DatabaseEnvironment() {
-	    File dbhome = new File(Modules.get(RuntimeProperties.class).get("db.location", ".//RADIXDB"));
+    public DatabaseEnvironment(RuntimeProperties properties) {
+	    File dbhome = new File(properties.get("db.location", ".//RADIXDB"));
 	    dbhome.mkdir();
 
 	    System.setProperty("je.disable.java.adler32", "true");
@@ -103,9 +94,9 @@ public final class DatabaseEnvironment
 	    environmentConfig.setConfigParam(EnvironmentConfig.ENV_RUN_VERIFIER, "false");
 	    environmentConfig.setConfigParam(EnvironmentConfig.TREE_MAX_EMBEDDED_LN, "0");
 
-	    long minCacheSize = Modules.get(RuntimeProperties.class).get("db.cache_size.min", Math.max(50000000, (long)(Runtime.getRuntime().maxMemory()*0.1)));
-	    long maxCacheSize = Modules.get(RuntimeProperties.class).get("db.cache_size.max", (long)(Runtime.getRuntime().maxMemory()*0.25));
-	    long cacheSize = Modules.get(RuntimeProperties.class).get("db.cache_size", (long)(Runtime.getRuntime().maxMemory()*0.125));
+	    long minCacheSize = properties.get("db.cache_size.min", Math.max(50000000, (long)(Runtime.getRuntime().maxMemory()*0.1)));
+	    long maxCacheSize = properties.get("db.cache_size.max", (long)(Runtime.getRuntime().maxMemory()*0.25));
+	    long cacheSize = properties.get("db.cache_size", (long)(Runtime.getRuntime().maxMemory()*0.125));
 	    cacheSize = Math.max(cacheSize, minCacheSize);
 	    cacheSize = Math.min(cacheSize, maxCacheSize);
 

@@ -100,7 +100,7 @@ public class PeerManagerTest extends RadixTest {
         interfaces = mock(Interfaces.class);
         when(interfaces.isSelf(any())).thenReturn(false);
         when(Modules.get(Universe.class).getPlanck()).thenReturn(10000L);
-        RuntimeProperties properties = Modules.get(RuntimeProperties.class);
+        RuntimeProperties properties = getProperties();
 
         when(properties.get(eq("network.peers.heartbeat.delay"), any())).thenReturn(100);
         when(properties.get(eq("network.peers.heartbeat.interval"), any())).thenReturn(200);

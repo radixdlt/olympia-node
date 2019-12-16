@@ -47,21 +47,23 @@ public class InternalService {
 	private final LedgerEntryStore store;
 	private final RadixEngineAtomProcessor radixEngineAtomProcessor;
 	private final Serialization serialization;
+	private final RuntimeProperties properties;
 
 	private static boolean spamming = false;
 
 	// Executor for prepare/store
 	private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
-	public InternalService(MessageCentral messageCentral, LedgerEntryStore store, RadixEngineAtomProcessor radixEngineAtomProcessor, Serialization serialization) {
+	public InternalService(MessageCentral messageCentral, LedgerEntryStore store, RadixEngineAtomProcessor radixEngineAtomProcessor, Serialization serialization, RuntimeProperties properties) {
 		this.messageCentral = messageCentral;
 		this.store = store;
 		this.radixEngineAtomProcessor = radixEngineAtomProcessor;
 		this.serialization = serialization;
+		this.properties = properties;
 	}
 
 	private class Spammer implements Runnable {
-		private final int nonceBits = Modules.get(RuntimeProperties.class).get("test.nullatom.junk_size", 40);
+		private final int nonceBits;
 
 		private final RadixEngineAtomProcessor radixEngineAtomProcessor;
 		private final ECKeyPair owner;
@@ -72,13 +74,14 @@ public class InternalService {
 
 		private final Random random = new Random();
 
-		public Spammer(RadixEngineAtomProcessor radixEngineAtomProcessor, ECKeyPair owner, int iterations, int batching, int rate) {
+		public Spammer(RadixEngineAtomProcessor radixEngineAtomProcessor, ECKeyPair owner, int iterations, int batching, int rate, int nonceBits) {
 			this.radixEngineAtomProcessor = radixEngineAtomProcessor;
 			this.owner = owner;
 			this.iterations = iterations;
 			this.rate = rate;
 			this.batching = Math.max(1, batching);
 			this.account = RadixAddress.from(Modules.get(Universe.class), owner.getPublicKey());
+			this.nonceBits = nonceBits;
 		}
 
 		private byte[] generateNonce(int randomBits) {
@@ -180,7 +183,7 @@ public class InternalService {
 	public JSONObject spamathon(String iterations, String batching, String rate) {
 		JSONObject result = new JSONObject();
 
-		if (spamming && Modules.get(RuntimeProperties.class).get("atoms.spam.multiple", false)) {
+		if (spamming && this.properties.get("atoms.spam.multiple", false)) {
 			throw new RuntimeException();
 		}
 		if (iterations == null) {
@@ -195,13 +198,14 @@ public class InternalService {
 		if (Integer.decode(rate) < 1) {
 			throw new RuntimeException("Rate is invalid");
 		}
-		if (Integer.decode(rate) > Modules.get(RuntimeProperties.class).get("atoms.spam.max_rate", 1000)) {
-			Integer maxRate = Modules.get(RuntimeProperties.class).get("atoms.spam.max_rate", 1000);
+		if (Integer.decode(rate) > this.properties.get("atoms.spam.max_rate", 1000)) {
+			Integer maxRate = this.properties.get("atoms.spam.max_rate", 1000);
 			throw new RuntimeException("Rate is too high - Maximum rate is " + maxRate);
 		}
 
 		try {
-			Thread spammerThread = new Thread(new Spammer(radixEngineAtomProcessor, new ECKeyPair(), Integer.decode(iterations), batching == null ? 1 : Integer.decode(batching), Integer.decode(rate)));
+			int nonceBits = this.properties.get("test.nullatom.junk_size", 40);
+			Thread spammerThread = new Thread(new Spammer(radixEngineAtomProcessor, new ECKeyPair(), Integer.decode(iterations), batching == null ? 1 : Integer.decode(batching), Integer.decode(rate), nonceBits));
 			spammerThread.setDaemon(true);
 			spammerThread.setName("Spammer " + System.currentTimeMillis());
 			spammerThread.start();

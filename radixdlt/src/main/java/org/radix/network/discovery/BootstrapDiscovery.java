@@ -8,6 +8,7 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -37,16 +38,7 @@ public class BootstrapDiscovery
 	private static final int MAX_DNS_NAME_OCTETS = 253;
 
 	private static final Logger log = Logging.getLogger();
-
-	public static synchronized BootstrapDiscovery getInstance()
-	{
-		if (instance == null)
-			instance = new BootstrapDiscovery();
-
-		return instance;
-	}
-
-	private static BootstrapDiscovery instance = null;
+	private final RuntimeProperties properties;
 
 	private Set<TransportInfo> hosts = new HashSet<>();
 
@@ -83,15 +75,14 @@ public class BootstrapDiscovery
 	 * - might be temporary unreachable
 	 * - might be compromized (don't trust it)
 	 */
-	private static String getNextNode(URL nodeFinderURL)
+	private String getNextNode(URL nodeFinderURL)
 	{
-		RuntimeProperties cfg = Modules.get(RuntimeProperties.class);
 		// Default retry total time = 30 * 10 = 300 seconds = 5 minutes
-		long retries = cfg.get("network.discovery.connection.retries", 30);
+		long retries = properties.get("network.discovery.connection.retries", 30);
 		// NOTE: min is 10 seconds - we don't allow less
-		int cooldown = cfg.get("network.discovery.connection.cooldown", 1) * 10000;
-		int connectionTimeout = cfg.get("network.discovery.connection.timeout", 60000);
-		int readTimeout = cfg.get("network.discovery.read.timeout", 60000);
+		int cooldown = properties.get("network.discovery.connection.cooldown", 1) * 10000;
+		int connectionTimeout = properties.get("network.discovery.connection.timeout", 60000);
+		int readTimeout = properties.get("network.discovery.read.timeout", 60000);
 
 		long attempt = 0;
 		byte[] buf = new byte[MAX_DNS_NAME_OCTETS];
@@ -155,17 +146,16 @@ public class BootstrapDiscovery
 		return null;
 	}
 
-	private BootstrapDiscovery() {
-		RuntimeProperties cfg = Modules.get(RuntimeProperties.class);
-
+	public BootstrapDiscovery(RuntimeProperties properties) {
+		this.properties = properties;
 		// allow nodes to connect to others, bypassing TLS handshake
-		if (cfg.get("network.discovery.allow_tls_bypass", 0) == 1) {
+		if (properties.get("network.discovery.allow_tls_bypass", 0) == 1) {
 			log.info("Allowing TLS handshake bypass...");
 			SSLFix.trustAllHosts();
 		}
 
 		HashSet<String> hosts = new HashSet<>();
-		for (String unparsedURL : cfg.get("network.discovery.urls", "").split(",")) {
+		for (String unparsedURL : properties.get("network.discovery.urls", "").split(",")) {
 			unparsedURL = unparsedURL.trim();
 			if (unparsedURL.isEmpty()) {
 				continue;
@@ -188,9 +178,7 @@ public class BootstrapDiscovery
 			}
 		}
 
-		for (String host : cfg.get("network.seeds", "").split(",")) {
-			hosts.add(host);
-		}
+		hosts.addAll(Arrays.asList(properties.get("network.seeds", "").split(",")));
 
 		for (String host : hosts) {
 			host = host.trim();

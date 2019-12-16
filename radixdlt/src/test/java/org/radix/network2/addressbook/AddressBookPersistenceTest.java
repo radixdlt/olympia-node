@@ -11,6 +11,7 @@ import org.radix.database.DatabaseEnvironment;
 import org.radix.modules.Modules;
 import org.radix.network2.transport.StaticTransportMetadata;
 import org.radix.network2.transport.TransportInfo;
+import org.radix.properties.RuntimeProperties;
 import org.radix.serialization.RadixTest;
 import org.radix.time.Time;
 import org.radix.time.Timestamps;
@@ -27,8 +28,8 @@ public class AddressBookPersistenceTest extends RadixTest {
 
 	@Before
 	public void setUp() {
-		this.dbEnv = new DatabaseEnvironment();
-		this.abp = new AddressBookPersistence(Serialization.getDefault(), dbEnv);
+		this.dbEnv = new DatabaseEnvironment(getProperties());
+		this.abp = new AddressBookPersistence(getSerialization(), dbEnv);
 		this.abp.reset();
 	}
 

@@ -59,7 +59,8 @@ public class MiddlewareModule extends AbstractModule {
 			ConstraintMachine constraintMachine,
 			UnaryOperator<CMStore> virtualStoreLayer,
 			EngineStore engineStore,
-			Serialization serialization
+			Serialization serialization,
+			RuntimeProperties properties
 	) {
 		RadixEngine radixEngine = new RadixEngine(
 			constraintMachine,
@@ -67,8 +68,7 @@ public class MiddlewareModule extends AbstractModule {
 			engineStore
 		);
 
-		final boolean skipAtomFeeCheck = Modules.isAvailable(RuntimeProperties.class)
-				&& Modules.get(RuntimeProperties.class).get("debug.nopow", false);
+		final boolean skipAtomFeeCheck = properties.get("debug.nopow", false);
 
 		radixEngine.addCMSuccessHook(
 				new AtomCheckHook(

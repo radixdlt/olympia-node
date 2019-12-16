@@ -3,7 +3,6 @@ package org.radix.serialization;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
 import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.radix.GenerateUniverses;
 import org.radix.modules.Modules;

@@ -8,6 +8,7 @@ import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.Bytes;
+import org.apache.commons.cli.ParseException;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.json.JSONObject;
 import org.radix.api.http.RadixHttpServer;
@@ -30,10 +31,10 @@ import org.radix.universe.system.LocalSystem;
 import org.radix.utils.IOUtils;
 import org.radix.utils.SystemMetaData;
 
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.net.URISyntaxException;
-import java.security.SecureRandom;
 import java.security.Security;
 
 public final class Radix
@@ -55,55 +56,21 @@ public final class Radix
 	private RadixEngineAtomProcessor atomProcessor;
 	private RadixHttpServer httpServer;
 
-	public static void main(String[] args)
-	{
-		try
-		{
-			JSONObject runtimeConfigurationJSON = new JSONObject();
-			if (Radix.class.getResourceAsStream("/runtime_options.json") != null) {
-				runtimeConfigurationJSON = new JSONObject(IOUtils.toString(Radix.class.getResourceAsStream("/runtime_options.json")));
-			}
+	public static void main(String[] args) {
+		try {
+			dumpExecutionLocation();
+			// Bouncy Castle is required for loading the node key, so set it up now.
+			setupBouncyCastle();
 
-			RuntimeProperties runtimeProperties = new RuntimeProperties(runtimeConfigurationJSON, args);
-			Modules.put(RuntimeProperties.class, runtimeProperties);
-
-			// Setup bouncy castle
-			// This is used when loading the node key below, so set it up now.
-			Security.insertProviderAt(new BouncyCastleProvider(), 1);
-			try {
-				Field isRestricted = Class.forName("javax.crypto.JceSecurity").getDeclaredField("isRestricted");
-
-				log.info("Encryption restrictions are set, need to override...");
-
-				if (Modifier.isFinal(isRestricted.getModifiers())) {
-					Field modifiers = Field.class.getDeclaredField("modifiers");
-					modifiers.setAccessible(true);
-					modifiers.setInt(isRestricted, isRestricted.getModifiers() & ~Modifier.FINAL);
-				}
-				isRestricted.setAccessible(true);
-				isRestricted.setBoolean(null, false);
-				isRestricted.setAccessible(false);
-				log.info("...override success!");
-			} catch (NoSuchFieldException nsfex) {
-				log.error("No such field - isRestricted");
-			}
-
-			// Used everywhere, so put it in early.
-			Modules.put(SecureRandom.class, new SecureRandom());
-
-			new Radix();
-		}
-		catch (Exception ex)
-		{
-			log.fatal("Unable to continue", ex);
+			RuntimeProperties properties = loadProperties(args);
+			new Radix(properties);
+		} catch (Exception ex) {
+			log.fatal("Unable to start", ex);
 			java.lang.System.exit(-1);
 		}
 	}
 
-	public Radix() {
-		RuntimeProperties properties = Modules.get(RuntimeProperties.class);
-		dumpExecutionLocation();
-
+	public Radix(RuntimeProperties properties) {
 		// set up serialisation
 		Serialization serialization = Serialization.getDefault();
 
@@ -118,7 +85,7 @@ public final class Radix
 		Events.getInstance();
 
 		// start database environment
-		DatabaseEnvironment dbEnv = new DatabaseEnvironment();
+		DatabaseEnvironment dbEnv = new DatabaseEnvironment(properties);
 
 		// start profiling
 		SystemMetaData.init(dbEnv);
@@ -128,7 +95,7 @@ public final class Radix
 		Interfaces interfaces = new Interfaces();
 		AddressBook addressBook = createAddressBook(dbEnv);
 		Modules.put(AddressBook.class, addressBook);
-		BootstrapDiscovery bootstrapDiscovery = BootstrapDiscovery.getInstance();
+		BootstrapDiscovery bootstrapDiscovery = new BootstrapDiscovery(properties);
 		PeerManager peerManager = createPeerManager(properties, addressBook, messageCentral, Events.getInstance(), bootstrapDiscovery, interfaces);
 		peerManager.start();
 
@@ -150,7 +117,7 @@ public final class Radix
 		log.info("Node '" + LocalSystem.getInstance().getNID() + "' started successfully");
 	}
 
-	private void dumpExecutionLocation() {
+	private static void dumpExecutionLocation() {
 		try {
 			String jarFile = ClassLoader.getSystemClassLoader().loadClass("org.radix.Radix").getProtectionDomain().getCodeSource().getLocation().toURI().getPath();
 			System.setProperty("radix.jar", jarFile);
@@ -186,6 +153,38 @@ public final class Radix
 		} catch (Exception e) {
 			throw new RuntimeException("Failure turning off AtomProcessor", e);
 		}
+	}
+
+	private static void setupBouncyCastle() throws ClassNotFoundException, IllegalAccessException {
+		Security.insertProviderAt(new BouncyCastleProvider(), 1);
+		try {
+			Field isRestricted = Class.forName("javax.crypto.JceSecurity").getDeclaredField("isRestricted");
+
+			log.info("Encryption restrictions are set, need to override...");
+
+			if (Modifier.isFinal(isRestricted.getModifiers())) {
+				Field modifiers = Field.class.getDeclaredField("modifiers");
+				modifiers.setAccessible(true);
+				modifiers.setInt(isRestricted, isRestricted.getModifiers() & ~Modifier.FINAL);
+			}
+			isRestricted.setAccessible(true);
+			isRestricted.setBoolean(null, false);
+			isRestricted.setAccessible(false);
+			log.info("...override success!");
+		} catch (NoSuchFieldException nsfex) {
+			log.error("No such field - isRestricted");
+		}
+	}
+
+	private static RuntimeProperties loadProperties(String[] args) throws IOException, ParseException {
+		JSONObject runtimeConfigurationJSON = new JSONObject();
+		if (Radix.class.getResourceAsStream("/runtime_options.json") != null) {
+			runtimeConfigurationJSON = new JSONObject(IOUtils.toString(Radix.class.getResourceAsStream("/runtime_options.json")));
+		}
+
+		RuntimeProperties properties = new RuntimeProperties(runtimeConfigurationJSON, args);
+		Modules.put(RuntimeProperties.class, properties);
+		return properties;
 	}
 
 	private MessageCentral createMessageCentral(RuntimeProperties properties) {

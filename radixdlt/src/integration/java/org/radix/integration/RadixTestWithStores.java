@@ -34,10 +34,9 @@ public class RadixTestWithStores extends RadixTest
 
 	@Before
 	public void beforeEachRadixTest() {
-		this.dbEnv = new DatabaseEnvironment();
+		this.dbEnv = new DatabaseEnvironment(getProperties());
 
-		RuntimeProperties properties = Modules.get(RuntimeProperties.class);
-		messageCentral = new MessageCentralFactory().createDefault(properties);
+		messageCentral = new MessageCentralFactory().createDefault(getProperties());
 
 		EUID self = LocalSystem.getInstance().getNID();
 		injector = Guice.createInjector(

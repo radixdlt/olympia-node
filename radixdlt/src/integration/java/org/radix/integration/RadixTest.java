@@ -21,6 +21,7 @@ public class RadixTest
 {
 	private static Serialization serialization;
 	private static String dbLocation = null;
+	private static RuntimeProperties properties;
 
 	private long clock = 100L; // Arbitrary starting point. Must be larger than number of atoms in genesis.
 
@@ -34,17 +35,17 @@ public class RadixTest
 		if (Radix.class.getResourceAsStream("/runtime_options.json") != null)
 			runtimeConfigurationJSON = new JSONObject(IOUtils.toString(Radix.class.getResourceAsStream("/runtime_options.json")));
 
-		RuntimeProperties	runtimeProperties = new RuntimeProperties(runtimeConfigurationJSON, null);
-		Modules.put(RuntimeProperties.class, runtimeProperties);
+		properties = new RuntimeProperties(runtimeConfigurationJSON, null);
+		Modules.put(RuntimeProperties.class, properties);
 
-		Modules.get(RuntimeProperties.class).set("debug.nopow", true);
+		properties.set("debug.nopow", true);
 		if (dbLocation == null) {
 			// Avoid RADIXDB_TEST_TEST_TEST_TEST_TEST situation
-			dbLocation = Modules.get(RuntimeProperties.class).get("db.location", ".//RADIXDB") + "_TEST";
+			dbLocation = properties.get("db.location", ".//RADIXDB") + "_TEST";
 		}
-		Modules.get(RuntimeProperties.class).set("db.location", dbLocation);
+		properties.set("db.location", dbLocation);
 
-		Universe universe = new GenerateUniverses().generateUniverses().stream().filter(Universe::isTest).findAny().get();
+		Universe universe = new GenerateUniverses(properties).generateUniverses().stream().filter(Universe::isTest).findAny().get();
 		Modules.remove(Universe.class); // GenerateUniverses adds this
 		Modules.put(Universe.class, universe);
 
@@ -63,5 +64,9 @@ public class RadixTest
 
 	protected static Serialization getSerialization() {
 		return serialization;
+	}
+
+	public static RuntimeProperties getProperties() {
+		return properties;
 	}
 }

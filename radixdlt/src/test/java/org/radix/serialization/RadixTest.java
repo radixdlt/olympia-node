@@ -23,6 +23,7 @@ public abstract class RadixTest
 {
 	private static Serialization serialization;
 	private static NtpService ntpService;
+	private static RuntimeProperties runtimeProperties;
 
 	@BeforeClass
 	public static void startRadixTest() {
@@ -30,7 +31,7 @@ public abstract class RadixTest
 
 		final SecureRandom secureRandom = new SecureRandom();
 
-		final RuntimeProperties runtimeProperties = mock(RuntimeProperties.class);
+		runtimeProperties = mock(RuntimeProperties.class);
 		doAnswer(invocation -> invocation.getArgument(1)).when(runtimeProperties).get(any(), any());
 
 		final Universe universe = mock(Universe.class);
@@ -48,7 +49,6 @@ public abstract class RadixTest
 		when(localSystem.getShards()).thenReturn(new ShardSpace(10000, 20000));
 
 		Modules.put(RuntimeProperties.class, runtimeProperties);
-		Modules.put(SecureRandom.class, secureRandom);
 		Modules.put(Universe.class, universe);
 		Modules.put(LocalSystem.class, localSystem);
 	}
@@ -69,5 +69,9 @@ public abstract class RadixTest
 
 	public static NtpService getNtpService() {
 		return ntpService;
+	}
+
+	public static RuntimeProperties getProperties() {
+		return runtimeProperties;
 	}
 }

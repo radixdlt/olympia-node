@@ -10,6 +10,8 @@ import com.google.inject.Injector;
 import com.google.inject.grapher.graphviz.GraphvizGrapher;
 import com.google.inject.grapher.graphviz.GraphvizModule;
 import org.radix.database.DatabaseEnvironment;
+import org.radix.modules.Modules;
+import org.radix.properties.RuntimeProperties;
 
 /**
  * Factory for creating an {@link AddressBook}.
@@ -41,10 +43,5 @@ public class AddressBookFactory {
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
 		}
-	}
-
-	public static void main(String[] args) {
-		Injector injector = new AddressBookFactory().createInjector(new DatabaseEnvironment());
-		outputGraph(injector, "AddressBook.dot");
 	}
 }
