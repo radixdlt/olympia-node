@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
+import com.google.inject.Inject;
 import org.bouncycastle.util.Arrays;
 import org.radix.database.exceptions.DatabaseException;
 import org.radix.logging.Logger;
@@ -82,61 +83,56 @@ public final class DatabaseEnvironment
 	private CheckpointerTask checkpointTask;
 	private Thread 							checkpointThread = null;
 
+	@Inject
+    public DatabaseEnvironment() {
+	    File dbhome = new File(Modules.get(RuntimeProperties.class).get("db.location", ".//RADIXDB"));
+	    dbhome.mkdir();
 
-    public DatabaseEnvironment() { super(); }
+	    System.setProperty("je.disable.java.adler32", "true");
 
-	public void start()
-	{
-		File dbhome = new File(Modules.get(RuntimeProperties.class).get("db.location", ".//RADIXDB"));
-		dbhome.mkdir();
+	    EnvironmentConfig environmentConfig = new EnvironmentConfig();
+	    environmentConfig.setTransactional(true);
+	    environmentConfig.setAllowCreate(true);
+	    environmentConfig.setLockTimeout(30, TimeUnit.SECONDS);
+	    environmentConfig.setDurability(Durability.COMMIT_NO_SYNC);
+	    environmentConfig.setConfigParam(EnvironmentConfig.LOG_FILE_MAX, "100000000");
+	    environmentConfig.setConfigParam(EnvironmentConfig.LOG_FILE_CACHE_SIZE, "256");
+	    environmentConfig.setConfigParam(EnvironmentConfig.ENV_RUN_CHECKPOINTER, "false");
+	    environmentConfig.setConfigParam(EnvironmentConfig.ENV_RUN_CLEANER, "false");
+	    environmentConfig.setConfigParam(EnvironmentConfig.ENV_RUN_EVICTOR, "false");
+	    environmentConfig.setConfigParam(EnvironmentConfig.ENV_RUN_VERIFIER, "false");
+	    environmentConfig.setConfigParam(EnvironmentConfig.TREE_MAX_EMBEDDED_LN, "0");
 
-		System.setProperty("je.disable.java.adler32", "true");
+	    long minCacheSize = Modules.get(RuntimeProperties.class).get("db.cache_size.min", Math.max(50000000, (long)(Runtime.getRuntime().maxMemory()*0.1)));
+	    long maxCacheSize = Modules.get(RuntimeProperties.class).get("db.cache_size.max", (long)(Runtime.getRuntime().maxMemory()*0.25));
+	    long cacheSize = Modules.get(RuntimeProperties.class).get("db.cache_size", (long)(Runtime.getRuntime().maxMemory()*0.125));
+	    cacheSize = Math.max(cacheSize, minCacheSize);
+	    cacheSize = Math.min(cacheSize, maxCacheSize);
 
-		EnvironmentConfig environmentConfig = new EnvironmentConfig();
-		environmentConfig.setTransactional(true);
-		environmentConfig.setAllowCreate(true);
-		environmentConfig.setLockTimeout(30, TimeUnit.SECONDS);
-		environmentConfig.setDurability(Durability.COMMIT_NO_SYNC);
-//		environmentConfig.setConfigParam(EnvironmentConfig.ENV_DUP_CONVERT_PRELOAD_ALL, "false");
-		environmentConfig.setConfigParam(EnvironmentConfig.LOG_FILE_MAX, "100000000");
-		environmentConfig.setConfigParam(EnvironmentConfig.LOG_FILE_CACHE_SIZE, "256");
-		environmentConfig.setConfigParam(EnvironmentConfig.ENV_RUN_CHECKPOINTER, "false");
-		environmentConfig.setConfigParam(EnvironmentConfig.ENV_RUN_CLEANER, "false");
-		environmentConfig.setConfigParam(EnvironmentConfig.ENV_RUN_EVICTOR, "false");
-		environmentConfig.setConfigParam(EnvironmentConfig.ENV_RUN_VERIFIER, "false");
-//		environmentConfig.setConfigParam(EnvironmentConfig.NODE_MAX_ENTRIES, "256");
-		environmentConfig.setConfigParam(EnvironmentConfig.TREE_MAX_EMBEDDED_LN, "0");
+	    environmentConfig.setCacheSize(cacheSize);
+	    environmentConfig.setCacheMode(CacheMode.EVICT_LN);
 
-		long minCacheSize = Modules.get(RuntimeProperties.class).get("db.cache_size.min", Math.max(50000000, (long)(Runtime.getRuntime().maxMemory()*0.1)));
-		long maxCacheSize = Modules.get(RuntimeProperties.class).get("db.cache_size.max", (long)(Runtime.getRuntime().maxMemory()*0.25));
-		long cacheSize = Modules.get(RuntimeProperties.class).get("db.cache_size", (long)(Runtime.getRuntime().maxMemory()*0.125));
-		cacheSize = Math.max(cacheSize, minCacheSize);
-		cacheSize = Math.min(cacheSize, maxCacheSize);
+	    this.environment = new Environment(dbhome, environmentConfig);
 
-		environmentConfig.setCacheSize(cacheSize);
-		environmentConfig.setCacheMode(CacheMode.EVICT_LN);
+	    DatabaseConfig primaryConfig = new DatabaseConfig();
+	    primaryConfig.setAllowCreate(true);
+	    primaryConfig.setTransactional(true);
 
-		this.environment = new Environment(dbhome, environmentConfig);
+	    try
+	    {
+		    this.metaDatabase = this.environment.openDatabase(null, "environment.meta_data", primaryConfig);
+	    }
+	    catch (Exception ex)
+	    {
+		    throw new RuntimeException("while opening database", ex);
+	    }
 
-		DatabaseConfig primaryConfig = new DatabaseConfig();
-		primaryConfig.setAllowCreate(true);
-		primaryConfig.setTransactional(true);
-
-		try
-		{
-			this.metaDatabase = getEnvironment().openDatabase(null, "environment.meta_data", primaryConfig);
-		}
-        catch (Exception ex)
-        {
-        	throw new RuntimeException("while opening database", ex);
-		}
-
-		this.checkpointTask = new CheckpointerTask();
-		this.checkpointThread = new Thread(this.checkpointTask);
-		this.checkpointThread.setDaemon(true);
-		this.checkpointThread.setName("Checkpointer");
-		this.checkpointThread.start();
-	}
+	    this.checkpointTask = new CheckpointerTask();
+	    this.checkpointThread = new Thread(this.checkpointTask);
+	    this.checkpointThread.setDaemon(true);
+	    this.checkpointThread.setName("Checkpointer");
+	    this.checkpointThread.start();
+    }
 
 	public void stop()
 	{
@@ -166,6 +162,10 @@ public final class DatabaseEnvironment
 
 	public Environment getEnvironment()
 	{
+		if (this.environment == null) {
+			throw new IllegalStateException("environment is not started");
+		}
+
 		return this.environment;
 	}
 

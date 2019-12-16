@@ -8,13 +8,18 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.serialization.Serialization;
 
+import java.util.Objects;
+
 /**
  * Guice configuration for {@link AddressBook}.
  */
 final class AddressBookModule extends AbstractModule {
 
-	AddressBookModule() {
+	private final DatabaseEnvironment dbEnv;
+
+	AddressBookModule(DatabaseEnvironment dbEnv) {
 		// Nothing
+		this.dbEnv = Objects.requireNonNull(dbEnv);
 	}
 
 	@Override
@@ -28,6 +33,10 @@ final class AddressBookModule extends AbstractModule {
 
 		// AddressBookPersistence dependencies
 		bind(Serialization.class).toProvider(Serialization::getDefault);
+
+		// Bind DatabaseEnvironment to global instance
+		// This is temporary as we're in the progress of untangling the dependency and DI mess
+		bind(DatabaseEnvironment.class).toInstance(dbEnv);
 	}
 
 	@Provides

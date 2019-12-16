@@ -28,7 +28,6 @@ public class AddressBookPersistenceTest extends RadixTest {
 	@Before
 	public void setUp() {
 		this.dbEnv = new DatabaseEnvironment();
-		this.dbEnv.start();
 		this.abp = new AddressBookPersistence(Serialization.getDefault(), dbEnv);
 		this.abp.reset();
 	}

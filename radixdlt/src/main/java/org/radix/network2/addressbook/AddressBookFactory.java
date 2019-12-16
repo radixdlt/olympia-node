@@ -9,6 +9,7 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.grapher.graphviz.GraphvizGrapher;
 import com.google.inject.grapher.graphviz.GraphvizModule;
+import org.radix.database.DatabaseEnvironment;
 
 /**
  * Factory for creating an {@link AddressBook}.
@@ -19,13 +20,14 @@ public class AddressBookFactory {
 	 * Create a {@link AddressBook} based on a default configuration.
 	 *
 	 * @return The newly constructed {@link AddressBook}
+	 * @param dbEnv
 	 */
-	public AddressBook createDefault() {
-		return createInjector().getInstance(AddressBook.class);
+	public AddressBook createDefault(DatabaseEnvironment dbEnv) {
+		return createInjector(dbEnv).getInstance(AddressBook.class);
 	}
 
-	private Injector createInjector() {
-		Injector injector = Guice.createInjector(new AddressBookModule());
+	private Injector createInjector(DatabaseEnvironment dbEnv) {
+		Injector injector = Guice.createInjector(new AddressBookModule(dbEnv));
 		return injector;
 	}
 
@@ -42,7 +44,7 @@ public class AddressBookFactory {
 	}
 
 	public static void main(String[] args) {
-		Injector injector = new AddressBookFactory().createInjector();
+		Injector injector = new AddressBookFactory().createInjector(new DatabaseEnvironment());
 		outputGraph(injector, "AddressBook.dot");
 	}
 }

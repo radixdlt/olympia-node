@@ -119,7 +119,6 @@ public final class Radix
 
 		// start database environment
 		DatabaseEnvironment dbEnv = new DatabaseEnvironment();
-		dbEnv.start();
 
 		// start profiling
 		SystemMetaData.init(dbEnv);
@@ -127,14 +126,14 @@ public final class Radix
 		// set up networking
 		MessageCentral messageCentral = createMessageCentral(properties);
 		Interfaces interfaces = new Interfaces();
-		AddressBook addressBook = createAddressBook();
+		AddressBook addressBook = createAddressBook(dbEnv);
 		Modules.put(AddressBook.class, addressBook);
 		BootstrapDiscovery bootstrapDiscovery = BootstrapDiscovery.getInstance();
 		PeerManager peerManager = createPeerManager(properties, addressBook, messageCentral, Events.getInstance(), bootstrapDiscovery, interfaces);
 		peerManager.start();
 
 		// TODO Eventually modules should be created using Google Guice injector
-		GlobalInjector globalInjector = new GlobalInjector(properties, dbEnv);
+		GlobalInjector globalInjector = new GlobalInjector(properties, dbEnv, messageCentral);
 		Consensus consensus = globalInjector.getInjector().getInstance(Consensus.class);
 		// TODO use consensus for application construction (in our case, the engine middleware)
 
@@ -193,8 +192,8 @@ public final class Radix
 		return new MessageCentralFactory().createDefault(properties);
 	}
 
-	private AddressBook createAddressBook() {
-		return new AddressBookFactory().createDefault();
+	private AddressBook createAddressBook(DatabaseEnvironment dbEnv) {
+		return new AddressBookFactory().createDefault(dbEnv);
 	}
 
 	private PeerManager createPeerManager(RuntimeProperties properties, AddressBook addressBook, MessageCentral messageCentral, Events events, BootstrapDiscovery bootstrapDiscovery, Interfaces interfaces) {

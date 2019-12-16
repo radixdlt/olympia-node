@@ -35,7 +35,6 @@ public class RadixTestWithStores extends RadixTest
 	@Before
 	public void beforeEachRadixTest() {
 		this.dbEnv = new DatabaseEnvironment();
-		this.dbEnv.start();
 
 		RuntimeProperties properties = Modules.get(RuntimeProperties.class);
 		messageCentral = new MessageCentralFactory().createDefault(properties);
@@ -48,7 +47,7 @@ public class RadixTestWithStores extends RadixTest
 						bind(EUID.class).annotatedWith(Names.named("self")).toInstance(self);
 					}
 				},
-				new BerkeleyStoreModule(dbEnv)
+				new BerkeleyStoreModule()
 		);
 
 		store = injector.getInstance(LedgerEntryStore.class);

@@ -30,7 +30,6 @@ public class TempoModule extends AbstractModule {
 		bind(EUID.class).annotatedWith(Names.named("self")).toInstance(localSystem.getNID());
 
 		// dependencies
-		bind(MessageCentral.class).toInstance(Modules.get(MessageCentral.class));
 		bind(Scheduler.class).toProvider(SingleThreadedScheduler::new);
 		bind(WallclockTimeSupplier.class).toInstance(Time::currentTimestamp);
 		bind(Consensus.class).to(Tempo.class).in(Scopes.SINGLETON);

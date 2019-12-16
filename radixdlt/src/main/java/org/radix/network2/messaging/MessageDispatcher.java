@@ -39,7 +39,6 @@ import org.xerial.snappy.Snappy;
  * required, and remove the stuff we don't want to keep.
  */
 //FIXME: Optional dependency on Modules.get(SystemMetaData.class) for system metadata
-//FIXME: Optional dependency on Modules.get(MessageProfiler.class) for profiling
 //FIXME: Optional dependency on Modules.get(AddressBook.class) for profiling
 // FIXME: Dependency on LocalSystem.getInstance() for signing key
 class MessageDispatcher {
