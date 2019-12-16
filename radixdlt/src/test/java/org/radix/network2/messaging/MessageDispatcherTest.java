@@ -66,6 +66,9 @@ public class MessageDispatcherTest extends RadixTest {
         when(getNtpService().getUTCTimeMS()).thenAnswer((Answer<Long>) invocation -> System.currentTimeMillis());
         Serialization serialization = Serialization.getDefault();
         MessageCentralConfiguration conf = new MessagingDummyConfigurations.DummyMessageCentralConfiguration();
+        interfaces = mock(Interfaces.class);
+        PowerMockito.when(interfaces.isSelf(any())).thenReturn(false);
+
         messageDispatcher = new MessageDispatcher(conf, serialization, () -> 30_000, interfaces);
         transportOutboundConnection = new MessagingDummyConfigurations.DummyTransportOutboundConnection();
         transport = new MessagingDummyConfigurations.DummyTransport(transportOutboundConnection);
@@ -86,9 +89,6 @@ public class MessageDispatcherTest extends RadixTest {
         when(addressBook.updatePeerSystem(peer1, peer1.getSystem())).thenReturn(peer1);
         when(addressBook.updatePeerSystem(peer2, peer2.getSystem())).thenReturn(peer2);
         Modules.put(AddressBook.class, addressBook);
-
-        interfaces = mock(Interfaces.class);
-        PowerMockito.when(interfaces.isSelf(any())).thenReturn(false);
     }
 
     @After
