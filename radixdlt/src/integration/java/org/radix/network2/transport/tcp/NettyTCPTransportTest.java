@@ -1,4 +1,4 @@
-package org.radix.network2.transport.udp;
+package org.radix.network2.transport.tcp;
 
 import java.io.IOException;
 import java.util.LinkedList;
@@ -21,10 +21,10 @@ import com.radixdlt.universe.Universe;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
-public class NettyUDPTransportImplTest {
+public class NettyTCPTransportTest {
 
-	private NettyUDPTransportImpl transport1;
-	private NettyUDPTransportImpl transport2;
+	private NettyTCPTransport transport1;
+	private NettyTCPTransport transport2;
 
 	private AtomicLong packetCounter;
 	private AtomicLong byteCounter;
@@ -53,7 +53,7 @@ public class NettyUDPTransportImplTest {
 	@Test
 	public void testThroughputSmallPacket() throws InterruptedException, ExecutionException, IOException {
 		// Approximate size of AtomBroadcastMessage
-		testThroughput("Small", 112, 200, 30);
+		testThroughput("Small", 112, 1000, 30);
 	}
 
 	@Test
@@ -65,7 +65,7 @@ public class NettyUDPTransportImplTest {
 	@Test
 	public void testThroughputLargePacket() throws InterruptedException, ExecutionException, IOException {
 		// Largest packet supported
-		testThroughput("Large", UDPConstants.MAX_PACKET_LENGTH - 9, 4, 30);
+		testThroughput("Large", TCPConstants.MAX_PACKET_LENGTH, 4, 30);
 	}
 
 	// Note that windowSize is to help us not wharrgarbl the O/S too much, as this just results in packets being dropped
@@ -125,8 +125,8 @@ public class NettyUDPTransportImplTest {
 		throw new IllegalStateException("Unexpected message");
 	}
 
-	private NettyUDPTransportImpl createTransport(String host, int port) {
-		UDPConfiguration config = new UDPConfiguration() {
+	private NettyTCPTransport createTransport(String host, int port) {
+		TCPConfiguration config = new TCPConfiguration() {
 			@Override
 			public int networkPort(int defaultValue) {
 				return port;
@@ -147,7 +147,7 @@ public class NettyUDPTransportImplTest {
 				return 0;
 			}
 		};
-		Injector injector = Guice.createInjector(new UDPTransportModule(config));
-		return injector.getInstance(NettyUDPTransportImpl.class);
+		Injector injector = Guice.createInjector(new TCPTransportModule(config));
+		return injector.getInstance(NettyTCPTransport.class);
 	}
 }

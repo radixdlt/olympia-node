@@ -31,11 +31,18 @@ public class FirstMatchTransportManagerTest {
 		// Mocked class doesn't need closing
 		@SuppressWarnings("resource")
 		Transport t1 = mock(Transport.class);
-		doAnswer(invocation -> UDPConstants.UDP_NAME).when(t1).name();
+		when(t1.name()).thenReturn(UDPConstants.UDP_NAME);
 		doAnswer(invocation -> closed.incrementAndGet()).when(t1).close();
+		when(t1.priority()).thenReturn(0);
+		when(t1.canHandle(any())).thenReturn(true);
+
 		@SuppressWarnings("resource")
 		Transport t2 = mock(Transport.class);
 		doAnswer(invocation -> "DUMMY").when(t2).name();
+		when(t2.name()).thenReturn("DUMMY");
+		when(t2.priority()).thenReturn(100);
+		when(t2.canHandle(any())).thenReturn(true);
+
 		this.transportManager = new FirstMatchTransportManager(ImmutableSet.of(t1, t2));
 		this.closed = new AtomicInteger(0);
 	}
@@ -47,11 +54,11 @@ public class FirstMatchTransportManagerTest {
 		TransportMetadata tm1 = mock(TransportMetadata.class);
 		Peer peer1 = mock(Peer.class);
 		when(peer1.connectionData(any())).thenReturn(tm1);
-		assertNotNull(transportManager.findTransport(peer1.supportedTransports(), dummyMessage));
+		assertNotNull(transportManager.findTransport(peer1, dummyMessage));
 	}
 
 	@Test
-	public void testFindTransportWithSelection() {
+	public void testFindTransportWithSelectionHiPriority() {
 		byte[] dummyMessage = new byte[0];
 
 		TransportInfo dummyTransport = TransportInfo.of("DUMMY", StaticTransportMetadata.empty());
@@ -61,10 +68,31 @@ public class FirstMatchTransportManagerTest {
 
 		Peer peer1 = mock(Peer.class);
 		doAnswer(invocation -> transports.stream()).when(peer1).supportedTransports();
+		doAnswer(invocation -> {
+			return "DUMMY".equals(invocation.getArgument(0))
+				|| UDPConstants.UDP_NAME.equals(invocation.getArgument(0));
+		}).when(peer1).supportsTransport(any());
 		@SuppressWarnings("resource")
-		Transport found = transportManager.findTransport(peer1.supportedTransports(), dummyMessage);
+		Transport found = transportManager.findTransport(peer1, dummyMessage);
 		assertNotNull(found);
-		assertEquals(found.name(), "DUMMY");
+		assertEquals("DUMMY", found.name());
+	}
+
+	@Test
+	public void testFindTransportWithSelectionLowPriority() {
+		byte[] dummyMessage = new byte[0];
+
+		TransportInfo udpTransport = TransportInfo.of(UDPConstants.UDP_NAME, StaticTransportMetadata.empty());
+
+		List<TransportInfo> transports = ImmutableList.of(udpTransport);
+
+		Peer peer1 = mock(Peer.class);
+		doAnswer(invocation -> transports.stream()).when(peer1).supportedTransports();
+		doAnswer(invocation -> UDPConstants.UDP_NAME.equals(invocation.getArgument(0))).when(peer1).supportsTransport(any());
+		@SuppressWarnings("resource")
+		Transport found = transportManager.findTransport(peer1, dummyMessage);
+		assertNotNull(found);
+		assertEquals("UDP", found.name());
 	}
 
 	@Test

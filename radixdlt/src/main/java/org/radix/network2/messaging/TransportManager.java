@@ -2,10 +2,8 @@ package org.radix.network2.messaging;
 
 import java.io.Closeable;
 import java.util.Collection;
-import java.util.stream.Stream;
-
+import org.radix.network2.addressbook.Peer;
 import org.radix.network2.transport.Transport;
-import org.radix.network2.transport.TransportInfo;
 
 /**
  * Interface for management of transports.
@@ -33,11 +31,11 @@ public interface TransportManager extends Closeable {
 	 * will need to call methods on the returned transport to make that
 	 * happen, even for connectionless protocols.
 	 *
-	 * @param peerTransports The transports available to the peer we wish to connect to.
+	 * @param peer The peer we wish to connect to.
 	 * @param bytes The message to be sent, or {@code null}.
 	 * @return A found transport, or {@code null} if no suitable transport
 	 *    can be found.
 	 */
-	Transport findTransport(Stream<TransportInfo> peerTransports, byte[] bytes);
+	Transport findTransport(Peer peer, byte[] bytes);
 
 }

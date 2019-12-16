@@ -14,6 +14,8 @@ import org.radix.network2.transport.Transport;
 import org.radix.network2.transport.TransportControl;
 import org.radix.network2.transport.TransportMetadata;
 import org.radix.network2.transport.TransportOutboundConnection;
+import org.radix.network2.transport.netty.LogSink;
+import org.radix.network2.transport.netty.LoggingHandler;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
@@ -29,6 +31,9 @@ import io.netty.channel.socket.nio.NioDatagramChannel;
 final class NettyUDPTransportImpl implements Transport {
 	private static final Logger log = Logging.getLogger("transport.udp");
 
+	// Set this to true to see a dump of packet data
+	protected static final boolean DEBUG_DATA = false;
+
 	// Default values if none specified in either localMetadata or config
 	private static final String DEFAULT_HOST = "0.0.0.0";
 	private static final int    DEFAULT_PORT = 30000;
@@ -41,6 +46,7 @@ final class NettyUDPTransportImpl implements Transport {
 	private final UDPTransportControlFactory controlFactory;
 	private final UDPTransportOutboundConnectionFactory connectionFactory;
 
+	private final int priority;
 	private final int inboundProcessingThreads;
 	private final AtomicInteger threadCounter = new AtomicInteger(0);
 	private final InetSocketAddress bindAddress;
@@ -71,7 +77,6 @@ final class NettyUDPTransportImpl implements Transport {
 		} else {
 			port = Integer.parseInt(portString);
 		}
-
 		this.localMetadata = StaticTransportMetadata.of(
 			UDPConstants.METADATA_UDP_HOST, providedHost,
 			UDPConstants.METADATA_UDP_PORT, String.valueOf(port)
@@ -79,6 +84,10 @@ final class NettyUDPTransportImpl implements Transport {
 		this.controlFactory = controlFactory;
 		this.connectionFactory = connectionFactory;
 		this.inboundProcessingThreads = config.processingThreads(1);
+		if (this.inboundProcessingThreads < 0) {
+			throw new IllegalStateException("Illegal number of UDP inbound threads: " + this.inboundProcessingThreads);
+		}
+		this.priority = config.priority(1000);
 		this.bindAddress = new InetSocketAddress(providedHost, port);
 		this.natHandler = natHandler;
 	}
@@ -99,6 +108,16 @@ final class NettyUDPTransportImpl implements Transport {
 	}
 
 	@Override
+	public boolean canHandle(byte[] message) {
+		return (message == null) || (message.length <= UDPConstants.MAX_PACKET_LENGTH);
+	}
+
+	@Override
+	public int priority() {
+		return this.priority;
+	}
+
+	@Override
 	public void start(InboundMessageConsumer messageSink) {
 		log.info(String.format("UDP transport %s, threads: %s", localAddress(), inboundProcessingThreads));
 		MultithreadEventLoopGroup group = new NioEventLoopGroup(inboundProcessingThreads, this::createThread);
@@ -113,8 +132,13 @@ final class NettyUDPTransportImpl implements Transport {
 	            		.setReceiveBufferSize(RCV_BUF_SIZE)
 	            		.setSendBufferSize(SND_BUF_SIZE)
 	            		.setOption(ChannelOption.RCVBUF_ALLOCATOR, new FixedRecvByteBufAllocator(MAX_DATAGRAM_SIZE));
+	        		if (log.hasLevel(Logging.DEBUG)) {
+	        			LogSink ls = LogSink.forDebug(log);
+	        			ch.pipeline()
+	        				.addLast(new LoggingHandler(ls, DEBUG_DATA));
+	        		}
 	                ch.pipeline()
-	                	.addLast("onboard", new NettyMessageHandler(natHandler, messageSink));
+	                	.addLast("onboard", new UDPNettyMessageHandler(natHandler, messageSink));
 	            }
 	        });
 	    try {

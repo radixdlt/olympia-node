@@ -4,67 +4,95 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Collection;
-import java.util.Objects;
+import java.util.Comparator;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
+import org.radix.network2.addressbook.Peer;
 import org.radix.network2.messaging.TransportManager;
+import org.radix.network2.transport.tcp.TCPConstants;
 import org.radix.network2.transport.udp.UDPConstants;
 
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 
-// Needs replacing with a transport manager that does a better job of
-// selecting a match.
-public class FirstMatchTransportManager implements TransportManager {
+/**
+ * Returns the highest priority transport that we have in common
+ * with the specified peer, and that can handle the specified message.
+ */
+public final class FirstMatchTransportManager implements TransportManager {
 	private static final Logger log = Logging.getLogger("transport");
 
-	private ImmutableMap<String, Transport> transports;
+	private final ImmutableList<Transport> transports;
+	private final Transport defaultTransport;
 
 	@Inject
 	public FirstMatchTransportManager(Set<Transport> transports) {
-		this.transports = transports.stream().collect(ImmutableMap.toImmutableMap(Transport::name, Function.identity()));
-		if (defaultTransport() == null) {
+		this.transports = transports.stream()
+			.sorted(Comparator.comparingInt(Transport::priority).reversed())
+			.distinct()
+			.collect(ImmutableList.toImmutableList());
+		this.defaultTransport = findDefaultTransport();
+
+		if (this.defaultTransport == null) {
 			log.warn("No default transport!  Things will be quiet.");
 		}
 	}
 
 	@Override
 	public Collection<Transport> transports() {
-		return transports.values();
+		return this.transports;
 	}
 
 	@Override
-	public Transport findTransport(Stream<TransportInfo> peerTransports, byte[] bytes) {
-		if (peerTransports != null) {
-			// First that matches for now.  Later we can check against message size etc
-			return peerTransports
-				.map(TransportInfo::name)
-				.map(transports::get)
-				.filter(Objects::nonNull)
+	public Transport findTransport(Peer peer, byte[] bytes) {
+		if (peer != null) {
+			// Could probably do something a bit more efficient here with caching and such
+			// once the list of transports supported gets reasonably long.
+
+			// Check in priority order for first capable matching transport
+			return this.transports.stream()
+				.filter(t -> peer.supportsTransport(t.name()))
+				.filter(t -> t.canHandle(bytes))
 				.findFirst()
-				.orElseGet(this::defaultTransport);
+				.orElse(this.defaultTransport);
 		}
-		return defaultTransport();
+		return this.defaultTransport;
 	}
 
 	@Override
 	public void close() throws IOException {
-		transports.values().forEach(this::closeSafely);
+		transports.forEach(this::closeSafely);
 	}
 
 	@Override
 	public String toString() {
-		String transportNames = transports.keySet().stream().collect(Collectors.joining(","));
+		String transportNames = transports.stream().map(Transport::name).collect(Collectors.joining(","));
 		return String.format("%s[%s]", getClass().getSimpleName(), transportNames);
 	}
 
-	private Transport defaultTransport() {
-		return transports.get(UDPConstants.UDP_NAME);
+	private Transport findDefaultTransport() {
+		// Prefer TCP, as that has the widest range of acceptable messages
+		Transport tcp = findTransportByName(TCPConstants.TCP_NAME);
+		if (tcp != null) {
+			return tcp;
+		}
+		// Otherwise, we would like to use UDP
+		Transport udp = findTransportByName(UDPConstants.UDP_NAME);
+		if (udp != null) {
+			return udp;
+		}
+		// If neither is possible, just use whatever we have
+		return this.transports.isEmpty() ? null : this.transports.get(0);
+	}
+
+	private Transport findTransportByName(String name) {
+		return this.transports.stream()
+			.filter(t -> name.equals(t.name()))
+			.findFirst()
+			.orElse(null);
 	}
 
 	private void closeSafely(Closeable c) {
