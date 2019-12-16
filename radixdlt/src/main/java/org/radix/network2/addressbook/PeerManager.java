@@ -10,6 +10,7 @@ import org.radix.logging.Logging;
 import org.radix.modules.Modules;
 import org.radix.network.Interfaces;
 import org.radix.network.discovery.BootstrapDiscovery;
+import org.radix.network.discovery.Whitelist;
 import org.radix.network.messages.GetPeersMessage;
 import org.radix.network.messages.PeerPingMessage;
 import org.radix.network.messages.PeerPongMessage;
@@ -17,6 +18,7 @@ import org.radix.network.messages.PeersMessage;
 import org.radix.network.peers.events.PeerAvailableEvent;
 import org.radix.network2.messaging.MessageCentral;
 import org.radix.network2.transport.TransportException;
+import org.radix.properties.RuntimeProperties;
 import org.radix.time.Time;
 import org.radix.time.Timestamps;
 import org.radix.universe.system.LocalSystem;
@@ -64,6 +66,7 @@ public class PeerManager {
 
 	private final SecureRandom rng;
 	private final Interfaces interfaces;
+	private final Whitelist whitelist;
 
 	private Future<?> heartbeatPeersFuture;
 	private Future<?> peersBroadcastFuture;
@@ -85,7 +88,7 @@ public class PeerManager {
 
 				if (peersToProbe.isEmpty()) {
 					addressbook.peers()
-						.filter(StandardFilters.standardFilter(interfaces))
+						.filter(StandardFilters.standardFilter(interfaces, whitelist))
 						.forEachOrdered(peersToProbe::add);
 					this.numPeers = peersToProbe.size();
 				}
@@ -102,7 +105,7 @@ public class PeerManager {
 		}
 	}
 
-	PeerManager(PeerManagerConfiguration config, AddressBook addressbook, MessageCentral messageCentral, Events events, BootstrapDiscovery bootstrapDiscovery, Interfaces interfaces) {
+	PeerManager(PeerManagerConfiguration config, AddressBook addressbook, MessageCentral messageCentral, Events events, BootstrapDiscovery bootstrapDiscovery, Interfaces interfaces, RuntimeProperties properties) {
 		super();
 
 		this.addressbook = Objects.requireNonNull(addressbook);
@@ -110,6 +113,7 @@ public class PeerManager {
 		this.events = Objects.requireNonNull(events);
 		this.bootstrapDiscovery = Objects.requireNonNull(bootstrapDiscovery);
 		this.interfaces = Objects.requireNonNull(interfaces);
+		this.whitelist = Whitelist.from(properties);
 
 		this.peersBroadcastIntervalMs = config.networkPeersBroadcastInterval(30000);
 		this.peersBroadcastDelayMs = config.networkPeersBroadcastDelay(60000);
@@ -235,7 +239,7 @@ public class PeerManager {
 			PeersMessage peersMessage = new PeersMessage();
 			List<Peer> peers = addressbook.peers()
 				.filter(Peer::hasNID)
-				.filter(StandardFilters.standardFilter(interfaces))
+				.filter(StandardFilters.standardFilter(interfaces, whitelist))
 				.filter(StandardFilters.recentlyActive())
 				.collect(Collectors.toList());
 
@@ -350,7 +354,7 @@ public class PeerManager {
 	private void discoverPeers() {
 		// Probe all the bootstrap hosts so that they know about us
 		GetPeersMessage msg = new GetPeersMessage();
-		bootstrapDiscovery.discover(StandardFilters.standardFilter(interfaces)).stream()
+		bootstrapDiscovery.discover(StandardFilters.standardFilter(interfaces, whitelist)).stream()
 			.map(addressbook::peer)
 			.forEachOrdered(peer -> {
 				probe(peer);

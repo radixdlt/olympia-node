@@ -7,7 +7,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.radix.Radix;
 import org.radix.modules.Modules;
-import org.radix.network.Network;
+import org.radix.network.discovery.Whitelist;
 import org.radix.network2.transport.StaticTransportMetadata;
 import org.radix.network2.transport.TransportInfo;
 import org.radix.network2.transport.udp.UDPConstants;
@@ -76,21 +76,18 @@ public class StandardFilters2Test {
 		try {
 			RuntimeProperties properties1 = mock(RuntimeProperties.class);
 			when(properties1.get(eq("network.whitelist"), any())).thenReturn("");
-			Modules.put(RuntimeProperties.class, properties1);
-			Network.reset();
-			assertTrue(StandardFilters.isWhitelisted().test(peer1));
-			assertTrue(StandardFilters.isWhitelisted().test(peer2));
-			assertTrue(StandardFilters.isWhitelisted().test(peer3)); // No host, whitelisted
+			Whitelist whitelist = Whitelist.from(properties1);
+			assertTrue(StandardFilters.isWhitelisted(whitelist).test(peer1));
+			assertTrue(StandardFilters.isWhitelisted(whitelist).test(peer2));
+			assertTrue(StandardFilters.isWhitelisted(whitelist).test(peer3)); // No host, whitelisted
 
 			RuntimeProperties properties2 = mock(RuntimeProperties.class);
 			when(properties2.get(eq("network.whitelist"), any())).thenReturn("127.0.0.1");
-			Modules.replace(RuntimeProperties.class, properties2);
-			Network.reset();
-			assertTrue(StandardFilters.isWhitelisted().test(peer1));
-			assertFalse(StandardFilters.isWhitelisted().test(peer2));
-			assertTrue(StandardFilters.isWhitelisted().test(peer3));
+			whitelist = Whitelist.from(properties2);
+			assertTrue(StandardFilters.isWhitelisted(whitelist).test(peer1));
+			assertFalse(StandardFilters.isWhitelisted(whitelist).test(peer2));
+			assertTrue(StandardFilters.isWhitelisted(whitelist).test(peer3));
 		} finally {
-			Network.reset();
 			Modules.remove(RuntimeProperties.class);
 		}
 	}

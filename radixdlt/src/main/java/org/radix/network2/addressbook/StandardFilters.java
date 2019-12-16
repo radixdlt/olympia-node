@@ -8,7 +8,7 @@ import java.util.Set;
 import org.radix.Radix;
 import org.radix.modules.Modules;
 import org.radix.network.Interfaces;
-import org.radix.network.Network;
+import org.radix.network.discovery.Whitelist;
 import org.radix.network2.transport.TransportInfo;
 import org.radix.time.Time;
 import org.radix.time.Timestamps;
@@ -47,11 +47,12 @@ public final class StandardFilters {
 	 *
 	 * @return {@code true} if all the criteria are met, {@code false} otherwise
 	 * @param interfaces the interfaces to test against
+	 * @param whitelist
 	 */
-	public static PeerPredicate standardFilter(Interfaces interfaces) {
+	public static PeerPredicate standardFilter(Interfaces interfaces, Whitelist whitelist) {
 		return hasTransports()
 			.and(notLocalAddress(interfaces))
-			.and(isWhitelisted())
+			.and(isWhitelisted(whitelist))
 			.and(notOurNID())
 			.and(acceptableProtocol())
 			.and(notBanned());
@@ -82,9 +83,12 @@ public final class StandardFilters {
 	 * Returns {@code true} if all of the peer's transports are whitelisted.
 	 *
 	 * @return {@code true} if all of the peer's transports are whitelisted, {@code false} otherwise
+	 * @param whitelist the whitelist to use
 	 */
-	public static PeerPredicate isWhitelisted() {
-		return peer -> peer.supportedTransports().noneMatch(StandardFilters::hostNotWhitelisted);
+	public static PeerPredicate isWhitelisted(Whitelist whitelist) {
+		return peer -> peer.supportedTransports().noneMatch((TransportInfo ti) -> {
+			return hostNotWhitelisted(ti, whitelist);
+		});
 	}
 
 	/**
@@ -150,10 +154,10 @@ public final class StandardFilters {
 		return peer -> (Time.currentTimestamp() - peer.getTimestamp(Timestamps.ACTIVE)) < Modules.get(Universe.class).getPlanck();
 	}
 
-	private static boolean hostNotWhitelisted(TransportInfo ti) {
+	private static boolean hostNotWhitelisted(TransportInfo ti, Whitelist whitelist) {
 		String host = ti.metadata().get("host");
 		if (host != null) {
-			if (!Network.getInstance().isWhitelisted(host)) {
+			if (!whitelist.isWhitelisted(host)) {
 				return true;
 			}
 		}

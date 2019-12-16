@@ -18,6 +18,6 @@ public class PeerManagerFactory {
 	 */
 	public PeerManager createDefault(RuntimeProperties properties, AddressBook addressBook, MessageCentral messageCentral, Events events, BootstrapDiscovery bootstrapDiscovery, Interfaces interfaces) {
 		PeerManagerConfiguration config = PeerManagerConfiguration.fromRuntimeProperties(properties);
-		return new PeerManager(config, addressBook, messageCentral, events, bootstrapDiscovery, interfaces);
+		return new PeerManager(config, addressBook, messageCentral, events, bootstrapDiscovery, interfaces, properties);
 	}
 }

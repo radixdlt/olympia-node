@@ -15,9 +15,10 @@ import com.radixdlt.common.EUID;
 import org.radix.events.Events;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.network.Network;
+import org.radix.network.discovery.Whitelist;
 import org.radix.network2.transport.TransportInfo;
 import org.radix.network2.utils.Locking;
+import org.radix.properties.RuntimeProperties;
 import org.radix.universe.system.RadixSystem;
 
 /**
@@ -35,12 +36,14 @@ public class AddressBookImpl implements AddressBook {
 	private final Lock peersLock = new ReentrantLock();
 	private final Map<EUID, Peer>          peersByNid  = new HashMap<>();
 	private final Map<TransportInfo, Peer> peersByInfo = new HashMap<>();
+	private final Whitelist whitelist;
 
 	@Inject
-	AddressBookImpl(PeerPersistence persistence, Events events) {
+	AddressBookImpl(PeerPersistence persistence, Events events, RuntimeProperties properties) {
 		super();
 		this.persistence = Objects.requireNonNull(persistence);
 		this.events = Objects.requireNonNull(events);
+		this.whitelist = Whitelist.from(properties);
 
 		this.persistence.forEachPersistedPeer(peer -> {
 			this.peersByNid.put(peer.getNID(), peer);
@@ -261,7 +264,7 @@ public class AddressBookImpl implements AddressBook {
 	private boolean hostNotWhitelisted(TransportInfo ti) {
 		String host = ti.metadata().get("host");
 		if (host != null) {
-			if (!Network.getInstance().isWhitelisted(host)) {
+			if (!whitelist.isWhitelisted(host)) {
 				return true;
 			}
 		}

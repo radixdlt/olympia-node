@@ -18,7 +18,6 @@ import java.util.Set;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.modules.Modules;
-import org.radix.network.Network;
 import org.radix.network.SSLFix;
 import org.radix.network2.addressbook.AddressBook;
 import org.radix.network2.addressbook.Peer;
@@ -180,12 +179,13 @@ public class BootstrapDiscovery
 
 		hosts.addAll(Arrays.asList(properties.get("network.seeds", "").split(",")));
 
+		Whitelist whitelist = Whitelist.from(properties);
 		for (String host : hosts) {
 			host = host.trim();
 			if (host.isEmpty()) {
 				continue;
 			}
-			if (!Network.getInstance().isWhitelisted(host)) {
+			if (!whitelist.isWhitelisted(host)) {
 				continue;
 			}
 			try {

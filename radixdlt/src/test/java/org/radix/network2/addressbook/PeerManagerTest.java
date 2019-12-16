@@ -178,7 +178,7 @@ public class PeerManagerTest extends RadixTest {
         when(addressBook.peer(transportInfo4)).thenReturn(peer4);
 
         bootstrapDiscovery = mock(BootstrapDiscovery.class);
-        peerManager = spy(new PeerManager(config, addressBook, messageCentral, events, bootstrapDiscovery, interfaces));
+        peerManager = spy(new PeerManager(config, addressBook, messageCentral, events, bootstrapDiscovery, interfaces, properties));
     }
 
     @After
@@ -276,7 +276,7 @@ public class PeerManagerTest extends RadixTest {
         when(addressBook.peers()).thenAnswer((Answer<Stream<Peer>>) invocation -> Stream.of(peer1, peer2));
         //start timeout handler immediately
         doReturn(0).when(config).networkPeersProbeTimeout(eq(20000));
-        peerManager = spy(new PeerManager(config, addressBook, messageCentral, events, bootstrapDiscovery, interfaces));
+        peerManager = spy(new PeerManager(config, addressBook, messageCentral, events, bootstrapDiscovery, interfaces, properties));
         Semaphore semaphore = new Semaphore(0);
         peerManager.start();
         //allow peer manager to run 1 sec

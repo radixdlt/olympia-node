@@ -54,7 +54,7 @@ public class AddressBookImplTest {
 			this.broadcastEventCount.addAndGet(abevent.peers().size());
 			return null;
 		}).when(this.events).broadcast(any());
-		this.addressbook = new AddressBookImpl(this.persistence, this.events);
+		this.addressbook = new AddressBookImpl(this.persistence, this.events, properties);
 
 		// Ideally this wouldn't be necessary
 		Universe universe = mock(Universe.class);
