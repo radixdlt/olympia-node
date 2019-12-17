@@ -13,6 +13,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 import org.radix.logging.Logger;
@@ -38,6 +39,7 @@ public class BootstrapDiscovery
 
 	private static final Logger log = Logging.getLogger();
 	private final RuntimeProperties properties;
+	private final Universe universe;
 
 	private Set<TransportInfo> hosts = new HashSet<>();
 
@@ -64,6 +66,59 @@ public class BootstrapDiscovery
 			return null;
 		}
 		return new String(buf, 0, len, StandardCharsets.US_ASCII);
+	}
+
+	public BootstrapDiscovery(RuntimeProperties properties, Universe universe) {
+		this.properties = Objects.requireNonNull(properties);
+		this.universe = Objects.requireNonNull(universe);
+
+		// allow nodes to connect to others, bypassing TLS handshake
+		if (properties.get("network.discovery.allow_tls_bypass", 0) == 1) {
+			log.info("Allowing TLS handshake bypass...");
+			SSLFix.trustAllHosts();
+		}
+
+		HashSet<String> hosts = new HashSet<>();
+		for (String unparsedURL : properties.get("network.discovery.urls", "").split(",")) {
+			unparsedURL = unparsedURL.trim();
+			if (unparsedURL.isEmpty()) {
+				continue;
+			}
+			try
+			{
+				// if host is an URL - we should GET the node from the given URL
+				URL url = new URL(unparsedURL);
+				if (!url.getProtocol().equals("https")) {
+					throw new IllegalStateException("cowardly refusing all but HTTPS network.seeds");
+				}
+
+				String host = getNextNode(url);
+				if (host != null) {
+					log.info("seeding from random host: "+host);
+					hosts.add(host);
+				}
+			} catch (MalformedURLException ignoreConcreteHost) {
+				// concrete host addresses end up here.
+			}
+		}
+
+		hosts.addAll(Arrays.asList(properties.get("network.seeds", "").split(",")));
+
+		Whitelist whitelist = Whitelist.from(properties);
+		for (String host : hosts) {
+			host = host.trim();
+			if (host.isEmpty()) {
+				continue;
+			}
+			if (!whitelist.isWhitelisted(host)) {
+				continue;
+			}
+			try {
+				this.hosts.add(toUdpTransportInfo(host));
+			} catch (IllegalArgumentException | UnknownHostException e) {
+				log.error("Host specification " + host + " does not specify a valid host and port");
+			}
+		}
 	}
 
 	/**
@@ -145,57 +200,6 @@ public class BootstrapDiscovery
 		return null;
 	}
 
-	public BootstrapDiscovery(RuntimeProperties properties) {
-		this.properties = properties;
-		// allow nodes to connect to others, bypassing TLS handshake
-		if (properties.get("network.discovery.allow_tls_bypass", 0) == 1) {
-			log.info("Allowing TLS handshake bypass...");
-			SSLFix.trustAllHosts();
-		}
-
-		HashSet<String> hosts = new HashSet<>();
-		for (String unparsedURL : properties.get("network.discovery.urls", "").split(",")) {
-			unparsedURL = unparsedURL.trim();
-			if (unparsedURL.isEmpty()) {
-				continue;
-			}
-			try
-			{
-				// if host is an URL - we should GET the node from the given URL
-				URL url = new URL(unparsedURL);
-				if (!url.getProtocol().equals("https")) {
-					throw new IllegalStateException("cowardly refusing all but HTTPS network.seeds");
-				}
-
-				String host = getNextNode(url);
-				if (host != null) {
-					log.info("seeding from random host: "+host);
-					hosts.add(host);
-				}
-			} catch (MalformedURLException ignoreConcreteHost) {
-				// concrete host addresses end up here.
-			}
-		}
-
-		hosts.addAll(Arrays.asList(properties.get("network.seeds", "").split(",")));
-
-		Whitelist whitelist = Whitelist.from(properties);
-		for (String host : hosts) {
-			host = host.trim();
-			if (host.isEmpty()) {
-				continue;
-			}
-			if (!whitelist.isWhitelisted(host)) {
-				continue;
-			}
-			try {
-				this.hosts.add(toUdpTransportInfo(host));
-			} catch (IllegalArgumentException | UnknownHostException e) {
-				log.error("Host specification " + host + " does not specify a valid host and port");
-			}
-		}
-	}
-
 	public Collection<TransportInfo> discover(PeerPredicate filter)
 	{
 		List<TransportInfo> results = Lists.newArrayList();
@@ -221,7 +225,7 @@ public class BootstrapDiscovery
 	}
 
 	private TransportInfo toUdpTransportInfo(String host) throws UnknownHostException {
-		HostAndPort hap = HostAndPort.fromString(host).withDefaultPort(Modules.get(Universe.class).getPort());
+		HostAndPort hap = HostAndPort.fromString(host).withDefaultPort(universe.getPort());
 		// Resolve any names so we don't have to do it again and again, and we will also be more
 		// likely to have a canonical representation.
 		InetAddress resolved = InetAddress.getByName(hap.getHost());

@@ -61,7 +61,7 @@ public final class RadixHttpServer {
 	private final JSONObject apiSerializedUniverse;
 	private final Serialization serialization;
 
-	public RadixHttpServer(LedgerEntryStore store, RadixEngineAtomProcessor radixEngineAtomProcessor, AtomToBinaryConverter atomToBinaryConverter, Universe universe, MessageCentral messageCentral, Serialization serialization) {
+	public RadixHttpServer(LedgerEntryStore store, RadixEngineAtomProcessor radixEngineAtomProcessor, AtomToBinaryConverter atomToBinaryConverter, Universe universe, MessageCentral messageCentral, Serialization serialization, RuntimeProperties properties) {
 		this.universe = Objects.requireNonNull(universe);
 		this.serialization = Objects.requireNonNull(serialization);
 		this.apiSerializedUniverse = serialization.toJsonObject(this.universe, DsonOutput.Output.API);

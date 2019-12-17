@@ -86,7 +86,7 @@ public class UniverseDsonOutputTest extends RadixTest {
 	}
 
 	private static Universe getDevelopmentUniverse() throws Exception {
-		GenerateUniverses gu = new GenerateUniverses();
+		GenerateUniverses gu = new GenerateUniverses(getProperties());
 		Universe u = gu.generateUniverses().stream()
 				.filter(Universe::isDevelopment)
 				.findAny().get();

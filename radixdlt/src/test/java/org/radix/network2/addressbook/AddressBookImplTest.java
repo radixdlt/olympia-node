@@ -12,6 +12,7 @@ import org.radix.events.Events;
 import org.radix.modules.Modules;
 import org.radix.network2.transport.StaticTransportMetadata;
 import org.radix.network2.transport.TransportInfo;
+import org.radix.properties.RuntimeProperties;
 import org.radix.time.Time;
 import org.radix.time.Timestamps;
 import org.radix.universe.system.RadixSystem;
@@ -54,7 +55,7 @@ public class AddressBookImplTest {
 			this.broadcastEventCount.addAndGet(abevent.peers().size());
 			return null;
 		}).when(this.events).broadcast(any());
-		this.addressbook = new AddressBookImpl(this.persistence, this.events, properties);
+		this.addressbook = new AddressBookImpl(this.persistence, this.events, mock(RuntimeProperties.class));
 
 		// Ideally this wouldn't be necessary
 		Universe universe = mock(Universe.class);

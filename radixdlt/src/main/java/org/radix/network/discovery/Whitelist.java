@@ -153,6 +153,6 @@ public class Whitelist
 	}
 
 	public static Whitelist from(RuntimeProperties properties) {
-		return new Whitelist(Modules.get(RuntimeProperties.class).get("network.whitelist", ""));
+		return new Whitelist(properties.get("network.whitelist", ""));
 	}
 }
