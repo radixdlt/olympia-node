@@ -6,14 +6,10 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.LongSupplier;
 
-import com.radixdlt.common.AID;
 import org.radix.Radix;
-import com.radixdlt.utils.Offset;
 import org.radix.common.executors.Executor;
 import org.radix.common.executors.ScheduledExecutable;
-import com.radixdlt.utils.Pair;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.keys.Keys;
 import com.radixdlt.crypto.CryptoException;
 import org.radix.logging.Logger;
@@ -28,7 +24,6 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializerId2;
-import org.radix.shards.ShardSpace;
 import com.radixdlt.universe.Universe;
 import org.radix.utils.SystemMetaData;
 
@@ -91,8 +86,7 @@ public final class LocalSystem extends RadixSystem
 			if (LocalSystem.instance == null) {
 				LocalSystem.instance = new LocalSystem(
 					nodeKey,
-					Radix.AGENT, Radix.AGENT_VERSION, Radix.PROTOCOL_VERSION,
-					Modules.get(RuntimeProperties.class).get("shards.range", ShardSpace.SHARD_CHUNK_RANGE)
+					Radix.AGENT, Radix.AGENT_VERSION, Radix.PROTOCOL_VERSION
 				);
 			}
 
@@ -129,16 +123,10 @@ public final class LocalSystem extends RadixSystem
 		this.keyPair = new ECKeyPair();
 	}
 
-	public LocalSystem(ECKeyPair key, String agent, int agentVersion, int protocolVersion, long shards)
+	public LocalSystem(ECKeyPair key, String agent, int agentVersion, int protocolVersion)
 	{
-		super(key.getPublicKey(), agent, agentVersion, protocolVersion, new ShardSpace(key.getUID().getShard(), shards), defaultTransports());
+		super(key.getPublicKey(), agent, agentVersion, protocolVersion, defaultTransports());
 		this.keyPair = key;
-	}
-
-	@Override
-	public void setShards(ShardSpace shards)
-	{
-		super.setShards(shards);
 	}
 
 	public ECKeyPair getKeyPair() {

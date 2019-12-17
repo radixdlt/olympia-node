@@ -98,11 +98,6 @@ public class RadixEngineAtomProcessor implements Application {
 	public AID process(JSONObject jsonAtom, Optional<ProcessorAtomEventListener> processorAtomEventListener) {
 		final Atom atom = serialization.fromJsonObject(jsonAtom, Atom.class);
 		processorAtomEventListener.ifPresent(listener -> listener.onDeserializationCompleted(atom.getAID()));
-		ShardSpace shardsSupported = LocalSystem.getInstance().getShards();
-		if (!shardsSupported.intersects(atom.getShards())) {
-			throw new RuntimeException(String.format("Not a suitable submission peer: " +
-				"atomShards(%s) shardsSupported(%s)", atom.getShards(), shardsSupported));
-		}
 		try {
 			processorAtomEventListener.ifPresent(listener -> parkedListeners.put(atom, listener));
 			parkedAtoms.add(atom);

@@ -46,7 +46,6 @@ public abstract class RadixTest
 		serialization = Serialization.getDefault();
 
 		final LocalSystem localSystem = mock(LocalSystem.class);
-		when(localSystem.getShards()).thenReturn(new ShardSpace(10000, 20000));
 
 		Modules.put(RuntimeProperties.class, runtimeProperties);
 		Modules.put(Universe.class, universe);

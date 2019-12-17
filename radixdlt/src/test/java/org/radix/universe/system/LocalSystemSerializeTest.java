@@ -41,7 +41,6 @@ public class LocalSystemSerializeTest extends SerializeMessageObject<LocalSystem
 		try {
 			newSystem = new LocalSystem();
 			newSystem.setPlanck(101);
-			newSystem.setShards(new ShardSpace(10000, 20000));
 			return newSystem;
 		} catch (CryptoException e) {
 			throw new IllegalStateException(e);

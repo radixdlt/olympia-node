@@ -93,8 +93,6 @@ public class MiddlewareModule extends AbstractModule {
 		bind(new TypeLiteral<UnaryOperator<CMStore>>() {
 		}).toInstance(os.buildVirtualLayer());
 		bind(EngineStore.class).to(LedgerEngineStore.class).in(Scopes.SINGLETON);
-		bind(new TypeLiteral<Supplier<ShardSpace>>() {
-		}).toInstance(() -> LocalSystem.getInstance().getShards());
 		bind(AtomToBinaryConverter.class).toInstance(new AtomToBinaryConverter(Serialization.getDefault()));
 	}
 }

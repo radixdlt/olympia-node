@@ -112,34 +112,4 @@ public class StandardFilters2Test {
 			Modules.remove(RuntimeProperties.class);
 		}
 	}
-
-	@Test
-	public void testHasOverlappingShards() throws CryptoException {
-		try {
-			RuntimeProperties properties = mock(RuntimeProperties.class);
-			when(properties.get(eq("node.key.path"), any())).thenReturn("node.ks");
-			when(properties.get(eq("shards.range"), anyLong())).thenReturn(1L);
-			Modules.put(RuntimeProperties.class, properties);
-
-			LocalSystem.reset();
-			ShardSpace ourSp = LocalSystem.getInstance().getShards();
-			RadixSystem system;
-			do {
-				ECKeyPair key = new ECKeyPair();
-				ShardSpace sp = new ShardSpace(key.getUID().getShard(), 1L);
-				system = new RadixSystem(key.getPublicKey(), Radix.AGENT, Radix.AGENT_VERSION, Radix.PROTOCOL_VERSION, sp, ImmutableList.of());
-				// Chances of this actually looping are pretty low
-			} while (ourSp.intersects(system.getShards()));
-
-			Peer our = new PeerWithSystem(LocalSystem.getInstance());
-			Peer notOur = new PeerWithSystem(system);
-			Peer noShards = new PeerWithNid(EUID.ONE);
-			assertTrue(StandardFilters.hasOverlappingShards().test(our));
-			assertFalse(StandardFilters.hasOverlappingShards().test(notOur));
-			assertFalse(StandardFilters.hasOverlappingShards().test(noShards));
-		} finally {
-			LocalSystem.reset();
-			Modules.remove(RuntimeProperties.class);
-		}
-	}
 }

@@ -14,7 +14,6 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.serialization.SerializerId2;
-import org.radix.shards.ShardRange;
 import org.radix.shards.ShardSpace;
 import com.radixdlt.universe.Universe;
 
@@ -38,10 +37,6 @@ public class RadixSystem extends BasicContainer
 
 	private String 			agent;
 
-	@JsonProperty("shards")
-	@DsonOutput(Output.ALL)
-	private ShardSpace		shards;
-
 	@JsonProperty("timestamp")
 	@DsonOutput(Output.ALL)
 	private long			timestamp;
@@ -60,7 +55,6 @@ public class RadixSystem extends BasicContainer
 		this.agentVersion = 0;
 		this.planck = 0;
 		this.protocolVersion = 0;
-		this.shards = new ShardSpace(0l, new ShardRange(0, 0));
 		this.timestamp = 0;
 		this.transports = ImmutableList.of();
 		this.key = null;
@@ -74,13 +68,12 @@ public class RadixSystem extends BasicContainer
  		this.agentVersion = system.getAgentVersion();
 		this.planck = system.getPlanck();
 		this.protocolVersion = system.getProtocolVersion();
-		this.shards = new ShardSpace(system.getKey().getUID().getShard(), system.getShards().getRange());
 		this.timestamp = system.getTimestamp();
 		this.transports = system.transports;
 		this.key = system.getKey();
 	}
 
-	public RadixSystem(ECPublicKey key, String agent, int agentVersion, int protocolVersion, ShardSpace shards, ImmutableList<TransportInfo> transports)
+	public RadixSystem(ECPublicKey key, String agent, int agentVersion, int protocolVersion, ImmutableList<TransportInfo> transports)
 	{
 		this();
 
@@ -88,7 +81,6 @@ public class RadixSystem extends BasicContainer
 		this.agent = agent;
 		this.agentVersion = agentVersion;
 		this.protocolVersion = protocolVersion;
-		this.shards = shards;
 		this.transports = transports;
 	}
 
@@ -135,50 +127,6 @@ public class RadixSystem extends BasicContainer
 	public boolean isAhead(RadixSystem system)
 	{
 		return this.timestamp > (system.timestamp + Modules.get(Universe.class).getPlanck());
-	}
-
-	/*	public boolean isSynced(System system)
-	{
-		if (system.getAtoms() == 0)
-			return false;
-
-		BigDecimal multiplier = BigDecimal.valueOf(system.getShards().getRange().getSpan()).divide(BigDecimal.valueOf(this.getShards().getRange().getSpan()), MathContext.DECIMAL64);
-		long estimation = BigDecimal.valueOf(this.getAtoms()).multiply(multiplier, MathContext.DECIMAL64).longValue();
-		long sqrtEstimation = (long) Math.sqrt(estimation);
-		long sqrt2Estimation = (long) Math.sqrt(sqrtEstimation);
-		long sqrtAtoms = (long) Math.sqrt(system.getAtoms());
-
-		if (Math.abs(sqrtAtoms - sqrtEstimation) > sqrt2Estimation)
-			return false;
-
-		return true;
-	}
-
-	public boolean isAhead(System system)
-	{
-		if (system.getAtoms() == 0)
-			return true;
-
-		BigDecimal multiplier = BigDecimal.valueOf(this.getShards().getRange().getSpan()).divide(BigDecimal.valueOf(system.getShards().getRange().getSpan()), MathContext.DECIMAL64);
-		long estimation = BigDecimal.valueOf(system.getAtoms()).multiply(multiplier, MathContext.DECIMAL64).longValue();
-		long sqrtEstimation = (long) Math.sqrt(estimation);
-		long sqrt2Estimation = (long) Math.sqrt(sqrtEstimation);
-		long sqrtAtoms = (long) Math.sqrt(this.getAtoms());
-
-		if (sqrtAtoms < sqrtEstimation - sqrt2Estimation)
-			return false;
-
-		return true;
-	}*/
-
-	public ShardSpace getShards()
-	{
-		return this.shards;
-	}
-
-	void setShards(ShardSpace shardSpace)
-	{
-		this.shards = shardSpace;
 	}
 
 	public Stream<TransportInfo> supportedTransports() {

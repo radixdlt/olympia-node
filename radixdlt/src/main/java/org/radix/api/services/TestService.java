@@ -9,7 +9,6 @@ import org.json.JSONObject;
 import org.radix.Radix;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.modules.Modules;
 import org.radix.network.messages.PeersMessage;
 import org.radix.network.messaging.Message.Direction;
 import org.radix.network2.addressbook.Peer;
@@ -83,7 +82,6 @@ public final class TestService {
 			RadixSystem system = new RadixSystem(
 				keyValue.getPublicKey(),
 				Radix.AGENT, Radix.AGENT_VERSION, Radix.PROTOCOL_VERSION,
-				shards,
 				ImmutableList.of(
 					TransportInfo.of(UDPConstants.UDP_NAME,
 						StaticTransportMetadata.of(

@@ -137,15 +137,6 @@ public final class StandardFilters {
 	}
 
 	/**
-	 * Returns {@code true} if the peer has shard space overlap with local peer.
-	 *
-	 * @return {@code true} if the peer has shard space overlap with local peer, {@code false} otherwise
-	 */
-	public static PeerPredicate hasOverlappingShards() {
-		return peer -> peer.hasSystem() && LocalSystem.getInstance().getShards().intersects(peer.getSystem().getShards());
-	}
-
-	/**
 	 * Returns {@code true} if the peer been active within one planck period.
 	 *
 	 * @return {@code true} if the peer been active within one planck period, {@code false} otherwise

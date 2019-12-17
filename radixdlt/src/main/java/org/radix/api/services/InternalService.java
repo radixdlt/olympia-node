@@ -133,18 +133,7 @@ public class InternalService {
 							atom.sign(this.owner);
 
 							JSONObject jsonAtom = serialization.toJsonObject(atom, DsonOutput.Output.WIRE);
-
-							if (LocalSystem.getInstance().getShards().intersects(atom.getShards()) == true) {
-								radixEngineAtomProcessor.process(jsonAtom, Optional.empty());
-							} else {
-								List<Peer> peers = Modules.get(AddressBook.class).recentPeers().collect(Collectors.toList());
-								for (Peer peer : peers) {
-									if (peer.hasSystem() && !peer.getNID().equals(LocalSystem.getInstance().getNID()) && peer.getSystem().getShards().intersects(atom.getShards())) {
-										messageCentral.send(peer, new AtomSubmitMessage(atom));
-										break;
-									}
-								}
-							}
+							radixEngineAtomProcessor.process(jsonAtom, Optional.empty());
 
 							remainingIterations--;
 							if (remainingIterations <= 0) {
