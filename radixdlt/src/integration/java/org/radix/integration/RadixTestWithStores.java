@@ -13,12 +13,9 @@ import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.store.berkeley.BerkeleyStoreModule;
 import org.junit.After;
 import org.junit.Before;
+import org.radix.GlobalInjector;
 import org.radix.database.DatabaseEnvironment;
-import org.radix.modules.Modules;
 import org.radix.network2.messaging.MessageCentral;
-import org.radix.network2.messaging.MessageCentralFactory;
-import org.radix.properties.RuntimeProperties;
-import org.radix.universe.system.LocalSystem;
 
 import java.io.IOException;
 
@@ -36,10 +33,11 @@ public class RadixTestWithStores extends RadixTest
 	public void beforeEachRadixTest() {
 		this.dbEnv = new DatabaseEnvironment(getProperties());
 
-		messageCentral = new MessageCentralFactory().createDefault(getProperties());
+		GlobalInjector injector = new GlobalInjector(getProperties(), dbEnv, getLocalSystem());
+		this.messageCentral = injector.getInjector().getInstance(MessageCentral.class);
 
 		EUID self = getLocalSystem().getNID();
-		injector = Guice.createInjector(
+		this.injector = Guice.createInjector(
 				new AbstractModule() {
 					@Override
 					protected void configure() {
@@ -49,7 +47,7 @@ public class RadixTestWithStores extends RadixTest
 				new BerkeleyStoreModule()
 		);
 
-		store = injector.getInstance(LedgerEntryStore.class);
+		store = this.injector.getInstance(LedgerEntryStore.class);
 		tempo = new Tempo(
 			mock(Application.class),
 			ImmutableSet.of(),
