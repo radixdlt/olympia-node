@@ -20,11 +20,9 @@ import org.radix.modules.Modules;
 import org.radix.network.Interfaces;
 import org.radix.network.discovery.BootstrapDiscovery;
 import org.radix.network2.addressbook.AddressBook;
-import org.radix.network2.addressbook.AddressBookFactory;
 import org.radix.network2.addressbook.PeerManager;
 import org.radix.network2.addressbook.PeerManagerFactory;
 import org.radix.network2.messaging.MessageCentral;
-import org.radix.network2.messaging.MessageCentralFactory;
 import org.radix.properties.RuntimeProperties;
 import org.radix.time.Time;
 import org.radix.universe.system.LocalSystem;
@@ -71,13 +69,11 @@ public final class Radix
 	}
 
 	public Radix(RuntimeProperties properties) {
-		// set up serialisation
 		Serialization serialization = Serialization.getDefault();
-		LocalSystem localSystem = LocalSystem.restoreOrCreate(properties);
-
-		// set up universe
 		Universe universe = extractUniverseFrom(properties, serialization);
 		Modules.put(Universe.class, universe);
+
+		LocalSystem localSystem = LocalSystem.restoreOrCreate(properties);
 
 		// set up time services
 		Time.start(properties);
@@ -91,18 +87,16 @@ public final class Radix
 		// start profiling
 		SystemMetaData.init(dbEnv);
 
-		// set up networking
-		MessageCentral messageCentral = createMessageCentral(properties);
-		Interfaces interfaces = new Interfaces();
-		AddressBook addressBook = createAddressBook(dbEnv);
-		BootstrapDiscovery bootstrapDiscovery = new BootstrapDiscovery(properties, universe);
-		PeerManager peerManager = createPeerManager(properties, addressBook, messageCentral, Events.getInstance(), bootstrapDiscovery, interfaces, localSystem);
-		peerManager.start();
-
 		// TODO Eventually modules should be created using Google Guice injector
-		GlobalInjector globalInjector = new GlobalInjector(properties, dbEnv, messageCentral, localSystem);
+		GlobalInjector globalInjector = new GlobalInjector(properties, dbEnv, localSystem);
 		Consensus consensus = globalInjector.getInjector().getInstance(Consensus.class);
 		// TODO use consensus for application construction (in our case, the engine middleware)
+
+		// setup networking
+		MessageCentral messageCentral = globalInjector.getInjector().getInstance(MessageCentral.class);
+		AddressBook addressBook = globalInjector.getInjector().getInstance(AddressBook.class);
+		PeerManager peerManager = globalInjector.getInjector().getInstance(PeerManager.class);
+		peerManager.start();
 
 		// start middleware
 		atomProcessor = globalInjector.getInjector().getInstance(RadixEngineAtomProcessor.class);
@@ -184,17 +178,4 @@ public final class Radix
 
 		return new RuntimeProperties(runtimeConfigurationJSON, args);
 	}
-
-	private MessageCentral createMessageCentral(RuntimeProperties properties) {
-		return new MessageCentralFactory().createDefault(properties);
-	}
-
-	private AddressBook createAddressBook(DatabaseEnvironment dbEnv) {
-		return new AddressBookFactory().createDefault(dbEnv);
-	}
-
-	private PeerManager createPeerManager(RuntimeProperties properties, AddressBook addressBook, MessageCentral messageCentral, Events events, BootstrapDiscovery bootstrapDiscovery, Interfaces interfaces, LocalSystem localSystem) {
-		return new PeerManagerFactory().createDefault(properties, addressBook, messageCentral, events, bootstrapDiscovery, interfaces, localSystem);
-	}
-
 }

@@ -13,11 +13,11 @@ import java.util.Objects;
 /**
  * Guice configuration for {@link AddressBook}.
  */
-final class AddressBookModule extends AbstractModule {
+public final class AddressBookModule extends AbstractModule {
 
 	private final DatabaseEnvironment dbEnv;
 
-	AddressBookModule(DatabaseEnvironment dbEnv) {
+	public AddressBookModule(DatabaseEnvironment dbEnv) {
 		// Nothing
 		this.dbEnv = Objects.requireNonNull(dbEnv);
 	}
@@ -25,14 +25,7 @@ final class AddressBookModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		// The main target
-		bind(AddressBook.class).to(AddressBookImpl.class);
-
-		// AddressBookImpl dependencies
-		// See addressBookePersistenceProvider
-		bind(Events.class).toProvider(Events::getInstance);
-
-		// AddressBookPersistence dependencies
-		bind(Serialization.class).toProvider(Serialization::getDefault);
+		bind(AddressBook.class).to(AddressBookImpl.class).in(Singleton.class);
 
 		// Bind DatabaseEnvironment to global instance
 		// This is temporary as we're in the progress of untangling the dependency and DI mess

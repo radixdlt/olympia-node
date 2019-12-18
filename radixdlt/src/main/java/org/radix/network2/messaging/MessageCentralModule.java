@@ -3,6 +3,7 @@ package org.radix.network2.messaging;
 import java.util.Objects;
 import java.util.concurrent.PriorityBlockingQueue;
 
+import com.google.inject.Singleton;
 import org.radix.events.Events;
 import org.radix.network2.TimeSupplier;
 import org.radix.network2.transport.FirstMatchTransportManager;
@@ -17,12 +18,12 @@ import com.radixdlt.serialization.Serialization;
  * Guice configuration for {@link MessageCentral} that includes a UDP
  * transport.
  */
-final class MessageCentralModule extends AbstractModule {
+public final class MessageCentralModule extends AbstractModule {
 
 	private final MessageCentralConfiguration config;
 	private final TimeSupplier timeSource;
 
-	MessageCentralModule(RuntimeProperties properties) {
+	public MessageCentralModule(RuntimeProperties properties) {
 		this(MessageCentralConfiguration.fromRuntimeProperties(properties), Time::currentTimestamp);
 	}
 
@@ -36,13 +37,11 @@ final class MessageCentralModule extends AbstractModule {
 		// The main target
 		bind(new TypeLiteral<EventQueueFactory<MessageEvent>>() {}).toInstance(PriorityBlockingQueue::new);
 
-		bind(MessageCentral.class).to(MessageCentralImpl.class);
+		bind(MessageCentral.class).to(MessageCentralImpl.class).in(Singleton.class);
 
 		// MessageCentral dependencies
 		bind(MessageCentralConfiguration.class).toInstance(this.config);
-		bind(Serialization.class).toProvider(Serialization::getDefault);
 		bind(TransportManager.class).to(FirstMatchTransportManager.class);
-		bind(Events.class).toProvider(Events::getInstance);
 		bind(TimeSupplier.class).toInstance(this.timeSource);
 	}
 }

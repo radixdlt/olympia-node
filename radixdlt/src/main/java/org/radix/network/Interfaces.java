@@ -24,16 +24,6 @@ public class Interfaces
 		LAN, WAN
 	}
 
-/*	private static Interfaces instance = null;
-
-	public Interfaces getInstance()
-	{
-		if (instance == null)
-			instance = new Interfaces();
-
-		return instance;
-	}*/
-
 	private Map<Domain, Set<InetAddress>> addresses = new HashMap<Domain, Set<InetAddress>>();
 
 	public Interfaces()

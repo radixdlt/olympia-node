@@ -16,9 +16,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+import com.google.inject.Inject;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.modules.Modules;
 import org.radix.network.SSLFix;
 import org.radix.network2.addressbook.AddressBook;
 import org.radix.network2.addressbook.Peer;
@@ -68,6 +68,7 @@ public class BootstrapDiscovery
 		return new String(buf, 0, len, StandardCharsets.US_ASCII);
 	}
 
+	@Inject
 	public BootstrapDiscovery(RuntimeProperties properties, Universe universe) {
 		this.properties = Objects.requireNonNull(properties);
 		this.universe = Objects.requireNonNull(universe);

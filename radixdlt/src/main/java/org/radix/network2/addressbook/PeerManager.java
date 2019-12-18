@@ -1,5 +1,7 @@
 package org.radix.network2.addressbook;
 
+import com.google.inject.Inject;
+import com.google.inject.name.Named;
 import com.radixdlt.common.EUID;
 import com.radixdlt.universe.Universe;
 import org.radix.common.executors.Executor;
@@ -107,7 +109,16 @@ public class PeerManager {
 		}
 	}
 
-	PeerManager(PeerManagerConfiguration config, AddressBook addressbook, MessageCentral messageCentral, Events events, BootstrapDiscovery bootstrapDiscovery, EUID self, LocalSystem localSystem, Interfaces interfaces, RuntimeProperties properties) {
+	@Inject
+	PeerManager(PeerManagerConfiguration config,
+	            AddressBook addressbook,
+	            MessageCentral messageCentral,
+	            Events events,
+	            BootstrapDiscovery bootstrapDiscovery,
+	            @Named("self") EUID self,
+	            LocalSystem localSystem,
+	            Interfaces interfaces,
+	            RuntimeProperties properties) {
 		super();
 
 		this.addressbook = Objects.requireNonNull(addressbook);
@@ -138,13 +149,13 @@ public class PeerManager {
 		this.rng = new SecureRandom();
 
 		log.info(String.format("%s started, " +
-						"peersBroadcastInterval=%s, peersBroadcastDelay=%s, peersProbeInterval=%s, " +
-						"peersProbeDelay=%s, heartbeatPeersInterval=%s, heartbeatPeersDelay=%s, " +
-						"discoverPeersInterval=%s, discoverPeersDelay=%s, peerProbeFrequency=%s",
+				"peersBroadcastInterval=%s, peersBroadcastDelay=%s, peersProbeInterval=%s, " +
+				"peersProbeDelay=%s, heartbeatPeersInterval=%s, heartbeatPeersDelay=%s, " +
+				"discoverPeersInterval=%s, discoverPeersDelay=%s, peerProbeFrequency=%s",
 			this.getClass().getSimpleName(),
-				this.peersBroadcastIntervalMs, this.peersBroadcastDelayMs, this.peerProbeIntervalMs,
-				this.peerProbeDelayMs, this.heartbeatPeersIntervalMs, this.heartbeatPeersDelayMs,
-				this.discoverPeersIntervalMs, this.discoverPeersDelayMs, this.peerProbeFrequencyMs
+			this.peersBroadcastIntervalMs, this.peersBroadcastDelayMs, this.peerProbeIntervalMs,
+			this.peerProbeDelayMs, this.heartbeatPeersIntervalMs, this.heartbeatPeersDelayMs,
+			this.discoverPeersIntervalMs, this.discoverPeersDelayMs, this.peerProbeFrequencyMs
 		));
 	}
 
