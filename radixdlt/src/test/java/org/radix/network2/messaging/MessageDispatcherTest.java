@@ -23,7 +23,6 @@ import org.radix.network2.transport.TransportInfo;
 import org.radix.network2.transport.TransportMetadata;
 import org.radix.network2.transport.TransportOutboundConnection;
 import org.radix.serialization.RadixTest;
-import org.radix.universe.system.LocalSystem;
 import org.radix.universe.system.RadixSystem;
 import org.radix.universe.system.SystemMessage;
 import org.radix.utils.SystemMetaData;
@@ -69,7 +68,7 @@ public class MessageDispatcherTest extends RadixTest {
         interfaces = mock(Interfaces.class);
         PowerMockito.when(interfaces.isSelf(any())).thenReturn(false);
 
-        messageDispatcher = new MessageDispatcher(conf, serialization, () -> 30_000, interfaces);
+        messageDispatcher = new MessageDispatcher(conf, serialization, () -> 30_000, getLocalSystem(), interfaces);
         transportOutboundConnection = new MessagingDummyConfigurations.DummyTransportOutboundConnection();
         transport = new MessagingDummyConfigurations.DummyTransport(transportOutboundConnection);
         transportManager = new MessagingDummyConfigurations.DummyTransportManager(transport);
@@ -81,9 +80,8 @@ public class MessageDispatcherTest extends RadixTest {
         transportInfo = mock(TransportInfo.class);
         when(transportInfo.metadata()).thenReturn(transportMetadata);
 
-        RadixSystem radixSystem = new RadixSystem(LocalSystem.getInstance());
-        peer1 = spy(new PeerWithSystem(radixSystem));
-        peer2 = spy(new PeerWithSystem(radixSystem));
+        peer1 = spy(new PeerWithSystem(getLocalSystem()));
+        peer2 = spy(new PeerWithSystem(getLocalSystem()));
 
         AddressBook addressBook = mock(AddressBook.class);
         when(addressBook.updatePeerSystem(peer1, peer1.getSystem())).thenReturn(peer1);
@@ -99,13 +97,13 @@ public class MessageDispatcherTest extends RadixTest {
     @Test
     public void sendSuccessfullyMessage() throws CryptoException {
 
-        SystemMessage message = spy(new SystemMessage());
+        SystemMessage message = spy(new SystemMessage(getLocalSystem()));
         MessageEvent messageEvent = new MessageEvent(peer1, transportInfo, message, 10_000);
 
         SendResult sendResult = messageDispatcher.send(transportManager, messageEvent);
 
         assertTrue(sendResult.isComplete());
-        verify(message, times(1)).sign(LocalSystem.getInstance().getKeyPair());
+        verify(message, times(1)).sign(getLocalSystem().getKeyPair());
     }
 
     @Test
@@ -122,8 +120,8 @@ public class MessageDispatcherTest extends RadixTest {
 
     @Test
     public void sendExceptionMessage() throws CryptoException {
-        SystemMessage message = spy(new SystemMessage());
-        doThrow(new CryptoException("Expected exception")).when(message).sign(LocalSystem.getInstance().getKeyPair());
+        SystemMessage message = spy(new SystemMessage(getLocalSystem()));
+        doThrow(new CryptoException("Expected exception")).when(message).sign(getLocalSystem().getKeyPair());
         MessageEvent messageEvent = new MessageEvent(peer1, transportInfo, message, 10_000);
 
         SendResult sendResult = messageDispatcher.send(transportManager, messageEvent);
@@ -135,7 +133,7 @@ public class MessageDispatcherTest extends RadixTest {
 
     @Test
     public void receiveSuccessfully() throws InterruptedException {
-        SystemMessage testMessage = spy(new SystemMessage());
+        SystemMessage testMessage = spy(new SystemMessage(getLocalSystem()));
         RadixSystem radixSystem = spy(testMessage.getSystem());
         doReturn(radixSystem).when(testMessage).getSystem();
         doReturn(EUID.ONE).when(radixSystem).getNID();
@@ -158,7 +156,7 @@ public class MessageDispatcherTest extends RadixTest {
 
     @Test
     public void receiveExpiredMessage() {
-        SystemMessage testMessage = spy(new SystemMessage());
+        SystemMessage testMessage = spy(new SystemMessage(getLocalSystem()));
         when(testMessage.getTimestamp()).thenReturn(10_000L);
         MessageEvent messageEvent = new MessageEvent(peer1, transportInfo, testMessage, 10_000);
 
@@ -171,13 +169,13 @@ public class MessageDispatcherTest extends RadixTest {
 
     @Test
     public void receiveDisconnectNullZeroSystem() {
-        SystemMessage testMessage1 = spy(new SystemMessage());
+        SystemMessage testMessage1 = spy(new SystemMessage(getLocalSystem()));
         RadixSystem radixSystem1 = spy(testMessage1.getSystem());
         doReturn(radixSystem1).when(testMessage1).getSystem();
         doReturn(EUID.ZERO).when(radixSystem1).getNID();
         MessageEvent messageEvent1 = new MessageEvent(peer1, transportInfo, testMessage1, 10_000);
 
-        SystemMessage testMessage2 = spy(new SystemMessage());
+        SystemMessage testMessage2 = spy(new SystemMessage(getLocalSystem()));
         RadixSystem radixSystem2 = spy(testMessage2.getSystem());
         doReturn(radixSystem2).when(testMessage2).getSystem();
         doReturn(null).when(radixSystem2).getNID();
@@ -195,7 +193,7 @@ public class MessageDispatcherTest extends RadixTest {
 
     @Test
     public void receiveDisconnectOldPeer() {
-        SystemMessage testMessage = spy(new SystemMessage());
+        SystemMessage testMessage = spy(new SystemMessage(getLocalSystem()));
         RadixSystem radixSystem = spy(testMessage.getSystem());
         doReturn(radixSystem).when(testMessage).getSystem();
         doReturn(EUID.ONE).when(radixSystem).getNID();
@@ -210,10 +208,10 @@ public class MessageDispatcherTest extends RadixTest {
 
     @Test
     public void receiveBanSelf() throws UnknownHostException {
-        SystemMessage testMessage = spy(new SystemMessage());
+        SystemMessage testMessage = spy(new SystemMessage(getLocalSystem()));
         RadixSystem radixSystem = spy(testMessage.getSystem());
         doReturn(radixSystem).when(testMessage).getSystem();
-        doReturn(LocalSystem.getInstance().getNID()).when(radixSystem).getNID();
+        doReturn(getLocalSystem().getNID()).when(radixSystem).getNID();
         MessageEvent messageEvent = new MessageEvent(peer1, transportInfo, testMessage, 10_000);
 
         messageDispatcher.receive(null, messageEvent);

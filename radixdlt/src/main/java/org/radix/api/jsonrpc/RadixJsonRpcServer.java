@@ -58,22 +58,27 @@ public final class RadixJsonRpcServer {
 	 */
     private final LedgerEntryStore ledger;
 
-
 	/**
 	 * Serialization mechanism
 	 */
 	private final Serialization serialization;
 
-	public RadixJsonRpcServer(Serialization serialization, LedgerEntryStore ledger, AtomsService atomsService, Schema atomSchema) {
-		this(serialization, ledger, atomsService, atomSchema, DEFAULT_MAX_REQUEST_SIZE);
+	/**
+	 * Local system
+	 */
+	private final LocalSystem localSystem;
+
+	public RadixJsonRpcServer(Serialization serialization, LedgerEntryStore ledger, AtomsService atomsService, Schema atomSchema, LocalSystem localSystem) {
+		this(serialization, ledger, atomsService, atomSchema, localSystem, DEFAULT_MAX_REQUEST_SIZE);
 	}
 
-	public RadixJsonRpcServer(Serialization serialization, LedgerEntryStore ledger, AtomsService atomsService, Schema atomSchema, long maxRequestSizeBytes) {
+	public RadixJsonRpcServer(Serialization serialization, LedgerEntryStore ledger, AtomsService atomsService, Schema atomSchema, LocalSystem localSystem, long maxRequestSizeBytes) {
 		this.serialization = Objects.requireNonNull(serialization);
 		this.ledger = Objects.requireNonNull(ledger);
 		this.atomsService = Objects.requireNonNull(atomsService);
 		this.atomSchema = Objects.requireNonNull(atomSchema);
-		this.maxRequestSizeBytes = Objects.requireNonNull(maxRequestSizeBytes);
+		this.localSystem = Objects.requireNonNull(localSystem);
+		this.maxRequestSizeBytes = maxRequestSizeBytes;
 	}
 
     /**
@@ -177,7 +182,7 @@ public final class RadixJsonRpcServer {
                     result = Modules.get(AddressBook.class).peers().collect(Collectors.toList());
                     break;
                 case "Network.getInfo":
-                    result = LocalSystem.getInstance();
+                    result = localSystem;
                     break;
                 case "Ping":
                     result = new JSONObject()

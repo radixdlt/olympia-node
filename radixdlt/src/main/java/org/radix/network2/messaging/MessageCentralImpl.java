@@ -15,6 +15,7 @@ import org.radix.network2.NetworkLegacyPatching;
 import org.radix.network2.TimeSupplier;
 import org.radix.network2.addressbook.Peer;
 import org.radix.network2.transport.Transport;
+import org.radix.universe.system.LocalSystem;
 import org.radix.universe.system.events.QueueFullEvent;
 import org.radix.utils.SystemMetaData;
 import org.xerial.snappy.Snappy;
@@ -71,7 +72,8 @@ final class MessageCentralImpl implements MessageCentral {
 		Events events,
 		TimeSupplier timeSource,
 		EventQueueFactory<MessageEvent> eventQueueFactory,
-		Interfaces interfaces
+		Interfaces interfaces,
+		LocalSystem localSystem
 	) {
 		this.inboundQueue = eventQueueFactory.createEventQueue(config.messagingInboundQueueMax(8192));
 		this.outboundQueue = eventQueueFactory.createEventQueue(config.messagingOutboundQueueMax(16384));
@@ -81,7 +83,7 @@ final class MessageCentralImpl implements MessageCentral {
 		this.events = Objects.requireNonNull(events);
 
 		Objects.requireNonNull(timeSource);
-		this.messageDispatcher = new MessageDispatcher(config, serialization, timeSource, interfaces);
+		this.messageDispatcher = new MessageDispatcher(config, serialization, timeSource, localSystem, interfaces);
 
 		this.transports = Lists.newArrayList(transportManager.transports());
 

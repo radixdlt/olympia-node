@@ -7,7 +7,6 @@ import org.junit.BeforeClass;
 import org.mockito.stubbing.Answer;
 import org.radix.modules.Modules;
 import org.radix.properties.RuntimeProperties;
-import org.radix.shards.ShardSpace;
 import org.radix.time.NtpService;
 import org.radix.universe.system.LocalSystem;
 import org.radix.utils.SystemMetaData;
@@ -23,7 +22,8 @@ public abstract class RadixTest
 {
 	private static Serialization serialization;
 	private static NtpService ntpService;
-	private static RuntimeProperties runtimeProperties;
+	private static RuntimeProperties properties;
+	private static LocalSystem localSystem;
 
 	@BeforeClass
 	public static void startRadixTest() {
@@ -31,11 +31,12 @@ public abstract class RadixTest
 
 		final SecureRandom secureRandom = new SecureRandom();
 
-		runtimeProperties = mock(RuntimeProperties.class);
-		doAnswer(invocation -> invocation.getArgument(1)).when(runtimeProperties).get(any(), any());
+		properties = mock(RuntimeProperties.class);
+		doAnswer(invocation -> invocation.getArgument(1)).when(properties).get(any(), any());
 
 		final Universe universe = mock(Universe.class);
 		when(universe.getMagic()).thenReturn(2);
+		when(universe.getPort()).thenReturn(8080);
 
 		final SystemMetaData systemMetaData = mock(SystemMetaData.class);
 		SystemMetaData.set(systemMetaData);
@@ -45,10 +46,10 @@ public abstract class RadixTest
 
 		serialization = Serialization.getDefault();
 
-		final LocalSystem localSystem = mock(LocalSystem.class);
-
-		Modules.put(RuntimeProperties.class, runtimeProperties);
 		Modules.put(Universe.class, universe);
+		localSystem = LocalSystem.restoreOrCreate(getProperties());
+
+		Modules.put(RuntimeProperties.class, properties);
 		Modules.put(LocalSystem.class, localSystem);
 	}
 
@@ -71,6 +72,10 @@ public abstract class RadixTest
 	}
 
 	public static RuntimeProperties getProperties() {
-		return runtimeProperties;
+		return properties;
+	}
+
+	public static LocalSystem getLocalSystem() {
+		return localSystem;
 	}
 }

@@ -46,14 +46,15 @@ public final class StandardFilters {
 	 * </ul>
 	 *
 	 * @return {@code true} if all the criteria are met, {@code false} otherwise
+	 * @param self the EUID of this node
 	 * @param interfaces the interfaces to test against
-	 * @param whitelist
+	 * @param whitelist the whitelist
 	 */
-	public static PeerPredicate standardFilter(Interfaces interfaces, Whitelist whitelist) {
+	public static PeerPredicate standardFilter(EUID self, Interfaces interfaces, Whitelist whitelist) {
 		return hasTransports()
 			.and(notLocalAddress(interfaces))
 			.and(isWhitelisted(whitelist))
-			.and(notOurNID())
+			.and(notOurNID(self))
 			.and(acceptableProtocol())
 			.and(notBanned());
 	}
@@ -95,9 +96,10 @@ public final class StandardFilters {
 	 * Returns {@code true} if the peer has a NID, and it's not the local NID.
 	 *
 	 * @return {@code true} if the peer has a NID, and it's not the local NID, {@code false} otherwise
+	 * @param self the EUID of this node
 	 */
-	public static PeerPredicate notOurNID() {
-		return peer -> !(peer.hasNID() && peer.getNID().equals(LocalSystem.getInstance().getNID()));
+	public static PeerPredicate notOurNID(EUID self) {
+		return peer -> !(peer.hasNID() && peer.getNID().equals(self));
 	}
 
 	/**

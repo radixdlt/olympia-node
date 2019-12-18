@@ -24,11 +24,6 @@ import org.radix.universe.system.LocalSystem;
 public class TempoModule extends AbstractModule {
 	@Override
 	protected void configure() {
-		// TODO bind Ledger interface to Tempo when ready to consume in application level
-		LocalSystem localSystem = LocalSystem.getInstance();
-		bind(LocalSystem.class).annotatedWith(Names.named("self")).toInstance(localSystem);
-		bind(EUID.class).annotatedWith(Names.named("self")).toInstance(localSystem.getNID());
-
 		// dependencies
 		bind(Scheduler.class).toProvider(SingleThreadedScheduler::new);
 		bind(WallclockTimeSupplier.class).toInstance(Time::currentTimestamp);

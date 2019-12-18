@@ -5,7 +5,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.radix.Radix;
 import org.radix.modules.Modules;
 import org.radix.network.discovery.Whitelist;
 import org.radix.network2.transport.StaticTransportMetadata;
@@ -15,12 +14,8 @@ import org.radix.properties.RuntimeProperties;
 import org.radix.serialization.TestSetupUtils;
 import org.radix.shards.ShardSpace;
 import org.radix.universe.system.LocalSystem;
-import org.radix.universe.system.RadixSystem;
 
-import com.google.common.collect.ImmutableList;
 import com.radixdlt.common.EUID;
-import com.radixdlt.crypto.CryptoException;
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.universe.Universe;
 
 import static org.junit.Assert.*;
@@ -100,15 +95,14 @@ public class StandardFilters2Test {
 			when(properties.get(eq("shards.range"), anyLong())).thenReturn(ShardSpace.SHARD_CHUNK_RANGE);
 			Modules.put(RuntimeProperties.class, properties);
 
-			LocalSystem.reset();
-			Peer ourNid = new PeerWithNid(LocalSystem.getInstance().getNID());
+			EUID self = EUID.ZERO;
+			Peer ourNid = new PeerWithNid(self);
 			Peer notOurNid = new PeerWithNid(EUID.ONE);
 			Peer noNidAtAll = new PeerWithTransport(TransportInfo.of("DUMMY", StaticTransportMetadata.empty()));
-			assertFalse(StandardFilters.notOurNID().test(ourNid));
-			assertTrue(StandardFilters.notOurNID().test(notOurNid));
-			assertTrue(StandardFilters.notOurNID().test(noNidAtAll));
+			assertFalse(StandardFilters.notOurNID(self).test(ourNid));
+			assertTrue(StandardFilters.notOurNID(self).test(notOurNid));
+			assertTrue(StandardFilters.notOurNID(self).test(noNidAtAll));
 		} finally {
-			LocalSystem.reset();
 			Modules.remove(RuntimeProperties.class);
 		}
 	}

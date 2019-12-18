@@ -40,19 +40,21 @@ import org.xerial.snappy.Snappy;
  */
 //FIXME: Optional dependency on Modules.get(SystemMetaData.class) for system metadata
 //FIXME: Optional dependency on Modules.get(AddressBook.class) for profiling
-// FIXME: Dependency on LocalSystem.getInstance() for signing key
+// FIXME: Dependency on this.localSystem for signing key
 class MessageDispatcher {
 	private static final Logger log = Logging.getLogger("messaging");
 
 	private final long messageTtlMs;
 	private final Serialization serialization;
 	private final TimeSupplier timeSource;
+	private final LocalSystem localSystem;
 	private final Interfaces interfaces;
 
-	MessageDispatcher(MessageCentralConfiguration config, Serialization serialization, TimeSupplier timeSource, Interfaces interfaces) {
+	MessageDispatcher(MessageCentralConfiguration config, Serialization serialization, TimeSupplier timeSource, LocalSystem localSystem, Interfaces interfaces) {
 		this.messageTtlMs = config.messagingTimeToLive(30) * 1000L;
 		this.serialization = serialization;
 		this.timeSource = timeSource;
+		this.localSystem = localSystem;
 		this.interfaces = interfaces;
 	}
 
@@ -73,7 +75,7 @@ class MessageDispatcher {
 			if (message instanceof SignedMessage) {
 				SignedMessage signedMessage = (SignedMessage) message;
 				if (signedMessage.getSignature() == null) {
-					signedMessage.sign(LocalSystem.getInstance().getKeyPair());
+					signedMessage.sign(this.localSystem.getKeyPair());
 				}
 			}
 
@@ -119,7 +121,7 @@ class MessageDispatcher {
 					return;
 				}
 
-				if (system.getNID().equals(LocalSystem.getInstance().getNID())) {
+				if (system.getNID().equals(this.localSystem.getNID())) {
 					peer.ban("Message from self");
 					TransportInfo ti = inboundMessage.transportInfo();
 					if (ti != null) {

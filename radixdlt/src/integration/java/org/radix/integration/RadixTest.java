@@ -22,6 +22,7 @@ public class RadixTest
 	private static Serialization serialization;
 	private static String dbLocation = null;
 	private static RuntimeProperties properties;
+	private static LocalSystem localSystem;
 
 	private long clock = 100L; // Arbitrary starting point. Must be larger than number of atoms in genesis.
 
@@ -49,7 +50,7 @@ public class RadixTest
 		Modules.remove(Universe.class); // GenerateUniverses adds this
 		Modules.put(Universe.class, universe);
 
-		LocalSystem.getInstance(); // Load node.ks, after universe
+		localSystem = LocalSystem.restoreOrCreate(properties);// Load node.ks, after universe
 	}
 
 	@AfterClass
@@ -68,5 +69,9 @@ public class RadixTest
 
 	public static RuntimeProperties getProperties() {
 		return properties;
+	}
+
+	public static LocalSystem getLocalSystem() {
+		return localSystem;
 	}
 }

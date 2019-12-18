@@ -38,7 +38,7 @@ public class RadixTestWithStores extends RadixTest
 
 		messageCentral = new MessageCentralFactory().createDefault(getProperties());
 
-		EUID self = LocalSystem.getInstance().getNID();
+		EUID self = getLocalSystem().getNID();
 		injector = Guice.createInjector(
 				new AbstractModule() {
 					@Override

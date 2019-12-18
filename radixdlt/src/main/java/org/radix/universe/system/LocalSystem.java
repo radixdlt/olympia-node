@@ -1,17 +1,21 @@
 package org.radix.universe.system;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableList;
+import com.radixdlt.crypto.CryptoException;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.keys.Keys;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.DsonOutput.Output;
+import com.radixdlt.serialization.Serialization;
+import com.radixdlt.serialization.SerializationException;
+import com.radixdlt.serialization.SerializerId2;
+import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.Bytes;
-import java.io.IOException;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.function.LongSupplier;
-
 import org.radix.Radix;
 import org.radix.common.executors.Executor;
 import org.radix.common.executors.ScheduledExecutable;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.keys.Keys;
-import com.radixdlt.crypto.CryptoException;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.modules.Modules;
@@ -20,97 +24,65 @@ import org.radix.network2.transport.TransportInfo;
 import org.radix.network2.transport.udp.PublicInetAddress;
 import org.radix.network2.transport.udp.UDPConstants;
 import org.radix.properties.RuntimeProperties;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.Serialization;
-import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.universe.Universe;
 import org.radix.utils.SystemMetaData;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableList;
+import java.io.IOException;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.function.LongSupplier;
+
 import static com.radixdlt.serialization.MapHelper.mapOf;
 
 @SerializerId2("api.local_system")
 // FIXME reimplement localsystem as an interface, extract persistence to elsewhere
 public final class LocalSystem extends RadixSystem
 {
-	private static final Logger log = Logging.getLogger ();
+	private static final Logger log = Logging.getLogger();
 
-	private static LocalSystem instance = null;
+	public static LocalSystem restoreOrCreate(RuntimeProperties properties) {
+		String nodeKeyPath = properties.get("node.key.path", "node.ks");
+		ECKeyPair nodeKey = loadNodeKey(nodeKeyPath);
+		LocalSystem localSystem;
 
-	// FIXME: This is a pretty horrible way of ensuring unit tests are stable,
-	// as freeMemory() can return varying numbers between calls.
-	// This is adjusted via reflection in the unit tests to be something that
-	// returns a constant.
-	private static LongSupplier freeMemory = () -> Runtime.getRuntime().freeMemory();
-	private static LongSupplier maxMemory = () -> Runtime.getRuntime().maxMemory();
-	private static LongSupplier totalMemory = () -> Runtime.getRuntime().totalMemory();
-
-	@VisibleForTesting
-	public static synchronized void reset() {
-		LocalSystem.instance = null;
-	}
-
-	public static synchronized LocalSystem getInstance()
-	{
-		if (LocalSystem.instance == null)
-		{
-			ECKeyPair nodeKey = null;
-
-			try
-			{
-				String nodeKeyPath = Modules.get(RuntimeProperties.class).get("node.key.path", "node.ks");
-				nodeKey = Keys.readKey(nodeKeyPath, "node", "RADIX_NODE_KEYSTORE_PASSWORD", "RADIX_NODE_KEY_PASSWORD");
+		// if system has been persisted
+		if (SystemMetaData.getInstanceOptional().map(meta -> meta.has("system") ).orElse(false)) {
+			byte[] systemBytes = SystemMetaData.getInstance().get("system", Bytes.EMPTY_BYTES);
+			try {
+				localSystem = Serialization.getDefault().fromDson(systemBytes, LocalSystem.class);
+			} catch (SerializationException e) {
+				throw new IllegalStateException("while restoring local instance", e);
 			}
-			catch (IOException | CryptoException ex)
-			{
-				throw new IllegalStateException(ex);
-			}
+		} else {
+			localSystem = new LocalSystem(
+				nodeKey,
+				Radix.AGENT, Radix.AGENT_VERSION, Radix.PROTOCOL_VERSION
+			);
+		}
 
-			if (SystemMetaData.getInstanceOptional().map(meta -> meta.has("system")).orElse(false)) {
-				try {
-					byte[] systemBytes = SystemMetaData.getInstance().get("system", Bytes.EMPTY_BYTES);
-					instance = Serialization.getDefault().fromDson(systemBytes, LocalSystem.class);
-
-					if (LocalSystem.instance.getKeyPair().equals(nodeKey) == false) // TODO what happens if NODE_KEY has changed?  Dump loggables?  Dump DB?
-						log.warn("Node key has changed from "+instance.getKeyPair().getUID()+" to "+nodeKey.getUID());
-
-					LocalSystem.instance.setKeyPair(nodeKey);
-				} catch (IOException ex) {
-					log.error("Could not load persisted system state from SystemMetaData", ex);
-				}
-			}
-
-			if (LocalSystem.instance == null) {
-				LocalSystem.instance = new LocalSystem(
-					nodeKey,
-					Radix.AGENT, Radix.AGENT_VERSION, Radix.PROTOCOL_VERSION
-				);
-			}
-
-			if (Modules.isAvailable(SystemMetaData.class) == true)
-			{
-				Executor.getInstance().scheduleAtFixedRate(new ScheduledExecutable(1, 1, TimeUnit.SECONDS)
-				{
-					@Override
-					public void execute()
-					{
-						SystemMetaData.ifPresent( smc -> {
-							try {
-								byte[] systemBytes = Serialization.getDefault().toDson(getInstance(), Output.PERSIST);
-								smc.put("system", systemBytes);
-							} catch (IOException e) {
-								log.error("Could not persist system state", e);
-							}
-						});
+		// setup background checkpoint task to persist instance into SystemMetaData
+		Executor.getInstance().scheduleAtFixedRate(new ScheduledExecutable(1, 1, TimeUnit.SECONDS) {
+			@Override
+			public void execute() {
+				SystemMetaData.ifPresent(smc -> {
+					try {
+						byte[] systemBytes = Serialization.getDefault().toDson(localSystem, Output.PERSIST);
+						smc.put("system", systemBytes);
+					} catch (IOException e) {
+						log.error("Could not persist system state", e);
 					}
 				});
 			}
-		}
+		});
 
-		return LocalSystem.instance;
+		return localSystem;
+	}
+
+	private static ECKeyPair loadNodeKey(String nodeKeyPath) {
+		try {
+			return Keys.readKey(nodeKeyPath, "node", "RADIX_NODE_KEYSTORE_PASSWORD", "RADIX_NODE_KEY_PASSWORD");
+		} catch (IOException | CryptoException ex) {
+			throw new IllegalStateException("while loading node key", ex);
+		}
 	}
 
 	private ECKeyPair keyPair;
@@ -133,11 +105,6 @@ public final class LocalSystem extends RadixSystem
 		return this.keyPair;
 	}
 
-	private void setKeyPair(ECKeyPair keyPair) {
-		this.keyPair = keyPair;
-		super.setKey(keyPair.getPublicKey());
-	}
-
 	// Property "ledger" - 1 getter
 	// No really obvious way of doing this better
 	@JsonProperty("ledger")
@@ -150,13 +117,6 @@ public final class LocalSystem extends RadixSystem
 			"persist", smd.get("ledger.latency.persist", 0)
 		);
 
-		Map<String, Object> faults = mapOf(
-			"tears", smd.get("ledger.faults.tears", 0),
-			"assists", smd.get("ledger.faults.assists", 0),
-			"stitched", smd.get("ledger.faults.stitched", 0),
-			"failed", smd.get("ledger.faults.failed", 0)
-		);
-
 		return mapOf(
 			"processed", smd.get("ledger.processed", 0),
 			"processing", smd.get("ledger.processing", 0),
@@ -166,8 +126,7 @@ public final class LocalSystem extends RadixSystem
 			"storingPerShard", smd.get("ledger.storingPerShard", 0),
 			"storing.peak", smd.get("ledger.storing.peak", 0),
 			"checksum", smd.get("ledger.checksum", 0),
-			"latency", latency,
-			"faults", faults
+			"latency", latency
 		);
 	}
 
@@ -220,17 +179,6 @@ public final class LocalSystem extends RadixSystem
 		return mapOf(
 				"inbound", inbound,
 				"outbound", outbound);
-	}
-
-	// Property "memory" - 1 getter
-	// No obvious improvements here
-	@JsonProperty("memory")
-	@DsonOutput(Output.API)
-	Map<String, Object> getJsonMemory() {
-		return mapOf(
-				"free", freeMemory.getAsLong(),
-				"total", totalMemory.getAsLong(),
-				"max", maxMemory.getAsLong());
 	}
 
 	// Property "processors" - 1 getter

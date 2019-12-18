@@ -22,14 +22,16 @@ import org.radix.utils.SystemMetaData;
 
 public class NetworkService {
 	private final Serialization serialization;
+	private final LocalSystem localSystem;
 
-	public NetworkService(Serialization serialization) {
+	public NetworkService(Serialization serialization, LocalSystem localSystem) {
 		this.serialization = serialization;
+		this.localSystem = localSystem;
 	}
 
 	public JSONObject getSelf() {
  		JSONObject self = new JSONObject();
-		self.put("system", serialization.toJsonObject(LocalSystem.getInstance(), Output.WIRE));
+		self.put("system", serialization.toJsonObject(localSystem, Output.WIRE));
  		return self;
  	}
 

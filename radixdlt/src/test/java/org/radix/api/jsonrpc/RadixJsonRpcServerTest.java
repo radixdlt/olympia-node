@@ -11,6 +11,7 @@ import org.json.JSONObject;
 import org.junit.Test;
 import org.radix.api.services.AtomsService;
 import com.radixdlt.serialization.Serialization;
+import org.radix.universe.system.LocalSystem;
 
 public class RadixJsonRpcServerTest {
 	@Test
@@ -21,7 +22,8 @@ public class RadixJsonRpcServerTest {
 			mock(Serialization.class),
 			mock(LedgerEntryStore.class),
 			mock(AtomsService.class),
-			mock(Schema.class)
+			mock(Schema.class),
+			mock(LocalSystem.class)
 		);
 
 		JSONObject response = new JSONObject(server.handleChecked(request.toString()));
@@ -48,7 +50,8 @@ public class RadixJsonRpcServerTest {
 				serializer,
 				mock(LedgerEntryStore.class),
 				mock(AtomsService.class),
-				mock(Schema.class)
+				mock(Schema.class),
+				mock(LocalSystem.class)
 		);
 
 		JSONObject response = new JSONObject(server.handleChecked(request.toString()));
@@ -67,6 +70,7 @@ public class RadixJsonRpcServerTest {
 			mock(LedgerEntryStore.class),
 			mock(AtomsService.class),
 			mock(Schema.class),
+			mock(LocalSystem.class),
 			5
 		);
 

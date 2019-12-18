@@ -73,6 +73,7 @@ public final class Radix
 	public Radix(RuntimeProperties properties) {
 		// set up serialisation
 		Serialization serialization = Serialization.getDefault();
+		LocalSystem localSystem = LocalSystem.restoreOrCreate(properties);
 
 		// set up universe
 		Universe universe = extractUniverseFrom(properties, serialization);
@@ -96,11 +97,11 @@ public final class Radix
 		AddressBook addressBook = createAddressBook(dbEnv);
 		Modules.put(AddressBook.class, addressBook);
 		BootstrapDiscovery bootstrapDiscovery = new BootstrapDiscovery(properties, universe);
-		PeerManager peerManager = createPeerManager(properties, addressBook, messageCentral, Events.getInstance(), bootstrapDiscovery, interfaces);
+		PeerManager peerManager = createPeerManager(properties, addressBook, messageCentral, Events.getInstance(), bootstrapDiscovery, interfaces, localSystem);
 		peerManager.start();
 
 		// TODO Eventually modules should be created using Google Guice injector
-		GlobalInjector globalInjector = new GlobalInjector(properties, dbEnv, messageCentral);
+		GlobalInjector globalInjector = new GlobalInjector(properties, dbEnv, messageCentral, localSystem);
 		Consensus consensus = globalInjector.getInjector().getInstance(Consensus.class);
 		// TODO use consensus for application construction (in our case, the engine middleware)
 
@@ -111,10 +112,10 @@ public final class Radix
 		// start API services
 		AtomToBinaryConverter atomToBinaryConverter = globalInjector.getInjector().getInstance(AtomToBinaryConverter.class);
 		LedgerEntryStore store = globalInjector.getInjector().getInstance(LedgerEntryStore.class);
-		httpServer = new RadixHttpServer(store, atomProcessor, atomToBinaryConverter, universe, messageCentral, serialization, properties);
+		httpServer = new RadixHttpServer(store, atomProcessor, atomToBinaryConverter, universe, messageCentral, serialization, properties, localSystem);
 		httpServer.start(properties);
 
-		log.info("Node '" + LocalSystem.getInstance().getNID() + "' started successfully");
+		log.info("Node '" + localSystem.getNID() + "' started successfully");
 	}
 
 	private static void dumpExecutionLocation() {
@@ -195,8 +196,8 @@ public final class Radix
 		return new AddressBookFactory().createDefault(dbEnv);
 	}
 
-	private PeerManager createPeerManager(RuntimeProperties properties, AddressBook addressBook, MessageCentral messageCentral, Events events, BootstrapDiscovery bootstrapDiscovery, Interfaces interfaces) {
-		return new PeerManagerFactory().createDefault(properties, addressBook, messageCentral, events, bootstrapDiscovery, interfaces);
+	private PeerManager createPeerManager(RuntimeProperties properties, AddressBook addressBook, MessageCentral messageCentral, Events events, BootstrapDiscovery bootstrapDiscovery, Interfaces interfaces, LocalSystem localSystem) {
+		return new PeerManagerFactory().createDefault(properties, addressBook, messageCentral, events, bootstrapDiscovery, interfaces, localSystem);
 	}
 
 }

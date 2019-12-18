@@ -4,6 +4,7 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
 
+import org.radix.universe.system.RadixSystem;
 import org.radix.universe.system.SystemMessage;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -16,12 +17,12 @@ public final class PeerPingMessage extends SystemMessage
 	private long nonce;
 
 	private PeerPingMessage() {
-		this(0L);
+		// for serializer
 	}
 
-	public PeerPingMessage(long nonce)
+	public PeerPingMessage(long nonce, RadixSystem system)
 	{
-		super();
+		super(system);
 		this.nonce = nonce;
 	}
 

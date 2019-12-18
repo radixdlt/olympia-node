@@ -19,6 +19,7 @@ import org.radix.network2.addressbook.Peer;
 import org.radix.network2.transport.StaticTransportMetadata;
 import org.radix.network2.transport.TransportInfo;
 import org.radix.properties.RuntimeProperties;
+import org.radix.universe.system.LocalSystem;
 import org.radix.universe.system.events.QueueFullEvent;
 import org.xerial.snappy.Snappy;
 
@@ -88,8 +89,9 @@ public class MessageCentralImplTest {
 		doReturn(outboundQueue).when(queueFactory).createEventQueue(conf.messagingOutboundQueueMax(0));
 		Interfaces interfaces = mock(Interfaces.class);
 		PowerMockito.when(interfaces.isSelf(any())).thenReturn(false);
+		LocalSystem localSystem = mock(LocalSystem.class);
 		this.mci = new MessageCentralImpl(new MessagingDummyConfigurations.DummyMessageCentralConfiguration(), serialization, transportManager, events, System::currentTimeMillis,
-				queueFactory, interfaces);
+				queueFactory, interfaces, localSystem);
 	}
 
 	@After

@@ -59,23 +59,25 @@ public final class RadixHttpServer {
     private final NetworkService networkService;
 	private final Universe universe;
 	private final JSONObject apiSerializedUniverse;
+	private final LocalSystem localSystem;
 	private final Serialization serialization;
 
-	public RadixHttpServer(LedgerEntryStore store, RadixEngineAtomProcessor radixEngineAtomProcessor, AtomToBinaryConverter atomToBinaryConverter, Universe universe, MessageCentral messageCentral, Serialization serialization, RuntimeProperties properties) {
+	public RadixHttpServer(LedgerEntryStore store, RadixEngineAtomProcessor radixEngineAtomProcessor, AtomToBinaryConverter atomToBinaryConverter, Universe universe, MessageCentral messageCentral, Serialization serialization, RuntimeProperties properties, LocalSystem localSystem) {
 		this.universe = Objects.requireNonNull(universe);
 		this.serialization = Objects.requireNonNull(serialization);
 		this.apiSerializedUniverse = serialization.toJsonObject(this.universe, DsonOutput.Output.API);
+		this.localSystem = Objects.requireNonNull(localSystem);
 		this.peers = new ConcurrentHashMap<>();
 		this.atomsService = new AtomsService(store, radixEngineAtomProcessor, atomToBinaryConverter);
 		this.jsonRpcServer = new RadixJsonRpcServer(
 				serialization,
 				store,
 				atomsService,
-				AtomSchemas.get()
-		);
+				AtomSchemas.get(),
+			localSystem);
 		this.internalService = new InternalService(messageCentral, store, radixEngineAtomProcessor, serialization, properties);
 		this.testService = new TestService(serialization, messageCentral);
-		this.networkService = new NetworkService(serialization);
+		this.networkService = new NetworkService(serialization, localSystem);
 	}
 
     private Undertow server;
@@ -259,7 +261,7 @@ public final class RadixHttpServer {
 
     private void addRestSystemRoutesTo(RoutingHandler handler) {
         addGetRoute("/api/system", exchange
-                -> respond(this.serialization.toJsonObject(LocalSystem.getInstance(), DsonOutput.Output.API), exchange), handler);
+                -> respond(this.serialization.toJsonObject(this.localSystem, DsonOutput.Output.API), exchange), handler);
     }
 
     // helper methods for responding to an exchange with various objects for readability

@@ -36,7 +36,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 // FIXME: static dependency on Modules.get(Universe.class).getPlanck()
-// FIXME: static dependency on LocalSystem.getInstance().getNID()
+// FIXME: static dependency on this.localSystem.getNID()
 public class PeerManager {
 	private static final Logger log = Logging.getLogger("peermanager");
 
@@ -65,8 +65,10 @@ public class PeerManager {
 	private final int peerMessageBatchSize;
 
 	private final SecureRandom rng;
+	private final EUID self;
 	private final Interfaces interfaces;
 	private final Whitelist whitelist;
+	private final LocalSystem localSystem;
 
 	private Future<?> heartbeatPeersFuture;
 	private Future<?> peersBroadcastFuture;
@@ -88,7 +90,7 @@ public class PeerManager {
 
 				if (peersToProbe.isEmpty()) {
 					addressbook.peers()
-						.filter(StandardFilters.standardFilter(interfaces, whitelist))
+						.filter(StandardFilters.standardFilter(self, interfaces, whitelist))
 						.forEachOrdered(peersToProbe::add);
 					this.numPeers = peersToProbe.size();
 				}
@@ -105,13 +107,15 @@ public class PeerManager {
 		}
 	}
 
-	PeerManager(PeerManagerConfiguration config, AddressBook addressbook, MessageCentral messageCentral, Events events, BootstrapDiscovery bootstrapDiscovery, Interfaces interfaces, RuntimeProperties properties) {
+	PeerManager(PeerManagerConfiguration config, AddressBook addressbook, MessageCentral messageCentral, Events events, BootstrapDiscovery bootstrapDiscovery, EUID self, LocalSystem localSystem, Interfaces interfaces, RuntimeProperties properties) {
 		super();
 
 		this.addressbook = Objects.requireNonNull(addressbook);
 		this.messageCentral = Objects.requireNonNull(messageCentral);
 		this.events = Objects.requireNonNull(events);
 		this.bootstrapDiscovery = Objects.requireNonNull(bootstrapDiscovery);
+		this.self = Objects.requireNonNull(self);
+		this.localSystem = Objects.requireNonNull(localSystem);
 		this.interfaces = Objects.requireNonNull(interfaces);
 		this.whitelist = Whitelist.from(properties);
 
@@ -207,7 +211,7 @@ public class PeerManager {
 
 	private void heartbeatPeers() {
 		// System Heartbeat
-		SystemMessage msg = new SystemMessage();
+		SystemMessage msg = new SystemMessage(localSystem);
 		addressbook.recentPeers().forEachOrdered(peer -> {
 			try {
 				messageCentral.send(peer, msg);
@@ -224,7 +228,7 @@ public class PeerManager {
 	private void handlePeersMessage(Peer peer, PeersMessage peersMessage) {
 		List<Peer> peers = peersMessage.getPeers();
 		if (peers != null) {
-			EUID localNid = LocalSystem.getInstance().getNID();
+			EUID localNid = this.localSystem.getNID();
 			peers.stream()
 				.filter(Peer::hasSystem)
 				.filter(p -> !localNid.equals(p.getNID()))
@@ -239,7 +243,7 @@ public class PeerManager {
 			PeersMessage peersMessage = new PeersMessage();
 			List<Peer> peers = addressbook.peers()
 				.filter(Peer::hasNID)
-				.filter(StandardFilters.standardFilter(interfaces, whitelist))
+				.filter(StandardFilters.standardFilter(self, interfaces, whitelist))
 				.filter(StandardFilters.recentlyActive())
 				.collect(Collectors.toList());
 
@@ -268,7 +272,7 @@ public class PeerManager {
 		try {
 			long nonce = message.getNonce();
 			log.debug("peer.ping from " + peer + " with nonce '" + nonce + "'");
-			messageCentral.send(peer, new PeerPongMessage(nonce));
+			messageCentral.send(peer, new PeerPongMessage(nonce, localSystem));
 			events.broadcast(new PeerAvailableEvent(peer));
 		} catch (Exception ex) {
 			log.error("peer.ping " + peer, ex);
@@ -318,7 +322,7 @@ public class PeerManager {
 					return false;
 				}
 				if (!this.probes.containsKey(peer)) {
-					PeerPingMessage ping = new PeerPingMessage(rng.nextLong());
+					PeerPingMessage ping = new PeerPingMessage(rng.nextLong(), localSystem);
 
 					// Only wait for response if peer has a system, otherwise peer will be upgraded by pong message
 					long nonce = ping.getNonce();
@@ -354,7 +358,7 @@ public class PeerManager {
 	private void discoverPeers() {
 		// Probe all the bootstrap hosts so that they know about us
 		GetPeersMessage msg = new GetPeersMessage();
-		bootstrapDiscovery.discover(StandardFilters.standardFilter(interfaces, whitelist)).stream()
+		bootstrapDiscovery.discover(StandardFilters.standardFilter(self, interfaces, whitelist)).stream()
 			.map(addressbook::peer)
 			.forEachOrdered(peer -> {
 				probe(peer);
