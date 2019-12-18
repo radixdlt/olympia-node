@@ -358,7 +358,7 @@ public class PeerManager {
 	private void discoverPeers() {
 		// Probe all the bootstrap hosts so that they know about us
 		GetPeersMessage msg = new GetPeersMessage();
-		bootstrapDiscovery.discover(StandardFilters.standardFilter(self, interfaces, whitelist)).stream()
+		bootstrapDiscovery.discover(this.addressbook, StandardFilters.standardFilter(self, interfaces, whitelist)).stream()
 			.map(addressbook::peer)
 			.forEachOrdered(peer -> {
 				probe(peer);

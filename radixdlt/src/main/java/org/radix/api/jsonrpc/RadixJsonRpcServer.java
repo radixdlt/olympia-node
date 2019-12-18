@@ -68,16 +68,22 @@ public final class RadixJsonRpcServer {
 	 */
 	private final LocalSystem localSystem;
 
-	public RadixJsonRpcServer(Serialization serialization, LedgerEntryStore ledger, AtomsService atomsService, Schema atomSchema, LocalSystem localSystem) {
-		this(serialization, ledger, atomsService, atomSchema, localSystem, DEFAULT_MAX_REQUEST_SIZE);
+	/**
+	 * Address book
+	 */
+	private final AddressBook addressBook;
+
+	public RadixJsonRpcServer(Serialization serialization, LedgerEntryStore ledger, AtomsService atomsService, Schema atomSchema, LocalSystem localSystem, AddressBook addressBook) {
+		this(serialization, ledger, atomsService, atomSchema, localSystem, addressBook, DEFAULT_MAX_REQUEST_SIZE);
 	}
 
-	public RadixJsonRpcServer(Serialization serialization, LedgerEntryStore ledger, AtomsService atomsService, Schema atomSchema, LocalSystem localSystem, long maxRequestSizeBytes) {
+	public RadixJsonRpcServer(Serialization serialization, LedgerEntryStore ledger, AtomsService atomsService, Schema atomSchema, LocalSystem localSystem, AddressBook addressBook, long maxRequestSizeBytes) {
 		this.serialization = Objects.requireNonNull(serialization);
 		this.ledger = Objects.requireNonNull(ledger);
 		this.atomsService = Objects.requireNonNull(atomsService);
 		this.atomSchema = Objects.requireNonNull(atomSchema);
 		this.localSystem = Objects.requireNonNull(localSystem);
+		this.addressBook = Objects.requireNonNull(addressBook);
 		this.maxRequestSizeBytes = maxRequestSizeBytes;
 	}
 
@@ -176,10 +182,10 @@ public final class RadixJsonRpcServer {
 					result = Modules.get(Universe.class);
 					break;
                 case "Network.getLivePeers":
-                    result = Modules.get(AddressBook.class).recentPeers().collect(Collectors.toList());
+                    result = this.addressBook.recentPeers().collect(Collectors.toList());
                     break;
                 case "Network.getPeers":
-                    result = Modules.get(AddressBook.class).peers().collect(Collectors.toList());
+                    result = this.addressBook.peers().collect(Collectors.toList());
                     break;
                 case "Network.getInfo":
                     result = localSystem;

@@ -23,10 +23,12 @@ import org.radix.utils.SystemMetaData;
 public class NetworkService {
 	private final Serialization serialization;
 	private final LocalSystem localSystem;
+	private final AddressBook addressBook;
 
-	public NetworkService(Serialization serialization, LocalSystem localSystem) {
+	public NetworkService(Serialization serialization, LocalSystem localSystem, AddressBook addressBook) {
 		this.serialization = serialization;
 		this.localSystem = localSystem;
+		this.addressBook = addressBook;
 	}
 
 	public JSONObject getSelf() {
@@ -41,7 +43,7 @@ public class NetworkService {
 		// sorted by transport name
 		Map<String, Set<Peer>> peersByTransport = new TreeMap<>();
 
-		Modules.get(AddressBook.class).recentPeers()
+		this.addressBook.recentPeers()
 			.forEachOrdered(p -> addPeerToMap(p, peersByTransport));
 
 
@@ -63,7 +65,7 @@ public class NetworkService {
 	}
 
 	public List<JSONObject> getLivePeers() {
-		return Modules.get(AddressBook.class).recentPeers()
+		return this.addressBook.recentPeers()
 			.map(peer -> {
 				return serialization.toJsonObject(peer, Output.WIRE);
 			})
@@ -72,12 +74,12 @@ public class NetworkService {
 
 	public JSONObject getLiveNIDS() {
 		JSONArray NIDS = new JSONArray();
-		Modules.get(AddressBook.class).recentPeers().forEachOrdered(peer -> NIDS.put(peer.getNID().toString()));
+		this.addressBook.recentPeers().forEachOrdered(peer -> NIDS.put(peer.getNID().toString()));
 		return new JSONObject().put("nids", NIDS);
 	}
 
 	public List<JSONObject> getPeers() {
-		return Modules.get(AddressBook.class).peers()
+		return this.addressBook.peers()
 			.map(peer -> {
 				return serialization.toJsonObject(peer, Output.WIRE);
 			})
@@ -89,7 +91,7 @@ public class NetworkService {
 
 		try {
 			EUID euid = EUID.valueOf(id);
-			Peer peer = Modules.get(AddressBook.class).peer(euid);
+			Peer peer = this.addressBook.peer(euid);
 			if (peer != null) {
 				return serialization.toJsonObject(peer, Output.API);
 			}

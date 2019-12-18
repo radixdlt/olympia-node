@@ -200,7 +200,7 @@ public class BootstrapDiscovery
 		return null;
 	}
 
-	public Collection<TransportInfo> discover(PeerPredicate filter)
+	public Collection<TransportInfo> discover(AddressBook addressbook, PeerPredicate filter)
 	{
 		List<TransportInfo> results = Lists.newArrayList();
 
@@ -209,7 +209,7 @@ public class BootstrapDiscovery
 				if (filter == null) {
 					results.add(host);
 				} else {
-					Peer peer = Modules.get(AddressBook.class).peer(host);
+					Peer peer = addressbook.peer(host);
 
 					if (peer != null && filter.test(peer)) {
 						results.add(host);

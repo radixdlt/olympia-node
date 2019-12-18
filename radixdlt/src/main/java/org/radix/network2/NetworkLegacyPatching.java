@@ -18,18 +18,6 @@ public final class NetworkLegacyPatching {
 	}
 
 	/**
-	 * Finds a peer, given transport information.
-	 *
-	 * @param info the {@link TransportInfo} for which to return a {@link Peer}
-	 * @return the {@link Peer} or {@code null} if the system is not yet ready
-	 *         to answer peer queries
-	 * @throws IOException if an I/O error occurs
-	 */
-	public static Peer findPeer(TransportInfo info) {
-		return Modules.isAvailable(AddressBook.class) ?  Modules.get(AddressBook.class).peer(info) : null;
-	}
-
-	/**
 	 * Return true if we already have information about the given peer being banned.
 	 * Note that if the peer is already banned according to our address book, the
 	 * specified peer instance will have it's banned timestamp updated to match the
@@ -38,19 +26,18 @@ public final class NetworkLegacyPatching {
 	 * @param peer the peer we are inquiring about
 	 * @param peerNid the corresponding node ID of the peer
 	 * @param timeSource a time source to use for checking expiration times
+	 * @param addressBook the address book
 	 * @return {@code true} if the peer is currently banned, {@code false} otherwise
 	 */
-	public static boolean checkPeerBanned(Peer peer, EUID peerNid, TimeSupplier timeSource) {
-		if (Modules.isAvailable(AddressBook.class)) {
-			Peer knownPeer = Modules.get(AddressBook.class).peer(peerNid);
+	public static boolean checkPeerBanned(Peer peer, EUID peerNid, TimeSupplier timeSource, AddressBook addressBook) {
+		Peer knownPeer = addressBook.peer(peerNid);
 
-			if (knownPeer != null && knownPeer.getTimestamp(Timestamps.BANNED) > timeSource.currentTime()) {
-				// Note that the next two commented out lines don't actually do anything, as the call to ban(...) overwrites the data
-				//peer.setTimestamp(Timestamps.BANNED, knownPeer.getTimestamp(Timestamps.BANNED));
-				//peer.setBanReason(knownPeer.getBanReason());
-				peer.ban(String.format("Banned peer %s at %s", peerNid, peer.toString()));
-				return true;
-			}
+		if (knownPeer != null && knownPeer.getTimestamp(Timestamps.BANNED) > timeSource.currentTime()) {
+			// Note that the next two commented out lines don't actually do anything, as the call to ban(...) overwrites the data
+			//peer.setTimestamp(Timestamps.BANNED, knownPeer.getTimestamp(Timestamps.BANNED));
+			//peer.setBanReason(knownPeer.getBanReason());
+			peer.ban(String.format("Banned peer %s at %s", peerNid, peer.toString()));
+			return true;
 		}
 		return false;
 	}

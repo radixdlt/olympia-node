@@ -39,7 +39,7 @@ import org.xerial.snappy.Snappy;
  * required, and remove the stuff we don't want to keep.
  */
 //FIXME: Optional dependency on Modules.get(SystemMetaData.class) for system metadata
-//FIXME: Optional dependency on Modules.get(AddressBook.class) for profiling
+//FIXME: Optional dependency on this.addressBook for profiling
 // FIXME: Dependency on this.localSystem for signing key
 class MessageDispatcher {
 	private static final Logger log = Logging.getLogger("messaging");
@@ -49,13 +49,15 @@ class MessageDispatcher {
 	private final TimeSupplier timeSource;
 	private final LocalSystem localSystem;
 	private final Interfaces interfaces;
+	private final AddressBook addressBook;
 
-	MessageDispatcher(MessageCentralConfiguration config, Serialization serialization, TimeSupplier timeSource, LocalSystem localSystem, Interfaces interfaces) {
+	MessageDispatcher(MessageCentralConfiguration config, Serialization serialization, TimeSupplier timeSource, LocalSystem localSystem, Interfaces interfaces, AddressBook addressBook) {
 		this.messageTtlMs = config.messagingTimeToLive(30) * 1000L;
 		this.serialization = serialization;
 		this.timeSource = timeSource;
 		this.localSystem = localSystem;
 		this.interfaces = interfaces;
+		this.addressBook = addressBook;
 	}
 
 	SendResult send(TransportManager transportManager, final MessageEvent outboundMessage) {
@@ -109,7 +111,7 @@ class MessageDispatcher {
 				SystemMessage systemMessage = (SystemMessage) message;
 				RadixSystem system = systemMessage.getSystem();
 
-				peer = Modules.get(AddressBook.class).updatePeerSystem(peer, system);
+				peer = this.addressBook.updatePeerSystem(peer, system);
 
 				if (system.getNID() == null || EUID.ZERO.equals(system.getNID())) {
 					peer.ban(String.format("%s:%s gave null NID", peer, message.getClass().getName()));
@@ -133,7 +135,7 @@ class MessageDispatcher {
 					return;
 				}
 
-				if (NetworkLegacyPatching.checkPeerBanned(peer, system.getNID(), timeSource)) {
+				if (NetworkLegacyPatching.checkPeerBanned(peer, system.getNID(), timeSource, this.addressBook)) {
 					return;
 				}
 			}

@@ -11,6 +11,7 @@ import org.json.JSONObject;
 import org.junit.Test;
 import org.radix.api.services.AtomsService;
 import com.radixdlt.serialization.Serialization;
+import org.radix.network2.addressbook.AddressBook;
 import org.radix.universe.system.LocalSystem;
 
 public class RadixJsonRpcServerTest {
@@ -23,8 +24,8 @@ public class RadixJsonRpcServerTest {
 			mock(LedgerEntryStore.class),
 			mock(AtomsService.class),
 			mock(Schema.class),
-			mock(LocalSystem.class)
-		);
+			mock(LocalSystem.class),
+			mock(AddressBook.class));
 
 		JSONObject response = new JSONObject(server.handleChecked(request.toString()));
 		assertThat(response.getString("jsonrpc")).isEqualTo("2.0");
@@ -39,19 +40,20 @@ public class RadixJsonRpcServerTest {
 	@Test
 	public void when_send_json_rpc_request_ping__return_pong_and_timestamp() {
 		JSONObject request = new JSONObject()
-				.put("id", 0)
-				.put("method", "Ping")
-				.put("params", new JSONObject());
+			.put("id", 0)
+			.put("method", "Ping")
+			.put("params", new JSONObject());
 
 		Serialization serializer = mock(Serialization.class);
 		when(serializer.toJsonObject(any(), any())).thenAnswer(i -> i.getArguments()[0]);
 
 		RadixJsonRpcServer server = new RadixJsonRpcServer(
-				serializer,
-				mock(LedgerEntryStore.class),
-				mock(AtomsService.class),
-				mock(Schema.class),
-				mock(LocalSystem.class)
+			serializer,
+			mock(LedgerEntryStore.class),
+			mock(AtomsService.class),
+			mock(Schema.class),
+			mock(LocalSystem.class),
+			mock(AddressBook.class)
 		);
 
 		JSONObject response = new JSONObject(server.handleChecked(request.toString()));
@@ -71,7 +73,7 @@ public class RadixJsonRpcServerTest {
 			mock(AtomsService.class),
 			mock(Schema.class),
 			mock(LocalSystem.class),
-			5
+			mock(AddressBook.class), 5
 		);
 
 		JSONObject response = new JSONObject(server.handleChecked("123456"));

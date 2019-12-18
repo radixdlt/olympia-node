@@ -28,6 +28,7 @@ import org.radix.api.services.NetworkService;
 import org.radix.api.services.TestService;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
+import org.radix.network2.addressbook.AddressBook;
 import org.radix.network2.messaging.MessageCentral;
 import org.radix.properties.RuntimeProperties;
 import org.radix.shards.ShardSpace;
@@ -62,7 +63,15 @@ public final class RadixHttpServer {
 	private final LocalSystem localSystem;
 	private final Serialization serialization;
 
-	public RadixHttpServer(LedgerEntryStore store, RadixEngineAtomProcessor radixEngineAtomProcessor, AtomToBinaryConverter atomToBinaryConverter, Universe universe, MessageCentral messageCentral, Serialization serialization, RuntimeProperties properties, LocalSystem localSystem) {
+	public RadixHttpServer(LedgerEntryStore store,
+	                       RadixEngineAtomProcessor radixEngineAtomProcessor,
+	                       AtomToBinaryConverter atomToBinaryConverter,
+	                       Universe universe,
+	                       MessageCentral messageCentral,
+	                       Serialization serialization,
+	                       RuntimeProperties properties,
+	                       LocalSystem localSystem,
+	                       AddressBook addressBook) {
 		this.universe = Objects.requireNonNull(universe);
 		this.serialization = Objects.requireNonNull(serialization);
 		this.apiSerializedUniverse = serialization.toJsonObject(this.universe, DsonOutput.Output.API);
@@ -70,14 +79,14 @@ public final class RadixHttpServer {
 		this.peers = new ConcurrentHashMap<>();
 		this.atomsService = new AtomsService(store, radixEngineAtomProcessor, atomToBinaryConverter);
 		this.jsonRpcServer = new RadixJsonRpcServer(
-				serialization,
-				store,
-				atomsService,
-				AtomSchemas.get(),
-			localSystem);
+			serialization,
+			store,
+			atomsService,
+			AtomSchemas.get(),
+			localSystem, addressBook);
 		this.internalService = new InternalService(messageCentral, store, radixEngineAtomProcessor, serialization, properties);
 		this.testService = new TestService(serialization, messageCentral);
-		this.networkService = new NetworkService(serialization, localSystem);
+		this.networkService = new NetworkService(serialization, localSystem, addressBook);
 	}
 
     private Undertow server;

@@ -68,11 +68,10 @@ public class MessageCentralImplTest {
 		when(universe.getMagic()).thenReturn(0);
 		RuntimeProperties runtimeProperties = mock(RuntimeProperties.class);
 		when(runtimeProperties.get(eq("network.whitelist"), any())).thenReturn("");
-		AddressBook addressbook = mock(AddressBook.class);
-		when(addressbook.peer(any(TransportInfo.class))).thenReturn(mock(Peer.class));
+		AddressBook addressBook = mock(AddressBook.class);
+		when(addressBook.peer(any(TransportInfo.class))).thenReturn(mock(Peer.class));
 
 		Modules.put(Universe.class, universe);
-		Modules.put(AddressBook.class, addressbook);
 
 		// Other scaffolding
 		this.toc = new DummyTransportOutboundConnection();
@@ -89,14 +88,13 @@ public class MessageCentralImplTest {
 		Interfaces interfaces = mock(Interfaces.class);
 		PowerMockito.when(interfaces.isSelf(any())).thenReturn(false);
 		LocalSystem localSystem = mock(LocalSystem.class);
-		this.mci = new MessageCentralImpl(new MessagingDummyConfigurations.DummyMessageCentralConfiguration(), serialization, transportManager, events, System::currentTimeMillis,
+		this.mci = new MessageCentralImpl(new MessagingDummyConfigurations.DummyMessageCentralConfiguration(), serialization, transportManager, events, addressBook, System::currentTimeMillis,
 				queueFactory, interfaces, localSystem);
 	}
 
 	@After
 	public void cleanup() {
 		Modules.remove(Universe.class);
-		Modules.remove(AddressBook.class);
 
 		this.mci.close();
 	}

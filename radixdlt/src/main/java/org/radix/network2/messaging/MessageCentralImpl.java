@@ -11,8 +11,8 @@ import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.network.Interfaces;
 import org.radix.network.messaging.Message;
-import org.radix.network2.NetworkLegacyPatching;
 import org.radix.network2.TimeSupplier;
+import org.radix.network2.addressbook.AddressBook;
 import org.radix.network2.addressbook.Peer;
 import org.radix.network2.transport.Transport;
 import org.radix.universe.system.LocalSystem;
@@ -36,6 +36,7 @@ final class MessageCentralImpl implements MessageCentral {
 	private final Serialization serialization;
 	private final TransportManager connectionManager;
 	private final Events events;
+	private final AddressBook addressBook;
 
 	// Local data
 
@@ -70,6 +71,7 @@ final class MessageCentralImpl implements MessageCentral {
 		Serialization serialization,
 		TransportManager transportManager,
 		Events events,
+		AddressBook addressBook,
 		TimeSupplier timeSource,
 		EventQueueFactory<MessageEvent> eventQueueFactory,
 		Interfaces interfaces,
@@ -81,9 +83,10 @@ final class MessageCentralImpl implements MessageCentral {
 		this.serialization = Objects.requireNonNull(serialization);
 		this.connectionManager = Objects.requireNonNull(transportManager);
 		this.events = Objects.requireNonNull(events);
+		this.addressBook = Objects.requireNonNull(addressBook);
 
 		Objects.requireNonNull(timeSource);
-		this.messageDispatcher = new MessageDispatcher(config, serialization, timeSource, localSystem, interfaces);
+		this.messageDispatcher = new MessageDispatcher(config, serialization, timeSource, localSystem, interfaces, this.addressBook);
 
 		this.transports = Lists.newArrayList(transportManager.transports());
 
@@ -154,7 +157,7 @@ final class MessageCentralImpl implements MessageCentral {
 	}
 
 	private void inboundMessage(InboundMessage inboundMessage) {
-		Peer peer = NetworkLegacyPatching.findPeer(inboundMessage.source());
+		Peer peer = addressBook.peer(inboundMessage.source());
 		if (peer != null) {
 			Message message = deserialize(inboundMessage.message());
 			inject(peer, message);

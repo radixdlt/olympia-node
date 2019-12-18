@@ -295,7 +295,7 @@ public class PeerManagerTest extends RadixTest {
 
     @Test
     public void discoverPeersTest() throws InterruptedException {
-        when(bootstrapDiscovery.discover(any())).thenReturn(ImmutableSet.of(transportInfo3, transportInfo4));
+        when(bootstrapDiscovery.discover(eq(addressBook), any())).thenReturn(ImmutableSet.of(transportInfo3, transportInfo4));
         when(addressBook.peers()).thenAnswer((Answer<Stream<Peer>>) invocation -> Stream.of(peer1, peer2, peer3, peer4));
         getPeersMessageTest(peer3, peer4, true);
     }

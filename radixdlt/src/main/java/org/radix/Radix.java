@@ -95,7 +95,6 @@ public final class Radix
 		MessageCentral messageCentral = createMessageCentral(properties);
 		Interfaces interfaces = new Interfaces();
 		AddressBook addressBook = createAddressBook(dbEnv);
-		Modules.put(AddressBook.class, addressBook);
 		BootstrapDiscovery bootstrapDiscovery = new BootstrapDiscovery(properties, universe);
 		PeerManager peerManager = createPeerManager(properties, addressBook, messageCentral, Events.getInstance(), bootstrapDiscovery, interfaces, localSystem);
 		peerManager.start();
@@ -112,7 +111,7 @@ public final class Radix
 		// start API services
 		AtomToBinaryConverter atomToBinaryConverter = globalInjector.getInjector().getInstance(AtomToBinaryConverter.class);
 		LedgerEntryStore store = globalInjector.getInjector().getInstance(LedgerEntryStore.class);
-		httpServer = new RadixHttpServer(store, atomProcessor, atomToBinaryConverter, universe, messageCentral, serialization, properties, localSystem);
+		httpServer = new RadixHttpServer(store, atomProcessor, atomToBinaryConverter, universe, messageCentral, serialization, properties, localSystem, addressBook);
 		httpServer.start(properties);
 
 		log.info("Node '" + localSystem.getNID() + "' started successfully");

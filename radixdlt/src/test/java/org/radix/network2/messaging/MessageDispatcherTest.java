@@ -68,7 +68,14 @@ public class MessageDispatcherTest extends RadixTest {
         interfaces = mock(Interfaces.class);
         PowerMockito.when(interfaces.isSelf(any())).thenReturn(false);
 
-        messageDispatcher = new MessageDispatcher(conf, serialization, () -> 30_000, getLocalSystem(), interfaces);
+        peer1 = spy(new PeerWithSystem(getLocalSystem()));
+        peer2 = spy(new PeerWithSystem(getLocalSystem()));
+
+        AddressBook addressBook = mock(AddressBook.class);
+        when(addressBook.updatePeerSystem(peer1, peer1.getSystem())).thenReturn(peer1);
+        when(addressBook.updatePeerSystem(peer2, peer2.getSystem())).thenReturn(peer2);
+        messageDispatcher = new MessageDispatcher(conf, serialization, () -> 30_000, getLocalSystem(), interfaces, addressBook);
+
         transportOutboundConnection = new MessagingDummyConfigurations.DummyTransportOutboundConnection();
         transport = new MessagingDummyConfigurations.DummyTransport(transportOutboundConnection);
         transportManager = new MessagingDummyConfigurations.DummyTransportManager(transport);
@@ -79,19 +86,6 @@ public class MessageDispatcherTest extends RadixTest {
         when(transportMetadata.get("host")).thenReturn("localhost");
         transportInfo = mock(TransportInfo.class);
         when(transportInfo.metadata()).thenReturn(transportMetadata);
-
-        peer1 = spy(new PeerWithSystem(getLocalSystem()));
-        peer2 = spy(new PeerWithSystem(getLocalSystem()));
-
-        AddressBook addressBook = mock(AddressBook.class);
-        when(addressBook.updatePeerSystem(peer1, peer1.getSystem())).thenReturn(peer1);
-        when(addressBook.updatePeerSystem(peer2, peer2.getSystem())).thenReturn(peer2);
-        Modules.put(AddressBook.class, addressBook);
-    }
-
-    @After
-    public void teardown() {
-        Modules.remove(AddressBook.class);
     }
 
     @Test
