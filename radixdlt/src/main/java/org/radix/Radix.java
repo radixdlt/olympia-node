@@ -183,9 +183,7 @@ public final class Radix
 			runtimeConfigurationJSON = new JSONObject(IOUtils.toString(Radix.class.getResourceAsStream("/runtime_options.json")));
 		}
 
-		RuntimeProperties properties = new RuntimeProperties(runtimeConfigurationJSON, args);
-		Modules.put(RuntimeProperties.class, properties);
-		return properties;
+		return new RuntimeProperties(runtimeConfigurationJSON, args);
 	}
 
 	private MessageCentral createMessageCentral(RuntimeProperties properties) {

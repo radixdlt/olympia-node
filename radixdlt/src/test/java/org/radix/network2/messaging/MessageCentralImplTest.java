@@ -72,7 +72,6 @@ public class MessageCentralImplTest {
 		when(addressbook.peer(any(TransportInfo.class))).thenReturn(mock(Peer.class));
 
 		Modules.put(Universe.class, universe);
-		Modules.put(RuntimeProperties.class, runtimeProperties);
 		Modules.put(AddressBook.class, addressbook);
 
 		// Other scaffolding
@@ -97,7 +96,6 @@ public class MessageCentralImplTest {
 	@After
 	public void cleanup() {
 		Modules.remove(Universe.class);
-		Modules.remove(RuntimeProperties.class);
 		Modules.remove(AddressBook.class);
 
 		this.mci.close();

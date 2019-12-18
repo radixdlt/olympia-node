@@ -68,42 +68,33 @@ public class StandardFilters2Test {
 		final Peer peer1 = new PeerWithTransport(localhost1);
 		final Peer peer2 = new PeerWithTransport(localhost2);
 		final Peer peer3 = new PeerWithTransport(TransportInfo.of("DUMMY", StaticTransportMetadata.empty()));
-		try {
-			RuntimeProperties properties1 = mock(RuntimeProperties.class);
-			when(properties1.get(eq("network.whitelist"), any())).thenReturn("");
-			Whitelist whitelist = Whitelist.from(properties1);
-			assertTrue(StandardFilters.isWhitelisted(whitelist).test(peer1));
-			assertTrue(StandardFilters.isWhitelisted(whitelist).test(peer2));
-			assertTrue(StandardFilters.isWhitelisted(whitelist).test(peer3)); // No host, whitelisted
+		RuntimeProperties properties1 = mock(RuntimeProperties.class);
+		when(properties1.get(eq("network.whitelist"), any())).thenReturn("");
+		Whitelist whitelist = Whitelist.from(properties1);
+		assertTrue(StandardFilters.isWhitelisted(whitelist).test(peer1));
+		assertTrue(StandardFilters.isWhitelisted(whitelist).test(peer2));
+		assertTrue(StandardFilters.isWhitelisted(whitelist).test(peer3)); // No host, whitelisted
 
-			RuntimeProperties properties2 = mock(RuntimeProperties.class);
-			when(properties2.get(eq("network.whitelist"), any())).thenReturn("127.0.0.1");
-			whitelist = Whitelist.from(properties2);
-			assertTrue(StandardFilters.isWhitelisted(whitelist).test(peer1));
-			assertFalse(StandardFilters.isWhitelisted(whitelist).test(peer2));
-			assertTrue(StandardFilters.isWhitelisted(whitelist).test(peer3));
-		} finally {
-			Modules.remove(RuntimeProperties.class);
-		}
+		RuntimeProperties properties2 = mock(RuntimeProperties.class);
+		when(properties2.get(eq("network.whitelist"), any())).thenReturn("127.0.0.1");
+		whitelist = Whitelist.from(properties2);
+		assertTrue(StandardFilters.isWhitelisted(whitelist).test(peer1));
+		assertFalse(StandardFilters.isWhitelisted(whitelist).test(peer2));
+		assertTrue(StandardFilters.isWhitelisted(whitelist).test(peer3));
 	}
 
 	@Test
 	public void testNotOurNID() {
-		try {
-			RuntimeProperties properties = mock(RuntimeProperties.class);
-			when(properties.get(eq("node.key.path"), any())).thenReturn("node.ks");
-			when(properties.get(eq("shards.range"), anyLong())).thenReturn(ShardSpace.SHARD_CHUNK_RANGE);
-			Modules.put(RuntimeProperties.class, properties);
+		RuntimeProperties properties = mock(RuntimeProperties.class);
+		when(properties.get(eq("node.key.path"), any())).thenReturn("node.ks");
+		when(properties.get(eq("shards.range"), anyLong())).thenReturn(ShardSpace.SHARD_CHUNK_RANGE);
 
-			EUID self = EUID.ZERO;
-			Peer ourNid = new PeerWithNid(self);
-			Peer notOurNid = new PeerWithNid(EUID.ONE);
-			Peer noNidAtAll = new PeerWithTransport(TransportInfo.of("DUMMY", StaticTransportMetadata.empty()));
-			assertFalse(StandardFilters.notOurNID(self).test(ourNid));
-			assertTrue(StandardFilters.notOurNID(self).test(notOurNid));
-			assertTrue(StandardFilters.notOurNID(self).test(noNidAtAll));
-		} finally {
-			Modules.remove(RuntimeProperties.class);
-		}
+		EUID self = EUID.ZERO;
+		Peer ourNid = new PeerWithNid(self);
+		Peer notOurNid = new PeerWithNid(EUID.ONE);
+		Peer noNidAtAll = new PeerWithTransport(TransportInfo.of("DUMMY", StaticTransportMetadata.empty()));
+		assertFalse(StandardFilters.notOurNID(self).test(ourNid));
+		assertTrue(StandardFilters.notOurNID(self).test(notOurNid));
+		assertTrue(StandardFilters.notOurNID(self).test(noNidAtAll));
 	}
 }

@@ -37,7 +37,6 @@ public class RadixTest
 			runtimeConfigurationJSON = new JSONObject(IOUtils.toString(Radix.class.getResourceAsStream("/runtime_options.json")));
 
 		properties = new RuntimeProperties(runtimeConfigurationJSON, null);
-		Modules.put(RuntimeProperties.class, properties);
 
 		properties.set("debug.nopow", true);
 		if (dbLocation == null) {
@@ -59,7 +58,6 @@ public class RadixTest
 		Modules.remove(Time.class);
 		Modules.remove(Serialization.class);
 		Modules.remove(CommandLine.class);
-		Modules.remove(RuntimeProperties.class);
 		Modules.remove(SecureRandom.class);
 	}
 

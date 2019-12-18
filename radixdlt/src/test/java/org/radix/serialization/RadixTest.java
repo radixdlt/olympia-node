@@ -48,18 +48,12 @@ public abstract class RadixTest
 
 		Modules.put(Universe.class, universe);
 		localSystem = LocalSystem.restoreOrCreate(getProperties());
-
-		Modules.put(RuntimeProperties.class, properties);
-		Modules.put(LocalSystem.class, localSystem);
 	}
 
 	@AfterClass
 	public static void finishRadixTest() {
-		Modules.remove(RuntimeProperties.class);
 		Modules.remove(Serialization.class);
-		Modules.remove(SecureRandom.class);
 		Modules.remove(Universe.class);
-		Modules.remove(LocalSystem.class);
 		SystemMetaData.clear();
 	}
 
