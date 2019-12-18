@@ -1,13 +1,12 @@
 package org.radix.serialization;
 
-import com.radixdlt.serialization.Serialization;
+import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializationException;
+import com.radixdlt.universe.Universe;
 import org.junit.AfterClass;
 import org.junit.Test;
 import org.radix.GenerateUniverses;
 import org.radix.modules.Modules;
-import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.universe.Universe;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -19,7 +18,6 @@ import static org.radix.serialization.SerializationTestUtils.compareJson;
 public class UniverseDsonOutputTest extends RadixTest {
 	@AfterClass
 	public static void afterClass() {
-		Modules.remove(Serialization.class);
 	}
 
 	@Test

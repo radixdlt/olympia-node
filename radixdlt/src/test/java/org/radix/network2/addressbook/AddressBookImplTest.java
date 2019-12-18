@@ -66,7 +66,6 @@ public class AddressBookImplTest {
 	@After
 	public void tearDown() throws Exception {
 		Modules.remove(Universe.class);
-		Modules.remove(Serialization.class);
 	}
 
 	@Test

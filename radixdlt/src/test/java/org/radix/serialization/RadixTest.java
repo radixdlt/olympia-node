@@ -52,7 +52,6 @@ public abstract class RadixTest
 
 	@AfterClass
 	public static void finishRadixTest() {
-		Modules.remove(Serialization.class);
 		Modules.remove(Universe.class);
 		SystemMetaData.clear();
 	}

@@ -33,12 +33,6 @@ public class TokenDefinitionSchemaTest {
 	@BeforeClass
 	public static void setupSerializer() {
 		serialization = Serialization.getDefault();
-		Modules.replace(Serialization.class, serialization);
-	}
-
-	@AfterClass
-	public static void teardownSerializer() {
-		Modules.remove(Serialization.class);
 	}
 
 	@Test

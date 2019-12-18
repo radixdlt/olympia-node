@@ -56,7 +56,6 @@ public class RadixTest
 	public static void endRadixTest() {
 		Modules.remove(Universe.class);
 		Modules.remove(Time.class);
-		Modules.remove(Serialization.class);
 		Modules.remove(CommandLine.class);
 		Modules.remove(SecureRandom.class);
 	}
