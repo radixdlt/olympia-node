@@ -26,15 +26,6 @@ public class Modules
 	// TODO change to Map<Class<? extends Module>, Module> and refactor non-module classes that use this as a singleton store.
 	private static Map<Class<?>, Object> modules = new ConcurrentHashMap<Class<?>, Object>();
 
-	static public <T> T get(Class<T> clazz)
-	{
-		T value = (T) Modules.modules.get(clazz);
-		if (value == null) {
-			throw new IllegalStateException("Requested module " + clazz.getName() + " is not available (" + Thread.currentThread().getName() + "): " + Modules.modules.keySet());
-		}
-		return value;
-	}
-
 	public static <T> void ifAvailable(Class<T> cls, Consumer<T> action) {
 		@SuppressWarnings("unchecked")
 		T value = (T) Modules.modules.get(cls);
