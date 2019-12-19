@@ -1,12 +1,12 @@
 package org.radix.network2.addressbook;
 
-import java.util.stream.Stream;
-
-import org.junit.After;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.radixdlt.common.EUID;
+import com.radixdlt.universe.Universe;
 import org.junit.Before;
 import org.junit.Test;
 import org.radix.Radix;
-import org.radix.modules.Modules;
 import org.radix.network.Interfaces;
 import org.radix.network2.transport.StaticTransportMetadata;
 import org.radix.network2.transport.TransportInfo;
@@ -15,13 +15,13 @@ import org.radix.time.Time;
 import org.radix.time.Timestamps;
 import org.radix.universe.system.RadixSystem;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.radixdlt.common.EUID;
-import com.radixdlt.universe.Universe;
+import java.util.stream.Stream;
 
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class StandardFiltersTest {
 

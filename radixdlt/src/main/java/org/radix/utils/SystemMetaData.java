@@ -15,7 +15,6 @@ import org.radix.database.DatabaseEnvironment;
 import org.radix.database.exceptions.DatabaseException;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.modules.Modules;
 import com.radixdlt.utils.Bytes;
 
 import com.radixdlt.utils.RadixConstants;

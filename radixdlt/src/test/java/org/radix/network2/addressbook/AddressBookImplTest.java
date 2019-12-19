@@ -4,12 +4,10 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.powermock.reflect.Whitebox;
 import org.radix.events.Events;
-import org.radix.modules.Modules;
 import org.radix.network2.transport.StaticTransportMetadata;
 import org.radix.network2.transport.TransportInfo;
 import org.radix.properties.RuntimeProperties;
@@ -19,7 +17,6 @@ import org.radix.universe.system.RadixSystem;
 
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.common.EUID;
-import com.radixdlt.universe.Universe;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;

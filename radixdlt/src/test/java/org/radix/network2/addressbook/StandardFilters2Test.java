@@ -1,11 +1,9 @@
 package org.radix.network2.addressbook;
 
-import org.junit.After;
-import org.junit.Before;
+import com.radixdlt.common.EUID;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.radix.modules.Modules;
 import org.radix.network.discovery.Whitelist;
 import org.radix.network2.transport.StaticTransportMetadata;
 import org.radix.network2.transport.TransportInfo;
@@ -13,13 +11,15 @@ import org.radix.network2.transport.udp.UDPConstants;
 import org.radix.properties.RuntimeProperties;
 import org.radix.serialization.TestSetupUtils;
 import org.radix.shards.ShardSpace;
-import org.radix.universe.system.LocalSystem;
 
-import com.radixdlt.common.EUID;
-import com.radixdlt.universe.Universe;
-
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyLong;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Tests for parts of StandardFilters that can't be tested without

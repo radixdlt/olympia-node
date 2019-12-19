@@ -19,7 +19,6 @@ import org.radix.common.Syncronicity;
 import org.radix.common.executors.Executable;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.modules.Modules;
 import org.radix.utils.SystemMetaData;
 
 import com.google.common.collect.Maps;

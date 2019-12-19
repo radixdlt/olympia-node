@@ -9,7 +9,6 @@ import org.radix.common.executors.ScheduledExecutable;
 import org.radix.events.Events;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.modules.Modules;
 import org.radix.network.Interfaces;
 import org.radix.network.discovery.BootstrapDiscovery;
 import org.radix.network.discovery.Whitelist;

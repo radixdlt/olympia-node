@@ -9,7 +9,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.radix.modules.Modules;
 import org.radix.network2.messaging.InboundMessage;
 import org.radix.network2.transport.SendResult;
 import org.radix.network2.transport.TransportControl;
@@ -17,9 +16,7 @@ import org.radix.network2.transport.TransportOutboundConnection;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.radixdlt.universe.Universe;
 import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
 
 public class NettyUDPTransportImplTest {
 

@@ -20,7 +20,6 @@ import org.radix.exceptions.ValidationException;
 import org.radix.integration.RadixTestWithStores;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.modules.Modules;
 import org.radix.universe.system.LocalSystem;
 
 import java.util.List;

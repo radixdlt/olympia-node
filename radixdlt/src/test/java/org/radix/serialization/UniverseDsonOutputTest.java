@@ -6,7 +6,6 @@ import com.radixdlt.universe.Universe;
 import org.junit.AfterClass;
 import org.junit.Test;
 import org.radix.GenerateUniverses;
-import org.radix.modules.Modules;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;

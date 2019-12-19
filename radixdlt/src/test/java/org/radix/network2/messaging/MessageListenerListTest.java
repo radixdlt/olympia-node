@@ -1,21 +1,17 @@
 package org.radix.network2.messaging;
 
+import org.junit.Before;
+import org.junit.Test;
+import org.radix.network.messages.TestMessage;
+import org.radix.network2.addressbook.Peer;
+
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.radix.modules.Modules;
-import org.radix.network.messages.TestMessage;
-import org.radix.network2.addressbook.Peer;
-
-import com.radixdlt.universe.Universe;
-
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
-import static org.hamcrest.CoreMatchers.*;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 
 // Unit tests for MessageListenerList
 public class MessageListenerListTest {

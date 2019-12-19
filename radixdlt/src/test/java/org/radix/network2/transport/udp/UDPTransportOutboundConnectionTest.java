@@ -1,19 +1,16 @@
 package org.radix.network2.transport.udp;
 
-import com.radixdlt.universe.Universe;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.DefaultChannelPromise;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.util.concurrent.DefaultEventExecutor;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 import org.mockito.ArgumentCaptor;
-import org.radix.modules.Modules;
 import org.radix.network2.transport.SendResult;
 import org.radix.network2.transport.TransportMetadata;
 

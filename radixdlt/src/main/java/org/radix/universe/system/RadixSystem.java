@@ -7,15 +7,12 @@ import com.radixdlt.common.EUID;
 import org.radix.containers.BasicContainer;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.CryptoException;
-import org.radix.modules.Modules;
 import org.radix.network2.transport.TransportInfo;
 
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.serialization.SerializerId2;
-import org.radix.shards.ShardSpace;
-import com.radixdlt.universe.Universe;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;

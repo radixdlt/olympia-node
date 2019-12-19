@@ -16,7 +16,6 @@ import org.radix.database.DatabaseEnvironment;
 import org.radix.events.Events;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.modules.Modules;
 import org.radix.network2.addressbook.AddressBook;
 import org.radix.network2.addressbook.PeerManager;
 import org.radix.network2.messaging.MessageCentral;

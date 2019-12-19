@@ -10,7 +10,6 @@ import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.CryptoException;
 import org.radix.integration.RadixTest;
-import org.radix.modules.Modules;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

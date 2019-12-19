@@ -5,7 +5,6 @@ import com.radixdlt.universe.Universe;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.mockito.stubbing.Answer;
-import org.radix.modules.Modules;
 import org.radix.properties.RuntimeProperties;
 import org.radix.time.NtpService;
 import org.radix.universe.system.LocalSystem;

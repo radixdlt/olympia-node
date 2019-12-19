@@ -20,7 +20,6 @@ import com.radixdlt.atomos.RRI;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECKeyPair;
 import org.radix.integration.RadixTest;
-import org.radix.modules.Modules;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.RadixConstants;

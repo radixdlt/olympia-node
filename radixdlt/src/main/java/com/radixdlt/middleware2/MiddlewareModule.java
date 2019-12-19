@@ -20,7 +20,6 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.universe.Universe;
-import org.radix.modules.Modules;
 import org.radix.properties.RuntimeProperties;
 import org.radix.time.Time;
 

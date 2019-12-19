@@ -13,7 +13,6 @@ import com.radixdlt.serialization.DsonOutput.Output;
 
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.modules.Modules;
 import org.radix.network.Interfaces;
 import org.radix.network.messaging.Message;
 import org.radix.network.messaging.Message.Direction;
