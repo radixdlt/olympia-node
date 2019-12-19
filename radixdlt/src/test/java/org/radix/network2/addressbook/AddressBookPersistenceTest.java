@@ -35,7 +35,7 @@ public class AddressBookPersistenceTest extends RadixTest {
 
 	@After
 	public void tearDown() {
-		this.abp.stop();
+		this.abp.close();
 		this.dbEnv.stop();
 	}
 
@@ -51,7 +51,7 @@ public class AddressBookPersistenceTest extends RadixTest {
 		// No exceptions, and should have no database when done
 		this.abp.start();
 		assertNotNull(Whitebox.getInternalState(this.abp, "peersByNidDB"));
-		this.abp.stop();
+		this.abp.close();
 		assertNull(Whitebox.getInternalState(this.abp, "peersByNidDB"));
 	}
 
@@ -63,7 +63,7 @@ public class AddressBookPersistenceTest extends RadixTest {
 		this.abp.forEachPersistedPeer(p -> peercount1.incrementAndGet());
 		assertEquals(1, peercount1.get());
 
-		this.abp.stop();
+		this.abp.close();
 		this.abp.reset();
 
 		this.abp.start();

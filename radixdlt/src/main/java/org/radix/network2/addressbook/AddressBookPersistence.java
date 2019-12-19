@@ -70,7 +70,8 @@ public class AddressBookPersistence implements PeerPersistence {
 		}
 	}
 
-	public void stop() {
+	@Override
+	public void close() {
 		if (this.peersByNidDB != null) {
 			this.peersByNidDB.close();
 			this.peersByNidDB = null;

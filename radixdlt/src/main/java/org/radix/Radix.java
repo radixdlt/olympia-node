@@ -141,6 +141,7 @@ public final class Radix
 
 	public void stop() {
 		httpServer.stop();
+		// TODO need to close persistence here as well (e.g. stores, peer persistence, db env)
 
 		try {
 			atomProcessor.stop();

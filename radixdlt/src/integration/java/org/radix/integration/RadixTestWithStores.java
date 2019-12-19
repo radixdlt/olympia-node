@@ -15,6 +15,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.radix.GlobalInjector;
 import org.radix.database.DatabaseEnvironment;
+import org.radix.network2.addressbook.AddressBook;
 import org.radix.network2.messaging.MessageCentral;
 
 import java.io.IOException;
@@ -23,11 +24,11 @@ import static org.mockito.Mockito.mock;
 
 public class RadixTestWithStores extends RadixTest
 {
-	private Injector injector;
 	private DatabaseEnvironment dbEnv;
 	private LedgerEntryStore store;
 	private Tempo tempo;
 	private MessageCentral messageCentral;
+	private AddressBook addressBook;
 
 	@Before
 	public void beforeEachRadixTest() {
@@ -35,19 +36,11 @@ public class RadixTestWithStores extends RadixTest
 
 		GlobalInjector injector = new GlobalInjector(getProperties(), dbEnv, getLocalSystem());
 		this.messageCentral = injector.getInjector().getInstance(MessageCentral.class);
+		this.addressBook = injector.getInjector().getInstance(AddressBook.class);
 
 		EUID self = getLocalSystem().getNID();
-		this.injector = Guice.createInjector(
-				new AbstractModule() {
-					@Override
-					protected void configure() {
-						bind(EUID.class).annotatedWith(Names.named("self")).toInstance(self);
-					}
-				},
-				new BerkeleyStoreModule()
-		);
 
-		store = this.injector.getInstance(LedgerEntryStore.class);
+		store = injector.getInjector().getInstance(LedgerEntryStore.class);
 		tempo = new Tempo(
 			mock(Application.class),
 			ImmutableSet.of(),
@@ -59,10 +52,10 @@ public class RadixTestWithStores extends RadixTest
 		tempo.close();
 		store.close();
 		store.reset();
+		messageCentral.close();
+		addressBook.close();
 
 		this.dbEnv.stop();
-
-		messageCentral.close();
 	}
 
 	protected DatabaseEnvironment getDbEnv() {

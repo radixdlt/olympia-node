@@ -68,6 +68,6 @@ public interface MessageCentral {
      *
      * @throws IOException if an I/O error occurs
      */
-    public void close() throws IOException;
+    void close() throws IOException;
 
 }

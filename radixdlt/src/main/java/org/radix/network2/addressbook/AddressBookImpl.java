@@ -1,5 +1,6 @@
 package org.radix.network2.addressbook;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -269,6 +270,11 @@ public class AddressBookImpl implements AddressBook {
 			}
 		}
 		return false;
+	}
+
+	@Override
+	public void close() throws IOException {
+		this.persistence.close();
 	}
 }
 
