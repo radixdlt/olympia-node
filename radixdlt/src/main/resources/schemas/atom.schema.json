@@ -20,14 +20,14 @@
       "type": "number"
     },
     "hid": { "$ref": "#/definitions/uid" },
-    "aid": { "$ref": "#/definitions/aid" },
+    "aid": { "$ref": "#/definitions/aid" }
   },
   "required": [ "particleGroups", "serializer" ],
   "definitions": {
     "string": {
       "type": "string",
-      "pattern": "^:str:.+",
-      "description": "A string."
+      "pattern": "^:str:.*",
+      "description": "A possibly empty string."
     },
     "nonEmptyBytes": {
       "type": "string",
