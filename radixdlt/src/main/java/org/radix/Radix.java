@@ -20,6 +20,7 @@ import org.radix.modules.Modules;
 import org.radix.network2.addressbook.AddressBook;
 import org.radix.network2.addressbook.PeerManager;
 import org.radix.network2.messaging.MessageCentral;
+import org.radix.network2.transport.udp.PublicInetAddress;
 import org.radix.properties.RuntimeProperties;
 import org.radix.time.Time;
 import org.radix.universe.system.LocalSystem;
@@ -69,6 +70,9 @@ public final class Radix
 		Serialization serialization = Serialization.getDefault();
 		Universe universe = extractUniverseFrom(properties, serialization);
 		Modules.put(Universe.class, universe);
+
+		// TODO this is awful, PublicInetAddress shouldn't be a singleton
+		PublicInetAddress.configure(null, universe.getPort());
 
 		LocalSystem localSystem = LocalSystem.restoreOrCreate(properties, universe);
 

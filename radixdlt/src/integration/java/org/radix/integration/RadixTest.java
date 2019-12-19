@@ -9,6 +9,7 @@ import org.junit.BeforeClass;
 import org.radix.GenerateUniverses;
 import org.radix.Radix;
 import org.radix.modules.Modules;
+import org.radix.network2.transport.udp.PublicInetAddress;
 import org.radix.properties.RuntimeProperties;
 import org.radix.serialization.TestSetupUtils;
 import org.radix.time.Time;
@@ -31,6 +32,8 @@ public class RadixTest
 	public static void startRadixTest() throws Exception {
 		TestSetupUtils.installBouncyCastleProvider();
 
+		universe = new GenerateUniverses(properties).generateUniverses().stream().filter(Universe::isTest).findAny().get();
+		PublicInetAddress.configure(null, universe.getPort());
 		serialization = Serialization.getDefault();
 
 		JSONObject runtimeConfigurationJSON = new JSONObject();
@@ -45,10 +48,6 @@ public class RadixTest
 			dbLocation = properties.get("db.location", ".//RADIXDB") + "_TEST";
 		}
 		properties.set("db.location", dbLocation);
-
-		universe = new GenerateUniverses(properties).generateUniverses().stream().filter(Universe::isTest).findAny().get();
-		Modules.remove(Universe.class); // GenerateUniverses adds this
-		Modules.put(Universe.class, universe);
 
 		localSystem = LocalSystem.restoreOrCreate(properties, universe);// Load node.ks, after universe
 	}

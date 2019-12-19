@@ -83,7 +83,7 @@ public class PeerManager {
 		@Override
 		public void run() {
 			try {
-				int numProbes = (int) (this.numPeers / TimeUnit.MILLISECONDS.toSeconds(Modules.get(Universe.class).getPlanck()));
+				int numProbes = (int) (this.numPeers / TimeUnit.MILLISECONDS.toSeconds(universe.getPlanck()));
 
 				if (numProbes == 0) {
 					numProbes = 16;
@@ -255,7 +255,7 @@ public class PeerManager {
 			List<Peer> peers = addressbook.peers()
 				.filter(Peer::hasNID)
 				.filter(StandardFilters.standardFilter(self, interfaces, whitelist))
-				.filter(StandardFilters.recentlyActive())
+				.filter(StandardFilters.recentlyActive(universe.getPlanck()))
 				.collect(Collectors.toList());
 
 			for (Peer p : peers) {

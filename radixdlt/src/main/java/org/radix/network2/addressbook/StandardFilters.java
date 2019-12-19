@@ -6,18 +6,15 @@ import java.net.InetAddress;
 import java.util.Collection;
 import java.util.Set;
 import org.radix.Radix;
-import org.radix.modules.Modules;
 import org.radix.network.Interfaces;
 import org.radix.network.discovery.Whitelist;
 import org.radix.network2.transport.TransportInfo;
 import org.radix.time.Time;
 import org.radix.time.Timestamps;
-import org.radix.universe.system.LocalSystem;
 import org.radix.universe.system.RadixSystem;
 
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.common.EUID;
-import com.radixdlt.universe.Universe;
 
 /**
  * Standard filters for peer streams.
@@ -142,9 +139,10 @@ public final class StandardFilters {
 	 * Returns {@code true} if the peer been active within one planck period.
 	 *
 	 * @return {@code true} if the peer been active within one planck period, {@code false} otherwise
+	 * @param recencyThreshold the recency threshold in millis
 	 */
-	public static PeerPredicate recentlyActive() {
-		return peer -> (Time.currentTimestamp() - peer.getTimestamp(Timestamps.ACTIVE)) < Modules.get(Universe.class).getPlanck();
+	public static PeerPredicate recentlyActive(long recencyThreshold) {
+		return peer -> (Time.currentTimestamp() - peer.getTimestamp(Timestamps.ACTIVE)) < recencyThreshold;
 	}
 
 	private static boolean hostNotWhitelisted(TransportInfo ti, Whitelist whitelist) {

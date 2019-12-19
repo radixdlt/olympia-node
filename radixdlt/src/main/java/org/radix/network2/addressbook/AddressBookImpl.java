@@ -33,6 +33,7 @@ public class AddressBookImpl implements AddressBook {
 
 	private final PeerPersistence persistence;
 	private final Events events;
+	private final long recencyThreshold;
 
 	private final Lock peersLock = new ReentrantLock();
 	private final Map<EUID, Peer>          peersByNid  = new HashMap<>();
@@ -40,10 +41,11 @@ public class AddressBookImpl implements AddressBook {
 	private final Whitelist whitelist;
 
 	@Inject
-	AddressBookImpl(PeerPersistence persistence, Events events, RuntimeProperties properties) {
+	AddressBookImpl(PeerPersistence persistence, Events events, long recencyThreshold, RuntimeProperties properties) {
 		super();
 		this.persistence = Objects.requireNonNull(persistence);
 		this.events = Objects.requireNonNull(events);
+		this.recencyThreshold = recencyThreshold;
 		this.whitelist = Whitelist.from(properties);
 
 		this.persistence.forEachPersistedPeer(peer -> {
@@ -150,7 +152,7 @@ public class AddressBookImpl implements AddressBook {
 
 	@Override
 	public Stream<Peer> recentPeers() {
-		return peers().filter(StandardFilters.recentlyActive());
+		return peers().filter(StandardFilters.recentlyActive(recencyThreshold));
 	}
 
 	@Override

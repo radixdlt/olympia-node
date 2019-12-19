@@ -108,8 +108,8 @@ public class StandardFiltersTest {
 	public void testRecentlyActive() {
 		this.pwn.setTimestamp(Timestamps.ACTIVE, 0L);
 		this.pwt.setTimestamp(Timestamps.ACTIVE, Time.currentTimestamp());
-		assertTrue(StandardFilters.recentlyActive().test(this.pwt));
-		assertFalse(StandardFilters.recentlyActive().test(this.pwn));
+		assertTrue(StandardFilters.recentlyActive(1000).test(this.pwt));
+		assertFalse(StandardFilters.recentlyActive(1000).test(this.pwn));
 	}
 
 }

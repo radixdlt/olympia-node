@@ -26,7 +26,6 @@ import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.Inject;
 import com.radixdlt.serialization.Serialization;
 
-//FIXME: Optional dependency on Modules.get(SystemMetadata.class) for updating metadata
 final class MessageCentralImpl implements MessageCentral {
 	private static final Logger log = Logging.getLogger("message");
 

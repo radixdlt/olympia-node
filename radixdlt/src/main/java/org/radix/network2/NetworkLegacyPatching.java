@@ -1,12 +1,9 @@
 package org.radix.network2;
 
-import org.radix.modules.Modules;
+import com.radixdlt.common.EUID;
 import org.radix.network2.addressbook.AddressBook;
 import org.radix.network2.addressbook.Peer;
-import org.radix.network2.transport.TransportInfo;
 import org.radix.time.Timestamps;
-import com.radixdlt.common.EUID;
-import com.radixdlt.universe.Universe;
 
 /**
  * Place for gathering stuff that will need to be resolved or disappear
@@ -40,14 +37,5 @@ public final class NetworkLegacyPatching {
 			return true;
 		}
 		return false;
-	}
-
-	/**
-	 * Not really convinced we need to keep doing this.
-	 *
-	 * @return The default network port
-	 */
-	public static int defaultPort() {
-		return Modules.get(Universe.class).getPort();
 	}
 }

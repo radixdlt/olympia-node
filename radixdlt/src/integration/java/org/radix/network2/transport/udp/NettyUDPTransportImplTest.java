@@ -31,9 +31,7 @@ public class NettyUDPTransportImplTest {
 
 	@Before
 	public void setup() {
-		Universe universe = mock(Universe.class);
-		doReturn(30000).when(universe).getPort();
-		Modules.put(Universe.class, universe);
+		PublicInetAddress.configure(null, 30000);
 
 		transport1 = createTransport("127.0.0.1", 12345);
 		transport2 = createTransport("127.0.0.1", 23456);

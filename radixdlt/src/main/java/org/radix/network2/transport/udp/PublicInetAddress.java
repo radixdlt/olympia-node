@@ -38,7 +38,7 @@ public final class PublicInetAddress {
 	public static PublicInetAddress getInstance() {
 		synchronized(INSTANCE_LOCK) {
 			if (instance == null) {
-				configure(null, NetworkLegacyPatching.defaultPort());
+				throw new IllegalStateException("instance not configured");
 			}
 			return instance;
 		}

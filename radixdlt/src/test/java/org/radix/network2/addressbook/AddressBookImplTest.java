@@ -19,7 +19,6 @@ import org.radix.universe.system.RadixSystem;
 
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.common.EUID;
-import com.radixdlt.serialization.Serialization;
 import com.radixdlt.universe.Universe;
 
 import static org.junit.Assert.*;
@@ -55,12 +54,7 @@ public class AddressBookImplTest {
 			this.broadcastEventCount.addAndGet(abevent.peers().size());
 			return null;
 		}).when(this.events).broadcast(any());
-		this.addressbook = new AddressBookImpl(this.persistence, this.events, mock(RuntimeProperties.class));
-
-		// Ideally this wouldn't be necessary
-		Universe universe = mock(Universe.class);
-		doReturn(86400L * 1000L).when(universe).getPlanck(); // 1 day
-		Modules.put(Universe.class, universe);
+		this.addressbook = new AddressBookImpl(this.persistence, this.events, 86400L * 1000L, mock(RuntimeProperties.class));
 	}
 
 	@After
