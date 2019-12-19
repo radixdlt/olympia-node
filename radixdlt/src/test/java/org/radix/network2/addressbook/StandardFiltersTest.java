@@ -58,12 +58,6 @@ public class StandardFiltersTest {
 		when(interfaces.isSelf(any())).thenReturn(true);
 		Universe universe = mock(Universe.class);
 		when(universe.getPlanck()).thenReturn(86400L * 1000L); // 1 day
-		Modules.put(Universe.class, universe);
-	}
-
-	@After
-	public void tearDown() throws Exception {
-		Modules.remove(Universe.class);
 	}
 
 	@Test

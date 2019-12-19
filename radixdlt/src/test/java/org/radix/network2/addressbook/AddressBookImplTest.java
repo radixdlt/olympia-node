@@ -57,11 +57,6 @@ public class AddressBookImplTest {
 		this.addressbook = new AddressBookImpl(this.persistence, this.events, 86400L * 1000L, mock(RuntimeProperties.class));
 	}
 
-	@After
-	public void tearDown() throws Exception {
-		Modules.remove(Universe.class);
-	}
-
 	@Test
 	public void testAddPeerWithTransport() {
 		TransportInfo transportInfo = TransportInfo.of("DUMMY", StaticTransportMetadata.empty());

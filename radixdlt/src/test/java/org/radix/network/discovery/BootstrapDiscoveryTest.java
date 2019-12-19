@@ -33,7 +33,7 @@ import static org.powermock.api.mockito.PowerMockito.when;
 
 @RunWith(PowerMockRunner.class)
 @PowerMockIgnore({"java.security.*", "javax.security.*", "org.bouncycastle.*"})
-@PrepareForTest({BootstrapDiscovery.class, Modules.class, URL.class, URLConnection.class, RuntimeProperties.class, Universe.class, Thread.class})
+@PrepareForTest({BootstrapDiscovery.class, URL.class, URLConnection.class, RuntimeProperties.class, Universe.class, Thread.class})
 public class BootstrapDiscoveryTest {
     // Mocks
     private RuntimeProperties config;
@@ -51,7 +51,6 @@ public class BootstrapDiscoveryTest {
     @Before
     public void setUp() throws Exception {
         // create stubs
-        spy(Modules.class);
         spy(BootstrapDiscovery.class);
         spy(Thread.class);
         config = defaultProperties();
@@ -64,7 +63,6 @@ public class BootstrapDiscoveryTest {
         getNextNode = Whitebox.getMethod(BootstrapDiscovery.class, "getNextNode", URL.class);
 
         // initialize stubs
-        doReturn(config).when(Modules.class, "get", RuntimeProperties.class);
         doReturn(30).when(config).get("network.discovery.connection.retries", 30);
         doReturn(1).when(config).get("network.discovery.connection.cooldown", 1);
         doReturn(60000).when(config).get("network.discovery.connection.timeout", 60000);
@@ -74,7 +72,6 @@ public class BootstrapDiscoveryTest {
         doReturn(8).when(config).get("network.connections.out", 8);
         doReturn(8192).when(config).get("messaging.inbound.queue_max", 8192);
         doReturn(1 << 18).when(config).get("network.udp.buffer", 1 << 18);
-        doReturn(universe).when(Modules.class, "get", Universe.class);
 
         when(config.get(eq("network.discovery.connection.retries"), any())).thenReturn(1);
         when(config.get(eq("network.discovery.connection.cooldown"), any())).thenReturn(1);

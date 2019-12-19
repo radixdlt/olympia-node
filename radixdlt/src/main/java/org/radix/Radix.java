@@ -69,7 +69,6 @@ public final class Radix
 	public Radix(RuntimeProperties properties) {
 		Serialization serialization = Serialization.getDefault();
 		Universe universe = extractUniverseFrom(properties, serialization);
-		Modules.put(Universe.class, universe);
 
 		// TODO this is awful, PublicInetAddress shouldn't be a singleton
 		PublicInetAddress.configure(null, universe.getPort());

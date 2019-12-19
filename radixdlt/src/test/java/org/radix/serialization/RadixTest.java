@@ -46,14 +46,11 @@ public abstract class RadixTest
 		when(ntpService.getUTCTimeMS()).thenAnswer((Answer<Long>) invocation -> System.currentTimeMillis());
 
 		serialization = Serialization.getDefault();
-
-		Modules.put(Universe.class, universe);
 		localSystem = LocalSystem.restoreOrCreate(getProperties(), universe);
 	}
 
 	@AfterClass
 	public static void finishRadixTest() {
-		Modules.remove(Universe.class);
 		SystemMetaData.clear();
 	}
 

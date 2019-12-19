@@ -71,8 +71,6 @@ public class MessageCentralImplTest {
 		AddressBook addressBook = mock(AddressBook.class);
 		when(addressBook.peer(any(TransportInfo.class))).thenReturn(mock(Peer.class));
 
-		Modules.put(Universe.class, universe);
-
 		// Other scaffolding
 		this.toc = new DummyTransportOutboundConnection();
 		this.dt = new DummyTransport(this.toc);
@@ -90,13 +88,6 @@ public class MessageCentralImplTest {
 		LocalSystem localSystem = mock(LocalSystem.class);
 		this.mci = new MessageCentralImpl(new MessagingDummyConfigurations.DummyMessageCentralConfiguration(), serialization, transportManager, events, addressBook, System::currentTimeMillis,
 				queueFactory, interfaces, localSystem);
-	}
-
-	@After
-	public void cleanup() {
-		Modules.remove(Universe.class);
-
-		this.mci.close();
 	}
 
 	@Test

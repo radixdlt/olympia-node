@@ -80,14 +80,6 @@ public class UDPTransportOutboundConnectionTest {
 
         when(metadata.get(UDPConstants.METADATA_UDP_PORT)).thenReturn("12345");
         when(metadata.get(UDPConstants.METADATA_UDP_HOST)).thenReturn(destinationAddressStr);
-
-        Universe universe = mock(Universe.class);
-        Modules.put(Universe.class, universe);
-    }
-
-    @After
-    public void tearDown() {
-        Modules.remove(Universe.class);
     }
 
     @Test

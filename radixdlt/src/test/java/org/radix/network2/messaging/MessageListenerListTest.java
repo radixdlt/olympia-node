@@ -29,17 +29,6 @@ public class MessageListenerListTest {
 	public void setUp() {
 		listenerList = new MessageListenerList();
 		called = 0;
-
-		// Curse you singletons
-		Universe universe = mock(Universe.class);
-		when(universe.getMagic()).thenReturn(0);
-
-		Modules.put(Universe.class, universe);
-	}
-
-	@After
-	public void cleanup() {
-		Modules.remove(Universe.class);
 	}
 
 	@Test

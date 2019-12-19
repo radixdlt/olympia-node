@@ -52,14 +52,6 @@ public class RadixTest
 		localSystem = LocalSystem.restoreOrCreate(properties, universe);// Load node.ks, after universe
 	}
 
-	@AfterClass
-	public static void endRadixTest() {
-		Modules.remove(Universe.class);
-		Modules.remove(Time.class);
-		Modules.remove(CommandLine.class);
-		Modules.remove(SecureRandom.class);
-	}
-
 	protected static Serialization getSerialization() {
 		return serialization;
 	}

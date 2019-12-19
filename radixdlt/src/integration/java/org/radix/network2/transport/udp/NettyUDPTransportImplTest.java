@@ -44,7 +44,6 @@ public class NettyUDPTransportImplTest {
 	public void teardown() throws IOException, InterruptedException {
 		transport2.close();
 		transport1.close();
-		Modules.remove(Universe.class);
 		Thread.sleep(500);
 	}
 

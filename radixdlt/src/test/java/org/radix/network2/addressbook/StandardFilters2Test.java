@@ -32,17 +32,6 @@ public class StandardFilters2Test {
 		TestSetupUtils.installBouncyCastleProvider();
 	}
 
-	@Before
-	public void setUp() throws Exception {
-		Universe universe = mock(Universe.class);
-		Modules.put(Universe.class, universe);
-	}
-
-	@After
-	public void tearDown() throws Exception {
-		Modules.remove(Universe.class);
-	}
-
 	@Test
 	@Ignore("Haven't bothered with this as all the components are checked")
 	public void testStandardFilter() {
