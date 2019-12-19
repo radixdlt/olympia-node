@@ -17,8 +17,8 @@ public final class PeerPongMessage extends SystemMessage {
 		// for serializer
 	}
 
-	public PeerPongMessage(long nonce, RadixSystem system) {
-		super(system);
+	public PeerPongMessage(long nonce, RadixSystem system, int magic) {
+		super(system, magic);
 
 		this.nonce = nonce;
 	}

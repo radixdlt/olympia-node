@@ -1,7 +1,6 @@
 package com.radixdlt.middleware2.processing;
 
 import com.google.inject.Inject;
-import com.google.inject.Singleton;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.Atom;
 import com.radixdlt.consensus.tempo.Application;
@@ -16,21 +15,15 @@ import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStore;
-import com.radixdlt.store.LedgerEntryStoreView;
 import com.radixdlt.universe.Universe;
 import org.json.JSONObject;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.modules.Modules;
-import org.radix.shards.ShardSpace;
-import org.radix.universe.system.LocalSystem;
 
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Queue;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -108,8 +101,8 @@ public class RadixEngineAtomProcessor implements Application {
 		return atom.getAID();
 	}
 
-	public void start() {
-		initGenesis();
+	public void start(Universe universe) {
+		initGenesis(universe);
 		new Thread(() -> {
 			try {
 				process();
@@ -124,10 +117,10 @@ public class RadixEngineAtomProcessor implements Application {
 		interrupted = true;
 	}
 
-	private void initGenesis() {
+	private void initGenesis(Universe universe) {
 		try {
 			LinkedList<AID> atomIds = new LinkedList<>();
-			for (Atom atom : Modules.get(Universe.class).getGenesis()) {
+			for (Atom atom : universe.getGenesis()) {
 				if (!store.contains(atom.getAID())) {
 					radixEngine.store(atom,
 							new AtomEventListener() {

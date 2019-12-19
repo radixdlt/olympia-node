@@ -6,6 +6,7 @@ import static org.mockito.Mockito.mock;
 import static org.powermock.api.mockito.PowerMockito.when;
 
 import com.radixdlt.store.LedgerEntryStore;
+import com.radixdlt.universe.Universe;
 import org.everit.json.schema.Schema;
 import org.json.JSONObject;
 import org.junit.Test;
@@ -25,7 +26,9 @@ public class RadixJsonRpcServerTest {
 			mock(AtomsService.class),
 			mock(Schema.class),
 			mock(LocalSystem.class),
-			mock(AddressBook.class));
+			mock(AddressBook.class),
+			mock(Universe.class)
+		);
 
 		JSONObject response = new JSONObject(server.handleChecked(request.toString()));
 		assertThat(response.getString("jsonrpc")).isEqualTo("2.0");
@@ -53,8 +56,8 @@ public class RadixJsonRpcServerTest {
 			mock(AtomsService.class),
 			mock(Schema.class),
 			mock(LocalSystem.class),
-			mock(AddressBook.class)
-		);
+			mock(AddressBook.class),
+			mock(Universe.class));
 
 		JSONObject response = new JSONObject(server.handleChecked(request.toString()));
 		assertThat(response.getString("jsonrpc")).isEqualTo("2.0");
@@ -73,7 +76,9 @@ public class RadixJsonRpcServerTest {
 			mock(AtomsService.class),
 			mock(Schema.class),
 			mock(LocalSystem.class),
-			mock(AddressBook.class), 5
+			mock(AddressBook.class),
+			mock(Universe.class),
+			5
 		);
 
 		JSONObject response = new JSONObject(server.handleChecked("123456"));

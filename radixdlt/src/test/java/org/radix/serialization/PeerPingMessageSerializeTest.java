@@ -11,6 +11,6 @@ public class PeerPingMessageSerializeTest extends SerializeMessageObject<PeerPin
 	}
 
 	private static PeerPingMessage get() {
-		return new PeerPingMessage(17L, getLocalSystem());
+		return new PeerPingMessage(17L, getLocalSystem(), 1);
 	}
 }

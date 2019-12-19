@@ -20,9 +20,14 @@ public final class PeersMessage extends Message
 	@DsonOutput(Output.ALL)
 	private List<Peer> peers = new ArrayList<>();
 
-	public PeersMessage ()
+	private PeersMessage() {
+		super(0);
+		// For serializer
+	}
+
+	public PeersMessage(int magic)
 	{
-		super();
+		super(magic);
 	}
 
 	@Override

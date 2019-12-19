@@ -18,7 +18,6 @@ import org.radix.common.executors.Executor;
 import org.radix.common.executors.ScheduledExecutable;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.modules.Modules;
 import org.radix.network2.transport.DynamicTransportMetadata;
 import org.radix.network2.transport.TransportInfo;
 import org.radix.network2.transport.udp.PublicInetAddress;
@@ -29,7 +28,6 @@ import org.radix.utils.SystemMetaData;
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.function.LongSupplier;
 
 import static com.radixdlt.serialization.MapHelper.mapOf;
 
@@ -38,52 +36,6 @@ import static com.radixdlt.serialization.MapHelper.mapOf;
 public final class LocalSystem extends RadixSystem
 {
 	private static final Logger log = Logging.getLogger();
-
-	public static LocalSystem restoreOrCreate(RuntimeProperties properties) {
-		String nodeKeyPath = properties.get("node.key.path", "node.ks");
-		ECKeyPair nodeKey = loadNodeKey(nodeKeyPath);
-		LocalSystem localSystem;
-
-		// if system has been persisted
-		if (SystemMetaData.getInstanceOptional().map(meta -> meta.has("system") ).orElse(false)) {
-			byte[] systemBytes = SystemMetaData.getInstance().get("system", Bytes.EMPTY_BYTES);
-			try {
-				localSystem = Serialization.getDefault().fromDson(systemBytes, LocalSystem.class);
-			} catch (SerializationException e) {
-				throw new IllegalStateException("while restoring local instance", e);
-			}
-		} else {
-			localSystem = new LocalSystem(
-				nodeKey,
-				Radix.AGENT, Radix.AGENT_VERSION, Radix.PROTOCOL_VERSION
-			);
-		}
-
-		// setup background checkpoint task to persist instance into SystemMetaData
-		Executor.getInstance().scheduleAtFixedRate(new ScheduledExecutable(1, 1, TimeUnit.SECONDS) {
-			@Override
-			public void execute() {
-				SystemMetaData.ifPresent(smc -> {
-					try {
-						byte[] systemBytes = Serialization.getDefault().toDson(localSystem, Output.PERSIST);
-						smc.put("system", systemBytes);
-					} catch (IOException e) {
-						log.error("Could not persist system state", e);
-					}
-				});
-			}
-		});
-
-		return localSystem;
-	}
-
-	private static ECKeyPair loadNodeKey(String nodeKeyPath) {
-		try {
-			return Keys.readKey(nodeKeyPath, "node", "RADIX_NODE_KEYSTORE_PASSWORD", "RADIX_NODE_KEY_PASSWORD");
-		} catch (IOException | CryptoException ex) {
-			throw new IllegalStateException("while loading node key", ex);
-		}
-	}
 
 	private ECKeyPair keyPair;
 
@@ -95,9 +47,9 @@ public final class LocalSystem extends RadixSystem
 		this.keyPair = new ECKeyPair();
 	}
 
-	public LocalSystem(ECKeyPair key, String agent, int agentVersion, int protocolVersion)
+	public LocalSystem(ECKeyPair key, String agent, int agentVersion, int protocolVersion, ImmutableList<TransportInfo> supportedTransports)
 	{
-		super(key.getPublicKey(), agent, agentVersion, protocolVersion, defaultTransports());
+		super(key.getPublicKey(), agent, agentVersion, protocolVersion, supportedTransports);
 		this.keyPair = key;
 	}
 
@@ -189,17 +141,60 @@ public final class LocalSystem extends RadixSystem
 		return Runtime.getRuntime().availableProcessors();
 	}
 
+	public static LocalSystem restoreOrCreate(RuntimeProperties properties, Universe universe) {
+		String nodeKeyPath = properties.get("node.key.path", "node.ks");
+		ECKeyPair nodeKey = loadNodeKey(nodeKeyPath);
+		LocalSystem localSystem;
+
+		// if system has been persisted
+		if (SystemMetaData.getInstanceOptional().map(meta -> meta.has("system") ).orElse(false)) {
+			byte[] systemBytes = SystemMetaData.getInstance().get("system", Bytes.EMPTY_BYTES);
+			try {
+				localSystem = Serialization.getDefault().fromDson(systemBytes, LocalSystem.class);
+			} catch (SerializationException e) {
+				throw new IllegalStateException("while restoring local instance", e);
+			}
+		} else {
+			localSystem = new LocalSystem(nodeKey, Radix.AGENT, Radix.AGENT_VERSION, Radix.PROTOCOL_VERSION, defaultTransports(universe));
+		}
+
+		// setup background checkpoint task to persist instance into SystemMetaData
+		Executor.getInstance().scheduleAtFixedRate(new ScheduledExecutable(1, 1, TimeUnit.SECONDS) {
+			@Override
+			public void execute() {
+				SystemMetaData.ifPresent(smc -> {
+					try {
+						byte[] systemBytes = Serialization.getDefault().toDson(localSystem, Output.PERSIST);
+						smc.put("system", systemBytes);
+					} catch (IOException e) {
+						log.error("Could not persist system state", e);
+					}
+				});
+			}
+		});
+
+		return localSystem;
+	}
+
 	// FIXME: *Really* need a better way of configuring this other than hardcoding here
 	// Should also have the option of overriding "port", rather than always using universe port
-	private static ImmutableList<TransportInfo> defaultTransports() {
+	private static ImmutableList<TransportInfo> defaultTransports(Universe universe) {
 		return ImmutableList.of(
 			TransportInfo.of(
 				UDPConstants.UDP_NAME,
 				DynamicTransportMetadata.of(
 					UDPConstants.METADATA_UDP_HOST, PublicInetAddress.getInstance()::toString,
-					UDPConstants.METADATA_UDP_PORT, () -> Integer.toString(Modules.get(Universe.class).getPort())
+					UDPConstants.METADATA_UDP_PORT, () -> Integer.toString(universe.getPort())
 				)
 			)
 		);
+	}
+
+	private static ECKeyPair loadNodeKey(String nodeKeyPath) {
+		try {
+			return Keys.readKey(nodeKeyPath, "node", "RADIX_NODE_KEYSTORE_PASSWORD", "RADIX_NODE_KEY_PASSWORD");
+		} catch (IOException | CryptoException ex) {
+			throw new IllegalStateException("while loading node key", ex);
+		}
 	}
 }

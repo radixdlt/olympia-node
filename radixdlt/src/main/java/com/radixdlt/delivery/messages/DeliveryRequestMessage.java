@@ -18,10 +18,12 @@ public class DeliveryRequestMessage extends Message {
 
 	DeliveryRequestMessage() {
 		// Serializer only
+		super(0);
 		this.aids = ImmutableList.of();
 	}
 
-	public DeliveryRequestMessage(Collection<AID> aids) {
+	public DeliveryRequestMessage(Collection<AID> aids, int magic) {
+		super(magic);
 		this.aids = ImmutableList.copyOf(aids);
 	}
 

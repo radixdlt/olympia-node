@@ -13,6 +13,7 @@ import com.radixdlt.consensus.tempo.Scheduler;
 import com.radixdlt.discovery.messages.IterativeDiscoveryRequestMessage;
 import com.radixdlt.discovery.messages.IterativeDiscoveryResponseMessage;
 import com.radixdlt.store.CursorStore;
+import com.radixdlt.universe.Universe;
 import org.radix.common.Syncronicity;
 import org.radix.events.EventListener;
 import org.radix.events.Events;
@@ -61,6 +62,7 @@ public final class IterativeDiscoverer implements AtomDiscoverer {
 	private final LedgerEntryStoreView storeView;
 	private final Scheduler scheduler;
 	private final MessageCentral messageCentral;
+	private final Universe universe;
 
 	private final Collection<AtomDiscoveryListener> discoveryListeners;
 
@@ -75,13 +77,15 @@ public final class IterativeDiscoverer implements AtomDiscoverer {
 		Scheduler scheduler,
 		MessageCentral messageCentral,
 		Events events,
-		IterativeDiscovererConfiguration configuration
+		IterativeDiscovererConfiguration configuration,
+		Universe universe
 	) {
 		this.self = Objects.requireNonNull(self);
 		this.storeView = Objects.requireNonNull(storeView);
 		this.cursorStore = Objects.requireNonNull(cursorStore);
 		this.scheduler = Objects.requireNonNull(scheduler);
 		this.messageCentral = Objects.requireNonNull(messageCentral);
+		this.universe = Objects.requireNonNull(universe);
 
 		// TODO improve locking to something like in messaging
 		this.discoveryListeners = Collections.synchronizedList(new ArrayList<>());
@@ -159,7 +163,7 @@ public final class IterativeDiscoverer implements AtomDiscoverer {
 	}
 
 	private void requestDiscovery(Peer peer, LogicalClockCursor cursor) {
-		IterativeDiscoveryRequestMessage request = new IterativeDiscoveryRequestMessage(cursor);
+		IterativeDiscoveryRequestMessage request = new IterativeDiscoveryRequestMessage(cursor, this.universe.getMagic());
 		discoveryState.addRequest(peer.getNID(), cursor.getLcPosition());
 		messageCentral.send(peer, request);
 		if (log.hasLevel(Logging.DEBUG)) {
@@ -205,7 +209,7 @@ public final class IterativeDiscoverer implements AtomDiscoverer {
 			nextCursor = new LogicalClockCursor(nextLcPosition, null);
 		}
 		LogicalClockCursor responseCursor = new LogicalClockCursor(lcPosition, nextCursor);
-		return new IterativeDiscoveryResponseMessage(aids, responseCursor);
+		return new IterativeDiscoveryResponseMessage(aids, responseCursor, this.universe.getMagic());
 	}
 
 	@Override

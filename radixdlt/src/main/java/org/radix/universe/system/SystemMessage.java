@@ -14,9 +14,11 @@ public class SystemMessage extends SignedMessage {
 
 	protected SystemMessage() {
 		// for serializer
+		super(0);
 	}
 
-	public SystemMessage(RadixSystem system) {
+	public SystemMessage(RadixSystem system, int magic) {
+		super(magic);
 		this.system = system;
 	}
 

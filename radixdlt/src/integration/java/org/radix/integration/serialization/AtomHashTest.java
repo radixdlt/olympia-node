@@ -17,7 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class AtomHashTest extends RadixTest {
 	@Test
 	public void testThatParticleSpinAffectsAtomHash() throws CryptoException {
-		Universe universe = Modules.get(Universe.class);
+		Universe universe = getUniverse();
 		RRIParticle p = new RRIParticle(RRI.of(RadixAddress.from(universe, new ECKeyPair().getPublicKey()), "test"));
 		Atom atom1 = new Atom();
 		atom1.addParticleGroupWith(p, Spin.UP);

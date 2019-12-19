@@ -92,7 +92,7 @@ public final class TestService {
 				)
 			);
 			Peer peer = new PeerWithSystem(system);
-			PeersMessage peersMessage = new PeersMessage();
+			PeersMessage peersMessage = new PeersMessage(0);
 			peersMessage.setPeers(Collections.singletonList(peer));
 			peersMessage.setDirection(Direction.INBOUND);
 			peersMessage.setTimestamp(Timestamps.RECEIVED, Time.currentTimestamp());

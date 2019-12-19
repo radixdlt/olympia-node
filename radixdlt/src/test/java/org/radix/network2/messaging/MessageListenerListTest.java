@@ -10,8 +10,6 @@ import org.junit.Test;
 import org.radix.modules.Modules;
 import org.radix.network.messages.TestMessage;
 import org.radix.network2.addressbook.Peer;
-import org.radix.network2.messaging.MessageListener;
-import org.radix.network2.messaging.MessageListenerList;
 
 import com.radixdlt.universe.Universe;
 
@@ -136,7 +134,7 @@ public class MessageListenerListTest {
 		lock.lock();
 		Thread otherThread = new Thread(() -> listenerList.messageReceived(null, null));
 		otherThread.start();
-		listenerList.messageReceived(null, new TestMessage());
+		listenerList.messageReceived(null, new TestMessage(1));
 		otherThread.join();
 	}
 

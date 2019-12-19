@@ -15,9 +15,11 @@ public class IterativeDiscoveryRequestMessage extends Message {
 
 	IterativeDiscoveryRequestMessage() {
 		// Serializer only
+		super(0);
 	}
 
-	public IterativeDiscoveryRequestMessage(LogicalClockCursor cursor) {
+	public IterativeDiscoveryRequestMessage(LogicalClockCursor cursor, int magic) {
+		super(magic);
 		this.cursor = cursor;
 	}
 

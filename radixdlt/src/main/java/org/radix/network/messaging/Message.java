@@ -1,28 +1,22 @@
 package org.radix.network.messaging;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.HashMap;
-import java.util.concurrent.atomic.AtomicLong;
-
-import org.radix.containers.BasicContainer;
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
-import org.radix.modules.Modules;
-import org.radix.network.exceptions.BanException;
-import com.radixdlt.utils.WireIO;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
+import org.radix.containers.BasicContainer;
+import org.radix.logging.Logger;
+import org.radix.logging.Logging;
 import org.radix.time.Time;
 import org.radix.time.Timestamps;
-import com.radixdlt.universe.Universe;
 import org.xerial.snappy.Snappy;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonValue;
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 public abstract class Message extends BasicContainer
 {
@@ -45,43 +39,20 @@ public abstract class Message extends BasicContainer
 	private static final AtomicLong instances = new AtomicLong();
 	public static final int MAX_MESSAGE_SIZE = (4096*1024);
 
-	public static Message parse(InputStream inputStream, Serialization serialization) throws IOException, BanException
-	{
-		WireIO.Reader reader = new WireIO.Reader(inputStream);
-
-		// Save the data items so that we can pre-calculate the hash //
-		int length = reader.readInt();
-		byte[] compressed = reader.readBytes(length);
-
-		byte[] bytes = Snappy.uncompress(compressed);
-		Message message = serialization.fromDson(bytes, Message.class);
-		if (message.getMagic() != Modules.get(Universe.class).getMagic()) {
-			throw new BanException("Wrong magic for this universe");
-		}
-
-		message.setDirection(Direction.INBOUND);
-		message.setTimestamp(Timestamps.RECEIVED, Time.currentTimestamp());
-		message.setTimestamp(Timestamps.LATENCY, java.lang.System.nanoTime());
-		messaginglog.debug(message.toString()+" bytes "+length);
-
-		return message;
-	}
-
-	private long 		instance = Message.instances.incrementAndGet();
+	private long instance = Message.instances.incrementAndGet();
 
 	@JsonProperty("magic")
 	@DsonOutput(value = Output.HASH, include = false)
-	private int magic = Modules.get(Universe.class).getMagic();
+	private int magic;
 
 	@JsonProperty("timestamps")
 	@DsonOutput(value = {Output.API, Output.PERSIST})
 	private final HashMap<String, Long> timestamps = new HashMap<>();
 
-	// Transients //
-	private transient 	int			size = 0;
-	private transient 	Direction 	direction;
+	private transient int size = 0;
+	private transient Direction direction;
 
-	protected Message()
+	protected Message(int magic)
 	{
 		setTimestamp(Timestamps.DEFAULT, Time.currentTimestamp());
 	}

@@ -8,18 +8,14 @@ import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.Bytes;
 
-import java.util.List;
-
 import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
 
 import org.json.JSONObject;
 import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.atomos.RRIParticle;
-import org.radix.atoms.messages.AtomSubmitMessage;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atommodel.unique.UniqueParticle;
@@ -30,13 +26,10 @@ import com.radixdlt.crypto.CryptoException;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.modules.Modules;
-import org.radix.network2.addressbook.AddressBook;
-import org.radix.network2.addressbook.Peer;
 import org.radix.network2.messaging.MessageCentral;
 import org.radix.properties.RuntimeProperties;
 
 import org.radix.time.Time;
-import org.radix.universe.system.LocalSystem;
 
 /**
  * API which is used for internal testing and should not be included in release to users
@@ -48,18 +41,20 @@ public class InternalService {
 	private final RadixEngineAtomProcessor radixEngineAtomProcessor;
 	private final Serialization serialization;
 	private final RuntimeProperties properties;
+	private final Universe universe;
 
 	private static boolean spamming = false;
 
 	// Executor for prepare/store
 	private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
-	public InternalService(MessageCentral messageCentral, LedgerEntryStore store, RadixEngineAtomProcessor radixEngineAtomProcessor, Serialization serialization, RuntimeProperties properties) {
+	public InternalService(MessageCentral messageCentral, LedgerEntryStore store, RadixEngineAtomProcessor radixEngineAtomProcessor, Serialization serialization, RuntimeProperties properties, Universe universe) {
 		this.messageCentral = messageCentral;
 		this.store = store;
 		this.radixEngineAtomProcessor = radixEngineAtomProcessor;
 		this.serialization = serialization;
 		this.properties = properties;
+		this.universe = universe;
 	}
 
 	private class Spammer implements Runnable {
@@ -80,7 +75,7 @@ public class InternalService {
 			this.iterations = iterations;
 			this.rate = rate;
 			this.batching = Math.max(1, batching);
-			this.account = RadixAddress.from(Modules.get(Universe.class), owner.getPublicKey());
+			this.account = RadixAddress.from(universe, owner.getPublicKey());
 			this.nonceBits = nonceBits;
 		}
 

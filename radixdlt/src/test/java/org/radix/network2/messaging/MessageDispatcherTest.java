@@ -4,13 +4,11 @@ import com.radixdlt.common.EUID;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.serialization.Serialization;
 import org.hamcrest.Matchers;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.stubbing.Answer;
 import org.powermock.api.mockito.PowerMockito;
 import org.radix.Radix;
-import org.radix.modules.Modules;
 import org.radix.network.Interfaces;
 import org.radix.network.messages.TestMessage;
 import org.radix.network.messaging.Message;
@@ -91,7 +89,7 @@ public class MessageDispatcherTest extends RadixTest {
     @Test
     public void sendSuccessfullyMessage() throws CryptoException {
 
-        SystemMessage message = spy(new SystemMessage(getLocalSystem()));
+        SystemMessage message = spy(new SystemMessage(getLocalSystem(), 0));
         MessageEvent messageEvent = new MessageEvent(peer1, transportInfo, message, 10_000);
 
         SendResult sendResult = messageDispatcher.send(transportManager, messageEvent);
@@ -102,7 +100,7 @@ public class MessageDispatcherTest extends RadixTest {
 
     @Test
     public void sendExpiredMessage() {
-        Message message = spy(new TestMessage());
+        Message message = spy(new TestMessage(0));
         when(message.getTimestamp()).thenReturn(10_000L);
         MessageEvent messageEvent = new MessageEvent(peer1, transportInfo, message, 10_000);
 
@@ -114,7 +112,7 @@ public class MessageDispatcherTest extends RadixTest {
 
     @Test
     public void sendExceptionMessage() throws CryptoException {
-        SystemMessage message = spy(new SystemMessage(getLocalSystem()));
+        SystemMessage message = spy(new SystemMessage(getLocalSystem(), 0));
         doThrow(new CryptoException("Expected exception")).when(message).sign(getLocalSystem().getKeyPair());
         MessageEvent messageEvent = new MessageEvent(peer1, transportInfo, message, 10_000);
 
@@ -127,7 +125,7 @@ public class MessageDispatcherTest extends RadixTest {
 
     @Test
     public void receiveSuccessfully() throws InterruptedException {
-        SystemMessage testMessage = spy(new SystemMessage(getLocalSystem()));
+        SystemMessage testMessage = spy(new SystemMessage(getLocalSystem(), 0));
         RadixSystem radixSystem = spy(testMessage.getSystem());
         doReturn(radixSystem).when(testMessage).getSystem();
         doReturn(EUID.ONE).when(radixSystem).getNID();
@@ -150,7 +148,7 @@ public class MessageDispatcherTest extends RadixTest {
 
     @Test
     public void receiveExpiredMessage() {
-        SystemMessage testMessage = spy(new SystemMessage(getLocalSystem()));
+        SystemMessage testMessage = spy(new SystemMessage(getLocalSystem(), 0));
         when(testMessage.getTimestamp()).thenReturn(10_000L);
         MessageEvent messageEvent = new MessageEvent(peer1, transportInfo, testMessage, 10_000);
 
@@ -163,13 +161,13 @@ public class MessageDispatcherTest extends RadixTest {
 
     @Test
     public void receiveDisconnectNullZeroSystem() {
-        SystemMessage testMessage1 = spy(new SystemMessage(getLocalSystem()));
+        SystemMessage testMessage1 = spy(new SystemMessage(getLocalSystem(), 0));
         RadixSystem radixSystem1 = spy(testMessage1.getSystem());
         doReturn(radixSystem1).when(testMessage1).getSystem();
         doReturn(EUID.ZERO).when(radixSystem1).getNID();
         MessageEvent messageEvent1 = new MessageEvent(peer1, transportInfo, testMessage1, 10_000);
 
-        SystemMessage testMessage2 = spy(new SystemMessage(getLocalSystem()));
+        SystemMessage testMessage2 = spy(new SystemMessage(getLocalSystem(), 0));
         RadixSystem radixSystem2 = spy(testMessage2.getSystem());
         doReturn(radixSystem2).when(testMessage2).getSystem();
         doReturn(null).when(radixSystem2).getNID();
@@ -187,7 +185,7 @@ public class MessageDispatcherTest extends RadixTest {
 
     @Test
     public void receiveDisconnectOldPeer() {
-        SystemMessage testMessage = spy(new SystemMessage(getLocalSystem()));
+        SystemMessage testMessage = spy(new SystemMessage(getLocalSystem(), 0));
         RadixSystem radixSystem = spy(testMessage.getSystem());
         doReturn(radixSystem).when(testMessage).getSystem();
         doReturn(EUID.ONE).when(radixSystem).getNID();
@@ -202,7 +200,7 @@ public class MessageDispatcherTest extends RadixTest {
 
     @Test
     public void receiveBanSelf() throws UnknownHostException {
-        SystemMessage testMessage = spy(new SystemMessage(getLocalSystem()));
+        SystemMessage testMessage = spy(new SystemMessage(getLocalSystem(), 0));
         RadixSystem radixSystem = spy(testMessage.getSystem());
         doReturn(radixSystem).when(testMessage).getSystem();
         doReturn(getLocalSystem().getNID()).when(radixSystem).getNID();

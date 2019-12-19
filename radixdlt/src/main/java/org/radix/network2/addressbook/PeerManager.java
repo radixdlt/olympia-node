@@ -37,8 +37,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-// FIXME: static dependency on Modules.get(Universe.class).getPlanck()
-// FIXME: static dependency on this.localSystem.getNID()
 public class PeerManager {
 	private static final Logger log = Logging.getLogger("peermanager");
 
@@ -71,6 +69,7 @@ public class PeerManager {
 	private final Interfaces interfaces;
 	private final Whitelist whitelist;
 	private final LocalSystem localSystem;
+	private final Universe universe;
 
 	private Future<?> heartbeatPeersFuture;
 	private Future<?> peersBroadcastFuture;
@@ -118,7 +117,7 @@ public class PeerManager {
 	            @Named("self") EUID self,
 	            LocalSystem localSystem,
 	            Interfaces interfaces,
-	            RuntimeProperties properties) {
+	            RuntimeProperties properties, Universe universe) {
 		super();
 
 		this.addressbook = Objects.requireNonNull(addressbook);
@@ -128,6 +127,7 @@ public class PeerManager {
 		this.self = Objects.requireNonNull(self);
 		this.localSystem = Objects.requireNonNull(localSystem);
 		this.interfaces = Objects.requireNonNull(interfaces);
+		this.universe = Objects.requireNonNull(universe);
 		this.whitelist = Whitelist.from(properties);
 
 		this.peersBroadcastIntervalMs = config.networkPeersBroadcastInterval(30000);
@@ -222,7 +222,7 @@ public class PeerManager {
 
 	private void heartbeatPeers() {
 		// System Heartbeat
-		SystemMessage msg = new SystemMessage(localSystem);
+		SystemMessage msg = new SystemMessage(localSystem, this.universe.getMagic());
 		addressbook.recentPeers().forEachOrdered(peer -> {
 			try {
 				messageCentral.send(peer, msg);
@@ -251,7 +251,7 @@ public class PeerManager {
 		try {
 			// Deliver known Peers in its entirety, filtered on whitelist and activity
 			// Chunk the sending of Peers so that UDP can handle it
-			PeersMessage peersMessage = new PeersMessage();
+			PeersMessage peersMessage = new PeersMessage(this.universe.getMagic());
 			List<Peer> peers = addressbook.peers()
 				.filter(Peer::hasNID)
 				.filter(StandardFilters.standardFilter(self, interfaces, whitelist))
@@ -267,7 +267,7 @@ public class PeerManager {
 				peersMessage.getPeers().add(p);
 				if (peersMessage.getPeers().size() == peerMessageBatchSize) {
 					messageCentral.send(peer, peersMessage);
-					peersMessage = new PeersMessage();
+					peersMessage = new PeersMessage(this.universe.getMagic());
 				}
 			}
 
@@ -283,7 +283,7 @@ public class PeerManager {
 		try {
 			long nonce = message.getNonce();
 			log.debug("peer.ping from " + peer + " with nonce '" + nonce + "'");
-			messageCentral.send(peer, new PeerPongMessage(nonce, localSystem));
+			messageCentral.send(peer, new PeerPongMessage(nonce, localSystem, this.universe.getMagic()));
 			events.broadcast(new PeerAvailableEvent(peer));
 		} catch (Exception ex) {
 			log.error("peer.ping " + peer, ex);
@@ -316,7 +316,7 @@ public class PeerManager {
 				int index = rand.nextInt(peers.size());
 				Peer peer = peers.get(index);
 				try {
-					messageCentral.send(peer, new GetPeersMessage());
+					messageCentral.send(peer, new GetPeersMessage(this.universe.getMagic()));
 				} catch (TransportException ioex) {
 					log.info("Failed to request peer information from " + peer, ioex);
 				}
@@ -333,7 +333,7 @@ public class PeerManager {
 					return false;
 				}
 				if (!this.probes.containsKey(peer)) {
-					PeerPingMessage ping = new PeerPingMessage(rng.nextLong(), localSystem);
+					PeerPingMessage ping = new PeerPingMessage(rng.nextLong(), localSystem, this.universe.getMagic());
 
 					// Only wait for response if peer has a system, otherwise peer will be upgraded by pong message
 					long nonce = ping.getNonce();
@@ -368,7 +368,7 @@ public class PeerManager {
 
 	private void discoverPeers() {
 		// Probe all the bootstrap hosts so that they know about us
-		GetPeersMessage msg = new GetPeersMessage();
+		GetPeersMessage msg = new GetPeersMessage(this.universe.getMagic());
 		bootstrapDiscovery.discover(this.addressbook, StandardFilters.standardFilter(self, interfaces, whitelist)).stream()
 			.map(addressbook::peer)
 			.forEachOrdered(peer -> {

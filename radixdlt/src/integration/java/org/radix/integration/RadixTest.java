@@ -23,6 +23,7 @@ public class RadixTest
 	private static String dbLocation = null;
 	private static RuntimeProperties properties;
 	private static LocalSystem localSystem;
+	private static Universe universe;
 
 	private long clock = 100L; // Arbitrary starting point. Must be larger than number of atoms in genesis.
 
@@ -45,11 +46,11 @@ public class RadixTest
 		}
 		properties.set("db.location", dbLocation);
 
-		Universe universe = new GenerateUniverses(properties).generateUniverses().stream().filter(Universe::isTest).findAny().get();
+		universe = new GenerateUniverses(properties).generateUniverses().stream().filter(Universe::isTest).findAny().get();
 		Modules.remove(Universe.class); // GenerateUniverses adds this
 		Modules.put(Universe.class, universe);
 
-		localSystem = LocalSystem.restoreOrCreate(properties);// Load node.ks, after universe
+		localSystem = LocalSystem.restoreOrCreate(properties, universe);// Load node.ks, after universe
 	}
 
 	@AfterClass
@@ -70,5 +71,9 @@ public class RadixTest
 
 	public static LocalSystem getLocalSystem() {
 		return localSystem;
+	}
+
+	public static Universe getUniverse() {
+		return universe;
 	}
 }

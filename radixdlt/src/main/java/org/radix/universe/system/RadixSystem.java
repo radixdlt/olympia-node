@@ -119,16 +119,6 @@ public class RadixSystem extends BasicContainer
 		this.timestamp = timestamp;
 	}
 
-	public boolean isSynced(RadixSystem system)
-	{
-		return Math.abs(this.timestamp - system.timestamp) < Modules.get(Universe.class).getPlanck();
-	}
-
-	public boolean isAhead(RadixSystem system)
-	{
-		return this.timestamp > (system.timestamp + Modules.get(Universe.class).getPlanck());
-	}
-
 	public Stream<TransportInfo> supportedTransports() {
 		return transports.stream();
 	}

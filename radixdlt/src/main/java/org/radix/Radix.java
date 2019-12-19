@@ -17,11 +17,8 @@ import org.radix.events.Events;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.modules.Modules;
-import org.radix.network.Interfaces;
-import org.radix.network.discovery.BootstrapDiscovery;
 import org.radix.network2.addressbook.AddressBook;
 import org.radix.network2.addressbook.PeerManager;
-import org.radix.network2.addressbook.PeerManagerFactory;
 import org.radix.network2.messaging.MessageCentral;
 import org.radix.properties.RuntimeProperties;
 import org.radix.time.Time;
@@ -73,7 +70,7 @@ public final class Radix
 		Universe universe = extractUniverseFrom(properties, serialization);
 		Modules.put(Universe.class, universe);
 
-		LocalSystem localSystem = LocalSystem.restoreOrCreate(properties);
+		LocalSystem localSystem = LocalSystem.restoreOrCreate(properties, universe);
 
 		// set up time services
 		Time.start(properties);
@@ -100,7 +97,7 @@ public final class Radix
 
 		// start middleware
 		atomProcessor = globalInjector.getInjector().getInstance(RadixEngineAtomProcessor.class);
-		atomProcessor.start();
+		atomProcessor.start(universe);
 
 		// start API services
 		AtomToBinaryConverter atomToBinaryConverter = globalInjector.getInjector().getInstance(AtomToBinaryConverter.class);

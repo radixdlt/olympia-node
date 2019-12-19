@@ -5,7 +5,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
 import com.radixdlt.common.EUID;
-import com.radixdlt.universe.Universe;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.After;
 import org.junit.Before;
@@ -17,7 +16,6 @@ import org.mockito.stubbing.Answer;
 import org.radix.events.Events;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.modules.Modules;
 import org.radix.network.Interfaces;
 import org.radix.network.discovery.BootstrapDiscovery;
 import org.radix.network.messages.GetPeersMessage;
@@ -99,7 +97,7 @@ public class PeerManagerTest extends RadixTest {
     public void setUp() {
         interfaces = mock(Interfaces.class);
         when(interfaces.isSelf(any())).thenReturn(false);
-        when(Modules.get(Universe.class).getPlanck()).thenReturn(10000L);
+        when(getUniverse().getPlanck()).thenReturn(10000L);
         RuntimeProperties properties = getProperties();
 
         when(properties.get(eq("network.peers.heartbeat.delay"), any())).thenReturn(100);
@@ -178,7 +176,7 @@ public class PeerManagerTest extends RadixTest {
         when(addressBook.peer(transportInfo4)).thenReturn(peer4);
 
         bootstrapDiscovery = mock(BootstrapDiscovery.class);
-        peerManager = spy(new PeerManager(config, addressBook, messageCentral, events, bootstrapDiscovery, self, getLocalSystem(), interfaces, properties));
+        peerManager = spy(new PeerManager(config, addressBook, messageCentral, events, bootstrapDiscovery, self, getLocalSystem(), interfaces, properties, getUniverse()));
     }
 
     @After
@@ -277,7 +275,7 @@ public class PeerManagerTest extends RadixTest {
         when(addressBook.peers()).thenAnswer((Answer<Stream<Peer>>) invocation -> Stream.of(peer1, peer2));
         //start timeout handler immediately
         doReturn(0).when(config).networkPeersProbeTimeout(eq(20000));
-        peerManager = spy(new PeerManager(config, addressBook, messageCentral, events, bootstrapDiscovery, self, getLocalSystem(), interfaces, getProperties()));
+        peerManager = spy(new PeerManager(config, addressBook, messageCentral, events, bootstrapDiscovery, self, getLocalSystem(), interfaces, getProperties(), getUniverse()));
         Semaphore semaphore = new Semaphore(0);
         peerManager.start();
         //allow peer manager to run 1 sec

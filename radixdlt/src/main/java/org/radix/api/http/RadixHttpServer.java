@@ -83,8 +83,11 @@ public final class RadixHttpServer {
 			store,
 			atomsService,
 			AtomSchemas.get(),
-			localSystem, addressBook);
-		this.internalService = new InternalService(messageCentral, store, radixEngineAtomProcessor, serialization, properties);
+			localSystem,
+			addressBook,
+			universe
+		);
+		this.internalService = new InternalService(messageCentral, store, radixEngineAtomProcessor, serialization, properties, universe);
 		this.testService = new TestService(serialization, messageCentral);
 		this.networkService = new NetworkService(serialization, localSystem, addressBook);
 	}

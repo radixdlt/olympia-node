@@ -22,9 +22,9 @@ public abstract class SignedMessage extends Message
 	@Override
 	public short VERSION() { return 100; }
 
-	protected SignedMessage()
+	protected SignedMessage(int magic)
 	{
-		super();
+		super(magic);
 	}
 
 	// SIGNABLE //

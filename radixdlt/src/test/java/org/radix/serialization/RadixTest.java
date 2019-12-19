@@ -24,6 +24,7 @@ public abstract class RadixTest
 	private static NtpService ntpService;
 	private static RuntimeProperties properties;
 	private static LocalSystem localSystem;
+	private static Universe universe;
 
 	@BeforeClass
 	public static void startRadixTest() {
@@ -34,7 +35,7 @@ public abstract class RadixTest
 		properties = mock(RuntimeProperties.class);
 		doAnswer(invocation -> invocation.getArgument(1)).when(properties).get(any(), any());
 
-		final Universe universe = mock(Universe.class);
+		universe = mock(Universe.class);
 		when(universe.getMagic()).thenReturn(2);
 		when(universe.getPort()).thenReturn(8080);
 
@@ -47,7 +48,7 @@ public abstract class RadixTest
 		serialization = Serialization.getDefault();
 
 		Modules.put(Universe.class, universe);
-		localSystem = LocalSystem.restoreOrCreate(getProperties());
+		localSystem = LocalSystem.restoreOrCreate(getProperties(), universe);
 	}
 
 	@AfterClass
@@ -70,5 +71,9 @@ public abstract class RadixTest
 
 	public static LocalSystem getLocalSystem() {
 		return localSystem;
+	}
+
+	public static Universe getUniverse() {
+		return universe;
 	}
 }

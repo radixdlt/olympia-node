@@ -113,7 +113,7 @@ public class MessageCentralImplTest {
 
 	@Test
 	public void testSend() throws InterruptedException {
-		Message msg = new TestMessage();
+		Message msg = new TestMessage(1);
 		Peer peer = mock(Peer.class);
 		mci.send(peer, msg);
 		assertTrue(toc.getCountDownLatch().await(10, TimeUnit.SECONDS));
@@ -122,7 +122,7 @@ public class MessageCentralImplTest {
 
 	@Test
 	public void testSendMessageDeliveredToTransport() throws InterruptedException {
-		Message msg = new TestMessage();
+		Message msg = new TestMessage(1);
 		Peer peer = mock(Peer.class);
 
 		int numberOfRequests = 6;
@@ -138,7 +138,7 @@ public class MessageCentralImplTest {
 
 	@Test
 	public void testInjectMessageDeliveredToListeners() throws InterruptedException {
-		Message msg = spy(new TestMessage());
+		Message msg = spy(new TestMessage(1));
 		doReturn(System.currentTimeMillis()).when(msg).getTimestamp();
 		Peer peer = mock(Peer.class);
 
@@ -170,7 +170,7 @@ public class MessageCentralImplTest {
 
 	private <T> void testQueueIsFull(Queue<T> queue, BiConsumer<Peer, Message> biConsumer) {
 		doReturn(false).when(queue).offer(notNull());
-		Message msg = new TestMessage();
+		Message msg = new TestMessage(1);
 		Peer peer = mock(Peer.class);
 
 		int numberOfRequests = 6;
@@ -182,7 +182,7 @@ public class MessageCentralImplTest {
 
 	@Test
 	public void testInbound() throws IOException, InterruptedException {
-		Message msg = new TestMessage();
+		Message msg = new TestMessage(1);
 		byte[] data = Snappy.compress(serialization.toDson(msg, Output.WIRE));
 
 		AtomicReference<Message> receivedMessage = new AtomicReference<>();

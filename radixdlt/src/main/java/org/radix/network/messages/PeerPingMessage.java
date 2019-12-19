@@ -20,9 +20,9 @@ public final class PeerPingMessage extends SystemMessage
 		// for serializer
 	}
 
-	public PeerPingMessage(long nonce, RadixSystem system)
+	public PeerPingMessage(long nonce, RadixSystem system, int magic)
 	{
-		super(system);
+		super(system, magic);
 		this.nonce = nonce;
 	}
 
