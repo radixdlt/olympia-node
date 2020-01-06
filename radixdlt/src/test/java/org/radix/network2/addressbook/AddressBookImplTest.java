@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
+import com.radixdlt.universe.Universe;
 import org.junit.Before;
 import org.junit.Test;
 import org.powermock.reflect.Whitebox;
@@ -51,7 +52,9 @@ public class AddressBookImplTest {
 			this.broadcastEventCount.addAndGet(abevent.peers().size());
 			return null;
 		}).when(this.events).broadcast(any());
-		this.addressbook = new AddressBookImpl(this.persistence, this.events, 86400L * 1000L, mock(RuntimeProperties.class));
+		Universe universe = mock(Universe.class);
+		when(universe.getPlanck()).thenReturn(86400L * 1000L);
+		this.addressbook = new AddressBookImpl(this.persistence, this.events, universe, mock(RuntimeProperties.class));
 	}
 
 	@Test

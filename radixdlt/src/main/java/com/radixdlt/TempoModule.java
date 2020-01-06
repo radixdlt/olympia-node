@@ -12,8 +12,6 @@ import com.radixdlt.middleware2.processing.RadixEngineAtomProcessor;
 import org.radix.time.Time;
 
 // FIXME: static dependency on Time
-// FIXME: static dependency on Events
-// FIXME: static dependency on LocalSystem
 public class TempoModule extends AbstractModule {
 	@Override
 	protected void configure() {

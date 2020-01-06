@@ -72,7 +72,7 @@ public class LedgerEngineStore implements EngineStore {
 
     @Override
     public boolean supports(Set<EUID> destinations) {
-        // Sharding support is removed for now, meaning that every node supports all destinations.
+        // TODO Sharding support is removed for now, meaning that every node supports all destinations.
         return true;
     }
 

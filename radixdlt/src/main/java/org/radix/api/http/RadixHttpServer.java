@@ -47,17 +47,17 @@ import java.util.concurrent.ConcurrentHashMap;
  * TODO: Document me!
  */
 public final class RadixHttpServer {
-    public static final int DEFAULT_PORT = 8080;
-    public static final String CONTENT_TYPE_JSON = "application/json";
+	public static final int DEFAULT_PORT = 8080;
+	public static final String CONTENT_TYPE_JSON = "application/json";
 
-    private static final Logger logger = Logging.getLogger("api");
+	private static final Logger logger = Logging.getLogger("api");
 
 	private final ConcurrentHashMap<RadixJsonRpcPeer, WebSocketChannel> peers;
 	private final AtomsService atomsService;
-    private final RadixJsonRpcServer jsonRpcServer;
-    private final InternalService internalService;
-    private final TestService testService;
-    private final NetworkService networkService;
+	private final RadixJsonRpcServer jsonRpcServer;
+	private final InternalService internalService;
+	private final TestService testService;
+	private final NetworkService networkService;
 	private final Universe universe;
 	private final JSONObject apiSerializedUniverse;
 	private final LocalSystem localSystem;

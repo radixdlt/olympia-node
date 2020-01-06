@@ -12,12 +12,13 @@ import com.radixdlt.discovery.IterativeDiscovererModule;
 import com.radixdlt.middleware2.MiddlewareModule;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.berkeley.BerkeleyStoreModule;
+import com.radixdlt.universe.Universe;
 import org.radix.database.DatabaseEnvironment;
-import org.radix.events.Event;
 import org.radix.events.Events;
 import org.radix.network2.addressbook.AddressBookModule;
 import org.radix.network2.addressbook.PeerManagerConfiguration;
 import org.radix.network2.messaging.MessageCentralModule;
+import org.radix.network2.transport.tcp.TCPTransportModule;
 import org.radix.network2.transport.udp.UDPTransportModule;
 import org.radix.properties.RuntimeProperties;
 import org.radix.universe.system.LocalSystem;
@@ -26,7 +27,7 @@ public class GlobalInjector {
 
 	private Injector injector;
 
-	public GlobalInjector(RuntimeProperties properties, DatabaseEnvironment dbEnv, LocalSystem localSystem) {
+	public GlobalInjector(RuntimeProperties properties, DatabaseEnvironment dbEnv, LocalSystem localSystem, Universe universe) {
 		Module lazyRequestDelivererModule = new LazyRequestDelivererModule(properties);
 		Module iterativeDiscovererModule = new IterativeDiscovererModule(properties);
 		Module berkeleyStoreModule = new BerkeleyStoreModule();
@@ -34,6 +35,7 @@ public class GlobalInjector {
 		Module middlewareModule = new MiddlewareModule();
 		Module messageCentralModule = new MessageCentralModule(properties);
 		Module udpTransportModule = new UDPTransportModule(properties);
+		Module tcpTransportModule = new TCPTransportModule(properties);
 		Module addressBookModule = new AddressBookModule(dbEnv);
 
 		// temporary global module to hook up global things
@@ -44,8 +46,9 @@ public class GlobalInjector {
 				bind(DatabaseEnvironment.class).toInstance(dbEnv);
 				bind(Serialization.class).toProvider(Serialization::getDefault);
 				bind(Events.class).toProvider(Events::getInstance);
-				bind(LocalSystem.class).annotatedWith(Names.named("self")).toInstance(localSystem);
+				bind(LocalSystem.class).toInstance(localSystem);
 				bind(EUID.class).annotatedWith(Names.named("self")).toInstance(localSystem.getNID());
+				bind(Universe.class).toInstance(universe);
 				bind(PeerManagerConfiguration.class).toInstance(PeerManagerConfiguration.fromRuntimeProperties(properties));
 			}
 		};
@@ -58,6 +61,7 @@ public class GlobalInjector {
 				middlewareModule,
 				messageCentralModule,
 				udpTransportModule,
+				tcpTransportModule,
 				addressBookModule,
 				globalModule);
 	}

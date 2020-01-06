@@ -37,8 +37,6 @@ import org.xerial.snappy.Snappy;
  * separated out so that we can check if all the functionality here is
  * required, and remove the stuff we don't want to keep.
  */
-//FIXME: Optional dependency on this.addressBook for profiling
-// FIXME: Dependency on this.localSystem for signing key
 class MessageDispatcher {
 	private static final Logger log = Logging.getLogger("messaging");
 

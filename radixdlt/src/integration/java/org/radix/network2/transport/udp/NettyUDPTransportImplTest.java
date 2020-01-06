@@ -8,6 +8,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.radix.network2.messaging.InboundMessage;
 import org.radix.network2.transport.SendResult;
@@ -45,18 +46,21 @@ public class NettyUDPTransportImplTest {
 	}
 
 	@Test
+	@Ignore
 	public void testThroughputSmallPacket() throws InterruptedException, ExecutionException, IOException {
 		// Approximate size of AtomBroadcastMessage
 		testThroughput("Small", 112, 200, 30);
 	}
 
 	@Test
+	@Ignore
 	public void testThroughputMediumPacket() throws InterruptedException, ExecutionException, IOException {
 		// Approximate size of a basic test universe
 		testThroughput("Medium", 3600, 100, 30);
 	}
 
 	@Test
+	@Ignore
 	public void testThroughputLargePacket() throws InterruptedException, ExecutionException, IOException {
 		// Largest packet supported
 		testThroughput("Large", UDPConstants.MAX_PACKET_LENGTH - 9, 4, 30);

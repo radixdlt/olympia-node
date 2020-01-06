@@ -18,10 +18,9 @@ public class Executor
 
 	public static Executor getInstance() {
 		if (instance == null) {
-			// Ideally, this should be read from a configuration file. However, Executor is currently used
-			// from within LocalSystem, which is a frequently accessed global mess and does not allow me
-			// to easily pass in the configuration. As a lesser evil, this will remain static for now.
-			instance = new Executor(1, 1);
+			int immediateThreads = Math.max(Runtime.getRuntime().availableProcessors(), 1);
+			int scheduledThreads = Math.max(Runtime.getRuntime().availableProcessors() / 2, 1);
+			instance = new Executor(immediateThreads, scheduledThreads);
 		}
 
 		return instance;

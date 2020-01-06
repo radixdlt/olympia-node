@@ -113,6 +113,7 @@ public class PeerManager {
 	            MessageCentral messageCentral,
 	            Events events,
 	            BootstrapDiscovery bootstrapDiscovery,
+	            SecureRandom rng,
 	            @Named("self") EUID self,
 	            LocalSystem localSystem,
 	            Interfaces interfaces,
@@ -123,6 +124,7 @@ public class PeerManager {
 		this.messageCentral = Objects.requireNonNull(messageCentral);
 		this.events = Objects.requireNonNull(events);
 		this.bootstrapDiscovery = Objects.requireNonNull(bootstrapDiscovery);
+		this.rng = Objects.requireNonNull(rng);
 		this.self = Objects.requireNonNull(self);
 		this.localSystem = Objects.requireNonNull(localSystem);
 		this.interfaces = Objects.requireNonNull(interfaces);
@@ -144,8 +146,6 @@ public class PeerManager {
 		this.discoverPeersDelayMs = config.networkDiscoverPeersDelay(1000);
 
 		this.peerMessageBatchSize = config.networkPeersMessageBatchSize(64);
-
-		this.rng = new SecureRandom();
 
 		log.info(String.format("%s started, " +
 				"peersBroadcastInterval=%s, peersBroadcastDelay=%s, peersProbeInterval=%s, " +

@@ -5,7 +5,6 @@ import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.common.Atom;
-import com.radixdlt.universe.Universe;
 import org.everit.json.schema.Schema;
 import org.everit.json.schema.ValidationException;
 import org.everit.json.schema.loader.SchemaLoader;
@@ -21,7 +20,6 @@ import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECKeyPair;
 import org.radix.integration.RadixTest;
 import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.RadixConstants;
 import com.radixdlt.utils.UInt256;
 
@@ -29,7 +27,7 @@ import java.io.InputStream;
 
 public class JsonSchemaTest extends RadixTest {
 
-	private static final int BILLION_POW_10 = 9;
+	private static final int BILLION_LOG_10 = 9;
 
 	public void testAtomSchema(Atom atom) throws Exception {
 		JSONObject atomJsonObject = getSerialization().toJsonObject(atom, Output.WIRE);
@@ -83,7 +81,7 @@ public class JsonSchemaTest extends RadixTest {
 		transactionAtom.addParticleGroupWith(new MessageParticle(address, address, "Radix....Just Imagine".getBytes(RadixConstants.STANDARD_CHARSET)), Spin.UP);
 
 		TransferrableTokensParticle mintParticle = new TransferrableTokensParticle(address,
-			UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 + BILLION_POW_10),
+			UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 + BILLION_LOG_10),
 			UInt256.ONE,
 			RRI.of(address, TokenDefinitionUtils.getNativeTokenShortCode()),
 			1L,

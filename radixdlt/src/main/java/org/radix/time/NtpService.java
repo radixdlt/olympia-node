@@ -78,7 +78,7 @@ public class NtpService
 				catch (Exception ex)
 				{
 					if (attempts >= 3)
-						throw new RuntimeException("failed to start NTP service", ex);
+						throw new NtpException("failed to start NTP service", ex);
 				}
 				finally
 				{
@@ -90,7 +90,7 @@ public class NtpService
 			}
 
 			if (!success)
-				throw new RuntimeException("Unable to start NTP service using "+server);
+				throw new NtpException("Unable to start NTP service using "+server);
 		}
 	}
 

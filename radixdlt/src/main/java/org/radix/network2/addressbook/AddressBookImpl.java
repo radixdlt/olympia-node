@@ -13,6 +13,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.radixdlt.common.EUID;
 
+import com.radixdlt.universe.Universe;
 import org.radix.events.Events;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
@@ -41,11 +42,11 @@ public class AddressBookImpl implements AddressBook {
 	private final Whitelist whitelist;
 
 	@Inject
-	AddressBookImpl(PeerPersistence persistence, Events events, long recencyThreshold, RuntimeProperties properties) {
+	AddressBookImpl(PeerPersistence persistence, Events events, Universe universe, RuntimeProperties properties) {
 		super();
 		this.persistence = Objects.requireNonNull(persistence);
 		this.events = Objects.requireNonNull(events);
-		this.recencyThreshold = recencyThreshold;
+		this.recencyThreshold = Objects.requireNonNull(universe).getPlanck();
 		this.whitelist = Whitelist.from(properties);
 
 		this.persistence.forEachPersistedPeer(peer -> {

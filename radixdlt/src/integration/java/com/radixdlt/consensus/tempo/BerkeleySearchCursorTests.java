@@ -13,7 +13,7 @@ import org.radix.integration.RadixTestWithStores;
 import java.util.List;
 
 public class BerkeleySearchCursorTests extends RadixTestWithStores {
-	private static final byte PREFIX = 7;
+	private static final byte PREFIX = 7; // test value with no special significance
 
 	private LedgerEntryGenerator ledgerEntryGenerator = new LedgerEntryGenerator();
 

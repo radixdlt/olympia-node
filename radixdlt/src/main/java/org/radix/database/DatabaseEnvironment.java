@@ -1,15 +1,6 @@
 package org.radix.database;
 
-import java.io.File;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.ReentrantLock;
-
 import com.google.inject.Inject;
-import org.bouncycastle.util.Arrays;
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
-import org.radix.properties.RuntimeProperties;
-
 import com.radixdlt.utils.RadixConstants;
 import com.sleepycat.je.CacheMode;
 import com.sleepycat.je.CheckpointConfig;
@@ -22,6 +13,14 @@ import com.sleepycat.je.EnvironmentConfig;
 import com.sleepycat.je.LockMode;
 import com.sleepycat.je.OperationStatus;
 import com.sleepycat.je.Transaction;
+import org.bouncycastle.util.Arrays;
+import org.radix.logging.Logger;
+import org.radix.logging.Logging;
+import org.radix.properties.RuntimeProperties;
+
+import java.io.File;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 
 public final class DatabaseEnvironment
 {
@@ -75,9 +74,9 @@ public final class DatabaseEnvironment
 	private Thread 							checkpointThread = null;
 
 	@Inject
-    public DatabaseEnvironment(RuntimeProperties properties) {
-	    File dbhome = new File(properties.get("db.location", ".//RADIXDB"));
-	    dbhome.mkdir();
+	public DatabaseEnvironment(RuntimeProperties properties) {
+		File dbhome = new File(properties.get("db.location", ".//RADIXDB"));
+		dbhome.mkdir();
 
 	    System.setProperty("je.disable.java.adler32", "true");
 

@@ -48,8 +48,38 @@ public final class Radix
 	public static final int 	REFUSE_AGENT_VERSION 	= 2709999;
 	public static final String 	AGENT 					= "/Radix:/"+AGENT_VERSION;
 
-	private RadixEngineAtomProcessor atomProcessor;
-	private RadixHttpServer httpServer;
+	private static final Object BC_LOCK = new Object();
+	private static boolean bcInitialised;
+
+	private static void setupBouncyCastle() throws ClassNotFoundException, IllegalAccessException {
+		synchronized (BC_LOCK) {
+			if (bcInitialised) {
+				log.warn("Bouncy castle is already initialised");
+				return;
+			}
+
+			Security.insertProviderAt(new BouncyCastleProvider(), 1);
+			try {
+				Field isRestricted = Class.forName("javax.crypto.JceSecurity").getDeclaredField("isRestricted");
+
+				log.info("Encryption restrictions are set, need to override...");
+
+				if (Modifier.isFinal(isRestricted.getModifiers())) {
+					Field modifiers = Field.class.getDeclaredField("modifiers");
+					modifiers.setAccessible(true);
+					modifiers.setInt(isRestricted, isRestricted.getModifiers() & ~Modifier.FINAL);
+				}
+				isRestricted.setAccessible(true);
+				isRestricted.setBoolean(null, false);
+				isRestricted.setAccessible(false);
+				log.info("...override success!");
+			} catch (NoSuchFieldException nsfex) {
+				log.error("No such field - isRestricted");
+			}
+
+			bcInitialised = true;
+		}
+	}
 
 	public static void main(String[] args) {
 		try {
@@ -58,14 +88,14 @@ public final class Radix
 			setupBouncyCastle();
 
 			RuntimeProperties properties = loadProperties(args);
-			new Radix(properties);
+			start(properties);
 		} catch (Exception ex) {
 			log.fatal("Unable to start", ex);
 			java.lang.System.exit(-1);
 		}
 	}
 
-	public Radix(RuntimeProperties properties) {
+	public static void start(RuntimeProperties properties) {
 		Serialization serialization = Serialization.getDefault();
 		Universe universe = extractUniverseFrom(properties, serialization);
 
@@ -87,7 +117,7 @@ public final class Radix
 		SystemMetaData.init(dbEnv);
 
 		// TODO Eventually modules should be created using Google Guice injector
-		GlobalInjector globalInjector = new GlobalInjector(properties, dbEnv, localSystem);
+		GlobalInjector globalInjector = new GlobalInjector(properties, dbEnv, localSystem, universe);
 		Consensus consensus = globalInjector.getInjector().getInstance(Consensus.class);
 		// TODO use consensus for application construction (in our case, the engine middleware)
 
@@ -98,13 +128,13 @@ public final class Radix
 		peerManager.start();
 
 		// start middleware
-		atomProcessor = globalInjector.getInjector().getInstance(RadixEngineAtomProcessor.class);
+		RadixEngineAtomProcessor atomProcessor = globalInjector.getInjector().getInstance(RadixEngineAtomProcessor.class);
 		atomProcessor.start(universe);
 
 		// start API services
 		AtomToBinaryConverter atomToBinaryConverter = globalInjector.getInjector().getInstance(AtomToBinaryConverter.class);
 		LedgerEntryStore store = globalInjector.getInjector().getInstance(LedgerEntryStore.class);
-		httpServer = new RadixHttpServer(store, atomProcessor, atomToBinaryConverter, universe, messageCentral, serialization, properties, localSystem, addressBook);
+		RadixHttpServer httpServer = new RadixHttpServer(store, atomProcessor, atomToBinaryConverter, universe, messageCentral, serialization, properties, localSystem, addressBook);
 		httpServer.start(properties);
 
 		log.info("Node '" + localSystem.getNID() + "' started successfully");
@@ -112,7 +142,7 @@ public final class Radix
 
 	private static void dumpExecutionLocation() {
 		try {
-			String jarFile = ClassLoader.getSystemClassLoader().loadClass("org.radix.Radix").getProtectionDomain().getCodeSource().getLocation().toURI().getPath();
+			String jarFile = ClassLoader.getSystemClassLoader().loadClass(Radix.class.getName()).getProtectionDomain().getCodeSource().getLocation().toURI().getPath();
 			System.setProperty("radix.jar", jarFile);
 
 			String jarPath = jarFile;
@@ -129,44 +159,12 @@ public final class Radix
 		}
 	}
 
-	private Universe extractUniverseFrom(RuntimeProperties properties, Serialization serialization) {
+	private static Universe extractUniverseFrom(RuntimeProperties properties, Serialization serialization) {
 		try {
 			byte[] bytes = Bytes.fromBase64String(properties.get("universe"));
 			return serialization.fromDson(bytes, Universe.class);
 		} catch (SerializationException e) {
 			throw new RuntimeException("while deserialising universe", e);
-		}
-	}
-
-	public void stop() {
-		httpServer.stop();
-		// TODO need to close persistence here as well (e.g. stores, peer persistence, db env)
-
-		try {
-			atomProcessor.stop();
-		} catch (Exception e) {
-			throw new RuntimeException("Failure turning off AtomProcessor", e);
-		}
-	}
-
-	private static void setupBouncyCastle() throws ClassNotFoundException, IllegalAccessException {
-		Security.insertProviderAt(new BouncyCastleProvider(), 1);
-		try {
-			Field isRestricted = Class.forName("javax.crypto.JceSecurity").getDeclaredField("isRestricted");
-
-			log.info("Encryption restrictions are set, need to override...");
-
-			if (Modifier.isFinal(isRestricted.getModifiers())) {
-				Field modifiers = Field.class.getDeclaredField("modifiers");
-				modifiers.setAccessible(true);
-				modifiers.setInt(isRestricted, isRestricted.getModifiers() & ~Modifier.FINAL);
-			}
-			isRestricted.setAccessible(true);
-			isRestricted.setBoolean(null, false);
-			isRestricted.setAccessible(false);
-			log.info("...override success!");
-		} catch (NoSuchFieldException nsfex) {
-			log.error("No such field - isRestricted");
 		}
 	}
 

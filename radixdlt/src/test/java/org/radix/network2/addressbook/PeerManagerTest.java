@@ -36,6 +36,7 @@ import org.radix.time.Timestamps;
 import org.radix.universe.system.RadixSystem;
 import org.radix.universe.system.SystemMessage;
 
+import java.security.SecureRandom;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -81,6 +82,7 @@ public class PeerManagerTest extends RadixTest {
     private Multimap<Peer, Message> peerMessageMultimap;
     private Interfaces interfaces;
     private EUID self = EUID.ZERO;
+    private SecureRandom rng;
 
     @BeforeClass
     public static void beforeClass() {
@@ -119,6 +121,7 @@ public class PeerManagerTest extends RadixTest {
         peerMessageMultimap = LinkedListMultimap.create();
         messageCentral = mock(MessageCentral.class);
         events = mock(Events.class);
+        rng = mock(SecureRandom.class);
 
         messageListenerRegistry = new HashMap<>();
         doAnswer(invocation -> {
@@ -176,7 +179,7 @@ public class PeerManagerTest extends RadixTest {
         when(addressBook.peer(transportInfo4)).thenReturn(peer4);
 
         bootstrapDiscovery = mock(BootstrapDiscovery.class);
-        peerManager = spy(new PeerManager(config, addressBook, messageCentral, events, bootstrapDiscovery, self, getLocalSystem(), interfaces, properties, getUniverse()));
+        peerManager = spy(new PeerManager(config, addressBook, messageCentral, events, bootstrapDiscovery, rng, self, getLocalSystem(), interfaces, properties, getUniverse()));
     }
 
     @After
@@ -275,7 +278,7 @@ public class PeerManagerTest extends RadixTest {
         when(addressBook.peers()).thenAnswer((Answer<Stream<Peer>>) invocation -> Stream.of(peer1, peer2));
         //start timeout handler immediately
         doReturn(0).when(config).networkPeersProbeTimeout(eq(20000));
-        peerManager = spy(new PeerManager(config, addressBook, messageCentral, events, bootstrapDiscovery, self, getLocalSystem(), interfaces, getProperties(), getUniverse()));
+        peerManager = spy(new PeerManager(config, addressBook, messageCentral, events, bootstrapDiscovery, rng, self, getLocalSystem(), interfaces, getProperties(), getUniverse()));
         Semaphore semaphore = new Semaphore(0);
         peerManager.start();
         //allow peer manager to run 1 sec

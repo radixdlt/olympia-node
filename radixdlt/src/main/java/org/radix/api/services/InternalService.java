@@ -33,7 +33,7 @@ import org.radix.time.Time;
 /**
  * API which is used for internal testing and should not be included in release to users
  */
-public class InternalService {
+public final class InternalService {
 	private static final Logger log = Logging.getLogger();
 	private final MessageCentral messageCentral;
 	private final LedgerEntryStore store;

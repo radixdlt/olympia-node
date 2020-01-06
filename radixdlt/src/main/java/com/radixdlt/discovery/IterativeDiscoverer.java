@@ -62,7 +62,7 @@ public final class IterativeDiscoverer implements AtomDiscoverer {
 	private final LedgerEntryStoreView storeView;
 	private final Scheduler scheduler;
 	private final MessageCentral messageCentral;
-	private final Universe universe;
+	private final int universeMagic;
 
 	private final Collection<AtomDiscoveryListener> discoveryListeners;
 
@@ -85,7 +85,7 @@ public final class IterativeDiscoverer implements AtomDiscoverer {
 		this.cursorStore = Objects.requireNonNull(cursorStore);
 		this.scheduler = Objects.requireNonNull(scheduler);
 		this.messageCentral = Objects.requireNonNull(messageCentral);
-		this.universe = Objects.requireNonNull(universe);
+		this.universeMagic = Objects.requireNonNull(universe).getMagic();
 
 		// TODO improve locking to something like in messaging
 		this.discoveryListeners = Collections.synchronizedList(new ArrayList<>());
@@ -163,7 +163,7 @@ public final class IterativeDiscoverer implements AtomDiscoverer {
 	}
 
 	private void requestDiscovery(Peer peer, LogicalClockCursor cursor) {
-		IterativeDiscoveryRequestMessage request = new IterativeDiscoveryRequestMessage(cursor, this.universe.getMagic());
+		IterativeDiscoveryRequestMessage request = new IterativeDiscoveryRequestMessage(cursor, universeMagic);
 		discoveryState.addRequest(peer.getNID(), cursor.getLcPosition());
 		messageCentral.send(peer, request);
 		if (log.hasLevel(Logging.DEBUG)) {
@@ -209,7 +209,7 @@ public final class IterativeDiscoverer implements AtomDiscoverer {
 			nextCursor = new LogicalClockCursor(nextLcPosition, null);
 		}
 		LogicalClockCursor responseCursor = new LogicalClockCursor(lcPosition, nextCursor);
-		return new IterativeDiscoveryResponseMessage(aids, responseCursor, this.universe.getMagic());
+		return new IterativeDiscoveryResponseMessage(aids, responseCursor, universeMagic);
 	}
 
 	@Override
