@@ -25,7 +25,6 @@ import org.radix.api.jsonrpc.RadixJsonRpcServer;
 import org.radix.api.services.AtomsService;
 import org.radix.api.services.InternalService;
 import org.radix.api.services.NetworkService;
-import org.radix.api.services.TestService;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.network2.addressbook.AddressBook;
@@ -56,7 +55,6 @@ public final class RadixHttpServer {
 	private final AtomsService atomsService;
 	private final RadixJsonRpcServer jsonRpcServer;
 	private final InternalService internalService;
-	private final TestService testService;
 	private final NetworkService networkService;
 	private final Universe universe;
 	private final JSONObject apiSerializedUniverse;
@@ -88,7 +86,6 @@ public final class RadixHttpServer {
 			universe
 		);
 		this.internalService = new InternalService(messageCentral, store, radixEngineAtomProcessor, serialization, properties, universe);
-		this.testService = new TestService(serialization, messageCentral);
 		this.networkService = new NetworkService(serialization, localSystem, addressBook);
 	}
 
@@ -163,16 +160,6 @@ public final class RadixHttpServer {
 
             respond(internalService.spamathon(iterations, batching, rate), exchange);
         }, handler);
-
-		addGetRoute("/api/test/newpeer", exchange -> {
-			String key = getParameter(exchange, "key").orElse(null);
-			String anchor = getParameter(exchange, "anchor").orElse("0");
-			String high = getParameter(exchange, "high").orElse(String.valueOf(ShardSpace.SHARD_CHUNK_RANGE - 1));
-			String low = getParameter(exchange, "low").orElse(String.valueOf(-ShardSpace.SHARD_CHUNK_RANGE));
-			String ip = getParameter(exchange, "ip").orElse(null);
-			String port = getParameter(exchange, "port").orElse("-1"); // Defaults to universe port
-			respond(testService.newPeer(key, anchor, high, low, ip, port), exchange);
-		}, handler);
 	}
 
     private void addTestRoutesTo(RoutingHandler handler) {
