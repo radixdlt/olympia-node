@@ -1,5 +1,6 @@
 package org.radix.network2.addressbook;
 
+import java.io.Closeable;
 import java.util.stream.Stream;
 
 import org.radix.network2.transport.TransportInfo;
@@ -11,7 +12,7 @@ import com.radixdlt.common.EUID;
  * Address book interface allowing client code to discover and add
  * {@link Peer} objects.
  */
-public interface AddressBook {
+public interface AddressBook extends Closeable {
 
 	/**
 	 * Adds the specified peer to the address book.

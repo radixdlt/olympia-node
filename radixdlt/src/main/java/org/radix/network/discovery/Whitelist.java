@@ -8,6 +8,7 @@ import java.util.Set;
 
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
+import org.radix.properties.RuntimeProperties;
 
 public class Whitelist
 {
@@ -129,7 +130,7 @@ public class Whitelist
 		return false;
 	}
 
-	public boolean accept(String hostName) {
+	public boolean isWhitelisted(String hostName) {
 		if (parameters.isEmpty()) {
 			return true;
 		}
@@ -137,11 +138,9 @@ public class Whitelist
 		try {
 			String hostAddress = InetAddress.getByName(hostName).getHostAddress();
 			for (String parameter : parameters) {
-				if (parameter.equalsIgnoreCase(hostName)) {
-					return true;
-				} else if (isRange(parameter) && isInRange(parameter, hostAddress)) {
-					return true;
-				} else if (isMask(parameter) && isMasked(parameter, hostAddress)) {
+				if (parameter.equalsIgnoreCase(hostName)
+					|| isRange(parameter) && isInRange(parameter, hostAddress)
+					|| isMask(parameter) && isMasked(parameter, hostAddress)) {
 					return true;
 				}
 			}
@@ -150,5 +149,9 @@ public class Whitelist
 		}
 
 		return false;
+	}
+
+	public static Whitelist from(RuntimeProperties properties) {
+		return new Whitelist(properties.get("network.whitelist", ""));
 	}
 }

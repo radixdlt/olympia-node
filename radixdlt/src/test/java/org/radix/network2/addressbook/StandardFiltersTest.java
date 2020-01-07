@@ -1,12 +1,12 @@
 package org.radix.network2.addressbook;
 
-import java.util.stream.Stream;
-
-import org.junit.After;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.radixdlt.common.EUID;
+import com.radixdlt.universe.Universe;
 import org.junit.Before;
 import org.junit.Test;
 import org.radix.Radix;
-import org.radix.modules.Modules;
 import org.radix.network.Interfaces;
 import org.radix.network2.transport.StaticTransportMetadata;
 import org.radix.network2.transport.TransportInfo;
@@ -15,13 +15,13 @@ import org.radix.time.Time;
 import org.radix.time.Timestamps;
 import org.radix.universe.system.RadixSystem;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.radixdlt.common.EUID;
-import com.radixdlt.universe.Universe;
+import java.util.stream.Stream;
 
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class StandardFiltersTest {
 
@@ -33,6 +33,7 @@ public class StandardFiltersTest {
 	private PeerWithNid pwn;
 	private PeerWithSystem pws;
 	private PeerWithTransport pwt;
+	private Interfaces interfaces;
 
 	@Before
 	public void setUp() throws Exception {
@@ -53,18 +54,10 @@ public class StandardFiltersTest {
 		this.pws = new PeerWithSystem(this.system);
 		this.pwt = new PeerWithTransport(this.transportInfo);
 
-		Interfaces interfaces = mock(Interfaces.class);
+		interfaces = mock(Interfaces.class);
 		when(interfaces.isSelf(any())).thenReturn(true);
 		Universe universe = mock(Universe.class);
 		when(universe.getPlanck()).thenReturn(86400L * 1000L); // 1 day
-		Modules.put(Interfaces.class, interfaces);
-		Modules.put(Universe.class, universe);
-	}
-
-	@After
-	public void tearDown() throws Exception {
-		Modules.remove(Universe.class);
-		Modules.remove(Interfaces.class);
 	}
 
 	@Test
@@ -75,8 +68,8 @@ public class StandardFiltersTest {
 
 	@Test
 	public void testNotLocalAddress() {
-		assertFalse(StandardFilters.notLocalAddress().test(this.pwt));
-		assertTrue(StandardFilters.notLocalAddress().test(this.pwn));
+		assertFalse(StandardFilters.notLocalAddress(interfaces).test(this.pwt));
+		assertTrue(StandardFilters.notLocalAddress(interfaces).test(this.pwn));
 	}
 
 	@Test
@@ -109,8 +102,8 @@ public class StandardFiltersTest {
 	public void testRecentlyActive() {
 		this.pwn.setTimestamp(Timestamps.ACTIVE, 0L);
 		this.pwt.setTimestamp(Timestamps.ACTIVE, Time.currentTimestamp());
-		assertTrue(StandardFilters.recentlyActive().test(this.pwt));
-		assertFalse(StandardFilters.recentlyActive().test(this.pwn));
+		assertTrue(StandardFilters.recentlyActive(1000).test(this.pwt));
+		assertFalse(StandardFilters.recentlyActive(1000).test(this.pwn));
 	}
 
 }

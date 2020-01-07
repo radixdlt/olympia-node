@@ -20,16 +20,21 @@ public final class TestMessage extends Message
 	@DsonOutput(Output.ALL)
 	public	byte[]	junk;
 
-	public TestMessage()
+	private TestMessage() {
+		this(0);
+		// for serializer
+	}
+
+	public TestMessage(int magic)
 	{
-		super();
+		super(magic);
 		testnonce = new SecureRandom().nextLong();
 		junk = new byte[1000];
 	}
 
-	public TestMessage(final int size)
+	public TestMessage(final int size, int magic)
 	{
-		super();
+		super(magic);
 		testnonce = new SecureRandom().nextLong();
 		junk = new byte[size];
 	}

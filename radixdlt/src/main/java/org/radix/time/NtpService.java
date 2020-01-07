@@ -6,7 +6,6 @@ import java.net.InetAddress;
 
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.modules.exceptions.ModuleException;
 
 public class NtpService
 {
@@ -21,7 +20,7 @@ public class NtpService
 	private int			attempts = 0;
 	private int			offset = 0;
 
-	public NtpService(String server) throws ModuleException
+	public NtpService(String server) 
 	{
 		this.server = server;
 
@@ -32,7 +31,7 @@ public class NtpService
 			initFromServer();
 	}
 
-	private void initFromServer() throws ModuleException
+	private void initFromServer() 
 	{
 		if (server != null)
 		{
@@ -79,7 +78,7 @@ public class NtpService
 				catch (Exception ex)
 				{
 					if (attempts >= 3)
-						throw new ModuleException(ex);
+						throw new NtpException("failed to start NTP service", ex);
 				}
 				finally
 				{
@@ -91,7 +90,7 @@ public class NtpService
 			}
 
 			if (!success)
-				throw new ModuleException("Unable to start NTP service using "+server);
+				throw new NtpException("Unable to start NTP service using "+server);
 		}
 	}
 

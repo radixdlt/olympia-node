@@ -12,7 +12,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.radixdlt.common.EUID;
-import org.radix.modules.Modules;
 import org.radix.network2.addressbook.AddressBook;
 import org.radix.network2.addressbook.Peer;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -21,17 +20,19 @@ import org.radix.universe.system.LocalSystem;
 import org.radix.utils.SystemMetaData;
 
 public class NetworkService {
-	private NetworkService() {}
+	private final Serialization serialization;
+	private final LocalSystem localSystem;
+	private final AddressBook addressBook;
 
-	private final static NetworkService instance = new NetworkService();
-
-	public static NetworkService getInstance() {
-		return instance;
+	public NetworkService(Serialization serialization, LocalSystem localSystem, AddressBook addressBook) {
+		this.serialization = serialization;
+		this.localSystem = localSystem;
+		this.addressBook = addressBook;
 	}
 
- 	public JSONObject getSelf() {
+	public JSONObject getSelf() {
  		JSONObject self = new JSONObject();
-		self.put("system", Modules.get(Serialization.class).toJsonObject(LocalSystem.getInstance(), Output.WIRE));
+		self.put("system", serialization.toJsonObject(localSystem, Output.WIRE));
  		return self;
  	}
 
@@ -41,18 +42,18 @@ public class NetworkService {
 		// sorted by transport name
 		Map<String, Set<Peer>> peersByTransport = new TreeMap<>();
 
-		Modules.get(AddressBook.class).recentPeers()
+		this.addressBook.recentPeers()
 			.forEachOrdered(p -> addPeerToMap(p, peersByTransport));
 
 
 		for (Map.Entry<String, Set<Peer>> e : peersByTransport.entrySet()) {
 			JSONArray transportPeers = new JSONArray();
 			for (Peer peer : e.getValue()) {
-				transportPeers.put(Modules.get(Serialization.class).toJsonObject(peer, Output.API));
+				transportPeers.put(serialization.toJsonObject(peer, Output.API));
 			}
 			result.put(e.getKey(), transportPeers);
 		}
-		Modules.ifAvailable(SystemMetaData.class, a -> result.put("nids", a.get("nids.count", 0)));
+		SystemMetaData.ifPresent( a -> result.put("nids", a.get("nids.count", 0)));
 
 		return result;
 	}
@@ -63,23 +64,23 @@ public class NetworkService {
 	}
 
 	public List<JSONObject> getLivePeers() {
-		return Modules.get(AddressBook.class).recentPeers()
+		return this.addressBook.recentPeers()
 			.map(peer -> {
-				return Modules.get(Serialization.class).toJsonObject(peer, Output.WIRE);
+				return serialization.toJsonObject(peer, Output.WIRE);
 			})
 			.collect(Collectors.toList());
 	}
 
 	public JSONObject getLiveNIDS() {
 		JSONArray NIDS = new JSONArray();
-		Modules.get(AddressBook.class).recentPeers().forEachOrdered(peer -> NIDS.put(peer.getNID().toString()));
+		this.addressBook.recentPeers().forEachOrdered(peer -> NIDS.put(peer.getNID().toString()));
 		return new JSONObject().put("nids", NIDS);
 	}
 
 	public List<JSONObject> getPeers() {
-		return Modules.get(AddressBook.class).peers()
+		return this.addressBook.peers()
 			.map(peer -> {
-				return Modules.get(Serialization.class).toJsonObject(peer, Output.WIRE);
+				return serialization.toJsonObject(peer, Output.WIRE);
 			})
 			.collect(Collectors.toList());
 	}
@@ -89,9 +90,9 @@ public class NetworkService {
 
 		try {
 			EUID euid = EUID.valueOf(id);
-			Peer peer = Modules.get(AddressBook.class).peer(euid);
+			Peer peer = this.addressBook.peer(euid);
 			if (peer != null) {
-				return Modules.get(Serialization.class).toJsonObject(peer, Output.API);
+				return serialization.toJsonObject(peer, Output.API);
 			}
 		} catch (NumberFormatException ex) {
 			// Ignore, return empty object

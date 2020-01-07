@@ -2,27 +2,26 @@ package org.radix.integration;
 
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.universe.Universe;
-import org.apache.commons.cli.CommandLine;
 import org.json.JSONObject;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.radix.GenerateUniverses;
 import org.radix.Radix;
-import org.radix.modules.Module;
-import org.radix.modules.Modules;
-import org.radix.modules.exceptions.ModuleException;
-import org.radix.properties.PersistedProperties;
+import org.radix.network2.transport.udp.PublicInetAddress;
 import org.radix.properties.RuntimeProperties;
 import org.radix.serialization.TestSetupUtils;
-import org.radix.time.Time;
 import org.radix.universe.system.LocalSystem;
 import org.radix.utils.IOUtils;
 
-import java.security.SecureRandom;
+import java.util.Objects;
 
 public class RadixTest
 {
+	private static Serialization serialization;
 	private static String dbLocation = null;
+	private static RuntimeProperties properties;
+	private static LocalSystem localSystem;
+	private static Universe universe;
 
 	private long clock = 100L; // Arbitrary starting point. Must be larger than number of atoms in genesis.
 
@@ -30,49 +29,48 @@ public class RadixTest
 	public static void startRadixTest() throws Exception {
 		TestSetupUtils.installBouncyCastleProvider();
 
-		Serialization serialization = Serialization.getDefault();
-
-		Modules.put(SecureRandom.class, new SecureRandom());
+		serialization = Serialization.getDefault();
 
 		JSONObject runtimeConfigurationJSON = new JSONObject();
 		if (Radix.class.getResourceAsStream("/runtime_options.json") != null)
 			runtimeConfigurationJSON = new JSONObject(IOUtils.toString(Radix.class.getResourceAsStream("/runtime_options.json")));
 
-		RuntimeProperties	runtimeProperties = new RuntimeProperties(runtimeConfigurationJSON, null);
-		Modules.put(RuntimeProperties.class, runtimeProperties);
-		Modules.put(PersistedProperties.class, runtimeProperties);
-		Modules.put(CommandLine.class, runtimeProperties.getCommandLine());
-		Modules.put(Serialization.class, serialization);
+		properties = new RuntimeProperties(runtimeConfigurationJSON, null);
 
-		Modules.get(RuntimeProperties.class).set("debug.nopow", true);
+		properties.set("debug.nopow", true);
 		if (dbLocation == null) {
 			// Avoid RADIXDB_TEST_TEST_TEST_TEST_TEST situation
-			dbLocation = Modules.get(RuntimeProperties.class).get("db.location", ".//RADIXDB") + "_TEST";
+			dbLocation = properties.get("db.location", ".//RADIXDB") + "_TEST";
 		}
-		Modules.get(RuntimeProperties.class).set("db.location", dbLocation);
+		properties.set("db.location", dbLocation);
 
-		Universe universe = new GenerateUniverses().generateUniverses().stream().filter(Universe::isTest).findAny().get();
-		Modules.remove(Universe.class); // GenerateUniverses adds this
-		Modules.put(Universe.class, universe);
-
-		LocalSystem.getInstance(); // Load node.ks, after universe
+		universe = new GenerateUniverses(properties).generateUniverses().stream().filter(Universe::isTest).findAny().get();
+		PublicInetAddress.configure(null, universe.getPort());
+		localSystem = LocalSystem.restoreOrCreate(properties, universe);// Load node.ks, after universe
 	}
-
 
 	@AfterClass
-	public static void endRadixTest() throws ModuleException {
-		Modules.remove(Universe.class);
-		Modules.remove(Time.class);
-		Modules.remove(Serialization.class);
-		Modules.remove(CommandLine.class);
-		Modules.remove(PersistedProperties.class);
-		Modules.remove(RuntimeProperties.class);
-		Modules.remove(SecureRandom.class);
+	public static void stopRadixTest() {
+		serialization = null;
+		dbLocation = null;
+		properties = null;
+		localSystem = null;
+		universe = null;
 	}
 
-	private static void safelyStop(Module m) throws ModuleException {
-		if (m != null) {
-			Modules.getInstance().stop(m);
-		}
+	protected static Serialization getSerialization() {
+		return Objects.requireNonNull(serialization, "serialization was not initialized");
+	}
+
+	public static RuntimeProperties getProperties() {
+		return Objects.requireNonNull(properties, "properties was not initialized");
+	}
+
+	public static LocalSystem getLocalSystem() {
+		return Objects.requireNonNull(localSystem, "localSystem was not initialized");
+	}
+
+	public static Universe getUniverse() {
+		return Objects.requireNonNull(universe, "universe was not initialized");
 	}
 }

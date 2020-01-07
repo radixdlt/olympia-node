@@ -3,20 +3,21 @@ package org.radix.network2.messaging;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.universe.Universe;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.powermock.api.mockito.PowerMockito;
 import org.radix.events.Events;
-import org.radix.modules.Modules;
+import org.radix.network.Interfaces;
 import org.radix.network.messages.TestMessage;
 import org.radix.network.messaging.Message;
-import org.radix.network2.messaging.MessagingDummyConfigurations.DummyTransport;
-import org.radix.network2.messaging.MessagingDummyConfigurations.DummyTransportOutboundConnection;
 import org.radix.network2.addressbook.AddressBook;
 import org.radix.network2.addressbook.Peer;
+import org.radix.network2.messaging.MessagingDummyConfigurations.DummyTransport;
+import org.radix.network2.messaging.MessagingDummyConfigurations.DummyTransportOutboundConnection;
 import org.radix.network2.transport.StaticTransportMetadata;
 import org.radix.network2.transport.TransportInfo;
 import org.radix.properties.RuntimeProperties;
+import org.radix.universe.system.LocalSystem;
 import org.radix.universe.system.events.QueueFullEvent;
 import org.xerial.snappy.Snappy;
 
@@ -65,12 +66,8 @@ public class MessageCentralImplTest {
 		when(universe.getMagic()).thenReturn(0);
 		RuntimeProperties runtimeProperties = mock(RuntimeProperties.class);
 		when(runtimeProperties.get(eq("network.whitelist"), any())).thenReturn("");
-		AddressBook addressbook = mock(AddressBook.class);
-		when(addressbook.peer(any(TransportInfo.class))).thenReturn(mock(Peer.class));
-
-		Modules.put(Universe.class, universe);
-		Modules.put(RuntimeProperties.class, runtimeProperties);
-		Modules.put(AddressBook.class, addressbook);
+		AddressBook addressBook = mock(AddressBook.class);
+		when(addressBook.peer(any(TransportInfo.class))).thenReturn(mock(Peer.class));
 
 		// Other scaffolding
 		this.toc = new DummyTransportOutboundConnection();
@@ -84,17 +81,11 @@ public class MessageCentralImplTest {
 		EventQueueFactory<MessageEvent> queueFactory = eventQueueFactoryMock();
 		doReturn(inboundQueue).when(queueFactory).createEventQueue(conf.messagingInboundQueueMax(0));
 		doReturn(outboundQueue).when(queueFactory).createEventQueue(conf.messagingOutboundQueueMax(0));
-		this.mci = new MessageCentralImpl(new MessagingDummyConfigurations.DummyMessageCentralConfiguration(), serialization, transportManager, events, System::currentTimeMillis,
-				queueFactory);
-	}
-
-	@After
-	public void cleanup() {
-		Modules.remove(Universe.class);
-		Modules.remove(RuntimeProperties.class);
-		Modules.remove(AddressBook.class);
-
-		this.mci.close();
+		Interfaces interfaces = mock(Interfaces.class);
+		PowerMockito.when(interfaces.isSelf(any())).thenReturn(false);
+		LocalSystem localSystem = mock(LocalSystem.class);
+		this.mci = new MessageCentralImpl(new MessagingDummyConfigurations.DummyMessageCentralConfiguration(), serialization, transportManager, events, addressBook, System::currentTimeMillis,
+				queueFactory, interfaces, localSystem);
 	}
 
 	@Test
@@ -111,7 +102,7 @@ public class MessageCentralImplTest {
 
 	@Test
 	public void testSend() throws InterruptedException {
-		Message msg = new TestMessage();
+		Message msg = new TestMessage(1);
 		Peer peer = mock(Peer.class);
 		mci.send(peer, msg);
 		assertTrue(toc.getCountDownLatch().await(10, TimeUnit.SECONDS));
@@ -120,7 +111,7 @@ public class MessageCentralImplTest {
 
 	@Test
 	public void testSendMessageDeliveredToTransport() throws InterruptedException {
-		Message msg = new TestMessage();
+		Message msg = new TestMessage(1);
 		Peer peer = mock(Peer.class);
 
 		int numberOfRequests = 6;
@@ -136,7 +127,7 @@ public class MessageCentralImplTest {
 
 	@Test
 	public void testInjectMessageDeliveredToListeners() throws InterruptedException {
-		Message msg = spy(new TestMessage());
+		Message msg = spy(new TestMessage(1));
 		doReturn(System.currentTimeMillis()).when(msg).getTimestamp();
 		Peer peer = mock(Peer.class);
 
@@ -168,7 +159,7 @@ public class MessageCentralImplTest {
 
 	private <T> void testQueueIsFull(Queue<T> queue, BiConsumer<Peer, Message> biConsumer) {
 		doReturn(false).when(queue).offer(notNull());
-		Message msg = new TestMessage();
+		Message msg = new TestMessage(1);
 		Peer peer = mock(Peer.class);
 
 		int numberOfRequests = 6;
@@ -180,7 +171,7 @@ public class MessageCentralImplTest {
 
 	@Test
 	public void testInbound() throws IOException, InterruptedException {
-		Message msg = new TestMessage();
+		Message msg = new TestMessage(1);
 		byte[] data = Snappy.compress(serialization.toDson(msg, Output.WIRE));
 
 		AtomicReference<Message> receivedMessage = new AtomicReference<>();

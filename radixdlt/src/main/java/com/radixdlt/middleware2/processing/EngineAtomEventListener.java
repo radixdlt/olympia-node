@@ -8,6 +8,7 @@ import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.AtomEventListener;
 import com.radixdlt.middleware2.store.EngineAtomIndices;
+import com.radixdlt.serialization.Serialization;
 import org.radix.atoms.AtomDependencyNotFoundException;
 import org.radix.atoms.events.AtomExceptionEvent;
 import org.radix.atoms.events.AtomStoredEvent;
@@ -23,6 +24,11 @@ import java.util.stream.Collectors;
 
 public class EngineAtomEventListener implements AtomEventListener {
 	private static final Logger log = Logging.getLogger("middleware2.eventListener");
+	private final Serialization serialization;
+
+	public EngineAtomEventListener(Serialization serialization) {
+		this.serialization = serialization;
+	}
 
 	@Override
 	public void onCMError(Atom atom, CMError error) {
@@ -33,7 +39,7 @@ public class EngineAtomEventListener implements AtomEventListener {
 	@Override
 	public void onStateStore(Atom atom) {
 		try {
-			EngineAtomIndices engineAtomIndices = EngineAtomIndices.from(atom);
+			EngineAtomIndices engineAtomIndices = EngineAtomIndices.from(atom, serialization);
 			Events.getInstance().broadcastWithException(new AtomStoredEvent(atom, () ->
 					engineAtomIndices.getDuplicateIndices().stream().filter(e -> e.getPrefix() == EngineAtomIndices.IndexType.DESTINATION.getValue())
 					.map(e -> EngineAtomIndices.toEUID(e.asKey()))

@@ -2,20 +2,19 @@ package org.radix.utils;
 
 import com.radixdlt.utils.Longs;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
+import org.radix.common.executors.Executor;
 import org.radix.common.executors.ScheduledExecutable;
 import org.radix.database.DatabaseEnvironment;
-import org.radix.database.DatabaseStore;
 import org.radix.database.exceptions.DatabaseException;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.modules.Modules;
-import org.radix.modules.exceptions.ModuleException;
-import org.radix.modules.exceptions.ModuleResetException;
-import org.radix.modules.exceptions.ModuleStartException;
 import com.radixdlt.utils.Bytes;
 
 import com.radixdlt.utils.RadixConstants;
@@ -29,37 +28,68 @@ import com.sleepycat.je.OperationStatus;
 import com.sleepycat.je.Transaction;
 import com.sleepycat.je.TransactionConfig;
 
-public final class SystemMetaData extends DatabaseStore
+// TODO Remove this horrible singleton with the particularly nasty set/unset/init lifecycle management.
+public final class SystemMetaData
 {
 	private static final Logger log = Logging.getLogger();
 
+	private static SystemMetaData instance;
+
+	public static void set(SystemMetaData instance) {
+		if (SystemMetaData.instance != null) {
+			throw new IllegalStateException("metadata instance is already initialised");
+		}
+		SystemMetaData.instance = instance;
+	}
+
+	public static void clear() {
+		if (instance != null) {
+			instance.stop();
+			instance = null;
+		}
+	}
+
+	public static void init(DatabaseEnvironment dbEnv) {
+		if (instance != null) {
+			throw new IllegalStateException("metadata instance is already initialised");
+		}
+		instance = new SystemMetaData(dbEnv);
+		instance.start();
+	}
+
+	public static void ifPresent(Consumer<SystemMetaData> consumer) {
+		getInstanceOptional().ifPresent(consumer);
+	}
+
+	public static Optional<SystemMetaData> getInstanceOptional() {
+		return Optional.ofNullable(instance);
+	}
+
+	public static SystemMetaData getInstance() {
+		if (instance == null) {
+			throw new RuntimeException("metadata instance has not been initialised");
+		}
+
+		return instance;
+	}
+
+	private final DatabaseEnvironment dbEnv;
 	private Map<String, Object> systemMetaData = new ConcurrentHashMap<>();
 	private Database systemMetaDataDB = null;
 	private Future<?> flush;
 
-	public SystemMetaData()
+	public SystemMetaData(DatabaseEnvironment dbEnv)
 	{
 		super();
+		this.dbEnv = Objects.requireNonNull(dbEnv);
 	}
 
-	@Override
-	public void build() throws DatabaseException { }
-
-	@Override
-	public void maintenence() throws DatabaseException { }
-
-	@Override
-	public void integrity() throws DatabaseException { }
-
-	@Override
-	public void start_impl() throws ModuleException
-	{
+	public void start() {
 		DatabaseConfig config = new DatabaseConfig();
 		config.setAllowCreate(true);
 
-		this.systemMetaDataDB = Modules.get(DatabaseEnvironment.class).getEnvironment().openDatabase(null, "system_meta_data", config);
+		this.systemMetaDataDB = this.dbEnv.getEnvironment().openDatabase(null, "system_meta_data", config);
 
-		super.start_impl();
 
 		try
 		{
@@ -67,35 +97,29 @@ public final class SystemMetaData extends DatabaseStore
 		}
 		catch (DatabaseException e)
 		{
-			throw new ModuleStartException(e, this);
+			throw new RuntimeException("while opening database", e);
 		}
 
-		this.flush = scheduleWithFixedDelay(new ScheduledExecutable(1, 1, TimeUnit.SECONDS)
-		{
+		ScheduledExecutable flushExecutable = new ScheduledExecutable(1, 1, TimeUnit.SECONDS) {
 			@Override
-			public void execute()
-			{
-				try
-				{
+			public void execute() {
+				try {
 					flush();
-				}
-				catch (DatabaseException e)
-				{
+				} catch (DatabaseException e) {
 					log.error(e.getMessage(), e);
 				}
 			}
-		});
+		};
+		this.flush = flushExecutable.getFuture();
+		Executor.getInstance().scheduleWithFixedDelay(flushExecutable);
 	}
 
-	@Override
-	public void reset_impl() throws ModuleException
-	{
+	public void reset() {
 		Transaction transaction = null;
-
 		try
 		{
-			transaction = Modules.get(DatabaseEnvironment.class).getEnvironment().beginTransaction(null, new TransactionConfig().setReadUncommitted(true));
-			Modules.get(DatabaseEnvironment.class).getEnvironment().truncateDatabase(transaction, "system_meta_data", false);
+			transaction = this.dbEnv.getEnvironment().beginTransaction(null, new TransactionConfig().setReadUncommitted(true));
+			this.dbEnv.getEnvironment().truncateDatabase(transaction, "system_meta_data", false);
 			transaction.commit();
 			this.systemMetaData.clear();
 		}
@@ -111,31 +135,21 @@ public final class SystemMetaData extends DatabaseStore
 			if (transaction != null)
 				transaction.abort();
 
-			throw new ModuleResetException(ex, this);
+			throw new RuntimeException("while resetting database", ex);
 		}
 	}
 
-	@Override
-	public void stop_impl() throws ModuleException
-	{
+	public void stop() {
 		if (this.flush != null) {
 			this.flush.cancel(false);
 		}
 
-		super.stop_impl();
 
 		systemMetaDataDB.close();
 	}
 
-	@Override
-	public String getName() { return "System Meta Data DBPlugin"; }
-
-	// DBPLUGIN BUILDER //
-	@Override
 	public synchronized void flush() throws DatabaseException
 	{
-		long start = SystemProfiler.getInstance().begin();
-
 		try
         {
 			for (Map.Entry<String, Object> e : this.systemMetaData.entrySet())
@@ -170,10 +184,6 @@ public final class SystemMetaData extends DatabaseStore
 		catch (Exception e)
 		{
 			throw new DatabaseException(e);
-		}
-		finally
-		{
-			SystemProfiler.getInstance().incrementFrom("SYSTEMMETRICS_FLUSH", start);
 		}
 	}
 
@@ -269,8 +279,6 @@ public final class SystemMetaData extends DatabaseStore
 	 */
 	private void load() throws DatabaseException
 	{
-		long start = SystemProfiler.getInstance().begin();
-
 		try (Cursor cursor = this.systemMetaDataDB.openCursor(null, null))
         {
 			DatabaseEntry key = new DatabaseEntry();
@@ -302,10 +310,6 @@ public final class SystemMetaData extends DatabaseStore
 		catch (Exception e)
 		{
 			throw new DatabaseException(e);
-		}
-		finally
-		{
-			SystemProfiler.getInstance().incrementFrom("SYSTEMMETRICS_GET_METRICS", start);
 		}
 	}
 

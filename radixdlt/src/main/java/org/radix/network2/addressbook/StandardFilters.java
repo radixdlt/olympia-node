@@ -6,18 +6,15 @@ import java.net.InetAddress;
 import java.util.Collection;
 import java.util.Set;
 import org.radix.Radix;
-import org.radix.modules.Modules;
 import org.radix.network.Interfaces;
-import org.radix.network.Network;
+import org.radix.network.discovery.Whitelist;
 import org.radix.network2.transport.TransportInfo;
 import org.radix.time.Time;
 import org.radix.time.Timestamps;
-import org.radix.universe.system.LocalSystem;
 import org.radix.universe.system.RadixSystem;
 
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.common.EUID;
-import com.radixdlt.universe.Universe;
 
 /**
  * Standard filters for peer streams.
@@ -46,12 +43,15 @@ public final class StandardFilters {
 	 * </ul>
 	 *
 	 * @return {@code true} if all the criteria are met, {@code false} otherwise
+	 * @param self the EUID of this node
+	 * @param interfaces the interfaces to test against
+	 * @param whitelist the whitelist
 	 */
-	public static PeerPredicate standardFilter() {
+	public static PeerPredicate standardFilter(EUID self, Interfaces interfaces, Whitelist whitelist) {
 		return hasTransports()
-			.and(notLocalAddress())
-			.and(isWhitelisted())
-			.and(notOurNID())
+			.and(notLocalAddress(interfaces))
+			.and(isWhitelisted(whitelist))
+			.and(notOurNID(self))
 			.and(acceptableProtocol())
 			.and(notBanned());
 	}
@@ -69,27 +69,34 @@ public final class StandardFilters {
 	 * Returns {@code true} if none of the peer's transports point to a local address.
 	 *
 	 * @return {@code true} if none of the peer's transports use a local address, {@code false} otherwise
+	 * @param interfaces the interfaces to check against
 	 */
-	public static PeerPredicate notLocalAddress() {
-		return peer -> peer.supportedTransports().noneMatch(StandardFilters::isLocalAddress);
+	public static PeerPredicate notLocalAddress(Interfaces interfaces) {
+		return peer -> peer.supportedTransports().noneMatch((TransportInfo ti) -> {
+			return isLocalAddress(ti, interfaces);
+		});
 	}
 
 	/**
 	 * Returns {@code true} if all of the peer's transports are whitelisted.
 	 *
 	 * @return {@code true} if all of the peer's transports are whitelisted, {@code false} otherwise
+	 * @param whitelist the whitelist to use
 	 */
-	public static PeerPredicate isWhitelisted() {
-		return peer -> peer.supportedTransports().noneMatch(StandardFilters::hostNotWhitelisted);
+	public static PeerPredicate isWhitelisted(Whitelist whitelist) {
+		return peer -> peer.supportedTransports().noneMatch((TransportInfo ti) -> {
+			return hostNotWhitelisted(ti, whitelist);
+		});
 	}
 
 	/**
 	 * Returns {@code true} if the peer has a NID, and it's not the local NID.
 	 *
 	 * @return {@code true} if the peer has a NID, and it's not the local NID, {@code false} otherwise
+	 * @param self the EUID of this node
 	 */
-	public static PeerPredicate notOurNID() {
-		return peer -> !(peer.hasNID() && peer.getNID().equals(LocalSystem.getInstance().getNID()));
+	public static PeerPredicate notOurNID(EUID self) {
+		return peer -> !(peer.hasNID() && peer.getNID().equals(self));
 	}
 
 	/**
@@ -129,39 +136,31 @@ public final class StandardFilters {
 	}
 
 	/**
-	 * Returns {@code true} if the peer has shard space overlap with local peer.
-	 *
-	 * @return {@code true} if the peer has shard space overlap with local peer, {@code false} otherwise
-	 */
-	public static PeerPredicate hasOverlappingShards() {
-		return peer -> peer.hasSystem() && LocalSystem.getInstance().getShards().intersects(peer.getSystem().getShards());
-	}
-
-	/**
 	 * Returns {@code true} if the peer been active within one planck period.
 	 *
 	 * @return {@code true} if the peer been active within one planck period, {@code false} otherwise
+	 * @param recencyThreshold the recency threshold in millis
 	 */
-	public static PeerPredicate recentlyActive() {
-		return peer -> (Time.currentTimestamp() - peer.getTimestamp(Timestamps.ACTIVE)) < Modules.get(Universe.class).getPlanck();
+	public static PeerPredicate recentlyActive(long recencyThreshold) {
+		return peer -> (Time.currentTimestamp() - peer.getTimestamp(Timestamps.ACTIVE)) < recencyThreshold;
 	}
 
-	private static boolean hostNotWhitelisted(TransportInfo ti) {
+	private static boolean hostNotWhitelisted(TransportInfo ti, Whitelist whitelist) {
 		String host = ti.metadata().get("host");
 		if (host != null) {
-			if (!Network.getInstance().isWhitelisted(host)) {
+			if (!whitelist.isWhitelisted(host)) {
 				return true;
 			}
 		}
 		return false;
 	}
 
-	private static boolean isLocalAddress(TransportInfo ti) {
+	private static boolean isLocalAddress(TransportInfo ti, Interfaces interfaces) {
 		try {
 			String host = ti.metadata().get("host");
 			if (host != null) {
 				InetAddress address = InetAddress.getByName(host);
-				if (Modules.get(Interfaces.class).isSelf(address)) {
+				if (interfaces.isSelf(address)) {
 					return true;
 				}
 			}

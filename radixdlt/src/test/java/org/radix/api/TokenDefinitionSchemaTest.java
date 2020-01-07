@@ -9,10 +9,8 @@ import com.radixdlt.common.Atom;
 import org.everit.json.schema.Schema;
 import org.everit.json.schema.ValidationException;
 import org.json.JSONObject;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.radix.modules.Modules;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atomos.RadixAddress;
@@ -33,12 +31,6 @@ public class TokenDefinitionSchemaTest {
 	@BeforeClass
 	public static void setupSerializer() {
 		serialization = Serialization.getDefault();
-		Modules.replace(Serialization.class, serialization);
-	}
-
-	@AfterClass
-	public static void teardownSerializer() {
-		Modules.remove(Serialization.class);
 	}
 
 	@Test

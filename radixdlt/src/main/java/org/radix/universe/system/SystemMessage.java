@@ -1,34 +1,33 @@
 package org.radix.universe.system;
 
-import org.radix.network.messaging.SignedMessage;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.serialization.DsonOutput.Output;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.DsonOutput.Output;
+import com.radixdlt.serialization.SerializerId2;
+import org.radix.network.messaging.SignedMessage;
 
 @SerializerId2("system")
-public class SystemMessage extends SignedMessage
-{
+public class SystemMessage extends SignedMessage {
 	@JsonProperty("system")
 	@DsonOutput(Output.ALL)
 	private RadixSystem system;
 
-	public SystemMessage()
-	{
-		super();
+	protected SystemMessage() {
+		// for serializer
+		super(0);
+	}
 
-		this.system = new RadixSystem(LocalSystem.getInstance());
+	public SystemMessage(RadixSystem system, int magic) {
+		super(magic);
+		this.system = system;
 	}
 
 	@Override
-	public String getCommand()
-	{
+	public String getCommand() {
 		return "system";
 	}
 
-	public RadixSystem getSystem()
-	{
+	public RadixSystem getSystem() {
 		return this.system;
 	}
 }

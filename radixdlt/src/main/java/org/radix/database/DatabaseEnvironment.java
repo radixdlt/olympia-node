@@ -1,24 +1,6 @@
 package org.radix.database;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.ReentrantLock;
-
-import org.bouncycastle.util.Arrays;
-import org.radix.database.exceptions.DatabaseException;
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
-import org.radix.modules.Modules;
-import org.radix.modules.exceptions.ModuleException;
-import org.radix.properties.RuntimeProperties;
-
+import com.google.inject.Inject;
 import com.radixdlt.utils.RadixConstants;
 import com.sleepycat.je.CacheMode;
 import com.sleepycat.je.CheckpointConfig;
@@ -31,6 +13,14 @@ import com.sleepycat.je.EnvironmentConfig;
 import com.sleepycat.je.LockMode;
 import com.sleepycat.je.OperationStatus;
 import com.sleepycat.je.Transaction;
+import org.bouncycastle.util.Arrays;
+import org.radix.logging.Logger;
+import org.radix.logging.Logging;
+import org.radix.properties.RuntimeProperties;
+
+import java.io.File;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 
 public final class DatabaseEnvironment
 {
@@ -82,84 +72,60 @@ public final class DatabaseEnvironment
 	private Environment						environment = null;
 	private CheckpointerTask checkpointTask;
 	private Thread 							checkpointThread = null;
-	private Map<Class<?>, DatabaseStore> 	databases = new HashMap<>();
 
-
-    public DatabaseEnvironment() { super(); }
-
-	public void start()
-	{
-		File dbhome = new File(Modules.get(RuntimeProperties.class).get("db.location", ".//RADIXDB"));
+	@Inject
+	public DatabaseEnvironment(RuntimeProperties properties) {
+		File dbhome = new File(properties.get("db.location", ".//RADIXDB"));
 		dbhome.mkdir();
 
-		System.setProperty("je.disable.java.adler32", "true");
+	    System.setProperty("je.disable.java.adler32", "true");
 
-		EnvironmentConfig environmentConfig = new EnvironmentConfig();
-		environmentConfig.setTransactional(true);
-		environmentConfig.setAllowCreate(true);
-		environmentConfig.setLockTimeout(30, TimeUnit.SECONDS);
-		environmentConfig.setDurability(Durability.COMMIT_NO_SYNC);
-//		environmentConfig.setConfigParam(EnvironmentConfig.ENV_DUP_CONVERT_PRELOAD_ALL, "false");
-		environmentConfig.setConfigParam(EnvironmentConfig.LOG_FILE_MAX, "100000000");
-		environmentConfig.setConfigParam(EnvironmentConfig.LOG_FILE_CACHE_SIZE, "256");
-		environmentConfig.setConfigParam(EnvironmentConfig.ENV_RUN_CHECKPOINTER, "false");
-		environmentConfig.setConfigParam(EnvironmentConfig.ENV_RUN_CLEANER, "false");
-		environmentConfig.setConfigParam(EnvironmentConfig.ENV_RUN_EVICTOR, "false");
-		environmentConfig.setConfigParam(EnvironmentConfig.ENV_RUN_VERIFIER, "false");
-//		environmentConfig.setConfigParam(EnvironmentConfig.NODE_MAX_ENTRIES, "256");
-		environmentConfig.setConfigParam(EnvironmentConfig.TREE_MAX_EMBEDDED_LN, "0");
+	    EnvironmentConfig environmentConfig = new EnvironmentConfig();
+	    environmentConfig.setTransactional(true);
+	    environmentConfig.setAllowCreate(true);
+	    environmentConfig.setLockTimeout(30, TimeUnit.SECONDS);
+	    environmentConfig.setDurability(Durability.COMMIT_NO_SYNC);
+	    environmentConfig.setConfigParam(EnvironmentConfig.LOG_FILE_MAX, "100000000");
+	    environmentConfig.setConfigParam(EnvironmentConfig.LOG_FILE_CACHE_SIZE, "256");
+	    environmentConfig.setConfigParam(EnvironmentConfig.ENV_RUN_CHECKPOINTER, "false");
+	    environmentConfig.setConfigParam(EnvironmentConfig.ENV_RUN_CLEANER, "false");
+	    environmentConfig.setConfigParam(EnvironmentConfig.ENV_RUN_EVICTOR, "false");
+	    environmentConfig.setConfigParam(EnvironmentConfig.ENV_RUN_VERIFIER, "false");
+	    environmentConfig.setConfigParam(EnvironmentConfig.TREE_MAX_EMBEDDED_LN, "0");
 
-		long minCacheSize = Modules.get(RuntimeProperties.class).get("db.cache_size.min", Math.max(50000000, (long)(Runtime.getRuntime().maxMemory()*0.1)));
-		long maxCacheSize = Modules.get(RuntimeProperties.class).get("db.cache_size.max", (long)(Runtime.getRuntime().maxMemory()*0.25));
-		long cacheSize = Modules.get(RuntimeProperties.class).get("db.cache_size", (long)(Runtime.getRuntime().maxMemory()*0.125));
-		cacheSize = Math.max(cacheSize, minCacheSize);
-		cacheSize = Math.min(cacheSize, maxCacheSize);
+	    long minCacheSize = properties.get("db.cache_size.min", Math.max(50000000, (long)(Runtime.getRuntime().maxMemory()*0.1)));
+	    long maxCacheSize = properties.get("db.cache_size.max", (long)(Runtime.getRuntime().maxMemory()*0.25));
+	    long cacheSize = properties.get("db.cache_size", (long)(Runtime.getRuntime().maxMemory()*0.125));
+	    cacheSize = Math.max(cacheSize, minCacheSize);
+	    cacheSize = Math.min(cacheSize, maxCacheSize);
 
-		environmentConfig.setCacheSize(cacheSize);
-		environmentConfig.setCacheMode(CacheMode.EVICT_LN);
+	    environmentConfig.setCacheSize(cacheSize);
+	    environmentConfig.setCacheMode(CacheMode.EVICT_LN);
 
-		this.environment = new Environment(dbhome, environmentConfig);
+	    this.environment = new Environment(dbhome, environmentConfig);
 
-		DatabaseConfig primaryConfig = new DatabaseConfig();
-		primaryConfig.setAllowCreate(true);
-		primaryConfig.setTransactional(true);
+	    DatabaseConfig primaryConfig = new DatabaseConfig();
+	    primaryConfig.setAllowCreate(true);
+	    primaryConfig.setTransactional(true);
 
-		try
-		{
-			this.metaDatabase = getEnvironment().openDatabase(null, "environment.meta_data", primaryConfig);
-		}
-        catch (Exception ex)
-        {
-        	throw new RuntimeException("while opening database", ex);
-		}
+	    try
+	    {
+		    this.metaDatabase = this.environment.openDatabase(null, "environment.meta_data", primaryConfig);
+	    }
+	    catch (Exception ex)
+	    {
+		    throw new RuntimeException("while opening database", ex);
+	    }
 
-		this.checkpointTask = new CheckpointerTask();
-		this.checkpointThread = new Thread(this.checkpointTask);
-		this.checkpointThread.setDaemon(true);
-		this.checkpointThread.setName("Checkpointer");
-		this.checkpointThread.start();
-	}
+	    this.checkpointTask = new CheckpointerTask();
+	    this.checkpointThread = new Thread(this.checkpointTask);
+	    this.checkpointThread.setDaemon(true);
+	    this.checkpointThread.setName("Checkpointer");
+	    this.checkpointThread.start();
+    }
 
 	public void stop()
 	{
-		Collection<DatabaseStore> allDatabases = new ArrayList<>(this.databases.values());
-        for (DatabaseStore database : allDatabases)
-        {
-			try
-        	{
-				Modules.getInstance().stop(database);
-			}
-        	catch (ModuleException e)
-			{
-        		log.error("Failure stopping database "+database.getClass().getName(), e);
-			}
-        }
-
-        try { flush(); } catch (DatabaseException dex)
-        {
-        	log.error("Flushing "+this.getClass().getName()+" on stop failed", dex);
-		}
-
         this.metaDatabase.close();
 		this.metaDatabase = null;
 
@@ -186,74 +152,11 @@ public final class DatabaseEnvironment
 
 	public Environment getEnvironment()
 	{
+		if (this.environment == null) {
+			throw new IllegalStateException("environment is not started");
+		}
+
 		return this.environment;
-	}
-
-	public void flush() throws DatabaseException
-	{
-        for (DatabaseStore database : this.databases.values())
-        	database.flush();
-	}
-
-    public void build() {
-    	for (DatabaseStore database : this.getAll(true)) {
-			try {
-				database.build();
-			} catch (DatabaseException dex) {
-				log.error("Could not build database", dex);
-			}
-    	}
-	}
-
-	public void maintenence() {
-        for (DatabaseStore database : this.databases.values()) {
-			try {
-				database.maintenence();
-			} catch (DatabaseException dex) {
-				log.error("Could not maintain database: " + database.toString(), dex);
-			}
-        }
-	}
-
-	public void register(DatabaseStore database) throws DatabaseException
-	{
-		if (this.databases.containsKey(database.getClass()) == false)
-		{
-			this.databases.put(database.getClass(), database);
-
-/*			if (!ModuleManager.get(Universe.class).isProduction())
-			{
-	        	if (ModuleManager.get(SystemMetaData.class).opt("version", 0l) <= Radix.MAJOR_AGENT_VERSION  || clean)
-	        	{
-	        		clean = true;
-	        		plugin.clean();
-	                plugin.build();
-	        	}
-			}*/
-
-			database.build();
-		}
-	}
-
-	public boolean isRegistered(DatabaseStore database) {
-		return this.databases.containsKey(database.getClass());
-	}
-
-	public void deregister(DatabaseStore database)
-	{
-		if (this.databases.containsKey(database.getClass()))
-			this.databases.remove(database.getClass());
-	}
-
-	public List<DatabaseStore> getAll(boolean byPriority)
-	{
-		List<DatabaseStore> allDatabases = new ArrayList<>(this.databases.values());
-
-		if (byPriority) {
-			Collections.sort(allDatabases, Comparator.comparingInt(DatabaseStore::getBuildPriority));
-		}
-
-		return allDatabases;
 	}
 
 	public OperationStatus put(Transaction transaction, String resource, String key, byte[] value)

@@ -16,7 +16,6 @@ import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 import org.powermock.reflect.Whitebox;
-import org.radix.modules.Modules;
 import org.radix.properties.RuntimeProperties;
 import com.radixdlt.universe.Universe;
 
@@ -24,6 +23,7 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.powermock.api.mockito.PowerMockito.doAnswer;
 import static org.powermock.api.mockito.PowerMockito.doReturn;
 import static org.powermock.api.mockito.PowerMockito.doThrow;
 import static org.powermock.api.mockito.PowerMockito.mock;
@@ -32,12 +32,13 @@ import static org.powermock.api.mockito.PowerMockito.when;
 
 @RunWith(PowerMockRunner.class)
 @PowerMockIgnore({"java.security.*", "javax.security.*", "org.bouncycastle.*"})
-@PrepareForTest({BootstrapDiscovery.class, Modules.class, URL.class, URLConnection.class, RuntimeProperties.class, Universe.class, Thread.class})
+@PrepareForTest({BootstrapDiscovery.class, URL.class, URLConnection.class, RuntimeProperties.class, Universe.class, Thread.class})
 public class BootstrapDiscoveryTest {
     // Mocks
     private RuntimeProperties config;
     private URL url;
     private URLConnection conn;
+    private Universe universe;
 
     // Methods
     private Method toHost;
@@ -49,11 +50,10 @@ public class BootstrapDiscoveryTest {
     @Before
     public void setUp() throws Exception {
         // create stubs
-        spy(Modules.class);
         spy(BootstrapDiscovery.class);
         spy(Thread.class);
-        config = mock(RuntimeProperties.class);
-        Universe universe = mock(Universe.class);
+        config = defaultProperties();
+        universe = mock(Universe.class);
         url = mock(URL.class);
         conn = mock(URLConnection.class);
 
@@ -62,7 +62,6 @@ public class BootstrapDiscoveryTest {
         getNextNode = Whitebox.getMethod(BootstrapDiscovery.class, "getNextNode", URL.class);
 
         // initialize stubs
-        doReturn(config).when(Modules.class, "get", RuntimeProperties.class);
         doReturn(30).when(config).get("network.discovery.connection.retries", 30);
         doReturn(1).when(config).get("network.discovery.connection.cooldown", 1);
         doReturn(60000).when(config).get("network.discovery.connection.timeout", 60000);
@@ -72,7 +71,6 @@ public class BootstrapDiscoveryTest {
         doReturn(8).when(config).get("network.connections.out", 8);
         doReturn(8192).when(config).get("messaging.inbound.queue_max", 8192);
         doReturn(1 << 18).when(config).get("network.udp.buffer", 1 << 18);
-        doReturn(universe).when(Modules.class, "get", Universe.class);
 
         when(config.get(eq("network.discovery.connection.retries"), any())).thenReturn(1);
         when(config.get(eq("network.discovery.connection.cooldown"), any())).thenReturn(1);
@@ -119,14 +117,14 @@ public class BootstrapDiscoveryTest {
         String expected = "1.1.1.1";
         doReturn(expected.length()).when(conn).getContentLength();
         doReturn(new ByteArrayInputStream(expected.getBytes("US-ASCII"))).when(conn).getInputStream();
-        assertEquals(expected,  getNextNode.invoke(null, url));
+        assertEquals(expected,  getNextNode.invoke(new BootstrapDiscovery(config, universe), url));
     }
 
     @Test
 	public void testGetNextNode_RuntimeException() throws Exception
 	{
         doThrow(new RuntimeException()).when(conn).connect();
-        assertEquals(null,  getNextNode.invoke(null, url));
+        assertEquals(null,  getNextNode.invoke(new BootstrapDiscovery(config, universe), url));
     }
 
     @Test
@@ -134,7 +132,7 @@ public class BootstrapDiscoveryTest {
 	{
         doThrow(new InterruptedException()).when(Thread.class);
         Thread.sleep(anyLong());
-        assertEquals(null,  getNextNode.invoke(null, url));
+        assertEquals(null,  getNextNode.invoke(new BootstrapDiscovery(config, universe), url));
     }
 
     @Test
@@ -147,7 +145,7 @@ public class BootstrapDiscoveryTest {
         doReturn(8000).when(config).get(eq("messaging.inbound.queue_max"), any());
         doReturn(8000).when(config).get(eq("messaging.outbound.queue_max"), any());
         doReturn(30).when(config).get(eq("messaging.time_to_live"), any());
-        BootstrapDiscovery testSubject = Whitebox.invokeConstructor(BootstrapDiscovery.class);
+        BootstrapDiscovery testSubject = Whitebox.invokeConstructor(BootstrapDiscovery.class, config, universe);
         Set<?> hosts = Whitebox.getInternalState(testSubject, "hosts");
         assertEquals(1, hosts.size());
     }
@@ -157,17 +155,12 @@ public class BootstrapDiscoveryTest {
 	{
         thrown.expect(IllegalStateException.class);
         doReturn("http://example.com").when(config).get("network.discovery.urls", "");
-        Whitebox.invokeConstructor(BootstrapDiscovery.class);
+        Whitebox.invokeConstructor(BootstrapDiscovery.class, config, universe);
     }
 
-    @Test
-	public void testConstructor() throws Exception
-	{
-        doReturn("https://example.com").when(config).get("network.discovery.urls", "");
-        doReturn("1.1.1.1").when(BootstrapDiscovery.class, "getNextNode", any());
-        doReturn("2.2.2.2").when(config).get("network.seeds", "");
-        BootstrapDiscovery testSubject = Whitebox.invokeConstructor(BootstrapDiscovery.class);
-        Set<?> hosts = Whitebox.getInternalState(testSubject, "hosts");
-        assertEquals(2, hosts.size());
+    private static RuntimeProperties defaultProperties() {
+        RuntimeProperties properties = mock(RuntimeProperties.class);
+        doAnswer(invocation -> invocation.getArgument(1)).when(properties).get(any(), any());
+        return properties;
     }
 }

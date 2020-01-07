@@ -15,9 +15,11 @@ public class DeliveryResponseMessage extends Message {
 
 	DeliveryResponseMessage() {
 		// For serializer only
+		super(0);
 	}
 
-	public DeliveryResponseMessage(LedgerEntry ledgerEntry) {
+	public DeliveryResponseMessage(LedgerEntry ledgerEntry, int magic) {
+		super(magic);
 		this.ledgerEntry = ledgerEntry;
 	}
 

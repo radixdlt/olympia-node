@@ -1,23 +1,9 @@
 package org.radix.network2.addressbook;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.util.Objects;
-import java.util.function.Consumer;
-import org.radix.database.DatabaseEnvironment;
-import org.radix.database.DatabaseStore;
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
-import org.radix.modules.Modules;
-import org.radix.modules.exceptions.ModuleException;
-import org.radix.modules.exceptions.ModuleResetException;
-import org.radix.modules.exceptions.ModuleStartException;
-
 import com.radixdlt.common.EUID;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
-
 import com.sleepycat.je.Cursor;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
@@ -28,42 +14,48 @@ import com.sleepycat.je.LockMode;
 import com.sleepycat.je.OperationStatus;
 import com.sleepycat.je.Transaction;
 import com.sleepycat.je.TransactionConfig;
+import org.radix.database.DatabaseEnvironment;
+import org.radix.logging.Logger;
+import org.radix.logging.Logging;
+
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.util.Objects;
+import java.util.function.Consumer;
 
 /**
  * Persistence for peers.
  */
-public class AddressBookPersistence extends DatabaseStore implements PeerPersistence {
+public class AddressBookPersistence implements PeerPersistence {
 	private static final Logger log = Logging.getLogger("addressbook");
 
 	private final Serialization serialization;
+	private final DatabaseEnvironment dbEnv;
 	private Database peersByNidDB;
 
-	AddressBookPersistence(Serialization serialization) {
+	AddressBookPersistence(Serialization serialization, DatabaseEnvironment dbEnv) {
 		super();
 		this.serialization = Objects.requireNonNull(serialization);
+		this.dbEnv = Objects.requireNonNull(dbEnv);
 	}
 
-	@Override
-	public void start_impl() throws ModuleException {
+	public void start() {
 		DatabaseConfig config = new DatabaseConfig();
 		config.setAllowCreate(true);
 
 		try {
-			this.peersByNidDB = Modules.get(DatabaseEnvironment.class).getEnvironment().openDatabase(null, "peers_by_nid", config);
+			this.peersByNidDB = this.dbEnv.getEnvironment().openDatabase(null, "peers_by_nid", config);
 		} catch (DatabaseException | IllegalArgumentException | IllegalStateException ex) {
-        	throw new ModuleStartException(ex, this);
+        	throw new RuntimeException("while opening database", ex);
 		}
-
-		super.start_impl();
 	}
 
-	@Override
-	public void reset_impl() throws ModuleException {
+	public void reset() {
 		Transaction transaction = null;
 
 		try {
-			transaction = Modules.get(DatabaseEnvironment.class).getEnvironment().beginTransaction(null, new TransactionConfig().setReadUncommitted(true));
-			Modules.get(DatabaseEnvironment.class).getEnvironment().truncateDatabase(transaction, "peers_by_nid", false);
+			transaction = this.dbEnv.getEnvironment().beginTransaction(null, new TransactionConfig().setReadUncommitted(true));
+			this.dbEnv.getEnvironment().truncateDatabase(transaction, "peers_by_nid", false);
 			transaction.commit();
 		} catch (DatabaseNotFoundException dsnfex) {
 			if (transaction != null) {
@@ -74,42 +66,16 @@ public class AddressBookPersistence extends DatabaseStore implements PeerPersist
 			if (transaction != null) {
 				transaction.abort();
 			}
-			throw new ModuleResetException(ex, this);
+			throw new RuntimeException("while resetting database", ex);
 		}
 	}
 
 	@Override
-	public void stop_impl() throws ModuleException {
-		super.stop_impl();
+	public void close() {
 		if (this.peersByNidDB != null) {
 			this.peersByNidDB.close();
 			this.peersByNidDB = null;
 		}
-	}
-
-	@Override
-	public void build() throws DatabaseException {
-		// Not used
-	}
-
-	@Override
-	public void maintenence() throws DatabaseException {
-		// Not used
-	}
-
-	@Override
-	public void integrity() throws DatabaseException {
-		// Not used
-	}
-
-	@Override
-	public void flush() throws DatabaseException  {
-		// Not used
-	}
-
-	@Override
-	public String getName() {
-		return "Peer Address Book Persistence";
 	}
 
 	@Override

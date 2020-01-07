@@ -9,12 +9,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.radix.events.Events;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.modules.Modules;
+import org.radix.network.Interfaces;
 import org.radix.network.messaging.Message;
-import org.radix.network2.NetworkLegacyPatching;
 import org.radix.network2.TimeSupplier;
+import org.radix.network2.addressbook.AddressBook;
 import org.radix.network2.addressbook.Peer;
 import org.radix.network2.transport.Transport;
+import org.radix.universe.system.LocalSystem;
 import org.radix.universe.system.events.QueueFullEvent;
 import org.radix.utils.SystemMetaData;
 import org.xerial.snappy.Snappy;
@@ -25,7 +26,6 @@ import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.Inject;
 import com.radixdlt.serialization.Serialization;
 
-//FIXME: Optional dependency on Modules.get(SystemMetadata.class) for updating metadata
 final class MessageCentralImpl implements MessageCentral {
 	private static final Logger log = Logging.getLogger("message");
 
@@ -35,6 +35,7 @@ final class MessageCentralImpl implements MessageCentral {
 	private final Serialization serialization;
 	private final TransportManager connectionManager;
 	private final Events events;
+	private final AddressBook addressBook;
 
 	// Local data
 
@@ -69,8 +70,11 @@ final class MessageCentralImpl implements MessageCentral {
 		Serialization serialization,
 		TransportManager transportManager,
 		Events events,
+		AddressBook addressBook,
 		TimeSupplier timeSource,
-		EventQueueFactory<MessageEvent> eventQueueFactory
+		EventQueueFactory<MessageEvent> eventQueueFactory,
+		Interfaces interfaces,
+		LocalSystem localSystem
 	) {
 		this.inboundQueue = eventQueueFactory.createEventQueue(config.messagingInboundQueueMax(8192));
 		this.outboundQueue = eventQueueFactory.createEventQueue(config.messagingOutboundQueueMax(16384));
@@ -78,9 +82,10 @@ final class MessageCentralImpl implements MessageCentral {
 		this.serialization = Objects.requireNonNull(serialization);
 		this.connectionManager = Objects.requireNonNull(transportManager);
 		this.events = Objects.requireNonNull(events);
+		this.addressBook = Objects.requireNonNull(addressBook);
 
 		Objects.requireNonNull(timeSource);
-		this.messageDispatcher = new MessageDispatcher(config, serialization, timeSource);
+		this.messageDispatcher = new MessageDispatcher(config, serialization, timeSource, localSystem, interfaces, this.addressBook);
 
 		this.transports = Lists.newArrayList(transportManager.transports());
 
@@ -151,7 +156,7 @@ final class MessageCentralImpl implements MessageCentral {
 	}
 
 	private void inboundMessage(InboundMessage inboundMessage) {
-		Peer peer = NetworkLegacyPatching.findPeer(inboundMessage.source());
+		Peer peer = addressBook.peer(inboundMessage.source());
 		if (peer != null) {
 			Message message = deserialize(inboundMessage.message());
 			inject(peer, message);
@@ -159,13 +164,13 @@ final class MessageCentralImpl implements MessageCentral {
 	}
 
 	private void inboundMessageProcessor(MessageEvent inbound) {
-		Modules.ifAvailable(SystemMetaData.class, a -> a.put("messages.inbound.pending", inboundQueue.size()));
+		SystemMetaData.ifPresent( a -> a.put("messages.inbound.pending", inboundQueue.size()));
 		MessageListenerList listeners = this.listeners.getOrDefault(inbound.message().getClass(), EMPTY_MESSAGE_LISTENER_LIST);
 		messageDispatcher.receive(listeners, inbound);
 	}
 
 	private void outboundMessageProcessor(MessageEvent outbound) {
-		Modules.ifAvailable(SystemMetaData.class, a -> a.put("messages.outbound.pending", outboundQueue.size()));
+		SystemMetaData.ifPresent( a -> a.put("messages.outbound.pending", outboundQueue.size()));
 		messageDispatcher.send(connectionManager, outbound);
 	}
 

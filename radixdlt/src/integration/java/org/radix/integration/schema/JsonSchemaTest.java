@@ -5,7 +5,6 @@ import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.common.Atom;
-import com.radixdlt.universe.Universe;
 import org.everit.json.schema.Schema;
 import org.everit.json.schema.ValidationException;
 import org.everit.json.schema.loader.SchemaLoader;
@@ -20,9 +19,7 @@ import com.radixdlt.atomos.RRI;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECKeyPair;
 import org.radix.integration.RadixTest;
-import org.radix.modules.Modules;
 import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.RadixConstants;
 import com.radixdlt.utils.UInt256;
 
@@ -30,12 +27,10 @@ import java.io.InputStream;
 
 public class JsonSchemaTest extends RadixTest {
 
-	private static final int BILLION_POW_10 = 9;
-
-	private Serialization serialization = Modules.get(Serialization.class);
+	private static final int BILLION_LOG_10 = 9;
 
 	public void testAtomSchema(Atom atom) throws Exception {
-		JSONObject atomJsonObject = serialization.toJsonObject(atom, Output.WIRE);
+		JSONObject atomJsonObject = getSerialization().toJsonObject(atom, Output.WIRE);
 
 		try (InputStream inputStream = getClass().getResourceAsStream("/schemas/atom.schema.json")) {
 			JSONObject rawSchema = new JSONObject(new JSONTokener(inputStream));
@@ -57,7 +52,7 @@ public class JsonSchemaTest extends RadixTest {
 		ECKeyPair ecKeyPair = new ECKeyPair();
 
 		MutableSupplyTokenDefinitionParticle testToken = new MutableSupplyTokenDefinitionParticle(
-			RadixAddress.from(Modules.get(Universe.class), ecKeyPair.getPublicKey()),
+			RadixAddress.from(getUniverse(), ecKeyPair.getPublicKey()),
 			"TEST",
 			"Test RADS",
 			"Radix Test Tokens",
@@ -80,13 +75,13 @@ public class JsonSchemaTest extends RadixTest {
 	@Test
 	public void testTransferAtom() throws Exception {
 		ECKeyPair ecKeyPair = new ECKeyPair();
-		RadixAddress address = RadixAddress.from(Modules.get(Universe.class), ecKeyPair.getPublicKey());
+		RadixAddress address = RadixAddress.from(getUniverse(), ecKeyPair.getPublicKey());
 
 		Atom transactionAtom = new Atom(1L);
 		transactionAtom.addParticleGroupWith(new MessageParticle(address, address, "Radix....Just Imagine".getBytes(RadixConstants.STANDARD_CHARSET)), Spin.UP);
 
 		TransferrableTokensParticle mintParticle = new TransferrableTokensParticle(address,
-			UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 + BILLION_POW_10),
+			UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 + BILLION_LOG_10),
 			UInt256.ONE,
 			RRI.of(address, TokenDefinitionUtils.getNativeTokenShortCode()),
 			1L,

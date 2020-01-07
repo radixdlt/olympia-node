@@ -16,10 +16,11 @@ public final class AtomSubmitMessage extends Message {
 
 	AtomSubmitMessage() {
 		// For serializer only
+		super(0);
 	}
 
-	public AtomSubmitMessage(Atom atom) {
-		super();
+	public AtomSubmitMessage(Atom atom, int magic) {
+		super(magic);
 		this.atom = atom;
 	}
 

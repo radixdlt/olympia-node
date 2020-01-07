@@ -13,7 +13,6 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationUtils;
 import com.radixdlt.store.SpinStateMachine;
 import com.radixdlt.utils.Longs;
-import org.radix.modules.Modules;
 
 import java.util.Map;
 import java.util.Set;
@@ -46,7 +45,7 @@ public class EngineAtomIndices {
 		this.duplicateIndices = duplicateIndices;
 	}
 
-	public static EngineAtomIndices from(Atom atom) {
+	public static EngineAtomIndices from(Atom atom, Serialization serialization) {
 		RadixEngineAtom radixEngineAtom;
 		try {
 			radixEngineAtom = RadixEngineUtils.toCMAtom(atom);
@@ -103,7 +102,7 @@ public class EngineAtomIndices {
 					// TODO: Remove
 					// This does not handle nested particle classes.
 					// If that ever becomes a problem, this is the place to fix it.
-					final Serialization serialization = Modules.get(Serialization.class);
+					// TODO Should probably not be using serialization for this
 					final String idForClass = serialization.getIdForClass(checkSpin.getParticle().getClass());
 					final EUID numericClassId = SerializationUtils.stringToNumericID(idForClass);
 					duplicateIndices.add(new StoreIndex(IndexType.PARTICLE_CLASS.getValue(), toByteArray(IndexType.PARTICLE_CLASS, numericClassId)));

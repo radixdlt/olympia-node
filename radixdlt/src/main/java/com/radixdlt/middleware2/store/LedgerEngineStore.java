@@ -6,6 +6,7 @@ import com.radixdlt.common.Atom;
 import com.radixdlt.common.EUID;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.SearchCursor;
 import com.radixdlt.store.StoreIndex;
 import com.radixdlt.store.LedgerSearchMode;
@@ -15,25 +16,25 @@ import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStore;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.shards.ShardSpace;
 
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class LedgerEngineStore implements EngineStore {
     private static final Logger log = Logging.getLogger("middleware2.store");
 
-    private LedgerEntryStore store;
-    private Supplier<ShardSpace> shardSpaceSupplier;
+    private final Serialization serialization;
+    private final LedgerEntryStore store;
     private AtomToBinaryConverter atomToBinaryConverter;
 
     @Inject
-    public LedgerEngineStore(LedgerEntryStore store, Supplier<ShardSpace> shardSpaceSupplier, AtomToBinaryConverter atomToBinaryConverter) {
+    public LedgerEngineStore(LedgerEntryStore store,
+                             AtomToBinaryConverter atomToBinaryConverter,
+                             Serialization serialization) {
+        this.serialization = serialization;
         this.store = store;
-        this.shardSpaceSupplier = shardSpaceSupplier;
         this.atomToBinaryConverter = atomToBinaryConverter;
     }
 
@@ -60,7 +61,7 @@ public class LedgerEngineStore implements EngineStore {
     public void storeAtom(Atom atom) {
         byte binaryAtom[] = atomToBinaryConverter.toLedgerEntryContent(atom);
         LedgerEntry ledgerEntry = new LedgerEntry(binaryAtom,atom.getAID());
-        EngineAtomIndices engineAtomIndices = EngineAtomIndices.from(atom);
+        EngineAtomIndices engineAtomIndices = EngineAtomIndices.from(atom, serialization);
         store.store(ledgerEntry, engineAtomIndices.getUniqueIndices(), engineAtomIndices.getDuplicateIndices());
     }
 
@@ -71,7 +72,8 @@ public class LedgerEngineStore implements EngineStore {
 
     @Override
     public boolean supports(Set<EUID> destinations) {
-        return shardSpaceSupplier.get().intersects(destinations.stream().map(EUID::getShard).collect(Collectors.toSet()));
+        // TODO Sharding support is removed for now, meaning that every node supports all destinations.
+        return true;
     }
 
     @Override

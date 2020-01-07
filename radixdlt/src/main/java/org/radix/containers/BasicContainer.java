@@ -5,7 +5,6 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.modules.Modules;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
@@ -63,7 +62,7 @@ public abstract class BasicContainer
 		try
 		{
 			if (hash == null || hash.equals(Hash.ZERO_HASH)) {
-				byte[] hashBytes = Modules.get(Serialization.class).toDson(this, Output.HASH);
+				byte[] hashBytes = Serialization.getDefault().toDson(this, Output.HASH);
 				hash = new Hash(Hash.hash256(hashBytes));
 			}
 

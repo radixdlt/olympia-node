@@ -20,7 +20,6 @@ import org.everit.json.schema.ValidationException;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.radix.api.services.AtomsService;
-import org.radix.modules.Modules;
 import org.radix.network2.addressbook.AddressBook;
 
 import com.radixdlt.universe.Universe;
@@ -58,22 +57,37 @@ public final class RadixJsonRpcServer {
 	 */
     private final LedgerEntryStore ledger;
 
-
-	/**
-	 * Serialization mechanism
-	 */
 	private final Serialization serialization;
+	private final LocalSystem localSystem;
+	private final AddressBook addressBook;
+	private final Universe universe;
 
-	public RadixJsonRpcServer(Serialization serialization, LedgerEntryStore ledger, AtomsService atomsService, Schema atomSchema) {
-		this(serialization, ledger, atomsService, atomSchema, DEFAULT_MAX_REQUEST_SIZE);
+	public RadixJsonRpcServer(Serialization serialization,
+	                          LedgerEntryStore ledger,
+	                          AtomsService atomsService,
+	                          Schema atomSchema,
+	                          LocalSystem localSystem,
+	                          AddressBook addressBook,
+	                          Universe universe) {
+		this(serialization, ledger, atomsService, atomSchema, localSystem, addressBook, universe, DEFAULT_MAX_REQUEST_SIZE);
 	}
 
-	public RadixJsonRpcServer(Serialization serialization, LedgerEntryStore ledger, AtomsService atomsService, Schema atomSchema, long maxRequestSizeBytes) {
+	public RadixJsonRpcServer(Serialization serialization,
+	                          LedgerEntryStore ledger,
+	                          AtomsService atomsService,
+	                          Schema atomSchema,
+	                          LocalSystem localSystem,
+	                          AddressBook addressBook,
+	                          Universe universe,
+	                          long maxRequestSizeBytes) {
 		this.serialization = Objects.requireNonNull(serialization);
 		this.ledger = Objects.requireNonNull(ledger);
 		this.atomsService = Objects.requireNonNull(atomsService);
 		this.atomSchema = Objects.requireNonNull(atomSchema);
-		this.maxRequestSizeBytes = Objects.requireNonNull(maxRequestSizeBytes);
+		this.localSystem = Objects.requireNonNull(localSystem);
+		this.addressBook = Objects.requireNonNull(addressBook);
+		this.universe = Objects.requireNonNull(universe);
+		this.maxRequestSizeBytes = maxRequestSizeBytes;
 	}
 
     /**
@@ -168,16 +182,16 @@ public final class RadixJsonRpcServer {
 
 					break;
 				case "Universe.getUniverse":
-					result = Modules.get(Universe.class);
+					result = this.universe;
 					break;
                 case "Network.getLivePeers":
-                    result = Modules.get(AddressBook.class).recentPeers().collect(Collectors.toList());
+                    result = this.addressBook.recentPeers().collect(Collectors.toList());
                     break;
                 case "Network.getPeers":
-                    result = Modules.get(AddressBook.class).peers().collect(Collectors.toList());
+                    result = this.addressBook.peers().collect(Collectors.toList());
                     break;
                 case "Network.getInfo":
-                    result = LocalSystem.getInstance();
+                    result = localSystem;
                     break;
                 case "Ping":
                     result = new JSONObject()

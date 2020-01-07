@@ -1,89 +1,87 @@
 package org.radix.integration;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.google.inject.name.Names;
 import com.radixdlt.common.EUID;
 import com.radixdlt.consensus.tempo.Application;
+import com.radixdlt.consensus.tempo.Scheduler;
 import com.radixdlt.consensus.tempo.Tempo;
 import com.radixdlt.delivery.LazyRequestDeliverer;
+import com.radixdlt.delivery.LazyRequestDelivererConfiguration;
 import com.radixdlt.store.LedgerEntryStore;
-import com.radixdlt.store.berkeley.BerkeleyStoreModule;
+import com.radixdlt.store.LedgerEntryStoreView;
 import org.junit.After;
 import org.junit.Before;
+import org.radix.GlobalInjector;
 import org.radix.database.DatabaseEnvironment;
-import org.radix.database.DatabaseStore;
-import org.radix.modules.Module;
-import org.radix.modules.Modules;
-import org.radix.modules.exceptions.ModuleException;
+import org.radix.network2.addressbook.AddressBook;
 import org.radix.network2.messaging.MessageCentral;
-import org.radix.network2.messaging.MessageCentralFactory;
-import org.radix.properties.RuntimeProperties;
-import org.radix.universe.system.LocalSystem;
 
 import java.io.IOException;
+import java.util.Objects;
 
 import static org.mockito.Mockito.mock;
 
 public class RadixTestWithStores extends RadixTest
 {
-	protected Injector injector;
 	private DatabaseEnvironment dbEnv;
+	private LedgerEntryStore store;
+	private Tempo tempo;
+	private MessageCentral messageCentral;
+	private AddressBook addressBook;
 
 	@Before
-	public void beforeEachRadixTest() throws ModuleException {
-		this.dbEnv = new DatabaseEnvironment();
-		this.dbEnv.start();
-		Modules.put(DatabaseEnvironment.class, this.dbEnv);
+	public void beforeEachRadixTest() {
+		this.dbEnv = new DatabaseEnvironment(getProperties());
 
-		RuntimeProperties properties = Modules.get(RuntimeProperties.class);
-		MessageCentral messageCentral = new MessageCentralFactory().createDefault(properties);
-		Modules.put(MessageCentral.class, messageCentral);
+		GlobalInjector injector = new GlobalInjector(getProperties(), dbEnv, getLocalSystem(), getUniverse());
+		this.messageCentral = injector.getInjector().getInstance(MessageCentral.class);
+		this.addressBook = injector.getInjector().getInstance(AddressBook.class);
 
-		EUID self = LocalSystem.getInstance().getNID();
-		injector = Guice.createInjector(
-				new AbstractModule() {
-					@Override
-					protected void configure() {
-						bind(EUID.class).annotatedWith(Names.named("self")).toInstance(self);
-					}
-				},
-				new BerkeleyStoreModule()
-		);
+		EUID self = getLocalSystem().getNID();
 
-		LedgerEntryStore atomStore = injector.getInstance(LedgerEntryStore.class);
-		Tempo tempo = new Tempo(
+		store = injector.getInjector().getInstance(LedgerEntryStore.class);
+		tempo = new Tempo(
 			mock(Application.class),
 			ImmutableSet.of(),
-			mock(LazyRequestDeliverer.class));
-			Modules.put(Tempo.class, tempo);
-			Modules.put(LedgerEntryStore.class, atomStore);
+			new LazyRequestDeliverer(
+				mock(Scheduler.class),
+				mock(MessageCentral.class),
+				mock(LedgerEntryStoreView.class),
+				LazyRequestDelivererConfiguration.fromRuntimeProperties(getProperties()),
+				getUniverse()
+			));
 	}
 
 	@After
-	public void afterEachRadixTest() throws ModuleException, IOException {
-		Modules.get(Tempo.class).close();
-		Modules.remove(Tempo.class);
-		Modules.remove(LedgerEntryStore.class);
+	public void afterEachRadixTest() throws IOException {
+		tempo.close();
+		store.close();
+		store.reset();
+		messageCentral.close();
+		addressBook.close();
 
 		this.dbEnv.stop();
-		Modules.remove(DatabaseEnvironment.class);
 
-		MessageCentral messageCentral = Modules.get(MessageCentral.class);
-		messageCentral.close();
-		Modules.remove(MessageCentral.class);
+		dbEnv = null;
+		store = null;
+		tempo = null;
+		messageCentral = null;
+		addressBook = null;
 	}
 
-	private static DatabaseStore clean(DatabaseStore m) throws ModuleException {
-		m.reset_impl();
-		return m;
+	protected DatabaseEnvironment getDbEnv() {
+		return Objects.requireNonNull(dbEnv, "dbEnv was not initialized");
 	}
 
-	public static void safelyStop(Module m) throws ModuleException {
-		if (m != null) {
-			Modules.getInstance().stop(m);
-		}
+	protected LedgerEntryStore getStore() {
+		return Objects.requireNonNull(store, "store was not initialized");
+	}
+
+	protected Tempo getTempo() {
+		return Objects.requireNonNull(tempo, "tempo was not initialized");
+	}
+
+	public MessageCentral getMessageCentral() {
+		return Objects.requireNonNull(messageCentral, "messageCentral was not initialized");
 	}
 }

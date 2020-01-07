@@ -21,10 +21,12 @@ public class IterativeDiscoveryResponseMessage extends Message {
 
 	IterativeDiscoveryResponseMessage() {
 		// Serializer only
+		super(0);
 		aids = ImmutableList.of();
 	}
 
-	public IterativeDiscoveryResponseMessage(ImmutableList<AID> aids, LogicalClockCursor cursor) {
+	public IterativeDiscoveryResponseMessage(ImmutableList<AID> aids, LogicalClockCursor cursor, int magic) {
+		super(magic);
 		this.aids = aids;
 		this.cursor = cursor;
 	}

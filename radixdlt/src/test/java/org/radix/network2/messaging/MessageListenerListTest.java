@@ -1,23 +1,17 @@
 package org.radix.network2.messaging;
 
+import org.junit.Before;
+import org.junit.Test;
+import org.radix.network.messages.TestMessage;
+import org.radix.network2.addressbook.Peer;
+
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.radix.modules.Modules;
-import org.radix.network.messages.TestMessage;
-import org.radix.network2.addressbook.Peer;
-import org.radix.network2.messaging.MessageListener;
-import org.radix.network2.messaging.MessageListenerList;
-
-import com.radixdlt.universe.Universe;
-
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
-import static org.hamcrest.CoreMatchers.*;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 
 // Unit tests for MessageListenerList
 public class MessageListenerListTest {
@@ -31,17 +25,6 @@ public class MessageListenerListTest {
 	public void setUp() {
 		listenerList = new MessageListenerList();
 		called = 0;
-
-		// Curse you singletons
-		Universe universe = mock(Universe.class);
-		when(universe.getMagic()).thenReturn(0);
-
-		Modules.put(Universe.class, universe);
-	}
-
-	@After
-	public void cleanup() {
-		Modules.remove(Universe.class);
 	}
 
 	@Test
@@ -136,7 +119,7 @@ public class MessageListenerListTest {
 		lock.lock();
 		Thread otherThread = new Thread(() -> listenerList.messageReceived(null, null));
 		otherThread.start();
-		listenerList.messageReceived(null, new TestMessage());
+		listenerList.messageReceived(null, new TestMessage(1));
 		otherThread.join();
 	}
 

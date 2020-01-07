@@ -6,9 +6,9 @@ import com.radixdlt.serialization.SerializerId2;
 @SerializerId2("network.message.get_peers")
 public final class GetPeersMessage extends Message
 {
-	public GetPeersMessage()
+	public GetPeersMessage(int magic)
 	{
-		super();
+		super(magic);
 	}
 
 	@Override

@@ -1,14 +1,11 @@
 package org.radix.serialization;
 
-import com.radixdlt.serialization.Serialization;
+import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializationException;
+import com.radixdlt.universe.Universe;
 import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.radix.GenerateUniverses;
-import org.radix.modules.Modules;
-import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.universe.Universe;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -18,31 +15,22 @@ import static org.radix.serialization.SerializationTestUtils.compareJson;
  * Serialization for Universe to DSON.
  */
 public class UniverseDsonOutputTest extends RadixTest {
-
-	private static Serialization serialization;
-
-	@BeforeClass
-	public static void beforeClass() throws Exception {
-		serialization = Modules.get(Serialization.class);
-	}
-
 	@AfterClass
 	public static void afterClass() {
-		Modules.remove(Serialization.class);
 	}
 
 	@Test
 	public void roundTripSimpleDson() throws SerializationException {
 		DummyTestObject testObject = new DummyTestObject(true);
-		byte[] jacksonBytes = serialization.toDson(testObject, Output.ALL);
-		DummyTestObject jacksonBytesObj = serialization.fromDson(jacksonBytes, DummyTestObject.class);
+		byte[] jacksonBytes = getSerialization().toDson(testObject, Output.ALL);
+		DummyTestObject jacksonBytesObj = getSerialization().fromDson(jacksonBytes, DummyTestObject.class);
 		assertEquals(testObject, jacksonBytesObj);
 	}
 
 	@Test
 	public void testNONEIsEmpty() throws Exception {
 		Universe development = getDevelopmentUniverse();
-		byte[] s2Dson = serialization.toDson(development, Output.NONE);
+		byte[] s2Dson = getSerialization().toDson(development, Output.NONE);
 		// Note that 0xBF, 0xFF is the CBOR code for a streamed object with 0 properties
 		assertArrayEquals(new byte[] { (byte) 0xBF, (byte)0xFF }, s2Dson);
 	}
@@ -83,24 +71,21 @@ public class UniverseDsonOutputTest extends RadixTest {
 
 	private static void testEncodeDecode(Output output, boolean changedHid) throws Exception {
 		Universe development = getDevelopmentUniverse();
-		byte[] dson1 = serialization.toDson(development, output);
-		Universe newDevelopment = serialization.fromDson(dson1, Universe.class);
-		byte[] dson2 = serialization.toDson(newDevelopment, output);
+		byte[] dson1 = getSerialization().toDson(development, output);
+		Universe newDevelopment = getSerialization().fromDson(dson1, Universe.class);
+		byte[] dson2 = getSerialization().toDson(newDevelopment, output);
 		compareJson(toJson(dson1, Universe.class, output), toJson(dson2, Universe.class, output));
 	}
 
 	private static String toJson(byte[] dson, Class<?> cls, Output output) throws SerializationException {
-		Object o = serialization.fromDson(dson, cls);
-		return serialization.toJson(o, output);
+		Object o = getSerialization().fromDson(dson, cls);
+		return getSerialization().toJson(o, output);
 	}
 
 	private static Universe getDevelopmentUniverse() throws Exception {
-		GenerateUniverses gu = new GenerateUniverses();
-		Universe u = gu.generateUniverses().stream()
+		GenerateUniverses gu = new GenerateUniverses(getProperties());
+		return gu.generateUniverses().stream()
 				.filter(Universe::isDevelopment)
 				.findAny().get();
-		Modules.remove(Universe.class);
-		Modules.put(Universe.class, u);
-		return u;
 	}
 }

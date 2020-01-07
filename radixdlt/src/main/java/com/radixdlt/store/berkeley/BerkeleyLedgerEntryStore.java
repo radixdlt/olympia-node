@@ -44,7 +44,6 @@ import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.shards.ShardRange;
 import org.radix.shards.ShardSpace;
-import org.radix.utils.SystemProfiler;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -78,7 +77,6 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 
 	private final EUID self;
 	private final Serialization serialization;
-	private final SystemProfiler profiler;
 	private final DatabaseEnvironment dbEnv;
 
 	private final AtomicLong pendingLogicalClock;
@@ -94,12 +92,10 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 	public BerkeleyLedgerEntryStore(
 		@Named("self") EUID self,
 		Serialization serialization,
-		SystemProfiler profiler,
 		DatabaseEnvironment dbEnv
 	) {
 		this.self = Objects.requireNonNull(self);
 		this.serialization = Objects.requireNonNull(serialization);
-		this.profiler = Objects.requireNonNull(profiler);
 		this.dbEnv = Objects.requireNonNull(dbEnv);
 
 		this.open();
@@ -211,13 +207,8 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 
 	@Override
 	public boolean contains(AID aid) {
-		long start = profiler.begin();
-		try {
-			DatabaseEntry key = new DatabaseEntry(StoreIndex.from(ENTRY_INDEX_PREFIX, aid.getBytes()));
-			return OperationStatus.SUCCESS == this.uniqueIndices.get(null, key, null, LockMode.DEFAULT);
-		} finally {
-			profiler.incrementFrom("ATOM_STORE:CONTAINS:CLOCK", start);
-		}
+		DatabaseEntry key = new DatabaseEntry(StoreIndex.from(ENTRY_INDEX_PREFIX, aid.getBytes()));
+		return OperationStatus.SUCCESS == this.uniqueIndices.get(null, key, null, LockMode.DEFAULT);
 	}
 
 	@Override
@@ -234,18 +225,12 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 	}
 
 	private boolean isPending(AID aid) {
-		long start = profiler.begin();
-		try {
 			DatabaseEntry key = new DatabaseEntry(aid.getBytes());
 			return OperationStatus.SUCCESS == this.pending.get(null, key, null, LockMode.DEFAULT);
-		} finally {
-			profiler.incrementFrom("ATOM_STORE:CONTAINS:CLOCK", start);
-		}
 	}
 
 	@Override
 	public Optional<LedgerEntry> get(AID aid) {
-		long start = profiler.begin();
 		try {
 			DatabaseEntry key = new DatabaseEntry(StoreIndex.from(ENTRY_INDEX_PREFIX, aid.getBytes()));
 			DatabaseEntry value = new DatabaseEntry();
@@ -255,8 +240,6 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 			}
 		} catch (Exception e) {
 			fail("Get of atom '" + aid + "' failed", e);
-		} finally {
-			profiler.incrementFrom("ATOM_STORE:GET:AID", start);
 		}
 
 		return Optional.empty();
@@ -275,8 +258,6 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 	@Override
 	public void commit(AID aid) {
 		// delete from pending and move to committed
-		long start = profiler.begin();
-
 		Transaction transaction = dbEnv.getEnvironment().beginTransaction(null, null);
 		try {
 			// TODO there must be a better way to change primary keys
@@ -301,14 +282,11 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 		} catch (Exception e) {
 			transaction.abort();
 			fail("Commit of pending atom '" + aid + "' failed", e);
-		} finally {
-			profiler.incrementFrom("ATOM_STORE:COMMIT", start);
 		}
 	}
 
 	@Override
 	public LedgerEntryStoreResult store(LedgerEntry atom, Set<StoreIndex> uniqueIndices, Set<StoreIndex> duplicateIndices) {
-		long start = profiler.begin();
 		Transaction transaction = dbEnv.getEnvironment().beginTransaction(null, null);
 		try {
 			// transaction is aborted in doStore in case of conflict
@@ -320,15 +298,12 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 		} catch (Exception e) {
 			transaction.abort();
 			fail("Store of atom '" + atom.getAID() + "' failed", e);
-		} finally {
-			profiler.incrementFrom("ATOM_STORE:STORE", start);
 		}
 		throw new IllegalStateException("Should never reach here");
 	}
 
 	@Override
 	public LedgerEntryStoreResult replace(Set<AID> aids, LedgerEntry atom, Set<StoreIndex> uniqueIndices, Set<StoreIndex> duplicateIndices) {
-		long start = profiler.begin();
 		Transaction transaction = dbEnv.getEnvironment().beginTransaction(null, null);
 		try {
 			for (AID aid : aids) {
@@ -346,8 +321,6 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 		} catch (Exception e) {
 			transaction.abort();
 			fail("Replace of atoms '" + aids + "' with atom '" + atom.getAID() + "' failed", e);
-		} finally {
-			profiler.incrementFrom("ATOM_STORE:REPLACE", start);
 		}
 		throw new IllegalStateException("Should never reach here");
 	}
@@ -471,7 +444,6 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 	// TODO missing shardspace check, should be added?
 	@Override
 	public ImmutableList<AID> getNextCommitted(long logicalClock, int limit) {
-		long start = profiler.begin();
 		try (Cursor cursor = this.atoms.openCursor(null, null)) {
 			ImmutableList.Builder<AID> aids = ImmutableList.builder();
 			DatabaseEntry search = toPKey(PREFIX_COMMITTED, logicalClock + 1);
@@ -490,8 +462,6 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 			}
 
 			return aids.build();
-		} finally {
-			profiler.incrementFrom("ATOM_STORE:DISCOVER:SYNC", start);
 		}
 	}
 	@Override
@@ -582,8 +552,6 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 
 	// not used yet
 	private List<AID> getByShardChunkAndRange(int chunk, ShardRange range) throws DatabaseException {
-		long start = profiler.begin();
-
 		try {
 			long from = ShardSpace.fromChunk(chunk, ShardSpace.SHARD_CHUNK_HALF_RANGE) + range.getLow();
 			long to = from + range.getSpan();
@@ -591,14 +559,11 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 			return this.getByShardRange(from, to);
 		} catch (Exception ex) {
 			throw new DatabaseException(ex);
-		} finally {
-			profiler.incrementFrom("ATOM_STORE:GET_BY_SHARD_CHUNK_AND_RANGE", start);
 		}
 	}
 
 	// not used yet
 	private List<AID> getByShardRange(long from, long to) throws DatabaseException {
-		long start = profiler.begin();
 		try (SecondaryCursor cursor = this.duplicatedIndices.openCursor(null, null)) {
 			List<AID> aids = new ArrayList<>();
 			DatabaseEntry key = new DatabaseEntry(StoreIndex.from(SHARD_INDEX_PREFIX, Longs.toByteArray(from)));
@@ -624,14 +589,11 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 			return aids;
 		} catch (Exception ex) {
 			throw new DatabaseException(ex);
-		} finally {
-			profiler.incrementFrom("ATOM_STORE:GET_BY_SHARD_RANGE", start);
 		}
 	}
 
 	// not used yet
 	private List<AID> getByShard(long shard) throws DatabaseException {
-		long start = profiler.begin();
 		try (SecondaryCursor cursor = this.duplicatedIndices.openCursor(null, null)) {
 			List<AID> aids = new ArrayList<>();
 
@@ -649,8 +611,6 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 			return aids;
 		} catch (Exception ex) {
 			throw new DatabaseException(ex);
-		} finally {
-			profiler.incrementFrom("ATOM_STORE:GET_BY_SHARD", start);
 		}
 	}
 	BerkeleySearchCursor getNext(BerkeleySearchCursor cursor) {

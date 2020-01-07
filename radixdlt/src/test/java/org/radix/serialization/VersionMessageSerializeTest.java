@@ -11,6 +11,6 @@ public class VersionMessageSerializeTest extends SerializeMessageObject<VersionM
 	}
 
 	private static VersionMessage get() {
-		return new VersionMessage();
+		return new VersionMessage(1);
 	}
 }

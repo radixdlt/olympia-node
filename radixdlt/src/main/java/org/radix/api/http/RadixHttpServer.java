@@ -25,10 +25,10 @@ import org.radix.api.jsonrpc.RadixJsonRpcServer;
 import org.radix.api.services.AtomsService;
 import org.radix.api.services.InternalService;
 import org.radix.api.services.NetworkService;
-import org.radix.api.services.TestService;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.modules.Modules;
+import org.radix.network2.addressbook.AddressBook;
+import org.radix.network2.messaging.MessageCentral;
 import org.radix.properties.RuntimeProperties;
 import org.radix.shards.ShardSpace;
 import org.radix.universe.system.LocalSystem;
@@ -46,32 +46,47 @@ import java.util.concurrent.ConcurrentHashMap;
  * TODO: Document me!
  */
 public final class RadixHttpServer {
-    public static final int DEFAULT_PORT = 8080;
-    public static final String CONTENT_TYPE_JSON = "application/json";
+	public static final int DEFAULT_PORT = 8080;
+	public static final String CONTENT_TYPE_JSON = "application/json";
 
-    private static final Logger logger = Logging.getLogger("api");
+	private static final Logger logger = Logging.getLogger("api");
 
 	private final ConcurrentHashMap<RadixJsonRpcPeer, WebSocketChannel> peers;
 	private final AtomsService atomsService;
-    private final RadixJsonRpcServer jsonRpcServer;
-    private final InternalService internalService;
+	private final RadixJsonRpcServer jsonRpcServer;
+	private final InternalService internalService;
+	private final NetworkService networkService;
 	private final Universe universe;
 	private final JSONObject apiSerializedUniverse;
+	private final LocalSystem localSystem;
 	private final Serialization serialization;
 
-	public RadixHttpServer(LedgerEntryStore store, RadixEngineAtomProcessor radixEngineAtomProcessor, AtomToBinaryConverter atomToBinaryConverter, Universe universe, Serialization serialization) {
+	public RadixHttpServer(LedgerEntryStore store,
+	                       RadixEngineAtomProcessor radixEngineAtomProcessor,
+	                       AtomToBinaryConverter atomToBinaryConverter,
+	                       Universe universe,
+	                       MessageCentral messageCentral,
+	                       Serialization serialization,
+	                       RuntimeProperties properties,
+	                       LocalSystem localSystem,
+	                       AddressBook addressBook) {
 		this.universe = Objects.requireNonNull(universe);
 		this.serialization = Objects.requireNonNull(serialization);
 		this.apiSerializedUniverse = serialization.toJsonObject(this.universe, DsonOutput.Output.API);
+		this.localSystem = Objects.requireNonNull(localSystem);
 		this.peers = new ConcurrentHashMap<>();
 		this.atomsService = new AtomsService(store, radixEngineAtomProcessor, atomToBinaryConverter);
 		this.jsonRpcServer = new RadixJsonRpcServer(
-				serialization,
-				store,
-				atomsService,
-				AtomSchemas.get()
+			serialization,
+			store,
+			atomsService,
+			AtomSchemas.get(),
+			localSystem,
+			addressBook,
+			universe
 		);
-		this.internalService = InternalService.getInstance(store, radixEngineAtomProcessor);
+		this.internalService = new InternalService(messageCentral, store, radixEngineAtomProcessor, serialization, properties, universe);
+		this.networkService = new NetworkService(serialization, localSystem, addressBook);
 	}
 
     private Undertow server;
@@ -98,7 +113,7 @@ public final class RadixHttpServer {
         handler.add(
         	Methods.GET,
 			"/rpc",
-			Handlers.websocket(new RadixHttpWebsocketHandler( this, jsonRpcServer, peers, atomsService))
+			Handlers.websocket(new RadixHttpWebsocketHandler( this, jsonRpcServer, peers, atomsService, serialization))
 		);
 
         // add appropriate error handlers for meaningful error messages (undertow is silent by default)
@@ -145,16 +160,6 @@ public final class RadixHttpServer {
 
             respond(internalService.spamathon(iterations, batching, rate), exchange);
         }, handler);
-
-		addGetRoute("/api/test/newpeer", exchange -> {
-			String key = getParameter(exchange, "key").orElse(null);
-			String anchor = getParameter(exchange, "anchor").orElse("0");
-			String high = getParameter(exchange, "high").orElse(String.valueOf(ShardSpace.SHARD_CHUNK_RANGE - 1));
-			String low = getParameter(exchange, "low").orElse(String.valueOf(-ShardSpace.SHARD_CHUNK_RANGE));
-			String ip = getParameter(exchange, "ip").orElse(null);
-			String port = getParameter(exchange, "port").orElse("-1"); // Defaults to universe port
-			respond(TestService.getInstance().newPeer(key, anchor, high, low, ip, port), exchange);
-		}, handler);
 	}
 
     private void addTestRoutesTo(RoutingHandler handler) {
@@ -242,20 +247,20 @@ public final class RadixHttpServer {
 
     private void addRestNetworkRoutesTo(RoutingHandler handler) {
         addGetRoute("/api/network", exchange -> {
-            respond(NetworkService.getInstance().getNetwork(), exchange);
+            respond(this.networkService.getNetwork(), exchange);
         }, handler);
         addGetRoute("/api/network/peers/live", exchange
-                -> respond(NetworkService.getInstance().getLivePeers().toString(), exchange), handler);
+                -> respond(this.networkService.getLivePeers().toString(), exchange), handler);
         addGetRoute("/api/network/peers", exchange
-                -> respond(NetworkService.getInstance().getPeers().toString(), exchange), handler);
+                -> respond(this.networkService.getPeers().toString(), exchange), handler);
         addGetRoute("/api/network/peers/{id}", exchange
-                -> respond(NetworkService.getInstance().getPeer(getParameter(exchange, "id").orElse(null)), exchange), handler);
+                -> respond(this.networkService.getPeer(getParameter(exchange, "id").orElse(null)), exchange), handler);
 
     }
 
     private void addRestSystemRoutesTo(RoutingHandler handler) {
         addGetRoute("/api/system", exchange
-                -> respond(this.serialization.toJsonObject(LocalSystem.getInstance(), DsonOutput.Output.API), exchange), handler);
+                -> respond(this.serialization.toJsonObject(this.localSystem, DsonOutput.Output.API), exchange), handler);
     }
 
     // helper methods for responding to an exchange with various objects for readability

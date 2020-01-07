@@ -1,5 +1,6 @@
 package org.radix.network2.addressbook;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -12,12 +13,14 @@ import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.radixdlt.common.EUID;
 
+import com.radixdlt.universe.Universe;
 import org.radix.events.Events;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.network.Network;
+import org.radix.network.discovery.Whitelist;
 import org.radix.network2.transport.TransportInfo;
 import org.radix.network2.utils.Locking;
+import org.radix.properties.RuntimeProperties;
 import org.radix.universe.system.RadixSystem;
 
 /**
@@ -31,16 +34,20 @@ public class AddressBookImpl implements AddressBook {
 
 	private final PeerPersistence persistence;
 	private final Events events;
+	private final long recencyThreshold;
 
 	private final Lock peersLock = new ReentrantLock();
 	private final Map<EUID, Peer>          peersByNid  = new HashMap<>();
 	private final Map<TransportInfo, Peer> peersByInfo = new HashMap<>();
+	private final Whitelist whitelist;
 
 	@Inject
-	AddressBookImpl(PeerPersistence persistence, Events events) {
+	AddressBookImpl(PeerPersistence persistence, Events events, Universe universe, RuntimeProperties properties) {
 		super();
 		this.persistence = Objects.requireNonNull(persistence);
 		this.events = Objects.requireNonNull(events);
+		this.recencyThreshold = Objects.requireNonNull(universe).getPlanck();
+		this.whitelist = Whitelist.from(properties);
 
 		this.persistence.forEachPersistedPeer(peer -> {
 			this.peersByNid.put(peer.getNID(), peer);
@@ -146,7 +153,7 @@ public class AddressBookImpl implements AddressBook {
 
 	@Override
 	public Stream<Peer> recentPeers() {
-		return peers().filter(StandardFilters.recentlyActive());
+		return peers().filter(StandardFilters.recentlyActive(recencyThreshold));
 	}
 
 	@Override
@@ -261,11 +268,16 @@ public class AddressBookImpl implements AddressBook {
 	private boolean hostNotWhitelisted(TransportInfo ti) {
 		String host = ti.metadata().get("host");
 		if (host != null) {
-			if (!Network.getInstance().isWhitelisted(host)) {
+			if (!whitelist.isWhitelisted(host)) {
 				return true;
 			}
 		}
 		return false;
+	}
+
+	@Override
+	public void close() throws IOException {
+		this.persistence.close();
 	}
 }
 

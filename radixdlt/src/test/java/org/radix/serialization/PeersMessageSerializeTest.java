@@ -16,7 +16,7 @@ public class PeersMessageSerializeTest extends SerializeMessageObject<PeersMessa
 	}
 
 	private static PeersMessage get() {
-		PeersMessage pm = new PeersMessage();
+		PeersMessage pm = new PeersMessage(1);
 		Peer p1 = new PeerWithSystem(new RadixSystem());
 		Peer p2 = new PeerWithSystem(new RadixSystem());
 		Peer p3 = new PeerWithSystem(new RadixSystem());

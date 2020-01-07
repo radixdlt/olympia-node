@@ -1,5 +1,31 @@
 package org.radix.network2.addressbook;
 
+import com.google.inject.Inject;
+import com.google.inject.name.Named;
+import com.radixdlt.common.EUID;
+import com.radixdlt.universe.Universe;
+import org.radix.common.executors.Executor;
+import org.radix.common.executors.ScheduledExecutable;
+import org.radix.events.Events;
+import org.radix.logging.Logger;
+import org.radix.logging.Logging;
+import org.radix.network.Interfaces;
+import org.radix.network.discovery.BootstrapDiscovery;
+import org.radix.network.discovery.Whitelist;
+import org.radix.network.messages.GetPeersMessage;
+import org.radix.network.messages.PeerPingMessage;
+import org.radix.network.messages.PeerPongMessage;
+import org.radix.network.messages.PeersMessage;
+import org.radix.network.peers.events.PeerAvailableEvent;
+import org.radix.network2.messaging.MessageCentral;
+import org.radix.network2.transport.TransportException;
+import org.radix.properties.RuntimeProperties;
+import org.radix.time.Time;
+import org.radix.time.Timestamps;
+import org.radix.universe.system.LocalSystem;
+import org.radix.universe.system.SystemMessage;
+
+import java.security.SecureRandom;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -9,31 +35,8 @@ import java.util.Random;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import com.radixdlt.common.EUID;
-import org.radix.common.executors.ScheduledExecutable;
-import org.radix.events.Events;
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
-import org.radix.modules.Modules;
-import org.radix.modules.Plugin;
-import org.radix.modules.exceptions.ModuleException;
-import org.radix.network.discovery.BootstrapDiscovery;
-import org.radix.network.messages.GetPeersMessage;
-import org.radix.network.messages.PeerPingMessage;
-import org.radix.network.messages.PeerPongMessage;
-import org.radix.network.messages.PeersMessage;
-import org.radix.network.peers.events.PeerAvailableEvent;
-import org.radix.network2.messaging.MessageCentral;
-import org.radix.network2.transport.TransportException;
-import com.radixdlt.universe.Universe;
-import org.radix.time.Time;
-import org.radix.time.Timestamps;
-import org.radix.universe.system.LocalSystem;
-import org.radix.universe.system.SystemMessage;
 
-// FIXME: static dependency on Modules.get(Universe.class).getPlanck()
-// FIXME: static dependency on LocalSystem.getInstance().getNID()
-public class PeerManager extends Plugin {
+public class PeerManager {
 	private static final Logger log = Logging.getLogger("peermanager");
 
 	private final Random rand = new Random(); // No need for cryptographically secure here
@@ -60,11 +63,17 @@ public class PeerManager extends Plugin {
 
 	private final int peerMessageBatchSize;
 
+	private final SecureRandom rng;
+	private final EUID self;
+	private final Interfaces interfaces;
+	private final Whitelist whitelist;
+	private final LocalSystem localSystem;
+	private final Universe universe;
+
 	private Future<?> heartbeatPeersFuture;
 	private Future<?> peersBroadcastFuture;
 	private Future<?> peerProbeFuture;
 	private Future<?> discoverPeersFuture;
-
 
 	private class ProbeTask implements Runnable {
 		private LinkedList<Peer> peersToProbe = new LinkedList<>();
@@ -73,7 +82,7 @@ public class PeerManager extends Plugin {
 		@Override
 		public void run() {
 			try {
-				int numProbes = (int) (this.numPeers / TimeUnit.MILLISECONDS.toSeconds(Modules.get(Universe.class).getPlanck()));
+				int numProbes = (int) (this.numPeers / TimeUnit.MILLISECONDS.toSeconds(universe.getPlanck()));
 
 				if (numProbes == 0) {
 					numProbes = 16;
@@ -81,7 +90,7 @@ public class PeerManager extends Plugin {
 
 				if (peersToProbe.isEmpty()) {
 					addressbook.peers()
-						.filter(StandardFilters.standardFilter())
+						.filter(StandardFilters.standardFilter(self, interfaces, whitelist))
 						.forEachOrdered(peersToProbe::add);
 					this.numPeers = peersToProbe.size();
 				}
@@ -98,13 +107,29 @@ public class PeerManager extends Plugin {
 		}
 	}
 
-	PeerManager(PeerManagerConfiguration config, AddressBook addressbook, MessageCentral messageCentral, Events events, BootstrapDiscovery bootstrapDiscovery) {
+	@Inject
+	PeerManager(PeerManagerConfiguration config,
+	            AddressBook addressbook,
+	            MessageCentral messageCentral,
+	            Events events,
+	            BootstrapDiscovery bootstrapDiscovery,
+	            SecureRandom rng,
+	            @Named("self") EUID self,
+	            LocalSystem localSystem,
+	            Interfaces interfaces,
+	            RuntimeProperties properties, Universe universe) {
 		super();
 
 		this.addressbook = Objects.requireNonNull(addressbook);
 		this.messageCentral = Objects.requireNonNull(messageCentral);
 		this.events = Objects.requireNonNull(events);
 		this.bootstrapDiscovery = Objects.requireNonNull(bootstrapDiscovery);
+		this.rng = Objects.requireNonNull(rng);
+		this.self = Objects.requireNonNull(self);
+		this.localSystem = Objects.requireNonNull(localSystem);
+		this.interfaces = Objects.requireNonNull(interfaces);
+		this.universe = Objects.requireNonNull(universe);
+		this.whitelist = Whitelist.from(properties);
 
 		this.peersBroadcastIntervalMs = config.networkPeersBroadcastInterval(30000);
 		this.peersBroadcastDelayMs = config.networkPeersBroadcastDelay(60000);
@@ -123,39 +148,70 @@ public class PeerManager extends Plugin {
 		this.peerMessageBatchSize = config.networkPeersMessageBatchSize(64);
 
 		log.info(String.format("%s started, " +
-						"peersBroadcastInterval=%s, peersBroadcastDelay=%s, peersProbeInterval=%s, " +
-						"peersProbeDelay=%s, heartbeatPeersInterval=%s, heartbeatPeersDelay=%s, " +
-						"discoverPeersInterval=%s, discoverPeersDelay=%s, peerProbeFrequency=%s",
+				"peersBroadcastInterval=%s, peersBroadcastDelay=%s, peersProbeInterval=%s, " +
+				"peersProbeDelay=%s, heartbeatPeersInterval=%s, heartbeatPeersDelay=%s, " +
+				"discoverPeersInterval=%s, discoverPeersDelay=%s, peerProbeFrequency=%s",
 			this.getClass().getSimpleName(),
-				this.peersBroadcastIntervalMs, this.peersBroadcastDelayMs, this.peerProbeIntervalMs,
-				this.peerProbeDelayMs, this.heartbeatPeersIntervalMs, this.heartbeatPeersDelayMs,
-				this.discoverPeersIntervalMs, this.discoverPeersDelayMs, this.peerProbeFrequencyMs
+			this.peersBroadcastIntervalMs, this.peersBroadcastDelayMs, this.peerProbeIntervalMs,
+			this.peerProbeDelayMs, this.heartbeatPeersIntervalMs, this.heartbeatPeersDelayMs,
+			this.discoverPeersIntervalMs, this.discoverPeersDelayMs, this.peerProbeFrequencyMs
 		));
 	}
 
-	@Override
-	public void start_impl() throws ModuleException {
-		// Listen for messages
-		register(PeersMessage.class, this::handlePeersMessage);
-		register(GetPeersMessage.class, this::handleGetPeersMessage);
-		register(PeerPingMessage.class, this::handlePeerPingMessage);
-		register(PeerPongMessage.class, this::handlePeerPongMessage);
-		register(SystemMessage.class, this::handleHeartbeatPeersMessage);
-
-		// Tasks
-		heartbeatPeersFuture = scheduleAtFixedRate(scheduledExecutable(heartbeatPeersDelayMs, heartbeatPeersIntervalMs, TimeUnit.MILLISECONDS, this::heartbeatPeers));
-		peersBroadcastFuture = scheduleWithFixedDelay(scheduledExecutable(peersBroadcastDelayMs, peersBroadcastIntervalMs, TimeUnit.MILLISECONDS, this::peersHousekeeping));
-		peerProbeFuture = scheduleWithFixedDelay(scheduledExecutable(peerProbeDelayMs, peerProbeIntervalMs, TimeUnit.MILLISECONDS, new ProbeTask()));
-		discoverPeersFuture = scheduleWithFixedDelay(scheduledExecutable(discoverPeersDelayMs, discoverPeersIntervalMs, TimeUnit.MILLISECONDS, this::discoverPeers));
+	private Future<?> schedule(long initialDelayMillis, Runnable runnable) {
+		ScheduledExecutable executable = new ScheduledExecutable(initialDelayMillis, 0, TimeUnit.MILLISECONDS) {
+			@Override
+			public void execute() {
+				runnable.run();
+			}
+		};
+		Executor.getInstance().schedule(executable);
+		return executable.getFuture();
 	}
 
-	@Override
-	public void stop_impl() throws ModuleException {
-		unregister(PeersMessage.class);
-		unregister(GetPeersMessage.class);
-		unregister(PeerPingMessage.class);
-		unregister(PeerPongMessage.class);
-		unregister(SystemMessage.class);
+	private Future<?> scheduleAtFixedRate(long initialDelayMillis, long recurrentDelayMillis, Runnable runnable) {
+		ScheduledExecutable executable = new ScheduledExecutable(initialDelayMillis, recurrentDelayMillis, TimeUnit.MILLISECONDS) {
+			@Override
+			public void execute() {
+				runnable.run();
+			}
+		};
+		Executor.getInstance().scheduleAtFixedRate(executable);
+		return executable.getFuture();
+	}
+
+	private Future<?> scheduleWithFixedDelay(long initialDelayMillis, long recurrentDelayMillis, Runnable runnable) {
+		ScheduledExecutable executable = new ScheduledExecutable(initialDelayMillis, recurrentDelayMillis, TimeUnit.MILLISECONDS) {
+			@Override
+			public void execute() {
+				runnable.run();
+			}
+		};
+		Executor.getInstance().scheduleWithFixedDelay(executable);
+		return executable.getFuture();
+	}
+
+	public void start() {
+		// Listen for messages
+		messageCentral.addListener(PeersMessage.class, this::handlePeersMessage);
+		messageCentral.addListener(GetPeersMessage.class, this::handleGetPeersMessage);
+		messageCentral.addListener(PeerPingMessage.class, this::handlePeerPingMessage);
+		messageCentral.addListener(PeerPongMessage.class, this::handlePeerPongMessage);
+		messageCentral.addListener(SystemMessage.class, this::handleHeartbeatPeersMessage);
+
+		// Tasks
+		heartbeatPeersFuture = scheduleAtFixedRate(heartbeatPeersDelayMs, heartbeatPeersIntervalMs, this::heartbeatPeers);
+		peersBroadcastFuture = scheduleWithFixedDelay(peersBroadcastDelayMs, peersBroadcastIntervalMs, this::peersHousekeeping);
+		peerProbeFuture = scheduleWithFixedDelay(peerProbeDelayMs, peerProbeIntervalMs, new ProbeTask());
+		discoverPeersFuture = scheduleWithFixedDelay(discoverPeersDelayMs, discoverPeersIntervalMs, this::discoverPeers);
+	}
+
+	public void stop() {
+		messageCentral.removeListener(PeersMessage.class, this::handlePeersMessage);
+		messageCentral.removeListener(GetPeersMessage.class, this::handleGetPeersMessage);
+		messageCentral.removeListener(PeerPingMessage.class, this::handlePeerPingMessage);
+		messageCentral.removeListener(PeerPongMessage.class, this::handlePeerPongMessage);
+		messageCentral.removeListener(SystemMessage.class, this::handleHeartbeatPeersMessage);
 
 		heartbeatPeersFuture.cancel(true);
 		peersBroadcastFuture.cancel(true);
@@ -163,14 +219,9 @@ public class PeerManager extends Plugin {
 		discoverPeersFuture.cancel(true);
 	}
 
-	@Override
-	public String getName() {
-		return "Peer Manager";
-	}
-
 	private void heartbeatPeers() {
 		// System Heartbeat
-		SystemMessage msg = new SystemMessage();
+		SystemMessage msg = new SystemMessage(localSystem, this.universe.getMagic());
 		addressbook.recentPeers().forEachOrdered(peer -> {
 			try {
 				messageCentral.send(peer, msg);
@@ -187,7 +238,7 @@ public class PeerManager extends Plugin {
 	private void handlePeersMessage(Peer peer, PeersMessage peersMessage) {
 		List<Peer> peers = peersMessage.getPeers();
 		if (peers != null) {
-			EUID localNid = LocalSystem.getInstance().getNID();
+			EUID localNid = this.localSystem.getNID();
 			peers.stream()
 				.filter(Peer::hasSystem)
 				.filter(p -> !localNid.equals(p.getNID()))
@@ -199,11 +250,11 @@ public class PeerManager extends Plugin {
 		try {
 			// Deliver known Peers in its entirety, filtered on whitelist and activity
 			// Chunk the sending of Peers so that UDP can handle it
-			PeersMessage peersMessage = new PeersMessage();
+			PeersMessage peersMessage = new PeersMessage(this.universe.getMagic());
 			List<Peer> peers = addressbook.peers()
 				.filter(Peer::hasNID)
-				.filter(StandardFilters.standardFilter())
-				.filter(StandardFilters.recentlyActive())
+				.filter(StandardFilters.standardFilter(self, interfaces, whitelist))
+				.filter(StandardFilters.recentlyActive(universe.getPlanck()))
 				.collect(Collectors.toList());
 
 			for (Peer p : peers) {
@@ -215,7 +266,7 @@ public class PeerManager extends Plugin {
 				peersMessage.getPeers().add(p);
 				if (peersMessage.getPeers().size() == peerMessageBatchSize) {
 					messageCentral.send(peer, peersMessage);
-					peersMessage = new PeersMessage();
+					peersMessage = new PeersMessage(this.universe.getMagic());
 				}
 			}
 
@@ -231,7 +282,7 @@ public class PeerManager extends Plugin {
 		try {
 			long nonce = message.getNonce();
 			log.debug("peer.ping from " + peer + " with nonce '" + nonce + "'");
-			messageCentral.send(peer, new PeerPongMessage(nonce));
+			messageCentral.send(peer, new PeerPongMessage(nonce, localSystem, this.universe.getMagic()));
 			events.broadcast(new PeerAvailableEvent(peer));
 		} catch (Exception ex) {
 			log.error("peer.ping " + peer, ex);
@@ -264,7 +315,7 @@ public class PeerManager extends Plugin {
 				int index = rand.nextInt(peers.size());
 				Peer peer = peers.get(index);
 				try {
-					messageCentral.send(peer, new GetPeersMessage());
+					messageCentral.send(peer, new GetPeersMessage(this.universe.getMagic()));
 				} catch (TransportException ioex) {
 					log.info("Failed to request peer information from " + peer, ioex);
 				}
@@ -281,13 +332,13 @@ public class PeerManager extends Plugin {
 					return false;
 				}
 				if (!this.probes.containsKey(peer)) {
-					PeerPingMessage ping = new PeerPingMessage();
+					PeerPingMessage ping = new PeerPingMessage(rng.nextLong(), localSystem, this.universe.getMagic());
 
 					// Only wait for response if peer has a system, otherwise peer will be upgraded by pong message
 					long nonce = ping.getNonce();
 					if (peer.hasSystem()) {
 						this.probes.put(peer, nonce);
-						schedule(scheduledExecutable(peerProbeTimeoutMs, 0, TimeUnit.MILLISECONDS, () -> handleProbeTimeout(peer, nonce)));
+						schedule(peerProbeTimeoutMs, () -> handleProbeTimeout(peer, nonce));
 						log.debug("Probing "+peer+" with nonce '"+nonce+"'");
 					} else {
 						log.debug("Nudging "+peer);
@@ -316,8 +367,8 @@ public class PeerManager extends Plugin {
 
 	private void discoverPeers() {
 		// Probe all the bootstrap hosts so that they know about us
-		GetPeersMessage msg = new GetPeersMessage();
-		bootstrapDiscovery.discover(StandardFilters.standardFilter()).stream()
+		GetPeersMessage msg = new GetPeersMessage(this.universe.getMagic());
+		bootstrapDiscovery.discover(this.addressbook, StandardFilters.standardFilter(self, interfaces, whitelist)).stream()
 			.map(addressbook::peer)
 			.forEachOrdered(peer -> {
 				probe(peer);

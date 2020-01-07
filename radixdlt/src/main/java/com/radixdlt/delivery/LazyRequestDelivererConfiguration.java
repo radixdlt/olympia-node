@@ -1,5 +1,6 @@
 package com.radixdlt.delivery;
 
+import com.google.inject.Provides;
 import org.radix.properties.RuntimeProperties;
 
 /**
@@ -12,6 +13,7 @@ public interface LazyRequestDelivererConfiguration {
 
 	int requestTimeoutSeconds(int defaultValue);
 
+	@Provides
 	static LazyRequestDelivererConfiguration fromRuntimeProperties(RuntimeProperties properties) {
 		return new LazyRequestDelivererConfiguration() {
 			@Override

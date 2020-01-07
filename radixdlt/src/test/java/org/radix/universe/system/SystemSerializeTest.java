@@ -14,7 +14,6 @@ public class SystemSerializeTest extends SerializeMessageObject<RadixSystem> {
 	private static RadixSystem getSystem() {
 		RadixSystem newSystem = new RadixSystem();
 		newSystem.setPlanck(101);
-		newSystem.setShards(new ShardSpace(10000, 20000));
 		return newSystem;
 	}
 }

@@ -18,7 +18,7 @@ public class AtomSubmitMessageSerializeTest extends SerializeMessageObject<AtomS
 			ECKeyPair key = new ECKeyPair();
 			Atom atom = new Atom();
 			atom.sign(key);
-			return new AtomSubmitMessage(atom);
+			return new AtomSubmitMessage(atom, 1);
 		} catch (CryptoException e) {
 			throw new IllegalStateException("Can't create ParticleConflict", e);
 		}

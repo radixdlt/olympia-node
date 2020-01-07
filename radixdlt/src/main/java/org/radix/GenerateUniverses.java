@@ -5,15 +5,15 @@ import com.google.common.collect.Lists;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.common.Atom;
-import org.apache.commons.cli.CommandLine;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.json.JSONObject;
 import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.atommodel.message.MessageParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atomos.RRI;
+import org.json.JSONObject;
+import org.radix.utils.IOUtils;
 import org.radix.validation.ConstraintMachineValidationException;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.utils.Offset;
@@ -22,24 +22,21 @@ import com.radixdlt.keys.Keys;
 import org.radix.exceptions.ValidationException;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.modules.Modules;
-import org.radix.properties.PersistedProperties;
 import org.radix.properties.RuntimeProperties;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.universe.Universe.UniverseType;
-import org.radix.utils.IOUtils;
 import com.radixdlt.utils.RadixConstants;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.Bytes;
 
 import java.io.IOException;
-import java.security.SecureRandom;
 import java.security.Security;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 public final class GenerateUniverses
@@ -50,43 +47,29 @@ public final class GenerateUniverses
 
 	private final Serialization serialization;
 	private final boolean standalone;
+	private final RuntimeProperties properties;
 	private final ECKeyPair universeKey;
 	private final ECKeyPair nodeKey;
 
-	public GenerateUniverses(String[] arguments, boolean standalone) throws Exception {
+	public GenerateUniverses(String[] arguments, boolean standalone, RuntimeProperties properties) throws Exception {
 		this.standalone = standalone;
+		this.properties = Objects.requireNonNull(properties);
 		this.serialization = Serialization.getDefault();
 
 		if (standalone) {
 			Security.insertProviderAt(new BouncyCastleProvider(), 1);
-
-			Modules.put(SecureRandom.class, new SecureRandom());
-			Modules.put(Serialization.class, this.serialization);
-
-			try {
-				JSONObject runtimeConfigurationJSON = new JSONObject();
-				if (Radix.class.getResourceAsStream("/runtime_options.json") != null)
-					runtimeConfigurationJSON = new JSONObject(IOUtils.toString(Radix.class.getResourceAsStream("/runtime_options.json")));
-
-				RuntimeProperties	runtimeProperties = new RuntimeProperties(runtimeConfigurationJSON, arguments);
-				Modules.put(RuntimeProperties.class, runtimeProperties);
-				Modules.put(PersistedProperties.class, runtimeProperties);
-				Modules.put(CommandLine.class, runtimeProperties.getCommandLine());
-			} catch (Exception ex) {
-				throw new IOException("Could not load runtime properties and set command ling arguments", ex);
-			}
 		}
 
-		String universeKeyPath = Modules.get(RuntimeProperties.class).get("universe.key.path", "universe.ks");
+		String universeKeyPath = this.properties.get("universe.key.path", "universe.ks");
 		universeKey = Keys.readKey(universeKeyPath, "universe", "RADIX_UNIVERSE_KEYSTORE_PASSWORD", "RADIX_UNIVERSE_KEY_PASSWORD");
 
 		// TODO want to be able to specify multiple nodes to get the genesis mass as bootstrapping
-		String nodeKeyPath = Modules.get(RuntimeProperties.class).get("node.key.path", "node.ks");
+		String nodeKeyPath = this.properties.get("node.key.path", "node.ks");
 		nodeKey = Keys.readKey(nodeKeyPath, "node", "RADIX_NODE_KEYSTORE_PASSWORD", "RADIX_NODE_KEY_PASSWORD");
 	}
 
-	public GenerateUniverses() throws Exception {
-		this(new String[] { "universe.key" }, false);
+	public GenerateUniverses(RuntimeProperties properties) throws Exception {
+		this(new String[] { "universe.key" }, false, properties);
 	}
 
 	public List<Universe> generateUniverses() throws Exception {
@@ -99,13 +82,13 @@ public final class GenerateUniverses
 
 		List<Universe> universes = new ArrayList<>();
 
-		int devPlanckPeriodSeconds = Modules.get(RuntimeProperties.class).get("dev.planck", 60);
+		int devPlanckPeriodSeconds = this.properties.get("dev.planck", 60);
 		long devPlanckPeriodMillis = TimeUnit.SECONDS.toMillis(devPlanckPeriodSeconds);
 
-		int prodPlanckPeriodSeconds = Modules.get(RuntimeProperties.class).get("prod.planck", 3600);
+		int prodPlanckPeriodSeconds = this.properties.get("prod.planck", 3600);
 		long prodPlanckPeriodMillis = TimeUnit.SECONDS.toMillis(prodPlanckPeriodSeconds);
 
-		long universeTimestampSeconds = Modules.get(RuntimeProperties.class).get("universe.timestamp", 1551225600);
+		long universeTimestampSeconds = this.properties.get("universe.timestamp", 1551225600);
 		long universeTimestampMillis = TimeUnit.SECONDS.toMillis(universeTimestampSeconds);
 
 		universes.add(buildUniverse(10000, "Radix Mainnet", "The Radix public Universe", UniverseType.PRODUCTION, universeTimestampMillis, prodPlanckPeriodMillis));
@@ -226,7 +209,23 @@ public final class GenerateUniverses
 	}
 
 	public static void main(String[] arguments) throws Exception {
-		GenerateUniverses generateUniverses = new GenerateUniverses(arguments, true);
+		RuntimeProperties properties = loadProperties(arguments);
+
+		GenerateUniverses generateUniverses = new GenerateUniverses(arguments, true, properties);
 		generateUniverses.generateUniverses();
 	}
+
+	private static RuntimeProperties loadProperties(String[] arguments) throws IOException {
+		try {
+			JSONObject runtimeConfigurationJSON = new JSONObject();
+			if (Radix.class.getResourceAsStream("/runtime_options.json") != null)
+				runtimeConfigurationJSON = new JSONObject(IOUtils.toString(Radix.class.getResourceAsStream("/runtime_options.json")));
+
+			return new RuntimeProperties(runtimeConfigurationJSON, arguments);
+		} catch (Exception ex) {
+			throw new IOException("while loading runtime properties", ex);
+		}
+	}
+
+
 }

@@ -14,8 +14,6 @@ import java.util.Set;
 
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.modules.Service;
-import org.radix.modules.exceptions.ModuleException;
 
 public class Interfaces
 {
@@ -25,16 +23,6 @@ public class Interfaces
 	{
 		LAN, WAN
 	}
-
-/*	private static Interfaces instance = null;
-
-	public Interfaces getInstance()
-	{
-		if (instance == null)
-			instance = new Interfaces();
-
-		return instance;
-	}*/
 
 	private Map<Domain, Set<InetAddress>> addresses = new HashMap<Domain, Set<InetAddress>>();
 
@@ -64,31 +52,6 @@ public class Interfaces
 		return false;
 	}
 
-	public Domain getInterfaceAddressDomain(InetAddress address)
-	{
-		if (address.isLoopbackAddress() || address.isLinkLocalAddress() ||
-			address.isAnyLocalAddress() || address.isSiteLocalAddress())
-    		return Domain.LAN;
-    	else
-    		return Domain.WAN;
-	}
-
-	public boolean hasInterfaceAddress(InetAddress address)
-	{
-		if ((addresses.containsKey(Domain.LAN) && addresses.get(Domain.LAN).contains(address)) ||
-			(addresses.containsKey(Domain.WAN) && addresses.get(Domain.WAN).contains(address)))
-			return true;
-
-		return false;
-	}
-
-	public List<InetAddress> getInterfaceAddresses(Domain domain)
-	{
-		if (addresses.containsKey(domain))
-			return new ArrayList<InetAddress>(addresses.get(domain));
-
-		return Collections.emptyList();
-	}
 
 	public boolean addInterfaceAddress(InetAddress address)
 	{
@@ -103,30 +66,6 @@ public class Interfaces
     		addresses.putIfAbsent(Domain.WAN, new HashSet<InetAddress>());
     		return addresses.get(Domain.WAN).add(address);
     	}
-	}
-
-	public List<InetAddress> getAllInterfaceAddresses()
-	{
-		List<InetAddress> interfaceAddresses = new ArrayList<InetAddress>();
-
-		try
-		{
-			Enumeration<NetworkInterface> networkInterfaces = NetworkInterface.getNetworkInterfaces();
-
-			while (networkInterfaces.hasMoreElements())
-				interfaceAddresses.addAll(Collections.list(networkInterfaces.nextElement().getInetAddresses()));
-		}
-		catch (Exception ex)
-		{
-			networklog.error("Could not get interface addresses", ex);
-		}
-
-	    return interfaceAddresses;
-	}
-
-	public List<InetAddress> getInterfaceAddresses(NetworkInterface networkInterface)
-	{
-		return Collections.list(networkInterface.getInetAddresses());
 	}
 
 	public List<InetAddress> getInterfaceInformation(NetworkInterface networkInterface) throws SocketException

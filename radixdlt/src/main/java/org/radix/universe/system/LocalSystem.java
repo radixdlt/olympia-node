@@ -1,123 +1,41 @@
 package org.radix.universe.system;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableList;
+import com.radixdlt.crypto.CryptoException;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.keys.Keys;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.DsonOutput.Output;
+import com.radixdlt.serialization.Serialization;
+import com.radixdlt.serialization.SerializationException;
+import com.radixdlt.serialization.SerializerId2;
+import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.Bytes;
-import java.io.IOException;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.function.LongSupplier;
-
-import com.radixdlt.common.AID;
 import org.radix.Radix;
-import com.radixdlt.utils.Offset;
 import org.radix.common.executors.Executor;
 import org.radix.common.executors.ScheduledExecutable;
-import com.radixdlt.utils.Pair;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.Hash;
-import com.radixdlt.keys.Keys;
-import com.radixdlt.crypto.CryptoException;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.modules.Modules;
 import org.radix.network2.transport.DynamicTransportMetadata;
 import org.radix.network2.transport.TransportInfo;
 import org.radix.network2.transport.udp.PublicInetAddress;
 import org.radix.network2.transport.udp.UDPConstants;
 import org.radix.properties.RuntimeProperties;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.Serialization;
-import com.radixdlt.serialization.SerializerId2;
-import org.radix.shards.ShardSpace;
-import com.radixdlt.universe.Universe;
 import org.radix.utils.SystemMetaData;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableList;
+import java.io.IOException;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
 import static com.radixdlt.serialization.MapHelper.mapOf;
 
 @SerializerId2("api.local_system")
 // FIXME reimplement localsystem as an interface, extract persistence to elsewhere
 public final class LocalSystem extends RadixSystem
 {
-	private static final Logger log = Logging.getLogger ();
-
-	private static LocalSystem instance = null;
-
-	// FIXME: This is a pretty horrible way of ensuring unit tests are stable,
-	// as freeMemory() can return varying numbers between calls.
-	// This is adjusted via reflection in the unit tests to be something that
-	// returns a constant.
-	private static LongSupplier freeMemory = () -> Runtime.getRuntime().freeMemory();
-	private static LongSupplier maxMemory = () -> Runtime.getRuntime().maxMemory();
-	private static LongSupplier totalMemory = () -> Runtime.getRuntime().totalMemory();
-
-	@VisibleForTesting
-	public static synchronized void reset() {
-		LocalSystem.instance = null;
-	}
-
-	public static synchronized LocalSystem getInstance()
-	{
-		if (LocalSystem.instance == null)
-		{
-			ECKeyPair nodeKey = null;
-
-			try
-			{
-				String nodeKeyPath = Modules.get(RuntimeProperties.class).get("node.key.path", "node.ks");
-				nodeKey = Keys.readKey(nodeKeyPath, "node", "RADIX_NODE_KEYSTORE_PASSWORD", "RADIX_NODE_KEY_PASSWORD");
-			}
-			catch (IOException | CryptoException ex)
-			{
-				throw new IllegalStateException(ex);
-			}
-
-			if (Modules.isAvailable(SystemMetaData.class) == true && Modules.get(SystemMetaData.class).has("system")) {
-				try {
-					byte[] systemBytes = Modules.get(SystemMetaData.class).get("system", Bytes.EMPTY_BYTES);
-					instance = Modules.get(Serialization.class).fromDson(systemBytes, LocalSystem.class);
-
-					if (LocalSystem.instance.getKeyPair().equals(nodeKey) == false) // TODO what happens if NODE_KEY has changed?  Dump loggables?  Dump DB?
-						log.warn("Node key has changed from "+instance.getKeyPair().getUID()+" to "+nodeKey.getUID());
-
-					LocalSystem.instance.setKeyPair(nodeKey);
-				} catch (IOException ex) {
-					log.error("Could not load persisted system state from SystemMetaData", ex);
-				}
-			}
-
-			if (LocalSystem.instance == null) {
-				LocalSystem.instance = new LocalSystem(
-					nodeKey,
-					Radix.AGENT, Radix.AGENT_VERSION, Radix.PROTOCOL_VERSION,
-					Modules.get(RuntimeProperties.class).get("shards.range", ShardSpace.SHARD_CHUNK_RANGE)
-				);
-			}
-
-			if (Modules.isAvailable(SystemMetaData.class) == true)
-			{
-				Executor.getInstance().scheduleAtFixedRate(new ScheduledExecutable(1, 1, TimeUnit.SECONDS)
-				{
-					@Override
-					public void execute()
-					{
-						Modules.ifAvailable(SystemMetaData.class, smc -> {
-							try {
-								byte[] systemBytes = Modules.get(Serialization.class).toDson(getInstance(), Output.PERSIST);
-								smc.put("system", systemBytes);
-							} catch (IOException e) {
-								log.error("Could not persist system state", e);
-							}
-						});
-					}
-				});
-			}
-		}
-
-		return LocalSystem.instance;
-	}
+	private static final Logger log = Logging.getLogger();
 
 	private ECKeyPair keyPair;
 
@@ -129,25 +47,14 @@ public final class LocalSystem extends RadixSystem
 		this.keyPair = new ECKeyPair();
 	}
 
-	public LocalSystem(ECKeyPair key, String agent, int agentVersion, int protocolVersion, long shards)
+	public LocalSystem(ECKeyPair key, String agent, int agentVersion, int protocolVersion, ImmutableList<TransportInfo> supportedTransports)
 	{
-		super(key.getPublicKey(), agent, agentVersion, protocolVersion, new ShardSpace(key.getUID().getShard(), shards), defaultTransports());
+		super(key.getPublicKey(), agent, agentVersion, protocolVersion, supportedTransports);
 		this.keyPair = key;
-	}
-
-	@Override
-	public void setShards(ShardSpace shards)
-	{
-		super.setShards(shards);
 	}
 
 	public ECKeyPair getKeyPair() {
 		return this.keyPair;
-	}
-
-	private void setKeyPair(ECKeyPair keyPair) {
-		this.keyPair = keyPair;
-		super.setKey(keyPair.getPublicKey());
 	}
 
 	// Property "ledger" - 1 getter
@@ -155,18 +62,11 @@ public final class LocalSystem extends RadixSystem
 	@JsonProperty("ledger")
 	@DsonOutput(Output.API)
 	Map<String, Object> getJsonLedger() {
-		SystemMetaData smd = Modules.get(SystemMetaData.class);
+		SystemMetaData smd = SystemMetaData.getInstance();
 
 		Map<String, Object> latency = mapOf(
 			"path", smd.get("ledger.latency.path", 0),
 			"persist", smd.get("ledger.latency.persist", 0)
-		);
-
-		Map<String, Object> faults = mapOf(
-			"tears", smd.get("ledger.faults.tears", 0),
-			"assists", smd.get("ledger.faults.assists", 0),
-			"stitched", smd.get("ledger.faults.stitched", 0),
-			"failed", smd.get("ledger.faults.failed", 0)
 		);
 
 		return mapOf(
@@ -178,8 +78,7 @@ public final class LocalSystem extends RadixSystem
 			"storingPerShard", smd.get("ledger.storingPerShard", 0),
 			"storing.peak", smd.get("ledger.storing.peak", 0),
 			"checksum", smd.get("ledger.checksum", 0),
-			"latency", latency,
-			"faults", faults
+			"latency", latency
 		);
 	}
 
@@ -188,9 +87,9 @@ public final class LocalSystem extends RadixSystem
 	@DsonOutput(Output.API)
 	Map<String, Object> getJsonGlobal() {
 		return mapOf(
-			"stored", Modules.get(SystemMetaData.class).get("ledger.network.stored", 0),
-			"processing", Modules.get(SystemMetaData.class).get("ledger.network.processing", 0),
-			"storing", Modules.get(SystemMetaData.class).get("ledger.network.storing", 0)
+			"stored", SystemMetaData.getInstance().get("ledger.network.stored", 0),
+			"processing", SystemMetaData.getInstance().get("ledger.network.processing", 0),
+			"storing", SystemMetaData.getInstance().get("ledger.network.storing", 0)
 		);
 	}
 
@@ -198,7 +97,7 @@ public final class LocalSystem extends RadixSystem
 	@JsonProperty("events")
 	@DsonOutput(Output.API)
 	Map<String, Object> getJsonEvents() {
-		SystemMetaData smd = Modules.get(SystemMetaData.class);
+		SystemMetaData smd = SystemMetaData.getInstance();
 
 		Map<String, Object> processed = mapOf(
 			"synchronous", smd.get("events.processed.synchronous", 0L),
@@ -220,29 +119,18 @@ public final class LocalSystem extends RadixSystem
 	@DsonOutput(Output.API)
 	Map<String, Object> getJsonMessages() {
 		Map<String, Object> outbound = mapOf(
-				"sent", Modules.get(SystemMetaData.class).get("messages.outbound.sent", 0),
-				"processed", Modules.get(SystemMetaData.class).get("messages.outbound.processed", 0),
-				"pending", Modules.get(SystemMetaData.class).get("messages.outbound.pending", 0),
-				"aborted", Modules.get(SystemMetaData.class).get("messages.outbound.aborted", 0));
+				"sent", SystemMetaData.getInstance().get("messages.outbound.sent", 0),
+				"processed", SystemMetaData.getInstance().get("messages.outbound.processed", 0),
+				"pending", SystemMetaData.getInstance().get("messages.outbound.pending", 0),
+				"aborted", SystemMetaData.getInstance().get("messages.outbound.aborted", 0));
 		Map<String, Object> inbound = mapOf(
-				"processed", Modules.get(SystemMetaData.class).get("messages.inbound.processed", 0),
-				"received", Modules.get(SystemMetaData.class).get("messages.inbound.received", 0),
-				"pending", Modules.get(SystemMetaData.class).get("messages.inbound.pending", 0),
-				"discarded", Modules.get(SystemMetaData.class).get("messages.inbound.discarded", 0));
+				"processed", SystemMetaData.getInstance().get("messages.inbound.processed", 0),
+				"received", SystemMetaData.getInstance().get("messages.inbound.received", 0),
+				"pending", SystemMetaData.getInstance().get("messages.inbound.pending", 0),
+				"discarded", SystemMetaData.getInstance().get("messages.inbound.discarded", 0));
 		return mapOf(
 				"inbound", inbound,
 				"outbound", outbound);
-	}
-
-	// Property "memory" - 1 getter
-	// No obvious improvements here
-	@JsonProperty("memory")
-	@DsonOutput(Output.API)
-	Map<String, Object> getJsonMemory() {
-		return mapOf(
-				"free", freeMemory.getAsLong(),
-				"total", totalMemory.getAsLong(),
-				"max", maxMemory.getAsLong());
 	}
 
 	// Property "processors" - 1 getter
@@ -253,17 +141,60 @@ public final class LocalSystem extends RadixSystem
 		return Runtime.getRuntime().availableProcessors();
 	}
 
+	public static LocalSystem restoreOrCreate(RuntimeProperties properties, Universe universe) {
+		String nodeKeyPath = properties.get("node.key.path", "node.ks");
+		ECKeyPair nodeKey = loadNodeKey(nodeKeyPath);
+		LocalSystem localSystem;
+
+		// if system has been persisted
+		if (SystemMetaData.getInstanceOptional().map(meta -> meta.has("system") ).orElse(false)) {
+			byte[] systemBytes = SystemMetaData.getInstance().get("system", Bytes.EMPTY_BYTES);
+			try {
+				localSystem = Serialization.getDefault().fromDson(systemBytes, LocalSystem.class);
+			} catch (SerializationException e) {
+				throw new IllegalStateException("while restoring local instance", e);
+			}
+		} else {
+			localSystem = new LocalSystem(nodeKey, Radix.AGENT, Radix.AGENT_VERSION, Radix.PROTOCOL_VERSION, defaultTransports(universe));
+		}
+
+		// setup background checkpoint task to persist instance into SystemMetaData
+		Executor.getInstance().scheduleAtFixedRate(new ScheduledExecutable(1, 1, TimeUnit.SECONDS) {
+			@Override
+			public void execute() {
+				SystemMetaData.ifPresent(smc -> {
+					try {
+						byte[] systemBytes = Serialization.getDefault().toDson(localSystem, Output.PERSIST);
+						smc.put("system", systemBytes);
+					} catch (IOException e) {
+						log.error("Could not persist system state", e);
+					}
+				});
+			}
+		});
+
+		return localSystem;
+	}
+
 	// FIXME: *Really* need a better way of configuring this other than hardcoding here
 	// Should also have the option of overriding "port", rather than always using universe port
-	private static ImmutableList<TransportInfo> defaultTransports() {
+	private static ImmutableList<TransportInfo> defaultTransports(Universe universe) {
 		return ImmutableList.of(
 			TransportInfo.of(
 				UDPConstants.UDP_NAME,
 				DynamicTransportMetadata.of(
 					UDPConstants.METADATA_UDP_HOST, PublicInetAddress.getInstance()::toString,
-					UDPConstants.METADATA_UDP_PORT, () -> Integer.toString(Modules.get(Universe.class).getPort())
+					UDPConstants.METADATA_UDP_PORT, () -> Integer.toString(universe.getPort())
 				)
 			)
 		);
+	}
+
+	private static ECKeyPair loadNodeKey(String nodeKeyPath) {
+		try {
+			return Keys.readKey(nodeKeyPath, "node", "RADIX_NODE_KEYSTORE_PASSWORD", "RADIX_NODE_KEY_PASSWORD");
+		} catch (IOException | CryptoException ex) {
+			throw new IllegalStateException("while loading node key", ex);
+		}
 	}
 }

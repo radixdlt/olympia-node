@@ -4,22 +4,20 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
-import org.junit.After;
+import com.radixdlt.universe.Universe;
 import org.junit.Before;
 import org.junit.Test;
 import org.powermock.reflect.Whitebox;
 import org.radix.events.Events;
-import org.radix.modules.Modules;
 import org.radix.network2.transport.StaticTransportMetadata;
 import org.radix.network2.transport.TransportInfo;
+import org.radix.properties.RuntimeProperties;
 import org.radix.time.Time;
 import org.radix.time.Timestamps;
 import org.radix.universe.system.RadixSystem;
 
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.common.EUID;
-import com.radixdlt.serialization.Serialization;
-import com.radixdlt.universe.Universe;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
@@ -54,19 +52,9 @@ public class AddressBookImplTest {
 			this.broadcastEventCount.addAndGet(abevent.peers().size());
 			return null;
 		}).when(this.events).broadcast(any());
-		this.addressbook = new AddressBookImpl(this.persistence, this.events);
-
-		// Ideally this wouldn't be necessary
 		Universe universe = mock(Universe.class);
-		doReturn(86400L * 1000L).when(universe).getPlanck(); // 1 day
-		Modules.put(Universe.class, universe);
-		Modules.put(Serialization.class, Serialization.getDefault());
-	}
-
-	@After
-	public void tearDown() throws Exception {
-		Modules.remove(Universe.class);
-		Modules.remove(Serialization.class);
+		when(universe.getPlanck()).thenReturn(86400L * 1000L);
+		this.addressbook = new AddressBookImpl(this.persistence, this.events, universe, mock(RuntimeProperties.class));
 	}
 
 	@Test

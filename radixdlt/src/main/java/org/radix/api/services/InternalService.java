@@ -8,18 +8,14 @@ import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.Bytes;
 
-import java.util.List;
-
 import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
 
 import org.json.JSONObject;
 import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.atomos.RRIParticle;
-import org.radix.atoms.messages.AtomSubmitMessage;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atommodel.unique.UniqueParticle;
@@ -29,45 +25,39 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.CryptoException;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.modules.Modules;
-import org.radix.network2.addressbook.AddressBook;
-import org.radix.network2.addressbook.Peer;
 import org.radix.network2.messaging.MessageCentral;
 import org.radix.properties.RuntimeProperties;
 
 import org.radix.time.Time;
-import org.radix.universe.system.LocalSystem;
-import org.radix.utils.SystemProfiler;
 
 /**
  * API which is used for internal testing and should not be included in release to users
  */
-public class InternalService {
+public final class InternalService {
 	private static final Logger log = Logging.getLogger();
-	private LedgerEntryStore store;
-	private RadixEngineAtomProcessor radixEngineAtomProcessor;
-	private static InternalService INTERNAL_SERVICE;
-	private static Serialization serialization = Serialization.getDefault();
-
-	public static InternalService getInstance(LedgerEntryStore ledger, RadixEngineAtomProcessor radixEngineAtomProcessor) {
-		if (INTERNAL_SERVICE == null) {
-			INTERNAL_SERVICE = new InternalService(ledger, radixEngineAtomProcessor);
-		}
-		return INTERNAL_SERVICE;
-	}
+	private final MessageCentral messageCentral;
+	private final LedgerEntryStore store;
+	private final RadixEngineAtomProcessor radixEngineAtomProcessor;
+	private final Serialization serialization;
+	private final RuntimeProperties properties;
+	private final Universe universe;
 
 	private static boolean spamming = false;
 
 	// Executor for prepare/store
 	private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
-	private InternalService(LedgerEntryStore store, RadixEngineAtomProcessor radixEngineAtomProcessor) {
+	public InternalService(MessageCentral messageCentral, LedgerEntryStore store, RadixEngineAtomProcessor radixEngineAtomProcessor, Serialization serialization, RuntimeProperties properties, Universe universe) {
+		this.messageCentral = messageCentral;
 		this.store = store;
 		this.radixEngineAtomProcessor = radixEngineAtomProcessor;
+		this.serialization = serialization;
+		this.properties = properties;
+		this.universe = universe;
 	}
 
-	private static class Spammer implements Runnable {
-		private final int nonceBits = Modules.get(RuntimeProperties.class).get("test.nullatom.junk_size", 40);
+	private class Spammer implements Runnable {
+		private final int nonceBits;
 
 		private final RadixEngineAtomProcessor radixEngineAtomProcessor;
 		private final ECKeyPair owner;
@@ -76,15 +66,16 @@ public class InternalService {
 		private final int     batching;
 		private final int     rate;
 
-		private static final Random random = new Random();
+		private final Random random = new Random();
 
-		public Spammer(RadixEngineAtomProcessor radixEngineAtomProcessor, ECKeyPair owner, int iterations, int batching, int rate) {
+		public Spammer(RadixEngineAtomProcessor radixEngineAtomProcessor, ECKeyPair owner, int iterations, int batching, int rate, int nonceBits) {
 			this.radixEngineAtomProcessor = radixEngineAtomProcessor;
 			this.owner = owner;
 			this.iterations = iterations;
 			this.rate = rate;
 			this.batching = Math.max(1, batching);
-			this.account = RadixAddress.from(Modules.get(Universe.class), owner.getPublicKey());
+			this.account = RadixAddress.from(universe, owner.getPublicKey());
+			this.nonceBits = nonceBits;
 		}
 
 		private byte[] generateNonce(int randomBits) {
@@ -122,41 +113,21 @@ public class InternalService {
 						long sliceStart = System.currentTimeMillis();
 
 						for (int i = 0; i < this.rate; i++) {
-							long start = SystemProfiler.getInstance().begin();
+							Atom atom = new Atom(Time.currentTimestamp(), ImmutableMap.of("magic", "0xdeadbeef"));
 
-							try {
-								Atom atom = new Atom(Time.currentTimestamp(), ImmutableMap.of("magic", "0xdeadbeef"));
-
-								for (int b = 0; b < this.batching; b++) {
-									byte[] nonce = generateNonce(nonceBits);
-									String rriName = nonce != null ? Bytes.toHexString(nonce) : "hi";
-									RRI rri = RRI.of(this.account, rriName);
-									RRIParticle rriParticle = new RRIParticle(rri);
-									UniqueParticle unique = new UniqueParticle(rriName, this.account, getRandomLong());
-									atom.addParticleGroupWith(rriParticle, Spin.DOWN, unique, Spin.UP);
-								}
-
-								atom.sign(this.owner);
-
-								JSONObject jsonAtom = serialization.toJsonObject(atom, DsonOutput.Output.WIRE);
-
-								if (LocalSystem.getInstance().getShards().intersects(atom.getShards()) == true) {
-									radixEngineAtomProcessor.process(jsonAtom, Optional.empty());
-								} else {
-									List<Peer> peers = Modules.get(AddressBook.class).recentPeers().collect(Collectors.toList());
-									for (Peer peer : peers) {
-										if (peer.hasSystem() && !peer.getNID().equals(LocalSystem.getInstance().getNID()) && peer.getSystem().getShards().intersects(atom.getShards())) {
-//											if (!org.radix.universe.System.getInstance().isSynced(peer.getSystem())) // TODO put this back in
-//												continue;
-
-											Modules.get(MessageCentral.class).send(peer, new AtomSubmitMessage(atom));
-											break;
-										}
-									}
-								}
-							} finally {
-								SystemProfiler.getInstance().incrementFrom("SPAMATHON:SUBMIT", start);
+							for (int b = 0; b < this.batching; b++) {
+								byte[] nonce = generateNonce(nonceBits);
+								String rriName = nonce != null ? Bytes.toHexString(nonce) : "hi";
+								RRI rri = RRI.of(this.account, rriName);
+								RRIParticle rriParticle = new RRIParticle(rri);
+								UniqueParticle unique = new UniqueParticle(rriName, this.account, getRandomLong());
+								atom.addParticleGroupWith(rriParticle, Spin.DOWN, unique, Spin.UP);
 							}
+
+							atom.sign(this.owner);
+
+							JSONObject jsonAtom = serialization.toJsonObject(atom, DsonOutput.Output.WIRE);
+							radixEngineAtomProcessor.process(jsonAtom, Optional.empty());
 
 							remainingIterations--;
 							if (remainingIterations <= 0) {
@@ -195,7 +166,7 @@ public class InternalService {
 	public JSONObject spamathon(String iterations, String batching, String rate) {
 		JSONObject result = new JSONObject();
 
-		if (spamming && Modules.get(RuntimeProperties.class).get("atoms.spam.multiple", false)) {
+		if (spamming && this.properties.get("atoms.spam.multiple", false)) {
 			throw new RuntimeException();
 		}
 		if (iterations == null) {
@@ -210,13 +181,14 @@ public class InternalService {
 		if (Integer.decode(rate) < 1) {
 			throw new RuntimeException("Rate is invalid");
 		}
-		if (Integer.decode(rate) > Modules.get(RuntimeProperties.class).get("atoms.spam.max_rate", 1000)) {
-			Integer maxRate = Modules.get(RuntimeProperties.class).get("atoms.spam.max_rate", 1000);
+		if (Integer.decode(rate) > this.properties.get("atoms.spam.max_rate", 1000)) {
+			Integer maxRate = this.properties.get("atoms.spam.max_rate", 1000);
 			throw new RuntimeException("Rate is too high - Maximum rate is " + maxRate);
 		}
 
 		try {
-			Thread spammerThread = new Thread(new Spammer(radixEngineAtomProcessor, new ECKeyPair(), Integer.decode(iterations), batching == null ? 1 : Integer.decode(batching), Integer.decode(rate)));
+			int nonceBits = this.properties.get("test.nullatom.junk_size", 40);
+			Thread spammerThread = new Thread(new Spammer(radixEngineAtomProcessor, new ECKeyPair(), Integer.decode(iterations), batching == null ? 1 : Integer.decode(batching), Integer.decode(rate), nonceBits));
 			spammerThread.setDaemon(true);
 			spammerThread.setName("Spammer " + System.currentTimeMillis());
 			spammerThread.start();

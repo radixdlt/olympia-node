@@ -8,8 +8,8 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
-import org.radix.modules.Modules;
 import org.radix.network2.messaging.InboundMessage;
 import org.radix.network2.transport.SendResult;
 import org.radix.network2.transport.TransportControl;
@@ -17,9 +17,7 @@ import org.radix.network2.transport.TransportOutboundConnection;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.radixdlt.universe.Universe;
 import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
 
 public class NettyUDPTransportImplTest {
 
@@ -31,9 +29,7 @@ public class NettyUDPTransportImplTest {
 
 	@Before
 	public void setup() {
-		Universe universe = mock(Universe.class);
-		doReturn(30000).when(universe).getPort();
-		Modules.put(Universe.class, universe);
+		PublicInetAddress.configure(null, 30000);
 
 		transport1 = createTransport("127.0.0.1", 12345);
 		transport2 = createTransport("127.0.0.1", 23456);
@@ -46,23 +42,25 @@ public class NettyUDPTransportImplTest {
 	public void teardown() throws IOException, InterruptedException {
 		transport2.close();
 		transport1.close();
-		Modules.remove(Universe.class);
 		Thread.sleep(500);
 	}
 
 	@Test
+	@Ignore
 	public void testThroughputSmallPacket() throws InterruptedException, ExecutionException, IOException {
 		// Approximate size of AtomBroadcastMessage
 		testThroughput("Small", 112, 200, 30);
 	}
 
 	@Test
+	@Ignore
 	public void testThroughputMediumPacket() throws InterruptedException, ExecutionException, IOException {
 		// Approximate size of a basic test universe
 		testThroughput("Medium", 3600, 100, 30);
 	}
 
 	@Test
+	@Ignore
 	public void testThroughputLargePacket() throws InterruptedException, ExecutionException, IOException {
 		// Largest packet supported
 		testThroughput("Large", UDPConstants.MAX_PACKET_LENGTH - 9, 4, 30);

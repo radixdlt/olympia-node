@@ -13,7 +13,6 @@ import com.radixdlt.serialization.DsonOutput.Output;
 
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.modules.Modules;
 import org.radix.network.Interfaces;
 import org.radix.network.messaging.Message;
 import org.radix.network.messaging.Message.Direction;
@@ -31,7 +30,6 @@ import org.radix.universe.system.LocalSystem;
 import org.radix.universe.system.RadixSystem;
 import org.radix.universe.system.SystemMessage;
 import org.radix.utils.SystemMetaData;
-import org.radix.utils.SystemProfiler;
 import org.xerial.snappy.Snappy;
 
 /*
@@ -39,33 +37,33 @@ import org.xerial.snappy.Snappy;
  * separated out so that we can check if all the functionality here is
  * required, and remove the stuff we don't want to keep.
  */
-//FIXME: Optional dependency on Modules.get(SystemMetaData.class) for system metadata
-//FIXME: Optional dependency on Modules.get(MessageProfiler.class) for profiling
-//FIXME: Optional dependency on Modules.get(AddressBook.class) for profiling
-//FIXME: Optional dependency on Modules.get(Interfaces.class) for keeping track of network interfaces
-// FIXME: Dependency on LocalSystem.getInstance() for signing key
 class MessageDispatcher {
 	private static final Logger log = Logging.getLogger("messaging");
 
 	private final long messageTtlMs;
 	private final Serialization serialization;
 	private final TimeSupplier timeSource;
+	private final LocalSystem localSystem;
+	private final Interfaces interfaces;
+	private final AddressBook addressBook;
 
-	MessageDispatcher(MessageCentralConfiguration config, Serialization serialization, TimeSupplier timeSource) {
+	MessageDispatcher(MessageCentralConfiguration config, Serialization serialization, TimeSupplier timeSource, LocalSystem localSystem, Interfaces interfaces, AddressBook addressBook) {
 		this.messageTtlMs = config.messagingTimeToLive(30) * 1000L;
 		this.serialization = serialization;
 		this.timeSource = timeSource;
+		this.localSystem = localSystem;
+		this.interfaces = interfaces;
+		this.addressBook = addressBook;
 	}
 
 	SendResult send(TransportManager transportManager, final MessageEvent outboundMessage) {
-		long start = SystemProfiler.getInstance().begin();
 		final Message message = outboundMessage.message();
 		final Peer peer = outboundMessage.peer();
 
 		if (timeSource.currentTime() - message.getTimestamp() > messageTtlMs) {
 			String msg = String.format("%s: TTL to %s has expired", message.getClass().getName(), peer);
 			log.warn(msg);
-			Modules.ifAvailable(SystemMetaData.class, a -> a.increment("messages.outbound.aborted"));
+			SystemMetaData.ifPresent( a -> a.increment("messages.outbound.aborted"));
 			return SendResult.failure(new IOException(msg));
 		}
 
@@ -75,7 +73,7 @@ class MessageDispatcher {
 			if (message instanceof SignedMessage) {
 				SignedMessage signedMessage = (SignedMessage) message;
 				if (signedMessage.getSignature() == null) {
-					signedMessage.sign(LocalSystem.getInstance().getKeyPair());
+					signedMessage.sign(this.localSystem.getKeyPair());
 				}
 			}
 
@@ -88,8 +86,6 @@ class MessageDispatcher {
 			String msg = String.format("%s: Sending to  %s failed", message.getClass().getName(), peer);
 			log.error(msg, ex);
 			return SendResult.failure(new IOException(msg, ex));
-		} finally {
-			SystemProfiler.getInstance().incrementFrom("MESSAGING:SEND:"+message.getCommand(), start);
 		}
 	}
 
@@ -99,10 +95,10 @@ class MessageDispatcher {
 
 		long currentTime = timeSource.currentTime();
 		peer.setTimestamp(Timestamps.ACTIVE, currentTime);
-		Modules.ifAvailable(SystemMetaData.class, a -> a.increment("messages.inbound.received"));
+		SystemMetaData.ifPresent(a -> a.increment("messages.inbound.received"));
 
 		if (currentTime - message.getTimestamp() > messageTtlMs) {
-			Modules.ifAvailable(SystemMetaData.class, a -> a.increment("messages.inbound.discarded"));
+			SystemMetaData.ifPresent(a -> a.increment("messages.inbound.discarded"));
 			return;
 		}
 
@@ -111,7 +107,7 @@ class MessageDispatcher {
 				SystemMessage systemMessage = (SystemMessage) message;
 				RadixSystem system = systemMessage.getSystem();
 
-				peer = Modules.get(AddressBook.class).updatePeerSystem(peer, system);
+				peer = this.addressBook.updatePeerSystem(peer, system);
 
 				if (system.getNID() == null || EUID.ZERO.equals(system.getNID())) {
 					peer.ban(String.format("%s:%s gave null NID", peer, message.getClass().getName()));
@@ -123,19 +119,19 @@ class MessageDispatcher {
 					return;
 				}
 
-				if (system.getNID().equals(LocalSystem.getInstance().getNID())) {
+				if (system.getNID().equals(this.localSystem.getNID())) {
 					peer.ban("Message from self");
 					TransportInfo ti = inboundMessage.transportInfo();
 					if (ti != null) {
 						String host = ti.metadata().get("host");
 						if (host != null) {
-							Modules.ifAvailable(Interfaces.class, i -> addInterfaceAddress(i, host)); // TODO what about DNS lookups?
+							addInterfaceAddress(interfaces, host); // TODO what about DNS lookups?
 						}
 					}
 					return;
 				}
 
-				if (NetworkLegacyPatching.checkPeerBanned(peer, system.getNID(), timeSource)) {
+				if (NetworkLegacyPatching.checkPeerBanned(peer, system.getNID(), timeSource, this.addressBook)) {
 					return;
 				}
 			}
@@ -144,21 +140,15 @@ class MessageDispatcher {
 			return;
 		}
 
-		long start = SystemProfiler.getInstance().begin();
-		try {
-			final Peer fp = peer; // Awkward
-			listeners.messageReceived(peer, message);
-			Modules.ifAvailable(SystemMetaData.class, a -> a.increment("messages.inbound.processed"));
-		} finally {
-			SystemProfiler.getInstance().incrementFrom("MESSAGING:IN:" + message.getCommand(), start);
-			SystemProfiler.getInstance().incrementFrom("MESSAGING:IN", start);
-		}
+		final Peer fp = peer; // Awkward
+		listeners.messageReceived(peer, message);
+		SystemMetaData.ifPresent( a -> a.increment("messages.inbound.processed"));
 	}
 
 	private SendResult updateStatistics(SendResult result) {
-		Modules.ifAvailable(SystemMetaData.class, a -> a.increment("messages.outbound.processed"));
+		SystemMetaData.ifPresent( a -> a.increment("messages.outbound.processed"));
 		if (result.isComplete()) {
-			Modules.ifAvailable(SystemMetaData.class, a -> a.increment("messages.outbound.sent"));
+			SystemMetaData.ifPresent( a -> a.increment("messages.outbound.sent"));
 		}
 		return result;
 	}

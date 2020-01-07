@@ -8,8 +8,8 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
-import org.radix.modules.Modules;
 import org.radix.network2.messaging.InboundMessage;
 import org.radix.network2.transport.SendResult;
 import org.radix.network2.transport.TransportControl;
@@ -28,12 +28,12 @@ public class NettyTCPTransportTest {
 
 	private AtomicLong packetCounter;
 	private AtomicLong byteCounter;
+	private Universe universe;
 
 	@Before
 	public void setup() {
-		Universe universe = mock(Universe.class);
+		universe = mock(Universe.class);
 		doReturn(30000).when(universe).getPort();
-		Modules.put(Universe.class, universe);
 
 		transport1 = createTransport("127.0.0.1", 12345);
 		transport2 = createTransport("127.0.0.1", 23456);
@@ -46,23 +46,26 @@ public class NettyTCPTransportTest {
 	public void teardown() throws IOException, InterruptedException {
 		transport2.close();
 		transport1.close();
-		Modules.remove(Universe.class);
+		universe = null;
 		Thread.sleep(500);
 	}
 
 	@Test
+	@Ignore
 	public void testThroughputSmallPacket() throws InterruptedException, ExecutionException, IOException {
 		// Approximate size of AtomBroadcastMessage
 		testThroughput("Small", 112, 1000, 30);
 	}
 
 	@Test
+	@Ignore
 	public void testThroughputMediumPacket() throws InterruptedException, ExecutionException, IOException {
 		// Approximate size of a basic test universe
 		testThroughput("Medium", 3600, 100, 30);
 	}
 
 	@Test
+	@Ignore
 	public void testThroughputLargePacket() throws InterruptedException, ExecutionException, IOException {
 		// Largest packet supported
 		testThroughput("Large", TCPConstants.MAX_PACKET_LENGTH, 4, 30);

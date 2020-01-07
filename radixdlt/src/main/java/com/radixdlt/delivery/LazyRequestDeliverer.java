@@ -13,6 +13,7 @@ import com.radixdlt.store.LedgerEntryStoreView;
 import com.radixdlt.consensus.tempo.Scheduler;
 import com.radixdlt.delivery.messages.DeliveryRequestMessage;
 import com.radixdlt.delivery.messages.DeliveryResponseMessage;
+import com.radixdlt.universe.Universe;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.network2.addressbook.Peer;
@@ -49,6 +50,7 @@ public final class LazyRequestDeliverer {
 	private final Scheduler scheduler;
 	private final MessageCentral messageCentral;
 	private final LedgerEntryStoreView storeView;
+	private final Universe universe;
 
 	private final BlockingQueue<AtomDeliveryRequest> requestQueue;
 	private final SimpleThreadPool<AtomDeliveryRequest> requestThreadPool;
@@ -58,11 +60,13 @@ public final class LazyRequestDeliverer {
 		Scheduler scheduler,
 		MessageCentral messageCentral,
 		LedgerEntryStoreView storeView,
-		LazyRequestDelivererConfiguration configuration
+		LazyRequestDelivererConfiguration configuration,
+		Universe universe
 	) {
 		this.scheduler = Objects.requireNonNull(scheduler);
 		this.messageCentral = Objects.requireNonNull(messageCentral);
 		this.storeView = Objects.requireNonNull(storeView);
+		this.universe = Objects.requireNonNull(universe);
 
 		this.requestTimeoutSeconds = configuration.requestTimeoutSeconds(DEFAULT_REQUEST_TIMEOUT_SECONDS);
 
@@ -90,7 +94,7 @@ public final class LazyRequestDeliverer {
 			.map(storeView::get)
 			.filter(Optional::isPresent)
 			.map(Optional::get)
-			.map(DeliveryResponseMessage::new)
+			.map(ledgerEntry -> new DeliveryResponseMessage(ledgerEntry, this.universe.getMagic()))
 			.forEach(response -> messageCentral.send(request.getPeer(), response));
 	}
 
@@ -161,7 +165,7 @@ public final class LazyRequestDeliverer {
 			log.debug("Requesting delivery of " + aids.size() + " aids from " + peer);
 		}
 
-		DeliveryRequestMessage request = new DeliveryRequestMessage(aids);
+		DeliveryRequestMessage request = new DeliveryRequestMessage(aids,this.universe.getMagic());
 		messageCentral.send(peer, request);
 
 		// TODO aggregate cancellables and cancel on stop

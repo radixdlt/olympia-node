@@ -11,6 +11,6 @@ public class PeerPongMessageSerializeTest extends SerializeMessageObject<PeerPon
 	}
 
 	private static PeerPongMessage get() {
-		return new PeerPongMessage();
+		return new PeerPongMessage(0L, getLocalSystem(), 1);
 	}
 }
