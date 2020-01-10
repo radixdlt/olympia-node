@@ -113,6 +113,8 @@ public class RadixEngineAtomProcessor implements Application {
 						process();
 					} catch (InterruptedException e) {
 						log.error("Starting of RadixEngineAtomProcessor failed", e);
+						// Re-interrupt, as we are not directly dealing with this.
+						Thread.currentThread().interrupt();
 					}
 				});
 				this.thread.start();
