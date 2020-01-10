@@ -7,6 +7,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.network2.transport.TransportMetadata;
@@ -20,6 +21,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.ChannelHandler.Sharable;
 
 /**
  * A {@link TransportControl} interface for TCP transport.
@@ -33,22 +35,38 @@ import io.netty.channel.socket.SocketChannel;
 final class TCPTransportControlImpl implements TCPTransportControl {
 	private static final Logger log = Logging.getLogger("transport.tcp");
 
+	@Sharable
 	private static class TCPConnectionHandlerChannelInbound extends ChannelInboundHandlerAdapter {
 		private final Object lock = new Object();
+		private final AtomicInteger channelCount = new AtomicInteger();
 		private final Map<String, LinkedList<SocketChannel>> channelMap = Maps.newHashMap();
+		private final int maxChannelCount;
+
+		TCPConnectionHandlerChannelInbound(int maxChannelCount) {
+			this.maxChannelCount = maxChannelCount;
+		}
 
 		@Override
 		public void channelActive(ChannelHandlerContext ctx) throws Exception {
 			Channel ch = ctx.channel();
 			if (ch instanceof SocketChannel) {
-				addChannel((SocketChannel) ch);
+				if (this.channelCount.incrementAndGet() < this.maxChannelCount) {
+					addChannel((SocketChannel) ch);
+				} else {
+					// Too many channels, we just close and exit.
+					ctx.close();
+					return;
+				}
 			}
+			super.channelActive(ctx);
+			return;
 		}
 
 		@Override
 		public void channelInactive(ChannelHandlerContext ctx) throws Exception {
 			Channel ch = ctx.channel();
 			if (ch instanceof SocketChannel) {
+				this.channelCount.decrementAndGet();
 				synchronized (lock) {
 					cleanChannels("Remove");
 				}
@@ -144,10 +162,10 @@ final class TCPTransportControlImpl implements TCPTransportControl {
 	private final TCPTransportOutboundConnectionFactory outboundFactory;
 	private final NettyTCPTransport transport;
 
-	TCPTransportControlImpl(TCPTransportOutboundConnectionFactory outboundFactory, NettyTCPTransport transport) {
+	TCPTransportControlImpl(TCPConfiguration config, TCPTransportOutboundConnectionFactory outboundFactory, NettyTCPTransport transport) {
 		this.outboundFactory = outboundFactory;
 		this.transport = transport;
-		this.handler = new TCPConnectionHandlerChannelInbound();
+		this.handler = new TCPConnectionHandlerChannelInbound(config.maxChannelCount(1024));
 	}
 
 	@Override

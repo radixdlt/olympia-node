@@ -54,6 +54,7 @@ public final class InternalService {
 		private final int     batching;
 		private final int     rate;
 
+		// This is safe, as it is just used to generate random nonces for testing
 		private final Random random = new Random();
 
 		public Spammer(RadixEngineAtomProcessor radixEngineAtomProcessor, ECKeyPair owner, int iterations, int batching, int rate, int nonceBits) {

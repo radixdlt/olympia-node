@@ -75,7 +75,9 @@ public class RadixEngineAtomProcessor implements Application {
 				try {
 					radixEngine.store(atom, new AtomEventListener() {
 					});
-					parkedAtoms.remove(atom);
+					if (!parkedAtoms.remove(atom)) {
+						log.error("Removing unknown atom in RadixEngineAtomProcessor.process()");
+					}
 				} catch (Exception e) {
 					parkedListeners.computeIfPresent(atom, (a, listener) -> {
 						listener.onError(e);

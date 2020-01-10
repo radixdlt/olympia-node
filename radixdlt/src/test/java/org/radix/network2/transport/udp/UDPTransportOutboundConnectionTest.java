@@ -23,7 +23,6 @@ import java.util.concurrent.ExecutionException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assume.assumeTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
@@ -42,7 +41,7 @@ public class UDPTransportOutboundConnectionTest {
 	private byte addressFormatFlag;
 	private Exception exception;
 
-	@Parameters(name = "{index}: Source address: {0}, Destination address {1} points, AddressFormatFlag {2}")
+	@Parameters(name = "{index}: Source address: {0}, Destination address {1} points, AddressFormatFlag {2}, Exception {3}")
 	public static Iterable<Object[]> data() {
 		return Arrays.asList(new Object[][]{
 				//testing success
@@ -114,13 +113,14 @@ public class UDPTransportOutboundConnectionTest {
 
 	@Test
 	public void sendFailureTest() throws ExecutionException, InterruptedException, IOException {
-		assumeTrue(exception != null);
-		try (UDPTransportOutboundConnection udpTransportOutboundConnection = new UDPTransportOutboundConnection(channel, metadata)) {
-			CompletableFuture<SendResult> completableFuture = udpTransportOutboundConnection.send(testMessage.getBytes());
-			channelFuture.setFailure(exception);
-			SendResult result = completableFuture.get();
-			assertThat(result.isComplete()).isEqualTo(false);
-			assertThat(result.getThrowable().getMessage()).isEqualTo(exception.getMessage());
+		if (exception != null) {
+			try (UDPTransportOutboundConnection udpTransportOutboundConnection = new UDPTransportOutboundConnection(channel, metadata)) {
+				CompletableFuture<SendResult> completableFuture = udpTransportOutboundConnection.send(testMessage.getBytes());
+				channelFuture.setFailure(exception);
+				SendResult result = completableFuture.get();
+				assertThat(result.isComplete()).isEqualTo(false);
+				assertThat(result.getThrowable().getMessage()).isEqualTo(exception.getMessage());
+			}
 		}
 	}
 }
