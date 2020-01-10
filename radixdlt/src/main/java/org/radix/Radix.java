@@ -134,7 +134,7 @@ public final class Radix
 		// start API services
 		AtomToBinaryConverter atomToBinaryConverter = globalInjector.getInjector().getInstance(AtomToBinaryConverter.class);
 		LedgerEntryStore store = globalInjector.getInjector().getInstance(LedgerEntryStore.class);
-		RadixHttpServer httpServer = new RadixHttpServer(store, atomProcessor, atomToBinaryConverter, universe, messageCentral, serialization, properties, localSystem, addressBook);
+		RadixHttpServer httpServer = new RadixHttpServer(store, atomProcessor, atomToBinaryConverter, universe, serialization, properties, localSystem, addressBook);
 		httpServer.start(properties);
 
 		log.info("Node '" + localSystem.getNID() + "' started successfully");

@@ -46,7 +46,7 @@ public class RadixJsonRpcPeer {
 		this.callback = callback;
 
 		this.atomStatusEpic = new AtomStatusEpic(atomsService, json -> callback.accept(this, json.toString()));
-		this.submitAtomAndSubscribeEpic = new SubmitAtomAndSubscribeEpic(atomsService, atomSchema, serialization,
+		this.submitAtomAndSubscribeEpic = new SubmitAtomAndSubscribeEpic(atomsService, atomSchema,
 			atomJson -> callback.accept(this, atomJson.toString()));
 		this.atomsSubscribeEpic = new AtomsSubscribeEpic(atomsService, serialization,
 			queryJson -> new AtomQuery(RadixAddress.from(queryJson.getString("address"))), atomJson -> callback.accept(this, atomJson.toString()));

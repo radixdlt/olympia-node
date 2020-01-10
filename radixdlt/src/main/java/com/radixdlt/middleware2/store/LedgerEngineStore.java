@@ -20,7 +20,6 @@ import org.radix.logging.Logging;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 public class LedgerEngineStore implements EngineStore {
     private static final Logger log = Logging.getLogger("middleware2.store");

@@ -1,7 +1,6 @@
 package org.radix.universe.system;
 
 import org.radix.serialization.SerializeMessageObject;
-import org.radix.shards.ShardSpace;
 
 /**
  * Check serialization of org.radix.universe.system.System

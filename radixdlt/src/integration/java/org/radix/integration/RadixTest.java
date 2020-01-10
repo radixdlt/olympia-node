@@ -23,8 +23,6 @@ public class RadixTest
 	private static LocalSystem localSystem;
 	private static Universe universe;
 
-	private long clock = 100L; // Arbitrary starting point. Must be larger than number of atoms in genesis.
-
 	@BeforeClass
 	public static void startRadixTest() throws Exception {
 		TestSetupUtils.installBouncyCastleProvider();

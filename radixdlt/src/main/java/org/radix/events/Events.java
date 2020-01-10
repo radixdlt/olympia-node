@@ -161,7 +161,6 @@ public final class Events
 							continue;
 
 						long start = System.nanoTime();
-						long executed = System.nanoTime();
 
 						try
 						{
@@ -182,8 +181,6 @@ public final class Events
 							{
 								for (EventListener<?> listener : listeners.get(Syncronicity.ASYNCRONOUS))
 								{
-									long listenerStart = System.nanoTime();
-
 									try
 									{
 										((org.radix.events.EventListener<Event>)listener).process(event);

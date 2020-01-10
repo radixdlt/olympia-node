@@ -28,9 +28,7 @@ import org.radix.api.services.NetworkService;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.network2.addressbook.AddressBook;
-import org.radix.network2.messaging.MessageCentral;
 import org.radix.properties.RuntimeProperties;
-import org.radix.shards.ShardSpace;
 import org.radix.universe.system.LocalSystem;
 
 import java.io.IOException;
@@ -65,7 +63,6 @@ public final class RadixHttpServer {
 	                       RadixEngineAtomProcessor radixEngineAtomProcessor,
 	                       AtomToBinaryConverter atomToBinaryConverter,
 	                       Universe universe,
-	                       MessageCentral messageCentral,
 	                       Serialization serialization,
 	                       RuntimeProperties properties,
 	                       LocalSystem localSystem,
@@ -85,7 +82,7 @@ public final class RadixHttpServer {
 			addressBook,
 			universe
 		);
-		this.internalService = new InternalService(messageCentral, store, radixEngineAtomProcessor, serialization, properties, universe);
+		this.internalService = new InternalService(radixEngineAtomProcessor, serialization, properties, universe);
 		this.networkService = new NetworkService(serialization, localSystem, addressBook);
 	}
 

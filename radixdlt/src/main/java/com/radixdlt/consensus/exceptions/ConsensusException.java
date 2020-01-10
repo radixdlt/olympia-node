@@ -1,7 +1,5 @@
 package com.radixdlt.consensus.exceptions;
 
-import com.radixdlt.consensus.Consensus;
-
 /**
  * Generic runtime exception in a {@link Consensus}
  */

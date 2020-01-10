@@ -1,7 +1,6 @@
 package org.radix.events;
 
 import org.radix.common.Syncronicity;
-import org.radix.events.Event.EventPriority;
 
 public interface EventListener<T extends Event>
 {

@@ -2,9 +2,6 @@ package org.radix.serialization;
 
 import org.radix.GenerateUniverses;
 import com.radixdlt.universe.Universe;
-import org.radix.properties.RuntimeProperties;
-
-import static org.mockito.Mockito.mock;
 
 /**
  * Serialization for Universe to JSON.

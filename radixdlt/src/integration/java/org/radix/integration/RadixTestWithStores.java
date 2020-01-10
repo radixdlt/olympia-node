@@ -1,7 +1,6 @@
 package org.radix.integration;
 
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.common.EUID;
 import com.radixdlt.consensus.tempo.Application;
 import com.radixdlt.consensus.tempo.Scheduler;
 import com.radixdlt.consensus.tempo.Tempo;
@@ -37,8 +36,6 @@ public class RadixTestWithStores extends RadixTest
 		this.messageCentral = injector.getInjector().getInstance(MessageCentral.class);
 		this.addressBook = injector.getInjector().getInstance(AddressBook.class);
 
-		EUID self = getLocalSystem().getNID();
-
 		store = injector.getInjector().getInstance(LedgerEntryStore.class);
 		tempo = new Tempo(
 			mock(Application.class),
@@ -54,13 +51,24 @@ public class RadixTestWithStores extends RadixTest
 
 	@After
 	public void afterEachRadixTest() throws IOException {
-		tempo.close();
-		store.close();
-		store.reset();
-		messageCentral.close();
-		addressBook.close();
+		// Null checks to better handle case where @Before throws
+		if (tempo != null) {
+			tempo.close();
+		}
+		if (store != null) {
+			store.close();
+			store.reset();
+		}
+		if (messageCentral != null) {
+			messageCentral.close();
+		}
+		if (addressBook != null) {
+			addressBook.close();
+		}
 
-		this.dbEnv.stop();
+		if (this.dbEnv != null) {
+			this.dbEnv.stop();
+		}
 
 		dbEnv = null;
 		store = null;

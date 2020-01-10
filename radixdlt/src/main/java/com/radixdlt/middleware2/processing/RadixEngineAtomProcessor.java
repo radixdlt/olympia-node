@@ -32,7 +32,9 @@ import java.util.concurrent.TimeUnit;
 public class RadixEngineAtomProcessor implements Application {
 	private static final Logger log = Logging.getLogger("middleware2.atomProcessor");
 
-	private boolean interrupted;
+	private volatile boolean interrupted;
+	private final Object threadLock = new Object();
+	private Thread thread;
 
 	private final Consensus consensus;
 	private final LedgerEntryStore store;
@@ -102,19 +104,40 @@ public class RadixEngineAtomProcessor implements Application {
 	}
 
 	public void start(Universe universe) {
-		initGenesis(universe);
-		new Thread(() -> {
-			try {
-				process();
-			} catch (InterruptedException e) {
-				log.error("Starting of RadixEngineAtomProcessor failed", e);
+		synchronized (this.threadLock) {
+			if (this.thread == null) {
+				initGenesis(universe);
+				this.interrupted = false;
+				this.thread = new Thread(() -> {
+					try {
+						process();
+					} catch (InterruptedException e) {
+						log.error("Starting of RadixEngineAtomProcessor failed", e);
+						// Re-interrupt, as we are not directly dealing with this.
+						Thread.currentThread().interrupt();
+					}
+				});
+				this.thread.start();
 			}
-		}).start();
+		}
 	}
 
 	public void stop() {
-		this.store.close();
-		interrupted = true;
+		synchronized (this.threadLock) {
+			if (this.thread != null) {
+				this.interrupted = true;
+				this.store.close();
+				try {
+					this.thread.interrupt();
+					this.thread.join();
+				} catch (InterruptedException e) {
+					// Ignore and re-interrupt. Someone else will have to deal with it
+					Thread.currentThread().interrupt();
+				} finally {
+					this.thread = null;
+				}
+			}
+		}
 	}
 
 	private void initGenesis(Universe universe) {
