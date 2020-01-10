@@ -4,7 +4,6 @@ import java.util.Objects;
 import java.util.concurrent.PriorityBlockingQueue;
 
 import com.google.inject.Singleton;
-import org.radix.events.Events;
 import org.radix.network2.TimeSupplier;
 import org.radix.network2.transport.FirstMatchTransportManager;
 import org.radix.properties.RuntimeProperties;
@@ -12,7 +11,6 @@ import org.radix.time.Time;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.TypeLiteral;
-import com.radixdlt.serialization.Serialization;
 
 /**
  * Guice configuration for {@link MessageCentral} that includes a UDP

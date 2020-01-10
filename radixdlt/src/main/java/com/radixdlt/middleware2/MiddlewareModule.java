@@ -4,7 +4,6 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
-import com.google.inject.TypeLiteral;
 import com.radixdlt.atommodel.message.MessageParticleConstraintScrypt;
 import com.radixdlt.atommodel.tokens.TokensConstraintScrypt;
 import com.radixdlt.atommodel.unique.UniqueParticleConstraintScrypt;

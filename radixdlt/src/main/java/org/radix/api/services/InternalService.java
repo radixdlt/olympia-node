@@ -4,15 +4,11 @@ import com.radixdlt.common.Atom;
 import com.radixdlt.middleware2.processing.RadixEngineAtomProcessor;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.Bytes;
 
 import java.util.Optional;
 import java.util.Random;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
 import org.json.JSONObject;
 import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.atomos.RRIParticle;
@@ -25,7 +21,6 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.CryptoException;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.network2.messaging.MessageCentral;
 import org.radix.properties.RuntimeProperties;
 
 import org.radix.time.Time;
@@ -35,8 +30,6 @@ import org.radix.time.Time;
  */
 public final class InternalService {
 	private static final Logger log = Logging.getLogger();
-	private final MessageCentral messageCentral;
-	private final LedgerEntryStore store;
 	private final RadixEngineAtomProcessor radixEngineAtomProcessor;
 	private final Serialization serialization;
 	private final RuntimeProperties properties;
@@ -44,12 +37,7 @@ public final class InternalService {
 
 	private static boolean spamming = false;
 
-	// Executor for prepare/store
-	private final ExecutorService executor = Executors.newSingleThreadExecutor();
-
-	public InternalService(MessageCentral messageCentral, LedgerEntryStore store, RadixEngineAtomProcessor radixEngineAtomProcessor, Serialization serialization, RuntimeProperties properties, Universe universe) {
-		this.messageCentral = messageCentral;
-		this.store = store;
+	public InternalService(RadixEngineAtomProcessor radixEngineAtomProcessor, Serialization serialization, RuntimeProperties properties, Universe universe) {
 		this.radixEngineAtomProcessor = radixEngineAtomProcessor;
 		this.serialization = serialization;
 		this.properties = properties;

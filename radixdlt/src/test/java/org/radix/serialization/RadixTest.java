@@ -10,8 +10,6 @@ import org.radix.time.NtpService;
 import org.radix.universe.system.LocalSystem;
 import org.radix.utils.SystemMetaData;
 
-import java.security.SecureRandom;
-
 import static org.mockito.ArgumentMatchers.any;
 import static org.powermock.api.mockito.PowerMockito.doAnswer;
 import static org.powermock.api.mockito.PowerMockito.mock;
@@ -28,8 +26,6 @@ public abstract class RadixTest
 	@BeforeClass
 	public static void startRadixTest() {
 		TestSetupUtils.installBouncyCastleProvider();
-
-		final SecureRandom secureRandom = new SecureRandom();
 
 		properties = mock(RuntimeProperties.class);
 		doAnswer(invocation -> invocation.getArgument(1)).when(properties).get(any(), any());

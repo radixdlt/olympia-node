@@ -2,7 +2,6 @@ package com.radixdlt.discovery;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.Multibinder;
-import org.radix.events.Events;
 import org.radix.properties.RuntimeProperties;
 
 public class IterativeDiscovererModule extends AbstractModule {

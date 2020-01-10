@@ -9,7 +9,6 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
 
 import org.radix.serialization.DummyTestObject;
-import org.radix.serialization.TestSetupUtils;
 
 /**
  * Some JMH driven benchmarks for testing serialisation performance of

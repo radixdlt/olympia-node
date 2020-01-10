@@ -46,7 +46,7 @@ public class SubmitAtomAndSubscribeEpicTest {
 			return null;
 		}).when(atomsService).submitAtom(any(), any());
 
-		SubmitAtomAndSubscribeEpic epic = new SubmitAtomAndSubscribeEpic(atomsService, schema, serializer, callback);
+		SubmitAtomAndSubscribeEpic epic = new SubmitAtomAndSubscribeEpic(atomsService, schema, callback);
 		epic.action(action);
 
 		InOrder inOrder = inOrder(callback);

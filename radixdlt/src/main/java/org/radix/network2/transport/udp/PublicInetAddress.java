@@ -7,8 +7,6 @@ import java.util.Random;
 import java.util.function.LongSupplier;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.network2.NetworkLegacyPatching;
-
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.common.annotations.VisibleForTesting;
 import com.radixdlt.utils.Longs;

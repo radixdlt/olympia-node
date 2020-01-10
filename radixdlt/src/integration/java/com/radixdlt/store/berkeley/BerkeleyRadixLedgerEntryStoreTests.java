@@ -8,24 +8,18 @@ import com.radixdlt.store.LedgerSearchMode;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.consensus.tempo.LedgerEntryGenerator;
-import com.radixdlt.consensus.tempo.Tempo;
 import com.radixdlt.store.LedgerEntryStatus;
 import com.radixdlt.utils.Ints;
 import org.assertj.core.api.SoftAssertions;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.radix.exceptions.ValidationException;
 import org.radix.integration.RadixTestWithStores;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.universe.system.LocalSystem;
-
 import java.util.List;
 import java.util.function.Supplier;
-
-import static org.junit.Assume.assumeTrue;
 
 public class BerkeleyRadixLedgerEntryStoreTests extends RadixTestWithStores {
 

@@ -1,8 +1,6 @@
 package org.radix.network2.addressbook;
 
 import org.radix.database.DatabaseEnvironment;
-import org.radix.events.Events;
-
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;

@@ -148,6 +148,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 		}
 	}
 
+	@Override
 	public void reset() {
 		dbEnv.withLock(() -> {
 			Transaction transaction = null;

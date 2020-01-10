@@ -140,7 +140,6 @@ class MessageDispatcher {
 			return;
 		}
 
-		final Peer fp = peer; // Awkward
 		listeners.messageReceived(peer, message);
 		SystemMetaData.ifPresent( a -> a.increment("messages.inbound.processed"));
 	}

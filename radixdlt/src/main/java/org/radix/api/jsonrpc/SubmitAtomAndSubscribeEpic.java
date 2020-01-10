@@ -1,6 +1,5 @@
 package org.radix.api.jsonrpc;
 
-import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -16,8 +15,6 @@ import org.radix.exceptions.ValidationException;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.validation.ConstraintMachineValidationException;
-
-import com.radixdlt.serialization.Serialization;
 
 /**
  * Epic responsible for translating an atom submission JSON RPC request to the response and resulting
@@ -51,15 +48,9 @@ public class SubmitAtomAndSubscribeEpic {
 	 */
 	private final Consumer<JSONObject> callback;
 
-	/**
-	 * DSON serializer/deserializer
-	 */
-	private final Serialization serialization;
-
-	public SubmitAtomAndSubscribeEpic(AtomsService atomsService, Schema atomSchema, Serialization serialization, Consumer<JSONObject> callback) {
+	public SubmitAtomAndSubscribeEpic(AtomsService atomsService, Schema atomSchema, Consumer<JSONObject> callback) {
 		this.atomsService = atomsService;
 		this.atomSchema = atomSchema;
-		this.serialization = serialization;
 		this.callback = callback;
 	}
 

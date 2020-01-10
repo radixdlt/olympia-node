@@ -20,7 +20,6 @@ import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 
 import java.util.Objects;
-import java.util.Optional;
 import java.util.OptionalLong;
 
 @Singleton
