@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.network2.transport.TransportMetadata;
@@ -15,6 +17,8 @@ import org.radix.network2.transport.TransportOutboundConnection;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.util.concurrent.RateLimiter;
+
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
@@ -37,6 +41,8 @@ final class TCPTransportControlImpl implements TCPTransportControl {
 
 	@Sharable
 	private static class TCPConnectionHandlerChannelInbound extends ChannelInboundHandlerAdapter {
+		private final RateLimiter droppedChannelRateLimiter = RateLimiter.create(1.0);
+		private final AtomicLong droppedChannelCount = new AtomicLong();
 		private final Object lock = new Object();
 		private final AtomicInteger channelCount = new AtomicInteger();
 		private final Map<String, LinkedList<SocketChannel>> channelMap = Maps.newHashMap();
@@ -54,6 +60,12 @@ final class TCPTransportControlImpl implements TCPTransportControl {
 					addChannel((SocketChannel) ch);
 				} else {
 					// Too many channels, we just close and exit.
+					// Include rate limited log of total dropped channels.
+					long droppedChannels = this.droppedChannelCount.incrementAndGet();
+					if (this.droppedChannelRateLimiter.tryAcquire()) {
+						log.error(String.format("Total of %s channel%s dropped due to connection limit",
+							droppedChannels, 1L == droppedChannels ? "" : "s"));
+					}
 					ctx.close();
 					return;
 				}
