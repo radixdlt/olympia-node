@@ -39,6 +39,17 @@ public interface TCPConfiguration {
 	int processingThreads(int defaultValue);
 
 	/**
+	 * Get the maximum number of open channels allowed, both inbound and
+	 * outbound.  Note that each channel consumes some resources on the host
+	 * machine, and there may be other global operating-system defined limits
+	 * that come into play.
+	 *
+	 * @param defaultValue a default value if no special configuration value is set
+	 * @return the maximum number of open TCP channels at any one time
+	 */
+	int maxChannelCount(int defaultValue);
+
+	/**
 	 * Get the priority of this transport.
 	 *
 	 * @param defaultValue a default value if no special configuration value is set
@@ -68,6 +79,11 @@ public interface TCPConfiguration {
 			@Override
 			public int processingThreads(int defaultValue) {
 				return properties.get("network.tcp.threads", defaultValue);
+			}
+
+			@Override
+			public int maxChannelCount(int defaultValue) {
+				return properties.get("network.tcp.maxchannels", defaultValue);
 			}
 
 			@Override

@@ -9,7 +9,6 @@ import org.assertj.core.api.SoftAssertions;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
@@ -273,7 +272,6 @@ public class PeerManagerTest extends RadixTest {
     }
 
     @Test
-    @Ignore("This test seems to rely on the scheduler's timing for 0 delays so that timeouts are run before pong responses, which apparently changed or broke.")
     public void handleProbeTimeoutTest() throws InterruptedException {
         when(addressBook.peers()).thenAnswer((Answer<Stream<Peer>>) invocation -> Stream.of(peer1, peer2));
         //start timeout handler immediately

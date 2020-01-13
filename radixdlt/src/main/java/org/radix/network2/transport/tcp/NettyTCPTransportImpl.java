@@ -84,7 +84,7 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 			TCPConstants.METADATA_TCP_PORT, String.valueOf(port)
 		);
 		this.priority = config.priority(0);
-		this.control = controlFactory.create(outboundFactory, this);
+		this.control = controlFactory.create(config, outboundFactory, this);
 		this.inboundProcessingThreads = config.processingThreads(1);
 		if (this.inboundProcessingThreads < 0) {
 			throw new IllegalStateException("Illegal number of TCP inbound threads: " + this.inboundProcessingThreads);

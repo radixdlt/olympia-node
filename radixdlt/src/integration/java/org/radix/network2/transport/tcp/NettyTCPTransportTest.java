@@ -8,7 +8,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.radix.network2.messaging.InboundMessage;
 import org.radix.network2.transport.SendResult;
@@ -51,21 +50,18 @@ public class NettyTCPTransportTest {
 	}
 
 	@Test
-	@Ignore
 	public void testThroughputSmallPacket() throws InterruptedException, ExecutionException, IOException {
 		// Approximate size of AtomBroadcastMessage
 		testThroughput("Small", 112, 1000, 30);
 	}
 
 	@Test
-	@Ignore
 	public void testThroughputMediumPacket() throws InterruptedException, ExecutionException, IOException {
 		// Approximate size of a basic test universe
 		testThroughput("Medium", 3600, 100, 30);
 	}
 
 	@Test
-	@Ignore
 	public void testThroughputLargePacket() throws InterruptedException, ExecutionException, IOException {
 		// Largest packet supported
 		testThroughput("Large", TCPConstants.MAX_PACKET_LENGTH, 4, 30);
@@ -143,6 +139,11 @@ public class NettyTCPTransportTest {
 			@Override
 			public int processingThreads(int defaultValue) {
 				return 1;
+			}
+
+			@Override
+			public int maxChannelCount(int defaultValue) {
+				return 1024;
 			}
 
 			@Override

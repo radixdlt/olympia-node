@@ -20,12 +20,40 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 
 public class TCPTransportControlImplTest {
+	private TCPConfiguration config;
 	private NettyTCPTransport transport;
 	private TCPTransportOutboundConnectionFactory outboundFactory;
 	private TransportOutboundConnection transportOutboundConnection;
 
 	@Before
 	public void setUp() {
+		config = new TCPConfiguration() {
+			@Override
+			public int networkPort(int defaultValue) {
+				return 0;
+			}
+
+			@Override
+			public String networkAddress(String defaultValue) {
+				return "127.0.0.1";
+			}
+
+			@Override
+			public int processingThreads(int defaultValue) {
+				return 1;
+			}
+
+			@Override
+			public int maxChannelCount(int defaultValue) {
+				return 1024;
+			}
+
+			@Override
+			public int priority(int defaultValue) {
+				return 0;
+			}
+		};
+
 		transportOutboundConnection = mock(TransportOutboundConnection.class);
 
 		outboundFactory = mock(TCPTransportOutboundConnectionFactory.class);
@@ -46,7 +74,7 @@ public class TCPTransportControlImplTest {
 
 	@Test
 	public void open() throws ExecutionException, InterruptedException, IOException {
-		try (TCPTransportControlImpl tcpTransportControl = new TCPTransportControlImpl(outboundFactory, transport)) {
+		try (TCPTransportControlImpl tcpTransportControl = new TCPTransportControlImpl(config, outboundFactory, transport)) {
 			TransportMetadata metadata = StaticTransportMetadata.of(
 				TCPConstants.METADATA_TCP_HOST, "localhost",
 				TCPConstants.METADATA_TCP_PORT, "443"
