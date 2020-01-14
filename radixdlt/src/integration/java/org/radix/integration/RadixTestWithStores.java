@@ -10,6 +10,7 @@ import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.store.LedgerEntryStoreView;
 import org.junit.After;
 import org.junit.Before;
+import org.mockito.invocation.InvocationOnMock;
 import org.radix.GlobalInjector;
 import org.radix.database.DatabaseEnvironment;
 import org.radix.network2.addressbook.AddressBook;
@@ -19,6 +20,7 @@ import java.io.IOException;
 import java.util.Objects;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class RadixTestWithStores extends RadixTest
 {
@@ -29,16 +31,19 @@ public class RadixTestWithStores extends RadixTest
 	private AddressBook addressBook;
 
 	@Before
-	public void beforeEachRadixTest() {
+	public void beforeEachRadixTest() throws InterruptedException {
 		this.dbEnv = new DatabaseEnvironment(getProperties());
 
 		GlobalInjector injector = new GlobalInjector(getProperties(), dbEnv, getLocalSystem(), getUniverse());
 		this.messageCentral = injector.getInjector().getInstance(MessageCentral.class);
 		this.addressBook = injector.getInjector().getInstance(AddressBook.class);
 
+		Application deadApplication = mock(Application.class);
+		when(deadApplication.takeNextEntry()).then(this::sleepForever);
+
 		store = injector.getInjector().getInstance(LedgerEntryStore.class);
 		tempo = new Tempo(
-			mock(Application.class),
+			deadApplication,
 			ImmutableSet.of(),
 			new LazyRequestDeliverer(
 				mock(Scheduler.class),
@@ -47,6 +52,11 @@ public class RadixTestWithStores extends RadixTest
 				LazyRequestDelivererConfiguration.fromRuntimeProperties(getProperties()),
 				getUniverse()
 			));
+	}
+
+	private <T> T sleepForever(InvocationOnMock invocation) throws InterruptedException {
+		Thread.sleep(Long.MAX_VALUE);
+		return null;
 	}
 
 	@After
