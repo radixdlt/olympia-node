@@ -29,7 +29,6 @@ public final class Tempo implements Consensus, Closeable {
 	private final LazyRequestDeliverer requestDeliverer;
 
 	private final BlockingQueue<ConsensusObservation> consensusObservations;
-	private final Application application;
 	private final SimpleThreadPool<LedgerEntry> consensusThreadPool;
 
 	@Inject
@@ -38,7 +37,7 @@ public final class Tempo implements Consensus, Closeable {
 		Set<AtomDiscoverer> atomDiscoverers,
 		LazyRequestDeliverer requestDeliverer
 	) {
-		this.application = Objects.requireNonNull(application);
+		Objects.requireNonNull(application);
 		Objects.requireNonNull(atomDiscoverers);
 		this.requestDeliverer = Objects.requireNonNull(requestDeliverer);
 
@@ -50,6 +49,7 @@ public final class Tempo implements Consensus, Closeable {
 		}
 
 		this.consensusThreadPool = new SimpleThreadPool<>("Consensus", 1, application::takeNextEntry, this::doConsensus, log);
+		this.consensusThreadPool.start();
 	}
 
 	private void doConsensus(LedgerEntry entry) {
@@ -80,5 +80,6 @@ public final class Tempo implements Consensus, Closeable {
 	@Override
 	public void close() {
 		this.requestDeliverer.close();
+		this.consensusThreadPool.stop();
 	}
 }

@@ -8,6 +8,7 @@ import org.radix.containers.BasicContainer;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.CryptoException;
 import org.radix.network2.transport.TransportInfo;
+import org.radix.shards.ShardSpace;
 
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -42,6 +43,10 @@ public class RadixSystem extends BasicContainer
 	@DsonOutput(Output.ALL)
 	private ImmutableList<TransportInfo> transports;
 
+	@JsonProperty("shards")
+	@DsonOutput(Output.ALL)
+	private ShardSpace shards;
+
 	private ECPublicKey		key;
 
 	public RadixSystem()
@@ -55,6 +60,9 @@ public class RadixSystem extends BasicContainer
 		this.timestamp = 0;
 		this.transports = ImmutableList.of();
 		this.key = null;
+
+		// FIXME: Needs to reflect actual range when shards implemented
+		this.shards = new ShardSpace(0L, ShardSpace.SHARD_RANGE_FULL);
 	}
 
 	public RadixSystem(RadixSystem system)
@@ -68,6 +76,7 @@ public class RadixSystem extends BasicContainer
 		this.timestamp = system.getTimestamp();
 		this.transports = system.transports;
 		this.key = system.getKey();
+		this.shards = system.shards;
 	}
 
 	public RadixSystem(ECPublicKey key, String agent, int agentVersion, int protocolVersion, ImmutableList<TransportInfo> transports)
