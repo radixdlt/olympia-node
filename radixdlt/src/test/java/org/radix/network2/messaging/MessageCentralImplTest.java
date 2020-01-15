@@ -5,7 +5,6 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.universe.Universe;
 import org.junit.Before;
 import org.junit.Test;
-import org.powermock.api.mockito.PowerMockito;
 import org.radix.events.Events;
 import org.radix.network.Interfaces;
 import org.radix.network.messages.TestMessage;
@@ -82,7 +81,7 @@ public class MessageCentralImplTest {
 		doReturn(inboundQueue).when(queueFactory).createEventQueue(conf.messagingInboundQueueMax(0));
 		doReturn(outboundQueue).when(queueFactory).createEventQueue(conf.messagingOutboundQueueMax(0));
 		Interfaces interfaces = mock(Interfaces.class);
-		PowerMockito.when(interfaces.isSelf(any())).thenReturn(false);
+		when(interfaces.isSelf(any())).thenReturn(false);
 		LocalSystem localSystem = mock(LocalSystem.class);
 		this.mci = new MessageCentralImpl(new MessagingDummyConfigurations.DummyMessageCentralConfiguration(), serialization, transportManager, events, addressBook, System::currentTimeMillis,
 				queueFactory, interfaces, localSystem);
