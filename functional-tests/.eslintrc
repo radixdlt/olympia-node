@@ -1,9 +1,0 @@
-{
-  "extends": "airbnb-base",
-  "rules": {
-    "quote-props": ["error", "always"],
-    "padded-blocks": "off",
-    "no-mixed-operators": "off",
-    "no-plusplus": "off"
-  }
-}
