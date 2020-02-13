@@ -19,12 +19,10 @@ package org.radix.api.services;
 
 import com.radixdlt.common.Atom;
 import com.radixdlt.middleware2.processing.RadixEngineAtomProcessor;
-import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.Bytes;
 
-import java.util.Optional;
 import java.util.Random;
 import org.json.JSONObject;
 import com.radixdlt.atomos.RadixAddress;
@@ -132,8 +130,7 @@ public final class InternalService {
 
 							atom.sign(this.owner);
 
-							JSONObject jsonAtom = serialization.toJsonObject(atom, DsonOutput.Output.WIRE);
-							radixEngineAtomProcessor.process(jsonAtom, Optional.empty());
+							radixEngineAtomProcessor.addAtom(atom);
 
 							remainingIterations--;
 							if (remainingIterations <= 0) {

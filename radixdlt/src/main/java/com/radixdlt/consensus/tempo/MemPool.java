@@ -17,11 +17,13 @@
 
 package com.radixdlt.consensus.tempo;
 
+import com.radixdlt.common.Atom;
 import com.radixdlt.store.LedgerEntry;
 
 /**
  * This is a temporary, rough interface representing the application-side part of the currently developing app/consensus interface.
  */
 public interface MemPool {
+	void addAtom(Atom atom);
 	LedgerEntry takeNextEntry() throws InterruptedException;
 }

@@ -59,7 +59,6 @@ public class RadixEngineAtomProcessor implements MemPool {
 	private final Serialization serialization;
 	private final AtomToBinaryConverter atomToBinaryConverter;
 	private final BlockingDeque<Atom> parkedAtoms;
-	private final Map<Atom, ProcessorAtomEventListener> parkedListeners;
 
 	@Inject
 	public RadixEngineAtomProcessor(
@@ -75,13 +74,17 @@ public class RadixEngineAtomProcessor implements MemPool {
 		this.serialization = serialization;
 		this.atomToBinaryConverter = atomToBinaryConverter;
 		this.parkedAtoms = new LinkedBlockingDeque<>();
-		this.parkedListeners = new ConcurrentHashMap<>();
 	}
 
 	@Override
 	public LedgerEntry takeNextEntry() throws InterruptedException {
 		Atom atom = parkedAtoms.take();
 		return new LedgerEntry(atomToBinaryConverter.toLedgerEntryContent(atom), atom.getAID());
+	}
+
+	@Override
+	public void addAtom(Atom atom) {
+		parkedAtoms.add(atom);
 	}
 
 	private void process() throws InterruptedException {
@@ -93,13 +96,9 @@ public class RadixEngineAtomProcessor implements MemPool {
 					radixEngine.store(atom, new AtomEventListener() {
 					});
 					if (!parkedAtoms.remove(atom)) {
-						log.error("Removing unknown atom in RadixEngineAtomProcessor.process()");
+						log.error("Removing unknown atom in RadixEngineAtomProcessor.addAtom()");
 					}
 				} catch (Exception e) {
-					parkedListeners.computeIfPresent(atom, (a, listener) -> {
-						listener.onError(e);
-						return null;
-					});
 					log.error("Storing atom failed", e);
 				}
 
@@ -109,18 +108,6 @@ public class RadixEngineAtomProcessor implements MemPool {
 		}
 	}
 
-	public AID process(JSONObject jsonAtom, Optional<ProcessorAtomEventListener> processorAtomEventListener) {
-		final Atom atom = serialization.fromJsonObject(jsonAtom, Atom.class);
-		processorAtomEventListener.ifPresent(listener -> listener.onDeserializationCompleted(atom.getAID()));
-		try {
-			processorAtomEventListener.ifPresent(listener -> parkedListeners.put(atom, listener));
-			parkedAtoms.add(atom);
-		} catch (Exception e) {
-			processorAtomEventListener.ifPresent(listener -> listener.onError(e));
-			log.error("Engine processing exception ", e);
-		}
-		return atom.getAID();
-	}
 
 	public void start(Universe universe) {
 		synchronized (this.threadLock) {
@@ -173,7 +160,7 @@ public class RadixEngineAtomProcessor implements MemPool {
 
 								@Override
 								public void onCMError(Atom atom, CMError error) {
-									log.fatal("Failed to process genesis Atom: " + error.getErrorCode() + " "
+									log.fatal("Failed to addAtom genesis Atom: " + error.getErrorCode() + " "
 											+ error.getErrMsg() + " " + error.getDataPointer() + "\n"
 											+ atom + "\n"
 											+ error.getCmValidationState().toString());
@@ -182,19 +169,19 @@ public class RadixEngineAtomProcessor implements MemPool {
 
 								@Override
 								public void onVirtualStateConflict(Atom atom, DataPointer dp) {
-									log.fatal("Failed to process genesis Atom: Virtual State Conflict");
+									log.fatal("Failed to addAtom genesis Atom: Virtual State Conflict");
 									System.exit(-1);
 								}
 
 								@Override
 								public void onStateConflict(Atom atom, DataPointer dp, Atom conflictAtom) {
-									log.fatal("Failed to process genesis Atom: State Conflict");
+									log.fatal("Failed to addAtom genesis Atom: State Conflict");
 									System.exit(-1);
 								}
 
 								@Override
 								public void onStateMissingDependency(AID atomId, Particle particle) {
-									log.fatal("Failed to process genesis Atom: Missing Dependency");
+									log.fatal("Failed to addAtom genesis Atom: Missing Dependency");
 									System.exit(-1);
 								}
 							});
@@ -202,7 +189,7 @@ public class RadixEngineAtomProcessor implements MemPool {
 			}
 			waitForAtoms(atomIds);
 		} catch (Exception ex) {
-			log.fatal("Failed to process genesis Atom", ex);
+			log.fatal("Failed to addAtom genesis Atom", ex);
 			System.exit(-1);
 		}
 	}

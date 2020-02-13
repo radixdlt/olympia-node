@@ -164,19 +164,19 @@ public class AtomsService {
 		return Collections.unmodifiableMap(atomEventCount);
 	}
 
-	public AID submitAtom(JSONObject atom, SingleAtomListener subscriber) {
-		return radixEngineAtomProcessor.process(atom, Optional.of(new RadixEngineAtomProcessor.ProcessorAtomEventListener() {
-			@Override
-			public void onDeserializationCompleted(AID atomId) {
-				if (subscriber != null) {
-					deleteOnEventSingleAtomObservers.compute(atomId, (hid, oldSubscribers) -> {
-						List<SingleAtomListener> subscribers = oldSubscribers == null ? new ArrayList<>() : oldSubscribers;
-						subscribers.add(subscriber);
-						return subscribers;
-					});
-				}
-			}
-		}));
+	public AID submitAtom(JSONObject jsonAtom, SingleAtomListener subscriber) {
+		final Atom atom = serialization.fromJsonObject(jsonAtom, Atom.class);
+		if (subscriber != null) {
+			deleteOnEventSingleAtomObservers.compute(atom.getAID(), (hid, oldSubscribers) -> {
+				List<SingleAtomListener> subscribers = oldSubscribers == null ? new ArrayList<>() : oldSubscribers;
+				subscribers.add(subscriber);
+				return subscribers;
+			});
+		}
+
+		radixEngineAtomProcessor.addAtom(atom);
+
+		return atom.getAID();
 	}
 
 	public Disposable subscribeAtomStatusNotifications(AID aid, AtomStatusListener subscriber) {
