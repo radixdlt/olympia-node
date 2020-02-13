@@ -28,6 +28,10 @@ repositories {
     maven { url 'https://jitpack.io' }
 }
 
+test {
+    systemProperty "java.security.egd", "file:/dev/urandom"
+}
+
 dependencies {
     // Please don't change this to use jitpack until we have jenkins sorted out
     //implementation 'com.radixdlt:radixdlt-java:release~1.0-beta.4-SNAPSHOT'
