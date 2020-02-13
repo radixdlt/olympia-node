@@ -2,29 +2,31 @@ package com.radixdlt.consensus;
 
 import com.google.inject.Inject;
 import com.radixdlt.common.Atom;
-import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
-import com.radixdlt.store.LedgerEntry;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.LinkedBlockingDeque;
 
 public class DumbMemPool implements MemPool {
-	private final AtomToBinaryConverter atomToBinaryConverter;
 	private final BlockingDeque<Atom> parkedAtoms;
 
 	@Inject
-	public DumbMemPool(AtomToBinaryConverter atomToBinaryConverter) {
-		this.atomToBinaryConverter = atomToBinaryConverter;
+	public DumbMemPool() {
 		this.parkedAtoms = new LinkedBlockingDeque<>();
 	}
 
 	@Override
-	public LedgerEntry takeNextEntry() {
-		Atom atom = parkedAtoms.poll();
-		if (atom == null) {
-			return null;
+	public List<Atom> getAtoms(int count) {
+		if (count != 1) {
+			throw new IllegalArgumentException();
 		}
 
-		return new LedgerEntry(atomToBinaryConverter.toLedgerEntryContent(atom), atom.getAID());
+		Atom atom = parkedAtoms.poll();
+		if (atom == null) {
+			return Collections.emptyList();
+		}
+
+		return Collections.singletonList(atom);
 	}
 
 

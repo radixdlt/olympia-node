@@ -18,12 +18,12 @@
 package com.radixdlt.consensus;
 
 import com.radixdlt.common.Atom;
-import com.radixdlt.store.LedgerEntry;
+import java.util.List;
 
 /**
  * This is a temporary, rough interface representing the application-side part of the currently developing app/consensus interface.
  */
 public interface MemPool {
 	void addAtom(Atom atom);
-	LedgerEntry takeNextEntry();
+	List<Atom> getAtoms(int count);
 }

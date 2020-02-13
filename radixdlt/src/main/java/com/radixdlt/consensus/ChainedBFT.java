@@ -32,11 +32,11 @@ public final class ChainedBFT {
 	@Inject
 	public ChainedBFT(
 		EventCoordinator eventCoordinator,
-		DumbPacemaker dumbPacemaker
+		Pacemaker pacemaker
 	) {
 		Objects.requireNonNull(eventCoordinator);
-		Objects.requireNonNull(dumbPacemaker);
+		Objects.requireNonNull(pacemaker);
 
-		dumbPacemaker.addCallback(v -> eventCoordinator.newRound());
+		pacemaker.addCallback(v -> eventCoordinator.newRound());
 	}
 }

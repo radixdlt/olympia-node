@@ -3,20 +3,14 @@ package com.radixdlt.consensus;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
-public class DumbPacemaker {
+public class DumbPacemaker implements Pacemaker {
 	private AtomicReference<Consumer<Void>> callbackRef;
-	private Thread thread;
 
 	public DumbPacemaker() {
 		this.callbackRef = new AtomicReference<>();
 	}
 
-	public void start() {
-		this.thread = new Thread(this::process, "Dumb Pacemaker");
-		this.thread.start();
-	}
-
-	private void process() {
+	public void run() {
 		while (true) {
 			try {
 				Thread.sleep(200);

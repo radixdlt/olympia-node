@@ -21,24 +21,19 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.DumbMemPool;
+import com.radixdlt.consensus.DumbPacemaker;
 import com.radixdlt.consensus.MemPool;
+import com.radixdlt.consensus.Pacemaker;
 import com.radixdlt.consensus.tempo.Scheduler;
 import com.radixdlt.consensus.tempo.SingleThreadedScheduler;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 
-// FIXME: static dependency on Time
 public class CerberusModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		// dependencies
 		bind(Scheduler.class).toProvider(SingleThreadedScheduler::new);
 		bind(MemPool.class).to(DumbMemPool.class);
-	}
-
-	// We want to use the same instance for Application and RadixEngineAtomProcessor
-	@Provides
-	@Singleton
-	private DumbMemPool dumbMemPool(AtomToBinaryConverter atomToBinaryConverter) {
-		return new DumbMemPool(atomToBinaryConverter);
+		bind(Pacemaker.class).to(DumbPacemaker.class).in(Singleton.class);
 	}
 }
