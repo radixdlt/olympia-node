@@ -18,9 +18,9 @@
 package org.radix.integration;
 
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.consensus.tempo.Application;
+import com.radixdlt.consensus.tempo.MemPool;
 import com.radixdlt.consensus.tempo.Scheduler;
-import com.radixdlt.consensus.tempo.Tempo;
+import com.radixdlt.consensus.tempo.ChainedBFT;
 import com.radixdlt.delivery.LazyRequestDeliverer;
 import com.radixdlt.delivery.LazyRequestDelivererConfiguration;
 import com.radixdlt.store.LedgerEntryStore;
@@ -43,7 +43,7 @@ public class RadixTestWithStores extends RadixTest
 {
 	private DatabaseEnvironment dbEnv;
 	private LedgerEntryStore store;
-	private Tempo tempo;
+	private ChainedBFT tempo;
 	private MessageCentral messageCentral;
 	private AddressBook addressBook;
 
@@ -55,20 +55,11 @@ public class RadixTestWithStores extends RadixTest
 		this.messageCentral = injector.getInjector().getInstance(MessageCentral.class);
 		this.addressBook = injector.getInjector().getInstance(AddressBook.class);
 
-		Application deadApplication = mock(Application.class);
+		MemPool deadApplication = mock(MemPool.class);
 		when(deadApplication.takeNextEntry()).then(this::sleepForever);
 
 		store = injector.getInjector().getInstance(LedgerEntryStore.class);
-		tempo = new Tempo(
-			deadApplication,
-			ImmutableSet.of(),
-			new LazyRequestDeliverer(
-				mock(Scheduler.class),
-				mock(MessageCentral.class),
-				mock(LedgerEntryStoreView.class),
-				LazyRequestDelivererConfiguration.fromRuntimeProperties(getProperties()),
-				getUniverse()
-			));
+		tempo = new ChainedBFT(deadApplication);
 	}
 
 	private <T> T sleepForever(InvocationOnMock invocation) throws InterruptedException {
@@ -112,7 +103,7 @@ public class RadixTestWithStores extends RadixTest
 		return Objects.requireNonNull(store, "store was not initialized");
 	}
 
-	protected Tempo getTempo() {
+	protected ChainedBFT getTempo() {
 		return Objects.requireNonNull(tempo, "tempo was not initialized");
 	}
 

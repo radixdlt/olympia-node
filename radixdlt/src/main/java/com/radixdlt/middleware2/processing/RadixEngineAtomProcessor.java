@@ -20,7 +20,7 @@ package com.radixdlt.middleware2.processing;
 import com.google.inject.Inject;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.Atom;
-import com.radixdlt.consensus.tempo.Application;
+import com.radixdlt.consensus.tempo.MemPool;
 import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.constraintmachine.Particle;
@@ -46,7 +46,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
-public class RadixEngineAtomProcessor implements Application {
+public class RadixEngineAtomProcessor implements MemPool {
 	private static final Logger log = Logging.getLogger("middleware2.atomProcessor");
 
 	private volatile boolean interrupted;
