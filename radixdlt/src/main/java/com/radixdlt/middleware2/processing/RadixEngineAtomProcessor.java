@@ -20,7 +20,6 @@ package com.radixdlt.middleware2.processing;
 import com.google.inject.Inject;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.Atom;
-import com.radixdlt.consensus.tempo.MemPool;
 import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.constraintmachine.Particle;
@@ -29,24 +28,16 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.consensus.Consensus;
 import com.radixdlt.consensus.ConsensusObservation;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
-import com.radixdlt.serialization.Serialization;
-import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.universe.Universe;
-import org.json.JSONObject;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.BlockingDeque;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
-public class RadixEngineAtomProcessor implements MemPool {
+public class RadixEngineAtomProcessor {
 	private static final Logger log = Logging.getLogger("middleware2.atomProcessor");
 
 	private volatile boolean interrupted;
@@ -56,35 +47,19 @@ public class RadixEngineAtomProcessor implements MemPool {
 	private final Consensus consensus;
 	private final LedgerEntryStore store;
 	private final RadixEngine radixEngine;
-	private final Serialization serialization;
 	private final AtomToBinaryConverter atomToBinaryConverter;
-	private final BlockingDeque<Atom> parkedAtoms;
 
 	@Inject
 	public RadixEngineAtomProcessor(
 		Consensus consensus,
 		LedgerEntryStore store,
 		RadixEngine radixEngine,
-		Serialization serialization,
 		AtomToBinaryConverter atomToBinaryConverter
 	) {
 		this.consensus = consensus;
 		this.store = store;
 		this.radixEngine = radixEngine;
-		this.serialization = serialization;
 		this.atomToBinaryConverter = atomToBinaryConverter;
-		this.parkedAtoms = new LinkedBlockingDeque<>();
-	}
-
-	@Override
-	public LedgerEntry takeNextEntry() throws InterruptedException {
-		Atom atom = parkedAtoms.take();
-		return new LedgerEntry(atomToBinaryConverter.toLedgerEntryContent(atom), atom.getAID());
-	}
-
-	@Override
-	public void addAtom(Atom atom) {
-		parkedAtoms.add(atom);
 	}
 
 	private void process() throws InterruptedException {
@@ -95,9 +70,6 @@ public class RadixEngineAtomProcessor implements MemPool {
 				try {
 					radixEngine.store(atom, new AtomEventListener() {
 					});
-					if (!parkedAtoms.remove(atom)) {
-						log.error("Removing unknown atom in RadixEngineAtomProcessor.addAtom()");
-					}
 				} catch (Exception e) {
 					log.error("Storing atom failed", e);
 				}
@@ -199,14 +171,6 @@ public class RadixEngineAtomProcessor implements MemPool {
 			while (!store.contains(atomID)) {
 				TimeUnit.MILLISECONDS.sleep(100);
 			}
-		}
-	}
-
-	public interface ProcessorAtomEventListener {
-		default void onDeserializationCompleted(AID atomId) {
-		}
-
-		default void onError(Exception e) {
 		}
 	}
 }

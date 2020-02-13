@@ -20,6 +20,7 @@ package org.radix.api.services;
 import com.google.common.collect.EvictingQueue;
 import com.radixdlt.common.Atom;
 
+import com.radixdlt.consensus.tempo.MemPool;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -74,12 +75,12 @@ public class AtomsService {
 
 	private final Object lock = new Object();
 	private final EvictingQueue<String> eventRingBuffer = EvictingQueue.create(64);
-	private final RadixEngineAtomProcessor radixEngineAtomProcessor;
+	private final MemPool memPool;
 	private final AtomToBinaryConverter atomToBinaryConverter;
 	private final LedgerEntryStore store;
 
-	public AtomsService(LedgerEntryStore store, RadixEngineAtomProcessor radixEngineAtomProcessor, AtomToBinaryConverter atomToBinaryConverter) {
-		this.radixEngineAtomProcessor = Objects.requireNonNull(radixEngineAtomProcessor);
+	public AtomsService(LedgerEntryStore store, MemPool memPool, AtomToBinaryConverter atomToBinaryConverter) {
+		this.memPool = Objects.requireNonNull(memPool);
 		this.store = Objects.requireNonNull(store);
 		this.atomToBinaryConverter = Objects.requireNonNull(atomToBinaryConverter);
 
@@ -174,7 +175,7 @@ public class AtomsService {
 			});
 		}
 
-		radixEngineAtomProcessor.addAtom(atom);
+		memPool.addAtom(atom);
 
 		return atom.getAID();
 	}

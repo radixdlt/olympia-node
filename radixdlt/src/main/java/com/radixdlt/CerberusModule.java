@@ -22,6 +22,7 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.Consensus;
+import com.radixdlt.consensus.tempo.DumbMemPool;
 import com.radixdlt.consensus.tempo.MemPool;
 import com.radixdlt.consensus.tempo.Scheduler;
 import com.radixdlt.consensus.tempo.SingleThreadedScheduler;
@@ -43,8 +44,14 @@ public class CerberusModule extends AbstractModule {
 		bind(Scheduler.class).toProvider(SingleThreadedScheduler::new);
 		bind(WallclockTimeSupplier.class).toInstance(Time::currentTimestamp);
 		bind(Consensus.class).to(ChainedBFT.class).in(Scopes.SINGLETON);
+		bind(MemPool.class).to(DumbMemPool.class);
+	}
 
-		bind(MemPool.class).to(RadixEngineAtomProcessor.class);
+	// We want to use the same instance for Application and RadixEngineAtomProcessor
+	@Provides
+	@Singleton
+	private DumbMemPool dumbMemPool(AtomToBinaryConverter atomToBinaryConverter) {
+		return new DumbMemPool(atomToBinaryConverter);
 	}
 
 	// We want to use the same instance for Application and RadixEngineAtomProcessor
@@ -54,10 +61,9 @@ public class CerberusModule extends AbstractModule {
 		Consensus consensus,
 		LedgerEntryStore store,
 		RadixEngine radixEngine,
-		Serialization serialization,
 		AtomToBinaryConverter atomToBinaryConverter
 	) {
-		return new RadixEngineAtomProcessor(consensus, store, radixEngine, serialization, atomToBinaryConverter);
+		return new RadixEngineAtomProcessor(consensus, store, radixEngine, atomToBinaryConverter);
 	}
 
 }
