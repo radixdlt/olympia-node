@@ -20,7 +20,6 @@ package org.radix;
 import com.radixdlt.consensus.Consensus;
 import com.radixdlt.consensus.tempo.MemPool;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
-import com.radixdlt.middleware2.processing.RadixEngineAtomProcessor;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.store.LedgerEntryStore;
@@ -145,12 +144,8 @@ public final class Radix
 		PeerManager peerManager = globalInjector.getInjector().getInstance(PeerManager.class);
 		peerManager.start();
 
-		// start middleware
-		MemPool memPool = globalInjector.getInjector().getInstance(MemPool.class);
-		RadixEngineAtomProcessor atomProcessor = globalInjector.getInjector().getInstance(RadixEngineAtomProcessor.class);
-		atomProcessor.start(universe);
-
 		// start API services
+		MemPool memPool = globalInjector.getInjector().getInstance(MemPool.class);
 		AtomToBinaryConverter atomToBinaryConverter = globalInjector.getInjector().getInstance(AtomToBinaryConverter.class);
 		LedgerEntryStore store = globalInjector.getInjector().getInstance(LedgerEntryStore.class);
 		RadixHttpServer httpServer = new RadixHttpServer(store, memPool, atomToBinaryConverter, universe, serialization, properties, localSystem, addressBook);

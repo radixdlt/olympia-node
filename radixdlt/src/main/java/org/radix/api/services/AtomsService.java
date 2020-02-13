@@ -34,7 +34,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
-import com.radixdlt.middleware2.processing.RadixEngineAtomProcessor;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.LedgerEntry;

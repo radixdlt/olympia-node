@@ -28,11 +28,7 @@ import com.radixdlt.consensus.tempo.Scheduler;
 import com.radixdlt.consensus.tempo.SingleThreadedScheduler;
 import com.radixdlt.consensus.tempo.ChainedBFT;
 import com.radixdlt.consensus.tempo.WallclockTimeSupplier;
-import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
-import com.radixdlt.middleware2.processing.RadixEngineAtomProcessor;
-import com.radixdlt.serialization.Serialization;
-import com.radixdlt.store.LedgerEntryStore;
 
 import org.radix.time.Time;
 
@@ -53,17 +49,4 @@ public class CerberusModule extends AbstractModule {
 	private DumbMemPool dumbMemPool(AtomToBinaryConverter atomToBinaryConverter) {
 		return new DumbMemPool(atomToBinaryConverter);
 	}
-
-	// We want to use the same instance for Application and RadixEngineAtomProcessor
-	@Provides
-	@Singleton
-	private RadixEngineAtomProcessor radixEngineAtomProcessorProvider(
-		Consensus consensus,
-		LedgerEntryStore store,
-		RadixEngine radixEngine,
-		AtomToBinaryConverter atomToBinaryConverter
-	) {
-		return new RadixEngineAtomProcessor(consensus, store, radixEngine, atomToBinaryConverter);
-	}
-
 }
