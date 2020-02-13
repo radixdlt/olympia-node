@@ -17,6 +17,8 @@
 
 package org.radix.integration;
 
+import com.radixdlt.consensus.DumbPacemaker;
+import com.radixdlt.consensus.EventCoordinator;
 import com.radixdlt.consensus.MemPool;
 import com.radixdlt.consensus.ChainedBFT;
 import com.radixdlt.store.LedgerEntryStore;
@@ -50,11 +52,8 @@ public class RadixTestWithStores extends RadixTest
 		this.messageCentral = injector.getInjector().getInstance(MessageCentral.class);
 		this.addressBook = injector.getInjector().getInstance(AddressBook.class);
 
-		MemPool deadApplication = mock(MemPool.class);
-		when(deadApplication.takeNextEntry()).then(this::sleepForever);
-
 		store = injector.getInjector().getInstance(LedgerEntryStore.class);
-		tempo = new ChainedBFT(deadApplication);
+		tempo = new ChainedBFT(mock(EventCoordinator.class), mock(DumbPacemaker.class));
 	}
 
 	private <T> T sleepForever(InvocationOnMock invocation) throws InterruptedException {
@@ -65,9 +64,6 @@ public class RadixTestWithStores extends RadixTest
 	@After
 	public void afterEachRadixTest() throws IOException {
 		// Null checks to better handle case where @Before throws
-		if (tempo != null) {
-			tempo.close();
-		}
 		if (store != null) {
 			store.close();
 			store.reset();
