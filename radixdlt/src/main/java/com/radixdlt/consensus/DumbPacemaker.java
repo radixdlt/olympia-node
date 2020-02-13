@@ -1,9 +1,10 @@
 package com.radixdlt.consensus;
 
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 public class DumbPacemaker {
-	private AtomicReference<Runnable> callbackRef;
+	private AtomicReference<Consumer<Void>> callbackRef;
 	private Thread thread;
 
 	public DumbPacemaker() {
@@ -19,16 +20,16 @@ public class DumbPacemaker {
 		while (true) {
 			try {
 				Thread.sleep(200);
-				Runnable callback = callbackRef.get();
+				Consumer<Void> callback = callbackRef.get();
 				if (callback != null) {
-					callback.run();
+					callback.accept(null);
 				}
 			} catch (InterruptedException e) {
 			}
 		}
 	}
 
-	public void addCallback(Runnable callback) {
+	public void addCallback(Consumer<Void> callback) {
 		this.callbackRef.set(callback);
 	}
 }
