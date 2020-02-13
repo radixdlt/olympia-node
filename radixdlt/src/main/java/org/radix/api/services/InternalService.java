@@ -18,7 +18,7 @@
 package org.radix.api.services;
 
 import com.radixdlt.common.Atom;
-import com.radixdlt.consensus.tempo.MemPool;
+import com.radixdlt.consensus.MemPool;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.Bytes;

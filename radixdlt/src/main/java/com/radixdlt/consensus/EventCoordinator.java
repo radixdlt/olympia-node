@@ -1,4 +1,4 @@
-package com.radixdlt.consensus.tempo;
+package com.radixdlt.consensus;
 
 import com.google.inject.Inject;
 import com.radixdlt.common.Atom;

@@ -17,8 +17,8 @@
 
 package org.radix.integration;
 
-import com.radixdlt.consensus.tempo.MemPool;
-import com.radixdlt.consensus.tempo.ChainedBFT;
+import com.radixdlt.consensus.MemPool;
+import com.radixdlt.consensus.ChainedBFT;
 import com.radixdlt.store.LedgerEntryStore;
 import org.junit.After;
 import org.junit.Before;

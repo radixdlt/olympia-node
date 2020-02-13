@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.tempo;
+package com.radixdlt.consensus;
 
 import com.radixdlt.common.Atom;
 import com.radixdlt.store.LedgerEntry;

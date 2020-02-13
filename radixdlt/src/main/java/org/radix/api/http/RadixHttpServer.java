@@ -17,7 +17,7 @@
 
 package org.radix.api.http;
 
-import com.radixdlt.consensus.tempo.MemPool;
+import com.radixdlt.consensus.MemPool;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;

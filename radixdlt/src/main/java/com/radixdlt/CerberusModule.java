@@ -20,13 +20,11 @@ package com.radixdlt;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.radixdlt.consensus.tempo.DumbMemPool;
-import com.radixdlt.consensus.tempo.MemPool;
+import com.radixdlt.consensus.DumbMemPool;
+import com.radixdlt.consensus.MemPool;
 import com.radixdlt.consensus.tempo.Scheduler;
 import com.radixdlt.consensus.tempo.SingleThreadedScheduler;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
-
-import org.radix.time.Time;
 
 // FIXME: static dependency on Time
 public class CerberusModule extends AbstractModule {

@@ -1,4 +1,4 @@
-package com.radixdlt.consensus.tempo;
+package com.radixdlt.consensus;
 
 import java.util.concurrent.atomic.AtomicReference;
 

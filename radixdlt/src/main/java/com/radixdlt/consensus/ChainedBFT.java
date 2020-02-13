@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.tempo;
+package com.radixdlt.consensus;
 
 import com.google.inject.Inject;
 import com.radixdlt.common.AID;
@@ -30,7 +30,6 @@ import com.radixdlt.universe.Universe;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 

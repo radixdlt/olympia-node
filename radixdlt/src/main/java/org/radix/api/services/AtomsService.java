@@ -20,7 +20,7 @@ package org.radix.api.services;
 import com.google.common.collect.EvictingQueue;
 import com.radixdlt.common.Atom;
 
-import com.radixdlt.consensus.tempo.MemPool;
+import com.radixdlt.consensus.MemPool;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
