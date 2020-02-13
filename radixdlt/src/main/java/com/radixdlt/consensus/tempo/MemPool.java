@@ -25,5 +25,5 @@ import com.radixdlt.store.LedgerEntry;
  */
 public interface MemPool {
 	void addAtom(Atom atom);
-	LedgerEntry takeNextEntry() throws InterruptedException;
+	LedgerEntry takeNextEntry();
 }

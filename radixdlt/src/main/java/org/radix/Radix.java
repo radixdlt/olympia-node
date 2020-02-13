@@ -18,6 +18,7 @@
 package org.radix;
 
 import com.radixdlt.consensus.Consensus;
+import com.radixdlt.consensus.tempo.DumbPacemaker;
 import com.radixdlt.consensus.tempo.MemPool;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.serialization.Serialization;
@@ -145,6 +146,9 @@ public final class Radix
 		peerManager.start();
 
 		// start API services
+		DumbPacemaker dumbPacemaker = globalInjector.getInjector().getInstance(DumbPacemaker.class);
+		dumbPacemaker.start();
+
 		MemPool memPool = globalInjector.getInjector().getInstance(MemPool.class);
 		AtomToBinaryConverter atomToBinaryConverter = globalInjector.getInjector().getInstance(AtomToBinaryConverter.class);
 		LedgerEntryStore store = globalInjector.getInjector().getInstance(LedgerEntryStore.class);

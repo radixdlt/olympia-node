@@ -27,8 +27,6 @@ import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.AtomEventListener;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
-import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.universe.Universe;
 import java.util.LinkedList;
@@ -36,9 +34,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.utils.SimpleThreadPool;
 
-import java.io.Closeable;
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -46,14 +42,11 @@ import java.util.concurrent.LinkedBlockingQueue;
 /**
  * A three-chain BFT
  */
-public final class ChainedBFT implements Consensus, Closeable {
+public final class ChainedBFT implements Consensus {
 	private static final Logger log = Logging.getLogger("bft");
 	private static final int INBOUND_QUEUE_CAPACITY = 16384;
 
 	private final BlockingQueue<ConsensusObservation> consensusObservations;
-	private final SimpleThreadPool<LedgerEntry> consensusThreadPool;
-	private final EventCoordinator eventCoordinator;
-	private final AtomToBinaryConverter atomToBinaryConverter;
 	private final Universe universe;
 	private final LedgerEntryStore store;
 	private final RadixEngine radixEngine;
@@ -62,46 +55,31 @@ public final class ChainedBFT implements Consensus, Closeable {
 	public ChainedBFT(
 		EventCoordinator eventCoordinator,
 		MemPool memPool,
-		AtomToBinaryConverter atomToBinaryConverter,
 		Universe universe,
 		RadixEngine radixEngine,
-		LedgerEntryStore store
+		LedgerEntryStore store,
+		DumbPacemaker dumbPacemaker
 	) {
 		Objects.requireNonNull(memPool);
 		Objects.requireNonNull(eventCoordinator);
-		Objects.requireNonNull(atomToBinaryConverter);
 		Objects.requireNonNull(universe);
 		Objects.requireNonNull(store);
 		Objects.requireNonNull(radixEngine);
 
-		this.eventCoordinator = eventCoordinator;
-		this.atomToBinaryConverter = atomToBinaryConverter;
 		this.universe = universe;
 		this.store = store;
 		this.radixEngine = radixEngine;
 
 		this.consensusObservations = new LinkedBlockingQueue<>(INBOUND_QUEUE_CAPACITY);
 
-		this.consensusThreadPool = new SimpleThreadPool<>("Consensus", 1, memPool::takeNextEntry, this::doConsensus, log);
-		this.consensusThreadPool.start();
-		this.initGenesis();
-	}
+		dumbPacemaker.addCallback(eventCoordinator::newRound);
 
-	private void doConsensus(LedgerEntry entry) {
-		// stupid simple "consensus", just immediately commit anything we get our hands on
-		this.consensusObservations.add(ConsensusObservation.commit(entry));
-		Atom atom = atomToBinaryConverter.toAtom(entry.getContent());
-		eventCoordinator.processProposal(atom);
+		this.initGenesis();
 	}
 
 	@Override
 	public ConsensusObservation observe() throws InterruptedException {
 		return this.consensusObservations.take();
-	}
-
-	@Override
-	public void close() {
-		this.consensusThreadPool.stop();
 	}
 
 	private void initGenesis() {

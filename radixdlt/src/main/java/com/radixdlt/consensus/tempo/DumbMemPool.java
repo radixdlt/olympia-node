@@ -18,8 +18,12 @@ public class DumbMemPool implements MemPool {
 	}
 
 	@Override
-	public LedgerEntry takeNextEntry() throws InterruptedException {
-		Atom atom = parkedAtoms.take();
+	public LedgerEntry takeNextEntry() {
+		Atom atom = parkedAtoms.poll();
+		if (atom == null) {
+			return null;
+		}
+
 		return new LedgerEntry(atomToBinaryConverter.toLedgerEntryContent(atom), atom.getAID());
 	}
 
