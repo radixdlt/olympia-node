@@ -21,7 +21,7 @@ public class DumbMemPool implements MemPool {
 			throw new IllegalArgumentException();
 		}
 
-		Atom atom = parkedAtoms.poll();
+		Atom atom = parkedAtoms.peek();
 		if (atom == null) {
 			return Collections.emptyList();
 		}
@@ -29,6 +29,15 @@ public class DumbMemPool implements MemPool {
 		return Collections.singletonList(atom);
 	}
 
+	@Override
+	public void removeCommittedAtom(Atom atom) {
+		parkedAtoms.removeFirstOccurrence(atom);
+	}
+
+	@Override
+	public void removeRejectedAtom(Atom atom) {
+		parkedAtoms.removeFirstOccurrence(atom);
+	}
 
 	@Override
 	public void addAtom(Atom atom) {

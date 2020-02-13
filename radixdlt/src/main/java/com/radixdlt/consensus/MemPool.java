@@ -25,5 +25,7 @@ import java.util.List;
  */
 public interface MemPool {
 	void addAtom(Atom atom);
+	void removeCommittedAtom(Atom atom);
+	void removeRejectedAtom(Atom atom);
 	List<Atom> getAtoms(int count);
 }
