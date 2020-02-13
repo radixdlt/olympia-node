@@ -17,7 +17,6 @@
 
 package org.radix;
 
-import com.radixdlt.consensus.Consensus;
 import com.radixdlt.consensus.tempo.DumbPacemaker;
 import com.radixdlt.consensus.tempo.MemPool;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
@@ -136,7 +135,6 @@ public final class Radix
 
 		// TODO Eventually modules should be created using Google Guice injector
 		GlobalInjector globalInjector = new GlobalInjector(properties, dbEnv, localSystem, universe);
-		Consensus consensus = globalInjector.getInjector().getInstance(Consensus.class);
 		// TODO use consensus for application construction (in our case, the engine middleware)
 
 		// setup networking

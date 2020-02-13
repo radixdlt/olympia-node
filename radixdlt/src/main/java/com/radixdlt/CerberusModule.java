@@ -19,15 +19,11 @@ package com.radixdlt;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.google.inject.Scopes;
 import com.google.inject.Singleton;
-import com.radixdlt.consensus.Consensus;
 import com.radixdlt.consensus.tempo.DumbMemPool;
 import com.radixdlt.consensus.tempo.MemPool;
 import com.radixdlt.consensus.tempo.Scheduler;
 import com.radixdlt.consensus.tempo.SingleThreadedScheduler;
-import com.radixdlt.consensus.tempo.ChainedBFT;
-import com.radixdlt.consensus.tempo.WallclockTimeSupplier;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 
 import org.radix.time.Time;
@@ -38,8 +34,6 @@ public class CerberusModule extends AbstractModule {
 	protected void configure() {
 		// dependencies
 		bind(Scheduler.class).toProvider(SingleThreadedScheduler::new);
-		bind(WallclockTimeSupplier.class).toInstance(Time::currentTimestamp);
-		bind(Consensus.class).to(ChainedBFT.class).in(Scopes.SINGLETON);
 		bind(MemPool.class).to(DumbMemPool.class);
 	}
 

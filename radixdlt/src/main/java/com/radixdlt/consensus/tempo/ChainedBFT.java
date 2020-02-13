@@ -20,8 +20,6 @@ package com.radixdlt.consensus.tempo;
 import com.google.inject.Inject;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.Atom;
-import com.radixdlt.consensus.Consensus;
-import com.radixdlt.consensus.ConsensusObservation;
 import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.constraintmachine.Particle;
@@ -32,21 +30,18 @@ import com.radixdlt.universe.Universe;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 
 import java.util.Objects;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * A three-chain BFT
  */
-public final class ChainedBFT implements Consensus {
+public final class ChainedBFT {
 	private static final Logger log = Logging.getLogger("bft");
-	private static final int INBOUND_QUEUE_CAPACITY = 16384;
 
-	private final BlockingQueue<ConsensusObservation> consensusObservations;
 	private final Universe universe;
 	private final LedgerEntryStore store;
 	private final RadixEngine radixEngine;
@@ -70,16 +65,9 @@ public final class ChainedBFT implements Consensus {
 		this.store = store;
 		this.radixEngine = radixEngine;
 
-		this.consensusObservations = new LinkedBlockingQueue<>(INBOUND_QUEUE_CAPACITY);
-
 		dumbPacemaker.addCallback(eventCoordinator::newRound);
 
 		this.initGenesis();
-	}
-
-	@Override
-	public ConsensusObservation observe() throws InterruptedException {
-		return this.consensusObservations.take();
 	}
 
 	private void initGenesis() {
