@@ -7,6 +7,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
+/**
+ * Overly simplistic network implementation that just sends messages to itself.
+ */
 public class DumbNetwork implements NetworkSender, NetworkRx {
 	private final AtomicReference<Consumer<Atom>> callbackRef;
 	private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();

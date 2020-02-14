@@ -7,7 +7,10 @@ import java.util.List;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.LinkedBlockingDeque;
 
-public class DumbMemPool implements MemPool {
+/**
+ * Overly simplistic Mem Pool implementation
+ */
+public final class DumbMemPool implements MemPool {
 	private final BlockingDeque<Atom> parkedAtoms;
 
 	@Inject

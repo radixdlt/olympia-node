@@ -10,6 +10,9 @@ import com.radixdlt.engine.AtomEventListener;
 import com.radixdlt.engine.RadixEngine;
 import java.util.List;
 
+/**
+ * Executes consensus logic given events
+ */
 public final class EventCoordinator {
 	private final RadixEngine engine;
 	private final MemPool memPool;

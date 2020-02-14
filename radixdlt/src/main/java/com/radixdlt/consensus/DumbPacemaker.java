@@ -7,6 +7,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
+/**
+ * Overly simplistic pacemaker
+ */
 public final class DumbPacemaker implements Pacemaker, PacemakerRx {
 	private final AtomicReference<Consumer<Void>> callbackRef;
 	private final AtomicReference<ScheduledFuture<?>> futureRef;

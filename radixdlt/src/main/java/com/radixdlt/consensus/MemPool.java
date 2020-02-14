@@ -21,11 +21,39 @@ import com.radixdlt.common.Atom;
 import java.util.List;
 
 /**
- * This is a temporary, rough interface representing the application-side part of the currently developing app/consensus interface.
+ * Basic mempool functionality
  */
 public interface MemPool {
+	/**
+	 * Add an atom to the local mempool.
+	 * Should be called after atom has been validated.
+	 *
+	 * @param atom The atom to add.
+	 */
 	void addAtom(Atom atom);
+
+	/**
+	 * Remove the atom from the local mempool after they have
+	 * been committed by consensus.
+	 *
+	 * @param atom the atom to remove
+	 */
 	void removeCommittedAtom(Atom atom);
+
+	/**
+	 * Remove the atom from the local mempool after they have
+	 * been rejected by consensus.
+	 *
+	 * @param atom the atom to remove
+	 */
 	void removeRejectedAtom(Atom atom);
+
+	/**
+	 * Retrieve a list of atoms from the local mempool for processing by
+	 * consensus.
+	 *
+	 * @param count the number of atoms to retrieve
+	 * @return A list of atoms for processing by consensus
+	 */
 	List<Atom> getAtoms(int count);
 }
