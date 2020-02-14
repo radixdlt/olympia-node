@@ -17,10 +17,6 @@
 
 package org.radix.integration;
 
-import com.radixdlt.consensus.DumbPacemaker;
-import com.radixdlt.consensus.EventCoordinator;
-import com.radixdlt.consensus.MemPool;
-import com.radixdlt.consensus.ChainedBFT;
 import com.radixdlt.store.LedgerEntryStore;
 import org.junit.After;
 import org.junit.Before;
@@ -33,14 +29,11 @@ import org.radix.network2.messaging.MessageCentral;
 import java.io.IOException;
 import java.util.Objects;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 public class RadixTestWithStores extends RadixTest
 {
 	private DatabaseEnvironment dbEnv;
 	private LedgerEntryStore store;
-	private ChainedBFT tempo;
+	//private ChainedBFT bft;
 	private MessageCentral messageCentral;
 	private AddressBook addressBook;
 
@@ -53,7 +46,6 @@ public class RadixTestWithStores extends RadixTest
 		this.addressBook = injector.getInjector().getInstance(AddressBook.class);
 
 		store = injector.getInjector().getInstance(LedgerEntryStore.class);
-		tempo = new ChainedBFT(mock(EventCoordinator.class), mock(DumbPacemaker.class));
 	}
 
 	private <T> T sleepForever(InvocationOnMock invocation) throws InterruptedException {
@@ -81,7 +73,6 @@ public class RadixTestWithStores extends RadixTest
 
 		dbEnv = null;
 		store = null;
-		tempo = null;
 		messageCentral = null;
 		addressBook = null;
 	}
@@ -92,10 +83,6 @@ public class RadixTestWithStores extends RadixTest
 
 	protected LedgerEntryStore getStore() {
 		return Objects.requireNonNull(store, "store was not initialized");
-	}
-
-	protected ChainedBFT getTempo() {
-		return Objects.requireNonNull(tempo, "tempo was not initialized");
 	}
 
 	public MessageCentral getMessageCentral() {

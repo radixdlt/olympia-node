@@ -53,24 +53,30 @@ public final class EventCoordinator {
 	public void processProposal(Vertex vertex) {
 		Atom atom = vertex.getAtom();
 
+		// TODO: Fix this interface
 		engine.store(atom, new AtomEventListener() {
+			@Override
 			public void onCMError(Atom atom, CMError error) {
 				memPool.removeRejectedAtom(atom);
 			}
 
+			@Override
 			public void onStateStore(Atom atom) {
 				memPool.removeCommittedAtom(atom);
 				networkSender.sendVote(vertex);
 			}
 
+			@Override
 			public void onVirtualStateConflict(Atom atom, DataPointer issueParticle) {
 				memPool.removeRejectedAtom(atom);
 			}
 
+			@Override
 			public void onStateConflict(Atom atom, DataPointer issueParticle, Atom conflictingAtom) {
 				memPool.removeRejectedAtom(atom);
 			}
 
+			@Override
 			public void onStateMissingDependency(AID atomId, Particle particle) {
 				memPool.removeRejectedAtom(atom);
 			}

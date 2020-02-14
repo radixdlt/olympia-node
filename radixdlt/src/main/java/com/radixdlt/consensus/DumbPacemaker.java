@@ -12,6 +12,7 @@ import java.util.function.Consumer;
  * Overly simplistic pacemaker
  */
 public final class DumbPacemaker implements Pacemaker, PacemakerRx {
+	private final static int TIMEOUT_MILLISECONDS = 500;
 	private final AtomicReference<Consumer<Void>> callbackRef;
 	private final AtomicReference<ScheduledFuture<?>> futureRef;
 	private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
@@ -28,7 +29,7 @@ public final class DumbPacemaker implements Pacemaker, PacemakerRx {
 			if (callback != null) {
 				callback.accept(null);
 			}
-		}, 500, TimeUnit.MILLISECONDS);
+		}, TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS);
 		this.futureRef.set(future);
 	}
 

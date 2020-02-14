@@ -18,8 +18,6 @@
 package com.radixdlt.consensus;
 
 import com.google.inject.Inject;
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
 
 import java.util.Objects;
 
@@ -27,8 +25,6 @@ import java.util.Objects;
  * A three-chain BFT
  */
 public final class ChainedBFT {
-	private static final Logger log = Logging.getLogger("bft");
-
 	private final PacemakerRx pacemaker;
 
 	@Inject

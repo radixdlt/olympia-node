@@ -7,6 +7,14 @@ import java.util.function.Consumer;
  * TODO: change to an rx interface
  */
 public interface NetworkRx {
+
+	/**
+	 * Throw away callback until rx is implemented
+	 */
 	void addReceiveProposalCallback(Consumer<Vertex> callback);
+
+	/**
+	 * Throw away callback until rx is implemented
+	 */
 	void addReceiveVoteCallback(Consumer<Vertex> callback);
 }
