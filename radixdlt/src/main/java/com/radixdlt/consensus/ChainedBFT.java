@@ -34,6 +34,7 @@ public final class ChainedBFT {
 	@Inject
 	public ChainedBFT(
 		EventCoordinator eventCoordinator,
+		Network network,
 		Pacemaker pacemaker
 	) {
 		Objects.requireNonNull(eventCoordinator);
@@ -42,6 +43,7 @@ public final class ChainedBFT {
 		this.pacemaker = pacemaker;
 
 		pacemaker.addCallback(v -> eventCoordinator.newRound());
+		network.addCallback(proposal -> eventCoordinator.processProposal(proposal));
 	}
 
 	// TODO: Add cleanup

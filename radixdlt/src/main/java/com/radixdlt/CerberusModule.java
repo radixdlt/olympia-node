@@ -20,8 +20,11 @@ package com.radixdlt;
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 import com.radixdlt.consensus.DumbMemPool;
+import com.radixdlt.consensus.DumbNetwork;
 import com.radixdlt.consensus.DumbPacemaker;
 import com.radixdlt.consensus.MemPool;
+import com.radixdlt.consensus.Network;
+import com.radixdlt.consensus.NetworkDispatch;
 import com.radixdlt.consensus.Pacemaker;
 import com.radixdlt.consensus.tempo.Scheduler;
 import com.radixdlt.consensus.tempo.SingleThreadedScheduler;
@@ -33,5 +36,8 @@ public class CerberusModule extends AbstractModule {
 		bind(Scheduler.class).toProvider(SingleThreadedScheduler::new);
 		bind(MemPool.class).to(DumbMemPool.class).in(Scopes.SINGLETON);
 		bind(Pacemaker.class).to(DumbPacemaker.class).in(Scopes.SINGLETON);
+		bind(DumbNetwork.class).in(Scopes.SINGLETON);
+		bind(Network.class).to(DumbNetwork.class);
+		bind(NetworkDispatch.class).to(DumbNetwork.class);
 	}
 }

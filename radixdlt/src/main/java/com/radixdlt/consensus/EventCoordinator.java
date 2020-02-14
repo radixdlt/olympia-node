@@ -13,38 +13,47 @@ import java.util.List;
 public final class EventCoordinator {
 	private final RadixEngine engine;
 	private final MemPool memPool;
+	private final NetworkDispatch networkDispatch;
 
 	@Inject
-	public EventCoordinator(MemPool memPool, RadixEngine engine) {
+	public EventCoordinator(
+		MemPool memPool,
+		NetworkDispatch networkDispatch,
+		RadixEngine engine
+	) {
 		this.memPool = memPool;
+		this.networkDispatch = networkDispatch;
 		this.engine = engine;
 	}
 
 	public void newRound() {
 		List<Atom> atoms = memPool.getAtoms(1);
 		for (Atom atom : atoms) {
-			engine.store(atom, new AtomEventListener() {
-
-				public void onCMError(Atom atom, CMError error) {
-					memPool.removeRejectedAtom(atom);
-				}
-
-				public void onStateStore(Atom atom) {
-					memPool.removeCommittedAtom(atom);
-				}
-
-				public void onVirtualStateConflict(Atom atom, DataPointer issueParticle) {
-					memPool.removeRejectedAtom(atom);
-				}
-
-				public void onStateConflict(Atom atom, DataPointer issueParticle, Atom conflictingAtom) {
-					memPool.removeRejectedAtom(atom);
-				}
-
-				public void onStateMissingDependency(AID atomId, Particle particle) {
-					memPool.removeRejectedAtom(atom);
-				}
-			});
+			networkDispatch.broadcastProposal(atom);
 		}
+	}
+
+	public void processProposal(Atom atom) {
+		engine.store(atom, new AtomEventListener() {
+			public void onCMError(Atom atom, CMError error) {
+				memPool.removeRejectedAtom(atom);
+			}
+
+			public void onStateStore(Atom atom) {
+				memPool.removeCommittedAtom(atom);
+			}
+
+			public void onVirtualStateConflict(Atom atom, DataPointer issueParticle) {
+				memPool.removeRejectedAtom(atom);
+			}
+
+			public void onStateConflict(Atom atom, DataPointer issueParticle, Atom conflictingAtom) {
+				memPool.removeRejectedAtom(atom);
+			}
+
+			public void onStateMissingDependency(AID atomId, Particle particle) {
+				memPool.removeRejectedAtom(atom);
+			}
+		});
 	}
 }
