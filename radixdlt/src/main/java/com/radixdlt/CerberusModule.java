@@ -18,22 +18,20 @@
 package com.radixdlt;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
+import com.google.inject.Scopes;
 import com.radixdlt.consensus.DumbMemPool;
 import com.radixdlt.consensus.DumbPacemaker;
 import com.radixdlt.consensus.MemPool;
 import com.radixdlt.consensus.Pacemaker;
 import com.radixdlt.consensus.tempo.Scheduler;
 import com.radixdlt.consensus.tempo.SingleThreadedScheduler;
-import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 
 public class CerberusModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		// dependencies
 		bind(Scheduler.class).toProvider(SingleThreadedScheduler::new);
-		bind(MemPool.class).to(DumbMemPool.class);
-		bind(Pacemaker.class).to(DumbPacemaker.class).in(Singleton.class);
+		bind(MemPool.class).to(DumbMemPool.class).in(Scopes.SINGLETON);
+		bind(Pacemaker.class).to(DumbPacemaker.class).in(Scopes.SINGLETON);
 	}
 }

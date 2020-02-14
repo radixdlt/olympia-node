@@ -29,6 +29,8 @@ import java.util.Objects;
 public final class ChainedBFT {
 	private static final Logger log = Logging.getLogger("bft");
 
+	private final Pacemaker pacemaker;
+
 	@Inject
 	public ChainedBFT(
 		EventCoordinator eventCoordinator,
@@ -37,6 +39,13 @@ public final class ChainedBFT {
 		Objects.requireNonNull(eventCoordinator);
 		Objects.requireNonNull(pacemaker);
 
+		this.pacemaker = pacemaker;
+
 		pacemaker.addCallback(v -> eventCoordinator.newRound());
+	}
+
+	// TODO: Add cleanup
+	public void start() {
+		this.pacemaker.start();
 	}
 }

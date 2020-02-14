@@ -24,8 +24,17 @@ public final class EventCoordinator {
 		List<Atom> atoms = memPool.getAtoms(1);
 		for (Atom atom : atoms) {
 			engine.store(atom, new AtomEventListener() {
+
+				public void onCMError(Atom atom, CMError error) {
+					memPool.removeRejectedAtom(atom);
+				}
+
 				public void onStateStore(Atom atom) {
 					memPool.removeCommittedAtom(atom);
+				}
+
+				public void onVirtualStateConflict(Atom atom, DataPointer issueParticle) {
+					memPool.removeRejectedAtom(atom);
 				}
 
 				public void onStateConflict(Atom atom, DataPointer issueParticle, Atom conflictingAtom) {

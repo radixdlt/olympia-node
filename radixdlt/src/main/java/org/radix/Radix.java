@@ -17,6 +17,7 @@
 
 package org.radix;
 
+import com.radixdlt.consensus.ChainedBFT;
 import com.radixdlt.consensus.DumbPacemaker;
 import com.radixdlt.consensus.MemPool;
 import com.radixdlt.consensus.Pacemaker;
@@ -145,11 +146,8 @@ public final class Radix
 		peerManager.start();
 
 		// start API services
-		Pacemaker dumbPacemaker = globalInjector.getInjector().getInstance(Pacemaker.class);
-
-		// TODO: Fix this
-		Thread thread = new Thread(dumbPacemaker);
-		thread.start();
+		ChainedBFT bft = globalInjector.getInjector().getInstance(ChainedBFT.class);
+		bft.start();
 
 		MemPool memPool = globalInjector.getInjector().getInstance(MemPool.class);
 		AtomToBinaryConverter atomToBinaryConverter = globalInjector.getInjector().getInstance(AtomToBinaryConverter.class);
