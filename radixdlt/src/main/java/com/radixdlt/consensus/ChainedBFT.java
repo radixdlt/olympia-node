@@ -42,8 +42,10 @@ public final class ChainedBFT {
 
 		this.pacemaker = pacemaker;
 
+		// TODO: The following should be executed serially
 		pacemaker.addTimeoutCallback(v -> eventCoordinator.processTimeout());
-		network.addProposalCallback(proposal -> eventCoordinator.processProposal(proposal));
+		network.addReceiveProposalCallback(proposal -> eventCoordinator.processProposal(proposal));
+		network.addReceiveVoteCallback(vote -> eventCoordinator.processVote(vote));
 	}
 
 	// TODO: Add cleanup

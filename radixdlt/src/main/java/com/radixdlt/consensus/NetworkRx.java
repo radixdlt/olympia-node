@@ -1,6 +1,5 @@
 package com.radixdlt.consensus;
 
-import com.radixdlt.common.Atom;
 import java.util.function.Consumer;
 
 /**
@@ -8,5 +7,6 @@ import java.util.function.Consumer;
  * TODO: change to an rx interface
  */
 public interface NetworkRx {
-	void addProposalCallback(Consumer<Atom> callback);
+	void addReceiveProposalCallback(Consumer<Vertex> callback);
+	void addReceiveVoteCallback(Consumer<Vertex> callback);
 }

@@ -35,9 +35,14 @@ public final class EventCoordinator {
 	private void newRound() {
 		// I am always the leader, bwahaha!
 		List<Atom> atoms = memPool.getAtoms(1);
-		for (Atom atom : atoms) {
-			networkSender.broadcastProposal(atom);
+		if (!atoms.isEmpty()) {
+			networkSender.broadcastProposal(new Vertex(this.pacemaker.getCurrentRound(), atoms.get(0)));
 		}
+	}
+
+	public void processVote(Vertex vertex) {
+		this.pacemaker.processVote(vertex);
+		newRound();
 	}
 
 	public void processTimeout() {
@@ -45,7 +50,9 @@ public final class EventCoordinator {
 		newRound();
 	}
 
-	public void processProposal(Atom atom) {
+	public void processProposal(Vertex vertex) {
+		Atom atom = vertex.getAtom();
+
 		engine.store(atom, new AtomEventListener() {
 			public void onCMError(Atom atom, CMError error) {
 				memPool.removeRejectedAtom(atom);
@@ -53,8 +60,7 @@ public final class EventCoordinator {
 
 			public void onStateStore(Atom atom) {
 				memPool.removeCommittedAtom(atom);
-				pacemaker.processedAtom();
-				newRound();
+				networkSender.sendVote(vertex);
 			}
 
 			public void onVirtualStateConflict(Atom atom, DataPointer issueParticle) {

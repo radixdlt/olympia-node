@@ -1,6 +1,5 @@
 package com.radixdlt.consensus;
 
-import com.radixdlt.common.Atom;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -11,25 +10,42 @@ import java.util.function.Consumer;
  * Overly simplistic network implementation that just sends messages to itself.
  */
 public class DumbNetwork implements NetworkSender, NetworkRx {
-	private final AtomicReference<Consumer<Atom>> callbackRef;
+	private final AtomicReference<Consumer<Vertex>> proposalCallbackRef;
+	private final AtomicReference<Consumer<Vertex>> voteCallbackRef;
 	private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 
 	public DumbNetwork() {
-		this.callbackRef = new AtomicReference<>();
+		this.proposalCallbackRef = new AtomicReference<>();
+		this.voteCallbackRef = new AtomicReference<>();
 	}
 
 	@Override
-	public void broadcastProposal(Atom atom) {
+	public void broadcastProposal(Vertex vertex) {
 		executorService.schedule(() -> {
-			Consumer<Atom> callback = this.callbackRef.get();
+			Consumer<Vertex> callback = this.proposalCallbackRef.get();
 			if (callback != null) {
-				callback.accept(atom);
+				callback.accept(vertex);
 			}
 		}, 200, TimeUnit.MILLISECONDS);
 	}
 
 	@Override
-	public void addProposalCallback(Consumer<Atom> callback) {
-		this.callbackRef.set(callback);
+	public void sendVote(Vertex vertex) {
+		executorService.schedule(() -> {
+			Consumer<Vertex> callback = this.voteCallbackRef.get();
+			if (callback != null) {
+				callback.accept(vertex);
+			}
+		}, 200, TimeUnit.MILLISECONDS);
+	}
+
+	@Override
+	public void addReceiveProposalCallback(Consumer<Vertex> callback) {
+		this.proposalCallbackRef.set(callback);
+	}
+
+	@Override
+	public void addReceiveVoteCallback(Consumer<Vertex> callback) {
+		this.voteCallbackRef.set(callback);
 	}
 }
