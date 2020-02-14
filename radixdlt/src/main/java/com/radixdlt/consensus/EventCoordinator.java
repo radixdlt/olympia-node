@@ -13,24 +13,33 @@ import java.util.List;
 public final class EventCoordinator {
 	private final RadixEngine engine;
 	private final MemPool memPool;
-	private final NetworkDispatch networkDispatch;
+	private final NetworkSender networkSender;
+	private final Pacemaker pacemaker;
 
 	@Inject
 	public EventCoordinator(
 		MemPool memPool,
-		NetworkDispatch networkDispatch,
+		NetworkSender networkSender,
+		Pacemaker pacemaker,
 		RadixEngine engine
 	) {
 		this.memPool = memPool;
-		this.networkDispatch = networkDispatch;
+		this.networkSender = networkSender;
+		this.pacemaker = pacemaker;
 		this.engine = engine;
 	}
 
-	public void newRound() {
+	private void newRound() {
+		// I am always the leader, bwahaha!
 		List<Atom> atoms = memPool.getAtoms(1);
 		for (Atom atom : atoms) {
-			networkDispatch.broadcastProposal(atom);
+			networkSender.broadcastProposal(atom);
 		}
+	}
+
+	public void processTimeout() {
+		this.pacemaker.processTimeout();
+		newRound();
 	}
 
 	public void processProposal(Atom atom) {
@@ -41,6 +50,8 @@ public final class EventCoordinator {
 
 			public void onStateStore(Atom atom) {
 				memPool.removeCommittedAtom(atom);
+				pacemaker.processedAtom();
+				newRound();
 			}
 
 			public void onVirtualStateConflict(Atom atom, DataPointer issueParticle) {

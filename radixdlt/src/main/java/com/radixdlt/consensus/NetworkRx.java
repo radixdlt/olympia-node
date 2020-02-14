@@ -3,6 +3,6 @@ package com.radixdlt.consensus;
 import com.radixdlt.common.Atom;
 import java.util.function.Consumer;
 
-public interface Network {
-	void addCallback(Consumer<Atom> callback);
+public interface NetworkRx {
+	void addProposalCallback(Consumer<Atom> callback);
 }

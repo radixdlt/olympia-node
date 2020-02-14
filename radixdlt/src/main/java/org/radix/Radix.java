@@ -18,9 +18,7 @@
 package org.radix;
 
 import com.radixdlt.consensus.ChainedBFT;
-import com.radixdlt.consensus.DumbPacemaker;
 import com.radixdlt.consensus.MemPool;
-import com.radixdlt.consensus.Pacemaker;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;

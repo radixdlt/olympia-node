@@ -29,21 +29,21 @@ import java.util.Objects;
 public final class ChainedBFT {
 	private static final Logger log = Logging.getLogger("bft");
 
-	private final Pacemaker pacemaker;
+	private final PacemakerRx pacemaker;
 
 	@Inject
 	public ChainedBFT(
 		EventCoordinator eventCoordinator,
-		Network network,
-		Pacemaker pacemaker
+		NetworkRx network,
+		PacemakerRx pacemaker
 	) {
 		Objects.requireNonNull(eventCoordinator);
 		Objects.requireNonNull(pacemaker);
 
 		this.pacemaker = pacemaker;
 
-		pacemaker.addCallback(v -> eventCoordinator.newRound());
-		network.addCallback(proposal -> eventCoordinator.processProposal(proposal));
+		pacemaker.addTimeoutCallback(v -> eventCoordinator.processTimeout());
+		network.addProposalCallback(proposal -> eventCoordinator.processProposal(proposal));
 	}
 
 	// TODO: Add cleanup

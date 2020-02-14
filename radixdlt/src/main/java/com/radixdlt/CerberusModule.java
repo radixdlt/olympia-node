@@ -23,9 +23,10 @@ import com.radixdlt.consensus.DumbMemPool;
 import com.radixdlt.consensus.DumbNetwork;
 import com.radixdlt.consensus.DumbPacemaker;
 import com.radixdlt.consensus.MemPool;
-import com.radixdlt.consensus.Network;
-import com.radixdlt.consensus.NetworkDispatch;
+import com.radixdlt.consensus.NetworkRx;
+import com.radixdlt.consensus.NetworkSender;
 import com.radixdlt.consensus.Pacemaker;
+import com.radixdlt.consensus.PacemakerRx;
 import com.radixdlt.consensus.tempo.Scheduler;
 import com.radixdlt.consensus.tempo.SingleThreadedScheduler;
 
@@ -35,9 +36,13 @@ public class CerberusModule extends AbstractModule {
 		// dependencies
 		bind(Scheduler.class).toProvider(SingleThreadedScheduler::new);
 		bind(MemPool.class).to(DumbMemPool.class).in(Scopes.SINGLETON);
-		bind(Pacemaker.class).to(DumbPacemaker.class).in(Scopes.SINGLETON);
+
+		bind(DumbPacemaker.class).in(Scopes.SINGLETON);
+		bind(PacemakerRx.class).to(DumbPacemaker.class);
+		bind(Pacemaker.class).to(DumbPacemaker.class);
+
 		bind(DumbNetwork.class).in(Scopes.SINGLETON);
-		bind(Network.class).to(DumbNetwork.class);
-		bind(NetworkDispatch.class).to(DumbNetwork.class);
+		bind(NetworkRx.class).to(DumbNetwork.class);
+		bind(NetworkSender.class).to(DumbNetwork.class);
 	}
 }

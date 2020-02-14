@@ -1,35 +1,52 @@
 package com.radixdlt.consensus;
 
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
-public final class DumbPacemaker implements Pacemaker {
+public final class DumbPacemaker implements Pacemaker, PacemakerRx {
 	private final AtomicReference<Consumer<Void>> callbackRef;
-	private final ExecutorService executorService = Executors.newSingleThreadExecutor();
+	private final AtomicReference<ScheduledFuture<?>> futureRef;
+	private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 
 	public DumbPacemaker() {
 		this.callbackRef = new AtomicReference<>();
+		this.futureRef = new AtomicReference<>();
 	}
 
-	public void start() {
-		executorService.submit(() -> {
-			while (true) {
-				try {
-					TimeUnit.MILLISECONDS.sleep(200);
-					Consumer<Void> callback = callbackRef.get();
-					if (callback != null) {
-						callback.accept(null);
-					}
-				} catch (InterruptedException e) {
-				}
+	private void scheduleTimeout() {
+		ScheduledFuture<?> future = executorService.schedule(() -> {
+			Consumer<Void> callback = callbackRef.get();
+			if (callback != null) {
+				callback.accept(null);
 			}
-		});
+		}, 500, TimeUnit.MILLISECONDS);
+		this.futureRef.set(future);
 	}
 
-	public void addCallback(Consumer<Void> callback) {
+	@Override
+	public void processTimeout() {
+		scheduleTimeout();
+	}
+
+	@Override
+	public void processedAtom() {
+		// FIXME: For sure there are race conditions here
+		ScheduledFuture<?> future = this.futureRef.get();
+		future.cancel(false);
+		scheduleTimeout();
+	}
+
+	@Override
+	public void start() {
+		scheduleTimeout();
+	}
+
+	@Override
+	public void addTimeoutCallback(Consumer<Void> callback) {
 		this.callbackRef.set(callback);
 	}
 }
