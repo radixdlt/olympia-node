@@ -40,8 +40,8 @@ public final class EventCoordinator {
 		}
 	}
 
-	public void processVote(Vertex vertex) {
-		this.pacemaker.processVote(vertex);
+	public void processVote(Vote vote) {
+		this.pacemaker.processVote(vote);
 		newRound();
 	}
 
@@ -63,7 +63,7 @@ public final class EventCoordinator {
 			@Override
 			public void onStateStore(Atom atom) {
 				memPool.removeCommittedAtom(atom);
-				networkSender.sendVote(vertex);
+				networkSender.sendVote(new Vote(vertex));
 			}
 
 			@Override

@@ -16,5 +16,5 @@ public interface NetworkRx {
 	/**
 	 * Throw away callback until rx is implemented
 	 */
-	void addReceiveVoteCallback(Consumer<Vertex> callback);
+	void addReceiveVoteCallback(Consumer<Vote> callback);
 }
