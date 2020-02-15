@@ -20,6 +20,7 @@ package org.radix.api.services;
 import com.google.common.collect.EvictingQueue;
 import com.radixdlt.common.Atom;
 
+import com.radixdlt.consensus.MemPool;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -33,7 +34,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
-import com.radixdlt.middleware2.processing.RadixEngineAtomProcessor;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.LedgerEntry;
@@ -74,12 +74,12 @@ public class AtomsService {
 
 	private final Object lock = new Object();
 	private final EvictingQueue<String> eventRingBuffer = EvictingQueue.create(64);
-	private final RadixEngineAtomProcessor radixEngineAtomProcessor;
+	private final MemPool memPool;
 	private final AtomToBinaryConverter atomToBinaryConverter;
 	private final LedgerEntryStore store;
 
-	public AtomsService(LedgerEntryStore store, RadixEngineAtomProcessor radixEngineAtomProcessor, AtomToBinaryConverter atomToBinaryConverter) {
-		this.radixEngineAtomProcessor = Objects.requireNonNull(radixEngineAtomProcessor);
+	public AtomsService(LedgerEntryStore store, MemPool memPool, AtomToBinaryConverter atomToBinaryConverter) {
+		this.memPool = Objects.requireNonNull(memPool);
 		this.store = Objects.requireNonNull(store);
 		this.atomToBinaryConverter = Objects.requireNonNull(atomToBinaryConverter);
 
@@ -164,19 +164,19 @@ public class AtomsService {
 		return Collections.unmodifiableMap(atomEventCount);
 	}
 
-	public AID submitAtom(JSONObject atom, SingleAtomListener subscriber) {
-		return radixEngineAtomProcessor.process(atom, Optional.of(new RadixEngineAtomProcessor.ProcessorAtomEventListener() {
-			@Override
-			public void onDeserializationCompleted(AID atomId) {
-				if (subscriber != null) {
-					deleteOnEventSingleAtomObservers.compute(atomId, (hid, oldSubscribers) -> {
-						List<SingleAtomListener> subscribers = oldSubscribers == null ? new ArrayList<>() : oldSubscribers;
-						subscribers.add(subscriber);
-						return subscribers;
-					});
-				}
-			}
-		}));
+	public AID submitAtom(JSONObject jsonAtom, SingleAtomListener subscriber) {
+		final Atom atom = serialization.fromJsonObject(jsonAtom, Atom.class);
+		if (subscriber != null) {
+			deleteOnEventSingleAtomObservers.compute(atom.getAID(), (hid, oldSubscribers) -> {
+				List<SingleAtomListener> subscribers = oldSubscribers == null ? new ArrayList<>() : oldSubscribers;
+				subscribers.add(subscriber);
+				return subscribers;
+			});
+		}
+
+		memPool.addAtom(atom);
+
+		return atom.getAID();
 	}
 
 	public Disposable subscribeAtomStatusNotifications(AID aid, AtomStatusListener subscriber) {

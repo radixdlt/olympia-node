@@ -22,7 +22,7 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.name.Names;
-import com.radixdlt.TempoModule;
+import com.radixdlt.CerberusModule;
 import com.radixdlt.common.EUID;
 import com.radixdlt.delivery.LazyRequestDelivererModule;
 import com.radixdlt.discovery.IterativeDiscovererModule;
@@ -48,7 +48,7 @@ public class GlobalInjector {
 		Module lazyRequestDelivererModule = new LazyRequestDelivererModule(properties);
 		Module iterativeDiscovererModule = new IterativeDiscovererModule(properties);
 		Module berkeleyStoreModule = new BerkeleyStoreModule();
-		Module tempoModule = new TempoModule();
+		Module tempoModule = new CerberusModule();
 		Module middlewareModule = new MiddlewareModule();
 		Module messageCentralModule = new MessageCentralModule(properties);
 		Module udpTransportModule = new UDPTransportModule(properties);
