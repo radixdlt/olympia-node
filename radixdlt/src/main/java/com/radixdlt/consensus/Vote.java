@@ -6,20 +6,16 @@ import java.util.Objects;
  * Represents a vote on a vertex
  */
 public final class Vote {
-	private final Vertex vertex;
+	private final int hash;
 
-	public Vote(Vertex vertex) {
-		this.vertex = Objects.requireNonNull(vertex);
-	}
-
-	public Vertex getVertex() {
-		return vertex;
+	public Vote(int hash) {
+		this.hash = hash;
 	}
 
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(vertex);
+		return hash;
 	}
 
 	@Override
@@ -29,6 +25,6 @@ public final class Vote {
 		}
 
 		Vote v = (Vote) o;
-		return Objects.equals(v.vertex, this.vertex);
+		return Objects.equals(v.hash, this.hash);
 	}
 }

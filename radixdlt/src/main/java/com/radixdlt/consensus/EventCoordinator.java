@@ -18,16 +18,19 @@ public final class EventCoordinator {
 	private final MemPool memPool;
 	private final NetworkSender networkSender;
 	private final Pacemaker pacemaker;
+	private final SafetyRules safetyRules;
 
 	@Inject
 	public EventCoordinator(
 		MemPool memPool,
 		NetworkSender networkSender,
+		SafetyRules safetyRules,
 		Pacemaker pacemaker,
 		RadixEngine engine
 	) {
 		this.memPool = memPool;
 		this.networkSender = networkSender;
+		this.safetyRules = safetyRules;
 		this.pacemaker = pacemaker;
 		this.engine = engine;
 	}
@@ -63,7 +66,10 @@ public final class EventCoordinator {
 			@Override
 			public void onStateStore(Atom atom) {
 				memPool.removeCommittedAtom(atom);
-				networkSender.sendVote(new Vote(vertex));
+
+				final Vote vote = safetyRules.vote(vertex);
+
+				networkSender.sendVote(vote);
 			}
 
 			@Override
