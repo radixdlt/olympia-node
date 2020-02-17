@@ -4,6 +4,7 @@ import com.google.common.collect.Sets;
 import com.google.inject.Inject;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.Atom;
+import com.radixdlt.common.EUID;
 import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.constraintmachine.Particle;
@@ -22,6 +23,8 @@ public final class EventCoordinator {
 	private final Mempool mempool;
 	private final NetworkSender networkSender;
 	private final Pacemaker pacemaker;
+	private final ProposerElection proposerElection;
+	private final EUID self;
 	private final SafetyRules safetyRules;
 
 	@Inject
@@ -32,6 +35,8 @@ public final class EventCoordinator {
 		Pacemaker pacemaker,
 		VertexStore vertexStore,
 		RadixEngine engine
+		ProposerElection proposerElection,
+		EUID self
 	) {
 		this.mempool = mempool;
 		this.networkSender = networkSender;
@@ -39,10 +44,16 @@ public final class EventCoordinator {
 		this.pacemaker = pacemaker;
 		this.vertexStore = vertexStore;
 		this.engine = engine;
+		this.proposerElection = proposerElection;
+		this.self = self;
 	}
 
-	private void newRound() {
-		// I am always the leader, bwahaha!
+	private void processNewRound(long round) {
+        // only do something if we're actually the leader
+		if (!proposerElection.isValidProposer(self, round)) {
+			return;
+		}
+        
 		List<Atom> atoms = mempool.getAtoms(1, Sets.newHashSet());
 		if (!atoms.isEmpty()) {
 			QuorumCertificate highestQC = vertexStore.getHighestQC();

@@ -50,8 +50,8 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 	}
 
 	@Override
-	public void processVertex(Vertex vertex) {
-		if (vertex.getRound() < currentRound.get()) {
+	public void processQC(long round) {
+		if (round < currentRound.get()) {
 			return;
 		}
 
