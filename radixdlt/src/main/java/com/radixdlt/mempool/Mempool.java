@@ -37,8 +37,9 @@ public interface Mempool {
 	 *
 	 * @param atom The atom to add.
 	 * @throws MempoolFullException if the mempool cannot accept new submissions.
+	 * @throws MempoolDuplicateException if the mempool already has the specified atom
 	 */
-	void addAtom(Atom atom) throws MempoolFullException;
+	void addAtom(Atom atom) throws MempoolFullException, MempoolDuplicateException;
 
 	/**
 	 * Remove the referenced atom from the local mempool after it has

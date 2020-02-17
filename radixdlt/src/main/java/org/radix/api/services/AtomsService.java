@@ -19,6 +19,7 @@ package org.radix.api.services;
 
 import com.google.common.collect.EvictingQueue;
 import com.radixdlt.common.Atom;
+import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
 
 import java.util.ArrayList;
@@ -177,7 +178,7 @@ public class AtomsService {
 				});
 			}
 			this.submissionControl.submitAtom(atom);
-		} catch (MempoolFullException e) {
+		} catch (MempoolFullException | MempoolDuplicateException e) {
 			if (subscriber != null) {
 				this.deleteOnEventSingleAtomObservers.computeIfPresent(atom.getAID(), (aid, subscribers) -> {
 					subscribers.remove(subscriber);

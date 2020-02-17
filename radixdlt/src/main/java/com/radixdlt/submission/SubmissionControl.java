@@ -17,6 +17,7 @@
 package com.radixdlt.submission;
 
 import com.radixdlt.common.Atom;
+import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
 
 /**
@@ -28,6 +29,7 @@ public interface SubmissionControl {
 	 *
 	 * @param atom the {@link Atom} for the atom
 	 * @throws MempoolFullException if the underlying mempool is too full to accept new submissions
+	 * @throws MempoolDuplicateException if the underlying mempool already has the specified atom
 	 */
-	public void submitAtom(Atom atom) throws MempoolFullException;
+	public void submitAtom(Atom atom) throws MempoolFullException, MempoolDuplicateException;
 }

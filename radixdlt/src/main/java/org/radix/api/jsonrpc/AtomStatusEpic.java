@@ -18,11 +18,10 @@
 package org.radix.api.jsonrpc;
 
 import com.radixdlt.engine.AtomStatus;
+import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
-import com.radixdlt.constraintmachine.DataPointer;
-
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -127,6 +126,11 @@ public class AtomStatusEpic {
 					data.put("message", e.getMessage());
 					// FIXME: Probably should be something different here, but decision deferred until later
 					sendAtomSubmissionState.accept(AtomStatus.DOES_NOT_EXIST, data);
+				} else if (e instanceof MempoolDuplicateException) {
+					JSONObject data = new JSONObject();
+					data.put("message", e.getMessage());
+					// FIXME: Probably should be something different here, but decision deferred until later
+					sendAtomSubmissionState.accept(AtomStatus.CONFLICT_LOSER, data);
 				} else {
 					JSONObject data = new JSONObject();
 					data.put("message", e.getMessage());

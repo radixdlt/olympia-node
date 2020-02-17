@@ -22,6 +22,7 @@ import java.util.function.Consumer;
 
 import com.radixdlt.common.AID;
 import com.radixdlt.constraintmachine.DataPointer;
+import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
 
 import org.everit.json.schema.Schema;
@@ -149,6 +150,11 @@ public class SubmitAtomAndSubscribeEpic {
 					data.put("message", e.getMessage());
 					// FIXME: Probably should be something different here, but decision deferred until later
 					sendAtomSubmissionState.accept(AtomSubmissionState.UNSUITABLE_PEER, data);
+				} else if (e instanceof MempoolDuplicateException) {
+					JSONObject data = new JSONObject();
+					data.put("message", e.getMessage());
+					data.put("pointerToIssue", DataPointer.ofAtom());
+					sendAtomSubmissionState.accept(AtomSubmissionState.COLLISION, data);
 				} else {
 					JSONObject data = new JSONObject();
 					data.put("message", e.getMessage());

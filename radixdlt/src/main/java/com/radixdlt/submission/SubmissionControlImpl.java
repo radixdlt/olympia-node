@@ -6,6 +6,7 @@ import javax.inject.Inject;
 
 import com.radixdlt.common.Atom;
 import com.radixdlt.mempool.Mempool;
+import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
 
 class SubmissionControlImpl implements SubmissionControl {
@@ -17,7 +18,7 @@ class SubmissionControlImpl implements SubmissionControl {
 	}
 
 	@Override
-	public void submitAtom(Atom atom) throws MempoolFullException {
+	public void submitAtom(Atom atom) throws MempoolFullException, MempoolDuplicateException {
 		// FIXME: Should perform at least static checks on atom via CM/RE before providing to mempool
 		this.mempool.addAtom(atom);
 	}
