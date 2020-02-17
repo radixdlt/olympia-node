@@ -44,7 +44,9 @@ public final class EventCoordinator {
 	}
 
 	public void processVote(Vote vote) {
-		this.pacemaker.processVote(vote);
+		// Assume a single node network for now
+		QuorumCertificate qc = new QuorumCertificate(vote);
+		this.pacemaker.processQC(qc.getRound());
 		newRound();
 	}
 

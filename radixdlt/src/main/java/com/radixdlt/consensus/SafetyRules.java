@@ -6,6 +6,6 @@ package com.radixdlt.consensus;
  */
 public final class SafetyRules {
 	public Vote vote(Vertex vertex) {
-		return new Vote(vertex.hashCode());
+		return new Vote(vertex.getRound(), vertex.hashCode());
 	}
 }

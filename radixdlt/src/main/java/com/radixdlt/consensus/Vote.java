@@ -7,11 +7,16 @@ import java.util.Objects;
  */
 public final class Vote {
 	private final int hash;
+	private final long round;
 
-	public Vote(int hash) {
+	public Vote(long round, int hash) {
+		this.round = round;
 		this.hash = hash;
 	}
 
+	public long getRound() {
+		return round;
+	}
 
 	@Override
 	public int hashCode() {
