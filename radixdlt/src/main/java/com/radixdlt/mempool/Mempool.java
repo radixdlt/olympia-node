@@ -14,46 +14,58 @@
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
  */
-
-package com.radixdlt.consensus;
+package com.radixdlt.mempool;
 
 import com.radixdlt.common.Atom;
+
 import java.util.List;
+import java.util.Set;
+
+import com.radixdlt.common.AID;
 
 /**
- * Basic mempool functionality
+ * Basic mempool functionality.
+ * Implementations are expected to be thread safe.
+ * <p>
+ * Note that conceptually, a mempoolcan be thought of as a list indexable
+ * by {@link AID} and ordered FIFO by {@link #addAtom(Atom)} call order.
  */
-public interface MemPool {
+public interface Mempool {
 	/**
 	 * Add an atom to the local mempool.
 	 * Should be called after atom has been validated.
 	 *
 	 * @param atom The atom to add.
+	 * @throws MempoolFullException if the mempool cannot accept new submissions.
 	 */
-	void addAtom(Atom atom);
+	void addAtom(Atom atom) throws MempoolFullException;
 
 	/**
-	 * Remove the atom from the local mempool after they have
+	 * Remove the referenced atom from the local mempool after it has
 	 * been committed by consensus.
 	 *
-	 * @param atom the atom to remove
+	 * @param aid The ID of the atom to remove
 	 */
-	void removeCommittedAtom(Atom atom);
+	void removeCommittedAtom(AID aid);
 
 	/**
-	 * Remove the atom from the local mempool after they have
+	 * Remove the referenced atom from the local mempool after it has
 	 * been rejected by consensus.
 	 *
-	 * @param atom the atom to remove
+	 * @param aid The ID of the atom to remove
 	 */
-	void removeRejectedAtom(Atom atom);
+	void removeRejectedAtom(AID aid);
 
 	/**
 	 * Retrieve a list of atoms from the local mempool for processing by
 	 * consensus.
+	 * <p>
+	 * Note that the supplied {@code seen} parameter is used to avoid inclusion
+	 * of atoms that are "in-flight" but not yet committed to the ledger.
 	 *
 	 * @param count the number of atoms to retrieve
+	 * @param seen IDs of atoms seen by consensus, but not yet committed to the ledger
 	 * @return A list of atoms for processing by consensus
 	 */
-	List<Atom> getAtoms(int count);
+	List<Atom> getAtoms(int count, Set<AID> seen);
 }

@@ -17,11 +17,11 @@
 
 package org.radix.api.http;
 
-import com.radixdlt.consensus.MemPool;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.LedgerEntryStore;
+import com.radixdlt.submission.SubmissionControl;
 import com.radixdlt.universe.Universe;
 import com.stijndewitt.undertow.cors.AllowAll;
 import com.stijndewitt.undertow.cors.Filter;
@@ -77,7 +77,7 @@ public final class RadixHttpServer {
 	private final Serialization serialization;
 
 	public RadixHttpServer(LedgerEntryStore store,
-	                       MemPool memPool,
+                           SubmissionControl submissionControl,
 	                       AtomToBinaryConverter atomToBinaryConverter,
 	                       Universe universe,
 	                       Serialization serialization,
@@ -89,7 +89,7 @@ public final class RadixHttpServer {
 		this.apiSerializedUniverse = serialization.toJsonObject(this.universe, DsonOutput.Output.API);
 		this.localSystem = Objects.requireNonNull(localSystem);
 		this.peers = new ConcurrentHashMap<>();
-		this.atomsService = new AtomsService(store, memPool, atomToBinaryConverter);
+		this.atomsService = new AtomsService(store, submissionControl, atomToBinaryConverter);
 		this.jsonRpcServer = new RadixJsonRpcServer(
 			serialization,
 			store,
@@ -99,7 +99,7 @@ public final class RadixHttpServer {
 			addressBook,
 			universe
 		);
-		this.internalService = new InternalService(memPool, serialization, properties, universe);
+		this.internalService = new InternalService(submissionControl, properties, universe);
 		this.networkService = new NetworkService(serialization, localSystem, addressBook);
 	}
 

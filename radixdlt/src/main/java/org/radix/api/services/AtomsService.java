@@ -19,8 +19,8 @@ package org.radix.api.services;
 
 import com.google.common.collect.EvictingQueue;
 import com.radixdlt.common.Atom;
+import com.radixdlt.mempool.MempoolFullException;
 
-import com.radixdlt.consensus.MemPool;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -38,6 +38,8 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStore;
+import com.radixdlt.submission.SubmissionControl;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -74,12 +76,12 @@ public class AtomsService {
 
 	private final Object lock = new Object();
 	private final EvictingQueue<String> eventRingBuffer = EvictingQueue.create(64);
-	private final MemPool memPool;
+	private final SubmissionControl submissionControl;
 	private final AtomToBinaryConverter atomToBinaryConverter;
 	private final LedgerEntryStore store;
 
-	public AtomsService(LedgerEntryStore store, MemPool memPool, AtomToBinaryConverter atomToBinaryConverter) {
-		this.memPool = Objects.requireNonNull(memPool);
+	public AtomsService(LedgerEntryStore store, SubmissionControl submissionControl, AtomToBinaryConverter atomToBinaryConverter) {
+		this.submissionControl = Objects.requireNonNull(submissionControl);
 		this.store = Objects.requireNonNull(store);
 		this.atomToBinaryConverter = Objects.requireNonNull(atomToBinaryConverter);
 
@@ -165,16 +167,26 @@ public class AtomsService {
 	}
 
 	public AID submitAtom(JSONObject jsonAtom, SingleAtomListener subscriber) {
-		final Atom atom = serialization.fromJsonObject(jsonAtom, Atom.class);
-		if (subscriber != null) {
-			deleteOnEventSingleAtomObservers.compute(atom.getAID(), (hid, oldSubscribers) -> {
-				List<SingleAtomListener> subscribers = oldSubscribers == null ? new ArrayList<>() : oldSubscribers;
-				subscribers.add(subscriber);
-				return subscribers;
-			});
+		final Atom atom = this.serialization.fromJsonObject(jsonAtom, Atom.class);
+		try {
+			if (subscriber != null) {
+				this.deleteOnEventSingleAtomObservers.compute(atom.getAID(), (hid, oldSubscribers) -> {
+					List<SingleAtomListener> subscribers = oldSubscribers == null ? new ArrayList<>() : oldSubscribers;
+					subscribers.add(subscriber);
+					return subscribers;
+				});
+			}
+			this.submissionControl.submitAtom(atom);
+		} catch (MempoolFullException e) {
+			if (subscriber != null) {
+				this.deleteOnEventSingleAtomObservers.computeIfPresent(atom.getAID(), (aid, subscribers) -> {
+					subscribers.remove(subscriber);
+					return subscribers;
+				});
+				subscriber.onError(atom.getAID(), e);
+			}
+			throw new IllegalStateException(e);
 		}
-
-		memPool.addAtom(atom);
 
 		return atom.getAID();
 	}
