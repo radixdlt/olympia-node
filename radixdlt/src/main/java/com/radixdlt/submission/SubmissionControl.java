@@ -22,6 +22,9 @@ import com.radixdlt.mempool.MempoolFullException;
 
 /**
  * Handle atom submission.
+ * <p>
+ * FIXME: In the longer term, it would be nice if the submit method here returned
+ * an {@code Observable<AtomStatusEvent>} or similar.
  */
 public interface SubmissionControl {
 	/**
