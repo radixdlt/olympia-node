@@ -21,6 +21,8 @@ import com.radixdlt.engine.AtomStatus;
 import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
+import com.radixdlt.constraintmachine.DataPointer;
+
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -123,8 +125,7 @@ public class AtomStatusEpic {
 				} else if (e instanceof MempoolFullException) {
 					JSONObject data = new JSONObject();
 					data.put("message", e.getMessage());
-
-					// FIXME: Probably need a better atom state than this
+					// FIXME: Probably should be something different here, but decision deferred until later
 					sendAtomSubmissionState.accept(AtomStatus.DOES_NOT_EXIST, data);
 				} else {
 					JSONObject data = new JSONObject();

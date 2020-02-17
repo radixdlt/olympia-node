@@ -21,12 +21,12 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
-
 import javax.annotation.concurrent.GuardedBy;
 import javax.inject.Inject;
 
 import org.radix.properties.RuntimeProperties;
 
+import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.radixdlt.common.AID;
@@ -39,10 +39,20 @@ import com.radixdlt.common.Atom;
  * network.  Threadsafe.
  */
 final class LocalMempool implements Mempool {
-
-	@GuardedBy("lock")
-	private final LinkedHashMap<AID, Atom> data = Maps.newLinkedHashMap();
+	// The following data structure is more complicated than it really should be.
+	// Here we are trying for amortized O(1) addAtom(...) and removeXxxAtom(...),
+	// with getAtoms(...) linear wrt "count" and size of "seen", and with overall
+	// ordering by insertion order.  Oh, and maintaining duplicates.
+	//
+	// In the longer term, the requirement for duplicates should be lifted, and
+	// this can be more simply implemented as a LinkedHashMap<AID, Atom>.
 	private final Object lock = new Object();
+	@GuardedBy("lock")
+	private final LinkedHashMap<Long, Atom> data = Maps.newLinkedHashMap();
+	@GuardedBy("lock")
+	private final LinkedListMultimap<AID, Long> index = LinkedListMultimap.create();
+	@GuardedBy("lock")
+	private long atomCount = 0L;
 
 	private final int maxSize;
 
@@ -65,14 +75,21 @@ final class LocalMempool implements Mempool {
 				throw new MempoolFullException(
 					String.format("Mempool full: %s of %s items", this.data.size(), this.maxSize));
 			}
-			this.data.put(atom.getAID(), atom);
+			Long indexCount = Long.valueOf(this.atomCount++);
+			// Do this first so that NPE on null atom doesn't corrupt index
+			this.index.put(atom.getAID(), indexCount);
+			this.data.put(indexCount, atom);
 		}
 	}
 
 	@Override
 	public void removeCommittedAtom(AID aid) {
 		synchronized (this.lock) {
-			this.data.remove(aid);
+			List<Long> items = this.index.get(aid);
+			if (!items.isEmpty()) {
+				Long indexCount = items.remove(0);
+				this.data.remove(indexCount);
+			}
 		}
 	}
 
@@ -88,8 +105,8 @@ final class LocalMempool implements Mempool {
 	public List<Atom> getAtoms(int count, Set<AID> seen) {
 		synchronized (this.lock) {
 			int size = Math.min(count, this.data.size());
-			List<Atom> atoms = Lists.newArrayList();
 			if (size > 0) {
+				List<Atom> atoms = Lists.newArrayList();
 				Iterator<Atom> i = this.data.values().iterator();
 				while (atoms.size() < size && i.hasNext()) {
 					Atom a = i.next();

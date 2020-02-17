@@ -1,5 +1,6 @@
 package com.radixdlt.consensus;
 
+import com.google.common.collect.Sets;
 import com.google.inject.Inject;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.Atom;
@@ -10,7 +11,6 @@ import com.radixdlt.engine.AtomEventListener;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.mempool.Mempool;
 
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -37,7 +37,7 @@ public final class EventCoordinator {
 
 	private void newRound() {
 		// I am always the leader, bwahaha!
-		List<Atom> atoms = mempool.getAtoms(1, Collections.emptySet());
+		List<Atom> atoms = mempool.getAtoms(1, Sets.newHashSet());
 		if (!atoms.isEmpty()) {
 			networkSender.broadcastProposal(new Vertex(this.pacemaker.getCurrentRound(), atoms.get(0)));
 		}

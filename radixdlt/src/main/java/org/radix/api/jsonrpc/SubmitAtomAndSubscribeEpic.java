@@ -21,6 +21,9 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import com.radixdlt.common.AID;
+import com.radixdlt.constraintmachine.DataPointer;
+import com.radixdlt.mempool.MempoolFullException;
+
 import org.everit.json.schema.Schema;
 import org.json.JSONObject;
 import org.radix.api.services.AtomsService;
@@ -141,6 +144,11 @@ public class SubmitAtomAndSubscribeEpic {
 					data.put("justStored", false);
 
 					sendAtomSubmissionState.accept(AtomSubmissionState.STORED, data);
+				} else if (e instanceof MempoolFullException) {
+					JSONObject data = new JSONObject();
+					data.put("message", e.getMessage());
+					// FIXME: Probably should be something different here, but decision deferred until later
+					sendAtomSubmissionState.accept(AtomSubmissionState.UNSUITABLE_PEER, data);
 				} else {
 					JSONObject data = new JSONObject();
 					data.put("message", e.getMessage());
