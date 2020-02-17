@@ -5,6 +5,6 @@ package com.radixdlt.consensus;
  */
 public interface Pacemaker {
 	long getCurrentRound();
-	void processTimeout();
+	boolean processLocalTimeout(long round);
 	void processQC(long round);
 }

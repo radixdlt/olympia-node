@@ -1,6 +1,6 @@
 package com.radixdlt.consensus;
 
-import java.util.function.Consumer;
+import java.util.function.LongConsumer;
 
 /**
  * Async callbacks from pacemaker timeouts
@@ -10,7 +10,7 @@ public interface PacemakerRx {
 	/**
 	 * Throw away callback until rx is implemented
 	 */
-	void addTimeoutCallback(Consumer<Void> callback);
+	void addTimeoutCallback(LongConsumer callback);
 
 	void start();
 }

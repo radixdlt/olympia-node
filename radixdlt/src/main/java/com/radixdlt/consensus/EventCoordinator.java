@@ -55,16 +55,15 @@ public final class EventCoordinator {
 		QuorumCertificate qc = new QuorumCertificate(vote);
 		this.vertexStore.syncToQC(qc);
 		this.pacemaker.processQC(qc.getRound());
-
-
-		// If qc generated, can move to next round
-		newRound();
 	}
 
-	public void processTimeout() {
-		this.pacemaker.processTimeout();
+	public void processTimeout(long round) {
+		if (!this.pacemaker.processLocalTimeout(round)) {
+			return;
+		}
 
-		newRound();
+
+
 	}
 
 	public void processProposal(Vertex vertex) {

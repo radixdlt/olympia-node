@@ -1,8 +1,5 @@
 package com.radixdlt.consensus;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -14,23 +11,27 @@ import java.util.function.LongConsumer;
 /**
  * Overly simplistic pacemaker
  */
-public final class DumbPacemaker implements Pacemaker, PacemakerRx {
-	private final static int TIMEOUT_MILLISECONDS = 500;
-	private final List<LongConsumer> timeoutCallbacks = new CopyOnWriteArrayList<>();
-	private final AtomicReference<ScheduledFuture<?>> futureDeadlineRef;
+public final class PacemakerImpl implements Pacemaker, PacemakerRx {
+	private static final int TIMEOUT_MILLISECONDS = 500;
+	private final AtomicReference<LongConsumer> callbackRef;
+	private final AtomicReference<ScheduledFuture<?>> futureRef;
 	private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 	private final AtomicLong currentRound = new AtomicLong();
 
-	public DumbPacemaker() {
-		this.futureDeadlineRef = new AtomicReference<>();
+	public PacemakerImpl() {
+		this.callbackRef = new AtomicReference<>();
+		this.futureRef = new AtomicReference<>();
 	}
 
 	private void scheduleTimeout() {
 		long currentRound = getCurrentRound();
 		ScheduledFuture<?> future = executorService.schedule(() -> {
-			timeoutCallbacks.forEach(callback -> callback.accept(currentRound));
+			LongConsumer callback = callbackRef.get();
+			if (callback != null) {
+				callback.accept(currentRound);
+			}
 		}, TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS);
-		this.futureDeadlineRef.set(future);
+		this.futureRef.set(future);
 	}
 
 	@Override
@@ -40,27 +41,24 @@ public final class DumbPacemaker implements Pacemaker, PacemakerRx {
 
 	@Override
 	public boolean processLocalTimeout(long round) {
-		// we only care if the current round was the one that timed out
-		if (currentRound.get() != round) {
+		if (round != this.currentRound.get()) {
 			return false;
 		}
 
-		// schedule next timeout
 		scheduleTimeout();
-
 		return true;
 	}
 
 	@Override
-	public void processQC(long round) {
-		if (round < currentRound.get()) {
+	public void processVertex(Vertex vertex) {
+		if (vertex.getRound() < currentRound.get()) {
 			return;
 		}
 
 		// FIXME: For sure there are race conditions here
 		currentRound.getAndIncrement();
 
-		ScheduledFuture<?> future = this.futureDeadlineRef.get();
+		ScheduledFuture<?> future = this.futureRef.get();
 		future.cancel(false);
 		scheduleTimeout();
 	}
@@ -72,7 +70,6 @@ public final class DumbPacemaker implements Pacemaker, PacemakerRx {
 
 	@Override
 	public void addTimeoutCallback(LongConsumer callback) {
-		Objects.requireNonNull(callback, "callback");
-		this.timeoutCallbacks.add(callback);
+		this.callbackRef.set(callback);
 	}
 }
