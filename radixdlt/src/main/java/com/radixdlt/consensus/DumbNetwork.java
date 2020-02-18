@@ -10,12 +10,15 @@ import java.util.function.Consumer;
  * Overly simplistic network implementation that just sends messages to itself.
  */
 public class DumbNetwork implements NetworkSender, NetworkRx {
+	public static final int LOOPBACK_DELAY = 100;
 	private final AtomicReference<Consumer<Vertex>> proposalCallbackRef;
+	private final AtomicReference<Consumer<Timeout>> timeoutCallbackRef;
 	private final AtomicReference<Consumer<Vote>> voteCallbackRef;
 	private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 
 	public DumbNetwork() {
 		this.proposalCallbackRef = new AtomicReference<>();
+		this.timeoutCallbackRef = new AtomicReference<>();
 		this.voteCallbackRef = new AtomicReference<>();
 	}
 
@@ -26,7 +29,17 @@ public class DumbNetwork implements NetworkSender, NetworkRx {
 			if (callback != null) {
 				callback.accept(vertex);
 			}
-		}, 200, TimeUnit.MILLISECONDS);
+		}, LOOPBACK_DELAY, TimeUnit.MILLISECONDS);
+	}
+
+	@Override
+	public void broadcastTimeout(Timeout timeout) {
+		executorService.schedule(() -> {
+			Consumer<Timeout> callback = this.timeoutCallbackRef.get();
+			if (callback != null) {
+				callback.accept(timeout);
+			}
+		}, LOOPBACK_DELAY, TimeUnit.MILLISECONDS);
 	}
 
 	@Override
@@ -36,12 +49,17 @@ public class DumbNetwork implements NetworkSender, NetworkRx {
 			if (callback != null) {
 				callback.accept(vote);
 			}
-		}, 200, TimeUnit.MILLISECONDS);
+		}, LOOPBACK_DELAY, TimeUnit.MILLISECONDS);
 	}
 
 	@Override
 	public void addReceiveProposalCallback(Consumer<Vertex> callback) {
 		this.proposalCallbackRef.set(callback);
+	}
+
+	@Override
+	public void addReceiveTimeoutCallback(Consumer<Timeout> callback) {
+		this.timeoutCallbackRef.set(callback);
 	}
 
 	@Override

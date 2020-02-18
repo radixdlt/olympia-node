@@ -16,5 +16,10 @@ public interface NetworkRx {
 	/**
 	 * Throw away callback until rx is implemented
 	 */
+	void addReceiveTimeoutCallback(Consumer<Timeout> callback);
+
+	/**
+	 * Throw away callback until rx is implemented
+	 */
 	void addReceiveVoteCallback(Consumer<Vote> callback);
 }

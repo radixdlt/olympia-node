@@ -1,5 +1,8 @@
 package com.radixdlt.consensus;
 
+import org.radix.logging.Logger;
+import org.radix.logging.Logging;
+
 import java.util.OptionalLong;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -12,6 +15,8 @@ import java.util.function.LongConsumer;
  * Overly simplistic pacemaker
  */
 public final class PacemakerImpl implements Pacemaker, PacemakerRx {
+	private static final Logger log = Logging.getLogger("EC");
+
 	private static final int TIMEOUT_MILLISECONDS = 500;
 	private final AtomicReference<LongConsumer> callbackRef;
 	private final AtomicReference<ScheduledFuture<?>> futureRef;

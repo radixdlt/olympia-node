@@ -5,5 +5,6 @@ package com.radixdlt.consensus;
  */
 public interface NetworkSender {
 	void broadcastProposal(Vertex vertex);
+	void broadcastTimeout(Timeout timeout);
 	void sendVote(Vote vote);
 }

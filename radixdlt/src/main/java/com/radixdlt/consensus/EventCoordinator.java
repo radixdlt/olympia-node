@@ -11,13 +11,17 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.AtomEventListener;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.mempool.Mempool;
-
+import org.radix.logging.Logger;
+import org.radix.logging.Logging;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Executes consensus logic given events
  */
 public final class EventCoordinator {
+	private static final Logger log = Logging.getLogger("EC");
+
 	private final VertexStore vertexStore;
 	private final RadixEngine engine;
 	private final Mempool mempool;
@@ -49,7 +53,8 @@ public final class EventCoordinator {
 	}
 
 	private void processNewRound(long round) {
-        // only do something if we're actually the leader
+		log.debug(String.format("Processing new round %d", round));
+		// only do something if we're actually the leader
 		if (!proposerElection.isValidProposer(self, round)) {
 			return;
 		}
@@ -62,20 +67,33 @@ public final class EventCoordinator {
 	}
 
 	public void processVote(Vote vote) {
-		// Assume a single node network for now
+		// only do something if we're actually the leader for the next round
+		if (!proposerElection.isValidProposer(self, vote.getRound() + 1)) {
+			log.debug(String.format("Got confused vote %s for round %d", vote.hashCode(), vote.getRound()));
+			return;
+		}
+
+		// accumulate votes into QCs
+		// TODO assumes a single node network for now
 		QuorumCertificate qc = new QuorumCertificate(vote);
 		this.vertexStore.syncToQC(qc);
 		this.pacemaker.processQC(qc.getRound())
 			.ifPresent(this::processNewRound);
 	}
 
-	public void processTimeout(long round) {
+	public void processLocalTimeout(long round) {
 		if (!this.pacemaker.processLocalTimeout(round)) {
 			return;
 		}
 
-		// TODO process new round events here
+		this.networkSender.broadcastTimeout(new Timeout(round));
+	}
 
+	public void processRemoteTimeout(Timeout timeout) {
+		// accumulate timeouts into timeout QC
+		// TODO assumes a single node network for now
+		this.pacemaker.processRemoteTimeout(timeout)
+			.ifPresent(this::processNewRound);
 	}
 
 	public void processProposal(Vertex vertex) {
