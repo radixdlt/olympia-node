@@ -19,8 +19,7 @@ package org.radix.api.services;
 
 import com.google.common.collect.EvictingQueue;
 import com.radixdlt.common.Atom;
-import com.radixdlt.mempool.MempoolDuplicateException;
-import com.radixdlt.mempool.MempoolFullException;
+import com.radixdlt.mempool.MempoolRejectedException;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -168,28 +167,29 @@ public class AtomsService {
 	}
 
 	public AID submitAtom(JSONObject jsonAtom, SingleAtomListener subscriber) {
-		final Atom atom = this.serialization.fromJsonObject(jsonAtom, Atom.class);
 		try {
+			return this.submissionControl.submitAtom(jsonAtom, atom -> subscribeToSubmission(subscriber, atom));
+		} catch (MempoolRejectedException e) {
 			if (subscriber != null) {
-				this.deleteOnEventSingleAtomObservers.compute(atom.getAID(), (hid, oldSubscribers) -> {
-					List<SingleAtomListener> subscribers = oldSubscribers == null ? new ArrayList<>() : oldSubscribers;
-					subscribers.add(subscriber);
-					return subscribers;
-				});
-			}
-			this.submissionControl.submitAtom(atom);
-		} catch (MempoolFullException | MempoolDuplicateException e) {
-			if (subscriber != null) {
-				this.deleteOnEventSingleAtomObservers.computeIfPresent(atom.getAID(), (aid, subscribers) -> {
+				AID atomId = e.atom().getAID();
+				this.deleteOnEventSingleAtomObservers.computeIfPresent(atomId, (aid, subscribers) -> {
 					subscribers.remove(subscriber);
 					return subscribers;
 				});
-				subscriber.onError(atom.getAID(), e);
+				subscriber.onError(atomId, e);
 			}
 			throw new IllegalStateException(e);
 		}
+	}
 
-		return atom.getAID();
+	private void subscribeToSubmission(SingleAtomListener subscriber, Atom atom) {
+		if (subscriber != null) {
+			this.deleteOnEventSingleAtomObservers.compute(atom.getAID(), (aid, oldSubscribers) -> {
+				List<SingleAtomListener> subscribers = oldSubscribers == null ? new ArrayList<>() : oldSubscribers;
+				subscribers.add(subscriber);
+				return subscribers;
+			});
+		}
 	}
 
 	public Disposable subscribeAtomStatusNotifications(AID aid, AtomStatusListener subscriber) {

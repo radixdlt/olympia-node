@@ -76,14 +76,16 @@ public final class RadixHttpServer {
 	private final LocalSystem localSystem;
 	private final Serialization serialization;
 
-	public RadixHttpServer(LedgerEntryStore store,
-                           SubmissionControl submissionControl,
-	                       AtomToBinaryConverter atomToBinaryConverter,
-	                       Universe universe,
-	                       Serialization serialization,
-	                       RuntimeProperties properties,
-	                       LocalSystem localSystem,
-	                       AddressBook addressBook) {
+	public RadixHttpServer(
+		LedgerEntryStore store,
+		SubmissionControl submissionControl,
+		AtomToBinaryConverter atomToBinaryConverter,
+		Universe universe,
+		Serialization serialization,
+		RuntimeProperties properties,
+		LocalSystem localSystem,
+		AddressBook addressBook
+	) {
 		this.universe = Objects.requireNonNull(universe);
 		this.serialization = Objects.requireNonNull(serialization);
 		this.apiSerializedUniverse = serialization.toJsonObject(this.universe, DsonOutput.Output.API);

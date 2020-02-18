@@ -69,4 +69,11 @@ public interface Mempool {
 	 * @return A list of atoms for processing by consensus
 	 */
 	List<Atom> getAtoms(int count, Set<AID> seen);
+
+	/**
+	 * Return approximate count of atoms in the mempool.
+	 * Note that this value will be approximate, and will change dynamically
+	 * as atoms are added and removed.
+	 */
+	int atomCount();
 }

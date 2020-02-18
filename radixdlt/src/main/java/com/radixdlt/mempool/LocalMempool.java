@@ -60,11 +60,10 @@ final class LocalMempool implements Mempool {
 	public void addAtom(Atom atom) throws MempoolFullException, MempoolDuplicateException {
 		synchronized (this.lock) {
 			if (this.data.size() >= this.maxSize) {
-				throw new MempoolFullException(
-					String.format("Mempool full: %s of %s items", this.data.size(), this.maxSize));
+				throw new MempoolFullException(atom, String.format("Mempool full: %s of %s items", this.data.size(), this.maxSize));
 			}
 			if (null != this.data.put(atom.getAID(), atom)) {
-				throw new MempoolDuplicateException(String.format("Mempool already has atom %s", atom.getAID()));
+				throw new MempoolDuplicateException(atom, String.format("Mempool already has atom %s", atom.getAID()));
 			}
 		}
 	}
@@ -104,7 +103,8 @@ final class LocalMempool implements Mempool {
 		}
 	}
 
-	private int size() {
+	@Override
+	public int atomCount() {
 		synchronized (this.lock) {
 			return this.data.size();
 		}
@@ -113,7 +113,7 @@ final class LocalMempool implements Mempool {
 	@Override
 	public String toString() {
 		return String.format("%s[%x:%s/%s]",
-			getClass().getSimpleName(), System.identityHashCode(this), size(), this.maxSize);
+			getClass().getSimpleName(), System.identityHashCode(this), atomCount(), this.maxSize);
 	}
 
 }
