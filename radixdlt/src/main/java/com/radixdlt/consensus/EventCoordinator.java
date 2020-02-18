@@ -2,6 +2,7 @@ package com.radixdlt.consensus;
 
 import com.google.common.collect.Sets;
 import com.google.inject.Inject;
+import com.google.inject.name.Named;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.Atom;
 import com.radixdlt.common.EUID;
@@ -14,7 +15,6 @@ import com.radixdlt.mempool.Mempool;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * Executes consensus logic given events
@@ -40,7 +40,7 @@ public final class EventCoordinator {
 		VertexStore vertexStore,
 		RadixEngine engine
 		ProposerElection proposerElection,
-		EUID self
+		@Named("self") EUID self
 	) {
 		this.mempool = mempool;
 		this.networkSender = networkSender;

@@ -37,6 +37,8 @@ public class CerberusModule extends AbstractModule {
 		// dependencies
 		bind(Scheduler.class).toProvider(SingleThreadedScheduler::new);
 
+		bind(ProposerElection.class).to(DumbProposerElection.class);
+
 		bind(PacemakerImpl.class).in(Scopes.SINGLETON);
 		bind(PacemakerRx.class).to(PacemakerImpl.class);
 		bind(Pacemaker.class).to(PacemakerImpl.class);
