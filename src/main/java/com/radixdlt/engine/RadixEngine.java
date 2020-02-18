@@ -193,6 +193,16 @@ public final class RadixEngine {
 		this.commitQueue.add(new DeleteAtom(atom));
 	}
 
+	public Optional<CMError> staticCheck(Atom atom) {
+		RadixEngineAtom cmAtom;
+		try {
+			cmAtom = RadixEngineUtils.toCMAtom(atom);
+		} catch (RadixEngineUtils.CMAtomConversionException e) {
+			return Optional.of(new CMError(e.getDataPointer(), CMErrorCode.INVALID_PARTICLE, null));
+		}
+		return constraintMachine.validate(cmAtom.getCMInstruction());
+	}
+
 	// TODO use reactive interface
 	public void store(Atom atom, AtomEventListener atomEventListener) {
 		Objects.requireNonNull(atom);
