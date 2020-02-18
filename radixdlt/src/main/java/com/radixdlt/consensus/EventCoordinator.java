@@ -65,7 +65,8 @@ public final class EventCoordinator {
 		// Assume a single node network for now
 		QuorumCertificate qc = new QuorumCertificate(vote);
 		this.vertexStore.syncToQC(qc);
-		this.pacemaker.processQC(qc.getRound());
+		this.pacemaker.processQC(qc.getRound())
+			.ifPresent(this::processNewRound);
 	}
 
 	public void processTimeout(long round) {
@@ -73,7 +74,7 @@ public final class EventCoordinator {
 			return;
 		}
 
-
+		// TODO process new round events here
 
 	}
 

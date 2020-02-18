@@ -1,10 +1,10 @@
 package com.radixdlt.consensus;
 
+import java.util.OptionalLong;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.LongConsumer;
 
@@ -16,7 +16,9 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 	private final AtomicReference<LongConsumer> callbackRef;
 	private final AtomicReference<ScheduledFuture<?>> futureRef;
 	private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
-	private final AtomicLong currentRound = new AtomicLong();
+
+	private long currentRound;
+	private long highestQCRound;
 
 	public PacemakerImpl() {
 		this.callbackRef = new AtomicReference<>();
@@ -36,12 +38,12 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 
 	@Override
 	public long getCurrentRound() {
-		return currentRound.get();
+		return currentRound;
 	}
 
 	@Override
 	public boolean processLocalTimeout(long round) {
-		if (round != this.currentRound.get()) {
+		if (round != this.currentRound) {
 			return false;
 		}
 
@@ -49,18 +51,30 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 		return true;
 	}
 
+	private void updateHighestQCRound(long round) {
+		if (round > highestQCRound) {
+			highestQCRound = round;
+		}
+	}
+
 	@Override
-	public void processQC(long round) {
-		if (round < currentRound.get()) {
-			return;
+	public OptionalLong processQC(long round) {
+		// update
+		updateHighestQCRound(round);
+
+		// check if a new round can be started
+		long newRound = highestQCRound + 1;
+		if (newRound <= currentRound) {
+			return OptionalLong.empty();
 		}
 
-		// FIXME: For sure there are race conditions here
-		currentRound.getAndIncrement();
-
+		// start new round
+		currentRound = round;
 		ScheduledFuture<?> future = this.futureRef.get();
 		future.cancel(false);
 		scheduleTimeout();
+
+		return OptionalLong.of(currentRound);
 	}
 
 	@Override
