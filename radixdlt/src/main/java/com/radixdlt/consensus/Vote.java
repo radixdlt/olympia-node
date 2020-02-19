@@ -32,4 +32,12 @@ public final class Vote {
 		Vote v = (Vote) o;
 		return v.hash == this.hash && v.round == this.round;
 	}
+
+	@Override
+	public String toString() {
+		return "Vote{" +
+			"hash=" + hash +
+			", round=" + round +
+			'}';
+	}
 }
