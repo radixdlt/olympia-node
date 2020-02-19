@@ -16,7 +16,7 @@ public interface NetworkRx {
 	/**
 	 * Throw away callback until rx is implemented
 	 */
-	void addReceiveTimeoutCallback(Consumer<Timeout> callback);
+	void addReceiveNewViewCallback(Consumer<NewView> callback);
 
 	/**
 	 * Throw away callback until rx is implemented

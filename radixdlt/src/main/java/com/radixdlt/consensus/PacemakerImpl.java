@@ -3,7 +3,6 @@ package com.radixdlt.consensus;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 
-import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -58,10 +57,10 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 	}
 
 	@Override
-	public OptionalLong processRemoteTimeout(Timeout timeout) {
+	public OptionalLong processRemoteNewView(NewView newView) {
 		// gather timeouts to form timeout QC
 		// TODO assumes single node network for now
-		return OptionalLong.of(timeout.getRound());
+		return OptionalLong.of(newView.getRound());
 	}
 
 	private void updateHighestQCRound(long round) {

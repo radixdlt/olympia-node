@@ -12,13 +12,13 @@ import java.util.function.Consumer;
 public class DumbNetwork implements NetworkSender, NetworkRx {
 	public static final int LOOPBACK_DELAY = 100;
 	private final AtomicReference<Consumer<Vertex>> proposalCallbackRef;
-	private final AtomicReference<Consumer<Timeout>> timeoutCallbackRef;
+	private final AtomicReference<Consumer<NewView>> newViewCallbackRef;
 	private final AtomicReference<Consumer<Vote>> voteCallbackRef;
 	private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 
 	public DumbNetwork() {
 		this.proposalCallbackRef = new AtomicReference<>();
-		this.timeoutCallbackRef = new AtomicReference<>();
+		this.newViewCallbackRef = new AtomicReference<>();
 		this.voteCallbackRef = new AtomicReference<>();
 	}
 
@@ -33,11 +33,11 @@ public class DumbNetwork implements NetworkSender, NetworkRx {
 	}
 
 	@Override
-	public void broadcastTimeout(Timeout timeout) {
+	public void sendNewView(NewView newView) {
 		executorService.schedule(() -> {
-			Consumer<Timeout> callback = this.timeoutCallbackRef.get();
+			Consumer<NewView> callback = this.newViewCallbackRef.get();
 			if (callback != null) {
-				callback.accept(timeout);
+				callback.accept(newView);
 			}
 		}, LOOPBACK_DELAY, TimeUnit.MILLISECONDS);
 	}
@@ -58,8 +58,8 @@ public class DumbNetwork implements NetworkSender, NetworkRx {
 	}
 
 	@Override
-	public void addReceiveTimeoutCallback(Consumer<Timeout> callback) {
-		this.timeoutCallbackRef.set(callback);
+	public void addReceiveNewViewCallback(Consumer<NewView> callback) {
+		this.newViewCallbackRef.set(callback);
 	}
 
 	@Override

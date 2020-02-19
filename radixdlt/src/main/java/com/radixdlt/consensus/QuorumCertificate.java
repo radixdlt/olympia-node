@@ -4,6 +4,7 @@ import java.util.Objects;
 
 public final class QuorumCertificate {
 	private final Vote vote;
+
 	public QuorumCertificate(Vote vote) {
 		this.vote = Objects.requireNonNull(vote);
 	}

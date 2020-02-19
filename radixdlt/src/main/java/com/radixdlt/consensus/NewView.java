@@ -3,12 +3,12 @@ package com.radixdlt.consensus;
 import java.util.Objects;
 
 /**
- * Represents a timeout in the pacemaker
+ * Represents a new view in the pacemaker
  */
-public final class Timeout {
+public final class NewView {
 	private final long round;
 
-	public Timeout(long round) {
+	public NewView(long round) {
 		this.round = round;
 	}
 
@@ -24,8 +24,8 @@ public final class Timeout {
 		if (o == null || getClass() != o.getClass()) {
 			return false;
 		}
-		Timeout timeout = (Timeout) o;
-		return round == timeout.round;
+		NewView newView = (NewView) o;
+		return round == newView.round;
 	}
 
 	@Override

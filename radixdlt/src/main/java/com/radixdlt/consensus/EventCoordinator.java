@@ -39,7 +39,7 @@ public final class EventCoordinator {
 		SafetyRules safetyRules,
 		Pacemaker pacemaker,
 		VertexStore vertexStore,
-		RadixEngine engine
+		RadixEngine engine,
 		ProposerElection proposerElection,
 		@Named("self") EUID self
 	) {
@@ -87,13 +87,13 @@ public final class EventCoordinator {
 			return;
 		}
 
-		this.networkSender.broadcastTimeout(new Timeout(round));
+		this.networkSender.sendNewView(new NewView(round + 1));
 	}
 
-	public void processRemoteTimeout(Timeout timeout) {
+	public void processRemoteNewView(NewView newView) {
 		// accumulate timeouts into timeout QC
 		// TODO assumes a single node network for now
-		this.pacemaker.processRemoteTimeout(timeout)
+		this.pacemaker.processRemoteNewView(newView)
 			.ifPresent(this::processNewRound);
 	}
 
