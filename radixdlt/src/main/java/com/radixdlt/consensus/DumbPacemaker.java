@@ -46,8 +46,8 @@ public final class DumbPacemaker implements Pacemaker, PacemakerRx {
 	}
 
 	@Override
-	public void processVote(Vertex vertex) {
-		if (vertex.getRound() < currentRound.get()) {
+	public void processQC(long round) {
+		if (round < currentRound.get()) {
 			return;
 		}
 

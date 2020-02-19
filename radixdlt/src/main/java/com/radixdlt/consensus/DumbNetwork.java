@@ -11,7 +11,7 @@ import java.util.function.Consumer;
  */
 public class DumbNetwork implements NetworkSender, NetworkRx {
 	private final AtomicReference<Consumer<Vertex>> proposalCallbackRef;
-	private final AtomicReference<Consumer<Vertex>> voteCallbackRef;
+	private final AtomicReference<Consumer<Vote>> voteCallbackRef;
 	private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 
 	public DumbNetwork() {
@@ -30,11 +30,11 @@ public class DumbNetwork implements NetworkSender, NetworkRx {
 	}
 
 	@Override
-	public void sendVote(Vertex vertex) {
+	public void sendVote(Vote vote) {
 		executorService.schedule(() -> {
-			Consumer<Vertex> callback = this.voteCallbackRef.get();
+			Consumer<Vote> callback = this.voteCallbackRef.get();
 			if (callback != null) {
-				callback.accept(vertex);
+				callback.accept(vote);
 			}
 		}, 200, TimeUnit.MILLISECONDS);
 	}
@@ -45,7 +45,7 @@ public class DumbNetwork implements NetworkSender, NetworkRx {
 	}
 
 	@Override
-	public void addReceiveVoteCallback(Consumer<Vertex> callback) {
+	public void addReceiveVoteCallback(Consumer<Vote> callback) {
 		this.voteCallbackRef.set(callback);
 	}
 }

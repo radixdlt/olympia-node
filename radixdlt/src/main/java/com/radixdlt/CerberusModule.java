@@ -25,6 +25,7 @@ import com.radixdlt.consensus.NetworkRx;
 import com.radixdlt.consensus.NetworkSender;
 import com.radixdlt.consensus.Pacemaker;
 import com.radixdlt.consensus.PacemakerRx;
+import com.radixdlt.consensus.SafetyRules;
 import com.radixdlt.consensus.tempo.Scheduler;
 import com.radixdlt.consensus.tempo.SingleThreadedScheduler;
 
@@ -41,5 +42,7 @@ public class CerberusModule extends AbstractModule {
 		bind(DumbNetwork.class).in(Scopes.SINGLETON);
 		bind(NetworkRx.class).to(DumbNetwork.class);
 		bind(NetworkSender.class).to(DumbNetwork.class);
+
+		bind(SafetyRules.class).in(Scopes.SINGLETON);
 	}
 }

@@ -17,21 +17,27 @@ import java.util.List;
  * Executes consensus logic given events
  */
 public final class EventCoordinator {
+	private final VertexStore vertexStore;
 	private final RadixEngine engine;
 	private final Mempool mempool;
 	private final NetworkSender networkSender;
 	private final Pacemaker pacemaker;
+	private final SafetyRules safetyRules;
 
 	@Inject
 	public EventCoordinator(
 		Mempool mempool,
 		NetworkSender networkSender,
+		SafetyRules safetyRules,
 		Pacemaker pacemaker,
+		VertexStore vertexStore,
 		RadixEngine engine
 	) {
 		this.mempool = mempool;
 		this.networkSender = networkSender;
+		this.safetyRules = safetyRules;
 		this.pacemaker = pacemaker;
+		this.vertexStore = vertexStore;
 		this.engine = engine;
 	}
 
@@ -39,17 +45,25 @@ public final class EventCoordinator {
 		// I am always the leader, bwahaha!
 		List<Atom> atoms = mempool.getAtoms(1, Sets.newHashSet());
 		if (!atoms.isEmpty()) {
-			networkSender.broadcastProposal(new Vertex(this.pacemaker.getCurrentRound(), atoms.get(0)));
+			QuorumCertificate highestQC = vertexStore.getHighestQC();
+			networkSender.broadcastProposal(new Vertex(highestQC, this.pacemaker.getCurrentRound(), atoms.get(0)));
 		}
 	}
 
-	public void processVote(Vertex vertex) {
-		this.pacemaker.processVote(vertex);
+	public void processVote(Vote vote) {
+		// Assume a single node network for now
+		QuorumCertificate qc = new QuorumCertificate(vote);
+		this.vertexStore.syncToQC(qc);
+		this.pacemaker.processQC(qc.getRound());
+
+
+		// If qc generated, can move to next round
 		newRound();
 	}
 
 	public void processTimeout() {
 		this.pacemaker.processTimeout();
+
 		newRound();
 	}
 
@@ -66,7 +80,12 @@ public final class EventCoordinator {
 			@Override
 			public void onStateStore(Atom atom) {
 				mempool.removeCommittedAtom(atom.getAID());
-				networkSender.sendVote(vertex);
+
+				vertexStore.insertVertex(vertex);
+
+				final Vote vote = safetyRules.vote(vertex);
+
+				networkSender.sendVote(vote);
 			}
 
 			@Override
