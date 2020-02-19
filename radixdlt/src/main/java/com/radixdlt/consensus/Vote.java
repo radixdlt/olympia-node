@@ -1,5 +1,7 @@
 package com.radixdlt.consensus;
 
+import java.util.Objects;
+
 /**
  * Represents a vote on a vertex
  */
@@ -18,7 +20,7 @@ public final class Vote {
 
 	@Override
 	public int hashCode() {
-		return hash;
+		return Objects.hash(round, hash);
 	}
 
 	@Override
@@ -28,6 +30,6 @@ public final class Vote {
 		}
 
 		Vote v = (Vote) o;
-		return v.hash == this.hash;
+		return v.hash == this.hash && v.round == this.round;
 	}
 }
