@@ -38,7 +38,7 @@ public final class NewRound {
 		if (this == o) {
 			return true;
 		}
-		if (o == null || getClass() != o.getClass()) {
+		if (!(o instanceof NewRound)) {
 			return false;
 		}
 		NewRound newRound = (NewRound) o;
@@ -47,12 +47,12 @@ public final class NewRound {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(round);
+		return Long.hashCode(this.round);
 	}
 
 	@Override
 	public String toString() {
-		return "Timeout{" +
+		return getClass().getSimpleName() + "{" +
 			"round=" + round +
 			'}';
 	}

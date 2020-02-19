@@ -26,6 +26,11 @@ public final class Vote {
 	private final int hash;
 	private final long round;
 
+	/**
+	 * Create a vote for a given round with a certain hash.
+	 * Note that the hash must reflect the given round.
+	 * This is a temporary method as Vote will be expanded to maintain this invariant itself.
+	 */
 	public Vote(long round, int hash) {
 		this.round = round;
 		this.hash = hash;
