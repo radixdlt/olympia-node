@@ -19,10 +19,8 @@ package com.radixdlt;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
-import com.radixdlt.consensus.DumbMemPool;
 import com.radixdlt.consensus.DumbNetwork;
 import com.radixdlt.consensus.DumbPacemaker;
-import com.radixdlt.consensus.MemPool;
 import com.radixdlt.consensus.NetworkRx;
 import com.radixdlt.consensus.NetworkSender;
 import com.radixdlt.consensus.Pacemaker;
@@ -36,7 +34,6 @@ public class CerberusModule extends AbstractModule {
 	protected void configure() {
 		// dependencies
 		bind(Scheduler.class).toProvider(SingleThreadedScheduler::new);
-		bind(MemPool.class).to(DumbMemPool.class).in(Scopes.SINGLETON);
 
 		bind(DumbPacemaker.class).in(Scopes.SINGLETON);
 		bind(PacemakerRx.class).to(DumbPacemaker.class);

@@ -1,5 +1,6 @@
 package com.radixdlt.consensus;
 
+import com.google.common.collect.Sets;
 import com.google.inject.Inject;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.Atom;
@@ -8,6 +9,8 @@ import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.AtomEventListener;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.mempool.Mempool;
+
 import java.util.List;
 
 /**
@@ -16,21 +19,21 @@ import java.util.List;
 public final class EventCoordinator {
 	private final VertexStore vertexStore;
 	private final RadixEngine engine;
-	private final MemPool memPool;
+	private final Mempool mempool;
 	private final NetworkSender networkSender;
 	private final Pacemaker pacemaker;
 	private final SafetyRules safetyRules;
 
 	@Inject
 	public EventCoordinator(
-		MemPool memPool,
+		Mempool mempool,
 		NetworkSender networkSender,
 		SafetyRules safetyRules,
 		Pacemaker pacemaker,
 		VertexStore vertexStore,
 		RadixEngine engine
 	) {
-		this.memPool = memPool;
+		this.mempool = mempool;
 		this.networkSender = networkSender;
 		this.safetyRules = safetyRules;
 		this.pacemaker = pacemaker;
@@ -40,7 +43,7 @@ public final class EventCoordinator {
 
 	private void newRound() {
 		// I am always the leader, bwahaha!
-		List<Atom> atoms = memPool.getAtoms(1);
+		List<Atom> atoms = mempool.getAtoms(1, Sets.newHashSet());
 		if (!atoms.isEmpty()) {
 			QuorumCertificate highestQC = vertexStore.getHighestQC();
 			networkSender.broadcastProposal(new Vertex(highestQC, this.pacemaker.getCurrentRound(), atoms.get(0)));
@@ -71,12 +74,12 @@ public final class EventCoordinator {
 		engine.store(atom, new AtomEventListener() {
 			@Override
 			public void onCMError(Atom atom, CMError error) {
-				memPool.removeRejectedAtom(atom);
+				mempool.removeRejectedAtom(atom.getAID());
 			}
 
 			@Override
 			public void onStateStore(Atom atom) {
-				memPool.removeCommittedAtom(atom);
+				mempool.removeCommittedAtom(atom.getAID());
 
 				vertexStore.insertVertex(vertex);
 
@@ -87,17 +90,17 @@ public final class EventCoordinator {
 
 			@Override
 			public void onVirtualStateConflict(Atom atom, DataPointer issueParticle) {
-				memPool.removeRejectedAtom(atom);
+				mempool.removeRejectedAtom(atom.getAID());
 			}
 
 			@Override
 			public void onStateConflict(Atom atom, DataPointer issueParticle, Atom conflictingAtom) {
-				memPool.removeRejectedAtom(atom);
+				mempool.removeRejectedAtom(atom.getAID());
 			}
 
 			@Override
 			public void onStateMissingDependency(AID atomId, Particle particle) {
-				memPool.removeRejectedAtom(atom);
+				mempool.removeRejectedAtom(atom.getAID());
 			}
 		});
 	}

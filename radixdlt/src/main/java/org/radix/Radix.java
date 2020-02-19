@@ -18,11 +18,11 @@
 package org.radix;
 
 import com.radixdlt.consensus.ChainedBFT;
-import com.radixdlt.consensus.MemPool;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.store.LedgerEntryStore;
+import com.radixdlt.submission.SubmissionControl;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.Bytes;
 import org.apache.commons.cli.ParseException;
@@ -35,7 +35,6 @@ import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.network2.addressbook.AddressBook;
 import org.radix.network2.addressbook.PeerManager;
-import org.radix.network2.messaging.MessageCentral;
 import org.radix.network2.transport.udp.PublicInetAddress;
 import org.radix.properties.RuntimeProperties;
 import org.radix.time.Time;
@@ -138,7 +137,6 @@ public final class Radix
 		// TODO use consensus for application construction (in our case, the engine middleware)
 
 		// setup networking
-		MessageCentral messageCentral = globalInjector.getInjector().getInstance(MessageCentral.class);
 		AddressBook addressBook = globalInjector.getInjector().getInstance(AddressBook.class);
 		PeerManager peerManager = globalInjector.getInjector().getInstance(PeerManager.class);
 		peerManager.start();
@@ -147,10 +145,10 @@ public final class Radix
 		ChainedBFT bft = globalInjector.getInjector().getInstance(ChainedBFT.class);
 		bft.start();
 
-		MemPool memPool = globalInjector.getInjector().getInstance(MemPool.class);
+		SubmissionControl submissionControl = globalInjector.getInjector().getInstance(SubmissionControl.class);
 		AtomToBinaryConverter atomToBinaryConverter = globalInjector.getInjector().getInstance(AtomToBinaryConverter.class);
 		LedgerEntryStore store = globalInjector.getInjector().getInstance(LedgerEntryStore.class);
-		RadixHttpServer httpServer = new RadixHttpServer(store, memPool, atomToBinaryConverter, universe, serialization, properties, localSystem, addressBook);
+		RadixHttpServer httpServer = new RadixHttpServer(store, submissionControl, atomToBinaryConverter, universe, serialization, properties, localSystem, addressBook);
 		httpServer.start(properties);
 
 		log.info("Node '" + localSystem.getNID() + "' started successfully");

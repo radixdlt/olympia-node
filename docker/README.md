@@ -114,8 +114,12 @@ $ docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' t
 ```
 # Find the IP of all core nodes
 
-for i in 0 1 2 3 4 5; do docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' test${BUILD_NUMBER}_core${i}_1; done
+```shell
+$ for i in 0 1 2 3 4 5; do docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' test${BUILD_NUMBER}_core${i}_1; done
+```
 
 # kill the network
 
-docker-compose -p  test$BUILD_NUMBER -f docker/minimal-network.yml down
+```shell
+$ docker-compose -p  test$BUILD_NUMBER -f docker/minimal-network.yml down
+```
