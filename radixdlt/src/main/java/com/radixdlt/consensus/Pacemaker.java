@@ -8,6 +8,6 @@ import java.util.OptionalLong;
 public interface Pacemaker {
 	long getCurrentRound();
 	boolean processLocalTimeout(long round);
-	OptionalLong processRemoteNewView(NewView newView);
+	OptionalLong processRemoteNewRound(NewRound newRound);
 	OptionalLong processQC(long round);
 }

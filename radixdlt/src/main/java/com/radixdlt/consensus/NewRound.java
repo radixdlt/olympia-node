@@ -3,12 +3,12 @@ package com.radixdlt.consensus;
 import java.util.Objects;
 
 /**
- * Represents a new view in the pacemaker
+ * Represents a new round in the pacemaker
  */
-public final class NewView {
+public final class NewRound {
 	private final long round;
 
-	public NewView(long round) {
+	public NewRound(long round) {
 		this.round = round;
 	}
 
@@ -24,8 +24,8 @@ public final class NewView {
 		if (o == null || getClass() != o.getClass()) {
 			return false;
 		}
-		NewView newView = (NewView) o;
-		return round == newView.round;
+		NewRound newRound = (NewRound) o;
+		return round == newRound.round;
 	}
 
 	@Override

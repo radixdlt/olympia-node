@@ -57,10 +57,10 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 	}
 
 	@Override
-	public OptionalLong processRemoteNewView(NewView newView) {
-		// gather timeouts to form timeout QC
+	public OptionalLong processRemoteNewRound(NewRound newRound) {
+		// gather new rounds to form new round QC
 		// TODO assumes single node network for now
-		return OptionalLong.of(newView.getRound());
+		return OptionalLong.of(newRound.getRound());
 	}
 
 	private void updateHighestQCRound(long round) {

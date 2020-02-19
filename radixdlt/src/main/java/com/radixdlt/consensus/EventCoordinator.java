@@ -63,6 +63,7 @@ public final class EventCoordinator {
 		List<Atom> atoms = mempool.getAtoms(1, Sets.newHashSet());
 		if (!atoms.isEmpty()) {
 			QuorumCertificate highestQC = vertexStore.getHighestQC();
+			log.info("Starting round " + round + " with proposal " + atoms.get(0));
 			networkSender.broadcastProposal(new Vertex(highestQC, this.pacemaker.getCurrentRound(), atoms.get(0)));
 		}
 	}
@@ -70,7 +71,7 @@ public final class EventCoordinator {
 	public void processVote(Vote vote) {
 		// only do something if we're actually the leader for the next round
 		if (!proposerElection.isValidProposer(self, vote.getRound() + 1)) {
-			log.debug(String.format("Got confused vote %s for round %d", vote.hashCode(), vote.getRound()));
+			log.warn(String.format("Got confused vote %s for round %d", vote.hashCode(), vote.getRound()));
 			return;
 		}
 
@@ -87,13 +88,17 @@ public final class EventCoordinator {
 			return;
 		}
 
-		this.networkSender.sendNewView(new NewView(round + 1));
+		this.networkSender.sendNewView(new NewRound(round + 1));
 	}
 
-	public void processRemoteNewView(NewView newView) {
-		// accumulate timeouts into timeout QC
-		// TODO assumes a single node network for now
-		this.pacemaker.processRemoteNewView(newView)
+	public void processRemoteNewRound(NewRound newRound) {
+		// only do something if we're actually the leader for the next round
+		if (!proposerElection.isValidProposer(self, newRound.getRound())) {
+			log.warn(String.format("Got confused new round %s for round %d", newRound.hashCode(), newRound.getRound()));
+			return;
+		}
+
+		this.pacemaker.processRemoteNewRound(newRound)
 			.ifPresent(this::processNewRound);
 	}
 

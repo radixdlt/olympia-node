@@ -16,7 +16,7 @@ public interface NetworkRx {
 	/**
 	 * Throw away callback until rx is implemented
 	 */
-	void addReceiveNewViewCallback(Consumer<NewView> callback);
+	void addReceiveNewRoundCallback(Consumer<NewRound> callback);
 
 	/**
 	 * Throw away callback until rx is implemented
