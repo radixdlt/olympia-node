@@ -15,6 +15,7 @@ import com.radixdlt.mempool.Mempool;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Executes consensus logic given events
@@ -42,14 +43,14 @@ public final class EventCoordinator {
 		ProposerElection proposerElection,
 		@Named("self") EUID self
 	) {
-		this.mempool = mempool;
-		this.networkSender = networkSender;
-		this.safetyRules = safetyRules;
-		this.pacemaker = pacemaker;
-		this.vertexStore = vertexStore;
-		this.engine = engine;
-		this.proposerElection = proposerElection;
-		this.self = self;
+		this.mempool = Objects.requireNonNull(mempool);
+		this.networkSender = Objects.requireNonNull(networkSender);
+		this.safetyRules = Objects.requireNonNull(safetyRules);
+		this.pacemaker = Objects.requireNonNull(pacemaker);
+		this.vertexStore = Objects.requireNonNull(vertexStore);
+        this.engine = Objects.requireNonNull(engine);
+		this.proposerElection = Objects.requireNonNull(proposerElection);
+		this.self = Objects.requireNonNull(self);
 	}
 
 	private void processNewRound(long round) {
