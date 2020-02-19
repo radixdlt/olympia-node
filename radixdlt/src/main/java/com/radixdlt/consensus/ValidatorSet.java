@@ -18,21 +18,24 @@
 package com.radixdlt.consensus;
 
 import java.util.Collection;
-
-import com.radixdlt.common.Atom;
+import java.util.Set;
 
 /**
- * Interface for Event Coordinator to send things through a network
+ * Interface for querying/updating validators.
  */
-public interface NetworkSender {
-	void broadcastProposal(Vertex vertex);
-	void sendVote(Vertex vertex);
+public interface ValidatorSet {
 
 	/**
-	 * Broadcast locally-received mempool submission to validators.
+	 * Replace current validators with a new set.
 	 *
-	 * @param validators the validators to send the submission to
-	 * @param atom the submission to send
+	 * @param validators the new validator set
 	 */
-	void sendMempoolSubmission(Collection<Validator> validators, Atom atom);
+	void replace(Collection<Validator> validators);
+
+	/**
+	 * Retrieve a snapshot of the current validator set.
+	 *
+	 * @return the current validator set
+	 */
+	Set<Validator> validators();
 }

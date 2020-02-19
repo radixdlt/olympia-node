@@ -110,10 +110,14 @@ final class LocalMempool implements Mempool {
 		}
 	}
 
+	// Used by SharedMempool
+	int maxCount() {
+		return this.maxSize;
+	}
+
 	@Override
 	public String toString() {
 		return String.format("%s[%x:%s/%s]",
 			getClass().getSimpleName(), System.identityHashCode(this), atomCount(), this.maxSize);
 	}
-
 }

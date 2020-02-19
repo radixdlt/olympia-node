@@ -17,22 +17,18 @@
 
 package com.radixdlt.consensus;
 
-import java.util.Collection;
-
-import com.radixdlt.common.Atom;
+import com.radixdlt.common.EUID;
 
 /**
- * Interface for Event Coordinator to send things through a network
+ * Stub validator interface.
  */
-public interface NetworkSender {
-	void broadcastProposal(Vertex vertex);
-	void sendVote(Vertex vertex);
+public interface Validator {
 
 	/**
-	 * Broadcast locally-received mempool submission to validators.
+	 * Returns the node ID of the validator.
 	 *
-	 * @param validators the validators to send the submission to
-	 * @param atom the submission to send
+	 * @return the node ID of the validator
 	 */
-	void sendMempoolSubmission(Collection<Validator> validators, Atom atom);
+	EUID nodeId();
+
 }
