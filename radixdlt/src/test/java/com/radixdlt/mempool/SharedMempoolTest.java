@@ -33,16 +33,19 @@ import com.radixdlt.common.Atom;
 import com.radixdlt.common.EUID;
 import com.radixdlt.consensus.NetworkSender;
 import com.radixdlt.consensus.ValidatorSet;
+import com.radixdlt.utils.Ints;
+
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 import static org.hamcrest.Matchers.*;
 
 public class SharedMempoolTest {
+	private static final AID TEST_AID = makeAID(1234);
+	private static final EUID self = EUID.ONE;
 
 	private LocalMempool localMempool;
 	private ValidatorSet validatorSet;
 	private NetworkSender networkSender;
-	private final EUID self = EUID.ONE;
 
 	private Mempool sharedMempool;
 
@@ -71,7 +74,7 @@ public class SharedMempoolTest {
 	public void when_adding_atom__then_atom_is_added_and_sent()
 		throws MempoolFullException, MempoolDuplicateException {
 		Atom mockAtom = mock(Atom.class);
-		when(mockAtom.getAID()).thenReturn(AID.ZERO);
+		when(mockAtom.getAID()).thenReturn(TEST_AID);
 		this.sharedMempool.addAtom(mockAtom);
 		verify(this.localMempool, times(1)).addAtom(any());
 		verify(this.validatorSet, times(1)).validators();
@@ -80,14 +83,14 @@ public class SharedMempoolTest {
 
 	@Test
 	public void when_committed_atom_is_removed__then_local_mempool_removed() {
-		this.sharedMempool.removeCommittedAtom(AID.ZERO);
-		verify(this.localMempool, times(1)).removeCommittedAtom(AID.ZERO);
+		this.sharedMempool.removeCommittedAtom(TEST_AID);
+		verify(this.localMempool, times(1)).removeCommittedAtom(TEST_AID);
 	}
 
 	@Test
 	public void when_rejected_atom_is_removed__then_local_mempool_removed() {
-		this.sharedMempool.removeRejectedAtom(AID.ZERO);
-		verify(this.localMempool, times(1)).removeRejectedAtom(AID.ZERO);
+		this.sharedMempool.removeRejectedAtom(TEST_AID);
+		verify(this.localMempool, times(1)).removeRejectedAtom(TEST_AID);
 	}
 
 	@Test
@@ -112,5 +115,11 @@ public class SharedMempoolTest {
 
 		assertThat(tostring, containsString("1/2"));
 		assertThat(tostring, containsString(SharedMempool.class.getSimpleName()));
+	}
+
+	private static AID makeAID(int n) {
+		byte[] temp = new byte[AID.BYTES];
+		Ints.copyTo(n, temp, AID.BYTES - Integer.BYTES);
+		return AID.from(temp);
 	}
 }

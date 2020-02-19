@@ -30,7 +30,7 @@ public interface ValidatorSet {
 	 *
 	 * @param validators the new validator set
 	 */
-	void replace(Collection<Validator> validators);
+	void replaceAll(Collection<Validator> validators);
 
 	/**
 	 * Retrieve a snapshot of the current validator set.

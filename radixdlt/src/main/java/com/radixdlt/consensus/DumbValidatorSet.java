@@ -49,7 +49,7 @@ public final class DumbValidatorSet implements ValidatorSet {
 	}
 
 	@Override
-	public void replace(Collection<Validator> validators) {
+	public void replaceAll(Collection<Validator> validators) {
 		synchronized (lock) {
 			this.validators = validators.stream()
 				.filter(this::notSelf)
