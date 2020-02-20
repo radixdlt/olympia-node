@@ -22,9 +22,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
-import javax.annotation.concurrent.GuardedBy;
 import javax.inject.Inject;
 import javax.inject.Named;
 
@@ -38,10 +38,7 @@ import com.radixdlt.common.EUID;
 public final class DumbValidatorSet implements ValidatorSet {
 
 	private final EUID self;
-
-	@GuardedBy("lock")
-	private ImmutableSet<Validator> validators = ImmutableSet.of();
-	private final Object lock = new Object();
+	private final AtomicReference<ImmutableSet<Validator>> validators = new AtomicReference<>(ImmutableSet.of());
 
 	@Inject
 	DumbValidatorSet(@Named("self") EUID self) {
@@ -50,18 +47,15 @@ public final class DumbValidatorSet implements ValidatorSet {
 
 	@Override
 	public void replaceAll(Collection<Validator> validators) {
-		synchronized (lock) {
-			this.validators = validators.stream()
-				.filter(this::notSelf)
-				.collect(ImmutableSet.toImmutableSet());
-		}
+		ImmutableSet<Validator> newValidators = validators.stream()
+			.filter(this::notSelf)
+			.collect(ImmutableSet.toImmutableSet());
+		this.validators.set(newValidators);
 	}
 
 	@Override
 	public Set<Validator> validators() {
-		synchronized (lock) {
-			return ImmutableSet.copyOf(this.validators);
-		}
+		return this.validators.get();
 	}
 
 	private boolean notSelf(Validator v) {
