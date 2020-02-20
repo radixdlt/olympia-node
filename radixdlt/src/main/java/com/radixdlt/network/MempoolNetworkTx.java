@@ -15,16 +15,22 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.mempool;
+package com.radixdlt.network;
+
+import java.util.Collection;
 
 import com.radixdlt.common.Atom;
+import com.radixdlt.consensus.Validator;
 
 /**
- * Exception thrown when an attempt to add new items would
- * exceed the mempool's maximum capacity.
+ * Interface for Mempool to send things through a network
  */
-public class MempoolFullException extends MempoolRejectedException {
-	public MempoolFullException(Atom atom, String message) {
-		super(atom, message);
-	}
+public interface MempoolNetworkTx {
+	/**
+	 * Broadcast locally-received mempool submission to validators.
+	 *
+	 * @param validators the validators to send the submission to
+	 * @param atom the submission to send
+	 */
+	void sendMempoolSubmission(Collection<Validator> validators, Atom atom);
 }
