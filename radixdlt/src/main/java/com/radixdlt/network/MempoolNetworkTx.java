@@ -15,12 +15,22 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.network;
+
+import java.util.Collection;
+
+import com.radixdlt.common.Atom;
+import com.radixdlt.consensus.Validator;
 
 /**
- * Interface for Event Coordinator to send things through a network
+ * Interface for Mempool to send things through a network
  */
-public interface NetworkSender {
-	void broadcastProposal(Vertex vertex);
-	void sendVote(Vertex vertex);
+public interface MempoolNetworkTx {
+	/**
+	 * Broadcast locally-received mempool submission to validators.
+	 *
+	 * @param validators the validators to send the submission to
+	 * @param atom the submission to send
+	 */
+	void sendMempoolSubmission(Collection<Validator> validators, Atom atom);
 }

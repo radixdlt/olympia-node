@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.network;
 
 import java.util.Objects;
 import java.util.function.Consumer;

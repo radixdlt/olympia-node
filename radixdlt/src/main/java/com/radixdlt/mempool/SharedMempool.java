@@ -25,8 +25,8 @@ import javax.inject.Inject;
 
 import com.radixdlt.common.AID;
 import com.radixdlt.common.Atom;
-import com.radixdlt.consensus.NetworkSender;
 import com.radixdlt.consensus.ValidatorSet;
+import com.radixdlt.network.MempoolNetworkTx;
 
 /**
  * Shared mempool.
@@ -37,10 +37,10 @@ import com.radixdlt.consensus.ValidatorSet;
 public class SharedMempool implements Mempool {
 	private final LocalMempool localMempool;
 	private final ValidatorSet validatorSet;
-	private final NetworkSender networkSender;
+	private final MempoolNetworkTx networkSender;
 
 	@Inject
-	SharedMempool(LocalMempool localMempool, ValidatorSet validatorSet, NetworkSender networkSender) {
+	SharedMempool(LocalMempool localMempool, ValidatorSet validatorSet, MempoolNetworkTx networkSender) {
 		this.localMempool = Objects.requireNonNull(localMempool);
 		this.validatorSet = Objects.requireNonNull(validatorSet);
 		this.networkSender = Objects.requireNonNull(networkSender);

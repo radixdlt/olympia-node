@@ -15,12 +15,17 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.network;
 
-/**
- * Interface for Event Coordinator to send things through a network
- */
-public interface NetworkSender {
-	void broadcastProposal(Vertex vertex);
-	void sendVote(Vertex vertex);
+import com.google.inject.AbstractModule;
+import com.google.inject.Scopes;
+
+public class NetworkModule extends AbstractModule {
+	@Override
+	protected void configure() {
+		// provides
+		bind(DumbMempoolNetwork.class).in(Scopes.SINGLETON);
+		bind(MempoolNetworkRx.class).to(DumbMempoolNetwork.class);
+		bind(MempoolNetworkTx.class).to(DumbMempoolNetwork.class);
+	}
 }

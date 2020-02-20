@@ -33,14 +33,14 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.Atom;
-import com.radixdlt.consensus.MempoolSubmissionCallback;
-import com.radixdlt.consensus.NetworkRx;
 import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
+import com.radixdlt.network.MempoolNetworkRx;
+import com.radixdlt.network.MempoolSubmissionCallback;
 import com.radixdlt.serialization.Serialization;
 
 import static org.junit.Assert.*;
@@ -53,7 +53,7 @@ public class SubmissionControlTest {
 	private RadixEngine radixEngine;
 	private Serialization serialization;
 	private Events events;
-	private NetworkRx networkRx;
+	private MempoolNetworkRx mempoolNetworkRx;
 	private AtomicReference<MempoolSubmissionCallback> rxCallback = new AtomicReference<>();
 
 	private SubmissionControl submissionControl;
@@ -65,12 +65,12 @@ public class SubmissionControlTest {
 		this.radixEngine = mock(RadixEngine.class);
 		this.serialization = mock(Serialization.class);
 		this.events = mock(Events.class);
-		this.networkRx = mock(NetworkRx.class);
+		this.mempoolNetworkRx = mock(MempoolNetworkRx.class);
 
 		doAnswer(args -> {
 			rxCallback.set(args.getArgument(0));
 			return null;
-		}).when(this.networkRx).addMempoolSubmissionCallback(any());
+		}).when(this.mempoolNetworkRx).addMempoolSubmissionCallback(any());
 
 		// test module to hook up dependencies
 		Module testModule = new AbstractModule() {
@@ -80,7 +80,7 @@ public class SubmissionControlTest {
 				bind(RadixEngine.class).toInstance(radixEngine);
 				bind(Serialization.class).toInstance(serialization);
 				bind(Events.class).toInstance(events);
-				bind(NetworkRx.class).toInstance(networkRx);
+				bind(MempoolNetworkRx.class).toInstance(mempoolNetworkRx);
 			}
 		};
 

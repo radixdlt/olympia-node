@@ -31,8 +31,8 @@ import com.google.inject.name.Names;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.Atom;
 import com.radixdlt.common.EUID;
-import com.radixdlt.consensus.NetworkSender;
 import com.radixdlt.consensus.ValidatorSet;
+import com.radixdlt.network.MempoolNetworkTx;
 import com.radixdlt.utils.Ints;
 
 import static org.junit.Assert.*;
@@ -45,7 +45,7 @@ public class SharedMempoolTest {
 
 	private LocalMempool localMempool;
 	private ValidatorSet validatorSet;
-	private NetworkSender networkSender;
+	private MempoolNetworkTx mempoolNetworkTx;
 
 	private Mempool sharedMempool;
 
@@ -53,7 +53,7 @@ public class SharedMempoolTest {
 	public void setUp() {
 		this.localMempool = mock(LocalMempool.class);
 		this.validatorSet = mock(ValidatorSet.class);
-		this.networkSender = mock(NetworkSender.class);
+		this.mempoolNetworkTx = mock(MempoolNetworkTx.class);
 
 		// test module to hook up dependencies
 		Module testModule = new AbstractModule() {
@@ -61,7 +61,7 @@ public class SharedMempoolTest {
 			protected void configure() {
 				bind(LocalMempool.class).toInstance(localMempool);
 				bind(ValidatorSet.class).toInstance(validatorSet);
-				bind(NetworkSender.class).toInstance(networkSender);
+				bind(MempoolNetworkTx.class).toInstance(mempoolNetworkTx);
 				bind(EUID.class).annotatedWith(Names.named("self")).toInstance(self);
 			}
 		};
@@ -78,7 +78,7 @@ public class SharedMempoolTest {
 		this.sharedMempool.addAtom(mockAtom);
 		verify(this.localMempool, times(1)).addAtom(any());
 		verify(this.validatorSet, times(1)).validators();
-		verify(this.networkSender, times(1)).sendMempoolSubmission(any(), any());
+		verify(this.mempoolNetworkTx, times(1)).sendMempoolSubmission(any(), any());
 	}
 
 	@Test

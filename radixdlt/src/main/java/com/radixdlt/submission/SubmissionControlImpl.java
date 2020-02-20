@@ -32,13 +32,13 @@ import org.radix.validation.ConstraintMachineValidationException;
 
 import com.radixdlt.common.AID;
 import com.radixdlt.common.Atom;
-import com.radixdlt.consensus.NetworkRx;
 import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.mempool.MempoolRejectedException;
+import com.radixdlt.network.MempoolNetworkRx;
 import com.radixdlt.serialization.Serialization;
 
 class SubmissionControlImpl implements SubmissionControl {
@@ -50,7 +50,7 @@ class SubmissionControlImpl implements SubmissionControl {
 	private final Events events;
 
 	@Inject
-	SubmissionControlImpl(Mempool mempool, RadixEngine radixEngine, Serialization serialization, Events events, NetworkRx networkRx) {
+	SubmissionControlImpl(Mempool mempool, RadixEngine radixEngine, Serialization serialization, Events events, MempoolNetworkRx networkRx) {
 		this.mempool = Objects.requireNonNull(mempool);
 		this.radixEngine = Objects.requireNonNull(radixEngine);
 		this.serialization = Objects.requireNonNull(serialization);

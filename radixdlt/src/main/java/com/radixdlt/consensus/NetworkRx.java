@@ -34,9 +34,4 @@ public interface NetworkRx {
 	 * Throw away callback until rx is implemented
 	 */
 	void addReceiveVoteCallback(Consumer<Vertex> callback);
-
-	/**
-	 * Callback when mempool submission received from remote node.
-	 */
-	void addMempoolSubmissionCallback(MempoolSubmissionCallback callback);
 }

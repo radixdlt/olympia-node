@@ -15,12 +15,16 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.network;
 
 /**
- * Interface for Event Coordinator to send things through a network
+ * Async callbacks from mempool network messages
+ * TODO: change to an rx interface
  */
-public interface NetworkSender {
-	void broadcastProposal(Vertex vertex);
-	void sendVote(Vertex vertex);
+public interface MempoolNetworkRx {
+
+	/**
+	 * Callback when mempool submission is received from remote node.
+	 */
+	void addMempoolSubmissionCallback(MempoolSubmissionCallback callback);
 }

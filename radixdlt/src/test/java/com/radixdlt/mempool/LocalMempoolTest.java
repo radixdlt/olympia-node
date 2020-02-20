@@ -75,13 +75,18 @@ public class LocalMempoolTest {
 		fail();
 	}
 
-	@Test(expected = MempoolFullException.class)
+	@Test
 	public void when_adding_too_many_atoms__then_exception_is_thrown()
 		throws MempoolFullException, MempoolDuplicateException {
 		this.mempool.addAtom(makeAtom(1));
 		this.mempool.addAtom(makeAtom(2));
-		this.mempool.addAtom(makeAtom(3));
-		fail();
+		Atom badAtom = makeAtom(3);
+		try {
+			this.mempool.addAtom(badAtom);
+			fail();
+		} catch (MempoolFullException e) {
+			assertSame(badAtom, e.atom());
+		}
 	}
 
 	@Test

@@ -17,14 +17,11 @@
 
 package com.radixdlt.consensus;
 
-import java.util.Collection;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-
-import com.radixdlt.common.Atom;
 
 /**
  * Overly simplistic network implementation that just sends messages to itself.
@@ -67,15 +64,5 @@ public class DumbNetwork implements NetworkSender, NetworkRx {
 	@Override
 	public void addReceiveVoteCallback(Consumer<Vertex> callback) {
 		this.voteCallbackRef.set(callback);
-	}
-
-	@Override
-	public void addMempoolSubmissionCallback(MempoolSubmissionCallback callback) {
-		// FIXME: No mempool network submissions for now, as we are assuming no network
-	}
-
-	@Override
-	public void sendMempoolSubmission(Collection<Validator> validators, Atom atom) {
-		// FIXME: Implement mempool gossip.
 	}
 }
