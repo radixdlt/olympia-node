@@ -17,51 +17,49 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.common.Atom;
 import java.util.Objects;
 
 /**
- * Vertex in the BFT Chain
+ * Represents a vote on a vertex
  */
-public final class Vertex {
-	private final QuorumCertificate qc;
+public final class Vote {
+	private final int hash;
 	private final long round;
-	private final Atom atom;
 
-	public Vertex(QuorumCertificate qc, long round, Atom atom) {
-		if (round < 0) {
-			throw new IllegalArgumentException("round must be >= 0 but was " + round);
-		}
+	/**
+	 * Create a vote for a given round with a certain hash.
+	 * Note that the hash must reflect the given round.
+	 * This is a temporary method as Vote will be expanded to maintain this invariant itself.
+	 */
+	public Vote(long round, int hash) {
 		this.round = round;
-		this.qc = qc;
-		this.atom = atom;
-	}
-
-	public QuorumCertificate getQc() {
-		return qc;
+		this.hash = hash;
 	}
 
 	public long getRound() {
 		return round;
 	}
 
-	public Atom getAtom() {
-		return atom;
-	}
-
 	@Override
 	public int hashCode() {
-		return Objects.hash(qc, round, atom);
+		return Objects.hash(round, hash);
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof Vertex)) {
+		if (!(o instanceof Vote)) {
 			return false;
 		}
 
-		Vertex v = (Vertex) o;
-		return v.round == round && Objects.equals(v.atom, this.atom)
-			&& Objects.equals(v.qc, this.qc);
+		Vote v = (Vote) o;
+		return v.hash == this.hash && v.round == this.round;
+	}
+
+	@Override
+	public String toString() {
+		return "Vote{" +
+			"hash=" + hash +
+			", round=" + round +
+			'}';
 	}
 }

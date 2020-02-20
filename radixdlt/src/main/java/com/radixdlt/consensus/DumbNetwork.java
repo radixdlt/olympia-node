@@ -27,12 +27,15 @@ import java.util.function.Consumer;
  * Overly simplistic network implementation that just sends messages to itself.
  */
 public class DumbNetwork implements NetworkSender, NetworkRx {
+	public static final int LOOPBACK_DELAY = 100;
 	private final AtomicReference<Consumer<Vertex>> proposalCallbackRef;
-	private final AtomicReference<Consumer<Vertex>> voteCallbackRef;
+	private final AtomicReference<Consumer<NewRound>> newRoundCallbackRef;
+	private final AtomicReference<Consumer<Vote>> voteCallbackRef;
 	private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 
 	public DumbNetwork() {
 		this.proposalCallbackRef = new AtomicReference<>();
+		this.newRoundCallbackRef = new AtomicReference<>();
 		this.voteCallbackRef = new AtomicReference<>();
 	}
 
@@ -43,17 +46,27 @@ public class DumbNetwork implements NetworkSender, NetworkRx {
 			if (callback != null) {
 				callback.accept(vertex);
 			}
-		}, 200, TimeUnit.MILLISECONDS);
+		}, LOOPBACK_DELAY, TimeUnit.MILLISECONDS);
 	}
 
 	@Override
-	public void sendVote(Vertex vertex) {
+	public void sendNewRound(NewRound newRound) {
 		executorService.schedule(() -> {
-			Consumer<Vertex> callback = this.voteCallbackRef.get();
+			Consumer<NewRound> callback = this.newRoundCallbackRef.get();
 			if (callback != null) {
-				callback.accept(vertex);
+				callback.accept(newRound);
 			}
-		}, 200, TimeUnit.MILLISECONDS);
+		}, LOOPBACK_DELAY, TimeUnit.MILLISECONDS);
+	}
+
+	@Override
+	public void sendVote(Vote vote) {
+		executorService.schedule(() -> {
+			Consumer<Vote> callback = this.voteCallbackRef.get();
+			if (callback != null) {
+				callback.accept(vote);
+			}
+		}, LOOPBACK_DELAY, TimeUnit.MILLISECONDS);
 	}
 
 	@Override
@@ -62,7 +75,12 @@ public class DumbNetwork implements NetworkSender, NetworkRx {
 	}
 
 	@Override
-	public void addReceiveVoteCallback(Consumer<Vertex> callback) {
+	public void addReceiveNewRoundCallback(Consumer<NewRound> callback) {
+		this.newRoundCallbackRef.set(callback);
+	}
+
+	@Override
+	public void addReceiveVoteCallback(Consumer<Vote> callback) {
 		this.voteCallbackRef.set(callback);
 	}
 }

@@ -17,51 +17,31 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.common.Atom;
 import java.util.Objects;
 
-/**
- * Vertex in the BFT Chain
- */
-public final class Vertex {
-	private final QuorumCertificate qc;
-	private final long round;
-	private final Atom atom;
+public final class QuorumCertificate {
+	private final Vote vote;
 
-	public Vertex(QuorumCertificate qc, long round, Atom atom) {
-		if (round < 0) {
-			throw new IllegalArgumentException("round must be >= 0 but was " + round);
-		}
-		this.round = round;
-		this.qc = qc;
-		this.atom = atom;
-	}
-
-	public QuorumCertificate getQc() {
-		return qc;
+	public QuorumCertificate(Vote vote) {
+		this.vote = Objects.requireNonNull(vote);
 	}
 
 	public long getRound() {
-		return round;
-	}
-
-	public Atom getAtom() {
-		return atom;
-	}
-
-	@Override
-	public int hashCode() {
-		return Objects.hash(qc, round, atom);
+		return vote.getRound();
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof Vertex)) {
+		if (!(o instanceof QuorumCertificate)) {
 			return false;
 		}
 
-		Vertex v = (Vertex) o;
-		return v.round == round && Objects.equals(v.atom, this.atom)
-			&& Objects.equals(v.qc, this.qc);
+		QuorumCertificate qc = (QuorumCertificate) o;
+		return Objects.equals(qc.vote, this.vote);
+	}
+
+	@Override
+	public int hashCode() {
+		return vote.hashCode();
 	}
 }

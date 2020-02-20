@@ -17,14 +17,12 @@
 
 package com.radixdlt.consensus;
 
-import java.util.OptionalLong;
-
 /**
- * Interface for an event coordinator to manage the pacemaker
+ * Manages safety of the protocol.
+ * TODO: Add storage of private key of node here
  */
-public interface Pacemaker {
-	long getCurrentRound();
-	boolean processLocalTimeout(long round);
-	OptionalLong processRemoteNewRound(NewRound newRound);
-	OptionalLong processQC(long round);
+public final class SafetyRules {
+	public Vote vote(Vertex vertex) {
+		return new Vote(vertex.getRound(), vertex.hashCode());
+	}
 }

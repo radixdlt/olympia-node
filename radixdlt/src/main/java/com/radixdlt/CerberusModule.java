@@ -20,13 +20,16 @@ package com.radixdlt;
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 import com.radixdlt.consensus.DumbNetwork;
-import com.radixdlt.consensus.DumbPacemaker;
 import com.radixdlt.consensus.DumbValidatorSet;
+import com.radixdlt.consensus.DumbProposerElection;
 import com.radixdlt.consensus.NetworkRx;
 import com.radixdlt.consensus.NetworkSender;
 import com.radixdlt.consensus.Pacemaker;
+import com.radixdlt.consensus.PacemakerImpl;
 import com.radixdlt.consensus.PacemakerRx;
 import com.radixdlt.consensus.ValidatorSet;
+import com.radixdlt.consensus.ProposerElection;
+import com.radixdlt.consensus.SafetyRules;
 import com.radixdlt.consensus.tempo.Scheduler;
 import com.radixdlt.consensus.tempo.SingleThreadedScheduler;
 
@@ -36,14 +39,18 @@ public class CerberusModule extends AbstractModule {
 		// dependencies
 		bind(Scheduler.class).toProvider(SingleThreadedScheduler::new);
 
-		bind(DumbPacemaker.class).in(Scopes.SINGLETON);
-		bind(PacemakerRx.class).to(DumbPacemaker.class);
-		bind(Pacemaker.class).to(DumbPacemaker.class);
+		bind(ProposerElection.class).to(DumbProposerElection.class);
+
+		bind(PacemakerImpl.class).in(Scopes.SINGLETON);
+		bind(PacemakerRx.class).to(PacemakerImpl.class);
+		bind(Pacemaker.class).to(PacemakerImpl.class);
 
 		bind(DumbNetwork.class).in(Scopes.SINGLETON);
 		bind(NetworkRx.class).to(DumbNetwork.class);
 		bind(NetworkSender.class).to(DumbNetwork.class);
 
 		bind(ValidatorSet.class).to(DumbValidatorSet.class).in(Scopes.SINGLETON);
+
+		bind(SafetyRules.class).in(Scopes.SINGLETON);
 	}
 }
