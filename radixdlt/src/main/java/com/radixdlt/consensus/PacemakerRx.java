@@ -17,17 +17,16 @@
 
 package com.radixdlt.consensus;
 
-import java.util.function.LongConsumer;
+import io.reactivex.rxjava3.core.Observable;
 
 /**
- * Async callbacks from pacemaker timeouts
- * TODO: change to an rx interface
+ * Pacemaker timeouts
  */
 public interface PacemakerRx {
 	/**
-	 * Throw away callback until rx is implemented
+	 * @return hot observable of timeout events
 	 */
-	void addTimeoutCallback(LongConsumer callback);
+	Observable<Long> getLocalTimeouts();
 
 	void start();
 }

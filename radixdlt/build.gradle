@@ -55,6 +55,7 @@ jar {
 
 dependencies {
     compile project(":radix-engine-library")
+    implementation 'io.reactivex.rxjava3:rxjava:3.0.0'
     compile 'commons-cli:commons-cli:1.4'
     compile 'org.json:json:20180813'
     compile 'org.xerial.snappy:snappy-java:1.1.7.3'

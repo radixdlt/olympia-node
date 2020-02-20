@@ -19,13 +19,18 @@ package com.radixdlt.consensus;
 
 import com.google.inject.Inject;
 
+import io.reactivex.rxjava3.core.Scheduler;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import java.util.Objects;
 
 /**
  * A three-chain BFT
  */
 public final class ChainedBFT {
+	private final NetworkRx network;
 	private final PacemakerRx pacemaker;
+	private final EventCoordinator eventCoordinator;
+	private final Scheduler singleThreadScheduler = Schedulers.single();
 
 	@Inject
 	public ChainedBFT(
@@ -33,20 +38,33 @@ public final class ChainedBFT {
 		NetworkRx network,
 		PacemakerRx pacemaker
 	) {
-		Objects.requireNonNull(eventCoordinator);
 		Objects.requireNonNull(pacemaker);
+		Objects.requireNonNull(network);
+		Objects.requireNonNull(eventCoordinator);
 
 		this.pacemaker = pacemaker;
-
-		// TODO: The following should be executed serially
-		pacemaker.addTimeoutCallback(eventCoordinator::processLocalTimeout);
-		network.addReceiveProposalCallback(eventCoordinator::processProposal);
-		network.addReceiveNewRoundCallback(eventCoordinator::processRemoteNewRound);
-		network.addReceiveVoteCallback(eventCoordinator::processVote);
+		this.network = network;
+		this.eventCoordinator = eventCoordinator;
 	}
 
 	// TODO: Add cleanup
 	public void start() {
 		this.pacemaker.start();
+
+		this.pacemaker.getLocalTimeouts()
+			.subscribeOn(this.singleThreadScheduler)
+			.subscribe(this.eventCoordinator::processLocalTimeout);
+
+		this.network.getNewRoundMessages()
+			.subscribeOn(this.singleThreadScheduler)
+			.subscribe(this.eventCoordinator::processRemoteNewRound);
+
+		this.network.getProposalMessages()
+			.subscribeOn(this.singleThreadScheduler)
+			.subscribe(this.eventCoordinator::processProposal);
+
+		this.network.getVoteMessages()
+			.subscribeOn(this.singleThreadScheduler)
+			.subscribe(this.eventCoordinator::processVote);
 	}
 }
