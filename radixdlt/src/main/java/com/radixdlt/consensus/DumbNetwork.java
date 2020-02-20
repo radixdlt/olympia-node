@@ -50,7 +50,7 @@ public class DumbNetwork implements NetworkSender, NetworkRx {
 	}
 
 	@Override
-	public void sendNewView(NewRound newRound) {
+	public void sendNewRound(NewRound newRound) {
 		executorService.schedule(() -> {
 			Consumer<NewRound> callback = this.newRoundCallbackRef.get();
 			if (callback != null) {

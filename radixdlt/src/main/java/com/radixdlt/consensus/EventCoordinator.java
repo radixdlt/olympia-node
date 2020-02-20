@@ -105,7 +105,7 @@ public final class EventCoordinator {
 			return;
 		}
 
-		this.networkSender.sendNewView(new NewRound(round + 1));
+		this.networkSender.sendNewRound(new NewRound(round + 1));
 	}
 
 	public void processRemoteNewRound(NewRound newRound) {
