@@ -268,23 +268,3 @@ integrationTest.mustRunAfter test
 task gendocanddeb4docker(dependsOn: [gendoc, deb4docker]) {
     deb4docker.mustRunAfter(gendoc);
 }
-
-def javaHome = System.getProperty('java.home')
-def obfuscatedJarArchivePath = jar.archivePath
-def originalJarArchivePath = file(jar.archivePath.path.replace('.jar', '-original.jar'))
-
-/**
- * Generate a random permutation of the strings 'a' through 'z' into the specified file.
- */
-def generateRandomDictionary(String where) {
-    def names = new ArrayList('a'..'z')
-    Collections.shuffle(names)
-    // Remove between 20% and 40% (exclusive) of the elements
-    int twentyPercentRoundedUp = (names.size + 4) / 5
-    int toRemove = twentyPercentRoundedUp + new Random().nextInt(twentyPercentRoundedUp)
-    new File(where).withWriter{ out ->
-        names.drop(toRemove).each {
-            out.println it
-        }
-    }
-}
