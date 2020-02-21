@@ -20,21 +20,30 @@ package com.radixdlt.consensus;
 import io.reactivex.rxjava3.core.Observable;
 
 /**
- * Messages from Network
+ * Network accessor for the EventCoordinator
  */
 public interface NetworkRx {
 
 	/**
+	 * Accessor to the stream of proposal messages as they are received from the
+	 * network.
+	 *
 	 * @return hot observable of proposal messages
 	 */
 	Observable<Vertex> proposalMessages();
 
 	/**
+	 * Accessor to the stream of new-round messages as they are received from the
+	 * network.
+	 *
 	 * @return hot observable of new round messages
 	 */
 	Observable<NewRound> newRoundMessages();
 
 	/**
+	 * Accessor to the stream of vote messages as they are received from the
+	 * network.
+	 *
 	 * @return hot observable of votes messages
 	 */
 	Observable<Vote> voteMessages();
