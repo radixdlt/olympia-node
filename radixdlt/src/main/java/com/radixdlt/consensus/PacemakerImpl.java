@@ -20,7 +20,7 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 
 	static final int TIMEOUT_MILLISECONDS = 500;
 	private final PublishSubject<Long> timeouts;
-	private final AtomicReference<ScheduledFuture<?>> futureRef;
+	private ScheduledFuture<?> currentTimeout;
 	private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 
 	private long currentRound;
@@ -28,15 +28,17 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 
 	public PacemakerImpl() {
 		this.timeouts = PublishSubject.create();
-		this.futureRef = new AtomicReference<>();
 	}
 
 	private void scheduleTimeout() {
-		final long currentRound = getCurrentRound();
-		ScheduledFuture<?> future = executorService.schedule(() -> {
+		final long currentRound = this.currentRound;
+		if (this.currentTimeout != null) {
+			this.currentTimeout.cancel(false);
+		}
+
+		this.currentTimeout = executorService.schedule(() -> {
 			timeouts.onNext(currentRound);
 		}, TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS);
-		this.futureRef.set(future);
 	}
 
 	@Override
@@ -82,8 +84,7 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 
 		// start new round
 		currentRound = newRound;
-		ScheduledFuture<?> future = this.futureRef.get();
-		future.cancel(false);
+
 		scheduleTimeout();
 
 		return OptionalLong.of(currentRound);
