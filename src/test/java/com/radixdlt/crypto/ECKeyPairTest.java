@@ -17,7 +17,7 @@
 
 package com.radixdlt.crypto;
 
-import java.nio.charset.StandardCharsets;
+import com.radixdlt.TestSetupUtils;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -25,7 +25,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import com.radixdlt.TestSetupUtils;
+import java.nio.charset.StandardCharsets;
 
 public class ECKeyPairTest {
 	@BeforeClass
@@ -64,7 +64,7 @@ public class ECKeyPairTest {
 			byte[] pub = key.getPublicKey().getBytes();
 
 			ECKeyPair keyPair = new ECKeyPair(priv);
-			ECSignature signature = keyPair.sign(Hash.hash256(helloWorld.getBytes(StandardCharsets.UTF_8)));
+			ECDSASignature signature = keyPair.sign(Hash.hash256(helloWorld.getBytes(StandardCharsets.UTF_8)));
 
 			ECPublicKey pubkey = new ECPublicKey(pub);
 			Assert.assertTrue(pubkey.verify(Hash.hash256(helloWorld.getBytes(StandardCharsets.UTF_8)), signature));

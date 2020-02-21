@@ -22,7 +22,7 @@ import com.radixdlt.atomos.Result;
 import com.radixdlt.common.EUID;
 import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.ECSignature;
+import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.store.SpinStateMachine;
 import java.util.HashMap;
@@ -81,10 +81,10 @@ public final class ConstraintMachine {
 		private UsedData particleRemainingUsed = null;
 		private final Map<Particle, Spin> currentSpins;
 		private final Hash witness;
-		private final Map<EUID, ECSignature> signatures;
+		private final Map<EUID, ECDSASignature> signatures;
 		private final Map<ECPublicKey, Boolean> isSignedByCache = new HashMap<>();
 
-		CMValidationState(Hash witness, Map<EUID, ECSignature> signatures) {
+		CMValidationState(Hash witness, Map<EUID, ECDSASignature> signatures) {
 			this.currentSpins = new HashMap<>();
 			this.witness = witness;
 			this.signatures = signatures;
@@ -112,7 +112,7 @@ public final class ConstraintMachine {
 				return false;
 			}
 
-			final ECSignature signature = signatures.get(publicKey.getUID());
+			final ECDSASignature signature = signatures.get(publicKey.getUID());
 			return signature != null && publicKey.verify(witness, signature);
 		}
 

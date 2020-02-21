@@ -27,8 +27,8 @@ import com.radixdlt.utils.Bytes;
 import java.math.BigInteger;
 import java.util.Objects;
 
-@SerializerId2("crypto.ecdsa_signature")
-public final class ECSignature {
+@SerializerId2("crypto.ecdsa_signature") // TODO do something smart with SerializerId, e,g, use `SignatureScheme`'s property 'nameOfScheme'
+public final class ECDSASignature implements Signature {
 	// Placeholder for the serializer ID
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(Output.ALL)
@@ -42,14 +42,14 @@ public final class ECSignature {
 	private BigInteger r;
 	private BigInteger s;
 
-	public ECSignature() {
+	public ECDSASignature() {
 		this(BigInteger.ZERO, BigInteger.ZERO);
 	}
 
 	/**
      * Constructs a signature with the given components. Does NOT automatically canonicalise the signature.
      */
-	public ECSignature(BigInteger r, BigInteger s) {
+	public ECDSASignature(BigInteger r, BigInteger s) {
     	super();
 
     	this.r = Objects.requireNonNull(r);
@@ -69,8 +69,8 @@ public final class ECSignature {
         if (this == o) {
         	return true;
         }
-        if (o instanceof ECSignature) {
-        	ECSignature signature = (ECSignature) o;
+        if (o instanceof ECDSASignature) {
+        	ECDSASignature signature = (ECDSASignature) o;
         	return Objects.equals(this.r, signature.r) && Objects.equals(this.s, signature.s);
         }
         return false;
@@ -105,5 +105,12 @@ public final class ECSignature {
 	private void setJsonS(byte[] s) {
 		// Set sign to positive to stop BigInteger interpreting high bit as sign
 		this.s = new BigInteger(1, s);
+	}
+
+	// TODO fix this ugly terrible crap...
+
+	@Override
+	public SignatureScheme signatureScheme() {
+		return SignatureScheme.ECDSA;
 	}
 }

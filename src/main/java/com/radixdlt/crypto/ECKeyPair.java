@@ -20,9 +20,6 @@ package com.radixdlt.crypto;
 import com.radixdlt.common.EUID;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.WireIO;
-import java.math.BigInteger;
-import java.security.SecureRandom;
-import java.util.Arrays;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.generators.ECKeyPairGenerator;
 import org.bouncycastle.crypto.params.ECKeyGenerationParameters;
@@ -30,10 +27,14 @@ import org.bouncycastle.crypto.params.ECPrivateKeyParameters;
 import org.bouncycastle.crypto.params.ECPublicKeyParameters;
 import org.bouncycastle.math.ec.ECPoint;
 
+import java.math.BigInteger;
+import java.security.SecureRandom;
+import java.util.Arrays;
+
 /**
  * Asymmetric EC key pair provider fixed to curve 'secp256k1'.
  */
-public final class ECKeyPair {
+public final class ECKeyPair implements Signing<ECDSASignature> {
 	public static final int	BYTES = 32;
 
 	private final byte[] privateKey;
@@ -85,12 +86,21 @@ public final class ECKeyPair {
 		return this.publicKey;
 	}
 
-	public ECSignature sign(Hash hash) throws CryptoException {
-		return sign(hash.toByteArray());
+//	public ECDSASignature sign(Hash hash) throws CryptoException {
+//		return sign(hash.toByteArray());
+//	}
+
+	public ECDSASignature sign(byte[] hash) throws CryptoException {
+		return ECKeyUtils.keyHandler.sign(hash, this.privateKey);
 	}
 
-	public ECSignature sign(byte[] hash) throws CryptoException {
-		return ECKeyUtils.keyHandler.sign(hash, this.privateKey);
+	@Override
+	public SignatureScheme signatureScheme() {
+		return SignatureScheme.ECDSA;
+	}
+
+	public <U extends Signature> boolean canProduceSignatureOfType(Class<U> signatureType) {
+		return signatureType.equals(ECDSASignature.class);
 	}
 
 	public byte[] decrypt(byte[] data) throws CryptoException {

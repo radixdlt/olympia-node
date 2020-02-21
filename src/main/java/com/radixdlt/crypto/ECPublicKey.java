@@ -23,12 +23,13 @@ import com.google.common.base.Suppliers;
 import com.radixdlt.common.EUID;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.WireIO;
+import org.bouncycastle.math.ec.ECPoint;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.function.Supplier;
-import org.bouncycastle.math.ec.ECPoint;
 
 /**
  * Asymmetric EC public key provider fixed to curve 'secp256k1'
@@ -93,11 +94,11 @@ public final class ECPublicKey {
 		return ECKeyUtils.spec.getCurve().decodePoint(this.publicKey);
 	}
 
-	public boolean verify(Hash hash, ECSignature signature) {
+	public boolean verify(Hash hash, ECDSASignature signature) {
 		return verify(hash.toByteArray(), signature);
 	}
 
-	public boolean verify(byte[] hash, ECSignature signature) {
+	public boolean verify(byte[] hash, ECDSASignature signature) {
 		if (signature == null) {
 			return false;
 		}
