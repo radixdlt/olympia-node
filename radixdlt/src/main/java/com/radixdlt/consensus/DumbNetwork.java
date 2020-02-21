@@ -63,17 +63,17 @@ public class DumbNetwork implements NetworkSender, NetworkRx {
 	}
 
 	@Override
-	public Observable<Vertex> getProposalMessages() {
+	public Observable<Vertex> proposalMessages() {
 		return proposals;
 	}
 
 	@Override
-	public Observable<NewRound> getNewRoundMessages() {
+	public Observable<NewRound> newRoundMessages() {
 		return newRounds;
 	}
 
 	@Override
-	public Observable<Vote> getVoteMessages() {
+	public Observable<Vote> voteMessages() {
 		return votes;
 	}
 }

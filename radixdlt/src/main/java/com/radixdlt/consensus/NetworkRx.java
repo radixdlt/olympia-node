@@ -27,15 +27,15 @@ public interface NetworkRx {
 	/**
 	 * @return hot observable of proposal messages
 	 */
-	Observable<Vertex> getProposalMessages();
+	Observable<Vertex> proposalMessages();
 
 	/**
 	 * @return hot observable of new round messages
 	 */
-	Observable<NewRound> getNewRoundMessages();
+	Observable<NewRound> newRoundMessages();
 
 	/**
 	 * @return hot observable of votes messages
 	 */
-	Observable<Vote> getVoteMessages();
+	Observable<Vote> voteMessages();
 }

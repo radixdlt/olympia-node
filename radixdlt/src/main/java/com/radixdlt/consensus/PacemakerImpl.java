@@ -95,7 +95,7 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 	}
 
 	@Override
-	public Observable<Long> getLocalTimeouts() {
+	public Observable<Long> localTimeouts() {
 		return timeouts;
 	}
 }
