@@ -1,6 +1,5 @@
 package com.radixdlt.consensus;
 
-import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import org.radix.logging.Logger;
@@ -12,7 +11,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.LongConsumer;
 
 /**
  * Overly simplistic pacemaker
@@ -20,7 +18,7 @@ import java.util.function.LongConsumer;
 public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 	private static final Logger log = Logging.getLogger("EC");
 
-	private static final int TIMEOUT_MILLISECONDS = 500;
+	static final int TIMEOUT_MILLISECONDS = 500;
 	private final PublishSubject<Long> timeouts;
 	private final AtomicReference<ScheduledFuture<?>> futureRef;
 	private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
@@ -34,7 +32,7 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 	}
 
 	private void scheduleTimeout() {
-		long currentRound = getCurrentRound();
+		final long currentRound = getCurrentRound();
 		ScheduledFuture<?> future = executorService.schedule(() -> {
 			timeouts.onNext(currentRound);
 		}, TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS);
@@ -51,6 +49,8 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 		if (round != this.currentRound) {
 			return false;
 		}
+
+		this.currentRound++;
 
 		scheduleTimeout();
 		return true;
