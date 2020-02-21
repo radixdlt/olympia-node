@@ -34,7 +34,7 @@ public final class VertexStore {
 			return;
 		}
 
-		if (highestQC == null || highestQC.getRound() < qc.getRound()) {
+		if (highestQC == null || highestQC.getRound().compareTo(qc.getRound()) < 0) {
 			highestQC = qc;
 		}
 	}

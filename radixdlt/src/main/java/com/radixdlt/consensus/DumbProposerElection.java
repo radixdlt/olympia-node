@@ -21,7 +21,7 @@ import com.radixdlt.common.EUID;
 
 public class DumbProposerElection implements ProposerElection {
 	@Override
-	public boolean isValidProposer(EUID nid, long round) {
+	public boolean isValidProposer(EUID nid, Round round) {
 		// will accept anything
 		return true;
 	}

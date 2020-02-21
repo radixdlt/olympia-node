@@ -26,7 +26,7 @@ public interface PacemakerRx {
 	/**
 	 * @return hot observable of timeout events
 	 */
-	Observable<Long> localTimeouts();
+	Observable<Round> localTimeouts();
 
 	void start();
 }

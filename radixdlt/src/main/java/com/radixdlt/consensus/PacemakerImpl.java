@@ -20,7 +20,7 @@ package com.radixdlt.consensus;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 
-import java.util.OptionalLong;
+import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -31,12 +31,12 @@ import java.util.concurrent.TimeUnit;
  */
 public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 	static final int TIMEOUT_MILLISECONDS = 500;
-	private final PublishSubject<Long> timeouts;
+	private final PublishSubject<Round> timeouts;
 	private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 
 	private ScheduledFuture<?> currentTimeout;
-	private long currentRound;
-	private long highestQCRound;
+	private Round currentRound = Round.create(0L);;
+	private Round highestQCRound = Round.create(0L);
 
 	public PacemakerImpl() {
 		this.timeouts = PublishSubject.create();
@@ -47,51 +47,51 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 			this.currentTimeout.cancel(false);
 		}
 
-		final long round = this.currentRound;
+		final Round round = this.currentRound;
 		this.currentTimeout = executorService.schedule(() -> {
 			timeouts.onNext(round);
 		}, TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS);
 	}
 
 	@Override
-	public long getCurrentRound() {
+	public Round getCurrentRound() {
 		return currentRound;
 	}
 
 	@Override
-	public boolean processLocalTimeout(long round) {
-		if (round != this.currentRound) {
+	public boolean processLocalTimeout(Round round) {
+		if (!round.equals(this.currentRound)) {
 			return false;
 		}
 
-		this.currentRound++;
+		this.currentRound = currentRound.next();
 
 		scheduleTimeout();
 		return true;
 	}
 
 	@Override
-	public OptionalLong processRemoteNewRound(NewRound newRound) {
+	public Optional<Round> processRemoteNewRound(NewRound newRound) {
 		// gather new rounds to form new round QC
 		// TODO assumes single node network for now
-		return OptionalLong.of(newRound.getRound());
+		return Optional.of(newRound.getRound());
 	}
 
-	private void updateHighestQCRound(long round) {
-		if (round > highestQCRound) {
+	private void updateHighestQCRound(Round round) {
+		if (round.compareTo(highestQCRound) > 0) {
 			highestQCRound = round;
 		}
 	}
 
 	@Override
-	public OptionalLong processQC(long round) {
+	public Optional<Round> processQC(Round round) {
 		// update
 		updateHighestQCRound(round);
 
 		// check if a new round can be started
-		long newRound = highestQCRound + 1;
-		if (newRound <= currentRound) {
-			return OptionalLong.empty();
+		Round newRound = highestQCRound.next();
+		if (newRound.compareTo(currentRound) <= 0) {
+			return Optional.empty();
 		}
 
 		// start new round
@@ -99,7 +99,7 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 
 		scheduleTimeout();
 
-		return OptionalLong.of(currentRound);
+		return Optional.of(currentRound);
 	}
 
 	@Override
@@ -108,7 +108,7 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 	}
 
 	@Override
-	public Observable<Long> localTimeouts() {
+	public Observable<Round> localTimeouts() {
 		return timeouts;
 	}
 }

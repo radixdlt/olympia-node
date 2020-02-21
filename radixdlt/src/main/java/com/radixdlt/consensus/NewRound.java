@@ -20,16 +20,16 @@ package com.radixdlt.consensus;
 import java.util.Objects;
 
 /**
- * Represents a new round in the pacemaker
+ * Represents a new round message in the pacemaker
  */
 public final class NewRound {
-	private final long round;
+	private final Round round;
 
-	public NewRound(long round) {
+	public NewRound(Round round) {
 		this.round = round;
 	}
 
-	public long getRound() {
+	public Round getRound() {
 		return round;
 	}
 
@@ -42,12 +42,12 @@ public final class NewRound {
 			return false;
 		}
 		NewRound newRound = (NewRound) o;
-		return round == newRound.round;
+		return Objects.equals(this.round, newRound.round);
 	}
 
 	@Override
 	public int hashCode() {
-		return Long.hashCode(this.round);
+		return this.round.hashCode();
 	}
 
 	@Override

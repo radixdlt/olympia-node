@@ -25,23 +25,20 @@ import java.util.Objects;
  */
 public final class Vertex {
 	private final QuorumCertificate qc;
-	private final long round;
+	private final Round round;
 	private final Atom atom;
 
-	public Vertex(QuorumCertificate qc, long round, Atom atom) {
-		if (round < 0) {
-			throw new IllegalArgumentException("round must be >= 0 but was " + round);
-		}
-		this.round = round;
+	public Vertex(QuorumCertificate qc, Round round, Atom atom) {
 		this.qc = qc;
 		this.atom = atom;
+		this.round = Objects.requireNonNull(round);
 	}
 
 	public QuorumCertificate getQc() {
 		return qc;
 	}
 
-	public long getRound() {
+	public Round getRound() {
 		return round;
 	}
 
@@ -61,7 +58,8 @@ public final class Vertex {
 		}
 
 		Vertex v = (Vertex) o;
-		return v.round == round && Objects.equals(v.atom, this.atom)
+		return Objects.equals(v.round, round)
+			&& Objects.equals(v.atom, this.atom)
 			&& Objects.equals(v.qc, this.qc);
 	}
 }
