@@ -20,6 +20,8 @@ package com.radixdlt.consensus;
 import com.google.inject.Inject;
 
 import io.reactivex.rxjava3.core.Scheduler;
+import io.reactivex.rxjava3.disposables.CompositeDisposable;
+import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import java.util.Objects;
 
@@ -31,6 +33,7 @@ public final class ChainedBFT {
 	private final PacemakerRx pacemaker;
 	private final EventCoordinator eventCoordinator;
 	private final Scheduler singleThreadScheduler = Schedulers.single();
+	private final CompositeDisposable disposable = new CompositeDisposable();
 
 	@Inject
 	public ChainedBFT(
@@ -47,24 +50,29 @@ public final class ChainedBFT {
 		this.eventCoordinator = eventCoordinator;
 	}
 
-	// TODO: Add cleanup
 	public void start() {
 		this.pacemaker.start();
 
-		this.pacemaker.getLocalTimeouts()
+		final Disposable timeoutDisposable = this.pacemaker.localTimeouts()
 			.subscribeOn(this.singleThreadScheduler)
 			.subscribe(this.eventCoordinator::processLocalTimeout);
 
-		this.network.getNewRoundMessages()
+		final Disposable newRoundDisposable = this.network.newRoundMessages()
 			.subscribeOn(this.singleThreadScheduler)
 			.subscribe(this.eventCoordinator::processRemoteNewRound);
 
-		this.network.getProposalMessages()
+		final Disposable proposalDisposable = this.network.proposalMessages()
 			.subscribeOn(this.singleThreadScheduler)
 			.subscribe(this.eventCoordinator::processProposal);
 
-		this.network.getVoteMessages()
+		final Disposable voteDisposable = this.network.voteMessages()
 			.subscribeOn(this.singleThreadScheduler)
 			.subscribe(this.eventCoordinator::processVote);
+
+		disposable.addAll(timeoutDisposable, newRoundDisposable, proposalDisposable, voteDisposable);
+	}
+
+	public void stop() {
+		disposable.dispose();
 	}
 }
