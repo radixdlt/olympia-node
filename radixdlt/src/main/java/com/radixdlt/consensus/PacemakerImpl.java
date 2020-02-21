@@ -81,7 +81,7 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 		}
 
 		// start new round
-		currentRound = round;
+		currentRound = newRound;
 		ScheduledFuture<?> future = this.futureRef.get();
 		future.cancel(false);
 		scheduleTimeout();
