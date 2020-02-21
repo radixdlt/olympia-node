@@ -17,26 +17,34 @@
 
 package com.radixdlt.consensus;
 
-import java.util.function.Consumer;
+import io.reactivex.rxjava3.core.Observable;
 
 /**
- * Async callbacks from network proposal messages
- * TODO: change to an rx interface
+ * Network accessor for the EventCoordinator
  */
 public interface NetworkRx {
 
 	/**
-	 * Throw away callback until rx is implemented
+	 * Accessor to the stream of proposal messages as they are received from the
+	 * network.
+	 *
+	 * @return hot observable of proposal messages
 	 */
-	void addReceiveProposalCallback(Consumer<Vertex> callback);
+	Observable<Vertex> proposalMessages();
 
 	/**
-	 * Throw away callback until rx is implemented
+	 * Accessor to the stream of new-round messages as they are received from the
+	 * network.
+	 *
+	 * @return hot observable of new round messages
 	 */
-	void addReceiveNewRoundCallback(Consumer<NewRound> callback);
+	Observable<NewRound> newRoundMessages();
 
 	/**
-	 * Throw away callback until rx is implemented
+	 * Accessor to the stream of vote messages as they are received from the
+	 * network.
+	 *
+	 * @return hot observable of votes messages
 	 */
-	void addReceiveVoteCallback(Consumer<Vote> callback);
+	Observable<Vote> voteMessages();
 }

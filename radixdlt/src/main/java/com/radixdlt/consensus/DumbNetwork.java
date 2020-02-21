@@ -17,6 +17,8 @@
 
 package com.radixdlt.consensus;
 
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.subjects.PublishSubject;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -28,59 +30,50 @@ import java.util.function.Consumer;
  */
 public class DumbNetwork implements NetworkSender, NetworkRx {
 	public static final int LOOPBACK_DELAY = 100;
-	private final AtomicReference<Consumer<Vertex>> proposalCallbackRef;
-	private final AtomicReference<Consumer<NewRound>> newRoundCallbackRef;
-	private final AtomicReference<Consumer<Vote>> voteCallbackRef;
+	private final PublishSubject<Vertex> proposals;
+	private final PublishSubject<NewRound> newRounds;
+	private final PublishSubject<Vote> votes;
 	private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 
 	public DumbNetwork() {
-		this.proposalCallbackRef = new AtomicReference<>();
-		this.newRoundCallbackRef = new AtomicReference<>();
-		this.voteCallbackRef = new AtomicReference<>();
+		this.proposals = PublishSubject.create();
+		this.newRounds = PublishSubject.create();
+		this.votes = PublishSubject.create();
 	}
 
 	@Override
 	public void broadcastProposal(Vertex vertex) {
 		executorService.schedule(() -> {
-			Consumer<Vertex> callback = this.proposalCallbackRef.get();
-			if (callback != null) {
-				callback.accept(vertex);
-			}
+			this.proposals.onNext(vertex);
 		}, LOOPBACK_DELAY, TimeUnit.MILLISECONDS);
 	}
 
 	@Override
 	public void sendNewRound(NewRound newRound) {
 		executorService.schedule(() -> {
-			Consumer<NewRound> callback = this.newRoundCallbackRef.get();
-			if (callback != null) {
-				callback.accept(newRound);
-			}
+			this.newRounds.onNext(newRound);
 		}, LOOPBACK_DELAY, TimeUnit.MILLISECONDS);
 	}
 
 	@Override
 	public void sendVote(Vote vote) {
 		executorService.schedule(() -> {
-			Consumer<Vote> callback = this.voteCallbackRef.get();
-			if (callback != null) {
-				callback.accept(vote);
-			}
+			this.votes.onNext(vote);
 		}, LOOPBACK_DELAY, TimeUnit.MILLISECONDS);
 	}
 
 	@Override
-	public void addReceiveProposalCallback(Consumer<Vertex> callback) {
-		this.proposalCallbackRef.set(callback);
+	public Observable<Vertex> proposalMessages() {
+		return proposals;
 	}
 
 	@Override
-	public void addReceiveNewRoundCallback(Consumer<NewRound> callback) {
-		this.newRoundCallbackRef.set(callback);
+	public Observable<NewRound> newRoundMessages() {
+		return newRounds;
 	}
 
 	@Override
-	public void addReceiveVoteCallback(Consumer<Vote> callback) {
-		this.voteCallbackRef.set(callback);
+	public Observable<Vote> voteMessages() {
+		return votes;
 	}
 }

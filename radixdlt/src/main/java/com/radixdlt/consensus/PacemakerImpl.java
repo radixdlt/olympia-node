@@ -1,5 +1,8 @@
 package com.radixdlt.consensus;
 
+import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.subjects.PublishSubject;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 
@@ -18,7 +21,7 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 	private static final Logger log = Logging.getLogger("EC");
 
 	private static final int TIMEOUT_MILLISECONDS = 500;
-	private final AtomicReference<LongConsumer> callbackRef;
+	private final PublishSubject<Long> timeouts;
 	private final AtomicReference<ScheduledFuture<?>> futureRef;
 	private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 
@@ -26,17 +29,14 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 	private long highestQCRound;
 
 	public PacemakerImpl() {
-		this.callbackRef = new AtomicReference<>();
+		this.timeouts = PublishSubject.create();
 		this.futureRef = new AtomicReference<>();
 	}
 
 	private void scheduleTimeout() {
 		long currentRound = getCurrentRound();
 		ScheduledFuture<?> future = executorService.schedule(() -> {
-			LongConsumer callback = callbackRef.get();
-			if (callback != null) {
-				callback.accept(currentRound);
-			}
+			timeouts.onNext(currentRound);
 		}, TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS);
 		this.futureRef.set(future);
 	}
@@ -95,7 +95,7 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 	}
 
 	@Override
-	public void addTimeoutCallback(LongConsumer callback) {
-		this.callbackRef.set(callback);
+	public Observable<Long> localTimeouts() {
+		return timeouts;
 	}
 }
