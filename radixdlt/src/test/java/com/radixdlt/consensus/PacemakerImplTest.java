@@ -27,7 +27,6 @@ import static org.mockito.Mockito.verify;
 
 import io.reactivex.rxjava3.observers.TestObserver;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 
 
@@ -54,7 +53,7 @@ public class PacemakerImplTest {
 	}
 
 	@Test
-	public void when_round_0_processed__then_current_round_should_be_1() {
+	public void when_round_0_processed_qc__then_current_round_should_be_1_and_next_timeout_should_be_scheduled() {
 		ScheduledExecutorService executorService = getMockedExecutorService();
 		PacemakerImpl pacemaker = new PacemakerImpl(executorService);
 		TestObserver<Round> testObserver = TestObserver.create();
@@ -62,8 +61,20 @@ public class PacemakerImplTest {
 		pacemaker.start();
 		pacemaker.processQC(Round.of(0L));
 		assertThat(pacemaker.getCurrentRound()).isEqualTo(Round.of(1L));
+		verify(executorService, times(2)).schedule(any(Runnable.class), anyLong(), any());
 	}
 
+	@Test
+	public void when_round_0_processed_timeout__then_current_round_should_be_1_and_next_timeout_should_be_scheduled() {
+		ScheduledExecutorService executorService = getMockedExecutorService();
+		PacemakerImpl pacemaker = new PacemakerImpl(executorService);
+		TestObserver<Round> testObserver = TestObserver.create();
+		pacemaker.localTimeouts().subscribe(testObserver);
+		pacemaker.start();
+		pacemaker.processLocalTimeout(Round.of(0L));
+		assertThat(pacemaker.getCurrentRound()).isEqualTo(Round.of(1L));
+		verify(executorService, times(2)).schedule(any(Runnable.class), anyLong(), any());
+	}
 
 	@Test
 	public void when_timeout_event_occurs_and_no_process__then_no_scheduled_timeout_occurs() {
