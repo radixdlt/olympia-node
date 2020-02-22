@@ -18,59 +18,74 @@
 package com.radixdlt.consensus;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import io.reactivex.rxjava3.observers.TestObserver;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 
+
 public class PacemakerImplTest {
-	@Test
-	public void when_round_0_completes__then_current_round_should_be_1() throws Exception {
-		PacemakerImpl pacemaker = new PacemakerImpl();
-		TestObserver<Round> testObserver = TestObserver.create();
-		pacemaker.localTimeouts().subscribe(testObserver);
-		pacemaker.start();
-		testObserver.await(PacemakerImpl.TIMEOUT_MILLISECONDS / 2, TimeUnit.MILLISECONDS);
-		pacemaker.processQC(Round.create(0));
-		assertThat(pacemaker.getCurrentRound()).isEqualTo(Round.create(1L));
+	private static ScheduledExecutorService getMockedExecutorService() {
+		ScheduledExecutorService executorService = mock(ScheduledExecutorService.class);
+		doAnswer((invocation) -> {
+			((Runnable) invocation.getArguments()[0]).run();
+			return null;
+		}).when(executorService).schedule(any(Runnable.class), anyLong(), any());
+		return executorService;
 	}
 
 	@Test
-	public void when_round_0_completes__then_a_timeout_event_with_round_0_does_not_occur() throws Exception {
-		PacemakerImpl pacemaker = new PacemakerImpl();
+	public void when_start__then_a_timeout_event_with_round_0_is_emitted() {
+		ScheduledExecutorService executorService = getMockedExecutorService();
+		PacemakerImpl pacemaker = new PacemakerImpl(executorService);
 		TestObserver<Round> testObserver = TestObserver.create();
 		pacemaker.localTimeouts().subscribe(testObserver);
 		pacemaker.start();
-		testObserver.await(PacemakerImpl.TIMEOUT_MILLISECONDS / 2, TimeUnit.MILLISECONDS);
-		pacemaker.processQC(Round.create(0L));
 		testObserver.awaitCount(1);
-		testObserver.assertValue(Round.create(1L));
-	}
-
-	@Test
-	public void when_timeout_occurs__then_only_a_single_timeout_event_occurs() throws Exception {
-		PacemakerImpl pacemaker = new PacemakerImpl();
-		TestObserver<Round> testObserver = TestObserver.create();
-		pacemaker.localTimeouts().subscribe(testObserver);
-		pacemaker.start();
-		testObserver.assertEmpty();
-		testObserver.awaitCount(1);
-		testObserver.assertValue(Round.create(0L));
-		testObserver.await(PacemakerImpl.TIMEOUT_MILLISECONDS * 3, TimeUnit.MILLISECONDS);
-		testObserver.assertValueCount(1);
+		testObserver.assertValues(Round.of(0L));
 		testObserver.assertNotComplete();
 	}
 
 	@Test
-	public void when_2x_timeout_occurs__then_two_timeout_events_occur() {
-		PacemakerImpl pacemaker = new PacemakerImpl();
+	public void when_round_0_processed__then_current_round_should_be_1() {
+		ScheduledExecutorService executorService = getMockedExecutorService();
+		PacemakerImpl pacemaker = new PacemakerImpl(executorService);
 		TestObserver<Round> testObserver = TestObserver.create();
 		pacemaker.localTimeouts().subscribe(testObserver);
 		pacemaker.start();
-		testObserver.assertEmpty();
-		testObserver.awaitCount(1);
-		pacemaker.processLocalTimeout(Round.create(0L));
+		pacemaker.processQC(Round.of(0L));
+		assertThat(pacemaker.getCurrentRound()).isEqualTo(Round.of(1L));
+	}
+
+
+	@Test
+	public void when_timeout_event_occurs_and_no_process__then_no_scheduled_timeout_occurs() {
+		ScheduledExecutorService executorService = getMockedExecutorService();
+		PacemakerImpl pacemaker = new PacemakerImpl(executorService);
+		TestObserver<Round> testObserver = TestObserver.create();
+		pacemaker.localTimeouts().subscribe(testObserver);
+		pacemaker.start();
+		testObserver.assertValueCount(1);
+		testObserver.assertNotComplete();
+		verify(executorService, times(1)).schedule(any(Runnable.class), anyLong(), any());
+	}
+
+	@Test
+	public void when_process_timeout__then_two_timeout_events_occur() {
+		ScheduledExecutorService executorService = getMockedExecutorService();
+		PacemakerImpl pacemaker = new PacemakerImpl(executorService);
+		TestObserver<Round> testObserver = TestObserver.create();
+		pacemaker.localTimeouts().subscribe(testObserver);
+		pacemaker.start();
+		pacemaker.processLocalTimeout(Round.of(0L));
 		testObserver.awaitCount(2);
-		testObserver.assertValues(Round.create(0L), Round.create(1L));
+		testObserver.assertValues(Round.of(0L), Round.of(1L));
 	}
 }

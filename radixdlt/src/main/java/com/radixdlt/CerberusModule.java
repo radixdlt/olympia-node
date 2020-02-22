@@ -18,7 +18,10 @@
 package com.radixdlt;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
 import com.google.inject.Scopes;
+import com.google.inject.Singleton;
+import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.consensus.DumbNetwork;
 import com.radixdlt.consensus.DumbProposerElection;
 import com.radixdlt.consensus.NetworkRx;
@@ -30,6 +33,8 @@ import com.radixdlt.consensus.ProposerElection;
 import com.radixdlt.consensus.SafetyRules;
 import com.radixdlt.consensus.tempo.Scheduler;
 import com.radixdlt.consensus.tempo.SingleThreadedScheduler;
+import com.radixdlt.constraintmachine.ConstraintMachine;
+import java.util.concurrent.Executors;
 
 public class CerberusModule extends AbstractModule {
 	@Override
@@ -39,7 +44,6 @@ public class CerberusModule extends AbstractModule {
 
 		bind(ProposerElection.class).to(DumbProposerElection.class);
 
-		bind(PacemakerImpl.class).in(Scopes.SINGLETON);
 		bind(PacemakerRx.class).to(PacemakerImpl.class);
 		bind(Pacemaker.class).to(PacemakerImpl.class);
 
@@ -48,5 +52,12 @@ public class CerberusModule extends AbstractModule {
 		bind(NetworkSender.class).to(DumbNetwork.class);
 
 		bind(SafetyRules.class).in(Scopes.SINGLETON);
+	}
+
+
+	@Provides
+	@Singleton
+	private PacemakerImpl pacemaker() {
+		return new PacemakerImpl(Executors.newSingleThreadScheduledExecutor());
 	}
 }

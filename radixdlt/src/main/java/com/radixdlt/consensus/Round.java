@@ -14,7 +14,7 @@ public final class Round implements Comparable<Round> {
 		this.round = round;
 	}
 
-	public static Round create(long round) {
+	public static Round of(long round) {
 		return new Round(round);
 	}
 

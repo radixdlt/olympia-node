@@ -21,9 +21,7 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 
 import java.util.Optional;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -32,24 +30,19 @@ import java.util.concurrent.TimeUnit;
 public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 	static final int TIMEOUT_MILLISECONDS = 500;
 	private final PublishSubject<Round> timeouts;
-	private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+	private final ScheduledExecutorService executorService;
 
-	private ScheduledFuture<?> currentTimeout;
-	private Round currentRound = Round.create(0L);;
-	private Round highestQCRound = Round.create(0L);
+	private Round currentRound = Round.of(0L);;
+	private Round highestQCRound = Round.of(0L);
 
-	public PacemakerImpl() {
+	public PacemakerImpl(ScheduledExecutorService executorService) {
 		this.timeouts = PublishSubject.create();
+		this.executorService = executorService;
 	}
 
-	private void scheduleTimeout() {
-		if (this.currentTimeout != null) {
-			this.currentTimeout.cancel(false);
-		}
-
-		final Round round = this.currentRound;
-		this.currentTimeout = executorService.schedule(() -> {
-			timeouts.onNext(round);
+	private void scheduleTimeout(final Round timeoutRound) {
+		executorService.schedule(() -> {
+			timeouts.onNext(timeoutRound);
 		}, TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS);
 	}
 
@@ -66,7 +59,7 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 
 		this.currentRound = currentRound.next();
 
-		scheduleTimeout();
+		scheduleTimeout(this.currentRound);
 		return true;
 	}
 
@@ -97,14 +90,14 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 		// start new round
 		currentRound = newRound;
 
-		scheduleTimeout();
+		scheduleTimeout(this.currentRound);
 
 		return Optional.of(currentRound);
 	}
 
 	@Override
 	public void start() {
-		scheduleTimeout();
+		scheduleTimeout(this.currentRound);
 	}
 
 	@Override
