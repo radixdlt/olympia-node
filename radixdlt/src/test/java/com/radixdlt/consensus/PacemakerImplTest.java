@@ -99,4 +99,18 @@ public class PacemakerImplTest {
 		testObserver.awaitCount(2);
 		testObserver.assertValues(Round.of(0L), Round.of(1L));
 	}
+
+	@Test
+	public void when_process_timeout_for_earlier_round__then_round_should_not_change_and_no_timeouts_triggered() {
+		ScheduledExecutorService executorService = getMockedExecutorService();
+		PacemakerImpl pacemaker = new PacemakerImpl(executorService);
+		TestObserver<Round> testObserver = TestObserver.create();
+		pacemaker.localTimeouts().subscribe(testObserver);
+		pacemaker.start();
+		assertThat(pacemaker.getCurrentRound()).isEqualByComparingTo(Round.of(0L));
+		pacemaker.processQC(Round.of(0L));
+		assertThat(pacemaker.getCurrentRound()).isEqualByComparingTo(Round.of(1L));
+		pacemaker.processLocalTimeout(Round.of(0L));
+		assertThat(pacemaker.getCurrentRound()).isEqualByComparingTo(Round.of(1L));
+	}
 }

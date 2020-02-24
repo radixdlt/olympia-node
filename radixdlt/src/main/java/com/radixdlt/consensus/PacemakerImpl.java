@@ -32,7 +32,7 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 	private final PublishSubject<Round> timeouts;
 	private final ScheduledExecutorService executorService;
 
-	private Round currentRound = Round.of(0L);;
+	private Round currentRound = Round.of(0L);
 	private Round highestQCRound = Round.of(0L);
 
 	public PacemakerImpl(ScheduledExecutorService executorService) {
@@ -88,11 +88,11 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 		}
 
 		// start new round
-		currentRound = newRound;
+		this.currentRound = newRound;
 
 		scheduleTimeout(this.currentRound);
 
-		return Optional.of(currentRound);
+		return Optional.of(this.currentRound);
 	}
 
 	@Override
