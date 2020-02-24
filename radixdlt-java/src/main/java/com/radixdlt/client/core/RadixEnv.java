@@ -50,8 +50,8 @@ public final class RadixEnv {
 			LOGGER.info("Using Bootstrap Mechanism: " + RADIX_BOOTSTRAP_CONFIG_ENV_VAR + "=" + bootstrapConfigName);
 			return Bootstrap.valueOf(bootstrapConfigName);
 		} else {
-			LOGGER.info("Using Bootstrap Mechanism: LOCALHOST");
-			return Bootstrap.LOCALHOST;
+			LOGGER.info("Using Bootstrap Mechanism: LOCALHOST_SINGLENODE");
+			return Bootstrap.LOCALHOST_SINGLENODE;
 		}
 	});
 
