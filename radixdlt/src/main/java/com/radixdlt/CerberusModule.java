@@ -21,7 +21,6 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
-import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.consensus.DumbNetwork;
 import com.radixdlt.consensus.DumbProposerElection;
 import com.radixdlt.consensus.NetworkRx;
@@ -33,7 +32,6 @@ import com.radixdlt.consensus.ProposerElection;
 import com.radixdlt.consensus.SafetyRules;
 import com.radixdlt.consensus.tempo.Scheduler;
 import com.radixdlt.consensus.tempo.SingleThreadedScheduler;
-import com.radixdlt.constraintmachine.ConstraintMachine;
 import java.util.concurrent.Executors;
 
 public class CerberusModule extends AbstractModule {

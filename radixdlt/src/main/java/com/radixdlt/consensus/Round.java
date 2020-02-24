@@ -20,7 +20,7 @@ public final class Round implements Comparable<Round> {
 
 	public Round next() {
 		if (this.round == Long.MAX_VALUE) {
-			throw new RuntimeException("Round Overflow");
+			throw new IllegalStateException("Round Overflow");
 		}
 
 		return new Round(round + 1);
