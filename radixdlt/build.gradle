@@ -53,6 +53,10 @@ jar {
    dependsOn ':radix-engine-library:jar'
 }
 
+test {
+    systemProperty "java.security.egd", "file:/dev/urandom"
+}
+
 dependencies {
     compile project(":radix-engine-library")
     compile 'commons-cli:commons-cli:1.4'
