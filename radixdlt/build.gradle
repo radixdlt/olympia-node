@@ -59,6 +59,9 @@ test {
 
 dependencies {
     compile project(":radix-engine-library")
+
+    implementation 'com.sleepycat:je:18.3.12'
+
     compile 'commons-cli:commons-cli:1.4'
     compile 'org.json:json:20180813'
     compile 'org.xerial.snappy:snappy-java:1.1.7.3'
@@ -96,9 +99,6 @@ dependencies {
         // Use our Guava lib
         exclude group: 'com.google.guava', module: 'guava'
     }
-
-    // TODO: Lets port to use NIO/NIO2 instead of naga
-    compile fileTree(dir: 'libs', include: '*.jar')
 
     //compile project(':vamos')
 
