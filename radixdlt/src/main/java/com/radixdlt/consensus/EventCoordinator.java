@@ -81,7 +81,24 @@ public final class EventCoordinator {
 		if (!atoms.isEmpty()) {
 			QuorumCertificate highestQC = vertexStore.getHighestQC();
 			log.info("Starting round " + round + " with proposal " + atoms.get(0));
-			networkSender.broadcastProposal(new Vertex(highestQC, this.pacemaker.getCurrentRound(), atoms.get(0)));
+
+			// figure out parent
+			Round parentRound;
+			long parentId;
+			if (highestQC != null) {
+				parentRound = highestQC.getRound();
+				parentId = highestQC.hashCode();
+			} else { // use zeros if this is a genesis vertex
+				parentRound = Round.of(0);
+				parentId = 0;
+			}
+
+			networkSender.broadcastProposal(new Vertex(highestQC,
+				this.pacemaker.getCurrentRound(),
+				atoms.get(0),
+				parentRound,
+				parentId
+			));
 		}
 	}
 

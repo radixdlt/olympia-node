@@ -19,6 +19,7 @@ package com.radixdlt.consensus;
 
 import com.radixdlt.common.Atom;
 import java.util.Objects;
+import java.util.OptionalLong;
 
 /**
  * Vertex in the BFT Chain
@@ -27,11 +28,15 @@ public final class Vertex {
 	private final QuorumCertificate qc;
 	private final Round round;
 	private final Atom atom;
+	private final Round parentRound;
+	private final long parentId;
 
-	public Vertex(QuorumCertificate qc, Round round, Atom atom) {
+	public Vertex(QuorumCertificate qc, Round round, Atom atom, Round parentRound, long parentId) {
 		this.qc = qc;
 		this.atom = atom;
 		this.round = Objects.requireNonNull(round);
+		this.parentRound = parentRound;
+		this.parentId = parentId;
 	}
 
 	public QuorumCertificate getQc() {
@@ -44,6 +49,14 @@ public final class Vertex {
 
 	public Atom getAtom() {
 		return atom;
+	}
+
+	public long getParentId() {
+		return parentId;
+	}
+
+	public Round getParentRound() {
+		return parentRound;
 	}
 
 	@Override
