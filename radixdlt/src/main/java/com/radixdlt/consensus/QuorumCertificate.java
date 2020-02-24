@@ -26,7 +26,7 @@ public final class QuorumCertificate {
 		this.vote = Objects.requireNonNull(vote);
 	}
 
-	public long getRound() {
+	public Round getRound() {
 		return vote.getRound();
 	}
 

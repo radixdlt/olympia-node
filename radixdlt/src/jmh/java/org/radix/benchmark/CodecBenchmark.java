@@ -17,7 +17,7 @@
 
 package org.radix.benchmark;
 
-import com.radixdlt.TestSetupUtils;
+
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.infra.Blackhole;
 import org.radix.logging.Logging;
@@ -26,6 +26,7 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
 
 import org.radix.serialization.DummyTestObject;
+import org.radix.serialization.TestSetupUtils;
 
 /**
  * Some JMH driven benchmarks for testing serialisation performance of

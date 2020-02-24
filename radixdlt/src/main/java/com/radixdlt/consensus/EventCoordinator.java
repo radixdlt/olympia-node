@@ -70,8 +70,8 @@ public final class EventCoordinator {
 		this.self = Objects.requireNonNull(self);
 	}
 
-	private void processNewRound(long round) {
-		log.debug(String.format("Processing new round %d", round));
+	private void processNewRound(Round round) {
+		log.debug("Processing new round: " +  round);
 		// only do something if we're actually the leader
 		if (!proposerElection.isValidProposer(self, round)) {
 			return;
@@ -87,8 +87,8 @@ public final class EventCoordinator {
 
 	public void processVote(Vote vote) {
 		// only do something if we're actually the leader for the next round
-		if (!proposerElection.isValidProposer(self, vote.getRound() + 1)) {
-			log.warn(String.format("Got confused vote %s for round %d", vote.hashCode(), vote.getRound()));
+		if (!proposerElection.isValidProposer(self, vote.getRound().next())) {
+			log.warn(String.format("Got confused vote %s for %s", vote.hashCode(), vote.getRound()));
 			return;
 		}
 
@@ -100,18 +100,18 @@ public final class EventCoordinator {
 			.ifPresent(this::processNewRound);
 	}
 
-	public void processLocalTimeout(long round) {
+	public void processLocalTimeout(Round round) {
 		if (!this.pacemaker.processLocalTimeout(round)) {
 			return;
 		}
 
-		this.networkSender.sendNewRound(new NewRound(round + 1));
+		this.networkSender.sendNewRound(new NewRound(round.next()));
 	}
 
 	public void processRemoteNewRound(NewRound newRound) {
 		// only do something if we're actually the leader for the next round
 		if (!proposerElection.isValidProposer(self, newRound.getRound())) {
-			log.warn(String.format("Got confused new round %s for round %d", newRound.hashCode(), newRound.getRound()));
+			log.warn(String.format("Got confused new round %s for round ", newRound.hashCode()) + newRound.getRound());
 			return;
 		}
 

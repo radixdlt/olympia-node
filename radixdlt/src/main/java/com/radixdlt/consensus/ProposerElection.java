@@ -29,5 +29,5 @@ public interface ProposerElection {
 	 * @param round The round
 	 * @return Whether the node is a valid proposer
 	 */
-	boolean isValidProposer(EUID nid, long round);
+	boolean isValidProposer(EUID nid, Round round);
 }

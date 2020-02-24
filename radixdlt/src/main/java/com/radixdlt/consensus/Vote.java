@@ -24,19 +24,19 @@ import java.util.Objects;
  */
 public final class Vote {
 	private final int hash;
-	private final long round;
+	private final Round round;
 
 	/**
 	 * Create a vote for a given round with a certain hash.
 	 * Note that the hash must reflect the given round.
 	 * This is a temporary method as Vote will be expanded to maintain this invariant itself.
 	 */
-	public Vote(long round, int hash) {
-		this.round = round;
+	public Vote(Round round, int hash) {
+		this.round = Objects.requireNonNull(round);
 		this.hash = hash;
 	}
 
-	public long getRound() {
+	public Round getRound() {
 		return round;
 	}
 
@@ -52,7 +52,7 @@ public final class Vote {
 		}
 
 		Vote v = (Vote) o;
-		return v.hash == this.hash && v.round == this.round;
+		return v.hash == this.hash && Objects.equals(v.round, this.round);
 	}
 
 	@Override

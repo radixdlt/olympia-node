@@ -1,101 +1,107 @@
+/*
+ * (C) Copyright 2020 Radix DLT Ltd
+ *
+ * Radix DLT Ltd licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License.  You may obtain a copy of the
+ * License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied.  See the License for the specific
+ * language governing permissions and limitations under the License.
+ */
+
 package com.radixdlt.consensus;
 
-import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
 
-import java.util.OptionalLong;
-import java.util.concurrent.Executors;
+import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.LongConsumer;
 
 /**
  * Overly simplistic pacemaker
  */
 public final class PacemakerImpl implements Pacemaker, PacemakerRx {
-	private static final Logger log = Logging.getLogger("EC");
+	static final int TIMEOUT_MILLISECONDS = 500;
+	private final PublishSubject<Round> timeouts;
+	private final ScheduledExecutorService executorService;
 
-	private static final int TIMEOUT_MILLISECONDS = 500;
-	private final PublishSubject<Long> timeouts;
-	private final AtomicReference<ScheduledFuture<?>> futureRef;
-	private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+	private Round currentRound = Round.of(0L);
+	private Round highestQCRound = Round.of(0L);
 
-	private long currentRound;
-	private long highestQCRound;
-
-	public PacemakerImpl() {
+	public PacemakerImpl(ScheduledExecutorService executorService) {
 		this.timeouts = PublishSubject.create();
-		this.futureRef = new AtomicReference<>();
+		this.executorService = executorService;
 	}
 
-	private void scheduleTimeout() {
-		long currentRound = getCurrentRound();
-		ScheduledFuture<?> future = executorService.schedule(() -> {
-			timeouts.onNext(currentRound);
+	private void scheduleTimeout(final Round timeoutRound) {
+		executorService.schedule(() -> {
+			timeouts.onNext(timeoutRound);
 		}, TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS);
-		this.futureRef.set(future);
 	}
 
 	@Override
-	public long getCurrentRound() {
+	public Round getCurrentRound() {
 		return currentRound;
 	}
 
 	@Override
-	public boolean processLocalTimeout(long round) {
-		if (round != this.currentRound) {
+	public boolean processLocalTimeout(Round round) {
+		if (!round.equals(this.currentRound)) {
 			return false;
 		}
 
-		scheduleTimeout();
+		this.currentRound = currentRound.next();
+
+		scheduleTimeout(this.currentRound);
 		return true;
 	}
 
 	@Override
-	public OptionalLong processRemoteNewRound(NewRound newRound) {
+	public Optional<Round> processRemoteNewRound(NewRound newRound) {
 		// gather new rounds to form new round QC
 		// TODO assumes single node network for now
-		return OptionalLong.of(newRound.getRound());
+		return Optional.of(newRound.getRound());
 	}
 
-	private void updateHighestQCRound(long round) {
-		if (round > highestQCRound) {
+	private void updateHighestQCRound(Round round) {
+		if (round.compareTo(highestQCRound) > 0) {
 			highestQCRound = round;
 		}
 	}
 
 	@Override
-	public OptionalLong processQC(long round) {
+	public Optional<Round> processQC(Round round) {
 		// update
 		updateHighestQCRound(round);
 
 		// check if a new round can be started
-		long newRound = highestQCRound + 1;
-		if (newRound <= currentRound) {
-			return OptionalLong.empty();
+		Round newRound = highestQCRound.next();
+		if (newRound.compareTo(currentRound) <= 0) {
+			return Optional.empty();
 		}
 
 		// start new round
-		currentRound = round;
-		ScheduledFuture<?> future = this.futureRef.get();
-		future.cancel(false);
-		scheduleTimeout();
+		this.currentRound = newRound;
 
-		return OptionalLong.of(currentRound);
+		scheduleTimeout(this.currentRound);
+
+		return Optional.of(this.currentRound);
 	}
 
 	@Override
 	public void start() {
-		scheduleTimeout();
+		scheduleTimeout(this.currentRound);
 	}
 
 	@Override
-	public Observable<Long> localTimeouts() {
+	public Observable<Round> localTimeouts() {
 		return timeouts;
 	}
 }

@@ -17,14 +17,14 @@
 
 package com.radixdlt.consensus;
 
-import java.util.OptionalLong;
+import java.util.Optional;
 
 /**
  * Interface for an event coordinator to manage the pacemaker
  */
 public interface Pacemaker {
-	long getCurrentRound();
-	boolean processLocalTimeout(long round);
-	OptionalLong processRemoteNewRound(NewRound newRound);
-	OptionalLong processQC(long round);
+	Round getCurrentRound();
+	boolean processLocalTimeout(Round round);
+	Optional<Round> processRemoteNewRound(NewRound newRound);
+	Optional<Round> processQC(Round round);
 }
