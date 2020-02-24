@@ -26,9 +26,11 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.reactivex.rxjava3.observers.TestObserver;
-import java.util.concurrent.ScheduledExecutorService;
-import org.junit.Test;
 
+import java.util.Optional;
+import java.util.concurrent.ScheduledExecutorService;
+
+import org.junit.Test;
 
 public class PacemakerImplTest {
 	private static ScheduledExecutorService getMockedExecutorService() {
@@ -101,16 +103,32 @@ public class PacemakerImplTest {
 	}
 
 	@Test
-	public void when_process_timeout_for_earlier_round__then_round_should_not_change_and_no_timeouts_triggered() {
+	public void when_process_timeout_for_earlier_round__then_round_should_not_change() {
+		ScheduledExecutorService executorService = getMockedExecutorService();
+		PacemakerImpl pacemaker = new PacemakerImpl(executorService);
+		pacemaker.start();
+		assertThat(pacemaker.getCurrentRound()).isEqualByComparingTo(Round.of(0L));
+		Optional<Round> newRound = pacemaker.processQC(Round.of(0L));
+		assertThat(newRound).isEqualTo(Optional.of(Round.of(1L)));
+		assertThat(pacemaker.getCurrentRound()).isEqualByComparingTo(Round.of(1L));
+		pacemaker.processLocalTimeout(Round.of(0L));
+		assertThat(pacemaker.getCurrentRound()).isEqualByComparingTo(Round.of(1L));
+	}
+
+	@Test
+	public void when_process_qc_twice_for_same_round__then_round_should_not_change() {
 		ScheduledExecutorService executorService = getMockedExecutorService();
 		PacemakerImpl pacemaker = new PacemakerImpl(executorService);
 		TestObserver<Round> testObserver = TestObserver.create();
 		pacemaker.localTimeouts().subscribe(testObserver);
 		pacemaker.start();
 		assertThat(pacemaker.getCurrentRound()).isEqualByComparingTo(Round.of(0L));
-		pacemaker.processQC(Round.of(0L));
+		Optional<Round> newRound = pacemaker.processQC(Round.of(0L));
+		assertThat(newRound).isEqualTo(Optional.of(Round.of(1L)));
 		assertThat(pacemaker.getCurrentRound()).isEqualByComparingTo(Round.of(1L));
-		pacemaker.processLocalTimeout(Round.of(0L));
+		newRound = pacemaker.processQC(Round.of(0L));
+		assertThat(newRound).isEmpty();
+		assertThat(pacemaker.getCurrentRound()).isEqualByComparingTo(Round.of(1L));
 		assertThat(pacemaker.getCurrentRound()).isEqualByComparingTo(Round.of(1L));
 	}
 }
