@@ -107,7 +107,6 @@ public final class ECDSASignature implements Signature {
 		this.s = new BigInteger(1, s);
 	}
 
-	// TODO fix this ugly terrible crap...
 
 	@Override
 	public SignatureScheme signatureScheme() {
