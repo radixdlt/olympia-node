@@ -86,10 +86,6 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
 		return this.publicKey;
 	}
 
-//	public ECDSASignature sign(Hash hash) throws CryptoException {
-//		return sign(hash.toByteArray());
-//	}
-
 	public ECDSASignature sign(byte[] hash) throws CryptoException {
 		return ECKeyUtils.keyHandler.sign(hash, this.privateKey);
 	}

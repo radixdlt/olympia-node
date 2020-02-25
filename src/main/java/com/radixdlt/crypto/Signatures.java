@@ -1,3 +1,20 @@
+/*
+ * (C) Copyright 2020 Radix DLT Ltd
+ *
+ * Radix DLT Ltd licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License.  You may obtain a copy of the
+ * License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied.  See the License for the specific
+ * language governing permissions and limitations under the License.
+ */
+
 package com.radixdlt.crypto;
 
 import java.util.Map;
@@ -21,6 +38,15 @@ public interface Signatures {
      * @return Returns the map from {@link ECPublicKey} to {@link Signature} produced by that key.
      */
     Map<ECPublicKey, Signature> keyToSignatures();
+
+    /**
+     * Checks whether or not this collection of {@link Signature}s and their corresponding {@link ECPublicKey}s indeed has signed the message,
+     * requiring that at least {@code requiredMinimumNumberOfValidSignatures} of the signatures are valid.
+     * @param message The hashed data to check against (the data that has been signed).
+     * @param requiredMinimumNumberOfValidSignatures The required minimum number of valid signatures.
+     * @return If the number of valid signatures having signed {@code message} is greater or equal to {@code requiredMinimumNumberOfValidSignatures}
+     */
+    boolean hasSignedMessage(Hash message, int requiredMinimumNumberOfValidSignatures);
 
     /**
      * Returns a new instance of {@link Signatures}, concatenated with the {@code signature},

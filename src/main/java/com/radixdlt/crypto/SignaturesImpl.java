@@ -18,18 +18,20 @@
 package com.radixdlt.crypto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 
+import java.util.List;
 import java.util.Map;
 
 /**
  * A set of cryptographically secure signatures, specifying which signature was used
  */
-public class SignaturesImpl<T extends Signature> implements Signatures {
+class SignaturesImpl<T extends Signature> implements Signatures {
     // Placeholder for the serializer ID
     @JsonProperty(SerializerConstants.SERIALIZER_NAME)
     @DsonOutput(DsonOutput.Output.ALL)
@@ -122,6 +124,15 @@ public class SignaturesImpl<T extends Signature> implements Signatures {
     @Override
     public boolean isEmpty() {
         return this.keyToSignature.isEmpty();
+    }
+
+    @Override
+    public boolean hasSignedMessage(Hash message, int requiredMinimumNumberOfValidSignatures) {
+        List<Boolean> validArray = this.keyToSignatures().entrySet().stream()
+                .map(e -> e.getKey().verify(message, (ECDSASignature) e.getValue()))
+                .collect(ImmutableList.toImmutableList());
+
+        return validArray.size() >= requiredMinimumNumberOfValidSignatures;
     }
 
     @Override
