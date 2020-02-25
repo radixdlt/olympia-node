@@ -82,37 +82,20 @@ public final class EventCoordinator {
 		if (!atoms.isEmpty()) {
 			QuorumCertificate highestQC = vertexStore.getHighestQC();
 			log.info("Starting round " + round + " with proposal " + atoms.get(0));
-
-			// figure out parent
-			Round parentRound;
-			long parentId;
-			if (highestQC != null) {
-				parentRound = highestQC.getRound();
-				parentId = highestQC.hashCode();
-			} else { // use zeros if this is a genesis vertex
-				parentRound = Round.of(0);
-				parentId = 0;
-			}
-
-			networkSender.broadcastProposal(new Vertex(highestQC,
-				this.pacemaker.getCurrentRound(),
-				atoms.get(0),
-				parentRound,
-				parentId
-			));
+			networkSender.broadcastProposal(new Vertex(highestQC, this.pacemaker.getCurrentRound(), atoms.get(0)));
 		}
 	}
 
-	public void processVote(Vote vote) {
+	public void processVote(VoteMessage vote) {
 		// only do something if we're actually the leader for the next round
-		if (!proposerElection.isValidProposer(self, vote.getRound().next())) {
-			log.warn(String.format("Got confused vote %s for %s", vote.hashCode(), vote.getRound()));
+		if (!proposerElection.isValidProposer(self, vote.getVertexMetadata().getRound().next())) {
+			log.warn(String.format("Got confused vote %s for %s", vote.hashCode(), vote.getVertexMetadata().getRound()));
 			return;
 		}
 
 		// accumulate votes into QCs
 		// TODO assumes a single node network for now
-		QuorumCertificate qc = new QuorumCertificate(vote);
+		QuorumCertificate qc = new QuorumCertificate(vote, vote.getVertexMetadata());
 		this.vertexStore.syncToQC(qc);
 		this.pacemaker.processQC(qc.getRound())
 			.ifPresent(this::processNewRound);
@@ -154,7 +137,7 @@ public final class EventCoordinator {
 				vertexStore.insertVertex(vertex);
 
 				final VoteResult voteResult = safetyRules.vote(vertex);
-				final Vote vote = voteResult.getVote();
+				final VoteMessage vote = voteResult.getVote();
 				networkSender.sendVote(vote);
 				// TODO do something on commit
 				voteResult.getCommittedAtom()

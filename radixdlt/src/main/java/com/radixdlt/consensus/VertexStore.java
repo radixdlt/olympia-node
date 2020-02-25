@@ -40,7 +40,7 @@ public final class VertexStore {
 	}
 
 	public void insertVertex(Vertex vertex) {
-		this.syncToQC(vertex.getQc());
+		this.syncToQC(vertex.getQC());
 		vertices.add(vertex);
 	}
 

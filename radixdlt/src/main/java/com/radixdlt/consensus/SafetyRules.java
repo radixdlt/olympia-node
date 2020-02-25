@@ -17,7 +17,10 @@
 
 package com.radixdlt.consensus;
 
+import com.google.inject.Inject;
+import com.google.inject.name.Named;
 import com.radixdlt.common.AID;
+import com.radixdlt.common.EUID;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -27,9 +30,32 @@ import java.util.Optional;
  * TODO: Add storage of private key of node here
  */
 public final class SafetyRules {
+	private final EUID self;
+
+	@Inject
+	public SafetyRules(@Named("self") EUID self) {
+		this.self = Objects.requireNonNull(self);
+	}
+
+	private AID getCommittedAtom(Vertex vertex) {
+		if (vertex.getRound().equals(vertex.getQC().getRound().next())
+			&& vertex.getQC().getRound().equals(vertex.getQC().getParentRound().next())) {
+			return vertex.getQC().getVertexMetadata().getParentAID();
+		}
+		return null;
+	}
+
 	public VoteResult vote(Vertex vertex) {
-		Vote vote = new Vote(vertex.getRound(), vertex.hashCode());
-		return new VoteResult(vote, null);
+		VertexMetadata vertexMetadata = new VertexMetadata(
+			vertex.getRound(),
+			vertex.getAID(),
+			vertex.getQC().getVertexMetadata().getRound(),
+			vertex.getQC().getVertexMetadata().getAID()
+		);
+		VoteMessage vote = new VoteMessage(self, vertexMetadata);
+		AID committedAtom = getCommittedAtom(vertex);
+
+		return new VoteResult(vote, committedAtom);
 	}
 
 	public static class ConsensusState {
@@ -39,15 +65,15 @@ public final class SafetyRules {
 	}
 
 	public static class VoteResult {
-		private final Vote vote;
+		private final VoteMessage vote;
 		private final AID committedAtom; // may be null
 
-		public VoteResult(Vote vote, AID committedAtom) {
+		public VoteResult(VoteMessage vote, AID committedAtom) {
 			this.vote = Objects.requireNonNull(vote);
 			this.committedAtom = committedAtom; // may be null
 		}
 
-		public Vote getVote() {
+		public VoteMessage getVote() {
 			return vote;
 		}
 

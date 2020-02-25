@@ -17,41 +17,28 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.common.EUID;
+
 import java.util.Objects;
 
-public final class QuorumCertificate {
-	private final VoteMessage vote;
+/**
+ * Represents a vote on a vertex
+ */
+public final class VoteMessage {
+	private final EUID author;
 	private final VertexMetadata vertexMetadata;
+	// TODO add signature
 
-	public QuorumCertificate(VoteMessage vote, VertexMetadata vertexMetadata) {
-		this.vote = Objects.requireNonNull(vote);
+	public VoteMessage(EUID author, VertexMetadata vertexMetadata) {
+		this.author = Objects.requireNonNull(author);
 		this.vertexMetadata = Objects.requireNonNull(vertexMetadata);
 	}
 
-	public Round getRound() {
-		return vertexMetadata.getRound();
-	}
-
-	public Round getParentRound() {
-		return vertexMetadata.getParentRound();
+	public EUID getAuthor() {
+		return author;
 	}
 
 	public VertexMetadata getVertexMetadata() {
 		return vertexMetadata;
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (!(o instanceof QuorumCertificate)) {
-			return false;
-		}
-
-		QuorumCertificate qc = (QuorumCertificate) o;
-		return Objects.equals(qc.vote, this.vote);
-	}
-
-	@Override
-	public int hashCode() {
-		return vote.hashCode();
 	}
 }

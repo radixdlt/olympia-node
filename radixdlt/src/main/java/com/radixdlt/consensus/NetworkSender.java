@@ -23,5 +23,5 @@ package com.radixdlt.consensus;
 public interface NetworkSender {
 	void broadcastProposal(Vertex vertex);
 	void sendNewRound(NewRound newRound);
-	void sendVote(Vote vote);
+	void sendVote(VoteMessage vote);
 }
