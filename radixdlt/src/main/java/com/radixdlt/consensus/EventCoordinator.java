@@ -23,6 +23,7 @@ import com.google.inject.name.Named;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.Atom;
 import com.radixdlt.common.EUID;
+import com.radixdlt.consensus.SafetyRules.VoteResult;
 import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.constraintmachine.Particle;
@@ -152,9 +153,12 @@ public final class EventCoordinator {
 
 				vertexStore.insertVertex(vertex);
 
-				final Vote vote = safetyRules.vote(vertex);
-
+				final VoteResult voteResult = safetyRules.vote(vertex);
+				final Vote vote = voteResult.getVote();
 				networkSender.sendVote(vote);
+				// TODO do something on commit
+				voteResult.getCommittedAtom()
+					.ifPresent(aid -> log.info("Committed atom " + aid));
 			}
 
 			@Override

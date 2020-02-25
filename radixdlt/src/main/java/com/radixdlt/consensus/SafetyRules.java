@@ -17,12 +17,42 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.common.AID;
+
+import java.util.Objects;
+import java.util.Optional;
+
 /**
  * Manages safety of the protocol.
  * TODO: Add storage of private key of node here
  */
 public final class SafetyRules {
-	public Vote vote(Vertex vertex) {
-		return new Vote(vertex.getRound(), vertex.hashCode());
+	public VoteResult vote(Vertex vertex) {
+		Vote vote = new Vote(vertex.getRound(), vertex.hashCode());
+		return new VoteResult(vote, null);
+	}
+
+	public static class ConsensusState {
+		private Round lastVotedRound;
+		private Round preferredRound;
+
+	}
+
+	public static class VoteResult {
+		private final Vote vote;
+		private final AID committedAtom; // may be null
+
+		public VoteResult(Vote vote, AID committedAtom) {
+			this.vote = Objects.requireNonNull(vote);
+			this.committedAtom = committedAtom; // may be null
+		}
+
+		public Vote getVote() {
+			return vote;
+		}
+
+		public Optional<AID> getCommittedAtom() {
+			return Optional.ofNullable(committedAtom);
+		}
 	}
 }
