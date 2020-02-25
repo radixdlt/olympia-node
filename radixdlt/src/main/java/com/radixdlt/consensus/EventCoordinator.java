@@ -96,6 +96,7 @@ public final class EventCoordinator {
 		// accumulate votes into QCs
 		// TODO assumes a single node network for now
 		QuorumCertificate qc = new QuorumCertificate(vote, vote.getVertexMetadata());
+		this.safetyRules.process(qc);
 		this.vertexStore.syncToQC(qc);
 		this.pacemaker.processQC(qc.getRound())
 			.ifPresent(this::processNewRound);

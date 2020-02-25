@@ -31,10 +31,12 @@ import java.util.Optional;
  */
 public final class SafetyRules {
 	private final EUID self;
+	private final SafetyState state;
 
 	@Inject
-	public SafetyRules(@Named("self") EUID self) {
+	public SafetyRules(@Named("self") EUID self, SafetyState initialState) {
 		this.self = Objects.requireNonNull(self);
+		this.state = new SafetyState(initialState.lastVotedRound, initialState.preferredRound);
 	}
 
 	private AID getCommittedAtom(Vertex vertex) {
@@ -45,7 +47,24 @@ public final class SafetyRules {
 		return null;
 	}
 
+	public void process(QuorumCertificate qc) {
+		if (qc.getParentRound().compareTo(this.state.preferredRound) > 0) {
+			this.state.preferredRound = qc.getParentRound();
+		}
+	}
+
 	public VoteResult vote(Vertex vertex) {
+		// ensure vertex does not violate earlier rounds
+		if (vertex.getRound().compareTo(this.state.lastVotedRound) < 0) {
+			// TODO safety err
+		}
+
+		// ensure vertex respects preference
+		if (vertex.getQC().getRound().compareTo(this.state.preferredRound) < 0) {
+			// TODO safety err
+		}
+
+		this.state.lastVotedRound = vertex.getRound();
 		VertexMetadata vertexMetadata = new VertexMetadata(
 			vertex.getRound(),
 			vertex.getAID(),
@@ -58,10 +77,14 @@ public final class SafetyRules {
 		return new VoteResult(vote, committedAtom);
 	}
 
-	public static class ConsensusState {
+	public static class SafetyState {
 		private Round lastVotedRound;
 		private Round preferredRound;
 
+		public SafetyState(Round lastVotedRound, Round preferredRound) {
+			this.lastVotedRound = lastVotedRound;
+			this.preferredRound = preferredRound;
+		}
 	}
 
 	public static class VoteResult {
