@@ -18,7 +18,7 @@ jobs:
   include:
     - stage: check
       script: ./gradlew check
-    - stage: test
+    - stage: test jacocoTestReport
       script: ./gradlew sonarqube
 
 cache:
