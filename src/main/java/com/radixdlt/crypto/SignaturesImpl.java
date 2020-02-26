@@ -45,7 +45,7 @@ class SignaturesImpl<T extends Signature> implements Signatures {
     @DsonOutput(DsonOutput.Output.ALL)
     private ImmutableMap<ECPublicKey, T> keyToSignature;
 
-    private final Maps.EntryTransformer<ECPublicKey, T, Signature> transformer = (key, value) -> value;
+    private static final Maps.EntryTransformer<ECPublicKey, Signature, Signature> transformer = (key, value) -> value;
 
     @Override
     public SignatureScheme signatureScheme() {
