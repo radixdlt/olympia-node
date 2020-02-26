@@ -107,6 +107,14 @@ public final class ECDSASignature implements Signature {
 		this.s = new BigInteger(1, s);
 	}
 
+	@Override
+	public String toString() {
+		return toHexString();
+	}
+
+	public String toHexString() {
+		return Bytes.toHexString(r.toByteArray()) + Bytes.toHexString(s.toByteArray());
+	}
 
 	@Override
 	public SignatureScheme signatureScheme() {

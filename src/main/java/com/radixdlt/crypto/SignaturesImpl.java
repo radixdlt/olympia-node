@@ -18,6 +18,7 @@
 package com.radixdlt.crypto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
@@ -31,6 +32,7 @@ import java.util.Map;
 /**
  * A set of cryptographically secure signatures, specifying which signature was used
  */
+@VisibleForTesting
 class SignaturesImpl<T extends Signature> implements Signatures {
     // Placeholder for the serializer ID
     @JsonProperty(SerializerConstants.SERIALIZER_NAME)
@@ -66,7 +68,7 @@ class SignaturesImpl<T extends Signature> implements Signatures {
      * @param publicKey the {@link ECPublicKey} corresponding to the {@link Signing} key which was used to produce the {@code signature}.
      * @param signature the {@link Signature} produced by the {@link Signing} key corresponding to the {@code publicKey}.
      */
-    public SignaturesImpl(Class<T> signatureType, ECPublicKey publicKey, T signature) {
+    SignaturesImpl(Class<T> signatureType, ECPublicKey publicKey, T signature) {
         this.keyToSignature = ImmutableMap.of(publicKey, signature);
         this.signatureType = signatureType;
     }
@@ -76,7 +78,7 @@ class SignaturesImpl<T extends Signature> implements Signatures {
      * @param signatureType The {@link Signature} type of {@code signature}
      * @param keyToSignature The map of {@link Signature}s and their corresponding {@link ECPublicKey}
      */
-    public SignaturesImpl(Class<T> signatureType, Map<ECPublicKey, ? extends T> keyToSignature) {
+    SignaturesImpl(Class<T> signatureType, Map<ECPublicKey, ? extends T> keyToSignature) {
         this.keyToSignature = ImmutableMap.copyOf(keyToSignature);
         this.signatureType = signatureType;
     }
@@ -86,7 +88,7 @@ class SignaturesImpl<T extends Signature> implements Signatures {
      * @param signatureType The {@link Signature} type of {@code signature}
      * @param keyToSignature The map of {@link Signature}s and their corresponding {@link ECPublicKey}
      */
-    public SignaturesImpl(Class<T> signatureType, ImmutableMap<ECPublicKey, T> keyToSignature) {
+    SignaturesImpl(Class<T> signatureType, ImmutableMap<ECPublicKey, T> keyToSignature) {
         this.keyToSignature = keyToSignature;
         this.signatureType = signatureType;
     }
@@ -96,7 +98,7 @@ class SignaturesImpl<T extends Signature> implements Signatures {
      * with an instance of {@code signatureType} at at a later point in time.
      * @param signatureType The type of {@link Signature}
      */
-    public SignaturesImpl(Class<T> signatureType) {
+    SignaturesImpl(Class<T> signatureType) {
         this.keyToSignature = ImmutableMap.of();
         this.signatureType = signatureType;
     }
@@ -130,6 +132,7 @@ class SignaturesImpl<T extends Signature> implements Signatures {
     public boolean hasSignedMessage(Hash message, int requiredMinimumNumberOfValidSignatures) {
         List<Boolean> validArray = this.keyToSignatures().entrySet().stream()
                 .map(e -> e.getKey().verify(message, (ECDSASignature) e.getValue()))
+                .filter(v -> v)
                 .collect(ImmutableList.toImmutableList());
 
         return validArray.size() >= requiredMinimumNumberOfValidSignatures;

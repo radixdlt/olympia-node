@@ -64,29 +64,4 @@ public interface Signatures {
      * @return {@code true} if this collection of signatures contains no key-value mappings
      */
     boolean isEmpty();
-
-    /**
-     * Nn empty collection of {@link Signature}s, with the default {@link SignatureScheme} used.
-     */
-    Signatures DEFAULT = new ECDSASignatures();
-
-    /**
-     * Returns an empty collection of {@link Signature}s, with the default {@link SignatureScheme} used.
-     * @return an empty collection of {@link Signature}s, with the default {@link SignatureScheme} used.
-     */
-    static Signatures defaultEmptySignatures() {
-        return DEFAULT;
-    }
-
-    /**
-     * Returns a collection of {@link Signature}s, with the default {@link SignatureScheme} used, containing the {@code signature},
-     * produced by the signing key corresponding to the {@code publicKey}.
-     * @param publicKey the {@link ECPublicKey} corresponding to the {@link Signing} key which was used to produce the {@code signature}.
-     * @param signature the {@link Signature} produced by the {@link Signing} key corresponding to the {@code publicKey}.
-     * @return an instance of the default {@link SignatureScheme} used, containing the {@code signature},
-     * produced by the signing key corresponding to the {@code publicKey}.
-     */
-    static Signatures defaultSingle(ECPublicKey publicKey, Signature signature) {
-        return defaultEmptySignatures().concatenate(publicKey, signature);
-    }
 }
