@@ -3,13 +3,11 @@ package com.radixdlt.crypto;
 import org.junit.Test;
 
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
 
 public class SignaturesTest {
 
@@ -26,7 +24,7 @@ public class SignaturesTest {
         assertEquals(nonEmptySignatures.keyToSignatures().size(), 1);
     }
 
-    @Test(expected = Test.None.class /* no exception expected */)
+    @Test
     public void test_that_we_can_bulk_verify_signatures_verify_all_two() throws CryptoException {
         test_that_we_can_bulk_verify_signatures(
                 2,
@@ -36,7 +34,7 @@ public class SignaturesTest {
         );
     }
 
-    @Test(expected = Test.None.class /* no exception expected */)
+    @Test
     public void test_that_we_can_bulk_verify_signatures_verify_at_least_N_of_M() throws CryptoException {
         for (int valid = 0; valid < 5; valid++) {
             for (int invalid = 0; invalid < 5; invalid++) {
@@ -71,11 +69,12 @@ public class SignaturesTest {
         for (int i = 0; i < numberOfValidSignaturesToCreate + numberOfInvalidSignaturesToCreate; i++) {
             ECKeyPair keyPair = new ECKeyPair();
             assertNotNull(keyPair);
-            Signature signature = null;
+            final Signature signature;
             boolean shouldSignatureBeValid = i >= numberOfInvalidSignaturesToCreate;
             if (shouldSignatureBeValid) {
                 signature = keyPair.sign(hashedMessage);
             } else {
+                // This creates an invalid signature.
                 signature = new ECDSASignature(BigInteger.ONE, BigInteger.ONE);
             }
             assertNotNull(signature);
