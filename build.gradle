@@ -24,7 +24,7 @@ buildscript {
         maven { url "https://plugins.gradle.org/m2/" }
     }
     dependencies {
-        classpath 'org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:2.6.2'
+        classpath 'org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:2.8'
         classpath 'com.adarshr:gradle-test-logger-plugin:1.6.0'
     }
 }
@@ -57,6 +57,13 @@ checkstyleTest {
 
 test {
     systemProperty "java.security.egd", "file:/dev/urandom"
+}
+
+jacocoTestReport {
+    reports {
+        xml.enabled true
+        csv.enabled false
+    }
 }
 
 dependencies {

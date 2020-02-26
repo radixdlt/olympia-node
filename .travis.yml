@@ -16,8 +16,10 @@ git:
 
 jobs:
   include:
-    - stage: test
-      script: ./gradlew sonarqube
+    - stage: check
+      script: ./gradlew check jacocoTestReport sonarqube --info
+    - stage: sonar
+      script: ./gradlew jacocoTestReport sonarqube --info
 
 cache:
   directories:
