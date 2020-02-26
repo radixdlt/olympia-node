@@ -28,8 +28,8 @@ repositories {
 
 sonarqube {
     properties {
-        property "sonar.sources", "${sourceSets.main.allSource.srcDirs}"
-        property "sonar.tests", "${sourceSets.test.allSource.srcDirs}"
+        property "sonar.sources", "src/main/java"
+        property "sonar.tests", ""
     }
 }
 
