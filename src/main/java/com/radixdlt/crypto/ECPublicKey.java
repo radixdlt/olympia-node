@@ -81,6 +81,10 @@ public final class ECPublicKey {
 		}
 	}
 
+	@JsonCreator
+	public static ECPublicKey fromBase64(String base64) throws CryptoException {
+		return new ECPublicKey(Bytes.fromBase64String(base64));
+	}
 
 	public EUID getUID() {
 		return this.uid.get();
@@ -180,7 +184,11 @@ public final class ECPublicKey {
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s]", getClass().getSimpleName(), Bytes.toBase64String(this.publicKey));
+		return String.format("%s[%s]", getClass().getSimpleName(), toBase64());
+	}
+
+	public String toBase64() {
+		return Bytes.toBase64String(this.publicKey);
 	}
 
 	private EUID computeUID() {
