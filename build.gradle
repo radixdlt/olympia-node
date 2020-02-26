@@ -59,15 +59,6 @@ test {
     systemProperty "java.security.egd", "file:/dev/urandom"
 }
 
-subprojects {
-    sonarqube {
-        properties {
-            property "sonar.sources", "src"
-        }
-    }
-}
-
-
 dependencies {
     compile 'org.slf4j:slf4j-api:1.7.26'
     compile 'org.slf4j:slf4j-simple:1.7.26'

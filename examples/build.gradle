@@ -26,6 +26,13 @@ repositories {
     mavenCentral()
 }
 
+sonarqube {
+    properties {
+        property "sonar.sources", "${sourceSets.main.allSource.srcDirs}"
+        property "sonar.tests", "${sourceSets.test.allSource.srcDirs}"
+    }
+}
+
 dependencies {
     compile rootProject //TODO: Hack for now since in code freeze
     testCompile group: 'junit', name: 'junit', version: '4.12'
