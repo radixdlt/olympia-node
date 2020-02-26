@@ -1,15 +1,35 @@
 package com.radixdlt.crypto;
 
+import com.google.common.collect.ImmutableMap;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.math.BigInteger;
+import java.util.Random;
+import java.util.function.Supplier;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 
 public class SignaturesTest {
+
+    @Test
+    public void verify_that_ecdsa_is_default_signature_scheme() {
+        Signatures emptySignatures = DefaultSignatures.emptySignatures();
+        assertEquals(emptySignatures.signatureType(), ECDSASignature.class);
+    }
+
+    @Test
+    public void well_formatted_tostring_of_signaturescheme() {
+        assertThat(SignatureScheme.ECDSA.toString(), is("ecdsa"));
+    }
 
     @Test
     public void verify_that_default_signature_scheme_is_ecdsa() {
@@ -22,6 +42,48 @@ public class SignaturesTest {
 
         Signatures nonEmptySignatures = emptySignatures.concatenate(publicKey, mockSignature);
         assertEquals(nonEmptySignatures.keyToSignatures().size(), 1);
+    }
+
+    @Test
+    public void verify_that_a_single_invalid_signature_does_fails_to_verify() {
+        Signatures single = new ECDSASignatures(publicKey(), randomInvalidSignature());
+        assertEquals(1, single.keyToSignatures().size());
+        assertFalse(single.hasSignedMessage(hashOfMessage("Fubar"), 1));
+    }
+
+    @Test
+    public void verify_that_multiple_invalid_signature_does_fails_to_verify() {
+        Signatures multiple = new ECDSASignatures(ImmutableMap.of(publicKey(), randomInvalidSignature(), publicKey(), randomInvalidSignature()));
+        assertEquals(2, multiple.keyToSignatures().size());
+        assertFalse(multiple.hasSignedMessage(hashOfMessage("Fubar"), 2));
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void verify_that_we_throw_an_exception_when_accessing_signature_scheme_directly_on_SignaturesImpl() {
+        Signatures signatures = new SignaturesImpl<>(ECDSASignature.class);
+        signatures.signatureScheme();
+        fail();
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void verify_that_we_crash_if_we_try_to_concatenate_signatures_with_a_signature_of_incompatible_type_schnorr_to_ecdsa() {
+        Signatures emptySignatures = DefaultSignatures.emptySignatures();
+        assertEquals(emptySignatures.signatureScheme(), SignatureScheme.ECDSA);
+        assertTrue(emptySignatures.isEmpty());
+        SchnorrSignature schnorr = mock(SchnorrSignature.class);
+        ECPublicKey publicKey = mock(ECPublicKey.class);
+        emptySignatures.concatenate(publicKey, schnorr);
+        fail();
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void verify_that_we_crash_if_we_try_to_concatenate_signatures_with_a_signature_of_incompatible_type_ecdsa_to_schnorr() {
+        Signatures emptySignatures = new SignaturesImpl<>(SchnorrSignature.class);
+        assertTrue(emptySignatures.isEmpty());
+        ECDSASignature ecdsaSignature = mock(ECDSASignature.class);
+        ECPublicKey publicKey = mock(ECPublicKey.class);
+        emptySignatures.concatenate(publicKey, ecdsaSignature);
+        fail();
     }
 
     @Test
@@ -53,6 +115,17 @@ public class SignaturesTest {
         }
     }
 
+    @Test
+    public void well_formatted_tostring() {
+        Signature dummySignature = randomInvalidSignature();
+        Signatures signatures = DefaultSignatures.single(publicKey(), dummySignature);
+        String tostring = signatures.toString();
+
+        Assert.assertThat(tostring, containsString(SignaturesImpl.class.getSimpleName()));
+        Assert.assertThat(tostring, containsString(ECDSASignature.class.getSimpleName()));
+        Assert.assertThat(tostring, containsString(dummySignature.toString()));
+    }
+
     private void test_that_we_can_bulk_verify_signatures(
             int thresholdNumberOfValidSignatures,
             boolean isExpectedToMeetThreshold,
@@ -65,7 +138,7 @@ public class SignaturesTest {
             );
         }
         Signatures signatures = DefaultSignatures.emptySignatures();
-        Hash hashedMessage = new Hash(Hash.hash256("You must do what you feel is right of course".getBytes()));
+        Hash hashedMessage = hashOfMessage("You must do what you feel is right of course");
         for (int i = 0; i < numberOfValidSignaturesToCreate + numberOfInvalidSignaturesToCreate; i++) {
             ECKeyPair keyPair = new ECKeyPair();
             assertNotNull(keyPair);
@@ -74,8 +147,7 @@ public class SignaturesTest {
             if (shouldSignatureBeValid) {
                 signature = keyPair.sign(hashedMessage);
             } else {
-                // This creates an invalid signature.
-                signature = new ECDSASignature(BigInteger.ONE, BigInteger.ONE);
+                signature = randomInvalidSignature();
             }
             assertNotNull(signature);
 
@@ -87,23 +159,25 @@ public class SignaturesTest {
         assertEquals(isExpectedToMeetThreshold, doesSignatureMeetValidityThreshold);
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void verify_that_we_crash_if_we_try_to_concatenate_signatures_with_a_signature_of_incompatible_type_schnorr_to_ecdsa() {
-        Signatures emptySignatures = DefaultSignatures.emptySignatures();
-        assertEquals(emptySignatures.signatureScheme(), SignatureScheme.ECDSA);
-        assertTrue(emptySignatures.isEmpty());
-        SchnorrSignature schnorr = mock(SchnorrSignature.class);
-        ECPublicKey publicKey = mock(ECPublicKey.class);
-        emptySignatures.concatenate(publicKey, schnorr);
+    private ECPublicKey publicKey() {
+        return keyPair().getPublicKey();
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void verify_that_we_crash_if_we_try_to_concatenate_signatures_with_a_signature_of_incompatible_type_ecdsa_to_schnorr() {
-        Signatures emptySignatures = new SignaturesImpl<>(SchnorrSignature.class);
-        assertTrue(emptySignatures.isEmpty());
-        ECDSASignature ecdsaSignature = mock(ECDSASignature.class);
-        ECPublicKey publicKey = mock(ECPublicKey.class);
-        emptySignatures.concatenate(publicKey, ecdsaSignature);
+    private ECKeyPair keyPair() {
+        try {
+            return new ECKeyPair();
+        } catch (CryptoException e) {
+            e.printStackTrace();
+        }
+        throw new IllegalStateException("Failed to create keyPair");
     }
 
+    private ECDSASignature randomInvalidSignature() {
+        Supplier<BigInteger> randomBigInt = () -> BigInteger.valueOf(new Random().nextLong());
+        return new ECDSASignature(randomBigInt.get(), randomBigInt.get());
+    }
+
+    private Hash hashOfMessage(String message) {
+        return new Hash(Hash.hash256(message.getBytes()));
+    }
 }

@@ -19,14 +19,12 @@ package com.radixdlt.crypto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -130,12 +128,11 @@ class SignaturesImpl<T extends Signature> implements Signatures {
 
     @Override
     public boolean hasSignedMessage(Hash message, int requiredMinimumNumberOfValidSignatures) {
-        List<Boolean> validArray = this.keyToSignatures().entrySet().stream()
-                .map(e -> e.getKey().verify(message, (ECDSASignature) e.getValue()))
-                .filter(v -> v)
-                .collect(ImmutableList.toImmutableList());
+        long numberOfValidSignatures = this.keyToSignatures().entrySet().stream()
+                .filter(e -> e.getKey().verify(message, (ECDSASignature) e.getValue()))
+                .count();
 
-        return validArray.size() >= requiredMinimumNumberOfValidSignatures;
+        return numberOfValidSignatures >= requiredMinimumNumberOfValidSignatures;
     }
 
     @Override

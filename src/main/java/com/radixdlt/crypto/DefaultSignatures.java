@@ -1,11 +1,12 @@
 package com.radixdlt.crypto;
 
-public abstract class DefaultSignatures {
+public final class DefaultSignatures {
 
-    /**
-     * An empty collection of {@link Signature}s, with the default {@link SignatureScheme} used.
-     */
-    static final Signatures DEFAULT = new ECDSASignatures();
+    private DefaultSignatures() {
+        throw new IllegalStateException("Can't construct.");
+    }
+
+    private static final Signatures DEFAULT = new ECDSASignatures();
 
     /**
      * Returns an empty collection of {@link Signature}s, with the default {@link SignatureScheme} used.
