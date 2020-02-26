@@ -27,7 +27,7 @@ import com.radixdlt.utils.Bytes;
 import java.math.BigInteger;
 import java.util.Objects;
 
-@SerializerId2("crypto.ecdsa_signature") // TODO do something smart with SerializerId, e,g, use `SignatureScheme`'s property 'nameOfScheme'
+@SerializerId2("crypto.ecdsa_signature")
 public final class ECDSASignature implements Signature {
 	// Placeholder for the serializer ID
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)

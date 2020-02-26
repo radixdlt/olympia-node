@@ -23,7 +23,7 @@ public class SignaturesTest {
     @Test
     public void verify_that_ecdsa_is_default_signature_scheme() {
         Signatures emptySignatures = DefaultSignatures.emptySignatures();
-        assertEquals(emptySignatures.signatureType(), ECDSASignature.class);
+        assertEquals(ECDSASignature.class, emptySignatures.signatureType());
     }
 
     @Test
@@ -35,13 +35,13 @@ public class SignaturesTest {
     public void verify_that_default_signature_scheme_is_ecdsa() {
         Signatures emptySignatures = DefaultSignatures.emptySignatures();
 
-        assertEquals(emptySignatures.signatureScheme(), SignatureScheme.ECDSA);
+        assertEquals(SignatureScheme.ECDSA, emptySignatures.signatureScheme());
         assertTrue(emptySignatures.isEmpty());
         ECDSASignature mockSignature = mock(ECDSASignature.class);
         ECPublicKey publicKey = mock(ECPublicKey.class);
 
         Signatures nonEmptySignatures = emptySignatures.concatenate(publicKey, mockSignature);
-        assertEquals(nonEmptySignatures.keyToSignatures().size(), 1);
+        assertEquals(1, nonEmptySignatures.keyToSignatures().size());
     }
 
     @Test
@@ -68,7 +68,7 @@ public class SignaturesTest {
     @Test(expected = IllegalArgumentException.class)
     public void verify_that_we_crash_if_we_try_to_concatenate_signatures_with_a_signature_of_incompatible_type_schnorr_to_ecdsa() {
         Signatures emptySignatures = DefaultSignatures.emptySignatures();
-        assertEquals(emptySignatures.signatureScheme(), SignatureScheme.ECDSA);
+        assertEquals(SignatureScheme.ECDSA, emptySignatures.signatureScheme());
         assertTrue(emptySignatures.isEmpty());
         SchnorrSignature schnorr = mock(SchnorrSignature.class);
         ECPublicKey publicKey = mock(ECPublicKey.class);
