@@ -55,6 +55,9 @@ checkstyleTest {
     configFile project.file('config/checkstyle/checkstyle_test.xml')
 }
 
+test {
+    systemProperty "java.security.egd", "file:/dev/urandom"
+}
 
 dependencies {
     compile 'org.slf4j:slf4j-api:1.7.26'
