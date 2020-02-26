@@ -20,7 +20,7 @@ git clone https://github.com/radixdlt/radix-engine-library.git
 Checkout the required branches:
 ```
 cd radix-engine-library && git checkout release/1.0-beta.4 && cd ..
-cd radixdlt-core && git checkout release release/1.0-beta.5
+cd radixdlt-core && git checkout release/1.0-beta.5
 ```
 
 Run tests (note that integration tests take several minutes to run):
