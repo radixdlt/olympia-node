@@ -23,7 +23,11 @@ import com.google.inject.name.Named;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.Atom;
 import com.radixdlt.common.EUID;
-import com.radixdlt.consensus.SafetyRules.VoteResult;
+import com.radixdlt.consensus.liveness.Pacemaker;
+import com.radixdlt.consensus.liveness.ProposerElection;
+import com.radixdlt.consensus.safety.SafetyRules;
+import com.radixdlt.consensus.safety.SafetyViolationException;
+import com.radixdlt.consensus.safety.VoteResult;
 import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.constraintmachine.Particle;
@@ -121,11 +125,11 @@ public final class EventCoordinator {
 			.ifPresent(this::processNewRound);
 	}
 
-	public void processProposal(Vertex vertex) {
-		Atom atom = vertex.getAtom();
+	public void processProposal(Vertex proposedVertex) {
+		Atom proposedAtom = proposedVertex.getAtom();
 
 		// TODO: Fix this interface
-		engine.store(atom, new AtomEventListener() {
+		engine.store(proposedAtom, new AtomEventListener() {
 			@Override
 			public void onCMError(Atom atom, CMError error) {
 				mempool.removeRejectedAtom(atom.getAID());
@@ -135,14 +139,19 @@ public final class EventCoordinator {
 			public void onStateStore(Atom atom) {
 				mempool.removeCommittedAtom(atom.getAID());
 
-				vertexStore.insertVertex(vertex);
+				vertexStore.insertVertex(proposedVertex);
 
-				final VoteResult voteResult = safetyRules.vote(vertex);
-				final VoteMessage vote = voteResult.getVote();
-				networkSender.sendVote(vote);
-				// TODO do something on commit
-				voteResult.getCommittedAtom()
-					.ifPresent(aid -> log.info("Committed atom " + aid));
+				final VoteResult voteResult;
+				try {
+					voteResult = safetyRules.vote(proposedVertex);
+					final VoteMessage vote = voteResult.getVote();
+					networkSender.sendVote(vote);
+					// TODO do something on commit
+					voteResult.getCommittedAtom()
+						.ifPresent(aid -> log.info("Committed atom " + aid));
+				} catch (SafetyViolationException e) {
+					log.error("Rejected " + proposedVertex, e);
+				}
 			}
 
 			@Override
@@ -157,7 +166,7 @@ public final class EventCoordinator {
 
 			@Override
 			public void onStateMissingDependency(AID atomId, Particle particle) {
-				mempool.removeRejectedAtom(atom.getAID());
+				mempool.removeRejectedAtom(proposedAtom.getAID());
 			}
 		});
 	}

@@ -15,7 +15,10 @@
  *  language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.consensus.liveness;
+
+import com.radixdlt.consensus.NewRound;
+import com.radixdlt.consensus.Round;
 
 import java.util.Optional;
 

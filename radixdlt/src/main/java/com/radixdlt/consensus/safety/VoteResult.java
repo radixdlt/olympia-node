@@ -15,19 +15,28 @@
  *  language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.consensus.safety;
 
-import com.radixdlt.common.EUID;
+import com.radixdlt.common.AID;
+import com.radixdlt.consensus.VoteMessage;
 
-/**
- * Represents the election for valid proposers
- */
-public interface ProposerElection {
-	/**
-	 * Check whether a node is a valid proposer in a certain round
-	 * @param nid The nid
-	 * @param round The round
-	 * @return Whether the node is a valid proposer
-	 */
-	boolean isValidProposer(EUID nid, Round round);
+import java.util.Objects;
+import java.util.Optional;
+
+public class VoteResult {
+	private final VoteMessage vote;
+	private final AID committedAtom; // may be null
+
+	public VoteResult(VoteMessage vote, AID committedAtom) {
+		this.vote = Objects.requireNonNull(vote);
+		this.committedAtom = committedAtom; // may be null
+	}
+
+	public VoteMessage getVote() {
+		return vote;
+	}
+
+	public Optional<AID> getCommittedAtom() {
+		return Optional.ofNullable(committedAtom);
+	}
 }

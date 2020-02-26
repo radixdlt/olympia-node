@@ -19,6 +19,7 @@ package com.radixdlt.consensus;
 
 import com.google.inject.Inject;
 
+import com.radixdlt.consensus.liveness.PacemakerRx;
 import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.disposables.Disposable;

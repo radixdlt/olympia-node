@@ -17,7 +17,7 @@
 
 package com.radixdlt.consensus.tempo;
 
-import com.radixdlt.consensus.exceptions.ConsensusException;
+import com.radixdlt.consensus.ConsensusException;
 
 /**
  * A Tempo exception

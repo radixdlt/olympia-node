@@ -25,6 +25,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import com.radixdlt.consensus.liveness.PacemakerImpl;
 import io.reactivex.rxjava3.observers.TestObserver;
 
 import java.util.Optional;

@@ -15,8 +15,9 @@
  *  language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.consensus.liveness;
 
+import com.radixdlt.consensus.Round;
 import io.reactivex.rxjava3.core.Observable;
 
 /**

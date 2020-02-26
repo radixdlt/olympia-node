@@ -15,15 +15,18 @@
  *  language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.consensus.safety;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
+import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.VoteMessage;
 
 import java.util.Objects;
-import java.util.Optional;
 
 /**
  * Manages safety of the protocol.
@@ -53,55 +56,32 @@ public final class SafetyRules {
 		}
 	}
 
-	public VoteResult vote(Vertex vertex) {
+	public VoteResult vote(Vertex proposedVertex) throws SafetyViolationException {
 		// ensure vertex does not violate earlier rounds
-		if (vertex.getRound().compareTo(this.state.lastVotedRound) < 0) {
-			// TODO safety err
+		if (proposedVertex.getRound().compareTo(this.state.lastVotedRound) < 0) {
+			throw new SafetyViolationException(String.format(
+				"Proposed vertex at %s would violate earlier vote at %s",
+				proposedVertex.getRound(), this.state.lastVotedRound));
 		}
 
 		// ensure vertex respects preference
-		if (vertex.getQC().getRound().compareTo(this.state.preferredRound) < 0) {
-			// TODO safety err
+		if (proposedVertex.getQC().getRound().compareTo(this.state.preferredRound) < 0) {
+			throw new SafetyViolationException(String.format(
+				"Proposed vertex QC at %s does not respect preferred round %s",
+				proposedVertex.getQC().getRound(), this.state.preferredRound));
 		}
 
-		this.state.lastVotedRound = vertex.getRound();
+		this.state.lastVotedRound = proposedVertex.getRound();
 		VertexMetadata vertexMetadata = new VertexMetadata(
-			vertex.getRound(),
-			vertex.getAID(),
-			vertex.getQC().getVertexMetadata().getRound(),
-			vertex.getQC().getVertexMetadata().getAID()
+			proposedVertex.getRound(),
+			proposedVertex.getAID(),
+			proposedVertex.getQC().getVertexMetadata().getRound(),
+			proposedVertex.getQC().getVertexMetadata().getAID()
 		);
 		VoteMessage vote = new VoteMessage(self, vertexMetadata);
-		AID committedAtom = getCommittedAtom(vertex);
+		AID committedAtom = getCommittedAtom(proposedVertex);
 
 		return new VoteResult(vote, committedAtom);
 	}
 
-	public static class SafetyState {
-		private Round lastVotedRound;
-		private Round preferredRound;
-
-		public SafetyState(Round lastVotedRound, Round preferredRound) {
-			this.lastVotedRound = lastVotedRound;
-			this.preferredRound = preferredRound;
-		}
-	}
-
-	public static class VoteResult {
-		private final VoteMessage vote;
-		private final AID committedAtom; // may be null
-
-		public VoteResult(VoteMessage vote, AID committedAtom) {
-			this.vote = Objects.requireNonNull(vote);
-			this.committedAtom = committedAtom; // may be null
-		}
-
-		public VoteMessage getVote() {
-			return vote;
-		}
-
-		public Optional<AID> getCommittedAtom() {
-			return Optional.ofNullable(committedAtom);
-		}
-	}
 }
