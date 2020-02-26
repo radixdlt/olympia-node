@@ -27,10 +27,7 @@ repositories {
 }
 
 sonarqube {
-    properties {
-        property "sonar.sources", "src/main/java"
-        property "sonar.tests", ""
-    }
+    skipProject = true
 }
 
 dependencies {
