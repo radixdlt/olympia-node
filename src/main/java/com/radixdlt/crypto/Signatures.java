@@ -17,8 +17,6 @@
 
 package com.radixdlt.crypto;
 
-import java.util.Map;
-
 public interface Signatures {
 
     /**
@@ -26,18 +24,6 @@ public interface Signatures {
      * @return Returns the {@link SignatureScheme} used to produce the signatures of this collection.
      */
     SignatureScheme signatureScheme();
-
-    /**
-     * Returns the type of {@link Signature} produced by the {@code signatureScheme}.
-     * @return Returns the type of {@link Signature} produced by the {@code signatureScheme}.
-     */
-    Class<? extends Signature> signatureType();
-
-    /**
-     * Returns the map from {@link ECPublicKey} to {@link Signature} produced by that key.
-     * @return Returns the map from {@link ECPublicKey} to {@link Signature} produced by that key.
-     */
-    Map<ECPublicKey, Signature> keyToSignatures();
 
     /**
      * Checks whether or not this collection of {@link Signature}s and their corresponding {@link ECPublicKey}s indeed has signed the message,
@@ -64,4 +50,11 @@ public interface Signatures {
      * @return {@code true} if this collection of signatures contains no key-value mappings
      */
     boolean isEmpty();
+
+    /**
+     * Returns the count of collected signatures in this signature collection.
+     *
+     * @return the cound of collected signatures
+     */
+    int size();
 }

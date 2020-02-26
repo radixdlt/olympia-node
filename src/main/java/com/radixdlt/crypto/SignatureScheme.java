@@ -18,13 +18,7 @@
 package com.radixdlt.crypto;
 
 public enum SignatureScheme {
-    ECDSA,
-
-    /**
-     * Schnorr signatures is NOT supported, only used by tests to demonstrate that we our
-     * code is prepared for switching over to another signature scheme in the future.
-     */
-    SCHNORR;
+    ECDSA;
 
     @Override
     public String toString() {

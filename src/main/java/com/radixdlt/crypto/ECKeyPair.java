@@ -86,17 +86,14 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
 		return this.publicKey;
 	}
 
+	@Override
 	public ECDSASignature sign(byte[] hash) throws CryptoException {
 		return ECKeyUtils.keyHandler.sign(hash, this.privateKey);
 	}
 
 	@Override
-	public SignatureScheme signatureScheme() {
-		return SignatureScheme.ECDSA;
-	}
-
-	public <U extends Signature> boolean canProduceSignatureOfType(Class<U> signatureType) {
-		return signatureType.equals(ECDSASignature.class);
+	public boolean canProduceSignatureForScheme(SignatureScheme signatureScheme) {
+		return SignatureScheme.ECDSA.equals(signatureScheme);
 	}
 
 	public byte[] decrypt(byte[] data) throws CryptoException {

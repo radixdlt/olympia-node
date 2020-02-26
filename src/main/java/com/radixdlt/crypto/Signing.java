@@ -24,12 +24,6 @@ package com.radixdlt.crypto;
 public interface Signing<T extends Signature> {
 
     /**
-     * The {@link SignatureScheme} in {@link #sign(byte[]) sign} to produce a {@link Signature}.
-     * @return The {@link SignatureScheme} in {@link #sign(byte[]) sign} to produce a {@link Signature}.
-     */
-    SignatureScheme signatureScheme();
-
-    /**
      * Produces a {@link Signature} of type {@code <T>} of {@code hash}.
      * @param hash A hash of some message to sign as a byte array.
      * @return A {@link Signature} of type {@code <T>} of {@code hash}.
@@ -37,13 +31,17 @@ public interface Signing<T extends Signature> {
      */
     T sign(byte[] hash) throws CryptoException;
 
-    /**
-     * Checks if signing entity is capable of producing a {@link Signature} matching the type {@code} signatureType
-     * @param signatureType the type of {@link Signature} we want to check if this signing entity can produce.
-     * @param <U> the type of {@link Signature} we want to check if this signing entity can produce.
-     * @return Checks if signing entity is capable of producing a {@link Signature} matching the type {@code} signatureType
-     */
-    <U extends Signature> boolean canProduceSignatureOfType(Class<U> signatureType);
+	/**
+	 * Checks if signing entity is capable of producing a {@link Signature} matching
+	 * the specified {@code signatureScheme)
+	 *
+	 * @param signatureScheme the {@link SignatureScheme} for the {@link Signature}
+	 * we want to check if this signing entity can produce.
+	 *
+	 * @return Checks if signing entity is capable of producing a {@link Signature}
+	 *         matching the type {@code} signatureType
+	 */
+    boolean canProduceSignatureForScheme(SignatureScheme signatureType);
 
     /**
      * Produces a {@link Signature} of type {@code <T>} of {@code hash}.
