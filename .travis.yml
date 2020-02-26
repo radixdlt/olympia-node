@@ -16,6 +16,8 @@ git:
 
 jobs:
   include:
+    - stage: check
+      script: ./gradlew check
     - stage: test
       script: ./gradlew sonarqube
 
