@@ -31,8 +31,8 @@ public final class Vertex {
 
 	public Vertex(QuorumCertificate qc, Round round, Atom atom) {
 		this.qc = qc;
-		this.atom = atom;
 		this.round = Objects.requireNonNull(round);
+		this.atom = atom;
 	}
 
 	public QuorumCertificate getQC() {

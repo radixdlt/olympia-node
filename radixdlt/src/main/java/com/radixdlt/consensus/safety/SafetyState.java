@@ -20,11 +20,15 @@ package com.radixdlt.consensus.safety;
 import com.radixdlt.consensus.Round;
 
 final class SafetyState {
-	Round lastVotedRound;
-	Round preferredRound;
+	Round lastVotedRound; // the last round this node voted on
+	Round lockedRound; // the highest 2-chain head
 
-	public SafetyState(Round lastVotedRound, Round preferredRound) {
+	public SafetyState(Round lastVotedRound, Round lockedRound) {
 		this.lastVotedRound = lastVotedRound;
-		this.preferredRound = preferredRound;
+		this.lockedRound = lockedRound;
+	}
+
+	public static SafetyState initialState() {
+		return new SafetyState(Round.of(0L), Round.of(0L));
 	}
 }

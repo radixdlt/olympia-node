@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus.safety;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import com.radixdlt.common.AID;
@@ -34,12 +35,12 @@ import java.util.Objects;
  */
 public final class SafetyRules {
 	private final EUID self;
-	private final SafetyState state;
+	@VisibleForTesting final SafetyState state;
 
 	@Inject
 	public SafetyRules(@Named("self") EUID self, SafetyState initialState) {
 		this.self = Objects.requireNonNull(self);
-		this.state = new SafetyState(initialState.lastVotedRound, initialState.preferredRound);
+		this.state = new SafetyState(initialState.lastVotedRound, initialState.lockedRound);
 	}
 
 	private AID getCommittedAtom(Vertex vertex) {
@@ -51,8 +52,8 @@ public final class SafetyRules {
 	}
 
 	public void process(QuorumCertificate qc) {
-		if (qc.getParentRound().compareTo(this.state.preferredRound) > 0) {
-			this.state.preferredRound = qc.getParentRound();
+		if (qc.getParentRound().compareTo(this.state.lockedRound) > 0) {
+			this.state.lockedRound = qc.getParentRound();
 		}
 	}
 
@@ -65,10 +66,10 @@ public final class SafetyRules {
 		}
 
 		// ensure vertex respects preference
-		if (proposedVertex.getQC().getRound().compareTo(this.state.preferredRound) < 0) {
+		if (proposedVertex.getQC().getRound().compareTo(this.state.lockedRound) < 0) {
 			throw new SafetyViolationException(String.format(
-				"Proposed vertex QC at %s does not respect preferred round %s",
-				proposedVertex.getQC().getRound(), this.state.preferredRound));
+				"Proposed vertex QC at %s does not respect locked round %s",
+				proposedVertex.getQC().getRound(), this.state.lockedRound));
 		}
 
 		this.state.lastVotedRound = proposedVertex.getRound();
