@@ -11,16 +11,14 @@ radixdlt-core is Radix' core consensus and networking module for the [Radix](htt
 - [License](#license)
 
 ## Building
-Clone the required repositories:
+Clone the required repository:
 ```
 git clone https://github.com/radixdlt/radixdlt-core.git
-git clone https://github.com/radixdlt/radix-engine-library.git
 ```
 
-Checkout the required branches:
+Checkout the required branch:
 ```
-cd radix-engine-library && git checkout release/1.0-beta.4 && cd ..
-cd radixdlt-core && git checkout release/1.0-beta.5
+cd radixdlt-core && git checkout release/1.0-beta.6
 ```
 
 Run tests (note that integration tests take several minutes to run):
