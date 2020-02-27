@@ -60,13 +60,13 @@ public final class SafetyRules {
 
 	public VoteResult vote(Vertex proposedVertex) throws SafetyViolationException {
 		// ensure vertex does not violate earlier rounds
-		if (proposedVertex.getRound().compareTo(this.state.lastVotedRound) < 0) {
+		if (proposedVertex.getRound().compareTo(this.state.lastVotedRound) <= 0) {
 			throw new SafetyViolationException(String.format(
 				"Proposed vertex at %s would violate earlier vote at %s",
 				proposedVertex.getRound(), this.state.lastVotedRound));
 		}
 
-		// ensure vertex respects preference
+		// ensure vertex respects locked QC
 		if (proposedVertex.getQC().getRound().compareTo(this.state.lockedRound) < 0) {
 			throw new SafetyViolationException(String.format(
 				"Proposed vertex QC at %s does not respect locked round %s",
