@@ -54,7 +54,7 @@ public interface Signatures {
     /**
      * Returns the count of collected signatures in this signature collection.
      *
-     * @return the cound of collected signatures
+     * @return the count of collected signatures
      */
-    int size();
+    int count();
 }

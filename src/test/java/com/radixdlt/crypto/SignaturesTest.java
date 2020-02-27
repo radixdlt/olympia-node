@@ -45,7 +45,7 @@ public class SignaturesTest {
         ECPublicKey publicKey = mock(ECPublicKey.class);
 
         Signatures nonEmptySignatures = emptySignatures.concatenate(publicKey, mockSignature);
-        assertEquals(1, nonEmptySignatures.size());
+        assertEquals(1, nonEmptySignatures.count());
 
         nonEmptySignatures.signatureScheme();
     }
@@ -53,14 +53,14 @@ public class SignaturesTest {
     @Test
     public void verify_that_a_single_invalid_signature_does_fails_to_verify() {
         Signatures single = new ECDSASignatures(publicKey(), randomInvalidSignature());
-        assertEquals(1, single.size());
+        assertEquals(1, single.count());
         assertFalse(single.hasSignedMessage(hashOfMessage("Fubar"), 1));
     }
 
     @Test
     public void verify_that_multiple_invalid_signature_does_fails_to_verify() {
         Signatures multiple = new ECDSASignatures(ImmutableMap.of(publicKey(), randomInvalidSignature(), publicKey(), randomInvalidSignature()));
-        assertEquals(2, multiple.size());
+        assertEquals(2, multiple.count());
         assertFalse(multiple.hasSignedMessage(hashOfMessage("Fubar"), 2));
     }
 
@@ -132,7 +132,7 @@ public class SignaturesTest {
     ) throws CryptoException {
         if (thresholdNumberOfValidSignatures > (numberOfValidSignaturesToCreate + numberOfInvalidSignaturesToCreate)) {
             throw new IllegalArgumentException(
-                    "The sum of valid + invalid signatures should >= 'thresholdNumberOfValidSignatures'"
+                    "The sum of #valid + #invalid signatures should >= 'thresholdNumberOfValidSignatures'"
             );
         }
         Signatures signatures = DefaultSignatures.emptySignatures();
@@ -152,7 +152,7 @@ public class SignaturesTest {
             signatures = signatures.concatenate(keyPair.getPublicKey(), signature);
         }
 
-        assertEquals((numberOfInvalidSignaturesToCreate + numberOfValidSignaturesToCreate), signatures.size());
+        assertEquals((numberOfInvalidSignaturesToCreate + numberOfValidSignaturesToCreate), signatures.count());
         boolean doesSignatureMeetValidityThreshold = signatures.hasSignedMessage(hashedMessage, thresholdNumberOfValidSignatures);
         assertEquals(isExpectedToMeetThreshold, doesSignatureMeetValidityThreshold);
     }

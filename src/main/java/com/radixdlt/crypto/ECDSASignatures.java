@@ -59,7 +59,7 @@ public class ECDSASignatures implements Signatures {
     }
 
     @Override
-    public int size() {
+    public int count() {
     	return this.keyToSignature.size();
     }
 
