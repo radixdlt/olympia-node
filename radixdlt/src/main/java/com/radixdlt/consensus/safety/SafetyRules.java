@@ -43,7 +43,8 @@ public final class SafetyRules {
 		this.state = new SafetyState(initialState.lastVotedRound, initialState.lockedRound);
 	}
 
-	private AID getCommittedAtom(Vertex vertex) {
+	@VisibleForTesting
+	AID getCommittedAtom(Vertex vertex) {
 		if (vertex.getRound().equals(vertex.getQC().getRound().next())
 			&& vertex.getQC().getRound().equals(vertex.getQC().getParentRound().next())) {
 			return vertex.getQC().getVertexMetadata().getParentAID();

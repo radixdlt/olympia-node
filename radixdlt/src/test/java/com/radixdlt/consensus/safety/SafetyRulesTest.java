@@ -50,8 +50,8 @@ public class SafetyRulesTest {
 
 	@Test
 	public void testLockedRound() {
-		/**
-		 * This test serves to ensure that the locking logic is working correctly.
+		/*
+		 * This test ensures that the locking logic is working correctly.
 		 * The locked round in HotStuff is the highest 2-chain head a node has seen.
 		 */
 
@@ -61,8 +61,63 @@ public class SafetyRulesTest {
 
 		AID a1Id = makeAID(11);
 		AID a2Id = makeAID(12);
-		AID a3Id = makeAID(12);
-		AID a4Id = makeAID(12);
+		AID a3Id = makeAID(13);
+		AID a4Id = makeAID(14);
+		AID b1Id = makeAID(21);
+		AID b2Id = makeAID(22);
+		AID b3Id = makeAID(23);
+		AID b4Id = makeAID(24);
+		Vertex a1 = makeVertex(GENESIS_VERTEX, Round.of(1), a1Id);
+		Vertex b1 = makeVertex(GENESIS_VERTEX, Round.of(2), b1Id);
+		Vertex b2 = makeVertex(a1, Round.of(3), b2Id);
+		Vertex a2 = makeVertex(b1, Round.of(4), a2Id);
+		Vertex b3 = makeVertex(a2, Round.of(5), b3Id);
+		Vertex a3 = makeVertex(a2, Round.of(6), a3Id);
+		Vertex a4 = makeVertex(a3, Round.of(7), a4Id);
+		Vertex b4 = makeVertex(b2, Round.of(8), b4Id);
+
+		safetyRules.process(a1.getQC());
+		assertThat(safetyRules.state.lockedRound).isEqualByComparingTo(GENESIS_ROUND);
+		safetyRules.process(b1.getQC());
+		assertThat(safetyRules.state.lockedRound).isEqualByComparingTo(GENESIS_ROUND);
+		safetyRules.process(b2.getQC());
+		assertThat(safetyRules.state.lockedRound).isEqualByComparingTo(GENESIS_ROUND);
+		safetyRules.process(a2.getQC());
+		assertThat(safetyRules.state.lockedRound).isEqualByComparingTo(GENESIS_ROUND);
+		safetyRules.process(a3.getQC());
+		assertThat(safetyRules.state.lockedRound).isEqualByComparingTo(b1.getRound());
+		safetyRules.process(b3.getQC());
+		assertThat(safetyRules.state.lockedRound).isEqualByComparingTo(b1.getRound());
+		safetyRules.process(a4.getQC());
+		assertThat(safetyRules.state.lockedRound).isEqualByComparingTo(a2.getRound());
+		safetyRules.process(b4.getQC());
+		assertThat(safetyRules.state.lockedRound).isEqualByComparingTo(a2.getRound());
+	}
+
+	@Test
+	public void testVote() {
+		// test violating the two safety rules
+		// see test_voting
+	}
+
+	@Test
+	public void testCommitRule() throws SafetyViolationException {
+		/*
+		 * This test ensures that the commit logic is working correctly.
+		 * The commit rule requires a 3-chain to commit an atom, that is, the chain
+		 *  A2 -> A3 -> A4 -> A5
+		 * would allow A2 to be committed at the time A5's QC for A4 is presented.
+		 */
+
+		SafetyRules safetyRules = createDefaultSafetyRules();
+		assertThat(safetyRules.state.lastVotedRound).isEqualByComparingTo(Round.of(0L));
+		assertThat(safetyRules.state.lockedRound).isEqualByComparingTo(Round.of(0L));
+
+		AID a1Id = makeAID(11);
+		AID a2Id = makeAID(12);
+		AID a3Id = makeAID(13);
+		AID a4Id = makeAID(14);
+		AID a5Id = makeAID(15);
 		AID b1Id = makeAID(21);
 		AID b2Id = makeAID(22);
 		AID b3Id = makeAID(23);
@@ -73,27 +128,16 @@ public class SafetyRulesTest {
 		Vertex b3 = makeVertex(a2, Round.of(5), b3Id);
 		Vertex a3 = makeVertex(a2, Round.of(6), a3Id);
 		Vertex a4 = makeVertex(a3, Round.of(7), a4Id);
+		Vertex a5 = makeVertex(a4, Round.of(8), a5Id);
 
-		safetyRules.process(a1.getQC());
-		assertThat(safetyRules.state.lockedRound).isEqualByComparingTo(GENESIS_ROUND);
-
-		safetyRules.process(b1.getQC());
-		assertThat(safetyRules.state.lockedRound).isEqualByComparingTo(GENESIS_ROUND);
-
-		safetyRules.process(b2.getQC());
-		assertThat(safetyRules.state.lockedRound).isEqualByComparingTo(GENESIS_ROUND);
-
-		safetyRules.process(a2.getQC());
-		assertThat(safetyRules.state.lockedRound).isEqualByComparingTo(GENESIS_ROUND);
-
-		safetyRules.process(a3.getQC());
-		assertThat(safetyRules.state.lockedRound).isEqualByComparingTo(b1.getRound());
-
-		safetyRules.process(b3.getQC());
-		assertThat(safetyRules.state.lockedRound).isEqualByComparingTo(b1.getRound());
-
-		safetyRules.process(a4.getQC());
-		assertThat(safetyRules.state.lockedRound).isEqualByComparingTo(a2.getRound());
+		assertThat(safetyRules.getCommittedAtom(a1)).isEqualTo(null);
+		assertThat(safetyRules.getCommittedAtom(b1)).isEqualTo(null);
+		assertThat(safetyRules.getCommittedAtom(b2)).isEqualTo(null);
+		assertThat(safetyRules.getCommittedAtom(a2)).isEqualTo(null);
+		assertThat(safetyRules.getCommittedAtom(b3)).isEqualTo(null);
+		assertThat(safetyRules.getCommittedAtom(a3)).isEqualTo(null);
+		assertThat(safetyRules.getCommittedAtom(a4)).isEqualTo(null);
+		assertThat(safetyRules.getCommittedAtom(a5)).isEqualTo(a3.getAID());
 	}
 
 	private static Vertex makeGenesisVertex() {
@@ -112,17 +156,5 @@ public class SafetyRulesTest {
 		Atom atom = mock(Atom.class);
 		when(atom.getAID()).thenReturn(id);
 		return new Vertex(qc, round, atom);
-	}
-
-	@Test
-	public void testVote() {
-		// test violating the two safety rules
-		// see test_voting
-	}
-
-	@Test
-	public void testCommitRule() {
-		// test broken chains, which should not lead to commits
-		// see test_voting_potential_commit_id
 	}
 }
