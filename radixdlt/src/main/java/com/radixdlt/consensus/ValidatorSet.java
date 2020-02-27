@@ -15,13 +15,27 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.tempo;
+package com.radixdlt.consensus;
 
-import com.radixdlt.store.LedgerEntry;
+import java.util.Collection;
+import java.util.Set;
 
 /**
- * This is a temporary, rough interface representing the application-side part of the currently developing app/consensus interface.
+ * Interface for querying/updating validators.
  */
-public interface Application {
-	LedgerEntry takeNextEntry() throws InterruptedException;
+public interface ValidatorSet {
+
+	/**
+	 * Replace current validators with a new set.
+	 *
+	 * @param validators the new validator set
+	 */
+	void replaceAll(Collection<Validator> validators);
+
+	/**
+	 * Retrieve a snapshot of the current validator set.
+	 *
+	 * @return the current validator set
+	 */
+	Set<Validator> validators();
 }

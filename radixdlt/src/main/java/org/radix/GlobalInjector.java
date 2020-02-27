@@ -22,13 +22,16 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.name.Names;
-import com.radixdlt.TempoModule;
+import com.radixdlt.CerberusModule;
 import com.radixdlt.common.EUID;
 import com.radixdlt.delivery.LazyRequestDelivererModule;
 import com.radixdlt.discovery.IterativeDiscovererModule;
+import com.radixdlt.mempool.MempoolModule;
 import com.radixdlt.middleware2.MiddlewareModule;
+import com.radixdlt.network.NetworkModule;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.berkeley.BerkeleyStoreModule;
+import com.radixdlt.submission.SubmissionControlModule;
 import com.radixdlt.universe.Universe;
 import org.radix.database.DatabaseEnvironment;
 import org.radix.events.Events;
@@ -48,12 +51,15 @@ public class GlobalInjector {
 		Module lazyRequestDelivererModule = new LazyRequestDelivererModule(properties);
 		Module iterativeDiscovererModule = new IterativeDiscovererModule(properties);
 		Module berkeleyStoreModule = new BerkeleyStoreModule();
-		Module tempoModule = new TempoModule();
+		Module tempoModule = new CerberusModule();
 		Module middlewareModule = new MiddlewareModule();
 		Module messageCentralModule = new MessageCentralModule(properties);
 		Module udpTransportModule = new UDPTransportModule(properties);
 		Module tcpTransportModule = new TCPTransportModule(properties);
 		Module addressBookModule = new AddressBookModule(dbEnv);
+		Module submissionControlModule = new SubmissionControlModule();
+		Module mempoolModule = new MempoolModule();
+		Module networkModule = new NetworkModule();
 
 		// temporary global module to hook up global things
 		Module globalModule = new AbstractModule() {
@@ -80,6 +86,9 @@ public class GlobalInjector {
 				udpTransportModule,
 				tcpTransportModule,
 				addressBookModule,
+				submissionControlModule,
+				mempoolModule,
+				networkModule,
 				globalModule);
 	}
 

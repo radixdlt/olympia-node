@@ -18,13 +18,9 @@
 package org.radix.api.services;
 
 import com.radixdlt.common.Atom;
-import com.radixdlt.middleware2.processing.RadixEngineAtomProcessor;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.Serialization;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.Bytes;
 
-import java.util.Optional;
 import java.util.Random;
 import org.json.JSONObject;
 import com.radixdlt.atomos.RadixAddress;
@@ -35,6 +31,7 @@ import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atomos.RRI;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.submission.SubmissionControl;
 import com.radixdlt.crypto.CryptoException;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
@@ -47,16 +44,14 @@ import org.radix.time.Time;
  */
 public final class InternalService {
 	private static final Logger log = Logging.getLogger();
-	private final RadixEngineAtomProcessor radixEngineAtomProcessor;
-	private final Serialization serialization;
+	private final SubmissionControl submissionControl;
 	private final RuntimeProperties properties;
 	private final Universe universe;
 
 	private static boolean spamming = false;
 
-	public InternalService(RadixEngineAtomProcessor radixEngineAtomProcessor, Serialization serialization, RuntimeProperties properties, Universe universe) {
-		this.radixEngineAtomProcessor = radixEngineAtomProcessor;
-		this.serialization = serialization;
+	public InternalService(SubmissionControl submissionControl, RuntimeProperties properties, Universe universe) {
+		this.submissionControl = submissionControl;
 		this.properties = properties;
 		this.universe = universe;
 	}
@@ -64,7 +59,6 @@ public final class InternalService {
 	private class Spammer implements Runnable {
 		private final int nonceBits;
 
-		private final RadixEngineAtomProcessor radixEngineAtomProcessor;
 		private final ECKeyPair owner;
 		private final RadixAddress account;
 		private final int     iterations;
@@ -74,8 +68,7 @@ public final class InternalService {
 		// This is safe, as it is just used to generate random nonces for testing
 		private final Random random = new Random();
 
-		public Spammer(RadixEngineAtomProcessor radixEngineAtomProcessor, ECKeyPair owner, int iterations, int batching, int rate, int nonceBits) {
-			this.radixEngineAtomProcessor = radixEngineAtomProcessor;
+		public Spammer(ECKeyPair owner, int iterations, int batching, int rate, int nonceBits) {
 			this.owner = owner;
 			this.iterations = iterations;
 			this.rate = rate;
@@ -132,8 +125,7 @@ public final class InternalService {
 
 							atom.sign(this.owner);
 
-							JSONObject jsonAtom = serialization.toJsonObject(atom, DsonOutput.Output.WIRE);
-							radixEngineAtomProcessor.process(jsonAtom, Optional.empty());
+							submissionControl.submitAtom(atom);
 
 							remainingIterations--;
 							if (remainingIterations <= 0) {
@@ -194,7 +186,7 @@ public final class InternalService {
 
 		try {
 			int nonceBits = this.properties.get("test.nullatom.junk_size", 40);
-			Thread spammerThread = new Thread(new Spammer(radixEngineAtomProcessor, new ECKeyPair(), Integer.decode(iterations), batching == null ? 1 : Integer.decode(batching), Integer.decode(rate), nonceBits));
+			Thread spammerThread = new Thread(new Spammer(new ECKeyPair(), Integer.decode(iterations), batching == null ? 1 : Integer.decode(batching), Integer.decode(rate), nonceBits));
 			spammerThread.setDaemon(true);
 			spammerThread.setName("Spammer " + System.currentTimeMillis());
 			spammerThread.start();

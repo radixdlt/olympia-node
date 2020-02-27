@@ -19,6 +19,7 @@ package org.radix.api.services;
 
 import com.google.common.collect.EvictingQueue;
 import com.radixdlt.common.Atom;
+import com.radixdlt.mempool.MempoolRejectedException;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -33,11 +34,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
-import com.radixdlt.middleware2.processing.RadixEngineAtomProcessor;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStore;
+import com.radixdlt.submission.SubmissionControl;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -74,12 +76,12 @@ public class AtomsService {
 
 	private final Object lock = new Object();
 	private final EvictingQueue<String> eventRingBuffer = EvictingQueue.create(64);
-	private final RadixEngineAtomProcessor radixEngineAtomProcessor;
+	private final SubmissionControl submissionControl;
 	private final AtomToBinaryConverter atomToBinaryConverter;
 	private final LedgerEntryStore store;
 
-	public AtomsService(LedgerEntryStore store, RadixEngineAtomProcessor radixEngineAtomProcessor, AtomToBinaryConverter atomToBinaryConverter) {
-		this.radixEngineAtomProcessor = Objects.requireNonNull(radixEngineAtomProcessor);
+	public AtomsService(LedgerEntryStore store, SubmissionControl submissionControl, AtomToBinaryConverter atomToBinaryConverter) {
+		this.submissionControl = Objects.requireNonNull(submissionControl);
 		this.store = Objects.requireNonNull(store);
 		this.atomToBinaryConverter = Objects.requireNonNull(atomToBinaryConverter);
 
@@ -164,19 +166,30 @@ public class AtomsService {
 		return Collections.unmodifiableMap(atomEventCount);
 	}
 
-	public AID submitAtom(JSONObject atom, SingleAtomListener subscriber) {
-		return radixEngineAtomProcessor.process(atom, Optional.of(new RadixEngineAtomProcessor.ProcessorAtomEventListener() {
-			@Override
-			public void onDeserializationCompleted(AID atomId) {
-				if (subscriber != null) {
-					deleteOnEventSingleAtomObservers.compute(atomId, (hid, oldSubscribers) -> {
-						List<SingleAtomListener> subscribers = oldSubscribers == null ? new ArrayList<>() : oldSubscribers;
-						subscribers.add(subscriber);
-						return subscribers;
-					});
-				}
+	public AID submitAtom(JSONObject jsonAtom, SingleAtomListener subscriber) {
+		try {
+			return this.submissionControl.submitAtom(jsonAtom, atom -> subscribeToSubmission(subscriber, atom));
+		} catch (MempoolRejectedException e) {
+			if (subscriber != null) {
+				AID atomId = e.atom().getAID();
+				this.deleteOnEventSingleAtomObservers.computeIfPresent(atomId, (aid, subscribers) -> {
+					subscribers.remove(subscriber);
+					return subscribers;
+				});
+				subscriber.onError(atomId, e);
 			}
-		}));
+			throw new IllegalStateException(e);
+		}
+	}
+
+	private void subscribeToSubmission(SingleAtomListener subscriber, Atom atom) {
+		if (subscriber != null) {
+			this.deleteOnEventSingleAtomObservers.compute(atom.getAID(), (aid, oldSubscribers) -> {
+				List<SingleAtomListener> subscribers = oldSubscribers == null ? new ArrayList<>() : oldSubscribers;
+				subscribers.add(subscriber);
+				return subscribers;
+			});
+		}
 	}
 
 	public Disposable subscribeAtomStatusNotifications(AID aid, AtomStatusListener subscriber) {

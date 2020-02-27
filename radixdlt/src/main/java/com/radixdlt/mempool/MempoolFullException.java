@@ -15,10 +15,16 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.tempo;
+package com.radixdlt.mempool;
 
-import java.util.function.LongSupplier;
+import com.radixdlt.common.Atom;
 
-// TODO consolidate with TimeSupplier in networking2
-public interface WallclockTimeSupplier extends LongSupplier {
+/**
+ * Exception thrown when an attempt to add new items would
+ * exceed the mempool's maximum capacity.
+ */
+public class MempoolFullException extends MempoolRejectedException {
+	public MempoolFullException(Atom atom, String message) {
+		super(atom, message);
+	}
 }
