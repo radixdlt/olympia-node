@@ -27,6 +27,11 @@ import com.radixdlt.utils.Bytes;
 import java.math.BigInteger;
 import java.util.Objects;
 
+/**
+ * An <a href="https://en.wikipedia.org/wiki/
+ * Elliptic_Curve_Digital_Signature_Algorithm">ECDSA</a> signature represented as
+ * a tuple of {@link BigInteger}s {@code (R, S)}/
+ */
 @SerializerId2("crypto.ecdsa_signature")
 public final class ECDSASignature implements Signature {
 	// Placeholder for the serializer ID
@@ -64,25 +69,6 @@ public final class ECDSASignature implements Signature {
 		return s;
 	}
 
-    @Override
-	public boolean equals(Object o) {
-        if (this == o) {
-        	return true;
-        }
-        if (o instanceof ECDSASignature) {
-        	ECDSASignature signature = (ECDSASignature) o;
-        	return Objects.equals(this.r, signature.r) && Objects.equals(this.s, signature.s);
-        }
-        return false;
-    }
-
-    @Override
-	public int hashCode() {
-        int result = r.hashCode();
-        result = 31 * result + s.hashCode();
-        return result;
-    }
-
 	@JsonProperty("r")
 	@DsonOutput(Output.ALL)
 	private byte[] getJsonR() {
@@ -113,7 +99,7 @@ public final class ECDSASignature implements Signature {
 	}
 
 	public String toHexString() {
-		return Bytes.toHexString(r.toByteArray()) + Bytes.toHexString(s.toByteArray());
+		return Bytes.toHexString(getJsonR()) + Bytes.toHexString(getJsonS());
 	}
 
 	@Override

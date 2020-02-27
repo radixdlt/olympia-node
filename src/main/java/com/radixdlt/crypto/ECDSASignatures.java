@@ -7,8 +7,10 @@ import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 
-import java.util.Map;
-
+/**
+ * A collection of <a href="https://en.wikipedia.org/wiki/
+ * Elliptic_Curve_Digital_Signature_Algorithm">ECDSA</a> signatures.
+ */
 @SerializerId2("crypto.ecdsa_signatures")
 public class ECDSASignatures implements Signatures {
     // Placeholder for the serializer ID
@@ -30,14 +32,6 @@ public class ECDSASignatures implements Signatures {
 
     public ECDSASignatures(ECPublicKey publicKey, ECDSASignature signature) {
         this.keyToSignature = ImmutableMap.of(publicKey, signature);
-    }
-
-    /**
-     * Returns a new instance containing {@code keyToSignature}.
-     * @param keyToSignature The map of {@link ECDSASignature}s and their corresponding {@link ECPublicKey}
-     */
-    public ECDSASignatures(Map<ECPublicKey, ECDSASignature> keyToSignature) {
-    	this.keyToSignature = ImmutableMap.copyOf(keyToSignature);
     }
 
     /**

@@ -9,10 +9,10 @@ import com.radixdlt.crypto.ECKeyPair;
 import org.junit.BeforeClass;
 
 import java.math.BigInteger;
-
+import java.util.Objects;
 
 /**
- * Serialization for Signatures to JSON.
+ * JSON Serialization round trip of {@link ECDSASignatures}
  */
 public class ECDSASignaturesSerializationTest extends SerializeObjectEngine<ECDSASignatures> {
 
@@ -38,7 +38,7 @@ public class ECDSASignaturesSerializationTest extends SerializeObjectEngine<ECDS
 
         return new ECDSASignatures(
                 ImmutableMap.of(
-                    k1.getPublicKey(), s1
+                    Objects.requireNonNull(k1).getPublicKey(), s1
                 )
         );
     }

@@ -31,6 +31,12 @@ public class SignaturesTest {
     }
 
     @Test
+    public void verify_that_ecdsasignature_specifies_correct_scheme() {
+	    ECDSASignature signature = new ECDSASignature();
+        assertEquals(SignatureScheme.ECDSA, signature.signatureScheme());
+    }
+
+    @Test
     public void well_formatted_tostring_of_signaturescheme() {
         assertThat(SignatureScheme.ECDSA.toString(), is("ecdsa"));
     }
