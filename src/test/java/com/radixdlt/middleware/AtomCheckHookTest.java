@@ -21,7 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.common.Atom;
 import com.radixdlt.common.EUID;
-import com.radixdlt.crypto.ECSignature;
+import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.universe.Universe;
 import org.junit.Test;
 
@@ -43,12 +43,12 @@ public class AtomCheckHookTest {
 			true,
 			30
 		);
-		ECSignature ecSignature = new ECSignature(BigInteger.ONE, BigInteger.ONE);
+		ECDSASignature ecdsaSignature = new ECDSASignature(BigInteger.ONE, BigInteger.ONE);
 
 		Atom atom = new Atom(
 			ImmutableList.of(mock(ParticleGroup.class)),
 			ImmutableMap.of(mock(EUID.class),
-				ecSignature), ImmutableMap.of("timestamp", "0")
+					ecdsaSignature), ImmutableMap.of("timestamp", "0")
 		);
 
 		assertThat(atomCheckHook.hook(atom).isSuccess()).isTrue();
@@ -65,12 +65,12 @@ public class AtomCheckHookTest {
 			30
 		);
 
-		ECSignature ecSignature = new ECSignature(BigInteger.ONE, BigInteger.ONE);
+		ECDSASignature ecdsaSignature = new ECDSASignature(BigInteger.ONE, BigInteger.ONE);
 
 		Atom atom = new Atom(
 			ImmutableList.of(),
 			ImmutableMap.of(mock(EUID.class),
-				ecSignature), ImmutableMap.of("timestamp", "0")
+					ecdsaSignature), ImmutableMap.of("timestamp", "0")
 		);
 
 		assertThat(atomCheckHook.hook(atom).getErrorMessage())
@@ -88,12 +88,12 @@ public class AtomCheckHookTest {
 			30
 		);
 
-		ECSignature ecSignature = new ECSignature(BigInteger.ONE, BigInteger.ONE);
+		ECDSASignature ecdsaSignature = new ECDSASignature(BigInteger.ONE, BigInteger.ONE);
 
 		Atom atom = new Atom(
 			ImmutableList.of(mock(ParticleGroup.class)),
 			ImmutableMap.of(mock(EUID.class),
-				ecSignature), ImmutableMap.of()
+					ecdsaSignature), ImmutableMap.of()
 		);
 
 		assertThat(atomCheckHook.hook(atom).getErrorMessage())
@@ -111,12 +111,12 @@ public class AtomCheckHookTest {
 			30
 		);
 
-		ECSignature ecSignature = new ECSignature(BigInteger.ONE, BigInteger.ONE);
+		ECDSASignature ecdsaSignature = new ECDSASignature(BigInteger.ONE, BigInteger.ONE);
 
 		Atom atom = new Atom(
 			ImmutableList.of(mock(ParticleGroup.class)),
 			ImmutableMap.of(mock(EUID.class),
-				ecSignature), ImmutableMap.of("timestamp", "badinput")
+					ecdsaSignature), ImmutableMap.of("timestamp", "badinput")
 		);
 
 		assertThat(atomCheckHook.hook(atom).getErrorMessage())

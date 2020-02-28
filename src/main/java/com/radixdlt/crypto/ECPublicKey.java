@@ -23,12 +23,13 @@ import com.google.common.base.Suppliers;
 import com.radixdlt.common.EUID;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.WireIO;
+import org.bouncycastle.math.ec.ECPoint;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.function.Supplier;
-import org.bouncycastle.math.ec.ECPoint;
 
 /**
  * Asymmetric EC public key provider fixed to curve 'secp256k1'
@@ -80,6 +81,10 @@ public final class ECPublicKey {
 		}
 	}
 
+	@JsonCreator
+	public static ECPublicKey fromBase64(String base64) throws CryptoException {
+		return new ECPublicKey(Bytes.fromBase64String(base64));
+	}
 
 	public EUID getUID() {
 		return this.uid.get();
@@ -93,11 +98,11 @@ public final class ECPublicKey {
 		return ECKeyUtils.spec.getCurve().decodePoint(this.publicKey);
 	}
 
-	public boolean verify(Hash hash, ECSignature signature) {
+	public boolean verify(Hash hash, ECDSASignature signature) {
 		return verify(hash.toByteArray(), signature);
 	}
 
-	public boolean verify(byte[] hash, ECSignature signature) {
+	public boolean verify(byte[] hash, ECDSASignature signature) {
 		if (signature == null) {
 			return false;
 		}
@@ -179,7 +184,11 @@ public final class ECPublicKey {
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s]", getClass().getSimpleName(), Bytes.toBase64String(this.publicKey));
+		return String.format("%s[%s]", getClass().getSimpleName(), toBase64());
+	}
+
+	public String toBase64() {
+		return Bytes.toBase64String(this.publicKey);
 	}
 
 	private EUID computeUID() {

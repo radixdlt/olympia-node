@@ -25,7 +25,7 @@ import com.radixdlt.common.EUID;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.ECSignature;
+import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -275,7 +275,7 @@ public class Universe {
 
 	private ECPublicKey creator;
 
-	private ECSignature signature;
+	private ECDSASignature signature;
 	private BigInteger sigR;
 	private BigInteger sigS;
 
@@ -411,11 +411,11 @@ public class Universe {
 		return creator;
 	}
 
-	public ECSignature getSignature() {
+	public ECDSASignature getSignature() {
 		return signature;
 	}
 
-	public void setSignature(ECSignature signature) {
+	public void setSignature(ECDSASignature signature) {
 		this.signature = signature;
 	}
 
@@ -487,7 +487,7 @@ public class Universe {
 		// Set sign to positive to stop BigInteger interpreting high bit as sign
 		this.sigR = new BigInteger(1, r);
 		if (this.sigS != null) {
-			signature = new ECSignature(this.sigR, this.sigS);
+			signature = new ECDSASignature(this.sigR, this.sigS);
 			this.sigS = null;
 			this.sigR = null;
 		}
@@ -498,7 +498,7 @@ public class Universe {
 		// Set sign to positive to stop BigInteger interpreting high bit as sign
 		this.sigS = new BigInteger(1, s);
 		if (this.sigR != null) {
-			signature = new ECSignature(this.sigR, this.sigS);
+			signature = new ECDSASignature(this.sigR, this.sigS);
 			this.sigS = null;
 			this.sigR = null;
 		}

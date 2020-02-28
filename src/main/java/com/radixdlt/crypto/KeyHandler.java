@@ -31,10 +31,10 @@ interface KeyHandler {
 	 *
 	 * @param hash The hash to sign
 	 * @param privateKey The private key to sign the hash with
-	 * @return An {@link ECSignature} with {@code r} and {@code s} values included
+	 * @return An {@link ECDSASignature} with {@code r} and {@code s} values included
 	 * @throws CryptoException if the {@code privateKey} is invalid
 	 */
-	ECSignature sign(byte[] hash, byte[] privateKey) throws CryptoException;
+	ECDSASignature sign(byte[] hash, byte[] privateKey) throws CryptoException;
 
 	/**
 	 * Verify the specified signature against the specified hash with the
@@ -46,7 +46,7 @@ interface KeyHandler {
 	 * @return An boolean indicating whether the signature could be successfully validated
 	 * @throws CryptoException if the {@code publicKey} or {@code signature} is invalid
 	 */
-	boolean verify(byte[] hash, ECSignature signature, byte[] publicKey) throws CryptoException;
+	boolean verify(byte[] hash, ECDSASignature signature, byte[] publicKey) throws CryptoException;
 
 	/**
 	 * Compute a public key for the specified private key.

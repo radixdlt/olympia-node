@@ -27,8 +27,13 @@ import com.radixdlt.utils.Bytes;
 import java.math.BigInteger;
 import java.util.Objects;
 
+/**
+ * An <a href="https://en.wikipedia.org/wiki/
+ * Elliptic_Curve_Digital_Signature_Algorithm">ECDSA</a> signature represented as
+ * a tuple of {@link BigInteger}s {@code (R, S)}/
+ */
 @SerializerId2("crypto.ecdsa_signature")
-public final class ECSignature {
+public final class ECDSASignature implements Signature {
 	// Placeholder for the serializer ID
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(Output.ALL)
@@ -42,14 +47,14 @@ public final class ECSignature {
 	private BigInteger r;
 	private BigInteger s;
 
-	public ECSignature() {
+	public ECDSASignature() {
 		this(BigInteger.ZERO, BigInteger.ZERO);
 	}
 
 	/**
      * Constructs a signature with the given components. Does NOT automatically canonicalise the signature.
      */
-	public ECSignature(BigInteger r, BigInteger s) {
+	public ECDSASignature(BigInteger r, BigInteger s) {
     	super();
 
     	this.r = Objects.requireNonNull(r);
@@ -63,25 +68,6 @@ public final class ECSignature {
 	public BigInteger getS() {
 		return s;
 	}
-
-    @Override
-	public boolean equals(Object o) {
-        if (this == o) {
-        	return true;
-        }
-        if (o instanceof ECSignature) {
-        	ECSignature signature = (ECSignature) o;
-        	return Objects.equals(this.r, signature.r) && Objects.equals(this.s, signature.s);
-        }
-        return false;
-    }
-
-    @Override
-	public int hashCode() {
-        int result = r.hashCode();
-        result = 31 * result + s.hashCode();
-        return result;
-    }
 
 	@JsonProperty("r")
 	@DsonOutput(Output.ALL)
@@ -105,5 +91,19 @@ public final class ECSignature {
 	private void setJsonS(byte[] s) {
 		// Set sign to positive to stop BigInteger interpreting high bit as sign
 		this.s = new BigInteger(1, s);
+	}
+
+	@Override
+	public String toString() {
+		return toHexString();
+	}
+
+	public String toHexString() {
+		return Bytes.toHexString(getJsonR()) + Bytes.toHexString(getJsonS());
+	}
+
+	@Override
+	public SignatureScheme signatureScheme() {
+		return SignatureScheme.ECDSA;
 	}
 }

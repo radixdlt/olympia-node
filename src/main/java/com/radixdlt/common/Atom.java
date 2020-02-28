@@ -28,7 +28,7 @@ import com.radixdlt.crypto.AtomAlreadySignedException;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.ECSignature;
+import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.middleware.ParticleGroup;
 import com.radixdlt.middleware.SpunParticle;
@@ -74,7 +74,7 @@ public class Atom {
 	/**
 	 * Contains signers and corresponding signatures of this Atom.
 	 */
-	protected final Map<EUID, ECSignature> signatures = new HashMap<>();
+	protected final Map<EUID, ECDSASignature> signatures = new HashMap<>();
 
 	/**
 	 * Metadata about the atom, such as which app made it
@@ -101,7 +101,7 @@ public class Atom {
 			.build();
 	}
 
-	protected Atom(List<ParticleGroup> particleGroups, Map<EUID, ECSignature> signatures) {
+	protected Atom(List<ParticleGroup> particleGroups, Map<EUID, ECDSASignature> signatures) {
 		Objects.requireNonNull(particleGroups, "particleGroups is required");
 		Objects.requireNonNull(signatures, "signatures is required");
 
@@ -110,7 +110,7 @@ public class Atom {
 		this.metaData = ImmutableMap.of();
 	}
 
-	public Atom(List<ParticleGroup> particleGroups, Map<EUID, ECSignature> signatures, Map<String, String> metaData) {
+	public Atom(List<ParticleGroup> particleGroups, Map<EUID, ECDSASignature> signatures, Map<String, String> metaData) {
 		Objects.requireNonNull(particleGroups, "particleGroups is required");
 		Objects.requireNonNull(signatures, "signatures is required");
 		Objects.requireNonNull(metaData, "metaData is required");
@@ -200,7 +200,7 @@ public class Atom {
 		int verified = 0;
 		Hash hash = this.getHash();
 		byte[] hashBytes = hash.toByteArray();
-		ECSignature signature = null;
+		ECDSASignature signature = null;
 
 		for (ECPublicKey key : keys) {
 			signature = this.signatures.get(key.getUID());
@@ -224,7 +224,7 @@ public class Atom {
 
 		Hash hash = this.getHash();
 
-		ECSignature signature = this.signatures.get(key.getUID());
+		ECDSASignature signature = this.signatures.get(key.getUID());
 
 		if (signature == null) {
 			return false;
@@ -233,15 +233,15 @@ public class Atom {
 		return key.verify(hash, signature);
 	}
 
-	public Map<EUID, ECSignature> getSignatures() {
+	public Map<EUID, ECDSASignature> getSignatures() {
 		return Collections.unmodifiableMap(this.signatures);
 	}
 
-	public ECSignature getSignature(EUID id) {
+	public ECDSASignature getSignature(EUID id) {
 		return this.signatures.get(id);
 	}
 
-	private void setSignature(EUID id, ECSignature signature) {
+	private void setSignature(EUID id, ECDSASignature signature) {
 		this.signatures.put(id, signature);
 	}
 
@@ -405,13 +405,13 @@ public class Atom {
 	// Property Signatures: 1 getter, 1 setter
 	@JsonProperty("signatures")
 	@DsonOutput(value = {DsonOutput.Output.API, DsonOutput.Output.WIRE, DsonOutput.Output.PERSIST})
-	private Map<String, ECSignature> getJsonSignatures() {
+	private Map<String, ECDSASignature> getJsonSignatures() {
 		return this.signatures.entrySet().stream()
 			.collect(Collectors.toMap(e -> e.getKey().toString(), Map.Entry::getValue));
 	}
 
 	@JsonProperty("signatures")
-	private void setJsonSignatures(Map<String, ECSignature> sigs) {
+	private void setJsonSignatures(Map<String, ECDSASignature> sigs) {
 		if (sigs != null && !sigs.isEmpty()) {
 			this.signatures.putAll((sigs.entrySet().stream()
 				.collect(Collectors.toMap(e -> EUID.valueOf(e.getKey()), Map.Entry::getValue))));
