@@ -25,6 +25,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import com.google.common.base.Strings;
 import com.radixdlt.TestSetupUtils;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.Longs;
@@ -33,7 +34,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.Arrays;
-import java.util.Collections;
 
 public class HashTest {
 
@@ -88,8 +88,8 @@ public class HashTest {
 
 	@Test
 	public void testCompare() {
-		Hash low = new Hash(repeatString("1", 64));
-		Hash high = new Hash(repeatString("9", 64));
+		Hash low = new Hash(Strings.repeat("1", 64));
+		Hash high = new Hash(Strings.repeat("9", 64));
 		assertThat(low, lessThan(high));
 	}
 
@@ -164,10 +164,7 @@ public class HashTest {
 	}
 
 	private String deadbeefString() {
-		return repeatString("deadbeef", 8);
-	}
-
-	private String repeatString(String stringToRepeat, int times) {
-		return String.join("", Collections.nCopies(times, stringToRepeat));
+		return Strings.repeat("deadbeef", 8);
 	}
 }
+
