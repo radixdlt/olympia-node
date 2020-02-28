@@ -22,7 +22,6 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import com.google.common.base.Strings;
@@ -32,8 +31,6 @@ import com.radixdlt.utils.Longs;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.util.Arrays;
 
 public class HashTest {
 
@@ -78,7 +75,7 @@ public class HashTest {
 		String hex = deadbeefString();
 		Hash hash = new Hash(hex);
 		byte[] expectedBytes = Bytes.fromHexString(hex);
-		assertTrue(Arrays.equals(hash.toByteArray(), expectedBytes));
+		assertArrayEquals(expectedBytes, hash.toByteArray());
 	}
 
 	@Test
