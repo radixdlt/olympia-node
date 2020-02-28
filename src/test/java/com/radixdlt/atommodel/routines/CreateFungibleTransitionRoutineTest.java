@@ -17,6 +17,7 @@
 
 package com.radixdlt.atommodel.routines;
 
+import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
 import com.radixdlt.atommodel.routines.CreateFungibleTransitionRoutine.UsedAmount;
@@ -44,6 +45,12 @@ public class CreateFungibleTransitionRoutineTest {
 		public String toString() {
 			return "Fungible " + amount;
 		}
+	}
+
+	@Test
+	public void equalsContract() {
+		EqualsVerifier.forClass(CreateFungibleTransitionRoutine.UsedAmount.class)
+				.verify();
 	}
 
 	@Test
