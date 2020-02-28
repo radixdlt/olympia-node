@@ -22,6 +22,7 @@ import static org.junit.Assert.assertArrayEquals;
 import com.radixdlt.TestSetupUtils;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.Longs;
+import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -32,6 +33,13 @@ public class HashTest {
 		TestSetupUtils.installBouncyCastleProvider();
 	}
 
+	@Test
+	public void equalsContract() {
+		EqualsVerifier.forClass(Hash.class)
+				.withIgnoredFields("data") // other field(s) dependent on `data` is used
+				.withIgnoredFields("idCached") // `idCached` is derived from other field(s) in use.
+				.verify();
+	}
 	@Test
 	public void testHashValues256() {
 		assertArrayEquals(

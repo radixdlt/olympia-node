@@ -17,6 +17,8 @@
 
 package com.radixdlt.crypto;
 
+import com.google.common.base.Supplier;
+import com.google.common.base.Suppliers;
 import com.google.common.primitives.UnsignedBytes;
 import com.radixdlt.common.EUID;
 import com.radixdlt.utils.Bytes;
@@ -63,11 +65,9 @@ public final class Hash implements Comparable<Hash> {
 	}
 
 	private final byte[] 	data;
-	private EUID			id;
+	private Supplier<EUID>	idCached = Suppliers.memoize(this::computeId);
 
-	// Hashcode caching
-	private boolean hashCodeComputed = false;
-	private int hashCode;
+	private final int hashCodeCached;
 
 	public Hash(byte[] hash) {
 		this(hash, 0, BYTES);
@@ -84,6 +84,7 @@ public final class Hash implements Comparable<Hash> {
 
 		this.data = new byte[BYTES];
 		System.arraycopy(hash, offset, this.data, 0, BYTES);
+		this.hashCodeCached = Arrays.hashCode(this.data);
 	}
 
 	public Hash(String hex) {
@@ -93,6 +94,7 @@ public final class Hash implements Comparable<Hash> {
 		}
 
 		this.data = Bytes.fromHexString(hex);
+		this.hashCodeCached = Arrays.hashCode(this.data);
 	}
 
 	/**
@@ -121,10 +123,7 @@ public final class Hash implements Comparable<Hash> {
 	}
 
 	public EUID getID() {
-		if (id == null) {
-			id = new EUID(data, 0);
-		}
-		return id;
+		return idCached.get();
 	}
 
 	public byte getFirstByte() {
@@ -150,9 +149,8 @@ public final class Hash implements Comparable<Hash> {
 		if (o instanceof Hash) {
 			Hash other = (Hash) o;
 
-			if (this.hashCode() == other.hashCode()) {
-				return Arrays.equals(this.data, other.data);
-			}
+			// `hashCode()` uses `this.hashCodeCached`, which in turn is derived from `this.data`.
+			return this.hashCode() == other.hashCode();
 		}
 
 		return false;
@@ -160,10 +158,10 @@ public final class Hash implements Comparable<Hash> {
 
 	@Override
 	public int hashCode() {
-		if (!this.hashCodeComputed) {
-			this.hashCode = Arrays.hashCode(this.data);
-			this.hashCodeComputed = true;
-		}
-		return this.hashCode;
+		return hashCodeCached;
+	}
+
+	private EUID computeId() {
+		return new EUID(data, 0);
 	}
 }
