@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.util.Arrays;
 import java.util.List;
 import com.radixdlt.TestSetupUtils;
+import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -30,6 +31,12 @@ public class RRITest {
 	@BeforeClass
 	public static void setup() {
 		TestSetupUtils.installBouncyCastleProvider();
+	}
+
+	@Test
+	public void equalsContract() {
+		EqualsVerifier.forClass(RRI.class)
+				.verify();
 	}
 
 	@Test
