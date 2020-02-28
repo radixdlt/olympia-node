@@ -129,37 +129,37 @@ public class SafetyRulesTest {
 		Vertex a5 = makeVertex(a4, Round.of(9), a5Id);
 
 		safetyRules.process(a1.getQC());
-		VoteResult result = safetyRules.vote(a1);
+		VoteResult result = safetyRules.voteFor(a1);
 		assertThat(result.getCommittedAtom()).isEmpty();
 
 		safetyRules.process(b1.getQC());
-		result = safetyRules.vote(b1);
+		result = safetyRules.voteFor(b1);
 		assertThat(result.getCommittedAtom()).isEmpty();
 
 		safetyRules.process(a2.getQC());
-		result = safetyRules.vote(a2);
+		result = safetyRules.voteFor(a2);
 		assertThat(result.getCommittedAtom()).isEmpty();
 
 		safetyRules.process(b2.getQC());
-		assertThatThrownBy(() -> safetyRules.vote(b2));
+		assertThatThrownBy(() -> safetyRules.voteFor(b2));
 
 		safetyRules.process(a3.getQC());
-		result = safetyRules.vote(a3);
+		result = safetyRules.voteFor(a3);
 		assertThat(result.getCommittedAtom()).isEmpty();
 
 		safetyRules.process(b3.getQC());
-		result = safetyRules.vote(b3);
+		result = safetyRules.voteFor(b3);
 		assertThat(result.getCommittedAtom()).isEmpty();
 
 		safetyRules.process(a4.getQC());
-		result = safetyRules.vote(a4);
+		result = safetyRules.voteFor(a4);
 		assertThat(result.getCommittedAtom()).isEmpty();
 
 		safetyRules.process(a4.getQC());
-		assertThatThrownBy(() -> safetyRules.vote(a4));
+		assertThatThrownBy(() -> safetyRules.voteFor(a4));
 
 		safetyRules.process(b4.getQC());
-		assertThatThrownBy(() -> safetyRules.vote(b4));
+		assertThatThrownBy(() -> safetyRules.voteFor(b4));
 	}
 
 	@Test

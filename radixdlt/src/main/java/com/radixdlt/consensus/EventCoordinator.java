@@ -143,7 +143,7 @@ public final class EventCoordinator {
 
 				final VoteResult voteResult;
 				try {
-					voteResult = safetyRules.vote(proposedVertex);
+					voteResult = safetyRules.voteFor(proposedVertex);
 					final VoteMessage vote = voteResult.getVote();
 					networkSender.sendVote(vote);
 					// TODO do something on commit

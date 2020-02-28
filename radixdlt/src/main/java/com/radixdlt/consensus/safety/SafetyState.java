@@ -19,6 +19,11 @@ package com.radixdlt.consensus.safety;
 
 import com.radixdlt.consensus.Round;
 
+import java.util.Objects;
+
+/**
+ * The state maintained to ensure the safety of the consensus system.
+ */
 final class SafetyState {
 	Round lastVotedRound; // the last round this node voted on
 	Round lockedRound; // the highest 2-chain head
@@ -28,7 +33,37 @@ final class SafetyState {
 		this.lockedRound = lockedRound;
 	}
 
+	public SafetyState(SafetyState other) {
+		this(other.lastVotedRound, other.lockedRound);
+	}
+
 	public static SafetyState initialState() {
 		return new SafetyState(Round.of(0L), Round.of(0L));
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		SafetyState that = (SafetyState) o;
+		return lastVotedRound.equals(that.lastVotedRound) &&
+			lockedRound.equals(that.lockedRound);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(lastVotedRound, lockedRound);
+	}
+
+	@Override
+	public String toString() {
+		return "SafetyState{" +
+			"lastVotedRound=" + lastVotedRound +
+			", lockedRound=" + lockedRound +
+			'}';
 	}
 }

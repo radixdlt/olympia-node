@@ -23,6 +23,9 @@ import com.radixdlt.consensus.VoteMessage;
 import java.util.Objects;
 import java.util.Optional;
 
+/**
+ * The result of a successful vote by {@link SafetyRules}.
+ */
 public class VoteResult {
 	private final VoteMessage vote;
 	private final AID committedAtom; // may be null
@@ -30,6 +33,24 @@ public class VoteResult {
 	public VoteResult(VoteMessage vote, AID committedAtom) {
 		this.vote = Objects.requireNonNull(vote);
 		this.committedAtom = committedAtom; // may be null
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		VoteResult that = (VoteResult) o;
+		return vote.equals(that.vote) &&
+			Objects.equals(committedAtom, that.committedAtom);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(vote, committedAtom);
 	}
 
 	public VoteMessage getVote() {
