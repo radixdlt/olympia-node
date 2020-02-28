@@ -57,7 +57,7 @@ public class HashTest {
 
 	@Test(expected = IllegalArgumentException.class)
 	public void verify_that_an_error_is_thrown_for_too_short_hex_string_constructor() {
-		new Hash("deedbeef");
+		new Hash("deadbeef");
 		fail();
 	}
 
