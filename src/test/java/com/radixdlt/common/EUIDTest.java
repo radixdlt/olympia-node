@@ -28,10 +28,8 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import com.google.common.base.Strings;
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.UInt128;
-import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 
