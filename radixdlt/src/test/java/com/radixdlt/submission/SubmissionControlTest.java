@@ -1,7 +1,25 @@
+/*
+ * (C) Copyright 2020 Radix DLT Ltd
+ *
+ * Radix DLT Ltd licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License.  You may obtain a copy of the
+ * License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied.  See the License for the specific
+ * language governing permissions and limitations under the License.
+ */
+
 package com.radixdlt.submission;
 
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.json.JSONObject;
 import org.junit.Before;
@@ -21,10 +39,13 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
+import com.radixdlt.network.MempoolNetworkRx;
+import com.radixdlt.network.MempoolSubmissionCallback;
 import com.radixdlt.serialization.Serialization;
+
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 
 public class SubmissionControlTest {
 
@@ -32,6 +53,8 @@ public class SubmissionControlTest {
 	private RadixEngine radixEngine;
 	private Serialization serialization;
 	private Events events;
+	private MempoolNetworkRx mempoolNetworkRx;
+	private AtomicReference<MempoolSubmissionCallback> rxCallback = new AtomicReference<>();
 
 	private SubmissionControl submissionControl;
 
@@ -42,6 +65,12 @@ public class SubmissionControlTest {
 		this.radixEngine = mock(RadixEngine.class);
 		this.serialization = mock(Serialization.class);
 		this.events = mock(Events.class);
+		this.mempoolNetworkRx = mock(MempoolNetworkRx.class);
+
+		doAnswer(args -> {
+			rxCallback.set(args.getArgument(0));
+			return null;
+		}).when(this.mempoolNetworkRx).addMempoolSubmissionCallback(any());
 
 		// test module to hook up dependencies
 		Module testModule = new AbstractModule() {
@@ -51,6 +80,7 @@ public class SubmissionControlTest {
 				bind(RadixEngine.class).toInstance(radixEngine);
 				bind(Serialization.class).toInstance(serialization);
 				bind(Events.class).toInstance(events);
+				bind(MempoolNetworkRx.class).toInstance(mempoolNetworkRx);
 			}
 		};
 
@@ -120,5 +150,34 @@ public class SubmissionControlTest {
 		assertThat(called.get(), is(true));
 		verify(this.events, never()).broadcast(any());
 		verify(this.mempool, times(1)).addAtom(any());
+	}
+
+	@Test
+	public void when_receiving_atom__then_atom_is_submitted()
+		throws MempoolFullException, MempoolDuplicateException {
+		assertNotNull(rxCallback.get());
+		Atom atomMock = mock(Atom.class);
+		when(atomMock.getAID()).thenReturn(AID.ZERO);
+
+		rxCallback.get().accept(atomMock);
+		verify(this.mempool, times(1)).addAtom(any());
+	}
+
+	@Test
+	public void when_receiving_duplicate_atom__handled_correctly()
+		throws MempoolFullException, MempoolDuplicateException {
+		assertNotNull(rxCallback.get());
+		Atom atomMock = mock(Atom.class);
+		when(atomMock.getAID()).thenReturn(AID.ZERO);
+		doThrow(new MempoolDuplicateException(atomMock, "fake duplicate")).when(this.mempool).addAtom(any());
+
+		rxCallback.get().accept(atomMock);
+		verify(this.mempool, times(1)).addAtom(any());
+	}
+
+	@Test
+	public void sensible_tostring() {
+		String tostring = this.submissionControl.toString();
+		assertThat(tostring, containsString(this.submissionControl.getClass().getSimpleName()));
 	}
 }

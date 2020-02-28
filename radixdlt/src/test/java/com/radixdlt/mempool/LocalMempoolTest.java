@@ -1,3 +1,20 @@
+/*
+ * (C) Copyright 2020 Radix DLT Ltd
+ *
+ * Radix DLT Ltd licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License.  You may obtain a copy of the
+ * License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied.  See the License for the specific
+ * language governing permissions and limitations under the License.
+ */
+
 package com.radixdlt.mempool;
 
 import java.util.List;
@@ -22,7 +39,7 @@ import static org.hamcrest.Matchers.*;
 public class LocalMempoolTest {
 
 	private RuntimeProperties config;
-	private Mempool mempool;
+	private LocalMempool mempool;
 
 	@Before
 	public void setUp() {
@@ -37,8 +54,8 @@ public class LocalMempoolTest {
 			}
 		};
 
-		Injector injector = Guice.createInjector(testModule, new MempoolModule());
-		this.mempool = injector.getInstance(Mempool.class);
+		Injector injector = Guice.createInjector(testModule);
+		this.mempool = injector.getInstance(LocalMempool.class);
 	}
 
 	@Test(expected = IllegalArgumentException.class)
@@ -58,13 +75,18 @@ public class LocalMempoolTest {
 		fail();
 	}
 
-	@Test(expected = MempoolFullException.class)
+	@Test
 	public void when_adding_too_many_atoms__then_exception_is_thrown()
 		throws MempoolFullException, MempoolDuplicateException {
 		this.mempool.addAtom(makeAtom(1));
 		this.mempool.addAtom(makeAtom(2));
-		this.mempool.addAtom(makeAtom(3));
-		fail();
+		Atom badAtom = makeAtom(3);
+		try {
+			this.mempool.addAtom(badAtom);
+			fail();
+		} catch (MempoolFullException e) {
+			assertSame(badAtom, e.atom());
+		}
 	}
 
 	@Test
@@ -132,6 +154,11 @@ public class LocalMempoolTest {
 		List<Atom> atoms = this.mempool.getAtoms(1, Sets.newHashSet(atom.getAID()));
 		assertTrue(atoms.isEmpty());
 		assertEquals(1, this.mempool.atomCount()); // postcondition
+	}
+
+	@Test
+	public void when_max_count_called__max_count_returned() {
+		assertEquals(2, this.mempool.maxCount());
 	}
 
 	@Test
