@@ -51,7 +51,7 @@ public final class EUID implements Comparable<EUID> {
 			throw new IllegalArgumentException("Byte length must be " + BYTES + " but was " + bytes.length);
 		}
 
-		this.value = UInt128.from(bytes);
+		this.value = Objects.requireNonNull(UInt128.from(bytes));
 	}
 
 	public EUID(int value) {
@@ -60,11 +60,11 @@ public final class EUID implements Comparable<EUID> {
 
 	public EUID(long value) {
 		long extend = (value < 0) ? -1L : 0L;
-		this.value = UInt128.from(extend, value);
+		this.value = Objects.requireNonNull(UInt128.from(extend, value));
 	}
 
 	public EUID(UInt128 value) {
-		this.value = value;
+		this.value = Objects.requireNonNull(value);
 	}
 
 	/**
@@ -86,7 +86,7 @@ public final class EUID implements Comparable<EUID> {
 			throw new IllegalArgumentException("Invalid byte length of " + bytes.length);
 		}
 		byte[] newBytes = extend(bytes);
-		this.value = UInt128.from(newBytes);
+		this.value = Objects.requireNonNull(UInt128.from(newBytes));
 	}
 
 	/**
@@ -99,7 +99,7 @@ public final class EUID implements Comparable<EUID> {
 	 */
 	public EUID(byte[] bytes, int offset) {
 		Objects.requireNonNull(bytes);
-		this.value = UInt128.from(bytes, offset);
+		this.value = Objects.requireNonNull(UInt128.from(bytes, offset));
 	}
 
 	/**
@@ -210,14 +210,14 @@ public final class EUID implements Comparable<EUID> {
 
 		if (o instanceof EUID) {
 			EUID other = (EUID) o;
-			return this.value.equals(other.value);
+			return Objects.equals(value, other.value);
 		}
 		return false;
 	}
 
 	@Override
 	public int hashCode() {
-		return this.value.hashCode();
+		return Objects.hashCode(value);
 	}
 
 	@Override

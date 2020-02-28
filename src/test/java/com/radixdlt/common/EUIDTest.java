@@ -27,16 +27,23 @@ import com.radixdlt.utils.UInt128;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
+
+import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
 public class EUIDTest {
-	BigInteger bi;
 
 	private static final byte[] ONE = new byte[32];
 	private static final byte[] NEGATIVE_ONE = new byte[32];
 	static {
 		ONE[EUID.BYTES - 1] = 1;
 		Arrays.fill(NEGATIVE_ONE, (byte) 0xff);
+	}
+
+
+	@Test
+	public void equalsContract() {
+		EqualsVerifier.forClass(EUID.class).verify();
 	}
 
 	@Test
