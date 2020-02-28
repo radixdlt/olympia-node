@@ -20,15 +20,23 @@ package com.radixdlt.common;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
+import com.google.common.base.Strings;
+import com.radixdlt.crypto.Hash;
+import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.UInt128;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
+import org.hamcrest.number.OrderingComparison;
 import org.junit.Test;
 
 public class EUIDTest {
@@ -40,10 +48,70 @@ public class EUIDTest {
 		Arrays.fill(NEGATIVE_ONE, (byte) 0xff);
 	}
 
-
 	@Test
 	public void equalsContract() {
 		EqualsVerifier.forClass(EUID.class).verify();
+	}
+
+	@Test
+	public void testOffsetBytesConstructor() {
+		EUID expected = new EUID("dead000000000000000000000000beef");
+		byte[] tooManyBytes = Bytes.fromHexString("11dead000000000000000000000000beef");
+		EUID offsetted = new EUID(tooManyBytes, 1); // remember 2 hex chars == 1 byte.
+		assertEquals(expected, offsetted);
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void verify_that_exception_is_thrown_when_calling_constructor_with_too_short_hexstring() {
+		new EUID("deadbeef");
+		fail();
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void verify_that_exception_is_thrown_when_calling_constructor_with_empty_byte_array() {
+		new EUID(new byte[0]);
+		fail();
+	}
+
+	@Test
+	public void testZero() {
+		assertTrue(EUID.ZERO.isZero());
+		assertFalse(EUID.ONE.isZero());
+	}
+
+	@Test
+	public void testGetValue() {
+		assertEquals(EUID.ZERO.getValue(), UInt128.ZERO);
+		assertEquals(EUID.ONE.getValue(), UInt128.ONE);
+		assertEquals(EUID.TWO.getValue(), UInt128.TWO);
+	}
+
+	@Test
+	public void testGetLow() {
+		assertEquals(1L, EUID.ONE.getLow());
+		assertEquals(0L, EUID.ZERO.getLow());
+		assertEquals(2L, EUID.TWO.getLow());
+	}
+
+	@Test
+	public void testGetShard() {
+		EUID euid = new EUID(UInt128.from(2L, 5L));
+		assertEquals(5L, euid.getLow());
+		assertEquals(2L, euid.getShard());
+	}
+
+	@Test
+	public void verify_that_tobytearray_returns_same_as_passed_in_constructor() {
+		byte[] bytes = Bytes.fromHexString("dead000000000000000000000000beef");
+		EUID euid = new EUID(bytes);
+		assertArrayEquals(bytes, euid.toByteArray());
+	}
+
+	@Test
+	public void testCompare() {
+		EUID low = new EUID(Strings.repeat("1", 32));
+		EUID high = new EUID(Strings.repeat("9", 32));
+		assertThat(low, OrderingComparison.lessThan(high));
 	}
 
 	@Test
