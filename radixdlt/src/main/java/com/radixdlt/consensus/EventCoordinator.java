@@ -34,6 +34,8 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.AtomEventListener;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.mempool.Mempool;
+import com.radixdlt.network.EventCoordinatorNetworkSender;
+
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import java.util.List;
@@ -48,7 +50,7 @@ public final class EventCoordinator {
 	private final VertexStore vertexStore;
 	private final RadixEngine engine;
 	private final Mempool mempool;
-	private final NetworkSender networkSender;
+	private final EventCoordinatorNetworkSender networkSender;
 	private final Pacemaker pacemaker;
 	private final ProposerElection proposerElection;
 	private final EUID self;
@@ -57,7 +59,7 @@ public final class EventCoordinator {
 	@Inject
 	public EventCoordinator(
 		Mempool mempool,
-		NetworkSender networkSender,
+		EventCoordinatorNetworkSender networkSender,
 		SafetyRules safetyRules,
 		Pacemaker pacemaker,
 		VertexStore vertexStore,

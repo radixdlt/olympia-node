@@ -17,10 +17,7 @@
 
 package com.radixdlt.network;
 
-import java.util.Collection;
-
 import com.radixdlt.common.Atom;
-import com.radixdlt.consensus.Validator;
 
 /**
  * Interface for Mempool to send things through a network
@@ -29,8 +26,7 @@ public interface MempoolNetworkTx {
 	/**
 	 * Broadcast locally-received mempool submission to validators.
 	 *
-	 * @param validators the validators to send the submission to
 	 * @param atom the submission to send
 	 */
-	void sendMempoolSubmission(Collection<Validator> validators, Atom atom);
+	void sendMempoolSubmission(Atom atom);
 }

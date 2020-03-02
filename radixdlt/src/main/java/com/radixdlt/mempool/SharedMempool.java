@@ -25,7 +25,6 @@ import javax.inject.Inject;
 
 import com.radixdlt.common.AID;
 import com.radixdlt.common.Atom;
-import com.radixdlt.consensus.ValidatorSet;
 import com.radixdlt.network.MempoolNetworkTx;
 
 /**
@@ -36,20 +35,18 @@ import com.radixdlt.network.MempoolNetworkTx;
  */
 public class SharedMempool implements Mempool {
 	private final LocalMempool localMempool;
-	private final ValidatorSet validatorSet;
 	private final MempoolNetworkTx networkSender;
 
 	@Inject
-	SharedMempool(LocalMempool localMempool, ValidatorSet validatorSet, MempoolNetworkTx networkSender) {
+	SharedMempool(LocalMempool localMempool, MempoolNetworkTx networkSender) {
 		this.localMempool = Objects.requireNonNull(localMempool);
-		this.validatorSet = Objects.requireNonNull(validatorSet);
 		this.networkSender = Objects.requireNonNull(networkSender);
 	}
 
 	@Override
 	public void addAtom(Atom atom) throws MempoolFullException, MempoolDuplicateException {
 		this.localMempool.addAtom(atom);
-		this.networkSender.sendMempoolSubmission(this.validatorSet.validators(), atom);
+		this.networkSender.sendMempoolSubmission(atom);
 	}
 
 	@Override

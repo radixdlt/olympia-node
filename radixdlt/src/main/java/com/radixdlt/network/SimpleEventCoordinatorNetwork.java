@@ -15,7 +15,7 @@
  *  language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.network;
 
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
@@ -30,6 +30,9 @@ import org.radix.network2.messaging.MessageCentral;
 import org.radix.universe.system.LocalSystem;
 
 import com.radixdlt.common.EUID;
+import com.radixdlt.consensus.NewRound;
+import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.messages.NewRoundMessage;
 import com.radixdlt.consensus.messages.VertexMessage;
 import com.radixdlt.consensus.messages.VoteMessage;
@@ -38,7 +41,7 @@ import com.radixdlt.universe.Universe;
 /**
  * Simple network that publishes messages to known nodes.
  */
-public class ActualNetwork implements NetworkSender, NetworkRx {
+public class SimpleEventCoordinatorNetwork implements EventCoordinatorNetworkSender, EventCoordinatorNetworkRx {
 	private final PeerWithSystem localPeer;
 	private final int magic;
 	private final AddressBook addressBook;
@@ -49,7 +52,7 @@ public class ActualNetwork implements NetworkSender, NetworkRx {
 	private final PublishSubject<Vote> votes;
 
 	@Inject
-	public ActualNetwork(
+	public SimpleEventCoordinatorNetwork(
 		LocalSystem system,
 		Universe universe,
 		AddressBook addressBook,

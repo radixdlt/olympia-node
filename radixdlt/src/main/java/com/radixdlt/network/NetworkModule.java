@@ -23,9 +23,20 @@ import com.google.inject.Scopes;
 public class NetworkModule extends AbstractModule {
 	@Override
 	protected void configure() {
-		// provides
-		bind(DumbMempoolNetwork.class).in(Scopes.SINGLETON);
-		bind(MempoolNetworkRx.class).to(DumbMempoolNetwork.class);
-		bind(MempoolNetworkTx.class).to(DumbMempoolNetwork.class);
+		// provides (for SharedMempool)
+//		bind(DumbMempoolNetwork.class).in(Scopes.SINGLETON);
+//		bind(MempoolNetworkRx.class).to(DumbMempoolNetwork.class);
+//		bind(MempoolNetworkTx.class).to(DumbMempoolNetwork.class);
+		bind(SimpleMempoolNetwork.class).in(Scopes.SINGLETON);
+		bind(MempoolNetworkRx.class).to(SimpleMempoolNetwork.class);
+		bind(MempoolNetworkTx.class).to(SimpleMempoolNetwork.class);
+
+		// Provides (for Event Coordinator)
+//		bind(DumbEventCoordinatorNetwork.class).in(Scopes.SINGLETON);
+//		bind(EventCoordinatorNetworkRx.class).to(DumbEventCoordinatorNetwork.class);
+//		bind(EventCoordinatorNetworkSender.class).to(DumbEventCoordinatorNetwork.class);
+		bind(SimpleEventCoordinatorNetwork.class).in(Scopes.SINGLETON);
+		bind(EventCoordinatorNetworkRx.class).to(SimpleEventCoordinatorNetwork.class);
+		bind(EventCoordinatorNetworkSender.class).to(SimpleEventCoordinatorNetwork.class);
 	}
 }

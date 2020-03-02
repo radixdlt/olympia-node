@@ -41,6 +41,10 @@ import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.network.MempoolNetworkRx;
 import com.radixdlt.serialization.Serialization;
 
+import io.reactivex.rxjava3.core.Scheduler;
+import io.reactivex.rxjava3.disposables.Disposable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
+
 class SubmissionControlImpl implements SubmissionControl {
 	private static final Logger log = Logging.getLogger("submission");
 
@@ -48,6 +52,8 @@ class SubmissionControlImpl implements SubmissionControl {
 	private final RadixEngine radixEngine;
 	private final Serialization serialization;
 	private final Events events;
+	private final Scheduler singleThreadScheduler = Schedulers.single();
+	private final Disposable disposable;
 
 	@Inject
 	SubmissionControlImpl(Mempool mempool, RadixEngine radixEngine, Serialization serialization, Events events, MempoolNetworkRx networkRx) {
@@ -55,7 +61,16 @@ class SubmissionControlImpl implements SubmissionControl {
 		this.radixEngine = Objects.requireNonNull(radixEngine);
 		this.serialization = Objects.requireNonNull(serialization);
 		this.events = Objects.requireNonNull(events);
-		networkRx.addMempoolSubmissionCallback(this::receiveAtom);
+
+		// FIXME: Should have some better lifetime handling here
+		this.disposable = networkRx.atomMessages()
+			.subscribeOn(this.singleThreadScheduler)
+			.subscribe(this::processAtom);
+	}
+
+	@Override
+	public void stop() {
+		this.disposable.dispose();
 	}
 
 	@Override
@@ -79,7 +94,7 @@ class SubmissionControlImpl implements SubmissionControl {
 		return atom.getAID();
 	}
 
-	private void receiveAtom(Atom atom) {
+	private void processAtom(Atom atom) {
 		try {
 			submitAtom(atom);
 		} catch (MempoolRejectedException e) {

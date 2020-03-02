@@ -15,28 +15,17 @@
  * language governing permissions and limitations under the License.
  */
 
-package org.radix.serialization;
+package com.radixdlt.network;
 
-import org.radix.GenerateUniverses;
-import com.radixdlt.universe.Universe;
+import com.radixdlt.consensus.NewRound;
+import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.Vote;
 
 /**
- * Serialization for Universe to JSON.
+ * Interface for Event Coordinator to send things through a network
  */
-public class UniverseJsonSerializeTest extends SerializeObject<Universe> {
-
-	public UniverseJsonSerializeTest() {
-		super(Universe.class, UniverseJsonSerializeTest::getDev);
-	}
-
-	private static Universe getDev() {
-		try {
-			GenerateUniverses gu = new GenerateUniverses(getProperties());
-			return gu.generateUniverses().stream()
-					.filter(Universe::isDevelopment)
-					.findAny().get();
-		} catch (Exception e) {
-			throw new IllegalStateException("Can't create universes", e);
-		}
-	}
+public interface EventCoordinatorNetworkSender {
+	void broadcastProposal(Vertex vertex);
+	void sendNewRound(NewRound newRound);
+	void sendVote(Vote vote);
 }

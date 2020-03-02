@@ -17,27 +17,30 @@
 
 package com.radixdlt.network;
 
-import java.util.Collection;
 import com.radixdlt.common.Atom;
-import com.radixdlt.consensus.Validator;
-import com.radixdlt.network.MempoolSubmissionCallback;
+
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.subjects.PublishSubject;
 
 /**
  * Overly simplistic network implementation that does absolutely nothing right now.
  */
 public class DumbMempoolNetwork implements MempoolNetworkRx, MempoolNetworkTx {
 
+	private final Observable<Atom> atoms;
+
 	public DumbMempoolNetwork() {
 		// Nothing for now, more to come later
+		this.atoms = PublishSubject.create();
 	}
 
 	@Override
-	public void addMempoolSubmissionCallback(MempoolSubmissionCallback callback) {
-		// FIXME: No mempool network submissions for now, as we are assuming no network
-	}
-
-	@Override
-	public void sendMempoolSubmission(Collection<Validator> validators, Atom atom) {
+	public void sendMempoolSubmission(Atom atom) {
 		// FIXME: Implement mempool gossip.
+	}
+
+	@Override
+	public Observable<Atom> atomMessages() {
+		return this.atoms;
 	}
 }

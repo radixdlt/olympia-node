@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.network;
 
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
@@ -23,17 +23,21 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import com.radixdlt.consensus.NewRound;
+import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.Vote;
+
 /**
  * Overly simplistic network implementation that just sends messages to itself.
  */
-public class DumbNetwork implements NetworkSender, NetworkRx {
+public class DumbEventCoordinatorNetwork implements EventCoordinatorNetworkSender, EventCoordinatorNetworkRx {
 	public static final int LOOPBACK_DELAY = 100;
 	private final PublishSubject<Vertex> proposals;
 	private final PublishSubject<NewRound> newRounds;
 	private final PublishSubject<Vote> votes;
 	private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 
-	public DumbNetwork() {
+	public DumbEventCoordinatorNetwork() {
 		this.proposals = PublishSubject.create();
 		this.newRounds = PublishSubject.create();
 		this.votes = PublishSubject.create();
