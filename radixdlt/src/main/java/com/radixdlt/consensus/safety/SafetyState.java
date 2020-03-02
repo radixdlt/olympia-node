@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus.safety;
 
+import com.google.inject.Inject;
 import com.radixdlt.consensus.Round;
 
 import java.util.Objects;
@@ -27,6 +28,11 @@ import java.util.Objects;
 final class SafetyState {
 	Round lastVotedRound; // the last round this node voted on
 	Round lockedRound; // the highest 2-chain head
+
+	@Inject
+	protected SafetyState() {
+		this(Round.of(0L), Round.of(0L));
+	}
 
 	public SafetyState(Round lastVotedRound, Round lockedRound) {
 		this.lastVotedRound = lastVotedRound;
