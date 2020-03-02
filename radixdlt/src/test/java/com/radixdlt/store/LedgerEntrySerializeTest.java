@@ -15,11 +15,10 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.tempo;
+package com.radixdlt.store;
 
 import com.radixdlt.common.AID;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.store.LedgerEntry;
 import org.radix.serialization.SerializeMessageObject;
 
 public class LedgerEntrySerializeTest extends SerializeMessageObject<LedgerEntry> {

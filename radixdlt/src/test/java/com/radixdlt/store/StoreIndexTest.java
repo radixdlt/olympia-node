@@ -7,8 +7,6 @@ import org.junit.Test;
 public class StoreIndexTest {
 	@Test
 	public void equalsContract() {
-		EqualsVerifier.forClass(StoreIndex.class)
-				.suppress(Warning.NONFINAL_FIELDS)
-				.verify();
+		EqualsVerifier.forClass(StoreIndex.class).verify();
 	}
 }
