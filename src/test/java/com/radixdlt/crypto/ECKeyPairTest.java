@@ -37,6 +37,13 @@ public class ECKeyPairTest {
 	public ExpectedException thrown = ExpectedException.none();
 
 	@Test
+	public void equalsContract() {
+		EqualsVerifier.forClass(ECKeyPair.class)
+				.withIgnoredFields("publicKey") // public key is derived from used private key.
+				.verify();
+	}
+
+	@Test
 	public void checkKeyIntegrity() throws CryptoException {
 		final int iterations = 5000;
 
