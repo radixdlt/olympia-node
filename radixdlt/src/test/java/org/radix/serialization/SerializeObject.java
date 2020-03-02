@@ -18,7 +18,8 @@
 package org.radix.serialization;
 
 import com.radixdlt.serialization.Polymorphic;
-
+import com.radixdlt.serialization.Serialization;
+import java.lang.reflect.Method;
 import java.util.function.Supplier;
 
 import org.junit.BeforeClass;
@@ -27,6 +28,7 @@ import org.radix.logging.Logging;
 import com.radixdlt.serialization.DsonOutput.Output;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assume.assumeFalse;
 import static org.radix.serialization.SerializationTestUtils.testEncodeDecode;
 
@@ -55,9 +57,42 @@ public abstract class SerializeObject<T> extends RadixTest {
 	}
 
 	@Test
+	public void testObjectHasEquals() throws NoSuchMethodException {
+		Method method = factory.get().getClass().getMethod("equals", Object.class);
+		assertFalse(method.getDeclaringClass().equals(Object.class));
+	}
+
+	@Test
+	public void testObjectHasHashCode() throws NoSuchMethodException {
+		Method method = factory.get().getClass().getMethod("hashCode");
+		assertFalse(method.getDeclaringClass().equals(Object.class));
+	}
+
+	@Test
 	public void testNONEIsEmpty() throws Exception {
 		String s2Json = getSerialization().toJson(factory.get(), Output.NONE);
 		assertEquals("{}", s2Json);
+	}
+
+	@Test
+	public void testRoundTripJsonSame() throws Exception {
+		assumeFalse("Not applicable for polymorphic classes", Polymorphic.class.isAssignableFrom(cls));
+		Serialization s = getSerialization();
+		T initialObj = factory.get();
+		String initialJson = s.toJson(initialObj, Output.ALL);
+		System.out.println(initialJson);
+		T deserialisedObj = s.fromJson(initialJson, this.cls);
+		assertEquals(initialObj, deserialisedObj);
+	}
+
+	@Test
+	public void testRoundTripDsonSame() throws Exception {
+		assumeFalse("Not applicable for polymorphic classes", Polymorphic.class.isAssignableFrom(cls));
+		Serialization s = getSerialization();
+		T initialObj = factory.get();
+		byte[] initialDson = s.toDson(initialObj, Output.ALL);
+		T deserialisedObj = s.fromDson(initialDson, this.cls);
+		assertEquals(initialObj, deserialisedObj);
 	}
 
 	@Test

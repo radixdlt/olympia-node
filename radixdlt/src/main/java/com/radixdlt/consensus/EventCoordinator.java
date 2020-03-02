@@ -90,7 +90,7 @@ public final class EventCoordinator {
 		}
 	}
 
-	public void processVote(VoteMessage vote) {
+	public void processVote(Vote vote) {
 		// only do something if we're actually the leader for the next round
 		if (!proposerElection.isValidProposer(self, vote.getVertexMetadata().getRound().next())) {
 			log.warn(String.format("Ignoring confused vote %s for %s", vote.hashCode(), vote.getVertexMetadata().getRound()));
@@ -144,7 +144,7 @@ public final class EventCoordinator {
 				final VoteResult voteResult;
 				try {
 					voteResult = safetyRules.voteFor(proposedVertex);
-					final VoteMessage vote = voteResult.getVote();
+					final Vote vote = voteResult.getVote();
 					networkSender.sendVote(vote);
 					// TODO do something on commit
 					voteResult.getCommittedAtom()

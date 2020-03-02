@@ -15,13 +15,19 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package org.radix.serialization;
 
-/**
- * Interface for Event Coordinator to send things through a network
- */
-public interface NetworkSender {
-	void broadcastProposal(Vertex vertex);
-	void sendNewRound(NewRound newRound);
-	void sendVote(Vote vote);
+import com.radixdlt.consensus.NewRound;
+import com.radixdlt.consensus.Round;
+import com.radixdlt.consensus.messages.NewRoundMessage;
+
+public class NewRoundMessageSerializeTest extends SerializeMessageObject<NewRoundMessage> {
+	public NewRoundMessageSerializeTest() {
+		super(NewRoundMessage.class, NewRoundMessageSerializeTest::get);
+	}
+
+	private static NewRoundMessage get() {
+		NewRound testRound = new NewRound(Round.of(1234567890L));
+		return new NewRoundMessage(1234, testRound);
+	}
 }

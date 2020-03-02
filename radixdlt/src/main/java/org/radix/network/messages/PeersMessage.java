@@ -42,21 +42,15 @@ public final class PeersMessage extends Message
 		// For serializer
 	}
 
-	public PeersMessage(int magic)
-	{
+	public PeersMessage(int magic) {
 		super(magic);
 	}
 
-	@Override
-	public String getCommand()
-	{
-		return "peers";
+	public List<Peer> getPeers() {
+		return peers;
 	}
 
-	public List<Peer> getPeers() { return peers; }
-
-	public void setPeers(Collection<Peer> peers)
-	{
+	public void setPeers(Collection<Peer> peers) {
 		this.peers.clear();
 		this.peers.addAll(peers);
 	}

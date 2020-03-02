@@ -30,7 +30,7 @@ public class DumbNetwork implements NetworkSender, NetworkRx {
 	public static final int LOOPBACK_DELAY = 100;
 	private final PublishSubject<Vertex> proposals;
 	private final PublishSubject<NewRound> newRounds;
-	private final PublishSubject<VoteMessage> votes;
+	private final PublishSubject<Vote> votes;
 	private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 
 	public DumbNetwork() {
@@ -54,7 +54,7 @@ public class DumbNetwork implements NetworkSender, NetworkRx {
 	}
 
 	@Override
-	public void sendVote(VoteMessage vote) {
+	public void sendVote(Vote vote) {
 		executorService.schedule(() -> {
 			this.votes.onNext(vote);
 		}, LOOPBACK_DELAY, TimeUnit.MILLISECONDS);
@@ -71,7 +71,7 @@ public class DumbNetwork implements NetworkSender, NetworkRx {
 	}
 
 	@Override
-	public Observable<VoteMessage> voteMessages() {
+	public Observable<Vote> voteMessages() {
 		return votes;
 	}
 }

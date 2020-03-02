@@ -17,46 +17,48 @@
 
 package com.radixdlt.consensus;
 
-import java.util.Objects;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.common.EUID;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.serialization.DsonOutput.Output;
 
-@SerializerId2("consensus.qc")
-public final class QuorumCertificate {
+import java.util.Objects;
+
+/**
+ * Represents a vote on a vertex
+ */
+@SerializerId2("consensus.vote")
+public final class Vote {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	@JsonProperty("vote")
+	@JsonProperty("author")
 	@DsonOutput(Output.ALL)
-	private final Vote vote;
+	private final EUID author;
 
 	@JsonProperty("vertex_metadata")
 	@DsonOutput(Output.ALL)
 	private final VertexMetadata vertexMetadata;
 
-	QuorumCertificate() {
+	// TODO add signature
+
+	Vote() {
 		// Serializer only
-		this.vote = null;
+		this.author = null;
 		this.vertexMetadata = null;
 	}
 
-	public QuorumCertificate(Vote vote, VertexMetadata vertexMetadata) {
-		this.vote = Objects.requireNonNull(vote);
+	public Vote(EUID author, VertexMetadata vertexMetadata) {
+		this.author = Objects.requireNonNull(author);
 		this.vertexMetadata = Objects.requireNonNull(vertexMetadata);
 	}
 
-	public Round getRound() {
-		return vertexMetadata.getRound();
-	}
-
-	public Round getParentRound() {
-		return vertexMetadata.getParentRound();
+	public EUID getAuthor() {
+		return author;
 	}
 
 	public VertexMetadata getVertexMetadata() {
@@ -64,17 +66,21 @@ public final class QuorumCertificate {
 	}
 
 	@Override
-	public boolean equals(Object o) {
-		if (!(o instanceof QuorumCertificate)) {
-			return false;
-		}
-
-		QuorumCertificate qc = (QuorumCertificate) o;
-		return Objects.equals(qc.vote, this.vote);
+	public int hashCode() {
+		return Objects.hash(this.author, this.vertexMetadata);
 	}
 
 	@Override
-	public int hashCode() {
-		return vote.hashCode();
+	public boolean equals(Object o) {
+		if (o == this) {
+			return true;
+		}
+		if (o instanceof Vote) {
+			Vote other = (Vote) o;
+			return
+				Objects.equals(this.author, other.author) &&
+				Objects.equals(this.vertexMetadata, other.vertexMetadata);
+		}
+		return false;
 	}
 }
