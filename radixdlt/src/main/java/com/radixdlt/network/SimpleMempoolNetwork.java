@@ -60,7 +60,7 @@ public class SimpleMempoolNetwork implements MempoolNetworkRx, MempoolNetworkTx 
 
 		this.atoms = PublishSubject.create();
 
-		// FIXME: Should be handled in start()/stop() once we have lifetimes sorted out
+		// TODO: Should be handled in start()/stop() once we have lifetimes sorted out
 		this.messageCentral.addListener(MempoolAtomMessage.class, this::handleMempoolAtomMessage);
 	}
 

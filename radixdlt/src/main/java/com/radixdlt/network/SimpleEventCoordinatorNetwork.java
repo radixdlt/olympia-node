@@ -67,7 +67,7 @@ public class SimpleEventCoordinatorNetwork implements EventCoordinatorNetworkSen
 		this.newRounds = PublishSubject.create();
 		this.votes = PublishSubject.create();
 
-		// FIXME: Should be handled in start()/stop() once we have lifetimes sorted out
+		// TODO: Should be handled in start()/stop() once we have lifetimes sorted out
 		this.messageCentral.addListener(VertexMessage.class, this::handleVertexMessage);
 		this.messageCentral.addListener(NewRoundMessage.class, this::handleNewRoundMessage);
 		this.messageCentral.addListener(VoteMessage.class, this::handleVoteMessage);

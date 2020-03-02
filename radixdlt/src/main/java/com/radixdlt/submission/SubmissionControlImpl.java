@@ -62,7 +62,7 @@ class SubmissionControlImpl implements SubmissionControl {
 		this.serialization = Objects.requireNonNull(serialization);
 		this.events = Objects.requireNonNull(events);
 
-		// FIXME: Should have some better lifetime handling here
+		// TODO: Should have some better lifetime handling here
 		this.disposable = networkRx.atomMessages()
 			.subscribeOn(this.singleThreadScheduler)
 			.subscribe(this::processAtom);
