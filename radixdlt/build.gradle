@@ -61,9 +61,9 @@ jacocoTestReport {
 }
 
 dependencies {
-    implementation 'io.reactivex.rxjava3:rxjava:3.0.0'
-    implementation 'com.sleepycat:je:18.3.12'
-    implementation 'com.github.radixdlt:radix-engine-library:rc~1.0-beta.5-SNAPSHOT'
+    compile 'io.reactivex.rxjava3:rxjava:3.0.0'
+    compile 'com.sleepycat:je:18.3.12'
+    compile 'com.github.radixdlt:radix-engine-library:rc~1.0-beta.5-SNAPSHOT'
 
     compile 'commons-cli:commons-cli:1.4'
     compile 'org.json:json:20180813'
