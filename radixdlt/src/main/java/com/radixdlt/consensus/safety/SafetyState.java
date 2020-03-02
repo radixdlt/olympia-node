@@ -56,8 +56,8 @@ final class SafetyState {
 			return false;
 		}
 		SafetyState that = (SafetyState) o;
-		return lastVotedRound.equals(that.lastVotedRound) &&
-			lockedRound.equals(that.lockedRound);
+		return Objects.equals(lastVotedRound, that.lastVotedRound) &&
+			Objects.equals(lockedRound, that.lockedRound);
 	}
 
 	@Override
