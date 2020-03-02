@@ -56,7 +56,6 @@ public class CerberusModule extends AbstractModule {
 		bind(SafetyRules.class).in(Scopes.SINGLETON);
 	}
 
-
 	@Provides
 	@Singleton
 	private PacemakerImpl pacemaker() {

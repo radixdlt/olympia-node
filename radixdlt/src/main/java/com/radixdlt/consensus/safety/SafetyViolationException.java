@@ -25,8 +25,8 @@ import java.util.Objects;
  * A safety violation.
  */
 public class SafetyViolationException extends Exception {
-	private final Vertex offendingVertex;
-	private final SafetyState safetyState;
+	private final transient Vertex offendingVertex;
+	private final transient SafetyState safetyState;
 
 	SafetyViolationException(Vertex offendingVertex, SafetyState safetyState, String reason) {
 		super(String.format("vertex %s violates safety at state %s: %s", offendingVertex, safetyState, reason));
