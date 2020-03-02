@@ -103,6 +103,24 @@ public final class ECDSASignature implements Signature {
 	}
 
 	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		ECDSASignature signature = (ECDSASignature) o;
+		return Objects.equals(r, signature.r)
+				&& Objects.equals(s, signature.s);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(r, s);
+	}
+
+	@Override
 	public SignatureScheme signatureScheme() {
 		return SignatureScheme.ECDSA;
 	}
