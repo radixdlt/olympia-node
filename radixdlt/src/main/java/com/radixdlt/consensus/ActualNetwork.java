@@ -22,12 +22,12 @@ import io.reactivex.rxjava3.subjects.PublishSubject;
 
 import java.util.Objects;
 import javax.inject.Inject;
-import javax.inject.Named;
-
 import org.radix.network.messaging.Message;
 import org.radix.network2.addressbook.AddressBook;
 import org.radix.network2.addressbook.Peer;
+import org.radix.network2.addressbook.PeerWithSystem;
 import org.radix.network2.messaging.MessageCentral;
+import org.radix.universe.system.LocalSystem;
 
 import com.radixdlt.common.EUID;
 import com.radixdlt.consensus.messages.NewRoundMessage;
@@ -36,12 +36,10 @@ import com.radixdlt.consensus.messages.VoteMessage;
 import com.radixdlt.universe.Universe;
 
 /**
- * Overly simplistic network implementation that just sends messages to itself.
+ * Simple network that publishes messages to known nodes.
  */
 public class ActualNetwork implements NetworkSender, NetworkRx {
-	public static final int LOOPBACK_DELAY = 100;
-
-	private final EUID self;
+	private final PeerWithSystem localPeer;
 	private final int magic;
 	private final AddressBook addressBook;
 	private final MessageCentral messageCentral;
@@ -52,15 +50,15 @@ public class ActualNetwork implements NetworkSender, NetworkRx {
 
 	@Inject
 	public ActualNetwork(
-		@Named("self") EUID self,
+		LocalSystem system,
 		Universe universe,
 		AddressBook addressBook,
 		MessageCentral messageCentral
 	) {
-		this.self = Objects.requireNonNull(self);
 		this.magic = universe.getMagic();
 		this.addressBook = Objects.requireNonNull(addressBook);
 		this.messageCentral = Objects.requireNonNull(messageCentral);
+		this.localPeer = new PeerWithSystem(system);
 
 		this.proposals = PublishSubject.create();
 		this.newRounds = PublishSubject.create();
@@ -74,36 +72,45 @@ public class ActualNetwork implements NetworkSender, NetworkRx {
 
 	@Override
 	public void broadcastProposal(Vertex vertex) {
-		sendToAll(new VertexMessage(this.magic, vertex));
+		VertexMessage message = new VertexMessage(this.magic, vertex);
+		handleVertexMessage(this.localPeer, message);
+		sendToOthers(message);
 	}
 
 	@Override
 	public void sendNewRound(NewRound newRound) {
-		sendToAll(new NewRoundMessage(this.magic, newRound));
+		NewRoundMessage message = new NewRoundMessage(this.magic, newRound);
+		handleNewRoundMessage(this.localPeer, message);
+		sendToOthers(message);
 	}
 
 	@Override
 	public void sendVote(Vote vote) {
-		sendToAll(new VoteMessage(this.magic, vote));
+		VoteMessage message = new VoteMessage(this.magic, vote);
+		handleVoteMessage(this.localPeer, message);
+		sendToOthers(message);
 	}
 
 	@Override
 	public Observable<Vertex> proposalMessages() {
-		return proposals;
+		return this.proposals;
 	}
 
 	@Override
 	public Observable<NewRound> newRoundMessages() {
-		return newRounds;
+		return this.newRounds;
 	}
 
 	@Override
 	public Observable<Vote> voteMessages() {
-		return votes;
+		return this.votes;
 	}
 
-	private void sendToAll(Message message) {
+	private void sendToOthers(Message message) {
+		final EUID self = this.localPeer.getNID();
 		this.addressBook.peers()
+			.filter(Peer::hasSystem) // Only peers with systems (and therefore transports)
+			.filter(p -> !self.equals(p.getNID())) // Exclude self, already sent
 			.forEach(peer -> this.messageCentral.send(peer, message));
 	}
 
