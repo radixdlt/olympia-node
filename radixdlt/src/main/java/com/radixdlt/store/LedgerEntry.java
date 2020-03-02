@@ -24,10 +24,11 @@ import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 
+import java.util.Arrays;
 import java.util.Objects;
 
 @SerializerId2("ledger.entry")
-public class LedgerEntry {
+public final class LedgerEntry {
 
 	// Placeholder for the serializer ID
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
@@ -68,12 +69,13 @@ public class LedgerEntry {
 			return false;
 		}
 		LedgerEntry radixLedgerEntry = (LedgerEntry) o;
-		return aid.equals(radixLedgerEntry.aid);
+		return Objects.equals(aid, radixLedgerEntry.aid)
+				&& Arrays.equals(content, radixLedgerEntry.content);
 	}
 
 	@Override
 	public int hashCode() {
-		return aid.hashCode();
+		return Objects.hash(aid, Arrays.hashCode(content));
 	}
 
 	@Override
