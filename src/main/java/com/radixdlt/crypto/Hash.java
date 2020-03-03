@@ -17,7 +17,6 @@
 
 package com.radixdlt.crypto;
 
-import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.primitives.UnsignedBytes;
 import com.radixdlt.common.EUID;
@@ -25,6 +24,7 @@ import com.radixdlt.utils.Bytes;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.function.Supplier;
 
 public final class Hash implements Comparable<Hash> {
 
