@@ -5,6 +5,7 @@
 /.gradle/
 /bin/
 /build/
+/examples/build/
 /.settings/
 
 out/
