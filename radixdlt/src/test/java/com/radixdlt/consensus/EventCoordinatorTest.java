@@ -30,6 +30,7 @@ import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.engine.AtomEventListener;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.mempool.Mempool;
+import com.radixdlt.network.EventCoordinatorNetworkSender;
 import com.radixdlt.utils.Ints;
 import org.junit.Test;
 
@@ -55,7 +56,7 @@ public class EventCoordinatorTest {
 	@Test
 	public void when_processing_vote_as_not_proposer__then_nothing_happens() {
 		Mempool mempool = mock(Mempool.class);
-		NetworkSender networkSender = mock(NetworkSender.class);
+		EventCoordinatorNetworkSender networkSender = mock(EventCoordinatorNetworkSender.class);
 		SafetyRules safetyRules = mock(SafetyRules.class);
 		Pacemaker pacemaker = mock(Pacemaker.class);
 		VertexStore vertexStore = mock(VertexStore.class);
@@ -73,7 +74,7 @@ public class EventCoordinatorTest {
 			SELF
 		);
 
-		VoteMessage voteMessage = mock(VoteMessage.class);
+		Vote voteMessage = mock(Vote.class);
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
 		when(voteMessage.getVertexMetadata()).thenReturn(vertexMetadata);
 		when(vertexMetadata.getRound()).thenReturn(Round.of(0L));
@@ -87,7 +88,7 @@ public class EventCoordinatorTest {
 	@Test
 	public void when_processing_vote_as_a_proposer__then_components_are_notified() {
 		Mempool mempool = mock(Mempool.class);
-		NetworkSender networkSender = mock(NetworkSender.class);
+		EventCoordinatorNetworkSender networkSender = mock(EventCoordinatorNetworkSender.class);
 		SafetyRules safetyRules = mock(SafetyRules.class);
 		Pacemaker pacemaker = mock(Pacemaker.class);
 		VertexStore vertexStore = mock(VertexStore.class);
@@ -106,7 +107,7 @@ public class EventCoordinatorTest {
 		);
 
 		when(mempool.getAtoms(anyInt(), any())).thenReturn(Lists.newArrayList());
-		VoteMessage voteMessage = mock(VoteMessage.class);
+		Vote voteMessage = mock(Vote.class);
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
 		when(voteMessage.getVertexMetadata()).thenReturn(vertexMetadata);
 		when(vertexMetadata.getRound()).thenReturn(Round.of(0L));
@@ -120,7 +121,7 @@ public class EventCoordinatorTest {
 	@Test
 	public void when_processing_relevant_local_timeout__then_new_round_is_emitted() {
 		Mempool mempool = mock(Mempool.class);
-		NetworkSender networkSender = mock(NetworkSender.class);
+		EventCoordinatorNetworkSender networkSender = mock(EventCoordinatorNetworkSender.class);
 		SafetyRules safetyRules = mock(SafetyRules.class);
 		Pacemaker pacemaker = mock(Pacemaker.class);
 		VertexStore vertexStore = mock(VertexStore.class);
@@ -146,7 +147,7 @@ public class EventCoordinatorTest {
 	@Test
 	public void when_processing_irrelevant_local_timeout__then_new_round_is_not_emitted() {
 		Mempool mempool = mock(Mempool.class);
-		NetworkSender networkSender = mock(NetworkSender.class);
+		EventCoordinatorNetworkSender networkSender = mock(EventCoordinatorNetworkSender.class);
 		SafetyRules safetyRules = mock(SafetyRules.class);
 		Pacemaker pacemaker = mock(Pacemaker.class);
 		VertexStore vertexStore = mock(VertexStore.class);
@@ -172,7 +173,7 @@ public class EventCoordinatorTest {
 	@Test
 	public void when_processing_remote_new_round_as_proposer__then_new_round_is_emitted() {
 		Mempool mempool = mock(Mempool.class);
-		NetworkSender networkSender = mock(NetworkSender.class);
+		EventCoordinatorNetworkSender networkSender = mock(EventCoordinatorNetworkSender.class);
 		SafetyRules safetyRules = mock(SafetyRules.class);
 		Pacemaker pacemaker = mock(Pacemaker.class);
 		VertexStore vertexStore = mock(VertexStore.class);
@@ -200,7 +201,7 @@ public class EventCoordinatorTest {
 	@Test
 	public void when_processing_remote_new_round_as_not_proposer__then_new_round_is_not_emitted() {
 		Mempool mempool = mock(Mempool.class);
-		NetworkSender networkSender = mock(NetworkSender.class);
+		EventCoordinatorNetworkSender networkSender = mock(EventCoordinatorNetworkSender.class);
 		SafetyRules safetyRules = mock(SafetyRules.class);
 		Pacemaker pacemaker = mock(Pacemaker.class);
 		VertexStore vertexStore = mock(VertexStore.class);
@@ -228,7 +229,7 @@ public class EventCoordinatorTest {
 	@Test
 	public void when_processing_invalid_proposal__then_atom_is_rejected() {
 		Mempool mempool = mock(Mempool.class);
-		NetworkSender networkSender = mock(NetworkSender.class);
+		EventCoordinatorNetworkSender networkSender = mock(EventCoordinatorNetworkSender.class);
 		SafetyRules safetyRules = mock(SafetyRules.class);
 		Pacemaker pacemaker = mock(Pacemaker.class);
 		VertexStore vertexStore = mock(VertexStore.class);
@@ -262,7 +263,7 @@ public class EventCoordinatorTest {
 	@Test
 	public void when_processing_valid_stored_proposal__then_atom_is_voted_on_and_removed() throws SafetyViolationException {
 		Mempool mempool = mock(Mempool.class);
-		NetworkSender networkSender = mock(NetworkSender.class);
+		EventCoordinatorNetworkSender networkSender = mock(EventCoordinatorNetworkSender.class);
 		SafetyRules safetyRules = mock(SafetyRules.class);
 		Pacemaker pacemaker = mock(Pacemaker.class);
 		VertexStore vertexStore = mock(VertexStore.class);
@@ -290,7 +291,7 @@ public class EventCoordinatorTest {
 			return null;
 		})).when(radixEngine).store(eq(proposedAtom), any());
 		VoteResult voteResult = mock(VoteResult.class);
-		VoteMessage voteMessage = mock(VoteMessage.class);
+		Vote voteMessage = mock(Vote.class);
 		when(voteResult.getVote()).thenReturn(voteMessage);
 		doReturn(voteResult).when(safetyRules).voteFor(eq(proposedVertex));
 		eventCoordinator.processProposal(proposedVertex);

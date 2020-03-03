@@ -39,11 +39,6 @@ public class SystemMessage extends SignedMessage {
 		this.system = system;
 	}
 
-	@Override
-	public String getCommand() {
-		return "system";
-	}
-
 	public RadixSystem getSystem() {
 		return this.system;
 	}

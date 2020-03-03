@@ -41,11 +41,7 @@ public final class AtomSubmitMessage extends Message {
 		this.atom = atom;
 	}
 
-	@Override
-	public String getCommand()
-	{
-		return "atom.submit";
+	public Atom getAtom() {
+		return atom;
 	}
-
-	public Atom getAtom() { return atom; }
 }

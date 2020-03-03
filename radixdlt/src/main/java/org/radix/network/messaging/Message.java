@@ -74,10 +74,6 @@ public abstract class Message extends BasicContainer
 		setTimestamp(Timestamps.DEFAULT, Time.currentTimestamp());
 	}
 
-	@JsonProperty("command")
-	@DsonOutput(value = Output.HASH, include = false)
-	public abstract String getCommand();
-
 	public final Direction getDirection()
 	{
 		return this.direction;
@@ -128,6 +124,6 @@ public abstract class Message extends BasicContainer
 	@Override
 	public String toString()
 	{
-		return this.instance+" -> "+this.getCommand()+":"+this.getDirection()+":"+this.getHID()+" @ "+this.getTimestamp();
+		return this.instance+" -> "+this.getClass().getSimpleName()+":"+this.getDirection()+":"+this.getHID()+" @ "+this.getTimestamp();
 	}
 }

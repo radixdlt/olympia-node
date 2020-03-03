@@ -25,7 +25,7 @@ import com.radixdlt.common.EUID;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
-import com.radixdlt.consensus.VoteMessage;
+import com.radixdlt.consensus.Vote;
 
 import java.util.Objects;
 
@@ -89,7 +89,7 @@ public final class SafetyRules {
 			proposedVertex.getQC().getVertexMetadata().getRound(),
 			proposedVertex.getQC().getVertexMetadata().getAID()
 		);
-		VoteMessage vote = new VoteMessage(self, vertexMetadata);
+		Vote vote = new Vote(self, vertexMetadata);
 		AID committedAtom = getCommittedAtom(proposedVertex);
 
 		return new VoteResult(vote, committedAtom);

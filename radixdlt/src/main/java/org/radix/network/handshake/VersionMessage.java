@@ -31,10 +31,4 @@ public final class VersionMessage extends Message
 	public VersionMessage(int magic) {
 		super(magic);
 	}
-	
-	@Override
-	public String getCommand()
-	{
-		return "version";
-	}
 }

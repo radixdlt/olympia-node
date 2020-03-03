@@ -34,6 +34,8 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.AtomEventListener;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.mempool.Mempool;
+import com.radixdlt.network.EventCoordinatorNetworkSender;
+
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import java.util.List;
@@ -48,7 +50,7 @@ public final class EventCoordinator {
 	private final VertexStore vertexStore;
 	private final RadixEngine engine;
 	private final Mempool mempool;
-	private final NetworkSender networkSender;
+	private final EventCoordinatorNetworkSender networkSender;
 	private final Pacemaker pacemaker;
 	private final ProposerElection proposerElection;
 	private final EUID self;
@@ -57,7 +59,7 @@ public final class EventCoordinator {
 	@Inject
 	public EventCoordinator(
 		Mempool mempool,
-		NetworkSender networkSender,
+		EventCoordinatorNetworkSender networkSender,
 		SafetyRules safetyRules,
 		Pacemaker pacemaker,
 		VertexStore vertexStore,
@@ -90,7 +92,7 @@ public final class EventCoordinator {
 		}
 	}
 
-	public void processVote(VoteMessage vote) {
+	public void processVote(Vote vote) {
 		// only do something if we're actually the leader for the next round
 		if (!proposerElection.isValidProposer(self, vote.getVertexMetadata().getRound().next())) {
 			log.warn(String.format("Ignoring confused vote %s for %s", vote.hashCode(), vote.getVertexMetadata().getRound()));
@@ -144,7 +146,7 @@ public final class EventCoordinator {
 				final VoteResult voteResult;
 				try {
 					voteResult = safetyRules.voteFor(proposedVertex);
-					final VoteMessage vote = voteResult.getVote();
+					final Vote vote = voteResult.getVote();
 					networkSender.sendVote(vote);
 					// TODO do something on commit
 					voteResult.getCommittedAtom()

@@ -17,14 +17,19 @@
 
 package com.radixdlt.network;
 
+import com.radixdlt.common.Atom;
+import io.reactivex.rxjava3.core.Observable;
+
 /**
- * Async callbacks from mempool network messages
- * TODO: change to an rx interface
+ * Observables from mempool network messages
  */
 public interface MempoolNetworkRx {
 
 	/**
-	 * Callback when mempool submission is received from remote node.
+	 * Returns the stream of mempool atoms as they are received from the
+	 * network.
+	 *
+	 * @return hot observable of atom messages
 	 */
-	void addMempoolSubmissionCallback(MempoolSubmissionCallback callback);
+	Observable<Atom> atomMessages();
 }

@@ -21,11 +21,6 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
-import com.radixdlt.consensus.DumbNetwork;
-import com.radixdlt.consensus.DumbValidatorSet;
-import com.radixdlt.consensus.NetworkRx;
-import com.radixdlt.consensus.NetworkSender;
-import com.radixdlt.consensus.ValidatorSet;
 import com.radixdlt.consensus.liveness.DumbProposerElection;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.PacemakerImpl;
@@ -46,12 +41,6 @@ public class CerberusModule extends AbstractModule {
 
 		bind(PacemakerRx.class).to(PacemakerImpl.class);
 		bind(Pacemaker.class).to(PacemakerImpl.class);
-
-		bind(DumbNetwork.class).in(Scopes.SINGLETON);
-		bind(NetworkRx.class).to(DumbNetwork.class);
-		bind(NetworkSender.class).to(DumbNetwork.class);
-
-		bind(ValidatorSet.class).to(DumbValidatorSet.class).in(Scopes.SINGLETON);
 
 		bind(SafetyRules.class).in(Scopes.SINGLETON);
 	}

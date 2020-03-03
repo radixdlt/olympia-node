@@ -15,53 +15,36 @@
  * language governing permissions and limitations under the License.
  */
 
-package org.radix.network.messages;
+package com.radixdlt.consensus.messages;
 
-import java.security.SecureRandom;
+import java.util.Objects;
 
 import org.radix.network.messaging.Message;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.consensus.Vote;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-
-@SerializerId2("network.message.test")
-public final class TestMessage extends Message {
-	@JsonProperty("nonce")
+@SerializerId2("message.consensus.vote")
+public class VoteMessage extends Message {
+	@JsonProperty("vote")
 	@DsonOutput(Output.ALL)
-	public long testnonce;
+	private final Vote vote;
 
-	@JsonProperty("junk")
-	@DsonOutput(Output.ALL)
-	public byte[] junk;
-
-	TestMessage() {
-		// for serializer
-		this(0);
+	VoteMessage() {
+		// Serializer only
+		super(0);
+		this.vote = null;
 	}
 
-	public TestMessage(int magic) {
+	public VoteMessage(int magic, Vote vote) {
 		super(magic);
-		testnonce = new SecureRandom().nextLong();
-		junk = new byte[1000];
+		this.vote = Objects.requireNonNull(vote);
 	}
 
-	public TestMessage(final int size, int magic) {
-		super(magic);
-		testnonce = new SecureRandom().nextLong();
-		junk = new byte[size];
-	}
-
-	public long getTestNonce() {
-		return testnonce;
-	}
-
-	public void setTestNonce(long testnonce) {
-		this.testnonce = testnonce;
-	}
-
-	public byte[] getJunk() {
-		return junk;
+	public Vote vote() {
+		return this.vote;
 	}
 }

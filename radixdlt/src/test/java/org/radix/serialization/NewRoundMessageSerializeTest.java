@@ -15,27 +15,19 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package org.radix.serialization;
 
-import java.util.Collection;
-import java.util.Set;
+import com.radixdlt.consensus.NewRound;
+import com.radixdlt.consensus.Round;
+import com.radixdlt.consensus.messages.NewRoundMessage;
 
-/**
- * Interface for querying/updating validators.
- */
-public interface ValidatorSet {
+public class NewRoundMessageSerializeTest extends SerializeMessageObject<NewRoundMessage> {
+	public NewRoundMessageSerializeTest() {
+		super(NewRoundMessage.class, NewRoundMessageSerializeTest::get);
+	}
 
-	/**
-	 * Replace current validators with a new set.
-	 *
-	 * @param validators the new validator set
-	 */
-	void replaceAll(Collection<Validator> validators);
-
-	/**
-	 * Retrieve a snapshot of the current validator set.
-	 *
-	 * @return the current validator set
-	 */
-	Set<Validator> validators();
+	private static NewRoundMessage get() {
+		NewRound testRound = new NewRound(Round.of(1234567890L));
+		return new NewRoundMessage(1234, testRound);
+	}
 }

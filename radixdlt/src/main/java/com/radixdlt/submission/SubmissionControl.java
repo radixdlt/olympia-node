@@ -39,7 +39,7 @@ public interface SubmissionControl {
 	 * @throws MempoolFullException if the underlying mempool is too full to accept new submissions
 	 * @throws MempoolDuplicateException if the underlying mempool already has the specified atom
 	 */
-	public void submitAtom(Atom atom) throws MempoolFullException, MempoolDuplicateException;
+	void submitAtom(Atom atom) throws MempoolFullException, MempoolDuplicateException;
 
 	/**
 	 * Handle atom submission from API or network as an {@link JSONObject}.
@@ -50,6 +50,11 @@ public interface SubmissionControl {
 	 * @throws MempoolFullException if the underlying mempool is too full to accept new submissions
 	 * @throws MempoolDuplicateException if the underlying mempool already has the specified atom
 	 */
-	public AID submitAtom(JSONObject atomJson, Consumer<Atom> deserialisationCallback)
+	AID submitAtom(JSONObject atomJson, Consumer<Atom> deserialisationCallback)
 		throws MempoolFullException, MempoolDuplicateException;
+
+	/**
+	 * Stops processing incoming messages.
+	 */
+	void stop();
 }

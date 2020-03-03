@@ -15,14 +15,18 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.network;
+
+import com.radixdlt.consensus.NewRound;
+import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.Vote;
 
 import io.reactivex.rxjava3.core.Observable;
 
 /**
  * Network accessor for the EventCoordinator
  */
-public interface NetworkRx {
+public interface EventCoordinatorNetworkRx {
 
 	/**
 	 * Accessor to the stream of proposal messages as they are received from the
@@ -46,5 +50,5 @@ public interface NetworkRx {
 	 *
 	 * @return hot observable of votes messages
 	 */
-	Observable<VoteMessage> voteMessages();
+	Observable<Vote> voteMessages();
 }

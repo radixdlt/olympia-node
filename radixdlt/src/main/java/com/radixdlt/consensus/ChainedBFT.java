@@ -20,6 +20,8 @@ package com.radixdlt.consensus;
 import com.google.inject.Inject;
 
 import com.radixdlt.consensus.liveness.PacemakerRx;
+import com.radixdlt.network.EventCoordinatorNetworkRx;
+
 import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.disposables.Disposable;
@@ -30,7 +32,7 @@ import java.util.Objects;
  * A three-chain BFT
  */
 public final class ChainedBFT {
-	private final NetworkRx network;
+	private final EventCoordinatorNetworkRx network;
 	private final PacemakerRx pacemaker;
 	private final EventCoordinator eventCoordinator;
 	private final Scheduler singleThreadScheduler = Schedulers.single();
@@ -39,7 +41,7 @@ public final class ChainedBFT {
 	@Inject
 	public ChainedBFT(
 		EventCoordinator eventCoordinator,
-		NetworkRx network,
+		EventCoordinatorNetworkRx network,
 		PacemakerRx pacemaker
 	) {
 		Objects.requireNonNull(pacemaker);

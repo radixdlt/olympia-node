@@ -29,7 +29,7 @@ import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Round;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
-import com.radixdlt.consensus.VoteMessage;
+import com.radixdlt.consensus.Vote;
 import com.radixdlt.utils.Ints;
 import org.junit.Test;
 
@@ -204,13 +204,13 @@ public class SafetyRulesTest {
 
 	private static Vertex makeGenesisVertex() {
 		VertexMetadata genesisMetadata = new VertexMetadata(GENESIS_ROUND, GENESIS_ID, GENESIS_ROUND, GENESIS_ID);
-		QuorumCertificate genesisQC = new QuorumCertificate(new VoteMessage(SELF, genesisMetadata), genesisMetadata);
+		QuorumCertificate genesisQC = new QuorumCertificate(new Vote(SELF, genesisMetadata), genesisMetadata);
 		return makeVertex(genesisQC, GENESIS_ROUND, GENESIS_ID);
 	}
 
 	private static Vertex makeVertex(Vertex parent, Round round, AID id) {
 		VertexMetadata parentMetadata = new VertexMetadata(parent.getRound(), parent.getAID(), parent.getQC().getRound(), parent.getQC().getVertexMetadata().getAID());
-		QuorumCertificate qc = new QuorumCertificate(new VoteMessage(SELF, parentMetadata), parentMetadata);
+		QuorumCertificate qc = new QuorumCertificate(new Vote(SELF, parentMetadata), parentMetadata);
 		return makeVertex(qc, round, id);
 	}
 

@@ -15,13 +15,18 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package org.radix.serialization;
 
-/**
- * Interface for Event Coordinator to send things through a network
- */
-public interface NetworkSender {
-	void broadcastProposal(Vertex vertex);
-	void sendNewRound(NewRound newRound);
-	void sendVote(VoteMessage vote);
+import com.radixdlt.common.Atom;
+import com.radixdlt.mempool.messages.MempoolAtomAddedMessage;
+
+public class MempoolAtomAddedMessageSerializeTest extends SerializeMessageObject<MempoolAtomAddedMessage> {
+	public MempoolAtomAddedMessageSerializeTest() {
+		super(MempoolAtomAddedMessage.class, MempoolAtomAddedMessageSerializeTest::get);
+	}
+
+	private static MempoolAtomAddedMessage get() {
+		Atom atom = new Atom();
+		return new MempoolAtomAddedMessage(1, atom);
+	}
 }

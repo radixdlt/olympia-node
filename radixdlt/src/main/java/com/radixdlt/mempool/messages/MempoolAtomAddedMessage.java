@@ -15,53 +15,42 @@
  * language governing permissions and limitations under the License.
  */
 
-package org.radix.network.messages;
+package com.radixdlt.mempool.messages;
 
-import java.security.SecureRandom;
+import java.util.Objects;
 
 import org.radix.network.messaging.Message;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.common.Atom;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-
-@SerializerId2("network.message.test")
-public final class TestMessage extends Message {
-	@JsonProperty("nonce")
+@SerializerId2("message.mempool.atomadded")
+public class MempoolAtomAddedMessage extends Message {
+	@JsonProperty("atom")
 	@DsonOutput(Output.ALL)
-	public long testnonce;
+	private final Atom atom;
 
-	@JsonProperty("junk")
-	@DsonOutput(Output.ALL)
-	public byte[] junk;
-
-	TestMessage() {
-		// for serializer
-		this(0);
+	MempoolAtomAddedMessage() {
+		// Serializer only
+		super(0);
+		this.atom = null;
 	}
 
-	public TestMessage(int magic) {
+	public MempoolAtomAddedMessage(int magic, Atom vertex) {
 		super(magic);
-		testnonce = new SecureRandom().nextLong();
-		junk = new byte[1000];
+		this.atom = Objects.requireNonNull(vertex);
 	}
 
-	public TestMessage(final int size, int magic) {
-		super(magic);
-		testnonce = new SecureRandom().nextLong();
-		junk = new byte[size];
+	public Atom atom() {
+		return this.atom;
 	}
 
-	public long getTestNonce() {
-		return testnonce;
-	}
-
-	public void setTestNonce(long testnonce) {
-		this.testnonce = testnonce;
-	}
-
-	public byte[] getJunk() {
-		return junk;
+	@Override
+	public String toString() {
+		String aidString = this.atom == null ? "null" : this.atom.getAID().toString();
+		return String.format("%s[%s]", getClass().getSimpleName(), aidString);
 	}
 }

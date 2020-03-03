@@ -26,6 +26,10 @@ public final class Round implements Comparable<Round> {
 		return new Round(round + 1);
 	}
 
+	public long number() {
+		return this.round;
+	}
+
 	@Override
 	public int compareTo(Round otherRound) {
 		return Long.compare(this.round, otherRound.round);

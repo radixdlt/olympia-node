@@ -18,7 +18,7 @@
 package com.radixdlt.consensus.safety;
 
 import com.radixdlt.common.AID;
-import com.radixdlt.consensus.VoteMessage;
+import com.radixdlt.consensus.Vote;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -27,10 +27,10 @@ import java.util.Optional;
  * The result of a successful vote by {@link SafetyRules}.
  */
 public final class VoteResult {
-	private final VoteMessage vote;
+	private final Vote vote;
 	private final AID committedAtom; // may be null
 
-	public VoteResult(VoteMessage vote, AID committedAtom) {
+	public VoteResult(Vote vote, AID committedAtom) {
 		this.vote = Objects.requireNonNull(vote);
 		this.committedAtom = committedAtom; // may be null
 	}
@@ -53,7 +53,7 @@ public final class VoteResult {
 		return Objects.hash(vote, committedAtom);
 	}
 
-	public VoteMessage getVote() {
+	public Vote getVote() {
 		return vote;
 	}
 

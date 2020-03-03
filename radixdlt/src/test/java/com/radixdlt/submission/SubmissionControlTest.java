@@ -18,10 +18,11 @@
 package com.radixdlt.submission;
 
 import java.util.Optional;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
-
 import org.json.JSONObject;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentMatchers;
@@ -31,6 +32,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
+
 import com.radixdlt.common.AID;
 import com.radixdlt.common.Atom;
 import com.radixdlt.constraintmachine.CMError;
@@ -40,8 +42,9 @@ import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.network.MempoolNetworkRx;
-import com.radixdlt.network.MempoolSubmissionCallback;
 import com.radixdlt.serialization.Serialization;
+
+import io.reactivex.rxjava3.subjects.PublishSubject;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
@@ -54,7 +57,7 @@ public class SubmissionControlTest {
 	private Serialization serialization;
 	private Events events;
 	private MempoolNetworkRx mempoolNetworkRx;
-	private AtomicReference<MempoolSubmissionCallback> rxCallback = new AtomicReference<>();
+	private PublishSubject<Atom> atomPublishSubject = PublishSubject.create();
 
 	private SubmissionControl submissionControl;
 
@@ -67,10 +70,7 @@ public class SubmissionControlTest {
 		this.events = mock(Events.class);
 		this.mempoolNetworkRx = mock(MempoolNetworkRx.class);
 
-		doAnswer(args -> {
-			rxCallback.set(args.getArgument(0));
-			return null;
-		}).when(this.mempoolNetworkRx).addMempoolSubmissionCallback(any());
+		doReturn(atomPublishSubject).when(this.mempoolNetworkRx).atomMessages();
 
 		// test module to hook up dependencies
 		Module testModule = new AbstractModule() {
@@ -87,6 +87,11 @@ public class SubmissionControlTest {
 		Injector injector = Guice.createInjector(testModule, new SubmissionControlModule());
 
 		this.submissionControl = injector.getInstance(SubmissionControl.class);
+	}
+
+	@After
+	public void tearDown() {
+		this.submissionControl.stop();
 	}
 
 	@Test
@@ -154,25 +159,30 @@ public class SubmissionControlTest {
 
 	@Test
 	public void when_receiving_atom__then_atom_is_submitted()
-		throws MempoolFullException, MempoolDuplicateException {
-		assertNotNull(rxCallback.get());
+		throws MempoolFullException, MempoolDuplicateException, InterruptedException {
 		Atom atomMock = mock(Atom.class);
 		when(atomMock.getAID()).thenReturn(AID.ZERO);
-
-		rxCallback.get().accept(atomMock);
-		verify(this.mempool, times(1)).addAtom(any());
+		Semaphore completed = new Semaphore(0);
+		doAnswer(inv -> {
+			completed.release();
+			return null;
+		}).when(this.mempool).addAtom(any());
+		this.atomPublishSubject.onNext(atomMock);
+		assertTrue(completed.tryAcquire(10, TimeUnit.SECONDS));
 	}
 
 	@Test
 	public void when_receiving_duplicate_atom__handled_correctly()
-		throws MempoolFullException, MempoolDuplicateException {
-		assertNotNull(rxCallback.get());
+		throws MempoolFullException, MempoolDuplicateException, InterruptedException {
 		Atom atomMock = mock(Atom.class);
 		when(atomMock.getAID()).thenReturn(AID.ZERO);
-		doThrow(new MempoolDuplicateException(atomMock, "fake duplicate")).when(this.mempool).addAtom(any());
-
-		rxCallback.get().accept(atomMock);
-		verify(this.mempool, times(1)).addAtom(any());
+		Semaphore completed = new Semaphore(0);
+		doAnswer(inv -> {
+			completed.release();
+			throw new MempoolDuplicateException(atomMock, "fake duplicate");
+		}).when(this.mempool).addAtom(any());
+		this.atomPublishSubject.onNext(atomMock);
+		assertTrue(completed.tryAcquire(10, TimeUnit.SECONDS));
 	}
 
 	@Test
