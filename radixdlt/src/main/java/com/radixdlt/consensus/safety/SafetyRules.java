@@ -35,7 +35,8 @@ import java.util.Objects;
  */
 public final class SafetyRules {
 	private final EUID self;
-	@VisibleForTesting final SafetyState state;
+
+	private final SafetyState state;
 
 	@Inject
 	public SafetyRules(@Named("self") EUID self, SafetyState initialState) {
@@ -92,5 +93,9 @@ public final class SafetyRules {
 		AID committedAtom = getCommittedAtom(proposedVertex);
 
 		return new VoteResult(vote, committedAtom);
+	}
+
+	@VisibleForTesting SafetyState getState() {
+		return state;
 	}
 }

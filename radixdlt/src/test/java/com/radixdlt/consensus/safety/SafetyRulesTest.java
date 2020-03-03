@@ -60,8 +60,8 @@ public class SafetyRulesTest {
 		 */
 
 		SafetyRules safetyRules = createDefaultSafetyRules();
-		assertThat(safetyRules.state.lastVotedRound).isEqualByComparingTo(Round.of(0L));
-		assertThat(safetyRules.state.lockedRound).isEqualByComparingTo(Round.of(0L));
+		assertThat(safetyRules.getState().lastVotedRound).isEqualByComparingTo(Round.of(0L));
+		assertThat(safetyRules.getState().lockedRound).isEqualByComparingTo(Round.of(0L));
 
 		AID a1Id = makeAID(11);
 		AID a2Id = makeAID(12);
@@ -81,21 +81,21 @@ public class SafetyRulesTest {
 		Vertex b4 = makeVertex(b2, Round.of(8), b4Id);
 
 		safetyRules.process(a1.getQC());
-		assertThat(safetyRules.state.lockedRound).isEqualByComparingTo(GENESIS_ROUND);
+		assertThat(safetyRules.getState().lockedRound).isEqualByComparingTo(GENESIS_ROUND);
 		safetyRules.process(b1.getQC());
-		assertThat(safetyRules.state.lockedRound).isEqualByComparingTo(GENESIS_ROUND);
+		assertThat(safetyRules.getState().lockedRound).isEqualByComparingTo(GENESIS_ROUND);
 		safetyRules.process(b2.getQC());
-		assertThat(safetyRules.state.lockedRound).isEqualByComparingTo(GENESIS_ROUND);
+		assertThat(safetyRules.getState().lockedRound).isEqualByComparingTo(GENESIS_ROUND);
 		safetyRules.process(a2.getQC());
-		assertThat(safetyRules.state.lockedRound).isEqualByComparingTo(GENESIS_ROUND);
+		assertThat(safetyRules.getState().lockedRound).isEqualByComparingTo(GENESIS_ROUND);
 		safetyRules.process(a3.getQC());
-		assertThat(safetyRules.state.lockedRound).isEqualByComparingTo(b1.getRound());
+		assertThat(safetyRules.getState().lockedRound).isEqualByComparingTo(b1.getRound());
 		safetyRules.process(b3.getQC());
-		assertThat(safetyRules.state.lockedRound).isEqualByComparingTo(b1.getRound());
+		assertThat(safetyRules.getState().lockedRound).isEqualByComparingTo(b1.getRound());
 		safetyRules.process(a4.getQC());
-		assertThat(safetyRules.state.lockedRound).isEqualByComparingTo(a2.getRound());
+		assertThat(safetyRules.getState().lockedRound).isEqualByComparingTo(a2.getRound());
 		safetyRules.process(b4.getQC());
-		assertThat(safetyRules.state.lockedRound).isEqualByComparingTo(a2.getRound());
+		assertThat(safetyRules.getState().lockedRound).isEqualByComparingTo(a2.getRound());
 	}
 
 	@Test
@@ -106,8 +106,8 @@ public class SafetyRulesTest {
 		 */
 
 		SafetyRules safetyRules = createDefaultSafetyRules();
-		assertThat(safetyRules.state.lastVotedRound).isEqualByComparingTo(Round.of(0L));
-		assertThat(safetyRules.state.lockedRound).isEqualByComparingTo(Round.of(0L));
+		assertThat(safetyRules.getState().lastVotedRound).isEqualByComparingTo(Round.of(0L));
+		assertThat(safetyRules.getState().lockedRound).isEqualByComparingTo(Round.of(0L));
 
 		AID a1Id = makeAID(11);
 		AID a2Id = makeAID(12);
@@ -172,8 +172,8 @@ public class SafetyRulesTest {
 		 */
 
 		SafetyRules safetyRules = createDefaultSafetyRules();
-		assertThat(safetyRules.state.lastVotedRound).isEqualByComparingTo(Round.of(0L));
-		assertThat(safetyRules.state.lockedRound).isEqualByComparingTo(Round.of(0L));
+		assertThat(safetyRules.getState().lastVotedRound).isEqualByComparingTo(Round.of(0L));
+		assertThat(safetyRules.getState().lockedRound).isEqualByComparingTo(Round.of(0L));
 
 		AID a1Id = makeAID(11);
 		AID a2Id = makeAID(12);
