@@ -93,7 +93,7 @@ public final class EventCoordinator {
 	public void processVote(VoteMessage vote) {
 		// only do something if we're actually the leader for the next round
 		if (!proposerElection.isValidProposer(self, vote.getVertexMetadata().getRound().next())) {
-			log.warn(String.format("Got confused vote %s for %s", vote.hashCode(), vote.getVertexMetadata().getRound()));
+			log.warn(String.format("Ignoring confused vote %s for %s", vote.hashCode(), vote.getVertexMetadata().getRound()));
 			return;
 		}
 
