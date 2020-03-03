@@ -63,7 +63,10 @@ public class LedgerEngineStore implements EngineStore {
     }
 
     private Optional<Atom> getAtomByParticle(Particle particle, boolean isInput) {
-        final byte[] indexableBytes = EngineAtomIndices.toByteArray(isInput ? EngineAtomIndices.IndexType.PARTICLE_DOWN : EngineAtomIndices.IndexType.PARTICLE_UP, particle.getHID());
+        final byte[] indexableBytes = EngineAtomIndices.toByteArray(
+        	isInput ? EngineAtomIndices.IndexType.PARTICLE_DOWN : EngineAtomIndices.IndexType.PARTICLE_UP,
+        	particle.getHID()
+        );
         SearchCursor cursor = store.search(StoreIndex.LedgerIndexType.UNIQUE, new StoreIndex(indexableBytes), LedgerSearchMode.EXACT);
         if (cursor != null) {
             return store.get(cursor.get()).flatMap(ledgerEntry ->  Optional.of(atomToBinaryConverter.toAtom(ledgerEntry.getContent())));
@@ -75,8 +78,8 @@ public class LedgerEngineStore implements EngineStore {
 
     @Override
     public void storeAtom(Atom atom) {
-        byte binaryAtom[] = atomToBinaryConverter.toLedgerEntryContent(atom);
-        LedgerEntry ledgerEntry = new LedgerEntry(binaryAtom,atom.getAID());
+        byte[] binaryAtom = atomToBinaryConverter.toLedgerEntryContent(atom);
+        LedgerEntry ledgerEntry = new LedgerEntry(binaryAtom, atom.getAID());
         EngineAtomIndices engineAtomIndices = EngineAtomIndices.from(atom, serialization);
         store.store(ledgerEntry, engineAtomIndices.getUniqueIndices(), engineAtomIndices.getDuplicateIndices());
     }

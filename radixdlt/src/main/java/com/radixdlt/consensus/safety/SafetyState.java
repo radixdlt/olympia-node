@@ -34,24 +34,24 @@ final class SafetyState {
 		this(Round.of(0L), Round.of(0L));
 	}
 
-	public SafetyState(Round lastVotedRound, Round lockedRound) {
+	SafetyState(Round lastVotedRound, Round lockedRound) {
 		this.lastVotedRound = lastVotedRound;
 		this.lockedRound = lockedRound;
 	}
 
-	public SafetyState(SafetyState other) {
+	SafetyState(SafetyState other) {
 		this(other.lastVotedRound, other.lockedRound);
 	}
 
-	public SafetyState withLastVotedRound(Round lastVotedRound) {
+	SafetyState withLastVotedRound(Round lastVotedRound) {
 		return new SafetyState(lastVotedRound, this.lockedRound);
 	}
 
-	public SafetyState withLockedRound(Round lockedRound) {
+	SafetyState withLockedRound(Round lockedRound) {
 		return new SafetyState(this.lastVotedRound, lockedRound);
 	}
 
-	public static SafetyState initialState() {
+	static SafetyState initialState() {
 		return new SafetyState(Round.of(0L), Round.of(0L));
 	}
 
@@ -64,8 +64,8 @@ final class SafetyState {
 			return false;
 		}
 		SafetyState that = (SafetyState) o;
-		return Objects.equals(lastVotedRound, that.lastVotedRound) &&
-			Objects.equals(lockedRound, that.lockedRound);
+		return Objects.equals(lastVotedRound, that.lastVotedRound)
+			&& Objects.equals(lockedRound, that.lockedRound);
 	}
 
 	@Override
@@ -75,9 +75,6 @@ final class SafetyState {
 
 	@Override
 	public String toString() {
-		return "SafetyState{" +
-			"lastVotedRound=" + lastVotedRound +
-			", lockedRound=" + lockedRound +
-			'}';
+		return "SafetyState{" + "lastVotedRound=" + lastVotedRound + ", lockedRound=" + lockedRound + '}';
 	}
 }
