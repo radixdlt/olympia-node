@@ -28,7 +28,6 @@ import com.radixdlt.engine.RadixEngineAtom;
 import com.radixdlt.middleware.RadixEngineUtils;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.SpinStateMachine;
-import com.radixdlt.utils.Pair;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;

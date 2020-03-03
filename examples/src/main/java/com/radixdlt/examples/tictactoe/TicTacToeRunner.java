@@ -17,6 +17,7 @@
 
 package com.radixdlt.examples.tictactoe;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.RadixAddress;
@@ -57,7 +58,8 @@ public class TicTacToeRunner {
 		);
 	}
 
-	private static XToMoveParticle buildInitialBoard(ECKeyPair xPlayer, ECKeyPair oPlayer) {
+	@VisibleForTesting
+	static XToMoveParticle buildInitialBoard(ECKeyPair xPlayer, ECKeyPair oPlayer) {
 		return new XToMoveParticle(
 			new RadixAddress((byte) 0, xPlayer.getPublicKey()),
 			new RadixAddress((byte) 0, oPlayer.getPublicKey()),
@@ -133,7 +135,8 @@ public class TicTacToeRunner {
 	/**
 	 * Builds an atom based on the transition from one board to another.
 	 */
-	private static Atom buildAtom(
+	@VisibleForTesting
+	static Atom buildAtom(
 		TicTacToeBaseParticle prevBoard,
 		TicTacToeBaseParticle nextBoard,
 		ECKeyPair player
