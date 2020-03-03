@@ -27,19 +27,19 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
 
-@SerializerId2("message.mempool.atom")
-public class MempoolAtomMessage extends Message {
+@SerializerId2("message.mempool.atomadded")
+public class MempoolAtomAddedMessage extends Message {
 	@JsonProperty("atom")
 	@DsonOutput(Output.ALL)
 	private final Atom atom;
 
-	MempoolAtomMessage() {
+	MempoolAtomAddedMessage() {
 		// Serializer only
 		super(0);
 		this.atom = null;
 	}
 
-	public MempoolAtomMessage(int magic, Atom vertex) {
+	public MempoolAtomAddedMessage(int magic, Atom vertex) {
 		super(magic);
 		this.atom = Objects.requireNonNull(vertex);
 	}

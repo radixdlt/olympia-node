@@ -18,15 +18,15 @@
 package org.radix.serialization;
 
 import com.radixdlt.common.Atom;
-import com.radixdlt.mempool.messages.MempoolAtomMessage;
+import com.radixdlt.mempool.messages.MempoolAtomAddedMessage;
 
-public class MempoolAtomMessageSerializeTest extends SerializeMessageObject<MempoolAtomMessage> {
-	public MempoolAtomMessageSerializeTest() {
-		super(MempoolAtomMessage.class, MempoolAtomMessageSerializeTest::get);
+public class MempoolAtomAddedMessageSerializeTest extends SerializeMessageObject<MempoolAtomAddedMessage> {
+	public MempoolAtomAddedMessageSerializeTest() {
+		super(MempoolAtomAddedMessage.class, MempoolAtomAddedMessageSerializeTest::get);
 	}
 
-	private static MempoolAtomMessage get() {
+	private static MempoolAtomAddedMessage get() {
 		Atom atom = new Atom();
-		return new MempoolAtomMessage(1, atom);
+		return new MempoolAtomAddedMessage(1, atom);
 	}
 }

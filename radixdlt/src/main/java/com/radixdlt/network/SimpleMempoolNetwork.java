@@ -29,7 +29,7 @@ import org.radix.universe.system.LocalSystem;
 
 import com.radixdlt.common.Atom;
 import com.radixdlt.common.EUID;
-import com.radixdlt.mempool.messages.MempoolAtomMessage;
+import com.radixdlt.mempool.messages.MempoolAtomAddedMessage;
 import com.radixdlt.universe.Universe;
 
 import io.reactivex.rxjava3.core.Observable;
@@ -61,13 +61,13 @@ public class SimpleMempoolNetwork implements MempoolNetworkRx, MempoolNetworkTx 
 		this.atoms = PublishSubject.create();
 
 		// TODO: Should be handled in start()/stop() once we have lifetimes sorted out
-		this.messageCentral.addListener(MempoolAtomMessage.class, this::handleMempoolAtomMessage);
+		this.messageCentral.addListener(MempoolAtomAddedMessage.class, this::handleMempoolAtomMessage);
 	}
 
 
 	@Override
 	public void sendMempoolSubmission(Atom atom) {
-		MempoolAtomMessage message = new MempoolAtomMessage(this.magic, atom);
+		MempoolAtomAddedMessage message = new MempoolAtomAddedMessage(this.magic, atom);
 		final EUID self = this.localPeer.getNID();
 		this.addressBook.peers()
 			.filter(Peer::hasSystem) // Only peers with systems (and therefore transports)
@@ -80,7 +80,7 @@ public class SimpleMempoolNetwork implements MempoolNetworkRx, MempoolNetworkTx 
 		return this.atoms;
 	}
 
-	private void handleMempoolAtomMessage(Peer source, MempoolAtomMessage message) {
+	private void handleMempoolAtomMessage(Peer source, MempoolAtomAddedMessage message) {
 		this.atoms.onNext(message.atom());
 	}
 }

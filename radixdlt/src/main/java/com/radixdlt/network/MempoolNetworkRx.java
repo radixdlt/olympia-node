@@ -26,7 +26,7 @@ import io.reactivex.rxjava3.core.Observable;
 public interface MempoolNetworkRx {
 
 	/**
-	 * Returns the stream of mempool atomsas they are received from the
+	 * Returns the stream of mempool atoms as they are received from the
 	 * network.
 	 *
 	 * @return hot observable of atom messages
