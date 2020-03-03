@@ -46,5 +46,5 @@ public interface NetworkRx {
 	 *
 	 * @return hot observable of votes messages
 	 */
-	Observable<Vote> voteMessages();
+	Observable<VoteMessage> voteMessages();
 }

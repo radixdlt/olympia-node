@@ -15,23 +15,14 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.tempo;
+package com.radixdlt.consensus.safety;
 
-import com.radixdlt.consensus.ConsensusException;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Test;
 
-/**
- * A Tempo exception
- */
-public class TempoException extends ConsensusException {
-	public TempoException(String message) {
-		super(message);
-	}
-
-	public TempoException(String message, Throwable cause) {
-		super(message, cause);
-	}
-
-	public TempoException(Throwable cause) {
-		super(cause);
+public class SafetyStateTest {
+	@Test
+	public void equalsContract() {
+		EqualsVerifier.forClass(SafetyState.class).verify();
 	}
 }

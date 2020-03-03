@@ -15,21 +15,19 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.exceptions;
+package com.radixdlt.consensus.liveness;
+
+import com.radixdlt.consensus.NewRound;
+import com.radixdlt.consensus.Round;
+
+import java.util.Optional;
 
 /**
- * Generic runtime exception in a {@link Consensus}
+ * Interface for an event coordinator to manage the pacemaker
  */
-public class ConsensusException extends RuntimeException {
-	public ConsensusException(String message) {
-		super(message);
-	}
-
-	public ConsensusException(String message, Throwable cause) {
-		super(message, cause);
-	}
-
-	public ConsensusException(Throwable cause) {
-		super(cause);
-	}
+public interface Pacemaker {
+	Round getCurrentRound();
+	boolean processLocalTimeout(Round round);
+	Optional<Round> processRemoteNewRound(NewRound newRound);
+	Optional<Round> processQC(Round round);
 }

@@ -23,15 +23,15 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.DumbNetwork;
 import com.radixdlt.consensus.DumbValidatorSet;
-import com.radixdlt.consensus.DumbProposerElection;
 import com.radixdlt.consensus.NetworkRx;
 import com.radixdlt.consensus.NetworkSender;
-import com.radixdlt.consensus.Pacemaker;
-import com.radixdlt.consensus.PacemakerImpl;
-import com.radixdlt.consensus.PacemakerRx;
 import com.radixdlt.consensus.ValidatorSet;
-import com.radixdlt.consensus.ProposerElection;
-import com.radixdlt.consensus.SafetyRules;
+import com.radixdlt.consensus.liveness.DumbProposerElection;
+import com.radixdlt.consensus.liveness.Pacemaker;
+import com.radixdlt.consensus.liveness.PacemakerImpl;
+import com.radixdlt.consensus.liveness.PacemakerRx;
+import com.radixdlt.consensus.liveness.ProposerElection;
+import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.tempo.Scheduler;
 import com.radixdlt.consensus.tempo.SingleThreadedScheduler;
 import java.util.concurrent.Executors;
@@ -55,7 +55,6 @@ public class CerberusModule extends AbstractModule {
 
 		bind(SafetyRules.class).in(Scopes.SINGLETON);
 	}
-
 
 	@Provides
 	@Singleton

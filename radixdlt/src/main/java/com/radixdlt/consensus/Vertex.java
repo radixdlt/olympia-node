@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.common.AID;
 import com.radixdlt.common.Atom;
 import java.util.Objects;
 
@@ -30,16 +31,20 @@ public final class Vertex {
 
 	public Vertex(QuorumCertificate qc, Round round, Atom atom) {
 		this.qc = qc;
-		this.atom = atom;
 		this.round = Objects.requireNonNull(round);
+		this.atom = atom;
 	}
 
-	public QuorumCertificate getQc() {
+	public QuorumCertificate getQC() {
 		return qc;
 	}
 
 	public Round getRound() {
 		return round;
+	}
+
+	public AID getAID() {
+		return atom.getAID();
 	}
 
 	public Atom getAtom() {

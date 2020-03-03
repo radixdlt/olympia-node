@@ -17,12 +17,34 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.common.EUID;
+import com.radixdlt.common.AID;
 
-public class DumbProposerElection implements ProposerElection {
-	@Override
-	public boolean isValidProposer(EUID nid, Round round) {
-		// will accept anything
-		return true;
+public class VertexMetadata {
+	private final Round round;
+	private final AID aid;
+	private final Round parentRound;
+	private final AID parentAid;
+
+	public VertexMetadata(Round round, AID aid, Round parentRound, AID parentAid) {
+		this.round = round;
+		this.aid = aid;
+		this.parentRound = parentRound;
+		this.parentAid = parentAid;
+	}
+
+	public Round getRound() {
+		return round;
+	}
+
+	public Round getParentRound() {
+		return parentRound;
+	}
+
+	public AID getAID() {
+		return aid;
+	}
+
+	public AID getParentAID() {
+		return parentAid;
 	}
 }

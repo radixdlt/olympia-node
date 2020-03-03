@@ -15,7 +15,14 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.consensus.liveness;
+
+import com.radixdlt.consensus.Round;
+import io.reactivex.rxjava3.observers.TestObserver;
+import org.junit.Test;
+
+import java.util.Optional;
+import java.util.concurrent.ScheduledExecutorService;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -24,13 +31,6 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-
-import io.reactivex.rxjava3.observers.TestObserver;
-
-import java.util.Optional;
-import java.util.concurrent.ScheduledExecutorService;
-
-import org.junit.Test;
 
 public class PacemakerImplTest {
 	private static ScheduledExecutorService getMockedExecutorService() {

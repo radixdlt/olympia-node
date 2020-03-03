@@ -22,8 +22,6 @@ import io.reactivex.rxjava3.subjects.PublishSubject;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
 
 /**
  * Overly simplistic network implementation that just sends messages to itself.
@@ -32,7 +30,7 @@ public class DumbNetwork implements NetworkSender, NetworkRx {
 	public static final int LOOPBACK_DELAY = 100;
 	private final PublishSubject<Vertex> proposals;
 	private final PublishSubject<NewRound> newRounds;
-	private final PublishSubject<Vote> votes;
+	private final PublishSubject<VoteMessage> votes;
 	private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 
 	public DumbNetwork() {
@@ -56,7 +54,7 @@ public class DumbNetwork implements NetworkSender, NetworkRx {
 	}
 
 	@Override
-	public void sendVote(Vote vote) {
+	public void sendVote(VoteMessage vote) {
 		executorService.schedule(() -> {
 			this.votes.onNext(vote);
 		}, LOOPBACK_DELAY, TimeUnit.MILLISECONDS);
@@ -73,7 +71,7 @@ public class DumbNetwork implements NetworkSender, NetworkRx {
 	}
 
 	@Override
-	public Observable<Vote> voteMessages() {
+	public Observable<VoteMessage> voteMessages() {
 		return votes;
 	}
 }

@@ -20,14 +20,24 @@ package com.radixdlt.consensus;
 import java.util.Objects;
 
 public final class QuorumCertificate {
-	private final Vote vote;
+	private final VoteMessage vote;
+	private final VertexMetadata vertexMetadata;
 
-	public QuorumCertificate(Vote vote) {
+	public QuorumCertificate(VoteMessage vote, VertexMetadata vertexMetadata) {
 		this.vote = Objects.requireNonNull(vote);
+		this.vertexMetadata = Objects.requireNonNull(vertexMetadata);
 	}
 
 	public Round getRound() {
-		return vote.getRound();
+		return vertexMetadata.getRound();
+	}
+
+	public Round getParentRound() {
+		return vertexMetadata.getParentRound();
+	}
+
+	public VertexMetadata getVertexMetadata() {
+		return vertexMetadata;
 	}
 
 	@Override

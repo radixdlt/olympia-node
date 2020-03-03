@@ -17,12 +17,28 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.common.EUID;
+
+import java.util.Objects;
+
 /**
- * Manages safety of the protocol.
- * TODO: Add storage of private key of node here
+ * Represents a vote on a vertex
  */
-public final class SafetyRules {
-	public Vote vote(Vertex vertex) {
-		return new Vote(vertex.getRound(), vertex.hashCode());
+public final class VoteMessage {
+	private final EUID author;
+	private final VertexMetadata vertexMetadata;
+	// TODO add signature
+
+	public VoteMessage(EUID author, VertexMetadata vertexMetadata) {
+		this.author = Objects.requireNonNull(author);
+		this.vertexMetadata = Objects.requireNonNull(vertexMetadata);
+	}
+
+	public EUID getAuthor() {
+		return author;
+	}
+
+	public VertexMetadata getVertexMetadata() {
+		return vertexMetadata;
 	}
 }

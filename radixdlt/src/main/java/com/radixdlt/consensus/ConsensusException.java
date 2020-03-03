@@ -17,17 +17,19 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.common.EUID;
-
 /**
- * Represents the election for valid proposers
+ * Generic runtime exception in a {@link Consensus}
  */
-public interface ProposerElection {
-	/**
-	 * Check whether a node is a valid proposer in a certain round
-	 * @param nid The nid
-	 * @param round The round
-	 * @return Whether the node is a valid proposer
-	 */
-	boolean isValidProposer(EUID nid, Round round);
+public class ConsensusException extends RuntimeException {
+	public ConsensusException(String message) {
+		super(message);
+	}
+
+	public ConsensusException(String message, Throwable cause) {
+		super(message, cause);
+	}
+
+	public ConsensusException(Throwable cause) {
+		super(cause);
+	}
 }
