@@ -79,9 +79,9 @@ public class EUIDTest {
 
 	@Test
 	public void testGetValue() {
-		assertEquals(EUID.ZERO.getValue(), UInt128.ZERO);
-		assertEquals(EUID.ONE.getValue(), UInt128.ONE);
-		assertEquals(EUID.TWO.getValue(), UInt128.TWO);
+		assertEquals(UInt128.ZERO, EUID.ZERO.getValue());
+		assertEquals(UInt128.ONE, EUID.ONE.getValue());
+		assertEquals(UInt128.TWO, EUID.TWO.getValue());
 	}
 
 	@Test
