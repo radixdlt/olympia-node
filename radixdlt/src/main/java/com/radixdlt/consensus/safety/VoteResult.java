@@ -27,7 +27,7 @@ import java.util.Optional;
  * The result of a successful vote by {@link SafetyRules}.
  */
 public final class VoteResult {
-	private final VoteMessage vote;
+	private final Vote vote;
 	private final AID committedAtom; // may be null
 
 	public VoteResult(Vote vote, AID committedAtom) {
