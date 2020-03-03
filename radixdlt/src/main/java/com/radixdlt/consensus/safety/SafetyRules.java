@@ -35,7 +35,8 @@ import java.util.Objects;
  */
 public final class SafetyRules {
 	private final EUID self;
-	@VisibleForTesting final SafetyState state;
+
+	private SafetyState state;
 
 	@Inject
 	public SafetyRules(@Named("self") EUID self, SafetyState initialState) {
@@ -52,28 +53,36 @@ public final class SafetyRules {
 		return null;
 	}
 
+	/**
+	 * Process a quorum certificate
+	 * @param qc The quorum certificate
+	 */
 	public void process(QuorumCertificate qc) {
 		if (qc.getParentRound().compareTo(this.state.lockedRound) > 0) {
-			this.state.lockedRound = qc.getParentRound();
+			this.state = this.state.withLockedRound(qc.getParentRound());
 		}
 	}
 
-	public VoteResult vote(Vertex proposedVertex) throws SafetyViolationException {
+	/**
+	 * Vote for a proposed vertex while ensuring that safety invariants are upheld.
+	 * @param proposedVertex The proposed vertex
+	 * @return A vote result containing the vote and any committed vertices
+	 * @throws SafetyViolationException In case the vertex would violate a safety invariant
+	 */
+	public VoteResult voteFor(Vertex proposedVertex) throws SafetyViolationException {
 		// ensure vertex does not violate earlier rounds
-		if (proposedVertex.getRound().compareTo(this.state.lastVotedRound) < 0) {
-			throw new SafetyViolationException(String.format(
-				"Proposed vertex at %s would violate earlier vote at %s",
-				proposedVertex.getRound(), this.state.lastVotedRound));
+		if (proposedVertex.getRound().compareTo(this.state.lastVotedRound) <= 0) {
+			throw new SafetyViolationException(proposedVertex, this.state, String.format(
+				"violates earlier vote at %s", this.state.lastVotedRound));
 		}
 
-		// ensure vertex respects preference
+		// ensure vertex respects locked QC
 		if (proposedVertex.getQC().getRound().compareTo(this.state.lockedRound) < 0) {
-			throw new SafetyViolationException(String.format(
-				"Proposed vertex QC at %s does not respect locked round %s",
-				proposedVertex.getQC().getRound(), this.state.lockedRound));
+			throw new SafetyViolationException(proposedVertex, this.state, String.format(
+				"does not respect locked round %s", this.state.lockedRound));
 		}
 
-		this.state.lastVotedRound = proposedVertex.getRound();
+		this.state = this.state.withLastVotedRound(proposedVertex.getRound());
 		VertexMetadata vertexMetadata = new VertexMetadata(
 			proposedVertex.getRound(),
 			proposedVertex.getAID(),
@@ -86,4 +95,7 @@ public final class SafetyRules {
 		return new VoteResult(vote, committedAtom);
 	}
 
+	@VisibleForTesting SafetyState getState() {
+		return state;
+	}
 }

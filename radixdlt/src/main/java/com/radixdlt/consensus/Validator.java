@@ -15,16 +15,20 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.mempool;
+package com.radixdlt.consensus;
 
-import com.radixdlt.common.Atom;
+import com.radixdlt.common.EUID;
 
 /**
- * Exception thrown when an attempt to add new items would
- * exceed the mempool's maximum capacity.
+ * Stub validator interface.
  */
-public class MempoolFullException extends MempoolRejectedException {
-	public MempoolFullException(Atom atom, String message) {
-		super(atom, message);
-	}
+public interface Validator {
+
+	/**
+	 * Returns the node ID of the validator.
+	 *
+	 * @return the node ID of the validator
+	 */
+	EUID nodeId();
+
 }

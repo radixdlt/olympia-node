@@ -17,18 +17,67 @@
 
 package com.radixdlt.consensus.safety;
 
+import com.google.inject.Inject;
 import com.radixdlt.consensus.Round;
 
+import java.util.Objects;
+
+/**
+ * The state maintained to ensure the safety of the consensus system.
+ */
 final class SafetyState {
-	Round lastVotedRound; // the last round this node voted on
-	Round lockedRound; // the highest 2-chain head
+	final Round lastVotedRound; // the last round this node voted on
+	final Round lockedRound; // the highest 2-chain head
+
+	@Inject
+	protected SafetyState() {
+		this(Round.of(0L), Round.of(0L));
+	}
 
 	public SafetyState(Round lastVotedRound, Round lockedRound) {
 		this.lastVotedRound = lastVotedRound;
 		this.lockedRound = lockedRound;
 	}
 
+	public SafetyState(SafetyState other) {
+		this(other.lastVotedRound, other.lockedRound);
+	}
+
+	public SafetyState withLastVotedRound(Round lastVotedRound) {
+		return new SafetyState(lastVotedRound, this.lockedRound);
+	}
+
+	public SafetyState withLockedRound(Round lockedRound) {
+		return new SafetyState(this.lastVotedRound, lockedRound);
+	}
+
 	public static SafetyState initialState() {
 		return new SafetyState(Round.of(0L), Round.of(0L));
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		SafetyState that = (SafetyState) o;
+		return Objects.equals(lastVotedRound, that.lastVotedRound) &&
+			Objects.equals(lockedRound, that.lockedRound);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(lastVotedRound, lockedRound);
+	}
+
+	@Override
+	public String toString() {
+		return "SafetyState{" +
+			"lastVotedRound=" + lastVotedRound +
+			", lockedRound=" + lockedRound +
+			'}';
 	}
 }

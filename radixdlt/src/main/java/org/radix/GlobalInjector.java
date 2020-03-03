@@ -28,6 +28,7 @@ import com.radixdlt.delivery.LazyRequestDelivererModule;
 import com.radixdlt.discovery.IterativeDiscovererModule;
 import com.radixdlt.mempool.MempoolModule;
 import com.radixdlt.middleware2.MiddlewareModule;
+import com.radixdlt.network.NetworkModule;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.berkeley.BerkeleyStoreModule;
 import com.radixdlt.submission.SubmissionControlModule;
@@ -58,6 +59,7 @@ public class GlobalInjector {
 		Module addressBookModule = new AddressBookModule(dbEnv);
 		Module submissionControlModule = new SubmissionControlModule();
 		Module mempoolModule = new MempoolModule();
+		Module networkModule = new NetworkModule();
 
 		// temporary global module to hook up global things
 		Module globalModule = new AbstractModule() {
@@ -86,6 +88,7 @@ public class GlobalInjector {
 				addressBookModule,
 				submissionControlModule,
 				mempoolModule,
+				networkModule,
 				globalModule);
 	}
 

@@ -18,6 +18,7 @@
 package com.radixdlt.consensus.safety;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -32,6 +33,9 @@ import com.radixdlt.consensus.VoteMessage;
 import com.radixdlt.utils.Ints;
 import org.junit.Test;
 
+/**
+ * This tests that the {@link SafetyRules} implementation obeys HotStuff's safety and commit rules.
+ */
 public class SafetyRulesTest {
 	private static final EUID SELF = EUID.ONE;
 	private static final Round GENESIS_ROUND = Round.of(0);
@@ -56,8 +60,8 @@ public class SafetyRulesTest {
 		 */
 
 		SafetyRules safetyRules = createDefaultSafetyRules();
-		assertThat(safetyRules.state.lastVotedRound).isEqualByComparingTo(Round.of(0L));
-		assertThat(safetyRules.state.lockedRound).isEqualByComparingTo(Round.of(0L));
+		assertThat(safetyRules.getState().lastVotedRound).isEqualByComparingTo(Round.of(0L));
+		assertThat(safetyRules.getState().lockedRound).isEqualByComparingTo(Round.of(0L));
 
 		AID a1Id = makeAID(11);
 		AID a2Id = makeAID(12);
@@ -77,27 +81,85 @@ public class SafetyRulesTest {
 		Vertex b4 = makeVertex(b2, Round.of(8), b4Id);
 
 		safetyRules.process(a1.getQC());
-		assertThat(safetyRules.state.lockedRound).isEqualByComparingTo(GENESIS_ROUND);
+		assertThat(safetyRules.getState().lockedRound).isEqualByComparingTo(GENESIS_ROUND);
 		safetyRules.process(b1.getQC());
-		assertThat(safetyRules.state.lockedRound).isEqualByComparingTo(GENESIS_ROUND);
+		assertThat(safetyRules.getState().lockedRound).isEqualByComparingTo(GENESIS_ROUND);
 		safetyRules.process(b2.getQC());
-		assertThat(safetyRules.state.lockedRound).isEqualByComparingTo(GENESIS_ROUND);
+		assertThat(safetyRules.getState().lockedRound).isEqualByComparingTo(GENESIS_ROUND);
 		safetyRules.process(a2.getQC());
-		assertThat(safetyRules.state.lockedRound).isEqualByComparingTo(GENESIS_ROUND);
+		assertThat(safetyRules.getState().lockedRound).isEqualByComparingTo(GENESIS_ROUND);
 		safetyRules.process(a3.getQC());
-		assertThat(safetyRules.state.lockedRound).isEqualByComparingTo(b1.getRound());
+		assertThat(safetyRules.getState().lockedRound).isEqualByComparingTo(b1.getRound());
 		safetyRules.process(b3.getQC());
-		assertThat(safetyRules.state.lockedRound).isEqualByComparingTo(b1.getRound());
+		assertThat(safetyRules.getState().lockedRound).isEqualByComparingTo(b1.getRound());
 		safetyRules.process(a4.getQC());
-		assertThat(safetyRules.state.lockedRound).isEqualByComparingTo(a2.getRound());
+		assertThat(safetyRules.getState().lockedRound).isEqualByComparingTo(a2.getRound());
 		safetyRules.process(b4.getQC());
-		assertThat(safetyRules.state.lockedRound).isEqualByComparingTo(a2.getRound());
+		assertThat(safetyRules.getState().lockedRound).isEqualByComparingTo(a2.getRound());
 	}
 
 	@Test
-	public void testVote() {
-		// test violating the two safety rules
-		// see test_voting
+	public void testVote() throws SafetyViolationException {
+		/*
+		 * This test ensures that the voting logic obeys the safety rules correctly.
+		 *
+		 */
+
+		SafetyRules safetyRules = createDefaultSafetyRules();
+		assertThat(safetyRules.getState().lastVotedRound).isEqualByComparingTo(Round.of(0L));
+		assertThat(safetyRules.getState().lockedRound).isEqualByComparingTo(Round.of(0L));
+
+		AID a1Id = makeAID(11);
+		AID a2Id = makeAID(12);
+		AID a3Id = makeAID(13);
+		AID a4Id = makeAID(14);
+		AID a5Id = makeAID(15);
+		AID b1Id = makeAID(21);
+		AID b2Id = makeAID(22);
+		AID b3Id = makeAID(23);
+		AID b4Id = makeAID(24);
+		Vertex a1 = makeVertex(GENESIS_VERTEX, Round.of(1), a1Id);
+		Vertex b1 = makeVertex(GENESIS_VERTEX, Round.of(2), b1Id);
+		Vertex b2 = makeVertex(a1, Round.of(3), b2Id);
+		Vertex a2 = makeVertex(b1, Round.of(4), a2Id);
+		Vertex a3 = makeVertex(a2, Round.of(5), a3Id);
+		Vertex b3 = makeVertex(a2, Round.of(6), b3Id);
+		Vertex a4 = makeVertex(a3, Round.of(7), a4Id);
+		Vertex b4 = makeVertex(b2, Round.of(8), b4Id);
+		Vertex a5 = makeVertex(a4, Round.of(9), a5Id);
+
+		safetyRules.process(a1.getQC());
+		VoteResult result = safetyRules.voteFor(a1);
+		assertThat(result.getCommittedAtom()).isEmpty();
+
+		safetyRules.process(b1.getQC());
+		result = safetyRules.voteFor(b1);
+		assertThat(result.getCommittedAtom()).isEmpty();
+
+		safetyRules.process(a2.getQC());
+		result = safetyRules.voteFor(a2);
+		assertThat(result.getCommittedAtom()).isEmpty();
+
+		safetyRules.process(b2.getQC());
+		assertThatThrownBy(() -> safetyRules.voteFor(b2));
+
+		safetyRules.process(a3.getQC());
+		result = safetyRules.voteFor(a3);
+		assertThat(result.getCommittedAtom()).isEmpty();
+
+		safetyRules.process(b3.getQC());
+		result = safetyRules.voteFor(b3);
+		assertThat(result.getCommittedAtom()).isEmpty();
+
+		safetyRules.process(a4.getQC());
+		result = safetyRules.voteFor(a4);
+		assertThat(result.getCommittedAtom()).isEmpty();
+
+		safetyRules.process(a4.getQC());
+		assertThatThrownBy(() -> safetyRules.voteFor(a4));
+
+		safetyRules.process(b4.getQC());
+		assertThatThrownBy(() -> safetyRules.voteFor(b4));
 	}
 
 	@Test
@@ -105,13 +167,13 @@ public class SafetyRulesTest {
 		/*
 		 * This test ensures that the commit logic is working correctly.
 		 * The commit rule requires a 3-chain to commit an atom, that is, the chain
-		 *  A2 -> A3 -> A4 -> A5
+		 *  A2 -> A3 -> A4 (-> A5)
 		 * would allow A2 to be committed at the time A5's QC for A4 is presented.
 		 */
 
 		SafetyRules safetyRules = createDefaultSafetyRules();
-		assertThat(safetyRules.state.lastVotedRound).isEqualByComparingTo(Round.of(0L));
-		assertThat(safetyRules.state.lockedRound).isEqualByComparingTo(Round.of(0L));
+		assertThat(safetyRules.getState().lastVotedRound).isEqualByComparingTo(Round.of(0L));
+		assertThat(safetyRules.getState().lockedRound).isEqualByComparingTo(Round.of(0L));
 
 		AID a1Id = makeAID(11);
 		AID a2Id = makeAID(12);

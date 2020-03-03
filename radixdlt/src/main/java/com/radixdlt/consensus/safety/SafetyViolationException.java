@@ -17,8 +17,28 @@
 
 package com.radixdlt.consensus.safety;
 
+import com.radixdlt.consensus.Vertex;
+
+import java.util.Objects;
+
+/**
+ * A safety violation.
+ */
 public class SafetyViolationException extends Exception {
-	SafetyViolationException(String message) {
-		super(message);
+	private final transient Vertex offendingVertex;
+	private final transient SafetyState safetyState;
+
+	SafetyViolationException(Vertex offendingVertex, SafetyState safetyState, String reason) {
+		super(String.format("vertex %s violates safety at state %s: %s", offendingVertex, safetyState, reason));
+		this.offendingVertex = Objects.requireNonNull(offendingVertex);
+		this.safetyState = new SafetyState(safetyState);
+	}
+
+	public Vertex getOffendingVertex() {
+		return offendingVertex;
+	}
+
+	public SafetyState getSafetyState() {
+		return safetyState;
 	}
 }

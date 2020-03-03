@@ -24,6 +24,6 @@ public class MempoolModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		// provides
-		bind(Mempool.class).to(LocalMempool.class).in(Scopes.SINGLETON);
+		bind(Mempool.class).to(SharedMempool.class).in(Scopes.SINGLETON);
 	}
 }

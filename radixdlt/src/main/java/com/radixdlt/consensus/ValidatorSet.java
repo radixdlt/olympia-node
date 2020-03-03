@@ -15,16 +15,27 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.mempool;
+package com.radixdlt.consensus;
 
-import com.radixdlt.common.Atom;
+import java.util.Collection;
+import java.util.Set;
 
 /**
- * Exception thrown when an attempt to add new items would
- * exceed the mempool's maximum capacity.
+ * Interface for querying/updating validators.
  */
-public class MempoolFullException extends MempoolRejectedException {
-	public MempoolFullException(Atom atom, String message) {
-		super(atom, message);
-	}
+public interface ValidatorSet {
+
+	/**
+	 * Replace current validators with a new set.
+	 *
+	 * @param validators the new validator set
+	 */
+	void replaceAll(Collection<Validator> validators);
+
+	/**
+	 * Retrieve a snapshot of the current validator set.
+	 *
+	 * @return the current validator set
+	 */
+	Set<Validator> validators();
 }

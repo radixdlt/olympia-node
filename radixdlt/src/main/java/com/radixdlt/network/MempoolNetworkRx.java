@@ -15,16 +15,16 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.mempool;
-
-import com.radixdlt.common.Atom;
+package com.radixdlt.network;
 
 /**
- * Exception thrown when an attempt to add new items would
- * exceed the mempool's maximum capacity.
+ * Async callbacks from mempool network messages
+ * TODO: change to an rx interface
  */
-public class MempoolFullException extends MempoolRejectedException {
-	public MempoolFullException(Atom atom, String message) {
-		super(atom, message);
-	}
+public interface MempoolNetworkRx {
+
+	/**
+	 * Callback when mempool submission is received from remote node.
+	 */
+	void addMempoolSubmissionCallback(MempoolSubmissionCallback callback);
 }

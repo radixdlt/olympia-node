@@ -15,16 +15,17 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.mempool;
+package com.radixdlt.network;
 
-import com.radixdlt.common.Atom;
+import com.google.inject.AbstractModule;
+import com.google.inject.Scopes;
 
-/**
- * Exception thrown when an attempt to add new items would
- * exceed the mempool's maximum capacity.
- */
-public class MempoolFullException extends MempoolRejectedException {
-	public MempoolFullException(Atom atom, String message) {
-		super(atom, message);
+public class NetworkModule extends AbstractModule {
+	@Override
+	protected void configure() {
+		// provides
+		bind(DumbMempoolNetwork.class).in(Scopes.SINGLETON);
+		bind(MempoolNetworkRx.class).to(DumbMempoolNetwork.class);
+		bind(MempoolNetworkTx.class).to(DumbMempoolNetwork.class);
 	}
 }
