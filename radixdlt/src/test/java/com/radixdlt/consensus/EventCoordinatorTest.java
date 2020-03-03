@@ -24,6 +24,8 @@ import com.radixdlt.common.EUID;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.safety.SafetyRules;
+import com.radixdlt.consensus.safety.SafetyViolationException;
+import com.radixdlt.consensus.safety.VoteResult;
 import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.engine.AtomEventListener;
 import com.radixdlt.engine.RadixEngine;
@@ -35,6 +37,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -247,11 +250,52 @@ public class EventCoordinatorTest {
 		Atom proposedAtom = mock(Atom.class);
 		AID aid = makeAID(7); // no special significance
 		when(proposedAtom.getAID()).thenReturn(aid);
+		when(proposedVertex.getAtom()).thenReturn(proposedAtom);
 		doAnswer((invocation -> {
 			((AtomEventListener) invocation.getArgument(1)).onCMError(proposedAtom, mock(CMError.class));
 			return null;
-		})).when(radixEngine.store(eq(proposedAtom), any()));
+		})).when(radixEngine).store(eq(proposedAtom), any());
 		eventCoordinator.processProposal(proposedVertex);
 		verify(mempool, times(1)).removeRejectedAtom(eq(aid));
+	}
+
+	@Test
+	public void when_processing_valid_stored_proposal__then_atom_is_voted_on_and_removed() throws SafetyViolationException {
+		Mempool mempool = mock(Mempool.class);
+		NetworkSender networkSender = mock(NetworkSender.class);
+		SafetyRules safetyRules = mock(SafetyRules.class);
+		Pacemaker pacemaker = mock(Pacemaker.class);
+		VertexStore vertexStore = mock(VertexStore.class);
+		RadixEngine radixEngine = mock(RadixEngine.class);
+		ProposerElection proposerElection = mock(ProposerElection.class);
+
+		EventCoordinator eventCoordinator = new EventCoordinator(
+			mempool,
+			networkSender,
+			safetyRules,
+			pacemaker,
+			vertexStore,
+			radixEngine,
+			proposerElection,
+			SELF
+		);
+
+		Vertex proposedVertex = mock(Vertex.class);
+		Atom proposedAtom = mock(Atom.class);
+		AID aid = makeAID(7); // no special significance
+		when(proposedAtom.getAID()).thenReturn(aid);
+		when(proposedVertex.getAtom()).thenReturn(proposedAtom);
+		doAnswer((invocation -> {
+			((AtomEventListener) invocation.getArgument(1)).onStateStore(proposedAtom);
+			return null;
+		})).when(radixEngine).store(eq(proposedAtom), any());
+		VoteResult voteResult = mock(VoteResult.class);
+		VoteMessage voteMessage = mock(VoteMessage.class);
+		when(voteResult.getVote()).thenReturn(voteMessage);
+		doReturn(voteResult).when(safetyRules).voteFor(eq(proposedVertex));
+		eventCoordinator.processProposal(proposedVertex);
+
+		verify(networkSender, times(1)).sendVote(eq(voteMessage));
+		verify(mempool, times(1)).removeCommittedAtom(eq(aid));
 	}
 }
