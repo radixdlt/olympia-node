@@ -26,8 +26,8 @@ import java.util.Objects;
  * The state maintained to ensure the safety of the consensus system.
  */
 final class SafetyState {
-	Round lastVotedRound; // the last round this node voted on
-	Round lockedRound; // the highest 2-chain head
+	final Round lastVotedRound; // the last round this node voted on
+	final Round lockedRound; // the highest 2-chain head
 
 	@Inject
 	protected SafetyState() {
@@ -41,6 +41,14 @@ final class SafetyState {
 
 	public SafetyState(SafetyState other) {
 		this(other.lastVotedRound, other.lockedRound);
+	}
+
+	public SafetyState withLastVotedRound(Round lastVotedRound) {
+		return new SafetyState(lastVotedRound, this.lockedRound);
+	}
+
+	public SafetyState withLockedRound(Round lockedRound) {
+		return new SafetyState(this.lastVotedRound, lockedRound);
 	}
 
 	public static SafetyState initialState() {

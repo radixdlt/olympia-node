@@ -36,7 +36,7 @@ import java.util.Objects;
 public final class SafetyRules {
 	private final EUID self;
 
-	private final SafetyState state;
+	private SafetyState state;
 
 	@Inject
 	public SafetyRules(@Named("self") EUID self, SafetyState initialState) {
@@ -59,7 +59,7 @@ public final class SafetyRules {
 	 */
 	public void process(QuorumCertificate qc) {
 		if (qc.getParentRound().compareTo(this.state.lockedRound) > 0) {
-			this.state.lockedRound = qc.getParentRound();
+			this.state = this.state.withLockedRound(qc.getParentRound());
 		}
 	}
 
@@ -82,7 +82,7 @@ public final class SafetyRules {
 				"does not respect locked round %s", this.state.lockedRound));
 		}
 
-		this.state.lastVotedRound = proposedVertex.getRound();
+		this.state = this.state.withLastVotedRound(proposedVertex.getRound());
 		VertexMetadata vertexMetadata = new VertexMetadata(
 			proposedVertex.getRound(),
 			proposedVertex.getAID(),
