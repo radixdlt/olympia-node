@@ -2,7 +2,7 @@
 import json
 import logging,os
 
-from fuzzer.fuzzer import fuzz_multithreaded_websocket, fuzz_multithreaded_atom
+from fuzzer.main import fuzz_multithreaded_websocket, fuzz_multithreaded_atom
 from tokenizer.particles import SAMPLE_ATOM
 from utils.__init_ import recursive_items
 from tokenizer.particles import particle_group_to_big_size
@@ -81,29 +81,30 @@ original_messages = [message]
 # application under test
 ignore_errors = []
 
-fuzz_multithreaded_atom(ws_address,
-                        init_messages,
-                        original_messages,
-                        ignore_tokens,
-                        ignore_errors,
-                        log_path,
-                        http_proxy_host,
-                        http_proxy_port,
-                        [
-                            particle_group_to_big_size
-                        ]
-                        )
+# fuzz_multithreaded_atom(ws_address,
+#                         init_messages,
+#                         original_messages,
+#                         ignore_tokens,
+#                         ignore_errors,
+#                         log_path,
+#                         http_proxy_host,
+#                         http_proxy_port,
+#                         [
+#                             particle_group_to_big_size
+#                         ]
+#                         )
 
-print ("Fuzzing biz size messages test finished")
+print("Fuzzing biz size messages test finished")
 
-# fuzz_multithreaded_websocket(ws_address,
-#                              init_messages,
-#                              original_messages,
-#                              ignore_tokens,
-#                              ignore_errors,
-#                              log_path,
-#                              http_proxy_host,
-#                              http_proxy_port,
-#                              [
-#                                  tokenize_double_quotes
-#                              ])
+fuzz_multithreaded_websocket(ws_address,
+                             init_messages,
+                             original_messages,
+                             ignore_tokens,
+                             ignore_errors,
+                             log_path,
+                             http_proxy_host,
+                             http_proxy_port,
+                             [
+                                 tokenize_double_quotes
+                             ])
+print("Fuzzing tokenised submission of atom finished")

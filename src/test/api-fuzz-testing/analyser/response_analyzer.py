@@ -177,8 +177,7 @@ INTERESTING_THINGS = (
 )
 
 
-
-def analyze_response(message, ignore_errors):
+def analyze_response(message: str, ignore_errors: list):
     """
     Receives a message and tries to identify interesting things in them.
 

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import logging,os
 
-from fuzzer.fuzzer import fuzz_websocket
+from fuzzer.main import fuzz_websocket
 #
 #   Configure logging
 #

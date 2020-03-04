@@ -8,9 +8,9 @@ from websocket._exceptions import WebSocketConnectionClosedException
 
 from analyser.response_analyzer import analyze_response
 from utils import utils
-from fuzzer.fuzzer_logger import FuzzerLogger,log,json_highlight,json_indent,OUTGOING,INCOMING
+from fuzzer.logger import FuzzerLogger, log, json_highlight, json_indent, OUTGOING, INCOMING
 class FuzzerWebSocket(WebSocketApp):
-    def __init__(self, url, client_messages,ignore_errors, tokenized_count, log_path):
+    def __init__(self, url: str, client_messages: list, errors_to_ignore: list, tokenized_count: int, log_path: str):
         params = {
             "on_message": self.on_message,
             'on_error': self.on_error,
@@ -27,7 +27,7 @@ class FuzzerWebSocket(WebSocketApp):
         self.inspect_response = False
         self.latest_message_timestamp = None
         self.latest_message_sent_timestamp = None
-        self.ignore_errors = ignore_errors
+        self.ignore_errors = errors_to_ignore
 
     def on_message(self, ws, message):
         self.messages_awaiting_responses = max(self.messages_awaiting_responses -1 , 0)
@@ -47,7 +47,7 @@ class FuzzerWebSocket(WebSocketApp):
         log(self,'/error %s ' % error)
 
     def on_close(self,ws):
-        print("closed connection")
+        log(self, 'closed connection')
 
     def on_open(self,ws):
         logging.debug("Successfully opened connection")
