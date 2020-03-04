@@ -76,13 +76,12 @@ public final class LedgerEntry {
 			return false;
 		}
 		LedgerEntry radixLedgerEntry = (LedgerEntry) o;
-		return Objects.equals(aid, radixLedgerEntry.aid)
-				&& Arrays.equals(content, radixLedgerEntry.content);
+		return Objects.equals(aid, radixLedgerEntry.aid);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(aid, Arrays.hashCode(content));
+		return Objects.hashCode(aid);
 	}
 
 	@Override
