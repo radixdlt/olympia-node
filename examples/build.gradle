@@ -33,4 +33,5 @@ sonarqube {
 dependencies {
     compile rootProject //TODO: Hack for now since in code freeze
     testCompile group: 'junit', name: 'junit', version: '4.12'
+    testCompile 'org.hamcrest:hamcrest-library:1.3'
 }

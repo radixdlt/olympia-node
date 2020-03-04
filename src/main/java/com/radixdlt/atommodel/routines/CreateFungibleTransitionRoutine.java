@@ -41,11 +41,11 @@ import java.util.function.Function;
  * Transition Procedure for one to one fungible types
  */
 public final class CreateFungibleTransitionRoutine<I extends Particle, O extends Particle> implements ConstraintRoutine {
-	public static class UsedAmount implements UsedData {
+	public static final class UsedAmount implements UsedData {
 		private final UInt256 amount;
 
 		UsedAmount(UInt256 usedAmount) {
-			this.amount = usedAmount;
+			this.amount = Objects.requireNonNull(usedAmount);
 		}
 
 		public UInt256 getUsedAmount() {
@@ -59,7 +59,7 @@ public final class CreateFungibleTransitionRoutine<I extends Particle, O extends
 
 		@Override
 		public int hashCode() {
-			return this.amount.hashCode();
+			return Objects.hashCode(amount);
 		}
 
 		@Override
@@ -69,7 +69,7 @@ public final class CreateFungibleTransitionRoutine<I extends Particle, O extends
 			}
 
 			UsedAmount u = (UsedAmount) obj;
-			return this.amount.equals(u.amount);
+			return Objects.equals(this.amount, u.amount);
 		}
 
 		@Override

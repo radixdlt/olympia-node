@@ -19,9 +19,19 @@ package com.radixdlt.atomos;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
+import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
 public class RadixAddressTest {
+
+	@Test
+	public void equalsContract() {
+		EqualsVerifier.forClass(RadixAddress.class)
+				.withIgnoredFields("key") // other field(s) dependent on `key` is used
+				.withIgnoredFields("base58") // other field(s) dependent on `base58` is used
+				.verify();
+	}
+
 	@Test
 	public void when_an_address_is_created_with_same_string__they_should_be_equal_and_have_same_hashcode() {
 		RadixAddress address0 = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");

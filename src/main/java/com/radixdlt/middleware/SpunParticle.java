@@ -51,6 +51,7 @@ public final class SpunParticle {
 	private short version = 100;
 
 	private SpunParticle() {
+		// For serializer
 		this.particle = null;
 		this.spin = null;
 	}
@@ -110,7 +111,7 @@ public final class SpunParticle {
 
 		SpunParticle spunParticle = (SpunParticle) obj;
 
-		return this.particle.equals(spunParticle.particle) && this.spin.equals(spunParticle.spin);
+		return Objects.equals(this.particle, spunParticle.particle) && Objects.equals(this.spin, spunParticle.spin);
 	}
 
 	@Override

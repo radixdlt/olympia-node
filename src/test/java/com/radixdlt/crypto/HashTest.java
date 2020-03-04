@@ -17,11 +17,18 @@
 
 package com.radixdlt.crypto;
 
+import static org.hamcrest.number.OrderingComparison.lessThan;
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
+import com.google.common.base.Strings;
 import com.radixdlt.TestSetupUtils;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.Longs;
+import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -30,6 +37,57 @@ public class HashTest {
 	@BeforeClass
 	public static void setupBouncyCastle() {
 		TestSetupUtils.installBouncyCastleProvider();
+	}
+
+	@Test
+	public void equalsContract() {
+		EqualsVerifier.forClass(Hash.class)
+				.withIgnoredFields("data") // other field(s) dependent on `data` is used
+				.withIgnoredFields("idCached") // `idCached` is derived from other field(s) in use.
+				.verify();
+	}
+
+	@Test
+	public void verify_that_random_is_not_null() {
+		assertNotNull(Hash.random());
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void verify_that_an_error_is_thrown_for_too_short_hex_string_constructor() {
+		new Hash("deadbeef");
+		fail();
+	}
+
+	@Test
+	public void verify_that_id_equals_for_same_hash() {
+		assertEquals(deadbeef().getID(), deadbeef().getID());
+	}
+
+	@Test
+	public void verify_that_hexstring_remains_the_same_as_passed_in_constructor() {
+		String hex = deadbeefString();
+		Hash hash = new Hash(hex);
+		assertEquals(hex, hash.toString());
+	}
+
+	@Test
+	public void verify_that_tobytearray_returns_same_bytes_as_passed_in_constructor() {
+		String hex = deadbeefString();
+		Hash hash = new Hash(hex);
+		byte[] expectedBytes = Bytes.fromHexString(hex);
+		assertArrayEquals(expectedBytes, hash.toByteArray());
+	}
+
+	@Test
+	public void testFirstByte() {
+		assertEquals(Bytes.fromHexString("de")[0], deadbeef().getFirstByte());
+	}
+
+	@Test
+	public void testCompare() {
+		Hash low = new Hash(Strings.repeat("1", 64));
+		Hash high = new Hash(Strings.repeat("9", 64));
+		assertThat(low, lessThan(high));
 	}
 
 	@Test
@@ -97,4 +155,13 @@ public class HashTest {
 	private byte[] hash512(byte[] data) {
 		return Hash.hash512(data);
 	}
+
+	private Hash deadbeef() {
+		return new Hash(deadbeefString());
+	}
+
+	private String deadbeefString() {
+		return Strings.repeat("deadbeef", 8);
+	}
 }
+

@@ -64,7 +64,7 @@ public final class EUID implements Comparable<EUID> {
 	}
 
 	public EUID(UInt128 value) {
-		this.value = value;
+		this.value = Objects.requireNonNull(value);
 	}
 
 	/**
@@ -210,14 +210,14 @@ public final class EUID implements Comparable<EUID> {
 
 		if (o instanceof EUID) {
 			EUID other = (EUID) o;
-			return this.value.equals(other.value);
+			return Objects.equals(value, other.value);
 		}
 		return false;
 	}
 
 	@Override
 	public int hashCode() {
-		return this.value.hashCode();
+		return Objects.hashCode(value);
 	}
 
 	@Override

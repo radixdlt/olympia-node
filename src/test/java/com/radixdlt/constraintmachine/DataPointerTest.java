@@ -19,9 +19,18 @@ package com.radixdlt.constraintmachine;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
 public class DataPointerTest {
+
+	@Test
+	public void equalsContract() {
+		EqualsVerifier.forClass(DataPointer.class)
+				.withIgnoredFields("pointerToIssue") // derived from other field(s), used for caching
+				.verify();
+	}
+
 	@Test
 	public void when_data_pointer_of_atom_is_created__then_no_exception_is_thrown() {
 		DataPointer.ofAtom();
