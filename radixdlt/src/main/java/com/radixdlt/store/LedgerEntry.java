@@ -24,7 +24,6 @@ import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 
-import java.util.Arrays;
 import java.util.Objects;
 
 @SerializerId2("ledger.entry")
