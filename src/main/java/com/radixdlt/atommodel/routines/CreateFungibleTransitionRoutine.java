@@ -59,7 +59,7 @@ public final class CreateFungibleTransitionRoutine<I extends Particle, O extends
 
 		@Override
 		public int hashCode() {
-			return Objects.hash(amount);
+			return Objects.hashCode(amount);
 		}
 
 		@Override

@@ -104,15 +104,17 @@ public final class ECDSASignature implements Signature {
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o) {
+		if (o == this) {
 			return true;
 		}
-		if (o == null || getClass() != o.getClass()) {
-			return false;
-		}
-		ECDSASignature signature = (ECDSASignature) o;
-		return Objects.equals(r, signature.r)
+
+		if (o instanceof ECDSASignature) {
+			ECDSASignature signature = (ECDSASignature) o;
+			return Objects.equals(r, signature.r)
 				&& Objects.equals(s, signature.s);
+		}
+
+		return false;
 	}
 
 	@Override
