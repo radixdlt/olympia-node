@@ -54,12 +54,16 @@ public class Range<T extends Number & Comparable<T>>
 	}
 
 	@Override
-	public boolean equals(Object other)
+	public final boolean equals(Object other)
 	{
 		if (other == this)
 			return true;
 
 		if (other == null)
+			return false;
+
+		// `FooRange` should not automatically equal `(Range) BarRange`.
+		if (!this.getClass().equals(other.getClass()))
 			return false;
 
 		if (other instanceof ShardRange) {

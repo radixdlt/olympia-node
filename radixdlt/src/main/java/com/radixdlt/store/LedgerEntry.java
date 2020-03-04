@@ -27,7 +27,7 @@ import com.radixdlt.serialization.SerializerId2;
 import java.util.Objects;
 
 @SerializerId2("ledger.entry")
-public class LedgerEntry {
+public final class LedgerEntry {
 
 	// Placeholder for the serializer ID
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
@@ -36,14 +36,15 @@ public class LedgerEntry {
 
 	@JsonProperty("content")
 	@DsonOutput(value = {DsonOutput.Output.ALL})
-	private byte[] content;
+	private final byte[] content;
 
 	@JsonProperty("aid")
 	@DsonOutput(value = {DsonOutput.Output.ALL})
-	private AID aid;
+	private final AID aid;
 
 	private LedgerEntry() {
-		// For serializer
+		this.aid = null;
+		this.content = null;
 	}
 
 	public LedgerEntry(byte[] content, AID aid) {
@@ -51,6 +52,12 @@ public class LedgerEntry {
 		this.aid = Objects.requireNonNull(aid, "aid is required");
 	}
 
+	/**
+	 * Returns the underlying bytes directly (no copy), due to performance reasons.
+	 * Do NOT edit the bytes, since it is not a copy.
+	 * @return Content of this ledger entry as a byte array, directly accessing the content. Do NOT
+	 * modify this. No copy is made for performance reasons.
+	 */
 	public byte[] getContent() {
 		return this.content;
 	}
@@ -68,12 +75,12 @@ public class LedgerEntry {
 			return false;
 		}
 		LedgerEntry radixLedgerEntry = (LedgerEntry) o;
-		return aid.equals(radixLedgerEntry.aid);
+		return Objects.equals(aid, radixLedgerEntry.aid);
 	}
 
 	@Override
 	public int hashCode() {
-		return aid.hashCode();
+		return Objects.hashCode(aid);
 	}
 
 	@Override

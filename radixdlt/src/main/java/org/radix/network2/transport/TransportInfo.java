@@ -36,18 +36,19 @@ public final class TransportInfo {
 
 	@JsonProperty("name")
 	@DsonOutput(Output.ALL)
-	private String name;
+	private final String name;
 
 	@JsonProperty("metadata")
 	@DsonOutput(Output.ALL)
-	private TransportMetadata metadata;
+	private final TransportMetadata metadata;
 
 	public static TransportInfo of(String name, TransportMetadata metadata) {
 		return new TransportInfo(name, metadata);
 	}
 
 	TransportInfo() {
-		// For serializer only
+		this.metadata = null;
+		this.name = null;
 	}
 
 	private TransportInfo(String name, TransportMetadata metadata) {

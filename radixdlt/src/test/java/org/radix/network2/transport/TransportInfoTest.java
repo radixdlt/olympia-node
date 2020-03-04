@@ -29,7 +29,7 @@ public class TransportInfoTest {
 
 	@Test
 	public void equalsContract() {
-	    EqualsVerifier.forClass(TransportInfo.class).suppress(Warning.NONFINAL_FIELDS).verify();
+	    EqualsVerifier.forClass(TransportInfo.class).verify();
 	}
 
 	@Test

@@ -15,30 +15,17 @@
  * language governing permissions and limitations under the License.
  */
 
-package org.radix.state;
+package com.radixdlt.store;
 
-public enum StateDomain
-{
-	NETWORK(0),
-	LOCAL(1),
-	EXEC(2),
-	VALIDATION(3);
+import com.radixdlt.common.AID;
+import com.radixdlt.crypto.Hash;
+import org.radix.serialization.SerializeMessageObject;
 
-	private final int domain;
-
-	StateDomain(int domain) { this.domain = domain; }
-
-	public int domain() { return domain; }
-
-	public static StateDomain get(int domain)
-	{
-		for (StateDomain d : values())
-		{
-			if (d.domain() == domain)
-				return d;
-		}
-
-		return null;
+public class LedgerEntrySerializeTest extends SerializeMessageObject<LedgerEntry> {
+	public LedgerEntrySerializeTest() {
+		super(LedgerEntry.class, () -> new LedgerEntry(
+			"{\"test\":\"test\"}".getBytes(),
+			AID.from(Hash.ZERO_HASH.toByteArray())
+		));
 	}
 }
-
