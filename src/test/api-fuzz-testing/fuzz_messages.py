@@ -1,9 +1,13 @@
 # -*- coding: utf-8 -*-
+import json
+import logging,os
 
-import logging
-
-from fuzzer.fuzzer import fuzz_multithreaded_websocket,fuzz_multithreaded_atom
+from fuzzer.fuzzer import fuzz_multithreaded_websocket, fuzz_multithreaded_atom
 from tokenizer.particles import SAMPLE_ATOM
+from utils.__init_ import recursive_items
+from tokenizer.particles import particle_group_to_big_size
+from tokenizer.quotes import tokenize_double_quotes
+
 #
 #   Configure logging
 #
@@ -19,7 +23,6 @@ formatter = logging.Formatter('[%(asctime)s][%(levelname)-8s] %(message)s')
 console.setFormatter(formatter)
 logging.getLogger('').addHandler(console)
 
-
 #
 #   User configured parameters
 #
@@ -32,7 +35,8 @@ logging.getLogger('').addHandler(console)
 ws_address = 'ws://35.177.35.134:8080/rpc'
 
 # The proxy server used to send the messages. This is very useful
-# for debugging the tools
+# Set the os environment HTTP_PROXY to true if  proxy is used
+# os.environ["HTTP_PROXY"] = "True"
 http_proxy_host = 'localhost'
 http_proxy_port = '8090'
 
@@ -56,7 +60,8 @@ message = open(SAMPLE_ATOM, 'r').read()
 #
 # And the `ignore_tokens` list contains "bar", then the fuzzer is not going to
 # send payloads in "bar" but it will in "foo".
-ignore_tokens = ['id','method','params','metaData','powNonce']
+keys = recursive_items(json.loads(message))
+ignore_tokens = [key for key, value in keys]
 
 # The list containing messages to be sent to the websocket. In some cases
 # You need to send two or more messages to set a specific remote state, and
@@ -76,14 +81,29 @@ original_messages = [message]
 # application under test
 ignore_errors = []
 
-#
-#   Do not touch these lines
-#
-fuzz_multithreaded_websocket(ws_address,
-                init_messages,
-                original_messages,
-                ignore_tokens,
-                ignore_errors,
-                log_path,
-                http_proxy_host,
-                http_proxy_port)
+fuzz_multithreaded_atom(ws_address,
+                        init_messages,
+                        original_messages,
+                        ignore_tokens,
+                        ignore_errors,
+                        log_path,
+                        http_proxy_host,
+                        http_proxy_port,
+                        [
+                            particle_group_to_big_size
+                        ]
+                        )
+
+print ("Fuzzing biz size messages test finished")
+
+# fuzz_multithreaded_websocket(ws_address,
+#                              init_messages,
+#                              original_messages,
+#                              ignore_tokens,
+#                              ignore_errors,
+#                              log_path,
+#                              http_proxy_host,
+#                              http_proxy_port,
+#                              [
+#                                  tokenize_double_quotes
+#                              ])

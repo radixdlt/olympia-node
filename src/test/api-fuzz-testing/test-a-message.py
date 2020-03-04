@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import logging
+import logging,os
 
 from fuzzer.fuzzer import fuzz_websocket
 #
@@ -30,6 +30,8 @@ ws_address = 'ws://35.177.35.134:8080/rpc'
 
 # The proxy server used to send the messages. This is very useful
 # for debugging the tools
+# Set the os environment HTTP_PROXY to true if  proxy is used
+# os.environ["HTTP_PROXY"] = "True"
 http_proxy_host = 'localhost'
 http_proxy_port = '8090'
 

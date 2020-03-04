@@ -4,10 +4,10 @@ import logging
 SAMPLE_ATOM = "data/samples/atom.json"
 
 
-def create_fuzzed_particle_group(ws_message, ignore_tokens):
+def particle_group_to_big_size(ws_message, ignore_tokens):
     parsedMessage = json.loads(ws_message)
     particleGroups = parsedMessage["params"]["particleGroups"]
-    for i in range(7):
+    for i in range(10):
         particleGroups.extend(particleGroups)
 
     parsedMessage["params"]["particleGroups"] = particleGroups

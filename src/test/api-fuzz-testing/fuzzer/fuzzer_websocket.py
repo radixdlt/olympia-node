@@ -44,7 +44,7 @@ class FuzzerWebSocket(WebSocketApp):
 
 
     def on_error(self, ws, error):
-        log(self,f'/error {error} ')
+        log(self,'/error %s ' % error)
 
     def on_close(self,ws):
         print("closed connection")
