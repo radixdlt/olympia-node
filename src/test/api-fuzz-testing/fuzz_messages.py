@@ -94,7 +94,7 @@ ignore_errors = []
 #                         ]
 #                         )
 
-print("Fuzzing biz size messages test finished")
+# print("Fuzzing biz size messages test finished")
 
 fuzz_multithreaded_websocket(ws_address,
                              init_messages,

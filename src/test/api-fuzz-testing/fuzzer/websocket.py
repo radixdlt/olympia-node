@@ -6,7 +6,7 @@ import time
 from websocket._app import WebSocketApp
 from websocket._exceptions import WebSocketConnectionClosedException
 
-from analyser.response_analyzer import analyze_response
+from analyser.response_analyzer import ResponseAnalyzer
 from utils import utils
 from fuzzer.logger import FuzzerLogger, log, json_highlight, json_indent, OUTGOING, INCOMING
 class FuzzerWebSocket(WebSocketApp):
@@ -37,7 +37,7 @@ class FuzzerWebSocket(WebSocketApp):
         #     anaylse_response(message);
 
         if self.inspect_response:
-            found_interesting = analyze_response(message, self.ignore_errors)
+            found_interesting = ResponseAnalyzer().log_response_if_relevant(message, self.ignore_errors)
             if found_interesting:
                 msg = 'Potential issue found in connection with ID %s: %s'
                 logging.warning(msg % (self._id, message))
