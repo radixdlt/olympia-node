@@ -1,0 +1,14 @@
+.checkstyle
+.classpath
+.project
+
+/.gradle/
+/bin/
+/build/
+/.settings/
+
+out/
+
+*.ks
+
+.idea/
