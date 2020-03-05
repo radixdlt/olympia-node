@@ -17,7 +17,10 @@
 
 package com.radixdlt.consensus;
 
+import com.google.inject.Inject;
+
 import java.util.HashSet;
+import java.util.Optional;
 
 /**
  * Manages the BFT Vertex chain
@@ -26,6 +29,7 @@ public final class VertexStore {
 	private final HashSet<Vertex> vertices = new HashSet<>();
 	private QuorumCertificate highestQC = null;
 
+	@Inject
 	public VertexStore() {
 	}
 
@@ -44,7 +48,7 @@ public final class VertexStore {
 		vertices.add(vertex);
 	}
 
-	public QuorumCertificate getHighestQC() {
-		return highestQC;
+	public Optional<QuorumCertificate> getHighestQC() {
+		return Optional.ofNullable(this.highestQC);
 	}
 }

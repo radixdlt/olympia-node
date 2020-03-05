@@ -35,9 +35,9 @@ import com.radixdlt.engine.AtomEventListener;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.network.EventCoordinatorNetworkSender;
-
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
+
 import java.util.List;
 import java.util.Objects;
 
@@ -46,6 +46,8 @@ import java.util.Objects;
  */
 public final class EventCoordinator {
 	private static final Logger log = Logging.getLogger("EC");
+	private static final Round GENESIS_ROUND = Round.of(0L);
+	private static final AID GENESIS_ID = AID.ZERO;
 
 	private final VertexStore vertexStore;
 	private final RadixEngine engine;
@@ -86,7 +88,9 @@ public final class EventCoordinator {
         
 		List<Atom> atoms = mempool.getAtoms(1, Sets.newHashSet());
 		if (!atoms.isEmpty()) {
-			QuorumCertificate highestQC = vertexStore.getHighestQC();
+			QuorumCertificate highestQC = vertexStore.getHighestQC()
+				.orElseGet(this::makeGenesisQC);
+
 			log.info("Starting round " + round + " with proposal " + atoms.get(0));
 			networkSender.broadcastProposal(new Vertex(highestQC, this.pacemaker.getCurrentRound(), atoms.get(0)));
 		}
@@ -171,5 +175,10 @@ public final class EventCoordinator {
 				mempool.removeRejectedAtom(proposedAtom.getAID());
 			}
 		});
+	}
+
+	private QuorumCertificate makeGenesisQC() {
+		VertexMetadata genesisMetadata = new VertexMetadata(GENESIS_ROUND, GENESIS_ID, GENESIS_ROUND, GENESIS_ID);
+		return new QuorumCertificate(new Vote(this.self, genesisMetadata), genesisMetadata);
 	}
 }
