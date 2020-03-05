@@ -96,8 +96,16 @@ public final class RadixEngine {
 
 	private void run() {
 		while (this.running) {
+			final EngineAction action;
 			try {
-				final EngineAction action = this.commitQueue.take();
+				action = this.commitQueue.take();
+			} catch (InterruptedException e) {
+				// Just exit if we are interrupted
+				Thread.currentThread().interrupt();
+				break;
+			}
+
+			try {
 				if (action instanceof StoreAtom) {
 					StoreAtom storeAtom = (StoreAtom) action;
 					stateCheckAndStore(storeAtom);
@@ -109,10 +117,8 @@ public final class RadixEngine {
 					// but we do want to flag this logic error.
 					log.error("Unknown EngineAction: {}", action.getClass().getName());
 				}
-			} catch (InterruptedException e) {
-				// Just exit if we are interrupted
-				Thread.currentThread().interrupt();
-				break;
+			} catch (Exception e) {
+				log.error("Error while processing action " + action + ": " + e, e);
 			}
 		}
 	}
