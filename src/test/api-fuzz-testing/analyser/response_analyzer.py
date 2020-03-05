@@ -177,22 +177,23 @@ INTERESTING_THINGS = (
 )
 
 
-def analyze_response(message: str, ignore_errors: list):
+def analyze_response(message: str, errors_to_ignore: list):
     """
     Receives a message and tries to identify interesting things in them.
 
+    :param errors_to_ignore: list of string that needs to be ignored in response
     :param message: The message received by the websocket server
     :return: None, we just print interesting things to output using logging
     """
     message = message.lower()
 
-    for ignore in ignore_errors:
+    for ignore in errors_to_ignore:
         if ignore in message:
             return False
 
-    for it in INTERESTING_THINGS:
-        if it in message:
-            logging.info(f"Found '{it}'")
+    for thing in INTERESTING_THINGS:
+        if thing in message:
+            logging.info(f"Found '{thing}'")
             return True
 
     return False
