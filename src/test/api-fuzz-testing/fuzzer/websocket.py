@@ -21,13 +21,14 @@ class FuzzerWebSocket(WebSocketApp):
         super(FuzzerWebSocket, self).__init__(url, **params)
         self._id = utils.getID()
         log_filename = self._id
-        self.log_file = FuzzerLogger(tokenized_count,log_path,log_filename)
+        self.log_file = FuzzerLogger(tokenized_count, log_path, log_filename)
         self.client_messages = client_messages
         self.messages_awaiting_responses = 0
         self.inspect_response = False
         self.latest_message_timestamp = None
         self.latest_message_sent_timestamp = None
-        self.ignore_errors = errors_to_ignore
+        self.errors_to_ignore = errors_to_ignore
+        self.response_analyzer = ResponseAnalyzer()
 
     def on_message(self, ws, message):
         self.messages_awaiting_responses = max(self.messages_awaiting_responses -1 , 0)
@@ -37,19 +38,21 @@ class FuzzerWebSocket(WebSocketApp):
         #     anaylse_response(message);
 
         if self.inspect_response:
-            found_interesting = ResponseAnalyzer().log_response_if_relevant(message, self.ignore_errors)
+            found_interesting = self.analyze_response(message)
             if found_interesting:
                 msg = 'Potential issue found in connection with ID %s: %s'
                 logging.warning(msg % (self._id, message))
 
+    def analyze_response(self, response: str):
+        return self.response_analyzer.log_response_if_relevant(response, self.errors_to_ignore)
 
     def on_error(self, ws, error):
-        log(self,'/error %s ' % error)
+        log(self, '/error %s ' % error)
 
-    def on_close(self,ws):
+    def on_close(self, ws):
         log(self, 'closed connection')
 
-    def on_open(self,ws):
+    def on_open(self, ws):
         logging.debug("Successfully opened connection")
         self.send_message(self.client_messages[0])
 

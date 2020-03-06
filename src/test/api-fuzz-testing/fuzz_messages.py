@@ -81,20 +81,20 @@ original_messages = [message]
 # application under test
 ignore_errors = []
 
-# fuzz_multithreaded_atom(ws_address,
-#                         init_messages,
-#                         original_messages,
-#                         ignore_tokens,
-#                         ignore_errors,
-#                         log_path,
-#                         http_proxy_host,
-#                         http_proxy_port,
-#                         [
-#                             particle_group_to_big_size
-#                         ]
-#                         )
+fuzz_multithreaded_atom(ws_address,
+                        init_messages,
+                        original_messages,
+                        ignore_tokens,
+                        ignore_errors,
+                        log_path,
+                        http_proxy_host,
+                        http_proxy_port,
+                        [
+                            particle_group_to_big_size
+                        ]
+                        )
 
-# print("Fuzzing biz size messages test finished")
+print("Fuzzing biz size messages test finished")
 
 fuzz_multithreaded_websocket(ws_address,
                              init_messages,
