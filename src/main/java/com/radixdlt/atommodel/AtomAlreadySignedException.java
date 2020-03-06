@@ -15,24 +15,15 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.serialization.mapper;
+package com.radixdlt.atommodel;
 
-import com.fasterxml.jackson.databind.introspect.Annotated;
-import com.fasterxml.jackson.databind.introspect.JacksonAnnotationIntrospector;
+import com.radixdlt.crypto.CryptoException;
 
 /**
- * An annotation introspector that defaults to using the DSON filter
- * if no other filter is specified.
+ * Exception when an already signed {@link Atom} is signed again
  */
-class DsonFilteringIntrospector extends JacksonAnnotationIntrospector {
-	private static final long serialVersionUID = 29L;
-
-	@Override
-	public Object findFilterId(Annotated a) {
-		Object id = super.findFilterId(a);
-		if (id == null) {
-			return MapperConstants.DSON_FILTER_NAME;
-		}
-		return id;
+public class AtomAlreadySignedException extends CryptoException {
+	public AtomAlreadySignedException(String message) {
+		super(message);
 	}
 }

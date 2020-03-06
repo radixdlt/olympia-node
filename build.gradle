@@ -70,6 +70,13 @@ dependencies {
     compile 'org.slf4j:slf4j-api:1.7.26'
     compile 'org.slf4j:slf4j-simple:1.7.26'
 
+
+    implementation('com.radixdlt:radixdlt-java-common') {
+        version {
+            branch = 'master'
+        }
+    }
+
     compile('org.reflections:reflections:0.9.11') {
         exclude group: 'com.google.guava', module: 'guava'
     }

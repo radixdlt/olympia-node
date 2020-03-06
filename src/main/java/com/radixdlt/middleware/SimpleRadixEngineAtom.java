@@ -17,7 +17,7 @@
 
 package com.radixdlt.middleware;
 
-import com.radixdlt.common.Atom;
+import com.radixdlt.atommodel.Atom;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.engine.RadixEngineAtom;
 

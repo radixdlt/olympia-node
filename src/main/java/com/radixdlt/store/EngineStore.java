@@ -18,7 +18,7 @@
 package com.radixdlt.store;
 
 import com.radixdlt.common.AID;
-import com.radixdlt.common.Atom;
+import com.radixdlt.atommodel.Atom;
 import com.radixdlt.constraintmachine.Particle;
 import java.util.function.Consumer;
 

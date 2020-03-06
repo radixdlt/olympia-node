@@ -1,2 +1,8 @@
 rootProject.name = 'radix-engine-library'
 include 'examples'
+
+sourceControl {
+    gitRepository("https://github.com/radixdlt/radixdlt-java-common.git") {
+        producesModule("com.radixdlt:radixdlt-java-common")
+    }
+}

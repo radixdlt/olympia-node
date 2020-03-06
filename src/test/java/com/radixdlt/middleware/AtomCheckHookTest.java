@@ -19,7 +19,7 @@ package com.radixdlt.middleware;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.common.Atom;
+import com.radixdlt.atommodel.Atom;
 import com.radixdlt.common.EUID;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.universe.Universe;
