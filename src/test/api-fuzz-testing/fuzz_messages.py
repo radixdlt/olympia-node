@@ -32,7 +32,7 @@ logging.getLogger('').addHandler(console)
 #       ws://localhost
 #       wss://localhost
 #
-ws_address = 'ws://35.177.35.134:8080/rpc'
+ws_address = 'ws://3.10.234.150:8080/rpc'
 
 # The proxy server used to send the messages. This is very useful
 # Set the os environment HTTP_PROXY to true if  proxy is used
@@ -95,16 +95,16 @@ fuzz_multithreaded_atom(ws_address,
                         )
 
 print("Fuzzing biz size messages test finished")
-
-fuzz_multithreaded_websocket(ws_address,
-                             init_messages,
-                             original_messages,
-                             ignore_tokens,
-                             ignore_errors,
-                             log_path,
-                             http_proxy_host,
-                             http_proxy_port,
-                             [
-                                 tokenize_double_quotes
-                             ])
+#
+# fuzz_multithreaded_websocket(ws_address,
+#                              init_messages,
+#                              original_messages,
+#                              ignore_tokens,
+#                              ignore_errors,
+#                              log_path,
+#                              http_proxy_host,
+#                              http_proxy_port,
+#                              [
+#                                  tokenize_double_quotes
+#                              ])
 print("Fuzzing tokenised submission of atom finished")
