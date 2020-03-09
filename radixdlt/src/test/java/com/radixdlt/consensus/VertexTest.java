@@ -17,6 +17,8 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.crypto.DefaultSignatures;
+import com.radixdlt.crypto.ECPublicKey;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -26,6 +28,9 @@ import com.radixdlt.common.EUID;
 import com.radixdlt.utils.Ints;
 
 import static org.junit.Assert.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class VertexTest {
@@ -45,8 +50,8 @@ public class VertexTest {
 
 		this.vertexMetadata = new VertexMetadata(round, aid, parentRound, parentAid);
 
-		this.vote = new Vote(EUID.TWO, this.vertexMetadata, signature);
-		this.qc = new QuorumCertificate(this.vote, this.vertexMetadata);
+		this.vote = new Vote(makePubKey(EUID.TWO), this.vertexMetadata, null);
+		this.qc = new QuorumCertificate(this.vertexMetadata, DefaultSignatures.emptySignatures());
 
 
 		this.atom = new Atom();
@@ -77,5 +82,11 @@ public class VertexTest {
 		byte[] bytes = new byte[AID.BYTES];
 		Ints.copyTo(id, bytes, AID.BYTES - Integer.BYTES);
 		return AID.from(bytes);
+	}
+
+	private static ECPublicKey makePubKey(EUID id) {
+		ECPublicKey pubKey = mock(ECPublicKey.class);
+		when(pubKey.getUID()).thenReturn(id);
+		return pubKey;
 	}
 }

@@ -25,6 +25,7 @@ import com.radixdlt.common.Atom;
 import com.radixdlt.common.EUID;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
+import com.radixdlt.consensus.safety.QuorumRequirements;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyViolationException;
 import com.radixdlt.consensus.safety.VoteResult;
@@ -32,6 +33,8 @@ import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.CryptoException;
+import com.radixdlt.crypto.DefaultSignatures;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.AtomEventListener;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.mempool.Mempool;
@@ -41,6 +44,7 @@ import org.radix.logging.Logging;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Executes consensus logic given events
@@ -56,7 +60,7 @@ public final class EventCoordinator {
 	private final EventCoordinatorNetworkSender networkSender;
 	private final Pacemaker pacemaker;
 	private final ProposerElection proposerElection;
-	private final EUID self;
+	private final ECPublicKey self;
 	private final SafetyRules safetyRules;
 
 	@Inject
@@ -68,7 +72,7 @@ public final class EventCoordinator {
 		VertexStore vertexStore,
 		RadixEngine engine,
 		ProposerElection proposerElection,
-		@Named("self") EUID self
+		@Named("self") ECPublicKey self
 	) {
 		this.mempool = Objects.requireNonNull(mempool);
 		this.networkSender = Objects.requireNonNull(networkSender);
@@ -83,7 +87,7 @@ public final class EventCoordinator {
 	private void processNewRound(Round round) {
 		log.debug("Processing new round: " +  round);
 		// only do something if we're actually the leader
-		if (!proposerElection.isValidProposer(self, round)) {
+		if (!proposerElection.isValidProposer(self.getUID(), round)) {
 			return;
 		}
         
@@ -99,18 +103,32 @@ public final class EventCoordinator {
 
 	public void processVote(Vote vote) {
 		// only do something if we're actually the leader for the next round
-		if (!proposerElection.isValidProposer(self, vote.getVertexMetadata().getRound().next())) {
+		if (!proposerElection.isValidProposer(self.getUID(), vote.getVertexMetadata().getRound().next())) {
 			log.warn(String.format("Ignoring confused vote %s for %s", vote.hashCode(), vote.getVertexMetadata().getRound()));
 			return;
 		}
 
-		// accumulate votes into QCs
-		// TODO assumes a single node network for now
-		QuorumCertificate qc = new QuorumCertificate(vote, vote.getVertexMetadata());
-		this.safetyRules.process(qc);
-		this.vertexStore.syncToQC(qc);
-		this.pacemaker.processQC(qc.getRound())
-			.ifPresent(this::processNewRound);
+		// accumulate votes into QCs in store
+		Optional<QuorumCertificate> potentialQc = this.vertexStore.insertVote(vote, new QuorumRequirements() {
+			@Override
+			public int numRequiredVotes() {
+				return 1;
+			}
+
+			@Override
+			public boolean acceptsVoteBy(EUID author) {
+				return true;
+			}
+		});
+		if (potentialQc.isPresent()) {
+			QuorumCertificate qc = potentialQc.get();
+			this.safetyRules.process(qc);
+			this.vertexStore.syncToQC(qc);
+
+			// start new round if pacemaker feels like it
+			this.pacemaker.processQC(qc.getRound())
+				.ifPresent(this::processNewRound);
+		}
 	}
 
 	public void processLocalTimeout(Round round) {
@@ -123,7 +141,7 @@ public final class EventCoordinator {
 
 	public void processRemoteNewRound(NewRound newRound) {
 		// only do something if we're actually the leader for the next round
-		if (!proposerElection.isValidProposer(self, newRound.getRound())) {
+		if (!proposerElection.isValidProposer(self.getUID(), newRound.getRound())) {
 			log.warn(String.format("Got confused new round %s for round ", newRound.hashCode()) + newRound.getRound());
 			return;
 		}
@@ -182,6 +200,6 @@ public final class EventCoordinator {
 
 	private QuorumCertificate makeGenesisQC() {
 		VertexMetadata genesisMetadata = new VertexMetadata(GENESIS_ROUND, GENESIS_ID, GENESIS_ROUND, GENESIS_ID);
-		return new QuorumCertificate(new Vote(this.self, genesisMetadata, null), genesisMetadata);
+		return new QuorumCertificate(genesisMetadata, DefaultSignatures.emptySignatures());
 	}
 }

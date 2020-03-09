@@ -31,7 +31,9 @@ import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.crypto.CryptoException;
+import com.radixdlt.crypto.DefaultSignatures;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.utils.Ints;
 import org.junit.Test;
@@ -40,13 +42,22 @@ import org.junit.Test;
  * This tests that the {@link SafetyRules} implementation obeys HotStuff's safety and commit rules.
  */
 public class SafetyRulesTest {
-	private static final EUID SELF = EUID.ONE;
+	private static final ECPublicKey SELF = makePubKey(EUID.ONE);
 	private static final Round GENESIS_ROUND = Round.of(0);
 	private static final AID GENESIS_ID = makeAID(1);
 	private static final Vertex GENESIS_VERTEX = makeGenesisVertex();
 
 	private static SafetyRules createDefaultSafetyRules() {
-		return new SafetyRules(SELF, mock(ECKeyPair.class), vertex -> Hash.ZERO_HASH, SafetyState.initialState());
+		ECKeyPair keyPair = mock(ECKeyPair.class);
+		when(keyPair.getPublicKey()).thenReturn(SELF);
+		when(keyPair.getUID()).thenReturn(EUID.ONE);
+		return new SafetyRules(keyPair, vertex -> Hash.ZERO_HASH, SafetyState.initialState());
+	}
+
+	private static ECPublicKey makePubKey(EUID id) {
+		ECPublicKey pubKey = mock(ECPublicKey.class);
+		when(pubKey.getUID()).thenReturn(id);
+		return pubKey;
 	}
 
 	private static AID makeAID(int n) {
@@ -207,13 +218,13 @@ public class SafetyRulesTest {
 
 	private static Vertex makeGenesisVertex() {
 		VertexMetadata genesisMetadata = new VertexMetadata(GENESIS_ROUND, GENESIS_ID, GENESIS_ROUND, GENESIS_ID);
-		QuorumCertificate genesisQC = new QuorumCertificate(new Vote(SELF, genesisMetadata, null), genesisMetadata);
+		QuorumCertificate genesisQC = new QuorumCertificate(genesisMetadata, DefaultSignatures.emptySignatures());
 		return makeVertex(genesisQC, GENESIS_ROUND, GENESIS_ID);
 	}
 
 	private static Vertex makeVertex(Vertex parent, Round round, AID id) {
 		VertexMetadata parentMetadata = new VertexMetadata(parent.getRound(), parent.getAID(), parent.getQC().getRound(), parent.getQC().getVertexMetadata().getAID());
-		QuorumCertificate qc = new QuorumCertificate(new Vote(SELF, parentMetadata, null), parentMetadata);
+		QuorumCertificate qc = new QuorumCertificate(parentMetadata, DefaultSignatures.emptySignatures());
 		return makeVertex(qc, round, id);
 	}
 

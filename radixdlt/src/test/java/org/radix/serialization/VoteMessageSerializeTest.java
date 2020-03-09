@@ -23,7 +23,11 @@ import com.radixdlt.consensus.Round;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.messages.VoteMessage;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.utils.Ints;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class VoteMessageSerializeTest extends SerializeMessageObject<VoteMessage> {
 	public VoteMessageSerializeTest() {
@@ -40,7 +44,7 @@ public class VoteMessageSerializeTest extends SerializeMessageObject<VoteMessage
 		EUID author = EUID.TWO;
 		VertexMetadata vertexMetadata = new VertexMetadata(round, aid, parentRound, parentAid);
 
-		Vote vote = new Vote(author, vertexMetadata, signature);
+		Vote vote = new Vote(makePubKey(author), vertexMetadata, null);
 
 		return new VoteMessage(1, vote);
 	}
@@ -49,5 +53,11 @@ public class VoteMessageSerializeTest extends SerializeMessageObject<VoteMessage
 		byte[] bytes = new byte[AID.BYTES];
 		Ints.copyTo(id, bytes, AID.BYTES - Integer.BYTES);
 		return AID.from(bytes);
+	}
+
+	private static ECPublicKey makePubKey(EUID id) {
+		ECPublicKey pubKey = mock(ECPublicKey.class);
+		when(pubKey.getUID()).thenReturn(id);
+		return pubKey;
 	}
 }

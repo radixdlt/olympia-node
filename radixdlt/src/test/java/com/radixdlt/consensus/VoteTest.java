@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.crypto.ECPublicKey;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -25,6 +26,9 @@ import com.radixdlt.common.EUID;
 import com.radixdlt.utils.Ints;
 
 import static org.junit.Assert.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class VoteTest {
@@ -40,10 +44,11 @@ public class VoteTest {
 		Round round = parentRound.next();
 		AID aid = aidOf(123456);
 
-		EUID author = EUID.TWO;
+		ECPublicKey author = mock(ECPublicKey.class);
+		when(author.getUID()).thenReturn(EUID.TWO);
 		this.vertexMetadata = new VertexMetadata(round, aid, parentRound, parentAid);
 
-		this.testObject = new Vote(author, vertexMetadata, signature);
+		this.testObject = new Vote(author, vertexMetadata, null);
 	}
 
 	@Test
@@ -55,7 +60,7 @@ public class VoteTest {
 	@Test
 	public void testGetters() {
 		assertEquals(this.vertexMetadata, this.testObject.getVertexMetadata());
-		assertEquals(EUID.TWO, this.testObject.getAuthor());
+		assertEquals(EUID.TWO, this.testObject.getAuthor().getUID());
 	}
 
 	@Test

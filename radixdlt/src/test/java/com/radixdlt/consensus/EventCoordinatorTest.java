@@ -27,6 +27,8 @@ import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyViolationException;
 import com.radixdlt.consensus.safety.VoteResult;
 import com.radixdlt.constraintmachine.CMError;
+import com.radixdlt.crypto.CryptoException;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.AtomEventListener;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.mempool.Mempool;
@@ -45,12 +47,18 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class EventCoordinatorTest {
-	private static final EUID SELF = EUID.ONE;
+	private static final ECPublicKey SELF = makePubKey(EUID.ONE);
 
 	private static AID makeAID(int n) {
 		byte[] temp = new byte[AID.BYTES];
 		Ints.copyTo(n, temp, AID.BYTES - Integer.BYTES);
 		return AID.from(temp);
+	}
+
+	private static ECPublicKey makePubKey(EUID id) {
+		ECPublicKey pubKey = mock(ECPublicKey.class);
+		when(pubKey.getUID()).thenReturn(id);
+		return pubKey;
 	}
 
 	@Test
@@ -261,7 +269,7 @@ public class EventCoordinatorTest {
 	}
 
 	@Test
-	public void when_processing_valid_stored_proposal__then_atom_is_voted_on_and_removed() throws SafetyViolationException {
+	public void when_processing_valid_stored_proposal__then_atom_is_voted_on_and_removed() throws SafetyViolationException, CryptoException {
 		Mempool mempool = mock(Mempool.class);
 		EventCoordinatorNetworkSender networkSender = mock(EventCoordinatorNetworkSender.class);
 		SafetyRules safetyRules = mock(SafetyRules.class);

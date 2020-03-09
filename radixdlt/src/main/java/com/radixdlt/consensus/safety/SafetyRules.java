@@ -21,7 +21,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import com.radixdlt.common.AID;
-import com.radixdlt.common.EUID;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
@@ -38,15 +37,13 @@ import java.util.Objects;
  * TODO: Add storage of private key of node here
  */
 public final class SafetyRules {
-	private final EUID self;
 	private final ECKeyPair key;
 	private final VertexHasher hasher;
 
 	private SafetyState state;
 
 	@Inject
-	public SafetyRules(@Named("self") EUID self, @Named("self") ECKeyPair key, VertexHasher hasher, SafetyState initialState) {
-		this.self = Objects.requireNonNull(self);
+	public SafetyRules(@Named("self") ECKeyPair key, VertexHasher hasher, SafetyState initialState) {
 		this.key = Objects.requireNonNull(key);
 		this.hasher = Objects.requireNonNull(hasher);
 		this.state = new SafetyState(initialState.lastVotedRound, initialState.lockedRound);
@@ -99,7 +96,7 @@ public final class SafetyRules {
 		);
 		Hash vertexHash = this.hasher.hash(vertexMetadata);
 		Signature signature = this.key.sign(vertexHash);
-		Vote vote = new Vote(self, vertexMetadata, signature);
+		Vote vote = new Vote(key.getPublicKey(), vertexMetadata, signature);
 		AID committedAtom = getCommittedAtom(proposedVertex);
 
 		return new VoteResult(vote, committedAtom);
