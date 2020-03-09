@@ -42,7 +42,7 @@ public class VertexMessageSerializeTest extends SerializeMessageObject<VertexMes
 		Atom atom = new Atom();
 
 		VertexMetadata vertexMetadata = new VertexMetadata(round, aid, parentRound, parentAid);
-		Vote vote = new Vote(author, vertexMetadata);
+		Vote vote = new Vote(author, vertexMetadata, signature);
 		QuorumCertificate qc = new QuorumCertificate(vote, vertexMetadata);
 		Vertex vertex = new Vertex(qc, round, atom);
 		return new VertexMessage(1, vertex);

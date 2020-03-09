@@ -19,6 +19,7 @@ package com.radixdlt.consensus;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.common.EUID;
+import com.radixdlt.crypto.Signature;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
@@ -26,6 +27,7 @@ import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.serialization.DsonOutput.Output;
 
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Represents a vote on a vertex
@@ -44,17 +46,21 @@ public final class Vote {
 	@DsonOutput(Output.ALL)
 	private final VertexMetadata vertexMetadata;
 
-	// TODO add signature
+	@JsonProperty("signature")
+	@DsonOutput(Output.ALL)
+	private final Signature signature; // may be null if not signed (e.g. for genesis)
 
 	Vote() {
 		// Serializer only
 		this.author = null;
 		this.vertexMetadata = null;
+		this.signature = null;
 	}
 
-	public Vote(EUID author, VertexMetadata vertexMetadata) {
+	public Vote(EUID author, VertexMetadata vertexMetadata, Signature signature) {
 		this.author = Objects.requireNonNull(author);
 		this.vertexMetadata = Objects.requireNonNull(vertexMetadata);
+		this.signature = signature;
 	}
 
 	public EUID getAuthor() {
@@ -63,6 +69,10 @@ public final class Vote {
 
 	public VertexMetadata getVertexMetadata() {
 		return vertexMetadata;
+	}
+
+	public Optional<Signature> getSignature() {
+		return Optional.ofNullable(this.signature);
 	}
 
 	@Override

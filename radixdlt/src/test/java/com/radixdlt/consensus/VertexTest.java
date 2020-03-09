@@ -45,7 +45,7 @@ public class VertexTest {
 
 		this.vertexMetadata = new VertexMetadata(round, aid, parentRound, parentAid);
 
-		this.vote = new Vote(EUID.TWO, this.vertexMetadata);
+		this.vote = new Vote(EUID.TWO, this.vertexMetadata, signature);
 		this.qc = new QuorumCertificate(this.vote, this.vertexMetadata);
 
 

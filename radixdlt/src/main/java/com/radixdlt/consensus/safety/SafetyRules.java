@@ -26,6 +26,10 @@ import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.Vote;
+import com.radixdlt.crypto.CryptoException;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.Hash;
+import com.radixdlt.crypto.Signature;
 
 import java.util.Objects;
 
@@ -35,12 +39,16 @@ import java.util.Objects;
  */
 public final class SafetyRules {
 	private final EUID self;
+	private final ECKeyPair key;
+	private final VertexHasher hasher;
 
 	private SafetyState state;
 
 	@Inject
-	public SafetyRules(@Named("self") EUID self, SafetyState initialState) {
+	public SafetyRules(@Named("self") EUID self, @Named("self") ECKeyPair key, VertexHasher hasher, SafetyState initialState) {
 		this.self = Objects.requireNonNull(self);
+		this.key = Objects.requireNonNull(key);
+		this.hasher = Objects.requireNonNull(hasher);
 		this.state = new SafetyState(initialState.lastVotedRound, initialState.lockedRound);
 	}
 
@@ -69,7 +77,7 @@ public final class SafetyRules {
 	 * @return A vote result containing the vote and any committed vertices
 	 * @throws SafetyViolationException In case the vertex would violate a safety invariant
 	 */
-	public VoteResult voteFor(Vertex proposedVertex) throws SafetyViolationException {
+	public VoteResult voteFor(Vertex proposedVertex) throws SafetyViolationException, CryptoException {
 		// ensure vertex does not violate earlier rounds
 		if (proposedVertex.getRound().compareTo(this.state.lastVotedRound) <= 0) {
 			throw new SafetyViolationException(proposedVertex, this.state, String.format(
@@ -89,7 +97,9 @@ public final class SafetyRules {
 			proposedVertex.getQC().getVertexMetadata().getRound(),
 			proposedVertex.getQC().getVertexMetadata().getAID()
 		);
-		Vote vote = new Vote(self, vertexMetadata);
+		Hash vertexHash = this.hasher.hash(vertexMetadata);
+		Signature signature = this.key.sign(vertexHash);
+		Vote vote = new Vote(self, vertexMetadata, signature);
 		AID committedAtom = getCommittedAtom(proposedVertex);
 
 		return new VoteResult(vote, committedAtom);
