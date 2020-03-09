@@ -2,6 +2,7 @@ package com.radix.regression;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
@@ -32,8 +33,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 public class SubmitIdenticalAtomsMultipleTimesTest {
 	private RadixUniverse universe = RadixUniverse.create(RadixEnv.getBootstrapConfig());
@@ -62,58 +61,65 @@ public class SubmitIdenticalAtomsMultipleTimesTest {
 	}
 
 	@Test
-	public void testSubmitSameAtomTwoTimesConcurrently() {
-		submitSameAtomXTimesConcurrently(2);
+	public void testSubmitConflictingAtomTwoTimesConcurrently() {
+		submitConflictingAtomXTimesConcurrently(2);
 	}
 
 	@Test
-	public void testSubmitSameAtomManyTimesConcurrently() {
-		submitSameAtomXTimesConcurrently(16);
+	public void testSubmitConflictingAtomManyTimesConcurrently() {
+		submitConflictingAtomXTimesConcurrently(16);
 	}
 
-	public void submitSameAtomXTimesConcurrently(int times) {
-		Atom atom = buildAtom(ImmutableMap.of(), true, System.currentTimeMillis() + "", SpunParticle.up(
-			new MessageParticle.MessageParticleBuilder()
-			.payload(new byte[10])
-			.metaData("application", "message")
-			.from(universe.getAddressFrom(this.identity.getPublicKey()))
-			.to(universe.getAddressFrom(this.identity.getPublicKey()))
-			.build()));
+	public void submitConflictingAtomXTimesConcurrently(int times) {
+		long startTime = System.currentTimeMillis();
+		long nonce = System.nanoTime(); // Same (sort of) random nonce for each message particle
+		List<TestObserver<AtomStatusEvent>> observers = Lists.newArrayList();
+		List<TestObserver<AtomStatusEvent>> submissions = Lists.newArrayList();
 
-		TestObserver<AtomStatusEvent> observer = TestObserver.create(Util.loggingObserver("Atom Status"));
-		final String subscriberId = UUID.randomUUID().toString();
-		this.jsonRpcClient.observeAtomStatusNotifications(subscriberId)
-			.doOnNext(n -> {
-				if (n.getType() == NotificationType.START) {
-					this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, atom.getAid()).blockingAwait();
-				}
-			})
-			.filter(n -> n.getType().equals(NotificationType.EVENT))
-			.map(Notification::getEvent)
-			.subscribe(observer);
+		for (int i = 0; i < times; ++i) {
+			Atom atom = buildAtom(ImmutableMap.of(), true, startTime + "", SpunParticle.up(
+				new MessageParticle.MessageParticleBuilder()
+					.payload(new byte[10])
+					.metaData("application", "message")
+					.nonce(nonce)
+					.from(universe.getAddressFrom(this.identity.getPublicKey()))
+					.to(universe.getAddressFrom(this.identity.getPublicKey()))
+					.build()
+			));
+			startTime += 1; // slightly different atom next time
 
-		List<TestObserver> submissions =
-			IntStream.range(0, times)
-			.mapToObj(x -> submitAtom(atom))
-			.collect(Collectors.toList()); // collect to make sure all get submitted
-
+			TestObserver<AtomStatusEvent> observer = TestObserver.create(Util.loggingObserver("Atom Status " + i));
+			final String subscriberId = UUID.randomUUID().toString();
+			this.jsonRpcClient.observeAtomStatusNotifications(subscriberId)
+				.doOnNext(n -> {
+					if (n.getType() == NotificationType.START) {
+						this.jsonRpcClient.sendGetAtomStatusNotifications(subscriberId, atom.getAid()).blockingAwait();
+					}
+				})
+				.filter(n -> n.getType().equals(NotificationType.EVENT))
+				.map(Notification::getEvent)
+				.subscribe(observer);
+			observers.add(observer);
+			submissions.add(submitAtom(atom));
+		}
 
 		submissions.forEach(submission -> {
 			submission.awaitTerminalEvent();
 			submission.assertNoErrors();
 			submission.assertComplete();
 		});
-		observer.awaitCount(times);
-		observer.assertValueCount(times);
-		observer.assertValueAt(0, notification -> notification.getAtomStatus() == AtomStatus.STORED);
-		for (int i = 1; i < times; i++) {
-			observer.assertValueAt(i, notification -> notification.getAtomStatus() == AtomStatus.CONFLICT_LOSER);
+		for (int i = 0; i < times; ++i) {
+			TestObserver<AtomStatusEvent> observer = observers.get(i);
+			observer.awaitCount(1);
+			observer.assertValueCount(1);
+			AtomStatus expectedStatus = (i == 0) ? AtomStatus.STORED : AtomStatus.CONFLICT_LOSER;
+			observer.assertValueAt(0, notification -> notification.getAtomStatus() == expectedStatus);
+			observer.dispose();
 		}
-		observer.dispose();
 	}
 
-	private TestObserver submitAtom(Atom atom) {
-		TestObserver observer = TestObserver.create();
+	private TestObserver<AtomStatusEvent> submitAtom(Atom atom) {
+		TestObserver<AtomStatusEvent> observer = TestObserver.create();
 
 		this.jsonRpcClient.pushAtom(atom).subscribe(observer);
 

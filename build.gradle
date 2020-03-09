@@ -17,6 +17,7 @@ version '1.0-SNAPSHOT'
 apply plugin: 'java'
 apply plugin: 'application'
 apply plugin: 'com.github.johnrengelman.shadow'
+apply plugin: 'com.adarshr.test-logger'
 
 mainClassName = "com.radix.regression.TokenCreation"
 
@@ -26,6 +27,14 @@ mainClassName = 'com.radix.regression.TokenCreation'
 repositories {
     mavenCentral()
     maven { url 'https://jitpack.io' }
+}
+
+test {
+    systemProperty "java.security.egd", "file:/dev/urandom"
+}
+
+testlogger {
+    theme 'plain'
 }
 
 dependencies {
