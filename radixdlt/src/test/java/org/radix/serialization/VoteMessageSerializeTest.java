@@ -40,7 +40,7 @@ public class VoteMessageSerializeTest extends SerializeMessageObject<VoteMessage
 		EUID author = EUID.TWO;
 		VertexMetadata vertexMetadata = new VertexMetadata(round, aid, parentRound, parentAid);
 
-		Vote vote = new Vote(author, vertexMetadata);
+		Vote vote = new Vote(author, vertexMetadata, signature);
 
 		return new VoteMessage(1, vote);
 	}

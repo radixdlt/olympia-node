@@ -39,7 +39,7 @@ public class VoteSerializeTest extends SerializeObject<Vote> {
 		EUID author = EUID.TWO;
 		VertexMetadata vertexMetadata = new VertexMetadata(round, aid, parentRound, parentAid);
 
-		return new Vote(author, vertexMetadata);
+		return new Vote(author, vertexMetadata, signature);
 	}
 
 	private static AID aidOf(int id) {

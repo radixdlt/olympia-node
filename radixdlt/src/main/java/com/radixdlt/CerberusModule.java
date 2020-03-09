@@ -27,6 +27,8 @@ import com.radixdlt.consensus.liveness.PacemakerImpl;
 import com.radixdlt.consensus.liveness.PacemakerRx;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.safety.SafetyRules;
+import com.radixdlt.consensus.safety.SimpleVertexHasher;
+import com.radixdlt.consensus.safety.VertexHasher;
 import com.radixdlt.consensus.tempo.Scheduler;
 import com.radixdlt.consensus.tempo.SingleThreadedScheduler;
 import java.util.concurrent.Executors;
@@ -42,6 +44,7 @@ public class CerberusModule extends AbstractModule {
 		bind(PacemakerRx.class).to(PacemakerImpl.class);
 		bind(Pacemaker.class).to(PacemakerImpl.class);
 
+		bind(VertexHasher.class).to(SimpleVertexHasher.class);
 		bind(SafetyRules.class).in(Scopes.SINGLETON);
 	}
 

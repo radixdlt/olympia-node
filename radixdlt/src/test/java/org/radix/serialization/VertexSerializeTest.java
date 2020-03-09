@@ -41,7 +41,7 @@ public class VertexSerializeTest extends SerializeObject<Vertex> {
 		VertexMetadata vertexMetadata = new VertexMetadata(round, aid, parentRound, parentAid);
 
 		EUID author = EUID.TWO;
-		Vote vote = new Vote(author, vertexMetadata);
+		Vote vote = new Vote(author, vertexMetadata, signature);
 		QuorumCertificate qc = new QuorumCertificate(vote, vertexMetadata);
 
 		Atom atom = new Atom();

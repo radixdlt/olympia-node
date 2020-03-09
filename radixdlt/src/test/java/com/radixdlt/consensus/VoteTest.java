@@ -43,7 +43,7 @@ public class VoteTest {
 		EUID author = EUID.TWO;
 		this.vertexMetadata = new VertexMetadata(round, aid, parentRound, parentAid);
 
-		this.testObject = new Vote(author, vertexMetadata);
+		this.testObject = new Vote(author, vertexMetadata, signature);
 	}
 
 	@Test

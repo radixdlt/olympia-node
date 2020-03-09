@@ -31,6 +31,7 @@ import com.radixdlt.consensus.safety.VoteResult;
 import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.engine.AtomEventListener;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.mempool.Mempool;
@@ -157,6 +158,8 @@ public final class EventCoordinator {
 						.ifPresent(aid -> log.info("Committed atom " + aid));
 				} catch (SafetyViolationException e) {
 					log.error("Rejected " + proposedVertex, e);
+				} catch (CryptoException e) {
+					log.error("Failed to sign " + proposedAtom, e);
 				}
 			}
 
@@ -179,6 +182,6 @@ public final class EventCoordinator {
 
 	private QuorumCertificate makeGenesisQC() {
 		VertexMetadata genesisMetadata = new VertexMetadata(GENESIS_ROUND, GENESIS_ID, GENESIS_ROUND, GENESIS_ID);
-		return new QuorumCertificate(new Vote(this.self, genesisMetadata), genesisMetadata);
+		return new QuorumCertificate(new Vote(this.self, genesisMetadata, null), genesisMetadata);
 	}
 }
