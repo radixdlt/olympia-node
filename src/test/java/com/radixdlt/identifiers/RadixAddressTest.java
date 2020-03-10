@@ -62,10 +62,12 @@ public class RadixAddressTest {
 		int magicByte = 2;
 		RadixAddress address = RadixAddress.from(new MagicByteProvider(magicByte), key);
 
-		// https://github.com/radixdlt/radixdlt-swift/blob/develop/Tests/TestCases/UnitTests/RadixStack/1_Subatomic/SubatomicModels/Address/AddressTests.swift
-		String expectedAddressHexString = "02" + // magic byte
-				publicKeyHexString +
-				"175341a9"; // checksum
+		// https://github.com/radixdlt/radixdlt-swift/
+		// blob/develop/Tests/TestCases/UnitTests/
+		// RadixStack/1_Subatomic/SubatomicModels/Address/AddressTests.swift
+		String expectedAddressHexString = "02" // magic byte
+				+ publicKeyHexString
+				+ "175341a9"; // checksum
 
 		assertThat(expectedAddressHexString).isEqualToIgnoringCase(Bytes.toHexString(address.toByteArray()));
 	}
