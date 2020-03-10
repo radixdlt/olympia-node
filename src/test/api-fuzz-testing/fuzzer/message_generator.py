@@ -1,5 +1,6 @@
 from fuzzer.main import PAYLOADS
 from tokenizer import TOKEN
+from utils.utils import get_max_threads
 
 
 def generator_from_payload(tokenized_message: str):
@@ -11,7 +12,7 @@ def generator_from_payload(tokenized_message: str):
 
 
 def generator_list_huge_atoms(huge_atom_message: str):
-    for i in range(100):
+    for i in range(get_max_threads()):
         yield huge_atom_message
 
 

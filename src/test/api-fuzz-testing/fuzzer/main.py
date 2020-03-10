@@ -3,6 +3,7 @@ import ssl, os
 from concurrent import futures
 from fuzzer.websocket import FuzzerWebSocket
 from tokenizer.main import create_tokenized_messages
+from utils.utils import get_max_threads
 
 PAYLOADS = 'data/payloads/payloads.txt'
 
@@ -35,7 +36,7 @@ def apply_generator_and_execute(tokenized_messages: list, login_messages: list, 
 
 def run_fuzz(login_messages: list, original_messages: list, tokens_to_ignore: list,
              tokeniser_methods: list, exec_params: dict, message_generator: callable):
-    with futures.ThreadPoolExecutor(max_workers=100) as executor:
+    with futures.ThreadPoolExecutor(max_workers=get_max_threads()) as executor:
         for original_message in original_messages:
             logging.info(f'Fuzzing the message {original_message} ')
             tokenized_messages = create_tokenized_messages(original_message, tokens_to_ignore, tokeniser_methods)

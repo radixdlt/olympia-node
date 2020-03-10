@@ -2,7 +2,7 @@
 import logging, os
 
 from fuzzer.main import fuzz_websocket
-
+from utils.utils import get_server_endpoint
 #
 #   Configure logging
 #
@@ -27,7 +27,7 @@ logging.getLogger('').addHandler(console)
 #       ws://localhost
 #       wss://localhost
 #
-ws_address = 'ws://3.10.234.150:8080/rpc'
+ws_address = f"ws://{get_server_endpoint()}/rpc"
 
 # The proxy server used to send the messages. This is very useful
 # for debugging the tools
@@ -58,14 +58,14 @@ messages_to_send = [
 # When doing analysis of the websocket responses to try to identify exceptions
 # and other errors, ignore these errors since they are common for the
 # application under test
-ignore_errors = []
+errors_to_ignore = []
 
 #
 #   Do not touch these lines
 #
 fuzz_websocket(ws_address,
                messages_to_send,
-               ignore_errors,
+               errors_to_ignore,
                0,
                log_path,
                http_proxy_host,

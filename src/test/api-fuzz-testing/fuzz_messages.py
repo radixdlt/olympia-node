@@ -8,7 +8,7 @@ from tokenizer.particles import SAMPLE_ATOM
 from utils.__init_ import recursive_items
 from tokenizer.particles import particle_group_to_big_size
 from tokenizer.quotes import tokenize_double_quotes
-
+from utils.utils import get_server_endpoint
 #
 #   Configure logging
 #
@@ -26,14 +26,15 @@ logging.getLogger('').addHandler(console)
 
 #
 #   User configured parameters
-#
 
 # The websocket address, including the protocol, for example:
 #
 #       ws://localhost
 #       wss://localhost
 #
-ws_address = 'ws://3.10.234.150:8080/rpc'
+
+
+ws_address = f"ws://{get_server_endpoint()}/rpc"
 
 # The proxy server used to send the messages. This is very useful
 # Set the os environment HTTP_PROXY to true if  proxy is used
@@ -41,7 +42,7 @@ ws_address = 'ws://3.10.234.150:8080/rpc'
 http_proxy_host = 'localhost'
 http_proxy_port = '8090'
 
-# Log path, all messages are logged in different files
+# Log path, all messages are lo""gged in different files
 log_path = 'output/'
 
 # Websocket authentication message. The tool will send the authentication
