@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
-import logging,os
+import logging, os
 
 from fuzzer.main import fuzz_websocket
+
 #
 #   Configure logging
 #
@@ -26,7 +27,7 @@ logging.getLogger('').addHandler(console)
 #       ws://localhost
 #       wss://localhost
 #
-ws_address = 'ws://35.177.35.134:8080/rpc'
+ws_address = 'ws://3.10.234.150:8080/rpc'
 
 # The proxy server used to send the messages. This is very useful
 # for debugging the tools
@@ -50,7 +51,7 @@ message = '{"id":"6e377df2-0db1-4cf6-83b5-921359a8150e","method":"Atoms.submitAt
 # The list containing all messages to be sent to the websocket. In some cases
 # You need to send two or more messages to set a specific remote state, and
 # then you send the attack
-messages = [
+messages_to_send = [
     message,
 ]
 
@@ -63,9 +64,9 @@ ignore_errors = []
 #   Do not touch these lines
 #
 fuzz_websocket(ws_address,
-                           messages,
-                           ignore_errors,
-                           0,
-                           log_path,
-                           http_proxy_host,
-                           http_proxy_port)
+               messages_to_send,
+               ignore_errors,
+               0,
+               log_path,
+               http_proxy_host,
+               http_proxy_port)

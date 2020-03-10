@@ -9,6 +9,8 @@ from websocket._exceptions import WebSocketConnectionClosedException
 from analyser.response_analyzer import ResponseAnalyzer
 from utils import utils
 from fuzzer.logger import FuzzerLogger, log, json_highlight, json_indent, OUTGOING, INCOMING
+
+
 class FuzzerWebSocket(WebSocketApp):
     def __init__(self, url: str, client_messages: list, errors_to_ignore: list, tokenized_count: int, log_path: str):
         params = {
@@ -31,8 +33,8 @@ class FuzzerWebSocket(WebSocketApp):
         self.response_analyzer = ResponseAnalyzer()
 
     def on_message(self, ws, message):
-        self.messages_awaiting_responses = max(self.messages_awaiting_responses -1 , 0)
-        log(self,message,INCOMING);
+        self.messages_awaiting_responses = max(self.messages_awaiting_responses - 1, 0)
+        log(self, message, INCOMING);
 
         # if self.inspect_response:
         #     anaylse_response(message);
@@ -77,12 +79,9 @@ class FuzzerWebSocket(WebSocketApp):
         except:
             pass
 
-
     def wait_on_messages(self):
         start_timestamp = time.time()
-        should_wait = self.messages_awaiting_responses > 0
-
-        while should_wait:
+        while self.messages_awaiting_responses > 0:
             time.sleep(0.1)
 
             spent_time = time.time() - start_timestamp
@@ -97,9 +96,8 @@ class FuzzerWebSocket(WebSocketApp):
             if self.messages_awaiting_responses == 0:
                 break
 
-
     def send_message(self, message, inspect_response=False):
-        log(self,message,direction=OUTGOING)
+        log(self, message, direction=OUTGOING)
         self.messages_awaiting_responses += 1
         self.inspect_response = inspect_response
         self.latest_message_sent_timestamp = time.time()
@@ -113,6 +111,3 @@ class FuzzerWebSocket(WebSocketApp):
     def messages_to_fuzz(self):
         for message in self.client_messages[1:]:
             yield message
-
-
-

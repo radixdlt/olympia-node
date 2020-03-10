@@ -5,7 +5,7 @@ from tokenizer import TOKEN
 QUOTES_RE = re.compile('"(.*?)"')
 
 
-def tokenize_double_quotes(ws_message: str, ignore_tokens: list):
+def tokenize_double_quotes(ws_message: str, tokens_to_ignore: list):
     tokenized = []
 
     for match in QUOTES_RE.finditer(ws_message):
@@ -13,7 +13,7 @@ def tokenize_double_quotes(ws_message: str, ignore_tokens: list):
 
         should_tokenize = True
 
-        for ignore_token in ignore_tokens:
+        for ignore_token in tokens_to_ignore:
             if ignore_token == ws_message[start + 1:end - 1]:
                 should_tokenize = False
                 break

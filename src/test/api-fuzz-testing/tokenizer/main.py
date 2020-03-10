@@ -8,9 +8,9 @@ TOKENIZER_METHODS = [
 ]
 
 
-def create_tokenized_messages(original_message: str, ignore_tokens: list, methods: list = None):
+def create_tokenized_messages(original_message: str, tokens_to_ignore: list, methods: list = None):
     tokenized_messages = []
     tokeniser_methods = methods if methods else TOKENIZER_METHODS
     for tokenizer_method in tokeniser_methods:
-        tokenized_messages.extend(tokenizer_method(original_message, ignore_tokens))
+        tokenized_messages.extend(tokenizer_method(original_message, tokens_to_ignore))
     return tokenized_messages

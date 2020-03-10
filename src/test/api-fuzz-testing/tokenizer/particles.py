@@ -4,7 +4,7 @@ import logging
 SAMPLE_ATOM = "data/samples/atom.json"
 
 
-def particle_group_to_big_size(ws_message: str, ignore_tokens: list):
+def particle_group_to_big_size(ws_message: str, tokens_to_ignore: list):
     parsedMessage = json.loads(ws_message)
     particleGroups = parsedMessage["params"]["particleGroups"]
     for i in range(10):

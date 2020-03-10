@@ -1,18 +1,10 @@
 import logging
 import ssl, os
-from multiprocessing import Queue
 from concurrent import futures
 from fuzzer.websocket import FuzzerWebSocket
 from tokenizer.main import create_tokenized_messages
-from tokenizer import TOKEN
 
 PAYLOADS = 'data/payloads/payloads.txt'
-
-
-class ThreadPoolExecutorWithQueueSizeLimit(futures.ThreadPoolExecutor):
-    def __init__(self, maxsize=50, *args, **kwargs):
-        super(ThreadPoolExecutorWithQueueSizeLimit, self).__init__(*args, **kwargs)
-        self._work_queue = Queue(maxsize=maxsize)
 
 
 def fuzz_websocket(ws_address: str, fuzzing_messages: list,
@@ -31,54 +23,22 @@ def fuzz_websocket(ws_address: str, fuzzing_messages: list,
         ws.run_forever(sslopt={"cert_reqs": ssl.CERT_NONE})
 
 
-def fuzz_multithreaded_websocket(ws_address: str, login_messages: list, original_messages: list, ignore_tokens: list,
-                                 errors_to_ignore: list, output: str,
-                                 http_proxy_host: str, http_proxy_port: str, methods: list):
-    payload_count = len(open(PAYLOADS).readlines())
-
-    with futures.ThreadPoolExecutor(max_workers=50) as executor:
-        for original_message in original_messages:
-
-            logging.info(f'Fuzzing the message {original_messages} ')
-            tokenized_messages = create_tokenized_messages(original_message, ignore_tokens, methods)
-            # print(f'Number of tokenized messages {tokenized_messages.count()}')
-            for tokenized_count, tokenized_message in enumerate(tokenized_messages):
-                with open(PAYLOADS, 'r') as f:
-                    for payload in f:
-                        message_applied_with_tokens = replace_token_in_json(payload, tokenized_message)
-                        logging.debug(f'Generated fuzzed message: {message_applied_with_tokens}')
-                        fuzzing_messages = login_messages[:]
-                        fuzzing_messages.append(message_applied_with_tokens)
-                        executor.submit(fuzz_websocket, ws_address, fuzzing_messages, errors_to_ignore, 0, output,
-                                        http_proxy_host, http_proxy_port)
+def apply_generator_and_execute(tokenized_messages: list, login_messages: list, message_generator: callable, executor,
+                                exec_params: dict):
+    for tokenized_count, tokenized_message in enumerate(tokenized_messages):
+        for message in message_generator(tokenized_message):
+            fuzzing_messages = login_messages[:]
+            logging.debug(f'Generated fuzzed message: {message}')
+            fuzzing_messages.append(message)
+            executor.submit(fuzz_websocket, fuzzing_messages=fuzzing_messages, **exec_params)
 
 
-def fuzz_multithreaded_atom(ws_address: str, login_messages: list, original_messages: list, ignore_tokens: list,
-                            errors_to_ignore: list, output: str,
-                            http_proxy_host: str, http_proxy_port: str, methods: list):
-    payload_count = len(open(PAYLOADS).readlines())
-
+def run_fuzz(login_messages: list, original_messages: list, tokens_to_ignore: list,
+             tokeniser_methods: list, exec_params: dict, message_generator: callable):
     with futures.ThreadPoolExecutor(max_workers=100) as executor:
         for original_message in original_messages:
-
-            logging.info(f'Fuzzing the message {original_messages} ')
-            tokenized_messages = create_tokenized_messages(original_message, ignore_tokens, methods)
-            for tokenized_count, tokenized_message in enumerate(tokenized_messages):
-                for i in range(100):
-                    message_applied_with_tokens = tokenized_message
-                    logging.debug(f'Generated fuzzed message: {message_applied_with_tokens}')
-                    fuzzing_messages = login_messages[:]
-                    fuzzing_messages.append(message_applied_with_tokens)
-                    executor.submit(fuzz_websocket, ws_address, fuzzing_messages, errors_to_ignore, 0, output,
-                                    http_proxy_host,
-                                    http_proxy_port)
-
-
-def replace_token_in_json(payload: str, tokenized_message: str):
-    # Escape any quotes which are in the payload
-    payload = payload.strip()
-    payload = payload.replace('"', '\\"')
-
-    # Do the replace
-    modified_message = tokenized_message.replace(TOKEN, payload)
-    return modified_message
+            logging.info(f'Fuzzing the message {original_message} ')
+            tokenized_messages = create_tokenized_messages(original_message, tokens_to_ignore, tokeniser_methods)
+            apply_generator_and_execute(tokenized_messages, login_messages, message_generator=message_generator,
+                                        executor=executor,
+                                        exec_params=exec_params)
