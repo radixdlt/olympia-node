@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.crypto.ECPublicKey;
 import org.junit.Before;
 import org.junit.Test;
@@ -44,8 +45,7 @@ public class VoteTest {
 		Round round = parentRound.next();
 		AID aid = aidOf(123456);
 
-		ECPublicKey author = mock(ECPublicKey.class);
-		when(author.getUID()).thenReturn(EUID.TWO);
+		RadixAddress author = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
 		this.vertexMetadata = new VertexMetadata(round, aid, parentRound, parentAid);
 
 		this.testObject = new Vote(author, vertexMetadata, null);

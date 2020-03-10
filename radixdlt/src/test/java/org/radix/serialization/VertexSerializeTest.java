@@ -17,14 +17,15 @@
 
 package org.radix.serialization;
 
+import com.radixdlt.atommodel.message.MessageParticle;
+import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.Atom;
-import com.radixdlt.common.EUID;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Round;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
-import com.radixdlt.crypto.DefaultSignatures;
+import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.utils.Ints;
 
@@ -41,10 +42,12 @@ public class VertexSerializeTest extends SerializeObject<Vertex> {
 
 		VertexMetadata vertexMetadata = new VertexMetadata(round, aid, parentRound, parentAid);
 
-		EUID author = EUID.TWO;
 		QuorumCertificate qc = new QuorumCertificate(vertexMetadata, new ECDSASignatures());
 
+		RadixAddress address = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
 		Atom atom = new Atom();
+		// add a particle to ensure atom is valid and has at least one shard
+		atom.addParticleGroupWith(new MessageParticle(address, address, "Hello".getBytes()), Spin.UP);
 
 		return new Vertex(qc, round, atom);
 	}

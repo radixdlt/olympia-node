@@ -20,6 +20,7 @@ package com.radixdlt.consensus.safety;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
+import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.common.AID;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
@@ -29,7 +30,6 @@ import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.crypto.Signature;
 
 import java.util.Objects;
 
@@ -38,14 +38,22 @@ import java.util.Objects;
  * TODO: Add storage of private key of node here
  */
 public final class SafetyRules {
-	private final ECKeyPair key;
+	private final RadixAddress selfAddress;
+	private final ECKeyPair selfKey;
 	private final VertexHasher hasher;
 
 	private SafetyState state;
 
 	@Inject
-	public SafetyRules(@Named("self") ECKeyPair key, VertexHasher hasher, SafetyState initialState) {
-		this.key = Objects.requireNonNull(key);
+	public SafetyRules(@Named("self") RadixAddress selfAddress,
+	                   @Named("self") ECKeyPair selfKey,
+	                   VertexHasher hasher,
+	                   SafetyState initialState) {
+		this.selfAddress = Objects.requireNonNull(selfAddress);
+		this.selfKey = Objects.requireNonNull(selfKey);
+		if (!selfAddress.getKey().equals(selfKey.getPublicKey())) {
+			throw new IllegalArgumentException("Address and key mismatch: " + selfAddress + " != " + selfKey);
+		}
 		this.hasher = Objects.requireNonNull(hasher);
 		this.state = new SafetyState(initialState.lastVotedRound, initialState.lockedRound);
 	}
@@ -96,8 +104,8 @@ public final class SafetyRules {
 			proposedVertex.getQC().getVertexMetadata().getAID()
 		);
 		Hash vertexHash = this.hasher.hash(vertexMetadata);
-		ECDSASignature signature = this.key.sign(vertexHash);
-		Vote vote = new Vote(key.getPublicKey(), vertexMetadata, signature);
+		ECDSASignature signature = this.selfKey.sign(vertexHash);
+		Vote vote = new Vote(selfAddress, vertexMetadata, signature);
 		AID committedAtom = getCommittedAtom(proposedVertex);
 
 		return new VoteResult(vote, committedAtom);

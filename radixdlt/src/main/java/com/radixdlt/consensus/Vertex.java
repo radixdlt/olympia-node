@@ -91,6 +91,15 @@ public final class Vertex {
 	}
 
 	@Override
+	public String toString() {
+		return "Vertex{" +
+			"round=" + round +
+			", atom=" + atom +
+			", qc=" + qc +
+			'}';
+	}
+
+	@Override
 	public int hashCode() {
 		return Objects.hash(qc, round, atom);
 	}

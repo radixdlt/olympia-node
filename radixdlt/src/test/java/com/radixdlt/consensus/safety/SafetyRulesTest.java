@@ -22,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.Atom;
 import com.radixdlt.common.EUID;
@@ -29,9 +30,7 @@ import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Round;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
-import com.radixdlt.consensus.Vote;
 import com.radixdlt.crypto.CryptoException;
-import com.radixdlt.crypto.DefaultSignatures;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
@@ -52,7 +51,9 @@ public class SafetyRulesTest {
 		ECKeyPair keyPair = mock(ECKeyPair.class);
 		when(keyPair.getPublicKey()).thenReturn(SELF);
 		when(keyPair.getUID()).thenReturn(EUID.ONE);
-		return new SafetyRules(keyPair, vertex -> Hash.ZERO_HASH, SafetyState.initialState());
+		RadixAddress address = mock(RadixAddress.class);
+		when(address.getKey()).thenReturn(SELF);
+		return new SafetyRules(address, keyPair, vertex -> Hash.ZERO_HASH, SafetyState.initialState());
 	}
 
 	private static ECPublicKey makePubKey(EUID id) {

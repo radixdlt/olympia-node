@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.crypto.DefaultSignatures;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECPublicKey;
@@ -51,7 +52,8 @@ public class VertexTest {
 
 		this.vertexMetadata = new VertexMetadata(round, aid, parentRound, parentAid);
 
-		this.vote = new Vote(makePubKey(EUID.TWO), this.vertexMetadata, null);
+		RadixAddress author = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
+		this.vote = new Vote(author, this.vertexMetadata, null);
 		this.qc = new QuorumCertificate(this.vertexMetadata, new ECDSASignatures());
 
 
@@ -83,11 +85,5 @@ public class VertexTest {
 		byte[] bytes = new byte[AID.BYTES];
 		Ints.copyTo(id, bytes, AID.BYTES - Integer.BYTES);
 		return AID.from(bytes);
-	}
-
-	private static ECPublicKey makePubKey(EUID id) {
-		ECPublicKey pubKey = mock(ECPublicKey.class);
-		when(pubKey.getUID()).thenReturn(id);
-		return pubKey;
 	}
 }

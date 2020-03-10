@@ -17,11 +17,14 @@
 
 package org.radix.serialization;
 
+import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
 import com.radixdlt.consensus.Round;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.Vote;
+import com.radixdlt.crypto.CryptoException;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.utils.Ints;
 
@@ -40,21 +43,15 @@ public class VoteSerializeTest extends SerializeObject<Vote> {
 		Round round = parentRound.next();
 		AID aid = aidOf(123456);
 
-		EUID author = EUID.TWO;
-		VertexMetadata vertexMetadata = new VertexMetadata(round, aid, parentRound, parentAid);
 
-		return new Vote(makePubKey(author), vertexMetadata, null);
+		VertexMetadata vertexMetadata = new VertexMetadata(round, aid, parentRound, parentAid);
+		RadixAddress author = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
+		return new Vote(author, vertexMetadata, null);
 	}
 
 	private static AID aidOf(int id) {
 		byte[] bytes = new byte[AID.BYTES];
 		Ints.copyTo(id, bytes, AID.BYTES - Integer.BYTES);
 		return AID.from(bytes);
-	}
-
-	private static ECPublicKey makePubKey(EUID id) {
-		ECPublicKey pubKey = mock(ECPublicKey.class);
-		when(pubKey.getUID()).thenReturn(id);
-		return pubKey;
 	}
 }
