@@ -36,6 +36,8 @@ import com.radixdlt.network.EventCoordinatorNetworkSender;
 import com.radixdlt.utils.Ints;
 import org.junit.Test;
 
+import java.util.Optional;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
@@ -120,6 +122,7 @@ public class EventCoordinatorTest {
 		when(voteMessage.getVertexMetadata()).thenReturn(vertexMetadata);
 		when(vertexMetadata.getRound()).thenReturn(Round.of(0L));
 		when(proposerElection.isValidProposer(any(), any())).thenReturn(true);
+		when(vertexStore.insertVote(eq(voteMessage), any())).thenReturn(Optional.of(mock(QuorumCertificate.class)));
 
 		eventCoordinator.processVote(voteMessage);
 		verify(safetyRules, times(1)).process(any());
