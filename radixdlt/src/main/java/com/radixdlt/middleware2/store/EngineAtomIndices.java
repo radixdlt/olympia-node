@@ -158,17 +158,15 @@ public class EngineAtomIndices {
 		return typeBytes;
 	}
 
-	public static byte[] toByteArray(byte prefix, long value)
-	{
-		byte[] typeBytes = new byte[Long.BYTES+1];
+	public static byte[] toByteArray(byte prefix, long value) {
+		byte[] typeBytes = new byte[Long.BYTES + 1];
 		typeBytes[0] = prefix;
 		System.arraycopy(Longs.toByteArray(value), 0, typeBytes, 1, Long.BYTES);
 		return typeBytes;
 	}
 
-	public static EUID toEUID(byte[] bytes)
-	{
-		byte[] temp = new byte[bytes.length-1];
+	public static EUID toEUID(byte[] bytes) {
+		byte[] temp = new byte[bytes.length - 1];
 		System.arraycopy(bytes, 1, temp, 0, temp.length);
 		return new EUID(temp);
 	}

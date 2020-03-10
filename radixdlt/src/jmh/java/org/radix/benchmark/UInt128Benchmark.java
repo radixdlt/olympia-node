@@ -65,7 +65,7 @@ public class UInt128Benchmark {
 	private static final UInt128 UI_LARGE_VALUE2 = fromBigInt(BI_LARGE_VALUE2);
 
 	static {
-		assert(BI_LARGE_VALUE1.multiply(BI_SMALL_VALUE).bitLength() < UInt128.SIZE);
+		assert BI_LARGE_VALUE1.multiply(BI_SMALL_VALUE).bitLength() < UInt128.SIZE;
 	}
 
     static UInt128 fromBigInt(BigInteger bi) {
@@ -73,52 +73,52 @@ public class UInt128Benchmark {
     }
 
 	@Benchmark
-	public void AddLargeLargeInt128(Blackhole bh) {
+	public void addLargeLargeInt128(Blackhole bh) {
 		bh.consume(UI_LARGE_VALUE1.add(UI_LARGE_VALUE2));
 	}
 
 	@Benchmark
-	public void AddLargeLargeBigInt(Blackhole bh) {
+	public void addLargeLargeBigInt(Blackhole bh) {
 		bh.consume(BI_LARGE_VALUE1.add(BI_LARGE_VALUE2));
 	}
 
 	@Benchmark
-	public void SubLargeLargeInt128(Blackhole bh) {
+	public void subLargeLargeInt128(Blackhole bh) {
 		bh.consume(UI_LARGE_VALUE1.subtract(UI_LARGE_VALUE2));
 	}
 
 	@Benchmark
-	public void SubLargeLargeBigInt(Blackhole bh) {
+	public void subLargeLargeBigInt(Blackhole bh) {
 		bh.consume(BI_LARGE_VALUE1.subtract(BI_LARGE_VALUE2));
 	}
 
 	@Benchmark
-	public void MulLargeSmallInt128(Blackhole bh) {
+	public void mulLargeSmallInt128(Blackhole bh) {
 		bh.consume(UI_LARGE_VALUE1.multiply(UI_SMALL_VALUE));
 	}
 
 	@Benchmark
-	public void MulLargeSmallBigInt(Blackhole bh) {
+	public void mulLargeSmallBigInt(Blackhole bh) {
 		bh.consume(BI_LARGE_VALUE1.multiply(BI_SMALL_VALUE));
 	}
 
 	@Benchmark
-	public void DivLargeSmallInt128(Blackhole bh) {
+	public void divLargeSmallInt128(Blackhole bh) {
 		bh.consume(UI_LARGE_VALUE1.divide(UI_SMALL_VALUE));
 	}
 
 	@Benchmark
-	public void DivLargeSmallBigInt(Blackhole bh) {
+	public void divLargeSmallBigInt(Blackhole bh) {
 		bh.consume(BI_LARGE_VALUE1.divide(BI_SMALL_VALUE));
 	}
 
 	@Benchmark
-	public void SqrtLargeInt128(Blackhole bh) {
+	public void sqrtLargeInt128(Blackhole bh) {
 		bh.consume(UI_LARGE_VALUE1.isqrt());
 	}
 
 	@Benchmark
-	public void SqrtLargeBigInt(Blackhole bh) {
+	public void sqrtLargeBigInt(Blackhole bh) {
 		bh.consume(BigIntegerMath.sqrt(BI_LARGE_VALUE1, RoundingMode.FLOOR));
 	}
 
