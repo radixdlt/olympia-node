@@ -22,8 +22,9 @@ import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
-import com.radixdlt.common.AID;
-import com.radixdlt.common.EUID;
+import com.radixdlt.DefaultSerialization;
+import com.radixdlt.identifiers.AID;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.CryptoException;
@@ -34,7 +35,6 @@ import com.radixdlt.crypto.Hash;
 import com.radixdlt.middleware.ParticleGroup;
 import com.radixdlt.middleware.SpunParticle;
 import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
@@ -368,7 +368,7 @@ public class Atom {
 
 	private Hash doGetHash() {
 		try {
-			return new Hash(Hash.hash256(Serialization.getDefault().toDson(this, DsonOutput.Output.HASH)));
+			return new Hash(Hash.hash256(DefaultSerialization.getDefault().toDson(this, DsonOutput.Output.HASH)));
 		} catch (Exception e) {
 			throw new IllegalStateException("Error generating hash: " + e, e);
 		}

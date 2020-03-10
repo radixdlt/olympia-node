@@ -18,6 +18,9 @@
 package com.radixdlt.atomos;
 
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.RadixAddress;
+
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;

@@ -28,6 +28,9 @@ import com.radixdlt.constraintmachine.VoidUsedData;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.WitnessValidator;
 import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
+import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.RadixAddress;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;

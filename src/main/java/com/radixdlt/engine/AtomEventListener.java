@@ -17,7 +17,7 @@
 
 package com.radixdlt.engine;
 
-import com.radixdlt.common.AID;
+import com.radixdlt.identifiers.AID;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.constraintmachine.CMError;

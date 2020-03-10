@@ -20,8 +20,8 @@ package com.radixdlt.atommodel.tokens;
 import static org.powermock.api.mockito.PowerMockito.mock;
 import static org.powermock.api.mockito.PowerMockito.when;
 
-import com.radixdlt.atomos.RRI;
-import com.radixdlt.atomos.RadixAddress;
+import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.constraintmachine.WitnessData;
 import com.radixdlt.crypto.ECPublicKey;
 import org.junit.Test;

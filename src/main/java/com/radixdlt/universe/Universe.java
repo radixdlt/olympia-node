@@ -20,16 +20,17 @@ package com.radixdlt.universe;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atommodel.Atom;
-import com.radixdlt.common.EUID;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.Hash;
+import com.radixdlt.identifiers.Magical;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
@@ -41,7 +42,7 @@ import java.util.Objects;
 import java.util.function.Supplier;
 
 @SerializerId2("radix.universe")
-public class Universe {
+public class Universe implements Magical {
 
 	/**
 	 * Universe builder.
@@ -429,7 +430,7 @@ public class Universe {
 
 	private Hash doGetHash() {
 		try {
-			return new Hash(Hash.hash256(Serialization.getDefault().toDson(this, Output.HASH)));
+			return new Hash(Hash.hash256(DefaultSerialization.getDefault().toDson(this, Output.HASH)));
 		} catch (Exception e) {
 			throw new RuntimeException("Error generating hash: " + e, e);
 		}

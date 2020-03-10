@@ -19,7 +19,7 @@ package com.radixdlt.constraintmachine;
 
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.atomos.Result;
-import com.radixdlt.common.EUID;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.ECDSASignature;

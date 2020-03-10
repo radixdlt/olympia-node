@@ -21,7 +21,7 @@ import static com.radixdlt.atomos.Result.error;
 import static com.radixdlt.atomos.Result.of;
 import static com.radixdlt.atomos.Result.success;
 
-import com.radixdlt.atomos.RRI;
+import com.radixdlt.identifiers.RRI;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.WitnessData;
 import java.util.Objects;
