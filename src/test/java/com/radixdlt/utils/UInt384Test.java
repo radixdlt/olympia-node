@@ -47,7 +47,7 @@ public class UInt384Test {
 	 * values, from {@code 0} up to and including {@link Short.MAX_VALUE}.
 	 */
 	@Test
-	public void when_constructing_int384_from_short_values__values_compare_equal() {
+	public void from_engine___when_constructing_int384_from_short_values__values_compare_equal() {
 		for (int i = 0; i <= Short.MAX_VALUE; ++i) {
 			short s = (short) i;
 			UInt384 int384 = UInt384.from(s);
@@ -61,7 +61,7 @@ public class UInt384Test {
 	 * down to {@code Integer.MAX_VALUE - TEST_RANGE}.
 	 */
 	@Test
-	public void when_constructing_int384_from_int_values__values_compare_equal() {
+	public void from_engine___when_constructing_int384_from_int_values__values_compare_equal() {
 		// Here we will just assume that testing some values near the
 		// extremes of the range will suffice.
 		for (int i = 0; i <= TEST_RANGE; ++i) {
@@ -81,7 +81,7 @@ public class UInt384Test {
 	 * down to {@code Long.MAX_VALUE - TEST_RANGE}.
 	 */
 	@Test
-	public void when_constructing_int384_from_long_values__accessors_compare_equal() {
+	public void from_engine___when_constructing_int384_from_long_values__accessors_compare_equal() {
 		// Here we will just assume that testing some values near the
 		// extremes of the range will suffice.
 		for (int i = 0; i < TEST_RANGE; ++i) {
@@ -97,7 +97,7 @@ public class UInt384Test {
 	}
 
 	@Test
-	public void when_performing_basic_addition__the_correct_values_are_returned() {
+	public void from_engine___when_performing_basic_addition__the_correct_values_are_returned() {
 		// Some basics
 		// 0 + 1 = 1
 		assertEqualToLong(1L, UInt384.ZERO.add(UInt384.ONE));
@@ -118,7 +118,7 @@ public class UInt384Test {
 	}
 
 	@Test
-	public void when_performing_addition_overflowing_between_words__the_correct_values_are_returned() {
+	public void from_engine___when_performing_addition_overflowing_between_words__the_correct_values_are_returned() {
 		// Test adding with carry.
 		UInt384 carry1 = UInt384.from(UInt128.ZERO, UInt256.MAX_VALUE).add(UInt384.ONE);
 		assertEquals(UInt128.ONE, carry1.getHigh());
@@ -132,7 +132,7 @@ public class UInt384Test {
 	}
 
 	@Test
-	public void when_performing_basic_subtraction__the_correct_values_are_returned() {
+	public void from_engine___when_performing_basic_subtraction__the_correct_values_are_returned() {
 		// Some basics
 		// 1 - 1 = 0
 		assertEqualToLong(0L, UInt384.ONE.subtract(UInt384.ONE));
@@ -153,7 +153,7 @@ public class UInt384Test {
 	}
 
 	@Test
-	public void when_performing_subtraction_underflowing_between_words__the_correct_value_is_returned() {
+	public void from_engine___when_performing_subtraction_underflowing_between_words__the_correct_value_is_returned() {
 		// Test subtraction with carry.
 		UInt384 carry1 = UInt384.from(UInt128.ONE, UInt256.ZERO).subtract(UInt384.ONE);
 		assertEquals(UInt128.ZERO, carry1.high);
@@ -172,19 +172,19 @@ public class UInt384Test {
 	}
 
 	@Test
-	public void when_incrementing_int384__the_correct_values_are_returned() {
+	public void from_engine___when_incrementing_int384__the_correct_values_are_returned() {
 		assertEquals(UInt384.ONE, UInt384.ZERO.increment());
 		assertEquals(UInt384.ZERO, UInt384.MAX_VALUE.increment()); // Internal and full overflow
 	}
 
 	@Test
-	public void when_decrementing_int384__the_correct_values_are_returned() {
+	public void from_engine___when_decrementing_int384__the_correct_values_are_returned() {
 		assertEquals(UInt384.ZERO, UInt384.ONE.decrement());
 		assertEquals(UInt384.MAX_VALUE, UInt384.ZERO.decrement()); // Internal and full overflow
 	}
 
 	@Test
-	public void when_multiplying_two_values__the_correct_value_is_returned() {
+	public void from_engine___when_multiplying_two_values__the_correct_value_is_returned() {
 		// Some basics
 		assertEquals(UInt384.ZERO, UInt384.ZERO.multiply(UInt384.ZERO));
 		assertEquals(UInt384.ZERO, UInt384.ZERO.multiply(UInt384.ONE));
@@ -196,7 +196,7 @@ public class UInt384Test {
 	}
 
 	@Test
-	public void when_dividing_one_value_by_another__the_correct_value_is_returned() {
+	public void from_engine___when_dividing_one_value_by_another__the_correct_value_is_returned() {
 		// Some basics
 		assertEquals(UInt384.ZERO, UInt384.ZERO.divide(UInt384.ONE));
 		assertEquals(UInt384.ONE, UInt384.ONE.divide(UInt384.ONE));
@@ -206,13 +206,13 @@ public class UInt384Test {
 	}
 
 	@Test(expected = IllegalArgumentException.class)
-	public void when_dividing_by_zero__an_exception_is_thrown() {
+    public void from_engine___from_engine___when_dividing_by_zero__an_exception_is_thrown() {
 		UInt384.ONE.divide(UInt384.ZERO);
 		fail();
 	}
 
 	@Test
-	public void when_dividing_one_value_by_another_int256__the_correct_value_is_returned() {
+	public void from_engine___when_dividing_one_value_by_another_int256__the_correct_value_is_returned() {
 		// Some basics
 		assertEquals(UInt384.ZERO, UInt384.ZERO.divide(UInt256.ONE));
 		assertEquals(UInt384.ONE, UInt384.ONE.divide(UInt256.ONE));
@@ -224,13 +224,13 @@ public class UInt384Test {
 	}
 
 	@Test(expected = IllegalArgumentException.class)
-	public void when_dividing_by_zero_int256__an_exception_is_thrown() {
+    public void from_engine___from_engine___when_dividing_by_zero_int256__an_exception_is_thrown() {
 		UInt384.ONE.divide(UInt256.ZERO);
 		fail();
 	}
 
 	@Test
-	public void when_computing_the_remainder_of_dividing_one_value_by_another__the_correct_value_is_returned() {
+	public void from_engine___when_computing_the_remainder_of_dividing_one_value_by_another__the_correct_value_is_returned() {
 		// Some basics
 		assertEquals(UInt384.ZERO, UInt384.ZERO.remainder(UInt384.ONE));
 		assertEquals(UInt384.ZERO, UInt384.ONE.remainder(UInt384.ONE));
@@ -241,13 +241,13 @@ public class UInt384Test {
 	}
 
 	@Test(expected = IllegalArgumentException.class)
-	public void when_computing_the_remainder_of_dividing_by_zero__an_exception_is_thrown() {
+    public void from_engine___from_engine___when_computing_the_remainder_of_dividing_by_zero__an_exception_is_thrown() {
 		UInt384.ONE.remainder(UInt384.ZERO);
 		fail();
 	}
 
 	@Test
-	public void when_comparing_int384_values_using_compareTo__the_correct_value_is_returned() {
+	public void from_engine___when_comparing_int384_values_using_compareTo__the_correct_value_is_returned() {
 		assertThat(UInt384.ZERO, comparesEqualTo(UInt384.ZERO));
 		assertThat(UInt384.ZERO, lessThan(UInt384.ONE));
 		assertThat(UInt384.ZERO, lessThan(UInt384.MAX_VALUE));
@@ -263,7 +263,7 @@ public class UInt384Test {
 	}
 
 	@Test
-	public void when_comparing_int384_values_using_equals__the_correct_value_is_returned() {
+	public void from_engine___when_comparing_int384_values_using_equals__the_correct_value_is_returned() {
 		assertNotEquals(UInt384.ZERO, null); // Nothing should be equal to null
 		assertEquals(UInt384.ZERO, UInt384.ZERO); // Same object check
 		UInt384 i127a = UInt384.from(UInt128.ZERO, UInt256.HIGH_BIT);
@@ -274,7 +274,7 @@ public class UInt384Test {
 	}
 
 	@Test
-	public void when_calculating_leading_zeros__the_correct_value_is_returned() {
+	public void from_engine___when_calculating_leading_zeros__the_correct_value_is_returned() {
 		assertEquals(UInt384.SIZE, UInt384.ZERO.numberOfLeadingZeros());
 		assertEquals(UInt384.SIZE - 1, UInt384.ONE.numberOfLeadingZeros());
 		assertEquals(0, UInt384.MAX_VALUE.numberOfLeadingZeros());
@@ -283,7 +283,7 @@ public class UInt384Test {
 	}
 
 	@Test
-	public void when_binary_oring_two_values__the_correct_value_is_returned() {
+	public void from_engine___when_binary_oring_two_values__the_correct_value_is_returned() {
 		// Use bit positions in both high and low word for tests
 		UInt384 b0 = UInt384.ONE;
 		UInt384 b128 = UInt384.from(UInt128.ONE, UInt256.ZERO);
@@ -302,7 +302,7 @@ public class UInt384Test {
 	}
 
 	@Test
-	public void when_binary_anding_two_values__the_correct_value_is_returned() {
+	public void from_engine___when_binary_anding_two_values__the_correct_value_is_returned() {
 		// Use bit positions in both high and low word for tests
 		UInt384 b0 = UInt384.ONE;
 		UInt384 b128 = UInt384.from(UInt128.ONE, UInt256.ZERO);
@@ -312,7 +312,7 @@ public class UInt384Test {
 	}
 
 	@Test
-	public void when_binary_xoring_two_values__the_correct_value_is_returned() {
+	public void from_engine___when_binary_xoring_two_values__the_correct_value_is_returned() {
 		// Use bit positions in both high and low word for tests
 		UInt384 b0 = UInt384.ONE;
 		UInt384 b128 = UInt384.from(UInt128.ONE, UInt256.ZERO);
@@ -325,7 +325,7 @@ public class UInt384Test {
 	}
 
 	@Test
-	public void when_creating_int256_from_byte_array__the_correct_value_is_created() {
+	public void from_engine___when_creating_int256_from_byte_array__the_correct_value_is_created() {
 		byte[] m1 = {
 			-1
 		};
@@ -345,7 +345,7 @@ public class UInt384Test {
 	}
 
 	@Test
-	public void when_converting_int256_to_byte_array__the_correct_values_are_returned() {
+	public void from_engine___when_converting_int256_to_byte_array__the_correct_values_are_returned() {
 		UInt128 bp0 = UInt128.from(0x0001_0203_0405_0607L, 0x0809_0A0B_0C0D_0E0FL);
 		UInt256 bp1 = UInt256
 			.from(UInt128.from(0x1011_1213_1415_1617L, 0x1819_1A1B_1C1D_1E1FL), UInt128.from(0x2021_2223_2425_2627L, 0x2829_2A2B_2C2D_2E2FL));
@@ -372,7 +372,7 @@ public class UInt384Test {
 	}
 
 	@Test
-	public void when_performing_binary_shifts__the_correct_value_is_returned() {
+	public void from_engine___when_performing_binary_shifts__the_correct_value_is_returned() {
 		final UInt256 minusTwo = UInt256.ZERO.decrement().decrement();
 		final UInt128 maxSigned = UInt128.HIGH_BIT.decrement();
 
@@ -398,7 +398,7 @@ public class UInt384Test {
 	 * Test multi shiftLeft.
 	 */
 	@Test
-	public void when_performing_binary_left_shifts_by_n__the_correct_value_is_returned() {
+	public void from_engine___when_performing_binary_left_shifts_by_n__the_correct_value_is_returned() {
 		for (int i = 0; i < UInt384.SIZE; ++i) {
 			UInt384 powNum = UInt384.TWO.pow(i);
 			UInt384 shiftNum = UInt384.ONE.shiftLeft(i);
@@ -413,7 +413,7 @@ public class UInt384Test {
 	 * Test multi shiftRight.
 	 */
 	@Test
-	public void when_performing_binary_right_shifts_by_n__the_correct_value_is_returned() {
+	public void from_engine___when_performing_binary_right_shifts_by_n__the_correct_value_is_returned() {
 		for (int i = 0; i < UInt384.SIZE; ++i) {
 			UInt384 powNum = UInt384.TWO.pow(UInt384.SIZE - (i + 1));
 			UInt384 shiftNum = UInt384.HIGH_BIT.shiftRight(i);
@@ -428,7 +428,7 @@ public class UInt384Test {
 	 * Integer square root.
 	 */
 	@Test
-	public void when_performing_integer_square_root__the_correct_value_is_returned() {
+	public void from_engine___when_performing_integer_square_root__the_correct_value_is_returned() {
 		long max = 1 << 53; // Precision of double
 		for (long n = 0; n < max; n += 997) {
 			long lsqrt = (long) Math.floor(Math.sqrt(n));
@@ -447,12 +447,12 @@ public class UInt384Test {
 	}
 
 	@Test
-	public void when_performing_bitwise_inversion__the_correct_value_is_returned() {
+	public void from_engine___when_performing_bitwise_inversion__the_correct_value_is_returned() {
 		assertEquals(UInt384.MAX_VALUE, UInt384.ZERO.invert());
 	}
 
 	@Test
-	public void when_using_predicates__the_correct_value_is_returned() {
+	public void from_engine___when_using_predicates__the_correct_value_is_returned() {
 		// Basic tests for odd/even
 		assertTrue(UInt384.ONE.isOdd());
 		assertFalse(UInt384.ONE.isEven());
@@ -471,7 +471,7 @@ public class UInt384Test {
 	}
 
 	@Test
-	public void when_converting_int384_to_string__the_correct_value_is_returned() {
+	public void from_engine___when_converting_int384_to_string__the_correct_value_is_returned() {
 		// Some basics
 		assertEquals("0", UInt384.ZERO.toString());
 		assertEquals("1", UInt384.ONE.toString());
@@ -496,7 +496,7 @@ public class UInt384Test {
 	}
 
 	@Test
-	public void when_converting_string_to_int384__the_correct_value_is_returned() {
+	public void from_engine___when_converting_string_to_int384__the_correct_value_is_returned() {
 		testRoundTrip("0");
 		testRoundTrip("123456789");
 		testRoundTrip("123456789123456789");
@@ -508,7 +508,7 @@ public class UInt384Test {
 	}
 
 	@Test
-	public void when_calculating_powers__the_correct_value_is_returned() {
+	public void from_engine___when_calculating_powers__the_correct_value_is_returned() {
 		assertEquals(UInt384.from(1L << 9), UInt384.TWO.pow(9));
 		assertEquals(UInt384.from(10_000_000_000L), UInt384.TEN.pow(10));
 		assertEquals(UInt384.ONE, UInt384.ZERO.pow(0)); // At least in the limit
@@ -516,7 +516,7 @@ public class UInt384Test {
 	}
 
 	@Test
-	public void equalsContract() {
+	public void from_engine___equalsContract() {
 		EqualsVerifier.forClass(UInt384.class).verify();
 	}
 
@@ -524,7 +524,7 @@ public class UInt384Test {
 	 * Test div 0.
 	 */
 	@Test(expected = IllegalArgumentException.class)
-	public void testDiv0() {
+    public void from_engine___from_engine___testDiv0() {
 		UInt384.ONE.divide(UInt384.ZERO);
 	}
 
@@ -532,7 +532,7 @@ public class UInt384Test {
 	 * Test rem 0.
 	 */
 	@Test(expected = IllegalArgumentException.class)
-	public void testRem0() {
+    public void from_engine___from_engine___testRem0() {
 		UInt384.ONE.remainder(UInt384.ZERO);
 	}
 
@@ -540,7 +540,7 @@ public class UInt384Test {
 	 * NumberFormatException on empty string.
 	 */
 	@Test(expected = NumberFormatException.class)
-	public void numberFormatExceptionOnEmpty() {
+    public void from_engine___from_engine___numberFormatExceptionOnEmpty() {
 		UInt384.from("");
 	}
 
@@ -548,7 +548,7 @@ public class UInt384Test {
 	 * NumberFormatException if no actual number.
 	 */
 	@Test(expected = NumberFormatException.class)
-	public void numberFormatExceptionIfNoNumber() {
+    public void from_engine___from_engine___numberFormatExceptionIfNoNumber() {
 		UInt384.from("+");
 	}
 
@@ -556,7 +556,7 @@ public class UInt384Test {
 	 * NumberFormatException if invalid digit.
 	 */
 	@Test(expected = NumberFormatException.class)
-	public void numberFormatExceptionIfInvalidDigit() {
+    public void from_engine___from_engine___numberFormatExceptionIfInvalidDigit() {
 		UInt384.from("+a");
 	}
 
@@ -564,7 +564,7 @@ public class UInt384Test {
 	 * IllegalArgumentException if byte array is empty.
 	 */
 	@Test(expected = IllegalArgumentException.class)
-	public void illegalArgumentExceptionIfByteArrayEmpty() {
+    public void from_engine___from_engine___illegalArgumentExceptionIfByteArrayEmpty() {
 		UInt384.from(new byte[0]);
 	}
 
@@ -572,7 +572,7 @@ public class UInt384Test {
 	 * IllegalArgumentException on radix too big.
 	 */
 	@Test(expected = IllegalArgumentException.class)
-	public void illegalArgumentExceptionOnRadixTooBig() {
+    public void from_engine___from_engine___illegalArgumentExceptionOnRadixTooBig() {
 		UInt384.ONE.toString(Character.MAX_RADIX + 1);
 	}
 
@@ -580,7 +580,7 @@ public class UInt384Test {
 	 * IllegalArgumentException on radix too small.
 	 */
 	@Test(expected = IllegalArgumentException.class)
-	public void illegalArgumentExceptionOnRadixTooSmall() {
+    public void from_engine___from_engine___illegalArgumentExceptionOnRadixTooSmall() {
 		UInt384.ONE.toString(Character.MIN_RADIX - 1);
 	}
 
@@ -588,7 +588,7 @@ public class UInt384Test {
 	 * IllegalArgumentException on negative exponent for pow.
 	 */
 	@Test(expected = IllegalArgumentException.class)
-	public void illegalArgumentExceptionOnNegativeExponent() {
+    public void from_engine___from_engine___illegalArgumentExceptionOnNegativeExponent() {
 		UInt384.ONE.pow(-1);
 	}
 

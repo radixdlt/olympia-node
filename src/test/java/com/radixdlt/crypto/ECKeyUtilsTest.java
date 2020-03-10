@@ -29,7 +29,7 @@ import static org.junit.Assert.assertTrue;
 public class ECKeyUtilsTest {
 
 	@Test
-	public void testGreaterOrEqualModulus() {
+	public void from_engine___testGreaterOrEqualModulus() {
 		byte[] modulus = ECKeyUtils.adjustArray(ECKeyUtils.domain.getN().toByteArray(), ECKeyPair.BYTES);
 		assertEquals(ECKeyPair.BYTES, modulus.length);
 		assertTrue(ECKeyUtils.greaterOrEqualOrder(modulus));
@@ -43,12 +43,12 @@ public class ECKeyUtilsTest {
 	}
 
 	@Test(expected = IllegalArgumentException.class)
-	public void testGreaterOrEqualModulusFail() {
+    public void from_engine___from_engine___testGreaterOrEqualModulusFail() {
 		ECKeyUtils.greaterOrEqualOrder(new byte[1]);
 	}
 
 	@Test
-	public void testAdjustArray() {
+	public void from_engine___testAdjustArray() {
 		// Test that all smaller or equal lengths are padded correctly
 		for (int i = 0; i <= ECKeyPair.BYTES; i += 1) {
 			byte[] testArray = new byte[i];
@@ -77,7 +77,7 @@ public class ECKeyUtilsTest {
 	}
 
 	@Test(expected = IllegalArgumentException.class)
-	public void testAdjustArrayFail() {
+    public void from_engine___from_engine___testAdjustArrayFail() {
 		// Test that longer length without leading zeros throws exception
 		byte[] testArray = new byte[ECKeyPair.BYTES + 1];
 		Arrays.fill(testArray, (byte) 1);

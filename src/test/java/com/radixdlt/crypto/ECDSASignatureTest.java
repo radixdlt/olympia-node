@@ -6,7 +6,7 @@ import org.junit.Test;
 
 public class ECDSASignatureTest {
 	@Test
-	public void equalsContract() {
+	public void from_engine___equalsContract() {
 		EqualsVerifier.forClass(ECDSASignature.class)
 				.suppress(Warning.NONFINAL_FIELDS) // serialization prevents us from making `r` and `s` final.
 				.withIgnoredFields("version") // only used for serialization

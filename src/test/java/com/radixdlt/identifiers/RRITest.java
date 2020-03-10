@@ -35,13 +35,13 @@ public class RRITest {
 	}
 
 	@Test
-	public void equalsContract() {
+	public void from_engine___equalsContract() {
 		EqualsVerifier.forClass(RRI.class)
 				.verify();
 	}
 
 	@Test
-	public void when_parsing_a_correctly_formed_rri__exception_is_not_thrown() {
+	public void from_engine___when_parsing_a_correctly_formed_rri__exception_is_not_thrown() {
 		List<String> correctRRIs = Arrays.asList(
 			"/JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor/name",
 			"/JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor/name-",
@@ -55,7 +55,7 @@ public class RRITest {
 	}
 
 	@Test
-	public void when_parsing_bad_structure__illegal_argument_exception_should_occur() {
+	public void from_engine___when_parsing_bad_structure__illegal_argument_exception_should_occur() {
 		List<String> badTypeRRIs = Arrays.asList(
 			"a/JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor/type/name",
 			"/JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor/type/",
@@ -70,7 +70,7 @@ public class RRITest {
 
 
 	@Test
-	public void when_parsing_bad_type__illegal_argument_exception_should_occur() {
+	public void from_engine___when_parsing_bad_type__illegal_argument_exception_should_occur() {
 		List<String> badTypeRRIs = Arrays.asList(
 			"/JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor//name",
 			"/JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor/ /name",
@@ -87,7 +87,7 @@ public class RRITest {
 	}
 
 	@Test
-	public void when_parsing_bad_name__illegal_argument_exception_should_occur() {
+	public void from_engine___when_parsing_bad_name__illegal_argument_exception_should_occur() {
 		List<String> badTypeRRIs = Arrays.asList(
 			"/JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor/type/#",
 			"/JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor/type/a b",

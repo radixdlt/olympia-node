@@ -37,14 +37,14 @@ public class ECKeyPairTest {
 	public ExpectedException thrown = ExpectedException.none();
 
 	@Test
-	public void equalsContract() {
+	public void from_engine___equalsContract() {
 		EqualsVerifier.forClass(ECKeyPair.class)
 				.withIgnoredFields("publicKey") // public key is derived from used private key.
 				.verify();
 	}
 
 	@Test
-	public void checkKeyIntegrity() throws CryptoException {
+	public void from_engine___checkKeyIntegrity() throws CryptoException {
 		final int iterations = 5000;
 
 		for (int i = 0; i < iterations; i++) {
@@ -61,7 +61,7 @@ public class ECKeyPairTest {
 	}
 
 	@Test
-	public void signAndVerify() throws CryptoException {
+	public void from_engine___signAndVerify() throws CryptoException {
 		final int iterations = 2000;
 		String helloWorld = "Hello World";
 
@@ -79,7 +79,7 @@ public class ECKeyPairTest {
 	}
 
 	@Test
-	public void encryptAndDecrypt() throws CryptoException {
+	public void from_engine___encryptAndDecrypt() throws CryptoException {
 		final int iterations = 1000;
 		String helloWorld = "Hello World";
 
@@ -96,14 +96,14 @@ public class ECKeyPairTest {
 	}
 
 	@Test
-	public void checkKeyPairEquals() {
+	public void from_engine___checkKeyPairEquals() {
 		EqualsVerifier.forClass(ECKeyPair.class)
 			.withIgnoredFields("publicKey") // Computed
 			.verify();
 	}
 
 	@Test
-	public void checkPublicKeyEquals() {
+	public void from_engine___checkPublicKeyEquals() {
 		EqualsVerifier.forClass(ECPublicKey.class)
 			.withIgnoredFields("uid") // Computed and cached
 			.verify();

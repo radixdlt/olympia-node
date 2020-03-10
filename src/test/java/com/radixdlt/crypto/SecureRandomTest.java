@@ -33,7 +33,7 @@ public class SecureRandomTest {
 	}
 
 	@Test
-	public void verifySecureRandomUsingBouncyCastleProviderByDefault() {
+	public void from_engine___verifySecureRandomUsingBouncyCastleProviderByDefault() {
 		Assert.assertTrue("BouncyCastleProvider should be used by default", new SecureRandom().getProvider() instanceof BouncyCastleProvider);
 	}
 }
