@@ -7,6 +7,8 @@ import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 
+import java.util.Objects;
+
 /**
  * A collection of <a href="https://en.wikipedia.org/wiki/
  * Elliptic_Curve_Digital_Signature_Algorithm">ECDSA</a> signatures.
@@ -84,5 +86,22 @@ public class ECDSASignatures implements Signatures {
 	@Override
 	public String toString() {
 		return String.format("%s[%s]", getClass().getSimpleName(), this.keyToSignature);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		ECDSASignatures that = (ECDSASignatures) o;
+		return Objects.equals(keyToSignature, that.keyToSignature);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(keyToSignature);
 	}
 }
