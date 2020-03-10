@@ -18,6 +18,7 @@
 package com.radixdlt.consensus;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Signature;
 import com.radixdlt.serialization.DsonOutput;
@@ -48,7 +49,7 @@ public final class Vote {
 
 	@JsonProperty("signature")
 	@DsonOutput(Output.ALL)
-	private final Signature signature; // may be null if not signed (e.g. for genesis)
+	private final ECDSASignature signature; // may be null if not signed (e.g. for genesis)
 
 	Vote() {
 		// Serializer only
@@ -57,7 +58,7 @@ public final class Vote {
 		this.signature = null;
 	}
 
-	public Vote(ECPublicKey author, VertexMetadata vertexMetadata, Signature signature) {
+	public Vote(ECPublicKey author, VertexMetadata vertexMetadata, ECDSASignature signature) {
 		this.author = Objects.requireNonNull(author);
 		this.vertexMetadata = Objects.requireNonNull(vertexMetadata);
 		this.signature = signature;
@@ -71,7 +72,7 @@ public final class Vote {
 		return vertexMetadata;
 	}
 
-	public Optional<Signature> getSignature() {
+	public Optional<ECDSASignature> getSignature() {
 		return Optional.ofNullable(this.signature);
 	}
 

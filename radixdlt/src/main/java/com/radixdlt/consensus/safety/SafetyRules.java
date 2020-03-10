@@ -26,6 +26,7 @@ import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.crypto.CryptoException;
+import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.crypto.Signature;
@@ -95,7 +96,7 @@ public final class SafetyRules {
 			proposedVertex.getQC().getVertexMetadata().getAID()
 		);
 		Hash vertexHash = this.hasher.hash(vertexMetadata);
-		Signature signature = this.key.sign(vertexHash);
+		ECDSASignature signature = this.key.sign(vertexHash);
 		Vote vote = new Vote(key.getPublicKey(), vertexMetadata, signature);
 		AID committedAtom = getCommittedAtom(proposedVertex);
 

@@ -20,6 +20,8 @@ package com.radixdlt.consensus;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.safety.QuorumRequirements;
 import com.radixdlt.crypto.DefaultSignatures;
+import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.Signature;
 import com.radixdlt.crypto.Signatures;
 
@@ -34,7 +36,7 @@ import java.util.Set;
  */
 public final class VertexStore {
 	private final Set<Vertex> vertices = new HashSet<>();
-	private final Map<VertexMetadata, Signatures> pendingSignatures = new HashMap<>();
+	private final Map<VertexMetadata, ECDSASignatures> pendingSignatures = new HashMap<>();
 	private QuorumCertificate highestQC = null;
 
 	@Inject
@@ -52,12 +54,13 @@ public final class VertexStore {
 	}
 
 	public Optional<QuorumCertificate> insertVote(Vote vote, QuorumRequirements quorumRequirements) {
-		Signature signature = vote.getSignature().orElseThrow(() -> new IllegalArgumentException("vote is missing signature"));
-		Signatures signatures = pendingSignatures.getOrDefault(vote.getVertexMetadata(), DefaultSignatures.emptySignatures());
+		ECDSASignature signature = vote.getSignature().orElseThrow(() -> new IllegalArgumentException("vote is missing signature"));
+		ECDSASignatures signatures = pendingSignatures.getOrDefault(vote.getVertexMetadata(), new ECDSASignatures());
 
 		// try to add the signature to form a QC if permitted by the requirements
 		if (quorumRequirements.acceptsVoteBy(vote.getAuthor().getUID())) {
-			signatures = signatures.concatenate(vote.getAuthor(), signature);
+			// FIXME ugly cast to ECDSASignatures because we need a specific type
+			signatures = (ECDSASignatures) signatures.concatenate(vote.getAuthor(), signature);
 		} else {
 			// there is no meaningful inaction here, so better let the caller know
 			throw new IllegalArgumentException("vote " + vote + " was not accepted into QC");

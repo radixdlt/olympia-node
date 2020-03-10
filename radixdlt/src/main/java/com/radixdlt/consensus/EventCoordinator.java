@@ -34,6 +34,7 @@ import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.DefaultSignatures;
+import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.AtomEventListener;
 import com.radixdlt.engine.RadixEngine;
@@ -200,6 +201,6 @@ public final class EventCoordinator {
 
 	private QuorumCertificate makeGenesisQC() {
 		VertexMetadata genesisMetadata = new VertexMetadata(GENESIS_ROUND, GENESIS_ID, GENESIS_ROUND, GENESIS_ID);
-		return new QuorumCertificate(genesisMetadata, DefaultSignatures.emptySignatures());
+		return new QuorumCertificate(genesisMetadata, new ECDSASignatures());
 	}
 }

@@ -32,6 +32,7 @@ import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.DefaultSignatures;
+import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
@@ -218,13 +219,13 @@ public class SafetyRulesTest {
 
 	private static Vertex makeGenesisVertex() {
 		VertexMetadata genesisMetadata = new VertexMetadata(GENESIS_ROUND, GENESIS_ID, GENESIS_ROUND, GENESIS_ID);
-		QuorumCertificate genesisQC = new QuorumCertificate(genesisMetadata, DefaultSignatures.emptySignatures());
+		QuorumCertificate genesisQC = new QuorumCertificate(genesisMetadata, new ECDSASignatures());
 		return makeVertex(genesisQC, GENESIS_ROUND, GENESIS_ID);
 	}
 
 	private static Vertex makeVertex(Vertex parent, Round round, AID id) {
 		VertexMetadata parentMetadata = new VertexMetadata(parent.getRound(), parent.getAID(), parent.getQC().getRound(), parent.getQC().getVertexMetadata().getAID());
-		QuorumCertificate qc = new QuorumCertificate(parentMetadata, DefaultSignatures.emptySignatures());
+		QuorumCertificate qc = new QuorumCertificate(parentMetadata, new ECDSASignatures());
 		return makeVertex(qc, round, id);
 	}
 

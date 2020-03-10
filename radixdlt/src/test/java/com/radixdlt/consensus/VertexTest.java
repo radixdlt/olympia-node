@@ -18,6 +18,7 @@
 package com.radixdlt.consensus;
 
 import com.radixdlt.crypto.DefaultSignatures;
+import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECPublicKey;
 import org.junit.Before;
 import org.junit.Test;
@@ -51,7 +52,7 @@ public class VertexTest {
 		this.vertexMetadata = new VertexMetadata(round, aid, parentRound, parentAid);
 
 		this.vote = new Vote(makePubKey(EUID.TWO), this.vertexMetadata, null);
-		this.qc = new QuorumCertificate(this.vertexMetadata, DefaultSignatures.emptySignatures());
+		this.qc = new QuorumCertificate(this.vertexMetadata, new ECDSASignatures());
 
 
 		this.atom = new Atom();

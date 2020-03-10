@@ -20,6 +20,7 @@ package com.radixdlt.consensus;
 import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.Signatures;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
@@ -35,7 +36,7 @@ public final class QuorumCertificate {
 
 	@JsonProperty("signatures")
 	@DsonOutput(Output.ALL)
-	private final Signatures signatures;
+	private final ECDSASignatures signatures;
 
 	@JsonProperty("vertex_metadata")
 	@DsonOutput(Output.ALL)
@@ -47,7 +48,7 @@ public final class QuorumCertificate {
 		this.signatures = null;
 	}
 
-	public QuorumCertificate(VertexMetadata vertexMetadata, Signatures signatures) {
+	public QuorumCertificate(VertexMetadata vertexMetadata, ECDSASignatures signatures) {
 		this.vertexMetadata = Objects.requireNonNull(vertexMetadata);
 		this.signatures = Objects.requireNonNull(signatures);
 	}

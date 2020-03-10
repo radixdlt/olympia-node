@@ -25,6 +25,7 @@ import com.radixdlt.consensus.Round;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.crypto.DefaultSignatures;
+import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.utils.Ints;
 
 public class VertexSerializeTest extends SerializeObject<Vertex> {
@@ -41,7 +42,7 @@ public class VertexSerializeTest extends SerializeObject<Vertex> {
 		VertexMetadata vertexMetadata = new VertexMetadata(round, aid, parentRound, parentAid);
 
 		EUID author = EUID.TWO;
-		QuorumCertificate qc = new QuorumCertificate(vertexMetadata, DefaultSignatures.emptySignatures());
+		QuorumCertificate qc = new QuorumCertificate(vertexMetadata, new ECDSASignatures());
 
 		Atom atom = new Atom();
 
