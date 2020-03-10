@@ -77,7 +77,7 @@ public final class Vote {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.author, this.vertexMetadata);
+		return Objects.hash(this.author, this.vertexMetadata, this.signature);
 	}
 
 	@Override
@@ -89,7 +89,8 @@ public final class Vote {
 			Vote other = (Vote) o;
 			return
 				Objects.equals(this.author, other.author) &&
-				Objects.equals(this.vertexMetadata, other.vertexMetadata);
+				Objects.equals(this.vertexMetadata, other.vertexMetadata) &&
+				Objects.equals(this.signature, other.signature);
 		}
 		return false;
 	}
