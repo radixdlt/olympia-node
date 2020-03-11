@@ -20,6 +20,7 @@ package com.radixdlt.consensus;
 import com.google.common.collect.Sets;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
+import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.Atom;
 import com.radixdlt.consensus.liveness.Pacemaker;
@@ -32,12 +33,15 @@ import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.CryptoException;
+import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECDSASignatures;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.AtomEventListener;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.network.EventCoordinatorNetworkSender;
+import com.radixdlt.utils.Longs;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 
@@ -60,7 +64,8 @@ public final class EventCoordinator {
 	private final Pacemaker pacemaker;
 	private final ProposerElection proposerElection;
 	private final QuorumRequirements quorumRequirements;
-	private final ECPublicKey self;
+	private final RadixAddress selfAddress;
+	private final ECKeyPair selfKey; // TODO remove signing/address to separate identity management
 	private final SafetyRules safetyRules;
 
 	@Inject
@@ -73,7 +78,8 @@ public final class EventCoordinator {
 		RadixEngine engine,
 		ProposerElection proposerElection,
 		QuorumRequirements quorumRequirements,
-		@Named("self") ECPublicKey self
+		@Named("self") RadixAddress selfAddress,
+		@Named("self") ECKeyPair selfKey
 	) {
 		this.mempool = Objects.requireNonNull(mempool);
 		this.networkSender = Objects.requireNonNull(networkSender);
@@ -83,13 +89,17 @@ public final class EventCoordinator {
         this.engine = Objects.requireNonNull(engine);
 		this.proposerElection = Objects.requireNonNull(proposerElection);
 		this.quorumRequirements = Objects.requireNonNull(quorumRequirements);
-		this.self = Objects.requireNonNull(self);
+		this.selfAddress = Objects.requireNonNull(selfAddress);
+		this.selfKey = Objects.requireNonNull(selfKey);
+		if (!selfAddress.getKey().equals(selfKey.getPublicKey())) {
+			throw new IllegalArgumentException("Address and key mismatch: " + selfAddress + " != " + selfKey);
+		}
 	}
 
 	private void processNewView(View view) {
 		log.debug("Processing new view: " + view);
 		// only do something if we're actually the leader
-		if (!proposerElection.isValidProposer(self.getUID(), view)) {
+		if (!proposerElection.isValidProposer(selfAddress.getUID(), view)) {
 			return;
 		}
         
@@ -105,7 +115,7 @@ public final class EventCoordinator {
 
 	public void processVote(Vote vote) {
 		// only do something if we're actually the leader for the next view
-		if (!proposerElection.isValidProposer(self.getUID(), vote.getVertexMetadata().getView().next())) {
+		if (!proposerElection.isValidProposer(selfAddress.getUID(), vote.getVertexMetadata().getView().next())) {
 			log.warn(String.format("Ignoring confused vote %s for %s", vote.hashCode(), vote.getVertexMetadata().getView()));
 			return;
 		}
@@ -128,12 +138,18 @@ public final class EventCoordinator {
 			return;
 		}
 
-		this.networkSender.sendNewView(new NewView(view.next()));
+		try {
+			// TODO make signing more robust by including author in signed hash
+			ECDSASignature signature = this.selfKey.sign(Hash.hash256(Longs.toByteArray(view.next().number())));
+			this.networkSender.sendNewView(new NewView(selfAddress, view.next(), signature));
+		} catch (CryptoException e) {
+			log.error("Failed to sign new view at " + view, e);
+		}
 	}
 
 	public void processRemoteNewView(NewView newView) {
 		// only do something if we're actually the leader for the next view
-		if (!proposerElection.isValidProposer(self.getUID(), newView.getView())) {
+		if (!proposerElection.isValidProposer(selfAddress.getUID(), newView.getView())) {
 			log.warn(String.format("Got confused new-view %s for view ", newView.hashCode()) + newView.getView());
 			return;
 		}

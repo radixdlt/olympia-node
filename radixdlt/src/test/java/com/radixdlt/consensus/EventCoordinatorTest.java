@@ -18,6 +18,7 @@
 package com.radixdlt.consensus;
 
 import com.google.common.collect.Lists;
+import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.Atom;
 import com.radixdlt.common.EUID;
@@ -30,11 +31,13 @@ import com.radixdlt.consensus.safety.SingleNodeQuorumRequirements;
 import com.radixdlt.consensus.safety.VoteResult;
 import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.crypto.CryptoException;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.AtomEventListener;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.network.EventCoordinatorNetworkSender;
+import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.Ints;
 import org.junit.Test;
 
@@ -51,12 +54,28 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class EventCoordinatorTest {
-	private static final ECPublicKey SELF = makePubKey(EUID.ONE);
+	private static final ECKeyPair SELF_KEY = makeKeyPair();
+	private static final ECPublicKey SELF_PUB_KEY = SELF_KEY.getPublicKey();
+	private static final RadixAddress SELF_ADDRESS = makeAddressFrom(SELF_PUB_KEY);
 
 	private static AID makeAID(int n) {
 		byte[] temp = new byte[AID.BYTES];
 		Ints.copyTo(n, temp, AID.BYTES - Integer.BYTES);
 		return AID.from(temp);
+	}
+
+	private static ECKeyPair makeKeyPair() {
+		try {
+			return new ECKeyPair();
+		} catch (CryptoException e) {
+			throw new IllegalStateException("Unable to create key pair", e);
+		}
+	}
+
+	private static RadixAddress makeAddressFrom(ECPublicKey pubKey) {
+		Universe universe = mock(Universe.class);
+		when(universe.getMagic()).thenReturn(127); // no special significance
+		return RadixAddress.from(universe, pubKey);
 	}
 
 	private static ECPublicKey makePubKey(EUID id) {
@@ -74,7 +93,7 @@ public class EventCoordinatorTest {
 		VertexStore vertexStore = mock(VertexStore.class);
 		RadixEngine radixEngine = mock(RadixEngine.class);
 		ProposerElection proposerElection = mock(ProposerElection.class);
-		QuorumRequirements quorumRequirements = new SingleNodeQuorumRequirements(SELF.getUID());
+		QuorumRequirements quorumRequirements = new SingleNodeQuorumRequirements(SELF_KEY.getUID());
 
 		EventCoordinator eventCoordinator = new EventCoordinator(
 			mempool,
@@ -85,8 +104,8 @@ public class EventCoordinatorTest {
 			radixEngine,
 			proposerElection,
 			quorumRequirements,
-			SELF
-		);
+			SELF_ADDRESS,
+			SELF_KEY);
 
 		Vote voteMessage = mock(Vote.class);
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
@@ -108,7 +127,7 @@ public class EventCoordinatorTest {
 		VertexStore vertexStore = mock(VertexStore.class);
 		RadixEngine radixEngine = mock(RadixEngine.class);
 		ProposerElection proposerElection = mock(ProposerElection.class);
-		QuorumRequirements quorumRequirements = new SingleNodeQuorumRequirements(SELF.getUID());
+		QuorumRequirements quorumRequirements = new SingleNodeQuorumRequirements(SELF_ADDRESS.getUID());
 
 		EventCoordinator eventCoordinator = new EventCoordinator(
 			mempool,
@@ -119,8 +138,8 @@ public class EventCoordinatorTest {
 			radixEngine,
 			proposerElection,
 			quorumRequirements,
-			SELF
-		);
+			SELF_ADDRESS,
+			SELF_KEY);
 
 		when(mempool.getAtoms(anyInt(), any())).thenReturn(Lists.newArrayList());
 		Vote voteMessage = mock(Vote.class);
@@ -144,7 +163,7 @@ public class EventCoordinatorTest {
 		VertexStore vertexStore = mock(VertexStore.class);
 		RadixEngine radixEngine = mock(RadixEngine.class);
 		ProposerElection proposerElection = mock(ProposerElection.class);
-		QuorumRequirements quorumRequirements = new SingleNodeQuorumRequirements(SELF.getUID());
+		QuorumRequirements quorumRequirements = new SingleNodeQuorumRequirements(SELF_ADDRESS.getUID());
 
 		EventCoordinator eventCoordinator = new EventCoordinator(
 			mempool,
@@ -155,8 +174,8 @@ public class EventCoordinatorTest {
 			radixEngine,
 			proposerElection,
 			quorumRequirements,
-			SELF
-		);
+			SELF_ADDRESS,
+			SELF_KEY);
 
 		when(pacemaker.processLocalTimeout(any())).thenReturn(true);
 		eventCoordinator.processLocalTimeout(View.of(0L));
@@ -172,7 +191,7 @@ public class EventCoordinatorTest {
 		VertexStore vertexStore = mock(VertexStore.class);
 		RadixEngine radixEngine = mock(RadixEngine.class);
 		ProposerElection proposerElection = mock(ProposerElection.class);
-		QuorumRequirements quorumRequirements = new SingleNodeQuorumRequirements(SELF.getUID());
+		QuorumRequirements quorumRequirements = new SingleNodeQuorumRequirements(SELF_ADDRESS.getUID());
 
 		EventCoordinator eventCoordinator = new EventCoordinator(
 			mempool,
@@ -183,8 +202,8 @@ public class EventCoordinatorTest {
 			radixEngine,
 			proposerElection,
 			quorumRequirements,
-			SELF
-		);
+			SELF_ADDRESS,
+			SELF_KEY);
 
 		when(pacemaker.processLocalTimeout(any())).thenReturn(false);
 		eventCoordinator.processLocalTimeout(View.of(0L));
@@ -200,7 +219,7 @@ public class EventCoordinatorTest {
 		VertexStore vertexStore = mock(VertexStore.class);
 		RadixEngine radixEngine = mock(RadixEngine.class);
 		ProposerElection proposerElection = mock(ProposerElection.class);
-		QuorumRequirements quorumRequirements = new SingleNodeQuorumRequirements(SELF.getUID());
+		QuorumRequirements quorumRequirements = new SingleNodeQuorumRequirements(SELF_ADDRESS.getUID());
 
 		EventCoordinator eventCoordinator = new EventCoordinator(
 			mempool,
@@ -211,8 +230,8 @@ public class EventCoordinatorTest {
 			radixEngine,
 			proposerElection,
 			quorumRequirements,
-			SELF
-		);
+			SELF_ADDRESS,
+			SELF_KEY);
 
 		NewView newView = mock(NewView.class);
 		when(newView.getView()).thenReturn(View.of(0L));
@@ -230,7 +249,7 @@ public class EventCoordinatorTest {
 		VertexStore vertexStore = mock(VertexStore.class);
 		RadixEngine radixEngine = mock(RadixEngine.class);
 		ProposerElection proposerElection = mock(ProposerElection.class);
-		QuorumRequirements quorumRequirements = new SingleNodeQuorumRequirements(SELF.getUID());
+		QuorumRequirements quorumRequirements = new SingleNodeQuorumRequirements(SELF_ADDRESS.getUID());
 
 		EventCoordinator eventCoordinator = new EventCoordinator(
 			mempool,
@@ -241,8 +260,8 @@ public class EventCoordinatorTest {
 			radixEngine,
 			proposerElection,
 			quorumRequirements,
-			SELF
-		);
+			SELF_ADDRESS,
+			SELF_KEY);
 
 		NewView newView = mock(NewView.class);
 		when(newView.getView()).thenReturn(View.of(0L));
@@ -260,7 +279,7 @@ public class EventCoordinatorTest {
 		VertexStore vertexStore = mock(VertexStore.class);
 		RadixEngine radixEngine = mock(RadixEngine.class);
 		ProposerElection proposerElection = mock(ProposerElection.class);
-		QuorumRequirements quorumRequirements = new SingleNodeQuorumRequirements(SELF.getUID());
+		QuorumRequirements quorumRequirements = new SingleNodeQuorumRequirements(SELF_ADDRESS.getUID());
 
 		EventCoordinator eventCoordinator = new EventCoordinator(
 			mempool,
@@ -271,8 +290,8 @@ public class EventCoordinatorTest {
 			radixEngine,
 			proposerElection,
 			quorumRequirements,
-			SELF
-		);
+			SELF_ADDRESS,
+			SELF_KEY);
 
 		Vertex proposedVertex = mock(Vertex.class);
 		Atom proposedAtom = mock(Atom.class);
@@ -296,7 +315,7 @@ public class EventCoordinatorTest {
 		VertexStore vertexStore = mock(VertexStore.class);
 		RadixEngine radixEngine = mock(RadixEngine.class);
 		ProposerElection proposerElection = mock(ProposerElection.class);
-		QuorumRequirements quorumRequirements = new SingleNodeQuorumRequirements(SELF.getUID());
+		QuorumRequirements quorumRequirements = new SingleNodeQuorumRequirements(SELF_ADDRESS.getUID());
 
 		EventCoordinator eventCoordinator = new EventCoordinator(
 			mempool,
@@ -307,8 +326,8 @@ public class EventCoordinatorTest {
 			radixEngine,
 			proposerElection,
 			quorumRequirements,
-			SELF
-		);
+			SELF_ADDRESS,
+			SELF_KEY);
 
 		Vertex proposedVertex = mock(Vertex.class);
 		Atom proposedAtom = mock(Atom.class);

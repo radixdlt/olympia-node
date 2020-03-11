@@ -18,8 +18,11 @@
 package com.radixdlt.consensus;
 
 import java.util.Objects;
+import java.util.Optional;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.atomos.RadixAddress;
+import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
@@ -35,19 +38,39 @@ public final class NewView {
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
 
+	@JsonProperty("author")
+	@DsonOutput(Output.ALL)
+	private final RadixAddress author;
+
 	private View view;
+
+	@JsonProperty("signature")
+	@DsonOutput(Output.ALL)
+	private final ECDSASignature signature; // may be null if not signed (e.g. for genesis)
 
 	NewView() {
 		// Serializer only
+		this.author = null;
 		this.view = View.of(Long.MAX_VALUE);
+		this.signature = null;
 	}
 
-	public NewView(View view) {
-		this.view = view;
+	public NewView(RadixAddress author, View view, ECDSASignature signature) {
+		this.author = Objects.requireNonNull(author);
+		this.view = Objects.requireNonNull(view);
+		this.signature = signature;
+	}
+
+	public RadixAddress getAuthor() {
+		return author;
 	}
 
 	public View getView() {
 		return view;
+	}
+
+	public Optional<ECDSASignature> getSignature() {
+		return Optional.ofNullable(this.signature);
 	}
 
 	@JsonProperty("view")

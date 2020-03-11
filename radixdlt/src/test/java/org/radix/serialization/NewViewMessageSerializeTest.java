@@ -17,6 +17,7 @@
 
 package org.radix.serialization;
 
+import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.messages.NewViewMessage;
@@ -27,7 +28,8 @@ public class NewViewMessageSerializeTest extends SerializeMessageObject<NewViewM
 	}
 
 	private static NewViewMessage get() {
-		NewView testView = new NewView(View.of(1234567890L));
+		RadixAddress author = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
+		NewView testView = new NewView(author, View.of(1234567890L), null);
 		return new NewViewMessage(1234, testView);
 	}
 }

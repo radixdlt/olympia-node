@@ -39,7 +39,7 @@ import java.util.Objects;
  */
 public final class SafetyRules {
 	private final RadixAddress selfAddress;
-	private final ECKeyPair selfKey;
+	private final ECKeyPair selfKey; // TODO remove signing/address to separate identity management
 	private final VertexHasher hasher;
 
 	private SafetyState state;
@@ -103,6 +103,7 @@ public final class SafetyRules {
 			proposedVertex.getQC().getVertexMetadata().getView(),
 			proposedVertex.getQC().getVertexMetadata().getAID()
 		);
+		// TODO make signing more robust by including author in signed hash
 		Hash vertexHash = this.hasher.hash(vertexMetadata);
 		ECDSASignature signature = this.selfKey.sign(vertexHash);
 		Vote vote = new Vote(selfAddress, vertexMetadata, signature);
