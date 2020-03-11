@@ -55,13 +55,13 @@ public final class SafetyRules {
 			throw new IllegalArgumentException("Address and key mismatch: " + selfAddress + " != " + selfKey);
 		}
 		this.hasher = Objects.requireNonNull(hasher);
-		this.state = new SafetyState(initialState.lastVotedRound, initialState.lockedRound);
+		this.state = new SafetyState(initialState.lastVotedView, initialState.lockedView);
 	}
 
 	@VisibleForTesting
 	AID getCommittedAtom(Vertex vertex) {
-		if (vertex.getRound().equals(vertex.getQC().getRound().next())
-			&& vertex.getQC().getRound().equals(vertex.getQC().getParentRound().next())) {
+		if (vertex.getView().equals(vertex.getQC().getView().next())
+			&& vertex.getQC().getView().equals(vertex.getQC().getParentView().next())) {
 			return vertex.getQC().getVertexMetadata().getParentAID();
 		}
 		return null;
@@ -72,8 +72,8 @@ public final class SafetyRules {
 	 * @param qc The quorum certificate
 	 */
 	public void process(QuorumCertificate qc) {
-		if (qc.getParentRound().compareTo(this.state.lockedRound) > 0) {
-			this.state = this.state.withLockedRound(qc.getParentRound());
+		if (qc.getParentView().compareTo(this.state.lockedView) > 0) {
+			this.state = this.state.withLockedView(qc.getParentView());
 		}
 	}
 
@@ -84,23 +84,23 @@ public final class SafetyRules {
 	 * @throws SafetyViolationException In case the vertex would violate a safety invariant
 	 */
 	public VoteResult voteFor(Vertex proposedVertex) throws SafetyViolationException, CryptoException {
-		// ensure vertex does not violate earlier rounds
-		if (proposedVertex.getRound().compareTo(this.state.lastVotedRound) <= 0) {
+		// ensure vertex does not violate earlier votes
+		if (proposedVertex.getView().compareTo(this.state.lastVotedView) <= 0) {
 			throw new SafetyViolationException(proposedVertex, this.state, String.format(
-				"violates earlier vote at %s", this.state.lastVotedRound));
+				"violates earlier vote at %s", this.state.lastVotedView));
 		}
 
 		// ensure vertex respects locked QC
-		if (proposedVertex.getQC().getRound().compareTo(this.state.lockedRound) < 0) {
+		if (proposedVertex.getQC().getView().compareTo(this.state.lockedView) < 0) {
 			throw new SafetyViolationException(proposedVertex, this.state, String.format(
-				"does not respect locked round %s", this.state.lockedRound));
+				"does not respect locked view %s", this.state.lockedView));
 		}
 
-		this.state = this.state.withLastVotedRound(proposedVertex.getRound());
+		this.state = this.state.withLastVotedView(proposedVertex.getView());
 		VertexMetadata vertexMetadata = new VertexMetadata(
-			proposedVertex.getRound(),
+			proposedVertex.getView(),
 			proposedVertex.getAID(),
-			proposedVertex.getQC().getVertexMetadata().getRound(),
+			proposedVertex.getQC().getVertexMetadata().getView(),
 			proposedVertex.getQC().getVertexMetadata().getAID()
 		);
 		Hash vertexHash = this.hasher.hash(vertexMetadata);

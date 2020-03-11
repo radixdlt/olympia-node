@@ -21,7 +21,6 @@ import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.crypto.ECDSASignatures;
-import com.radixdlt.crypto.Signatures;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
@@ -53,12 +52,12 @@ public final class QuorumCertificate {
 		this.signatures = Objects.requireNonNull(signatures);
 	}
 
-	public Round getRound() {
-		return vertexMetadata.getRound();
+	public View getView() {
+		return vertexMetadata.getView();
 	}
 
-	public Round getParentRound() {
-		return vertexMetadata.getParentRound();
+	public View getParentView() {
+		return vertexMetadata.getParentView();
 	}
 
 	public VertexMetadata getVertexMetadata() {

@@ -17,8 +17,9 @@
 
 package com.radixdlt.consensus.liveness;
 
-import com.radixdlt.consensus.NewRound;
-import com.radixdlt.consensus.Round;
+import com.radixdlt.consensus.NewView;
+import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.safety.QuorumRequirements;
 
 import java.util.Optional;
 
@@ -26,8 +27,8 @@ import java.util.Optional;
  * Interface for an event coordinator to manage the pacemaker
  */
 public interface Pacemaker {
-	Round getCurrentRound();
-	boolean processLocalTimeout(Round round);
-	Optional<Round> processRemoteNewRound(NewRound newRound);
-	Optional<Round> processQC(Round round);
+	View getCurrentView();
+	boolean processLocalTimeout(View view);
+	Optional<View> processRemoteNewView(NewView newView, QuorumRequirements quorumRequirements);
+	Optional<View> processQC(View view);
 }

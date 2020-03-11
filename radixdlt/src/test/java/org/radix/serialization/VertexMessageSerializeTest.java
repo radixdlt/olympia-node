@@ -21,12 +21,10 @@ import com.radixdlt.common.AID;
 import com.radixdlt.common.Atom;
 import com.radixdlt.common.EUID;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.Round;
+import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
-import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.messages.VertexMessage;
-import com.radixdlt.crypto.DefaultSignatures;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.utils.Ints;
 
@@ -36,16 +34,16 @@ public class VertexMessageSerializeTest extends SerializeMessageObject<VertexMes
 	}
 
 	private static VertexMessage get() {
-		Round parentRound = Round.of(1234567890L);
-		Round round = parentRound.next();
+		View parentView = View.of(1234567890L);
+		View view = parentView.next();
 		AID parentAid = aidOf(12345);
 		AID aid = aidOf(23456);
 		EUID author = EUID.TWO;
 		Atom atom = new Atom();
 
-		VertexMetadata vertexMetadata = new VertexMetadata(round, aid, parentRound, parentAid);
+		VertexMetadata vertexMetadata = new VertexMetadata(view, aid, parentView, parentAid);
 		QuorumCertificate qc = new QuorumCertificate(vertexMetadata, new ECDSASignatures());
-		Vertex vertex = new Vertex(qc, round, atom);
+		Vertex vertex = new Vertex(qc, view, atom);
 		return new VertexMessage(1, vertex);
 	}
 

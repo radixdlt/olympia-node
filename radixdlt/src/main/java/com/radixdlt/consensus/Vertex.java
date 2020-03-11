@@ -44,7 +44,7 @@ public final class Vertex {
 	@DsonOutput(Output.ALL)
 	private final QuorumCertificate qc;
 
-	private Round round;
+	private View view;
 
 	@JsonProperty("atom")
 	@DsonOutput(Output.ALL)
@@ -53,13 +53,13 @@ public final class Vertex {
 	Vertex() {
 		// Serializer only
 		this.qc = null;
-		this.round = null;
+		this.view = null;
 		this.atom = null;
 	}
 
-	public Vertex(QuorumCertificate qc, Round round, Atom atom) {
+	public Vertex(QuorumCertificate qc, View view, Atom atom) {
 		this.qc = qc;
-		this.round = Objects.requireNonNull(round);
+		this.view = Objects.requireNonNull(view);
 		this.atom = atom;
 	}
 
@@ -67,8 +67,8 @@ public final class Vertex {
 		return qc;
 	}
 
-	public Round getRound() {
-		return round;
+	public View getView() {
+		return view;
 	}
 
 	public AID getAID() {
@@ -79,21 +79,21 @@ public final class Vertex {
 		return atom;
 	}
 
-	@JsonProperty("round")
+	@JsonProperty("view")
 	@DsonOutput(Output.ALL)
-	private Long getSerializerRound() {
-		return this.round == null ? null : this.round.number();
+	private Long getSerializerView() {
+		return this.view == null ? null : this.view.number();
 	}
 
-	@JsonProperty("round")
-	private void setSerializerRound(Long number) {
-		this.round = number == null ? null : Round.of(number.longValue());
+	@JsonProperty("view")
+	private void setSerializerView(Long number) {
+		this.view = number == null ? null : View.of(number.longValue());
 	}
 
 	@Override
 	public String toString() {
 		return "Vertex{" +
-			"round=" + round +
+			"view=" + view +
 			", atom=" + atom +
 			", qc=" + qc +
 			'}';
@@ -101,7 +101,7 @@ public final class Vertex {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(qc, round, atom);
+		return Objects.hash(qc, view, atom);
 	}
 
 	@Override
@@ -111,7 +111,7 @@ public final class Vertex {
 		}
 
 		Vertex v = (Vertex) o;
-		return Objects.equals(v.round, round)
+		return Objects.equals(v.view, view)
 			&& Objects.equals(v.atom, this.atom)
 			&& Objects.equals(v.qc, this.qc);
 	}

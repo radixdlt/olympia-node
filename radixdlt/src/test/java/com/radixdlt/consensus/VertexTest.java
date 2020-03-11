@@ -18,20 +18,16 @@
 package com.radixdlt.consensus;
 
 import com.radixdlt.atomos.RadixAddress;
-import com.radixdlt.crypto.DefaultSignatures;
 import com.radixdlt.crypto.ECDSASignatures;
-import com.radixdlt.crypto.ECPublicKey;
 import org.junit.Before;
 import org.junit.Test;
 
 import com.radixdlt.common.AID;
 import com.radixdlt.common.Atom;
-import com.radixdlt.common.EUID;
 import com.radixdlt.utils.Ints;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
 
@@ -45,12 +41,12 @@ public class VertexTest {
 
 	@Before
 	public void setUp() throws Exception {
-		Round parentRound = Round.of(1234567890L);
+		View parentView = View.of(1234567890L);
 		AID parentAid = aidOf(23456);
-		Round round = parentRound.next();
+		View view = parentView.next();
 		AID aid = aidOf(123456);
 
-		this.vertexMetadata = new VertexMetadata(round, aid, parentRound, parentAid);
+		this.vertexMetadata = new VertexMetadata(view, aid, parentView, parentAid);
 
 		RadixAddress author = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
 		this.vote = new Vote(author, this.vertexMetadata, null);
@@ -59,7 +55,7 @@ public class VertexTest {
 
 		this.atom = new Atom();
 
-		this.testObject = new Vertex(this.qc, round, this.atom);
+		this.testObject = new Vertex(this.qc, view, this.atom);
 	}
 
 	@Test
@@ -72,7 +68,7 @@ public class VertexTest {
 	public void testGetters() {
 		assertEquals(this.atom, this.testObject.getAtom());
 		assertEquals(this.qc, this.testObject.getQC());
-		assertEquals(Round.of(1234567891L), this.testObject.getRound());
+		assertEquals(View.of(1234567891L), this.testObject.getView());
 	}
 
 	@Test

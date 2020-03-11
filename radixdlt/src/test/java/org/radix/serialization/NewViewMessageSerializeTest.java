@@ -17,17 +17,17 @@
 
 package org.radix.serialization;
 
-import com.radixdlt.consensus.NewRound;
-import com.radixdlt.consensus.Round;
-import com.radixdlt.consensus.messages.NewRoundMessage;
+import com.radixdlt.consensus.NewView;
+import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.messages.NewViewMessage;
 
-public class NewRoundMessageSerializeTest extends SerializeMessageObject<NewRoundMessage> {
-	public NewRoundMessageSerializeTest() {
-		super(NewRoundMessage.class, NewRoundMessageSerializeTest::get);
+public class NewViewMessageSerializeTest extends SerializeMessageObject<NewViewMessage> {
+	public NewViewMessageSerializeTest() {
+		super(NewViewMessage.class, NewViewMessageSerializeTest::get);
 	}
 
-	private static NewRoundMessage get() {
-		NewRound testRound = new NewRound(Round.of(1234567890L));
-		return new NewRoundMessage(1234, testRound);
+	private static NewViewMessage get() {
+		NewView testView = new NewView(View.of(1234567890L));
+		return new NewViewMessage(1234, testView);
 	}
 }

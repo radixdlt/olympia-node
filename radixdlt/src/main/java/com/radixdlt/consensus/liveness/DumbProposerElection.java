@@ -18,11 +18,11 @@
 package com.radixdlt.consensus.liveness;
 
 import com.radixdlt.common.EUID;
-import com.radixdlt.consensus.Round;
+import com.radixdlt.consensus.View;
 
 public class DumbProposerElection implements ProposerElection {
 	@Override
-	public boolean isValidProposer(EUID nid, Round round) {
+	public boolean isValidProposer(EUID nid, View view) {
 		// will accept anything
 		return true;
 	}

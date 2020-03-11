@@ -17,7 +17,7 @@
 
 package com.radixdlt.network;
 
-import com.radixdlt.consensus.NewRound;
+import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.Vote;
 
@@ -26,6 +26,6 @@ import com.radixdlt.consensus.Vote;
  */
 public interface EventCoordinatorNetworkSender {
 	void broadcastProposal(Vertex vertex);
-	void sendNewRound(NewRound newRound);
+	void sendNewView(NewView newView);
 	void sendVote(Vote vote);
 }

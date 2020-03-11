@@ -36,13 +36,13 @@ public final class VertexMetadata {
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	private Round round;
+	private View view;
 
 	@JsonProperty("aid")
 	@DsonOutput(Output.ALL)
 	private final AID aid;
 
-	private Round parentRound;
+	private View parentView;
 
 	@JsonProperty("parent_aid")
 	@DsonOutput(Output.ALL)
@@ -50,25 +50,25 @@ public final class VertexMetadata {
 
 	VertexMetadata() {
 		// Serializer only
-		this.round = null;
+		this.view = null;
 		this.aid = null;
-		this.parentRound = null;
+		this.parentView = null;
 		this.parentAid = null;
 	}
 
-	public VertexMetadata(Round round, AID aid, Round parentRound, AID parentAid) {
-		this.round = round;
+	public VertexMetadata(View view, AID aid, View parentView, AID parentAid) {
+		this.view = view;
 		this.aid = aid;
-		this.parentRound = parentRound;
+		this.parentView = parentView;
 		this.parentAid = parentAid;
 	}
 
-	public Round getRound() {
-		return round;
+	public View getView() {
+		return view;
 	}
 
-	public Round getParentRound() {
-		return parentRound;
+	public View getParentView() {
+		return parentView;
 	}
 
 	public AID getAID() {
@@ -79,32 +79,32 @@ public final class VertexMetadata {
 		return parentAid;
 	}
 
-	@JsonProperty("round")
+	@JsonProperty("view")
 	@DsonOutput(Output.ALL)
-	private Long getSerializerRound() {
-		return this.round == null ? null : this.round.number();
+	private Long getSerializerView() {
+		return this.view == null ? null : this.view.number();
 	}
 
-	@JsonProperty("round")
-	private void setSerializerRound(Long number) {
-		this.round = number == null ? null : Round.of(number.longValue());
+	@JsonProperty("view")
+	private void setSerializerView(Long number) {
+		this.view = number == null ? null : View.of(number.longValue());
 	}
 
-	@JsonProperty("parent_round")
+	@JsonProperty("parent_view")
 	@DsonOutput(Output.ALL)
-	private Long getSerializerParentRound() {
-		return this.parentRound == null ? null : this.parentRound.number();
+	private Long getSerializerParentView() {
+		return this.parentView == null ? null : this.parentView.number();
 	}
 
-	@JsonProperty("parent_round")
-	private void setSerializerParentRound(Long number) {
-		this.parentRound = number == null ? null : Round.of(number.longValue());
+	@JsonProperty("parent_view")
+	private void setSerializerParentView(Long number) {
+		this.parentView = number == null ? null : View.of(number.longValue());
 	}
 
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.round, this.aid, this.parentRound, this.parentAid);
+		return Objects.hash(this.view, this.aid, this.parentView, this.parentAid);
 	}
 
 	@Override
@@ -115,9 +115,9 @@ public final class VertexMetadata {
 		if (o instanceof VertexMetadata) {
 			VertexMetadata other = (VertexMetadata) o;
 			return
-				Objects.equals(this.round, other.round) &&
+				Objects.equals(this.view, other.view) &&
 				Objects.equals(this.aid, other.aid) &&
-				Objects.equals(this.parentRound, other.parentRound) &&
+				Objects.equals(this.parentView, other.parentView) &&
 				Objects.equals(this.parentAid, other.parentAid);
 		}
 		return false;

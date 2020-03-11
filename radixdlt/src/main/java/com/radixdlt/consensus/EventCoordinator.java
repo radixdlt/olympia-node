@@ -22,7 +22,6 @@ import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.Atom;
-import com.radixdlt.common.EUID;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.safety.QuorumRequirements;
@@ -33,7 +32,6 @@ import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.crypto.CryptoException;
-import com.radixdlt.crypto.DefaultSignatures;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.AtomEventListener;
@@ -52,7 +50,7 @@ import java.util.Optional;
  */
 public final class EventCoordinator {
 	private static final Logger log = Logging.getLogger("EC");
-	private static final Round GENESIS_ROUND = Round.of(0L);
+	private static final View GENESIS_VIEW = View.of(0L);
 	private static final AID GENESIS_ID = AID.ZERO;
 
 	private final VertexStore vertexStore;
@@ -61,6 +59,7 @@ public final class EventCoordinator {
 	private final EventCoordinatorNetworkSender networkSender;
 	private final Pacemaker pacemaker;
 	private final ProposerElection proposerElection;
+	private final QuorumRequirements quorumRequirements;
 	private final ECPublicKey self;
 	private final SafetyRules safetyRules;
 
@@ -73,6 +72,7 @@ public final class EventCoordinator {
 		VertexStore vertexStore,
 		RadixEngine engine,
 		ProposerElection proposerElection,
+		QuorumRequirements quorumRequirements,
 		@Named("self") ECPublicKey self
 	) {
 		this.mempool = Objects.requireNonNull(mempool);
@@ -82,13 +82,14 @@ public final class EventCoordinator {
 		this.vertexStore = Objects.requireNonNull(vertexStore);
         this.engine = Objects.requireNonNull(engine);
 		this.proposerElection = Objects.requireNonNull(proposerElection);
+		this.quorumRequirements = Objects.requireNonNull(quorumRequirements);
 		this.self = Objects.requireNonNull(self);
 	}
 
-	private void processNewRound(Round round) {
-		log.debug("Processing new round: " +  round);
+	private void processNewView(View view) {
+		log.debug("Processing new view: " + view);
 		// only do something if we're actually the leader
-		if (!proposerElection.isValidProposer(self.getUID(), round)) {
+		if (!proposerElection.isValidProposer(self.getUID(), view)) {
 			return;
 		}
         
@@ -97,58 +98,48 @@ public final class EventCoordinator {
 			QuorumCertificate highestQC = vertexStore.getHighestQC()
 				.orElseGet(this::makeGenesisQC);
 
-			log.info("Starting round " + round + " with proposal " + atoms.get(0));
-			networkSender.broadcastProposal(new Vertex(highestQC, this.pacemaker.getCurrentRound(), atoms.get(0)));
+			log.info("Starting view " + view + " with proposal " + atoms.get(0));
+			networkSender.broadcastProposal(new Vertex(highestQC, this.pacemaker.getCurrentView(), atoms.get(0)));
 		}
 	}
 
 	public void processVote(Vote vote) {
-		// only do something if we're actually the leader for the next round
-		if (!proposerElection.isValidProposer(self.getUID(), vote.getVertexMetadata().getRound().next())) {
-			log.warn(String.format("Ignoring confused vote %s for %s", vote.hashCode(), vote.getVertexMetadata().getRound()));
+		// only do something if we're actually the leader for the next view
+		if (!proposerElection.isValidProposer(self.getUID(), vote.getVertexMetadata().getView().next())) {
+			log.warn(String.format("Ignoring confused vote %s for %s", vote.hashCode(), vote.getVertexMetadata().getView()));
 			return;
 		}
 
 		// accumulate votes into QCs in store
-		Optional<QuorumCertificate> potentialQc = this.vertexStore.insertVote(vote, new QuorumRequirements() {
-			@Override
-			public int numRequiredVotes() {
-				return 1;
-			}
-
-			@Override
-			public boolean acceptsVoteBy(EUID author) {
-				return true;
-			}
-		});
+		Optional<QuorumCertificate> potentialQc = this.vertexStore.insertVote(vote, this.quorumRequirements);
 		if (potentialQc.isPresent()) {
 			QuorumCertificate qc = potentialQc.get();
 			this.safetyRules.process(qc);
 			this.vertexStore.syncToQC(qc);
 
-			// start new round if pacemaker feels like it
-			this.pacemaker.processQC(qc.getRound())
-				.ifPresent(this::processNewRound);
+			// start new view if pacemaker feels like it
+			this.pacemaker.processQC(qc.getView())
+				.ifPresent(this::processNewView);
 		}
 	}
 
-	public void processLocalTimeout(Round round) {
-		if (!this.pacemaker.processLocalTimeout(round)) {
+	public void processLocalTimeout(View view) {
+		if (!this.pacemaker.processLocalTimeout(view)) {
 			return;
 		}
 
-		this.networkSender.sendNewRound(new NewRound(round.next()));
+		this.networkSender.sendNewView(new NewView(view.next()));
 	}
 
-	public void processRemoteNewRound(NewRound newRound) {
-		// only do something if we're actually the leader for the next round
-		if (!proposerElection.isValidProposer(self.getUID(), newRound.getRound())) {
-			log.warn(String.format("Got confused new round %s for round ", newRound.hashCode()) + newRound.getRound());
+	public void processRemoteNewView(NewView newView) {
+		// only do something if we're actually the leader for the next view
+		if (!proposerElection.isValidProposer(self.getUID(), newView.getView())) {
+			log.warn(String.format("Got confused new-view %s for view ", newView.hashCode()) + newView.getView());
 			return;
 		}
 
-		this.pacemaker.processRemoteNewRound(newRound)
-			.ifPresent(this::processNewRound);
+		this.pacemaker.processRemoteNewView(newView, this.quorumRequirements)
+			.ifPresent(this::processNewView);
 	}
 
 	public void processProposal(Vertex proposedVertex) {
@@ -200,7 +191,7 @@ public final class EventCoordinator {
 	}
 
 	private QuorumCertificate makeGenesisQC() {
-		VertexMetadata genesisMetadata = new VertexMetadata(GENESIS_ROUND, GENESIS_ID, GENESIS_ROUND, GENESIS_ID);
+		VertexMetadata genesisMetadata = new VertexMetadata(GENESIS_VIEW, GENESIS_ID, GENESIS_VIEW, GENESIS_ID);
 		return new QuorumCertificate(genesisMetadata, new ECDSASignatures());
 	}
 }

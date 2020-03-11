@@ -19,16 +19,13 @@ package org.radix.serialization;
 
 import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.common.AID;
-import com.radixdlt.common.EUID;
-import com.radixdlt.consensus.Round;
+import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.messages.VoteMessage;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.utils.Ints;
 
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class VoteMessageSerializeTest extends SerializeMessageObject<VoteMessage> {
 	public VoteMessageSerializeTest() {
@@ -36,14 +33,14 @@ public class VoteMessageSerializeTest extends SerializeMessageObject<VoteMessage
 	}
 
 	private static VoteMessage get() {
-		Round parentRound = Round.of(1234567890L);
+		View parentView = View.of(1234567890L);
 		AID parentAid = aidOf(23456);
 
-		Round round = parentRound.next();
+		View view = parentView.next();
 		AID aid = aidOf(123456);
 
 		RadixAddress author = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
-		VertexMetadata vertexMetadata = new VertexMetadata(round, aid, parentRound, parentAid);
+		VertexMetadata vertexMetadata = new VertexMetadata(view, aid, parentView, parentAid);
 
 		Vote vote = new Vote(author, vertexMetadata, null);
 

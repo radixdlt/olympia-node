@@ -17,8 +17,9 @@
 
 package com.radixdlt.consensus.liveness;
 
-import com.radixdlt.consensus.NewRound;
-import com.radixdlt.consensus.Round;
+import com.radixdlt.consensus.NewView;
+import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.safety.QuorumRequirements;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 
@@ -31,79 +32,79 @@ import java.util.concurrent.TimeUnit;
  */
 public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 	static final int TIMEOUT_MILLISECONDS = 500;
-	private final PublishSubject<Round> timeouts;
+	private final PublishSubject<View> timeouts;
 	private final ScheduledExecutorService executorService;
 
-	private Round currentRound = Round.of(0L);
-	private Round highestQCRound = Round.of(0L);
+	private View currentView = View.of(0L);
+	private View highestQCView = View.of(0L);
 
 	public PacemakerImpl(ScheduledExecutorService executorService) {
 		this.timeouts = PublishSubject.create();
 		this.executorService = executorService;
 	}
 
-	private void scheduleTimeout(final Round timeoutRound) {
+	private void scheduleTimeout(final View timeoutView) {
 		executorService.schedule(() -> {
-			timeouts.onNext(timeoutRound);
+			timeouts.onNext(timeoutView);
 		}, TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS);
 	}
 
 	@Override
-	public Round getCurrentRound() {
-		return currentRound;
+	public View getCurrentView() {
+		return currentView;
 	}
 
 	@Override
-	public boolean processLocalTimeout(Round round) {
-		if (!round.equals(this.currentRound)) {
+	public boolean processLocalTimeout(View view) {
+		if (!view.equals(this.currentView)) {
 			return false;
 		}
 
-		this.currentRound = currentRound.next();
+		this.currentView = currentView.next();
 
-		scheduleTimeout(this.currentRound);
+		scheduleTimeout(this.currentView);
 		return true;
 	}
 
 	@Override
-	public Optional<Round> processRemoteNewRound(NewRound newRound) {
-		// gather new rounds to form new round QC
+	public Optional<View> processRemoteNewView(NewView newView, QuorumRequirements quorumRequirements) {
+		// gather new views to form new views QC
 		// TODO assumes single node network for now
-		return Optional.of(newRound.getRound());
+		return Optional.of(newView.getView());
 	}
 
-	private void updateHighestQCRound(Round round) {
-		if (round.compareTo(highestQCRound) > 0) {
-			highestQCRound = round;
+	private void updateHighestQCView(View view) {
+		if (view.compareTo(highestQCView) > 0) {
+			highestQCView = view;
 		}
 	}
 
 	@Override
-	public Optional<Round> processQC(Round round) {
+	public Optional<View> processQC(View view) {
 		// update
-		updateHighestQCRound(round);
+		updateHighestQCView(view);
 
-		// check if a new round can be started
-		Round newRound = highestQCRound.next();
-		if (newRound.compareTo(currentRound) <= 0) {
+		// check if a new view can be started
+		View newView = highestQCView.next();
+		if (newView.compareTo(currentView) <= 0) {
 			return Optional.empty();
 		}
 
-		// start new round
-		this.currentRound = newRound;
+		// start new view
+		this.currentView = newView;
 
-		scheduleTimeout(this.currentRound);
+		scheduleTimeout(this.currentView);
 
-		return Optional.of(this.currentRound);
+		return Optional.of(this.currentView);
 	}
 
 	@Override
 	public void start() {
-		scheduleTimeout(this.currentRound);
+		scheduleTimeout(this.currentView);
 	}
 
 	@Override
-	public Observable<Round> localTimeouts() {
+	public Observable<View> localTimeouts() {
 		return timeouts;
 	}
 }

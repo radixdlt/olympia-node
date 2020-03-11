@@ -22,7 +22,7 @@ import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.Atom;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.Round;
+import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.constraintmachine.Spin;
@@ -35,12 +35,12 @@ public class VertexSerializeTest extends SerializeObject<Vertex> {
 	}
 
 	private static Vertex get() {
-		Round parentRound = Round.of(1234567890L);
-		Round round = parentRound.next();
+		View parentView = View.of(1234567890L);
+		View view = parentView.next();
 		AID parentAid = aidOf(12345);
 		AID aid = aidOf(23456);
 
-		VertexMetadata vertexMetadata = new VertexMetadata(round, aid, parentRound, parentAid);
+		VertexMetadata vertexMetadata = new VertexMetadata(view, aid, parentView, parentAid);
 
 		QuorumCertificate qc = new QuorumCertificate(vertexMetadata, new ECDSASignatures());
 
@@ -49,7 +49,7 @@ public class VertexSerializeTest extends SerializeObject<Vertex> {
 		// add a particle to ensure atom is valid and has at least one shard
 		atom.addParticleGroupWith(new MessageParticle(address, address, "Hello".getBytes()), Spin.UP);
 
-		return new Vertex(qc, round, atom);
+		return new Vertex(qc, view, atom);
 	}
 
 	private static AID aidOf(int id) {

@@ -30,10 +30,10 @@ import org.radix.network2.messaging.MessageCentral;
 import org.radix.universe.system.LocalSystem;
 
 import com.radixdlt.common.EUID;
-import com.radixdlt.consensus.NewRound;
+import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.messages.NewRoundMessage;
+import com.radixdlt.consensus.messages.NewViewMessage;
 import com.radixdlt.consensus.messages.VertexMessage;
 import com.radixdlt.consensus.messages.VoteMessage;
 import com.radixdlt.universe.Universe;
@@ -48,7 +48,7 @@ public class SimpleEventCoordinatorNetwork implements EventCoordinatorNetworkSen
 	private final MessageCentral messageCentral;
 
 	private final PublishSubject<Vertex> proposals;
-	private final PublishSubject<NewRound> newRounds;
+	private final PublishSubject<NewView> newViews;
 	private final PublishSubject<Vote> votes;
 
 	@Inject
@@ -64,12 +64,12 @@ public class SimpleEventCoordinatorNetwork implements EventCoordinatorNetworkSen
 		this.localPeer = new PeerWithSystem(system);
 
 		this.proposals = PublishSubject.create();
-		this.newRounds = PublishSubject.create();
+		this.newViews = PublishSubject.create();
 		this.votes = PublishSubject.create();
 
 		// TODO: Should be handled in start()/stop() once we have lifetimes sorted out
 		this.messageCentral.addListener(VertexMessage.class, this::handleVertexMessage);
-		this.messageCentral.addListener(NewRoundMessage.class, this::handleNewRoundMessage);
+		this.messageCentral.addListener(NewViewMessage.class, this::handleNewViewMessage);
 		this.messageCentral.addListener(VoteMessage.class, this::handleVoteMessage);
 	}
 
@@ -81,9 +81,9 @@ public class SimpleEventCoordinatorNetwork implements EventCoordinatorNetworkSen
 	}
 
 	@Override
-	public void sendNewRound(NewRound newRound) {
-		NewRoundMessage message = new NewRoundMessage(this.magic, newRound);
-		handleNewRoundMessage(this.localPeer, message);
+	public void sendNewView(NewView newView) {
+		NewViewMessage message = new NewViewMessage(this.magic, newView);
+		handleNewViewMessage(this.localPeer, message);
 		sendToOthers(message);
 	}
 
@@ -100,8 +100,8 @@ public class SimpleEventCoordinatorNetwork implements EventCoordinatorNetworkSen
 	}
 
 	@Override
-	public Observable<NewRound> newRoundMessages() {
-		return this.newRounds;
+	public Observable<NewView> newViewMessages() {
+		return this.newViews;
 	}
 
 	@Override
@@ -121,8 +121,8 @@ public class SimpleEventCoordinatorNetwork implements EventCoordinatorNetworkSen
 		this.proposals.onNext(message.vertex());
 	}
 
-	private void handleNewRoundMessage(Peer source, NewRoundMessage message) {
-		this.newRounds.onNext(message.newRound());
+	private void handleNewViewMessage(Peer source, NewViewMessage message) {
+		this.newViews.onNext(message.newView());
 	}
 
 	private void handleVoteMessage(Peer source, VoteMessage message) {

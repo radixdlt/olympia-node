@@ -17,7 +17,7 @@
 
 package com.radixdlt.network;
 
-import com.radixdlt.consensus.NewRound;
+import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.Vote;
 
@@ -37,12 +37,12 @@ public interface EventCoordinatorNetworkRx {
 	Observable<Vertex> proposalMessages();
 
 	/**
-	 * Accessor to the stream of new-round messages as they are received from the
+	 * Accessor to the stream of new-view messages as they are received from the
 	 * network.
 	 *
-	 * @return hot observable of new round messages
+	 * @return hot observable of new view messages
 	 */
-	Observable<NewRound> newRoundMessages();
+	Observable<NewView> newViewMessages();
 
 	/**
 	 * Accessor to the stream of vote messages as they are received from the

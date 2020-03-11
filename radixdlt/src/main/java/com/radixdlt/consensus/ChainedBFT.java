@@ -60,9 +60,9 @@ public final class ChainedBFT {
 			.subscribeOn(this.singleThreadScheduler)
 			.subscribe(this.eventCoordinator::processLocalTimeout);
 
-		final Disposable newRoundDisposable = this.network.newRoundMessages()
+		final Disposable newRoundDisposable = this.network.newViewMessages()
 			.subscribeOn(this.singleThreadScheduler)
-			.subscribe(this.eventCoordinator::processRemoteNewRound);
+			.subscribe(this.eventCoordinator::processRemoteNewView);
 
 		final Disposable proposalDisposable = this.network.proposalMessages()
 			.subscribeOn(this.singleThreadScheduler)

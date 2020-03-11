@@ -18,7 +18,6 @@
 package com.radixdlt.consensus;
 
 import com.radixdlt.atomos.RadixAddress;
-import com.radixdlt.crypto.ECPublicKey;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -28,27 +27,26 @@ import com.radixdlt.utils.Ints;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class VoteTest {
 
+	public static final RadixAddress ADDRESS = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
 	private Vote testObject;
 	private VertexMetadata vertexMetadata;
 
 	@Before
 	public void setUp() throws Exception {
-		Round parentRound = Round.of(1234567890L);
+		View parentView = View.of(1234567890L);
 		AID parentAid = aidOf(23456);
 
-		Round round = parentRound.next();
+		View view = parentView.next();
 		AID aid = aidOf(123456);
 
-		RadixAddress author = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
-		this.vertexMetadata = new VertexMetadata(round, aid, parentRound, parentAid);
+		this.vertexMetadata = new VertexMetadata(view, aid, parentView, parentAid);
 
-		this.testObject = new Vote(author, vertexMetadata, null);
+		this.testObject = new Vote(ADDRESS, vertexMetadata, null);
 	}
 
 	@Test
@@ -60,7 +58,7 @@ public class VoteTest {
 	@Test
 	public void testGetters() {
 		assertEquals(this.vertexMetadata, this.testObject.getVertexMetadata());
-		assertEquals(EUID.TWO, this.testObject.getAuthor().getUID());
+		assertEquals(ADDRESS, this.testObject.getAuthor());
 	}
 
 	@Test

@@ -27,38 +27,38 @@ import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 
 /**
- * Represents a new round message in the pacemaker
+ * Represents a new-view message in the pacemaker
  */
-@SerializerId2("consensus.newround")
-public final class NewRound {
+@SerializerId2("consensus.newview")
+public final class NewView {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	private Round round;
+	private View view;
 
-	NewRound() {
+	NewView() {
 		// Serializer only
-		this.round = Round.of(Long.MAX_VALUE);
+		this.view = View.of(Long.MAX_VALUE);
 	}
 
-	public NewRound(Round round) {
-		this.round = round;
+	public NewView(View view) {
+		this.view = view;
 	}
 
-	public Round getRound() {
-		return round;
+	public View getView() {
+		return view;
 	}
 
-	@JsonProperty("round")
+	@JsonProperty("view")
 	@DsonOutput(Output.ALL)
-	private Long getSerializerRound() {
-		return this.round == null ? null : this.round.number();
+	private Long getSerializerView() {
+		return this.view == null ? null : this.view.number();
 	}
 
-	@JsonProperty("round")
-	private void setSerializerRound(Long number) {
-		this.round = number == null ? null : Round.of(number.longValue());
+	@JsonProperty("view")
+	private void setSerializerView(Long number) {
+		this.view = number == null ? null : View.of(number.longValue());
 	}
 
 	@Override
@@ -66,22 +66,22 @@ public final class NewRound {
 		if (this == o) {
 			return true;
 		}
-		if (!(o instanceof NewRound)) {
+		if (!(o instanceof NewView)) {
 			return false;
 		}
-		NewRound newRound = (NewRound) o;
-		return Objects.equals(this.round, newRound.round);
+		NewView newView = (NewView) o;
+		return Objects.equals(this.view, newView.view);
 	}
 
 	@Override
 	public int hashCode() {
-		return this.round.hashCode();
+		return this.view.hashCode();
 	}
 
 	@Override
 	public String toString() {
 		return getClass().getSimpleName() + "{" +
-			"round=" + round +
+			"view=" + view +
 			'}';
 	}
 }

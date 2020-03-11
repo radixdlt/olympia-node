@@ -27,7 +27,7 @@ import com.radixdlt.common.AID;
 import com.radixdlt.common.Atom;
 import com.radixdlt.common.EUID;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.Round;
+import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.crypto.CryptoException;
@@ -43,7 +43,7 @@ import org.junit.Test;
  */
 public class SafetyRulesTest {
 	private static final ECPublicKey SELF = makePubKey(EUID.ONE);
-	private static final Round GENESIS_ROUND = Round.of(0);
+	private static final View GENESIS_VIEW = View.of(0);
 	private static final AID GENESIS_ID = makeAID(1);
 	private static final Vertex GENESIS_VERTEX = makeGenesisVertex();
 
@@ -69,15 +69,15 @@ public class SafetyRulesTest {
 	}
 
 	@Test
-	public void testLockedRound() {
+	public void testLockedView() {
 		/*
 		 * This test ensures that the locking logic is working correctly.
-		 * The locked round in HotStuff is the highest 2-chain head a node has seen.
+		 * The locked view in HotStuff is the highest 2-chain head a node has seen.
 		 */
 
 		SafetyRules safetyRules = createDefaultSafetyRules();
-		assertThat(safetyRules.getState().lastVotedRound).isEqualByComparingTo(Round.of(0L));
-		assertThat(safetyRules.getState().lockedRound).isEqualByComparingTo(Round.of(0L));
+		assertThat(safetyRules.getState().lastVotedView).isEqualByComparingTo(View.of(0L));
+		assertThat(safetyRules.getState().lockedView).isEqualByComparingTo(View.of(0L));
 
 		AID a1Id = makeAID(11);
 		AID a2Id = makeAID(12);
@@ -87,31 +87,31 @@ public class SafetyRulesTest {
 		AID b2Id = makeAID(22);
 		AID b3Id = makeAID(23);
 		AID b4Id = makeAID(24);
-		Vertex a1 = makeVertex(GENESIS_VERTEX, Round.of(1), a1Id);
-		Vertex b1 = makeVertex(GENESIS_VERTEX, Round.of(2), b1Id);
-		Vertex b2 = makeVertex(a1, Round.of(3), b2Id);
-		Vertex a2 = makeVertex(b1, Round.of(4), a2Id);
-		Vertex b3 = makeVertex(a2, Round.of(5), b3Id);
-		Vertex a3 = makeVertex(a2, Round.of(6), a3Id);
-		Vertex a4 = makeVertex(a3, Round.of(7), a4Id);
-		Vertex b4 = makeVertex(b2, Round.of(8), b4Id);
+		Vertex a1 = makeVertex(GENESIS_VERTEX, View.of(1), a1Id);
+		Vertex b1 = makeVertex(GENESIS_VERTEX, View.of(2), b1Id);
+		Vertex b2 = makeVertex(a1, View.of(3), b2Id);
+		Vertex a2 = makeVertex(b1, View.of(4), a2Id);
+		Vertex b3 = makeVertex(a2, View.of(5), b3Id);
+		Vertex a3 = makeVertex(a2, View.of(6), a3Id);
+		Vertex a4 = makeVertex(a3, View.of(7), a4Id);
+		Vertex b4 = makeVertex(b2, View.of(8), b4Id);
 
 		safetyRules.process(a1.getQC());
-		assertThat(safetyRules.getState().lockedRound).isEqualByComparingTo(GENESIS_ROUND);
+		assertThat(safetyRules.getState().lockedView).isEqualByComparingTo(GENESIS_VIEW);
 		safetyRules.process(b1.getQC());
-		assertThat(safetyRules.getState().lockedRound).isEqualByComparingTo(GENESIS_ROUND);
+		assertThat(safetyRules.getState().lockedView).isEqualByComparingTo(GENESIS_VIEW);
 		safetyRules.process(b2.getQC());
-		assertThat(safetyRules.getState().lockedRound).isEqualByComparingTo(GENESIS_ROUND);
+		assertThat(safetyRules.getState().lockedView).isEqualByComparingTo(GENESIS_VIEW);
 		safetyRules.process(a2.getQC());
-		assertThat(safetyRules.getState().lockedRound).isEqualByComparingTo(GENESIS_ROUND);
+		assertThat(safetyRules.getState().lockedView).isEqualByComparingTo(GENESIS_VIEW);
 		safetyRules.process(a3.getQC());
-		assertThat(safetyRules.getState().lockedRound).isEqualByComparingTo(b1.getRound());
+		assertThat(safetyRules.getState().lockedView).isEqualByComparingTo(b1.getView());
 		safetyRules.process(b3.getQC());
-		assertThat(safetyRules.getState().lockedRound).isEqualByComparingTo(b1.getRound());
+		assertThat(safetyRules.getState().lockedView).isEqualByComparingTo(b1.getView());
 		safetyRules.process(a4.getQC());
-		assertThat(safetyRules.getState().lockedRound).isEqualByComparingTo(a2.getRound());
+		assertThat(safetyRules.getState().lockedView).isEqualByComparingTo(a2.getView());
 		safetyRules.process(b4.getQC());
-		assertThat(safetyRules.getState().lockedRound).isEqualByComparingTo(a2.getRound());
+		assertThat(safetyRules.getState().lockedView).isEqualByComparingTo(a2.getView());
 	}
 
 	@Test
@@ -122,8 +122,8 @@ public class SafetyRulesTest {
 		 */
 
 		SafetyRules safetyRules = createDefaultSafetyRules();
-		assertThat(safetyRules.getState().lastVotedRound).isEqualByComparingTo(Round.of(0L));
-		assertThat(safetyRules.getState().lockedRound).isEqualByComparingTo(Round.of(0L));
+		assertThat(safetyRules.getState().lastVotedView).isEqualByComparingTo(View.of(0L));
+		assertThat(safetyRules.getState().lockedView).isEqualByComparingTo(View.of(0L));
 
 		AID a1Id = makeAID(11);
 		AID a2Id = makeAID(12);
@@ -134,15 +134,15 @@ public class SafetyRulesTest {
 		AID b2Id = makeAID(22);
 		AID b3Id = makeAID(23);
 		AID b4Id = makeAID(24);
-		Vertex a1 = makeVertex(GENESIS_VERTEX, Round.of(1), a1Id);
-		Vertex b1 = makeVertex(GENESIS_VERTEX, Round.of(2), b1Id);
-		Vertex b2 = makeVertex(a1, Round.of(3), b2Id);
-		Vertex a2 = makeVertex(b1, Round.of(4), a2Id);
-		Vertex a3 = makeVertex(a2, Round.of(5), a3Id);
-		Vertex b3 = makeVertex(a2, Round.of(6), b3Id);
-		Vertex a4 = makeVertex(a3, Round.of(7), a4Id);
-		Vertex b4 = makeVertex(b2, Round.of(8), b4Id);
-		Vertex a5 = makeVertex(a4, Round.of(9), a5Id);
+		Vertex a1 = makeVertex(GENESIS_VERTEX, View.of(1), a1Id);
+		Vertex b1 = makeVertex(GENESIS_VERTEX, View.of(2), b1Id);
+		Vertex b2 = makeVertex(a1, View.of(3), b2Id);
+		Vertex a2 = makeVertex(b1, View.of(4), a2Id);
+		Vertex a3 = makeVertex(a2, View.of(5), a3Id);
+		Vertex b3 = makeVertex(a2, View.of(6), b3Id);
+		Vertex a4 = makeVertex(a3, View.of(7), a4Id);
+		Vertex b4 = makeVertex(b2, View.of(8), b4Id);
+		Vertex a5 = makeVertex(a4, View.of(9), a5Id);
 
 		safetyRules.process(a1.getQC());
 		VoteResult result = safetyRules.voteFor(a1);
@@ -188,8 +188,8 @@ public class SafetyRulesTest {
 		 */
 
 		SafetyRules safetyRules = createDefaultSafetyRules();
-		assertThat(safetyRules.getState().lastVotedRound).isEqualByComparingTo(Round.of(0L));
-		assertThat(safetyRules.getState().lockedRound).isEqualByComparingTo(Round.of(0L));
+		assertThat(safetyRules.getState().lastVotedView).isEqualByComparingTo(View.of(0L));
+		assertThat(safetyRules.getState().lockedView).isEqualByComparingTo(View.of(0L));
 
 		AID a1Id = makeAID(11);
 		AID a2Id = makeAID(12);
@@ -199,14 +199,14 @@ public class SafetyRulesTest {
 		AID b1Id = makeAID(21);
 		AID b2Id = makeAID(22);
 		AID b3Id = makeAID(23);
-		Vertex a1 = makeVertex(GENESIS_VERTEX, Round.of(1), a1Id);
-		Vertex b1 = makeVertex(GENESIS_VERTEX, Round.of(2), b1Id);
-		Vertex b2 = makeVertex(a1, Round.of(3), b2Id);
-		Vertex a2 = makeVertex(b1, Round.of(4), a2Id);
-		Vertex b3 = makeVertex(a2, Round.of(5), b3Id);
-		Vertex a3 = makeVertex(a2, Round.of(6), a3Id);
-		Vertex a4 = makeVertex(a3, Round.of(7), a4Id);
-		Vertex a5 = makeVertex(a4, Round.of(8), a5Id);
+		Vertex a1 = makeVertex(GENESIS_VERTEX, View.of(1), a1Id);
+		Vertex b1 = makeVertex(GENESIS_VERTEX, View.of(2), b1Id);
+		Vertex b2 = makeVertex(a1, View.of(3), b2Id);
+		Vertex a2 = makeVertex(b1, View.of(4), a2Id);
+		Vertex b3 = makeVertex(a2, View.of(5), b3Id);
+		Vertex a3 = makeVertex(a2, View.of(6), a3Id);
+		Vertex a4 = makeVertex(a3, View.of(7), a4Id);
+		Vertex a5 = makeVertex(a4, View.of(8), a5Id);
 
 		assertThat(safetyRules.getCommittedAtom(a1)).isEqualTo(null);
 		assertThat(safetyRules.getCommittedAtom(b1)).isEqualTo(null);
@@ -219,20 +219,20 @@ public class SafetyRulesTest {
 	}
 
 	private static Vertex makeGenesisVertex() {
-		VertexMetadata genesisMetadata = new VertexMetadata(GENESIS_ROUND, GENESIS_ID, GENESIS_ROUND, GENESIS_ID);
+		VertexMetadata genesisMetadata = new VertexMetadata(GENESIS_VIEW, GENESIS_ID, GENESIS_VIEW, GENESIS_ID);
 		QuorumCertificate genesisQC = new QuorumCertificate(genesisMetadata, new ECDSASignatures());
-		return makeVertex(genesisQC, GENESIS_ROUND, GENESIS_ID);
+		return makeVertex(genesisQC, GENESIS_VIEW, GENESIS_ID);
 	}
 
-	private static Vertex makeVertex(Vertex parent, Round round, AID id) {
-		VertexMetadata parentMetadata = new VertexMetadata(parent.getRound(), parent.getAID(), parent.getQC().getRound(), parent.getQC().getVertexMetadata().getAID());
+	private static Vertex makeVertex(Vertex parent, View view, AID id) {
+		VertexMetadata parentMetadata = new VertexMetadata(parent.getView(), parent.getAID(), parent.getQC().getView(), parent.getQC().getVertexMetadata().getAID());
 		QuorumCertificate qc = new QuorumCertificate(parentMetadata, new ECDSASignatures());
-		return makeVertex(qc, round, id);
+		return makeVertex(qc, view, id);
 	}
 
-	private static Vertex makeVertex(QuorumCertificate qc, Round round, AID id) {
+	private static Vertex makeVertex(QuorumCertificate qc, View view, AID id) {
 		Atom atom = mock(Atom.class);
 		when(atom.getAID()).thenReturn(id);
-		return new Vertex(qc, round, atom);
+		return new Vertex(qc, view, atom);
 	}
 }
