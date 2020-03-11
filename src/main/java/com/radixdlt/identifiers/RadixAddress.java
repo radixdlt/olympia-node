@@ -30,7 +30,7 @@ import java.util.function.Supplier;
 /**
  * base58 address based on a public key
  */
-public final class RadixAddress implements Magical {
+public final class RadixAddress {
 	/**
 	 * The public key this address represents
 	 */
@@ -57,10 +57,6 @@ public final class RadixAddress implements Magical {
 		System.arraycopy(check, 0, addressBytes, digest.length + 1, 4);
 
 		this.addressBytes = addressBytes;
-	}
-
-	public static RadixAddress from(Magical magical, ECPublicKey key) {
-		return new RadixAddress((byte) (magical.getMagic() & 0xff), key);
 	}
 
 	public static RadixAddress from(byte[] raw) {

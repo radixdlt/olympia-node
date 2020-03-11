@@ -43,24 +43,11 @@ public class RadixAddressTest {
 		assertThat(address0).hasSameHashCodeAs(address1);
 	}
 
-	private static final class MagicByteProvider implements Magical {
-		private int magic;
-		MagicByteProvider(int magic) {
-			this.magic = magic;
-		}
-
-		@Override
-		public int getMagic() {
-			return magic;
-		}
-	}
-
 	@Test
 	public void from_engine___address_from_key_and_magical() throws CryptoException {
 		String publicKeyHexString = "03000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F";
 		ECPublicKey key = new ECPublicKey(Bytes.fromHexString(publicKeyHexString));
-		int magicByte = 2;
-		RadixAddress address = RadixAddress.from(new MagicByteProvider(magicByte), key);
+		RadixAddress address = new RadixAddress((byte) 2, key);
 
 		// https://github.com/radixdlt/radixdlt-swift/
 		// blob/develop/Tests/TestCases/UnitTests/
