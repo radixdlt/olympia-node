@@ -28,7 +28,6 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.identifiers.Magical;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
@@ -42,7 +41,7 @@ import java.util.Objects;
 import java.util.function.Supplier;
 
 @SerializerId2("radix.universe")
-public class Universe implements Magical {
+public class Universe {
 
 	/**
 	 * Universe builder.
