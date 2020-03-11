@@ -40,7 +40,7 @@ public class HashTest {
 	}
 
 	@Test
-	public void equalsContract() {
+	public void from_engine___equalsContract() {
 		EqualsVerifier.forClass(Hash.class)
 				.withIgnoredFields("data") // other field(s) dependent on `data` is used
 				.withIgnoredFields("idCached") // `idCached` is derived from other field(s) in use.
@@ -48,30 +48,30 @@ public class HashTest {
 	}
 
 	@Test
-	public void verify_that_random_is_not_null() {
+	public void from_engine___verify_that_random_is_not_null() {
 		assertNotNull(Hash.random());
 	}
 
 	@Test(expected = IllegalArgumentException.class)
-	public void verify_that_an_error_is_thrown_for_too_short_hex_string_constructor() {
+    public void from_engine___from_engine___verify_that_an_error_is_thrown_for_too_short_hex_string_constructor() {
 		new Hash("deadbeef");
 		fail();
 	}
 
 	@Test
-	public void verify_that_id_equals_for_same_hash() {
+	public void from_engine___verify_that_id_equals_for_same_hash() {
 		assertEquals(deadbeef().getID(), deadbeef().getID());
 	}
 
 	@Test
-	public void verify_that_hexstring_remains_the_same_as_passed_in_constructor() {
+	public void from_engine___verify_that_hexstring_remains_the_same_as_passed_in_constructor() {
 		String hex = deadbeefString();
 		Hash hash = new Hash(hex);
 		assertEquals(hex, hash.toString());
 	}
 
 	@Test
-	public void verify_that_tobytearray_returns_same_bytes_as_passed_in_constructor() {
+	public void from_engine___verify_that_tobytearray_returns_same_bytes_as_passed_in_constructor() {
 		String hex = deadbeefString();
 		Hash hash = new Hash(hex);
 		byte[] expectedBytes = Bytes.fromHexString(hex);
@@ -79,19 +79,19 @@ public class HashTest {
 	}
 
 	@Test
-	public void testFirstByte() {
+	public void from_engine___testFirstByte() {
 		assertEquals(Bytes.fromHexString("de")[0], deadbeef().getFirstByte());
 	}
 
 	@Test
-	public void testCompare() {
+	public void from_engine___testCompare() {
 		Hash low = new Hash(Strings.repeat("1", 64));
 		Hash high = new Hash(Strings.repeat("9", 64));
 		assertThat(low, lessThan(high));
 	}
 
 	@Test
-	public void testHashValues256() {
+	public void from_engine___testHashValues256() {
 		assertArrayEquals(
 			Bytes.fromHexString("7ef0ca626bbb058dd443bb78e33b888bdec8295c96e51f5545f96370870c10b9"),
 			hash256(Longs.toByteArray(0L))
@@ -115,7 +115,7 @@ public class HashTest {
 	}
 
 	@Test
-	public void testHashValues512() {
+	public void from_engine___testHashValues512() {
 		assertArrayEquals(
 			Bytes.fromHexString(
 				"d6f117761cef5715fcb3fe49a3cf2ebb268acec9e9d87a1e8812a8aa811a1d02ed636b9d04694c160fd071e687772d0cc2e1c3990da4435409c7b1f7b87fa632"

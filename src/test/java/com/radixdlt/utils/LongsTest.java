@@ -23,7 +23,7 @@ import org.junit.Test;
 
 public class LongsTest {
 	@Test
-	public void testLongsToBytes() {
+	public void from_engine___testLongsToBytes() {
 		byte[] b1 = Longs.toByteArray(1L);
 		byte[] b2 = Longs.toByteArray(2L);
 		long[] longs = Longs.fromBytes(Arrays.concatenate(b1, b2));

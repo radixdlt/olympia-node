@@ -34,7 +34,7 @@ import org.junit.Test;
 
 public class AIDTest {
 	@Test
-	public void testIllegalConstruction() {
+	public void from_engine___testIllegalConstruction() {
 		assertThatThrownBy(() -> AID.from((byte[]) null)).isInstanceOf(NullPointerException.class);
 		assertThatThrownBy(() -> AID.from((String) null)).isInstanceOf(NullPointerException.class);
 
@@ -43,7 +43,7 @@ public class AIDTest {
 	}
 
 	@Test
-	public void testCreateEquivalence() {
+	public void from_engine___testCreateEquivalence() {
 		byte[] bytes1 = new byte[AID.BYTES];
 		for (int i = 0; i < AID.BYTES; i++) {
 			bytes1[i] = (byte) i;
@@ -66,7 +66,7 @@ public class AIDTest {
 	}
 
 	@Test
-	public void testFromAtom() {
+	public void from_engine___testFromAtom() {
 		byte[] hashBytes = new byte[Hash.BYTES];
 		for (int i = 0; i < Hash.BYTES; i++) {
 			hashBytes[i] = (byte) (i + 3);
@@ -80,12 +80,12 @@ public class AIDTest {
 	}
 
 	@Test
-	public void equalsContract() {
+	public void from_engine___equalsContract() {
 		EqualsVerifier.forClass(AID.class).verify();
 	}
 
 	@Test
-	public void testArrayOffsetFactory() {
+	public void from_engine___testArrayOffsetFactory() {
 		byte[] bytes = new byte[AID.BYTES * 2];
 		AID aid0 = AID.from(bytes, 0);
 		assertEquals(AID.ZERO, aid0);

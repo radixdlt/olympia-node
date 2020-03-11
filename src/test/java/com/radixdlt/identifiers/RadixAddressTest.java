@@ -17,15 +17,18 @@
 
 package com.radixdlt.identifiers;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-
+import com.radixdlt.crypto.CryptoException;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.utils.Bytes;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class RadixAddressTest {
 
 	@Test
-	public void equalsContract() {
+	public void from_engine___equalsContract() {
 		EqualsVerifier.forClass(RadixAddress.class)
 				.withIgnoredFields("key") // other field(s) dependent on `key` is used
 				.withIgnoredFields("base58") // other field(s) dependent on `base58` is used
@@ -33,10 +36,26 @@ public class RadixAddressTest {
 	}
 
 	@Test
-	public void when_an_address_is_created_with_same_string__they_should_be_equal_and_have_same_hashcode() {
+	public void from_engine___when_an_address_is_created_with_same_string__they_should_be_equal_and_have_same_hashcode() {
 		RadixAddress address0 = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
 		RadixAddress address1 = RadixAddress.from(address0.toString());
 		assertThat(address0).isEqualTo(address1);
 		assertThat(address0).hasSameHashCodeAs(address1);
+	}
+
+	@Test
+	public void from_engine___address_from_key_and_magical() throws CryptoException {
+		String publicKeyHexString = "03000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F";
+		ECPublicKey key = new ECPublicKey(Bytes.fromHexString(publicKeyHexString));
+		RadixAddress address = new RadixAddress((byte) 2, key);
+
+		// https://github.com/radixdlt/radixdlt-swift/
+		// blob/develop/Tests/TestCases/UnitTests/
+		// RadixStack/1_Subatomic/SubatomicModels/Address/AddressTests.swift
+		String expectedAddressHexString = "02" // magic byte
+				+ publicKeyHexString
+				+ "175341a9"; // checksum
+
+		assertThat(expectedAddressHexString).isEqualToIgnoringCase(Bytes.toHexString(address.toByteArray()));
 	}
 }

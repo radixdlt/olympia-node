@@ -58,6 +58,7 @@ public final class RadixAddress {
 
 		this.addressBytes = addressBytes;
 	}
+
 	public static RadixAddress from(byte[] raw) {
 		try {
 			byte[] check = Hash.hash256(raw, 0, raw.length - 4);
