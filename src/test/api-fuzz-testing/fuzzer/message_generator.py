@@ -3,7 +3,7 @@ from tokenizer import TOKEN
 from utils.utils import get_max_threads
 
 
-def generator_from_payload(tokenized_message: str):
+def generator_from_payload(tokenized_message: str) -> list:
     message_applied_with_tokens = []
     with open(PAYLOADS, 'r') as f:
         for payload in f:
@@ -16,7 +16,7 @@ def generator_list_huge_atoms(huge_atom_message: str):
         yield huge_atom_message
 
 
-def replace_token_in_json(payload: str, tokenized_message: str):
+def replace_token_in_json(payload: str, tokenized_message: str) -> str:
     # Escape any quotes which are in the payload
     payload = payload.strip()
     payload = payload.replace('"', '\\"')

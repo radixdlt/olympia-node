@@ -34,7 +34,7 @@ class FuzzerWebSocket(WebSocketApp):
         self.errors_to_ignore = errors_to_ignore
         self.response_analyzer = ResponseAnalyzer()
 
-    def on_message(self, ws, message):
+    def on_message(self, ws, message) -> None:
         self.messages_awaiting_responses = max(self.messages_awaiting_responses - 1, 0)
         log(self, message, INCOMING);
 
@@ -47,23 +47,23 @@ class FuzzerWebSocket(WebSocketApp):
                 msg = 'Potential issue found in connection with ID %s: %s'
                 logging.warning(msg % (self._id, message))
 
-    def analyze_response(self, response: str):
+    def analyze_response(self, response: str) -> bool:
         return self.response_analyzer.log_response_if_relevant(response, self.errors_to_ignore)
 
-    def on_error(self, ws, error):
+    def on_error(self, ws, error) -> None:
         log(self, '/error %s ' % error)
 
-    def on_close(self, ws):
+    def on_close(self, ws) -> None:
         log(self, 'closed connection')
 
-    def on_open(self, ws):
+    def on_open(self, ws) -> None:
         logging.debug("Successfully opened connection")
         self.send_message(self.client_messages[0])
 
         t = threading.Thread(target=self.send_login_and_payloads, )
         t.start()
 
-    def send_login_and_payloads(self):
+    def send_login_and_payloads(self) -> None:
         self.wait_on_messages()
 
         for message in self.messages_to_fuzz():
@@ -81,7 +81,7 @@ class FuzzerWebSocket(WebSocketApp):
         except:
             pass
 
-    def wait_on_messages(self):
+    def wait_on_messages(self) -> None:
         start_timestamp = time.time()
         while self.messages_awaiting_responses > 0:
             time.sleep(0.1)
@@ -98,7 +98,7 @@ class FuzzerWebSocket(WebSocketApp):
             if self.messages_awaiting_responses == 0:
                 break
 
-    def send_message(self, message, inspect_response=False):
+    def send_message(self, message, inspect_response=False) -> None:
         log(self, message, direction=OUTGOING)
         self.messages_awaiting_responses += 1
         self.inspect_response = inspect_response

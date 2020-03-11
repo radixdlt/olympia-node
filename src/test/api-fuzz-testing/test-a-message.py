@@ -63,10 +63,10 @@ errors_to_ignore = []
 #
 #   Do not touch these lines
 #
-fuzz_websocket(ws_address,
-               messages_to_send,
-               errors_to_ignore,
-               0,
-               log_path,
-               http_proxy_host,
-               http_proxy_port)
+fuzz_websocket(ws_address=ws_address,
+               fuzzing_messages=messages_to_send,
+               errors_to_ignore=errors_to_ignore,
+               tokenized_count=0,
+               log_path=log_path,
+               http_proxy_host=http_proxy_host,
+               http_proxy_port=http_proxy_port)

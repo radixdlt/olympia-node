@@ -5,7 +5,7 @@ from tokenizer import TOKEN
 QUOTES_RE = re.compile('"(.*?)"')
 
 
-def tokenize_double_quotes(ws_message: str, tokens_to_ignore: list):
+def tokenize_double_quotes(ws_message: str, tokens_to_ignore: list) -> list:
     tokenized = []
 
     for match in QUOTES_RE.finditer(ws_message):

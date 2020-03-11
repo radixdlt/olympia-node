@@ -90,17 +90,18 @@ params = {
     'http_proxy_port': http_proxy_port,
     'tokenized_count': 0
 }
+#
+# run_fuzz(
+#     login_messages=init_messages,
+#     original_messages=original_messages,
+#     tokens_to_ignore=tokens_to_ignore,
+#     tokeniser_methods=[
+#         particle_group_to_big_size
 
-run_fuzz(
-    login_messages=init_messages,
-    original_messages=original_messages,
-    tokens_to_ignore=tokens_to_ignore,
-    tokeniser_methods=[
-        particle_group_to_big_size
-    ],
-    exec_params=params,
-    message_generator=generator_list_huge_atoms
-)
+#     ],
+#     exec_params=params,
+#     message_generator=generator_list_huge_atoms
+# )
 
 print("Fuzzing big size messages test finished")
 run_fuzz(
