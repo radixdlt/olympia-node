@@ -1,7 +1,7 @@
 package com.radixdlt.client.application.translate.unique;
 
 import com.radixdlt.client.application.translate.Action;
-import com.radixdlt.client.core.atoms.particles.RRI;
+import com.radixdlt.identifiers.RRI;
 import java.util.Objects;
 
 public class PutUniqueIdAction implements Action {

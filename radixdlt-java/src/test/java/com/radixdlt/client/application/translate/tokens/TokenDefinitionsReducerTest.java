@@ -4,12 +4,12 @@ import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle
 import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
-import com.radixdlt.client.core.atoms.particles.RRI;
+import com.radixdlt.identifiers.RRI;
 import java.util.Collections;
 
 import org.junit.Test;
-import org.radix.common.ID.EUID;
-import org.radix.utils.UInt256;
+import com.radixdlt.identifiers.EUID;
+import com.radixdlt.utils.UInt256;
 
 import com.radixdlt.client.application.translate.tokens.TokenState.TokenSupplyType;
 import com.radixdlt.client.atommodel.tokens.FixedSupplyTokenDefinitionParticle;

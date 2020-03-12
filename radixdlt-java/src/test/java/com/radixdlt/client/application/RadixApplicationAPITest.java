@@ -8,7 +8,7 @@ import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.client.core.address.RadixUniverseConfigs;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.AtomStatusEvent;
-import com.radixdlt.client.core.atoms.particles.RRI;
+import com.radixdlt.identifiers.RRI;
 import com.radixdlt.client.core.network.RadixNetworkController;
 import com.radixdlt.client.core.network.RadixNetworkEpic;
 import com.radixdlt.client.core.network.RadixNetworkState;
@@ -17,6 +17,7 @@ import com.radixdlt.client.core.network.RadixNodeAction;
 import com.radixdlt.client.core.network.actions.FetchAtomsObservationAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomCompleteAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
+import com.radixdlt.utils.Pair;
 import io.reactivex.subjects.PublishSubject;
 import io.reactivex.subjects.ReplaySubject;
 import java.math.BigDecimal;
@@ -41,14 +42,14 @@ import com.radixdlt.client.application.translate.StatelessActionToParticleGroups
 import com.radixdlt.client.application.translate.data.AtomToDecryptedMessageMapper;
 import com.radixdlt.client.application.translate.data.DecryptedMessage;
 import com.radixdlt.client.application.translate.tokens.TokenBalanceReducer;
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.ledger.AtomObservation;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
-import com.radixdlt.client.core.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.client.core.ledger.AtomStore;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomReceivedAction;
@@ -67,8 +68,7 @@ import static org.mockito.Mockito.when;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.observers.TestObserver;
-import org.radix.common.ID.EUID;
-import org.radix.common.tuples.Pair;
+import com.radixdlt.identifiers.EUID;
 
 public class RadixApplicationAPITest {
 	private RadixApplicationAPI createMockedAPI(RadixNetworkController controller, AtomStore atomStore) {

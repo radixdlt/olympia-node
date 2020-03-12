@@ -1,6 +1,6 @@
 package com.radixdlt.client.core.ledger;
 
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.identifiers.RadixAddress;
 
 import io.reactivex.Observable;
 

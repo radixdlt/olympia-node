@@ -6,9 +6,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.identifiers.RadixAddress;
 import org.junit.Test;
-import org.radix.common.ID.EUID;
+import com.radixdlt.identifiers.EUID;
 
 public class FetchAtomsRequestActionTest {
 	@Test

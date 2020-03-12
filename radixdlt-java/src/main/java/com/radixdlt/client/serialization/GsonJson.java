@@ -1,4 +1,4 @@
-package org.radix.serialization2.client;
+package com.radixdlt.client.serialization;
 
 import org.json.JSONObject;
 

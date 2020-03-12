@@ -2,16 +2,16 @@ package com.radixdlt.client.application.translate.data;
 
 import com.google.gson.JsonArray;
 import com.radixdlt.client.application.translate.StatelessActionToParticleGroupsMapper;
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.crypto.encryption.ECIESException;
+import com.radixdlt.crypto.encryption.EncryptedPrivateKey;
+import com.radixdlt.crypto.encryption.Encryptor;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.client.atommodel.message.MessageParticle;
 import com.radixdlt.client.atommodel.message.MessageParticle.MessageParticleBuilder;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
-import com.radixdlt.client.core.crypto.ECKeyPair;
-import com.radixdlt.client.core.crypto.ECPublicKey;
-import com.radixdlt.client.core.crypto.EncryptedPrivateKey;
-import com.radixdlt.client.core.crypto.Encryptor;
-import com.radixdlt.client.core.crypto.Encryptor.EncryptorBuilder;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -81,7 +81,7 @@ public class SendMessageToParticleGroupsMapper implements StatelessActionToParti
 
 		final byte[] payload;
 		if (action.encrypt()) {
-			EncryptorBuilder encryptorBuilder = new EncryptorBuilder();
+			Encryptor.EncryptorBuilder encryptorBuilder = new Encryptor.EncryptorBuilder();
 			this.encryptionScheme.apply(action).forEach(encryptorBuilder::addReader);
 
 			ECKeyPair sharedKey = this.keyPairGenerator.get();
@@ -103,7 +103,11 @@ public class SendMessageToParticleGroupsMapper implements StatelessActionToParti
 					.build();
 			particles.add(SpunParticle.up(encryptorParticle));
 
-			payload = sharedKey.getPublicKey().encrypt(action.getData());
+			try {
+				payload = sharedKey.getPublicKey().encrypt(action.getData());
+			} catch (ECIESException e) {
+				throw new IllegalStateException("Failed to encrypt data", e);
+			}
 		} else {
 			payload = action.getData();
 		}

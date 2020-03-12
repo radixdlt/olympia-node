@@ -1,6 +1,6 @@
 package com.radixdlt.client.core.atoms;
 
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import org.junit.Test;

@@ -1,12 +1,12 @@
 package com.radixdlt.client.core;
 
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.client.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
-import com.radixdlt.client.core.atoms.particles.RRI;
+import com.radixdlt.identifiers.RRI;
 import com.radixdlt.client.core.ledger.AtomObservation;
 import com.radixdlt.client.core.atoms.particles.Spin;
-import com.radixdlt.client.core.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.client.core.ledger.AtomPuller;
 import com.radixdlt.client.core.ledger.AtomStore;
 import com.radixdlt.client.core.ledger.InMemoryAtomStore;
@@ -184,7 +184,7 @@ public final class RadixUniverse {
 	 * @return the corresponding address to the key for this universe
 	 */
 	public RadixAddress getAddressFrom(ECPublicKey publicKey) {
-		return new RadixAddress(config, publicKey);
+		return new RadixAddress(config.getMagicByte(), publicKey);
 	}
 
 	public RadixUniverseConfig getConfig() {

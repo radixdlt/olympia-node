@@ -1,11 +1,10 @@
-package org.radix.serialization2.client;
+package com.radixdlt.client.serialization;
 
 import java.util.Collection;
 
-import org.radix.serialization2.ClassScanningSerializerIds;
-import org.radix.serialization2.SerializerIds;
-
 import com.google.common.annotations.VisibleForTesting;
+import com.radixdlt.serialization.ClassScanningSerializerIds;
+import com.radixdlt.serialization.SerializerIds;
 
 /**
  * Class that maintains a map of serializer IDs to {@code Class<?>} objects,

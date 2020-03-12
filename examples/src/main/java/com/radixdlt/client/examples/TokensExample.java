@@ -5,14 +5,14 @@ import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.application.translate.tokens.MintTokensAction;
 import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
-import com.radixdlt.client.core.atoms.particles.RRI;
+import com.radixdlt.identifiers.RRI;
 import java.math.BigDecimal;
 
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.client.core.Bootstrap;
 
 public class TokensExample {

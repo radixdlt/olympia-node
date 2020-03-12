@@ -10,7 +10,7 @@ import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
-import org.radix.common.tuples.Pair;
+import com.radixdlt.utils.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

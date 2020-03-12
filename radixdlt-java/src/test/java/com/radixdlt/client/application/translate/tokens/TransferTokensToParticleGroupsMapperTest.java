@@ -7,11 +7,11 @@ import static org.mockito.Mockito.when;
 
 import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
-import com.radixdlt.client.core.atoms.particles.RRI;
+import com.radixdlt.identifiers.RRI;
 import java.math.BigDecimal;
 import java.util.stream.Stream;
 import org.junit.Test;
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.identifiers.RadixAddress;
 import java.util.Collections;
 
 public class TransferTokensToParticleGroupsMapperTest {

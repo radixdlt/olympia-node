@@ -1,10 +1,10 @@
 package com.radixdlt.client.core.atoms;
 
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.client.atommodel.message.MessageParticle;
 import com.radixdlt.client.atommodel.message.MessageParticle.MessageParticleBuilder;
 import org.junit.Test;
-import org.radix.common.ID.EUID;
+import com.radixdlt.identifiers.EUID;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.Assert.assertEquals;

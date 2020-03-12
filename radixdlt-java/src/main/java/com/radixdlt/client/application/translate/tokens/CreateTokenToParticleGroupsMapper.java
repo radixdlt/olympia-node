@@ -19,7 +19,7 @@ import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import org.radix.utils.UInt256;
+import com.radixdlt.utils.UInt256;
 
 /**
  * Maps the CreateToken action into it's corresponding particles

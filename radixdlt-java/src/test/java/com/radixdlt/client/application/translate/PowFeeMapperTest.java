@@ -8,33 +8,34 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.radixdlt.client.core.RadixUniverse;
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.ParticleGroup;
-import com.radixdlt.client.core.atoms.RadixHash;
-import com.radixdlt.client.core.crypto.ECPublicKey;
+import com.radixdlt.crypto.Hash;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.client.core.pow.ProofOfWork;
 import com.radixdlt.client.core.pow.ProofOfWorkBuilder;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+
+import com.radixdlt.utils.Pair;
 import org.junit.Test;
-import org.radix.common.tuples.Pair;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class PowFeeMapperTest {
 	@Test
 	public void testNormalMap() {
-		RadixHash hash = mock(RadixHash.class);
+		Hash hash = mock(Hash.class);
 		when(hash.toByteArray()).thenReturn(new byte[] {});
 		ProofOfWorkBuilder builder = mock(ProofOfWorkBuilder.class);
 		ProofOfWork pow = mock(ProofOfWork.class);
 		when(builder.build(anyInt(), any(), anyInt())).thenReturn(pow);
 		when(pow.getNonce()).thenReturn(1L);
 
-		Function<Atom, RadixHash> hasher = mock(Function.class);
+		Function<Atom, Hash> hasher = mock(Function.class);
 		when(hasher.apply(any())).thenReturn(hash);
 		PowFeeMapper powFeeMapper = new PowFeeMapper(hasher, builder);
 

@@ -1,13 +1,23 @@
 package com.radixdlt.client.core.atoms.particles;
 
-import org.radix.serialization2.DsonOutput;
-import org.radix.serialization2.SerializerId2;
-import org.radix.serialization2.client.SerializableObject;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.SerializerConstants;
+import com.radixdlt.serialization.SerializerDummy;
+import com.radixdlt.serialization.SerializerId2;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 @SerializerId2("radix.spun_particle")
-public class SpunParticle<T extends Particle> extends SerializableObject {
+public class SpunParticle<T extends Particle> {
+
+	// Placeholder for the serializer ID
+	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
+	@DsonOutput(DsonOutput.Output.ALL)
+	private SerializerDummy serializer = SerializerDummy.DUMMY;
+
+	@JsonProperty("version")
+	@DsonOutput(DsonOutput.Output.ALL)
+	private short version = 100;
 
 	@JsonProperty("particle")
 	@DsonOutput(DsonOutput.Output.ALL)

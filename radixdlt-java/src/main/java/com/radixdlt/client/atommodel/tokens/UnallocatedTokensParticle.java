@@ -4,19 +4,19 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.atommodel.Accountable;
 import com.radixdlt.client.atommodel.Ownable;
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.client.core.atoms.particles.Particle;
-import com.radixdlt.client.core.atoms.particles.RRI;
+import com.radixdlt.identifiers.RRI;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.radix.serialization2.DsonOutput;
-import org.radix.serialization2.DsonOutput.Output;
-import org.radix.serialization2.SerializerId2;
-import org.radix.utils.UInt256;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.DsonOutput.Output;
+import com.radixdlt.serialization.SerializerId2;
+import com.radixdlt.utils.UInt256;
 
 /**
  *  A particle which represents an amount of unallocated tokens which can be minted.

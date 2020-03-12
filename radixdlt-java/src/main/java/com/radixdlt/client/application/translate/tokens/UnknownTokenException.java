@@ -1,7 +1,7 @@
 package com.radixdlt.client.application.translate.tokens;
 
 import com.radixdlt.client.application.translate.StageActionException;
-import com.radixdlt.client.core.atoms.particles.RRI;
+import com.radixdlt.identifiers.RRI;
 
 /**
  * Exception thrown when information on an unknown token is requested.

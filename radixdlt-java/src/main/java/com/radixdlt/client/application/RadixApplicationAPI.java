@@ -10,7 +10,8 @@ import com.radixdlt.client.application.translate.unique.PutUniqueIdAction;
 import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.particles.Particle;
-import com.radixdlt.client.core.atoms.particles.RRI;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.identifiers.RRI;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.client.core.ledger.AtomStore;
 import com.radixdlt.client.core.network.RadixNode;
@@ -33,8 +34,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.radix.common.tuples.Pair;
-import org.radix.utils.RadixConstants;
+import com.radixdlt.utils.Pair;
+import com.radixdlt.utils.RadixConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,14 +74,13 @@ import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import com.radixdlt.client.application.translate.tokens.TransferTokensToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.unique.AlreadyUsedUniqueIdReasonMapper;
 import com.radixdlt.client.application.translate.unique.PutUniqueIdToParticleGroupsMapper;
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.ledger.AtomObservation;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.UnsignedAtom;
-import com.radixdlt.client.core.crypto.ECKeyPairGenerator;
-import com.radixdlt.client.core.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.client.core.network.RadixNetworkState;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomStatusAction;
@@ -343,7 +343,7 @@ public class RadixApplicationAPI {
 			.defaultFeeMapper()
 			.addStatelessParticlesMapper(
 				SendMessageAction.class,
-				new SendMessageToParticleGroupsMapper(ECKeyPairGenerator.newInstance()::generateKeyPair)
+				new SendMessageToParticleGroupsMapper(ECKeyPair::new)
 			)
 			.addStatelessParticlesMapper(CreateTokenAction.class, new CreateTokenToParticleGroupsMapper())
 			.addStatelessParticlesMapper(PutUniqueIdAction.class, new PutUniqueIdToParticleGroupsMapper())

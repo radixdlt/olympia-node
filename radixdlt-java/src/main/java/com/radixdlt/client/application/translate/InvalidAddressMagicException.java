@@ -1,6 +1,6 @@
 package com.radixdlt.client.application.translate;
 
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.identifiers.RadixAddress;
 
 public final class InvalidAddressMagicException extends StageActionException {
 	private final RadixAddress address;

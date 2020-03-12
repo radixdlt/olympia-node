@@ -14,12 +14,12 @@ import com.radixdlt.client.application.identity.Data;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.AtomToExecutedActionsMapper;
 import com.radixdlt.client.application.translate.data.DecryptedMessage.EncryptionState;
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.crypto.encryption.EncryptedPrivateKey;
+import com.radixdlt.crypto.encryption.Encryptor;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.client.atommodel.message.MessageParticle;
 import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.crypto.CryptoException;
-import com.radixdlt.client.core.crypto.EncryptedPrivateKey;
-import com.radixdlt.client.core.crypto.Encryptor;
+import com.radixdlt.crypto.CryptoException;
 
 import io.reactivex.Observable;
 import io.reactivex.Single;

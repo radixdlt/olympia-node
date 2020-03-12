@@ -1,8 +1,9 @@
 package com.radixdlt.client.core.util;
 
 import com.radixdlt.client.core.atoms.Atom;
-import org.radix.serialization2.DsonOutput;
-import org.radix.serialization2.client.Serialize;
+import com.radixdlt.client.serialization.Serialize;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.SerializationException;
 
 public class TestUtils {
 	private TestUtils() {
@@ -16,7 +17,11 @@ public class TestUtils {
 	 * @param atom The atom
 	 */
 	public static void dumpJsonForHash(Atom atom) {
-		System.out.println(Serialize.getInstance().toJson(atom, DsonOutput.Output.HASH));
+		try {
+			System.out.println(Serialize.getInstance().toJson(atom, DsonOutput.Output.HASH));
+		} catch (SerializationException e) {
+			throw new IllegalStateException("Failed to serialize", e);
+		}
 	}
 
 	/**

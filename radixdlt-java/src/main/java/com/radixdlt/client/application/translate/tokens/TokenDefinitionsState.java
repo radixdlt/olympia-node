@@ -5,12 +5,12 @@ import com.radixdlt.client.application.translate.ApplicationState;
 import com.radixdlt.client.application.translate.tokens.TokenState.TokenSupplyType;
 
 import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
-import com.radixdlt.client.core.atoms.particles.RRI;
+import com.radixdlt.identifiers.RRI;
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import org.radix.utils.UInt256;
+import com.radixdlt.utils.UInt256;
 
 public class TokenDefinitionsState implements ApplicationState {
 	private final ImmutableMap<RRI, TokenState> state;

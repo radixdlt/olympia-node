@@ -3,7 +3,7 @@ package com.radixdlt.client.application.translate.unique;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.identifiers.RadixAddress;
 import org.junit.Test;
 
 public class UniqueIdTest {

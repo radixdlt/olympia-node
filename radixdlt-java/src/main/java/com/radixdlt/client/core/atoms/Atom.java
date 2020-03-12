@@ -5,17 +5,19 @@ import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
-import com.radixdlt.client.core.crypto.ECSignature;
-import org.radix.common.ID.AID;
-import org.radix.common.ID.EUID;
-import org.radix.serialization2.DsonOutput;
-import org.radix.serialization2.SerializerConstants;
-import org.radix.serialization2.SerializerDummy;
-import org.radix.serialization2.SerializerId2;
-import org.radix.serialization2.client.Serialize;
+import com.radixdlt.client.serialization.Serialize;
+import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.Hash;
+import com.radixdlt.identifiers.AID;
+import com.radixdlt.identifiers.EUID;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.SerializationException;
+import com.radixdlt.serialization.SerializerConstants;
+import com.radixdlt.serialization.SerializerDummy;
+import com.radixdlt.serialization.SerializerId2;
 
 import java.util.ArrayList;
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.identifiers.RadixAddress;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -51,7 +53,7 @@ public final class Atom {
 
 	@JsonProperty("signatures")
 	@DsonOutput(value = {DsonOutput.Output.API, DsonOutput.Output.WIRE, DsonOutput.Output.PERSIST})
-	private final Map<String, ECSignature> signatures = new HashMap<>();
+	private final Map<String, ECDSASignature> signatures = new HashMap<>();
 
 	@JsonProperty("metaData")
 	@DsonOutput(DsonOutput.Output.ALL)
@@ -85,7 +87,7 @@ public final class Atom {
 		List<ParticleGroup> particleGroups,
 		Map<String, String> metaData,
 		EUID signatureId,
-		ECSignature signature
+		ECDSASignature signature
 	) {
 		this(particleGroups, metaData);
 
@@ -95,7 +97,7 @@ public final class Atom {
 		this.signatures.put(signatureId.toString(), signature);
 	}
 
-	public Atom withSignature(ECSignature signature, EUID signatureId) {
+	public Atom withSignature(ECDSASignature signature, EUID signatureId) {
 		return new Atom(
 			this.particleGroups,
 			this.metaData,
@@ -165,20 +167,24 @@ public final class Atom {
 		}
 	}
 
-	public Map<String, ECSignature> getSignatures() {
+	public Map<String, ECDSASignature> getSignatures() {
 		return this.signatures;
 	}
 
-	public Optional<ECSignature> getSignature(EUID uid) {
+	public Optional<ECDSASignature> getSignature(EUID uid) {
 		return Optional.ofNullable(this.signatures).map(sigs -> sigs.get(uid.toString()));
 	}
 
 	public byte[] toDson() {
-		return Serialize.getInstance().toDson(this, DsonOutput.Output.HASH);
+		try {
+			return Serialize.getInstance().toDson(this, DsonOutput.Output.HASH);
+		} catch (SerializationException e) {
+			throw new IllegalStateException("Failed to serialize", e);
+		}
 	}
 
-	public RadixHash getHash() {
-		return RadixHash.of(toDson());
+	public Hash getHash() {
+		return new Hash(toDson());
 	}
 
 	public AID getAid() {

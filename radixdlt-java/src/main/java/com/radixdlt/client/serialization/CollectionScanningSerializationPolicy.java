@@ -1,14 +1,13 @@
-package org.radix.serialization2.client;
+package com.radixdlt.client.serialization;
 
 import java.util.Collection;
 
-import org.radix.serialization2.ClassScanningSerializationPolicy;
-import org.radix.serialization2.SerializationPolicy;
-
 import com.google.common.annotations.VisibleForTesting;
+import com.radixdlt.serialization.ClassScanningSerializationPolicy;
+import com.radixdlt.serialization.SerializationPolicy;
 
 /**
- * Class that maintains a map of {@link org.radix.serialization2.DsonOutput.Output}
+ * Class that maintains a map of {@link com.radixdlt.serialization.DsonOutput.Output}
  * values to a set of pairs of classes and field/method names to output for that
  * serialization type.
  * <p>

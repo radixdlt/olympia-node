@@ -1,13 +1,13 @@
 package com.radixdlt.client.application.translate.tokens;
 
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
-import com.radixdlt.client.core.atoms.particles.RRI;
+import com.radixdlt.identifiers.RRI;
 import java.math.BigDecimal;
 
 import org.junit.Test;
-import org.radix.utils.UInt256;
+import com.radixdlt.utils.UInt256;
 
-import com.radixdlt.client.core.atoms.RadixHash;
+import com.radixdlt.crypto.Hash;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -18,7 +18,7 @@ public class TokenBalanceReducerTest {
 	@Test
 	public void testSimpleBalance() {
 		TransferrableTokensParticle minted = mock(TransferrableTokensParticle.class);
-		RadixHash hash = mock(RadixHash.class);
+		Hash hash = mock(Hash.class);
 		when(minted.getAmount()).thenReturn(UInt256.TEN);
 		when(minted.getGranularity()).thenReturn(UInt256.ONE);
 		when(minted.getHash()).thenReturn(hash);

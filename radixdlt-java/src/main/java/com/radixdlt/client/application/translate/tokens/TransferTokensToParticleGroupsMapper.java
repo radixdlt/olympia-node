@@ -3,7 +3,7 @@ package com.radixdlt.client.application.translate.tokens;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.application.translate.StageActionException;
 import com.radixdlt.client.application.translate.ShardedParticleStateId;
-import com.radixdlt.client.core.atoms.particles.RRI;
+import com.radixdlt.identifiers.RRI;
 import com.radixdlt.client.core.fungible.FungibleParticleTransitioner;
 import com.radixdlt.client.core.fungible.FungibleParticleTransitioner.FungibleParticleTransition;
 import com.radixdlt.client.core.fungible.NotEnoughFungiblesException;
@@ -18,7 +18,7 @@ import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import java.util.stream.Stream;
 import org.bouncycastle.util.encoders.Base64;
-import org.radix.utils.UInt256;
+import com.radixdlt.utils.UInt256;
 
 import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
 import com.radixdlt.client.core.atoms.ParticleGroup;

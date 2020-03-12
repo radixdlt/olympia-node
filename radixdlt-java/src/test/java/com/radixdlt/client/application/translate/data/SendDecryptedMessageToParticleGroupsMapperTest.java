@@ -4,10 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.core.crypto.ECKeyPair;
+import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.crypto.ECKeyPair;
 import org.junit.Test;
-import org.radix.common.ID.EUID;
+import com.radixdlt.identifiers.EUID;
 
 public class SendDecryptedMessageToParticleGroupsMapperTest {
 	@Test
