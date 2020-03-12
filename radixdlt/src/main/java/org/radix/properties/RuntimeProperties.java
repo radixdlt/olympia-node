@@ -17,9 +17,6 @@
 
 package org.radix.properties;
 
-import java.io.FileNotFoundException;
-import java.util.Properties;
-
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -40,12 +37,7 @@ public class RuntimeProperties extends PersistedProperties
 {
 	private CommandLine	commandLine = null;
 
-	public RuntimeProperties(PersistedProperties persistedProperties)
-	{
-		super(new Properties(persistedProperties.properties));
-	}
-
-	public RuntimeProperties(JSONObject commandLineConfig, String[] commandLineArguments) throws ParseException, FileNotFoundException
+	public RuntimeProperties(JSONObject commandLineConfig, String[] commandLineArguments) throws ParseException
 	{
 		super();
 
@@ -81,43 +73,5 @@ public class RuntimeProperties extends PersistedProperties
 		}
 
 		return super.get(key);
-	}
-
-	@Override
-	public <T> T get(String key, T defaultValue)
-	{
-		String value = null;
-
-		for (Option commandLineOption : commandLine.getOptions())
-		{
-			if (commandLineOption.getOpt().equals(key) || commandLineOption.getLongOpt().equals(key))
-			{
-				if (commandLineOption.hasArg())
-					value = commandLineOption.getValue();
-				else
-					value = "1";
-			}
-		}
-
-		if (value == null)
-			return super.get(key, defaultValue);
-		else if (defaultValue instanceof Byte)
-			return (T) Byte.valueOf(value);
-		else if (defaultValue instanceof Short)
-			return (T) Short.valueOf(value);
-		else if (defaultValue instanceof Integer)
-			return (T) Integer.valueOf(value);
-		else if (defaultValue instanceof Long)
-			return (T) Long.valueOf(value);
-		else if (defaultValue instanceof Float)
-			return (T) Float.valueOf(value);
-		else if (defaultValue instanceof Double)
-			return (T) Double.valueOf(value);
-		else if (defaultValue instanceof Boolean)
-			return (T) Boolean.valueOf(value);
-		else if (defaultValue instanceof String)
-			return (T) value;
-
-		return null;
 	}
 }

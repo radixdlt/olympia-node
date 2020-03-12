@@ -37,7 +37,7 @@ public class NtpService
 	private int			attempts = 0;
 	private int			offset = 0;
 
-	public NtpService(String server) 
+	public NtpService(String server)
 	{
 		this.server = server;
 
@@ -48,7 +48,7 @@ public class NtpService
 			initFromServer();
 	}
 
-	private void initFromServer() 
+	private void initFromServer()
 	{
 		if (server != null)
 		{
@@ -56,12 +56,8 @@ public class NtpService
 
 			while (attempts < 3 && !success)
 			{
-				DatagramSocket socket = null;
-
-				try
-				{
+				try (DatagramSocket socket = new DatagramSocket()) {
 					// Send request
-					socket = new DatagramSocket();
 					socket.setSoTimeout(5000);
 
 					InetAddress address = InetAddress.getByName(server);
@@ -91,18 +87,11 @@ public class NtpService
 
 					log.info(msg.toString());
 					success = true;
-				}
-				catch (Exception ex)
-				{
+				} catch (Exception ex) {
 					if (attempts >= 3)
 						throw new NtpException("failed to start NTP service", ex);
-				}
-				finally
-				{
+				} finally {
 					attempts++;
-
-					if (socket != null)
-						socket.close();
 				}
 			}
 

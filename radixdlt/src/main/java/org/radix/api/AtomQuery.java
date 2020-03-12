@@ -17,17 +17,12 @@
 
 package org.radix.api;
 
-import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.common.EUID;
 
 import java.util.Set;
 
-public class AtomQuery {
+public final class AtomQuery {
 	private final EUID destination;
-
-	public AtomQuery(RadixAddress address) {
-		this.destination = address.getUID();
-	}
 
 	public AtomQuery(EUID destination) {
 		this.destination = destination;

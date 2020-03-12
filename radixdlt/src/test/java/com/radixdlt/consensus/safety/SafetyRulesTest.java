@@ -113,7 +113,6 @@ public class SafetyRulesTest {
 		AID a2Id = makeAID(12);
 		AID a3Id = makeAID(13);
 		AID a4Id = makeAID(14);
-		AID a5Id = makeAID(15);
 		AID b1Id = makeAID(21);
 		AID b2Id = makeAID(22);
 		AID b3Id = makeAID(23);
@@ -126,7 +125,6 @@ public class SafetyRulesTest {
 		Vertex b3 = makeVertex(a2, Round.of(6), b3Id);
 		Vertex a4 = makeVertex(a3, Round.of(7), a4Id);
 		Vertex b4 = makeVertex(b2, Round.of(8), b4Id);
-		Vertex a5 = makeVertex(a4, Round.of(9), a5Id);
 
 		safetyRules.process(a1.getQC());
 		VoteResult result = safetyRules.voteFor(a1);
@@ -163,7 +161,7 @@ public class SafetyRulesTest {
 	}
 
 	@Test
-	public void testCommitRule() throws SafetyViolationException {
+	public void testCommitRule() {
 		/*
 		 * This test ensures that the commit logic is working correctly.
 		 * The commit rule requires a 3-chain to commit an atom, that is, the chain

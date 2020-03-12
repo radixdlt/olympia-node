@@ -36,7 +36,6 @@ import java.util.Set;
 import com.google.inject.Inject;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.network.SSLFix;
 import org.radix.network2.addressbook.AddressBook;
 import org.radix.network2.addressbook.Peer;
 import org.radix.network2.addressbook.PeerPredicate;
@@ -125,10 +124,7 @@ public class BootstrapDiscovery
 		Whitelist whitelist = Whitelist.from(properties);
 		for (String host : hosts) {
 			host = host.trim();
-			if (host.isEmpty()) {
-				continue;
-			}
-			if (!whitelist.isWhitelisted(host)) {
+			if (host.isEmpty() || !whitelist.isWhitelisted(host)) {
 				continue;
 			}
 			try {

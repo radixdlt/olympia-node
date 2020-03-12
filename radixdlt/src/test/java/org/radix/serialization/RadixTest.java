@@ -59,7 +59,7 @@ public abstract class RadixTest
 		when(ntpService.getUTCTimeMS()).thenAnswer((Answer<Long>) invocation -> System.currentTimeMillis());
 
 		serialization = Serialization.getDefault();
-		PublicInetAddress.configure(null, 30000);
+		PublicInetAddress.configure(30000);
 		localSystem = LocalSystem.restoreOrCreate(getProperties(), universe);
 	}
 

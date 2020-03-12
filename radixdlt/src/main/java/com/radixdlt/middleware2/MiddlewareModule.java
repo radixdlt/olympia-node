@@ -44,7 +44,6 @@ import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.universe.Universe;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;

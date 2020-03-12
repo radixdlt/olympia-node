@@ -20,7 +20,6 @@ package org.radix.integration;
 import com.radixdlt.store.LedgerEntryStore;
 import org.junit.After;
 import org.junit.Before;
-import org.mockito.invocation.InvocationOnMock;
 import org.radix.GlobalInjector;
 import org.radix.database.DatabaseEnvironment;
 import org.radix.network2.addressbook.AddressBook;
@@ -38,7 +37,7 @@ public class RadixTestWithStores extends RadixTest
 	private AddressBook addressBook;
 
 	@Before
-	public void beforeEachRadixTest() throws InterruptedException {
+	public void beforeEachRadixTest() {
 		this.dbEnv = new DatabaseEnvironment(getProperties());
 
 		GlobalInjector injector = new GlobalInjector(getProperties(), dbEnv, getLocalSystem(), getUniverse());
@@ -46,11 +45,6 @@ public class RadixTestWithStores extends RadixTest
 		this.addressBook = injector.getInjector().getInstance(AddressBook.class);
 
 		store = injector.getInjector().getInstance(LedgerEntryStore.class);
-	}
-
-	private <T> T sleepForever(InvocationOnMock invocation) throws InterruptedException {
-		Thread.sleep(Long.MAX_VALUE);
-		return null;
 	}
 
 	@After

@@ -31,7 +31,7 @@ public class Whitelist
 {
 	private static final Logger networkLog = Logging.getLogger ("network");
 
-	private Set<String> parameters = new HashSet<String>();
+	private Set<String> parameters = new HashSet<>();
 
 	public Whitelist(String parameters)
 	{
