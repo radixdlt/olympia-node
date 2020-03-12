@@ -22,5 +22,5 @@ import com.radixdlt.common.EUID;
 public interface QuorumRequirements {
 	int numRequiredVotes();
 
-	boolean acceptsVoteBy(EUID author);
+	boolean accepts(EUID author);
 }

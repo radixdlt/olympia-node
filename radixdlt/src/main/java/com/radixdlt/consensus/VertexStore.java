@@ -55,7 +55,7 @@ public final class VertexStore {
 		ECDSASignatures signatures = pendingVotes.getOrDefault(vote.getVertexMetadata(), new ECDSASignatures());
 
 		// try to add the signature to form a QC if permitted by the requirements
-		if (quorumRequirements.acceptsVoteBy(vote.getAuthor().getUID())) {
+		if (quorumRequirements.accepts(vote.getAuthor().getUID())) {
 			// FIXME ugly cast to ECDSASignatures because we need a specific type
 			signatures = (ECDSASignatures) signatures.concatenate(vote.getAuthor().getKey(), signature);
 		} else {

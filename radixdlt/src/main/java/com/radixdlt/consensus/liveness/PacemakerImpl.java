@@ -20,9 +20,13 @@ package com.radixdlt.consensus.liveness;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.safety.QuorumRequirements;
+import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.ECDSASignatures;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -35,6 +39,7 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 	private final PublishSubject<View> timeouts;
 	private final ScheduledExecutorService executorService;
 
+	private final Map<View, ECDSASignatures> pendingNewViews = new HashMap<>();
 	private View currentView = View.of(0L);
 	private View highestQCView = View.of(0L);
 
@@ -68,9 +73,28 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 
 	@Override
 	public Optional<View> processRemoteNewView(NewView newView, QuorumRequirements quorumRequirements) {
-		// gather new views to form new views QC
-		// TODO assumes single node network for now
-		return Optional.of(newView.getView());
+		ECDSASignature signature = newView.getSignature().orElseThrow(() -> new IllegalArgumentException("new-view is missing signature"));
+		ECDSASignatures signatures = pendingNewViews.getOrDefault(newView.getView(), new ECDSASignatures());
+
+		// try to add the signature if permitted by the requirements
+		if (quorumRequirements.accepts(newView.getAuthor().getUID())) {
+			// FIXME ugly cast to ECDSASignatures because we need a specific type
+			// TODO do we even need to keep signatures or just QCs & count for new-views?
+			signatures = (ECDSASignatures) signatures.concatenate(newView.getAuthor().getKey(), signature);
+		} else {
+			// there is no meaningful inaction here, so better let the caller know
+			throw new IllegalArgumentException("new-view " + newView + " was not accepted");
+		}
+
+		// check if we have gotten enough new-views to proceed
+		if (signatures.count() >= quorumRequirements.numRequiredVotes()) {
+			// if we got enough new-views, remove pending and return formed QC
+			return Optional.of(newView.getView().next());
+		} else {
+			// if we haven't got enough new-views yet, do nothing
+			pendingNewViews.put(newView.getView(), signatures);
+			return Optional.empty();
+		}
 	}
 
 	private void updateHighestQCView(View view) {

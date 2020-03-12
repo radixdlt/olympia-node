@@ -37,7 +37,7 @@ public class SingleNodeQuorumRequirements implements QuorumRequirements {
 	}
 
 	@Override
-	public boolean acceptsVoteBy(EUID author) {
+	public boolean accepts(EUID author) {
 		return self.equals(author);
 	}
 }
