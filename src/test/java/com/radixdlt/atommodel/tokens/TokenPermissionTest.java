@@ -32,7 +32,7 @@ public class TokenPermissionTest {
 		MutableSupplyTokenDefinitionParticle tokenDefinitionParticle = mock(MutableSupplyTokenDefinitionParticle.class);
 		RadixAddress address = mock(RadixAddress.class);
 		ECPublicKey key = mock(ECPublicKey.class);
-		when(address.getKey()).thenReturn(key);
+		when(address.getPublicKey()).thenReturn(key);
 		RRI rri = mock(RRI.class);
 		when(rri.getAddress()).thenReturn(address);
 		when(tokenDefinitionParticle.getRRI()).thenReturn(rri);
@@ -48,7 +48,7 @@ public class TokenPermissionTest {
 		MutableSupplyTokenDefinitionParticle tokenDefinitionParticle = mock(MutableSupplyTokenDefinitionParticle.class);
 		RadixAddress address = mock(RadixAddress.class);
 		ECPublicKey key = mock(ECPublicKey.class);
-		when(address.getKey()).thenReturn(key);
+		when(address.getPublicKey()).thenReturn(key);
 		RRI rri = mock(RRI.class);
 		when(rri.getAddress()).thenReturn(address);
 		when(tokenDefinitionParticle.getRRI()).thenReturn(rri);

@@ -34,7 +34,7 @@ public enum TokenPermission {
 	 * Only the token owner can do this
 	 */
 	TOKEN_OWNER_ONLY((tokDefRef, meta) -> of(
-		meta.isSignedBy(tokDefRef.getAddress().getKey()),
+		meta.isSignedBy(tokDefRef.getAddress().getPublicKey()),
 		() -> "must be signed by token owner: " + tokDefRef.getAddress())),
 
 	/**

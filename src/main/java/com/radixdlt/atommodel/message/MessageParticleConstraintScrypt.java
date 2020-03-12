@@ -83,7 +83,7 @@ public class MessageParticleConstraintScrypt implements ConstraintScrypt {
 				@Override
 				public WitnessValidator<MessageParticle> outputWitnessValidator() {
 					return (msg, meta) ->
-						meta.isSignedBy(msg.getFrom().getKey())
+						meta.isSignedBy(msg.getFrom().getPublicKey())
 							? WitnessValidatorResult.success()
 							: WitnessValidatorResult.error("Message particle " + msg + " not signed.");
 				}

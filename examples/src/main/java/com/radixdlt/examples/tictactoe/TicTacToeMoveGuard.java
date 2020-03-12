@@ -94,7 +94,7 @@ public class TicTacToeMoveGuard<T extends TicTacToeBaseParticle, U extends TicTa
 	@Override
 	public WitnessValidator<T> inputWitnessValidator() {
 		// Move should be signed by player making the move
-		return (p, w) -> w.isSignedBy((toMove == TicTacToeSquareValue.X ? p.getXPlayer() : p.getOPlayer()).getKey())
+		return (p, w) -> w.isSignedBy((toMove == TicTacToeSquareValue.X ? p.getXPlayer() : p.getOPlayer()).getPublicKey())
 			? WitnessValidatorResult.success()
 			: WitnessValidatorResult.error("Move not signed by player");
 	}

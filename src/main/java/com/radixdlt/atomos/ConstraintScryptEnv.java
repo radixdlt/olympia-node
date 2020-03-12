@@ -199,7 +199,7 @@ final class ConstraintScryptEnv implements SysCalls {
 
 				@Override
 				public WitnessValidator<RRIParticle> inputWitnessValidator() {
-					return (rri, witnessData) -> witnessData.isSignedBy(rri.getRri().getAddress().getKey())
+					return (rri, witnessData) -> witnessData.isSignedBy(rri.getRri().getAddress().getPublicKey())
 						? WitnessValidatorResult.success() : WitnessValidatorResult.error("Not signed by " + rri.getRri().getAddress());
 				}
 
@@ -231,7 +231,7 @@ final class ConstraintScryptEnv implements SysCalls {
 			particleClass0,
 			particleClass1,
 			combinedCheck,
-			(in, witness) -> witness.isSignedBy(in.getRri().getAddress().getKey())
+			(in, witness) -> witness.isSignedBy(in.getRri().getAddress().getPublicKey())
 				? WitnessValidatorResult.success() : WitnessValidatorResult.error("Not signed by " + in.getRri().getAddress())
 		);
 

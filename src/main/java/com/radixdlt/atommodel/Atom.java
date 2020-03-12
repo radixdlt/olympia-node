@@ -381,7 +381,7 @@ public class Atom {
 	@JsonProperty("hid")
 	@DsonOutput(DsonOutput.Output.API)
 	public final EUID getHID() {
-		return getHash().getID();
+		return getHash().euid();
 	}
 
 

@@ -442,7 +442,7 @@ public class Universe {
 	@JsonProperty("hid")
 	@DsonOutput(Output.API)
 	public final EUID getHID() {
-		return getHash().getID();
+		return getHash().euid();
 	}
 
 	// Type - 1 getter, 1 setter

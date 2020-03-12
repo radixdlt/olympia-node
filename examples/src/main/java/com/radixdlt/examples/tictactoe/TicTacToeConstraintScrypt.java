@@ -249,7 +249,7 @@ public class TicTacToeConstraintScrypt implements ConstraintScrypt {
 			 */
 			@Override
 			public WitnessValidator<XToMoveParticle> outputWitnessValidator() {
-				return (p, w) -> w.isSignedBy(p.getXPlayer().getKey()) || w.isSignedBy(p.getOPlayer().getKey())
+				return (p, w) -> w.isSignedBy(p.getXPlayer().getPublicKey()) || w.isSignedBy(p.getOPlayer().getPublicKey())
 					? WitnessValidatorResult.success()
 					: WitnessValidatorResult.error("Game must be started by either one of the players.");
 			}

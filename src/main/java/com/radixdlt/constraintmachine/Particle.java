@@ -107,6 +107,6 @@ public abstract class Particle {
 	@JsonProperty("hid")
 	@DsonOutput(Output.API)
 	public final EUID getHID() {
-		return getHash().getID();
+		return getHash().euid();
 	}
 }

@@ -109,12 +109,12 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			checkEquals(
 				UnallocatedTokensParticle::getGranularity,
 				UnallocatedTokensParticle::getGranularity,
-				"Granulaties not equal.",
+				"Granularities not equal.",
 				UnallocatedTokensParticle::getTokenPermissions,
 				UnallocatedTokensParticle::getTokenPermissions,
 				"Permissions not equal."
 			),
-			(in, meta) -> meta.isSignedBy(in.getTokDefRef().getAddress().getKey())
+			(in, meta) -> meta.isSignedBy(in.getTokDefRef().getAddress().getPublicKey())
 				? WitnessValidatorResult.success() : WitnessValidatorResult.error("Permission not allowed.")
 		));
 
@@ -127,7 +127,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			checkEquals(
 				UnallocatedTokensParticle::getGranularity,
 				TransferrableTokensParticle::getGranularity,
-				"Granulaties not equal.",
+				"Granularities not equal.",
 				UnallocatedTokensParticle::getTokenPermissions,
 				TransferrableTokensParticle::getTokenPermissions,
 				"Permissions not equal."
@@ -145,12 +145,12 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			checkEquals(
 				TransferrableTokensParticle::getGranularity,
 				TransferrableTokensParticle::getGranularity,
-				"Granulaties not equal.",
+				"Granularities not equal.",
 				TransferrableTokensParticle::getTokenPermissions,
 				TransferrableTokensParticle::getTokenPermissions,
 				"Permissions not equal."
 			),
-			(in, meta) -> meta.isSignedBy(in.getAddress().getKey())
+			(in, meta) -> meta.isSignedBy(in.getAddress().getPublicKey())
 				? WitnessValidatorResult.success() : WitnessValidatorResult.error("Permission not allowed.")
 		));
 
@@ -163,7 +163,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			checkEquals(
 				TransferrableTokensParticle::getGranularity,
 				UnallocatedTokensParticle::getGranularity,
-				"Granulaties not equal.",
+				"Granularities not equal.",
 				TransferrableTokensParticle::getTokenPermissions,
 				UnallocatedTokensParticle::getTokenPermissions,
 				"Permissions not equal."
