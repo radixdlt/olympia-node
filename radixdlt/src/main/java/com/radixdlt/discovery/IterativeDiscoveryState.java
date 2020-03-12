@@ -103,8 +103,7 @@ class IterativeDiscoveryState {
 
 	@Override
 	public String toString() {
-		return "IterativeDiscoveryState{" +
-			"states=" + states + '}';
+		return "IterativeDiscoveryState{" + "states=" + states + '}';
 	}
 
 	int getBackoff(EUID nid) {

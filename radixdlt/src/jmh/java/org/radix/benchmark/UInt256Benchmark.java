@@ -69,52 +69,52 @@ public class UInt256Benchmark {
     }
 
 	@Benchmark
-	public void AddLargeLargeInt256(Blackhole bh) {
+	public void addLargeLargeInt256(Blackhole bh) {
 		bh.consume(UI_LARGE_VALUE1.add(UI_LARGE_VALUE2));
 	}
 
 	@Benchmark
-	public void AddLargeLargeBigInt(Blackhole bh) {
+	public void addLargeLargeBigInt(Blackhole bh) {
 		bh.consume(BI_LARGE_VALUE1.add(BI_LARGE_VALUE2));
 	}
 
 	@Benchmark
-	public void SubLargeLargeInt256(Blackhole bh) {
+	public void subLargeLargeInt256(Blackhole bh) {
 		bh.consume(UI_LARGE_VALUE1.subtract(UI_LARGE_VALUE2));
 	}
 
 	@Benchmark
-	public void SubLargeLargeBigInt(Blackhole bh) {
+	public void subLargeLargeBigInt(Blackhole bh) {
 		bh.consume(BI_LARGE_VALUE1.subtract(BI_LARGE_VALUE2));
 	}
 
 	@Benchmark
-	public void MulLargeSmallInt256(Blackhole bh) {
+	public void mulLargeSmallInt256(Blackhole bh) {
 		bh.consume(UI_LARGE_VALUE1.multiply(UI_SMALL_VALUE));
 	}
 
 	@Benchmark
-	public void MulLargeSmallBigInt(Blackhole bh) {
+	public void mulLargeSmallBigInt(Blackhole bh) {
 		bh.consume(BI_LARGE_VALUE1.multiply(BI_SMALL_VALUE));
 	}
 
 	@Benchmark
-	public void DivLargeSmallInt256(Blackhole bh) {
+	public void divLargeSmallInt256(Blackhole bh) {
 		bh.consume(UI_LARGE_VALUE1.divide(UI_SMALL_VALUE));
 	}
 
 	@Benchmark
-	public void DivLargeSmallBigInt(Blackhole bh) {
+	public void divLargeSmallBigInt(Blackhole bh) {
 		bh.consume(BI_LARGE_VALUE1.divide(BI_SMALL_VALUE));
 	}
 
 	@Benchmark
-	public void SqrtLargeInt256(Blackhole bh) {
+	public void sqrtLargeInt256(Blackhole bh) {
 		bh.consume(UI_LARGE_VALUE1.isqrt());
 	}
 
 	@Benchmark
-	public void SqrtLargeBigInt(Blackhole bh) {
+	public void sqrtLargeBigInt(Blackhole bh) {
 		bh.consume(BigIntegerMath.sqrt(BI_LARGE_VALUE1, RoundingMode.FLOOR));
 	}
 

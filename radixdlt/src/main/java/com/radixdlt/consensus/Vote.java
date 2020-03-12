@@ -78,8 +78,8 @@ public final class Vote {
 		if (o instanceof Vote) {
 			Vote other = (Vote) o;
 			return
-				Objects.equals(this.author, other.author) &&
-				Objects.equals(this.vertexMetadata, other.vertexMetadata);
+				Objects.equals(this.author, other.author)
+				&& Objects.equals(this.vertexMetadata, other.vertexMetadata);
 		}
 		return false;
 	}

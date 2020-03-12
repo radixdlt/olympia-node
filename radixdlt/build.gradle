@@ -16,6 +16,7 @@
  */
 
 apply plugin: 'jacoco'
+apply plugin: 'checkstyle'
 apply plugin: 'application'
 apply plugin: 'distribution'
 apply plugin: 'project-report'
@@ -49,6 +50,27 @@ configurations {
     integrationTestRuntime.extendsFrom testRuntime
 }
 
+checkstyle {
+    toolVersion '8.10.1'
+    showViolations = true
+}
+
+checkstyleMain {
+    configFile project.file('config/checkstyle/checkstyle.xml')
+    exclude "**/org/radix/**/*.java"
+}
+
+checkstyleTest {
+    // Largely the same as the main file, but extended snake case allowed
+    configFile project.file('config/checkstyle/checkstyle_test.xml')
+    exclude "**/org/radix/**/*.java"
+}
+
+checkstyleIntegrationTest {
+    // Largely the same as the main file, but extended snake case allowed
+    configFile project.file('config/checkstyle/checkstyle_test.xml')
+}
+
 test {
     systemProperty "java.security.egd", "file:/dev/urandom"
 }
@@ -63,7 +85,7 @@ jacocoTestReport {
 dependencies {
     compile 'io.reactivex.rxjava3:rxjava:3.0.0'
     compile 'com.sleepycat:je:18.3.12'
-    compile 'com.github.radixdlt:radix-engine-library:release~1.0-beta.6-SNAPSHOT'
+    compile 'com.github.radixdlt:radix-engine-library:rc~1.0-beta.7-SNAPSHOT'
 
     compile 'commons-cli:commons-cli:1.4'
     compile 'org.json:json:20180813'

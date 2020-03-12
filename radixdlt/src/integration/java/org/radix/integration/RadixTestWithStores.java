@@ -28,8 +28,7 @@ import org.radix.network2.messaging.MessageCentral;
 import java.io.IOException;
 import java.util.Objects;
 
-public class RadixTestWithStores extends RadixTest
-{
+public class RadixTestWithStores extends RadixTest {
 	private DatabaseEnvironment dbEnv;
 	private LedgerEntryStore store;
 	//private ChainedBFT bft;

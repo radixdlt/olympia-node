@@ -207,7 +207,12 @@ public class SafetyRulesTest {
 	}
 
 	private static Vertex makeVertex(Vertex parent, Round round, AID id) {
-		VertexMetadata parentMetadata = new VertexMetadata(parent.getRound(), parent.getAID(), parent.getQC().getRound(), parent.getQC().getVertexMetadata().getAID());
+		VertexMetadata parentMetadata = new VertexMetadata(
+			parent.getRound(),
+			parent.getAID(),
+			parent.getQC().getRound(),
+			parent.getQC().getVertexMetadata().getAID()
+		);
 		QuorumCertificate qc = new QuorumCertificate(new Vote(SELF, parentMetadata), parentMetadata);
 		return makeVertex(qc, round, id);
 	}

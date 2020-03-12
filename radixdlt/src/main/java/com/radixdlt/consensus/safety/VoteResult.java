@@ -44,8 +44,8 @@ public final class VoteResult {
 			return false;
 		}
 		VoteResult that = (VoteResult) o;
-		return Objects.equals(vote, that.vote) &&
-			Objects.equals(committedAtom, that.committedAtom);
+		return Objects.equals(vote, that.vote)
+			&& Objects.equals(committedAtom, that.committedAtom);
 	}
 
 	@Override

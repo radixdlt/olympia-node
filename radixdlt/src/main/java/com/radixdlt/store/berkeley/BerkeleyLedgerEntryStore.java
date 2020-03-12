@@ -342,7 +342,12 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 		throw new IllegalStateException("Should never reach here");
 	}
 
-	private LedgerEntryStoreResult doStorePending(LedgerEntry atom, Set<StoreIndex> uniqueIndices, Set<StoreIndex> duplicateIndices, Transaction transaction) throws SerializationException {
+	private LedgerEntryStoreResult doStorePending(
+		LedgerEntry atom,
+		Set<StoreIndex> uniqueIndices,
+		Set<StoreIndex> duplicateIndices,
+		Transaction transaction
+	) throws SerializationException {
 		byte[] atomData = serialization.toDson(atom, Output.PERSIST);
 		LedgerEntryIndices indices = LedgerEntryIndices.from(atom, uniqueIndices, duplicateIndices);
 		// TODO should probably do some ordering on pending atoms
@@ -351,7 +356,14 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 		return doStore(PREFIX_PENDING, pendingLC, atom.getAID(), atomData, indices, transaction);
 	}
 
-	private LedgerEntryStoreResult doStore(byte prefix, long logicalClock, AID aid, byte[] ledgerEntryData, LedgerEntryIndices indices, Transaction transaction) throws SerializationException {
+	private LedgerEntryStoreResult doStore(
+		byte prefix,
+		long logicalClock,
+		AID aid,
+		byte[] ledgerEntryData,
+		LedgerEntryIndices indices,
+		Transaction transaction
+	) throws SerializationException {
 		try {
 			DatabaseEntry pKey = toPKey(prefix, logicalClock, aid);
 			DatabaseEntry pData = new DatabaseEntry(ledgerEntryData);

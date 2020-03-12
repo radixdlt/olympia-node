@@ -42,7 +42,11 @@ public class BerkeleySearchCursorTests extends RadixTestWithStores {
 		StoreIndex uniqueIndex = new StoreIndex(PREFIX, ledgerEntries.get(0).getAID().getBytes());
 		getStore().store(ledgerEntries.get(0), ImmutableSet.of(uniqueIndex), ImmutableSet.of());
 
-		SearchCursor cursor = getStore().search(StoreIndex.LedgerIndexType.UNIQUE, new StoreIndex(PREFIX, ledgerEntries.get(0).getAID().getBytes()), LedgerSearchMode.EXACT);
+		SearchCursor cursor = getStore().search(
+			StoreIndex.LedgerIndexType.UNIQUE,
+			new StoreIndex(PREFIX, ledgerEntries.get(0).getAID().getBytes()),
+			LedgerSearchMode.EXACT
+		);
 
 		Assert.assertNotNull(cursor);
 		Assert.assertEquals(ledgerEntries.get(0).getAID(), cursor.get());
@@ -54,7 +58,11 @@ public class BerkeleySearchCursorTests extends RadixTestWithStores {
 		StoreIndex uniqueIndex = new StoreIndex(PREFIX, ledgerEntries.get(0).getAID().getBytes());
 		getStore().store(ledgerEntries.get(0), ImmutableSet.of(uniqueIndex), ImmutableSet.of());
 
-		SearchCursor cursor = getStore().search(StoreIndex.LedgerIndexType.UNIQUE, new StoreIndex(PREFIX, ledgerEntries.get(1).getAID().getBytes()), LedgerSearchMode.EXACT);
+		SearchCursor cursor = getStore().search(
+			StoreIndex.LedgerIndexType.UNIQUE,
+			new StoreIndex(PREFIX, ledgerEntries.get(1).getAID().getBytes()),
+			LedgerSearchMode.EXACT
+		);
 		Assert.assertNull(cursor);
 	}
 

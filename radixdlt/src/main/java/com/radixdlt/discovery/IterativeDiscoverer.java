@@ -120,7 +120,13 @@ public final class IterativeDiscoverer implements AtomDiscoverer {
 
 		this.requestQueue = new ArrayBlockingQueue<>(configuration.requestProcessorThreads(DEFAULT_REQUEST_QUEUE_CAPACITY));
 		int processorThreads = configuration.requestProcessorThreads(DEFAULT_REQUEST_PROCESSOR_THREADS);
-		this.requestThreadPool = new SimpleThreadPool<>("Iterative discovery processing", processorThreads, requestQueue::take, this::processRequest, log);
+		this.requestThreadPool = new SimpleThreadPool<>(
+			"Iterative discovery processing",
+			processorThreads,
+			requestQueue::take,
+			this::processRequest,
+			log
+		);
 		this.requestThreadPool.start();
 	}
 

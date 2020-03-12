@@ -55,7 +55,12 @@ public final class Keys {
 	 * @throws IOException If the key store cannot be accessed or created
 	 * @throws CryptoException If the key in the key store is invalid
 	 */
-	public static ECKeyPair readKey(String keyStorePath, String keyName, String keyStorePasswordEnv, String keyPasswordEnv) throws IOException, CryptoException {
+	public static ECKeyPair readKey(
+		String keyStorePath,
+		String keyName,
+		String keyStorePasswordEnv,
+		String keyPasswordEnv
+	) throws IOException, CryptoException {
 		char[] keyPassword = readPassword(keyPasswordEnv);
 		char[] keyStorePassword = readPassword(keyStorePasswordEnv);
 		try (RadixKeyStore ks = RadixKeyStore.fromFile(new File(keyStorePath), keyStorePassword, true)) {

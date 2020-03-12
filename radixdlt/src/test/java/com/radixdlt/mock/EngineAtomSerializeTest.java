@@ -23,7 +23,6 @@ import org.radix.serialization.SerializeMessageObject;
 
 public class EngineAtomSerializeTest extends SerializeMessageObject<Atom> {
 	public EngineAtomSerializeTest() {
-		super(Atom.class, () -> new Atom(1l,
-			ImmutableMap.of("test","test")));
+		super(Atom.class, () -> new Atom(1L, ImmutableMap.of("test", "test")));
 	}
 }
