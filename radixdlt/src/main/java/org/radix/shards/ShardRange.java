@@ -30,7 +30,7 @@ public final class ShardRange {
 	// Placeholder for the serializer ID
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(Output.ALL)
-	private final SerializerDummy serializer = SerializerDummy.DUMMY;
+	private SerializerDummy serializer = SerializerDummy.DUMMY;
 
 	@JsonProperty("low")
 	@DsonOutput(Output.ALL)

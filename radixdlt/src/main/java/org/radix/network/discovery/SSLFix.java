@@ -55,46 +55,46 @@ class SSLFix {
 					@Override
 					public void checkClientTrusted(java.security.cert.X509Certificate[] certs, String authType)
 						throws CertificateException {
-						if (!standardVerifyResult) {
-							throw new CertificateException("Client not trusted by default.");
-						}
+						checkClient();
 					}
 
 					@Override
 					public void checkServerTrusted(java.security.cert.X509Certificate[] certs, String authType)
 						throws CertificateException {
-						if (!standardVerifyResult) {
-							throw new CertificateException("Server not trusted by default.");
-						}
+						checkServer();
 					}
 
 					@Override
 					public void checkClientTrusted(java.security.cert.X509Certificate[] xcs, String string, Socket socket)
 						throws CertificateException {
-						if (!standardVerifyResult) {
-							throw new CertificateException("Client not trusted by default.");
-						}
+						checkClient();
 					}
 
 					@Override
 					public void checkServerTrusted(java.security.cert.X509Certificate[] xcs, String string, Socket socket)
 						throws CertificateException {
-						if (!standardVerifyResult) {
-							throw new CertificateException("Server not trusted by default.");
-						}
+						checkServer();
 					}
 
 					@Override
 					public void checkClientTrusted(java.security.cert.X509Certificate[] xcs, String string, SSLEngine ssle)
 						throws CertificateException {
-						if (!standardVerifyResult) {
-							throw new CertificateException("Client not trusted by default.");
-						}
+						checkClient();
 					}
 
 					@Override
 					public void checkServerTrusted(java.security.cert.X509Certificate[] xcs, String string, SSLEngine ssle)
 						throws CertificateException {
+						checkServer();
+					}
+
+					private void checkClient() throws CertificateException {
+						if (!standardVerifyResult) {
+							throw new CertificateException("Client not trusted by default.");
+						}
+					}
+
+					private void checkServer() throws CertificateException {
 						if (!standardVerifyResult) {
 							throw new CertificateException("Server not trusted by default.");
 						}
