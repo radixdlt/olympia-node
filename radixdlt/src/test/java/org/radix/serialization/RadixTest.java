@@ -17,13 +17,13 @@
 
 package org.radix.serialization;
 
+import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.universe.Universe;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.mockito.stubbing.Answer;
 import org.radix.network2.transport.udp.PublicInetAddress;
-import org.radix.properties.RuntimeProperties;
 import org.radix.time.NtpService;
 import org.radix.universe.system.LocalSystem;
 import org.radix.utils.SystemMetaData;

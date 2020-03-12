@@ -42,10 +42,10 @@ import org.radix.network2.addressbook.PeerPredicate;
 import org.radix.network2.transport.StaticTransportMetadata;
 import org.radix.network2.transport.TransportInfo;
 import org.radix.network2.transport.udp.UDPConstants;
-import org.radix.properties.RuntimeProperties;
 
 import com.google.common.collect.Lists;
 import com.google.common.net.HostAndPort;
+import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.universe.Universe;
 
 public class BootstrapDiscovery

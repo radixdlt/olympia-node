@@ -31,12 +31,11 @@ import com.radixdlt.atommodel.unique.UniqueParticle;
 import com.radixdlt.atomos.RRI;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.submission.SubmissionControl;
 import com.radixdlt.crypto.CryptoException;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.properties.RuntimeProperties;
-
 import org.radix.time.Time;
 
 /**

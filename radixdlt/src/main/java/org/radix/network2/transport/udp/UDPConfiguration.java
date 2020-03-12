@@ -17,7 +17,7 @@
 
 package org.radix.network2.transport.udp;
 
-import org.radix.properties.RuntimeProperties;
+import com.radixdlt.properties.RuntimeProperties;
 
 /**
  * Static configuration data for UDP transport configuration.

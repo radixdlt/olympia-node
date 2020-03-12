@@ -22,6 +22,8 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
 import com.radixdlt.common.EUID;
+import com.radixdlt.properties.RuntimeProperties;
+
 import org.assertj.core.api.SoftAssertions;
 import org.junit.After;
 import org.junit.Before;
@@ -42,7 +44,6 @@ import org.radix.network2.messaging.MessageListener;
 import org.radix.network2.transport.TransportInfo;
 import org.radix.network2.transport.TransportMetadata;
 import org.radix.network2.transport.udp.UDPConstants;
-import org.radix.properties.RuntimeProperties;
 import org.radix.serialization.RadixTest;
 import org.radix.serialization.TestSetupUtils;
 import org.radix.time.Timestamps;

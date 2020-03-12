@@ -24,12 +24,11 @@ import java.util.Set;
 import javax.annotation.concurrent.GuardedBy;
 import javax.inject.Inject;
 
-import org.radix.properties.RuntimeProperties;
-
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.Atom;
+import com.radixdlt.properties.RuntimeProperties;
 
 /**
  * Local-only mempool.

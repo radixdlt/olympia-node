@@ -35,7 +35,8 @@ import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 import org.powermock.reflect.Whitebox;
-import org.radix.properties.RuntimeProperties;
+
+import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.universe.Universe;
 
 import static org.junit.Assert.assertEquals;

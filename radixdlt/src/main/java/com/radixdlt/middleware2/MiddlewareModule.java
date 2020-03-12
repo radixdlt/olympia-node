@@ -38,6 +38,7 @@ import com.radixdlt.middleware.AtomCheckHook;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.middleware2.processing.EngineAtomEventListener;
 import com.radixdlt.middleware2.store.LedgerEngineStore;
+import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
@@ -47,7 +48,6 @@ import java.util.LinkedList;
 import java.util.concurrent.TimeUnit;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.properties.RuntimeProperties;
 import org.radix.time.Time;
 
 import java.util.function.UnaryOperator;

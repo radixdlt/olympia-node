@@ -22,11 +22,11 @@ import java.util.Objects;
 import org.radix.network2.transport.StaticTransportMetadata;
 import org.radix.network2.transport.Transport;
 import org.radix.network2.transport.TransportMetadata;
-import org.radix.properties.RuntimeProperties;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.name.Names;
+import com.radixdlt.properties.RuntimeProperties;
 
 /**
  * Guice configuration for the UDP transport subsystem.

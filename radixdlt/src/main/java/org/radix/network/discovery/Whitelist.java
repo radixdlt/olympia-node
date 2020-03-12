@@ -25,7 +25,8 @@ import java.util.Set;
 
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.properties.RuntimeProperties;
+
+import com.radixdlt.properties.RuntimeProperties;
 
 public class Whitelist
 {

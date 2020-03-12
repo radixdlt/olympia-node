@@ -19,6 +19,7 @@ package org.radix.network2.addressbook;
 
 import com.google.inject.Inject;
 import com.radixdlt.common.EUID;
+import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.universe.Universe;
 import org.radix.common.executors.Executor;
 import org.radix.common.executors.ScheduledExecutable;
@@ -33,7 +34,6 @@ import org.radix.network.messages.PeerPongMessage;
 import org.radix.network.messages.PeersMessage;
 import org.radix.network2.messaging.MessageCentral;
 import org.radix.network2.transport.TransportException;
-import org.radix.properties.RuntimeProperties;
 import org.radix.time.Time;
 import org.radix.time.Timestamps;
 import org.radix.universe.system.LocalSystem;

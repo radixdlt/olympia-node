@@ -18,6 +18,7 @@
 package org.radix.api.http;
 
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
+import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.LedgerEntryStore;
@@ -45,7 +46,6 @@ import org.radix.api.services.NetworkService;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.network2.addressbook.AddressBook;
-import org.radix.properties.RuntimeProperties;
 import org.radix.universe.system.LocalSystem;
 
 import java.io.IOException;

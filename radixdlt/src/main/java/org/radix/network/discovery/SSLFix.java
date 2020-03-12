@@ -25,7 +25,6 @@ import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
-import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509ExtendedTrustManager;
 
 import org.radix.logging.Logger;
@@ -44,9 +43,9 @@ class SSLFix {
 	// other sites
 	static boolean standardVerifyResult = true;
 
-	static void trustAllHosts() {
+	static X509ExtendedTrustManager[] trustAllHosts() {
 		try {
-			TrustManager[] trustAllCerts = new TrustManager[] {
+			X509ExtendedTrustManager[] trustAllCerts = new X509ExtendedTrustManager[] {
 				new X509ExtendedTrustManager() {
 					@Override
 					public java.security.cert.X509Certificate[] getAcceptedIssuers() {
@@ -72,25 +71,33 @@ class SSLFix {
 					@Override
 					public void checkClientTrusted(java.security.cert.X509Certificate[] xcs, String string, Socket socket)
 						throws CertificateException {
-						// Ignored -> trusting everything, so no exception thrown
+						if (!standardVerifyResult) {
+							throw new CertificateException("Client not trusted by default.");
+						}
 					}
 
 					@Override
 					public void checkServerTrusted(java.security.cert.X509Certificate[] xcs, String string, Socket socket)
 						throws CertificateException {
-						// Ignored -> trusting everything, so no exception thrown
+						if (!standardVerifyResult) {
+							throw new CertificateException("Server not trusted by default.");
+						}
 					}
 
 					@Override
 					public void checkClientTrusted(java.security.cert.X509Certificate[] xcs, String string, SSLEngine ssle)
 						throws CertificateException {
-						// Ignored -> trusting everything, so no exception thrown
+						if (!standardVerifyResult) {
+							throw new CertificateException("Client not trusted by default.");
+						}
 					}
 
 					@Override
 					public void checkServerTrusted(java.security.cert.X509Certificate[] xcs, String string, SSLEngine ssle)
 						throws CertificateException {
-						// Ignored -> trusting everything, so no exception thrown
+						if (!standardVerifyResult) {
+							throw new CertificateException("Server not trusted by default.");
+						}
 					}
 				}
 			};
@@ -104,8 +111,10 @@ class SSLFix {
 
 			// Install the all-trusting host verifier
 			HttpsURLConnection.setDefaultHostnameVerifier(allHostsValid);
+			return trustAllCerts;
 		} catch (GeneralSecurityException e) {
 			log.error("Error occurred", e);
+			throw new IllegalStateException("Error occurred installing trust manager", e);
 		}
 	}
 }

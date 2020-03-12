@@ -19,6 +19,7 @@ package org.radix;
 
 import com.radixdlt.consensus.ChainedBFT;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
+import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.store.LedgerEntryStore;
@@ -36,7 +37,6 @@ import org.radix.logging.Logging;
 import org.radix.network2.addressbook.AddressBook;
 import org.radix.network2.addressbook.PeerManager;
 import org.radix.network2.transport.udp.PublicInetAddress;
-import org.radix.properties.RuntimeProperties;
 import org.radix.time.Time;
 import org.radix.universe.UniverseValidator;
 import org.radix.universe.system.LocalSystem;
