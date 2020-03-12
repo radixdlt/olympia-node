@@ -21,16 +21,23 @@ import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.utils.Bytes;
 import nl.jqno.equalsverifier.EqualsVerifier;
+import org.bouncycastle.util.encoders.Base64;
+import org.bouncycastle.util.encoders.DecoderException;
 import org.junit.Test;
 
+import java.util.Arrays;
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 public class RadixAddressTest {
 
 	@Test
 	public void from_engine___equalsContract() {
 		EqualsVerifier.forClass(RadixAddress.class)
-				.withIgnoredFields("key") // other field(s) dependent on `key` is used
+				.withIgnoredFields("publicKey") // other field(s) dependent on `key` is used
 				.withIgnoredFields("base58") // other field(s) dependent on `base58` is used
 				.verify();
 	}
@@ -57,5 +64,51 @@ public class RadixAddressTest {
 				+ "175341a9"; // checksum
 
 		assertThat(expectedAddressHexString).isEqualToIgnoringCase(Bytes.toHexString(address.toByteArray()));
+	}
+
+	@Test
+	public void from_client_library___createAddressFromPublicKey() throws CryptoException {
+		ECPublicKey publicKey = new ECPublicKey(Base64.decode("A455PdOZNwyRWaSWFXyYYkbj7Wv9jtgCCqUYhuOHiPLC"));
+		RadixAddress address = new RadixAddress(magicByte(), publicKey);
+		assertEquals("JHB89drvftPj6zVCNjnaijURk8D8AMFw4mVja19aoBGmRXWchnJ", address.toString());
+		assertEquals(address, RadixAddress.from("JHB89drvftPj6zVCNjnaijURk8D8AMFw4mVja19aoBGmRXWchnJ"));
+	}
+
+	@Test(expected = DecoderException.class)
+	public void from_client_library___createAddressFromBadPublicKey() throws CryptoException, DecoderException {
+		ECPublicKey publicKey = new ECPublicKey(Base64.decode("BADKEY"));
+		new RadixAddress(magicByte(), publicKey);
+		fail();
+	}
+
+	@Test
+	public void from_client_library___createAddressAndCheckUID() {
+		RadixAddress address = RadixAddress.from("JHB89drvftPj6zVCNjnaijURk8D8AMFw4mVja19aoBGmRXWchnJ");
+		assertEquals(new EUID("8cfef50ea6a767813631490f9a94f73f"), address.getUID());
+	}
+
+	@Test(expected = CryptoException.class)
+	public void from_client_library___generateAddress() throws CryptoException {
+		new RadixAddress(magicByte(), new ECPublicKey(new byte[33]));
+		fail();
+	}
+
+	@Test
+	public void from_client_library___testAddresses() {
+		List<String> addresses = Arrays.asList(
+				"JHB89drvftPj6zVCNjnaijURk8D8AMFw4mVja19aoBGmRXWchnJ"
+		);
+
+		addresses.forEach(address -> {
+			RadixAddress.from(address);
+		});
+	}
+
+	private byte magicByte() {
+		return (byte) (magic() & 0xff);
+	}
+
+	private int magic() {
+		return -1332248574;
 	}
 }

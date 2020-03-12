@@ -32,7 +32,18 @@ public interface Signatures {
      * @param requiredMinimumNumberOfValidSignatures The required minimum number of valid signatures.
      * @return If the number of valid signatures having signed {@code message} is greater or equal to {@code requiredMinimumNumberOfValidSignatures}
      */
-    boolean hasSignedMessage(Hash message, int requiredMinimumNumberOfValidSignatures);
+    default boolean hasSignedMessage(Hash message, int requiredMinimumNumberOfValidSignatures) {
+        return hasSignedMessage(message.toByteArray(), requiredMinimumNumberOfValidSignatures);
+    }
+
+    /**
+     * Checks whether or not this collection of {@link Signature}s and their corresponding {@link ECPublicKey}s indeed has signed the message,
+     * requiring that at least {@code requiredMinimumNumberOfValidSignatures} of the signatures are valid.
+     * @param message The hashed data to check against (the data that has been signed).
+     * @param requiredMinimumNumberOfValidSignatures The required minimum number of valid signatures.
+     * @return If the number of valid signatures having signed {@code message} is greater or equal to {@code requiredMinimumNumberOfValidSignatures}
+     */
+    boolean hasSignedMessage(byte[] message, int requiredMinimumNumberOfValidSignatures);
 
     /**
      * Returns a new instance of {@link Signatures}, concatenated with the {@code signature},

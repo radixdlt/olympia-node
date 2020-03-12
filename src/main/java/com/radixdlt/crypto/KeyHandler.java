@@ -34,7 +34,7 @@ interface KeyHandler {
 	 * @return An {@link ECDSASignature} with {@code r} and {@code s} values included
 	 * @throws CryptoException if the {@code privateKey} is invalid
 	 */
-	ECDSASignature sign(byte[] hash, byte[] privateKey) throws CryptoException;
+	ECDSASignature sign(byte[] hash, byte[] privateKey, boolean enforceLowS, boolean beDeterministic) throws CryptoException;
 
 	/**
 	 * Verify the specified signature against the specified hash with the
@@ -56,4 +56,11 @@ interface KeyHandler {
 	 * @throws CryptoException If the {@code privateKey} is invalid
 	 */
 	byte[] computePublicKey(byte[] privateKey) throws CryptoException;
+
+	default ECDSASignature sign(byte[] hash, byte[] privateKey) throws CryptoException {
+		boolean enforceLowS = true;
+		boolean useDeterministicSignatures = false;
+		return sign(hash, privateKey, enforceLowS, useDeterministicSignatures);
+	}
+
 }

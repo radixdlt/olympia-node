@@ -21,15 +21,14 @@ package com.radixdlt.crypto;
  * An entity capable of producing a {@link Signature} of type {@code <T>} using some {@link SignatureScheme}.
  * @param <T>
  */
-public interface Signing<T extends Signature> {
+public interface Signing<T extends Signature> extends ECMultiplicationScalar {
 
     /**
      * Produces a {@link Signature} of type {@code <T>} of {@code hash}.
      * @param hash A hash of some message to sign as a byte array.
      * @return A {@link Signature} of type {@code <T>} of {@code hash}.
-     * @throws CryptoException
      */
-    T sign(byte[] hash) throws CryptoException;
+    T sign(byte[] hash);
 
 	/**
 	 * Checks if signing entity is capable of producing a {@link Signature} matching
@@ -47,9 +46,8 @@ public interface Signing<T extends Signature> {
      * Produces a {@link Signature} of type {@code <T>} of {@code hash}.
      * @param hash A hash of some message to sign.
      * @return A {@link Signature} of type {@code <T>} of {@code hash}.
-     * @throws CryptoException
      */
-    default T sign(Hash hash) throws CryptoException {
+    default T sign(Hash hash) {
         return sign(hash.toByteArray());
     }
 }

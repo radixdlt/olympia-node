@@ -142,7 +142,7 @@ public class SignaturesTest {
             );
         }
         Signatures signatures = DefaultSignatures.emptySignatures();
-        Hash hashedMessage = hashOfMessage("You must do what you feel is right of course");
+        byte[] hashedMessage = hashOfMessage("You must do what you feel is right of course");
         for (int i = 0; i < numberOfValidSignaturesToCreate + numberOfInvalidSignaturesToCreate; i++) {
             ECKeyPair keyPair = new ECKeyPair();
             assertNotNull(keyPair);
@@ -164,15 +164,7 @@ public class SignaturesTest {
     }
 
     private ECPublicKey publicKey() {
-        return keyPair().getPublicKey();
-    }
-
-    private ECKeyPair keyPair() {
-        try {
-            return new ECKeyPair();
-        } catch (CryptoException e) {
-        	throw new IllegalStateException("Failed to create keyPair", e);
-        }
+        return new ECKeyPair().getPublicKey();
     }
 
     private ECDSASignature randomInvalidSignature() {
@@ -180,7 +172,7 @@ public class SignaturesTest {
         return new ECDSASignature(randomBigInt.get(), randomBigInt.get());
     }
 
-    private Hash hashOfMessage(String message) {
-        return new Hash(Hash.hash256(message.getBytes()));
+    private byte[] hashOfMessage(String message) {
+        return Hash.hash256(message.getBytes());
     }
 }

@@ -20,14 +20,12 @@ package com.radixdlt.crypto;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.common.base.Suppliers;
+import com.radixdlt.crypto.encryption.ECIES;
+import com.radixdlt.crypto.encryption.ECIESException;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.utils.Bytes;
-import com.radixdlt.utils.WireIO;
 import org.bouncycastle.math.ec.ECPoint;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.function.Supplier;
 
@@ -94,8 +92,8 @@ public final class ECPublicKey {
 		return this.publicKey;
 	}
 
-	ECPoint getPublicPoint() {
-		return ECKeyUtils.spec.getCurve().decodePoint(this.publicKey);
+	public ECPoint getPublicPoint() {
+		return ECKeyUtils.spec().getCurve().decodePoint(this.publicKey);
 	}
 
 	public boolean verify(Hash hash, ECDSASignature signature) {
@@ -111,57 +109,6 @@ public final class ECPublicKey {
 			return ECKeyUtils.keyHandler.verify(hash, signature, this.publicKey);
 		} catch (CryptoException e) {
 			return false;
-		}
-	}
-
-	public byte[] encrypt(byte[] data) throws CryptoException {
-        byte[] iv = new byte[16];
-        ECKeyUtils.secureRandom.nextBytes(iv);
-		return encrypt(data, iv);
-	}
-
-	public byte[] encrypt(byte[] data, byte[] iv) throws CryptoException {
-		try {
-			// 1. The destination is this.getPublicKey()
-	        // 2. Generate 16 random bytes using a secure random number generator. Call them IV
-			// IV is passed in
-
-	        // 3. Generate a new ephemeral EC key pair
-			ECKeyPair ephemeral = new ECKeyPair();
-
-	        // 4. Do an EC point multiply with this.getPublicKey() and ephemeral private key. This gives you a point M.
-	        ECPoint m = getPublicPoint().multiply(new BigInteger(1, ephemeral.getPrivateKey())).normalize();
-
-	        // 5. Use the X component of point M and calculate the SHA512 hash H.
-	        byte[] h = Hash.hash512(m.getXCoord().getEncoded());
-
-	        // 6. The first 32 bytes of H are called key_e and the last 32 bytes are called key_m.
-	        byte[] keyE = Arrays.copyOfRange(h, 0, 32);
-	        byte[] keyM = Arrays.copyOfRange(h, 32, 64);
-
-	        // 7. Pad the input text to a multiple of 16 bytes, in accordance to PKCS7.
-	        // 8. Encrypt the data with AES-256-CBC, using IV as initialization vector, key_e as encryption key and the
-	        //    padded input text as payload. Call the output cipher text.
-	        byte[] encrypted = ECKeyUtils.crypt(true, iv, data, keyE);
-
-	        // 9. Calculate a 32 byte MAC with HMACSHA256, using key_m as salt and IV + ephemeral.pub + cipher text as
-	        //    data. Call the output MAC.
-	        byte[] mac = ECKeyUtils.calculateMAC(keyM, iv, ephemeral.getPublicKey(), encrypted);
-
-	        // 10. Write out the encryption result IV + ephemeral.pub + encrypted + MAC
-	        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-			WireIO.Writer writer = new WireIO.Writer(baos);
-			writer.writeBytes(iv);
-			byte[] pubKeyBytes = ephemeral.getPublicKey().getBytes();
-			writer.writeByte(pubKeyBytes.length);
-			writer.writeBytes(pubKeyBytes);
-			writer.writeInt(encrypted.length);
-			writer.writeBytes(encrypted);
-			writer.writeBytes(mac);
-
-			return baos.toByteArray();
-		} catch (IOException ioex) {
-			throw new CryptoException(ioex);
 		}
 	}
 
@@ -192,6 +139,15 @@ public final class ECPublicKey {
 	}
 
 	private EUID computeUID() {
-		return new EUID(Hash.hash256(getBytes()), 0);
+		return new EUID(Hash.hash256(getBytes()));
+	}
+
+	// ### From Client Library ###
+	public int length() {
+		return publicKey.length;
+	}
+
+	public byte[] encrypt(byte[] data) throws ECIESException {
+		return ECIES.encrypt(data, this);
 	}
 }
