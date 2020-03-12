@@ -61,7 +61,7 @@ public class RadixTest {
 
 		universe = new GenerateUniverses(properties).generateUniverses().stream().filter(Universe::isTest).findAny().get();
 		PublicInetAddress.configure(universe.getPort());
-		localSystem = LocalSystem.restoreOrCreate(properties, universe);// Load node.ks, after universe
+		localSystem = LocalSystem.restoreOrCreate(properties, universe); // Load node.ks, after universe
 	}
 
 	@AfterClass
