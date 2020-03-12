@@ -51,17 +51,7 @@ public final class RadixEngine {
 
 	private static final Logger log = LoggerFactory.getLogger(RadixEngine.class);
 
-	private interface EngineAction {
-	}
-
-	private final class DeleteAtom implements EngineAction {
-		private final Atom atom;
-		DeleteAtom(Atom atom) {
-			this.atom = atom;
-		}
-	}
-
-	private final class StoreAtom implements EngineAction {
+	private final class StoreAtom {
 		private final Atom atom;
 		private final AtomEventListener listener;
 
@@ -77,7 +67,7 @@ public final class RadixEngine {
 	private final EngineStore engineStore;
 	private final CopyOnWriteArrayList<AtomEventListener> atomEventListeners = new CopyOnWriteArrayList<>();
 	private final CopyOnWriteArrayList<CMSuccessHook> cmSuccessHooks = new CopyOnWriteArrayList<>();
-	private	final BlockingQueue<EngineAction> commitQueue = new LinkedBlockingQueue<>();
+	private	final BlockingQueue<StoreAtom> commitQueue = new LinkedBlockingQueue<>();
 
 	private volatile boolean running = false;
 	private Thread stateUpdateThread = null;
@@ -96,7 +86,7 @@ public final class RadixEngine {
 
 	private void run() {
 		while (this.running) {
-			final EngineAction action;
+			final StoreAtom action;
 			try {
 				action = this.commitQueue.take();
 			} catch (InterruptedException e) {
@@ -106,32 +96,16 @@ public final class RadixEngine {
 			}
 
 			try {
-				if (action instanceof StoreAtom) {
-					StoreAtom storeAtom = (StoreAtom) action;
-					stateCheckAndStore(storeAtom);
-				} else if (action instanceof DeleteAtom) {
-					DeleteAtom deleteAtom = (DeleteAtom) action;
-					engineStore.deleteAtom(deleteAtom.atom.getAID());
-				} else {
-					// We don't want to stop processing future EngineActions,
-					// but we do want to flag this logic error.
-					log.error("Unknown EngineAction: {}", action.getClass().getName());
-				}
+				stateCheckAndStore(action);
 			} catch (Exception e) {
 				log.error("Error while processing action " + action + ": " + e, e);
 			}
 		}
 	}
 
-	// TODO: temporary interface, remove in favor of reactive-streams
-	public int getCommitQueueSize() {
-		return commitQueue.size();
-	}
-
 	/**
 	 * Start this instance of the Radix Engine processing incoming events.
-	 * Events are placed onto a queue by the {@link #delete(Atom)}
-	 * and {@link #store(Atom, AtomEventListener)} methods.
+	 * Events are placed onto a queue by the {@link #store(Atom, AtomEventListener)} methods.
 	 * <p>
 	 * In order to initially start the engine processing events, this method
 	 * needs to be called after instance creation.
@@ -193,10 +167,6 @@ public final class RadixEngine {
 
 	public void addAtomEventListener(AtomEventListener acceptor) {
 		this.atomEventListeners.add(acceptor);
-	}
-
-	public void delete(Atom atom) {
-		this.commitQueue.add(new DeleteAtom(atom));
 	}
 
 	public Optional<CMError> staticCheck(Atom atom) {
