@@ -63,7 +63,7 @@ jacocoTestReport {
 dependencies {
     compile 'io.reactivex.rxjava3:rxjava:3.0.0'
     compile 'com.sleepycat:je:18.3.12'
-    compile 'com.github.radixdlt:radix-engine-library:release~1.0-beta.6-SNAPSHOT'
+    compile 'com.github.radixdlt:radix-engine-library:feature~update-api-SNAPSHOT'
 
     compile 'commons-cli:commons-cli:1.4'
     compile 'org.json:json:20180813'
