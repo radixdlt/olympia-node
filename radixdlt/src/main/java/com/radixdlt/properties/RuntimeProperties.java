@@ -30,8 +30,6 @@ import org.json.JSONObject;
  * Runtime properties are temporary property sets that are discarded upon client termination.
  *
  * They combine a set of persisted properties, with a set of command line properties.
- *
- * @author Dan Hughes
  */
 public final class RuntimeProperties extends PersistedProperties {
 	private final CommandLine commandLine;

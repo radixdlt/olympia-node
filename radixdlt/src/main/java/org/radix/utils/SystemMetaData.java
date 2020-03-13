@@ -200,7 +200,7 @@ public final class SystemMetaData
 		}
 		catch (Exception e)
 		{
-			throw new DatabaseException(e);
+			throw new DatabaseException("While flushing system meta data", e);
 		}
 	}
 
@@ -326,7 +326,7 @@ public final class SystemMetaData
 		}
 		catch (Exception e)
 		{
-			throw new DatabaseException(e);
+			throw new DatabaseException("While loading system meta data", e);
 		}
 	}
 

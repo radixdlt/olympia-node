@@ -587,7 +587,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 
 			return this.getByShardRange(from, to);
 		} catch (Exception ex) {
-			throw new DatabaseException(ex);
+			throw new DatabaseException("While querying shard chunk and range", ex);
 		}
 	}
 
@@ -617,7 +617,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 
 			return aids;
 		} catch (Exception ex) {
-			throw new DatabaseException(ex);
+			throw new DatabaseException("While querying shard range", ex);
 		}
 	}
 
@@ -639,7 +639,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 
 			return aids;
 		} catch (Exception ex) {
-			throw new DatabaseException(ex);
+			throw new DatabaseException("While querying shard", ex);
 		}
 	}
 	BerkeleySearchCursor getNext(BerkeleySearchCursor cursor) {

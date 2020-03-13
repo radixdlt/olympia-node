@@ -45,7 +45,7 @@ public class PersistedProperties {
 	}
 
 	/**
-	 * Load properties from specified file.
+	 * Loads properties from specified file.
 	 *
 	 * @param filename the file to load the properties from
 	 * @throws ParseException if the properties cannot be loaded
@@ -81,6 +81,12 @@ public class PersistedProperties {
 		}
 	}
 
+	/**
+	 * Saves properties to the specified file.
+	 *
+	 * @param filename The file to save the properties to
+	 * @throws IOException if the properties cannot be saved
+	 */
 	public void save(String filename) throws IOException {
 		try (OutputStream propertiesOutput = new FileOutputStream(new File(filename))) {
 			this.properties.store(propertiesOutput, "");
