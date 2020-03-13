@@ -12,3 +12,5 @@ out/
 *.ks
 
 .idea/
+
+*.iml
