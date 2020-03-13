@@ -17,7 +17,7 @@
 
 package org.radix.time;
 
-import org.radix.properties.RuntimeProperties;
+import com.radixdlt.properties.RuntimeProperties;
 
 public final class Time {
 	public static final int MAXIMUM_DRIFT = 30;

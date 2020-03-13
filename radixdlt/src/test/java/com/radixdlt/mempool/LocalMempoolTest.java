@@ -21,7 +21,6 @@ import java.util.List;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.radix.properties.RuntimeProperties;
 
 import com.google.common.collect.Sets;
 import com.google.inject.AbstractModule;
@@ -30,6 +29,7 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.Atom;
+import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.utils.Ints;
 
 import static org.junit.Assert.*;

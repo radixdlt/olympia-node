@@ -33,8 +33,6 @@ import org.radix.atoms.particles.conflict.ParticleConflict;
 import org.radix.atoms.particles.conflict.ParticleConflictException;
 import org.radix.exceptions.AtomAlreadyStoredException;
 import org.radix.exceptions.ValidationException;
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
 import org.radix.validation.ConstraintMachineValidationException;
 
 /**
@@ -51,8 +49,6 @@ public class SubmitAtomAndSubscribeEpic {
 	public enum AtomSubmissionState {
 		SUBMITTING, SUBMITTED, STORED, VALIDATION_ERROR, UNKNOWN_ERROR, COLLISION, UNSUITABLE_PEER
 	}
-
-	private static final Logger LOGGER = Logging.getLogger("SubmitAndSubscribeEpic");
 
 	/**
 	 * Interface for atom submission and return of results

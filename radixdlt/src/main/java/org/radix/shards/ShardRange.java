@@ -22,47 +22,86 @@ import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.serialization.DsonOutput.Output;
-import org.radix.utils.Range;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 @SerializerId2("radix.shards.range")
-public final class ShardRange extends Range<Long>
-{
+public final class ShardRange {
 	// Placeholder for the serializer ID
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(Output.ALL)
 	private SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	ShardRange()
-	{
+	@JsonProperty("low")
+	@DsonOutput(Output.ALL)
+	private final long low;
+
+	@JsonProperty("high")
+	@DsonOutput(Output.ALL)
+	private final long high;
+
+
+	ShardRange() {
 		// For serializer
+		this.low = 0L;
+		this.high = 0L;
 	}
 
-	public ShardRange(long low, long high)
-	{
-		super(low, high);
+	public ShardRange(long low, long high) {
+		if (low > high) {
+			throw new IllegalStateException("'low' shard can not be greater than 'high' shard");
+		}
+		this.low = low;
+		this.high = high;
 	}
 
-	@JsonProperty("low")
-	@DsonOutput(Output.ALL)
-	long getJsonLow() {
-		return this.getLow();
+	public long getLow() {
+		return this.low;
 	}
 
-	@JsonProperty("high")
-	@DsonOutput(Output.ALL)
-	long getJsonHigh() {
-		return this.getHigh();
+	public long getHigh() {
+		return this.high;
 	}
 
-	@JsonProperty("low")
-	void setJsonLow(long low) {
-		this.setLow(low);
+	public long getSpan() {
+		return this.high - this.low;
 	}
 
-	@JsonProperty("high")
-	void setJsonHigh(long high) {
-		this.setHigh(high);
+	public boolean intersects(long point) {
+		// FIXME: Fix special magic
+		if (this.low == 0L && this.high == 0L) {
+			return false;
+		}
+		return point >= this.low && point <= this.high;
+	}
+
+	public boolean intersects(ShardRange range) {
+		// FIXME: Fix special magic
+		if (this.low == 0L && this.high == 0L) {
+			return false;
+		}
+		return range.high >= this.low && range.low <= this.high;
+	}
+
+	@Override
+	public int hashCode() {
+		return Long.hashCode(this.low) * 31 + Long.hashCode(this.high);
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (obj instanceof ShardRange) {
+			ShardRange other = (ShardRange) obj;
+			return this.low == other.low && this.high == other.high;
+		}
+		return false;
+	}
+
+	@Override
+	public String toString() {
+		return String.format("%s[%s -> %s]", getClass().getSimpleName(), this.low, this.high);
 	}
 }

@@ -29,6 +29,7 @@ import com.radixdlt.discovery.IterativeDiscovererModule;
 import com.radixdlt.mempool.MempoolModule;
 import com.radixdlt.middleware2.MiddlewareModule;
 import com.radixdlt.network.NetworkModule;
+import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.berkeley.BerkeleyStoreModule;
 import com.radixdlt.submission.SubmissionControlModule;
@@ -40,7 +41,6 @@ import org.radix.network2.addressbook.PeerManagerConfiguration;
 import org.radix.network2.messaging.MessageCentralModule;
 import org.radix.network2.transport.tcp.TCPTransportModule;
 import org.radix.network2.transport.udp.UDPTransportModule;
-import org.radix.properties.RuntimeProperties;
 import org.radix.universe.system.LocalSystem;
 
 public class GlobalInjector {

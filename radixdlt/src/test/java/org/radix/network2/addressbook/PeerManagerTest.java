@@ -22,6 +22,8 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
 import com.radixdlt.common.EUID;
+import com.radixdlt.properties.RuntimeProperties;
+
 import org.assertj.core.api.SoftAssertions;
 import org.junit.After;
 import org.junit.Before;
@@ -30,9 +32,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
-import org.radix.events.Events;
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
 import org.radix.network.Interfaces;
 import org.radix.network.discovery.BootstrapDiscovery;
 import org.radix.network.messages.GetPeersMessage;
@@ -40,13 +39,11 @@ import org.radix.network.messages.PeerPingMessage;
 import org.radix.network.messages.PeerPongMessage;
 import org.radix.network.messages.PeersMessage;
 import org.radix.network.messaging.Message;
-import org.radix.network.peers.events.PeerAvailableEvent;
 import org.radix.network2.messaging.MessageCentral;
 import org.radix.network2.messaging.MessageListener;
 import org.radix.network2.transport.TransportInfo;
 import org.radix.network2.transport.TransportMetadata;
 import org.radix.network2.transport.udp.UDPConstants;
-import org.radix.properties.RuntimeProperties;
 import org.radix.serialization.RadixTest;
 import org.radix.serialization.TestSetupUtils;
 import org.radix.time.Timestamps;
@@ -66,9 +63,9 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.data.Offset.offset;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeast;
-import static org.mockito.Mockito.atMost;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -77,12 +74,9 @@ import static org.mockito.Mockito.verify;
 import static org.powermock.api.mockito.PowerMockito.when;
 
 public class PeerManagerTest extends RadixTest {
-    private static final Logger log = Logging.getLogger("PeerManagerTest");
-
     private MessageCentral messageCentral;
     private PeerManager peerManager;
     private AddressBook addressBook;
-    private Events events;
     private BootstrapDiscovery bootstrapDiscovery;
     private PeerManagerConfiguration config;
     private Map<Class<Message>, MessageListener<Message>> messageListenerRegistry;
@@ -98,7 +92,6 @@ public class PeerManagerTest extends RadixTest {
     private ArgumentCaptor<Message> messageArgumentCaptor;
     private Multimap<Peer, Message> peerMessageMultimap;
     private Interfaces interfaces;
-    private EUID self = EUID.ZERO;
     private SecureRandom rng;
 
     @BeforeClass
@@ -119,25 +112,24 @@ public class PeerManagerTest extends RadixTest {
         when(getUniverse().getPlanck()).thenReturn(10000L);
         RuntimeProperties properties = getProperties();
 
-        when(properties.get(eq("network.peers.heartbeat.delay"), any())).thenReturn(100);
-        when(properties.get(eq("network.peers.heartbeat.interval"), any())).thenReturn(200);
+        when(properties.get(eq("network.peers.heartbeat.delay"), anyInt())).thenReturn(100);
+        when(properties.get(eq("network.peers.heartbeat.interval"), anyInt())).thenReturn(200);
 
-        when(properties.get(eq("network.peers.broadcast.delay"), any())).thenReturn(100);
-        when(properties.get(eq("network.peers.broadcast.interval"), any())).thenReturn(200);
+        when(properties.get(eq("network.peers.broadcast.delay"), anyInt())).thenReturn(100);
+        when(properties.get(eq("network.peers.broadcast.interval"), anyInt())).thenReturn(200);
 
-        when(properties.get(eq("network.peers.probe.delay"), any())).thenReturn(100);
-        when(properties.get(eq("network.peers.probe.interval"), any())).thenReturn(200);
-        when(properties.get(eq("network.peers.probe.frequency"), any())).thenReturn(300);
+        when(properties.get(eq("network.peers.probe.delay"), anyInt())).thenReturn(100);
+        when(properties.get(eq("network.peers.probe.interval"), anyInt())).thenReturn(200);
+        when(properties.get(eq("network.peers.probe.frequency"), anyInt())).thenReturn(300);
 
-        when(properties.get(eq("network.peers.discover.delay"), any())).thenReturn(100);
-        when(properties.get(eq("network.peers.discover.interval"), any())).thenReturn(200);
+        when(properties.get(eq("network.peers.discover.delay"), anyInt())).thenReturn(100);
+        when(properties.get(eq("network.peers.discover.interval"), anyInt())).thenReturn(200);
 
-        when(properties.get(eq("network.peers.message.batch.size"), any())).thenReturn(2);
+        when(properties.get(eq("network.peers.message.batch.size"), anyInt())).thenReturn(2);
 
         config = spy(PeerManagerConfiguration.fromRuntimeProperties(properties));
         peerMessageMultimap = LinkedListMultimap.create();
         messageCentral = mock(MessageCentral.class);
-        events = mock(Events.class);
         rng = mock(SecureRandom.class);
 
         messageListenerRegistry = new HashMap<>();
@@ -196,7 +188,7 @@ public class PeerManagerTest extends RadixTest {
         when(addressBook.peer(transportInfo4)).thenReturn(peer4);
 
         bootstrapDiscovery = mock(BootstrapDiscovery.class);
-        peerManager = spy(new PeerManager(config, addressBook, messageCentral, events, bootstrapDiscovery, rng, self, getLocalSystem(), interfaces, properties, getUniverse()));
+        peerManager = spy(new PeerManager(config, addressBook, messageCentral, bootstrapDiscovery, rng, getLocalSystem(), interfaces, properties, getUniverse()));
     }
 
     @After
@@ -282,11 +274,6 @@ public class PeerManagerTest extends RadixTest {
             softly.assertThat(peer2PeerPongMessages.size()).isCloseTo(2, offset(1));
 
         });
-        //For each Ping and Pong Message we are broadcasting PeerAvailableEvent. Expected number of invocation is 8
-        //message delivery could be late and last few messages of PeerPing could be lost or
-        //could be executed more times as peerManager started before we scheduling stop operation and some messages could be sent before moment when we are starting to count
-        verify(events, atLeast(8)).broadcast(any(PeerAvailableEvent.class));
-        verify(events, atMost(12)).broadcast(any(PeerAvailableEvent.class));
     }
 
     @Test
@@ -295,7 +282,7 @@ public class PeerManagerTest extends RadixTest {
         when(addressBook.peers()).thenAnswer((Answer<Stream<Peer>>) invocation -> Stream.of(peer1, peer2));
         //start timeout handler immediately
         doReturn(0).when(config).networkPeersProbeTimeout(eq(20000));
-        peerManager = spy(new PeerManager(config, addressBook, messageCentral, events, bootstrapDiscovery, rng, self, getLocalSystem(), interfaces, getProperties(), getUniverse()));
+        peerManager = spy(new PeerManager(config, addressBook, messageCentral, bootstrapDiscovery, rng, getLocalSystem(), interfaces, getProperties(), getUniverse()));
         Semaphore semaphore = new Semaphore(0);
         peerManager.start();
         //allow peer manager to run 1 sec

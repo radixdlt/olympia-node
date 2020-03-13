@@ -64,7 +64,7 @@ public class PublicInetAddressTest {
 	@Before
 	public void setUp() {
 		clock = new AtomicLong(0);
-		dut = new PublicInetAddress("10.10.10.10", 30000, clock::get);
+		dut = new PublicInetAddress(30000, clock::get);
 	}
 
 	@Test
@@ -131,9 +131,6 @@ public class PublicInetAddressTest {
 		assertNotEquals(expectedSecret, Whitebox.getField(PublicInetAddress.class, "secret").get(dut));
 		// make sure unconfirmedAddress changed
 		assertEquals(InetAddress.getByName("3.3.3.3"), Whitebox.getField(PublicInetAddress.class, "unconfirmedAddress").get(dut));
-
-		// get should return local address (10.10.10.10 from constructor)
-		assertEquals(InetAddress.getByName("10.10.10.10"), dut.get());
 	}
 
 	@Test

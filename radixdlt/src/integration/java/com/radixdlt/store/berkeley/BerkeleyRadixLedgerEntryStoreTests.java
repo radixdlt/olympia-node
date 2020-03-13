@@ -31,16 +31,11 @@ import org.assertj.core.api.SoftAssertions;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.radix.exceptions.ValidationException;
 import org.radix.integration.RadixTestWithStores;
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
 import java.util.List;
 import java.util.function.Supplier;
 
 public class BerkeleyRadixLedgerEntryStoreTests extends RadixTestWithStores {
-
-    private static final Logger LOGGER = Logging.getLogger("BerkeleyTempoAtomStoreTests");
 
     private LedgerEntryGenerator ledgerEntryGenerator = new LedgerEntryGenerator();
     private Serialization serialization = Serialization.getDefault();
@@ -51,8 +46,8 @@ public class BerkeleyRadixLedgerEntryStoreTests extends RadixTestWithStores {
     private ECKeyPair identity;
 
     @Before
-    public void setup() throws CryptoException, ValidationException {
-        tempoAtomStore = new BerkeleyLedgerEntryStore(getLocalSystem().getNID(), serialization, this.getDbEnv());
+    public void setup() throws CryptoException {
+        tempoAtomStore = new BerkeleyLedgerEntryStore(serialization, this.getDbEnv());
 
         identity = new ECKeyPair();
         ledgerEntries = ledgerEntryGenerator.createLedgerEntries(identity, 5);

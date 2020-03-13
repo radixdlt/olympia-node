@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.google.inject.name.Named;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
 import com.radixdlt.store.LedgerEntryStoreView;
@@ -67,7 +66,6 @@ public final class IterativeDiscoverer implements AtomDiscoverer {
 	private static final int DEFAULT_REQUEST_QUEUE_CAPACITY = 8192;
 	private static final int DEFAULT_REQUEST_PROCESSOR_THREADS = 2;
 
-	private final EUID self;
 	private final int maxBackoff;
 	private final int responseLimit;
 	private final int requestTimeoutSeconds;
@@ -88,7 +86,6 @@ public final class IterativeDiscoverer implements AtomDiscoverer {
 
 	@Inject
 	public IterativeDiscoverer(
-		@Named("self") EUID self,
 		LedgerEntryStoreView storeView,
 		CursorStore cursorStore,
 		Scheduler scheduler,
@@ -97,7 +94,6 @@ public final class IterativeDiscoverer implements AtomDiscoverer {
 		IterativeDiscovererConfiguration configuration,
 		Universe universe
 	) {
-		this.self = Objects.requireNonNull(self);
 		this.storeView = Objects.requireNonNull(storeView);
 		this.cursorStore = Objects.requireNonNull(cursorStore);
 		this.scheduler = Objects.requireNonNull(scheduler);

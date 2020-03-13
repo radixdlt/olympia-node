@@ -107,7 +107,7 @@ public final class Events
 	private class ExecutorThreadFactory implements ThreadFactory
 	{
 		private int nextID = 0;
-		private final Set<Thread> threads = new HashSet<Thread>();
+		private final Set<Thread> threads = new HashSet<>();
 		public final AtomicInteger cycle = new AtomicInteger(0);
 
 		@Override
@@ -128,8 +128,8 @@ public final class Events
 
 		public EventQueueProcessor()
 		{
-			this.eventQueue = new ConcurrentLinkedQueue<Event>();
-			this.listeners = new ArrayList<EventListeners>();
+			this.eventQueue = new ConcurrentLinkedQueue<>();
+			this.listeners = new ArrayList<>();
 		}
 
 		public boolean offer(Event event)
@@ -237,8 +237,8 @@ public final class Events
 	private final ExecutorService			executor = Executors.newFixedThreadPool(Math.max(1, Runtime.getRuntime().availableProcessors()/2), this.executorThreadFactory);
 	private EventQueueProcessor[] 			eventQueueProcessors = new EventQueueProcessor[Math.max(1, Runtime.getRuntime().availableProcessors()/2)];
 
-	private final Set<Thread> reentrancy = new HashSet<Thread>();
-	private final Map<Class<? extends Event>, EventListeners> listeners = new HashMap<Class<? extends Event>, EventListeners> ();
+	private final Set<Thread> reentrancy = new HashSet<>();
+	private final Map<Class<? extends Event>, EventListeners> listeners = new HashMap<> ();
 
 	Events()
 	{

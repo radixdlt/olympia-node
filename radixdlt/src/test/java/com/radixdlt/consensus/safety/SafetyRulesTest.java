@@ -113,7 +113,6 @@ public class SafetyRulesTest {
 		AID a2Id = makeAID(12);
 		AID a3Id = makeAID(13);
 		AID a4Id = makeAID(14);
-		AID a5Id = makeAID(15);
 		AID b1Id = makeAID(21);
 		AID b2Id = makeAID(22);
 		AID b3Id = makeAID(23);

@@ -18,6 +18,7 @@
 package org.radix.network2.messaging;
 
 import com.radixdlt.serialization.DsonOutput.Output;
+import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.universe.Universe;
 import org.junit.Before;
@@ -32,7 +33,6 @@ import org.radix.network2.messaging.MessagingDummyConfigurations.DummyTransport;
 import org.radix.network2.messaging.MessagingDummyConfigurations.DummyTransportOutboundConnection;
 import org.radix.network2.transport.StaticTransportMetadata;
 import org.radix.network2.transport.TransportInfo;
-import org.radix.properties.RuntimeProperties;
 import org.radix.universe.system.LocalSystem;
 import org.radix.universe.system.events.QueueFullEvent;
 import org.xerial.snappy.Snappy;

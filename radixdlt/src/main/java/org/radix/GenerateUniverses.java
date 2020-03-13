@@ -36,10 +36,12 @@ import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.utils.Offset;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.keys.Keys;
+import com.radixdlt.properties.RuntimeProperties;
+
 import org.radix.exceptions.ValidationException;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.properties.RuntimeProperties;
+
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.universe.Universe;

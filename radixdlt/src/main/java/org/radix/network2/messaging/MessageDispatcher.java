@@ -32,7 +32,6 @@ import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.network.Interfaces;
 import org.radix.network.messaging.Message;
-import org.radix.network.messaging.Message.Direction;
 import org.radix.network.messaging.SignedMessage;
 import org.radix.network2.NetworkLegacyPatching;
 import org.radix.network2.TimeSupplier;
@@ -83,8 +82,6 @@ class MessageDispatcher {
 			SystemMetaData.ifPresent( a -> a.increment("messages.outbound.aborted"));
 			return SendResult.failure(new IOException(msg));
 		}
-
-		message.setDirection(Direction.OUTBOUND);
 
 		try {
 			if (message instanceof SignedMessage) {

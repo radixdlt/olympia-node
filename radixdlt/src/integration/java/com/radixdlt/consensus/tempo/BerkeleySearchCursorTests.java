@@ -118,7 +118,6 @@ public class BerkeleySearchCursorTests extends RadixTestWithStores {
 
 		StoreIndex index = new StoreIndex(PREFIX, identity.getUID().toByteArray());
 		List<LedgerEntry> ledgerEntries = ledgerEntryGenerator.createLedgerEntries(identity, 2);
-		int logicalClock = 0;
 		for (LedgerEntry ledgerEntry : ledgerEntries) {
 			StoreIndex uniqueIndex = new StoreIndex(PREFIX, ledgerEntry.getAID().getBytes());
 			getStore().store(ledgerEntry, ImmutableSet.of(uniqueIndex), ImmutableSet.of(index));
