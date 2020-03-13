@@ -34,6 +34,7 @@ import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.AtomEventListener;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.middleware.AtomCheckHook;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.middleware2.processing.EngineAtomEventListener;
@@ -116,7 +117,6 @@ public class MiddlewareModule extends AbstractModule {
 		);
 
 		radixEngine.addAtomEventListener(new EngineAtomEventListener(serialization));
-		radixEngine.start();
 
 		initGenesis(radixEngine, store, universe);
 
@@ -131,57 +131,15 @@ public class MiddlewareModule extends AbstractModule {
 
 
 	private void initGenesis(RadixEngine radixEngine, LedgerEntryStore store, Universe universe) {
-		try {
-			LinkedList<AID> atomIds = new LinkedList<>();
-			for (Atom atom : universe.getGenesis()) {
-				if (!store.contains(atom.getAID())) {
-					radixEngine.store(atom,
-						new AtomEventListener() {
-							@Override
-							public void onCMSuccess(Atom atom) {
-								log.debug("Genesis Atom " + atom.getAID() + " stored to atom store");
-							}
-
-							@Override
-							public void onCMError(Atom atom, CMError error) {
-								log.fatal("Failed to addAtom genesis Atom: " + error.getErrorCode() + " "
-									+ error.getErrMsg() + " " + error.getDataPointer() + "\n"
-									+ atom + "\n"
-									+ error.getCmValidationState().toString());
-								System.exit(-1);
-							}
-
-							@Override
-							public void onVirtualStateConflict(Atom atom, DataPointer dp) {
-								log.fatal("Failed to addAtom genesis Atom: Virtual State Conflict");
-								System.exit(-1);
-							}
-
-							@Override
-							public void onStateConflict(Atom atom, DataPointer dp, Atom conflictAtom) {
-								log.fatal("Failed to addAtom genesis Atom: State Conflict");
-								System.exit(-1);
-							}
-
-							@Override
-							public void onStateMissingDependency(AID atomId, Particle particle) {
-								log.fatal("Failed to addAtom genesis Atom: Missing Dependency");
-								System.exit(-1);
-							}
-						});
+		for (Atom atom : universe.getGenesis()) {
+			if (!store.contains(atom.getAID())) {
+				try {
+					radixEngine.store(atom);
+				} catch (Exception e) {
+					log.fatal("Failed to addAtom genesis Atom: " + e.getMessage());
+					System.exit(-1);
 				}
 			}
-
-			// Wait for atoms
-			for (AID atomID : atomIds) {
-				while (!store.contains(atomID)) {
-					TimeUnit.MILLISECONDS.sleep(100);
-				}
-			}
-
-		} catch (Exception ex) {
-			log.fatal("Failed to addAtom genesis Atom", ex);
-			System.exit(-1);
 		}
 	}
 }
