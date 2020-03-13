@@ -256,7 +256,7 @@ public class EventCoordinatorTest {
 		AID aid = makeAID(7); // no special significance
 		when(proposedAtom.getAID()).thenReturn(aid);
 		when(proposedVertex.getAtom()).thenReturn(proposedAtom);
-		doThrow(new RadixEngineException(DataPointer.ofAtom(), RadixEngineErrorCode.CM_ERROR))
+		doThrow(new RadixEngineException(RadixEngineErrorCode.CM_ERROR, DataPointer.ofAtom()))
 			.when(radixEngine).store(eq(proposedAtom));
 		eventCoordinator.processProposal(proposedVertex);
 		verify(mempool, times(1)).removeRejectedAtom(eq(aid));
