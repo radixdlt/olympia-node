@@ -28,11 +28,8 @@ import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyViolationException;
 import com.radixdlt.consensus.safety.VoteResult;
-import com.radixdlt.constraintmachine.CMError;
-import com.radixdlt.constraintmachine.DataPointer;
-import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.engine.AtomEventListener;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.network.EventCoordinatorNetworkSender;
 import org.radix.logging.Logger;
@@ -132,49 +129,30 @@ public final class EventCoordinator {
 	}
 
 	public void processProposal(Vertex proposedVertex) {
-		Atom proposedAtom = proposedVertex.getAtom();
+		Atom atom = proposedVertex.getAtom();
 
-		// TODO: Fix this interface
-		engine.store(proposedAtom, new AtomEventListener() {
-			@Override
-			public void onCMError(Atom atom, CMError error) {
-				mempool.removeRejectedAtom(atom.getAID());
-			}
+		try {
+			engine.store(atom);
+		} catch (RadixEngineException e) {
+			mempool.removeRejectedAtom(atom.getAID());
+			return;
+		}
 
-			@Override
-			public void onStateStore(Atom atom) {
-				mempool.removeCommittedAtom(atom.getAID());
+		mempool.removeCommittedAtom(atom.getAID());
 
-				vertexStore.insertVertex(proposedVertex);
+		vertexStore.insertVertex(proposedVertex);
 
-				final VoteResult voteResult;
-				try {
-					voteResult = safetyRules.voteFor(proposedVertex);
-					final Vote vote = voteResult.getVote();
-					networkSender.sendVote(vote);
-					// TODO do something on commit
-					voteResult.getCommittedAtom()
-						.ifPresent(aid -> log.info("Committed atom " + aid));
-				} catch (SafetyViolationException e) {
-					log.error("Rejected " + proposedVertex, e);
-				}
-			}
-
-			@Override
-			public void onVirtualStateConflict(Atom atom, DataPointer issueParticle) {
-				mempool.removeRejectedAtom(atom.getAID());
-			}
-
-			@Override
-			public void onStateConflict(Atom atom, DataPointer issueParticle, Atom conflictingAtom) {
-				mempool.removeRejectedAtom(atom.getAID());
-			}
-
-			@Override
-			public void onStateMissingDependency(AID atomId, Particle particle) {
-				mempool.removeRejectedAtom(proposedAtom.getAID());
-			}
-		});
+		final VoteResult voteResult;
+		try {
+			voteResult = safetyRules.voteFor(proposedVertex);
+			final Vote vote = voteResult.getVote();
+			networkSender.sendVote(vote);
+			// TODO do something on commit
+			voteResult.getCommittedAtom()
+				.ifPresent(aid -> log.info("Committed atom " + aid));
+		} catch (SafetyViolationException e) {
+			log.error("Rejected " + proposedVertex, e);
+		}
 	}
 
 	private QuorumCertificate makeGenesisQC() {
