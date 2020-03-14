@@ -19,13 +19,8 @@ package org.radix.common.executors;
 
 import java.util.concurrent.TimeUnit;
 
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
-
 public abstract class ScheduledExecutable extends Executable
 {
-	private static final Logger log = Logging.getLogger();
-
 	private final long initialDelay;
 	private final long recurrentDelay;
 	private final TimeUnit unit;

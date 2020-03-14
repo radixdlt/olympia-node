@@ -82,20 +82,6 @@ public class RadixSystem extends BasicContainer
 		this.shards = new ShardSpace(0L, ShardSpace.SHARD_RANGE_FULL);
 	}
 
-	public RadixSystem(RadixSystem system)
-	{
-		super();
-
- 		this.agent = system.getAgent();
- 		this.agentVersion = system.getAgentVersion();
-		this.planck = system.getPlanck();
-		this.protocolVersion = system.getProtocolVersion();
-		this.timestamp = system.getTimestamp();
-		this.transports = system.transports;
-		this.key = system.getKey();
-		this.shards = system.shards;
-	}
-
 	public RadixSystem(ECPublicKey key, String agent, int agentVersion, int protocolVersion, ImmutableList<TransportInfo> transports)
 	{
 		this();

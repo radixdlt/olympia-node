@@ -16,6 +16,7 @@
  */
 
 apply plugin: 'jacoco'
+apply plugin: 'checkstyle'
 apply plugin: 'application'
 apply plugin: 'distribution'
 apply plugin: 'project-report'
@@ -47,6 +48,27 @@ sourceSets {
 configurations {
     integrationTestCompile.extendsFrom testCompile
     integrationTestRuntime.extendsFrom testRuntime
+}
+
+checkstyle {
+    toolVersion '8.10.1'
+    showViolations = true
+}
+
+checkstyleMain {
+    configFile project.file('config/checkstyle/checkstyle.xml')
+    exclude "**/org/radix/**/*.java"
+}
+
+checkstyleTest {
+    // Largely the same as the main file, but extended snake case allowed
+    configFile project.file('config/checkstyle/checkstyle_test.xml')
+    exclude "**/org/radix/**/*.java"
+}
+
+checkstyleIntegrationTest {
+    // Largely the same as the main file, but extended snake case allowed
+    configFile project.file('config/checkstyle/checkstyle_test.xml')
 }
 
 test {

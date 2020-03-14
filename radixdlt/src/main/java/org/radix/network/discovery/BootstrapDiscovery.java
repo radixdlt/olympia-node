@@ -36,17 +36,16 @@ import java.util.Set;
 import com.google.inject.Inject;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.network.SSLFix;
 import org.radix.network2.addressbook.AddressBook;
 import org.radix.network2.addressbook.Peer;
 import org.radix.network2.addressbook.PeerPredicate;
 import org.radix.network2.transport.StaticTransportMetadata;
 import org.radix.network2.transport.TransportInfo;
 import org.radix.network2.transport.udp.UDPConstants;
-import org.radix.properties.RuntimeProperties;
 
 import com.google.common.collect.Lists;
 import com.google.common.net.HostAndPort;
+import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.universe.Universe;
 
 public class BootstrapDiscovery
@@ -125,10 +124,7 @@ public class BootstrapDiscovery
 		Whitelist whitelist = Whitelist.from(properties);
 		for (String host : hosts) {
 			host = host.trim();
-			if (host.isEmpty()) {
-				continue;
-			}
-			if (!whitelist.isWhitelisted(host)) {
+			if (host.isEmpty() || !whitelist.isWhitelisted(host)) {
 				continue;
 			}
 			try {

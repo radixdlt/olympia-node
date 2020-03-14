@@ -18,7 +18,7 @@
 package com.radixdlt.delivery;
 
 import com.google.inject.AbstractModule;
-import org.radix.properties.RuntimeProperties;
+import com.radixdlt.properties.RuntimeProperties;
 
 public class LazyRequestDelivererModule extends AbstractModule {
 	private final LazyRequestDelivererConfiguration configuration;

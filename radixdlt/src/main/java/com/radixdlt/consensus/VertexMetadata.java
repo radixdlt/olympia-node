@@ -115,10 +115,10 @@ public final class VertexMetadata {
 		if (o instanceof VertexMetadata) {
 			VertexMetadata other = (VertexMetadata) o;
 			return
-				Objects.equals(this.round, other.round) &&
-				Objects.equals(this.aid, other.aid) &&
-				Objects.equals(this.parentRound, other.parentRound) &&
-				Objects.equals(this.parentAid, other.parentAid);
+				Objects.equals(this.round, other.round)
+				&& Objects.equals(this.aid, other.aid)
+				&& Objects.equals(this.parentRound, other.parentRound)
+				&& Objects.equals(this.parentAid, other.parentAid);
 		}
 		return false;
 	}

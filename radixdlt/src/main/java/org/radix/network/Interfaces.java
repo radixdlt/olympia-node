@@ -40,7 +40,7 @@ public class Interfaces
 		LAN, WAN
 	}
 
-	private Map<Domain, Set<InetAddress>> addresses = new HashMap<Domain, Set<InetAddress>>();
+	private Map<Domain, Set<InetAddress>> addresses = new HashMap<>();
 
 	public Interfaces()
 	{
@@ -84,7 +84,7 @@ public class Interfaces
     	}
 	}
 
-	public List<InetAddress> getInterfaceInformation(NetworkInterface networkInterface) throws SocketException
+	public List<InetAddress> getInterfaceInformation(NetworkInterface networkInterface)
 	{
 		networklog.info("Display name: "+networkInterface.getDisplayName());
 		networklog.info("Name: "+networkInterface.getName());

@@ -29,7 +29,6 @@ import com.radixdlt.constraintmachine.DataPointer;
 import org.radix.validation.ConstraintMachineValidationException;
 import com.radixdlt.serialization.Serialization;
 
-import java.io.IOException;
 import java.util.function.Consumer;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -42,12 +41,16 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 
 public class SubmitAtomAndSubscribeEpicTest {
+	interface ConsumerJSONObject extends Consumer<JSONObject> {
+		// Nothing here
+	}
+
 	@Test
-	public void testAtomValidationError() throws IOException {
+	public void testAtomValidationError() {
 		AtomsService atomsService = mock(AtomsService.class);
 		Schema schema = mock(Schema.class);
 		Serialization serializer = mock(Serialization.class);
-		Consumer<JSONObject> callback = mock(Consumer.class);
+		Consumer<JSONObject> callback = mock(ConsumerJSONObject.class);
 		JSONObject action = mock(JSONObject.class);
 		JSONObject params = mock(JSONObject.class);
 		JSONObject jsonAtom = new JSONObject();

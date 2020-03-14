@@ -42,7 +42,8 @@ public final class LedgerEntry {
 	@DsonOutput(value = {DsonOutput.Output.ALL})
 	private final AID aid;
 
-	private LedgerEntry() {
+	LedgerEntry() {
+		// Serializer only
 		this.aid = null;
 		this.content = null;
 	}

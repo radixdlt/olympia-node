@@ -17,7 +17,7 @@
 
 package com.radixdlt.discovery;
 
-import org.radix.properties.RuntimeProperties;
+import com.radixdlt.properties.RuntimeProperties;
 
 /**
  * Static configuration for an {@link IterativeDiscoverer}

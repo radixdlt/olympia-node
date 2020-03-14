@@ -82,7 +82,7 @@ public final class EventCoordinator {
 		if (!proposerElection.isValidProposer(self, round)) {
 			return;
 		}
-        
+
 		List<Atom> atoms = mempool.getAtoms(1, Sets.newHashSet());
 		if (!atoms.isEmpty()) {
 			QuorumCertificate highestQC = vertexStore.getHighestQC()
