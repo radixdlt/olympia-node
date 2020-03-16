@@ -28,8 +28,6 @@ import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyViolationException;
 import com.radixdlt.consensus.safety.VoteResult;
-import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.network.EventCoordinatorNetworkSender;
 import org.radix.logging.Logger;
@@ -47,7 +45,6 @@ public final class EventCoordinator {
 	private static final AID GENESIS_ID = AID.ZERO;
 
 	private final VertexStore vertexStore;
-	private final RadixEngine engine;
 	private final Mempool mempool;
 	private final EventCoordinatorNetworkSender networkSender;
 	private final Pacemaker pacemaker;
@@ -62,7 +59,6 @@ public final class EventCoordinator {
 		SafetyRules safetyRules,
 		Pacemaker pacemaker,
 		VertexStore vertexStore,
-		RadixEngine engine,
 		ProposerElection proposerElection,
 		@Named("self") EUID self
 	) {
@@ -71,7 +67,6 @@ public final class EventCoordinator {
 		this.safetyRules = Objects.requireNonNull(safetyRules);
 		this.pacemaker = Objects.requireNonNull(pacemaker);
 		this.vertexStore = Objects.requireNonNull(vertexStore);
-        this.engine = Objects.requireNonNull(engine);
 		this.proposerElection = Objects.requireNonNull(proposerElection);
 		this.self = Objects.requireNonNull(self);
 	}
@@ -132,15 +127,13 @@ public final class EventCoordinator {
 		Atom atom = proposedVertex.getAtom();
 
 		try {
-			engine.store(atom);
-		} catch (RadixEngineException e) {
+			vertexStore.insertVertex(proposedVertex);
+		} catch (VertexInsertionException e) {
 			mempool.removeRejectedAtom(atom.getAID());
 			return;
 		}
 
 		mempool.removeCommittedAtom(atom.getAID());
-
-		vertexStore.insertVertex(proposedVertex);
 
 		final VoteResult voteResult;
 		try {

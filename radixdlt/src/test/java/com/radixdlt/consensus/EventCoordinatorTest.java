@@ -61,7 +61,6 @@ public class EventCoordinatorTest {
 		SafetyRules safetyRules = mock(SafetyRules.class);
 		Pacemaker pacemaker = mock(Pacemaker.class);
 		VertexStore vertexStore = mock(VertexStore.class);
-		RadixEngine radixEngine = mock(RadixEngine.class);
 		ProposerElection proposerElection = mock(ProposerElection.class);
 
 		EventCoordinator eventCoordinator = new EventCoordinator(
@@ -70,7 +69,6 @@ public class EventCoordinatorTest {
 			safetyRules,
 			pacemaker,
 			vertexStore,
-			radixEngine,
 			proposerElection,
 			SELF
 		);
@@ -93,7 +91,6 @@ public class EventCoordinatorTest {
 		SafetyRules safetyRules = mock(SafetyRules.class);
 		Pacemaker pacemaker = mock(Pacemaker.class);
 		VertexStore vertexStore = mock(VertexStore.class);
-		RadixEngine radixEngine = mock(RadixEngine.class);
 		ProposerElection proposerElection = mock(ProposerElection.class);
 
 		EventCoordinator eventCoordinator = new EventCoordinator(
@@ -102,7 +99,6 @@ public class EventCoordinatorTest {
 			safetyRules,
 			pacemaker,
 			vertexStore,
-			radixEngine,
 			proposerElection,
 			SELF
 		);
@@ -126,7 +122,6 @@ public class EventCoordinatorTest {
 		SafetyRules safetyRules = mock(SafetyRules.class);
 		Pacemaker pacemaker = mock(Pacemaker.class);
 		VertexStore vertexStore = mock(VertexStore.class);
-		RadixEngine radixEngine = mock(RadixEngine.class);
 		ProposerElection proposerElection = mock(ProposerElection.class);
 
 		EventCoordinator eventCoordinator = new EventCoordinator(
@@ -135,7 +130,6 @@ public class EventCoordinatorTest {
 			safetyRules,
 			pacemaker,
 			vertexStore,
-			radixEngine,
 			proposerElection,
 			SELF
 		);
@@ -152,7 +146,6 @@ public class EventCoordinatorTest {
 		SafetyRules safetyRules = mock(SafetyRules.class);
 		Pacemaker pacemaker = mock(Pacemaker.class);
 		VertexStore vertexStore = mock(VertexStore.class);
-		RadixEngine radixEngine = mock(RadixEngine.class);
 		ProposerElection proposerElection = mock(ProposerElection.class);
 
 		EventCoordinator eventCoordinator = new EventCoordinator(
@@ -161,7 +154,6 @@ public class EventCoordinatorTest {
 			safetyRules,
 			pacemaker,
 			vertexStore,
-			radixEngine,
 			proposerElection,
 			SELF
 		);
@@ -178,7 +170,6 @@ public class EventCoordinatorTest {
 		SafetyRules safetyRules = mock(SafetyRules.class);
 		Pacemaker pacemaker = mock(Pacemaker.class);
 		VertexStore vertexStore = mock(VertexStore.class);
-		RadixEngine radixEngine = mock(RadixEngine.class);
 		ProposerElection proposerElection = mock(ProposerElection.class);
 
 		EventCoordinator eventCoordinator = new EventCoordinator(
@@ -187,7 +178,6 @@ public class EventCoordinatorTest {
 			safetyRules,
 			pacemaker,
 			vertexStore,
-			radixEngine,
 			proposerElection,
 			SELF
 		);
@@ -206,7 +196,6 @@ public class EventCoordinatorTest {
 		SafetyRules safetyRules = mock(SafetyRules.class);
 		Pacemaker pacemaker = mock(Pacemaker.class);
 		VertexStore vertexStore = mock(VertexStore.class);
-		RadixEngine radixEngine = mock(RadixEngine.class);
 		ProposerElection proposerElection = mock(ProposerElection.class);
 
 		EventCoordinator eventCoordinator = new EventCoordinator(
@@ -215,7 +204,6 @@ public class EventCoordinatorTest {
 			safetyRules,
 			pacemaker,
 			vertexStore,
-			radixEngine,
 			proposerElection,
 			SELF
 		);
@@ -234,7 +222,6 @@ public class EventCoordinatorTest {
 		SafetyRules safetyRules = mock(SafetyRules.class);
 		Pacemaker pacemaker = mock(Pacemaker.class);
 		VertexStore vertexStore = mock(VertexStore.class);
-		RadixEngine radixEngine = mock(RadixEngine.class);
 		ProposerElection proposerElection = mock(ProposerElection.class);
 
 		EventCoordinator eventCoordinator = new EventCoordinator(
@@ -243,7 +230,6 @@ public class EventCoordinatorTest {
 			safetyRules,
 			pacemaker,
 			vertexStore,
-			radixEngine,
 			proposerElection,
 			SELF
 		);
@@ -253,8 +239,8 @@ public class EventCoordinatorTest {
 		AID aid = makeAID(7); // no special significance
 		when(proposedAtom.getAID()).thenReturn(aid);
 		when(proposedVertex.getAtom()).thenReturn(proposedAtom);
-		doThrow(new RadixEngineException(RadixEngineErrorCode.CM_ERROR, DataPointer.ofAtom()))
-			.when(radixEngine).store(eq(proposedAtom));
+		doThrow(new VertexInsertionException(new RadixEngineException(RadixEngineErrorCode.CM_ERROR, DataPointer.ofAtom())))
+			.when(vertexStore).insertVertex(any());
 		eventCoordinator.processProposal(proposedVertex);
 		verify(mempool, times(1)).removeRejectedAtom(eq(aid));
 	}
@@ -266,7 +252,6 @@ public class EventCoordinatorTest {
 		SafetyRules safetyRules = mock(SafetyRules.class);
 		Pacemaker pacemaker = mock(Pacemaker.class);
 		VertexStore vertexStore = mock(VertexStore.class);
-		RadixEngine radixEngine = mock(RadixEngine.class);
 		ProposerElection proposerElection = mock(ProposerElection.class);
 
 		EventCoordinator eventCoordinator = new EventCoordinator(
@@ -275,7 +260,6 @@ public class EventCoordinatorTest {
 			safetyRules,
 			pacemaker,
 			vertexStore,
-			radixEngine,
 			proposerElection,
 			SELF
 		);
@@ -285,7 +269,6 @@ public class EventCoordinatorTest {
 		AID aid = makeAID(7); // no special significance
 		when(proposedAtom.getAID()).thenReturn(aid);
 		when(proposedVertex.getAtom()).thenReturn(proposedAtom);
-		doAnswer(invocation -> null).when(radixEngine).store(eq(proposedAtom));
 		VoteResult voteResult = mock(VoteResult.class);
 		Vote voteMessage = mock(Vote.class);
 		when(voteResult.getVote()).thenReturn(voteMessage);

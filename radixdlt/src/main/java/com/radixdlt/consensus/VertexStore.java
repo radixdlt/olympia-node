@@ -19,18 +19,23 @@ package com.radixdlt.consensus;
 
 import com.google.inject.Inject;
 
+import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.engine.RadixEngineException;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
  * Manages the BFT Vertex chain
  */
 public final class VertexStore {
+	private final RadixEngine engine;
 	private final HashSet<Vertex> vertices = new HashSet<>();
 	private QuorumCertificate highestQC = null;
 
 	@Inject
-	public VertexStore() {
+	public VertexStore(RadixEngine engine) {
+		this.engine = Objects.requireNonNull(engine);
 	}
 
 	public void syncToQC(QuorumCertificate qc) {
@@ -43,8 +48,15 @@ public final class VertexStore {
 		}
 	}
 
-	public void insertVertex(Vertex vertex) {
+	public void insertVertex(Vertex vertex) throws VertexInsertionException {
 		this.syncToQC(vertex.getQC());
+
+		try {
+			this.engine.store(vertex.getAtom());
+		} catch (RadixEngineException e) {
+			throw new VertexInsertionException(e);
+		}
+
 		vertices.add(vertex);
 	}
 
