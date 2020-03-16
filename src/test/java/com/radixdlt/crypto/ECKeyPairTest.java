@@ -21,10 +21,7 @@ import com.radixdlt.TestSetupUtils;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
-
 import java.nio.charset.StandardCharsets;
 
 public class ECKeyPairTest {
@@ -32,9 +29,6 @@ public class ECKeyPairTest {
 	public static void beforeClass() {
 		TestSetupUtils.installBouncyCastleProvider();
 	}
-
-	@Rule
-	public ExpectedException thrown = ExpectedException.none();
 
 	@Test
 	public void equalsContract() {

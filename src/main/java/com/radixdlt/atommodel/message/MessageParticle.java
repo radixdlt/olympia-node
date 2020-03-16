@@ -62,7 +62,8 @@ public final class MessageParticle extends Particle {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private long nonce;
 
-	private MessageParticle() {
+	MessageParticle() {
+		// Serializer only
 		super(ImmutableSet.of());
 	}
 

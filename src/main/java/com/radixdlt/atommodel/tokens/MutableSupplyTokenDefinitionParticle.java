@@ -62,7 +62,8 @@ public final class MutableSupplyTokenDefinitionParticle extends Particle {
 
 	private Map<TokenTransition, TokenPermission> tokenPermissions;
 
-	private MutableSupplyTokenDefinitionParticle() {
+	MutableSupplyTokenDefinitionParticle() {
+		// Serializer only
 		super();
 	}
 
