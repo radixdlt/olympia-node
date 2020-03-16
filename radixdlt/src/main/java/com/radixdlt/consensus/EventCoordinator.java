@@ -124,7 +124,8 @@ public final class EventCoordinator {
 		Optional<QuorumCertificate> potentialQc = this.vertexStore.insertVote(vote, this.quorumRequirements);
 		if (potentialQc.isPresent()) {
 			QuorumCertificate qc = potentialQc.get();
-			this.safetyRules.process(qc);
+			this.safetyRules.process(qc, vote.getVertexMetadata().getView())
+				.ifPresent(aid -> log.info("committed " + aid)); // TODO act on commit
 			this.vertexStore.syncToQC(qc);
 
 			// start new view if pacemaker feels like it
@@ -174,14 +175,9 @@ public final class EventCoordinator {
 
 				vertexStore.insertVertex(proposedVertex);
 
-				final VoteResult voteResult;
 				try {
-					voteResult = safetyRules.voteFor(proposedVertex);
-					final Vote vote = voteResult.getVote();
+					final Vote vote = safetyRules.voteFor(proposedVertex);
 					networkSender.sendVote(vote);
-					// TODO do something on commit
-					voteResult.getCommittedAtom()
-						.ifPresent(aid -> log.info("Committed atom " + aid));
 				} catch (SafetyViolationException e) {
 					log.error("Rejected " + proposedVertex, e);
 				} catch (CryptoException e) {
@@ -207,7 +203,7 @@ public final class EventCoordinator {
 	}
 
 	private QuorumCertificate makeGenesisQC() {
-		VertexMetadata genesisMetadata = new VertexMetadata(GENESIS_VIEW, GENESIS_ID, GENESIS_VIEW, GENESIS_ID);
+		VertexMetadata genesisMetadata = new VertexMetadata(GENESIS_VIEW, GENESIS_ID);
 		return new QuorumCertificate(genesisMetadata, new ECDSASignatures());
 	}
 }

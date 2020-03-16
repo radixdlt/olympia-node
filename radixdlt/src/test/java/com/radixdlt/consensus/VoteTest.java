@@ -22,7 +22,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.radixdlt.common.AID;
-import com.radixdlt.common.EUID;
 import com.radixdlt.utils.Ints;
 
 import static org.junit.Assert.*;
@@ -44,7 +43,7 @@ public class VoteTest {
 		View view = parentView.next();
 		AID aid = aidOf(123456);
 
-		this.vertexMetadata = new VertexMetadata(view, aid, parentView, parentAid);
+		this.vertexMetadata = new VertexMetadata(view, aid);
 
 		this.testObject = new Vote(ADDRESS, vertexMetadata, null);
 	}

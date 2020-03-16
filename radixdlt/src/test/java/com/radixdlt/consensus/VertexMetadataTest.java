@@ -38,7 +38,7 @@ public class VertexMetadataTest {
 		View view = parentView.next();
 		AID aid = aidOf(123456);
 
-		this.testObject = new VertexMetadata(view, aid, parentView, parentAid);
+		this.testObject = new VertexMetadata(view, aid);
 	}
 
 	@Test

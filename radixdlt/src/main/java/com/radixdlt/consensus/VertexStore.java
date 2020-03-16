@@ -32,7 +32,7 @@ import java.util.Set;
  * Manages the BFT Vertex chain
  */
 public final class VertexStore {
-	private final Set<Vertex> vertices = new HashSet<>();
+	private final Map<View, Vertex> vertices = new HashMap<>();
 	private final Map<VertexMetadata, ECDSASignatures> pendingVotes = new HashMap<>();
 	private QuorumCertificate highestQC = null;
 
@@ -78,7 +78,11 @@ public final class VertexStore {
 
 	public void insertVertex(Vertex vertex) {
 		this.syncToQC(vertex.getQC());
-		vertices.add(vertex);
+		vertices.put(vertex.getView(), vertex);
+	}
+
+	public Vertex getVertex(View view) {
+		return vertices.get(view);
 	}
 
 	public Optional<QuorumCertificate> getHighestQC() {

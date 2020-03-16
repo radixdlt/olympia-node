@@ -18,41 +18,49 @@
 package com.radixdlt.consensus.safety;
 
 import com.google.inject.Inject;
+import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.View;
 
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * The state maintained to ensure the safety of the consensus system.
  */
 final class SafetyState {
-	final View lastVotedView; // the last view this node voted on
-	final View lockedView; // the highest 2-chain head
+	private final View lastVotedView; // the last view this node voted on (and is thus safe)
+	private final View lockedView; // the highest 2-chain head
+	private final QuorumCertificate genericQC; // the highest 1-chain head
 
 	@Inject
 	protected SafetyState() {
-		this(View.of(0L), View.of(0L));
+		this(View.of(0L), View.of(0L), null);
 	}
 
-	public SafetyState(View lastVotedView, View lockedView) {
-		this.lastVotedView = lastVotedView;
-		this.lockedView = lockedView;
+	public SafetyState(View lastVotedView, View lockedView, QuorumCertificate genericQC) {
+		this.lastVotedView = Objects.requireNonNull(lastVotedView);
+		this.lockedView = Objects.requireNonNull(lockedView);
+		this.genericQC = genericQC;
 	}
 
 	public SafetyState(SafetyState other) {
-		this(other.lastVotedView, other.lockedView);
+		this(other.lastVotedView, other.lockedView, other.genericQC);
 	}
 
 	public SafetyState withLastVotedView(View lastVotedView) {
-		return new SafetyState(lastVotedView, this.lockedView);
+		return new SafetyState(lastVotedView, this.lockedView, this.genericQC);
 	}
 
 	public SafetyState withLockedView(View lockedView) {
-		return new SafetyState(this.lastVotedView, lockedView);
+		return new SafetyState(this.lastVotedView, lockedView, this.genericQC);
+	}
+
+	public SafetyState withGenericQC(QuorumCertificate genericQC) {
+		return new SafetyState(this.lastVotedView, this.lockedView, genericQC);
 	}
 
 	public static SafetyState initialState() {
-		return new SafetyState(View.of(0L), View.of(0L));
+		return new SafetyState(View.of(0L), View.of(0L), null);
 	}
 
 	@Override
@@ -78,6 +86,23 @@ final class SafetyState {
 		return "SafetyState{" +
 			"lastVotedView=" + lastVotedView +
 			", lockedView=" + lockedView +
+			", genericQC=" + genericQC +
 			'}';
+	}
+
+	public View getLastVotedView() {
+		return lastVotedView;
+	}
+
+	public Optional<QuorumCertificate> getGenericQC() {
+		return Optional.ofNullable(genericQC);
+	}
+
+	public Optional<View> getGenericView() {
+		return getGenericQC().map(QuorumCertificate::getView);
+	}
+
+	public View getLockedView() {
+		return lockedView;
 	}
 }

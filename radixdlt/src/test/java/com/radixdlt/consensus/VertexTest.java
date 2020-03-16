@@ -46,7 +46,7 @@ public class VertexTest {
 		View view = parentView.next();
 		AID aid = aidOf(123456);
 
-		this.vertexMetadata = new VertexMetadata(view, aid, parentView, parentAid);
+		this.vertexMetadata = new VertexMetadata(view, aid);
 
 		RadixAddress author = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
 		this.vote = new Vote(author, this.vertexMetadata, null);

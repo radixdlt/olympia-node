@@ -56,10 +56,6 @@ public final class QuorumCertificate {
 		return vertexMetadata.getView();
 	}
 
-	public View getParentView() {
-		return vertexMetadata.getParentView();
-	}
-
 	public VertexMetadata getVertexMetadata() {
 		return vertexMetadata;
 	}

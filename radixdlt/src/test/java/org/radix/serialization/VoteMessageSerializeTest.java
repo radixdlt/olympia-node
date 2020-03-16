@@ -40,7 +40,7 @@ public class VoteMessageSerializeTest extends SerializeMessageObject<VoteMessage
 		AID aid = aidOf(123456);
 
 		RadixAddress author = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
-		VertexMetadata vertexMetadata = new VertexMetadata(view, aid, parentView, parentAid);
+		VertexMetadata vertexMetadata = new VertexMetadata(view, aid);
 
 		Vote vote = new Vote(author, vertexMetadata, null);
 
