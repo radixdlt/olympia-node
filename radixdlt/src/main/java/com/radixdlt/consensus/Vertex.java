@@ -18,7 +18,6 @@
 package com.radixdlt.consensus;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.common.AID;
 import com.radixdlt.common.Atom;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
@@ -31,7 +30,7 @@ import java.util.Objects;
 import javax.annotation.concurrent.Immutable;
 
 /**
- * Vertex in the BFT Chain
+ * Vertex in a Vertex graph
  */
 @Immutable
 @SerializerId2("consensus.vertex")
@@ -57,10 +56,39 @@ public final class Vertex {
 		this.atom = null;
 	}
 
-	public Vertex(QuorumCertificate qc, Round round, Atom atom) {
+	private Vertex(QuorumCertificate qc, Round round, Atom atom) {
 		this.qc = qc;
-		this.round = Objects.requireNonNull(round);
+		this.round = round;
 		this.atom = atom;
+	}
+
+	public static Vertex createGenesis(Atom atom) {
+		return new Vertex(null, Round.of(0), atom);
+	}
+
+	public static Vertex createVertex(QuorumCertificate qc, Round round, Atom atom) {
+		Objects.requireNonNull(qc);
+		Objects.requireNonNull(round);
+
+		if (round.number() == 0) {
+			throw new IllegalArgumentException("Only genesis can have round 0.");
+		}
+
+		return new Vertex(qc, round, atom);
+	}
+
+	// TODO: Use a larger type (e.g. 512-bit SHA)
+	public Integer getId() {
+		return this.hashCode();
+	}
+
+	// TODO: Use a larger type (e.g. 512-bit SHA)
+	public Integer getParentId() {
+		return qc == null ? null : qc.getVertexMetadata().getId();
+	}
+
+	public Round getParentRound() {
+		return qc == null ? Round.of(0) : qc.getRound();
 	}
 
 	public QuorumCertificate getQC() {
@@ -69,10 +97,6 @@ public final class Vertex {
 
 	public Round getRound() {
 		return round;
-	}
-
-	public AID getAID() {
-		return atom.getAID();
 	}
 
 	public Atom getAtom() {
@@ -87,7 +111,7 @@ public final class Vertex {
 
 	@JsonProperty("round")
 	private void setSerializerRound(Long number) {
-		this.round = number == null ? null : Round.of(number.longValue());
+		this.round = number == null ? null : Round.of(number);
 	}
 
 	@Override

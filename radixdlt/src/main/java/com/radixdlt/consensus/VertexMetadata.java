@@ -22,7 +22,6 @@ import java.util.Objects;
 import javax.annotation.concurrent.Immutable;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.common.AID;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
@@ -38,29 +37,33 @@ public final class VertexMetadata {
 
 	private Round round;
 
-	@JsonProperty("aid")
+	@JsonProperty("id")
 	@DsonOutput(Output.ALL)
-	private final AID aid;
+	private final Integer id;
 
 	private Round parentRound;
 
-	@JsonProperty("parent_aid")
+	@JsonProperty("parent_id")
 	@DsonOutput(Output.ALL)
-	private final AID parentAid;
+	private final Integer parentId;
 
 	VertexMetadata() {
 		// Serializer only
 		this.round = null;
-		this.aid = null;
+		this.id = null;
 		this.parentRound = null;
-		this.parentAid = null;
+		this.parentId = null;
 	}
 
-	public VertexMetadata(Round round, AID aid, Round parentRound, AID parentAid) {
+	public VertexMetadata(Round round, Integer id, Round parentRound, Integer parentId) {
+		if (parentId == null && round.number() != 0) {
+			throw new IllegalArgumentException("Root vertex must be round 0.");
+		}
+
 		this.round = round;
-		this.aid = aid;
+		this.id = Objects.requireNonNull(id);
 		this.parentRound = parentRound;
-		this.parentAid = parentAid;
+		this.parentId = parentId;
 	}
 
 	public Round getRound() {
@@ -71,12 +74,12 @@ public final class VertexMetadata {
 		return parentRound;
 	}
 
-	public AID getAID() {
-		return aid;
+	public Integer getParentId() {
+		return parentId;
 	}
 
-	public AID getParentAID() {
-		return parentAid;
+	public Integer getId() {
+		return id;
 	}
 
 	@JsonProperty("round")
@@ -87,7 +90,7 @@ public final class VertexMetadata {
 
 	@JsonProperty("round")
 	private void setSerializerRound(Long number) {
-		this.round = number == null ? null : Round.of(number.longValue());
+		this.round = number == null ? null : Round.of(number);
 	}
 
 	@JsonProperty("parent_round")
@@ -98,13 +101,12 @@ public final class VertexMetadata {
 
 	@JsonProperty("parent_round")
 	private void setSerializerParentRound(Long number) {
-		this.parentRound = number == null ? null : Round.of(number.longValue());
+		this.parentRound = number == null ? null : Round.of(number);
 	}
-
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.round, this.aid, this.parentRound, this.parentAid);
+		return Objects.hash(this.round, this.id, this.parentRound, this.parentId);
 	}
 
 	@Override
@@ -116,9 +118,9 @@ public final class VertexMetadata {
 			VertexMetadata other = (VertexMetadata) o;
 			return
 				Objects.equals(this.round, other.round)
-				&& Objects.equals(this.aid, other.aid)
+				&& Objects.equals(this.id, other.id)
 				&& Objects.equals(this.parentRound, other.parentRound)
-				&& Objects.equals(this.parentAid, other.parentAid);
+				&& Objects.equals(this.parentId, other.parentId);
 		}
 		return false;
 	}

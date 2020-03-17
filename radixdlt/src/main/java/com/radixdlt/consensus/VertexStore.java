@@ -17,25 +17,36 @@
 
 package com.radixdlt.consensus;
 
-import com.google.inject.Inject;
-
+import com.radixdlt.common.Atom;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
-import java.util.HashSet;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 
 /**
  * Manages the BFT Vertex chain
  */
 public final class VertexStore {
-	private final RadixEngine engine;
-	private final HashSet<Vertex> vertices = new HashSet<>();
-	private QuorumCertificate highestQC = null;
 
-	@Inject
-	public VertexStore(RadixEngine engine) {
-		this.engine = Objects.requireNonNull(engine);
+	private final RadixEngine engine;
+	private final Map<Integer, Vertex> vertices = new HashMap<>();
+	private QuorumCertificate highestQC;
+
+	// TODO: Cleanup this interface
+	public VertexStore(
+		Vertex genesisVertex,
+		QuorumCertificate rootQC,
+		RadixEngine engine
+	) throws RadixEngineException {
+		Objects.requireNonNull(genesisVertex);
+		Objects.requireNonNull(rootQC);
+		Objects.requireNonNull(engine);
+
+		this.engine = engine;
+		this.highestQC = rootQC;
+		this.engine.store(genesisVertex.getAtom());
+		this.vertices.put(genesisVertex.getId(), genesisVertex);
 	}
 
 	public void syncToQC(QuorumCertificate qc) {
@@ -49,18 +60,25 @@ public final class VertexStore {
 	}
 
 	public void insertVertex(Vertex vertex) throws VertexInsertionException {
-		this.syncToQC(vertex.getQC());
-
-		try {
-			this.engine.store(vertex.getAtom());
-		} catch (RadixEngineException e) {
-			throw new VertexInsertionException(e);
+		final Vertex parent = vertices.get(vertex.getParentId());
+		if (parent == null) {
+			throw new MissingParentException(vertex.getParentId());
 		}
 
-		vertices.add(vertex);
+		this.syncToQC(vertex.getQC());
+
+		if (vertex.getAtom() != null) {
+			try {
+				this.engine.store(vertex.getAtom());
+			} catch (RadixEngineException e) {
+				throw new VertexInsertionException(e);
+			}
+		}
+
+		vertices.put(vertex.getId(), vertex);
 	}
 
-	public Optional<QuorumCertificate> getHighestQC() {
-		return Optional.ofNullable(this.highestQC);
+	public QuorumCertificate getHighestQC() {
+		return this.highestQC;
 	}
 }

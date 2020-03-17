@@ -39,11 +39,11 @@ public class VertexTest {
 	@Before
 	public void setUp() throws Exception {
 		Round parentRound = Round.of(1234567890L);
-		AID parentAid = aidOf(23456);
+		Integer parentId = 23456;
 		Round round = parentRound.next();
-		AID aid = aidOf(123456);
+		Integer id = 123456;
 
-		this.vertexMetadata = new VertexMetadata(round, aid, parentRound, parentAid);
+		this.vertexMetadata = new VertexMetadata(round, id, parentRound, parentId);
 
 		this.vote = new Vote(EUID.TWO, this.vertexMetadata);
 		this.qc = new QuorumCertificate(this.vote, this.vertexMetadata);
@@ -51,7 +51,7 @@ public class VertexTest {
 
 		this.atom = new Atom();
 
-		this.testObject = new Vertex(this.qc, round, this.atom);
+		this.testObject = Vertex.createVertex(this.qc, round, this.atom);
 	}
 
 	@Test
@@ -71,11 +71,5 @@ public class VertexTest {
 	public void testSerializerConstructor() {
 		// Don't want to see any exceptions here
 		assertNotNull(new Vertex());
-	}
-
-	private static AID aidOf(int id) {
-		byte[] bytes = new byte[AID.BYTES];
-		Ints.copyTo(id, bytes, AID.BYTES - Integer.BYTES);
-		return AID.from(bytes);
 	}
 }

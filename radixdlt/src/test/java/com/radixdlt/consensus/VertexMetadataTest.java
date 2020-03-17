@@ -33,12 +33,12 @@ public class VertexMetadataTest {
 	@Before
 	public void setUp() throws Exception {
 		Round parentRound = Round.of(1234567890L);
-		AID parentAid = aidOf(23456);
+		Integer parentId = 23456;
 
 		Round round = parentRound.next();
-		AID aid = aidOf(123456);
+		Integer id = 123456;
 
-		this.testObject = new VertexMetadata(round, aid, parentRound, parentAid);
+		this.testObject = new VertexMetadata(round, id, parentRound, parentId);
 	}
 
 	@Test
@@ -52,19 +52,13 @@ public class VertexMetadataTest {
 		assertEquals(Round.of(1234567890L), this.testObject.getParentRound());
 		assertEquals(Round.of(1234567891L), this.testObject.getRound());
 
-		assertEquals(aidOf(23456), this.testObject.getParentAID());
-		assertEquals(aidOf(123456), this.testObject.getAID());
+		assertEquals(Integer.valueOf(23456), this.testObject.getParentId());
+		assertEquals(Integer.valueOf(123456), this.testObject.getId());
 	}
 
 	@Test
 	public void testSerializerConstructor() {
 		// Don't want to see any exceptions here
 		assertNotNull(new VertexMetadata());
-	}
-
-	private static AID aidOf(int id) {
-		byte[] bytes = new byte[AID.BYTES];
-		Ints.copyTo(id, bytes, AID.BYTES - Integer.BYTES);
-		return AID.from(bytes);
 	}
 }
