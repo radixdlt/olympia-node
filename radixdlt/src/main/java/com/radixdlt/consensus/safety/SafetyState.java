@@ -73,12 +73,13 @@ final class SafetyState {
 		}
 		SafetyState that = (SafetyState) o;
 		return Objects.equals(lastVotedView, that.lastVotedView) &&
-			Objects.equals(lockedView, that.lockedView);
+			Objects.equals(lockedView, that.lockedView) &&
+			Objects.equals(genericQC, that.genericQC);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(lastVotedView, lockedView);
+		return Objects.hash(lastVotedView, lockedView, genericQC);
 	}
 
 	@Override

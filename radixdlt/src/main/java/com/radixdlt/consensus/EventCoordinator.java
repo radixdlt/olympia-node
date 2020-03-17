@@ -39,6 +39,7 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.AtomEventListener;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.network.EventCoordinatorNetworkSender;
 import com.radixdlt.utils.Longs;
@@ -102,7 +103,7 @@ public final class EventCoordinator {
 		if (!proposerElection.isValidProposer(selfAddress.getUID(), view)) {
 			return;
 		}
-        
+
 		List<Atom> atoms = mempool.getAtoms(1, Sets.newHashSet());
 		if (!atoms.isEmpty()) {
 			QuorumCertificate highestQC = vertexStore.getHighestQC()
@@ -160,46 +161,27 @@ public final class EventCoordinator {
 	}
 
 	public void processProposal(Vertex proposedVertex) {
-		Atom proposedAtom = proposedVertex.getAtom();
+		Atom atom = proposedVertex.getAtom();
 
-		// TODO: Fix this interface
-		engine.store(proposedAtom, new AtomEventListener() {
-			@Override
-			public void onCMError(Atom atom, CMError error) {
-				mempool.removeRejectedAtom(atom.getAID());
-			}
+		try {
+			engine.store(atom);
+		} catch (RadixEngineException e) {
+			mempool.removeRejectedAtom(atom.getAID());
+			return;
+		}
 
-			@Override
-			public void onStateStore(Atom atom) {
-				mempool.removeCommittedAtom(atom.getAID());
+		mempool.removeCommittedAtom(atom.getAID());
 
-				vertexStore.insertVertex(proposedVertex);
+		vertexStore.insertVertex(proposedVertex);
 
-				try {
-					final Vote vote = safetyRules.voteFor(proposedVertex);
-					networkSender.sendVote(vote);
-				} catch (SafetyViolationException e) {
-					log.error("Rejected " + proposedVertex, e);
-				} catch (CryptoException e) {
-					log.error("Failed to sign " + proposedAtom, e);
-				}
-			}
-
-			@Override
-			public void onVirtualStateConflict(Atom atom, DataPointer issueParticle) {
-				mempool.removeRejectedAtom(atom.getAID());
-			}
-
-			@Override
-			public void onStateConflict(Atom atom, DataPointer issueParticle, Atom conflictingAtom) {
-				mempool.removeRejectedAtom(atom.getAID());
-			}
-
-			@Override
-			public void onStateMissingDependency(AID atomId, Particle particle) {
-				mempool.removeRejectedAtom(proposedAtom.getAID());
-			}
-		});
+		try {
+			final Vote vote = safetyRules.voteFor(proposedVertex);
+			networkSender.sendVote(vote);
+		} catch (SafetyViolationException e) {
+			log.error("Rejected " + proposedVertex, e);
+		} catch (CryptoException e) {
+			log.error("Failed to vote for " + proposedVertex, e);
+		}
 	}
 
 	private QuorumCertificate makeGenesisQC() {

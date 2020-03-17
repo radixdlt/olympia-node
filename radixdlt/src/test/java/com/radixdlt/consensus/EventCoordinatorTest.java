@@ -30,11 +30,14 @@ import com.radixdlt.consensus.safety.SafetyViolationException;
 import com.radixdlt.consensus.safety.SingleNodeQuorumRequirements;
 import com.radixdlt.consensus.safety.VoteResult;
 import com.radixdlt.constraintmachine.CMError;
+import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.AtomEventListener;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.engine.RadixEngineErrorCode;
+import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.network.EventCoordinatorNetworkSender;
 import com.radixdlt.universe.Universe;
@@ -48,6 +51,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -271,7 +275,7 @@ public class EventCoordinatorTest {
 	}
 
 	@Test
-	public void when_processing_invalid_proposal__then_atom_is_rejected() {
+	public void when_processing_invalid_proposal__then_atom_is_rejected() throws Exception {
 		Mempool mempool = mock(Mempool.class);
 		EventCoordinatorNetworkSender networkSender = mock(EventCoordinatorNetworkSender.class);
 		SafetyRules safetyRules = mock(SafetyRules.class);
@@ -298,16 +302,14 @@ public class EventCoordinatorTest {
 		AID aid = makeAID(7); // no special significance
 		when(proposedAtom.getAID()).thenReturn(aid);
 		when(proposedVertex.getAtom()).thenReturn(proposedAtom);
-		doAnswer((invocation -> {
-			((AtomEventListener) invocation.getArgument(1)).onCMError(proposedAtom, mock(CMError.class));
-			return null;
-		})).when(radixEngine).store(eq(proposedAtom), any());
+		doThrow(new RadixEngineException(RadixEngineErrorCode.CM_ERROR, DataPointer.ofAtom()))
+			.when(radixEngine).store(eq(proposedAtom));
 		eventCoordinator.processProposal(proposedVertex);
 		verify(mempool, times(1)).removeRejectedAtom(eq(aid));
 	}
 
 	@Test
-	public void when_processing_valid_stored_proposal__then_atom_is_voted_on_and_removed() throws SafetyViolationException, CryptoException {
+	public void when_processing_valid_stored_proposal__then_atom_is_voted_on_and_removed() throws SafetyViolationException, CryptoException, RadixEngineException {
 		Mempool mempool = mock(Mempool.class);
 		EventCoordinatorNetworkSender networkSender = mock(EventCoordinatorNetworkSender.class);
 		SafetyRules safetyRules = mock(SafetyRules.class);
@@ -334,10 +336,7 @@ public class EventCoordinatorTest {
 		AID aid = makeAID(7); // no special significance
 		when(proposedAtom.getAID()).thenReturn(aid);
 		when(proposedVertex.getAtom()).thenReturn(proposedAtom);
-		doAnswer((invocation -> {
-			((AtomEventListener) invocation.getArgument(1)).onStateStore(proposedAtom);
-			return null;
-		})).when(radixEngine).store(eq(proposedAtom), any());
+		doAnswer(invocation -> null).when(radixEngine).store(eq(proposedAtom));
 		VoteResult voteResult = mock(VoteResult.class);
 		Vote voteMessage = mock(Vote.class);
 		when(voteResult.getVote()).thenReturn(voteMessage);

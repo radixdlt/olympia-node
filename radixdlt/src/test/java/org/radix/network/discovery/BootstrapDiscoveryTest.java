@@ -18,9 +18,11 @@
 package org.radix.network.discovery;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.charset.StandardCharsets;
 import java.util.Set;
 
 import org.junit.After;
@@ -33,11 +35,13 @@ import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 import org.powermock.reflect.Whitebox;
-import org.radix.properties.RuntimeProperties;
+
+import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.universe.Universe;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.powermock.api.mockito.PowerMockito.doAnswer;
@@ -65,7 +69,7 @@ public class BootstrapDiscoveryTest {
     public ExpectedException thrown = ExpectedException.none();
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() throws IOException {
         // create stubs
         spy(BootstrapDiscovery.class);
         spy(Thread.class);
@@ -89,14 +93,14 @@ public class BootstrapDiscoveryTest {
         doReturn(8192).when(config).get("messaging.inbound.queue_max", 8192);
         doReturn(1 << 18).when(config).get("network.udp.buffer", 1 << 18);
 
-        when(config.get(eq("network.discovery.connection.retries"), any())).thenReturn(1);
-        when(config.get(eq("network.discovery.connection.cooldown"), any())).thenReturn(1);
-        when(config.get(eq("network.connections.in"), any())).thenReturn(8);
-        when(config.get(eq("network.connections.out"), any())).thenReturn(8);
+        when(config.get(eq("network.discovery.connection.retries"), anyInt())).thenReturn(1);
+        when(config.get(eq("network.discovery.connection.cooldown"), anyInt())).thenReturn(1);
+        when(config.get(eq("network.connections.in"), anyInt())).thenReturn(8);
+        when(config.get(eq("network.connections.out"), anyInt())).thenReturn(8);
 
-        when(config.get(eq("network.discovery.connection.timeout"), any())).thenReturn(60000);
-        when(config.get(eq("network.discovery.read.timeout"), any())).thenReturn(60000);
-        when(config.get(eq("network.discovery.allow_tls_bypass"), any())).thenReturn(0);
+        when(config.get(eq("network.discovery.connection.timeout"), anyInt())).thenReturn(60000);
+        when(config.get(eq("network.discovery.read.timeout"), anyInt())).thenReturn(60000);
+        when(config.get(eq("network.discovery.allow_tls_bypass"), anyInt())).thenReturn(0);
 
         when(universe.getPort()).thenReturn(30000);
 
@@ -110,18 +114,18 @@ public class BootstrapDiscoveryTest {
     }
 
 	@Test
-    public void testToHost_Empty() throws Exception
+    public void testToHost_Empty() throws ReflectiveOperationException
     {
         assertEquals("",  toHost.invoke(null, new byte[0], 0));
     }
 
 	@Test
-    public void testToHost() throws Exception
+    public void testToHost() throws ReflectiveOperationException
     {
         for (int b = Byte.MIN_VALUE; b <= Byte.MAX_VALUE; b++) {
             byte[] buf = new byte[] {(byte) b};
             if ("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-.".indexOf(0xff & b) != -1) {
-                assertEquals(new String(buf, "US-ASCII"), toHost.invoke(null, buf, buf.length));
+                assertEquals(new String(buf, StandardCharsets.US_ASCII), toHost.invoke(null, buf, buf.length));
             } else {
                 assertEquals(null,  toHost.invoke(null, buf, buf.length));
             }
@@ -129,23 +133,23 @@ public class BootstrapDiscoveryTest {
     }
 
     @Test
-	public void testGetNextNode() throws Exception
+	public void testGetNextNode() throws IOException, ReflectiveOperationException
 	{
         String expected = "1.1.1.1";
         doReturn(expected.length()).when(conn).getContentLength();
-        doReturn(new ByteArrayInputStream(expected.getBytes("US-ASCII"))).when(conn).getInputStream();
+        doReturn(new ByteArrayInputStream(expected.getBytes(StandardCharsets.US_ASCII))).when(conn).getInputStream();
         assertEquals(expected,  getNextNode.invoke(new BootstrapDiscovery(config, universe), url));
     }
 
     @Test
-	public void testGetNextNode_RuntimeException() throws Exception
+	public void testGetNextNode_RuntimeException() throws IOException, ReflectiveOperationException
 	{
         doThrow(new RuntimeException()).when(conn).connect();
         assertEquals(null,  getNextNode.invoke(new BootstrapDiscovery(config, universe), url));
     }
 
     @Test
-	public void testGetNextNode_InterruptedException() throws Exception
+	public void testGetNextNode_InterruptedException() throws ReflectiveOperationException, InterruptedException
 	{
         doThrow(new InterruptedException()).when(Thread.class);
         Thread.sleep(anyLong());
@@ -157,11 +161,11 @@ public class BootstrapDiscoveryTest {
 	{
         doReturn("").when(config).get("network.discovery.urls", "");
         doReturn("1.1.1.1").when(config).get("network.seeds", "");
-        doReturn(Integer.valueOf(8)).when(config).get("network.connections.in", Integer.valueOf(8));
-        doReturn(Integer.valueOf(8)).when(config).get("network.connections.out", Integer.valueOf(8));
-        doReturn(8000).when(config).get(eq("messaging.inbound.queue_max"), any());
-        doReturn(8000).when(config).get(eq("messaging.outbound.queue_max"), any());
-        doReturn(30).when(config).get(eq("messaging.time_to_live"), any());
+        doReturn(8).when(config).get(eq("network.connections.in"), anyInt());
+        doReturn(8).when(config).get(eq("network.connections.out"), anyInt());
+        doReturn(8000).when(config).get(eq("messaging.inbound.queue_max"), anyInt());
+        doReturn(8000).when(config).get(eq("messaging.outbound.queue_max"), anyInt());
+        doReturn(30).when(config).get(eq("messaging.time_to_live"), anyInt());
         BootstrapDiscovery testSubject = Whitebox.invokeConstructor(BootstrapDiscovery.class, config, universe);
         Set<?> hosts = Whitebox.getInternalState(testSubject, "hosts");
         assertEquals(1, hosts.size());

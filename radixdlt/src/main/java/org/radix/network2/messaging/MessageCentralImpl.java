@@ -34,6 +34,7 @@ import org.radix.network2.addressbook.Peer;
 import org.radix.network2.transport.Transport;
 import org.radix.universe.system.LocalSystem;
 import org.radix.universe.system.events.QueueFullEvent;
+import org.radix.utils.SimpleThreadPool;
 import org.radix.utils.SystemMetaData;
 import org.xerial.snappy.Snappy;
 
@@ -108,12 +109,12 @@ final class MessageCentralImpl implements MessageCentral {
 
 		// Start inbound processing thread
 		int inboundThreads = config.messagingInboundQueueThreads(1);
-		this.inboundThreadPool = new SimpleThreadPool<>("Inbound message processing", inboundThreads, inboundQueue::take, this::inboundMessageProcessor);
+		this.inboundThreadPool = new SimpleThreadPool<>("Inbound message processing", inboundThreads, inboundQueue::take, this::inboundMessageProcessor, log);
 		this.inboundThreadPool.start();
 
 		// Start outbound processing thread
 		int outboundThreads = config.messagingOutboundQueueThreads(1);
-		this.outboundThreadPool = new SimpleThreadPool<>("Outbound message processing", outboundThreads, outboundQueue::take, this::outboundMessageProcessor);
+		this.outboundThreadPool = new SimpleThreadPool<>("Outbound message processing", outboundThreads, outboundQueue::take, this::outboundMessageProcessor, log);
 		this.outboundThreadPool.start();
 
 		// Start our listeners

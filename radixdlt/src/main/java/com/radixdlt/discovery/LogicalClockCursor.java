@@ -40,7 +40,7 @@ public final class LogicalClockCursor {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private LogicalClockCursor next;
 
-	private LogicalClockCursor() {
+	LogicalClockCursor() {
 		// For serializer
 	}
 

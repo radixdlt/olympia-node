@@ -35,7 +35,7 @@ import static org.mockito.Mockito.verify;
 public class PacemakerImplTest {
 	private static ScheduledExecutorService getMockedExecutorService() {
 		ScheduledExecutorService executorService = mock(ScheduledExecutorService.class);
-		doAnswer((invocation) -> {
+		doAnswer(invocation -> {
 			((Runnable) invocation.getArguments()[0]).run();
 			return null;
 		}).when(executorService).schedule(any(Runnable.class), anyLong(), any());

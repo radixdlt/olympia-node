@@ -146,7 +146,6 @@ public class SafetyRulesTest {
 		Vertex a4 = makeVertex(a3, View.of(7), a4Id);
 		Vertex b4 = makeVertex(b2, View.of(8), b4Id);
 		Vertex a5 = makeVertex(a4, View.of(9), a5Id);
-
 		
 		assertThat(safetyRules.process(a1)).isEmpty();
 
@@ -171,7 +170,7 @@ public class SafetyRulesTest {
 	}
 
 	@Test
-	public void testCommitRule() throws SafetyViolationException {
+	public void testCommitRule() {
 		/*
 		 * This test ensures that the commit logic is working correctly.
 		 * The commit rule requires a 3-chain to commit an atom, that is, the chain

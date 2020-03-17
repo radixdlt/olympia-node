@@ -28,11 +28,14 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 import org.mockito.ArgumentCaptor;
+import org.powermock.reflect.Whitebox;
 import org.radix.network2.transport.SendResult;
 import org.radix.network2.transport.TransportMetadata;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
@@ -80,9 +83,10 @@ public class UDPTransportOutboundConnectionTest {
 	}
 
 	@Before
-	public void setUp() {
+	public void setUp() throws UnknownHostException {
 
-		PublicInetAddress.configure(sourceAddressStr, 12345);
+		PublicInetAddress.configure(12345);
+		Whitebox.setInternalState(PublicInetAddress.getInstance(), "localAddress", InetAddress.getByName(this.sourceAddressStr));
 
 		channel = mock(DatagramChannel.class);//spy(new NioDatagramChannel());
 		channelFuture = spy(new DefaultChannelPromise(channel, new DefaultEventExecutor())); //new DefaultPromise(new DefaultEventExecutor());

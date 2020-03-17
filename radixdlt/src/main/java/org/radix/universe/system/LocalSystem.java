@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.keys.Keys;
+import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
@@ -39,7 +40,6 @@ import org.radix.network2.transport.DynamicTransportMetadata;
 import org.radix.network2.transport.TransportInfo;
 import org.radix.network2.transport.udp.PublicInetAddress;
 import org.radix.network2.transport.udp.UDPConstants;
-import org.radix.properties.RuntimeProperties;
 import org.radix.utils.SystemMetaData;
 
 import java.io.IOException;

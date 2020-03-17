@@ -18,7 +18,7 @@
 package com.radixdlt.delivery;
 
 import com.google.inject.Provides;
-import org.radix.properties.RuntimeProperties;
+import com.radixdlt.properties.RuntimeProperties;
 
 /**
  * Static configuration for a {@link LazyRequestDeliverer}
