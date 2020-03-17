@@ -34,8 +34,8 @@ public class VertexMessageSerializeTest extends SerializeMessageObject<VertexMes
 	private static VertexMessage get() {
 		Round parentRound = Round.of(1234567890L);
 		Round round = parentRound.next();
-		Integer parentId = 12345;
-		Integer id = 23456;
+		EUID parentId = new EUID(12345);
+		EUID id = new EUID(23456);
 		EUID author = EUID.TWO;
 		Atom atom = new Atom();
 

@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus.safety;
 
+import com.radixdlt.common.EUID;
 import com.radixdlt.consensus.Vote;
 
 import java.util.Objects;
@@ -27,9 +28,9 @@ import java.util.Optional;
  */
 public final class VoteResult {
 	private final Vote vote;
-	private final Integer committedVertexId; // may be null
+	private final EUID committedVertexId; // may be null
 
-	public VoteResult(Vote vote, Integer committedVertexId) {
+	public VoteResult(Vote vote, EUID committedVertexId) {
 		this.vote = Objects.requireNonNull(vote);
 		this.committedVertexId = committedVertexId; // may be null
 	}
@@ -56,7 +57,7 @@ public final class VoteResult {
 		return vote;
 	}
 
-	public Optional<Integer> getCommittedVertexId() {
+	public Optional<EUID> getCommittedVertexId() {
 		return Optional.ofNullable(committedVertexId);
 	}
 }

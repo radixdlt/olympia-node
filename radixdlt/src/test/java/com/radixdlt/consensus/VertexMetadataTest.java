@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.common.EUID;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -33,10 +34,10 @@ public class VertexMetadataTest {
 	@Before
 	public void setUp() throws Exception {
 		Round parentRound = Round.of(1234567890L);
-		Integer parentId = 23456;
+		EUID parentId = new EUID(23456);
 
 		Round round = parentRound.next();
-		Integer id = 123456;
+		EUID id = new EUID(123456);
 
 		this.testObject = new VertexMetadata(round, id, parentRound, parentId);
 	}
@@ -52,8 +53,8 @@ public class VertexMetadataTest {
 		assertEquals(Round.of(1234567890L), this.testObject.getParentRound());
 		assertEquals(Round.of(1234567891L), this.testObject.getRound());
 
-		assertEquals(Integer.valueOf(23456), this.testObject.getParentId());
-		assertEquals(Integer.valueOf(123456), this.testObject.getId());
+		assertEquals(new EUID(23456), this.testObject.getParentId());
+		assertEquals(new EUID(123456), this.testObject.getId());
 	}
 
 	@Test

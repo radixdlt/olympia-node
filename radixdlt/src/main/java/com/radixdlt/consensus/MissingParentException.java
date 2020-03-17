@@ -1,5 +1,6 @@
 package com.radixdlt.consensus;
 
+import com.radixdlt.common.EUID;
 import java.util.Objects;
 
 /**
@@ -7,7 +8,7 @@ import java.util.Objects;
  * it's parent is missing from the current store.
  */
 class MissingParentException extends VertexInsertionException {
-	MissingParentException(Integer parentId) {
+	MissingParentException(EUID parentId) {
 		super("Parent Vertex missing: " + Objects.requireNonNull(parentId));
 	}
 }

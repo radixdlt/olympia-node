@@ -17,6 +17,7 @@
 
 package org.radix.serialization;
 
+import com.radixdlt.common.EUID;
 import com.radixdlt.consensus.Round;
 import com.radixdlt.consensus.VertexMetadata;
 
@@ -28,8 +29,8 @@ public class VertexMetadataSerializeTest extends SerializeObject<VertexMetadata>
 	private static VertexMetadata get() {
 		Round parentRound = Round.of(1234567890L);
 		Round round = parentRound.next();
-		Integer parentId = 12345;
-		Integer id = 23456;
+		EUID parentId = new EUID(12345);
+		EUID id = new EUID(23456);
 
 		return new VertexMetadata(round, id, parentRound, parentId);
 	}

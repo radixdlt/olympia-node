@@ -44,7 +44,7 @@ public final class SafetyRules {
 	}
 
 	@VisibleForTesting
-	Integer getCommittedVertexId(Vertex vertex) {
+	EUID getCommittedVertexId(Vertex vertex) {
 		if (vertex.getRound().equals(vertex.getQC().getRound().next())
 			&& vertex.getQC().getRound().equals(vertex.getQC().getParentRound().next())) {
 			return vertex.getQC().getVertexMetadata().getParentId();
@@ -89,7 +89,7 @@ public final class SafetyRules {
 			proposedVertex.getParentId()
 		);
 		Vote vote = new Vote(self, vertexMetadata);
-		Integer committedVertex = getCommittedVertexId(proposedVertex);
+		EUID committedVertex = getCommittedVertexId(proposedVertex);
 
 		return new VoteResult(vote, committedVertex);
 	}

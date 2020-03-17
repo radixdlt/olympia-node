@@ -19,6 +19,7 @@ package com.radixdlt.consensus;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.common.Atom;
+import com.radixdlt.common.EUID;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
@@ -77,13 +78,12 @@ public final class Vertex {
 		return new Vertex(qc, round, atom);
 	}
 
-	// TODO: Use a larger type (e.g. 512-bit SHA)
-	public Integer getId() {
-		return this.hashCode();
+	// TODO: Replace with a better type over EUID wrapping hashCode()
+	public EUID getId() {
+		return new EUID(this.hashCode());
 	}
 
-	// TODO: Use a larger type (e.g. 512-bit SHA)
-	public Integer getParentId() {
+	public EUID getParentId() {
 		return qc == null ? null : qc.getVertexMetadata().getId();
 	}
 

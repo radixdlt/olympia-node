@@ -35,10 +35,10 @@ public class VoteTest {
 	@Before
 	public void setUp() throws Exception {
 		Round parentRound = Round.of(1234567890L);
-		Integer parentId = 23456;
+		EUID parentId = new EUID(23456);
 
 		Round round = parentRound.next();
-		Integer id = 123456;
+		EUID id = new EUID(123456);
 
 		EUID author = EUID.TWO;
 		this.vertexMetadata = new VertexMetadata(round, id, parentRound, parentId);

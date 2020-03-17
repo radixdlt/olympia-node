@@ -17,13 +17,11 @@
 
 package org.radix.serialization;
 
-import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
 import com.radixdlt.consensus.Round;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.messages.VoteMessage;
-import com.radixdlt.utils.Ints;
 
 public class VoteMessageSerializeTest extends SerializeMessageObject<VoteMessage> {
 	public VoteMessageSerializeTest() {
@@ -32,10 +30,10 @@ public class VoteMessageSerializeTest extends SerializeMessageObject<VoteMessage
 
 	private static VoteMessage get() {
 		Round parentRound = Round.of(1234567890L);
-		Integer parentId = 23456;
+		EUID parentId = new EUID(23456);
 
 		Round round = parentRound.next();
-		Integer id = 123456;
+		EUID id = new EUID(123456);
 
 		EUID author = EUID.TWO;
 		VertexMetadata vertexMetadata = new VertexMetadata(round, id, parentRound, parentId);

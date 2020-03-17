@@ -33,8 +33,8 @@ public class VertexSerializeTest extends SerializeObject<Vertex> {
 	private static Vertex get() {
 		Round parentRound = Round.of(1234567890L);
 		Round round = parentRound.next();
-		Integer parentId = 12345;
-		Integer id = 23456;
+		EUID parentId = new EUID(12345);
+		EUID id = new EUID(23456);
 
 		VertexMetadata vertexMetadata = new VertexMetadata(round, id, parentRound, parentId);
 
