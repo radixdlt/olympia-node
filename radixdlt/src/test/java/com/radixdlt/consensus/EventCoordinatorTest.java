@@ -28,13 +28,10 @@ import com.radixdlt.consensus.safety.QuorumRequirements;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyViolationException;
 import com.radixdlt.consensus.safety.SingleNodeQuorumRequirements;
-import com.radixdlt.consensus.safety.VoteResult;
-import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.engine.AtomEventListener;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineErrorCode;
 import com.radixdlt.engine.RadixEngineException;
@@ -154,7 +151,7 @@ public class EventCoordinatorTest {
 		when(vertexStore.insertVote(eq(voteMessage), any())).thenReturn(Optional.of(mock(QuorumCertificate.class)));
 
 		eventCoordinator.processVote(voteMessage);
-		verify(safetyRules, times(1)).process(any());
+		verify(safetyRules, times(1)).process(any(), any());
 		verify(pacemaker, times(1)).processQC(any());
 	}
 
@@ -337,13 +334,11 @@ public class EventCoordinatorTest {
 		when(proposedAtom.getAID()).thenReturn(aid);
 		when(proposedVertex.getAtom()).thenReturn(proposedAtom);
 		doAnswer(invocation -> null).when(radixEngine).store(eq(proposedAtom));
-		VoteResult voteResult = mock(VoteResult.class);
-		Vote voteMessage = mock(Vote.class);
-		when(voteResult.getVote()).thenReturn(voteMessage);
-		doReturn(voteResult).when(safetyRules).voteFor(eq(proposedVertex));
+		Vote vote = mock(Vote.class);
+		doReturn(vote).when(safetyRules).voteFor(eq(proposedVertex));
 		eventCoordinator.processProposal(proposedVertex);
 
-		verify(networkSender, times(1)).sendVote(eq(voteMessage));
+		verify(networkSender, times(1)).sendVote(eq(vote));
 		verify(mempool, times(1)).removeCommittedAtom(eq(aid));
 	}
 }
