@@ -46,7 +46,6 @@ public class SafetyRulesTest {
 	private static final ECPublicKey SELF = makePubKey(EUID.ONE);
 	private static final View GENESIS_VIEW = View.of(0);
 	private static final AID GENESIS_ID = makeAID(1);
-	private static final Vertex GENESIS_VERTEX = makeGenesisVertex();
 
 	private static SafetyRules createDefaultSafetyRules(VertexStore vertexStore) {
 		ECKeyPair keyPair = mock(ECKeyPair.class);
@@ -89,14 +88,14 @@ public class SafetyRulesTest {
 		AID b2Id = makeAID(22);
 		AID b3Id = makeAID(23);
 		AID b4Id = makeAID(24);
-		Vertex a1 = makeVertex(GENESIS_VERTEX, View.of(1), a1Id);
-		Vertex b1 = makeVertex(GENESIS_VERTEX, View.of(2), b1Id);
-		Vertex b2 = makeVertex(a1, View.of(3), b2Id);
-		Vertex a2 = makeVertex(b1, View.of(4), a2Id);
-		Vertex b3 = makeVertex(a2, View.of(5), b3Id);
-		Vertex a3 = makeVertex(a2, View.of(6), a3Id);
-		Vertex a4 = makeVertex(a3, View.of(7), a4Id);
-		Vertex b4 = makeVertex(b2, View.of(8), b4Id);
+		Vertex a1 = makeVertex(makeGenesisVertex(vertexStore), View.of(1), a1Id, vertexStore);
+		Vertex b1 = makeVertex(makeGenesisVertex(vertexStore), View.of(2), b1Id, vertexStore);
+		Vertex b2 = makeVertex(a1, View.of(3), b2Id, vertexStore);
+		Vertex a2 = makeVertex(b1, View.of(4), a2Id, vertexStore);
+		Vertex b3 = makeVertex(a2, View.of(5), b3Id, vertexStore);
+		Vertex a3 = makeVertex(a2, View.of(6), a3Id, vertexStore);
+		Vertex a4 = makeVertex(a3, View.of(7), a4Id, vertexStore);
+		Vertex b4 = makeVertex(b2, View.of(8), b4Id, vertexStore);
 
 		safetyRules.process(a1);
 		assertThat(safetyRules.getState().getLockedView()).isEqualByComparingTo(GENESIS_VIEW);
@@ -137,15 +136,15 @@ public class SafetyRulesTest {
 		AID b2Id = makeAID(22);
 		AID b3Id = makeAID(23);
 		AID b4Id = makeAID(24);
-		Vertex a1 = makeVertex(GENESIS_VERTEX, View.of(1), a1Id);
-		Vertex b1 = makeVertex(GENESIS_VERTEX, View.of(2), b1Id);
-		Vertex b2 = makeVertex(a1, View.of(3), b2Id);
-		Vertex a2 = makeVertex(b1, View.of(4), a2Id);
-		Vertex a3 = makeVertex(a2, View.of(5), a3Id);
-		Vertex b3 = makeVertex(a2, View.of(6), b3Id);
-		Vertex a4 = makeVertex(a3, View.of(7), a4Id);
-		Vertex b4 = makeVertex(b2, View.of(8), b4Id);
-		Vertex a5 = makeVertex(a4, View.of(9), a5Id);
+		Vertex a1 = makeVertex(makeGenesisVertex(vertexStore), View.of(1), a1Id, vertexStore);
+		Vertex b1 = makeVertex(makeGenesisVertex(vertexStore), View.of(2), b1Id, vertexStore);
+		Vertex b2 = makeVertex(a1, View.of(3), b2Id, vertexStore);
+		Vertex a2 = makeVertex(b1, View.of(4), a2Id, vertexStore);
+		Vertex a3 = makeVertex(a2, View.of(5), a3Id, vertexStore);
+		Vertex b3 = makeVertex(a2, View.of(6), b3Id, vertexStore);
+		Vertex a4 = makeVertex(a3, View.of(7), a4Id, vertexStore);
+		Vertex b4 = makeVertex(b2, View.of(8), b4Id, vertexStore);
+		Vertex a5 = makeVertex(a4, View.of(9), a5Id, vertexStore);
 		
 		assertThat(safetyRules.process(a1)).isEmpty();
 
@@ -188,17 +187,19 @@ public class SafetyRulesTest {
 		AID a3Id = makeAID(13);
 		AID a4Id = makeAID(14);
 		AID a5Id = makeAID(15);
+		AID a6Id = makeAID(16);
 		AID b1Id = makeAID(21);
 		AID b2Id = makeAID(22);
 		AID b3Id = makeAID(23);
-		Vertex a1 = makeVertex(GENESIS_VERTEX, View.of(1), a1Id);
-		Vertex b1 = makeVertex(GENESIS_VERTEX, View.of(2), b1Id);
-		Vertex b2 = makeVertex(a1, View.of(3), b2Id);
-		Vertex a2 = makeVertex(b1, View.of(4), a2Id);
-		Vertex b3 = makeVertex(a2, View.of(5), b3Id);
-		Vertex a3 = makeVertex(a2, View.of(6), a3Id);
-		Vertex a4 = makeVertex(a3, View.of(7), a4Id);
-		Vertex a5 = makeVertex(a4, View.of(8), a5Id);
+		Vertex a1 = makeVertex(makeGenesisVertex(vertexStore), View.of(1), a1Id, vertexStore);
+		Vertex b1 = makeVertex(makeGenesisVertex(vertexStore), View.of(2), b1Id, vertexStore);
+		Vertex b2 = makeVertex(a1, View.of(3), b2Id, vertexStore);
+		Vertex a2 = makeVertex(b1, View.of(4), a2Id, vertexStore);
+		Vertex b3 = makeVertex(a2, View.of(5), b3Id, vertexStore);
+		Vertex a3 = makeVertex(a2, View.of(6), a3Id, vertexStore);
+		Vertex a4 = makeVertex(a3, View.of(7), a4Id, vertexStore);
+		Vertex a5 = makeVertex(a4, View.of(8), a5Id, vertexStore);
+		Vertex a6 = makeVertex(a5, View.of(9), a6Id, vertexStore);
 
 		assertThat(safetyRules.process(a1)).isEmpty();
 		assertThat(safetyRules.process(b1)).isEmpty();
@@ -207,24 +208,27 @@ public class SafetyRulesTest {
 		assertThat(safetyRules.process(b3)).isEmpty();
 		assertThat(safetyRules.process(a3)).isEmpty();
 		assertThat(safetyRules.process(a4)).isEmpty();
-		assertThat(safetyRules.process(a5)).isEqualTo(a3.getAID());
+		assertThat(safetyRules.process(a5)).isEmpty();
+		assertThat(safetyRules.process(a6)).hasValue(a3.getAID());
 	}
 
-	private static Vertex makeGenesisVertex() {
+	private static Vertex makeGenesisVertex(VertexStore vertexStore) {
 		VertexMetadata genesisMetadata = new VertexMetadata(GENESIS_VIEW, GENESIS_ID);
 		QuorumCertificate genesisQC = new QuorumCertificate(genesisMetadata, new ECDSASignatures());
-		return makeVertex(genesisQC, GENESIS_VIEW, GENESIS_ID);
+		return makeVertex(genesisQC, GENESIS_VIEW, GENESIS_ID, vertexStore);
 	}
 
-	private static Vertex makeVertex(Vertex parent, View view, AID id) {
+	private static Vertex makeVertex(Vertex parent, View view, AID id, VertexStore vertexStore) {
 		VertexMetadata parentMetadata = new VertexMetadata(parent.getView(), parent.getAID());
 		QuorumCertificate qc = new QuorumCertificate(parentMetadata, new ECDSASignatures());
-		return makeVertex(qc, view, id);
+		return makeVertex(qc, view, id, vertexStore);
 	}
 
-	private static Vertex makeVertex(QuorumCertificate qc, View view, AID id) {
+	private static Vertex makeVertex(QuorumCertificate qc, View view, AID id, VertexStore vertexStore) {
 		Atom atom = mock(Atom.class);
 		when(atom.getAID()).thenReturn(id);
-		return new Vertex(qc, view, atom);
+		Vertex vertex = new Vertex(qc, view, atom);
+		vertexStore.insertVertex(vertex);
+		return vertex;
 	}
 }
