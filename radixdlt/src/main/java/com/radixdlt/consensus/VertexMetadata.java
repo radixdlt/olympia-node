@@ -42,23 +42,41 @@ public final class VertexMetadata {
 	@DsonOutput(Output.ALL)
 	private final AID aid;
 
+	private View parentView;
+
+	@JsonProperty("parent_aid")
+	@DsonOutput(Output.ALL)
+	private final AID parentAid;
+
 	VertexMetadata() {
 		// Serializer only
 		this.view = null;
 		this.aid = null;
+		this.parentView = null;
+		this.parentAid = null;
 	}
 
-	public VertexMetadata(View view, AID aid) {
+	public VertexMetadata(View view, AID aid, View parentView, AID parentAid) {
 		this.view = view;
 		this.aid = aid;
+		this.parentView = parentView;
+		this.parentAid = parentAid;
 	}
 
 	public View getView() {
 		return view;
 	}
 
+	public View getParentView() {
+		return parentView;
+	}
+
 	public AID getAID() {
 		return aid;
+	}
+
+	public AID getParentAID() {
+		return parentAid;
 	}
 
 	@JsonProperty("view")
@@ -72,21 +90,36 @@ public final class VertexMetadata {
 		this.view = number == null ? null : View.of(number.longValue());
 	}
 
-	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (o == null || getClass() != o.getClass()) {
-			return false;
-		}
-		VertexMetadata that = (VertexMetadata) o;
-		return Objects.equals(view, that.view) &&
-			Objects.equals(aid, that.aid);
+	@JsonProperty("parent_view")
+	@DsonOutput(Output.ALL)
+	private Long getSerializerParentView() {
+		return this.parentView == null ? null : this.parentView.number();
 	}
+
+	@JsonProperty("parent_view")
+	private void setSerializerParentView(Long number) {
+		this.parentView = number == null ? null : View.of(number.longValue());
+	}
+
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(view, aid);
+		return Objects.hash(this.view, this.aid, this.parentView, this.parentAid);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (o == this) {
+			return true;
+		}
+		if (o instanceof VertexMetadata) {
+			VertexMetadata other = (VertexMetadata) o;
+			return
+				Objects.equals(this.view, other.view)
+				&& Objects.equals(this.aid, other.aid)
+				&& Objects.equals(this.parentView, other.parentView)
+				&& Objects.equals(this.parentAid, other.parentAid);
+		}
+		return false;
 	}
 }

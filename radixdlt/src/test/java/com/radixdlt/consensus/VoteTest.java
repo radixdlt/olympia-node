@@ -43,7 +43,7 @@ public class VoteTest {
 		View view = parentView.next();
 		AID aid = aidOf(123456);
 
-		this.vertexMetadata = new VertexMetadata(view, aid);
+		this.vertexMetadata = new VertexMetadata(view, aid, parentView, parentAid);
 
 		this.testObject = new Vote(ADDRESS, vertexMetadata, null);
 	}

@@ -180,7 +180,7 @@ public final class EventCoordinator {
 	}
 
 	private QuorumCertificate makeGenesisQC() {
-		VertexMetadata genesisMetadata = new VertexMetadata(GENESIS_VIEW, GENESIS_ID);
+		VertexMetadata genesisMetadata = new VertexMetadata(GENESIS_VIEW, GENESIS_ID, GENESIS_VIEW, GENESIS_ID);
 		return new QuorumCertificate(genesisMetadata, new ECDSASignatures());
 	}
 }

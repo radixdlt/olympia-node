@@ -33,7 +33,7 @@ public class VertexMetadataSerializeTest extends SerializeObject<VertexMetadata>
 		AID parentAid = aidOf(12345);
 		AID aid = aidOf(23456);
 
-		return new VertexMetadata(view, aid);
+		return new VertexMetadata(view, aid, parentView, parentAid);
 	}
 
 	private static AID aidOf(int id) {

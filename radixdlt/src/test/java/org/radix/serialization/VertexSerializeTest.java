@@ -40,7 +40,7 @@ public class VertexSerializeTest extends SerializeObject<Vertex> {
 		AID parentAid = aidOf(12345);
 		AID aid = aidOf(23456);
 
-		VertexMetadata vertexMetadata = new VertexMetadata(view, aid);
+		VertexMetadata vertexMetadata = new VertexMetadata(view, aid, parentView, parentAid);
 
 		QuorumCertificate qc = new QuorumCertificate(vertexMetadata, new ECDSASignatures());
 

@@ -71,110 +71,8 @@ public class SafetyRulesTest {
 	@Test
 	public void testLockedView() {
 		/*
-		 * This test ensures that the locking logic is working correctly.
+		 * This test ensures that locking works correctly.
 		 * The locked view in HotStuff is the highest 2-chain head a node has seen.
-		 */
-
-		VertexStore vertexStore = new VertexStore();
-		SafetyRules safetyRules = createDefaultSafetyRules(vertexStore);
-		assertThat(safetyRules.getState().getLastVotedView()).isEqualByComparingTo(View.of(0L));
-		assertThat(safetyRules.getState().getLockedView()).isEqualByComparingTo(View.of(0L));
-
-		AID a1Id = makeAID(11);
-		AID a2Id = makeAID(12);
-		AID a3Id = makeAID(13);
-		AID a4Id = makeAID(14);
-		AID b1Id = makeAID(21);
-		AID b2Id = makeAID(22);
-		AID b3Id = makeAID(23);
-		AID b4Id = makeAID(24);
-		Vertex a1 = makeVertex(makeGenesisVertex(vertexStore), View.of(1), a1Id, vertexStore);
-		Vertex b1 = makeVertex(makeGenesisVertex(vertexStore), View.of(2), b1Id, vertexStore);
-		Vertex b2 = makeVertex(a1, View.of(3), b2Id, vertexStore);
-		Vertex a2 = makeVertex(b1, View.of(4), a2Id, vertexStore);
-		Vertex b3 = makeVertex(a2, View.of(5), b3Id, vertexStore);
-		Vertex a3 = makeVertex(a2, View.of(6), a3Id, vertexStore);
-		Vertex a4 = makeVertex(a3, View.of(7), a4Id, vertexStore);
-		Vertex b4 = makeVertex(b2, View.of(8), b4Id, vertexStore);
-
-		safetyRules.process(a1);
-		assertThat(safetyRules.getState().getLockedView()).isEqualByComparingTo(GENESIS_VIEW);
-		safetyRules.process(b1);
-		assertThat(safetyRules.getState().getLockedView()).isEqualByComparingTo(GENESIS_VIEW);
-		safetyRules.process(b2);
-		assertThat(safetyRules.getState().getLockedView()).isEqualByComparingTo(GENESIS_VIEW);
-		safetyRules.process(a2);
-		assertThat(safetyRules.getState().getLockedView()).isEqualByComparingTo(GENESIS_VIEW);
-		safetyRules.process(a3);
-		assertThat(safetyRules.getState().getLockedView()).isEqualByComparingTo(b1.getView());
-		safetyRules.process(b3);
-		assertThat(safetyRules.getState().getLockedView()).isEqualByComparingTo(b1.getView());
-		safetyRules.process(a4);
-		assertThat(safetyRules.getState().getLockedView()).isEqualByComparingTo(a2.getView());
-		safetyRules.process(b4);
-		assertThat(safetyRules.getState().getLockedView()).isEqualByComparingTo(a2.getView());
-	}
-
-	@Test
-	public void testVote() throws SafetyViolationException, CryptoException {
-		/*
-		 * This test ensures that the voting logic obeys the safety rules correctly.
-		 *
-		 */
-
-		VertexStore vertexStore = new VertexStore();
-		SafetyRules safetyRules = createDefaultSafetyRules(vertexStore);
-		assertThat(safetyRules.getState().getLastVotedView()).isEqualByComparingTo(View.of(0L));
-		assertThat(safetyRules.getState().getLockedView()).isEqualByComparingTo(View.of(0L));
-
-		AID a1Id = makeAID(11);
-		AID a2Id = makeAID(12);
-		AID a3Id = makeAID(13);
-		AID a4Id = makeAID(14);
-		AID a5Id = makeAID(15);
-		AID b1Id = makeAID(21);
-		AID b2Id = makeAID(22);
-		AID b3Id = makeAID(23);
-		AID b4Id = makeAID(24);
-		Vertex a1 = makeVertex(makeGenesisVertex(vertexStore), View.of(1), a1Id, vertexStore);
-		Vertex b1 = makeVertex(makeGenesisVertex(vertexStore), View.of(2), b1Id, vertexStore);
-		Vertex b2 = makeVertex(a1, View.of(3), b2Id, vertexStore);
-		Vertex a2 = makeVertex(b1, View.of(4), a2Id, vertexStore);
-		Vertex a3 = makeVertex(a2, View.of(5), a3Id, vertexStore);
-		Vertex b3 = makeVertex(a2, View.of(6), b3Id, vertexStore);
-		Vertex a4 = makeVertex(a3, View.of(7), a4Id, vertexStore);
-		Vertex b4 = makeVertex(b2, View.of(8), b4Id, vertexStore);
-		Vertex a5 = makeVertex(a4, View.of(9), a5Id, vertexStore);
-		
-		assertThat(safetyRules.process(a1)).isEmpty();
-
-		assertThat(safetyRules.process(b1)).isEmpty();
-
-		assertThat(safetyRules.process(a2)).isEmpty();
-
-		safetyRules.process(b2);
-		assertThatThrownBy(() -> safetyRules.voteFor(b2));
-
-		assertThat(safetyRules.process(a3)).isEmpty();
-
-		assertThat(safetyRules.process(b3)).isEmpty();
-
-		assertThat(safetyRules.process(a4)).isEmpty();
-
-		safetyRules.process(a4);
-		assertThatThrownBy(() -> safetyRules.voteFor(a4));
-
-		safetyRules.process(b4);
-		assertThatThrownBy(() -> safetyRules.voteFor(b4));
-	}
-
-	@Test
-	public void testCommitRule() {
-		/*
-		 * This test ensures that the commit logic is working correctly.
-		 * The commit rule requires a 3-chain to commit an atom, that is, the chain
-		 *  A2 -> A3 -> A4 (-> A5)
-		 * would allow A2 to be committed at the time A5's QC for A4 is presented.
 		 */
 
 		VertexStore vertexStore = new VertexStore();
@@ -201,25 +99,139 @@ public class SafetyRulesTest {
 		Vertex a5 = makeVertex(a4, View.of(8), a5Id, vertexStore);
 		Vertex a6 = makeVertex(a5, View.of(9), a6Id, vertexStore);
 
+		safetyRules.process(a1);
+		assertThat(safetyRules.getState().getLockedView()).isEqualByComparingTo(GENESIS_VIEW);
+		safetyRules.process(b1);
+		assertThat(safetyRules.getState().getLockedView()).isEqualByComparingTo(GENESIS_VIEW);
+		safetyRules.process(b2);
+		assertThat(safetyRules.getState().getLockedView()).isEqualByComparingTo(GENESIS_VIEW);
+		safetyRules.process(a2);
+		assertThat(safetyRules.getState().getLockedView()).isEqualByComparingTo(GENESIS_VIEW);
+		safetyRules.process(a3);
+		assertThat(safetyRules.getState().getLockedView()).isEqualByComparingTo(b1.getView());
+		safetyRules.process(b3);
+		assertThat(safetyRules.getState().getLockedView()).isEqualByComparingTo(b1.getView());
+		safetyRules.process(a4);
+		assertThat(safetyRules.getState().getLockedView()).isEqualByComparingTo(a2.getView());
+		safetyRules.process(a5);
+		assertThat(safetyRules.getState().getLockedView()).isEqualByComparingTo(a3.getView());
+		safetyRules.process(a6);
+		assertThat(safetyRules.getState().getLockedView()).isEqualByComparingTo(a4.getView());
+	}
+
+	@Test
+	public void testVote() throws SafetyViolationException, CryptoException {
+		/*
+		 * This test ensures that voting is safe. That is, proposals are only voted on if
+		 *  1.
+		 *
+		 */
+
+		VertexStore vertexStore = new VertexStore();
+		SafetyRules safetyRules = createDefaultSafetyRules(vertexStore);
+		assertThat(safetyRules.getState().getLastVotedView()).isEqualByComparingTo(View.of(0L));
+		assertThat(safetyRules.getState().getLockedView()).isEqualByComparingTo(View.of(0L));
+
+		AID a1Id = makeAID(11);
+		AID a2Id = makeAID(12);
+		AID a3Id = makeAID(13);
+		AID a4Id = makeAID(14);
+		AID a5Id = makeAID(15);
+		AID b1Id = makeAID(21);
+		AID b2Id = makeAID(22);
+		AID b3Id = makeAID(23);
+		AID b4Id = makeAID(24);
+		Vertex a1 = makeVertex(makeGenesisVertex(vertexStore), View.of(1), a1Id, vertexStore);
+		Vertex b1 = makeVertex(makeGenesisVertex(vertexStore), View.of(2), b1Id, vertexStore);
+		Vertex b2 = makeVertex(a1, View.of(3), b2Id, vertexStore);
+		Vertex a2 = makeVertex(b1, View.of(4), a2Id, vertexStore);
+		Vertex a3 = makeVertex(a2, View.of(5), a3Id, vertexStore);
+		Vertex b3 = makeVertex(a2, View.of(6), b3Id, vertexStore);
+		Vertex a4 = makeVertex(a3, View.of(7), a4Id, vertexStore);
+		Vertex b4 = makeVertex(b2, View.of(8), b4Id, vertexStore);
+
+		assertThat(safetyRules.process(a1)).isEmpty();
+		safetyRules.voteFor(a1);
+
+		assertThat(safetyRules.process(b1)).isEmpty();
+		safetyRules.voteFor(b1);
+
+		assertThat(safetyRules.process(a2)).isEmpty();
+		safetyRules.voteFor(a2);
+
+		safetyRules.process(b2);
+		assertThatThrownBy(() -> safetyRules.voteFor(b2));
+
+		assertThat(safetyRules.process(a3)).isEmpty();
+		safetyRules.voteFor(a3);
+
+		assertThat(safetyRules.process(b3)).isEmpty();
+		safetyRules.voteFor(b3);
+
+		assertThat(safetyRules.process(a4)).hasValue(b1.getAID());
+		safetyRules.voteFor(a4);
+
+		safetyRules.process(a4);
+		assertThatThrownBy(() -> safetyRules.voteFor(a4));
+
+		safetyRules.process(b4);
+		assertThatThrownBy(() -> safetyRules.voteFor(b4));
+	}
+
+	@Test
+	public void testCommitRule() {
+		/*
+		 * This test ensures that the commit logic is working correctly.
+		 * The commit rule requires a 3-chain to commit an atom, that is, the chain
+		 *  A2 -> A3 -> A4 -> A5
+		 * would allow A2 to be committed at the time A5's QC for A4 is presented.
+		 */
+
+		VertexStore vertexStore = new VertexStore();
+		SafetyRules safetyRules = createDefaultSafetyRules(vertexStore);
+		assertThat(safetyRules.getState().getLastVotedView()).isEqualByComparingTo(View.of(0L));
+		assertThat(safetyRules.getState().getLockedView()).isEqualByComparingTo(View.of(0L));
+
+		AID a1Id = makeAID(11);
+		AID a2Id = makeAID(12);
+		AID a3Id = makeAID(13);
+		AID a4Id = makeAID(14);
+		AID a5Id = makeAID(15);
+		AID b1Id = makeAID(21);
+		AID b2Id = makeAID(22);
+		AID b3Id = makeAID(23);
+		Vertex a1 = makeVertex(makeGenesisVertex(vertexStore), View.of(1), a1Id, vertexStore);
+		Vertex b1 = makeVertex(makeGenesisVertex(vertexStore), View.of(2), b1Id, vertexStore);
+		Vertex b2 = makeVertex(a1, View.of(3), b2Id, vertexStore);
+		Vertex a2 = makeVertex(b1, View.of(4), a2Id, vertexStore);
+		Vertex b3 = makeVertex(a2, View.of(5), b3Id, vertexStore);
+		Vertex a3 = makeVertex(a2, View.of(6), a3Id, vertexStore);
+		Vertex a4 = makeVertex(a3, View.of(7), a4Id, vertexStore);
+		Vertex a5 = makeVertex(a4, View.of(8), a5Id, vertexStore);
+
 		assertThat(safetyRules.process(a1)).isEmpty();
 		assertThat(safetyRules.process(b1)).isEmpty();
 		assertThat(safetyRules.process(b2)).isEmpty();
 		assertThat(safetyRules.process(a2)).isEmpty();
 		assertThat(safetyRules.process(b3)).isEmpty();
 		assertThat(safetyRules.process(a3)).isEmpty();
+		assertThat(safetyRules.process(a4)).hasValue(b1.getAID());
 		assertThat(safetyRules.process(a4)).isEmpty();
+		assertThat(safetyRules.process(a5)).hasValue(a2.getAID());
 		assertThat(safetyRules.process(a5)).isEmpty();
-		assertThat(safetyRules.process(a6)).hasValue(a3.getAID());
 	}
 
 	private static Vertex makeGenesisVertex(VertexStore vertexStore) {
-		VertexMetadata genesisMetadata = new VertexMetadata(GENESIS_VIEW, GENESIS_ID);
+		VertexMetadata genesisMetadata = new VertexMetadata(GENESIS_VIEW, GENESIS_ID, GENESIS_VIEW, GENESIS_ID);
 		QuorumCertificate genesisQC = new QuorumCertificate(genesisMetadata, new ECDSASignatures());
 		return makeVertex(genesisQC, GENESIS_VIEW, GENESIS_ID, vertexStore);
 	}
 
 	private static Vertex makeVertex(Vertex parent, View view, AID id, VertexStore vertexStore) {
-		VertexMetadata parentMetadata = new VertexMetadata(parent.getView(), parent.getAID());
+		VertexMetadata parentMetadata = new VertexMetadata(parent.getView(),
+			parent.getAID(),
+			parent.getQC().getView(),
+			parent.getQC().getVertexMetadata().getAID());
 		QuorumCertificate qc = new QuorumCertificate(parentMetadata, new ECDSASignatures());
 		return makeVertex(qc, view, id, vertexStore);
 	}

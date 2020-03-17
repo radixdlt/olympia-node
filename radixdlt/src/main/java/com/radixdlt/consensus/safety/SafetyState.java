@@ -30,37 +30,43 @@ import java.util.Optional;
 final class SafetyState {
 	private final View lastVotedView; // the last view this node voted on (and is thus safe)
 	private final View lockedView; // the highest 2-chain head
+	private final View committedView; // the highest 3-chain (executed) head
 	private final QuorumCertificate genericQC; // the highest 1-chain head
 
 	@Inject
 	protected SafetyState() {
-		this(View.of(0L), View.of(0L), null);
+		this(View.of(0L), View.of(0L), View.of(0L), null);
 	}
 
-	public SafetyState(View lastVotedView, View lockedView, QuorumCertificate genericQC) {
+	public SafetyState(View lastVotedView, View lockedView, View committedView, QuorumCertificate genericQC) {
 		this.lastVotedView = Objects.requireNonNull(lastVotedView);
 		this.lockedView = Objects.requireNonNull(lockedView);
+		this.committedView = Objects.requireNonNull(committedView);
 		this.genericQC = genericQC;
 	}
 
 	public SafetyState(SafetyState other) {
-		this(other.lastVotedView, other.lockedView, other.genericQC);
+		this(other.lastVotedView, other.lockedView, other.committedView, other.genericQC);
 	}
 
 	public SafetyState withLastVotedView(View lastVotedView) {
-		return new SafetyState(lastVotedView, this.lockedView, this.genericQC);
+		return new SafetyState(lastVotedView, this.lockedView, committedView, this.genericQC);
 	}
 
 	public SafetyState withLockedView(View lockedView) {
-		return new SafetyState(this.lastVotedView, lockedView, this.genericQC);
+		return new SafetyState(this.lastVotedView, lockedView, committedView, this.genericQC);
+	}
+
+	public SafetyState withCommittedView(View committedView) {
+		return new SafetyState(this.lastVotedView, this.lockedView, committedView, this.genericQC);
 	}
 
 	public SafetyState withGenericQC(QuorumCertificate genericQC) {
-		return new SafetyState(this.lastVotedView, this.lockedView, genericQC);
+		return new SafetyState(this.lastVotedView, this.lockedView, committedView, genericQC);
 	}
 
 	public static SafetyState initialState() {
-		return new SafetyState(View.of(0L), View.of(0L), null);
+		return new SafetyState();
 	}
 
 	@Override
@@ -74,12 +80,13 @@ final class SafetyState {
 		SafetyState that = (SafetyState) o;
 		return Objects.equals(lastVotedView, that.lastVotedView) &&
 			Objects.equals(lockedView, that.lockedView) &&
+			Objects.equals(committedView, that.committedView) &&
 			Objects.equals(genericQC, that.genericQC);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(lastVotedView, lockedView, genericQC);
+		return Objects.hash(lastVotedView, lockedView, committedView, genericQC);
 	}
 
 	@Override
@@ -105,5 +112,9 @@ final class SafetyState {
 
 	public View getLockedView() {
 		return lockedView;
+	}
+
+	public View getCommittedView() {
+		return committedView;
 	}
 }

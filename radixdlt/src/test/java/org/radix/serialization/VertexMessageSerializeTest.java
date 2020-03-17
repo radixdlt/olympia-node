@@ -41,7 +41,7 @@ public class VertexMessageSerializeTest extends SerializeMessageObject<VertexMes
 		EUID author = EUID.TWO;
 		Atom atom = new Atom();
 
-		VertexMetadata vertexMetadata = new VertexMetadata(view, aid);
+		VertexMetadata vertexMetadata = new VertexMetadata(view, aid, parentView, parentAid);
 		QuorumCertificate qc = new QuorumCertificate(vertexMetadata, new ECDSASignatures());
 		Vertex vertex = new Vertex(qc, view, atom);
 		return new VertexMessage(1, vertex);
