@@ -31,6 +31,7 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 
 public class CreateFungibleTransitionRoutineTest {
+
 	private static class Fungible extends Particle {
 		private final UInt256 amount;
 		Fungible(UInt256 amount) {
@@ -47,6 +48,10 @@ public class CreateFungibleTransitionRoutineTest {
 		}
 	}
 
+	interface WitnessValidatorFungible extends WitnessValidator<Fungible> {
+		// Empty
+	}
+
 	@Test
 	public void equalsContract() {
 		EqualsVerifier.forClass(CreateFungibleTransitionRoutine.UsedAmount.class)
@@ -58,7 +63,7 @@ public class CreateFungibleTransitionRoutineTest {
 		TransitionProcedure<Fungible, UsedAmount, Fungible, VoidUsedData> procedure = new CreateFungibleTransitionRoutine<>(
 			Fungible.class, Fungible.class, Fungible::getAmount, Fungible::getAmount,
 			(a, b) -> Result.success(),
-			mock(WitnessValidator.class)
+			mock(WitnessValidatorFungible.class)
 		).getProcedure1();
 
 		assertThatThrownBy(() -> procedure.inputUsedCompute().compute(
@@ -81,7 +86,7 @@ public class CreateFungibleTransitionRoutineTest {
 		TransitionProcedure<Fungible, VoidUsedData, Fungible, UsedAmount> procedure = new CreateFungibleTransitionRoutine<>(
 			Fungible.class, Fungible.class, Fungible::getAmount, Fungible::getAmount,
 			(a, b) -> Result.success(),
-			mock(WitnessValidator.class)
+			mock(WitnessValidatorFungible.class)
 		).getProcedure2();
 
 		assertThatThrownBy(() -> procedure.inputUsedCompute().compute(
@@ -104,7 +109,7 @@ public class CreateFungibleTransitionRoutineTest {
 		TransitionProcedure<Fungible, VoidUsedData, Fungible, VoidUsedData> procedure = new CreateFungibleTransitionRoutine<>(
 			Fungible.class, Fungible.class, Fungible::getAmount, Fungible::getAmount,
 			(a, b) -> Result.success(),
-			mock(WitnessValidator.class)
+			mock(WitnessValidatorFungible.class)
 		).getProcedure0();
 
 		assertThat(procedure.inputUsedCompute().compute(
@@ -128,7 +133,7 @@ public class CreateFungibleTransitionRoutineTest {
 		TransitionProcedure<Fungible, VoidUsedData, Fungible, VoidUsedData> procedure = new CreateFungibleTransitionRoutine<>(
 			Fungible.class, Fungible.class, Fungible::getAmount, Fungible::getAmount,
 			(a, b) -> Result.success(),
-			mock(WitnessValidator.class)
+			mock(WitnessValidatorFungible.class)
 		).getProcedure0();
 
 
@@ -152,7 +157,7 @@ public class CreateFungibleTransitionRoutineTest {
 		TransitionProcedure<Fungible, VoidUsedData, Fungible, VoidUsedData> procedure = new CreateFungibleTransitionRoutine<>(
 			Fungible.class, Fungible.class, Fungible::getAmount, Fungible::getAmount,
 			(a, b) -> Result.success(),
-			mock(WitnessValidator.class)
+			mock(WitnessValidatorFungible.class)
 		).getProcedure0();
 
 		assertThat(procedure.inputUsedCompute().compute(
@@ -175,7 +180,7 @@ public class CreateFungibleTransitionRoutineTest {
 		TransitionProcedure<Fungible, VoidUsedData, Fungible, VoidUsedData> procedure = new CreateFungibleTransitionRoutine<>(
 			Fungible.class, Fungible.class, Fungible::getAmount, Fungible::getAmount,
 			(a, b) -> Result.success(),
-			mock(WitnessValidator.class)
+			mock(WitnessValidatorFungible.class)
 		).getProcedure0();
 
 		assertThat(procedure.inputUsedCompute().compute(
@@ -198,7 +203,7 @@ public class CreateFungibleTransitionRoutineTest {
 		TransitionProcedure<Fungible, VoidUsedData, Fungible, UsedAmount> procedure = new CreateFungibleTransitionRoutine<>(
 			Fungible.class, Fungible.class, Fungible::getAmount, Fungible::getAmount,
 			(a, b) -> Result.success(),
-			mock(WitnessValidator.class)
+			mock(WitnessValidatorFungible.class)
 		).getProcedure2();
 
 		assertThat(procedure.inputUsedCompute().compute(

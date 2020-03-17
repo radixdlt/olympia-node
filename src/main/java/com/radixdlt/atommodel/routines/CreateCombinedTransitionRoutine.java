@@ -76,6 +76,7 @@ public final class CreateCombinedTransitionRoutine<I extends Particle, O extends
 		this.inputWitnessValidator = inputWitnessValidator;
 	}
 
+	@Override
 	public void main(RoutineCalls calls) {
 		calls.createTransition(
 			new TransitionToken<>(inputClass, TypeToken.of(VoidUsedData.class), outputClass0, TypeToken.of(VoidUsedData.class)),
