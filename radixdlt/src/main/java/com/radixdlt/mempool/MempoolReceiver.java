@@ -69,6 +69,12 @@ public final class MempoolReceiver {
 		}
 	}
 
+	boolean running() {
+		synchronized (this.startLock) {
+			return this.disposable != null;
+		}
+	}
+
 	private void processAtom(Atom atom) {
 		try {
 			this.submissionControl.submitAtom(atom);
