@@ -259,7 +259,7 @@ public class EventCoordinatorTest {
 	}
 
 	@Test
-	public void when_processing_valid_stored_proposal__then_atom_is_voted_on_and_removed() throws Exception {
+	public void when_processing_valid_stored_proposal__then_atom_is_voted_on() throws Exception {
 		ProposalGenerator proposalGenerator = mock(ProposalGenerator.class);
 		Mempool mempool = mock(Mempool.class);
 		EventCoordinatorNetworkSender networkSender = mock(EventCoordinatorNetworkSender.class);
@@ -291,6 +291,5 @@ public class EventCoordinatorTest {
 		eventCoordinator.processProposal(proposedVertex);
 
 		verify(networkSender, times(1)).sendVote(eq(voteMessage));
-		verify(mempool, times(1)).removeCommittedAtom(eq(aid));
 	}
 }

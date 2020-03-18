@@ -128,14 +128,11 @@ public final class EventCoordinator {
 		} catch (VertexInsertionException e) {
 			log.info("Rejected vertex insertion " + e);
 
+			// TODO: Better logic for removal on exception
 			if (atom != null) {
 				mempool.removeRejectedAtom(atom.getAID());
 			}
 			return;
-		}
-
-		if (atom != null) {
-			mempool.removeCommittedAtom(atom.getAID());
 		}
 
 		final VoteResult voteResult;
@@ -143,9 +140,14 @@ public final class EventCoordinator {
 			voteResult = safetyRules.voteFor(proposedVertex);
 			final Vote vote = voteResult.getVote();
 			networkSender.sendVote(vote);
-			// TODO do something on commit
 			voteResult.getCommittedVertexId()
-				.ifPresent(vertexId -> log.info("Committed vertex " + vertexId));
+				.ifPresent(vertexId -> {
+					log.info("Committed vertex " + vertexId);
+
+					final Vertex vertex = vertexStore.commitVertex(vertexId);
+					final Atom committedAtom = vertex.getAtom();
+					mempool.removeCommittedAtom(committedAtom.getAID());
+				});
 		} catch (SafetyViolationException e) {
 			log.error("Rejected " + proposedVertex, e);
 		}

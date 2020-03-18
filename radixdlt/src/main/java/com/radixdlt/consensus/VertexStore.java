@@ -20,7 +20,9 @@ package com.radixdlt.consensus;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -31,6 +33,7 @@ public final class VertexStore {
 
 	private final RadixEngine engine;
 	private final Map<Hash, Vertex> vertices = new HashMap<>();
+	private final Map<Hash, Vertex> committedVertices = new HashMap<>();
 	private QuorumCertificate highestQC;
 
 	// TODO: Cleanup this interface
@@ -47,6 +50,7 @@ public final class VertexStore {
 		this.highestQC = rootQC;
 		this.engine.store(genesisVertex.getAtom());
 		this.vertices.put(genesisVertex.getId(), genesisVertex);
+		this.committedVertices.put(genesisVertex.getId(), genesisVertex);
 	}
 
 	public void syncToQC(QuorumCertificate qc) {
@@ -76,6 +80,28 @@ public final class VertexStore {
 		}
 
 		vertices.put(vertex.getId(), vertex);
+	}
+
+	public Vertex commitVertex(Hash vertexId) {
+		Vertex vertex = vertices.get(vertexId);
+		if (vertex == null) {
+			throw new IllegalStateException("Committing a vertex which was never inserted: " + vertexId);
+		}
+
+		committedVertices.put(vertexId, vertex);
+		return vertex;
+	}
+
+	public List<Vertex> getPathFromRoot(Hash vertexId) {
+		List<Vertex> path = new ArrayList<>();
+
+		Vertex vertex = vertices.get(vertexId);
+		while (!committedVertices.containsKey(vertex.getId())) {
+			path.add(vertex);
+			vertex = vertices.get(vertex.getParentId());
+		}
+
+		return path;
 	}
 
 	public QuorumCertificate getHighestQC() {
