@@ -26,7 +26,6 @@ import com.radixdlt.atommodel.tokens.TokensConstraintScrypt;
 import com.radixdlt.atommodel.unique.UniqueParticleConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.Result;
-import com.radixdlt.common.Atom;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.middleware.AtomCheckHook;
@@ -37,7 +36,6 @@ import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
-import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.universe.Universe;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
@@ -87,8 +85,7 @@ public class MiddlewareModule extends AbstractModule {
 			EngineStore engineStore,
 			Serialization serialization,
 			RuntimeProperties properties,
-			Universe universe,
-			LedgerEntryStore store
+			Universe universe
 	) {
 		RadixEngine radixEngine = new RadixEngine(
 			constraintMachine,
@@ -109,8 +106,6 @@ public class MiddlewareModule extends AbstractModule {
 
 		radixEngine.addAtomEventListener(new EngineAtomEventListener(serialization));
 
-		initGenesis(radixEngine, store, universe);
-
 		return radixEngine;
 	}
 
@@ -118,19 +113,5 @@ public class MiddlewareModule extends AbstractModule {
 	protected void configure() {
 		bind(EngineStore.class).to(LedgerEngineStore.class).in(Scopes.SINGLETON);
 		bind(AtomToBinaryConverter.class).toInstance(new AtomToBinaryConverter(Serialization.getDefault()));
-	}
-
-
-	private void initGenesis(RadixEngine radixEngine, LedgerEntryStore store, Universe universe) {
-		for (Atom atom : universe.getGenesis()) {
-			if (!store.contains(atom.getAID())) {
-				try {
-					radixEngine.store(atom);
-				} catch (Exception e) {
-					log.fatal("Failed to addAtom genesis Atom: " + e.getMessage());
-					System.exit(-1);
-				}
-			}
-		}
 	}
 }

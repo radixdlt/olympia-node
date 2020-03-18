@@ -17,25 +17,21 @@
 
 package com.radixdlt.consensus;
 
-import com.google.common.collect.Sets;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
-import com.radixdlt.common.AID;
 import com.radixdlt.common.Atom;
 import com.radixdlt.common.EUID;
 import com.radixdlt.consensus.liveness.Pacemaker;
+import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyViolationException;
 import com.radixdlt.consensus.safety.VoteResult;
-import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.network.EventCoordinatorNetworkSender;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 
-import java.util.List;
 import java.util.Objects;
 
 /**
@@ -43,11 +39,9 @@ import java.util.Objects;
  */
 public final class EventCoordinator {
 	private static final Logger log = Logging.getLogger("EC");
-	private static final Round GENESIS_ROUND = Round.of(0L);
-	private static final AID GENESIS_ID = AID.ZERO;
 
 	private final VertexStore vertexStore;
-	private final RadixEngine engine;
+	private final ProposalGenerator proposalGenerator;
 	private final Mempool mempool;
 	private final EventCoordinatorNetworkSender networkSender;
 	private final Pacemaker pacemaker;
@@ -57,21 +51,21 @@ public final class EventCoordinator {
 
 	@Inject
 	public EventCoordinator(
+		ProposalGenerator proposalGenerator,
 		Mempool mempool,
 		EventCoordinatorNetworkSender networkSender,
 		SafetyRules safetyRules,
 		Pacemaker pacemaker,
 		VertexStore vertexStore,
-		RadixEngine engine,
 		ProposerElection proposerElection,
 		@Named("self") EUID self
 	) {
+		this.proposalGenerator = Objects.requireNonNull(proposalGenerator);
 		this.mempool = Objects.requireNonNull(mempool);
 		this.networkSender = Objects.requireNonNull(networkSender);
 		this.safetyRules = Objects.requireNonNull(safetyRules);
 		this.pacemaker = Objects.requireNonNull(pacemaker);
 		this.vertexStore = Objects.requireNonNull(vertexStore);
-        this.engine = Objects.requireNonNull(engine);
 		this.proposerElection = Objects.requireNonNull(proposerElection);
 		this.self = Objects.requireNonNull(self);
 	}
@@ -83,13 +77,11 @@ public final class EventCoordinator {
 			return;
 		}
 
-		List<Atom> atoms = mempool.getAtoms(1, Sets.newHashSet());
-		if (!atoms.isEmpty()) {
-			QuorumCertificate highestQC = vertexStore.getHighestQC()
-				.orElseGet(this::makeGenesisQC);
+		Vertex proposal = proposalGenerator.generateProposal(this.pacemaker.getCurrentRound());
 
-			log.info("Starting round " + round + " with proposal " + atoms.get(0));
-			networkSender.broadcastProposal(new Vertex(highestQC, this.pacemaker.getCurrentRound(), atoms.get(0)));
+		// TODO: Handle empty proposals
+		if (proposal.getAtom() != null) {
+			this.networkSender.broadcastProposal(proposal);
 		}
 	}
 
@@ -132,31 +124,32 @@ public final class EventCoordinator {
 		Atom atom = proposedVertex.getAtom();
 
 		try {
-			engine.store(atom);
-		} catch (RadixEngineException e) {
-			mempool.removeRejectedAtom(atom.getAID());
+			vertexStore.insertVertex(proposedVertex);
+		} catch (VertexInsertionException e) {
+			log.info("Rejected vertex insertion " + e);
+
+			// TODO: Better logic for removal on exception
+			if (atom != null) {
+				mempool.removeRejectedAtom(atom.getAID());
+			}
 			return;
 		}
-
-		mempool.removeCommittedAtom(atom.getAID());
-
-		vertexStore.insertVertex(proposedVertex);
 
 		final VoteResult voteResult;
 		try {
 			voteResult = safetyRules.voteFor(proposedVertex);
 			final Vote vote = voteResult.getVote();
 			networkSender.sendVote(vote);
-			// TODO do something on commit
-			voteResult.getCommittedAtom()
-				.ifPresent(aid -> log.info("Committed atom " + aid));
+			voteResult.getCommittedVertexId()
+				.ifPresent(vertexId -> {
+					log.info("Committed vertex " + vertexId);
+
+					final Vertex vertex = vertexStore.commitVertex(vertexId);
+					final Atom committedAtom = vertex.getAtom();
+					mempool.removeCommittedAtom(committedAtom.getAID());
+				});
 		} catch (SafetyViolationException e) {
 			log.error("Rejected " + proposedVertex, e);
 		}
-	}
-
-	private QuorumCertificate makeGenesisQC() {
-		VertexMetadata genesisMetadata = new VertexMetadata(GENESIS_ROUND, GENESIS_ID, GENESIS_ROUND, GENESIS_ID);
-		return new QuorumCertificate(new Vote(this.self, genesisMetadata), genesisMetadata);
 	}
 }

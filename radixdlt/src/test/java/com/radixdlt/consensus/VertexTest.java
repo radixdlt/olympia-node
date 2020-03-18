@@ -17,13 +17,12 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.crypto.Hash;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.radixdlt.common.AID;
 import com.radixdlt.common.Atom;
 import com.radixdlt.common.EUID;
-import com.radixdlt.utils.Ints;
 
 import static org.junit.Assert.*;
 import nl.jqno.equalsverifier.EqualsVerifier;
@@ -35,15 +34,17 @@ public class VertexTest {
 	private Atom atom;
 	private Vote vote;
 	private VertexMetadata vertexMetadata;
+	private Hash parentId;
+	private Hash id;
 
 	@Before
 	public void setUp() throws Exception {
 		Round parentRound = Round.of(1234567890L);
-		AID parentAid = aidOf(23456);
+		this.parentId = Hash.random();
 		Round round = parentRound.next();
-		AID aid = aidOf(123456);
+		this.id = Hash.random();
 
-		this.vertexMetadata = new VertexMetadata(round, aid, parentRound, parentAid);
+		this.vertexMetadata = new VertexMetadata(round, id, parentRound, parentId);
 
 		this.vote = new Vote(EUID.TWO, this.vertexMetadata);
 		this.qc = new QuorumCertificate(this.vote, this.vertexMetadata);
@@ -51,7 +52,7 @@ public class VertexTest {
 
 		this.atom = new Atom();
 
-		this.testObject = new Vertex(this.qc, round, this.atom);
+		this.testObject = Vertex.createVertex(this.qc, round, this.atom);
 	}
 
 	@Test
@@ -71,11 +72,5 @@ public class VertexTest {
 	public void testSerializerConstructor() {
 		// Don't want to see any exceptions here
 		assertNotNull(new Vertex());
-	}
-
-	private static AID aidOf(int id) {
-		byte[] bytes = new byte[AID.BYTES];
-		Ints.copyTo(id, bytes, AID.BYTES - Integer.BYTES);
-		return AID.from(bytes);
 	}
 }
