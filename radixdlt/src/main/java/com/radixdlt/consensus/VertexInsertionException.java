@@ -8,7 +8,7 @@ class VertexInsertionException extends Exception {
 		super(message);
 	}
 
-	VertexInsertionException(Exception cause) {
-		super(cause);
+	VertexInsertionException(String message, Exception cause) {
+		super(message, cause);
 	}
 }

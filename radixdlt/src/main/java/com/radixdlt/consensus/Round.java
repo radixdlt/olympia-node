@@ -4,6 +4,7 @@ package com.radixdlt.consensus;
  * Represents a BFT round used by the Pacemaker of a BFT instance
  */
 public final class Round implements Comparable<Round> {
+	private static final Round GENESIS_ROUND = new Round(0);
 	private final long round;
 
 	private Round(long round) {
@@ -14,7 +15,15 @@ public final class Round implements Comparable<Round> {
 		this.round = round;
 	}
 
+	public static Round genesis() {
+		return GENESIS_ROUND;
+	}
+
 	public static Round of(long round) {
+		if (round == 0) {
+			return GENESIS_ROUND;
+		}
+
 		return new Round(round);
 	}
 

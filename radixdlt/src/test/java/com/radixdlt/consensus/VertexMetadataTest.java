@@ -21,9 +21,6 @@ import com.radixdlt.common.EUID;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.radixdlt.common.AID;
-import com.radixdlt.utils.Ints;
-
 import static org.junit.Assert.*;
 import nl.jqno.equalsverifier.EqualsVerifier;
 

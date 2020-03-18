@@ -9,6 +9,7 @@ import com.radixdlt.consensus.VertexStore;
 import com.radixdlt.mempool.Mempool;
 import java.util.List;
 import java.util.Objects;
+import javax.inject.Inject;
 
 /**
  * Logic for generating new proposals
@@ -17,7 +18,7 @@ public final class ProposalGenerator {
 	private final Mempool mempool;
 	private final VertexStore vertexStore;
 
-	@com.google.inject.Inject
+	@Inject
 	public ProposalGenerator(
 		VertexStore vertexStore,
 		Mempool mempool

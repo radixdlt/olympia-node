@@ -69,7 +69,6 @@ public final class Vertex {
 
 	public static Vertex createVertex(QuorumCertificate qc, Round round, Atom atom) {
 		Objects.requireNonNull(qc);
-		Objects.requireNonNull(round);
 
 		if (round.number() == 0) {
 			throw new IllegalArgumentException("Only genesis can have round 0.");

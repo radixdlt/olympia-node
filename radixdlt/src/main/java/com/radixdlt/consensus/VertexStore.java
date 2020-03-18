@@ -71,7 +71,7 @@ public final class VertexStore {
 			try {
 				this.engine.store(vertex.getAtom());
 			} catch (RadixEngineException e) {
-				throw new VertexInsertionException(e);
+				throw new VertexInsertionException("Failed to execute", e);
 			}
 		}
 
