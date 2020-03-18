@@ -93,10 +93,10 @@ public final class VertexStore {
 	}
 
 	public List<Vertex> getPathFromRoot(Hash vertexId) {
-		List<Vertex> path = new ArrayList<>();
+		final List<Vertex> path = new ArrayList<>();
 
 		Vertex vertex = vertices.get(vertexId);
-		while (!committedVertices.containsKey(vertex.getId())) {
+		while (vertex != null && !committedVertices.containsKey(vertex.getId())) {
 			path.add(vertex);
 			vertex = vertices.get(vertex.getParentId());
 		}
