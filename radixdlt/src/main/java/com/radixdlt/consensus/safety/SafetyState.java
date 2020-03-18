@@ -38,14 +38,14 @@ final class SafetyState {
 		this(View.of(0L), View.of(0L), View.of(0L), null);
 	}
 
-	public SafetyState(View lastVotedView, View lockedView, View committedView, QuorumCertificate genericQC) {
+	SafetyState(View lastVotedView, View lockedView, View committedView, QuorumCertificate genericQC) {
 		this.lastVotedView = Objects.requireNonNull(lastVotedView);
 		this.lockedView = Objects.requireNonNull(lockedView);
 		this.committedView = Objects.requireNonNull(committedView);
 		this.genericQC = genericQC;
 	}
 
-	public SafetyState(SafetyState other) {
+	SafetyState(SafetyState other) {
 		this(other.lastVotedView, other.lockedView, other.committedView, other.genericQC);
 	}
 
@@ -78,10 +78,10 @@ final class SafetyState {
 			return false;
 		}
 		SafetyState that = (SafetyState) o;
-		return Objects.equals(lastVotedView, that.lastVotedView) &&
-			Objects.equals(lockedView, that.lockedView) &&
-			Objects.equals(committedView, that.committedView) &&
-			Objects.equals(genericQC, that.genericQC);
+		return Objects.equals(lastVotedView, that.lastVotedView)
+			&& Objects.equals(lockedView, that.lockedView)
+			&& Objects.equals(committedView, that.committedView)
+			&& Objects.equals(genericQC, that.genericQC);
 	}
 
 	@Override
@@ -91,11 +91,7 @@ final class SafetyState {
 
 	@Override
 	public String toString() {
-		return "SafetyState{" +
-			"lastVotedView=" + lastVotedView +
-			", lockedView=" + lockedView +
-			", genericQC=" + genericQC +
-			'}';
+		return String.format("SafetyState{lastVotedView=%s, lockedView=%s, genericQC=%s}", lastVotedView, lockedView, genericQC);
 	}
 
 	public View getLastVotedView() {

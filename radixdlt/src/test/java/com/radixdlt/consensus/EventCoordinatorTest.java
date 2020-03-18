@@ -305,7 +305,8 @@ public class EventCoordinatorTest {
 	}
 
 	@Test
-	public void when_processing_valid_stored_proposal__then_atom_is_voted_on_and_removed() throws SafetyViolationException, CryptoException, RadixEngineException {
+	public void when_processing_valid_stored_proposal__then_atom_is_voted_on_and_removed()
+		throws SafetyViolationException, CryptoException {
 		ProposalGenerator proposalGenerator = mock(ProposalGenerator.class);
 		Mempool mempool = mock(Mempool.class);
 		EventCoordinatorNetworkSender networkSender = mock(EventCoordinatorNetworkSender.class);

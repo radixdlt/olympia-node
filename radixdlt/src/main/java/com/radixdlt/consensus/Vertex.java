@@ -129,11 +129,7 @@ public final class Vertex {
 
 	@Override
 	public String toString() {
-		return "Vertex{" +
-			"view=" + view +
-			", atom=" + atom +
-			", qc=" + qc +
-			'}';
+		return String.format("Vertex{view=%s, atom=%s, qc=%s}", view, atom, qc);
 	}
 
 	@Override

@@ -20,13 +20,11 @@ package com.radixdlt.consensus;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.Signature;
 import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.serialization.DsonOutput.Output;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -90,9 +88,9 @@ public final class Vote {
 		if (o instanceof Vote) {
 			Vote other = (Vote) o;
 			return
-				Objects.equals(this.author, other.author) &&
-				Objects.equals(this.vertexMetadata, other.vertexMetadata) &&
-				Objects.equals(this.signature, other.signature);
+				Objects.equals(this.author, other.author)
+					&& Objects.equals(this.vertexMetadata, other.vertexMetadata)
+					&& Objects.equals(this.signature, other.signature);
 		}
 		return false;
 	}

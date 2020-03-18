@@ -17,21 +17,14 @@
 
 package com.radixdlt.consensus.safety;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import com.radixdlt.atomos.RadixAddress;
-import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
 import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexInsertionException;
+import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.VertexStore;
 import com.radixdlt.consensus.View;
-import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.VertexMetadata;
-import com.radixdlt.consensus.Vote;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECKeyPair;
@@ -40,6 +33,11 @@ import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import org.junit.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * This tests that the {@link SafetyRules} implementation obeys HotStuff's safety and commit rules.

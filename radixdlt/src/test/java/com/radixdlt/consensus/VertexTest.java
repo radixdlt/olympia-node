@@ -18,18 +18,15 @@
 package com.radixdlt.consensus;
 
 import com.radixdlt.atomos.RadixAddress;
+import com.radixdlt.common.Atom;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.Hash;
+import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.radixdlt.common.Atom;
-import com.radixdlt.common.EUID;
-
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.mock;
-
-import nl.jqno.equalsverifier.EqualsVerifier;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class VertexTest {
 

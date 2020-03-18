@@ -69,8 +69,8 @@ public final class QuorumCertificate {
 			return false;
 		}
 		QuorumCertificate that = (QuorumCertificate) o;
-		return Objects.equals(signatures, that.signatures) &&
-			Objects.equals(vertexMetadata, that.vertexMetadata);
+		return Objects.equals(signatures, that.signatures)
+			&& Objects.equals(vertexMetadata, that.vertexMetadata);
 	}
 
 	@Override

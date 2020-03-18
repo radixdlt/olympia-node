@@ -18,18 +18,15 @@
 package com.radixdlt.consensus;
 
 import com.radixdlt.atomos.RadixAddress;
-import com.radixdlt.common.EUID;
+import com.radixdlt.common.AID;
 import com.radixdlt.crypto.Hash;
+import com.radixdlt.utils.Ints;
+import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.radixdlt.common.AID;
-import com.radixdlt.utils.Ints;
-
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.mock;
-
-import nl.jqno.equalsverifier.EqualsVerifier;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class VoteTest {
 	public static final RadixAddress ADDRESS = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
@@ -39,7 +36,7 @@ public class VoteTest {
 	private Hash id;
 
 	@Before
-	public void setUp() throws Exception {
+	public void setUp() {
 		View parentView = View.of(1234567890L);
 		this.parentId = Hash.random();
 

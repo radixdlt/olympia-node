@@ -103,8 +103,6 @@ public final class NewView {
 
 	@Override
 	public String toString() {
-		return getClass().getSimpleName() + "{" +
-			"view=" + view +
-			'}';
+		return String.format("%s{view=%s}", getClass().getSimpleName(), view);
 	}
 }
