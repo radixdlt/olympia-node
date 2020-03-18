@@ -18,13 +18,11 @@
 package org.radix.serialization;
 
 import com.radixdlt.atomos.RadixAddress;
-import com.radixdlt.common.AID;
+import com.radixdlt.common.EUID;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.Vote;
-import com.radixdlt.utils.Ints;
-
-import static org.mockito.Mockito.mock;
+import com.radixdlt.crypto.Hash;
 
 public class VoteSerializeTest extends SerializeObject<Vote> {
 	public VoteSerializeTest() {
@@ -33,20 +31,13 @@ public class VoteSerializeTest extends SerializeObject<Vote> {
 
 	private static Vote get() {
 		View parentView = View.of(1234567890L);
-		AID parentAid = aidOf(23456);
+		Hash parentId = Hash.random();
 
 		View view = parentView.next();
-		AID aid = aidOf(123456);
+		Hash id = Hash.random();
 
-
-		VertexMetadata vertexMetadata = new VertexMetadata(view, aid, parentView, parentAid);
+		VertexMetadata vertexMetadata = new VertexMetadata(view, id, parentView, parentId);
 		RadixAddress author = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
 		return new Vote(author, vertexMetadata, null);
-	}
-
-	private static AID aidOf(int id) {
-		byte[] bytes = new byte[AID.BYTES];
-		Ints.copyTo(id, bytes, AID.BYTES - Integer.BYTES);
-		return AID.from(bytes);
 	}
 }

@@ -17,27 +17,46 @@
 
 package com.radixdlt.consensus;
 
-import com.google.inject.Inject;
 import com.radixdlt.consensus.safety.QuorumRequirements;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECDSASignatures;
+import com.radixdlt.crypto.Hash;
+import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.engine.RadixEngineException;
 
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 
 /**
  * Manages the BFT Vertex chain
  */
 public final class VertexStore {
-	private final Map<View, Vertex> vertices = new HashMap<>();
-	private final Map<VertexMetadata, ECDSASignatures> pendingVotes = new HashMap<>();
-	private QuorumCertificate highestQC = null;
 
-	@Inject
-	public VertexStore() {
+	private final RadixEngine engine;
+	private final Map<Hash, Vertex> vertices = new HashMap<>();
+	private final Map<Hash, Vertex> committedVertices = new HashMap<>();
+	private final HashMap<Hash, ECDSASignatures> pendingVotes = new HashMap<>();
+	private QuorumCertificate highestQC;
+
+	// TODO: Cleanup this interface
+	public VertexStore(
+		Vertex genesisVertex,
+		QuorumCertificate rootQC,
+		RadixEngine engine
+	) throws RadixEngineException {
+		Objects.requireNonNull(genesisVertex);
+		Objects.requireNonNull(rootQC);
+		Objects.requireNonNull(engine);
+
+		this.engine = engine;
+		this.highestQC = rootQC;
+		this.engine.store(genesisVertex.getAtom());
+		this.vertices.put(genesisVertex.getId(), genesisVertex);
+		this.committedVertices.put(genesisVertex.getId(), genesisVertex);
 	}
 
 	public void syncToQC(QuorumCertificate qc) {
@@ -51,8 +70,9 @@ public final class VertexStore {
 	}
 
 	public Optional<QuorumCertificate> insertVote(Vote vote, QuorumRequirements quorumRequirements) {
+		Hash voteId = vote.getVertexMetadata().getId();
 		ECDSASignature signature = vote.getSignature().orElseThrow(() -> new IllegalArgumentException("vote is missing signature"));
-		ECDSASignatures signatures = pendingVotes.getOrDefault(vote.getVertexMetadata(), new ECDSASignatures());
+		ECDSASignatures signatures = pendingVotes.getOrDefault(voteId, new ECDSASignatures());
 
 		// try to add the signature to form a QC if permitted by the requirements
 		if (quorumRequirements.accepts(vote.getAuthor().getUID())) {
@@ -66,26 +86,62 @@ public final class VertexStore {
 		// try to form a QC with the added signature according to the requirements
 		if (signatures.count() >= quorumRequirements.numRequiredVotes()) {
 			// if QC could be formed, remove pending and return formed QC
-			pendingVotes.remove(vote.getVertexMetadata());
+			pendingVotes.remove(voteId);
 			QuorumCertificate qc = new QuorumCertificate(vote.getVertexMetadata(), signatures);
 			return Optional.of(qc);
 		} else {
 			// if no QC could be formed, update pending and return nothing
-			pendingVotes.put(vote.getVertexMetadata(), signatures);
+			pendingVotes.put(voteId, signatures);
 			return Optional.empty();
 		}
 	}
 
-	public void insertVertex(Vertex vertex) {
+	public void insertVertex(Vertex vertex) throws VertexInsertionException {
+		final Vertex parent = vertices.get(vertex.getParentId());
+		if (parent == null) {
+			throw new MissingParentException(vertex.getParentId());
+		}
+
 		this.syncToQC(vertex.getQC());
-		vertices.put(vertex.getView(), vertex);
+
+		if (vertex.getAtom() != null) {
+			try {
+				this.engine.store(vertex.getAtom());
+			} catch (RadixEngineException e) {
+				throw new VertexInsertionException("Failed to execute", e);
+			}
+		}
+
+		vertices.put(vertex.getId(), vertex);
 	}
 
-	public Vertex getVertex(View view) {
-		return vertices.get(view);
+	public Vertex commitVertex(Hash vertexId) {
+		Vertex vertex = vertices.get(vertexId);
+		if (vertex == null) {
+			throw new IllegalStateException("Committing a vertex which was never inserted: " + vertexId);
+		}
+
+		committedVertices.put(vertexId, vertex);
+		return vertex;
 	}
 
-	public Optional<QuorumCertificate> getHighestQC() {
-		return Optional.ofNullable(this.highestQC);
+	public List<Vertex> getPathFromRoot(Hash vertexId) {
+		final List<Vertex> path = new ArrayList<>();
+
+		Vertex vertex = vertices.get(vertexId);
+		while (vertex != null && !committedVertices.containsKey(vertex.getId())) {
+			path.add(vertex);
+			vertex = vertices.get(vertex.getParentId());
+		}
+
+		return path;
+	}
+
+	public Vertex getVertex(Hash vertexId) {
+		return vertices.get(vertexId);
+	}
+
+	public QuorumCertificate getHighestQC() {
+		return this.highestQC;
 	}
 }

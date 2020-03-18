@@ -21,7 +21,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import com.radixdlt.atomos.RadixAddress;
-import com.radixdlt.common.AID;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
@@ -63,26 +62,21 @@ public final class SafetyRules {
 		this.state = new SafetyState(initialState);
 	}
 
-	private Optional<Vertex> getVertexAt(View view) {
-		return Optional.ofNullable(vertexStore.getVertex(view));
-	}
-
 	/**
 	 * Process a vertex
 	 * @param vertex The vertex
 	 * @return the now-committed aid, if any
 	 */
-	public Optional<AID> process(Vertex vertex) {
-		return process(vertex.getQC(), vertex.getView());
+	public Optional<Hash> process(Vertex vertex) {
+		return process(vertex.getQC());
 	}
 
 	/**
 	 * Process a QC seen at a certain view
 	 * @param qc The quorum certificate
-	 * @param view The view at which it was seen
 	 * @return the now-committed aid, if any
 	 */
-	public Optional<AID> process(QuorumCertificate qc, View view) {
+	public Optional<Hash> process(QuorumCertificate qc) {
 		// pre-commit phase on vertex's parent if there is a newer 1-chain
 		// keep highest 1-chain as the current "generic" QC
 		if (qc.getView().compareTo(this.state.getGenericView().orElse(View.of(0L))) > 0) {
@@ -91,21 +85,21 @@ public final class SafetyRules {
 
 		// commit phase on vertex's grandparent if there is a newer 2-chain
 		// keep the highest 2-chain as the locked QC
-		Vertex parent = vertexStore.getVertex(qc.getView());
-		if (parent != null) {
+		Vertex parent = vertexStore.getVertex(qc.getVertexMetadata().getId());
+		if (parent != null && parent.getQC() != null)  { // genesis QC may be null
 			if (parent.getQC().getView().compareTo(this.state.getLockedView()) > 0) {
 				this.state = this.state.withLockedView(parent.getQC().getView());
 			}
 
 			// decide phase on vertex's great-grandparent if there is a newer 3-chain
 			// return committed aid
-			Vertex grandparent = vertexStore.getVertex(parent.getQC().getView());
-			if (grandparent != null) {
+			Vertex grandparent = vertexStore.getVertex(parent.getQC().getVertexMetadata().getId());
+			if (grandparent != null && grandparent.getQC() != null) { // genesis QC may be null
 				boolean threeChain = qc.getVertexMetadata().getView() == parent.getView()
 					&& parent.getQC().getVertexMetadata().getView() == grandparent.getView();
 				if (threeChain && grandparent.getQC().getView().compareTo(this.state.getCommittedView()) > 0) {
 					this.state = this.state.withCommittedView(grandparent.getQC().getView());
-					return Optional.of(grandparent.getQC().getVertexMetadata().getAID());
+					return Optional.of(grandparent.getQC().getVertexMetadata().getId());
 				}
 			}
 		}
@@ -135,9 +129,9 @@ public final class SafetyRules {
 		this.state = this.state.withLastVotedView(proposedVertex.getView());
 		VertexMetadata vertexMetadata = new VertexMetadata(
 			proposedVertex.getView(),
-			proposedVertex.getAID(),
+			proposedVertex.getId(),
 			proposedVertex.getQC().getView(),
-			proposedVertex.getQC().getVertexMetadata().getAID()
+			proposedVertex.getQC().getVertexMetadata().getId()
 		);
 		// TODO make signing more robust by including author in signed hash
 		Hash vertexHash = this.hasher.hash(vertexMetadata);

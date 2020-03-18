@@ -17,11 +17,9 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.crypto.Hash;
 import org.junit.Before;
 import org.junit.Test;
-
-import com.radixdlt.common.AID;
-import com.radixdlt.utils.Ints;
 
 import static org.junit.Assert.*;
 import nl.jqno.equalsverifier.EqualsVerifier;
@@ -29,16 +27,18 @@ import nl.jqno.equalsverifier.EqualsVerifier;
 public class VertexMetadataTest {
 
 	private VertexMetadata testObject;
+	private Hash parentId;
+	private Hash id;
 
 	@Before
-	public void setUp() throws Exception {
+	public void setUp() {
 		View parentView = View.of(1234567890L);
-		AID parentAid = aidOf(23456);
+		this.parentId = Hash.random();
 
 		View view = parentView.next();
-		AID aid = aidOf(123456);
+		this.id = Hash.random();
 
-		this.testObject = new VertexMetadata(view, aid, parentView, parentAid);
+		this.testObject = new VertexMetadata(view, id, parentView, parentId);
 	}
 
 	@Test
@@ -51,18 +51,13 @@ public class VertexMetadataTest {
 	public void testGetters() {
 		assertEquals(View.of(1234567891L), this.testObject.getView());
 
-		assertEquals(aidOf(123456), this.testObject.getAID());
+		assertEquals(parentId, this.testObject.getParentId());
+		assertEquals(id, this.testObject.getId());
 	}
 
 	@Test
 	public void testSerializerConstructor() {
 		// Don't want to see any exceptions here
 		assertNotNull(new VertexMetadata());
-	}
-
-	private static AID aidOf(int id) {
-		byte[] bytes = new byte[AID.BYTES];
-		Ints.copyTo(id, bytes, AID.BYTES - Integer.BYTES);
-		return AID.from(bytes);
 	}
 }

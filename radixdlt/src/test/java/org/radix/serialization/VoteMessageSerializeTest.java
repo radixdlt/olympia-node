@@ -23,6 +23,7 @@ import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.messages.VoteMessage;
+import com.radixdlt.crypto.Hash;
 import com.radixdlt.utils.Ints;
 
 import static org.mockito.Mockito.mock;
@@ -34,13 +35,13 @@ public class VoteMessageSerializeTest extends SerializeMessageObject<VoteMessage
 
 	private static VoteMessage get() {
 		View parentView = View.of(1234567890L);
-		AID parentAid = aidOf(23456);
+		Hash parentId = Hash.random();
 
 		View view = parentView.next();
-		AID aid = aidOf(123456);
+		Hash id = Hash.random();
 
 		RadixAddress author = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
-		VertexMetadata vertexMetadata = new VertexMetadata(view, aid, parentView, parentAid);
+		VertexMetadata vertexMetadata = new VertexMetadata(view, id, parentView, parentId);
 
 		Vote vote = new Vote(author, vertexMetadata, null);
 

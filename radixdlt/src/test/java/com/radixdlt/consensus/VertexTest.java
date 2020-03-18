@@ -19,12 +19,12 @@ package com.radixdlt.consensus;
 
 import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.crypto.ECDSASignatures;
+import com.radixdlt.crypto.Hash;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.radixdlt.common.AID;
 import com.radixdlt.common.Atom;
-import com.radixdlt.utils.Ints;
+import com.radixdlt.common.EUID;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
@@ -38,15 +38,17 @@ public class VertexTest {
 	private Atom atom;
 	private Vote vote;
 	private VertexMetadata vertexMetadata;
+	private Hash parentId;
+	private Hash id;
 
 	@Before
 	public void setUp() throws Exception {
 		View parentView = View.of(1234567890L);
-		AID parentAid = aidOf(23456);
+		this.parentId = Hash.random();
 		View view = parentView.next();
-		AID aid = aidOf(123456);
+		this.id = Hash.random();
 
-		this.vertexMetadata = new VertexMetadata(view, aid, parentView, parentAid);
+		this.vertexMetadata = new VertexMetadata(view, id, parentView, parentId);
 
 		RadixAddress author = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
 		this.vote = new Vote(author, this.vertexMetadata, null);
@@ -55,7 +57,7 @@ public class VertexTest {
 
 		this.atom = new Atom();
 
-		this.testObject = new Vertex(this.qc, view, this.atom);
+		this.testObject = Vertex.createVertex(this.qc, view, this.atom);
 	}
 
 	@Test
@@ -75,11 +77,5 @@ public class VertexTest {
 	public void testSerializerConstructor() {
 		// Don't want to see any exceptions here
 		assertNotNull(new Vertex());
-	}
-
-	private static AID aidOf(int id) {
-		byte[] bytes = new byte[AID.BYTES];
-		Ints.copyTo(id, bytes, AID.BYTES - Integer.BYTES);
-		return AID.from(bytes);
 	}
 }

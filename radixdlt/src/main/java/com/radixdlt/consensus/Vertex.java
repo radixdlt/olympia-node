@@ -18,9 +18,11 @@
 package com.radixdlt.consensus;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.common.AID;
+import com.google.common.base.Suppliers;
 import com.radixdlt.common.Atom;
+import com.radixdlt.crypto.Hash;
 import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
@@ -28,10 +30,11 @@ import com.radixdlt.serialization.DsonOutput.Output;
 
 import java.util.Objects;
 
+import java.util.function.Supplier;
 import javax.annotation.concurrent.Immutable;
 
 /**
- * Vertex in the BFT Chain
+ * Vertex in a Vertex graph
  */
 @Immutable
 @SerializerId2("consensus.vertex")
@@ -50,17 +53,55 @@ public final class Vertex {
 	@DsonOutput(Output.ALL)
 	private final Atom atom;
 
+	private final transient Supplier<Hash> cachedHash;
+
 	Vertex() {
 		// Serializer only
 		this.qc = null;
 		this.view = null;
 		this.atom = null;
+		this.cachedHash = null;
 	}
 
 	public Vertex(QuorumCertificate qc, View view, Atom atom) {
 		this.qc = qc;
 		this.view = Objects.requireNonNull(view);
 		this.atom = atom;
+		this.cachedHash = Suppliers.memoize(this::doGetHash);
+	}
+
+	public static Vertex createGenesis(Atom atom) {
+		return new Vertex(null, View.of(0), atom);
+	}
+
+	public static Vertex createVertex(QuorumCertificate qc, View view, Atom atom) {
+		Objects.requireNonNull(qc);
+
+		if (view.number() == 0) {
+			throw new IllegalArgumentException("Only genesis can have view 0.");
+		}
+
+		return new Vertex(qc, view, atom);
+	}
+
+	private Hash doGetHash() {
+		try {
+			return new Hash(Hash.hash256(Serialization.getDefault().toDson(this, Output.HASH)));
+		} catch (Exception e) {
+			throw new IllegalStateException("Error generating hash: " + e, e);
+		}
+	}
+
+	public Hash getId() {
+		return this.cachedHash.get();
+	}
+
+	public Hash getParentId() {
+		return qc == null ? null : qc.getVertexMetadata().getId();
+	}
+
+	public View getParentView() {
+		return qc == null ? View.of(0) : qc.getView();
 	}
 
 	public QuorumCertificate getQC() {
@@ -69,10 +110,6 @@ public final class Vertex {
 
 	public View getView() {
 		return view;
-	}
-
-	public AID getAID() {
-		return atom.getAID();
 	}
 
 	public Atom getAtom() {

@@ -120,7 +120,7 @@ public final class GenerateUniverses
 	private Universe buildUniverse(int port, String name, String description, UniverseType type, long timestamp, long planckPeriod) throws Exception {
 		LOGGER.info("------------------ Starting of Universe: " + type.toString() + " ------------------");
 		byte universeMagic = (byte) (Universe.computeMagic(universeKey.getPublicKey(), timestamp, port, type, planckPeriod) & 0xFF);
-		List<Atom> universeAtoms = createGenesisAtoms(universeMagic, timestamp, planckPeriod);
+		Atom universeAtom = createGenesisAtom(universeMagic, timestamp, planckPeriod);
 
 		Universe universe = Universe.newBuilder()
 			.port(port)
@@ -130,7 +130,7 @@ public final class GenerateUniverses
 			.timestamp(timestamp)
 			.planckPeriod(planckPeriod)
 			.creator(universeKey.getPublicKey())
-			.addAtoms(universeAtoms)
+			.addAtom(universeAtom)
 			.build();
 		universe.sign(universeKey);
 
@@ -146,7 +146,7 @@ public final class GenerateUniverses
 		return universe;
 	}
 
-	private List<Atom> createGenesisAtoms(byte magic, long timestamp, long planck) throws Exception {
+	private Atom createGenesisAtom(byte magic, long timestamp, long planck) throws Exception {
 		RadixAddress universeAddress = new RadixAddress(magic, universeKey.getPublicKey());
 		UInt256 genesisAmount = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 + 9); // 10^9 = 1,000,000,000 pieces of eight, please
 		FixedSupplyTokenDefinitionParticle xrdDefinition = createTokenDefinition(magic, "XRD", "Rads", "Radix Native Tokens", genesisAmount);
@@ -180,7 +180,7 @@ public final class GenerateUniverses
 			);
 		}
 
-		return Lists.newArrayList(genesisAtom);
+		return genesisAtom;
 	}
 
 	/*

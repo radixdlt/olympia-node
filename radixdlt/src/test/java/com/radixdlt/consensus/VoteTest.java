@@ -18,6 +18,8 @@
 package com.radixdlt.consensus;
 
 import com.radixdlt.atomos.RadixAddress;
+import com.radixdlt.common.EUID;
+import com.radixdlt.crypto.Hash;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -30,20 +32,21 @@ import static org.mockito.Mockito.mock;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class VoteTest {
-
 	public static final RadixAddress ADDRESS = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
 	private Vote testObject;
 	private VertexMetadata vertexMetadata;
+	private Hash parentId;
+	private Hash id;
 
 	@Before
 	public void setUp() throws Exception {
 		View parentView = View.of(1234567890L);
-		AID parentAid = aidOf(23456);
+		this.parentId = Hash.random();
 
 		View view = parentView.next();
-		AID aid = aidOf(123456);
+		this.id = Hash.random();
 
-		this.vertexMetadata = new VertexMetadata(view, aid, parentView, parentAid);
+		this.vertexMetadata = new VertexMetadata(view, id, parentView, parentId);
 
 		this.testObject = new Vote(ADDRESS, vertexMetadata, null);
 	}

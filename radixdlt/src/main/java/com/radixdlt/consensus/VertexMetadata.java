@@ -17,12 +17,12 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.crypto.Hash;
 import java.util.Objects;
 
 import javax.annotation.concurrent.Immutable;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.common.AID;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
@@ -38,29 +38,32 @@ public final class VertexMetadata {
 
 	private View view;
 
-	@JsonProperty("aid")
+	@JsonProperty("id")
 	@DsonOutput(Output.ALL)
-	private final AID aid;
+	private final Hash id;
 
 	private View parentView;
 
-	@JsonProperty("parent_aid")
+	@JsonProperty("parent_id")
 	@DsonOutput(Output.ALL)
-	private final AID parentAid;
+	private final Hash parentId;
 
 	VertexMetadata() {
 		// Serializer only
 		this.view = null;
-		this.aid = null;
+		this.id = null;
 		this.parentView = null;
-		this.parentAid = null;
+		this.parentId = null;
 	}
 
-	public VertexMetadata(View view, AID aid, View parentView, AID parentAid) {
-		this.view = view;
-		this.aid = aid;
+	public VertexMetadata(View view, Hash id, View parentView, Hash parentId) {
+		if (parentId == null && view.number() != 0) {
+			throw new IllegalArgumentException("Root vertex must be view 0.");
+		}
+        this.view = view;
+		this.id = id;
 		this.parentView = parentView;
-		this.parentAid = parentAid;
+		this.parentId = parentId;
 	}
 
 	public View getView() {
@@ -71,12 +74,12 @@ public final class VertexMetadata {
 		return parentView;
 	}
 
-	public AID getAID() {
-		return aid;
+	public Hash getParentId() {
+		return parentId;
 	}
 
-	public AID getParentAID() {
-		return parentAid;
+	public Hash getId() {
+		return id;
 	}
 
 	@JsonProperty("view")
@@ -101,10 +104,9 @@ public final class VertexMetadata {
 		this.parentView = number == null ? null : View.of(number.longValue());
 	}
 
-
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.view, this.aid, this.parentView, this.parentAid);
+		return Objects.hash(this.view, this.id, this.parentView, this.parentId);
 	}
 
 	@Override
@@ -116,9 +118,9 @@ public final class VertexMetadata {
 			VertexMetadata other = (VertexMetadata) o;
 			return
 				Objects.equals(this.view, other.view)
-				&& Objects.equals(this.aid, other.aid)
+				&& Objects.equals(this.id, other.id)
 				&& Objects.equals(this.parentView, other.parentView)
-				&& Objects.equals(this.parentAid, other.parentAid);
+				&& Objects.equals(this.parentId, other.parentId);
 		}
 		return false;
 	}

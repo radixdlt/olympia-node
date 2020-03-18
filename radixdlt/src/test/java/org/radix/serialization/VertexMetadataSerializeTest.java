@@ -17,10 +17,9 @@
 
 package org.radix.serialization;
 
-import com.radixdlt.common.AID;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.VertexMetadata;
-import com.radixdlt.utils.Ints;
+import com.radixdlt.crypto.Hash;
 
 public class VertexMetadataSerializeTest extends SerializeObject<VertexMetadata> {
 	public VertexMetadataSerializeTest() {
@@ -30,15 +29,9 @@ public class VertexMetadataSerializeTest extends SerializeObject<VertexMetadata>
 	private static VertexMetadata get() {
 		View parentView = View.of(1234567890L);
 		View view = parentView.next();
-		AID parentAid = aidOf(12345);
-		AID aid = aidOf(23456);
+		Hash parentId = Hash.random();
+		Hash id = Hash.random();
 
-		return new VertexMetadata(view, aid, parentView, parentAid);
-	}
-
-	private static AID aidOf(int id) {
-		byte[] bytes = new byte[AID.BYTES];
-		Ints.copyTo(id, bytes, AID.BYTES - Integer.BYTES);
-		return AID.from(bytes);
+		return new VertexMetadata(view, id, parentView, parentId);
 	}
 }
