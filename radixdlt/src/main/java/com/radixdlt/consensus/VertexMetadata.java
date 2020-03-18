@@ -17,7 +17,7 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.common.EUID;
+import com.radixdlt.crypto.Hash;
 import java.util.Objects;
 
 import javax.annotation.concurrent.Immutable;
@@ -40,13 +40,13 @@ public final class VertexMetadata {
 
 	@JsonProperty("id")
 	@DsonOutput(Output.ALL)
-	private final EUID id;
+	private final Hash id;
 
 	private Round parentRound;
 
 	@JsonProperty("parent_id")
 	@DsonOutput(Output.ALL)
-	private final EUID parentId;
+	private final Hash parentId;
 
 	VertexMetadata() {
 		// Serializer only
@@ -56,7 +56,7 @@ public final class VertexMetadata {
 		this.parentId = null;
 	}
 
-	public VertexMetadata(Round round, EUID id, Round parentRound, EUID parentId) {
+	public VertexMetadata(Round round, Hash id, Round parentRound, Hash parentId) {
 		if (parentId == null && round.number() != 0) {
 			throw new IllegalArgumentException("Root vertex must be round 0.");
 		}
@@ -75,11 +75,11 @@ public final class VertexMetadata {
 		return parentRound;
 	}
 
-	public EUID getParentId() {
+	public Hash getParentId() {
 		return parentId;
 	}
 
-	public EUID getId() {
+	public Hash getId() {
 		return id;
 	}
 

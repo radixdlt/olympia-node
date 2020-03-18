@@ -22,6 +22,7 @@ import com.radixdlt.consensus.Round;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.messages.VoteMessage;
+import com.radixdlt.crypto.Hash;
 
 public class VoteMessageSerializeTest extends SerializeMessageObject<VoteMessage> {
 	public VoteMessageSerializeTest() {
@@ -30,10 +31,10 @@ public class VoteMessageSerializeTest extends SerializeMessageObject<VoteMessage
 
 	private static VoteMessage get() {
 		Round parentRound = Round.of(1234567890L);
-		EUID parentId = new EUID(23456);
+		Hash parentId = Hash.random();
 
 		Round round = parentRound.next();
-		EUID id = new EUID(123456);
+		Hash id = Hash.random();
 
 		EUID author = EUID.TWO;
 		VertexMetadata vertexMetadata = new VertexMetadata(round, id, parentRound, parentId);

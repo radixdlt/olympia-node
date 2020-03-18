@@ -18,9 +18,11 @@
 package com.radixdlt.consensus;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.base.Suppliers;
 import com.radixdlt.common.Atom;
-import com.radixdlt.common.EUID;
+import com.radixdlt.crypto.Hash;
 import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
@@ -28,6 +30,7 @@ import com.radixdlt.serialization.DsonOutput.Output;
 
 import java.util.Objects;
 
+import java.util.function.Supplier;
 import javax.annotation.concurrent.Immutable;
 
 /**
@@ -50,17 +53,21 @@ public final class Vertex {
 	@DsonOutput(Output.ALL)
 	private final Atom atom;
 
+	private final transient Supplier<Hash> cachedHash;
+
 	Vertex() {
 		// Serializer only
 		this.qc = null;
 		this.round = null;
 		this.atom = null;
+		this.cachedHash = null;
 	}
 
 	private Vertex(QuorumCertificate qc, Round round, Atom atom) {
 		this.qc = qc;
 		this.round = round;
 		this.atom = atom;
+		this.cachedHash = Suppliers.memoize(this::doGetHash);
 	}
 
 	public static Vertex createGenesis(Atom atom) {
@@ -77,12 +84,19 @@ public final class Vertex {
 		return new Vertex(qc, round, atom);
 	}
 
-	// TODO: Replace with a better type over EUID wrapping hashCode()
-	public EUID getId() {
-		return new EUID(this.hashCode());
+	private Hash doGetHash() {
+		try {
+			return new Hash(Hash.hash256(Serialization.getDefault().toDson(this, Output.HASH)));
+		} catch (Exception e) {
+			throw new IllegalStateException("Error generating hash: " + e, e);
+		}
 	}
 
-	public EUID getParentId() {
+	public Hash getId() {
+		return this.cachedHash.get();
+	}
+
+	public Hash getParentId() {
 		return qc == null ? null : qc.getVertexMetadata().getId();
 	}
 

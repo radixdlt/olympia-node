@@ -26,6 +26,7 @@ import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.Vote;
 
+import com.radixdlt.crypto.Hash;
 import java.util.Objects;
 
 /**
@@ -44,7 +45,7 @@ public final class SafetyRules {
 	}
 
 	@VisibleForTesting
-	EUID getCommittedVertexId(Vertex vertex) {
+	Hash getCommittedVertexId(Vertex vertex) {
 		if (vertex.getRound().equals(vertex.getQC().getRound().next())
 			&& vertex.getQC().getRound().equals(vertex.getQC().getParentRound().next())) {
 			return vertex.getQC().getVertexMetadata().getParentId();
@@ -89,7 +90,7 @@ public final class SafetyRules {
 			proposedVertex.getParentId()
 		);
 		Vote vote = new Vote(self, vertexMetadata);
-		EUID committedVertex = getCommittedVertexId(proposedVertex);
+		Hash committedVertex = getCommittedVertexId(proposedVertex);
 
 		return new VoteResult(vote, committedVertex);
 	}

@@ -25,6 +25,7 @@ import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.messages.VertexMessage;
+import com.radixdlt.crypto.Hash;
 
 public class VertexMessageSerializeTest extends SerializeMessageObject<VertexMessage> {
 	public VertexMessageSerializeTest() {
@@ -34,8 +35,8 @@ public class VertexMessageSerializeTest extends SerializeMessageObject<VertexMes
 	private static VertexMessage get() {
 		Round parentRound = Round.of(1234567890L);
 		Round round = parentRound.next();
-		EUID parentId = new EUID(12345);
-		EUID id = new EUID(23456);
+		Hash parentId = Hash.random();
+		Hash id = Hash.random();
 		EUID author = EUID.TWO;
 		Atom atom = new Atom();
 

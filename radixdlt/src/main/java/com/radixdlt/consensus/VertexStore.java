@@ -17,7 +17,7 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.common.EUID;
+import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import java.util.HashMap;
@@ -30,7 +30,7 @@ import java.util.Objects;
 public final class VertexStore {
 
 	private final RadixEngine engine;
-	private final Map<EUID, Vertex> vertices = new HashMap<>();
+	private final Map<Hash, Vertex> vertices = new HashMap<>();
 	private QuorumCertificate highestQC;
 
 	// TODO: Cleanup this interface

@@ -24,6 +24,7 @@ import com.radixdlt.consensus.Round;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.Vote;
+import com.radixdlt.crypto.Hash;
 
 public class VertexSerializeTest extends SerializeObject<Vertex> {
 	public VertexSerializeTest() {
@@ -33,8 +34,8 @@ public class VertexSerializeTest extends SerializeObject<Vertex> {
 	private static Vertex get() {
 		Round parentRound = Round.of(1234567890L);
 		Round round = parentRound.next();
-		EUID parentId = new EUID(12345);
-		EUID id = new EUID(23456);
+		Hash parentId = Hash.random();
+		Hash id = Hash.random();
 
 		VertexMetadata vertexMetadata = new VertexMetadata(round, id, parentRound, parentId);
 

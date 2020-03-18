@@ -17,7 +17,7 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.common.EUID;
+import com.radixdlt.crypto.Hash;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -27,14 +27,16 @@ import nl.jqno.equalsverifier.EqualsVerifier;
 public class VertexMetadataTest {
 
 	private VertexMetadata testObject;
+	private Hash parentId;
+	private Hash id;
 
 	@Before
-	public void setUp() throws Exception {
+	public void setUp() {
 		Round parentRound = Round.of(1234567890L);
-		EUID parentId = new EUID(23456);
+		this.parentId = Hash.random();
 
 		Round round = parentRound.next();
-		EUID id = new EUID(123456);
+		this.id = Hash.random();
 
 		this.testObject = new VertexMetadata(round, id, parentRound, parentId);
 	}
@@ -50,8 +52,8 @@ public class VertexMetadataTest {
 		assertEquals(Round.of(1234567890L), this.testObject.getParentRound());
 		assertEquals(Round.of(1234567891L), this.testObject.getRound());
 
-		assertEquals(new EUID(23456), this.testObject.getParentId());
-		assertEquals(new EUID(123456), this.testObject.getId());
+		assertEquals(parentId, this.testObject.getParentId());
+		assertEquals(id, this.testObject.getId());
 	}
 
 	@Test
