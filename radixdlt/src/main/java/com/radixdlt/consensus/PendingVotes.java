@@ -23,6 +23,7 @@ import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.Hash;
 
 import java.util.HashMap;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -32,6 +33,9 @@ public final class PendingVotes {
 	private final HashMap<Hash, ECDSASignatures> pendingVotes = new HashMap<>();
 
 	public Optional<QuorumCertificate> insertVote(Vote vote, QuorumRequirements quorumRequirements) {
+		Objects.requireNonNull(vote, "vote");
+		Objects.requireNonNull(quorumRequirements, "quorumRequirements");
+
 		Hash voteId = vote.getVertexMetadata().getId();
 		ECDSASignature signature = vote.getSignature().orElseThrow(() -> new IllegalArgumentException("vote is missing signature"));
 		ECDSASignatures signatures = pendingVotes.getOrDefault(voteId, new ECDSASignatures());
