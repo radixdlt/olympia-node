@@ -17,9 +17,6 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.consensus.safety.QuorumRequirements;
-import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
@@ -29,7 +26,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 
 /**
  * Manages the BFT Vertex chain
@@ -39,7 +35,6 @@ public final class VertexStore {
 	private final RadixEngine engine;
 	private final Map<Hash, Vertex> vertices = new HashMap<>();
 	private final Map<Hash, Vertex> committedVertices = new HashMap<>();
-	private final HashMap<Hash, ECDSASignatures> pendingVotes = new HashMap<>();
 	private QuorumCertificate highestQC;
 
 	// TODO: Cleanup this interface
@@ -66,33 +61,6 @@ public final class VertexStore {
 
 		if (highestQC == null || highestQC.getView().compareTo(qc.getView()) < 0) {
 			highestQC = qc;
-		}
-	}
-
-	public Optional<QuorumCertificate> insertVote(Vote vote, QuorumRequirements quorumRequirements) {
-		Hash voteId = vote.getVertexMetadata().getId();
-		ECDSASignature signature = vote.getSignature().orElseThrow(() -> new IllegalArgumentException("vote is missing signature"));
-		ECDSASignatures signatures = pendingVotes.getOrDefault(voteId, new ECDSASignatures());
-
-		// try to add the signature to form a QC if permitted by the requirements
-		if (quorumRequirements.accepts(vote.getAuthor().getUID())) {
-			// FIXME ugly cast to ECDSASignatures because we need a specific type
-			signatures = (ECDSASignatures) signatures.concatenate(vote.getAuthor(), signature);
-		} else {
-			// there is no meaningful inaction here, so better let the caller know
-			throw new IllegalArgumentException("vote " + vote + " was not accepted into QC");
-		}
-
-		// try to form a QC with the added signature according to the requirements
-		if (signatures.count() >= quorumRequirements.numRequiredVotes()) {
-			// if QC could be formed, remove pending and return formed QC
-			pendingVotes.remove(voteId);
-			QuorumCertificate qc = new QuorumCertificate(vote.getVertexMetadata(), signatures);
-			return Optional.of(qc);
-		} else {
-			// if no QC could be formed, update pending and return nothing
-			pendingVotes.put(voteId, signatures);
-			return Optional.empty();
 		}
 	}
 

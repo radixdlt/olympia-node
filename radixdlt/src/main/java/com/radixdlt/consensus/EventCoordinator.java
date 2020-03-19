@@ -46,6 +46,7 @@ public final class EventCoordinator {
 	private static final Logger log = Logging.getLogger("EC");
 
 	private final VertexStore vertexStore;
+	private final PendingVotes pendingVotes;
 	private final ProposalGenerator proposalGenerator;
 	private final Mempool mempool;
 	private final EventCoordinatorNetworkSender networkSender;
@@ -63,6 +64,7 @@ public final class EventCoordinator {
 		SafetyRules safetyRules,
 		Pacemaker pacemaker,
 		VertexStore vertexStore,
+		PendingVotes pendingVotes,
 		ProposerElection proposerElection,
 		QuorumRequirements quorumRequirements,
 		@Named("self") ECKeyPair selfKey
@@ -73,6 +75,7 @@ public final class EventCoordinator {
 		this.safetyRules = Objects.requireNonNull(safetyRules);
 		this.pacemaker = Objects.requireNonNull(pacemaker);
 		this.vertexStore = Objects.requireNonNull(vertexStore);
+		this.pendingVotes = Objects.requireNonNull(pendingVotes);
 		this.proposerElection = Objects.requireNonNull(proposerElection);
 		this.quorumRequirements = Objects.requireNonNull(quorumRequirements);
 		this.selfKey = Objects.requireNonNull(selfKey);
@@ -102,7 +105,7 @@ public final class EventCoordinator {
 		}
 
 		// accumulate votes into QCs in store
-		Optional<QuorumCertificate> potentialQc = this.vertexStore.insertVote(vote, this.quorumRequirements);
+		Optional<QuorumCertificate> potentialQc = this.pendingVotes.insertVote(vote, this.quorumRequirements);
 		if (potentialQc.isPresent()) {
 			QuorumCertificate qc = potentialQc.get();
 			this.safetyRules.process(qc)
