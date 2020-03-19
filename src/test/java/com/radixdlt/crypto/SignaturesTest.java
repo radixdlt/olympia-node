@@ -1,7 +1,6 @@
 package com.radixdlt.crypto;
 
 import com.google.common.collect.ImmutableMap;
-import org.junit.Assert;
 import org.junit.Test;
 
 import java.math.BigInteger;
@@ -126,8 +125,8 @@ public class SignaturesTest {
         Signatures signatures = DefaultSignatures.single(publicKey(), dummySignature);
         String tostring = signatures.toString();
 
-        Assert.assertThat(tostring, containsString(ECDSASignature.class.getSimpleName()));
-        Assert.assertThat(tostring, containsString(dummySignature.toString()));
+        assertThat(tostring, containsString(ECDSASignature.class.getSimpleName()));
+        assertThat(tostring, containsString(dummySignature.toString()));
     }
 
     private void test_that_we_can_bulk_verify_signatures(

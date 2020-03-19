@@ -29,6 +29,7 @@ import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.AtomEventListener;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.examples.tictactoe.TicTacToeConstraintScrypt.OToMoveParticle;
 import com.radixdlt.examples.tictactoe.TicTacToeConstraintScrypt.XToMoveParticle;
 import com.radixdlt.middleware.ParticleGroup;
@@ -172,7 +173,6 @@ public class TicTacToeRunner {
 			cmAtomOS.buildVirtualLayer(),
 			engineStore
 		);
-		engine.start();
 
 		// Our two tic toe players
 		ECKeyPair xPlayer = new ECKeyPair();
@@ -234,22 +234,11 @@ public class TicTacToeRunner {
 
 		// Execute each atom on the engine and see what happens
 		for (Atom atom : atomsToTest) {
-			engine.store(atom, new AtomEventListener() {
-				@Override
-				public void onCMError(Atom atom, CMError error) {
-					System.out.println("ERROR:   " + atom + " CM verification " + error);
-				}
-
-				@Override
-				public void onStateConflict(Atom atom, DataPointer issueParticle, Atom conflictingAtom) {
-					System.out.println("ERROR:   " + atom + " Conflict with atom " + conflictingAtom);
-				}
-
-				@Override
-				public void onStateStore(Atom atom) {
-					System.out.println("SUCCESS: " + atom);
-				}
-			});
+			try {
+				engine.store(atom);
+			} catch (RadixEngineException e) {
+				System.out.println("ERROR:   " + atom);
+			}
 		}
 	}
 }

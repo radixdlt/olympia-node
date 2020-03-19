@@ -18,12 +18,11 @@
 package com.radixdlt.crypto;
 
 import static org.hamcrest.number.OrderingComparison.lessThan;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
-
+import static org.junit.Assert.assertNull;
 import com.google.common.base.Strings;
 import com.radixdlt.TestSetupUtils;
 import com.radixdlt.utils.Bytes;
@@ -54,8 +53,7 @@ public class HashTest {
 
 	@Test(expected = IllegalArgumentException.class)
 	public void verify_that_an_error_is_thrown_for_too_short_hex_string_constructor() {
-		new Hash("deadbeef");
-		fail();
+		assertNull(new Hash("deadbeef"));
 	}
 
 	@Test

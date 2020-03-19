@@ -12,6 +12,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import java.util.Objects;
+
 /**
  * A collection of <a href="https://en.wikipedia.org/wiki/
  * Elliptic_Curve_Digital_Signature_Algorithm">ECDSA</a> signatures.
@@ -106,35 +108,35 @@ public class ECDSASignatures implements Signatures {
 		return Objects.hash(keyToSignature);
 	}
 
-    @JsonProperty("signatures")
-    @DsonOutput(DsonOutput.Output.ALL)
-    private Map<String, ECDSASignature> getSerializerSignatures() {
-    	if (this.keyToSignature != null) {
-    		return this.keyToSignature.entrySet().stream()
-    			.collect(Collectors.toMap(e -> encodePublicKey(e.getKey()), Map.Entry::getValue));
-    	}
-    	return null;
-    }
+	@JsonProperty("signatures")
+	@DsonOutput(DsonOutput.Output.ALL)
+	private Map<String, ECDSASignature> getSerializerSignatures() {
+		if (this.keyToSignature != null) {
+			return this.keyToSignature.entrySet().stream()
+				.collect(Collectors.toMap(e -> encodePublicKey(e.getKey()), Map.Entry::getValue));
+		}
+		return null;
+	}
 
-    @JsonProperty("signatures")
-    private void setSerializerSignatures(Map<String, ECDSASignature> signatures) {
-    	if (signatures != null) {
-    		this.keyToSignature = signatures.entrySet().stream()
-    			.collect(ImmutableMap.toImmutableMap(e -> decodePublicKey(e.getKey()), Map.Entry::getValue));
-    	} else {
-    		this.keyToSignature = null;
-    	}
-    }
+	@JsonProperty("signatures")
+	private void setSerializerSignatures(Map<String, ECDSASignature> signatures) {
+		if (signatures != null) {
+			this.keyToSignature = signatures.entrySet().stream()
+				.collect(ImmutableMap.toImmutableMap(e -> decodePublicKey(e.getKey()), Map.Entry::getValue));
+		} else {
+			this.keyToSignature = null;
+		}
+	}
 
-    private String encodePublicKey(ECPublicKey key) {
-    	return Bytes.toHexString(key.getBytes());
-    }
+	private String encodePublicKey(ECPublicKey key) {
+		return Bytes.toHexString(key.getBytes());
+	}
 
-    private ECPublicKey decodePublicKey(String str) {
-    	try {
-    		return new ECPublicKey(Bytes.fromHexString(str));
-    	} catch (CryptoException e) {
-    		throw new IllegalStateException("Error decoding public key", e);
-    	}
-    }
+	private ECPublicKey decodePublicKey(String str) {
+		try {
+			return new ECPublicKey(Bytes.fromHexString(str));
+		} catch (CryptoException e) {
+			throw new IllegalStateException("Error decoding public key", e);
+		}
+	}
 }

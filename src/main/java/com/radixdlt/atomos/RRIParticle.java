@@ -32,7 +32,8 @@ public final class RRIParticle extends Particle {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private long nonce;
 
-	private RRIParticle() {
+	RRIParticle() {
+		// Serializer only
 	}
 
 	public RRIParticle(RRI rri) {

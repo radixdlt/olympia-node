@@ -43,6 +43,7 @@ import com.radixdlt.TestSetupUtils;
 
 import static org.junit.Assert.*;
 import static org.hamcrest.Matchers.*;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.assertj.core.api.Assertions.*;
 
 public class RadixKeyStoreTest {

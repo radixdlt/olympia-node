@@ -20,13 +20,12 @@ package com.radixdlt.common;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import com.google.common.base.Strings;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.UInt128;
@@ -61,14 +60,12 @@ public class EUIDTest {
 
 	@Test(expected = IllegalArgumentException.class)
 	public void verify_that_exception_is_thrown_when_calling_constructor_with_too_short_hexstring() {
-		new EUID("deadbeef");
-		fail();
+		assertNull(new EUID("deadbeef"));
 	}
 
 	@Test(expected = IllegalArgumentException.class)
 	public void verify_that_exception_is_thrown_when_calling_constructor_with_empty_byte_array() {
-		new EUID(new byte[0]);
-		fail();
+		assertNull(new EUID(new byte[0]));
 	}
 
 	@Test
