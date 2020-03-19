@@ -21,6 +21,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.errorprone.annotations.Immutable;
 import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
@@ -34,6 +35,7 @@ import com.radixdlt.serialization.SerializerId2;
  * Represents a new-view message in the pacemaker
  */
 @SerializerId2("consensus.newview")
+@Immutable // view cannot be but is effectively final because of serializer
 public final class NewView {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
