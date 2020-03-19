@@ -62,7 +62,7 @@ public final class SafetyRules {
 	}
 
 	/**
-	 * Process a QC seen at a certain view
+	 * Process a QC
 	 * @param qc The quorum certificate
 	 * @return the just-committed vertex id, if any
 	 */
@@ -85,8 +85,8 @@ public final class SafetyRules {
 			// return committed aid
 			Vertex grandparent = vertexStore.getVertex(parent.getQC().getVertexMetadata().getId());
 			if (grandparent != null && grandparent.getQC() != null) { // genesis QC may be null
-				boolean threeChain = qc.getVertexMetadata().getView() == parent.getView()
-					&& parent.getQC().getVertexMetadata().getView() == grandparent.getView();
+				boolean threeChain = qc.getVertexMetadata().getId().equals(parent.getId())
+					&& parent.getQC().getVertexMetadata().getId().equals(grandparent.getId());
 				if (threeChain && grandparent.getQC().getView().compareTo(this.state.getCommittedView()) > 0) {
 					this.state = this.state.withCommittedView(grandparent.getQC().getView());
 					return Optional.of(grandparent.getQC().getVertexMetadata().getId());
