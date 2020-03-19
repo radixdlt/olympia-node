@@ -55,7 +55,7 @@ public final class SafetyRules {
 	/**
 	 * Process a vertex
 	 * @param vertex The vertex
-	 * @return the now-committed aid, if any
+	 * @return the just-committed vertex id, if any
 	 */
 	public Optional<Hash> process(Vertex vertex) {
 		return process(vertex.getQC());
@@ -64,7 +64,7 @@ public final class SafetyRules {
 	/**
 	 * Process a QC seen at a certain view
 	 * @param qc The quorum certificate
-	 * @return the now-committed aid, if any
+	 * @return the just-committed vertex id, if any
 	 */
 	public Optional<Hash> process(QuorumCertificate qc) {
 		// pre-commit phase on vertex's parent if there is a newer 1-chain
