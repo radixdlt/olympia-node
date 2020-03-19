@@ -6,6 +6,11 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
+import com.radixdlt.utils.Bytes;
+
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * A collection of <a href="https://en.wikipedia.org/wiki/
@@ -22,8 +27,6 @@ public class ECDSASignatures implements Signatures {
     @DsonOutput(DsonOutput.Output.ALL)
 	private short version = 100;
 
-    @JsonProperty("signatures")
-    @DsonOutput(DsonOutput.Output.ALL)
     private ImmutableMap<ECPublicKey, ECDSASignature> keyToSignature;
 
     public ECDSASignatures() {
@@ -85,4 +88,53 @@ public class ECDSASignatures implements Signatures {
 	public String toString() {
 		return String.format("%s[%s]", getClass().getSimpleName(), this.keyToSignature);
 	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		ECDSASignatures that = (ECDSASignatures) o;
+		return Objects.equals(keyToSignature, that.keyToSignature);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(keyToSignature);
+	}
+
+    @JsonProperty("signatures")
+    @DsonOutput(DsonOutput.Output.ALL)
+    private Map<String, ECDSASignature> getSerializerSignatures() {
+    	if (this.keyToSignature != null) {
+    		return this.keyToSignature.entrySet().stream()
+    			.collect(Collectors.toMap(e -> encodePublicKey(e.getKey()), Map.Entry::getValue));
+    	}
+    	return null;
+    }
+
+    @JsonProperty("signatures")
+    private void setSerializerSignatures(Map<String, ECDSASignature> signatures) {
+    	if (signatures != null) {
+    		this.keyToSignature = signatures.entrySet().stream()
+    			.collect(ImmutableMap.toImmutableMap(e -> decodePublicKey(e.getKey()), Map.Entry::getValue));
+    	} else {
+    		this.keyToSignature = null;
+    	}
+    }
+
+    private String encodePublicKey(ECPublicKey key) {
+    	return Bytes.toHexString(key.getBytes());
+    }
+
+    private ECPublicKey decodePublicKey(String str) {
+    	try {
+    		return new ECPublicKey(Bytes.fromHexString(str));
+    	} catch (CryptoException e) {
+    		throw new IllegalStateException("Error decoding public key", e);
+    	}
+    }
 }

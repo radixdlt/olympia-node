@@ -4,7 +4,8 @@ import org.junit.Test;
 
 import java.util.function.Supplier;
 
-import static com.radixdlt.serialization.SerializationTestUtilsEngine.testEncodeDecode;
+import static com.radixdlt.serialization.SerializationTestUtilsEngine.testEncodeDecodeJson;
+import static com.radixdlt.serialization.SerializationTestUtilsEngine.testEncodeDecodeDson;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeFalse;
 
@@ -32,29 +33,41 @@ public abstract class SerializeObjectEngine<T> {
     public void testNONEIsEmpty() throws Exception {
         String s2Json = this.serialization.toJson(factory.get(), DsonOutput.Output.NONE);
         assertEquals("{}", s2Json);
+
+        byte[] s2Dson = this.serialization.toDson(factory.get(), DsonOutput.Output.NONE);
+        // CBOR should be completely empty, or empty map
+        if (s2Dson.length != 0) {
+        	assertEquals(2, s2Dson.length);
+        	assertEquals(0xBF, s2Dson[0] & 0xFF); // Indeterminate length map
+        	assertEquals(0xFF, s2Dson[1] & 0xFF); // End of map
+        }
     }
 
     @Test
     public void testEncodeDecodeALL() throws Exception {
         assumeFalse("Not applicable for polymorphic classes", Polymorphic.class.isAssignableFrom(cls));
-        testEncodeDecode(factory.get(), cls, this.serialization, DsonOutput.Output.ALL);
+        testEncodeDecodeJson(factory.get(), cls, this.serialization, DsonOutput.Output.ALL);
+        testEncodeDecodeDson(factory.get(), cls, this.serialization, DsonOutput.Output.ALL);
     }
 
     @Test
     public void testEncodeDecodeAPI() throws Exception {
         assumeFalse("Not applicable for polymorphic classes", Polymorphic.class.isAssignableFrom(cls));
-        testEncodeDecode(factory.get(), cls, this.serialization, DsonOutput.Output.API);
+        testEncodeDecodeJson(factory.get(), cls, this.serialization, DsonOutput.Output.API);
+        testEncodeDecodeDson(factory.get(), cls, this.serialization, DsonOutput.Output.API);
     }
 
     @Test
     public void testEncodeDecodePERSIST() throws Exception {
         assumeFalse("Not applicable for polymorphic classes", Polymorphic.class.isAssignableFrom(cls));
-        testEncodeDecode(factory.get(), cls, this.serialization, DsonOutput.Output.PERSIST);
+        testEncodeDecodeJson(factory.get(), cls, this.serialization, DsonOutput.Output.PERSIST);
+        testEncodeDecodeDson(factory.get(), cls, this.serialization, DsonOutput.Output.PERSIST);
     }
 
     @Test
     public void testEncodeDecodeWIRE() throws Exception {
         assumeFalse("Not applicable for polymorphic classes", Polymorphic.class.isAssignableFrom(cls));
-        testEncodeDecode(factory.get(), cls, this.serialization, DsonOutput.Output.WIRE);
+        testEncodeDecodeJson(factory.get(), cls, this.serialization, DsonOutput.Output.WIRE);
+        testEncodeDecodeDson(factory.get(), cls, this.serialization, DsonOutput.Output.WIRE);
     }
 }
