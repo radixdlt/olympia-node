@@ -23,10 +23,9 @@ import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECKeyPair;
-import org.junit.BeforeClass;
+import com.radixdlt.crypto.Hash;
 
-import java.math.BigInteger;
-import java.util.Objects;
+import org.junit.BeforeClass;
 
 /**
  * JSON Serialization round trip of {@link ECDSASignatures}
@@ -44,19 +43,23 @@ public class ECDSASignaturesSerializationTest extends SerializeObjectEngine<ECDS
     }
 
     private static ECDSASignatures getECDSASignatures() {
+    	try {
+    		Hash hash = Hash.random();
 
-        ECKeyPair k1 = null;
-        try {
-            k1 = new ECKeyPair();
-        } catch (CryptoException e) {
-            e.printStackTrace();
-        }
-        ECDSASignature s1 = new ECDSASignature(BigInteger.ONE, BigInteger.ONE);
+    		ECKeyPair k1 = new ECKeyPair();
+    		ECDSASignature s1 = k1.sign(hash);
 
-        return new ECDSASignatures(
-                ImmutableMap.of(
-                    Objects.requireNonNull(k1).getPublicKey(), s1
-                )
-        );
+    		ECKeyPair k2 = new ECKeyPair();
+    		ECDSASignature s2 = k2.sign(hash);
+
+    		return new ECDSASignatures(
+   				ImmutableMap.of(
+					k1.getPublicKey(), s1,
+					k2.getPublicKey(), s2
+    			)
+    		);
+    	} catch (CryptoException e) {
+    		throw new IllegalStateException("While generating keypair", e);
+    	}
     }
 }

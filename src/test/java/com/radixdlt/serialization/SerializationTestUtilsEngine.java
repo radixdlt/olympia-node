@@ -26,6 +26,7 @@ import com.flipkart.zjsonpatch.JsonDiff;
 
 import java.io.IOException;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.fail;
 
 /**
@@ -37,12 +38,24 @@ final class SerializationTestUtilsEngine {
         throw new IllegalStateException("Can't construct");
     }
 
-    static <T> void testEncodeDecode(T target, Class<T> cls, Serialization serialization, DsonOutput.Output output)
-            throws Exception {
+    static <T> void testEncodeDecodeJson(T target, Class<T> cls, Serialization serialization, DsonOutput.Output output)
+    	throws IOException {
         String json1 = serialization.toJson(target, output);
         T newTarget = serialization.fromJson(json1, cls);
         String json2 = serialization.toJson(newTarget, output);
         compareJson(json1, json2);
+    }
+
+    static <T> void testEncodeDecodeDson(T target, Class<T> cls, Serialization serialization, DsonOutput.Output output)
+		throws IOException {
+        byte[] dson1 = serialization.toDson(target, output);
+        T newTarget = serialization.fromDson(dson1, cls);
+        byte[] dson2 = serialization.toDson(newTarget, output);
+        compareDson(dson1, dson2);
+    }
+
+    static void compareDson(byte[] dson1, byte[] dson2) {
+    	assertArrayEquals(dson1, dson2);
     }
 
     static void compareJson(String s1Json, String s2aJson, String s2bJson) throws IOException {

@@ -17,11 +17,20 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 
+import nl.jqno.equalsverifier.EqualsVerifier;
+
 public class SignaturesTest {
 
 	interface SchnorrSignature extends Signature {
 		// Dummy type for tests
 	}
+
+    @Test
+    public void equalsContract() {
+    	EqualsVerifier.forClass(ECDSASignatures.class)
+    		.withIgnoredFields("version")
+    		.verify();
+    }
 
     @Test
     public void verify_that_ecdsa_is_default_signature_scheme() {
