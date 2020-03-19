@@ -19,7 +19,6 @@ package com.radixdlt.consensus.liveness;
 
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.View;
-import com.radixdlt.consensus.safety.QuorumRequirements;
 
 import java.util.Optional;
 
@@ -29,6 +28,6 @@ import java.util.Optional;
 public interface Pacemaker {
 	View getCurrentView();
 	boolean processLocalTimeout(View view);
-	Optional<View> processRemoteNewView(NewView newView, QuorumRequirements quorumRequirements);
+	Optional<View> processRemoteNewView(NewView newView);
 	Optional<View> processQC(View view);
 }

@@ -27,6 +27,7 @@ import io.reactivex.rxjava3.subjects.PublishSubject;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -38,14 +39,16 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 	static final int TIMEOUT_MILLISECONDS = 500;
 	private final PublishSubject<View> timeouts;
 	private final ScheduledExecutorService executorService;
+	private final QuorumRequirements quorumRequirements;
 
 	private final Map<View, ECDSASignatures> pendingNewViews = new HashMap<>();
 	private View currentView = View.of(0L);
 	private View highestQCView = View.of(0L);
 
-	public PacemakerImpl(ScheduledExecutorService executorService) {
+	public PacemakerImpl(QuorumRequirements quorumRequirements, ScheduledExecutorService executorService) {
+		this.quorumRequirements = Objects.requireNonNull(quorumRequirements);
+		this.executorService = Objects.requireNonNull(executorService);
 		this.timeouts = PublishSubject.create();
-		this.executorService = executorService;
 	}
 
 	private void scheduleTimeout(final View timeoutView) {
@@ -72,7 +75,7 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 	}
 
 	@Override
-	public Optional<View> processRemoteNewView(NewView newView, QuorumRequirements quorumRequirements) {
+	public Optional<View> processRemoteNewView(NewView newView) {
 		ECDSASignature signature = newView.getSignature().orElseThrow(() -> new IllegalArgumentException("new-view is missing signature"));
 		ECDSASignatures signatures = pendingNewViews.getOrDefault(newView.getView(), new ECDSASignatures());
 
@@ -89,6 +92,7 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 		// check if we have gotten enough new-views to proceed
 		if (signatures.count() >= quorumRequirements.numRequiredVotes()) {
 			// if we got enough new-views, remove pending and return formed QC
+			pendingNewViews.remove(newView.getView());
 			return Optional.of(newView.getView().next());
 		} else {
 			// if we haven't got enough new-views yet, do nothing

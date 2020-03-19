@@ -152,7 +152,7 @@ public final class EventCoordinator {
 			return;
 		}
 
-		this.pacemaker.processRemoteNewView(newView, this.quorumRequirements)
+		this.pacemaker.processRemoteNewView(newView)
 			.ifPresent(this::processNewView);
 	}
 

@@ -53,6 +53,7 @@ public class CerberusModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		// dependencies
+		bind(QuorumRequirements.class).to(SingleNodeQuorumRequirements.class);
 		bind(Scheduler.class).toProvider(SingleThreadedScheduler::new);
 
 		bind(ProposerElection.class).to(DumbProposerElection.class);
@@ -60,14 +61,13 @@ public class CerberusModule extends AbstractModule {
 		bind(PacemakerRx.class).to(PacemakerImpl.class);
 		bind(Pacemaker.class).to(PacemakerImpl.class);
 
-		bind(QuorumRequirements.class).to(SingleNodeQuorumRequirements.class);
 		bind(SafetyRules.class).in(Scopes.SINGLETON);
 	}
 
 	@Provides
 	@Singleton
-	private PacemakerImpl pacemaker() {
-		return new PacemakerImpl(Executors.newSingleThreadScheduledExecutor());
+	private PacemakerImpl pacemaker(QuorumRequirements quorumRequirements) {
+		return new PacemakerImpl(quorumRequirements, Executors.newSingleThreadScheduledExecutor());
 	}
 
 	@Provides
