@@ -29,12 +29,15 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import javax.annotation.concurrent.Immutable;
+
 /**
  * A collection of <a href="https://en.wikipedia.org/wiki/
  * Elliptic_Curve_Digital_Signature_Algorithm">ECDSA</a> signatures.
  */
+@Immutable
 @SerializerId2("crypto.ecdsa_signatures")
-public class ECDSASignatures implements Signatures {
+public final class ECDSASignatures implements Signatures {
     // Placeholder for the serializer ID
     @JsonProperty(SerializerConstants.SERIALIZER_NAME)
     @DsonOutput(DsonOutput.Output.ALL)
@@ -108,10 +111,7 @@ public class ECDSASignatures implements Signatures {
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (o == null || getClass() != o.getClass()) {
+		if (!(o instanceof ECDSASignatures)) {
 			return false;
 		}
 		ECDSASignatures that = (ECDSASignatures) o;
