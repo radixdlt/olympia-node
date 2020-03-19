@@ -92,9 +92,9 @@ public class EventCoordinatorTest {
 		SafetyRules safetyRules = mock(SafetyRules.class);
 		Pacemaker pacemaker = mock(Pacemaker.class);
 		VertexStore vertexStore = mock(VertexStore.class);
-		PendingVotes pendingVotes = new PendingVotes();
-		ProposerElection proposerElection = mock(ProposerElection.class);
 		QuorumRequirements quorumRequirements = new SingleNodeQuorumRequirements(SELF_ADDRESS.getUID());
+		PendingVotes pendingVotes = new PendingVotes(quorumRequirements);
+		ProposerElection proposerElection = mock(ProposerElection.class);
 
 		EventCoordinator eventCoordinator = new EventCoordinator(
 			proposalGenerator,
@@ -150,7 +150,7 @@ public class EventCoordinatorTest {
 		when(vertexMetadata.getView()).thenReturn(View.of(0L));
 		when(vertexMetadata.getId()).thenReturn(Hash.random());
 		when(proposerElection.isValidProposer(any(), any())).thenReturn(true);
-		when(pendingVotes.insertVote(eq(vote), any())).thenReturn(Optional.of(mock(QuorumCertificate.class)));
+		when(pendingVotes.insertVote(eq(vote))).thenReturn(Optional.of(mock(QuorumCertificate.class)));
 
 		eventCoordinator.processVote(vote);
 		verify(safetyRules, times(1)).process(any(QuorumCertificate.class));
@@ -165,9 +165,9 @@ public class EventCoordinatorTest {
 		SafetyRules safetyRules = mock(SafetyRules.class);
 		Pacemaker pacemaker = mock(Pacemaker.class);
 		VertexStore vertexStore = mock(VertexStore.class);
-		PendingVotes pendingVotes = new PendingVotes();
-		ProposerElection proposerElection = mock(ProposerElection.class);
 		QuorumRequirements quorumRequirements = new SingleNodeQuorumRequirements(SELF_ADDRESS.getUID());
+		PendingVotes pendingVotes = new PendingVotes(quorumRequirements);
+		ProposerElection proposerElection = mock(ProposerElection.class);
 
 		EventCoordinator eventCoordinator = new EventCoordinator(
 			proposalGenerator,
@@ -194,9 +194,9 @@ public class EventCoordinatorTest {
 		SafetyRules safetyRules = mock(SafetyRules.class);
 		Pacemaker pacemaker = mock(Pacemaker.class);
 		VertexStore vertexStore = mock(VertexStore.class);
-		PendingVotes pendingVotes = new PendingVotes();
-		ProposerElection proposerElection = mock(ProposerElection.class);
 		QuorumRequirements quorumRequirements = new SingleNodeQuorumRequirements(SELF_ADDRESS.getUID());
+		PendingVotes pendingVotes = new PendingVotes(quorumRequirements);
+		ProposerElection proposerElection = mock(ProposerElection.class);
 
 		EventCoordinator eventCoordinator = new EventCoordinator(
 			proposalGenerator,
@@ -223,9 +223,9 @@ public class EventCoordinatorTest {
 		SafetyRules safetyRules = mock(SafetyRules.class);
 		Pacemaker pacemaker = mock(Pacemaker.class);
 		VertexStore vertexStore = mock(VertexStore.class);
-		PendingVotes pendingVotes = new PendingVotes();
-		ProposerElection proposerElection = mock(ProposerElection.class);
 		QuorumRequirements quorumRequirements = new SingleNodeQuorumRequirements(SELF_ADDRESS.getUID());
+		PendingVotes pendingVotes = new PendingVotes(quorumRequirements);
+		ProposerElection proposerElection = mock(ProposerElection.class);
 
 		EventCoordinator eventCoordinator = new EventCoordinator(
 			proposalGenerator,
@@ -254,9 +254,9 @@ public class EventCoordinatorTest {
 		SafetyRules safetyRules = mock(SafetyRules.class);
 		Pacemaker pacemaker = mock(Pacemaker.class);
 		VertexStore vertexStore = mock(VertexStore.class);
-		PendingVotes pendingVotes = new PendingVotes();
-		ProposerElection proposerElection = mock(ProposerElection.class);
 		QuorumRequirements quorumRequirements = new SingleNodeQuorumRequirements(SELF_ADDRESS.getUID());
+		PendingVotes pendingVotes = new PendingVotes(quorumRequirements);
+		ProposerElection proposerElection = mock(ProposerElection.class);
 
 		EventCoordinator eventCoordinator = new EventCoordinator(
 			proposalGenerator,
@@ -285,9 +285,9 @@ public class EventCoordinatorTest {
 		SafetyRules safetyRules = mock(SafetyRules.class);
 		Pacemaker pacemaker = mock(Pacemaker.class);
 		VertexStore vertexStore = mock(VertexStore.class);
-		PendingVotes pendingVotes = new PendingVotes();
-		ProposerElection proposerElection = mock(ProposerElection.class);
 		QuorumRequirements quorumRequirements = new SingleNodeQuorumRequirements(SELF_ADDRESS.getUID());
+		PendingVotes pendingVotes = new PendingVotes(quorumRequirements);
+		ProposerElection proposerElection = mock(ProposerElection.class);
 
 		EventCoordinator eventCoordinator = new EventCoordinator(
 			proposalGenerator,
@@ -324,9 +324,9 @@ public class EventCoordinatorTest {
 		SafetyRules safetyRules = mock(SafetyRules.class);
 		Pacemaker pacemaker = mock(Pacemaker.class);
 		VertexStore vertexStore = mock(VertexStore.class);
-		PendingVotes pendingVotes = new PendingVotes();
-		ProposerElection proposerElection = mock(ProposerElection.class);
 		QuorumRequirements quorumRequirements = new SingleNodeQuorumRequirements(SELF_ADDRESS.getUID());
+		PendingVotes pendingVotes = new PendingVotes(quorumRequirements);
+		ProposerElection proposerElection = mock(ProposerElection.class);
 
 		EventCoordinator eventCoordinator = new EventCoordinator(
 			proposalGenerator,
@@ -365,7 +365,7 @@ public class EventCoordinatorTest {
 		VertexStore vertexStore = mock(VertexStore.class);
 		ProposerElection proposerElection = mock(ProposerElection.class);
 		QuorumRequirements quorumRequirements = new SingleNodeQuorumRequirements(SELF_ADDRESS.getUID());
-		PendingVotes pendingVotes = new PendingVotes();
+		PendingVotes pendingVotes = new PendingVotes(quorumRequirements);
 
 		EventCoordinator eventCoordinator = new EventCoordinator(
 			proposalGenerator,

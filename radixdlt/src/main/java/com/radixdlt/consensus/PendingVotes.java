@@ -30,11 +30,23 @@ import java.util.Optional;
  * Manages pending votes for various vertices
  */
 public final class PendingVotes {
+	private final QuorumRequirements quorumRequirements;
 	private final HashMap<Hash, ECDSASignatures> pendingVotes = new HashMap<>();
 
-	public Optional<QuorumCertificate> insertVote(Vote vote, QuorumRequirements quorumRequirements) {
+	public PendingVotes(QuorumRequirements quorumRequirements) {
+		this.quorumRequirements = Objects.requireNonNull(quorumRequirements);
+	}
+
+	/**
+	 * Inserts a vote for a given vertex, attempting to form a quorum certificate for that vertex.
+	 *
+	 * The vote will only be inserted if permitted by the installed {@link QuorumRequirements}.
+	 * Similarly, a QC will only be formed if permitted by the installed {@link QuorumRequirements}.
+	 * @param vote The vote to be inserted
+	 * @return The generated QC, if any
+	 */
+	public Optional<QuorumCertificate> insertVote(Vote vote) {
 		Objects.requireNonNull(vote, "vote");
-		Objects.requireNonNull(quorumRequirements, "quorumRequirements");
 
 		Hash voteId = vote.getVertexMetadata().getId();
 		ECDSASignature signature = vote.getSignature().orElseThrow(() -> new IllegalArgumentException("vote is missing signature"));

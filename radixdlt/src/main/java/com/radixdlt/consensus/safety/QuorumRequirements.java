@@ -19,8 +19,20 @@ package com.radixdlt.consensus.safety;
 
 import com.radixdlt.common.EUID;
 
+/**
+ * Static requirements for forming a quorum
+ */
 public interface QuorumRequirements {
+	/**
+	 * Gets the number of votes required for the quorum
+	 * @return the number of required votes
+	 */
 	int numRequiredVotes();
 
+	/**
+	 * Tests whether the given author is accepted into the quorum
+	 * @param author The author
+	 * @return Whether the author is acceptable
+	 */
 	boolean accepts(EUID author);
 }

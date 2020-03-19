@@ -105,7 +105,7 @@ public final class EventCoordinator {
 		}
 
 		// accumulate votes into QCs in store
-		Optional<QuorumCertificate> potentialQc = this.pendingVotes.insertVote(vote, this.quorumRequirements);
+		Optional<QuorumCertificate> potentialQc = this.pendingVotes.insertVote(vote);
 		if (potentialQc.isPresent()) {
 			QuorumCertificate qc = potentialQc.get();
 			processQC(qc);

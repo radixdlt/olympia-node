@@ -35,37 +35,37 @@ import static org.mockito.Mockito.when;
 public class PendingVotesTest {
 	@Test
 	public void when_inserting_a_vote_without_signature__then_exception_is_thrown() {
-		PendingVotes pendingVotes = new PendingVotes();
+		PendingVotes pendingVotes = new PendingVotes(mock(QuorumRequirements.class));
 		Vote voteWithoutSignature = mock(Vote.class);
 		when(voteWithoutSignature.getVertexMetadata()).thenReturn(mock(VertexMetadata.class));
 		when(voteWithoutSignature.getSignature()).thenReturn(Optional.empty());
 
-		assertThatThrownBy(() -> pendingVotes.insertVote(voteWithoutSignature, mock(QuorumRequirements.class)));
+		assertThatThrownBy(() -> pendingVotes.insertVote(voteWithoutSignature));
 	}
 
 	@Test
 	public void when_inserting_valid_but_unaccepted_votes__then_exception_is_thrown() {
-		PendingVotes pendingVotes = new PendingVotes();
 		Hash vertexId = Hash.random();
 		Vote vote1 = makeVoteFor(vertexId);
 		Vote vote2 = makeVoteFor(vertexId);
 		QuorumRequirements quorumRequirements = WhitelistQuorum.from(vote1.getAuthor());
-		assertThatThrownBy(() -> pendingVotes.insertVote(vote2, quorumRequirements))
+		PendingVotes pendingVotes = new PendingVotes(quorumRequirements);
+		assertThatThrownBy(() -> pendingVotes.insertVote(vote2))
 			.isInstanceOf(IllegalArgumentException.class);
-		pendingVotes.insertVote(vote1, quorumRequirements);
-		assertThatThrownBy(() -> pendingVotes.insertVote(vote2, quorumRequirements))
+		pendingVotes.insertVote(vote1);
+		assertThatThrownBy(() -> pendingVotes.insertVote(vote2))
 			.isInstanceOf(IllegalArgumentException.class);
 	}
 
 	@Test
 	public void when_inserting_valid_and_accepted_votes__then_qc_is_formed() {
-		PendingVotes pendingVotes = new PendingVotes();
 		Hash vertexId = Hash.random();
 		Vote vote1 = makeVoteFor(vertexId);
 		Vote vote2 = makeVoteFor(vertexId);
 		QuorumRequirements quorumRequirements = WhitelistQuorum.from(vote1.getAuthor(), vote2.getAuthor());
-		pendingVotes.insertVote(vote1, quorumRequirements);
-		assertThat(pendingVotes.insertVote(vote2, quorumRequirements)).isNotEmpty();
+		PendingVotes pendingVotes = new PendingVotes(quorumRequirements);
+		pendingVotes.insertVote(vote1);
+		assertThat(pendingVotes.insertVote(vote2)).isNotEmpty();
 	}
 
 	private Vote makeVoteFor(Hash vertexId) {
