@@ -116,6 +116,10 @@ public final class Vertex {
 		return atom;
 	}
 
+	public boolean isGenesis() {
+		return this.view.isGenesis();
+	}
+
 	@JsonProperty("view")
 	@DsonOutput(Output.ALL)
 	private Long getSerializerView() {

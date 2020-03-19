@@ -76,7 +76,12 @@ public final class SafetyRules {
 		// commit phase on vertex's grandparent if there is a newer 2-chain
 		// keep the highest 2-chain as the locked QC
 		Vertex parent = vertexStore.getVertex(qc.getVertexMetadata().getId());
-		if (parent != null && parent.getQC() != null)  { // genesis QC may be null
+		if (parent == null) {
+			throw new IllegalStateException(String.format(
+				"QC %s has no vertex at %s", qc, qc.getVertexMetadata().getId()));
+		}
+		// do not go beyond genesis
+		if (!parent.isGenesis()) {
 			if (parent.getQC().getView().compareTo(this.state.getLockedView()) > 0) {
 				this.state = this.state.withLockedView(parent.getQC().getView());
 			}
@@ -84,7 +89,12 @@ public final class SafetyRules {
 			// decide phase on vertex's great-grandparent if there is a newer 3-chain
 			// return committed aid
 			Vertex grandparent = vertexStore.getVertex(parent.getQC().getVertexMetadata().getId());
-			if (grandparent != null && grandparent.getQC() != null) { // genesis QC may be null
+			if (grandparent == null) {
+				throw new IllegalStateException(String.format(
+					"QC %s has no vertex at %s", qc, qc.getVertexMetadata().getId()));
+			}
+			// do not go beyond genesis
+			if (!grandparent.isGenesis()) {
 				boolean threeChain = qc.getVertexMetadata().getId().equals(parent.getId())
 					&& parent.getQC().getVertexMetadata().getId().equals(grandparent.getId());
 				if (threeChain && grandparent.getQC().getView().compareTo(this.state.getCommittedView()) > 0) {

@@ -53,6 +53,10 @@ public final class View implements Comparable<View> {
 		return "view " + this.view;
 	}
 
+	public boolean isGenesis() {
+		return GENESIS_VIEW.equals(this);
+	}
+
 	public static View genesis() {
 		return GENESIS_VIEW;
 	}
