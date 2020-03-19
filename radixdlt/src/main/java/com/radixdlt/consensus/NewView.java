@@ -23,6 +23,7 @@ import java.util.Optional;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
@@ -40,7 +41,7 @@ public final class NewView {
 
 	@JsonProperty("author")
 	@DsonOutput(Output.ALL)
-	private final RadixAddress author;
+	private final ECPublicKey author;
 
 	private View view;
 
@@ -55,13 +56,13 @@ public final class NewView {
 		this.signature = null;
 	}
 
-	public NewView(RadixAddress author, View view, ECDSASignature signature) {
+	public NewView(ECPublicKey author, View view, ECDSASignature signature) {
 		this.author = Objects.requireNonNull(author);
 		this.view = Objects.requireNonNull(view);
 		this.signature = signature;
 	}
 
-	public RadixAddress getAuthor() {
+	public ECPublicKey getAuthor() {
 		return author;
 	}
 

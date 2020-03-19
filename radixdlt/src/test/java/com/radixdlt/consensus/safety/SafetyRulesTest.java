@@ -53,7 +53,7 @@ public class SafetyRulesTest {
 		when(keyPair.getUID()).thenReturn(EUID.ONE);
 		RadixAddress address = mock(RadixAddress.class);
 		when(address.getKey()).thenReturn(SELF);
-		return new SafetyRules(address, keyPair, vertex -> Hash.ZERO_HASH, vertexStore, SafetyState.initialState());
+		return new SafetyRules(keyPair, vertex -> Hash.ZERO_HASH, vertexStore, SafetyState.initialState());
 	}
 
 	private static ECPublicKey makePubKey(EUID id) {

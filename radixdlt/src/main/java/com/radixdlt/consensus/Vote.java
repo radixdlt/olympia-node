@@ -20,6 +20,7 @@ package com.radixdlt.consensus;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
@@ -40,7 +41,7 @@ public final class Vote {
 
 	@JsonProperty("author")
 	@DsonOutput(Output.ALL)
-	private final RadixAddress author;
+	private final ECPublicKey author;
 
 	@JsonProperty("vertex_metadata")
 	@DsonOutput(Output.ALL)
@@ -57,13 +58,13 @@ public final class Vote {
 		this.signature = null;
 	}
 
-	public Vote(RadixAddress author, VertexMetadata vertexMetadata, ECDSASignature signature) {
+	public Vote(ECPublicKey author, VertexMetadata vertexMetadata, ECDSASignature signature) {
 		this.author = Objects.requireNonNull(author);
 		this.vertexMetadata = Objects.requireNonNull(vertexMetadata);
 		this.signature = signature;
 	}
 
-	public RadixAddress getAuthor() {
+	public ECPublicKey getAuthor() {
 		return author;
 	}
 

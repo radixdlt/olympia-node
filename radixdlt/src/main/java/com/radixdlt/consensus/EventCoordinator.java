@@ -19,7 +19,6 @@ package com.radixdlt.consensus;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
-import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.common.Atom;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
@@ -53,7 +52,6 @@ public final class EventCoordinator {
 	private final Pacemaker pacemaker;
 	private final ProposerElection proposerElection;
 	private final QuorumRequirements quorumRequirements;
-	private final RadixAddress selfAddress;
 	private final ECKeyPair selfKey; // TODO remove signing/address to separate identity management
 	private final SafetyRules safetyRules;
 
@@ -67,7 +65,6 @@ public final class EventCoordinator {
 		VertexStore vertexStore,
 		ProposerElection proposerElection,
 		QuorumRequirements quorumRequirements,
-		@Named("self") RadixAddress selfAddress,
 		@Named("self") ECKeyPair selfKey
 	) {
 		this.proposalGenerator = Objects.requireNonNull(proposalGenerator);
@@ -78,17 +75,13 @@ public final class EventCoordinator {
 		this.vertexStore = Objects.requireNonNull(vertexStore);
 		this.proposerElection = Objects.requireNonNull(proposerElection);
 		this.quorumRequirements = Objects.requireNonNull(quorumRequirements);
-		this.selfAddress = Objects.requireNonNull(selfAddress);
 		this.selfKey = Objects.requireNonNull(selfKey);
-		if (!selfAddress.getKey().equals(selfKey.getPublicKey())) {
-			throw new IllegalArgumentException("Address and key mismatch: " + selfAddress + " != " + selfKey);
-		}
 	}
 
 	private void processNewView(View view) {
 		log.debug("Processing new view: " + view);
 		// only do something if we're actually the leader
-		if (!proposerElection.isValidProposer(selfAddress.getUID(), view)) {
+		if (!proposerElection.isValidProposer(selfKey.getUID(), view)) {
 			return;
 		}
 
@@ -103,7 +96,7 @@ public final class EventCoordinator {
 
 	public void processVote(Vote vote) {
 		// only do something if we're actually the leader for the next view
-		if (!proposerElection.isValidProposer(selfAddress.getUID(), vote.getVertexMetadata().getView().next())) {
+		if (!proposerElection.isValidProposer(selfKey.getUID(), vote.getVertexMetadata().getView().next())) {
 			log.warn(String.format("Ignoring confused vote %s for %s", vote.hashCode(), vote.getVertexMetadata().getView()));
 			return;
 		}
@@ -136,7 +129,7 @@ public final class EventCoordinator {
 		try {
 			// TODO make signing more robust by including author in signed hash
 			ECDSASignature signature = this.selfKey.sign(Hash.hash256(Longs.toByteArray(view.next().number())));
-			this.networkSender.sendNewView(new NewView(selfAddress, view.next(), signature));
+			this.networkSender.sendNewView(new NewView(selfKey.getPublicKey(), view.next(), signature));
 		} catch (CryptoException e) {
 			log.error("Failed to sign new view at " + view, e);
 		}
@@ -144,7 +137,7 @@ public final class EventCoordinator {
 
 	public void processRemoteNewView(NewView newView) {
 		// only do something if we're actually the leader for the next view
-		if (!proposerElection.isValidProposer(selfAddress.getUID(), newView.getView())) {
+		if (!proposerElection.isValidProposer(selfKey.getPublicKey().getUID(), newView.getView())) {
 			log.warn(String.format("Got confused new-view %s for view ", newView.hashCode()) + newView.getView());
 			return;
 		}

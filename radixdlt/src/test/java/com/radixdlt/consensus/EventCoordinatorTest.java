@@ -104,7 +104,6 @@ public class EventCoordinatorTest {
 			vertexStore,
 			proposerElection,
 			quorumRequirements,
-			SELF_ADDRESS,
 			SELF_KEY);
 
 		Vote voteMessage = mock(Vote.class);
@@ -138,7 +137,6 @@ public class EventCoordinatorTest {
 			vertexStore,
 			proposerElection,
 			quorumRequirements,
-			SELF_ADDRESS,
 			SELF_KEY);
 
 		when(mempool.getAtoms(anyInt(), any())).thenReturn(Lists.newArrayList());
@@ -174,7 +172,6 @@ public class EventCoordinatorTest {
 			vertexStore,
 			proposerElection,
 			quorumRequirements,
-			SELF_ADDRESS,
 			SELF_KEY);
 
 		when(pacemaker.processLocalTimeout(any())).thenReturn(true);
@@ -202,7 +199,6 @@ public class EventCoordinatorTest {
 			vertexStore,
 			proposerElection,
 			quorumRequirements,
-			SELF_ADDRESS,
 			SELF_KEY);
 
 		when(pacemaker.processLocalTimeout(any())).thenReturn(false);
@@ -230,7 +226,6 @@ public class EventCoordinatorTest {
 			vertexStore,
 			proposerElection,
 			quorumRequirements,
-			SELF_ADDRESS,
 			SELF_KEY);
 
 		NewView newView = mock(NewView.class);
@@ -260,7 +255,6 @@ public class EventCoordinatorTest {
 			vertexStore,
 			proposerElection,
 			quorumRequirements,
-			SELF_ADDRESS,
 			SELF_KEY);
 
 		NewView newView = mock(NewView.class);
@@ -290,7 +284,6 @@ public class EventCoordinatorTest {
 			vertexStore,
 			proposerElection,
 			quorumRequirements,
-			SELF_ADDRESS,
 			SELF_KEY);
 
 		Vertex proposedVertex = mock(Vertex.class);
@@ -325,7 +318,6 @@ public class EventCoordinatorTest {
 			vertexStore,
 			proposerElection,
 			quorumRequirements,
-			SELF_ADDRESS,
 			SELF_KEY);
 
 		Vertex proposedVertex = mock(Vertex.class);

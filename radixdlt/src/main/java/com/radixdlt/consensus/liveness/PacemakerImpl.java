@@ -80,7 +80,7 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 		if (quorumRequirements.accepts(newView.getAuthor().getUID())) {
 			// FIXME ugly cast to ECDSASignatures because we need a specific type
 			// TODO do we even need to keep signatures or just QCs & count for new-views?
-			signatures = (ECDSASignatures) signatures.concatenate(newView.getAuthor().getKey(), signature);
+			signatures = (ECDSASignatures) signatures.concatenate(newView.getAuthor(), signature);
 		} else {
 			// there is no meaningful inaction here, so better let the caller know
 			throw new IllegalArgumentException("new-view " + newView + " was not accepted");

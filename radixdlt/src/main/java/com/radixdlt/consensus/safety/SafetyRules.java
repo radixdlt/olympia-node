@@ -20,7 +20,6 @@ package com.radixdlt.consensus.safety;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
-import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
@@ -39,7 +38,6 @@ import java.util.Optional;
  * Manages safety of the protocol.
  */
 public final class SafetyRules {
-	private final RadixAddress selfAddress;
 	private final ECKeyPair selfKey; // TODO remove signing/address to separate identity management
 	private final VertexHasher hasher;
 
@@ -47,17 +45,12 @@ public final class SafetyRules {
 	private SafetyState state;
 
 	@Inject
-	public SafetyRules(@Named("self") RadixAddress selfAddress,
-	                   @Named("self") ECKeyPair selfKey,
+	public SafetyRules(@Named("self") ECKeyPair selfKey,
 	                   VertexHasher hasher,
 	                   VertexStore vertexStore,
 	                   SafetyState initialState) {
-		this.selfAddress = Objects.requireNonNull(selfAddress);
 		this.selfKey = Objects.requireNonNull(selfKey);
 		this.vertexStore = Objects.requireNonNull(vertexStore);
-		if (!selfAddress.getKey().equals(selfKey.getPublicKey())) {
-			throw new IllegalArgumentException("Address and key mismatch: " + selfAddress + " != " + selfKey);
-		}
 		this.hasher = Objects.requireNonNull(hasher);
 		this.state = new SafetyState(initialState);
 	}
@@ -137,7 +130,7 @@ public final class SafetyRules {
 		Hash vertexHash = this.hasher.hash(vertexMetadata);
 		ECDSASignature signature = this.selfKey.sign(vertexHash);
 
-		return new Vote(selfAddress, vertexMetadata, signature);
+		return new Vote(selfKey.getPublicKey(), vertexMetadata, signature);
 	}
 
 	@VisibleForTesting SafetyState getState() {

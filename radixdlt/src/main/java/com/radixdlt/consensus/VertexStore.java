@@ -77,7 +77,7 @@ public final class VertexStore {
 		// try to add the signature to form a QC if permitted by the requirements
 		if (quorumRequirements.accepts(vote.getAuthor().getUID())) {
 			// FIXME ugly cast to ECDSASignatures because we need a specific type
-			signatures = (ECDSASignatures) signatures.concatenate(vote.getAuthor().getKey(), signature);
+			signatures = (ECDSASignatures) signatures.concatenate(vote.getAuthor(), signature);
 		} else {
 			// there is no meaningful inaction here, so better let the caller know
 			throw new IllegalArgumentException("vote " + vote + " was not accepted into QC");

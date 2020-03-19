@@ -38,6 +38,6 @@ public class VoteSerializeTest extends SerializeObject<Vote> {
 
 		VertexMetadata vertexMetadata = new VertexMetadata(view, id, parentView, parentId);
 		RadixAddress author = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
-		return new Vote(author, vertexMetadata, null);
+		return new Vote(author.getKey(), vertexMetadata, null);
 	}
 }

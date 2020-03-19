@@ -48,7 +48,7 @@ public class VertexTest {
 		this.vertexMetadata = new VertexMetadata(view, id, parentView, parentId);
 
 		RadixAddress author = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
-		this.vote = new Vote(author, this.vertexMetadata, null);
+		this.vote = new Vote(author.getKey(), this.vertexMetadata, null);
 		this.qc = new QuorumCertificate(this.vertexMetadata, new ECDSASignatures());
 
 

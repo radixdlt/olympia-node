@@ -45,7 +45,7 @@ public class VoteTest {
 
 		this.vertexMetadata = new VertexMetadata(view, id, parentView, parentId);
 
-		this.testObject = new Vote(ADDRESS, vertexMetadata, null);
+		this.testObject = new Vote(ADDRESS.getKey(), vertexMetadata, null);
 	}
 
 	@Test
@@ -57,7 +57,7 @@ public class VoteTest {
 	@Test
 	public void testGetters() {
 		assertEquals(this.vertexMetadata, this.testObject.getVertexMetadata());
-		assertEquals(ADDRESS, this.testObject.getAuthor());
+		assertEquals(ADDRESS.getKey(), this.testObject.getAuthor());
 	}
 
 	@Test
