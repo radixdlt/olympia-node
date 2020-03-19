@@ -18,9 +18,6 @@
 package com.radixdlt.consensus;
 
 import com.radixdlt.atomos.RadixAddress;
-import com.radixdlt.common.AID;
-import com.radixdlt.crypto.Hash;
-import com.radixdlt.utils.Ints;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Before;
 import org.junit.Test;

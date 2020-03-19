@@ -19,6 +19,7 @@ package com.radixdlt.consensus;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.errorprone.annotations.Immutable;
+import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.serialization.DsonOutput;
@@ -31,18 +32,16 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * Represents a new-view message in the pacemaker
+ * Represents a new-view message from the pacemaker
  */
 @SerializerId2("consensus.newview")
-@Immutable // view cannot be but is effectively final because of serializer
+@Immutable // view and author cannot be but are effectively final because of serializer
 public final class NewView {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	@JsonProperty("author")
-	@DsonOutput(Output.ALL)
-	private final ECPublicKey author;
+	private ECPublicKey author;
 
 	private View view;
 
@@ -84,6 +83,16 @@ public final class NewView {
 	@JsonProperty("view")
 	private void setSerializerView(Long number) {
 		this.view = number == null ? null : View.of(number.longValue());
+	}
+
+	@JsonProperty("author")
+	@DsonOutput(Output.ALL)
+	private byte[] getSerializerAuthor() {
+		return this.author == null ? null : this.author.getBytes();
+	}
+	@JsonProperty("author")
+	private void setSerializerAuthor(byte[] author) throws CryptoException {
+		this.author = (author == null) ? null : new ECPublicKey(author);
 	}
 
 	@Override

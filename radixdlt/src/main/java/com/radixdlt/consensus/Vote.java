@@ -18,6 +18,8 @@
 package com.radixdlt.consensus;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.errorprone.annotations.Immutable;
+import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.serialization.DsonOutput;
@@ -33,14 +35,13 @@ import java.util.Optional;
  * Represents a vote on a vertex
  */
 @SerializerId2("consensus.vote")
+@Immutable // author cannot be but is effectively final because of serializer
 public final class Vote {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	@JsonProperty("author")
-	@DsonOutput(Output.ALL)
-	private final ECPublicKey author;
+	private ECPublicKey author;
 
 	@JsonProperty("vertex_metadata")
 	@DsonOutput(Output.ALL)
@@ -73,6 +74,16 @@ public final class Vote {
 
 	public Optional<ECDSASignature> getSignature() {
 		return Optional.ofNullable(this.signature);
+	}
+
+	@JsonProperty("author")
+	@DsonOutput(Output.ALL)
+	private byte[] getSerializerAuthor() {
+		return this.author == null ? null : this.author.getBytes();
+	}
+	@JsonProperty("author")
+	private void setSerializerAuthor(byte[] author) throws CryptoException {
+		this.author = (author == null) ? null : new ECPublicKey(author);
 	}
 
 	@Override
