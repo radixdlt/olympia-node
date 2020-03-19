@@ -172,8 +172,6 @@ public final class EventCoordinator {
 			return;
 		}
 
-		mempool.removeCommittedAtom(atom.getAID());
-
 		try {
 			final Vote vote = safetyRules.voteFor(proposedVertex);
 			networkSender.sendVote(vote);
