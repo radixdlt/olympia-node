@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus;
 
+import com.google.inject.Inject;
 import com.radixdlt.consensus.safety.QuorumRequirements;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECDSASignatures;
@@ -33,6 +34,7 @@ public final class PendingVotes {
 	private final QuorumRequirements quorumRequirements;
 	private final HashMap<Hash, ECDSASignatures> pendingVotes = new HashMap<>();
 
+	@Inject
 	public PendingVotes(QuorumRequirements quorumRequirements) {
 		this.quorumRequirements = Objects.requireNonNull(quorumRequirements);
 	}
