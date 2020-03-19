@@ -17,12 +17,8 @@
 
 package com.radixdlt.consensus;
 
-import java.util.Objects;
-import java.util.Optional;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.errorprone.annotations.Immutable;
-import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.serialization.DsonOutput;
@@ -30,6 +26,9 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
+
+import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Represents a new-view message in the pacemaker
@@ -96,9 +95,9 @@ public final class NewView {
 			return false;
 		}
 		NewView newView = (NewView) o;
-		return Objects.equals(author, newView.author) &&
-			Objects.equals(view, newView.view) &&
-			Objects.equals(signature, newView.signature);
+		return Objects.equals(author, newView.author)
+			&& Objects.equals(view, newView.view)
+			&& Objects.equals(signature, newView.signature);
 	}
 
 	@Override
