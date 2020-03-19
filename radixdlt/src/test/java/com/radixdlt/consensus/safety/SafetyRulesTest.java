@@ -29,7 +29,6 @@ import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import org.junit.Test;
@@ -53,7 +52,7 @@ public class SafetyRulesTest {
 		when(keyPair.getUID()).thenReturn(EUID.ONE);
 		RadixAddress address = mock(RadixAddress.class);
 		when(address.getKey()).thenReturn(SELF);
-		return new SafetyRules(keyPair, vertex -> Hash.ZERO_HASH, vertexStore, SafetyState.initialState());
+		return new SafetyRules(keyPair, vertexStore, SafetyState.initialState());
 	}
 
 	private static ECPublicKey makePubKey(EUID id) {

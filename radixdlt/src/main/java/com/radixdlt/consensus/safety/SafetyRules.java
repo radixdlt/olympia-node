@@ -39,19 +39,16 @@ import java.util.Optional;
  */
 public final class SafetyRules {
 	private final ECKeyPair selfKey; // TODO remove signing/address to separate identity management
-	private final VertexHasher hasher;
 
 	private final VertexStore vertexStore;
 	private SafetyState state;
 
 	@Inject
 	public SafetyRules(@Named("self") ECKeyPair selfKey,
-	                   VertexHasher hasher,
 	                   VertexStore vertexStore,
 	                   SafetyState initialState) {
 		this.selfKey = Objects.requireNonNull(selfKey);
 		this.vertexStore = Objects.requireNonNull(vertexStore);
-		this.hasher = Objects.requireNonNull(hasher);
 		this.state = new SafetyState(initialState);
 	}
 
@@ -127,8 +124,7 @@ public final class SafetyRules {
 			proposedVertex.getQC().getVertexMetadata().getId()
 		);
 		// TODO make signing more robust by including author in signed hash
-		Hash vertexHash = this.hasher.hash(vertexMetadata);
-		ECDSASignature signature = this.selfKey.sign(vertexHash);
+		ECDSASignature signature = this.selfKey.sign(proposedVertex.getId());
 
 		return new Vote(selfKey.getPublicKey(), vertexMetadata, signature);
 	}
