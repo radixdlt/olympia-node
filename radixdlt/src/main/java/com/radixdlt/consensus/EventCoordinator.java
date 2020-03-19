@@ -108,20 +108,27 @@ public final class EventCoordinator {
 		Optional<QuorumCertificate> potentialQc = this.pendingVotes.insertVote(vote, this.quorumRequirements);
 		if (potentialQc.isPresent()) {
 			QuorumCertificate qc = potentialQc.get();
-			this.safetyRules.process(qc)
-				.ifPresent(vertexId -> {
-					log.info("Committed vertex " + vertexId);
-
-					final Vertex vertex = vertexStore.commitVertex(vertexId);
-					final Atom committedAtom = vertex.getAtom();
-					mempool.removeCommittedAtom(committedAtom.getAID());
-				});
-			this.vertexStore.syncToQC(qc);
-
-			// start new view if pacemaker feels like it
-			this.pacemaker.processQC(qc.getView())
-				.ifPresent(this::processNewView);
+			processQC(qc);
 		}
+	}
+
+	private void processQC(QuorumCertificate qc) {
+		// sync up to QC if necessary
+		this.vertexStore.syncToQC(qc);
+
+		// commit any newly committable vertices
+		this.safetyRules.process(qc)
+			.ifPresent(vertexId -> {
+				log.info("Committed vertex " + vertexId);
+
+				final Vertex vertex = vertexStore.commitVertex(vertexId);
+				final Atom committedAtom = vertex.getAtom();
+				mempool.removeCommittedAtom(committedAtom.getAID());
+			});
+
+		// start new view if pacemaker feels like it
+		this.pacemaker.processQC(qc.getView())
+			.ifPresent(this::processNewView);
 	}
 
 	public void processLocalTimeout(View view) {
@@ -150,6 +157,7 @@ public final class EventCoordinator {
 	}
 
 	public void processProposal(Vertex proposedVertex) {
+		processQC(proposedVertex.getQC());
 		Atom atom = proposedVertex.getAtom();
 
 		try {

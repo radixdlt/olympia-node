@@ -307,8 +307,11 @@ public class EventCoordinatorTest {
 		AID aid = makeAID(7); // no special significance
 		when(proposedAtom.getAID()).thenReturn(aid);
 		when(proposedVertex.getAtom()).thenReturn(proposedAtom);
+		when(proposedVertex.getQC()).thenReturn(mock(QuorumCertificate.class));
+
 		doThrow(new VertexInsertionException("Test", new RadixEngineException(RadixEngineErrorCode.CM_ERROR, DataPointer.ofAtom())))
 			.when(vertexStore).insertVertex(any());
+		when(pacemaker.processQC(any())).thenReturn(Optional.empty());
 		eventCoordinator.processProposal(proposedVertex);
 		verify(mempool, times(1)).removeRejectedAtom(eq(aid));
 	}
@@ -343,8 +346,11 @@ public class EventCoordinatorTest {
 		AID aid = makeAID(7); // no special significance
 		when(proposedAtom.getAID()).thenReturn(aid);
 		when(proposedVertex.getAtom()).thenReturn(proposedAtom);
+		when(proposedVertex.getQC()).thenReturn(mock(QuorumCertificate.class));
 		Vote vote = mock(Vote.class);
 		doReturn(vote).when(safetyRules).voteFor(eq(proposedVertex));
+
+		when(pacemaker.processQC(any())).thenReturn(Optional.empty());
 		eventCoordinator.processProposal(proposedVertex);
 
 		verify(networkSender, times(1)).sendVote(eq(vote));
