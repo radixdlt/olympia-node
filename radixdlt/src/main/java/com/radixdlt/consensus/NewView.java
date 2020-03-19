@@ -90,16 +90,18 @@ public final class NewView {
 		if (this == o) {
 			return true;
 		}
-		if (!(o instanceof NewView)) {
+		if (o == null || getClass() != o.getClass()) {
 			return false;
 		}
 		NewView newView = (NewView) o;
-		return Objects.equals(this.view, newView.view);
+		return Objects.equals(author, newView.author) &&
+			Objects.equals(view, newView.view) &&
+			Objects.equals(signature, newView.signature);
 	}
 
 	@Override
 	public int hashCode() {
-		return this.view.hashCode();
+		return Objects.hash(author, view, signature);
 	}
 
 	@Override
