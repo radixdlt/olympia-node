@@ -68,7 +68,7 @@ public final class SafetyRules {
 	 */
 	public Optional<Hash> process(QuorumCertificate qc) {
 		// pre-commit phase on vertex's parent if there is a newer consecutive 1-chain
-		// keep highest consecutive 1-chain as the current "generic" QC
+		// keep highest 1-chain as the current "generic" QC
 		if (qc.getView().compareTo(this.state.getGenericView().orElse(View.of(0L))) > 0) {
 			this.state = this.state.withGenericQC(qc);
 		}
