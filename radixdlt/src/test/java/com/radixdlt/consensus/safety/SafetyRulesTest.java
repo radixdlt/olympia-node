@@ -65,7 +65,7 @@ public class SafetyRulesTest {
 	public void testLockedView() {
 		/*
 		 * This test ensures that locking works correctly.
-		 * The locked view in HotStuff is the highest 2-chain head a node has seen.
+		 * The locked view in HotStuff is the highest consecutive 2-chain head a node has seen.
 		 */
 
 		VertexStore vertexStore = makeVertexStore();
@@ -92,11 +92,11 @@ public class SafetyRulesTest {
 		safetyRules.process(a2);
 		assertThat(safetyRules.getState().getLockedView()).isEqualByComparingTo(GENESIS_VIEW);
 		safetyRules.process(a3);
-		assertThat(safetyRules.getState().getLockedView()).isEqualByComparingTo(b1.getView());
+		assertThat(safetyRules.getState().getLockedView()).isEqualByComparingTo(GENESIS_VIEW);
 		safetyRules.process(b3);
-		assertThat(safetyRules.getState().getLockedView()).isEqualByComparingTo(b1.getView());
+		assertThat(safetyRules.getState().getLockedView()).isEqualByComparingTo(GENESIS_VIEW);
 		safetyRules.process(a4);
-		assertThat(safetyRules.getState().getLockedView()).isEqualByComparingTo(a2.getView());
+		assertThat(safetyRules.getState().getLockedView()).isEqualByComparingTo(GENESIS_VIEW);
 		safetyRules.process(a5);
 		assertThat(safetyRules.getState().getLockedView()).isEqualByComparingTo(a3.getView());
 		safetyRules.process(a6);
@@ -106,9 +106,7 @@ public class SafetyRulesTest {
 	@Test
 	public void testVote() throws SafetyViolationException, CryptoException {
 		/*
-		 * This test ensures that voting is safe. That is, proposals are only voted on if
-		 *  1.
-		 *
+		 * This test ensures that voting is safe.
 		 */
 
 		VertexStore vertexStore = makeVertexStore();
@@ -143,7 +141,7 @@ public class SafetyRulesTest {
 		assertThat(safetyRules.process(b3)).isEmpty();
 		safetyRules.voteFor(b3);
 
-		assertThat(safetyRules.process(a4)).hasValue(b1.getId());
+		assertThat(safetyRules.process(a4)).isEmpty();
 		safetyRules.voteFor(a4);
 
 		safetyRules.process(a4);
@@ -157,7 +155,7 @@ public class SafetyRulesTest {
 	public void testCommitRule() {
 		/*
 		 * This test ensures that the commit logic is working correctly.
-		 * The commit rule requires a 3-chain to commit an atom, that is, the chain
+		 * The commit rule requires a consecutive 3-chain to commit an atom, that is, the chain
 		 *  A2 -> A3 -> A4 -> A5
 		 * would allow A2 to be committed at the time A5's QC for A4 is presented.
 		 */
@@ -175,6 +173,7 @@ public class SafetyRulesTest {
 		Vertex a3 = makeVertex(a2, View.of(6), vertexStore);
 		Vertex a4 = makeVertex(a3, View.of(7), vertexStore);
 		Vertex a5 = makeVertex(a4, View.of(8), vertexStore);
+		Vertex a6 = makeVertex(a5, View.of(9), vertexStore);
 
 		assertThat(safetyRules.process(a1)).isEmpty();
 		assertThat(safetyRules.process(b1)).isEmpty();
@@ -182,10 +181,10 @@ public class SafetyRulesTest {
 		assertThat(safetyRules.process(a2)).isEmpty();
 		assertThat(safetyRules.process(b3)).isEmpty();
 		assertThat(safetyRules.process(a3)).isEmpty();
-		assertThat(safetyRules.process(a4)).hasValue(b1.getId());
 		assertThat(safetyRules.process(a4)).isEmpty();
-		assertThat(safetyRules.process(a5)).hasValue(a2.getId());
 		assertThat(safetyRules.process(a5)).isEmpty();
+		assertThat(safetyRules.process(a5)).isEmpty();
+		assertThat(safetyRules.process(a6)).hasValue(a3.getId());
 	}
 
 	private static VertexStore makeVertexStore() {

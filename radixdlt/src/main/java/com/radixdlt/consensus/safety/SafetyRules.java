@@ -62,19 +62,19 @@ public final class SafetyRules {
 	}
 
 	/**
-	 * Process a QC
+	 * Process a QC included at a certain view
 	 * @param qc The quorum certificate
 	 * @return the just-committed vertex id, if any
 	 */
 	public Optional<Hash> process(QuorumCertificate qc) {
-		// pre-commit phase on vertex's parent if there is a newer 1-chain
-		// keep highest 1-chain as the current "generic" QC
+		// pre-commit phase on vertex's parent if there is a newer consecutive 1-chain
+		// keep highest consecutive 1-chain as the current "generic" QC
 		if (qc.getView().compareTo(this.state.getGenericView().orElse(View.of(0L))) > 0) {
 			this.state = this.state.withGenericQC(qc);
 		}
 
-		// commit phase on vertex's grandparent if there is a newer 2-chain
-		// keep the highest 2-chain as the locked QC
+		// commit phase on vertex's grandparent if there is a newer consecutive 2-chain
+		// keep the highest consecutive 2-chain as the locked QC
 		Vertex parent = vertexStore.getVertex(qc.getVertexMetadata().getId());
 		if (parent == null) {
 			throw new IllegalStateException(String.format(
@@ -82,11 +82,12 @@ public final class SafetyRules {
 		}
 		// do not go beyond genesis
 		if (!parent.isGenesis()) {
-			if (parent.getQC().getView().compareTo(this.state.getLockedView()) > 0) {
+			boolean twoChain = parent.getQC().getView().next().equals(parent.getView());
+			if (twoChain && parent.getQC().getView().compareTo(this.state.getLockedView()) > 0) {
 				this.state = this.state.withLockedView(parent.getQC().getView());
 			}
 
-			// decide phase on vertex's great-grandparent if there is a newer 3-chain
+			// decide phase on vertex's great-grandparent if there is a newer consecutive 3-chain
 			// return committed aid
 			Vertex grandparent = vertexStore.getVertex(parent.getQC().getVertexMetadata().getId());
 			if (grandparent == null) {
@@ -94,9 +95,10 @@ public final class SafetyRules {
 					"QC %s has no vertex at %s", qc, qc.getVertexMetadata().getId()));
 			}
 			// do not go beyond genesis
-			if (!grandparent.isGenesis()) {
+			if (!grandparent.isGenesis() && twoChain) {
 				boolean threeChain = qc.getVertexMetadata().getId().equals(parent.getId())
-					&& parent.getQC().getVertexMetadata().getId().equals(grandparent.getId());
+					&& parent.getQC().getVertexMetadata().getId().equals(grandparent.getId())
+					&& grandparent.getQC().getView().next().equals(grandparent.getView());
 				if (threeChain && grandparent.getQC().getView().compareTo(this.state.getCommittedView()) > 0) {
 					this.state = this.state.withCommittedView(grandparent.getQC().getView());
 					return Optional.of(grandparent.getQC().getVertexMetadata().getId());
