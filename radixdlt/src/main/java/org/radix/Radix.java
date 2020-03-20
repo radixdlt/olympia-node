@@ -18,12 +18,13 @@
 package org.radix;
 
 import com.radixdlt.consensus.ChainedBFT;
+import com.radixdlt.mempool.MempoolReceiver;
+import com.radixdlt.mempool.SubmissionControl;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.store.LedgerEntryStore;
-import com.radixdlt.submission.SubmissionControl;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.Bytes;
 import org.apache.commons.cli.ParseException;
@@ -142,9 +143,11 @@ public final class Radix
 		PeerManager peerManager = globalInjector.getInjector().getInstance(PeerManager.class);
 		peerManager.start();
 
+		// Start mempool receiver
+		globalInjector.getInjector().getInstance(MempoolReceiver.class).start();
+
 		// start API services
-		ChainedBFT bft = globalInjector.getInjector().getInstance(ChainedBFT.class);
-		bft.start();
+		globalInjector.getInjector().getInstance(ChainedBFT.class).start();
 
 		SubmissionControl submissionControl = globalInjector.getInjector().getInstance(SubmissionControl.class);
 		AtomToBinaryConverter atomToBinaryConverter = globalInjector.getInjector().getInstance(AtomToBinaryConverter.class);

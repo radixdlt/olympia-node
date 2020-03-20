@@ -31,7 +31,9 @@ import com.google.inject.name.Names;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.Atom;
 import com.radixdlt.common.EUID;
+import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.network.MempoolNetworkTx;
+import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.Ints;
 
 import static org.junit.Assert.*;
@@ -44,6 +46,8 @@ public class SharedMempoolTest {
 
 	private LocalMempool localMempool;
 	private MempoolNetworkTx mempoolNetworkTx;
+	private RadixEngine radixEngine;
+	private Serialization serialization;
 
 	private Mempool sharedMempool;
 
@@ -51,6 +55,8 @@ public class SharedMempoolTest {
 	public void setUp() {
 		this.localMempool = mock(LocalMempool.class);
 		this.mempoolNetworkTx = mock(MempoolNetworkTx.class);
+		this.radixEngine = mock(RadixEngine.class);
+		this.serialization = mock(Serialization.class);
 
 		// test module to hook up dependencies
 		Module testModule = new AbstractModule() {
@@ -59,6 +65,8 @@ public class SharedMempoolTest {
 				bind(LocalMempool.class).toInstance(localMempool);
 				bind(MempoolNetworkTx.class).toInstance(mempoolNetworkTx);
 				bind(EUID.class).annotatedWith(Names.named("self")).toInstance(self);
+				bind(RadixEngine.class).toInstance(radixEngine);
+				bind(Serialization.class).toInstance(serialization);
 			}
 		};
 
