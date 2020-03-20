@@ -113,7 +113,7 @@ public final class SafetyRules {
 	 * @return A vote result containing the vote and any committed vertices
 	 * @throws SafetyViolationException In case the vertex would violate a safety invariant
 	 */
-	public Vote voteFor(Vertex proposedVertex) throws SafetyViolationException, CryptoException {
+	public Vote voteFor(Vertex proposedVertex) throws SafetyViolationException {
 		// ensure vertex does not violate earlier votes
 		if (proposedVertex.getView().compareTo(this.state.getLastVotedView()) <= 0) {
 			throw new SafetyViolationException(proposedVertex, this.state, String.format(
@@ -133,10 +133,13 @@ public final class SafetyRules {
 			proposedVertex.getQC().getView(),
 			proposedVertex.getQC().getVertexMetadata().getId()
 		);
-		// TODO make signing more robust by including author in signed hash
-		ECDSASignature signature = this.selfKey.sign(proposedVertex.getId());
-
-		return new Vote(selfKey.getPublicKey(), vertexMetadata, signature);
+		try {
+			// TODO make signing more robust by including author in signed hash
+			ECDSASignature signature = this.selfKey.sign(proposedVertex.getId());
+			return new Vote(selfKey.getPublicKey(), vertexMetadata, signature);
+		} catch (CryptoException e) {
+			throw new IllegalStateException("Failed to sign proposed vertex " + proposedVertex, e);
+		}
 	}
 
 	@VisibleForTesting SafetyState getState() {

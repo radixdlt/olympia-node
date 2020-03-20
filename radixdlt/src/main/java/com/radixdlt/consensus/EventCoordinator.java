@@ -141,7 +141,7 @@ public final class EventCoordinator {
 			ECDSASignature signature = this.selfKey.sign(Hash.hash256(Longs.toByteArray(view.next().number())));
 			this.networkSender.sendNewView(new NewView(selfKey.getPublicKey(), view.next(), signature));
 		} catch (CryptoException e) {
-			log.error("Failed to sign new view at " + view, e);
+			throw new IllegalStateException("Failed to sign new view at " + view, e);
 		}
 	}
 
@@ -177,8 +177,6 @@ public final class EventCoordinator {
 			networkSender.sendVote(vote);
 		} catch (SafetyViolationException e) {
 			log.error("Rejected " + proposedVertex, e);
-		} catch (CryptoException e) {
-			log.error("Failed to vote for " + proposedVertex, e);
 		}
 	}
 }
