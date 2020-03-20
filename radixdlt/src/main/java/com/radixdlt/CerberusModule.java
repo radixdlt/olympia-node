@@ -74,8 +74,7 @@ public class CerberusModule extends AbstractModule {
 	@Singleton
 	private VertexStore getVertexStore(
 		Universe universe,
-		RadixEngine radixEngine,
-		@Named("self") RadixAddress self
+		RadixEngine radixEngine
 	) throws RadixEngineException {
 		if (universe.getGenesis().size() != 1) {
 			throw new IllegalStateException("Can only support one genesis atom.");
