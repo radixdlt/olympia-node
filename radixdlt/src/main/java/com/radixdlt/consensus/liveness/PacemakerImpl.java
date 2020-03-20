@@ -17,11 +17,17 @@
 
 package com.radixdlt.consensus.liveness;
 
-import com.radixdlt.consensus.NewRound;
-import com.radixdlt.consensus.Round;
+import com.radixdlt.consensus.NewView;
+import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.safety.QuorumRequirements;
+import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.ECDSASignatures;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -31,79 +37,102 @@ import java.util.concurrent.TimeUnit;
  */
 public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 	static final int TIMEOUT_MILLISECONDS = 500;
-	private final PublishSubject<Round> timeouts;
+	private final PublishSubject<View> timeouts;
 	private final ScheduledExecutorService executorService;
+	private final QuorumRequirements quorumRequirements;
 
-	private Round currentRound = Round.of(0L);
-	private Round highestQCRound = Round.of(0L);
+	private final Map<View, ECDSASignatures> pendingNewViews = new HashMap<>();
+	private View currentView = View.of(0L);
+	private View highestQCView = View.of(0L);
 
-	public PacemakerImpl(ScheduledExecutorService executorService) {
+	public PacemakerImpl(QuorumRequirements quorumRequirements, ScheduledExecutorService executorService) {
+		this.quorumRequirements = Objects.requireNonNull(quorumRequirements);
+		this.executorService = Objects.requireNonNull(executorService);
 		this.timeouts = PublishSubject.create();
-		this.executorService = executorService;
 	}
 
-	private void scheduleTimeout(final Round timeoutRound) {
+	private void scheduleTimeout(final View timeoutView) {
 		executorService.schedule(() -> {
-			timeouts.onNext(timeoutRound);
+			timeouts.onNext(timeoutView);
 		}, TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS);
 	}
 
 	@Override
-	public Round getCurrentRound() {
-		return currentRound;
+	public View getCurrentView() {
+		return currentView;
 	}
 
 	@Override
-	public boolean processLocalTimeout(Round round) {
-		if (!round.equals(this.currentRound)) {
+	public boolean processLocalTimeout(View view) {
+		if (!view.equals(this.currentView)) {
 			return false;
 		}
 
-		this.currentRound = currentRound.next();
+		this.currentView = currentView.next();
 
-		scheduleTimeout(this.currentRound);
+		scheduleTimeout(this.currentView);
 		return true;
 	}
 
 	@Override
-	public Optional<Round> processRemoteNewRound(NewRound newRound) {
-		// gather new rounds to form new round QC
-		// TODO assumes single node network for now
-		return Optional.of(newRound.getRound());
+	public Optional<View> processRemoteNewView(NewView newView) {
+		ECDSASignature signature = newView.getSignature().orElseThrow(() -> new IllegalArgumentException("new-view is missing signature"));
+		ECDSASignatures signatures = pendingNewViews.getOrDefault(newView.getView(), new ECDSASignatures());
+
+		// try to add the signature if permitted by the requirements
+		if (quorumRequirements.accepts(newView.getAuthor().getUID())) {
+			// FIXME ugly cast to ECDSASignatures because we need a specific type
+			// TODO do we even need to keep signatures or just QCs & count for new-views?
+			signatures = (ECDSASignatures) signatures.concatenate(newView.getAuthor(), signature);
+		} else {
+			// there is no meaningful inaction here, so better let the caller know
+			throw new IllegalArgumentException("new-view " + newView + " was not accepted");
+		}
+
+		// check if we have gotten enough new-views to proceed
+		if (signatures.count() >= quorumRequirements.numRequiredVotes()) {
+			// if we got enough new-views, remove pending and return formed QC
+			pendingNewViews.remove(newView.getView());
+			return Optional.of(newView.getView().next());
+		} else {
+			// if we haven't got enough new-views yet, do nothing
+			pendingNewViews.put(newView.getView(), signatures);
+			return Optional.empty();
+		}
 	}
 
-	private void updateHighestQCRound(Round round) {
-		if (round.compareTo(highestQCRound) > 0) {
-			highestQCRound = round;
+	private void updateHighestQCView(View view) {
+		if (view.compareTo(highestQCView) > 0) {
+			highestQCView = view;
 		}
 	}
 
 	@Override
-	public Optional<Round> processQC(Round round) {
+	public Optional<View> processQC(View view) {
 		// update
-		updateHighestQCRound(round);
+		updateHighestQCView(view);
 
-		// check if a new round can be started
-		Round newRound = highestQCRound.next();
-		if (newRound.compareTo(currentRound) <= 0) {
+		// check if a new view can be started
+		View newView = highestQCView.next();
+		if (newView.compareTo(currentView) <= 0) {
 			return Optional.empty();
 		}
 
-		// start new round
-		this.currentRound = newRound;
+		// start new view
+		this.currentView = newView;
 
-		scheduleTimeout(this.currentRound);
+		scheduleTimeout(this.currentView);
 
-		return Optional.of(this.currentRound);
+		return Optional.of(this.currentView);
 	}
 
 	@Override
 	public void start() {
-		scheduleTimeout(this.currentRound);
+		scheduleTimeout(this.currentView);
 	}
 
 	@Override
-	public Observable<Round> localTimeouts() {
+	public Observable<View> localTimeouts() {
 		return timeouts;
 	}
 }

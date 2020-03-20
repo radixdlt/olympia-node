@@ -17,8 +17,9 @@
 
 package org.radix.serialization;
 
+import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.common.EUID;
-import com.radixdlt.consensus.Round;
+import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.crypto.Hash;
@@ -29,15 +30,14 @@ public class VoteSerializeTest extends SerializeObject<Vote> {
 	}
 
 	private static Vote get() {
-		Round parentRound = Round.of(1234567890L);
+		View parentView = View.of(1234567890L);
 		Hash parentId = Hash.random();
 
-		Round round = parentRound.next();
+		View view = parentView.next();
 		Hash id = Hash.random();
 
-		EUID author = EUID.TWO;
-		VertexMetadata vertexMetadata = new VertexMetadata(round, id, parentRound, parentId);
-
-		return new Vote(author, vertexMetadata);
+		VertexMetadata vertexMetadata = new VertexMetadata(view, id, parentView, parentId);
+		RadixAddress author = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
+		return new Vote(author.getKey(), vertexMetadata, null);
 	}
 }

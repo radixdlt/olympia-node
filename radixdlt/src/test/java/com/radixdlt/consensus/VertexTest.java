@@ -17,15 +17,16 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.atomos.RadixAddress;
+import com.radixdlt.common.Atom;
+import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.Hash;
+import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.radixdlt.common.Atom;
-import com.radixdlt.common.EUID;
-
-import static org.junit.Assert.*;
-import nl.jqno.equalsverifier.EqualsVerifier;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class VertexTest {
 
@@ -39,20 +40,21 @@ public class VertexTest {
 
 	@Before
 	public void setUp() throws Exception {
-		Round parentRound = Round.of(1234567890L);
+		View parentView = View.of(1234567890L);
 		this.parentId = Hash.random();
-		Round round = parentRound.next();
+		View view = parentView.next();
 		this.id = Hash.random();
 
-		this.vertexMetadata = new VertexMetadata(round, id, parentRound, parentId);
+		this.vertexMetadata = new VertexMetadata(view, id, parentView, parentId);
 
-		this.vote = new Vote(EUID.TWO, this.vertexMetadata);
-		this.qc = new QuorumCertificate(this.vote, this.vertexMetadata);
+		RadixAddress author = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
+		this.vote = new Vote(author.getKey(), this.vertexMetadata, null);
+		this.qc = new QuorumCertificate(this.vertexMetadata, new ECDSASignatures());
 
 
 		this.atom = new Atom();
 
-		this.testObject = Vertex.createVertex(this.qc, round, this.atom);
+		this.testObject = Vertex.createVertex(this.qc, view, this.atom);
 	}
 
 	@Test
@@ -65,7 +67,7 @@ public class VertexTest {
 	public void testGetters() {
 		assertEquals(this.atom, this.testObject.getAtom());
 		assertEquals(this.qc, this.testObject.getQC());
-		assertEquals(Round.of(1234567891L), this.testObject.getRound());
+		assertEquals(View.of(1234567891L), this.testObject.getView());
 	}
 
 	@Test

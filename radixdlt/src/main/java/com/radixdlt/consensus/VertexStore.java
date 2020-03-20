@@ -20,6 +20,7 @@ package com.radixdlt.consensus;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -58,7 +59,7 @@ public final class VertexStore {
 			return;
 		}
 
-		if (highestQC == null || highestQC.getRound().compareTo(qc.getRound()) < 0) {
+		if (highestQC == null || highestQC.getView().compareTo(qc.getView()) < 0) {
 			highestQC = qc;
 		}
 	}
@@ -102,6 +103,10 @@ public final class VertexStore {
 		}
 
 		return path;
+	}
+
+	public Vertex getVertex(Hash vertexId) {
+		return vertices.get(vertexId);
 	}
 
 	public QuorumCertificate getHighestQC() {

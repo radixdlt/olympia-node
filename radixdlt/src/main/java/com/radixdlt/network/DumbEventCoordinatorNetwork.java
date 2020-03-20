@@ -23,7 +23,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import com.radixdlt.consensus.NewRound;
+import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.Vote;
 
@@ -33,13 +33,13 @@ import com.radixdlt.consensus.Vote;
 public class DumbEventCoordinatorNetwork implements EventCoordinatorNetworkSender, EventCoordinatorNetworkRx {
 	public static final int LOOPBACK_DELAY = 100;
 	private final PublishSubject<Vertex> proposals;
-	private final PublishSubject<NewRound> newRounds;
+	private final PublishSubject<NewView> newViews;
 	private final PublishSubject<Vote> votes;
 	private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 
 	public DumbEventCoordinatorNetwork() {
 		this.proposals = PublishSubject.create();
-		this.newRounds = PublishSubject.create();
+		this.newViews = PublishSubject.create();
 		this.votes = PublishSubject.create();
 	}
 
@@ -51,9 +51,9 @@ public class DumbEventCoordinatorNetwork implements EventCoordinatorNetworkSende
 	}
 
 	@Override
-	public void sendNewRound(NewRound newRound) {
+	public void sendNewView(NewView newView) {
 		executorService.schedule(() -> {
-			this.newRounds.onNext(newRound);
+			this.newViews.onNext(newView);
 		}, LOOPBACK_DELAY, TimeUnit.MILLISECONDS);
 	}
 
@@ -70,8 +70,8 @@ public class DumbEventCoordinatorNetwork implements EventCoordinatorNetworkSende
 	}
 
 	@Override
-	public Observable<NewRound> newRoundMessages() {
-		return newRounds;
+	public Observable<NewView> newViewMessages() {
+		return newViews;
 	}
 
 	@Override

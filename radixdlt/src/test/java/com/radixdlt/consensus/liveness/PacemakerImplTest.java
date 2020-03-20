@@ -17,7 +17,13 @@
 
 package com.radixdlt.consensus.liveness;
 
-import com.radixdlt.consensus.Round;
+import com.radixdlt.consensus.NewView;
+import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.safety.QuorumRequirements;
+import com.radixdlt.consensus.safety.WhitelistQuorum;
+import com.radixdlt.crypto.CryptoException;
+import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.ECKeyPair;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.junit.Test;
 
@@ -25,12 +31,14 @@ import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class PacemakerImplTest {
 	private static ScheduledExecutorService getMockedExecutorService() {
@@ -43,46 +51,46 @@ public class PacemakerImplTest {
 	}
 
 	@Test
-	public void when_start__then_a_timeout_event_with_round_0_is_emitted() {
+	public void when_start__then_a_timeout_event_with_view_0_is_emitted() {
 		ScheduledExecutorService executorService = getMockedExecutorService();
-		PacemakerImpl pacemaker = new PacemakerImpl(executorService);
-		TestObserver<Round> testObserver = TestObserver.create();
+		PacemakerImpl pacemaker = new PacemakerImpl(mock(QuorumRequirements.class), executorService);
+		TestObserver<View> testObserver = TestObserver.create();
 		pacemaker.localTimeouts().subscribe(testObserver);
 		pacemaker.start();
 		testObserver.awaitCount(1);
-		testObserver.assertValues(Round.of(0L));
+		testObserver.assertValues(View.of(0L));
 		testObserver.assertNotComplete();
 	}
 
 	@Test
-	public void when_round_0_processed_qc__then_current_round_should_be_1_and_next_timeout_should_be_scheduled() {
+	public void when_view_0_processed_qc__then_current_view_should_be_1_and_next_timeout_should_be_scheduled() {
 		ScheduledExecutorService executorService = getMockedExecutorService();
-		PacemakerImpl pacemaker = new PacemakerImpl(executorService);
-		TestObserver<Round> testObserver = TestObserver.create();
+		PacemakerImpl pacemaker = new PacemakerImpl(mock(QuorumRequirements.class), executorService);
+		TestObserver<View> testObserver = TestObserver.create();
 		pacemaker.localTimeouts().subscribe(testObserver);
 		pacemaker.start();
-		pacemaker.processQC(Round.of(0L));
-		assertThat(pacemaker.getCurrentRound()).isEqualTo(Round.of(1L));
+		pacemaker.processQC(View.of(0L));
+		assertThat(pacemaker.getCurrentView()).isEqualTo(View.of(1L));
 		verify(executorService, times(2)).schedule(any(Runnable.class), anyLong(), any());
 	}
 
 	@Test
-	public void when_round_0_processed_timeout__then_current_round_should_be_1_and_next_timeout_should_be_scheduled() {
+	public void when_view_0_processed_timeout__then_current_view_should_be_1_and_next_timeout_should_be_scheduled() {
 		ScheduledExecutorService executorService = getMockedExecutorService();
-		PacemakerImpl pacemaker = new PacemakerImpl(executorService);
-		TestObserver<Round> testObserver = TestObserver.create();
+		PacemakerImpl pacemaker = new PacemakerImpl(mock(QuorumRequirements.class), executorService);
+		TestObserver<View> testObserver = TestObserver.create();
 		pacemaker.localTimeouts().subscribe(testObserver);
 		pacemaker.start();
-		pacemaker.processLocalTimeout(Round.of(0L));
-		assertThat(pacemaker.getCurrentRound()).isEqualTo(Round.of(1L));
+		pacemaker.processLocalTimeout(View.of(0L));
+		assertThat(pacemaker.getCurrentView()).isEqualTo(View.of(1L));
 		verify(executorService, times(2)).schedule(any(Runnable.class), anyLong(), any());
 	}
 
 	@Test
 	public void when_timeout_event_occurs_and_no_process__then_no_scheduled_timeout_occurs() {
 		ScheduledExecutorService executorService = getMockedExecutorService();
-		PacemakerImpl pacemaker = new PacemakerImpl(executorService);
-		TestObserver<Round> testObserver = TestObserver.create();
+		PacemakerImpl pacemaker = new PacemakerImpl(mock(QuorumRequirements.class), executorService);
+		TestObserver<View> testObserver = TestObserver.create();
 		pacemaker.localTimeouts().subscribe(testObserver);
 		pacemaker.start();
 		testObserver.assertValueCount(1);
@@ -93,42 +101,92 @@ public class PacemakerImplTest {
 	@Test
 	public void when_process_timeout__then_two_timeout_events_occur() {
 		ScheduledExecutorService executorService = getMockedExecutorService();
-		PacemakerImpl pacemaker = new PacemakerImpl(executorService);
-		TestObserver<Round> testObserver = TestObserver.create();
+		PacemakerImpl pacemaker = new PacemakerImpl(mock(QuorumRequirements.class), executorService);
+		TestObserver<View> testObserver = TestObserver.create();
 		pacemaker.localTimeouts().subscribe(testObserver);
 		pacemaker.start();
-		pacemaker.processLocalTimeout(Round.of(0L));
+		pacemaker.processLocalTimeout(View.of(0L));
 		testObserver.awaitCount(2);
-		testObserver.assertValues(Round.of(0L), Round.of(1L));
+		testObserver.assertValues(View.of(0L), View.of(1L));
 	}
 
 	@Test
-	public void when_process_timeout_for_earlier_round__then_round_should_not_change() {
+	public void when_process_timeout_for_earlier_view__then_view_should_not_change() {
 		ScheduledExecutorService executorService = getMockedExecutorService();
-		PacemakerImpl pacemaker = new PacemakerImpl(executorService);
+		PacemakerImpl pacemaker = new PacemakerImpl(mock(QuorumRequirements.class), executorService);
 		pacemaker.start();
-		assertThat(pacemaker.getCurrentRound()).isEqualByComparingTo(Round.of(0L));
-		Optional<Round> newRound = pacemaker.processQC(Round.of(0L));
-		assertThat(newRound).isEqualTo(Optional.of(Round.of(1L)));
-		assertThat(pacemaker.getCurrentRound()).isEqualByComparingTo(Round.of(1L));
-		pacemaker.processLocalTimeout(Round.of(0L));
-		assertThat(pacemaker.getCurrentRound()).isEqualByComparingTo(Round.of(1L));
+		assertThat(pacemaker.getCurrentView()).isEqualByComparingTo(View.of(0L));
+		Optional<View> newView = pacemaker.processQC(View.of(0L));
+		assertThat(newView).isEqualTo(Optional.of(View.of(1L)));
+		assertThat(pacemaker.getCurrentView()).isEqualByComparingTo(View.of(1L));
+		pacemaker.processLocalTimeout(View.of(0L));
+		assertThat(pacemaker.getCurrentView()).isEqualByComparingTo(View.of(1L));
 	}
 
 	@Test
-	public void when_process_qc_twice_for_same_round__then_round_should_not_change() {
+	public void when_process_qc_twice_for_same_view__then_view_should_not_change() {
 		ScheduledExecutorService executorService = getMockedExecutorService();
-		PacemakerImpl pacemaker = new PacemakerImpl(executorService);
-		TestObserver<Round> testObserver = TestObserver.create();
+		PacemakerImpl pacemaker = new PacemakerImpl(mock(QuorumRequirements.class), executorService);
+		TestObserver<View> testObserver = TestObserver.create();
 		pacemaker.localTimeouts().subscribe(testObserver);
 		pacemaker.start();
-		assertThat(pacemaker.getCurrentRound()).isEqualByComparingTo(Round.of(0L));
-		Optional<Round> newRound = pacemaker.processQC(Round.of(0L));
-		assertThat(newRound).isEqualTo(Optional.of(Round.of(1L)));
-		assertThat(pacemaker.getCurrentRound()).isEqualByComparingTo(Round.of(1L));
-		newRound = pacemaker.processQC(Round.of(0L));
-		assertThat(newRound).isEmpty();
-		assertThat(pacemaker.getCurrentRound()).isEqualByComparingTo(Round.of(1L));
-		assertThat(pacemaker.getCurrentRound()).isEqualByComparingTo(Round.of(1L));
+		assertThat(pacemaker.getCurrentView()).isEqualByComparingTo(View.of(0L));
+		Optional<View> newView = pacemaker.processQC(View.of(0L));
+		assertThat(newView).isEqualTo(Optional.of(View.of(1L)));
+		assertThat(pacemaker.getCurrentView()).isEqualByComparingTo(View.of(1L));
+		newView = pacemaker.processQC(View.of(0L));
+		assertThat(newView).isEmpty();
+		assertThat(pacemaker.getCurrentView()).isEqualByComparingTo(View.of(1L));
+		assertThat(pacemaker.getCurrentView()).isEqualByComparingTo(View.of(1L));
+	}
+
+	@Test
+	public void when_inserting_a_new_view_without_signature__then_exception_is_thrown() {
+		ScheduledExecutorService executorService = getMockedExecutorService();
+		PacemakerImpl pacemaker = new PacemakerImpl(mock(QuorumRequirements.class), executorService);
+		NewView newViewWithoutSignature = mock(NewView.class);
+		when(newViewWithoutSignature.getView()).thenReturn(View.of(2L));
+		when(newViewWithoutSignature.getSignature()).thenReturn(Optional.empty());
+
+		assertThatThrownBy(() -> pacemaker.processRemoteNewView(newViewWithoutSignature));
+	}
+
+	@Test
+	public void when_inserting_valid_but_unaccepted_new_views__then_exception_is_thrown() {
+		View view = View.of(2);
+		NewView newView1 = makeNewViewFor(view);
+		NewView newView2 = makeNewViewFor(view);
+		QuorumRequirements quorumRequirements = WhitelistQuorum.from(newView1.getAuthor());
+		ScheduledExecutorService executorService = getMockedExecutorService();
+		PacemakerImpl pacemaker = new PacemakerImpl(quorumRequirements, executorService);
+		assertThatThrownBy(() -> pacemaker.processRemoteNewView(newView2))
+			.isInstanceOf(IllegalArgumentException.class);
+		pacemaker.processRemoteNewView(newView1);
+		assertThatThrownBy(() -> pacemaker.processRemoteNewView(newView2))
+			.isInstanceOf(IllegalArgumentException.class);
+	}
+
+	@Test
+	public void when_inserting_valid_and_accepted_new_views__then_qc_is_formed() {
+		View view = View.of(2);
+		NewView newView1 = makeNewViewFor(view);
+		NewView newView2 = makeNewViewFor(view);
+		QuorumRequirements quorumRequirements = WhitelistQuorum.from(newView1.getAuthor(), newView2.getAuthor());
+		ScheduledExecutorService executorService = getMockedExecutorService();
+		PacemakerImpl pacemaker = new PacemakerImpl(quorumRequirements, executorService);
+		pacemaker.processRemoteNewView(newView1);
+		assertThat(pacemaker.processRemoteNewView(newView2)).isNotEmpty();
+	}
+
+	private NewView makeNewViewFor(View view) {
+		NewView newView = mock(NewView.class);
+		when(newView.getView()).thenReturn(view);
+		when(newView.getSignature()).thenReturn(Optional.of(new ECDSASignature()));
+		try {
+			when(newView.getAuthor()).thenReturn(new ECKeyPair().getPublicKey());
+		} catch (CryptoException e) {
+			throw new RuntimeException("Failed to setup new-view", e);
+		}
+		return newView;
 	}
 }

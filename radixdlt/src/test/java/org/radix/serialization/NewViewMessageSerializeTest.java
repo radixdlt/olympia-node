@@ -15,19 +15,21 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.liveness;
+package org.radix.serialization;
 
+import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.messages.NewViewMessage;
 
-import java.util.Optional;
+public class NewViewMessageSerializeTest extends SerializeMessageObject<NewViewMessage> {
+	public NewViewMessageSerializeTest() {
+		super(NewViewMessage.class, NewViewMessageSerializeTest::get);
+	}
 
-/**
- * Interface for an event coordinator to manage the pacemaker
- */
-public interface Pacemaker {
-	View getCurrentView();
-	boolean processLocalTimeout(View view);
-	Optional<View> processRemoteNewView(NewView newView);
-	Optional<View> processQC(View view);
+	private static NewViewMessage get() {
+		RadixAddress author = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
+		NewView testView = new NewView(author.getKey(), View.of(1234567890L), null);
+		return new NewViewMessage(1234, testView);
+	}
 }

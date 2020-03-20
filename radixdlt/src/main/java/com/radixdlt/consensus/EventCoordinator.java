@@ -20,19 +20,23 @@ package com.radixdlt.consensus;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import com.radixdlt.common.Atom;
-import com.radixdlt.common.EUID;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyViolationException;
-import com.radixdlt.consensus.safety.VoteResult;
+import com.radixdlt.crypto.CryptoException;
+import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.Hash;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.network.EventCoordinatorNetworkSender;
+import com.radixdlt.utils.Longs;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Executes consensus logic given events
@@ -41,12 +45,13 @@ public final class EventCoordinator {
 	private static final Logger log = Logging.getLogger("EC");
 
 	private final VertexStore vertexStore;
+	private final PendingVotes pendingVotes;
 	private final ProposalGenerator proposalGenerator;
 	private final Mempool mempool;
 	private final EventCoordinatorNetworkSender networkSender;
 	private final Pacemaker pacemaker;
 	private final ProposerElection proposerElection;
-	private final EUID self;
+	private final ECKeyPair selfKey; // TODO remove signing/address to separate identity management
 	private final SafetyRules safetyRules;
 
 	@Inject
@@ -57,8 +62,9 @@ public final class EventCoordinator {
 		SafetyRules safetyRules,
 		Pacemaker pacemaker,
 		VertexStore vertexStore,
+		PendingVotes pendingVotes,
 		ProposerElection proposerElection,
-		@Named("self") EUID self
+		@Named("self") ECKeyPair selfKey
 	) {
 		this.proposalGenerator = Objects.requireNonNull(proposalGenerator);
 		this.mempool = Objects.requireNonNull(mempool);
@@ -66,61 +72,88 @@ public final class EventCoordinator {
 		this.safetyRules = Objects.requireNonNull(safetyRules);
 		this.pacemaker = Objects.requireNonNull(pacemaker);
 		this.vertexStore = Objects.requireNonNull(vertexStore);
+		this.pendingVotes = Objects.requireNonNull(pendingVotes);
 		this.proposerElection = Objects.requireNonNull(proposerElection);
-		this.self = Objects.requireNonNull(self);
+		this.selfKey = Objects.requireNonNull(selfKey);
 	}
 
-	private void processNewRound(Round round) {
-		log.debug("Processing new round: " +  round);
+	private void processNewView(View view) {
+		log.debug("Processing new view: " + view);
 		// only do something if we're actually the leader
-		if (!proposerElection.isValidProposer(self, round)) {
+		if (!proposerElection.isValidProposer(selfKey.getUID(), view)) {
 			return;
 		}
 
-		Vertex proposal = proposalGenerator.generateProposal(this.pacemaker.getCurrentRound());
+		Vertex proposal = proposalGenerator.generateProposal(this.pacemaker.getCurrentView());
 
 		// TODO: Handle empty proposals
 		if (proposal.getAtom() != null) {
 			this.networkSender.broadcastProposal(proposal);
+			log.info("Starting view " + view + " with proposal " + proposal);
 		}
 	}
 
 	public void processVote(Vote vote) {
-		// only do something if we're actually the leader for the next round
-		if (!proposerElection.isValidProposer(self, vote.getVertexMetadata().getRound().next())) {
-			log.warn(String.format("Ignoring confused vote %s for %s", vote.hashCode(), vote.getVertexMetadata().getRound()));
+		// only do something if we're actually the leader for the next view
+		if (!proposerElection.isValidProposer(selfKey.getUID(), vote.getVertexMetadata().getView().next())) {
+			log.warn(String.format("Ignoring confused vote %s for %s", vote.hashCode(), vote.getVertexMetadata().getView()));
 			return;
 		}
 
-		// accumulate votes into QCs
-		// TODO assumes a single node network for now
-		QuorumCertificate qc = new QuorumCertificate(vote, vote.getVertexMetadata());
-		this.safetyRules.process(qc);
+		// accumulate votes into QCs in store
+		Optional<QuorumCertificate> potentialQc = this.pendingVotes.insertVote(vote);
+		if (potentialQc.isPresent()) {
+			QuorumCertificate qc = potentialQc.get();
+			processQC(qc);
+		}
+	}
+
+	private void processQC(QuorumCertificate qc) {
+		// sync up to QC if necessary
 		this.vertexStore.syncToQC(qc);
-		this.pacemaker.processQC(qc.getRound())
-			.ifPresent(this::processNewRound);
+
+		// commit any newly committable vertices
+		this.safetyRules.process(qc)
+			.ifPresent(vertexId -> {
+				log.info("Committed vertex " + vertexId);
+
+				final Vertex vertex = vertexStore.commitVertex(vertexId);
+				final Atom committedAtom = vertex.getAtom();
+				mempool.removeCommittedAtom(committedAtom.getAID());
+			});
+
+		// start new view if pacemaker feels like it
+		this.pacemaker.processQC(qc.getView())
+			.ifPresent(this::processNewView);
 	}
 
-	public void processLocalTimeout(Round round) {
-		if (!this.pacemaker.processLocalTimeout(round)) {
+	public void processLocalTimeout(View view) {
+		if (!this.pacemaker.processLocalTimeout(view)) {
 			return;
 		}
 
-		this.networkSender.sendNewRound(new NewRound(round.next()));
+		try {
+			// TODO make signing more robust by including author in signed hash
+			ECDSASignature signature = this.selfKey.sign(Hash.hash256(Longs.toByteArray(view.next().number())));
+			this.networkSender.sendNewView(new NewView(selfKey.getPublicKey(), view.next(), signature));
+		} catch (CryptoException e) {
+			throw new IllegalStateException("Failed to sign new view at " + view, e);
+		}
 	}
 
-	public void processRemoteNewRound(NewRound newRound) {
-		// only do something if we're actually the leader for the next round
-		if (!proposerElection.isValidProposer(self, newRound.getRound())) {
-			log.warn(String.format("Got confused new round %s for round ", newRound.hashCode()) + newRound.getRound());
+	public void processRemoteNewView(NewView newView) {
+		// only do something if we're actually the leader for the next view
+		if (!proposerElection.isValidProposer(selfKey.getPublicKey().getUID(), newView.getView())) {
+			log.warn(String.format("Got confused new-view %s for view ", newView.hashCode()) + newView.getView());
 			return;
 		}
 
-		this.pacemaker.processRemoteNewRound(newRound)
-			.ifPresent(this::processNewRound);
+		this.pacemaker.processRemoteNewView(newView)
+			.ifPresent(this::processNewView);
 	}
 
 	public void processProposal(Vertex proposedVertex) {
+		processQC(proposedVertex.getQC());
 		Atom atom = proposedVertex.getAtom();
 
 		try {
@@ -135,19 +168,9 @@ public final class EventCoordinator {
 			return;
 		}
 
-		final VoteResult voteResult;
 		try {
-			voteResult = safetyRules.voteFor(proposedVertex);
-			final Vote vote = voteResult.getVote();
+			final Vote vote = safetyRules.voteFor(proposedVertex);
 			networkSender.sendVote(vote);
-			voteResult.getCommittedVertexId()
-				.ifPresent(vertexId -> {
-					log.info("Committed vertex " + vertexId);
-
-					final Vertex vertex = vertexStore.commitVertex(vertexId);
-					final Atom committedAtom = vertex.getAtom();
-					mempool.removeCommittedAtom(committedAtom.getAID());
-				});
 		} catch (SafetyViolationException e) {
 			log.error("Rejected " + proposedVertex, e);
 		}

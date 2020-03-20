@@ -3,9 +3,9 @@ package com.radixdlt.consensus.liveness;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.Atom;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.Round;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexStore;
+import com.radixdlt.consensus.View;
 import com.radixdlt.mempool.Mempool;
 import java.util.List;
 import java.util.Objects;
@@ -30,7 +30,7 @@ public final class ProposalGenerator {
 	}
 
 	// TODO: check that next proposal works with current vertexStore state
-	public Vertex generateProposal(Round round) {
+	public Vertex generateProposal(View view) {
 		final QuorumCertificate highestQC = vertexStore.getHighestQC();
 		final List<Vertex> preparedVertices = vertexStore.getPathFromRoot(highestQC.getVertexMetadata().getId());
 		final Set<AID> preparedAtoms = preparedVertices.stream()
@@ -40,6 +40,6 @@ public final class ProposalGenerator {
 
 		final List<Atom> atoms = mempool.getAtoms(1, preparedAtoms);
 
-		return Vertex.createVertex(highestQC, round, !atoms.isEmpty() ? atoms.get(0) : null);
+		return Vertex.createVertex(highestQC, view, !atoms.isEmpty() ? atoms.get(0) : null);
 	}
 }

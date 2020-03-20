@@ -18,46 +18,53 @@
 package com.radixdlt.consensus;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.common.EUID;
+import com.google.errorprone.annotations.Immutable;
+import com.radixdlt.crypto.CryptoException;
+import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.serialization.DsonOutput.Output;
 
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Represents a vote on a vertex
  */
 @SerializerId2("consensus.vote")
+@Immutable // author cannot be but is effectively final because of serializer
 public final class Vote {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	@JsonProperty("author")
-	@DsonOutput(Output.ALL)
-	private final EUID author;
+	private ECPublicKey author;
 
 	@JsonProperty("vertex_metadata")
 	@DsonOutput(Output.ALL)
 	private final VertexMetadata vertexMetadata;
 
-	// TODO add signature
+	@JsonProperty("signature")
+	@DsonOutput(Output.ALL)
+	private final ECDSASignature signature; // may be null if not signed (e.g. for genesis)
 
 	Vote() {
 		// Serializer only
 		this.author = null;
 		this.vertexMetadata = null;
+		this.signature = null;
 	}
 
-	public Vote(EUID author, VertexMetadata vertexMetadata) {
+	public Vote(ECPublicKey author, VertexMetadata vertexMetadata, ECDSASignature signature) {
 		this.author = Objects.requireNonNull(author);
 		this.vertexMetadata = Objects.requireNonNull(vertexMetadata);
+		this.signature = signature;
 	}
 
-	public EUID getAuthor() {
+	public ECPublicKey getAuthor() {
 		return author;
 	}
 
@@ -65,9 +72,23 @@ public final class Vote {
 		return vertexMetadata;
 	}
 
+	public Optional<ECDSASignature> getSignature() {
+		return Optional.ofNullable(this.signature);
+	}
+
+	@JsonProperty("author")
+	@DsonOutput(Output.ALL)
+	private byte[] getSerializerAuthor() {
+		return this.author == null ? null : this.author.getBytes();
+	}
+	@JsonProperty("author")
+	private void setSerializerAuthor(byte[] author) throws CryptoException {
+		this.author = (author == null) ? null : new ECPublicKey(author);
+	}
+
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.author, this.vertexMetadata);
+		return Objects.hash(this.author, this.vertexMetadata, this.signature);
 	}
 
 	@Override
@@ -79,7 +100,8 @@ public final class Vote {
 			Vote other = (Vote) o;
 			return
 				Objects.equals(this.author, other.author)
-				&& Objects.equals(this.vertexMetadata, other.vertexMetadata);
+					&& Objects.equals(this.vertexMetadata, other.vertexMetadata)
+					&& Objects.equals(this.signature, other.signature);
 		}
 		return false;
 	}

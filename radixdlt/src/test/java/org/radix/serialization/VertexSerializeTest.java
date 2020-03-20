@@ -17,13 +17,15 @@
 
 package org.radix.serialization;
 
+import com.radixdlt.atommodel.message.MessageParticle;
+import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.common.Atom;
-import com.radixdlt.common.EUID;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.Round;
+import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
-import com.radixdlt.consensus.Vote;
+import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.Hash;
 
 public class VertexSerializeTest extends SerializeObject<Vertex> {
@@ -32,19 +34,20 @@ public class VertexSerializeTest extends SerializeObject<Vertex> {
 	}
 
 	private static Vertex get() {
-		Round parentRound = Round.of(1234567890L);
-		Round round = parentRound.next();
+		View parentView = View.of(1234567890L);
+		View view = parentView.next();
 		Hash parentId = Hash.random();
 		Hash id = Hash.random();
 
-		VertexMetadata vertexMetadata = new VertexMetadata(round, id, parentRound, parentId);
+		VertexMetadata vertexMetadata = new VertexMetadata(view, id, parentView, parentId);
 
-		EUID author = EUID.TWO;
-		Vote vote = new Vote(author, vertexMetadata);
-		QuorumCertificate qc = new QuorumCertificate(vote, vertexMetadata);
+		QuorumCertificate qc = new QuorumCertificate(vertexMetadata, new ECDSASignatures());
 
+		RadixAddress address = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
 		Atom atom = new Atom();
+		// add a particle to ensure atom is valid and has at least one shard
+		atom.addParticleGroupWith(new MessageParticle(address, address, "Hello".getBytes()), Spin.UP);
 
-		return Vertex.createVertex(qc, round, atom);
+		return Vertex.createVertex(qc, view, atom);
 	}
 }
