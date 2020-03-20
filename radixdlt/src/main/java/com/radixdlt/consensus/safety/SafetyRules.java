@@ -62,7 +62,7 @@ public final class SafetyRules {
 	}
 
 	/**
-	 * Process a QC included at a certain view
+	 * Process a QC.
 	 * @param qc The quorum certificate
 	 * @return the just-committed vertex id, if any
 	 */

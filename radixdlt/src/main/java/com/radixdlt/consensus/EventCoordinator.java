@@ -23,7 +23,6 @@ import com.radixdlt.common.Atom;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposerElection;
-import com.radixdlt.consensus.safety.QuorumRequirements;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyViolationException;
 import com.radixdlt.crypto.CryptoException;
@@ -52,7 +51,6 @@ public final class EventCoordinator {
 	private final EventCoordinatorNetworkSender networkSender;
 	private final Pacemaker pacemaker;
 	private final ProposerElection proposerElection;
-	private final QuorumRequirements quorumRequirements;
 	private final ECKeyPair selfKey; // TODO remove signing/address to separate identity management
 	private final SafetyRules safetyRules;
 
@@ -66,7 +64,6 @@ public final class EventCoordinator {
 		VertexStore vertexStore,
 		PendingVotes pendingVotes,
 		ProposerElection proposerElection,
-		QuorumRequirements quorumRequirements,
 		@Named("self") ECKeyPair selfKey
 	) {
 		this.proposalGenerator = Objects.requireNonNull(proposalGenerator);
@@ -77,7 +74,6 @@ public final class EventCoordinator {
 		this.vertexStore = Objects.requireNonNull(vertexStore);
 		this.pendingVotes = Objects.requireNonNull(pendingVotes);
 		this.proposerElection = Objects.requireNonNull(proposerElection);
-		this.quorumRequirements = Objects.requireNonNull(quorumRequirements);
 		this.selfKey = Objects.requireNonNull(selfKey);
 	}
 

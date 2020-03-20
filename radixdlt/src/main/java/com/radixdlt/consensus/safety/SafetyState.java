@@ -35,7 +35,7 @@ final class SafetyState {
 
 	@Inject
 	protected SafetyState() {
-		this(View.of(0L), View.of(0L), View.of(0L), null);
+		this(View.genesis(), View.genesis(), View.genesis(), null);
 	}
 
 	SafetyState(View lastVotedView, View lockedView, View committedView, QuorumCertificate genericQC) {
