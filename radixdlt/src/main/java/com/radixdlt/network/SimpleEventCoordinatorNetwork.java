@@ -93,10 +93,13 @@ public class SimpleEventCoordinatorNetwork implements EventCoordinatorNetworkSen
 	}
 
 	@Override
-	public void sendVote(Vote vote) {
+	public void sendVote(Vote vote, EUID leader) {
 		VoteMessage message = new VoteMessage(this.magic, vote);
-		handleVoteMessage(this.localPeer, message);
-		broadcast(message);
+		if (this.localPeer.getNID().equals(leader)) {
+			handleVoteMessage(this.localPeer, message);
+		} else {
+			send(message, leader);
+		}
 	}
 
 	@Override

@@ -40,7 +40,7 @@ public class TestEventCoordinatorNetwork implements EventCoordinatorNetworkSende
 	public static final int LOOPBACK_DELAY = 100;
 	private final PublishSubject<Vertex> proposals;
 	private final PublishSubject<Map.Entry<NewView, EUID>> newViews;
-	private final PublishSubject<Vote> votes;
+	private final PublishSubject<Map.Entry<Vote, EUID>> votes;
 	private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 
 	public TestEventCoordinatorNetwork() {
@@ -64,9 +64,9 @@ public class TestEventCoordinatorNetwork implements EventCoordinatorNetworkSende
 	}
 
 	@Override
-	public void sendVote(Vote vote) {
+	public void sendVote(Vote vote, EUID leader) {
 		executorService.schedule(() -> {
-			this.votes.onNext(vote);
+			this.votes.onNext(new SimpleEntry<>(vote, leader));
 		}, LOOPBACK_DELAY, TimeUnit.MILLISECONDS);
 	}
 
@@ -86,7 +86,9 @@ public class TestEventCoordinatorNetwork implements EventCoordinatorNetworkSende
 
 			@Override
 			public Observable<Vote> voteMessages() {
-				return votes;
+				return votes
+					.filter(e -> e.getValue().equals(euid))
+					.map(Entry::getKey);
 			}
 		};
 	}

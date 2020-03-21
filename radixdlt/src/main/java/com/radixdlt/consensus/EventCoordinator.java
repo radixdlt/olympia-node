@@ -20,6 +20,7 @@ package com.radixdlt.consensus;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import com.radixdlt.common.Atom;
+import com.radixdlt.common.EUID;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposerElection;
@@ -170,7 +171,9 @@ public final class EventCoordinator {
 
 		try {
 			final Vote vote = safetyRules.voteFor(proposedVertex);
-			networkSender.sendVote(vote);
+			final View currentView = this.pacemaker.getCurrentView();
+			final EUID leader = this.proposerElection.getProposer(currentView);
+			networkSender.sendVote(vote, leader);
 		} catch (SafetyViolationException e) {
 			log.error("Rejected " + proposedVertex, e);
 		}

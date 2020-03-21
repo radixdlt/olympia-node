@@ -344,7 +344,7 @@ public class EventCoordinatorTest {
 		when(pacemaker.processQC(any())).thenReturn(Optional.empty());
 		eventCoordinator.processProposal(proposedVertex);
 
-		verify(networkSender, times(1)).sendVote(eq(vote));
+		verify(networkSender, times(1)).sendVote(eq(vote), any());
 	}
 
 	@Test

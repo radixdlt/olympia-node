@@ -25,5 +25,5 @@ import com.radixdlt.common.EUID;
 public interface EventCoordinatorNetworkSender {
 	void broadcastProposal(Vertex vertex);
 	void sendNewView(NewView newView, EUID newViewLeader);
-	void sendVote(Vote vote);
+	void sendVote(Vote vote, EUID leader);
 }
