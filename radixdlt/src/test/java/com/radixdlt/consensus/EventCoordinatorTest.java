@@ -294,23 +294,27 @@ public class EventCoordinatorTest {
 			proposerElection,
 			SELF_KEY);
 
+		View currentView = View.of(123);
+
 		Vertex proposedVertex = mock(Vertex.class);
 		Atom proposedAtom = mock(Atom.class);
 		AID aid = makeAID(7); // no special significance
 		when(proposedAtom.getAID()).thenReturn(aid);
 		when(proposedVertex.getAtom()).thenReturn(proposedAtom);
 		when(proposedVertex.getQC()).thenReturn(mock(QuorumCertificate.class));
+		when(proposedVertex.getView()).thenReturn(currentView);
 
 		doThrow(new VertexInsertionException("Test", new RadixEngineException(RadixEngineErrorCode.CM_ERROR, DataPointer.ofAtom())))
 			.when(vertexStore).insertVertex(any());
 		when(pacemaker.processQC(any())).thenReturn(Optional.empty());
+		when(pacemaker.getCurrentView()).thenReturn(currentView);
 		eventCoordinator.processProposal(proposedVertex);
 		verify(mempool, times(1)).removeRejectedAtom(eq(aid));
 	}
 
 	@Test
 	public void when_processing_valid_stored_proposal__then_atom_is_voted_on_and_removed()
-		throws SafetyViolationException, CryptoException {
+		throws SafetyViolationException {
 		ProposalGenerator proposalGenerator = mock(ProposalGenerator.class);
 		Mempool mempool = mock(Mempool.class);
 		EventCoordinatorNetworkSender networkSender = mock(EventCoordinatorNetworkSender.class);
@@ -332,12 +336,16 @@ public class EventCoordinatorTest {
 			proposerElection,
 			SELF_KEY);
 
+		View currentView = View.of(123);
+
 		Vertex proposedVertex = mock(Vertex.class);
 		Atom proposedAtom = mock(Atom.class);
 		AID aid = makeAID(7); // no special significance
 		when(proposedAtom.getAID()).thenReturn(aid);
 		when(proposedVertex.getAtom()).thenReturn(proposedAtom);
 		when(proposedVertex.getQC()).thenReturn(mock(QuorumCertificate.class));
+		when(proposedVertex.getView()).thenReturn(currentView);
+		when(pacemaker.getCurrentView()).thenReturn(currentView);
 		Vote vote = mock(Vote.class);
 		doReturn(vote).when(safetyRules).voteFor(eq(proposedVertex));
 
@@ -370,7 +378,10 @@ public class EventCoordinatorTest {
 			proposerElection,
 			SELF_KEY);
 
+		View currentView = View.of(123);
+
 		when(pacemaker.processQC(any())).thenReturn(Optional.empty());
+		when(pacemaker.getCurrentView()).thenReturn(currentView);
 
 		Vertex proposalVertex = mock(Vertex.class);
 		Hash proposalVertexId = mock(Hash.class);
@@ -378,6 +389,7 @@ public class EventCoordinatorTest {
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		when(qc.getView()).thenReturn(mock(View.class));
 		when(proposalVertex.getQC()).thenReturn(qc);
+		when(proposalVertex.getView()).thenReturn(currentView);
 
 		Hash committedVertexId = mock(Hash.class);
 		Vertex committedVertex = mock(Vertex.class);
