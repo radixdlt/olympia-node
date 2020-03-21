@@ -188,13 +188,9 @@ public class SafetyRulesTest {
 	}
 
 	private static VertexStore makeVertexStore() {
-		try {
-			final VertexMetadata genesisMetadata = new VertexMetadata(View.genesis(), GENESIS_VERTEX.getId(), View.genesis(), GENESIS_VERTEX.getId());
-			final QuorumCertificate rootQC = new QuorumCertificate(genesisMetadata, new ECDSASignatures());
-			return new VertexStore(GENESIS_VERTEX, rootQC, mock(RadixEngine.class));
-		} catch (RadixEngineException e) {
-			throw new RuntimeException("failed to setup vertex store", e);
-		}
+		final VertexMetadata genesisMetadata = new VertexMetadata(View.genesis(), GENESIS_VERTEX.getId(), View.genesis(), GENESIS_VERTEX.getId());
+		final QuorumCertificate rootQC = new QuorumCertificate(genesisMetadata, new ECDSASignatures());
+		return new VertexStore(GENESIS_VERTEX, rootQC, mock(RadixEngine.class));
 	}
 
 	private static Vertex makeVertex(Vertex parent, View view, VertexStore vertexStore) {

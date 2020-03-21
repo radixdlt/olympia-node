@@ -42,14 +42,18 @@ public final class VertexStore {
 		Vertex genesisVertex,
 		QuorumCertificate rootQC,
 		RadixEngine engine
-	) throws RadixEngineException {
+	) {
 		Objects.requireNonNull(genesisVertex);
 		Objects.requireNonNull(rootQC);
 		Objects.requireNonNull(engine);
 
 		this.engine = engine;
 		this.highestQC = rootQC;
-		this.engine.store(genesisVertex.getAtom());
+		try {
+			this.engine.store(genesisVertex.getAtom());
+		} catch (RadixEngineException e) {
+			throw new IllegalStateException("Could not store genesis atom: " + genesisVertex.getAtom(), e);
+		}
 		this.vertices.put(genesisVertex.getId(), genesisVertex);
 		this.committedVertices.put(genesisVertex.getId(), genesisVertex);
 	}
