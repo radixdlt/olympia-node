@@ -87,8 +87,8 @@ public final class EventCoordinator {
 
 		// TODO: Handle empty proposals
 		if (proposal.getAtom() != null) {
+			log.info(view + ": Broadcasting proposal " + proposal);
 			this.networkSender.broadcastProposal(proposal);
-			log.info("Starting view " + view + " with proposal " + proposal);
 		}
 	}
 
@@ -103,6 +103,7 @@ public final class EventCoordinator {
 		Optional<QuorumCertificate> potentialQc = this.pendingVotes.insertVote(vote);
 		if (potentialQc.isPresent()) {
 			QuorumCertificate qc = potentialQc.get();
+			log.info("QC created: " + qc);
 			processQC(qc);
 		}
 	}
@@ -128,6 +129,7 @@ public final class EventCoordinator {
 
 	public void processLocalTimeout(View view) {
 		if (!this.pacemaker.processLocalTimeout(view)) {
+			log.info("Ignore timeout: " + view);
 			return;
 		}
 
@@ -154,7 +156,21 @@ public final class EventCoordinator {
 	}
 
 	public void processProposal(Vertex proposedVertex) {
+		final View currentView = this.pacemaker.getCurrentView();
+		if (proposedVertex.getView().compareTo(currentView) < 0) {
+			log.info("Ignore proposal current " + currentView + " but proposed " + proposedVertex.getView());
+			return;
+		}
+
 		processQC(proposedVertex.getQC());
+
+		// TODO: Sync at this point
+
+		final View updatedView = this.pacemaker.getCurrentView();
+		if (proposedVertex.getView().compareTo(updatedView) != 0) {
+			log.info("Ignore proposal current " + updatedView + " but proposed " + proposedVertex.getView());
+			return;
+		}
 
 		try {
 			vertexStore.insertVertex(proposedVertex);
@@ -171,8 +187,7 @@ public final class EventCoordinator {
 
 		try {
 			final Vote vote = safetyRules.voteFor(proposedVertex);
-			final View currentView = this.pacemaker.getCurrentView();
-			final EUID leader = this.proposerElection.getProposer(currentView);
+			final EUID leader = this.proposerElection.getProposer(updatedView);
 			networkSender.sendVote(vote, leader);
 		} catch (SafetyViolationException e) {
 			log.error("Rejected " + proposedVertex, e);

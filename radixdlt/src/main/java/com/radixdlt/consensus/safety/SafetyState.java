@@ -27,7 +27,7 @@ import java.util.Optional;
 /**
  * The state maintained to ensure the safety of the consensus system.
  */
-final class SafetyState {
+public final class SafetyState {
 	private final View lastVotedView; // the last view this node voted on (and is thus safe)
 	private final View lockedView; // the highest 2-chain head
 	private final View committedView; // the highest 3-chain (executed) head

@@ -37,7 +37,7 @@ import com.radixdlt.consensus.Vote;
  * Overly simplistic network implementation that just sends messages to itself.
  */
 public class TestEventCoordinatorNetwork implements EventCoordinatorNetworkSender {
-	public static final int LOOPBACK_DELAY = 100;
+	public static final int LOOPBACK_DELAY = 50;
 	private final PublishSubject<Vertex> proposals;
 	private final PublishSubject<Map.Entry<NewView, EUID>> newViews;
 	private final PublishSubject<Map.Entry<Vote, EUID>> votes;
