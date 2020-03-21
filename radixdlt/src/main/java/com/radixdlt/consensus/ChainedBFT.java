@@ -20,7 +20,6 @@ package com.radixdlt.consensus;
 import com.google.inject.Inject;
 
 import com.radixdlt.consensus.liveness.PacemakerRx;
-import com.radixdlt.network.EventCoordinatorNetworkRx;
 
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Scheduler;

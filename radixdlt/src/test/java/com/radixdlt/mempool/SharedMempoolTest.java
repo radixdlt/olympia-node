@@ -31,7 +31,7 @@ import com.google.inject.name.Names;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.Atom;
 import com.radixdlt.common.EUID;
-import com.radixdlt.network.MempoolNetworkTx;
+import com.radixdlt.consensus.MempoolNetworkTx;
 import com.radixdlt.utils.Ints;
 
 import static org.junit.Assert.*;

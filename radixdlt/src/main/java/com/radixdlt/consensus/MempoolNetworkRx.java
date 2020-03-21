@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.network;
+package com.radixdlt.consensus;
 
 import com.radixdlt.common.Atom;
 import io.reactivex.rxjava3.core.Observable;

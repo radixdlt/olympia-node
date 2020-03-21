@@ -41,7 +41,7 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
-import com.radixdlt.network.MempoolNetworkRx;
+import com.radixdlt.consensus.MempoolNetworkRx;
 import com.radixdlt.serialization.Serialization;
 
 import io.reactivex.rxjava3.subjects.PublishSubject;

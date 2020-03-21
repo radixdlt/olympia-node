@@ -19,6 +19,10 @@ package com.radixdlt.network;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
+import com.radixdlt.consensus.EventCoordinatorNetworkRx;
+import com.radixdlt.consensus.EventCoordinatorNetworkSender;
+import com.radixdlt.consensus.MempoolNetworkRx;
+import com.radixdlt.consensus.MempoolNetworkTx;
 
 public class NetworkModule extends AbstractModule {
 

@@ -17,6 +17,8 @@
 
 package com.radixdlt.network;
 
+import com.radixdlt.consensus.EventCoordinatorNetworkRx;
+import com.radixdlt.consensus.EventCoordinatorNetworkSender;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 

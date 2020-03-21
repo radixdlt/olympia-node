@@ -38,7 +38,7 @@ import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.mempool.MempoolRejectedException;
-import com.radixdlt.network.MempoolNetworkRx;
+import com.radixdlt.consensus.MempoolNetworkRx;
 import com.radixdlt.serialization.Serialization;
 
 import io.reactivex.rxjava3.core.Scheduler;

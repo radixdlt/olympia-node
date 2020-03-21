@@ -30,7 +30,6 @@ import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.mempool.Mempool;
-import com.radixdlt.network.EventCoordinatorNetworkSender;
 import com.radixdlt.utils.Longs;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;

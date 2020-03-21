@@ -37,7 +37,6 @@ import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.RadixEngineErrorCode;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.mempool.Mempool;
-import com.radixdlt.network.EventCoordinatorNetworkSender;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.Ints;
 import java.util.Optional;
