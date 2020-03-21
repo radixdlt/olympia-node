@@ -77,21 +77,24 @@ public class SimpleEventCoordinatorNetwork implements EventCoordinatorNetworkSen
 	public void broadcastProposal(Vertex vertex) {
 		VertexMessage message = new VertexMessage(this.magic, vertex);
 		handleVertexMessage(this.localPeer, message);
-		sendToOthers(message);
+		broadcast(message);
 	}
 
 	@Override
-	public void sendNewView(NewView newView) {
+	public void sendNewView(NewView newView, EUID newViewLeader) {
 		NewViewMessage message = new NewViewMessage(this.magic, newView);
-		handleNewViewMessage(this.localPeer, message);
-		sendToOthers(message);
+		if (this.localPeer.getNID().equals(newViewLeader)) {
+			handleNewViewMessage(this.localPeer, message);
+		} else {
+			send(message, newViewLeader);
+		}
 	}
 
 	@Override
 	public void sendVote(Vote vote) {
 		VoteMessage message = new VoteMessage(this.magic, vote);
 		handleVoteMessage(this.localPeer, message);
-		sendToOthers(message);
+		broadcast(message);
 	}
 
 	@Override
@@ -109,7 +112,13 @@ public class SimpleEventCoordinatorNetwork implements EventCoordinatorNetworkSen
 		return this.votes;
 	}
 
-	private void sendToOthers(Message message) {
+	private void send(Message message, EUID recipient) {
+		this.addressBook.peers()
+			.filter(p -> p.getNID().equals(recipient))
+			.forEach(p -> this.messageCentral.send(p, message));
+	}
+
+	private void broadcast(Message message) {
 		final EUID self = this.localPeer.getNID();
 		this.addressBook.peers()
 			.filter(Peer::hasSystem) // Only peers with systems (and therefore transports)

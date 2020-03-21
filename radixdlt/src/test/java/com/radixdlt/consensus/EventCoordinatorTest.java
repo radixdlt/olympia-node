@@ -179,8 +179,9 @@ public class EventCoordinatorTest {
 			SELF_KEY);
 
 		when(pacemaker.processLocalTimeout(any())).thenReturn(true);
+		when(pacemaker.getCurrentView()).thenReturn(View.of(1));
 		eventCoordinator.processLocalTimeout(View.of(0L));
-		verify(networkSender, times(1)).sendNewView(any());
+		verify(networkSender, times(1)).sendNewView(any(), any());
 	}
 
 	@Test
@@ -208,7 +209,7 @@ public class EventCoordinatorTest {
 
 		when(pacemaker.processLocalTimeout(any())).thenReturn(false);
 		eventCoordinator.processLocalTimeout(View.of(0L));
-		verify(networkSender, times(0)).sendNewView(any());
+		verify(networkSender, times(0)).sendNewView(any(), any());
 	}
 
 	@Test

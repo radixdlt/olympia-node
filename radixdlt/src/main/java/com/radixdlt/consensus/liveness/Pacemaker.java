@@ -27,7 +27,14 @@ import java.util.Optional;
  */
 public interface Pacemaker {
 	View getCurrentView();
+
+	/**
+	 * Notifies pacemaker that the local timeout is being processed.
+	 * @param view the view to timeout
+	 * @return true, if the pacemaker still agrees with the current view to timeout
+	 */
 	boolean processLocalTimeout(View view);
+
 	Optional<View> processRemoteNewView(NewView newView);
 	Optional<View> processQC(View view);
 }

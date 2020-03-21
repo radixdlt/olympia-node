@@ -17,8 +17,12 @@
 
 package com.radixdlt.network;
 
+import com.radixdlt.common.EUID;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
+import java.util.AbstractMap.SimpleEntry;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -30,14 +34,14 @@ import com.radixdlt.consensus.Vote;
 /**
  * Overly simplistic network implementation that just sends messages to itself.
  */
-public class DumbEventCoordinatorNetwork implements EventCoordinatorNetworkSender, EventCoordinatorNetworkRx {
+public class TestEventCoordinatorNetwork implements EventCoordinatorNetworkSender {
 	public static final int LOOPBACK_DELAY = 100;
 	private final PublishSubject<Vertex> proposals;
-	private final PublishSubject<NewView> newViews;
+	private final PublishSubject<Map.Entry<NewView, EUID>> newViews;
 	private final PublishSubject<Vote> votes;
 	private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 
-	public DumbEventCoordinatorNetwork() {
+	public TestEventCoordinatorNetwork() {
 		this.proposals = PublishSubject.create();
 		this.newViews = PublishSubject.create();
 		this.votes = PublishSubject.create();
@@ -51,9 +55,9 @@ public class DumbEventCoordinatorNetwork implements EventCoordinatorNetworkSende
 	}
 
 	@Override
-	public void sendNewView(NewView newView) {
+	public void sendNewView(NewView newView, EUID newViewLeader) {
 		executorService.schedule(() -> {
-			this.newViews.onNext(newView);
+			this.newViews.onNext(new SimpleEntry<>(newView, newViewLeader));
 		}, LOOPBACK_DELAY, TimeUnit.MILLISECONDS);
 	}
 
@@ -64,18 +68,24 @@ public class DumbEventCoordinatorNetwork implements EventCoordinatorNetworkSende
 		}, LOOPBACK_DELAY, TimeUnit.MILLISECONDS);
 	}
 
-	@Override
-	public Observable<Vertex> proposalMessages() {
-		return proposals;
-	}
+	public EventCoordinatorNetworkRx getNetworkRx(EUID euid) {
+		return new EventCoordinatorNetworkRx() {
+			@Override
+			public Observable<Vertex> proposalMessages() {
+				return proposals;
+			}
 
-	@Override
-	public Observable<NewView> newViewMessages() {
-		return newViews;
-	}
+			@Override
+			public Observable<NewView> newViewMessages() {
+				return newViews
+					.filter(e -> e.getValue().equals(euid))
+					.map(Entry::getKey);
+			}
 
-	@Override
-	public Observable<Vote> voteMessages() {
-		return votes;
+			@Override
+			public Observable<Vote> voteMessages() {
+				return votes;
+			}
+		};
 	}
 }

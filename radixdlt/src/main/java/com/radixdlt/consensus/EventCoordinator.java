@@ -134,7 +134,9 @@ public final class EventCoordinator {
 		try {
 			// TODO make signing more robust by including author in signed hash
 			ECDSASignature signature = this.selfKey.sign(Hash.hash256(Longs.toByteArray(view.next().number())));
-			this.networkSender.sendNewView(new NewView(selfKey.getPublicKey(), view.next(), signature));
+			View nextView = this.pacemaker.getCurrentView();
+			NewView newView = new NewView(selfKey.getPublicKey(), nextView, signature);
+			this.networkSender.sendNewView(newView, this.proposerElection.getProposer(nextView));
 		} catch (CryptoException e) {
 			throw new IllegalStateException("Failed to sign new view at " + view, e);
 		}

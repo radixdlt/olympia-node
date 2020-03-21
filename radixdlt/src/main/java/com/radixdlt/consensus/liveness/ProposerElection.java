@@ -31,4 +31,11 @@ public interface ProposerElection {
 	 * @return Whether the node is a valid proposer
 	 */
 	boolean isValidProposer(EUID nid, View view);
+
+	/**
+	 * Retrieve the deterministic proposer for a given view
+	 * @param view the view to get the proposer for
+	 * @return the EUID of the proposer
+	 */
+	EUID getProposer(View view);
 }
