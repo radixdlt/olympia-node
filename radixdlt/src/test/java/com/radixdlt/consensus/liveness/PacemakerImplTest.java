@@ -185,4 +185,21 @@ public class PacemakerImplTest {
 		}
 		return newView;
 	}
+
+	@Test
+	public void when_process_new_view_and_is_a_quorum__should_return_new_view() throws Exception {
+		ScheduledExecutorService executorService = getMockedExecutorService();
+		QuorumRequirements quorumRequirements = mock(QuorumRequirements.class);
+		when(quorumRequirements.accepts(any())).thenReturn(true);
+		when(quorumRequirements.numRequiredVotes()).thenReturn(1);
+
+		PacemakerImpl pacemaker = new PacemakerImpl(quorumRequirements, executorService);
+
+		View view = mock(View.class);
+		ECKeyPair keyPair = new ECKeyPair();
+		NewView newView = new NewView(keyPair.getPublicKey(), view, mock(ECDSASignature.class));
+		assertThat(pacemaker.processRemoteNewView(newView))
+			.get()
+			.isEqualTo(view);
+	}
 }
