@@ -50,7 +50,7 @@ public final class View implements Comparable<View> {
 
 	@Override
 	public String toString() {
-		return "view " + this.view;
+		return "View " + this.view;
 	}
 
 	public boolean isGenesis() {
