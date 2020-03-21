@@ -25,9 +25,7 @@ import io.reactivex.rxjava3.core.Observable;
  */
 public interface PacemakerRx {
 	/**
-	 * @return hot observable of timeout events
+	 * @return observable of timeout events which begins emitting on the first subscription
 	 */
 	Observable<View> localTimeouts();
-
-	void start();
 }

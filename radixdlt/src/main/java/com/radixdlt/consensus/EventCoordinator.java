@@ -78,7 +78,6 @@ public final class EventCoordinator {
 	}
 
 	private void processNewView(View view) {
-		log.debug("Processing new view: " + view);
 		// only do something if we're actually the leader
 		if (!proposerElection.isValidProposer(selfKey.getUID(), view)) {
 			return;
@@ -154,7 +153,6 @@ public final class EventCoordinator {
 
 	public void processProposal(Vertex proposedVertex) {
 		processQC(proposedVertex.getQC());
-		Atom atom = proposedVertex.getAtom();
 
 		try {
 			vertexStore.insertVertex(proposedVertex);
@@ -162,6 +160,7 @@ public final class EventCoordinator {
 			log.info("Rejected vertex insertion " + e);
 
 			// TODO: Better logic for removal on exception
+			final Atom atom = proposedVertex.getAtom();
 			if (atom != null) {
 				mempool.removeRejectedAtom(atom.getAID());
 			}

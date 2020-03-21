@@ -25,6 +25,8 @@ import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import io.reactivex.rxjava3.observers.TestObserver;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 
 import java.util.Optional;
@@ -44,7 +46,7 @@ public class PacemakerImplTest {
 	private static ScheduledExecutorService getMockedExecutorService() {
 		ScheduledExecutorService executorService = mock(ScheduledExecutorService.class);
 		doAnswer(invocation -> {
-			((Runnable) invocation.getArguments()[0]).run();
+			Executors.newSingleThreadScheduledExecutor().schedule((Runnable) invocation.getArguments()[0], 0, TimeUnit.MILLISECONDS);
 			return null;
 		}).when(executorService).schedule(any(Runnable.class), anyLong(), any());
 		return executorService;
@@ -56,7 +58,6 @@ public class PacemakerImplTest {
 		PacemakerImpl pacemaker = new PacemakerImpl(mock(QuorumRequirements.class), executorService);
 		TestObserver<View> testObserver = TestObserver.create();
 		pacemaker.localTimeouts().subscribe(testObserver);
-		pacemaker.start();
 		testObserver.awaitCount(1);
 		testObserver.assertValues(View.of(0L));
 		testObserver.assertNotComplete();
@@ -68,7 +69,6 @@ public class PacemakerImplTest {
 		PacemakerImpl pacemaker = new PacemakerImpl(mock(QuorumRequirements.class), executorService);
 		TestObserver<View> testObserver = TestObserver.create();
 		pacemaker.localTimeouts().subscribe(testObserver);
-		pacemaker.start();
 		pacemaker.processQC(View.of(0L));
 		assertThat(pacemaker.getCurrentView()).isEqualTo(View.of(1L));
 		verify(executorService, times(2)).schedule(any(Runnable.class), anyLong(), any());
@@ -80,7 +80,6 @@ public class PacemakerImplTest {
 		PacemakerImpl pacemaker = new PacemakerImpl(mock(QuorumRequirements.class), executorService);
 		TestObserver<View> testObserver = TestObserver.create();
 		pacemaker.localTimeouts().subscribe(testObserver);
-		pacemaker.start();
 		pacemaker.processLocalTimeout(View.of(0L));
 		assertThat(pacemaker.getCurrentView()).isEqualTo(View.of(1L));
 		verify(executorService, times(2)).schedule(any(Runnable.class), anyLong(), any());
@@ -92,7 +91,7 @@ public class PacemakerImplTest {
 		PacemakerImpl pacemaker = new PacemakerImpl(mock(QuorumRequirements.class), executorService);
 		TestObserver<View> testObserver = TestObserver.create();
 		pacemaker.localTimeouts().subscribe(testObserver);
-		pacemaker.start();
+		testObserver.awaitCount(1);
 		testObserver.assertValueCount(1);
 		testObserver.assertNotComplete();
 		verify(executorService, times(1)).schedule(any(Runnable.class), anyLong(), any());
@@ -104,7 +103,6 @@ public class PacemakerImplTest {
 		PacemakerImpl pacemaker = new PacemakerImpl(mock(QuorumRequirements.class), executorService);
 		TestObserver<View> testObserver = TestObserver.create();
 		pacemaker.localTimeouts().subscribe(testObserver);
-		pacemaker.start();
 		pacemaker.processLocalTimeout(View.of(0L));
 		testObserver.awaitCount(2);
 		testObserver.assertValues(View.of(0L), View.of(1L));
@@ -114,7 +112,6 @@ public class PacemakerImplTest {
 	public void when_process_timeout_for_earlier_view__then_view_should_not_change() {
 		ScheduledExecutorService executorService = getMockedExecutorService();
 		PacemakerImpl pacemaker = new PacemakerImpl(mock(QuorumRequirements.class), executorService);
-		pacemaker.start();
 		assertThat(pacemaker.getCurrentView()).isEqualByComparingTo(View.of(0L));
 		Optional<View> newView = pacemaker.processQC(View.of(0L));
 		assertThat(newView).isEqualTo(Optional.of(View.of(1L)));
@@ -129,7 +126,6 @@ public class PacemakerImplTest {
 		PacemakerImpl pacemaker = new PacemakerImpl(mock(QuorumRequirements.class), executorService);
 		TestObserver<View> testObserver = TestObserver.create();
 		pacemaker.localTimeouts().subscribe(testObserver);
-		pacemaker.start();
 		assertThat(pacemaker.getCurrentView()).isEqualByComparingTo(View.of(0L));
 		Optional<View> newView = pacemaker.processQC(View.of(0L));
 		assertThat(newView).isEqualTo(Optional.of(View.of(1L)));

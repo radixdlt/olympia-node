@@ -38,6 +38,7 @@ import java.util.concurrent.TimeUnit;
 public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 	static final int TIMEOUT_MILLISECONDS = 500;
 	private final PublishSubject<View> timeouts;
+	private final Observable<View> timeoutsObservable;
 	private final ScheduledExecutorService executorService;
 	private final QuorumRequirements quorumRequirements;
 
@@ -49,6 +50,10 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 		this.quorumRequirements = Objects.requireNonNull(quorumRequirements);
 		this.executorService = Objects.requireNonNull(executorService);
 		this.timeouts = PublishSubject.create();
+		this.timeoutsObservable = this.timeouts
+			.publish()
+			.refCount()
+			.doOnSubscribe(d -> scheduleTimeout(this.currentView));
 	}
 
 	private void scheduleTimeout(final View timeoutView) {
@@ -127,12 +132,7 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 	}
 
 	@Override
-	public void start() {
-		scheduleTimeout(this.currentView);
-	}
-
-	@Override
 	public Observable<View> localTimeouts() {
-		return timeouts;
+		return this.timeoutsObservable;
 	}
 }

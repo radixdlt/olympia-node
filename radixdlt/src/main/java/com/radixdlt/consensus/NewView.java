@@ -116,6 +116,6 @@ public final class NewView {
 
 	@Override
 	public String toString() {
-		return String.format("%s{view=%s}", getClass().getSimpleName(), view);
+		return String.format("%s{view=%s author=%s}", getClass().getSimpleName(), view, author);
 	}
 }
