@@ -29,9 +29,9 @@ import com.radixdlt.discovery.IterativeDiscovererModule;
 import com.radixdlt.mempool.MempoolModule;
 import com.radixdlt.middleware2.MiddlewareModule;
 import com.radixdlt.network.NetworkModule;
+import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.berkeley.BerkeleyStoreModule;
-import com.radixdlt.submission.SubmissionControlModule;
 import com.radixdlt.universe.Universe;
 import org.radix.database.DatabaseEnvironment;
 import org.radix.events.Events;
@@ -40,7 +40,6 @@ import org.radix.network2.addressbook.PeerManagerConfiguration;
 import org.radix.network2.messaging.MessageCentralModule;
 import org.radix.network2.transport.tcp.TCPTransportModule;
 import org.radix.network2.transport.udp.UDPTransportModule;
-import org.radix.properties.RuntimeProperties;
 import org.radix.universe.system.LocalSystem;
 
 public class GlobalInjector {
@@ -57,7 +56,6 @@ public class GlobalInjector {
 		Module udpTransportModule = new UDPTransportModule(properties);
 		Module tcpTransportModule = new TCPTransportModule(properties);
 		Module addressBookModule = new AddressBookModule(dbEnv);
-		Module submissionControlModule = new SubmissionControlModule();
 		Module mempoolModule = new MempoolModule();
 		Module networkModule = new NetworkModule();
 
@@ -86,7 +84,6 @@ public class GlobalInjector {
 				udpTransportModule,
 				tcpTransportModule,
 				addressBookModule,
-				submissionControlModule,
 				mempoolModule,
 				networkModule,
 				globalModule);

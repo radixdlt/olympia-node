@@ -17,28 +17,21 @@
 
 package com.radixdlt.consensus;
 
-import com.google.common.collect.Sets;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
-import com.radixdlt.common.AID;
 import com.radixdlt.common.Atom;
 import com.radixdlt.common.EUID;
 import com.radixdlt.consensus.liveness.Pacemaker;
+import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyViolationException;
 import com.radixdlt.consensus.safety.VoteResult;
-import com.radixdlt.constraintmachine.CMError;
-import com.radixdlt.constraintmachine.DataPointer;
-import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.engine.AtomEventListener;
-import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.network.EventCoordinatorNetworkSender;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 
-import java.util.List;
 import java.util.Objects;
 
 /**
@@ -46,11 +39,9 @@ import java.util.Objects;
  */
 public final class EventCoordinator {
 	private static final Logger log = Logging.getLogger("EC");
-	private static final Round GENESIS_ROUND = Round.of(0L);
-	private static final AID GENESIS_ID = AID.ZERO;
 
 	private final VertexStore vertexStore;
-	private final RadixEngine engine;
+	private final ProposalGenerator proposalGenerator;
 	private final Mempool mempool;
 	private final EventCoordinatorNetworkSender networkSender;
 	private final Pacemaker pacemaker;
@@ -60,21 +51,21 @@ public final class EventCoordinator {
 
 	@Inject
 	public EventCoordinator(
+		ProposalGenerator proposalGenerator,
 		Mempool mempool,
 		EventCoordinatorNetworkSender networkSender,
 		SafetyRules safetyRules,
 		Pacemaker pacemaker,
 		VertexStore vertexStore,
-		RadixEngine engine,
 		ProposerElection proposerElection,
 		@Named("self") EUID self
 	) {
+		this.proposalGenerator = Objects.requireNonNull(proposalGenerator);
 		this.mempool = Objects.requireNonNull(mempool);
 		this.networkSender = Objects.requireNonNull(networkSender);
 		this.safetyRules = Objects.requireNonNull(safetyRules);
 		this.pacemaker = Objects.requireNonNull(pacemaker);
 		this.vertexStore = Objects.requireNonNull(vertexStore);
-        this.engine = Objects.requireNonNull(engine);
 		this.proposerElection = Objects.requireNonNull(proposerElection);
 		this.self = Objects.requireNonNull(self);
 	}
@@ -85,14 +76,12 @@ public final class EventCoordinator {
 		if (!proposerElection.isValidProposer(self, round)) {
 			return;
 		}
-        
-		List<Atom> atoms = mempool.getAtoms(1, Sets.newHashSet());
-		if (!atoms.isEmpty()) {
-			QuorumCertificate highestQC = vertexStore.getHighestQC()
-				.orElseGet(this::makeGenesisQC);
 
-			log.info("Starting round " + round + " with proposal " + atoms.get(0));
-			networkSender.broadcastProposal(new Vertex(highestQC, this.pacemaker.getCurrentRound(), atoms.get(0)));
+		Vertex proposal = proposalGenerator.generateProposal(this.pacemaker.getCurrentRound());
+
+		// TODO: Handle empty proposals
+		if (proposal.getAtom() != null) {
+			this.networkSender.broadcastProposal(proposal);
 		}
 	}
 
@@ -132,53 +121,33 @@ public final class EventCoordinator {
 	}
 
 	public void processProposal(Vertex proposedVertex) {
-		Atom proposedAtom = proposedVertex.getAtom();
+		Atom atom = proposedVertex.getAtom();
 
-		// TODO: Fix this interface
-		engine.store(proposedAtom, new AtomEventListener() {
-			@Override
-			public void onCMError(Atom atom, CMError error) {
+		try {
+			vertexStore.insertVertex(proposedVertex);
+		} catch (VertexInsertionException e) {
+			log.info("Rejected vertex insertion " + e);
+
+			if (atom != null) {
 				mempool.removeRejectedAtom(atom.getAID());
 			}
+			return;
+		}
 
-			@Override
-			public void onStateStore(Atom atom) {
-				mempool.removeCommittedAtom(atom.getAID());
+		if (atom != null) {
+			mempool.removeCommittedAtom(atom.getAID());
+		}
 
-				vertexStore.insertVertex(proposedVertex);
-
-				final VoteResult voteResult;
-				try {
-					voteResult = safetyRules.voteFor(proposedVertex);
-					final Vote vote = voteResult.getVote();
-					networkSender.sendVote(vote);
-					// TODO do something on commit
-					voteResult.getCommittedAtom()
-						.ifPresent(aid -> log.info("Committed atom " + aid));
-				} catch (SafetyViolationException e) {
-					log.error("Rejected " + proposedVertex, e);
-				}
-			}
-
-			@Override
-			public void onVirtualStateConflict(Atom atom, DataPointer issueParticle) {
-				mempool.removeRejectedAtom(atom.getAID());
-			}
-
-			@Override
-			public void onStateConflict(Atom atom, DataPointer issueParticle, Atom conflictingAtom) {
-				mempool.removeRejectedAtom(atom.getAID());
-			}
-
-			@Override
-			public void onStateMissingDependency(AID atomId, Particle particle) {
-				mempool.removeRejectedAtom(proposedAtom.getAID());
-			}
-		});
-	}
-
-	private QuorumCertificate makeGenesisQC() {
-		VertexMetadata genesisMetadata = new VertexMetadata(GENESIS_ROUND, GENESIS_ID, GENESIS_ROUND, GENESIS_ID);
-		return new QuorumCertificate(new Vote(this.self, genesisMetadata), genesisMetadata);
+		final VoteResult voteResult;
+		try {
+			voteResult = safetyRules.voteFor(proposedVertex);
+			final Vote vote = voteResult.getVote();
+			networkSender.sendVote(vote);
+			// TODO do something on commit
+			voteResult.getCommittedVertexId()
+				.ifPresent(vertexId -> log.info("Committed vertex " + vertexId));
+		} catch (SafetyViolationException e) {
+			log.error("Rejected " + proposedVertex, e);
+		}
 	}
 }

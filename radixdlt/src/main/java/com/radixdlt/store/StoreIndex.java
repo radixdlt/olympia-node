@@ -46,7 +46,8 @@ public final class StoreIndex implements Comparable<StoreIndex> {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final byte[] identifier;
 
-	private StoreIndex() {
+	StoreIndex() {
+		// Serializer only
 		this.prefix = (byte) 0;
 		this.identifier = Bytes.EMPTY_BYTES;
 	}

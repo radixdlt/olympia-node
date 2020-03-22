@@ -80,8 +80,6 @@ public final class NewRound {
 
 	@Override
 	public String toString() {
-		return getClass().getSimpleName() + "{" +
-			"round=" + round +
-			'}';
+		return getClass().getSimpleName() + '{' + "round=" + round + '}';
 	}
 }

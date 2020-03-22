@@ -26,29 +26,19 @@ import com.radixdlt.atommodel.tokens.TokensConstraintScrypt;
 import com.radixdlt.atommodel.unique.UniqueParticleConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.Result;
-import com.radixdlt.common.AID;
-import com.radixdlt.common.Atom;
-import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.ConstraintMachine;
-import com.radixdlt.constraintmachine.DataPointer;
-import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.engine.AtomEventListener;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.middleware.AtomCheckHook;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.middleware2.processing.EngineAtomEventListener;
 import com.radixdlt.middleware2.store.LedgerEngineStore;
+import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
-import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.universe.Universe;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.properties.RuntimeProperties;
 import org.radix.time.Time;
 
 import java.util.function.UnaryOperator;
@@ -95,8 +85,7 @@ public class MiddlewareModule extends AbstractModule {
 			EngineStore engineStore,
 			Serialization serialization,
 			RuntimeProperties properties,
-			Universe universe,
-			LedgerEntryStore store
+			Universe universe
 	) {
 		RadixEngine radixEngine = new RadixEngine(
 			constraintMachine,
@@ -116,9 +105,6 @@ public class MiddlewareModule extends AbstractModule {
 		);
 
 		radixEngine.addAtomEventListener(new EngineAtomEventListener(serialization));
-		radixEngine.start();
-
-		initGenesis(radixEngine, store, universe);
 
 		return radixEngine;
 	}
@@ -127,61 +113,5 @@ public class MiddlewareModule extends AbstractModule {
 	protected void configure() {
 		bind(EngineStore.class).to(LedgerEngineStore.class).in(Scopes.SINGLETON);
 		bind(AtomToBinaryConverter.class).toInstance(new AtomToBinaryConverter(Serialization.getDefault()));
-	}
-
-
-	private void initGenesis(RadixEngine radixEngine, LedgerEntryStore store, Universe universe) {
-		try {
-			LinkedList<AID> atomIds = new LinkedList<>();
-			for (Atom atom : universe.getGenesis()) {
-				if (!store.contains(atom.getAID())) {
-					radixEngine.store(atom,
-						new AtomEventListener() {
-							@Override
-							public void onCMSuccess(Atom atom) {
-								log.debug("Genesis Atom " + atom.getAID() + " stored to atom store");
-							}
-
-							@Override
-							public void onCMError(Atom atom, CMError error) {
-								log.fatal("Failed to addAtom genesis Atom: " + error.getErrorCode() + " "
-									+ error.getErrMsg() + " " + error.getDataPointer() + "\n"
-									+ atom + "\n"
-									+ error.getCmValidationState().toString());
-								System.exit(-1);
-							}
-
-							@Override
-							public void onVirtualStateConflict(Atom atom, DataPointer dp) {
-								log.fatal("Failed to addAtom genesis Atom: Virtual State Conflict");
-								System.exit(-1);
-							}
-
-							@Override
-							public void onStateConflict(Atom atom, DataPointer dp, Atom conflictAtom) {
-								log.fatal("Failed to addAtom genesis Atom: State Conflict");
-								System.exit(-1);
-							}
-
-							@Override
-							public void onStateMissingDependency(AID atomId, Particle particle) {
-								log.fatal("Failed to addAtom genesis Atom: Missing Dependency");
-								System.exit(-1);
-							}
-						});
-				}
-			}
-
-			// Wait for atoms
-			for (AID atomID : atomIds) {
-				while (!store.contains(atomID)) {
-					TimeUnit.MILLISECONDS.sleep(100);
-				}
-			}
-
-		} catch (Exception ex) {
-			log.fatal("Failed to addAtom genesis Atom", ex);
-			System.exit(-1);
-		}
 	}
 }

@@ -18,11 +18,13 @@
 package org.radix;
 
 import com.radixdlt.consensus.ChainedBFT;
+import com.radixdlt.mempool.MempoolReceiver;
+import com.radixdlt.mempool.SubmissionControl;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
+import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.store.LedgerEntryStore;
-import com.radixdlt.submission.SubmissionControl;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.Bytes;
 import org.apache.commons.cli.ParseException;
@@ -36,8 +38,8 @@ import org.radix.logging.Logging;
 import org.radix.network2.addressbook.AddressBook;
 import org.radix.network2.addressbook.PeerManager;
 import org.radix.network2.transport.udp.PublicInetAddress;
-import org.radix.properties.RuntimeProperties;
 import org.radix.time.Time;
+import org.radix.universe.UniverseValidator;
 import org.radix.universe.system.LocalSystem;
 import org.radix.utils.IOUtils;
 import org.radix.utils.SystemMetaData;
@@ -116,7 +118,7 @@ public final class Radix
 		Universe universe = extractUniverseFrom(properties, serialization);
 
 		// TODO this is awful, PublicInetAddress shouldn't be a singleton
-		PublicInetAddress.configure(null, universe.getPort());
+		PublicInetAddress.configure(universe.getPort());
 
 		LocalSystem localSystem = LocalSystem.restoreOrCreate(properties, universe);
 
@@ -141,9 +143,11 @@ public final class Radix
 		PeerManager peerManager = globalInjector.getInjector().getInstance(PeerManager.class);
 		peerManager.start();
 
+		// Start mempool receiver
+		globalInjector.getInjector().getInstance(MempoolReceiver.class).start();
+
 		// start API services
-		ChainedBFT bft = globalInjector.getInjector().getInstance(ChainedBFT.class);
-		bft.start();
+		globalInjector.getInjector().getInstance(ChainedBFT.class).start();
 
 		SubmissionControl submissionControl = globalInjector.getInjector().getInstance(SubmissionControl.class);
 		AtomToBinaryConverter atomToBinaryConverter = globalInjector.getInjector().getInstance(AtomToBinaryConverter.class);
@@ -162,23 +166,25 @@ public final class Radix
 			String jarPath = jarFile;
 
 			if (jarPath.toLowerCase().endsWith(".jar")) {
-				jarPath = jarPath.substring(0, jarPath.lastIndexOf("/"));
+				jarPath = jarPath.substring(0, jarPath.lastIndexOf('/'));
 			}
 			System.setProperty("radix.jar.path", jarPath);
 
 			log.debug("Execution file: "+ System.getProperty("radix.jar"));
 			log.debug("Execution path: "+ System.getProperty("radix.jar.path"));
 		} catch (URISyntaxException | ClassNotFoundException e) {
-			throw new RuntimeException("while fetching execution location", e);
+			throw new IllegalStateException("Error while fetching execution location", e);
 		}
 	}
 
 	private static Universe extractUniverseFrom(RuntimeProperties properties, Serialization serialization) {
 		try {
 			byte[] bytes = Bytes.fromBase64String(properties.get("universe"));
-			return serialization.fromDson(bytes, Universe.class);
+			Universe u = serialization.fromDson(bytes, Universe.class);
+			UniverseValidator.validate(u);
+			return u;
 		} catch (SerializationException e) {
-			throw new RuntimeException("while deserialising universe", e);
+			throw new IllegalStateException("Error while deserialising universe", e);
 		}
 	}
 

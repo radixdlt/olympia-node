@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.crypto.Hash;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -31,17 +32,19 @@ public class VoteTest {
 
 	private Vote testObject;
 	private VertexMetadata vertexMetadata;
+	private Hash parentId;
+	private Hash id;
 
 	@Before
 	public void setUp() throws Exception {
 		Round parentRound = Round.of(1234567890L);
-		AID parentAid = aidOf(23456);
+		this.parentId = Hash.random();
 
 		Round round = parentRound.next();
-		AID aid = aidOf(123456);
+		this.id = Hash.random();
 
 		EUID author = EUID.TWO;
-		this.vertexMetadata = new VertexMetadata(round, aid, parentRound, parentAid);
+		this.vertexMetadata = new VertexMetadata(round, id, parentRound, parentId);
 
 		this.testObject = new Vote(author, vertexMetadata);
 	}

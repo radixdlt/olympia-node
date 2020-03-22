@@ -73,9 +73,7 @@ final class PendingDeliveryState {
 
 	@Override
 	public String toString() {
-		return "PendingDeliveryState{" +
-			"pendingDeliveries=" + pendingDeliveries +
-			'}';
+		return "PendingDeliveryState{" + "pendingDeliveries=" + pendingDeliveries + '}';
 	}
 
 	public void reset() {
@@ -98,10 +96,7 @@ final class PendingDeliveryState {
 
 		@Override
 		public String toString() {
-			return "PendingDelivery{" +
-				"requestedFromPeer=" + requestedFromPeer +
-				", fallbackPeers=" + fallbackPeers +
-				'}';
+			return "PendingDelivery{" + "requestedFromPeer=" + requestedFromPeer + ", fallbackPeers=" + fallbackPeers + '}';
 		}
 	}
 }

@@ -17,9 +17,6 @@
 
 package org.radix.common.executors;
 
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
-
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -29,8 +26,6 @@ import java.util.concurrent.TimeUnit;
 
 public class Executor
 {
-	private static final Logger log = Logging.getLogger();
-
 	private static Executor	instance = null;
 
 	public static Executor getInstance() {

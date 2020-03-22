@@ -17,7 +17,6 @@
 
 package org.radix.serialization;
 
-import com.radixdlt.common.AID;
 import com.radixdlt.common.Atom;
 import com.radixdlt.common.EUID;
 import com.radixdlt.consensus.QuorumCertificate;
@@ -25,7 +24,7 @@ import com.radixdlt.consensus.Round;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.Vote;
-import com.radixdlt.utils.Ints;
+import com.radixdlt.crypto.Hash;
 
 public class VertexSerializeTest extends SerializeObject<Vertex> {
 	public VertexSerializeTest() {
@@ -35,10 +34,10 @@ public class VertexSerializeTest extends SerializeObject<Vertex> {
 	private static Vertex get() {
 		Round parentRound = Round.of(1234567890L);
 		Round round = parentRound.next();
-		AID parentAid = aidOf(12345);
-		AID aid = aidOf(23456);
+		Hash parentId = Hash.random();
+		Hash id = Hash.random();
 
-		VertexMetadata vertexMetadata = new VertexMetadata(round, aid, parentRound, parentAid);
+		VertexMetadata vertexMetadata = new VertexMetadata(round, id, parentRound, parentId);
 
 		EUID author = EUID.TWO;
 		Vote vote = new Vote(author, vertexMetadata);
@@ -46,12 +45,6 @@ public class VertexSerializeTest extends SerializeObject<Vertex> {
 
 		Atom atom = new Atom();
 
-		return new Vertex(qc, round, atom);
-	}
-
-	private static AID aidOf(int id) {
-		byte[] bytes = new byte[AID.BYTES];
-		Ints.copyTo(id, bytes, AID.BYTES - Integer.BYTES);
-		return AID.from(bytes);
+		return Vertex.createVertex(qc, round, atom);
 	}
 }

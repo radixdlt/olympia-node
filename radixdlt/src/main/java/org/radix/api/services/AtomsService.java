@@ -20,6 +20,7 @@ package org.radix.api.services;
 import com.google.common.collect.EvictingQueue;
 import com.radixdlt.common.Atom;
 import com.radixdlt.mempool.MempoolRejectedException;
+import com.radixdlt.mempool.SubmissionControl;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -38,7 +39,6 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStore;
-import com.radixdlt.submission.SubmissionControl;
 
 import org.json.JSONException;
 import org.json.JSONObject;

@@ -14,7 +14,7 @@
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
  */
-package com.radixdlt.submission;
+package com.radixdlt.mempool;
 
 import java.util.function.Consumer;
 
@@ -22,14 +22,9 @@ import org.json.JSONObject;
 
 import com.radixdlt.common.AID;
 import com.radixdlt.common.Atom;
-import com.radixdlt.mempool.MempoolDuplicateException;
-import com.radixdlt.mempool.MempoolFullException;
 
 /**
  * Handle atom submission.
- * <p>
- * FIXME: In the longer term, it would be nice if the submit method here returned
- * an {@code Observable<AtomStatusEvent>} or similar.
  */
 public interface SubmissionControl {
 	/**
@@ -52,9 +47,4 @@ public interface SubmissionControl {
 	 */
 	AID submitAtom(JSONObject atomJson, Consumer<Atom> deserialisationCallback)
 		throws MempoolFullException, MempoolDuplicateException;
-
-	/**
-	 * Stops processing incoming messages.
-	 */
-	void stop();
 }

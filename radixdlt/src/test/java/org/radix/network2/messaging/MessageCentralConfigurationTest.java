@@ -18,7 +18,8 @@
 package org.radix.network2.messaging;
 
 import org.junit.Test;
-import org.radix.properties.RuntimeProperties;
+
+import com.radixdlt.properties.RuntimeProperties;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.anyInt;

@@ -182,7 +182,7 @@ public final class LazyRequestDeliverer {
 			log.debug("Requesting delivery of " + aids.size() + " aids from " + peer);
 		}
 
-		DeliveryRequestMessage request = new DeliveryRequestMessage(aids,this.universe.getMagic());
+		DeliveryRequestMessage request = new DeliveryRequestMessage(aids, this.universe.getMagic());
 		messageCentral.send(peer, request);
 
 		// TODO aggregate cancellables and cancel on stop

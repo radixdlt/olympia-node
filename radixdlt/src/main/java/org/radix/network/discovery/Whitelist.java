@@ -25,13 +25,14 @@ import java.util.Set;
 
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.properties.RuntimeProperties;
+
+import com.radixdlt.properties.RuntimeProperties;
 
 public class Whitelist
 {
 	private static final Logger networkLog = Logging.getLogger ("network");
 
-	private Set<String> parameters = new HashSet<String>();
+	private Set<String> parameters = new HashSet<>();
 
 	public Whitelist(String parameters)
 	{

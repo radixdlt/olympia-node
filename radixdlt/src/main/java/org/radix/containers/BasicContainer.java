@@ -20,8 +20,6 @@ package org.radix.containers;
 import com.radixdlt.common.EUID;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
@@ -32,8 +30,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public abstract class BasicContainer
 {
-	private static final Logger log = Logging.getLogger ();
-
 	// Placeholder for the serializer ID
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(Output.ALL)

@@ -20,13 +20,13 @@ package com.radixdlt.consensus.safety;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
-import com.radixdlt.common.AID;
 import com.radixdlt.common.EUID;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.Vote;
 
+import com.radixdlt.crypto.Hash;
 import java.util.Objects;
 
 /**
@@ -45,10 +45,10 @@ public final class SafetyRules {
 	}
 
 	@VisibleForTesting
-	AID getCommittedAtom(Vertex vertex) {
+	Hash getCommittedVertexId(Vertex vertex) {
 		if (vertex.getRound().equals(vertex.getQC().getRound().next())
 			&& vertex.getQC().getRound().equals(vertex.getQC().getParentRound().next())) {
-			return vertex.getQC().getVertexMetadata().getParentAID();
+			return vertex.getQC().getVertexMetadata().getParentId();
 		}
 		return null;
 	}
@@ -85,14 +85,14 @@ public final class SafetyRules {
 		this.state = this.state.withLastVotedRound(proposedVertex.getRound());
 		VertexMetadata vertexMetadata = new VertexMetadata(
 			proposedVertex.getRound(),
-			proposedVertex.getAID(),
-			proposedVertex.getQC().getVertexMetadata().getRound(),
-			proposedVertex.getQC().getVertexMetadata().getAID()
+			proposedVertex.getId(),
+			proposedVertex.getParentRound(),
+			proposedVertex.getParentId()
 		);
 		Vote vote = new Vote(self, vertexMetadata);
-		AID committedAtom = getCommittedAtom(proposedVertex);
+		Hash committedVertex = getCommittedVertexId(proposedVertex);
 
-		return new VoteResult(vote, committedAtom);
+		return new VoteResult(vote, committedVertex);
 	}
 
 	@VisibleForTesting SafetyState getState() {

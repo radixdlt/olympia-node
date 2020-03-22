@@ -17,9 +17,9 @@
 
 package com.radixdlt.consensus.safety;
 
-import com.radixdlt.common.AID;
 import com.radixdlt.consensus.Vote;
 
+import com.radixdlt.crypto.Hash;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -28,11 +28,11 @@ import java.util.Optional;
  */
 public final class VoteResult {
 	private final Vote vote;
-	private final AID committedAtom; // may be null
+	private final Hash committedVertexId; // may be null
 
-	public VoteResult(Vote vote, AID committedAtom) {
+	public VoteResult(Vote vote, Hash committedVertexId) {
 		this.vote = Objects.requireNonNull(vote);
-		this.committedAtom = committedAtom; // may be null
+		this.committedVertexId = committedVertexId; // may be null
 	}
 
 	@Override
@@ -44,20 +44,20 @@ public final class VoteResult {
 			return false;
 		}
 		VoteResult that = (VoteResult) o;
-		return Objects.equals(vote, that.vote) &&
-			Objects.equals(committedAtom, that.committedAtom);
+		return Objects.equals(vote, that.vote)
+			&& Objects.equals(committedVertexId, that.committedVertexId);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(vote, committedAtom);
+		return Objects.hash(vote, committedVertexId);
 	}
 
 	public Vote getVote() {
 		return vote;
 	}
 
-	public Optional<AID> getCommittedAtom() {
-		return Optional.ofNullable(committedAtom);
+	public Optional<Hash> getCommittedVertexId() {
+		return Optional.ofNullable(committedVertexId);
 	}
 }
