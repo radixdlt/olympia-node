@@ -24,6 +24,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.mockito.Mockito.mock;
 
 public class NewViewTest {
 	public static final RadixAddress ADDRESS = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
@@ -33,7 +34,7 @@ public class NewViewTest {
 	@Before
 	public void setUp() {
 		this.view = View.of(1L);
-		this.testObject = new NewView(ADDRESS.getKey(), view, null);
+		this.testObject = new NewView(ADDRESS.getKey(), view, mock(QuorumCertificate.class), null);
 	}
 
 	@Test

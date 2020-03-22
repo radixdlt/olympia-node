@@ -41,6 +41,10 @@ public final class NewView {
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
 
+	@JsonProperty("qc")
+	@DsonOutput(Output.ALL)
+	private QuorumCertificate highestQc;
+
 	private ECPublicKey author;
 
 	private View view;
@@ -56,9 +60,10 @@ public final class NewView {
 		this.signature = null;
 	}
 
-	public NewView(ECPublicKey author, View view, ECDSASignature signature) {
+	public NewView(ECPublicKey author, View view, QuorumCertificate highestQc, ECDSASignature signature) {
 		this.author = Objects.requireNonNull(author);
 		this.view = Objects.requireNonNull(view);
+		this.highestQc = highestQc;
 		this.signature = signature;
 	}
 
@@ -106,16 +111,17 @@ public final class NewView {
 		NewView newView = (NewView) o;
 		return Objects.equals(author, newView.author)
 			&& Objects.equals(view, newView.view)
+			&& Objects.equals(highestQc, newView.highestQc)
 			&& Objects.equals(signature, newView.signature);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(author, view, signature);
+		return Objects.hash(author, view, highestQc, signature);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{view=%s author=%s}", getClass().getSimpleName(), view, author);
+		return String.format("%s{view=%s qc=%s author=%s}", getClass().getSimpleName(), view, highestQc, author.getUID().toString().substring(0, 6));
 	}
 }

@@ -145,7 +145,7 @@ public final class EventCoordinator {
 			// TODO make signing more robust by including author in signed hash
 			ECDSASignature signature = this.selfKey.sign(Hash.hash256(Longs.toByteArray(view.next().number())));
 			View nextView = this.pacemaker.getCurrentView();
-			NewView newView = new NewView(selfKey.getPublicKey(), nextView, signature);
+			NewView newView = new NewView(selfKey.getPublicKey(), nextView, this.vertexStore.getHighestQC(), signature);
 			EUID nextLeader = this.proposerElection.getProposer(nextView);
 			log.info(this.getShortName() + ": Sending NewView to " + nextLeader.toString().substring(0, 6) + ": " + newView);
 			this.networkSender.sendNewView(newView, nextLeader);

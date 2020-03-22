@@ -18,6 +18,7 @@
 package com.radixdlt.consensus.liveness;
 
 import com.radixdlt.consensus.NewView;
+import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.safety.QuorumRequirements;
 import com.radixdlt.consensus.safety.WhitelistQuorum;
@@ -197,7 +198,7 @@ public class PacemakerImplTest {
 
 		View view = mock(View.class);
 		ECKeyPair keyPair = new ECKeyPair();
-		NewView newView = new NewView(keyPair.getPublicKey(), view, mock(ECDSASignature.class));
+		NewView newView = new NewView(keyPair.getPublicKey(), view, mock(QuorumCertificate.class), mock(ECDSASignature.class));
 		assertThat(pacemaker.processRemoteNewView(newView))
 			.get()
 			.isEqualTo(view);
