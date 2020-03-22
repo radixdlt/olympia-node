@@ -15,18 +15,15 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.network;
+package com.radixdlt.consensus;
 
-import com.radixdlt.common.Atom;
+import com.radixdlt.common.EUID;
 
 /**
- * Interface for Mempool to send things through a network
+ * Interface for Event Coordinator to send things through a network
  */
-public interface MempoolNetworkTx {
-	/**
-	 * Broadcast locally-received mempool submission to validators.
-	 *
-	 * @param atom the submission to send
-	 */
-	void sendMempoolSubmission(Atom atom);
+public interface EventCoordinatorNetworkSender {
+	void broadcastProposal(Vertex vertex);
+	void sendNewView(NewView newView, EUID newViewLeader);
+	void sendVote(Vote vote, EUID leader);
 }

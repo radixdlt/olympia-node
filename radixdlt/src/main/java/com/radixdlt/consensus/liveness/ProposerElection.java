@@ -18,17 +18,24 @@
 package com.radixdlt.consensus.liveness;
 
 import com.radixdlt.common.EUID;
-import com.radixdlt.consensus.Round;
+import com.radixdlt.consensus.View;
 
 /**
  * Represents the election for valid proposers
  */
 public interface ProposerElection {
 	/**
-	 * Check whether a node is a valid proposer in a certain round
+	 * Check whether a node is a valid proposer in a certain view
 	 * @param nid The nid
-	 * @param round The round
+	 * @param view The view
 	 * @return Whether the node is a valid proposer
 	 */
-	boolean isValidProposer(EUID nid, Round round);
+	boolean isValidProposer(EUID nid, View view);
+
+	/**
+	 * Retrieve the deterministic proposer for a given view
+	 * @param view the view to get the proposer for
+	 * @return the EUID of the proposer
+	 */
+	EUID getProposer(View view);
 }

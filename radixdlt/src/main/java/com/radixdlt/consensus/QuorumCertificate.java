@@ -20,6 +20,7 @@ package com.radixdlt.consensus;
 import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
@@ -32,9 +33,9 @@ public final class QuorumCertificate {
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	@JsonProperty("vote")
+	@JsonProperty("signatures")
 	@DsonOutput(Output.ALL)
-	private final Vote vote;
+	private final ECDSASignatures signatures;
 
 	@JsonProperty("vertex_metadata")
 	@DsonOutput(Output.ALL)
@@ -42,21 +43,17 @@ public final class QuorumCertificate {
 
 	QuorumCertificate() {
 		// Serializer only
-		this.vote = null;
 		this.vertexMetadata = null;
+		this.signatures = null;
 	}
 
-	public QuorumCertificate(Vote vote, VertexMetadata vertexMetadata) {
-		this.vote = Objects.requireNonNull(vote);
+	public QuorumCertificate(VertexMetadata vertexMetadata, ECDSASignatures signatures) {
 		this.vertexMetadata = Objects.requireNonNull(vertexMetadata);
+		this.signatures = Objects.requireNonNull(signatures);
 	}
 
-	public Round getRound() {
-		return vertexMetadata.getRound();
-	}
-
-	public Round getParentRound() {
-		return vertexMetadata.getParentRound();
+	public View getView() {
+		return vertexMetadata.getView();
 	}
 
 	public VertexMetadata getVertexMetadata() {
@@ -65,16 +62,23 @@ public final class QuorumCertificate {
 
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof QuorumCertificate)) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
 			return false;
 		}
-
-		QuorumCertificate qc = (QuorumCertificate) o;
-		return Objects.equals(qc.vote, this.vote);
+		QuorumCertificate that = (QuorumCertificate) o;
+		return Objects.equals(signatures, that.signatures)
+			&& Objects.equals(vertexMetadata, that.vertexMetadata);
 	}
 
 	@Override
 	public int hashCode() {
-		return vote.hashCode();
+		return Objects.hash(signatures, vertexMetadata);
+	}
+
+	public String toString() {
+		return String.format("QC{view=%s}", vertexMetadata.getView());
 	}
 }

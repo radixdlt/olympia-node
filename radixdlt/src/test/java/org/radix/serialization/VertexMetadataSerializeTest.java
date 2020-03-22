@@ -17,7 +17,7 @@
 
 package org.radix.serialization;
 
-import com.radixdlt.consensus.Round;
+import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.crypto.Hash;
 
@@ -27,11 +27,11 @@ public class VertexMetadataSerializeTest extends SerializeObject<VertexMetadata>
 	}
 
 	private static VertexMetadata get() {
-		Round parentRound = Round.of(1234567890L);
-		Round round = parentRound.next();
+		View parentView = View.of(1234567890L);
+		View view = parentView.next();
 		Hash parentId = Hash.random();
 		Hash id = Hash.random();
 
-		return new VertexMetadata(round, id, parentRound, parentId);
+		return new VertexMetadata(view, id, parentView, parentId);
 	}
 }

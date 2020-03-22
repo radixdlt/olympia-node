@@ -17,6 +17,8 @@
 
 package com.radixdlt.network;
 
+import com.radixdlt.consensus.MempoolNetworkRx;
+import com.radixdlt.consensus.MempoolNetworkTx;
 import java.util.Objects;
 
 import javax.inject.Inject;

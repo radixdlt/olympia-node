@@ -18,12 +18,24 @@
 package com.radixdlt.consensus.liveness;
 
 import com.radixdlt.common.EUID;
-import com.radixdlt.consensus.Round;
+import com.radixdlt.consensus.View;
+import java.util.Objects;
 
-public class DumbProposerElection implements ProposerElection {
+public final class SingleLeader implements ProposerElection {
+
+	private final EUID leader;
+
+	public SingleLeader(EUID leader) {
+		this.leader = Objects.requireNonNull(leader);
+	}
+
 	@Override
-	public boolean isValidProposer(EUID nid, Round round) {
-		// will accept anything
-		return true;
+	public boolean isValidProposer(EUID nid, View view) {
+		return nid.equals(leader);
+	}
+
+	@Override
+	public EUID getProposer(View view) {
+		return leader;
 	}
 }

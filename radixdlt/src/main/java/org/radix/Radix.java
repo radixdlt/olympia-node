@@ -147,7 +147,16 @@ public final class Radix
 		globalInjector.getInjector().getInstance(MempoolReceiver.class).start();
 
 		// start API services
-		globalInjector.getInjector().getInstance(ChainedBFT.class).start();
+		ChainedBFT bft = globalInjector.getInjector().getInstance(ChainedBFT.class);
+		bft.processEvents()
+			.subscribe(
+				event -> {
+				},
+				e -> {
+					log.error("BFT Unexpected Error", e);
+					System.exit(-1);
+				}
+			);
 
 		SubmissionControl submissionControl = globalInjector.getInjector().getInstance(SubmissionControl.class);
 		AtomToBinaryConverter atomToBinaryConverter = globalInjector.getInjector().getInstance(AtomToBinaryConverter.class);

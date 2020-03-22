@@ -22,30 +22,30 @@ import java.util.Objects;
 import org.radix.network.messaging.Message;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.consensus.NewRound;
+import com.radixdlt.consensus.NewView;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
 
-@SerializerId2("message.consensus.newround")
-public class NewRoundMessage extends Message {
-	@JsonProperty("newround")
+@SerializerId2("message.consensus.newview")
+public class NewViewMessage extends Message {
+	@JsonProperty("newview")
 	@DsonOutput(Output.ALL)
-	private final NewRound newRound;
+	private final NewView newView;
 
-	NewRoundMessage() {
+	NewViewMessage() {
 		// Serializer only
 		super(0);
-		this.newRound = null;
+		this.newView = null;
 	}
 
-	public NewRoundMessage(int magic, NewRound newRound) {
+	public NewViewMessage(int magic, NewView newView) {
 		super(magic);
-		this.newRound = Objects.requireNonNull(newRound);
+		this.newView = Objects.requireNonNull(newView);
 	}
 
-	public NewRound newRound() {
-		return this.newRound;
+	public NewView newView() {
+		return this.newView;
 	}
 
 }

@@ -23,7 +23,10 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.name.Names;
 import com.radixdlt.CerberusModule;
+import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.common.EUID;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.delivery.LazyRequestDelivererModule;
 import com.radixdlt.discovery.IterativeDiscovererModule;
 import com.radixdlt.mempool.MempoolModule;
@@ -69,6 +72,9 @@ public class GlobalInjector {
 				bind(Events.class).toProvider(Events::getInstance);
 				bind(LocalSystem.class).toInstance(localSystem);
 				bind(EUID.class).annotatedWith(Names.named("self")).toInstance(localSystem.getNID());
+				bind(ECKeyPair.class).annotatedWith(Names.named("self")).toInstance(localSystem.getKeyPair());
+				bind(ECPublicKey.class).annotatedWith(Names.named("self")).toInstance(localSystem.getKeyPair().getPublicKey());
+				bind(RadixAddress.class).annotatedWith(Names.named("self")).toInstance(RadixAddress.from(universe, localSystem.getKey()));
 				bind(Universe.class).toInstance(universe);
 				bind(PeerManagerConfiguration.class).toInstance(PeerManagerConfiguration.fromRuntimeProperties(properties));
 			}

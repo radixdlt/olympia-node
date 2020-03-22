@@ -32,13 +32,13 @@ public class VertexMetadataTest {
 
 	@Before
 	public void setUp() {
-		Round parentRound = Round.of(1234567890L);
+		View parentView = View.of(1234567890L);
 		this.parentId = Hash.random();
 
-		Round round = parentRound.next();
+		View view = parentView.next();
 		this.id = Hash.random();
 
-		this.testObject = new VertexMetadata(round, id, parentRound, parentId);
+		this.testObject = new VertexMetadata(view, id, parentView, parentId);
 	}
 
 	@Test
@@ -49,8 +49,7 @@ public class VertexMetadataTest {
 
 	@Test
 	public void testGetters() {
-		assertEquals(Round.of(1234567890L), this.testObject.getParentRound());
-		assertEquals(Round.of(1234567891L), this.testObject.getRound());
+		assertEquals(View.of(1234567891L), this.testObject.getView());
 
 		assertEquals(parentId, this.testObject.getParentId());
 		assertEquals(id, this.testObject.getId());

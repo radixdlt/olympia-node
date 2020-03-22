@@ -15,21 +15,36 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.network;
+package com.radixdlt.consensus;
 
-import com.radixdlt.common.Atom;
 import io.reactivex.rxjava3.core.Observable;
 
 /**
- * Observables from mempool network messages
+ * Network accessor for the EventCoordinator
  */
-public interface MempoolNetworkRx {
+public interface EventCoordinatorNetworkRx {
 
 	/**
-	 * Returns the stream of mempool atoms as they are received from the
+	 * Accessor to the stream of proposal messages as they are received from the
 	 * network.
 	 *
-	 * @return hot observable of atom messages
+	 * @return hot observable of proposal messages
 	 */
-	Observable<Atom> atomMessages();
+	Observable<Vertex> proposalMessages();
+
+	/**
+	 * Accessor to the stream of new-view messages as they are received from the
+	 * network.
+	 *
+	 * @return hot observable of new view messages
+	 */
+	Observable<NewView> newViewMessages();
+
+	/**
+	 * Accessor to the stream of vote messages as they are received from the
+	 * network.
+	 *
+	 * @return hot observable of votes messages
+	 */
+	Observable<Vote> voteMessages();
 }

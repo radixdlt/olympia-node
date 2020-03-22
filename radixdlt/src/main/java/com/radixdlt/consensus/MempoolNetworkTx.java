@@ -15,19 +15,18 @@
  * language governing permissions and limitations under the License.
  */
 
-package org.radix.serialization;
+package com.radixdlt.consensus;
 
-import com.radixdlt.consensus.NewRound;
-import com.radixdlt.consensus.Round;
-import com.radixdlt.consensus.messages.NewRoundMessage;
+import com.radixdlt.common.Atom;
 
-public class NewRoundMessageSerializeTest extends SerializeMessageObject<NewRoundMessage> {
-	public NewRoundMessageSerializeTest() {
-		super(NewRoundMessage.class, NewRoundMessageSerializeTest::get);
-	}
-
-	private static NewRoundMessage get() {
-		NewRound testRound = new NewRound(Round.of(1234567890L));
-		return new NewRoundMessage(1234, testRound);
-	}
+/**
+ * Interface for Mempool to send things through a network
+ */
+public interface MempoolNetworkTx {
+	/**
+	 * Broadcast locally-received mempool submission to validators.
+	 *
+	 * @param atom the submission to send
+	 */
+	void sendMempoolSubmission(Atom atom);
 }

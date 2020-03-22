@@ -17,6 +17,7 @@
 
 package com.radixdlt.mempool;
 
+import com.radixdlt.consensus.MempoolNetworkRx;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
@@ -25,7 +26,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.radixdlt.common.Atom;
-import com.radixdlt.network.MempoolNetworkRx;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;

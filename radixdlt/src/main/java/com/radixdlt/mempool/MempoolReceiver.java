@@ -17,6 +17,7 @@
 
 package com.radixdlt.mempool;
 
+import com.radixdlt.consensus.MempoolNetworkRx;
 import java.util.Objects;
 
 import org.radix.logging.Logger;
@@ -24,7 +25,6 @@ import org.radix.logging.Logging;
 
 import com.google.inject.Inject;
 import com.radixdlt.common.Atom;
-import com.radixdlt.network.MempoolNetworkRx;
 
 import io.reactivex.rxjava3.disposables.Disposable;
 

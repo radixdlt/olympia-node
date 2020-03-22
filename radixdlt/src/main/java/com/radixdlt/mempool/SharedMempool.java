@@ -25,7 +25,7 @@ import javax.inject.Inject;
 
 import com.radixdlt.common.AID;
 import com.radixdlt.common.Atom;
-import com.radixdlt.network.MempoolNetworkTx;
+import com.radixdlt.consensus.MempoolNetworkTx;
 
 /**
  * Shared mempool.

@@ -15,17 +15,21 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.network;
+package com.radixdlt.consensus;
 
-import com.radixdlt.consensus.NewRound;
-import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.Vote;
+import com.radixdlt.common.Atom;
+import io.reactivex.rxjava3.core.Observable;
 
 /**
- * Interface for Event Coordinator to send things through a network
+ * Observables from mempool network messages
  */
-public interface EventCoordinatorNetworkSender {
-	void broadcastProposal(Vertex vertex);
-	void sendNewRound(NewRound newRound);
-	void sendVote(Vote vote);
+public interface MempoolNetworkRx {
+
+	/**
+	 * Returns the stream of mempool atoms as they are received from the
+	 * network.
+	 *
+	 * @return hot observable of atom messages
+	 */
+	Observable<Atom> atomMessages();
 }

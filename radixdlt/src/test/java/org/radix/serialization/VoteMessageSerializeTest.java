@@ -17,12 +17,16 @@
 
 package org.radix.serialization;
 
-import com.radixdlt.common.EUID;
-import com.radixdlt.consensus.Round;
+import com.radixdlt.atomos.RadixAddress;
+import com.radixdlt.common.AID;
+import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.messages.VoteMessage;
 import com.radixdlt.crypto.Hash;
+import com.radixdlt.utils.Ints;
+
+import static org.mockito.Mockito.mock;
 
 public class VoteMessageSerializeTest extends SerializeMessageObject<VoteMessage> {
 	public VoteMessageSerializeTest() {
@@ -30,17 +34,23 @@ public class VoteMessageSerializeTest extends SerializeMessageObject<VoteMessage
 	}
 
 	private static VoteMessage get() {
-		Round parentRound = Round.of(1234567890L);
+		View parentView = View.of(1234567890L);
 		Hash parentId = Hash.random();
 
-		Round round = parentRound.next();
+		View view = parentView.next();
 		Hash id = Hash.random();
 
-		EUID author = EUID.TWO;
-		VertexMetadata vertexMetadata = new VertexMetadata(round, id, parentRound, parentId);
+		RadixAddress author = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
+		VertexMetadata vertexMetadata = new VertexMetadata(view, id, parentView, parentId);
 
-		Vote vote = new Vote(author, vertexMetadata);
+		Vote vote = new Vote(author.getKey(), vertexMetadata, null);
 
 		return new VoteMessage(1, vote);
+	}
+
+	private static AID aidOf(int id) {
+		byte[] bytes = new byte[AID.BYTES];
+		Ints.copyTo(id, bytes, AID.BYTES - Integer.BYTES);
+		return AID.from(bytes);
 	}
 }

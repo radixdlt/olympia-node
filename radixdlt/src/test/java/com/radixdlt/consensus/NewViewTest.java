@@ -18,57 +18,40 @@
 package com.radixdlt.consensus;
 
 import com.radixdlt.atomos.RadixAddress;
-import com.radixdlt.common.AID;
-import com.radixdlt.crypto.Hash;
-import com.radixdlt.utils.Ints;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.mockito.Mockito.mock;
 
-public class VoteTest {
+public class NewViewTest {
 	public static final RadixAddress ADDRESS = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
-	private Vote testObject;
-	private VertexMetadata vertexMetadata;
-	private Hash parentId;
-	private Hash id;
+	private NewView testObject;
+	private View view;
 
 	@Before
 	public void setUp() {
-		View parentView = View.of(1234567890L);
-		this.parentId = Hash.random();
-
-		View view = parentView.next();
-		this.id = Hash.random();
-
-		this.vertexMetadata = new VertexMetadata(view, id, parentView, parentId);
-
-		this.testObject = new Vote(ADDRESS.getKey(), vertexMetadata, null);
+		this.view = View.of(1L);
+		this.testObject = new NewView(ADDRESS.getKey(), view, mock(QuorumCertificate.class), null);
 	}
 
 	@Test
 	public void equalsContract() {
-		EqualsVerifier.forClass(Vote.class)
+		EqualsVerifier.forClass(NewView.class)
 			.verify();
 	}
 
 	@Test
 	public void testGetters() {
-		assertEquals(this.vertexMetadata, this.testObject.getVertexMetadata());
+		assertEquals(this.view, this.testObject.getView());
 		assertEquals(ADDRESS.getKey(), this.testObject.getAuthor());
 	}
 
 	@Test
 	public void testSerializerConstructor() {
 		// Don't want to see any exceptions here
-		assertNotNull(new Vote());
-	}
-
-	private static AID aidOf(int id) {
-		byte[] bytes = new byte[AID.BYTES];
-		Ints.copyTo(id, bytes, AID.BYTES - Integer.BYTES);
-		return AID.from(bytes);
+		assertNotNull(new NewView());
 	}
 }
