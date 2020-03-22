@@ -69,7 +69,6 @@ public class ChainedBFTTest {
 			when(atom.toString()).thenReturn(Long.toHexString(atomId.incrementAndGet()));
 			return Collections.singletonList(atom);
 		}).when(mempool).getAtoms(anyInt(), anySet());
-
 		ProposalGenerator proposalGenerator = new ProposalGenerator(vertexStore, mempool);
 		SafetyRules safetyRules = new SafetyRules(key, vertexStore, SafetyState.initialState());
 		PacemakerImpl pacemaker = new PacemakerImpl(quorumRequirements, Executors.newSingleThreadScheduledExecutor());
@@ -77,7 +76,7 @@ public class ChainedBFTTest {
 		EventCoordinator eventCoordinator = new EventCoordinator(
 			proposalGenerator,
 			mempool,
-			testEventCoordinatorNetwork,
+			testEventCoordinatorNetwork.getNetworkSender(key.getUID()),
 			safetyRules,
 			pacemaker,
 			vertexStore,
@@ -127,6 +126,42 @@ public class ChainedBFTTest {
 				final int id = i;
 				committedListener.assertValueAt(i, v -> v.getAtom().toString().equals(Integer.toHexString(id)));
 			}
+		}
+	}
+
+	@Test
+	public void given_2_out_of_3_correct_bft_instances_with_single_leader__then_all_instances_should_only_get_genesis_commit() throws Exception {
+		final List<ECKeyPair> nodes = Arrays.asList(new ECKeyPair(), new ECKeyPair(), new ECKeyPair());
+		final int commitCount = 10;
+
+		final QuorumRequirements quorumRequirements = WhitelistQuorum.from(nodes.stream().map(ECKeyPair::getPublicKey));
+		final ProposerElection proposerElection = new SingleLeader(nodes.get(0).getUID());
+
+		testEventCoordinatorNetwork.setSendingDisable(nodes.get(2).getUID(), true);
+
+		final List<Pair<TestObserver<Vertex>, Observable<Event>>> bftEvents = nodes.stream()
+			.map(e -> {
+				RadixEngine radixEngine = mock(RadixEngine.class);
+				when(radixEngine.staticCheck(any())).thenReturn(Optional.empty());
+				VertexStore vertexStore = new VertexStore(genesisVertex, genesisQC, radixEngine);
+				TestObserver<Vertex> testObserver = TestObserver.create();
+				vertexStore.lastCommittedVertex().subscribe(testObserver);
+				ChainedBFT chainedBFT = createBFTInstance(e, proposerElection, quorumRequirements, vertexStore);
+				return new Pair<>(testObserver, chainedBFT.processEvents());
+			})
+			.collect(Collectors.toList());
+
+		final List<TestObserver<Vertex>> committedListeners = bftEvents.stream()
+			.map(Pair::getFirst)
+			.collect(Collectors.toList());
+
+		Observable.merge(bftEvents.stream().map(Pair::getSecond).collect(Collectors.toList()))
+			.map(Event::toString)
+			.subscribe(log::info);
+
+		for (TestObserver<Vertex> committedListener : committedListeners) {
+			committedListener.awaitCount(commitCount);
+			committedListener.assertValue(v -> v.getAtom().toString().equals(Integer.toHexString(0)));
 		}
 	}
 }

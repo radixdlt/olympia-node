@@ -23,8 +23,10 @@ import com.radixdlt.consensus.EventCoordinatorNetworkSender;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import java.util.AbstractMap.SimpleEntry;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -36,12 +38,13 @@ import com.radixdlt.consensus.Vote;
 /**
  * Overly simplistic network implementation that just sends messages to itself.
  */
-public class TestEventCoordinatorNetwork implements EventCoordinatorNetworkSender {
-	public static final int LOOPBACK_DELAY = 50;
+public class TestEventCoordinatorNetwork {
+	private static final int LOOPBACK_DELAY = 50;
 	private final PublishSubject<Vertex> proposals;
 	private final PublishSubject<Map.Entry<NewView, EUID>> newViews;
 	private final PublishSubject<Map.Entry<Vote, EUID>> votes;
 	private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+	private final Set<EUID> sendingDisabled = new HashSet<>();
 
 	public TestEventCoordinatorNetwork() {
 		this.proposals = PublishSubject.create();
@@ -49,25 +52,43 @@ public class TestEventCoordinatorNetwork implements EventCoordinatorNetworkSende
 		this.votes = PublishSubject.create();
 	}
 
-	@Override
-	public void broadcastProposal(Vertex vertex) {
-		executorService.schedule(() -> {
-			this.proposals.onNext(vertex);
-		}, LOOPBACK_DELAY, TimeUnit.MILLISECONDS);
+	public void setSendingDisable(EUID euid, boolean disable) {
+		if (disable) {
+			sendingDisabled.add(euid);
+		} else {
+			sendingDisabled.remove(euid);
+		}
 	}
 
-	@Override
-	public void sendNewView(NewView newView, EUID newViewLeader) {
-		executorService.schedule(() -> {
-			this.newViews.onNext(new SimpleEntry<>(newView, newViewLeader));
-		}, LOOPBACK_DELAY, TimeUnit.MILLISECONDS);
-	}
+	public EventCoordinatorNetworkSender getNetworkSender(EUID euid) {
+		return new EventCoordinatorNetworkSender() {
+			@Override
+			public void broadcastProposal(Vertex vertex) {
+				if (!sendingDisabled.contains(euid)) {
+					executorService.schedule(() -> {
+						proposals.onNext(vertex);
+					}, LOOPBACK_DELAY, TimeUnit.MILLISECONDS);
+				}
+			}
 
-	@Override
-	public void sendVote(Vote vote, EUID leader) {
-		executorService.schedule(() -> {
-			this.votes.onNext(new SimpleEntry<>(vote, leader));
-		}, LOOPBACK_DELAY, TimeUnit.MILLISECONDS);
+			@Override
+			public void sendNewView(NewView newView, EUID newViewLeader) {
+				if (!sendingDisabled.contains(euid)) {
+					executorService.schedule(() -> {
+						newViews.onNext(new SimpleEntry<>(newView, newViewLeader));
+					}, LOOPBACK_DELAY, TimeUnit.MILLISECONDS);
+				}
+			}
+
+			@Override
+			public void sendVote(Vote vote, EUID leader) {
+				if (!sendingDisabled.contains(euid)) {
+					executorService.schedule(() -> {
+						votes.onNext(new SimpleEntry<>(vote, leader));
+					}, LOOPBACK_DELAY, TimeUnit.MILLISECONDS);
+				}
+			}
+		};
 	}
 
 	public EventCoordinatorNetworkRx getNetworkRx(EUID euid) {
