@@ -21,6 +21,8 @@ import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -35,6 +37,7 @@ public final class VertexStore {
 	private final RadixEngine engine;
 	private final Map<Hash, Vertex> vertices = new HashMap<>();
 	private final Map<Hash, Vertex> committedVertices = new HashMap<>();
+	private final BehaviorSubject<Vertex> lastCommittedVertex = BehaviorSubject.create();
 	private QuorumCertificate highestQC;
 
 	// TODO: Cleanup this interface
@@ -56,6 +59,7 @@ public final class VertexStore {
 		}
 		this.vertices.put(genesisVertex.getId(), genesisVertex);
 		this.committedVertices.put(genesisVertex.getId(), genesisVertex);
+		this.lastCommittedVertex.onNext(genesisVertex);
 	}
 
 	public void syncToQC(QuorumCertificate qc) {
@@ -88,13 +92,23 @@ public final class VertexStore {
 	}
 
 	public Vertex commitVertex(Hash vertexId) {
-		Vertex vertex = vertices.get(vertexId);
-		if (vertex == null) {
+		final Vertex tipVertex = vertices.get(vertexId);
+		if (tipVertex == null) {
 			throw new IllegalStateException("Committing a vertex which was never inserted: " + vertexId);
 		}
+		Vertex vertex = tipVertex;
+		while (vertex != null && !committedVertices.containsKey(vertex.getId())) {
+			committedVertices.put(vertexId, vertex);
+			vertex = vertices.get(vertex.getParentId());
+		}
 
-		committedVertices.put(vertexId, vertex);
-		return vertex;
+		lastCommittedVertex.onNext(tipVertex);
+
+		return tipVertex;
+	}
+
+	public Observable<Vertex> lastCommittedVertex() {
+		return lastCommittedVertex;
 	}
 
 	public List<Vertex> getPathFromRoot(Hash vertexId) {

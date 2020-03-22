@@ -22,6 +22,7 @@ import com.radixdlt.common.EUID;
 import com.radixdlt.crypto.ECPublicKey;
 
 import java.util.Arrays;
+import java.util.stream.Stream;
 
 /**
  * A quorum consisting of a static whitelist.
@@ -41,6 +42,12 @@ public class WhitelistQuorum implements  QuorumRequirements {
 	@Override
 	public boolean accepts(EUID author) {
 		return whitelist.contains(author);
+	}
+
+	public static WhitelistQuorum from(Stream<ECPublicKey> whitelistedNodes) {
+		return new WhitelistQuorum(whitelistedNodes
+			.map(ECPublicKey::getUID)
+			.collect(ImmutableSet.toImmutableSet()));
 	}
 
 	public static WhitelistQuorum from(ECPublicKey... whitelistedNodes) {
