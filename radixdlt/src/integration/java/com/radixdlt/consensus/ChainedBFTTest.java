@@ -1,5 +1,6 @@
 package com.radixdlt.consensus;
 
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anySet;
@@ -7,11 +8,13 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.common.Atom;
 import com.radixdlt.consensus.ChainedBFT.Event;
 import com.radixdlt.consensus.liveness.PacemakerImpl;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposerElection;
+import com.radixdlt.consensus.liveness.RotatingLeaders;
 import com.radixdlt.consensus.liveness.SingleLeader;
 import com.radixdlt.consensus.safety.QuorumRequirements;
 import com.radixdlt.consensus.safety.SafetyRules;
@@ -110,8 +113,7 @@ public class ChainedBFTTest {
 			.collect(Collectors.toList());
 
 		Observable.merge(bftEvents.stream().map(Pair::getSecond).collect(Collectors.toList()))
-			.map(Event::toString)
-			.subscribe(log::info);
+			.subscribe();
 
 		return bftEvents.stream()
 			.map(Pair::getFirst)
@@ -131,6 +133,27 @@ public class ChainedBFTTest {
 			for (int i = 0; i < commitCount; i++) {
 				final int id = i;
 				committedListener.assertValueAt(i, v -> v.getAtom().toString().equals(Integer.toHexString(id)));
+			}
+		}
+	}
+
+	@Test
+	public void given_3_correct_bft_instances_with_rotating_leaders__then_all_instances_should_get_the_same_ten_commits() throws Exception {
+		final List<ECKeyPair> nodes = Arrays.asList(new ECKeyPair(), new ECKeyPair(), new ECKeyPair());
+		final QuorumRequirements quorumRequirements = WhitelistQuorum.from(nodes.stream().map(ECKeyPair::getPublicKey));
+		final ProposerElection proposerElection = new RotatingLeaders(nodes.stream().map(ECKeyPair::getUID).collect(ImmutableList.toImmutableList()));
+		final List<TestObserver<Vertex>> committedListeners = runBFT(nodes, quorumRequirements, proposerElection);
+
+		final int commitCount = 10;
+		for (TestObserver<Vertex> committedListener : committedListeners) {
+			committedListener.awaitCount(commitCount);
+			committedListener.assertValueCount(commitCount);
+		}
+
+		for (TestObserver<Vertex> committedListener : committedListeners) {
+			for (TestObserver<Vertex> otherCommittedListener : committedListeners) {
+				assertThat(committedListener.values().subList(0, commitCount))
+					.isEqualTo(otherCommittedListener.values().subList(0, commitCount));
 			}
 		}
 	}

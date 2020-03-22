@@ -111,6 +111,17 @@ public final class EventCoordinator {
 			QuorumCertificate qc = potentialQc.get();
 			log.info(this.getShortName() + ": Creating QC: " + qc);
 			processQC(qc);
+
+			try {
+				View nextView = this.pacemaker.getCurrentView();
+				ECDSASignature signature = this.selfKey.sign(Hash.hash256(Longs.toByteArray(nextView.number())));
+				NewView newView = new NewView(selfKey.getPublicKey(), nextView, this.vertexStore.getHighestQC(), signature);
+				EUID nextLeader = this.proposerElection.getProposer(nextView);
+				log.info(this.getShortName() + ": Sending NewView to " + nextLeader.toString().substring(0, 6) + ": " + newView);
+				this.networkSender.sendNewView(newView, nextLeader);
+			} catch (CryptoException e) {
+				throw new IllegalStateException("Failed to sign new view", e);
+			}
 		}
 	}
 
@@ -143,8 +154,8 @@ public final class EventCoordinator {
 
 		try {
 			// TODO make signing more robust by including author in signed hash
-			ECDSASignature signature = this.selfKey.sign(Hash.hash256(Longs.toByteArray(view.next().number())));
 			View nextView = this.pacemaker.getCurrentView();
+			ECDSASignature signature = this.selfKey.sign(Hash.hash256(Longs.toByteArray(nextView.number())));
 			NewView newView = new NewView(selfKey.getPublicKey(), nextView, this.vertexStore.getHighestQC(), signature);
 			EUID nextLeader = this.proposerElection.getProposer(nextView);
 			log.info(this.getShortName() + ": Sending NewView to " + nextLeader.toString().substring(0, 6) + ": " + newView);
@@ -162,6 +173,8 @@ public final class EventCoordinator {
 			log.warn(String.format("Got confused new-view %s for view ", newView.hashCode()) + newView.getView());
 			return;
 		}
+
+		this.processQC(newView.getQc());
 
 		this.pacemaker.processRemoteNewView(newView)
 			.ifPresent(this::processNewView);

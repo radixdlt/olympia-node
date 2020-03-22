@@ -43,7 +43,7 @@ public final class NewView {
 
 	@JsonProperty("qc")
 	@DsonOutput(Output.ALL)
-	private QuorumCertificate highestQc;
+	private QuorumCertificate qc;
 
 	private ECPublicKey author;
 
@@ -60,11 +60,15 @@ public final class NewView {
 		this.signature = null;
 	}
 
-	public NewView(ECPublicKey author, View view, QuorumCertificate highestQc, ECDSASignature signature) {
+	public NewView(ECPublicKey author, View view, QuorumCertificate qc, ECDSASignature signature) {
 		this.author = Objects.requireNonNull(author);
 		this.view = Objects.requireNonNull(view);
-		this.highestQc = highestQc;
+		this.qc = qc;
 		this.signature = signature;
+	}
+
+	public QuorumCertificate getQc() {
+		return qc;
 	}
 
 	public ECPublicKey getAuthor() {
@@ -111,17 +115,17 @@ public final class NewView {
 		NewView newView = (NewView) o;
 		return Objects.equals(author, newView.author)
 			&& Objects.equals(view, newView.view)
-			&& Objects.equals(highestQc, newView.highestQc)
+			&& Objects.equals(qc, newView.qc)
 			&& Objects.equals(signature, newView.signature);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(author, view, highestQc, signature);
+		return Objects.hash(author, view, qc, signature);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{view=%s qc=%s author=%s}", getClass().getSimpleName(), view, highestQc, author.getUID().toString().substring(0, 6));
+		return String.format("%s{view=%s qc=%s author=%s}", getClass().getSimpleName(), view, qc, author.getUID().toString().substring(0, 6));
 	}
 }
