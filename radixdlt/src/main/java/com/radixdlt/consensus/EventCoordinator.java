@@ -77,6 +77,10 @@ public final class EventCoordinator {
 		this.selfKey = Objects.requireNonNull(selfKey);
 	}
 
+	private String getShortName() {
+		return selfKey.getUID().toString().substring(0, 6);
+	}
+
 	private void processNewView(View view) {
 		// only do something if we're actually the leader
 		if (!proposerElection.isValidProposer(selfKey.getUID(), view)) {
@@ -87,15 +91,17 @@ public final class EventCoordinator {
 
 		// TODO: Handle empty proposals
 		if (proposal.getAtom() != null) {
-			log.info(view + ": Broadcasting proposal " + proposal);
+			log.info(getShortName() + ": Broadcasting Proposal: " + proposal);
 			this.networkSender.broadcastProposal(proposal);
 		}
 	}
 
 	public void processVote(Vote vote) {
-		// only do something if we're actually the leader for the next view
-		if (!proposerElection.isValidProposer(selfKey.getUID(), vote.getVertexMetadata().getView().next())) {
-			log.warn(String.format("Ignoring confused vote %s for %s", vote.hashCode(), vote.getVertexMetadata().getView()));
+		log.info(this.getShortName() + ": Processing VOTE_MESSAGE: " + vote);
+
+		// only do something if we're actually the leader for the vote
+		if (!proposerElection.isValidProposer(selfKey.getUID(), vote.getVertexMetadata().getView())) {
+			log.warn(String.format("%s Ignoring confused vote %s for %s", getShortName(), vote.hashCode(), vote.getVertexMetadata().getView()));
 			return;
 		}
 
@@ -103,7 +109,7 @@ public final class EventCoordinator {
 		Optional<QuorumCertificate> potentialQc = this.pendingVotes.insertVote(vote);
 		if (potentialQc.isPresent()) {
 			QuorumCertificate qc = potentialQc.get();
-			log.info("QC created: " + qc);
+			log.info(this.getShortName() + ": Creating QC: " + qc);
 			processQC(qc);
 		}
 	}
@@ -128,8 +134,10 @@ public final class EventCoordinator {
 	}
 
 	public void processLocalTimeout(View view) {
+		log.info(this.getShortName() + ": Processing LOCAL_TIMEOUT: " + view);
+
 		if (!this.pacemaker.processLocalTimeout(view)) {
-			log.info("Ignore timeout: " + view);
+			log.info(this.getShortName() + ": Ignoring Timeout: " + view);
 			return;
 		}
 
@@ -138,13 +146,17 @@ public final class EventCoordinator {
 			ECDSASignature signature = this.selfKey.sign(Hash.hash256(Longs.toByteArray(view.next().number())));
 			View nextView = this.pacemaker.getCurrentView();
 			NewView newView = new NewView(selfKey.getPublicKey(), nextView, signature);
-			this.networkSender.sendNewView(newView, this.proposerElection.getProposer(nextView));
+			EUID nextLeader = this.proposerElection.getProposer(nextView);
+			log.info(this.getShortName() + ": Sending NewView to " + nextLeader.toString().substring(0, 6) + ": " + newView);
+			this.networkSender.sendNewView(newView, nextLeader);
 		} catch (CryptoException e) {
 			throw new IllegalStateException("Failed to sign new view at " + view, e);
 		}
 	}
 
 	public void processRemoteNewView(NewView newView) {
+		log.info(this.getShortName() + ": Processing NEW_VIEW_MESSAGE: " + newView);
+
 		// only do something if we're actually the leader for the next view
 		if (!proposerElection.isValidProposer(selfKey.getPublicKey().getUID(), newView.getView())) {
 			log.warn(String.format("Got confused new-view %s for view ", newView.hashCode()) + newView.getView());
@@ -156,6 +168,8 @@ public final class EventCoordinator {
 	}
 
 	public void processProposal(Vertex proposedVertex) {
+		log.info(this.getShortName() + ": Processing PROPOSAL_MESSAGE: " + proposedVertex);
+
 		final View currentView = this.pacemaker.getCurrentView();
 		if (proposedVertex.getView().compareTo(currentView) < 0) {
 			log.info("Ignore proposal current " + currentView + " but proposed " + proposedVertex.getView());
@@ -188,6 +202,7 @@ public final class EventCoordinator {
 		try {
 			final Vote vote = safetyRules.voteFor(proposedVertex);
 			final EUID leader = this.proposerElection.getProposer(updatedView);
+			log.info(this.getShortName() + ": Sending Vote to " + leader.toString().substring(0, 6) + ": " + vote);
 			networkSender.sendVote(vote, leader);
 		} catch (SafetyViolationException e) {
 			log.error("Rejected " + proposedVertex, e);
