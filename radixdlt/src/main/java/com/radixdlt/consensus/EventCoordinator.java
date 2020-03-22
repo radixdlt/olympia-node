@@ -77,8 +77,13 @@ public final class EventCoordinator {
 		this.selfKey = Objects.requireNonNull(selfKey);
 	}
 
+	// TODO: Move to EUID.java
+	private String getShortName(EUID euid) {
+		return euid.toString().substring(0, 6);
+	}
+
 	private String getShortName() {
-		return selfKey.getUID().toString().substring(0, 6);
+		return getShortName(selfKey.getUID());
 	}
 
 	private void processNewView(View view) {
@@ -93,6 +98,8 @@ public final class EventCoordinator {
 		if (proposal.getAtom() != null) {
 			log.info(getShortName() + ": Broadcasting Proposal: " + proposal);
 			this.networkSender.broadcastProposal(proposal);
+		} else {
+			log.info(getShortName() + ": Skipping proposal because no atom available for proposal");
 		}
 	}
 
@@ -117,7 +124,7 @@ public final class EventCoordinator {
 				ECDSASignature signature = this.selfKey.sign(Hash.hash256(Longs.toByteArray(nextView.number())));
 				NewView newView = new NewView(selfKey.getPublicKey(), nextView, this.vertexStore.getHighestQC(), signature);
 				EUID nextLeader = this.proposerElection.getProposer(nextView);
-				log.info(this.getShortName() + ": Sending NewView to " + nextLeader.toString().substring(0, 6) + ": " + newView);
+				log.info(this.getShortName() + ": Sending NewView to " + this.getShortName(nextLeader) + ": " + newView);
 				this.networkSender.sendNewView(newView, nextLeader);
 			} catch (CryptoException e) {
 				throw new IllegalStateException("Failed to sign new view", e);
@@ -158,7 +165,7 @@ public final class EventCoordinator {
 			ECDSASignature signature = this.selfKey.sign(Hash.hash256(Longs.toByteArray(nextView.number())));
 			NewView newView = new NewView(selfKey.getPublicKey(), nextView, this.vertexStore.getHighestQC(), signature);
 			EUID nextLeader = this.proposerElection.getProposer(nextView);
-			log.info(this.getShortName() + ": Sending NewView to " + nextLeader.toString().substring(0, 6) + ": " + newView);
+			log.info(this.getShortName() + ": Sending NewView to " + this.getShortName(nextLeader) + ": " + newView);
 			this.networkSender.sendNewView(newView, nextLeader);
 		} catch (CryptoException e) {
 			throw new IllegalStateException("Failed to sign new view at " + view, e);
@@ -215,7 +222,7 @@ public final class EventCoordinator {
 		try {
 			final Vote vote = safetyRules.voteFor(proposedVertex);
 			final EUID leader = this.proposerElection.getProposer(updatedView);
-			log.info(this.getShortName() + ": Sending Vote to " + leader.toString().substring(0, 6) + ": " + vote);
+			log.info(this.getShortName() + ": Sending Vote to " + this.getShortName(leader) + ": " + vote);
 			networkSender.sendVote(vote, leader);
 		} catch (SafetyViolationException e) {
 			log.error("Rejected " + proposedVertex, e);

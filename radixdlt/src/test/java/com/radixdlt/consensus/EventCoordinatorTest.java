@@ -127,7 +127,6 @@ public class EventCoordinatorTest {
 		VertexStore vertexStore = mock(VertexStore.class);
 		PendingVotes pendingVotes = mock(PendingVotes.class);
 		ProposerElection proposerElection = mock(ProposerElection.class);
-		QuorumRequirements quorumRequirements = new SingleNodeQuorumRequirements(SELF_ADDRESS.getUID());
 
 		EventCoordinator eventCoordinator = new EventCoordinator(
 			proposalGenerator,
@@ -140,6 +139,7 @@ public class EventCoordinatorTest {
 			proposerElection,
 			SELF_KEY);
 
+		when(proposerElection.getProposer(any())).thenReturn(mock(EUID.class));
 		when(mempool.getAtoms(anyInt(), any())).thenReturn(Lists.newArrayList());
 		Vote vote = mock(Vote.class);
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
@@ -148,7 +148,7 @@ public class EventCoordinatorTest {
 		when(vertexMetadata.getId()).thenReturn(Hash.random());
 		when(proposerElection.isValidProposer(any(), any())).thenReturn(true);
 		when(pendingVotes.insertVote(eq(vote))).thenReturn(Optional.of(mock(QuorumCertificate.class)));
-
+		when(pacemaker.getCurrentView()).thenReturn(mock(View.class));
 		eventCoordinator.processVote(vote);
 		verify(safetyRules, times(1)).process(any(QuorumCertificate.class));
 		verify(pacemaker, times(1)).processQC(any());
@@ -177,6 +177,7 @@ public class EventCoordinatorTest {
 			proposerElection,
 			SELF_KEY);
 
+		when(proposerElection.getProposer(any())).thenReturn(mock(EUID.class));
 		when(pacemaker.processLocalTimeout(any())).thenReturn(true);
 		when(pacemaker.getCurrentView()).thenReturn(View.of(1));
 		eventCoordinator.processLocalTimeout(View.of(0L));
@@ -235,8 +236,10 @@ public class EventCoordinatorTest {
 			SELF_KEY);
 
 		NewView newView = mock(NewView.class);
+		when(newView.getQc()).thenReturn(mock(QuorumCertificate.class));
 		when(newView.getView()).thenReturn(View.of(0L));
 		when(proposerElection.isValidProposer(any(), any())).thenReturn(true);
+		when(proposerElection.getProposer(any())).thenReturn(mock(EUID.class));
 		eventCoordinator.processRemoteNewView(newView);
 		verify(pacemaker, times(1)).processRemoteNewView(any());
 	}
@@ -338,6 +341,8 @@ public class EventCoordinatorTest {
 
 		View currentView = View.of(123);
 
+		when(proposerElection.getProposer(any())).thenReturn(mock(EUID.class));
+
 		Vertex proposedVertex = mock(Vertex.class);
 		Atom proposedAtom = mock(Atom.class);
 		AID aid = makeAID(7); // no special significance
@@ -400,6 +405,7 @@ public class EventCoordinatorTest {
 
 		when(safetyRules.process(eq(qc))).thenReturn(Optional.of(committedVertexId));
 		when(vertexStore.commitVertex(eq(committedVertexId))).thenReturn(committedVertex);
+		when(proposerElection.getProposer(any())).thenReturn(mock(EUID.class));
 
 		eventCoordinator.processProposal(proposalVertex);
 		verify(mempool, times(1)).removeCommittedAtom(eq(aid));

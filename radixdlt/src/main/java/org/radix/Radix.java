@@ -147,7 +147,6 @@ public final class Radix
 		bft.processEvents()
 			.subscribe(
 				event -> {
-					log.info("BFT Event: " + event);
 				},
 				e -> {
 					log.error("BFT Unexpected Error", e);
