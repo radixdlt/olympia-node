@@ -32,6 +32,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import org.apache.commons.math3.util.Pair;
@@ -121,13 +122,13 @@ public class ChainedBFTTest {
 	}
 
 	@Test
-	public void given_3_correct_bft_instances_with_single_leader__then_all_instances_should_get_ten_commits() throws Exception {
+	public void given_3_correct_bft_instances_with_single_leader__then_all_instances_should_get_3_commits() throws Exception {
 		final List<ECKeyPair> nodes = Arrays.asList(new ECKeyPair(), new ECKeyPair(), new ECKeyPair());
 		final QuorumRequirements quorumRequirements = WhitelistQuorum.from(nodes.stream().map(ECKeyPair::getPublicKey));
 		final ProposerElection proposerElection = new SingleLeader(nodes.get(0).getUID());
 		final List<TestObserver<Vertex>> committedListeners = runBFT(nodes, quorumRequirements, proposerElection);
 
-		final int commitCount = 10;
+		final int commitCount = 3;
 		for (TestObserver<Vertex> committedListener : committedListeners) {
 			committedListener.awaitCount(commitCount);
 			for (int i = 0; i < commitCount; i++) {
@@ -138,16 +139,15 @@ public class ChainedBFTTest {
 	}
 
 	@Test
-	public void given_3_correct_bft_instances_with_rotating_leaders__then_all_instances_should_get_the_same_ten_commits() throws Exception {
+	public void given_3_correct_bft_instances_with_rotating_leaders__then_all_instances_should_get_the_same_5_commits() throws Exception {
 		final List<ECKeyPair> nodes = Arrays.asList(new ECKeyPair(), new ECKeyPair(), new ECKeyPair());
 		final QuorumRequirements quorumRequirements = WhitelistQuorum.from(nodes.stream().map(ECKeyPair::getPublicKey));
 		final ProposerElection proposerElection = new RotatingLeaders(nodes.stream().map(ECKeyPair::getUID).collect(ImmutableList.toImmutableList()));
 		final List<TestObserver<Vertex>> committedListeners = runBFT(nodes, quorumRequirements, proposerElection);
 
-		final int commitCount = 10;
+		final int commitCount = 5;
 		for (TestObserver<Vertex> committedListener : committedListeners) {
 			committedListener.awaitCount(commitCount);
-			committedListener.assertValueCount(commitCount);
 		}
 
 		for (TestObserver<Vertex> committedListener : committedListeners) {
