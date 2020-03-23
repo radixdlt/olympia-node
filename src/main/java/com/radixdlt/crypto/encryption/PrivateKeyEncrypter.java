@@ -58,22 +58,22 @@ public final class PrivateKeyEncrypter {
 
     public static String createEncryptedPrivateKey(String password) throws GeneralSecurityException {
         ECKeyPair ecKeyPair = new ECKeyPair();
-        String privateKey = Objects.requireNonNull(Bytes.toHexString(ecKeyPair.getPrivateKey()));
+        String privateKey = Bytes.toHexString(ecKeyPair.getPrivateKey());
         byte[] salt = getSalt().getBytes(StandardCharsets.UTF_8);
 
-        SecretKey derivedKey = Objects.requireNonNull(getSecretKey(password, salt, ITERATIONS, KEY_LENGTH));
+        SecretKey derivedKey = getSecretKey(password, salt, ITERATIONS, KEY_LENGTH);
 
-        Cipher cipher = Objects.requireNonNull(Cipher.getInstance("AES/CTR/NoPadding"));
+        Cipher cipher = Cipher.getInstance("AES/CTR/NoPadding");
         cipher.init(Cipher.ENCRYPT_MODE, derivedKey);
         byte[] iv = cipher.getParameters().getParameterSpec(IvParameterSpec.class).getIV();
 
         String cipherText = encrypt(cipher, privateKey);
         byte[] mac = generateMac(derivedKey.getEncoded(), Bytes.fromHexString(cipherText));
 
-        Keystore keystore = Objects.requireNonNull(createKeystore(ecKeyPair, cipherText, mac, iv, salt));
+        Keystore keystore = createKeystore(ecKeyPair, cipherText, mac, iv, salt);
 
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
-        return Objects.requireNonNull(gson.toJson(keystore));
+        return gson.toJson(keystore);
     }
 
     public static byte[] decryptPrivateKey(String password, Reader keyReader) throws IOException, GeneralSecurityException {
