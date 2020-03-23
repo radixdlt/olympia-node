@@ -77,12 +77,6 @@ public class EventCoordinatorTest {
 		return RadixAddress.from(universe, pubKey);
 	}
 
-	private static ECPublicKey makePubKey(EUID id) {
-		ECPublicKey pubKey = mock(ECPublicKey.class);
-		when(pubKey.getUID()).thenReturn(id);
-		return pubKey;
-	}
-
 	@Test
 	public void when_processing_vote_as_not_proposer__then_nothing_happens() {
 		ProposalGenerator proposalGenerator = mock(ProposalGenerator.class);
@@ -118,7 +112,7 @@ public class EventCoordinatorTest {
 	}
 
 	@Test
-	public void when_processing_vote_as_a_proposer__then_components_are_notified() {
+	public void when_processing_vote_as_a_proposer_and_quorum_is_reached__then_a_new_view_is_sent() {
 		ProposalGenerator proposalGenerator = mock(ProposalGenerator.class);
 		Mempool mempool = mock(Mempool.class);
 		EventCoordinatorNetworkSender networkSender = mock(EventCoordinatorNetworkSender.class);
@@ -139,19 +133,26 @@ public class EventCoordinatorTest {
 			proposerElection,
 			SELF_KEY);
 
-		when(proposerElection.getProposer(any())).thenReturn(mock(EUID.class));
-		when(mempool.getAtoms(anyInt(), any())).thenReturn(Lists.newArrayList());
+		when(proposerElection.getProposer(any())).thenReturn(SELF_KEY.getUID());
+		when(proposerElection.isValidProposer(eq(SELF_KEY.getUID()), any())).thenReturn(true);
+
 		Vote vote = mock(Vote.class);
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
 		when(vote.getVertexMetadata()).thenReturn(vertexMetadata);
 		when(vertexMetadata.getView()).thenReturn(View.of(0L));
 		when(vertexMetadata.getId()).thenReturn(Hash.random());
-		when(proposerElection.isValidProposer(any(), any())).thenReturn(true);
-		when(pendingVotes.insertVote(eq(vote))).thenReturn(Optional.of(mock(QuorumCertificate.class)));
+
+		QuorumCertificate qc = mock(QuorumCertificate.class);
+		View view = mock(View.class);
+		when(qc.getView()).thenReturn(view);
+		when(pendingVotes.insertVote(eq(vote))).thenReturn(Optional.of(qc));
+		when(mempool.getAtoms(anyInt(), any())).thenReturn(Lists.newArrayList());
 		when(pacemaker.getCurrentView()).thenReturn(mock(View.class));
+		when(pacemaker.processQC(eq(view))).thenReturn(Optional.of(mock(View.class)));
+
 		eventCoordinator.processVote(vote);
-		verify(safetyRules, times(1)).process(any(QuorumCertificate.class));
-		verify(pacemaker, times(1)).processQC(any());
+
+		verify(networkSender, times(1)).sendNewView(any(), any());
 	}
 
 	@Test

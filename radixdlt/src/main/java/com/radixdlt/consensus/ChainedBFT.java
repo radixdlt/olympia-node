@@ -46,6 +46,10 @@ public final class ChainedBFT {
 			this.event = event;
 		}
 
+		public EventType getEventType() {
+			return eventType;
+		}
+
 		@Override
 		public String toString() {
 			return eventType + ": " + event;

@@ -32,7 +32,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import org.apache.commons.math3.util.Pair;
@@ -41,7 +40,7 @@ import org.junit.Test;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 
-public class ChainedBFTTest {
+public class MultiNodeConsensusTest {
 	private static final Logger log = Logging.getLogger("Test");
 	private final TestEventCoordinatorNetwork testEventCoordinatorNetwork = new TestEventCoordinatorNetwork();
 
