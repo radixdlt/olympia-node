@@ -57,6 +57,7 @@ public final class PrivateKeyEncrypter {
     private PrivateKeyEncrypter() { }
 
     public static String createEncryptedPrivateKey(String password) throws GeneralSecurityException {
+        Objects.requireNonNull(password);
         ECKeyPair ecKeyPair = new ECKeyPair();
         String privateKey = Bytes.toHexString(ecKeyPair.getPrivateKey());
         byte[] salt = getSalt().getBytes(StandardCharsets.UTF_8);
