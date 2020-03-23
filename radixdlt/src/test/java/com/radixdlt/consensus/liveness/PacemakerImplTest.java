@@ -26,8 +26,8 @@ import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import io.reactivex.rxjava3.observers.TestObserver;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 
 import java.util.Optional;
@@ -45,9 +45,11 @@ import static org.mockito.Mockito.when;
 
 public class PacemakerImplTest {
 	private static ScheduledExecutorService getMockedExecutorService() {
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+
 		ScheduledExecutorService executorService = mock(ScheduledExecutorService.class);
 		doAnswer(invocation -> {
-			Executors.newSingleThreadScheduledExecutor().schedule((Runnable) invocation.getArguments()[0], 0, TimeUnit.MILLISECONDS);
+			executor.submit((Runnable) invocation.getArguments()[0]);
 			return null;
 		}).when(executorService).schedule(any(Runnable.class), anyLong(), any());
 		return executorService;
@@ -104,6 +106,7 @@ public class PacemakerImplTest {
 		PacemakerImpl pacemaker = new PacemakerImpl(mock(QuorumRequirements.class), executorService);
 		TestObserver<View> testObserver = TestObserver.create();
 		pacemaker.localTimeouts().subscribe(testObserver);
+		testObserver.awaitCount(1);
 		pacemaker.processLocalTimeout(View.of(0L));
 		testObserver.awaitCount(2);
 		testObserver.assertValues(View.of(0L), View.of(1L));
