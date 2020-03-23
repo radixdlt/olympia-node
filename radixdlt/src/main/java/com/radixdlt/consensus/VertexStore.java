@@ -38,6 +38,8 @@ public final class VertexStore {
 	private final Map<Hash, Vertex> vertices = new HashMap<>();
 	private final Map<Hash, Vertex> committedVertices = new HashMap<>();
 	private final BehaviorSubject<Vertex> lastCommittedVertex = BehaviorSubject.create();
+
+	// Should never be null
 	private QuorumCertificate highestQC;
 
 	// TODO: Cleanup this interface
@@ -63,11 +65,7 @@ public final class VertexStore {
 	}
 
 	public void syncToQC(QuorumCertificate qc) {
-		if (qc == null) {
-			return;
-		}
-
-		if (highestQC == null || highestQC.getView().compareTo(qc.getView()) < 0) {
+		if (highestQC.getView().compareTo(qc.getView()) < 0) {
 			highestQC = qc;
 		}
 	}
