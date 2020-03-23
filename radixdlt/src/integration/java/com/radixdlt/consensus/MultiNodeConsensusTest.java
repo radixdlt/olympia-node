@@ -27,7 +27,6 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.common.Atom;
-import com.radixdlt.consensus.ChainedBFT.Event;
 import com.radixdlt.consensus.liveness.PacemakerImpl;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposerElection;
@@ -42,7 +41,6 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.network.TestEventCoordinatorNetwork;
-import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.observers.TestObserver;
 import java.util.Arrays;
 import java.util.Collections;
@@ -51,7 +49,6 @@ import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
-import org.apache.commons.math3.util.Pair;
 import org.junit.Before;
 import org.junit.Test;
 import org.radix.logging.Logger;
@@ -117,7 +114,7 @@ public class MultiNodeConsensusTest {
 		QuorumRequirements quorumRequirements,
 		ProposerElection proposerElection
 	) {
-		final List<Pair<TestObserver<Vertex>, Observable<Event>>> bftEvents = nodes.stream()
+		return nodes.stream()
 			.map(e -> {
 				RadixEngine radixEngine = mock(RadixEngine.class);
 				when(radixEngine.staticCheck(any())).thenReturn(Optional.empty());
@@ -125,15 +122,9 @@ public class MultiNodeConsensusTest {
 				TestObserver<Vertex> testObserver = TestObserver.create();
 				vertexStore.lastCommittedVertex().subscribe(testObserver);
 				ChainedBFT chainedBFT = createBFTInstance(e, proposerElection, quorumRequirements, vertexStore);
-				return new Pair<>(testObserver, chainedBFT.processEvents());
+				chainedBFT.processEvents().subscribe();
+				return testObserver;
 			})
-			.collect(Collectors.toList());
-
-		Observable.merge(bftEvents.stream().map(Pair::getSecond).collect(Collectors.toList()))
-			.subscribe();
-
-		return bftEvents.stream()
-			.map(Pair::getFirst)
 			.collect(Collectors.toList());
 	}
 
@@ -149,6 +140,7 @@ public class MultiNodeConsensusTest {
 			committedListener.awaitCount(commitCount);
 			for (int i = 0; i < commitCount; i++) {
 				final int id = i;
+				// Checking Atom's mocked toString()
 				committedListener.assertValueAt(i, v -> v.getAtom().toString().equals(Integer.toHexString(id)));
 			}
 		}

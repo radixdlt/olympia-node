@@ -155,7 +155,7 @@ public class EventCoordinatorTest {
 	@Test
 	public void when_processing_new_view_as_proposer__then_new_view_is_emitted() {
 		NewView newView = mock(NewView.class);
-		when(newView.getQc()).thenReturn(mock(QuorumCertificate.class));
+		when(newView.getQC()).thenReturn(mock(QuorumCertificate.class));
 		when(newView.getView()).thenReturn(View.of(0L));
 		when(proposerElection.isValidProposer(any(), any())).thenReturn(true);
 		when(proposerElection.getProposer(any())).thenReturn(mock(EUID.class));

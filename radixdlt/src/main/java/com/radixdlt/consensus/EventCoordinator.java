@@ -77,7 +77,6 @@ public final class EventCoordinator {
 		this.selfKey = Objects.requireNonNull(selfKey);
 	}
 
-	// TODO: Move to EUID.java
 	private String getShortName(EUID euid) {
 		return euid.toString().substring(0, 6);
 	}
@@ -109,7 +108,7 @@ public final class EventCoordinator {
 			ECDSASignature signature = this.selfKey.sign(Hash.hash256(Longs.toByteArray(nextView.number())));
 			NewView newView = new NewView(selfKey.getPublicKey(), nextView, this.vertexStore.getHighestQC(), signature);
 			EUID nextLeader = this.proposerElection.getProposer(nextView);
-			log.info(this.getShortName() + ": Sending NewView to " + this.getShortName(nextLeader) + ": " + newView);
+			log.info(String.format("%s: Sending NewView to %s: %s", this.getShortName(), this.getShortName(nextLeader), newView));
 			this.networkSender.sendNewView(newView, nextLeader);
 		} catch (CryptoException e) {
 			throw new IllegalStateException("Failed to sign new view", e);
@@ -148,7 +147,7 @@ public final class EventCoordinator {
 		Optional<QuorumCertificate> potentialQc = this.pendingVotes.insertVote(vote);
 		if (potentialQc.isPresent()) {
 			QuorumCertificate qc = potentialQc.get();
-			log.info(this.getShortName() + ": Creating QC: " + qc);
+			log.info(this.getShortName() + ": Formed QC: " + qc);
 			this.processQC(qc);
 		}
 	}
@@ -162,7 +161,7 @@ public final class EventCoordinator {
 			return;
 		}
 
-		this.processQC(newView.getQc());
+		this.processQC(newView.getQC());
 
 		this.pacemaker.processNewView(newView)
 			.ifPresent(this::startQuorumNewView);

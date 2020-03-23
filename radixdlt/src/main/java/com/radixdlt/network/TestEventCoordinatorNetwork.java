@@ -23,10 +23,11 @@ import com.radixdlt.consensus.EventCoordinatorNetworkSender;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import java.util.AbstractMap.SimpleEntry;
-import java.util.HashSet;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -44,7 +45,7 @@ public class TestEventCoordinatorNetwork {
 	private final PublishSubject<Map.Entry<NewView, EUID>> newViews;
 	private final PublishSubject<Map.Entry<Vote, EUID>> votes;
 	private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
-	private final Set<EUID> sendingDisabled = new HashSet<>();
+	private final Set<EUID> sendingDisabled = Collections.newSetFromMap(new ConcurrentHashMap<EUID, Boolean>());
 
 	public TestEventCoordinatorNetwork() {
 		this.proposals = PublishSubject.create();

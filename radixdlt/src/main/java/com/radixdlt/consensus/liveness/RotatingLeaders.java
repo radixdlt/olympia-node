@@ -22,6 +22,9 @@ import com.radixdlt.common.EUID;
 import com.radixdlt.consensus.View;
 import java.util.Objects;
 
+/**
+ * Round Robin leaders
+ */
 public final class RotatingLeaders implements ProposerElection {
 	private final ImmutableList<EUID> leaders;
 	public RotatingLeaders(ImmutableList<EUID> leaders) {

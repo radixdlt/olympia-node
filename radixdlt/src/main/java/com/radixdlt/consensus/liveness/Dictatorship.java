@@ -21,6 +21,9 @@ import com.radixdlt.common.EUID;
 import com.radixdlt.consensus.View;
 import java.util.Objects;
 
+/**
+ * A Proposer Election where there is only a single leader used for every view
+ */
 public final class Dictatorship implements ProposerElection {
 
 	private final EUID leader;

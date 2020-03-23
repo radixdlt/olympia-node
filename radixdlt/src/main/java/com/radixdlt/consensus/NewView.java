@@ -67,7 +67,7 @@ public final class NewView {
 		this.signature = signature;
 	}
 
-	public QuorumCertificate getQc() {
+	public QuorumCertificate getQC() {
 		return qc;
 	}
 
