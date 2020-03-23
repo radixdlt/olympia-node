@@ -21,12 +21,13 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
+import com.google.inject.name.Named;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.VertexStore;
 import com.radixdlt.consensus.View;
-import com.radixdlt.consensus.liveness.DumbProposerElection;
+import com.radixdlt.consensus.liveness.Dictatorship;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.PacemakerImpl;
 import com.radixdlt.consensus.liveness.PacemakerRx;
@@ -37,8 +38,8 @@ import com.radixdlt.consensus.safety.SingleNodeQuorumRequirements;
 import com.radixdlt.consensus.tempo.Scheduler;
 import com.radixdlt.consensus.tempo.SingleThreadedScheduler;
 import com.radixdlt.crypto.ECDSASignatures;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.universe.Universe;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
@@ -53,13 +54,17 @@ public class CerberusModule extends AbstractModule {
 		// dependencies
 		bind(QuorumRequirements.class).to(SingleNodeQuorumRequirements.class);
 		bind(Scheduler.class).toProvider(SingleThreadedScheduler::new);
-
-		bind(ProposerElection.class).to(DumbProposerElection.class);
-
 		bind(PacemakerRx.class).to(PacemakerImpl.class);
 		bind(Pacemaker.class).to(PacemakerImpl.class);
-
 		bind(SafetyRules.class).in(Scopes.SINGLETON);
+	}
+
+	@Provides
+	@Singleton
+	private ProposerElection proposerElection(
+		@Named("self") ECKeyPair selfKey
+	) {
+		return new Dictatorship(selfKey.getUID());
 	}
 
 	@Provides
@@ -73,7 +78,7 @@ public class CerberusModule extends AbstractModule {
 	private VertexStore getVertexStore(
 		Universe universe,
 		RadixEngine radixEngine
-	) throws RadixEngineException {
+	) {
 		if (universe.getGenesis().size() != 1) {
 			throw new IllegalStateException("Can only support one genesis atom.");
 		}

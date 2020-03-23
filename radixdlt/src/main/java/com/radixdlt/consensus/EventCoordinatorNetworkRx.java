@@ -15,11 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.network;
-
-import com.radixdlt.consensus.NewView;
-import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.Vote;
+package com.radixdlt.consensus;
 
 import io.reactivex.rxjava3.core.Observable;
 

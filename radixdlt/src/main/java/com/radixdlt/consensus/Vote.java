@@ -87,6 +87,12 @@ public final class Vote {
 	}
 
 	@Override
+	public String toString() {
+		return String.format("%s{author=%s view=%s}", getClass().getSimpleName(),
+			author.getUID().toString().substring(0, 6), vertexMetadata.getView());
+	}
+
+	@Override
 	public int hashCode() {
 		return Objects.hash(this.author, this.vertexMetadata, this.signature);
 	}

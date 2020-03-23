@@ -19,11 +19,26 @@ package com.radixdlt.consensus.liveness;
 
 import com.radixdlt.common.EUID;
 import com.radixdlt.consensus.View;
+import java.util.Objects;
 
-public class DumbProposerElection implements ProposerElection {
+/**
+ * A Proposer Election where there is only a single leader used for every view
+ */
+public final class Dictatorship implements ProposerElection {
+
+	private final EUID leader;
+
+	public Dictatorship(EUID leader) {
+		this.leader = Objects.requireNonNull(leader);
+	}
+
 	@Override
 	public boolean isValidProposer(EUID nid, View view) {
-		// will accept anything
-		return true;
+		return nid.equals(leader);
+	}
+
+	@Override
+	public EUID getProposer(View view) {
+		return leader;
 	}
 }

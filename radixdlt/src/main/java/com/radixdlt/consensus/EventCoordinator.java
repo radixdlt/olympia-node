@@ -20,6 +20,7 @@ package com.radixdlt.consensus;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import com.radixdlt.common.Atom;
+import com.radixdlt.common.EUID;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposerElection;
@@ -30,7 +31,6 @@ import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.mempool.Mempool;
-import com.radixdlt.network.EventCoordinatorNetworkSender;
 import com.radixdlt.utils.Longs;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
@@ -77,8 +77,15 @@ public final class EventCoordinator {
 		this.selfKey = Objects.requireNonNull(selfKey);
 	}
 
-	private void processNewView(View view) {
-		log.debug("Processing new view: " + view);
+	private String getShortName(EUID euid) {
+		return euid.toString().substring(0, 6);
+	}
+
+	private String getShortName() {
+		return getShortName(selfKey.getUID());
+	}
+
+	private void startQuorumNewView(View view) {
 		// only do something if we're actually the leader
 		if (!proposerElection.isValidProposer(selfKey.getUID(), view)) {
 			return;
@@ -86,25 +93,25 @@ public final class EventCoordinator {
 
 		Vertex proposal = proposalGenerator.generateProposal(this.pacemaker.getCurrentView());
 
-		// TODO: Handle empty proposals
 		if (proposal.getAtom() != null) {
+			log.info(getShortName() + ": Broadcasting Proposal: " + proposal);
 			this.networkSender.broadcastProposal(proposal);
-			log.info("Starting view " + view + " with proposal " + proposal);
+		} else {
+			// TODO: Handle empty proposals
+			log.info(getShortName() + ": Skipping proposal because no atom available for proposal");
 		}
 	}
 
-	public void processVote(Vote vote) {
-		// only do something if we're actually the leader for the next view
-		if (!proposerElection.isValidProposer(selfKey.getUID(), vote.getVertexMetadata().getView().next())) {
-			log.warn(String.format("Ignoring confused vote %s for %s", vote.hashCode(), vote.getVertexMetadata().getView()));
-			return;
-		}
-
-		// accumulate votes into QCs in store
-		Optional<QuorumCertificate> potentialQc = this.pendingVotes.insertVote(vote);
-		if (potentialQc.isPresent()) {
-			QuorumCertificate qc = potentialQc.get();
-			processQC(qc);
+	private void proceedToView(View nextView) {
+		try {
+			// TODO make signing more robust by including author in signed hash
+			ECDSASignature signature = this.selfKey.sign(Hash.hash256(Longs.toByteArray(nextView.number())));
+			NewView newView = new NewView(selfKey.getPublicKey(), nextView, this.vertexStore.getHighestQC(), signature);
+			EUID nextLeader = this.proposerElection.getProposer(nextView);
+			log.info(String.format("%s: Sending NewView to %s: %s", this.getShortName(), this.getShortName(nextLeader), newView));
+			this.networkSender.sendNewView(newView, nextLeader);
+		} catch (CryptoException e) {
+			throw new IllegalStateException("Failed to sign new view", e);
 		}
 	}
 
@@ -115,46 +122,69 @@ public final class EventCoordinator {
 		// commit any newly committable vertices
 		this.safetyRules.process(qc)
 			.ifPresent(vertexId -> {
-				log.info("Committed vertex " + vertexId);
+				log.info(this.getShortName() + ": Committing vertex " + vertexId);
 
 				final Vertex vertex = vertexStore.commitVertex(vertexId);
 				final Atom committedAtom = vertex.getAtom();
 				mempool.removeCommittedAtom(committedAtom.getAID());
 			});
 
-		// start new view if pacemaker feels like it
+		// proceed to next view if pacemaker feels like it
 		this.pacemaker.processQC(qc.getView())
-			.ifPresent(this::processNewView);
+			.ifPresent(this::proceedToView);
 	}
 
-	public void processLocalTimeout(View view) {
-		if (!this.pacemaker.processLocalTimeout(view)) {
+	public void processVote(Vote vote) {
+		log.info(this.getShortName() + ": Processing VOTE_MESSAGE: " + vote);
+
+		// only do something if we're actually the leader for the vote
+		if (!proposerElection.isValidProposer(selfKey.getUID(), vote.getVertexMetadata().getView())) {
+			log.warn(String.format("%s Ignoring confused vote %s for %s", getShortName(), vote.hashCode(), vote.getVertexMetadata().getView()));
 			return;
 		}
 
-		try {
-			// TODO make signing more robust by including author in signed hash
-			ECDSASignature signature = this.selfKey.sign(Hash.hash256(Longs.toByteArray(view.next().number())));
-			this.networkSender.sendNewView(new NewView(selfKey.getPublicKey(), view.next(), signature));
-		} catch (CryptoException e) {
-			throw new IllegalStateException("Failed to sign new view at " + view, e);
+		// accumulate votes into QCs in store
+		Optional<QuorumCertificate> potentialQc = this.pendingVotes.insertVote(vote);
+		if (potentialQc.isPresent()) {
+			QuorumCertificate qc = potentialQc.get();
+			log.info(this.getShortName() + ": Formed QC: " + qc);
+			this.processQC(qc);
 		}
 	}
 
-	public void processRemoteNewView(NewView newView) {
+	public void processNewView(NewView newView) {
+		log.info(this.getShortName() + ": Processing NEW_VIEW_MESSAGE: " + newView);
+
 		// only do something if we're actually the leader for the next view
 		if (!proposerElection.isValidProposer(selfKey.getPublicKey().getUID(), newView.getView())) {
 			log.warn(String.format("Got confused new-view %s for view ", newView.hashCode()) + newView.getView());
 			return;
 		}
 
-		this.pacemaker.processRemoteNewView(newView)
-			.ifPresent(this::processNewView);
+		this.processQC(newView.getQC());
+
+		this.pacemaker.processNewView(newView)
+			.ifPresent(this::startQuorumNewView);
 	}
 
 	public void processProposal(Vertex proposedVertex) {
+		log.info(this.getShortName() + ": Processing PROPOSAL_MESSAGE: " + proposedVertex);
+
+		final View currentView = this.pacemaker.getCurrentView();
+		if (proposedVertex.getView().compareTo(currentView) < 0) {
+			log.info("Ignore proposal current " + currentView + " but proposed " + proposedVertex.getView());
+			return;
+		}
+
 		processQC(proposedVertex.getQC());
-		Atom atom = proposedVertex.getAtom();
+
+		// TODO: Sync at this point
+
+		final View updatedView = this.pacemaker.getCurrentView();
+		if (proposedVertex.getView().compareTo(updatedView) != 0) {
+			log.info("Ignore proposal current " + updatedView + " but proposed " + proposedVertex.getView());
+			return;
+		}
 
 		try {
 			vertexStore.insertVertex(proposedVertex);
@@ -162,6 +192,7 @@ public final class EventCoordinator {
 			log.info("Rejected vertex insertion " + e);
 
 			// TODO: Better logic for removal on exception
+			final Atom atom = proposedVertex.getAtom();
 			if (atom != null) {
 				mempool.removeRejectedAtom(atom.getAID());
 			}
@@ -170,9 +201,22 @@ public final class EventCoordinator {
 
 		try {
 			final Vote vote = safetyRules.voteFor(proposedVertex);
-			networkSender.sendVote(vote);
+			final EUID leader = this.proposerElection.getProposer(updatedView);
+			log.info(this.getShortName() + ": Sending Vote to " + this.getShortName(leader) + ": " + vote);
+			networkSender.sendVote(vote, leader);
 		} catch (SafetyViolationException e) {
 			log.error("Rejected " + proposedVertex, e);
 		}
+
+		// TODO: Proceed to next view if not leader or next leader
+		// TODO: For now, just depend on Timeout events
+	}
+
+	public void processLocalTimeout(View view) {
+		log.info(this.getShortName() + ": Processing LOCAL_TIMEOUT: " + view);
+
+		// proceed to next view if pacemaker feels like it
+		this.pacemaker.processLocalTimeout(view)
+			.ifPresent(this::proceedToView);
 	}
 }

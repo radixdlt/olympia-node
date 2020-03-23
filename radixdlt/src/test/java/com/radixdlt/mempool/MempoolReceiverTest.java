@@ -25,7 +25,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.radixdlt.common.Atom;
-import com.radixdlt.network.MempoolNetworkRx;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;

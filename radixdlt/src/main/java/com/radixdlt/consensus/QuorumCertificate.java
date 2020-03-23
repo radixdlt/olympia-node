@@ -77,4 +77,8 @@ public final class QuorumCertificate {
 	public int hashCode() {
 		return Objects.hash(signatures, vertexMetadata);
 	}
+
+	public String toString() {
+		return String.format("QC{view=%s}", vertexMetadata.getView());
+	}
 }

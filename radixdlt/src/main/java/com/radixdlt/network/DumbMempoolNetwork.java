@@ -19,6 +19,8 @@ package com.radixdlt.network;
 
 import com.radixdlt.common.Atom;
 
+import com.radixdlt.mempool.MempoolNetworkRx;
+import com.radixdlt.mempool.MempoolNetworkTx;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 

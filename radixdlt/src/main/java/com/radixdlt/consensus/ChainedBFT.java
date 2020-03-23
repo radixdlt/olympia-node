@@ -20,23 +20,43 @@ package com.radixdlt.consensus;
 import com.google.inject.Inject;
 
 import com.radixdlt.consensus.liveness.PacemakerRx;
-import com.radixdlt.network.EventCoordinatorNetworkRx;
 
+import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Scheduler;
-import io.reactivex.rxjava3.disposables.CompositeDisposable;
-import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import java.util.Objects;
 
 /**
- * A three-chain BFT
+ * A three-chain BFT. The inputs are events via rx streams from a pacemaker and
+ * a network.
  */
 public final class ChainedBFT {
+	public enum EventType {
+		LOCAL_TIMEOUT,
+		NEW_VIEW_MESSAGE,
+		PROPOSAL_MESSAGE,
+		VOTE_MESSAGE
+	}
+
+	public static class Event {
+		private final EventType eventType;
+		private final Object eventObject;
+
+		private Event(EventType eventType, Object eventObject) {
+			this.eventType = eventType;
+			this.eventObject = eventObject;
+		}
+
+		@Override
+		public String toString() {
+			return eventType + ": " + eventObject;
+		}
+	}
+
 	private final EventCoordinatorNetworkRx network;
 	private final PacemakerRx pacemaker;
 	private final EventCoordinator eventCoordinator;
 	private final Scheduler singleThreadScheduler = Schedulers.single();
-	private final CompositeDisposable disposable = new CompositeDisposable();
 
 	@Inject
 	public ChainedBFT(
@@ -53,29 +73,34 @@ public final class ChainedBFT {
 		this.eventCoordinator = eventCoordinator;
 	}
 
-	public void start() {
-		this.pacemaker.start();
-
-		final Disposable timeoutDisposable = this.pacemaker.localTimeouts()
+	/**
+	 * Returns a cold observable which when subscribed to begins consuming
+	 * and processing bft events. Does not begin processing until the observable
+	 * is subscribed to.
+	 *
+	 * @return observable of the events which are being processed
+	 */
+	public Observable<Event> processEvents() {
+		final Observable<Event> timeouts = this.pacemaker.localTimeouts()
 			.subscribeOn(this.singleThreadScheduler)
-			.subscribe(this.eventCoordinator::processLocalTimeout);
+			.doAfterNext(this.eventCoordinator::processLocalTimeout)
+			.map(o -> new Event(EventType.LOCAL_TIMEOUT, o));
 
-		final Disposable newRoundDisposable = this.network.newViewMessages()
+		final Observable<Event> newViews = this.network.newViewMessages()
 			.subscribeOn(this.singleThreadScheduler)
-			.subscribe(this.eventCoordinator::processRemoteNewView);
+			.doAfterNext(this.eventCoordinator::processNewView)
+			.map(o -> new Event(EventType.NEW_VIEW_MESSAGE, o));
 
-		final Disposable proposalDisposable = this.network.proposalMessages()
+		final Observable<Event> proposals = this.network.proposalMessages()
 			.subscribeOn(this.singleThreadScheduler)
-			.subscribe(this.eventCoordinator::processProposal);
+			.doAfterNext(this.eventCoordinator::processProposal)
+			.map(o -> new Event(EventType.PROPOSAL_MESSAGE, o));
 
-		final Disposable voteDisposable = this.network.voteMessages()
+		final Observable<Event> votes = this.network.voteMessages()
 			.subscribeOn(this.singleThreadScheduler)
-			.subscribe(this.eventCoordinator::processVote);
+			.doAfterNext(this.eventCoordinator::processVote)
+			.map(o -> new Event(EventType.VOTE_MESSAGE, o));
 
-		disposable.addAll(timeoutDisposable, newRoundDisposable, proposalDisposable, voteDisposable);
-	}
-
-	public void stop() {
-		disposable.dispose();
+		return Observable.merge(timeouts, newViews, proposals, votes);
 	}
 }

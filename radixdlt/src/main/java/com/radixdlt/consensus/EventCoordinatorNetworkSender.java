@@ -15,17 +15,15 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.network;
+package com.radixdlt.consensus;
 
-import com.radixdlt.consensus.NewView;
-import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.Vote;
+import com.radixdlt.common.EUID;
 
 /**
  * Interface for Event Coordinator to send things through a network
  */
 public interface EventCoordinatorNetworkSender {
 	void broadcastProposal(Vertex vertex);
-	void sendNewView(NewView newView);
-	void sendVote(Vote vote);
+	void sendNewView(NewView newView, EUID newViewLeader);
+	void sendVote(Vote vote, EUID leader);
 }

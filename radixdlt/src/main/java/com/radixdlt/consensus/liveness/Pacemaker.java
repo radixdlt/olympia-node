@@ -26,8 +26,31 @@ import java.util.Optional;
  * Interface for an event coordinator to manage the pacemaker
  */
 public interface Pacemaker {
+
+	/**
+	 * Retrieves the local current view the pacemaker is at
+	 * @return view of the pacemaker
+	 */
 	View getCurrentView();
-	boolean processLocalTimeout(View view);
-	Optional<View> processRemoteNewView(NewView newView);
+
+	/**
+	 * Signifies to the pacemaker that a timeout for a given view is processed
+	 * @param view the view to timeout
+	 * @return optional with view, if the pacemaker changes views within the call
+	 */
+	Optional<View> processLocalTimeout(View view);
+
+	/**
+	 * Signifies to the pacemaker that a quorum has agreed that a view has been completed
+	 * @param view the view the quorum agreed to
+	 * @return optional with view, if the pacemaker changes views within the call
+	 */
 	Optional<View> processQC(View view);
+
+	/**
+	 * Adds a new view message to the pacemaker state
+	 * @param newView the new view message
+	 * @return optional with view, if the pacemaker gains a quorum of new views
+	 */
+	Optional<View> processNewView(NewView newView);
 }
