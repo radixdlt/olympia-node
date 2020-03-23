@@ -67,15 +67,15 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 	}
 
 	@Override
-	public boolean processLocalTimeout(View view) {
+	public Optional<View> processLocalTimeout(View view) {
 		if (!view.equals(this.currentView)) {
-			return false;
+			return Optional.empty();
 		}
 
 		this.currentView = currentView.next();
 
 		scheduleTimeout(this.currentView);
-		return true;
+		return Optional.of(this.currentView);
 	}
 
 	@Override

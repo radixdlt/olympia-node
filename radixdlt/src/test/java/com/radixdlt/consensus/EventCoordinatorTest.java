@@ -178,7 +178,7 @@ public class EventCoordinatorTest {
 			SELF_KEY);
 
 		when(proposerElection.getProposer(any())).thenReturn(mock(EUID.class));
-		when(pacemaker.processLocalTimeout(any())).thenReturn(true);
+		when(pacemaker.processLocalTimeout(any())).thenReturn(Optional.of(View.of(1)));
 		when(pacemaker.getCurrentView()).thenReturn(View.of(1));
 		eventCoordinator.processLocalTimeout(View.of(0L));
 		verify(networkSender, times(1)).sendNewView(any(), any());
@@ -195,6 +195,7 @@ public class EventCoordinatorTest {
 		QuorumRequirements quorumRequirements = new SingleNodeQuorumRequirements(SELF_ADDRESS.getUID());
 		PendingVotes pendingVotes = new PendingVotes(quorumRequirements);
 		ProposerElection proposerElection = mock(ProposerElection.class);
+		when(proposerElection.getProposer(any())).thenReturn(mock(EUID.class));
 
 		EventCoordinator eventCoordinator = new EventCoordinator(
 			proposalGenerator,
@@ -207,7 +208,7 @@ public class EventCoordinatorTest {
 			proposerElection,
 			SELF_KEY);
 
-		when(pacemaker.processLocalTimeout(any())).thenReturn(false);
+		when(pacemaker.processLocalTimeout(any())).thenReturn(Optional.empty());
 		eventCoordinator.processLocalTimeout(View.of(0L));
 		verify(networkSender, times(0)).sendNewView(any(), any());
 	}

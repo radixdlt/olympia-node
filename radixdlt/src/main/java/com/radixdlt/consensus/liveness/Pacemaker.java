@@ -31,10 +31,9 @@ public interface Pacemaker {
 	/**
 	 * Notifies pacemaker that the local timeout is being processed.
 	 * @param view the view to timeout
-	 * @return true, if the pacemaker still agrees with the current view to timeout
+	 * @return optional with view, if the pacemaker still agrees with the current view to timeout
 	 */
-	boolean processLocalTimeout(View view);
-
-	Optional<View> processRemoteNewView(NewView newView);
+	Optional<View> processLocalTimeout(View view);
 	Optional<View> processQC(View view);
+	Optional<View> processRemoteNewView(NewView newView);
 }
