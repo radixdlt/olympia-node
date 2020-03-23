@@ -1,20 +1,18 @@
 /*
+ * (C) Copyright 2020 Radix DLT Ltd
  *
- *  * (C) Copyright 2020 Radix DLT Ltd
- *  *
- *  * Radix DLT Ltd licenses this file to you under the Apache License,
- *  * Version 2.0 (the "License"); you may not use this file except in
- *  * compliance with the License.  You may obtain a copy of the
- *  * License at
- *  *
- *  *  http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  * Unless required by applicable law or agreed to in writing,
- *  * software distributed under the License is distributed on an
- *  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
- *  * either express or implied.  See the License for the specific
- *  * language governing permissions and limitations under the License.
+ * Radix DLT Ltd licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License.  You may obtain a copy of the
+ * License at
  *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied.  See the License for the specific
+ * language governing permissions and limitations under the License.
  */
 
 package com.radixdlt.crypto.encryption;
@@ -30,6 +28,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.KeySpec;
 import java.util.Arrays;
+import java.util.Objects;
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.crypto.SecretKeyFactory;
@@ -59,22 +58,22 @@ public final class PrivateKeyEncrypter {
 
     public static String createEncryptedPrivateKey(String password) throws GeneralSecurityException {
         ECKeyPair ecKeyPair = new ECKeyPair();
-        String privateKey = Bytes.toHexString(ecKeyPair.getPrivateKey());
+        String privateKey = Objects.requireNonNull(Bytes.toHexString(ecKeyPair.getPrivateKey()));
         byte[] salt = getSalt().getBytes(StandardCharsets.UTF_8);
 
-        SecretKey derivedKey = getSecretKey(password, salt, ITERATIONS, KEY_LENGTH);
+        SecretKey derivedKey = Objects.requireNonNull(getSecretKey(password, salt, ITERATIONS, KEY_LENGTH));
 
-        Cipher cipher = Cipher.getInstance("AES/CTR/NoPadding");
+        Cipher cipher = Objects.requireNonNull(Cipher.getInstance("AES/CTR/NoPadding"));
         cipher.init(Cipher.ENCRYPT_MODE, derivedKey);
         byte[] iv = cipher.getParameters().getParameterSpec(IvParameterSpec.class).getIV();
 
         String cipherText = encrypt(cipher, privateKey);
         byte[] mac = generateMac(derivedKey.getEncoded(), Bytes.fromHexString(cipherText));
 
-        Keystore keystore = createKeystore(ecKeyPair, cipherText, mac, iv, salt);
+        Keystore keystore = Objects.requireNonNull(createKeystore(ecKeyPair, cipherText, mac, iv, salt));
 
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
-        return gson.toJson(keystore);
+        return Objects.requireNonNull(gson.toJson(keystore));
     }
 
     public static byte[] decryptPrivateKey(String password, Reader keyReader) throws IOException, GeneralSecurityException {

@@ -31,7 +31,7 @@ class SHAHashHandler implements HashHandler {
 	private final ThreadLocal<MessageDigest> hash512Digester = ThreadLocal.withInitial(() -> getDigester("SHA-512"));
 
 	SHAHashHandler() {
-		// cannot construct
+
 	}
 
 	/**

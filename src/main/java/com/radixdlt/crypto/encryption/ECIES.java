@@ -1,20 +1,18 @@
 /*
+ * (C) Copyright 2020 Radix DLT Ltd
  *
- *  * (C) Copyright 2020 Radix DLT Ltd
- *  *
- *  * Radix DLT Ltd licenses this file to you under the Apache License,
- *  * Version 2.0 (the "License"); you may not use this file except in
- *  * compliance with the License.  You may obtain a copy of the
- *  * License at
- *  *
- *  *  http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  * Unless required by applicable law or agreed to in writing,
- *  * software distributed under the License is distributed on an
- *  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
- *  * either express or implied.  See the License for the specific
- *  * language governing permissions and limitations under the License.
+ * Radix DLT Ltd licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License.  You may obtain a copy of the
+ * License at
  *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied.  See the License for the specific
+ * language governing permissions and limitations under the License.
  */
 
 package com.radixdlt.crypto.encryption;
@@ -36,22 +34,32 @@ import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
 import java.util.Arrays;
-import java.util.Random;
 
 /**
  * Encrypt and Decrypt data using ECIES
  * (Elliptic Curve <a href="https://en.wikipedia.org/wiki/Integrated_Encryption_Scheme">Integrated Encryption Scheme</a>, subset of DHIES):
  */
 public final class ECIES {
+
+	private static SecureRandom secureRandom;
+
+	static {
+		install();
+	}
+
+	static synchronized void install() {
+		secureRandom = new SecureRandom();
+	}
+
 	private ECIES() {
-		// cannot construct
+		throw new IllegalStateException("Can't construct");
 	}
 
 	public static <M extends ECMultiplicationScalar> byte[] decrypt(byte[] data, M multiplicationScalar) throws ECIESException {
 		try {
 			DataInputStream inputStream = new DataInputStream(new ByteArrayInputStream(data));
 
-			// 1. Read the IV
+			// 1. Read the `IV` (as in `initialization vector`)
 			byte[] iv = new byte[16];
 			inputStream.readFully(iv);
 
@@ -99,12 +107,11 @@ public final class ECIES {
 
 	private static byte[] encrypt(byte[] data, ECPoint publicKeyPointOnCurve) throws ECIESException {
 		try {
-			Random rand = new SecureRandom();
-
 			// 1. The destination is this.getPublicKey()
-			// 2. Generate 16 random bytes using a secure random number generator. Call them IV
+			// 2. Generate 16 random bytes using a secure random number generator.
+			// Call them `IV` (as in `initialization vector`)
 			byte[] iv = new byte[16];
-			rand.nextBytes(iv);
+			secureRandom.nextBytes(iv);
 
 			// 3. Generate a new ephemeral EC key pair
 			ECKeyPair ephemeral = new ECKeyPair(); // ECKeyPairGenerator.newInstance().generateKeyPair((publicKey.length - 1) * 8);

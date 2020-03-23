@@ -50,7 +50,6 @@ public class ECKeyUtils {
 	private static byte[] order;
 
 	public static SecureRandom secureRandom() {
-		System.out.println("ECKeyUtils - static `secureRandom()`");
 		return secureRandom;
 	}
 
@@ -67,12 +66,10 @@ public class ECKeyUtils {
 	}
 
 	static {
-		System.out.println("ECKeyUtils - static `{}`");
 		install();
 	}
 
 	static synchronized void install() {
-		System.out.println("ECKeyUtils - static `install()`");
 		if (RuntimeUtils.isAndroidRuntime()) {
 			new LinuxSecureRandom();
 			// Ensure the library version of BouncyCastle is used for Android

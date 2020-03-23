@@ -50,7 +50,7 @@ public final class RadixAddress {
 	/**
 	 * The magic byte of this address
 	 */
-	private final transient int magicByte; // MIGRATION: From Client Library
+	private final transient int magicByte;
 
 	public RadixAddress(byte magic, ECPublicKey publicKey) {
 		this.publicKey = Objects.requireNonNull(publicKey);

@@ -52,19 +52,9 @@ final class BouncyCastleKeyHandler implements KeyHandler {
 		this.spec = new ECParameterSpec(curve.getCurve(), curve.getG(), curve.getN(), curve.getH());
 	}
 
-	/**
-	 * Signs data using the ECPrivateKey resulting in an ECDSA signature.
-	 *
-	 * @param hash The hashed data to sign
-	 * @param enforceLowS If signature should enforce low values of signature part `S`, according to
-	 * <a href="https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki#Low_S_values_in_signatures">BIP-62</a>
-	 * @param beDeterministic If signing should use randomness or be deterministic according to
-	 * <a href="https://tools.ietf.org/html/rfc6979">RFC6979</a>.
-	 * @return An ECDSA Signature.
-	 */
 	@Override
-	public ECDSASignature sign(byte[] hash, byte[] privateKey, boolean enforceLowS, boolean beDeterministic) throws CryptoException {
-		final DSAKCalculator kCalculator = beDeterministic ? new HMacDSAKCalculator(new SHA256Digest()) : new RandomDSAKCalculator();
+	public ECDSASignature sign(byte[] hash, byte[] privateKey, boolean enforceLowS, boolean useDeterministicSignatures) throws CryptoException {
+		final DSAKCalculator kCalculator = useDeterministicSignatures ? new HMacDSAKCalculator(new SHA256Digest()) : new RandomDSAKCalculator();
 		ECDSASigner signer = new ECDSASigner(kCalculator);
 		BigInteger privateKeyScalar = new BigInteger(1, privateKey);
 		ECPrivateKeyParameters privateKeyParameters = new ECPrivateKeyParameters(privateKeyScalar, domain);

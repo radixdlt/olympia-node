@@ -24,6 +24,7 @@ import com.radixdlt.utils.Bytes;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Objects;
 import java.util.function.Supplier;
 
 public final class Hash implements Comparable<Hash> {
@@ -94,7 +95,7 @@ public final class Hash implements Comparable<Hash> {
 	/**
 	 * This does NOT perform any hashing, the byte array passed should be already hashed.
 	 * <p>
-	 * If you want to hash the data, use the any of the static methods
+	 * If you want to hash the data, use any of the static methods
 	 * {@link Hash#hash256(byte[])} or {@link Hash#hash512(byte[])} instead.
 	 *
 	 * @param alreadyHashedData The data that has already been hashed.
@@ -107,7 +108,7 @@ public final class Hash implements Comparable<Hash> {
 	/**
 	 * This does NOT perform any hashing, the byte array passed should be already hashed.
 	 * <p>
-	 * If you want to hash the data, use the any of the static methods
+	 * If you want to hash the data, use any of the static methods
 	 * {@link Hash#hash256(byte[])} or {@link Hash#hash512(byte[])} instead.
 	 *
 	 * @param alreadyHashedData The data that has already been hashed.
@@ -116,6 +117,7 @@ public final class Hash implements Comparable<Hash> {
 	 * @return a container for the already hashed data.
 	 */
 	public Hash(byte[] alreadyHashedData, int offset, int length) {
+		Objects.requireNonNull(alreadyHashedData);
 		if (length != BYTES) {
 			throw new IllegalArgumentException("Digest length must be " + BYTES + " bytes for Hash, was " + length);
 		}
@@ -133,13 +135,14 @@ public final class Hash implements Comparable<Hash> {
 	/**
 	 * This does NOT perform any hashing, the byte array passed should be already hashed.
 	 * <p>
-	 * If you want to hash the data, use the any of the static methods
+	 * If you want to hash the data, use any of the static methods
 	 * {@link Hash#hash256(byte[])} or {@link Hash#hash512(byte[])} instead.
 	 *
 	 * @param alreadyHashedDataAsHexString The data that has already been hashed, as a hexadecimal string
 	 * @return a container for the already hashed data.
 	 */
 	public Hash(String alreadyHashedDataAsHexString) {
+		Objects.requireNonNull(alreadyHashedDataAsHexString);
 		if (alreadyHashedDataAsHexString.length() != (BYTES * 2)) {
 			throw new IllegalArgumentException(String.format(
 				"Digest length must be %s hex characters for Hash, was %s", BYTES * 2, alreadyHashedDataAsHexString.length()));

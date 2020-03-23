@@ -132,7 +132,6 @@ public final class ECDSASignature implements Signature {
 		return SignatureScheme.ECDSA;
 	}
 
-	// ### From Client library ###
 	public static ECDSASignature decodeFromDER(byte[] bytes) {
 		DLSequence seq;
 		ASN1Integer r, s;
@@ -140,8 +139,10 @@ public final class ECDSASignature implements Signature {
 			seq = (DLSequence) decoder.readObject();
 			r = (ASN1Integer) seq.getObjectAt(0);
 			s = (ASN1Integer) seq.getObjectAt(1);
-		} catch (ClassCastException | IOException e) {
-			throw new IllegalArgumentException(e);
+		} catch (IOException e) {
+			throw new IllegalArgumentException("Failed to read bytes as ASN1 decode bytes", e);
+		} catch (ClassCastException e) {
+			throw new IllegalStateException("Failed to cast to ASN1Integer", e);
 		}
 
 		return new ECDSASignature(r.getPositiveValue(), s.getPositiveValue());

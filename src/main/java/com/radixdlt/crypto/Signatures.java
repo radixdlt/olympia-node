@@ -27,23 +27,23 @@ public interface Signatures {
 
     /**
      * Checks whether or not this collection of {@link Signature}s and their corresponding {@link ECPublicKey}s indeed has signed the message,
-     * requiring that at least {@code requiredMinimumNumberOfValidSignatures} of the signatures are valid.
+     * requiring that at least {@code minimumValidSignatures} of the signatures are valid.
      * @param message The hashed data to check against (the data that has been signed).
-     * @param requiredMinimumNumberOfValidSignatures The required minimum number of valid signatures.
-     * @return If the number of valid signatures having signed {@code message} is greater or equal to {@code requiredMinimumNumberOfValidSignatures}
+     * @param minimumValidSignatures The required minimum number of valid signatures.
+     * @return If the number of valid signatures having signed {@code message} is greater or equal to {@code minimumValidSignatures}
      */
-    default boolean hasSignedMessage(Hash message, int requiredMinimumNumberOfValidSignatures) {
-        return hasSignedMessage(message.toByteArray(), requiredMinimumNumberOfValidSignatures);
+    default boolean hasSignedMessage(Hash message, int minimumValidSignatures) {
+        return hasSignedMessage(message.toByteArray(), minimumValidSignatures);
     }
 
     /**
      * Checks whether or not this collection of {@link Signature}s and their corresponding {@link ECPublicKey}s indeed has signed the message,
-     * requiring that at least {@code requiredMinimumNumberOfValidSignatures} of the signatures are valid.
+     * requiring that at least {@code minimumValidSignatures} of the signatures are valid.
      * @param message The hashed data to check against (the data that has been signed).
-     * @param requiredMinimumNumberOfValidSignatures The required minimum number of valid signatures.
-     * @return If the number of valid signatures having signed {@code message} is greater or equal to {@code requiredMinimumNumberOfValidSignatures}
+     * @param minimumValidSignatures The required minimum number of valid signatures.
+     * @return If the number of valid signatures having signed {@code message} is greater or equal to {@code minimumValidSignatures}
      */
-    boolean hasSignedMessage(byte[] message, int requiredMinimumNumberOfValidSignatures);
+    boolean hasSignedMessage(byte[] message, int minimumValidSignatures);
 
     /**
      * Returns a new instance of {@link Signatures}, concatenated with the {@code signature},

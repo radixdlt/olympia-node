@@ -37,6 +37,9 @@ import org.bouncycastle.math.ec.ECPoint;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.util.Arrays;
@@ -96,7 +99,6 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
 		if (seed.length == 0) {
 			throw new IllegalArgumentException("Seed must not be empty");
 		}
-
 
 		byte[] privateKey = Hash.hash256(seed);
 
@@ -214,14 +216,28 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
 	}
 
 	public static ECKeyPair fromFile(File file) throws CryptoException {
-		try (BufferedInputStream io = new BufferedInputStream(new FileInputStream(file))) {
-			byte[] privateKey = new byte[32];
-			int len = io.read(privateKey, 0, 32);
+		InputStream inputStream;
+		try {
+			inputStream = new FileInputStream(file);
+		} catch (FileNotFoundException e) {
+			throw new IllegalArgumentException("Failed to read file", e);
+		}
 
-			if (len < 32) {
-				throw new IllegalStateException("Private Key file must be 32 bytes");
-			}
+		BufferedInputStream io = new BufferedInputStream(inputStream);
 
+		byte[] privateKey = new byte[32];
+		int len = 0;
+		try {
+			len = io.read(privateKey, 0, 32);
+		} catch (IOException e) {
+			throw new IllegalArgumentException("Failed to read 32 bytes from content of file", e);
+		}
+
+		if (len < 32) {
+			throw new IllegalStateException("Private Key file must be 32 bytes");
+		}
+
+		try {
 			return new ECKeyPair(privateKey);
 		} catch (Exception e) {
 			throw new CryptoException("Failed to create KeyPair from file", e);
@@ -252,7 +268,7 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
 		try {
 			encryptedPrivateKeyBytes = publicKeyUsedToEncrypt.encrypt(this.privateKey);
 		} catch (ECIESException e) {
-			e.printStackTrace();
+			throw new IllegalStateException("Failed to encrypt `this.privateKey` with provided `ECPublicKey`", e);
 		}
 		return new EncryptedPrivateKey(encryptedPrivateKeyBytes);
 	}
