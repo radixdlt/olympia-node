@@ -18,28 +18,24 @@
 package com.radixdlt.consensus;
 
 import com.google.common.collect.Lists;
-import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.Atom;
 import com.radixdlt.common.EUID;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposerElection;
-import com.radixdlt.consensus.safety.QuorumRequirements;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyViolationException;
-import com.radixdlt.consensus.safety.SingleNodeQuorumRequirements;
 import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.RadixEngineErrorCode;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.mempool.Mempool;
-import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.Ints;
 import java.util.Optional;
+import org.junit.Before;
 import org.junit.Test;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -48,14 +44,46 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class EventCoordinatorTest {
 	private static final ECKeyPair SELF_KEY = makeKeyPair();
-	private static final ECPublicKey SELF_PUB_KEY = SELF_KEY.getPublicKey();
-	private static final RadixAddress SELF_ADDRESS = makeAddressFrom(SELF_PUB_KEY);
+
+	private EventCoordinator eventCoordinator;
+	private ProposalGenerator proposalGenerator;
+	private ProposerElection proposerElection;
+	private SafetyRules safetyRules;
+	private Pacemaker pacemaker;
+	private PendingVotes pendingVotes;
+	private Mempool mempool;
+	private EventCoordinatorNetworkSender networkSender;
+	private VertexStore vertexStore;
+
+	@Before
+	public void setUp() {
+		this.proposalGenerator = mock(ProposalGenerator.class);
+		this.mempool = mock(Mempool.class);
+		this.networkSender = mock(EventCoordinatorNetworkSender.class);
+		this.safetyRules = mock(SafetyRules.class);
+		this.pacemaker = mock(Pacemaker.class);
+		this.vertexStore = mock(VertexStore.class);
+		this.pendingVotes = mock(PendingVotes.class);
+		this.proposerElection = mock(ProposerElection.class);
+
+		this.eventCoordinator = new EventCoordinator(
+			proposalGenerator,
+			mempool,
+			networkSender,
+			safetyRules,
+			pacemaker,
+			vertexStore,
+			pendingVotes,
+			proposerElection,
+			SELF_KEY);
+	}
 
 	private static AID makeAID(int n) {
 		byte[] temp = new byte[AID.BYTES];
@@ -71,35 +99,8 @@ public class EventCoordinatorTest {
 		}
 	}
 
-	private static RadixAddress makeAddressFrom(ECPublicKey pubKey) {
-		Universe universe = mock(Universe.class);
-		when(universe.getMagic()).thenReturn(127); // no special significance
-		return RadixAddress.from(universe, pubKey);
-	}
-
 	@Test
 	public void when_processing_vote_as_not_proposer__then_nothing_happens() {
-		ProposalGenerator proposalGenerator = mock(ProposalGenerator.class);
-		Mempool mempool = mock(Mempool.class);
-		EventCoordinatorNetworkSender networkSender = mock(EventCoordinatorNetworkSender.class);
-		SafetyRules safetyRules = mock(SafetyRules.class);
-		Pacemaker pacemaker = mock(Pacemaker.class);
-		VertexStore vertexStore = mock(VertexStore.class);
-		QuorumRequirements quorumRequirements = new SingleNodeQuorumRequirements(SELF_ADDRESS.getUID());
-		PendingVotes pendingVotes = new PendingVotes(quorumRequirements);
-		ProposerElection proposerElection = mock(ProposerElection.class);
-
-		EventCoordinator eventCoordinator = new EventCoordinator(
-			proposalGenerator,
-			mempool,
-			networkSender,
-			safetyRules,
-			pacemaker,
-			vertexStore,
-			pendingVotes,
-			proposerElection,
-			SELF_KEY);
-
 		Vote voteMessage = mock(Vote.class);
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
 		when(voteMessage.getVertexMetadata()).thenReturn(vertexMetadata);
@@ -113,26 +114,6 @@ public class EventCoordinatorTest {
 
 	@Test
 	public void when_processing_vote_as_a_proposer_and_quorum_is_reached__then_a_new_view_is_sent() {
-		ProposalGenerator proposalGenerator = mock(ProposalGenerator.class);
-		Mempool mempool = mock(Mempool.class);
-		EventCoordinatorNetworkSender networkSender = mock(EventCoordinatorNetworkSender.class);
-		SafetyRules safetyRules = mock(SafetyRules.class);
-		Pacemaker pacemaker = mock(Pacemaker.class);
-		VertexStore vertexStore = mock(VertexStore.class);
-		PendingVotes pendingVotes = mock(PendingVotes.class);
-		ProposerElection proposerElection = mock(ProposerElection.class);
-
-		EventCoordinator eventCoordinator = new EventCoordinator(
-			proposalGenerator,
-			mempool,
-			networkSender,
-			safetyRules,
-			pacemaker,
-			vertexStore,
-			pendingVotes,
-			proposerElection,
-			SELF_KEY);
-
 		when(proposerElection.getProposer(any())).thenReturn(SELF_KEY.getUID());
 		when(proposerElection.isValidProposer(eq(SELF_KEY.getUID()), any())).thenReturn(true);
 
@@ -157,27 +138,6 @@ public class EventCoordinatorTest {
 
 	@Test
 	public void when_processing_relevant_local_timeout__then_new_view_is_emitted() {
-		ProposalGenerator proposalGenerator = mock(ProposalGenerator.class);
-		Mempool mempool = mock(Mempool.class);
-		EventCoordinatorNetworkSender networkSender = mock(EventCoordinatorNetworkSender.class);
-		SafetyRules safetyRules = mock(SafetyRules.class);
-		Pacemaker pacemaker = mock(Pacemaker.class);
-		VertexStore vertexStore = mock(VertexStore.class);
-		QuorumRequirements quorumRequirements = new SingleNodeQuorumRequirements(SELF_ADDRESS.getUID());
-		PendingVotes pendingVotes = new PendingVotes(quorumRequirements);
-		ProposerElection proposerElection = mock(ProposerElection.class);
-
-		EventCoordinator eventCoordinator = new EventCoordinator(
-			proposalGenerator,
-			mempool,
-			networkSender,
-			safetyRules,
-			pacemaker,
-			vertexStore,
-			pendingVotes,
-			proposerElection,
-			SELF_KEY);
-
 		when(proposerElection.getProposer(any())).thenReturn(mock(EUID.class));
 		when(pacemaker.processLocalTimeout(any())).thenReturn(Optional.of(View.of(1)));
 		when(pacemaker.getCurrentView()).thenReturn(View.of(1));
@@ -187,56 +147,13 @@ public class EventCoordinatorTest {
 
 	@Test
 	public void when_processing_irrelevant_local_timeout__then_new_view_is_not_emitted() {
-		ProposalGenerator proposalGenerator = mock(ProposalGenerator.class);
-		Mempool mempool = mock(Mempool.class);
-		EventCoordinatorNetworkSender networkSender = mock(EventCoordinatorNetworkSender.class);
-		SafetyRules safetyRules = mock(SafetyRules.class);
-		Pacemaker pacemaker = mock(Pacemaker.class);
-		VertexStore vertexStore = mock(VertexStore.class);
-		QuorumRequirements quorumRequirements = new SingleNodeQuorumRequirements(SELF_ADDRESS.getUID());
-		PendingVotes pendingVotes = new PendingVotes(quorumRequirements);
-		ProposerElection proposerElection = mock(ProposerElection.class);
-		when(proposerElection.getProposer(any())).thenReturn(mock(EUID.class));
-
-		EventCoordinator eventCoordinator = new EventCoordinator(
-			proposalGenerator,
-			mempool,
-			networkSender,
-			safetyRules,
-			pacemaker,
-			vertexStore,
-			pendingVotes,
-			proposerElection,
-			SELF_KEY);
-
 		when(pacemaker.processLocalTimeout(any())).thenReturn(Optional.empty());
 		eventCoordinator.processLocalTimeout(View.of(0L));
 		verify(networkSender, times(0)).sendNewView(any(), any());
 	}
 
 	@Test
-	public void when_processing_remote_new_view_as_proposer__then_new_view_is_emitted() {
-		ProposalGenerator proposalGenerator = mock(ProposalGenerator.class);
-		Mempool mempool = mock(Mempool.class);
-		EventCoordinatorNetworkSender networkSender = mock(EventCoordinatorNetworkSender.class);
-		SafetyRules safetyRules = mock(SafetyRules.class);
-		Pacemaker pacemaker = mock(Pacemaker.class);
-		VertexStore vertexStore = mock(VertexStore.class);
-		QuorumRequirements quorumRequirements = new SingleNodeQuorumRequirements(SELF_ADDRESS.getUID());
-		PendingVotes pendingVotes = new PendingVotes(quorumRequirements);
-		ProposerElection proposerElection = mock(ProposerElection.class);
-
-		EventCoordinator eventCoordinator = new EventCoordinator(
-			proposalGenerator,
-			mempool,
-			networkSender,
-			safetyRules,
-			pacemaker,
-			vertexStore,
-			pendingVotes,
-			proposerElection,
-			SELF_KEY);
-
+	public void when_processing_new_view_as_proposer__then_new_view_is_emitted() {
 		NewView newView = mock(NewView.class);
 		when(newView.getQc()).thenReturn(mock(QuorumCertificate.class));
 		when(newView.getView()).thenReturn(View.of(0L));
@@ -247,28 +164,7 @@ public class EventCoordinatorTest {
 	}
 
 	@Test
-	public void when_processing_remote_new_view_as_not_proposer__then_new_view_is_not_emitted() {
-		ProposalGenerator proposalGenerator = mock(ProposalGenerator.class);
-		Mempool mempool = mock(Mempool.class);
-		EventCoordinatorNetworkSender networkSender = mock(EventCoordinatorNetworkSender.class);
-		SafetyRules safetyRules = mock(SafetyRules.class);
-		Pacemaker pacemaker = mock(Pacemaker.class);
-		VertexStore vertexStore = mock(VertexStore.class);
-		QuorumRequirements quorumRequirements = new SingleNodeQuorumRequirements(SELF_ADDRESS.getUID());
-		PendingVotes pendingVotes = new PendingVotes(quorumRequirements);
-		ProposerElection proposerElection = mock(ProposerElection.class);
-
-		EventCoordinator eventCoordinator = new EventCoordinator(
-			proposalGenerator,
-			mempool,
-			networkSender,
-			safetyRules,
-			pacemaker,
-			vertexStore,
-			pendingVotes,
-			proposerElection,
-			SELF_KEY);
-
+	public void when_processing_new_view_as_not_proposer__then_new_view_is_not_emitted() {
 		NewView newView = mock(NewView.class);
 		when(newView.getView()).thenReturn(View.of(0L));
 		when(proposerElection.isValidProposer(any(), any())).thenReturn(false);
@@ -277,28 +173,17 @@ public class EventCoordinatorTest {
 	}
 
 	@Test
+	public void when_processing_old_proposal__then_no_vertex_is_inserted() throws Exception {
+		when(pacemaker.getCurrentView()).thenReturn(View.of(10));
+
+		Vertex vertex = mock(Vertex.class);
+		when(vertex.getView()).thenReturn(View.of(9));
+		eventCoordinator.processProposal(vertex);
+		verify(vertexStore, never()).insertVertex(any());
+	}
+
+	@Test
 	public void when_processing_invalid_proposal__then_atom_is_rejected() throws Exception {
-		ProposalGenerator proposalGenerator = mock(ProposalGenerator.class);
-		Mempool mempool = mock(Mempool.class);
-		EventCoordinatorNetworkSender networkSender = mock(EventCoordinatorNetworkSender.class);
-		SafetyRules safetyRules = mock(SafetyRules.class);
-		Pacemaker pacemaker = mock(Pacemaker.class);
-		VertexStore vertexStore = mock(VertexStore.class);
-		QuorumRequirements quorumRequirements = new SingleNodeQuorumRequirements(SELF_ADDRESS.getUID());
-		PendingVotes pendingVotes = new PendingVotes(quorumRequirements);
-		ProposerElection proposerElection = mock(ProposerElection.class);
-
-		EventCoordinator eventCoordinator = new EventCoordinator(
-			proposalGenerator,
-			mempool,
-			networkSender,
-			safetyRules,
-			pacemaker,
-			vertexStore,
-			pendingVotes,
-			proposerElection,
-			SELF_KEY);
-
 		View currentView = View.of(123);
 
 		Vertex proposedVertex = mock(Vertex.class);
@@ -320,27 +205,6 @@ public class EventCoordinatorTest {
 	@Test
 	public void when_processing_valid_stored_proposal__then_atom_is_voted_on_and_removed()
 		throws SafetyViolationException {
-		ProposalGenerator proposalGenerator = mock(ProposalGenerator.class);
-		Mempool mempool = mock(Mempool.class);
-		EventCoordinatorNetworkSender networkSender = mock(EventCoordinatorNetworkSender.class);
-		SafetyRules safetyRules = mock(SafetyRules.class);
-		Pacemaker pacemaker = mock(Pacemaker.class);
-		VertexStore vertexStore = mock(VertexStore.class);
-		QuorumRequirements quorumRequirements = new SingleNodeQuorumRequirements(SELF_ADDRESS.getUID());
-		PendingVotes pendingVotes = new PendingVotes(quorumRequirements);
-		ProposerElection proposerElection = mock(ProposerElection.class);
-
-		EventCoordinator eventCoordinator = new EventCoordinator(
-			proposalGenerator,
-			mempool,
-			networkSender,
-			safetyRules,
-			pacemaker,
-			vertexStore,
-			pendingVotes,
-			proposerElection,
-			SELF_KEY);
-
 		View currentView = View.of(123);
 
 		when(proposerElection.getProposer(any())).thenReturn(mock(EUID.class));
@@ -364,27 +228,6 @@ public class EventCoordinatorTest {
 
 	@Test
 	public void when_processing_valid_stored_proposal_and_there_exists_a_new_commit__the_new_commit_atom_is_removed_from_mempool() throws Exception {
-		ProposalGenerator proposalGenerator = mock(ProposalGenerator.class);
-		Mempool mempool = mock(Mempool.class);
-		EventCoordinatorNetworkSender networkSender = mock(EventCoordinatorNetworkSender.class);
-		SafetyRules safetyRules = mock(SafetyRules.class);
-		Pacemaker pacemaker = mock(Pacemaker.class);
-		VertexStore vertexStore = mock(VertexStore.class);
-		ProposerElection proposerElection = mock(ProposerElection.class);
-		QuorumRequirements quorumRequirements = new SingleNodeQuorumRequirements(SELF_ADDRESS.getUID());
-		PendingVotes pendingVotes = new PendingVotes(quorumRequirements);
-
-		EventCoordinator eventCoordinator = new EventCoordinator(
-			proposalGenerator,
-			mempool,
-			networkSender,
-			safetyRules,
-			pacemaker,
-			vertexStore,
-			pendingVotes,
-			proposerElection,
-			SELF_KEY);
-
 		View currentView = View.of(123);
 
 		when(pacemaker.processQC(any())).thenReturn(Optional.empty());
