@@ -242,8 +242,8 @@ public class EventCoordinatorTest {
 		when(newView.getView()).thenReturn(View.of(0L));
 		when(proposerElection.isValidProposer(any(), any())).thenReturn(true);
 		when(proposerElection.getProposer(any())).thenReturn(mock(EUID.class));
-		eventCoordinator.processRemoteNewView(newView);
-		verify(pacemaker, times(1)).processRemoteNewView(any());
+		eventCoordinator.processNewView(newView);
+		verify(pacemaker, times(1)).processNewView(any());
 	}
 
 	@Test
@@ -272,8 +272,8 @@ public class EventCoordinatorTest {
 		NewView newView = mock(NewView.class);
 		when(newView.getView()).thenReturn(View.of(0L));
 		when(proposerElection.isValidProposer(any(), any())).thenReturn(false);
-		eventCoordinator.processRemoteNewView(newView);
-		verify(pacemaker, times(0)).processRemoteNewView(any());
+		eventCoordinator.processNewView(newView);
+		verify(pacemaker, times(0)).processNewView(any());
 	}
 
 	@Test

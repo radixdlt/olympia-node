@@ -153,15 +153,7 @@ public final class EventCoordinator {
 		}
 	}
 
-	public void processLocalTimeout(View view) {
-		log.info(this.getShortName() + ": Processing LOCAL_TIMEOUT: " + view);
-
-		// proceed to next view if pacemaker feels like it
-		this.pacemaker.processLocalTimeout(view)
-			.ifPresent(this::proceedToView);
-	}
-
-	public void processRemoteNewView(NewView newView) {
+	public void processNewView(NewView newView) {
 		log.info(this.getShortName() + ": Processing NEW_VIEW_MESSAGE: " + newView);
 
 		// only do something if we're actually the leader for the next view
@@ -172,7 +164,7 @@ public final class EventCoordinator {
 
 		this.processQC(newView.getQc());
 
-		this.pacemaker.processRemoteNewView(newView)
+		this.pacemaker.processNewView(newView)
 			.ifPresent(this::startQuorumNewView);
 	}
 
@@ -219,5 +211,13 @@ public final class EventCoordinator {
 
 		// TODO: Proceed to next view if not leader or next leader
 		// TODO: For now, just depend on Timeout events
+	}
+
+	public void processLocalTimeout(View view) {
+		log.info(this.getShortName() + ": Processing LOCAL_TIMEOUT: " + view);
+
+		// proceed to next view if pacemaker feels like it
+		this.pacemaker.processLocalTimeout(view)
+			.ifPresent(this::proceedToView);
 	}
 }

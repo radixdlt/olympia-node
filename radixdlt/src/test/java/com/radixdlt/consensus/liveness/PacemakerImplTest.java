@@ -148,7 +148,7 @@ public class PacemakerImplTest {
 		when(newViewWithoutSignature.getView()).thenReturn(View.of(2L));
 		when(newViewWithoutSignature.getSignature()).thenReturn(Optional.empty());
 
-		assertThatThrownBy(() -> pacemaker.processRemoteNewView(newViewWithoutSignature));
+		assertThatThrownBy(() -> pacemaker.processNewView(newViewWithoutSignature));
 	}
 
 	@Test
@@ -159,10 +159,10 @@ public class PacemakerImplTest {
 		QuorumRequirements quorumRequirements = WhitelistQuorum.from(newView1.getAuthor());
 		ScheduledExecutorService executorService = getMockedExecutorService();
 		PacemakerImpl pacemaker = new PacemakerImpl(quorumRequirements, executorService);
-		assertThatThrownBy(() -> pacemaker.processRemoteNewView(newView2))
+		assertThatThrownBy(() -> pacemaker.processNewView(newView2))
 			.isInstanceOf(IllegalArgumentException.class);
-		pacemaker.processRemoteNewView(newView1);
-		assertThatThrownBy(() -> pacemaker.processRemoteNewView(newView2))
+		pacemaker.processNewView(newView1);
+		assertThatThrownBy(() -> pacemaker.processNewView(newView2))
 			.isInstanceOf(IllegalArgumentException.class);
 	}
 
@@ -174,8 +174,8 @@ public class PacemakerImplTest {
 		QuorumRequirements quorumRequirements = WhitelistQuorum.from(newView1.getAuthor(), newView2.getAuthor());
 		ScheduledExecutorService executorService = getMockedExecutorService();
 		PacemakerImpl pacemaker = new PacemakerImpl(quorumRequirements, executorService);
-		pacemaker.processRemoteNewView(newView1);
-		assertThat(pacemaker.processRemoteNewView(newView2)).isNotEmpty();
+		pacemaker.processNewView(newView1);
+		assertThat(pacemaker.processNewView(newView2)).isNotEmpty();
 	}
 
 	private NewView makeNewViewFor(View view) {
@@ -202,7 +202,7 @@ public class PacemakerImplTest {
 		View view = mock(View.class);
 		ECKeyPair keyPair = new ECKeyPair();
 		NewView newView = new NewView(keyPair.getPublicKey(), view, mock(QuorumCertificate.class), mock(ECDSASignature.class));
-		assertThat(pacemaker.processRemoteNewView(newView))
+		assertThat(pacemaker.processNewView(newView))
 			.get()
 			.isEqualTo(view);
 	}

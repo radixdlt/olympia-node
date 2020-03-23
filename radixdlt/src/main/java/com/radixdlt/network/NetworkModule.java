@@ -26,9 +26,6 @@ import com.radixdlt.mempool.MempoolNetworkTx;
 
 public class NetworkModule extends AbstractModule {
 
-	public NetworkModule() {
-	}
-
 	@Override
 	protected void configure() {
 		// provides (for SharedMempool)

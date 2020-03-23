@@ -27,7 +27,7 @@ import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.VertexStore;
 import com.radixdlt.consensus.View;
-import com.radixdlt.consensus.liveness.SingleLeader;
+import com.radixdlt.consensus.liveness.Dictatorship;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.PacemakerImpl;
 import com.radixdlt.consensus.liveness.PacemakerRx;
@@ -40,7 +40,6 @@ import com.radixdlt.consensus.tempo.SingleThreadedScheduler;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.universe.Universe;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
@@ -65,7 +64,7 @@ public class CerberusModule extends AbstractModule {
 	private ProposerElection proposerElection(
 		@Named("self") ECKeyPair selfKey
 	) {
-		return new SingleLeader(selfKey.getUID());
+		return new Dictatorship(selfKey.getUID());
 	}
 
 	@Provides
@@ -79,7 +78,7 @@ public class CerberusModule extends AbstractModule {
 	private VertexStore getVertexStore(
 		Universe universe,
 		RadixEngine radixEngine
-	) throws RadixEngineException {
+	) {
 		if (universe.getGenesis().size() != 1) {
 			throw new IllegalStateException("Can only support one genesis atom.");
 		}

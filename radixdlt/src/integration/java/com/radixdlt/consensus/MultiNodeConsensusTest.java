@@ -1,3 +1,20 @@
+/*
+ * (C) Copyright 2020 Radix DLT Ltd
+ *
+ * Radix DLT Ltd licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License.  You may obtain a copy of the
+ * License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied.  See the License for the specific
+ * language governing permissions and limitations under the License.
+ */
+
 package com.radixdlt.consensus;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
@@ -15,7 +32,7 @@ import com.radixdlt.consensus.liveness.PacemakerImpl;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.RotatingLeaders;
-import com.radixdlt.consensus.liveness.SingleLeader;
+import com.radixdlt.consensus.liveness.Dictatorship;
 import com.radixdlt.consensus.safety.QuorumRequirements;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyState;
@@ -124,7 +141,7 @@ public class MultiNodeConsensusTest {
 	public void given_3_correct_bft_instances_with_single_leader__then_all_instances_should_get_3_commits() throws Exception {
 		final List<ECKeyPair> nodes = Arrays.asList(new ECKeyPair(), new ECKeyPair(), new ECKeyPair());
 		final QuorumRequirements quorumRequirements = WhitelistQuorum.from(nodes.stream().map(ECKeyPair::getPublicKey));
-		final ProposerElection proposerElection = new SingleLeader(nodes.get(0).getUID());
+		final ProposerElection proposerElection = new Dictatorship(nodes.get(0).getUID());
 		final List<TestObserver<Vertex>> committedListeners = runBFT(nodes, quorumRequirements, proposerElection);
 
 		final int commitCount = 3;
@@ -161,7 +178,7 @@ public class MultiNodeConsensusTest {
 	public void given_2_out_of_3_correct_bft_instances_with_single_leader__then_all_instances_should_only_get_genesis_commit() throws Exception {
 		final List<ECKeyPair> nodes = Arrays.asList(new ECKeyPair(), new ECKeyPair(), new ECKeyPair());
 		final QuorumRequirements quorumRequirements = WhitelistQuorum.from(nodes.stream().map(ECKeyPair::getPublicKey));
-		final ProposerElection proposerElection = new SingleLeader(nodes.get(0).getUID());
+		final ProposerElection proposerElection = new Dictatorship(nodes.get(0).getUID());
 		testEventCoordinatorNetwork.setSendingDisable(nodes.get(2).getUID(), true);
 		final List<TestObserver<Vertex>> committedListeners = runBFT(nodes, quorumRequirements, proposerElection);
 		final int commitCount = 10;

@@ -27,7 +27,8 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
 import java.util.Objects;
 
 /**
- * A three-chain BFT
+ * A three-chain BFT. The inputs are events via rx streams from a pacemaker and
+ * a network.
  */
 public final class ChainedBFT {
 	public enum EventType {
@@ -44,10 +45,6 @@ public final class ChainedBFT {
 		private Event(EventType eventType, Object event) {
 			this.eventType = eventType;
 			this.event = event;
-		}
-
-		public EventType getEventType() {
-			return eventType;
 		}
 
 		@Override
@@ -76,6 +73,13 @@ public final class ChainedBFT {
 		this.eventCoordinator = eventCoordinator;
 	}
 
+	/**
+	 * Returns a cold observable which when subscribed to begins consuming
+	 * and processing bft events. Does not begin processing until the observable
+	 * is subscribed to.
+	 *
+	 * @return observable of the events which are being processed
+	 */
 	public Observable<Event> processEvents() {
 		final Observable<Event> timeouts = this.pacemaker.localTimeouts()
 			.subscribeOn(this.singleThreadScheduler)
@@ -84,7 +88,7 @@ public final class ChainedBFT {
 
 		final Observable<Event> newViews = this.network.newViewMessages()
 			.subscribeOn(this.singleThreadScheduler)
-			.doAfterNext(this.eventCoordinator::processRemoteNewView)
+			.doAfterNext(this.eventCoordinator::processNewView)
 			.map(o -> new Event(EventType.NEW_VIEW_MESSAGE, o));
 
 		final Observable<Event> proposals = this.network.proposalMessages()

@@ -21,11 +21,11 @@ import com.radixdlt.common.EUID;
 import com.radixdlt.consensus.View;
 import java.util.Objects;
 
-public final class SingleLeader implements ProposerElection {
+public final class Dictatorship implements ProposerElection {
 
 	private final EUID leader;
 
-	public SingleLeader(EUID leader) {
+	public Dictatorship(EUID leader) {
 		this.leader = Objects.requireNonNull(leader);
 	}
 
