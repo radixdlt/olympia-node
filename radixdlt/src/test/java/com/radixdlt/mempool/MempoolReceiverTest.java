@@ -17,7 +17,6 @@
 
 package com.radixdlt.mempool;
 
-import com.radixdlt.consensus.MempoolNetworkRx;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 

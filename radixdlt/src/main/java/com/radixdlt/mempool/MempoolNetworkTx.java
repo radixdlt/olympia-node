@@ -15,21 +15,18 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.mempool;
 
 import com.radixdlt.common.Atom;
-import io.reactivex.rxjava3.core.Observable;
 
 /**
- * Observables from mempool network messages
+ * Interface for Mempool to send things through a network
  */
-public interface MempoolNetworkRx {
-
+public interface MempoolNetworkTx {
 	/**
-	 * Returns the stream of mempool atoms as they are received from the
-	 * network.
+	 * Broadcast locally-received mempool submission to validators.
 	 *
-	 * @return hot observable of atom messages
+	 * @param atom the submission to send
 	 */
-	Observable<Atom> atomMessages();
+	void sendMempoolSubmission(Atom atom);
 }

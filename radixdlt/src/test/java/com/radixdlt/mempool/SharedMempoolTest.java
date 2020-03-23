@@ -33,7 +33,6 @@ import com.radixdlt.common.Atom;
 import com.radixdlt.common.EUID;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.consensus.MempoolNetworkTx;
 import com.radixdlt.utils.Ints;
 
 import static org.junit.Assert.*;
