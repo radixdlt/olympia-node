@@ -80,8 +80,8 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
 	        this.privateKey = privateKeyBytes;
 
 	        this.publicKey = new ECPublicKey(pubParams.getQ().getEncoded(true));
-		} catch (Exception ex) {
-			throw new IllegalStateException("Failed to generate ECKeyPair, exception: " + ex);
+		} catch (Exception e) {
+			throw new IllegalStateException("Failed to generate ECKeyPair", e);
 		}
 	}
 
@@ -105,7 +105,7 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
 		try {
 			return new ECKeyPair(privateKey);
 		} catch (CryptoException e) {
-			throw new IllegalStateException("Should always be able to create private key from seed, unexpected error: " + e);
+			throw new IllegalStateException("Should always be able to create private key from seed", e);
 		}
 	}
 
@@ -143,7 +143,7 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
 		try {
 			return ECKeyUtils.keyHandler.sign(hash, this.privateKey);
 		} catch (CryptoException e) {
-			throw new IllegalStateException("Failed to sign hash, exception: " + e);
+			throw new IllegalStateException("Failed to sign hash", e);
 		}
 	}
 
@@ -161,7 +161,7 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
 		try {
 			return ECKeyUtils.keyHandler.sign(data, this.privateKey, enforceLowS, beDeterministic);
 		} catch (CryptoException e) {
-			throw new IllegalStateException("Failed to sign hash, exception: " + e);
+			throw new IllegalStateException("Failed to sign hash", e);
 		}
 	}
 
@@ -210,7 +210,7 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
 		try {
 			this.publicKey = new ECPublicKey(publicKey);
 		} catch (CryptoException e) {
-			throw new IllegalArgumentException("Failed to create public key from bytes, error: " + e);
+			throw new IllegalArgumentException("Failed to create public key from bytes", e);
 		}
 		this.privateKey = Arrays.copyOf(privateKey, privateKey.length);
 	}
@@ -248,7 +248,7 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
 		try {
 			return this.publicKey.encrypt(data);
 		} catch (ECIESException e) {
-			throw new IllegalStateException("Failed to encrypt data, exception: " + e);
+			throw new IllegalStateException("Failed to encrypt data", e);
 		}
 	}
 

@@ -208,7 +208,7 @@ public class HashTest {
 		try {
 			hasher = MessageDigest.getInstance("SHA-256");
 		} catch (NoSuchAlgorithmException e) {
-			throw new IllegalStateException("Should always be able to sha256 hash, got error: " + e);
+			throw new IllegalStateException("Should always be able to sha256 hash", e);
 		}
 		hasher.update(data);
 		return hasher.digest();
