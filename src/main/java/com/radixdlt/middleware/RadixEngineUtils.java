@@ -93,7 +93,7 @@ public final class RadixEngineUtils {
 	public static SimpleRadixEngineAtom toCMAtom(Atom atom) throws CMAtomConversionException {
 		final int computedSize;
 		try {
-			computedSize = DefaultSerialization.getDefault().toDson(atom, Output.PERSIST).length;
+			computedSize = DefaultSerialization.getInstance().toDson(atom, Output.PERSIST).length;
 		} catch (SerializationException e) {
 			throw new IllegalStateException("Could not compute size", e);
 		}

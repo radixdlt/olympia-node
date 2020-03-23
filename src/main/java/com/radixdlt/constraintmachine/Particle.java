@@ -94,7 +94,7 @@ public abstract class Particle {
 
 	private Hash doGetHash() {
 		try {
-			return new Hash(Hash.hash256(DefaultSerialization.getDefault().toDson(this, Output.HASH)));
+			return new Hash(Hash.hash256(DefaultSerialization.getInstance().toDson(this, Output.HASH)));
 		} catch (Exception e) {
 			throw new RuntimeException("Error generating hash: " + e, e);
 		}

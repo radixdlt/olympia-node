@@ -26,13 +26,17 @@ import com.radixdlt.serialization.core.ClasspathScanningSerializerIds;
 public final class DefaultSerialization {
 
 	private DefaultSerialization() {
-		//not called
+		throw new IllegalStateException("Can't construct");
 	}
 
-	private static final Serialization defaultInstance = Serialization.create(ClasspathScanningSerializerIds.create(),
-			ClasspathScanningSerializationPolicy.create());
+	private static class LazyHolder {
+		static final Serialization INSTANCE = Serialization.create(
+				ClasspathScanningSerializerIds.create(),
+				ClasspathScanningSerializationPolicy.create()
+		);
+	}
 
-	public static Serialization getDefault() {
-		return defaultInstance;
+	public static Serialization getInstance() {
+		return LazyHolder.INSTANCE;
 	}
 }

@@ -368,7 +368,7 @@ public class Atom {
 
 	private Hash doGetHash() {
 		try {
-			return new Hash(Hash.hash256(DefaultSerialization.getDefault().toDson(this, DsonOutput.Output.HASH)));
+			return new Hash(Hash.hash256(DefaultSerialization.getInstance().toDson(this, DsonOutput.Output.HASH)));
 		} catch (Exception e) {
 			throw new IllegalStateException("Error generating hash: " + e, e);
 		}
