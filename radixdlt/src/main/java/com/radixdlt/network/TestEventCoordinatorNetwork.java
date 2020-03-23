@@ -65,27 +65,33 @@ public class TestEventCoordinatorNetwork {
 			@Override
 			public void broadcastProposal(Vertex vertex) {
 				if (!sendingDisabled.contains(euid)) {
-					executorService.schedule(() -> {
-						proposals.onNext(vertex);
-					}, LOOPBACK_DELAY, TimeUnit.MILLISECONDS);
+					executorService.schedule(
+						() -> proposals.onNext(vertex),
+						LOOPBACK_DELAY,
+						TimeUnit.MILLISECONDS
+					);
 				}
 			}
 
 			@Override
 			public void sendNewView(NewView newView, EUID newViewLeader) {
 				if (!sendingDisabled.contains(euid)) {
-					executorService.schedule(() -> {
-						newViews.onNext(new SimpleEntry<>(newView, newViewLeader));
-					}, LOOPBACK_DELAY, TimeUnit.MILLISECONDS);
+					executorService.schedule(
+						() -> newViews.onNext(new SimpleEntry<>(newView, newViewLeader)),
+						LOOPBACK_DELAY,
+						TimeUnit.MILLISECONDS
+					);
 				}
 			}
 
 			@Override
 			public void sendVote(Vote vote, EUID leader) {
 				if (!sendingDisabled.contains(euid)) {
-					executorService.schedule(() -> {
-						votes.onNext(new SimpleEntry<>(vote, leader));
-					}, LOOPBACK_DELAY, TimeUnit.MILLISECONDS);
+					executorService.schedule(
+						() -> votes.onNext(new SimpleEntry<>(vote, leader)),
+						LOOPBACK_DELAY,
+						TimeUnit.MILLISECONDS
+					);
 				}
 			}
 		};

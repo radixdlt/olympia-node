@@ -40,16 +40,16 @@ public final class ChainedBFT {
 
 	public static class Event {
 		private final EventType eventType;
-		private final Object event;
+		private final Object eventObject;
 
-		private Event(EventType eventType, Object event) {
+		private Event(EventType eventType, Object eventObject) {
 			this.eventType = eventType;
-			this.event = event;
+			this.eventObject = eventObject;
 		}
 
 		@Override
 		public String toString() {
-			return eventType + ": " + event;
+			return eventType + ": " + eventObject;
 		}
 	}
 
