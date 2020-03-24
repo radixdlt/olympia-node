@@ -32,15 +32,16 @@ import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.PacemakerImpl;
 import com.radixdlt.consensus.liveness.PacemakerRx;
 import com.radixdlt.consensus.liveness.ProposerElection;
-import com.radixdlt.consensus.safety.QuorumRequirements;
 import com.radixdlt.consensus.safety.SafetyRules;
-import com.radixdlt.consensus.safety.SingleNodeQuorumRequirements;
 import com.radixdlt.consensus.tempo.Scheduler;
 import com.radixdlt.consensus.tempo.SingleThreadedScheduler;
+import com.radixdlt.consensus.validators.Validator;
+import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.universe.Universe;
+import java.util.Collections;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 
@@ -52,11 +53,18 @@ public class CerberusModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		// dependencies
-		bind(QuorumRequirements.class).to(SingleNodeQuorumRequirements.class);
 		bind(Scheduler.class).toProvider(SingleThreadedScheduler::new);
 		bind(PacemakerRx.class).to(PacemakerImpl.class);
 		bind(Pacemaker.class).to(PacemakerImpl.class);
 		bind(SafetyRules.class).in(Scopes.SINGLETON);
+	}
+
+	@Provides
+	@Singleton
+	private ValidatorSet validatorSet(
+		@Named("self") ECKeyPair selfKey
+	) {
+		return ValidatorSet.from(Collections.singleton(Validator.from(selfKey.getPublicKey())));
 	}
 
 	@Provides
@@ -69,8 +77,10 @@ public class CerberusModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private PacemakerImpl pacemaker(QuorumRequirements quorumRequirements) {
-		return new PacemakerImpl(quorumRequirements, Executors.newSingleThreadScheduledExecutor());
+	private PacemakerImpl pacemaker(
+		ValidatorSet validatorSet
+	) {
+		return new PacemakerImpl(validatorSet, Executors.newSingleThreadScheduledExecutor());
 	}
 
 	@Provides

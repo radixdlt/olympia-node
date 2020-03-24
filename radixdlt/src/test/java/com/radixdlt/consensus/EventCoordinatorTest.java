@@ -26,6 +26,7 @@ import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyViolationException;
+import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
@@ -61,6 +62,7 @@ public class EventCoordinatorTest {
 	private Mempool mempool;
 	private EventCoordinatorNetworkSender networkSender;
 	private VertexStore vertexStore;
+	private ValidatorSet validatorSet;
 
 	@Before
 	public void setUp() {
@@ -72,6 +74,7 @@ public class EventCoordinatorTest {
 		this.vertexStore = mock(VertexStore.class);
 		this.pendingVotes = mock(PendingVotes.class);
 		this.proposerElection = mock(ProposerElection.class);
+		this.validatorSet = mock(ValidatorSet.class);
 
 		this.eventCoordinator = new EventCoordinator(
 			proposalGenerator,
@@ -82,7 +85,9 @@ public class EventCoordinatorTest {
 			vertexStore,
 			pendingVotes,
 			proposerElection,
-			SELF_KEY);
+			SELF_KEY,
+			validatorSet
+		);
 	}
 
 	private static AID makeAID(int n) {
@@ -126,7 +131,7 @@ public class EventCoordinatorTest {
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		View view = mock(View.class);
 		when(qc.getView()).thenReturn(view);
-		when(pendingVotes.insertVote(eq(vote))).thenReturn(Optional.of(qc));
+		when(pendingVotes.insertVote(eq(vote), any())).thenReturn(Optional.of(qc));
 		when(mempool.getAtoms(anyInt(), any())).thenReturn(Lists.newArrayList());
 		when(pacemaker.getCurrentView()).thenReturn(mock(View.class));
 		when(pacemaker.processQC(eq(view))).thenReturn(Optional.of(mock(View.class)));

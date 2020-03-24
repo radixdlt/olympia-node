@@ -26,6 +26,7 @@ import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyViolationException;
+import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
@@ -53,6 +54,7 @@ public final class EventCoordinator {
 	private final ProposerElection proposerElection;
 	private final ECKeyPair selfKey; // TODO remove signing/address to separate identity management
 	private final SafetyRules safetyRules;
+	private final ValidatorSet validatorSet;
 
 	@Inject
 	public EventCoordinator(
@@ -64,7 +66,8 @@ public final class EventCoordinator {
 		VertexStore vertexStore,
 		PendingVotes pendingVotes,
 		ProposerElection proposerElection,
-		@Named("self") ECKeyPair selfKey
+		@Named("self") ECKeyPair selfKey,
+		ValidatorSet validatorSet
 	) {
 		this.proposalGenerator = Objects.requireNonNull(proposalGenerator);
 		this.mempool = Objects.requireNonNull(mempool);
@@ -75,6 +78,7 @@ public final class EventCoordinator {
 		this.pendingVotes = Objects.requireNonNull(pendingVotes);
 		this.proposerElection = Objects.requireNonNull(proposerElection);
 		this.selfKey = Objects.requireNonNull(selfKey);
+		this.validatorSet = Objects.requireNonNull(validatorSet);
 	}
 
 	private String getShortName(EUID euid) {
@@ -144,7 +148,7 @@ public final class EventCoordinator {
 		}
 
 		// accumulate votes into QCs in store
-		Optional<QuorumCertificate> potentialQc = this.pendingVotes.insertVote(vote);
+		Optional<QuorumCertificate> potentialQc = this.pendingVotes.insertVote(vote, validatorSet);
 		if (potentialQc.isPresent()) {
 			QuorumCertificate qc = potentialQc.get();
 			log.info(this.getShortName() + ": Formed QC: " + qc);

@@ -19,9 +19,12 @@ package com.radixdlt.consensus.liveness;
 
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.View;
-import com.radixdlt.consensus.safety.QuorumRequirements;
+import com.radixdlt.consensus.validators.ValidationResult;
+import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECDSASignatures;
+import com.radixdlt.crypto.Hash;
+import com.radixdlt.utils.Longs;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 
@@ -40,13 +43,13 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 	private final PublishSubject<View> timeouts;
 	private final Observable<View> timeoutsObservable;
 	private final ScheduledExecutorService executorService;
-	private final QuorumRequirements quorumRequirements;
+	private final ValidatorSet validatorSet;
 
 	private final Map<View, ECDSASignatures> pendingNewViews = new HashMap<>();
 	private View currentView = View.of(0L);
 
-	public PacemakerImpl(QuorumRequirements quorumRequirements, ScheduledExecutorService executorService) {
-		this.quorumRequirements = Objects.requireNonNull(quorumRequirements);
+	public PacemakerImpl(ValidatorSet validatorSet, ScheduledExecutorService executorService) {
+		this.validatorSet = Objects.requireNonNull(validatorSet);
 		this.executorService = Objects.requireNonNull(executorService);
 		this.timeouts = PublishSubject.create();
 		this.timeoutsObservable = this.timeouts
@@ -80,28 +83,21 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 
 	@Override
 	public Optional<View> processNewView(NewView newView) {
+		Hash newViewId = new Hash(Hash.hash256(Longs.toByteArray(newView.getView().number())));
 		ECDSASignature signature = newView.getSignature().orElseThrow(() -> new IllegalArgumentException("new-view is missing signature"));
 		ECDSASignatures signatures = pendingNewViews.getOrDefault(newView.getView(), new ECDSASignatures());
-
-		// try to add the signature if permitted by the requirements
-		if (quorumRequirements.accepts(newView.getAuthor().getUID())) {
-			// FIXME ugly cast to ECDSASignatures because we need a specific type
-			// TODO do we even need to keep signatures or just QCs & count for new-views?
-			signatures = (ECDSASignatures) signatures.concatenate(newView.getAuthor(), signature);
-		} else {
-			// there is no meaningful inaction here, so better let the caller know
-			throw new IllegalArgumentException("new-view " + newView + " was not accepted");
-		}
+		signatures = (ECDSASignatures) signatures.concatenate(newView.getAuthor(), signature);
 
 		// check if we have gotten enough new-views to proceed
-		if (signatures.count() >= quorumRequirements.numRequiredVotes()) {
-			// if we got enough new-views, remove pending and return formed QC
-			pendingNewViews.remove(newView.getView());
-			return Optional.of(newView.getView());
-		} else {
+		ValidationResult validationResult = validatorSet.validate(newViewId, signatures);
+		if (!validationResult.valid()) {
 			// if we haven't got enough new-views yet, do nothing
 			pendingNewViews.put(newView.getView(), signatures);
 			return Optional.empty();
+		} else {
+			// if we got enough new-views, remove pending and return formed QC
+			pendingNewViews.remove(newView.getView());
+			return Optional.of(newView.getView());
 		}
 	}
 

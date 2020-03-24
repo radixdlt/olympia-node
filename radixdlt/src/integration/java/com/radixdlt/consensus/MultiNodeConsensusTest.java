@@ -32,10 +32,10 @@ import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.RotatingLeaders;
 import com.radixdlt.consensus.liveness.Dictatorship;
-import com.radixdlt.consensus.safety.QuorumRequirements;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyState;
-import com.radixdlt.consensus.safety.WhitelistQuorum;
+import com.radixdlt.consensus.validators.Validator;
+import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
@@ -73,7 +73,7 @@ public class MultiNodeConsensusTest {
 	private ChainedBFT createBFTInstance(
 		ECKeyPair key,
 		ProposerElection proposerElection,
-		QuorumRequirements quorumRequirements,
+		ValidatorSet validatorSet,
 		VertexStore vertexStore
 	) {
 		Mempool mempool = mock(Mempool.class);
@@ -85,8 +85,8 @@ public class MultiNodeConsensusTest {
 		}).when(mempool).getAtoms(anyInt(), anySet());
 		ProposalGenerator proposalGenerator = new ProposalGenerator(vertexStore, mempool);
 		SafetyRules safetyRules = new SafetyRules(key, vertexStore, SafetyState.initialState());
-		PacemakerImpl pacemaker = new PacemakerImpl(quorumRequirements, Executors.newSingleThreadScheduledExecutor());
-		PendingVotes pendingVotes = new PendingVotes(quorumRequirements);
+		PacemakerImpl pacemaker = new PacemakerImpl(validatorSet, Executors.newSingleThreadScheduledExecutor());
+		PendingVotes pendingVotes = new PendingVotes();
 		EventCoordinator eventCoordinator = new EventCoordinator(
 			proposalGenerator,
 			mempool,
@@ -96,7 +96,8 @@ public class MultiNodeConsensusTest {
 			vertexStore,
 			pendingVotes,
 			proposerElection,
-			key
+			key,
+			validatorSet
 		);
 
 		return new ChainedBFT(
@@ -108,7 +109,7 @@ public class MultiNodeConsensusTest {
 
 	private List<TestObserver<Vertex>> runBFT(
 		List<ECKeyPair> nodes,
-		QuorumRequirements quorumRequirements,
+		ValidatorSet validatorSet,
 		ProposerElection proposerElection
 	) {
 		return nodes.stream()
@@ -118,7 +119,7 @@ public class MultiNodeConsensusTest {
 				VertexStore vertexStore = new VertexStore(genesisVertex, genesisQC, radixEngine);
 				TestObserver<Vertex> testObserver = TestObserver.create();
 				vertexStore.lastCommittedVertex().subscribe(testObserver);
-				ChainedBFT chainedBFT = createBFTInstance(e, proposerElection, quorumRequirements, vertexStore);
+				ChainedBFT chainedBFT = createBFTInstance(e, proposerElection, validatorSet, vertexStore);
 				chainedBFT.processEvents().subscribe();
 				return testObserver;
 			})
@@ -128,9 +129,11 @@ public class MultiNodeConsensusTest {
 	@Test
 	public void given_3_correct_bft_instances_with_single_leader__then_all_instances_should_get_3_commits() throws Exception {
 		final List<ECKeyPair> nodes = Arrays.asList(new ECKeyPair(), new ECKeyPair(), new ECKeyPair());
-		final QuorumRequirements quorumRequirements = WhitelistQuorum.from(nodes.stream().map(ECKeyPair::getPublicKey));
 		final ProposerElection proposerElection = new Dictatorship(nodes.get(0).getUID());
-		final List<TestObserver<Vertex>> committedListeners = runBFT(nodes, quorumRequirements, proposerElection);
+		final ValidatorSet validatorSet = ValidatorSet.from(
+			nodes.stream().map(ECKeyPair::getPublicKey).map(Validator::from).collect(Collectors.toList())
+		);
+		final List<TestObserver<Vertex>> committedListeners = runBFT(nodes, validatorSet, proposerElection);
 
 		final int commitCount = 3;
 		for (TestObserver<Vertex> committedListener : committedListeners) {
@@ -146,9 +149,11 @@ public class MultiNodeConsensusTest {
 	@Test
 	public void given_3_correct_bft_instances_with_rotating_leaders__then_all_instances_should_get_the_same_5_commits() throws Exception {
 		final List<ECKeyPair> nodes = Arrays.asList(new ECKeyPair(), new ECKeyPair(), new ECKeyPair());
-		final QuorumRequirements quorumRequirements = WhitelistQuorum.from(nodes.stream().map(ECKeyPair::getPublicKey));
+		final ValidatorSet validatorSet = ValidatorSet.from(
+			nodes.stream().map(ECKeyPair::getPublicKey).map(Validator::from).collect(Collectors.toList())
+		);
 		final ProposerElection proposerElection = new RotatingLeaders(nodes.stream().map(ECKeyPair::getUID).collect(ImmutableList.toImmutableList()));
-		final List<TestObserver<Vertex>> committedListeners = runBFT(nodes, quorumRequirements, proposerElection);
+		final List<TestObserver<Vertex>> committedListeners = runBFT(nodes, validatorSet, proposerElection);
 
 		final int commitCount = 5;
 		for (TestObserver<Vertex> committedListener : committedListeners) {
@@ -166,10 +171,12 @@ public class MultiNodeConsensusTest {
 	@Test
 	public void given_2_out_of_3_correct_bft_instances_with_single_leader__then_all_instances_should_only_get_genesis_commit() throws Exception {
 		final List<ECKeyPair> nodes = Arrays.asList(new ECKeyPair(), new ECKeyPair(), new ECKeyPair());
-		final QuorumRequirements quorumRequirements = WhitelistQuorum.from(nodes.stream().map(ECKeyPair::getPublicKey));
+		final ValidatorSet validatorSet = ValidatorSet.from(
+			nodes.stream().map(ECKeyPair::getPublicKey).map(Validator::from).collect(Collectors.toList())
+		);
 		final ProposerElection proposerElection = new Dictatorship(nodes.get(0).getUID());
 		testEventCoordinatorNetwork.setSendingDisable(nodes.get(2).getUID(), true);
-		final List<TestObserver<Vertex>> committedListeners = runBFT(nodes, quorumRequirements, proposerElection);
+		final List<TestObserver<Vertex>> committedListeners = runBFT(nodes, validatorSet, proposerElection);
 		final int commitCount = 10;
 
 		for (TestObserver<Vertex> committedListener : committedListeners) {
