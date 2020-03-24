@@ -92,8 +92,12 @@ public final class EventCoordinator {
 		}
 
 		Vertex proposal = proposalGenerator.generateProposal(this.pacemaker.getCurrentView());
-		log.info(getShortName() + ": Broadcasting Proposal: " + proposal);
-		this.networkSender.broadcastProposal(proposal);
+		if (proposal.getAtom() != null) {
+			log.info(getShortName() + ": Broadcasting Proposal: " + proposal);
+			this.networkSender.broadcastProposal(proposal);
+		} else {
+			log.info(getShortName() + ": Skipping proposal because no atom");
+		}
 	}
 
 	private void proceedToView(View nextView) {
@@ -109,7 +113,7 @@ public final class EventCoordinator {
 		}
 	}
 
-	private void processQC(QuorumCertificate qc) {
+	private void processQC(QuorumCertificate qc) throws SyncException {
 		// sync up to QC if necessary
 		this.vertexStore.syncToQC(qc);
 
@@ -144,7 +148,12 @@ public final class EventCoordinator {
 		if (potentialQc.isPresent()) {
 			QuorumCertificate qc = potentialQc.get();
 			log.info(this.getShortName() + ": Formed QC: " + qc);
-			this.processQC(qc);
+			try {
+				this.processQC(qc);
+			} catch (SyncException e) {
+				// Should never go here
+				throw new IllegalStateException("Could not process QC " + e.getQC() + " which was created.");
+			}
 		}
 	}
 
@@ -157,7 +166,12 @@ public final class EventCoordinator {
 			return;
 		}
 
-		this.processQC(newView.getQC());
+		try {
+			this.processQC(newView.getQC());
+		} catch (SyncException e) {
+			log.warn("Ignoring new view because unable to sync to QC " + e.getQC());
+			return;
+		}
 
 		this.pacemaker.processNewView(newView)
 			.ifPresent(this::startQuorumNewView);
@@ -172,9 +186,12 @@ public final class EventCoordinator {
 			return;
 		}
 
-		processQC(proposedVertex.getQC());
-
-		// TODO: Sync at this point
+		try {
+			processQC(proposedVertex.getQC());
+		} catch (SyncException e) {
+			log.warn("Ignoring proposal because unable to sync to QC " + e.getQC());
+			return;
+		}
 
 		final View updatedView = this.pacemaker.getCurrentView();
 		if (proposedVertex.getView().compareTo(updatedView) != 0) {
