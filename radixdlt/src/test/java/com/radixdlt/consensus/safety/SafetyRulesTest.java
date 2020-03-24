@@ -25,7 +25,6 @@ import com.radixdlt.consensus.VertexInsertionException;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.VertexStore;
 import com.radixdlt.consensus.View;
-import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
@@ -103,7 +102,7 @@ public class SafetyRulesTest {
 	}
 
 	@Test
-	public void testVote() throws SafetyViolationException, CryptoException {
+	public void testVote() throws SafetyViolationException {
 		/*
 		 * This test ensures that voting is safe.
 		 */

@@ -18,12 +18,10 @@
 package org.radix.serialization;
 
 import com.radixdlt.common.Atom;
-import com.radixdlt.common.EUID;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
-import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.messages.VertexMessage;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.Hash;
@@ -38,7 +36,6 @@ public class VertexMessageSerializeTest extends SerializeMessageObject<VertexMes
 		View view = parentView.next();
 		Hash parentId = Hash.random();
 		Hash id = Hash.random();
-		EUID author = EUID.TWO;
 		Atom atom = new Atom();
 
 		VertexMetadata vertexMetadata = new VertexMetadata(view, id, parentView, parentId);

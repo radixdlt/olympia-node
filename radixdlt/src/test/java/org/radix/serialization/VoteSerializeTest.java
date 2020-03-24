@@ -18,7 +18,6 @@
 package org.radix.serialization;
 
 import com.radixdlt.atomos.RadixAddress;
-import com.radixdlt.common.EUID;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.Vote;

@@ -37,15 +37,11 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.universe.Universe;
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
 import org.radix.time.Time;
 
 import java.util.function.UnaryOperator;
 
 public class MiddlewareModule extends AbstractModule {
-	private static final Logger log = Logging.getLogger("Middleware");
-
 	@Provides
 	@Singleton
 	private CMAtomOS buildCMAtomOS(Universe universe) {

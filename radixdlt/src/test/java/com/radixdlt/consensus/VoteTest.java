@@ -18,9 +18,7 @@
 package com.radixdlt.consensus;
 
 import com.radixdlt.atomos.RadixAddress;
-import com.radixdlt.common.AID;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.utils.Ints;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Before;
 import org.junit.Test;
@@ -64,11 +62,5 @@ public class VoteTest {
 	public void testSerializerConstructor() {
 		// Don't want to see any exceptions here
 		assertNotNull(new Vote());
-	}
-
-	private static AID aidOf(int id) {
-		byte[] bytes = new byte[AID.BYTES];
-		Ints.copyTo(id, bytes, AID.BYTES - Integer.BYTES);
-		return AID.from(bytes);
 	}
 }

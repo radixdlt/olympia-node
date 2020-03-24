@@ -18,15 +18,11 @@
 package org.radix.serialization;
 
 import com.radixdlt.atomos.RadixAddress;
-import com.radixdlt.common.AID;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.messages.VoteMessage;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.utils.Ints;
-
-import static org.mockito.Mockito.mock;
 
 public class VoteMessageSerializeTest extends SerializeMessageObject<VoteMessage> {
 	public VoteMessageSerializeTest() {
@@ -46,11 +42,5 @@ public class VoteMessageSerializeTest extends SerializeMessageObject<VoteMessage
 		Vote vote = new Vote(author.getKey(), vertexMetadata, null);
 
 		return new VoteMessage(1, vote);
-	}
-
-	private static AID aidOf(int id) {
-		byte[] bytes = new byte[AID.BYTES];
-		Ints.copyTo(id, bytes, AID.BYTES - Integer.BYTES);
-		return AID.from(bytes);
 	}
 }
