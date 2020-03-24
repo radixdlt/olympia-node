@@ -24,12 +24,12 @@ package com.radixdlt.client.application.identity;
 
 import java.util.Optional;
 
+import io.reactivex.observers.TestObserver;
 import org.junit.Test;
 import com.radixdlt.identifiers.EUID;
 
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECDSASignature;
 
@@ -52,7 +52,7 @@ public class LocalRadixIdentityTest {
 		Atom signedAtom = mock(Atom.class);
 		when(signedAtom.getSignature(any())).thenReturn(Optional.of(ecSignature));
 		Hash hash = mock(Hash.class);
-		UnsignedAtom atom = mock(UnsignedAtom.class);
+		Atom atom = mock(Atom.class);
 		when(atom.addSignature(any(), any())).thenReturn(signedAtom);
 		when(atom.getHash()).thenReturn(hash);
 		LocalRadixIdentity identity = new LocalRadixIdentity(keyPair);

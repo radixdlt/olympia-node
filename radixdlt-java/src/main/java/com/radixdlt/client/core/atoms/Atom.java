@@ -25,7 +25,6 @@ package com.radixdlt.client.core.atoms;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
@@ -40,10 +39,7 @@ import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 
-import java.util.ArrayList;
 import com.radixdlt.identifiers.RadixAddress;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -91,7 +87,7 @@ public final class Atom {
 
 	@JsonProperty("signatures")
 	@DsonOutput(value = {DsonOutput.Output.API, DsonOutput.Output.WIRE, DsonOutput.Output.PERSIST})
-	private final ImmutableMap<String, ECSignature> signatures;
+	private final ImmutableMap<String, ECDSASignature> signatures;
 
 	@JsonProperty("metaData")
 	@DsonOutput(DsonOutput.Output.ALL)
@@ -129,7 +125,7 @@ public final class Atom {
 
 	// TODO: refactor to utilize an AtomBuilder
 	public Atom addSignature(EUID signatureId, ECDSASignature signature) {
-		ImmutableMap.Builder<String, ECSignature> builder = ImmutableMap.builder();
+		ImmutableMap.Builder<String, ECDSASignature> builder = ImmutableMap.builder();
 		signatures.forEach((id, sig) -> {
 			if (!id.equals(signatureId.toString())) {
 				builder.put(id, sig);

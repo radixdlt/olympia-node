@@ -23,7 +23,6 @@
 package com.radixdlt.client.application.identity;
 
 import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.atoms.UnsignedAtom;
 import com.radixdlt.crypto.ECPublicKey;
 import io.reactivex.Single;
 
