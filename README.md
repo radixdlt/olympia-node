@@ -255,7 +255,7 @@ result.blockUntilComplete();
 
 ## Contribute
 
-Contributions are welcome, we simply ask to:
+[Contributions](CONTRIBUTING.md) are welcome, we simply ask to:
 
 * Fork the codebase
 * Make changes
@@ -276,4 +276,4 @@ Please follow our [Code of Conduct](CODE_OF_CONDUCT.md) in all your interactions
 
 ## License
 
-radixdlt-java is released under the [MIT License](LICENSE).
+The `radixdlt-java` library is released under the [MIT License](LICENSE).

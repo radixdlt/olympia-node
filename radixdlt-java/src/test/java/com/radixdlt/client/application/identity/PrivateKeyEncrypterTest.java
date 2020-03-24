@@ -20,32 +20,24 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-package com.radixdlt.client.core.network.epics;
+package com.radixdlt.client.application.identity;
 
-import com.radixdlt.client.core.network.RadixNetworkEpic;
-import com.radixdlt.client.core.network.RadixNetworkState;
-import com.radixdlt.client.core.network.RadixNodeAction;
-import com.radixdlt.client.core.network.WebSockets;
-import com.radixdlt.client.core.network.actions.WebSocketEvent;
-import io.reactivex.Observable;
+import org.junit.Assert;
+import org.junit.Test;
 
-/**
- * Epic which emits websocket events from each node
- */
-public final class WebSocketEventsEpic implements RadixNetworkEpic {
-	private final WebSockets webSockets;
+import java.io.IOException;
+import java.io.Reader;
+import java.io.StringReader;
+import java.security.GeneralSecurityException;
 
-	public WebSocketEventsEpic(WebSockets webSockets) {
-		this.webSockets = webSockets;
+public class PrivateKeyEncrypterTest {
+
+	@Test
+	public void encryptDecryptPrivateKey() throws GeneralSecurityException, IOException {
+		String key = PrivateKeyEncrypter.createEncryptedPrivateKey("Password");
+		Reader stringReader = new StringReader(key);
+		byte[] decryptedKey = PrivateKeyEncrypter.decryptPrivateKey("Password", stringReader);
+		Assert.assertEquals(32, decryptedKey.length);
 	}
 
-	@Override
-	public Observable<RadixNodeAction> epic(Observable<RadixNodeAction> actions, Observable<RadixNetworkState> networkState) {
-		// TODO: Should this really be an epic?
-		return webSockets.getNewNodes()
-			.flatMap(n -> webSockets.getOrCreate(n)
-						.getState()
-						.map(s -> WebSocketEvent.nodeStatus(n, s))
-			);
-	}
 }
