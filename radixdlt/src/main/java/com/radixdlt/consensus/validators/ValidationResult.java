@@ -55,6 +55,9 @@ public final class ValidationResult {
 	 * @return The validation result
 	 */
 	public static ValidationResult passed(ImmutableList<Validator> signed) {
+		if (signed.isEmpty()) {
+			throw new IllegalArgumentException("List of signing validators must not be empty");
+		}
 		return new ValidationResult(signed);
 	}
 
