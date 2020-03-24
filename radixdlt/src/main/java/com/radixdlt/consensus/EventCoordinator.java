@@ -92,14 +92,8 @@ public final class EventCoordinator {
 		}
 
 		Vertex proposal = proposalGenerator.generateProposal(this.pacemaker.getCurrentView());
-
-		if (proposal.getAtom() != null) {
-			log.info(getShortName() + ": Broadcasting Proposal: " + proposal);
-			this.networkSender.broadcastProposal(proposal);
-		} else {
-			// TODO: Handle empty proposals
-			log.info(getShortName() + ": Skipping proposal because no atom available for proposal");
-		}
+		log.info(getShortName() + ": Broadcasting Proposal: " + proposal);
+		this.networkSender.broadcastProposal(proposal);
 	}
 
 	private void proceedToView(View nextView) {
@@ -126,7 +120,9 @@ public final class EventCoordinator {
 
 				final Vertex vertex = vertexStore.commitVertex(vertexId);
 				final Atom committedAtom = vertex.getAtom();
-				mempool.removeCommittedAtom(committedAtom.getAID());
+				if (committedAtom != null) {
+					mempool.removeCommittedAtom(committedAtom.getAID());
+				}
 			});
 
 		// proceed to next view if pacemaker feels like it
