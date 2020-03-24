@@ -25,6 +25,7 @@ import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.utils.Bytes;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -96,12 +97,11 @@ public final class ECDSASignatures implements Signatures {
     }
 
 	@Override
-    public boolean hasSignedMessage(Hash message, int requiredMinimumNumberOfValidSignatures) {
-        long numberOfValidSignatures = this.keyToSignature.entrySet().stream()
+    public List<ECPublicKey> signedMessage(Hash message) {
+        return this.keyToSignature.entrySet().stream()
             .filter(e -> e.getKey().verify(message, e.getValue()))
-            .count();
-
-        return numberOfValidSignatures >= requiredMinimumNumberOfValidSignatures;
+            .map(Map.Entry::getKey)
+            .collect(Collectors.toList());
     }
 
 	@Override

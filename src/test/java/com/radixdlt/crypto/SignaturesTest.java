@@ -11,7 +11,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -68,14 +67,14 @@ public class SignaturesTest {
     public void verify_that_a_single_invalid_signature_does_fails_to_verify() {
         Signatures single = new ECDSASignatures(publicKey(), randomInvalidSignature());
         assertEquals(1, single.count());
-        assertFalse(single.hasSignedMessage(hashOfMessage("Fubar"), 1));
+        assertTrue(single.signedMessage(hashOfMessage("Fubar")).isEmpty());
     }
 
     @Test
     public void verify_that_multiple_invalid_signature_does_fails_to_verify() {
         Signatures multiple = new ECDSASignatures(ImmutableMap.of(publicKey(), randomInvalidSignature(), publicKey(), randomInvalidSignature()));
         assertEquals(2, multiple.count());
-        assertFalse(multiple.hasSignedMessage(hashOfMessage("Fubar"), 2));
+        assertTrue(multiple.signedMessage(hashOfMessage("Fubar")).isEmpty());
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -167,7 +166,7 @@ public class SignaturesTest {
         }
 
         assertEquals((numberOfInvalidSignaturesToCreate + numberOfValidSignaturesToCreate), signatures.count());
-        boolean doesSignatureMeetValidityThreshold = signatures.hasSignedMessage(hashedMessage, thresholdNumberOfValidSignatures);
+        boolean doesSignatureMeetValidityThreshold = signatures.signedMessage(hashedMessage).size() >= thresholdNumberOfValidSignatures;
         assertEquals(isExpectedToMeetThreshold, doesSignatureMeetValidityThreshold);
     }
 
