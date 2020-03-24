@@ -108,7 +108,7 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
 	 *
 	 * @param seed The seed to use when deriving the key pair instance, that is hashed (256 bits).
 	 * @return A key pair that corresponds to the hash of the provided seed.
-	 * @throws IllegalArgumentException if the seed is empty or a null pointer.
+	 * @throws IllegalArgumentException if the seed is empty.
 	 */
 	public static ECKeyPair fromSeed(byte[] seed) {
 		Objects.requireNonNull(seed, "Seed must not be null");
