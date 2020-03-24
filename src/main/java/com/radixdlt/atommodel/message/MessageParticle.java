@@ -67,7 +67,7 @@ public final class MessageParticle extends Particle {
 	}
 
 	public MessageParticle(RadixAddress from, RadixAddress to, byte[] bytes) {
-		super(ImmutableSet.of(from.getUID(), to.getUID()));
+		super(ImmutableSet.of(from.euid(), to.euid()));
 
 		this.from = Objects.requireNonNull(from, "from is required");
 		this.to = Objects.requireNonNull(to, "to is required");
@@ -76,7 +76,7 @@ public final class MessageParticle extends Particle {
 	}
 
 	public MessageParticle(RadixAddress from, RadixAddress to, byte[] bytes, String contentType) {
-		super(ImmutableSet.of(from.getUID(), to.getUID()));
+		super(ImmutableSet.of(from.euid(), to.euid()));
 
 		this.from = Objects.requireNonNull(from, "from is required");
 		this.to = Objects.requireNonNull(to, "to is required");

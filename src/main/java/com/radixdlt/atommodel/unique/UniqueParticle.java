@@ -45,7 +45,7 @@ public class UniqueParticle extends Particle {
 	}
 
 	public UniqueParticle(String name, RadixAddress address, long nonce) {
-		super(address.getUID());
+		super(address.euid());
 		this.name = Objects.requireNonNull(name);
 		this.address = address;
 		this.nonce = nonce;

@@ -121,7 +121,7 @@ public final class SpunParticle {
 
 	@Override
 	public String toString() {
-		EUID phid = (this.particle == null) ? null : this.particle.getHID();
+		EUID phid = (this.particle == null) ? null : this.particle.euid();
 
 		return String.format("%s[(%s):%s:%s:%s]", getClass().getSimpleName(),
 				String.valueOf(phid), String.valueOf(spin), String.valueOf(particle),

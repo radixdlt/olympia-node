@@ -37,7 +37,7 @@ public final class RRIParticle extends Particle {
 	}
 
 	public RRIParticle(RRI rri) {
-		super(rri.getAddress().getUID());
+		super(rri.getAddress().euid());
 
 		this.rri = rri;
 		this.nonce = 0;

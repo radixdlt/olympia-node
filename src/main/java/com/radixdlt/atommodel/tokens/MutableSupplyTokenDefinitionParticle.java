@@ -75,7 +75,7 @@ public final class MutableSupplyTokenDefinitionParticle extends Particle {
 		String iconUrl,
 		Map<TokenTransition, TokenPermission> tokenPermissions
 	) {
-		super(address.getUID());
+		super(address.euid());
 
 		this.rri = RRI.of(address, symbol);
 		this.name = name;

@@ -76,7 +76,7 @@ public final class TransferrableTokensParticle extends Particle {
 		long planck,
 		Map<TokenTransition, TokenPermission> tokenPermissions
 	) {
-		super(address.getUID());
+		super(address.euid());
 
 		this.address = Objects.requireNonNull(address);
 		this.granularity = Objects.requireNonNull(granularity);

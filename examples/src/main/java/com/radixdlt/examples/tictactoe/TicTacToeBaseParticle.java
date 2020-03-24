@@ -48,7 +48,7 @@ abstract class TicTacToeBaseParticle extends Particle {
 	private final ImmutableList<TicTacToeSquareValue> board;
 
 	TicTacToeBaseParticle(RadixAddress xPlayer, RadixAddress oPlayer, ImmutableList<TicTacToeSquareValue> board) {
-		super(ImmutableSet.of(xPlayer.getUID(), oPlayer.getUID()));
+		super(ImmutableSet.of(xPlayer.euid(), oPlayer.euid()));
 
 		this.xPlayer = xPlayer;
 		this.oPlayer = oPlayer;

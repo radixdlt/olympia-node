@@ -204,7 +204,7 @@ public class Atom {
 		ECDSASignature signature = null;
 
 		for (ECPublicKey key : keys) {
-			signature = this.signatures.get(key.getUID());
+			signature = this.signatures.get(key.euid());
 
 			if (signature == null) {
 				continue;
@@ -225,7 +225,7 @@ public class Atom {
 
 		Hash hash = this.getHash();
 
-		ECDSASignature signature = this.signatures.get(key.getUID());
+		ECDSASignature signature = this.signatures.get(key.euid());
 
 		if (signature == null) {
 			return false;
@@ -252,7 +252,7 @@ public class Atom {
 		}
 
 		Hash hash = this.getHash();
-		this.setSignature(key.getUID(), key.sign(hash.toByteArray()));
+		this.setSignature(key.euid(), key.sign(hash.toByteArray()));
 	}
 
 	public void sign(Collection<ECKeyPair> keys) throws CryptoException {
@@ -263,7 +263,7 @@ public class Atom {
 		Hash hash = this.getHash();
 
 		for (ECKeyPair key : keys) {
-			this.setSignature(key.getUID(), key.sign(hash.toByteArray()));
+			this.setSignature(key.euid(), key.sign(hash.toByteArray()));
 		}
 	}
 
@@ -380,7 +380,7 @@ public class Atom {
 
 	@JsonProperty("hid")
 	@DsonOutput(DsonOutput.Output.API)
-	public final EUID getHID() {
+	public final EUID euid() {
 		return getHash().euid();
 	}
 

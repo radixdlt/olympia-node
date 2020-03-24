@@ -112,7 +112,7 @@ public final class ConstraintMachine {
 				return false;
 			}
 
-			final ECDSASignature signature = signatures.get(publicKey.getUID());
+			final ECDSASignature signature = signatures.get(publicKey.euid());
 			return signature != null && publicKey.verify(witness, signature);
 		}
 

@@ -64,7 +64,7 @@ public class UnallocatedTokensParticle extends Particle {
 		RRI tokenDefinitionReference,
 		Map<TokenTransition, TokenPermission> tokenPermissions
 	) {
-		super(tokenDefinitionReference.getAddress().getUID());
+		super(tokenDefinitionReference.getAddress().euid());
 
 		this.granularity = Objects.requireNonNull(granularity);
 		this.tokenDefinitionReference = Objects.requireNonNull(tokenDefinitionReference);

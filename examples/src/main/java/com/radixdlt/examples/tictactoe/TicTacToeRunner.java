@@ -175,8 +175,8 @@ public class TicTacToeRunner {
 		engine.start();
 
 		// Our two tic toe players
-		ECKeyPair xPlayer = new ECKeyPair();
-		ECKeyPair oPlayer = new ECKeyPair();
+		ECKeyPair xPlayer = ECKeyPair.generateNew();
+		ECKeyPair oPlayer = ECKeyPair.generateNew();
 
 		// Build out real particle states for each of the boards
 		XToMoveParticle illegalInitialBoard = buildIllegalInitialBoard(xPlayer, oPlayer);

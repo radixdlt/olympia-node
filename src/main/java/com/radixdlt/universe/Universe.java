@@ -214,7 +214,7 @@ public class Universe {
 	 * @return The universe magic
 	 */
 	public static int computeMagic(ECPublicKey creator, long timestamp, int port, UniverseType type, long planck) {
-		return 31 * ((int) creator.getUID().getLow()) * 13 * (int) timestamp * 7 * port + type.ordinal(); // + planck;
+		return 31 * ((int) creator.euid().getLow()) * 13 * (int) timestamp * 7 * port + type.ordinal(); // + planck;
 	}
 
 	/**
@@ -441,7 +441,7 @@ public class Universe {
 
 	@JsonProperty("hid")
 	@DsonOutput(Output.API)
-	public final EUID getHID() {
+	public final EUID euid() {
 		return getHash().euid();
 	}
 

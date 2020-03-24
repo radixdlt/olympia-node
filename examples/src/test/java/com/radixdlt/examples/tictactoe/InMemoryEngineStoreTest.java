@@ -47,8 +47,8 @@ public class InMemoryEngineStoreTest {
 
 	private static Atom initialBoardAtom() throws CryptoException {
 		// Our two tic toe players
-		ECKeyPair xPlayer = new ECKeyPair();
-		ECKeyPair oPlayer = new ECKeyPair();
+		ECKeyPair xPlayer = ECKeyPair.generateNew();
+		ECKeyPair oPlayer = ECKeyPair.generateNew();
 
 		// Build out real particle states for each of the boards
 		TicTacToeConstraintScrypt.XToMoveParticle initialBoard = TicTacToeRunner.buildInitialBoard(xPlayer, oPlayer);

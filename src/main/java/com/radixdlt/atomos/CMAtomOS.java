@@ -106,7 +106,7 @@ public final class CMAtomOS {
 			}
 
 			final Function<Particle, Stream<RadixAddress>> mapper = particleDefinition.getAddressMapper();
-			final Set<EUID> destinations = mapper.apply(p).map(RadixAddress::getUID).collect(Collectors.toSet());
+			final Set<EUID> destinations = mapper.apply(p).map(RadixAddress::euid).collect(Collectors.toSet());
 
 			if (!destinations.containsAll(p.getDestinations())) {
 				return Result.error("Address destinations does not contain all destinations");
