@@ -78,6 +78,7 @@ public final class QuorumCertificate {
 		return Objects.hash(signatures, vertexMetadata);
 	}
 
+	@Override
 	public String toString() {
 		return String.format("QC{view=%s}", vertexMetadata.getView());
 	}

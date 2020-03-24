@@ -51,11 +51,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import org.junit.Before;
 import org.junit.Test;
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
 
 public class MultiNodeConsensusTest {
-	private static final Logger log = Logging.getLogger("Test");
 	private final TestEventCoordinatorNetwork testEventCoordinatorNetwork = new TestEventCoordinatorNetwork();
 
 	private Atom genesis;

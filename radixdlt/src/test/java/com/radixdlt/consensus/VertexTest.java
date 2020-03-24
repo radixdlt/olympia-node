@@ -17,7 +17,6 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.common.Atom;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.Hash;
@@ -33,7 +32,6 @@ public class VertexTest {
 	private Vertex testObject;
 	private QuorumCertificate qc;
 	private Atom atom;
-	private Vote vote;
 	private VertexMetadata vertexMetadata;
 	private Hash parentId;
 	private Hash id;
@@ -47,10 +45,7 @@ public class VertexTest {
 
 		this.vertexMetadata = new VertexMetadata(view, id, parentView, parentId);
 
-		RadixAddress author = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
-		this.vote = new Vote(author.getKey(), this.vertexMetadata, null);
 		this.qc = new QuorumCertificate(this.vertexMetadata, new ECDSASignatures());
-
 
 		this.atom = new Atom();
 

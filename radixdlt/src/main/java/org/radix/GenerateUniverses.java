@@ -18,7 +18,6 @@
 package org.radix;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.common.Atom;
