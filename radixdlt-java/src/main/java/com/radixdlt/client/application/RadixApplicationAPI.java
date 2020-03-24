@@ -1156,7 +1156,7 @@ public class RadixApplicationAPI {
 			BiFunction<Action, Stream<Particle>, List<ParticleGroup>> statefulMapper = actionMappers.get(action.getClass());
 			if (statefulMapper == null) {
 				throw new IllegalArgumentException(
-						"Unknown action class: " + action.getClass() + ". Available: " + actionMappers.keySet()
+						String.format("Unknown action class: %s. Available: %s", action.getClass(), actionMappers.keySet())
 				);
 			}
 

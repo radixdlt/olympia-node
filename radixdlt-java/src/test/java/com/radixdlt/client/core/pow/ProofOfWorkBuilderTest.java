@@ -42,11 +42,11 @@ public class ProofOfWorkBuilderTest {
 	}
 
 	@Test
-	public void test_vectors() {
-		testVectors.forEach(v -> test_vector(v));
+	public void testProofOfWorkVectors() {
+		testVectors.forEach(v -> doTestVector(v));
 	}
 
-	private void test_vector(TestVector vector) {
+	private void doTestVector(TestVector vector) {
 		ProofOfWork pow = new ProofOfWorkBuilder().build(vector.getMagic(), vector.getSeed(), vector.getNumberOfLeadingZeros());
 		int nonce = (int) pow.getNonce();
 		assertEquals(vector.getNonce(), nonce);

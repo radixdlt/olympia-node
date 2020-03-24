@@ -128,7 +128,7 @@ public class SendMessageToParticleGroupsMapper implements StatelessActionToParti
 			try {
 				payload = sharedKey.getPublicKey().encrypt(action.getData());
 			} catch (ECIESException e) {
-				throw new IllegalStateException("Failed to encrypt data", e);
+				throw new IllegalStateException("Expected to always be able to encrypt", e);
 			}
 		} else {
 			payload = action.getData();
