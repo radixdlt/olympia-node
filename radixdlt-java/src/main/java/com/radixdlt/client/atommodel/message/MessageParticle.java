@@ -120,7 +120,7 @@ public class MessageParticle extends Particle implements Accountable {
 	private long nonce;
 
 	private MessageParticle(RadixAddress from, RadixAddress to, byte[] bytes, MetadataMap metaData, long nonce) {
-		this(from, to, bytes, metaData, nonce, ImmutableSet.of(from.getUID(), to.getUID()));
+		this(from, to, bytes, metaData, nonce, ImmutableSet.of(from.euid(), to.euid()));
 	}
 
 	public MessageParticle(

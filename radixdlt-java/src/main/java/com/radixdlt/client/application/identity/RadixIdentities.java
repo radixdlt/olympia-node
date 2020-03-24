@@ -59,7 +59,7 @@ public class RadixIdentities {
 	 * @return an unstored radix identity
 	 */
 	public static LocalRadixIdentity createNew() {
-		return new LocalRadixIdentity(new ECKeyPair());
+		return new LocalRadixIdentity(ECKeyPair.generateNew());
 	}
 
 	/**
@@ -74,7 +74,7 @@ public class RadixIdentities {
 		if (keyFile.exists()) {
 			ecKeyPair = ECKeyPair.fromFile(keyFile);
 		} else {
-			ecKeyPair = new ECKeyPair();
+			ecKeyPair = ECKeyPair.generateNew();
 
 			try (FileOutputStream io = new FileOutputStream(keyFile)) {
 				io.write(ecKeyPair.getPrivateKey());

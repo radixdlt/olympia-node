@@ -160,13 +160,13 @@ public class RadixUniverseConfig {
 		}
 	}
 
-	public EUID getHid() {
+	public EUID euid() {
 		return this.getHash().euid();
 	}
 
 	@Override
 	public String toString() {
-		return name + " " + magic + " " + getHid();
+		return name + " " + magic + " " + euid();
 	}
 
 	@Override

@@ -41,7 +41,7 @@ public class FetchAtomsRequestActionTest {
 	@Test
 	public void when_initializing_with_address__shards_should_match() {
 		RadixAddress address = mock(RadixAddress.class);
-		when(address.getUID()).thenReturn(EUID.ONE);
+		when(address.euid()).thenReturn(EUID.ONE);
 		assertThat(FetchAtomsRequestAction.newRequest(address).getShards()).containsExactly(EUID.ONE.getShard());
 	}
 }

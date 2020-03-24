@@ -63,7 +63,7 @@ public final class FetchAtomsRequestAction implements FetchAtomsAction, FindANod
 
 	@Override
 	public Set<Long> getShards() {
-		return Collections.singleton(address.getUID().getShard());
+		return Collections.singleton(address.euid().getShard());
 	}
 
 	@Override

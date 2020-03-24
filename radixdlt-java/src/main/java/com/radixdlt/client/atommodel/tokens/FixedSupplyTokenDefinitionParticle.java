@@ -88,7 +88,7 @@ public final class FixedSupplyTokenDefinitionParticle extends Particle implement
 		UInt256 granularity,
 		String iconUrl
 	) {
-		super(rri.getAddress().getUID());
+		super(rri.getAddress().euid());
 
 		this.rri = rri;
 		this.name = name;

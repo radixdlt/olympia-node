@@ -47,7 +47,7 @@ public class LocalRadixIdentityTest {
 		ECDSASignature ecSignature = mock(ECDSASignature.class);
 		EUID euid = mock(EUID.class);
 		when(keyPair.sign(any(Hash.class))).thenReturn(ecSignature);
-		when(keyPair.getUID()).thenReturn(euid);
+		when(keyPair.euid()).thenReturn(euid);
 
 		Atom signedAtom = mock(Atom.class);
 		when(signedAtom.getSignature(any())).thenReturn(Optional.of(ecSignature));

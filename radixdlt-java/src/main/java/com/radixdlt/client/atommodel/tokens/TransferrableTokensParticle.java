@@ -86,7 +86,7 @@ public final class TransferrableTokensParticle extends Particle implements Accou
 		long planck,
 		Map<TokenTransition, TokenPermission> tokenPermissions
 	) {
-		super(address.getUID());
+		super(address.euid());
 
 		// Redundant null check added for completeness
 		Objects.requireNonNull(amount, "amount is required");

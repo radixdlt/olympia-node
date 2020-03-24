@@ -51,7 +51,7 @@ public class CreateTokenToParticleGroupsMapperTest {
 	public void testNormalMutableSupplyConstruction() {
 		CreateTokenAction tokenCreation = mock(CreateTokenAction.class);
 		RadixAddress address = mock(RadixAddress.class);
-		when(address.getUID()).thenReturn(mock(EUID.class));
+		when(address.euid()).thenReturn(mock(EUID.class));
 		ECPublicKey key = mock(ECPublicKey.class);
 		when(address.getPublicKey()).thenReturn(key);
 		when(tokenCreation.getRRI()).thenReturn(RRI.of(address, "ISO"));
@@ -72,7 +72,7 @@ public class CreateTokenToParticleGroupsMapperTest {
 	public void testNormalFixedSupplyConstruction() {
 		CreateTokenAction tokenCreation = mock(CreateTokenAction.class);
 		RadixAddress address = mock(RadixAddress.class);
-		when(address.getUID()).thenReturn(mock(EUID.class));
+		when(address.euid()).thenReturn(mock(EUID.class));
 		ECPublicKey key = mock(ECPublicKey.class);
 		when(address.getPublicKey()).thenReturn(key);
 		when(tokenCreation.getRRI()).thenReturn(RRI.of(address, "ISO"));

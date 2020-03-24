@@ -45,7 +45,7 @@ public class AtomToTokenTransferActionsMapperTest {
 	@Test
 	public void testSendToSelfTest() {
 		RadixAddress myAddress = mock(RadixAddress.class);
-		when(myAddress.getUID()).thenReturn(EUID.ONE);
+		when(myAddress.euid()).thenReturn(EUID.ONE);
 		RRI tokenDefinitionReference = mock(RRI.class);
 		when(tokenDefinitionReference.getName()).thenReturn("JOSH");
 		when(tokenDefinitionReference.getAddress()).thenReturn(RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor"));

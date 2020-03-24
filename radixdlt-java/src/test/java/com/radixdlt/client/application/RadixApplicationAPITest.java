@@ -178,7 +178,7 @@ public class RadixApplicationAPITest {
 		RadixAddress address = mock(RadixAddress.class);
 		when(address.getPublicKey()).thenReturn(key);
 		when(api.getAddress()).thenReturn(address);
-		when(address.getUID()).thenReturn(EUID.ONE);
+		when(address.euid()).thenReturn(EUID.ONE);
 
 		Result result = api.sendMessage(address, new byte[0], false);
 		validateSuccessfulStoreDataResult(result);
@@ -193,7 +193,7 @@ public class RadixApplicationAPITest {
 
 		RadixAddress address = mock(RadixAddress.class);
 		when(address.getPublicKey()).thenReturn(mock(ECPublicKey.class));
-		when(address.getUID()).thenReturn(EUID.ONE);
+		when(address.euid()).thenReturn(EUID.ONE);
 		when(api.getAddress()).thenReturn(address);
 
 		api.sendMessage(address, new byte[0], false);
@@ -209,7 +209,7 @@ public class RadixApplicationAPITest {
 		RadixAddress address = mock(RadixAddress.class);
 		when(address.getPublicKey()).thenReturn(mock(ECPublicKey.class));
 		when(api.getAddress()).thenReturn(address);
-		when(address.getUID()).thenReturn(EUID.ONE);
+		when(address.euid()).thenReturn(EUID.ONE);
 
 		Result result = api.sendMessage(address, new byte[0], false);
 		Observable observable = result.toObservable();
@@ -281,9 +281,9 @@ public class RadixApplicationAPITest {
 	public void testErrorMapper() {
 		Particle particle = mock(Particle.class);
 		RadixAddress address = mock(RadixAddress.class);
-		when(address.getUID()).thenReturn(EUID.ONE);
+		when(address.euid()).thenReturn(EUID.ONE);
 		when(particle.getDestinations()).thenReturn(Collections.singleton(EUID.ONE));
-		when(particle.getHid()).thenReturn(EUID.ONE);
+		when(particle.euid()).thenReturn(EUID.ONE);
 		Atom atom = Atom.create(Collections.singletonList(ParticleGroup.of(SpunParticle.up(particle))), 0L);
 		RadixIdentity identity = mock(RadixIdentity.class);
 		when(identity.addSignature(any())).thenReturn(Single.just(atom));

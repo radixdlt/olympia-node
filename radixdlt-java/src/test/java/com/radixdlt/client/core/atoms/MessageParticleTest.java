@@ -38,7 +38,7 @@ public class MessageParticleTest {
 	@Test
 	public void testApplicationMetaData() {
 		RadixAddress address = mock(RadixAddress.class);
-		when(address.getUID()).thenReturn(mock(EUID.class), mock(EUID.class));
+		when(address.euid()).thenReturn(mock(EUID.class), mock(EUID.class));
 
 		MessageParticle messageParticle = new MessageParticleBuilder()
 			.payload(new byte[0])

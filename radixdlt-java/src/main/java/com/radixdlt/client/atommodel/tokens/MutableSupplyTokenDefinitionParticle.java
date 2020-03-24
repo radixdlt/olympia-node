@@ -91,7 +91,7 @@ public class MutableSupplyTokenDefinitionParticle extends Particle implements Id
 		Map<TokenTransition, TokenPermission> tokenPermissions,
 		String iconUrl
 	) {
-		super(rri.getAddress().getUID());
+		super(rri.getAddress().euid());
 		this.rri = rri;
 		this.name = name;
 		this.description = description;

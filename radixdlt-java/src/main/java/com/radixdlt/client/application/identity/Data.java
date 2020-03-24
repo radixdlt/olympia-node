@@ -81,7 +81,7 @@ public class Data {
 					throw new IllegalStateException("Must either be unencrypted or have at least one reader.");
 				}
 
-				ECKeyPair sharedKey = new ECKeyPair();
+				ECKeyPair sharedKey = ECKeyPair.generateNew();
 				encryptorBuilder.sharedKey(sharedKey);
 				encryptor = encryptorBuilder.build();
 				try {

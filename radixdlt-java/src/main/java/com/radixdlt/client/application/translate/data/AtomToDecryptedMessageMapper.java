@@ -107,12 +107,12 @@ public class AtomToDecryptedMessageMapper implements AtomToExecutedActionsMapper
 			.map(u -> {
 				final EncryptionState encryptionState = encryptorParticle.isPresent()
 					? EncryptionState.DECRYPTED : EncryptionState.NOT_ENCRYPTED;
-				return new DecryptedMessage(u.getData(), from, to, encryptionState, atom.getTimestamp(), bytesParticle.get().getHid());
+				return new DecryptedMessage(u.getData(), from, to, encryptionState, atom.getTimestamp(), bytesParticle.get().euid());
 			})
 			.onErrorResumeNext(e -> {
 				if (e instanceof CryptoException) {
 					return Single.just(
-						new DecryptedMessage(bytes, from, to, EncryptionState.CANNOT_DECRYPT, atom.getTimestamp(), bytesParticle.get().getHid())
+						new DecryptedMessage(bytes, from, to, EncryptionState.CANNOT_DECRYPT, atom.getTimestamp(), bytesParticle.get().euid())
 					);
 				} else {
 					return Single.error(e);

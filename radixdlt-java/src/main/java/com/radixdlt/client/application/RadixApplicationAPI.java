@@ -149,7 +149,7 @@ public class RadixApplicationAPI {
 			.defaultFeeMapper()
 			.addStatelessParticlesMapper(
 				SendMessageAction.class,
-				new SendMessageToParticleGroupsMapper(ECKeyPair::new)
+				new SendMessageToParticleGroupsMapper(ECKeyPair::generateNew)
 			)
 			.addStatelessParticlesMapper(CreateTokenAction.class, new CreateTokenToParticleGroupsMapper())
 			.addStatelessParticlesMapper(PutUniqueIdAction.class, new PutUniqueIdToParticleGroupsMapper())

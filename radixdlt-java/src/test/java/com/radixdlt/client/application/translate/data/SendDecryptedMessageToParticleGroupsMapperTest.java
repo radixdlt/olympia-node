@@ -35,7 +35,7 @@ public class SendDecryptedMessageToParticleGroupsMapperTest {
 	@Test
 	public void testNoEncryption() {
 		RadixAddress address = mock(RadixAddress.class);
-		when(address.getUID()).thenReturn(mock(EUID.class), mock(EUID.class));
+		when(address.euid()).thenReturn(mock(EUID.class), mock(EUID.class));
 
 		SendMessageToParticleGroupsMapper sendMessageToParticleGroupsMapper =
 			new SendMessageToParticleGroupsMapper(() -> mock(ECKeyPair.class));

@@ -155,7 +155,7 @@ public final class Atom {
 			return this.spunParticles()
 				.filter(s -> s.getSpin() == Spin.DOWN)
 				.flatMap(s -> s.getParticle().getShardables().stream())
-				.map(RadixAddress::getUID)
+				.map(RadixAddress::euid)
 				.map(EUID::getShard)
 				.collect(Collectors.toSet());
 		} else {
