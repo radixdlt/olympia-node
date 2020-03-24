@@ -155,8 +155,8 @@ public class ECKeyPairTest {
 	@Test
 	public void when_generating_two_key_pairs_from_same_seed__they_should_have_same_private_keys() throws CryptoException {
 		byte[] seed = "seed".getBytes();
-		byte[] privateKey1 = ECKeyPair.fromSeedSha2bits256HashedTwice(seed).getPrivateKey();
-		byte[] privateKey2 = ECKeyPair.fromSeedSha2bits256HashedTwice(seed).getPrivateKey();
+		byte[] privateKey1 = ECKeyPair.fromSeed(seed).getPrivateKey();
+		byte[] privateKey2 = ECKeyPair.fromSeed(seed).getPrivateKey();
 
 		assertThat(privateKey1, equalTo(privateKey2));
 	}
@@ -164,8 +164,8 @@ public class ECKeyPairTest {
 	@Test
 	public void when_signing_some_hash_with_a_seeded_key_pair__another_key_pair_from_same_seed_can_verify_the_signature() throws CryptoException {
 		byte[] seed = "seed".getBytes();
-		ECKeyPair keyPair1 = ECKeyPair.fromSeedSha2bits256HashedTwice(seed);
-		ECKeyPair keyPair2 = ECKeyPair.fromSeedSha2bits256HashedTwice(seed);
+		ECKeyPair keyPair1 = ECKeyPair.fromSeed(seed);
+		ECKeyPair keyPair2 = ECKeyPair.fromSeed(seed);
 
 		Hash hash1 = Hash.random();
 		Hash hash2 = Hash.random();

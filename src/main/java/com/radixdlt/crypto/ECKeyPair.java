@@ -103,14 +103,14 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
 	}
 
 	/**
-	 * Generates a new, deterministic {@code ECKeyPair} instance based on the
+	 * Generates a new, deterministic {@code ECKeyPair} instance by <b>hashing<b/> the
 	 * provided seed.
 	 *
-	 * @param seed The seed to use when deriving the key pair instance, that is <b>twice</> SHA2-256 hashed.
-	 * @return A key pair that corresponds to the provided seed.
+	 * @param seed The seed to use when deriving the key pair instance, that is hashed (256 bits).
+	 * @return A key pair that corresponds to the hash of the provided seed.
 	 * @throws IllegalArgumentException if the seed is empty or a null pointer.
 	 */
-	public static ECKeyPair fromSeedSha2bits256HashedTwice(byte[] seed) {
+	public static ECKeyPair fromSeed(byte[] seed) {
 		Objects.requireNonNull(seed, "Seed must not be null");
 
 		if (seed.length == 0) {
