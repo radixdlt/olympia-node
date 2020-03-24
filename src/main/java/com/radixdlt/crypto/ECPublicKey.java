@@ -84,7 +84,7 @@ public final class ECPublicKey {
 		return new ECPublicKey(Bytes.fromBase64String(base64));
 	}
 
-	public EUID getUID() {
+	public EUID euid() {
 		return this.uid.get();
 	}
 

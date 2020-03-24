@@ -144,7 +144,7 @@ public class SignaturesTest {
         Signatures signatures = DefaultSignatures.emptySignatures();
         byte[] hashedMessage = hashOfMessage("You must do what you feel is right of course");
         for (int i = 0; i < numberOfValidSignaturesToCreate + numberOfInvalidSignaturesToCreate; i++) {
-            ECKeyPair keyPair = new ECKeyPair();
+            ECKeyPair keyPair = ECKeyPair.generateNew();
             assertNotNull(keyPair);
             final Signature signature;
             boolean shouldSignatureBeValid = i >= numberOfInvalidSignaturesToCreate;
@@ -164,7 +164,7 @@ public class SignaturesTest {
     }
 
     private ECPublicKey publicKey() {
-        return new ECKeyPair().getPublicKey();
+        return ECKeyPair.generateNew().getPublicKey();
     }
 
     private ECDSASignature randomInvalidSignature() {

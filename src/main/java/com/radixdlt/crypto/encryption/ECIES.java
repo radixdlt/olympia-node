@@ -114,7 +114,7 @@ public final class ECIES {
 			secureRandom.nextBytes(iv);
 
 			// 3. Generate a new ephemeral EC key pair
-			ECKeyPair ephemeral = new ECKeyPair(); // ECKeyPairGenerator.newInstance().generateKeyPair((publicKey.length - 1) * 8);
+			ECKeyPair ephemeral = ECKeyPair.generateNew();
 
 			// 4. Do an EC point multiply with `publicKeyPointOnCurve` and ephemeral private key. This gives you a point M.
 			ECPoint m = ephemeral.multiply(publicKeyPointOnCurve);

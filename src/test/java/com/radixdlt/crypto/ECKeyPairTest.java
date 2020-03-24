@@ -58,7 +58,7 @@ public class ECKeyPairTest {
 		final int iterations = 5000;
 
 		for (int i = 0; i < iterations; i++) {
-			ECKeyPair key = new ECKeyPair();
+			ECKeyPair key = ECKeyPair.generateNew();
 
 			byte[] priv = key.getPrivateKey();
 			byte[] pub = key.getPublicKey().getBytes();
@@ -76,7 +76,7 @@ public class ECKeyPairTest {
 		String helloWorld = "Hello World";
 
 		for (int i = 0; i < iterations; i++) {
-			ECKeyPair key = new ECKeyPair();
+			ECKeyPair key = ECKeyPair.generateNew();
 			byte[] priv = key.getPrivateKey();
 			byte[] pub = key.getPublicKey().getBytes();
 
@@ -94,7 +94,7 @@ public class ECKeyPairTest {
 		String helloWorld = "Hello World";
 
 		for (int i = 0; i < iterations; ++i) {
-			ECKeyPair key = new ECKeyPair();
+			ECKeyPair key = ECKeyPair.generateNew();
 			byte[] priv = key.getPrivateKey();
 
 
@@ -124,8 +124,8 @@ public class ECKeyPairTest {
 
 	@Test
 	public void decrypt_bad_encrypted_data_with_good_encrypted_private_key__should_throw_CryptoException() throws CryptoException {
-		ECKeyPair keyPair1 = new ECKeyPair();
-		ECKeyPair keyPair2 = new ECKeyPair();
+		ECKeyPair keyPair1 = ECKeyPair.generateNew();
+		ECKeyPair keyPair2 = ECKeyPair.generateNew();
 
 		EncryptedPrivateKey encryptedPrivateKey = keyPair2.encryptPrivateKeyWithPublicKey(keyPair1.getPublicKey()); //(keyPair1.getPublicKey());
 
@@ -136,7 +136,7 @@ public class ECKeyPairTest {
 	@Test
 	public void encryptionTest() throws CryptoException {
 		String testPhrase = "Hello World";
-		ECKeyPair ecKeyPair = new ECKeyPair();
+		ECKeyPair ecKeyPair = ECKeyPair.generateNew();
 		byte[] encrypted = ecKeyPair.getPublicKey().encrypt(testPhrase.getBytes());
 		assertTrue(encrypted.length > 0);
 		byte[] decrypted = ecKeyPair.decrypt(encrypted);
@@ -146,8 +146,8 @@ public class ECKeyPairTest {
 
 	@Test
 	public void when_generating_two_default_key_pairs__they_should_have_different_private_keys() throws CryptoException {
-		byte[] privateKey1 = new ECKeyPair().getPrivateKey();
-		byte[] privateKey2 = new ECKeyPair().getPrivateKey();
+		byte[] privateKey1 = ECKeyPair.generateNew().getPrivateKey();
+		byte[] privateKey2 = ECKeyPair.generateNew().getPrivateKey();
 
 		assertThat(privateKey1, not(equalTo(privateKey2)));
 	}

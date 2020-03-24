@@ -84,7 +84,7 @@ public class RadixAddressTest {
 	@Test
 	public void from_client_library___createAddressAndCheckUID() {
 		RadixAddress address = RadixAddress.from("JHB89drvftPj6zVCNjnaijURk8D8AMFw4mVja19aoBGmRXWchnJ");
-		assertEquals(new EUID("8cfef50ea6a767813631490f9a94f73f"), address.getUID());
+		assertEquals(new EUID("8cfef50ea6a767813631490f9a94f73f"), address.euid());
 	}
 
 	@Test(expected = CryptoException.class)

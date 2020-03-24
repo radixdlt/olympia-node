@@ -60,8 +60,7 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final ECPublicKey publicKey;
 
-
-	public ECKeyPair() {
+	private ECKeyPair() {
 		this(ECKeyUtils.secureRandom());
 	}
 
@@ -83,6 +82,24 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
 		} catch (Exception e) {
 			throw new IllegalStateException("Failed to generate ECKeyPair", e);
 		}
+	}
+
+	public ECKeyPair(byte[] privateKey) throws CryptoException {
+		try {
+			ECKeyUtils.validatePrivate(privateKey);
+			this.privateKey = privateKey;
+			this.publicKey = new ECPublicKey(ECKeyUtils.keyHandler.computePublicKey(privateKey));
+		} catch (Exception ex) {
+			throw new CryptoException(ex);
+		}
+	}
+
+	/**
+	 * Generates a new private and public key pair based on randomness.
+	 * @return a newly generated private key and it's corresponding {@link ECPublicKey}.
+	 */
+	public static ECKeyPair generateNew() {
+		return new ECKeyPair();
 	}
 
 	/**
@@ -109,18 +126,8 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
 		}
 	}
 
-	public ECKeyPair(byte[] privateKey) throws CryptoException {
-		try {
-			ECKeyUtils.validatePrivate(privateKey);
-			this.privateKey = privateKey;
-			this.publicKey = new ECPublicKey(ECKeyUtils.keyHandler.computePublicKey(privateKey));
-		} catch (Exception ex) {
-			throw new CryptoException(ex);
-		}
-	}
-
-	public EUID getUID() {
-		return this.publicKey.getUID();
+	public EUID euid() {
+		return this.publicKey.euid();
 	}
 
 	public byte[] getPrivateKey() {

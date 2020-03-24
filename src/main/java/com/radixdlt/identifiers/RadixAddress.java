@@ -102,8 +102,8 @@ public final class RadixAddress {
 		return this.publicKey;
 	}
 
-	public EUID getUID() {
-		return this.publicKey.getUID();
+	public EUID euid() {
+		return this.publicKey.euid();
 	}
 
 	@Override

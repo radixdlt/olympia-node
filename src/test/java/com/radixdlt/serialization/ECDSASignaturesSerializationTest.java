@@ -27,7 +27,7 @@ public class ECDSASignaturesSerializationTest extends SerializeObjectEngine<ECDS
 
     private static ECDSASignatures getECDSASignatures() {
 
-        ECKeyPair k1 = new ECKeyPair();
+        ECKeyPair k1 = ECKeyPair.generateNew();
         ECDSASignature s1 = new ECDSASignature(BigInteger.ONE, BigInteger.ONE);
 
         return new ECDSASignatures(
