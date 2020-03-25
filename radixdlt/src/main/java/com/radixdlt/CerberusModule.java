@@ -29,11 +29,9 @@ import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.VertexStore;
 import com.radixdlt.consensus.View;
-import com.radixdlt.consensus.liveness.Dictatorship;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.PacemakerImpl;
 import com.radixdlt.consensus.liveness.PacemakerRx;
-import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.tempo.Scheduler;
 import com.radixdlt.consensus.tempo.SingleThreadedScheduler;
@@ -86,14 +84,6 @@ public class CerberusModule extends AbstractModule {
 		@Named("self") ECKeyPair selfKey
 	) {
 		return ValidatorSet.from(Collections.singleton(Validator.from(selfKey.getPublicKey())));
-	}
-
-	@Provides
-	@Singleton
-	private ProposerElection proposerElection(
-		@Named("self") ECKeyPair selfKey
-	) {
-		return new Dictatorship(selfKey.getPublicKey());
 	}
 
 	@Provides

@@ -139,6 +139,7 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 			.ifPresent(this::proceedToView);
 	}
 
+	@Override
 	public void processVote(Vote vote) {
 		log.info(this.getShortName() + ": Processing VOTE_MESSAGE: " + vote);
 
@@ -158,6 +159,7 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 		}
 	}
 
+	@Override
 	public void processNewView(NewView newView) {
 		log.info(this.getShortName() + ": Processing NEW_VIEW_MESSAGE: " + newView);
 
@@ -175,6 +177,7 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 			.ifPresent(this::startQuorumNewView);
 	}
 
+	@Override
 	public void processProposal(Vertex proposedVertex) {
 		log.info(this.getShortName() + ": Processing PROPOSAL_MESSAGE: " + proposedVertex);
 
@@ -220,6 +223,7 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 		// TODO: For now, just depend on Timeout events
 	}
 
+	@Override
 	public void processLocalTimeout(View view) {
 		log.info(this.getShortName() + ": Processing LOCAL_TIMEOUT: " + view);
 

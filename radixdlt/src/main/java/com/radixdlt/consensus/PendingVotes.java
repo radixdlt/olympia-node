@@ -36,8 +36,7 @@ public final class PendingVotes {
 	/**
 	 * Inserts a vote for a given vertex, attempting to form a quorum certificate for that vertex.
 	 *
-	 * The vote will only be inserted if permitted by the {@link ValidatorSet}.
-	 * Similarly, a QC will only be formed if permitted by the {@link ValidatorSet}.
+	 * A QC will only be formed if permitted by the {@link ValidatorSet}.
 	 * @param vote The vote to be inserted
 	 * @return The generated QC, if any
 	 */
