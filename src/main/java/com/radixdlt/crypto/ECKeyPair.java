@@ -34,7 +34,6 @@ import org.bouncycastle.crypto.params.ECPrivateKeyParameters;
 import org.bouncycastle.crypto.params.ECPublicKeyParameters;
 import org.bouncycastle.math.ec.ECPoint;
 
-import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -219,7 +218,7 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
 		}
 		this.privateKey = Arrays.copyOf(privateKey, privateKey.length);
 	}
-	
+
 	public static ECKeyPair fromFile(File file) throws CryptoException {
 		try (InputStream inputStream = new FileInputStream(file)) {
 			byte[] privateKey = new byte[32];
