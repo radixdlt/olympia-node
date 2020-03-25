@@ -53,7 +53,7 @@ public class GlobalInjector {
 		Module lazyRequestDelivererModule = new LazyRequestDelivererModule(properties);
 		Module iterativeDiscovererModule = new IterativeDiscovererModule(properties);
 		Module berkeleyStoreModule = new BerkeleyStoreModule();
-		Module tempoModule = new CerberusModule();
+		Module tempoModule = new CerberusModule(properties);
 		Module middlewareModule = new MiddlewareModule();
 		Module messageCentralModule = new MessageCentralModule(properties);
 		Module udpTransportModule = new UDPTransportModule(properties);

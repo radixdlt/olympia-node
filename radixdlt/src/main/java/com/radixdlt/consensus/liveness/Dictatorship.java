@@ -17,8 +17,8 @@
 
 package com.radixdlt.consensus.liveness;
 
-import com.radixdlt.common.EUID;
 import com.radixdlt.consensus.View;
+import com.radixdlt.crypto.ECPublicKey;
 import java.util.Objects;
 
 /**
@@ -26,19 +26,14 @@ import java.util.Objects;
  */
 public final class Dictatorship implements ProposerElection {
 
-	private final EUID leader;
+	private final ECPublicKey leader;
 
-	public Dictatorship(EUID leader) {
+	public Dictatorship(ECPublicKey leader) {
 		this.leader = Objects.requireNonNull(leader);
 	}
 
 	@Override
-	public boolean isValidProposer(EUID nid, View view) {
-		return nid.equals(leader);
-	}
-
-	@Override
-	public EUID getProposer(View view) {
+	public ECPublicKey getProposer(View view) {
 		return leader;
 	}
 }

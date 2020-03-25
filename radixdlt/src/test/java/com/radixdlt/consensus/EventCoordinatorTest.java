@@ -20,12 +20,12 @@ package com.radixdlt.consensus;
 import com.google.common.collect.Lists;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.Atom;
-import com.radixdlt.common.EUID;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyViolationException;
+import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
@@ -52,7 +52,7 @@ import static org.mockito.Mockito.when;
 public class EventCoordinatorTest {
 	private static final ECKeyPair SELF_KEY = makeKeyPair();
 
-	private EventCoordinator eventCoordinator;
+	private ValidatingEventCoordinator eventCoordinator;
 	private ProposalGenerator proposalGenerator;
 	private ProposerElection proposerElection;
 	private SafetyRules safetyRules;
@@ -61,6 +61,7 @@ public class EventCoordinatorTest {
 	private Mempool mempool;
 	private EventCoordinatorNetworkSender networkSender;
 	private VertexStore vertexStore;
+	private ValidatorSet validatorSet;
 
 	@Before
 	public void setUp() {
@@ -72,8 +73,9 @@ public class EventCoordinatorTest {
 		this.vertexStore = mock(VertexStore.class);
 		this.pendingVotes = mock(PendingVotes.class);
 		this.proposerElection = mock(ProposerElection.class);
+		this.validatorSet = mock(ValidatorSet.class);
 
-		this.eventCoordinator = new EventCoordinator(
+		this.eventCoordinator = new ValidatingEventCoordinator(
 			proposalGenerator,
 			mempool,
 			networkSender,
@@ -82,7 +84,9 @@ public class EventCoordinatorTest {
 			vertexStore,
 			pendingVotes,
 			proposerElection,
-			SELF_KEY);
+			SELF_KEY,
+			validatorSet
+		);
 	}
 
 	private static AID makeAID(int n) {
@@ -105,7 +109,6 @@ public class EventCoordinatorTest {
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
 		when(voteMessage.getVertexMetadata()).thenReturn(vertexMetadata);
 		when(vertexMetadata.getView()).thenReturn(View.of(0L));
-		when(proposerElection.isValidProposer(any(), any())).thenReturn(false);
 
 		eventCoordinator.processVote(voteMessage);
 		verify(safetyRules, times(0)).process(any(QuorumCertificate.class));
@@ -114,8 +117,7 @@ public class EventCoordinatorTest {
 
 	@Test
 	public void when_processing_vote_as_a_proposer_and_quorum_is_reached__then_a_new_view_is_sent() {
-		when(proposerElection.getProposer(any())).thenReturn(SELF_KEY.getUID());
-		when(proposerElection.isValidProposer(eq(SELF_KEY.getUID()), any())).thenReturn(true);
+		when(proposerElection.getProposer(any())).thenReturn(SELF_KEY.getPublicKey());
 
 		Vote vote = mock(Vote.class);
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
@@ -126,7 +128,7 @@ public class EventCoordinatorTest {
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		View view = mock(View.class);
 		when(qc.getView()).thenReturn(view);
-		when(pendingVotes.insertVote(eq(vote))).thenReturn(Optional.of(qc));
+		when(pendingVotes.insertVote(eq(vote), any())).thenReturn(Optional.of(qc));
 		when(mempool.getAtoms(anyInt(), any())).thenReturn(Lists.newArrayList());
 		when(pacemaker.getCurrentView()).thenReturn(mock(View.class));
 		when(pacemaker.processQC(eq(view))).thenReturn(Optional.of(mock(View.class)));
@@ -138,7 +140,7 @@ public class EventCoordinatorTest {
 
 	@Test
 	public void when_processing_relevant_local_timeout__then_new_view_is_emitted() {
-		when(proposerElection.getProposer(any())).thenReturn(mock(EUID.class));
+		when(proposerElection.getProposer(any())).thenReturn(makeKeyPair().getPublicKey());
 		when(pacemaker.processLocalTimeout(any())).thenReturn(Optional.of(View.of(1)));
 		when(pacemaker.getCurrentView()).thenReturn(View.of(1));
 		eventCoordinator.processLocalTimeout(View.of(0L));
@@ -157,8 +159,7 @@ public class EventCoordinatorTest {
 		NewView newView = mock(NewView.class);
 		when(newView.getQC()).thenReturn(mock(QuorumCertificate.class));
 		when(newView.getView()).thenReturn(View.of(0L));
-		when(proposerElection.isValidProposer(any(), any())).thenReturn(true);
-		when(proposerElection.getProposer(any())).thenReturn(mock(EUID.class));
+		when(proposerElection.getProposer(any())).thenReturn(SELF_KEY.getPublicKey());
 		eventCoordinator.processNewView(newView);
 		verify(pacemaker, times(1)).processNewView(any());
 	}
@@ -167,7 +168,6 @@ public class EventCoordinatorTest {
 	public void when_processing_new_view_as_not_proposer__then_new_view_is_not_emitted() {
 		NewView newView = mock(NewView.class);
 		when(newView.getView()).thenReturn(View.of(0L));
-		when(proposerElection.isValidProposer(any(), any())).thenReturn(false);
 		eventCoordinator.processNewView(newView);
 		verify(pacemaker, times(0)).processNewView(any());
 	}
@@ -207,7 +207,7 @@ public class EventCoordinatorTest {
 		throws SafetyViolationException {
 		View currentView = View.of(123);
 
-		when(proposerElection.getProposer(any())).thenReturn(mock(EUID.class));
+		when(proposerElection.getProposer(any())).thenReturn(makeKeyPair().getPublicKey());
 
 		Vertex proposedVertex = mock(Vertex.class);
 		Atom proposedAtom = mock(Atom.class);
@@ -250,7 +250,7 @@ public class EventCoordinatorTest {
 
 		when(safetyRules.process(eq(qc))).thenReturn(Optional.of(committedVertexId));
 		when(vertexStore.commitVertex(eq(committedVertexId))).thenReturn(committedVertex);
-		when(proposerElection.getProposer(any())).thenReturn(mock(EUID.class));
+		when(proposerElection.getProposer(any())).thenReturn(makeKeyPair().getPublicKey());
 
 		eventCoordinator.processProposal(proposalVertex);
 		verify(mempool, times(1)).removeCommittedAtom(eq(aid));

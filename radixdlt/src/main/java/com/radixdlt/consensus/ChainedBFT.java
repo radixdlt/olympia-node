@@ -21,6 +21,7 @@ import com.google.inject.Inject;
 
 import com.radixdlt.consensus.liveness.PacemakerRx;
 
+import com.radixdlt.consensus.validators.ValidatorSet;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.schedulers.Schedulers;
@@ -32,6 +33,7 @@ import java.util.Objects;
  */
 public final class ChainedBFT {
 	public enum EventType {
+		EPOCH,
 		LOCAL_TIMEOUT,
 		NEW_VIEW_MESSAGE,
 		PROPOSAL_MESSAGE,
@@ -54,23 +56,23 @@ public final class ChainedBFT {
 	}
 
 	private final EventCoordinatorNetworkRx network;
-	private final PacemakerRx pacemaker;
-	private final EventCoordinator eventCoordinator;
+	private final PacemakerRx pacemakerRx;
+	private final EpochRx epochRx;
+	private final EpochManager epochManager;
+
 	private final Scheduler singleThreadScheduler = Schedulers.single();
 
 	@Inject
 	public ChainedBFT(
-		EventCoordinator eventCoordinator,
+		EpochRx epochRx,
 		EventCoordinatorNetworkRx network,
-		PacemakerRx pacemaker
+		PacemakerRx pacemakerRx,
+		EpochManager epochManager
 	) {
-		Objects.requireNonNull(pacemaker);
-		Objects.requireNonNull(network);
-		Objects.requireNonNull(eventCoordinator);
-
-		this.pacemaker = pacemaker;
-		this.network = network;
-		this.eventCoordinator = eventCoordinator;
+		this.pacemakerRx = Objects.requireNonNull(pacemakerRx);
+		this.network = Objects.requireNonNull(network);
+		this.epochRx = Objects.requireNonNull(epochRx);
+		this.epochManager = Objects.requireNonNull(epochManager);
 	}
 
 	/**
@@ -81,26 +83,58 @@ public final class ChainedBFT {
 	 * @return observable of the events which are being processed
 	 */
 	public Observable<Event> processEvents() {
-		final Observable<Event> timeouts = this.pacemaker.localTimeouts()
-			.subscribeOn(this.singleThreadScheduler)
-			.doAfterNext(this.eventCoordinator::processLocalTimeout)
-			.map(o -> new Event(EventType.LOCAL_TIMEOUT, o));
+		final Observable<ValidatorSet> epochEvents = this.epochRx.epochs()
+			.publish()
+			.autoConnect(2);
 
-		final Observable<Event> newViews = this.network.newViewMessages()
-			.subscribeOn(this.singleThreadScheduler)
-			.doAfterNext(this.eventCoordinator::processNewView)
-			.map(o -> new Event(EventType.NEW_VIEW_MESSAGE, o));
+		final Observable<Event> epochs = epochEvents
+			.map(o -> new Event(EventType.EPOCH, o))
+			.subscribeOn(this.singleThreadScheduler);
 
-		final Observable<Event> proposals = this.network.proposalMessages()
-			.subscribeOn(this.singleThreadScheduler)
-			.doAfterNext(this.eventCoordinator::processProposal)
-			.map(o -> new Event(EventType.PROPOSAL_MESSAGE, o));
+		final Observable<EventCoordinator> epochCoordinators = epochEvents
+			.map(epochManager::nextEpoch)
+			.startWithItem(epochManager.start())
+			.publish()
+			.autoConnect(4);
 
-		final Observable<Event> votes = this.network.voteMessages()
-			.subscribeOn(this.singleThreadScheduler)
-			.doAfterNext(this.eventCoordinator::processVote)
-			.map(o -> new Event(EventType.VOTE_MESSAGE, o));
+		final Observable<Event> timeouts = Observable.combineLatest(
+			epochCoordinators,
+			this.pacemakerRx.localTimeouts(),
+			(e, timeout) -> {
+				e.processLocalTimeout(timeout);
+				return new Event(EventType.LOCAL_TIMEOUT, timeout);
+			}
+		).subscribeOn(this.singleThreadScheduler);
 
-		return Observable.merge(timeouts, newViews, proposals, votes);
+		final Observable<Event> newViews = Observable.combineLatest(
+			epochCoordinators,
+			this.network.newViewMessages(),
+			(e, newView) -> {
+				e.processNewView(newView);
+				return new Event(EventType.NEW_VIEW_MESSAGE, newView);
+			}
+		).subscribeOn(this.singleThreadScheduler);
+
+		final Observable<Event> proposals = Observable.combineLatest(
+			epochCoordinators,
+			this.network.proposalMessages(),
+			(e, proposal) -> {
+				e.processProposal(proposal);
+				return new Event(EventType.PROPOSAL_MESSAGE, proposal);
+			}
+		).subscribeOn(this.singleThreadScheduler);
+
+		final Observable<Event> votes = Observable.combineLatest(
+			epochCoordinators,
+			this.network.voteMessages(),
+			(e, vote) -> {
+				e.processVote(vote);
+				return new Event(EventType.VOTE_MESSAGE, vote);
+			}
+		).subscribeOn(this.singleThreadScheduler);
+
+		final Observable<Event> networkMessages = Observable.merge(newViews, proposals, votes);
+
+		return Observable.merge(epochs, timeouts, networkMessages);
 	}
 }

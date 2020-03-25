@@ -17,8 +17,8 @@
 
 package com.radixdlt.consensus;
 
-import com.google.inject.Inject;
-import com.radixdlt.consensus.safety.QuorumRequirements;
+import com.radixdlt.consensus.validators.ValidationResult;
+import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.Hash;
@@ -31,48 +31,34 @@ import java.util.Optional;
  * Manages pending votes for various vertices
  */
 public final class PendingVotes {
-	private final QuorumRequirements quorumRequirements;
 	private final HashMap<Hash, ECDSASignatures> pendingVotes = new HashMap<>();
-
-	@Inject
-	public PendingVotes(QuorumRequirements quorumRequirements) {
-		this.quorumRequirements = Objects.requireNonNull(quorumRequirements);
-	}
 
 	/**
 	 * Inserts a vote for a given vertex, attempting to form a quorum certificate for that vertex.
 	 *
-	 * The vote will only be inserted if permitted by the installed {@link QuorumRequirements}.
-	 * Similarly, a QC will only be formed if permitted by the installed {@link QuorumRequirements}.
+	 * A QC will only be formed if permitted by the {@link ValidatorSet}.
 	 * @param vote The vote to be inserted
 	 * @return The generated QC, if any
 	 */
-	public Optional<QuorumCertificate> insertVote(Vote vote) {
+	public Optional<QuorumCertificate> insertVote(Vote vote, ValidatorSet validatorSet) {
 		Objects.requireNonNull(vote, "vote");
 
 		Hash voteId = vote.getVertexMetadata().getId();
 		ECDSASignature signature = vote.getSignature().orElseThrow(() -> new IllegalArgumentException("vote is missing signature"));
 		ECDSASignatures signatures = pendingVotes.getOrDefault(voteId, new ECDSASignatures());
-
-		// try to add the signature to form a QC if permitted by the requirements
-		if (quorumRequirements.accepts(vote.getAuthor().getUID())) {
-			// FIXME ugly cast to ECDSASignatures because we need a specific type
-			signatures = (ECDSASignatures) signatures.concatenate(vote.getAuthor(), signature);
-		} else {
-			// there is no meaningful inaction here, so better let the caller know
-			throw new IllegalArgumentException("vote " + vote + " was not accepted into QC");
-		}
+		signatures = (ECDSASignatures) signatures.concatenate(vote.getAuthor(), signature);
 
 		// try to form a QC with the added signature according to the requirements
-		if (signatures.count() >= quorumRequirements.numRequiredVotes()) {
+		ValidationResult validationResult = validatorSet.validate(voteId, signatures);
+		if (!validationResult.valid()) {
+			// if no QC could be formed, update pending and return nothing
+			pendingVotes.put(voteId, signatures);
+			return Optional.empty();
+		} else {
 			// if QC could be formed, remove pending and return formed QC
 			pendingVotes.remove(voteId);
 			QuorumCertificate qc = new QuorumCertificate(vote.getVertexMetadata(), signatures);
 			return Optional.of(qc);
-		} else {
-			// if no QC could be formed, update pending and return nothing
-			pendingVotes.put(voteId, signatures);
-			return Optional.empty();
 		}
 	}
 }

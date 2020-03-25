@@ -17,11 +17,11 @@
 
 package com.radixdlt.consensus.validators;
 
+import com.google.common.collect.ImmutableBiMap;
+import com.google.common.collect.ImmutableSet;
 import java.util.Collection;
-import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
@@ -36,11 +36,11 @@ import com.radixdlt.crypto.Signatures;
  * as long as all validators sign.
  */
 public final class ValidatorSet {
-	private final Map<ECPublicKey, Validator> validators;
+	private final ImmutableBiMap<ECPublicKey, Validator> validators;
 
 	private ValidatorSet(Collection<Validator> validators) {
 		this.validators = validators.stream()
-			.collect(Collectors.toMap(Validator::nodeKey, Function.identity()));
+			.collect(ImmutableBiMap.toImmutableBiMap(Validator::nodeKey, Function.identity()));
 	}
 
 	/**
@@ -71,6 +71,10 @@ public final class ValidatorSet {
 		} else {
 			return ValidationResult.passed(signed);
 		}
+	}
+
+	public ImmutableSet<Validator> getValidators() {
+		return validators.values();
 	}
 
 	@VisibleForTesting

@@ -18,11 +18,26 @@
 package com.radixdlt.consensus;
 
 /**
- * Processor of BFT events
+ * An empty BFT event processor
  */
-public interface EventCoordinator {
-	void processVote(Vote vote);
-	void processNewView(NewView newView);
-	void processProposal(Vertex proposedVertex);
-	void processLocalTimeout(View view);
+public class EmptyEventCoordinator implements EventCoordinator {
+	@Override
+	public void processVote(Vote vote) {
+		// No-op
+	}
+
+	@Override
+	public void processNewView(NewView newView) {
+		// No-op
+	}
+
+	@Override
+	public void processProposal(Vertex proposedVertex) {
+		// No-op
+	}
+
+	@Override
+	public void processLocalTimeout(View view) {
+		// No-op
+	}
 }
