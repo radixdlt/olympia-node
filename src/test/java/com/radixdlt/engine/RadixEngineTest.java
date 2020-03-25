@@ -28,16 +28,14 @@ import com.radixdlt.middleware.SpunParticle;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.store.CMStores;
 import com.radixdlt.store.EngineStore;
+import org.assertj.core.api.Assertions;
 import org.junit.Test;
 
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.timeout;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class RadixEngineTest {
@@ -62,11 +60,12 @@ public class RadixEngineTest {
 			engineStore
 		);
 
-		engine.start();
 		Atom atom = spy(new Atom());
 		when(atom.getParticleGroups()).thenReturn(ImmutableList.of(ParticleGroup.of(SpunParticle.of(mock(IndexedParticle.class), Spin.UP))));
-		AtomEventListener listener = mock(AtomEventListener.class);
-		engine.store(atom, listener);
-		verify(listener, timeout(200).times(1)).onVirtualStateConflict(any(), eq(DataPointer.ofParticle(0, 0)));
+		Assertions.assertThatThrownBy(() -> engine.store(atom))
+			.isInstanceOf(RadixEngineException.class)
+			.matches(e -> ((RadixEngineException) e).getDataPointer().equals(DataPointer.ofParticle(0, 0)), "points to 1st particle")
+			.extracting(e -> ((RadixEngineException) e).getErrorCode())
+			.isEqualTo(RadixEngineErrorCode.VIRTUAL_STATE_CONFLICT);
 	}
 }

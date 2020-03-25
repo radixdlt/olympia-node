@@ -54,7 +54,8 @@ public class UnallocatedTokensParticle extends Particle {
 
 	private Map<TokenTransition, TokenPermission> tokenPermissions;
 
-	private UnallocatedTokensParticle() {
+	UnallocatedTokensParticle() {
+		// Serializer only
 		super();
 	}
 
