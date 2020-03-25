@@ -19,16 +19,9 @@ package com.radixdlt.consensus;
 
 import com.google.inject.Inject;
 
-import com.google.inject.name.Named;
-import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.PacemakerRx;
 
-import com.radixdlt.consensus.liveness.ProposalGenerator;
-import com.radixdlt.consensus.liveness.ProposerElection;
-import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.validators.ValidatorSet;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.mempool.Mempool;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.schedulers.Schedulers;
@@ -65,16 +58,7 @@ public final class ChainedBFT {
 	private final EventCoordinatorNetworkRx network;
 	private final PacemakerRx pacemakerRx;
 	private final EpochRx epochRx;
-	private final ProposalGenerator proposalGenerator;
-	private final Mempool mempool;
-	private final EventCoordinatorNetworkSender networkSender;
-	private final SafetyRules safetyRules;
-	private final Pacemaker pacemaker;
-	private final VertexStore vertexStore;
-	private final PendingVotes pendingVotes;
-	private final ProposerElection proposerElection;
-	private final ECKeyPair selfKey;
-
+	private final EpochManager epochManager;
 
 	private final Scheduler singleThreadScheduler = Schedulers.single();
 
@@ -83,28 +67,12 @@ public final class ChainedBFT {
 		EpochRx epochRx,
 		EventCoordinatorNetworkRx network,
 		PacemakerRx pacemakerRx,
-		ProposalGenerator proposalGenerator,
-		Mempool mempool,
-		EventCoordinatorNetworkSender networkSender,
-		SafetyRules safetyRules,
-		Pacemaker pacemaker,
-		VertexStore vertexStore,
-		PendingVotes pendingVotes,
-		ProposerElection proposerElection,
-		@Named("self") ECKeyPair selfKey
+		EpochManager epochManager
 	) {
 		this.pacemakerRx = Objects.requireNonNull(pacemakerRx);
 		this.network = Objects.requireNonNull(network);
 		this.epochRx = Objects.requireNonNull(epochRx);
-		this.proposalGenerator = Objects.requireNonNull(proposalGenerator);
-		this.mempool = Objects.requireNonNull(mempool);
-		this.networkSender = Objects.requireNonNull(networkSender);
-		this.safetyRules = Objects.requireNonNull(safetyRules);
-		this.pacemaker = Objects.requireNonNull(pacemaker);
-		this.vertexStore = Objects.requireNonNull(vertexStore);
-		this.pendingVotes = Objects.requireNonNull(pendingVotes);
-		this.proposerElection = Objects.requireNonNull(proposerElection);
-		this.selfKey = Objects.requireNonNull(selfKey);
+		this.epochManager = Objects.requireNonNull(epochManager);
 	}
 
 	/**
@@ -124,19 +92,8 @@ public final class ChainedBFT {
 			.subscribeOn(this.singleThreadScheduler);
 
 		final Observable<EventCoordinator> epochCoordinators = epochEvents
-			.<EventCoordinator>map(validatorSet -> new ValidatingEventCoordinator(
-				this.proposalGenerator,
-				this.mempool,
-				this.networkSender,
-				this.safetyRules,
-				this.pacemaker,
-				this.vertexStore,
-				this.pendingVotes,
-				this.proposerElection,
-				this.selfKey,
-				validatorSet
-			))
-			.startWithItem(new EmptyEventCoordinator())
+			.map(epochManager::nextEpoch)
+			.startWithItem(epochManager.start())
 			.publish()
 			.autoConnect(4);
 

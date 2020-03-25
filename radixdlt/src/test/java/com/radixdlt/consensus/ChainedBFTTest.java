@@ -21,14 +21,8 @@ import static org.mockito.Mockito.mock;
 import static org.powermock.api.mockito.PowerMockito.when;
 
 import com.radixdlt.consensus.ChainedBFT.Event;
-import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.PacemakerRx;
-import com.radixdlt.consensus.liveness.ProposalGenerator;
-import com.radixdlt.consensus.liveness.ProposerElection;
-import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.validators.ValidatorSet;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.mempool.Mempool;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.junit.Test;
@@ -39,6 +33,9 @@ public class ChainedBFTTest {
 		EventCoordinatorNetworkRx networkRx = mock(EventCoordinatorNetworkRx.class);
 
 		EpochRx epochRx = () -> Observable.just(mock(ValidatorSet.class)).concatWith(Observable.never());
+
+		EpochManager epochManager = mock(EpochManager.class);
+		when(epochManager.start()).thenReturn(mock(EventCoordinator.class));
 
 		PacemakerRx pacemakerRx = mock(PacemakerRx.class);
 
@@ -62,15 +59,7 @@ public class ChainedBFTTest {
 			epochRx,
 			networkRx,
 			pacemakerRx,
-			mock(ProposalGenerator.class),
-			mock(Mempool.class),
-			mock(EventCoordinatorNetworkSender.class),
-			mock(SafetyRules.class),
-			mock(Pacemaker.class),
-			mock(VertexStore.class),
-			mock(PendingVotes.class),
-			mock(ProposerElection.class),
-			mock(ECKeyPair.class)
+			epochManager
 		);
 
 		TestObserver<Event> testObserver = TestObserver.create();
