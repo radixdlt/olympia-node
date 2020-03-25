@@ -41,6 +41,7 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.network.TestEventCoordinatorNetwork;
+import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.observers.TestObserver;
 import java.util.Arrays;
 import java.util.Collections;
@@ -87,7 +88,13 @@ public class MultiNodeConsensusTest {
 		SafetyRules safetyRules = new SafetyRules(key, vertexStore, SafetyState.initialState());
 		PacemakerImpl pacemaker = new PacemakerImpl(validatorSet, Executors.newSingleThreadScheduledExecutor());
 		PendingVotes pendingVotes = new PendingVotes();
-		EventCoordinator eventCoordinator = new EventCoordinator(
+
+		EpochRx epochRx = () -> Observable.just(validatorSet).concatWith(Observable.never());
+
+		return new ChainedBFT(
+			epochRx,
+			testEventCoordinatorNetwork.getNetworkRx(key.getUID()),
+			pacemaker,
 			proposalGenerator,
 			mempool,
 			testEventCoordinatorNetwork.getNetworkSender(key.getUID()),
@@ -96,14 +103,7 @@ public class MultiNodeConsensusTest {
 			vertexStore,
 			pendingVotes,
 			proposerElection,
-			key,
-			validatorSet
-		);
-
-		return new ChainedBFT(
-			eventCoordinator,
-			testEventCoordinatorNetwork.getNetworkRx(key.getUID()),
-			pacemaker
+			key
 		);
 	}
 

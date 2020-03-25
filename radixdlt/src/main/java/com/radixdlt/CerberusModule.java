@@ -22,6 +22,8 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
+import com.radixdlt.consensus.BasicEpochRx;
+import com.radixdlt.consensus.EpochRx;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
@@ -40,15 +42,24 @@ import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.universe.Universe;
 import java.util.Collections;
+import java.util.Objects;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 
 import java.util.concurrent.Executors;
+import org.radix.network2.addressbook.AddressBook;
 
 public class CerberusModule extends AbstractModule {
 	private static final Logger log = Logging.getLogger("Startup");
+
+	private final RuntimeProperties runtimeProperties;
+
+	public CerberusModule(RuntimeProperties runtimeProperties) {
+		this.runtimeProperties = Objects.requireNonNull(runtimeProperties);
+	}
 
 	@Override
 	protected void configure() {
@@ -57,6 +68,16 @@ public class CerberusModule extends AbstractModule {
 		bind(PacemakerRx.class).to(PacemakerImpl.class);
 		bind(Pacemaker.class).to(PacemakerImpl.class);
 		bind(SafetyRules.class).in(Scopes.SINGLETON);
+	}
+
+	@Provides
+	@Singleton
+	private EpochRx epochRx(
+		@Named("self") ECKeyPair selfKey,
+		AddressBook addressBook
+	) {
+		final int fixedQuorumSize = Integer.parseInt(runtimeProperties.get("consensus.fixed_quorum_size", "1"));
+		return new BasicEpochRx(selfKey.getPublicKey(), addressBook, fixedQuorumSize);
 	}
 
 	@Provides

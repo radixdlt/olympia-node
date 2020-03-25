@@ -17,12 +17,12 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.consensus.validators.ValidatorSet;
+import io.reactivex.rxjava3.core.Observable;
+
 /**
- * Processor of BFT events
+ * Validator Set change events
  */
-public interface EventCoordinator {
-	void processVote(Vote vote);
-	void processNewView(NewView newView);
-	void processProposal(Vertex proposedVertex);
-	void processLocalTimeout(View view);
+public interface EpochRx {
+	Observable<ValidatorSet> epochs();
 }

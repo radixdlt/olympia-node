@@ -53,7 +53,7 @@ import static org.mockito.Mockito.when;
 public class EventCoordinatorTest {
 	private static final ECKeyPair SELF_KEY = makeKeyPair();
 
-	private EventCoordinator eventCoordinator;
+	private ValidatingEventCoordinator eventCoordinator;
 	private ProposalGenerator proposalGenerator;
 	private ProposerElection proposerElection;
 	private SafetyRules safetyRules;
@@ -76,7 +76,7 @@ public class EventCoordinatorTest {
 		this.proposerElection = mock(ProposerElection.class);
 		this.validatorSet = mock(ValidatorSet.class);
 
-		this.eventCoordinator = new EventCoordinator(
+		this.eventCoordinator = new ValidatingEventCoordinator(
 			proposalGenerator,
 			mempool,
 			networkSender,

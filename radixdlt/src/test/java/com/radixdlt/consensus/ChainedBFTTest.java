@@ -17,14 +17,18 @@
 
 package com.radixdlt.consensus;
 
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import static org.powermock.api.mockito.PowerMockito.when;
 
 import com.radixdlt.consensus.ChainedBFT.Event;
+import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.PacemakerRx;
+import com.radixdlt.consensus.liveness.ProposalGenerator;
+import com.radixdlt.consensus.liveness.ProposerElection;
+import com.radixdlt.consensus.safety.SafetyRules;
+import com.radixdlt.consensus.validators.ValidatorSet;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.mempool.Mempool;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.junit.Test;
@@ -33,7 +37,9 @@ public class ChainedBFTTest {
 	@Test
 	public void when_events_get_emitted__then_event_coordinator_should_be_called() {
 		EventCoordinatorNetworkRx networkRx = mock(EventCoordinatorNetworkRx.class);
-		EventCoordinator eventCoordinator = mock(EventCoordinator.class);
+
+		EpochRx epochRx = () -> Observable.just(mock(ValidatorSet.class)).concatWith(Observable.never());
+
 		PacemakerRx pacemakerRx = mock(PacemakerRx.class);
 
 		NewView newView = mock(NewView.class);
@@ -53,18 +59,23 @@ public class ChainedBFTTest {
 			.thenReturn(Observable.just(view).concatWith(Observable.never()));
 
 		ChainedBFT chainedBFT = new ChainedBFT(
-			eventCoordinator,
+			epochRx,
 			networkRx,
-			pacemakerRx
+			pacemakerRx,
+			mock(ProposalGenerator.class),
+			mock(Mempool.class),
+			mock(EventCoordinatorNetworkSender.class),
+			mock(SafetyRules.class),
+			mock(Pacemaker.class),
+			mock(VertexStore.class),
+			mock(PendingVotes.class),
+			mock(ProposerElection.class),
+			mock(ECKeyPair.class)
 		);
 
 		TestObserver<Event> testObserver = TestObserver.create();
 		chainedBFT.processEvents().subscribe(testObserver);
 		testObserver.awaitCount(4);
 		testObserver.assertNotComplete();
-		verify(eventCoordinator, times(1)).processNewView(eq(newView));
-		verify(eventCoordinator, times(1)).processProposal(eq(proposal));
-		verify(eventCoordinator, times(1)).processVote(eq(vote));
-		verify(eventCoordinator, times(1)).processLocalTimeout(eq(view));
 	}
 }

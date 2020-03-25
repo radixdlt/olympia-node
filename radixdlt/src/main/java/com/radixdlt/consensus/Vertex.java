@@ -53,21 +53,19 @@ public final class Vertex {
 	@DsonOutput(Output.ALL)
 	private final Atom atom;
 
-	private final transient Supplier<Hash> cachedHash;
+	private final transient Supplier<Hash> cachedHash = Suppliers.memoize(this::doGetHash);
 
 	Vertex() {
 		// Serializer only
 		this.qc = null;
 		this.view = null;
 		this.atom = null;
-		this.cachedHash = null;
 	}
 
 	public Vertex(QuorumCertificate qc, View view, Atom atom) {
 		this.qc = qc;
 		this.view = Objects.requireNonNull(view);
 		this.atom = atom;
-		this.cachedHash = Suppliers.memoize(this::doGetHash);
 	}
 
 	public static Vertex createGenesis(Atom atom) {
