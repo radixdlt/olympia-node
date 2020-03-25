@@ -120,7 +120,7 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 		}
 	}
 
-	private void processQC(QuorumCertificate qc) {
+	private void processQC(QuorumCertificate qc) throws SyncException {
 		// sync up to QC if necessary
 		this.vertexStore.syncToQC(qc);
 
@@ -131,7 +131,9 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 
 				final Vertex vertex = vertexStore.commitVertex(vertexId);
 				final Atom committedAtom = vertex.getAtom();
-				mempool.removeCommittedAtom(committedAtom.getAID());
+				if (committedAtom != null) {
+					mempool.removeCommittedAtom(committedAtom.getAID());
+				}
 			});
 
 		// proceed to next view if pacemaker feels like it
@@ -155,7 +157,12 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 		if (potentialQc.isPresent()) {
 			QuorumCertificate qc = potentialQc.get();
 			log.info(this.getShortName() + ": Formed QC: " + qc);
-			this.processQC(qc);
+			try {
+				this.processQC(qc);
+			} catch (SyncException e) {
+				// Should never go here
+				throw new IllegalStateException("Could not process QC " + e.getQC() + " which was created.");
+			}
 		}
 	}
 
@@ -171,7 +178,12 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 			return;
 		}
 
-		this.processQC(newView.getQC());
+		try {
+			this.processQC(newView.getQC());
+		} catch (SyncException e) {
+			log.warn("Ignoring new view because unable to sync to QC " + e.getQC());
+			return;
+		}
 
 		this.pacemaker.processNewView(newView)
 			.ifPresent(this::startQuorumNewView);
@@ -187,7 +199,12 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 			return;
 		}
 
-		processQC(proposedVertex.getQC());
+		try {
+			processQC(proposedVertex.getQC());
+		} catch (SyncException e) {
+			log.warn("Ignoring proposal because unable to sync to QC " + e.getQC());
+			return;
+		}
 
 		// TODO: Sync at this point
 

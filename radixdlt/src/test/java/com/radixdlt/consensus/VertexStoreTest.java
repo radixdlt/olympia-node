@@ -22,6 +22,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.powermock.api.mockito.PowerMockito.when;
 
 import com.radixdlt.common.Atom;
 import com.radixdlt.crypto.ECDSASignatures;
@@ -49,6 +50,16 @@ public class VertexStoreTest {
 		this.rootQC = new QuorumCertificate(vertexMetadata, new ECDSASignatures());
 		this.radixEngine = mock(RadixEngine.class);
 		this.vertexStore = new VertexStore(genesisVertex, rootQC, radixEngine);
+	}
+
+	@Test
+	public void when_qc_sync_fails__then_sync_exception_is_thrown() {
+		QuorumCertificate qc = mock(QuorumCertificate.class);
+		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
+		when(vertexMetadata.getId()).thenReturn(mock(Hash.class));
+		when(qc.getVertexMetadata()).thenReturn(vertexMetadata);
+		assertThatThrownBy(() -> vertexStore.syncToQC(qc))
+			.isInstanceOf(SyncException.class);
 	}
 
 	@Test
