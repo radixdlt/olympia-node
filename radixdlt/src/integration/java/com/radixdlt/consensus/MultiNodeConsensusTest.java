@@ -129,7 +129,7 @@ public class MultiNodeConsensusTest {
 	@Test
 	public void given_3_correct_bft_instances_with_single_leader__then_all_instances_should_get_3_commits() throws Exception {
 		final List<ECKeyPair> nodes = Arrays.asList(new ECKeyPair(), new ECKeyPair(), new ECKeyPair());
-		final ProposerElection proposerElection = new Dictatorship(nodes.get(0).getUID());
+		final ProposerElection proposerElection = new Dictatorship(nodes.get(0).getPublicKey());
 		final ValidatorSet validatorSet = ValidatorSet.from(
 			nodes.stream().map(ECKeyPair::getPublicKey).map(Validator::from).collect(Collectors.toList())
 		);
@@ -152,7 +152,9 @@ public class MultiNodeConsensusTest {
 		final ValidatorSet validatorSet = ValidatorSet.from(
 			nodes.stream().map(ECKeyPair::getPublicKey).map(Validator::from).collect(Collectors.toList())
 		);
-		final ProposerElection proposerElection = new RotatingLeaders(nodes.stream().map(ECKeyPair::getUID).collect(ImmutableList.toImmutableList()));
+		final ProposerElection proposerElection = new RotatingLeaders(
+			nodes.stream().map(ECKeyPair::getPublicKey).collect(ImmutableList.toImmutableList())
+		);
 		final List<TestObserver<Vertex>> committedListeners = runBFT(nodes, validatorSet, proposerElection);
 
 		final int commitCount = 5;
@@ -174,7 +176,7 @@ public class MultiNodeConsensusTest {
 		final ValidatorSet validatorSet = ValidatorSet.from(
 			nodes.stream().map(ECKeyPair::getPublicKey).map(Validator::from).collect(Collectors.toList())
 		);
-		final ProposerElection proposerElection = new Dictatorship(nodes.get(0).getUID());
+		final ProposerElection proposerElection = new Dictatorship(nodes.get(0).getPublicKey());
 		testEventCoordinatorNetwork.setSendingDisable(nodes.get(2).getUID(), true);
 		final List<TestObserver<Vertex>> committedListeners = runBFT(nodes, validatorSet, proposerElection);
 		final int commitCount = 10;

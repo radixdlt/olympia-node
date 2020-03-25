@@ -30,6 +30,7 @@ import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.utils.Longs;
@@ -91,7 +92,7 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 
 	private void startQuorumNewView(View view) {
 		// only do something if we're actually the leader
-		if (!Objects.equals(proposerElection.getProposer(view), selfKey.getPublicKey().getUID())) {
+		if (!Objects.equals(proposerElection.getProposer(view), selfKey.getPublicKey())) {
 			return;
 		}
 
@@ -111,9 +112,9 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 			// TODO make signing more robust by including author in signed hash
 			ECDSASignature signature = this.selfKey.sign(Hash.hash256(Longs.toByteArray(nextView.number())));
 			NewView newView = new NewView(selfKey.getPublicKey(), nextView, this.vertexStore.getHighestQC(), signature);
-			EUID nextLeader = this.proposerElection.getProposer(nextView);
-			log.info(String.format("%s: Sending NewView to %s: %s", this.getShortName(), this.getShortName(nextLeader), newView));
-			this.networkSender.sendNewView(newView, nextLeader);
+			ECPublicKey nextLeader = this.proposerElection.getProposer(nextView);
+			log.info(String.format("%s: Sending NewView to %s: %s", this.getShortName(), this.getShortName(nextLeader.getUID()), newView));
+			this.networkSender.sendNewView(newView, nextLeader.getUID());
 		} catch (CryptoException e) {
 			throw new IllegalStateException("Failed to sign new view", e);
 		}
@@ -143,7 +144,7 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 
 		// only do something if we're actually the leader for the vote
 		final View view = vote.getVertexMetadata().getView();
-		if (!Objects.equals(proposerElection.getProposer(view), selfKey.getPublicKey().getUID())) {
+		if (!Objects.equals(proposerElection.getProposer(view), selfKey.getPublicKey())) {
 			log.warn(String.format("%s Ignoring confused vote %s for %s", getShortName(), vote.hashCode(), vote.getVertexMetadata().getView()));
 			return;
 		}
@@ -163,7 +164,7 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 		// only do something if we're actually the leader for the next view
 
 		final View view = newView.getView();
-		if (!Objects.equals(proposerElection.getProposer(view), selfKey.getPublicKey().getUID())) {
+		if (!Objects.equals(proposerElection.getProposer(view), selfKey.getPublicKey())) {
 			log.warn(String.format("Got confused new-view %s for view ", newView.hashCode()) + newView.getView());
 			return;
 		}
@@ -208,9 +209,9 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 
 		try {
 			final Vote vote = safetyRules.voteFor(proposedVertex);
-			final EUID leader = this.proposerElection.getProposer(updatedView);
-			log.info(this.getShortName() + ": Sending Vote to " + this.getShortName(leader) + ": " + vote);
-			networkSender.sendVote(vote, leader);
+			final ECPublicKey leader = this.proposerElection.getProposer(updatedView);
+			log.info(this.getShortName() + ": Sending Vote to " + this.getShortName(leader.getUID()) + ": " + vote);
+			networkSender.sendVote(vote, leader.getUID());
 		} catch (SafetyViolationException e) {
 			log.error("Rejected " + proposedVertex, e);
 		}

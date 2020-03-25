@@ -18,21 +18,21 @@
 package com.radixdlt.consensus.liveness;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.common.EUID;
 import com.radixdlt.consensus.View;
+import com.radixdlt.crypto.ECPublicKey;
 import java.util.Objects;
 
 /**
  * Round Robin leaders
  */
 public final class RotatingLeaders implements ProposerElection {
-	private final ImmutableList<EUID> leaders;
-	public RotatingLeaders(ImmutableList<EUID> leaders) {
+	private final ImmutableList<ECPublicKey> leaders;
+	public RotatingLeaders(ImmutableList<ECPublicKey> leaders) {
 		this.leaders = Objects.requireNonNull(leaders);
 	}
 
 	@Override
-	public EUID getProposer(View view) {
+	public ECPublicKey getProposer(View view) {
 		int index = (int) (view.number() % leaders.size());
 		return leaders.get(index);
 	}

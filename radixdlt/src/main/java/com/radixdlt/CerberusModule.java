@@ -93,7 +93,7 @@ public class CerberusModule extends AbstractModule {
 	private ProposerElection proposerElection(
 		@Named("self") ECKeyPair selfKey
 	) {
-		return new Dictatorship(selfKey.getUID());
+		return new Dictatorship(selfKey.getPublicKey());
 	}
 
 	@Provides
