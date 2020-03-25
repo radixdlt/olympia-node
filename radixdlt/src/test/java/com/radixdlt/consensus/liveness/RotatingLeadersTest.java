@@ -31,9 +31,5 @@ public class RotatingLeadersTest {
 		RotatingLeaders rotatingLeaders = new RotatingLeaders(leaders);
 		assertThat(rotatingLeaders.getProposer(View.of(leaders.size())))
 			.isEqualTo(leaders.get(0));
-		assertThat(rotatingLeaders.isValidProposer(leaders.get(0), View.of(leaders.size())))
-			.isTrue();
-		assertThat(rotatingLeaders.isValidProposer(leaders.get(1), View.of(leaders.size())))
-			.isFalse();
 	}
 }

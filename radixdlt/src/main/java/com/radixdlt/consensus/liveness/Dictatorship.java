@@ -33,11 +33,6 @@ public final class Dictatorship implements ProposerElection {
 	}
 
 	@Override
-	public boolean isValidProposer(EUID nid, View view) {
-		return nid.equals(leader);
-	}
-
-	@Override
 	public EUID getProposer(View view) {
 		return leader;
 	}

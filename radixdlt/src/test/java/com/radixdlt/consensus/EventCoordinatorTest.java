@@ -110,7 +110,6 @@ public class EventCoordinatorTest {
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
 		when(voteMessage.getVertexMetadata()).thenReturn(vertexMetadata);
 		when(vertexMetadata.getView()).thenReturn(View.of(0L));
-		when(proposerElection.isValidProposer(any(), any())).thenReturn(false);
 
 		eventCoordinator.processVote(voteMessage);
 		verify(safetyRules, times(0)).process(any(QuorumCertificate.class));
@@ -120,7 +119,6 @@ public class EventCoordinatorTest {
 	@Test
 	public void when_processing_vote_as_a_proposer_and_quorum_is_reached__then_a_new_view_is_sent() {
 		when(proposerElection.getProposer(any())).thenReturn(SELF_KEY.getUID());
-		when(proposerElection.isValidProposer(eq(SELF_KEY.getUID()), any())).thenReturn(true);
 
 		Vote vote = mock(Vote.class);
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
@@ -162,8 +160,7 @@ public class EventCoordinatorTest {
 		NewView newView = mock(NewView.class);
 		when(newView.getQC()).thenReturn(mock(QuorumCertificate.class));
 		when(newView.getView()).thenReturn(View.of(0L));
-		when(proposerElection.isValidProposer(any(), any())).thenReturn(true);
-		when(proposerElection.getProposer(any())).thenReturn(mock(EUID.class));
+		when(proposerElection.getProposer(any())).thenReturn(SELF_KEY.getUID());
 		eventCoordinator.processNewView(newView);
 		verify(pacemaker, times(1)).processNewView(any());
 	}
@@ -172,7 +169,6 @@ public class EventCoordinatorTest {
 	public void when_processing_new_view_as_not_proposer__then_new_view_is_not_emitted() {
 		NewView newView = mock(NewView.class);
 		when(newView.getView()).thenReturn(View.of(0L));
-		when(proposerElection.isValidProposer(any(), any())).thenReturn(false);
 		eventCoordinator.processNewView(newView);
 		verify(pacemaker, times(0)).processNewView(any());
 	}

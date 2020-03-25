@@ -32,11 +32,6 @@ public final class RotatingLeaders implements ProposerElection {
 	}
 
 	@Override
-	public boolean isValidProposer(EUID nid, View view) {
-		return nid.equals(getProposer(view));
-	}
-
-	@Override
 	public EUID getProposer(View view) {
 		int index = (int) (view.number() % leaders.size());
 		return leaders.get(index);

@@ -12,7 +12,5 @@ public class DictatorshipTest {
 	public void when_retrieve_dictatorship_proposer__it_should_always_be_the_same() {
 		Dictatorship dictatorship = new Dictatorship(EUID.ONE);
 		assertThat(dictatorship.getProposer(mock(View.class))).isEqualTo(EUID.ONE);
-		assertThat(dictatorship.isValidProposer(EUID.ONE, mock(View.class))).isTrue();
-		assertThat(dictatorship.isValidProposer(mock(EUID.class), mock(View.class))).isFalse();
 	}
 }

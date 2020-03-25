@@ -91,7 +91,7 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 
 	private void startQuorumNewView(View view) {
 		// only do something if we're actually the leader
-		if (!proposerElection.isValidProposer(selfKey.getUID(), view)) {
+		if (!Objects.equals(proposerElection.getProposer(view), selfKey.getPublicKey().getUID())) {
 			return;
 		}
 
@@ -142,7 +142,8 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 		log.info(this.getShortName() + ": Processing VOTE_MESSAGE: " + vote);
 
 		// only do something if we're actually the leader for the vote
-		if (!proposerElection.isValidProposer(selfKey.getUID(), vote.getVertexMetadata().getView())) {
+		final View view = vote.getVertexMetadata().getView();
+		if (!Objects.equals(proposerElection.getProposer(view), selfKey.getPublicKey().getUID())) {
 			log.warn(String.format("%s Ignoring confused vote %s for %s", getShortName(), vote.hashCode(), vote.getVertexMetadata().getView()));
 			return;
 		}
@@ -160,7 +161,9 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 		log.info(this.getShortName() + ": Processing NEW_VIEW_MESSAGE: " + newView);
 
 		// only do something if we're actually the leader for the next view
-		if (!proposerElection.isValidProposer(selfKey.getPublicKey().getUID(), newView.getView())) {
+
+		final View view = newView.getView();
+		if (!Objects.equals(proposerElection.getProposer(view), selfKey.getPublicKey().getUID())) {
 			log.warn(String.format("Got confused new-view %s for view ", newView.hashCode()) + newView.getView());
 			return;
 		}
