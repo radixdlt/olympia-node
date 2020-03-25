@@ -34,6 +34,7 @@ public final class ProposalGenerator {
 		final QuorumCertificate highestQC = vertexStore.getHighestQC();
 		final List<Vertex> preparedVertices = vertexStore.getPathFromRoot(highestQC.getVertexMetadata().getId());
 		final Set<AID> preparedAtoms = preparedVertices.stream()
+			.filter(v -> v.getAtom() != null)
 			.map(Vertex::getAtom)
 			.map(Atom::getAID)
 			.collect(Collectors.toSet());

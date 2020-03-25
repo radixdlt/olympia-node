@@ -64,7 +64,13 @@ public final class VertexStore {
 		this.lastCommittedVertex.onNext(genesisVertex);
 	}
 
-	public void syncToQC(QuorumCertificate qc) {
+	public void syncToQC(QuorumCertificate qc) throws SyncException {
+		final Vertex vertex = vertices.get(qc.getVertexMetadata().getId());
+		if (vertex == null) {
+			// TODO: actual syncing
+			throw new SyncException(qc);
+		}
+
 		if (highestQC.getView().compareTo(qc.getView()) < 0) {
 			highestQC = qc;
 		}
@@ -75,8 +81,6 @@ public final class VertexStore {
 		if (parent == null) {
 			throw new MissingParentException(vertex.getParentId());
 		}
-
-		this.syncToQC(vertex.getQC());
 
 		if (vertex.getAtom() != null) {
 			try {
