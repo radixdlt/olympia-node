@@ -15,18 +15,12 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.crypto;
+package com.radixdlt.crypto.encryption;
 
-public enum SignatureScheme {
+public enum CryptOperation {
+	ENCRYPT, DECRYPT;
 
-    /**
-     *  Elliptic Curve Digital Signature Algorithm, or ECDSA for short. A good introduction is to be found
-     *  <a href="https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm">here on wikipedia</a>.
-     */
-    ECDSA;
-
-    @Override
-    public String toString() {
-        return this.name().toLowerCase();
-    }
+	public boolean isEncryption() {
+		return this == ENCRYPT;
+	}
 }

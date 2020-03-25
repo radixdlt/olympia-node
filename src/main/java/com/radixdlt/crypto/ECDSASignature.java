@@ -24,6 +24,11 @@ import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.utils.Bytes;
+import org.bouncycastle.asn1.ASN1InputStream;
+import org.bouncycastle.asn1.ASN1Integer;
+import org.bouncycastle.asn1.DLSequence;
+
+import java.io.IOException;
 import java.math.BigInteger;
 import java.util.Objects;
 
@@ -125,5 +130,19 @@ public final class ECDSASignature implements Signature {
 	@Override
 	public SignatureScheme signatureScheme() {
 		return SignatureScheme.ECDSA;
+	}
+
+	public static ECDSASignature decodeFromDER(byte[] bytes) {
+		try (ASN1InputStream decoder = new ASN1InputStream(bytes)) {
+			DLSequence seq = (DLSequence) decoder.readObject();
+			ASN1Integer r = (ASN1Integer) seq.getObjectAt(0);
+			ASN1Integer s = (ASN1Integer) seq.getObjectAt(1);
+			return new ECDSASignature(r.getPositiveValue(), s.getPositiveValue());
+		} catch (IOException e) {
+			throw new IllegalArgumentException("Failed to read bytes as ASN1 decode bytes", e);
+		} catch (ClassCastException e) {
+			throw new IllegalStateException("Failed to cast to ASN1Integer", e);
+		}
+
 	}
 }

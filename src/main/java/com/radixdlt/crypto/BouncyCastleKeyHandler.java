@@ -17,21 +17,26 @@
 
 package com.radixdlt.crypto;
 
-import java.math.BigInteger;
-import java.security.KeyFactory;
-import java.security.SecureRandom;
-import java.util.Objects;
 import org.bouncycastle.asn1.x9.X9ECParameters;
+import org.bouncycastle.crypto.digests.SHA256Digest;
 import org.bouncycastle.crypto.params.ECDomainParameters;
 import org.bouncycastle.crypto.params.ECPrivateKeyParameters;
 import org.bouncycastle.crypto.params.ECPublicKeyParameters;
-import org.bouncycastle.crypto.params.ParametersWithRandom;
+import org.bouncycastle.crypto.signers.DSAKCalculator;
 import org.bouncycastle.crypto.signers.ECDSASigner;
+import org.bouncycastle.crypto.signers.HMacDSAKCalculator;
+import org.bouncycastle.crypto.signers.RandomDSAKCalculator;
 import org.bouncycastle.jce.interfaces.ECPublicKey;
 import org.bouncycastle.jce.spec.ECParameterSpec;
 import org.bouncycastle.jce.spec.ECPublicKeySpec;
 
-class BouncyCastleKeyHandler implements KeyHandler {
+import java.math.BigInteger;
+import java.security.KeyFactory;
+import java.security.SecureRandom;
+import java.util.Objects;
+
+final class BouncyCastleKeyHandler implements KeyHandler {
+	private final BigInteger curveOrder;
 	private final BigInteger halfCurveOrder;
 	private final X9ECParameters curve;
 	private final ECDomainParameters domain;
@@ -41,22 +46,31 @@ class BouncyCastleKeyHandler implements KeyHandler {
 	BouncyCastleKeyHandler(SecureRandom secureRandom, X9ECParameters curve) {
 		this.secureRandom = Objects.requireNonNull(secureRandom);
 		this.curve = Objects.requireNonNull(curve);
+		this.curveOrder = curve.getN();
 		this.halfCurveOrder = curve.getN().shiftRight(1);
 		this.domain = new ECDomainParameters(curve.getCurve(), curve.getG(), curve.getN(), curve.getH());
 		this.spec = new ECParameterSpec(curve.getCurve(), curve.getG(), curve.getN(), curve.getH());
 	}
 
 	@Override
-	public ECDSASignature sign(byte[] hash, byte[] privateKey) throws CryptoException {
-		ECDSASigner signer = new ECDSASigner();
-		signer.init(true, new ParametersWithRandom(
-			new ECPrivateKeyParameters(new BigInteger(1, privateKey), domain), secureRandom));
-		BigInteger[] components = signer.generateSignature(hash);
+	public ECDSASignature sign(byte[] hash, byte[] privateKey, boolean enforceLowS, boolean useDeterministicSignatures) throws CryptoException {
+		final DSAKCalculator kCalculator = useDeterministicSignatures ? new HMacDSAKCalculator(new SHA256Digest()) : new RandomDSAKCalculator();
+		ECDSASigner signer = new ECDSASigner(kCalculator);
+		BigInteger privateKeyScalar = new BigInteger(1, privateKey);
+		ECPrivateKeyParameters privateKeyParameters = new ECPrivateKeyParameters(privateKeyScalar, domain);
+		signer.init(true, privateKeyParameters);
 
-		// Canonicalise the signature //
-		return (components[1].compareTo(halfCurveOrder) > 0)
-			? new ECDSASignature(components[0], curve.getN().subtract(components[1]))
-			: new ECDSASignature(components[0], components[1]);
+		BigInteger[] components = signer.generateSignature(hash);
+		BigInteger r = components[0];
+		BigInteger s = components[1];
+
+		boolean sIsLow = s.compareTo(this.halfCurveOrder) <= 0;
+
+		if (enforceLowS && !sIsLow) {
+			s = this.curveOrder.subtract(s);
+		}
+
+		return new ECDSASignature(r, s);
 	}
 
 	@Override

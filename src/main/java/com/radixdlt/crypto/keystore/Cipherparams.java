@@ -15,18 +15,21 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.crypto;
+package com.radixdlt.crypto.keystore;
 
-public enum SignatureScheme {
+import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.SerializedName;
 
-    /**
-     *  Elliptic Curve Digital Signature Algorithm, or ECDSA for short. A good introduction is to be found
-     *  <a href="https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm">here on wikipedia</a>.
-     */
-    ECDSA;
+public class Cipherparams {
+    @SerializedName("iv")
+    @Expose
+    private String iv;
 
-    @Override
-    public String toString() {
-        return this.name().toLowerCase();
+    public String getIv() {
+        return iv;
+    }
+
+    public void setIv(String iv) {
+        this.iv = iv;
     }
 }

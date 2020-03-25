@@ -26,15 +26,20 @@ package com.radixdlt.crypto;
  * Note that all methods must be thread safe.
  */
 interface KeyHandler {
+
 	/**
 	 * Sign the specified hash with the specified private key.
 	 *
 	 * @param hash The hash to sign
 	 * @param privateKey The private key to sign the hash with
+	 * @param enforceLowS If signature should enforce low values of signature part {@code S}, according to
+	 * <a href="https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki#Low_S_values_in_signatures">BIP-62</a>
+	 * @param useDeterministicSignatures If signing should use randomness or be deterministic according to
+	 * <a href="https://tools.ietf.org/html/rfc6979">RFC6979</a>.
 	 * @return An {@link ECDSASignature} with {@code r} and {@code s} values included
 	 * @throws CryptoException if the {@code privateKey} is invalid
 	 */
-	ECDSASignature sign(byte[] hash, byte[] privateKey) throws CryptoException;
+	ECDSASignature sign(byte[] hash, byte[] privateKey, boolean enforceLowS, boolean useDeterministicSignatures) throws CryptoException;
 
 	/**
 	 * Verify the specified signature against the specified hash with the
@@ -56,4 +61,18 @@ interface KeyHandler {
 	 * @throws CryptoException If the {@code privateKey} is invalid
 	 */
 	byte[] computePublicKey(byte[] privateKey) throws CryptoException;
+
+	/**
+	 * Sign the specified hash with the specified private by using randomness and enforced low {@code S} values,
+	 * see documentation of {@link #sign(byte[], byte[], boolean, boolean)} for more details.
+	 *
+	 * @param hash The hash to sign
+	 * @param privateKey The private key to sign the hash with
+	 * @return An {@link ECDSASignature} with {@code r} and {@code s} values included
+	 * @throws CryptoException if the {@code privateKey} is invalid
+	 */
+	default ECDSASignature sign(byte[] hash, byte[] privateKey) throws CryptoException {
+		return sign(hash, privateKey, true, false);
+	}
+
 }

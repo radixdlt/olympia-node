@@ -82,7 +82,7 @@ public class RadixKeyStoreTest {
 	@Test
 	public void from_engine___testFromFileReload1() throws IOException, CryptoException {
 		File file = newFile(TEST_KS_FILENAME);
-		ECKeyPair kp1 = new ECKeyPair();
+		ECKeyPair kp1 = ECKeyPair.generateNew();
 		try (RadixKeyStore ks = RadixKeyStore.fromFile(file, null, true)) {
 			assertTrue(file.exists());
 			ks.writeKeyPair("test", kp1);

@@ -15,18 +15,28 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.crypto;
+package com.radixdlt.crypto.encryption;
 
-public enum SignatureScheme {
+import org.bouncycastle.util.encoders.Base64;
 
-    /**
-     *  Elliptic Curve Digital Signature Algorithm, or ECDSA for short. A good introduction is to be found
-     *  <a href="https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm">here on wikipedia</a>.
-     */
-    ECDSA;
+import java.util.Arrays;
 
-    @Override
-    public String toString() {
-        return this.name().toLowerCase();
-    }
+public class EncryptedPrivateKey {
+	private final byte[] encryptedPrivateKey;
+
+	public static EncryptedPrivateKey fromBase64(String base64) {
+		return new EncryptedPrivateKey(Base64.decode(base64));
+	}
+
+	public EncryptedPrivateKey(byte[] encryptedPrivateKey) {
+		this.encryptedPrivateKey = encryptedPrivateKey;
+	}
+
+	public String base64() {
+		return Base64.toBase64String(encryptedPrivateKey);
+	}
+
+	public byte[] toByteArray() {
+		return Arrays.copyOf(encryptedPrivateKey, encryptedPrivateKey.length);
+	}
 }

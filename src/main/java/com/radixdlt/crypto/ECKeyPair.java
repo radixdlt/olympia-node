@@ -17,9 +17,16 @@
 
 package com.radixdlt.crypto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.crypto.encryption.ECIES;
+import com.radixdlt.crypto.encryption.ECIESException;
+import com.radixdlt.crypto.encryption.EncryptedPrivateKey;
 import com.radixdlt.identifiers.EUID;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.SerializerConstants;
+import com.radixdlt.serialization.SerializerDummy;
+import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.utils.Bytes;
-import com.radixdlt.utils.WireIO;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.generators.ECKeyPairGenerator;
 import org.bouncycastle.crypto.params.ECKeyGenerationParameters;
@@ -27,27 +34,39 @@ import org.bouncycastle.crypto.params.ECPrivateKeyParameters;
 import org.bouncycastle.crypto.params.ECPublicKeyParameters;
 import org.bouncycastle.math.ec.ECPoint;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.util.Arrays;
+import java.util.Objects;
 
 /**
  * Asymmetric EC key pair provider fixed to curve 'secp256k1'.
  */
+@SerializerId2("crypto.ec_key_pair")
 public final class ECKeyPair implements Signing<ECDSASignature> {
 	public static final int	BYTES = 32;
 
+	@JsonProperty("private")
+	@DsonOutput(DsonOutput.Output.PERSIST)
 	private final byte[] privateKey;
+
+	@JsonProperty("public")
+	@DsonOutput(DsonOutput.Output.ALL)
 	private final ECPublicKey publicKey;
 
-	public ECKeyPair() throws CryptoException {
-		this(ECKeyUtils.secureRandom);
+	private ECKeyPair() {
+		this(ECKeyUtils.secureRandom());
 	}
 
-	public ECKeyPair(SecureRandom random) throws CryptoException {
+	public ECKeyPair(SecureRandom random) {
 		try {
 			ECKeyPairGenerator generator = new ECKeyPairGenerator();
-	        ECKeyGenerationParameters keygenParams = new ECKeyGenerationParameters(ECKeyUtils.domain, random);
+	        ECKeyGenerationParameters keygenParams = new ECKeyGenerationParameters(ECKeyUtils.domain(), random);
 	        generator.init(keygenParams);
 	        AsymmetricCipherKeyPair keypair = generator.generateKeyPair();
 	        ECPrivateKeyParameters privParams = (ECPrivateKeyParameters) keypair.getPrivate();
@@ -59,23 +78,55 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
 	        this.privateKey = privateKeyBytes;
 
 	        this.publicKey = new ECPublicKey(pubParams.getQ().getEncoded(true));
-		} catch (Exception ex) {
-			throw new CryptoException(ex);
+		} catch (Exception e) {
+			throw new IllegalStateException("Failed to generate ECKeyPair", e);
 		}
 	}
 
-	public ECKeyPair(byte[] key) throws CryptoException {
+	public ECKeyPair(byte[] privateKey) throws CryptoException {
 		try {
-			ECKeyUtils.validatePrivate(key);
-			this.privateKey = key;
-			this.publicKey = new ECPublicKey(ECKeyUtils.keyHandler.computePublicKey(key));
+			ECKeyUtils.validatePrivate(privateKey);
+			this.privateKey = privateKey;
+			this.publicKey = new ECPublicKey(ECKeyUtils.keyHandler.computePublicKey(privateKey));
 		} catch (Exception ex) {
-			throw new CryptoException(ex);
+			throw new CryptoException("Invalid privateKey", ex);
 		}
 	}
 
-	public EUID getUID() {
-		return this.publicKey.getUID();
+	/**
+	 * Generates a new private and public key pair based on randomness.
+	 * @return a newly generated private key and it's corresponding {@link ECPublicKey}.
+	 */
+	public static ECKeyPair generateNew() {
+		return new ECKeyPair();
+	}
+
+	/**
+	 * Generates a new, deterministic {@code ECKeyPair} instance by <b>hashing<b/> the
+	 * provided seed.
+	 *
+	 * @param seed The seed to use when deriving the key pair instance, that is hashed (256 bits).
+	 * @return A key pair that corresponds to the hash of the provided seed.
+	 * @throws IllegalArgumentException if the seed is empty.
+	 */
+	public static ECKeyPair fromSeed(byte[] seed) {
+		Objects.requireNonNull(seed, "Seed must not be null");
+
+		if (seed.length == 0) {
+			throw new IllegalArgumentException("Seed must not be empty");
+		}
+
+		byte[] privateKey = Hash.hash256(seed);
+
+		try {
+			return new ECKeyPair(privateKey);
+		} catch (CryptoException e) {
+			throw new IllegalStateException("Should always be able to create private key from seed", e);
+		}
+	}
+
+	public EUID euid() {
+		return this.publicKey.euid();
 	}
 
 	public byte[] getPrivateKey() {
@@ -86,55 +137,43 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
 		return this.publicKey;
 	}
 
+	// TODO move this to new class (yet to be created) `ECPrivateKey`.
 	@Override
-	public ECDSASignature sign(byte[] hash) throws CryptoException {
-		return ECKeyUtils.keyHandler.sign(hash, this.privateKey);
+	public ECPoint multiply(ECPoint point) {
+		BigInteger scalarFromPrivateKey = new BigInteger(1, this.privateKey);
+		return point.multiply(scalarFromPrivateKey).normalize();
+	}
+
+	@Override
+	public ECDSASignature sign(byte[] hash) {
+		try {
+			return ECKeyUtils.keyHandler.sign(hash, this.privateKey);
+		} catch (CryptoException e) {
+			throw new IllegalStateException("Failed to sign hash", e);
+		}
+	}
+
+	/**
+	 * Signs data using the ECPrivateKey resulting in an ECDSA signature.
+	 *
+	 * @param data The data to sign
+	 * @param enforceLowS If signature should enforce low values of signature part `S`, according to
+	 * <a href="https://github.com/bitcoin/bips/blob/master/bip-0062.mediawiki#Low_S_values_in_signatures">BIP-62</a>
+	 * @param beDeterministic If signing should use randomness or be deterministic according to
+	 * <a href="https://tools.ietf.org/html/rfc6979">RFC6979</a>.
+	 * @return An ECDSA Signature.
+	 */
+	public ECDSASignature sign(byte[] data, boolean enforceLowS, boolean beDeterministic) {
+		try {
+			return ECKeyUtils.keyHandler.sign(data, this.privateKey, enforceLowS, beDeterministic);
+		} catch (CryptoException e) {
+			throw new IllegalStateException("Failed to sign hash", e);
+		}
 	}
 
 	@Override
 	public boolean canProduceSignatureForScheme(SignatureScheme signatureScheme) {
 		return SignatureScheme.ECDSA.equals(signatureScheme);
-	}
-
-	public byte[] decrypt(byte[] data) throws CryptoException {
-		try {
-			WireIO.Reader reader = new WireIO.Reader(data);
-
-			// 1. Read the initialization vector, IV
-			byte[] iv = reader.readBytes(16);
-
-			// 2. Read the ephemeral public key
-			ECPublicKey ephemeral = new ECPublicKey(reader.readBytes(reader.readByte()));
-
-			// 3. Do an EC point multiply with this.getPrivateKey() and ephemeral public key. This gives you a point M.
-			ECPoint m = ephemeral.getPublicPoint().multiply(new BigInteger(1, getPrivateKey())).normalize();
-
-			// 4. Use the X component of point M and calculate the SHA512 hash H.
-			byte[] h = Hash.hash512(m.getXCoord().getEncoded());
-
-			// 5. The first 32 bytes of H are called key_e and the last 32 bytes are called key_m.
-			byte[] keyE = Arrays.copyOfRange(h, 0, 32);
-			byte[] keyM = Arrays.copyOfRange(h, 32, 64);
-
-			// 6. Read encrypted data
-			byte[] encrypted = reader.readBytes(reader.readInt());
-
-			// 6. Read MAC
-			byte[] mac = reader.readBytes(32);
-
-			// 7. Compare MAC with MAC'. If not equal, decryption will fail.
-			if (!Arrays.equals(mac, ECKeyUtils.calculateMAC(keyM, iv, ephemeral, encrypted))) {
-				throw new CryptoException("MAC mismatch when decrypting");
-			}
-
-			// 8. Decrypt the cipher text with AES-256-CBC, using IV as initialization vector, key_e as decryption key
-			// and the cipher text as payload. The output is the padded input text.
-			return ECKeyUtils.crypt(false, iv, encrypted, keyE);
-		} catch (CryptoException e) {
-			throw e;
-		} catch (Exception e) {
-			throw new CryptoException("Failed to decrypt", e);
-		}
 	}
 
 	@Override
@@ -161,4 +200,67 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
 		return String.format("%s[%s]",
 			getClass().getSimpleName(), Bytes.toBase64String(getPublicKey().getBytes()));
 	}
+
+	@JsonProperty("version")
+	@DsonOutput(DsonOutput.Output.ALL)
+	private short version = 100;
+
+	// Placeholder for the serializer ID
+	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
+	@DsonOutput(DsonOutput.Output.ALL)
+	private SerializerDummy serializer = SerializerDummy.DUMMY;
+
+	public ECKeyPair(byte[] publicKey, byte[] privateKey) {
+		try {
+			this.publicKey = new ECPublicKey(publicKey);
+		} catch (CryptoException e) {
+			throw new IllegalArgumentException("Failed to create public key from bytes", e);
+		}
+		this.privateKey = Arrays.copyOf(privateKey, privateKey.length);
+	}
+
+	public static ECKeyPair fromFile(File file) throws CryptoException {
+		try (InputStream inputStream = new FileInputStream(file)) {
+			byte[] privateKey = new byte[32];
+			int len = inputStream.read(privateKey);
+			if (len != 32) {
+				throw new IllegalStateException("Private Key file must be 32 bytes in " + file);
+			}
+			return new ECKeyPair(privateKey);
+		} catch (FileNotFoundException e) {
+			throw new IllegalArgumentException("Failed to read file", e);
+		} catch (IOException e) {
+			throw new IllegalArgumentException("Failed to read 32 bytes from content of file", e);
+		}
+	}
+
+	public byte[] encrypt(byte[] data) {
+		try {
+			return this.publicKey.encrypt(data);
+		} catch (ECIESException e) {
+			throw new IllegalStateException("Failed to encrypt data", e);
+		}
+	}
+
+	public byte[] decrypt(byte[] data) throws ECIESException {
+		return ECIES.decrypt(data, this);
+	}
+
+
+	public byte[] decrypt(byte[] data, EncryptedPrivateKey sharedKey) throws CryptoException {
+		byte[] privateKeyData = this.decrypt(sharedKey.toByteArray());
+		ECKeyPair sharedKeyPair = new ECKeyPair(privateKeyData);
+		return sharedKeyPair.decrypt(data);
+	}
+
+	public EncryptedPrivateKey encryptPrivateKeyWithPublicKey(ECPublicKey publicKeyUsedToEncrypt) {
+		byte[] encryptedPrivateKeyBytes = new byte[0];
+		try {
+			encryptedPrivateKeyBytes = publicKeyUsedToEncrypt.encrypt(this.privateKey);
+		} catch (ECIESException e) {
+			throw new IllegalStateException("Failed to encrypt `this.privateKey` with provided `ECPublicKey`", e);
+		}
+		return new EncryptedPrivateKey(encryptedPrivateKeyBytes);
+	}
+
 }

@@ -157,7 +157,7 @@ public final class RadixKeyStore implements Closeable {
 			KeyStore.Entry entry = this.keyStore.getEntry(name, emptyPassword);
 			if (entry == null) {
 				if (create) {
-					ECKeyPair newKeyPair = new ECKeyPair();
+					ECKeyPair newKeyPair = ECKeyPair.generateNew();
 					writeKeyPair(name, newKeyPair);
 					return newKeyPair;
 				} else {

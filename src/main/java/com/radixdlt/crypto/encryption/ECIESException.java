@@ -15,18 +15,14 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.crypto;
+package com.radixdlt.crypto.encryption;
 
-public enum SignatureScheme {
+import com.radixdlt.crypto.CryptoException;
 
-    /**
-     *  Elliptic Curve Digital Signature Algorithm, or ECDSA for short. A good introduction is to be found
-     *  <a href="https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm">here on wikipedia</a>.
-     */
-    ECDSA;
+public class ECIESException extends CryptoException {
 
-    @Override
-    public String toString() {
-        return this.name().toLowerCase();
-    }
+	public ECIESException(String message, Exception exception) {
+		super(message, exception);
+	}
+
 }

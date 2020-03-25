@@ -17,16 +17,28 @@
 
 package com.radixdlt.crypto;
 
-public enum SignatureScheme {
+import org.bouncycastle.util.encoders.Base64;
 
-    /**
-     *  Elliptic Curve Digital Signature Algorithm, or ECDSA for short. A good introduction is to be found
-     *  <a href="https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm">here on wikipedia</a>.
-     */
-    ECDSA;
+public class MacMismatchException extends CryptoException {
+	private final byte[] expected;
+	private final byte[] actual;
 
-    @Override
-    public String toString() {
-        return this.name().toLowerCase();
-    }
+	public MacMismatchException(String msg, byte[] expected, byte[] actual) {
+		super(msg);
+		this.expected = expected;
+		this.actual = actual;
+	}
+
+	public MacMismatchException(byte[] expected, byte[] actual) {
+		this.expected = expected;
+		this.actual = actual;
+	}
+
+	public String getExpectedBase64() {
+		return Base64.toBase64String(expected);
+	}
+
+	public String getActualBase64() {
+		return Base64.toBase64String(actual);
+	}
 }

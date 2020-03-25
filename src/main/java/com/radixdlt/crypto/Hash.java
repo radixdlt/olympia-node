@@ -24,6 +24,7 @@ import com.radixdlt.utils.Bytes;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Objects;
 import java.util.function.Supplier;
 
 public final class Hash implements Comparable<Hash> {
@@ -44,56 +45,110 @@ public final class Hash implements Comparable<Hash> {
 		return new Hash(hasher.hash256(randomBytes));
 	}
 
-	public static byte[] hash256(byte[] data)	{
-		return hasher.hash256(data, 0, data.length);
+	/**
+	 * Hashes the supplied array, returning a cryptographically secure 256-bit hash.
+	 * <p>
+	 * If your data already is hashed and you want to create a container for it,
+	 * use {@link Hash#Hash(byte[]) } constructor instead.
+	 *
+	 * @param dataToBeHashed The data to hash
+	 * @return The digest by applying the 256-bit/32-byte hash function
+	 */
+	public static byte[] hash256(byte[] dataToBeHashed)	{
+		return hash256(dataToBeHashed, 0, dataToBeHashed.length);
 	}
 
-	public static byte[] hash256(byte[] data, int offset, int length) {
-		return hasher.hash256(data, offset, length);
+	/**
+	 * Hashes the specified portion of the array, returning a cryptographically secure 256-bit hash.
+	 * <p>
+	 * If your data already is hashed and you want to create a container for it,
+	 * use {@link Hash#Hash(byte[], int, int) } constructor instead.
+	 *
+	 * @param dataToBeHashed The data to hash
+	 * @param offset The offset within the array to start hashing data
+	 * @param length The number of bytes in the array to hash
+	 * @return The digest by applying the 256-bit/32-byte hash function.
+	 */
+	public static byte[] hash256(byte[] dataToBeHashed, int offset, int length) {
+		return hasher.hash256(dataToBeHashed, offset, length);
 	}
 
-	public static byte[] hash512(byte[] data) {
-		return hasher.hash512(data, 0, data.length);
+	/**
+	 * Hashes the specified portion of the array, returning a cryptographically secure 512-bit hash.
+	 * <p>
+	 * If your data already is hashed and you want to create a container for it,
+	 * use {@link Hash#Hash(byte[]) } constructor instead.
+	 *
+	 * @param dataToBeHashed The data to hash
+	 * @return The 512-bit/64-byte hash
+	 */
+	public static byte[] hash512(byte[] dataToBeHashed) {
+		return hasher.hash512(dataToBeHashed);
 	}
 
-	public static byte[] hash512(byte[] data, int offset, int length) {
-		return hasher.hash512(data, offset, length);
-	}
-
-	public static byte[] hash256(byte[] data0, byte[] data1) {
-		return hasher.hash256(data0, data1);
-	}
 
 	private final byte[] 	data;
 	private Supplier<EUID>	idCached = Suppliers.memoize(this::computeId);
 
 	private final int hashCodeCached;
 
-	public Hash(byte[] hash) {
-		this(hash, 0, BYTES);
+	/**
+	 * This does NOT perform any hashing, the byte array passed should be already hashed.
+	 * <p>
+	 * If you want to hash the data, use any of the static methods
+	 * {@link Hash#hash256(byte[])} or {@link Hash#hash512(byte[])} instead.
+	 *
+	 * @param alreadyHashedData The data that has already been hashed.
+	 * @return a container for the already hashed data.
+	 */
+	public Hash(byte[] alreadyHashedData) {
+		this(alreadyHashedData, 0, BYTES);
 	}
 
-	public Hash(byte[] hash, int offset, int length) {
+	/**
+	 * This does NOT perform any hashing, the byte array passed should be already hashed.
+	 * <p>
+	 * If you want to hash the data, use any of the static methods
+	 * {@link Hash#hash256(byte[])} or {@link Hash#hash512(byte[])} instead.
+	 *
+	 * @param alreadyHashedData The data that has already been hashed.
+	 * @param offset The offset within the already hashed data
+	 * @param length The number of bytes of the already hashed data.
+	 * @return a container for the already hashed data.
+	 */
+	public Hash(byte[] alreadyHashedData, int offset, int length) {
+		Objects.requireNonNull(alreadyHashedData);
 		if (length != BYTES) {
 			throw new IllegalArgumentException("Digest length must be " + BYTES + " bytes for Hash, was " + length);
 		}
-		if (offset + length > hash.length) {
+		if (offset + length > alreadyHashedData.length) {
 			throw new IllegalArgumentException(String.format(
-				"Hash length must be at least %s for offset %s, but was %s", offset + length, offset, hash.length));
+				"Hash length must be at least %s for offset %s, but was %s", offset + length, offset, alreadyHashedData.length));
 		}
 
 		this.data = new byte[BYTES];
-		System.arraycopy(hash, offset, this.data, 0, BYTES);
+		System.arraycopy(alreadyHashedData, offset, this.data, 0, BYTES);
 		this.hashCodeCached = Arrays.hashCode(this.data);
 	}
 
-	public Hash(String hex) {
-		if (hex.length() != (BYTES * 2)) {
+
+	/**
+	 * This does NOT perform any hashing, the byte array passed should be already hashed.
+	 * <p>
+	 * If you want to hash the data, use any of the static methods
+	 * {@link Hash#hash256(byte[])} or {@link Hash#hash512(byte[])} instead.
+	 *
+	 * @param alreadyHashedDataAsHexString The data that has already been hashed, as a hexadecimal string
+	 * @return a container for the already hashed data.
+	 */
+	public Hash(String alreadyHashedDataAsHexString) {
+		Objects.requireNonNull(alreadyHashedDataAsHexString);
+		if (alreadyHashedDataAsHexString.length() != (BYTES * 2)) {
 			throw new IllegalArgumentException(String.format(
-				"Digest length must be %s hex characters for Hash, was %s", BYTES * 2, hex.length()));
+				"Digest length must be %s hex characters for Hash, was %s", BYTES * 2, alreadyHashedDataAsHexString.length()));
 		}
 
-		this.data = Bytes.fromHexString(hex);
+		this.data = Bytes.fromHexString(alreadyHashedDataAsHexString);
 		this.hashCodeCached = Arrays.hashCode(this.data);
 	}
 
@@ -122,7 +177,7 @@ public final class Hash implements Comparable<Hash> {
 		System.arraycopy(this.data, 0, array, offset, length);
 	}
 
-	public EUID getID() {
+	public EUID euid() {
 		return idCached.get();
 	}
 

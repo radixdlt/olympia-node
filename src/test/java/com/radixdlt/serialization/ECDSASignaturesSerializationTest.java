@@ -2,7 +2,6 @@ package com.radixdlt.serialization;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.TestSetupUtils;
-import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECKeyPair;
@@ -28,12 +27,7 @@ public class ECDSASignaturesSerializationTest extends SerializeObjectEngine<ECDS
 
     private static ECDSASignatures getECDSASignatures() {
 
-        ECKeyPair k1 = null;
-        try {
-            k1 = new ECKeyPair();
-        } catch (CryptoException e) {
-            e.printStackTrace();
-        }
+        ECKeyPair k1 = ECKeyPair.generateNew();
         ECDSASignature s1 = new ECDSASignature(BigInteger.ONE, BigInteger.ONE);
 
         return new ECDSASignatures(

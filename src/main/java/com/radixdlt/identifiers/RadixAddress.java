@@ -19,6 +19,7 @@ package com.radixdlt.identifiers;
 
 import com.google.common.base.Suppliers;
 import com.radixdlt.crypto.CryptoException;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.utils.Base58;
@@ -34,7 +35,7 @@ public final class RadixAddress {
 	/**
 	 * The public key this address represents
 	 */
-	private final ECPublicKey key;
+	private final ECPublicKey publicKey;
 
 	/**
 	 * The unique string which maps this address represents
@@ -46,10 +47,15 @@ public final class RadixAddress {
 	 */
 	private final Supplier<String> base58 = Suppliers.memoize(this::computeBase58);
 
-	public RadixAddress(byte magic, ECPublicKey key) {
-		this.key = Objects.requireNonNull(key);
+	/**
+	 * The magic byte of this address
+	 */
+	private final transient int magicByte;
 
-		byte[] digest = key.getBytes();
+	public RadixAddress(byte magic, ECPublicKey publicKey) {
+		this.publicKey = Objects.requireNonNull(publicKey);
+
+		byte[] digest = publicKey.getBytes();
 		byte[] addressBytes = new byte[1 + digest.length + 4];
 		addressBytes[0] = magic;
 		System.arraycopy(digest, 0, addressBytes, 1, digest.length);
@@ -57,6 +63,7 @@ public final class RadixAddress {
 		System.arraycopy(check, 0, addressBytes, digest.length + 1, 4);
 
 		this.addressBytes = addressBytes;
+		this.magicByte = magic;
 	}
 
 	public static RadixAddress from(byte[] raw) {
@@ -91,12 +98,12 @@ public final class RadixAddress {
 		return addressBytes.clone();
 	}
 
-	public ECPublicKey getKey() {
-		return this.key;
+	public ECPublicKey getPublicKey() {
+		return this.publicKey;
 	}
 
-	public EUID getUID() {
-		return this.key.getUID();
+	public EUID euid() {
+		return this.publicKey.euid();
 	}
 
 	@Override
@@ -123,5 +130,19 @@ public final class RadixAddress {
 
 	private String computeBase58() {
 		return Base58.toBase58(addressBytes);
+	}
+
+	// ###  Methods from Client Library ###
+
+	public int getMagicByte() {
+		return magicByte;
+	}
+
+	public boolean ownsKey(ECKeyPair ecKeyPair) {
+		return this.ownsKey(ecKeyPair.getPublicKey());
+	}
+
+	public boolean ownsKey(ECPublicKey publicKey) {
+		return this.publicKey.equals(publicKey);
 	}
 }

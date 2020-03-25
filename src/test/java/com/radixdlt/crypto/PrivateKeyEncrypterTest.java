@@ -17,16 +17,23 @@
 
 package com.radixdlt.crypto;
 
-public enum SignatureScheme {
+import com.radixdlt.crypto.encryption.PrivateKeyEncrypter;
+import org.junit.Assert;
+import org.junit.Test;
 
-    /**
-     *  Elliptic Curve Digital Signature Algorithm, or ECDSA for short. A good introduction is to be found
-     *  <a href="https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm">here on wikipedia</a>.
-     */
-    ECDSA;
+import java.io.IOException;
+import java.io.Reader;
+import java.io.StringReader;
+import java.security.GeneralSecurityException;
 
-    @Override
-    public String toString() {
-        return this.name().toLowerCase();
-    }
+public class PrivateKeyEncrypterTest {
+
+	@Test
+	public void encryptDecryptPrivateKey() throws GeneralSecurityException, IOException {
+		String key = PrivateKeyEncrypter.createEncryptedPrivateKey("Password");
+		Reader stringReader = new StringReader(key);
+		byte[] decryptedKey = PrivateKeyEncrypter.decryptPrivateKey("Password", stringReader);
+		Assert.assertEquals(32, decryptedKey.length);
+	}
+
 }

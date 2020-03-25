@@ -17,16 +17,8 @@
 
 package com.radixdlt.crypto;
 
-public enum SignatureScheme {
+import org.bouncycastle.math.ec.ECPoint;
 
-    /**
-     *  Elliptic Curve Digital Signature Algorithm, or ECDSA for short. A good introduction is to be found
-     *  <a href="https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm">here on wikipedia</a>.
-     */
-    ECDSA;
-
-    @Override
-    public String toString() {
-        return this.name().toLowerCase();
-    }
+public interface ECMultiplicationScalar {
+	ECPoint multiply(ECPoint point);
 }

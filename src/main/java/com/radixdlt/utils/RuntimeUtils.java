@@ -15,18 +15,23 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.crypto;
+package com.radixdlt.utils;
 
-public enum SignatureScheme {
+public final class RuntimeUtils {
 
-    /**
-     *  Elliptic Curve Digital Signature Algorithm, or ECDSA for short. A good introduction is to be found
-     *  <a href="https://en.wikipedia.org/wiki/Elliptic_Curve_Digital_Signature_Algorithm">here on wikipedia</a>.
-     */
-    ECDSA;
+	// Taken from BitcoinJ implementation
+	// https://github.com/bitcoinj/bitcoinj/blob/3cb1f6c6c589f84fe6e1fb56bf26d94cccc85429/core/src/main/java/org/bitcoinj/core/Utils.java#L573
+	private static int isAndroid = -1;
 
-    @Override
-    public String toString() {
-        return this.name().toLowerCase();
-    }
+	public static boolean isAndroidRuntime() {
+		if (isAndroid == -1) {
+			final String runtime = System.getProperty("java.runtime.name");
+			isAndroid = (runtime != null && runtime.equals("Android Runtime")) ? 1 : 0;
+		}
+		return isAndroid == 1;
+	}
+
+	private RuntimeUtils() {
+		// cannot construct
+	}
 }

@@ -75,12 +75,12 @@ public class ECDSASignatures implements Signatures {
     }
 
 	@Override
-    public boolean hasSignedMessage(Hash message, int requiredMinimumNumberOfValidSignatures) {
+    public boolean hasSignedMessage(byte[] message, int minimumValidSignatures) {
         long numberOfValidSignatures = this.keyToSignature.entrySet().stream()
             .filter(e -> e.getKey().verify(message, e.getValue()))
             .count();
 
-        return numberOfValidSignatures >= requiredMinimumNumberOfValidSignatures;
+        return numberOfValidSignatures >= minimumValidSignatures;
     }
 
 	@Override

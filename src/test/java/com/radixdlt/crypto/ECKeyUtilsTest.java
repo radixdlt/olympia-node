@@ -30,11 +30,11 @@ public class ECKeyUtilsTest {
 
 	@Test
 	public void from_engine___testGreaterOrEqualModulus() {
-		byte[] modulus = ECKeyUtils.adjustArray(ECKeyUtils.domain.getN().toByteArray(), ECKeyPair.BYTES);
+		byte[] modulus = ECKeyUtils.adjustArray(ECKeyUtils.domain().getN().toByteArray(), ECKeyPair.BYTES);
 		assertEquals(ECKeyPair.BYTES, modulus.length);
 		assertTrue(ECKeyUtils.greaterOrEqualOrder(modulus));
 
-		byte[] goodKey = ECKeyUtils.adjustArray(ECKeyUtils.domain.getN().subtract(BigInteger.ONE).toByteArray(), ECKeyPair.BYTES);
+		byte[] goodKey = ECKeyUtils.adjustArray(ECKeyUtils.domain().getN().subtract(BigInteger.ONE).toByteArray(), ECKeyPair.BYTES);
 		assertFalse(ECKeyUtils.greaterOrEqualOrder(goodKey));
 
 		byte[] badKey = new byte[ECKeyPair.BYTES];
