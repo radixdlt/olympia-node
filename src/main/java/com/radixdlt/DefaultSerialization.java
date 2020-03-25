@@ -36,6 +36,10 @@ public final class DefaultSerialization {
 		);
 	}
 
+	/**
+	 * A singleton created using {@link ClasspathScanningSerializerIds} and {@link ClasspathScanningSerializationPolicy}
+	 * @return A singleton created using {@link ClasspathScanningSerializerIds} and {@link ClasspathScanningSerializationPolicy},
+	 */
 	public static Serialization getInstance() {
 		return LazyHolder.INSTANCE;
 	}
