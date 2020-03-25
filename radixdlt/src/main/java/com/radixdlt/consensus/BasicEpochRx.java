@@ -60,7 +60,7 @@ public class BasicEpochRx implements EpochRx {
 			Events.getInstance().register(PeersAddedEvent.class, eventListener);
 		})
 			.map(peers -> Streams.concat(
-				peers.stream().filter(Peer::hasSystem).map(Peer::getSystem).map(RadixSystem::getKey),
+				addressBook.peers().filter(Peer::hasSystem).map(Peer::getSystem).map(RadixSystem::getKey),
 				Stream.of(selfKey)
 			).distinct().collect(Collectors.toList()))
 			.filter(peers -> peers.size() == fixedQuorumSize)
