@@ -98,13 +98,8 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 
 		Vertex proposal = proposalGenerator.generateProposal(this.pacemaker.getCurrentView());
 
-		if (proposal.getAtom() != null) {
-			log.info(getShortName() + ": Broadcasting Proposal: " + proposal);
-			this.networkSender.broadcastProposal(proposal);
-		} else {
-			// TODO: Handle empty proposals
-			log.info(getShortName() + ": Skipping proposal because no atom available for proposal");
-		}
+		log.info(getShortName() + ": Broadcasting Proposal: " + proposal);
+		this.networkSender.broadcastProposal(proposal);
 	}
 
 	private void proceedToView(View nextView) {
@@ -170,8 +165,7 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 	public void processNewView(NewView newView) {
 		log.info(this.getShortName() + ": Processing NEW_VIEW_MESSAGE: " + newView);
 
-		// only do something if we're actually the leader for the next view
-
+		// only do something if we're actually the leader for the view
 		final View view = newView.getView();
 		if (!Objects.equals(proposerElection.getProposer(view), selfKey.getPublicKey())) {
 			log.warn(String.format("Got confused new-view %s for view ", newView.hashCode()) + newView.getView());
@@ -185,7 +179,7 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 			return;
 		}
 
-		this.pacemaker.processNewView(newView)
+		this.pacemaker.processNewView(newView, validatorSet)
 			.ifPresent(this::startQuorumNewView);
 	}
 
@@ -195,7 +189,7 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 
 		final View currentView = this.pacemaker.getCurrentView();
 		if (proposedVertex.getView().compareTo(currentView) < 0) {
-			log.info("Ignore proposal current " + currentView + " but proposed " + proposedVertex.getView());
+			log.info("Ignoring proposal current " + currentView + " but proposed " + proposedVertex.getView());
 			return;
 		}
 
@@ -210,7 +204,7 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 
 		final View updatedView = this.pacemaker.getCurrentView();
 		if (proposedVertex.getView().compareTo(updatedView) != 0) {
-			log.info("Ignore proposal current " + updatedView + " but proposed " + proposedVertex.getView());
+			log.info("Ignoring proposal current " + updatedView + " but proposed " + proposedVertex.getView());
 			return;
 		}
 

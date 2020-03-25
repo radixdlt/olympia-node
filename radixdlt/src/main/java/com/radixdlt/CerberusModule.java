@@ -88,10 +88,8 @@ public class CerberusModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private PacemakerImpl pacemaker(
-		ValidatorSet validatorSet
-	) {
-		return new PacemakerImpl(validatorSet, Executors.newSingleThreadScheduledExecutor());
+	private PacemakerImpl pacemaker() {
+		return new PacemakerImpl(Executors.newSingleThreadScheduledExecutor());
 	}
 
 	@Provides
