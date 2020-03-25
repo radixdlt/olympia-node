@@ -39,11 +39,10 @@ public final class Locking {
 	/**
 	 * Acquire a lock, execute a {@link Runnable} and finally unlock the lock.
 	 *
-	 * @param <A> The argument type.
 	 * @param l   The lock to acquire/release.
 	 * @param r   The {@link Runnable} to execute.
 	 */
-	public static <A> void withLock(Lock l, Runnable r) {
+	public static void withLock(Lock l, Runnable r) {
 		l.lock();
 		try {
 			r.run();
@@ -93,12 +92,11 @@ public final class Locking {
 	 * result.
 	 *
 	 * @param <R> The result type from <code>r</code>.
-	 * @param <A> The argument type for <code>r</code>.
 	 * @param l   The lock to acquire/release.
 	 * @param s   The supplier to execute.
 	 * @return The result from the executed supplier.
 	 */
-	public static <R, A> R withSupplierLock(Lock l, Supplier<R> s) {
+	public static <R> R withSupplierLock(Lock l, Supplier<R> s) {
 		l.lock();
 		try {
 			return s.get();

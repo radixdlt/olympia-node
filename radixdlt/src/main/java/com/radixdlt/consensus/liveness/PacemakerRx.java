@@ -17,7 +17,7 @@
 
 package com.radixdlt.consensus.liveness;
 
-import com.radixdlt.consensus.Round;
+import com.radixdlt.consensus.View;
 import io.reactivex.rxjava3.core.Observable;
 
 /**
@@ -25,9 +25,7 @@ import io.reactivex.rxjava3.core.Observable;
  */
 public interface PacemakerRx {
 	/**
-	 * @return hot observable of timeout events
+	 * @return observable of timeout events which begins emitting on the first subscription
 	 */
-	Observable<Round> localTimeouts();
-
-	void start();
+	Observable<View> localTimeouts();
 }

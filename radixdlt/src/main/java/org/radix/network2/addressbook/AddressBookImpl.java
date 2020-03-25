@@ -29,7 +29,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.radixdlt.common.EUID;
-
+import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.universe.Universe;
 import org.radix.events.Events;
 import org.radix.logging.Logger;
@@ -37,7 +37,6 @@ import org.radix.logging.Logging;
 import org.radix.network.discovery.Whitelist;
 import org.radix.network2.transport.TransportInfo;
 import org.radix.network2.utils.Locking;
-import org.radix.properties.RuntimeProperties;
 import org.radix.universe.system.RadixSystem;
 
 /**

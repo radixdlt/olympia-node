@@ -17,7 +17,7 @@
 
 package org.radix.network2.addressbook;
 
-import java.io.Closeable;
+import java.io.IOException;
 import java.util.stream.Stream;
 
 import org.radix.network2.transport.TransportInfo;
@@ -29,7 +29,7 @@ import com.radixdlt.common.EUID;
  * Address book interface allowing client code to discover and add
  * {@link Peer} objects.
  */
-public interface AddressBook extends Closeable {
+public interface AddressBook {
 
 	/**
 	 * Adds the specified peer to the address book.
@@ -130,4 +130,12 @@ public interface AddressBook extends Closeable {
 	 */
 	Stream<EUID> nids();
 
+    /**
+     * Closes this {@code AddressBook} and releases any system resources associated
+     * with it. If the {@code AddressBook} is already closed then invoking this
+     * method has no effect.
+     *
+     * @throws IOException if an I/O error occurs
+     */
+    public void close() throws IOException;
 }

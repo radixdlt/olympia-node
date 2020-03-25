@@ -28,13 +28,13 @@ import org.powermock.reflect.Whitebox;
 import org.radix.events.Events;
 import org.radix.network2.transport.StaticTransportMetadata;
 import org.radix.network2.transport.TransportInfo;
-import org.radix.properties.RuntimeProperties;
 import org.radix.time.Time;
 import org.radix.time.Timestamps;
 import org.radix.universe.system.RadixSystem;
 
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.common.EUID;
+import com.radixdlt.properties.RuntimeProperties;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;

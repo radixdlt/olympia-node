@@ -59,9 +59,9 @@ public final class PublicInetAddress {
 		}
 	}
 
-	public static void configure(String localAddress, int localPort) {
+	public static void configure(int localPort) {
 		synchronized(INSTANCE_LOCK) {
-			instance = new PublicInetAddress(localAddress, localPort, System::currentTimeMillis);
+			instance = new PublicInetAddress(localPort, System::currentTimeMillis);
 		}
 	}
 
@@ -78,8 +78,8 @@ public final class PublicInetAddress {
 	private long secretEndOfLife = Long.MIN_VALUE; // Very much expired
 
 	@VisibleForTesting
-	PublicInetAddress(String localAddress, int localPort, LongSupplier timeSource) {
-		this.localAddress = getLocalAddress(localAddress);
+	PublicInetAddress(int localPort, LongSupplier timeSource) {
+		this.localAddress = getLocalAddress();
 		this.localPort = localPort;
 		this.timeSource = timeSource;
 	}
@@ -228,14 +228,7 @@ public final class PublicInetAddress {
 		ctx.writeAndFlush(packet);
 	}
 
-	private InetAddress getLocalAddress(String localAddress) {
-		try {
-			if (localAddress != null) {
-				return InetAddress.getByName(localAddress);
-			}
-		} catch (UnknownHostException e) {
-			// Ignore and fall through
-		}
+	private InetAddress getLocalAddress() {
 		try {
 			return InetAddress.getLocalHost();
 		} catch (UnknownHostException e) {

@@ -54,9 +54,6 @@ public final class LedgerEntryConflict {
 
 	@Override
 	public String toString() {
-		return "LedgerEntryConflict{" +
-			"ledgerEntry=" + ledgerEntry +
-			", conflictingLedgerEntries=" + conflictingLedgerEntries +
-			'}';
+		return "LedgerEntryConflict{" + "ledgerEntry=" + ledgerEntry + ", conflictingLedgerEntries=" + conflictingLedgerEntries + '}';
 	}
 }

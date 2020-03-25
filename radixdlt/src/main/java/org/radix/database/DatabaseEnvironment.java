@@ -18,6 +18,7 @@
 package org.radix.database;
 
 import com.google.inject.Inject;
+import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.utils.RadixConstants;
 import com.sleepycat.je.CacheMode;
 import com.sleepycat.je.CheckpointConfig;
@@ -33,7 +34,6 @@ import com.sleepycat.je.Transaction;
 import org.bouncycastle.util.Arrays;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.properties.RuntimeProperties;
 
 import java.io.File;
 import java.util.concurrent.TimeUnit;

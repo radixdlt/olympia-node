@@ -17,12 +17,12 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.crypto.Hash;
 import java.util.Objects;
 
 import javax.annotation.concurrent.Immutable;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.common.AID;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
@@ -36,75 +36,77 @@ public final class VertexMetadata {
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	private Round round;
+	private View view;
 
-	@JsonProperty("aid")
+	@JsonProperty("id")
 	@DsonOutput(Output.ALL)
-	private final AID aid;
+	private final Hash id;
 
-	private Round parentRound;
+	private View parentView;
 
-	@JsonProperty("parent_aid")
+	@JsonProperty("parent_id")
 	@DsonOutput(Output.ALL)
-	private final AID parentAid;
+	private final Hash parentId;
 
 	VertexMetadata() {
 		// Serializer only
-		this.round = null;
-		this.aid = null;
-		this.parentRound = null;
-		this.parentAid = null;
+		this.view = null;
+		this.id = null;
+		this.parentView = null;
+		this.parentId = null;
 	}
 
-	public VertexMetadata(Round round, AID aid, Round parentRound, AID parentAid) {
-		this.round = round;
-		this.aid = aid;
-		this.parentRound = parentRound;
-		this.parentAid = parentAid;
+	public VertexMetadata(View view, Hash id, View parentView, Hash parentId) {
+		if (parentId == null && view.number() != 0) {
+			throw new IllegalArgumentException("Root vertex must be view 0.");
+		}
+        this.view = view;
+		this.id = id;
+		this.parentView = parentView;
+		this.parentId = parentId;
 	}
 
-	public Round getRound() {
-		return round;
+	public View getView() {
+		return view;
 	}
 
-	public Round getParentRound() {
-		return parentRound;
+	public View getParentView() {
+		return parentView;
 	}
 
-	public AID getAID() {
-		return aid;
+	public Hash getParentId() {
+		return parentId;
 	}
 
-	public AID getParentAID() {
-		return parentAid;
+	public Hash getId() {
+		return id;
 	}
 
-	@JsonProperty("round")
+	@JsonProperty("view")
 	@DsonOutput(Output.ALL)
-	private Long getSerializerRound() {
-		return this.round == null ? null : this.round.number();
+	private Long getSerializerView() {
+		return this.view == null ? null : this.view.number();
 	}
 
-	@JsonProperty("round")
-	private void setSerializerRound(Long number) {
-		this.round = number == null ? null : Round.of(number.longValue());
+	@JsonProperty("view")
+	private void setSerializerView(Long number) {
+		this.view = number == null ? null : View.of(number.longValue());
 	}
 
-	@JsonProperty("parent_round")
+	@JsonProperty("parent_view")
 	@DsonOutput(Output.ALL)
-	private Long getSerializerParentRound() {
-		return this.parentRound == null ? null : this.parentRound.number();
+	private Long getSerializerParentView() {
+		return this.parentView == null ? null : this.parentView.number();
 	}
 
-	@JsonProperty("parent_round")
-	private void setSerializerParentRound(Long number) {
-		this.parentRound = number == null ? null : Round.of(number.longValue());
+	@JsonProperty("parent_view")
+	private void setSerializerParentView(Long number) {
+		this.parentView = number == null ? null : View.of(number.longValue());
 	}
-
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.round, this.aid, this.parentRound, this.parentAid);
+		return Objects.hash(this.view, this.id, this.parentView, this.parentId);
 	}
 
 	@Override
@@ -115,10 +117,10 @@ public final class VertexMetadata {
 		if (o instanceof VertexMetadata) {
 			VertexMetadata other = (VertexMetadata) o;
 			return
-				Objects.equals(this.round, other.round) &&
-				Objects.equals(this.aid, other.aid) &&
-				Objects.equals(this.parentRound, other.parentRound) &&
-				Objects.equals(this.parentAid, other.parentAid);
+				Objects.equals(this.view, other.view)
+				&& Objects.equals(this.id, other.id)
+				&& Objects.equals(this.parentView, other.parentView)
+				&& Objects.equals(this.parentId, other.parentId);
 		}
 		return false;
 	}

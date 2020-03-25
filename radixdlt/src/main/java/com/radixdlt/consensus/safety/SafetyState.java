@@ -18,41 +18,55 @@
 package com.radixdlt.consensus.safety;
 
 import com.google.inject.Inject;
-import com.radixdlt.consensus.Round;
+import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.View;
 
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * The state maintained to ensure the safety of the consensus system.
  */
-final class SafetyState {
-	final Round lastVotedRound; // the last round this node voted on
-	final Round lockedRound; // the highest 2-chain head
+public final class SafetyState {
+	private final View lastVotedView; // the last view this node voted on (and is thus safe)
+	private final View lockedView; // the highest 2-chain head
+	private final View committedView; // the highest 3-chain (executed) head
+	private final QuorumCertificate genericQC; // the highest 1-chain head
 
 	@Inject
 	protected SafetyState() {
-		this(Round.of(0L), Round.of(0L));
+		this(View.genesis(), View.genesis(), View.genesis(), null);
 	}
 
-	public SafetyState(Round lastVotedRound, Round lockedRound) {
-		this.lastVotedRound = lastVotedRound;
-		this.lockedRound = lockedRound;
+	SafetyState(View lastVotedView, View lockedView, View committedView, QuorumCertificate genericQC) {
+		this.lastVotedView = Objects.requireNonNull(lastVotedView);
+		this.lockedView = Objects.requireNonNull(lockedView);
+		this.committedView = Objects.requireNonNull(committedView);
+		this.genericQC = genericQC;
 	}
 
-	public SafetyState(SafetyState other) {
-		this(other.lastVotedRound, other.lockedRound);
+	SafetyState(SafetyState other) {
+		this(other.lastVotedView, other.lockedView, other.committedView, other.genericQC);
 	}
 
-	public SafetyState withLastVotedRound(Round lastVotedRound) {
-		return new SafetyState(lastVotedRound, this.lockedRound);
+	public SafetyState withLastVotedView(View lastVotedView) {
+		return new SafetyState(lastVotedView, this.lockedView, committedView, this.genericQC);
 	}
 
-	public SafetyState withLockedRound(Round lockedRound) {
-		return new SafetyState(this.lastVotedRound, lockedRound);
+	public SafetyState withLockedView(View lockedView) {
+		return new SafetyState(this.lastVotedView, lockedView, committedView, this.genericQC);
+	}
+
+	public SafetyState withCommittedView(View committedView) {
+		return new SafetyState(this.lastVotedView, this.lockedView, committedView, this.genericQC);
+	}
+
+	public SafetyState withGenericQC(QuorumCertificate genericQC) {
+		return new SafetyState(this.lastVotedView, this.lockedView, committedView, genericQC);
 	}
 
 	public static SafetyState initialState() {
-		return new SafetyState(Round.of(0L), Round.of(0L));
+		return new SafetyState();
 	}
 
 	@Override
@@ -64,20 +78,39 @@ final class SafetyState {
 			return false;
 		}
 		SafetyState that = (SafetyState) o;
-		return Objects.equals(lastVotedRound, that.lastVotedRound) &&
-			Objects.equals(lockedRound, that.lockedRound);
+		return Objects.equals(lastVotedView, that.lastVotedView)
+			&& Objects.equals(lockedView, that.lockedView)
+			&& Objects.equals(committedView, that.committedView)
+			&& Objects.equals(genericQC, that.genericQC);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(lastVotedRound, lockedRound);
+		return Objects.hash(lastVotedView, lockedView, committedView, genericQC);
 	}
 
 	@Override
 	public String toString() {
-		return "SafetyState{" +
-			"lastVotedRound=" + lastVotedRound +
-			", lockedRound=" + lockedRound +
-			'}';
+		return String.format("SafetyState{lastVotedView=%s, lockedView=%s, genericQC=%s}", lastVotedView, lockedView, genericQC);
+	}
+
+	public View getLastVotedView() {
+		return lastVotedView;
+	}
+
+	public Optional<QuorumCertificate> getGenericQC() {
+		return Optional.ofNullable(genericQC);
+	}
+
+	public Optional<View> getGenericView() {
+		return getGenericQC().map(QuorumCertificate::getView);
+	}
+
+	public View getLockedView() {
+		return lockedView;
+	}
+
+	public View getCommittedView() {
+		return committedView;
 	}
 }

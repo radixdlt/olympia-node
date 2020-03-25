@@ -17,15 +17,16 @@
 
 package org.radix.serialization;
 
-import com.radixdlt.common.AID;
+import com.radixdlt.atommodel.message.MessageParticle;
+import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.common.Atom;
-import com.radixdlt.common.EUID;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.Round;
+import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
-import com.radixdlt.consensus.Vote;
-import com.radixdlt.utils.Ints;
+import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.crypto.ECDSASignatures;
+import com.radixdlt.crypto.Hash;
 
 public class VertexSerializeTest extends SerializeObject<Vertex> {
 	public VertexSerializeTest() {
@@ -33,25 +34,20 @@ public class VertexSerializeTest extends SerializeObject<Vertex> {
 	}
 
 	private static Vertex get() {
-		Round parentRound = Round.of(1234567890L);
-		Round round = parentRound.next();
-		AID parentAid = aidOf(12345);
-		AID aid = aidOf(23456);
+		View parentView = View.of(1234567890L);
+		View view = parentView.next();
+		Hash parentId = Hash.random();
+		Hash id = Hash.random();
 
-		VertexMetadata vertexMetadata = new VertexMetadata(round, aid, parentRound, parentAid);
+		VertexMetadata vertexMetadata = new VertexMetadata(view, id, parentView, parentId);
 
-		EUID author = EUID.TWO;
-		Vote vote = new Vote(author, vertexMetadata);
-		QuorumCertificate qc = new QuorumCertificate(vote, vertexMetadata);
+		QuorumCertificate qc = new QuorumCertificate(vertexMetadata, new ECDSASignatures());
 
+		RadixAddress address = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
 		Atom atom = new Atom();
+		// add a particle to ensure atom is valid and has at least one shard
+		atom.addParticleGroupWith(new MessageParticle(address, address, "Hello".getBytes()), Spin.UP);
 
-		return new Vertex(qc, round, atom);
-	}
-
-	private static AID aidOf(int id) {
-		byte[] bytes = new byte[AID.BYTES];
-		Ints.copyTo(id, bytes, AID.BYTES - Integer.BYTES);
-		return AID.from(bytes);
+		return Vertex.createVertex(qc, view, atom);
 	}
 }

@@ -19,7 +19,7 @@ package com.radixdlt.discovery;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.Multibinder;
-import org.radix.properties.RuntimeProperties;
+import com.radixdlt.properties.RuntimeProperties;
 
 public class IterativeDiscovererModule extends AbstractModule {
 	private final IterativeDiscovererConfiguration configuration;

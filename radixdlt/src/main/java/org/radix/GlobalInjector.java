@@ -23,15 +23,18 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.name.Names;
 import com.radixdlt.CerberusModule;
+import com.radixdlt.atomos.RadixAddress;
 import com.radixdlt.common.EUID;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.delivery.LazyRequestDelivererModule;
 import com.radixdlt.discovery.IterativeDiscovererModule;
 import com.radixdlt.mempool.MempoolModule;
 import com.radixdlt.middleware2.MiddlewareModule;
 import com.radixdlt.network.NetworkModule;
+import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.berkeley.BerkeleyStoreModule;
-import com.radixdlt.submission.SubmissionControlModule;
 import com.radixdlt.universe.Universe;
 import org.radix.database.DatabaseEnvironment;
 import org.radix.events.Events;
@@ -40,7 +43,6 @@ import org.radix.network2.addressbook.PeerManagerConfiguration;
 import org.radix.network2.messaging.MessageCentralModule;
 import org.radix.network2.transport.tcp.TCPTransportModule;
 import org.radix.network2.transport.udp.UDPTransportModule;
-import org.radix.properties.RuntimeProperties;
 import org.radix.universe.system.LocalSystem;
 
 public class GlobalInjector {
@@ -51,13 +53,12 @@ public class GlobalInjector {
 		Module lazyRequestDelivererModule = new LazyRequestDelivererModule(properties);
 		Module iterativeDiscovererModule = new IterativeDiscovererModule(properties);
 		Module berkeleyStoreModule = new BerkeleyStoreModule();
-		Module tempoModule = new CerberusModule();
+		Module tempoModule = new CerberusModule(properties);
 		Module middlewareModule = new MiddlewareModule();
 		Module messageCentralModule = new MessageCentralModule(properties);
 		Module udpTransportModule = new UDPTransportModule(properties);
 		Module tcpTransportModule = new TCPTransportModule(properties);
 		Module addressBookModule = new AddressBookModule(dbEnv);
-		Module submissionControlModule = new SubmissionControlModule();
 		Module mempoolModule = new MempoolModule();
 		Module networkModule = new NetworkModule();
 
@@ -71,6 +72,9 @@ public class GlobalInjector {
 				bind(Events.class).toProvider(Events::getInstance);
 				bind(LocalSystem.class).toInstance(localSystem);
 				bind(EUID.class).annotatedWith(Names.named("self")).toInstance(localSystem.getNID());
+				bind(ECKeyPair.class).annotatedWith(Names.named("self")).toInstance(localSystem.getKeyPair());
+				bind(ECPublicKey.class).annotatedWith(Names.named("self")).toInstance(localSystem.getKeyPair().getPublicKey());
+				bind(RadixAddress.class).annotatedWith(Names.named("self")).toInstance(RadixAddress.from(universe, localSystem.getKey()));
 				bind(Universe.class).toInstance(universe);
 				bind(PeerManagerConfiguration.class).toInstance(PeerManagerConfiguration.fromRuntimeProperties(properties));
 			}
@@ -86,7 +90,6 @@ public class GlobalInjector {
 				udpTransportModule,
 				tcpTransportModule,
 				addressBookModule,
-				submissionControlModule,
 				mempoolModule,
 				networkModule,
 				globalModule);

@@ -18,12 +18,11 @@
 package org.radix.network2.addressbook;
 
 import com.google.inject.Inject;
-import com.google.inject.name.Named;
 import com.radixdlt.common.EUID;
+import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.universe.Universe;
 import org.radix.common.executors.Executor;
 import org.radix.common.executors.ScheduledExecutable;
-import org.radix.events.Events;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.network.Interfaces;
@@ -33,10 +32,8 @@ import org.radix.network.messages.GetPeersMessage;
 import org.radix.network.messages.PeerPingMessage;
 import org.radix.network.messages.PeerPongMessage;
 import org.radix.network.messages.PeersMessage;
-import org.radix.network.peers.events.PeerAvailableEvent;
 import org.radix.network2.messaging.MessageCentral;
 import org.radix.network2.transport.TransportException;
-import org.radix.properties.RuntimeProperties;
 import org.radix.time.Time;
 import org.radix.time.Timestamps;
 import org.radix.universe.system.LocalSystem;
@@ -61,7 +58,6 @@ public class PeerManager {
 
 	private final AddressBook addressbook;
 	private final MessageCentral messageCentral;
-	private final Events events;
 	private final BootstrapDiscovery bootstrapDiscovery;
 
 	private final long peersBroadcastIntervalMs;
@@ -81,7 +77,6 @@ public class PeerManager {
 	private final int peerMessageBatchSize;
 
 	private final SecureRandom rng;
-	private final EUID self;
 	private final Interfaces interfaces;
 	private final Whitelist whitelist;
 	private final LocalSystem localSystem;
@@ -107,7 +102,7 @@ public class PeerManager {
 
 				if (peersToProbe.isEmpty()) {
 					addressbook.peers()
-						.filter(StandardFilters.standardFilter(self, interfaces, whitelist))
+						.filter(StandardFilters.standardFilter(localSystem.getNID(), interfaces, whitelist))
 						.forEachOrdered(peersToProbe::add);
 					this.numPeers = peersToProbe.size();
 				}
@@ -125,25 +120,24 @@ public class PeerManager {
 	}
 
 	@Inject
-	PeerManager(PeerManagerConfiguration config,
-	            AddressBook addressbook,
-	            MessageCentral messageCentral,
-	            Events events,
-	            BootstrapDiscovery bootstrapDiscovery,
-	            SecureRandom rng,
-	            @Named("self") EUID self,
-	            LocalSystem localSystem,
-	            Interfaces interfaces,
-	            RuntimeProperties properties, Universe universe) {
+	PeerManager(
+		PeerManagerConfiguration config,
+		AddressBook addressbook,
+		MessageCentral messageCentral,
+		BootstrapDiscovery bootstrapDiscovery,
+		SecureRandom rng,
+		LocalSystem localSystem,
+		Interfaces interfaces,
+		RuntimeProperties properties,
+		Universe universe
+	) {
 		super();
 
 		this.addressbook = Objects.requireNonNull(addressbook);
 		this.messageCentral = Objects.requireNonNull(messageCentral);
-		this.events = Objects.requireNonNull(events);
 		this.bootstrapDiscovery = Objects.requireNonNull(bootstrapDiscovery);
 		this.rng = Objects.requireNonNull(rng);
-		this.self = Objects.requireNonNull(self);
-		this.localSystem = Objects.requireNonNull(localSystem);
+		this.localSystem = localSystem;
 		this.interfaces = Objects.requireNonNull(interfaces);
 		this.universe = Objects.requireNonNull(universe);
 		this.whitelist = Whitelist.from(properties);
@@ -270,7 +264,7 @@ public class PeerManager {
 			PeersMessage peersMessage = new PeersMessage(this.universe.getMagic());
 			List<Peer> peers = addressbook.peers()
 				.filter(Peer::hasNID)
-				.filter(StandardFilters.standardFilter(self, interfaces, whitelist))
+				.filter(StandardFilters.standardFilter(localSystem.getNID(), interfaces, whitelist))
 				.filter(StandardFilters.recentlyActive(universe.getPlanck()))
 				.collect(Collectors.toList());
 
@@ -300,7 +294,6 @@ public class PeerManager {
 			long nonce = message.getNonce();
 			log.debug("peer.ping from " + peer + " with nonce '" + nonce + "'");
 			messageCentral.send(peer, new PeerPongMessage(nonce, localSystem, this.universe.getMagic()));
-			events.broadcast(new PeerAvailableEvent(peer));
 		} catch (Exception ex) {
 			log.error("peer.ping " + peer, ex);
 		}
@@ -314,7 +307,6 @@ public class PeerManager {
 				if (ourNonce != null && ourNonce.longValue() == nonce) {
 					this.probes.remove(peer);
 					log.debug("Got peer.pong from " + peer + " with nonce '" + nonce + "'");
-					events.broadcast(new PeerAvailableEvent(peer));
 				} else if (ourNonce != null) {
 					log.debug("Got mismatched peer.pong from " + peer + " with nonce'" + nonce + "', ours '" + ourNonce + "'");
 				}
@@ -385,21 +377,12 @@ public class PeerManager {
 	private void discoverPeers() {
 		// Probe all the bootstrap hosts so that they know about us
 		GetPeersMessage msg = new GetPeersMessage(this.universe.getMagic());
-		bootstrapDiscovery.discover(this.addressbook, StandardFilters.standardFilter(self, interfaces, whitelist)).stream()
+		bootstrapDiscovery.discover(this.addressbook, StandardFilters.standardFilter(localSystem.getNID(), interfaces, whitelist)).stream()
 			.map(addressbook::peer)
 			.forEachOrdered(peer -> {
 				probe(peer);
 				messageCentral.send(peer, msg);
 			});
-	}
-
-	private ScheduledExecutable scheduledExecutable(long initialDelay, long recurrentDelay, TimeUnit units, Runnable r) {
-		return new ScheduledExecutable(initialDelay, recurrentDelay, units) {
-			@Override
-			public void execute() {
-				r.run();
-			}
-		};
 	}
 }
 

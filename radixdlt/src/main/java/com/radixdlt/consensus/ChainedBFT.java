@@ -20,62 +20,121 @@ package com.radixdlt.consensus;
 import com.google.inject.Inject;
 
 import com.radixdlt.consensus.liveness.PacemakerRx;
-import com.radixdlt.network.EventCoordinatorNetworkRx;
 
+import com.radixdlt.consensus.validators.ValidatorSet;
+import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Scheduler;
-import io.reactivex.rxjava3.disposables.CompositeDisposable;
-import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import java.util.Objects;
 
 /**
- * A three-chain BFT
+ * A three-chain BFT. The inputs are events via rx streams from a pacemaker and
+ * a network.
  */
 public final class ChainedBFT {
+	public enum EventType {
+		EPOCH,
+		LOCAL_TIMEOUT,
+		NEW_VIEW_MESSAGE,
+		PROPOSAL_MESSAGE,
+		VOTE_MESSAGE
+	}
+
+	public static class Event {
+		private final EventType eventType;
+		private final Object eventObject;
+
+		private Event(EventType eventType, Object eventObject) {
+			this.eventType = eventType;
+			this.eventObject = eventObject;
+		}
+
+		@Override
+		public String toString() {
+			return eventType + ": " + eventObject;
+		}
+	}
+
 	private final EventCoordinatorNetworkRx network;
-	private final PacemakerRx pacemaker;
-	private final EventCoordinator eventCoordinator;
+	private final PacemakerRx pacemakerRx;
+	private final EpochRx epochRx;
+	private final EpochManager epochManager;
+
 	private final Scheduler singleThreadScheduler = Schedulers.single();
-	private final CompositeDisposable disposable = new CompositeDisposable();
 
 	@Inject
 	public ChainedBFT(
-		EventCoordinator eventCoordinator,
+		EpochRx epochRx,
 		EventCoordinatorNetworkRx network,
-		PacemakerRx pacemaker
+		PacemakerRx pacemakerRx,
+		EpochManager epochManager
 	) {
-		Objects.requireNonNull(pacemaker);
-		Objects.requireNonNull(network);
-		Objects.requireNonNull(eventCoordinator);
-
-		this.pacemaker = pacemaker;
-		this.network = network;
-		this.eventCoordinator = eventCoordinator;
+		this.pacemakerRx = Objects.requireNonNull(pacemakerRx);
+		this.network = Objects.requireNonNull(network);
+		this.epochRx = Objects.requireNonNull(epochRx);
+		this.epochManager = Objects.requireNonNull(epochManager);
 	}
 
-	public void start() {
-		this.pacemaker.start();
+	/**
+	 * Returns a cold observable which when subscribed to begins consuming
+	 * and processing bft events. Does not begin processing until the observable
+	 * is subscribed to.
+	 *
+	 * @return observable of the events which are being processed
+	 */
+	public Observable<Event> processEvents() {
+		final Observable<ValidatorSet> epochEvents = this.epochRx.epochs()
+			.publish()
+			.autoConnect(2);
 
-		final Disposable timeoutDisposable = this.pacemaker.localTimeouts()
-			.subscribeOn(this.singleThreadScheduler)
-			.subscribe(this.eventCoordinator::processLocalTimeout);
+		final Observable<Event> epochs = epochEvents
+			.map(o -> new Event(EventType.EPOCH, o))
+			.subscribeOn(this.singleThreadScheduler);
 
-		final Disposable newRoundDisposable = this.network.newRoundMessages()
-			.subscribeOn(this.singleThreadScheduler)
-			.subscribe(this.eventCoordinator::processRemoteNewRound);
+		final Observable<EventCoordinator> epochCoordinators = epochEvents
+			.map(epochManager::nextEpoch)
+			.startWithItem(epochManager.start())
+			.publish()
+			.autoConnect(4);
 
-		final Disposable proposalDisposable = this.network.proposalMessages()
-			.subscribeOn(this.singleThreadScheduler)
-			.subscribe(this.eventCoordinator::processProposal);
+		final Observable<Event> timeouts = Observable.combineLatest(
+			epochCoordinators,
+			this.pacemakerRx.localTimeouts(),
+			(e, timeout) -> {
+				e.processLocalTimeout(timeout);
+				return new Event(EventType.LOCAL_TIMEOUT, timeout);
+			}
+		).subscribeOn(this.singleThreadScheduler);
 
-		final Disposable voteDisposable = this.network.voteMessages()
-			.subscribeOn(this.singleThreadScheduler)
-			.subscribe(this.eventCoordinator::processVote);
+		final Observable<Event> newViews = Observable.combineLatest(
+			epochCoordinators,
+			this.network.newViewMessages(),
+			(e, newView) -> {
+				e.processNewView(newView);
+				return new Event(EventType.NEW_VIEW_MESSAGE, newView);
+			}
+		).subscribeOn(this.singleThreadScheduler);
 
-		disposable.addAll(timeoutDisposable, newRoundDisposable, proposalDisposable, voteDisposable);
-	}
+		final Observable<Event> proposals = Observable.combineLatest(
+			epochCoordinators,
+			this.network.proposalMessages(),
+			(e, proposal) -> {
+				e.processProposal(proposal);
+				return new Event(EventType.PROPOSAL_MESSAGE, proposal);
+			}
+		).subscribeOn(this.singleThreadScheduler);
 
-	public void stop() {
-		disposable.dispose();
+		final Observable<Event> votes = Observable.combineLatest(
+			epochCoordinators,
+			this.network.voteMessages(),
+			(e, vote) -> {
+				e.processVote(vote);
+				return new Event(EventType.VOTE_MESSAGE, vote);
+			}
+		).subscribeOn(this.singleThreadScheduler);
+
+		final Observable<Event> networkMessages = Observable.merge(newViews, proposals, votes);
+
+		return Observable.merge(epochs, timeouts, networkMessages);
 	}
 }

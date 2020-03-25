@@ -20,47 +20,93 @@ package com.radixdlt.consensus.safety;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
-import com.radixdlt.common.AID;
-import com.radixdlt.common.EUID;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.VertexStore;
+import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.Vote;
+import com.radixdlt.crypto.CryptoException;
+import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.Hash;
 
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Manages safety of the protocol.
- * TODO: Add storage of private key of node here
  */
 public final class SafetyRules {
-	private final EUID self;
+	private final ECKeyPair selfKey; // TODO remove signing/address to separate identity management
 
+	private final VertexStore vertexStore;
 	private SafetyState state;
 
 	@Inject
-	public SafetyRules(@Named("self") EUID self, SafetyState initialState) {
-		this.self = Objects.requireNonNull(self);
-		this.state = new SafetyState(initialState.lastVotedRound, initialState.lockedRound);
-	}
-
-	@VisibleForTesting
-	AID getCommittedAtom(Vertex vertex) {
-		if (vertex.getRound().equals(vertex.getQC().getRound().next())
-			&& vertex.getQC().getRound().equals(vertex.getQC().getParentRound().next())) {
-			return vertex.getQC().getVertexMetadata().getParentAID();
-		}
-		return null;
+	public SafetyRules(@Named("self") ECKeyPair selfKey,
+	                   VertexStore vertexStore,
+	                   SafetyState initialState) {
+		this.selfKey = Objects.requireNonNull(selfKey);
+		this.vertexStore = Objects.requireNonNull(vertexStore);
+		this.state = new SafetyState(initialState);
 	}
 
 	/**
-	 * Process a quorum certificate
-	 * @param qc The quorum certificate
+	 * Process a vertex
+	 * @param vertex The vertex
+	 * @return the just-committed vertex id, if any
 	 */
-	public void process(QuorumCertificate qc) {
-		if (qc.getParentRound().compareTo(this.state.lockedRound) > 0) {
-			this.state = this.state.withLockedRound(qc.getParentRound());
+	public Optional<Hash> process(Vertex vertex) {
+		return process(vertex.getQC());
+	}
+
+	/**
+	 * Process a QC.
+	 * @param qc The quorum certificate
+	 * @return the just-committed vertex id, if any
+	 */
+	public Optional<Hash> process(QuorumCertificate qc) {
+		// pre-commit phase on vertex's parent if there is a newer consecutive 1-chain
+		// keep highest 1-chain as the current "generic" QC
+		if (qc.getView().compareTo(this.state.getGenericView().orElse(View.of(0L))) > 0) {
+			this.state = this.state.withGenericQC(qc);
 		}
+
+		// commit phase on vertex's grandparent if there is a newer consecutive 2-chain
+		// keep the highest consecutive 2-chain as the locked QC
+		Vertex parent = vertexStore.getVertex(qc.getVertexMetadata().getId());
+		if (parent == null) {
+			throw new IllegalStateException(String.format(
+				"QC %s has no vertex at %s", qc, qc.getVertexMetadata().getId()));
+		}
+		// do not go beyond genesis
+		if (!parent.isGenesis()) {
+			boolean twoChain = parent.getQC().getView().next().equals(parent.getView());
+			if (twoChain && parent.getQC().getView().compareTo(this.state.getLockedView()) > 0) {
+				this.state = this.state.withLockedView(parent.getQC().getView());
+			}
+
+			// decide phase on vertex's great-grandparent if there is a newer consecutive 3-chain
+			// return committed aid
+			Vertex grandparent = vertexStore.getVertex(parent.getQC().getVertexMetadata().getId());
+			if (grandparent == null) {
+				throw new IllegalStateException(String.format(
+					"QC %s has no vertex at %s", qc, qc.getVertexMetadata().getId()));
+			}
+			// do not go beyond genesis
+			if (!grandparent.isGenesis() && twoChain) {
+				boolean threeChain = qc.getVertexMetadata().getId().equals(parent.getId())
+					&& parent.getQC().getVertexMetadata().getId().equals(grandparent.getId())
+					&& grandparent.getQC().getView().next().equals(grandparent.getView());
+				if (threeChain && grandparent.getQC().getView().compareTo(this.state.getCommittedView()) > 0) {
+					this.state = this.state.withCommittedView(grandparent.getQC().getView());
+					return Optional.of(grandparent.getQC().getVertexMetadata().getId());
+				}
+			}
+		}
+
+		return Optional.empty();
 	}
 
 	/**
@@ -69,30 +115,33 @@ public final class SafetyRules {
 	 * @return A vote result containing the vote and any committed vertices
 	 * @throws SafetyViolationException In case the vertex would violate a safety invariant
 	 */
-	public VoteResult voteFor(Vertex proposedVertex) throws SafetyViolationException {
-		// ensure vertex does not violate earlier rounds
-		if (proposedVertex.getRound().compareTo(this.state.lastVotedRound) <= 0) {
+	public Vote voteFor(Vertex proposedVertex) throws SafetyViolationException {
+		// ensure vertex does not violate earlier votes
+		if (proposedVertex.getView().compareTo(this.state.getLastVotedView()) <= 0) {
 			throw new SafetyViolationException(proposedVertex, this.state, String.format(
-				"violates earlier vote at %s", this.state.lastVotedRound));
+				"violates earlier vote at %s", this.state.getLastVotedView()));
 		}
 
 		// ensure vertex respects locked QC
-		if (proposedVertex.getQC().getRound().compareTo(this.state.lockedRound) < 0) {
+		if (proposedVertex.getQC().getView().compareTo(this.state.getLockedView()) < 0) {
 			throw new SafetyViolationException(proposedVertex, this.state, String.format(
-				"does not respect locked round %s", this.state.lockedRound));
+				"does not respect locked view %s", this.state.getLockedView()));
 		}
 
-		this.state = this.state.withLastVotedRound(proposedVertex.getRound());
+		this.state = this.state.withLastVotedView(proposedVertex.getView());
 		VertexMetadata vertexMetadata = new VertexMetadata(
-			proposedVertex.getRound(),
-			proposedVertex.getAID(),
-			proposedVertex.getQC().getVertexMetadata().getRound(),
-			proposedVertex.getQC().getVertexMetadata().getAID()
+			proposedVertex.getView(),
+			proposedVertex.getId(),
+			proposedVertex.getQC().getView(),
+			proposedVertex.getQC().getVertexMetadata().getId()
 		);
-		Vote vote = new Vote(self, vertexMetadata);
-		AID committedAtom = getCommittedAtom(proposedVertex);
-
-		return new VoteResult(vote, committedAtom);
+		try {
+			// TODO make signing more robust by including author in signed hash
+			ECDSASignature signature = this.selfKey.sign(proposedVertex.getId());
+			return new Vote(selfKey.getPublicKey(), vertexMetadata, signature);
+		} catch (CryptoException e) {
+			throw new IllegalStateException("Failed to sign proposed vertex " + proposedVertex, e);
+		}
 	}
 
 	@VisibleForTesting SafetyState getState() {
