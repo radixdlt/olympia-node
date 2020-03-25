@@ -202,8 +202,6 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
 			getClass().getSimpleName(), Bytes.toBase64String(getPublicKey().getBytes()));
 	}
 
-	// ###  From Client Library  ###
-
 	@JsonProperty("version")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private short version = 100;

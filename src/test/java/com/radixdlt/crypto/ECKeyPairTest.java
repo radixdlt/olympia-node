@@ -120,14 +120,12 @@ public class ECKeyPairTest {
 			.verify();
 	}
 
-	// ### FROM Client Librart ###
-
 	@Test
 	public void decrypt_bad_encrypted_data_with_good_encrypted_private_key__should_throw_CryptoException() throws CryptoException {
 		ECKeyPair keyPair1 = ECKeyPair.generateNew();
 		ECKeyPair keyPair2 = ECKeyPair.generateNew();
 
-		EncryptedPrivateKey encryptedPrivateKey = keyPair2.encryptPrivateKeyWithPublicKey(keyPair1.getPublicKey()); //(keyPair1.getPublicKey());
+		EncryptedPrivateKey encryptedPrivateKey = keyPair2.encryptPrivateKeyWithPublicKey(keyPair1.getPublicKey());
 
 		assertThatThrownBy(() -> keyPair1.decrypt(new byte[]{0}, encryptedPrivateKey))
 				.isInstanceOf(CryptoException.class);

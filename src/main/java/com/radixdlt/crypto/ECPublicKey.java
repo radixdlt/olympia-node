@@ -142,7 +142,6 @@ public final class ECPublicKey {
 		return new EUID(Hash.hash256(getBytes()));
 	}
 
-	// ### From Client Library ###
 	public int length() {
 		return publicKey.length;
 	}
