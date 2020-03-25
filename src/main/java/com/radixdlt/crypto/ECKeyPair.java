@@ -90,7 +90,7 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
 			this.privateKey = privateKey;
 			this.publicKey = new ECPublicKey(ECKeyUtils.keyHandler.computePublicKey(privateKey));
 		} catch (Exception ex) {
-			throw new CryptoException(ex);
+			throw new CryptoException("Invalid privateKey", ex);
 		}
 	}
 

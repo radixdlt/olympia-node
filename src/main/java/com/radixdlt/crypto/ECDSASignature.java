@@ -133,18 +133,16 @@ public final class ECDSASignature implements Signature {
 	}
 
 	public static ECDSASignature decodeFromDER(byte[] bytes) {
-		DLSequence seq;
-		ASN1Integer r, s;
 		try (ASN1InputStream decoder = new ASN1InputStream(bytes)) {
-			seq = (DLSequence) decoder.readObject();
-			r = (ASN1Integer) seq.getObjectAt(0);
-			s = (ASN1Integer) seq.getObjectAt(1);
+			DLSequence seq = (DLSequence) decoder.readObject();
+			ASN1Integer r = (ASN1Integer) seq.getObjectAt(0);
+			ASN1Integer s = (ASN1Integer) seq.getObjectAt(1);
+			return new ECDSASignature(r.getPositiveValue(), s.getPositiveValue());
 		} catch (IOException e) {
 			throw new IllegalArgumentException("Failed to read bytes as ASN1 decode bytes", e);
 		} catch (ClassCastException e) {
 			throw new IllegalStateException("Failed to cast to ASN1Integer", e);
 		}
 
-		return new ECDSASignature(r.getPositiveValue(), s.getPositiveValue());
 	}
 }

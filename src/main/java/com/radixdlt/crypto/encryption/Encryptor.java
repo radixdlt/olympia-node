@@ -65,10 +65,10 @@ public class Encryptor {
 
 	public byte[] decrypt(byte[] data, ECKeyPair accessor) throws CryptoException {
 		for (EncryptedPrivateKey protector : protectors) {
-			// TODO: remove exception catching
 			try {
 				return accessor.decrypt(data, protector);
 			} catch (CryptoException e) {
+				// exception could so that we can proceed with next `protector`
 			}
 		}
 
