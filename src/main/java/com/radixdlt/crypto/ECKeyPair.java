@@ -219,33 +219,19 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
 		}
 		this.privateKey = Arrays.copyOf(privateKey, privateKey.length);
 	}
-
+	
 	public static ECKeyPair fromFile(File file) throws CryptoException {
-		InputStream inputStream;
-		try {
-			inputStream = new FileInputStream(file);
+		try (InputStream inputStream = new FileInputStream(file)) {
+			byte[] privateKey = new byte[32];
+			int len = inputStream.read(privateKey);
+			if (len != 32) {
+				throw new IllegalStateException("Private Key file must be 32 bytes in " + file);
+			}
+			return new ECKeyPair(privateKey);
 		} catch (FileNotFoundException e) {
 			throw new IllegalArgumentException("Failed to read file", e);
-		}
-
-		BufferedInputStream io = new BufferedInputStream(inputStream);
-
-		byte[] privateKey = new byte[32];
-		int len = 0;
-		try {
-			len = io.read(privateKey, 0, 32);
 		} catch (IOException e) {
 			throw new IllegalArgumentException("Failed to read 32 bytes from content of file", e);
-		}
-
-		if (len < 32) {
-			throw new IllegalStateException("Private Key file must be 32 bytes");
-		}
-
-		try {
-			return new ECKeyPair(privateKey);
-		} catch (Exception e) {
-			throw new CryptoException("Failed to create KeyPair from file", e);
 		}
 	}
 
