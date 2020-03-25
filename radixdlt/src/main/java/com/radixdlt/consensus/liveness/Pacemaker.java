@@ -20,6 +20,7 @@ package com.radixdlt.consensus.liveness;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.View;
 
+import com.radixdlt.consensus.validators.ValidatorSet;
 import java.util.Optional;
 
 /**
@@ -50,7 +51,8 @@ public interface Pacemaker {
 	/**
 	 * Adds a new view message to the pacemaker state
 	 * @param newView the new view message
+	 * @param validatorSet validator set which forms the quorum
 	 * @return optional with view, if the pacemaker gains a quorum of new views
 	 */
-	Optional<View> processNewView(NewView newView);
+	Optional<View> processNewView(NewView newView, ValidatorSet validatorSet);
 }

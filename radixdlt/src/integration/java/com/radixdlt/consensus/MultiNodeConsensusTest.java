@@ -83,7 +83,7 @@ public class MultiNodeConsensusTest {
 		}).when(mempool).getAtoms(anyInt(), anySet());
 		ProposalGenerator proposalGenerator = new ProposalGenerator(vertexStore, mempool);
 		SafetyRules safetyRules = new SafetyRules(key, vertexStore, SafetyState.initialState());
-		PacemakerImpl pacemaker = new PacemakerImpl(validatorSet, Executors.newSingleThreadScheduledExecutor());
+		PacemakerImpl pacemaker = new PacemakerImpl(Executors.newSingleThreadScheduledExecutor());
 		PendingVotes pendingVotes = new PendingVotes();
 
 		EpochRx epochRx = () -> Observable.just(validatorSet).concatWith(Observable.never());

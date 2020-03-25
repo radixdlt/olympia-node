@@ -43,13 +43,11 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 	private final PublishSubject<View> timeouts;
 	private final Observable<View> timeoutsObservable;
 	private final ScheduledExecutorService executorService;
-	private final ValidatorSet validatorSet;
 
 	private final Map<View, ECDSASignatures> pendingNewViews = new HashMap<>();
 	private View currentView = View.of(0L);
 
-	public PacemakerImpl(ValidatorSet validatorSet, ScheduledExecutorService executorService) {
-		this.validatorSet = Objects.requireNonNull(validatorSet);
+	public PacemakerImpl(ScheduledExecutorService executorService) {
 		this.executorService = Objects.requireNonNull(executorService);
 		this.timeouts = PublishSubject.create();
 		this.timeoutsObservable = this.timeouts
@@ -82,7 +80,7 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 	}
 
 	@Override
-	public Optional<View> processNewView(NewView newView) {
+	public Optional<View> processNewView(NewView newView, ValidatorSet validatorSet) {
 		Hash newViewId = new Hash(Hash.hash256(Longs.toByteArray(newView.getView().number())));
 		ECDSASignature signature = newView.getSignature().orElseThrow(() -> new IllegalArgumentException("new-view is missing signature"));
 		ECDSASignatures signatures = pendingNewViews.getOrDefault(newView.getView(), new ECDSASignatures());
