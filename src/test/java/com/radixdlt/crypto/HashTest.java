@@ -35,6 +35,7 @@ import java.util.function.Function;
 import static org.hamcrest.number.OrderingComparison.lessThan;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
@@ -201,6 +202,16 @@ public class HashTest {
 		String expectedEUIDHex = "cbed388efef3a09bee696ad1b30d49a0";
 		assertEquals(expectedEUIDHex, publicKey.euid().toString());
 		assertEquals(expectedEUIDHex, Bytes.toHexString(Hash.hash256(publicKeyBytes)).substring(0, 32));
+	}
+
+	@Test
+	public void test_that_hash_constructor_does_not_perform_any_hashing() {
+		byte[] deadbeef = deadbeef().toByteArray();
+		assertArrayEquals(deadbeef, new Hash(deadbeef).toByteArray());
+		assertArrayEquals(Hash.hash256(deadbeef), Hash.of(deadbeef).toByteArray());
+
+		assertNotEquals(deadbeef, Hash.of(deadbeef).toByteArray());
+		assertNotEquals(deadbeef, Hash.hash256(deadbeef));
 	}
 
 	private void testEncodeToHashFromString(String message, Function<byte[], Hash> hashFunction, String expectedHashHex) {
