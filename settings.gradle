@@ -1,5 +1,2 @@
 include 'radixdlt-java'
 include 'examples'
-
-include ":radixdlt-java-common"
-project(":radixdlt-java-common").projectDir = file("../radixdlt-java-common")
