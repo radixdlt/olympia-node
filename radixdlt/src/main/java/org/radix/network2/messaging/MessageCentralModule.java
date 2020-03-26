@@ -23,11 +23,11 @@ import java.util.concurrent.PriorityBlockingQueue;
 import com.google.inject.Singleton;
 import org.radix.network2.TimeSupplier;
 import org.radix.network2.transport.FirstMatchTransportManager;
-import org.radix.properties.RuntimeProperties;
 import org.radix.time.Time;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.TypeLiteral;
+import com.radixdlt.properties.RuntimeProperties;
 
 /**
  * Guice configuration for {@link MessageCentral} that includes a UDP

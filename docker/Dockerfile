@@ -1,5 +1,5 @@
-FROM eu.gcr.io/lunar-arc-236318/base-core
-MAINTAINER Zalan Blenessy <zalan@radix.global>
+FROM radixdlt/base-core
+MAINTAINER Radix Devops <devops@radixdlt.com>
 
 # set entrypoint and default command
 ENTRYPOINT [ "/opt/radixdlt/config_radixdlt.sh" ]

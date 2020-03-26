@@ -70,8 +70,11 @@ public final class BerkeleyCursorStore implements CursorStore {
 		primaryConfig.setTransactional(true);
 
 		try {
-			Environment dbEnv = this.dbEnv.getEnvironment();
-			this.cursors = dbEnv.openDatabase(null, LC_CURSOR_STORE_NAME, primaryConfig);
+			// This SuppressWarnings here is valid, as ownership of the underlying
+			// resource is not changed here, the resource is just accessed.
+			@SuppressWarnings("resource")
+			Environment env = this.dbEnv.getEnvironment();
+			this.cursors = env.openDatabase(null, LC_CURSOR_STORE_NAME, primaryConfig);
 		} catch (Exception e) {
 			throw new TempoException("Error while opening database", e);
 		}
@@ -86,6 +89,9 @@ public final class BerkeleyCursorStore implements CursorStore {
 		dbEnv.withLock(() -> {
 			Transaction transaction = null;
 			try {
+				// This SuppressWarnings here is valid, as ownership of the underlying
+				// resource is not changed here, the resource is just accessed.
+				@SuppressWarnings("resource")
 				Environment env = this.dbEnv.getEnvironment();
 				transaction = env.beginTransaction(null, new TransactionConfig().setReadUncommitted(true));
 				env.truncateDatabase(transaction, LC_CURSOR_STORE_NAME, false);

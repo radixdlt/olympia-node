@@ -27,53 +27,41 @@ import com.radixdlt.serialization.SerializerId2;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 @SerializerId2("network.message.test")
-public final class TestMessage extends Message
-{
+public final class TestMessage extends Message {
 	@JsonProperty("nonce")
 	@DsonOutput(Output.ALL)
-	public 	long 	testnonce;
+	public long testnonce;
 
 	@JsonProperty("junk")
 	@DsonOutput(Output.ALL)
-	public	byte[]	junk;
+	public byte[] junk;
 
-	private TestMessage() {
-		this(0);
+	TestMessage() {
 		// for serializer
+		this(0);
 	}
 
-	public TestMessage(int magic)
-	{
+	public TestMessage(int magic) {
 		super(magic);
 		testnonce = new SecureRandom().nextLong();
 		junk = new byte[1000];
 	}
 
-	public TestMessage(final int size, int magic)
-	{
+	public TestMessage(final int size, int magic) {
 		super(magic);
 		testnonce = new SecureRandom().nextLong();
 		junk = new byte[size];
 	}
 
-	@Override
-	public String getCommand()
-	{
-		return "test";
-	}
-
-	public long getTestNonce ()
-	{
+	public long getTestNonce() {
 		return testnonce;
 	}
 
-	public void setTestNonce (long testnonce)
-	{
+	public void setTestNonce(long testnonce) {
 		this.testnonce = testnonce;
 	}
 
-	public byte[] getJunk()
-	{
+	public byte[] getJunk() {
 		return junk;
 	}
 }

@@ -259,7 +259,7 @@ public final class RadixJsonRpcServer {
 
 			// FIXME: Bit of a hack for now
 			if (result instanceof List) {
-				List<Object> list = (List<Object>) result;
+				List<?> list = (List<?>) result;
 				JSONArray resultArray = new JSONArray();
 				list.stream().map(o -> serialization.toJsonObject(o, Output.API)).forEach(resultArray::put);
 				response.put("result", resultArray);

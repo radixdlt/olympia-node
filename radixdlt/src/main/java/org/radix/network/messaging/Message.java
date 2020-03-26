@@ -18,13 +18,10 @@
 package org.radix.network.messaging;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonValue;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import org.radix.containers.BasicContainer;
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
 import org.radix.time.Time;
 import org.radix.time.Timestamps;
 import org.xerial.snappy.Snappy;
@@ -37,19 +34,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public abstract class Message extends BasicContainer
 {
-	public enum Direction {
-		OUTBOUND,
-		INBOUND;
-
-		@JsonValue
-		@Override
-		public String toString() {
-			return this.name();
-		}
-	}
-
-	private static final Logger messaginglog = Logging.getLogger("messaging");
-
 	@Override
 	public short VERSION() { return 100; }
 
@@ -67,25 +51,11 @@ public abstract class Message extends BasicContainer
 	private final HashMap<String, Long> timestamps = new HashMap<>();
 
 	private transient int size = 0;
-	private transient Direction direction;
 
 	protected Message(int magic)
 	{
 		setTimestamp(Timestamps.DEFAULT, Time.currentTimestamp());
-	}
-
-	@JsonProperty("command")
-	@DsonOutput(value = Output.HASH, include = false)
-	public abstract String getCommand();
-
-	public final Direction getDirection()
-	{
-		return this.direction;
-	}
-
-	public final void setDirection(Direction direction)
-	{
-		this.direction = direction;
+		this.magic = magic;
 	}
 
 	public final int getMagic() {
@@ -128,6 +98,6 @@ public abstract class Message extends BasicContainer
 	@Override
 	public String toString()
 	{
-		return this.instance+" -> "+this.getCommand()+":"+this.getDirection()+":"+this.getHID()+" @ "+this.getTimestamp();
+		return this.instance+" -> "+this.getClass().getSimpleName()+":"+this.getHID()+" @ "+this.getTimestamp();
 	}
 }

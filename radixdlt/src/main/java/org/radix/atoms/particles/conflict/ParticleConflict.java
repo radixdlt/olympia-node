@@ -24,12 +24,12 @@ import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
-import org.radix.validation.ValidatableObject;
+import org.radix.containers.BasicContainer;
 
 import java.util.Set;
 
 @SerializerId2("conflict.particle_conflict")
-public final class ParticleConflict extends ValidatableObject {
+public final class ParticleConflict extends BasicContainer {
 	@Override
 	public short VERSION() {
 		return 100;

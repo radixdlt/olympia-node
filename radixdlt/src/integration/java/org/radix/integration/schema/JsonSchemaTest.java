@@ -95,7 +95,10 @@ public class JsonSchemaTest extends RadixTest {
 		RadixAddress address = RadixAddress.from(getUniverse(), ecKeyPair.getPublicKey());
 
 		Atom transactionAtom = new Atom(1L);
-		transactionAtom.addParticleGroupWith(new MessageParticle(address, address, "Radix....Just Imagine".getBytes(RadixConstants.STANDARD_CHARSET)), Spin.UP);
+		transactionAtom.addParticleGroupWith(
+			new MessageParticle(address, address, "Radix....Just Imagine".getBytes(RadixConstants.STANDARD_CHARSET)),
+			Spin.UP
+		);
 
 		TransferrableTokensParticle mintParticle = new TransferrableTokensParticle(address,
 			UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 + BILLION_LOG_10),

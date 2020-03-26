@@ -21,6 +21,10 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import com.radixdlt.common.AID;
+import com.radixdlt.constraintmachine.DataPointer;
+import com.radixdlt.mempool.MempoolDuplicateException;
+import com.radixdlt.mempool.MempoolFullException;
+
 import org.everit.json.schema.Schema;
 import org.json.JSONObject;
 import org.radix.api.services.AtomsService;
@@ -29,8 +33,6 @@ import org.radix.atoms.particles.conflict.ParticleConflict;
 import org.radix.atoms.particles.conflict.ParticleConflictException;
 import org.radix.exceptions.AtomAlreadyStoredException;
 import org.radix.exceptions.ValidationException;
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
 import org.radix.validation.ConstraintMachineValidationException;
 
 /**
@@ -47,8 +49,6 @@ public class SubmitAtomAndSubscribeEpic {
 	public enum AtomSubmissionState {
 		SUBMITTING, SUBMITTED, STORED, VALIDATION_ERROR, UNKNOWN_ERROR, COLLISION, UNSUITABLE_PEER
 	}
-
-	private static final Logger LOGGER = Logging.getLogger("SubmitAndSubscribeEpic");
 
 	/**
 	 * Interface for atom submission and return of results
@@ -141,6 +141,16 @@ public class SubmitAtomAndSubscribeEpic {
 					data.put("justStored", false);
 
 					sendAtomSubmissionState.accept(AtomSubmissionState.STORED, data);
+				} else if (e instanceof MempoolFullException) {
+					JSONObject data = new JSONObject();
+					data.put("message", e.getMessage());
+					// FIXME: Probably should be something different here, but decision deferred until later
+					sendAtomSubmissionState.accept(AtomSubmissionState.UNSUITABLE_PEER, data);
+				} else if (e instanceof MempoolDuplicateException) {
+					JSONObject data = new JSONObject();
+					data.put("message", e.getMessage());
+					data.put("pointerToIssue", DataPointer.ofAtom());
+					sendAtomSubmissionState.accept(AtomSubmissionState.COLLISION, data);
 				} else {
 					JSONObject data = new JSONObject();
 					data.put("message", e.getMessage());

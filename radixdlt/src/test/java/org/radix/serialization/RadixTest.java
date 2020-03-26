@@ -17,13 +17,13 @@
 
 package org.radix.serialization;
 
+import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.universe.Universe;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.mockito.stubbing.Answer;
 import org.radix.network2.transport.udp.PublicInetAddress;
-import org.radix.properties.RuntimeProperties;
 import org.radix.time.NtpService;
 import org.radix.universe.system.LocalSystem;
 import org.radix.utils.SystemMetaData;
@@ -59,7 +59,7 @@ public abstract class RadixTest
 		when(ntpService.getUTCTimeMS()).thenAnswer((Answer<Long>) invocation -> System.currentTimeMillis());
 
 		serialization = Serialization.getDefault();
-		PublicInetAddress.configure(null, 30000);
+		PublicInetAddress.configure(30000);
 		localSystem = LocalSystem.restoreOrCreate(getProperties(), universe);
 	}
 

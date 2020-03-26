@@ -23,9 +23,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.primitives.UnsignedBytes;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.google.inject.name.Named;
 import com.radixdlt.common.AID;
-import com.radixdlt.common.EUID;
 import com.radixdlt.store.SearchCursor;
 import com.radixdlt.store.StoreIndex;
 import com.radixdlt.store.StoreIndex.LedgerIndexType;
@@ -90,9 +88,6 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 	private static final byte PREFIX_COMMITTED = 0b0000_0000;
 	private static final byte PREFIX_PENDING = 0b0000_0001;
 
-	private static final byte[] EMPTY_DATA = new byte[0];
-
-	private final EUID self;
 	private final Serialization serialization;
 	private final DatabaseEnvironment dbEnv;
 
@@ -107,11 +102,9 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 
 	@Inject
 	public BerkeleyLedgerEntryStore(
-		@Named("self") EUID self,
 		Serialization serialization,
 		DatabaseEnvironment dbEnv
 	) {
-		this.self = Objects.requireNonNull(self);
 		this.serialization = Objects.requireNonNull(serialization);
 		this.dbEnv = Objects.requireNonNull(dbEnv);
 
@@ -150,12 +143,15 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 		pendingConfig.setBtreeComparator(BerkeleyLedgerEntryStore.AtomStorePackedPrimaryKeyComparator.class);
 
 		try {
-			Environment dbEnv = this.dbEnv.getEnvironment();
-			this.atoms = dbEnv.openDatabase(null, ATOMS_DB_NAME, primaryConfig);
-			this.uniqueIndices = dbEnv.openSecondaryDatabase(null, UNIQUE_INDICES_DB_NAME, this.atoms, uniqueIndicesConfig);
-			this.duplicatedIndices = dbEnv.openSecondaryDatabase(null, DUPLICATE_INDICES_DB_NAME, this.atoms, duplicateIndicesConfig);
-			this.atomIndices = dbEnv.openDatabase(null, ATOM_INDICES_DB_NAME, primaryConfig);
-			this.pending = dbEnv.openDatabase(null, PENDING_DB_NAME, pendingConfig);
+			// This SuppressWarnings here is valid, as ownership of the underlying
+			// resource is not changed here, the resource is just accessed.
+			@SuppressWarnings("resource")
+			Environment env = this.dbEnv.getEnvironment();
+			this.atoms = env.openDatabase(null, ATOMS_DB_NAME, primaryConfig);
+			this.uniqueIndices = env.openSecondaryDatabase(null, UNIQUE_INDICES_DB_NAME, this.atoms, uniqueIndicesConfig);
+			this.duplicatedIndices = env.openSecondaryDatabase(null, DUPLICATE_INDICES_DB_NAME, this.atoms, duplicateIndicesConfig);
+			this.atomIndices = env.openDatabase(null, ATOM_INDICES_DB_NAME, primaryConfig);
+			this.pending = env.openDatabase(null, PENDING_DB_NAME, pendingConfig);
 		} catch (Exception e) {
 			throw new TempoException("Error while opening databases", e);
 		}
@@ -170,6 +166,9 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 		dbEnv.withLock(() -> {
 			Transaction transaction = null;
 			try {
+				// This SuppressWarnings here is valid, as ownership of the underlying
+				// resource is not changed here, the resource is just accessed.
+				@SuppressWarnings("resource")
 				Environment env = this.dbEnv.getEnvironment();
 				transaction = env.beginTransaction(null, new TransactionConfig().setReadUncommitted(true));
 				env.truncateDatabase(transaction, ATOMS_DB_NAME, false);
@@ -343,7 +342,12 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 		throw new IllegalStateException("Should never reach here");
 	}
 
-	private LedgerEntryStoreResult doStorePending(LedgerEntry atom, Set<StoreIndex> uniqueIndices, Set<StoreIndex> duplicateIndices, Transaction transaction) throws SerializationException {
+	private LedgerEntryStoreResult doStorePending(
+		LedgerEntry atom,
+		Set<StoreIndex> uniqueIndices,
+		Set<StoreIndex> duplicateIndices,
+		Transaction transaction
+	) throws SerializationException {
 		byte[] atomData = serialization.toDson(atom, Output.PERSIST);
 		LedgerEntryIndices indices = LedgerEntryIndices.from(atom, uniqueIndices, duplicateIndices);
 		// TODO should probably do some ordering on pending atoms
@@ -352,7 +356,14 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 		return doStore(PREFIX_PENDING, pendingLC, atom.getAID(), atomData, indices, transaction);
 	}
 
-	private LedgerEntryStoreResult doStore(byte prefix, long logicalClock, AID aid, byte[] ledgerEntryData, LedgerEntryIndices indices, Transaction transaction) throws SerializationException {
+	private LedgerEntryStoreResult doStore(
+		byte prefix,
+		long logicalClock,
+		AID aid,
+		byte[] ledgerEntryData,
+		LedgerEntryIndices indices,
+		Transaction transaction
+	) throws SerializationException {
 		try {
 			DatabaseEntry pKey = toPKey(prefix, logicalClock, aid);
 			DatabaseEntry pData = new DatabaseEntry(ledgerEntryData);
@@ -576,7 +587,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 
 			return this.getByShardRange(from, to);
 		} catch (Exception ex) {
-			throw new DatabaseException(ex);
+			throw new DatabaseException("While querying shard chunk and range", ex);
 		}
 	}
 
@@ -606,7 +617,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 
 			return aids;
 		} catch (Exception ex) {
-			throw new DatabaseException(ex);
+			throw new DatabaseException("While querying shard range", ex);
 		}
 	}
 
@@ -628,7 +639,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 
 			return aids;
 		} catch (Exception ex) {
-			throw new DatabaseException(ex);
+			throw new DatabaseException("While querying shard", ex);
 		}
 	}
 	BerkeleySearchCursor getNext(BerkeleySearchCursor cursor) {
@@ -705,16 +716,13 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 	}
 
 	private SecondaryCursor toSecondaryCursor(LedgerIndexType type) {
-		Objects.requireNonNull(type, "cursor is required");
-		SecondaryCursor databaseCursor;
 		if (type.equals(StoreIndex.LedgerIndexType.UNIQUE)) {
-			databaseCursor = this.uniqueIndices.openCursor(null, null);
+			return this.uniqueIndices.openCursor(null, null);
 		} else if (type.equals(StoreIndex.LedgerIndexType.DUPLICATE)) {
-			databaseCursor = this.duplicatedIndices.openCursor(null, null);
+			return this.duplicatedIndices.openCursor(null, null);
 		} else {
 			throw new IllegalStateException("Cursor type " + type + " not supported");
 		}
-		return databaseCursor;
 	}
 
 	private static AID getAidFromPKey(DatabaseEntry pKey) {

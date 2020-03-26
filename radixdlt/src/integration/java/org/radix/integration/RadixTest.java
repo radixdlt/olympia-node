@@ -17,6 +17,7 @@
 
 package org.radix.integration;
 
+import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.universe.Universe;
 import org.json.JSONObject;
@@ -25,15 +26,13 @@ import org.junit.BeforeClass;
 import org.radix.GenerateUniverses;
 import org.radix.Radix;
 import org.radix.network2.transport.udp.PublicInetAddress;
-import org.radix.properties.RuntimeProperties;
 import org.radix.serialization.TestSetupUtils;
 import org.radix.universe.system.LocalSystem;
 import org.radix.utils.IOUtils;
 
 import java.util.Objects;
 
-public class RadixTest
-{
+public class RadixTest {
 	private static Serialization serialization;
 	private static String dbLocation = null;
 	private static RuntimeProperties properties;
@@ -47,8 +46,9 @@ public class RadixTest
 		serialization = Serialization.getDefault();
 
 		JSONObject runtimeConfigurationJSON = new JSONObject();
-		if (Radix.class.getResourceAsStream("/runtime_options.json") != null)
+		if (Radix.class.getResourceAsStream("/runtime_options.json") != null) {
 			runtimeConfigurationJSON = new JSONObject(IOUtils.toString(Radix.class.getResourceAsStream("/runtime_options.json")));
+		}
 
 		properties = new RuntimeProperties(runtimeConfigurationJSON, null);
 
@@ -60,8 +60,8 @@ public class RadixTest
 		properties.set("db.location", dbLocation);
 
 		universe = new GenerateUniverses(properties).generateUniverses().stream().filter(Universe::isTest).findAny().get();
-		PublicInetAddress.configure(null, universe.getPort());
-		localSystem = LocalSystem.restoreOrCreate(properties, universe);// Load node.ks, after universe
+		PublicInetAddress.configure(universe.getPort());
+		localSystem = LocalSystem.restoreOrCreate(properties, universe); // Load node.ks, after universe
 	}
 
 	@AfterClass
@@ -73,19 +73,19 @@ public class RadixTest
 		universe = null;
 	}
 
-	protected static Serialization getSerialization() {
+	protected Serialization getSerialization() {
 		return Objects.requireNonNull(serialization, "serialization was not initialized");
 	}
 
-	public static RuntimeProperties getProperties() {
+	protected RuntimeProperties getProperties() {
 		return Objects.requireNonNull(properties, "properties was not initialized");
 	}
 
-	public static LocalSystem getLocalSystem() {
+	protected LocalSystem getLocalSystem() {
 		return Objects.requireNonNull(localSystem, "localSystem was not initialized");
 	}
 
-	public static Universe getUniverse() {
+	protected Universe getUniverse() {
 		return Objects.requireNonNull(universe, "universe was not initialized");
 	}
 }

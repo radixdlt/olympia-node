@@ -17,17 +17,16 @@
 
 package org.radix.serialization;
 
-import com.radixdlt.common.Atom;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import com.google.common.base.Strings;
 import com.radixdlt.middleware.ParticleGroup;
 import com.radixdlt.serialization.DsonOutput.Output;
 
 import static org.junit.Assert.assertEquals;
-
-import joptsimple.internal.Strings;
 
 public class TestParticleGroupSerialization {
 	static Serialization serialization;
@@ -39,11 +38,8 @@ public class TestParticleGroupSerialization {
 
 	@Test
 	public void testLargeStringSerialization() throws SerializationException {
-		long timestamp = 0x0001020304050607L;
-		Atom atom = new Atom(timestamp);
-
 		// "massive" must be greater length than (16000 / 4) - 4 = 3996
-		String massive = Strings.repeat('X', 4096);
+		String massive = Strings.repeat("X", 4096);
 		ParticleGroup pg = ParticleGroup.builder().addMetaData("massive", massive).build();
 
 		byte[] particleGroupBytes = serialization.toDson(pg, Output.HASH);

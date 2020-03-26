@@ -29,20 +29,6 @@ public abstract class Event implements Comparable<Event>, Future<Event>
 {
 	private static AtomicLong noncer = new AtomicLong(1);
 
-	public enum EventPriority
-	{
-		LOW(1),
-		DEFAULT(100),
-		MEDIUM(500),
-		HIGH(1000);
-
-		private final int p;
-
-		EventPriority(int p) { this.p = p; }
-
-		public int priority() { return p; }
-	}
-
 	private final long 	nonce;
 	private final long	timestamp;
 	private final CountDownLatch latch;

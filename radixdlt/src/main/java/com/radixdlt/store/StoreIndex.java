@@ -23,6 +23,7 @@ import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
+import com.radixdlt.utils.Bytes;
 import org.bouncycastle.util.Arrays;
 import org.bouncycastle.util.encoders.Hex;
 
@@ -39,14 +40,16 @@ public final class StoreIndex implements Comparable<StoreIndex> {
 	// TODO change to int (byte for compatibility with legacy AtomStore IDType)
 	@JsonProperty("prefix")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private byte prefix;
+	private final byte prefix;
 
 	@JsonProperty("identifier")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private byte[] identifier;
+	private final byte[] identifier;
 
-	private StoreIndex() {
-		// For serializer
+	StoreIndex() {
+		// Serializer only
+		this.prefix = (byte) 0;
+		this.identifier = Bytes.EMPTY_BYTES;
 	}
 
 	public StoreIndex(byte prefix, byte[] identifier) {

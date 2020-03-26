@@ -26,7 +26,7 @@ import com.radixdlt.common.Atom;
 import com.radixdlt.common.EUID;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECSignature;
+import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.middleware.ParticleGroup;
 import com.radixdlt.middleware.SpunParticle;
 import com.radixdlt.serialization.Serialization;
@@ -40,10 +40,10 @@ public class AtomToBinaryConverterTest {
 	private AtomToBinaryConverter atomToBinaryConverter = new AtomToBinaryConverter(Serialization.getDefault());
 
 	@Test
-	public void test_atom_content_transformation_to_byte_array_and_back () throws CryptoException {
-		ECSignature ecSignature = new ECSignature(BigInteger.ONE, BigInteger.ONE);
+	public void test_atom_content_transformation_to_byte_array_and_back() throws CryptoException {
+		ECDSASignature ecSignature = new ECDSASignature(BigInteger.ONE, BigInteger.ONE);
 		ECKeyPair key = new ECKeyPair();
-		RadixAddress radixAddress = new RadixAddress((byte)1, key.getPublicKey());
+		RadixAddress radixAddress = new RadixAddress((byte) 1, key.getPublicKey());
 		RRI rri = RRI.of(radixAddress, "test");
 		RRIParticle rriParticle = new RRIParticle(rri);
 

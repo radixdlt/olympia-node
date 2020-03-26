@@ -30,7 +30,7 @@ public final class PeerPongMessage extends SystemMessage {
 	@DsonOutput(Output.ALL)
 	private long nonce;
 
-	private PeerPongMessage() {
+	PeerPongMessage() {
 		// for serializer
 	}
 
@@ -39,12 +39,6 @@ public final class PeerPongMessage extends SystemMessage {
 
 		this.nonce = nonce;
 	}
-
-	@Override
-	public String getCommand() {
-		return "peer.pong";
-	}
-
 	public long getNonce() {
 		return nonce;
 	}

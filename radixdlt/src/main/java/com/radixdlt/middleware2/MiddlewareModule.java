@@ -32,11 +32,11 @@ import com.radixdlt.middleware.AtomCheckHook;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.middleware2.processing.EngineAtomEventListener;
 import com.radixdlt.middleware2.store.LedgerEngineStore;
+import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.universe.Universe;
-import org.radix.properties.RuntimeProperties;
 import org.radix.time.Time;
 
 import java.util.function.UnaryOperator;
@@ -101,7 +101,7 @@ public class MiddlewareModule extends AbstractModule {
 		);
 
 		radixEngine.addAtomEventListener(new EngineAtomEventListener(serialization));
-		radixEngine.start();
+
 		return radixEngine;
 	}
 

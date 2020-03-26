@@ -43,9 +43,4 @@ public class IterativeDiscoveryRequestMessage extends Message {
 	public LogicalClockCursor getCursor() {
 		return cursor;
 	}
-
-	@Override
-	public String getCommand() {
-		return "tempo.sync.discovery.iterative.request";
-	}
 }

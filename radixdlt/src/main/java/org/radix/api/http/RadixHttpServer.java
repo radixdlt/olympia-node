@@ -17,8 +17,9 @@
 
 package org.radix.api.http;
 
+import com.radixdlt.mempool.SubmissionControl;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
-import com.radixdlt.middleware2.processing.RadixEngineAtomProcessor;
+import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.LedgerEntryStore;
@@ -45,7 +46,6 @@ import org.radix.api.services.NetworkService;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.network2.addressbook.AddressBook;
-import org.radix.properties.RuntimeProperties;
 import org.radix.universe.system.LocalSystem;
 
 import java.io.IOException;
@@ -76,20 +76,22 @@ public final class RadixHttpServer {
 	private final LocalSystem localSystem;
 	private final Serialization serialization;
 
-	public RadixHttpServer(LedgerEntryStore store,
-	                       RadixEngineAtomProcessor radixEngineAtomProcessor,
-	                       AtomToBinaryConverter atomToBinaryConverter,
-	                       Universe universe,
-	                       Serialization serialization,
-	                       RuntimeProperties properties,
-	                       LocalSystem localSystem,
-	                       AddressBook addressBook) {
+	public RadixHttpServer(
+		LedgerEntryStore store,
+		SubmissionControl submissionControl,
+		AtomToBinaryConverter atomToBinaryConverter,
+		Universe universe,
+		Serialization serialization,
+		RuntimeProperties properties,
+		LocalSystem localSystem,
+		AddressBook addressBook
+	) {
 		this.universe = Objects.requireNonNull(universe);
 		this.serialization = Objects.requireNonNull(serialization);
 		this.apiSerializedUniverse = serialization.toJsonObject(this.universe, DsonOutput.Output.API);
 		this.localSystem = Objects.requireNonNull(localSystem);
 		this.peers = new ConcurrentHashMap<>();
-		this.atomsService = new AtomsService(store, radixEngineAtomProcessor, atomToBinaryConverter);
+		this.atomsService = new AtomsService(store, submissionControl, atomToBinaryConverter);
 		this.jsonRpcServer = new RadixJsonRpcServer(
 			serialization,
 			store,
@@ -99,7 +101,7 @@ public final class RadixHttpServer {
 			addressBook,
 			universe
 		);
-		this.internalService = new InternalService(radixEngineAtomProcessor, serialization, properties, universe);
+		this.internalService = new InternalService(submissionControl, properties, universe);
 		this.networkService = new NetworkService(serialization, localSystem, addressBook);
 	}
 

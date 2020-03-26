@@ -44,11 +44,6 @@ public class DeliveryRequestMessage extends Message {
 		this.aids = ImmutableList.copyOf(aids);
 	}
 
-	@Override
-	public String getCommand() {
-		return "tempo.sync.delivery.request";
-	}
-
 	public Collection<AID> getAids() {
 		return this.aids;
 	}

@@ -17,9 +17,11 @@
 
 package org.radix;
 
-import com.radixdlt.consensus.Consensus;
+import com.radixdlt.consensus.ChainedBFT;
+import com.radixdlt.mempool.MempoolReceiver;
+import com.radixdlt.mempool.SubmissionControl;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
-import com.radixdlt.middleware2.processing.RadixEngineAtomProcessor;
+import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.store.LedgerEntryStore;
@@ -35,10 +37,9 @@ import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.network2.addressbook.AddressBook;
 import org.radix.network2.addressbook.PeerManager;
-import org.radix.network2.messaging.MessageCentral;
 import org.radix.network2.transport.udp.PublicInetAddress;
-import org.radix.properties.RuntimeProperties;
 import org.radix.time.Time;
+import org.radix.universe.UniverseValidator;
 import org.radix.universe.system.LocalSystem;
 import org.radix.utils.IOUtils;
 import org.radix.utils.SystemMetaData;
@@ -117,7 +118,7 @@ public final class Radix
 		Universe universe = extractUniverseFrom(properties, serialization);
 
 		// TODO this is awful, PublicInetAddress shouldn't be a singleton
-		PublicInetAddress.configure(null, universe.getPort());
+		PublicInetAddress.configure(universe.getPort());
 
 		LocalSystem localSystem = LocalSystem.restoreOrCreate(properties, universe);
 
@@ -135,23 +136,32 @@ public final class Radix
 
 		// TODO Eventually modules should be created using Google Guice injector
 		GlobalInjector globalInjector = new GlobalInjector(properties, dbEnv, localSystem, universe);
-		Consensus consensus = globalInjector.getInjector().getInstance(Consensus.class);
 		// TODO use consensus for application construction (in our case, the engine middleware)
 
 		// setup networking
-		MessageCentral messageCentral = globalInjector.getInjector().getInstance(MessageCentral.class);
 		AddressBook addressBook = globalInjector.getInjector().getInstance(AddressBook.class);
 		PeerManager peerManager = globalInjector.getInjector().getInstance(PeerManager.class);
 		peerManager.start();
 
-		// start middleware
-		RadixEngineAtomProcessor atomProcessor = globalInjector.getInjector().getInstance(RadixEngineAtomProcessor.class);
-		atomProcessor.start(universe);
+		// Start mempool receiver
+		globalInjector.getInjector().getInstance(MempoolReceiver.class).start();
 
 		// start API services
+		ChainedBFT bft = globalInjector.getInjector().getInstance(ChainedBFT.class);
+		bft.processEvents()
+			.subscribe(
+				event -> {
+				},
+				e -> {
+					log.error("BFT Unexpected Error", e);
+					System.exit(-1);
+				}
+			);
+
+		SubmissionControl submissionControl = globalInjector.getInjector().getInstance(SubmissionControl.class);
 		AtomToBinaryConverter atomToBinaryConverter = globalInjector.getInjector().getInstance(AtomToBinaryConverter.class);
 		LedgerEntryStore store = globalInjector.getInjector().getInstance(LedgerEntryStore.class);
-		RadixHttpServer httpServer = new RadixHttpServer(store, atomProcessor, atomToBinaryConverter, universe, serialization, properties, localSystem, addressBook);
+		RadixHttpServer httpServer = new RadixHttpServer(store, submissionControl, atomToBinaryConverter, universe, serialization, properties, localSystem, addressBook);
 		httpServer.start(properties);
 
 		log.info("Node '" + localSystem.getNID() + "' started successfully");
@@ -165,23 +175,25 @@ public final class Radix
 			String jarPath = jarFile;
 
 			if (jarPath.toLowerCase().endsWith(".jar")) {
-				jarPath = jarPath.substring(0, jarPath.lastIndexOf("/"));
+				jarPath = jarPath.substring(0, jarPath.lastIndexOf('/'));
 			}
 			System.setProperty("radix.jar.path", jarPath);
 
 			log.debug("Execution file: "+ System.getProperty("radix.jar"));
 			log.debug("Execution path: "+ System.getProperty("radix.jar.path"));
 		} catch (URISyntaxException | ClassNotFoundException e) {
-			throw new RuntimeException("while fetching execution location", e);
+			throw new IllegalStateException("Error while fetching execution location", e);
 		}
 	}
 
 	private static Universe extractUniverseFrom(RuntimeProperties properties, Serialization serialization) {
 		try {
 			byte[] bytes = Bytes.fromBase64String(properties.get("universe"));
-			return serialization.fromDson(bytes, Universe.class);
+			Universe u = serialization.fromDson(bytes, Universe.class);
+			UniverseValidator.validate(u);
+			return u;
 		} catch (SerializationException e) {
-			throw new RuntimeException("while deserialising universe", e);
+			throw new IllegalStateException("Error while deserialising universe", e);
 		}
 	}
 

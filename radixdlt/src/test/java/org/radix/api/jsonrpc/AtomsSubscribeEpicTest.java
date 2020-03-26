@@ -17,7 +17,6 @@
 
 package org.radix.api.jsonrpc;
 
-import java.io.IOException;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -46,8 +45,16 @@ import static org.mockito.Mockito.when;
 
 public class AtomsSubscribeEpicTest {
 
+	interface ObservedAtomEventsObservable extends Observable<ObservedAtomEvents> {
+		// Nothing here
+	}
+
+	interface ConsumerJSONObject extends Consumer<JSONObject> {
+		// Nothing here
+	}
+
 	@Test
-	public void testSingleAtom() throws IOException {
+	public void testSingleAtom() {
 		AtomsService atomsService = mock(AtomsService.class);
 		ObservedAtomEvents observedAtomEvents = mock(ObservedAtomEvents.class);
 		Atom atom = mock(Atom.class);
@@ -57,17 +64,20 @@ public class AtomsSubscribeEpicTest {
 		when(observedAtomEvents.atomEvents()).thenReturn(Stream.of(atomEventDto));
 		when(observedAtomEvents.isHead()).thenReturn(true);
 
-		Observable<ObservedAtomEvents> observable = mock(Observable.class);
+		Observable<ObservedAtomEvents> observable = mock(ObservedAtomEventsObservable.class);
 		Disposable disposable = mock(Disposable.class);
 		when(observable.subscribe(any())).thenAnswer(invocation -> {
-			((Consumer<ObservedAtomEvents>) invocation.getArguments()[0]).accept(observedAtomEvents);
+			// SuppressWarnings required here - no other way to have correct type args
+			@SuppressWarnings("unchecked")
+			Consumer<ObservedAtomEvents> consumer = (Consumer<ObservedAtomEvents>) invocation.getArguments()[0];
+			consumer.accept(observedAtomEvents);
 			return disposable;
 		});
 		when(atomsService.getAtomEvents(any())).thenReturn(observable);
 		Serialization serializer = mock(Serialization.class);
 		JSONObject jsonAtom = mock(JSONObject.class);
 		when(serializer.toJsonObject(same(atom), any())).thenReturn(jsonAtom);
-		Consumer<JSONObject> callback = mock(Consumer.class);
+		Consumer<JSONObject> callback = mock(ConsumerJSONObject.class);
 		AtomQuery atomQuery = mock(AtomQuery.class);
 		AtomsSubscribeEpic epic = new AtomsSubscribeEpic(atomsService, serializer, json -> atomQuery, callback);
 		epic.action(new JSONObject()

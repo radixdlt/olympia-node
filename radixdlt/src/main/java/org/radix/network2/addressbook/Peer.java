@@ -23,10 +23,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import org.radix.containers.BasicContainer;
-import org.radix.events.Events;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
-import org.radix.network.peers.events.PeerBannedEvent;
 import org.radix.network2.transport.TransportInfo;
 import org.radix.network2.transport.TransportMetadata;
 import org.radix.time.Time;
@@ -84,7 +82,6 @@ public abstract class Peer extends BasicContainer {
 		log.info(toString()+" - Banned for "+DEFAULT_BANTIME+" seconds due to "+reason);
 		this.banReason = reason;
 		setTimestamp(Timestamps.BANNED, Time.currentTimestamp() + TimeUnit.SECONDS.toMillis(DEFAULT_BANTIME));
-		Events.getInstance().broadcast(new PeerBannedEvent(this));
 	}
 
 	/**

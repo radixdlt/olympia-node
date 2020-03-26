@@ -43,9 +43,4 @@ public class DeliveryResponseMessage extends Message {
 	public LedgerEntry getLedgerEntry() {
 		return ledgerEntry;
 	}
-
-	@Override
-	public String getCommand() {
-		return "tempo.sync.delivery.response";
-	}
 }
