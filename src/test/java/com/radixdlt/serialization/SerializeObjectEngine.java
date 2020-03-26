@@ -35,31 +35,31 @@ public abstract class SerializeObjectEngine<T> {
     }
 
     @Test
-    public void from_engine___testNONEIsEmpty() throws Exception {
+    public void testNONEIsEmpty() throws Exception {
         String s2Json = this.serialization.toJson(factory.get(), DsonOutput.Output.NONE);
         assertEquals("{}", s2Json);
     }
 
     @Test
-    public void from_engine___testEncodeDecodeALL() throws Exception {
+    public void testEncodeDecodeALL() throws Exception {
         assumeFalse("Not applicable for polymorphic classes", Polymorphic.class.isAssignableFrom(cls));
         testEncodeDecode(factory.get(), cls, this.serialization, DsonOutput.Output.ALL);
     }
 
     @Test
-    public void from_engine___testEncodeDecodeAPI() throws Exception {
+    public void testEncodeDecodeAPI() throws Exception {
         assumeFalse("Not applicable for polymorphic classes", Polymorphic.class.isAssignableFrom(cls));
         testEncodeDecode(factory.get(), cls, this.serialization, DsonOutput.Output.API);
     }
 
     @Test
-    public void from_engine___testEncodeDecodePERSIST() throws Exception {
+    public void testEncodeDecodePERSIST() throws Exception {
         assumeFalse("Not applicable for polymorphic classes", Polymorphic.class.isAssignableFrom(cls));
         testEncodeDecode(factory.get(), cls, this.serialization, DsonOutput.Output.PERSIST);
     }
 
     @Test
-    public void from_engine___testEncodeDecodeWIRE() throws Exception {
+    public void testEncodeDecodeWIRE() throws Exception {
         assumeFalse("Not applicable for polymorphic classes", Polymorphic.class.isAssignableFrom(cls));
         testEncodeDecode(factory.get(), cls, this.serialization, DsonOutput.Output.WIRE);
     }

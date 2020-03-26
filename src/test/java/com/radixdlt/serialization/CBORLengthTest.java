@@ -37,7 +37,7 @@ public class CBORLengthTest {
 
 	@Test
 	// Check that length is encoded in a single byte for 23 character strings
-	public void from_engine___testJacksonEncodesCBORLengthsCorrectly() throws JsonProcessingException {
+	public void testJacksonEncodesCBORLengthsCorrectly() throws JsonProcessingException {
 		byte[] expectedData = Bytes.fromHexString("7772616469782e7061727469636c65732e6d657373616765");
 		byte[] data = cborMapper.writeValueAsBytes("radix.particles.message");
 		assertArrayEquals(expectedData, data);
@@ -45,7 +45,7 @@ public class CBORLengthTest {
 
 	@Test
 	// Check that the value 23 is encoded in a single byte for integers
-	public void from_engine___testJacksonEncodesCBORIntsCorrectly() throws JsonProcessingException {
+	public void testJacksonEncodesCBORIntsCorrectly() throws JsonProcessingException {
 		byte[] expectedData = Bytes.fromHexString("17");
 		byte[] data = cborMapper.writeValueAsBytes(23);
 		assertArrayEquals(expectedData, data);

@@ -47,12 +47,12 @@ public class EUIDTest {
 	}
 
 	@Test
-	public void from_engine___equalsContract() {
+	public void equalsContract() {
 		EqualsVerifier.forClass(EUID.class).verify();
 	}
 
 	@Test
-	public void from_engine___testOffsetBytesConstructor() {
+	public void testOffsetBytesConstructor() {
 		EUID expected = new EUID("dead000000000000000000000000beef");
 		byte[] tooManyBytes = Bytes.fromHexString("11dead000000000000000000000000beef");
 		EUID offsetted = new EUID(tooManyBytes, 1); // remember 2 hex chars == 1 byte.
@@ -60,60 +60,60 @@ public class EUIDTest {
 	}
 
 	@Test(expected = IllegalArgumentException.class)
-    public void from_engine___from_engine___verify_that_exception_is_thrown_when_calling_constructor_with_too_short_hexstring() {
+    public void verify_that_exception_is_thrown_when_calling_constructor_with_too_short_hexstring() {
 		new EUID("deadbeef");
 		fail();
 	}
 
 	@Test(expected = IllegalArgumentException.class)
-    public void from_engine___from_engine___verify_that_exception_is_thrown_when_calling_constructor_with_empty_byte_array() {
+    public void verify_that_exception_is_thrown_when_calling_constructor_with_empty_byte_array() {
 		new EUID(new byte[0]);
 		fail();
 	}
 
 	@Test
-	public void from_engine___testZero() {
+	public void testZero() {
 		assertTrue(EUID.ZERO.isZero());
 		assertFalse(EUID.ONE.isZero());
 	}
 
 	@Test
-	public void from_engine___testGetValue() {
+	public void testGetValue() {
 		assertEquals(UInt128.ZERO, EUID.ZERO.getValue());
 		assertEquals(UInt128.ONE, EUID.ONE.getValue());
 		assertEquals(UInt128.TWO, EUID.TWO.getValue());
 	}
 
 	@Test
-	public void from_engine___testGetLow() {
+	public void testGetLow() {
 		assertEquals(1L, EUID.ONE.getLow());
 		assertEquals(0L, EUID.ZERO.getLow());
 		assertEquals(2L, EUID.TWO.getLow());
 	}
 
 	@Test
-	public void from_engine___testGetShard() {
+	public void testGetShard() {
 		EUID euid = new EUID(UInt128.from(2L, 5L));
 		assertEquals(5L, euid.getLow());
 		assertEquals(2L, euid.getShard());
 	}
 
 	@Test
-	public void from_engine___verify_that_tobytearray_returns_same_as_passed_in_constructor() {
+	public void verify_that_tobytearray_returns_same_as_passed_in_constructor() {
 		byte[] bytes = Bytes.fromHexString("dead000000000000000000000000beef");
 		EUID euid = new EUID(bytes);
 		assertArrayEquals(bytes, euid.toByteArray());
 	}
 
 	@Test
-	public void from_engine___testCompare() {
+	public void testCompare() {
 		EUID low = new EUID(Strings.repeat("1", 32));
 		EUID high = new EUID(Strings.repeat("9", 32));
 		assertThat(low, OrderingComparison.lessThan(high));
 	}
 
 	@Test
-	public void from_engine___testEqualityWithDifferentConstructors() {
+	public void testEqualityWithDifferentConstructors() {
 		List<List<EUID>> equalIds =
 			Arrays.asList(
 				Arrays.asList(
@@ -146,7 +146,7 @@ public class EUIDTest {
 	}
 
 	@Test
-	public void from_engine___trimAndExpand() {
+	public void trimAndExpand() {
 		EUID small = new EUID(Integer.MAX_VALUE);
 		EUID large = new EUID(Long.MIN_VALUE);
 
@@ -161,7 +161,7 @@ public class EUIDTest {
 	 * Test compareDistances().
 	 */
 	@Test
-	public void from_engine___testCompareDistances() {
+	public void testCompareDistances() {
 		assertThat(EUID.ZERO.compareDistances(EUID.ONE, EUID.ONE), is(0));
 
 		// Both to right of origin
@@ -205,7 +205,7 @@ public class EUIDTest {
 	 * Test routingDistanceFrom(...).
 	 */
 	@Test
-	public void from_engine___testRoutingDistanceFrom() {
+	public void testRoutingDistanceFrom() {
 		EUID minusOne = new EUID(-1L);
 		assertEquals(UInt128.SIZE, EUID.ZERO.routingDistanceFrom(EUID.ZERO));
 		assertEquals(UInt128.SIZE, EUID.ONE.routingDistanceFrom(EUID.ONE));

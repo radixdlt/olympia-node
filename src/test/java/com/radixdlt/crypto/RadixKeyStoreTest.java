@@ -59,7 +59,7 @@ public class RadixKeyStoreTest {
 	 * Test method for {@link RadixKeyStore#fromFile(java.io.File, char[], boolean)}.
 	 */
 	@Test
-	public void from_engine___testFromFileCreate() throws IOException, CryptoException {
+	public void testFromFileCreate() throws IOException, CryptoException {
 		File file = newFile(TEST_KS_FILENAME);
 		try (RadixKeyStore ks = RadixKeyStore.fromFile(file, null, true)) {
 			assertTrue(file.exists());
@@ -70,7 +70,7 @@ public class RadixKeyStoreTest {
 	 * Test method for {@link RadixKeyStore#fromFile(java.io.File, char[], boolean)}.
 	 */
 	@Test
-	public void from_engine___testFromFileNotFound() throws IOException {
+	public void testFromFileNotFound() throws IOException {
 		File file = newFile(TEST_KS_FILENAME);
 		assertThatThrownBy(() -> RadixKeyStore.fromFile(file, null, false))
 			.isInstanceOf(FileNotFoundException.class);
@@ -80,7 +80,7 @@ public class RadixKeyStoreTest {
 	 * Test method for {@link RadixKeyStore#fromFile(java.io.File, char[], boolean)}.
 	 */
 	@Test
-	public void from_engine___testFromFileReload1() throws IOException, CryptoException {
+	public void testFromFileReload1() throws IOException, CryptoException {
 		File file = newFile(TEST_KS_FILENAME);
 		ECKeyPair kp1 = ECKeyPair.generateNew();
 		try (RadixKeyStore ks = RadixKeyStore.fromFile(file, null, true)) {
@@ -98,7 +98,7 @@ public class RadixKeyStoreTest {
 	 * Test method for {@link RadixKeyStore#fromFile(java.io.File, char[], boolean)}.
 	 */
 	@Test
-	public void from_engine___testFromFileReload2() throws IOException, CryptoException {
+	public void testFromFileReload2() throws IOException, CryptoException {
 		File file = newFile(TEST_KS_FILENAME);
 		final ECKeyPair kp1;
 		try (RadixKeyStore ks = RadixKeyStore.fromFile(file, null, true)) {
@@ -116,7 +116,7 @@ public class RadixKeyStoreTest {
 	 * Test method for {@link RadixKeyStore#fromFile(java.io.File, char[], boolean)}.
 	 */
 	@Test
-	public void from_engine___testFromFileWrongFilePassword() throws IOException, CryptoException {
+	public void testFromFileWrongFilePassword() throws IOException, CryptoException {
 		File file = newFile(TEST_KS_FILENAME);
 		try (RadixKeyStore ks = RadixKeyStore.fromFile(file, "secret1".toCharArray(), true)) {
 			assertTrue(file.exists());
@@ -131,7 +131,7 @@ public class RadixKeyStoreTest {
 	 * Test method for {@link RadixKeyStore#readKeyPair(String, boolean)}.
 	 */
 	@Test
-	public void from_engine___testReadKeyPairFail() throws IOException, CryptoException {
+	public void testReadKeyPairFail() throws IOException, CryptoException {
 		File file = newFile(TEST_KS_FILENAME);
 		try (RadixKeyStore ks = RadixKeyStore.fromFile(file, null, true)) {
 			assertTrue(file.exists());
@@ -146,7 +146,7 @@ public class RadixKeyStoreTest {
 	 * Test method for {@link RadixKeyStore#close()}.
 	 */
 	@Test
-	public void from_engine___testClose() throws IOException, CryptoException {
+	public void testClose() throws IOException, CryptoException {
 		File file = newFile(TEST_KS_FILENAME);
 		@SuppressWarnings("resource")
 		RadixKeyStore ks = RadixKeyStore.fromFile(file, "testpassword".toCharArray(), true);
@@ -161,7 +161,7 @@ public class RadixKeyStoreTest {
 	 * Test method for {@link RadixKeyStore#toString()}.
 	 */
 	@Test
-	public void from_engine___testToString() throws IOException, CryptoException {
+	public void testToString() throws IOException, CryptoException {
 		File file = newFile(TEST_KS_FILENAME);
 		try (RadixKeyStore ks = RadixKeyStore.fromFile(file, null, true)) {
 			assertThat(ks.toString(), containsString(file.toString()));
@@ -173,7 +173,7 @@ public class RadixKeyStoreTest {
 	 * Test method for ensuring that only secp256k1 keys are allowed.
 	 */
 	@Test
-	public void from_engine___testInvalidECKey() throws IOException, GeneralSecurityException, CryptoException {
+	public void testInvalidECKey() throws IOException, GeneralSecurityException, CryptoException {
 		File file = newFile(TEST_KS_FILENAME);
 
 		KeyStore jks = KeyStore.getInstance("pkcs12");
@@ -205,7 +205,7 @@ public class RadixKeyStoreTest {
 	 * Test method for ensuring that only PrivateKeyEntry values are allowed.
 	 */
 	@Test
-	public void from_engine___testInvalidEntry() throws IOException, GeneralSecurityException {
+	public void testInvalidEntry() throws IOException, GeneralSecurityException {
 		KeyStore jks = KeyStore.getInstance("pkcs12");
 		jks.load(null, "password".toCharArray());
 

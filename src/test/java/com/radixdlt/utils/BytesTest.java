@@ -31,7 +31,7 @@ public class BytesTest {
 	 * Test that partial array compares for equality work.
 	 */
 	@Test
-	public void from_engine___testArrayEquals() {
+	public void testArrayEquals() {
 		byte[] array1 = {
 			0, 1, 2, 3, 4, 5, 6, 7, 8,  9
 		};
@@ -51,7 +51,7 @@ public class BytesTest {
 	 * Test that hash codes for partial arrays are equal.
 	 */
 	@Test
-	public void from_engine___testHashCode() {
+	public void testHashCode() {
 		byte[] array1 = {
 			0, 1, 2, 3, 4, 5, 6, 7, 8,  9
 		};
@@ -68,7 +68,7 @@ public class BytesTest {
 	 * Test conversion from byte to hex string.
 	 */
 	@Test
-	public void from_engine___testToHexStringByte() {
+	public void testToHexStringByte() {
 		for (int i = 0; i < 0x100; ++i) {
 			String base = String.format("%02x", i);
 			String convert = Bytes.toHexString((byte) i);
@@ -80,7 +80,7 @@ public class BytesTest {
 	 * Test conversion from array of bytes to hex string.
 	 */
 	@Test
-	public void from_engine___testToHexStringByteArray() {
+	public void testToHexStringByteArray() {
 		byte[] bytes = new byte[256];
 		StringBuilder sb = new StringBuilder();
 		for (int i = 0; i < 256; ++i) {
@@ -95,7 +95,7 @@ public class BytesTest {
 	 * Test conversion from partial array to hex string.
 	 */
 	@Test
-	public void from_engine___testToHexStringPartialByteArray() {
+	public void testToHexStringPartialByteArray() {
 		byte[] bytes = new byte[256];
 		StringBuilder sb = new StringBuilder();
 		for (int i = 0; i < 256; ++i) {
@@ -118,7 +118,7 @@ public class BytesTest {
 	 * Various test cases for conversion of string to byte array.
 	 */
 	@Test
-	public void from_engine___testFromHexString() {
+	public void testFromHexString() {
 		// Single byte
 		byte[] expected1 = {
 			(byte) 0xAA
@@ -162,7 +162,7 @@ public class BytesTest {
 	 * Various test cases for trimLeadingZeros.
 	 */
 	@Test
-	public void from_engine___testTrimLeadingZeros() {
+	public void testTrimLeadingZeros() {
 		assertEquals(null, Bytes.trimLeadingZeros(null)); // Null -> noop
 
 		byte[] emptyBytes = new byte[0];

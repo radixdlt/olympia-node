@@ -29,37 +29,37 @@ import org.junit.Test;
 public class MapHelperTest {
 
 	@Test
-	public void from_engine___testMapOf1() {
+	public void testMapOf1() {
 		Map<String, Object> map = MapHelper.mapOf("k1", 1L);
 		assertEquals(map, ImmutableMap.of("k1", 1L));
 	}
 
 	@Test
-	public void from_engine___testMapOf2() {
+	public void testMapOf2() {
 		Map<String, Object> map = MapHelper.mapOf("k1", 1L, "k2", 2L);
 		assertEquals(map, ImmutableMap.of("k1", 1L, "k2", 2L));
 	}
 
 	@Test
-	public void from_engine___testMapOf3() {
+	public void testMapOf3() {
 		Map<String, Object> map = MapHelper.mapOf("k1", 1L, "k2", 2L, "k3", 3L);
 		assertEquals(map, ImmutableMap.of("k1", 1L, "k2", 2L, "k3", 3L));
 	}
 
 	@Test
-	public void from_engine___testMapOf4() {
+	public void testMapOf4() {
 		Map<String, Object> map = MapHelper.mapOf("k1", 1L, "k2", 2L, "k3", 3L, "k4", 4L);
 		assertEquals(map, ImmutableMap.of("k1", 1L, "k2", 2L, "k3", 3L, "k4", 4L));
 	}
 
 	@Test
-	public void from_engine___testMapOf5() {
+	public void testMapOf5() {
 		Map<String, Object> map = MapHelper.mapOf("k1", 1L, "k2", 2L, "k3", 3L, "k4", 4L, "k5", 5L);
 		assertEquals(map, ImmutableMap.of("k1", 1L, "k2", 2L, "k3", 3L, "k4", 4L, "k5", 5L));
 	}
 
 	@Test
-	public void from_engine___testMapOf6() {
+	public void testMapOf6() {
 		Map<String, Object> map = MapHelper.mapOf("k1", 1L, "k2", 2L, "k3", 3L, "k4", 4L, "k5", 5L, "k6", 6L);
 		ImmutableMap<String, Long> imap = new ImmutableMap.Builder<String, Long>()
 				.put("k1", 1L)
@@ -73,7 +73,7 @@ public class MapHelperTest {
 	}
 
 	@Test
-	public void from_engine___testMapOf7() {
+	public void testMapOf7() {
 		Map<String, Object> map = MapHelper.mapOf("k1", 1L, "k2", 2L, "k3", 3L, "k4", 4L, "k5", 5L, "k6", 6L, "k7", 7L);
 		ImmutableMap<String, Long> imap = new ImmutableMap.Builder<String, Long>()
 				.put("k1", 1L)

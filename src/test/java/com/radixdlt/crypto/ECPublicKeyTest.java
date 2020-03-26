@@ -5,7 +5,7 @@ import org.junit.Test;
 
 public class ECPublicKeyTest {
 	@Test
-	public void from_engine___equalsContract() {
+	public void equalsContract() {
 		EqualsVerifier.forClass(ECPublicKey.class)
 				.withIgnoredFields("uid") // hash of public key bytes.
 				.verify();

@@ -28,7 +28,7 @@ public class ECDSASignatureTest {
 
 
 	@Test
-	public void from_engine___equalsContract() {
+	public void equalsContract() {
 		EqualsVerifier.forClass(ECDSASignature.class)
 				.suppress(Warning.NONFINAL_FIELDS) // serialization prevents us from making `r` and `s` final.
 				.withIgnoredFields("version") // only used for serialization
@@ -36,7 +36,7 @@ public class ECDSASignatureTest {
 	}
 
 	@Test
-	public void from_client_library___test_rfc6979_determinstic_signatures() throws CryptoException {
+	public void test_rfc6979_determinstic_signatures() throws CryptoException {
 
 		/// Sanity checks of Signing implementation of RFC6979 - Deterministic usage of ECDSA: https://tools.ietf.org/html/rfc6979
 		/// Test vectors: https://github.com/trezor/trezor-crypto/blob/957b8129bded180c8ac3106e61ff79a1a3df8893/tests/test_check.c#L1959-L1965
