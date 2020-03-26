@@ -14,7 +14,7 @@ import com.radixdlt.client.application.translate.ActionExecutionException;
 import com.radixdlt.client.application.translate.data.DecryptedMessage;
 import com.radixdlt.client.application.translate.data.DecryptedMessage.EncryptionState;
 import com.radixdlt.client.application.translate.data.SendMessageAction;
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.identifiers.RadixAddress;
 
 import io.reactivex.Completable;
 import io.reactivex.observers.TestObserver;

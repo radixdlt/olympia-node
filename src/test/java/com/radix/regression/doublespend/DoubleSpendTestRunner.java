@@ -43,7 +43,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.radix.common.tuples.Pair;
+import com.radixdlt.utils.Pair;
 
 import static org.junit.Assume.assumeTrue;
 
