@@ -17,6 +17,7 @@
 
 package com.radixdlt.identifiers;
 
+import com.radixdlt.crypto.Hash;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.UInt128;
 import java.util.Arrays;
@@ -87,6 +88,16 @@ public final class EUID implements Comparable<EUID> {
 		}
 		byte[] newBytes = extend(bytes);
 		this.value = UInt128.from(newBytes);
+	}
+
+	/**
+	 * Performs hashing on {@code bytes} and creates an EUID
+	 * using the 256-bit digest of those bytes.
+	 * @param bytes
+	 * @return An EUID by taking the 256-bit digest of provided {@code bytes}.
+	 */
+	public static EUID hash256(byte[] bytes) {
+		return new EUID(Hash.hash256(bytes));
 	}
 
 	/**

@@ -139,7 +139,7 @@ public final class ECPublicKey {
 	}
 
 	private EUID computeUID() {
-		return new EUID(Hash.hash256(getBytes()));
+		return EUID.hash256(getBytes());
 	}
 
 	public int length() {

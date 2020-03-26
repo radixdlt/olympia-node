@@ -24,10 +24,12 @@ import com.radixdlt.utils.Longs;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import sun.util.resources.cldr.shi.CurrencyNames_shi;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.concurrent.RunnableScheduledFuture;
 import java.util.function.Function;
 
 import static org.hamcrest.number.OrderingComparison.lessThan;
@@ -183,6 +185,22 @@ public class HashTest {
 				Hash::hash256,
 				"0cffe17f68954dac3a84fb1458bd5ec99209449749b2b308b7cb55812f9563af"
 		);
+	}
+
+	@Test
+	public void test_of_method_same_as_static_hash256_plus_constructor() {
+		byte[] unhashedData = "Hello Radix".getBytes(StandardCharsets.UTF_8);
+		assertArrayEquals(Hash.hash256(unhashedData), Hash.of(unhashedData).toByteArray());
+	}
+
+	@Test
+	public void test_hash_of_publickey() throws CryptoException {
+		String publicKeyHex = "03" + deadbeefString();
+		byte[] publicKeyBytes = Bytes.fromHexString(publicKeyHex);
+		ECPublicKey publicKey = new ECPublicKey(publicKeyBytes);
+		String expectedEUIDHex = "cbed388efef3a09bee696ad1b30d49a0";
+		assertEquals(expectedEUIDHex, publicKey.euid().toString());
+		assertEquals(expectedEUIDHex, Bytes.toHexString(Hash.hash256(publicKeyBytes)).substring(0, 32));
 	}
 
 	private void testEncodeToHashFromString(String message, Function<byte[], Hash> hashFunction, String expectedHashHex) {
