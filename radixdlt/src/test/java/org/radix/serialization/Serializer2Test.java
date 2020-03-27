@@ -17,6 +17,7 @@
 
 package org.radix.serialization;
 
+import com.radixdlt.DefaultSerialization;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
 import java.nio.charset.StandardCharsets;
@@ -48,7 +49,7 @@ public class Serializer2Test extends RadixTest {
 		Logging.getLogger().setLevels(Logging.ALL & ~Logging.INFO & ~Logging.TRACE & ~Logging.DEBUG);
 		TestSetupUtils.installBouncyCastleProvider();
 
-		serialization = Serialization.getDefault();
+		serialization = DefaultSerialization.getInstance();
 
 		testObject = new DummyTestObject(true);
 

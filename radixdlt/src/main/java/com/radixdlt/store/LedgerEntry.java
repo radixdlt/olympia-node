@@ -18,7 +18,7 @@
 package com.radixdlt.store;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.common.AID;
+import com.radixdlt.identifiers.AID;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;

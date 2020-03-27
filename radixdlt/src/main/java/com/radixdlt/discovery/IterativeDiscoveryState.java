@@ -17,7 +17,7 @@
 
 package com.radixdlt.discovery;
 
-import com.radixdlt.common.EUID;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.consensus.tempo.TempoException;
 import org.radix.network2.utils.Locking;
 

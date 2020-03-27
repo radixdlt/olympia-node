@@ -18,13 +18,13 @@
 package org.radix.api.jsonrpc;
 
 import com.google.common.io.CharStreams;
-import com.radixdlt.atomos.RadixAddress;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.store.SearchCursor;
 import com.radixdlt.store.StoreIndex;
 import com.radixdlt.store.LedgerSearchMode;
 import com.radixdlt.middleware2.store.EngineAtomIndices;
 import com.radixdlt.engine.AtomStatus;
-import com.radixdlt.common.AID;
+import com.radixdlt.identifiers.AID;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.LedgerEntryStore;
@@ -187,7 +187,7 @@ public final class RadixJsonRpcServer {
 						final String addressString = params.getString("address");
 						final RadixAddress address = RadixAddress.from(addressString);
 
-						StoreIndex index = new StoreIndex(EngineAtomIndices.IndexType.DESTINATION.getValue(), address.getUID().toByteArray());
+						StoreIndex index = new StoreIndex(EngineAtomIndices.IndexType.DESTINATION.getValue(), address.euid().toByteArray());
 						List<AID> collectedAids = new ArrayList<>();
 						SearchCursor cursor = ledger.search(StoreIndex.LedgerIndexType.DUPLICATE, index, LedgerSearchMode.EXACT);
 						while (cursor != null) {

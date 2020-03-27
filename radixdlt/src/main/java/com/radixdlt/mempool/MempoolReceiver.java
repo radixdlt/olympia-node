@@ -23,7 +23,7 @@ import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 
 import com.google.inject.Inject;
-import com.radixdlt.common.Atom;
+import com.radixdlt.atommodel.Atom;
 
 import io.reactivex.rxjava3.disposables.Disposable;
 

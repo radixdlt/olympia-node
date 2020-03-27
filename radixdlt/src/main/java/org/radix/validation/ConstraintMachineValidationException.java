@@ -17,7 +17,7 @@
 
 package org.radix.validation;
 
-import com.radixdlt.common.Atom;
+import com.radixdlt.atommodel.Atom;
 
 import java.util.Objects;
 import com.radixdlt.constraintmachine.DataPointer;

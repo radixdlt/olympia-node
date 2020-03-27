@@ -17,7 +17,7 @@
 
 package org.radix.network2.addressbook;
 
-import com.radixdlt.common.EUID;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.properties.RuntimeProperties;
 
 import org.junit.BeforeClass;

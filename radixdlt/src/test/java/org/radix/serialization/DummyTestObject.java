@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 
-import com.radixdlt.common.EUID;
+import com.radixdlt.identifiers.EUID;
 import org.radix.containers.BasicContainer;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.serialization.DsonOutput.Output;

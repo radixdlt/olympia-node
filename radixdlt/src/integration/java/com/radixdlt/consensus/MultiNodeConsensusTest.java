@@ -25,7 +25,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.radixdlt.common.Atom;
+import com.radixdlt.atommodel.Atom;
 import com.radixdlt.consensus.liveness.PacemakerImpl;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.safety.SafetyRules;
@@ -90,12 +90,12 @@ public class MultiNodeConsensusTest {
 		List<ECPublicKey> proposers = validatorSet.getValidators().stream()
 			.map(Validator::nodeKey)
 			.collect(Collectors.toList());
-		proposers.sort(Comparator.comparing(ECPublicKey::getUID));
+		proposers.sort(Comparator.comparing(ECPublicKey::euid));
 
 		EpochManager epochManager = new EpochManager(
 			proposalGenerator,
 			mempool,
-			testEventCoordinatorNetwork.getNetworkSender(key.getUID()),
+			testEventCoordinatorNetwork.getNetworkSender(key.euid()),
 			safetyRules,
 			pacemaker,
 			vertexStore,
@@ -105,7 +105,7 @@ public class MultiNodeConsensusTest {
 
 		return new ChainedBFT(
 			epochRx,
-			testEventCoordinatorNetwork.getNetworkRx(key.getUID()),
+			testEventCoordinatorNetwork.getNetworkRx(key.euid()),
 			pacemaker,
 			epochManager
 		);
@@ -131,7 +131,7 @@ public class MultiNodeConsensusTest {
 
 	@Test
 	public void given_3_correct_bft_instances__then_all_instances_should_get_the_same_5_commits() throws Exception {
-		final List<ECKeyPair> nodes = Arrays.asList(new ECKeyPair(), new ECKeyPair(), new ECKeyPair());
+		final List<ECKeyPair> nodes = Arrays.asList(ECKeyPair.generateNew(), ECKeyPair.generateNew(), ECKeyPair.generateNew());
 		final ValidatorSet validatorSet = ValidatorSet.from(
 			nodes.stream().map(ECKeyPair::getPublicKey).map(Validator::from).collect(Collectors.toList())
 		);
@@ -152,11 +152,11 @@ public class MultiNodeConsensusTest {
 
 	@Test
 	public void given_2_out_of_3_correct_bft_instances__then_all_instances_should_only_get_genesis_commit() throws Exception {
-		final List<ECKeyPair> nodes = Arrays.asList(new ECKeyPair(), new ECKeyPair(), new ECKeyPair());
+		final List<ECKeyPair> nodes = Arrays.asList(ECKeyPair.generateNew(), ECKeyPair.generateNew(), ECKeyPair.generateNew());
 		final ValidatorSet validatorSet = ValidatorSet.from(
 			nodes.stream().map(ECKeyPair::getPublicKey).map(Validator::from).collect(Collectors.toList())
 		);
-		testEventCoordinatorNetwork.setSendingDisable(nodes.get(2).getUID(), true);
+		testEventCoordinatorNetwork.setSendingDisable(nodes.get(2).euid(), true);
 		final List<TestObserver<Vertex>> committedListeners = runBFT(nodes, validatorSet);
 		final int commitCount = 10;
 

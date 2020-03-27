@@ -17,8 +17,8 @@
 
 package org.radix.serialization;
 
-import com.radixdlt.atomos.RadixAddress;
-import com.radixdlt.atomos.RRI;
+import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.identifiers.RRI;
 
 public class RRITest extends SerializeValue<RRI> {
 	public RRITest() {

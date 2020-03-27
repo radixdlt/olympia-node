@@ -27,7 +27,7 @@ public class EpochManagerTest {
 			mock(ECKeyPair.class)
 		);
 
-		ECKeyPair ecKeyPair = new ECKeyPair();
+		ECKeyPair ecKeyPair = ECKeyPair.generateNew();
 		Validator validator = Validator.from(ecKeyPair.getPublicKey());
 		EventCoordinator eventCoordinator = epochManager.nextEpoch(ValidatorSet.from(Collections.singleton(validator)));
 		assertNotNull(eventCoordinator);

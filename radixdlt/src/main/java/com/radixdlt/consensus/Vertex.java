@@ -19,7 +19,8 @@ package com.radixdlt.consensus;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Suppliers;
-import com.radixdlt.common.Atom;
+import com.radixdlt.DefaultSerialization;
+import com.radixdlt.atommodel.Atom;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
@@ -84,7 +85,7 @@ public final class Vertex {
 
 	private Hash doGetHash() {
 		try {
-			return new Hash(Hash.hash256(Serialization.getDefault().toDson(this, Output.HASH)));
+			return Hash.of(DefaultSerialization.getInstance().toDson(this, Output.HASH));
 		} catch (Exception e) {
 			throw new IllegalStateException("Error generating hash: " + e, e);
 		}

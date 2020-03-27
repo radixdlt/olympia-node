@@ -20,7 +20,7 @@ package org.radix.network2.addressbook;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-import com.radixdlt.common.EUID;
+import com.radixdlt.identifiers.EUID;
 import org.radix.network2.transport.TransportException;
 import org.radix.network2.transport.TransportInfo;
 import org.radix.network2.transport.TransportMetadata;

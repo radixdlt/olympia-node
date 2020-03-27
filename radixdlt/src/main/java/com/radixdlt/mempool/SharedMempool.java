@@ -23,8 +23,8 @@ import java.util.Set;
 
 import javax.inject.Inject;
 
-import com.radixdlt.common.AID;
-import com.radixdlt.common.Atom;
+import com.radixdlt.identifiers.AID;
+import com.radixdlt.atommodel.Atom;
 
 /**
  * Shared mempool.

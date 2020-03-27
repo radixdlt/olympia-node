@@ -21,18 +21,18 @@ import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
-import com.radixdlt.common.Atom;
+import com.radixdlt.atommodel.Atom;
 import org.everit.json.schema.Schema;
 import org.everit.json.schema.ValidationException;
 import org.everit.json.schema.loader.SchemaLoader;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 import org.junit.Test;
-import com.radixdlt.atomos.RadixAddress;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.atommodel.message.MessageParticle;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.atommodel.tokens.TokenPermission;
-import com.radixdlt.atomos.RRI;
+import com.radixdlt.identifiers.RRI;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECKeyPair;
 import org.radix.integration.RadixTest;
@@ -66,10 +66,10 @@ public class JsonSchemaTest extends RadixTest {
 
 	@Test
 	public void testTokenDefinition() throws Exception {
-		ECKeyPair ecKeyPair = new ECKeyPair();
+		ECKeyPair ecKeyPair = ECKeyPair.generateNew();
 
 		MutableSupplyTokenDefinitionParticle testToken = new MutableSupplyTokenDefinitionParticle(
-			RadixAddress.from(getUniverse(), ecKeyPair.getPublicKey()),
+			new RadixAddress((byte) getUniverse().getMagic(), ecKeyPair.getPublicKey()),
 			"TEST",
 			"Test RADS",
 			"Radix Test Tokens",
@@ -91,8 +91,8 @@ public class JsonSchemaTest extends RadixTest {
 
 	@Test
 	public void testTransferAtom() throws Exception {
-		ECKeyPair ecKeyPair = new ECKeyPair();
-		RadixAddress address = RadixAddress.from(getUniverse(), ecKeyPair.getPublicKey());
+		ECKeyPair ecKeyPair = ECKeyPair.generateNew();
+		RadixAddress address = new RadixAddress((byte) getUniverse().getMagic(), ecKeyPair.getPublicKey());
 
 		Atom transactionAtom = new Atom(1L);
 		transactionAtom.addParticleGroupWith(

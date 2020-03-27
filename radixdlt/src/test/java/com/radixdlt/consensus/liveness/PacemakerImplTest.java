@@ -182,11 +182,7 @@ public class PacemakerImplTest {
 		NewView newView = mock(NewView.class);
 		when(newView.getView()).thenReturn(view);
 		when(newView.getSignature()).thenReturn(Optional.of(new ECDSASignature()));
-		try {
-			when(newView.getAuthor()).thenReturn(new ECKeyPair().getPublicKey());
-		} catch (CryptoException e) {
-			throw new RuntimeException("Failed to setup new-view", e);
-		}
+		when(newView.getAuthor()).thenReturn(ECKeyPair.generateNew().getPublicKey());
 		return newView;
 	}
 
@@ -198,7 +194,7 @@ public class PacemakerImplTest {
 		PacemakerImpl pacemaker = new PacemakerImpl(executorService);
 
 		View view = mock(View.class);
-		ECKeyPair keyPair = new ECKeyPair();
+		ECKeyPair keyPair = ECKeyPair.generateNew();
 		NewView newView = new NewView(keyPair.getPublicKey(), view, mock(QuorumCertificate.class), mock(ECDSASignature.class));
 		assertThat(pacemaker.processNewView(newView, validatorSet))
 			.get()

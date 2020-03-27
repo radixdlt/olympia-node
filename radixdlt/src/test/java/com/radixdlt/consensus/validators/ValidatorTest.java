@@ -52,11 +52,7 @@ public class ValidatorTest extends SerializeObject<Validator> {
 	}
 
 	private static Validator create() {
-		try {
-			ECKeyPair nodeKey = new ECKeyPair();
-			return Validator.from(nodeKey.getPublicKey());
-		} catch (CryptoException e) {
-			throw new IllegalStateException("While constructing validator", e);
-		}
+		ECKeyPair nodeKey = ECKeyPair.generateNew();
+		return Validator.from(nodeKey.getPublicKey());
 	}
 }

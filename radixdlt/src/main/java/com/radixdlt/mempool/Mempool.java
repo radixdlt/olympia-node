@@ -16,12 +16,12 @@
  */
 package com.radixdlt.mempool;
 
-import com.radixdlt.common.Atom;
+import com.radixdlt.atommodel.Atom;
 
 import java.util.List;
 import java.util.Set;
 
-import com.radixdlt.common.AID;
+import com.radixdlt.identifiers.AID;
 
 /**
  * Basic mempool functionality.

@@ -75,7 +75,7 @@ public class EpochManager {
 	public EventCoordinator nextEpoch(ValidatorSet validatorSet) {
 		ImmutableList<ECPublicKey> proposers = validatorSet.getValidators().stream()
 			.map(Validator::nodeKey)
-			.sorted(Comparator.comparing(ECPublicKey::getUID))
+			.sorted(Comparator.comparing(ECPublicKey::euid))
 			.collect(ImmutableList.toImmutableList());
 		ProposerElection proposerElection = new RotatingLeaders(proposers);
 

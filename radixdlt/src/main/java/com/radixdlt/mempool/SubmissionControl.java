@@ -20,8 +20,8 @@ import java.util.function.Consumer;
 
 import org.json.JSONObject;
 
-import com.radixdlt.common.AID;
-import com.radixdlt.common.Atom;
+import com.radixdlt.identifiers.AID;
+import com.radixdlt.atommodel.Atom;
 
 /**
  * Handle atom submission.

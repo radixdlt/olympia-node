@@ -18,16 +18,17 @@
 package org.radix;
 
 import com.google.common.collect.ImmutableMap;
+import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
-import com.radixdlt.common.Atom;
+import com.radixdlt.atommodel.Atom;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import com.radixdlt.constraintmachine.DataPointer;
-import com.radixdlt.atomos.RadixAddress;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.atommodel.message.MessageParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
-import com.radixdlt.atomos.RRI;
+import com.radixdlt.identifiers.RRI;
 import org.json.JSONObject;
 import org.radix.utils.IOUtils;
 import org.radix.validation.ConstraintMachineValidationException;
@@ -72,7 +73,7 @@ public final class GenerateUniverses
 	public GenerateUniverses(String[] arguments, boolean standalone, RuntimeProperties properties) throws Exception {
 		this.standalone = standalone;
 		this.properties = Objects.requireNonNull(properties);
-		this.serialization = Serialization.getDefault();
+		this.serialization = DefaultSerialization.getInstance();
 
 		if (standalone) {
 			Security.insertProviderAt(new BouncyCastleProvider(), 1);
@@ -163,10 +164,10 @@ public final class GenerateUniverses
 		genesisAtom.sign(universeKey);
 
 		if (standalone) {
-			byte[] sigBytes = serialization.toDson(genesisAtom.getSignature(universeKey.getUID()), Output.WIRE);
+			byte[] sigBytes = serialization.toDson(genesisAtom.getSignature(universeKey.euid()), Output.WIRE);
 			byte[] transactionBytes = serialization.toDson(genesisAtom, Output.HASH);
-			LOGGER.info("GENESIS TRANSACTION SIGNATURE " + universeKey.getUID() + ": " + Bytes.toHexString(sigBytes));
-			LOGGER.info("GENESIS TRANSACTION HID: " + genesisAtom.getHash().getID());
+			LOGGER.info("GENESIS TRANSACTION SIGNATURE " + universeKey.euid() + ": " + Bytes.toHexString(sigBytes));
+			LOGGER.info("GENESIS TRANSACTION HID: " + genesisAtom.getHash().euid());
 			LOGGER.info("GENESIS TRANSACTION HASH: " + genesisAtom.getHash().toString());
 			LOGGER.info("GENESIS TRANSACTION HASH DSON: " + Base64.getEncoder().encodeToString(transactionBytes));
 		}

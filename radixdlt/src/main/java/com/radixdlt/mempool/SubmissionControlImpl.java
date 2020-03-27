@@ -30,8 +30,8 @@ import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.validation.ConstraintMachineValidationException;
 
-import com.radixdlt.common.AID;
-import com.radixdlt.common.Atom;
+import com.radixdlt.identifiers.AID;
+import com.radixdlt.atommodel.Atom;
 import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.serialization.Serialization;

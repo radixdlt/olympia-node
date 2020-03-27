@@ -28,7 +28,7 @@ import java.util.stream.Stream;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
-import com.radixdlt.common.EUID;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.universe.Universe;
 import org.radix.events.Events;

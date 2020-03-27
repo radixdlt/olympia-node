@@ -19,8 +19,8 @@ package com.radixdlt.consensus;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
-import com.radixdlt.common.Atom;
-import com.radixdlt.common.EUID;
+import com.radixdlt.atommodel.Atom;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposerElection;
@@ -87,7 +87,7 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 	}
 
 	private String getShortName() {
-		return getShortName(selfKey.getUID());
+		return getShortName(selfKey.euid());
 	}
 
 	private void startQuorumNewView(View view) {
@@ -103,16 +103,12 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 	}
 
 	private void proceedToView(View nextView) {
-		try {
-			// TODO make signing more robust by including author in signed hash
-			ECDSASignature signature = this.selfKey.sign(Hash.hash256(Longs.toByteArray(nextView.number())));
-			NewView newView = new NewView(selfKey.getPublicKey(), nextView, this.vertexStore.getHighestQC(), signature);
-			ECPublicKey nextLeader = this.proposerElection.getProposer(nextView);
-			log.info(String.format("%s: Sending NewView to %s: %s", this.getShortName(), this.getShortName(nextLeader.getUID()), newView));
-			this.networkSender.sendNewView(newView, nextLeader.getUID());
-		} catch (CryptoException e) {
-			throw new IllegalStateException("Failed to sign new view", e);
-		}
+		// TODO make signing more robust by including author in signed hash
+		ECDSASignature signature = this.selfKey.sign(Hash.hash256(Longs.toByteArray(nextView.number())));
+		NewView newView = new NewView(selfKey.getPublicKey(), nextView, this.vertexStore.getHighestQC(), signature);
+		ECPublicKey nextLeader = this.proposerElection.getProposer(nextView);
+		log.info(String.format("%s: Sending NewView to %s: %s", this.getShortName(), this.getShortName(nextLeader.euid()), newView));
+		this.networkSender.sendNewView(newView, nextLeader.euid());
 	}
 
 	private void processQC(QuorumCertificate qc) throws SyncException {
@@ -224,8 +220,8 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 		try {
 			final Vote vote = safetyRules.voteFor(proposedVertex);
 			final ECPublicKey leader = this.proposerElection.getProposer(updatedView);
-			log.info(this.getShortName() + ": Sending Vote to " + this.getShortName(leader.getUID()) + ": " + vote);
-			networkSender.sendVote(vote, leader.getUID());
+			log.info(this.getShortName() + ": Sending Vote to " + this.getShortName(leader.euid()) + ": " + vote);
+			networkSender.sendVote(vote, leader.euid());
 		} catch (SafetyViolationException e) {
 			log.error("Rejected " + proposedVertex, e);
 		}

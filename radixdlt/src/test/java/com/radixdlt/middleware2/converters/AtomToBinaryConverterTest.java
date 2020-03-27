@@ -19,11 +19,12 @@ package com.radixdlt.middleware2.converters;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.atomos.RRI;
+import com.radixdlt.DefaultSerialization;
+import com.radixdlt.identifiers.RRI;
 import com.radixdlt.atomos.RRIParticle;
-import com.radixdlt.atomos.RadixAddress;
-import com.radixdlt.common.Atom;
-import com.radixdlt.common.EUID;
+import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.atommodel.Atom;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECDSASignature;
@@ -37,12 +38,12 @@ import java.math.BigInteger;
 import static org.junit.Assert.assertEquals;
 
 public class AtomToBinaryConverterTest {
-	private AtomToBinaryConverter atomToBinaryConverter = new AtomToBinaryConverter(Serialization.getDefault());
+	private AtomToBinaryConverter atomToBinaryConverter = new AtomToBinaryConverter(DefaultSerialization.getInstance());
 
 	@Test
 	public void test_atom_content_transformation_to_byte_array_and_back() throws CryptoException {
 		ECDSASignature ecSignature = new ECDSASignature(BigInteger.ONE, BigInteger.ONE);
-		ECKeyPair key = new ECKeyPair();
+		ECKeyPair key = ECKeyPair.generateNew();
 		RadixAddress radixAddress = new RadixAddress((byte) 1, key.getPublicKey());
 		RRI rri = RRI.of(radixAddress, "test");
 		RRIParticle rriParticle = new RRIParticle(rri);
