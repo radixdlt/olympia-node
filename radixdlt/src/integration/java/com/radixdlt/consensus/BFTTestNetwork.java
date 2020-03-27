@@ -135,7 +135,7 @@ public class BFTTestNetwork {
 		return testEventCoordinatorNetwork;
 	}
 
-	public void start() {
-		this.bftEvents.subscribe();
+	public Observable<Event> processBFT() {
+		return this.bftEvents;
 	}
 }

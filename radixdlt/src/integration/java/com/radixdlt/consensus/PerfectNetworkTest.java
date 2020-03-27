@@ -84,8 +84,7 @@ public class PerfectNetworkTest {
 				.satisfies(new Condition<>(vtx -> vtx.getView().equals(vtx.getParentView().next()), "Vertex has direct parent")))
 			.map(o -> o);
 
-		Observable.merge(commitCheck, timeoutCheck, proposalsCheck)
-			.doOnSubscribe(d -> bftNetwork.start())
+		Observable.merge(bftNetwork.processBFT(), commitCheck, timeoutCheck, proposalsCheck)
 			.take(time, timeUnit)
 			.blockingSubscribe();
 	}
