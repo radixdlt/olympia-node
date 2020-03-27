@@ -21,6 +21,7 @@ import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import com.radixdlt.common.Atom;
 import com.radixdlt.common.EUID;
+import com.radixdlt.consensus.Counters.CounterType;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposerElection;
@@ -56,6 +57,7 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 	private final ECKeyPair selfKey; // TODO remove signing/address to separate identity management
 	private final SafetyRules safetyRules;
 	private final ValidatorSet validatorSet;
+	private final Counters counters;
 
 	@Inject
 	public ValidatingEventCoordinator(
@@ -68,7 +70,8 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 		PendingVotes pendingVotes,
 		ProposerElection proposerElection,
 		@Named("self") ECKeyPair selfKey,
-		ValidatorSet validatorSet
+		ValidatorSet validatorSet,
+		Counters counters
 	) {
 		this.proposalGenerator = Objects.requireNonNull(proposalGenerator);
 		this.mempool = Objects.requireNonNull(mempool);
@@ -80,6 +83,7 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 		this.proposerElection = Objects.requireNonNull(proposerElection);
 		this.selfKey = Objects.requireNonNull(selfKey);
 		this.validatorSet = Objects.requireNonNull(validatorSet);
+		this.counters = counters;
 	}
 
 	private String getShortName(EUID euid) {
@@ -245,7 +249,13 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 		log.info(this.getShortName() + ": LOCAL_TIMEOUT: Processing " + view);
 
 		// proceed to next view if pacemaker feels like it
-		this.pacemaker.processLocalTimeout(view)
-			.ifPresent(this::proceedToView);
+		Optional<View> nextView = this.pacemaker.processLocalTimeout(view);
+		if (nextView.isPresent()) {
+			log.info(this.getShortName() + ": LOCAL_TIMEOUT: Processed " + view);
+			counters.increment(CounterType.TIMEOUT);
+			this.proceedToView(view);
+		} else {
+			log.info(this.getShortName() + ": LOCAL_TIMEOUT: Ignoring " + view);
+		}
 	}
 }

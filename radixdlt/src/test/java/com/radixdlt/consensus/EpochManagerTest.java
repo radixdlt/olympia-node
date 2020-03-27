@@ -24,7 +24,8 @@ public class EpochManagerTest {
 			mock(Pacemaker.class),
 			mock(VertexStore.class),
 			mock(PendingVotes.class),
-			mock(ECKeyPair.class)
+			mock(ECKeyPair.class),
+			mock(Counters.class)
 		);
 
 		ECKeyPair ecKeyPair = new ECKeyPair();

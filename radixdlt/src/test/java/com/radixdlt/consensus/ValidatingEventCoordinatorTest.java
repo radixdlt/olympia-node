@@ -20,6 +20,7 @@ package com.radixdlt.consensus;
 import com.google.common.collect.Lists;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.Atom;
+import com.radixdlt.consensus.Counters.CounterType;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposerElection;
@@ -49,7 +50,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class EventCoordinatorTest {
+public class ValidatingEventCoordinatorTest {
 	private static final ECKeyPair SELF_KEY = makeKeyPair();
 
 	private ValidatingEventCoordinator eventCoordinator;
@@ -62,6 +63,7 @@ public class EventCoordinatorTest {
 	private EventCoordinatorNetworkSender networkSender;
 	private VertexStore vertexStore;
 	private ValidatorSet validatorSet;
+	private Counters counters;
 
 	@Before
 	public void setUp() {
@@ -74,6 +76,7 @@ public class EventCoordinatorTest {
 		this.pendingVotes = mock(PendingVotes.class);
 		this.proposerElection = mock(ProposerElection.class);
 		this.validatorSet = mock(ValidatorSet.class);
+		this.counters = mock(Counters.class);
 
 		this.eventCoordinator = new ValidatingEventCoordinator(
 			proposalGenerator,
@@ -85,7 +88,8 @@ public class EventCoordinatorTest {
 			pendingVotes,
 			proposerElection,
 			SELF_KEY,
-			validatorSet
+			validatorSet,
+			counters
 		);
 	}
 
@@ -139,19 +143,21 @@ public class EventCoordinatorTest {
 	}
 
 	@Test
-	public void when_processing_relevant_local_timeout__then_new_view_is_emitted() {
+	public void when_processing_relevant_local_timeout__then_new_view_is_emitted_and_counter_increment() {
 		when(proposerElection.getProposer(any())).thenReturn(makeKeyPair().getPublicKey());
 		when(pacemaker.processLocalTimeout(any())).thenReturn(Optional.of(View.of(1)));
 		when(pacemaker.getCurrentView()).thenReturn(View.of(1));
 		eventCoordinator.processLocalTimeout(View.of(0L));
 		verify(networkSender, times(1)).sendNewView(any(), any());
+		verify(counters, times(1)).increment(eq(CounterType.TIMEOUT));
 	}
 
 	@Test
-	public void when_processing_irrelevant_local_timeout__then_new_view_is_not_emitted() {
+	public void when_processing_irrelevant_local_timeout__then_new_view_is_not_emitted_and_no_counter_increment() {
 		when(pacemaker.processLocalTimeout(any())).thenReturn(Optional.empty());
 		eventCoordinator.processLocalTimeout(View.of(0L));
 		verify(networkSender, times(0)).sendNewView(any(), any());
+		verify(counters, times(0)).increment(eq(CounterType.TIMEOUT));
 	}
 
 	@Test

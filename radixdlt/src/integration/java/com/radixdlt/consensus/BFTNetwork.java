@@ -101,6 +101,7 @@ public class BFTNetwork {
 		PacemakerImpl pacemaker = new PacemakerImpl(Executors.newSingleThreadScheduledExecutor());
 		PendingVotes pendingVotes = new PendingVotes();
 		EpochRx epochRx = () -> Observable.just(validatorSet).concatWith(Observable.never());
+		Counters counters = new Counters();
 		EpochManager epochManager = new EpochManager(
 			proposalGenerator,
 			mempool,
@@ -109,7 +110,8 @@ public class BFTNetwork {
 			pacemaker,
 			vertexStore,
 			pendingVotes,
-			key
+			key,
+			counters
 		);
 
 		return new ChainedBFT(
