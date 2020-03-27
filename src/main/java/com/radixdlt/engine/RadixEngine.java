@@ -18,7 +18,7 @@
 package com.radixdlt.engine;
 
 import com.radixdlt.atomos.Result;
-import com.radixdlt.common.Atom;
+import com.radixdlt.atommodel.Atom;
 import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;

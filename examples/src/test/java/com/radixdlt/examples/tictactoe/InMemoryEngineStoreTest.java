@@ -17,7 +17,7 @@
 
 package com.radixdlt.examples.tictactoe;
 
-import com.radixdlt.common.Atom;
+import com.radixdlt.atommodel.Atom;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.CryptoException;
@@ -47,8 +47,8 @@ public class InMemoryEngineStoreTest {
 
 	private static Atom initialBoardAtom() throws CryptoException {
 		// Our two tic toe players
-		ECKeyPair xPlayer = new ECKeyPair();
-		ECKeyPair oPlayer = new ECKeyPair();
+		ECKeyPair xPlayer = ECKeyPair.generateNew();
+		ECKeyPair oPlayer = ECKeyPair.generateNew();
 
 		// Build out real particle states for each of the boards
 		TicTacToeConstraintScrypt.XToMoveParticle initialBoard = TicTacToeRunner.buildInitialBoard(xPlayer, oPlayer);

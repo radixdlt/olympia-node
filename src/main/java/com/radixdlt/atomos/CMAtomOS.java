@@ -22,6 +22,7 @@ import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.UsedData;
 import com.radixdlt.constraintmachine.VoidParticle;
 import com.radixdlt.constraintmachine.TransitionProcedure;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.store.CMStore;
 import java.util.HashMap;
 import java.util.Map;
@@ -31,7 +32,7 @@ import java.util.function.UnaryOperator;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.store.CMStores;
-import com.radixdlt.common.EUID;
+import com.radixdlt.identifiers.EUID;
 
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -105,7 +106,7 @@ public final class CMAtomOS {
 			}
 
 			final Function<Particle, Stream<RadixAddress>> mapper = particleDefinition.getAddressMapper();
-			final Set<EUID> destinations = mapper.apply(p).map(RadixAddress::getUID).collect(Collectors.toSet());
+			final Set<EUID> destinations = mapper.apply(p).map(RadixAddress::euid).collect(Collectors.toSet());
 
 			if (!destinations.containsAll(p.getDestinations())) {
 				return Result.error("Address destinations does not contain all destinations");

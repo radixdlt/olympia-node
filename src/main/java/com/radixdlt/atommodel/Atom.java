@@ -15,25 +15,26 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.common;
+package com.radixdlt.atommodel;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import com.radixdlt.DefaultSerialization;
+import com.radixdlt.identifiers.AID;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.crypto.AtomAlreadySignedException;
 import com.radixdlt.crypto.CryptoException;
+import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.middleware.ParticleGroup;
 import com.radixdlt.middleware.SpunParticle;
 import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
@@ -203,7 +204,7 @@ public class Atom {
 		ECDSASignature signature = null;
 
 		for (ECPublicKey key : keys) {
-			signature = this.signatures.get(key.getUID());
+			signature = this.signatures.get(key.euid());
 
 			if (signature == null) {
 				continue;
@@ -224,7 +225,7 @@ public class Atom {
 
 		Hash hash = this.getHash();
 
-		ECDSASignature signature = this.signatures.get(key.getUID());
+		ECDSASignature signature = this.signatures.get(key.euid());
 
 		if (signature == null) {
 			return false;
@@ -251,7 +252,7 @@ public class Atom {
 		}
 
 		Hash hash = this.getHash();
-		this.setSignature(key.getUID(), key.sign(hash.toByteArray()));
+		this.setSignature(key.euid(), key.sign(hash.toByteArray()));
 	}
 
 	public void sign(Collection<ECKeyPair> keys) throws CryptoException {
@@ -262,7 +263,7 @@ public class Atom {
 		Hash hash = this.getHash();
 
 		for (ECKeyPair key : keys) {
-			this.setSignature(key.getUID(), key.sign(hash.toByteArray()));
+			this.setSignature(key.euid(), key.sign(hash.toByteArray()));
 		}
 	}
 
@@ -367,7 +368,7 @@ public class Atom {
 
 	private Hash doGetHash() {
 		try {
-			return new Hash(Hash.hash256(Serialization.getDefault().toDson(this, DsonOutput.Output.HASH)));
+			return Hash.of(DefaultSerialization.getInstance().toDson(this, DsonOutput.Output.HASH));
 		} catch (Exception e) {
 			throw new IllegalStateException("Error generating hash: " + e, e);
 		}
@@ -379,8 +380,8 @@ public class Atom {
 
 	@JsonProperty("hid")
 	@DsonOutput(DsonOutput.Output.API)
-	public final EUID getHID() {
-		return getHash().getID();
+	public final EUID euid() {
+		return getHash().euid();
 	}
 
 

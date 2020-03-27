@@ -18,16 +18,15 @@
 package com.radixdlt.serialization;
 
 import com.radixdlt.TestSetupUtils;
-import com.radixdlt.atomos.RRI;
 import com.radixdlt.atomos.RRIParticle;
-import com.radixdlt.atomos.RadixAddress;
-import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
 
 import static org.junit.Assert.assertEquals;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 
+import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.RadixAddress;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -41,13 +40,9 @@ public class RRIParticleSerializationTest extends SerializeObjectEngine<RRIParti
 	private static final RRI rri;
 
 	static {
-        try {
-        	keyPair = new ECKeyPair();
-        	address = new RadixAddress((byte) 123, keyPair.getPublicKey());
-        	rri = RRI.of(address, NAME);
-    	} catch (CryptoException ex) {
-    		throw new IllegalStateException("Error while creating RRIParticle", ex);
-    	}
+		keyPair = ECKeyPair.generateNew();
+		address = new RadixAddress((byte) 123, keyPair.getPublicKey());
+		rri = RRI.of(address, NAME);
 	}
 
     public RRIParticleSerializationTest() {

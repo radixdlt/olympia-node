@@ -20,7 +20,7 @@ package com.radixdlt.middleware;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.common.EUID;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
@@ -121,7 +121,7 @@ public final class SpunParticle {
 
 	@Override
 	public String toString() {
-		EUID phid = (this.particle == null) ? null : this.particle.getHID();
+		EUID phid = (this.particle == null) ? null : this.particle.euid();
 
 		return String.format("%s[(%s):%s:%s:%s]", getClass().getSimpleName(),
 				String.valueOf(phid), String.valueOf(spin), String.valueOf(particle),

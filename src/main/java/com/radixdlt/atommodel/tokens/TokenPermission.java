@@ -21,7 +21,7 @@ import static com.radixdlt.atomos.Result.error;
 import static com.radixdlt.atomos.Result.of;
 import static com.radixdlt.atomos.Result.success;
 
-import com.radixdlt.atomos.RRI;
+import com.radixdlt.identifiers.RRI;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.WitnessData;
 import java.util.Objects;
@@ -34,7 +34,7 @@ public enum TokenPermission {
 	 * Only the token owner can do this
 	 */
 	TOKEN_OWNER_ONLY((tokDefRef, meta) -> of(
-		meta.isSignedBy(tokDefRef.getAddress().getKey()),
+		meta.isSignedBy(tokDefRef.getAddress().getPublicKey()),
 		() -> "must be signed by token owner: " + tokDefRef.getAddress())),
 
 	/**

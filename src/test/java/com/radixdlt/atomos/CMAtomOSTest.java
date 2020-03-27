@@ -22,6 +22,8 @@ import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.VoidUsedData;
 import java.util.function.Function;
+
+import com.radixdlt.identifiers.RadixAddress;
 import org.junit.Test;
 
 import com.radixdlt.constraintmachine.Particle;

@@ -20,8 +20,8 @@ package com.radixdlt.atommodel.tokens;
 import static org.powermock.api.mockito.PowerMockito.mock;
 import static org.powermock.api.mockito.PowerMockito.when;
 
-import com.radixdlt.atomos.RRI;
-import com.radixdlt.atomos.RadixAddress;
+import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.constraintmachine.WitnessData;
 import com.radixdlt.crypto.ECPublicKey;
 import org.junit.Test;
@@ -32,7 +32,7 @@ public class TokenPermissionTest {
 		MutableSupplyTokenDefinitionParticle tokenDefinitionParticle = mock(MutableSupplyTokenDefinitionParticle.class);
 		RadixAddress address = mock(RadixAddress.class);
 		ECPublicKey key = mock(ECPublicKey.class);
-		when(address.getKey()).thenReturn(key);
+		when(address.getPublicKey()).thenReturn(key);
 		RRI rri = mock(RRI.class);
 		when(rri.getAddress()).thenReturn(address);
 		when(tokenDefinitionParticle.getRRI()).thenReturn(rri);
@@ -48,7 +48,7 @@ public class TokenPermissionTest {
 		MutableSupplyTokenDefinitionParticle tokenDefinitionParticle = mock(MutableSupplyTokenDefinitionParticle.class);
 		RadixAddress address = mock(RadixAddress.class);
 		ECPublicKey key = mock(ECPublicKey.class);
-		when(address.getKey()).thenReturn(key);
+		when(address.getPublicKey()).thenReturn(key);
 		RRI rri = mock(RRI.class);
 		when(rri.getAddress()).thenReturn(address);
 		when(tokenDefinitionParticle.getRRI()).thenReturn(rri);

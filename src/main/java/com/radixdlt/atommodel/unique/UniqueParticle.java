@@ -18,8 +18,8 @@
 package com.radixdlt.atommodel.unique;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.atomos.RRI;
-import com.radixdlt.atomos.RadixAddress;
+import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerId2;
@@ -45,7 +45,7 @@ public class UniqueParticle extends Particle {
 	}
 
 	public UniqueParticle(String name, RadixAddress address, long nonce) {
-		super(address.getUID());
+		super(address.euid());
 		this.name = Objects.requireNonNull(name);
 		this.address = address;
 		this.nonce = nonce;

@@ -28,6 +28,9 @@ import com.radixdlt.constraintmachine.VoidUsedData;
 import com.radixdlt.constraintmachine.TransitionProcedure;
 import com.radixdlt.constraintmachine.WitnessValidator;
 import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
+import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.RadixAddress;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -196,7 +199,7 @@ final class ConstraintScryptEnv implements SysCalls {
 
 				@Override
 				public WitnessValidator<RRIParticle> inputWitnessValidator() {
-					return (rri, witnessData) -> witnessData.isSignedBy(rri.getRri().getAddress().getKey())
+					return (rri, witnessData) -> witnessData.isSignedBy(rri.getRri().getAddress().getPublicKey())
 						? WitnessValidatorResult.success() : WitnessValidatorResult.error("Not signed by " + rri.getRri().getAddress());
 				}
 
@@ -228,7 +231,7 @@ final class ConstraintScryptEnv implements SysCalls {
 			particleClass0,
 			particleClass1,
 			combinedCheck,
-			(in, witness) -> witness.isSignedBy(in.getRri().getAddress().getKey())
+			(in, witness) -> witness.isSignedBy(in.getRri().getAddress().getPublicKey())
 				? WitnessValidatorResult.success() : WitnessValidatorResult.error("Not signed by " + in.getRri().getAddress())
 		);
 

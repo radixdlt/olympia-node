@@ -19,7 +19,7 @@ package com.radixdlt.atommodel.message;
 
 import static org.mockito.Mockito.mock;
 
-import com.radixdlt.atomos.RadixAddress;
+import com.radixdlt.identifiers.RadixAddress;
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
 

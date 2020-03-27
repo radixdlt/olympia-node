@@ -20,12 +20,12 @@ package com.radixdlt.middleware;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.common.Atom;
+import com.radixdlt.DefaultSerialization;
+import com.radixdlt.atommodel.Atom;
 import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.store.SpinStateMachine;
 import java.util.HashMap;
@@ -93,7 +93,7 @@ public final class RadixEngineUtils {
 	public static SimpleRadixEngineAtom toCMAtom(Atom atom) throws CMAtomConversionException {
 		final int computedSize;
 		try {
-			computedSize = Serialization.getDefault().toDson(atom, Output.PERSIST).length;
+			computedSize = DefaultSerialization.getInstance().toDson(atom, Output.PERSIST).length;
 		} catch (SerializationException e) {
 			throw new IllegalStateException("Could not compute size", e);
 		}

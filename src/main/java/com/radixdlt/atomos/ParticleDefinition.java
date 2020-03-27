@@ -18,6 +18,9 @@
 package com.radixdlt.atomos;
 
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.RadixAddress;
+
 import java.util.function.Function;
 import java.util.stream.Stream;
 

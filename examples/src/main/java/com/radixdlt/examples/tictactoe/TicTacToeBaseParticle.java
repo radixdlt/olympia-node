@@ -20,7 +20,7 @@ package com.radixdlt.examples.tictactoe;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.atomos.RadixAddress;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -48,7 +48,7 @@ abstract class TicTacToeBaseParticle extends Particle {
 	private final ImmutableList<TicTacToeSquareValue> board;
 
 	TicTacToeBaseParticle(RadixAddress xPlayer, RadixAddress oPlayer, ImmutableList<TicTacToeSquareValue> board) {
-		super(ImmutableSet.of(xPlayer.getUID(), oPlayer.getUID()));
+		super(ImmutableSet.of(xPlayer.euid(), oPlayer.euid()));
 
 		this.xPlayer = xPlayer;
 		this.oPlayer = oPlayer;

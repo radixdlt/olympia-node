@@ -19,6 +19,7 @@ package com.radixdlt.atomos;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.identifiers.RRI;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerId2;
 
@@ -37,7 +38,7 @@ public final class RRIParticle extends Particle {
 	}
 
 	public RRIParticle(RRI rri) {
-		super(rri.getAddress().getUID());
+		super(rri.getAddress().euid());
 
 		this.rri = rri;
 		this.nonce = 0;

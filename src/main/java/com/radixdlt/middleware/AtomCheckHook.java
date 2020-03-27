@@ -18,7 +18,7 @@
 package com.radixdlt.middleware;
 
 import com.radixdlt.atomos.Result;
-import com.radixdlt.common.Atom;
+import com.radixdlt.atommodel.Atom;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.CMSuccessHook;
 import com.radixdlt.universe.Universe;

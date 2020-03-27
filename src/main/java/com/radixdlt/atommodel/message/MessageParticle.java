@@ -19,7 +19,7 @@ package com.radixdlt.atommodel.message;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.atomos.RadixAddress;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerId2;
@@ -68,7 +68,7 @@ public final class MessageParticle extends Particle {
 	}
 
 	public MessageParticle(RadixAddress from, RadixAddress to, byte[] bytes) {
-		super(ImmutableSet.of(from.getUID(), to.getUID()));
+		super(ImmutableSet.of(from.euid(), to.euid()));
 
 		this.from = Objects.requireNonNull(from, "from is required");
 		this.to = Objects.requireNonNull(to, "to is required");
@@ -77,7 +77,7 @@ public final class MessageParticle extends Particle {
 	}
 
 	public MessageParticle(RadixAddress from, RadixAddress to, byte[] bytes, String contentType) {
-		super(ImmutableSet.of(from.getUID(), to.getUID()));
+		super(ImmutableSet.of(from.euid(), to.euid()));
 
 		this.from = Objects.requireNonNull(from, "from is required");
 		this.to = Objects.requireNonNull(to, "to is required");

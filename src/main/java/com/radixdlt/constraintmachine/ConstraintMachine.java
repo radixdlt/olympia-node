@@ -19,7 +19,7 @@ package com.radixdlt.constraintmachine;
 
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.atomos.Result;
-import com.radixdlt.common.EUID;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.ECDSASignature;
@@ -112,7 +112,7 @@ public final class ConstraintMachine {
 				return false;
 			}
 
-			final ECDSASignature signature = signatures.get(publicKey.getUID());
+			final ECDSASignature signature = signatures.get(publicKey.euid());
 			return signature != null && publicKey.verify(witness, signature);
 		}
 

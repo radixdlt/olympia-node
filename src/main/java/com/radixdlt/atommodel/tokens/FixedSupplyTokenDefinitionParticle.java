@@ -19,7 +19,7 @@ package com.radixdlt.atommodel.tokens;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.atomos.RRI;
+import com.radixdlt.identifiers.RRI;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
@@ -69,7 +69,7 @@ public final class FixedSupplyTokenDefinitionParticle extends Particle {
 		UInt256 granularity,
 		String iconUrl
 	) {
-		super(rri.getAddress().getUID());
+		super(rri.getAddress().euid());
 
 		this.rri = rri;
 		this.name = name;
