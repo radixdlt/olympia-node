@@ -40,4 +40,9 @@ public class EmptyEventCoordinator implements EventCoordinator {
 	public void processLocalTimeout(View view) {
 		// No-op
 	}
+
+	@Override
+	public void start() {
+		// No-op
+	}
 }

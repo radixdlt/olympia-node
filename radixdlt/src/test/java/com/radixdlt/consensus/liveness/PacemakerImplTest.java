@@ -110,6 +110,7 @@ public class PacemakerImplTest {
 		TestObserver<View> testObserver = TestObserver.create();
 		pacemaker.localTimeouts().subscribe(testObserver);
 		testObserver.awaitCount(1);
+		testObserver.assertValue(View.of(0L));
 		pacemaker.processLocalTimeout(View.of(0L));
 		testObserver.awaitCount(2);
 		testObserver.assertValues(View.of(0L), View.of(1L));
@@ -166,7 +167,22 @@ public class PacemakerImplTest {
 	}
 
 	@Test
-	public void when_inserting_valid_and_accepted_new_views__then_qc_is_formed() {
+	public void when_inserting_current_and_accepted_new_views__then_qc_is_formed_and_current_view_has_changed_and_no_new_timeout() {
+		View view = View.of(0);
+		NewView newView = makeNewViewFor(view);
+		ValidatorSet validatorSet = mock(ValidatorSet.class);
+		ValidationResult result = mock(ValidationResult.class);
+		when(result.valid()).thenReturn(true);
+		when(validatorSet.validate(any(), any())).thenReturn(result);
+		ScheduledExecutorService executorService = getMockedExecutorService();
+		PacemakerImpl pacemaker = new PacemakerImpl(executorService);
+		assertThat(pacemaker.processNewView(newView, validatorSet)).isPresent().get().isEqualTo(View.of(0));
+		assertThat(pacemaker.getCurrentView()).isEqualTo(View.of(0));
+		verify(executorService, times(0)).schedule(any(Runnable.class), anyLong(), any());
+	}
+
+	@Test
+	public void when_inserting_new_and_accepted_new_views__then_qc_is_formed_and_current_view_has_changed_and_new_timeout() {
 		View view = View.of(2);
 		NewView newView = makeNewViewFor(view);
 		ValidatorSet validatorSet = mock(ValidatorSet.class);
@@ -175,7 +191,9 @@ public class PacemakerImplTest {
 		when(validatorSet.validate(any(), any())).thenReturn(result);
 		ScheduledExecutorService executorService = getMockedExecutorService();
 		PacemakerImpl pacemaker = new PacemakerImpl(executorService);
-		assertThat(pacemaker.processNewView(newView, validatorSet)).isPresent();
+		assertThat(pacemaker.processNewView(newView, validatorSet)).isPresent().get().isEqualTo(View.of(2));
+		assertThat(pacemaker.getCurrentView()).isEqualTo(View.of(2));
+		verify(executorService, times(1)).schedule(any(Runnable.class), anyLong(), any());
 	}
 
 	private NewView makeNewViewFor(View view) {
