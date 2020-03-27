@@ -5,8 +5,8 @@ import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
 import com.radixdlt.client.application.translate.tokens.MintTokensAction;
 import com.radixdlt.client.application.translate.tokens.TokenBalanceState;
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.core.atoms.particles.RRI;
+import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.identifiers.RRI;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Collections;
@@ -14,7 +14,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.assertj.core.api.Condition;
-import org.radix.common.tuples.Pair;
+import com.radixdlt.utils.Pair;
 
 public class DoubleSpendCreateAndMintTokenTestConditions implements DoubleSpendTestConditions {
 	private final RadixAddress apiAddress;

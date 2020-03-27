@@ -7,8 +7,9 @@ import com.radixdlt.client.application.translate.ShardedAppStateId;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import com.radixdlt.utils.Pair;
 import org.assertj.core.api.Condition;
-import org.radix.common.tuples.Pair;
 
 public interface DoubleSpendTestConditions {
 	class PostConsensusCondition {

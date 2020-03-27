@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.junit.Before;
 import org.junit.Test;
-import org.radix.common.ID.EUID;
+import com.radixdlt.identifiers.EUID;
 
 public class TranslucentAtomTest {
 	private RadixApplicationAPI api;
@@ -74,7 +74,7 @@ public class TranslucentAtomTest {
 			api.getAddress(),
 			new byte[1],
 			new MetadataMap(),
-			0, ImmutableSet.of(api.getAddress().getUID(), EUID.ONE));
+			0, ImmutableSet.of(api.getAddress().euid(), EUID.ONE));
 		Atom unsignedAtom = Atom.create(ParticleGroup.of(SpunParticle.up(messageParticle)), System.currentTimeMillis());
 		Atom signedAtom = this.identity.addSignature(unsignedAtom).blockingGet();
 		Result result = api.submitAtom(signedAtom);

@@ -6,7 +6,7 @@ import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.FeeMapper;
 import com.radixdlt.client.application.translate.PowFeeMapper;
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.client.atommodel.rri.RRIParticle;
 import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
@@ -32,7 +32,7 @@ import io.reactivex.observers.TestObserver;
 import java.util.UUID;
 import org.junit.Before;
 import org.junit.Test;
-import org.radix.utils.UInt256;
+import com.radixdlt.utils.UInt256;
 
 import java.util.Arrays;
 import java.util.HashMap;

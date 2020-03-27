@@ -16,16 +16,17 @@ import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
 import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import com.radixdlt.client.application.translate.tokens.TransferTokensToParticleGroupsMapper;
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.particles.Particle;
-import com.radixdlt.client.core.atoms.particles.RRI;
-import com.radixdlt.client.core.crypto.ECKeyPairGenerator;
+import com.radixdlt.identifiers.RRI;
 import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomStatusAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomSendAction;
+import com.radixdlt.utils.UInt256;
 import cucumber.api.java.en.And;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
@@ -34,7 +35,6 @@ import io.reactivex.observers.BaseTestConsumer.TestWaitStrategy;
 import io.reactivex.observers.TestObserver;
 import java.util.Set;
 import java.util.stream.Stream;
-import org.radix.utils.UInt256;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -74,7 +74,6 @@ public class ParticleGroups {
 			GRANULARITY,	"1"
 	);
 	private final List<TestObserver<Object>> observers = Lists.newArrayList();
-	private ECKeyPairGenerator ecKeyPairGenerator = ECKeyPairGenerator.newInstance();
 
 	private class CreateEmptyGroupAction implements Action {
 
@@ -222,7 +221,7 @@ public class ParticleGroups {
 		return TransferTokensAction.create(
 			RRI.of(api.getAddress(), symbol),
 			api.getAddress(),
-			api.getAddress(ecKeyPairGenerator.generateKeyPair().getPublicKey()),
+			api.getAddress(ECKeyPair.generateNew().getPublicKey()),
 			BigDecimal.valueOf(amount)
 		);
 	}
