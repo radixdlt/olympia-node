@@ -1,7 +1,6 @@
 package com.radixdlt.crypto;
 
 import com.google.common.collect.ImmutableMap;
-import org.junit.Assert;
 import org.junit.Test;
 
 import java.math.BigInteger;
@@ -12,17 +11,25 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 
+import nl.jqno.equalsverifier.EqualsVerifier;
+
 public class SignaturesTest {
 
-	interface SchnorrSignature extends Signature {
-		// Dummy type for tests
-	}
+    interface SchnorrSignature extends Signature {
+        // Dummy type for tests
+    }
+
+    @Test
+    public void equalsContract() {
+        EqualsVerifier.forClass(ECDSASignatures.class)
+                .withIgnoredFields("version")
+                .verify();
+    }
 
     @Test
     public void verify_that_ecdsa_is_default_signature_scheme() {
@@ -32,7 +39,7 @@ public class SignaturesTest {
 
     @Test
     public void verify_that_ecdsasignature_specifies_correct_scheme() {
-	    ECDSASignature signature = new ECDSASignature();
+        ECDSASignature signature = new ECDSASignature();
         assertEquals(SignatureScheme.ECDSA, signature.signatureScheme());
     }
 
@@ -60,14 +67,14 @@ public class SignaturesTest {
     public void verify_that_a_single_invalid_signature_does_fails_to_verify() {
         Signatures single = new ECDSASignatures(publicKey(), randomInvalidSignature());
         assertEquals(1, single.count());
-        assertFalse(single.hasSignedMessage(hashOfMessage("Fubar"), 1));
+        assertTrue(single.signedMessage(hashOfMessage("Fubar")).isEmpty());
     }
 
     @Test
     public void verify_that_multiple_invalid_signature_does_fails_to_verify() {
         Signatures multiple = new ECDSASignatures(ImmutableMap.of(publicKey(), randomInvalidSignature(), publicKey(), randomInvalidSignature()));
         assertEquals(2, multiple.count());
-        assertFalse(multiple.hasSignedMessage(hashOfMessage("Fubar"), 2));
+        assertTrue(multiple.signedMessage(hashOfMessage("Fubar")).isEmpty());
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -126,8 +133,8 @@ public class SignaturesTest {
         Signatures signatures = DefaultSignatures.single(publicKey(), dummySignature);
         String tostring = signatures.toString();
 
-        Assert.assertThat(tostring, containsString(ECDSASignature.class.getSimpleName()));
-        Assert.assertThat(tostring, containsString(dummySignature.toString()));
+        assertThat(tostring, containsString(ECDSASignature.class.getSimpleName()));
+        assertThat(tostring, containsString(dummySignature.toString()));
     }
 
     private void test_that_we_can_bulk_verify_signatures(
@@ -142,7 +149,7 @@ public class SignaturesTest {
             );
         }
         Signatures signatures = DefaultSignatures.emptySignatures();
-        byte[] hashedMessage = hashOfMessage("You must do what you feel is right of course");
+        Hash hashedMessage = hashOfMessage("You must do what you feel is right of course");
         for (int i = 0; i < numberOfValidSignaturesToCreate + numberOfInvalidSignaturesToCreate; i++) {
             ECKeyPair keyPair = ECKeyPair.generateNew();
             assertNotNull(keyPair);
@@ -159,7 +166,7 @@ public class SignaturesTest {
         }
 
         assertEquals((numberOfInvalidSignaturesToCreate + numberOfValidSignaturesToCreate), signatures.count());
-        boolean doesSignatureMeetValidityThreshold = signatures.hasSignedMessage(hashedMessage, thresholdNumberOfValidSignatures);
+        boolean doesSignatureMeetValidityThreshold = signatures.signedMessage(hashedMessage).size() >= thresholdNumberOfValidSignatures;
         assertEquals(isExpectedToMeetThreshold, doesSignatureMeetValidityThreshold);
     }
 
@@ -172,7 +179,7 @@ public class SignaturesTest {
         return new ECDSASignature(randomBigInt.get(), randomBigInt.get());
     }
 
-    private byte[] hashOfMessage(String message) {
-        return Hash.hash256(message.getBytes());
+    private Hash hashOfMessage(String message) {
+        return new Hash(Hash.hash256(message.getBytes()));
     }
 }

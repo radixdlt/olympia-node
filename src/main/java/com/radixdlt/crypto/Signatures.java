@@ -17,6 +17,9 @@
 
 package com.radixdlt.crypto;
 
+
+import java.util.List;
+
 public interface Signatures {
 
     /**
@@ -26,24 +29,14 @@ public interface Signatures {
     SignatureScheme signatureScheme();
 
     /**
-     * Checks whether or not this collection of {@link Signature}s and their corresponding {@link ECPublicKey}s indeed has signed the message,
-     * requiring that at least {@code minimumValidSignatures} of the signatures are valid.
+     * Checks whether or not this collection of {@link Signature}s and their corresponding
+     * {@link ECPublicKey}s indeed has signed the message.  The {@link ECPublicKey}s of the
+     * signatories are returned.
+     *
      * @param message The hashed data to check against (the data that has been signed).
-     * @param minimumValidSignatures The required minimum number of valid signatures.
-     * @return If the number of valid signatures having signed {@code message} is greater or equal to {@code minimumValidSignatures}
+     * @return The possibly empty list of valid signatories for the provided hash.
      */
-    default boolean hasSignedMessage(Hash message, int minimumValidSignatures) {
-        return hasSignedMessage(message.toByteArray(), minimumValidSignatures);
-    }
-
-    /**
-     * Checks whether or not this collection of {@link Signature}s and their corresponding {@link ECPublicKey}s indeed has signed the message,
-     * requiring that at least {@code minimumValidSignatures} of the signatures are valid.
-     * @param message The hashed data to check against (the data that has been signed).
-     * @param minimumValidSignatures The required minimum number of valid signatures.
-     * @return If the number of valid signatures having signed {@code message} is greater or equal to {@code minimumValidSignatures}
-     */
-    boolean hasSignedMessage(byte[] message, int minimumValidSignatures);
+    List<ECPublicKey> signedMessage(Hash message);
 
     /**
      * Returns a new instance of {@link Signatures}, concatenated with the {@code signature},
