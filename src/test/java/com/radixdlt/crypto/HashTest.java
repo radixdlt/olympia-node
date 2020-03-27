@@ -19,7 +19,6 @@
 
 package com.radixdlt.crypto;
 
-import com.google.common.collect.ImmutableList;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.identifiers.RRI;
