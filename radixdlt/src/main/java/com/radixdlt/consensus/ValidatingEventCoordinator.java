@@ -258,4 +258,10 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 			log.info(this.getShortName() + ": LOCAL_TIMEOUT: Ignoring " + view);
 		}
 	}
+
+	@Override
+	public void start() {
+		this.pacemaker.processQC(this.vertexStore.getHighestQC().getView())
+			.ifPresent(this::proceedToView);
+	}
 }

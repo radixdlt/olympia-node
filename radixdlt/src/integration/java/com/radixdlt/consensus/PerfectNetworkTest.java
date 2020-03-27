@@ -19,6 +19,7 @@ package com.radixdlt.consensus;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
+import com.radixdlt.consensus.Counters.CounterType;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
 import io.reactivex.rxjava3.core.Observable;
@@ -41,26 +42,35 @@ public class PerfectNetworkTest {
 	}
 
 	@Test
-	public void given_3_correct_bft_instances__then_all_instances_should_get_the_same_commits_over_1_minute() {
+	public void given_3_correct_bfts__then_all_should_get_same_commits_and_no_timeouts_over_1_minute() {
 		final int numNodes = 3;
 		final long time = 1;
 		final TimeUnit timeUnit = TimeUnit.MINUTES;
 
 		final List<ECKeyPair> nodes = createNodes(numNodes);
-		final BFTNetwork bftNetwork = new BFTNetwork(nodes);
+		final BFTTestNetwork bftNetwork = new BFTTestNetwork(nodes);
 
-		Observable.zip(nodes.stream()
+		Observable<Object> commitCheck = Observable.zip(nodes.stream()
 			.map(bftNetwork::getVertexStore)
 			.map(VertexStore::lastCommittedVertex)
 			.collect(Collectors.toList()), Arrays::stream)
-			.take(time, timeUnit)
 			.map(s -> s.distinct().collect(Collectors.toList()))
 			.doOnNext(s -> {
 				assertThat(s).hasSize(1);
 				Vertex v = (Vertex) s.get(0);
 				System.out.println("Committed " + v);
 			})
+			.map(o -> o);
+
+		Observable<Object> timeoutCheck = Observable.interval(2, TimeUnit.SECONDS)
+			.flatMapIterable(i -> nodes)
+			.map(bftNetwork::getCounters)
+			.doOnNext(counters -> assertThat(counters.getCount(CounterType.TIMEOUT)).isEqualTo(0))
+			.map(o -> o);
+
+		Observable.merge(commitCheck, timeoutCheck)
 			.doOnSubscribe(d -> bftNetwork.start())
+			.take(time, timeUnit)
 			.blockingSubscribe();
 	}
 }

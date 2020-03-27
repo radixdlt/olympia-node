@@ -108,6 +108,19 @@ public class ValidatingEventCoordinatorTest {
 	}
 
 	@Test
+	public void when_start__then_should_proceed_to_first_view() {
+		QuorumCertificate qc = mock(QuorumCertificate.class);
+		View view = mock(View.class);
+		when(qc.getView()).thenReturn(view);
+		when(proposerElection.getProposer(any())).thenReturn(SELF_KEY.getPublicKey());
+		when(vertexStore.getHighestQC()).thenReturn(qc);
+		when(pacemaker.processQC(eq(view))).thenReturn(Optional.of(mock(View.class)));
+		eventCoordinator.start();
+		verify(pacemaker, times(1)).processQC(eq(view));
+		verify(networkSender, times(1)).sendNewView(any(), any());
+	}
+
+	@Test
 	public void when_processing_vote_as_not_proposer__then_nothing_happens() {
 		Vote voteMessage = mock(Vote.class);
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);

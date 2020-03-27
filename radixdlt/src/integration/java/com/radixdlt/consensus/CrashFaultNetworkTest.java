@@ -46,7 +46,7 @@ public class CrashFaultNetworkTest {
 		final TimeUnit timeUnit = TimeUnit.MINUTES;
 
 		final List<ECKeyPair> nodes = createNodes(numNodes);
-		final BFTNetwork bftNetwork = new BFTNetwork(nodes);
+		final BFTTestNetwork bftNetwork = new BFTTestNetwork(nodes);
 		bftNetwork.getTestEventCoordinatorNetwork().setSendingDisable(nodes.get(2).getUID(), true);
 
 		Observable.zip(nodes.stream()

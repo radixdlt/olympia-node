@@ -47,15 +47,17 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
-public class BFTNetwork {
+public class BFTTestNetwork {
 	private final TestEventCoordinatorNetwork testEventCoordinatorNetwork = new TestEventCoordinatorNetwork();
 	private final Atom genesis;
 	private final Vertex genesisVertex;
 	private final QuorumCertificate genesisQC;
 	private final ImmutableMap<ECKeyPair, VertexStore> vertexStores;
+	private final ImmutableMap<ECKeyPair, Counters> counters;
 	private final Observable<Event> bftEvents;
+	private final ValidatorSet validatorSet;
 
-	public BFTNetwork(List<ECKeyPair> nodes) {
+	public BFTTestNetwork(List<ECKeyPair> nodes) {
 		this.genesis = mock(Atom.class);
 		AID aid = mock(AID.class);
 		when(aid.toString()).thenReturn(Long.toString(0));
@@ -65,7 +67,7 @@ public class BFTNetwork {
 			new VertexMetadata(View.genesis(), genesisVertex.getId(), null, null),
 			new ECDSASignatures()
 		);
-		final ValidatorSet validatorSet = ValidatorSet.from(
+		this.validatorSet = ValidatorSet.from(
 			nodes.stream().map(ECKeyPair::getPublicKey).map(Validator::from).collect(Collectors.toList())
 		);
 		this.vertexStores = nodes.stream()
@@ -77,16 +79,13 @@ public class BFTNetwork {
 					return new VertexStore(genesisVertex, genesisQC, radixEngine);
 				})
 			);
-		this.bftEvents = Observable.merge(this.vertexStores.entrySet().stream().map(e ->
-			createBFTInstance(e.getKey(), validatorSet, e.getValue()).processEvents()
+		this.counters = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e, e -> new Counters()));
+		this.bftEvents = Observable.merge(this.vertexStores.entrySet().stream()
+			.map(e -> createBFTInstance(e.getKey()).processEvents()
 		).collect(Collectors.toList()));
 	}
 
-	private ChainedBFT createBFTInstance(
-		ECKeyPair key,
-		ValidatorSet validatorSet,
-		VertexStore vertexStore
-	) {
+	private ChainedBFT createBFTInstance(ECKeyPair key) {
 		Mempool mempool = mock(Mempool.class);
 		AtomicLong atomId = new AtomicLong();
 		doAnswer(inv -> {
@@ -96,22 +95,21 @@ public class BFTNetwork {
 			when(atom.getAID()).thenReturn(aid);
 			return Collections.singletonList(atom);
 		}).when(mempool).getAtoms(anyInt(), anySet());
-		ProposalGenerator proposalGenerator = new ProposalGenerator(vertexStore, mempool);
-		SafetyRules safetyRules = new SafetyRules(key, vertexStore, SafetyState.initialState());
+		ProposalGenerator proposalGenerator = new ProposalGenerator(vertexStores.get(key), mempool);
+		SafetyRules safetyRules = new SafetyRules(key, vertexStores.get(key), SafetyState.initialState());
 		PacemakerImpl pacemaker = new PacemakerImpl(Executors.newSingleThreadScheduledExecutor());
 		PendingVotes pendingVotes = new PendingVotes();
 		EpochRx epochRx = () -> Observable.just(validatorSet).concatWith(Observable.never());
-		Counters counters = new Counters();
 		EpochManager epochManager = new EpochManager(
 			proposalGenerator,
 			mempool,
 			testEventCoordinatorNetwork.getNetworkSender(key.getUID()),
 			safetyRules,
 			pacemaker,
-			vertexStore,
+			vertexStores.get(key),
 			pendingVotes,
 			key,
-			counters
+			counters.get(key)
 		);
 
 		return new ChainedBFT(
@@ -124,6 +122,10 @@ public class BFTNetwork {
 
 	public VertexStore getVertexStore(ECKeyPair keyPair) {
 		return vertexStores.get(keyPair);
+	}
+
+	public Counters getCounters(ECKeyPair keyPair) {
+		return counters.get(keyPair);
 	}
 
 	public TestEventCoordinatorNetwork getTestEventCoordinatorNetwork() {
