@@ -22,6 +22,10 @@
 
 package com.radixdlt.client.core.atoms;
 
+import com.google.common.collect.ImmutableList;
+import com.radixdlt.client.atommodel.rri.RRIParticle;
+import com.radixdlt.crypto.Hash;
+import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
@@ -30,6 +34,8 @@ import org.junit.Test;
 import java.util.Collections;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -43,5 +49,34 @@ public class AtomTest {
 		when(particle1.getShardables()).thenReturn(Collections.singleton(address));
 		Atom atom = Atom.create(ParticleGroup.of(SpunParticle.up(particle0), SpunParticle.up(particle1)), 0L);
 		assertThat(atom.addresses()).containsExactly(address);
+	}
+
+	@Test
+	public void hash_test_atom() {
+		Atom atom = Atom.create(ImmutableList.of(), 123456789L);
+		Hash hash = atom.getHash();
+		assertIsNotRawDSON(hash);
+		String hashHex = hash.toString();
+		assertEquals("e7c0184f951334f75d494996fcbbff7437185752d6e1d105d8eda703bc8fce13", hashHex);
+	}
+
+	@Test
+	public void hash_test_particle() {
+		RadixAddress address = RadixAddress.from("JEbhKQzBn4qJzWJFBbaPioA2GTeaQhuUjYWkanTE6N8VvvPpvM8");
+		RRI rri = RRI.of(address, "FOOBAR");
+		RRIParticle particle = new RRIParticle(rri);
+		Hash hash = particle.getHash();
+		assertIsNotRawDSON(hash);
+		String hashHex = hash.toString();
+		assertEquals("a29e3505d9736f4de2a576b2fee1b6a449e56f6b3cbaa86b8388e39a1557c53a", hashHex);
+	}
+
+	private void assertIsNotRawDSON(Hash hash) {
+		String hashHex = hash.toString();
+		// CBOR/DSON encoding of an object starts with "bf" and ends with "ff", so we are here making
+		// sure that Hash of the object is not just the DSON output, but rather a 256 bit hash digest of it.
+		// the probability of 'accidentally' getting getting these prefixes and suffixes anyway is minimal (1/2^16)
+		// for any DSON bytes as argument.
+		assertFalse(hashHex.startsWith("bf") && hashHex.endsWith("ff"));
 	}
 }

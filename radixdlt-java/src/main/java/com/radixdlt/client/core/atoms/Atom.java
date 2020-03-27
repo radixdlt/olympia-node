@@ -218,7 +218,7 @@ public final class Atom {
 	}
 
 	public Hash getHash() {
-		return new Hash(toDson());
+		return Hash.of(toDson());
 	}
 
 	public AID getAid() {

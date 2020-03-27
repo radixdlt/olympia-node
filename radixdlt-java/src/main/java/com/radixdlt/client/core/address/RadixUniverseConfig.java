@@ -154,7 +154,7 @@ public class RadixUniverseConfig {
 
 	public Hash getHash() {
 		try {
-			return new Hash(Serialize.getInstance().toDson(this, Output.HASH));
+			return Hash.of(Serialize.getInstance().toDson(this, Output.HASH));
 		} catch (SerializationException e) {
 			throw new IllegalStateException("Failed to serialize universe config", e);
 		}

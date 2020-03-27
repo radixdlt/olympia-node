@@ -101,7 +101,7 @@ public abstract class Particle {
 	}
 
 	public final Hash getHash() {
-		return new Hash(toDson());
+		return Hash.of(toDson());
 	}
 
 	public final EUID euid() {
