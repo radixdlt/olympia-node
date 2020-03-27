@@ -28,6 +28,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.Test;
 
+/**
+ * Tests with networks with crashed nodes
+ */
 public class CrashFaultNetworkTest {
 	static List<ECKeyPair> createNodes(int numNodes) {
 		return Stream.generate(() -> {

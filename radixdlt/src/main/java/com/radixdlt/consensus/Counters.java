@@ -17,25 +17,24 @@
 
 package com.radixdlt.consensus;
 
-import java.util.EnumMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Consensus event counting utility class.
- * Class is NOT thread-safe so must be run in the same thread or with correct locking.
  */
 public final class Counters {
 	public enum CounterType {
 		TIMEOUT
 	}
 
-	private Map<CounterType, Long> counters = new EnumMap<>(CounterType.class);
+	private Map<CounterType, Long> counters = new ConcurrentHashMap<>();
 
 	public void increment(CounterType counterType) {
 		counters.merge(counterType, 1L, Long::sum);
 	}
 
-	public Long getCount(CounterType counterType) {
+	public long getCount(CounterType counterType) {
 		return counters.getOrDefault(counterType, 0L);
 	}
 }

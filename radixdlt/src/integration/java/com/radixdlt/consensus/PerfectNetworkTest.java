@@ -30,6 +30,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.Test;
 
+/**
+ * Tests with a perfect network
+ */
 public class PerfectNetworkTest {
 	private static List<ECKeyPair> createNodes(int numNodes) {
 		return Stream.generate(() -> {
@@ -55,11 +58,8 @@ public class PerfectNetworkTest {
 			.map(VertexStore::lastCommittedVertex)
 			.collect(Collectors.toList()), Arrays::stream)
 			.map(s -> s.distinct().collect(Collectors.toList()))
-			.doOnNext(s -> {
-				assertThat(s).hasSize(1);
-				Vertex v = (Vertex) s.get(0);
-				System.out.println("Committed " + v);
-			})
+			.doOnNext(s -> assertThat(s).hasSize(1))
+			.map(s -> (Vertex) s.get(0))
 			.map(o -> o);
 
 		Observable<Object> timeoutCheck = Observable.interval(2, TimeUnit.SECONDS)

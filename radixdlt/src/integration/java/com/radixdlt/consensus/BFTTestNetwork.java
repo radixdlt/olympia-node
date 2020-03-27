@@ -47,6 +47,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
+/**
+ * A multi-node bft test network where the network is simulated.
+ */
 public class BFTTestNetwork {
 	private final TestEventCoordinatorNetwork testEventCoordinatorNetwork = new TestEventCoordinatorNetwork();
 	private final Atom genesis;
