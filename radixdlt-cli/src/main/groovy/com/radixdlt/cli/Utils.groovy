@@ -29,8 +29,8 @@ class Utils {
     }
 
     static RadixIdentity getIdentity(Composite.IdentityInfo info) {
-        if (info.encryptedFileInfo != null) {
-            return getIdentity(info.encryptedFileInfo.keyFile, info.encryptedFileInfo.password, null)
+        if (info.encrypted != null) {
+            return getIdentity(info.encrypted.keyFile, info.encrypted.password, null)
         } else if (info.unEncryptedKeyFile != null) {
             return getIdentity(null, null, info.unEncryptedKeyFile)
         }

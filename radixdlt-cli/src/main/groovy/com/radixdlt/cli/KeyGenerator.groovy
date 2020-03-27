@@ -22,5 +22,6 @@ class KeyGenerator implements Runnable {
         RadixIdentities.createNewEncryptedIdentity(writer, password)
         writer.flush()
         writer.close()
+        System.exit(0)
     }
 }

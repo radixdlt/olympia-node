@@ -3,17 +3,17 @@ package com.radixdlt.cli
 import com.radixdlt.client.application.RadixApplicationAPI
 import com.radixdlt.client.core.Bootstrap
 import picocli.CommandLine
+import picocli.CommandLine.ArgGroup
+import picocli.CommandLine.Command
 
 //@Grab('info.picocli:picocli:2.0.3')
 
-import picocli.CommandLine.ArgGroup
-import picocli.CommandLine.Command
 import picocli.CommandLine.Parameters
 
 @Command(name = "radix", version = "1.0",
         mixinStandardHelpOptions = true,
         description = "Radix CLI", subcommands = [
-                KeyGenerator.class, GetBalance.class, GetMessage.class, SendMessage.class, SendTokens.class])
+                KeyGenerator.class, GetBalance.class, GetMessage.class, SendMessage.class, SendTokens.class, GetPublicKey.class])
 class RadixCLI implements Runnable {
 
 //    @Option(names = ["-k", "--keyfile"], paramLabel = "KEYFILE", description = "location of keyfile.")
@@ -31,15 +31,17 @@ class RadixCLI implements Runnable {
         print "Running Radix CLI"
     }
 
-    @Command(name = "myaddr",mixinStandardHelpOptions = true, description = "Get My address")
-    void getAddress(@ArgGroup(exclusive = true, multiplicity = "0..1") Composite.IdentityInfo info) {
-        RadixApplicationAPI api = RadixApplicationAPI.create(Bootstrap.SUNSTONE, Utils.getIdentity(info))
+    @Command(name = "myaddr", mixinStandardHelpOptions = true, description = "Get My address")
+    void getAddress(@ArgGroup(exclusive = true, multiplicity = "0..1")
+                            Composite.IdentityInfo identityInfo
+    ) {
+        RadixApplicationAPI api = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, Utils.getIdentity(info))
         api.getAddress().toString()
         System.out.println(api.getAddress().toString())
         System.exit(0)
     }
 
-    @Command(name = "native-token",mixinStandardHelpOptions = true, description = "Native tokens")
+    @Command(name = "native-token", mixinStandardHelpOptions = true, description = "Native tokens")
     void nativeTokens(@ArgGroup(exclusive = true, multiplicity = "0..1") Composite.IdentityInfo info) {
         RadixApplicationAPI api = RadixApplicationAPI.create(Bootstrap.SUNSTONE, Utils.getIdentity(info))
         System.out.println('${api.getNativeTokenRef().getAddress()} + "/tokens/"')
