@@ -24,12 +24,10 @@ import com.radixdlt.utils.Longs;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import sun.util.resources.cldr.shi.CurrencyNames_shi;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.concurrent.RunnableScheduledFuture;
 import java.util.function.Function;
 
 import static org.hamcrest.number.OrderingComparison.lessThan;
