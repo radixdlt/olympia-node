@@ -58,6 +58,6 @@ public class POW {
 		buffer.putLong(nonce);
 		buffer.flip();
 
-		return new Hash(Hash.hash256(buffer.array()));
+		return Hash.of(buffer.array());
 	}
 }

@@ -46,6 +46,19 @@ public final class Hash implements Comparable<Hash> {
 	}
 
 	/**
+	 * Hashes the supplied array, returning a cryptographically secure 256-bit hash, in this container class.
+	 * <p>
+	 * If your data already is hashed and you want to create a container for it,
+	 * use {@link Hash#Hash(byte[]) } constructor instead.
+	 *
+	 * @param dataToBeHashed The data to hash
+	 * @return The digest by applying the 256-bit/32-byte hash function, in this container class.
+	 */
+	public static Hash of(byte[] dataToBeHashed)	{
+		return new Hash(Hash.hash256(dataToBeHashed));
+	}
+
+	/**
 	 * Hashes the supplied array, returning a cryptographically secure 256-bit hash.
 	 * <p>
 	 * If your data already is hashed and you want to create a container for it,

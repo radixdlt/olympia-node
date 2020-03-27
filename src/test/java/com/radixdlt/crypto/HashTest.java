@@ -33,6 +33,7 @@ import java.util.function.Function;
 import static org.hamcrest.number.OrderingComparison.lessThan;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
@@ -45,7 +46,7 @@ public class HashTest {
 	}
 
 	@Test
-	public void from_engine___equalsContract() {
+	public void equalsContract() {
 		EqualsVerifier.forClass(Hash.class)
 				.withIgnoredFields("data") // other field(s) dependent on `data` is used
 				.withIgnoredFields("idCached") // `idCached` is derived from other field(s) in use.
@@ -53,30 +54,30 @@ public class HashTest {
 	}
 
 	@Test
-	public void from_engine___verify_that_random_is_not_null() {
+	public void verify_that_random_is_not_null() {
 		assertNotNull(Hash.random());
 	}
 
 	@Test(expected = IllegalArgumentException.class)
-    public void from_engine___from_engine___verify_that_an_error_is_thrown_for_too_short_hex_string_constructor() {
+    public void verify_that_an_error_is_thrown_for_too_short_hex_string_constructor() {
 		new Hash("deadbeef");
 		fail();
 	}
 
 	@Test
-	public void from_engine___verify_that_id_equals_for_same_hash() {
+	public void verify_that_id_equals_for_same_hash() {
 		assertEquals(deadbeef().euid(), deadbeef().euid());
 	}
 
 	@Test
-	public void from_engine___verify_that_hexstring_remains_the_same_as_passed_in_constructor() {
+	public void verify_that_hexstring_remains_the_same_as_passed_in_constructor() {
 		String hex = deadbeefString();
 		Hash hash = new Hash(hex);
 		assertEquals(hex, hash.toString());
 	}
 
 	@Test
-	public void from_engine___verify_that_tobytearray_returns_same_bytes_as_passed_in_constructor() {
+	public void verify_that_tobytearray_returns_same_bytes_as_passed_in_constructor() {
 		String hex = deadbeefString();
 		Hash hash = new Hash(hex);
 		byte[] expectedBytes = Bytes.fromHexString(hex);
@@ -84,19 +85,19 @@ public class HashTest {
 	}
 
 	@Test
-	public void from_engine___testFirstByte() {
+	public void testFirstByte() {
 		assertEquals(Bytes.fromHexString("de")[0], deadbeef().getFirstByte());
 	}
 
 	@Test
-	public void from_engine___testCompare() {
+	public void testCompare() {
 		Hash low = new Hash(Strings.repeat("1", 64));
 		Hash high = new Hash(Strings.repeat("9", 64));
 		assertThat(low, lessThan(high));
 	}
 
 	@Test
-	public void from_engine___testHashValues256() {
+	public void testHashValues256() {
 		assertArrayEquals(
 			Bytes.fromHexString("7ef0ca626bbb058dd443bb78e33b888bdec8295c96e51f5545f96370870c10b9"),
 				Hash.hash256(Longs.toByteArray(0L))
@@ -120,7 +121,7 @@ public class HashTest {
 	}
 
 	@Test
-	public void from_engine___testHashValues512() {
+	public void testHashValues512() {
 		assertArrayEquals(
 			Bytes.fromHexString(
 				"d6f117761cef5715fcb3fe49a3cf2ebb268acec9e9d87a1e8812a8aa811a1d02ed636b9d04694c160fd071e687772d0cc2e1c3990da4435409c7b1f7b87fa632"
@@ -154,7 +155,7 @@ public class HashTest {
 	}
 
 	@Test
-	public void from_client_library___test_sha256_hash_as_reference_for_other_libraries()  {
+	public void test_sha256_hash_as_reference_for_other_libraries()  {
 		byte[] data = "Hello Radix".getBytes(StandardCharsets.UTF_8);
 
 		byte[] singleHash = sha2bits256Once(data);
@@ -168,7 +169,7 @@ public class HashTest {
 	}
 
 	@Test
-	public void new_test___verify_hash256_once() {
+	public void verify_hash256_once() {
 		testEncodeToHashedBytesFromString(
 				"abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq",
 				this::sha2bits256Once,
@@ -177,12 +178,38 @@ public class HashTest {
 	}
 
 	@Test
-	public void new_test___verify_hash256_twice() {
+	public void verify_hash256_twice() {
 		testEncodeToHashedBytesFromString(
 				"abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq",
 				Hash::hash256,
 				"0cffe17f68954dac3a84fb1458bd5ec99209449749b2b308b7cb55812f9563af"
 		);
+	}
+
+	@Test
+	public void test_of_method_same_as_static_hash256_plus_constructor() {
+		byte[] unhashedData = "Hello Radix".getBytes(StandardCharsets.UTF_8);
+		assertArrayEquals(Hash.hash256(unhashedData), Hash.of(unhashedData).toByteArray());
+	}
+
+	@Test
+	public void test_hash_of_publickey() throws CryptoException {
+		String publicKeyHex = "03" + deadbeefString();
+		byte[] publicKeyBytes = Bytes.fromHexString(publicKeyHex);
+		ECPublicKey publicKey = new ECPublicKey(publicKeyBytes);
+		String expectedEUIDHex = "cbed388efef3a09bee696ad1b30d49a0";
+		assertEquals(expectedEUIDHex, publicKey.euid().toString());
+		assertEquals(expectedEUIDHex, Bytes.toHexString(Hash.hash256(publicKeyBytes)).substring(0, 32));
+	}
+
+	@Test
+	public void test_that_hash_constructor_does_not_perform_any_hashing() {
+		byte[] deadbeef = deadbeef().toByteArray();
+		assertArrayEquals(deadbeef, new Hash(deadbeef).toByteArray());
+		assertArrayEquals(Hash.hash256(deadbeef), Hash.of(deadbeef).toByteArray());
+
+		assertNotEquals(deadbeef, Hash.of(deadbeef).toByteArray());
+		assertNotEquals(deadbeef, Hash.hash256(deadbeef));
 	}
 
 	private void testEncodeToHashFromString(String message, Function<byte[], Hash> hashFunction, String expectedHashHex) {

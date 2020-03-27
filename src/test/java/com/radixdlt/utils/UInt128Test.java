@@ -47,7 +47,7 @@ public class UInt128Test {
 	 * and including {@link Short.MAX_VALUE}.
 	 */
 	@Test
-	public void from_engine___testShortValues() {
+	public void testShortValues() {
 		for (int i = Short.MIN_VALUE; i <= Short.MAX_VALUE; ++i) {
 			short s = (short) i;
 			UInt128 int128 = UInt128.from(s);
@@ -64,7 +64,7 @@ public class UInt128Test {
 	 * {@code Integer.MAX_VALUE - TEST_RANGE}.
 	 */
 	@Test
-	public void from_engine___testIntValue() {
+	public void testIntValue() {
 		// Here we will just assume that testing some values near the
 		// extremes of the range will suffice.
 		for (int i = 0; i <= TEST_RANGE; ++i) {
@@ -89,7 +89,7 @@ public class UInt128Test {
 	 * {@code Long.MAX_VALUE - TEST_RANGE}.
 	 */
 	@Test
-	public void from_engine___testLongValue() {
+	public void testLongValue() {
 		// Here we will just assume that testing some values near the
 		// extremes of the range will suffice.
 		for (int i = 0; i < TEST_RANGE; ++i) {
@@ -112,7 +112,7 @@ public class UInt128Test {
 	 * values.
 	 */
 	@Test
-	public void from_engine___testAddition() {
+	public void testAddition() {
 		// Some basics
 		// 0 + 1 = 1
 		assertEquals(1L, UInt128.ZERO.add(UInt128.ONE).getLow());
@@ -140,7 +140,7 @@ public class UInt128Test {
 	 * values.
 	 */
 	@Test
-	public void from_engine___testSubtraction() {
+	public void testSubtraction() {
 		// Some basics
 		// 0 - 1 = MAX_VALUE (wrap)
 		assertEquals(-1L, UInt128.ZERO.subtract(UInt128.ONE).getLow());
@@ -166,7 +166,7 @@ public class UInt128Test {
 	 * Test multiplication.
 	 */
 	@Test
-	public void from_engine___testMultiplication() {
+	public void testMultiplication() {
 		// Some basics
 		assertEquals(UInt128.ZERO, UInt128.ZERO.multiply(UInt128.ONE));
 		assertEquals(UInt128.ZERO, UInt128.ONE.multiply(UInt128.ZERO));
@@ -182,7 +182,7 @@ public class UInt128Test {
 	 * Test division.
 	 */
 	@Test
-	public void from_engine___testDivision() {
+	public void testDivision() {
 		// Some basics
 		assertEquals(UInt128.ZERO, UInt128.ZERO.divide(UInt128.ONE));
 		assertEquals(UInt128.ZERO, UInt128.ONE.divide(UInt128.MAX_VALUE));
@@ -197,7 +197,7 @@ public class UInt128Test {
 	 * Test remainder.
 	 */
 	@Test
-	public void from_engine___testRemainder() {
+	public void testRemainder() {
 		// Some basics
 		UInt128 two = UInt128.from(2);
 		assertEquals(UInt128.ZERO, UInt128.ZERO.remainder(UInt128.ONE));
@@ -214,7 +214,7 @@ public class UInt128Test {
 	 * Basic tests for comparisons.
 	 */
 	@Test
-	public void from_engine___testCompare() {
+	public void testCompare() {
 		assertThat(UInt128.ZERO, comparesEqualTo(UInt128.ZERO));
 		assertThat(UInt128.ZERO, lessThan(UInt128.ONE));
 		assertThat(UInt128.ZERO, lessThan(UInt128.MAX_VALUE));
@@ -233,7 +233,7 @@ public class UInt128Test {
 	 * Basic tests for equals(...) method.
 	 */
 	@Test
-	public void from_engine___testEquals() {
+	public void testEquals() {
 		assertNotEquals(UInt128.ZERO, null); // Nothing should be equal to null
 		assertEquals(UInt128.ZERO, UInt128.ZERO); // Same object check
 		UInt128 i63a = UInt128.from(0x0000_0000_0000_0000L, 0x8000_0000_0000_0000L);
@@ -247,7 +247,7 @@ public class UInt128Test {
 	 * Tests for numberOfLeadingZeros().
 	 */
 	@Test
-	public void from_engine___testNumberOfLeadingZeros() {
+	public void testNumberOfLeadingZeros() {
 		assertEquals(UInt128.SIZE, UInt128.ZERO.numberOfLeadingZeros());
 		assertEquals(UInt128.SIZE - 1, UInt128.ONE.numberOfLeadingZeros());
 		assertEquals(0, UInt128.MAX_VALUE.numberOfLeadingZeros());
@@ -258,7 +258,7 @@ public class UInt128Test {
 	 * Tests for bit operations.
 	 */
 	@Test
-	public void from_engine___testBitOperations() {
+	public void testBitOperations() {
 		// Use bit positions in both high and low word for tests
 		UInt128 b0 = UInt128.ONE;
 		UInt128 b64 = UInt128.from(0x0000_0000_0000_0001L, 0x0000_0000_0000_0000);
@@ -291,7 +291,7 @@ public class UInt128Test {
 	 * Test creation from byte array.
 	 */
 	@Test
-	public void from_engine___testCreateFromByteArray() {
+	public void testCreateFromByteArray() {
 		byte[] m1 = {
 			-1
 		};
@@ -314,7 +314,7 @@ public class UInt128Test {
 	 * Test toByteArray(...) methods.
 	 */
 	@Test
-	public void from_engine___testToByteArray() {
+	public void testToByteArray() {
 		UInt128 bitPattern = UInt128.from(0x0001_0203_0405_0607L, 0x0809_0A0B_0C0D_0E0FL);
 		byte[] bytes2 = new byte[UInt128.BYTES * 3];
 		Arrays.fill(bytes2, (byte) -1);
@@ -341,7 +341,7 @@ public class UInt128Test {
 	 * Test shiftLeft and shiftRight.
 	 */
 	@Test
-	public void from_engine___testShifts() {
+	public void testShifts() {
 		// Basic cases, left shift
 		assertEquals(UInt128.ZERO, UInt128.ZERO.shiftLeft());
 		// Zero extend on left
@@ -364,7 +364,7 @@ public class UInt128Test {
 	 * Test multi shiftLeft.
 	 */
 	@Test
-	public void from_engine___testMultiShiftLeft() {
+	public void testMultiShiftLeft() {
 		for (int i = 0; i < UInt128.SIZE; ++i) {
 			UInt128 powNum = UInt128.TWO.pow(i);
 			UInt128 shiftNum = UInt128.ONE.shiftLeft(i);
@@ -379,7 +379,7 @@ public class UInt128Test {
 	 * Test multi shiftRight.
 	 */
 	@Test
-	public void from_engine___testMultiShiftRight() {
+	public void testMultiShiftRight() {
 		for (int i = 0; i < UInt128.SIZE; ++i) {
 			UInt128 powNum = UInt128.TWO.pow(UInt128.SIZE - (i + 1));
 			UInt128 shiftNum = UInt128.HIGH_BIT.shiftRight(i);
@@ -394,7 +394,7 @@ public class UInt128Test {
 	 * Integer square root.
 	 */
 	@Test
-	public void from_engine___testIntegerSquareRoot() {
+	public void testIntegerSquareRoot() {
 		long max = 1 << 53; // Precision of double
 		for (long n = 0; n < max; n += 997) {
 			long lsqrt = (long) Math.floor(Math.sqrt(n));
@@ -416,7 +416,7 @@ public class UInt128Test {
 	 * Test isEven(), isOdd(), isZero(), isHighBitSet() predicates.
 	 */
 	@Test
-	public void from_engine___testPredicates() {
+	public void testPredicates() {
 		// Basic tests for odd/even
 		assertTrue(UInt128.ONE.isOdd());
 		assertFalse(UInt128.ONE.isEven());
@@ -446,7 +446,7 @@ public class UInt128Test {
 	 * Test toString() method.
 	 */
 	@Test
-	public void from_engine___testToString() {
+	public void testToString() {
 		// Some basics
 		assertEquals("0", UInt128.ZERO.toString());
 		assertEquals("1", UInt128.ONE.toString());
@@ -465,7 +465,7 @@ public class UInt128Test {
 	 * Test materialising {@code UInt128} values from {@code String} values.
 	 */
 	@Test
-	public void from_engine___testFromString() {
+	public void testFromString() {
 		testRoundTrip("0");
 		testRoundTrip("123456789");
 		testRoundTrip("123456789123456789");
@@ -481,7 +481,7 @@ public class UInt128Test {
 	 * Test increment.
 	 */
 	@Test
-	public void from_engine___testIncrement() {
+	public void testIncrement() {
 		assertEquals(UInt128.ONE, UInt128.ZERO.increment());
 		assertEquals(UInt128.ZERO, UInt128.MAX_VALUE.increment()); // wrap
 		assertEquals(UInt128.ONE.shiftLeft(Integer.SIZE), UInt128.from(0, 0, 0, -1).increment());
@@ -493,7 +493,7 @@ public class UInt128Test {
 	 * Test decrement.
 	 */
 	@Test
-	public void from_engine___testDecrement() {
+	public void testDecrement() {
 		assertEquals(UInt128.ZERO, UInt128.ONE.decrement());
 		assertEquals(UInt128.MAX_VALUE, UInt128.ZERO.decrement()); // wrap
 		assertEquals(UInt128.from(0, 0, 0, -1), UInt128.ONE.shiftLeft(Integer.SIZE).decrement());
@@ -507,7 +507,7 @@ public class UInt128Test {
 	 * Tests bitwise inversion.
 	 */
 	@Test
-	public void from_engine___testInvert() {
+	public void testInvert() {
 		assertEquals(UInt128.MAX_VALUE, UInt128.ZERO.invert());
 		assertEquals(UInt128.ZERO, UInt128.MAX_VALUE.invert());
 		assertEquals(UInt128.MAX_VALUE.decrement(), UInt128.ONE.invert());
@@ -520,7 +520,7 @@ public class UInt128Test {
 	 * Test getLowestSetBit.
 	 */
 	@Test
-	public void from_engine___testGetLowestSetBit() {
+	public void testGetLowestSetBit() {
 		assertEquals(-1, UInt128.ZERO.getLowestSetBit());
 		assertEquals(0, UInt128.ONE.getLowestSetBit());
 		assertEquals(1, UInt128.TWO.getLowestSetBit());
@@ -533,7 +533,7 @@ public class UInt128Test {
 	}
 
 	@Test
-	public void from_engine___equalsContract() {
+	public void equalsContract() {
 	    EqualsVerifier.forClass(UInt128.class).verify();
 	}
 
@@ -541,7 +541,7 @@ public class UInt128Test {
 	 * Test div 0.
 	 */
 	@Test(expected = IllegalArgumentException.class)
-    public void from_engine___from_engine___testDiv0() {
+    public void testDiv0() {
 		UInt128.ONE.divide(UInt128.ZERO);
 	}
 
@@ -549,7 +549,7 @@ public class UInt128Test {
 	 * Test rem 0.
 	 */
 	@Test(expected = IllegalArgumentException.class)
-    public void from_engine___from_engine___testRem0() {
+    public void testRem0() {
 		UInt128.ONE.remainder(UInt128.ZERO);
 	}
 
@@ -557,7 +557,7 @@ public class UInt128Test {
 	 * NumberFormatException on empty string.
 	 */
 	@Test(expected = NumberFormatException.class)
-    public void from_engine___from_engine___numberFormatExceptionOnEmpty() {
+    public void numberFormatExceptionOnEmpty() {
 		UInt128.from("");
 	}
 
@@ -565,7 +565,7 @@ public class UInt128Test {
 	 * NumberFormatException if no actual number.
 	 */
 	@Test(expected = NumberFormatException.class)
-    public void from_engine___from_engine___numberFormatExceptionIfNoNumber() {
+    public void numberFormatExceptionIfNoNumber() {
 		UInt128.from("+");
 	}
 
@@ -573,7 +573,7 @@ public class UInt128Test {
 	 * NumberFormatException if invalid digit.
 	 */
 	@Test(expected = NumberFormatException.class)
-    public void from_engine___from_engine___numberFormatExceptionIfInvalidDigit() {
+    public void numberFormatExceptionIfInvalidDigit() {
 		UInt128.from("+a");
 	}
 
@@ -581,7 +581,7 @@ public class UInt128Test {
 	 * IllegalArgumentException if byte array is empty.
 	 */
 	@Test(expected = IllegalArgumentException.class)
-    public void from_engine___from_engine___illegalArgumentExceptionIfByteArrayEmpty() {
+    public void illegalArgumentExceptionIfByteArrayEmpty() {
 		UInt128.from(new byte[0]);
 	}
 
@@ -589,7 +589,7 @@ public class UInt128Test {
 	 * IllegalArgumentException on radix too big.
 	 */
 	@Test(expected = IllegalArgumentException.class)
-    public void from_engine___from_engine___illegalArgumentExceptionOnRadixTooBig() {
+    public void illegalArgumentExceptionOnRadixTooBig() {
 		UInt128.ONE.toString(Character.MAX_RADIX + 1);
 	}
 
@@ -597,7 +597,7 @@ public class UInt128Test {
 	 * IllegalArgumentException on radix too small.
 	 */
 	@Test(expected = IllegalArgumentException.class)
-    public void from_engine___from_engine___illegalArgumentExceptionOnRadixTooSmall() {
+    public void illegalArgumentExceptionOnRadixTooSmall() {
 		UInt128.ONE.toString(Character.MIN_RADIX - 1);
 	}
 
@@ -605,7 +605,7 @@ public class UInt128Test {
 	 * IllegalArgumentException on negative exponent for pow.
 	 */
 	@Test(expected = IllegalArgumentException.class)
-    public void from_engine___from_engine___illegalArgumentExceptionOnNegativeExponent() {
+    public void illegalArgumentExceptionOnNegativeExponent() {
 		UInt128.ONE.pow(-1);
 	}
 

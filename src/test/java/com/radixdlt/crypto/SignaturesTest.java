@@ -25,24 +25,24 @@ public class SignaturesTest {
 	}
 
     @Test
-    public void from_engine___verify_that_ecdsa_is_default_signature_scheme() {
+    public void verify_that_ecdsa_is_default_signature_scheme() {
         Signatures emptySignatures = DefaultSignatures.emptySignatures();
         assertEquals(SignatureScheme.ECDSA, emptySignatures.signatureScheme());
     }
 
     @Test
-    public void from_engine___verify_that_ecdsasignature_specifies_correct_scheme() {
+    public void verify_that_ecdsasignature_specifies_correct_scheme() {
 	    ECDSASignature signature = new ECDSASignature();
         assertEquals(SignatureScheme.ECDSA, signature.signatureScheme());
     }
 
     @Test
-    public void from_engine___well_formatted_tostring_of_signaturescheme() {
+    public void well_formatted_tostring_of_signaturescheme() {
         assertThat(SignatureScheme.ECDSA.toString(), is("ecdsa"));
     }
 
     @Test
-    public void from_engine___verify_that_default_signature_scheme_is_ecdsa() {
+    public void verify_that_default_signature_scheme_is_ecdsa() {
         Signatures emptySignatures = DefaultSignatures.emptySignatures();
 
         assertEquals(SignatureScheme.ECDSA, emptySignatures.signatureScheme());
@@ -57,21 +57,21 @@ public class SignaturesTest {
     }
 
     @Test
-    public void from_engine___verify_that_a_single_invalid_signature_does_fails_to_verify() {
+    public void verify_that_a_single_invalid_signature_does_fails_to_verify() {
         Signatures single = new ECDSASignatures(publicKey(), randomInvalidSignature());
         assertEquals(1, single.count());
         assertFalse(single.hasSignedMessage(hashOfMessage("Fubar"), 1));
     }
 
     @Test
-    public void from_engine___verify_that_multiple_invalid_signature_does_fails_to_verify() {
+    public void verify_that_multiple_invalid_signature_does_fails_to_verify() {
         Signatures multiple = new ECDSASignatures(ImmutableMap.of(publicKey(), randomInvalidSignature(), publicKey(), randomInvalidSignature()));
         assertEquals(2, multiple.count());
         assertFalse(multiple.hasSignedMessage(hashOfMessage("Fubar"), 2));
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void from_engine___verify_that_we_crash_if_we_try_to_concatenate_signatures_with_a_signature_of_incompatible_type_schnorr_to_ecdsa() {
+    public void verify_that_we_crash_if_we_try_to_concatenate_signatures_with_a_signature_of_incompatible_type_schnorr_to_ecdsa() {
         Signatures emptySignatures = DefaultSignatures.emptySignatures();
         assertEquals(SignatureScheme.ECDSA, emptySignatures.signatureScheme());
         assertTrue(emptySignatures.isEmpty());
@@ -82,7 +82,7 @@ public class SignaturesTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void from_engine___verify_that_we_crash_if_we_try_to_concatenate_signatures_with_a_signature_of_incompatible_type_ecdsa_to_schnorr() {
+    public void verify_that_we_crash_if_we_try_to_concatenate_signatures_with_a_signature_of_incompatible_type_ecdsa_to_schnorr() {
         Signatures emptySignatures = DefaultSignatures.emptySignatures();
         assertTrue(emptySignatures.isEmpty());
         SchnorrSignature schnorrSignature = mock(SchnorrSignature.class);
@@ -92,7 +92,7 @@ public class SignaturesTest {
     }
 
     @Test
-    public void from_engine___test_that_we_can_bulk_verify_signatures_verify_all_two() throws CryptoException {
+    public void test_that_we_can_bulk_verify_signatures_verify_all_two() throws CryptoException {
         test_that_we_can_bulk_verify_signatures(
                 2,
                 true,
@@ -102,7 +102,7 @@ public class SignaturesTest {
     }
 
     @Test
-    public void from_engine___test_that_we_can_bulk_verify_signatures_verify_at_least_N_of_M() throws CryptoException {
+    public void test_that_we_can_bulk_verify_signatures_verify_at_least_N_of_M() throws CryptoException {
         for (int valid = 0; valid < 5; valid++) {
             for (int invalid = 0; invalid < 5; invalid++) {
                 for (int threshold = 0; threshold <= (valid + invalid); threshold++) {
@@ -121,7 +121,7 @@ public class SignaturesTest {
     }
 
     @Test
-    public void from_engine___well_formatted_tostring() {
+    public void well_formatted_tostring() {
         Signature dummySignature = randomInvalidSignature();
         Signatures signatures = DefaultSignatures.single(publicKey(), dummySignature);
         String tostring = signatures.toString();
