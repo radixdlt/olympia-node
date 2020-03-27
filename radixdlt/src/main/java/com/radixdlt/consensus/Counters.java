@@ -17,32 +17,24 @@
 
 package com.radixdlt.consensus;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 /**
- * An empty BFT event processor
+ * Consensus event counting utility class.
  */
-public class EmptyEventCoordinator implements EventCoordinator {
-	@Override
-	public void processVote(Vote vote) {
-		// No-op
+public final class Counters {
+	public enum CounterType {
+		TIMEOUT
 	}
 
-	@Override
-	public void processNewView(NewView newView) {
-		// No-op
+	private Map<CounterType, Long> counters = new ConcurrentHashMap<>();
+
+	public void increment(CounterType counterType) {
+		counters.merge(counterType, 1L, Long::sum);
 	}
 
-	@Override
-	public void processProposal(Vertex proposedVertex) {
-		// No-op
-	}
-
-	@Override
-	public void processLocalTimeout(View view) {
-		// No-op
-	}
-
-	@Override
-	public void start() {
-		// No-op
+	public long getCount(CounterType counterType) {
+		return counters.getOrDefault(counterType, 0L);
 	}
 }

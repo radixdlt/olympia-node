@@ -46,6 +46,7 @@ public class EpochManager {
 	private final VertexStore vertexStore;
 	private final PendingVotes pendingVotes;
 	private final ECKeyPair selfKey;
+	private final Counters counters;
 
 	@Inject
 	public EpochManager(
@@ -56,7 +57,8 @@ public class EpochManager {
 		Pacemaker pacemaker,
 		VertexStore vertexStore,
 		PendingVotes pendingVotes,
-		@Named("self") ECKeyPair selfKey
+		@Named("self") ECKeyPair selfKey,
+		Counters counters
 	) {
 		this.proposalGenerator = Objects.requireNonNull(proposalGenerator);
 		this.mempool = Objects.requireNonNull(mempool);
@@ -66,6 +68,7 @@ public class EpochManager {
 		this.vertexStore = Objects.requireNonNull(vertexStore);
 		this.pendingVotes = Objects.requireNonNull(pendingVotes);
 		this.selfKey = Objects.requireNonNull(selfKey);
+		this.counters = Objects.requireNonNull(counters);
 	}
 
 	public EventCoordinator start() {
@@ -89,7 +92,8 @@ public class EpochManager {
 			this.pendingVotes,
 			proposerElection,
 			this.selfKey,
-			validatorSet
+			validatorSet,
+			counters
 		);
 	}
 }

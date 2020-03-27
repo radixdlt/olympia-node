@@ -28,19 +28,24 @@ import com.radixdlt.utils.Longs;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 
+import io.reactivex.rxjava3.subjects.Subject;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import org.radix.logging.Logger;
+import org.radix.logging.Logging;
 
 /**
  * Overly simplistic pacemaker
  */
 public final class PacemakerImpl implements Pacemaker, PacemakerRx {
-	static final int TIMEOUT_MILLISECONDS = 1000;
-	private final PublishSubject<View> timeouts;
+	private static final Logger log = Logging.getLogger("PM");
+
+	static final int TIMEOUT_MILLISECONDS = 5000;
+	private final Subject<View> timeouts;
 	private final Observable<View> timeoutsObservable;
 	private final ScheduledExecutorService executorService;
 
@@ -49,7 +54,7 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 
 	public PacemakerImpl(ScheduledExecutorService executorService) {
 		this.executorService = Objects.requireNonNull(executorService);
-		this.timeouts = PublishSubject.create();
+		this.timeouts = PublishSubject.<View>create().toSerialized();
 		this.timeoutsObservable = this.timeouts
 			.publish()
 			.refCount()
@@ -57,9 +62,8 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 	}
 
 	private void scheduleTimeout(final View timeoutView) {
-		executorService.schedule(() -> {
-			timeouts.onNext(timeoutView);
-		}, TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS);
+		log.info("Starting View: " + timeoutView);
+		executorService.schedule(() -> timeouts.onNext(timeoutView), TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS);
 	}
 
 	@Override
@@ -95,7 +99,18 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 		} else {
 			// if we got enough new-views, remove pending and return formed QC
 			pendingNewViews.remove(newView.getView());
-			return Optional.of(newView.getView());
+
+			if (newView.getView().compareTo(this.currentView) > 0) {
+				this.currentView = newView.getView();
+				scheduleTimeout(this.currentView);
+			}
+
+			if (newView.getView().compareTo(this.currentView) >= 0) {
+				return Optional.of(this.currentView);
+			} else {
+				log.info("Ignoring New View Quorum: " + newView.getView() + " Current is: " + this.currentView);
+				return Optional.empty();
+			}
 		}
 	}
 
