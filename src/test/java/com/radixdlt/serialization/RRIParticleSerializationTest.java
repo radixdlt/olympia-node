@@ -19,7 +19,6 @@ package com.radixdlt.serialization;
 
 import com.radixdlt.TestSetupUtils;
 import com.radixdlt.atomos.RRIParticle;
-import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
 
 import static org.junit.Assert.assertEquals;
