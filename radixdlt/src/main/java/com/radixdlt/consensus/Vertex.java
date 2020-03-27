@@ -131,7 +131,7 @@ public final class Vertex {
 
 	@Override
 	public String toString() {
-		return String.format("Vertex{view=%s, atom=%s, qc=%s}", view, atom, qc);
+		return String.format("Vertex{view=%s, qc=%s, atom=%s}", view, qc, atom == null ? null : atom.getAID());
 	}
 
 	@Override

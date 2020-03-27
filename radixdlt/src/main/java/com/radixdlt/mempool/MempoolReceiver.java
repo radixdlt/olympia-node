@@ -78,7 +78,7 @@ public final class MempoolReceiver {
 		try {
 			this.submissionControl.submitAtom(atom);
 		} catch (MempoolRejectedException ex) {
-			log.info(String.format("Mempool rejected atom %s", atom.getAID()), ex);
+			log.info(String.format("Mempool rejected atom %s: %s", atom.getAID(), ex.getMessage()));
 		}
 	}
 }

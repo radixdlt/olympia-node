@@ -81,7 +81,6 @@ public class EngineAtomEventListener implements AtomEventListener {
 				));
 		AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(conflict, atom.getAID());
 		Events.getInstance().broadcast(atomExceptionEvent);
-		log.error("Conflict: ", conflict);
 	}
 
 	@Override
@@ -94,6 +93,5 @@ public class EngineAtomEventListener implements AtomEventListener {
 
 		AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(notFoundException, atomId);
 		Events.getInstance().broadcast(atomExceptionEvent);
-		log.error(notFoundException);
 	}
 }

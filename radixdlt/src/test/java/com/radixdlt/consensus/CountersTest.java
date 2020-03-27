@@ -17,32 +17,22 @@
 
 package com.radixdlt.consensus;
 
-/**
- * An empty BFT event processor
- */
-public class EmptyEventCoordinator implements EventCoordinator {
-	@Override
-	public void processVote(Vote vote) {
-		// No-op
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+
+import com.radixdlt.consensus.Counters.CounterType;
+import org.junit.Test;
+
+public class CountersTest {
+	@Test
+	public void when_get_count__then_count_should_be_0() {
+		Counters counters = new Counters();
+		assertThat(counters.getCount(CounterType.TIMEOUT)).isEqualTo(0);
 	}
 
-	@Override
-	public void processNewView(NewView newView) {
-		// No-op
-	}
-
-	@Override
-	public void processProposal(Vertex proposedVertex) {
-		// No-op
-	}
-
-	@Override
-	public void processLocalTimeout(View view) {
-		// No-op
-	}
-
-	@Override
-	public void start() {
-		// No-op
+	@Test
+	public void when_increment__then_count_should_be_1() {
+		Counters counters = new Counters();
+		counters.increment(CounterType.TIMEOUT);
+		assertThat(counters.getCount(CounterType.TIMEOUT)).isEqualTo(1);
 	}
 }

@@ -25,4 +25,5 @@ public interface EventCoordinator {
 	void processNewView(NewView newView);
 	void processProposal(Vertex proposedVertex);
 	void processLocalTimeout(View view);
+	void start();
 }
