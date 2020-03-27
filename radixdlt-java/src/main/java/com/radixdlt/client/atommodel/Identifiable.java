@@ -22,7 +22,7 @@
 
 package com.radixdlt.client.atommodel;
 
-import com.radixdlt.client.core.atoms.particles.RRI;
+import com.radixdlt.identifiers.RRI;
 
 /**
  * Temporary interface for representing a particle which is indexed at an RRI

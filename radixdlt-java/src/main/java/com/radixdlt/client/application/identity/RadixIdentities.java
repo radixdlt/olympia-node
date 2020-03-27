@@ -22,8 +22,8 @@
 
 package com.radixdlt.client.application.identity;
 
-import com.radixdlt.client.core.crypto.ECKeyPair;
-import com.radixdlt.client.core.crypto.ECKeyPairGenerator;
+import com.radixdlt.crypto.CryptoException;
+import com.radixdlt.crypto.ECKeyPair;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileReader;
@@ -33,6 +33,8 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.io.Writer;
 import java.security.GeneralSecurityException;
+
+import com.radixdlt.crypto.encryption.PrivateKeyEncrypter;
 import org.bouncycastle.util.encoders.Base64;
 
 /**
@@ -47,7 +49,7 @@ public class RadixIdentities {
 	 * @param privateKeyBase64 the private key encoded in base 64
 	 * @return a radix identity
 	 */
-	public static RadixIdentity fromPrivateKeyBase64(String privateKeyBase64) {
+	public static RadixIdentity fromPrivateKeyBase64(String privateKeyBase64) throws CryptoException {
 		final ECKeyPair myKey = new ECKeyPair(Base64.decode(privateKeyBase64));
 		return new LocalRadixIdentity(myKey);
 	}
@@ -57,7 +59,7 @@ public class RadixIdentities {
 	 * @return an unstored radix identity
 	 */
 	public static LocalRadixIdentity createNew() {
-		return new LocalRadixIdentity(ECKeyPairGenerator.newInstance().generateKeyPair());
+		return new LocalRadixIdentity(ECKeyPair.generateNew());
 	}
 
 	/**
@@ -67,12 +69,13 @@ public class RadixIdentities {
 	 * @return a radix identity
 	 * @throws IOException
 	 */
-	public static RadixIdentity loadOrCreateFile(File keyFile) throws IOException {
+	public static RadixIdentity loadOrCreateFile(File keyFile) throws IOException, CryptoException {
 		final ECKeyPair ecKeyPair;
 		if (keyFile.exists()) {
 			ecKeyPair = ECKeyPair.fromFile(keyFile);
 		} else {
-			ecKeyPair = ECKeyPairGenerator.newInstance().generateKeyPair();
+			ecKeyPair = ECKeyPair.generateNew();
+
 			try (FileOutputStream io = new FileOutputStream(keyFile)) {
 				io.write(ecKeyPair.getPrivateKey());
 			}
@@ -88,7 +91,7 @@ public class RadixIdentities {
 	 * @return a radix identity
 	 * @throws IOException
 	 */
-	public static RadixIdentity loadOrCreateFile(String filePath) throws IOException {
+	public static RadixIdentity loadOrCreateFile(String filePath) throws IOException, CryptoException {
 		return loadOrCreateFile(new File(filePath));
 	}
 
@@ -100,7 +103,8 @@ public class RadixIdentities {
 	 * @return a radix identity
 	 * @throws IOException
 	 */
-	public static RadixIdentity loadOrCreateEncryptedFile(File keyFile, String password) throws IOException, GeneralSecurityException {
+	public static RadixIdentity loadOrCreateEncryptedFile(File keyFile, String password)
+			throws IOException, GeneralSecurityException, CryptoException {
 		if (!keyFile.exists()) {
 			try (Writer writer = new FileWriter(keyFile)) {
 				return createNewEncryptedIdentity(writer, password);
@@ -120,7 +124,8 @@ public class RadixIdentities {
 	 * @return a radix identity
 	 * @throws IOException
 	 */
-	public static RadixIdentity loadOrCreateEncryptedFile(String filePath, String password) throws IOException, GeneralSecurityException {
+	public static RadixIdentity loadOrCreateEncryptedFile(String filePath, String password)
+			throws IOException, GeneralSecurityException, CryptoException {
 		return loadOrCreateEncryptedFile(new File(filePath), password);
 	}
 
@@ -132,7 +137,8 @@ public class RadixIdentities {
 	 * @return the radix identity created
 	 * @throws IOException
 	 */
-	public static RadixIdentity createNewEncryptedIdentity(Writer writer, String password) throws IOException, GeneralSecurityException {
+	public static RadixIdentity createNewEncryptedIdentity(Writer writer, String password)
+			throws IOException, GeneralSecurityException, CryptoException {
 		String encryptedKey = PrivateKeyEncrypter.createEncryptedPrivateKey(password);
 		writer.write(encryptedKey);
 		writer.flush();
@@ -146,7 +152,8 @@ public class RadixIdentities {
 	 * @return the decrypted radix identity
 	 * @throws IOException
 	 */
-	public static RadixIdentity readEncryptedIdentity(Reader reader, String password) throws IOException, GeneralSecurityException {
+	public static RadixIdentity readEncryptedIdentity(Reader reader, String password)
+			throws IOException, GeneralSecurityException, CryptoException {
 		final ECKeyPair key = new ECKeyPair(PrivateKeyEncrypter.decryptPrivateKey(password, reader));
 		return new LocalRadixIdentity(key);
 	}

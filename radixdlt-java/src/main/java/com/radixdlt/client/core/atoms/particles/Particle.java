@@ -28,24 +28,35 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
-import org.radix.common.ID.EUID;
-import org.radix.serialization2.DsonOutput;
+import com.radixdlt.client.serialization.Serialize;
+import com.radixdlt.identifiers.EUID;
+import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.client.atommodel.Accountable;
 import com.radixdlt.client.atommodel.Identifiable;
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.identifiers.RadixAddress;
 
-import org.radix.serialization2.DsonOutput.Output;
-import org.radix.serialization2.SerializerId2;
-import org.radix.serialization2.client.SerializableObject;
-import org.radix.serialization2.client.Serialize;
+import com.radixdlt.serialization.DsonOutput.Output;
+import com.radixdlt.serialization.SerializationException;
+import com.radixdlt.serialization.SerializerConstants;
+import com.radixdlt.serialization.SerializerDummy;
+import com.radixdlt.serialization.SerializerId2;
 
-import com.radixdlt.client.core.atoms.RadixHash;
+import com.radixdlt.crypto.Hash;
 
 /**
  * A logical action on the ledger
  */
 @SerializerId2("radix.particle")
-public abstract class Particle extends SerializableObject {
+public abstract class Particle {
+
+	// Placeholder for the serializer ID
+	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
+	@DsonOutput(DsonOutput.Output.ALL)
+	private SerializerDummy serializer = SerializerDummy.DUMMY;
+
+	@JsonProperty("version")
+	@DsonOutput(DsonOutput.Output.ALL)
+	private short version = 100;
 
 	@JsonProperty("destinations")
 	@DsonOutput(Output.ALL)
@@ -82,15 +93,19 @@ public abstract class Particle extends SerializableObject {
 	}
 
 	public final byte[] toDson() {
-		return Serialize.getInstance().toDson(this, DsonOutput.Output.HASH);
+		try {
+			return Serialize.getInstance().toDson(this, Output.HASH);
+		} catch (SerializationException e) {
+			throw new IllegalStateException("Failed to serialize", e);
+		}
 	}
 
-	public final RadixHash getHash() {
-		return RadixHash.of(toDson());
+	public final Hash getHash() {
+		return Hash.of(toDson());
 	}
 
-	public final EUID getHid() {
-		return this.getHash().toEUID();
+	public final EUID euid() {
+		return this.getHash().euid();
 	}
 
 	public Set<EUID> getDestinations() {

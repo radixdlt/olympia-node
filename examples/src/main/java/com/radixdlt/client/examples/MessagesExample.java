@@ -26,9 +26,9 @@ import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.RadixApplicationAPI.Result;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.client.core.Bootstrap;
-import org.radix.utils.RadixConstants;
+import com.radixdlt.utils.RadixConstants;
 
 public class MessagesExample {
 	public static void main(String[] args) {

@@ -23,8 +23,8 @@
 package com.radixdlt.client.application.translate.tokens;
 
 import com.radixdlt.client.application.translate.Action;
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.core.atoms.particles.RRI;
+import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.identifiers.RRI;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.HashMap;

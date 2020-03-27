@@ -24,14 +24,14 @@ package com.radixdlt.client.atommodel.rri;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.client.atommodel.Accountable;
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.client.core.atoms.particles.Particle;
-import com.radixdlt.client.core.atoms.particles.RRI;
+import com.radixdlt.identifiers.RRI;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
-import org.radix.serialization2.DsonOutput;
-import org.radix.serialization2.SerializerId2;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.SerializerId2;
 
 @SerializerId2("radix.particles.rri")
 public class RRIParticle extends Particle implements Accountable {
@@ -47,7 +47,7 @@ public class RRIParticle extends Particle implements Accountable {
 	}
 
 	public RRIParticle(RRI rri) {
-		super(rri.getAddress().getUID());
+		super(rri.getAddress().euid());
 
 		this.rri = Objects.requireNonNull(rri);
 		this.nonce = 0;

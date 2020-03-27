@@ -23,7 +23,7 @@
 package com.radixdlt.client.core.fungible;
 
 import java.util.Objects;
-import org.radix.utils.UInt256;
+import com.radixdlt.utils.UInt256;
 
 /**
  * Exception thrown indicating that there is not enough input

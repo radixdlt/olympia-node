@@ -24,11 +24,11 @@ package com.radixdlt.client.atommodel.unique;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.client.atommodel.Identifiable;
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.client.core.atoms.particles.Particle;
-import com.radixdlt.client.core.atoms.particles.RRI;
-import org.radix.serialization2.DsonOutput;
-import org.radix.serialization2.SerializerId2;
+import com.radixdlt.identifiers.RRI;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.SerializerId2;
 
 @SerializerId2("radix.particles.unique")
 public class UniqueParticle extends Particle implements Identifiable {
@@ -49,7 +49,7 @@ public class UniqueParticle extends Particle implements Identifiable {
 	}
 
 	public UniqueParticle(RadixAddress address, String unique) {
-		super(address.getUID());
+		super(address.euid());
 		this.address = address;
 		this.name = unique;
 		this.nonce = System.nanoTime();

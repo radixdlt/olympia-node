@@ -20,32 +20,50 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-package com.radixdlt.client.application.identity.model.keystore;
+package com.radixdlt.client.serialization;
 
-import com.google.gson.annotations.Expose;
-import com.google.gson.annotations.SerializedName;
+import org.json.JSONObject;
 
-public class Keystore {
-    @SerializedName("crypto")
-    @Expose
-    private Crypto crypto;
-    @SerializedName("id")
-    @Expose
-    private String id;
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 
-    public Crypto getCrypto() {
-        return crypto;
-    }
+/**
+ * Hopefully temporary class to provide conversion from
+ * org.json JSONObject class to Gson JsonElement.
+ */
+public final class GsonJson {
 
-    public void setCrypto(Crypto crypto) {
-        this.crypto = crypto;
-    }
+	private static class Holder {
+		private static GsonJson instance = new GsonJson();
 
-    public String getId() {
-        return id;
-    }
+		// This paraphernalia is here to placate checkstyle
+		static GsonJson instance() {
+			return instance;
+		}
+	}
 
-    public void setId(String id) {
-        this.id = id;
-    }
+	public static GsonJson getInstance() {
+		return Holder.instance();
+	}
+
+	private final Gson gson;
+	private final JsonParser parser;
+
+	private GsonJson() {
+		this.gson = new Gson();
+		this.parser = new JsonParser();
+	}
+
+	public JSONObject fromGson(JsonElement element) {
+		return new JSONObject(this.gson.toJson(element));
+	}
+
+	public String stringFromGson(JsonElement element) {
+		return this.gson.toJson(element);
+	}
+
+	public JsonElement toGson(JSONObject element) {
+		return this.parser.parse(element.toString());
+	}
 }

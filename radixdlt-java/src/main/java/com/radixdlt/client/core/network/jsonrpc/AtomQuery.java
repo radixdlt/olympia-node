@@ -22,7 +22,7 @@
 
 package com.radixdlt.client.core.network.jsonrpc;
 
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.identifiers.RadixAddress;
 
 import com.google.gson.JsonObject;
 

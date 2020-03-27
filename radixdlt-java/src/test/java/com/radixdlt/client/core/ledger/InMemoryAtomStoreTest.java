@@ -26,12 +26,12 @@ import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
-import com.radixdlt.client.core.atoms.RadixHash;
+import com.radixdlt.crypto.Hash;
 import java.util.Collections;
 import java.util.stream.Stream;
 import org.junit.Test;
 
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.identifiers.RadixAddress;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -39,11 +39,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.reactivex.observers.TestObserver;
-import org.radix.common.ID.AID;
+import com.radixdlt.identifiers.AID;
 
 public class InMemoryAtomStoreTest {
 	private AtomObservation mockDeletedAtom(Atom atom, RadixAddress address) {
-		RadixHash hash = mock(RadixHash.class);
+		Hash hash = mock(Hash.class);
 		AID hid = mock(AID.class);
 		when(atom.getAid()).thenReturn(hid);
 		when(atom.getHash()).thenReturn(hash);
@@ -58,7 +58,7 @@ public class InMemoryAtomStoreTest {
 	}
 
 	private AtomObservation mockStoredAtom(Atom atom, RadixAddress address) {
-		RadixHash hash = mock(RadixHash.class);
+		Hash hash = mock(Hash.class);
 		AID hid = mock(AID.class);
 		when(atom.getAid()).thenReturn(hid);
 		when(atom.getHash()).thenReturn(hash);
@@ -73,7 +73,7 @@ public class InMemoryAtomStoreTest {
 	}
 
 	private AtomObservation mockStoredAtom(Atom atom, SpunParticle spun0, SpunParticle spun1, RadixAddress address) {
-		RadixHash hash = mock(RadixHash.class);
+		Hash hash = mock(Hash.class);
 		AID hid = mock(AID.class);
 		when(atom.spunParticles()).thenReturn(
 			Stream.of(spun0, spun1),
@@ -90,7 +90,7 @@ public class InMemoryAtomStoreTest {
 	}
 
 	private AtomObservation mockStoredAtom(Atom atom, SpunParticle spun, RadixAddress address, boolean soft) {
-		RadixHash hash = mock(RadixHash.class);
+		Hash hash = mock(Hash.class);
 		AID hid = mock(AID.class);
 		when(atom.spunParticles()).thenReturn(Stream.of(spun), Stream.of(spun), Stream.of(spun));
 		when(atom.particles(any())).thenCallRealMethod().thenCallRealMethod().thenCallRealMethod();

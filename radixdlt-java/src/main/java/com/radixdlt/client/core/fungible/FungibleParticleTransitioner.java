@@ -29,8 +29,8 @@ import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
-import org.radix.utils.UInt256;
-import org.radix.utils.UInt256s;
+import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.UInt256s;
 
 /**
  * Helper class for transitioning fungible particles

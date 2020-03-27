@@ -22,9 +22,9 @@
 
 package com.radixdlt.client.application.translate.data;
 
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.identifiers.RadixAddress;
 import org.bouncycastle.util.encoders.Base64;
-import org.radix.common.ID.EUID;
+import com.radixdlt.identifiers.EUID;
 
 /**
  * An application layer object representing some data found on the ledger.

@@ -24,8 +24,8 @@ package com.radixdlt.client.application.translate.tokens;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import org.radix.utils.UInt256;
-import org.radix.utils.UInt256s;
+import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.UInt256s;
 
 /**
  * Utility class for converting token units between UInt256 and BigDecimal

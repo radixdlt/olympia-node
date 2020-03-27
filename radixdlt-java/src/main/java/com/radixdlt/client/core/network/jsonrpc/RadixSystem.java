@@ -23,15 +23,26 @@
 package com.radixdlt.client.core.network.jsonrpc;
 
 
-import org.radix.serialization2.DsonOutput;
-import org.radix.serialization2.DsonOutput.Output;
-import org.radix.serialization2.SerializerId2;
-import org.radix.serialization2.client.SerializableObject;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.DsonOutput.Output;
+import com.radixdlt.serialization.SerializerConstants;
+import com.radixdlt.serialization.SerializerDummy;
+import com.radixdlt.serialization.SerializerId2;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 @SerializerId2("api.system")
-public class RadixSystem extends SerializableObject {
+public class RadixSystem {
+
+	// Placeholder for the serializer ID
+	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
+	@DsonOutput(DsonOutput.Output.ALL)
+	private SerializerDummy serializer = SerializerDummy.DUMMY;
+
+	@JsonProperty("version")
+	@DsonOutput(DsonOutput.Output.ALL)
+	private short version = 100;
+
 	@JsonProperty("shards")
 	@DsonOutput(Output.ALL)
 	private ShardSpace shards;

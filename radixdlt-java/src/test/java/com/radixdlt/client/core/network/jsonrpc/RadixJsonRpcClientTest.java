@@ -22,16 +22,16 @@
 
 package com.radixdlt.client.core.network.jsonrpc;
 
+import com.radixdlt.client.serialization.GsonJson;
+import com.radixdlt.client.serialization.Serialize;
 import io.reactivex.functions.Cancellable;
 import java.util.Collections;
 
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import org.junit.Test;
-import org.radix.common.ID.EUID;
-import org.radix.serialization2.DsonOutput.Output;
-import org.radix.serialization2.client.GsonJson;
-import org.radix.serialization2.client.Serialize;
+import com.radixdlt.identifiers.EUID;
+import com.radixdlt.serialization.DsonOutput.Output;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;

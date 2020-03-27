@@ -22,30 +22,41 @@
 
 package com.radixdlt.client.core.address;
 
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.io.ByteStreams;
+import com.radixdlt.client.core.atoms.Atom;
+import com.radixdlt.client.serialization.Serialize;
+import com.radixdlt.crypto.CryptoException;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.Hash;
+import com.radixdlt.identifiers.EUID;
+import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.DsonOutput.Output;
+import com.radixdlt.serialization.SerializationException;
+import com.radixdlt.serialization.SerializerConstants;
+import com.radixdlt.serialization.SerializerDummy;
+import com.radixdlt.serialization.SerializerId2;
+import com.radixdlt.utils.RadixConstants;
+import org.bouncycastle.util.encoders.Base64;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.Collections;
 import java.util.List;
 
-import org.bouncycastle.util.encoders.Base64;
-import org.radix.common.ID.EUID;
-import org.radix.serialization2.DsonOutput;
-import org.radix.serialization2.DsonOutput.Output;
-import org.radix.serialization2.SerializerId2;
-import org.radix.serialization2.client.SerializableObject;
-import org.radix.serialization2.client.Serialize;
-import org.radix.utils.RadixConstants;
-
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.io.ByteStreams;
-import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.atoms.RadixHash;
-import com.radixdlt.client.core.crypto.ECPublicKey;
-
 @SerializerId2("radix.universe")
-public class RadixUniverseConfig extends SerializableObject {
+public class RadixUniverseConfig {
+
+	// Placeholder for the serializer ID
+	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
+	@DsonOutput(Output.ALL)
+	private SerializerDummy serializer = SerializerDummy.DUMMY;
+
+	@JsonProperty("version")
+	@DsonOutput(Output.ALL)
+	private short version = 100;
 
 	@JsonProperty("magic")
 	@DsonOutput(value = Output.HASH, include = false)
@@ -77,7 +88,12 @@ public class RadixUniverseConfig extends SerializableObject {
 
 	public static RadixUniverseConfig fromDsonBase64(String dsonBase64) {
 		byte[] bytes = Base64.decode(dsonBase64);
-		RadixUniverseConfig universe = Serialize.getInstance().fromDson(bytes, RadixUniverseConfig.class);
+		RadixUniverseConfig universe = null;
+		try {
+			universe = Serialize.getInstance().fromDson(bytes, RadixUniverseConfig.class);
+		} catch (SerializationException e) {
+			throw new IllegalStateException("Failed to deserialize bytes", e);
+		}
 		return universe;
 	}
 
@@ -129,24 +145,28 @@ public class RadixUniverseConfig extends SerializableObject {
 	}
 
 	public RadixAddress getSystemAddress() {
-		return new RadixAddress(this, creator);
+		return new RadixAddress((byte) (this.magic & 0xff), creator);
 	}
 
 	public List<Atom> getGenesis() {
 		return genesis;
 	}
 
-	public RadixHash getHash() {
-		return RadixHash.of(Serialize.getInstance().toDson(this, Output.HASH));
+	public Hash getHash() {
+		try {
+			return Hash.of(Serialize.getInstance().toDson(this, Output.HASH));
+		} catch (SerializationException e) {
+			throw new IllegalStateException("Failed to serialize universe config", e);
+		}
 	}
 
-	public EUID getHid() {
-		return this.getHash().toEUID();
+	public EUID euid() {
+		return this.getHash().euid();
 	}
 
 	@Override
 	public String toString() {
-		return name + " " + magic + " " + getHid();
+		return name + " " + magic + " " + euid();
 	}
 
 	@Override
@@ -169,12 +189,16 @@ public class RadixUniverseConfig extends SerializableObject {
 	@JsonProperty("creator")
 	@DsonOutput(Output.ALL)
 	private byte[] getJsonCreator() {
-		return this.creator.toByteArray();
+		return this.creator.getBytes();
 	}
 
 	@JsonProperty("creator")
 	private void setJsonCreator(byte[] bytes) {
-		this.creator = new ECPublicKey(bytes);
+		try {
+			this.creator = new ECPublicKey(bytes);
+		} catch (CryptoException e) {
+			throw new IllegalArgumentException("Failed to create public key from bytes", e);
+		}
 	}
 
 	@JsonProperty("type")

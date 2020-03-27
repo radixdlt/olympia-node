@@ -22,14 +22,16 @@
 
 package com.radixdlt.client.application.identity;
 
+import com.radixdlt.crypto.encryption.EncryptedPrivateKey;
+import com.radixdlt.identifiers.EUID;
+
 import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.crypto.CryptoException;
-import com.radixdlt.client.core.crypto.ECKeyPair;
-import com.radixdlt.client.core.crypto.ECPublicKey;
-import com.radixdlt.client.core.crypto.ECSignature;
-import com.radixdlt.client.core.crypto.EncryptedPrivateKey;
+import com.radixdlt.crypto.CryptoException;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.ECDSASignature;
+
 import io.reactivex.Single;
-import org.radix.common.ID.EUID;
 
 public class LocalRadixIdentity implements RadixIdentity {
 	private final ECKeyPair myKey;
@@ -39,8 +41,8 @@ public class LocalRadixIdentity implements RadixIdentity {
 	}
 
 	public Atom syncAddSignature(Atom atom) {
-		ECSignature signature = myKey.sign(atom.getHash().toByteArray());
-		EUID signatureId = myKey.getUID();
+		ECDSASignature signature = myKey.sign(atom.getHash().toByteArray());
+		EUID signatureId = myKey.euid();
 		return atom.addSignature(signatureId, signature);
 	}
 
