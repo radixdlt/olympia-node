@@ -24,10 +24,10 @@ class SendMessage implements Runnable {
         RadixApplicationAPI api = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, Utils.getIdentity(identityInfo))
         RadixAddress address = RadixAddress.from(addressString)
 
-        println "Sending message '${messageString}' from address ${address}"
+        println "Sending message '${messageString}' to address ${address}"
         RadixApplicationAPI.Result result = api.sendMessage(address, messageString.getBytes(RadixConstants.STANDARD_CHARSET), true)
         result.blockUntilComplete()
-        println "Message sent successfully"
+        println "Message sent successfully using AtomID : ${result.getAtom().getAid()}"
         System.exit(0)
 
 
