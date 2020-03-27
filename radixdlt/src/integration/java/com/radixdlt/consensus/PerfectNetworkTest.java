@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.assertj.core.api.Condition;
 import org.junit.Test;
 
 /**
@@ -44,9 +45,12 @@ public class PerfectNetworkTest {
 		}).limit(numNodes).collect(Collectors.toList());
 	}
 
+	/**
+	 * 4 is the smallest network size where quorum size (3) != network size
+	 */
 	@Test
-	public void given_3_correct_bfts__then_all_should_get_same_commits_and_no_timeouts_over_1_minute() {
-		final int numNodes = 3;
+	public void given_4_correct_bfts__then_all_should_get_same_commits_consecutive_vertices_and_no_timeouts_over_1_minute() {
+		final int numNodes = 4;
 		final long time = 1;
 		final TimeUnit timeUnit = TimeUnit.MINUTES;
 
@@ -65,10 +69,22 @@ public class PerfectNetworkTest {
 		Observable<Object> timeoutCheck = Observable.interval(2, TimeUnit.SECONDS)
 			.flatMapIterable(i -> nodes)
 			.map(bftNetwork::getCounters)
-			.doOnNext(counters -> assertThat(counters.getCount(CounterType.TIMEOUT)).isEqualTo(0))
+			.doOnNext(counters -> assertThat(counters.getCount(CounterType.TIMEOUT))
+				.satisfies(new Condition<>(c -> c == 0, "Timeout counter is zero.")))
 			.map(o -> o);
 
-		Observable.merge(commitCheck, timeoutCheck)
+		List<Observable<Vertex>> proposals = nodes.stream()
+			.map(ECKeyPair::getUID)
+			.map(bftNetwork.getTestEventCoordinatorNetwork()::getNetworkRx)
+			.map(EventCoordinatorNetworkRx::proposalMessages)
+			.collect(Collectors.toList());
+
+		Observable<Object> proposalsCheck = Observable.merge(proposals)
+			.doOnNext(v -> assertThat(v)
+				.satisfies(new Condition<>(vtx -> vtx.getView().equals(vtx.getParentView().next()), "Vertex has direct parent")))
+			.map(o -> o);
+
+		Observable.merge(commitCheck, timeoutCheck, proposalsCheck)
 			.doOnSubscribe(d -> bftNetwork.start())
 			.take(time, timeUnit)
 			.blockingSubscribe();

@@ -222,8 +222,7 @@ public class ValidatingEventCoordinatorTest {
 	}
 
 	@Test
-	public void when_processing_valid_stored_proposal__then_atom_is_voted_on_and_removed()
-		throws SafetyViolationException {
+	public void when_processing_valid_stored_proposal__then_atom_is_voted_on_and_new_view() throws SafetyViolationException {
 		View currentView = View.of(123);
 
 		when(proposerElection.getProposer(any())).thenReturn(makeKeyPair().getPublicKey());
@@ -233,20 +232,83 @@ public class ValidatingEventCoordinatorTest {
 		AID aid = makeAID(7); // no special significance
 		when(proposedAtom.getAID()).thenReturn(aid);
 		when(proposedVertex.getAtom()).thenReturn(proposedAtom);
-		when(proposedVertex.getQC()).thenReturn(mock(QuorumCertificate.class));
+		QuorumCertificate qc = mock(QuorumCertificate.class);
+		View qcView = mock(View.class);
+		when(qc.getView()).thenReturn(qcView);
+		when(proposedVertex.getQC()).thenReturn(qc);
 		when(proposedVertex.getView()).thenReturn(currentView);
 		when(pacemaker.getCurrentView()).thenReturn(currentView);
 		Vote vote = mock(Vote.class);
 		doReturn(vote).when(safetyRules).voteFor(eq(proposedVertex));
+		when(pacemaker.processQC(eq(qcView))).thenReturn(Optional.empty());
+		when(pacemaker.processQC(eq(currentView))).thenReturn(Optional.of(View.of(124)));
 
-		when(pacemaker.processQC(any())).thenReturn(Optional.empty());
 		eventCoordinator.processProposal(proposedVertex);
 
 		verify(networkSender, times(1)).sendVote(eq(vote), any());
+		verify(networkSender, times(1)).sendNewView(any(), any());
 	}
 
 	@Test
-	public void when_processing_valid_stored_proposal_and_there_exists_a_new_commit__the_new_commit_atom_is_removed_from_mempool() throws Exception {
+	public void when_processing_valid_stored_proposal_and_next_leader__then_atom_is_voted_on_and_new_view() throws SafetyViolationException {
+		View currentView = View.of(123);
+
+		when(proposerElection.getProposer(eq(currentView))).thenReturn(makeKeyPair().getPublicKey());
+		when(proposerElection.getProposer(eq(currentView.next()))).thenReturn(SELF_KEY.getPublicKey());
+
+		Vertex proposedVertex = mock(Vertex.class);
+		Atom proposedAtom = mock(Atom.class);
+		AID aid = makeAID(7); // no special significance
+		when(proposedAtom.getAID()).thenReturn(aid);
+		when(proposedVertex.getAtom()).thenReturn(proposedAtom);
+		QuorumCertificate qc = mock(QuorumCertificate.class);
+		View qcView = mock(View.class);
+		when(qc.getView()).thenReturn(qcView);
+		when(proposedVertex.getQC()).thenReturn(qc);
+		when(proposedVertex.getView()).thenReturn(currentView);
+		when(pacemaker.getCurrentView()).thenReturn(currentView);
+		Vote vote = mock(Vote.class);
+		doReturn(vote).when(safetyRules).voteFor(eq(proposedVertex));
+		when(pacemaker.processQC(eq(qcView))).thenReturn(Optional.empty());
+		when(pacemaker.processQC(eq(currentView))).thenReturn(Optional.of(View.of(124)));
+
+		eventCoordinator.processProposal(proposedVertex);
+
+		verify(networkSender, times(1)).sendVote(eq(vote), any());
+		verify(networkSender, times(0)).sendNewView(any(), any());
+	}
+
+	@Test
+	public void when_processing_valid_stored_proposal_and_leader__then_atom_is_voted_on_and_no_new_view() throws SafetyViolationException {
+		View currentView = View.of(123);
+
+		when(proposerElection.getProposer(eq(currentView))).thenReturn(SELF_KEY.getPublicKey());
+
+		Vertex proposedVertex = mock(Vertex.class);
+		Atom proposedAtom = mock(Atom.class);
+		AID aid = makeAID(7); // no special significance
+		when(proposedAtom.getAID()).thenReturn(aid);
+		when(proposedVertex.getAtom()).thenReturn(proposedAtom);
+		QuorumCertificate qc = mock(QuorumCertificate.class);
+		View qcView = mock(View.class);
+		when(qc.getView()).thenReturn(qcView);
+		when(proposedVertex.getQC()).thenReturn(qc);
+		when(proposedVertex.getView()).thenReturn(currentView);
+		when(pacemaker.getCurrentView()).thenReturn(currentView);
+		Vote vote = mock(Vote.class);
+		doReturn(vote).when(safetyRules).voteFor(eq(proposedVertex));
+		when(pacemaker.processQC(eq(qcView))).thenReturn(Optional.empty());
+		when(pacemaker.processQC(eq(currentView))).thenReturn(Optional.of(View.of(124)));
+
+		eventCoordinator.processProposal(proposedVertex);
+
+		verify(networkSender, times(1)).sendVote(eq(vote), any());
+		verify(networkSender, times(0)).sendNewView(any(), any());
+	}
+
+
+	@Test
+	public void when_processing_valid_stored_proposal_and_there_exists_a_new_commit__the_new_commit_atom_is_removed_from_mempool() {
 		View currentView = View.of(123);
 
 		when(pacemaker.processQC(any())).thenReturn(Optional.empty());
