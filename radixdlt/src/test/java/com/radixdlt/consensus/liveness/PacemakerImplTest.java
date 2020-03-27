@@ -167,6 +167,20 @@ public class PacemakerImplTest {
 	}
 
 	@Test
+	public void when_inserting_valid_but_old_new_views__then_no_new_view_is_returned() {
+		View view = View.of(0);
+		NewView newView = makeNewViewFor(view);
+		ValidatorSet validatorSet = mock(ValidatorSet.class);
+		ValidationResult result = mock(ValidationResult.class);
+		when(result.valid()).thenReturn(true);
+		when(validatorSet.validate(any(), any())).thenReturn(result);
+		ScheduledExecutorService executorService = getMockedExecutorService();
+		PacemakerImpl pacemaker = new PacemakerImpl(executorService);
+		pacemaker.processQC(View.of(0));
+		assertThat(pacemaker.processNewView(newView, validatorSet)).isEmpty();
+	}
+
+	@Test
 	public void when_inserting_current_and_accepted_new_views__then_qc_is_formed_and_current_view_has_changed_and_no_new_timeout() {
 		View view = View.of(0);
 		NewView newView = makeNewViewFor(view);
