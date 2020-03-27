@@ -1,0 +1,35 @@
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath 'com.github.jengelman.gradle.plugins:shadow:2.0.1'
+    }
+}
+apply plugin: 'java'
+apply plugin: 'com.github.johnrengelman.shadow'
+apply plugin: 'groovy'
+repositories {
+    jcenter()
+    maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
+}
+
+compileJava {
+    options.compilerArgs += ["-Aproject=${project.group}/${project.name}"]
+}
+dependencies {
+    compile 'org.codehaus.groovy:groovy-all:2.4.15'
+    compile group: 'commons-cli', name: 'commons-cli', version: '1.4'
+    compile 'info.picocli:picocli:4.2.0'
+    annotationProcessor 'info.picocli:picocli-codegen:4.2.0'
+    compile project(":radixdlt-java")
+}
+
+
+shadowJar {
+    manifest {
+        attributes 'Main-Class': 'com.radixdlt.cli.RadixCLI'
+    }
+    archiveName = "radixdlt-cli-${classifier}.]=${extension}"
+
+}
