@@ -17,7 +17,6 @@
 
 package com.radixdlt.consensus;
 
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anySet;
@@ -25,7 +24,10 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.google.common.collect.ImmutableMap;
+import com.radixdlt.common.AID;
 import com.radixdlt.common.Atom;
+import com.radixdlt.consensus.ChainedBFT.Event;
 import com.radixdlt.consensus.liveness.PacemakerImpl;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.safety.SafetyRules;
@@ -34,39 +36,50 @@ import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.network.TestEventCoordinatorNetwork;
 import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.observers.TestObserver;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
-import org.junit.Before;
-import org.junit.Test;
 
-public class MultiNodeConsensusTest {
+public class BFTNetwork {
 	private final TestEventCoordinatorNetwork testEventCoordinatorNetwork = new TestEventCoordinatorNetwork();
+	private final Atom genesis;
+	private final Vertex genesisVertex;
+	private final QuorumCertificate genesisQC;
+	private final ImmutableMap<ECKeyPair, VertexStore> vertexStores;
+	private final Observable<Event> bftEvents;
 
-	private Atom genesis;
-	private Vertex genesisVertex;
-	private QuorumCertificate genesisQC;
-
-	@Before
-	public void setup() {
+	public BFTNetwork(List<ECKeyPair> nodes) {
 		this.genesis = mock(Atom.class);
-		when(this.genesis.toString()).thenReturn(Long.toHexString(0));
+		AID aid = mock(AID.class);
+		when(aid.toString()).thenReturn(Long.toString(0));
+		when(this.genesis.getAID()).thenReturn(aid);
 		this.genesisVertex = Vertex.createGenesis(genesis);
 		this.genesisQC = new QuorumCertificate(
 			new VertexMetadata(View.genesis(), genesisVertex.getId(), null, null),
 			new ECDSASignatures()
 		);
+		final ValidatorSet validatorSet = ValidatorSet.from(
+			nodes.stream().map(ECKeyPair::getPublicKey).map(Validator::from).collect(Collectors.toList())
+		);
+		this.vertexStores = nodes.stream()
+			.collect(ImmutableMap.toImmutableMap(
+				e -> e,
+				e -> {
+					RadixEngine radixEngine = mock(RadixEngine.class);
+					when(radixEngine.staticCheck(any())).thenReturn(Optional.empty());
+					return new VertexStore(genesisVertex, genesisQC, radixEngine);
+				})
+			);
+		this.bftEvents = Observable.merge(this.vertexStores.entrySet().stream().map(e ->
+			createBFTInstance(e.getKey(), validatorSet, e.getValue()).processEvents()
+		).collect(Collectors.toList()));
 	}
 
 	private ChainedBFT createBFTInstance(
@@ -78,20 +91,16 @@ public class MultiNodeConsensusTest {
 		AtomicLong atomId = new AtomicLong();
 		doAnswer(inv -> {
 			Atom atom = mock(Atom.class);
-			when(atom.toString()).thenReturn(Long.toHexString(atomId.incrementAndGet()));
+			AID aid = mock(AID.class);
+			when(aid.toString()).thenReturn(Long.toString(atomId.incrementAndGet()));
+			when(atom.getAID()).thenReturn(aid);
 			return Collections.singletonList(atom);
 		}).when(mempool).getAtoms(anyInt(), anySet());
 		ProposalGenerator proposalGenerator = new ProposalGenerator(vertexStore, mempool);
 		SafetyRules safetyRules = new SafetyRules(key, vertexStore, SafetyState.initialState());
 		PacemakerImpl pacemaker = new PacemakerImpl(Executors.newSingleThreadScheduledExecutor());
 		PendingVotes pendingVotes = new PendingVotes();
-
 		EpochRx epochRx = () -> Observable.just(validatorSet).concatWith(Observable.never());
-		List<ECPublicKey> proposers = validatorSet.getValidators().stream()
-			.map(Validator::nodeKey)
-			.collect(Collectors.toList());
-		proposers.sort(Comparator.comparing(ECPublicKey::getUID));
-
 		EpochManager epochManager = new EpochManager(
 			proposalGenerator,
 			mempool,
@@ -111,58 +120,15 @@ public class MultiNodeConsensusTest {
 		);
 	}
 
-	private List<TestObserver<Vertex>> runBFT(
-		List<ECKeyPair> nodes,
-		ValidatorSet validatorSet
-	) {
-		return nodes.stream()
-			.map(e -> {
-				RadixEngine radixEngine = mock(RadixEngine.class);
-				when(radixEngine.staticCheck(any())).thenReturn(Optional.empty());
-				VertexStore vertexStore = new VertexStore(genesisVertex, genesisQC, radixEngine);
-				TestObserver<Vertex> testObserver = TestObserver.create();
-				vertexStore.lastCommittedVertex().subscribe(testObserver);
-				ChainedBFT chainedBFT = createBFTInstance(e, validatorSet, vertexStore);
-				chainedBFT.processEvents().subscribe();
-				return testObserver;
-			})
-			.collect(Collectors.toList());
+	public VertexStore getVertexStore(ECKeyPair keyPair) {
+		return vertexStores.get(keyPair);
 	}
 
-	@Test
-	public void given_3_correct_bft_instances__then_all_instances_should_get_the_same_5_commits() throws Exception {
-		final List<ECKeyPair> nodes = Arrays.asList(new ECKeyPair(), new ECKeyPair(), new ECKeyPair());
-		final ValidatorSet validatorSet = ValidatorSet.from(
-			nodes.stream().map(ECKeyPair::getPublicKey).map(Validator::from).collect(Collectors.toList())
-		);
-		final List<TestObserver<Vertex>> committedListeners = runBFT(nodes, validatorSet);
-
-		final int commitCount = 5;
-		for (TestObserver<Vertex> committedListener : committedListeners) {
-			committedListener.awaitCount(commitCount);
-		}
-
-		for (TestObserver<Vertex> committedListener : committedListeners) {
-			for (TestObserver<Vertex> otherCommittedListener : committedListeners) {
-				assertThat(committedListener.values().subList(0, commitCount))
-					.isEqualTo(otherCommittedListener.values().subList(0, commitCount));
-			}
-		}
+	public TestEventCoordinatorNetwork getTestEventCoordinatorNetwork() {
+		return testEventCoordinatorNetwork;
 	}
 
-	@Test
-	public void given_2_out_of_3_correct_bft_instances__then_all_instances_should_only_get_genesis_commit() throws Exception {
-		final List<ECKeyPair> nodes = Arrays.asList(new ECKeyPair(), new ECKeyPair(), new ECKeyPair());
-		final ValidatorSet validatorSet = ValidatorSet.from(
-			nodes.stream().map(ECKeyPair::getPublicKey).map(Validator::from).collect(Collectors.toList())
-		);
-		testEventCoordinatorNetwork.setSendingDisable(nodes.get(2).getUID(), true);
-		final List<TestObserver<Vertex>> committedListeners = runBFT(nodes, validatorSet);
-		final int commitCount = 10;
-
-		for (TestObserver<Vertex> committedListener : committedListeners) {
-			committedListener.awaitCount(commitCount);
-			committedListener.assertValue(v -> v.getAtom().toString().equals(Integer.toHexString(0)));
-		}
+	public void start() {
+		this.bftEvents.subscribe();
 	}
 }
