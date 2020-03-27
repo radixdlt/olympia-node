@@ -21,13 +21,14 @@ class SendMessage implements Runnable {
 
     void run() {
 
-        RadixApplicationAPI api = RadixApplicationAPI.create(Bootstrap.SUNSTONE, Utils.getIdentity(identityInfo))
+        RadixApplicationAPI api = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, Utils.getIdentity(identityInfo))
         RadixAddress address = RadixAddress.from(addressString)
 
-        api.sendMessage(address, messageString.getBytes(RadixConstants.STANDARD_CHARSET), false).toCompletable().blockingAwait()
-
-//        TODO transferTokens is not valid api method
-//        api.transferTokens(address, amount, TokenDefinitionReference.of(tokenAddress, iso)).toCompletable().blockingAwait();
+        println "Sending message '${messageString}' from address ${address}"
+        RadixApplicationAPI.Result result = api.sendMessage(address, messageString.getBytes(RadixConstants.STANDARD_CHARSET), true)
+        result.blockUntilComplete()
+        println "Message sent successfully"
+        System.exit(0)
 
 
     }
