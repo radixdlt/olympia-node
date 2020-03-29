@@ -1,9 +1,7 @@
 package com.radixdlt.cli
 
-
 import com.radixdlt.client.application.RadixApplicationAPI
 import com.radixdlt.client.atommodel.accounts.RadixAddress
-import com.radixdlt.client.core.Bootstrap
 import picocli.CommandLine
 
 @CommandLine.Command(name = "send-token", mixinStandardHelpOptions = true,
@@ -25,7 +23,7 @@ class SendTokens implements Runnable {
 
     void run() {
 
-        RadixApplicationAPI api = RadixApplicationAPI.create(Bootstrap.SUNSTONE, Utils.getIdentity(identityInfo))
+        RadixApplicationAPI api = Utils.getAPI(identityInfo)
         String[] ref = tokenString.split("/")
         RadixAddress tokenAddress = RadixAddress.from(ref[0])
         String iso = ref[2]

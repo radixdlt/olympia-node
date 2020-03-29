@@ -1,8 +1,6 @@
 package com.radixdlt.cli
 
-
 import com.radixdlt.client.application.RadixApplicationAPI
-import com.radixdlt.client.core.Bootstrap
 import picocli.CommandLine
 
 @CommandLine.Command(name = "get-message", mixinStandardHelpOptions = true,
@@ -14,7 +12,7 @@ class GetMessage implements Runnable {
 
     void run() {
 
-        RadixApplicationAPI api = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, Utils.getIdentity(identityInfo))
+        RadixApplicationAPI api = Utils.getAPI(identityInfo)
         api.pull()
         api.observeMessages().subscribe({ it -> println it })
     }

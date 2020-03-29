@@ -2,7 +2,6 @@ package com.radixdlt.cli
 
 import com.radixdlt.client.application.RadixApplicationAPI
 import com.radixdlt.client.atommodel.accounts.RadixAddress
-import com.radixdlt.client.core.Bootstrap
 import org.radix.utils.RadixConstants
 import picocli.CommandLine
 
@@ -21,7 +20,7 @@ class SendMessage implements Runnable {
 
     void run() {
 
-        RadixApplicationAPI api = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, Utils.getIdentity(identityInfo))
+        RadixApplicationAPI api = Utils.getAPI(identityInfo)
         RadixAddress address = RadixAddress.from(addressString)
 
         println "Sending message '${messageString}' to address ${address}"

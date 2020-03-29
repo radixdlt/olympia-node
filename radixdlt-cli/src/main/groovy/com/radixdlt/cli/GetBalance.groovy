@@ -4,7 +4,6 @@ import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.radixdlt.client.application.RadixApplicationAPI
 import com.radixdlt.client.atommodel.accounts.RadixAddress
-import com.radixdlt.client.core.Bootstrap
 import picocli.CommandLine
 
 @CommandLine.Command(name = "get-balance", mixinStandardHelpOptions = true,
@@ -16,7 +15,7 @@ class GetBalance implements Runnable {
 
     void run() {
 
-        RadixApplicationAPI api = RadixApplicationAPI.create(Bootstrap.SUNSTONE, Utils.getIdentity(identityInfo))
+        RadixApplicationAPI api = Utils.getAPI(identityInfo)
         Gson gson = new GsonBuilder()
                 .registerTypeAdapter(RadixAddress.class, new RadixAddressTypeAdapter())
                 .excludeFieldsWithoutExposeAnnotation()

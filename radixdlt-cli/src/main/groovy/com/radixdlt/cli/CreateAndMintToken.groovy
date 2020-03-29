@@ -4,7 +4,6 @@ import com.radixdlt.client.application.RadixApplicationAPI
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction
 import com.radixdlt.client.application.translate.tokens.MintTokensAction
 import com.radixdlt.client.application.translate.tokens.TokenUnitConversions
-import com.radixdlt.client.core.Bootstrap
 import com.radixdlt.client.core.atoms.particles.RRI
 import picocli.CommandLine
 
@@ -27,7 +26,7 @@ class CreateAndMintToken implements Runnable {
 
     void run() {
 
-        RadixApplicationAPI api = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, Utils.getIdentity(identityInfo))
+        RadixApplicationAPI api = Utils.getAPI(identityInfo)
         RRI tokenRRI = RRI.of(api.getAddress(), tokenName)
         RadixApplicationAPI.Transaction transaction = api.createTransaction()
         transaction.stage(CreateTokenAction.create(

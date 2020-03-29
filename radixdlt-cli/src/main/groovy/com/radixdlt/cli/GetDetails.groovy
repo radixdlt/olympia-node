@@ -1,8 +1,6 @@
 package com.radixdlt.cli
 
-
 import com.radixdlt.client.application.RadixApplicationAPI
-import com.radixdlt.client.core.Bootstrap
 import picocli.CommandLine
 
 @CommandLine.Command(name = "get-details", mixinStandardHelpOptions = true,
@@ -14,7 +12,7 @@ class GetDetails implements Runnable {
 
     void run() {
 
-        RadixApplicationAPI api = RadixApplicationAPI.create(Bootstrap.LOCALHOST_SINGLENODE, Utils.getIdentity(identityInfo))
+        RadixApplicationAPI api = Utils.getAPI(identityInfo)
 
         println("My address:\t " + api.getAddress())
         println("My public key:\t " + api.getPublicKey())
