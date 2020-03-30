@@ -86,7 +86,8 @@ public final class VertexStore {
 			try {
 				this.engine.store(vertex.getAtom());
 			} catch (RadixEngineException e) {
-				// TODO: Don't check for state computer errors for now
+				// TODO: Don't check for state computer errors for now so that we don't
+				// TODO: have to deal with failing leader proposals
 				// TODO: Reinstate this when ProposalGenerator + Mempool can guarantee correct proposals
 				//throw new VertexInsertionException("Failed to execute", e);
 			}

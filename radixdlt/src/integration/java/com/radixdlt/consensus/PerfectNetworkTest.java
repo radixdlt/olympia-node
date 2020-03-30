@@ -81,7 +81,7 @@ public class PerfectNetworkTest {
 
 		Observable<Object> proposalsCheck = Observable.merge(proposals)
 			.doOnNext(v -> assertThat(v)
-				.satisfies(new Condition<>(vtx -> vtx.getView().equals(vtx.getParentView().next()), "Vertex has direct parent")))
+				.satisfies(new Condition<>(Vertex::hasDirectParent, "Vertex has direct parent")))
 			.map(o -> o);
 
 		Observable.merge(bftNetwork.processBFT(), commitCheck, timeoutCheck, proposalsCheck)

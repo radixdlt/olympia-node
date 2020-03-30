@@ -106,6 +106,10 @@ public final class Vertex {
 		return qc;
 	}
 
+	public boolean hasDirectParent() {
+		return this.view.equals(this.getParentView().next());
+	}
+
 	public View getView() {
 		return view;
 	}
