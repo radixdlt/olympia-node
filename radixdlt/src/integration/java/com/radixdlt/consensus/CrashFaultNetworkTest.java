@@ -95,8 +95,9 @@ public class CrashFaultNetworkTest {
 			.map(ECKeyPair::getPublicKey)
 			.collect(Collectors.toSet());
 		final BFTTestNetwork bftNetwork = new BFTTestNetwork(allNodes);
-		// "crash" all faulty nodes by disallowing any sends
+		// "crash" all faulty nodes by disallowing any communication
 		faultyNodes.forEach(node -> bftNetwork.getTestEventCoordinatorNetwork().setSendingDisable(node.getUID(), true));
+		faultyNodes.forEach(node -> bftNetwork.getTestEventCoordinatorNetwork().setReceivingDisable(node.getUID(), true));
 
 		// correct nodes should all get the same commits in the same order
 		Observable<Object> correctCommitCheck = Observable.zip(correctNodes.stream()

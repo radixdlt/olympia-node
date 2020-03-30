@@ -45,7 +45,8 @@ public class TestEventCoordinatorNetwork {
 	private final PublishSubject<Map.Entry<NewView, EUID>> newViews;
 	private final PublishSubject<Map.Entry<Vote, EUID>> votes;
 	private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
-	private final Set<EUID> sendingDisabled = Collections.newSetFromMap(new ConcurrentHashMap<EUID, Boolean>());
+	private final Set<EUID> sendingDisabled = Collections.newSetFromMap(new ConcurrentHashMap<>());
+	private final Set<EUID> receivingDisabled = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
 	public TestEventCoordinatorNetwork() {
 		this.proposals = PublishSubject.create();
@@ -58,6 +59,14 @@ public class TestEventCoordinatorNetwork {
 			sendingDisabled.add(euid);
 		} else {
 			sendingDisabled.remove(euid);
+		}
+	}
+
+	public void setReceivingDisable(EUID euid, boolean disable) {
+		if (disable) {
+			receivingDisabled.add(euid);
+		} else {
+			receivingDisabled.remove(euid);
 		}
 	}
 
@@ -102,20 +111,21 @@ public class TestEventCoordinatorNetwork {
 		return new EventCoordinatorNetworkRx() {
 			@Override
 			public Observable<Vertex> proposalMessages() {
-				return proposals;
+				return proposals
+					.filter(p -> !receivingDisabled.contains(euid));
 			}
 
 			@Override
 			public Observable<NewView> newViewMessages() {
 				return newViews
-					.filter(e -> e.getValue().equals(euid))
+					.filter(e -> e.getValue().equals(euid) && !receivingDisabled.contains(euid))
 					.map(Entry::getKey);
 			}
 
 			@Override
 			public Observable<Vote> voteMessages() {
 				return votes
-					.filter(e -> e.getValue().equals(euid))
+					.filter(e -> e.getValue().equals(euid) && !receivingDisabled.contains(euid))
 					.map(Entry::getKey);
 			}
 		};
