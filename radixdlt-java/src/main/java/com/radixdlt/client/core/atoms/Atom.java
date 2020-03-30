@@ -25,19 +25,21 @@ package com.radixdlt.client.core.atoms;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
-import com.radixdlt.client.core.crypto.ECSignature;
-import org.radix.common.ID.AID;
-import org.radix.common.ID.EUID;
-import org.radix.serialization2.DsonOutput;
-import org.radix.serialization2.SerializerConstants;
-import org.radix.serialization2.SerializerDummy;
-import org.radix.serialization2.SerializerId2;
-import org.radix.serialization2.client.Serialize;
+import com.radixdlt.client.serialization.Serialize;
+import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.Hash;
+import com.radixdlt.identifiers.AID;
+import com.radixdlt.identifiers.EUID;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.SerializationException;
+import com.radixdlt.serialization.SerializerConstants;
+import com.radixdlt.serialization.SerializerDummy;
+import com.radixdlt.serialization.SerializerId2;
 
+import com.radixdlt.identifiers.RadixAddress;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -85,7 +87,7 @@ public final class Atom {
 
 	@JsonProperty("signatures")
 	@DsonOutput(value = {DsonOutput.Output.API, DsonOutput.Output.WIRE, DsonOutput.Output.PERSIST})
-	private final ImmutableMap<String, ECSignature> signatures;
+	private final ImmutableMap<String, ECDSASignature> signatures;
 
 	@JsonProperty("metaData")
 	@DsonOutput(DsonOutput.Output.ALL)
@@ -110,7 +112,7 @@ public final class Atom {
 	private Atom(
 		ImmutableList<ParticleGroup> particleGroups,
 		ImmutableMap<String, String> metaData,
-		ImmutableMap<String, ECSignature> signatures
+		ImmutableMap<String, ECDSASignature> signatures
 	) {
 		Objects.requireNonNull(particleGroups, "particleGroups is required");
 		Objects.requireNonNull(metaData, "metaData is required");
@@ -122,8 +124,8 @@ public final class Atom {
 	}
 
 	// TODO: refactor to utilize an AtomBuilder
-	public Atom addSignature(EUID signatureId, ECSignature signature) {
-		ImmutableMap.Builder<String, ECSignature> builder = ImmutableMap.builder();
+	public Atom addSignature(EUID signatureId, ECDSASignature signature) {
+		ImmutableMap.Builder<String, ECDSASignature> builder = ImmutableMap.builder();
 		signatures.forEach((id, sig) -> {
 			if (!id.equals(signatureId.toString())) {
 				builder.put(id, sig);
@@ -153,7 +155,7 @@ public final class Atom {
 			return this.spunParticles()
 				.filter(s -> s.getSpin() == Spin.DOWN)
 				.flatMap(s -> s.getParticle().getShardables().stream())
-				.map(RadixAddress::getUID)
+				.map(RadixAddress::euid)
 				.map(EUID::getShard)
 				.collect(Collectors.toSet());
 		} else {
@@ -199,20 +201,24 @@ public final class Atom {
 		}
 	}
 
-	public Map<String, ECSignature> getSignatures() {
+	public Map<String, ECDSASignature> getSignatures() {
 		return this.signatures;
 	}
 
-	public Optional<ECSignature> getSignature(EUID uid) {
+	public Optional<ECDSASignature> getSignature(EUID uid) {
 		return Optional.ofNullable(this.signatures).map(sigs -> sigs.get(uid.toString()));
 	}
 
 	public byte[] toDson() {
-		return Serialize.getInstance().toDson(this, DsonOutput.Output.HASH);
+		try {
+			return Serialize.getInstance().toDson(this, DsonOutput.Output.HASH);
+		} catch (SerializationException e) {
+			throw new IllegalStateException("Failed to serialize", e);
+		}
 	}
 
-	public RadixHash getHash() {
-		return RadixHash.of(toDson());
+	public Hash getHash() {
+		return Hash.of(toDson());
 	}
 
 	public AID getAid() {

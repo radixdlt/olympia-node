@@ -26,12 +26,12 @@ import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle
 import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
-import com.radixdlt.client.core.atoms.particles.RRI;
+import com.radixdlt.identifiers.RRI;
 import java.util.Collections;
 
 import org.junit.Test;
-import org.radix.common.ID.EUID;
-import org.radix.utils.UInt256;
+import com.radixdlt.identifiers.EUID;
+import com.radixdlt.utils.UInt256;
 
 import com.radixdlt.client.application.translate.tokens.TokenState.TokenSupplyType;
 import com.radixdlt.client.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
@@ -108,7 +108,7 @@ public class TokenDefinitionsReducerTest {
 		UnallocatedTokensParticle unallocatedTokensParticle = mock(UnallocatedTokensParticle.class);
 		when(unallocatedTokensParticle.getAmount()).thenReturn(UInt256.MAX_VALUE.subtract(hundred));
 		when(unallocatedTokensParticle.getTokDefRef()).thenReturn(tokenRef);
-		when(unallocatedTokensParticle.getHid()).thenReturn(EUID.ONE);
+		when(unallocatedTokensParticle.euid()).thenReturn(EUID.ONE);
 
 		TokenDefinitionsReducer tokenDefinitionsReducer = new TokenDefinitionsReducer();
 		TokenDefinitionsState state1 = tokenDefinitionsReducer.reduce(TokenDefinitionsState.init(), tokenDefinitionParticle);

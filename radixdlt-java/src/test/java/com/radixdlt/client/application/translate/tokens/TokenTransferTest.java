@@ -25,11 +25,11 @@ package com.radixdlt.client.application.translate.tokens;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.core.atoms.particles.RRI;
+import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.identifiers.RRI;
 import java.math.BigDecimal;
 import org.junit.Test;
-import org.radix.utils.RadixConstants;
+import com.radixdlt.utils.RadixConstants;
 
 public class TokenTransferTest {
 

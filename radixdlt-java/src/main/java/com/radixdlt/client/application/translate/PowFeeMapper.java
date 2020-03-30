@@ -27,11 +27,11 @@ import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.ParticleGroup;
-import com.radixdlt.client.core.atoms.RadixHash;
-import com.radixdlt.client.core.crypto.ECPublicKey;
+import com.radixdlt.crypto.Hash;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.client.core.pow.ProofOfWork;
 import com.radixdlt.client.core.pow.ProofOfWorkBuilder;
-import org.radix.common.tuples.Pair;
+import com.radixdlt.utils.Pair;
 
 import java.util.List;
 import java.util.Map;
@@ -44,10 +44,10 @@ import java.util.function.Function;
 public class PowFeeMapper implements FeeMapper {
 	private static final int LEADING = 16;
 
-	private final Function<Atom, RadixHash> hasher;
+	private final Function<Atom, Hash> hasher;
 	private final ProofOfWorkBuilder powBuilder;
 
-	public PowFeeMapper(Function<Atom, RadixHash> hasher, ProofOfWorkBuilder powBuilder) {
+	public PowFeeMapper(Function<Atom, Hash> hasher, ProofOfWorkBuilder powBuilder) {
 		this.hasher = Objects.requireNonNull(hasher, "hasher is required");
 		this.powBuilder = Objects.requireNonNull(powBuilder, "powBuilder is required");
 	}

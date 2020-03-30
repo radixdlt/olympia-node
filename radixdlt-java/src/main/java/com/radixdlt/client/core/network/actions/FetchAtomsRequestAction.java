@@ -22,7 +22,7 @@
 
 package com.radixdlt.client.core.network.actions;
 
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.client.core.network.RadixNode;
 import java.util.Collections;
 import java.util.Objects;
@@ -63,7 +63,7 @@ public final class FetchAtomsRequestAction implements FetchAtomsAction, FindANod
 
 	@Override
 	public Set<Long> getShards() {
-		return Collections.singleton(address.getUID().getShard());
+		return Collections.singleton(address.euid().getShard());
 	}
 
 	@Override

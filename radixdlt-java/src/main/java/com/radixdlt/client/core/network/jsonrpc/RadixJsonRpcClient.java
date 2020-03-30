@@ -22,9 +22,17 @@
 
 package com.radixdlt.client.core.network.jsonrpc;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.AtomStatusEvent;
 import com.radixdlt.client.core.ledger.AtomEvent;
+import com.radixdlt.client.serialization.GsonJson;
+import com.radixdlt.client.serialization.Serialize;
+import com.radixdlt.serialization.SerializationException;
 import io.reactivex.functions.Cancellable;
 import java.util.List;
 import java.util.UUID;
@@ -34,20 +42,14 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.json.JSONObject;
-import org.radix.common.ID.AID;
-import org.radix.common.ID.EUID;
-import org.radix.serialization2.DsonOutput.Output;
-import org.radix.serialization2.JsonJavaType;
-import org.radix.serialization2.Serialization;
-import org.radix.serialization2.client.GsonJson;
-import org.radix.serialization2.client.Serialize;
+import com.radixdlt.identifiers.AID;
+import com.radixdlt.identifiers.EUID;
+import com.radixdlt.serialization.DsonOutput.Output;
+import com.radixdlt.serialization.JsonJavaType;
+import com.radixdlt.serialization.Serialization;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.ledger.AtomObservation;
@@ -393,7 +395,13 @@ public class RadixJsonRpcClient {
 				JsonArray atomEvents = json.getAsJsonArray("atomEvents");
 				boolean isHead = json.has("isHead") && json.get("isHead").getAsBoolean();
 				Stream<AtomObservation> observations = StreamSupport.stream(atomEvents.spliterator(), false)
-					.map(jsonAtom -> Serialize.getInstance().fromJson(jsonAtom.toString(), AtomEvent.class))
+					.map(jsonAtom -> {
+						try {
+							return Serialize.getInstance().fromJson(jsonAtom.toString(), AtomEvent.class);
+						} catch (SerializationException e) {
+							throw new IllegalStateException("Failed to deserialize", e);
+						}
+					})
 					.map(AtomObservation::ofEvent);
 
 				if (isHead) {

@@ -28,7 +28,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import com.radixdlt.client.core.fungible.FungibleParticleTransitioner.FungibleParticleTransition;
 import java.util.Collections;
 import org.junit.Test;
-import org.radix.utils.UInt256;
+import com.radixdlt.utils.UInt256;
 
 public class FungibleParticleTransitionerTest {
 	private static class TestParticle {

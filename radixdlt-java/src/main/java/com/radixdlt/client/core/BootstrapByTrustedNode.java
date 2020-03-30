@@ -34,11 +34,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
+
+import com.radixdlt.client.serialization.Serialize;
+import com.radixdlt.serialization.SerializationException;
 import okhttp3.Call;
 import okhttp3.OkHttpClient;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
-import org.radix.serialization2.client.Serialize;
 
 /**
  * Bootstrap configuration by a trusted node. Universe configuration file will be retrieved from
@@ -68,7 +70,11 @@ public class BootstrapByTrustedNode implements BootstrapConfig {
 				throw new IllegalStateException("Could not retrieve universe configuration.", e);
 			}
 
-			return Serialize.getInstance().fromJson(universeJson, RadixUniverseConfig.class);
+			try {
+				return Serialize.getInstance().fromJson(universeJson, RadixUniverseConfig.class);
+			} catch (SerializationException e) {
+				throw new IllegalStateException("Failed to deserialize", e);
+			}
 		});
 	}
 

@@ -25,16 +25,16 @@ package com.radixdlt.client.atommodel.message;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.client.atommodel.Accountable;
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.client.core.atoms.particles.Particle;
 
 import java.util.Random;
 import java.util.Set;
 import java.util.TreeMap;
 
-import org.radix.common.ID.EUID;
-import org.radix.serialization2.DsonOutput;
-import org.radix.serialization2.SerializerId2;
+import com.radixdlt.identifiers.EUID;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.SerializerId2;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -120,7 +120,7 @@ public class MessageParticle extends Particle implements Accountable {
 	private long nonce;
 
 	private MessageParticle(RadixAddress from, RadixAddress to, byte[] bytes, MetadataMap metaData, long nonce) {
-		this(from, to, bytes, metaData, nonce, ImmutableSet.of(from.getUID(), to.getUID()));
+		this(from, to, bytes, metaData, nonce, ImmutableSet.of(from.euid(), to.euid()));
 	}
 
 	public MessageParticle(

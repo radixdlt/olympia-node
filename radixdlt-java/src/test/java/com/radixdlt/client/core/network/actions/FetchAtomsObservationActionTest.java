@@ -25,7 +25,7 @@ package com.radixdlt.client.core.network.actions;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.client.core.ledger.AtomObservation;
 import com.radixdlt.client.core.network.RadixNode;
 import org.junit.Test;

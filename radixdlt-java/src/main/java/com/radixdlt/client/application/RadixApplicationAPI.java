@@ -65,19 +65,19 @@ import com.radixdlt.client.application.translate.tokens.TransferTokensToParticle
 import com.radixdlt.client.application.translate.unique.AlreadyUsedUniqueIdReasonMapper;
 import com.radixdlt.client.application.translate.unique.PutUniqueIdAction;
 import com.radixdlt.client.application.translate.unique.PutUniqueIdToParticleGroupsMapper;
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
 import com.radixdlt.client.core.BootstrapConfig;
+import com.radixdlt.client.core.atoms.particles.Particle;
+import com.radixdlt.client.core.atoms.particles.SpunParticle;
+import com.radixdlt.client.core.ledger.AtomObservation;
+import com.radixdlt.client.core.ledger.AtomStore;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.atoms.AtomStatus;
 import com.radixdlt.client.core.atoms.ParticleGroup;
-import com.radixdlt.client.core.atoms.particles.Particle;
-import com.radixdlt.client.core.atoms.particles.RRI;
-import com.radixdlt.client.core.atoms.particles.SpunParticle;
-import com.radixdlt.client.core.crypto.ECKeyPairGenerator;
-import com.radixdlt.client.core.crypto.ECPublicKey;
-import com.radixdlt.client.core.ledger.AtomObservation;
-import com.radixdlt.client.core.ledger.AtomStore;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.client.core.network.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.RadixNodeAction;
@@ -88,6 +88,7 @@ import com.radixdlt.client.core.network.actions.SubmitAtomRequestAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomSendAction;
 import com.radixdlt.client.core.network.actions.SubmitAtomStatusAction;
 import com.radixdlt.client.core.pow.ProofOfWorkBuilder;
+import com.radixdlt.utils.Pair;
 import io.reactivex.Completable;
 import io.reactivex.Maybe;
 import io.reactivex.Observable;
@@ -96,8 +97,9 @@ import io.reactivex.annotations.Nullable;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.disposables.Disposables;
 import io.reactivex.observables.ConnectableObservable;
-import org.radix.common.tuples.Pair;
-import org.radix.utils.RadixConstants;
+
+import com.radixdlt.utils.RadixConstants;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -147,7 +149,7 @@ public class RadixApplicationAPI {
 			.defaultFeeMapper()
 			.addStatelessParticlesMapper(
 				SendMessageAction.class,
-				new SendMessageToParticleGroupsMapper(ECKeyPairGenerator.newInstance()::generateKeyPair)
+				new SendMessageToParticleGroupsMapper(ECKeyPair::generateNew)
 			)
 			.addStatelessParticlesMapper(CreateTokenAction.class, new CreateTokenToParticleGroupsMapper())
 			.addStatelessParticlesMapper(PutUniqueIdAction.class, new PutUniqueIdToParticleGroupsMapper())
@@ -1153,7 +1155,9 @@ public class RadixApplicationAPI {
 		public void stage(Action action) throws StageActionException {
 			BiFunction<Action, Stream<Particle>, List<ParticleGroup>> statefulMapper = actionMappers.get(action.getClass());
 			if (statefulMapper == null) {
-				throw new IllegalArgumentException("Unknown action class: " + action.getClass() + ". Available: " + actionMappers.keySet());
+				throw new IllegalArgumentException(
+						String.format("Unknown action class: %s. Available: %s", action.getClass(), actionMappers.keySet())
+				);
 			}
 
 			Function<Action, Set<ShardedParticleStateId>> requiredStateMapper = requiredStateMappers.get(action.getClass());

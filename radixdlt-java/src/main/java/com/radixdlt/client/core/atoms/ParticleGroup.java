@@ -31,9 +31,10 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.radix.serialization2.DsonOutput;
-import org.radix.serialization2.SerializerId2;
-import org.radix.serialization2.client.SerializableObject;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.SerializerConstants;
+import com.radixdlt.serialization.SerializerDummy;
+import com.radixdlt.serialization.SerializerId2;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
@@ -48,7 +49,17 @@ import com.radixdlt.client.core.atoms.particles.SpunParticle;
  * * @author flotothemoon
  */
 @SerializerId2("radix.particle_group")
-public class ParticleGroup extends SerializableObject {
+public class ParticleGroup {
+
+	// Placeholder for the serializer ID
+	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
+	@DsonOutput(DsonOutput.Output.ALL)
+	private SerializerDummy serializer = SerializerDummy.DUMMY;
+
+	@JsonProperty("version")
+	@DsonOutput(DsonOutput.Output.ALL)
+	private short version = 100;
+
 	@JsonProperty("particles")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private final ImmutableList<SpunParticle> particles;

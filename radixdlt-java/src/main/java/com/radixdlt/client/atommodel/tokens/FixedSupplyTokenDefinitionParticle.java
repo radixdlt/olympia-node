@@ -25,16 +25,16 @@ package com.radixdlt.client.atommodel.tokens;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.client.atommodel.Identifiable;
 import com.radixdlt.client.atommodel.Ownable;
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.client.core.atoms.particles.Particle;
-import com.radixdlt.client.core.atoms.particles.RRI;
+import com.radixdlt.identifiers.RRI;
 
 import java.util.Objects;
 
-import org.radix.serialization2.DsonOutput;
-import org.radix.serialization2.DsonOutput.Output;
-import org.radix.serialization2.SerializerId2;
-import org.radix.utils.UInt256;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.DsonOutput.Output;
+import com.radixdlt.serialization.SerializerId2;
+import com.radixdlt.utils.UInt256;
 
 @SerializerId2("radix.particles.fixed_supply_token_definition")
 public final class FixedSupplyTokenDefinitionParticle extends Particle implements Identifiable, Ownable {
@@ -88,7 +88,7 @@ public final class FixedSupplyTokenDefinitionParticle extends Particle implement
 		UInt256 granularity,
 		String iconUrl
 	) {
-		super(rri.getAddress().getUID());
+		super(rri.getAddress().euid());
 
 		this.rri = rri;
 		this.name = name;

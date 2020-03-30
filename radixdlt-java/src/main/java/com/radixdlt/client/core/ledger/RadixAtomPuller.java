@@ -26,7 +26,7 @@ import com.radixdlt.client.core.network.RadixNetworkController;
 import com.radixdlt.client.core.network.actions.FetchAtomsAction;
 import com.radixdlt.client.core.network.actions.FetchAtomsCancelAction;
 import com.radixdlt.client.core.network.actions.FetchAtomsRequestAction;
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.identifiers.RadixAddress;
 import io.reactivex.Observable;
 import java.util.concurrent.ConcurrentHashMap;
 

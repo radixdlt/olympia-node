@@ -22,7 +22,7 @@
 
 package com.radixdlt.client.application.translate.unique;
 
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.identifiers.RadixAddress;
 import java.util.Objects;
 
 public final class UniqueId {

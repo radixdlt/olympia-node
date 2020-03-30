@@ -27,6 +27,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import java.io.Writer;
+
 import org.junit.Test;
 
 public class RadixIdentitiesTest {

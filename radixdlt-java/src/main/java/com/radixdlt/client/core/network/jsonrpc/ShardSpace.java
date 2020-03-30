@@ -27,11 +27,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-import org.radix.serialization2.DsonOutput;
-import org.radix.serialization2.DsonOutput.Output;
-import org.radix.serialization2.SerializerConstants;
-import org.radix.serialization2.SerializerDummy;
-import org.radix.serialization2.SerializerId2;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.DsonOutput.Output;
+import com.radixdlt.serialization.SerializerConstants;
+import com.radixdlt.serialization.SerializerDummy;
+import com.radixdlt.serialization.SerializerId2;
 
 @SerializerId2("radix.shard.space")
 public final class ShardSpace {

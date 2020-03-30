@@ -26,7 +26,7 @@ import com.radixdlt.client.atommodel.rri.RRIParticle;
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.core.atoms.particles.Particle;
-import com.radixdlt.client.core.atoms.particles.RRI;
+import com.radixdlt.identifiers.RRI;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 
 import java.util.List;
@@ -38,9 +38,9 @@ import com.radixdlt.client.core.atoms.ParticleGroup;
 import org.junit.Test;
 
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
-import com.radixdlt.client.core.crypto.ECPublicKey;
-import org.radix.common.ID.EUID;
+import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.identifiers.EUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -51,7 +51,7 @@ public class CreateTokenToParticleGroupsMapperTest {
 	public void testNormalMutableSupplyConstruction() {
 		CreateTokenAction tokenCreation = mock(CreateTokenAction.class);
 		RadixAddress address = mock(RadixAddress.class);
-		when(address.getUID()).thenReturn(mock(EUID.class));
+		when(address.euid()).thenReturn(mock(EUID.class));
 		ECPublicKey key = mock(ECPublicKey.class);
 		when(address.getPublicKey()).thenReturn(key);
 		when(tokenCreation.getRRI()).thenReturn(RRI.of(address, "ISO"));
@@ -72,7 +72,7 @@ public class CreateTokenToParticleGroupsMapperTest {
 	public void testNormalFixedSupplyConstruction() {
 		CreateTokenAction tokenCreation = mock(CreateTokenAction.class);
 		RadixAddress address = mock(RadixAddress.class);
-		when(address.getUID()).thenReturn(mock(EUID.class));
+		when(address.euid()).thenReturn(mock(EUID.class));
 		ECPublicKey key = mock(ECPublicKey.class);
 		when(address.getPublicKey()).thenReturn(key);
 		when(tokenCreation.getRRI()).thenReturn(RRI.of(address, "ISO"));

@@ -22,11 +22,11 @@
 
 package com.radixdlt.client.core.atoms;
 
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.client.atommodel.message.MessageParticle;
 import com.radixdlt.client.atommodel.message.MessageParticle.MessageParticleBuilder;
 import org.junit.Test;
-import org.radix.common.ID.EUID;
+import com.radixdlt.identifiers.EUID;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.Assert.assertEquals;
@@ -38,7 +38,7 @@ public class MessageParticleTest {
 	@Test
 	public void testApplicationMetaData() {
 		RadixAddress address = mock(RadixAddress.class);
-		when(address.getUID()).thenReturn(mock(EUID.class), mock(EUID.class));
+		when(address.euid()).thenReturn(mock(EUID.class), mock(EUID.class));
 
 		MessageParticle messageParticle = new MessageParticleBuilder()
 			.payload(new byte[0])

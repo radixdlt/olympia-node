@@ -22,14 +22,14 @@
 
 package com.radixdlt.client.application.identity;
 
-import com.radixdlt.client.core.crypto.ECKeyPair;
-import com.radixdlt.client.core.crypto.ECKeyPairGenerator;
-import com.radixdlt.client.core.crypto.ECPublicKey;
-import com.radixdlt.client.core.crypto.Encryptor;
-import com.radixdlt.client.core.crypto.Encryptor.EncryptorBuilder;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
+
+import com.radixdlt.crypto.encryption.ECIESException;
+import com.radixdlt.crypto.encryption.Encryptor;
 import org.bouncycastle.util.encoders.Base64;
 
 /**
@@ -39,7 +39,7 @@ public class Data {
 	public static class DataBuilder {
 		private Map<String, Object> metaData = new LinkedHashMap<>();
 		private byte[] bytes;
-		private EncryptorBuilder encryptorBuilder = new EncryptorBuilder();
+		private Encryptor.EncryptorBuilder encryptorBuilder = new Encryptor.EncryptorBuilder();
 		private boolean unencrypted = false;
 
 		public DataBuilder() {
@@ -78,13 +78,17 @@ public class Data {
 				bytes = this.bytes;
 			} else {
 				if (encryptorBuilder.getNumReaders() == 0) {
-					throw new IllegalStateException("Must either be unencrypted or have atleast one reader.");
+					throw new IllegalStateException("Must either be unencrypted or have at least one reader.");
 				}
 
-				ECKeyPair sharedKey = ECKeyPairGenerator.newInstance().generateKeyPair();
+				ECKeyPair sharedKey = ECKeyPair.generateNew();
 				encryptorBuilder.sharedKey(sharedKey);
 				encryptor = encryptorBuilder.build();
-				bytes = sharedKey.getPublicKey().encrypt(this.bytes);
+				try {
+					bytes = sharedKey.getPublicKey().encrypt(this.bytes);
+				} catch (ECIESException e) {
+					throw new IllegalStateException("Expected to always be able to encrypt", e);
+				}
 			}
 			metaData.put("encrypted", unencrypted);
 

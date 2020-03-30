@@ -22,7 +22,7 @@
 
 package com.radixdlt.client.atommodel;
 
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.identifiers.RadixAddress;
 
 /**
  * Temporary interface for representing a particle that can be owned and only invalidated by an owner.
