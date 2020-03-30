@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus;
 
+import static org.assertj.core.api.AssertionsForClassTypes.within;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
@@ -36,10 +37,14 @@ import org.junit.Test;
  * Tests with networks with crashed nodes
  */
 public class CrashFaultNetworkTest {
-	static List<ECKeyPair> createNodes(int numNodes) {
+	static List<ECKeyPair> createNodes(int numNodes, String designation) {
 		return Stream.generate(() -> {
 			try {
-				return new ECKeyPair();
+				ECKeyPair keyPair = null;
+				do {
+					keyPair = new ECKeyPair();
+				} while (!keyPair.getUID().toString().startsWith(designation));
+				return keyPair;
 			} catch (CryptoException e) {
 				throw new RuntimeException();
 			}
@@ -52,7 +57,7 @@ public class CrashFaultNetworkTest {
 		final long time = 1;
 		final TimeUnit timeUnit = TimeUnit.MINUTES;
 
-		final List<ECKeyPair> nodes = createNodes(numNodes);
+		final List<ECKeyPair> nodes = createNodes(numNodes, "");
 		final BFTTestNetwork bftNetwork = new BFTTestNetwork(nodes);
 		bftNetwork.getTestEventCoordinatorNetwork().setSendingDisable(nodes.get(2).getUID(), true);
 
@@ -83,14 +88,15 @@ public class CrashFaultNetworkTest {
 		final long time = 1;
 		final TimeUnit timeUnit = TimeUnit.MINUTES;
 
-		final List<ECKeyPair> allNodes = createNodes(numNodes);
-		final List<ECKeyPair> correctNodes = allNodes.subList(0, numCorrect);
+		final List<ECKeyPair> correctNodes = createNodes(numCorrect, "c");
+		final List<ECKeyPair> faultyNodes = createNodes(numCrashed, "f");
+		final List<ECKeyPair> allNodes = Stream.concat(correctNodes.stream(), faultyNodes.stream()).collect(Collectors.toList());
 		final Set<ECPublicKey> correctNodesPubs = correctNodes.stream()
 			.map(ECKeyPair::getPublicKey)
 			.collect(Collectors.toSet());
-		final List<ECKeyPair> crashedNodes = allNodes.subList(numCorrect, numCorrect + numCrashed);
 		final BFTTestNetwork bftNetwork = new BFTTestNetwork(allNodes);
-		crashedNodes.forEach(node -> bftNetwork.getTestEventCoordinatorNetwork().setSendingDisable(node.getUID(), true));
+		// "crash" all faulty nodes by disallowing any sends
+		faultyNodes.forEach(node -> bftNetwork.getTestEventCoordinatorNetwork().setSendingDisable(node.getUID(), true));
 
 		// correct nodes should all get the same commits in the same order
 		Observable<Object> correctCommitCheck = Observable.zip(correctNodes.stream()
