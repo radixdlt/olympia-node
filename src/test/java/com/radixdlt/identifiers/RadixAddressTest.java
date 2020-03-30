@@ -30,6 +30,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
 public class RadixAddressTest {
@@ -77,7 +78,7 @@ public class RadixAddressTest {
 	@Test(expected = DecoderException.class)
 	public void createAddressFromBadPublicKey() throws CryptoException, DecoderException {
 		ECPublicKey publicKey = new ECPublicKey(Base64.decode("BADKEY"));
-		new RadixAddress(magicByte(), publicKey);
+		assertNotNull(new RadixAddress(magicByte(), publicKey));
 		fail();
 	}
 
@@ -89,7 +90,7 @@ public class RadixAddressTest {
 
 	@Test(expected = CryptoException.class)
 	public void generateAddress() throws CryptoException {
-		new RadixAddress(magicByte(), new ECPublicKey(new byte[33]));
+		assertNotNull(new RadixAddress(magicByte(), new ECPublicKey(new byte[33])));
 		fail();
 	}
 

@@ -60,7 +60,7 @@ public class HashTest {
 
 	@Test(expected = IllegalArgumentException.class)
     public void verify_that_an_error_is_thrown_for_too_short_hex_string_constructor() {
-		new Hash("deadbeef");
+		assertNotNull(new Hash("deadbeef"));
 		fail();
 	}
 
@@ -210,10 +210,6 @@ public class HashTest {
 
 		assertNotEquals(deadbeef, Hash.of(deadbeef).toByteArray());
 		assertNotEquals(deadbeef, Hash.hash256(deadbeef));
-	}
-
-	private void testEncodeToHashFromString(String message, Function<byte[], Hash> hashFunction, String expectedHashHex) {
-		testEncodeToHashedBytesFromString(message, hashFunction.andThen(Hash::toByteArray), expectedHashHex);
 	}
 
 	private void testEncodeToHashedBytesFromString(String message, Function<byte[], byte[]> hashFunction, String expectedHashHex) {

@@ -23,6 +23,7 @@ import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -61,13 +62,13 @@ public class EUIDTest {
 
 	@Test(expected = IllegalArgumentException.class)
     public void verify_that_exception_is_thrown_when_calling_constructor_with_too_short_hexstring() {
-		new EUID("deadbeef");
+		assertNotNull(new EUID("deadbeef"));
 		fail();
 	}
 
 	@Test(expected = IllegalArgumentException.class)
     public void verify_that_exception_is_thrown_when_calling_constructor_with_empty_byte_array() {
-		new EUID(new byte[0]);
+		assertNotNull(new EUID(new byte[0]));
 		fail();
 	}
 

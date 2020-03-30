@@ -154,7 +154,7 @@ public final class PrivateKeyEncrypter {
         return new String(decrypted, StandardCharsets.UTF_8);
     }
 
-    private static byte[] generateMac(byte[] derivedKey, byte[] cipherText) throws NoSuchAlgorithmException {
+    private static byte[] generateMac(byte[] derivedKey, byte[] cipherText) {
         byte[] result = new byte[derivedKey.length + cipherText.length];
         result = ByteBuffer.wrap(result).put(derivedKey).put(cipherText).array();
 

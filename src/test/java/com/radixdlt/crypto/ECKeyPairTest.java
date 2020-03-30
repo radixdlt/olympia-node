@@ -121,7 +121,7 @@ public class ECKeyPairTest {
 	}
 
 	@Test
-	public void decrypt_bad_encrypted_data_with_good_encrypted_private_key__should_throw_CryptoException() throws CryptoException {
+	public void decrypt_bad_encrypted_data_with_good_encrypted_private_key__should_throw_CryptoException() {
 		ECKeyPair keyPair1 = ECKeyPair.generateNew();
 		ECKeyPair keyPair2 = ECKeyPair.generateNew();
 
@@ -143,7 +143,7 @@ public class ECKeyPairTest {
 
 
 	@Test
-	public void when_generating_two_default_key_pairs__they_should_have_different_private_keys() throws CryptoException {
+	public void when_generating_two_default_key_pairs__they_should_have_different_private_keys() {
 		byte[] privateKey1 = ECKeyPair.generateNew().getPrivateKey();
 		byte[] privateKey2 = ECKeyPair.generateNew().getPrivateKey();
 
@@ -151,7 +151,7 @@ public class ECKeyPairTest {
 	}
 
 	@Test
-	public void when_generating_two_key_pairs_from_same_seed__they_should_have_same_private_keys() throws CryptoException {
+	public void when_generating_two_key_pairs_from_same_seed__they_should_have_same_private_keys() {
 		byte[] seed = "seed".getBytes();
 		byte[] privateKey1 = ECKeyPair.fromSeed(seed).getPrivateKey();
 		byte[] privateKey2 = ECKeyPair.fromSeed(seed).getPrivateKey();
@@ -160,7 +160,7 @@ public class ECKeyPairTest {
 	}
 
 	@Test
-	public void when_signing_some_hash_with_a_seeded_key_pair__another_key_pair_from_same_seed_can_verify_the_signature() throws CryptoException {
+	public void when_signing_some_hash_with_a_seeded_key_pair__another_key_pair_from_same_seed_can_verify_the_signature() {
 		byte[] seed = "seed".getBytes();
 		ECKeyPair keyPair1 = ECKeyPair.fromSeed(seed);
 		ECKeyPair keyPair2 = ECKeyPair.fromSeed(seed);
