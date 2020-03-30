@@ -110,7 +110,7 @@ public class CrashFaultNetworkTest {
 			.map(s -> (Vertex) s.get(0))
 			.map(o -> o);
 
-		// correct nodes should not get any timeouts since a quorum can still be formed
+		// correct nodes should only get timeouts when crashed nodes were a proposer
 		Observable<Object> correctTimeoutCheck = Observable.interval(1, TimeUnit.SECONDS)
 			.flatMapIterable(i -> correctNodes)
 			.doOnNext(cn -> assertThat(bftNetwork.getCounters(cn).getCount(Counters.CounterType.TIMEOUT))
