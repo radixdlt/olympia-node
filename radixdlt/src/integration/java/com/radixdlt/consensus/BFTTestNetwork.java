@@ -60,6 +60,7 @@ public class BFTTestNetwork {
 	private final QuorumCertificate genesisQC;
 	private final ImmutableMap<ECKeyPair, VertexStore> vertexStores;
 	private final ImmutableMap<ECKeyPair, Counters> counters;
+	private final ImmutableMap<ECKeyPair, PacemakerImpl> pacemakers;
 	private final Observable<Event> bftEvents;
 	private final ProposerElection proposerElection;
 	private final ValidatorSet validatorSet;
@@ -91,6 +92,7 @@ public class BFTTestNetwork {
 				})
 			);
 		this.counters = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e, e -> new Counters()));
+		this.pacemakers = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e, e -> new PacemakerImpl(Executors.newSingleThreadScheduledExecutor())));
 		this.bftEvents = Observable.merge(this.vertexStores.entrySet().stream()
 			.map(e -> createBFTInstance(e.getKey()).processEvents()
 		).collect(Collectors.toList()));
@@ -108,7 +110,7 @@ public class BFTTestNetwork {
 		}).when(mempool).getAtoms(anyInt(), anySet());
 		ProposalGenerator proposalGenerator = new ProposalGenerator(vertexStores.get(key), mempool);
 		SafetyRules safetyRules = new SafetyRules(key, vertexStores.get(key), SafetyState.initialState());
-		PacemakerImpl pacemaker = new PacemakerImpl(Executors.newSingleThreadScheduledExecutor());
+		PacemakerImpl pacemaker = pacemakers.get(key);
 		PendingVotes pendingVotes = new PendingVotes();
 		EpochRx epochRx = () -> Observable.just(validatorSet).concatWith(Observable.never());
 		EpochManager epochManager = new EpochManager(
@@ -142,6 +144,10 @@ public class BFTTestNetwork {
 
 	public Counters getCounters(ECKeyPair keyPair) {
 		return counters.get(keyPair);
+	}
+
+	public PacemakerImpl getPacemaker(ECKeyPair keyPair) {
+		return pacemakers.get(keyPair);
 	}
 
 	public TestEventCoordinatorNetwork getTestEventCoordinatorNetwork() {

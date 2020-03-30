@@ -17,12 +17,13 @@
 
 package com.radixdlt.consensus;
 
-import static org.assertj.core.api.AssertionsForClassTypes.within;
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import io.reactivex.rxjava3.core.Observable;
+import org.assertj.core.api.Condition;
+import org.junit.Test;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -30,8 +31,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.assertj.core.api.Condition;
-import org.junit.Test;
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 /**
  * Tests with networks with crashed nodes
@@ -40,6 +40,7 @@ public class CrashFaultNetworkTest {
 	static List<ECKeyPair> createNodes(int numNodes, String designation) {
 		return Stream.generate(() -> {
 			try {
+				// efficient? no. useful? yes.
 				ECKeyPair keyPair = null;
 				do {
 					keyPair = new ECKeyPair();
@@ -112,9 +113,9 @@ public class CrashFaultNetworkTest {
 		// correct nodes should not get any timeouts since a quorum can still be formed
 		Observable<Object> correctTimeoutCheck = Observable.interval(1, TimeUnit.SECONDS)
 			.flatMapIterable(i -> correctNodes)
-			.map(bftNetwork::getCounters)
-			.doOnNext(counters -> assertThat(counters.getCount(Counters.CounterType.TIMEOUT))
-				.satisfies(new Condition<>(c -> c == 0, "Timeout counter is zero.")))
+			.doOnNext(cn -> assertThat(bftNetwork.getCounters(cn).getCount(Counters.CounterType.TIMEOUT))
+				.satisfies(new Condition<>(c -> c == (bftNetwork.getPacemaker(cn).getCurrentView().number() / numNodes) * numCrashed,
+					"Timeout counter is equal to number of times crashed nodes were proposer.")))
 			.map(o -> o);
 
 		// correct proposals should be direct if generated after another correct proposal, otherwise there should be a gap
@@ -124,14 +125,16 @@ public class CrashFaultNetworkTest {
 			.map(EventCoordinatorNetworkRx::proposalMessages)
 			.collect(Collectors.toList());
 		Observable<Object> directProposalsCheck = Observable.merge(correctProposals)
-			.filter(v -> correctNodesPubs.contains(bftNetwork.getProposerElection().getProposer(v.getParentView())))
+			.filter(v -> correctNodesPubs.contains(bftNetwork.getProposerElection().getProposer(v.getView().previous())))
 			.doOnNext(v -> assertThat(v)
-				.satisfies(new Condition<>(vtx -> vtx.getView().equals(vtx.getParentView().next()), "Vertex after correct has direct parent")))
+				.satisfies(new Condition<>(vtx -> vtx.getView().equals(vtx.getParentView().next()),
+					"Vertex after correct %s at %s has direct parent", bftNetwork.getProposerElection().getProposer(v.getParentView()).getUID(), v.getParentView())))
 			.map(o -> o);
 		Observable<Object> gapProposalsCheck = Observable.merge(correctProposals)
-			.filter(v -> !correctNodesPubs.contains(bftNetwork.getProposerElection().getProposer(v.getParentView())))
+			.filter(v -> !correctNodesPubs.contains(bftNetwork.getProposerElection().getProposer(v.getView().previous())))
 			.doOnNext(v -> assertThat(v)
-				.satisfies(new Condition<>(vtx -> !vtx.getView().equals(vtx.getParentView().next()), "Vertex after timeout has gap")))
+				.satisfies(new Condition<>(vtx -> !vtx.getView().equals(vtx.getParentView().next()),
+					"Vertex after faulty %s at %s has gap", bftNetwork.getProposerElection().getProposer(v.getParentView()).getUID(), v.getParentView())))
 			.map(o -> o);
 
 		Observable.mergeArray(bftNetwork.processBFT(), correctCommitCheck, correctTimeoutCheck, directProposalsCheck, gapProposalsCheck)
