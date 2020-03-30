@@ -29,12 +29,13 @@ import io.reactivex.functions.Function;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import io.reactivex.functions.Predicate;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class IncreasingRetryTimer implements Function<Observable<Throwable>, ObservableSource<Long>> {
-	private static final Logger LOGGER = LoggerFactory.getLogger(IncreasingRetryTimer.class);
+	private static final Logger LOGGER = LogManager.getLogger(IncreasingRetryTimer.class);
 
 	private final Predicate<Throwable> filter;
 

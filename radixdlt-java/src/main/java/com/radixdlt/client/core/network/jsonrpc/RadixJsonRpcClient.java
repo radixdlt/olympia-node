@@ -41,14 +41,15 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.JsonJavaType;
 import com.radixdlt.serialization.Serialization;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.client.core.atoms.Atom;
@@ -117,7 +118,7 @@ public class RadixJsonRpcClient {
 		}
 	}
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(RadixJsonRpcClient.class);
+	private static final Logger LOGGER = LogManager.getLogger(RadixJsonRpcClient.class);
 
 	/**
 	 * API version of Client, must match with Server

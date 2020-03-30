@@ -39,8 +39,7 @@ test {
 }
 
 dependencies {
-
-    api 'com.github.radixdlt:radixdlt-java-common:rc~1.0-beta.2-SNAPSHOT'
+    api 'com.github.radixdlt:radixdlt-java-common:4dfcbad8df24abbff1b656c43587fc679089daaa'
 
     api group: 'com.squareup.okhttp3', name: 'okhttp', version: '3.10.0'
     api group: 'com.squareup.okhttp3', name: 'logging-interceptor', version: '3.10.0'

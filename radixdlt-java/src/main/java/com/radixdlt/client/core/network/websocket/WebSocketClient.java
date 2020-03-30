@@ -34,17 +34,19 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import okhttp3.Response;
 import okhttp3.WebSocket;
 import okhttp3.WebSocketListener;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Manages the state for a single websocket.
  */
 public class WebSocketClient implements PersistentChannel {
-	private static final Logger LOGGER = LoggerFactory.getLogger(WebSocketClient.class);
+	private static final Logger LOGGER = LogManager.getLogger(WebSocketClient.class);
 	private static final int MAX_LOG_STRING_OUTPUT = 1024;
 	private final Object lock = new Object();
 	private final BehaviorSubject<WebSocketStatus> state = BehaviorSubject.createDefault(WebSocketStatus.DISCONNECTED);
