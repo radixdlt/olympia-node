@@ -106,13 +106,12 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 	}
 
 	private void proceedToView(View nextView) {
-        // TODO make signing more robust by including author in signed hash
+		// TODO make signing more robust by including author in signed hash
 		ECDSASignature signature = this.selfKey.sign(Hash.hash256(Longs.toByteArray(nextView.number())));
-        NewView newView = new NewView(selfKey.getPublicKey(), nextView, this.vertexStore.getHighestQC(), signature);
-        ECPublicKey nextLeader = this.proposerElection.getProposer(nextView);
-        log.info(String.format("%s: Sending NEW_VIEW to %s: %s", this.getShortName(), this.getShortName(nextLeader.euid()), newView));
-        this.networkSender.sendNewView(newView, nextLeader.euid());
-
+		NewView newView = new NewView(selfKey.getPublicKey(), nextView, this.vertexStore.getHighestQC(), signature);
+		ECPublicKey nextLeader = this.proposerElection.getProposer(nextView);
+		log.info(String.format("%s: Sending NEW_VIEW to %s: %s", this.getShortName(), this.getShortName(nextLeader.euid()), newView));
+		this.networkSender.sendNewView(newView, nextLeader.euid());
 	}
 
 	private void processQC(QuorumCertificate qc) throws SyncException {
