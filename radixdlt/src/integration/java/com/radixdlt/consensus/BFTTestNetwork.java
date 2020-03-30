@@ -24,12 +24,15 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.common.AID;
 import com.radixdlt.common.Atom;
 import com.radixdlt.consensus.ChainedBFT.Event;
 import com.radixdlt.consensus.liveness.PacemakerImpl;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
+import com.radixdlt.consensus.liveness.ProposerElection;
+import com.radixdlt.consensus.liveness.RotatingLeaders;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.consensus.validators.Validator;
@@ -58,6 +61,7 @@ public class BFTTestNetwork {
 	private final ImmutableMap<ECKeyPair, VertexStore> vertexStores;
 	private final ImmutableMap<ECKeyPair, Counters> counters;
 	private final Observable<Event> bftEvents;
+	private final ProposerElection proposerElection;
 	private final ValidatorSet validatorSet;
 
 	public BFTTestNetwork(List<ECKeyPair> nodes) {
@@ -72,6 +76,10 @@ public class BFTTestNetwork {
 		);
 		this.validatorSet = ValidatorSet.from(
 			nodes.stream().map(ECKeyPair::getPublicKey).map(Validator::from).collect(Collectors.toList())
+		);
+		this.proposerElection = new RotatingLeaders(validatorSet.getValidators().stream()
+			.map(Validator::nodeKey)
+			.collect(ImmutableList.toImmutableList())
 		);
 		this.vertexStores = nodes.stream()
 			.collect(ImmutableMap.toImmutableMap(
@@ -111,6 +119,7 @@ public class BFTTestNetwork {
 			pacemaker,
 			vertexStores.get(key),
 			pendingVotes,
+			proposers -> proposerElection, // assumes all instances use the same validators
 			key,
 			counters.get(key)
 		);
@@ -121,6 +130,10 @@ public class BFTTestNetwork {
 			pacemaker,
 			epochManager
 		);
+	}
+
+	public ProposerElection getProposerElection() {
+		return proposerElection;
 	}
 
 	public VertexStore getVertexStore(ECKeyPair keyPair) {

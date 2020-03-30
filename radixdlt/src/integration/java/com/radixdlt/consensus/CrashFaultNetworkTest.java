@@ -20,12 +20,16 @@ package com.radixdlt.consensus;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import org.assertj.core.api.Condition;
 import org.junit.Test;
 
 /**
@@ -70,4 +74,62 @@ public class CrashFaultNetworkTest {
 		bftNetwork.processBFT().takeUntil(committed)
 			.blockingSubscribe();
 	}
+
+	@Test
+	public void given_3_out_of_4_correct_bfts__then_correct_instances_should_get_same_commits_consecutive_vertices_over_1_minute() {
+		final int numNodes = 4;
+		final int numCrashed = 1;
+		final int numCorrect = numNodes - numCrashed;
+		final long time = 1;
+		final TimeUnit timeUnit = TimeUnit.MINUTES;
+
+		final List<ECKeyPair> allNodes = createNodes(numNodes);
+		final List<ECKeyPair> correctNodes = allNodes.subList(0, numCorrect);
+		final Set<ECPublicKey> correctNodesPubs = correctNodes.stream()
+			.map(ECKeyPair::getPublicKey)
+			.collect(Collectors.toSet());
+		final List<ECKeyPair> crashedNodes = allNodes.subList(numCorrect, numCorrect + numCrashed);
+		final BFTTestNetwork bftNetwork = new BFTTestNetwork(allNodes);
+		crashedNodes.forEach(node -> bftNetwork.getTestEventCoordinatorNetwork().setSendingDisable(node.getUID(), true));
+
+		// correct nodes should all get the same commits in the same order
+		Observable<Object> correctCommitCheck = Observable.zip(correctNodes.stream()
+			.map(bftNetwork::getVertexStore)
+			.map(VertexStore::lastCommittedVertex)
+			.collect(Collectors.toList()), Arrays::stream)
+			.map(s -> s.distinct().collect(Collectors.toList()))
+			.doOnNext(s -> assertThat(s).hasSize(1))
+			.map(s -> (Vertex) s.get(0))
+			.map(o -> o);
+
+		// correct nodes should not get any timeouts since a quorum can still be formed
+		Observable<Object> correctTimeoutCheck = Observable.interval(1, TimeUnit.SECONDS)
+			.flatMapIterable(i -> correctNodes)
+			.map(bftNetwork::getCounters)
+			.doOnNext(counters -> assertThat(counters.getCount(Counters.CounterType.TIMEOUT))
+				.satisfies(new Condition<>(c -> c == 0, "Timeout counter is zero.")))
+			.map(o -> o);
+
+		// correct proposals should be direct if generated after another correct proposal, otherwise there should be a gap
+		List<Observable<Vertex>> correctProposals = correctNodes.stream()
+			.map(ECKeyPair::getUID)
+			.map(bftNetwork.getTestEventCoordinatorNetwork()::getNetworkRx)
+			.map(EventCoordinatorNetworkRx::proposalMessages)
+			.collect(Collectors.toList());
+		Observable<Object> directProposalsCheck = Observable.merge(correctProposals)
+			.filter(v -> correctNodesPubs.contains(bftNetwork.getProposerElection().getProposer(v.getParentView())))
+			.doOnNext(v -> assertThat(v)
+				.satisfies(new Condition<>(vtx -> vtx.getView().equals(vtx.getParentView().next()), "Vertex after correct has direct parent")))
+			.map(o -> o);
+		Observable<Object> gapProposalsCheck = Observable.merge(correctProposals)
+			.filter(v -> !correctNodesPubs.contains(bftNetwork.getProposerElection().getProposer(v.getParentView())))
+			.doOnNext(v -> assertThat(v)
+				.satisfies(new Condition<>(vtx -> !vtx.getView().equals(vtx.getParentView().next()), "Vertex after timeout has gap")))
+			.map(o -> o);
+
+		Observable.mergeArray(bftNetwork.processBFT(), correctCommitCheck, correctTimeoutCheck, directProposalsCheck, gapProposalsCheck)
+			.take(time, timeUnit)
+			.blockingSubscribe();
+	}
+
 }

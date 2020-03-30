@@ -98,7 +98,6 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 			return Optional.empty();
 		} else {
 			// if we got enough new-views, remove pending and return formed QC
-
 			if (newView.getView().compareTo(this.currentView) > 0
 				&& newView.getQC().getView().equals(this.currentView)) {
 				this.currentView = newView.getView();
