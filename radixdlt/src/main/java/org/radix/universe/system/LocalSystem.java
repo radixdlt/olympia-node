@@ -20,6 +20,7 @@ package org.radix.universe.system;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.DefaultSerialization;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.keys.Keys;
@@ -61,7 +62,7 @@ public final class LocalSystem extends RadixSystem
 	{
 		super();
 
-		this.keyPair = new ECKeyPair();
+		this.keyPair = ECKeyPair.generateNew();
 	}
 
 	public LocalSystem(ECKeyPair key, String agent, int agentVersion, int protocolVersion, ImmutableList<TransportInfo> supportedTransports)
@@ -167,7 +168,7 @@ public final class LocalSystem extends RadixSystem
 		if (SystemMetaData.getInstanceOptional().map(meta -> meta.has("system") ).orElse(false)) {
 			byte[] systemBytes = SystemMetaData.getInstance().get("system", Bytes.EMPTY_BYTES);
 			try {
-				localSystem = Serialization.getDefault().fromDson(systemBytes, LocalSystem.class);
+				localSystem = DefaultSerialization.getInstance().fromDson(systemBytes, LocalSystem.class);
 			} catch (SerializationException e) {
 				throw new IllegalStateException("while restoring local instance", e);
 			}
@@ -181,7 +182,7 @@ public final class LocalSystem extends RadixSystem
 			public void execute() {
 				SystemMetaData.ifPresent(smc -> {
 					try {
-						byte[] systemBytes = Serialization.getDefault().toDson(localSystem, Output.PERSIST);
+						byte[] systemBytes = DefaultSerialization.getInstance().toDson(localSystem, Output.PERSIST);
 						smc.put("system", systemBytes);
 					} catch (IOException e) {
 						log.error("Could not persist system state", e);

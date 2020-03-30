@@ -17,7 +17,7 @@
 
 package com.radixdlt.middleware2.converters;
 
-import com.radixdlt.common.Atom;
+import com.radixdlt.atommodel.Atom;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;

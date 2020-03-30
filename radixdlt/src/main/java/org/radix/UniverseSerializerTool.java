@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Base64;
 
+import com.radixdlt.DefaultSerialization;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.universe.Universe;
@@ -51,7 +52,7 @@ public class UniverseSerializerTool
 
 		String universeFileContent = new String(Files.readAllBytes(universeFile.toPath()));
 
-		Serialization serialization = Serialization.getDefault();
+		Serialization serialization = DefaultSerialization.getInstance();
 		Universe universe = serialization.fromJson(universeFileContent, Universe.class);
 		String serializedUniverseBase64String = Base64.getEncoder().encodeToString(serialization.toDson(universe, Output.ALL));
 		System.out.println(serializedUniverseBase64String);

@@ -17,7 +17,8 @@
 
 package org.radix.network2.messaging;
 
-import com.radixdlt.common.EUID;
+import com.radixdlt.DefaultSerialization;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.serialization.Serialization;
 import org.hamcrest.Matchers;
@@ -78,7 +79,7 @@ public class MessageDispatcherTest extends RadixTest {
     @Before
     public void setup() {
         when(getNtpService().getUTCTimeMS()).thenAnswer((Answer<Long>) invocation -> System.currentTimeMillis());
-        Serialization serialization = Serialization.getDefault();
+        Serialization serialization = DefaultSerialization.getInstance();
         MessageCentralConfiguration conf = new MessagingDummyConfigurations.DummyMessageCentralConfiguration();
         interfaces = mock(Interfaces.class);
         PowerMockito.when(interfaces.isSelf(any())).thenReturn(false);

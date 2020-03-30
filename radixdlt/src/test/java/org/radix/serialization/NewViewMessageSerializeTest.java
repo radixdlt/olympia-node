@@ -17,7 +17,7 @@
 
 package org.radix.serialization;
 
-import com.radixdlt.atomos.RadixAddress;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.VertexMetadata;
@@ -35,7 +35,7 @@ public class NewViewMessageSerializeTest extends SerializeMessageObject<NewViewM
 		RadixAddress author = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
 		VertexMetadata vertexMetadata = new VertexMetadata(View.of(1), Hash.ZERO_HASH, View.of(2), Hash.ZERO_HASH);
 		QuorumCertificate quorumCertificate = new QuorumCertificate(vertexMetadata, new ECDSASignatures());
-		NewView testView = new NewView(author.getKey(), View.of(1234567890L), quorumCertificate, null);
+		NewView testView = new NewView(author.getPublicKey(), View.of(1234567890L), quorumCertificate, null);
 		return new NewViewMessage(1234, testView);
 	}
 }

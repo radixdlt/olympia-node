@@ -49,7 +49,7 @@ public class ValidationResultTest {
 	public void testGetters() throws CryptoException {
 		assertFalse(ValidationResult.failure().valid());
 
-		ECKeyPair nodeKey = new ECKeyPair();
+		ECKeyPair nodeKey = ECKeyPair.generateNew();
 		Validator v = Validator.from(nodeKey.getPublicKey());
 		ImmutableList<Validator> vs = ImmutableList.of(v);
 		ValidationResult vr = ValidationResult.passed(vs);

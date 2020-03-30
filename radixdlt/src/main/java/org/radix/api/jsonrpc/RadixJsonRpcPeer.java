@@ -24,7 +24,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.radix.api.AtomQuery;
 import org.radix.api.services.AtomsService;
-import com.radixdlt.atomos.RadixAddress;
+import com.radixdlt.identifiers.RadixAddress;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 
@@ -66,7 +66,7 @@ public class RadixJsonRpcPeer {
 		this.submitAtomAndSubscribeEpic = new SubmitAtomAndSubscribeEpic(atomsService, atomSchema,
 			atomJson -> callback.accept(this, atomJson.toString()));
 		this.atomsSubscribeEpic = new AtomsSubscribeEpic(atomsService, serialization,
-			queryJson -> new AtomQuery(RadixAddress.from(queryJson.getString("address")).getUID()), atomJson -> callback.accept(this, atomJson.toString()));
+			queryJson -> new AtomQuery(RadixAddress.from(queryJson.getString("address")).euid()), atomJson -> callback.accept(this, atomJson.toString()));
 
 		callback.accept(this, JsonRpcUtil.notification("Radix.welcome", new JSONObject().put("message", "Hello!")).toString());
 	}

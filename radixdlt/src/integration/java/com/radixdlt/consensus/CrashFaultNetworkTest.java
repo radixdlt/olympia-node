@@ -18,7 +18,6 @@
 package com.radixdlt.consensus;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
-import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.Arrays;
@@ -34,11 +33,7 @@ import org.junit.Test;
 public class CrashFaultNetworkTest {
 	static List<ECKeyPair> createNodes(int numNodes) {
 		return Stream.generate(() -> {
-			try {
-				return new ECKeyPair();
-			} catch (CryptoException e) {
-				throw new RuntimeException();
-			}
+			return ECKeyPair.generateNew();
 		}).limit(numNodes).collect(Collectors.toList());
 	}
 
@@ -50,7 +45,7 @@ public class CrashFaultNetworkTest {
 
 		final List<ECKeyPair> nodes = createNodes(numNodes);
 		final BFTTestNetwork bftNetwork = new BFTTestNetwork(nodes);
-		bftNetwork.getTestEventCoordinatorNetwork().setSendingDisable(nodes.get(2).getUID(), true);
+		bftNetwork.getTestEventCoordinatorNetwork().setSendingDisable(nodes.get(2).euid(), true);
 
 		Observable.zip(nodes.stream()
 			.map(bftNetwork::getVertexStore)

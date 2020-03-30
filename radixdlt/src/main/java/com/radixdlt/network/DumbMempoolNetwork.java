@@ -17,7 +17,7 @@
 
 package com.radixdlt.network;
 
-import com.radixdlt.common.Atom;
+import com.radixdlt.atommodel.Atom;
 
 import com.radixdlt.mempool.MempoolNetworkRx;
 import com.radixdlt.mempool.MempoolNetworkTx;

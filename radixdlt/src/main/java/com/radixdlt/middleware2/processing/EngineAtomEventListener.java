@@ -18,8 +18,8 @@
 package com.radixdlt.middleware2.processing;
 
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.common.AID;
-import com.radixdlt.common.Atom;
+import com.radixdlt.identifiers.AID;
+import com.radixdlt.atommodel.Atom;
 import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.constraintmachine.Particle;
@@ -87,8 +87,8 @@ public class EngineAtomEventListener implements AtomEventListener {
 	public void onStateMissingDependency(AID atomId, Particle particle) {
 		final AtomDependencyNotFoundException notFoundException =
 			new AtomDependencyNotFoundException(
-				String.format("Atom has missing dependencies in transitions: %s", particle.getHID()),
-				Collections.singleton(particle.getHID())
+				String.format("Atom has missing dependencies in transitions: %s", particle.euid()),
+				Collections.singleton(particle.euid())
 			);
 
 		AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(notFoundException, atomId);

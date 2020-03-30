@@ -17,18 +17,18 @@
 
 package org.radix.api.services;
 
-import com.radixdlt.common.Atom;
+import com.radixdlt.atommodel.Atom;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.Bytes;
 
 import java.util.Random;
 import org.json.JSONObject;
-import com.radixdlt.atomos.RadixAddress;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.atomos.RRIParticle;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atommodel.unique.UniqueParticle;
-import com.radixdlt.atomos.RRI;
+import com.radixdlt.identifiers.RRI;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.mempool.SubmissionControl;
@@ -72,7 +72,7 @@ public final class InternalService {
 			this.iterations = iterations;
 			this.rate = rate;
 			this.batching = Math.max(1, batching);
-			this.account = RadixAddress.from(universe, owner.getPublicKey());
+			this.account = new RadixAddress((byte) universe.getMagic(), owner.getPublicKey());
 			this.nonceBits = nonceBits;
 		}
 
@@ -183,17 +183,13 @@ public final class InternalService {
 			throw new RuntimeException("Rate is too high - Maximum rate is " + maxRate);
 		}
 
-		try {
-			int nonceBits = this.properties.get("test.nullatom.junk_size", 40);
-			Thread spammerThread = new Thread(new Spammer(new ECKeyPair(), Integer.decode(iterations), batching == null ? 1 : Integer.decode(batching), Integer.decode(rate), nonceBits));
-			spammerThread.setDaemon(true);
-			spammerThread.setName("Spammer " + System.currentTimeMillis());
-			spammerThread.start();
+		int nonceBits = this.properties.get("test.nullatom.junk_size", 40);
+		Thread spammerThread = new Thread(new Spammer(ECKeyPair.generateNew(), Integer.decode(iterations), batching == null ? 1 : Integer.decode(batching), Integer.decode(rate), nonceBits));
+		spammerThread.setDaemon(true);
+		spammerThread.setName("Spammer " + System.currentTimeMillis());
+		spammerThread.start();
 
-			result.put("data", "OK");
-		} catch (CryptoException e) {
-			result.put("error", e.getMessage());
-		}
+		result.put("data", "OK");
 
 		return result;
 	}

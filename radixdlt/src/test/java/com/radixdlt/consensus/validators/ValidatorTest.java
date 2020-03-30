@@ -20,7 +20,6 @@ package com.radixdlt.consensus.validators;
 import org.junit.Test;
 import org.radix.serialization.SerializeObject;
 
-import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
@@ -52,11 +51,7 @@ public class ValidatorTest extends SerializeObject<Validator> {
 	}
 
 	private static Validator create() {
-		try {
-			ECKeyPair nodeKey = new ECKeyPair();
-			return Validator.from(nodeKey.getPublicKey());
-		} catch (CryptoException e) {
-			throw new IllegalStateException("While constructing validator", e);
-		}
+		ECKeyPair nodeKey = ECKeyPair.generateNew();
+		return Validator.from(nodeKey.getPublicKey());
 	}
 }

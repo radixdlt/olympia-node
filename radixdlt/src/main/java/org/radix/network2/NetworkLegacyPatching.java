@@ -17,7 +17,7 @@
 
 package org.radix.network2;
 
-import com.radixdlt.common.EUID;
+import com.radixdlt.identifiers.EUID;
 import org.radix.network2.addressbook.AddressBook;
 import org.radix.network2.addressbook.Peer;
 import org.radix.time.Timestamps;

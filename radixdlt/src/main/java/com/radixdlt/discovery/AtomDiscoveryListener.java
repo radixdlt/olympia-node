@@ -17,7 +17,7 @@
 
 package com.radixdlt.discovery;
 
-import com.radixdlt.common.AID;
+import com.radixdlt.identifiers.AID;
 import org.radix.network2.addressbook.Peer;
 
 import java.util.Set;

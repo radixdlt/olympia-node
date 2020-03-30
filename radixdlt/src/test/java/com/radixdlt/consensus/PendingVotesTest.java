@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.validators.ValidationResult;
 import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
-import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
@@ -73,11 +72,7 @@ public class PendingVotesTest {
 		when(vertexMetadata.getId()).thenReturn(vertexId);
 		when(vote.getVertexMetadata()).thenReturn(vertexMetadata);
 		when(vote.getSignature()).thenReturn(Optional.of(new ECDSASignature()));
-		try {
-			when(vote.getAuthor()).thenReturn(new ECKeyPair().getPublicKey());
-		} catch (CryptoException e) {
-			throw new RuntimeException("Failed to setup vote", e);
-		}
+		when(vote.getAuthor()).thenReturn(ECKeyPair.generateNew().getPublicKey());
 		return vote;
 	}
 }

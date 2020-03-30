@@ -18,8 +18,8 @@
 package com.radixdlt.middleware2.store;
 
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.common.Atom;
-import com.radixdlt.common.EUID;
+import com.radixdlt.atommodel.Atom;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
@@ -98,7 +98,7 @@ public class EngineAtomIndices {
 							throw new IllegalStateException("Unknown SPIN state for particle " + nextSpin);
 					}
 
-					final byte[] indexableBytes = toByteArray(indexType, i.getParticle().getHID());
+					final byte[] indexableBytes = toByteArray(indexType, i.getParticle().euid());
 					uniqueIndices.add(new StoreIndex(indexableBytes));
 				});
 

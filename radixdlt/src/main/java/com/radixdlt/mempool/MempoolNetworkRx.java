@@ -17,7 +17,7 @@
 
 package com.radixdlt.mempool;
 
-import com.radixdlt.common.Atom;
+import com.radixdlt.atommodel.Atom;
 import io.reactivex.rxjava3.core.Observable;
 
 /**

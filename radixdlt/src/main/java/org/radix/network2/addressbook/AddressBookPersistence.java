@@ -17,7 +17,7 @@
 
 package org.radix.network2.addressbook;
 
-import com.radixdlt.common.EUID;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;

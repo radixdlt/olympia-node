@@ -20,7 +20,6 @@ package com.radixdlt.consensus;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.radixdlt.consensus.Counters.CounterType;
-import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.Arrays;
@@ -36,11 +35,7 @@ import org.junit.Test;
 public class PerfectNetworkTest {
 	private static List<ECKeyPair> createNodes(int numNodes) {
 		return Stream.generate(() -> {
-			try {
-				return new ECKeyPair();
-			} catch (CryptoException e) {
-				throw new RuntimeException();
-			}
+			return ECKeyPair.generateNew();
 		}).limit(numNodes).collect(Collectors.toList());
 	}
 

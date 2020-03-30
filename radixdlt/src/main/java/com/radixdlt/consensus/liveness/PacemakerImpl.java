@@ -85,7 +85,7 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 
 	@Override
 	public Optional<View> processNewView(NewView newView, ValidatorSet validatorSet) {
-		Hash newViewId = new Hash(Hash.hash256(Longs.toByteArray(newView.getView().number())));
+		Hash newViewId = Hash.of(Longs.toByteArray(newView.getView().number()));
 		ECDSASignature signature = newView.getSignature().orElseThrow(() -> new IllegalArgumentException("new-view is missing signature"));
 		ECDSASignatures signatures = pendingNewViews.getOrDefault(newView.getView(), new ECDSASignatures());
 		signatures = (ECDSASignatures) signatures.concatenate(newView.getAuthor(), signature);
