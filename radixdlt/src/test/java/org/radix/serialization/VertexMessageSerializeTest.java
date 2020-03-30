@@ -32,13 +32,11 @@ public class VertexMessageSerializeTest extends SerializeMessageObject<VertexMes
 	}
 
 	private static VertexMessage get() {
-		View parentView = View.of(1234567890L);
-		View view = parentView.next();
-		Hash parentId = Hash.random();
+		View view = View.of(1234567890L);
 		Hash id = Hash.random();
 		Atom atom = new Atom();
 
-		VertexMetadata vertexMetadata = new VertexMetadata(view, id, parentView, parentId);
+		VertexMetadata vertexMetadata = new VertexMetadata(view, id);
 		QuorumCertificate qc = new QuorumCertificate(vertexMetadata, new ECDSASignatures());
 		Vertex vertex = new Vertex(qc, view, atom);
 		return new VertexMessage(1, vertex);

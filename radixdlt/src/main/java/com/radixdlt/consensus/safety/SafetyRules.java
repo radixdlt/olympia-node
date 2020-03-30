@@ -130,9 +130,7 @@ public final class SafetyRules {
 		this.state = this.state.withLastVotedView(proposedVertex.getView());
 		VertexMetadata vertexMetadata = new VertexMetadata(
 			proposedVertex.getView(),
-			proposedVertex.getId(),
-			proposedVertex.getQC().getView(),
-			proposedVertex.getQC().getVertexMetadata().getId()
+			proposedVertex.getId()
 		);
 
 		// TODO make signing more robust by including author in signed hash

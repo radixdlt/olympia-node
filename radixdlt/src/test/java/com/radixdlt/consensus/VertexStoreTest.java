@@ -45,9 +45,7 @@ public class VertexStoreTest {
 	@Before
 	public void setUp() {
 		this.genesisVertex = Vertex.createGenesis(null);
-		VertexMetadata vertexMetadata = new VertexMetadata(
-			View.genesis(), genesisVertex.getId(), null, null
-		);
+		VertexMetadata vertexMetadata = new VertexMetadata(View.genesis(), genesisVertex.getId());
 		this.rootQC = new QuorumCertificate(vertexMetadata, new ECDSASignatures());
 		this.radixEngine = mock(RadixEngine.class);
 		this.vertexStore = new VertexStore(genesisVertex, rootQC, radixEngine);
@@ -65,9 +63,7 @@ public class VertexStoreTest {
 
 	@Test
 	public void when_inserting_vertex_with_missing_parent__then_missing_parent_exception_is_thrown() throws Exception {
-		VertexMetadata vertexMetadata = new VertexMetadata(
-			View.genesis(), Hash.ZERO_HASH, null, null
-		);
+		VertexMetadata vertexMetadata = new VertexMetadata(View.genesis(), Hash.ZERO_HASH);
 		QuorumCertificate qc = new QuorumCertificate(vertexMetadata, new ECDSASignatures());
 		Vertex nextVertex = Vertex.createVertex(qc, View.of(1), mock(Atom.class));
 		assertThatThrownBy(() -> vertexStore.insertVertex(nextVertex))
@@ -93,7 +89,7 @@ public class VertexStoreTest {
 	@Test
 	public void when_insert_two_vertices__then_get_path_from_root_should_return_the_two_vertices() throws Exception {
 		Vertex nextVertex0 = Vertex.createVertex(rootQC, View.of(1), null);
-		VertexMetadata vertexMetadata = new VertexMetadata(View.of(1), nextVertex0.getId(), View.genesis(), genesisVertex.getId());
+		VertexMetadata vertexMetadata = new VertexMetadata(View.of(1), nextVertex0.getId());
 		QuorumCertificate qc = new QuorumCertificate(vertexMetadata, new ECDSASignatures());
 		Vertex nextVertex1 = Vertex.createVertex(qc, View.of(2), null);
 		vertexStore.insertVertex(nextVertex0);

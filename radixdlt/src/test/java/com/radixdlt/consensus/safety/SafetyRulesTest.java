@@ -186,7 +186,7 @@ public class SafetyRulesTest {
 	}
 
 	private static VertexStore makeVertexStore() {
-		final VertexMetadata genesisMetadata = new VertexMetadata(View.genesis(), GENESIS_VERTEX.getId(), View.genesis(), GENESIS_VERTEX.getId());
+		final VertexMetadata genesisMetadata = new VertexMetadata(View.genesis(), GENESIS_VERTEX.getId());
 		final QuorumCertificate rootQC = new QuorumCertificate(genesisMetadata, new ECDSASignatures());
 		return new VertexStore(GENESIS_VERTEX, rootQC, mock(RadixEngine.class));
 	}
@@ -194,9 +194,7 @@ public class SafetyRulesTest {
 	private static Vertex makeVertex(Vertex parent, View view, VertexStore vertexStore) {
 		VertexMetadata parentMetadata = new VertexMetadata(
 			parent.getView(),
-			parent.getId(),
-			parent.getParentView(),
-			parent.getParentId()
+			parent.getId()
 		);
 		QuorumCertificate qc = new QuorumCertificate(parentMetadata, new ECDSASignatures());
 		Vertex vertex = Vertex.createVertex(qc, view, null);

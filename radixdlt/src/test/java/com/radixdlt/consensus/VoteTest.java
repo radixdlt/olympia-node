@@ -35,13 +35,10 @@ public class VoteTest {
 
 	@Before
 	public void setUp() {
-		View parentView = View.of(1234567890L);
-		this.parentId = Hash.random();
-
-		View view = parentView.next();
+		View view = View.of(1234567890L);
 		this.id = Hash.random();
 
-		this.vertexMetadata = new VertexMetadata(view, id, parentView, parentId);
+		this.vertexMetadata = new VertexMetadata(view, id);
 
 		this.testObject = new Vote(ADDRESS.getPublicKey(), vertexMetadata, null);
 	}

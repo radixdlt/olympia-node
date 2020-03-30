@@ -27,18 +27,14 @@ import nl.jqno.equalsverifier.EqualsVerifier;
 public class VertexMetadataTest {
 
 	private VertexMetadata testObject;
-	private Hash parentId;
 	private Hash id;
 
 	@Before
 	public void setUp() {
-		View parentView = View.of(1234567890L);
-		this.parentId = Hash.random();
-
-		View view = parentView.next();
+		View view = View.of(1234567890L);
 		this.id = Hash.random();
 
-		this.testObject = new VertexMetadata(view, id, parentView, parentId);
+		this.testObject = new VertexMetadata(view, id);
 	}
 
 	@Test
@@ -51,7 +47,6 @@ public class VertexMetadataTest {
 	public void testGetters() {
 		assertEquals(View.of(1234567891L), this.testObject.getView());
 
-		assertEquals(parentId, this.testObject.getParentId());
 		assertEquals(id, this.testObject.getId());
 	}
 

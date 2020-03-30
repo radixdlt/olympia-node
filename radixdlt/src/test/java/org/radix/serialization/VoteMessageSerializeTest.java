@@ -30,14 +30,11 @@ public class VoteMessageSerializeTest extends SerializeMessageObject<VoteMessage
 	}
 
 	private static VoteMessage get() {
-		View parentView = View.of(1234567890L);
-		Hash parentId = Hash.random();
-
-		View view = parentView.next();
+		View view = View.of(1234567890L);
 		Hash id = Hash.random();
 
 		RadixAddress author = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
-		VertexMetadata vertexMetadata = new VertexMetadata(view, id, parentView, parentId);
+		VertexMetadata vertexMetadata = new VertexMetadata(view, id);
 
 		Vote vote = new Vote(author.getPublicKey(), vertexMetadata, null);
 

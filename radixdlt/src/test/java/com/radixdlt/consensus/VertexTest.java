@@ -33,17 +33,14 @@ public class VertexTest {
 	private QuorumCertificate qc;
 	private Atom atom;
 	private VertexMetadata vertexMetadata;
-	private Hash parentId;
 	private Hash id;
 
 	@Before
 	public void setUp() throws Exception {
-		View parentView = View.of(1234567890L);
-		this.parentId = Hash.random();
-		View view = parentView.next();
+		View view = View.of(1234567890L);
 		this.id = Hash.random();
 
-		this.vertexMetadata = new VertexMetadata(view, id, parentView, parentId);
+		this.vertexMetadata = new VertexMetadata(view, id);
 
 		this.qc = new QuorumCertificate(this.vertexMetadata, new ECDSASignatures());
 
