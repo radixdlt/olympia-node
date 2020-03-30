@@ -71,9 +71,9 @@ class Utils {
     static RadixIdentity getIdentity(IdentityInfo info) {
 
         if (info?.encrypted != null) {
-            return getIdentity(info.encrypted.keyFile, info.encrypted.password, null)
-        } else if (info?.unEncryptedKeyFile != null) {
-            return getIdentity(null, null, info.unEncryptedKeyFile)
+            return getIdentity(info.encrypted.keyStore, info.encrypted.password, null)
+        } else if (info?.unencryptedKeyFile != null) {
+            return getIdentity(null, null, info.unencryptedKeyFile)
         }
         return getIdentiyUsingEnvVar()
     }

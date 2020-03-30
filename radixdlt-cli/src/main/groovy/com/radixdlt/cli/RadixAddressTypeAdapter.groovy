@@ -34,7 +34,6 @@ class RadixAddressTypeAdapter extends TypeAdapter<RadixAddress> {
 
     @Override
     RadixAddress read(JsonReader reader) throws IOException {
-        // implement the deserialization
         return RadixAddress.from(reader.nextString())
     }
 }

@@ -26,9 +26,9 @@ import picocli.CommandLine
 
 
 class Composite {
-    static class EnCrypted {
-        @CommandLine.Option(names = ["-k", "--keyfile"], paramLabel = "KEYFILE", description = "location of keyfile.", required = true)
-        String keyFile
+    static class Encrypted {
+        @CommandLine.Option(names = ["-k", "--keystore"], paramLabel = "KEYSTORE", description = "location of keystore file.", required = true)
+        String keyStore
 
         @CommandLine.Option(names = ["-p", "--password"], paramLabel = "PASSWORD", description = "password", required = true)
         String password
@@ -36,9 +36,9 @@ class Composite {
 
     static class IdentityInfo {
         @CommandLine.ArgGroup(exclusive = false)
-        EnCrypted encrypted
+        Encrypted encrypted
 
         @CommandLine.Option(names = ["-u", "--unencryptedkeyfile"], paramLabel = "UNENCRYPTED_KEYFILE", description = "location of unencrypted keyfile.")
-        String unEncryptedKeyFile
+        String unencryptedKeyFile
     }
 }

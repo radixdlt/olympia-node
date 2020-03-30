@@ -31,9 +31,9 @@ import picocli.CommandLine.Parameters
 @Command(name = "radix", version = "1.0",
         mixinStandardHelpOptions = true,
         description = "Radix CLI", subcommands = [
-                KeyGenerator.class, GetBalance.class, GetMessage.class,
-                SendMessage.class, SendTokens.class, GetDetails.class,
-                GetAtomStore.class, CreateAndMintToken.class])
+                KeyGenerator.class, GetMessage.class,
+                SendMessage.class, GetDetails.class,
+                GetStoredAtoms.class, CreateAndMintToken.class])
 class RadixCLI implements Runnable {
 
 

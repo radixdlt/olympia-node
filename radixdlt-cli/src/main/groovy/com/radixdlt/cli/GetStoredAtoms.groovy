@@ -21,15 +21,12 @@
  */
 package com.radixdlt.cli
 
-import com.google.gson.Gson
-import com.google.gson.GsonBuilder
 import com.radixdlt.client.application.RadixApplicationAPI
-import com.radixdlt.client.atommodel.accounts.RadixAddress
 import picocli.CommandLine
 
-@CommandLine.Command(name = "get-balance", mixinStandardHelpOptions = true,
-        description = "Get Balance")
-class GetBalance implements Runnable {
+@CommandLine.Command(name = "get-stored-atoms", mixinStandardHelpOptions = true,
+        description = "Get stored Atoms")
+class GetStoredAtoms implements Runnable {
 
     @CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
     Composite.IdentityInfo identityInfo
@@ -37,14 +34,14 @@ class GetBalance implements Runnable {
     void run() {
 
         RadixApplicationAPI api = Utils.getAPI(identityInfo)
-        Gson gson = new GsonBuilder()
-                .registerTypeAdapter(RadixAddress.class, new RadixAddressTypeAdapter())
-                .excludeFieldsWithoutExposeAnnotation()
-                .create()
-//        TODO api.getState is not valid method
-//        TokenBalanceState tokenBalanceState = api.getState(TokenBalanceState.class, api.getMyAddress()).blockingFirst();
-//        System.out.println(gson.toJson(tokenBalanceState));
-//        System.exit(0);
+        api.pull()
+
+        def atomStore = api.getAtomStore()
+        def observations = atomStore.getAtomObservations(api.getAddress())
+        observations.filter({ it -> return it.isHead() }).blockingFirst()
+        atomStore.getStoredAtoms(api.getAddress()).each { it -> println it.getAid() }
+        System.exit(0)
     }
 
 }
+
