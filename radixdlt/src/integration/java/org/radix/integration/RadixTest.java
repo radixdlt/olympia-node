@@ -17,6 +17,7 @@
 
 package org.radix.integration;
 
+import com.radixdlt.DefaultSerialization;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.universe.Universe;
@@ -43,7 +44,7 @@ public class RadixTest {
 	public static void startRadixTest() throws Exception {
 		TestSetupUtils.installBouncyCastleProvider();
 
-		serialization = Serialization.getDefault();
+		serialization = DefaultSerialization.getInstance();
 
 		JSONObject runtimeConfigurationJSON = new JSONObject();
 		if (Radix.class.getResourceAsStream("/runtime_options.json") != null) {

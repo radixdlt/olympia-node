@@ -20,7 +20,7 @@ package org.radix.atoms;
 import org.radix.exceptions.ValidationException;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.common.EUID;
+import com.radixdlt.identifiers.EUID;
 
 import java.util.List;
 import java.util.Set;

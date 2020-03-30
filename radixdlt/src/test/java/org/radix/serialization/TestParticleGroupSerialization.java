@@ -17,6 +17,7 @@
 
 package org.radix.serialization;
 
+import com.radixdlt.DefaultSerialization;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
 import org.junit.BeforeClass;
@@ -33,7 +34,7 @@ public class TestParticleGroupSerialization {
 
 	@BeforeClass
 	public static void setupSerializer() {
-		serialization = Serialization.getDefault();
+		serialization = DefaultSerialization.getInstance();
 	}
 
 	@Test

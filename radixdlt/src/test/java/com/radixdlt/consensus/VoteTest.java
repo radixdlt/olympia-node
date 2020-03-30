@@ -17,7 +17,7 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.atomos.RadixAddress;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.crypto.Hash;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Before;
@@ -43,7 +43,7 @@ public class VoteTest {
 
 		this.vertexMetadata = new VertexMetadata(view, id, parentView, parentId);
 
-		this.testObject = new Vote(ADDRESS.getKey(), vertexMetadata, null);
+		this.testObject = new Vote(ADDRESS.getPublicKey(), vertexMetadata, null);
 	}
 
 	@Test
@@ -55,7 +55,7 @@ public class VoteTest {
 	@Test
 	public void testGetters() {
 		assertEquals(this.vertexMetadata, this.testObject.getVertexMetadata());
-		assertEquals(ADDRESS.getKey(), this.testObject.getAuthor());
+		assertEquals(ADDRESS.getPublicKey(), this.testObject.getAuthor());
 	}
 
 	@Test

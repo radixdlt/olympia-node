@@ -23,8 +23,9 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.name.Names;
 import com.radixdlt.CerberusModule;
-import com.radixdlt.atomos.RadixAddress;
-import com.radixdlt.common.EUID;
+import com.radixdlt.DefaultSerialization;
+import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.delivery.LazyRequestDelivererModule;
@@ -68,13 +69,13 @@ public class GlobalInjector {
 			protected void configure() {
 				bind(RuntimeProperties.class).toInstance(properties);
 				bind(DatabaseEnvironment.class).toInstance(dbEnv);
-				bind(Serialization.class).toProvider(Serialization::getDefault);
+				bind(Serialization.class).toProvider(DefaultSerialization::getInstance);
 				bind(Events.class).toProvider(Events::getInstance);
 				bind(LocalSystem.class).toInstance(localSystem);
 				bind(EUID.class).annotatedWith(Names.named("self")).toInstance(localSystem.getNID());
 				bind(ECKeyPair.class).annotatedWith(Names.named("self")).toInstance(localSystem.getKeyPair());
 				bind(ECPublicKey.class).annotatedWith(Names.named("self")).toInstance(localSystem.getKeyPair().getPublicKey());
-				bind(RadixAddress.class).annotatedWith(Names.named("self")).toInstance(RadixAddress.from(universe, localSystem.getKey()));
+				bind(RadixAddress.class).annotatedWith(Names.named("self")).toInstance(new RadixAddress((byte) universe.getMagic(), localSystem.getKey()));
 				bind(Universe.class).toInstance(universe);
 				bind(PeerManagerConfiguration.class).toInstance(PeerManagerConfiguration.fromRuntimeProperties(properties));
 			}

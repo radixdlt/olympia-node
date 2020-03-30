@@ -18,7 +18,7 @@
 package org.radix.serialization;
 
 import org.junit.Ignore;
-import com.radixdlt.common.AID;
+import com.radixdlt.identifiers.AID;
 
 public class AIDSerializeTest extends SerializeMessageObject<AID> {
 	public AIDSerializeTest() {

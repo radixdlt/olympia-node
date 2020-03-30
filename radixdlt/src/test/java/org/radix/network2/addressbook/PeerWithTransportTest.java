@@ -25,7 +25,7 @@ import org.radix.network2.transport.TransportException;
 import org.radix.network2.transport.TransportInfo;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.common.EUID;
+import com.radixdlt.identifiers.EUID;
 
 import static org.junit.Assert.*;
 import static org.hamcrest.Matchers.*;

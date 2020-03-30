@@ -25,8 +25,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.common.AID;
-import com.radixdlt.common.Atom;
+import com.radixdlt.identifiers.AID;
+import com.radixdlt.atommodel.Atom;
 import com.radixdlt.consensus.ChainedBFT.Event;
 import com.radixdlt.consensus.liveness.PacemakerImpl;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
@@ -106,7 +106,7 @@ public class BFTTestNetwork {
 		EpochManager epochManager = new EpochManager(
 			proposalGenerator,
 			mempool,
-			testEventCoordinatorNetwork.getNetworkSender(key.getUID()),
+			testEventCoordinatorNetwork.getNetworkSender(key.euid()),
 			safetyRules,
 			pacemaker,
 			vertexStores.get(key),
@@ -117,7 +117,7 @@ public class BFTTestNetwork {
 
 		return new ChainedBFT(
 			epochRx,
-			testEventCoordinatorNetwork.getNetworkRx(key.getUID()),
+			testEventCoordinatorNetwork.getNetworkRx(key.euid()),
 			pacemaker,
 			epochManager
 		);

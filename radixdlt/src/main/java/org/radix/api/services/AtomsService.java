@@ -18,7 +18,8 @@
 package org.radix.api.services;
 
 import com.google.common.collect.EvictingQueue;
-import com.radixdlt.common.Atom;
+import com.radixdlt.DefaultSerialization;
+import com.radixdlt.atommodel.Atom;
 import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.mempool.SubmissionControl;
 
@@ -53,7 +54,7 @@ import org.radix.api.observable.Observable;
 import org.radix.atoms.events.AtomEvent;
 import org.radix.atoms.events.AtomExceptionEvent;
 import org.radix.atoms.events.AtomStoredEvent;
-import com.radixdlt.common.AID;
+import com.radixdlt.identifiers.AID;
 import org.radix.events.Events;
 
 public class AtomsService {
@@ -72,7 +73,7 @@ public class AtomsService {
 	private final ConcurrentHashMap<AID, List<SingleAtomListener>> deleteOnEventSingleAtomObservers = new ConcurrentHashMap<>();
 
 	private final ConcurrentHashMap<AtomEventDto.AtomEventType, Long> atomEventCount = new ConcurrentHashMap<>();
-	private final Serialization serialization = Serialization.getDefault();
+	private final Serialization serialization = DefaultSerialization.getInstance();
 
 	private final Object lock = new Object();
 	private final EvictingQueue<String> eventRingBuffer = EvictingQueue.create(64);

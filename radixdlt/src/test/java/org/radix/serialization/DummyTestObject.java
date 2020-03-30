@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 
-import com.radixdlt.common.EUID;
+import com.radixdlt.identifiers.EUID;
 import org.radix.containers.BasicContainer;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -95,7 +95,7 @@ public class DummyTestObject extends BasicContainer {
 			this.bfalse = false;
 			this.num = 0x123456789abcdefL;
 			this.id = new EUID(UInt128.from(r.nextLong(), r.nextLong()));
-			this.theHash = new Hash(Hash.hash256(randomData));
+			this.theHash = Hash.of(randomData);
 			this.bytes = randomData.clone();
 			this.string = getClass().getName();
 			this.array = new ArrayList<>(Collections.nCopies(10, id));

@@ -17,6 +17,7 @@
 
 package org.radix.serialization;
 
+import com.radixdlt.DefaultSerialization;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.universe.Universe;
@@ -58,7 +59,7 @@ public abstract class RadixTest
 		ntpService = mock(NtpService.class);
 		when(ntpService.getUTCTimeMS()).thenAnswer((Answer<Long>) invocation -> System.currentTimeMillis());
 
-		serialization = Serialization.getDefault();
+		serialization = DefaultSerialization.getInstance();
 		PublicInetAddress.configure(30000);
 		localSystem = LocalSystem.restoreOrCreate(getProperties(), universe);
 	}

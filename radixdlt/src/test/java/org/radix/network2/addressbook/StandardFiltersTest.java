@@ -19,7 +19,7 @@ package org.radix.network2.addressbook;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.common.EUID;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.universe.Universe;
 import org.junit.Before;
 import org.junit.Test;

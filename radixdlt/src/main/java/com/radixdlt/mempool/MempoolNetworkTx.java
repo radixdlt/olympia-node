@@ -17,7 +17,7 @@
 
 package com.radixdlt.mempool;
 
-import com.radixdlt.common.Atom;
+import com.radixdlt.atommodel.Atom;
 
 /**
  * Interface for Mempool to send things through a network

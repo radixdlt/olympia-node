@@ -23,7 +23,6 @@ import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.validators.ValidationResult;
 import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
-import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import io.reactivex.rxjava3.observers.TestObserver;
@@ -238,11 +237,7 @@ public class PacemakerImplTest {
 		NewView newView = mock(NewView.class);
 		when(newView.getView()).thenReturn(view);
 		when(newView.getSignature()).thenReturn(Optional.of(new ECDSASignature()));
-		try {
-			when(newView.getAuthor()).thenReturn(new ECKeyPair().getPublicKey());
-		} catch (CryptoException e) {
-			throw new RuntimeException("Failed to setup new-view", e);
-		}
+		when(newView.getAuthor()).thenReturn(ECKeyPair.generateNew().getPublicKey());
 		return newView;
 	}
 }

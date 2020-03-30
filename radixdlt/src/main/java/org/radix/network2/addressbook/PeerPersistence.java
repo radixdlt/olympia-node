@@ -20,7 +20,7 @@ package org.radix.network2.addressbook;
 import java.io.Closeable;
 import java.util.function.Consumer;
 
-import com.radixdlt.common.EUID;
+import com.radixdlt.identifiers.EUID;
 
 /**
  * Persistence interface for persisting peers in AddressBook.

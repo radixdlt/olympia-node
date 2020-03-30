@@ -19,7 +19,7 @@ package com.radixdlt.network;
 
 import static org.mockito.Mockito.mock;
 
-import com.radixdlt.common.EUID;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.Vote;
