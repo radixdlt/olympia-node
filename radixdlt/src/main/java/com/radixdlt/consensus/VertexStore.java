@@ -30,14 +30,16 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Manages the BFT Vertex chain
+ * Manages the BFT Vertex chain. NOT thread-safe.
  */
 public final class VertexStore {
 
 	private final RadixEngine engine;
 	private final Map<Hash, Vertex> vertices = new HashMap<>();
-	private final Map<Hash, Vertex> committedVertices = new HashMap<>();
 	private final BehaviorSubject<Vertex> lastCommittedVertex = BehaviorSubject.create();
+
+	// Should never be null
+	private Vertex root;
 
 	// Should never be null
 	private QuorumCertificate highestQC;
@@ -60,7 +62,7 @@ public final class VertexStore {
 			throw new IllegalStateException("Could not store genesis atom: " + genesisVertex.getAtom(), e);
 		}
 		this.vertices.put(genesisVertex.getId(), genesisVertex);
-		this.committedVertices.put(genesisVertex.getId(), genesisVertex);
+		this.root = genesisVertex;
 		this.lastCommittedVertex.onNext(genesisVertex);
 	}
 
@@ -102,11 +104,11 @@ public final class VertexStore {
 			throw new IllegalStateException("Committing a vertex which was never inserted: " + vertexId);
 		}
 		Vertex vertex = tipVertex;
-		while (vertex != null && !committedVertices.containsKey(vertex.getId())) {
-			committedVertices.put(vertexId, vertex);
+		while (vertex != null && !vertex.getId().equals(root.getId())) {
 			vertex = vertices.get(vertex.getParentId());
 		}
 
+		root = tipVertex;
 		lastCommittedVertex.onNext(tipVertex);
 
 		return tipVertex;
@@ -120,7 +122,7 @@ public final class VertexStore {
 		final List<Vertex> path = new ArrayList<>();
 
 		Vertex vertex = vertices.get(vertexId);
-		while (vertex != null && !committedVertices.containsKey(vertex.getId())) {
+		while (vertex != null && !vertex.getId().equals(root.getId())) {
 			path.add(vertex);
 			vertex = vertices.get(vertex.getParentId());
 		}
