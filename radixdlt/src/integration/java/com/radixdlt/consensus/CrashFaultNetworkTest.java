@@ -47,19 +47,22 @@ public class CrashFaultNetworkTest {
 		final BFTTestNetwork bftNetwork = new BFTTestNetwork(nodes);
 		bftNetwork.getTestEventCoordinatorNetwork().setSendingDisable(nodes.get(2).euid(), true);
 
-		Observable.zip(nodes.stream()
+
+		List<Observable<Vertex>> committedObservables = nodes.stream()
 			.map(bftNetwork::getVertexStore)
 			.map(VertexStore::lastCommittedVertex)
-			.collect(Collectors.toList()), Arrays::stream)
+			.collect(Collectors.toList());
+
+		Observable<Vertex> committed = Observable.zip(committedObservables, Arrays::stream)
 			.map(s -> s.distinct().collect(Collectors.toList()))
 			.take(time, timeUnit)
-			.doOnSubscribe(d -> bftNetwork.start())
 			.singleOrError()
-			.doAfterSuccess(s -> {
-				assertThat(s).hasSize(1);
-				Vertex v = (Vertex) s.get(0);
-				System.out.println("Committed " + v);
-			})
+			.doAfterSuccess(s -> assertThat(s).hasSize(1))
+			.map(s -> (Vertex) s.get(0))
+			.doAfterSuccess(v -> System.out.println("Committed " + v))
+			.toObservable();
+
+		bftNetwork.processBFT().takeUntil(committed)
 			.blockingSubscribe();
 	}
 }

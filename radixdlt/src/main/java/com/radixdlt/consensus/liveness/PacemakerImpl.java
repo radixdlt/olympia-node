@@ -97,15 +97,15 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 			pendingNewViews.put(newView.getView(), signatures);
 			return Optional.empty();
 		} else {
-			// if we got enough new-views, remove pending and return formed QC
-			pendingNewViews.remove(newView.getView());
-
-			if (newView.getView().compareTo(this.currentView) > 0) {
+			// if we got enough new-views and, receive the current leader's new-view, proceed to next view
+			if (newView.getView().compareTo(this.currentView) > 0
+				&& newView.getQC().getView().equals(this.currentView)) {
 				this.currentView = newView.getView();
 				scheduleTimeout(this.currentView);
 			}
 
-			if (newView.getView().compareTo(this.currentView) >= 0) {
+			if (newView.getView().equals(this.currentView)) {
+				pendingNewViews.remove(newView.getView());
 				return Optional.of(this.currentView);
 			} else {
 				log.info("Ignoring New View Quorum: " + newView.getView() + " Current is: " + this.currentView);

@@ -230,12 +230,11 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 			log.error(this.getShortName() + ": PROPOSAL: Rejected " + proposedVertex, e);
 		}
 
-		// If currently node leader, Proceed to next view
-		if (!Objects.equals(proposerElection.getProposer(updatedView), selfKey.getPublicKey())) {
+		// If not currently leader or next leader, Proceed to next view
+		if (!Objects.equals(proposerElection.getProposer(updatedView), selfKey.getPublicKey())
+			&& !Objects.equals(proposerElection.getProposer(updatedView.next()), selfKey.getPublicKey())) {
 			this.pacemaker.processQC(updatedView)
 				.ifPresent(this::proceedToView);
-			// TODO: If currently next leader, wait for new view from leader
-			//this.proceedToView(updatedView.next());
 		}
 	}
 
@@ -246,9 +245,9 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 		// proceed to next view if pacemaker feels like it
 		Optional<View> nextView = this.pacemaker.processLocalTimeout(view);
 		if (nextView.isPresent()) {
-			log.info(this.getShortName() + ": LOCAL_TIMEOUT: Processed " + view);
 			counters.increment(CounterType.TIMEOUT);
-			this.proceedToView(view);
+			this.proceedToView(nextView.get());
+			log.info(this.getShortName() + ": LOCAL_TIMEOUT: Processed " + view);
 		} else {
 			log.info(this.getShortName() + ": LOCAL_TIMEOUT: Ignoring " + view);
 		}
