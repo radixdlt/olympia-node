@@ -11,6 +11,22 @@ import okhttp3.Request
 class Utils {
     static String RADIX_BOOTSTRAP_TRUSTED_NODE = "RADIX_BOOTSTRAP_TRUSTED_NODE"
 
+    static RadixIdentity getIdentiyUsingEnvVar() {
+        RadixIdentity identity
+        if (System.getenv("RADCLI_ENCRYPTED_KEYFILE") != null && System.getenv("RADCLI_PWD") != null) {
+            identity = RadixIdentities.loadOrCreateEncryptedFile(System.getenv("RADCLI_ENCRYPTED_KEYFILE"), System.getenv("RADCLI_PWD"))
+        } else if (System.getenv("RADCLI_UNENCRYPTED_KEYFILE") != null) {
+            identity = RadixIdentities.loadOrCreateFile(System.getenv("RADCLI_UNENCRYPTED_KEYFILE"))
+        } else {
+            System.err.println("Key required in form of environment variable [RADCLI_ENCRYPTED_KEYFILE & RADCLI_PWD] or RADCLI_UNENCRYPTED_KEYFILE")
+            System.err.println("Run help -h option to check the usage")
+
+            System.exit(-1)
+            return
+        }
+        return identity
+    }
+
     static RadixIdentity getIdentity(String keyFile, String password, String unEncryptedKeyFile) {
         RadixIdentity identity
 
@@ -23,10 +39,6 @@ class Utils {
             identity = RadixIdentities.loadOrCreateEncryptedFile(keyFile, password)
         } else if (unEncryptedKeyFile != null) {
             identity = RadixIdentities.loadOrCreateFile(unEncryptedKeyFile)
-        } else if (System.getenv("RADCLI_ENCRYPTED_KEYFILE") != null && System.getenv("RADCLI_PWD") != null) {
-            identity = RadixIdentities.loadOrCreateEncryptedFile(System.getenv("RADCLI_ENCRYPTED_KEYFILE"), System.getenv("RADCLI_PWD"))
-        } else if (System.getenv("RADCLI_UNENCRYPTED_KEYFILE") != null) {
-            identity = RadixIdentities.loadOrCreateFile(System.getenv("RADCLI_UNENCRYPTED_KEYFILE"))
         } else {
             System.err.println("key required")
             System.exit(-1)
@@ -36,12 +48,13 @@ class Utils {
     }
 
     static RadixIdentity getIdentity(IdentityInfo info) {
-        if (info.encrypted != null) {
+
+        if (info?.encrypted != null) {
             return getIdentity(info.encrypted.keyFile, info.encrypted.password, null)
-        } else if (info.unEncryptedKeyFile != null) {
+        } else if (info?.unEncryptedKeyFile != null) {
             return getIdentity(null, null, info.unEncryptedKeyFile)
         }
-        return null
+        return getIdentiyUsingEnvVar()
     }
 
     static RadixApplicationAPI getAPI(IdentityInfo identityInfo) {
