@@ -22,8 +22,8 @@
 package com.radixdlt.cli
 
 import com.radixdlt.client.application.RadixApplicationAPI
-import com.radixdlt.client.atommodel.accounts.RadixAddress
-import org.radix.utils.RadixConstants
+import com.radixdlt.identifiers.RadixAddress
+import com.radixdlt.utils.RadixConstants
 import picocli.CommandLine
 
 @CommandLine.Command(name = "send-message", mixinStandardHelpOptions = true,

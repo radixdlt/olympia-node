@@ -24,7 +24,7 @@ package com.radixdlt.cli
 import com.google.gson.TypeAdapter
 import com.google.gson.stream.JsonReader
 import com.google.gson.stream.JsonWriter
-import com.radixdlt.client.atommodel.accounts.RadixAddress
+import com.radixdlt.identifiers.RadixAddress
 
 class RadixAddressTypeAdapter extends TypeAdapter<RadixAddress> {
     @Override
