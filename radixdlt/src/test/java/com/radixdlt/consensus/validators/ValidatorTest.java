@@ -20,7 +20,6 @@ package com.radixdlt.consensus.validators;
 import org.junit.Test;
 import org.radix.serialization.SerializeObject;
 
-import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
 import nl.jqno.equalsverifier.EqualsVerifier;
 

@@ -30,7 +30,6 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.middleware.ParticleGroup;
 import com.radixdlt.middleware.SpunParticle;
-import com.radixdlt.serialization.Serialization;
 import org.junit.Test;
 
 import java.math.BigInteger;

@@ -18,7 +18,6 @@
 package com.radixdlt.consensus;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
-import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.Arrays;
