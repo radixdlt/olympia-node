@@ -20,7 +20,6 @@ package org.radix.network.messaging;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 
@@ -29,7 +28,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public abstract class SignedMessage extends Message {
 
 	@JsonProperty("signature")
-	@DsonOutput(Output.ALL)
+	@DsonOutput(value = { Output.HASH }, include = false)
 	private ECDSASignature signature;
 
 	@Override
@@ -50,8 +49,13 @@ public abstract class SignedMessage extends Message {
 		this.signature = signature;
 	}
 
-	public void sign(ECKeyPair key) throws CryptoException {
-		this.signature = key.sign(getHash());
+
+	public void sign(ECKeyPair key) {
+		sign(key, false);
+	}
+
+	public void sign(ECKeyPair key, boolean deterministic) {
+		this.signature = key.sign(getHash().toByteArray(), true, deterministic);
 	}
 
 	public boolean verify(ECPublicKey key) {

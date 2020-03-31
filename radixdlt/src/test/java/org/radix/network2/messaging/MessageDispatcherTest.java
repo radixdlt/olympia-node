@@ -127,20 +127,7 @@ public class MessageDispatcherTest extends RadixTest {
         assertThat(sendResult.getThrowable().getMessage(), Matchers.equalTo("org.radix.network.messages.TestMessage: TTL to " + peer1 + " has expired"));
         verify(systemMetaData, times(1)).increment("messages.outbound.aborted");
     }
-
-    @Test
-    public void sendExceptionMessage() throws CryptoException {
-        SystemMessage message = spy(new SystemMessage(getLocalSystem(), 0));
-        doThrow(new CryptoException("Expected exception")).when(message).sign(getLocalSystem().getKeyPair());
-        MessageEvent messageEvent = new MessageEvent(peer1, transportInfo, message, 10_000);
-
-        SendResult sendResult = messageDispatcher.send(transportManager, messageEvent);
-
-        assertFalse(sendResult.isComplete());
-        assertThat(sendResult.getThrowable().getMessage(), Matchers.equalTo("org.radix.universe.system.SystemMessage: Sending to  " + peer1 + " failed"));
-        assertThat(sendResult.getThrowable().getCause().getMessage(), Matchers.equalTo("Expected exception"));
-    }
-
+    
     @Test
     public void receiveSuccessfully() throws InterruptedException {
         SystemMessage testMessage = spy(new SystemMessage(getLocalSystem(), 0));
