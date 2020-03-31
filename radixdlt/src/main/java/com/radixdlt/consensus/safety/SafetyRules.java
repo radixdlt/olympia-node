@@ -17,7 +17,6 @@
 
 package com.radixdlt.consensus.safety;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import com.radixdlt.DefaultSerialization;
@@ -52,15 +51,6 @@ public final class SafetyRules {
 	}
 
 	/**
-	 * Process a vertex
-	 * @param vertex The vertex
-	 * @return the just-committed vertex id, if any
-	 */
-	public Optional<Hash> process(Vertex vertex) {
-		return process(vertex.getQC());
-	}
-
-	/**
 	 * Process a QC.
 	 * @param qc The quorum certificate
 	 * @return the just-committed vertex id, if any
@@ -82,8 +72,9 @@ public final class SafetyRules {
 		}
 
 		final Optional<Hash> commitHash;
-		if (qc.getCommitted().isPresent()) {
-			VertexMetadata committed = qc.getCommitted().get();
+		final Optional<VertexMetadata> commitOptional = qc.getCommitted();
+		if (commitOptional.isPresent()) {
+			VertexMetadata committed = commitOptional.get();
 			if (committed.getView().compareTo(this.state.getCommittedView()) > 0) {
 				safetyStateBuilder.committedView(committed.getView());
 				commitHash = Optional.of(committed.getId());
@@ -148,9 +139,5 @@ public final class SafetyRules {
 		// TODO make signing more robust by including author in signed hash
 		ECDSASignature signature = this.selfKey.sign(voteHash);
 		return new Vote(selfKey.getPublicKey(), voteData, signature);
-	}
-
-	@VisibleForTesting SafetyState getState() {
-		return state;
 	}
 }
