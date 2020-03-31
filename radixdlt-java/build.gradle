@@ -30,7 +30,6 @@ apply plugin: 'com.adarshr.test-logger'
 
 repositories {
     jcenter()
-    maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
     maven { url 'https://jitpack.io' }
 }
 
@@ -39,7 +38,7 @@ test {
 }
 
 dependencies {
-    api 'com.github.radixdlt:radixdlt-java-common:4dfcbad8df24abbff1b656c43587fc679089daaa'
+    api 'com.github.radixdlt:radixdlt-java-common:7632a482bd98524'
 
     api group: 'com.squareup.okhttp3', name: 'okhttp', version: '3.10.0'
     api group: 'com.squareup.okhttp3', name: 'logging-interceptor', version: '3.10.0'
@@ -57,10 +56,6 @@ checkstyle {
     configFile rootProject.file('.checkstyle.xml')
     toolVersion '8.10.1'
     showViolations = true
-}
-
-testlogger {
-    theme 'plain'
 }
 
 checkstyleTest {
