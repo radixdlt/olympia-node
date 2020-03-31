@@ -27,7 +27,6 @@ import com.radixdlt.keys.Keys;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.universe.Universe;
@@ -58,7 +57,7 @@ public final class LocalSystem extends RadixSystem
 	private ECKeyPair keyPair;
 
 	@VisibleForTesting
-	LocalSystem() throws CryptoException
+	LocalSystem()
 	{
 		super();
 

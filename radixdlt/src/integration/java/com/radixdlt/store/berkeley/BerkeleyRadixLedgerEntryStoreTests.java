@@ -19,7 +19,6 @@ package com.radixdlt.store.berkeley;
 
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.store.StoreIndex;
 import com.radixdlt.store.LedgerSearchMode;
@@ -47,7 +46,7 @@ public class BerkeleyRadixLedgerEntryStoreTests extends RadixTestWithStores {
     private ECKeyPair identity;
 
     @Before
-    public void setup() throws CryptoException {
+    public void setup() {
         tempoAtomStore = new BerkeleyLedgerEntryStore(serialization, this.getDbEnv());
 
         identity = ECKeyPair.generateNew();

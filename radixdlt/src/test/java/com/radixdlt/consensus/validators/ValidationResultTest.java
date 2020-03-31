@@ -20,7 +20,6 @@ package com.radixdlt.consensus.validators;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
@@ -46,7 +45,7 @@ public class ValidationResultTest {
 	}
 
 	@Test
-	public void testGetters() throws CryptoException {
+	public void testGetters() {
 		assertFalse(ValidationResult.failure().valid());
 
 		ECKeyPair nodeKey = ECKeyPair.generateNew();

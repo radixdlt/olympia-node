@@ -33,7 +33,6 @@ import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.mempool.SubmissionControl;
 import com.radixdlt.properties.RuntimeProperties;
-import com.radixdlt.crypto.CryptoException;
 import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 import org.radix.time.Time;
