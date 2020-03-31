@@ -36,7 +36,8 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 /**
- * Tests with networks with crashed nodes
+ * Tests with networks with crash-stopped nodes (that do not recover).
+ * These tests comprise both static and dynamic configurations (where nodes crash before or during runtime, respectively).
  */
 public class CrashFaultNetworkTest {
 	static List<ECKeyPair> createNodes(int numNodes, String designation) {
@@ -55,6 +56,11 @@ public class CrashFaultNetworkTest {
 		bftNetwork.getTestEventCoordinatorNetwork().setSendingDisable(node.euid(), true);
 	}
 
+	/**
+	 * Tests a static configuration of 3 nodes (1 crash-stopped), meaning a QC can never be formed.
+	 * The intended behaviour is that all instances retain the genesis commit as their latest committed vertex
+	 * since no progress can be made.
+	 */
 	@Test
 	public void given_2_out_of_3_correct_bft_instances__then_all_instances_should_only_get_genesis_commit_over_1_minute() {
 		final int numNodes = 3;
@@ -87,6 +93,11 @@ public class CrashFaultNetworkTest {
 			.blockingSubscribe();
 	}
 
+	/**
+	 * Tests a static configuration of 4 nodes (1 crash-stopped), meaning a QC *can* be formed.
+	 * The intended behaviour is that the correct instances make progress,
+	 * "skipping" the faulty node as a leader when required.
+	 */
 	@Test
 	public void given_3_out_of_4_correct_bfts__then_correct_instances_should_get_same_commits_consecutive_vertices_over_1_minute() {
 		final int numNodes = 4;
@@ -135,13 +146,15 @@ public class CrashFaultNetworkTest {
 			.filter(v -> correctNodesPubs.contains(bftNetwork.getProposerElection().getProposer(v.getView().previous())))
 			.doOnNext(v -> assertThat(v)
 				.satisfies(new Condition<>(vtx -> vtx.getView().equals(vtx.getParentView().next()),
-					"Vertex after correct %s at %s has direct parent", bftNetwork.getProposerElection().getProposer(v.getParentView()).euid(), v.getParentView())))
+					"Vertex after correct %s at %s has direct parent",
+					bftNetwork.getProposerElection().getProposer(v.getParentView()).euid(), v.getParentView())))
 			.map(o -> o);
 		Observable<Object> gapProposalsCheck = Observable.merge(correctProposals)
 			.filter(v -> !correctNodesPubs.contains(bftNetwork.getProposerElection().getProposer(v.getView().previous())))
 			.doOnNext(v -> assertThat(v)
 				.satisfies(new Condition<>(vtx -> !vtx.getView().equals(vtx.getParentView().next()),
-					"Vertex after faulty %s at %s has gap", bftNetwork.getProposerElection().getProposer(v.getParentView()).euid(), v.getParentView())))
+					"Vertex after faulty %s at %s has gap",
+					bftNetwork.getProposerElection().getProposer(v.getParentView()).euid(), v.getParentView())))
 			.map(o -> o);
 
 		Observable.mergeArray(bftNetwork.processBFT(), correctCommitCheck, correctTimeoutCheck, directProposalsCheck, gapProposalsCheck)
@@ -149,19 +162,26 @@ public class CrashFaultNetworkTest {
 			.blockingSubscribe();
 	}
 
+	/**
+	 * Tests a dynamic configuration of 7 nodes (all correct at start),
+	 * where correct nodes are crash-stopped at random over time.
+	 * The intended behaviour is that the correct nodes keep making progress until QCs can no longer be formed.
+	 */
 	@Test
-	public void given_6_initially_correct_bfts_that_randomly_crash_stop__then_correct_instances_should_get_same_commits_consecutive_vertices_until_quorums_are_impossible_over_1_minute() {
-		final int numNodes = 6;
+	public void given_7_correct_bfts_that_randomly_crash__then_correct_instances_should_make_progress_as_possible_over_1_minute() {
+		final int numNodes = 7;
 		final long time = 1;
 		final TimeUnit timeUnit = TimeUnit.MINUTES;
 		final long rngSeed = System.currentTimeMillis();
-		final double crashProbabilityPerSecond = 0.1; // probability that a single node out of all correct nodes will crash-stop
+		// probability that a single node out of all correct nodes will crash-stop
+		final double crashProbabilityPerSecond = 0.1;
 
 		final List<ECKeyPair> allNodes = createNodes(numNodes, "");
 		final Set<ECPublicKey> faultyNodesPubs = new HashSet<>();
 		final BFTTestNetwork bftNetwork = new BFTTestNetwork(allNodes);
 
 		// correct nodes should all get the same commits in the same order
+		//CHECKSTYLE:OFF
 		Observable<Object> correctCommitCheck = Observable.zip(
 				allNodes.stream()
 					.map(node -> bftNetwork.getVertexStore(node).lastCommittedVertex()
@@ -169,6 +189,7 @@ public class CrashFaultNetworkTest {
 					.collect(Collectors.toList()),
 				Arrays::stream)
 			.map(nodesAndVertices -> nodesAndVertices
+				// the following cast is fine, checkstyle, see above
 				.map(nodeAndVertex -> (Pair<ECPublicKey, Vertex>) nodeAndVertex)
 				.filter(nodeAndVertex -> !faultyNodesPubs.contains(nodeAndVertex.getFirst()))
 				.map(Pair::getSecond)
@@ -177,6 +198,7 @@ public class CrashFaultNetworkTest {
 			.doOnNext(committedVertices -> assertThat(committedVertices).hasSize(1))
 			.map(vertices -> vertices.get(0))
 			.map(o -> o);
+		//CHECKSTYLE:ON
 
 		// randomly seduce nodes to be naughty and pretend to crash-stop
 		Random rng = new Random(rngSeed);

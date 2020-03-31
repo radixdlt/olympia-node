@@ -92,7 +92,8 @@ public class BFTTestNetwork {
 				})
 			);
 		this.counters = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e, e -> new Counters()));
-		this.pacemakers = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e, e -> new PacemakerImpl(Executors.newSingleThreadScheduledExecutor())));
+		this.pacemakers = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e,
+			e -> new PacemakerImpl(Executors.newSingleThreadScheduledExecutor())));
 		this.bftEvents = Observable.merge(this.vertexStores.entrySet().stream()
 			.map(e -> createBFTInstance(e.getKey()).processEvents()
 		).collect(Collectors.toList()));
