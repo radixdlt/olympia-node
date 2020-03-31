@@ -47,16 +47,11 @@ import java.util.Objects;
 /**
  * Asymmetric EC key pair provider fixed to curve 'secp256k1'.
  */
-@SerializerId2("crypto.ec_key_pair")
 public final class ECKeyPair implements Signing<ECDSASignature> {
 	public static final int	BYTES = 32;
 
-	@JsonProperty("private")
-	@DsonOutput(DsonOutput.Output.PERSIST)
 	private final byte[] privateKey;
 
-	@JsonProperty("public")
-	@DsonOutput(DsonOutput.Output.ALL)
 	private final ECPublicKey publicKey;
 
 	private ECKeyPair() {
@@ -200,15 +195,6 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
 		return String.format("%s[%s]",
 			getClass().getSimpleName(), Bytes.toBase64String(getPublicKey().getBytes()));
 	}
-
-	@JsonProperty("version")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private short version = 100;
-
-	// Placeholder for the serializer ID
-	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
-	@DsonOutput(DsonOutput.Output.ALL)
-	private SerializerDummy serializer = SerializerDummy.DUMMY;
 
 	public ECKeyPair(byte[] publicKey, byte[] privateKey) {
 		try {
