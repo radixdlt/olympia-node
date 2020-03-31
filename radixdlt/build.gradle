@@ -83,9 +83,10 @@ jacocoTestReport {
 }
 
 dependencies {
+    compile 'com.radixdlt:radix-engine-library:2cbb61427601a52f7bc6c4af8'
+
     compile 'io.reactivex.rxjava3:rxjava:3.0.0'
     compile 'com.sleepycat:je:18.3.12'
-    compile 'com.radixdlt:radix-engine-library:rc~1.0-beta.8-SNAPSHOT'
 
     compile 'commons-cli:commons-cli:1.4'
     compile 'org.xerial.snappy:snappy-java:1.1.7.3'
