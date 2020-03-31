@@ -62,5 +62,6 @@ class CreateAndMintToken implements Runnable {
         transaction.stage(MintTokensAction.create(tokenRRI, api.getAddress(), BigDecimal.valueOf(amount)))
         RadixApplicationAPI.Result createTokenAndMint = transaction.commitAndPush()
         createTokenAndMint.toObservable().blockingSubscribe({ it -> println it })
+        System.exit(0)
     }
 }

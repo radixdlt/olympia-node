@@ -84,7 +84,7 @@ class Utils {
 
     static BootstrapByTrustedNode getRadixNode() {
         String bootstrapByTrustedNode = System.getenv(RADIX_BOOTSTRAP_TRUSTED_NODE) ?: {
-            println("RADIX_BOOTSTRAP_TRUSTED_NODE  env variable not set, using default http://localhost:8080")
+            println("RADIX_BOOTSTRAP_TRUSTED_NODE env variable not set, using default http://localhost:8080")
             return "http://localhost:8080"
         }()
         println("Using Bootstrap Mechanism: RADIX_BOOTSTRAP_TRUSTED_NODE  ${bootstrapByTrustedNode}")

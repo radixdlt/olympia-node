@@ -24,8 +24,8 @@ package com.radixdlt.cli
 import com.radixdlt.client.application.RadixApplicationAPI
 import picocli.CommandLine
 
-@CommandLine.Command(name = "get-message", mixinStandardHelpOptions = true,
-        description = "Get Message")
+@CommandLine.Command(name = "get-messages", mixinStandardHelpOptions = true,
+        description = "get all the messages")
 class GetMessage implements Runnable {
 
     @CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
@@ -35,7 +35,7 @@ class GetMessage implements Runnable {
 
         RadixApplicationAPI api = Utils.getAPI(identityInfo)
         api.pull()
-        api.observeMessages().subscribe({ it -> println it })
+        api.observeMessages().blockingSubscribe({ it -> println it })
     }
 
 }
