@@ -26,38 +26,31 @@ import com.radixdlt.serialization.DsonOutput.Output;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public abstract class SignedMessage extends Message
-{
-	@JsonProperty("key")
-	@DsonOutput(Output.ALL)
-	private ECKeyPair key;
+public abstract class SignedMessage extends Message {
 
 	@JsonProperty("signature")
 	@DsonOutput(Output.ALL)
 	private ECDSASignature signature;
 
 	@Override
-	public short VERSION() { return 100; }
+	public short VERSION() {
+		return 100;
+	}
 
-	protected SignedMessage(int magic)
-	{
+	protected SignedMessage(int magic) {
 		super(magic);
 	}
 
 	// SIGNABLE //
-	public final ECDSASignature getSignature()
-	{
+	public final ECDSASignature getSignature() {
 		return this.signature;
 	}
 
-	public final void setSignature(ECDSASignature signature)
-	{
+	public final void setSignature(ECDSASignature signature) {
 		this.signature = signature;
 	}
 
-	public void sign(ECKeyPair key) throws CryptoException
-	{
-		this.key = key;
+	public void sign(ECKeyPair key) throws CryptoException {
 		this.signature = key.sign(getHash());
 	}
 
