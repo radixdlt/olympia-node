@@ -74,4 +74,16 @@ public class TestEventCoordinatorNetworkTest {
 		network.getNetworkSender(EUID.ONE).sendNewView(newView, EUID.ONE);
 		testObserver.assertEmpty();
 	}
+
+	@Test
+	public void when_disable_receive_and_other_sends_view_to_self__then_should_receive_it() {
+		TestEventCoordinatorNetwork network = new TestEventCoordinatorNetwork();
+		TestObserver<NewView> testObserver = TestObserver.create();
+		network.setReceivingDisable(EUID.ONE, true);
+		network.getNetworkRx(EUID.ONE).newViewMessages()
+			.subscribe(testObserver);
+		NewView newView = mock(NewView.class);
+		network.getNetworkSender(EUID.TWO).sendNewView(newView, EUID.ONE);
+		testObserver.assertEmpty();
+	}
 }
