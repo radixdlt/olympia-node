@@ -17,7 +17,8 @@
 
 package org.radix.network2.messaging;
 
-import com.radixdlt.common.EUID;
+import com.radixdlt.DefaultSerialization;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.serialization.Serialization;
 import org.hamcrest.Matchers;
@@ -78,7 +79,7 @@ public class MessageDispatcherTest extends RadixTest {
     @Before
     public void setup() {
         when(getNtpService().getUTCTimeMS()).thenAnswer((Answer<Long>) invocation -> System.currentTimeMillis());
-        Serialization serialization = Serialization.getDefault();
+        Serialization serialization = DefaultSerialization.getInstance();
         MessageCentralConfiguration conf = new MessagingDummyConfigurations.DummyMessageCentralConfiguration();
         interfaces = mock(Interfaces.class);
         PowerMockito.when(interfaces.isSelf(any())).thenReturn(false);
@@ -126,20 +127,7 @@ public class MessageDispatcherTest extends RadixTest {
         assertThat(sendResult.getThrowable().getMessage(), Matchers.equalTo("org.radix.network.messages.TestMessage: TTL to " + peer1 + " has expired"));
         verify(systemMetaData, times(1)).increment("messages.outbound.aborted");
     }
-
-    @Test
-    public void sendExceptionMessage() throws CryptoException {
-        SystemMessage message = spy(new SystemMessage(getLocalSystem(), 0));
-        doThrow(new CryptoException("Expected exception")).when(message).sign(getLocalSystem().getKeyPair());
-        MessageEvent messageEvent = new MessageEvent(peer1, transportInfo, message, 10_000);
-
-        SendResult sendResult = messageDispatcher.send(transportManager, messageEvent);
-
-        assertFalse(sendResult.isComplete());
-        assertThat(sendResult.getThrowable().getMessage(), Matchers.equalTo("org.radix.universe.system.SystemMessage: Sending to  " + peer1 + " failed"));
-        assertThat(sendResult.getThrowable().getCause().getMessage(), Matchers.equalTo("Expected exception"));
-    }
-
+    
     @Test
     public void receiveSuccessfully() throws InterruptedException {
         SystemMessage testMessage = spy(new SystemMessage(getLocalSystem(), 0));

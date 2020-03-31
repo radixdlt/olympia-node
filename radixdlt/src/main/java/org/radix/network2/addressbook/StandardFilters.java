@@ -31,7 +31,7 @@ import org.radix.time.Timestamps;
 import org.radix.universe.system.RadixSystem;
 
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.common.EUID;
+import com.radixdlt.identifiers.EUID;
 
 /**
  * Standard filters for peer streams.

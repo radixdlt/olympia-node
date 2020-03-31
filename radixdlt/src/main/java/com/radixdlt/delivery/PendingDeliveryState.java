@@ -17,8 +17,8 @@
 
 package com.radixdlt.delivery;
 
-import com.radixdlt.common.AID;
-import com.radixdlt.common.EUID;
+import com.radixdlt.identifiers.AID;
+import com.radixdlt.identifiers.EUID;
 import org.radix.network2.addressbook.Peer;
 
 import java.util.ArrayDeque;

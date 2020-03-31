@@ -18,27 +18,36 @@
 package org.radix.serialization;
 
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.utils.Bytes;
-import org.radix.network.messages.PeerPingMessage;
+import org.radix.Radix;
+import org.radix.network2.transport.StaticTransportMetadata;
+import org.radix.network2.transport.TransportInfo;
+import org.radix.network2.transport.udp.UDPConstants;
+import org.radix.universe.system.LocalSystem;
 
-/**
- * Check serialization of PeerPingMessage
- */
-public class PeerPingMessageSerializeTest extends SerializeMessageObject<PeerPingMessage> {
-	public PeerPingMessageSerializeTest() {
-		super(PeerPingMessage.class, PeerPingMessageSerializeTest::get);
+public class LocalSystemSerializeTest extends SerializeValue<LocalSystem> {
+	public LocalSystemSerializeTest() {
+		super(LocalSystem.class, LocalSystemSerializeTest::get);
 	}
 
-	private static PeerPingMessage get() {
+	private static LocalSystem get() {
 		try {
-			PeerPingMessage pingMessage = new PeerPingMessage(17L, getLocalSystem(), 1);
 			ECKeyPair keyPair = new ECKeyPair(Bytes.fromHexString(Strings.repeat("deadbeef", 8)));
-			pingMessage.sign(keyPair, true);
-			return pingMessage;
+			return new LocalSystem(keyPair, Radix.AGENT, Radix.AGENT_VERSION, Radix.PROTOCOL_VERSION, ImmutableList.of(
+					TransportInfo.of(
+							UDPConstants.UDP_NAME,
+							StaticTransportMetadata.of(
+									UDPConstants.METADATA_UDP_HOST,"127.0.0.1",
+									UDPConstants.METADATA_UDP_PORT,"30000"
+							)
+					)
+			));
 		} catch (CryptoException e) {
-			throw new IllegalStateException("Failed to create key", e);
+			throw new IllegalStateException("Failed to create keypair", e);
 		}
+
 	}
 }

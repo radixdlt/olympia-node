@@ -20,7 +20,7 @@ package org.radix.universe.system;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import com.radixdlt.common.EUID;
+import com.radixdlt.identifiers.EUID;
 import org.radix.containers.BasicContainer;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.CryptoException;
@@ -144,7 +144,7 @@ public class RadixSystem extends BasicContainer
 
 	public EUID getNID()
 	{
-		return this.key == null ? EUID.ZERO : this.key.getUID();
+		return this.key == null ? EUID.ZERO : this.key.euid();
 	}
 
 	// Property "agent" - 1 getter, 1 setter
@@ -186,6 +186,6 @@ public class RadixSystem extends BasicContainer
 	@JsonProperty("nid")
 	@DsonOutput(Output.ALL)
 	EUID getJsonNid() {
-		return this.key == null ? null : this.key.getUID();
+		return this.key == null ? null : this.key.euid();
 	}
 }

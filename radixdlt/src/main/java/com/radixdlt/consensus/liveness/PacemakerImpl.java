@@ -85,7 +85,7 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 
 	@Override
 	public Optional<View> processNewView(NewView newView, ValidatorSet validatorSet) {
-		Hash newViewId = new Hash(Hash.hash256(Longs.toByteArray(newView.getView().number())));
+		Hash newViewId = Hash.of(Longs.toByteArray(newView.getView().number()));
 		ECDSASignature signature = newView.getSignature().orElseThrow(() -> new IllegalArgumentException("new-view is missing signature"));
 		ECDSASignatures signatures = pendingNewViews.getOrDefault(newView.getView(), new ECDSASignatures());
 		signatures = (ECDSASignatures) signatures.concatenate(newView.getAuthor(), signature);
@@ -97,14 +97,14 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 			pendingNewViews.put(newView.getView(), signatures);
 			return Optional.empty();
 		} else {
-			// if we got enough new-views, remove pending and return formed QC
+			// if we got enough new-views and, receive the current leader's new-view, proceed to next view
 			if (newView.getView().compareTo(this.currentView) > 0
 				&& newView.getQC().getView().equals(this.currentView)) {
 				this.currentView = newView.getView();
 				scheduleTimeout(this.currentView);
 			}
 
-			if (newView.getView().compareTo(this.currentView) == 0) {
+			if (newView.getView().equals(this.currentView)) {
 				pendingNewViews.remove(newView.getView());
 				return Optional.of(this.currentView);
 			} else {

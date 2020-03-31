@@ -24,7 +24,7 @@ import java.net.UnknownHostException;
 import java.util.concurrent.CompletableFuture;
 import org.radix.Radix;
 
-import com.radixdlt.common.EUID;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.DsonOutput.Output;
 

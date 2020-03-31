@@ -17,7 +17,6 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.examples.tictactoe.Pair;
@@ -42,22 +41,18 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 public class CrashFaultNetworkTest {
 	static List<ECKeyPair> createNodes(int numNodes, String designation) {
 		return Stream.generate(() -> {
-			try {
-				// efficient? no. useful? yes.
-				ECKeyPair keyPair = null;
-				do {
-					keyPair = new ECKeyPair();
-				} while (!keyPair.getUID().toString().startsWith(designation));
-				return keyPair;
-			} catch (CryptoException e) {
-				throw new RuntimeException();
-			}
+			// efficient? no. useful? yes.
+			ECKeyPair keyPair;
+			do {
+				keyPair = ECKeyPair.generateNew();
+			} while (!keyPair.euid().toString().startsWith(designation));
+			return keyPair;
 		}).limit(numNodes).collect(Collectors.toList());
 	}
 
 	private void crashNode(ECKeyPair node, BFTTestNetwork bftNetwork) {
-		bftNetwork.getTestEventCoordinatorNetwork().setReceivingDisable(node.getUID(), true);
-		bftNetwork.getTestEventCoordinatorNetwork().setSendingDisable(node.getUID(), true);
+		bftNetwork.getTestEventCoordinatorNetwork().setReceivingDisable(node.euid(), true);
+		bftNetwork.getTestEventCoordinatorNetwork().setSendingDisable(node.euid(), true);
 	}
 
 	@Test
@@ -132,7 +127,7 @@ public class CrashFaultNetworkTest {
 
 		// correct proposals should be direct if generated after another correct proposal, otherwise there should be a gap
 		List<Observable<Vertex>> correctProposals = correctNodes.stream()
-			.map(ECKeyPair::getUID)
+			.map(ECKeyPair::euid)
 			.map(bftNetwork.getTestEventCoordinatorNetwork()::getNetworkRx)
 			.map(EventCoordinatorNetworkRx::proposalMessages)
 			.collect(Collectors.toList());
@@ -140,13 +135,13 @@ public class CrashFaultNetworkTest {
 			.filter(v -> correctNodesPubs.contains(bftNetwork.getProposerElection().getProposer(v.getView().previous())))
 			.doOnNext(v -> assertThat(v)
 				.satisfies(new Condition<>(vtx -> vtx.getView().equals(vtx.getParentView().next()),
-					"Vertex after correct %s at %s has direct parent", bftNetwork.getProposerElection().getProposer(v.getParentView()).getUID(), v.getParentView())))
+					"Vertex after correct %s at %s has direct parent", bftNetwork.getProposerElection().getProposer(v.getParentView()).euid(), v.getParentView())))
 			.map(o -> o);
 		Observable<Object> gapProposalsCheck = Observable.merge(correctProposals)
 			.filter(v -> !correctNodesPubs.contains(bftNetwork.getProposerElection().getProposer(v.getView().previous())))
 			.doOnNext(v -> assertThat(v)
 				.satisfies(new Condition<>(vtx -> !vtx.getView().equals(vtx.getParentView().next()),
-					"Vertex after faulty %s at %s has gap", bftNetwork.getProposerElection().getProposer(v.getParentView()).getUID(), v.getParentView())))
+					"Vertex after faulty %s at %s has gap", bftNetwork.getProposerElection().getProposer(v.getParentView()).euid(), v.getParentView())))
 			.map(o -> o);
 
 		Observable.mergeArray(bftNetwork.processBFT(), correctCommitCheck, correctTimeoutCheck, directProposalsCheck, gapProposalsCheck)
@@ -191,7 +186,7 @@ public class CrashFaultNetworkTest {
 			.map(allNodes::get)
 			.doOnNext(node -> faultyNodesPubs.add(node.getPublicKey()))
 			.doOnNext(node -> crashNode(node, bftNetwork))
-			.doAfterNext(node -> System.out.println("Crashed " + node.getUID()))
+			.doAfterNext(node -> System.out.println("Crashed " + node.euid()))
 			.map(o -> o);
 
 		Observable.mergeArray(bftNetwork.processBFT(), correctCommitCheck, seducer)

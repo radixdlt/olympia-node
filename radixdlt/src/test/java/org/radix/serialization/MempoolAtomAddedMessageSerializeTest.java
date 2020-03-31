@@ -17,7 +17,7 @@
 
 package org.radix.serialization;
 
-import com.radixdlt.common.Atom;
+import com.radixdlt.atommodel.Atom;
 import com.radixdlt.mempool.messages.MempoolAtomAddedMessage;
 
 public class MempoolAtomAddedMessageSerializeTest extends SerializeMessageObject<MempoolAtomAddedMessage> {

@@ -17,7 +17,7 @@
 
 package com.radixdlt.store.berkeley;
 
-import com.radixdlt.common.AID;
+import com.radixdlt.identifiers.AID;
 import com.radixdlt.store.SearchCursor;
 import com.radixdlt.store.StoreIndex;
 import org.bouncycastle.util.Arrays;

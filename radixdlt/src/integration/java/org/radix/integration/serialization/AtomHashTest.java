@@ -17,12 +17,12 @@
 
 package org.radix.integration.serialization;
 
-import com.radixdlt.common.Atom;
+import com.radixdlt.atommodel.Atom;
 import com.radixdlt.universe.Universe;
 import org.junit.Test;
-import com.radixdlt.atomos.RadixAddress;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.atomos.RRIParticle;
-import com.radixdlt.atomos.RRI;
+import com.radixdlt.identifiers.RRI;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.CryptoException;
@@ -34,7 +34,7 @@ public class AtomHashTest extends RadixTest {
 	@Test
 	public void testThatParticleSpinAffectsAtomHash() throws CryptoException {
 		Universe universe = getUniverse();
-		RRIParticle p = new RRIParticle(RRI.of(RadixAddress.from(universe, new ECKeyPair().getPublicKey()), "test"));
+		RRIParticle p = new RRIParticle(RRI.of(new RadixAddress((byte) universe.getMagic(), ECKeyPair.generateNew().getPublicKey()), "test"));
 		Atom atom1 = new Atom();
 		atom1.addParticleGroupWith(p, Spin.UP);
 

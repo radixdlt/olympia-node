@@ -20,7 +20,6 @@ package com.radixdlt.consensus;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.radixdlt.consensus.Counters.CounterType;
-import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.Arrays;
@@ -37,11 +36,7 @@ import org.junit.Test;
 public class PerfectNetworkTest {
 	private static List<ECKeyPair> createNodes(int numNodes) {
 		return Stream.generate(() -> {
-			try {
-				return new ECKeyPair();
-			} catch (CryptoException e) {
-				throw new RuntimeException();
-			}
+			return ECKeyPair.generateNew();
 		}).limit(numNodes).collect(Collectors.toList());
 	}
 
@@ -74,14 +69,14 @@ public class PerfectNetworkTest {
 			.map(o -> o);
 
 		List<Observable<Vertex>> proposals = nodes.stream()
-			.map(ECKeyPair::getUID)
+			.map(ECKeyPair::euid)
 			.map(bftNetwork.getTestEventCoordinatorNetwork()::getNetworkRx)
 			.map(EventCoordinatorNetworkRx::proposalMessages)
 			.collect(Collectors.toList());
 
 		Observable<Object> proposalsCheck = Observable.merge(proposals)
 			.doOnNext(v -> assertThat(v)
-				.satisfies(new Condition<>(vtx -> vtx.getView().equals(vtx.getParentView().next()), "Vertex has direct parent")))
+				.satisfies(new Condition<>(Vertex::hasDirectParent, "Vertex has direct parent")))
 			.map(o -> o);
 
 		Observable.merge(bftNetwork.processBFT(), commitCheck, timeoutCheck, proposalsCheck)

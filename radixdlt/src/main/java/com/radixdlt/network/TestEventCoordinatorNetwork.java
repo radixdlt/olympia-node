@@ -17,7 +17,7 @@
 
 package com.radixdlt.network;
 
-import com.radixdlt.common.EUID;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.consensus.EventCoordinatorNetworkRx;
 import com.radixdlt.consensus.EventCoordinatorNetworkSender;
 import io.reactivex.rxjava3.core.Observable;

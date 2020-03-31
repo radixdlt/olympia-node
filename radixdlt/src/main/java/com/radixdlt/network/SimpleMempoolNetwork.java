@@ -29,8 +29,8 @@ import org.radix.network2.addressbook.PeerWithSystem;
 import org.radix.network2.messaging.MessageCentral;
 import org.radix.universe.system.LocalSystem;
 
-import com.radixdlt.common.Atom;
-import com.radixdlt.common.EUID;
+import com.radixdlt.atommodel.Atom;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.mempool.messages.MempoolAtomAddedMessage;
 import com.radixdlt.universe.Universe;
 

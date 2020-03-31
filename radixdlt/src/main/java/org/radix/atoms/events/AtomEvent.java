@@ -17,7 +17,7 @@
 
 package org.radix.atoms.events;
 
-import com.radixdlt.common.Atom;
+import com.radixdlt.atommodel.Atom;
 import org.radix.common.Syncronicity;
 import org.radix.events.Event;
 

@@ -22,7 +22,7 @@ import java.util.Objects;
 import org.radix.network.messaging.Message;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.common.Atom;
+import com.radixdlt.atommodel.Atom;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;

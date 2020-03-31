@@ -36,8 +36,8 @@ public final class GenerateNodeKey
 		File file = args.length > 2 ? new File(args[2]) : new File("node.key");
 
 		while (true) {
-			ECKeyPair key = new ECKeyPair();
-			ShardSpace shardSpace = new ShardSpace(key.getUID().getShard(), maxChunkRange);
+			ECKeyPair key = ECKeyPair.generateNew();
+			ShardSpace shardSpace = new ShardSpace(key.euid().getShard(), maxChunkRange);
 			if (shardSpace.intersects(targetShard)) {
 				System.out.println("targetShard: " + targetShard);
 				System.out.println("maxChunkRange: " + maxChunkRange);

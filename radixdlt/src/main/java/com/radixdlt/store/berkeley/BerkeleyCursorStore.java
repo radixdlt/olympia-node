@@ -19,7 +19,7 @@ package com.radixdlt.store.berkeley;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.radixdlt.common.EUID;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.consensus.tempo.TempoException;
 import com.radixdlt.store.CursorStore;
 import com.radixdlt.utils.Longs;

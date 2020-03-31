@@ -17,6 +17,7 @@
 
 package org.radix;
 
+import com.radixdlt.DefaultSerialization;
 import com.radixdlt.consensus.ChainedBFT;
 import com.radixdlt.mempool.MempoolReceiver;
 import com.radixdlt.mempool.SubmissionControl;
@@ -114,7 +115,7 @@ public final class Radix
 	}
 
 	public static void start(RuntimeProperties properties) {
-		Serialization serialization = Serialization.getDefault();
+		Serialization serialization = DefaultSerialization.getInstance();
 		Universe universe = extractUniverseFrom(properties, serialization);
 
 		// TODO this is awful, PublicInetAddress shouldn't be a singleton

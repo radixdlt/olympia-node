@@ -23,7 +23,7 @@ import java.util.stream.Stream;
 import org.radix.network2.transport.TransportInfo;
 import org.radix.universe.system.RadixSystem;
 
-import com.radixdlt.common.EUID;
+import com.radixdlt.identifiers.EUID;
 
 /**
  * Address book interface allowing client code to discover and add

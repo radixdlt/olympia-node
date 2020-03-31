@@ -17,7 +17,7 @@
 
 package com.radixdlt.store;
 
-import com.radixdlt.common.AID;
+import com.radixdlt.identifiers.AID;
 import com.radixdlt.crypto.Hash;
 import org.radix.serialization.SerializeMessageObject;
 

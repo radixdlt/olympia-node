@@ -28,7 +28,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import com.radixdlt.common.EUID;
+import com.radixdlt.identifiers.EUID;
 import org.radix.network2.addressbook.AddressBook;
 import org.radix.network2.addressbook.Peer;
 import com.radixdlt.serialization.DsonOutput.Output;
