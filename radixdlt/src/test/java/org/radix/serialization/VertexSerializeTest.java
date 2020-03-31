@@ -18,6 +18,7 @@
 package org.radix.serialization;
 
 import com.radixdlt.atommodel.message.MessageParticle;
+import com.radixdlt.consensus.VoteData;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.consensus.QuorumCertificate;
@@ -38,8 +39,9 @@ public class VertexSerializeTest extends SerializeObject<Vertex> {
 		Hash id = Hash.random();
 
 		VertexMetadata vertexMetadata = new VertexMetadata(view, id);
+		VoteData voteData = new VoteData(vertexMetadata, null);
 
-		QuorumCertificate qc = new QuorumCertificate(vertexMetadata, new ECDSASignatures());
+		QuorumCertificate qc = new QuorumCertificate(voteData, new ECDSASignatures());
 
 		RadixAddress address = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
 		Atom atom = new Atom();

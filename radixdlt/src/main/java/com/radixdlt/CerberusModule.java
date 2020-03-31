@@ -29,6 +29,7 @@ import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.VertexStore;
 import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.PacemakerImpl;
 import com.radixdlt.consensus.liveness.PacemakerRx;
@@ -104,7 +105,8 @@ public class CerberusModule extends AbstractModule {
 
 		final Vertex genesisVertex = Vertex.createGenesis(universe.getGenesis().get(0));
 		final VertexMetadata genesisMetadata = new VertexMetadata(View.genesis(), genesisVertex.getId());
-		final QuorumCertificate rootQC = new QuorumCertificate(genesisMetadata, new ECDSASignatures());
+		final VoteData voteData = new VoteData(genesisMetadata, null);
+		final QuorumCertificate rootQC = new QuorumCertificate(voteData, new ECDSASignatures());
 
 		log.info("Genesis Vertex Id: " + genesisVertex.getId());
 		return new VertexStore(genesisVertex, rootQC, radixEngine);

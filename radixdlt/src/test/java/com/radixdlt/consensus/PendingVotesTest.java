@@ -40,7 +40,7 @@ public class PendingVotesTest {
 	public void when_inserting_a_vote_without_signature__then_exception_is_thrown() {
 		PendingVotes pendingVotes = new PendingVotes();
 		Vote voteWithoutSignature = mock(Vote.class);
-		when(voteWithoutSignature.getVertexMetadata()).thenReturn(mock(VertexMetadata.class));
+		when(voteWithoutSignature.getVoteData()).thenReturn(mock(VoteData.class));
 		when(voteWithoutSignature.getSignature()).thenReturn(Optional.empty());
 
 		assertThatThrownBy(() -> pendingVotes.insertVote(voteWithoutSignature, mock(ValidatorSet.class)));
@@ -70,7 +70,8 @@ public class PendingVotesTest {
 		Vote vote = mock(Vote.class);
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
 		when(vertexMetadata.getId()).thenReturn(vertexId);
-		when(vote.getVertexMetadata()).thenReturn(vertexMetadata);
+		VoteData voteData = new VoteData(vertexMetadata, null);
+		when(vote.getVoteData()).thenReturn(voteData);
 		when(vote.getSignature()).thenReturn(Optional.of(new ECDSASignature()));
 		when(vote.getAuthor()).thenReturn(ECKeyPair.generateNew().getPublicKey());
 		return vote;

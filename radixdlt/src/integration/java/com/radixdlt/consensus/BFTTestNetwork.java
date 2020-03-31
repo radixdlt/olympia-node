@@ -67,7 +67,7 @@ public class BFTTestNetwork {
 		when(this.genesis.getAID()).thenReturn(aid);
 		this.genesisVertex = Vertex.createGenesis(genesis);
 		this.genesisQC = new QuorumCertificate(
-			new VertexMetadata(View.genesis(), genesisVertex.getId()),
+			new VoteData(VertexMetadata.ofVertex(genesisVertex), null),
 			new ECDSASignatures()
 		);
 		this.validatorSet = ValidatorSet.from(

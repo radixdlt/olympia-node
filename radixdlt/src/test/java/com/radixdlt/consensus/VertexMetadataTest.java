@@ -45,7 +45,7 @@ public class VertexMetadataTest {
 
 	@Test
 	public void testGetters() {
-		assertEquals(View.of(1234567891L), this.testObject.getView());
+		assertEquals(View.of(1234567890L), this.testObject.getView());
 
 		assertEquals(id, this.testObject.getId());
 	}

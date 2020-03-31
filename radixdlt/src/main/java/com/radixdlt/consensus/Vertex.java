@@ -95,7 +95,7 @@ public final class Vertex {
 	}
 
 	public Hash getParentId() {
-		return qc == null ? null : qc.getVertexMetadata().getId();
+		return qc == null ? null : qc.getProposed().getId();
 	}
 
 	public View getParentView() {

@@ -22,6 +22,7 @@ import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.messages.VertexMessage;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.Hash;
@@ -37,7 +38,8 @@ public class VertexMessageSerializeTest extends SerializeMessageObject<VertexMes
 		Atom atom = new Atom();
 
 		VertexMetadata vertexMetadata = new VertexMetadata(view, id);
-		QuorumCertificate qc = new QuorumCertificate(vertexMetadata, new ECDSASignatures());
+		VoteData voteData = new VoteData(vertexMetadata, null);
+		QuorumCertificate qc = new QuorumCertificate(voteData, new ECDSASignatures());
 		Vertex vertex = new Vertex(qc, view, atom);
 		return new VertexMessage(1, vertex);
 	}

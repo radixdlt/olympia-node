@@ -41,8 +41,9 @@ public class VertexTest {
 		this.id = Hash.random();
 
 		this.vertexMetadata = new VertexMetadata(view, id);
+		VoteData voteData = new VoteData(vertexMetadata, null);
 
-		this.qc = new QuorumCertificate(this.vertexMetadata, new ECDSASignatures());
+		this.qc = new QuorumCertificate(voteData, new ECDSASignatures());
 
 		this.atom = new Atom();
 
@@ -59,7 +60,7 @@ public class VertexTest {
 	public void testGetters() {
 		assertEquals(this.atom, this.testObject.getAtom());
 		assertEquals(this.qc, this.testObject.getQC());
-		assertEquals(View.of(1234567891L), this.testObject.getView());
+		assertEquals(View.of(1234567890L), this.testObject.getView());
 	}
 
 	@Test

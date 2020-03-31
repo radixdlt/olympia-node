@@ -20,16 +20,20 @@ package com.radixdlt.consensus.safety;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
+import com.radixdlt.DefaultSerialization;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.VertexStore;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.VoteData;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
 
+import com.radixdlt.serialization.DsonOutput.Output;
+import com.radixdlt.serialization.SerializationException;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -74,10 +78,10 @@ public final class SafetyRules {
 
 		// commit phase on vertex's grandparent if there is a newer consecutive 2-chain
 		// keep the highest consecutive 2-chain as the locked QC
-		Vertex parent = vertexStore.getVertex(qc.getVertexMetadata().getId());
+		Vertex parent = vertexStore.getVertex(qc.getProposed().getId());
 		if (parent == null) {
 			throw new IllegalStateException(String.format(
-				"QC %s has no vertex at %s", qc, qc.getVertexMetadata().getId()));
+				"QC %s has no vertex at %s", qc, qc.getProposed().getId()));
 		}
 		// do not go beyond genesis
 		if (!parent.isGenesis()) {
@@ -88,19 +92,19 @@ public final class SafetyRules {
 
 			// decide phase on vertex's great-grandparent if there is a newer consecutive 3-chain
 			// return committed aid
-			Vertex grandparent = vertexStore.getVertex(parent.getQC().getVertexMetadata().getId());
+			Vertex grandparent = vertexStore.getVertex(parent.getQC().getProposed().getId());
 			if (grandparent == null) {
 				throw new IllegalStateException(String.format(
-					"QC %s has no vertex at %s", qc, qc.getVertexMetadata().getId()));
+					"QC %s has no vertex at %s", qc, qc.getProposed().getId()));
 			}
 			// do not go beyond genesis
 			if (!grandparent.isGenesis() && twoChain) {
-				boolean threeChain = qc.getVertexMetadata().getId().equals(parent.getId())
-					&& parent.getQC().getVertexMetadata().getId().equals(grandparent.getId())
+				boolean threeChain = qc.getProposed().getId().equals(parent.getId())
+					&& parent.getQC().getProposed().getId().equals(grandparent.getId())
 					&& grandparent.getQC().getView().next().equals(grandparent.getView());
 				if (threeChain && grandparent.getQC().getView().compareTo(this.state.getCommittedView()) > 0) {
 					this.state = this.state.withCommittedView(grandparent.getQC().getView());
-					return Optional.of(grandparent.getQC().getVertexMetadata().getId());
+					return Optional.of(grandparent.getQC().getProposed().getId());
 				}
 			}
 		}
@@ -128,14 +132,20 @@ public final class SafetyRules {
 		}
 
 		this.state = this.state.withLastVotedView(proposedVertex.getView());
-		VertexMetadata vertexMetadata = new VertexMetadata(
-			proposedVertex.getView(),
-			proposedVertex.getId()
-		);
+		final VertexMetadata proposed = VertexMetadata.ofVertex(proposedVertex);
+		final VertexMetadata parent = VertexMetadata.ofParent(proposedVertex);
+		final VoteData voteData = new VoteData(proposed, parent);
+
+		Hash voteHash;
+		try {
+			voteHash = Hash.of(DefaultSerialization.getInstance().toDson(voteData, Output.HASH));
+		} catch (SerializationException e) {
+			throw new IllegalStateException("Failed to serialize for hash.");
+		}
 
 		// TODO make signing more robust by including author in signed hash
-		ECDSASignature signature = this.selfKey.sign(proposedVertex.getId());
-		return new Vote(selfKey.getPublicKey(), vertexMetadata, signature);
+		ECDSASignature signature = this.selfKey.sign(voteHash);
+		return new Vote(selfKey.getPublicKey(), voteData, signature);
 	}
 
 	@VisibleForTesting SafetyState getState() {

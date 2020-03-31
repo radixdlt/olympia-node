@@ -46,7 +46,8 @@ public class VertexStoreTest {
 	public void setUp() {
 		this.genesisVertex = Vertex.createGenesis(null);
 		VertexMetadata vertexMetadata = new VertexMetadata(View.genesis(), genesisVertex.getId());
-		this.rootQC = new QuorumCertificate(vertexMetadata, new ECDSASignatures());
+		VoteData voteData = new VoteData(vertexMetadata, null);
+		this.rootQC = new QuorumCertificate(voteData, new ECDSASignatures());
 		this.radixEngine = mock(RadixEngine.class);
 		this.vertexStore = new VertexStore(genesisVertex, rootQC, radixEngine);
 	}
@@ -56,7 +57,7 @@ public class VertexStoreTest {
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
 		when(vertexMetadata.getId()).thenReturn(mock(Hash.class));
-		when(qc.getVertexMetadata()).thenReturn(vertexMetadata);
+		when(qc.getProposed()).thenReturn(vertexMetadata);
 		assertThatThrownBy(() -> vertexStore.syncToQC(qc))
 			.isInstanceOf(SyncException.class);
 	}
@@ -64,7 +65,8 @@ public class VertexStoreTest {
 	@Test
 	public void when_inserting_vertex_with_missing_parent__then_missing_parent_exception_is_thrown() throws Exception {
 		VertexMetadata vertexMetadata = new VertexMetadata(View.genesis(), Hash.ZERO_HASH);
-		QuorumCertificate qc = new QuorumCertificate(vertexMetadata, new ECDSASignatures());
+		VoteData voteData = new VoteData(vertexMetadata, null);
+		QuorumCertificate qc = new QuorumCertificate(voteData, new ECDSASignatures());
 		Vertex nextVertex = Vertex.createVertex(qc, View.of(1), mock(Atom.class));
 		assertThatThrownBy(() -> vertexStore.insertVertex(nextVertex))
 			.isInstanceOf(MissingParentException.class);
@@ -90,7 +92,8 @@ public class VertexStoreTest {
 	public void when_insert_two_vertices__then_get_path_from_root_should_return_the_two_vertices() throws Exception {
 		Vertex nextVertex0 = Vertex.createVertex(rootQC, View.of(1), null);
 		VertexMetadata vertexMetadata = new VertexMetadata(View.of(1), nextVertex0.getId());
-		QuorumCertificate qc = new QuorumCertificate(vertexMetadata, new ECDSASignatures());
+		VoteData voteData = new VoteData(vertexMetadata, rootQC.getProposed());
+		QuorumCertificate qc = new QuorumCertificate(voteData, new ECDSASignatures());
 		Vertex nextVertex1 = Vertex.createVertex(qc, View.of(2), null);
 		vertexStore.insertVertex(nextVertex0);
 		vertexStore.insertVertex(nextVertex1);

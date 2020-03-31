@@ -115,7 +115,8 @@ public class ValidatingEventCoordinatorTest {
 	public void when_processing_vote_as_not_proposer__then_nothing_happens() {
 		Vote voteMessage = mock(Vote.class);
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
-		when(voteMessage.getVertexMetadata()).thenReturn(vertexMetadata);
+		VoteData voteData = new VoteData(vertexMetadata, null);
+		when(voteMessage.getVoteData()).thenReturn(voteData);
 		when(vertexMetadata.getView()).thenReturn(View.of(0L));
 
 		eventCoordinator.processVote(voteMessage);
@@ -129,7 +130,8 @@ public class ValidatingEventCoordinatorTest {
 
 		Vote vote = mock(Vote.class);
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
-		when(vote.getVertexMetadata()).thenReturn(vertexMetadata);
+		VoteData voteData = new VoteData(vertexMetadata, null);
+		when(vote.getVoteData()).thenReturn(voteData);
 		when(vertexMetadata.getView()).thenReturn(View.of(0L));
 		when(vertexMetadata.getId()).thenReturn(Hash.random());
 

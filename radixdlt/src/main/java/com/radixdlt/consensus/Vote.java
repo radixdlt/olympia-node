@@ -45,7 +45,7 @@ public final class Vote {
 
 	@JsonProperty("vertex_metadata")
 	@DsonOutput(Output.ALL)
-	private final VertexMetadata vertexMetadata;
+	private final VoteData voteData;
 
 	@JsonProperty("signature")
 	@DsonOutput(Output.ALL)
@@ -54,13 +54,13 @@ public final class Vote {
 	Vote() {
 		// Serializer only
 		this.author = null;
-		this.vertexMetadata = null;
+		this.voteData = null;
 		this.signature = null;
 	}
 
-	public Vote(ECPublicKey author, VertexMetadata vertexMetadata, ECDSASignature signature) {
+	public Vote(ECPublicKey author, VoteData voteData, ECDSASignature signature) {
 		this.author = Objects.requireNonNull(author);
-		this.vertexMetadata = Objects.requireNonNull(vertexMetadata);
+		this.voteData = Objects.requireNonNull(voteData);
 		this.signature = signature;
 	}
 
@@ -68,8 +68,8 @@ public final class Vote {
 		return author;
 	}
 
-	public VertexMetadata getVertexMetadata() {
-		return vertexMetadata;
+	public VoteData getVoteData() {
+		return voteData;
 	}
 
 	public Optional<ECDSASignature> getSignature() {
@@ -89,12 +89,12 @@ public final class Vote {
 	@Override
 	public String toString() {
 		return String.format("%s{author=%s view=%s}", getClass().getSimpleName(),
-			author.euid().toString().substring(0, 6), vertexMetadata.getView());
+			author.euid().toString().substring(0, 6), voteData.getProposed().getView());
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.author, this.vertexMetadata, this.signature);
+		return Objects.hash(this.author, this.voteData, this.signature);
 	}
 
 	@Override
@@ -106,7 +106,7 @@ public final class Vote {
 			Vote other = (Vote) o;
 			return
 				Objects.equals(this.author, other.author)
-					&& Objects.equals(this.vertexMetadata, other.vertexMetadata)
+					&& Objects.equals(this.voteData, other.voteData)
 					&& Objects.equals(this.signature, other.signature);
 		}
 		return false;

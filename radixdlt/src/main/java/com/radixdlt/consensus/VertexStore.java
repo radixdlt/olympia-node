@@ -67,7 +67,7 @@ public final class VertexStore {
 	}
 
 	public void syncToQC(QuorumCertificate qc) throws SyncException {
-		final Vertex vertex = vertices.get(qc.getVertexMetadata().getId());
+		final Vertex vertex = vertices.get(qc.getProposed().getId());
 		if (vertex == null) {
 			// TODO: actual syncing
 			throw new SyncException(qc);

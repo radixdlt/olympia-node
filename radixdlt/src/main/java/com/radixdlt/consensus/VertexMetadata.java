@@ -53,6 +53,14 @@ public final class VertexMetadata {
 		this.id = id;
 	}
 
+	public static VertexMetadata ofVertex(Vertex vertex) {
+		return new VertexMetadata(vertex.getView(), vertex.getId());
+	}
+
+	public static VertexMetadata ofParent(Vertex vertex) {
+		return new VertexMetadata(vertex.getParentView(), vertex.getParentId());
+	}
+
 	public View getView() {
 		return view;
 	}

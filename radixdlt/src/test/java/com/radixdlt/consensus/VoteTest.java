@@ -29,7 +29,7 @@ import static org.junit.Assert.assertNotNull;
 public class VoteTest {
 	public static final RadixAddress ADDRESS = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
 	private Vote testObject;
-	private VertexMetadata vertexMetadata;
+	private VoteData voteData;
 	private Hash parentId;
 	private Hash id;
 
@@ -38,9 +38,9 @@ public class VoteTest {
 		View view = View.of(1234567890L);
 		this.id = Hash.random();
 
-		this.vertexMetadata = new VertexMetadata(view, id);
+		this.voteData = new VoteData(new VertexMetadata(view, id), null);
 
-		this.testObject = new Vote(ADDRESS.getPublicKey(), vertexMetadata, null);
+		this.testObject = new Vote(ADDRESS.getPublicKey(), voteData, null);
 	}
 
 	@Test
@@ -51,7 +51,7 @@ public class VoteTest {
 
 	@Test
 	public void testGetters() {
-		assertEquals(this.vertexMetadata, this.testObject.getVertexMetadata());
+		assertEquals(this.voteData, this.testObject.getVoteData());
 		assertEquals(ADDRESS.getPublicKey(), this.testObject.getAuthor());
 	}
 

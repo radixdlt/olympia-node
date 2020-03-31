@@ -17,12 +17,15 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.DefaultSerialization;
 import com.radixdlt.consensus.validators.ValidationResult;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.Hash;
 
+import com.radixdlt.serialization.DsonOutput.Output;
+import com.radixdlt.serialization.SerializationException;
 import java.util.HashMap;
 import java.util.Objects;
 import java.util.Optional;
@@ -43,21 +46,27 @@ public final class PendingVotes {
 	public Optional<QuorumCertificate> insertVote(Vote vote, ValidatorSet validatorSet) {
 		Objects.requireNonNull(vote, "vote");
 
-		Hash voteId = vote.getVertexMetadata().getId();
+		Hash voteHash;
+		try {
+			voteHash = Hash.of(DefaultSerialization.getInstance().toDson(vote.getVoteData(), Output.HASH));
+		} catch (SerializationException e) {
+			throw new IllegalStateException("Failed to serialize for hash.");
+		}
+
 		ECDSASignature signature = vote.getSignature().orElseThrow(() -> new IllegalArgumentException("vote is missing signature"));
-		ECDSASignatures signatures = pendingVotes.getOrDefault(voteId, new ECDSASignatures());
+		ECDSASignatures signatures = pendingVotes.getOrDefault(voteHash, new ECDSASignatures());
 		signatures = (ECDSASignatures) signatures.concatenate(vote.getAuthor(), signature);
 
 		// try to form a QC with the added signature according to the requirements
-		ValidationResult validationResult = validatorSet.validate(voteId, signatures);
+		ValidationResult validationResult = validatorSet.validate(voteHash, signatures);
 		if (!validationResult.valid()) {
 			// if no QC could be formed, update pending and return nothing
-			pendingVotes.put(voteId, signatures);
+			pendingVotes.put(voteHash, signatures);
 			return Optional.empty();
 		} else {
 			// if QC could be formed, remove pending and return formed QC
-			pendingVotes.remove(voteId);
-			QuorumCertificate qc = new QuorumCertificate(vote.getVertexMetadata(), signatures);
+			pendingVotes.remove(voteHash);
+			QuorumCertificate qc = new QuorumCertificate(vote.getVoteData(), signatures);
 			return Optional.of(qc);
 		}
 	}

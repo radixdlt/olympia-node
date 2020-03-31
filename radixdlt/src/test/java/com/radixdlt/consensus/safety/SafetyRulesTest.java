@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus.safety;
 
+import com.radixdlt.consensus.VoteData;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.consensus.QuorumCertificate;
@@ -187,16 +188,17 @@ public class SafetyRulesTest {
 
 	private static VertexStore makeVertexStore() {
 		final VertexMetadata genesisMetadata = new VertexMetadata(View.genesis(), GENESIS_VERTEX.getId());
-		final QuorumCertificate rootQC = new QuorumCertificate(genesisMetadata, new ECDSASignatures());
+		final VoteData voteData = new VoteData(genesisMetadata, null);
+		final QuorumCertificate rootQC = new QuorumCertificate(voteData, new ECDSASignatures());
 		return new VertexStore(GENESIS_VERTEX, rootQC, mock(RadixEngine.class));
 	}
 
 	private static Vertex makeVertex(Vertex parent, View view, VertexStore vertexStore) {
-		VertexMetadata parentMetadata = new VertexMetadata(
-			parent.getView(),
-			parent.getId()
-		);
-		QuorumCertificate qc = new QuorumCertificate(parentMetadata, new ECDSASignatures());
+		VertexMetadata parentMetadata = VertexMetadata.ofVertex(parent);
+		VertexMetadata grandParentMetaData = VertexMetadata.ofParent(parent);
+		VoteData voteData = new VoteData(parentMetadata, grandParentMetaData);
+
+		QuorumCertificate qc = new QuorumCertificate(voteData, new ECDSASignatures());
 		Vertex vertex = Vertex.createVertex(qc, view, null);
 		try {
 			vertexStore.insertVertex(vertex);
