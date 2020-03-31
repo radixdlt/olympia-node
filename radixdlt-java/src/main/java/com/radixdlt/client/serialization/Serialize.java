@@ -82,7 +82,6 @@ public final class Serialize {
 				TransferrableTokensParticle.class,
 				UniqueParticle.class,
 
-				ECKeyPair.class,
 				ECDSASignature.class,
 				NodeRunnerData.class,
 				ShardSpace.class,
