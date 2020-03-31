@@ -32,9 +32,7 @@ import org.junit.Test;
  */
 public class CrashFaultNetworkTest {
 	static List<ECKeyPair> createNodes(int numNodes) {
-		return Stream.generate(() -> {
-			return ECKeyPair.generateNew();
-		}).limit(numNodes).collect(Collectors.toList());
+		return Stream.generate(ECKeyPair::generateNew).limit(numNodes).collect(Collectors.toList());
 	}
 
 	@Test

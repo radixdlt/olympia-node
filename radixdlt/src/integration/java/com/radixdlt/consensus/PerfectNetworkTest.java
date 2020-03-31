@@ -35,9 +35,7 @@ import org.junit.Test;
  */
 public class PerfectNetworkTest {
 	private static List<ECKeyPair> createNodes(int numNodes) {
-		return Stream.generate(() -> {
-			return ECKeyPair.generateNew();
-		}).limit(numNodes).collect(Collectors.toList());
+		return Stream.generate(ECKeyPair::generateNew).limit(numNodes).collect(Collectors.toList());
 	}
 
 	/**
@@ -80,6 +78,39 @@ public class PerfectNetworkTest {
 			.map(o -> o);
 
 		Observable.merge(bftNetwork.processBFT(), commitCheck, timeoutCheck, proposalsCheck)
+			.take(time, timeUnit)
+			.blockingSubscribe();
+	}
+
+	@Test
+	public void given_a_correct_bft__then_new_memory_used_should_be_less_than_10MB_over_2_minutes() {
+		final int numNodes = 1;
+		final long time = 2;
+		final TimeUnit timeUnit = TimeUnit.MINUTES;
+
+		final List<ECKeyPair> nodes = createNodes(numNodes);
+		final BFTTestNetwork bftNetwork = new BFTTestNetwork(nodes);
+
+		Observable<Long> memory = Observable.interval(500, TimeUnit.MILLISECONDS)
+			.map(l -> {
+				Runtime.getRuntime().gc();
+				return (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()) / 1024L / 1024L;
+			})
+			.publish()
+			.autoConnect(2);
+
+		Observable<Long> memoryCheck = Observable.combineLatest(
+			memory.firstOrError().toObservable()
+				.doOnNext(mb -> System.out.println(mb + "MB initially used"))
+				.concatWith(Observable.never()),
+			memory,
+			(init, next) -> next - init
+		)
+			.doOnNext(mb -> System.out.println(mb + "MB used increase"))
+			.doOnNext(usedMem -> assertThat(usedMem).isLessThan(10L));
+
+
+		Observable.merge(bftNetwork.processBFT(), memoryCheck)
 			.take(time, timeUnit)
 			.blockingSubscribe();
 	}

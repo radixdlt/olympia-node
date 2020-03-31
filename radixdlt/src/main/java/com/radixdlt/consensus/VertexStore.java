@@ -25,6 +25,7 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -103,13 +104,19 @@ public final class VertexStore {
 		if (tipVertex == null) {
 			throw new IllegalStateException("Committing a vertex which was never inserted: " + vertexId);
 		}
+		final LinkedList<Vertex> path = new LinkedList<>();
 		Vertex vertex = tipVertex;
-		while (vertex != null && !vertex.getId().equals(root.getId())) {
-			vertex = vertices.get(vertex.getParentId());
+		while (vertex != null && !root.equals(vertex)) {
+			path.addFirst(vertex);
+			vertex = vertices.remove(vertex.getParentId());
 		}
 
+		for (Vertex committed : path) {
+			lastCommittedVertex.onNext(committed);
+		}
+
+		vertices.remove(root.getId());
 		root = tipVertex;
-		lastCommittedVertex.onNext(tipVertex);
 
 		return tipVertex;
 	}
@@ -128,10 +135,6 @@ public final class VertexStore {
 		}
 
 		return path;
-	}
-
-	public Vertex getVertex(Hash vertexId) {
-		return vertices.get(vertexId);
 	}
 
 	public QuorumCertificate getHighestQC() {

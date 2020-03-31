@@ -114,4 +114,23 @@ public class VertexStoreTest {
 		testObserver.awaitCount(2);
 		testObserver.assertValues(genesisVertex, nextVertex);
 	}
+
+	@Test
+	public void when_insert_two_and_commit_vertex__then_two_committed_vertices_should_emit_in_order() throws Exception {
+		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), null);
+		vertexStore.insertVertex(nextVertex);
+
+		QuorumCertificate qc = mock(QuorumCertificate.class);
+		when(qc.getProposed()).thenReturn(VertexMetadata.ofVertex(nextVertex));
+		Vertex nextVertex2 = Vertex.createVertex(qc, View.of(2), null);
+		vertexStore.insertVertex(nextVertex2);
+
+		TestObserver<Vertex> testObserver = TestObserver.create();
+		vertexStore.lastCommittedVertex().subscribe(testObserver);
+		testObserver.awaitCount(1);
+
+		vertexStore.commitVertex(nextVertex2.getId());
+		testObserver.awaitCount(3);
+		testObserver.assertValues(genesisVertex, nextVertex, nextVertex2);
+	}
 }
