@@ -17,15 +17,10 @@
 
 package com.radixdlt.crypto;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.crypto.encryption.ECIES;
 import com.radixdlt.crypto.encryption.ECIESException;
 import com.radixdlt.crypto.encryption.EncryptedPrivateKey;
 import com.radixdlt.identifiers.EUID;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.SerializerConstants;
-import com.radixdlt.serialization.SerializerDummy;
-import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.utils.Bytes;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.generators.ECKeyPairGenerator;
