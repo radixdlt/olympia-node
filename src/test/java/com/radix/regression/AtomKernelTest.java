@@ -24,7 +24,10 @@ import com.radixdlt.client.core.network.websocket.WebSocketClient;
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
 import com.radixdlt.client.core.pow.ProofOfWorkBuilder;
 import io.reactivex.observers.TestObserver;
+import io.reactivex.observers.BaseTestConsumer.TestWaitStrategy;
+
 import java.util.UUID;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -69,7 +72,7 @@ public class AtomKernelTest {
 
 	@Test
 	public void testAtomTooBig() {
-		TestObserver observer = submitAtom(ImmutableMap.of(), true, System.currentTimeMillis() + "", SpunParticle.up(new MessageParticle.MessageParticleBuilder()
+		TestObserver<?> observer = submitAtom(ImmutableMap.of(), true, System.currentTimeMillis() + "", SpunParticle.up(new MessageParticle.MessageParticleBuilder()
 			.payload(new byte[1 << 20])
 			.metaData("application", "message")
 			.from(universe.getAddressFrom(this.identity.getPublicKey()))
@@ -104,7 +107,7 @@ public class AtomKernelTest {
 			.from(universe.getAddressFrom(this.identity.getPublicKey()))
 			.to(universe.getAddressFrom(this.identity.getPublicKey()))
 			.build()));
-		observer.awaitCount(1);
+		observer.awaitCount(1, TestWaitStrategy.SLEEP_10MS, 10000);
 		observer.assertValue(n -> n.getAtomStatus() == AtomStatus.EVICTED_FAILED_CM_VERIFICATION);
 		observer.dispose();
 	}
@@ -117,7 +120,7 @@ public class AtomKernelTest {
 			.from(universe.getAddressFrom(this.identity.getPublicKey()))
 			.to(universe.getAddressFrom(this.identity.getPublicKey()))
 			.build()));
-		observer.awaitCount(1);
+		observer.awaitCount(1, TestWaitStrategy.SLEEP_10MS, 10000);
 		observer.assertValue(n -> n.getAtomStatus() == AtomStatus.EVICTED_FAILED_CM_VERIFICATION);
 		observer.dispose();
 	}
@@ -130,14 +133,14 @@ public class AtomKernelTest {
 			.from(universe.getAddressFrom(this.identity.getPublicKey()))
 			.to(universe.getAddressFrom(this.identity.getPublicKey()))
 			.build()));
-		observer.awaitCount(1);
+		observer.awaitCount(1, TestWaitStrategy.SLEEP_10MS, 5000);
 		observer.assertValue(n -> n.getAtomStatus() == AtomStatus.EVICTED_FAILED_CM_VERIFICATION);
 		observer.dispose();
 	}
 
 	@Test
 	public void testAtomEmpty() {
-		TestObserver observer = submitAtom(ImmutableMap.of(), false, System.currentTimeMillis() + "");
+		TestObserver<?> observer = submitAtom(ImmutableMap.of(), false, System.currentTimeMillis() + "");
 		observer.awaitTerminalEvent();
 		observer.assertError(RuntimeException.class);
 		observer.dispose();
@@ -181,7 +184,7 @@ public class AtomKernelTest {
 		return observer;
 	}
 
-	private TestObserver submitAtom(
+	private TestObserver<?> submitAtom(
 		Map<String, String> metaData,
 		boolean addFee,
 		String timestamp,
