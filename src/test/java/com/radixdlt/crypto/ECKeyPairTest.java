@@ -49,7 +49,6 @@ public class ECKeyPairTest {
 	public void equalsContract() {
 		EqualsVerifier.forClass(ECKeyPair.class)
 				.withIgnoredFields("publicKey") // public key is derived from used private key.
-				.withIgnoredFields("version") // only used for serialization
 				.verify();
 	}
 
@@ -109,7 +108,6 @@ public class ECKeyPairTest {
 	public void checkKeyPairEquals() {
 		EqualsVerifier.forClass(ECKeyPair.class)
 			.withIgnoredFields("publicKey") // Computed
-				.withIgnoredFields("version") // only used for serialization
 			.verify();
 	}
 

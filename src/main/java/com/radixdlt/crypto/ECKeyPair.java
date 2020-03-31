@@ -17,15 +17,10 @@
 
 package com.radixdlt.crypto;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.crypto.encryption.ECIES;
 import com.radixdlt.crypto.encryption.ECIESException;
 import com.radixdlt.crypto.encryption.EncryptedPrivateKey;
 import com.radixdlt.identifiers.EUID;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.SerializerConstants;
-import com.radixdlt.serialization.SerializerDummy;
-import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.utils.Bytes;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.generators.ECKeyPairGenerator;
@@ -47,16 +42,11 @@ import java.util.Objects;
 /**
  * Asymmetric EC key pair provider fixed to curve 'secp256k1'.
  */
-@SerializerId2("crypto.ec_key_pair")
 public final class ECKeyPair implements Signing<ECDSASignature> {
 	public static final int	BYTES = 32;
 
-	@JsonProperty("private")
-	@DsonOutput(DsonOutput.Output.PERSIST)
 	private final byte[] privateKey;
 
-	@JsonProperty("public")
-	@DsonOutput(DsonOutput.Output.ALL)
 	private final ECPublicKey publicKey;
 
 	private ECKeyPair() {
@@ -200,15 +190,6 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
 		return String.format("%s[%s]",
 			getClass().getSimpleName(), Bytes.toBase64String(getPublicKey().getBytes()));
 	}
-
-	@JsonProperty("version")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private short version = 100;
-
-	// Placeholder for the serializer ID
-	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
-	@DsonOutput(DsonOutput.Output.ALL)
-	private SerializerDummy serializer = SerializerDummy.DUMMY;
 
 	public ECKeyPair(byte[] publicKey, byte[] privateKey) {
 		try {
