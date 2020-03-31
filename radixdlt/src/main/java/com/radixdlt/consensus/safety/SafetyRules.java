@@ -24,10 +24,10 @@ import com.radixdlt.DefaultSerialization;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
-import com.radixdlt.consensus.VertexStore;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.VoteData;
+import com.radixdlt.consensus.safety.SafetyState.Builder;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
@@ -43,16 +43,12 @@ import java.util.Optional;
 public final class SafetyRules {
 	private final ECKeyPair selfKey; // TODO remove signing/address to separate identity management
 
-	private final VertexStore vertexStore;
 	private SafetyState state;
 
 	@Inject
-	public SafetyRules(@Named("self") ECKeyPair selfKey,
-	                   VertexStore vertexStore,
-	                   SafetyState initialState) {
+	public SafetyRules(@Named("self") ECKeyPair selfKey, SafetyState initialState) {
 		this.selfKey = Objects.requireNonNull(selfKey);
-		this.vertexStore = Objects.requireNonNull(vertexStore);
-		this.state = new SafetyState(initialState);
+		this.state = Objects.requireNonNull(initialState);
 	}
 
 	/**
@@ -70,46 +66,37 @@ public final class SafetyRules {
 	 * @return the just-committed vertex id, if any
 	 */
 	public Optional<Hash> process(QuorumCertificate qc) {
+		final Builder safetyStateBuilder = this.state.toBuilder();
+
 		// pre-commit phase on vertex's parent if there is a newer consecutive 1-chain
 		// keep highest 1-chain as the current "generic" QC
 		if (qc.getView().compareTo(this.state.getGenericView().orElse(View.of(0L))) > 0) {
-			this.state = this.state.withGenericQC(qc);
+			safetyStateBuilder.qc(qc);
 		}
 
-		// commit phase on vertex's grandparent if there is a newer consecutive 2-chain
-		// keep the highest consecutive 2-chain as the locked QC
-		Vertex parent = vertexStore.getVertex(qc.getProposed().getId());
-		if (parent == null) {
-			throw new IllegalStateException(String.format(
-				"QC %s has no vertex at %s", qc, qc.getProposed().getId()));
-		}
-		// do not go beyond genesis
-		if (!parent.isGenesis()) {
-			boolean twoChain = parent.getQC().getView().next().equals(parent.getView());
-			if (twoChain && parent.getQC().getView().compareTo(this.state.getLockedView()) > 0) {
-				this.state = this.state.withLockedView(parent.getQC().getView());
-			}
+		if (qc.getParent() != null
+			&& qc.getParent().getView().compareTo(this.state.getLockedView()) > 0
+			&& qc.getParent().getView().next().equals(qc.getView())) {
 
-			// decide phase on vertex's great-grandparent if there is a newer consecutive 3-chain
-			// return committed aid
-			Vertex grandparent = vertexStore.getVertex(parent.getQC().getProposed().getId());
-			if (grandparent == null) {
-				throw new IllegalStateException(String.format(
-					"QC %s has no vertex at %s", qc, qc.getProposed().getId()));
-			}
-			// do not go beyond genesis
-			if (!grandparent.isGenesis() && twoChain) {
-				boolean threeChain = qc.getProposed().getId().equals(parent.getId())
-					&& parent.getQC().getProposed().getId().equals(grandparent.getId())
-					&& grandparent.getQC().getView().next().equals(grandparent.getView());
-				if (threeChain && grandparent.getQC().getView().compareTo(this.state.getCommittedView()) > 0) {
-					this.state = this.state.withCommittedView(grandparent.getQC().getView());
-					return Optional.of(grandparent.getQC().getProposed().getId());
-				}
-			}
+			safetyStateBuilder.lockedView(qc.getParent().getView());
 		}
 
-		return Optional.empty();
+		final Optional<Hash> commitHash;
+		if (qc.getCommitted().isPresent()) {
+			VertexMetadata committed = qc.getCommitted().get();
+			if (committed.getView().compareTo(this.state.getCommittedView()) > 0) {
+				safetyStateBuilder.committedView(committed.getView());
+				commitHash = Optional.of(committed.getId());
+			} else {
+				commitHash = Optional.empty();
+			}
+		} else {
+			commitHash = Optional.empty();
+		}
+
+		this.state = safetyStateBuilder.build();
+
+		return commitHash;
 	}
 
 	/**
@@ -131,10 +118,23 @@ public final class SafetyRules {
 				"does not respect locked view %s", this.state.getLockedView()));
 		}
 
-		this.state = this.state.withLastVotedView(proposedVertex.getView());
+		Builder safetyStateBuilder = this.state.toBuilder();
+		safetyStateBuilder.lastVotedView(proposedVertex.getView());
+
 		final VertexMetadata proposed = VertexMetadata.ofVertex(proposedVertex);
 		final VertexMetadata parent = VertexMetadata.ofParent(proposedVertex);
-		final VoteData voteData = new VoteData(proposed, parent);
+		final VertexMetadata committed;
+
+		if (proposedVertex.getView().equals(proposedVertex.getParentView().next())
+			&& !proposedVertex.getParentView().isGenesis() && !proposedVertex.getGrandParentView().isGenesis()
+			&& proposedVertex.getParentView().equals(proposedVertex.getGrandParentView().next())
+		) {
+			committed = proposedVertex.getQC().getParent();
+		} else {
+			committed = null;
+		}
+
+		final VoteData voteData = new VoteData(proposed, parent, committed);
 
 		Hash voteHash;
 		try {
@@ -142,6 +142,8 @@ public final class SafetyRules {
 		} catch (SerializationException e) {
 			throw new IllegalStateException("Failed to serialize for hash.");
 		}
+
+		this.state = safetyStateBuilder.build();
 
 		// TODO make signing more robust by including author in signed hash
 		ECDSASignature signature = this.selfKey.sign(voteHash);

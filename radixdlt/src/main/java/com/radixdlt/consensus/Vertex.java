@@ -102,6 +102,10 @@ public final class Vertex {
 		return qc == null ? View.of(0) : qc.getView();
 	}
 
+	public View getGrandParentView() {
+		return qc == null ? View.of(0) : qc.getParent() == null ? View.of(0) : qc.getParent().getView();
+	}
+
 	public QuorumCertificate getQC() {
 		return qc;
 	}

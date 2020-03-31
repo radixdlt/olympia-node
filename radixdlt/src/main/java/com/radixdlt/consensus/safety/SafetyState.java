@@ -45,24 +45,54 @@ public final class SafetyState {
 		this.genericQC = genericQC;
 	}
 
-	SafetyState(SafetyState other) {
-		this(other.lastVotedView, other.lockedView, other.committedView, other.genericQC);
+	public static class Builder {
+		private final SafetyState original;
+		private View lastVotedView;
+		private View lockedView;
+		private View committedView;
+		private QuorumCertificate genericQC;
+		private boolean changed = false;
+
+		private Builder(SafetyState safetyState) {
+			this.original = safetyState;
+		}
+
+		public Builder lastVotedView(View lastVotedView) {
+			this.lastVotedView = lastVotedView;
+			this.changed = true;
+			return this;
+		}
+
+		public Builder lockedView(View lockedView) {
+			this.lockedView = lockedView;
+			this.changed = true;
+			return this;
+		}
+
+		public Builder committedView(View committedView) {
+			this.committedView = committedView;
+			this.changed = true;
+			return this;
+		}
+
+		public Builder qc(QuorumCertificate genericQC) {
+			this.genericQC = genericQC;
+			this.changed = true;
+			return this;
+		}
+
+		public SafetyState build() {
+			return changed ? new SafetyState(
+				lastVotedView == null ? original.lastVotedView : lastVotedView,
+				lockedView == null ? original.lockedView : lockedView,
+				committedView == null ? original.committedView : committedView,
+				genericQC == null ? original.genericQC : genericQC
+			) : original;
+		}
 	}
 
-	public SafetyState withLastVotedView(View lastVotedView) {
-		return new SafetyState(lastVotedView, this.lockedView, committedView, this.genericQC);
-	}
-
-	public SafetyState withLockedView(View lockedView) {
-		return new SafetyState(this.lastVotedView, lockedView, committedView, this.genericQC);
-	}
-
-	public SafetyState withCommittedView(View committedView) {
-		return new SafetyState(this.lastVotedView, this.lockedView, committedView, this.genericQC);
-	}
-
-	public SafetyState withGenericQC(QuorumCertificate genericQC) {
-		return new SafetyState(this.lastVotedView, this.lockedView, committedView, genericQC);
+	public Builder toBuilder() {
+		return new Builder(this);
 	}
 
 	public static SafetyState initialState() {

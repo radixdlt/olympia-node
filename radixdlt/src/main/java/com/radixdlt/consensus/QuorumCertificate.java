@@ -26,6 +26,7 @@ import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.serialization.DsonOutput.Output;
+import java.util.Optional;
 
 @SerializerId2("consensus.qc")
 public final class QuorumCertificate {
@@ -62,6 +63,10 @@ public final class QuorumCertificate {
 
 	public VertexMetadata getParent() {
 		return voteData.getParent();
+	}
+
+	public Optional<VertexMetadata> getCommitted() {
+		return voteData.getCommitted();
 	}
 
 	@Override

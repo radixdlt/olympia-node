@@ -7,6 +7,7 @@ import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import java.util.Objects;
+import java.util.Optional;
 import javax.annotation.concurrent.Immutable;
 
 @Immutable
@@ -24,15 +25,25 @@ public final class VoteData {
 	@DsonOutput(Output.ALL)
 	private final VertexMetadata parent;
 
+	@JsonProperty("committed")
+	@DsonOutput(Output.ALL)
+	private final VertexMetadata committed;
+
 	VoteData() {
 		// Serializer only
 		this.proposed = null;
 		this.parent = null;
+		this.committed = null;
 	}
 
 	public VoteData(VertexMetadata proposed, VertexMetadata parent) {
+		this(proposed, parent, null);
+	}
+
+	public VoteData(VertexMetadata proposed, VertexMetadata parent, VertexMetadata committed) {
 		this.proposed = Objects.requireNonNull(proposed);
 		this.parent = parent;
+		this.committed = committed;
 	}
 
 	public VertexMetadata getProposed() {
@@ -41,6 +52,10 @@ public final class VoteData {
 
 	public VertexMetadata getParent() {
 		return parent;
+	}
+
+	public Optional<VertexMetadata> getCommitted() {
+		return Optional.ofNullable(committed);
 	}
 
 	@Override

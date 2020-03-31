@@ -67,7 +67,7 @@ public class BFTTestNetwork {
 		when(this.genesis.getAID()).thenReturn(aid);
 		this.genesisVertex = Vertex.createGenesis(genesis);
 		this.genesisQC = new QuorumCertificate(
-			new VoteData(VertexMetadata.ofVertex(genesisVertex), null),
+			new VoteData(VertexMetadata.ofVertex(genesisVertex), null, null),
 			new ECDSASignatures()
 		);
 		this.validatorSet = ValidatorSet.from(
@@ -99,7 +99,7 @@ public class BFTTestNetwork {
 			return Collections.singletonList(atom);
 		}).when(mempool).getAtoms(anyInt(), anySet());
 		ProposalGenerator proposalGenerator = new ProposalGenerator(vertexStores.get(key), mempool);
-		SafetyRules safetyRules = new SafetyRules(key, vertexStores.get(key), SafetyState.initialState());
+		SafetyRules safetyRules = new SafetyRules(key, SafetyState.initialState());
 		PacemakerImpl pacemaker = new PacemakerImpl(Executors.newSingleThreadScheduledExecutor());
 		PendingVotes pendingVotes = new PendingVotes();
 		EpochRx epochRx = () -> Observable.just(validatorSet).concatWith(Observable.never());
