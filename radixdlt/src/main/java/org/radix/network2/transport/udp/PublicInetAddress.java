@@ -22,8 +22,7 @@ import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.Random;
 import java.util.function.LongSupplier;
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
+
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.common.annotations.VisibleForTesting;
 import com.radixdlt.utils.Longs;
@@ -33,6 +32,9 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.socket.DatagramPacket;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 /**
  * Class for NAT handling/discovery.
  */
@@ -40,7 +42,7 @@ import io.netty.channel.socket.DatagramPacket;
 public final class PublicInetAddress {
 	@VisibleForTesting
 	static final int SECRET_LIFETIME_MS = 60_000;
-	private static final Logger log = Logging.getLogger("transport.udp");
+	private static final Logger log = LogManager.getLogger("transport.udp");
 
 	public static boolean isPublicUnicastInetAddress(InetAddress address) {
 		return ! (address.isSiteLocalAddress() || address.isLinkLocalAddress() ||

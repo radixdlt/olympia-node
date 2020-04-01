@@ -28,12 +28,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class Interfaces
 {
-	private static final Logger networklog = Logging.getLogger ("network");
+	private static final Logger networklog = LogManager.getLogger ("network");
 
 	public enum Domain
 	{

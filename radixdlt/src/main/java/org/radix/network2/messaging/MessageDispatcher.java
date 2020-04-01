@@ -28,8 +28,8 @@ import com.radixdlt.identifiers.EUID;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.DsonOutput.Output;
 
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.radix.network.Interfaces;
 import org.radix.network.messaging.Message;
 import org.radix.network.messaging.SignedMessage;
@@ -54,7 +54,7 @@ import org.xerial.snappy.Snappy;
  * required, and remove the stuff we don't want to keep.
  */
 class MessageDispatcher {
-	private static final Logger log = Logging.getLogger("messaging");
+	private static final Logger log = LogManager.getLogger("messaging");
 
 	private final long messageTtlMs;
 	private final Serialization serialization;

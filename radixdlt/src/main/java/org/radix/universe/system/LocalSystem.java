@@ -31,11 +31,12 @@ import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.Bytes;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.radix.Radix;
 import org.radix.common.executors.Executor;
 import org.radix.common.executors.ScheduledExecutable;
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
 import org.radix.network2.transport.DynamicTransportMetadata;
 import org.radix.network2.transport.TransportInfo;
 import org.radix.network2.transport.udp.PublicInetAddress;
@@ -52,7 +53,7 @@ import static com.radixdlt.serialization.MapHelper.mapOf;
 // FIXME reimplement localsystem as an interface, extract persistence to elsewhere
 public final class LocalSystem extends RadixSystem
 {
-	private static final Logger log = Logging.getLogger();
+	private static final Logger log = LogManager.getLogger();
 
 	private ECKeyPair keyPair;
 

@@ -17,24 +17,26 @@
 
 package org.radix.api.jsonrpc;
 
-import io.undertow.websockets.core.BufferedTextMessage;
 import java.util.function.BiConsumer;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.everit.json.schema.Schema;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.radix.api.AtomQuery;
 import org.radix.api.services.AtomsService;
-import com.radixdlt.identifiers.RadixAddress;
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
 
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.Serialization;
+
+import io.undertow.websockets.core.BufferedTextMessage;
 
 /**
  * A Stateful JSON RPC 2.0 Server and Client for duplex communication
  */
 public class RadixJsonRpcPeer {
-	private static final Logger LOGGER = Logging.getLogger("api");
+	private static final Logger LOGGER = LogManager.getLogger("api");
 
 	private final BiConsumer<RadixJsonRpcPeer, String> callback;
 

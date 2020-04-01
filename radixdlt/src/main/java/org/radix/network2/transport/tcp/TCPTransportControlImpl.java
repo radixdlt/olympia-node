@@ -27,8 +27,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.radix.network2.transport.TransportMetadata;
 import org.radix.network2.transport.TransportOutboundConnection;
 
@@ -54,7 +54,7 @@ import io.netty.channel.ChannelHandler.Sharable;
  * outbound connection regardless.
  */
 final class TCPTransportControlImpl implements TCPTransportControl {
-	private static final Logger log = Logging.getLogger("transport.tcp");
+	private static final Logger log = LogManager.getLogger("transport.tcp");
 
 	@Sharable
 	private static class TCPConnectionHandlerChannelInbound extends ChannelInboundHandlerAdapter {
@@ -176,7 +176,7 @@ final class TCPTransportControlImpl implements TCPTransportControl {
 		}
 
 		private void channelInfo(String what, SocketChannel c) {
-			if (log.hasLevel(Logging.DEBUG)) {
+			if (log.isDebugEnabled()) {
 				log.debug(String.format("%s: %s channel from %s to %s",
 					System.identityHashCode(this), what, formatAddr(c.localAddress()), formatAddr(c.remoteAddress())));
 			}

@@ -18,8 +18,9 @@
 package com.radixdlt.properties;
 
 import org.apache.commons.cli.ParseException;
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -36,7 +37,7 @@ import java.util.Properties;
  * and may be reloaded on the next application execution.
  */
 public class PersistedProperties {
-	private static final Logger log = Logging.getLogger();
+	private static final Logger log = LogManager.getLogger();
 
 	private final Properties properties;
 

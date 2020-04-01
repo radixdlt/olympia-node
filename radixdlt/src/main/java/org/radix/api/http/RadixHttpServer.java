@@ -26,6 +26,7 @@ import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.universe.Universe;
 import com.stijndewitt.undertow.cors.AllowAll;
 import com.stijndewitt.undertow.cors.Filter;
+
 import io.undertow.Handlers;
 import io.undertow.Undertow;
 import io.undertow.server.HttpHandler;
@@ -35,6 +36,9 @@ import io.undertow.util.Headers;
 import io.undertow.util.Methods;
 import io.undertow.util.StatusCodes;
 import io.undertow.websockets.core.WebSocketChannel;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.radix.api.AtomSchemas;
@@ -43,8 +47,6 @@ import org.radix.api.jsonrpc.RadixJsonRpcServer;
 import org.radix.api.services.AtomsService;
 import org.radix.api.services.InternalService;
 import org.radix.api.services.NetworkService;
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
 import org.radix.network2.addressbook.AddressBook;
 import org.radix.universe.system.LocalSystem;
 
@@ -64,7 +66,7 @@ public final class RadixHttpServer {
 	public static final int DEFAULT_PORT = 8080;
 	public static final String CONTENT_TYPE_JSON = "application/json";
 
-	private static final Logger logger = Logging.getLogger("api");
+	private static final Logger logger = LogManager.getLogger("api");
 
 	private final ConcurrentHashMap<RadixJsonRpcPeer, WebSocketChannel> peers;
 	private final AtomsService atomsService;

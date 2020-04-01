@@ -18,13 +18,17 @@
 package org.radix.serialization;
 
 import com.radixdlt.DefaultSerialization;
+import com.radixdlt.serialization.ClassScanningSerializerIds;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
 import java.nio.charset.StandardCharsets;
 
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.config.Configurator;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.radix.logging.Logging;
+
 import com.radixdlt.serialization.DsonOutput.Output;
 
 import static org.junit.Assert.assertEquals;
@@ -40,21 +44,19 @@ public class Serializer2Test extends RadixTest {
 
 	private static DummyTestObject testObject;
 
-	private static String jacksonJson;
-	private static byte[] jacksonDson;
-
 	@BeforeClass
-	public static void beforeClass() throws Exception {
+	public static void beforeClass() throws SerializationException {
 		// Disable this output for now, as the serialiser is quite verbose when starting.
-		Logging.getLogger().setLevels(Logging.ALL & ~Logging.INFO & ~Logging.TRACE & ~Logging.DEBUG);
+		Configurator.setLevel(LogManager.getLogger(ClassScanningSerializerIds.class).getName(), Level.INFO);
+
 		TestSetupUtils.installBouncyCastleProvider();
 
 		serialization = DefaultSerialization.getInstance();
 
 		testObject = new DummyTestObject(true);
 
-		jacksonJson = serialization.toJson(testObject, Output.ALL);
-		jacksonDson = serialization.toDson(testObject, Output.ALL);
+		String jacksonJson = serialization.toJson(testObject, Output.ALL);
+		byte[] jacksonDson = serialization.toDson(testObject, Output.ALL);
 
 		DummyTestObject jacksonJsonObj = serialization.fromJson(jacksonJson, DummyTestObject.class);
 		DummyTestObject jacksonCborObj = serialization.fromDson(jacksonDson, DummyTestObject.class);

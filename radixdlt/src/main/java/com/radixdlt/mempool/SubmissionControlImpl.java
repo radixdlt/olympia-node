@@ -23,11 +23,11 @@ import java.util.function.Consumer;
 
 import javax.inject.Inject;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
 import org.radix.atoms.events.AtomExceptionEvent;
 import org.radix.events.Events;
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
 import org.radix.validation.ConstraintMachineValidationException;
 
 import com.radixdlt.identifiers.AID;
@@ -37,7 +37,7 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.serialization.Serialization;
 
 class SubmissionControlImpl implements SubmissionControl {
-	private static final Logger log = Logging.getLogger("submission");
+	private static final Logger log = LogManager.getLogger("submission");
 
 	private final Mempool mempool;
 	private final RadixEngine radixEngine;

@@ -34,8 +34,9 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.utils.Longs;
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -44,7 +45,7 @@ import java.util.Optional;
  * Processes BFT events with correct validation logic and message sending
  */
 public final class ValidatingEventCoordinator implements EventCoordinator {
-	private static final Logger log = Logging.getLogger("EC");
+	private static final Logger log = LogManager.getLogger("EC");
 
 	private final VertexStore vertexStore;
 	private final PendingVotes pendingVotes;

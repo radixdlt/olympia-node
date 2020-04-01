@@ -26,14 +26,14 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.radix.common.executors.Executor;
 import org.radix.common.executors.ScheduledExecutable;
 import org.radix.database.DatabaseEnvironment;
 import org.radix.database.exceptions.DatabaseException;
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
-import com.radixdlt.utils.Bytes;
 
+import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.RadixConstants;
 import com.sleepycat.je.Cursor;
 import com.sleepycat.je.Database;
@@ -48,7 +48,7 @@ import com.sleepycat.je.TransactionConfig;
 // TODO Remove this horrible singleton with the particularly nasty set/unset/init lifecycle management.
 public final class SystemMetaData
 {
-	private static final Logger log = Logging.getLogger();
+	private static final Logger log = LogManager.getLogger();
 
 	private static SystemMetaData instance;
 

@@ -25,8 +25,8 @@ import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.radix.network.messaging.Message;
 import org.radix.network2.addressbook.Peer;
 import org.radix.network2.utils.Locking;
@@ -42,7 +42,7 @@ import com.google.common.annotations.VisibleForTesting;
  * methods have returned.
  */
 final class MessageListenerList {
-	private static final Logger log = Logging.getLogger("messaging");
+	private static final Logger log = LogManager.getLogger("messaging");
 
 	/**
 	 * A list of queues of callbacks that we are currently processing.

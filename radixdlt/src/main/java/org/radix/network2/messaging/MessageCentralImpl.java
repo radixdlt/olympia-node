@@ -23,9 +23,10 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.radix.events.Events;
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
 import org.radix.network.Interfaces;
 import org.radix.network.messaging.Message;
 import org.radix.network2.TimeSupplier;
@@ -45,7 +46,7 @@ import com.google.inject.Inject;
 import com.radixdlt.serialization.Serialization;
 
 final class MessageCentralImpl implements MessageCentral {
-	private static final Logger log = Logging.getLogger("message");
+	private static final Logger log = LogManager.getLogger("message");
 
 	private static final MessageListenerList EMPTY_MESSAGE_LISTENER_LIST = new MessageListenerList();
 
