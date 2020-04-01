@@ -44,7 +44,7 @@ import org.radix.logging.Logging;
 public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 	private static final Logger log = Logging.getLogger("PM");
 
-	static final int TIMEOUT_MILLISECONDS = 5000;
+	private final int timeoutMilliseconds;
 	private final Subject<View> timeouts;
 	private final Observable<View> timeoutsObservable;
 	private final ScheduledExecutorService executorService;
@@ -52,7 +52,11 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 	private final Map<View, ECDSASignatures> pendingNewViews = new HashMap<>();
 	private View currentView = View.of(0L);
 
-	public PacemakerImpl(ScheduledExecutorService executorService) {
+	public PacemakerImpl(int timeoutMilliseconds, ScheduledExecutorService executorService) {
+		if (timeoutMilliseconds <= 0) {
+			throw new IllegalArgumentException("timeoutMilliseconds must be > 0 but was " + timeoutMilliseconds);
+		}
+		this.timeoutMilliseconds = timeoutMilliseconds;
 		this.executorService = Objects.requireNonNull(executorService);
 		this.timeouts = PublishSubject.<View>create().toSerialized();
 		this.timeoutsObservable = this.timeouts
@@ -63,7 +67,7 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 
 	private void scheduleTimeout(final View timeoutView) {
 		log.info("Starting View: " + timeoutView);
-		executorService.schedule(() -> timeouts.onNext(timeoutView), TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS);
+		executorService.schedule(() -> timeouts.onNext(timeoutView), timeoutMilliseconds, TimeUnit.MILLISECONDS);
 	}
 
 	@Override

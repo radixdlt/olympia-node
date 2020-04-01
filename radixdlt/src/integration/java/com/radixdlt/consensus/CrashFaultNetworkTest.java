@@ -109,6 +109,11 @@ public class CrashFaultNetworkTest {
 		// "crash" all faulty nodes by disallowing any communication
 		faultyNodes.forEach(node -> crashNode(node, bftNetwork));
 
+		// there should be a new highest QC every once in a while to ensure progress
+		// the minimum latency per round is determined using the network latency and a tolerance
+		int idealLatencyPerRound = bftNetwork.getNetworkLatency() * 2;
+
+
 		// correct nodes should all get the same commits in the same order
 		Observable<Object> correctCommitCheck = Observable.zip(
 				correctNodes.stream()

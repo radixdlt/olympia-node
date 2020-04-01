@@ -50,7 +50,7 @@ public class TestEventCoordinatorNetwork {
 
 	public TestEventCoordinatorNetwork(int loopbackDelay) {
 		if (loopbackDelay < 0) {
-			throw new IllegalArgumentException("loopbackDelay must be > 0 but was " + loopbackDelay);
+			throw new IllegalArgumentException("loopbackDelay must be >= 0 but was " + loopbackDelay);
 		}
 		this.loopbackDelay = loopbackDelay;
 		this.proposals = PublishSubject.create();

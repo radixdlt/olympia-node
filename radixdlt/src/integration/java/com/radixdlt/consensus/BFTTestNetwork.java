@@ -54,8 +54,10 @@ import java.util.stream.Collectors;
  * A multi-node bft test network where the network is simulated.
  */
 public class BFTTestNetwork {
-	private static final int TEST_LOOPBACK_DELAY = 50;
-	private final TestEventCoordinatorNetwork testEventCoordinatorNetwork = new TestEventCoordinatorNetwork(TEST_LOOPBACK_DELAY);
+	private static final int TEST_NETWORK_LATENCY = 50;
+	private static final int TEST_PACEMAKER_TIMEOUT = 1000;
+
+	private final TestEventCoordinatorNetwork testEventCoordinatorNetwork = new TestEventCoordinatorNetwork(TEST_NETWORK_LATENCY);
 	private final Atom genesis;
 	private final Vertex genesisVertex;
 	private final QuorumCertificate genesisQC;
@@ -94,7 +96,7 @@ public class BFTTestNetwork {
 			);
 		this.counters = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e, e -> new Counters()));
 		this.pacemakers = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e,
-			e -> new PacemakerImpl(Executors.newSingleThreadScheduledExecutor())));
+			e -> new PacemakerImpl(TEST_PACEMAKER_TIMEOUT, Executors.newSingleThreadScheduledExecutor())));
 		this.bftEvents = Observable.merge(this.vertexStores.entrySet().stream()
 			.map(e -> createBFTInstance(e.getKey()).processEvents()
 		).collect(Collectors.toList()));
@@ -158,5 +160,9 @@ public class BFTTestNetwork {
 
 	public Observable<Event> processBFT() {
 		return this.bftEvents;
+	}
+
+	public int getNetworkLatency() {
+		return TEST_NETWORK_LATENCY;
 	}
 }
