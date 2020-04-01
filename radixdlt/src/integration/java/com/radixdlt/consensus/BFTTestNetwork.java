@@ -54,7 +54,8 @@ import java.util.stream.Collectors;
  * A multi-node bft test network where the network is simulated.
  */
 public class BFTTestNetwork {
-	private final TestEventCoordinatorNetwork testEventCoordinatorNetwork = new TestEventCoordinatorNetwork();
+	private static final int TEST_LOOPBACK_DELAY = 50;
+	private final TestEventCoordinatorNetwork testEventCoordinatorNetwork = new TestEventCoordinatorNetwork(TEST_LOOPBACK_DELAY);
 	private final Atom genesis;
 	private final Vertex genesisVertex;
 	private final QuorumCertificate genesisQC;

@@ -40,7 +40,7 @@ import com.radixdlt.consensus.Vote;
  * Overly simplistic network implementation that just sends messages to itself.
  */
 public class TestEventCoordinatorNetwork {
-	private static final int LOOPBACK_DELAY = 50;
+	private final int loopbackDelay;
 	private final PublishSubject<Vertex> proposals;
 	private final PublishSubject<Map.Entry<NewView, EUID>> newViews;
 	private final PublishSubject<Map.Entry<Vote, EUID>> votes;
@@ -48,7 +48,11 @@ public class TestEventCoordinatorNetwork {
 	private final Set<EUID> sendingDisabled = Collections.newSetFromMap(new ConcurrentHashMap<>());
 	private final Set<EUID> receivingDisabled = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
-	public TestEventCoordinatorNetwork() {
+	public TestEventCoordinatorNetwork(int loopbackDelay) {
+		if (loopbackDelay < 0) {
+			throw new IllegalArgumentException("loopbackDelay must be > 0 but was " + loopbackDelay);
+		}
+		this.loopbackDelay = loopbackDelay;
 		this.proposals = PublishSubject.create();
 		this.newViews = PublishSubject.create();
 		this.votes = PublishSubject.create();
@@ -77,7 +81,7 @@ public class TestEventCoordinatorNetwork {
 				if (!sendingDisabled.contains(euid)) {
 					executorService.schedule(
 						() -> proposals.onNext(vertex),
-						LOOPBACK_DELAY,
+						loopbackDelay,
 						TimeUnit.MILLISECONDS
 					);
 				}
@@ -88,7 +92,7 @@ public class TestEventCoordinatorNetwork {
 				if (!sendingDisabled.contains(euid)) {
 					executorService.schedule(
 						() -> newViews.onNext(new SimpleEntry<>(newView, newViewLeader)),
-						LOOPBACK_DELAY,
+						loopbackDelay,
 						TimeUnit.MILLISECONDS
 					);
 				}
@@ -99,7 +103,7 @@ public class TestEventCoordinatorNetwork {
 				if (!sendingDisabled.contains(euid)) {
 					executorService.schedule(
 						() -> votes.onNext(new SimpleEntry<>(vote, leader)),
-						LOOPBACK_DELAY,
+						loopbackDelay,
 						TimeUnit.MILLISECONDS
 					);
 				}
