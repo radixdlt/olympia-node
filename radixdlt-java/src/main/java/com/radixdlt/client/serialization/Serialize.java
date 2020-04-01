@@ -32,7 +32,6 @@ import java.util.Collection;
 import com.radixdlt.client.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
 
-import com.radixdlt.client.application.translate.unique.UniqueId;
 import com.radixdlt.client.atommodel.message.MessageParticle;
 import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
 import com.radixdlt.client.atommodel.unique.UniqueParticle;
@@ -46,8 +45,6 @@ import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.client.core.network.jsonrpc.NodeRunnerData;
 import com.radixdlt.client.core.network.jsonrpc.RadixLocalSystem;
 import com.radixdlt.client.core.network.jsonrpc.RadixSystem;
-import com.radixdlt.identifiers.RRI;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationPolicy;
 import com.radixdlt.serialization.SerializerIds;
@@ -69,7 +66,6 @@ public final class Serialize {
 			return Arrays.asList(
 				Atom.class,
 				AtomEvent.class,
-				RadixAddress.class,
 				ParticleGroup.class,
 				Particle.class,
 				RRIParticle.class,
@@ -87,9 +83,7 @@ public final class Serialize {
 				ShardRange.class,
 				RadixLocalSystem.class,
 				RadixSystem.class,
-				RadixUniverseConfig.class,
-				RRI.class,
-				UniqueId.class
+				RadixUniverseConfig.class
 			);
 		}
 	}

@@ -46,8 +46,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Epic which finds a connected sharded node when a FindANode request is received. If there are none found,
@@ -57,7 +55,6 @@ public final class FindANodeEpic implements RadixNetworkEpic {
 	private static final int MAX_SIMULTANEOUS_CONNECTION_REQUESTS = 2;
 	private static final int NEXT_CONNECTION_THROTTLE_TIMEOUT_SECS = 1;
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(FindANodeEpic.class);
 	private final RadixPeerSelector selector;
 
 	public FindANodeEpic(RadixPeerSelector selector) {

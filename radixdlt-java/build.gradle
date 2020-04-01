@@ -38,7 +38,6 @@ test {
 }
 
 dependencies {
-
     api 'com.github.radixdlt:radixdlt-java-common:rc~1.0-beta.2-SNAPSHOT'
 
     api group: 'com.squareup.okhttp3', name: 'okhttp', version: '3.10.0'
@@ -57,10 +56,6 @@ checkstyle {
     configFile rootProject.file('.checkstyle.xml')
     toolVersion '8.10.1'
     showViolations = true
-}
-
-testlogger {
-    theme 'plain'
 }
 
 checkstyleTest {

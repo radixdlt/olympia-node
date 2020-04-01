@@ -33,16 +33,17 @@ import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.particles.Spin;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.utils.Pair;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 public class AlreadyUsedUniqueIdReasonMapper implements AtomErrorToExceptionReasonMapper {
 
-	public static final Logger LOGGER = LoggerFactory.getLogger(AlreadyUsedUniqueIdReasonMapper.class);
+	public static final Logger LOGGER = LogManager.getLogger(AlreadyUsedUniqueIdReasonMapper.class);
 
 	@Override
 	public Stream<ActionExecutionExceptionReason> mapAtomErrorToExceptionReasons(Atom atom, JsonObject errorData) {

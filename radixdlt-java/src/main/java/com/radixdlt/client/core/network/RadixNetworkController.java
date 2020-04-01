@@ -38,15 +38,15 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * The meat and bones of the Networking module. This module connects all the epics and reducers
  * to produce a stream of actions and states.
  */
 public class RadixNetworkController {
-	private static final Logger LOGGER = LoggerFactory.getLogger(RadixNetworkController.class);
+	private static final Logger LOGGER = LogManager.getLogger(RadixNetworkController.class);
 
 	public static class RadixNetworkControllerBuilder {
 		private RadixNetwork network;

@@ -100,9 +100,6 @@ import io.reactivex.observables.ConnectableObservable;
 
 import com.radixdlt.utils.RadixConstants;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -122,8 +119,6 @@ import java.util.stream.Stream;
  * consensus. It exposes a simple high level interface for interaction with a Radix ledger.
  */
 public class RadixApplicationAPI {
-	private static final Logger LOGGER = LoggerFactory.getLogger(RadixApplicationAPI.class);
-
 	/**
 	 * Creates an API with the default actions and reducers
 	 *
