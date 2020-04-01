@@ -165,4 +165,8 @@ public class BFTTestNetwork {
 	public int getNetworkLatency() {
 		return TEST_NETWORK_LATENCY;
 	}
+
+	public int getPacemakerTimeout() {
+		return TEST_PACEMAKER_TIMEOUT;
+	}
 }

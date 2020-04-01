@@ -20,6 +20,7 @@ package com.radixdlt.consensus;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.examples.tictactoe.Pair;
+import io.reactivex.rxjava3.annotations.NonNull;
 import io.reactivex.rxjava3.core.Observable;
 import org.assertj.core.api.Condition;
 import org.junit.Test;
@@ -30,6 +31,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -111,8 +113,26 @@ public class CrashFaultNetworkTest {
 
 		// there should be a new highest QC every once in a while to ensure progress
 		// the minimum latency per round is determined using the network latency and a tolerance
-		int idealLatencyPerRound = bftNetwork.getNetworkLatency() * 2;
-
+		int worstCaseLatencyPerRound = bftNetwork.getNetworkLatency() * 2 // base latency: two rounds in the normal case
+			+ numCrashed * (bftNetwork.getNetworkLatency() * 4 + bftNetwork.getPacemakerTimeout()); // four rounds plus timeout in bad case
+		// account for any inaccuracies, execution time, scheduling inefficiencies..
+		// the tolerance is high since we're only interested in qualitative progress in this test
+		double tolerance = 2.0;
+		int minimumLatencyPerRound = (int) (worstCaseLatencyPerRound * tolerance);
+		AtomicReference<View> highestQCView = new AtomicReference<>(View.genesis());
+		Observable<Object> progressCheck = Observable.interval(minimumLatencyPerRound, minimumLatencyPerRound, TimeUnit.MILLISECONDS)
+			.map(i -> allNodes.stream()
+				.map(bftNetwork::getVertexStore)
+				.map(VertexStore::getHighestQC)
+				.map(QuorumCertificate::getView)
+				.max(View::compareTo)
+				.get()) // there must be some max highest QC unless allNodes is empty
+			.doOnNext(view -> assertThat(view)
+				.satisfies(new Condition<>(v -> v.compareTo(highestQCView.get()) > 0,
+					"The highest highestQC %s increased since last highestQC %s after %d ms", view, highestQCView.get(), minimumLatencyPerRound)))
+			.doOnNext(highestQCView::set)
+			.doOnNext(newHighestQCView -> System.out.println("Made progress to new highest QC view " + highestQCView))
+			.map(o -> o);
 
 		// correct nodes should all get the same commits in the same order
 		Observable<Object> correctCommitCheck = Observable.zip(
@@ -155,7 +175,10 @@ public class CrashFaultNetworkTest {
 					bftNetwork.getProposerElection().getProposer(v.getParentView()).euid(), v.getParentView())))
 			.map(o -> o);
 
-		Observable.mergeArray(bftNetwork.processBFT(), correctCommitCheck, correctTimeoutCheck, directProposalsCheck, gapProposalsCheck)
+		List<Observable<Object>> checks = Arrays.asList(
+			correctCommitCheck, progressCheck, correctTimeoutCheck, directProposalsCheck, gapProposalsCheck
+		);
+		Observable.mergeArray(bftNetwork.processBFT(), Observable.merge(checks))
 			.take(time, timeUnit)
 			.blockingSubscribe();
 	}
