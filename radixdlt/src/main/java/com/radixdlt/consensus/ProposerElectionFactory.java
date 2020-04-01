@@ -20,8 +20,8 @@ package com.radixdlt.consensus;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.crypto.ECPublicKey;
 
-import java.util.Collection;
+import java.util.List;
 
 public interface ProposerElectionFactory {
-	ProposerElection create(Collection<ECPublicKey> proposers);
+	ProposerElection create(List<ECPublicKey> proposers);
 }
