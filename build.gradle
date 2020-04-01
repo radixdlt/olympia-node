@@ -49,3 +49,12 @@ dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.12'
     testCompile group: 'org.assertj', name: 'assertj-core', version: '3.11.0'
 }
+
+//gradle -PsystemTests test only will execute if property is passed.
+project('system-tests') {
+    test {
+        onlyIf {
+            project.hasProperty("systemTests")
+        }
+    }
+}
