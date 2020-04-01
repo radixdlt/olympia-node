@@ -39,10 +39,16 @@ public class PerfectNetworkTest {
 	}
 
 	/**
-	 * 4 is the smallest network size where quorum size (3) != network size
+	 * Sanity test check for a perfect network. 4 is the size used because it is
+	 * the smallest network size where quorum size (3) != network size. The sanity checks
+	 * done are:
+	 * 1. Committed vertices are the same across nodes
+	 * 2. The size of vertex store does not increase for any node
+	 * 3. A timeout never occurs for any node
+	 * 4. Every proposal has a direct parent
 	 */
 	@Test
-	public void given_4_correct_bfts__then_all_should_get_same_commits_consecutive_vertices_and_no_timeouts_over_1_minute() {
+	public void given_4_correct_bfts__then_should_pass_sanity_tests_over_1_minute() {
 		final int numNodes = 4;
 		final long time = 1;
 		final TimeUnit timeUnit = TimeUnit.MINUTES;
@@ -50,6 +56,7 @@ public class PerfectNetworkTest {
 		final List<ECKeyPair> nodes = createNodes(numNodes);
 		final BFTTestNetwork bftNetwork = new BFTTestNetwork(nodes);
 
+		// Check that every node agrees to the order of committed vertices
 		Observable<Object> commitCheck = Observable.zip(nodes.stream()
 			.map(bftNetwork::getVertexStore)
 			.map(VertexStore::lastCommittedVertex)
@@ -59,6 +66,18 @@ public class PerfectNetworkTest {
 			.map(s -> (Vertex) s.get(0))
 			.map(o -> o);
 
+		// Every vertex store should only ever at most have 4 vertices since every vertex
+		// should get committed and thus pruned in a perfect network
+		Observable<Object> vertexStoreCheck = Observable.timer(2, TimeUnit.SECONDS)
+			.map(l -> nodes.stream().map(bftNetwork::getVertexStore).collect(Collectors.toList()))
+			.doOnNext(s -> {
+				for (VertexStore vertexStore : s) {
+					assertThat(vertexStore.getSize()).isLessThanOrEqualTo(4);
+				}
+			})
+			.map(o -> o);
+
+		// Check that no node ever times out
 		Observable<Object> timeoutCheck = Observable.interval(2, TimeUnit.SECONDS)
 			.flatMapIterable(i -> nodes)
 			.map(bftNetwork::getCounters)
@@ -66,18 +85,22 @@ public class PerfectNetworkTest {
 				.satisfies(new Condition<>(c -> c == 0, "Timeout counter is zero.")))
 			.map(o -> o);
 
+		// Check that every received proposal has a direct parent
 		List<Observable<Vertex>> proposals = nodes.stream()
 			.map(ECKeyPair::euid)
 			.map(bftNetwork.getTestEventCoordinatorNetwork()::getNetworkRx)
 			.map(EventCoordinatorNetworkRx::proposalMessages)
 			.collect(Collectors.toList());
-
 		Observable<Object> proposalsCheck = Observable.merge(proposals)
 			.doOnNext(v -> assertThat(v)
 				.satisfies(new Condition<>(Vertex::hasDirectParent, "Vertex has direct parent")))
 			.map(o -> o);
 
-		Observable.merge(bftNetwork.processBFT(), commitCheck, timeoutCheck, proposalsCheck)
+		List<Observable<Object>> checks = Arrays.asList(
+			commitCheck, vertexStoreCheck, timeoutCheck, proposalsCheck
+		);
+
+		Observable.merge(bftNetwork.processBFT(), Observable.merge(checks))
 			.take(time, timeUnit)
 			.blockingSubscribe();
 	}

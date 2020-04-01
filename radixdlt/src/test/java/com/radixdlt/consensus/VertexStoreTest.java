@@ -102,7 +102,7 @@ public class VertexStoreTest {
 	}
 
 	@Test
-	public void when_insert_and_commit_vertex__then_committed_vertex_should_emit() throws Exception {
+	public void when_insert_and_commit_vertex__then_committed_vertex_should_emit_and_store_should_have_size_1() throws Exception {
 		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), null);
 		vertexStore.insertVertex(nextVertex);
 
@@ -113,10 +113,11 @@ public class VertexStoreTest {
 		assertThat(vertexStore.commitVertex(nextVertex.getId())).isEqualTo(nextVertex);
 		testObserver.awaitCount(2);
 		testObserver.assertValues(genesisVertex, nextVertex);
+		assertThat(vertexStore.getSize()).isEqualTo(1);
 	}
 
 	@Test
-	public void when_insert_two_and_commit_vertex__then_two_committed_vertices_should_emit_in_order() throws Exception {
+	public void when_insert_two_and_commit_vertex__then_two_committed_vertices_should_emit_in_order_and_store_should_have_size_1() throws Exception {
 		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), null);
 		vertexStore.insertVertex(nextVertex);
 
@@ -132,5 +133,6 @@ public class VertexStoreTest {
 		vertexStore.commitVertex(nextVertex2.getId());
 		testObserver.awaitCount(3);
 		testObserver.assertValues(genesisVertex, nextVertex, nextVertex2);
+		assertThat(vertexStore.getSize()).isEqualTo(1);
 	}
 }

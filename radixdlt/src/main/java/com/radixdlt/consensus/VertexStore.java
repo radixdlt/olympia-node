@@ -24,11 +24,11 @@ import com.radixdlt.engine.RadixEngineException;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Manages the BFT Vertex chain. NOT thread-safe.
@@ -36,7 +36,7 @@ import java.util.Objects;
 public final class VertexStore {
 
 	private final RadixEngine engine;
-	private final Map<Hash, Vertex> vertices = new HashMap<>();
+	private final Map<Hash, Vertex> vertices = new ConcurrentHashMap<>();
 	private final BehaviorSubject<Vertex> lastCommittedVertex = BehaviorSubject.create();
 
 	// Should never be null
@@ -139,5 +139,9 @@ public final class VertexStore {
 
 	public QuorumCertificate getHighestQC() {
 		return this.highestQC;
+	}
+
+	public int getSize() {
+		return vertices.size();
 	}
 }
