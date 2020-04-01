@@ -40,15 +40,8 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
  * These tests comprise both static and dynamic configurations (where nodes crash before or during runtime, respectively).
  */
 public class CrashFaultNetworkTest {
-	static List<ECKeyPair> createNodes(int numNodes, String designation) {
-		return Stream.generate(() -> {
-			// efficient? no. useful? yes.
-			ECKeyPair keyPair;
-			do {
-				keyPair = ECKeyPair.generateNew();
-			} while (!keyPair.euid().toString().startsWith(designation));
-			return keyPair;
-		}).limit(numNodes).collect(Collectors.toList());
+	static List<ECKeyPair> createNodes(int numNodes) {
+		return Stream.generate(ECKeyPair::generateNew).limit(numNodes).collect(Collectors.toList());
 	}
 
 	private void crashNode(ECKeyPair node, BFTTestNetwork bftNetwork) {
@@ -69,8 +62,8 @@ public class CrashFaultNetworkTest {
 		final long time = 1;
 		final TimeUnit timeUnit = TimeUnit.MINUTES;
 
-		final List<ECKeyPair> correctNodes = createNodes(numCorrect, "c");
-		final List<ECKeyPair> faultyNodes = createNodes(numCrashed, "f");
+		final List<ECKeyPair> correctNodes = createNodes(numCorrect);
+		final List<ECKeyPair> faultyNodes = createNodes(numCrashed);
 		final List<ECKeyPair> allNodes = Stream.concat(correctNodes.stream(), faultyNodes.stream()).collect(Collectors.toList());
 		final BFTTestNetwork bftNetwork = new BFTTestNetwork(allNodes);
 		crashNode(allNodes.get(2), bftNetwork);
@@ -106,8 +99,8 @@ public class CrashFaultNetworkTest {
 		final long time = 1;
 		final TimeUnit timeUnit = TimeUnit.MINUTES;
 
-		final List<ECKeyPair> correctNodes = createNodes(numCorrect, "c");
-		final List<ECKeyPair> faultyNodes = createNodes(numCrashed, "f");
+		final List<ECKeyPair> correctNodes = createNodes(numCorrect);
+		final List<ECKeyPair> faultyNodes = createNodes(numCrashed);
 		final List<ECKeyPair> allNodes = Stream.concat(correctNodes.stream(), faultyNodes.stream()).collect(Collectors.toList());
 		final Set<ECPublicKey> correctNodesPubs = correctNodes.stream()
 			.map(ECKeyPair::getPublicKey)
@@ -176,7 +169,7 @@ public class CrashFaultNetworkTest {
 		// probability that a single node out of all correct nodes will crash-stop
 		final double crashProbabilityPerSecond = 0.1;
 
-		final List<ECKeyPair> allNodes = createNodes(numNodes, "");
+		final List<ECKeyPair> allNodes = createNodes(numNodes);
 		final Set<ECPublicKey> faultyNodesPubs = new HashSet<>();
 		final BFTTestNetwork bftNetwork = new BFTTestNetwork(allNodes);
 
