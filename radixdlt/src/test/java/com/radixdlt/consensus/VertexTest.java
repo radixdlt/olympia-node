@@ -37,11 +37,12 @@ public class VertexTest {
 
 	@Before
 	public void setUp() throws Exception {
-		View view = View.of(1234567890L);
+		View view = View.of(1234567891L);
 		this.id = Hash.random();
 
 		this.vertexMetadata = new VertexMetadata(view, id);
-		VoteData voteData = new VoteData(vertexMetadata, null);
+		VertexMetadata parent = new VertexMetadata(View.of(1234567890L), Hash.random());
+		VoteData voteData = new VoteData(vertexMetadata, parent);
 
 		this.qc = new QuorumCertificate(voteData, new ECDSASignatures());
 
@@ -60,7 +61,7 @@ public class VertexTest {
 	public void testGetters() {
 		assertEquals(this.atom, this.testObject.getAtom());
 		assertEquals(this.qc, this.testObject.getQC());
-		assertEquals(View.of(1234567890L), this.testObject.getView());
+		assertEquals(View.of(1234567891L), this.testObject.getView());
 	}
 
 	@Test

@@ -62,12 +62,13 @@ public final class SafetyRules {
 	public Optional<Hash> process(QuorumCertificate qc) {
 		final Builder safetyStateBuilder = this.state.toBuilder();
 
-		// pre-commit phase on vertex's parent if there is a newer consecutive 1-chain
+		// prepare phase on qc's proposed vertex if there is a newer 1-chain
 		// keep highest 1-chain as the current "generic" QC
 		if (qc.getView().compareTo(this.state.getGenericView().orElse(View.of(0L))) > 0) {
 			safetyStateBuilder.qc(qc);
 		}
 
+		// pre-commit phase on consecutive qc's proposed vertex
 		if (qc.getParent() != null
 			&& qc.getParent().getView().compareTo(this.state.getLockedView()) > 0
 			&& qc.getParent().getView().next().equals(qc.getView())) {
@@ -75,6 +76,8 @@ public final class SafetyRules {
 			safetyStateBuilder.lockedView(qc.getParent().getView());
 		}
 
+		// commit phase for a vertex if it's view is greater than last commit.
+		// otherwise, it must have already been committed
 		final Optional<Hash> commitHash = qc.getCommitted().flatMap(vmd -> {
 			if (vmd.getView().compareTo(this.state.getCommittedView()) > 0) {
 				safetyStateBuilder.committedView(vmd.getView());
@@ -112,18 +115,20 @@ public final class SafetyRules {
 
 		final VertexMetadata proposed = VertexMetadata.ofVertex(proposedVertex);
 		final VertexMetadata parent = VertexMetadata.ofParent(proposedVertex);
-		final VertexMetadata committed;
+		final VertexMetadata toCommit;
 
+		// Add a vertex to commit if creating a quorum for the proposed vertex would
+		// create three consecutive qcs.
 		if (proposedVertex.getView().equals(proposedVertex.getParentView().next())
 			&& !proposedVertex.getParentView().isGenesis() && !proposedVertex.getGrandParentView().isGenesis()
 			&& proposedVertex.getParentView().equals(proposedVertex.getGrandParentView().next())
 		) {
-			committed = proposedVertex.getQC().getParent();
+			toCommit = proposedVertex.getQC().getParent();
 		} else {
-			committed = null;
+			toCommit = null;
 		}
 
-		final VoteData voteData = new VoteData(proposed, parent, committed);
+		final VoteData voteData = new VoteData(proposed, parent, toCommit);
 		final Hash voteHash = hasher.hash(voteData);
 
 		this.state = safetyStateBuilder.build();

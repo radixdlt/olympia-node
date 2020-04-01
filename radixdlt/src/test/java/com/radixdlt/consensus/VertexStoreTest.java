@@ -117,6 +117,25 @@ public class VertexStoreTest {
 	}
 
 	@Test
+	public void when_insert_and_commit_vertex_2x__then_committed_vertex_should_emit_in_order_and_store_should_have_size_1() throws Exception {
+		TestObserver<Vertex> testObserver = TestObserver.create();
+		vertexStore.lastCommittedVertex().subscribe(testObserver);
+		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), null);
+		vertexStore.insertVertex(nextVertex);
+		vertexStore.commitVertex(nextVertex.getId());
+
+		QuorumCertificate qc = mock(QuorumCertificate.class);
+		when(qc.getProposed()).thenReturn(VertexMetadata.ofVertex(nextVertex));
+		Vertex nextVertex2 = Vertex.createVertex(qc, View.of(2), null);
+		vertexStore.insertVertex(nextVertex2);
+		vertexStore.commitVertex(nextVertex2.getId());
+
+		testObserver.awaitCount(3);
+		testObserver.assertValues(genesisVertex, nextVertex, nextVertex2);
+		assertThat(vertexStore.getSize()).isEqualTo(1);
+	}
+
+	@Test
 	public void when_insert_two_and_commit_vertex__then_two_committed_vertices_should_emit_in_order_and_store_should_have_size_1() throws Exception {
 		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), null);
 		vertexStore.insertVertex(nextVertex);

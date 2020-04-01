@@ -58,6 +58,10 @@ public final class VertexMetadata {
 	}
 
 	public static VertexMetadata ofParent(Vertex vertex) {
+		if (vertex.isGenesis()) {
+			throw new IllegalStateException("Genesis has no parent.");
+		}
+
 		return new VertexMetadata(vertex.getParentView(), vertex.getParentId());
 	}
 

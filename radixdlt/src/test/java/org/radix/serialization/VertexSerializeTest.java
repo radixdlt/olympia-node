@@ -35,11 +35,12 @@ public class VertexSerializeTest extends SerializeObject<Vertex> {
 	}
 
 	private static Vertex get() {
-		View view = View.of(1234567890L);
+		View view = View.of(1234567891L);
 		Hash id = Hash.random();
 
 		VertexMetadata vertexMetadata = new VertexMetadata(view, id);
-		VoteData voteData = new VoteData(vertexMetadata, null);
+		VertexMetadata parent = new VertexMetadata(View.of(1234567890L), Hash.random());
+		VoteData voteData = new VoteData(vertexMetadata, parent);
 
 		QuorumCertificate qc = new QuorumCertificate(voteData, new ECDSASignatures());
 

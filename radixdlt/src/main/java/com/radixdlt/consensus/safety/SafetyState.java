@@ -45,7 +45,7 @@ public final class SafetyState {
 		this.genericQC = genericQC;
 	}
 
-	public static class Builder {
+	static class Builder {
 		private final SafetyState original;
 		private View lastVotedView;
 		private View lockedView;

@@ -35,7 +35,8 @@ public class NewViewMessageSerializeTest extends SerializeMessageObject<NewViewM
 	private static NewViewMessage get() {
 		RadixAddress author = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
 		VertexMetadata vertexMetadata = new VertexMetadata(View.of(1), Hash.ZERO_HASH);
-		VoteData voteData = new VoteData(vertexMetadata, null);
+		VertexMetadata parent = new VertexMetadata(View.of(0), Hash.ZERO_HASH);
+		VoteData voteData = new VoteData(vertexMetadata, parent);
 		QuorumCertificate quorumCertificate = new QuorumCertificate(voteData, new ECDSASignatures());
 		NewView testView = new NewView(author.getPublicKey(), View.of(1234567890L), quorumCertificate, null);
 		return new NewViewMessage(1234, testView);

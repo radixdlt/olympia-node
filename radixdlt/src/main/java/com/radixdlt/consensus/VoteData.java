@@ -64,6 +64,14 @@ public final class VoteData {
 	}
 
 	public VoteData(VertexMetadata proposed, VertexMetadata parent, VertexMetadata committed) {
+		if (parent == null) {
+			if (!proposed.getView().isGenesis()) {
+				throw new IllegalArgumentException("Only genesis is allowed to have no parent.");
+			}
+		} else if (proposed.getView().compareTo(parent.getView()) < 0) {
+			throw new IllegalArgumentException("Proposed " + proposed + " must have higher view than parent " + parent);
+		}
+
 		this.proposed = Objects.requireNonNull(proposed);
 		this.parent = parent;
 		this.committed = committed;
