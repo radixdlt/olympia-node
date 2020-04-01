@@ -58,10 +58,10 @@ public class PersistedProperties {
 		try (FileInputStream propertiesInput = new FileInputStream(file)) {
 			this.properties.load(propertiesInput);
 			// No need to immediately save, we just loaded them
-			log.info("Loaded properties from " + file);
+			log.info("Loaded properties from {}", file);
 			loaded = true;
 		} catch (IOException ex) {
-			log.error("Can not open properties file " + file + ", using default", ex);
+			log.error("Can not open properties file {}" + file + ", using default", ex);
 		}
 
 		// Try in resource if not loaded
@@ -71,10 +71,10 @@ public class PersistedProperties {
 					throw new FileNotFoundException("Default properties for " + file + " not found");
 				}
 				this.properties.load(propertiesInput);
-				log.info("Loaded default properties for " + file);
+				log.info("Loaded default properties for {}", file);
 				// Save to file, so they can be edited later
 				save(filename);
-				log.info("Saved default properties in " + file);
+				log.info("Saved default properties in {}", file);
 			} catch (IOException ex) {
 				log.fatal("Can not load default properties for " + file, ex);
 				throw new ParseException("Can not load properties file, fatal!");

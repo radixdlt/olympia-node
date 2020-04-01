@@ -59,12 +59,10 @@ class SubmissionControlImpl implements SubmissionControl {
 			CMError error = validationError.get();
 			ConstraintMachineValidationException ex = new ConstraintMachineValidationException(atom, error.getErrMsg(), error.getDataPointer());
 			log.info(
-				String.format(
-					"Rejecting atom %s with constraint machine error '%s' at '%s'.",
-					atom.getAID(),
-					error.getErrorDescription(),
-					error.getDataPointer()
-				)
+				"Rejecting atom {} with constraint machine error '{}' at '{}'.",
+				atom.getAID(),
+				error.getErrorDescription(),
+				error.getDataPointer()
 			);
 			this.events.broadcast(new AtomExceptionEvent(ex, atom.getAID()));
 		} else {
