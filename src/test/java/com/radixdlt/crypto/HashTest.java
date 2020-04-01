@@ -36,7 +36,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class HashTest {
 
@@ -58,10 +58,10 @@ public class HashTest {
 		assertNotNull(Hash.random());
 	}
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test
     public void verify_that_an_error_is_thrown_for_too_short_hex_string_constructor() {
-		new Hash("deadbeef");
-		fail();
+		assertThatThrownBy(() -> new Hash("deadbeef"))
+			.isInstanceOf(IllegalArgumentException.class);
 	}
 
 	@Test
@@ -210,10 +210,6 @@ public class HashTest {
 
 		assertNotEquals(deadbeef, Hash.of(deadbeef).toByteArray());
 		assertNotEquals(deadbeef, Hash.hash256(deadbeef));
-	}
-
-	private void testEncodeToHashFromString(String message, Function<byte[], Hash> hashFunction, String expectedHashHex) {
-		testEncodeToHashedBytesFromString(message, hashFunction.andThen(Hash::toByteArray), expectedHashHex);
 	}
 
 	private void testEncodeToHashedBytesFromString(String message, Function<byte[], byte[]> hashFunction, String expectedHashHex) {

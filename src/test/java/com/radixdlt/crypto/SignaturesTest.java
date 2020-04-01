@@ -99,7 +99,7 @@ public class SignaturesTest {
     }
 
     @Test
-    public void test_that_we_can_bulk_verify_signatures_verify_all_two() throws CryptoException {
+    public void test_that_we_can_bulk_verify_signatures_verify_all_two() {
         test_that_we_can_bulk_verify_signatures(
                 2,
                 true,
@@ -109,7 +109,7 @@ public class SignaturesTest {
     }
 
     @Test
-    public void test_that_we_can_bulk_verify_signatures_verify_at_least_N_of_M() throws CryptoException {
+    public void test_that_we_can_bulk_verify_signatures_verify_at_least_N_of_M() {
         for (int valid = 0; valid < 5; valid++) {
             for (int invalid = 0; invalid < 5; invalid++) {
                 for (int threshold = 0; threshold <= (valid + invalid); threshold++) {
@@ -142,7 +142,7 @@ public class SignaturesTest {
             boolean isExpectedToMeetThreshold,
             int numberOfValidSignaturesToCreate,
             int numberOfInvalidSignaturesToCreate
-    ) throws CryptoException {
+    ) {
         if (thresholdNumberOfValidSignatures > (numberOfValidSignaturesToCreate + numberOfInvalidSignaturesToCreate)) {
             throw new IllegalArgumentException(
                     "The sum of #valid + #invalid signatures should >= 'thresholdNumberOfValidSignatures'"

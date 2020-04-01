@@ -25,7 +25,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.google.common.base.Strings;
 import com.radixdlt.utils.Bytes;
@@ -59,16 +59,16 @@ public class EUIDTest {
 		assertEquals(expected, offsetted);
 	}
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test
     public void verify_that_exception_is_thrown_when_calling_constructor_with_too_short_hexstring() {
-		new EUID("deadbeef");
-		fail();
+		assertThatThrownBy(() -> new EUID("deadbeef"))
+			.isInstanceOf(IllegalArgumentException.class);
 	}
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test
     public void verify_that_exception_is_thrown_when_calling_constructor_with_empty_byte_array() {
-		new EUID(new byte[0]);
-		fail();
+		assertThatThrownBy(() -> new EUID(new byte[0]))
+			.isInstanceOf(IllegalArgumentException.class);
 	}
 
 	@Test

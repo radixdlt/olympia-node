@@ -32,20 +32,14 @@ import org.bouncycastle.jce.spec.ECPublicKeySpec;
 
 import java.math.BigInteger;
 import java.security.KeyFactory;
-import java.security.SecureRandom;
-import java.util.Objects;
 
 final class BouncyCastleKeyHandler implements KeyHandler {
 	private final BigInteger curveOrder;
 	private final BigInteger halfCurveOrder;
-	private final X9ECParameters curve;
 	private final ECDomainParameters domain;
 	private final ECParameterSpec spec;
-	private final SecureRandom secureRandom;
 
-	BouncyCastleKeyHandler(SecureRandom secureRandom, X9ECParameters curve) {
-		this.secureRandom = Objects.requireNonNull(secureRandom);
-		this.curve = Objects.requireNonNull(curve);
+	BouncyCastleKeyHandler(X9ECParameters curve) {
 		this.curveOrder = curve.getN();
 		this.halfCurveOrder = curve.getN().shiftRight(1);
 		this.domain = new ECDomainParameters(curve.getCurve(), curve.getG(), curve.getN(), curve.getH());

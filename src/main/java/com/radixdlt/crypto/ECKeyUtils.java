@@ -97,7 +97,7 @@ public class ECKeyUtils {
 	}
 
 	// Must be after secureRandom init
-	static final KeyHandler keyHandler = new BouncyCastleKeyHandler(secureRandom, curve);
+	static final KeyHandler keyHandler = new BouncyCastleKeyHandler(curve);
 
 	static void validatePrivate(byte[] privateKey) throws CryptoException {
 		if (privateKey == null) {

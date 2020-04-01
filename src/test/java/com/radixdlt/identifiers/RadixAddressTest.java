@@ -29,8 +29,8 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 
 public class RadixAddressTest {
 
@@ -74,11 +74,10 @@ public class RadixAddressTest {
 		assertEquals(address, RadixAddress.from("JHB89drvftPj6zVCNjnaijURk8D8AMFw4mVja19aoBGmRXWchnJ"));
 	}
 
-	@Test(expected = DecoderException.class)
-	public void createAddressFromBadPublicKey() throws CryptoException, DecoderException {
-		ECPublicKey publicKey = new ECPublicKey(Base64.decode("BADKEY"));
-		new RadixAddress(magicByte(), publicKey);
-		fail();
+	@Test
+	public void createBadPublicKey() {
+		assertThatThrownBy(() -> new ECPublicKey(Base64.decode("BADKEY")))
+			.isInstanceOf(DecoderException.class);
 	}
 
 	@Test
@@ -87,10 +86,10 @@ public class RadixAddressTest {
 		assertEquals(new EUID("8cfef50ea6a767813631490f9a94f73f"), address.euid());
 	}
 
-	@Test(expected = CryptoException.class)
-	public void generateAddress() throws CryptoException {
-		new RadixAddress(magicByte(), new ECPublicKey(new byte[33]));
-		fail();
+	@Test
+	public void generateAddress() {
+		assertThatThrownBy(() -> new RadixAddress(magicByte(), new ECPublicKey(new byte[33])))
+			.isInstanceOf(CryptoException.class);
 	}
 
 	@Test
@@ -99,9 +98,7 @@ public class RadixAddressTest {
 				"JHB89drvftPj6zVCNjnaijURk8D8AMFw4mVja19aoBGmRXWchnJ"
 		);
 
-		addresses.forEach(address -> {
-			RadixAddress.from(address);
-		});
+		addresses.forEach(RadixAddress::from);
 	}
 
 	private byte magicByte() {
