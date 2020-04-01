@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus.safety;
 
+import com.radixdlt.consensus.DefaultHasher;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.safety.SafetyState.Builder;
@@ -49,7 +50,7 @@ public class SafetyRulesTest {
 	@Before
 	public void setup() {
 		this.safetyState = mock(SafetyState.class);
-		this.safetyRules = new SafetyRules(ECKeyPair.generateNew(), safetyState);
+		this.safetyRules = new SafetyRules(ECKeyPair.generateNew(), safetyState, new DefaultHasher());
 	}
 
 	@Test

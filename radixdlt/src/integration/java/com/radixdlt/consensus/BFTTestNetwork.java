@@ -87,9 +87,10 @@ public class BFTTestNetwork {
 		Mempool mempool = mock(Mempool.class);
 		doAnswer(inv -> Collections.emptyList()).when(mempool).getAtoms(anyInt(), anySet());
 		ProposalGenerator proposalGenerator = new ProposalGenerator(vertexStores.get(key), mempool);
-		SafetyRules safetyRules = new SafetyRules(key, SafetyState.initialState());
+		Hasher hasher = new DefaultHasher();
+		SafetyRules safetyRules = new SafetyRules(key, SafetyState.initialState(), hasher);
 		PacemakerImpl pacemaker = new PacemakerImpl(Executors.newSingleThreadScheduledExecutor());
-		PendingVotes pendingVotes = new PendingVotes();
+		PendingVotes pendingVotes = new PendingVotes(hasher);
 		EpochRx epochRx = () -> Observable.just(validatorSet).concatWith(Observable.never());
 		EpochManager epochManager = new EpochManager(
 			proposalGenerator,

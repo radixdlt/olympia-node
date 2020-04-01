@@ -23,7 +23,9 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 import com.radixdlt.consensus.BasicEpochRx;
+import com.radixdlt.consensus.DefaultHasher;
 import com.radixdlt.consensus.EpochRx;
+import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
@@ -67,6 +69,7 @@ public class CerberusModule extends AbstractModule {
 		bind(PacemakerRx.class).to(PacemakerImpl.class);
 		bind(Pacemaker.class).to(PacemakerImpl.class);
 		bind(SafetyRules.class).in(Scopes.SINGLETON);
+		bind(Hasher.class).to(DefaultHasher.class);
 	}
 
 	@Provides

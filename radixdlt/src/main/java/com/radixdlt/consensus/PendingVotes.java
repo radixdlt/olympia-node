@@ -17,15 +17,13 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.DefaultSerialization;
+import com.google.inject.Inject;
 import com.radixdlt.consensus.validators.ValidationResult;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.Hash;
 
-import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.SerializationException;
 import java.util.HashMap;
 import java.util.Objects;
 import java.util.Optional;
@@ -35,6 +33,12 @@ import java.util.Optional;
  */
 public final class PendingVotes {
 	private final HashMap<Hash, ECDSASignatures> pendingVotes = new HashMap<>();
+	private final Hasher hasher;
+
+	@Inject
+	public PendingVotes(Hasher hasher) {
+		this.hasher = Objects.requireNonNull(hasher);
+	}
 
 	/**
 	 * Inserts a vote for a given vertex, attempting to form a quorum certificate for that vertex.
@@ -46,12 +50,7 @@ public final class PendingVotes {
 	public Optional<QuorumCertificate> insertVote(Vote vote, ValidatorSet validatorSet) {
 		Objects.requireNonNull(vote, "vote");
 
-		Hash voteHash;
-		try {
-			voteHash = Hash.of(DefaultSerialization.getInstance().toDson(vote.getVoteData(), Output.HASH));
-		} catch (SerializationException e) {
-			throw new IllegalStateException("Failed to serialize for hash.");
-		}
+		final Hash voteHash = hasher.hash(vote.getVoteData());
 
 		ECDSASignature signature = vote.getSignature().orElseThrow(() -> new IllegalArgumentException("vote is missing signature"));
 		ECDSASignatures signatures = pendingVotes.getOrDefault(voteHash, new ECDSASignatures());

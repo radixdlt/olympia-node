@@ -19,7 +19,7 @@ package com.radixdlt.consensus.safety;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
-import com.radixdlt.DefaultSerialization;
+import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
@@ -31,8 +31,6 @@ import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
 
-import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.SerializationException;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -41,13 +39,19 @@ import java.util.Optional;
  */
 public final class SafetyRules {
 	private final ECKeyPair selfKey; // TODO remove signing/address to separate identity management
+	private final Hasher hasher;
 
 	private SafetyState state;
 
 	@Inject
-	public SafetyRules(@Named("self") ECKeyPair selfKey, SafetyState initialState) {
+	public SafetyRules(
+		@Named("self") ECKeyPair selfKey,
+		SafetyState initialState,
+		Hasher hasher
+	) {
 		this.selfKey = Objects.requireNonNull(selfKey);
 		this.state = Objects.requireNonNull(initialState);
+		this.hasher = Objects.requireNonNull(hasher);
 	}
 
 	/**
@@ -71,19 +75,13 @@ public final class SafetyRules {
 			safetyStateBuilder.lockedView(qc.getParent().getView());
 		}
 
-		final Optional<Hash> commitHash;
-		final Optional<VertexMetadata> commitOptional = qc.getCommitted();
-		if (commitOptional.isPresent()) {
-			VertexMetadata committed = commitOptional.get();
-			if (committed.getView().compareTo(this.state.getCommittedView()) > 0) {
-				safetyStateBuilder.committedView(committed.getView());
-				commitHash = Optional.of(committed.getId());
-			} else {
-				commitHash = Optional.empty();
+		final Optional<Hash> commitHash = qc.getCommitted().flatMap(vmd -> {
+			if (vmd.getView().compareTo(this.state.getCommittedView()) > 0) {
+				safetyStateBuilder.committedView(vmd.getView());
+				return Optional.of(vmd.getId());
 			}
-		} else {
-			commitHash = Optional.empty();
-		}
+			return Optional.empty();
+		});
 
 		this.state = safetyStateBuilder.build();
 
@@ -126,13 +124,7 @@ public final class SafetyRules {
 		}
 
 		final VoteData voteData = new VoteData(proposed, parent, committed);
-
-		Hash voteHash;
-		try {
-			voteHash = Hash.of(DefaultSerialization.getInstance().toDson(voteData, Output.HASH));
-		} catch (SerializationException e) {
-			throw new IllegalStateException("Failed to serialize for hash.");
-		}
+		final Hash voteHash = hasher.hash(voteData);
 
 		this.state = safetyStateBuilder.build();
 

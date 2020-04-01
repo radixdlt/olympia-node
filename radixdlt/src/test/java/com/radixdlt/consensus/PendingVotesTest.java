@@ -25,6 +25,7 @@ import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
 import java.util.Collections;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Optional;
@@ -36,9 +37,18 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class PendingVotesTest {
+	private PendingVotes pendingVotes;
+	private Hasher hasher;
+
+	@Before
+	public void setup() {
+		this.hasher = mock(Hasher.class);
+		when(this.hasher.hash(any())).thenReturn(Hash.random());
+		this.pendingVotes = new PendingVotes(this.hasher);
+	}
+
 	@Test
 	public void when_inserting_a_vote_without_signature__then_exception_is_thrown() {
-		PendingVotes pendingVotes = new PendingVotes();
 		Vote voteWithoutSignature = mock(Vote.class);
 		when(voteWithoutSignature.getVoteData()).thenReturn(mock(VoteData.class));
 		when(voteWithoutSignature.getSignature()).thenReturn(Optional.empty());
@@ -52,8 +62,7 @@ public class PendingVotesTest {
 		Vote vote1 = makeVoteFor(vertexId);
 		Vote vote2 = makeVoteFor(vertexId);
 		ValidatorSet validatorSet = ValidatorSet.from(Collections.singleton(Validator.from(vote1.getAuthor())));
-		PendingVotes pendingVotes = new PendingVotes();
-		assertThat(pendingVotes.insertVote(vote2, validatorSet)).isEmpty();
+		assertThat(this.pendingVotes.insertVote(vote2, validatorSet)).isEmpty();
 	}
 
 	@Test
@@ -62,8 +71,7 @@ public class PendingVotesTest {
 		Vote vote1 = makeVoteFor(vertexId);
 		ValidatorSet validatorSet = mock(ValidatorSet.class);
 		when(validatorSet.validate(any(), any())).thenReturn(ValidationResult.passed(ImmutableList.of(mock(Validator.class))));
-		PendingVotes pendingVotes = new PendingVotes();
-		assertThat(pendingVotes.insertVote(vote1, validatorSet)).isPresent();
+		assertThat(this.pendingVotes.insertVote(vote1, validatorSet)).isPresent();
 	}
 
 	private Vote makeVoteFor(Hash vertexId) {
