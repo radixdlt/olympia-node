@@ -9,7 +9,7 @@ import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
 import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.atoms.AtomStatus;
-import com.radixdlt.client.core.atoms.particles.RRI;
+import com.radixdlt.identifiers.RRI;
 import com.radixdlt.client.core.network.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.actions.SubmitAtomAction;
@@ -22,7 +22,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import java.util.concurrent.TimeUnit;
-import org.radix.utils.UInt256;
+import com.radixdlt.utils.UInt256;
 
 import com.google.common.collect.Lists;
 import com.radix.acceptance.SpecificProperties;
@@ -34,7 +34,7 @@ import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
 import com.radixdlt.client.application.translate.tokens.InsufficientFundsException;
 import com.radixdlt.client.application.translate.tokens.UnknownTokenException;
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.identifiers.RadixAddress;
 
 import static com.radixdlt.client.core.atoms.AtomStatus.STORED;
 import static com.radixdlt.client.core.atoms.AtomStatus.EVICTED_FAILED_CM_VERIFICATION;

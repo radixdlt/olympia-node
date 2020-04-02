@@ -25,6 +25,9 @@ import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.NotificationT
 import com.radixdlt.client.core.network.websocket.WebSocketClient;
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
 import com.radixdlt.client.core.pow.ProofOfWorkBuilder;
+import com.radixdlt.client.serialization.GsonJson;
+import com.radixdlt.client.serialization.Serialize;
+import com.radixdlt.serialization.DsonOutput;
 import cucumber.api.java.After;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
@@ -33,9 +36,6 @@ import io.reactivex.Single;
 import io.reactivex.functions.Cancellable;
 import io.reactivex.observers.TestObserver;
 import org.json.JSONObject;
-import org.radix.serialization2.DsonOutput;
-import org.radix.serialization2.client.GsonJson;
-import org.radix.serialization2.client.Serialize;
 
 import java.nio.charset.Charset;
 import java.util.ArrayList;

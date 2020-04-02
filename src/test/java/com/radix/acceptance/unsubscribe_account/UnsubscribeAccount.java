@@ -9,6 +9,7 @@ import com.radixdlt.client.core.ledger.AtomObservation;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.Notification;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient.NotificationType;
+import com.radixdlt.crypto.ECKeyPair;
 import io.reactivex.Observable;
 import java.util.List;
 import java.util.UUID;
@@ -19,9 +20,8 @@ import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
 import com.radixdlt.client.application.translate.data.SendMessageAction;
-import com.radixdlt.client.atommodel.accounts.RadixAddress;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.client.core.atoms.Atom;
-import com.radixdlt.client.core.crypto.ECKeyPairGenerator;
 import com.radixdlt.client.core.network.HttpClients;
 import com.radixdlt.client.core.network.jsonrpc.AtomQuery;
 import com.radixdlt.client.core.network.jsonrpc.RadixJsonRpcClient;
@@ -106,7 +106,7 @@ public class UnsubscribeAccount {
 	public void the_websocket_client_has_an_atom_subscription_to_another_account() throws Throwable {
 		this.jsonRpcClient = new RadixJsonRpcClient(this.webSocketClient);
 
-		this.otherAccount = api.getAddress(ECKeyPairGenerator.newInstance().generateKeyPair().getPublicKey());
+		this.otherAccount = api.getAddress(ECKeyPair.generateNew().getPublicKey());
 
 		this.otherUuid = UUID.randomUUID().toString();
 		this.otherObserver = TestObserver.create(Util.loggingObserver("Other observer"));

@@ -2,6 +2,7 @@ package com.radix.regression;
 
 import com.radixdlt.client.application.translate.data.SendMessageAction;
 import com.radixdlt.client.core.RadixEnv;
+import com.radixdlt.crypto.ECKeyPair;
 import io.reactivex.disposables.Disposable;
 import java.util.stream.Stream;
 
@@ -15,7 +16,6 @@ import com.radixdlt.client.application.translate.data.DecryptedMessage;
 import com.radixdlt.client.application.translate.data.DecryptedMessage.EncryptionState;
 import com.radixdlt.client.application.translate.data.SendMessageToParticleGroupsMapper;
 import com.radixdlt.client.core.RadixUniverse;
-import com.radixdlt.client.core.crypto.ECKeyPairGenerator;
 
 import io.reactivex.Completable;
 import io.reactivex.observers.TestObserver;
@@ -33,10 +33,9 @@ public class SendReceiveEncryptedDataTransactionTest {
 		Disposable d = normalApi.pull();
 
 		// When I send a message to myself encrypted with a different key
-		ECKeyPairGenerator ecKeyPairGenerator = ECKeyPairGenerator.newInstance();
 		SendMessageToParticleGroupsMapper msgMapper = new SendMessageToParticleGroupsMapper(
-			ecKeyPairGenerator::generateKeyPair,
-			sendMsg -> Stream.of(ECKeyPairGenerator.newInstance().generateKeyPair().getPublicKey())
+				ECKeyPair::generateNew,
+				sendMsg -> Stream.of(ECKeyPair.generateNew().getPublicKey())
 		);
 		RadixApplicationAPI sendMessageWithDifferentKeyApi = new RadixApplicationAPIBuilder()
 			.defaultFeeMapper()

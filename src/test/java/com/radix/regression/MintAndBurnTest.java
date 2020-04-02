@@ -9,12 +9,12 @@ import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenS
 import com.radixdlt.client.application.translate.tokens.MintTokensAction;
 import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
 import com.radixdlt.client.core.RadixEnv;
-import com.radixdlt.client.core.atoms.particles.RRI;
+import com.radixdlt.identifiers.RRI;
 import com.radixdlt.client.core.network.RadixNetworkState;
 import com.radixdlt.client.core.network.RadixNode;
 import java.math.BigDecimal;
 import org.junit.Test;
-import org.radix.utils.UInt256;
+import com.radixdlt.utils.UInt256;
 
 public class MintAndBurnTest {
 	@Test
