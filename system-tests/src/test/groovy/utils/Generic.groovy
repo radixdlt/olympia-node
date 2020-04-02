@@ -14,7 +14,7 @@ class Generic {
     }
 
     static String keyStorePath() {
-        return "${System.getProperty('user.dir')}/src/test/resources/keystore/test-key.json"
+        return "${System.getProperty('user.dir')}/system-tests/src/test/resources/keystore/test-key.json"
     }
 
     static String pathToCLIJar() {

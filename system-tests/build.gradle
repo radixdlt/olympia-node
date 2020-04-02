@@ -39,6 +39,7 @@ task copyCLIJar {
 task bddTest(type: Test) {
     dependsOn clean,copyCLIJar
     testLogging.showStandardStreams = true
+    systemProperties System.getProperties()
     include "Runner.class"
 }
 

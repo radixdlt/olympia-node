@@ -4,7 +4,8 @@ import org.junit.runner.RunWith
 
 @RunWith(Cucumber.class)
 @CucumberOptions(
+        tags = "not @ignore",
         plugin = ["json:target/cucumber/cucumber.json","pretty","html:target/cucumber-reports"],
-        features= "src/test/resources/features/")
+        features= "system-tests/src/test/resources/features")
 class Runner {}
 
