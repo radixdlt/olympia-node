@@ -26,7 +26,6 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.identifiers.AID;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.consensus.ChainedBFT.Event;
 import com.radixdlt.consensus.liveness.PacemakerImpl;
@@ -47,7 +46,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 /**
@@ -69,13 +67,10 @@ public class BFTTestNetwork {
 	private final ValidatorSet validatorSet;
 
 	public BFTTestNetwork(List<ECKeyPair> nodes) {
-		this.genesis = mock(Atom.class);
-		AID aid = mock(AID.class);
-		when(aid.toString()).thenReturn(Long.toString(0));
-		when(this.genesis.getAID()).thenReturn(aid);
+		this.genesis = null;
 		this.genesisVertex = Vertex.createGenesis(genesis);
 		this.genesisQC = new QuorumCertificate(
-			new VertexMetadata(View.genesis(), genesisVertex.getId(), null, null),
+			new VoteData(VertexMetadata.ofVertex(genesisVertex), null, null),
 			new ECDSASignatures()
 		);
 		this.validatorSet = ValidatorSet.from(
@@ -104,18 +99,12 @@ public class BFTTestNetwork {
 
 	private ChainedBFT createBFTInstance(ECKeyPair key) {
 		Mempool mempool = mock(Mempool.class);
-		AtomicLong atomId = new AtomicLong();
-		doAnswer(inv -> {
-			Atom atom = mock(Atom.class);
-			AID aid = mock(AID.class);
-			when(aid.toString()).thenReturn(Long.toString(atomId.incrementAndGet()));
-			when(atom.getAID()).thenReturn(aid);
-			return Collections.singletonList(atom);
-		}).when(mempool).getAtoms(anyInt(), anySet());
+		doAnswer(inv -> Collections.emptyList()).when(mempool).getAtoms(anyInt(), anySet());
 		ProposalGenerator proposalGenerator = new ProposalGenerator(vertexStores.get(key), mempool);
-		SafetyRules safetyRules = new SafetyRules(key, vertexStores.get(key), SafetyState.initialState());
+		Hasher hasher = new DefaultHasher();
+		SafetyRules safetyRules = new SafetyRules(key, SafetyState.initialState(), hasher);
 		PacemakerImpl pacemaker = pacemakers.get(key);
-		PendingVotes pendingVotes = new PendingVotes();
+		PendingVotes pendingVotes = new PendingVotes(hasher);
 		EpochRx epochRx = () -> Observable.just(validatorSet).concatWith(Observable.never());
 		EpochManager epochManager = new EpochManager(
 			proposalGenerator,

@@ -42,40 +42,31 @@ public final class VertexMetadata {
 	@DsonOutput(Output.ALL)
 	private final Hash id;
 
-	private View parentView;
-
-	@JsonProperty("parent_id")
-	@DsonOutput(Output.ALL)
-	private final Hash parentId;
-
 	VertexMetadata() {
 		// Serializer only
 		this.view = null;
 		this.id = null;
-		this.parentView = null;
-		this.parentId = null;
 	}
 
-	public VertexMetadata(View view, Hash id, View parentView, Hash parentId) {
-		if (parentId == null && view.number() != 0) {
-			throw new IllegalArgumentException("Root vertex must be view 0.");
-		}
+	public VertexMetadata(View view, Hash id) {
         this.view = view;
 		this.id = id;
-		this.parentView = parentView;
-		this.parentId = parentId;
+	}
+
+	public static VertexMetadata ofVertex(Vertex vertex) {
+		return new VertexMetadata(vertex.getView(), vertex.getId());
+	}
+
+	public static VertexMetadata ofParent(Vertex vertex) {
+		if (vertex.isGenesis()) {
+			throw new IllegalStateException("Genesis has no parent.");
+		}
+
+		return new VertexMetadata(vertex.getParentView(), vertex.getParentId());
 	}
 
 	public View getView() {
 		return view;
-	}
-
-	public View getParentView() {
-		return parentView;
-	}
-
-	public Hash getParentId() {
-		return parentId;
 	}
 
 	public Hash getId() {
@@ -90,23 +81,12 @@ public final class VertexMetadata {
 
 	@JsonProperty("view")
 	private void setSerializerView(Long number) {
-		this.view = number == null ? null : View.of(number.longValue());
-	}
-
-	@JsonProperty("parent_view")
-	@DsonOutput(Output.ALL)
-	private Long getSerializerParentView() {
-		return this.parentView == null ? null : this.parentView.number();
-	}
-
-	@JsonProperty("parent_view")
-	private void setSerializerParentView(Long number) {
-		this.parentView = number == null ? null : View.of(number.longValue());
+		this.view = number == null ? null : View.of(number);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.view, this.id, this.parentView, this.parentId);
+		return Objects.hash(this.view, this.id);
 	}
 
 	@Override
@@ -118,9 +98,7 @@ public final class VertexMetadata {
 			VertexMetadata other = (VertexMetadata) o;
 			return
 				Objects.equals(this.view, other.view)
-				&& Objects.equals(this.id, other.id)
-				&& Objects.equals(this.parentView, other.parentView)
-				&& Objects.equals(this.parentId, other.parentId);
+				&& Objects.equals(this.id, other.id);
 		}
 		return false;
 	}

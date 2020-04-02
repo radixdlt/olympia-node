@@ -43,7 +43,7 @@ public class ProposalGeneratorTest {
 
 		VertexStore vertexStore = mock(VertexStore.class);
 		QuorumCertificate qc = mock(QuorumCertificate.class);
-		when(qc.getVertexMetadata()).thenReturn(mock(VertexMetadata.class));
+		when(qc.getProposed()).thenReturn(mock(VertexMetadata.class));
 		when(vertexStore.getHighestQC()).thenReturn(qc);
 		Vertex vertex = mock(Vertex.class);
 		when(vertex.getAtom()).thenReturn(null);
