@@ -59,6 +59,14 @@ public class PacemakerImplTest {
 	}
 
 	@Test
+	public void when_creating_pacemaker_with_invalid_timeout__then_exception_is_thrown() {
+		ScheduledExecutorService executorService = getMockedExecutorService();
+		assertThatThrownBy(() -> new PacemakerImpl(0, executorService));
+		assertThatThrownBy(() -> new PacemakerImpl(-1, executorService));
+		assertThatThrownBy(() -> new PacemakerImpl(-100, executorService));
+	}
+
+	@Test
 	public void when_start__then_a_timeout_event_with_view_0_is_emitted() {
 		ScheduledExecutorService executorService = getMockedExecutorService();
 		PacemakerImpl pacemaker = new PacemakerImpl(TEST_PACEMAKER_TIMEOUT, executorService);
