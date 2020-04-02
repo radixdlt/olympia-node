@@ -191,6 +191,7 @@ public class CrashFaultNetworkTest {
 	@Test
 	public void given_7_correct_bfts_that_randomly_crash__then_correct_instances_should_make_progress_as_possible_over_1_minute() {
 		final int numNodes = 7;
+		final int maxToleratedFaultyNodes = (numNodes - 1) / 3;
 		final long time = 1;
 		final TimeUnit timeUnit = TimeUnit.MINUTES;
 		final long rngSeed = System.currentTimeMillis();
@@ -221,6 +222,30 @@ public class CrashFaultNetworkTest {
 			.map(o -> o);
 		//CHECKSTYLE:ON
 
+		// there should be a new highest QC every once in a while to ensure progress
+		// the minimum latency per round is determined using the network latency and a tolerance
+		int worstCaseLatencyPerRound = bftNetwork.getNetworkLatency() * 2 // base latency: two rounds in the normal case
+			+ numNodes * (bftNetwork.getNetworkLatency() * 4 + bftNetwork.getPacemakerTimeout()); // four rounds plus timeout in bad case
+		// account for any inaccuracies, execution time, scheduling inefficiencies..
+		// the tolerance is high since we're only interested in qualitative progress in this test
+		double tolerance = 2.0;
+		int minimumLatencyPerRound = (int) (worstCaseLatencyPerRound * tolerance);
+		AtomicReference<View> highestQCView = new AtomicReference<>(View.genesis());
+		Observable<Object> progressCheck = Observable.interval(minimumLatencyPerRound, minimumLatencyPerRound, TimeUnit.MILLISECONDS)
+			.filter(i -> faultyNodesPubs.size() <= maxToleratedFaultyNodes)
+			.map(i -> allNodes.stream()
+				.map(bftNetwork::getVertexStore)
+				.map(VertexStore::getHighestQC)
+				.map(QuorumCertificate::getView)
+				.max(View::compareTo)
+				.get()) // there must be some max highest QC unless allNodes is empty
+			.doOnNext(view -> assertThat(view)
+				.satisfies(new Condition<>(v -> v.compareTo(highestQCView.get()) > 0,
+					"The highest highestQC %s increased since last highestQC %s after %d ms", view, highestQCView.get(), minimumLatencyPerRound)))
+			.doOnNext(highestQCView::set)
+			.doOnNext(newHighestQCView -> System.out.println("Made progress to new highest QC view " + highestQCView))
+			.map(o -> o);
+
 		// randomly seduce nodes to be naughty and pretend to crash-stop
 		Random rng = new Random(rngSeed);
 		Observable<Object> seducer = Observable.interval(1, TimeUnit.SECONDS)
@@ -232,7 +257,8 @@ public class CrashFaultNetworkTest {
 			.doAfterNext(node -> System.out.println("Crashed " + node.euid()))
 			.map(o -> o);
 
-		Observable.mergeArray(bftNetwork.processBFT(), correctCommitCheck, seducer)
+		List<Observable<Object>> checks = Arrays.asList(correctCommitCheck, progressCheck, seducer);
+		Observable.mergeArray(bftNetwork.processBFT(), Observable.merge(checks))
 			.take(time, timeUnit)
 			.blockingSubscribe();
 	}
