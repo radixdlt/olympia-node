@@ -15,6 +15,14 @@ public final class View implements Comparable<View> {
 		this.view = view;
 	}
 
+	public View previous() {
+		if (this.view == 0) {
+			throw new IllegalStateException("View Underflow");
+		}
+
+		return new View(view - 1);
+	}
+
 	public View next() {
 		if (this.view == Long.MAX_VALUE) {
 			throw new IllegalStateException("View Overflow");

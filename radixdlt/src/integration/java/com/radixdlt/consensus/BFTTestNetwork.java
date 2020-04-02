@@ -24,12 +24,15 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.consensus.ChainedBFT.Event;
 import com.radixdlt.consensus.liveness.PacemakerImpl;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
+import com.radixdlt.consensus.liveness.ProposerElection;
+import com.radixdlt.consensus.liveness.RotatingLeaders;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.consensus.validators.Validator;
@@ -51,13 +54,18 @@ import java.util.stream.Collectors;
  * A multi-node bft test network where the network is simulated.
  */
 public class BFTTestNetwork {
-	private final TestEventCoordinatorNetwork testEventCoordinatorNetwork = new TestEventCoordinatorNetwork();
+	private static final int TEST_NETWORK_LATENCY = 50;
+	private static final int TEST_PACEMAKER_TIMEOUT = 1000;
+
+	private final TestEventCoordinatorNetwork testEventCoordinatorNetwork = new TestEventCoordinatorNetwork(TEST_NETWORK_LATENCY);
 	private final Atom genesis;
 	private final Vertex genesisVertex;
 	private final QuorumCertificate genesisQC;
 	private final ImmutableMap<ECKeyPair, VertexStore> vertexStores;
 	private final ImmutableMap<ECKeyPair, Counters> counters;
+	private final ImmutableMap<ECKeyPair, PacemakerImpl> pacemakers;
 	private final Observable<Event> bftEvents;
+	private final ProposerElection proposerElection;
 	private final ValidatorSet validatorSet;
 
 	public BFTTestNetwork(List<ECKeyPair> nodes) {
@@ -73,6 +81,10 @@ public class BFTTestNetwork {
 		this.validatorSet = ValidatorSet.from(
 			nodes.stream().map(ECKeyPair::getPublicKey).map(Validator::from).collect(Collectors.toList())
 		);
+		this.proposerElection = new RotatingLeaders(validatorSet.getValidators().stream()
+			.map(Validator::nodeKey)
+			.collect(ImmutableList.toImmutableList())
+		);
 		this.vertexStores = nodes.stream()
 			.collect(ImmutableMap.toImmutableMap(
 				e -> e,
@@ -83,6 +95,8 @@ public class BFTTestNetwork {
 				})
 			);
 		this.counters = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e, e -> new Counters()));
+		this.pacemakers = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e,
+			e -> new PacemakerImpl(TEST_PACEMAKER_TIMEOUT, Executors.newSingleThreadScheduledExecutor())));
 		this.bftEvents = Observable.merge(this.vertexStores.entrySet().stream()
 			.map(e -> createBFTInstance(e.getKey()).processEvents()
 		).collect(Collectors.toList()));
@@ -100,7 +114,7 @@ public class BFTTestNetwork {
 		}).when(mempool).getAtoms(anyInt(), anySet());
 		ProposalGenerator proposalGenerator = new ProposalGenerator(vertexStores.get(key), mempool);
 		SafetyRules safetyRules = new SafetyRules(key, vertexStores.get(key), SafetyState.initialState());
-		PacemakerImpl pacemaker = new PacemakerImpl(Executors.newSingleThreadScheduledExecutor());
+		PacemakerImpl pacemaker = pacemakers.get(key);
 		PendingVotes pendingVotes = new PendingVotes();
 		EpochRx epochRx = () -> Observable.just(validatorSet).concatWith(Observable.never());
 		EpochManager epochManager = new EpochManager(
@@ -111,6 +125,7 @@ public class BFTTestNetwork {
 			pacemaker,
 			vertexStores.get(key),
 			pendingVotes,
+			proposers -> proposerElection, // assumes all instances use the same validators
 			key,
 			counters.get(key)
 		);
@@ -123,6 +138,10 @@ public class BFTTestNetwork {
 		);
 	}
 
+	public ProposerElection getProposerElection() {
+		return proposerElection;
+	}
+
 	public VertexStore getVertexStore(ECKeyPair keyPair) {
 		return vertexStores.get(keyPair);
 	}
@@ -131,11 +150,23 @@ public class BFTTestNetwork {
 		return counters.get(keyPair);
 	}
 
+	public PacemakerImpl getPacemaker(ECKeyPair keyPair) {
+		return pacemakers.get(keyPair);
+	}
+
 	public TestEventCoordinatorNetwork getTestEventCoordinatorNetwork() {
 		return testEventCoordinatorNetwork;
 	}
 
 	public Observable<Event> processBFT() {
 		return this.bftEvents;
+	}
+
+	public int getNetworkLatency() {
+		return TEST_NETWORK_LATENCY;
+	}
+
+	public int getPacemakerTimeout() {
+		return TEST_PACEMAKER_TIMEOUT;
 	}
 }

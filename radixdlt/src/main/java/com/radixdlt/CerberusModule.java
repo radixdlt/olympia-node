@@ -89,7 +89,10 @@ public class CerberusModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private PacemakerImpl pacemaker() {
-		return new PacemakerImpl(Executors.newSingleThreadScheduledExecutor());
+		final int pacemakerTimeout = Integer.parseInt(
+			runtimeProperties.get("consensus.pacemaker_timeout_millis", "5000")
+		);
+		return new PacemakerImpl(pacemakerTimeout, Executors.newSingleThreadScheduledExecutor());
 	}
 
 	@Provides
