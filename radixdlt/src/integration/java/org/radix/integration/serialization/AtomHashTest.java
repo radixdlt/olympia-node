@@ -25,14 +25,13 @@ import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.CryptoException;
 import org.radix.integration.RadixTest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class AtomHashTest extends RadixTest {
 	@Test
-	public void testThatParticleSpinAffectsAtomHash() throws CryptoException {
+	public void testThatParticleSpinAffectsAtomHash() {
 		Universe universe = getUniverse();
 		RRIParticle p = new RRIParticle(RRI.of(new RadixAddress((byte) universe.getMagic(), ECKeyPair.generateNew().getPublicKey()), "test"));
 		Atom atom1 = new Atom();

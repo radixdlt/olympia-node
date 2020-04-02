@@ -17,14 +17,20 @@
 
 package org.radix.serialization;
 
+import com.radixdlt.serialization.ClassScanningSerializerIds;
 import com.radixdlt.serialization.Polymorphic;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.serialization.SerializationException;
+
 import java.lang.reflect.Method;
 import java.util.function.Supplier;
 
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.config.Configurator;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.radix.logging.Logging;
+
 import com.radixdlt.serialization.DsonOutput.Output;
 
 import static org.junit.Assert.assertEquals;
@@ -43,9 +49,9 @@ import static org.radix.serialization.SerializationTestUtils.testEncodeDecode;
  */
 public abstract class SerializeObject<T> extends RadixTest {
 	@BeforeClass
-	public static void serializeObjectBeforeClass() throws Exception {
+	public static void serializeObjectBeforeClass() {
 		// Disable this output for now, as the serialiser is quite verbose when starting.
-		Logging.getLogger().setLevels(Logging.ALL & ~Logging.INFO & ~Logging.TRACE & ~Logging.DEBUG);
+		Configurator.setLevel(LogManager.getLogger(ClassScanningSerializerIds.class).getName(), Level.INFO);
 	}
 
 	private final Class<T> cls;
@@ -69,14 +75,14 @@ public abstract class SerializeObject<T> extends RadixTest {
 	}
 
 	@Test
-	public void testNONEIsEmpty() throws Exception {
+	public void testNONEIsEmpty() throws SerializationException {
 		String s2Json = getSerialization().toJson(factory.get(), Output.NONE);
 		assertEquals("{}", s2Json);
 	}
 
 	@Test
-	public void testRoundTripJsonSame() throws Exception {
-		assumeFalse("Not applicable for polymorphic classes", Polymorphic.class.isAssignableFrom(cls));
+	public void testRoundTripJsonSame() throws SerializationException {
+		checkPolymorphic();
 		Serialization s = getSerialization();
 		T initialObj = factory.get();
 		String initialJson = s.toJson(initialObj, Output.ALL);
@@ -85,8 +91,8 @@ public abstract class SerializeObject<T> extends RadixTest {
 	}
 
 	@Test
-	public void testRoundTripDsonSame() throws Exception {
-		assumeFalse("Not applicable for polymorphic classes", Polymorphic.class.isAssignableFrom(cls));
+	public void testRoundTripDsonSame() throws SerializationException {
+		checkPolymorphic();
 		Serialization s = getSerialization();
 		T initialObj = factory.get();
 		byte[] initialDson = s.toDson(initialObj, Output.ALL);
@@ -96,37 +102,32 @@ public abstract class SerializeObject<T> extends RadixTest {
 
 	@Test
 	public void testEncodeDecodeALL() throws Exception {
-		assumeFalse("Not applicable for polymorphic classes", Polymorphic.class.isAssignableFrom(cls));
+		checkPolymorphic();
 		testEncodeDecode(factory.get(), cls, getSerialization(), Output.ALL);
 	}
 
 	@Test
 	public void testEncodeDecodeAPI() throws Exception {
-		assumeFalse("Not applicable for polymorphic classes", Polymorphic.class.isAssignableFrom(cls));
+		checkPolymorphic();
 		testEncodeDecode(factory.get(), cls, getSerialization(), Output.API);
 	}
 
-//	@Test
-//	public void testEncodeDecodeHASH() throws Exception {
-//		assumeFalse("Not applicable for polymorphic classes", Polymorphic.class.isAssignableFrom(cls));
-//		// Output.HASH does not serialize "serializers" and can't be deserialized
-//	}
-
-//	@Test
-//	public void testEncodeDecodeNONE() throws Exception {
-//		assumeFalse("Not applicable for polymorphic classes", Polymorphic.class.isAssignableFrom(cls));
-//		// Output.NONE does not serialize "serializers" and can't be deserialized
-//	}
+	// Output.HASH does not serialize "serializers" and can't be deserialized
+	// Output.NONE does not serialize "serializers" and can't be deserialized
 
 	@Test
 	public void testEncodeDecodePERSIST() throws Exception {
-		assumeFalse("Not applicable for polymorphic classes", Polymorphic.class.isAssignableFrom(cls));
+		checkPolymorphic();
 		testEncodeDecode(factory.get(), cls, getSerialization(), Output.PERSIST);
 	}
 
 	@Test
 	public void testEncodeDecodeWIRE() throws Exception {
-		assumeFalse("Not applicable for polymorphic classes", Polymorphic.class.isAssignableFrom(cls));
+		checkPolymorphic();
 		testEncodeDecode(factory.get(), cls, getSerialization(), Output.WIRE);
+	}
+
+	private void checkPolymorphic() {
+		assumeFalse("Not applicable for polymorphic classes", Polymorphic.class.isAssignableFrom(cls));
 	}
 }

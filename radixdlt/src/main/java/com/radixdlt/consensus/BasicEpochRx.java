@@ -51,6 +51,7 @@ public class BasicEpochRx implements EpochRx {
 		this.addressBook = Objects.requireNonNull(addressBook);
 	}
 
+	@Override
 	public Observable<ValidatorSet> epochs() {
 		return Observable.<List<Peer>>create(emitter -> {
 			emitter.onNext(addressBook.peers().collect(Collectors.toList()));

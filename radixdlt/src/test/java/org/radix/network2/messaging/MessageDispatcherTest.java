@@ -19,7 +19,6 @@ package org.radix.network2.messaging;
 
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.identifiers.EUID;
-import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.serialization.Serialization;
 import org.hamcrest.Matchers;
 import org.junit.Before;
@@ -50,12 +49,10 @@ import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.spy;
@@ -105,7 +102,7 @@ public class MessageDispatcherTest extends RadixTest {
     }
 
     @Test
-    public void sendSuccessfullyMessage() throws CryptoException {
+    public void sendSuccessfullyMessage() {
 
         SystemMessage message = spy(new SystemMessage(getLocalSystem(), 0));
         MessageEvent messageEvent = new MessageEvent(peer1, transportInfo, message, 10_000);
@@ -127,7 +124,7 @@ public class MessageDispatcherTest extends RadixTest {
         assertThat(sendResult.getThrowable().getMessage(), Matchers.equalTo("org.radix.network.messages.TestMessage: TTL to " + peer1 + " has expired"));
         verify(systemMetaData, times(1)).increment("messages.outbound.aborted");
     }
-    
+
     @Test
     public void receiveSuccessfully() throws InterruptedException {
         SystemMessage testMessage = spy(new SystemMessage(getLocalSystem(), 0));

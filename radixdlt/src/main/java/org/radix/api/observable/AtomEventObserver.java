@@ -29,12 +29,13 @@ import com.radixdlt.middleware2.store.EngineAtomIndices;
 
 import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStore;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.radix.api.AtomQuery;
 import org.radix.api.observable.AtomEventDto.AtomEventType;
 import org.radix.atoms.events.AtomEventWithDestinations;
 import org.radix.atoms.events.AtomStoredEvent;
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -49,7 +50,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class AtomEventObserver {
-	private static final Logger log = Logging.getLogger("api");
+	private static final Logger log = LogManager.getLogger("api");
 
 	private static final int BATCH_SIZE = 50;
 

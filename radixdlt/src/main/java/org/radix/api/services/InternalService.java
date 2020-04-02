@@ -17,32 +17,31 @@
 
 package org.radix.api.services;
 
-import com.radixdlt.atommodel.Atom;
-import com.radixdlt.universe.Universe;
-import com.radixdlt.utils.Bytes;
-
 import java.util.Random;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
-import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.atomos.RRIParticle;
+import org.radix.time.Time;
 
 import com.google.common.collect.ImmutableMap;
+import com.radixdlt.atommodel.Atom;
 import com.radixdlt.atommodel.unique.UniqueParticle;
-import com.radixdlt.identifiers.RRI;
+import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.SubmissionControl;
 import com.radixdlt.properties.RuntimeProperties;
-import com.radixdlt.crypto.CryptoException;
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
-import org.radix.time.Time;
+import com.radixdlt.universe.Universe;
+import com.radixdlt.utils.Bytes;
 
 /**
  * API which is used for internal testing and should not be included in release to users
  */
 public final class InternalService {
-	private static final Logger log = Logging.getLogger();
+	private static final Logger log = LogManager.getLogger();
 	private final SubmissionControl submissionControl;
 	private final RuntimeProperties properties;
 	private final Universe universe;
@@ -140,7 +139,7 @@ public final class InternalService {
 							}
 						}
 					} catch (Exception ex) {
-						log.error(ex);
+						log.error("While spamming", ex);
 						try {
 							Thread.sleep(1000);
 						} catch (InterruptedException nil) {

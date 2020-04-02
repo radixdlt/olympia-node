@@ -38,9 +38,9 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.keys.Keys;
 import com.radixdlt.properties.RuntimeProperties;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.radix.exceptions.ValidationException;
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
 
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
@@ -60,7 +60,7 @@ import java.util.concurrent.TimeUnit;
 
 public final class GenerateUniverses
 {
-	private static final Logger LOGGER = Logging.getLogger("GenerateUniverses");
+	private static final Logger LOGGER = LogManager.getLogger("GenerateUniverses");
 
 	public static final String RADIX_ICON_URL = "https://assets.radixdlt.com/icons/icon-xrd-32x32.png";
 

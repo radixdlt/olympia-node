@@ -23,14 +23,14 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
-
 import com.radixdlt.properties.RuntimeProperties;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class Whitelist
 {
-	private static final Logger networkLog = Logging.getLogger ("network");
+	private static final Logger networkLog = LogManager.getLogger ("network");
 
 	private Set<String> parameters = new HashSet<>();
 
@@ -163,7 +163,7 @@ public class Whitelist
 				}
 			}
 		} catch (UnknownHostException ex) {
-			networkLog.error(ex);
+			networkLog.error("While checking whitelist", ex);
 		}
 
 		return false;

@@ -33,7 +33,6 @@ import org.junit.Test;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -52,7 +51,7 @@ public class TokenDefinitionSchemaTest {
 	}
 
 	@Test
-	public void when_validating_complete_tokendefinition_particle_against_schema__validation_is_successful() throws CryptoException {
+	public void when_validating_complete_tokendefinition_particle_against_schema__validation_is_successful() {
 		ECKeyPair kp = ECKeyPair.generateNew();
 		RadixAddress addr = new RadixAddress((byte) 12, kp.getPublicKey());
 		Map<TokenTransition, TokenPermission> tp = ImmutableMap.of(

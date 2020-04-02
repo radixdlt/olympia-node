@@ -31,15 +31,16 @@ import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStore;
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 
 public class LedgerEngineStore implements EngineStore {
-    private static final Logger log = Logging.getLogger("middleware2.store");
+    private static final Logger log = LogManager.getLogger("middleware2.store");
 
     private final Serialization serialization;
     private final LedgerEntryStore store;

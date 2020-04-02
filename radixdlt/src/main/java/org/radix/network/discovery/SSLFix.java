@@ -27,8 +27,8 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.X509ExtendedTrustManager;
 
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 class SSLFix {
 
@@ -36,7 +36,7 @@ class SSLFix {
 		throw new IllegalStateException("Can't construct");
 	}
 
-	private static final Logger log = Logging.getLogger();
+	private static final Logger log = LogManager.getLogger();
 
 	// This, and the code that uses it, is here to placate sonar.
 	// It should always be true, unless you do not want to use TLS etc to connect to

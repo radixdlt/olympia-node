@@ -25,8 +25,6 @@ import org.radix.api.AtomSchemas;
 import org.radix.api.jsonrpc.RadixJsonRpcPeer;
 import org.radix.api.jsonrpc.RadixJsonRpcServer;
 import org.radix.api.services.AtomsService;
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
 
 import io.undertow.websockets.WebSocketConnectionCallback;
 import io.undertow.websockets.core.AbstractReceiveListener;
@@ -35,11 +33,14 @@ import io.undertow.websockets.core.WebSocketChannel;
 import io.undertow.websockets.core.WebSockets;
 import io.undertow.websockets.spi.WebSocketHttpExchange;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 /**
  * A handler for websockets on the Radix HTTP API that establishes and maintains connections and forwards the messages for processing
  */
 /*package*/ final class RadixHttpWebsocketHandler implements WebSocketConnectionCallback {
-    private static final Logger logger = Logging.getLogger("api");
+    private static final Logger logger = LogManager.getLogger("api");
     private final ConcurrentHashMap<RadixJsonRpcPeer, WebSocketChannel> peers;
     private final RadixJsonRpcServer jsonRpcServer;
 	private final RadixHttpServer radixHttpServer;

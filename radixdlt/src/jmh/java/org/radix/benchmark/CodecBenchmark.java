@@ -19,10 +19,14 @@ package org.radix.benchmark;
 
 
 import com.radixdlt.DefaultSerialization;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.config.Configurator;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.infra.Blackhole;
-import org.radix.logging.Logging;
+
 import com.radixdlt.serialization.DsonOutput.Output;
+import com.radixdlt.serialization.ClassScanningSerializerIds;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
 
@@ -62,7 +66,8 @@ public class CodecBenchmark {
 
 	static {
 		// Disable this output for now, as the serialiser is quite verbose when starting.
-		Logging.getLogger().setLevels(Logging.ALL & ~Logging.INFO & ~Logging.TRACE & ~Logging.DEBUG);
+		Configurator.setLevel(LogManager.getLogger(ClassScanningSerializerIds.class).getName(), Level.INFO);
+
 		try {
 			TestSetupUtils.installBouncyCastleProvider();
 
@@ -86,7 +91,7 @@ public class CodecBenchmark {
 			byte[] bytes = serialization.toDson(testObject, Output.WIRE);
 			bh.consume(bytes);
 		} catch (SerializationException ex) {
-			throw new RuntimeException(ex);
+			throw new IllegalStateException("While serializing to DSON", ex);
 		}
 	}
 
@@ -96,7 +101,7 @@ public class CodecBenchmark {
 			DummyTestObject newObj = serialization.fromDson(jacksonBytes, DummyTestObject.class);
 			bh.consume(newObj);
 		} catch (SerializationException ex) {
-			throw new RuntimeException(ex);
+			throw new IllegalStateException("While deserializing from DSON", ex);
 		}
 	}
 
@@ -107,7 +112,7 @@ public class CodecBenchmark {
 			String json = serialization.toJson(testObject, Output.WIRE);
 			bh.consume(json);
 		} catch (SerializationException ex) {
-			throw new RuntimeException(ex);
+			throw new IllegalStateException("While serializing to JSON", ex);
 		}
 	}
 
@@ -117,7 +122,7 @@ public class CodecBenchmark {
 			DummyTestObject newObj = serialization.fromJson(jacksonJson, DummyTestObject.class);
 			bh.consume(newObj);
 		} catch (SerializationException ex) {
-			throw new RuntimeException(ex);
+			throw new IllegalStateException("While deserializing from JSON", ex);
 		}
 	}
 }

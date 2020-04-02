@@ -20,8 +20,8 @@ package org.radix.network2.transport.tcp;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.radix.network2.messaging.InboundMessage;
 import org.radix.network2.messaging.InboundMessageConsumer;
 import org.radix.network2.transport.StaticTransportMetadata;
@@ -39,7 +39,7 @@ import io.netty.channel.SimpleChannelInboundHandler;
 // downstream blocking that will happen, and this has the potential to slow down
 // the whole inbound network pipeline.
 final class TCPNettyMessageHandler extends SimpleChannelInboundHandler<ByteBuf> {
-	private static final Logger log = Logging.getLogger("transport.tcp");
+	private static final Logger log = LogManager.getLogger("transport.tcp");
 
 	private final InboundMessageConsumer messageSink;
 

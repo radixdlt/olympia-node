@@ -31,9 +31,10 @@ import com.google.inject.Inject;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.universe.Universe;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.radix.events.Events;
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
 import org.radix.network.discovery.Whitelist;
 import org.radix.network2.transport.TransportInfo;
 import org.radix.network2.utils.Locking;
@@ -46,7 +47,7 @@ import org.radix.universe.system.RadixSystem;
  */
 // FIXME: Static dependency on Network.getInstance().isWhitelisted(...)
 public class AddressBookImpl implements AddressBook {
-	private static final Logger log = Logging.getLogger("addressbook");
+	private static final Logger log = LogManager.getLogger("addressbook");
 
 	private final PeerPersistence persistence;
 	private final Events events;

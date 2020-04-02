@@ -32,10 +32,10 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.radix.common.Syncronicity;
 import org.radix.common.executors.Executable;
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
 import org.radix.utils.SystemMetaData;
 
 import com.google.common.collect.Maps;
@@ -54,7 +54,7 @@ public final class Events
 		return Events.instance;
 	}
 
-	private static final Logger eventLog = Logging.getLogger("events");
+	private static final Logger eventLog = LogManager.getLogger("events");
 
 	private class EventListeners
 	{

@@ -28,14 +28,15 @@ import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.Bytes;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.commons.cli.ParseException;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.json.JSONObject;
 import org.radix.api.http.RadixHttpServer;
 import org.radix.database.DatabaseEnvironment;
 import org.radix.events.Events;
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
 import org.radix.network2.addressbook.AddressBook;
 import org.radix.network2.addressbook.PeerManager;
 import org.radix.network2.transport.udp.PublicInetAddress;
@@ -58,7 +59,7 @@ public final class Radix
 		java.lang.System.setProperty("java.net.preferIPv4Stack", "true");
 	}
 
-	private static final Logger log = Logging.getLogger();
+	private static final Logger log = LogManager.getLogger();
 
 	public static final int 	PROTOCOL_VERSION 		= 100;
 

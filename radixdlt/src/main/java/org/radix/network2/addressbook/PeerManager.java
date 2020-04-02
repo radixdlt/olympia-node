@@ -21,10 +21,11 @@ import com.google.inject.Inject;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.universe.Universe;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.radix.common.executors.Executor;
 import org.radix.common.executors.ScheduledExecutable;
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
 import org.radix.network.Interfaces;
 import org.radix.network.discovery.BootstrapDiscovery;
 import org.radix.network.discovery.Whitelist;
@@ -51,7 +52,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 public class PeerManager {
-	private static final Logger log = Logging.getLogger("peermanager");
+	private static final Logger log = LogManager.getLogger("peermanager");
 
 	private final Random rand = new Random(); // No need for cryptographically secure here
 	private final Map<Peer, Long> probes = new HashMap<>();

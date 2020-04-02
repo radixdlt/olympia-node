@@ -25,7 +25,6 @@ import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.identifiers.EUID;
-import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.middleware.ParticleGroup;
@@ -40,7 +39,7 @@ public class AtomToBinaryConverterTest {
 	private AtomToBinaryConverter atomToBinaryConverter = new AtomToBinaryConverter(DefaultSerialization.getInstance());
 
 	@Test
-	public void test_atom_content_transformation_to_byte_array_and_back() throws CryptoException {
+	public void test_atom_content_transformation_to_byte_array_and_back() {
 		ECDSASignature ecSignature = new ECDSASignature(BigInteger.ONE, BigInteger.ONE);
 		ECKeyPair key = ECKeyPair.generateNew();
 		RadixAddress radixAddress = new RadixAddress((byte) 1, key.getPublicKey());

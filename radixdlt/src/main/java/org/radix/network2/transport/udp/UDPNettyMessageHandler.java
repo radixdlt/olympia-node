@@ -19,8 +19,9 @@ package org.radix.network2.transport.udp;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.radix.network2.messaging.InboundMessage;
 import org.radix.network2.messaging.InboundMessageConsumer;
 import org.radix.network2.transport.StaticTransportMetadata;
@@ -37,7 +38,7 @@ import io.netty.channel.socket.DatagramPacket;
 // downstream blocking that will happen, and this has the potential to slow down
 // the whole inbound network pipeline.
 final class UDPNettyMessageHandler extends SimpleChannelInboundHandler<DatagramPacket> {
-	private static final Logger log = Logging.getLogger("transport.udp");
+	private static final Logger log = LogManager.getLogger("transport.udp");
 
 	private final InboundMessageConsumer messageSink;
 	private final PublicInetAddress natHandler;

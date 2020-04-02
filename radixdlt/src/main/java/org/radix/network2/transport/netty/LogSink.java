@@ -17,7 +17,7 @@
 
 package org.radix.network2.transport.netty;
 
-import org.radix.logging.Logger;
+import org.apache.logging.log4j.Logger;
 
 /**
  * A sink that accepts log strings.
