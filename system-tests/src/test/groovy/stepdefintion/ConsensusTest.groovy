@@ -15,6 +15,7 @@ class ConsensusTest {
 
     Map SetupOptions
     String sentMessageAID
+    List sentMessages
 
     @Given('^I have (.*) network with (.*) nodes and quorumsize of (.*) nodes$')
     void iHaveNetworkWithThreeNodes(String networkName, int numberOfNodes, int quorumSize) {
@@ -59,8 +60,52 @@ class ConsensusTest {
         sentMessageAID = extracted[0][1]
     }
 
+    //I send sequence of 10 message to first node one
+    @When('^I send sequence of (.*) message to first node one$')
+    void sendnMessages(int numberOfMessages) {
+
+        println "User directory ${System.getProperty("user.dir")}"
+        List sendMessageOptions = [
+                "send-message",
+                "--keystore=${Generic.keyStorePath()}",
+                "--password=test123",
+                "--address=JHJEBjTsEcmGKzrvTVwQ4BpDmwRvYYYjbehXdSnpx8C5kCdUNEK",
+                "--message=hello"
+        ]
+        //TODO enhance this sleep to wait for system to be up
+        Thread.sleep(5000)
 
 
+        def sendMessageCmd = CmdHelper.radixCliCommand(sendMessageOptions)
+        sentMessages = (1..numberOfMessages).collect({
+            List<String> output, error
+            (output, error) = runCommand(sendMessageCmd,
+                    ["RADIX_BOOTSTRAP_TRUSTED_NODE=http://localhost:${setupOptions["core1"].hostPort}"] as String[], true)
+            def filtered = output.find({ it.contains("AtomID") })
+            def extracted = filtered =~ /AtomID of resulting atom : (.*)/
+            return extracted[0][1]
+        })
+
+    }
+
+    //the AtomIDs of 10 message should be of same sequence on all nodes
+    @Then("the AtomIDs of the messages should be of same sequence on all nodes")
+    void messageSequence() {
+        List getAtomsOptions = [
+                "get-stored-atoms",
+                "--keystore=${Generic.keyStorePath()}",
+                "--password=test123",
+        ]
+        def sendMessageCmd = CmdHelper.radixCliCommand(getAtomsOptions)
+        SetupOptions.keySet().each {
+            List<String> output, error
+            (output, error) = runCommand(sendMessageCmd,
+                    ["RADIX_BOOTSTRAP_TRUSTED_NODE=http://localhost:${setupOptions[it].hostPort}"] as String[], true)
+//            int firstAtomIndex = output.findIndexOf {sentMessages[0]}
+            List<String> actualSequenceFromNode =  output[1..output.size()-1]
+            assert actualSequenceFromNode == sentMessages
+        }
+    }
     @Then("corresponding atom of the message should be available on atom store of all nodes")
     void correspondingAtomOfTheMessageShouldBeAvailableOnAtomStoreOfAllNodes() {
         println "Checking Atom ${sentMessageAID}"
@@ -73,7 +118,7 @@ class ConsensusTest {
 
         def sendMessageCmd = CmdHelper.radixCliCommand(getAtomsOptions)
         SetupOptions.keySet().each {
-            List<String[]> output, error
+            List<String> output, error
             (output, error) = runCommand(sendMessageCmd,
                     ["RADIX_BOOTSTRAP_TRUSTED_NODE=http://localhost:${setupOptions[it].hostPort}"] as String[], true)
             assert output.find({ it.contains(sentMessageAID) }) != null

@@ -18,6 +18,6 @@ class Generic {
     }
 
     static String pathToCLIJar() {
-        return "target/cli/radixdlt-cli-all.jar"
+        return "${System.getProperty('user.dir')}/system-tests/target/cli/radixdlt-cli-all.jar"
     }
 }
