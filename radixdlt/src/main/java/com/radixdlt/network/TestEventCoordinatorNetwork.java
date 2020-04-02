@@ -37,59 +37,59 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 /**
- * Simple simulated network implementation that just sends messages to itself with a configurable delay.
+ * Simple simulated network implementation that just sends messages to itself with a configurable latency.
  */
 public class TestEventCoordinatorNetwork {
 	private final Random rng;
-	private final int minimumDelay;
-	private final int maximumDelay;
+	private final int minimumLatency;
+	private final int maximumLatency;
 
 	private final PublishSubject<MessageInTransit> messages;
 	private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 	private final Set<EUID> sendingDisabled = Collections.newSetFromMap(new ConcurrentHashMap<>());
 	private final Set<EUID> receivingDisabled = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
-	private TestEventCoordinatorNetwork(int minimumDelay, int maximumDelay, long rngSeed) {
-		if (minimumDelay < 0) {
-			throw new IllegalArgumentException("minimumDelay must be >= 0 but was " + minimumDelay);
+	private TestEventCoordinatorNetwork(int minimumLatency, int maximumLatency, long rngSeed) {
+		if (minimumLatency < 0) {
+			throw new IllegalArgumentException("minimumLatency must be >= 0 but was " + minimumLatency);
 		}
-		if (maximumDelay < 0) {
-			throw new IllegalArgumentException("maximumDelay must be >= 0 but was " + maximumDelay);
+		if (maximumLatency < 0) {
+			throw new IllegalArgumentException("maximumLatency must be >= 0 but was " + maximumLatency);
 		}
-		this.minimumDelay = minimumDelay;
-		this.maximumDelay = maximumDelay;
+		this.minimumLatency = minimumLatency;
+		this.maximumLatency = maximumLatency;
 		this.rng = new Random(rngSeed);
 		this.messages = PublishSubject.create();
 	}
 
 	/**
-	 * Creates a perfect simulated network with a fixed delay.
-	 * @param fixedDelay The fixed delay (may be 0)
+	 * Creates a perfect simulated network with a fixed latency.
+	 * @param fixedLatency The fixed latency (may be 0)
 	 * @return a network
 	 */
-	public static TestEventCoordinatorNetwork perfect(int fixedDelay) {
-		return new TestEventCoordinatorNetwork(fixedDelay, fixedDelay, 0);
+	public static TestEventCoordinatorNetwork perfect(int fixedLatency) {
+		return new TestEventCoordinatorNetwork(fixedLatency, fixedLatency, 0);
 	}
 
 	/**
-	 * Creates an unreliable simulated network with a randomised bounded delay.
-	 * @param minimumDelay The minimum delay (inclusive)
-	 * @param maximumDelay The maximum delay (inclusive)
+	 * Creates an unreliable simulated network with a randomised bounded latency.
+	 * @param minimumLatency The minimum latency (inclusive)
+	 * @param maximumLatency The maximum latency (inclusive)
 	 * @return a network
 	 */
-	public static TestEventCoordinatorNetwork unreliable(int minimumDelay, int maximumDelay) {
-		return unreliable(minimumDelay, maximumDelay, System.currentTimeMillis());
+	public static TestEventCoordinatorNetwork unreliable(int minimumLatency, int maximumLatency) {
+		return unreliable(minimumLatency, maximumLatency, System.currentTimeMillis());
 	}
 
 	/**
-	 * Creates an unreliable simulated network with a randomised bounded delay.
-	 * @param minimumDelay The minimum delay (inclusive)
-	 * @param maximumDelay The maximum delay (inclusive)
+	 * Creates an unreliable simulated network with a randomised bounded latency.
+	 * @param minimumLatency The minimum latency (inclusive)
+	 * @param maximumLatency The maximum latency (inclusive)
 	 * @param rngSeed The seed to use for random operations
 	 * @return a network
 	 */
-	public static TestEventCoordinatorNetwork unreliable(int minimumDelay, int maximumDelay, long rngSeed) {
-		return new TestEventCoordinatorNetwork(minimumDelay, maximumDelay, rngSeed);
+	public static TestEventCoordinatorNetwork unreliable(int minimumLatency, int maximumLatency, long rngSeed) {
+		return new TestEventCoordinatorNetwork(minimumLatency, maximumLatency, rngSeed);
 	}
 
 	public void setSendingDisable(EUID euid, boolean disable) {
@@ -108,18 +108,18 @@ public class TestEventCoordinatorNetwork {
 		}
 	}
 
-	private int getRandomDelay() {
-		if (minimumDelay == maximumDelay) {
-			return minimumDelay;
+	private int getRandomLatency() {
+		if (minimumLatency == maximumLatency) {
+			return minimumLatency;
 		} else {
-			return minimumDelay + rng.nextInt(maximumDelay - minimumDelay + 1);
+			return minimumLatency + rng.nextInt(maximumLatency - minimumLatency + 1);
 		}
 	}
 
 	public EventCoordinatorNetworkSender getNetworkSender(EUID forNode) {
 		Consumer<MessageInTransit> sendMessageSink = message -> {
 			if (!sendingDisabled.contains(forNode)) {
-				executorService.schedule(() -> messages.onNext(message), getRandomDelay(), TimeUnit.MILLISECONDS);
+				executorService.schedule(() -> messages.onNext(message), getRandomLatency(), TimeUnit.MILLISECONDS);
 			}
 		};
 		return new EventCoordinatorNetworkSender() {
@@ -162,6 +162,10 @@ public class TestEventCoordinatorNetwork {
 				return myMessages.ofType(Vote.class);
 			}
 		};
+	}
+
+	public int getMaximumLatency() {
+		return maximumLatency;
 	}
 
 	private static final class MessageInTransit {

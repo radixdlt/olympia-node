@@ -46,8 +46,8 @@ public class CrashFaultNetworkTest {
 	}
 
 	private void crashNode(ECKeyPair node, BFTTestNetwork bftNetwork) {
-		bftNetwork.getTestEventCoordinatorNetwork().setReceivingDisable(node.euid(), true);
-		bftNetwork.getTestEventCoordinatorNetwork().setSendingDisable(node.euid(), true);
+		bftNetwork.getUnderlyingNetwork().setReceivingDisable(node.euid(), true);
+		bftNetwork.getUnderlyingNetwork().setSendingDisable(node.euid(), true);
 	}
 
 	/**
@@ -112,8 +112,8 @@ public class CrashFaultNetworkTest {
 
 		// there should be a new highest QC every once in a while to ensure progress
 		// the minimum latency per round is determined using the network latency and a tolerance
-		int worstCaseLatencyPerRound = bftNetwork.getNetworkLatency() * 2 // base latency: two rounds in the normal case
-			+ numCrashed * (bftNetwork.getNetworkLatency() * 4 + bftNetwork.getPacemakerTimeout()); // four rounds plus timeout in bad case
+		int worstCaseLatencyPerRound = bftNetwork.getMaximumNetworkLatency() * 2 // base latency: two rounds in the normal case
+			+ numCrashed * (bftNetwork.getMaximumNetworkLatency() * 4 + bftNetwork.getPacemakerTimeout()); // four rounds plus timeout in bad case
 		// account for any inaccuracies, execution time, scheduling inefficiencies..
 		// the tolerance is high since we're only interested in qualitative progress in this test
 		double tolerance = 2.0;
@@ -158,7 +158,7 @@ public class CrashFaultNetworkTest {
 		// correct proposals should be direct if generated after another correct proposal, otherwise there should be a gap
 		List<Observable<Vertex>> correctProposals = correctNodes.stream()
 			.map(ECKeyPair::euid)
-			.map(bftNetwork.getTestEventCoordinatorNetwork()::getNetworkRx)
+			.map(bftNetwork.getUnderlyingNetwork()::getNetworkRx)
 			.map(EventCoordinatorNetworkRx::proposalMessages)
 			.collect(Collectors.toList());
 		Observable<Object> directProposalsCheck = Observable.merge(correctProposals)
@@ -225,8 +225,8 @@ public class CrashFaultNetworkTest {
 
 		// there should be a new highest QC every once in a while to ensure progress
 		// the minimum latency per round is determined using the network latency and a tolerance
-		int worstCaseLatencyPerRound = bftNetwork.getNetworkLatency() * 2 // base latency: two rounds in the normal case
-			+ numNodes * (bftNetwork.getNetworkLatency() * 4 + bftNetwork.getPacemakerTimeout()); // four rounds plus timeout in bad case
+		int worstCaseLatencyPerRound = bftNetwork.getMaximumNetworkLatency() * 2 // base latency: two rounds in the normal case
+			+ numNodes * (bftNetwork.getMaximumNetworkLatency() * 4 + bftNetwork.getPacemakerTimeout()); // four rounds plus timeout in bad case
 		// account for any inaccuracies, execution time, scheduling inefficiencies..
 		// the tolerance is high since we're only interested in qualitative progress in this test
 		double tolerance = 2.0;
