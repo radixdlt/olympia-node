@@ -22,6 +22,14 @@ import com.radixdlt.crypto.ECPublicKey;
 
 import java.util.List;
 
+/**
+ * Factory for creating {@link ProposerElection}s for specific lists of proposeres
+ */
 public interface ProposerElectionFactory {
+	/**
+	 * Create a {@link ProposerElection} for a certain list of proposers
+	 * @param proposers The (ordered) list of proposers
+	 * @return The created {@link ProposerElection} instance
+	 */
 	ProposerElection create(List<ECPublicKey> proposers);
 }
