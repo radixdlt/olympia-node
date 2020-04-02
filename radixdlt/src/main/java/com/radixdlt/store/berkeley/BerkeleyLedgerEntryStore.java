@@ -53,10 +53,11 @@ import com.sleepycat.je.SecondaryMultiKeyCreator;
 import com.sleepycat.je.Transaction;
 import com.sleepycat.je.TransactionConfig;
 import com.sleepycat.je.UniqueConstraintException;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.radix.database.DatabaseEnvironment;
 import org.radix.database.exceptions.DatabaseException;
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
 import org.radix.shards.ShardRange;
 import org.radix.shards.ShardSpace;
 
@@ -77,7 +78,7 @@ import static com.radixdlt.store.berkeley.LedgerEntryIndices.SHARD_INDEX_PREFIX;
 
 @Singleton
 public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
-	private static final Logger log = Logging.getLogger("store.atoms");
+	private static final Logger log = LogManager.getLogger("store.atoms");
 
 	private static final String ATOM_INDICES_DB_NAME = "tempo2.atom_indices";
 	private static final String DUPLICATE_INDICES_DB_NAME = "tempo2.duplicated_indices";

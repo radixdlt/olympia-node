@@ -21,7 +21,6 @@ import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
@@ -74,7 +73,7 @@ public class ValidatorSetTest {
 	}
 
 	@Test
-	public void testValidate() throws CryptoException {
+	public void testValidate() {
 		ECKeyPair k1 = ECKeyPair.generateNew();
 		ECKeyPair k2 = ECKeyPair.generateNew();
 		ECKeyPair k3 = ECKeyPair.generateNew();

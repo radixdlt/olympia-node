@@ -22,9 +22,9 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.radix.containers.BasicContainer;
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
 import org.radix.network2.transport.TransportInfo;
 import org.radix.network2.transport.TransportMetadata;
 import org.radix.time.Time;
@@ -42,7 +42,7 @@ import com.radixdlt.serialization.DsonOutput.Output;
 // interfaces can't currently be part of a serialization type hierarchy.
 @SerializerId2("network.peer.base")
 public abstract class Peer extends BasicContainer {
-	protected static final Logger log = Logging.getLogger("addressbook");
+	protected static final Logger log = LogManager.getLogger("addressbook");
 
 	public static final int DEFAULT_BANTIME = 60 * 60;
 

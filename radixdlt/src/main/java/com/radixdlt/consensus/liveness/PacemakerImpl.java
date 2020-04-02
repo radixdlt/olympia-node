@@ -25,24 +25,26 @@ import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.utils.Longs;
+
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
-
 import io.reactivex.rxjava3.subjects.Subject;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
 
 /**
  * Overly simplistic pacemaker
  */
 public final class PacemakerImpl implements Pacemaker, PacemakerRx {
-	private static final Logger log = Logging.getLogger("PM");
+	private static final Logger log = LogManager.getLogger("PM");
 
 	private final int timeoutMilliseconds;
 	private final Subject<View> timeouts;

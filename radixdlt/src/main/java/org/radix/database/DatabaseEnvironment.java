@@ -31,9 +31,10 @@ import com.sleepycat.je.EnvironmentConfig;
 import com.sleepycat.je.LockMode;
 import com.sleepycat.je.OperationStatus;
 import com.sleepycat.je.Transaction;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.bouncycastle.util.Arrays;
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
 
 import java.io.File;
 import java.util.concurrent.TimeUnit;
@@ -41,7 +42,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public final class DatabaseEnvironment
 {
-	private static final Logger log = Logging.getLogger();
+	private static final Logger log = LogManager.getLogger();
 	private class CheckpointerTask implements Runnable {
 
 		private volatile boolean interrupted = false;

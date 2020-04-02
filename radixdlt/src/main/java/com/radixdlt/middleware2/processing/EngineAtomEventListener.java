@@ -26,21 +26,22 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.AtomEventListener;
 import com.radixdlt.middleware2.store.EngineAtomIndices;
 import com.radixdlt.serialization.Serialization;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.radix.atoms.AtomDependencyNotFoundException;
 import org.radix.atoms.events.AtomExceptionEvent;
 import org.radix.atoms.events.AtomStoredEvent;
 import org.radix.atoms.particles.conflict.ParticleConflict;
 import org.radix.atoms.particles.conflict.ParticleConflictException;
 import org.radix.events.Events;
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
 import org.radix.validation.ConstraintMachineValidationException;
 
 import java.util.Collections;
 import java.util.stream.Collectors;
 
 public class EngineAtomEventListener implements AtomEventListener {
-	private static final Logger log = Logging.getLogger("middleware2.eventListener");
+	private static final Logger log = LogManager.getLogger("middleware2.eventListener");
 	private final Serialization serialization;
 
 	public EngineAtomEventListener(Serialization serialization) {
@@ -70,7 +71,7 @@ public class EngineAtomEventListener implements AtomEventListener {
 	@Override
 	public void onVirtualStateConflict(Atom atom, DataPointer issueParticle) {
 		ConstraintMachineValidationException e = new ConstraintMachineValidationException(atom, "Virtual state conflict", issueParticle);
-		log.error(e);
+		log.error("Virtual state conflict", e);
 		Events.getInstance().broadcast(new AtomExceptionEvent(e, atom.getAID()));
 	}
 

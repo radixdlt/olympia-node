@@ -45,16 +45,17 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.universe.Universe;
+
 import java.util.Collections;
 import java.util.Objects;
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
-
 import java.util.concurrent.Executors;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.radix.network2.addressbook.AddressBook;
 
 public class CerberusModule extends AbstractModule {
-	private static final Logger log = Logging.getLogger("Startup");
+	private static final Logger log = LogManager.getLogger("Startup");
 
 	private final RuntimeProperties runtimeProperties;
 
@@ -118,7 +119,7 @@ public class CerberusModule extends AbstractModule {
 		final VertexMetadata genesisMetadata = new VertexMetadata(View.genesis(), genesisVertex.getId(), View.genesis(), genesisVertex.getId());
 		final QuorumCertificate rootQC = new QuorumCertificate(genesisMetadata, new ECDSASignatures());
 
-		log.info("Genesis Vertex Id: " + genesisVertex.getId());
+		log.info("Genesis Vertex Id: {}", genesisVertex.getId());
 		return new VertexStore(genesisVertex, rootQC, radixEngine);
 	}
 }

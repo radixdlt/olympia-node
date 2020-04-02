@@ -23,8 +23,8 @@ import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.radix.network2.messaging.InboundMessageConsumer;
 import org.radix.network2.transport.StaticTransportMetadata;
 import org.radix.network2.transport.TransportControl;
@@ -51,7 +51,7 @@ import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
 
 final class NettyTCPTransportImpl implements NettyTCPTransport {
-	private static final Logger log = Logging.getLogger("transport.tcp");
+	private static final Logger log = LogManager.getLogger("transport.tcp");
 
 	// Set this to true to see a dump of packet data
 	private static final boolean DEBUG_DATA = false;
@@ -163,7 +163,7 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 					setupChannel(ch, messageSink);
 				}
 			});
-		if (log.hasLevel(Logging.DEBUG)) {
+		if (log.isDebugEnabled()) {
 			LogSink ls = LogSink.forDebug(log);
 			b.handler(new LoggingHandler(ls, DEBUG_DATA));
 		}
@@ -187,7 +187,7 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 			.setReceiveBufferSize(RCV_BUF_SIZE)
 			.setSendBufferSize(SND_BUF_SIZE)
 			.setOption(ChannelOption.RCVBUF_ALLOCATOR, new FixedRecvByteBufAllocator(packetLength));
-		if (log.hasLevel(Logging.DEBUG)) {
+		if (log.isDebugEnabled()) {
 			LogSink ls = LogSink.forDebug(log);
 			ch.pipeline().addLast(new LoggingHandler(ls, DEBUG_DATA));
 		}
@@ -226,7 +226,7 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 
 	private Thread createThread(Runnable r) {
 		String threadName = String.format("TCP handler %s - %s", localAddress(), threadCounter.incrementAndGet());
-		if (log.hasLevel(Logging.DEBUG)) {
+		if (log.isDebugEnabled()) {
 			log.debug("New thread: " + threadName);
 		}
 		return new Thread(r, threadName);

@@ -34,8 +34,9 @@ import java.util.Objects;
 import java.util.Set;
 
 import com.google.inject.Inject;
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.radix.network2.addressbook.AddressBook;
 import org.radix.network2.addressbook.Peer;
 import org.radix.network2.addressbook.PeerPredicate;
@@ -53,7 +54,7 @@ public class BootstrapDiscovery
 	// https://en.wikipedia.org/wiki/Domain_Name_System
 	private static final int MAX_DNS_NAME_OCTETS = 253;
 
-	private static final Logger log = Logging.getLogger();
+	private static final Logger log = LogManager.getLogger();
 	private final RuntimeProperties properties;
 	private final Universe universe;
 

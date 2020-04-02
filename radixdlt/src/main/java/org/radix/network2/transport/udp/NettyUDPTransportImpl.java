@@ -23,8 +23,8 @@ import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.radix.network2.messaging.InboundMessageConsumer;
 import org.radix.network2.transport.StaticTransportMetadata;
 import org.radix.network2.transport.Transport;
@@ -36,6 +36,7 @@ import org.radix.network2.transport.netty.LoggingHandler;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
+
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
@@ -46,7 +47,7 @@ import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 
 final class NettyUDPTransportImpl implements Transport {
-	private static final Logger log = Logging.getLogger("transport.udp");
+	private static final Logger log = LogManager.getLogger("transport.udp");
 
 	// Set this to true to see a dump of packet data
 	protected static final boolean DEBUG_DATA = false;
@@ -149,7 +150,7 @@ final class NettyUDPTransportImpl implements Transport {
 	            		.setReceiveBufferSize(RCV_BUF_SIZE)
 	            		.setSendBufferSize(SND_BUF_SIZE)
 	            		.setOption(ChannelOption.RCVBUF_ALLOCATOR, new FixedRecvByteBufAllocator(MAX_DATAGRAM_SIZE));
-	        		if (log.hasLevel(Logging.DEBUG)) {
+	        		if (log.isDebugEnabled()) {
 	        			LogSink ls = LogSink.forDebug(log);
 	        			ch.pipeline()
 	        				.addLast(new LoggingHandler(ls, DEBUG_DATA));
@@ -197,7 +198,7 @@ final class NettyUDPTransportImpl implements Transport {
 
 	private Thread createThread(Runnable r) {
 		String threadName = String.format("UDP handler %s - %s", localAddress(), threadCounter.incrementAndGet());
-		if (log.hasLevel(Logging.DEBUG)) {
+		if (log.isDebugEnabled()) {
 			log.debug("New thread: " + threadName);
 		}
 		return new Thread(r, threadName);
