@@ -71,4 +71,12 @@ class CmdHelper {
         }
 
     }
+
+    static void removeAllDockerContainers(){
+        def psOutput,psError
+        (psOutput,psError)=runCommand("docker ps")
+        psOutput.findAll({!it.contains("IMAGE")}).collect({it ->
+            return it.split(" ")[0]
+        }).each { it -> runCommand("docker rm -f ${it}") }
+    }
 }

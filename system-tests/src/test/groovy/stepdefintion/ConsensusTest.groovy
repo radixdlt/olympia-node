@@ -20,8 +20,7 @@ class ConsensusTest {
     void iHaveNetworkWithThreeNodes(String networkName, int numberOfNodes, int quorumSize) {
 
         dockerOptions = CmdHelper.getDockerOptions(numberOfNodes, quorumSize)
-        dockerOptions.keySet().each { it -> runCommand("docker rm -f ${it}") }
-//        runCommand("docker ps -a | awk '{ print \$1,\$2 }' | grep core | awk '{print \$1 }' | xargs -I {} docker rm -f {}")
+        CmdHelper.removeAllDockerContainers()
         runCommand("docker network rm ${networkName}", null, true)
         runCommand("docker network create ${networkName}")
         String[] dockerEnv
@@ -32,6 +31,7 @@ class ConsensusTest {
             runCommand("${dockerCommand}", dockerEnv)
         }
     }
+
 
     @When("I send a message to first node one")
     void iSendAMessage() {
