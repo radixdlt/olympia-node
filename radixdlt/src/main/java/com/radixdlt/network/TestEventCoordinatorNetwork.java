@@ -33,6 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 /**
  * Overly simplistic network implementation that just sends messages to itself.
@@ -68,39 +69,26 @@ public class TestEventCoordinatorNetwork {
 		}
 	}
 
-	public EventCoordinatorNetworkSender getNetworkSender(EUID euid) {
+	public EventCoordinatorNetworkSender getNetworkSender(EUID forNode) {
+		Consumer<MessageInTransit> sendMessageSink = message -> {
+			if (!sendingDisabled.contains(forNode)) {
+				executorService.schedule(() -> messages.onNext(message), loopbackDelay, TimeUnit.MILLISECONDS);
+			}
+		};
 		return new EventCoordinatorNetworkSender() {
 			@Override
 			public void broadcastProposal(Vertex vertex) {
-				if (!sendingDisabled.contains(euid)) {
-					executorService.schedule(
-						() -> messages.onNext(MessageInTransit.broadcast(vertex)),
-						loopbackDelay,
-						TimeUnit.MILLISECONDS
-					);
-				}
+				sendMessageSink.accept(MessageInTransit.broadcast(vertex));
 			}
 
 			@Override
 			public void sendNewView(NewView newView, EUID newViewLeader) {
-				if (!sendingDisabled.contains(euid)) {
-					executorService.schedule(
-						() -> messages.onNext(MessageInTransit.send(newView, newViewLeader)),
-						loopbackDelay,
-						TimeUnit.MILLISECONDS
-					);
-				}
+				sendMessageSink.accept(MessageInTransit.send(newView, newViewLeader));
 			}
 
 			@Override
 			public void sendVote(Vote vote, EUID leader) {
-				if (!sendingDisabled.contains(euid)) {
-					executorService.schedule(
-						() -> messages.onNext(MessageInTransit.send(vote, leader)),
-						loopbackDelay,
-						TimeUnit.MILLISECONDS
-					);
-				}
+				sendMessageSink.accept(MessageInTransit.send(vote, leader));
 			}
 		};
 	}
