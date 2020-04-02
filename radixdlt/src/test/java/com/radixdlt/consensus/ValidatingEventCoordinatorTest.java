@@ -114,9 +114,10 @@ public class ValidatingEventCoordinatorTest {
 	@Test
 	public void when_processing_vote_as_not_proposer__then_nothing_happens() {
 		Vote voteMessage = mock(Vote.class);
-		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
-		when(voteMessage.getVertexMetadata()).thenReturn(vertexMetadata);
-		when(vertexMetadata.getView()).thenReturn(View.of(0L));
+		VertexMetadata proposal = new VertexMetadata(View.of(2), Hash.random());
+		VertexMetadata parent = new VertexMetadata(View.of(1), Hash.random());
+		VoteData voteData = new VoteData(proposal, parent);
+		when(voteMessage.getVoteData()).thenReturn(voteData);
 
 		eventCoordinator.processVote(voteMessage);
 		verify(safetyRules, times(0)).process(any(QuorumCertificate.class));
@@ -128,10 +129,10 @@ public class ValidatingEventCoordinatorTest {
 		when(proposerElection.getProposer(any())).thenReturn(SELF_KEY.getPublicKey());
 
 		Vote vote = mock(Vote.class);
-		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
-		when(vote.getVertexMetadata()).thenReturn(vertexMetadata);
-		when(vertexMetadata.getView()).thenReturn(View.of(0L));
-		when(vertexMetadata.getId()).thenReturn(Hash.random());
+		VertexMetadata proposal = new VertexMetadata(View.of(2), Hash.random());
+		VertexMetadata parent = new VertexMetadata(View.of(1), Hash.random());
+		VoteData voteData = new VoteData(proposal, parent);
+		when(vote.getVoteData()).thenReturn(voteData);
 
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		View view = mock(View.class);

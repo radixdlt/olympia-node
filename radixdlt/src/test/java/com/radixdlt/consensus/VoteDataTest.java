@@ -15,21 +15,15 @@
  * language governing permissions and limitations under the License.
  */
 
-package org.radix.serialization;
+package com.radixdlt.consensus;
 
-import com.radixdlt.consensus.View;
-import com.radixdlt.consensus.VertexMetadata;
-import com.radixdlt.crypto.Hash;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Test;
 
-public class VertexMetadataSerializeTest extends SerializeObject<VertexMetadata> {
-	public VertexMetadataSerializeTest() {
-		super(VertexMetadata.class, VertexMetadataSerializeTest::get);
-	}
-
-	private static VertexMetadata get() {
-		View view = View.of(1234567890L);
-		Hash id = Hash.random();
-
-		return new VertexMetadata(view, id);
+public class VoteDataTest {
+	@Test
+	public void equalsContract() {
+		EqualsVerifier.forClass(VoteData.class)
+			.verify();
 	}
 }

@@ -15,21 +15,23 @@
  * language governing permissions and limitations under the License.
  */
 
-package org.radix.serialization;
+package com.radixdlt.consensus;
 
-import com.radixdlt.consensus.View;
-import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.DefaultSerialization;
 import com.radixdlt.crypto.Hash;
+import com.radixdlt.serialization.DsonOutput.Output;
+import com.radixdlt.serialization.SerializationException;
 
-public class VertexMetadataSerializeTest extends SerializeObject<VertexMetadata> {
-	public VertexMetadataSerializeTest() {
-		super(VertexMetadata.class, VertexMetadataSerializeTest::get);
-	}
-
-	private static VertexMetadata get() {
-		View view = View.of(1234567890L);
-		Hash id = Hash.random();
-
-		return new VertexMetadata(view, id);
+/**
+ * Hasher which uses the default dson serialization in order to construct hashes of objects.
+ */
+public final class DefaultHasher implements Hasher {
+	@Override
+	public Hash hash(Object o) {
+		try {
+			return Hash.of(DefaultSerialization.getInstance().toDson(o, Output.HASH));
+		} catch (SerializationException e) {
+			throw new IllegalArgumentException("Failed to serialize for hash", e);
+		}
 	}
 }

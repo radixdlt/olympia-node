@@ -22,6 +22,7 @@ import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.messages.VertexMessage;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.Hash;
@@ -32,14 +33,14 @@ public class VertexMessageSerializeTest extends SerializeMessageObject<VertexMes
 	}
 
 	private static VertexMessage get() {
-		View parentView = View.of(1234567890L);
-		View view = parentView.next();
-		Hash parentId = Hash.random();
+		View view = View.of(1234567891L);
 		Hash id = Hash.random();
 		Atom atom = new Atom();
 
-		VertexMetadata vertexMetadata = new VertexMetadata(view, id, parentView, parentId);
-		QuorumCertificate qc = new QuorumCertificate(vertexMetadata, new ECDSASignatures());
+		VertexMetadata vertexMetadata = new VertexMetadata(view, id);
+		VertexMetadata parent = new VertexMetadata(View.of(1234567890L), Hash.random());
+		VoteData voteData = new VoteData(vertexMetadata, parent);
+		QuorumCertificate qc = new QuorumCertificate(voteData, new ECDSASignatures());
 		Vertex vertex = new Vertex(qc, view, atom);
 		return new VertexMessage(1, vertex);
 	}

@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus;
 
+import com.google.inject.Inject;
 import com.radixdlt.consensus.validators.ValidationResult;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.crypto.ECDSASignature;
@@ -32,6 +33,12 @@ import java.util.Optional;
  */
 public final class PendingVotes {
 	private final HashMap<Hash, ECDSASignatures> pendingVotes = new HashMap<>();
+	private final Hasher hasher;
+
+	@Inject
+	public PendingVotes(Hasher hasher) {
+		this.hasher = Objects.requireNonNull(hasher);
+	}
 
 	/**
 	 * Inserts a vote for a given vertex, attempting to form a quorum certificate for that vertex.
@@ -43,21 +50,22 @@ public final class PendingVotes {
 	public Optional<QuorumCertificate> insertVote(Vote vote, ValidatorSet validatorSet) {
 		Objects.requireNonNull(vote, "vote");
 
-		Hash voteId = vote.getVertexMetadata().getId();
+		final Hash voteHash = hasher.hash(vote.getVoteData());
+
 		ECDSASignature signature = vote.getSignature().orElseThrow(() -> new IllegalArgumentException("vote is missing signature"));
-		ECDSASignatures signatures = pendingVotes.getOrDefault(voteId, new ECDSASignatures());
+		ECDSASignatures signatures = pendingVotes.getOrDefault(voteHash, new ECDSASignatures());
 		signatures = (ECDSASignatures) signatures.concatenate(vote.getAuthor(), signature);
 
 		// try to form a QC with the added signature according to the requirements
-		ValidationResult validationResult = validatorSet.validate(voteId, signatures);
+		ValidationResult validationResult = validatorSet.validate(voteHash, signatures);
 		if (!validationResult.valid()) {
 			// if no QC could be formed, update pending and return nothing
-			pendingVotes.put(voteId, signatures);
+			pendingVotes.put(voteHash, signatures);
 			return Optional.empty();
 		} else {
 			// if QC could be formed, remove pending and return formed QC
-			pendingVotes.remove(voteId);
-			QuorumCertificate qc = new QuorumCertificate(vote.getVertexMetadata(), signatures);
+			pendingVotes.remove(voteHash);
+			QuorumCertificate qc = new QuorumCertificate(vote.getVoteData(), signatures);
 			return Optional.of(qc);
 		}
 	}

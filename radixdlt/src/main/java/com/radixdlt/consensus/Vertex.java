@@ -95,11 +95,15 @@ public final class Vertex {
 	}
 
 	public Hash getParentId() {
-		return qc == null ? null : qc.getVertexMetadata().getId();
+		return qc == null ? null : qc.getProposed().getId();
 	}
 
 	public View getParentView() {
 		return qc == null ? View.of(0) : qc.getView();
+	}
+
+	public View getGrandParentView() {
+		return qc == null ? View.of(0) : qc.getParent() == null ? View.of(0) : qc.getParent().getView();
 	}
 
 	public QuorumCertificate getQC() {

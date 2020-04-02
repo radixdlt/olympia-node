@@ -141,9 +141,10 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 		log.info("{}: VOTE: Processing {}", this.getShortName(), vote);
 
 		// only do something if we're actually the leader for the vote
-		final View view = vote.getVertexMetadata().getView();
+		final View view = vote.getVoteData().getProposed().getView();
 		if (!Objects.equals(proposerElection.getProposer(view), selfKey.getPublicKey())) {
-			log.warn("{}: VOTE: Ignoring confused vote {} for {}", getShortName(), vote.hashCode(), vote.getVertexMetadata().getView());
+			log.warn("{}: VOTE: Ignoring confused vote {} for {}",
+				getShortName(), vote.hashCode(), vote.getVoteData().getProposed().getView());
 			return;
 		}
 
