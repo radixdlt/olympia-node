@@ -1,7 +1,7 @@
 package utils
 
 class CmdHelper {
-    static List runCommand(cmd, String[] env = null, failOnError = false) {
+    static List<String[]> runCommand(cmd, String[] env = null, failOnError = false) {
 
         Thread.sleep(1000)
         def sout = new StringBuffer()
@@ -19,7 +19,7 @@ class CmdHelper {
 
         List outPut, error
         if (sout) {
-            outPut = sout.collect { it }
+            outPut = sout.toString().split(System.lineSeparator()).collect({ it })
             println "-----------Output---------"
             sout.each { println it }
         }
@@ -28,7 +28,7 @@ class CmdHelper {
             println "-----------error---------"
 
             serr.each { println it }
-            error = serr.collect({ it })
+            error = serr.toString().split(System.lineSeparator()).collect({ it })
             if (failOnError) {
                 throw new Exception(error.toString())
             }

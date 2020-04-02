@@ -39,7 +39,7 @@ class ConsensusTest {
                     socketAddressPort: 50507
 
             ]]
-
+    String sentMessageAID
 
     @Given('^I have (.*) network with (.*) nodes$')
     void iHaveNetworkWithThreeNodes(String networkName, int numberOfNodes) {
@@ -67,14 +67,29 @@ class ConsensusTest {
         ]
         Thread.sleep(5000)
         def sendMessageCmd = "java -jar target/cli/radixdlt-cli-all.jar send-message ${listToDelimitedString(sendMessageOptions, ' ')}"
-        def output,error
+        List<String[]> output, error
         (output, error) = runCommand(sendMessageCmd,
                 ["RADIX_BOOTSTRAP_TRUSTED_NODE=http://localhost:${dockerOptions.core1Options.hostPort}"] as String[], true)
-        println output.find({ it.contains("AtomID") }).toString()
+        def filtered = output.find({ it.contains("AtomID") })
+        def extracted = filtered =~ /AtomID of resulting atom : (.*)/
+        sentMessageAID = extracted[0][1]
     }
 
     @Then("corresponding atom of the message should be available on atom store of all nodes")
     void correspondingAtomOfTheMessageShouldBeAvailableOnAtomStoreOfAllNodes() {
+        println "Checking Atom ${sentMessageAID}"
 
+        List getAtomsOptions = [
+                "--keystore=${System.getProperty('user.dir')}/src/test/resources/keystore/shambu-key.json",
+                "--password=shambu",
+        ]
+
+        def sendMessageCmd = "java -jar target/cli/radixdlt-cli-all.jar get-stored-atoms ${listToDelimitedString(getAtomsOptions, ' ')}"
+        dockerOptions.keySet().each {
+            List<String[]> output, error
+            (output, error) = runCommand(sendMessageCmd,
+                    ["RADIX_BOOTSTRAP_TRUSTED_NODE=http://localhost:${dockerOptions[it].hostPort}"] as String[], true)
+            assert output.find({ it.contains(sentMessageAID) }) != null
+        }
     }
 }
