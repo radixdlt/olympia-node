@@ -30,6 +30,7 @@ import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
+import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
@@ -419,7 +420,7 @@ public class Universe {
 		this.signature = signature;
 	}
 
-	public void sign(ECKeyPair key) throws CryptoException {
+	public void sign(ECKeyPair key) {
 		this.signature = key.sign(getHash());
 	}
 
@@ -430,8 +431,8 @@ public class Universe {
 	private Hash doGetHash() {
 		try {
 			return Hash.of(DefaultSerialization.getInstance().toDson(this, Output.HASH));
-		} catch (Exception e) {
-			throw new RuntimeException("Error generating hash: " + e, e);
+		} catch (SerializationException e) {
+			throw new IllegalStateException("Error generating hash", e);
 		}
 	}
 
