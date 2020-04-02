@@ -31,7 +31,7 @@ public class TestEventCoordinatorNetworkTest {
 
 	@Test
 	public void when_send_new_view_to_self__then_should_receive_it() {
-		TestEventCoordinatorNetwork network = new TestEventCoordinatorNetwork(TEST_LOOPBACK_DELAY);
+		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.perfect(TEST_LOOPBACK_DELAY);
 		TestObserver<NewView> testObserver = TestObserver.create();
 		network.getNetworkRx(EUID.ONE).newViewMessages()
 			.subscribe(testObserver);
@@ -43,7 +43,7 @@ public class TestEventCoordinatorNetworkTest {
 
 	@Test
 	public void when_send_vote_to_self__then_should_receive_it() {
-		TestEventCoordinatorNetwork network = new TestEventCoordinatorNetwork(TEST_LOOPBACK_DELAY);
+		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.perfect(TEST_LOOPBACK_DELAY);
 		TestObserver<Vote> testObserver = TestObserver.create();
 		network.getNetworkRx(EUID.ONE).voteMessages()
 			.subscribe(testObserver);
@@ -55,7 +55,7 @@ public class TestEventCoordinatorNetworkTest {
 
 	@Test
 	public void when_broadcast_proposal__then_should_receive_it() {
-		TestEventCoordinatorNetwork network = new TestEventCoordinatorNetwork(TEST_LOOPBACK_DELAY);
+		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.perfect(TEST_LOOPBACK_DELAY);
 		TestObserver<Vertex> testObserver = TestObserver.create();
 		network.getNetworkRx(EUID.ONE).proposalMessages()
 			.subscribe(testObserver);
@@ -67,7 +67,7 @@ public class TestEventCoordinatorNetworkTest {
 
 	@Test
 	public void when_disable_and_then_send_new_view_to_self__then_should_receive_it() {
-		TestEventCoordinatorNetwork network = new TestEventCoordinatorNetwork(TEST_LOOPBACK_DELAY);
+		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.perfect(TEST_LOOPBACK_DELAY);
 		TestObserver<NewView> testObserver = TestObserver.create();
 		network.setSendingDisable(EUID.ONE, true);
 		network.getNetworkRx(EUID.ONE).newViewMessages()
@@ -79,7 +79,7 @@ public class TestEventCoordinatorNetworkTest {
 
 	@Test
 	public void when_disable_receive_and_other_sends_view_to_self__then_should_receive_it() {
-		TestEventCoordinatorNetwork network = new TestEventCoordinatorNetwork(TEST_LOOPBACK_DELAY);
+		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.perfect(TEST_LOOPBACK_DELAY);
 		TestObserver<NewView> testObserver = TestObserver.create();
 		network.setReceivingDisable(EUID.ONE, true);
 		network.getNetworkRx(EUID.ONE).newViewMessages()
@@ -91,7 +91,7 @@ public class TestEventCoordinatorNetworkTest {
 
 	@Test
 	public void when_disable_then_reenable_receive_and_other_sends_view_to_self__then_should_receive_it() {
-		TestEventCoordinatorNetwork network = new TestEventCoordinatorNetwork(TEST_LOOPBACK_DELAY);
+		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.perfect(TEST_LOOPBACK_DELAY);
 		TestObserver<NewView> testObserver = TestObserver.create();
 		network.setReceivingDisable(EUID.ONE, true);
 		network.setReceivingDisable(EUID.ONE, false);

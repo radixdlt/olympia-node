@@ -28,6 +28,7 @@ import io.reactivex.rxjava3.subjects.PublishSubject;
 
 import java.util.Collections;
 import java.util.Objects;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
@@ -36,21 +37,59 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 /**
- * Overly simplistic network implementation that just sends messages to itself.
+ * Simple simulated network implementation that just sends messages to itself with a configurable delay.
  */
 public class TestEventCoordinatorNetwork {
-	private final int loopbackDelay;
+	private final Random rng;
+	private final int minimumDelay;
+	private final int maximumDelay;
+
 	private final PublishSubject<MessageInTransit> messages;
 	private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 	private final Set<EUID> sendingDisabled = Collections.newSetFromMap(new ConcurrentHashMap<>());
 	private final Set<EUID> receivingDisabled = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
-	public TestEventCoordinatorNetwork(int loopbackDelay) {
-		if (loopbackDelay < 0) {
-			throw new IllegalArgumentException("loopbackDelay must be >= 0 but was " + loopbackDelay);
+	private TestEventCoordinatorNetwork(int minimumDelay, int maximumDelay, long rngSeed) {
+		if (minimumDelay < 0) {
+			throw new IllegalArgumentException("minimumDelay must be >= 0 but was " + minimumDelay);
 		}
-		this.loopbackDelay = loopbackDelay;
+		if (maximumDelay < 0) {
+			throw new IllegalArgumentException("maximumDelay must be >= 0 but was " + maximumDelay);
+		}
+		this.minimumDelay = minimumDelay;
+		this.maximumDelay = maximumDelay;
+		this.rng = new Random(rngSeed);
 		this.messages = PublishSubject.create();
+	}
+
+	/**
+	 * Creates a perfect simulated network with a fixed delay.
+	 * @param fixedDelay The fixed delay (may be 0)
+	 * @return a network
+	 */
+	public static TestEventCoordinatorNetwork perfect(int fixedDelay) {
+		return new TestEventCoordinatorNetwork(fixedDelay, fixedDelay, 0);
+	}
+
+	/**
+	 * Creates an unreliable simulated network with a randomised bounded delay.
+	 * @param minimumDelay The minimum delay (inclusive)
+	 * @param maximumDelay The maximum delay (inclusive)
+	 * @return a network
+	 */
+	public static TestEventCoordinatorNetwork unreliable(int minimumDelay, int maximumDelay) {
+		return unreliable(minimumDelay, maximumDelay, System.currentTimeMillis());
+	}
+
+	/**
+	 * Creates an unreliable simulated network with a randomised bounded delay.
+	 * @param minimumDelay The minimum delay (inclusive)
+	 * @param maximumDelay The maximum delay (inclusive)
+	 * @param rngSeed The seed to use for random operations
+	 * @return a network
+	 */
+	public static TestEventCoordinatorNetwork unreliable(int minimumDelay, int maximumDelay, long rngSeed) {
+		return new TestEventCoordinatorNetwork(minimumDelay, maximumDelay, rngSeed);
 	}
 
 	public void setSendingDisable(EUID euid, boolean disable) {
@@ -69,10 +108,18 @@ public class TestEventCoordinatorNetwork {
 		}
 	}
 
+	private int getRandomDelay() {
+		if (minimumDelay == maximumDelay) {
+			return minimumDelay;
+		} else {
+			return minimumDelay + rng.nextInt(maximumDelay - minimumDelay + 1);
+		}
+	}
+
 	public EventCoordinatorNetworkSender getNetworkSender(EUID forNode) {
 		Consumer<MessageInTransit> sendMessageSink = message -> {
 			if (!sendingDisabled.contains(forNode)) {
-				executorService.schedule(() -> messages.onNext(message), loopbackDelay, TimeUnit.MILLISECONDS);
+				executorService.schedule(() -> messages.onNext(message), getRandomDelay(), TimeUnit.MILLISECONDS);
 			}
 		};
 		return new EventCoordinatorNetworkSender() {
