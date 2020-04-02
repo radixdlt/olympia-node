@@ -1,5 +1,7 @@
 package utils
 
+import static utils.Generic.listToDelimitedString
+
 class CmdHelper {
     static List<String[]> runCommand(cmd, String[] env = null, failOnError = false) {
 
@@ -39,7 +41,7 @@ class CmdHelper {
 
     static List node(options) {
         String[] env = ["JAVA_OPTS=-server -Xms2g -Xmx2g -Djava.security.egd=file:/dev/urandom -Dcom.sun.management.jmxremote.port=${options.rmiPort} -Dcom.sun.management.jmxremote.rmi.port=${options.rmiPort} -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=localhost -agentlib:jdwp=transport=dt_socket,address=${options.socketAddressPort},suspend=n,server=y",
-                        "RADIXDLT_NETWORK_SEEDS_REMOTE=${Generic.listToDelimitedString(options.remoteSeeds)}",
+                        "RADIXDLT_NETWORK_SEEDS_REMOTE=${listToDelimitedString(options.remoteSeeds)}",
                         "RADIXDLT_CONSENSUS_FIXED_QUORUM_SIZE=${options.quorumSize}",
 
         ]
@@ -72,11 +74,31 @@ class CmdHelper {
 
     }
 
-    static void removeAllDockerContainers(){
-        def psOutput,psError
-        (psOutput,psError)=runCommand("docker ps")
-        psOutput.findAll({!it.contains("IMAGE")}).collect({it ->
-            return it.split(" ")[0]
-        }).each { it -> runCommand("docker rm -f ${it}") }
+    static void removeAllDockerContainers(String name = "core") {
+        def psOutput, psError
+        (psOutput, psError) = runCommand("docker ps -a")
+        psOutput
+                .findAll({ !it.contains("IMAGE") })
+                .findAll({ it.contains(name) })
+                .collect({ return it.split(" ")[0] })
+                .each { runCommand("docker rm -f ${it}") }
+    }
+
+    static void checkNGenerateKey() {
+        def file = new File(Generic.keyStorePath())
+        if (!file.exists()) {
+            List options = ["generate-key", "--password=test123"]
+            def key, error
+            (key, error) = runCommand("java -jar ${Generic.pathToCLIJar()} ${listToDelimitedString(options, ' ')}", null, true)
+            file.withWriter('UTF-8') { writer ->
+                key.each {
+                    writer.write(it)
+                }
+            }
+        }
+    }
+
+    static String radixCliCommand(List cmdOptions){
+        return "java -jar ${Generic.pathToCLIJar()} ${listToDelimitedString(cmdOptions, ' ')}"
     }
 }

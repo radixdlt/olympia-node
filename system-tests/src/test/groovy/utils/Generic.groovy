@@ -1,7 +1,7 @@
 package utils
 
 class Generic {
-    public static String listToDelimitedString(List array, String delimiter = ",") {
+    static String listToDelimitedString(List array, String delimiter = ",") {
         String str = ""
         array.collect {
             it ->
@@ -11,5 +11,13 @@ class Generic {
                     str += "${it}${delimiter}"
         }
         return str
+    }
+
+    static String keyStorePath() {
+        return "${System.getProperty('user.dir')}/src/test/resources/keystore/test-key.json"
+    }
+
+    static String pathToCLIJar() {
+        return "target/cli/radixdlt-cli-all.jar"
     }
 }
