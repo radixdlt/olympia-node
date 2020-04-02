@@ -17,33 +17,29 @@
 
 package com.radixdlt.network;
 
-import com.radixdlt.identifiers.EUID;
 import com.radixdlt.consensus.EventCoordinatorNetworkRx;
 import com.radixdlt.consensus.EventCoordinatorNetworkSender;
+import com.radixdlt.consensus.NewView;
+import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.Vote;
+import com.radixdlt.identifiers.EUID;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
-import java.util.AbstractMap.SimpleEntry;
+
 import java.util.Collections;
-import java.util.Map;
-import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import com.radixdlt.consensus.NewView;
-import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.Vote;
-
 /**
  * Overly simplistic network implementation that just sends messages to itself.
  */
 public class TestEventCoordinatorNetwork {
 	private final int loopbackDelay;
-	private final PublishSubject<Vertex> proposals;
-	private final PublishSubject<Map.Entry<NewView, EUID>> newViews;
-	private final PublishSubject<Map.Entry<Vote, EUID>> votes;
+	private final PublishSubject<MessageInTransit> messages;
 	private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 	private final Set<EUID> sendingDisabled = Collections.newSetFromMap(new ConcurrentHashMap<>());
 	private final Set<EUID> receivingDisabled = Collections.newSetFromMap(new ConcurrentHashMap<>());
@@ -53,9 +49,7 @@ public class TestEventCoordinatorNetwork {
 			throw new IllegalArgumentException("loopbackDelay must be >= 0 but was " + loopbackDelay);
 		}
 		this.loopbackDelay = loopbackDelay;
-		this.proposals = PublishSubject.create();
-		this.newViews = PublishSubject.create();
-		this.votes = PublishSubject.create();
+		this.messages = PublishSubject.create();
 	}
 
 	public void setSendingDisable(EUID euid, boolean disable) {
@@ -80,7 +74,7 @@ public class TestEventCoordinatorNetwork {
 			public void broadcastProposal(Vertex vertex) {
 				if (!sendingDisabled.contains(euid)) {
 					executorService.schedule(
-						() -> proposals.onNext(vertex),
+						() -> messages.onNext(MessageInTransit.broadcast(vertex)),
 						loopbackDelay,
 						TimeUnit.MILLISECONDS
 					);
@@ -91,7 +85,7 @@ public class TestEventCoordinatorNetwork {
 			public void sendNewView(NewView newView, EUID newViewLeader) {
 				if (!sendingDisabled.contains(euid)) {
 					executorService.schedule(
-						() -> newViews.onNext(new SimpleEntry<>(newView, newViewLeader)),
+						() -> messages.onNext(MessageInTransit.send(newView, newViewLeader)),
 						loopbackDelay,
 						TimeUnit.MILLISECONDS
 					);
@@ -102,7 +96,7 @@ public class TestEventCoordinatorNetwork {
 			public void sendVote(Vote vote, EUID leader) {
 				if (!sendingDisabled.contains(euid)) {
 					executorService.schedule(
-						() -> votes.onNext(new SimpleEntry<>(vote, leader)),
+						() -> messages.onNext(MessageInTransit.send(vote, leader)),
 						loopbackDelay,
 						TimeUnit.MILLISECONDS
 					);
@@ -111,27 +105,53 @@ public class TestEventCoordinatorNetwork {
 		};
 	}
 
-	public EventCoordinatorNetworkRx getNetworkRx(EUID euid) {
+	public EventCoordinatorNetworkRx getNetworkRx(EUID forNode) {
+		// filter only relevant messages (appropriate target and if receiving is allowed)
+		Observable<Object> myMessages = messages
+			.filter(message -> !receivingDisabled.contains(forNode))
+			.filter(message -> message.isRelevantFor(forNode))
+			.map(MessageInTransit::getContent);
 		return new EventCoordinatorNetworkRx() {
 			@Override
 			public Observable<Vertex> proposalMessages() {
-				return proposals
-					.filter(p -> !receivingDisabled.contains(euid));
+				return myMessages.ofType(Vertex.class);
 			}
 
 			@Override
 			public Observable<NewView> newViewMessages() {
-				return newViews
-					.filter(e -> e.getValue().equals(euid) && !receivingDisabled.contains(euid))
-					.map(Entry::getKey);
+				return myMessages.ofType(NewView.class);
 			}
 
 			@Override
 			public Observable<Vote> voteMessages() {
-				return votes
-					.filter(e -> e.getValue().equals(euid) && !receivingDisabled.contains(euid))
-					.map(Entry::getKey);
+				return myMessages.ofType(Vote.class);
 			}
 		};
+	}
+
+	private static final class MessageInTransit {
+		private final Object content;
+		private final EUID target; // may be null if broadcast
+
+		private MessageInTransit(Object content, EUID target) {
+			this.content = Objects.requireNonNull(content);
+			this.target = target;
+		}
+
+		private static MessageInTransit broadcast(Object content) {
+			return new MessageInTransit(content, null);
+		}
+
+		private static MessageInTransit send(Object content, EUID receiver) {
+			return new MessageInTransit(content, receiver);
+		}
+
+		private Object getContent() {
+			return this.content;
+		}
+
+		private boolean isRelevantFor(EUID node) {
+			return target == null || node.equals(target);
+		}
 	}
 }
