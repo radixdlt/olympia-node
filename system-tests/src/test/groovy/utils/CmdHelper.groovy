@@ -55,4 +55,20 @@ class CmdHelper {
         return [env as String[], dockerContainer]
     }
 
+
+    static Map getDockerOptions(int numberOfnode, int quorumSize) {
+
+        List<String> nodeNames = (1..numberOfnode).collect({ return "core${it}".toString() })
+        return nodeNames.withIndex().collectEntries { node, index ->
+            Map options = [:]
+            options.nodeName = node
+            options.quorumSize = quorumSize
+            options.remoteSeeds = nodeNames.findAll({ it != node })
+            options.hostPort = 1080 + index
+            options.rmiPort = 9010 + index
+            options.socketAddressPort = 50505 + index
+            return [(node): options]
+        }
+
+    }
 }
