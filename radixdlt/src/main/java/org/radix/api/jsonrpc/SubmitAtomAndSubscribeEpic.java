@@ -20,7 +20,7 @@ package org.radix.api.jsonrpc;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-import com.radixdlt.common.AID;
+import com.radixdlt.identifiers.AID;
 import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;

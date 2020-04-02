@@ -17,6 +17,7 @@
 
 package com.radixdlt;
 
+import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
@@ -24,6 +25,7 @@ import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 import com.radixdlt.consensus.BasicEpochRx;
 import com.radixdlt.consensus.EpochRx;
+import com.radixdlt.consensus.ProposerElectionFactory;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
@@ -32,6 +34,7 @@ import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.PacemakerImpl;
 import com.radixdlt.consensus.liveness.PacemakerRx;
+import com.radixdlt.consensus.liveness.RotatingLeaders;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.tempo.Scheduler;
 import com.radixdlt.consensus.tempo.SingleThreadedScheduler;
@@ -70,6 +73,12 @@ public class CerberusModule extends AbstractModule {
 
 	@Provides
 	@Singleton
+	private ProposerElectionFactory proposerElectionFactory() {
+		return keys -> new RotatingLeaders(ImmutableList.copyOf(keys));
+	}
+
+	@Provides
+	@Singleton
 	private EpochRx epochRx(
 		@Named("self") ECKeyPair selfKey,
 		AddressBook addressBook
@@ -89,7 +98,10 @@ public class CerberusModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private PacemakerImpl pacemaker() {
-		return new PacemakerImpl(Executors.newSingleThreadScheduledExecutor());
+		final int pacemakerTimeout = Integer.parseInt(
+			runtimeProperties.get("consensus.pacemaker_timeout_millis", "5000")
+		);
+		return new PacemakerImpl(pacemakerTimeout, Executors.newSingleThreadScheduledExecutor());
 	}
 
 	@Provides

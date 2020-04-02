@@ -17,7 +17,7 @@
 
 package org.radix.serialization;
 
-import com.radixdlt.atomos.RadixAddress;
+import com.radixdlt.identifiers.RadixAddress;
 
 public class RadixAddressSerializeTest extends SerializeValue<RadixAddress> {
 	public RadixAddressSerializeTest() {

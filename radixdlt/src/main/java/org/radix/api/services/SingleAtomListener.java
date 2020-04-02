@@ -17,7 +17,7 @@
 
 package org.radix.api.services;
 
-import com.radixdlt.common.AID;
+import com.radixdlt.identifiers.AID;
 
 public interface SingleAtomListener {
 	void onStored(boolean first);

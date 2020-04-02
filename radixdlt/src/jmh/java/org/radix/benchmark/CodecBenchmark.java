@@ -18,6 +18,7 @@
 package org.radix.benchmark;
 
 
+import com.radixdlt.DefaultSerialization;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.infra.Blackhole;
 import org.radix.logging.Logging;
@@ -65,7 +66,7 @@ public class CodecBenchmark {
 		try {
 			TestSetupUtils.installBouncyCastleProvider();
 
-			serialization = Serialization.getDefault();
+			serialization = DefaultSerialization.getInstance();
 
 			testObject = new DummyTestObject(true);
 

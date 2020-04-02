@@ -89,7 +89,7 @@ public final class Vote {
 	@Override
 	public String toString() {
 		return String.format("%s{author=%s view=%s}", getClass().getSimpleName(),
-			author.getUID().toString().substring(0, 6), vertexMetadata.getView());
+			author.euid().toString().substring(0, 6), vertexMetadata.getView());
 	}
 
 	@Override

@@ -80,7 +80,6 @@ public abstract class SerializeObject<T> extends RadixTest {
 		Serialization s = getSerialization();
 		T initialObj = factory.get();
 		String initialJson = s.toJson(initialObj, Output.ALL);
-		System.out.println(initialJson);
 		T deserialisedObj = s.fromJson(initialJson, this.cls);
 		assertEquals(initialObj, deserialisedObj);
 	}

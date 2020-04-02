@@ -29,7 +29,7 @@ import org.radix.network2.transport.udp.UDPConstants;
 import org.radix.universe.system.RadixSystem;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.common.EUID;
+import com.radixdlt.identifiers.EUID;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;

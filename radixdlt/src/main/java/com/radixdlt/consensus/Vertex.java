@@ -19,10 +19,10 @@ package com.radixdlt.consensus;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Suppliers;
-import com.radixdlt.common.Atom;
+import com.radixdlt.DefaultSerialization;
+import com.radixdlt.atommodel.Atom;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
@@ -84,7 +84,7 @@ public final class Vertex {
 
 	private Hash doGetHash() {
 		try {
-			return new Hash(Hash.hash256(Serialization.getDefault().toDson(this, Output.HASH)));
+			return Hash.of(DefaultSerialization.getInstance().toDson(this, Output.HASH));
 		} catch (Exception e) {
 			throw new IllegalStateException("Error generating hash: " + e, e);
 		}
@@ -104,6 +104,10 @@ public final class Vertex {
 
 	public QuorumCertificate getQC() {
 		return qc;
+	}
+
+	public boolean hasDirectParent() {
+		return this.view.equals(this.getParentView().next());
 	}
 
 	public View getView() {
@@ -131,7 +135,7 @@ public final class Vertex {
 
 	@Override
 	public String toString() {
-		return String.format("Vertex{view=%s, atom=%s, qc=%s}", view, atom, qc);
+		return String.format("Vertex{view=%s, qc=%s, atom=%s}", view, qc, atom == null ? null : atom.getAID());
 	}
 
 	@Override

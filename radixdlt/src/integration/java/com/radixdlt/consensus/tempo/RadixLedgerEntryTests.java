@@ -32,7 +32,7 @@ public class RadixLedgerEntryTests extends RadixTestWithStores {
 
 	@Test
 	public void store_atom() throws Exception {
-		ECKeyPair identity = new ECKeyPair();
+		ECKeyPair identity = ECKeyPair.generateNew();
 
 		List<LedgerEntry> ledgerEntries = ledgerEntryGenerator.createLedgerEntries(identity, 1);
 		LedgerEntryStore store = getStore();
@@ -45,7 +45,7 @@ public class RadixLedgerEntryTests extends RadixTestWithStores {
 
 	@Test
 	public void store_duplicate_atom() throws Exception {
-		ECKeyPair identity = new ECKeyPair();
+		ECKeyPair identity = ECKeyPair.generateNew();
 
 		List<LedgerEntry> ledgerEntries = ledgerEntryGenerator.createLedgerEntries(identity, 1);
 		getStore().store(ledgerEntries.get(0), ImmutableSet.of(), ImmutableSet.of());
@@ -54,7 +54,7 @@ public class RadixLedgerEntryTests extends RadixTestWithStores {
 
 	@Test
 	public void store_atom__replace_atom__get_replacement__get_original() throws Exception {
-		ECKeyPair identity = new ECKeyPair();
+		ECKeyPair identity = ECKeyPair.generateNew();
 
 		List<LedgerEntry> ledgerEntries = ledgerEntryGenerator.createLedgerEntries(identity, 2);
 		getStore().store(ledgerEntries.get(0), ImmutableSet.of(), ImmutableSet.of());

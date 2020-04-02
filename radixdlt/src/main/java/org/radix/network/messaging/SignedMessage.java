@@ -20,45 +20,42 @@ package org.radix.network.messaging;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public abstract class SignedMessage extends Message
-{
-	@JsonProperty("key")
-	@DsonOutput(Output.ALL)
-	private ECKeyPair key;
+public abstract class SignedMessage extends Message {
 
 	@JsonProperty("signature")
-	@DsonOutput(Output.ALL)
+	@DsonOutput(value = { Output.HASH }, include = false)
 	private ECDSASignature signature;
 
 	@Override
-	public short VERSION() { return 100; }
+	public short VERSION() {
+		return 100;
+	}
 
-	protected SignedMessage(int magic)
-	{
+	protected SignedMessage(int magic) {
 		super(magic);
 	}
 
 	// SIGNABLE //
-	public final ECDSASignature getSignature()
-	{
+	public final ECDSASignature getSignature() {
 		return this.signature;
 	}
 
-	public final void setSignature(ECDSASignature signature)
-	{
+	public final void setSignature(ECDSASignature signature) {
 		this.signature = signature;
 	}
 
-	public void sign(ECKeyPair key) throws CryptoException
-	{
-		this.key = key;
-		this.signature = key.sign(getHash());
+
+	public void sign(ECKeyPair key) {
+		sign(key, false);
+	}
+
+	public void sign(ECKeyPair key, boolean deterministic) {
+		this.signature = key.sign(getHash().toByteArray(), true, deterministic);
 	}
 
 	public boolean verify(ECPublicKey key) {

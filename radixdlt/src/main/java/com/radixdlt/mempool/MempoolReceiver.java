@@ -23,7 +23,7 @@ import org.radix.logging.Logger;
 import org.radix.logging.Logging;
 
 import com.google.inject.Inject;
-import com.radixdlt.common.Atom;
+import com.radixdlt.atommodel.Atom;
 
 import io.reactivex.rxjava3.disposables.Disposable;
 
@@ -78,7 +78,7 @@ public final class MempoolReceiver {
 		try {
 			this.submissionControl.submitAtom(atom);
 		} catch (MempoolRejectedException ex) {
-			log.info(String.format("Mempool rejected atom %s", atom.getAID()), ex);
+			log.info(String.format("Mempool rejected atom %s: %s", atom.getAID(), ex.getMessage()));
 		}
 	}
 }

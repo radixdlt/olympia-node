@@ -17,8 +17,8 @@
 
 package com.radixdlt.consensus.safety;
 
-import com.radixdlt.atomos.RadixAddress;
-import com.radixdlt.common.EUID;
+import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexInsertionException;
@@ -47,15 +47,15 @@ public class SafetyRulesTest {
 	private static SafetyRules createDefaultSafetyRules(VertexStore vertexStore) {
 		ECKeyPair keyPair = mock(ECKeyPair.class);
 		when(keyPair.getPublicKey()).thenReturn(SELF);
-		when(keyPair.getUID()).thenReturn(EUID.ONE);
+		when(keyPair.euid()).thenReturn(EUID.ONE);
 		RadixAddress address = mock(RadixAddress.class);
-		when(address.getKey()).thenReturn(SELF);
+		when(address.getPublicKey()).thenReturn(SELF);
 		return new SafetyRules(keyPair, vertexStore, SafetyState.initialState());
 	}
 
 	private static ECPublicKey makePubKey(EUID id) {
 		ECPublicKey pubKey = mock(ECPublicKey.class);
-		when(pubKey.getUID()).thenReturn(id);
+		when(pubKey.euid()).thenReturn(id);
 		return pubKey;
 	}
 

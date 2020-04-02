@@ -26,7 +26,6 @@ import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.VertexStore;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.Vote;
-import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
@@ -135,13 +134,10 @@ public final class SafetyRules {
 			proposedVertex.getQC().getView(),
 			proposedVertex.getQC().getVertexMetadata().getId()
 		);
-		try {
-			// TODO make signing more robust by including author in signed hash
-			ECDSASignature signature = this.selfKey.sign(proposedVertex.getId());
-			return new Vote(selfKey.getPublicKey(), vertexMetadata, signature);
-		} catch (CryptoException e) {
-			throw new IllegalStateException("Failed to sign proposed vertex " + proposedVertex, e);
-		}
+
+		// TODO make signing more robust by including author in signed hash
+		ECDSASignature signature = this.selfKey.sign(proposedVertex.getId());
+		return new Vote(selfKey.getPublicKey(), vertexMetadata, signature);
 	}
 
 	@VisibleForTesting SafetyState getState() {

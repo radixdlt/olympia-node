@@ -21,7 +21,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
-import com.radixdlt.common.EUID;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.properties.RuntimeProperties;
 
 import org.assertj.core.api.SoftAssertions;

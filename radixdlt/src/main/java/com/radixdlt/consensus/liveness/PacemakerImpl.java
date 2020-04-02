@@ -28,28 +28,37 @@ import com.radixdlt.utils.Longs;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 
+import io.reactivex.rxjava3.subjects.Subject;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import org.radix.logging.Logger;
+import org.radix.logging.Logging;
 
 /**
  * Overly simplistic pacemaker
  */
 public final class PacemakerImpl implements Pacemaker, PacemakerRx {
-	static final int TIMEOUT_MILLISECONDS = 1000;
-	private final PublishSubject<View> timeouts;
+	private static final Logger log = Logging.getLogger("PM");
+
+	private final int timeoutMilliseconds;
+	private final Subject<View> timeouts;
 	private final Observable<View> timeoutsObservable;
 	private final ScheduledExecutorService executorService;
 
 	private final Map<View, ECDSASignatures> pendingNewViews = new HashMap<>();
 	private View currentView = View.of(0L);
 
-	public PacemakerImpl(ScheduledExecutorService executorService) {
+	public PacemakerImpl(int timeoutMilliseconds, ScheduledExecutorService executorService) {
+		if (timeoutMilliseconds <= 0) {
+			throw new IllegalArgumentException("timeoutMilliseconds must be > 0 but was " + timeoutMilliseconds);
+		}
+		this.timeoutMilliseconds = timeoutMilliseconds;
 		this.executorService = Objects.requireNonNull(executorService);
-		this.timeouts = PublishSubject.create();
+		this.timeouts = PublishSubject.<View>create().toSerialized();
 		this.timeoutsObservable = this.timeouts
 			.publish()
 			.refCount()
@@ -57,9 +66,8 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 	}
 
 	private void scheduleTimeout(final View timeoutView) {
-		executorService.schedule(() -> {
-			timeouts.onNext(timeoutView);
-		}, TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS);
+		log.info("Starting View: " + timeoutView);
+		executorService.schedule(() -> timeouts.onNext(timeoutView), timeoutMilliseconds, TimeUnit.MILLISECONDS);
 	}
 
 	@Override
@@ -81,7 +89,7 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 
 	@Override
 	public Optional<View> processNewView(NewView newView, ValidatorSet validatorSet) {
-		Hash newViewId = new Hash(Hash.hash256(Longs.toByteArray(newView.getView().number())));
+		Hash newViewId = Hash.of(Longs.toByteArray(newView.getView().number()));
 		ECDSASignature signature = newView.getSignature().orElseThrow(() -> new IllegalArgumentException("new-view is missing signature"));
 		ECDSASignatures signatures = pendingNewViews.getOrDefault(newView.getView(), new ECDSASignatures());
 		signatures = (ECDSASignatures) signatures.concatenate(newView.getAuthor(), signature);
@@ -93,9 +101,20 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 			pendingNewViews.put(newView.getView(), signatures);
 			return Optional.empty();
 		} else {
-			// if we got enough new-views, remove pending and return formed QC
-			pendingNewViews.remove(newView.getView());
-			return Optional.of(newView.getView());
+			// if we got enough new-views and, receive the current leader's new-view, proceed to next view
+			if (newView.getView().compareTo(this.currentView) > 0
+				&& newView.getQC().getView().equals(this.currentView)) {
+				this.currentView = newView.getView();
+				scheduleTimeout(this.currentView);
+			}
+
+			if (newView.getView().equals(this.currentView)) {
+				pendingNewViews.remove(newView.getView());
+				return Optional.of(this.currentView);
+			} else {
+				log.info("Ignoring New View Quorum: " + newView.getView() + " Current is: " + this.currentView);
+				return Optional.empty();
+			}
 		}
 	}
 

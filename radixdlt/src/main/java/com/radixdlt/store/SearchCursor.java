@@ -17,7 +17,7 @@
 
 package com.radixdlt.store;
 
-import com.radixdlt.common.AID;
+import com.radixdlt.identifiers.AID;
 
 /**
  * A ledger cursor, bound to a specific ledger instance.

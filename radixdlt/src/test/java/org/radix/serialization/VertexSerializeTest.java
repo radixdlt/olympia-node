@@ -18,8 +18,8 @@
 package org.radix.serialization;
 
 import com.radixdlt.atommodel.message.MessageParticle;
-import com.radixdlt.atomos.RadixAddress;
-import com.radixdlt.common.Atom;
+import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.atommodel.Atom;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.Vertex;

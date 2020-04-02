@@ -126,6 +126,6 @@ public final class NewView {
 
 	@Override
 	public String toString() {
-		return String.format("%s{view=%s qc=%s author=%s}", getClass().getSimpleName(), view, qc, author.getUID().toString().substring(0, 6));
+		return String.format("%s{view=%s qc=%s author=%s}", getClass().getSimpleName(), view, qc, author.euid().toString().substring(0, 6));
 	}
 }

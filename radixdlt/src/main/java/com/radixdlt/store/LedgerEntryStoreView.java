@@ -18,7 +18,7 @@
 package com.radixdlt.store;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.common.AID;
+import com.radixdlt.identifiers.AID;
 
 import java.util.Optional;
 import java.util.Set;

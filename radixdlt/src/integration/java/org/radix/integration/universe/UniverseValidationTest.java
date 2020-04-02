@@ -17,7 +17,7 @@
 
 package org.radix.integration.universe;
 
-import com.radixdlt.common.Atom;
+import com.radixdlt.atommodel.Atom;
 import org.junit.Test;
 import org.radix.integration.RadixTest;
 import com.radixdlt.universe.Universe;

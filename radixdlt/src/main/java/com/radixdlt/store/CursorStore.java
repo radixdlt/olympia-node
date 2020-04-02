@@ -17,7 +17,7 @@
 
 package com.radixdlt.store;
 
-import com.radixdlt.common.EUID;
+import com.radixdlt.identifiers.EUID;
 
 import java.util.OptionalLong;
 

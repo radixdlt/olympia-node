@@ -17,6 +17,10 @@
 
 package org.radix.serialization;
 
+import com.google.common.base.Strings;
+import com.radixdlt.crypto.CryptoException;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.utils.Bytes;
 import org.radix.network.messages.PeerPingMessage;
 
 /**
@@ -28,6 +32,13 @@ public class PeerPingMessageSerializeTest extends SerializeMessageObject<PeerPin
 	}
 
 	private static PeerPingMessage get() {
-		return new PeerPingMessage(17L, getLocalSystem(), 1);
+		try {
+			PeerPingMessage pingMessage = new PeerPingMessage(17L, getLocalSystem(), 1);
+			ECKeyPair keyPair = new ECKeyPair(Bytes.fromHexString(Strings.repeat("deadbeef", 8)));
+			pingMessage.sign(keyPair, true);
+			return pingMessage;
+		} catch (CryptoException e) {
+			throw new IllegalStateException("Failed to create key", e);
+		}
 	}
 }
