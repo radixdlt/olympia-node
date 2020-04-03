@@ -28,7 +28,6 @@ import org.assertj.core.api.SoftAssertions;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
@@ -65,34 +64,22 @@ import static org.assertj.core.data.Offset.offset;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
 import static org.powermock.api.mockito.PowerMockito.when;
 
 public class PeerManagerTest extends RadixTest {
-    private MessageCentral messageCentral;
     private PeerManager peerManager;
     private AddressBook addressBook;
     private BootstrapDiscovery bootstrapDiscovery;
-    private PeerManagerConfiguration config;
-    private Map<Class<Message>, MessageListener<Message>> messageListenerRegistry;
     private Peer peer1;
     private Peer peer2;
     private Peer peer3;
     private Peer peer4;
-    private TransportInfo transportInfo1;
-    private TransportInfo transportInfo2;
     private TransportInfo transportInfo3;
     private TransportInfo transportInfo4;
-    private ArgumentCaptor<Peer> peerArgumentCaptor;
-    private ArgumentCaptor<Message> messageArgumentCaptor;
     private Multimap<Peer, Message> peerMessageMultimap;
-    private Interfaces interfaces;
-    private SecureRandom rng;
 
     @BeforeClass
     public static void beforeClass() {
@@ -107,7 +94,7 @@ public class PeerManagerTest extends RadixTest {
 
     @Before
     public void setUp() {
-        interfaces = mock(Interfaces.class);
+    	Interfaces interfaces = mock(Interfaces.class);
         when(interfaces.isSelf(any())).thenReturn(false);
         when(getUniverse().getPlanck()).thenReturn(10000L);
         RuntimeProperties properties = getProperties();
@@ -127,19 +114,19 @@ public class PeerManagerTest extends RadixTest {
 
         when(properties.get(eq("network.peers.message.batch.size"), anyInt())).thenReturn(2);
 
-        config = spy(PeerManagerConfiguration.fromRuntimeProperties(properties));
+        PeerManagerConfiguration config = PeerManagerConfiguration.fromRuntimeProperties(properties);
         peerMessageMultimap = LinkedListMultimap.create();
-        messageCentral = mock(MessageCentral.class);
-        rng = mock(SecureRandom.class);
+        MessageCentral messageCentral = mock(MessageCentral.class);
+        SecureRandom rng = mock(SecureRandom.class);
 
-        messageListenerRegistry = new HashMap<>();
+        Map<Class<Message>, MessageListener<Message>> messageListenerRegistry = new HashMap<>();
         doAnswer(invocation -> {
             messageListenerRegistry.put(invocation.getArgument(0), invocation.getArgument(1));
             return null;
         }).when(messageCentral).addListener(any(), any());
 
-        peerArgumentCaptor = ArgumentCaptor.forClass(Peer.class);
-        messageArgumentCaptor = ArgumentCaptor.forClass(Message.class);
+        ArgumentCaptor<Peer> peerArgumentCaptor = ArgumentCaptor.forClass(Peer.class);
+        ArgumentCaptor<Message> messageArgumentCaptor = ArgumentCaptor.forClass(Message.class);
         doAnswer(invocation -> {
             peerMessageMultimap.put(invocation.getArgument(0), invocation.getArgument(1));
             MessageListener<Message> messageListener = messageListenerRegistry.get(invocation.getArgument(1).getClass());
@@ -149,9 +136,9 @@ public class PeerManagerTest extends RadixTest {
 
 
         TransportMetadata transportMetadata1 = TransportMetadata.create(ImmutableMap.of("host", "192.168.0.1"));
-        transportInfo1 = TransportInfo.of(UDPConstants.UDP_NAME, transportMetadata1);
+        TransportInfo transportInfo1 = TransportInfo.of(UDPConstants.UDP_NAME, transportMetadata1);
         TransportMetadata transportMetadata2 = TransportMetadata.create(ImmutableMap.of("host", "192.168.0.2"));
-        transportInfo2 = TransportInfo.of(UDPConstants.UDP_NAME, transportMetadata2);
+        TransportInfo transportInfo2 = TransportInfo.of(UDPConstants.UDP_NAME, transportMetadata2);
         TransportMetadata transportMetadata3 = TransportMetadata.create(ImmutableMap.of("host", "192.168.0.3"));
         transportInfo3 = TransportInfo.of(UDPConstants.UDP_NAME, transportMetadata3);
         TransportMetadata transportMetadata4 = TransportMetadata.create(ImmutableMap.of("host", "192.168.0.4"));
@@ -188,7 +175,7 @@ public class PeerManagerTest extends RadixTest {
         when(addressBook.peer(transportInfo4)).thenReturn(peer4);
 
         bootstrapDiscovery = mock(BootstrapDiscovery.class);
-        peerManager = spy(new PeerManager(config, addressBook, messageCentral, bootstrapDiscovery, rng, getLocalSystem(), interfaces, properties, getUniverse()));
+        peerManager = new PeerManager(config, addressBook, messageCentral, bootstrapDiscovery, rng, getLocalSystem(), interfaces, properties, getUniverse());
     }
 
     @After
@@ -274,28 +261,6 @@ public class PeerManagerTest extends RadixTest {
             softly.assertThat(peer2PeerPongMessages.size()).isCloseTo(2, offset(1));
 
         });
-    }
-
-    @Test
-    @Ignore("This test appears to be too timing sensitive, and doesn't work reliably on travis at the moment")
-    public void handleProbeTimeoutTest() throws InterruptedException {
-        when(addressBook.peers()).thenAnswer((Answer<Stream<Peer>>) invocation -> Stream.of(peer1, peer2));
-        //start timeout handler immediately
-        doReturn(0).when(config).networkPeersProbeTimeout(eq(20000));
-        peerManager = spy(new PeerManager(config, addressBook, messageCentral, bootstrapDiscovery, rng, getLocalSystem(), interfaces, getProperties(), getUniverse()));
-        Semaphore semaphore = new Semaphore(0);
-        peerManager.start();
-        //allow peer manager to run 1 sec
-        new Timer().schedule(new TimerTask() {
-            @Override
-            public void run() {
-                peerManager.stop();
-                semaphore.release();
-            }
-        }, 1000);
-        semaphore.acquire();
-        verify(addressBook, atLeast(1)).removePeer(peer1);
-        verify(addressBook, atLeast(1)).removePeer(peer2);
     }
 
     @Test
