@@ -94,7 +94,7 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 		return getShortName(selfKey.euid());
 	}
 
-	// OnNextSyncView
+	// Hotstuff's Event-Driven OnNextSyncView
 	private void proceedToView(View nextView) {
 		// TODO make signing more robust by including author in signed hash
 		ECDSASignature signature = this.selfKey.sign(Hash.hash256(Longs.toByteArray(nextView.number())));
@@ -155,6 +155,12 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 	public void processNewView(NewView newView) {
 		log.info("{}: NEW_VIEW: Processing: {}", this.getShortName(), newView);
 
+		final View currentView = this.pacemaker.getCurrentView();
+		if (newView.getView().compareTo(currentView) < 0) {
+			log.info("{}: NEW_VIEW: Ignoring {} Current is: {}", this.getShortName(), newView.getView(), currentView);
+			return;
+		}
+
 		// only do something if we're actually the leader for the view
 		final View view = newView.getView();
 		if (!Objects.equals(proposerElection.getProposer(view), selfKey.getPublicKey())) {
@@ -171,7 +177,7 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 
 		this.pacemaker.processNewView(newView, validatorSet, proposerElection)
 			.ifPresent(syncedView -> {
-				// OnBeat
+				// Hotstuff's Event-Driven OnBeat
 				Vertex proposal = proposalGenerator.generateProposal(syncedView);
 				log.info("{}: Broadcasting PROPOSAL: {}", getShortName(), proposal);
 				this.networkSender.broadcastProposal(proposal);

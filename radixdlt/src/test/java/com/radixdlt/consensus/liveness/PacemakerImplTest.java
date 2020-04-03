@@ -191,7 +191,7 @@ public class PacemakerImplTest {
 	}
 
 	@Test
-	public void when_inserting_current_and_accepted_new_views__then_qc_is_formed_and_current_view_has_changed_and_no_new_timeout() {
+	public void when_inserting_current_and_accepted_new_views__then_qc_is_formed_and_current_view_has_changed() {
 		View view = View.of(1);
 		NewView newView = makeNewViewFor(view);
 		ValidatorSet validatorSet = mock(ValidatorSet.class);
