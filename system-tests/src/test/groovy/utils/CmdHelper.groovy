@@ -13,8 +13,9 @@ class CmdHelper {
         if (env) {
             println "------Environment variables ${env}-----"
             process = cmd.execute(env as String[], null)
-        } else
+        } else {
             process = cmd.execute()
+        }
 
         process.consumeProcessOutput(sout, serr)
         process.waitFor()
@@ -98,7 +99,7 @@ class CmdHelper {
         }
     }
 
-    static String radixCliCommand(List cmdOptions){
+    static String radixCliCommand(List cmdOptions) {
         return "java -jar ${Generic.pathToCLIJar()} ${listToDelimitedString(cmdOptions, ' ')}"
     }
 }

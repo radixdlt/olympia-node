@@ -18,7 +18,7 @@ class ConsensusTest {
     List sentMessages
 
     @Given('^I have (.*) network with (.*) nodes and quorumsize of (.*) nodes$')
-    void iHaveNetworkWithThreeNodes(String networkName, int numberOfNodes, int quorumSize) {
+    void i_have_network_with_n_nodes_and_quorumsize_of_n_nodes(String networkName, int numberOfNodes, int quorumSize) {
 
         SetupOptions = CmdHelper.getDockerOptions(numberOfNodes, quorumSize)
         CmdHelper.removeAllDockerContainers()
@@ -36,7 +36,7 @@ class ConsensusTest {
 
 
     @When("I send a message to first node one")
-    void iSendAMessage() {
+    void i_send_a_message_to_first_node_one() {
 
         println "User directory ${System.getProperty("user.dir")}"
         List sendMessageOptions = [
@@ -60,9 +60,8 @@ class ConsensusTest {
         sentMessageAID = extracted[0][1]
     }
 
-    //I send sequence of 10 message to first node one
     @When('^I send sequence of (.*) message to first node one$')
-    void sendnMessages(int numberOfMessages) {
+    void "i_send_sequence_of_n_message_to_first_node_one"(int numberOfMessages) {
 
         println "User directory ${System.getProperty("user.dir")}"
         List sendMessageOptions = [
@@ -90,7 +89,7 @@ class ConsensusTest {
 
     //the AtomIDs of 10 message should be of same sequence on all nodes
     @Then("the AtomIDs of the messages should be of same sequence on all nodes")
-    void messageSequence() {
+    void the_AtomIDs_of_the_messages_should_be_of_same_sequence_on_all_nodes() {
         List getAtomsOptions = [
                 "get-stored-atoms",
                 "--keystore=${Generic.keyStorePath()}",
@@ -107,7 +106,7 @@ class ConsensusTest {
         }
     }
     @Then("corresponding atom of the message should be available on atom store of all nodes")
-    void correspondingAtomOfTheMessageShouldBeAvailableOnAtomStoreOfAllNodes() {
+    void corresponding_atom_of_the_message_should_be_available_on_atom_store_of_all_nodes() {
         println "Checking Atom ${sentMessageAID}"
 
         List getAtomsOptions = [
