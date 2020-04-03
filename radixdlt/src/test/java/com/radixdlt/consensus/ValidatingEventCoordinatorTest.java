@@ -172,7 +172,7 @@ public class ValidatingEventCoordinatorTest {
 		when(newView.getView()).thenReturn(View.of(0L));
 		when(proposerElection.getProposer(any())).thenReturn(SELF_KEY.getPublicKey());
 		eventCoordinator.processNewView(newView);
-		verify(pacemaker, times(1)).processNewView(any(), any());
+		verify(pacemaker, times(1)).processNewView(any(), any(), any());
 	}
 
 	@Test
@@ -180,7 +180,7 @@ public class ValidatingEventCoordinatorTest {
 		NewView newView = mock(NewView.class);
 		when(newView.getView()).thenReturn(View.of(0L));
 		eventCoordinator.processNewView(newView);
-		verify(pacemaker, times(0)).processNewView(any(), any());
+		verify(pacemaker, times(0)).processNewView(any(), any(), any());
 	}
 
 	@Test

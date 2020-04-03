@@ -25,6 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public final class Counters {
 	public enum CounterType {
+		REJECTED_PROPOSAL,
 		TIMEOUT
 	}
 

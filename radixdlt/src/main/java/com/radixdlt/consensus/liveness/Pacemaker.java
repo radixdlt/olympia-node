@@ -54,5 +54,5 @@ public interface Pacemaker {
 	 * @param validatorSet validator set which forms the quorum
 	 * @return optional with view, if the pacemaker gains a quorum of new views
 	 */
-	Optional<View> processNewView(NewView newView, ValidatorSet validatorSet);
+	Optional<View> processNewView(NewView newView, ValidatorSet validatorSet, ProposerElection proposerElection);
 }

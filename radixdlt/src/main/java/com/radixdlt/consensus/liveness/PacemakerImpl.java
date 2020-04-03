@@ -19,7 +19,6 @@ package com.radixdlt.consensus.liveness;
 
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.View;
-import com.radixdlt.consensus.validators.ValidationResult;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECDSASignatures;
@@ -53,6 +52,7 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 
 	private final Map<View, ECDSASignatures> pendingNewViews = new HashMap<>();
 	private View currentView = View.of(0L);
+	private View lastSyncView = View.of(0L);
 
 	public PacemakerImpl(int timeoutMilliseconds, ScheduledExecutorService executorService) {
 		if (timeoutMilliseconds <= 0) {
@@ -90,33 +90,38 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 	}
 
 	@Override
-	public Optional<View> processNewView(NewView newView, ValidatorSet validatorSet) {
-		Hash newViewId = Hash.of(Longs.toByteArray(newView.getView().number()));
-		ECDSASignature signature = newView.getSignature().orElseThrow(() -> new IllegalArgumentException("new-view is missing signature"));
-		ECDSASignatures signatures = pendingNewViews.getOrDefault(newView.getView(), new ECDSASignatures());
-		signatures = (ECDSASignatures) signatures.concatenate(newView.getAuthor(), signature);
-
-		// check if we have gotten enough new-views to proceed
-		ValidationResult validationResult = validatorSet.validate(newViewId, signatures);
-		if (!validationResult.valid()) {
-			// if we haven't got enough new-views yet, do nothing
-			pendingNewViews.put(newView.getView(), signatures);
+	public Optional<View> processNewView(NewView newView, ValidatorSet validatorSet, ProposerElection proposerElection) {
+		if (newView.getView().compareTo(this.lastSyncView) <= 0) {
 			return Optional.empty();
-		} else {
-			// if we got enough new-views and, receive the current leader's new-view, proceed to next view
-			if (newView.getView().compareTo(this.currentView) > 0
-				&& newView.getQC().getView().equals(this.currentView)) {
-				this.currentView = newView.getView();
-				scheduleTimeout(this.currentView);
-			}
+		}
 
-			if (newView.getView().equals(this.currentView)) {
-				pendingNewViews.remove(newView.getView());
-				return Optional.of(this.currentView);
-			} else {
-				log.info("Ignoring New View Quorum: " + newView.getView() + " Current is: " + this.currentView);
+		// TODO: Should check that previous leader is correct by checking new-view has qc for his view
+		final boolean isFromPrevLeader = Objects.equals(proposerElection.getProposer(newView.getView().previous()), newView.getAuthor())
+			&& !newView.getQC().getView().isGenesis();
+
+		if (!isFromPrevLeader) {
+			Hash newViewId = Hash.of(Longs.toByteArray(newView.getView().number()));
+			ECDSASignature signature = newView.getSignature().orElseThrow(() -> new IllegalArgumentException("new-view is missing signature"));
+			ECDSASignatures signatures = pendingNewViews.getOrDefault(newView.getView(), new ECDSASignatures());
+			signatures = (ECDSASignatures) signatures.concatenate(newView.getAuthor(), signature);
+
+			// check if we have gotten enough new-views to proceed
+			if (!validatorSet.validate(newViewId, signatures).valid()) {
+				// if we haven't got enough new-views yet, do nothing
+				pendingNewViews.put(newView.getView(), signatures);
 				return Optional.empty();
 			}
+		}
+
+		if (newView.getView().equals(this.currentView)) {
+			pendingNewViews.remove(newView.getView());
+
+			this.lastSyncView = this.currentView;
+
+			return Optional.of(this.currentView);
+		} else {
+			log.info("Ignoring New View Quorum: " + newView.getView() + " Current is: " + this.currentView);
+			return Optional.empty();
 		}
 	}
 

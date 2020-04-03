@@ -179,7 +179,7 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 			return;
 		}
 
-		this.pacemaker.processNewView(newView, validatorSet)
+		this.pacemaker.processNewView(newView, validatorSet, proposerElection)
 			.ifPresent(this::startQuorumNewView);
 	}
 
@@ -211,6 +211,8 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 		try {
 			vertexStore.insertVertex(proposedVertex);
 		} catch (VertexInsertionException e) {
+			counters.increment(CounterType.REJECTED_PROPOSAL);
+
 			log.info(this.getShortName() + ": PROPOSAL: Rejected", e);
 
 			// TODO: Better logic for removal on exception
