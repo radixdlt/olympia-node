@@ -170,17 +170,19 @@ public class ValidatingEventCoordinatorTest {
 		NewView newView = mock(NewView.class);
 		when(newView.getQC()).thenReturn(mock(QuorumCertificate.class));
 		when(newView.getView()).thenReturn(View.of(0L));
+		when(pacemaker.getCurrentView()).thenReturn(View.of(0L));
 		when(proposerElection.getProposer(any())).thenReturn(SELF_KEY.getPublicKey());
 		eventCoordinator.processNewView(newView);
-		verify(pacemaker, times(1)).processNewView(any(), any(), any());
+		verify(pacemaker, times(1)).processNewView(any(), any());
 	}
 
 	@Test
 	public void when_processing_new_view_as_not_proposer__then_new_view_is_not_emitted() {
 		NewView newView = mock(NewView.class);
 		when(newView.getView()).thenReturn(View.of(0L));
+		when(pacemaker.getCurrentView()).thenReturn(View.of(0L));
 		eventCoordinator.processNewView(newView);
-		verify(pacemaker, times(0)).processNewView(any(), any(), any());
+		verify(pacemaker, times(0)).processNewView(any(), any());
 	}
 
 	@Test

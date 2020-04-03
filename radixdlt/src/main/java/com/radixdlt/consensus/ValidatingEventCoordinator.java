@@ -175,7 +175,7 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 			return;
 		}
 
-		this.pacemaker.processNewView(newView, validatorSet, proposerElection)
+		this.pacemaker.processNewView(newView, validatorSet)
 			.ifPresent(syncedView -> {
 				// Hotstuff's Event-Driven OnBeat
 				Vertex proposal = proposalGenerator.generateProposal(syncedView);

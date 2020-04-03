@@ -90,16 +90,17 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 	}
 
 	@Override
-	public Optional<View> processNewView(NewView newView, ValidatorSet validatorSet, ProposerElection proposerElection) {
+	public Optional<View> processNewView(NewView newView, ValidatorSet validatorSet) {
 		if (newView.getView().compareTo(this.lastSyncView) <= 0) {
 			return Optional.empty();
 		}
 
-		// TODO: Should check that previous leader is correct by checking new-view has qc for his view
-		final boolean isFromPrevLeader = Objects.equals(proposerElection.getProposer(newView.getView().previous()), newView.getAuthor())
-			&& !newView.getQC().getView().isGenesis();
+		// If QC of new-view was from previous view, then we are guaranteed to have the highest QC for this view
+		// and can proceed
+		final View qcView = newView.getQC().getView();
+		final boolean highestQC = !qcView.isGenesis() && qcView.next().equals(this.currentView);
 
-		if (!isFromPrevLeader) {
+		if (!highestQC) {
 			Hash newViewId = Hash.of(Longs.toByteArray(newView.getView().number()));
 			ECDSASignature signature = newView.getSignature().orElseThrow(() -> new IllegalArgumentException("new-view is missing signature"));
 			ECDSASignatures signatures = pendingNewViews.getOrDefault(newView.getView(), new ECDSASignatures());
