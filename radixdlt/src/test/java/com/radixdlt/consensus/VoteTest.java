@@ -30,13 +30,11 @@ public class VoteTest {
 	public static final RadixAddress ADDRESS = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
 	private Vote testObject;
 	private VoteData voteData;
-	private Hash parentId;
-	private Hash id;
 
 	@Before
 	public void setUp() {
 		View view = View.of(1234567891L);
-		this.id = Hash.random();
+		Hash id = Hash.random();
 
 		VertexMetadata parent = new VertexMetadata(View.of(1234567890L), Hash.random());
 		this.voteData = new VoteData(new VertexMetadata(view, id), parent);
