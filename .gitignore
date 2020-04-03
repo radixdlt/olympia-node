@@ -49,3 +49,4 @@ radixdlt/src/main/resources/markdown
 # functional test
 functional-tests/api/node_modules
 radix-spamathon/out
+**/target/
