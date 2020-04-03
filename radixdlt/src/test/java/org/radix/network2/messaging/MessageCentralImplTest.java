@@ -34,6 +34,7 @@ import org.radix.network2.messaging.MessagingDummyConfigurations.DummyTransport;
 import org.radix.network2.messaging.MessagingDummyConfigurations.DummyTransportOutboundConnection;
 import org.radix.network2.transport.StaticTransportMetadata;
 import org.radix.network2.transport.TransportInfo;
+import org.radix.time.Timestamps;
 import org.radix.universe.system.LocalSystem;
 import org.radix.universe.system.events.QueueFullEvent;
 import org.xerial.snappy.Snappy;
@@ -41,36 +42,60 @@ import org.xerial.snappy.Snappy;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.notNull;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 public class MessageCentralImplTest {
+
+	static class TestBlockingQueue extends PriorityBlockingQueue<MessageEvent> {
+		private final AtomicLong offered = new AtomicLong(0);
+		private final AtomicBoolean full = new AtomicBoolean(false);
+
+		TestBlockingQueue() {
+			super();
+		}
+
+		@Override
+		public boolean offer(MessageEvent e) {
+			this.offered.incrementAndGet();
+			if (this.full.get()) {
+				return false;
+			} else {
+				return super.offer(e);
+			}
+		}
+
+		long offered() {
+			return this.offered.get();
+		}
+
+		boolean setFull(boolean b) {
+			return this.full.compareAndSet(!b, b);
+		}
+	}
 
 	private Serialization serialization;
 	private DummyTransportOutboundConnection toc;
 	private DummyTransport dt;
-	private TransportManager transportManager;
 	private MessageCentralImpl mci;
-	private PriorityBlockingQueue<MessageEvent> inboundQueue;
-	private PriorityBlockingQueue<MessageEvent> outboundQueue;
+	private TestBlockingQueue inboundQueuex;
+	private TestBlockingQueue outboundQueuex;
 	private Events events;
 
 	@Before
@@ -80,26 +105,29 @@ public class MessageCentralImplTest {
 
 		// Curse you singletons
 		Universe universe = mock(Universe.class);
-		when(universe.getMagic()).thenReturn(0);
+		doReturn(0).when(universe).getMagic();
 		RuntimeProperties runtimeProperties = mock(RuntimeProperties.class);
-		when(runtimeProperties.get(eq("network.whitelist"), any())).thenReturn("");
+		doReturn("").when(runtimeProperties).get(eq("network.whitelist"), any());
 		AddressBook addressBook = mock(AddressBook.class);
-		when(addressBook.peer(any(TransportInfo.class))).thenReturn(mock(Peer.class));
+		Peer peer = mock(Peer.class);
+		doReturn(peer).when(addressBook).peer(any(TransportInfo.class));
 
 		// Other scaffolding
 		this.toc = new DummyTransportOutboundConnection();
 		this.dt = new DummyTransport(this.toc);
 
-		this.transportManager = new MessagingDummyConfigurations.DummyTransportManager(this.dt);
+		// Safe, as this is a dummy transport with no underlying resources
+		@SuppressWarnings("resource")
+		MessagingDummyConfigurations.DummyTransportManager transportManager = new MessagingDummyConfigurations.DummyTransportManager(this.dt);
 
 		this.events = mock(Events.class);
-		inboundQueue = spy(new PriorityBlockingQueue<>(conf.messagingInboundQueueMax(0)));
-		outboundQueue = spy(new PriorityBlockingQueue<>(conf.messagingOutboundQueueMax(0)));
+		inboundQueuex = new TestBlockingQueue();
+		outboundQueuex = new TestBlockingQueue();
 		EventQueueFactory<MessageEvent> queueFactory = eventQueueFactoryMock();
-		doReturn(inboundQueue).when(queueFactory).createEventQueue(conf.messagingInboundQueueMax(0));
-		doReturn(outboundQueue).when(queueFactory).createEventQueue(conf.messagingOutboundQueueMax(0));
+		doReturn(inboundQueuex).when(queueFactory).createEventQueue(conf.messagingInboundQueueMax(0));
+		doReturn(outboundQueuex).when(queueFactory).createEventQueue(conf.messagingOutboundQueueMax(0));
 		Interfaces interfaces = mock(Interfaces.class);
-		when(interfaces.isSelf(any())).thenReturn(false);
+		doReturn(false).when(interfaces).isSelf(any());
 		LocalSystem localSystem = mock(LocalSystem.class);
 		this.mci = new MessageCentralImpl(new MessagingDummyConfigurations.DummyMessageCentralConfiguration(), serialization, transportManager, events, addressBook, System::currentTimeMillis,
 				queueFactory, interfaces, localSystem);
@@ -138,14 +166,14 @@ public class MessageCentralImplTest {
 			mci.send(peer, msg);
 		}
 
-		receivedFlag.await(10, TimeUnit.SECONDS);
+		assertTrue(receivedFlag.await(10, TimeUnit.SECONDS));
 		assertEquals(numberOfRequests, toc.getMessages().size());
 	}
 
 	@Test
 	public void testInjectMessageDeliveredToListeners() throws InterruptedException {
-		Message msg = spy(new TestMessage(1));
-		doReturn(System.currentTimeMillis()).when(msg).getTimestamp();
+		Message msg = new TestMessage(1);
+		msg.setTimestamp(Timestamps.DEFAULT, System.currentTimeMillis());
 		Peer peer = mock(Peer.class);
 
 		int numberOfRequests = 6;
@@ -159,23 +187,23 @@ public class MessageCentralImplTest {
 		for (int i = 0; i < numberOfRequests; i++) {
 			mci.inject(peer, msg);
 		}
-		receivedFlag.await(10, TimeUnit.SECONDS);
+		assertTrue(receivedFlag.await(10, TimeUnit.SECONDS));
 		assertEquals(numberOfRequests, messages.size());
-		verify(inboundQueue, times(numberOfRequests)).offer(any());
+		assertEquals(numberOfRequests, inboundQueuex.offered());
 	}
 
 	@Test
-	public void testInjectQueueIsFull() throws Exception {
-		testQueueIsFull(inboundQueue, (peer, message) -> mci.inject(peer, message));
+	public void testInjectQueueIsFull() {
+		testQueueIsFull(inboundQueuex, (peer, message) -> mci.inject(peer, message));
 	}
 
 	@Test
-	public void testSendQueueIsFull() throws Exception {
-		testQueueIsFull(outboundQueue, (peer, message) -> mci.send(peer, message));
+	public void testSendQueueIsFull() {
+		testQueueIsFull(outboundQueuex, (peer, message) -> mci.send(peer, message));
 	}
 
-	private <T> void testQueueIsFull(Queue<T> queue, BiConsumer<Peer, Message> biConsumer) {
-		doReturn(false).when(queue).offer(notNull());
+	private void testQueueIsFull(TestBlockingQueue queue, BiConsumer<Peer, Message> biConsumer) {
+		queue.setFull(true);
 		Message msg = new TestMessage(1);
 		Peer peer = mock(Peer.class);
 
