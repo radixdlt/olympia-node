@@ -25,7 +25,7 @@ Feature: Consensus testing
     Then corresponding atom of the message should be available on atom store of all nodes
 
   @ignore
-  Scenario: Network failure when nodes are less than size as quorum
+  Scenario: Network failure when nodes are less than quorum size
     Given I have local network with 6 nodes and quorumsize of 4 nodes
     And I send a message to first node one
     Then corresponding atom of the message should be available on atom store of all nodes
