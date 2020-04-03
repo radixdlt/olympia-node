@@ -72,7 +72,7 @@ public class BFTTestNetwork {
 	 * @param nodes The nodes to populate the network with
 	 */
 	public BFTTestNetwork(List<ECKeyPair> nodes) {
-		this(nodes, TestEventCoordinatorNetwork.perfect(DEFAULT_TEST_NETWORK_LATENCY));
+		this(nodes, TestEventCoordinatorNetwork.orderedLatent(DEFAULT_TEST_NETWORK_LATENCY));
 	}
 
 	/**

@@ -33,12 +33,12 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 /**
- * Tests with networks with imperfect out-of-order communication channels.
+ * Tests with networks with imperfect and randomly latent (but ordered) communication channels.
  * These tests comprise only static configurations of exclusively correct nodes.
  */
-public class OutOfOrderNetworkTest {
+public class LatentNetworkTest {
 	private static final int MINIMUM_NETWORK_LATENCY = 10;
-	private static final int MAXIMUM_NETWORK_LATENCY = 100;
+	private static final int MAXIMUM_NETWORK_LATENCY = 2000;
 
 	static List<ECKeyPair> createNodes(int numNodes) {
 		return Stream.generate(ECKeyPair::generateNew).limit(numNodes).collect(Collectors.toList());
@@ -47,7 +47,7 @@ public class OutOfOrderNetworkTest {
 	static BFTTestNetwork createNetwork(List<ECKeyPair> nodes) {
 		return new BFTTestNetwork(
 			nodes,
-			TestEventCoordinatorNetwork.unreliable(MINIMUM_NETWORK_LATENCY, MAXIMUM_NETWORK_LATENCY)
+			TestEventCoordinatorNetwork.orderedRandomlyLatent(MINIMUM_NETWORK_LATENCY, MAXIMUM_NETWORK_LATENCY)
 		);
 	}
 
@@ -119,7 +119,7 @@ public class OutOfOrderNetworkTest {
 			.map(o -> o);
 
 		List<Observable<Object>> checks = Arrays.asList(
-			correctCommitCheck, progressCheck, correctTimeoutCheck, directProposalsCheck
+			correctCommitCheck, progressCheck, directProposalsCheck
 		);
 		Observable.mergeArray(bftNetwork.processBFT(), Observable.merge(checks))
 			.take(time, timeUnit)
