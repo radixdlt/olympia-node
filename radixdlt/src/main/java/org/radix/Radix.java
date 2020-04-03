@@ -166,7 +166,7 @@ public final class Radix
 		RadixHttpServer httpServer = new RadixHttpServer(store, submissionControl, atomToBinaryConverter, universe, serialization, properties, localSystem, addressBook);
 		httpServer.start(properties);
 
-		log.info("Node '" + localSystem.getNID() + "' started successfully");
+		log.info("Node '{}' started successfully", localSystem.getNID());
 	}
 
 	private static void dumpExecutionLocation() {
@@ -181,8 +181,8 @@ public final class Radix
 			}
 			System.setProperty("radix.jar.path", jarPath);
 
-			log.debug("Execution file: "+ System.getProperty("radix.jar"));
-			log.debug("Execution path: "+ System.getProperty("radix.jar.path"));
+			log.debug("Execution file: {}", System.getProperty("radix.jar"));
+			log.debug("Execution path: {}", System.getProperty("radix.jar.path"));
 		} catch (URISyntaxException | ClassNotFoundException e) {
 			throw new IllegalStateException("Error while fetching execution location", e);
 		}
