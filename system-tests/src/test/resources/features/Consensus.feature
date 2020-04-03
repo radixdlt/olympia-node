@@ -5,11 +5,11 @@ Feature: Consensus testing
     When I send a message to first node one
     Then corresponding atom of the message should be available on atom store of all nodes
 
-  @sequence @ignore
-  Scenario Outline: Sequence of message send should be in same sequence for all nodes
+  @multiple
+  Scenario Outline: Network with same size as quorum,multiple message sent to a node should be available on all nodes
     Given I have local network with 6 nodes and quorumsize of 6 nodes
     When I send sequence of <numberOfMessages> message to first node one
-    Then the AtomIDs of the messages should be of same sequence on all nodes
+    Then all the atomIDs are committed on all nodes
     Examples:
       | numberOfMessages |
       | 2                |

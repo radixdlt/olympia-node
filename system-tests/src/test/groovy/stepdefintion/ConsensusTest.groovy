@@ -87,9 +87,8 @@ class ConsensusTest {
 
     }
 
-    //the AtomIDs of 10 message should be of same sequence on all nodes
-    @Then("the AtomIDs of the messages should be of same sequence on all nodes")
-    void the_AtomIDs_of_the_messages_should_be_of_same_sequence_on_all_nodes() {
+    @Then("all the atomIDs are committed on all nodes")
+    void all_the_atomIDs_are_committed_on_all_nodes() {
         List getAtomsOptions = [
                 "get-stored-atoms",
                 "--keystore=${Generic.keyStorePath()}",
@@ -100,9 +99,8 @@ class ConsensusTest {
             List<String> output, error
             (output, error) = runCommand(sendMessageCmd,
                     ["RADIX_BOOTSTRAP_TRUSTED_NODE=http://localhost:${setupOptions[it].hostPort}"] as String[], true)
-//            int firstAtomIndex = output.findIndexOf {sentMessages[0]}
             List<String> actualSequenceFromNode =  output[1..output.size()-1]
-            assert actualSequenceFromNode == sentMessages
+            assert actualSequenceFromNode.toSet() == sentMessages.toSet()
         }
     }
     @Then("corresponding atom of the message should be available on atom store of all nodes")
