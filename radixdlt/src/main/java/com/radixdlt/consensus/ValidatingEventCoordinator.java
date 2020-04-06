@@ -83,7 +83,7 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 		this.proposerElection = Objects.requireNonNull(proposerElection);
 		this.selfKey = Objects.requireNonNull(selfKey);
 		this.validatorSet = Objects.requireNonNull(validatorSet);
-		this.counters = counters;
+		this.counters = Objects.requireNonNull(counters);
 	}
 
 	private String getShortName(EUID euid) {
@@ -94,17 +94,7 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 		return getShortName(selfKey.euid());
 	}
 
-	private void startQuorumNewView(View view) {
-		// only do something if we're actually the leader
-		if (!Objects.equals(proposerElection.getProposer(view), selfKey.getPublicKey())) {
-			return;
-		}
-
-		Vertex proposal = proposalGenerator.generateProposal(view);
-		log.info("{}: Broadcasting PROPOSAL: {}", getShortName(), proposal);
-		this.networkSender.broadcastProposal(proposal);
-	}
-
+	// Hotstuff's Event-Driven OnNextSyncView
 	private void proceedToView(View nextView) {
 		// TODO make signing more robust by including author in signed hash
 		ECDSASignature signature = this.selfKey.sign(Hash.hash256(Longs.toByteArray(nextView.number())));
@@ -165,6 +155,12 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 	public void processNewView(NewView newView) {
 		log.info("{}: NEW_VIEW: Processing: {}", this.getShortName(), newView);
 
+		final View currentView = this.pacemaker.getCurrentView();
+		if (newView.getView().compareTo(currentView) < 0) {
+			log.info("{}: NEW_VIEW: Ignoring {} Current is: {}", this.getShortName(), newView.getView(), currentView);
+			return;
+		}
+
 		// only do something if we're actually the leader for the view
 		final View view = newView.getView();
 		if (!Objects.equals(proposerElection.getProposer(view), selfKey.getPublicKey())) {
@@ -180,7 +176,12 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 		}
 
 		this.pacemaker.processNewView(newView, validatorSet)
-			.ifPresent(this::startQuorumNewView);
+			.ifPresent(syncedView -> {
+				// Hotstuff's Event-Driven OnBeat
+				Vertex proposal = proposalGenerator.generateProposal(syncedView);
+				log.info("{}: Broadcasting PROPOSAL: {}", getShortName(), proposal);
+				this.networkSender.broadcastProposal(proposal);
+			});
 	}
 
 	@Override
@@ -211,6 +212,8 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 		try {
 			vertexStore.insertVertex(proposedVertex);
 		} catch (VertexInsertionException e) {
+			counters.increment(CounterType.REJECTED_PROPOSAL);
+
 			log.info(this.getShortName() + ": PROPOSAL: Rejected", e);
 
 			// TODO: Better logic for removal on exception

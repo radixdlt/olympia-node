@@ -166,19 +166,34 @@ public class ValidatingEventCoordinatorTest {
 	}
 
 	@Test
-	public void when_processing_new_view_as_proposer__then_new_view_is_emitted() {
+	public void when_process_irrelevant_new_view__then_no_event_occurs() {
+		NewView newView = mock(NewView.class);
+		when(newView.getView()).thenReturn(View.of(0L));
+		when(pacemaker.getCurrentView()).thenReturn(View.of(1L));
+		eventCoordinator.processNewView(newView);
+		verify(pacemaker, times(0)).processQC(any());
+		verify(pacemaker, times(0)).processNewView(any(), any());
+	}
+
+	@Test
+	public void when_processing_new_view_as_proposer__then_new_view_is_emitted_and_proposal_is_sent() {
 		NewView newView = mock(NewView.class);
 		when(newView.getQC()).thenReturn(mock(QuorumCertificate.class));
 		when(newView.getView()).thenReturn(View.of(0L));
+		when(pacemaker.getCurrentView()).thenReturn(View.of(0L));
+		when(pacemaker.processNewView(any(), any())).thenReturn(Optional.of(View.of(1L)));
 		when(proposerElection.getProposer(any())).thenReturn(SELF_KEY.getPublicKey());
+		when(proposalGenerator.generateProposal(eq(View.of(1L)))).thenReturn(mock(Vertex.class));
 		eventCoordinator.processNewView(newView);
 		verify(pacemaker, times(1)).processNewView(any(), any());
+		verify(networkSender, times(1)).broadcastProposal(any());
 	}
 
 	@Test
 	public void when_processing_new_view_as_not_proposer__then_new_view_is_not_emitted() {
 		NewView newView = mock(NewView.class);
 		when(newView.getView()).thenReturn(View.of(0L));
+		when(pacemaker.getCurrentView()).thenReturn(View.of(0L));
 		eventCoordinator.processNewView(newView);
 		verify(pacemaker, times(0)).processNewView(any(), any());
 	}

@@ -81,8 +81,12 @@ public class PerfectNetworkTest {
 		Observable<Object> timeoutCheck = Observable.interval(2, TimeUnit.SECONDS)
 			.flatMapIterable(i -> nodes)
 			.map(bftNetwork::getCounters)
-			.doOnNext(counters -> assertThat(counters.getCount(CounterType.TIMEOUT))
-				.satisfies(new Condition<>(c -> c == 0, "Timeout counter is zero.")))
+			.doOnNext(counters -> {
+				assertThat(counters.getCount(CounterType.TIMEOUT))
+					.satisfies(new Condition<>(c -> c == 0, "Timeout counter is zero."));
+				assertThat(counters.getCount(CounterType.REJECTED_PROPOSAL))
+					.satisfies(new Condition<>(c -> c == 0, "Rejected Proposal counter is zero."));
+			})
 			.map(o -> o);
 
 		// Check that every received proposal has a direct parent
