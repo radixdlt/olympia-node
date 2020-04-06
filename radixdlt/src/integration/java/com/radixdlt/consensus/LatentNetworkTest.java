@@ -38,7 +38,9 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
  */
 public class LatentNetworkTest {
 	private static final int MINIMUM_NETWORK_LATENCY = 10;
-	private static final int MAXIMUM_NETWORK_LATENCY = 500;
+	// 2 times max latency should be less than BFTTestNetwork.TEST_PACEMAKER_TIMEOUT
+	// so we don't get unwanted pacemaker timeouts
+	private static final int MAXIMUM_NETWORK_LATENCY = 300;
 
 	static List<ECKeyPair> createNodes(int numNodes) {
 		return Stream.generate(ECKeyPair::generateNew).limit(numNodes).collect(Collectors.toList());
