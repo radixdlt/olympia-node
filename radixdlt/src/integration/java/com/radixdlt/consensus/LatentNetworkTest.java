@@ -33,12 +33,12 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 /**
- * Tests with networks with imperfect and randomly latent (but ordered) communication channels.
+ * Tests with networks with imperfect and randomly latent in-order communication channels.
  * These tests comprise only static configurations of exclusively correct nodes.
  */
 public class LatentNetworkTest {
 	private static final int MINIMUM_NETWORK_LATENCY = 10;
-	private static final int MAXIMUM_NETWORK_LATENCY = 2000;
+	private static final int MAXIMUM_NETWORK_LATENCY = 500;
 
 	static List<ECKeyPair> createNodes(int numNodes) {
 		return Stream.generate(ECKeyPair::generateNew).limit(numNodes).collect(Collectors.toList());
@@ -52,11 +52,11 @@ public class LatentNetworkTest {
 	}
 
 	/**
-	 * Tests a static configuration of 4 correct nodes with unreliable communication.
+	 * Tests a static configuration of 4 correct nodes with randomly latent in-order communication.
 	 * The intended behaviour is that all correct instances make progress and eventually align in their commits.
 	 */
 	@Test
-	public void given_4_correct_bfts_in_unreliable_network__then_all_instances_should_get_same_commits_consecutive_vertices_eventually_over_1_minute() {
+	public void given_4_correct_bfts_in_latent_network__then_all_instances_should_get_same_commits_consecutive_vertices_eventually_over_1_minute() {
 		final int numNodes = 4;
 		final long time = 1;
 		final TimeUnit timeUnit = TimeUnit.MINUTES;
@@ -98,14 +98,15 @@ public class LatentNetworkTest {
 			.map(vertices -> (Vertex) vertices.get(0))
 			.map(o -> o);
 
-		// correct nodes should get no? timeouts
+		// correct nodes should get no timeouts since max latency is smaller than timeout
 		Observable<Object> correctTimeoutCheck = Observable.interval(1, TimeUnit.SECONDS)
 			.flatMapIterable(i -> allNodes)
 			.doOnNext(cn -> assertThat(bftNetwork.getCounters(cn).getCount(Counters.CounterType.TIMEOUT))
-				.satisfies(new Condition<>(c -> c == 0, "Timeout counter is zero.")))
+				.satisfies(new Condition<>(c -> c == 0,
+					"Timeout counter is zero in correct node %s", cn.getPublicKey().euid())))
 			.map(o -> o);
 
-		// all? proposals should be direct
+		// TODO all? proposals should be direct
 		List<Observable<Vertex>> correctProposals = allNodes.stream()
 			.map(ECKeyPair::euid)
 			.map(bftNetwork.getUnderlyingNetwork()::getNetworkRx)
@@ -119,7 +120,7 @@ public class LatentNetworkTest {
 			.map(o -> o);
 
 		List<Observable<Object>> checks = Arrays.asList(
-			correctCommitCheck, progressCheck, directProposalsCheck
+			correctCommitCheck, progressCheck, correctTimeoutCheck, directProposalsCheck
 		);
 		Observable.mergeArray(bftNetwork.processBFT(), Observable.merge(checks))
 			.take(time, timeUnit)
