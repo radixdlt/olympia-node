@@ -34,6 +34,7 @@ import org.junit.Test;
 
 import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -46,14 +47,16 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class PacemakerImplTest {
-	private static final int TEST_PACEMAKER_TIMEOUT = 1000;
+	private static final int TEST_PACEMAKER_TIMEOUT = 100;
 
 	private static ScheduledExecutorService getMockedExecutorService() {
-		ExecutorService executor = Executors.newSingleThreadExecutor();
+		ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
 
 		ScheduledExecutorService executorService = mock(ScheduledExecutorService.class);
 		doAnswer(invocation -> {
-			executor.submit((Runnable) invocation.getArguments()[0]);
+			// schedule submissions with a small timeout to ensure that control is returned before the
+			// "scheduled" runnable is executed, otherwise required events may not be triggered in time
+			executor.schedule((Runnable) invocation.getArguments()[0], 10, TimeUnit.MILLISECONDS);
 			return null;
 		}).when(executorService).schedule(any(Runnable.class), anyLong(), any());
 		return executorService;
@@ -74,8 +77,8 @@ public class PacemakerImplTest {
 		TestObserver<View> testObserver = TestObserver.create();
 		pacemaker.localTimeouts().subscribe(testObserver);
 		testObserver.awaitCount(1);
-		testObserver.assertValues(View.of(0L));
 		testObserver.assertNotComplete();
+		testObserver.assertValues(View.of(0L));
 	}
 
 	@Test
