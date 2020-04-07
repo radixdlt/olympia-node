@@ -20,6 +20,8 @@ jobs:
       script: ./gradlew check --info
     - stage: sonar
       script: ./gradlew jacocoTestReport sonarqube --info
+    - stage: integration
+      script: ./gradlew integrationTest
 
 cache:
   directories:
