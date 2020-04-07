@@ -18,10 +18,10 @@ jobs:
   include:
     - stage: check
       script: ./gradlew check --info
-    - stage: integration
-      script: ./gradlew integrationTest --info
     - stage: sonar
       script: ./gradlew jacocoTestReport sonarqube --info
+    - stage: integration
+      script: ./gradlew integrationTest --info
 
 cache:
   directories:
