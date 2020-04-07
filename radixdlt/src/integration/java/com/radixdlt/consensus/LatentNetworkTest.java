@@ -40,7 +40,7 @@ public class LatentNetworkTest {
 	private static final int MINIMUM_NETWORK_LATENCY = 10;
 	// 2 times max latency should be less than BFTTestNetwork.TEST_PACEMAKER_TIMEOUT
 	// so we don't get unwanted pacemaker timeouts
-	private static final int MAXIMUM_NETWORK_LATENCY = 300;
+	private static final int MAXIMUM_NETWORK_LATENCY = 100;
 
 	static List<ECKeyPair> createNodes(int numNodes) {
 		return Stream.generate(ECKeyPair::generateNew).limit(numNodes).collect(Collectors.toList());
@@ -85,7 +85,7 @@ public class LatentNetworkTest {
 				.satisfies(new Condition<>(v -> v.compareTo(highestQCView.get()) > 0,
 					"The highest highestQC %s increased since last highestQC %s after %d ms", view, highestQCView.get(), minimumLatencyPerRound)))
 			.doOnNext(highestQCView::set)
-			.doOnNext(newHighestQCView -> System.out.println("Made progress to new highest QC view " + highestQCView))
+			.doOnNext(newHighestQCView -> System.out.println("Progressed to new highest QC view " + highestQCView))
 			.map(o -> o);
 
 		// correct nodes should all get the same commits in the same order
