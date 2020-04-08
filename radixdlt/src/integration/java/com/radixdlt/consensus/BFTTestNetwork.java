@@ -44,6 +44,7 @@ import com.radixdlt.network.TestEventCoordinatorNetwork;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
@@ -52,10 +53,10 @@ import java.util.stream.Collectors;
  * A multi-node bft test network where the network is simulated.
  */
 public class BFTTestNetwork {
-	private static final int TEST_NETWORK_LATENCY = 50;
+	private static final int DEFAULT_TEST_NETWORK_LATENCY = 50;
 	private static final int TEST_PACEMAKER_TIMEOUT = 1000;
 
-	private final TestEventCoordinatorNetwork testEventCoordinatorNetwork = new TestEventCoordinatorNetwork(TEST_NETWORK_LATENCY);
+	private final TestEventCoordinatorNetwork underlyingNetwork;
 	private final Atom genesis;
 	private final Vertex genesisVertex;
 	private final QuorumCertificate genesisQC;
@@ -66,7 +67,20 @@ public class BFTTestNetwork {
 	private final ProposerElection proposerElection;
 	private final ValidatorSet validatorSet;
 
+	/**
+	 * Create a BFT test network with a perfect underlying network and the default latency.
+	 * @param nodes The nodes to populate the network with
+	 */
 	public BFTTestNetwork(List<ECKeyPair> nodes) {
+		this(nodes, TestEventCoordinatorNetwork.orderedLatent(DEFAULT_TEST_NETWORK_LATENCY));
+	}
+
+	/**
+	 * Create a BFT test network with a specific underlying network.
+	 * @param nodes The nodes to populate the network with
+	 */
+	public BFTTestNetwork(List<ECKeyPair> nodes, TestEventCoordinatorNetwork underlyingNetwork) {
+		this.underlyingNetwork = Objects.requireNonNull(underlyingNetwork);
 		this.genesis = null;
 		this.genesisVertex = Vertex.createGenesis(genesis);
 		this.genesisQC = new QuorumCertificate(
@@ -92,9 +106,9 @@ public class BFTTestNetwork {
 		this.counters = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e, e -> new Counters()));
 		this.pacemakers = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e,
 			e -> new PacemakerImpl(TEST_PACEMAKER_TIMEOUT, Executors.newSingleThreadScheduledExecutor())));
-		this.bftEvents = Observable.merge(this.vertexStores.entrySet().stream()
-			.map(e -> createBFTInstance(e.getKey()).processEvents()
-		).collect(Collectors.toList()));
+		this.bftEvents = Observable.merge(this.vertexStores.keySet().stream()
+			.map(vertexStore -> createBFTInstance(vertexStore).processEvents())
+			.collect(Collectors.toList()));
 	}
 
 	private ChainedBFT createBFTInstance(ECKeyPair key) {
@@ -109,7 +123,7 @@ public class BFTTestNetwork {
 		EpochManager epochManager = new EpochManager(
 			proposalGenerator,
 			mempool,
-			testEventCoordinatorNetwork.getNetworkSender(key.euid()),
+			underlyingNetwork.getNetworkSender(key.euid()),
 			safetyRules,
 			pacemaker,
 			vertexStores.get(key),
@@ -121,7 +135,7 @@ public class BFTTestNetwork {
 
 		return new ChainedBFT(
 			epochRx,
-			testEventCoordinatorNetwork.getNetworkRx(key.euid()),
+			underlyingNetwork.getNetworkRx(key.euid()),
 			pacemaker,
 			epochManager
 		);
@@ -143,16 +157,16 @@ public class BFTTestNetwork {
 		return pacemakers.get(keyPair);
 	}
 
-	public TestEventCoordinatorNetwork getTestEventCoordinatorNetwork() {
-		return testEventCoordinatorNetwork;
+	public TestEventCoordinatorNetwork getUnderlyingNetwork() {
+		return underlyingNetwork;
 	}
 
 	public Observable<Event> processBFT() {
 		return this.bftEvents;
 	}
 
-	public int getNetworkLatency() {
-		return TEST_NETWORK_LATENCY;
+	public int getMaximumNetworkLatency() {
+		return underlyingNetwork.getMaximumLatency();
 	}
 
 	public int getPacemakerTimeout() {

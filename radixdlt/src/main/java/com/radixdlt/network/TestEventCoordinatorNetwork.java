@@ -17,45 +17,85 @@
 
 package com.radixdlt.network;
 
-import com.radixdlt.identifiers.EUID;
 import com.radixdlt.consensus.EventCoordinatorNetworkRx;
 import com.radixdlt.consensus.EventCoordinatorNetworkSender;
-import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.subjects.PublishSubject;
-import java.util.AbstractMap.SimpleEntry;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.Vote;
+import com.radixdlt.identifiers.EUID;
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.subjects.PublishSubject;
+
+import java.util.Collections;
+import java.util.Deque;
+import java.util.Objects;
+import java.util.Random;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 /**
- * Overly simplistic network implementation that just sends messages to itself.
+ * Simple simulated network implementation that just sends messages to itself with a configurable latency.
  */
 public class TestEventCoordinatorNetwork {
-	private final int loopbackDelay;
-	private final PublishSubject<Vertex> proposals;
-	private final PublishSubject<Map.Entry<NewView, EUID>> newViews;
-	private final PublishSubject<Map.Entry<Vote, EUID>> votes;
+	private final Random rng;
+	private final int minimumLatency;
+	private final int maximumLatency;
+	private final boolean preserveOrder;
+
+	private final Deque<MessageInTransit> orderedMessageBuffer;
+	private final PublishSubject<MessageInTransit> receivedMessages;
 	private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 	private final Set<EUID> sendingDisabled = Collections.newSetFromMap(new ConcurrentHashMap<>());
 	private final Set<EUID> receivingDisabled = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
-	public TestEventCoordinatorNetwork(int loopbackDelay) {
-		if (loopbackDelay < 0) {
-			throw new IllegalArgumentException("loopbackDelay must be >= 0 but was " + loopbackDelay);
+	private TestEventCoordinatorNetwork(int minimumLatency, int maximumLatency, long rngSeed, boolean preserveOrder) {
+		this.preserveOrder = preserveOrder;
+		if (minimumLatency < 0) {
+			throw new IllegalArgumentException("minimumLatency must be >= 0 but was " + minimumLatency);
 		}
-		this.loopbackDelay = loopbackDelay;
-		this.proposals = PublishSubject.create();
-		this.newViews = PublishSubject.create();
-		this.votes = PublishSubject.create();
+		if (maximumLatency < 0) {
+			throw new IllegalArgumentException("maximumLatency must be >= 0 but was " + maximumLatency);
+		}
+		this.minimumLatency = minimumLatency;
+		this.maximumLatency = maximumLatency;
+		this.rng = new Random(rngSeed);
+		this.orderedMessageBuffer = new LinkedBlockingDeque<>();
+		this.receivedMessages = PublishSubject.create();
+	}
+
+	/**
+	 * Creates a latent simulated network with a fixed latency and all messages delivered in order.
+	 * @param fixedLatency The fixed latency (may be 0)
+	 * @return a network
+	 */
+	public static TestEventCoordinatorNetwork orderedLatent(int fixedLatency) {
+		return new TestEventCoordinatorNetwork(fixedLatency, fixedLatency, 0, true);
+	}
+
+	/**
+	 * Creates a latent simulated network with a randomised bounded latency and all messages delivered in order.
+	 * @param minimumLatency The minimum latency (inclusive)
+	 * @param maximumLatency The maximum latency (inclusive)
+	 * @return a network
+	 */
+	public static TestEventCoordinatorNetwork orderedRandomlyLatent(int minimumLatency, int maximumLatency) {
+		return orderedRandomlyLatent(minimumLatency, maximumLatency, System.currentTimeMillis());
+	}
+
+	/**
+	 * Creates a latent simulated network with a randomised bounded latency and all messages delivered in order.
+	 * @param minimumLatency The minimum latency (inclusive)
+	 * @param maximumLatency The maximum latency (inclusive)
+	 * @param rngSeed The seed to use for random operations
+	 * @return a network
+	 */
+	public static TestEventCoordinatorNetwork orderedRandomlyLatent(int minimumLatency, int maximumLatency, long rngSeed) {
+		return new TestEventCoordinatorNetwork(minimumLatency, maximumLatency, rngSeed, true);
 	}
 
 	public void setSendingDisable(EUID euid, boolean disable) {
@@ -74,64 +114,102 @@ public class TestEventCoordinatorNetwork {
 		}
 	}
 
-	public EventCoordinatorNetworkSender getNetworkSender(EUID euid) {
+	private int getRandomLatency() {
+		if (minimumLatency == maximumLatency) {
+			return minimumLatency;
+		} else {
+			return minimumLatency + rng.nextInt(maximumLatency - minimumLatency + 1);
+		}
+	}
+
+	public EventCoordinatorNetworkSender getNetworkSender(EUID forNode) {
+		Consumer<MessageInTransit> sendMessageSink = message -> {
+			if (!sendingDisabled.contains(forNode)) {
+				if (preserveOrder) {
+					orderedMessageBuffer.push(message);
+				}
+				executorService.schedule(() -> {
+					if (preserveOrder) {
+						MessageInTransit otherMessage = orderedMessageBuffer.pollLast();
+						if (otherMessage == null) {
+							throw new IllegalStateException("No message available in message buffer");
+						}
+						receivedMessages.onNext(otherMessage);
+					} else {
+						receivedMessages.onNext(message);
+					}
+				}, getRandomLatency(), TimeUnit.MILLISECONDS);
+			}
+		};
 		return new EventCoordinatorNetworkSender() {
 			@Override
 			public void broadcastProposal(Vertex vertex) {
-				if (!sendingDisabled.contains(euid)) {
-					executorService.schedule(
-						() -> proposals.onNext(vertex),
-						loopbackDelay,
-						TimeUnit.MILLISECONDS
-					);
-				}
+				sendMessageSink.accept(MessageInTransit.broadcast(vertex));
 			}
 
 			@Override
 			public void sendNewView(NewView newView, EUID newViewLeader) {
-				if (!sendingDisabled.contains(euid)) {
-					executorService.schedule(
-						() -> newViews.onNext(new SimpleEntry<>(newView, newViewLeader)),
-						loopbackDelay,
-						TimeUnit.MILLISECONDS
-					);
-				}
+				sendMessageSink.accept(MessageInTransit.send(newView, newViewLeader));
 			}
 
 			@Override
 			public void sendVote(Vote vote, EUID leader) {
-				if (!sendingDisabled.contains(euid)) {
-					executorService.schedule(
-						() -> votes.onNext(new SimpleEntry<>(vote, leader)),
-						loopbackDelay,
-						TimeUnit.MILLISECONDS
-					);
-				}
+				sendMessageSink.accept(MessageInTransit.send(vote, leader));
 			}
 		};
 	}
 
-	public EventCoordinatorNetworkRx getNetworkRx(EUID euid) {
+	public EventCoordinatorNetworkRx getNetworkRx(EUID forNode) {
+		// filter only relevant messages (appropriate target and if receiving is allowed)
+		Observable<Object> myMessages = receivedMessages
+			.filter(message -> !receivingDisabled.contains(forNode))
+			.filter(message -> message.isRelevantFor(forNode))
+			.map(MessageInTransit::getContent);
 		return new EventCoordinatorNetworkRx() {
 			@Override
 			public Observable<Vertex> proposalMessages() {
-				return proposals
-					.filter(p -> !receivingDisabled.contains(euid));
+				return myMessages.ofType(Vertex.class);
 			}
 
 			@Override
 			public Observable<NewView> newViewMessages() {
-				return newViews
-					.filter(e -> e.getValue().equals(euid) && !receivingDisabled.contains(euid))
-					.map(Entry::getKey);
+				return myMessages.ofType(NewView.class);
 			}
 
 			@Override
 			public Observable<Vote> voteMessages() {
-				return votes
-					.filter(e -> e.getValue().equals(euid) && !receivingDisabled.contains(euid))
-					.map(Entry::getKey);
+				return myMessages.ofType(Vote.class);
 			}
 		};
+	}
+
+	public int getMaximumLatency() {
+		return maximumLatency;
+	}
+
+	private static final class MessageInTransit {
+		private final Object content;
+		private final EUID target; // may be null if broadcast
+
+		private MessageInTransit(Object content, EUID target) {
+			this.content = Objects.requireNonNull(content);
+			this.target = target;
+		}
+
+		private static MessageInTransit broadcast(Object content) {
+			return new MessageInTransit(content, null);
+		}
+
+		private static MessageInTransit send(Object content, EUID receiver) {
+			return new MessageInTransit(content, receiver);
+		}
+
+		private Object getContent() {
+			return this.content;
+		}
+
+		private boolean isRelevantFor(EUID node) {
+			return target == null || node.equals(target);
+		}
 	}
 }
