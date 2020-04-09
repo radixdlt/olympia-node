@@ -26,6 +26,7 @@ import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.mempool.Mempool;
@@ -46,7 +47,7 @@ public class EpochManager {
 	private final PendingVotes pendingVotes;
 	private final ProposerElectionFactory proposerElectionFactory;
 	private final ECKeyPair selfKey;
-	private final Counters counters;
+	private final SystemCounters counters;
 
 	@Inject
 	public EpochManager(
@@ -59,7 +60,7 @@ public class EpochManager {
 		PendingVotes pendingVotes,
 		ProposerElectionFactory proposerElectionFactory,
 		@Named("self") ECKeyPair selfKey,
-		Counters counters
+		SystemCounters counters
 	) {
 		this.proposalGenerator = Objects.requireNonNull(proposalGenerator);
 		this.mempool = Objects.requireNonNull(mempool);

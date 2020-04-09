@@ -9,6 +9,7 @@ import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.mempool.Mempool;
 import java.util.Collections;
@@ -27,7 +28,7 @@ public class EpochManagerTest {
 			mock(PendingVotes.class),
 			proposers -> mock(ProposerElection.class),
 			mock(ECKeyPair.class),
-			mock(Counters.class)
+			mock(SystemCounters.class)
 		);
 
 		ECKeyPair ecKeyPair = ECKeyPair.generateNew();

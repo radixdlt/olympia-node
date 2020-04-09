@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.network.TestEventCoordinatorNetwork;
 import io.reactivex.rxjava3.core.Observable;
@@ -103,7 +104,7 @@ public class LatentNetworkTest {
 		// correct nodes should get no timeouts since max latency is smaller than timeout
 		Observable<Object> correctTimeoutCheck = Observable.interval(1, TimeUnit.SECONDS)
 			.flatMapIterable(i -> allNodes)
-			.doOnNext(cn -> assertThat(bftNetwork.getCounters(cn).getCount(Counters.CounterType.TIMEOUT))
+			.doOnNext(cn -> assertThat(bftNetwork.getCounters(cn).get(CounterType.CONSENSUS_TIMEOUT))
 				.satisfies(new Condition<>(c -> c == 0,
 					"Timeout counter is zero in correct node %s", cn.getPublicKey().euid())))
 			.map(o -> o);

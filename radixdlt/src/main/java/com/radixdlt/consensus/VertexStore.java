@@ -17,6 +17,8 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
@@ -36,6 +38,8 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class VertexStore {
 
 	private final RadixEngine engine;
+	private final SystemCounters counters;
+
 	private final Map<Hash, Vertex> vertices = new ConcurrentHashMap<>();
 	private final BehaviorSubject<Vertex> lastCommittedVertex = BehaviorSubject.create();
 
@@ -49,14 +53,12 @@ public final class VertexStore {
 	public VertexStore(
 		Vertex genesisVertex,
 		QuorumCertificate rootQC,
-		RadixEngine engine
+		RadixEngine engine,
+		SystemCounters counters
 	) {
-		Objects.requireNonNull(genesisVertex);
-		Objects.requireNonNull(rootQC);
-		Objects.requireNonNull(engine);
-
-		this.engine = engine;
-		this.highestQC = rootQC;
+		this.engine = Objects.requireNonNull(engine);
+		this.counters = Objects.requireNonNull(counters);
+		this.highestQC = Objects.requireNonNull(rootQC);
 		try {
 			this.engine.store(genesisVertex.getAtom());
 		} catch (RadixEngineException e) {
@@ -87,7 +89,9 @@ public final class VertexStore {
 
 		if (vertex.getAtom() != null) {
 			try {
+				this.counters.increment(CounterType.LEDGER_PROCESSED);
 				this.engine.store(vertex.getAtom());
+				this.counters.increment(CounterType.LEDGER_STORED);
 			} catch (RadixEngineException e) {
 				// TODO: Don't check for state computer errors for now so that we don't
 				// TODO: have to deal with failing leader proposals

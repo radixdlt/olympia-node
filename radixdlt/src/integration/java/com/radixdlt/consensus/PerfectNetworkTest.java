@@ -19,7 +19,7 @@ package com.radixdlt.consensus;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-import com.radixdlt.consensus.Counters.CounterType;
+import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.ECKeyPair;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.Arrays;
@@ -82,9 +82,9 @@ public class PerfectNetworkTest {
 			.flatMapIterable(i -> nodes)
 			.map(bftNetwork::getCounters)
 			.doOnNext(counters -> {
-				assertThat(counters.getCount(CounterType.TIMEOUT))
+				assertThat(counters.get(CounterType.CONSENSUS_TIMEOUT))
 					.satisfies(new Condition<>(c -> c == 0, "Timeout counter is zero."));
-				assertThat(counters.getCount(CounterType.REJECTED_PROPOSAL))
+				assertThat(counters.get(CounterType.CONSENSUS_REJECTED))
 					.satisfies(new Condition<>(c -> c == 0, "Rejected Proposal counter is zero."));
 			})
 			.map(o -> o);

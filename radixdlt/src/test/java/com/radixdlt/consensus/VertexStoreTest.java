@@ -25,6 +25,7 @@ import static org.mockito.Mockito.mock;
 import static org.powermock.api.mockito.PowerMockito.when;
 
 import com.radixdlt.atommodel.Atom;
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.RadixEngine;
@@ -49,7 +50,8 @@ public class VertexStoreTest {
 		VoteData voteData = new VoteData(vertexMetadata, null);
 		this.rootQC = new QuorumCertificate(voteData, new ECDSASignatures());
 		this.radixEngine = mock(RadixEngine.class);
-		this.vertexStore = new VertexStore(genesisVertex, rootQC, radixEngine);
+		SystemCounters counters = mock(SystemCounters.class);
+		this.vertexStore = new VertexStore(genesisVertex, rootQC, radixEngine, counters);
 	}
 
 	@Test

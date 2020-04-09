@@ -25,7 +25,6 @@ import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.radixdlt.identifiers.EUID;
@@ -34,7 +33,6 @@ import org.radix.network2.addressbook.Peer;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import org.radix.universe.system.LocalSystem;
-import org.radix.utils.SystemMetaData;
 
 public class NetworkService {
 	private final Serialization serialization;
@@ -53,7 +51,7 @@ public class NetworkService {
  		return self;
  	}
 
- 	public JSONObject getNetwork() throws JSONException {
+ 	public JSONObject getNetwork() {
 		JSONObject result = new JSONObject();
 
 		// sorted by transport name
@@ -70,7 +68,6 @@ public class NetworkService {
 			}
 			result.put(e.getKey(), transportPeers);
 		}
-		SystemMetaData.ifPresent( a -> result.put("nids", a.get("nids.count", 0)));
 
 		return result;
 	}
@@ -82,27 +79,23 @@ public class NetworkService {
 
 	public List<JSONObject> getLivePeers() {
 		return this.addressBook.recentPeers()
-			.map(peer -> {
-				return serialization.toJsonObject(peer, Output.WIRE);
-			})
+			.map(peer -> serialization.toJsonObject(peer, Output.WIRE))
 			.collect(Collectors.toList());
 	}
 
 	public JSONObject getLiveNIDS() {
-		JSONArray NIDS = new JSONArray();
-		this.addressBook.recentPeers().forEachOrdered(peer -> NIDS.put(peer.getNID().toString()));
-		return new JSONObject().put("nids", NIDS);
+		JSONArray nids = new JSONArray();
+		this.addressBook.recentPeers().forEachOrdered(peer -> nids.put(peer.getNID().toString()));
+		return new JSONObject().put("nids", nids);
 	}
 
 	public List<JSONObject> getPeers() {
 		return this.addressBook.peers()
-			.map(peer -> {
-				return serialization.toJsonObject(peer, Output.WIRE);
-			})
+			.map(peer -> serialization.toJsonObject(peer, Output.WIRE))
 			.collect(Collectors.toList());
 	}
 
-	public JSONObject getPeer(String id) throws JSONException {
+	public JSONObject getPeer(String id) {
 		JSONObject result = new JSONObject();
 
 		try {

@@ -24,6 +24,8 @@ import java.net.UnknownHostException;
 import java.util.concurrent.CompletableFuture;
 import org.radix.Radix;
 
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -45,7 +47,6 @@ import org.radix.time.Timestamps;
 import org.radix.universe.system.LocalSystem;
 import org.radix.universe.system.RadixSystem;
 import org.radix.universe.system.SystemMessage;
-import org.radix.utils.SystemMetaData;
 import org.xerial.snappy.Snappy;
 
 /*
@@ -57,14 +58,16 @@ class MessageDispatcher {
 	private static final Logger log = LogManager.getLogger("messaging");
 
 	private final long messageTtlMs;
+	private final SystemCounters counters;
 	private final Serialization serialization;
 	private final TimeSupplier timeSource;
 	private final LocalSystem localSystem;
 	private final Interfaces interfaces;
 	private final AddressBook addressBook;
 
-	MessageDispatcher(MessageCentralConfiguration config, Serialization serialization, TimeSupplier timeSource, LocalSystem localSystem, Interfaces interfaces, AddressBook addressBook) {
+	MessageDispatcher(SystemCounters counters, MessageCentralConfiguration config, Serialization serialization, TimeSupplier timeSource, LocalSystem localSystem, Interfaces interfaces, AddressBook addressBook) {
 		this.messageTtlMs = config.messagingTimeToLive(30) * 1000L;
+		this.counters = counters;
 		this.serialization = serialization;
 		this.timeSource = timeSource;
 		this.localSystem = localSystem;
@@ -79,7 +82,7 @@ class MessageDispatcher {
 		if (timeSource.currentTime() - message.getTimestamp() > messageTtlMs) {
 			String msg = String.format("%s: TTL to %s has expired", message.getClass().getName(), peer);
 			log.warn(msg);
-			SystemMetaData.ifPresent( a -> a.increment("messages.outbound.aborted"));
+			this.counters.increment(CounterType.MESSAGES_OUTBOUND_ABORTED);
 			return SendResult.failure(new IOException(msg));
 		}
 
@@ -109,10 +112,10 @@ class MessageDispatcher {
 
 		long currentTime = timeSource.currentTime();
 		peer.setTimestamp(Timestamps.ACTIVE, currentTime);
-		SystemMetaData.ifPresent(a -> a.increment("messages.inbound.received"));
+		this.counters.increment(CounterType.MESSAGES_INBOUND_RECEIVED);
 
 		if (currentTime - message.getTimestamp() > messageTtlMs) {
-			SystemMetaData.ifPresent(a -> a.increment("messages.inbound.discarded"));
+			this.counters.increment(CounterType.MESSAGES_INBOUND_DISCARDED);
 			return;
 		}
 
@@ -155,13 +158,13 @@ class MessageDispatcher {
 		}
 
 		listeners.messageReceived(peer, message);
-		SystemMetaData.ifPresent( a -> a.increment("messages.inbound.processed"));
+		this.counters.increment(CounterType.MESSAGES_INBOUND_PROCESSED);
 	}
 
 	private SendResult updateStatistics(SendResult result) {
-		SystemMetaData.ifPresent( a -> a.increment("messages.outbound.processed"));
+		this.counters.increment(CounterType.MESSAGES_OUTBOUND_PROCESSED);
 		if (result.isComplete()) {
-			SystemMetaData.ifPresent( a -> a.increment("messages.outbound.sent"));
+			this.counters.increment(CounterType.MESSAGES_OUTBOUND_SENT);
 		}
 		return result;
 	}

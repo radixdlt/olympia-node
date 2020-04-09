@@ -25,6 +25,8 @@ import javax.inject.Inject;
 
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.atommodel.Atom;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCounters.CounterType;
 
 /**
  * Shared mempool.
@@ -35,27 +37,32 @@ import com.radixdlt.atommodel.Atom;
 public class SharedMempool implements Mempool {
 	private final LocalMempool localMempool;
 	private final MempoolNetworkTx networkSender;
+	private final SystemCounters counters;
 
 	@Inject
-	SharedMempool(LocalMempool localMempool, MempoolNetworkTx networkSender) {
+	SharedMempool(SystemCounters counters, LocalMempool localMempool, MempoolNetworkTx networkSender) {
 		this.localMempool = Objects.requireNonNull(localMempool);
 		this.networkSender = Objects.requireNonNull(networkSender);
+		this.counters = Objects.requireNonNull(counters);
 	}
 
 	@Override
 	public void addAtom(Atom atom) throws MempoolFullException, MempoolDuplicateException {
 		this.localMempool.addAtom(atom);
+		updateCounts();
 		this.networkSender.sendMempoolSubmission(atom);
 	}
 
 	@Override
 	public void removeCommittedAtom(AID aid) {
 		this.localMempool.removeCommittedAtom(aid);
+		updateCounts();
 	}
 
 	@Override
 	public void removeRejectedAtom(AID aid) {
 		this.localMempool.removeRejectedAtom(aid);
+		updateCounts();
 	}
 
 	@Override
@@ -66,6 +73,11 @@ public class SharedMempool implements Mempool {
 	@Override
 	public int atomCount() {
 		return this.localMempool.atomCount();
+	}
+
+	private void updateCounts() {
+		this.counters.set(CounterType.MEMPOOL_COUNT, atomCount());
+		this.counters.set(CounterType.MEMPOOL_MAXCOUNT, this.localMempool.maxCount());
 	}
 
 	@Override

@@ -18,16 +18,15 @@
 package org.radix.serialization;
 
 import com.radixdlt.DefaultSerialization;
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.universe.Universe;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.mockito.stubbing.Answer;
 import org.radix.network2.transport.udp.PublicInetAddress;
 import org.radix.time.NtpService;
 import org.radix.universe.system.LocalSystem;
-import org.radix.utils.SystemMetaData;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.powermock.api.mockito.PowerMockito.doAnswer;
@@ -41,6 +40,7 @@ public abstract class RadixTest
 	private static RuntimeProperties properties;
 	private static LocalSystem localSystem;
 	private static Universe universe;
+	private static SystemCounters counters;
 
 	@BeforeClass
 	public static void startRadixTest() {
@@ -53,20 +53,15 @@ public abstract class RadixTest
 		when(universe.getMagic()).thenReturn(2);
 		when(universe.getPort()).thenReturn(8080);
 
-		final SystemMetaData systemMetaData = mock(SystemMetaData.class);
-		SystemMetaData.set(systemMetaData);
 
 		ntpService = mock(NtpService.class);
 		when(ntpService.getUTCTimeMS()).thenAnswer((Answer<Long>) invocation -> System.currentTimeMillis());
 
 		serialization = DefaultSerialization.getInstance();
-		PublicInetAddress.configure(30000);
-		localSystem = LocalSystem.restoreOrCreate(getProperties(), universe);
-	}
 
-	@AfterClass
-	public static void finishRadixTest() {
-		SystemMetaData.clear();
+		PublicInetAddress.configure(30000);
+		counters = mock(SystemCounters.class);
+		localSystem = LocalSystem.create(counters, getProperties(), universe);
 	}
 
 	public static Serialization getSerialization() {
@@ -87,5 +82,9 @@ public abstract class RadixTest
 
 	public static Universe getUniverse() {
 		return universe;
+	}
+
+	public static SystemCounters getCounters() {
+		return counters;
 	}
 }

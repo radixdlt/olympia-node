@@ -39,7 +39,7 @@ public class RadixTestWithStores extends RadixTest {
 	public void beforeEachRadixTest() {
 		this.dbEnv = new DatabaseEnvironment(getProperties());
 
-		GlobalInjector injector = new GlobalInjector(getProperties(), dbEnv, getLocalSystem(), getUniverse());
+		GlobalInjector injector = new GlobalInjector(getProperties(), dbEnv, getUniverse());
 		this.messageCentral = injector.getInjector().getInstance(MessageCentral.class);
 		this.addressBook = injector.getInjector().getInstance(AddressBook.class);
 

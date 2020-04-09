@@ -20,7 +20,6 @@ package com.radixdlt.consensus;
 import com.google.common.collect.Lists;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.atommodel.Atom;
-import com.radixdlt.consensus.Counters.CounterType;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposerElection;
@@ -28,6 +27,8 @@ import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyViolationException;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.constraintmachine.DataPointer;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.RadixEngineErrorCode;
@@ -62,7 +63,7 @@ public class ValidatingEventCoordinatorTest {
 	private EventCoordinatorNetworkSender networkSender;
 	private VertexStore vertexStore;
 	private ValidatorSet validatorSet;
-	private Counters counters;
+	private SystemCounters counters;
 
 	@Before
 	public void setUp() {
@@ -75,7 +76,7 @@ public class ValidatingEventCoordinatorTest {
 		this.pendingVotes = mock(PendingVotes.class);
 		this.proposerElection = mock(ProposerElection.class);
 		this.validatorSet = mock(ValidatorSet.class);
-		this.counters = mock(Counters.class);
+		this.counters = mock(SystemCounters.class);
 
 		this.eventCoordinator = new ValidatingEventCoordinator(
 			proposalGenerator,
@@ -154,7 +155,7 @@ public class ValidatingEventCoordinatorTest {
 		when(pacemaker.getCurrentView()).thenReturn(View.of(1));
 		eventCoordinator.processLocalTimeout(View.of(0L));
 		verify(networkSender, times(1)).sendNewView(any(), any());
-		verify(counters, times(1)).increment(eq(CounterType.TIMEOUT));
+		verify(counters, times(1)).increment(eq(CounterType.CONSENSUS_TIMEOUT));
 	}
 
 	@Test
@@ -162,7 +163,7 @@ public class ValidatingEventCoordinatorTest {
 		when(pacemaker.processLocalTimeout(any())).thenReturn(Optional.empty());
 		eventCoordinator.processLocalTimeout(View.of(0L));
 		verify(networkSender, times(0)).sendNewView(any(), any());
-		verify(counters, times(0)).increment(eq(CounterType.TIMEOUT));
+		verify(counters, times(0)).increment(eq(CounterType.CONSENSUS_TIMEOUT));
 	}
 
 	@Test

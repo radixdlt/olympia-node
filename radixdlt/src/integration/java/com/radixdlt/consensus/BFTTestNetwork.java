@@ -36,6 +36,8 @@ import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
@@ -61,7 +63,7 @@ public class BFTTestNetwork {
 	private final Vertex genesisVertex;
 	private final QuorumCertificate genesisQC;
 	private final ImmutableMap<ECKeyPair, VertexStore> vertexStores;
-	private final ImmutableMap<ECKeyPair, Counters> counters;
+	private final ImmutableMap<ECKeyPair, SystemCounters> counters;
 	private final ImmutableMap<ECKeyPair, PacemakerImpl> pacemakers;
 	private final Observable<Event> bftEvents;
 	private final ProposerElection proposerElection;
@@ -94,16 +96,16 @@ public class BFTTestNetwork {
 			.map(Validator::nodeKey)
 			.collect(ImmutableList.toImmutableList())
 		);
+		this.counters = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e, e -> new SystemCountersImpl()));
 		this.vertexStores = nodes.stream()
 			.collect(ImmutableMap.toImmutableMap(
 				e -> e,
 				e -> {
 					RadixEngine radixEngine = mock(RadixEngine.class);
 					when(radixEngine.staticCheck(any())).thenReturn(Optional.empty());
-					return new VertexStore(genesisVertex, genesisQC, radixEngine);
+					return new VertexStore(genesisVertex, genesisQC, radixEngine, this.counters.get(e));
 				})
 			);
-		this.counters = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e, e -> new Counters()));
 		this.pacemakers = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e,
 			e -> new PacemakerImpl(TEST_PACEMAKER_TIMEOUT, Executors.newSingleThreadScheduledExecutor())));
 		this.bftEvents = Observable.merge(this.vertexStores.keySet().stream()
@@ -149,7 +151,7 @@ public class BFTTestNetwork {
 		return vertexStores.get(keyPair);
 	}
 
-	public Counters getCounters(ECKeyPair keyPair) {
+	public SystemCounters getCounters(ECKeyPair keyPair) {
 		return counters.get(keyPair);
 	}
 

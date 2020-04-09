@@ -21,13 +21,14 @@ import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.identifiers.EUID;
-import com.radixdlt.consensus.Counters.CounterType;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyViolationException;
 import com.radixdlt.consensus.validators.ValidatorSet;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
@@ -57,7 +58,7 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 	private final ECKeyPair selfKey; // TODO remove signing/address to separate identity management
 	private final SafetyRules safetyRules;
 	private final ValidatorSet validatorSet;
-	private final Counters counters;
+	private final SystemCounters counters;
 
 	@Inject
 	public ValidatingEventCoordinator(
@@ -71,7 +72,7 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 		ProposerElection proposerElection,
 		@Named("self") ECKeyPair selfKey,
 		ValidatorSet validatorSet,
-		Counters counters
+		SystemCounters counters
 	) {
 		this.proposalGenerator = Objects.requireNonNull(proposalGenerator);
 		this.mempool = Objects.requireNonNull(mempool);
@@ -168,6 +169,7 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 			return;
 		}
 
+		this.counters.set(CounterType.CONSENSUS_VIEW, newView.getView().number());
 		try {
 			this.processQC(newView.getQC());
 		} catch (SyncException e) {
@@ -212,7 +214,7 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 		try {
 			vertexStore.insertVertex(proposedVertex);
 		} catch (VertexInsertionException e) {
-			counters.increment(CounterType.REJECTED_PROPOSAL);
+			counters.increment(CounterType.CONSENSUS_REJECTED);
 
 			log.info(this.getShortName() + ": PROPOSAL: Rejected", e);
 
@@ -248,7 +250,7 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 		// proceed to next view if pacemaker feels like it
 		Optional<View> nextView = this.pacemaker.processLocalTimeout(view);
 		if (nextView.isPresent()) {
-			counters.increment(CounterType.TIMEOUT);
+			counters.increment(CounterType.CONSENSUS_TIMEOUT);
 			this.proceedToView(nextView.get());
 			log.info("{}: LOCAL_TIMEOUT: Processed {}", this.getShortName(), view);
 		} else {

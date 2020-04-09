@@ -44,7 +44,6 @@ import org.radix.time.Time;
 import org.radix.universe.UniverseValidator;
 import org.radix.universe.system.LocalSystem;
 import org.radix.utils.IOUtils;
-import org.radix.utils.SystemMetaData;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -122,8 +121,6 @@ public final class Radix
 		// TODO this is awful, PublicInetAddress shouldn't be a singleton
 		PublicInetAddress.configure(universe.getPort());
 
-		LocalSystem localSystem = LocalSystem.restoreOrCreate(properties, universe);
-
 		// set up time services
 		Time.start(properties);
 
@@ -133,16 +130,14 @@ public final class Radix
 		// start database environment
 		DatabaseEnvironment dbEnv = new DatabaseEnvironment(properties);
 
-		// start profiling
-		SystemMetaData.init(dbEnv);
-
 		// TODO Eventually modules should be created using Google Guice injector
-		GlobalInjector globalInjector = new GlobalInjector(properties, dbEnv, localSystem, universe);
+		GlobalInjector globalInjector = new GlobalInjector(properties, dbEnv, universe);
 		// TODO use consensus for application construction (in our case, the engine middleware)
 
 		// setup networking
 		AddressBook addressBook = globalInjector.getInjector().getInstance(AddressBook.class);
 		PeerManager peerManager = globalInjector.getInjector().getInstance(PeerManager.class);
+		LocalSystem localSystem = globalInjector.getInjector().getInstance(LocalSystem.class);
 		peerManager.start();
 
 		// Start mempool receiver

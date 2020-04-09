@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.examples.tictactoe.Pair;
@@ -150,7 +151,7 @@ public class CrashFaultNetworkTest {
 			.flatMapIterable(i -> correctNodes)
 			// there is a race condition between getCount(TIMEOUT) and getCurrentView in pacemaker
 			// however, since we're only interested in having at most X timeouts, we can safely just check for <=
-			.doOnNext(cn -> assertThat(bftNetwork.getCounters(cn).getCount(Counters.CounterType.TIMEOUT))
+			.doOnNext(cn -> assertThat(bftNetwork.getCounters(cn).get(SystemCounters.CounterType.CONSENSUS_TIMEOUT))
 				.satisfies(new Condition<>(c -> c <= (bftNetwork.getPacemaker(cn).getCurrentView().number() / numNodes) * numCrashed,
 					"Timeout counter is less or equal to number of times crashed nodes were proposer.")))
 			.map(o -> o);
@@ -204,24 +205,19 @@ public class CrashFaultNetworkTest {
 		final BFTTestNetwork bftNetwork = new BFTTestNetwork(allNodes);
 
 		// correct nodes should all get the same commits in the same order
-		//CHECKSTYLE:OFF
 		Observable<Object> correctCommitCheck = Observable.zip(
 				allNodes.stream()
 					.map(node -> bftNetwork.getVertexStore(node).lastCommittedVertex()
 						.map(vertex -> Pair.of(node, vertex)))
 					.collect(Collectors.toList()),
-				Arrays::stream)
-			.map(nodesAndVertices -> nodesAndVertices
-				// the following cast is fine, checkstyle, see above
-				.map(nodeAndVertex -> (Pair<ECPublicKey, Vertex>) nodeAndVertex)
-				.filter(nodeAndVertex -> !faultyNodesPubs.contains(nodeAndVertex.getFirst()))
-				.map(Pair::getSecond)
-				.distinct()
-				.collect(Collectors.toList()))
-			.doOnNext(committedVertices -> assertThat(committedVertices).hasSize(1))
-			.map(vertices -> vertices.get(0))
-			.map(o -> o);
-		//CHECKSTYLE:ON
+					this::toStream)
+				.map(nodesAndVertices -> nodesAndVertices
+					.filter(nodeAndVertex -> !faultyNodesPubs.contains(nodeAndVertex.getFirst().getPublicKey()))
+					.map(Pair::getSecond)
+					.distinct()
+					.collect(Collectors.toList()))
+				.doOnNext(committedVertices -> assertThat(committedVertices).hasSize(1))
+				.map(vertices -> vertices.get(0));
 
 		// there should be a new highest QC every once in a while to ensure progress
 		// the minimum latency per round is determined using the network latency and a tolerance
@@ -264,4 +260,10 @@ public class CrashFaultNetworkTest {
 			.blockingSubscribe();
 	}
 
+	private Stream<Pair<ECKeyPair, Vertex>> toStream(Object[] input) {
+		// Unfortunately Observable.zip has an interface that can't possibly be statically typesafe
+		return Arrays.stream(input)
+			.map(Pair.class::cast)
+			.map(p -> Pair.of(ECKeyPair.class.cast(p.getFirst()), Vertex.class.cast(p.getSecond())));
+	}
 }
