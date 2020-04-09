@@ -65,7 +65,7 @@ public class SystemCountersImplTest {
 	public void when_tomap__then_values_correct() {
 		SystemCounters counters = new SystemCountersImpl();
 		for (CounterType value : CounterType.values()) {
-			counters.set(value, value.ordinal() + 1L);
+			counters.set(value, ordinal(value));
 		}
 		// Ensure writeable
 		Map<String, Object> m = new TreeMap<>(counters.toMap());
@@ -82,6 +82,12 @@ public class SystemCountersImplTest {
 		assertThat(s).contains("1234");
 	}
 
+	private int ordinal(CounterType value) {
+		// Add one so that none are zero.
+		// Zero is the default value, and this lets us catch the "not set" case.
+		return value.ordinal() + 1;
+	}
+
 	private void testMap(String path, Map<String, Object> m) {
 		for (Map.Entry<String, Object> entry : m.entrySet()) {
 			String p = entry.getKey().toUpperCase();
@@ -94,7 +100,8 @@ public class SystemCountersImplTest {
 			} else {
 				String s = o.toString();
 				CounterType ct = CounterType.valueOf(newPath);
-				assertThat(Long.parseLong(s)).isEqualTo(ct.ordinal() + 1L);
+				// Check that values in the map match the values we set above
+				assertThat(Long.parseLong(s)).isEqualTo(ordinal(ct));
 			}
 		}
 	}
