@@ -17,6 +17,7 @@
 
 package com.radixdlt.counters;
 
+import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -26,7 +27,16 @@ import com.google.common.collect.Maps;
  * Event counting utility class.
  */
 public final class SystemCountersImpl implements SystemCounters {
-	private ConcurrentHashMap<CounterType, Long> counters = new ConcurrentHashMap<>();
+	private final ConcurrentHashMap<CounterType, Long> counters = new ConcurrentHashMap<>();
+	private final String since;
+
+	public SystemCountersImpl() {
+		this(System.currentTimeMillis());
+	}
+
+	public SystemCountersImpl(long startTime) {
+		this.since = Instant.ofEpochMilli(startTime).toString();
+	}
 
 	@Override
 	public long increment(CounterType counterType) {
@@ -56,6 +66,7 @@ public final class SystemCountersImpl implements SystemCounters {
 			long value = get(counter);
 			addValue(output, makePath(counter), value);
 		}
+		output.put("since", since);
 		return output;
 	}
 

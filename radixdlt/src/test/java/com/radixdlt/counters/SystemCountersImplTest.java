@@ -17,13 +17,15 @@
 
 package com.radixdlt.counters;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-
 import java.util.Map;
+import java.util.TreeMap;
 
 import org.junit.Test;
 
 import com.radixdlt.counters.SystemCounters.CounterType;
+
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.Assert.assertNotNull;
 
 public class SystemCountersImplTest {
 	@Test
@@ -65,7 +67,9 @@ public class SystemCountersImplTest {
 		for (CounterType value : CounterType.values()) {
 			counters.set(value, value.ordinal() + 1L);
 		}
-		Map<String, Object> m = counters.toMap();
+		// Ensure writeable
+		Map<String, Object> m = new TreeMap<>(counters.toMap());
+		assertNotNull(m.remove("since"));
 		testMap("", m);
 	}
 
