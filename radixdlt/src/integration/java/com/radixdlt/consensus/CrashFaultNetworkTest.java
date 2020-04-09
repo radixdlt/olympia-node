@@ -206,18 +206,19 @@ public class CrashFaultNetworkTest {
 
 		// correct nodes should all get the same commits in the same order
 		Observable<Object> correctCommitCheck = Observable.zip(
-				allNodes.stream()
-					.map(node -> bftNetwork.getVertexStore(node).lastCommittedVertex()
-						.map(vertex -> Pair.of(node, vertex)))
-					.collect(Collectors.toList()),
-					this::toStream)
-				.map(nodesAndVertices -> nodesAndVertices
-					.filter(nodeAndVertex -> !faultyNodesPubs.contains(nodeAndVertex.getFirst().getPublicKey()))
-					.map(Pair::getSecond)
-					.distinct()
-					.collect(Collectors.toList()))
-				.doOnNext(committedVertices -> assertThat(committedVertices).hasSize(1))
-				.map(vertices -> vertices.get(0));
+			allNodes.stream()
+				.map(node -> bftNetwork.getVertexStore(node).lastCommittedVertex()
+					.map(vertex -> Pair.of(node, vertex)))
+				.collect(Collectors.toList()),
+				this::toStream)
+			.map(nodesAndVertices -> nodesAndVertices
+				.filter(nodeAndVertex -> !faultyNodesPubs.contains(nodeAndVertex.getFirst().getPublicKey()))
+				.map(Pair::getSecond)
+				.distinct()
+				.collect(Collectors.toList()))
+			.doOnNext(committedVertices -> assertThat(committedVertices).hasSize(1))
+			.map(vertices -> vertices.get(0))
+			.map(o -> o);
 
 		// there should be a new highest QC every once in a while to ensure progress
 		// the minimum latency per round is determined using the network latency and a tolerance
