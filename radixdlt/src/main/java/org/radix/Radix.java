@@ -18,7 +18,6 @@
 package org.radix;
 
 import com.radixdlt.DefaultSerialization;
-import com.google.common.collect.Lists;
 import com.radixdlt.consensus.ChainedBFT;
 import com.radixdlt.mempool.MempoolReceiver;
 import com.radixdlt.mempool.SubmissionControl;
@@ -52,17 +51,12 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.net.URISyntaxException;
 import java.security.Security;
-import java.util.List;
-import java.util.Random;
 
 public final class Radix
 {
 	static
 	{
 		System.setProperty("java.net.preferIPv4Stack", "true");
-		if (Boolean.parseBoolean(System.getProperty("radix.fillheap", "false"))) {
-			fillHeap();
-		}
 	}
 
 	private static final Logger log = LogManager.getLogger();
@@ -76,22 +70,6 @@ public final class Radix
 
 	private static final Object BC_LOCK = new Object();
 	private static boolean bcInitialised;
-
-	// Be careful here.  This is a debugging method to detect overcommitted heap usage on Linux.
-	// It *really* needs to run in a single thread environment, other threads might cause a
-	// OutOfMemoryError.  This method tries to fill up memory until somewhere between
-	// minFree and 2 * minFree bytes are available.  Consumed memory is available for garbage
-	// collection on completion.
-	public static void fillHeap() {
-		final Random r = new Random();
-		final int minFree = 50 * 1024 * 1024;
-		List<byte[]> junk = Lists.newArrayList();
-		while (Runtime.getRuntime().freeMemory() > minFree * 2) {
-			byte[] data = new byte[minFree];
-			r.nextBytes(data);
-			junk.add(data);
-		}
-	}
 
 	private static void setupBouncyCastle() throws ClassNotFoundException, IllegalAccessException {
 		synchronized (BC_LOCK) {
