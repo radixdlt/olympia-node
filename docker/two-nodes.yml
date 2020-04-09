@@ -28,7 +28,7 @@ services:
       RADIXDLT_NETWORK_SEEDS_REMOTE: core0
       RADIXDLT_CONSENSUS_FIXED_QUORUM_SIZE: 2
       #RADIXDLT_NETWORK_DISCOVERY_URLS: https://sunstone.radixdlt.com:8443/explorer/node-finder
-      JAVA_OPTS: -server -Xms2g -Xmx2g -XX:+HeapDumpOnOutOfMemoryError -Djava.security.egd=file:/dev/urandom -Dcom.sun.management.jmxremote.port=9012 -Dcom.sun.management.jmxremote.rmi.port=9012 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=localhost -agentlib:jdwp=transport=dt_socket,address=50506,suspend=n,server=y
+      JAVA_OPTS: -server -Xms2g -Xmx2g -XX:+HeapDumpOnOutOfMemoryError -XX:+AlwaysPreTouch -Djava.security.egd=file:/dev/urandom -Dcom.sun.management.jmxremote.port=9012 -Dcom.sun.management.jmxremote.rmi.port=9012 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=localhost -agentlib:jdwp=transport=dt_socket,address=50506,suspend=n,server=y
     build: .
     image: radixdlt/radixdlt-core:develop
     labels:
