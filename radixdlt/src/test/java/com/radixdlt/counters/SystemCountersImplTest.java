@@ -92,7 +92,7 @@ public class SystemCountersImplTest {
 				Map<String, Object> newm = (Map<String, Object>) o;
 				testMap(newPath, newm);
 			} else {
-				String s = (String) o;
+				String s = o.toString();
 				CounterType ct = CounterType.valueOf(newPath);
 				assertThat(Long.parseLong(s)).isEqualTo(ct.ordinal() + 1L);
 			}

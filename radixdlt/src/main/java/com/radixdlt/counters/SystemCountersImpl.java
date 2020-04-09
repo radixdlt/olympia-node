@@ -78,7 +78,7 @@ public final class SystemCountersImpl implements SystemCounters {
 			Map<String, Object> newValues = (Map<String, Object>) values.computeIfAbsent(path[i], k -> Maps.newTreeMap());
 			values = newValues;
 		}
-		values.put(path[path.length - 1], String.valueOf(value));
+		values.put(path[path.length - 1], Long.valueOf(value));
 	}
 
 	private String[] makePath(CounterType counter) {
