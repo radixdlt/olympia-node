@@ -36,6 +36,7 @@ import com.radixdlt.crypto.Hash;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.utils.Longs;
 
+import io.reactivex.rxjava3.core.Single;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -105,9 +106,9 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 		this.networkSender.sendNewView(newView, nextLeader);
 	}
 
-	private void processQC(QuorumCertificate qc) throws SyncException {
+	private void syncToQC(QuorumCertificate qc) throws SyncException {
 		// sync up to QC if necessary
-		this.vertexStore.syncToQC(qc);
+		this.vertexStore.syncToQC(qc, hash -> Single.error(new RuntimeException("Could not retrieve vertex " + hash)));
 
 		// commit any newly committable vertices
 		this.safetyRules.process(qc)
@@ -144,7 +145,7 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 		potentialQc.ifPresent(qc -> {
 			log.info("{}: VOTE: Formed QC: {}", this.getShortName(), qc);
 			try {
-				this.processQC(qc);
+				this.syncToQC(qc);
 			} catch (SyncException e) {
 				// Should never go here
 				throw new IllegalStateException("Could not process QC " + e.getQC() + " which was created.");
@@ -171,7 +172,7 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 
 		this.counters.set(CounterType.CONSENSUS_VIEW, newView.getView().number());
 		try {
-			this.processQC(newView.getQC());
+			this.syncToQC(newView.getQC());
 		} catch (SyncException e) {
 			log.warn("{}: NEW_VIEW: Ignoring new view because unable to sync to QC {}", this.getShortName(), e.getQC());
 			return;
@@ -199,7 +200,7 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 		}
 
 		try {
-			processQC(proposedVertex.getQC());
+			syncToQC(proposedVertex.getQC());
 		} catch (SyncException e) {
 			log.warn("{}: PROPOSAL: Ignoring because unable to sync to QC {}", this.getShortName(), e.getQC());
 			return;
