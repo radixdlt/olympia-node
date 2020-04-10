@@ -24,8 +24,6 @@ import com.radixdlt.identifiers.EUID;
 import org.radix.network2.transport.TransportException;
 import org.radix.network2.transport.TransportInfo;
 import org.radix.network2.transport.TransportMetadata;
-import org.radix.network2.transport.udp.UDPConstants;
-
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
@@ -108,7 +106,11 @@ public final class PeerWithSystem extends Peer {
 
 	@Override
 	public String toString() {
-		String connectionInfo = supportsTransport(UDPConstants.UDP_NAME) ? connectionData(UDPConstants.UDP_NAME).toString() : "(No UDP data)";
+		// Here we are going to assume that hosts order their transports by priority, so use the first one.
+		String connectionInfo = supportedTransports()
+			.findFirst()
+			.map(ti -> String.format("%s:%s", ti.name(), ti.metadata()))
+			.orElse("None");
 		return String.format("%s[%s:%s]", this.getClass().getSimpleName(), this.system.getNID(), connectionInfo);
 	}
 

@@ -31,10 +31,10 @@ public class PeerWithTransportSerializeTest extends SerializeMessageObject<PeerW
 	}
 
 	private static PeerWithTransport get() {
-		TransportInfo ti = TransportInfo.of(UDPConstants.UDP_NAME,
+		TransportInfo ti = TransportInfo.of(UDPConstants.NAME,
 			StaticTransportMetadata.of(
-				UDPConstants.METADATA_UDP_HOST, "127.0.0.1",
-				UDPConstants.METADATA_UDP_PORT, "10000"
+				UDPConstants.METADATA_HOST, "127.0.0.1",
+				UDPConstants.METADATA_PORT, "10000"
 			)
 		);
 		return new PeerWithTransport(ti);

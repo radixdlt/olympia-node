@@ -28,17 +28,17 @@ public class UDPConstants {
 	/**
 	 * The UDP transport name.
 	 */
-	public static final String UDP_NAME = "UDP";
+	public static final String NAME = "UDP";
 
 	/**
 	 * The "host" property for the UDP transport.
 	 * Can be an IPv4/IPv6 raw address or host name.
 	 */
-	public static final String METADATA_UDP_HOST = "host";
+	public static final String METADATA_HOST = "host";
 	/**
 	 * The "port" property for the UDP transport.
 	 */
-	public static final String METADATA_UDP_PORT = "port";
+	public static final String METADATA_PORT = "port";
 
 	/**
 	 * Maximum packet size that we will attempt to send.

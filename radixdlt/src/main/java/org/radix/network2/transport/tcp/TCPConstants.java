@@ -28,17 +28,17 @@ public class TCPConstants {
 	/**
 	 * The TCP transport name.
 	 */
-	public static final String TCP_NAME = "TCP";
+	public static final String NAME = "TCP";
 
 	/**
 	 * The "host" property for the TCP transport.
 	 * Can be an IPv4/IPv6 raw address or host name.
 	 */
-	public static final String METADATA_TCP_HOST = "host";
+	public static final String METADATA_HOST = "host";
 	/**
 	 * The "port" property for the TCP transport.
 	 */
-	public static final String METADATA_TCP_PORT = "port";
+	public static final String METADATA_PORT = "port";
 
 	/**
 	 * Maximum packet size that we will attempt to send.

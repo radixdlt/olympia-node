@@ -107,7 +107,7 @@ final class TCPTransportControlImpl implements TCPTransportControl {
 			NettyTCPTransport transport,
 			TCPTransportOutboundConnectionFactory outboundFactory
 		) {
-			String host = metadata.get(TCPConstants.METADATA_TCP_HOST);
+			String host = metadata.get(TCPConstants.METADATA_HOST);
 			synchronized (lock) {
 				cleanChannels("Clean");
 				LinkedList<SocketChannel> items = this.channelMap.get(host);
@@ -119,7 +119,7 @@ final class TCPTransportControlImpl implements TCPTransportControl {
 					channel = null;
 				}
 				if (channel == null) {
-					int port = Integer.parseInt(metadata.get(TCPConstants.METADATA_TCP_PORT));
+					int port = Integer.parseInt(metadata.get(TCPConstants.METADATA_PORT));
 					ChannelFuture cf = transport.createChannel(host, port);
 					final CompletableFuture<TransportOutboundConnection> cfsr = new CompletableFuture<>();
 					cf.addListener(f -> {

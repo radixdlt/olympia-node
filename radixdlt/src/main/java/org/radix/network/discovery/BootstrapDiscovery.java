@@ -42,8 +42,7 @@ import org.radix.network2.addressbook.Peer;
 import org.radix.network2.addressbook.PeerPredicate;
 import org.radix.network2.transport.StaticTransportMetadata;
 import org.radix.network2.transport.TransportInfo;
-import org.radix.network2.transport.udp.UDPConstants;
-
+import org.radix.network2.transport.tcp.TCPConstants;
 import com.google.common.collect.Lists;
 import com.google.common.net.HostAndPort;
 import com.radixdlt.properties.RuntimeProperties;
@@ -112,7 +111,7 @@ public class BootstrapDiscovery
 
 				String host = getNextNode(url);
 				if (host != null) {
-					log.info("seeding from random host: "+host);
+					log.info("seeding from random host: {}",  host);
 					hosts.add(host);
 				}
 			} catch (MalformedURLException ignoreConcreteHost) {
@@ -129,9 +128,9 @@ public class BootstrapDiscovery
 				continue;
 			}
 			try {
-				this.hosts.add(toUdpTransportInfo(host));
+				this.hosts.add(toDefaultTransportInfo(host));
 			} catch (IllegalArgumentException | UnknownHostException e) {
-				log.error("Host specification " + host + " does not specify a valid host and port");
+				log.error("Host specification {} does not specify a valid host and port", host);
 			}
 		}
 	}
@@ -195,13 +194,18 @@ public class BootstrapDiscovery
 			catch (RuntimeException e)
 			{
 				// rejected, offline, etc. - this is expected
-				log.warn("invalid host returned by node finder: "+host, e);
+				log.warn("invalid host returned by node finder: " + host, e);
 				break;
 			}
 			finally
 			{
-				if (input != null)
-					try { input.close(); } catch (IOException ignoredExceptionOnClose) { }
+				if (input != null) {
+					try {
+						input.close();
+					} catch (IOException ignoredExceptionOnClose) {
+						// Ignored
+					}
+				}
 			}
 
 			try {
@@ -239,16 +243,16 @@ public class BootstrapDiscovery
 		return results;
 	}
 
-	private TransportInfo toUdpTransportInfo(String host) throws UnknownHostException {
+	private TransportInfo toDefaultTransportInfo(String host) throws UnknownHostException {
 		HostAndPort hap = HostAndPort.fromString(host).withDefaultPort(universe.getPort());
 		// Resolve any names so we don't have to do it again and again, and we will also be more
 		// likely to have a canonical representation.
 		InetAddress resolved = InetAddress.getByName(hap.getHost());
 		return TransportInfo.of(
-			UDPConstants.UDP_NAME,
+			TCPConstants.NAME,
 			StaticTransportMetadata.of(
-				UDPConstants.METADATA_UDP_HOST, resolved.getHostAddress(),
-				UDPConstants.METADATA_UDP_PORT, String.valueOf(hap.getPort())
+				TCPConstants.METADATA_HOST, resolved.getHostAddress(),
+				TCPConstants.METADATA_PORT, String.valueOf(hap.getPort())
 			)
 		);
 	}

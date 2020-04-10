@@ -88,7 +88,7 @@ public class MessagingDummyConfigurations {
 
 		@Override
 		public String name() {
-			return UDPConstants.UDP_NAME;
+			return UDPConstants.NAME;
 		}
 
 		@Override

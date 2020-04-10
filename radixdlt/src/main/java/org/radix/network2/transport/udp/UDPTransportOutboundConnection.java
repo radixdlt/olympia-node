@@ -37,8 +37,8 @@ final class UDPTransportOutboundConnection implements TransportOutboundConnectio
 
 	UDPTransportOutboundConnection(DatagramChannel channel, TransportMetadata metadata) {
 		this.remoteAddr = new InetSocketAddress(
-			metadata.get(UDPConstants.METADATA_UDP_HOST),
-			Integer.valueOf(metadata.get(UDPConstants.METADATA_UDP_PORT))
+			metadata.get(UDPConstants.METADATA_HOST),
+			Integer.valueOf(metadata.get(UDPConstants.METADATA_PORT))
 		);
 		this.channel = channel;
 	}

@@ -96,8 +96,8 @@ public class UDPTransportOutboundConnectionTest {
 		when(channel.writeAndFlush(datagramPacketArgumentCaptor.capture())).thenReturn(channelFuture);
 		metadata = mock(TransportMetadata.class);
 
-		when(metadata.get(UDPConstants.METADATA_UDP_PORT)).thenReturn("12345");
-		when(metadata.get(UDPConstants.METADATA_UDP_HOST)).thenReturn(destinationAddressStr);
+		when(metadata.get(UDPConstants.METADATA_PORT)).thenReturn("12345");
+		when(metadata.get(UDPConstants.METADATA_HOST)).thenReturn(destinationAddressStr);
 	}
 
 	@Test
@@ -117,8 +117,8 @@ public class UDPTransportOutboundConnectionTest {
 
 			byte[] sourceAddress = PublicInetAddress.getInstance().get().getAddress();
 			byte[] destinationAddress = new InetSocketAddress(
-				metadata.get(UDPConstants.METADATA_UDP_HOST),
-				Integer.valueOf(metadata.get(UDPConstants.METADATA_UDP_PORT))
+				metadata.get(UDPConstants.METADATA_HOST),
+				Integer.valueOf(metadata.get(UDPConstants.METADATA_PORT))
 			).getAddress().getAddress();
 			byte[] data = testMessage.getBytes();
 			ByteBuffer expectedMessageBuffer = ByteBuffer.allocate(datagramPacket.content().capacity());

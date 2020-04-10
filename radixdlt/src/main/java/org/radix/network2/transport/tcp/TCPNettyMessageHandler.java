@@ -61,10 +61,10 @@ final class TCPNettyMessageHandler extends SimpleChannelInboundHandler<ByteBuf> 
 			final byte[] data = new byte[length];
 			buf.readBytes(data);
 			TransportInfo source = TransportInfo.of(
-				TCPConstants.TCP_NAME,
+				TCPConstants.NAME,
 				StaticTransportMetadata.of(
-					TCPConstants.METADATA_TCP_HOST, sender.getAddress().getHostAddress(),
-					TCPConstants.METADATA_TCP_PORT, String.valueOf(sender.getPort())
+					TCPConstants.METADATA_HOST, sender.getAddress().getHostAddress(),
+					TCPConstants.METADATA_PORT, String.valueOf(sender.getPort())
 				)
 			);
 			messageSink.accept(InboundMessage.of(source, data));

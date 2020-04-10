@@ -56,10 +56,10 @@ public class StandardFiltersTest {
 	public void setUp() throws Exception {
 		this.nidPwn = EUID.ONE;
 		this.nidPws = EUID.TWO;
-		this.transportInfo = TransportInfo.of(UDPConstants.UDP_NAME,
+		this.transportInfo = TransportInfo.of(UDPConstants.NAME,
 			StaticTransportMetadata.of(
-				UDPConstants.METADATA_UDP_HOST, "127.0.0.1",
-				UDPConstants.METADATA_UDP_PORT, "10000"
+				UDPConstants.METADATA_HOST, "127.0.0.1",
+				UDPConstants.METADATA_PORT, "10000"
 			)
 		);
 		this.system = mock(RadixSystem.class);

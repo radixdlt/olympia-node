@@ -40,10 +40,10 @@ public class LocalSystemSerializeTest extends SerializeValue<LocalSystem> {
 			ECKeyPair keyPair = new ECKeyPair(Bytes.fromHexString(Strings.repeat("deadbeef", 8)));
 			return new LocalSystem(ImmutableMap::of, keyPair, Radix.AGENT, Radix.AGENT_VERSION, Radix.PROTOCOL_VERSION, ImmutableList.of(
 					TransportInfo.of(
-							UDPConstants.UDP_NAME,
+							UDPConstants.NAME,
 							StaticTransportMetadata.of(
-									UDPConstants.METADATA_UDP_HOST,"127.0.0.1",
-									UDPConstants.METADATA_UDP_PORT,"30000"
+									UDPConstants.METADATA_HOST,"127.0.0.1",
+									UDPConstants.METADATA_PORT,"30000"
 							)
 					)
 			));

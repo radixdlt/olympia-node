@@ -48,7 +48,7 @@ public class FirstMatchTransportManagerTest {
 		// Mocked class doesn't need closing
 		@SuppressWarnings("resource")
 		Transport t1 = mock(Transport.class);
-		when(t1.name()).thenReturn(UDPConstants.UDP_NAME);
+		when(t1.name()).thenReturn(UDPConstants.NAME);
 		doAnswer(invocation -> closed.incrementAndGet()).when(t1).close();
 		when(t1.priority()).thenReturn(0);
 		when(t1.canHandle(any())).thenReturn(true);
@@ -79,7 +79,7 @@ public class FirstMatchTransportManagerTest {
 		byte[] dummyMessage = new byte[0];
 
 		TransportInfo dummyTransport = TransportInfo.of("DUMMY", StaticTransportMetadata.empty());
-		TransportInfo udpTransport = TransportInfo.of(UDPConstants.UDP_NAME, StaticTransportMetadata.empty());
+		TransportInfo udpTransport = TransportInfo.of(UDPConstants.NAME, StaticTransportMetadata.empty());
 
 		List<TransportInfo> transports = ImmutableList.of(dummyTransport, udpTransport);
 
@@ -87,7 +87,7 @@ public class FirstMatchTransportManagerTest {
 		doAnswer(invocation -> transports.stream()).when(peer1).supportedTransports();
 		doAnswer(invocation -> {
 			return "DUMMY".equals(invocation.getArgument(0))
-				|| UDPConstants.UDP_NAME.equals(invocation.getArgument(0));
+				|| UDPConstants.NAME.equals(invocation.getArgument(0));
 		}).when(peer1).supportsTransport(any());
 		@SuppressWarnings("resource")
 		Transport found = transportManager.findTransport(peer1, dummyMessage);
@@ -99,13 +99,13 @@ public class FirstMatchTransportManagerTest {
 	public void testFindTransportWithSelectionLowPriority() {
 		byte[] dummyMessage = new byte[0];
 
-		TransportInfo udpTransport = TransportInfo.of(UDPConstants.UDP_NAME, StaticTransportMetadata.empty());
+		TransportInfo udpTransport = TransportInfo.of(UDPConstants.NAME, StaticTransportMetadata.empty());
 
 		List<TransportInfo> transports = ImmutableList.of(udpTransport);
 
 		Peer peer1 = mock(Peer.class);
 		doAnswer(invocation -> transports.stream()).when(peer1).supportedTransports();
-		doAnswer(invocation -> UDPConstants.UDP_NAME.equals(invocation.getArgument(0))).when(peer1).supportsTransport(any());
+		doAnswer(invocation -> UDPConstants.NAME.equals(invocation.getArgument(0))).when(peer1).supportsTransport(any());
 		@SuppressWarnings("resource")
 		Transport found = transportManager.findTransport(peer1, dummyMessage);
 		assertNotNull(found);
@@ -125,7 +125,7 @@ public class FirstMatchTransportManagerTest {
 			.map(Transport::name)
 			.collect(Collectors.toSet());
 		assertThat(transports, hasItem("DUMMY"));
-		assertThat(transports, hasItem(UDPConstants.UDP_NAME));
+		assertThat(transports, hasItem(UDPConstants.NAME));
 	}
 
 
@@ -133,6 +133,6 @@ public class FirstMatchTransportManagerTest {
 	public void testToString() {
 		String s = transportManager.toString();
 		assertThat(s, containsString("DUMMY"));
-		assertThat(s, containsString(UDPConstants.UDP_NAME));
+		assertThat(s, containsString(UDPConstants.NAME));
 	}
 }

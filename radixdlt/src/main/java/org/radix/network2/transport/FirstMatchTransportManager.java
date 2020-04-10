@@ -92,12 +92,12 @@ public final class FirstMatchTransportManager implements TransportManager {
 
 	private Transport findDefaultTransport() {
 		// Prefer TCP, as that has the widest range of acceptable messages
-		Transport tcp = findTransportByName(TCPConstants.TCP_NAME);
+		Transport tcp = findTransportByName(TCPConstants.NAME);
 		if (tcp != null) {
 			return tcp;
 		}
 		// Otherwise, we would like to use UDP
-		Transport udp = findTransportByName(UDPConstants.UDP_NAME);
+		Transport udp = findTransportByName(UDPConstants.NAME);
 		if (udp != null) {
 			return udp;
 		}

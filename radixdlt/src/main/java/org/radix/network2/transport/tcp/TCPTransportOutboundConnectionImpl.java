@@ -37,8 +37,8 @@ final class TCPTransportOutboundConnectionImpl implements TransportOutboundConne
 		// Note that this isn't necessarily the actual metadata we are connected to,
 		// as we may be reusing an inbound connection.
 		this.remoteAddr = new InetSocketAddress(
-			metadata.get(TCPConstants.METADATA_TCP_HOST),
-			Integer.valueOf(metadata.get(TCPConstants.METADATA_TCP_PORT))
+			metadata.get(TCPConstants.METADATA_HOST),
+			Integer.valueOf(metadata.get(TCPConstants.METADATA_PORT))
 		);
 		this.channel = channel;
 	}

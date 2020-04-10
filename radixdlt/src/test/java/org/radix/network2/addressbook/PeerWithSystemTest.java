@@ -65,10 +65,10 @@ public class PeerWithSystemTest {
 		assertThat(s, containsString("No UDP data"));
 
 		EUID nid = EUID.TWO;
-		TransportInfo fakeUdp = TransportInfo.of(UDPConstants.UDP_NAME,
+		TransportInfo fakeUdp = TransportInfo.of(UDPConstants.NAME,
 			StaticTransportMetadata.of(
-				UDPConstants.METADATA_UDP_HOST, "127.0.0.1",
-				UDPConstants.METADATA_UDP_PORT, "10000"
+				UDPConstants.METADATA_HOST, "127.0.0.1",
+				UDPConstants.METADATA_PORT, "10000"
 			)
 		);
 		RadixSystem system = mock(RadixSystem.class);
@@ -78,8 +78,8 @@ public class PeerWithSystemTest {
 		String s2 = pws.toString();
 		assertThat(s2, containsString("PeerWithSystem")); // class name
 		assertThat(s2, containsString(nid.toString())); // nid
-		assertThat(s2, containsString(fakeUdp.metadata().get(UDPConstants.METADATA_UDP_HOST)));
-		assertThat(s2, containsString(fakeUdp.metadata().get(UDPConstants.METADATA_UDP_PORT)));
+		assertThat(s2, containsString(fakeUdp.metadata().get(UDPConstants.METADATA_HOST)));
+		assertThat(s2, containsString(fakeUdp.metadata().get(UDPConstants.METADATA_PORT)));
 	}
 
 	@Test

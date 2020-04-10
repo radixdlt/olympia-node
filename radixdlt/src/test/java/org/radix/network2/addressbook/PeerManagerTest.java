@@ -136,13 +136,13 @@ public class PeerManagerTest extends RadixTest {
 
 
         TransportMetadata transportMetadata1 = TransportMetadata.create(ImmutableMap.of("host", "192.168.0.1"));
-        TransportInfo transportInfo1 = TransportInfo.of(UDPConstants.UDP_NAME, transportMetadata1);
+        TransportInfo transportInfo1 = TransportInfo.of(UDPConstants.NAME, transportMetadata1);
         TransportMetadata transportMetadata2 = TransportMetadata.create(ImmutableMap.of("host", "192.168.0.2"));
-        TransportInfo transportInfo2 = TransportInfo.of(UDPConstants.UDP_NAME, transportMetadata2);
+        TransportInfo transportInfo2 = TransportInfo.of(UDPConstants.NAME, transportMetadata2);
         TransportMetadata transportMetadata3 = TransportMetadata.create(ImmutableMap.of("host", "192.168.0.3"));
-        transportInfo3 = TransportInfo.of(UDPConstants.UDP_NAME, transportMetadata3);
+        transportInfo3 = TransportInfo.of(UDPConstants.NAME, transportMetadata3);
         TransportMetadata transportMetadata4 = TransportMetadata.create(ImmutableMap.of("host", "192.168.0.4"));
-        transportInfo4 = TransportInfo.of(UDPConstants.UDP_NAME, transportMetadata4);
+        transportInfo4 = TransportInfo.of(UDPConstants.NAME, transportMetadata4);
 
         RadixSystem radixSystem1 = spy(new RadixSystem());
         when(radixSystem1.supportedTransports()).thenAnswer((Answer<Stream<TransportInfo>>) invocation -> Stream.of(transportInfo1));

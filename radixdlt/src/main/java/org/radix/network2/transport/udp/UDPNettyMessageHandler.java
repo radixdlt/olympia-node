@@ -64,10 +64,10 @@ final class UDPNettyMessageHandler extends SimpleChannelInboundHandler<DatagramP
 			final byte[] data = new byte[length];
 			buf.readBytes(data);
 			TransportInfo source = TransportInfo.of(
-				UDPConstants.UDP_NAME,
+				UDPConstants.NAME,
 				StaticTransportMetadata.of(
-					UDPConstants.METADATA_UDP_HOST, sender.getAddress().getHostAddress(),
-					UDPConstants.METADATA_UDP_PORT, String.valueOf(sender.getPort())
+					UDPConstants.METADATA_HOST, sender.getAddress().getHostAddress(),
+					UDPConstants.METADATA_PORT, String.valueOf(sender.getPort())
 				)
 			);
 			messageSink.accept(InboundMessage.of(source, data));

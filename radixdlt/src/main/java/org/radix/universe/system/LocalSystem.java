@@ -25,9 +25,8 @@ import java.util.function.Supplier;
 import org.radix.Radix;
 import org.radix.network2.transport.DynamicTransportMetadata;
 import org.radix.network2.transport.TransportInfo;
+import org.radix.network2.transport.tcp.TCPConstants;
 import org.radix.network2.transport.udp.PublicInetAddress;
-import org.radix.network2.transport.udp.UDPConstants;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
@@ -95,10 +94,10 @@ public final class LocalSystem extends RadixSystem {
 	private static ImmutableList<TransportInfo> defaultTransports(Universe universe) {
 		return ImmutableList.of(
 			TransportInfo.of(
-				UDPConstants.UDP_NAME,
+				TCPConstants.NAME,
 				DynamicTransportMetadata.of(
-					UDPConstants.METADATA_UDP_HOST, PublicInetAddress.getInstance()::toString,
-					UDPConstants.METADATA_UDP_PORT, () -> Integer.toString(universe.getPort())
+					TCPConstants.METADATA_HOST, PublicInetAddress.getInstance()::toString,
+					TCPConstants.METADATA_PORT, () -> Integer.toString(universe.getPort())
 				)
 			)
 		);

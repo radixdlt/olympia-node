@@ -84,11 +84,11 @@ final class NettyUDPTransportImpl implements Transport {
 		UDPTransportOutboundConnectionFactory connectionFactory,
 		PublicInetAddress natHandler
 	) {
-		String providedHost = localMetadata.get(UDPConstants.METADATA_UDP_HOST);
+		String providedHost = localMetadata.get(UDPConstants.METADATA_HOST);
 		if (providedHost == null) {
 			providedHost = config.networkAddress(DEFAULT_HOST);
 		}
-		String portString = localMetadata.get(UDPConstants.METADATA_UDP_PORT);
+		String portString = localMetadata.get(UDPConstants.METADATA_PORT);
 		final int port;
 		if (portString == null) {
 			port = config.networkPort(DEFAULT_PORT);
@@ -96,8 +96,8 @@ final class NettyUDPTransportImpl implements Transport {
 			port = Integer.parseInt(portString);
 		}
 		this.localMetadata = StaticTransportMetadata.of(
-			UDPConstants.METADATA_UDP_HOST, providedHost,
-			UDPConstants.METADATA_UDP_PORT, String.valueOf(port)
+			UDPConstants.METADATA_HOST, providedHost,
+			UDPConstants.METADATA_PORT, String.valueOf(port)
 		);
 		this.controlFactory = controlFactory;
 		this.connectionFactory = connectionFactory;
@@ -112,7 +112,7 @@ final class NettyUDPTransportImpl implements Transport {
 
 	@Override
 	public String name() {
-		return UDPConstants.UDP_NAME;
+		return UDPConstants.NAME;
 	}
 
 	@Override

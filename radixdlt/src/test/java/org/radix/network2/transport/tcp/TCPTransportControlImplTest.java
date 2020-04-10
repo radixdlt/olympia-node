@@ -93,8 +93,8 @@ public class TCPTransportControlImplTest {
 	public void open() throws ExecutionException, InterruptedException, IOException {
 		try (TCPTransportControlImpl tcpTransportControl = new TCPTransportControlImpl(config, outboundFactory, transport)) {
 			TransportMetadata metadata = StaticTransportMetadata.of(
-				TCPConstants.METADATA_TCP_HOST, "localhost",
-				TCPConstants.METADATA_TCP_PORT, "443"
+				TCPConstants.METADATA_HOST, "localhost",
+				TCPConstants.METADATA_PORT, "443"
 			);
 			CompletableFuture<TransportOutboundConnection> result = tcpTransportControl.open(metadata);
 			assertThat(result.get()).isEqualTo(transportOutboundConnection);

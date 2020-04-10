@@ -85,11 +85,11 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 		TCPTransportOutboundConnectionFactory outboundFactory,
 		TCPTransportControlFactory controlFactory
 	) {
-		String providedHost = localMetadata.get(TCPConstants.METADATA_TCP_HOST);
+		String providedHost = localMetadata.get(TCPConstants.METADATA_HOST);
 		if (providedHost == null) {
 			providedHost = config.networkAddress(DEFAULT_HOST);
 		}
-		String portString = localMetadata.get(TCPConstants.METADATA_TCP_PORT);
+		String portString = localMetadata.get(TCPConstants.METADATA_PORT);
 		final int port;
 		if (portString == null) {
 			port = config.networkPort(DEFAULT_PORT);
@@ -97,8 +97,8 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 			port = Integer.parseInt(portString);
 		}
 		this.localMetadata = StaticTransportMetadata.of(
-			TCPConstants.METADATA_TCP_HOST, providedHost,
-			TCPConstants.METADATA_TCP_PORT, String.valueOf(port)
+			TCPConstants.METADATA_HOST, providedHost,
+			TCPConstants.METADATA_PORT, String.valueOf(port)
 		);
 		this.priority = config.priority(0);
 		this.control = controlFactory.create(config, outboundFactory, this);
@@ -111,7 +111,7 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 
 	@Override
 	public String name() {
-		return TCPConstants.TCP_NAME;
+		return TCPConstants.NAME;
 	}
 
 	@Override
@@ -136,7 +136,7 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 
 	@Override
 	public void start(InboundMessageConsumer messageSink) {
-		log.info(String.format("TCP transport %s, threads: %s", localAddress(), this.inboundProcessingThreads));
+		log.info("TCP transport {}, threads: {}", localAddress(), this.inboundProcessingThreads);
 
 		EventLoopGroup serverGroup = new NioEventLoopGroup(1);
 		EventLoopGroup workerGroup = new NioEventLoopGroup(this.inboundProcessingThreads, this::createThread);
@@ -227,7 +227,7 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 	private Thread createThread(Runnable r) {
 		String threadName = String.format("TCP handler %s - %s", localAddress(), threadCounter.incrementAndGet());
 		if (log.isDebugEnabled()) {
-			log.debug("New thread: " + threadName);
+			log.debug("New thread: {}", threadName);
 		}
 		return new Thread(r, threadName);
 	}

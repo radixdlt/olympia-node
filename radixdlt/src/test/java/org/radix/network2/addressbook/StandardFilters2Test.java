@@ -59,17 +59,17 @@ public class StandardFilters2Test {
 	@Test
 	public void testIsWhitelisted() {
 		final TransportInfo localhost1 = TransportInfo.of(
-			UDPConstants.UDP_NAME,
+			UDPConstants.NAME,
 			StaticTransportMetadata.of(
-				UDPConstants.METADATA_UDP_HOST, "127.0.0.1",
-				UDPConstants.METADATA_UDP_PORT, "10000"
+				UDPConstants.METADATA_HOST, "127.0.0.1",
+				UDPConstants.METADATA_PORT, "10000"
 			)
 		);
 		final TransportInfo localhost2 = TransportInfo.of(
-			UDPConstants.UDP_NAME,
+			UDPConstants.NAME,
 			StaticTransportMetadata.of(
-				UDPConstants.METADATA_UDP_HOST, "127.0.0.2",
-				UDPConstants.METADATA_UDP_PORT, "10000"
+				UDPConstants.METADATA_HOST, "127.0.0.2",
+				UDPConstants.METADATA_PORT, "10000"
 			)
 		);
 		final Peer peer1 = new PeerWithTransport(localhost1);
