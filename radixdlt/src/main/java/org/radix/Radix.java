@@ -55,7 +55,7 @@ public final class Radix
 {
 	static
 	{
-		java.lang.System.setProperty("java.net.preferIPv4Stack", "true");
+		System.setProperty("java.net.preferIPv4Stack", "true");
 	}
 
 	private static final Logger log = LogManager.getLogger();
