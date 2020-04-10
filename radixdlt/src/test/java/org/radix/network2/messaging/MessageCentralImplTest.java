@@ -18,6 +18,7 @@
 package org.radix.network2.messaging;
 
 import com.radixdlt.DefaultSerialization;
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
@@ -129,8 +130,19 @@ public class MessageCentralImplTest {
 		Interfaces interfaces = mock(Interfaces.class);
 		doReturn(false).when(interfaces).isSelf(any());
 		LocalSystem localSystem = mock(LocalSystem.class);
-		this.mci = new MessageCentralImpl(new MessagingDummyConfigurations.DummyMessageCentralConfiguration(), serialization, transportManager, events, addressBook, System::currentTimeMillis,
-				queueFactory, interfaces, localSystem);
+		SystemCounters counters = mock(SystemCounters.class);
+		this.mci = new MessageCentralImpl(
+			new MessagingDummyConfigurations.DummyMessageCentralConfiguration(),
+			serialization,
+			transportManager,
+			events,
+			addressBook,
+			System::currentTimeMillis,
+			queueFactory,
+			interfaces,
+			localSystem,
+			counters
+		);
 	}
 
 	@Test

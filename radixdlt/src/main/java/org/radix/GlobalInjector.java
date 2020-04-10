@@ -21,9 +21,12 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
+import com.google.inject.Scopes;
 import com.google.inject.name.Names;
 import com.radixdlt.CerberusModule;
 import com.radixdlt.DefaultSerialization;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.crypto.ECKeyPair;
@@ -37,6 +40,9 @@ import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.berkeley.BerkeleyStoreModule;
 import com.radixdlt.universe.Universe;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
 import org.radix.database.DatabaseEnvironment;
 import org.radix.events.Events;
 import org.radix.network2.addressbook.AddressBookModule;
@@ -50,7 +56,7 @@ public class GlobalInjector {
 
 	private Injector injector;
 
-	public GlobalInjector(RuntimeProperties properties, DatabaseEnvironment dbEnv, LocalSystem localSystem, Universe universe) {
+	public GlobalInjector(RuntimeProperties properties, DatabaseEnvironment dbEnv, Universe universe) {
 		Module lazyRequestDelivererModule = new LazyRequestDelivererModule(properties);
 		Module iterativeDiscovererModule = new IterativeDiscovererModule(properties);
 		Module berkeleyStoreModule = new BerkeleyStoreModule();
@@ -69,34 +75,117 @@ public class GlobalInjector {
 			protected void configure() {
 				bind(RuntimeProperties.class).toInstance(properties);
 				bind(DatabaseEnvironment.class).toInstance(dbEnv);
+				bind(Universe.class).toInstance(universe);
+
+				bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
+
+				bind(LocalSystem.class).toProvider(LocalSystemProvider.class).in(Scopes.SINGLETON);
+
+				bind(EUID.class).annotatedWith(Names.named("self")).toProvider(SelfNidProvider.class);
+				bind(ECKeyPair.class).annotatedWith(Names.named("self")).toProvider(SelfKeyPairProvider.class);
+				bind(ECPublicKey.class).annotatedWith(Names.named("self")).toProvider(SelfPublicKeyProvider.class);
+				bind(RadixAddress.class).annotatedWith(Names.named("self")).toProvider(SelfAddressProvider.class);
+
 				bind(Serialization.class).toProvider(DefaultSerialization::getInstance);
 				bind(Events.class).toProvider(Events::getInstance);
-				bind(LocalSystem.class).toInstance(localSystem);
-				bind(EUID.class).annotatedWith(Names.named("self")).toInstance(localSystem.getNID());
-				bind(ECKeyPair.class).annotatedWith(Names.named("self")).toInstance(localSystem.getKeyPair());
-				bind(ECPublicKey.class).annotatedWith(Names.named("self")).toInstance(localSystem.getKeyPair().getPublicKey());
-				bind(RadixAddress.class).annotatedWith(Names.named("self")).toInstance(new RadixAddress((byte) universe.getMagic(), localSystem.getKey()));
-				bind(Universe.class).toInstance(universe);
+
 				bind(PeerManagerConfiguration.class).toInstance(PeerManagerConfiguration.fromRuntimeProperties(properties));
 			}
 		};
 
 		injector = Guice.createInjector(
-				lazyRequestDelivererModule,
-				iterativeDiscovererModule,
-				berkeleyStoreModule,
-				tempoModule,
-				middlewareModule,
-				messageCentralModule,
-				udpTransportModule,
-				tcpTransportModule,
-				addressBookModule,
-				mempoolModule,
-				networkModule,
-				globalModule);
+			lazyRequestDelivererModule,
+			iterativeDiscovererModule,
+			berkeleyStoreModule,
+			tempoModule,
+			middlewareModule,
+			messageCentralModule,
+			udpTransportModule,
+			tcpTransportModule,
+			addressBookModule,
+			mempoolModule,
+			networkModule,
+			globalModule
+		);
 	}
 
 	public Injector getInjector() {
 		return injector;
+	}
+
+	static class SelfNidProvider implements Provider<EUID> {
+		private final LocalSystem localSystem;
+
+		@Inject
+		SelfNidProvider(LocalSystem localSystem) {
+			this.localSystem = localSystem;
+		}
+
+		@Override
+		public EUID get() {
+			return this.localSystem.getNID();
+		}
+	}
+
+	static class SelfKeyPairProvider implements Provider<ECKeyPair> {
+		private final LocalSystem localSystem;
+
+		@Inject
+		SelfKeyPairProvider(LocalSystem localSystem) {
+			this.localSystem = localSystem;
+		}
+
+		@Override
+		public ECKeyPair get() {
+			return this.localSystem.getKeyPair();
+		}
+	}
+
+	static class SelfPublicKeyProvider implements Provider<ECPublicKey> {
+		private final LocalSystem localSystem;
+
+		@Inject
+		SelfPublicKeyProvider(LocalSystem localSystem) {
+			this.localSystem = localSystem;
+		}
+
+		@Override
+		public ECPublicKey get() {
+			return this.localSystem.getKeyPair().getPublicKey();
+		}
+	}
+
+	static class SelfAddressProvider implements Provider<RadixAddress> {
+		private final Universe universe;
+		private final LocalSystem localSystem;
+
+		@Inject
+		SelfAddressProvider(Universe universe, LocalSystem localSystem) {
+			this.universe = universe;
+			this.localSystem = localSystem;
+		}
+
+		@Override
+		public RadixAddress get() {
+			return new RadixAddress((byte) this.universe.getMagic(), this.localSystem.getKey());
+		}
+	}
+
+	static class LocalSystemProvider implements Provider<LocalSystem> {
+		private final SystemCounters counters;
+		private final RuntimeProperties properties;
+		private final Universe universe;
+
+		@Inject
+		public LocalSystemProvider(SystemCounters counters, RuntimeProperties properties, Universe universe) {
+			this.counters = counters;
+			this.properties = properties;
+			this.universe = universe;
+		}
+
+		@Override
+		public LocalSystem get() {
+			return LocalSystem.create(this.counters, this.properties, this.universe);
+		}
 	}
 }

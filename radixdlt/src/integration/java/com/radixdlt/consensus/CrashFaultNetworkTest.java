@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.examples.tictactoe.Pair;
@@ -151,7 +152,7 @@ public class CrashFaultNetworkTest {
 			.flatMapIterable(i -> correctNodes)
 			// there is a race condition between getCount(TIMEOUT) and getCurrentView in pacemaker
 			// however, since we're only interested in having at most X timeouts, we can safely just check for <=
-			.doOnNext(cn -> assertThat(bftNetwork.getCounters(cn).getCount(Counters.CounterType.TIMEOUT))
+			.doOnNext(cn -> assertThat(bftNetwork.getCounters(cn).get(SystemCounters.CounterType.CONSENSUS_TIMEOUT))
 				.satisfies(new Condition<>(c -> c <= (bftNetwork.getPacemaker(cn).getCurrentView().number() / numNodes) * numCrashed,
 					"Timeout counter is less or equal to number of times crashed nodes were proposer.")))
 			.map(o -> o);

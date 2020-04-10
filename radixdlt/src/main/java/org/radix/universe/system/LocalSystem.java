@@ -17,138 +17,63 @@
 
 package org.radix.universe.system;
 
+import java.io.IOException;
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.Supplier;
+
+import org.radix.Radix;
+import org.radix.network2.transport.DynamicTransportMetadata;
+import org.radix.network2.transport.TransportInfo;
+import org.radix.network2.transport.udp.PublicInetAddress;
+import org.radix.network2.transport.udp.UDPConstants;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.DefaultSerialization;
+import com.google.common.collect.ImmutableMap;
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.keys.Keys;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.universe.Universe;
-import com.radixdlt.utils.Bytes;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.radix.Radix;
-import org.radix.common.executors.Executor;
-import org.radix.common.executors.ScheduledExecutable;
-import org.radix.network2.transport.DynamicTransportMetadata;
-import org.radix.network2.transport.TransportInfo;
-import org.radix.network2.transport.udp.PublicInetAddress;
-import org.radix.network2.transport.udp.UDPConstants;
-import org.radix.utils.SystemMetaData;
-
-import java.io.IOException;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
-import static com.radixdlt.serialization.MapHelper.mapOf;
 
 @SerializerId2("api.local_system")
 // FIXME reimplement localsystem as an interface, extract persistence to elsewhere
-public final class LocalSystem extends RadixSystem
-{
-	private static final Logger log = LogManager.getLogger();
+public final class LocalSystem extends RadixSystem {
+	private final ECKeyPair keyPair;
+	private final Supplier<Map<String, Object>> counters;
 
-	private ECKeyPair keyPair;
-
-	@VisibleForTesting
-	LocalSystem()
-	{
-		super();
-
-		this.keyPair = ECKeyPair.generateNew();
+	LocalSystem() {
+		// Serializer only
+		this(ImmutableMap::of);
 	}
 
-	public LocalSystem(ECKeyPair key, String agent, int agentVersion, int protocolVersion, ImmutableList<TransportInfo> supportedTransports)
-	{
+	@VisibleForTesting
+	LocalSystem(Supplier<Map<String, Object>> counters) {
+		this.keyPair = ECKeyPair.generateNew();
+		this.counters = counters;
+	}
+
+	public LocalSystem(Supplier<Map<String, Object>> counters, ECKeyPair key, String agent, int agentVersion, int protocolVersion, ImmutableList<TransportInfo> supportedTransports) {
 		super(key.getPublicKey(), agent, agentVersion, protocolVersion, supportedTransports);
 		this.keyPair = key;
+		this.counters = Objects.requireNonNull(counters);
 	}
 
 	public ECKeyPair getKeyPair() {
 		return this.keyPair;
 	}
 
-	// Property "ledger" - 1 getter
-	// No really obvious way of doing this better
-	@JsonProperty("ledger")
+	// Property "counters" - 1 getter
+	@JsonProperty("counters")
 	@DsonOutput(Output.API)
-	Map<String, Object> getJsonLedger() {
-		SystemMetaData smd = SystemMetaData.getInstance();
-
-		Map<String, Object> latency = mapOf(
-			"path", smd.get("ledger.latency.path", 0),
-			"persist", smd.get("ledger.latency.persist", 0)
-		);
-
-		return mapOf(
-			"processed", smd.get("ledger.processed", 0),
-			"processing", smd.get("ledger.processing", 0),
-			"stored", smd.get("ledger.stored", 0),
-			"storedPerShard", smd.get("ledger.storedPerShard", "0"),
-			"storing", smd.get("ledger.storing", 0),
-			"storingPerShard", smd.get("ledger.storingPerShard", 0),
-			"storing.peak", smd.get("ledger.storing.peak", 0),
-			"checksum", smd.get("ledger.checksum", 0),
-			"latency", latency
-		);
-	}
-
-	// Property "global" - 1 getter
-	@JsonProperty("global")
-	@DsonOutput(Output.API)
-	Map<String, Object> getJsonGlobal() {
-		return mapOf(
-			"stored", SystemMetaData.getInstance().get("ledger.network.stored", 0),
-			"processing", SystemMetaData.getInstance().get("ledger.network.processing", 0),
-			"storing", SystemMetaData.getInstance().get("ledger.network.storing", 0)
-		);
-	}
-
-	// Property "events" - 1 getter
-	@JsonProperty("events")
-	@DsonOutput(Output.API)
-	Map<String, Object> getJsonEvents() {
-		SystemMetaData smd = SystemMetaData.getInstance();
-
-		Map<String, Object> processed = mapOf(
-			"synchronous", smd.get("events.processed.synchronous", 0L),
-			"asynchronous", smd.get("events.processed.asynchronous", 0L)
-		);
-
-		return mapOf(
-			"processed", processed,
-			"processing", smd.get("events.processing", 0L),
-			"broadcast",  smd.get("events.broadcast", 0L),
-			"queued", smd.get("events.queued", 0L),
-			"dequeued", smd.get("events.dequeued", 0L)
-		);
-	}
-
-	// Property "messages" - 1 getter
-	// No obvious improvements here
-	@JsonProperty("messages")
-	@DsonOutput(Output.API)
-	Map<String, Object> getJsonMessages() {
-		Map<String, Object> outbound = mapOf(
-				"sent", SystemMetaData.getInstance().get("messages.outbound.sent", 0),
-				"processed", SystemMetaData.getInstance().get("messages.outbound.processed", 0),
-				"pending", SystemMetaData.getInstance().get("messages.outbound.pending", 0),
-				"aborted", SystemMetaData.getInstance().get("messages.outbound.aborted", 0));
-		Map<String, Object> inbound = mapOf(
-				"processed", SystemMetaData.getInstance().get("messages.inbound.processed", 0),
-				"received", SystemMetaData.getInstance().get("messages.inbound.received", 0),
-				"pending", SystemMetaData.getInstance().get("messages.inbound.pending", 0),
-				"discarded", SystemMetaData.getInstance().get("messages.inbound.discarded", 0));
-		return mapOf(
-				"inbound", inbound,
-				"outbound", outbound);
+	Map<String, Object> getJsonCounters() {
+		return this.counters.get();
 	}
 
 	// Property "processors" - 1 getter
@@ -159,39 +84,10 @@ public final class LocalSystem extends RadixSystem
 		return Runtime.getRuntime().availableProcessors();
 	}
 
-	public static LocalSystem restoreOrCreate(RuntimeProperties properties, Universe universe) {
+	public static LocalSystem create(SystemCounters counters, RuntimeProperties properties, Universe universe) {
 		String nodeKeyPath = properties.get("node.key.path", "node.ks");
 		ECKeyPair nodeKey = loadNodeKey(nodeKeyPath);
-		LocalSystem localSystem;
-
-		// if system has been persisted
-		if (SystemMetaData.getInstanceOptional().map(meta -> meta.has("system") ).orElse(false)) {
-			byte[] systemBytes = SystemMetaData.getInstance().get("system", Bytes.EMPTY_BYTES);
-			try {
-				localSystem = DefaultSerialization.getInstance().fromDson(systemBytes, LocalSystem.class);
-			} catch (SerializationException e) {
-				throw new IllegalStateException("while restoring local instance", e);
-			}
-		} else {
-			localSystem = new LocalSystem(nodeKey, Radix.AGENT, Radix.AGENT_VERSION, Radix.PROTOCOL_VERSION, defaultTransports(universe));
-		}
-
-		// setup background checkpoint task to persist instance into SystemMetaData
-		Executor.getInstance().scheduleAtFixedRate(new ScheduledExecutable(1, 1, TimeUnit.SECONDS) {
-			@Override
-			public void execute() {
-				SystemMetaData.ifPresent(smc -> {
-					try {
-						byte[] systemBytes = DefaultSerialization.getInstance().toDson(localSystem, Output.PERSIST);
-						smc.put("system", systemBytes);
-					} catch (IOException e) {
-						log.error("Could not persist system state", e);
-					}
-				});
-			}
-		});
-
-		return localSystem;
+		return new LocalSystem(counters::toMap, nodeKey, Radix.AGENT, Radix.AGENT_VERSION, Radix.PROTOCOL_VERSION, defaultTransports(universe));
 	}
 
 	// FIXME: *Really* need a better way of configuring this other than hardcoding here
