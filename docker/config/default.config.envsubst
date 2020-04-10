@@ -23,7 +23,7 @@ partition.low=-9223372036854775808
 partition.fragments=$RADIXDLT_PARTITION_FRAGMENTS
 universe.witness=$RADIXDLT_UNIVERSE_WITNESSES
 debug.profiler=$RADIXDLT_DEBUG_PROFILER
-consensus.fixed_quorum_size=$RADIXDLT_CONSENSUS_FIXED_QUORUM_SIZE
+consensus.fixed_node_count=$RADIXDLT_CONSENSUS_FIXED_NODE_COUNT
 
 # RTP
 rtp.interval=4

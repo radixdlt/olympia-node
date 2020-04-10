@@ -88,8 +88,8 @@ public class CerberusModule extends AbstractModule {
 		@Named("self") ECKeyPair selfKey,
 		AddressBook addressBook
 	) {
-		final int fixedQuorumSize = Integer.parseInt(runtimeProperties.get("consensus.fixed_quorum_size", "1"));
-		return new BasicEpochRx(selfKey.getPublicKey(), addressBook, fixedQuorumSize);
+		final int fixedNodeCount = Integer.parseInt(runtimeProperties.get("consensus.fixed_node_count", "1"));
+		return new BasicEpochRx(selfKey.getPublicKey(), addressBook, fixedNodeCount);
 	}
 
 	@Provides
