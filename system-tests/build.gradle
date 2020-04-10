@@ -32,6 +32,7 @@ dependencies {
     testCompile 'io.cucumber:cucumber-junit:5.5.0'
     testCompile group: 'org.junit.vintage', name: 'junit-vintage-engine', version: '5.6.1'
     api group: 'io.reactivex.rxjava2', name: 'rxjava', version: '2.1.14'
+    api 'org.json:json:20180813'
 }
 
 task copyCLIJar {
