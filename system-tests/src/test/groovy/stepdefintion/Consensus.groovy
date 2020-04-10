@@ -11,7 +11,7 @@ import static utils.CmdHelper.runCommand
 import static utils.Generic.listToDelimitedString
 
 
-class ConsensusTest {
+class Consensus {
 
     Map SetupOptions
     String sentMessageAID

@@ -17,6 +17,12 @@ apply plugin: 'java'
 apply plugin: 'groovy'
 apply plugin: 'idea'
 
+sourceSets {
+    test {
+        java { srcDirs = [] }    // no source dirs for the java compiler
+        groovy { srcDirs = ["src/test/java", "src/test/groovy"] }  // compile   everything in src/ with groovy
+    }
+}
 
 dependencies {
     testCompile group: 'io.cucumber', name: 'cucumber-groovy', version: '4.7.1'
@@ -42,4 +48,11 @@ task bddTest(type: Test) {
     testLogging.showStandardStreams = true
     systemProperties System.getProperties()
     include "Runner.class"
+}
+test.enabled = false
+
+task jUnitTest(type: Test) {
+    testLogging.showStandardStreams = true
+    systemProperties System.getProperties()
+    exclude "Runner.class"
 }

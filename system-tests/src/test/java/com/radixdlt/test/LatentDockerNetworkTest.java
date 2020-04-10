@@ -8,6 +8,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import static utils.CmdHelper.node;
+import static utils.CmdHelper.runCommand;
+
 public class LatentDockerNetworkTest {
 
 	// copied from ValidatorSet in core
@@ -24,17 +27,18 @@ public class LatentDockerNetworkTest {
 		final long runtimeSeconds = 1;
 		final long refreshIntervalMillis = 500;
 		final TimeUnit timeUnit = TimeUnit.MINUTES;
-
+		final String networkName = "junit_test";
 		Map<String, Map<String, Object>> dockerOptionsPerNode = CmdHelper.getDockerOptions(numNodes, quorumSize);
 		CmdHelper.removeAllDockerContainers();
-		CmdHelper.runCommand("docker network rm ${networkName}", null, true);
-		CmdHelper.runCommand("docker network create ${networkName}");
+		CmdHelper.runCommand("docker network rm " + networkName);
+		CmdHelper.runCommand("docker network create " + networkName ,null, true);
 
 		dockerOptionsPerNode.forEach((nodeName, options) -> {
+			options.put("network",networkName);
 			List<Object> dockerSetup = CmdHelper.node(options);
 			String[] dockerEnv = (String[]) dockerSetup.get(0);
 			String dockerCommand = (String) dockerSetup.get(1);
-			CmdHelper.runCommand(dockerCommand, dockerEnv);
+			CmdHelper.runCommand(dockerCommand, dockerEnv,true);
 		});
 
 		CmdHelper.checkNGenerateKey();
