@@ -38,15 +38,15 @@ import org.radix.universe.system.RadixSystem;
  * matches the size and used as the validator set.
  */
 public class BasicEpochRx implements EpochRx {
-	private final int fixedQuorumSize;
+	private final int fixedNodeCount;
 	private final AddressBook addressBook;
 	private final ECPublicKey selfKey;
 
-	public BasicEpochRx(ECPublicKey selfKey, AddressBook addressBook, int fixedQuorumSize) {
-		if (fixedQuorumSize <= 0) {
-			throw new IllegalArgumentException("Quorum size must be > 0 but was " + fixedQuorumSize);
+	public BasicEpochRx(ECPublicKey selfKey, AddressBook addressBook, int fixedNodeCount) {
+		if (fixedNodeCount <= 0) {
+			throw new IllegalArgumentException("Quorum size must be > 0 but was " + fixedNodeCount);
 		}
-		this.fixedQuorumSize = fixedQuorumSize;
+		this.fixedNodeCount = fixedNodeCount;
 		this.selfKey = Objects.requireNonNull(selfKey);
 		this.addressBook = Objects.requireNonNull(addressBook);
 	}
@@ -64,7 +64,7 @@ public class BasicEpochRx implements EpochRx {
 				addressBook.peers().filter(Peer::hasSystem).map(Peer::getSystem).map(RadixSystem::getKey),
 				Stream.of(selfKey)
 			).distinct().collect(Collectors.toList()))
-			.filter(peers -> peers.size() == fixedQuorumSize)
+			.filter(peers -> peers.size() == fixedNodeCount)
 			.firstOrError()
 			.map(peers -> {
 				List<Validator> validators = peers.stream()

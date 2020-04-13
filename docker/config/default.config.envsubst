@@ -25,6 +25,7 @@ universe.witness=$RADIXDLT_UNIVERSE_WITNESSES
 debug.profiler=$RADIXDLT_DEBUG_PROFILER
 consensus.fixed_quorum_size=$RADIXDLT_CONSENSUS_FIXED_QUORUM_SIZE
 consensus.pacemaker_timeout_millis=$RADIXDLT_PACEMAKER_TIMEOUT_MILLIS
+consensus.fixed_node_count=$RADIXDLT_CONSENSUS_FIXED_NODE_COUNT
 
 # RTP
 rtp.interval=4
