@@ -17,10 +17,12 @@
 
 package com.radixdlt.network;
 
+import com.google.inject.name.Named;
 import com.radixdlt.consensus.ConsensusMessage;
 import com.radixdlt.consensus.EventCoordinatorNetworkRx;
 import com.radixdlt.consensus.EventCoordinatorNetworkSender;
 import com.radixdlt.consensus.Proposal;
+import com.radixdlt.crypto.ECPublicKey;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 
@@ -29,10 +31,8 @@ import javax.inject.Inject;
 import org.radix.network.messaging.Message;
 import org.radix.network2.addressbook.AddressBook;
 import org.radix.network2.addressbook.Peer;
-import org.radix.network2.addressbook.PeerWithSystem;
 import org.radix.network2.messaging.MessageCentral;
 import org.radix.network2.messaging.MessageListener;
-import org.radix.universe.system.LocalSystem;
 
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.consensus.NewView;
@@ -43,7 +43,7 @@ import com.radixdlt.universe.Universe;
  * Simple network that publishes messages to known nodes.
  */
 public class SimpleEventCoordinatorNetwork implements EventCoordinatorNetworkSender, EventCoordinatorNetworkRx {
-	private final PeerWithSystem localPeer;
+	private final ECPublicKey selfPublicKey;
 	private final int magic;
 	private final AddressBook addressBook;
 	private final MessageCentral messageCentral;
@@ -51,16 +51,15 @@ public class SimpleEventCoordinatorNetwork implements EventCoordinatorNetworkSen
 
 	@Inject
 	public SimpleEventCoordinatorNetwork(
-		LocalSystem system,
+		@Named("self") ECPublicKey selfPublicKey,
 		Universe universe,
 		AddressBook addressBook,
 		MessageCentral messageCentral
 	) {
 		this.magic = universe.getMagic();
+		this.selfPublicKey = Objects.requireNonNull(selfPublicKey);
 		this.addressBook = Objects.requireNonNull(addressBook);
 		this.messageCentral = Objects.requireNonNull(messageCentral);
-		this.localPeer = new PeerWithSystem(system);
-
 		this.localMessages = PublishSubject.create();
 	}
 
@@ -83,7 +82,7 @@ public class SimpleEventCoordinatorNetwork implements EventCoordinatorNetworkSen
 
 	@Override
 	public void sendNewView(NewView newView, EUID newViewLeader) {
-		if (this.localPeer.getNID().equals(newViewLeader)) {
+		if (this.selfPublicKey.euid().equals(newViewLeader)) {
 			this.localMessages.onNext(newView);
 		} else {
 			ConsensusMessageDto message = new ConsensusMessageDto(this.magic, newView);
@@ -93,7 +92,7 @@ public class SimpleEventCoordinatorNetwork implements EventCoordinatorNetworkSen
 
 	@Override
 	public void sendVote(Vote vote, EUID leader) {
-		if (this.localPeer.getNID().equals(leader)) {
+		if (this.selfPublicKey.euid().equals(leader)) {
 			this.localMessages.onNext(vote);
 		} else {
 			ConsensusMessageDto message = new ConsensusMessageDto(this.magic, vote);
@@ -108,7 +107,7 @@ public class SimpleEventCoordinatorNetwork implements EventCoordinatorNetworkSen
 	}
 
 	private void broadcast(Message message) {
-		final EUID self = this.localPeer.getNID();
+		final EUID self = this.selfPublicKey.euid();
 		this.addressBook.peers()
 			.filter(Peer::hasSystem) // Only peers with systems (and therefore transports)
 			.filter(p -> !self.equals(p.getNID())) // Exclude self, already sent

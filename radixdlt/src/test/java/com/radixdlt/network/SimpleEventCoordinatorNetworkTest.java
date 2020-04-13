@@ -24,6 +24,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Vote;
@@ -34,10 +36,9 @@ import org.junit.Test;
 import org.radix.network2.addressbook.AddressBook;
 import org.radix.network2.addressbook.Peer;
 import org.radix.network2.messaging.MessageCentral;
-import org.radix.universe.system.LocalSystem;
 
 public class SimpleEventCoordinatorNetworkTest {
-	private LocalSystem localSystem;
+	private ECPublicKey selfKey;
 	private Universe universe;
 	private AddressBook addressBook;
 	private MessageCentral messageCentral;
@@ -45,12 +46,11 @@ public class SimpleEventCoordinatorNetworkTest {
 
 	@Before
 	public void setUp() {
-		this.localSystem = mock(LocalSystem.class);
-		when(localSystem.getNID()).thenReturn(mock(EUID.class));
+		this.selfKey = ECKeyPair.generateNew().getPublicKey();
 		this.universe = mock(Universe.class);
 		this.addressBook = mock(AddressBook.class);
 		this.messageCentral = mock(MessageCentral.class);
-		this.network = new SimpleEventCoordinatorNetwork(localSystem, universe, addressBook, messageCentral);
+		this.network = new SimpleEventCoordinatorNetwork(selfKey, universe, addressBook, messageCentral);
 	}
 
 	@Test
