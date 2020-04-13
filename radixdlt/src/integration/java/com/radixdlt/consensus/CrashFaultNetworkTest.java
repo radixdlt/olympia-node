@@ -160,8 +160,8 @@ public class CrashFaultNetworkTest {
 		List<Observable<Vertex>> correctProposals = correctNodes.stream()
 			.map(ECKeyPair::euid)
 			.map(bftNetwork.getUnderlyingNetwork()::getNetworkRx)
-			.map(EventCoordinatorNetworkRx::proposalMessages)
-			.map(p -> p.map(Proposal::getVertex))
+			.map(EventCoordinatorNetworkRx::consensusMessages)
+			.map(p -> p.ofType(Proposal.class).map(Proposal::getVertex))
 			.collect(Collectors.toList());
 		Observable<Object> directProposalsCheck = Observable.merge(correctProposals)
 			.filter(v -> correctNodesPubs.contains(bftNetwork.getProposerElection().getProposer(v.getView().previous())))

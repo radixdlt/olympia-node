@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,30 +15,30 @@
  * language governing permissions and limitations under the License.
  */
 
-package org.radix.serialization;
+package com.radixdlt.network;
 
-import com.radixdlt.consensus.VoteData;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.View;
-import com.radixdlt.consensus.messages.NewViewMessage;
+import com.radixdlt.consensus.VoteData;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.Hash;
+import com.radixdlt.identifiers.RadixAddress;
+import org.radix.serialization.SerializeMessageObject;
 
-public class NewViewMessageSerializeTest extends SerializeMessageObject<NewViewMessage> {
-	public NewViewMessageSerializeTest() {
-		super(NewViewMessage.class, NewViewMessageSerializeTest::get);
+public class ConsensusMessageDtoSerializeTest extends SerializeMessageObject<ConsensusMessageDto> {
+	public ConsensusMessageDtoSerializeTest() {
+		super(ConsensusMessageDto.class, ConsensusMessageDtoSerializeTest::get);
 	}
 
-	private static NewViewMessage get() {
+	private static ConsensusMessageDto get() {
 		RadixAddress author = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
 		VertexMetadata vertexMetadata = new VertexMetadata(View.of(1), Hash.ZERO_HASH);
 		VertexMetadata parent = new VertexMetadata(View.of(0), Hash.ZERO_HASH);
 		VoteData voteData = new VoteData(vertexMetadata, parent);
 		QuorumCertificate quorumCertificate = new QuorumCertificate(voteData, new ECDSASignatures());
 		NewView testView = new NewView(author.getPublicKey(), View.of(1234567890L), quorumCertificate, null);
-		return new NewViewMessage(1234, testView);
+		return new ConsensusMessageDto(1234, testView);
 	}
 }

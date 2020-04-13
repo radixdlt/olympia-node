@@ -19,6 +19,7 @@ package com.radixdlt.network;
 
 import static org.mockito.Mockito.mock;
 
+import com.radixdlt.consensus.ConsensusMessage;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.consensus.NewView;
@@ -32,8 +33,8 @@ public class TestEventCoordinatorNetworkTest {
 	@Test
 	public void when_send_new_view_to_self__then_should_receive_it() {
 		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.orderedLatent(TEST_LOOPBACK_LATENCY);
-		TestObserver<NewView> testObserver = TestObserver.create();
-		network.getNetworkRx(EUID.ONE).newViewMessages()
+		TestObserver<ConsensusMessage> testObserver = TestObserver.create();
+		network.getNetworkRx(EUID.ONE).consensusMessages()
 			.subscribe(testObserver);
 		NewView newView = mock(NewView.class);
 		network.getNetworkSender(EUID.ONE).sendNewView(newView, EUID.ONE);
@@ -44,8 +45,8 @@ public class TestEventCoordinatorNetworkTest {
 	@Test
 	public void when_send_vote_to_self__then_should_receive_it() {
 		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.orderedLatent(TEST_LOOPBACK_LATENCY);
-		TestObserver<Vote> testObserver = TestObserver.create();
-		network.getNetworkRx(EUID.ONE).voteMessages()
+		TestObserver<ConsensusMessage> testObserver = TestObserver.create();
+		network.getNetworkRx(EUID.ONE).consensusMessages()
 			.subscribe(testObserver);
 		Vote vote = mock(Vote.class);
 		network.getNetworkSender(EUID.ONE).sendVote(vote, EUID.ONE);
@@ -56,8 +57,8 @@ public class TestEventCoordinatorNetworkTest {
 	@Test
 	public void when_broadcast_proposal__then_should_receive_it() {
 		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.orderedLatent(TEST_LOOPBACK_LATENCY);
-		TestObserver<Proposal> testObserver = TestObserver.create();
-		network.getNetworkRx(EUID.ONE).proposalMessages()
+		TestObserver<ConsensusMessage> testObserver = TestObserver.create();
+		network.getNetworkRx(EUID.ONE).consensusMessages()
 			.subscribe(testObserver);
 		Proposal proposal = mock(Proposal.class);
 		network.getNetworkSender(EUID.ONE).broadcastProposal(proposal);
@@ -68,9 +69,9 @@ public class TestEventCoordinatorNetworkTest {
 	@Test
 	public void when_disable_and_then_send_new_view_to_self__then_should_receive_it() {
 		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.orderedLatent(TEST_LOOPBACK_LATENCY);
-		TestObserver<NewView> testObserver = TestObserver.create();
+		TestObserver<ConsensusMessage> testObserver = TestObserver.create();
 		network.setSendingDisable(EUID.ONE, true);
-		network.getNetworkRx(EUID.ONE).newViewMessages()
+		network.getNetworkRx(EUID.ONE).consensusMessages()
 			.subscribe(testObserver);
 		NewView newView = mock(NewView.class);
 		network.getNetworkSender(EUID.ONE).sendNewView(newView, EUID.ONE);
@@ -80,9 +81,9 @@ public class TestEventCoordinatorNetworkTest {
 	@Test
 	public void when_disable_receive_and_other_sends_view_to_self__then_should_receive_it() {
 		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.orderedLatent(TEST_LOOPBACK_LATENCY);
-		TestObserver<NewView> testObserver = TestObserver.create();
+		TestObserver<ConsensusMessage> testObserver = TestObserver.create();
 		network.setReceivingDisable(EUID.ONE, true);
-		network.getNetworkRx(EUID.ONE).newViewMessages()
+		network.getNetworkRx(EUID.ONE).consensusMessages()
 			.subscribe(testObserver);
 		NewView newView = mock(NewView.class);
 		network.getNetworkSender(EUID.TWO).sendNewView(newView, EUID.ONE);
@@ -92,10 +93,10 @@ public class TestEventCoordinatorNetworkTest {
 	@Test
 	public void when_disable_then_reenable_receive_and_other_sends_view_to_self__then_should_receive_it() {
 		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.orderedLatent(TEST_LOOPBACK_LATENCY);
-		TestObserver<NewView> testObserver = TestObserver.create();
+		TestObserver<ConsensusMessage> testObserver = TestObserver.create();
 		network.setReceivingDisable(EUID.ONE, true);
 		network.setReceivingDisable(EUID.ONE, false);
-		network.getNetworkRx(EUID.ONE).newViewMessages()
+		network.getNetworkRx(EUID.ONE).consensusMessages()
 			.subscribe(testObserver);
 		NewView newView = mock(NewView.class);
 		network.getNetworkSender(EUID.TWO).sendNewView(newView, EUID.ONE);

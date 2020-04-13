@@ -27,8 +27,6 @@ import static org.mockito.Mockito.when;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.messages.NewViewMessage;
-import com.radixdlt.consensus.messages.VoteMessage;
 import com.radixdlt.universe.Universe;
 import java.util.stream.Stream;
 import org.junit.Before;
@@ -64,7 +62,7 @@ public class SimpleEventCoordinatorNetworkTest {
 		when(addressBook.peers()).thenReturn(Stream.of(peer));
 
 		network.sendNewView(newView, leader);
-		verify(messageCentral, times(1)).send(eq(peer), any(NewViewMessage.class));
+		verify(messageCentral, times(1)).send(eq(peer), any(ConsensusMessageDto.class));
 	}
 
 	@Test
@@ -76,6 +74,6 @@ public class SimpleEventCoordinatorNetworkTest {
 		when(addressBook.peers()).thenReturn(Stream.of(peer));
 
 		network.sendVote(vote, leader);
-		verify(messageCentral, times(1)).send(eq(peer), any(VoteMessage.class));
+		verify(messageCentral, times(1)).send(eq(peer), any(ConsensusMessageDto.class));
 	}
 }

@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.powermock.api.mockito.PowerMockito.when;
 
@@ -36,24 +37,16 @@ public class ChainedBFTTest {
 
 		EpochManager epochManager = mock(EpochManager.class);
 		when(epochManager.start()).thenReturn(mock(EventCoordinator.class));
+		when(epochManager.nextEpoch(any())).thenReturn(mock(EventCoordinator.class));
 
 		PacemakerRx pacemakerRx = mock(PacemakerRx.class);
+		when(pacemakerRx.localTimeouts()).thenReturn(Observable.never());
 
 		NewView newView = mock(NewView.class);
-		when(networkRx.newViewMessages())
-			.thenReturn(Observable.just(newView).concatWith(Observable.never()));
-
 		Proposal proposal = mock(Proposal.class);
-		when(networkRx.proposalMessages())
-			.thenReturn(Observable.just(proposal).concatWith(Observable.never()));
-
 		Vote vote = mock(Vote.class);
-		when(networkRx.voteMessages())
-			.thenReturn(Observable.just(vote).concatWith(Observable.never()));
-
-		View view = mock(View.class);
-		when(pacemakerRx.localTimeouts())
-			.thenReturn(Observable.just(view).concatWith(Observable.never()));
+		when(networkRx.consensusMessages())
+			.thenReturn(Observable.just(newView, proposal, vote).concatWith(Observable.never()));
 
 		ChainedBFT chainedBFT = new ChainedBFT(
 			epochRx,
@@ -65,6 +58,7 @@ public class ChainedBFTTest {
 		TestObserver<Event> testObserver = TestObserver.create();
 		chainedBFT.processEvents().subscribe(testObserver);
 		testObserver.awaitCount(4);
+		testObserver.assertValueCount(4);
 		testObserver.assertNotComplete();
 	}
 }

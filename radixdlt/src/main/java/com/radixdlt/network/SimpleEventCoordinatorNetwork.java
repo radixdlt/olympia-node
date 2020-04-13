@@ -17,6 +17,7 @@
 
 package com.radixdlt.network;
 
+import com.radixdlt.consensus.ConsensusMessage;
 import com.radixdlt.consensus.EventCoordinatorNetworkRx;
 import com.radixdlt.consensus.EventCoordinatorNetworkSender;
 import com.radixdlt.consensus.Proposal;
@@ -35,9 +36,6 @@ import org.radix.universe.system.LocalSystem;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.messages.NewViewMessage;
-import com.radixdlt.consensus.messages.ProposalMessage;
-import com.radixdlt.consensus.messages.VoteMessage;
 import com.radixdlt.universe.Universe;
 
 /**
@@ -48,10 +46,7 @@ public class SimpleEventCoordinatorNetwork implements EventCoordinatorNetworkSen
 	private final int magic;
 	private final AddressBook addressBook;
 	private final MessageCentral messageCentral;
-
-	private final PublishSubject<Proposal> proposals;
-	private final PublishSubject<NewView> newViews;
-	private final PublishSubject<Vote> votes;
+	private final PublishSubject<ConsensusMessage> consensusMessages;
 
 	@Inject
 	public SimpleEventCoordinatorNetwork(
@@ -65,28 +60,31 @@ public class SimpleEventCoordinatorNetwork implements EventCoordinatorNetworkSen
 		this.messageCentral = Objects.requireNonNull(messageCentral);
 		this.localPeer = new PeerWithSystem(system);
 
-		this.proposals = PublishSubject.create();
-		this.newViews = PublishSubject.create();
-		this.votes = PublishSubject.create();
+		this.consensusMessages = PublishSubject.create();
 
 		// TODO: Should be handled in start()/stop() once we have lifetimes sorted out
-		this.messageCentral.addListener(ProposalMessage.class, this::handleVertexMessage);
-		this.messageCentral.addListener(NewViewMessage.class, this::handleNewViewMessage);
-		this.messageCentral.addListener(VoteMessage.class, this::handleVoteMessage);
+		this.messageCentral.addListener(ConsensusMessageDto.class, (src, msg) -> {
+				handleConsensusMessage(msg.getConsensusMessage());
+		});
+	}
+
+	@Override
+	public Observable<ConsensusMessage> consensusMessages() {
+		return consensusMessages;
 	}
 
 	@Override
 	public void broadcastProposal(Proposal proposal) {
-		ProposalMessage message = new ProposalMessage(this.magic, proposal);
-		handleVertexMessage(this.localPeer, message);
+		ConsensusMessageDto message = new ConsensusMessageDto(this.magic, proposal);
+		handleConsensusMessage(proposal);
 		broadcast(message);
 	}
 
 	@Override
 	public void sendNewView(NewView newView, EUID newViewLeader) {
-		NewViewMessage message = new NewViewMessage(this.magic, newView);
+		ConsensusMessageDto message = new ConsensusMessageDto(this.magic, newView);
 		if (this.localPeer.getNID().equals(newViewLeader)) {
-			handleNewViewMessage(this.localPeer, message);
+			handleConsensusMessage(newView);
 		} else {
 			send(message, newViewLeader);
 		}
@@ -94,27 +92,12 @@ public class SimpleEventCoordinatorNetwork implements EventCoordinatorNetworkSen
 
 	@Override
 	public void sendVote(Vote vote, EUID leader) {
-		VoteMessage message = new VoteMessage(this.magic, vote);
+		ConsensusMessageDto message = new ConsensusMessageDto(this.magic, vote);
 		if (this.localPeer.getNID().equals(leader)) {
-			handleVoteMessage(this.localPeer, message);
+			handleConsensusMessage(vote);
 		} else {
 			send(message, leader);
 		}
-	}
-
-	@Override
-	public Observable<Proposal> proposalMessages() {
-		return this.proposals;
-	}
-
-	@Override
-	public Observable<NewView> newViewMessages() {
-		return this.newViews;
-	}
-
-	@Override
-	public Observable<Vote> voteMessages() {
-		return this.votes;
 	}
 
 	private void send(Message message, EUID recipient) {
@@ -131,15 +114,7 @@ public class SimpleEventCoordinatorNetwork implements EventCoordinatorNetworkSen
 			.forEach(peer -> this.messageCentral.send(peer, message));
 	}
 
-	private void handleVertexMessage(Peer source, ProposalMessage message) {
-		this.proposals.onNext(message.proposal());
-	}
-
-	private void handleNewViewMessage(Peer source, NewViewMessage message) {
-		this.newViews.onNext(message.newView());
-	}
-
-	private void handleVoteMessage(Peer source, VoteMessage message) {
-		this.votes.onNext(message.vote());
+	private void handleConsensusMessage(ConsensusMessage message) {
+		this.consensusMessages.onNext(message);
 	}
 }

@@ -17,6 +17,7 @@
 
 package com.radixdlt.network;
 
+import com.radixdlt.consensus.ConsensusMessage;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.consensus.EventCoordinatorNetworkRx;
@@ -165,22 +166,7 @@ public class TestEventCoordinatorNetwork {
 			.filter(message -> !receivingDisabled.contains(forNode))
 			.filter(message -> message.isRelevantFor(forNode))
 			.map(MessageInTransit::getContent);
-		return new EventCoordinatorNetworkRx() {
-			@Override
-			public Observable<Proposal> proposalMessages() {
-				return myMessages.ofType(Proposal.class);
-			}
-
-			@Override
-			public Observable<NewView> newViewMessages() {
-				return myMessages.ofType(NewView.class);
-			}
-
-			@Override
-			public Observable<Vote> voteMessages() {
-				return myMessages.ofType(Vote.class);
-			}
-		};
+		return () -> myMessages.ofType(ConsensusMessage.class);
 	}
 
 	public int getMaximumLatency() {
