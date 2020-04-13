@@ -2,6 +2,7 @@ version: '3'
 services:
   core0:
     environment:
+      RADIXDLT_HOST_IP_ADDRESS: core0
       RADIXDLT_NETWORK_SEEDS_REMOTE: core1,core2
       RADIXDLT_CONSENSUS_FIXED_NODE_COUNT: 3
       #RADIXDLT_NETWORK_DISCOVERY_URLS: https://sunstone.radixdlt.com:8443/explorer/node-finder
@@ -25,6 +26,7 @@ services:
       - "30000:30000/udp"      
   core1:
     environment:
+      RADIXDLT_HOST_IP_ADDRESS: core1
       RADIXDLT_NETWORK_SEEDS_REMOTE: core0,core2
       RADIXDLT_CONSENSUS_FIXED_NODE_COUNT: 3
       #RADIXDLT_NETWORK_DISCOVERY_URLS: https://sunstone.radixdlt.com:8443/explorer/node-finder
@@ -41,6 +43,7 @@ services:
       - "50506:50506"
   core2:
     environment:
+      RADIXDLT_HOST_IP_ADDRESS: core2
       RADIXDLT_NETWORK_SEEDS_REMOTE: core0,core1
       RADIXDLT_CONSENSUS_FIXED_NODE_COUNT: 3
       #RADIXDLT_NETWORK_DISCOVERY_URLS: https://sunstone.radixdlt.com:8443/explorer/node-finder
