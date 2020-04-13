@@ -61,7 +61,7 @@ public abstract class RadixTest
 
 		PublicInetAddress.configure(30000);
 		counters = mock(SystemCounters.class);
-		localSystem = LocalSystem.create(counters, getProperties(), universe);
+		localSystem = LocalSystem.create(counters, getProperties(), universe, "127.0.0.1");
 	}
 
 	public static Serialization getSerialization() {

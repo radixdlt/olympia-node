@@ -28,7 +28,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.radix.common.executors.Executor;
 import org.radix.common.executors.ScheduledExecutable;
-import org.radix.network.Interfaces;
 import org.radix.network.discovery.BootstrapDiscovery;
 import org.radix.network.discovery.Whitelist;
 import org.radix.network.messages.GetPeersMessage;
@@ -78,7 +77,6 @@ public class PeerManager {
 	private final int peerMessageBatchSize;
 
 	private final SecureRandom rng;
-	private final Interfaces interfaces;
 	private final Whitelist whitelist;
 	private final LocalSystem localSystem;
 	private final Universe universe;
@@ -103,7 +101,7 @@ public class PeerManager {
 
 				if (peersToProbe.isEmpty()) {
 					addressbook.peers()
-						.filter(StandardFilters.standardFilter(localSystem.getNID(), interfaces, whitelist))
+						.filter(StandardFilters.standardFilter(localSystem.getNID(), whitelist))
 						.forEachOrdered(peersToProbe::add);
 					this.numPeers = peersToProbe.size();
 				}
@@ -128,7 +126,6 @@ public class PeerManager {
 		BootstrapDiscovery bootstrapDiscovery,
 		SecureRandom rng,
 		LocalSystem localSystem,
-		Interfaces interfaces,
 		RuntimeProperties properties,
 		Universe universe
 	) {
@@ -139,7 +136,6 @@ public class PeerManager {
 		this.bootstrapDiscovery = Objects.requireNonNull(bootstrapDiscovery);
 		this.rng = Objects.requireNonNull(rng);
 		this.localSystem = localSystem;
-		this.interfaces = Objects.requireNonNull(interfaces);
 		this.universe = Objects.requireNonNull(universe);
 		this.whitelist = Whitelist.from(properties);
 
@@ -265,7 +261,7 @@ public class PeerManager {
 			PeersMessage peersMessage = new PeersMessage(this.universe.getMagic());
 			List<Peer> peers = addressbook.peers()
 				.filter(Peer::hasNID)
-				.filter(StandardFilters.standardFilter(localSystem.getNID(), interfaces, whitelist))
+				.filter(StandardFilters.standardFilter(localSystem.getNID(), whitelist))
 				.filter(StandardFilters.recentlyActive(universe.getPlanck()))
 				.collect(Collectors.toList());
 
@@ -378,7 +374,7 @@ public class PeerManager {
 	private void discoverPeers() {
 		// Probe all the bootstrap hosts so that they know about us
 		GetPeersMessage msg = new GetPeersMessage(this.universe.getMagic());
-		bootstrapDiscovery.discover(this.addressbook, StandardFilters.standardFilter(localSystem.getNID(), interfaces, whitelist)).stream()
+		bootstrapDiscovery.discover(this.addressbook, StandardFilters.standardFilter(localSystem.getNID(), whitelist)).stream()
 			.map(addressbook::peer)
 			.forEachOrdered(peer -> {
 				probe(peer);

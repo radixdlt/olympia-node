@@ -27,7 +27,6 @@ import com.radixdlt.universe.Universe;
 import org.junit.Before;
 import org.junit.Test;
 import org.radix.Radix;
-import org.radix.network.Interfaces;
 import org.radix.time.Time;
 import org.radix.time.Timestamps;
 import org.radix.universe.system.RadixSystem;
@@ -36,7 +35,6 @@ import java.util.stream.Stream;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -46,7 +44,6 @@ public class StandardFiltersTest {
 	private PeerWithNid pwn;
 	private PeerWithSystem pws;
 	private PeerWithTransport pwt;
-	private Interfaces interfaces;
 
 	@Before
 	public void setUp() {
@@ -67,8 +64,6 @@ public class StandardFiltersTest {
 		this.pws = new PeerWithSystem(system);
 		this.pwt = new PeerWithTransport(transportInfo);
 
-		interfaces = mock(Interfaces.class);
-		when(interfaces.isSelf(any())).thenReturn(true);
 		Universe universe = mock(Universe.class);
 		when(universe.getPlanck()).thenReturn(86400L * 1000L); // 1 day
 	}
@@ -77,12 +72,6 @@ public class StandardFiltersTest {
 	public void testHasTransports() {
 		assertTrue(StandardFilters.hasTransports().test(this.pwt));
 		assertFalse(StandardFilters.hasTransports().test(this.pwn));
-	}
-
-	@Test
-	public void testNotLocalAddress() {
-		assertFalse(StandardFilters.notLocalAddress(interfaces).test(this.pwt));
-		assertTrue(StandardFilters.notLocalAddress(interfaces).test(this.pwn));
 	}
 
 	@Test

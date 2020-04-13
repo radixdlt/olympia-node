@@ -51,6 +51,8 @@ public class AddressBookImplTest {
 		this.broadcastEventCount = new AtomicInteger(0);
 		this.savedPeerCount = new AtomicInteger(0);
 		this.deletedPeerCount = new AtomicInteger(0);
+		// No danger of resources not being closed with mock
+		@SuppressWarnings("resource")
 		PeerPersistence persistence = mock(PeerPersistence.class);
 		doAnswer(invocation -> {
 			savedPeerCount.incrementAndGet();

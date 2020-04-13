@@ -36,7 +36,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
-import org.radix.network.Interfaces;
 import org.radix.network.discovery.BootstrapDiscovery;
 import org.radix.network.messages.GetPeersMessage;
 import org.radix.network.messages.PeerPingMessage;
@@ -94,8 +93,6 @@ public class PeerManagerTest extends RadixTest {
 
     @Before
     public void setUp() {
-    	Interfaces interfaces = mock(Interfaces.class);
-        when(interfaces.isSelf(any())).thenReturn(false);
         when(getUniverse().getPlanck()).thenReturn(10000L);
         RuntimeProperties properties = getProperties();
 
@@ -182,7 +179,6 @@ public class PeerManagerTest extends RadixTest {
         	bootstrapDiscovery,
         	rng,
         	getLocalSystem(),
-        	interfaces,
         	properties,
         	getUniverse()
         );

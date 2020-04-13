@@ -27,7 +27,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.radix.events.Events;
-import org.radix.network.Interfaces;
 import org.radix.network.messaging.Message;
 import org.radix.universe.system.LocalSystem;
 import org.radix.universe.system.events.QueueFullEvent;
@@ -94,7 +93,6 @@ final class MessageCentralImpl implements MessageCentral {
 		AddressBook addressBook,
 		TimeSupplier timeSource,
 		EventQueueFactory<MessageEvent> eventQueueFactory,
-		Interfaces interfaces,
 		LocalSystem localSystem,
 		SystemCounters counters
 	) {

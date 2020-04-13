@@ -32,10 +32,9 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.keys.Keys;
-import com.radixdlt.network.transport.DynamicTransportMetadata;
+import com.radixdlt.network.transport.StaticTransportMetadata;
 import com.radixdlt.network.transport.TransportInfo;
 import com.radixdlt.network.transport.tcp.TCPConstants;
-import com.radixdlt.network.transport.udp.PublicInetAddress;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -84,21 +83,21 @@ public final class LocalSystem extends RadixSystem {
 		return Runtime.getRuntime().availableProcessors();
 	}
 
-	public static LocalSystem create(SystemCounters counters, RuntimeProperties properties, Universe universe) {
+	public static LocalSystem create(SystemCounters counters, RuntimeProperties properties, Universe universe, String host) {
 		String nodeKeyPath = properties.get("node.key.path", "node.ks");
 		ECKeyPair nodeKey = loadNodeKey(nodeKeyPath);
-		return new LocalSystem(counters::toMap, nodeKey, Radix.AGENT, Radix.AGENT_VERSION, Radix.PROTOCOL_VERSION, defaultTransports(universe));
+		return new LocalSystem(counters::toMap, nodeKey, Radix.AGENT, Radix.AGENT_VERSION, Radix.PROTOCOL_VERSION, defaultTransports(universe, host));
 	}
 
 	// FIXME: *Really* need a better way of configuring this other than hardcoding here
 	// Should also have the option of overriding "port", rather than always using universe port
-	private static ImmutableList<TransportInfo> defaultTransports(Universe universe) {
+	private static ImmutableList<TransportInfo> defaultTransports(Universe universe, String host) {
 		return ImmutableList.of(
 			TransportInfo.of(
 				TCPConstants.NAME,
-				DynamicTransportMetadata.of(
-					TCPConstants.METADATA_HOST, PublicInetAddress.getInstance()::toString,
-					TCPConstants.METADATA_PORT, () -> Integer.toString(universe.getPort())
+				StaticTransportMetadata.of(
+					TCPConstants.METADATA_HOST, host,
+					TCPConstants.METADATA_PORT, String.valueOf(universe.getPort())
 				)
 			)
 		);

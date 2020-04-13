@@ -32,7 +32,6 @@ import com.radixdlt.universe.Universe;
 import org.junit.Before;
 import org.junit.Test;
 import org.radix.events.Events;
-import org.radix.network.Interfaces;
 import org.radix.network.messages.TestMessage;
 import org.radix.network.messaging.Message;
 import org.radix.time.Timestamps;
@@ -127,8 +126,6 @@ public class MessageCentralImplTest {
 		EventQueueFactory<MessageEvent> queueFactory = eventQueueFactoryMock();
 		doReturn(inboundQueuex).when(queueFactory).createEventQueue(conf.messagingInboundQueueMax(0));
 		doReturn(outboundQueuex).when(queueFactory).createEventQueue(conf.messagingOutboundQueueMax(0));
-		Interfaces interfaces = mock(Interfaces.class);
-		doReturn(false).when(interfaces).isSelf(any());
 		LocalSystem localSystem = mock(LocalSystem.class);
 		SystemCounters counters = mock(SystemCounters.class);
 		this.mci = new MessageCentralImpl(
@@ -139,7 +136,6 @@ public class MessageCentralImplTest {
 			addressBook,
 			System::currentTimeMillis,
 			queueFactory,
-			interfaces,
 			localSystem,
 			counters
 		);

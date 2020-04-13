@@ -17,13 +17,9 @@
 
 package com.radixdlt.network.addressbook;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.net.InetAddress;
 import java.util.Collection;
 import java.util.Set;
 import org.radix.Radix;
-import org.radix.network.Interfaces;
 import org.radix.network.discovery.Whitelist;
 import org.radix.time.Time;
 import org.radix.time.Timestamps;
@@ -64,9 +60,8 @@ public final class StandardFilters {
 	 * @param interfaces the interfaces to test against
 	 * @param whitelist the whitelist
 	 */
-	public static PeerPredicate standardFilter(EUID self, Interfaces interfaces, Whitelist whitelist) {
+	public static PeerPredicate standardFilter(EUID self, Whitelist whitelist) {
 		return hasTransports()
-			.and(notLocalAddress(interfaces))
 			.and(isWhitelisted(whitelist))
 			.and(notOurNID(self))
 			.and(acceptableProtocol())
@@ -83,27 +78,14 @@ public final class StandardFilters {
 	}
 
 	/**
-	 * Returns {@code true} if none of the peer's transports point to a local address.
-	 *
-	 * @return {@code true} if none of the peer's transports use a local address, {@code false} otherwise
-	 * @param interfaces the interfaces to check against
-	 */
-	public static PeerPredicate notLocalAddress(Interfaces interfaces) {
-		return peer -> peer.supportedTransports().noneMatch((TransportInfo ti) -> {
-			return isLocalAddress(ti, interfaces);
-		});
-	}
-
-	/**
 	 * Returns {@code true} if all of the peer's transports are whitelisted.
 	 *
 	 * @return {@code true} if all of the peer's transports are whitelisted, {@code false} otherwise
 	 * @param whitelist the whitelist to use
 	 */
 	public static PeerPredicate isWhitelisted(Whitelist whitelist) {
-		return peer -> peer.supportedTransports().noneMatch((TransportInfo ti) -> {
-			return hostNotWhitelisted(ti, whitelist);
-		});
+		return peer -> peer.supportedTransports()
+			.noneMatch(ti -> hostNotWhitelisted(ti, whitelist));
 	}
 
 	/**
@@ -164,27 +146,7 @@ public final class StandardFilters {
 
 	private static boolean hostNotWhitelisted(TransportInfo ti, Whitelist whitelist) {
 		String host = ti.metadata().get("host");
-		if (host != null) {
-			if (!whitelist.isWhitelisted(host)) {
-				return true;
-			}
-		}
-		return false;
-	}
-
-	private static boolean isLocalAddress(TransportInfo ti, Interfaces interfaces) {
-		try {
-			String host = ti.metadata().get("host");
-			if (host != null) {
-				InetAddress address = InetAddress.getByName(host);
-				if (interfaces.isSelf(address)) {
-					return true;
-				}
-			}
-			return false;
-		} catch (IOException e) {
-			throw new UncheckedIOException("Error while checking for local address", e);
-		}
+		return (host != null && !whitelist.isWhitelisted(host));
 	}
 
 	private static boolean acceptableProtocol(Peer peer) {

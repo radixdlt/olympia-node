@@ -53,16 +53,6 @@ public class MessagingDummyConfigurations {
 		public int messagingTimeToLive(int defaultValue) {
 			return 10;
 		}
-
-		@Override
-		public int messagingInboundQueueThreads(int defaultValue) {
-			return 1;
-		}
-
-		@Override
-		public int messagingOutboundQueueThreads(int defaultValue) {
-			return 1;
-		}
 	}
 
 	public static class DummyTransport implements Transport {
