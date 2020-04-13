@@ -17,10 +17,35 @@
 
 package com.radixdlt.consensus;
 
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.mockito.Mockito.mock;
+
+import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.ECPublicKey;
 import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Before;
 import org.junit.Test;
 
 public class ProposalTest {
+	private Proposal proposal;
+	private Vertex vertex;
+	private ECPublicKey key;
+	private ECDSASignature signature;
+
+	@Before
+	public void setUp() {
+		this.vertex = mock(Vertex.class);
+		this.key = mock(ECPublicKey.class);
+		this.signature = mock(ECDSASignature.class);
+
+		this.proposal = new Proposal(vertex, key, signature);
+	}
+
+	@Test
+	public void testGetters() {
+		assertThat(this.proposal.getVertex()).isEqualTo(vertex);
+	}
+
 	@Test
 	public void equalsContract() {
 		EqualsVerifier.forClass(Proposal.class)
