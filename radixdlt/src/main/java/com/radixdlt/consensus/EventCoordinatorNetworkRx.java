@@ -27,7 +27,7 @@ public interface EventCoordinatorNetworkRx {
 	 * Accessor to the stream of consensus messages as they are received from the
 	 * network.
 	 *
-	 * @return hot observable of consensus messages
+	 * @return observable of consensus messages
 	 */
 	Observable<ConsensusMessage> consensusMessages();
 }

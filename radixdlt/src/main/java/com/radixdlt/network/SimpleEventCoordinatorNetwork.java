@@ -31,6 +31,7 @@ import org.radix.network2.addressbook.AddressBook;
 import org.radix.network2.addressbook.Peer;
 import org.radix.network2.addressbook.PeerWithSystem;
 import org.radix.network2.messaging.MessageCentral;
+import org.radix.network2.messaging.MessageListener;
 import org.radix.universe.system.LocalSystem;
 
 import com.radixdlt.identifiers.EUID;
@@ -46,7 +47,7 @@ public class SimpleEventCoordinatorNetwork implements EventCoordinatorNetworkSen
 	private final int magic;
 	private final AddressBook addressBook;
 	private final MessageCentral messageCentral;
-	private final PublishSubject<ConsensusMessage> consensusMessages;
+	private final PublishSubject<ConsensusMessage> localMessages;
 
 	@Inject
 	public SimpleEventCoordinatorNetwork(
@@ -60,42 +61,42 @@ public class SimpleEventCoordinatorNetwork implements EventCoordinatorNetworkSen
 		this.messageCentral = Objects.requireNonNull(messageCentral);
 		this.localPeer = new PeerWithSystem(system);
 
-		this.consensusMessages = PublishSubject.create();
-
-		// TODO: Should be handled in start()/stop() once we have lifetimes sorted out
-		this.messageCentral.addListener(ConsensusMessageDto.class, (src, msg) -> {
-				handleConsensusMessage(msg.getConsensusMessage());
-		});
+		this.localMessages = PublishSubject.create();
 	}
 
 	@Override
 	public Observable<ConsensusMessage> consensusMessages() {
-		return consensusMessages;
+		return Observable.<ConsensusMessage>create(emitter -> {
+			MessageListener<ConsensusMessageDto> listener =
+				(src, msg) -> emitter.onNext(msg.getConsensusMessage());
+			this.messageCentral.addListener(ConsensusMessageDto.class, listener);
+			emitter.setCancellable(() -> this.messageCentral.removeListener(listener));
+		}).mergeWith(localMessages);
 	}
 
 	@Override
 	public void broadcastProposal(Proposal proposal) {
+		this.localMessages.onNext(proposal);
 		ConsensusMessageDto message = new ConsensusMessageDto(this.magic, proposal);
-		handleConsensusMessage(proposal);
 		broadcast(message);
 	}
 
 	@Override
 	public void sendNewView(NewView newView, EUID newViewLeader) {
-		ConsensusMessageDto message = new ConsensusMessageDto(this.magic, newView);
 		if (this.localPeer.getNID().equals(newViewLeader)) {
-			handleConsensusMessage(newView);
+			this.localMessages.onNext(newView);
 		} else {
+			ConsensusMessageDto message = new ConsensusMessageDto(this.magic, newView);
 			send(message, newViewLeader);
 		}
 	}
 
 	@Override
 	public void sendVote(Vote vote, EUID leader) {
-		ConsensusMessageDto message = new ConsensusMessageDto(this.magic, vote);
 		if (this.localPeer.getNID().equals(leader)) {
-			handleConsensusMessage(vote);
+			this.localMessages.onNext(vote);
 		} else {
+			ConsensusMessageDto message = new ConsensusMessageDto(this.magic, vote);
 			send(message, leader);
 		}
 	}
@@ -112,9 +113,5 @@ public class SimpleEventCoordinatorNetwork implements EventCoordinatorNetworkSen
 			.filter(Peer::hasSystem) // Only peers with systems (and therefore transports)
 			.filter(p -> !self.equals(p.getNID())) // Exclude self, already sent
 			.forEach(peer -> this.messageCentral.send(peer, message));
-	}
-
-	private void handleConsensusMessage(ConsensusMessage message) {
-		this.consensusMessages.onNext(message);
 	}
 }

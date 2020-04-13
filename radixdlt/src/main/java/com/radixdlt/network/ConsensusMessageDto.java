@@ -56,21 +56,21 @@ public class ConsensusMessageDto extends Message {
 		this.vote = null;
 	}
 
-	public ConsensusMessageDto(int magic, NewView newView) {
+	ConsensusMessageDto(int magic, NewView newView) {
 		super(magic);
 		this.newView = newView;
 		this.proposal = null;
 		this.vote = null;
 	}
 
-	public ConsensusMessageDto(int magic, Proposal proposal) {
+	ConsensusMessageDto(int magic, Proposal proposal) {
 		super(magic);
 		this.newView = null;
 		this.proposal = proposal;
 		this.vote = null;
 	}
 
-	public ConsensusMessageDto(int magic, Vote vote) {
+	ConsensusMessageDto(int magic, Vote vote) {
 		super(magic);
 		this.newView = null;
 		this.proposal = null;
@@ -78,8 +78,7 @@ public class ConsensusMessageDto extends Message {
 	}
 
 	public ConsensusMessage getConsensusMessage() {
-		return this.newView != null ? this.newView :
-			this.proposal != null ? this.proposal :
-			this.vote;
+		return this.newView != null ? this.newView : this.proposal != null
+			? this.proposal : this.vote;
 	}
 }
