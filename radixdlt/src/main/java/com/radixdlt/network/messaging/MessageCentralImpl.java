@@ -113,10 +113,9 @@ final class MessageCentralImpl implements MessageCentral {
 		this.transports = Lists.newArrayList(transportManager.transports());
 
 		// Start inbound processing thread
-		int inboundThreads = config.messagingInboundQueueThreads(1);
 		this.inboundThreadPool = new SimpleThreadPool<>(
 			"Inbound message processing",
-			inboundThreads,
+			1, // Ensure messages processed in-order
 			inboundQueue::take,
 			this::inboundMessageProcessor,
 			log
@@ -124,10 +123,9 @@ final class MessageCentralImpl implements MessageCentral {
 		this.inboundThreadPool.start();
 
 		// Start outbound processing thread
-		int outboundThreads = config.messagingOutboundQueueThreads(1);
 		this.outboundThreadPool = new SimpleThreadPool<>(
 			"Outbound message processing",
-			outboundThreads,
+			1, // Ensure messages sent in-order
 			outboundQueue::take,
 			this::outboundMessageProcessor,
 			log
