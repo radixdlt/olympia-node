@@ -113,7 +113,7 @@ public class LatentNetworkTest {
 		List<Observable<Vertex>> correctProposals = allNodes.stream()
 			.map(ECKeyPair::getPublicKey)
 			.map(bftNetwork.getUnderlyingNetwork()::getNetworkRx)
-			.map(EventCoordinatorNetworkRx::consensusMessages)
+			.map(EventCoordinatorNetworkRx::consensusEvents)
 			.map(p -> p.ofType(Proposal.class).map(Proposal::getVertex))
 			.collect(Collectors.toList());
 		Observable<Object> directProposalsCheck = Observable.merge(correctProposals)

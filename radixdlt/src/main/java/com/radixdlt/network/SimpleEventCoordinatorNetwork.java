@@ -18,7 +18,7 @@
 package com.radixdlt.network;
 
 import com.google.inject.name.Named;
-import com.radixdlt.consensus.ConsensusMessage;
+import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.EventCoordinatorNetworkRx;
 import com.radixdlt.consensus.EventCoordinatorNetworkSender;
 import com.radixdlt.consensus.Proposal;
@@ -46,7 +46,7 @@ public class SimpleEventCoordinatorNetwork implements EventCoordinatorNetworkSen
 	private final int magic;
 	private final AddressBook addressBook;
 	private final MessageCentral messageCentral;
-	private final PublishSubject<ConsensusMessage> localMessages;
+	private final PublishSubject<ConsensusEvent> localMessages;
 
 	@Inject
 	public SimpleEventCoordinatorNetwork(
@@ -63,11 +63,11 @@ public class SimpleEventCoordinatorNetwork implements EventCoordinatorNetworkSen
 	}
 
 	@Override
-	public Observable<ConsensusMessage> consensusMessages() {
-		return Observable.<ConsensusMessage>create(emitter -> {
-			MessageListener<ConsensusMessageDto> listener =
+	public Observable<ConsensusEvent> consensusEvents() {
+		return Observable.<ConsensusEvent>create(emitter -> {
+			MessageListener<ConsensusEventMessage> listener =
 				(src, msg) -> emitter.onNext(msg.getConsensusMessage());
-			this.messageCentral.addListener(ConsensusMessageDto.class, listener);
+			this.messageCentral.addListener(ConsensusEventMessage.class, listener);
 			emitter.setCancellable(() -> this.messageCentral.removeListener(listener));
 		}).mergeWith(localMessages);
 	}
@@ -75,7 +75,7 @@ public class SimpleEventCoordinatorNetwork implements EventCoordinatorNetworkSen
 	@Override
 	public void broadcastProposal(Proposal proposal) {
 		this.localMessages.onNext(proposal);
-		ConsensusMessageDto message = new ConsensusMessageDto(this.magic, proposal);
+		ConsensusEventMessage message = new ConsensusEventMessage(this.magic, proposal);
 		broadcast(message);
 	}
 
@@ -84,7 +84,7 @@ public class SimpleEventCoordinatorNetwork implements EventCoordinatorNetworkSen
 		if (this.selfPublicKey.equals(newViewLeader)) {
 			this.localMessages.onNext(newView);
 		} else {
-			ConsensusMessageDto message = new ConsensusMessageDto(this.magic, newView);
+			ConsensusEventMessage message = new ConsensusEventMessage(this.magic, newView);
 			send(message, newViewLeader);
 		}
 	}
@@ -94,7 +94,7 @@ public class SimpleEventCoordinatorNetwork implements EventCoordinatorNetworkSen
 		if (this.selfPublicKey.equals(leader)) {
 			this.localMessages.onNext(vote);
 		} else {
-			ConsensusMessageDto message = new ConsensusMessageDto(this.magic, vote);
+			ConsensusEventMessage message = new ConsensusEventMessage(this.magic, vote);
 			send(message, leader);
 		}
 	}

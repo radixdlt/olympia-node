@@ -96,7 +96,7 @@ public final class ChainedBFT {
 			.startWithItem(epochManager.start())
 			.doOnNext(EventCoordinator::start)
 			.publish()
-			.autoConnect(2);
+			.autoConnect(2); // timeouts and consensusMessages below
 
 		final Observable<Event> timeouts = Observable.combineLatest(
 			epochCoordinators,
@@ -109,7 +109,7 @@ public final class ChainedBFT {
 
 		final Observable<Event> consensusMessages = Observable.combineLatest(
 			epochCoordinators,
-			this.network.consensusMessages(),
+			this.network.consensusEvents(),
 			(e, msg) -> {
 				final EventType eventType;
 				if (msg instanceof NewView) {

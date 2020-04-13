@@ -22,6 +22,6 @@ package com.radixdlt.consensus;
  * related messages can be handled within a single rxjava stream.
  * TODO: possibly add signature and validation method signatures here
  */
-public interface ConsensusMessage {
+public interface ConsensusEvent {
 
 }

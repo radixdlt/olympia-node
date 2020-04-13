@@ -93,7 +93,7 @@ public class PerfectNetworkTest {
 		List<Observable<Vertex>> proposals = nodes.stream()
 			.map(ECKeyPair::getPublicKey)
 			.map(bftNetwork.getUnderlyingNetwork()::getNetworkRx)
-			.map(EventCoordinatorNetworkRx::consensusMessages)
+			.map(EventCoordinatorNetworkRx::consensusEvents)
 			.map(o -> o.ofType(Proposal.class).map(Proposal::getVertex))
 			.collect(Collectors.toList());
 		Observable<Object> proposalsCheck = Observable.merge(proposals)

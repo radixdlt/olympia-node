@@ -17,7 +17,7 @@
 
 package com.radixdlt.network;
 
-import com.radixdlt.consensus.ConsensusMessage;
+import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.consensus.EventCoordinatorNetworkRx;
@@ -166,7 +166,7 @@ public class TestEventCoordinatorNetwork {
 			.filter(message -> !receivingDisabled.contains(forNode))
 			.filter(message -> message.isRelevantFor(forNode))
 			.map(MessageInTransit::getContent);
-		return () -> myMessages.ofType(ConsensusMessage.class);
+		return () -> myMessages.ofType(ConsensusEvent.class);
 	}
 
 	public int getMaximumLatency() {

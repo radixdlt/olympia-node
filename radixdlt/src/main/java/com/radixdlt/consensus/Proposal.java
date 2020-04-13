@@ -34,7 +34,7 @@ import java.util.Objects;
  */
 @SerializerId2("consensus.proposal")
 @Immutable // author cannot be but is effectively final because of serializer
-public final class Proposal implements ConsensusMessage {
+public final class Proposal implements ConsensusEvent {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;

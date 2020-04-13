@@ -18,7 +18,7 @@
 package com.radixdlt.network;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.consensus.ConsensusMessage;
+import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
@@ -31,8 +31,8 @@ import org.radix.network.messaging.Message;
  * The Data Transfer Object for Consensus messages. Each type of consensus message currently needs to be
  * a parameter in this class due to lack of interface serialization.
  */
-@SerializerId2("message.consensus.msg")
-public class ConsensusMessageDto extends Message {
+@SerializerId2("message.consensus.event")
+public class ConsensusEventMessage extends Message {
 	@JsonProperty("newview")
 	@DsonOutput(Output.ALL)
 	private final NewView newView;
@@ -45,7 +45,7 @@ public class ConsensusMessageDto extends Message {
 	@DsonOutput(Output.ALL)
 	private final Vote vote;
 
-	private ConsensusMessageDto() {
+	private ConsensusEventMessage() {
 		// Serializer only
 		super(0);
 		this.newView = null;
@@ -53,28 +53,28 @@ public class ConsensusMessageDto extends Message {
 		this.vote = null;
 	}
 
-	ConsensusMessageDto(int magic, NewView newView) {
+	ConsensusEventMessage(int magic, NewView newView) {
 		super(magic);
 		this.newView = newView;
 		this.proposal = null;
 		this.vote = null;
 	}
 
-	ConsensusMessageDto(int magic, Proposal proposal) {
+	ConsensusEventMessage(int magic, Proposal proposal) {
 		super(magic);
 		this.newView = null;
 		this.proposal = proposal;
 		this.vote = null;
 	}
 
-	ConsensusMessageDto(int magic, Vote vote) {
+	ConsensusEventMessage(int magic, Vote vote) {
 		super(magic);
 		this.newView = null;
 		this.proposal = null;
 		this.vote = vote;
 	}
 
-	public ConsensusMessage getConsensusMessage() {
+	public ConsensusEvent getConsensusMessage() {
 		if (this.newView != null) {
 			return this.newView;
 		}

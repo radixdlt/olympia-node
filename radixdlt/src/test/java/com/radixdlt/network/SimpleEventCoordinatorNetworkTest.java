@@ -24,7 +24,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.radixdlt.consensus.ConsensusMessage;
+import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
@@ -57,8 +57,8 @@ public class SimpleEventCoordinatorNetworkTest {
 
 	@Test
 	public void when_send_new_view_to_self__then_should_receive_new_view_message() {
-		TestObserver<ConsensusMessage> testObserver = TestObserver.create();
-		network.consensusMessages().subscribe(testObserver);
+		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
+		network.consensusEvents().subscribe(testObserver);
 		NewView newView = mock(NewView.class);
 		network.sendNewView(newView, selfKey);
 		testObserver.awaitCount(1);
@@ -67,8 +67,8 @@ public class SimpleEventCoordinatorNetworkTest {
 
 	@Test
 	public void when_send_vote_to_self__then_should_receive_vote_message() {
-		TestObserver<ConsensusMessage> testObserver = TestObserver.create();
-		network.consensusMessages().subscribe(testObserver);
+		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
+		network.consensusEvents().subscribe(testObserver);
 		Vote vote = mock(Vote.class);
 		network.sendVote(vote, selfKey);
 		testObserver.awaitCount(1);
@@ -77,8 +77,8 @@ public class SimpleEventCoordinatorNetworkTest {
 
 	@Test
 	public void when_broadcast_proposal__then_should_receive_proposal() {
-		TestObserver<ConsensusMessage> testObserver = TestObserver.create();
-		network.consensusMessages().subscribe(testObserver);
+		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
+		network.consensusEvents().subscribe(testObserver);
 		Proposal proposal = mock(Proposal.class);
 		network.broadcastProposal(proposal);
 		testObserver.awaitCount(1);
@@ -94,7 +94,7 @@ public class SimpleEventCoordinatorNetworkTest {
 		when(addressBook.peers()).thenReturn(Stream.of(peer));
 
 		network.sendNewView(newView, leader);
-		verify(messageCentral, times(1)).send(eq(peer), any(ConsensusMessageDto.class));
+		verify(messageCentral, times(1)).send(eq(peer), any(ConsensusEventMessage.class));
 	}
 
 	@Test
@@ -106,6 +106,6 @@ public class SimpleEventCoordinatorNetworkTest {
 		when(addressBook.peers()).thenReturn(Stream.of(peer));
 
 		network.sendVote(vote, leader);
-		verify(messageCentral, times(1)).send(eq(peer), any(ConsensusMessageDto.class));
+		verify(messageCentral, times(1)).send(eq(peer), any(ConsensusEventMessage.class));
 	}
 }

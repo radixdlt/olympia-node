@@ -24,10 +24,10 @@ import io.reactivex.rxjava3.core.Observable;
  */
 public interface EventCoordinatorNetworkRx {
 	/**
-	 * Accessor to the stream of consensus messages as they are received from the
+	 * Accessor to the stream of consensus message events as they are received from the
 	 * network.
 	 *
-	 * @return observable of consensus messages
+	 * @return observable of consensus message events
 	 */
-	Observable<ConsensusMessage> consensusMessages();
+	Observable<ConsensusEvent> consensusEvents();
 }

@@ -45,7 +45,7 @@ public class ChainedBFTTest {
 		NewView newView = mock(NewView.class);
 		Proposal proposal = mock(Proposal.class);
 		Vote vote = mock(Vote.class);
-		when(networkRx.consensusMessages())
+		when(networkRx.consensusEvents())
 			.thenReturn(Observable.just(newView, proposal, vote).concatWith(Observable.never()));
 
 		ChainedBFT chainedBFT = new ChainedBFT(
