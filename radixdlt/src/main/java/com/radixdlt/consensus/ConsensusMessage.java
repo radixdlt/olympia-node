@@ -18,8 +18,9 @@
 package com.radixdlt.consensus;
 
 /**
- * A message meant for consensus
- * TODO: add signatures and validation here
+ * A message meant for consensus. Currently a marker interface so that all consensus
+ * related messages can be handled within a single rxjava stream.
+ * TODO: possibly add signature and validation method signatures here
  */
 public interface ConsensusMessage {
 

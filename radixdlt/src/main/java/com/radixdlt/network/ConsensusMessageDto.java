@@ -29,10 +29,7 @@ import org.radix.network.messaging.Message;
 
 /**
  * The Data Transfer Object for Consensus messages. Each type of consensus message currently needs to be
- * a parameter in this class. Though "ugly" it is required due to:
- * 1. the current requirement of consensus to process messages in order
- * 2. the current interface design of MessageCentral which requires listeners to
- * register with a single class, otherwise in-order messages isn't guaranteed
+ * a parameter in this class due to lack of interface serialization.
  */
 @SerializerId2("message.consensus.msg")
 public class ConsensusMessageDto extends Message {
@@ -78,7 +75,18 @@ public class ConsensusMessageDto extends Message {
 	}
 
 	public ConsensusMessage getConsensusMessage() {
-		return this.newView != null ? this.newView : this.proposal != null
-			? this.proposal : this.vote;
+		if (this.newView != null) {
+			return this.newView;
+		}
+
+		if (this.proposal != null) {
+			return this.proposal;
+		}
+
+		if (this.vote != null) {
+			return this.vote;
+		}
+
+		throw new IllegalStateException("No consensus message.");
 	}
 }
