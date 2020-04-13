@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -18,12 +18,10 @@
 package com.radixdlt.consensus;
 
 /**
- * Processor of BFT events
+ * A message meant for consensus. Currently a marker interface so that all consensus
+ * related messages can be handled within a single rxjava stream.
+ * TODO: possibly add signature and validation method signatures here
  */
-public interface EventCoordinator {
-	void processVote(Vote vote);
-	void processNewView(NewView newView);
-	void processProposal(Proposal proposal);
-	void processLocalTimeout(View view);
-	void start();
+public interface ConsensusEvent {
+
 }

@@ -96,7 +96,7 @@ public final class ChainedBFT {
 			.startWithItem(epochManager.start())
 			.doOnNext(EventCoordinator::start)
 			.publish()
-			.autoConnect(4);
+			.autoConnect(2); // timeouts and consensusMessages below
 
 		final Observable<Event> timeouts = Observable.combineLatest(
 			epochCoordinators,
@@ -107,35 +107,28 @@ public final class ChainedBFT {
 			}
 		).subscribeOn(this.singleThreadScheduler);
 
-		final Observable<Event> newViews = Observable.combineLatest(
+		final Observable<Event> consensusMessages = Observable.combineLatest(
 			epochCoordinators,
-			this.network.newViewMessages(),
-			(e, newView) -> {
-				e.processNewView(newView);
-				return new Event(EventType.NEW_VIEW_MESSAGE, newView);
+			this.network.consensusEvents(),
+			(e, msg) -> {
+				final EventType eventType;
+				if (msg instanceof NewView) {
+					e.processNewView((NewView) msg);
+					eventType = EventType.NEW_VIEW_MESSAGE;
+				} else if (msg instanceof Proposal) {
+					e.processProposal((Proposal) msg);
+					eventType = EventType.PROPOSAL_MESSAGE;
+				} else if (msg instanceof Vote) {
+					e.processVote((Vote) msg);
+					eventType = EventType.VOTE_MESSAGE;
+				} else {
+					throw new IllegalStateException("Unknown Consensus Message: " + msg);
+				}
+
+				return new Event(eventType, msg);
 			}
 		).subscribeOn(this.singleThreadScheduler);
 
-		final Observable<Event> proposals = Observable.combineLatest(
-			epochCoordinators,
-			this.network.proposalMessages(),
-			(e, proposal) -> {
-				e.processProposal(proposal);
-				return new Event(EventType.PROPOSAL_MESSAGE, proposal);
-			}
-		).subscribeOn(this.singleThreadScheduler);
-
-		final Observable<Event> votes = Observable.combineLatest(
-			epochCoordinators,
-			this.network.voteMessages(),
-			(e, vote) -> {
-				e.processVote(vote);
-				return new Event(EventType.VOTE_MESSAGE, vote);
-			}
-		).subscribeOn(this.singleThreadScheduler);
-
-		final Observable<Event> networkMessages = Observable.merge(newViews, proposals, votes);
-
-		return Observable.merge(epochs, timeouts, networkMessages);
+		return Observable.merge(epochs, timeouts, consensusMessages);
 	}
 }

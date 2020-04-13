@@ -32,7 +32,7 @@ public class EmptyEventCoordinator implements EventCoordinator {
 	}
 
 	@Override
-	public void processProposal(Vertex proposedVertex) {
+	public void processProposal(Proposal proposal) {
 		// No-op
 	}
 

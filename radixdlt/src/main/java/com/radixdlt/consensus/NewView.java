@@ -36,7 +36,7 @@ import java.util.Optional;
  */
 @SerializerId2("consensus.newview")
 @Immutable // view and author cannot be but are effectively final because of serializer
-public final class NewView {
+public final class NewView implements ConsensusEvent {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;

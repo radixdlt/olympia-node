@@ -125,7 +125,7 @@ public class BFTTestNetwork {
 		EpochManager epochManager = new EpochManager(
 			proposalGenerator,
 			mempool,
-			underlyingNetwork.getNetworkSender(key.euid()),
+			underlyingNetwork.getNetworkSender(key.getPublicKey()),
 			safetyRules,
 			pacemaker,
 			vertexStores.get(key),
@@ -137,7 +137,7 @@ public class BFTTestNetwork {
 
 		return new ChainedBFT(
 			epochRx,
-			underlyingNetwork.getNetworkRx(key.euid()),
+			underlyingNetwork.getNetworkRx(key.getPublicKey()),
 			pacemaker,
 			epochManager
 		);

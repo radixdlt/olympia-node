@@ -1,18 +1,18 @@
 /*
- *  (C) Copyright 2020 Radix DLT Ltd
+ * (C) Copyright 2020 Radix DLT Ltd
  *
- *  Radix DLT Ltd licenses this file to you under the Apache License,
- *  Version 2.0 (the "License"); you may not use this file except in
- *  compliance with the License.  You may obtain a copy of the
- *  License at
+ * Radix DLT Ltd licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License.  You may obtain a copy of the
+ * License at
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing,
- *  software distributed under the License is distributed on an
- *  "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
- *  either express or implied.  See the License for the specific
- *  language governing permissions and limitations under the License.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied.  See the License for the specific
+ * language governing permissions and limitations under the License.
  */
 
 package com.radixdlt.consensus;
@@ -27,53 +27,43 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
-
 import java.util.Objects;
-import java.util.Optional;
 
 /**
- * Represents a vote on a vertex
+ * Represents a proposal made by a leader in a round of consensus
  */
-@SerializerId2("consensus.vote")
+@SerializerId2("consensus.proposal")
 @Immutable // author cannot be but is effectively final because of serializer
-public final class Vote implements ConsensusEvent {
+public final class Proposal implements ConsensusEvent {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	private ECPublicKey author;
-
-	@JsonProperty("vertex_metadata")
+	@JsonProperty("vertex")
 	@DsonOutput(Output.ALL)
-	private final VoteData voteData;
+	private final Vertex vertex;
+
+	private ECPublicKey author;
 
 	@JsonProperty("signature")
 	@DsonOutput(Output.ALL)
-	private final ECDSASignature signature; // may be null if not signed (e.g. for genesis)
+	private final ECDSASignature signature;
 
-	Vote() {
+	Proposal() {
 		// Serializer only
+		this.vertex = null;
 		this.author = null;
-		this.voteData = null;
 		this.signature = null;
 	}
 
-	public Vote(ECPublicKey author, VoteData voteData, ECDSASignature signature) {
+	public Proposal(Vertex vertex, ECPublicKey author, ECDSASignature signature) {
+		this.vertex = Objects.requireNonNull(vertex);
 		this.author = Objects.requireNonNull(author);
-		this.voteData = Objects.requireNonNull(voteData);
-		this.signature = signature;
+		this.signature = Objects.requireNonNull(signature);
 	}
 
-	public ECPublicKey getAuthor() {
-		return author;
-	}
-
-	public VoteData getVoteData() {
-		return voteData;
-	}
-
-	public Optional<ECDSASignature> getSignature() {
-		return Optional.ofNullable(this.signature);
+	public Vertex getVertex() {
+		return vertex;
 	}
 
 	@JsonProperty("author")
@@ -81,6 +71,7 @@ public final class Vote implements ConsensusEvent {
 	private byte[] getSerializerAuthor() {
 		return this.author == null ? null : this.author.getBytes();
 	}
+
 	@JsonProperty("author")
 	private void setSerializerAuthor(byte[] author) throws CryptoException {
 		this.author = (author == null) ? null : new ECPublicKey(author);
@@ -89,12 +80,12 @@ public final class Vote implements ConsensusEvent {
 	@Override
 	public String toString() {
 		return String.format("%s{author=%s view=%s}", getClass().getSimpleName(),
-			author.euid().toString().substring(0, 6), voteData.getProposed().getView());
+			author.euid().toString().substring(0, 6), vertex.getView());
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.author, this.voteData, this.signature);
+		return Objects.hash(this.author, this.vertex, this.signature);
 	}
 
 	@Override
@@ -102,11 +93,11 @@ public final class Vote implements ConsensusEvent {
 		if (o == this) {
 			return true;
 		}
-		if (o instanceof Vote) {
-			Vote other = (Vote) o;
+		if (o instanceof Proposal) {
+			Proposal other = (Proposal) o;
 			return
 				Objects.equals(this.author, other.author)
-					&& Objects.equals(this.voteData, other.voteData)
+					&& Objects.equals(this.vertex, other.vertex)
 					&& Objects.equals(this.signature, other.signature);
 		}
 		return false;

@@ -23,28 +23,11 @@ import io.reactivex.rxjava3.core.Observable;
  * Network accessor for the EventCoordinator
  */
 public interface EventCoordinatorNetworkRx {
-
 	/**
-	 * Accessor to the stream of proposal messages as they are received from the
+	 * Accessor to the stream of consensus message events as they are received from the
 	 * network.
 	 *
-	 * @return hot observable of proposal messages
+	 * @return observable of consensus message events
 	 */
-	Observable<Vertex> proposalMessages();
-
-	/**
-	 * Accessor to the stream of new-view messages as they are received from the
-	 * network.
-	 *
-	 * @return hot observable of new view messages
-	 */
-	Observable<NewView> newViewMessages();
-
-	/**
-	 * Accessor to the stream of vote messages as they are received from the
-	 * network.
-	 *
-	 * @return hot observable of votes messages
-	 */
-	Observable<Vote> voteMessages();
+	Observable<ConsensusEvent> consensusEvents();
 }

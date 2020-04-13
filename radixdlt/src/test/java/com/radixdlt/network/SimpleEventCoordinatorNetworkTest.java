@@ -24,22 +24,23 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.radixdlt.identifiers.EUID;
+import com.radixdlt.consensus.ConsensusEvent;
+import com.radixdlt.consensus.Proposal;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.messages.NewViewMessage;
-import com.radixdlt.consensus.messages.VoteMessage;
 import com.radixdlt.universe.Universe;
+import io.reactivex.rxjava3.observers.TestObserver;
 import java.util.stream.Stream;
 import org.junit.Before;
 import org.junit.Test;
 import org.radix.network2.addressbook.AddressBook;
 import org.radix.network2.addressbook.Peer;
 import org.radix.network2.messaging.MessageCentral;
-import org.radix.universe.system.LocalSystem;
 
 public class SimpleEventCoordinatorNetworkTest {
-	private LocalSystem localSystem;
+	private ECPublicKey selfKey;
 	private Universe universe;
 	private AddressBook addressBook;
 	private MessageCentral messageCentral;
@@ -47,35 +48,64 @@ public class SimpleEventCoordinatorNetworkTest {
 
 	@Before
 	public void setUp() {
-		this.localSystem = mock(LocalSystem.class);
-		when(localSystem.getNID()).thenReturn(mock(EUID.class));
+		this.selfKey = ECKeyPair.generateNew().getPublicKey();
 		this.universe = mock(Universe.class);
 		this.addressBook = mock(AddressBook.class);
 		this.messageCentral = mock(MessageCentral.class);
-		this.network = new SimpleEventCoordinatorNetwork(localSystem, universe, addressBook, messageCentral);
+		this.network = new SimpleEventCoordinatorNetwork(selfKey, universe, addressBook, messageCentral);
+	}
+
+	@Test
+	public void when_send_new_view_to_self__then_should_receive_new_view_message() {
+		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
+		network.consensusEvents().subscribe(testObserver);
+		NewView newView = mock(NewView.class);
+		network.sendNewView(newView, selfKey);
+		testObserver.awaitCount(1);
+		testObserver.assertValue(newView);
+	}
+
+	@Test
+	public void when_send_vote_to_self__then_should_receive_vote_message() {
+		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
+		network.consensusEvents().subscribe(testObserver);
+		Vote vote = mock(Vote.class);
+		network.sendVote(vote, selfKey);
+		testObserver.awaitCount(1);
+		testObserver.assertValue(vote);
+	}
+
+	@Test
+	public void when_broadcast_proposal__then_should_receive_proposal() {
+		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
+		network.consensusEvents().subscribe(testObserver);
+		Proposal proposal = mock(Proposal.class);
+		network.broadcastProposal(proposal);
+		testObserver.awaitCount(1);
+		testObserver.assertValue(proposal);
 	}
 
 	@Test
 	public void when_send_new_view__then_message_central_should_be_sent_new_view_message() {
 		NewView newView = mock(NewView.class);
-		EUID leader = mock(EUID.class);
+		ECPublicKey leader = ECKeyPair.generateNew().getPublicKey();
 		Peer peer = mock(Peer.class);
-		when(peer.getNID()).thenReturn(leader);
+		when(peer.getNID()).thenReturn(leader.euid());
 		when(addressBook.peers()).thenReturn(Stream.of(peer));
 
 		network.sendNewView(newView, leader);
-		verify(messageCentral, times(1)).send(eq(peer), any(NewViewMessage.class));
+		verify(messageCentral, times(1)).send(eq(peer), any(ConsensusEventMessage.class));
 	}
 
 	@Test
 	public void when_send_vote__then_message_central_should_be_sent_vote_message() {
 		Vote vote = mock(Vote.class);
-		EUID leader = mock(EUID.class);
+		ECPublicKey leader = ECKeyPair.generateNew().getPublicKey();
 		Peer peer = mock(Peer.class);
-		when(peer.getNID()).thenReturn(leader);
+		when(peer.getNID()).thenReturn(leader.euid());
 		when(addressBook.peers()).thenReturn(Stream.of(peer));
 
 		network.sendVote(vote, leader);
-		verify(messageCentral, times(1)).send(eq(peer), any(VoteMessage.class));
+		verify(messageCentral, times(1)).send(eq(peer), any(ConsensusEventMessage.class));
 	}
 }

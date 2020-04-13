@@ -17,12 +17,13 @@
 
 package com.radixdlt.network;
 
+import com.radixdlt.consensus.ConsensusEvent;
+import com.radixdlt.consensus.Proposal;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.consensus.EventCoordinatorNetworkRx;
 import com.radixdlt.consensus.EventCoordinatorNetworkSender;
 import com.radixdlt.consensus.NewView;
-import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.Vote;
-import com.radixdlt.identifiers.EUID;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 
@@ -50,8 +51,8 @@ public class TestEventCoordinatorNetwork {
 	private final Deque<MessageInTransit> orderedMessageBuffer;
 	private final PublishSubject<MessageInTransit> receivedMessages;
 	private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
-	private final Set<EUID> sendingDisabled = Collections.newSetFromMap(new ConcurrentHashMap<>());
-	private final Set<EUID> receivingDisabled = Collections.newSetFromMap(new ConcurrentHashMap<>());
+	private final Set<ECPublicKey> sendingDisabled = Collections.newSetFromMap(new ConcurrentHashMap<>());
+	private final Set<ECPublicKey> receivingDisabled = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
 	private TestEventCoordinatorNetwork(int minimumLatency, int maximumLatency, long rngSeed, boolean preserveOrder) {
 		this.preserveOrder = preserveOrder;
@@ -98,19 +99,19 @@ public class TestEventCoordinatorNetwork {
 		return new TestEventCoordinatorNetwork(minimumLatency, maximumLatency, rngSeed, true);
 	}
 
-	public void setSendingDisable(EUID euid, boolean disable) {
+	public void setSendingDisable(ECPublicKey validatorId, boolean disable) {
 		if (disable) {
-			sendingDisabled.add(euid);
+			sendingDisabled.add(validatorId);
 		} else {
-			sendingDisabled.remove(euid);
+			sendingDisabled.remove(validatorId);
 		}
 	}
 
-	public void setReceivingDisable(EUID euid, boolean disable) {
+	public void setReceivingDisable(ECPublicKey validatorId, boolean disable) {
 		if (disable) {
-			receivingDisabled.add(euid);
+			receivingDisabled.add(validatorId);
 		} else {
-			receivingDisabled.remove(euid);
+			receivingDisabled.remove(validatorId);
 		}
 	}
 
@@ -122,7 +123,7 @@ public class TestEventCoordinatorNetwork {
 		}
 	}
 
-	public EventCoordinatorNetworkSender getNetworkSender(EUID forNode) {
+	public EventCoordinatorNetworkSender getNetworkSender(ECPublicKey forNode) {
 		Consumer<MessageInTransit> sendMessageSink = message -> {
 			if (!sendingDisabled.contains(forNode)) {
 				if (preserveOrder) {
@@ -143,44 +144,29 @@ public class TestEventCoordinatorNetwork {
 		};
 		return new EventCoordinatorNetworkSender() {
 			@Override
-			public void broadcastProposal(Vertex vertex) {
-				sendMessageSink.accept(MessageInTransit.broadcast(vertex));
+			public void broadcastProposal(Proposal proposal) {
+				sendMessageSink.accept(MessageInTransit.broadcast(proposal));
 			}
 
 			@Override
-			public void sendNewView(NewView newView, EUID newViewLeader) {
+			public void sendNewView(NewView newView, ECPublicKey newViewLeader) {
 				sendMessageSink.accept(MessageInTransit.send(newView, newViewLeader));
 			}
 
 			@Override
-			public void sendVote(Vote vote, EUID leader) {
+			public void sendVote(Vote vote, ECPublicKey leader) {
 				sendMessageSink.accept(MessageInTransit.send(vote, leader));
 			}
 		};
 	}
 
-	public EventCoordinatorNetworkRx getNetworkRx(EUID forNode) {
+	public EventCoordinatorNetworkRx getNetworkRx(ECPublicKey forNode) {
 		// filter only relevant messages (appropriate target and if receiving is allowed)
 		Observable<Object> myMessages = receivedMessages
 			.filter(message -> !receivingDisabled.contains(forNode))
 			.filter(message -> message.isRelevantFor(forNode))
 			.map(MessageInTransit::getContent);
-		return new EventCoordinatorNetworkRx() {
-			@Override
-			public Observable<Vertex> proposalMessages() {
-				return myMessages.ofType(Vertex.class);
-			}
-
-			@Override
-			public Observable<NewView> newViewMessages() {
-				return myMessages.ofType(NewView.class);
-			}
-
-			@Override
-			public Observable<Vote> voteMessages() {
-				return myMessages.ofType(Vote.class);
-			}
-		};
+		return () -> myMessages.ofType(ConsensusEvent.class);
 	}
 
 	public int getMaximumLatency() {
@@ -189,9 +175,9 @@ public class TestEventCoordinatorNetwork {
 
 	private static final class MessageInTransit {
 		private final Object content;
-		private final EUID target; // may be null if broadcast
+		private final ECPublicKey target; // may be null if broadcast
 
-		private MessageInTransit(Object content, EUID target) {
+		private MessageInTransit(Object content, ECPublicKey target) {
 			this.content = Objects.requireNonNull(content);
 			this.target = target;
 		}
@@ -200,7 +186,7 @@ public class TestEventCoordinatorNetwork {
 			return new MessageInTransit(content, null);
 		}
 
-		private static MessageInTransit send(Object content, EUID receiver) {
+		private static MessageInTransit send(Object content, ECPublicKey receiver) {
 			return new MessageInTransit(content, receiver);
 		}
 
@@ -208,7 +194,7 @@ public class TestEventCoordinatorNetwork {
 			return this.content;
 		}
 
-		private boolean isRelevantFor(EUID node) {
+		private boolean isRelevantFor(ECPublicKey node) {
 			return target == null || node.equals(target);
 		}
 	}

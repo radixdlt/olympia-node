@@ -91,9 +91,10 @@ public class PerfectNetworkTest {
 
 		// Check that every received proposal has a direct parent
 		List<Observable<Vertex>> proposals = nodes.stream()
-			.map(ECKeyPair::euid)
+			.map(ECKeyPair::getPublicKey)
 			.map(bftNetwork.getUnderlyingNetwork()::getNetworkRx)
-			.map(EventCoordinatorNetworkRx::proposalMessages)
+			.map(EventCoordinatorNetworkRx::consensusEvents)
+			.map(o -> o.ofType(Proposal.class).map(Proposal::getVertex))
 			.collect(Collectors.toList());
 		Observable<Object> proposalsCheck = Observable.merge(proposals)
 			.doOnNext(v -> assertThat(v)

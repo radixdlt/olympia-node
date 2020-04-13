@@ -17,8 +17,12 @@
 
 package com.radixdlt.network;
 
+import com.google.inject.name.Named;
+import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.EventCoordinatorNetworkRx;
 import com.radixdlt.consensus.EventCoordinatorNetworkSender;
+import com.radixdlt.consensus.Proposal;
+import com.radixdlt.crypto.ECPublicKey;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 
@@ -27,119 +31,84 @@ import javax.inject.Inject;
 import org.radix.network.messaging.Message;
 import org.radix.network2.addressbook.AddressBook;
 import org.radix.network2.addressbook.Peer;
-import org.radix.network2.addressbook.PeerWithSystem;
 import org.radix.network2.messaging.MessageCentral;
-import org.radix.universe.system.LocalSystem;
+import org.radix.network2.messaging.MessageListener;
 
-import com.radixdlt.identifiers.EUID;
 import com.radixdlt.consensus.NewView;
-import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.messages.NewViewMessage;
-import com.radixdlt.consensus.messages.VertexMessage;
-import com.radixdlt.consensus.messages.VoteMessage;
 import com.radixdlt.universe.Universe;
 
 /**
  * Simple network that publishes messages to known nodes.
  */
 public class SimpleEventCoordinatorNetwork implements EventCoordinatorNetworkSender, EventCoordinatorNetworkRx {
-	private final PeerWithSystem localPeer;
+	private final ECPublicKey selfPublicKey;
 	private final int magic;
 	private final AddressBook addressBook;
 	private final MessageCentral messageCentral;
-
-	private final PublishSubject<Vertex> proposals;
-	private final PublishSubject<NewView> newViews;
-	private final PublishSubject<Vote> votes;
+	private final PublishSubject<ConsensusEvent> localMessages;
 
 	@Inject
 	public SimpleEventCoordinatorNetwork(
-		LocalSystem system,
+		@Named("self") ECPublicKey selfPublicKey,
 		Universe universe,
 		AddressBook addressBook,
 		MessageCentral messageCentral
 	) {
 		this.magic = universe.getMagic();
+		this.selfPublicKey = Objects.requireNonNull(selfPublicKey);
 		this.addressBook = Objects.requireNonNull(addressBook);
 		this.messageCentral = Objects.requireNonNull(messageCentral);
-		this.localPeer = new PeerWithSystem(system);
-
-		this.proposals = PublishSubject.create();
-		this.newViews = PublishSubject.create();
-		this.votes = PublishSubject.create();
-
-		// TODO: Should be handled in start()/stop() once we have lifetimes sorted out
-		this.messageCentral.addListener(VertexMessage.class, this::handleVertexMessage);
-		this.messageCentral.addListener(NewViewMessage.class, this::handleNewViewMessage);
-		this.messageCentral.addListener(VoteMessage.class, this::handleVoteMessage);
+		this.localMessages = PublishSubject.create();
 	}
 
 	@Override
-	public void broadcastProposal(Vertex vertex) {
-		VertexMessage message = new VertexMessage(this.magic, vertex);
-		handleVertexMessage(this.localPeer, message);
+	public Observable<ConsensusEvent> consensusEvents() {
+		return Observable.<ConsensusEvent>create(emitter -> {
+			MessageListener<ConsensusEventMessage> listener =
+				(src, msg) -> emitter.onNext(msg.getConsensusMessage());
+			this.messageCentral.addListener(ConsensusEventMessage.class, listener);
+			emitter.setCancellable(() -> this.messageCentral.removeListener(listener));
+		}).mergeWith(localMessages);
+	}
+
+	@Override
+	public void broadcastProposal(Proposal proposal) {
+		this.localMessages.onNext(proposal);
+		ConsensusEventMessage message = new ConsensusEventMessage(this.magic, proposal);
 		broadcast(message);
 	}
 
 	@Override
-	public void sendNewView(NewView newView, EUID newViewLeader) {
-		NewViewMessage message = new NewViewMessage(this.magic, newView);
-		if (this.localPeer.getNID().equals(newViewLeader)) {
-			handleNewViewMessage(this.localPeer, message);
+	public void sendNewView(NewView newView, ECPublicKey newViewLeader) {
+		if (this.selfPublicKey.equals(newViewLeader)) {
+			this.localMessages.onNext(newView);
 		} else {
+			ConsensusEventMessage message = new ConsensusEventMessage(this.magic, newView);
 			send(message, newViewLeader);
 		}
 	}
 
 	@Override
-	public void sendVote(Vote vote, EUID leader) {
-		VoteMessage message = new VoteMessage(this.magic, vote);
-		if (this.localPeer.getNID().equals(leader)) {
-			handleVoteMessage(this.localPeer, message);
+	public void sendVote(Vote vote, ECPublicKey leader) {
+		if (this.selfPublicKey.equals(leader)) {
+			this.localMessages.onNext(vote);
 		} else {
+			ConsensusEventMessage message = new ConsensusEventMessage(this.magic, vote);
 			send(message, leader);
 		}
 	}
 
-	@Override
-	public Observable<Vertex> proposalMessages() {
-		return this.proposals;
-	}
-
-	@Override
-	public Observable<NewView> newViewMessages() {
-		return this.newViews;
-	}
-
-	@Override
-	public Observable<Vote> voteMessages() {
-		return this.votes;
-	}
-
-	private void send(Message message, EUID recipient) {
+	private void send(Message message, ECPublicKey recipient) {
 		this.addressBook.peers()
-			.filter(p -> p.getNID().equals(recipient))
+			.filter(p -> p.getNID().equals(recipient.euid()))
 			.forEach(p -> this.messageCentral.send(p, message));
 	}
 
 	private void broadcast(Message message) {
-		final EUID self = this.localPeer.getNID();
 		this.addressBook.peers()
 			.filter(Peer::hasSystem) // Only peers with systems (and therefore transports)
-			.filter(p -> !self.equals(p.getNID())) // Exclude self, already sent
+			.filter(p -> !selfPublicKey.euid().equals(p.getNID())) // Exclude self, already sent
 			.forEach(peer -> this.messageCentral.send(peer, message));
-	}
-
-	private void handleVertexMessage(Peer source, VertexMessage message) {
-		this.proposals.onNext(message.vertex());
-	}
-
-	private void handleNewViewMessage(Peer source, NewViewMessage message) {
-		this.newViews.onNext(message.newView());
-	}
-
-	private void handleVoteMessage(Peer source, VoteMessage message) {
-		this.votes.onNext(message.vote());
 	}
 }
