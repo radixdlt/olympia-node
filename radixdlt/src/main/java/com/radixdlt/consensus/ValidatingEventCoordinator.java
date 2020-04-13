@@ -102,7 +102,7 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 		NewView newView = new NewView(selfKey.getPublicKey(), nextView, this.vertexStore.getHighestQC(), signature);
 		ECPublicKey nextLeader = this.proposerElection.getProposer(nextView);
 		log.info("{}: Sending NEW_VIEW to {}: {}", this.getShortName(), this.getShortName(nextLeader.euid()), newView);
-		this.networkSender.sendNewView(newView, nextLeader.euid());
+		this.networkSender.sendNewView(newView, nextLeader);
 	}
 
 	private void processQC(QuorumCertificate qc) throws SyncException {
@@ -232,7 +232,7 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 			final Vote vote = safetyRules.voteFor(proposedVertex);
 			final ECPublicKey leader = this.proposerElection.getProposer(updatedView);
 			log.info("{}: PROPOSAL: Sending VOTE to {}: {}", this.getShortName(), this.getShortName(leader.euid()), vote);
-			networkSender.sendVote(vote, leader.euid());
+			networkSender.sendVote(vote, leader);
 		} catch (SafetyViolationException e) {
 			log.error(this.getShortName() + ": PROPOSAL: Rejected " + proposedVertex, e);
 		}

@@ -111,7 +111,7 @@ public class LatentNetworkTest {
 
 		// TODO all? proposals should be direct
 		List<Observable<Vertex>> correctProposals = allNodes.stream()
-			.map(ECKeyPair::euid)
+			.map(ECKeyPair::getPublicKey)
 			.map(bftNetwork.getUnderlyingNetwork()::getNetworkRx)
 			.map(EventCoordinatorNetworkRx::consensusMessages)
 			.map(p -> p.ofType(Proposal.class).map(Proposal::getVertex))

@@ -47,8 +47,8 @@ public class CrashFaultNetworkTest {
 	}
 
 	private void crashNode(ECKeyPair node, BFTTestNetwork bftNetwork) {
-		bftNetwork.getUnderlyingNetwork().setReceivingDisable(node.euid(), true);
-		bftNetwork.getUnderlyingNetwork().setSendingDisable(node.euid(), true);
+		bftNetwork.getUnderlyingNetwork().setReceivingDisable(node.getPublicKey(), true);
+		bftNetwork.getUnderlyingNetwork().setSendingDisable(node.getPublicKey(), true);
 	}
 
 	/**
@@ -158,7 +158,7 @@ public class CrashFaultNetworkTest {
 
 		// correct proposals should be direct if generated after another correct proposal, otherwise there should be a gap
 		List<Observable<Vertex>> correctProposals = correctNodes.stream()
-			.map(ECKeyPair::euid)
+			.map(ECKeyPair::getPublicKey)
 			.map(bftNetwork.getUnderlyingNetwork()::getNetworkRx)
 			.map(EventCoordinatorNetworkRx::consensusMessages)
 			.map(p -> p.ofType(Proposal.class).map(Proposal::getVertex))

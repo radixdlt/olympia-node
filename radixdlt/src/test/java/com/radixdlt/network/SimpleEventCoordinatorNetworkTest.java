@@ -26,7 +26,6 @@ import static org.mockito.Mockito.when;
 
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.EUID;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.universe.Universe;
@@ -56,9 +55,9 @@ public class SimpleEventCoordinatorNetworkTest {
 	@Test
 	public void when_send_new_view__then_message_central_should_be_sent_new_view_message() {
 		NewView newView = mock(NewView.class);
-		EUID leader = mock(EUID.class);
+		ECPublicKey leader = ECKeyPair.generateNew().getPublicKey();
 		Peer peer = mock(Peer.class);
-		when(peer.getNID()).thenReturn(leader);
+		when(peer.getNID()).thenReturn(leader.euid());
 		when(addressBook.peers()).thenReturn(Stream.of(peer));
 
 		network.sendNewView(newView, leader);
@@ -68,9 +67,9 @@ public class SimpleEventCoordinatorNetworkTest {
 	@Test
 	public void when_send_vote__then_message_central_should_be_sent_vote_message() {
 		Vote vote = mock(Vote.class);
-		EUID leader = mock(EUID.class);
+		ECPublicKey leader = ECKeyPair.generateNew().getPublicKey();
 		Peer peer = mock(Peer.class);
-		when(peer.getNID()).thenReturn(leader);
+		when(peer.getNID()).thenReturn(leader.euid());
 		when(addressBook.peers()).thenReturn(Stream.of(peer));
 
 		network.sendVote(vote, leader);

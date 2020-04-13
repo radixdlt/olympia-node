@@ -17,13 +17,13 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.identifiers.EUID;
+import com.radixdlt.crypto.ECPublicKey;
 
 /**
  * Interface for Event Coordinator to send things through a network
  */
 public interface EventCoordinatorNetworkSender {
 	void broadcastProposal(Proposal proposal);
-	void sendNewView(NewView newView, EUID newViewLeader);
-	void sendVote(Vote vote, EUID leader);
+	void sendNewView(NewView newView, ECPublicKey newViewLeader);
+	void sendVote(Vote vote, ECPublicKey leader);
 }

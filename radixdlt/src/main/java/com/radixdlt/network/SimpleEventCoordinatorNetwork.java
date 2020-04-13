@@ -34,7 +34,6 @@ import org.radix.network2.addressbook.Peer;
 import org.radix.network2.messaging.MessageCentral;
 import org.radix.network2.messaging.MessageListener;
 
-import com.radixdlt.identifiers.EUID;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.universe.Universe;
@@ -81,8 +80,8 @@ public class SimpleEventCoordinatorNetwork implements EventCoordinatorNetworkSen
 	}
 
 	@Override
-	public void sendNewView(NewView newView, EUID newViewLeader) {
-		if (this.selfPublicKey.euid().equals(newViewLeader)) {
+	public void sendNewView(NewView newView, ECPublicKey newViewLeader) {
+		if (this.selfPublicKey.equals(newViewLeader)) {
 			this.localMessages.onNext(newView);
 		} else {
 			ConsensusMessageDto message = new ConsensusMessageDto(this.magic, newView);
@@ -91,8 +90,8 @@ public class SimpleEventCoordinatorNetwork implements EventCoordinatorNetworkSen
 	}
 
 	@Override
-	public void sendVote(Vote vote, EUID leader) {
-		if (this.selfPublicKey.euid().equals(leader)) {
+	public void sendVote(Vote vote, ECPublicKey leader) {
+		if (this.selfPublicKey.equals(leader)) {
 			this.localMessages.onNext(vote);
 		} else {
 			ConsensusMessageDto message = new ConsensusMessageDto(this.magic, vote);
@@ -100,17 +99,16 @@ public class SimpleEventCoordinatorNetwork implements EventCoordinatorNetworkSen
 		}
 	}
 
-	private void send(Message message, EUID recipient) {
+	private void send(Message message, ECPublicKey recipient) {
 		this.addressBook.peers()
-			.filter(p -> p.getNID().equals(recipient))
+			.filter(p -> p.getNID().equals(recipient.euid()))
 			.forEach(p -> this.messageCentral.send(p, message));
 	}
 
 	private void broadcast(Message message) {
-		final EUID self = this.selfPublicKey.euid();
 		this.addressBook.peers()
 			.filter(Peer::hasSystem) // Only peers with systems (and therefore transports)
-			.filter(p -> !self.equals(p.getNID())) // Exclude self, already sent
+			.filter(p -> !selfPublicKey.euid().equals(p.getNID())) // Exclude self, already sent
 			.forEach(peer -> this.messageCentral.send(peer, message));
 	}
 }
