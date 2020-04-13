@@ -19,7 +19,6 @@ package com.radixdlt.discovery;
 
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.consensus.tempo.TempoException;
-import org.radix.network2.utils.Locking;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -28,6 +27,8 @@ import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Stream;
+
+import org.radix.utils.Locking;
 
 /**
  * The state of iterative discovery across multiple peers.

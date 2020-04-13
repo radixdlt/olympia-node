@@ -23,6 +23,7 @@ import com.radixdlt.store.SearchCursor;
 import com.radixdlt.store.StoreIndex;
 import com.radixdlt.store.LedgerSearchMode;
 import com.radixdlt.middleware2.store.EngineAtomIndices;
+import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.engine.AtomStatus;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -37,7 +38,6 @@ import org.everit.json.schema.ValidationException;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.radix.api.services.AtomsService;
-import org.radix.network2.addressbook.AddressBook;
 
 import com.radixdlt.universe.Universe;
 import org.radix.universe.system.LocalSystem;

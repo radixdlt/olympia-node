@@ -35,7 +35,12 @@ import com.radixdlt.delivery.LazyRequestDelivererModule;
 import com.radixdlt.discovery.IterativeDiscovererModule;
 import com.radixdlt.mempool.MempoolModule;
 import com.radixdlt.middleware2.MiddlewareModule;
-import com.radixdlt.network.NetworkModule;
+import com.radixdlt.network.addressbook.AddressBookModule;
+import com.radixdlt.network.addressbook.PeerManagerConfiguration;
+import com.radixdlt.network.consensus.NetworkModule;
+import com.radixdlt.network.messaging.MessageCentralModule;
+import com.radixdlt.network.transport.tcp.TCPTransportModule;
+import com.radixdlt.network.transport.udp.UDPTransportModule;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.berkeley.BerkeleyStoreModule;
@@ -45,11 +50,6 @@ import javax.inject.Inject;
 import javax.inject.Provider;
 import org.radix.database.DatabaseEnvironment;
 import org.radix.events.Events;
-import org.radix.network2.addressbook.AddressBookModule;
-import org.radix.network2.addressbook.PeerManagerConfiguration;
-import org.radix.network2.messaging.MessageCentralModule;
-import org.radix.network2.transport.tcp.TCPTransportModule;
-import org.radix.network2.transport.udp.UDPTransportModule;
 import org.radix.universe.system.LocalSystem;
 
 public class GlobalInjector {

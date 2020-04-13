@@ -23,10 +23,7 @@ import java.util.Objects;
 import java.util.function.Supplier;
 
 import org.radix.Radix;
-import org.radix.network2.transport.DynamicTransportMetadata;
-import org.radix.network2.transport.TransportInfo;
-import org.radix.network2.transport.tcp.TCPConstants;
-import org.radix.network2.transport.udp.PublicInetAddress;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
@@ -35,6 +32,10 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.keys.Keys;
+import com.radixdlt.network.transport.DynamicTransportMetadata;
+import com.radixdlt.network.transport.TransportInfo;
+import com.radixdlt.network.transport.tcp.TCPConstants;
+import com.radixdlt.network.transport.udp.PublicInetAddress;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;

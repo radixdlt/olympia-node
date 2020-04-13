@@ -19,7 +19,7 @@ package com.radixdlt.delivery;
 
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
-import org.radix.network2.addressbook.Peer;
+import com.radixdlt.network.addressbook.Peer;
 
 import java.util.ArrayDeque;
 import java.util.HashSet;

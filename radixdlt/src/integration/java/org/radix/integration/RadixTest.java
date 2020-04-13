@@ -18,6 +18,7 @@
 package org.radix.integration;
 
 import com.radixdlt.DefaultSerialization;
+import com.radixdlt.network.transport.udp.PublicInetAddress;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.universe.Universe;
@@ -27,7 +28,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.radix.GenerateUniverses;
 import org.radix.Radix;
-import org.radix.network2.transport.udp.PublicInetAddress;
 import org.radix.serialization.TestSetupUtils;
 import org.radix.utils.IOUtils;
 

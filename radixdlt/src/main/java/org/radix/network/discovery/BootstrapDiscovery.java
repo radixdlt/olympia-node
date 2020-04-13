@@ -37,14 +37,15 @@ import com.google.inject.Inject;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.radix.network2.addressbook.AddressBook;
-import org.radix.network2.addressbook.Peer;
-import org.radix.network2.addressbook.PeerPredicate;
-import org.radix.network2.transport.StaticTransportMetadata;
-import org.radix.network2.transport.TransportInfo;
-import org.radix.network2.transport.tcp.TCPConstants;
+
 import com.google.common.collect.Lists;
 import com.google.common.net.HostAndPort;
+import com.radixdlt.network.addressbook.AddressBook;
+import com.radixdlt.network.addressbook.Peer;
+import com.radixdlt.network.addressbook.PeerPredicate;
+import com.radixdlt.network.transport.StaticTransportMetadata;
+import com.radixdlt.network.transport.TransportInfo;
+import com.radixdlt.network.transport.tcp.TCPConstants;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.universe.Universe;
 

@@ -47,6 +47,7 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.universe.Universe;
 
@@ -56,7 +57,6 @@ import java.util.concurrent.Executors;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.radix.network2.addressbook.AddressBook;
 
 public class CerberusModule extends AbstractModule {
 	private static final Logger log = LogManager.getLogger("Startup");

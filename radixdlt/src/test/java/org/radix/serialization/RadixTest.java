@@ -19,12 +19,12 @@ package org.radix.serialization;
 
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.network.transport.udp.PublicInetAddress;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.universe.Universe;
 import org.junit.BeforeClass;
 import org.mockito.stubbing.Answer;
-import org.radix.network2.transport.udp.PublicInetAddress;
 import org.radix.time.NtpService;
 import org.radix.universe.system.LocalSystem;
 

@@ -22,8 +22,8 @@ import java.util.Collection;
 import java.util.List;
 
 import org.radix.network.messaging.Message;
-import org.radix.network2.addressbook.Peer;
 
+import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;

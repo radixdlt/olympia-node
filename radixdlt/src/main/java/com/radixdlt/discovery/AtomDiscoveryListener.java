@@ -18,7 +18,7 @@
 package com.radixdlt.discovery;
 
 import com.radixdlt.identifiers.AID;
-import org.radix.network2.addressbook.Peer;
+import com.radixdlt.network.addressbook.Peer;
 
 import java.util.Set;
 import java.util.function.BiConsumer;

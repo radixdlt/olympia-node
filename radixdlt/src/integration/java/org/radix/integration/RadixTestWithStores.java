@@ -17,13 +17,13 @@
 
 package org.radix.integration;
 
+import com.radixdlt.network.addressbook.AddressBook;
+import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.store.LedgerEntryStore;
 import org.junit.After;
 import org.junit.Before;
 import org.radix.GlobalInjector;
 import org.radix.database.DatabaseEnvironment;
-import org.radix.network2.addressbook.AddressBook;
-import org.radix.network2.messaging.MessageCentral;
 
 import java.io.IOException;
 import java.util.Objects;

@@ -28,8 +28,8 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import com.radixdlt.identifiers.EUID;
-import org.radix.network2.addressbook.AddressBook;
-import org.radix.network2.addressbook.Peer;
+import com.radixdlt.network.addressbook.AddressBook;
+import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import org.radix.universe.system.LocalSystem;

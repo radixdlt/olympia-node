@@ -24,7 +24,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.radix.database.DatabaseEnvironment;
-import org.radix.network2.transport.udp.PublicInetAddress;
 import org.radix.serialization.TestSetupUtils;
 
 import com.google.inject.Key;
@@ -33,6 +32,7 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.network.transport.udp.PublicInetAddress;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.universe.Universe;
 
