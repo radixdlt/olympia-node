@@ -17,6 +17,7 @@
 
 package org.radix;
 
+import com.radixdlt.DefaultSerialization;
 import com.radixdlt.consensus.ChainedBFT;
 import com.radixdlt.mempool.MempoolReceiver;
 import com.radixdlt.mempool.SubmissionControl;
@@ -27,14 +28,15 @@ import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.Bytes;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.commons.cli.ParseException;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.json.JSONObject;
 import org.radix.api.http.RadixHttpServer;
 import org.radix.database.DatabaseEnvironment;
 import org.radix.events.Events;
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
 import org.radix.network2.addressbook.AddressBook;
 import org.radix.network2.addressbook.PeerManager;
 import org.radix.network2.transport.udp.PublicInetAddress;
@@ -42,7 +44,6 @@ import org.radix.time.Time;
 import org.radix.universe.UniverseValidator;
 import org.radix.universe.system.LocalSystem;
 import org.radix.utils.IOUtils;
-import org.radix.utils.SystemMetaData;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -54,10 +55,10 @@ public final class Radix
 {
 	static
 	{
-		java.lang.System.setProperty("java.net.preferIPv4Stack", "true");
+		System.setProperty("java.net.preferIPv4Stack", "true");
 	}
 
-	private static final Logger log = Logging.getLogger();
+	private static final Logger log = LogManager.getLogger();
 
 	public static final int 	PROTOCOL_VERSION 		= 100;
 
@@ -114,13 +115,11 @@ public final class Radix
 	}
 
 	public static void start(RuntimeProperties properties) {
-		Serialization serialization = Serialization.getDefault();
+		Serialization serialization = DefaultSerialization.getInstance();
 		Universe universe = extractUniverseFrom(properties, serialization);
 
 		// TODO this is awful, PublicInetAddress shouldn't be a singleton
 		PublicInetAddress.configure(universe.getPort());
-
-		LocalSystem localSystem = LocalSystem.restoreOrCreate(properties, universe);
 
 		// set up time services
 		Time.start(properties);
@@ -131,16 +130,14 @@ public final class Radix
 		// start database environment
 		DatabaseEnvironment dbEnv = new DatabaseEnvironment(properties);
 
-		// start profiling
-		SystemMetaData.init(dbEnv);
-
 		// TODO Eventually modules should be created using Google Guice injector
-		GlobalInjector globalInjector = new GlobalInjector(properties, dbEnv, localSystem, universe);
+		GlobalInjector globalInjector = new GlobalInjector(properties, dbEnv, universe);
 		// TODO use consensus for application construction (in our case, the engine middleware)
 
 		// setup networking
 		AddressBook addressBook = globalInjector.getInjector().getInstance(AddressBook.class);
 		PeerManager peerManager = globalInjector.getInjector().getInstance(PeerManager.class);
+		LocalSystem localSystem = globalInjector.getInjector().getInstance(LocalSystem.class);
 		peerManager.start();
 
 		// Start mempool receiver
@@ -164,7 +161,7 @@ public final class Radix
 		RadixHttpServer httpServer = new RadixHttpServer(store, submissionControl, atomToBinaryConverter, universe, serialization, properties, localSystem, addressBook);
 		httpServer.start(properties);
 
-		log.info("Node '" + localSystem.getNID() + "' started successfully");
+		log.info("Node '{}' started successfully", localSystem.getNID());
 	}
 
 	private static void dumpExecutionLocation() {
@@ -179,8 +176,8 @@ public final class Radix
 			}
 			System.setProperty("radix.jar.path", jarPath);
 
-			log.debug("Execution file: "+ System.getProperty("radix.jar"));
-			log.debug("Execution path: "+ System.getProperty("radix.jar.path"));
+			log.debug("Execution file: {}", System.getProperty("radix.jar"));
+			log.debug("Execution path: {}", System.getProperty("radix.jar.path"));
 		} catch (URISyntaxException | ClassNotFoundException e) {
 			throw new IllegalStateException("Error while fetching execution location", e);
 		}

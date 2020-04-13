@@ -20,7 +20,7 @@ package org.radix.utils;
 import java.util.Objects;
 import java.util.function.Consumer;
 
-import org.radix.logging.Logger;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Simple thread pool that copies values of a specified type from a source

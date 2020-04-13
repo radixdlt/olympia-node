@@ -17,7 +17,7 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.atomos.RadixAddress;
+import com.radixdlt.identifiers.RadixAddress;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Before;
 import org.junit.Test;
@@ -34,7 +34,7 @@ public class NewViewTest {
 	@Before
 	public void setUp() {
 		this.view = View.of(1L);
-		this.testObject = new NewView(ADDRESS.getKey(), view, mock(QuorumCertificate.class), null);
+		this.testObject = new NewView(ADDRESS.getPublicKey(), view, mock(QuorumCertificate.class), null);
 	}
 
 	@Test
@@ -46,7 +46,7 @@ public class NewViewTest {
 	@Test
 	public void testGetters() {
 		assertEquals(this.view, this.testObject.getView());
-		assertEquals(ADDRESS.getKey(), this.testObject.getAuthor());
+		assertEquals(ADDRESS.getPublicKey(), this.testObject.getAuthor());
 	}
 
 	@Test

@@ -17,7 +17,7 @@
 
 package org.radix.network2.addressbook;
 
-import com.radixdlt.common.EUID;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
@@ -31,9 +31,10 @@ import com.sleepycat.je.LockMode;
 import com.sleepycat.je.OperationStatus;
 import com.sleepycat.je.Transaction;
 import com.sleepycat.je.TransactionConfig;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.radix.database.DatabaseEnvironment;
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -44,7 +45,7 @@ import java.util.function.Consumer;
  * Persistence for peers.
  */
 public class AddressBookPersistence implements PeerPersistence {
-	private static final Logger log = Logging.getLogger("addressbook");
+	private static final Logger log = LogManager.getLogger("addressbook");
 
 	private final Serialization serialization;
 	private final DatabaseEnvironment dbEnv;

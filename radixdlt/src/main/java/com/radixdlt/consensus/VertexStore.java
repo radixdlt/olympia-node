@@ -17,6 +17,8 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
@@ -24,20 +26,25 @@ import com.radixdlt.engine.RadixEngineException;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Manages the BFT Vertex chain
+ * Manages the BFT Vertex chain. NOT thread-safe.
  */
 public final class VertexStore {
 
 	private final RadixEngine engine;
-	private final Map<Hash, Vertex> vertices = new HashMap<>();
-	private final Map<Hash, Vertex> committedVertices = new HashMap<>();
+	private final SystemCounters counters;
+
+	private final Map<Hash, Vertex> vertices = new ConcurrentHashMap<>();
 	private final BehaviorSubject<Vertex> lastCommittedVertex = BehaviorSubject.create();
+
+	// Should never be null
+	private Vertex root;
 
 	// Should never be null
 	private QuorumCertificate highestQC;
@@ -46,26 +53,24 @@ public final class VertexStore {
 	public VertexStore(
 		Vertex genesisVertex,
 		QuorumCertificate rootQC,
-		RadixEngine engine
+		RadixEngine engine,
+		SystemCounters counters
 	) {
-		Objects.requireNonNull(genesisVertex);
-		Objects.requireNonNull(rootQC);
-		Objects.requireNonNull(engine);
-
-		this.engine = engine;
-		this.highestQC = rootQC;
+		this.engine = Objects.requireNonNull(engine);
+		this.counters = Objects.requireNonNull(counters);
+		this.highestQC = Objects.requireNonNull(rootQC);
 		try {
 			this.engine.store(genesisVertex.getAtom());
 		} catch (RadixEngineException e) {
 			throw new IllegalStateException("Could not store genesis atom: " + genesisVertex.getAtom(), e);
 		}
 		this.vertices.put(genesisVertex.getId(), genesisVertex);
-		this.committedVertices.put(genesisVertex.getId(), genesisVertex);
+		this.root = genesisVertex;
 		this.lastCommittedVertex.onNext(genesisVertex);
 	}
 
 	public void syncToQC(QuorumCertificate qc) throws SyncException {
-		final Vertex vertex = vertices.get(qc.getVertexMetadata().getId());
+		final Vertex vertex = vertices.get(qc.getProposed().getId());
 		if (vertex == null) {
 			// TODO: actual syncing
 			throw new SyncException(qc);
@@ -84,9 +89,14 @@ public final class VertexStore {
 
 		if (vertex.getAtom() != null) {
 			try {
+				this.counters.increment(CounterType.LEDGER_PROCESSED);
 				this.engine.store(vertex.getAtom());
+				this.counters.increment(CounterType.LEDGER_STORED);
 			} catch (RadixEngineException e) {
-				throw new VertexInsertionException("Failed to execute", e);
+				// TODO: Don't check for state computer errors for now so that we don't
+				// TODO: have to deal with failing leader proposals
+				// TODO: Reinstate this when ProposalGenerator + Mempool can guarantee correct proposals
+				//throw new VertexInsertionException("Failed to execute", e);
 			}
 		}
 
@@ -98,13 +108,19 @@ public final class VertexStore {
 		if (tipVertex == null) {
 			throw new IllegalStateException("Committing a vertex which was never inserted: " + vertexId);
 		}
+		final LinkedList<Vertex> path = new LinkedList<>();
 		Vertex vertex = tipVertex;
-		while (vertex != null && !committedVertices.containsKey(vertex.getId())) {
-			committedVertices.put(vertexId, vertex);
-			vertex = vertices.get(vertex.getParentId());
+		while (vertex != null && !root.equals(vertex)) {
+			path.addFirst(vertex);
+			vertex = vertices.remove(vertex.getParentId());
 		}
 
-		lastCommittedVertex.onNext(tipVertex);
+		for (Vertex committed : path) {
+			lastCommittedVertex.onNext(committed);
+		}
+
+		vertices.remove(root.getId());
+		root = tipVertex;
 
 		return tipVertex;
 	}
@@ -117,7 +133,7 @@ public final class VertexStore {
 		final List<Vertex> path = new ArrayList<>();
 
 		Vertex vertex = vertices.get(vertexId);
-		while (vertex != null && !committedVertices.containsKey(vertex.getId())) {
+		while (vertex != null && !vertex.getId().equals(root.getId())) {
 			path.add(vertex);
 			vertex = vertices.get(vertex.getParentId());
 		}
@@ -125,11 +141,11 @@ public final class VertexStore {
 		return path;
 	}
 
-	public Vertex getVertex(Hash vertexId) {
-		return vertices.get(vertexId);
-	}
-
 	public QuorumCertificate getHighestQC() {
 		return this.highestQC;
+	}
+
+	public int getSize() {
+		return vertices.size();
 	}
 }

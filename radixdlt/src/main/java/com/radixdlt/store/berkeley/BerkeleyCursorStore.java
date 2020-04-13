@@ -19,7 +19,7 @@ package com.radixdlt.store.berkeley;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.radixdlt.common.EUID;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.consensus.tempo.TempoException;
 import com.radixdlt.store.CursorStore;
 import com.radixdlt.utils.Longs;
@@ -32,9 +32,10 @@ import com.sleepycat.je.LockMode;
 import com.sleepycat.je.OperationStatus;
 import com.sleepycat.je.Transaction;
 import com.sleepycat.je.TransactionConfig;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.radix.database.DatabaseEnvironment;
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
 
 import java.util.Objects;
 import java.util.OptionalLong;
@@ -42,7 +43,7 @@ import java.util.OptionalLong;
 @Singleton
 public final class BerkeleyCursorStore implements CursorStore {
 	private static final String LC_CURSOR_STORE_NAME = "tempo2.sync.iterative.cursors";
-	private static final Logger logger = Logging.getLogger("store.cursors");
+	private static final Logger logger = LogManager.getLogger("store.cursors");
 
 	private final DatabaseEnvironment dbEnv;
 	private Database cursors;

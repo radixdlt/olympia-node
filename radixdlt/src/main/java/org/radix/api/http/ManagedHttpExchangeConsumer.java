@@ -19,15 +19,16 @@ package org.radix.api.http;
 
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.StatusCodes;
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * A shortcut interface for creating lambda methods that handle {@link HttpServerExchange}s in a safe way
  */
 @FunctionalInterface
 interface ManagedHttpExchangeConsumer {
-    Logger logger = Logging.getLogger("api");
+    Logger logger = LogManager.getLogger("api");
 
     /**
      * Process a given HTTP exchange safely, return an error if internal processing fails

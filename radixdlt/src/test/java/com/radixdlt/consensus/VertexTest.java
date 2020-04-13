@@ -17,7 +17,7 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.common.Atom;
+import com.radixdlt.atommodel.Atom;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.Hash;
 import nl.jqno.equalsverifier.EqualsVerifier;
@@ -33,19 +33,18 @@ public class VertexTest {
 	private QuorumCertificate qc;
 	private Atom atom;
 	private VertexMetadata vertexMetadata;
-	private Hash parentId;
 	private Hash id;
 
 	@Before
 	public void setUp() throws Exception {
-		View parentView = View.of(1234567890L);
-		this.parentId = Hash.random();
-		View view = parentView.next();
+		View view = View.of(1234567891L);
 		this.id = Hash.random();
 
-		this.vertexMetadata = new VertexMetadata(view, id, parentView, parentId);
+		this.vertexMetadata = new VertexMetadata(view, id);
+		VertexMetadata parent = new VertexMetadata(View.of(1234567890L), Hash.random());
+		VoteData voteData = new VoteData(vertexMetadata, parent);
 
-		this.qc = new QuorumCertificate(this.vertexMetadata, new ECDSASignatures());
+		this.qc = new QuorumCertificate(voteData, new ECDSASignatures());
 
 		this.atom = new Atom();
 

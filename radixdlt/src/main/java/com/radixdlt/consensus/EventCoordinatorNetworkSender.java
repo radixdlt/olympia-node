@@ -17,7 +17,7 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.common.EUID;
+import com.radixdlt.identifiers.EUID;
 
 /**
  * Interface for Event Coordinator to send things through a network

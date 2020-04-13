@@ -31,7 +31,7 @@ public class SafetyViolationException extends Exception {
 	SafetyViolationException(Vertex offendingVertex, SafetyState safetyState, String reason) {
 		super(String.format("vertex %s violates safety at state %s: %s", offendingVertex, safetyState, reason));
 		this.offendingVertex = Objects.requireNonNull(offendingVertex);
-		this.safetyState = new SafetyState(safetyState);
+		this.safetyState = safetyState;
 	}
 
 	public Vertex getOffendingVertex() {

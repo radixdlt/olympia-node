@@ -17,8 +17,8 @@
 
 package org.radix.api.jsonrpc;
 
-import com.radixdlt.common.AID;
-import com.radixdlt.common.Atom;
+import com.radixdlt.identifiers.AID;
+import com.radixdlt.atommodel.Atom;
 import org.everit.json.schema.Schema;
 import org.json.JSONObject;
 import org.junit.Test;

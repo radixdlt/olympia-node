@@ -27,11 +27,9 @@ public class VertexMetadataSerializeTest extends SerializeObject<VertexMetadata>
 	}
 
 	private static VertexMetadata get() {
-		View parentView = View.of(1234567890L);
-		View view = parentView.next();
-		Hash parentId = Hash.random();
+		View view = View.of(1234567890L);
 		Hash id = Hash.random();
 
-		return new VertexMetadata(view, id, parentView, parentId);
+		return new VertexMetadata(view, id);
 	}
 }

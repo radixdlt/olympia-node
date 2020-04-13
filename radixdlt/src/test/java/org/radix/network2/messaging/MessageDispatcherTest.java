@@ -17,8 +17,10 @@
 
 package org.radix.network2.messaging;
 
-import com.radixdlt.common.EUID;
-import com.radixdlt.crypto.CryptoException;
+import com.radixdlt.DefaultSerialization;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.serialization.Serialization;
 import org.hamcrest.Matchers;
 import org.junit.Before;
@@ -40,8 +42,6 @@ import org.radix.network2.transport.TransportOutboundConnection;
 import org.radix.serialization.RadixTest;
 import org.radix.universe.system.RadixSystem;
 import org.radix.universe.system.SystemMessage;
-import org.radix.utils.SystemMetaData;
-
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -49,14 +49,11 @@ import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -65,20 +62,17 @@ import static org.mockito.Mockito.when;
 public class MessageDispatcherTest extends RadixTest {
 
     private MessageDispatcher messageDispatcher;
-    private Transport transport;
     private TransportManager transportManager;
-    private TransportOutboundConnection transportOutboundConnection;
-    private SystemMetaData systemMetaData;
     private Peer peer1;
     private Peer peer2;
     private TransportInfo transportInfo;
-    private TransportMetadata transportMetadata;
     private Interfaces interfaces;
+    private SystemCounters counters;
 
     @Before
     public void setup() {
         when(getNtpService().getUTCTimeMS()).thenAnswer((Answer<Long>) invocation -> System.currentTimeMillis());
-        Serialization serialization = Serialization.getDefault();
+        Serialization serialization = DefaultSerialization.getInstance();
         MessageCentralConfiguration conf = new MessagingDummyConfigurations.DummyMessageCentralConfiguration();
         interfaces = mock(Interfaces.class);
         PowerMockito.when(interfaces.isSelf(any())).thenReturn(false);
@@ -89,22 +83,26 @@ public class MessageDispatcherTest extends RadixTest {
         AddressBook addressBook = mock(AddressBook.class);
         when(addressBook.updatePeerSystem(peer1, peer1.getSystem())).thenReturn(peer1);
         when(addressBook.updatePeerSystem(peer2, peer2.getSystem())).thenReturn(peer2);
-        messageDispatcher = new MessageDispatcher(conf, serialization, () -> 30_000, getLocalSystem(), interfaces, addressBook);
 
-        transportOutboundConnection = new MessagingDummyConfigurations.DummyTransportOutboundConnection();
-        transport = new MessagingDummyConfigurations.DummyTransport(transportOutboundConnection);
+        counters = mock(SystemCounters.class);
+        messageDispatcher = new MessageDispatcher(counters, conf, serialization, () -> 30_000, getLocalSystem(), interfaces, addressBook);
+
+        // Suppression safe here - dummy outbound connection does not need closing
+        @SuppressWarnings("resource")
+		TransportOutboundConnection transportOutboundConnection = new MessagingDummyConfigurations.DummyTransportOutboundConnection();
+        // Suppression safe here - dummy transport does not need closing
+        @SuppressWarnings("resource")
+		Transport transport = new MessagingDummyConfigurations.DummyTransport(transportOutboundConnection);
         transportManager = new MessagingDummyConfigurations.DummyTransportManager(transport);
-        systemMetaData = SystemMetaData.getInstance();
-        reset(systemMetaData);
 
-        transportMetadata = mock(TransportMetadata.class);
+        TransportMetadata transportMetadata = mock(TransportMetadata.class);
         when(transportMetadata.get("host")).thenReturn("localhost");
         transportInfo = mock(TransportInfo.class);
         when(transportInfo.metadata()).thenReturn(transportMetadata);
     }
 
     @Test
-    public void sendSuccessfullyMessage() throws CryptoException {
+    public void sendSuccessfullyMessage() {
 
         SystemMessage message = spy(new SystemMessage(getLocalSystem(), 0));
         MessageEvent messageEvent = new MessageEvent(peer1, transportInfo, message, 10_000);
@@ -124,20 +122,7 @@ public class MessageDispatcherTest extends RadixTest {
         SendResult sendResult = messageDispatcher.send(transportManager, messageEvent);
 
         assertThat(sendResult.getThrowable().getMessage(), Matchers.equalTo("org.radix.network.messages.TestMessage: TTL to " + peer1 + " has expired"));
-        verify(systemMetaData, times(1)).increment("messages.outbound.aborted");
-    }
-
-    @Test
-    public void sendExceptionMessage() throws CryptoException {
-        SystemMessage message = spy(new SystemMessage(getLocalSystem(), 0));
-        doThrow(new CryptoException("Expected exception")).when(message).sign(getLocalSystem().getKeyPair());
-        MessageEvent messageEvent = new MessageEvent(peer1, transportInfo, message, 10_000);
-
-        SendResult sendResult = messageDispatcher.send(transportManager, messageEvent);
-
-        assertFalse(sendResult.isComplete());
-        assertThat(sendResult.getThrowable().getMessage(), Matchers.equalTo("org.radix.universe.system.SystemMessage: Sending to  " + peer1 + " failed"));
-        assertThat(sendResult.getThrowable().getCause().getMessage(), Matchers.equalTo("Expected exception"));
+        verify(counters, times(1)).increment(CounterType.MESSAGES_OUTBOUND_ABORTED);
     }
 
     @Test
@@ -173,7 +158,7 @@ public class MessageDispatcherTest extends RadixTest {
 
         //execution is terminated before message.getSystem() method
         verify(testMessage, times(0)).getSystem();
-        verify(systemMetaData, times(1)).increment("messages.inbound.discarded");
+        verify(counters, times(1)).increment(CounterType.MESSAGES_INBOUND_DISCARDED);
     }
 
     @Test

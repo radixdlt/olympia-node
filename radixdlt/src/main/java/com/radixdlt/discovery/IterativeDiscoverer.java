@@ -22,19 +22,20 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.radixdlt.common.AID;
-import com.radixdlt.common.EUID;
+import com.radixdlt.identifiers.AID;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.store.LedgerEntryStoreView;
 import com.radixdlt.consensus.tempo.Scheduler;
 import com.radixdlt.discovery.messages.IterativeDiscoveryRequestMessage;
 import com.radixdlt.discovery.messages.IterativeDiscoveryResponseMessage;
 import com.radixdlt.store.CursorStore;
 import com.radixdlt.universe.Universe;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.radix.common.Syncronicity;
 import org.radix.events.EventListener;
 import org.radix.events.Events;
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
 import org.radix.network2.addressbook.AddressBookEvent;
 import org.radix.network2.addressbook.Peer;
 import org.radix.network2.addressbook.PeersAddedEvent;
@@ -58,7 +59,7 @@ import java.util.stream.Stream;
  */
 @Singleton
 public final class IterativeDiscoverer implements AtomDiscoverer {
-	private static final Logger log = Logging.getLogger("discoverer.iterative");
+	private static final Logger log = LogManager.getLogger("discoverer.iterative");
 
 	private static final int DEFAULT_REQUEST_TIMEOUT_SECONDS = 5;
 	private static final int DEFAULT_MAX_BACKOFF = 4;
@@ -137,7 +138,7 @@ public final class IterativeDiscoverer implements AtomDiscoverer {
 
 	private void processRequest(IterativeDiscoveryRequest request) {
 		IterativeDiscoveryResponseMessage response = fetchResponse(request.getMessage().getCursor());
-		if (log.hasLevel(Logging.DEBUG)) {
+		if (log.isDebugEnabled()) {
 			log.debug("Responding to iterative discovery request from " + request.getPeer() + " with " + response.getCursor() + "");
 		}
 		messageCentral.send(request.getPeer(), response);
@@ -160,7 +161,7 @@ public final class IterativeDiscoverer implements AtomDiscoverer {
 				// TODO aggregate cancellables and cancel on stop
 				scheduler.schedule(() -> initiateDiscovery(peer), timeout, TimeUnit.SECONDS);
 
-				if (log.hasLevel(Logging.DEBUG)) {
+				if (log.isDebugEnabled()) {
 					log.debug(String.format("Backing off from iterative discovery with %s for %d seconds as all synced up", peer, timeout));
 				}
 			}
@@ -185,14 +186,14 @@ public final class IterativeDiscoverer implements AtomDiscoverer {
 		IterativeDiscoveryRequestMessage request = new IterativeDiscoveryRequestMessage(cursor, universeMagic);
 		discoveryState.addRequest(peer.getNID(), cursor.getLcPosition());
 		messageCentral.send(peer, request);
-		if (log.hasLevel(Logging.DEBUG)) {
+		if (log.isDebugEnabled()) {
 			log.debug("Requesting iterative discovery from " + peer + " at " + cursor);
 		}
 
 		// re-request after a certain timeout if no response has been received
 		scheduler.schedule(() -> {
 			if (discoveryState.isPending(peer.getNID(), cursor.getLcPosition())) {
-				if (log.hasLevel(Logging.DEBUG)) {
+				if (log.isDebugEnabled()) {
 					log.debug("Iterative discovery request to peer " + peer + " at " + cursor + " has timed out, resending");
 				}
 

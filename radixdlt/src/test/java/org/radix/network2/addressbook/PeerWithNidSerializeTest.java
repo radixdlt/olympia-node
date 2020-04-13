@@ -18,7 +18,7 @@
 package org.radix.network2.addressbook;
 
 import org.radix.serialization.SerializeMessageObject;
-import com.radixdlt.common.EUID;
+import com.radixdlt.identifiers.EUID;
 
 /**
  * Check serialization of PeerWithNid

@@ -18,9 +18,9 @@
 package com.radixdlt.middleware2.store;
 
 import com.google.inject.Inject;
-import com.radixdlt.common.AID;
-import com.radixdlt.common.Atom;
-import com.radixdlt.common.EUID;
+import com.radixdlt.identifiers.AID;
+import com.radixdlt.atommodel.Atom;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.serialization.Serialization;
@@ -31,15 +31,16 @@ import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStore;
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 
 public class LedgerEngineStore implements EngineStore {
-    private static final Logger log = Logging.getLogger("middleware2.store");
+    private static final Logger log = LogManager.getLogger("middleware2.store");
 
     private final Serialization serialization;
     private final LedgerEntryStore store;
@@ -65,7 +66,7 @@ public class LedgerEngineStore implements EngineStore {
     private Optional<Atom> getAtomByParticle(Particle particle, boolean isInput) {
         final byte[] indexableBytes = EngineAtomIndices.toByteArray(
         	isInput ? EngineAtomIndices.IndexType.PARTICLE_DOWN : EngineAtomIndices.IndexType.PARTICLE_UP,
-        	particle.getHID()
+        	particle.euid()
         );
         SearchCursor cursor = store.search(StoreIndex.LedgerIndexType.UNIQUE, new StoreIndex(indexableBytes), LedgerSearchMode.EXACT);
         if (cursor != null) {

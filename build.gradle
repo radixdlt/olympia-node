@@ -43,7 +43,6 @@ subprojects {
     }
 
     apply plugin: 'java'
-    //apply plugin: 'eclipse-wtp'
 
     repositories {
         jcenter()
@@ -60,6 +59,5 @@ subprojects {
             println repositories.collect { it.url }
         }
     }
-
 }
 

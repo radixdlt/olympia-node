@@ -17,8 +17,9 @@
 
 package org.radix.universe.system;
 
-import com.radixdlt.crypto.CryptoException;
 import org.radix.serialization.SerializeMessageObject;
+
+import com.google.common.collect.ImmutableMap;
 
 /**
  * Check serialization of org.radix.universe.system.LocalSystem
@@ -29,13 +30,8 @@ public class LocalSystemSerializeTest extends SerializeMessageObject<LocalSystem
 	}
 
 	private static LocalSystem getSystem() {
-		LocalSystem newSystem;
-		try {
-			newSystem = new LocalSystem();
-			newSystem.setPlanck(101);
-			return newSystem;
-		} catch (CryptoException e) {
-			throw new IllegalStateException(e);
-		}
+		LocalSystem newSystem = new LocalSystem(ImmutableMap::of);
+		newSystem.setPlanck(101);
+		return newSystem;
 	}
 }

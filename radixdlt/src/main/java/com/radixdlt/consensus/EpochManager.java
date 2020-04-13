@@ -23,10 +23,10 @@ import com.google.inject.name.Named;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposerElection;
-import com.radixdlt.consensus.liveness.RotatingLeaders;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.mempool.Mempool;
@@ -45,7 +45,9 @@ public class EpochManager {
 	private final Pacemaker pacemaker;
 	private final VertexStore vertexStore;
 	private final PendingVotes pendingVotes;
+	private final ProposerElectionFactory proposerElectionFactory;
 	private final ECKeyPair selfKey;
+	private final SystemCounters counters;
 
 	@Inject
 	public EpochManager(
@@ -56,7 +58,9 @@ public class EpochManager {
 		Pacemaker pacemaker,
 		VertexStore vertexStore,
 		PendingVotes pendingVotes,
-		@Named("self") ECKeyPair selfKey
+		ProposerElectionFactory proposerElectionFactory,
+		@Named("self") ECKeyPair selfKey,
+		SystemCounters counters
 	) {
 		this.proposalGenerator = Objects.requireNonNull(proposalGenerator);
 		this.mempool = Objects.requireNonNull(mempool);
@@ -65,7 +69,9 @@ public class EpochManager {
 		this.pacemaker = Objects.requireNonNull(pacemaker);
 		this.vertexStore = Objects.requireNonNull(vertexStore);
 		this.pendingVotes = Objects.requireNonNull(pendingVotes);
+		this.proposerElectionFactory = Objects.requireNonNull(proposerElectionFactory);
 		this.selfKey = Objects.requireNonNull(selfKey);
+		this.counters = Objects.requireNonNull(counters);
 	}
 
 	public EventCoordinator start() {
@@ -75,9 +81,9 @@ public class EpochManager {
 	public EventCoordinator nextEpoch(ValidatorSet validatorSet) {
 		ImmutableList<ECPublicKey> proposers = validatorSet.getValidators().stream()
 			.map(Validator::nodeKey)
-			.sorted(Comparator.comparing(ECPublicKey::getUID))
+			.sorted(Comparator.comparing(ECPublicKey::euid))
 			.collect(ImmutableList.toImmutableList());
-		ProposerElection proposerElection = new RotatingLeaders(proposers);
+		ProposerElection proposerElection = proposerElectionFactory.create(proposers);
 
 		return new ValidatingEventCoordinator(
 			this.proposalGenerator,
@@ -89,7 +95,8 @@ public class EpochManager {
 			this.pendingVotes,
 			proposerElection,
 			this.selfKey,
-			validatorSet
+			validatorSet,
+			counters
 		);
 	}
 }

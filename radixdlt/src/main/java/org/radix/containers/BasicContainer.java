@@ -17,12 +17,12 @@
 
 package org.radix.containers;
 
-import com.radixdlt.common.EUID;
+import com.radixdlt.DefaultSerialization;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 
@@ -75,8 +75,8 @@ public abstract class BasicContainer
 		try
 		{
 			if (hash == null || hash.equals(Hash.ZERO_HASH)) {
-				byte[] hashBytes = Serialization.getDefault().toDson(this, Output.HASH);
-				hash = new Hash(Hash.hash256(hashBytes));
+				byte[] dsonBytes = DefaultSerialization.getInstance().toDson(this, Output.HASH);
+				hash = Hash.of(dsonBytes);
 			}
 
 			return hash;
@@ -90,9 +90,9 @@ public abstract class BasicContainer
 	// HID //
 	@JsonProperty("hid")
 	@DsonOutput(Output.API)
-	public synchronized final EUID getHID()
+	public synchronized final EUID euid()
 	{
-		return getHash().getID();
+		return getHash().euid();
 	}
 
 	/**
@@ -109,7 +109,7 @@ public abstract class BasicContainer
 	@Override
 	public String toString()
 	{
-		return this.getClass().toString()+": "+getHID().toString();
+		return this.getClass().toString()+": "+euid().toString();
 	}
 
 	public abstract short VERSION();

@@ -5,9 +5,11 @@ import static org.mockito.Mockito.mock;
 
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
+import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.mempool.Mempool;
 import java.util.Collections;
@@ -24,10 +26,12 @@ public class EpochManagerTest {
 			mock(Pacemaker.class),
 			mock(VertexStore.class),
 			mock(PendingVotes.class),
-			mock(ECKeyPair.class)
+			proposers -> mock(ProposerElection.class),
+			mock(ECKeyPair.class),
+			mock(SystemCounters.class)
 		);
 
-		ECKeyPair ecKeyPair = new ECKeyPair();
+		ECKeyPair ecKeyPair = ECKeyPair.generateNew();
 		Validator validator = Validator.from(ecKeyPair.getPublicKey());
 		EventCoordinator eventCoordinator = epochManager.nextEpoch(ValidatorSet.from(Collections.singleton(validator)));
 		assertNotNull(eventCoordinator);

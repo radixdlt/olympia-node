@@ -19,8 +19,8 @@ package org.radix.api.observable;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import com.radixdlt.common.AID;
-import com.radixdlt.common.Atom;
+import com.radixdlt.identifiers.AID;
+import com.radixdlt.atommodel.Atom;
 import com.radixdlt.store.SearchCursor;
 import com.radixdlt.store.StoreIndex;
 import com.radixdlt.store.LedgerSearchMode;
@@ -29,12 +29,13 @@ import com.radixdlt.middleware2.store.EngineAtomIndices;
 
 import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStore;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.radix.api.AtomQuery;
 import org.radix.api.observable.AtomEventDto.AtomEventType;
 import org.radix.atoms.events.AtomEventWithDestinations;
 import org.radix.atoms.events.AtomStoredEvent;
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -49,7 +50,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class AtomEventObserver {
-	private static final Logger log = Logging.getLogger("api");
+	private static final Logger log = LogManager.getLogger("api");
 
 	private static final int BATCH_SIZE = 50;
 

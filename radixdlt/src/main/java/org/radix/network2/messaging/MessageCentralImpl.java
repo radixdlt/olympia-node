@@ -23,9 +23,10 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.radix.events.Events;
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
 import org.radix.network.Interfaces;
 import org.radix.network.messaging.Message;
 import org.radix.network2.TimeSupplier;
@@ -35,17 +36,18 @@ import org.radix.network2.transport.Transport;
 import org.radix.universe.system.LocalSystem;
 import org.radix.universe.system.events.QueueFullEvent;
 import org.radix.utils.SimpleThreadPool;
-import org.radix.utils.SystemMetaData;
 import org.xerial.snappy.Snappy;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.RateLimiter;
 import com.google.inject.Inject;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.serialization.Serialization;
 
 final class MessageCentralImpl implements MessageCentral {
-	private static final Logger log = Logging.getLogger("message");
+	private static final Logger log = LogManager.getLogger("message");
 
 	private static final MessageListenerList EMPTY_MESSAGE_LISTENER_LIST = new MessageListenerList();
 
@@ -54,6 +56,7 @@ final class MessageCentralImpl implements MessageCentral {
 	private final TransportManager connectionManager;
 	private final Events events;
 	private final AddressBook addressBook;
+	private final SystemCounters counters;
 
 	// Local data
 
@@ -92,8 +95,10 @@ final class MessageCentralImpl implements MessageCentral {
 		TimeSupplier timeSource,
 		EventQueueFactory<MessageEvent> eventQueueFactory,
 		Interfaces interfaces,
-		LocalSystem localSystem
+		LocalSystem localSystem,
+		SystemCounters counters
 	) {
+		this.counters = Objects.requireNonNull(counters);
 		this.inboundQueue = eventQueueFactory.createEventQueue(config.messagingInboundQueueMax(8192));
 		this.outboundQueue = eventQueueFactory.createEventQueue(config.messagingOutboundQueueMax(16384));
 
@@ -103,7 +108,7 @@ final class MessageCentralImpl implements MessageCentral {
 		this.addressBook = Objects.requireNonNull(addressBook);
 
 		Objects.requireNonNull(timeSource);
-		this.messageDispatcher = new MessageDispatcher(config, serialization, timeSource, localSystem, interfaces, this.addressBook);
+		this.messageDispatcher = new MessageDispatcher(counters, config, serialization, timeSource, localSystem, interfaces, this.addressBook);
 
 		this.transports = Lists.newArrayList(transportManager.transports());
 
@@ -123,7 +128,7 @@ final class MessageCentralImpl implements MessageCentral {
 
 	@Override
 	public void close() {
-		this.transports.forEach(tl -> closeWithLog(tl));
+		this.transports.forEach(this::closeWithLog);
 		this.transports.clear();
 
 		inboundThreadPool.stop();
@@ -134,7 +139,7 @@ final class MessageCentralImpl implements MessageCentral {
 	public void send(Peer peer, Message message) {
 		if (!outboundQueue.offer(new MessageEvent(peer, null, message, System.nanoTime() - timeBase))) {
 			if (outboundLogRateLimiter.tryAcquire()) {
-				log.error(String.format("Outbound message to %s dropped", peer));
+				log.error("Outbound message to {} dropped", peer);
 			}
 			events.broadcast(new QueueFullEvent());
 		}
@@ -145,7 +150,7 @@ final class MessageCentralImpl implements MessageCentral {
 		MessageEvent event = new MessageEvent(peer, null, message, System.nanoTime() - timeBase);
 		if (!inboundQueue.offer(event)) {
 			if (inboundLogRateLimiter.tryAcquire()) {
-				log.error(String.format("Injected message from %s dropped", peer));
+				log.error("Injected message from {} dropped", peer);
 			}
 			events.broadcast(new QueueFullEvent());
 		}
@@ -182,13 +187,13 @@ final class MessageCentralImpl implements MessageCentral {
 	}
 
 	private void inboundMessageProcessor(MessageEvent inbound) {
-		SystemMetaData.ifPresent( a -> a.put("messages.inbound.pending", inboundQueue.size()));
-		MessageListenerList listeners = this.listeners.getOrDefault(inbound.message().getClass(), EMPTY_MESSAGE_LISTENER_LIST);
-		messageDispatcher.receive(listeners, inbound);
+		this.counters.set(CounterType.MESSAGES_INBOUND_PENDING, inboundQueue.size());
+		MessageListenerList ls = this.listeners.getOrDefault(inbound.message().getClass(), EMPTY_MESSAGE_LISTENER_LIST);
+		messageDispatcher.receive(ls, inbound);
 	}
 
 	private void outboundMessageProcessor(MessageEvent outbound) {
-		SystemMetaData.ifPresent( a -> a.put("messages.outbound.pending", outboundQueue.size()));
+		this.counters.set(CounterType.MESSAGES_OUTBOUND_PENDING, outboundQueue.size());
 		messageDispatcher.send(connectionManager, outbound);
 	}
 

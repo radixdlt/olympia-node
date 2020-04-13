@@ -32,13 +32,10 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.radix.common.Syncronicity;
 import org.radix.common.executors.Executable;
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
-import org.radix.utils.SystemMetaData;
-
-import com.google.common.collect.Maps;
 
 public final class Events
 {
@@ -54,7 +51,7 @@ public final class Events
 		return Events.instance;
 	}
 
-	private static final Logger eventLog = Logging.getLogger("events");
+	private static final Logger eventLog = LogManager.getLogger("events");
 
 	private class EventListeners
 	{
@@ -210,11 +207,6 @@ public final class Events
 							}
 
 							event.setDone();
-
-							SystemMetaData.ifPresent( a -> {
-								a.increment("events.dequeued");
-								a.increment("events.processed.asynchronous");
-							});
 						}
 						finally
 						{
@@ -249,24 +241,6 @@ public final class Events
 		}
 	}
 
-	// TODO convert to overridden Module.getMetaData
-	public Map<String, Object> getMetaData()
-	{
-		final Map<String, Object> metaData = Maps.newHashMap();
-		SystemMetaData.ifPresent( a -> {
-			final Map<String, Object> processedMetaData = Maps.newHashMap();
-			processedMetaData.put("synchronous", a.get("events.processed.synchronous", 0L));
-			processedMetaData.put("asynchronous", a.get("events.processed.asynchronous", 0L));
-			metaData.put("processed",  processedMetaData);
-
-			metaData.put("processing",  a.get("events.processing", 0L));
-			metaData.put("broadcast",  a.get("events.broadcast", 0L));
-			metaData.put("queued", a.get("events.queued", 0L));
-			metaData.put("dequeued",  a.get("events.dequeued", 0L));
-		});
-		return metaData;
-	}
-
 	public void broadcast(final Event event)
 	{
 		try
@@ -281,8 +255,6 @@ public final class Events
 
 	public void broadcastWithException(final Event event) throws Throwable
 	{
-		SystemMetaData.ifPresent( a -> a.increment("events.broadcast"));
-
 		synchronized(this.reentrancy)
 		{
 			if (this.reentrancy.contains(Thread.currentThread()))
@@ -334,8 +306,6 @@ public final class Events
 								((org.radix.events.EventListener<Event>)listener).process(event);
 						}
 					}
-
-					SystemMetaData.ifPresent( a -> a.increment("events.processed.synchronous"));
 				}
 				finally
 				{
@@ -347,7 +317,6 @@ public final class Events
 			if (hasAsync == true)
 			{
 				this.eventQueueProcessors[Events.this.executorThreadFactory.cycle.incrementAndGet() % this.eventQueueProcessors.length].offer(event);
-				SystemMetaData.ifPresent( a -> a.increment("events.queued"));
 			}
 			else
 				event.setDone();

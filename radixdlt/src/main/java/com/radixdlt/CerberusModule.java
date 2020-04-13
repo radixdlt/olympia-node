@@ -17,41 +17,49 @@
 
 package com.radixdlt;
 
+import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 import com.radixdlt.consensus.BasicEpochRx;
+import com.radixdlt.consensus.DefaultHasher;
 import com.radixdlt.consensus.EpochRx;
+import com.radixdlt.consensus.ProposerElectionFactory;
+import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.VertexStore;
 import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.PacemakerImpl;
 import com.radixdlt.consensus.liveness.PacemakerRx;
+import com.radixdlt.consensus.liveness.RotatingLeaders;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.tempo.Scheduler;
 import com.radixdlt.consensus.tempo.SingleThreadedScheduler;
 import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.universe.Universe;
+
 import java.util.Collections;
 import java.util.Objects;
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
-
 import java.util.concurrent.Executors;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.radix.network2.addressbook.AddressBook;
 
 public class CerberusModule extends AbstractModule {
-	private static final Logger log = Logging.getLogger("Startup");
+	private static final Logger log = LogManager.getLogger("Startup");
 
 	private final RuntimeProperties runtimeProperties;
 
@@ -66,6 +74,13 @@ public class CerberusModule extends AbstractModule {
 		bind(PacemakerRx.class).to(PacemakerImpl.class);
 		bind(Pacemaker.class).to(PacemakerImpl.class);
 		bind(SafetyRules.class).in(Scopes.SINGLETON);
+		bind(Hasher.class).to(DefaultHasher.class);
+	}
+
+	@Provides
+	@Singleton
+	private ProposerElectionFactory proposerElectionFactory() {
+		return keys -> new RotatingLeaders(ImmutableList.copyOf(keys));
 	}
 
 	@Provides
@@ -89,24 +104,29 @@ public class CerberusModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private PacemakerImpl pacemaker() {
-		return new PacemakerImpl(Executors.newSingleThreadScheduledExecutor());
+		final int pacemakerTimeout = Integer.parseInt(
+			runtimeProperties.get("consensus.pacemaker_timeout_millis", "5000")
+		);
+		return new PacemakerImpl(pacemakerTimeout, Executors.newSingleThreadScheduledExecutor());
 	}
 
 	@Provides
 	@Singleton
 	private VertexStore getVertexStore(
 		Universe universe,
-		RadixEngine radixEngine
+		RadixEngine radixEngine,
+		SystemCounters counters
 	) {
 		if (universe.getGenesis().size() != 1) {
 			throw new IllegalStateException("Can only support one genesis atom.");
 		}
 
 		final Vertex genesisVertex = Vertex.createGenesis(universe.getGenesis().get(0));
-		final VertexMetadata genesisMetadata = new VertexMetadata(View.genesis(), genesisVertex.getId(), View.genesis(), genesisVertex.getId());
-		final QuorumCertificate rootQC = new QuorumCertificate(genesisMetadata, new ECDSASignatures());
+		final VertexMetadata genesisMetadata = new VertexMetadata(View.genesis(), genesisVertex.getId());
+		final VoteData voteData = new VoteData(genesisMetadata, null);
+		final QuorumCertificate rootQC = new QuorumCertificate(voteData, new ECDSASignatures());
 
-		log.info("Genesis Vertex Id: " + genesisVertex.getId());
-		return new VertexStore(genesisVertex, rootQC, radixEngine);
+		log.info("Genesis Vertex Id: {}", genesisVertex.getId());
+		return new VertexStore(genesisVertex, rootQC, radixEngine, counters);
 	}
 }

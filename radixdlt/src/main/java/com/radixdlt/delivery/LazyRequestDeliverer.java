@@ -23,16 +23,17 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.radixdlt.common.AID;
-import com.radixdlt.common.EUID;
+import com.radixdlt.identifiers.AID;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStoreView;
 import com.radixdlt.consensus.tempo.Scheduler;
 import com.radixdlt.delivery.messages.DeliveryRequestMessage;
 import com.radixdlt.delivery.messages.DeliveryResponseMessage;
 import com.radixdlt.universe.Universe;
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.radix.network2.addressbook.Peer;
 import org.radix.network2.messaging.MessageCentral;
 import org.radix.utils.SimpleThreadPool;
@@ -53,7 +54,7 @@ import java.util.concurrent.TimeUnit;
 
 @Singleton
 public final class LazyRequestDeliverer {
-	private static final Logger log = Logging.getLogger("deliverer.request");
+	private static final Logger log = LogManager.getLogger("deliverer.request");
 
 	private static final int DEFAULT_REQUEST_QUEUE_CAPACITY = 8192;
 	private static final int DEFAULT_REQUEST_PROCESSOR_THREADS = 2;
@@ -102,7 +103,7 @@ public final class LazyRequestDeliverer {
 	}
 
 	private void processRequest(AtomDeliveryRequest request) {
-		if (log.hasLevel(Logging.DEBUG)) {
+		if (log.isDebugEnabled()) {
 			log.debug(String.format("Processing atom delivery request for %d aids from %s",
 				request.getMessage().getAids().size(), request.getPeer()));
 		}
@@ -116,7 +117,7 @@ public final class LazyRequestDeliverer {
 	}
 
 	private void onResponse(Peer peer, DeliveryResponseMessage message) {
-		if (log.hasLevel(Logging.DEBUG)) {
+		if (log.isDebugEnabled()) {
 			log.debug("Received delivery of '" + message.getLedgerEntry().getAID() + "' from " + peer);
 		}
 		LedgerEntry ledgerEntry = message.getLedgerEntry();
@@ -178,7 +179,7 @@ public final class LazyRequestDeliverer {
 		if (aids.isEmpty()) {
 			return;
 		}
-		if (log.hasLevel(Logging.DEBUG)) {
+		if (log.isDebugEnabled()) {
 			log.debug("Requesting delivery of " + aids.size() + " aids from " + peer);
 		}
 
@@ -198,7 +199,7 @@ public final class LazyRequestDeliverer {
 	}
 
 	private void handleFailedDelivery(Collection<AID> missingAids, Peer peer) {
-		if (log.hasLevel(Logging.DEBUG)) {
+		if (log.isDebugEnabled()) {
 			log.debug("Delivery of " + missingAids.size() + " aids from primary peer " + peer + " failed, attempting retry with fallback peers");
 		}
 

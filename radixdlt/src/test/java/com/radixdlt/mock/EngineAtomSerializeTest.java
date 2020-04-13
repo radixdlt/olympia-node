@@ -18,7 +18,7 @@
 package com.radixdlt.mock;
 
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.common.Atom;
+import com.radixdlt.atommodel.Atom;
 import org.radix.serialization.SerializeMessageObject;
 
 public class EngineAtomSerializeTest extends SerializeMessageObject<Atom> {

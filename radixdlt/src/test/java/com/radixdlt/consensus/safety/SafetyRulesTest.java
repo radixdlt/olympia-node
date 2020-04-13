@@ -17,18 +17,18 @@
 
 package com.radixdlt.consensus.safety;
 
-import com.radixdlt.atomos.RadixAddress;
-import com.radixdlt.common.EUID;
+import com.radixdlt.consensus.DefaultHasher;
+import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.VoteData;
+import com.radixdlt.consensus.safety.SafetyState.Builder;
+import com.radixdlt.crypto.Hash;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.VertexInsertionException;
 import com.radixdlt.consensus.VertexMetadata;
-import com.radixdlt.consensus.VertexStore;
 import com.radixdlt.consensus.View;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.engine.RadixEngine;
+import org.junit.Before;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -40,171 +40,126 @@ import static org.mockito.Mockito.when;
  * This tests that the {@link SafetyRules} implementation obeys HotStuff's safety and commit rules.
  */
 public class SafetyRulesTest {
-	private static final ECPublicKey SELF = makePubKey(EUID.ONE);
-	private static final View GENESIS_VIEW = View.of(0);
 	private static final Vertex GENESIS_VERTEX = Vertex.createGenesis(null);
+	private static final VoteData GENESIS_DATA = new VoteData(VertexMetadata.ofVertex(GENESIS_VERTEX), null);
+	private static final QuorumCertificate GENESIS_QC = new QuorumCertificate(GENESIS_DATA, new ECDSASignatures());
 
-	private static SafetyRules createDefaultSafetyRules(VertexStore vertexStore) {
-		ECKeyPair keyPair = mock(ECKeyPair.class);
-		when(keyPair.getPublicKey()).thenReturn(SELF);
-		when(keyPair.getUID()).thenReturn(EUID.ONE);
-		RadixAddress address = mock(RadixAddress.class);
-		when(address.getKey()).thenReturn(SELF);
-		return new SafetyRules(keyPair, vertexStore, SafetyState.initialState());
-	}
+	private SafetyState safetyState;
+	private SafetyRules safetyRules;
 
-	private static ECPublicKey makePubKey(EUID id) {
-		ECPublicKey pubKey = mock(ECPublicKey.class);
-		when(pubKey.getUID()).thenReturn(id);
-		return pubKey;
+	@Before
+	public void setup() {
+		this.safetyState = mock(SafetyState.class);
+		this.safetyRules = new SafetyRules(ECKeyPair.generateNew(), safetyState, new DefaultHasher());
 	}
 
 	@Test
-	public void testLockedView() {
-		/*
-		 * This test ensures that locking works correctly.
-		 * The locked view in HotStuff is the highest consecutive 2-chain head a node has seen.
-		 */
+	public void when_vote_on_same_view__then_exception_is_thrown() {
+		View view = mock(View.class);
+		when(safetyState.getLastVotedView()).thenReturn(view);
+		Vertex vertex = mock(Vertex.class);
+		when(vertex.getView()).thenReturn(view);
 
-		VertexStore vertexStore = makeVertexStore();
-		SafetyRules safetyRules = createDefaultSafetyRules(vertexStore);
-		assertThat(safetyRules.getState().getLastVotedView()).isEqualByComparingTo(View.of(0L));
-		assertThat(safetyRules.getState().getLockedView()).isEqualByComparingTo(View.of(0L));
-
-		Vertex a1 = makeVertex(GENESIS_VERTEX, View.of(1), vertexStore);
-		Vertex b1 = makeVertex(GENESIS_VERTEX, View.of(2), vertexStore);
-		Vertex b2 = makeVertex(a1, View.of(3), vertexStore);
-		Vertex a2 = makeVertex(b1, View.of(4), vertexStore);
-		Vertex b3 = makeVertex(a2, View.of(5), vertexStore);
-		Vertex a3 = makeVertex(a2, View.of(6), vertexStore);
-		Vertex a4 = makeVertex(a3, View.of(7), vertexStore);
-		Vertex a5 = makeVertex(a4, View.of(8), vertexStore);
-		Vertex a6 = makeVertex(a5, View.of(9), vertexStore);
-
-		safetyRules.process(a1);
-		assertThat(safetyRules.getState().getLockedView()).isEqualByComparingTo(GENESIS_VIEW);
-		safetyRules.process(b1);
-		assertThat(safetyRules.getState().getLockedView()).isEqualByComparingTo(GENESIS_VIEW);
-		safetyRules.process(b2);
-		assertThat(safetyRules.getState().getLockedView()).isEqualByComparingTo(GENESIS_VIEW);
-		safetyRules.process(a2);
-		assertThat(safetyRules.getState().getLockedView()).isEqualByComparingTo(GENESIS_VIEW);
-		safetyRules.process(a3);
-		assertThat(safetyRules.getState().getLockedView()).isEqualByComparingTo(GENESIS_VIEW);
-		safetyRules.process(b3);
-		assertThat(safetyRules.getState().getLockedView()).isEqualByComparingTo(GENESIS_VIEW);
-		safetyRules.process(a4);
-		assertThat(safetyRules.getState().getLockedView()).isEqualByComparingTo(GENESIS_VIEW);
-		safetyRules.process(a5);
-		assertThat(safetyRules.getState().getLockedView()).isEqualByComparingTo(a3.getView());
-		safetyRules.process(a6);
-		assertThat(safetyRules.getState().getLockedView()).isEqualByComparingTo(a4.getView());
+		assertThatThrownBy(() -> this.safetyRules.voteFor(vertex))
+			.isInstanceOf(SafetyViolationException.class);
 	}
 
 	@Test
-	public void testVote() throws SafetyViolationException {
-		/*
-		 * This test ensures that voting is safe.
-		 */
+	public void when_vote_with_qc_on_different_locked_view__then_exception_is_thrown() {
+		when(safetyState.getLastVotedView()).thenReturn(View.of(2));
+		when(safetyState.getLockedView()).thenReturn(View.of(1));
+		Vertex vertex = mock(Vertex.class);
+		when(vertex.getView()).thenReturn(View.of(3));
+		QuorumCertificate qc = mock(QuorumCertificate.class);
+		when(qc.getView()).thenReturn(View.of(0));
+		when(vertex.getQC()).thenReturn(qc);
 
-		VertexStore vertexStore = makeVertexStore();
-		SafetyRules safetyRules = createDefaultSafetyRules(vertexStore);
-		assertThat(safetyRules.getState().getLastVotedView()).isEqualByComparingTo(View.of(0L));
-		assertThat(safetyRules.getState().getLockedView()).isEqualByComparingTo(View.of(0L));
-
-		Vertex a1 = makeVertex(GENESIS_VERTEX, View.of(1), vertexStore);
-		Vertex b1 = makeVertex(GENESIS_VERTEX, View.of(2), vertexStore);
-		Vertex b2 = makeVertex(a1, View.of(3), vertexStore);
-		Vertex a2 = makeVertex(b1, View.of(4), vertexStore);
-		Vertex a3 = makeVertex(a2, View.of(5), vertexStore);
-		Vertex b3 = makeVertex(a2, View.of(6), vertexStore);
-		Vertex a4 = makeVertex(a3, View.of(7), vertexStore);
-		Vertex b4 = makeVertex(b2, View.of(8), vertexStore);
-
-		assertThat(safetyRules.process(a1)).isEmpty();
-		safetyRules.voteFor(a1);
-
-		assertThat(safetyRules.process(b1)).isEmpty();
-		safetyRules.voteFor(b1);
-
-		assertThat(safetyRules.process(a2)).isEmpty();
-		safetyRules.voteFor(a2);
-
-		safetyRules.process(b2);
-		assertThatThrownBy(() -> safetyRules.voteFor(b2));
-
-		assertThat(safetyRules.process(a3)).isEmpty();
-		safetyRules.voteFor(a3);
-
-		assertThat(safetyRules.process(b3)).isEmpty();
-		safetyRules.voteFor(b3);
-
-		assertThat(safetyRules.process(a4)).isEmpty();
-		safetyRules.voteFor(a4);
-
-		safetyRules.process(a4);
-		assertThatThrownBy(() -> safetyRules.voteFor(a4));
-
-		safetyRules.process(b4);
-		assertThatThrownBy(() -> safetyRules.voteFor(b4));
+		assertThatThrownBy(() -> this.safetyRules.voteFor(vertex))
+			.isInstanceOf(SafetyViolationException.class);
 	}
 
 	@Test
-	public void testCommitRule() {
-		/*
-		 * This test ensures that the commit logic is working correctly.
-		 * The commit rule requires a consecutive 3-chain to commit an atom, that is, the chain
-		 *  A2 -> A3 -> A4 -> A5
-		 * would allow A2 to be committed at the time A5's QC for A4 is presented.
-		 */
-
-		VertexStore vertexStore = makeVertexStore();
-		SafetyRules safetyRules = createDefaultSafetyRules(vertexStore);
-		assertThat(safetyRules.getState().getLastVotedView()).isEqualByComparingTo(View.of(0L));
-		assertThat(safetyRules.getState().getLockedView()).isEqualByComparingTo(View.of(0L));
-
-		Vertex a1 = makeVertex(GENESIS_VERTEX, View.of(1), vertexStore);
-		Vertex b1 = makeVertex(GENESIS_VERTEX, View.of(2), vertexStore);
-		Vertex b2 = makeVertex(a1, View.of(3), vertexStore);
-		Vertex a2 = makeVertex(b1, View.of(4), vertexStore);
-		Vertex b3 = makeVertex(a2, View.of(5), vertexStore);
-		Vertex a3 = makeVertex(a2, View.of(6), vertexStore);
-		Vertex a4 = makeVertex(a3, View.of(7), vertexStore);
-		Vertex a5 = makeVertex(a4, View.of(8), vertexStore);
-		Vertex a6 = makeVertex(a5, View.of(9), vertexStore);
-
-		assertThat(safetyRules.process(a1)).isEmpty();
-		assertThat(safetyRules.process(b1)).isEmpty();
-		assertThat(safetyRules.process(b2)).isEmpty();
-		assertThat(safetyRules.process(a2)).isEmpty();
-		assertThat(safetyRules.process(b3)).isEmpty();
-		assertThat(safetyRules.process(a3)).isEmpty();
-		assertThat(safetyRules.process(a4)).isEmpty();
-		assertThat(safetyRules.process(a5)).isEmpty();
-		assertThat(safetyRules.process(a5)).isEmpty();
-		assertThat(safetyRules.process(a6)).hasValue(a3.getId());
+	public void when_vote_on_proposal_after_genesis__then_returned_vote_has_no_commit() throws SafetyViolationException {
+		when(safetyState.getLastVotedView()).thenReturn(View.of(0));
+		when(safetyState.getLockedView()).thenReturn(View.of(0));
+		when(safetyState.toBuilder()).thenReturn(mock(Builder.class));
+		Vertex vertex = Vertex.createVertex(GENESIS_QC, View.of(1), null);
+		Vote vote = safetyRules.voteFor(vertex);
+		assertThat(vote.getVoteData().getProposed()).isEqualTo(VertexMetadata.ofVertex(vertex));
+		assertThat(vote.getVoteData().getParent()).isEqualTo(VertexMetadata.ofParent(vertex));
+		assertThat(vote.getVoteData().getCommitted()).isEmpty();
 	}
 
-	private static VertexStore makeVertexStore() {
-		final VertexMetadata genesisMetadata = new VertexMetadata(View.genesis(), GENESIS_VERTEX.getId(), View.genesis(), GENESIS_VERTEX.getId());
-		final QuorumCertificate rootQC = new QuorumCertificate(genesisMetadata, new ECDSASignatures());
-		return new VertexStore(GENESIS_VERTEX, rootQC, mock(RadixEngine.class));
+	@Test
+	public void when_vote_on_proposal_two_after_genesis__then_returned_vote_has_no_commit() throws SafetyViolationException {
+		when(safetyState.getLastVotedView()).thenReturn(View.of(1));
+		when(safetyState.getLockedView()).thenReturn(View.of(0));
+		when(safetyState.toBuilder()).thenReturn(mock(Builder.class));
+		Vertex vertex = Vertex.createVertex(GENESIS_QC, View.of(1), null);
+		VoteData voteData = new VoteData(VertexMetadata.ofVertex(vertex), VertexMetadata.ofParent(vertex));
+		QuorumCertificate qc = new QuorumCertificate(voteData, new ECDSASignatures());
+		Vertex proposal = Vertex.createVertex(qc, View.of(2), null);
+		Vote vote = safetyRules.voteFor(proposal);
+		assertThat(vote.getVoteData().getCommitted()).isEmpty();
 	}
 
-	private static Vertex makeVertex(Vertex parent, View view, VertexStore vertexStore) {
-		VertexMetadata parentMetadata = new VertexMetadata(
-			parent.getView(),
-			parent.getId(),
-			parent.getParentView(),
-			parent.getParentId()
+	@Test
+	public void when_vote_on_proposal_three_after_genesis__then_returned_vote_has_commit() throws SafetyViolationException {
+		when(safetyState.getLastVotedView()).thenReturn(View.of(1));
+		when(safetyState.getLockedView()).thenReturn(View.of(0));
+		when(safetyState.toBuilder()).thenReturn(mock(Builder.class));
+
+		Vertex grandParent = Vertex.createVertex(GENESIS_QC, View.of(1), null);
+		VoteData voteData = new VoteData(VertexMetadata.ofVertex(grandParent), VertexMetadata.ofParent(grandParent));
+		QuorumCertificate qc = new QuorumCertificate(voteData, new ECDSASignatures());
+
+		Vertex parent = Vertex.createVertex(qc, View.of(2), null);
+		VoteData parentVoteData = new VoteData(VertexMetadata.ofVertex(parent), VertexMetadata.ofParent(parent));
+		QuorumCertificate parentQC = new QuorumCertificate(parentVoteData, new ECDSASignatures());
+
+		Vertex proposal = Vertex.createVertex(parentQC, View.of(3), null);
+
+		Vote vote = safetyRules.voteFor(proposal);
+		assertThat(vote.getVoteData().getCommitted()).hasValue(VertexMetadata.ofVertex(grandParent));
+	}
+
+	@Test
+	public void when_vote_on_proposal_three_after_genesis_with_skip__then_returned_vote_has_no_commit() throws SafetyViolationException {
+		when(safetyState.getLastVotedView()).thenReturn(View.of(1));
+		when(safetyState.getLockedView()).thenReturn(View.of(0));
+		when(safetyState.toBuilder()).thenReturn(mock(Builder.class));
+
+		Vertex grandParent = Vertex.createVertex(GENESIS_QC, View.of(1), null);
+		VoteData voteData = new VoteData(VertexMetadata.ofVertex(grandParent), VertexMetadata.ofParent(grandParent));
+		QuorumCertificate qc = new QuorumCertificate(voteData, new ECDSASignatures());
+
+		Vertex parent = Vertex.createVertex(qc, View.of(2), null);
+		VoteData parentVoteData = new VoteData(VertexMetadata.ofVertex(parent), VertexMetadata.ofParent(parent));
+		QuorumCertificate parentQC = new QuorumCertificate(parentVoteData, new ECDSASignatures());
+
+		Vertex proposal = Vertex.createVertex(parentQC, View.of(4), null);
+
+		Vote vote = safetyRules.voteFor(proposal);
+		assertThat(vote.getVoteData().getCommitted()).isEmpty();
+	}
+
+	@Test
+	public void when_process_qc_with_commit_greater_than_current__then_return_commit() {
+		when(safetyState.getLastVotedView()).thenReturn(View.of(0));
+		when(safetyState.getLockedView()).thenReturn(View.of(0));
+		when(safetyState.getCommittedView()).thenReturn(View.of(0));
+		when(safetyState.toBuilder()).thenReturn(mock(Builder.class));
+
+		Hash toBeCommitted = mock(Hash.class);
+
+		VoteData voteData = new VoteData(
+			new VertexMetadata(View.of(3), mock(Hash.class)),
+			new VertexMetadata(View.of(2), mock(Hash.class)),
+			new VertexMetadata(View.of(1), toBeCommitted)
 		);
-		QuorumCertificate qc = new QuorumCertificate(parentMetadata, new ECDSASignatures());
-		Vertex vertex = Vertex.createVertex(qc, view, null);
-		try {
-			vertexStore.insertVertex(vertex);
-		} catch (VertexInsertionException e) {
-			throw new RuntimeException("Failed to setup vertex " + vertex, e);
-		}
-		return vertex;
+
+		QuorumCertificate qc = new QuorumCertificate(voteData, new ECDSASignatures());
+
+		assertThat(safetyRules.process(qc)).hasValue(toBeCommitted);
 	}
 }

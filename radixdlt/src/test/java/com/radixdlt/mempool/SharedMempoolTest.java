@@ -28,9 +28,10 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.name.Names;
-import com.radixdlt.common.AID;
-import com.radixdlt.common.Atom;
-import com.radixdlt.common.EUID;
+import com.radixdlt.identifiers.AID;
+import com.radixdlt.atommodel.Atom;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.Ints;
@@ -47,6 +48,7 @@ public class SharedMempoolTest {
 	private MempoolNetworkTx mempoolNetworkTx;
 	private RadixEngine radixEngine;
 	private Serialization serialization;
+	private SystemCounters counters;
 
 	private Mempool sharedMempool;
 
@@ -56,6 +58,7 @@ public class SharedMempoolTest {
 		this.mempoolNetworkTx = mock(MempoolNetworkTx.class);
 		this.radixEngine = mock(RadixEngine.class);
 		this.serialization = mock(Serialization.class);
+		this.counters = mock(SystemCounters.class);
 
 		// test module to hook up dependencies
 		Module testModule = new AbstractModule() {
@@ -66,6 +69,7 @@ public class SharedMempoolTest {
 				bind(EUID.class).annotatedWith(Names.named("self")).toInstance(self);
 				bind(RadixEngine.class).toInstance(radixEngine);
 				bind(Serialization.class).toInstance(serialization);
+				bind(SystemCounters.class).toInstance(counters);
 			}
 		};
 

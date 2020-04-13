@@ -31,7 +31,7 @@ import org.radix.serialization.RadixTest;
 import org.radix.time.Time;
 import org.radix.time.Timestamps;
 
-import com.radixdlt.common.EUID;
+import com.radixdlt.identifiers.EUID;
 
 import static org.junit.Assert.*;
 

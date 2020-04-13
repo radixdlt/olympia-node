@@ -19,7 +19,7 @@ package com.radixdlt.store;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.common.AID;
+import com.radixdlt.identifiers.AID;
 
 import java.util.stream.Stream;
 

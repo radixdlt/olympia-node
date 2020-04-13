@@ -25,8 +25,8 @@ import java.util.Comparator;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.radix.network2.addressbook.Peer;
 import org.radix.network2.messaging.TransportManager;
 import org.radix.network2.transport.tcp.TCPConstants;
@@ -40,7 +40,7 @@ import com.google.inject.Inject;
  * with the specified peer, and that can handle the specified message.
  */
 public final class FirstMatchTransportManager implements TransportManager {
-	private static final Logger log = Logging.getLogger("transport");
+	private static final Logger log = LogManager.getLogger("transport");
 
 	private final ImmutableList<Transport> transports;
 	private final Transport defaultTransport;

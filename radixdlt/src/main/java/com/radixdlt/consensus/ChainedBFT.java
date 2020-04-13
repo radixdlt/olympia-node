@@ -94,6 +94,7 @@ public final class ChainedBFT {
 		final Observable<EventCoordinator> epochCoordinators = epochEvents
 			.map(epochManager::nextEpoch)
 			.startWithItem(epochManager.start())
+			.doOnNext(EventCoordinator::start)
 			.publish()
 			.autoConnect(4);
 

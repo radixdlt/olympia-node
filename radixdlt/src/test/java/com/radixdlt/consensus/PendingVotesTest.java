@@ -21,11 +21,11 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.validators.ValidationResult;
 import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
-import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
 import java.util.Collections;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Optional;
@@ -37,11 +37,20 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class PendingVotesTest {
+	private PendingVotes pendingVotes;
+	private Hasher hasher;
+
+	@Before
+	public void setup() {
+		this.hasher = mock(Hasher.class);
+		when(this.hasher.hash(any())).thenReturn(Hash.random());
+		this.pendingVotes = new PendingVotes(this.hasher);
+	}
+
 	@Test
 	public void when_inserting_a_vote_without_signature__then_exception_is_thrown() {
-		PendingVotes pendingVotes = new PendingVotes();
 		Vote voteWithoutSignature = mock(Vote.class);
-		when(voteWithoutSignature.getVertexMetadata()).thenReturn(mock(VertexMetadata.class));
+		when(voteWithoutSignature.getVoteData()).thenReturn(mock(VoteData.class));
 		when(voteWithoutSignature.getSignature()).thenReturn(Optional.empty());
 
 		assertThatThrownBy(() -> pendingVotes.insertVote(voteWithoutSignature, mock(ValidatorSet.class)));
@@ -53,8 +62,7 @@ public class PendingVotesTest {
 		Vote vote1 = makeVoteFor(vertexId);
 		Vote vote2 = makeVoteFor(vertexId);
 		ValidatorSet validatorSet = ValidatorSet.from(Collections.singleton(Validator.from(vote1.getAuthor())));
-		PendingVotes pendingVotes = new PendingVotes();
-		assertThat(pendingVotes.insertVote(vote2, validatorSet)).isEmpty();
+		assertThat(this.pendingVotes.insertVote(vote2, validatorSet)).isEmpty();
 	}
 
 	@Test
@@ -63,21 +71,17 @@ public class PendingVotesTest {
 		Vote vote1 = makeVoteFor(vertexId);
 		ValidatorSet validatorSet = mock(ValidatorSet.class);
 		when(validatorSet.validate(any(), any())).thenReturn(ValidationResult.passed(ImmutableList.of(mock(Validator.class))));
-		PendingVotes pendingVotes = new PendingVotes();
-		assertThat(pendingVotes.insertVote(vote1, validatorSet)).isPresent();
+		assertThat(this.pendingVotes.insertVote(vote1, validatorSet)).isPresent();
 	}
 
 	private Vote makeVoteFor(Hash vertexId) {
 		Vote vote = mock(Vote.class);
-		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
-		when(vertexMetadata.getId()).thenReturn(vertexId);
-		when(vote.getVertexMetadata()).thenReturn(vertexMetadata);
+		VertexMetadata proposed = new VertexMetadata(View.of(1), vertexId);
+		VertexMetadata parent = new VertexMetadata(View.of(0), Hash.random());
+		VoteData voteData = new VoteData(proposed, parent);
+		when(vote.getVoteData()).thenReturn(voteData);
 		when(vote.getSignature()).thenReturn(Optional.of(new ECDSASignature()));
-		try {
-			when(vote.getAuthor()).thenReturn(new ECKeyPair().getPublicKey());
-		} catch (CryptoException e) {
-			throw new RuntimeException("Failed to setup vote", e);
-		}
+		when(vote.getAuthor()).thenReturn(ECKeyPair.generateNew().getPublicKey());
 		return vote;
 	}
 }

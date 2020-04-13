@@ -26,6 +26,7 @@ import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.serialization.DsonOutput.Output;
+import java.util.Optional;
 
 @SerializerId2("consensus.qc")
 public final class QuorumCertificate {
@@ -37,27 +38,35 @@ public final class QuorumCertificate {
 	@DsonOutput(Output.ALL)
 	private final ECDSASignatures signatures;
 
-	@JsonProperty("vertex_metadata")
+	@JsonProperty("vote_data")
 	@DsonOutput(Output.ALL)
-	private final VertexMetadata vertexMetadata;
+	private final VoteData voteData;
 
 	QuorumCertificate() {
 		// Serializer only
-		this.vertexMetadata = null;
+		this.voteData = null;
 		this.signatures = null;
 	}
 
-	public QuorumCertificate(VertexMetadata vertexMetadata, ECDSASignatures signatures) {
-		this.vertexMetadata = Objects.requireNonNull(vertexMetadata);
+	public QuorumCertificate(VoteData voteData, ECDSASignatures signatures) {
+		this.voteData = Objects.requireNonNull(voteData);
 		this.signatures = Objects.requireNonNull(signatures);
 	}
 
 	public View getView() {
-		return vertexMetadata.getView();
+		return voteData.getProposed().getView();
 	}
 
-	public VertexMetadata getVertexMetadata() {
-		return vertexMetadata;
+	public VertexMetadata getProposed() {
+		return voteData.getProposed();
+	}
+
+	public VertexMetadata getParent() {
+		return voteData.getParent();
+	}
+
+	public Optional<VertexMetadata> getCommitted() {
+		return voteData.getCommitted();
 	}
 
 	@Override
@@ -70,16 +79,16 @@ public final class QuorumCertificate {
 		}
 		QuorumCertificate that = (QuorumCertificate) o;
 		return Objects.equals(signatures, that.signatures)
-			&& Objects.equals(vertexMetadata, that.vertexMetadata);
+			&& Objects.equals(voteData, that.voteData);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(signatures, vertexMetadata);
+		return Objects.hash(signatures, voteData);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("QC{view=%s}", vertexMetadata.getView());
+		return String.format("QC{view=%s}", this.getView());
 	}
 }

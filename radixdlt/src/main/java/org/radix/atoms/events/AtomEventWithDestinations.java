@@ -17,8 +17,8 @@
 
 package org.radix.atoms.events;
 
-import com.radixdlt.common.Atom;
-import com.radixdlt.common.EUID;
+import com.radixdlt.atommodel.Atom;
+import com.radixdlt.identifiers.EUID;
 
 import java.util.Set;
 import java.util.function.Supplier;

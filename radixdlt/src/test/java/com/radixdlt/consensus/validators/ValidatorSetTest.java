@@ -21,7 +21,6 @@ import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
@@ -74,12 +73,12 @@ public class ValidatorSetTest {
 	}
 
 	@Test
-	public void testValidate() throws CryptoException {
-		ECKeyPair k1 = new ECKeyPair();
-		ECKeyPair k2 = new ECKeyPair();
-		ECKeyPair k3 = new ECKeyPair();
-		ECKeyPair k4 = new ECKeyPair();
-		ECKeyPair k5 = new ECKeyPair(); // Rogue signature
+	public void testValidate() {
+		ECKeyPair k1 = ECKeyPair.generateNew();
+		ECKeyPair k2 = ECKeyPair.generateNew();
+		ECKeyPair k3 = ECKeyPair.generateNew();
+		ECKeyPair k4 = ECKeyPair.generateNew();
+		ECKeyPair k5 = ECKeyPair.generateNew(); // Rogue signature
 
 		Validator v1 = Validator.from(k1.getPublicKey());
 		Validator v2 = Validator.from(k2.getPublicKey());

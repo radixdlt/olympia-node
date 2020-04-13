@@ -18,7 +18,7 @@
 package com.radixdlt.store.berkeley;
 
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.crypto.CryptoException;
+import com.radixdlt.DefaultSerialization;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.store.StoreIndex;
 import com.radixdlt.store.LedgerSearchMode;
@@ -38,7 +38,7 @@ import java.util.function.Supplier;
 public class BerkeleyRadixLedgerEntryStoreTests extends RadixTestWithStores {
 
     private LedgerEntryGenerator ledgerEntryGenerator = new LedgerEntryGenerator();
-    private Serialization serialization = Serialization.getDefault();
+    private Serialization serialization = DefaultSerialization.getInstance();
     private BerkeleyLedgerEntryStore tempoAtomStore;
 
     private List<LedgerEntry> ledgerEntries;
@@ -46,10 +46,10 @@ public class BerkeleyRadixLedgerEntryStoreTests extends RadixTestWithStores {
     private ECKeyPair identity;
 
     @Before
-    public void setup() throws CryptoException {
+    public void setup() {
         tempoAtomStore = new BerkeleyLedgerEntryStore(serialization, this.getDbEnv());
 
-        identity = new ECKeyPair();
+        identity = ECKeyPair.generateNew();
         ledgerEntries = ledgerEntryGenerator.createLedgerEntries(identity, 5);
     }
 

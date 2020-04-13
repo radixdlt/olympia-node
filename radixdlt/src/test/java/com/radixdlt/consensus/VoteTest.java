@@ -17,7 +17,7 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.atomos.RadixAddress;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.crypto.Hash;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Before;
@@ -29,21 +29,17 @@ import static org.junit.Assert.assertNotNull;
 public class VoteTest {
 	public static final RadixAddress ADDRESS = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
 	private Vote testObject;
-	private VertexMetadata vertexMetadata;
-	private Hash parentId;
-	private Hash id;
+	private VoteData voteData;
 
 	@Before
 	public void setUp() {
-		View parentView = View.of(1234567890L);
-		this.parentId = Hash.random();
+		View view = View.of(1234567891L);
+		Hash id = Hash.random();
 
-		View view = parentView.next();
-		this.id = Hash.random();
+		VertexMetadata parent = new VertexMetadata(View.of(1234567890L), Hash.random());
+		this.voteData = new VoteData(new VertexMetadata(view, id), parent);
 
-		this.vertexMetadata = new VertexMetadata(view, id, parentView, parentId);
-
-		this.testObject = new Vote(ADDRESS.getKey(), vertexMetadata, null);
+		this.testObject = new Vote(ADDRESS.getPublicKey(), voteData, null);
 	}
 
 	@Test
@@ -54,8 +50,8 @@ public class VoteTest {
 
 	@Test
 	public void testGetters() {
-		assertEquals(this.vertexMetadata, this.testObject.getVertexMetadata());
-		assertEquals(ADDRESS.getKey(), this.testObject.getAuthor());
+		assertEquals(this.voteData, this.testObject.getVoteData());
+		assertEquals(ADDRESS.getPublicKey(), this.testObject.getAuthor());
 	}
 
 	@Test

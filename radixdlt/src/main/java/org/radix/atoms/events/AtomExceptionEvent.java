@@ -17,7 +17,7 @@
 
 package org.radix.atoms.events;
 
-import com.radixdlt.common.AID;
+import com.radixdlt.identifiers.AID;
 import org.radix.exceptions.ExceptionEvent;
 
 public class AtomExceptionEvent extends ExceptionEvent {

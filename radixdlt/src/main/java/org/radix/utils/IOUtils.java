@@ -24,10 +24,10 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.Charset;
 
-import org.radix.logging.Logger;
-
 import com.google.common.io.CharStreams;
 import com.radixdlt.utils.RadixConstants;
+
+import org.apache.logging.log4j.Logger;
 
 /**
  * Some utility methods dealing with streams and closeables.

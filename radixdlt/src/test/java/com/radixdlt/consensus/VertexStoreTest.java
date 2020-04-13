@@ -24,7 +24,8 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.powermock.api.mockito.PowerMockito.when;
 
-import com.radixdlt.common.Atom;
+import com.radixdlt.atommodel.Atom;
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.RadixEngine;
@@ -32,6 +33,7 @@ import com.radixdlt.engine.RadixEngineException;
 import io.reactivex.rxjava3.observers.TestObserver;
 import java.util.Arrays;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class VertexStoreTest {
@@ -44,12 +46,12 @@ public class VertexStoreTest {
 	@Before
 	public void setUp() {
 		this.genesisVertex = Vertex.createGenesis(null);
-		VertexMetadata vertexMetadata = new VertexMetadata(
-			View.genesis(), genesisVertex.getId(), null, null
-		);
-		this.rootQC = new QuorumCertificate(vertexMetadata, new ECDSASignatures());
+		VertexMetadata vertexMetadata = new VertexMetadata(View.genesis(), genesisVertex.getId());
+		VoteData voteData = new VoteData(vertexMetadata, null);
+		this.rootQC = new QuorumCertificate(voteData, new ECDSASignatures());
 		this.radixEngine = mock(RadixEngine.class);
-		this.vertexStore = new VertexStore(genesisVertex, rootQC, radixEngine);
+		SystemCounters counters = mock(SystemCounters.class);
+		this.vertexStore = new VertexStore(genesisVertex, rootQC, radixEngine, counters);
 	}
 
 	@Test
@@ -57,23 +59,23 @@ public class VertexStoreTest {
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
 		when(vertexMetadata.getId()).thenReturn(mock(Hash.class));
-		when(qc.getVertexMetadata()).thenReturn(vertexMetadata);
+		when(qc.getProposed()).thenReturn(vertexMetadata);
 		assertThatThrownBy(() -> vertexStore.syncToQC(qc))
 			.isInstanceOf(SyncException.class);
 	}
 
 	@Test
 	public void when_inserting_vertex_with_missing_parent__then_missing_parent_exception_is_thrown() throws Exception {
-		VertexMetadata vertexMetadata = new VertexMetadata(
-			View.genesis(), Hash.ZERO_HASH, null, null
-		);
-		QuorumCertificate qc = new QuorumCertificate(vertexMetadata, new ECDSASignatures());
+		VertexMetadata vertexMetadata = new VertexMetadata(View.genesis(), Hash.ZERO_HASH);
+		VoteData voteData = new VoteData(vertexMetadata, null);
+		QuorumCertificate qc = new QuorumCertificate(voteData, new ECDSASignatures());
 		Vertex nextVertex = Vertex.createVertex(qc, View.of(1), mock(Atom.class));
 		assertThatThrownBy(() -> vertexStore.insertVertex(nextVertex))
 			.isInstanceOf(MissingParentException.class);
 	}
 
 	@Test
+	@Ignore("Reinstate once better ProposalGenerator + Mempool is implemented")
 	public void when_inserting_vertex_which_fails_to_pass_re__then_vertex_insertion_exception_is_thrown() throws Exception {
 		doThrow(mock(RadixEngineException.class)).when(radixEngine).store(any());
 
@@ -91,8 +93,9 @@ public class VertexStoreTest {
 	@Test
 	public void when_insert_two_vertices__then_get_path_from_root_should_return_the_two_vertices() throws Exception {
 		Vertex nextVertex0 = Vertex.createVertex(rootQC, View.of(1), null);
-		VertexMetadata vertexMetadata = new VertexMetadata(View.of(1), nextVertex0.getId(), View.genesis(), genesisVertex.getId());
-		QuorumCertificate qc = new QuorumCertificate(vertexMetadata, new ECDSASignatures());
+		VertexMetadata vertexMetadata = new VertexMetadata(View.of(1), nextVertex0.getId());
+		VoteData voteData = new VoteData(vertexMetadata, rootQC.getProposed());
+		QuorumCertificate qc = new QuorumCertificate(voteData, new ECDSASignatures());
 		Vertex nextVertex1 = Vertex.createVertex(qc, View.of(2), null);
 		vertexStore.insertVertex(nextVertex0);
 		vertexStore.insertVertex(nextVertex1);
@@ -101,7 +104,7 @@ public class VertexStoreTest {
 	}
 
 	@Test
-	public void when_insert_and_commit_vertex__then_committed_vertex_should_emit() throws Exception {
+	public void when_insert_and_commit_vertex__then_committed_vertex_should_emit_and_store_should_have_size_1() throws Exception {
 		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), null);
 		vertexStore.insertVertex(nextVertex);
 
@@ -112,5 +115,45 @@ public class VertexStoreTest {
 		assertThat(vertexStore.commitVertex(nextVertex.getId())).isEqualTo(nextVertex);
 		testObserver.awaitCount(2);
 		testObserver.assertValues(genesisVertex, nextVertex);
+		assertThat(vertexStore.getSize()).isEqualTo(1);
+	}
+
+	@Test
+	public void when_insert_and_commit_vertex_2x__then_committed_vertex_should_emit_in_order_and_store_should_have_size_1() throws Exception {
+		TestObserver<Vertex> testObserver = TestObserver.create();
+		vertexStore.lastCommittedVertex().subscribe(testObserver);
+		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), null);
+		vertexStore.insertVertex(nextVertex);
+		vertexStore.commitVertex(nextVertex.getId());
+
+		QuorumCertificate qc = mock(QuorumCertificate.class);
+		when(qc.getProposed()).thenReturn(VertexMetadata.ofVertex(nextVertex));
+		Vertex nextVertex2 = Vertex.createVertex(qc, View.of(2), null);
+		vertexStore.insertVertex(nextVertex2);
+		vertexStore.commitVertex(nextVertex2.getId());
+
+		testObserver.awaitCount(3);
+		testObserver.assertValues(genesisVertex, nextVertex, nextVertex2);
+		assertThat(vertexStore.getSize()).isEqualTo(1);
+	}
+
+	@Test
+	public void when_insert_two_and_commit_vertex__then_two_committed_vertices_should_emit_in_order_and_store_should_have_size_1() throws Exception {
+		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), null);
+		vertexStore.insertVertex(nextVertex);
+
+		QuorumCertificate qc = mock(QuorumCertificate.class);
+		when(qc.getProposed()).thenReturn(VertexMetadata.ofVertex(nextVertex));
+		Vertex nextVertex2 = Vertex.createVertex(qc, View.of(2), null);
+		vertexStore.insertVertex(nextVertex2);
+
+		TestObserver<Vertex> testObserver = TestObserver.create();
+		vertexStore.lastCommittedVertex().subscribe(testObserver);
+		testObserver.awaitCount(1);
+
+		vertexStore.commitVertex(nextVertex2.getId());
+		testObserver.awaitCount(3);
+		testObserver.assertValues(genesisVertex, nextVertex, nextVertex2);
+		assertThat(vertexStore.getSize()).isEqualTo(1);
 	}
 }

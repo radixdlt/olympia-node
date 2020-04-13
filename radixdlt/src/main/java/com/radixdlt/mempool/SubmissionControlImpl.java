@@ -23,21 +23,21 @@ import java.util.function.Consumer;
 
 import javax.inject.Inject;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
 import org.radix.atoms.events.AtomExceptionEvent;
 import org.radix.events.Events;
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
 import org.radix.validation.ConstraintMachineValidationException;
 
-import com.radixdlt.common.AID;
-import com.radixdlt.common.Atom;
+import com.radixdlt.identifiers.AID;
+import com.radixdlt.atommodel.Atom;
 import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.serialization.Serialization;
 
 class SubmissionControlImpl implements SubmissionControl {
-	private static final Logger log = Logging.getLogger("submission");
+	private static final Logger log = LogManager.getLogger("submission");
 
 	private final Mempool mempool;
 	private final RadixEngine radixEngine;
@@ -59,12 +59,10 @@ class SubmissionControlImpl implements SubmissionControl {
 			CMError error = validationError.get();
 			ConstraintMachineValidationException ex = new ConstraintMachineValidationException(atom, error.getErrMsg(), error.getDataPointer());
 			log.info(
-				String.format(
-					"Rejecting atom %s with constraint machine error '%s' at '%s'.",
-					atom.getAID(),
-					error.getErrorDescription(),
-					error.getDataPointer()
-				)
+				"Rejecting atom {} with constraint machine error '{}' at '{}'.",
+				atom.getAID(),
+				error.getErrorDescription(),
+				error.getDataPointer()
 			);
 			this.events.broadcast(new AtomExceptionEvent(ex, atom.getAID()));
 		} else {

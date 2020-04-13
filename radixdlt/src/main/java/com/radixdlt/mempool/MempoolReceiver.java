@@ -19,11 +19,11 @@ package com.radixdlt.mempool;
 
 import java.util.Objects;
 
-import org.radix.logging.Logger;
-import org.radix.logging.Logging;
-
 import com.google.inject.Inject;
-import com.radixdlt.common.Atom;
+import com.radixdlt.atommodel.Atom;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import io.reactivex.rxjava3.disposables.Disposable;
 
@@ -31,7 +31,7 @@ import io.reactivex.rxjava3.disposables.Disposable;
  * Network glue for SubmissionControl.
  */
 public final class MempoolReceiver {
-	private static final Logger log = Logging.getLogger("submission");
+	private static final Logger log = LogManager.getLogger("submission");
 
 	private final MempoolNetworkRx mempoolRx;
 	private final SubmissionControl submissionControl;
@@ -78,7 +78,7 @@ public final class MempoolReceiver {
 		try {
 			this.submissionControl.submitAtom(atom);
 		} catch (MempoolRejectedException ex) {
-			log.info(String.format("Mempool rejected atom %s", atom.getAID()), ex);
+			log.info(String.format("Mempool rejected atom %s: %s", atom.getAID(), ex.getMessage()));
 		}
 	}
 }

@@ -24,7 +24,7 @@ import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.Mockito.mock;
 import static org.powermock.api.mockito.PowerMockito.when;
 
-import com.radixdlt.common.Atom;
+import com.radixdlt.atommodel.Atom;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
@@ -43,7 +43,7 @@ public class ProposalGeneratorTest {
 
 		VertexStore vertexStore = mock(VertexStore.class);
 		QuorumCertificate qc = mock(QuorumCertificate.class);
-		when(qc.getVertexMetadata()).thenReturn(mock(VertexMetadata.class));
+		when(qc.getProposed()).thenReturn(mock(VertexMetadata.class));
 		when(vertexStore.getHighestQC()).thenReturn(qc);
 		Vertex vertex = mock(Vertex.class);
 		when(vertex.getAtom()).thenReturn(null);

@@ -17,6 +17,7 @@
 
 package org.radix.network2.transport;
 
+import com.radixdlt.DefaultSerialization;
 import org.junit.Test;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -59,7 +60,7 @@ public class TransportMetadataSerializationTest {
 
 	@Test
 	public void testDynamicMetadataSerializationToJson() throws SerializationException {
-		Serialization serialization = Serialization.getDefault();
+		Serialization serialization = DefaultSerialization.getInstance();
 
 		TestClass tc = new TestClass(DynamicTransportMetadata.of("host", () -> "127.0.0.1", "port", () -> "30000"));
 
@@ -76,7 +77,7 @@ public class TransportMetadataSerializationTest {
 
 	@Test
 	public void testStaticMetadataSerializationToJson() throws SerializationException {
-		Serialization serialization = Serialization.getDefault();
+		Serialization serialization = DefaultSerialization.getInstance();
 
 		TestClass tc = new TestClass(StaticTransportMetadata.of("host", "127.0.0.1", "port", "30000"));
 
