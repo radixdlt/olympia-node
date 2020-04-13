@@ -94,6 +94,7 @@ public class PerfectNetworkTest {
 			.map(ECKeyPair::euid)
 			.map(bftNetwork.getUnderlyingNetwork()::getNetworkRx)
 			.map(EventCoordinatorNetworkRx::proposalMessages)
+			.map(o -> o.map(Proposal::getVertex))
 			.collect(Collectors.toList());
 		Observable<Object> proposalsCheck = Observable.merge(proposals)
 			.doOnNext(v -> assertThat(v)

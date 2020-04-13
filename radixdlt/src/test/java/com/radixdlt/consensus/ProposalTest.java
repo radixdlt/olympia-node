@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -17,13 +17,13 @@
 
 package com.radixdlt.consensus;
 
-/**
- * Processor of BFT events
- */
-public interface EventCoordinator {
-	void processVote(Vote vote);
-	void processNewView(NewView newView);
-	void processProposal(Proposal proposal);
-	void processLocalTimeout(View view);
-	void start();
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Test;
+
+public class ProposalTest {
+	@Test
+	public void equalsContract() {
+		EqualsVerifier.forClass(Proposal.class)
+			.verify();
+	}
 }

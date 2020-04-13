@@ -19,9 +19,9 @@ package com.radixdlt.network;
 
 import static org.mockito.Mockito.mock;
 
+import com.radixdlt.consensus.Proposal;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.consensus.NewView;
-import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.Vote;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.junit.Test;
@@ -56,10 +56,10 @@ public class TestEventCoordinatorNetworkTest {
 	@Test
 	public void when_broadcast_proposal__then_should_receive_it() {
 		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.orderedLatent(TEST_LOOPBACK_LATENCY);
-		TestObserver<Vertex> testObserver = TestObserver.create();
+		TestObserver<Proposal> testObserver = TestObserver.create();
 		network.getNetworkRx(EUID.ONE).proposalMessages()
 			.subscribe(testObserver);
-		Vertex proposal = mock(Vertex.class);
+		Proposal proposal = mock(Proposal.class);
 		network.getNetworkSender(EUID.ONE).broadcastProposal(proposal);
 		testObserver.awaitCount(1);
 		testObserver.assertValue(proposal);

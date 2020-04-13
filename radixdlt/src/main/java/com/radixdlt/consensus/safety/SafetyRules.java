@@ -20,6 +20,7 @@ package com.radixdlt.consensus.safety;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import com.radixdlt.consensus.Hasher;
+import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
@@ -89,6 +90,17 @@ public final class SafetyRules {
 		this.state = safetyStateBuilder.build();
 
 		return commitHash;
+	}
+
+	/**
+	 * Create a signed proposal from a vertex
+	 * @param proposedVertex vertex to sign
+	 * @return signed proposal object for consensus
+	 */
+	public Proposal signProposal(Vertex proposedVertex) {
+		final Hash vertexHash = this.hasher.hash(proposedVertex);
+		ECDSASignature signature = this.selfKey.sign(vertexHash);
+		return new Proposal(proposedVertex, this.selfKey.getPublicKey(), signature);
 	}
 
 	/**

@@ -23,7 +23,7 @@ import com.radixdlt.identifiers.EUID;
  * Interface for Event Coordinator to send things through a network
  */
 public interface EventCoordinatorNetworkSender {
-	void broadcastProposal(Vertex vertex);
+	void broadcastProposal(Proposal proposal);
 	void sendNewView(NewView newView, EUID newViewLeader);
 	void sendVote(Vote vote, EUID leader);
 }

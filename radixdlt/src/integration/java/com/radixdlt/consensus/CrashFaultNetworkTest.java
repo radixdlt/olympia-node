@@ -161,6 +161,7 @@ public class CrashFaultNetworkTest {
 			.map(ECKeyPair::euid)
 			.map(bftNetwork.getUnderlyingNetwork()::getNetworkRx)
 			.map(EventCoordinatorNetworkRx::proposalMessages)
+			.map(p -> p.map(Proposal::getVertex))
 			.collect(Collectors.toList());
 		Observable<Object> directProposalsCheck = Observable.merge(correctProposals)
 			.filter(v -> correctNodesPubs.contains(bftNetwork.getProposerElection().getProposer(v.getView().previous())))

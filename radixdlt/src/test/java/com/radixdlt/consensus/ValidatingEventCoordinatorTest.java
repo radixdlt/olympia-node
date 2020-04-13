@@ -205,7 +205,9 @@ public class ValidatingEventCoordinatorTest {
 
 		Vertex vertex = mock(Vertex.class);
 		when(vertex.getView()).thenReturn(View.of(9));
-		eventCoordinator.processProposal(vertex);
+		Proposal proposal = mock(Proposal.class);
+		when(proposal.getVertex()).thenReturn(vertex);
+		eventCoordinator.processProposal(proposal);
 		verify(vertexStore, never()).insertVertex(any());
 	}
 
@@ -221,11 +223,14 @@ public class ValidatingEventCoordinatorTest {
 		when(proposedVertex.getQC()).thenReturn(mock(QuorumCertificate.class));
 		when(proposedVertex.getView()).thenReturn(currentView);
 
+		Proposal proposal = mock(Proposal.class);
+		when(proposal.getVertex()).thenReturn(proposedVertex);
+
 		doThrow(new VertexInsertionException("Test", new RadixEngineException(RadixEngineErrorCode.CM_ERROR, DataPointer.ofAtom())))
 			.when(vertexStore).insertVertex(any());
 		when(pacemaker.processQC(any())).thenReturn(Optional.empty());
 		when(pacemaker.getCurrentView()).thenReturn(currentView);
-		eventCoordinator.processProposal(proposedVertex);
+		eventCoordinator.processProposal(proposal);
 		verify(mempool, times(1)).removeRejectedAtom(eq(aid));
 	}
 
@@ -245,13 +250,17 @@ public class ValidatingEventCoordinatorTest {
 		when(qc.getView()).thenReturn(qcView);
 		when(proposedVertex.getQC()).thenReturn(qc);
 		when(proposedVertex.getView()).thenReturn(currentView);
+
+		Proposal proposal = mock(Proposal.class);
+		when(proposal.getVertex()).thenReturn(proposedVertex);
+
 		when(pacemaker.getCurrentView()).thenReturn(currentView);
 		Vote vote = mock(Vote.class);
 		doReturn(vote).when(safetyRules).voteFor(eq(proposedVertex));
 		when(pacemaker.processQC(eq(qcView))).thenReturn(Optional.empty());
 		when(pacemaker.processQC(eq(currentView))).thenReturn(Optional.of(View.of(124)));
 
-		eventCoordinator.processProposal(proposedVertex);
+		eventCoordinator.processProposal(proposal);
 
 		verify(networkSender, times(1)).sendVote(eq(vote), any());
 		verify(networkSender, times(1)).sendNewView(any(), any());
@@ -274,13 +283,17 @@ public class ValidatingEventCoordinatorTest {
 		when(qc.getView()).thenReturn(qcView);
 		when(proposedVertex.getQC()).thenReturn(qc);
 		when(proposedVertex.getView()).thenReturn(currentView);
+
+		Proposal proposal = mock(Proposal.class);
+		when(proposal.getVertex()).thenReturn(proposedVertex);
+
 		when(pacemaker.getCurrentView()).thenReturn(currentView);
 		Vote vote = mock(Vote.class);
 		doReturn(vote).when(safetyRules).voteFor(eq(proposedVertex));
 		when(pacemaker.processQC(eq(qcView))).thenReturn(Optional.empty());
 		when(pacemaker.processQC(eq(currentView))).thenReturn(Optional.of(View.of(124)));
 
-		eventCoordinator.processProposal(proposedVertex);
+		eventCoordinator.processProposal(proposal);
 
 		verify(networkSender, times(1)).sendVote(eq(vote), any());
 		verify(networkSender, times(0)).sendNewView(any(), any());
@@ -302,13 +315,17 @@ public class ValidatingEventCoordinatorTest {
 		when(qc.getView()).thenReturn(qcView);
 		when(proposedVertex.getQC()).thenReturn(qc);
 		when(proposedVertex.getView()).thenReturn(currentView);
+
+		Proposal proposal = mock(Proposal.class);
+		when(proposal.getVertex()).thenReturn(proposedVertex);
+
 		when(pacemaker.getCurrentView()).thenReturn(currentView);
 		Vote vote = mock(Vote.class);
 		doReturn(vote).when(safetyRules).voteFor(eq(proposedVertex));
 		when(pacemaker.processQC(eq(qcView))).thenReturn(Optional.empty());
 		when(pacemaker.processQC(eq(currentView))).thenReturn(Optional.of(View.of(124)));
 
-		eventCoordinator.processProposal(proposedVertex);
+		eventCoordinator.processProposal(proposal);
 
 		verify(networkSender, times(1)).sendVote(eq(vote), any());
 		verify(networkSender, times(0)).sendNewView(any(), any());
@@ -330,6 +347,9 @@ public class ValidatingEventCoordinatorTest {
 		when(proposalVertex.getQC()).thenReturn(qc);
 		when(proposalVertex.getView()).thenReturn(currentView);
 
+		Proposal proposal = mock(Proposal.class);
+		when(proposal.getVertex()).thenReturn(proposalVertex);
+
 		Hash committedVertexId = mock(Hash.class);
 		Vertex committedVertex = mock(Vertex.class);
 		Atom atom = mock(Atom.class);
@@ -341,7 +361,7 @@ public class ValidatingEventCoordinatorTest {
 		when(vertexStore.commitVertex(eq(committedVertexId))).thenReturn(committedVertex);
 		when(proposerElection.getProposer(any())).thenReturn(ECKeyPair.generateNew().getPublicKey());
 
-		eventCoordinator.processProposal(proposalVertex);
+		eventCoordinator.processProposal(proposal);
 		verify(mempool, times(1)).removeCommittedAtom(eq(aid));
 	}
 }

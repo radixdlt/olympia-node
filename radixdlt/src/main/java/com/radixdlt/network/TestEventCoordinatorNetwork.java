@@ -17,12 +17,12 @@
 
 package com.radixdlt.network;
 
+import com.radixdlt.consensus.Proposal;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.consensus.EventCoordinatorNetworkRx;
 import com.radixdlt.consensus.EventCoordinatorNetworkSender;
 import com.radixdlt.consensus.NewView;
-import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.Vote;
-import com.radixdlt.identifiers.EUID;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 
@@ -143,8 +143,8 @@ public class TestEventCoordinatorNetwork {
 		};
 		return new EventCoordinatorNetworkSender() {
 			@Override
-			public void broadcastProposal(Vertex vertex) {
-				sendMessageSink.accept(MessageInTransit.broadcast(vertex));
+			public void broadcastProposal(Proposal proposal) {
+				sendMessageSink.accept(MessageInTransit.broadcast(proposal));
 			}
 
 			@Override
@@ -167,8 +167,8 @@ public class TestEventCoordinatorNetwork {
 			.map(MessageInTransit::getContent);
 		return new EventCoordinatorNetworkRx() {
 			@Override
-			public Observable<Vertex> proposalMessages() {
-				return myMessages.ofType(Vertex.class);
+			public Observable<Proposal> proposalMessages() {
+				return myMessages.ofType(Proposal.class);
 			}
 
 			@Override

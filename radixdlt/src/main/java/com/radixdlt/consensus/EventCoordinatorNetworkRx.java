@@ -30,7 +30,7 @@ public interface EventCoordinatorNetworkRx {
 	 *
 	 * @return hot observable of proposal messages
 	 */
-	Observable<Vertex> proposalMessages();
+	Observable<Proposal> proposalMessages();
 
 	/**
 	 * Accessor to the stream of new-view messages as they are received from the

@@ -18,21 +18,24 @@
 package org.radix.serialization;
 
 import com.radixdlt.atommodel.Atom;
+import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.VoteData;
-import com.radixdlt.consensus.messages.VertexMessage;
+import com.radixdlt.consensus.messages.ProposalMessage;
+import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECDSASignatures;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
 
-public class VertexMessageSerializeTest extends SerializeMessageObject<VertexMessage> {
-	public VertexMessageSerializeTest() {
-		super(VertexMessage.class, VertexMessageSerializeTest::get);
+public class ProposalMessageSerializeTest extends SerializeMessageObject<ProposalMessage> {
+	public ProposalMessageSerializeTest() {
+		super(ProposalMessage.class, ProposalMessageSerializeTest::get);
 	}
 
-	private static VertexMessage get() {
+	private static ProposalMessage get() {
 		View view = View.of(1234567891L);
 		Hash id = Hash.random();
 		Atom atom = new Atom();
@@ -42,6 +45,7 @@ public class VertexMessageSerializeTest extends SerializeMessageObject<VertexMes
 		VoteData voteData = new VoteData(vertexMetadata, parent);
 		QuorumCertificate qc = new QuorumCertificate(voteData, new ECDSASignatures());
 		Vertex vertex = new Vertex(qc, view, atom);
-		return new VertexMessage(1, vertex);
+		Proposal proposal = new Proposal(vertex, ECKeyPair.generateNew().getPublicKey(), new ECDSASignature());
+		return new ProposalMessage(1, proposal);
 	}
 }

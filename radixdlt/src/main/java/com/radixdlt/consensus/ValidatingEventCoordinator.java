@@ -180,16 +180,18 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 		this.pacemaker.processNewView(newView, validatorSet)
 			.ifPresent(syncedView -> {
 				// Hotstuff's Event-Driven OnBeat
-				Vertex proposal = proposalGenerator.generateProposal(syncedView);
+				final Vertex proposedVertex = proposalGenerator.generateProposal(view);
+				final Proposal proposal = safetyRules.signProposal(proposedVertex);
 				log.info("{}: Broadcasting PROPOSAL: {}", getShortName(), proposal);
 				this.networkSender.broadcastProposal(proposal);
 			});
 	}
 
 	@Override
-	public void processProposal(Vertex proposedVertex) {
-		log.info("{}: PROPOSAL: Processing {}", this.getShortName(), proposedVertex);
+	public void processProposal(Proposal proposal) {
+		log.info("{}: PROPOSAL: Processing {}", this.getShortName(), proposal);
 
+		final Vertex proposedVertex = proposal.getVertex();
 		final View currentView = this.pacemaker.getCurrentView();
 		if (proposedVertex.getView().compareTo(currentView) < 0) {
 			log.info("{}: PROPOSAL: Ignoring view {} Current is: {}", this.getShortName(), proposedVertex.getView(), currentView);

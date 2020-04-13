@@ -43,7 +43,7 @@ public class ChainedBFTTest {
 		when(networkRx.newViewMessages())
 			.thenReturn(Observable.just(newView).concatWith(Observable.never()));
 
-		Vertex proposal = mock(Vertex.class);
+		Proposal proposal = mock(Proposal.class);
 		when(networkRx.proposalMessages())
 			.thenReturn(Observable.just(proposal).concatWith(Observable.never()));
 

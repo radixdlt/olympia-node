@@ -114,6 +114,7 @@ public class LatentNetworkTest {
 			.map(ECKeyPair::euid)
 			.map(bftNetwork.getUnderlyingNetwork()::getNetworkRx)
 			.map(EventCoordinatorNetworkRx::proposalMessages)
+			.map(p -> p.map(Proposal::getVertex))
 			.collect(Collectors.toList());
 		Observable<Object> directProposalsCheck = Observable.merge(correctProposals)
 			.doOnNext(v -> assertThat(v)

@@ -19,6 +19,7 @@ package com.radixdlt.network;
 
 import com.radixdlt.consensus.EventCoordinatorNetworkRx;
 import com.radixdlt.consensus.EventCoordinatorNetworkSender;
+import com.radixdlt.consensus.Proposal;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 
@@ -33,10 +34,9 @@ import org.radix.universe.system.LocalSystem;
 
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.consensus.NewView;
-import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.messages.NewViewMessage;
-import com.radixdlt.consensus.messages.VertexMessage;
+import com.radixdlt.consensus.messages.ProposalMessage;
 import com.radixdlt.consensus.messages.VoteMessage;
 import com.radixdlt.universe.Universe;
 
@@ -49,7 +49,7 @@ public class SimpleEventCoordinatorNetwork implements EventCoordinatorNetworkSen
 	private final AddressBook addressBook;
 	private final MessageCentral messageCentral;
 
-	private final PublishSubject<Vertex> proposals;
+	private final PublishSubject<Proposal> proposals;
 	private final PublishSubject<NewView> newViews;
 	private final PublishSubject<Vote> votes;
 
@@ -70,14 +70,14 @@ public class SimpleEventCoordinatorNetwork implements EventCoordinatorNetworkSen
 		this.votes = PublishSubject.create();
 
 		// TODO: Should be handled in start()/stop() once we have lifetimes sorted out
-		this.messageCentral.addListener(VertexMessage.class, this::handleVertexMessage);
+		this.messageCentral.addListener(ProposalMessage.class, this::handleVertexMessage);
 		this.messageCentral.addListener(NewViewMessage.class, this::handleNewViewMessage);
 		this.messageCentral.addListener(VoteMessage.class, this::handleVoteMessage);
 	}
 
 	@Override
-	public void broadcastProposal(Vertex vertex) {
-		VertexMessage message = new VertexMessage(this.magic, vertex);
+	public void broadcastProposal(Proposal proposal) {
+		ProposalMessage message = new ProposalMessage(this.magic, proposal);
 		handleVertexMessage(this.localPeer, message);
 		broadcast(message);
 	}
@@ -103,7 +103,7 @@ public class SimpleEventCoordinatorNetwork implements EventCoordinatorNetworkSen
 	}
 
 	@Override
-	public Observable<Vertex> proposalMessages() {
+	public Observable<Proposal> proposalMessages() {
 		return this.proposals;
 	}
 
@@ -131,8 +131,8 @@ public class SimpleEventCoordinatorNetwork implements EventCoordinatorNetworkSen
 			.forEach(peer -> this.messageCentral.send(peer, message));
 	}
 
-	private void handleVertexMessage(Peer source, VertexMessage message) {
-		this.proposals.onNext(message.vertex());
+	private void handleVertexMessage(Peer source, ProposalMessage message) {
+		this.proposals.onNext(message.proposal());
 	}
 
 	private void handleNewViewMessage(Peer source, NewViewMessage message) {

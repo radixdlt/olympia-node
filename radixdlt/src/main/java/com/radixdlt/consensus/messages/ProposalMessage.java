@@ -17,34 +17,34 @@
 
 package com.radixdlt.consensus.messages;
 
+import com.radixdlt.consensus.Proposal;
 import java.util.Objects;
 
 import org.radix.network.messaging.Message;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.consensus.Vertex;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
 
-@SerializerId2("message.consensus.vertex")
-public class VertexMessage extends Message {
-	@JsonProperty("vertex")
+@SerializerId2("message.consensus.proposal")
+public class ProposalMessage extends Message {
+	@JsonProperty("proposal")
 	@DsonOutput(Output.ALL)
-	private final Vertex vertex;
+	private final Proposal proposal;
 
-	VertexMessage() {
+	ProposalMessage() {
 		// Serializer only
 		super(0);
-		this.vertex = null;
+		this.proposal = null;
 	}
 
-	public VertexMessage(int magic, Vertex vertex) {
+	public ProposalMessage(int magic, Proposal proposal) {
 		super(magic);
-		this.vertex = Objects.requireNonNull(vertex);
+		this.proposal = Objects.requireNonNull(proposal);
 	}
 
-	public Vertex vertex() {
-		return this.vertex;
+	public Proposal proposal() {
+		return this.proposal;
 	}
 }
