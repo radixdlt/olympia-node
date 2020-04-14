@@ -28,7 +28,6 @@ import com.radixdlt.network.transport.TransportOutboundConnection;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 
-// FIXME: Dependency on PublicInetAddress singleton
 final class TCPTransportOutboundConnectionImpl implements TransportOutboundConnection {
 	private final InetSocketAddress remoteAddr;
 	private final Channel channel;

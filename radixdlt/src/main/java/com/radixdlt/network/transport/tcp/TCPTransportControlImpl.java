@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -30,6 +31,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.RateLimiter;
@@ -57,7 +59,7 @@ final class TCPTransportControlImpl implements TCPTransportControl {
 	private static final Logger log = LogManager.getLogger("transport.tcp");
 
 	@Sharable
-	private static class TCPConnectionHandlerChannelInbound extends ChannelInboundHandlerAdapter {
+	static class TCPConnectionHandlerChannelInbound extends ChannelInboundHandlerAdapter {
 		private final RateLimiter droppedChannelRateLimiter = RateLimiter.create(1.0);
 		private final AtomicLong droppedChannelCount = new AtomicLong();
 
@@ -71,11 +73,26 @@ final class TCPTransportControlImpl implements TCPTransportControl {
 			this.maxChannelCount = maxChannelCount;
 		}
 
+		@VisibleForTesting
+		int channelMapSize() {
+			return this.channelMap.size();
+		}
+
+		@VisibleForTesting
+		int pendingMapSize() {
+			return this.pendingMap.size();
+		}
+
+		@VisibleForTesting
+		long droppedChannels() {
+			return this.droppedChannelCount.get();
+		}
+
 		@Override
 		public void channelActive(ChannelHandlerContext ctx) throws Exception {
 			Channel ch = ctx.channel();
 			if (ch instanceof SocketChannel) {
-				if (this.channelCount.incrementAndGet() < this.maxChannelCount) {
+				if (this.channelCount.getAndIncrement() < this.maxChannelCount) {
 					SocketChannel sch = (SocketChannel) ch;
 					InetSocketAddress remote = sch.remoteAddress();
 					String host = remote.getAddress().getHostAddress();
@@ -137,18 +154,9 @@ final class TCPTransportControlImpl implements TCPTransportControl {
 				}
 				if (channel == null) {
 					ChannelFuture cf = transport.createChannel(host, Integer.parseInt(port));
-					final CompletableFuture<TransportOutboundConnection> cfsr = new CompletableFuture<>();
-					cf.addListener(f -> {
-						Throwable cause = f.cause();
-						if (cause == null) {
-							cfsr.complete(outboundFactory.create(cf.channel(), metadata));
-						} else {
-							cfsr.completeExceptionally(cause);
-						}
-					});
-					log.debug("Add pending {}", hostAndPort);
-					this.pendingMap.put(hostAndPort, cfsr);
-					return cfsr.whenComplete((obc, t) -> {
+					final CompletableFuture<TransportOutboundConnection> cfsr0 = new CompletableFuture<>();
+					final CompletableFuture<TransportOutboundConnection> cfsr = cfsr0.whenComplete((obc, t) -> {
+						log.debug("Completed");
 						if (t != null) {
 							// If we are completing exceptionally, then we need to remove the pending connection
 							synchronized (lock) {
@@ -156,6 +164,19 @@ final class TCPTransportControlImpl implements TCPTransportControl {
 							}
 						}
 					});
+					log.debug("Add pending {}", hostAndPort);
+					this.pendingMap.put(hostAndPort, cfsr);
+					cf.addListener(f -> {
+						Throwable cause = f.cause();
+						if (cause == null) {
+							log.debug("Listener completed");
+							cfsr0.complete(outboundFactory.create(cf.channel(), metadata));
+						} else {
+							log.debug("Listener completed exceptionally");
+							cfsr0.completeExceptionally(cause);
+						}
+					});
+					return cfsr;
 				}
 				return CompletableFuture.completedFuture(outboundFactory.create(channel, metadata));
 			}
@@ -167,6 +188,7 @@ final class TCPTransportControlImpl implements TCPTransportControl {
 				for (LinkedList<SocketChannel> channels : this.channelMap.values()) {
 					channels.stream()
 						.map(Channel::close)
+						.filter(Objects::nonNull)
 						.forEachOrdered(futures::add);
 					channels.clear();
 				}

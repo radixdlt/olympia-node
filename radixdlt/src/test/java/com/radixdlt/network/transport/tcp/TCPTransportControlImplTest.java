@@ -23,17 +23,22 @@ import org.junit.Test;
 import com.radixdlt.network.transport.StaticTransportMetadata;
 import com.radixdlt.network.transport.TransportMetadata;
 import com.radixdlt.network.transport.TransportOutboundConnection;
+import com.radixdlt.network.transport.tcp.TCPTransportControlImpl.TCPConnectionHandlerChannelInbound;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.socket.SocketChannel;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 
@@ -63,7 +68,7 @@ public class TCPTransportControlImplTest {
 
 			@Override
 			public int maxChannelCount(int defaultValue) {
-				return 1024;
+				return 1;
 			}
 
 			@Override
@@ -100,5 +105,71 @@ public class TCPTransportControlImplTest {
 			CompletableFuture<TransportOutboundConnection> result = tcpTransportControl.open(metadata);
 			assertThat(result.get()).isEqualTo(transportOutboundConnection);
 		}
+	}
+
+	@Test
+	public void channelActive() throws Exception {
+		try (TCPTransportControlImpl tcpTransportControl = new TCPTransportControlImpl(config, outboundFactory, transport)) {
+			ChannelHandlerContext ctx = createContext("127.0.0.1", 1234);
+			TCPConnectionHandlerChannelInbound handler = (TCPConnectionHandlerChannelInbound) tcpTransportControl.handler();
+			handler.channelActive(ctx);
+			assertEquals(1, handler.channelMapSize());
+		}
+	}
+
+	@Test
+	public void tooManyChannels() throws Exception {
+		try (TCPTransportControlImpl tcpTransportControl = new TCPTransportControlImpl(config, outboundFactory, transport)) {
+			ChannelHandlerContext ctx1 = createContext("127.0.0.1", 1234);
+			ChannelHandlerContext ctx2 = createContext("127.0.0.2", 4321);
+			TCPConnectionHandlerChannelInbound handler = (TCPConnectionHandlerChannelInbound) tcpTransportControl.handler();
+			handler.channelActive(ctx1);
+			handler.channelActive(ctx2);
+			assertEquals(1, handler.channelMapSize());
+			assertEquals(1, handler.droppedChannels());
+		}
+	}
+
+	@Test
+	public void channelInactive() throws Exception {
+		try (TCPTransportControlImpl tcpTransportControl = new TCPTransportControlImpl(config, outboundFactory, transport)) {
+			ChannelHandlerContext ctx1 = createContext("127.0.0.1", 1234);
+			TCPConnectionHandlerChannelInbound handler = (TCPConnectionHandlerChannelInbound) tcpTransportControl.handler();
+			handler.channelActive(ctx1);
+			assertEquals(1, handler.channelMapSize());
+			handler.channelInactive(ctx1);
+			assertEquals(0, handler.channelMapSize());
+		}
+	}
+
+	@Test
+	public void findOrCreateActiveChannelNew() throws Exception {
+		try (TCPTransportControlImpl tcpTransportControl = new TCPTransportControlImpl(config, outboundFactory, transport)) {
+			TransportMetadata metadata = StaticTransportMetadata.of(
+				TCPConstants.METADATA_HOST, "127.0.0.1",
+				TCPConstants.METADATA_PORT, "1234"
+			);
+			TCPConnectionHandlerChannelInbound handler = (TCPConnectionHandlerChannelInbound) tcpTransportControl.handler();
+
+			CompletableFuture<TransportOutboundConnection> cf = handler.findOrCreateActiveChannel(metadata, transport, outboundFactory);
+			assertTrue(cf.isDone());
+			assertEquals(1, handler.pendingMapSize());
+			assertEquals(0, handler.channelMapSize());
+
+			ChannelHandlerContext ctx = createContext("127.0.0.1", 1234);
+			handler.channelActive(ctx);
+			assertEquals(0, handler.pendingMapSize());
+			assertEquals(1, handler.channelMapSize());
+		}
+	}
+
+	ChannelHandlerContext createContext(String host, int port) {
+		InetSocketAddress isa = new InetSocketAddress(host, port);
+		SocketChannel sch = mock(SocketChannel.class);
+		when(sch.localAddress()).thenReturn(isa);
+		when(sch.remoteAddress()).thenReturn(isa);
+		ChannelHandlerContext ctx = mock(ChannelHandlerContext.class);
+		when(ctx.channel()).thenReturn(sch);
+		return ctx;
 	}
 }
