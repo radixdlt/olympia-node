@@ -89,7 +89,7 @@ public class CerberusModule extends AbstractModule {
 		@Named("self") ECKeyPair selfKey,
 		AddressBook addressBook
 	) {
-		final int fixedNodeCount = Integer.parseInt(runtimeProperties.get("consensus.fixed_node_count", "1"));
+		final int fixedNodeCount = runtimeProperties.get("consensus.fixed_node_count", 1);
 		return new BasicEpochRx(selfKey.getPublicKey(), addressBook, fixedNodeCount);
 	}
 
@@ -104,9 +104,7 @@ public class CerberusModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private PacemakerImpl pacemaker() {
-		final int pacemakerTimeout = Integer.parseInt(
-			runtimeProperties.get("consensus.pacemaker_timeout_millis", "5000")
-		);
+		final int pacemakerTimeout = runtimeProperties.get("consensus.pacemaker_timeout_millis", 5000);
 		return new PacemakerImpl(pacemakerTimeout, Executors.newSingleThreadScheduledExecutor());
 	}
 

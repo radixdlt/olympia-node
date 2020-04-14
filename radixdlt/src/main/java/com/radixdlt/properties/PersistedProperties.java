@@ -113,7 +113,12 @@ public class PersistedProperties {
 	 */
 	public int get(String key, int defaultValue) {
 		String value = get(key);
-		return value == null ? defaultValue : Integer.parseInt(value);
+		try {
+			return value == null ? defaultValue : Integer.parseInt(value);
+		} catch (NumberFormatException ex) {
+			String msg = String.format("Exception while retrieving integer value for %s: '%s'", key, value);
+			throw new IllegalArgumentException(msg, ex);
+		}
 	}
 
 	/**
@@ -125,7 +130,12 @@ public class PersistedProperties {
 	 */
 	public long get(String key, long defaultValue) {
 		String value = get(key);
-		return value == null ? defaultValue : Long.parseLong(value);
+		try {
+			return value == null ? defaultValue : Long.parseLong(value);
+		} catch (NumberFormatException ex) {
+			String msg = String.format("Exception while retrieving long value for %s: '%s'", key, value);
+			throw new IllegalArgumentException(msg, ex);
+		}
 	}
 
 	/**
