@@ -119,7 +119,7 @@ public class LoggingHandler extends ChannelDuplexHandler {
 	@Override
 	public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
 		if (this.includeReadWrite) {
-			this.logger.log(format(ctx, "READ COMPLETE"));
+			this.logger.log(format(ctx, "READ_COMPLETE"));
 		}
 		ctx.fireChannelReadComplete();
 	}
@@ -143,7 +143,7 @@ public class LoggingHandler extends ChannelDuplexHandler {
 	@Override
 	public void channelWritabilityChanged(ChannelHandlerContext ctx) throws Exception {
 		if (this.includeReadWrite) {
-			this.logger.log(format(ctx, "WRITABILITY CHANGED"));
+			this.logger.log(format(ctx, "WRITABILITY_CHANGED"));
 		}
 		ctx.fireChannelWritabilityChanged();
 	}
@@ -220,7 +220,7 @@ public class LoggingHandler extends ChannelDuplexHandler {
 			buf.append(chStr).append(' ').append(eventName).append(": 0B");
 			return buf.toString();
 		} else {
-			int rows = length / 16 + (length % 15 == 0 ? 0 : 1) + 4;
+			int rows = (length + 15) / 16 + 4;
 			StringBuilder buf = new StringBuilder(chStr.length() + 1 + eventName.length() + 2 + 10 + 1 + 2 + rows * 80);
 
 			buf.append(chStr).append(' ').append(eventName).append(": ").append(length).append('B').append(NEWLINE);
@@ -241,10 +241,10 @@ public class LoggingHandler extends ChannelDuplexHandler {
 		int length = content.readableBytes();
 		if (length == 0) {
 			StringBuilder buf = new StringBuilder(chStr.length() + 1 + eventName.length() + 2 + msgStr.length() + 4);
-			buf.append(chStr).append(' ').append(eventName).append(", ").append(msgStr).append(", 0B");
+			buf.append(chStr).append(' ').append(eventName).append(": ").append(msgStr).append(", 0B");
 			return buf.toString();
 		} else {
-			int rows = length / 16 + (length % 15 == 0 ? 0 : 1) + 4;
+			int rows = (length + 15) / 16 + 4;
 			StringBuilder buf = new StringBuilder(chStr.length() + 1 + eventName.length() + 2 + msgStr.length() + 2 + 10 + 1 + 2 + rows * 80);
 
 			buf.append(chStr).append(' ').append(eventName).append(": ").append(msgStr).append(", ").append(length).append('B').append(NEWLINE);
