@@ -23,6 +23,7 @@ import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.net.HostAndPort;
 import com.radixdlt.properties.RuntimeProperties;
 
@@ -32,7 +33,8 @@ import com.radixdlt.properties.RuntimeProperties;
 final class RuntimePropertiesHostIp implements HostIp {
 	private static final Logger log = LogManager.getLogger();
 
-	private static final String HOST_IP_PROPERTY = "host.ip";
+	@VisibleForTesting
+	static final String HOST_IP_PROPERTY = "host.ip";
 
 	private final String value;
 

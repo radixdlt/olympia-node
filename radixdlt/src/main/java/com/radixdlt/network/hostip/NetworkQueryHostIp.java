@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -50,19 +51,21 @@ import com.radixdlt.properties.RuntimeProperties;
 final class NetworkQueryHostIp implements HostIp {
 	private static final Logger log = LogManager.getLogger();
 
-	private static final String QUERY_URLS_PROPERTY = "host.ip.urls";
+	@VisibleForTesting
+	static final String QUERY_URLS_PROPERTY = "host.ip.urls";
 
-	private static final ImmutableList<String> DEFAULT_QUERY_URLS = ImmutableList.of(
-		"https://checkip.amazonaws.com/",
-		"https://ipv4.icanhazip.com/",
-		"https://myexternalip.com/raw",
-		"https://ipecho.net/plain",
-		"https://bot.whatismyipaddress.com/",
-		"https://www.trackip.net/ip",
-		"https://ifconfig.co/ip"
+	@VisibleForTesting
+	static final ImmutableList<URL> DEFAULT_QUERY_URLS = ImmutableList.of(
+		makeurl("https://checkip.amazonaws.com/"),
+		makeurl("https://ipv4.icanhazip.com/"),
+		makeurl("https://myexternalip.com/raw"),
+		makeurl("https://ipecho.net/plain"),
+		makeurl("https://bot.whatismyipaddress.com/"),
+		makeurl("https://www.trackip.net/ip"),
+		makeurl("https://ifconfig.co/ip")
 	);
 
-	static HostIp create(Collection<String> urls) {
+	static HostIp create(Collection<URL> urls) {
 		return new NetworkQueryHostIp(urls);
 	}
 
@@ -72,14 +75,17 @@ final class NetworkQueryHostIp implements HostIp {
 			log.info("Using default URL list {}", DEFAULT_QUERY_URLS);
 			return create(DEFAULT_QUERY_URLS);
 		}
-		List<String> urls = Arrays.asList(urlsProperty.split(","));
+		ImmutableList<URL> urls = Arrays.asList(urlsProperty.split(","))
+			.stream()
+			.map(NetworkQueryHostIp::makeurl)
+			.collect(ImmutableList.toImmutableList());
 		log.info("Using URL list {}", urls);
 		return create(urls);
 	}
 
-	private final List<String> hosts;
+	private final List<URL> hosts;
 
-	NetworkQueryHostIp(Collection<String> urls) {
+	NetworkQueryHostIp(Collection<URL> urls) {
 		if (urls.isEmpty()) {
 			throw new IllegalArgumentException("At least one URL must be specified");
 		}
@@ -96,10 +102,11 @@ final class NetworkQueryHostIp implements HostIp {
 	}
 
 	Optional<String> publicIp(int threshold) {
+		// Make sure we don't DoS the first one on the list
 		Collections.shuffle(this.hosts);
 		final Map<HostAndPort, AtomicInteger> ips = Maps.newHashMap();
-		for (String s : this.hosts) {
-			HostAndPort q = query(s);
+		for (URL url : this.hosts) {
+			HostAndPort q = query(url);
 			if (q != null) {
 				int newValue = ips.computeIfAbsent(q, k -> new AtomicInteger()).incrementAndGet();
 				if (newValue >= threshold) {
@@ -113,9 +120,8 @@ final class NetworkQueryHostIp implements HostIp {
 	}
 
 	@VisibleForTesting
-	static HostAndPort query(String host) {
+	static HostAndPort query(URL url) {
 		try {
-			URL url = new URL(host);
 			HttpURLConnection con = (HttpURLConnection) url.openConnection();
 			con.setRequestMethod("GET");
 			// Pretty much required by shared hosting
@@ -129,7 +135,7 @@ final class NetworkQueryHostIp implements HostIp {
 
 			int status = con.getResponseCode();
 			if (status > 299) {
-				log.debug("Host {} failed with status {}", host, status);
+				log.debug("Host {} failed with status {}", url, status);
 				return null;
 			}
 
@@ -138,15 +144,23 @@ final class NetworkQueryHostIp implements HostIp {
 				InputStreamReader isr = new InputStreamReader(is, StandardCharsets.UTF_8)
 			) {
 				String result = CharStreams.toString(isr).trim();
-				log.debug("Host {} returned {}", host, result);
+				log.debug("Host {} returned {}", url, result);
 				return HostAndPort.fromHost(result);
 			}
 		} catch (IOException | IllegalArgumentException ex) {
 			// Ignored
 			if (log.isDebugEnabled()) {
-				log.debug("Host " + host + " failed with exception", ex);
+				log.debug("Host " + url + " failed with exception", ex);
 			}
 			return null;
+		}
+	}
+
+	private static URL makeurl(String s) {
+		try {
+			return new URL(s);
+		} catch (MalformedURLException ex) {
+			throw new IllegalStateException("While constructing URL for " + s, ex);
 		}
 	}
 }

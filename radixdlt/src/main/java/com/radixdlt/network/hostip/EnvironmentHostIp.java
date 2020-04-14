@@ -23,6 +23,7 @@ import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.net.HostAndPort;
 
 /**
@@ -31,6 +32,7 @@ import com.google.common.net.HostAndPort;
 final class EnvironmentHostIp implements HostIp {
 	private static final Logger log = LogManager.getLogger();
 
+	@VisibleForTesting
 	static final String ENV_VAR = "RADIXDLT_HOST_IP_ADDRESS";
 
 	static HostIp create() {
@@ -39,7 +41,12 @@ final class EnvironmentHostIp implements HostIp {
 
 	@Override
 	public Optional<String> hostIp() {
-		String value = System.getenv(ENV_VAR);
+		return hostIp(System.getenv(ENV_VAR));
+	}
+
+	// Broken out for testing as environment is immutable from Java runtime
+	@VisibleForTesting
+	Optional<String> hostIp(String value) {
 		if (value != null && !value.trim().isEmpty()) {
 			try {
 				InetAddress address = InetAddress.getByName(value);

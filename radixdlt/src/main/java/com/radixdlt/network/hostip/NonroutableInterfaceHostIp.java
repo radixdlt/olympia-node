@@ -22,6 +22,7 @@ import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -30,6 +31,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.Streams;
 import com.google.common.net.HostAndPort;
 
 /**
@@ -46,27 +49,36 @@ final class NonroutableInterfaceHostIp implements HostIp {
 	@Override
 	public Optional<String> hostIp() {
 		try {
-			ImmutableList<HostAndPort> addresses = addresses()
-				.map(addr -> HostAndPort.fromHost(addr.getHostAddress()))
-				.collect(ImmutableList.toImmutableList());
-			if (addresses.size() > 1) {
-				log.warn("Too many local addresses {}", addresses);
-				return Optional.empty();
-			}
-			if (addresses.isEmpty()) {
-				log.debug("No addresses found");
-			}
-			HostAndPort hap = addresses.get(0);
-			log.debug("Found address {}", hap);
-			return Optional.of(hap.getHost());
-		} catch (SocketException | IllegalArgumentException e) {
-			throw new IllegalStateException("while adding interfaces", e);
+			return hostIp(Iterators.forEnumeration(NetworkInterface.getNetworkInterfaces()));
+		} catch (SocketException e) {
+			log.warn("Exception while retrieving network interfaces", e);
 		}
+		return Optional.empty();
 	}
 
-	private Stream<InetAddress> addresses() throws SocketException {
-		Enumeration<NetworkInterface> networkInterfaces = NetworkInterface.getNetworkInterfaces();
-		return Collections.list(networkInterfaces).stream()
+	@VisibleForTesting
+	Optional<String> hostIp(Iterator<NetworkInterface> interfaces) {
+		try {
+			ImmutableList<HostAndPort> addresses = addresses(interfaces)
+				.map(addr -> HostAndPort.fromHost(addr.getHostAddress()))
+				.collect(ImmutableList.toImmutableList());
+			if (addresses.isEmpty()) {
+				log.debug("No addresses found");
+			} else if (addresses.size() > 1) {
+				log.warn("Too many addresses {}", addresses);
+			} else {
+				HostAndPort hap = addresses.get(0);
+				log.debug("Found address {}", hap);
+				return Optional.of(hap.getHost());
+			}
+		} catch (IllegalArgumentException e) {
+			log.warn("Exception while retrieving interface address", e);
+		}
+		return Optional.empty();
+	}
+
+	private Stream<InetAddress> addresses(Iterator<NetworkInterface> networkInterfaces) {
+		return Streams.stream(networkInterfaces)
 			.flatMap(this::interfaceAddresses)
 			.filter(NonroutableInterfaceHostIp::filter);
 	}

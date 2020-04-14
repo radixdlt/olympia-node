@@ -45,7 +45,6 @@ import org.radix.utils.Locking;
  * Note that a persistence layer may be specified so that clients do not have
  * to wait for a lengthy discovery process to complete on restarting.
  */
-// FIXME: Static dependency on Network.getInstance().isWhitelisted(...)
 public class AddressBookImpl implements AddressBook {
 	private static final Logger log = LogManager.getLogger("addressbook");
 
@@ -78,7 +77,7 @@ public class AddressBookImpl implements AddressBook {
 		for (Peer peer : allPeers) {
 			// Maybe consider making whitelist per transport at some point?
 			if (peer.supportedTransports().anyMatch(this::hostNotWhitelisted)) {
-				log.info("Deleting " + peer + ", as not whitelisted");
+				log.info("Deleting {}, as not whitelisted", peer);
 				removePeer(peer);
 			}
 		}
@@ -89,15 +88,15 @@ public class AddressBookImpl implements AddressBook {
 		final Peer removed;
 		final Peer updated;
 
-		static PeerUpdates added(Peer peer) {
+		static PeerUpdates add(Peer peer) {
 			return new PeerUpdates(peer, null, null);
 		}
 
-		public static PeerUpdates removed(Peer peer) {
+		public static PeerUpdates remove(Peer peer) {
 			return new PeerUpdates(null, peer, null);
 		}
 
-		public static PeerUpdates updated(Peer peer) {
+		public static PeerUpdates update(Peer peer) {
 			return new PeerUpdates(null, null, peer);
 		}
 
@@ -205,15 +204,15 @@ public class AddressBookImpl implements AddressBook {
 			// We don't overwrite if transport already exists
 			boolean changed = peer.supportedTransports()
 				.map(t -> peersByInfo.putIfAbsent(t, peer) == null)
-				.reduce(false, (a, b) -> a | b);
-			return changed ? PeerUpdates.added(peer) : null;
+				.reduce(false, (a, b) -> a || b);
+			return changed ? PeerUpdates.add(peer) : null;
 		}
 
 		Peer oldPeer = peersByNid.get(peer.getNID());
 		if (oldPeer == null || !Objects.equals(oldPeer.getSystem(), peer.getSystem())) {
 			// Add new peer or update old peer
 			if (updatePeerInternal(peer)) {
-				return oldPeer == null ? PeerUpdates.added(peer) : PeerUpdates.updated(peer);
+				return oldPeer == null ? PeerUpdates.add(peer) : PeerUpdates.update(peer);
 			}
 		}
 		// No change
@@ -230,7 +229,7 @@ public class AddressBookImpl implements AddressBook {
 				.forEachOrdered(t -> peersByInfo.put(t, peer));
 			return true;
 		}
-		log.error("Failure saving " + peer);
+		log.error("Failure saving {}", peer);
 		return false;
 	}
 
@@ -241,8 +240,8 @@ public class AddressBookImpl implements AddressBook {
 			// Only remove transport if it points to specified peer
 			boolean changed = peer.supportedTransports()
 				.map(t -> peersByInfo.remove(t, peer))
-				.reduce(false, (a, b) -> a | b);
-			return changed ? PeerUpdates.removed(peer) : null;
+				.reduce(false, (a, b) -> a || b);
+			return changed ? PeerUpdates.remove(peer) : null;
 		} else {
 			EUID nid = peer.getNID();
 			Peer oldPeer = peersByNid.remove(nid);
@@ -250,9 +249,9 @@ public class AddressBookImpl implements AddressBook {
 				// Remove all transports
 				oldPeer.supportedTransports().forEachOrdered(peersByInfo::remove);
 				if (!this.persistence.deletePeer(nid)) {
-					log.error("Failure removing " + oldPeer);
+					log.error("Failure removing {}", oldPeer);
 				}
-				return PeerUpdates.removed(oldPeer);
+				return PeerUpdates.remove(oldPeer);
 			}
 		}
 		return null;
@@ -284,12 +283,7 @@ public class AddressBookImpl implements AddressBook {
 
 	private boolean hostNotWhitelisted(TransportInfo ti) {
 		String host = ti.metadata().get("host");
-		if (host != null) {
-			if (!whitelist.isWhitelisted(host)) {
-				return true;
-			}
-		}
-		return false;
+		return (host != null) && !whitelist.isWhitelisted(host);
 	}
 
 	@Override
