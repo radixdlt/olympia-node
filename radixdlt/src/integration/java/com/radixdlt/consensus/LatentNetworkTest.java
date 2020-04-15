@@ -19,7 +19,7 @@ package com.radixdlt.consensus;
 
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.network.consensus.TestEventCoordinatorNetwork;
+import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork;
 
 import io.reactivex.rxjava3.core.Observable;
 import org.assertj.core.api.Condition;

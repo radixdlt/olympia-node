@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.network.consensus;
+package com.radixdlt.middleware2.network;
 
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.QuorumCertificate;
@@ -25,6 +25,7 @@ import com.radixdlt.consensus.VoteData;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.identifiers.RadixAddress;
+
 import org.radix.serialization.SerializeMessageObject;
 
 public class ConsensusEventMessageSerializeTest extends SerializeMessageObject<ConsensusEventMessage> {

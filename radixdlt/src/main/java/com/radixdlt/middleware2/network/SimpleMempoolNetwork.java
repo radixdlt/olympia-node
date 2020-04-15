@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.network.consensus;
+package com.radixdlt.middleware2.network;
 
 import com.radixdlt.mempool.MempoolNetworkRx;
 import com.radixdlt.mempool.MempoolNetworkTx;

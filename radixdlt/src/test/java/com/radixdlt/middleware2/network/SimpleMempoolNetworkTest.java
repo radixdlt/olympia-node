@@ -15,13 +15,11 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.network.consensus;
+package com.radixdlt.middleware2.network;
 
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 import org.radix.universe.system.LocalSystem;
 
@@ -39,25 +37,7 @@ import static org.mockito.Mockito.*;
 
 import io.reactivex.rxjava3.observers.TestObserver;
 
-/**
- * @author msandiford
- *
- */
 public class SimpleMempoolNetworkTest {
-
-	/**
-	 * @throws java.lang.Exception
-	 */
-	@Before
-	public void setUp() throws Exception {
-	}
-
-	/**
-	 * @throws java.lang.Exception
-	 */
-	@After
-	public void tearDown() throws Exception {
-	}
 
 	@Test
 	public void testSendMempoolSubmission() {
@@ -81,9 +61,6 @@ public class SimpleMempoolNetworkTest {
 		verify(messageCentral, times(1)).send(any(), any());
 	}
 
-	/**
-	 * Test method for {@link com.radixdlt.network.consensus.SimpleMempoolNetwork#atomMessages()}.
-	 */
 	@Test
 	public void testAtomMessages() {
 		LocalSystem system = mock(LocalSystem.class);

@@ -15,7 +15,7 @@
  *  language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.network.consensus;
+package com.radixdlt.middleware2.network;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -41,7 +41,6 @@ import org.junit.Test;
 
 public class SimpleEventCoordinatorNetworkTest {
 	private ECPublicKey selfKey;
-	private Universe universe;
 	private AddressBook addressBook;
 	private MessageCentral messageCentral;
 	private SimpleEventCoordinatorNetwork network;
@@ -49,7 +48,7 @@ public class SimpleEventCoordinatorNetworkTest {
 	@Before
 	public void setUp() {
 		this.selfKey = ECKeyPair.generateNew().getPublicKey();
-		this.universe = mock(Universe.class);
+		Universe universe = mock(Universe.class);
 		this.addressBook = mock(AddressBook.class);
 		this.messageCentral = mock(MessageCentral.class);
 		this.network = new SimpleEventCoordinatorNetwork(selfKey, universe, addressBook, messageCentral);
