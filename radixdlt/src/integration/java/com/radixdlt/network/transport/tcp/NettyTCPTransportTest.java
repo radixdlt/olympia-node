@@ -154,11 +154,6 @@ public class NettyTCPTransportTest {
 			}
 
 			@Override
-			public int processingThreads(int defaultValue) {
-				return 1;
-			}
-
-			@Override
 			public int maxChannelCount(int defaultValue) {
 				return 1024;
 			}

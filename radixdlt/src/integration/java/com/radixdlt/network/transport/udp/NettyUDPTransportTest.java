@@ -36,7 +36,7 @@ import com.radixdlt.network.transport.TransportOutboundConnection;
 
 import static org.junit.Assert.*;
 
-public class NettyUDPTransportImplTest {
+public class NettyUDPTransportTest {
 
 	private NettyUDPTransportImpl transport1;
 	private NettyUDPTransportImpl transport2;
@@ -147,11 +147,6 @@ public class NettyUDPTransportImplTest {
 			@Override
 			public String networkAddress(String defaultValue) {
 				return host;
-			}
-
-			@Override
-			public int processingThreads(int defaultValue) {
-				return 1;
 			}
 
 			@Override

@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import com.radixdlt.network.messaging.InboundMessageConsumer;
@@ -57,8 +58,10 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 	private static final boolean DEBUG_DATA = false;
 
 	// Default values if none specified in either localMetadata or config
-	private static final String DEFAULT_HOST = "0.0.0.0";
-	private static final int    DEFAULT_PORT = 30000;
+	@VisibleForTesting
+	static final String DEFAULT_HOST = "0.0.0.0";
+	@VisibleForTesting
+	static final int    DEFAULT_PORT = 30000;
 
 	private static final int RCV_BUF_SIZE = TCPConstants.MAX_PACKET_LENGTH * 2;
 	private static final int SND_BUF_SIZE = TCPConstants.MAX_PACKET_LENGTH * 2;
@@ -67,7 +70,6 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 	private final TransportMetadata localMetadata;
 
 	private final int priority;
-	private final int inboundProcessingThreads;
 	private final AtomicInteger threadCounter = new AtomicInteger(0);
 	private final InetSocketAddress bindAddress;
 	private final Object channelLock = new Object();
@@ -102,10 +104,6 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 		);
 		this.priority = config.priority(0);
 		this.control = controlFactory.create(config, outboundFactory, this);
-		this.inboundProcessingThreads = config.processingThreads(1);
-		if (this.inboundProcessingThreads < 0) {
-			throw new IllegalStateException("Illegal number of TCP inbound threads: " + this.inboundProcessingThreads);
-		}
 		this.bindAddress = new InetSocketAddress(providedHost, port);
 	}
 
@@ -136,10 +134,10 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 
 	@Override
 	public void start(InboundMessageConsumer messageSink) {
-		log.info("TCP transport {}, threads: {}", localAddress(), this.inboundProcessingThreads);
+		log.info("TCP transport {}", localAddress());
 
 		EventLoopGroup serverGroup = new NioEventLoopGroup(1);
-		EventLoopGroup workerGroup = new NioEventLoopGroup(this.inboundProcessingThreads, this::createThread);
+		EventLoopGroup workerGroup = new NioEventLoopGroup(1, this::createThread);
 
 		this.outboundBootstrap = new Bootstrap();
 		this.outboundBootstrap.group(workerGroup)
@@ -220,7 +218,7 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s|%s]", getClass().getSimpleName(), localAddress(), inboundProcessingThreads);
+		return String.format("%s[%s]", getClass().getSimpleName(), localAddress());
 	}
 
 	private String localAddress() {

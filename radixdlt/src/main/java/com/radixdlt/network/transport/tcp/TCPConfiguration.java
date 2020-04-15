@@ -41,21 +41,6 @@ public interface TCPConfiguration {
 	int networkPort(int defaultValue);
 
 	/**
-	 * Get the number of processing threads to use for messages.
-	 * <p>
-	 * The value must be greater than or equal to zero.  If zero is
-	 * specified, a default value will be used, typically 1.  Otherwise
-	 * the specified number of threads will be used.
-	 * <p>
-	 * Note that because the underlying I/O system is evented, there
-	 * should be no need to specify a number larger than 1.
-	 *
-	 * @param defaultValue a default value if no special configuration value is set
-	 * @return the number threads for processing messages
-	 */
-	int processingThreads(int defaultValue);
-
-	/**
 	 * Get the maximum number of open channels allowed, both inbound and
 	 * outbound.  Note that each channel consumes some resources on the host
 	 * machine, and there may be other global operating-system defined limits
@@ -91,11 +76,6 @@ public interface TCPConfiguration {
 			@Override
 			public int networkPort(int defaultValue) {
 				return properties.get("network.tcp.port", defaultValue);
-			}
-
-			@Override
-			public int processingThreads(int defaultValue) {
-				return properties.get("network.tcp.threads", defaultValue);
 			}
 
 			@Override

@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import com.radixdlt.network.messaging.InboundMessageConsumer;
@@ -53,8 +54,10 @@ final class NettyUDPTransportImpl implements Transport {
 	protected static final boolean DEBUG_DATA = false;
 
 	// Default values if none specified in either localMetadata or config
-	private static final String DEFAULT_HOST = "0.0.0.0";
-	private static final int    DEFAULT_PORT = 30000;
+	@VisibleForTesting
+	static final String DEFAULT_HOST = "0.0.0.0";
+	@VisibleForTesting
+	static final int    DEFAULT_PORT = 30000;
 
 	static final int MAX_DATAGRAM_SIZE = 65536;
 	static final int RCV_BUF_SIZE = MAX_DATAGRAM_SIZE * 4;
@@ -65,7 +68,6 @@ final class NettyUDPTransportImpl implements Transport {
 	private final UDPTransportOutboundConnectionFactory connectionFactory;
 
 	private final int priority;
-	private final int inboundProcessingThreads;
 	private final AtomicInteger threadCounter = new AtomicInteger(0);
 	private final InetSocketAddress bindAddress;
 	private final PublicInetAddress natHandler;
@@ -101,10 +103,6 @@ final class NettyUDPTransportImpl implements Transport {
 		);
 		this.controlFactory = controlFactory;
 		this.connectionFactory = connectionFactory;
-		this.inboundProcessingThreads = config.processingThreads(1);
-		if (this.inboundProcessingThreads < 0) {
-			throw new IllegalStateException("Illegal number of UDP inbound threads: " + this.inboundProcessingThreads);
-		}
 		this.priority = config.priority(1000);
 		this.bindAddress = new InetSocketAddress(providedHost, port);
 		this.natHandler = natHandler;
@@ -137,8 +135,10 @@ final class NettyUDPTransportImpl implements Transport {
 
 	@Override
 	public void start(InboundMessageConsumer messageSink) {
-		log.info(String.format("UDP transport %s, threads: %s", localAddress(), inboundProcessingThreads));
-		MultithreadEventLoopGroup group = new NioEventLoopGroup(inboundProcessingThreads, this::createThread);
+		if (log.isInfoEnabled()) {
+			log.info("UDP transport {}", localAddress());
+		}
+		MultithreadEventLoopGroup group = new NioEventLoopGroup(1, this::createThread);
 
 	    Bootstrap b = new Bootstrap();
 	    b.group(group)
@@ -189,7 +189,7 @@ final class NettyUDPTransportImpl implements Transport {
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s|%s]", getClass().getSimpleName(), localAddress(), inboundProcessingThreads);
+		return String.format("%s[%s]", getClass().getSimpleName(), localAddress());
 	}
 
 	private String localAddress() {
@@ -199,7 +199,7 @@ final class NettyUDPTransportImpl implements Transport {
 	private Thread createThread(Runnable r) {
 		String threadName = String.format("UDP handler %s - %s", localAddress(), threadCounter.incrementAndGet());
 		if (log.isDebugEnabled()) {
-			log.debug("New thread: " + threadName);
+			log.debug("New thread: {}", threadName);
 		}
 		return new Thread(r, threadName);
 	}
