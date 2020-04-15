@@ -282,7 +282,7 @@ public class PeerManager {
 				messageCentral.send(peer, peersMessage);
 			}
 		} catch (Exception ex) {
-			log.error("peers.get " + peer, ex);
+			log.error(String.format("peers.get %s", peer), ex);
 		}
 	}
 
@@ -292,7 +292,7 @@ public class PeerManager {
 			log.debug("peer.ping from {} with nonce '{}'", peer, nonce);
 			messageCentral.send(peer, new PeerPongMessage(nonce, localSystem, this.universe.getMagic()));
 		} catch (Exception ex) {
-			log.error("peer.ping " + peer, ex);
+			log.error(String.format("peer.ping %s", peer), ex);
 		}
 	}
 
@@ -309,7 +309,7 @@ public class PeerManager {
 				}
 			}
 		} catch (Exception ex) {
-			log.error("peer.pong " + peer, ex);
+			log.error(String.format("peer.pong %s", peer), ex);
 		}
 	}
 
@@ -323,7 +323,7 @@ public class PeerManager {
 				try {
 					messageCentral.send(peer, new GetPeersMessage(this.universe.getMagic()));
 				} catch (TransportException ioex) {
-					log.info("Failed to request peer information from " + peer, ioex);
+					log.info(String.format("Failed to request peer information from %s",  peer), ioex);
 				}
 			}
 		} catch (Exception t) {
@@ -337,25 +337,27 @@ public class PeerManager {
 				if (Time.currentTimestamp() - peer.getTimestamp(Timestamps.PROBED) < peerProbeFrequencyMs) {
 					return false;
 				}
-				if (!this.probes.containsKey(peer)) {
-					PeerPingMessage ping = new PeerPingMessage(rng.nextLong(), localSystem, this.universe.getMagic());
+				synchronized (this.probes) {
+					if (!this.probes.containsKey(peer)) {
+						PeerPingMessage ping = new PeerPingMessage(rng.nextLong(), localSystem, this.universe.getMagic());
 
-					// Only wait for response if peer has a system, otherwise peer will be upgraded by pong message
-					long nonce = ping.getNonce();
-					if (peer.hasSystem()) {
-						this.probes.put(peer, nonce);
-						// schedule(peerProbeTimeoutMs, () -> handleProbeTimeout(peer, nonce));
-						log.debug("Probing {} with nonce '{}'", peer, nonce);
-					} else {
-						log.debug("Nudging {}", peer);
+						// Only wait for response if peer has a system, otherwise peer will be upgraded by pong message
+						long nonce = ping.getNonce();
+						if (peer.hasSystem()) {
+							this.probes.put(peer, nonce);
+// FIXME: XXX							schedule(peerProbeTimeoutMs, () -> handleProbeTimeout(peer, nonce));
+							log.debug("Probing {} with nonce '{}'", peer, nonce);
+						} else {
+							log.debug("Nudging {}", peer);
+						}
+						messageCentral.send(peer, ping);
+						peer.setTimestamp(Timestamps.PROBED, Time.currentTimestamp());
+						return true;
 					}
-					messageCentral.send(peer, ping);
-					peer.setTimestamp(Timestamps.PROBED, Time.currentTimestamp());
-					return true;
 				}
 			}
 		} catch (Exception ex) {
-			log.error("Probe of peer " + peer + " failed", ex);
+			log.error(String.format("Probe of peer %s failed", peer), ex);
 		}
 		return false;
 	}
