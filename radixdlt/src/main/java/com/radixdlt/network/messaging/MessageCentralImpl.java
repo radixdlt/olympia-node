@@ -145,7 +145,7 @@ final class MessageCentralImpl implements MessageCentral {
 
 	@Override
 	public void send(Peer peer, Message message) {
-		if (!outboundQueue.offer(new MessageEvent(peer, null, message, System.nanoTime() - timeBase))) {
+		if (!outboundQueue.offer(new MessageEvent(peer, message, System.nanoTime() - timeBase))) {
 			if (outboundLogRateLimiter.tryAcquire()) {
 				log.error("Outbound message to {} dropped", peer);
 			}
@@ -155,7 +155,7 @@ final class MessageCentralImpl implements MessageCentral {
 
 	@Override
 	public void inject(Peer peer, Message message) {
-		MessageEvent event = new MessageEvent(peer, null, message, System.nanoTime() - timeBase);
+		MessageEvent event = new MessageEvent(peer, message, System.nanoTime() - timeBase);
 		if (!inboundQueue.offer(event)) {
 			if (inboundLogRateLimiter.tryAcquire()) {
 				log.error("Injected message from {} dropped", peer);

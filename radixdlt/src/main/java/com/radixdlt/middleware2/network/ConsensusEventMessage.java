@@ -75,6 +75,14 @@ public class ConsensusEventMessage extends Message {
 	}
 
 	public ConsensusEvent getConsensusMessage() {
+		ConsensusEvent event = consensusMessageInternal();
+		if (event == null) {
+			throw new IllegalStateException("No consensus message.");
+		}
+		return event;
+	}
+
+	private ConsensusEvent consensusMessageInternal() {
 		if (this.newView != null) {
 			return this.newView;
 		}
@@ -87,6 +95,11 @@ public class ConsensusEventMessage extends Message {
 			return this.vote;
 		}
 
-		throw new IllegalStateException("No consensus message.");
+		return null;
+	}
+
+	@Override
+	public String toString() {
+		return String.format("%s[%s]", getClass().getSimpleName(), consensusMessageInternal());
 	}
 }

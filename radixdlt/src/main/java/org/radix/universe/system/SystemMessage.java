@@ -42,4 +42,9 @@ public class SystemMessage extends SignedMessage {
 	public RadixSystem getSystem() {
 		return this.system;
 	}
+
+	@Override
+	public String toString() {
+		return String.format("%s[%s]", getClass().getSimpleName(), this.system.getNID());
+	}
 }

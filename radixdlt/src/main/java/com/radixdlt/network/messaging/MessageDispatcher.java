@@ -97,7 +97,7 @@ class MessageDispatcher {
 
 			byte[] bytes = serialize(message);
 			return findTransportAndOpenConnection(transportManager, peer, bytes)
-				.thenCompose(conn -> conn.send(bytes))
+				.thenCompose(conn -> send(peer, conn, message, bytes))
 				.thenApply(this::updateStatistics)
 				.get();
 		} catch (Exception ex) {
@@ -105,6 +105,13 @@ class MessageDispatcher {
 			log.error(msg, ex);
 			return SendResult.failure(new IOException(msg, ex));
 		}
+	}
+
+	private CompletableFuture<SendResult> send(Peer peer, TransportOutboundConnection conn, Message message, byte[] bytes) {
+		if (log.isTraceEnabled()) {
+			log.trace("Sending to {}: {}", hostId(peer), message);
+		}
+		return conn.send(bytes);
 	}
 
 	void receive(MessageListenerList listeners, final MessageEvent inboundMessage) {
@@ -134,6 +141,9 @@ class MessageDispatcher {
 			return;
 		}
 
+		if (log.isTraceEnabled()) {
+			log.trace("Received from {}: {}", hostId(peer), inboundMessage.message());
+		}
 		listeners.messageReceived(peer, message);
 		this.counters.increment(CounterType.MESSAGES_INBOUND_PROCESSED);
 	}
@@ -212,5 +222,12 @@ class MessageDispatcher {
 		} catch (IOException e) {
 			throw new UncheckedIOException("While serializing message", e);
 		}
+	}
+
+	private String hostId(Peer peer) {
+		return peer.supportedTransports()
+			.findFirst()
+			.map(ti -> String.format("%s:%s", ti.name(), ti.metadata()))
+			.orElse("None");
 	}
 }

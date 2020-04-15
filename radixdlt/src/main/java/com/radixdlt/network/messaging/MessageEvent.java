@@ -27,7 +27,6 @@ import org.radix.network.messaging.Message;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.network.addressbook.Peer;
-import com.radixdlt.network.transport.TransportInfo;
 
 /**
  * Inbound and outbound message wrapper with priority, time and destination.
@@ -52,16 +51,14 @@ public final class MessageEvent extends Event {
 	private final int priority;
 	private final long nanoTimeDiff;
 	private final Peer peer;
-	private final TransportInfo transportInfo;
 	private final Message message;
 
-	MessageEvent(Peer peer, TransportInfo transportInfo, Message message, long nanoTimeDiff) {
+	MessageEvent(Peer peer, Message message, long nanoTimeDiff) {
 		super();
 
 		this.priority = MESSAGE_PRIORITIES.getOrDefault(message.getClass(), DEFAULT_PRIORITY);
 		this.nanoTimeDiff = nanoTimeDiff;
 		this.peer = peer;
-		this.transportInfo = transportInfo;
 		this.message = message;
 	}
 
@@ -92,17 +89,6 @@ public final class MessageEvent extends Event {
 	 */
 	public Peer peer() {
 		return peer;
-	}
-
-	/**
-	 * Returns the source transport for inbound messages or {@code null}.
-	 * <p>
-	 * FIXME: Should be cleaner separation between inbound and outbound here.
-	 *
-	 * @return the transport for the message
-	 */
-	public TransportInfo transportInfo() {
-		return transportInfo;
 	}
 
 	/**

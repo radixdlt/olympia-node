@@ -25,7 +25,6 @@ import java.util.concurrent.CompletableFuture;
 import com.radixdlt.network.transport.SendResult;
 import com.radixdlt.network.transport.TransportMetadata;
 import com.radixdlt.network.transport.TransportOutboundConnection;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.DatagramPacket;
@@ -86,5 +85,10 @@ final class UDPTransportOutboundConnection implements TransportOutboundConnectio
 	private byte getAddressFormat(int srclen, int dstlen) {
 		// MSB: switch between old/new protocol format
 		return (byte) (0x80 | (srclen != 4 ? 0x02 : 0x00) | (dstlen != 4 ? 0x01 : 0x00));
+	}
+
+	@Override
+	public String toString() {
+		return String.format("%s:%s:%s", UDPConstants.NAME, remoteAddr.getHostString(), remoteAddr.getPort());
 	}
 }
