@@ -55,7 +55,7 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 	private static final Logger log = LogManager.getLogger("transport.tcp");
 
 	// Set this to true to see a dump of packet data
-	private static final boolean DEBUG_DATA = false;
+	private static final boolean DEBUG_DATA = true;
 
 	// Default values if none specified in either localMetadata or config
 	@VisibleForTesting
