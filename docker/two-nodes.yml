@@ -5,6 +5,7 @@ services:
       RADIXDLT_HOST_IP_ADDRESS: core0
       RADIXDLT_NETWORK_SEEDS_REMOTE: core1
       RADIXDLT_CONSENSUS_FIXED_NODE_COUNT: 2
+      RADIXDLT_LOG_LEVEL: debug
       #RADIXDLT_NETWORK_DISCOVERY_URLS: https://sunstone.radixdlt.com:8443/explorer/node-finder
       JAVA_OPTS: -server -Xms1g -Xmx1g -XX:+HeapDumpOnOutOfMemoryError -XX:+AlwaysPreTouch -Djava.security.egd=file:/dev/urandom -Dcom.sun.management.jmxremote.port=9011 -Dcom.sun.management.jmxremote.rmi.port=9011 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=localhost -agentlib:jdwp=transport=dt_socket,address=50505,suspend=n,server=y
     build: .
@@ -29,6 +30,7 @@ services:
       RADIXDLT_HOST_IP_ADDRESS: core1
       RADIXDLT_NETWORK_SEEDS_REMOTE: core0
       RADIXDLT_CONSENSUS_FIXED_NODE_COUNT: 2
+      RADIXDLT_LOG_LEVEL: debug
       #RADIXDLT_NETWORK_DISCOVERY_URLS: https://sunstone.radixdlt.com:8443/explorer/node-finder
       JAVA_OPTS: -server -Xms1g -Xmx1g -XX:+HeapDumpOnOutOfMemoryError -XX:+AlwaysPreTouch -Djava.security.egd=file:/dev/urandom -Dcom.sun.management.jmxremote.port=9012 -Dcom.sun.management.jmxremote.rmi.port=9012 -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=localhost -agentlib:jdwp=transport=dt_socket,address=50506,suspend=n,server=y
     build: .
