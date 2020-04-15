@@ -28,8 +28,10 @@ import org.everit.json.schema.Schema;
 import org.json.JSONObject;
 import org.junit.Test;
 import org.radix.api.services.AtomsService;
+
+import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.serialization.Serialization;
-import org.radix.network2.addressbook.AddressBook;
+
 import org.radix.universe.system.LocalSystem;
 
 public class RadixJsonRpcServerTest {

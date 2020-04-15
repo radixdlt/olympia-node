@@ -25,6 +25,8 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
+import com.radixdlt.network.addressbook.Peer;
+import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStoreView;
 import com.radixdlt.consensus.tempo.Scheduler;
@@ -34,8 +36,6 @@ import com.radixdlt.universe.Universe;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.radix.network2.addressbook.Peer;
-import org.radix.network2.messaging.MessageCentral;
 import org.radix.utils.SimpleThreadPool;
 
 import java.util.ArrayList;

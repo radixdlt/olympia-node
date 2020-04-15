@@ -4,9 +4,10 @@ import static org.mockito.Mockito.mock;
 
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.network.addressbook.AddressBook;
+
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.junit.Test;
-import org.radix.network2.addressbook.AddressBook;
 
 public class BasicEpochRxTest {
 	@Test

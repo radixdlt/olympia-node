@@ -21,10 +21,12 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import com.radixdlt.identifiers.EUID;
+import com.radixdlt.network.transport.TransportInfo;
+
 import org.radix.containers.BasicContainer;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.CryptoException;
-import org.radix.network2.transport.TransportInfo;
+
 import org.radix.shards.ShardSpace;
 
 import com.radixdlt.serialization.DsonOutput;

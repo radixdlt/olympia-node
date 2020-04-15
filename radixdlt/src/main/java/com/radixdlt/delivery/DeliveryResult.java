@@ -17,8 +17,8 @@
 
 package com.radixdlt.delivery;
 
+import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.store.LedgerEntry;
-import org.radix.network2.addressbook.Peer;
 
 import javax.annotation.Nullable;
 import java.util.Objects;

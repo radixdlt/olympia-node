@@ -20,9 +20,10 @@ package org.radix.serialization;
 import java.util.Arrays;
 
 import org.radix.network.messages.PeersMessage;
-import org.radix.network2.addressbook.Peer;
-import org.radix.network2.addressbook.PeerWithSystem;
 import org.radix.universe.system.RadixSystem;
+
+import com.radixdlt.network.addressbook.Peer;
+import com.radixdlt.network.addressbook.PeerWithSystem;
 
 /**
  * Check serialization of PeersMessage

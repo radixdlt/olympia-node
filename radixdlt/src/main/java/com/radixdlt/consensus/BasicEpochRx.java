@@ -21,6 +21,10 @@ import com.google.common.collect.Streams;
 import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.network.addressbook.AddressBook;
+import com.radixdlt.network.addressbook.Peer;
+import com.radixdlt.network.addressbook.PeersAddedEvent;
+
 import io.reactivex.rxjava3.core.Observable;
 import java.util.List;
 import java.util.Objects;
@@ -28,9 +32,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.radix.events.EventListener;
 import org.radix.events.Events;
-import org.radix.network2.addressbook.AddressBook;
-import org.radix.network2.addressbook.Peer;
-import org.radix.network2.addressbook.PeersAddedEvent;
 import org.radix.universe.system.RadixSystem;
 
 /**

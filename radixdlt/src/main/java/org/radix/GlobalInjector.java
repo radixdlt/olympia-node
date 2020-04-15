@@ -35,7 +35,14 @@ import com.radixdlt.delivery.LazyRequestDelivererModule;
 import com.radixdlt.discovery.IterativeDiscovererModule;
 import com.radixdlt.mempool.MempoolModule;
 import com.radixdlt.middleware2.MiddlewareModule;
-import com.radixdlt.network.NetworkModule;
+import com.radixdlt.middleware2.network.NetworkModule;
+import com.radixdlt.network.addressbook.AddressBookModule;
+import com.radixdlt.network.addressbook.PeerManagerConfiguration;
+import com.radixdlt.network.hostip.HostIp;
+import com.radixdlt.network.hostip.HostIpModule;
+import com.radixdlt.network.messaging.MessageCentralModule;
+import com.radixdlt.network.transport.tcp.TCPTransportModule;
+import com.radixdlt.network.transport.udp.UDPTransportModule;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.berkeley.BerkeleyStoreModule;
@@ -45,11 +52,6 @@ import javax.inject.Inject;
 import javax.inject.Provider;
 import org.radix.database.DatabaseEnvironment;
 import org.radix.events.Events;
-import org.radix.network2.addressbook.AddressBookModule;
-import org.radix.network2.addressbook.PeerManagerConfiguration;
-import org.radix.network2.messaging.MessageCentralModule;
-import org.radix.network2.transport.tcp.TCPTransportModule;
-import org.radix.network2.transport.udp.UDPTransportModule;
 import org.radix.universe.system.LocalSystem;
 
 public class GlobalInjector {
@@ -57,18 +59,6 @@ public class GlobalInjector {
 	private Injector injector;
 
 	public GlobalInjector(RuntimeProperties properties, DatabaseEnvironment dbEnv, Universe universe) {
-		Module lazyRequestDelivererModule = new LazyRequestDelivererModule(properties);
-		Module iterativeDiscovererModule = new IterativeDiscovererModule(properties);
-		Module berkeleyStoreModule = new BerkeleyStoreModule();
-		Module tempoModule = new CerberusModule(properties);
-		Module middlewareModule = new MiddlewareModule();
-		Module messageCentralModule = new MessageCentralModule(properties);
-		Module udpTransportModule = new UDPTransportModule(properties);
-		Module tcpTransportModule = new TCPTransportModule(properties);
-		Module addressBookModule = new AddressBookModule(dbEnv);
-		Module mempoolModule = new MempoolModule();
-		Module networkModule = new NetworkModule();
-
 		// temporary global module to hook up global things
 		Module globalModule = new AbstractModule() {
 			@Override
@@ -94,17 +84,18 @@ public class GlobalInjector {
 		};
 
 		injector = Guice.createInjector(
-			lazyRequestDelivererModule,
-			iterativeDiscovererModule,
-			berkeleyStoreModule,
-			tempoModule,
-			middlewareModule,
-			messageCentralModule,
-			udpTransportModule,
-			tcpTransportModule,
-			addressBookModule,
-			mempoolModule,
-			networkModule,
+			new LazyRequestDelivererModule(properties),
+			new IterativeDiscovererModule(properties),
+			new BerkeleyStoreModule(),
+			new CerberusModule(properties),
+			new MiddlewareModule(),
+			new MessageCentralModule(properties),
+			new UDPTransportModule(properties),
+			new TCPTransportModule(properties),
+			new AddressBookModule(dbEnv),
+			new HostIpModule(properties),
+			new MempoolModule(),
+			new NetworkModule(),
 			globalModule
 		);
 	}
@@ -175,17 +166,21 @@ public class GlobalInjector {
 		private final SystemCounters counters;
 		private final RuntimeProperties properties;
 		private final Universe universe;
+		private final HostIp hostIp;
 
 		@Inject
-		public LocalSystemProvider(SystemCounters counters, RuntimeProperties properties, Universe universe) {
+		public LocalSystemProvider(SystemCounters counters, RuntimeProperties properties, Universe universe, HostIp hostIp) {
 			this.counters = counters;
 			this.properties = properties;
 			this.universe = universe;
+			this.hostIp = hostIp;
 		}
 
 		@Override
 		public LocalSystem get() {
-			return LocalSystem.create(this.counters, this.properties, this.universe);
+			String host = this.hostIp.hostIp()
+				.orElseThrow(() -> new IllegalStateException("Unable to determine host IP"));
+			return LocalSystem.create(this.counters, this.properties, this.universe, host);
 		}
 	}
 }

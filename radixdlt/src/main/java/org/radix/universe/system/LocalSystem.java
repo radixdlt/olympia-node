@@ -23,10 +23,6 @@ import java.util.Objects;
 import java.util.function.Supplier;
 
 import org.radix.Radix;
-import org.radix.network2.transport.DynamicTransportMetadata;
-import org.radix.network2.transport.TransportInfo;
-import org.radix.network2.transport.udp.PublicInetAddress;
-import org.radix.network2.transport.udp.UDPConstants;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.annotations.VisibleForTesting;
@@ -36,6 +32,9 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.keys.Keys;
+import com.radixdlt.network.transport.StaticTransportMetadata;
+import com.radixdlt.network.transport.TransportInfo;
+import com.radixdlt.network.transport.tcp.TCPConstants;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -84,21 +83,21 @@ public final class LocalSystem extends RadixSystem {
 		return Runtime.getRuntime().availableProcessors();
 	}
 
-	public static LocalSystem create(SystemCounters counters, RuntimeProperties properties, Universe universe) {
+	public static LocalSystem create(SystemCounters counters, RuntimeProperties properties, Universe universe, String host) {
 		String nodeKeyPath = properties.get("node.key.path", "node.ks");
 		ECKeyPair nodeKey = loadNodeKey(nodeKeyPath);
-		return new LocalSystem(counters::toMap, nodeKey, Radix.AGENT, Radix.AGENT_VERSION, Radix.PROTOCOL_VERSION, defaultTransports(universe));
+		return new LocalSystem(counters::toMap, nodeKey, Radix.AGENT, Radix.AGENT_VERSION, Radix.PROTOCOL_VERSION, defaultTransports(universe, host));
 	}
 
 	// FIXME: *Really* need a better way of configuring this other than hardcoding here
 	// Should also have the option of overriding "port", rather than always using universe port
-	private static ImmutableList<TransportInfo> defaultTransports(Universe universe) {
+	private static ImmutableList<TransportInfo> defaultTransports(Universe universe, String host) {
 		return ImmutableList.of(
 			TransportInfo.of(
-				UDPConstants.UDP_NAME,
-				DynamicTransportMetadata.of(
-					UDPConstants.METADATA_UDP_HOST, PublicInetAddress.getInstance()::toString,
-					UDPConstants.METADATA_UDP_PORT, () -> Integer.toString(universe.getPort())
+				TCPConstants.NAME,
+				StaticTransportMetadata.of(
+					TCPConstants.METADATA_HOST, host,
+					TCPConstants.METADATA_PORT, String.valueOf(universe.getPort())
 				)
 			)
 		);
