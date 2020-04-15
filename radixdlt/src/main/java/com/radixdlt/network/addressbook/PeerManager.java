@@ -344,7 +344,7 @@ public class PeerManager {
 					long nonce = ping.getNonce();
 					if (peer.hasSystem()) {
 						this.probes.put(peer, nonce);
-						schedule(peerProbeTimeoutMs, () -> handleProbeTimeout(peer, nonce));
+						// schedule(peerProbeTimeoutMs, () -> handleProbeTimeout(peer, nonce));
 						log.debug("Probing {} with nonce '{}'", peer, nonce);
 					} else {
 						log.debug("Nudging {}", peer);
