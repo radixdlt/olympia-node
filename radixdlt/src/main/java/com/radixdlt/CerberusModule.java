@@ -46,12 +46,14 @@ import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.universe.Universe;
 
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Objects;
 import java.util.concurrent.Executors;
 
@@ -80,7 +82,10 @@ public class CerberusModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private ProposerElectionFactory proposerElectionFactory() {
-		return keys -> new RotatingLeaders(ImmutableList.copyOf(keys));
+		return keys -> new RotatingLeaders(
+			keys.stream().sorted(Comparator.comparing(ECPublicKey::euid))
+				.collect(ImmutableList.toImmutableList())
+		);
 	}
 
 	@Provides
