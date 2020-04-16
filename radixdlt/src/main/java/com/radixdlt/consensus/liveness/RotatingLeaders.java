@@ -37,4 +37,9 @@ public final class RotatingLeaders implements ProposerElection {
 		int index = (int) (view.number() % leaders.size());
 		return leaders.get(index);
 	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{leaders=%s}", getClass().getSimpleName(), leaders);
+	}
 }
