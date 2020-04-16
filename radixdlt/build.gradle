@@ -88,6 +88,9 @@ dependencies {
     compile 'io.reactivex.rxjava3:rxjava:3.0.0'
     compile 'com.sleepycat:je:18.3.12'
 
+    // LMAX Disruptor for async logging
+    compile 'com.lmax:disruptor:3.4.2'
+
     compile 'commons-cli:commons-cli:1.4'
     compile 'org.xerial.snappy:snappy-java:1.1.7.3'
     compile 'io.netty:netty-all:4.1.39.Final'
