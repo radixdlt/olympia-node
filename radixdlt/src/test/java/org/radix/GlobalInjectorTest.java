@@ -24,9 +24,10 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.radix.database.DatabaseEnvironment;
+import org.radix.serialization.TestSetupUtils;
+
 import com.google.inject.Key;
 import com.google.inject.name.Names;
-import com.radixdlt.TestSetupUtils;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.EUID;
