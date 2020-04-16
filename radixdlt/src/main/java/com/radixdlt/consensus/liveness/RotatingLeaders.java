@@ -27,7 +27,7 @@ import java.util.Objects;
  */
 public final class RotatingLeaders implements ProposerElection {
 	private final ImmutableList<ECPublicKey> leaders;
-	
+
 	public RotatingLeaders(ImmutableList<ECPublicKey> leaders) {
 		this.leaders = Objects.requireNonNull(leaders);
 	}
