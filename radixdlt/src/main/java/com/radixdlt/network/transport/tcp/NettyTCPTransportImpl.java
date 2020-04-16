@@ -54,8 +54,8 @@ import io.netty.handler.codec.LengthFieldPrepender;
 final class NettyTCPTransportImpl implements NettyTCPTransport {
 	private static final Logger log = LogManager.getLogger("transport.tcp");
 
-	// Set this to true to see a dump of packet data
-	private static final boolean DEBUG_DATA = true;
+	// Set this to true to see a detailed hexdump of sent/received data at runtime
+	private final boolean debugData;
 
 	// Default values if none specified in either localMetadata or config
 	@VisibleForTesting
@@ -103,6 +103,7 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 			TCPConstants.METADATA_PORT, String.valueOf(port)
 		);
 		this.priority = config.priority(0);
+		this.debugData = config.debugData(false);
 		this.control = controlFactory.create(config, outboundFactory, this);
 		this.bindAddress = new InetSocketAddress(providedHost, port);
 	}
@@ -166,7 +167,7 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 			});
 		if (log.isDebugEnabled()) {
 			LogSink ls = LogSink.forDebug(log);
-			b.handler(new LoggingHandler(ls, DEBUG_DATA));
+			b.handler(new LoggingHandler(ls, this.debugData));
 		}
 		try {
 			synchronized (channelLock) {
@@ -190,7 +191,7 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 			.setOption(ChannelOption.RCVBUF_ALLOCATOR, new FixedRecvByteBufAllocator(packetLength));
 		if (log.isDebugEnabled()) {
 			LogSink ls = LogSink.forDebug(log);
-			ch.pipeline().addLast(new LoggingHandler(ls, DEBUG_DATA));
+			ch.pipeline().addLast(new LoggingHandler(ls, debugData));
 		}
 		if (isOutbound) {
 			ch.pipeline()
