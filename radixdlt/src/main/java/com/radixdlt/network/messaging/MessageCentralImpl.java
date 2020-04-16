@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.logging.log4j.LogManager;
@@ -76,11 +75,11 @@ final class MessageCentralImpl implements MessageCentral {
 	private final RateLimiter outboundLogRateLimiter = RateLimiter.create(1.0);
 
 	// Inbound message handling
-	private final BlockingQueue<MessageEvent> inboundQueue;
+	private final SimpleBlockingQueue<MessageEvent> inboundQueue;
 	private final SimpleThreadPool<MessageEvent> inboundThreadPool;
 
 	// Outbound message handling
-	private final BlockingQueue<MessageEvent> outboundQueue;
+	private final SimpleBlockingQueue<MessageEvent> outboundQueue;
 	private final SimpleThreadPool<MessageEvent> outboundThreadPool;
 
 

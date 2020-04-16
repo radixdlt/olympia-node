@@ -24,15 +24,13 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.radix.database.DatabaseEnvironment;
-import org.radix.serialization.TestSetupUtils;
-
 import com.google.inject.Key;
 import com.google.inject.name.Names;
+import com.radixdlt.TestSetupUtils;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.network.transport.udp.PublicInetAddress;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.universe.Universe;
 
@@ -45,7 +43,6 @@ public class GlobalInjectorTest {
 
 	@BeforeClass
 	public static void beforeClass() {
-		PublicInetAddress.configure(30000);
 		TestSetupUtils.installBouncyCastleProvider();
 	}
 

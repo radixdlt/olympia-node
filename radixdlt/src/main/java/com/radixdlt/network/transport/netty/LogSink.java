@@ -61,12 +61,12 @@ public interface LogSink {
 	void trace(String message);
 
 	/**
-	 * Create a {@link LogSink} for the specified logger at the debug level.
+	 * Create a {@link LogSink} using the specified logger.
 	 *
 	 * @param log The logger that will consume log messages
 	 * @return A newly constructed {@link LogSink}
 	 */
-	static LogSink forDebug(Logger log) {
+	static LogSink using(Logger log) {
 		return new LogSink() {
 
 			@Override

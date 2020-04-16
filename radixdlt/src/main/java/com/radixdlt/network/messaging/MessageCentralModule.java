@@ -18,7 +18,6 @@
 package com.radixdlt.network.messaging;
 
 import java.util.Objects;
-import java.util.concurrent.PriorityBlockingQueue;
 
 import com.google.inject.Singleton;
 
@@ -51,7 +50,7 @@ public final class MessageCentralModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		// The main target
-		bind(new TypeLiteral<EventQueueFactory<MessageEvent>>() { }).toInstance(PriorityBlockingQueue::new);
+		bind(new TypeLiteral<EventQueueFactory<MessageEvent>>() { }).toInstance(SimplePriorityBlockingQueue::new);
 
 		bind(MessageCentral.class).to(MessageCentralImpl.class).in(Singleton.class);
 

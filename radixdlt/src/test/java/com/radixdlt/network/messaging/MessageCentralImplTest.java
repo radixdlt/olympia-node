@@ -43,7 +43,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -63,12 +62,12 @@ import static org.mockito.Mockito.verify;
 
 public class MessageCentralImplTest {
 
-	static class TestBlockingQueue extends PriorityBlockingQueue<MessageEvent> {
+	static class TestBlockingQueue extends SimplePriorityBlockingQueue<MessageEvent> {
 		private final AtomicLong offered = new AtomicLong(0);
 		private final AtomicBoolean full = new AtomicBoolean(false);
 
 		TestBlockingQueue() {
-			super();
+			super(100); // Close enough for jazz
 		}
 
 		@Override

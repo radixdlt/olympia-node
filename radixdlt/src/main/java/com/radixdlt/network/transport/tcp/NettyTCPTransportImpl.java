@@ -165,9 +165,8 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 					setupChannel(ch, messageSink, false);
 				}
 			});
-		if (log.isDebugEnabled()) {
-			LogSink ls = LogSink.forDebug(log);
-			b.handler(new LoggingHandler(ls, this.debugData));
+		if (log.isDebugEnabled() || log.isTraceEnabled()) {
+			b.handler(new LoggingHandler(LogSink.using(log), this.debugData));
 		}
 		try {
 			synchronized (channelLock) {
@@ -190,8 +189,7 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 			.setSendBufferSize(SND_BUF_SIZE)
 			.setOption(ChannelOption.RCVBUF_ALLOCATOR, new FixedRecvByteBufAllocator(packetLength));
 		if (log.isDebugEnabled()) {
-			LogSink ls = LogSink.forDebug(log);
-			ch.pipeline().addLast(new LoggingHandler(ls, debugData));
+			ch.pipeline().addLast(new LoggingHandler(LogSink.using(log), debugData));
 		}
 		if (isOutbound) {
 			ch.pipeline()

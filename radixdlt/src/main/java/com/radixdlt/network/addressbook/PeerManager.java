@@ -234,7 +234,7 @@ public class PeerManager {
 			try {
 				messageCentral.send(peer, msg);
 			} catch (TransportException ioex) {
-				log.error("Could not send System heartbeat to " + peer, ioex);
+				log.error(String.format("Could not send System heartbeat to %s", peer), ioex);
 			}
 		});
 	}
@@ -345,7 +345,7 @@ public class PeerManager {
 						long nonce = ping.getNonce();
 						if (peer.hasSystem()) {
 							this.probes.put(peer, nonce);
-// FIXME: XXX							schedule(peerProbeTimeoutMs, () -> handleProbeTimeout(peer, nonce));
+							schedule(peerProbeTimeoutMs, () -> handleProbeTimeout(peer, nonce));
 							log.debug("Probing {} with nonce '{}'", peer, nonce);
 						} else {
 							log.debug("Nudging {}", peer);
