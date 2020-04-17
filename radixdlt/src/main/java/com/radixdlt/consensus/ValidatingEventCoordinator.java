@@ -108,7 +108,12 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 
 	private void syncToQC(QuorumCertificate qc) throws SyncException {
 		// sync up to QC if necessary
-		this.vertexStore.syncToQC(qc, hash -> Single.error(new RuntimeException("Could not retrieve vertex " + hash)));
+		try {
+			this.vertexStore.syncToQC(qc, hash -> Single.error(new RuntimeException("Could not retrieve vertex " + hash)));
+		} catch (SyncException e) {
+			counters.increment(CounterType.CONSENSUS_SYNC_EXCEPTION);
+			throw e;
+		}
 
 		// commit any newly committable vertices
 		this.safetyRules.process(qc)
@@ -205,8 +210,6 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 			log.warn("{}: PROPOSAL: Ignoring because unable to sync to QC {}", this.getShortName(), e.getQC());
 			return;
 		}
-
-		// TODO: Sync at this point
 
 		final View updatedView = this.pacemaker.getCurrentView();
 		if (proposedVertex.getView().compareTo(updatedView) != 0) {

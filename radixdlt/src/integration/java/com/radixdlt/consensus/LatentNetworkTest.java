@@ -110,6 +110,13 @@ public class LatentNetworkTest {
 					"Timeout counter is zero in correct node %s", cn.getPublicKey().euid())))
 			.map(o -> o);
 
+		Observable<Object> syncExceptionCheck = Observable.interval(1, TimeUnit.SECONDS)
+			.flatMapIterable(i -> allNodes)
+			.doOnNext(cn -> assertThat(bftNetwork.getCounters(cn).get(CounterType.CONSENSUS_SYNC_EXCEPTION))
+				.satisfies(new Condition<>(c -> c == 0,
+					"Sync Exception counter is zero in correct node %s", cn.getPublicKey().euid())))
+			.map(o -> o);
+
 		// TODO all? proposals should be direct
 		List<Observable<Vertex>> correctProposals = allNodes.stream()
 			.map(ECKeyPair::getPublicKey)
@@ -125,7 +132,11 @@ public class LatentNetworkTest {
 			.map(o -> o);
 
 		List<Observable<Object>> checks = Arrays.asList(
-			correctCommitCheck, progressCheck, correctTimeoutCheck, directProposalsCheck
+			correctCommitCheck,
+			progressCheck,
+			correctTimeoutCheck,
+			syncExceptionCheck,
+			directProposalsCheck
 		);
 		Observable.mergeArray(bftNetwork.processBFT(), Observable.merge(checks))
 			.take(time, timeUnit)
