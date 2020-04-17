@@ -39,6 +39,7 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
  * These tests comprise only static configurations of exclusively correct nodes.
  */
 public class LatentNetworkTest {
+
 	private static final int MINIMUM_NETWORK_LATENCY = 10;
 	// 2 times max latency should be less than BFTTestNetwork.TEST_PACEMAKER_TIMEOUT
 	// so we don't get unwanted pacemaker timeouts
@@ -62,7 +63,7 @@ public class LatentNetworkTest {
 	@Test
 	public void given_4_correct_bfts_in_latent_network__then_all_instances_should_get_same_commits_consecutive_vertices_eventually_over_1_minute() {
 		final int numNodes = 4;
-		final long time = 1;
+		final long time = 3;
 		final TimeUnit timeUnit = TimeUnit.MINUTES;
 
 		final List<ECKeyPair> allNodes = createNodes(numNodes);

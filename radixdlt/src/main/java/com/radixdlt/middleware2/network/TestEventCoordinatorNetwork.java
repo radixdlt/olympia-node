@@ -28,13 +28,12 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 
 import java.util.Collections;
-import java.util.Deque;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -46,17 +45,14 @@ public class TestEventCoordinatorNetwork {
 	private final Random rng;
 	private final int minimumLatency;
 	private final int maximumLatency;
-	private final boolean preserveOrder;
 
-	private final Deque<MessageInTransit> orderedMessageBuffer;
 	private final PublishSubject<MessageInTransit> receivedMessages;
 	private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 	private final Set<ECPublicKey> readers = Collections.newSetFromMap(new ConcurrentHashMap<>());
 	private final Set<ECPublicKey> sendingDisabled = Collections.newSetFromMap(new ConcurrentHashMap<>());
 	private final Set<ECPublicKey> receivingDisabled = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
-	private TestEventCoordinatorNetwork(int minimumLatency, int maximumLatency, long rngSeed, boolean preserveOrder) {
-		this.preserveOrder = preserveOrder;
+	private TestEventCoordinatorNetwork(int minimumLatency, int maximumLatency, long rngSeed) {
 		if (minimumLatency < 0) {
 			throw new IllegalArgumentException("minimumLatency must be >= 0 but was " + minimumLatency);
 		}
@@ -66,7 +62,6 @@ public class TestEventCoordinatorNetwork {
 		this.minimumLatency = minimumLatency;
 		this.maximumLatency = maximumLatency;
 		this.rng = new Random(rngSeed);
-		this.orderedMessageBuffer = new LinkedBlockingDeque<>();
 		this.receivedMessages = PublishSubject.create();
 	}
 
@@ -76,7 +71,7 @@ public class TestEventCoordinatorNetwork {
 	 * @return a network
 	 */
 	public static TestEventCoordinatorNetwork orderedLatent(int fixedLatency) {
-		return new TestEventCoordinatorNetwork(fixedLatency, fixedLatency, 0, true);
+		return new TestEventCoordinatorNetwork(fixedLatency, fixedLatency, 0);
 	}
 
 	/**
@@ -97,7 +92,7 @@ public class TestEventCoordinatorNetwork {
 	 * @return a network
 	 */
 	public static TestEventCoordinatorNetwork orderedRandomlyLatent(int minimumLatency, int maximumLatency, long rngSeed) {
-		return new TestEventCoordinatorNetwork(minimumLatency, maximumLatency, rngSeed, true);
+		return new TestEventCoordinatorNetwork(minimumLatency, maximumLatency, rngSeed);
 	}
 
 	public void setSendingDisable(ECPublicKey validatorId, boolean disable) {
@@ -116,33 +111,33 @@ public class TestEventCoordinatorNetwork {
 		}
 	}
 
-	private int getRandomLatency() {
-		if (minimumLatency == maximumLatency) {
-			return minimumLatency;
-		} else {
-			return minimumLatency + rng.nextInt(maximumLatency - minimumLatency + 1);
-		}
-	}
-
 	public EventCoordinatorNetworkSender getNetworkSender(ECPublicKey forNode) {
-		Consumer<MessageInTransit> sendMessageSink = message -> {
-			if (!sendingDisabled.contains(forNode)) {
-				if (preserveOrder) {
-					orderedMessageBuffer.push(message);
-				}
-				executorService.schedule(() -> {
-					if (preserveOrder) {
-						MessageInTransit otherMessage = orderedMessageBuffer.pollLast();
-						if (otherMessage == null) {
-							throw new IllegalStateException("No message available in message buffer");
-						}
-						receivedMessages.onNext(otherMessage);
-					} else {
-						receivedMessages.onNext(message);
-					}
-				}, getRandomLatency(), TimeUnit.MILLISECONDS);
+		final Map<ECPublicKey, Long> lastTimestamps = new ConcurrentHashMap<>();
+
+		final Consumer<MessageInTransit> sendMessageSink = message -> {
+			if (sendingDisabled.contains(forNode)) {
+				return;
 			}
+
+			if (message.target.equals(forNode)) {
+				receivedMessages.onNext(message);
+				return;
+			}
+
+			final long curTime = System.currentTimeMillis();
+			final Long lastTimestamp = lastTimestamps.get(message.target);
+			final int minimumLatency;
+			if (lastTimestamp != null && lastTimestamp > curTime) {
+				minimumLatency = Math.min(this.minimumLatency, (int)(lastTimestamp - curTime));
+			} else {
+				minimumLatency = this.minimumLatency;
+			}
+			final int nextLatency = minimumLatency + rng.nextInt(maximumLatency - minimumLatency + 1);
+			lastTimestamps.put(message.target, curTime + nextLatency);
+
+			executorService.schedule(() -> receivedMessages.onNext(message), nextLatency, TimeUnit.MILLISECONDS);
 		};
+
 		return new EventCoordinatorNetworkSender() {
 			@Override
 			public void broadcastProposal(Proposal proposal) {
