@@ -43,7 +43,7 @@ public class LatentNetworkTest {
 	private static final int MINIMUM_NETWORK_LATENCY = 10;
 	// 2 times max latency should be less than BFTTestNetwork.TEST_PACEMAKER_TIMEOUT
 	// so we don't get unwanted pacemaker timeouts
-	private static final int MAXIMUM_NETWORK_LATENCY = 100;
+	private static final int MAXIMUM_NETWORK_LATENCY = 200;
 
 	static List<ECKeyPair> createNodes(int numNodes) {
 		return Stream.generate(ECKeyPair::generateNew).limit(numNodes).collect(Collectors.toList());
@@ -72,12 +72,11 @@ public class LatentNetworkTest {
 		// there should be a new highest QC every once in a while to ensure progress
 		// the minimum latency per round is determined using the network latency and a tolerance
 		int worstCaseLatencyPerRound = bftNetwork.getMaximumNetworkLatency() * 2; // base latency: two rounds in the normal case
-		// account for any inaccuracies, execution time, scheduling inefficiencies..
-		// the tolerance is high since we're only interested in qualitative progress in this test
-		double tolerance = 2.0;
-		int minimumLatencyPerRound = (int) (worstCaseLatencyPerRound * tolerance);
+		// a round consists of 3 message trips
+		double trips = 3.0;
+		int maximumLatencyPerRound = (int) (worstCaseLatencyPerRound * trips);
 		AtomicReference<View> highestQCView = new AtomicReference<>(View.genesis());
-		Observable<Object> progressCheck = Observable.interval(minimumLatencyPerRound, minimumLatencyPerRound, TimeUnit.MILLISECONDS)
+		Observable<Object> progressCheck = Observable.interval(maximumLatencyPerRound, maximumLatencyPerRound, TimeUnit.MILLISECONDS)
 			.map(i -> allNodes.stream()
 				.map(bftNetwork::getVertexStore)
 				.map(VertexStore::getHighestQC)
@@ -86,7 +85,7 @@ public class LatentNetworkTest {
 				.get()) // there must be some max highest QC unless allNodes is empty
 			.doOnNext(view -> assertThat(view)
 				.satisfies(new Condition<>(v -> v.compareTo(highestQCView.get()) > 0,
-					"The highest highestQC %s increased since last highestQC %s after %d ms", view, highestQCView.get(), minimumLatencyPerRound)))
+					"The highest highestQC %s increased since last highestQC %s after %d ms", view, highestQCView.get(), maximumLatencyPerRound)))
 			.doOnNext(highestQCView::set)
 			.doOnNext(newHighestQCView -> System.out.println("Progressed to new highest QC view " + highestQCView))
 			.map(o -> o);
