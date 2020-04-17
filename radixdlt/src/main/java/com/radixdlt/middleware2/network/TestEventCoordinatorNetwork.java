@@ -51,6 +51,7 @@ public class TestEventCoordinatorNetwork {
 	private final Deque<MessageInTransit> orderedMessageBuffer;
 	private final PublishSubject<MessageInTransit> receivedMessages;
 	private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+	private final Set<ECPublicKey> readers = Collections.newSetFromMap(new ConcurrentHashMap<>());
 	private final Set<ECPublicKey> sendingDisabled = Collections.newSetFromMap(new ConcurrentHashMap<>());
 	private final Set<ECPublicKey> receivingDisabled = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
@@ -145,7 +146,9 @@ public class TestEventCoordinatorNetwork {
 		return new EventCoordinatorNetworkSender() {
 			@Override
 			public void broadcastProposal(Proposal proposal) {
-				sendMessageSink.accept(MessageInTransit.broadcast(proposal));
+				for (ECPublicKey reader : readers) {
+					sendMessageSink.accept(MessageInTransit.send(proposal, reader));
+				}
 			}
 
 			@Override
@@ -161,10 +164,11 @@ public class TestEventCoordinatorNetwork {
 	}
 
 	public EventCoordinatorNetworkRx getNetworkRx(ECPublicKey forNode) {
+		readers.add(forNode);
 		// filter only relevant messages (appropriate target and if receiving is allowed)
 		Observable<Object> myMessages = receivedMessages
-			.filter(message -> !receivingDisabled.contains(forNode))
-			.filter(message -> message.isRelevantFor(forNode))
+			.filter(msg -> !receivingDisabled.contains(forNode))
+			.filter(msg -> msg.target.equals(forNode))
 			.map(MessageInTransit::getContent);
 		return () -> myMessages.ofType(ConsensusEvent.class);
 	}
@@ -182,20 +186,12 @@ public class TestEventCoordinatorNetwork {
 			this.target = target;
 		}
 
-		private static MessageInTransit broadcast(Object content) {
-			return new MessageInTransit(content, null);
-		}
-
 		private static MessageInTransit send(Object content, ECPublicKey receiver) {
 			return new MessageInTransit(content, receiver);
 		}
 
 		private Object getContent() {
 			return this.content;
-		}
-
-		private boolean isRelevantFor(ECPublicKey node) {
-			return target == null || node.equals(target);
 		}
 	}
 }
