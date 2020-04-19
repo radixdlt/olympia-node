@@ -45,15 +45,12 @@ public final class NetworkLegacyPatching {
 	 * @return {@code true} if the peer is currently banned, {@code false} otherwise
 	 */
 	public static boolean checkPeerBanned(Peer peer, EUID peerNid, TimeSupplier timeSource, AddressBook addressBook) {
-		Peer knownPeer = addressBook.peer(peerNid);
-
-		if (knownPeer != null && knownPeer.getTimestamp(Timestamps.BANNED) > timeSource.currentTime()) {
-			// Note that the next two commented out lines don't actually do anything, as the call to ban(...) overwrites the data
-			//peer.setTimestamp(Timestamps.BANNED, knownPeer.getTimestamp(Timestamps.BANNED));
-			//peer.setBanReason(knownPeer.getBanReason());
-			peer.ban(String.format("Banned peer %s at %s", peerNid, peer.toString()));
-			return true;
-		}
-		return false;
+		return addressBook.peer(peerNid)
+			.filter(kp -> kp.getTimestamp(Timestamps.BANNED) > timeSource.currentTime())
+			.map(kp -> {
+				peer.ban(kp.getBanReason(), kp.getTimestamp(Timestamps.BANNED));
+				return true;
+			})
+			.orElse(false);
 	}
 }

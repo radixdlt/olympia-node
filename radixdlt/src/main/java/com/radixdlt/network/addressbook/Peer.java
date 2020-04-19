@@ -85,6 +85,18 @@ public abstract class Peer extends BasicContainer {
 	}
 
 	/**
+	 * Marks the peer as banned for the specified reason, until the specified time.
+	 *
+	 * @param reason the reason for the ban, as a human-readable string
+	 * @param until the time to ban the peer in epoch milliseconds
+	 */
+	public void ban(String reason, long until) {
+		log.info("{} - Banned until {} due to {}", this, DEFAULT_BANTIME, reason);
+		this.banReason = reason;
+		setTimestamp(Timestamps.BANNED, until);
+	}
+
+	/**
 	 * Returns {@code true} if this peer is banned.
 	 *
 	 * @return {@code true} if this peer is banned, {@code false} otherwise

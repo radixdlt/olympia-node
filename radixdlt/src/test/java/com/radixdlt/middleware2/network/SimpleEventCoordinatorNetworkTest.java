@@ -35,7 +35,8 @@ import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.universe.Universe;
 import io.reactivex.rxjava3.observers.TestObserver;
-import java.util.stream.Stream;
+
+import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -90,7 +91,7 @@ public class SimpleEventCoordinatorNetworkTest {
 		ECPublicKey leader = ECKeyPair.generateNew().getPublicKey();
 		Peer peer = mock(Peer.class);
 		when(peer.getNID()).thenReturn(leader.euid());
-		when(addressBook.peers()).thenReturn(Stream.of(peer));
+		when(addressBook.peer(leader.euid())).thenReturn(Optional.of(peer));
 
 		network.sendNewView(newView, leader);
 		verify(messageCentral, times(1)).send(eq(peer), any(ConsensusEventMessage.class));
@@ -102,7 +103,7 @@ public class SimpleEventCoordinatorNetworkTest {
 		ECPublicKey leader = ECKeyPair.generateNew().getPublicKey();
 		Peer peer = mock(Peer.class);
 		when(peer.getNID()).thenReturn(leader.euid());
-		when(addressBook.peers()).thenReturn(Stream.of(peer));
+		when(addressBook.peer(leader.euid())).thenReturn(Optional.of(peer));
 
 		network.sendVote(vote, leader);
 		verify(messageCentral, times(1)).send(eq(peer), any(ConsensusEventMessage.class));

@@ -24,12 +24,15 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.powermock.reflect.Whitebox;
+import org.radix.Radix;
 import org.radix.database.DatabaseEnvironment;
 import org.radix.serialization.RadixTest;
 import org.radix.time.Time;
 import org.radix.time.Timestamps;
+import org.radix.universe.system.RadixSystem;
 
-import com.radixdlt.identifiers.EUID;
+import com.google.common.collect.ImmutableList;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.network.transport.StaticTransportMetadata;
 import com.radixdlt.network.transport.TransportInfo;
 
@@ -72,7 +75,7 @@ public class AddressBookPersistenceTest extends RadixTest {
 	@Test
 	public void testReset() {
 		this.abp.start();
-		assertTrue(this.abp.savePeer(new PeerWithNid(EUID.ONE)));
+		assertTrue(this.abp.savePeer(makePeer()));
 		AtomicInteger peercount1 = new AtomicInteger(0);
 		this.abp.forEachPersistedPeer(p -> peercount1.incrementAndGet());
 		assertEquals(1, peercount1.get());
@@ -90,21 +93,21 @@ public class AddressBookPersistenceTest extends RadixTest {
 	public void testSavePeer() {
 		this.abp.start();
 
-		PeerWithNid pwn = new PeerWithNid(EUID.ONE);
-		assertTrue(this.abp.savePeer(pwn));
+		PeerWithSystem pws = makePeer();
+		assertTrue(this.abp.savePeer(pws));
 		assertEquals(1, peerCount());
 		assertEquals(0L, onlyPeer().getTimestamp(Timestamps.ACTIVE));
 
 		// Update timestamp
 		long now = Time.currentTimestamp();
-		pwn.setTimestamp(Timestamps.ACTIVE, now);
-		assertTrue(this.abp.savePeer(pwn));
+		pws.setTimestamp(Timestamps.ACTIVE, now);
+		assertTrue(this.abp.savePeer(pws));
 		assertEquals(1, peerCount());
 		assertEquals(now, onlyPeer().getTimestamp(Timestamps.ACTIVE));
 
 		// Add new peer
-		PeerWithNid pwn2 = new PeerWithNid(EUID.TWO);
-		assertTrue(this.abp.savePeer(pwn2));
+		PeerWithSystem pws2 = makePeer();
+		assertTrue(this.abp.savePeer(pws2));
 		assertEquals(2, peerCount());
 
 		// Can't save peer without a nid
@@ -117,25 +120,25 @@ public class AddressBookPersistenceTest extends RadixTest {
 	public void testDeletePeer() {
 		this.abp.start();
 
-		PeerWithNid pwn1 = new PeerWithNid(EUID.ONE);
-		assertTrue(this.abp.savePeer(pwn1));
+		PeerWithSystem pws1 = makePeer();
+		assertTrue(this.abp.savePeer(pws1));
 		assertEquals(1, peerCount());
-		PeerWithNid pwn2 = new PeerWithNid(EUID.TWO);
-		assertTrue(this.abp.savePeer(pwn2));
+		PeerWithSystem pws2 = makePeer();
+		assertTrue(this.abp.savePeer(pws2));
 		assertEquals(2, peerCount());
 
 		// Delete one, and check that the only one left is the right one
-		assertTrue(this.abp.deletePeer(EUID.ONE));
-		assertEquals(EUID.TWO, onlyPeer().getNID());
+		assertTrue(this.abp.deletePeer(pws1.getNID()));
+		assertEquals(pws2.getNID(), onlyPeer().getNID());
 
 		// Add back the deleted one, and delete the other
-		assertTrue(this.abp.savePeer(pwn1));
+		assertTrue(this.abp.savePeer(pws1));
 		assertEquals(2, peerCount());
-		assertTrue(this.abp.deletePeer(EUID.TWO));
-		assertEquals(EUID.ONE, onlyPeer().getNID());
+		assertTrue(this.abp.deletePeer(pws2.getNID()));
+		assertEquals(pws1.getNID(), onlyPeer().getNID());
 
 		// Try to delete something that doesn't exist
-		assertFalse(this.abp.deletePeer(EUID.TWO));
+		assertFalse(this.abp.deletePeer(pws2.getNID()));
 	}
 
 	private int peerCount() {
@@ -149,5 +152,11 @@ public class AddressBookPersistenceTest extends RadixTest {
 		this.abp.forEachPersistedPeer(p -> assertTrue(peer.compareAndSet(null, p)));
 		assertNotNull(peer.get());
 		return peer.get();
+	}
+
+	private PeerWithSystem makePeer() {
+		ECKeyPair key = ECKeyPair.generateNew();
+		RadixSystem sys = new RadixSystem(key.getPublicKey(), Radix.AGENT, Radix.AGENT_VERSION, Radix.PROTOCOL_VERSION, ImmutableList.of());
+		return new PeerWithSystem(sys);
 	}
 }

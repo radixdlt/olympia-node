@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Stream;
@@ -151,13 +152,8 @@ public class AddressBookImpl implements AddressBook {
 	}
 
 	@Override
-	public Peer peer(EUID nid) {
-		Peer p = Locking.withFunctionLock(this.peersLock, this.peersByNid::get, nid);
-		if (p == null) {
-			p = new PeerWithNid(nid);
-			addPeer(p);
-		}
-		return p;
+	public Optional<Peer> peer(EUID nid) {
+		return Optional.ofNullable(Locking.withFunctionLock(this.peersLock, this.peersByNid::get, nid));
 	}
 
 	@Override

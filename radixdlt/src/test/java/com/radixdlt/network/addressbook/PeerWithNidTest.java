@@ -30,6 +30,7 @@ import com.radixdlt.network.transport.TransportInfo;
 import static org.junit.Assert.*;
 import static org.hamcrest.Matchers.*;
 
+// Retaining these tests, even though PeerWithNid has moved into tests
 public class PeerWithNidTest {
 
 	private EUID nid;

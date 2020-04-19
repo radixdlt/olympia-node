@@ -47,7 +47,7 @@ import io.reactivex.rxjava3.subjects.PublishSubject;
  * Simple network that publishes messages to known nodes.
  */
 public class SimpleEventCoordinatorNetwork implements EventCoordinatorNetworkSender, EventCoordinatorNetworkRx {
-	private static final Logger log = LogManager.getLogger("EC-net");
+	private static final Logger log = LogManager.getLogger();
 
 	private final ECPublicKey selfPublicKey;
 	private final int magic;
@@ -107,12 +107,10 @@ public class SimpleEventCoordinatorNetwork implements EventCoordinatorNetworkSen
 	}
 
 	private void send(Message message, ECPublicKey recipient) {
-		Optional<Peer> peer = this.addressBook.peers()
-			.filter(p -> p.getNID().equals(recipient.euid()))
-			.findFirst();
+		Optional<Peer> peer = this.addressBook.peer(recipient.euid());
 
 		if (!peer.isPresent()) {
-			log.error("Peer with pub key " + recipient + " not present.");
+			log.error("Peer with pubkey {} not present", recipient);
 		} else {
 			this.messageCentral.send(peer.get(), message);
 		}
