@@ -190,4 +190,9 @@ public class RadixSystem extends BasicContainer
 	EUID getJsonNid() {
 		return this.key == null ? null : this.key.euid();
 	}
+
+	@Override
+	public String toString() {
+		return key == null ? "null" : key.euid().toString();
+	}
 }

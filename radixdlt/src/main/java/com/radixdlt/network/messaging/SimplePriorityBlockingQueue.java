@@ -29,10 +29,10 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @param <T> The element type
  */
-class SimplePriorityBlockingQueue<T extends Comparable<? super T>> implements SimpleBlockingQueue<T> {
+class SimplePriorityBlockingQueue<T> implements SimpleBlockingQueue<T> {
 	private final PriorityBlockingQueue<SimpleEntry<T>> queue;
 
-	static final class SimpleEntry<U extends Comparable<? super U>> {
+	static final class SimpleEntry<U> {
 		private static final AtomicLong sequence = new AtomicLong(0);
 
 		final long seq;
@@ -57,12 +57,12 @@ class SimplePriorityBlockingQueue<T extends Comparable<? super T>> implements Si
 		}
 	}
 
-	SimplePriorityBlockingQueue(int size) {
-		this.queue = new PriorityBlockingQueue<>(size, comparator());
+	SimplePriorityBlockingQueue(int size, Comparator<? super T> comparator) {
+		this.queue = new PriorityBlockingQueue<>(size, comparator(comparator));
 	}
 
-	private Comparator<SimpleEntry<T>> comparator() {
-		return Comparator.comparing(SimpleEntry<T>::getEntry).thenComparingLong(SimpleEntry<T>::getSeq);
+	private Comparator<SimpleEntry<T>> comparator(Comparator<? super T> comparator) {
+		return Comparator.comparing(SimpleEntry<T>::getEntry, comparator).thenComparingLong(SimpleEntry<T>::getSeq);
 	}
 
 	@Override

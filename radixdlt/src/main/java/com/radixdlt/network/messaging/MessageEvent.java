@@ -19,8 +19,8 @@ package com.radixdlt.network.messaging;
 
 import java.util.Comparator;
 import java.util.Map;
+import java.util.Objects;
 
-import org.radix.events.Event;
 import org.radix.network.messages.PeerPingMessage;
 import org.radix.network.messages.PeerPongMessage;
 import org.radix.network.messaging.Message;
@@ -36,7 +36,7 @@ import com.radixdlt.network.addressbook.Peer;
  * <p>
  * Time is number of nanoseconds since some arbitrary baseline.
  */
-public final class MessageEvent extends Event {
+public final class MessageEvent {
 
 	private static final int DEFAULT_PRIORITY = 0;
 	// Lower (inc -ve) numbers are higher priority than larger numbers
@@ -45,8 +45,9 @@ public final class MessageEvent extends Event {
 		PeerPongMessage.class, Integer.MIN_VALUE
 	);
 
-	static final Comparator<MessageEvent> COMPARATOR =
-		Comparator.comparingInt(MessageEvent::priority).thenComparingLong(MessageEvent::nanoTimeDiff);
+	public static Comparator<MessageEvent> comparator() {
+		return Comparator.comparingInt(MessageEvent::priority).thenComparingLong(MessageEvent::nanoTimeDiff);
+	}
 
 	private final int priority;
 	private final long nanoTimeDiff;
@@ -98,6 +99,26 @@ public final class MessageEvent extends Event {
 	 */
 	public Message message() {
 		return message;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(this.priority, this.nanoTimeDiff, this.peer, this.message);
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (obj instanceof MessageEvent) {
+			MessageEvent that = (MessageEvent) obj;
+			return this.priority == that.priority
+				&& this.nanoTimeDiff == that.nanoTimeDiff
+				&& Objects.equals(this.peer, that.peer)
+				&& Objects.equals(this.message, that.message);
+		}
+		return false;
 	}
 
 	@Override

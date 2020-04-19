@@ -42,7 +42,7 @@ public class SimplePriorityBlockingQueueTest {
 		// For this test, we need to ensure that we are not interrupted
 		Thread.interrupted();
 
-		SimplePriorityBlockingQueue<TestObject> test = new SimplePriorityBlockingQueue<>(100);
+		SimplePriorityBlockingQueue<TestObject> test = new SimplePriorityBlockingQueue<>(100, TestObject::compareTo);
 
 		final int testObjects = 1000;
 		for (int i = 0; i < testObjects; ++i) {
@@ -57,7 +57,7 @@ public class SimplePriorityBlockingQueueTest {
 
 	@Test
 	public void sensibleToString() {
-		SimplePriorityBlockingQueue<Long> test = new SimplePriorityBlockingQueue<>(100);
+		SimplePriorityBlockingQueue<Long> test = new SimplePriorityBlockingQueue<>(100, Long::compare);
 
 		assertTrue(test.offer(1234L));
 		assertTrue(test.offer(4321L));

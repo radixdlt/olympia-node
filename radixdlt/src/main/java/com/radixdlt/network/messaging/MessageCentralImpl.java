@@ -96,8 +96,8 @@ final class MessageCentralImpl implements MessageCentral {
 		SystemCounters counters
 	) {
 		this.counters = Objects.requireNonNull(counters);
-		this.inboundQueue = eventQueueFactory.createEventQueue(config.messagingInboundQueueMax(8192));
-		this.outboundQueue = eventQueueFactory.createEventQueue(config.messagingOutboundQueueMax(16384));
+		this.inboundQueue = eventQueueFactory.createEventQueue(config.messagingInboundQueueMax(8192), MessageEvent.comparator());
+		this.outboundQueue = eventQueueFactory.createEventQueue(config.messagingOutboundQueueMax(16384), MessageEvent.comparator());
 
 		this.serialization = Objects.requireNonNull(serialization);
 		this.connectionManager = Objects.requireNonNull(transportManager);

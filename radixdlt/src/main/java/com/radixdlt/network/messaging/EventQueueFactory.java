@@ -17,7 +17,9 @@
 
 package com.radixdlt.network.messaging;
 
+import java.util.Comparator;
+
 @FunctionalInterface
 public interface EventQueueFactory<T> {
-	SimpleBlockingQueue<T> createEventQueue(int queueSize);
+	SimpleBlockingQueue<T> createEventQueue(int queueSize, Comparator<T> comparator);
 }

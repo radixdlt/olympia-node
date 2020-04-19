@@ -87,27 +87,33 @@ public class AddressBookImpl implements AddressBook {
 		final Peer added;
 		final Peer removed;
 		final Peer updated;
+		final Peer existing;
 
 		static PeerUpdates add(Peer peer) {
-			return new PeerUpdates(peer, null, null);
+			return new PeerUpdates(peer, null, null, null);
 		}
 
-		public static PeerUpdates remove(Peer peer) {
-			return new PeerUpdates(null, peer, null);
+		static PeerUpdates remove(Peer peer) {
+			return new PeerUpdates(null, peer, null, null);
 		}
 
-		public static PeerUpdates update(Peer peer) {
-			return new PeerUpdates(null, null, peer);
+		static PeerUpdates update(Peer peer) {
+			return new PeerUpdates(null, null, peer, null);
 		}
 
-		public static PeerUpdates addAndRemove(Peer added, Peer removed) {
-			return new PeerUpdates(added, removed, null);
+		static PeerUpdates addAndRemove(Peer added, Peer removed) {
+			return new PeerUpdates(added, removed, null, null);
 		}
 
-		private PeerUpdates(Peer added, Peer removed, Peer updated) {
+		static PeerUpdates existing(Peer existing) {
+			return new PeerUpdates(null, null, null, existing);
+		}
+
+		private PeerUpdates(Peer added, Peer removed, Peer updated, Peer existing) {
 			this.added = added;
 			this.removed = removed;
 			this.updated = updated;
+			this.existing = existing;
 		}
 	}
 
@@ -131,6 +137,9 @@ public class AddressBookImpl implements AddressBook {
 		PeerUpdates updates = Locking.withBiFunctionLock(this.peersLock, this::updateSystemInternal, peer, system);
 		handleUpdatedPeers(updates);
 		if (updates != null) {
+			if (updates.existing != null) {
+				return updates.existing;
+			}
 			if (updates.updated != null) {
 				return updates.updated;
 			}
@@ -163,7 +172,6 @@ public class AddressBookImpl implements AddressBook {
 
 	@Override
 	public Stream<Peer> peers() {
-		// FIXME: Think about how to do this in a not so copying way
 		return Locking.withSupplierLock(this.peersLock, () -> ImmutableSet.copyOf(this.peersByInfo.values())).stream();
 	}
 
@@ -174,7 +182,6 @@ public class AddressBookImpl implements AddressBook {
 
 	@Override
 	public Stream<EUID> nids() {
-		// FIXME: Think about how to do this in a not so copying way
 		return Locking.withSupplierLock(this.peersLock, () -> ImmutableSet.copyOf(this.peersByNid.keySet())).stream();
 	}
 
@@ -196,7 +203,6 @@ public class AddressBookImpl implements AddressBook {
 	}
 
 	// Needs peersLock held
-	// FIXME: double check logic here - especially around NID changes
 	private PeerUpdates addUpdatePeerInternal(Peer peer) {
 		// Handle specially if it's a connection-only peer (no NID)
 		if (!peer.hasNID()) {
@@ -216,7 +222,7 @@ public class AddressBookImpl implements AddressBook {
 			}
 		}
 		// No change
-		return null;
+		return oldPeer == null ? null : PeerUpdates.existing(oldPeer);
 	}
 
 	// Needs peersLock held

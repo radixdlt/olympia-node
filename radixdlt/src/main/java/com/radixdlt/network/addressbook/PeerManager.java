@@ -23,7 +23,6 @@ import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.transport.TransportException;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.universe.Universe;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.radix.common.executors.Executor;
@@ -212,6 +211,8 @@ public class PeerManager {
 		peersBroadcastFuture = scheduleWithFixedDelay(peersBroadcastDelayMs, peersBroadcastIntervalMs, this::peersHousekeeping);
 		peerProbeFuture = scheduleWithFixedDelay(peerProbeDelayMs, peerProbeIntervalMs, new ProbeTask());
 		discoverPeersFuture = scheduleWithFixedDelay(discoverPeersDelayMs, discoverPeersIntervalMs, this::discoverPeers);
+
+		log.info("PeerManager started");
 	}
 
 	public void stop() {
@@ -225,6 +226,8 @@ public class PeerManager {
 		peersBroadcastFuture.cancel(true);
 		peerProbeFuture.cancel(true);
 		discoverPeersFuture.cancel(true);
+
+		log.info("PeerManager stopped");
 	}
 
 	private void heartbeatPeers() {
@@ -244,6 +247,7 @@ public class PeerManager {
 	}
 
 	private void handlePeersMessage(Peer peer, PeersMessage peersMessage) {
+		log.trace("Received PeersMessage from {}", peer);
 		List<Peer> peers = peersMessage.getPeers();
 		if (peers != null) {
 			EUID localNid = this.localSystem.getNID();
@@ -255,6 +259,7 @@ public class PeerManager {
 	}
 
 	private void handleGetPeersMessage(Peer peer, GetPeersMessage getPeersMessage) {
+		log.trace("Received GetPeersMessage from {}", peer);
 		try {
 			// Deliver known Peers in its entirety, filtered on whitelist and activity
 			// Chunk the sending of Peers so that UDP can handle it
@@ -287,9 +292,10 @@ public class PeerManager {
 	}
 
 	private void handlePeerPingMessage(Peer peer, PeerPingMessage message) {
+		log.trace("Received PeerPingMessage from {}:{}", () -> peer, () -> formatNonce(message.getNonce()));
 		try {
 			long nonce = message.getNonce();
-			log.debug("peer.ping from {} with nonce '{}'", peer, nonce);
+			log.debug("peer.ping from {}:{}", () -> peer, () -> formatNonce(nonce));
 			messageCentral.send(peer, new PeerPongMessage(nonce, localSystem, this.universe.getMagic()));
 		} catch (Exception ex) {
 			log.error(String.format("peer.ping %s", peer), ex);
@@ -297,15 +303,19 @@ public class PeerManager {
 	}
 
 	private void handlePeerPongMessage(Peer peer, PeerPongMessage message) {
+		log.trace("Received PeerPongMessage from {}:{}", () -> peer, () -> formatNonce(message.getNonce()));
 		try {
 			synchronized (this.probes) {
-				long nonce = message.getNonce();
 				Long ourNonce = this.probes.get(peer);
-				if (ourNonce != null && ourNonce.longValue() == nonce) {
-					this.probes.remove(peer);
-					log.debug("Got peer.pong from {} with nonce '{}'", peer, nonce);
-				} else if (ourNonce != null) {
-					log.debug("Got mismatched peer.pong from {} with nonce '{}', ours '{}'", peer, nonce, ourNonce);
+				if (ourNonce != null) {
+					long nonce = message.getNonce();
+					if (ourNonce.longValue() == nonce) {
+						this.probes.remove(peer);
+						log.debug("Got good peer.pong from {}:{}", () -> peer, () -> formatNonce(nonce));
+					} else {
+						log.debug("Got mismatched peer.pong from {} with nonce '{}', ours '{}'",
+							() -> peer, () -> formatNonce(nonce), () -> formatNonce(ourNonce));
+					}
 				}
 			}
 		} catch (Exception ex) {
@@ -345,8 +355,8 @@ public class PeerManager {
 						long nonce = ping.getNonce();
 						if (peer.hasSystem()) {
 							this.probes.put(peer, nonce);
-							//schedule(peerProbeTimeoutMs, () -> handleProbeTimeout(peer, nonce));
-							log.debug("Probing {} with nonce '{}'", peer, nonce);
+							schedule(peerProbeTimeoutMs, () -> handleProbeTimeout(peer, nonce));
+							log.debug("Probing {}:{}", () -> peer, () -> formatNonce(nonce));
 						} else {
 							log.debug("Nudging {}", peer);
 						}
@@ -366,7 +376,7 @@ public class PeerManager {
 		synchronized (this.probes) {
 			Long value = this.probes.get(peer);
 			if (value != null && value.longValue() == nonce) {
-				log.info("Removing peer {} because of probe timeout", peer);
+				log.info("Removing peer {}:{} because of probe timeout", () -> peer, ()-> formatNonce(nonce));
 				this.probes.remove(peer);
 				this.addressbook.removePeer(peer);
 			}
@@ -382,6 +392,10 @@ public class PeerManager {
 				probe(peer);
 				messageCentral.send(peer, msg);
 			});
+	}
+
+	private String formatNonce(long nonce) {
+		return Long.toHexString(nonce);
 	}
 }
 
