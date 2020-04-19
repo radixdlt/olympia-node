@@ -25,7 +25,6 @@ import org.radix.Radix;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.identifiers.EUID;
-import com.radixdlt.network.NetworkLegacyPatching;
 import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
@@ -167,7 +166,7 @@ class MessageDispatcher {
 				log.debug("Ignoring {} message from self", messageType);
 				return null;
 			}
-			if (NetworkLegacyPatching.checkPeerBanned(peer, system.getNID(), timeSource, this.addressBook)) {
+			if (checkPeerBanned(system.getNID(), messageType)) {
 				return null;
 			}
 			return peer;
@@ -229,5 +228,25 @@ class MessageDispatcher {
 			.findFirst()
 			.map(ti -> String.format("%s:%s", ti.name(), ti.metadata()))
 			.orElse("None");
+	}
+
+	/**
+	 * Return true if we already have information about the given peer being banned.
+	 * Note that if the peer is already banned according to our address book, the
+	 * specified peer instance will have it's banned timestamp updated to match the
+	 * known peer's banned time.
+	 *
+	 * @param peerNid the corresponding node ID of the peer
+	 * @param messageType the message type for logging ignored messages
+	 * @return {@code true} if the peer is currently banned, {@code false} otherwise
+	 */
+	private boolean checkPeerBanned(EUID peerNid, String messageType) {
+		return this.addressBook.peer(peerNid)
+			.filter(kp -> kp.getTimestamp(Timestamps.BANNED) > this.timeSource.currentTime())
+			.map(kp -> {
+				log.debug("Ignoring {} message from banned peer {}", messageType, kp);
+				return true;
+			})
+			.orElse(false);
 	}
 }

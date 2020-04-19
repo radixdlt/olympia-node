@@ -94,4 +94,12 @@ public class PeerWithNidTest {
 		assertThat(this.pwn.getTimestamp(Timestamps.BANNED), greaterThanOrEqualTo(now));
 		assertThat(this.pwn.getBanReason(), is("Reason for ban"));
 	}
+
+	@Test
+	public void testBanCopy() {
+		long now = Time.currentTimestamp();
+		this.pwn.setBan("Reason for ban", now);
+		assertThat(this.pwn.getTimestamp(Timestamps.BANNED), is(now));
+		assertThat(this.pwn.getBanReason(), is("Reason for ban"));
+	}
 }

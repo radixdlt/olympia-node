@@ -45,7 +45,7 @@ public class ConsensusEventMessage extends Message {
 	@DsonOutput(Output.ALL)
 	private final Vote vote;
 
-	private ConsensusEventMessage() {
+	ConsensusEventMessage() {
 		// Serializer only
 		super(0);
 		this.newView = null;

@@ -248,6 +248,31 @@ public class AddressBookImplTest {
 	}
 
 	@Test
+	public void testUpdatePeerSameSystem() {
+		EUID nid = EUID.ONE;
+		TransportInfo transportInfo = TransportInfo.of("DUMMY", StaticTransportMetadata.empty());
+
+
+		RadixSystem system = mock(RadixSystem.class);
+		when(system.getNID()).thenReturn(nid);
+		when(system.supportedTransports()).thenAnswer(invocation -> Stream.of(transportInfo));
+		PeerWithSystem peer = new PeerWithSystem(system);
+
+		assertTrue(this.addressbook.addPeer(peer));
+		assertEquals(1, this.broadcastEventCount.get());
+		assertEquals(1, this.savedPeerCount.get());
+
+		Peer peer2 = this.addressbook.updatePeerSystem(new PeerWithTransport(transportInfo), system);
+		assertNotNull(peer2);
+		assertEquals(1, this.broadcastEventCount.get());
+		assertEquals(1, this.savedPeerCount.get());
+
+		// Quick check of internal state too
+		assertSize(1, Whitebox.getInternalState(this.addressbook, "peersByInfo"));
+		assertSize(1, Whitebox.getInternalState(this.addressbook, "peersByNid"));
+	}
+
+	@Test
 	public void testUpdatePeerSystemChangedNid() {
 		PeerWithNid peer = new PeerWithNid(EUID.ONE);
 

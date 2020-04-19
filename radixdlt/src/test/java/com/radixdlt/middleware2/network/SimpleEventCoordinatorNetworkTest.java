@@ -19,10 +19,7 @@ package com.radixdlt.middleware2.network;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.Proposal;
@@ -95,6 +92,14 @@ public class SimpleEventCoordinatorNetworkTest {
 
 		network.sendNewView(newView, leader);
 		verify(messageCentral, times(1)).send(eq(peer), any(ConsensusEventMessage.class));
+	}
+
+	@Test
+	public void when_send_new_view_to_nonexistent__then_no_message_sent() {
+		ECPublicKey otherKey = ECKeyPair.generateNew().getPublicKey();
+		NewView newView = mock(NewView.class);
+		network.sendNewView(newView, otherKey);
+		verify(messageCentral, never()).send(any(), any());
 	}
 
 	@Test

@@ -17,13 +17,20 @@
 
 package org.radix.serialization;
 
-import java.util.Arrays;
-
+import org.junit.Test;
+import org.radix.Radix;
 import org.radix.network.messages.PeersMessage;
 import org.radix.universe.system.RadixSystem;
 
+import com.google.common.collect.ImmutableList;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.network.addressbook.PeerWithSystem;
+import com.radixdlt.network.transport.StaticTransportMetadata;
+import com.radixdlt.network.transport.TransportInfo;
+
+import static org.hamcrest.CoreMatchers.*;
+import static org.junit.Assert.*;
 
 /**
  * Check serialization of PeersMessage
@@ -38,7 +45,23 @@ public class PeersMessageSerializeTest extends SerializeMessageObject<PeersMessa
 		Peer p1 = new PeerWithSystem(new RadixSystem());
 		Peer p2 = new PeerWithSystem(new RadixSystem());
 		Peer p3 = new PeerWithSystem(new RadixSystem());
-		pm.setPeers(Arrays.asList(p1, p2, p3));
+		pm.setPeers(ImmutableList.of(p1, p2, p3));
 		return pm;
+	}
+
+	@Test
+	public void sensibleToString() {
+		PeersMessage pm = new PeersMessage(1);
+		ECKeyPair key = ECKeyPair.generateNew();
+		TransportInfo ti = TransportInfo.of("DUMMY", StaticTransportMetadata.empty());
+		RadixSystem system = new RadixSystem(
+				key.getPublicKey(), Radix.AGENT, Radix.AGENT_VERSION, Radix.PROTOCOL_VERSION, ImmutableList.of(ti));
+		Peer p = new PeerWithSystem(system);
+		pm.setPeers(ImmutableList.of(p));
+		String s = pm.toString();
+
+		assertThat(s, containsString(PeersMessage.class.getSimpleName()));
+		assertThat(s, containsString(key.getPublicKey().euid().toString()));
+		assertThat(s, containsString("DUMMY"));
 	}
 }

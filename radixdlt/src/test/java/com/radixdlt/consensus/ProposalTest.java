@@ -17,14 +17,17 @@
 
 package com.radixdlt.consensus;
 
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
-import static org.mockito.Mockito.mock;
+import org.junit.Before;
+import org.junit.Test;
 
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.identifiers.EUID;
+
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.mockito.Mockito.*;
+
 import nl.jqno.equalsverifier.EqualsVerifier;
-import org.junit.Before;
-import org.junit.Test;
 
 public class ProposalTest {
 	private Proposal proposal;
@@ -55,5 +58,19 @@ public class ProposalTest {
 	public void equalsContract() {
 		EqualsVerifier.forClass(Proposal.class)
 			.verify();
+	}
+
+	@Test
+	public void sensibleToString() {
+		when(key.euid()).thenReturn(EUID.TWO);
+		View view = mock(View.class);
+		QuorumCertificate qc = mock(QuorumCertificate.class);
+		when(vertex.getView()).thenReturn(view);
+		when(vertex.getQC()).thenReturn(qc);
+		String s = this.proposal.toString();
+
+		assertThat(s).contains(EUID.TWO.toString().substring(0, 6));
+		assertThat(s).contains(view.toString());
+		assertThat(s).contains(qc.toString());
 	}
 }

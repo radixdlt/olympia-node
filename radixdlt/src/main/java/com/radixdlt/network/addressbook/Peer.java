@@ -90,8 +90,7 @@ public abstract class Peer extends BasicContainer {
 	 * @param reason the reason for the ban, as a human-readable string
 	 * @param until the time to ban the peer in epoch milliseconds
 	 */
-	public void ban(String reason, long until) {
-		log.info("{} - Banned until {} due to {}", this, DEFAULT_BANTIME, reason);
+	public void setBan(String reason, long until) {
 		this.banReason = reason;
 		setTimestamp(Timestamps.BANNED, until);
 	}

@@ -101,7 +101,7 @@ public class NetworkService {
 			return this.addressBook.peer(euid)
 				.map(peer -> serialization.toJsonObject(peer, Output.API))
 				.orElseGet(JSONObject::new);
-		} catch (NumberFormatException ex) {
+		} catch (IllegalArgumentException ex) {
 			// Ignore, return empty object
 		}
 		return new JSONObject();

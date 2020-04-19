@@ -41,6 +41,7 @@ import org.radix.universe.system.RadixSystem;
 import org.radix.universe.system.SystemMessage;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
@@ -71,6 +72,7 @@ public class MessageDispatcherTest extends RadixTest {
 
     private MessageDispatcher messageDispatcher;
     private TransportManager transportManager;
+    private AddressBook addressBook;
     private Peer peer1;
     private Peer peer2;
     private SystemCounters counters;
@@ -84,7 +86,7 @@ public class MessageDispatcherTest extends RadixTest {
         peer1 = spy(new PeerWithSystem(getLocalSystem()));
         peer2 = spy(new PeerWithSystem(getLocalSystem()));
 
-        AddressBook addressBook = mock(AddressBook.class);
+        addressBook = mock(AddressBook.class);
         when(addressBook.updatePeerSystem(peer1, peer1.getSystem())).thenReturn(peer1);
         when(addressBook.updatePeerSystem(peer2, peer2.getSystem())).thenReturn(peer2);
 
@@ -158,6 +160,26 @@ public class MessageDispatcherTest extends RadixTest {
         //execution is terminated before message.getSystem() method
         verify(testMessage, times(0)).getSystem();
         verify(counters, times(1)).increment(CounterType.MESSAGES_INBOUND_DISCARDED);
+    }
+
+    @Test
+    public void receiveMessageFromBannedPeer() {
+    	// Banned for a long time
+    	peer1.setBan("Test", System.currentTimeMillis() + 86_400_000L);
+    	when(this.addressBook.peer(any(EUID.class))).thenReturn(Optional.of(peer1));
+    	RadixSystem system = mock(RadixSystem.class);
+    	doReturn(EUID.TWO).when(system).getNID();
+    	doReturn(Radix.AGENT_VERSION).when(system).getAgentVersion();
+        SystemMessage testMessage = spy(new SystemMessage(system, 0));
+        doReturn(true).when(testMessage).verify(any());
+        MessageEvent messageEvent = new MessageEvent(peer1, testMessage, 10_000);
+
+        messageDispatcher.receive(null, messageEvent);
+
+        // Received message not counted as discarded or processed
+        verify(counters, times(1)).increment(CounterType.MESSAGES_INBOUND_RECEIVED);
+        verify(counters, never()).increment(CounterType.MESSAGES_INBOUND_DISCARDED);
+        verify(counters, never()).increment(CounterType.MESSAGES_INBOUND_PROCESSED);
     }
 
     @Test

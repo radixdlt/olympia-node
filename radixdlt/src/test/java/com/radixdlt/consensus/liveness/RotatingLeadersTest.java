@@ -33,4 +33,14 @@ public class RotatingLeadersTest {
 		assertThat(rotatingLeaders.getProposer(View.of(leaders.size())))
 			.isEqualTo(leaders.get(0));
 	}
+
+	@Test
+	public void sensibleToString() {
+		ECPublicKey pk1 = mock(ECPublicKey.class);
+		ImmutableList<ECPublicKey> leaders = ImmutableList.of(pk1);
+		String s = new RotatingLeaders(leaders).toString();
+
+		assertThat(s).contains(RotatingLeaders.class.getSimpleName());
+		assertThat(s).contains(pk1.toString());
+	}
 }
