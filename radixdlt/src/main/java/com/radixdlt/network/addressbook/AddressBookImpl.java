@@ -88,7 +88,7 @@ public class AddressBookImpl implements AddressBook {
 		final Peer added;
 		final Peer removed;
 		final Peer updated;
-		final Peer existing;
+		final Peer exists;
 
 		static PeerUpdates add(Peer peer) {
 			return new PeerUpdates(peer, null, null, null);
@@ -110,11 +110,11 @@ public class AddressBookImpl implements AddressBook {
 			return new PeerUpdates(null, null, null, existing);
 		}
 
-		private PeerUpdates(Peer added, Peer removed, Peer updated, Peer existing) {
+		private PeerUpdates(Peer added, Peer removed, Peer updated, Peer exists) {
 			this.added = added;
 			this.removed = removed;
 			this.updated = updated;
-			this.existing = existing;
+			this.exists = exists;
 		}
 	}
 
@@ -138,8 +138,8 @@ public class AddressBookImpl implements AddressBook {
 		PeerUpdates updates = Locking.withBiFunctionLock(this.peersLock, this::updateSystemInternal, peer, system);
 		handleUpdatedPeers(updates);
 		if (updates != null) {
-			if (updates.existing != null) {
-				return updates.existing;
+			if (updates.exists != null) {
+				return updates.exists;
 			}
 			if (updates.updated != null) {
 				return updates.updated;
