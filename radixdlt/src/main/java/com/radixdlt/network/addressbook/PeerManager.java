@@ -376,7 +376,7 @@ public class PeerManager {
 		synchronized (this.probes) {
 			Long value = this.probes.get(peer);
 			if (value != null && value.longValue() == nonce) {
-				log.info("Removing peer {}:{} because of probe timeout", () -> peer, ()-> formatNonce(nonce));
+				log.info("Removing peer {}:{} because of probe timeout", () -> peer, () -> formatNonce(nonce));
 				this.probes.remove(peer);
 				this.addressbook.removePeer(peer);
 			}
