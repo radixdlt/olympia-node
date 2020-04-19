@@ -59,10 +59,10 @@ public class SimplePriorityBlockingQueueTest {
 	public void sensibleToString() {
 		SimplePriorityBlockingQueue<Long> test = new SimplePriorityBlockingQueue<>(100, Long::compare);
 
-		assertTrue(test.offer(1234L));
 		assertTrue(test.offer(4321L));
+		assertTrue(test.offer(1234L));
 
 		String s = test.toString();
-		assertEquals(s, "[1234, 4321]");
+		assertEquals("[1234, 4321]", s);
 	}
 }
