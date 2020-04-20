@@ -63,14 +63,9 @@ public class ProposalTest {
 	@Test
 	public void sensibleToString() {
 		when(key.euid()).thenReturn(EUID.TWO);
-		View view = mock(View.class);
-		QuorumCertificate qc = mock(QuorumCertificate.class);
-		when(vertex.getView()).thenReturn(view);
-		when(vertex.getQC()).thenReturn(qc);
 		String s = this.proposal.toString();
 
 		assertThat(s).contains(EUID.TWO.toString().substring(0, 6));
-		assertThat(s).contains(view.toString());
-		assertThat(s).contains(qc.toString());
+		assertThat(s).contains(vertex.toString());
 	}
 }
