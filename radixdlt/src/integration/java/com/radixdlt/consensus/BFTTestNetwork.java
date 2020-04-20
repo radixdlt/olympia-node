@@ -69,6 +69,7 @@ public class BFTTestNetwork {
 	private final Observable<Event> bftEvents;
 	private final ProposerElection proposerElection;
 	private final ValidatorSet validatorSet;
+	private final List<ECKeyPair> nodes;
 
 	/**
 	 * Create a BFT test network with a perfect underlying network and the default latency.
@@ -83,6 +84,7 @@ public class BFTTestNetwork {
 	 * @param nodes The nodes to populate the network with
 	 */
 	public BFTTestNetwork(List<ECKeyPair> nodes, TestEventCoordinatorNetwork underlyingNetwork) {
+		this.nodes = nodes;
 		this.underlyingNetwork = Objects.requireNonNull(underlyingNetwork);
 		this.genesis = null;
 		this.genesisVertex = Vertex.createGenesis(genesis);
@@ -112,6 +114,10 @@ public class BFTTestNetwork {
 		this.bftEvents = Observable.merge(this.vertexStores.keySet().stream()
 			.map(vertexStore -> createBFTInstance(vertexStore).processEvents())
 			.collect(Collectors.toList()));
+	}
+
+	public List<ECKeyPair> getNodes() {
+		return nodes;
 	}
 
 	private ChainedBFT createBFTInstance(ECKeyPair key) {
