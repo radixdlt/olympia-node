@@ -96,19 +96,15 @@ public class NetworkService {
 	}
 
 	public JSONObject getPeer(String id) {
-		JSONObject result = new JSONObject();
-
 		try {
 			EUID euid = EUID.valueOf(id);
-			Peer peer = this.addressBook.peer(euid);
-			if (peer != null) {
-				return serialization.toJsonObject(peer, Output.API);
-			}
-		} catch (NumberFormatException ex) {
+			return this.addressBook.peer(euid)
+				.map(peer -> serialization.toJsonObject(peer, Output.API))
+				.orElseGet(JSONObject::new);
+		} catch (IllegalArgumentException ex) {
 			// Ignore, return empty object
 		}
-
-		return result;
+		return new JSONObject();
 	}
 
 }

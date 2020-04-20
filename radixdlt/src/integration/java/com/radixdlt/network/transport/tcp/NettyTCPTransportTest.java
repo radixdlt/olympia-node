@@ -162,6 +162,11 @@ public class NettyTCPTransportTest {
 			public int priority(int defaultValue) {
 				return 0;
 			}
+
+			@Override
+			public boolean debugData(boolean defaultValue) {
+				return false;
+			}
 		};
 		Injector injector = Guice.createInjector(new TCPTransportModule(config));
 		return injector.getInstance(NettyTCPTransport.class);

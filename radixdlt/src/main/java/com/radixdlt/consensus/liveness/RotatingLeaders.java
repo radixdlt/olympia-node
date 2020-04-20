@@ -27,6 +27,7 @@ import java.util.Objects;
  */
 public final class RotatingLeaders implements ProposerElection {
 	private final ImmutableList<ECPublicKey> leaders;
+
 	public RotatingLeaders(ImmutableList<ECPublicKey> leaders) {
 		this.leaders = Objects.requireNonNull(leaders);
 	}
@@ -35,5 +36,10 @@ public final class RotatingLeaders implements ProposerElection {
 	public ECPublicKey getProposer(View view) {
 		int index = (int) (view.number() % leaders.size());
 		return leaders.get(index);
+	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{leaders=%s}", getClass().getSimpleName(), leaders);
 	}
 }

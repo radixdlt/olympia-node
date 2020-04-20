@@ -19,8 +19,11 @@ package com.radixdlt.middleware2.network;
 
 import java.util.Objects;
 
+import java.util.Optional;
 import javax.inject.Inject;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.radix.network.messaging.Message;
 
 import com.google.inject.name.Named;
@@ -44,6 +47,8 @@ import io.reactivex.rxjava3.subjects.PublishSubject;
  * Simple network that publishes messages to known nodes.
  */
 public class SimpleEventCoordinatorNetwork implements EventCoordinatorNetworkSender, EventCoordinatorNetworkRx {
+	private static final Logger log = LogManager.getLogger();
+
 	private final ECPublicKey selfPublicKey;
 	private final int magic;
 	private final AddressBook addressBook;
@@ -102,11 +107,16 @@ public class SimpleEventCoordinatorNetwork implements EventCoordinatorNetworkSen
 	}
 
 	private void send(Message message, ECPublicKey recipient) {
-		this.addressBook.peers()
-			.filter(p -> p.getNID().equals(recipient.euid()))
-			.forEach(p -> this.messageCentral.send(p, message));
+		Optional<Peer> peer = this.addressBook.peer(recipient.euid());
+
+		if (!peer.isPresent()) {
+			log.error("Peer with pubkey {} not present", recipient);
+		} else {
+			this.messageCentral.send(peer.get(), message);
+		}
 	}
 
+	// TODO: use a validator set to ensure every validator gets message
 	private void broadcast(Message message) {
 		this.addressBook.peers()
 			.filter(Peer::hasSystem) // Only peers with systems (and therefore transports)

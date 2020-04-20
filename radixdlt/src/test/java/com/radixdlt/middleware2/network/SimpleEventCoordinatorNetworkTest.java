@@ -19,10 +19,7 @@ package com.radixdlt.middleware2.network;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.Proposal;
@@ -35,7 +32,8 @@ import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.universe.Universe;
 import io.reactivex.rxjava3.observers.TestObserver;
-import java.util.stream.Stream;
+
+import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -90,10 +88,18 @@ public class SimpleEventCoordinatorNetworkTest {
 		ECPublicKey leader = ECKeyPair.generateNew().getPublicKey();
 		Peer peer = mock(Peer.class);
 		when(peer.getNID()).thenReturn(leader.euid());
-		when(addressBook.peers()).thenReturn(Stream.of(peer));
+		when(addressBook.peer(leader.euid())).thenReturn(Optional.of(peer));
 
 		network.sendNewView(newView, leader);
 		verify(messageCentral, times(1)).send(eq(peer), any(ConsensusEventMessage.class));
+	}
+
+	@Test
+	public void when_send_new_view_to_nonexistent__then_no_message_sent() {
+		ECPublicKey otherKey = ECKeyPair.generateNew().getPublicKey();
+		NewView newView = mock(NewView.class);
+		network.sendNewView(newView, otherKey);
+		verify(messageCentral, never()).send(any(), any());
 	}
 
 	@Test
@@ -102,7 +108,7 @@ public class SimpleEventCoordinatorNetworkTest {
 		ECPublicKey leader = ECKeyPair.generateNew().getPublicKey();
 		Peer peer = mock(Peer.class);
 		when(peer.getNID()).thenReturn(leader.euid());
-		when(addressBook.peers()).thenReturn(Stream.of(peer));
+		when(addressBook.peer(leader.euid())).thenReturn(Optional.of(peer));
 
 		network.sendVote(vote, leader);
 		verify(messageCentral, times(1)).send(eq(peer), any(ConsensusEventMessage.class));

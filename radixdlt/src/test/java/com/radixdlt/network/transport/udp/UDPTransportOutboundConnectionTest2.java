@@ -24,11 +24,14 @@ import org.junit.Test;
 import com.radixdlt.network.transport.SendResult;
 import com.radixdlt.network.transport.StaticTransportMetadata;
 import com.radixdlt.network.transport.TransportMetadata;
+
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 
 public class UDPTransportOutboundConnectionTest2 {
@@ -55,5 +58,23 @@ public class UDPTransportOutboundConnectionTest2 {
 			assertThat(result.isComplete()).isEqualTo(false);
 			assertThat(result.getThrowable().getMessage()).contains("is too large");
 		}
+	}
+
+	@Test
+	public void sensibleToString() {
+		TransportMetadata metadata = StaticTransportMetadata.of(
+			UDPConstants.METADATA_HOST, "localhost",
+			UDPConstants.METADATA_PORT, "443"
+		);
+		DatagramChannel channel = mock(DatagramChannel.class);
+
+		// No resource issues as everything is mocked
+		@SuppressWarnings("resource")
+		UDPTransportOutboundConnection oci = new UDPTransportOutboundConnection(channel, metadata);
+		String s = oci.toString();
+
+		assertThat(s, containsString(UDPConstants.NAME));
+		assertThat(s, containsString(metadata.get(UDPConstants.METADATA_HOST)));
+		assertThat(s, containsString(metadata.get(UDPConstants.METADATA_PORT)));
 	}
 }

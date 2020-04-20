@@ -15,20 +15,24 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.network.addressbook;
+package org.radix.network.messages;
 
+import org.junit.Test;
 import org.radix.serialization.SerializeMessageObject;
-import com.radixdlt.identifiers.EUID;
 
-/**
- * Check serialization of PeerWithNid
- */
-public class PeerWithNidSerializeTest extends SerializeMessageObject<PeerWithNid> {
-	public PeerWithNidSerializeTest() {
-		super(PeerWithNid.class, PeerWithNidSerializeTest::get);
+import static org.junit.Assert.*;
+import static org.hamcrest.CoreMatchers.*;
+
+public class GetPeersMessageTest extends SerializeMessageObject<GetPeersMessage> {
+
+	public GetPeersMessageTest() {
+		super(GetPeersMessage.class, GetPeersMessage::new);
 	}
 
-	private static PeerWithNid get() {
-		return new PeerWithNid(EUID.ONE);
+	@Test
+	public void sensibleToString() {
+		String s = new GetPeersMessage().toString();
+
+		assertThat(s, containsString(GetPeersMessage.class.getSimpleName()));
 	}
 }

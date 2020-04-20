@@ -17,19 +17,35 @@
 
 package org.radix.universe.system;
 
+import org.junit.Test;
+import org.radix.Radix;
 import org.radix.serialization.SerializeMessageObject;
+
+import com.google.common.collect.ImmutableList;
+import com.radixdlt.crypto.ECKeyPair;
+
+import static org.junit.Assert.*;
 
 /**
  * Check serialization of org.radix.universe.system.System
  */
-public class SystemSerializeTest extends SerializeMessageObject<RadixSystem> {
-	public SystemSerializeTest() {
-		super(RadixSystem.class, SystemSerializeTest::getSystem);
+public class RadixSystemSerializeTest extends SerializeMessageObject<RadixSystem> {
+	public RadixSystemSerializeTest() {
+		super(RadixSystem.class, RadixSystemSerializeTest::getSystem);
 	}
 
 	private static RadixSystem getSystem() {
 		RadixSystem newSystem = new RadixSystem();
 		newSystem.setPlanck(101);
 		return newSystem;
+	}
+
+	@Test
+	public void sensibleToString() {
+		ECKeyPair key = ECKeyPair.generateNew();
+		RadixSystem system = new RadixSystem(
+				key.getPublicKey(), Radix.AGENT, Radix.AGENT_VERSION, Radix.PROTOCOL_VERSION, ImmutableList.of());
+
+		assertEquals(key.getPublicKey().euid().toString(), system.toString());
 	}
 }

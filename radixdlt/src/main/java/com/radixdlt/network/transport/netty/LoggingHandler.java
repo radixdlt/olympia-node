@@ -37,7 +37,7 @@ import static io.netty.util.internal.StringUtil.NEWLINE;
 public class LoggingHandler extends ChannelDuplexHandler {
 
 	private final LogSink logger;
-	private final boolean includeReadWrite;
+	private final boolean includeData;
 
 	/**
 	 * Creates a new instance where log messages are sent to the specified
@@ -45,113 +45,147 @@ public class LoggingHandler extends ChannelDuplexHandler {
 	 *
 	 * @param logger the {@code LogSink} to which all messages will be sent
 	 */
-	public LoggingHandler(LogSink logger, boolean includeReadWrite) {
+	public LoggingHandler(LogSink logger, boolean includeData) {
 		this.logger = Objects.requireNonNull(logger);
-		this.includeReadWrite = includeReadWrite;
+		this.includeData = includeData;
 	}
 
 	@Override
 	public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
-		this.logger.log(format(ctx, "REGISTERED"));
+		if (this.logger.isDebugEnabled()) {
+			this.logger.debug(format(ctx, "REGISTERED"));
+		}
 		ctx.fireChannelRegistered();
 	}
 
 	@Override
 	public void channelUnregistered(ChannelHandlerContext ctx) throws Exception {
-		this.logger.log(format(ctx, "UNREGISTERED"));
+		if (this.logger.isDebugEnabled()) {
+			this.logger.debug(format(ctx, "UNREGISTERED"));
+		}
 		ctx.fireChannelUnregistered();
 	}
 
 	@Override
 	public void channelActive(ChannelHandlerContext ctx) throws Exception {
-		this.logger.log(format(ctx, "ACTIVE"));
+		if (this.logger.isDebugEnabled()) {
+			this.logger.debug(format(ctx, "ACTIVE"));
+		}
 		ctx.fireChannelActive();
 	}
 
 	@Override
 	public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-		this.logger.log(format(ctx, "INACTIVE"));
+		if (this.logger.isDebugEnabled()) {
+			this.logger.debug(format(ctx, "INACTIVE"));
+		}
 		ctx.fireChannelInactive();
 	}
 
 	@Override
 	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-		this.logger.log(format(ctx, "EXCEPTION", cause), cause);
+		if (this.logger.isDebugEnabled()) {
+			this.logger.debug(formatSimpleDetails(ctx, "EXCEPTION", cause), cause);
+		}
 		ctx.fireExceptionCaught(cause);
 	}
 
 	@Override
 	public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
-		this.logger.log(format(ctx, "USER_EVENT", evt));
+		if (this.logger.isDebugEnabled()) {
+			if (this.includeData) {
+				this.logger.debug(formatDetails(ctx, "USER_EVENT", evt));
+			} else {
+				this.logger.debug(formatSummary(ctx, "USER_EVENT", evt));
+			}
+		}
 		ctx.fireUserEventTriggered(evt);
 	}
 
 	@Override
 	public void bind(ChannelHandlerContext ctx, SocketAddress localAddress, ChannelPromise promise) throws Exception {
-		this.logger.log(format(ctx, "BIND", localAddress));
+		if (this.logger.isDebugEnabled()) {
+			this.logger.debug(formatSimpleDetails(ctx, "BIND", localAddress));
+		}
 		ctx.bind(localAddress, promise);
 	}
 
 	@Override
 	public void connect(ChannelHandlerContext ctx, SocketAddress remoteAddress, SocketAddress localAddress, ChannelPromise promise) throws Exception {
-		this.logger.log(format(ctx, "CONNECT", remoteAddress, localAddress));
+		if (this.logger.isDebugEnabled()) {
+			this.logger.debug(format(ctx, "CONNECT", remoteAddress, localAddress));
+		}
 		ctx.connect(remoteAddress, localAddress, promise);
 	}
 
 	@Override
 	public void disconnect(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
-		this.logger.log(format(ctx, "DISCONNECT"));
+		if (this.logger.isDebugEnabled()) {
+			this.logger.debug(format(ctx, "DISCONNECT"));
+		}
 		ctx.disconnect(promise);
 	}
 
 	@Override
 	public void close(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
-		this.logger.log(format(ctx, "CLOSE"));
+		if (this.logger.isDebugEnabled()) {
+			this.logger.debug(format(ctx, "CLOSE"));
+		}
 		ctx.close(promise);
 	}
 
 	@Override
 	public void deregister(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
-		this.logger.log(format(ctx, "DEREGISTER"));
+		if (this.logger.isDebugEnabled()) {
+			this.logger.debug(format(ctx, "DEREGISTER"));
+		}
 		ctx.deregister(promise);
 	}
 
 	@Override
 	public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
-		if (this.includeReadWrite) {
-			this.logger.log(format(ctx, "READ_COMPLETE"));
+		if (this.logger.isTraceEnabled()) {
+			this.logger.trace(format(ctx, "READ_COMPLETE"));
 		}
 		ctx.fireChannelReadComplete();
 	}
 
 	@Override
 	public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-		if (this.includeReadWrite) {
-			this.logger.log(format(ctx, "READ", msg));
+		if (this.logger.isTraceEnabled()) {
+			if (this.includeData) {
+				this.logger.trace(formatDetails(ctx, "READ", msg));
+			} else {
+				this.logger.trace(formatSummary(ctx, "READ", msg));
+			}
 		}
 		ctx.fireChannelRead(msg);
 	}
 
 	@Override
 	public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
-		if (this.includeReadWrite) {
-			this.logger.log(format(ctx, "WRITE", msg));
+		if (this.logger.isTraceEnabled()) {
+			if (this.includeData) {
+				this.logger.trace(formatDetails(ctx, "WRITE", msg));
+			} else {
+				this.logger.trace(formatSummary(ctx, "WRITE", msg));
+			}
 		}
 		ctx.write(msg, promise);
 	}
 
 	@Override
 	public void channelWritabilityChanged(ChannelHandlerContext ctx) throws Exception {
-		if (this.includeReadWrite) {
-			this.logger.log(format(ctx, "WRITABILITY_CHANGED"));
+		if (this.logger.isTraceEnabled()) {
+			this.logger.trace(format(ctx, "WRITABILITY_CHANGED"));
 		}
 		ctx.fireChannelWritabilityChanged();
 	}
 
 	@Override
 	public void flush(ChannelHandlerContext ctx) throws Exception {
-		if (this.includeReadWrite) {
-			this.logger.log(format(ctx, "FLUSH"));
+		if (this.logger.isTraceEnabled()) {
+			this.logger.trace(format(ctx, "FLUSH"));
 		}
 		ctx.flush();
 	}
@@ -176,13 +210,29 @@ public class LoggingHandler extends ChannelDuplexHandler {
 	 * @param eventName the name of the event
 	 * @param arg       the argument of the event
 	 */
-	protected String format(ChannelHandlerContext ctx, String eventName, Object arg) {
+	protected String formatDetails(ChannelHandlerContext ctx, String eventName, Object arg) {
 		if (arg instanceof ByteBuf) {
-			return formatByteBuf(ctx, eventName, (ByteBuf) arg);
+			return formatByteBufDetails(ctx, eventName, (ByteBuf) arg);
 		} else if (arg instanceof ByteBufHolder) {
-			return formatByteBufHolder(ctx, eventName, (ByteBufHolder) arg);
+			return formatByteBufHolderDetails(ctx, eventName, (ByteBufHolder) arg);
 		} else {
-			return formatSimple(ctx, eventName, arg);
+			return formatSimpleDetails(ctx, eventName, arg);
+		}
+	}
+
+	/**
+	 * Formats an event and returns the formatted message.
+	 *
+	 * @param eventName the name of the event
+	 * @param arg       the argument of the event
+	 */
+	protected String formatSummary(ChannelHandlerContext ctx, String eventName, Object arg) {
+		if (arg instanceof ByteBuf) {
+			return formatByteBufSummary(ctx, eventName, (ByteBuf) arg);
+		} else if (arg instanceof ByteBufHolder) {
+			return formatByteBufHolderSummary(ctx, eventName, (ByteBufHolder) arg);
+		} else {
+			return formatSimpleSummary(ctx, eventName, arg);
 		}
 	}
 
@@ -197,7 +247,7 @@ public class LoggingHandler extends ChannelDuplexHandler {
 	 */
 	protected String format(ChannelHandlerContext ctx, String eventName, Object firstArg, Object secondArg) {
 		if (secondArg == null) {
-			return formatSimple(ctx, eventName, firstArg);
+			return formatSimpleDetails(ctx, eventName, firstArg);
 		}
 
 		String chStr = ctx.channel().toString();
@@ -212,7 +262,7 @@ public class LoggingHandler extends ChannelDuplexHandler {
 	 * Generates the default log message of the specified event whose argument is a
 	 * {@link ByteBuf}.
 	 */
-	private static String formatByteBuf(ChannelHandlerContext ctx, String eventName, ByteBuf msg) {
+	private static String formatByteBufDetails(ChannelHandlerContext ctx, String eventName, ByteBuf msg) {
 		String chStr = ctx.channel().toString();
 		int length = msg.readableBytes();
 		if (length == 0) {
@@ -232,9 +282,21 @@ public class LoggingHandler extends ChannelDuplexHandler {
 
 	/**
 	 * Generates the default log message of the specified event whose argument is a
+	 * {@link ByteBuf}.
+	 */
+	private static String formatByteBufSummary(ChannelHandlerContext ctx, String eventName, ByteBuf msg) {
+		String chStr = ctx.channel().toString();
+		int length = msg.readableBytes();
+		StringBuilder buf = new StringBuilder(chStr.length() + 1 + eventName.length() + 20);
+		buf.append(chStr).append(' ').append(eventName).append(": ").append(length).append('B');
+		return buf.toString();
+	}
+
+	/**
+	 * Generates the default log message of the specified event whose argument is a
 	 * {@link ByteBufHolder}.
 	 */
-	private static String formatByteBufHolder(ChannelHandlerContext ctx, String eventName, ByteBufHolder msg) {
+	private static String formatByteBufHolderDetails(ChannelHandlerContext ctx, String eventName, ByteBufHolder msg) {
 		String chStr = ctx.channel().toString();
 		String msgStr = msg.toString();
 		ByteBuf content = msg.content();
@@ -255,12 +317,37 @@ public class LoggingHandler extends ChannelDuplexHandler {
 	}
 
 	/**
+	 * Generates the default log message of the specified event whose argument is a
+	 * {@link ByteBufHolder}.
+	 */
+	private static String formatByteBufHolderSummary(ChannelHandlerContext ctx, String eventName, ByteBufHolder msg) {
+		String chStr = ctx.channel().toString();
+		String msgStr = msg.toString();
+		ByteBuf content = msg.content();
+		int length = content.readableBytes();
+		StringBuilder buf = new StringBuilder(chStr.length() + 1 + eventName.length() + 2 + msgStr.length() + 20);
+		buf.append(chStr).append(' ').append(eventName).append(": ").append(msgStr).append(", ").append(length).append('B');
+		return buf.toString();
+	}
+
+	/**
 	 * Generates the default log message of the specified event whose argument is an
 	 * arbitrary object.
 	 */
-	private static String formatSimple(ChannelHandlerContext ctx, String eventName, Object msg) {
+	private static String formatSimpleDetails(ChannelHandlerContext ctx, String eventName, Object msg) {
 		String chStr = ctx.channel().toString();
 		String msgStr = String.valueOf(msg);
+		StringBuilder buf = new StringBuilder(chStr.length() + 1 + eventName.length() + 2 + msgStr.length());
+		return buf.append(chStr).append(' ').append(eventName).append(": ").append(msgStr).toString();
+	}
+
+	/**
+	 * Generates the default log message of the specified event whose argument is an
+	 * arbitrary object.
+	 */
+	private static String formatSimpleSummary(ChannelHandlerContext ctx, String eventName, Object msg) {
+		String chStr = ctx.channel().toString();
+		String msgStr = msg == null ? "null" : msg.getClass().getSimpleName();
 		StringBuilder buf = new StringBuilder(chStr.length() + 1 + eventName.length() + 2 + msgStr.length());
 		return buf.append(chStr).append(' ').append(eventName).append(": ").append(msgStr).toString();
 	}

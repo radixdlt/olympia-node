@@ -54,4 +54,9 @@ public final class PeersMessage extends Message
 		this.peers.clear();
 		this.peers.addAll(peers);
 	}
+
+	@Override
+	public String toString() {
+		return String.format("%s[%s]", getClass().getSimpleName(), peers);
+	}
 }

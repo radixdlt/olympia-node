@@ -17,7 +17,15 @@
 
 package org.radix.serialization;
 
+import org.junit.Test;
 import org.radix.network.messages.PeerPongMessage;
+import org.radix.universe.system.RadixSystem;
+
+import com.radixdlt.identifiers.EUID;
+
+import static org.hamcrest.CoreMatchers.*;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
 /**
  * Check serialization of UDPPongMessage
@@ -29,5 +37,16 @@ public class PeerPongMessageSerializeTest extends SerializeMessageObject<PeerPon
 
 	private static PeerPongMessage get() {
 		return new PeerPongMessage(0L, getLocalSystem(), 1);
+	}
+
+	@Test
+	public void sensibleToString() {
+		RadixSystem system = mock(RadixSystem.class);
+		when(system.getNID()).thenReturn(EUID.TWO);
+		String s = new PeerPongMessage(1234L, system, 0).toString();
+
+		assertThat(s, containsString(PeerPongMessage.class.getSimpleName()));
+		assertThat(s, containsString(EUID.TWO.toString()));
+		assertThat(s, containsString("1234"));
 	}
 }

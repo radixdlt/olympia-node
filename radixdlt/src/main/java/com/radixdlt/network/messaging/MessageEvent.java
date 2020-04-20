@@ -19,15 +19,14 @@ package com.radixdlt.network.messaging;
 
 import java.util.Comparator;
 import java.util.Map;
+import java.util.Objects;
 
-import org.radix.events.Event;
 import org.radix.network.messages.PeerPingMessage;
 import org.radix.network.messages.PeerPongMessage;
 import org.radix.network.messaging.Message;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.network.addressbook.Peer;
-import com.radixdlt.network.transport.TransportInfo;
 
 /**
  * Inbound and outbound message wrapper with priority, time and destination.
@@ -37,7 +36,7 @@ import com.radixdlt.network.transport.TransportInfo;
  * <p>
  * Time is number of nanoseconds since some arbitrary baseline.
  */
-public final class MessageEvent extends Event {
+public final class MessageEvent {
 
 	private static final int DEFAULT_PRIORITY = 0;
 	// Lower (inc -ve) numbers are higher priority than larger numbers
@@ -46,22 +45,21 @@ public final class MessageEvent extends Event {
 		PeerPongMessage.class, Integer.MIN_VALUE
 	);
 
-	static final Comparator<MessageEvent> COMPARATOR =
-		Comparator.comparingInt(MessageEvent::priority).thenComparingLong(MessageEvent::nanoTimeDiff);
+	public static Comparator<MessageEvent> comparator() {
+		return Comparator.comparingInt(MessageEvent::priority).thenComparingLong(MessageEvent::nanoTimeDiff);
+	}
 
 	private final int priority;
 	private final long nanoTimeDiff;
 	private final Peer peer;
-	private final TransportInfo transportInfo;
 	private final Message message;
 
-	MessageEvent(Peer peer, TransportInfo transportInfo, Message message, long nanoTimeDiff) {
+	MessageEvent(Peer peer, Message message, long nanoTimeDiff) {
 		super();
 
 		this.priority = MESSAGE_PRIORITIES.getOrDefault(message.getClass(), DEFAULT_PRIORITY);
 		this.nanoTimeDiff = nanoTimeDiff;
 		this.peer = peer;
-		this.transportInfo = transportInfo;
 		this.message = message;
 	}
 
@@ -95,23 +93,32 @@ public final class MessageEvent extends Event {
 	}
 
 	/**
-	 * Returns the source transport for inbound messages or {@code null}.
-	 * <p>
-	 * FIXME: Should be cleaner separation between inbound and outbound here.
-	 *
-	 * @return the transport for the message
-	 */
-	public TransportInfo transportInfo() {
-		return transportInfo;
-	}
-
-	/**
 	 * Returns the message.
 	 *
 	 * @return the message.
 	 */
 	public Message message() {
 		return message;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(this.priority, this.nanoTimeDiff, this.peer, this.message);
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (obj instanceof MessageEvent) {
+			MessageEvent that = (MessageEvent) obj;
+			return this.priority == that.priority
+				&& this.nanoTimeDiff == that.nanoTimeDiff
+				&& Objects.equals(this.peer, that.peer)
+				&& Objects.equals(this.message, that.message);
+		}
+		return false;
 	}
 
 	@Override

@@ -54,8 +54,8 @@ import io.netty.handler.codec.LengthFieldPrepender;
 final class NettyTCPTransportImpl implements NettyTCPTransport {
 	private static final Logger log = LogManager.getLogger("transport.tcp");
 
-	// Set this to true to see a dump of packet data
-	private static final boolean DEBUG_DATA = false;
+	// Set this to true to see a detailed hexdump of sent/received data at runtime
+	private final boolean debugData;
 
 	// Default values if none specified in either localMetadata or config
 	@VisibleForTesting
@@ -103,6 +103,7 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 			TCPConstants.METADATA_PORT, String.valueOf(port)
 		);
 		this.priority = config.priority(0);
+		this.debugData = config.debugData(false);
 		this.control = controlFactory.create(config, outboundFactory, this);
 		this.bindAddress = new InetSocketAddress(providedHost, port);
 	}
@@ -134,7 +135,9 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 
 	@Override
 	public void start(InboundMessageConsumer messageSink) {
-		log.info("TCP transport {}", localAddress());
+		if (log.isInfoEnabled()) {
+			log.info("TCP transport {}", localAddress());
+		}
 
 		EventLoopGroup serverGroup = new NioEventLoopGroup(1);
 		EventLoopGroup workerGroup = new NioEventLoopGroup(1, this::createThread);
@@ -146,7 +149,7 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 			.handler(new ChannelInitializer<SocketChannel>() {
 				@Override
 				public void initChannel(SocketChannel ch) throws Exception {
-					setupChannel(ch, messageSink);
+					setupChannel(ch, messageSink, true);
 				}
 			});
 
@@ -159,12 +162,11 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 				@Override
 				public void initChannel(SocketChannel ch) throws Exception {
 					log.info("Connection from {}:{}", ch.remoteAddress().getHostString(), ch.remoteAddress().getPort());
-					setupChannel(ch, messageSink);
+					setupChannel(ch, messageSink, false);
 				}
 			});
-		if (log.isDebugEnabled()) {
-			LogSink ls = LogSink.forDebug(log);
-			b.handler(new LoggingHandler(ls, DEBUG_DATA));
+		if (log.isDebugEnabled() || log.isTraceEnabled()) {
+			b.handler(new LoggingHandler(LogSink.using(log), this.debugData));
 		}
 		try {
 			synchronized (channelLock) {
@@ -179,7 +181,7 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 		}
 	}
 
-	private void setupChannel(SocketChannel ch, InboundMessageConsumer messageSink) {
+	private void setupChannel(SocketChannel ch, InboundMessageConsumer messageSink, boolean isOutbound) {
 		final int packetLength = TCPConstants.MAX_PACKET_LENGTH + TCPConstants.LENGTH_HEADER;
 		final int headerLength = TCPConstants.LENGTH_HEADER;
 		ch.config()
@@ -187,11 +189,13 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 			.setSendBufferSize(SND_BUF_SIZE)
 			.setOption(ChannelOption.RCVBUF_ALLOCATOR, new FixedRecvByteBufAllocator(packetLength));
 		if (log.isDebugEnabled()) {
-			LogSink ls = LogSink.forDebug(log);
-			ch.pipeline().addLast(new LoggingHandler(ls, DEBUG_DATA));
+			ch.pipeline().addLast(new LoggingHandler(LogSink.using(log), debugData));
+		}
+		if (isOutbound) {
+			ch.pipeline()
+				.addLast("connections", control.handler());
 		}
 		ch.pipeline()
-			.addLast("connections", control.handler())
 			.addLast("unpack", new LengthFieldBasedFrameDecoder(packetLength, 0, headerLength, 0, headerLength))
 			.addLast("onboard", new TCPNettyMessageHandler(messageSink));
 		ch.pipeline()
@@ -238,7 +242,7 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 			try {
 				c.close();
 			} catch (IOException | UncheckedIOException e) {
-				log.warn("Error while closing " + c, e);
+				log.warn(String.format("Error while closing %s", c), e);
 			}
 		}
 	}

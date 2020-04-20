@@ -18,6 +18,7 @@
 package com.radixdlt.network.addressbook;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
@@ -25,12 +26,15 @@ import com.radixdlt.universe.Universe;
 import org.junit.Before;
 import org.junit.Test;
 import org.powermock.reflect.Whitebox;
+import org.radix.Radix;
 import org.radix.events.Events;
 import org.radix.time.Time;
 import org.radix.time.Timestamps;
 import org.radix.universe.system.RadixSystem;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.network.transport.StaticTransportMetadata;
 import com.radixdlt.network.transport.TransportInfo;
@@ -114,8 +118,9 @@ public class AddressBookImplTest {
 		assertEquals(1, this.savedPeerCount.get());
 
 		// Should be able to find by nid in address book
-		Peer foundPeer = this.addressbook.peer(nid);
-		assertSame(peer, foundPeer);
+		Optional<Peer> foundPeer = this.addressbook.peer(nid);
+		assertTrue(foundPeer.isPresent());
+		assertSame(peer, foundPeer.get());
 
 		// Quick check of internal state too
 		assertEmpty(Whitebox.getInternalState(this.addressbook, "peersByInfo"));
@@ -143,8 +148,9 @@ public class AddressBookImplTest {
 		assertEquals(1, this.savedPeerCount.get());
 
 		// Should be able to find by nid in address book
-		Peer foundPeer1 = this.addressbook.peer(system.getNID());
-		assertSame(peer, foundPeer1);
+		Optional<Peer> foundPeer1 = this.addressbook.peer(system.getNID());
+		assertTrue(foundPeer1.isPresent());
+		assertSame(peer, foundPeer1.get());
 
 		// Should be able to find by transportInfo in address book
 		Peer foundPeer2 = this.addressbook.peer(transportInfo);
@@ -242,6 +248,31 @@ public class AddressBookImplTest {
 	}
 
 	@Test
+	public void testUpdatePeerSameSystem() {
+		EUID nid = EUID.ONE;
+		TransportInfo transportInfo = TransportInfo.of("DUMMY", StaticTransportMetadata.empty());
+
+
+		RadixSystem system = mock(RadixSystem.class);
+		when(system.getNID()).thenReturn(nid);
+		when(system.supportedTransports()).thenAnswer(invocation -> Stream.of(transportInfo));
+		PeerWithSystem peer = new PeerWithSystem(system);
+
+		assertTrue(this.addressbook.addPeer(peer));
+		assertEquals(1, this.broadcastEventCount.get());
+		assertEquals(1, this.savedPeerCount.get());
+
+		Peer peer2 = this.addressbook.updatePeerSystem(new PeerWithTransport(transportInfo), system);
+		assertNotNull(peer2);
+		assertEquals(1, this.broadcastEventCount.get());
+		assertEquals(1, this.savedPeerCount.get());
+
+		// Quick check of internal state too
+		assertSize(1, Whitebox.getInternalState(this.addressbook, "peersByInfo"));
+		assertSize(1, Whitebox.getInternalState(this.addressbook, "peersByNid"));
+	}
+
+	@Test
 	public void testUpdatePeerSystemChangedNid() {
 		PeerWithNid peer = new PeerWithNid(EUID.ONE);
 
@@ -276,18 +307,21 @@ public class AddressBookImplTest {
 
 	@Test
 	public void testPeerNid() {
-		EUID nid = EUID.ONE;
+		Optional<Peer> peer = this.addressbook.peer(EUID.ONE);
+		assertFalse(peer.isPresent());
+		assertEquals(0, this.broadcastEventCount.get());
+		assertEquals(0, this.savedPeerCount.get());
 
-		Peer peer = this.addressbook.peer(nid);
-		assertNotNull(peer);
+		ECKeyPair key = ECKeyPair.generateNew();
+		RadixSystem sys = new RadixSystem(key.getPublicKey(), Radix.AGENT, Radix.AGENT_VERSION, Radix.PROTOCOL_VERSION, ImmutableList.of());
+		PeerWithSystem pws = new PeerWithSystem(sys);
+		this.addressbook.addPeer(pws);
+
+		Optional<Peer> peer2 = this.addressbook.peer(pws.getNID());
+		assertTrue(peer2.isPresent());
 		assertEquals(1, this.broadcastEventCount.get());
 		assertEquals(1, this.savedPeerCount.get());
-
-		Peer peer2 = this.addressbook.peer(nid);
-		assertNotNull(peer2);
-		assertEquals(1, this.broadcastEventCount.get());
-		assertEquals(1, this.savedPeerCount.get());
-		assertSame(peer, peer2);
+		assertSame(pws, peer2.get());
 
 		// Quick check of internal state too
 		assertEmpty(Whitebox.getInternalState(this.addressbook, "peersByInfo"));

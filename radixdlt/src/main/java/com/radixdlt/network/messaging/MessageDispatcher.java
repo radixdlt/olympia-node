@@ -25,7 +25,6 @@ import org.radix.Radix;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.identifiers.EUID;
-import com.radixdlt.network.NetworkLegacyPatching;
 import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
@@ -97,7 +96,7 @@ class MessageDispatcher {
 
 			byte[] bytes = serialize(message);
 			return findTransportAndOpenConnection(transportManager, peer, bytes)
-				.thenCompose(conn -> conn.send(bytes))
+				.thenCompose(conn -> send(peer, conn, message, bytes))
 				.thenApply(this::updateStatistics)
 				.get();
 		} catch (Exception ex) {
@@ -105,6 +104,13 @@ class MessageDispatcher {
 			log.error(msg, ex);
 			return SendResult.failure(new IOException(msg, ex));
 		}
+	}
+
+	private CompletableFuture<SendResult> send(Peer peer, TransportOutboundConnection conn, Message message, byte[] bytes) {
+		if (log.isTraceEnabled()) {
+			log.trace("Sending to {}: {}", hostId(peer), message);
+		}
+		return conn.send(bytes);
 	}
 
 	void receive(MessageListenerList listeners, final MessageEvent inboundMessage) {
@@ -134,6 +140,9 @@ class MessageDispatcher {
 			return;
 		}
 
+		if (log.isTraceEnabled()) {
+			log.trace("Received from {}: {}", hostId(peer), inboundMessage.message());
+		}
 		listeners.messageReceived(peer, message);
 		this.counters.increment(CounterType.MESSAGES_INBOUND_PROCESSED);
 	}
@@ -143,7 +152,7 @@ class MessageDispatcher {
 		RadixSystem system = systemMessage.getSystem();
 		if (checkSignature(systemMessage, system)) {
 			Peer peer = this.addressBook.updatePeerSystem(oldPeer, system);
-			log.debug("Good signature on {} message from {}", messageType, peer);
+			log.debug("Good signature on {} from {}", messageType, peer);
 			if (system.getNID() == null || EUID.ZERO.equals(system.getNID())) {
 				peer.ban(String.format("%s:%s gave null NID", peer, messageType));
 				return null;
@@ -157,7 +166,7 @@ class MessageDispatcher {
 				log.debug("Ignoring {} message from self", messageType);
 				return null;
 			}
-			if (NetworkLegacyPatching.checkPeerBanned(peer, system.getNID(), timeSource, this.addressBook)) {
+			if (checkPeerBanned(system.getNID(), messageType)) {
 				return null;
 			}
 			return peer;
@@ -212,5 +221,32 @@ class MessageDispatcher {
 		} catch (IOException e) {
 			throw new UncheckedIOException("While serializing message", e);
 		}
+	}
+
+	private String hostId(Peer peer) {
+		return peer.supportedTransports()
+			.findFirst()
+			.map(ti -> String.format("%s:%s", ti.name(), ti.metadata()))
+			.orElse("None");
+	}
+
+	/**
+	 * Return true if we already have information about the given peer being banned.
+	 * Note that if the peer is already banned according to our address book, the
+	 * specified peer instance will have it's banned timestamp updated to match the
+	 * known peer's banned time.
+	 *
+	 * @param peerNid the corresponding node ID of the peer
+	 * @param messageType the message type for logging ignored messages
+	 * @return {@code true} if the peer is currently banned, {@code false} otherwise
+	 */
+	private boolean checkPeerBanned(EUID peerNid, String messageType) {
+		return this.addressBook.peer(peerNid)
+			.filter(kp -> kp.getTimestamp(Timestamps.BANNED) > this.timeSource.currentTime())
+			.map(kp -> {
+				log.debug("Ignoring {} message from banned peer {}", messageType, kp);
+				return true;
+			})
+			.orElse(false);
 	}
 }

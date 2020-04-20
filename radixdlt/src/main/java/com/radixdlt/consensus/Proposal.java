@@ -79,8 +79,8 @@ public final class Proposal implements ConsensusEvent {
 
 	@Override
 	public String toString() {
-		return String.format("%s{vertex=%s author=%s}", getClass().getSimpleName(),
-			vertex, author.euid().toString().substring(0, 6));
+		String who = author == null ? null : author.euid().toString().substring(0, 6);
+		return String.format("%s{vertex=%s author=%s}", getClass().getSimpleName(), vertex, who);
 	}
 
 	@Override

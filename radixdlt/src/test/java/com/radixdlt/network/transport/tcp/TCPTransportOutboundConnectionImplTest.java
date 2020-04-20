@@ -28,6 +28,7 @@ import com.radixdlt.network.transport.StaticTransportMetadata;
 import com.radixdlt.network.transport.TransportMetadata;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -162,4 +163,21 @@ public class TCPTransportOutboundConnectionImplTest {
 		assertFalse(cfsr.get().isComplete());
 	}
 
+	@Test
+	public void sensibleToString() {
+		TransportMetadata metadata = StaticTransportMetadata.of(
+			TCPConstants.METADATA_HOST, "localhost",
+			TCPConstants.METADATA_PORT, "443"
+		);
+		Channel channel = mock(Channel.class);
+
+		// No resource issues as everything is mocked
+		@SuppressWarnings("resource")
+		TCPTransportOutboundConnectionImpl oci = new TCPTransportOutboundConnectionImpl(channel, metadata);
+		String s = oci.toString();
+
+		assertThat(s, containsString(TCPConstants.NAME));
+		assertThat(s, containsString(metadata.get(TCPConstants.METADATA_HOST)));
+		assertThat(s, containsString(metadata.get(TCPConstants.METADATA_PORT)));
+	}
 }
