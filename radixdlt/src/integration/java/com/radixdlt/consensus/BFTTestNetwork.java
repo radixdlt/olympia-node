@@ -173,10 +173,6 @@ public class BFTTestNetwork {
 		return this.bftEvents;
 	}
 
-	public int getMaximumNetworkLatency() {
-		return underlyingNetwork.getMaxLatency();
-	}
-
 	public int getPacemakerTimeout() {
 		return TEST_PACEMAKER_TIMEOUT;
 	}

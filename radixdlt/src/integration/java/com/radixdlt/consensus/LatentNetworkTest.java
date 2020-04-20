@@ -34,23 +34,22 @@ public class LatentNetworkTest {
 	@Test
 	public void given_3_correct_bfts_in_latent_network__then_all_normal_sanity_checks_should_pass() {
 		final int maxLatency = 160;
-
-		BFTTest bftTest = BFTTest.builder()
-			.numNodes(3)
-			.time(1, TimeUnit.MINUTES)
-			.networkLatency(10, maxLatency) // 6 times max latency should be less than BFTTestNetwork.TEST_PACEMAKER_TIMEOUT
-			.build();
-		bftTest.assertSafety();
-
 		// there should be a new highest QC every once in a while to ensure progress
 		// the minimum latency per round is determined using the network latency
 		// a round can consist of 6 * max_transmission_time
 		int trips = 6;
-		bftTest.assertLiveness(maxLatency * trips, TimeUnit.MILLISECONDS);
-		bftTest.assertAllProposalsHaveDirectParents();
-		bftTest.assertNoSyncExceptions();
-		bftTest.assertNoTimeouts();
-		bftTest.run();
+
+		BFTTest bftTest = BFTTest.builder()
+			.numNodes(3)
+			.randomLatency(10, maxLatency) // 6 times max latency should be less than BFTTestNetwork.TEST_PACEMAKER_TIMEOUT
+			.checkLiveness(maxLatency * trips, TimeUnit.MILLISECONDS)
+			.checkSafety()
+			.checkAllProposalsHaveDirectParents()
+			.checkNoSyncExceptions()
+			.checkNoTimeouts()
+			.build();
+
+		bftTest.run(1, TimeUnit.MINUTES);
 	}
 
 	/**
@@ -61,12 +60,10 @@ public class LatentNetworkTest {
 	public void given_4_correct_bfts_in_latent_network_with_no_syncing__then_network_should_eventually_timeout() {
 		BFTTest bftTest = BFTTest.builder()
 			.numNodes(4)
-			.time(10, TimeUnit.MINUTES)
-			.networkLatency(10, 160) // 6 times max latency should be less than BFTTestNetwork.TEST_PACEMAKER_TIMEOUT
+			.randomLatency(10, 160) // 6 times max latency should be less than BFTTestNetwork.TEST_PACEMAKER_TIMEOUT
+			.checkNoTimeouts()
 			.build();
-		bftTest.assertNoTimeouts();
-
-		assertThatThrownBy(bftTest::run)
+		assertThatThrownBy(() -> bftTest.run(10, TimeUnit.MINUTES))
 			.isInstanceOf(AssertionError.class);
 	}
 }

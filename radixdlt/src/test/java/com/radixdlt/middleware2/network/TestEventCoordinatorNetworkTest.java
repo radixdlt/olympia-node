@@ -17,7 +17,6 @@
 
 package com.radixdlt.middleware2.network;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
@@ -38,24 +37,12 @@ public class TestEventCoordinatorNetworkTest {
 	@Test
 	public void when_building_with_negative_latencies__then_illegal_argument_exception_thrown() {
 		assertThatThrownBy(() -> TestEventCoordinatorNetwork.builder()
-			.minLatency(-1)
-			.maxLatency(100)
-			.build()).isInstanceOf(IllegalArgumentException.class);
+			.randomLatency(-1, 100)
+		).isInstanceOf(IllegalArgumentException.class);
 
 		assertThatThrownBy(() -> TestEventCoordinatorNetwork.builder()
-			.minLatency(10)
-			.maxLatency(-1)
-			.build()).isInstanceOf(IllegalArgumentException.class);
-	}
-
-	@Test
-	public void when_builder_with_max_latency__then_created_object_should_have_max_latency() {
-		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.builder()
-			.minLatency(50)
-			.maxLatency(100)
-			.build();
-
-		assertThat(network.getMaxLatency()).isEqualTo(100);
+			.randomLatency(10, -1)
+		).isInstanceOf(IllegalArgumentException.class);
 	}
 
 	@Test

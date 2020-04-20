@@ -22,6 +22,7 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.examples.tictactoe.Pair;
 
+import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork;
 import io.reactivex.rxjava3.core.Observable;
 import org.assertj.core.api.Condition;
 import org.junit.Test;
@@ -112,10 +113,12 @@ public class CrashFaultNetworkTest {
 		// "crash" all faulty nodes by disallowing any communication
 		faultyNodes.forEach(node -> crashNode(node, bftNetwork));
 
+
 		// there should be a new highest QC every once in a while to ensure progress
 		// the minimum latency per round is determined using the network latency and a tolerance
-		int worstCaseLatencyPerRound = bftNetwork.getMaximumNetworkLatency() * 2 // base latency: two rounds in the normal case
-			+ numCrashed * (bftNetwork.getMaximumNetworkLatency() * 4 + bftNetwork.getPacemakerTimeout()); // four rounds plus timeout in bad case
+		final int maxLatency = TestEventCoordinatorNetwork.DEFAULT_LATENCY;
+		int worstCaseLatencyPerRound = maxLatency * 2 // base latency: two rounds in the normal case
+			+ numCrashed * (maxLatency * 4 + bftNetwork.getPacemakerTimeout()); // four rounds plus timeout in bad case
 		// account for any inaccuracies, execution time, scheduling inefficiencies..
 		// the tolerance is high since we're only interested in qualitative progress in this test
 		double tolerance = 2.0;
@@ -224,8 +227,9 @@ public class CrashFaultNetworkTest {
 
 		// there should be a new highest QC every once in a while to ensure progress
 		// the minimum latency per round is determined using the network latency and a tolerance
-		int worstCaseLatencyPerRound = bftNetwork.getMaximumNetworkLatency() * 2 // base latency: two rounds in the normal case
-			+ numNodes * (bftNetwork.getMaximumNetworkLatency() * 4 + bftNetwork.getPacemakerTimeout()); // four rounds plus timeout in bad case
+		final int maxLatency = TestEventCoordinatorNetwork.DEFAULT_LATENCY;
+		int worstCaseLatencyPerRound = maxLatency * 2 // base latency: two rounds in the normal case
+			+ numNodes * (maxLatency * 4 + bftNetwork.getPacemakerTimeout()); // four rounds plus timeout in bad case
 		// account for any inaccuracies, execution time, scheduling inefficiencies..
 		// the tolerance is high since we're only interested in qualitative progress in this test
 		double tolerance = 2.0;

@@ -36,53 +36,51 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiFunction;
 
 /**
  * Simple simulated network implementation that just sends messages to itself with a configurable latency.
  */
 public class TestEventCoordinatorNetwork {
-	private final Random rng;
-	private final int minimumLatency;
-	private final int maximumLatency;
+	public static final int DEFAULT_LATENCY = 50;
 
 	private final Subject<MessageInTransit> receivedMessages;
 	private final Map<ECPublicKey, EventCoordinatorNetworkRx> readers = new ConcurrentHashMap<>();
 	private final Set<ECPublicKey> sendingDisabled = Sets.newConcurrentHashSet();
 	private final Set<ECPublicKey> receivingDisabled = Sets.newConcurrentHashSet();
+	private final BiFunction<ECPublicKey, ECPublicKey, Integer> nextLatency;
 
-	private TestEventCoordinatorNetwork(int minimumLatency, int maximumLatency, long rngSeed) {
-		if (minimumLatency < 0) {
-			throw new IllegalArgumentException("minimumLatency must be >= 0 but was " + minimumLatency);
-		}
-		if (maximumLatency < 0) {
-			throw new IllegalArgumentException("maximumLatency must be >= 0 but was " + maximumLatency);
-		}
-		this.minimumLatency = minimumLatency;
-		this.maximumLatency = maximumLatency;
-		this.rng = new Random(rngSeed);
+	private TestEventCoordinatorNetwork(BiFunction<ECPublicKey, ECPublicKey, Integer> nextLatency) {
+		this.nextLatency = nextLatency;
 		this.receivedMessages = ReplaySubject.<MessageInTransit>create(5) // To catch startup timing issues
 			.toSerialized();
 	}
 
 	public static class Builder {
-		private int minLatency = 50;
-		private int maxLatency = 50;
+		private BiFunction<ECPublicKey, ECPublicKey, Integer> nextLatency = (from, to) -> DEFAULT_LATENCY;
 
 		private Builder() {
 		}
 
-		public Builder minLatency(int minLatency) {
-			this.minLatency = minLatency;
+		public Builder nextLatency(BiFunction<ECPublicKey, ECPublicKey, Integer> nextLatency) {
+			this.nextLatency = nextLatency;
 			return this;
 		}
 
-		public Builder maxLatency(int maxLatency) {
-			this.maxLatency = maxLatency;
+		public Builder randomLatency(int minLatency, int maxLatency) {
+			if (minLatency < 0) {
+				throw new IllegalArgumentException("minimumLatency must be >= 0 but was " + minLatency);
+			}
+			if (maxLatency < 0) {
+				throw new IllegalArgumentException("maximumLatency must be >= 0 but was " + maxLatency);
+			}
+			final Random rng = new Random(System.currentTimeMillis());
+			this.nextLatency = (from, to) -> minLatency + rng.nextInt(maxLatency - minLatency + 1);
 			return this;
 		}
 
 		public TestEventCoordinatorNetwork build() {
-			return new TestEventCoordinatorNetwork(minLatency, maxLatency, System.currentTimeMillis());
+			return new TestEventCoordinatorNetwork(nextLatency);
 		}
 	}
 
@@ -138,8 +136,7 @@ public class TestEventCoordinatorNetwork {
 					if (msg.sender.equals(node)) {
 						return msg;
 					} else {
-						int nextDelay = minimumLatency + rng.nextInt(maximumLatency - minimumLatency + 1);
-						return msg.delayed(nextDelay);
+						return msg.delayed(nextLatency.apply(msg.sender, msg.target));
 					}
 				})
 				.timestamp(TimeUnit.MILLISECONDS)
@@ -157,10 +154,6 @@ public class TestEventCoordinatorNetwork {
 				.map(MessageInTransit::getContent)
 				.ofType(ConsensusEvent.class)
 		);
-	}
-
-	public int getMaxLatency() {
-		return maximumLatency;
 	}
 
 	private static final class MessageInTransit {

@@ -37,13 +37,12 @@ public class PerfectNetworkTest {
 	public void given_4_correct_bfts__then_should_pass_sanity_tests_over_1_minute() {
 		BFTTest bftTest = BFTTest.builder()
 			.numNodes(4)
-			.time(1, TimeUnit.MINUTES)
+			.checkSafety()
+			.checkLiveness()
+			.checkNoTimeouts()
+			.checkNoSyncExceptions()
+			.checkAllProposalsHaveDirectParents()
 			.build();
-		bftTest.assertSafety();
-		bftTest.assertLiveness();
-		bftTest.assertNoTimeouts();
-		bftTest.assertNoSyncExceptions();
-		bftTest.assertAllProposalsHaveDirectParents();
-		bftTest.run();
+		bftTest.run(1, TimeUnit.MINUTES);
 	}
 }
