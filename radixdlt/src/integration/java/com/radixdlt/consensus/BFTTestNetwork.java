@@ -56,7 +56,6 @@ import java.util.stream.Collectors;
  * A multi-node bft test network where the network is simulated.
  */
 public class BFTTestNetwork {
-	private static final int DEFAULT_TEST_NETWORK_LATENCY = 50;
 	private static final int TEST_PACEMAKER_TIMEOUT = 1000;
 
 	private final TestEventCoordinatorNetwork underlyingNetwork;
@@ -76,7 +75,7 @@ public class BFTTestNetwork {
 	 * @param nodes The nodes to populate the network with
 	 */
 	public BFTTestNetwork(List<ECKeyPair> nodes) {
-		this(nodes, TestEventCoordinatorNetwork.orderedLatent(DEFAULT_TEST_NETWORK_LATENCY));
+		this(nodes, new TestEventCoordinatorNetwork.Builder().build());
 	}
 
 	/**

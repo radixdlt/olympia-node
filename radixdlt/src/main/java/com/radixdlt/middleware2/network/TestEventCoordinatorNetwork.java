@@ -25,18 +25,16 @@ import com.radixdlt.consensus.EventCoordinatorNetworkSender;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Vote;
 import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.subjects.PublishSubject;
 
+import io.reactivex.rxjava3.schedulers.Timed;
+import io.reactivex.rxjava3.subjects.ReplaySubject;
+import io.reactivex.rxjava3.subjects.Subject;
 import java.util.Collections;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 
 /**
  * Simple simulated network implementation that just sends messages to itself with a configurable latency.
@@ -46,8 +44,7 @@ public class TestEventCoordinatorNetwork {
 	private final int minimumLatency;
 	private final int maximumLatency;
 
-	private final PublishSubject<MessageInTransit> receivedMessages;
-	private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+	private final Subject<MessageInTransit> receivedMessages;
 	private final Set<ECPublicKey> readers = Collections.newSetFromMap(new ConcurrentHashMap<>());
 	private final Set<ECPublicKey> sendingDisabled = Collections.newSetFromMap(new ConcurrentHashMap<>());
 	private final Set<ECPublicKey> receivingDisabled = Collections.newSetFromMap(new ConcurrentHashMap<>());
@@ -62,37 +59,27 @@ public class TestEventCoordinatorNetwork {
 		this.minimumLatency = minimumLatency;
 		this.maximumLatency = maximumLatency;
 		this.rng = new Random(rngSeed);
-		this.receivedMessages = PublishSubject.create();
+		this.receivedMessages = ReplaySubject.<MessageInTransit>create(5) // To catch startup timing issues
+			.toSerialized();
 	}
 
-	/**
-	 * Creates a latent simulated network with a fixed latency and all messages delivered in order.
-	 * @param fixedLatency The fixed latency (may be 0)
-	 * @return a network
-	 */
-	public static TestEventCoordinatorNetwork orderedLatent(int fixedLatency) {
-		return new TestEventCoordinatorNetwork(fixedLatency, fixedLatency, 0);
-	}
+	public static class Builder {
+		private int minLatency = 50;
+		private int maxLatency = 50;
 
-	/**
-	 * Creates a latent simulated network with a randomised bounded latency and all messages delivered in order.
-	 * @param minimumLatency The minimum latency (inclusive)
-	 * @param maximumLatency The maximum latency (inclusive)
-	 * @return a network
-	 */
-	public static TestEventCoordinatorNetwork orderedRandomlyLatent(int minimumLatency, int maximumLatency) {
-		return orderedRandomlyLatent(minimumLatency, maximumLatency, System.currentTimeMillis());
-	}
+		public Builder minLatency(int minLatency) {
+			this.minLatency = minLatency;
+			return this;
+		}
 
-	/**
-	 * Creates a latent simulated network with a randomised bounded latency and all messages delivered in order.
-	 * @param minimumLatency The minimum latency (inclusive)
-	 * @param maximumLatency The maximum latency (inclusive)
-	 * @param rngSeed The seed to use for random operations
-	 * @return a network
-	 */
-	public static TestEventCoordinatorNetwork orderedRandomlyLatent(int minimumLatency, int maximumLatency, long rngSeed) {
-		return new TestEventCoordinatorNetwork(minimumLatency, maximumLatency, rngSeed);
+		public Builder maxLatency(int maxLatency) {
+			this.maxLatency = maxLatency;
+			return this;
+		}
+
+		public TestEventCoordinatorNetwork build() {
+			return new TestEventCoordinatorNetwork(minLatency, maxLatency, System.currentTimeMillis());
+		}
 	}
 
 	public void setSendingDisable(ECPublicKey validatorId, boolean disable) {
@@ -112,49 +99,22 @@ public class TestEventCoordinatorNetwork {
 	}
 
 	public EventCoordinatorNetworkSender getNetworkSender(ECPublicKey forNode) {
-		final Map<ECPublicKey, Long> lastTimestamps = new ConcurrentHashMap<>();
-
-		final Consumer<MessageInTransit> sendMessageSink = message -> {
-			if (sendingDisabled.contains(forNode)) {
-				return;
-			}
-
-			final int nextLatency;
-			if (message.target.equals(forNode)) {
-				nextLatency = 0;
-			} else {
-
-				final long curTime = System.currentTimeMillis();
-				final Long lastTimestamp = lastTimestamps.get(message.target);
-				final int minimumLatency;
-				if (lastTimestamp != null && lastTimestamp > curTime) {
-					minimumLatency = Math.min(this.minimumLatency, (int) (lastTimestamp - curTime));
-				} else {
-					minimumLatency = this.minimumLatency;
-				}
-				nextLatency = minimumLatency + rng.nextInt(maximumLatency - minimumLatency + 1);
-				lastTimestamps.put(message.target, curTime + nextLatency);
-			}
-
-			executorService.schedule(() -> receivedMessages.onNext(message), nextLatency, TimeUnit.MILLISECONDS);
-		};
-
 		return new EventCoordinatorNetworkSender() {
 			@Override
 			public void broadcastProposal(Proposal proposal) {
 				for (ECPublicKey reader : readers) {
-					sendMessageSink.accept(MessageInTransit.send(proposal, reader));
+					receivedMessages.onNext(MessageInTransit.send(proposal, forNode, reader));
 				}
 			}
 
 			@Override
 			public void sendNewView(NewView newView, ECPublicKey newViewLeader) {
-				sendMessageSink.accept(MessageInTransit.send(newView, newViewLeader));
+				receivedMessages.onNext(MessageInTransit.send(newView, forNode, newViewLeader));
 			}
 
 			@Override
 			public void sendVote(Vote vote, ECPublicKey leader) {
-				sendMessageSink.accept(MessageInTransit.send(vote, leader));
+				receivedMessages.onNext(MessageInTransit.send(vote, forNode, leader));
 			}
 		};
 	}
@@ -162,11 +122,25 @@ public class TestEventCoordinatorNetwork {
 	public EventCoordinatorNetworkRx getNetworkRx(ECPublicKey forNode) {
 		readers.add(forNode);
 		// filter only relevant messages (appropriate target and if receiving is allowed)
-		Observable<Object> myMessages = receivedMessages
-			.filter(msg -> !receivingDisabled.contains(forNode))
+		Observable<ConsensusEvent> myMessages = receivedMessages
 			.filter(msg -> msg.target.equals(forNode))
-			.map(MessageInTransit::getContent);
-		return () -> myMessages.ofType(ConsensusEvent.class);
+			.timestamp(TimeUnit.MILLISECONDS)
+			.scan((msg1, msg2) -> {
+				if (msg2.value().sender.equals(forNode)) {
+					return msg2;
+				}
+				int delayCarryover = (int) Math.max(msg1.time() + msg1.value().delay - msg2.time(), 0);
+				int range = maximumLatency - delayCarryover - minimumLatency + 1;
+				// Currently a gaussian distribution
+				int nextDelay = range > 0 ? minimumLatency + rng.nextInt(range) : 0;
+				return new Timed<>(msg2.value().delayed(nextDelay), msg2.time(), msg2.unit());
+			})
+			.delay(p -> Observable.timer(p.value().delay, TimeUnit.MILLISECONDS))
+			.filter(msg -> !receivingDisabled.contains(forNode))
+			.map(Timed::value)
+			.map(MessageInTransit::getContent)
+			.ofType(ConsensusEvent.class);
+		return () -> myMessages;
 	}
 
 	public int getMaximumLatency() {
@@ -175,15 +149,23 @@ public class TestEventCoordinatorNetwork {
 
 	private static final class MessageInTransit {
 		private final Object content;
-		private final ECPublicKey target; // may be null if broadcast
+		private final ECPublicKey sender;
+		private final ECPublicKey target;
+		private final long delay;
 
-		private MessageInTransit(Object content, ECPublicKey target) {
+		private MessageInTransit(Object content, ECPublicKey sender, ECPublicKey target, long delay) {
 			this.content = Objects.requireNonNull(content);
+			this.sender = sender;
 			this.target = target;
+			this.delay = delay;
 		}
 
-		private static MessageInTransit send(Object content, ECPublicKey receiver) {
-			return new MessageInTransit(content, receiver);
+		private static MessageInTransit send(Object content, ECPublicKey sender, ECPublicKey receiver) {
+			return new MessageInTransit(content, sender, receiver, 0);
+		}
+
+		private MessageInTransit delayed(long delay) {
+			return new MessageInTransit(content, sender, target, delay);
 		}
 
 		private Object getContent() {

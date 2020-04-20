@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.consensus.BFTTest.Builder;
 import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 
@@ -35,7 +36,7 @@ public class PerfectNetworkTest {
 	 */
 	@Test
 	public void given_4_correct_bfts__then_should_pass_sanity_tests_over_1_minute() {
-		BFTTest bftTest = new BFTTest.BFTTestBuilder()
+		BFTTest bftTest = new Builder()
 			.numNodes(4)
 			.time(1, TimeUnit.MINUTES)
 			.build();

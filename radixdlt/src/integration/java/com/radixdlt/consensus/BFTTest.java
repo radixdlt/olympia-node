@@ -24,6 +24,7 @@ import com.radixdlt.consensus.checks.NoTimeoutCheck;
 import com.radixdlt.consensus.checks.SafetyCheck;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork;
+import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork.Builder;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.ArrayList;
 import java.util.List;
@@ -48,25 +49,25 @@ public class BFTTest {
 		this.maxNetworkLatency = maxNetworkLatency;
 	}
 
-	public static class BFTTestBuilder {
+	public static class Builder {
 		private int numNodes = 1;
 		private long time = 1;
 		private TimeUnit timeUnit = TimeUnit.MINUTES;
 		private int minNetworkLatency = 50;
 		private int maxNetworkLatency = 50;
 
-		public BFTTestBuilder numNodes(int numNodes) {
+		public Builder numNodes(int numNodes) {
 			this.numNodes = numNodes;
 			return this;
 		}
 
-		public BFTTestBuilder time(long time, TimeUnit timeUnit) {
+		public Builder time(long time, TimeUnit timeUnit) {
 			this.time = time;
 			this.timeUnit = timeUnit;
 			return this;
 		}
 
-		public BFTTestBuilder networkLatency(int minNetworkLatency, int maxNetworkLatency) {
+		public Builder networkLatency(int minNetworkLatency, int maxNetworkLatency) {
 			this.minNetworkLatency = minNetworkLatency;
 			this.maxNetworkLatency = maxNetworkLatency;
 			return this;
@@ -101,10 +102,12 @@ public class BFTTest {
 		List<ECKeyPair> nodes = Stream.generate(ECKeyPair::generateNew)
 			.limit(numNodes)
 			.collect(Collectors.toList());
-		BFTTestNetwork bftNetwork =  new BFTTestNetwork(
-			nodes,
-			TestEventCoordinatorNetwork.orderedRandomlyLatent(minNetworkLatency, maxNetworkLatency)
-		);
+		TestEventCoordinatorNetwork network = new TestEventCoordinatorNetwork.Builder()
+			.minLatency(minNetworkLatency)
+			.maxLatency(maxNetworkLatency)
+			.build();
+
+		BFTTestNetwork bftNetwork =  new BFTTestNetwork(nodes, network);
 		List<Observable<Object>> assertions = this.checks.stream().map(c -> c.check(bftNetwork)).collect(Collectors.toList());
 		Observable.mergeArray(bftNetwork.processBFT(), Observable.merge(assertions))
 			.take(time, timeUnit)

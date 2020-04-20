@@ -17,7 +17,7 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.consensus.BFTTest.BFTTestBuilder;
+import com.radixdlt.consensus.BFTTest.Builder;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -33,9 +33,9 @@ public class LatentNetworkTest {
 	 */
 	@Test
 	public void given_3_correct_bfts_in_latent_network__then_all_normal_sanity_checks_should_pass() {
-		BFTTest bftTest = new BFTTestBuilder()
+		BFTTest bftTest = new Builder()
 			.numNodes(3)
-			.time(1, TimeUnit.MINUTES)
+			.time(10, TimeUnit.MINUTES)
 			.networkLatency(10, 160) // 6 times max latency should be less than BFTTestNetwork.TEST_PACEMAKER_TIMEOUT
 			.build();
 		bftTest.assertSafety();
@@ -52,7 +52,7 @@ public class LatentNetworkTest {
 	@Test
 	@Ignore("This test currently fails due to sync not being implemented and thus one node falling behind is possible.")
 	public void given_4_correct_bfts_in_latent_network__then_all_normal_sanity_checks_should_pass() {
-		BFTTest bftTest = new BFTTestBuilder()
+		BFTTest bftTest = new Builder()
 			.numNodes(4)
 			.time(10, TimeUnit.MINUTES)
 			.networkLatency(10, 160) // 6 times max latency should be less than BFTTestNetwork.TEST_PACEMAKER_TIMEOUT

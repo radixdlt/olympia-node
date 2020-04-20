@@ -35,7 +35,7 @@ public class TestEventCoordinatorNetworkTest {
 
 	@Test
 	public void when_send_new_view_to_self__then_should_receive_it() {
-		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.orderedLatent(TEST_LOOPBACK_LATENCY);
+		TestEventCoordinatorNetwork network = new TestEventCoordinatorNetwork.Builder().build();
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
 		network.getNetworkRx(validatorId).consensusEvents()
 			.subscribe(testObserver);
@@ -47,7 +47,7 @@ public class TestEventCoordinatorNetworkTest {
 
 	@Test
 	public void when_send_vote_to_self__then_should_receive_it() {
-		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.orderedLatent(TEST_LOOPBACK_LATENCY);
+		TestEventCoordinatorNetwork network = new TestEventCoordinatorNetwork.Builder().build();
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
 		network.getNetworkRx(validatorId).consensusEvents()
 			.subscribe(testObserver);
@@ -59,7 +59,7 @@ public class TestEventCoordinatorNetworkTest {
 
 	@Test
 	public void when_broadcast_proposal__then_should_receive_it() {
-		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.orderedLatent(TEST_LOOPBACK_LATENCY);
+		TestEventCoordinatorNetwork network = new TestEventCoordinatorNetwork.Builder().build();
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
 		network.getNetworkRx(validatorId).consensusEvents()
 			.subscribe(testObserver);
@@ -71,7 +71,7 @@ public class TestEventCoordinatorNetworkTest {
 
 	@Test
 	public void when_disable_and_then_send_new_view_to_self__then_should_receive_it() {
-		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.orderedLatent(TEST_LOOPBACK_LATENCY);
+		TestEventCoordinatorNetwork network = new TestEventCoordinatorNetwork.Builder().build();
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
 		network.setSendingDisable(validatorId, true);
 		network.getNetworkRx(validatorId).consensusEvents()
@@ -83,7 +83,7 @@ public class TestEventCoordinatorNetworkTest {
 
 	@Test
 	public void when_disable_receive_and_other_sends_view_to_self__then_should_receive_it() {
-		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.orderedLatent(TEST_LOOPBACK_LATENCY);
+		TestEventCoordinatorNetwork network = new TestEventCoordinatorNetwork.Builder().build();
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
 		network.setReceivingDisable(validatorId, true);
 		network.getNetworkRx(validatorId).consensusEvents()
@@ -95,7 +95,7 @@ public class TestEventCoordinatorNetworkTest {
 
 	@Test
 	public void when_disable_then_reenable_receive_and_other_sends_view_to_self__then_should_receive_it() {
-		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.orderedLatent(TEST_LOOPBACK_LATENCY);
+		TestEventCoordinatorNetwork network = new TestEventCoordinatorNetwork.Builder().build();
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
 		network.setReceivingDisable(validatorId, true);
 		network.setReceivingDisable(validatorId, false);
