@@ -31,21 +31,23 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.assertj.core.api.Condition;
 
 /**
- * Check that the network is making strong progress by ensuring that new QCs are
- * being created every round.
+ * Check that the network is making progress by ensuring that new QCs are
+ * progressively increasing in view number.
  */
-public class StrongLivenessCheck implements BFTCheck {
+public class LivenessCheck implements BFTCheck {
+	private final long time;
+	private final TimeUnit timeUnit;
+
+	public LivenessCheck(long time, TimeUnit timeUnit) {
+		this.time = time;
+		this.timeUnit = timeUnit;
+	}
+
 	@Override
 	public Completable check(BFTTestNetwork network) {
-		// there should be a new highest QC every once in a while to ensure progress
-		// the minimum latency per round is determined using the network latency
-		// a round can consist of 6 * max_transmission_time
-		double trips = 6.0;
-		int maxLatencyPerRound = (int) (network.getMaximumNetworkLatency() * trips);
-
 		AtomicReference<View> highestQCView = new AtomicReference<>(View.genesis());
 		return Observable
-			.interval(maxLatencyPerRound, maxLatencyPerRound, TimeUnit.MILLISECONDS)
+			.interval(time, time, timeUnit)
 			.map(i -> network.getNodes().stream()
 				.map(network::getVertexStore)
 				.map(VertexStore::getHighestQC)
@@ -54,7 +56,7 @@ public class StrongLivenessCheck implements BFTCheck {
 				.get()) // there must be some max highest QC unless allNodes is empty
 			.doOnNext(view -> assertThat(view)
 				.satisfies(new Condition<>(v -> v.compareTo(highestQCView.get()) > 0,
-					"The highest highestQC %s increased since last highestQC %s after %d ms", view, highestQCView.get(), maxLatencyPerRound)))
+					"The highest highestQC %s increased since last highestQC %s after %d %s", view, highestQCView.get(), time, timeUnit)))
 			.doOnNext(highestQCView::set)
 			.doOnNext(newHighestQCView -> System.out.println("Progressed to new highest QC view " + highestQCView))
 			.flatMapCompletable(v -> Completable.complete());

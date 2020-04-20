@@ -30,9 +30,11 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.schedulers.Timed;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -44,7 +46,7 @@ public class TestEventCoordinatorNetwork {
 	private final int maximumLatency;
 
 	private final Subject<MessageInTransit> receivedMessages;
-	private final Set<ECPublicKey> readers = Sets.newConcurrentHashSet();
+	private final Map<ECPublicKey, EventCoordinatorNetworkRx> readers = new ConcurrentHashMap<>();
 	private final Set<ECPublicKey> sendingDisabled = Sets.newConcurrentHashSet();
 	private final Set<ECPublicKey> receivingDisabled = Sets.newConcurrentHashSet();
 
@@ -108,7 +110,7 @@ public class TestEventCoordinatorNetwork {
 		return new EventCoordinatorNetworkSender() {
 			@Override
 			public void broadcastProposal(Proposal proposal) {
-				for (ECPublicKey reader : readers) {
+				for (ECPublicKey reader : readers.keySet()) {
 					receivedMessages.onNext(MessageInTransit.send(proposal, forNode, reader));
 				}
 			}
@@ -126,36 +128,35 @@ public class TestEventCoordinatorNetwork {
 	}
 
 	public EventCoordinatorNetworkRx getNetworkRx(ECPublicKey forNode) {
-		readers.add(forNode);
 		// filter only relevant messages (appropriate target and if receiving is allowed)
-		Observable<ConsensusEvent> myMessages = receivedMessages
-			.filter(msg -> !sendingDisabled.contains(msg.sender))
-			.filter(msg -> !receivingDisabled.contains(msg.target))
-			.filter(msg -> msg.target.equals(forNode))
-			.map(msg -> {
-				if (msg.sender.equals(forNode)) {
-					return msg;
-				} else {
-					int nextDelay = minimumLatency + rng.nextInt(maximumLatency - minimumLatency + 1);
-					return msg.delayed(nextDelay);
-				}
-			})
-			.timestamp(TimeUnit.MILLISECONDS)
-			.scan((msg1, msg2) -> {
-				int delayCarryover = (int) Math.max(msg1.time() + msg1.value().delay - msg2.time(), 0);
-				int additionalDelay = (int) (msg2.value().delay - delayCarryover);
-				if (additionalDelay > 0) {
-					return new Timed<>(msg2.value().delayed(additionalDelay), msg2.time(), msg2.unit());
-				} else {
-					return msg2;
-				}
-			})
-			.delay(p -> Observable.timer(p.value().delay, TimeUnit.MILLISECONDS))
-			.map(Timed::value)
-			.map(MessageInTransit::getContent)
-			.ofType(ConsensusEvent.class);
-
-		return () -> myMessages;
+		return readers.computeIfAbsent(forNode, node -> () ->
+			receivedMessages
+				.filter(msg -> !sendingDisabled.contains(msg.sender))
+				.filter(msg -> !receivingDisabled.contains(msg.target))
+				.filter(msg -> msg.target.equals(node))
+				.map(msg -> {
+					if (msg.sender.equals(node)) {
+						return msg;
+					} else {
+						int nextDelay = minimumLatency + rng.nextInt(maximumLatency - minimumLatency + 1);
+						return msg.delayed(nextDelay);
+					}
+				})
+				.timestamp(TimeUnit.MILLISECONDS)
+				.scan((msg1, msg2) -> {
+					int delayCarryover = (int) Math.max(msg1.time() + msg1.value().delay - msg2.time(), 0);
+					int additionalDelay = (int) (msg2.value().delay - delayCarryover);
+					if (additionalDelay > 0) {
+						return new Timed<>(msg2.value().delayed(additionalDelay), msg2.time(), msg2.unit());
+					} else {
+						return msg2;
+					}
+				})
+				.delay(p -> Observable.timer(p.value().delay, TimeUnit.MILLISECONDS))
+				.map(Timed::value)
+				.map(MessageInTransit::getContent)
+				.ofType(ConsensusEvent.class)
+		);
 	}
 
 	public int getMaxLatency() {
