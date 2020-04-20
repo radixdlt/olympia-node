@@ -150,7 +150,7 @@ public class TestEventCoordinatorNetwork {
 		return () -> myMessages;
 	}
 
-	public int getMaximumLatency() {
+	public int getMaxLatency() {
 		return maximumLatency;
 	}
 

@@ -17,6 +17,7 @@
 
 package com.radixdlt.middleware2.network;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.mock;
 
 import com.radixdlt.consensus.ConsensusEvent;
@@ -31,6 +32,16 @@ import org.junit.Test;
 public class TestEventCoordinatorNetworkTest {
 	private ECPublicKey validatorId = ECKeyPair.generateNew().getPublicKey();
 	private ECPublicKey validatorId2 = ECKeyPair.generateNew().getPublicKey();
+
+	@Test
+	public void when_builder_with_max_latency__then_created_object_should_have_max_latency() {
+		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.builder()
+			.minLatency(50)
+			.maxLatency(100)
+			.build();
+
+		assertThat(network.getMaxLatency()).isEqualTo(100);
+	}
 
 	@Test
 	public void when_send_new_view_to_self__then_should_receive_it() {

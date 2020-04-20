@@ -174,7 +174,7 @@ public class BFTTestNetwork {
 	}
 
 	public int getMaximumNetworkLatency() {
-		return underlyingNetwork.getMaximumLatency();
+		return underlyingNetwork.getMaxLatency();
 	}
 
 	public int getPacemakerTimeout() {

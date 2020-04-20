@@ -57,6 +57,18 @@ public class VertexStoreTest {
 	}
 
 	@Test
+	public void when_vertex_retriever_succeeds__then_vertex_is_inserted() throws Exception {
+		Vertex vertex = Vertex.createVertex(rootQC, View.of(1), mock(Atom.class));
+		VoteData voteData = new VoteData(VertexMetadata.ofVertex(vertex), genesisVertexMetadata);
+		QuorumCertificate qc = new QuorumCertificate(voteData, new ECDSASignatures());
+		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
+		when(vertexMetadata.getId()).thenReturn(vertex.getId());
+
+		vertexStore.syncToQC(qc, id -> Single.just(vertex));
+		assertThat(vertexStore.getHighestQC()).isEqualTo(qc);
+	}
+
+	@Test
 	public void when_vertex_retriever_fails_on_qc_sync__then_sync_exception_is_thrown() {
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
