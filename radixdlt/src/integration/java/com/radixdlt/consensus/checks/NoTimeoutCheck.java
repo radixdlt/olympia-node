@@ -24,9 +24,12 @@ import com.radixdlt.consensus.BFTTestNetwork;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.concurrent.TimeUnit;
-import org.assertj.core.api.AssertionsForClassTypes;
 import org.assertj.core.api.Condition;
 
+/**
+ * Checks that no local timeouts are occurring.
+ * Only makes sense to check in networks where there are no failing nodes.
+ */
 public class NoTimeoutCheck implements BFTCheck {
 
 	@Override

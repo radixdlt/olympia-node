@@ -29,6 +29,10 @@ import java.util.stream.Collectors;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.assertj.core.api.Condition;
 
+/**
+ * Check that every proposal on the network has a direct parent.
+ * This check only makes sense in networks where there are no failing nodes.
+ */
 public class AllProposalsHaveDirectParentsCheck implements BFTCheck {
 
 	@Override

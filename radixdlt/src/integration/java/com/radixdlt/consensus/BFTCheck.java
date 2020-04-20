@@ -19,6 +19,15 @@ package com.radixdlt.consensus;
 
 import io.reactivex.rxjava3.core.Observable;
 
+/**
+ * A running BFT check given access to network
+ */
 public interface BFTCheck {
+
+	/**
+	 * Creates an observable which runs assertions against a bft network
+	 * @param network network to check
+	 * @return observable to subscribe to enable checking
+	 */
 	Observable<Object> check(BFTTestNetwork network);
 }

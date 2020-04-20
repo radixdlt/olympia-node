@@ -29,6 +29,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.assertj.core.api.Condition;
 
+/**
+ * Check that the network is making progress by ensuring that QCs are progressively
+ * increasing.
+ */
 public class LivenessCheck implements BFTCheck {
 
 	@Override

@@ -25,6 +25,9 @@ import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.assertj.core.api.Condition;
 
+/**
+ * Checks that there are no synchronisation errors.
+ */
 public class NoSyncExceptionCheck implements BFTCheck {
 
 	@Override

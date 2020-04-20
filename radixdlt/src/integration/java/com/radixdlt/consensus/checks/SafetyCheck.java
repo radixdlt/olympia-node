@@ -27,6 +27,9 @@ import io.reactivex.rxjava3.core.Observable;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
+/**
+ * Checks that nodes are committed on the same vertex.
+ */
 public class SafetyCheck implements BFTCheck {
 
 	@Override
