@@ -69,11 +69,30 @@ public final class VertexStore {
 		this.lastCommittedVertex.onNext(genesisVertex);
 	}
 
-	public void syncToQC(QuorumCertificate qc) throws SyncException {
+	public void syncToQC(QuorumCertificate qc, VertexSupplier vertexSupplier) throws SyncException {
 		final Vertex vertex = vertices.get(qc.getProposed().getId());
 		if (vertex == null) {
-			// TODO: actual syncing
-			throw new SyncException(qc);
+			if (!vertices.containsKey(qc.getParent().getId())) {
+				// Too far behind
+				// TODO: more syncing
+				throw new SyncException(qc);
+			}
+
+			final Vertex proposedVertex;
+			try {
+				// TODO: remove blocking
+				proposedVertex = vertexSupplier.getVertex(qc.getProposed().getId()).blockingGet();
+			} catch (Exception e) {
+				throw new SyncException(qc, e);
+			}
+
+			try {
+				this.insertVertex(proposedVertex);
+			} catch (VertexInsertionException e) {
+				// Currently only looking to sync one vertex away from known QC
+				// so this should never throw the MissingParentException
+				throw new IllegalStateException("Should not go here.", e);
+			}
 		}
 
 		if (highestQC.getView().compareTo(qc.getView()) < 0) {

@@ -25,6 +25,7 @@ import java.util.Map;
 public interface SystemCounters {
 
 	enum CounterType {
+		CONSENSUS_SYNC_EXCEPTION,
 		CONSENSUS_REJECTED,
 		CONSENSUS_TIMEOUT,
 		CONSENSUS_VIEW,

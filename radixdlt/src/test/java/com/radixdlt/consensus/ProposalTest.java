@@ -47,6 +47,11 @@ public class ProposalTest {
 	}
 
 	@Test
+	public void testToString() {
+		assertThat(this.proposal).isNotNull();
+	}
+
+	@Test
 	public void equalsContract() {
 		EqualsVerifier.forClass(Proposal.class)
 			.verify();

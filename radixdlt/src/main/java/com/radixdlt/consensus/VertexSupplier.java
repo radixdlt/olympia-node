@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -17,23 +17,18 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.crypto.Hash;
+import io.reactivex.rxjava3.core.Single;
+
 /**
- * Exception indicating that vertices for a qc was not able to be synced.
+ * An asynchronous supplier which retrieves data for a vertex with a given id
  */
-class SyncException extends Exception {
-	private final QuorumCertificate qc;
+public interface VertexSupplier {
 
-	SyncException(QuorumCertificate qc) {
-		super("Unable to sync qc " + qc);
-		this.qc = qc;
-	}
-
-	SyncException(QuorumCertificate qc, Exception cause) {
-		super("Unable to sync qc " + qc, cause);
-		this.qc = qc;
-	}
-
-	public QuorumCertificate getQC() {
-		return qc;
-	}
+	/**
+	 * Retrieve vertex data from it's id.
+	 * @param id the id of vertex to retrieve
+	 * @return vertex data once available
+	 */
+	Single<Vertex> getVertex(Hash id);
 }

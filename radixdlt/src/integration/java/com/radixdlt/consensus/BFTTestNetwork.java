@@ -56,7 +56,6 @@ import java.util.stream.Collectors;
  * A multi-node bft test network where the network is simulated.
  */
 public class BFTTestNetwork {
-	private static final int DEFAULT_TEST_NETWORK_LATENCY = 50;
 	private static final int TEST_PACEMAKER_TIMEOUT = 1000;
 
 	private final TestEventCoordinatorNetwork underlyingNetwork;
@@ -69,13 +68,14 @@ public class BFTTestNetwork {
 	private final Observable<Event> bftEvents;
 	private final ProposerElection proposerElection;
 	private final ValidatorSet validatorSet;
+	private final List<ECKeyPair> nodes;
 
 	/**
 	 * Create a BFT test network with a perfect underlying network and the default latency.
 	 * @param nodes The nodes to populate the network with
 	 */
 	public BFTTestNetwork(List<ECKeyPair> nodes) {
-		this(nodes, TestEventCoordinatorNetwork.orderedLatent(DEFAULT_TEST_NETWORK_LATENCY));
+		this(nodes, TestEventCoordinatorNetwork.builder().build());
 	}
 
 	/**
@@ -83,6 +83,7 @@ public class BFTTestNetwork {
 	 * @param nodes The nodes to populate the network with
 	 */
 	public BFTTestNetwork(List<ECKeyPair> nodes, TestEventCoordinatorNetwork underlyingNetwork) {
+		this.nodes = nodes;
 		this.underlyingNetwork = Objects.requireNonNull(underlyingNetwork);
 		this.genesis = null;
 		this.genesisVertex = Vertex.createGenesis(genesis);
@@ -112,6 +113,10 @@ public class BFTTestNetwork {
 		this.bftEvents = Observable.merge(this.vertexStores.keySet().stream()
 			.map(vertexStore -> createBFTInstance(vertexStore).processEvents())
 			.collect(Collectors.toList()));
+	}
+
+	public List<ECKeyPair> getNodes() {
+		return nodes;
 	}
 
 	private ChainedBFT createBFTInstance(ECKeyPair key) {
@@ -169,7 +174,7 @@ public class BFTTestNetwork {
 	}
 
 	public int getMaximumNetworkLatency() {
-		return underlyingNetwork.getMaximumLatency();
+		return underlyingNetwork.getMaxLatency();
 	}
 
 	public int getPacemakerTimeout() {

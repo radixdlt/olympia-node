@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -17,23 +17,20 @@
 
 package com.radixdlt.consensus;
 
+import io.reactivex.rxjava3.core.Observable;
+
 /**
- * Exception indicating that vertices for a qc was not able to be synced.
+ * A running BFT check given access to network
  */
-class SyncException extends Exception {
-	private final QuorumCertificate qc;
+public interface BFTCheck {
 
-	SyncException(QuorumCertificate qc) {
-		super("Unable to sync qc " + qc);
-		this.qc = qc;
-	}
-
-	SyncException(QuorumCertificate qc, Exception cause) {
-		super("Unable to sync qc " + qc, cause);
-		this.qc = qc;
-	}
-
-	public QuorumCertificate getQC() {
-		return qc;
-	}
+	/**
+	 * Creates an observable which runs assertions against a bft network.
+	 * Assertions errors are expected to propagate down the observable.
+	 * TODO: Cleanup interface a bit
+	 *
+	 * @param network network to check
+	 * @return observable to subscribe to enable checking
+	 */
+	Observable<Object> check(BFTTestNetwork network);
 }
