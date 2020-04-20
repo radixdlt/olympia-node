@@ -42,8 +42,8 @@ import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.mempool.Mempool;
-import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork;
 
+import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.Collections;
 import java.util.List;

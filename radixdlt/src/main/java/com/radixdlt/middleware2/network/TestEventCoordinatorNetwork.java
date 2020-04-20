@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -19,12 +19,12 @@ package com.radixdlt.middleware2.network;
 
 import com.google.common.collect.Sets;
 import com.radixdlt.consensus.ConsensusEvent;
-import com.radixdlt.consensus.Proposal;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.consensus.EventCoordinatorNetworkRx;
 import com.radixdlt.consensus.EventCoordinatorNetworkSender;
 import com.radixdlt.consensus.NewView;
+import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
+import com.radixdlt.crypto.ECPublicKey;
 import io.reactivex.rxjava3.core.Observable;
 
 import io.reactivex.rxjava3.schedulers.Timed;
@@ -32,11 +32,9 @@ import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.function.BiFunction;
 
 /**
  * Simple simulated network implementation that just sends messages to itself with a configurable latency.
@@ -44,43 +42,35 @@ import java.util.function.BiFunction;
 public class TestEventCoordinatorNetwork {
 	public static final int DEFAULT_LATENCY = 50;
 
+	public interface LatencyProvider {
+		Integer nextLatency(ECPublicKey from, ECPublicKey to);
+	}
+
 	private final Subject<MessageInTransit> receivedMessages;
 	private final Map<ECPublicKey, EventCoordinatorNetworkRx> readers = new ConcurrentHashMap<>();
 	private final Set<ECPublicKey> sendingDisabled = Sets.newConcurrentHashSet();
 	private final Set<ECPublicKey> receivingDisabled = Sets.newConcurrentHashSet();
-	private final BiFunction<ECPublicKey, ECPublicKey, Integer> nextLatency;
+	private final LatencyProvider latencyProvider;
 
-	private TestEventCoordinatorNetwork(BiFunction<ECPublicKey, ECPublicKey, Integer> nextLatency) {
-		this.nextLatency = nextLatency;
+	private TestEventCoordinatorNetwork(LatencyProvider latencyProvider) {
+		this.latencyProvider = latencyProvider;
 		this.receivedMessages = ReplaySubject.<MessageInTransit>create(5) // To catch startup timing issues
 			.toSerialized();
 	}
 
 	public static class Builder {
-		private BiFunction<ECPublicKey, ECPublicKey, Integer> nextLatency = (from, to) -> DEFAULT_LATENCY;
+		private LatencyProvider latencyProvider = (from, to) -> DEFAULT_LATENCY;
 
 		private Builder() {
 		}
 
-		public Builder nextLatency(BiFunction<ECPublicKey, ECPublicKey, Integer> nextLatency) {
-			this.nextLatency = nextLatency;
-			return this;
-		}
-
-		public Builder randomLatency(int minLatency, int maxLatency) {
-			if (minLatency < 0) {
-				throw new IllegalArgumentException("minimumLatency must be >= 0 but was " + minLatency);
-			}
-			if (maxLatency < 0) {
-				throw new IllegalArgumentException("maximumLatency must be >= 0 but was " + maxLatency);
-			}
-			final Random rng = new Random(System.currentTimeMillis());
-			this.nextLatency = (from, to) -> minLatency + rng.nextInt(maxLatency - minLatency + 1);
+		public Builder latencyProvider(LatencyProvider latencyProvider) {
+			this.latencyProvider = latencyProvider;
 			return this;
 		}
 
 		public TestEventCoordinatorNetwork build() {
-			return new TestEventCoordinatorNetwork(nextLatency);
+			return new TestEventCoordinatorNetwork(latencyProvider);
 		}
 	}
 
@@ -136,7 +126,7 @@ public class TestEventCoordinatorNetwork {
 					if (msg.sender.equals(node)) {
 						return msg;
 					} else {
-						return msg.delayed(nextLatency.apply(msg.sender, msg.target));
+						return msg.delayed(latencyProvider.nextLatency(msg.sender, msg.target));
 					}
 				})
 				.timestamp(TimeUnit.MILLISECONDS)

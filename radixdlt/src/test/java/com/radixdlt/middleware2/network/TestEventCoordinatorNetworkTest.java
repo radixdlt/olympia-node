@@ -17,7 +17,6 @@
 
 package com.radixdlt.middleware2.network;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
 import com.radixdlt.consensus.ConsensusEvent;
@@ -33,17 +32,6 @@ import org.junit.Test;
 public class TestEventCoordinatorNetworkTest {
 	private ECPublicKey validatorId = ECKeyPair.generateNew().getPublicKey();
 	private ECPublicKey validatorId2 = ECKeyPair.generateNew().getPublicKey();
-
-	@Test
-	public void when_building_with_negative_latencies__then_illegal_argument_exception_thrown() {
-		assertThatThrownBy(() -> TestEventCoordinatorNetwork.builder()
-			.randomLatency(-1, 100)
-		).isInstanceOf(IllegalArgumentException.class);
-
-		assertThatThrownBy(() -> TestEventCoordinatorNetwork.builder()
-			.randomLatency(10, -1)
-		).isInstanceOf(IllegalArgumentException.class);
-	}
 
 	@Test
 	public void when_send_new_view_to_self__then_should_receive_it() {

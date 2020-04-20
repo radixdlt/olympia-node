@@ -24,40 +24,57 @@ import com.radixdlt.consensus.checks.NoSyncExceptionCheck;
 import com.radixdlt.consensus.checks.NoTimeoutCheck;
 import com.radixdlt.consensus.checks.SafetyCheck;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork;
+import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork.LatencyProvider;
 import io.reactivex.rxjava3.core.Completable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public class BFTTest {
-	private final int numNodes;
-	private final TestEventCoordinatorNetwork network;
+	private final ImmutableList<ECKeyPair> nodes;
+	private final LatencyProvider latencyProvider;
 	private final ImmutableList<BFTCheck> checks;
 
-	private BFTTest(int numNodes, TestEventCoordinatorNetwork network, ImmutableList<BFTCheck> checks) {
-		this.numNodes = numNodes;
-		this.network = network;
+	private BFTTest(ImmutableList<ECKeyPair> nodes, LatencyProvider latencyProvider, ImmutableList<BFTCheck> checks) {
+		this.nodes = nodes;
+		this.latencyProvider = latencyProvider;
 		this.checks = checks;
 	}
 
 	public static class Builder {
-		private final TestEventCoordinatorNetwork.Builder networkBuilder = TestEventCoordinatorNetwork.builder();
+		private LatencyProvider latencyProvider = (from, to) -> TestEventCoordinatorNetwork.DEFAULT_LATENCY;
 		private final List<BFTCheck> checks = new ArrayList<>();
-		private int numNodes = 1;
+		private List<ECKeyPair> nodes = Collections.singletonList(ECKeyPair.generateNew());
 
 		private Builder() {
 		}
 
 		public Builder numNodes(int numNodes) {
-			this.numNodes = numNodes;
+			this.nodes = Stream.generate(ECKeyPair::generateNew).limit(numNodes).collect(Collectors.toList());
+			return this;
+		}
+
+		public Builder numNodesAndLatencies(int numNodes, int... latencies) {
+			if (latencies.length != numNodes) {
+				throw new IllegalArgumentException(String.format("Number of latencies (%d) not equal to numNodes (%d)", numNodes, latencies.length));
+			}
+			this.nodes = Stream.generate(ECKeyPair::generateNew).limit(numNodes).collect(Collectors.toList());
+			Map<ECPublicKey, Integer> nodeLatencies = IntStream.range(0, numNodes)
+				.boxed()
+				.collect(Collectors.toMap(i -> this.nodes.get(i).getPublicKey(), i -> latencies[i]));
+			this.latencyProvider = (from, to) -> Math.max(nodeLatencies.get(from), nodeLatencies.get(to));
 			return this;
 		}
 
 		public Builder randomLatency(int minLatency, int maxLatency) {
-			networkBuilder.randomLatency(minLatency, maxLatency);
+			this.latencyProvider = new RandomLatencyProvider(minLatency, maxLatency);
 			return this;
 		}
 
@@ -93,7 +110,7 @@ public class BFTTest {
 		}
 
 		public BFTTest build() {
-			return new BFTTest(numNodes, networkBuilder.build(), ImmutableList.copyOf(checks));
+			return new BFTTest(ImmutableList.copyOf(nodes), latencyProvider, ImmutableList.copyOf(checks));
 		}
 	}
 
@@ -102,9 +119,9 @@ public class BFTTest {
 	}
 
 	public void run(long time, TimeUnit timeUnit) {
-		List<ECKeyPair> nodes = Stream.generate(ECKeyPair::generateNew)
-			.limit(numNodes)
-			.collect(Collectors.toList());
+		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.builder()
+			.latencyProvider(this.latencyProvider)
+			.build();
 		BFTTestNetwork bftNetwork =  new BFTTestNetwork(nodes, network);
 		List<Completable> assertions = this.checks.stream().map(c -> c.check(bftNetwork)).collect(Collectors.toList());
 		Completable.mergeArray(bftNetwork.processBFT().flatMapCompletable(e -> Completable.complete()), Completable.merge(assertions))

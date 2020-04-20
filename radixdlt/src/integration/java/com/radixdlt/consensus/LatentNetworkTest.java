@@ -53,6 +53,20 @@ public class LatentNetworkTest {
 	}
 
 	/**
+	 * Tests a static configuration of 4 correct nodes with no syncing and where one is much slower than the others.
+	 * Running this bft should cause a timeout at some point and so an exception is expected.
+	 */
+	@Test
+	public void given_3_fast_nodes_and_1_slow_node_with_no_syncing__then_network_should_eventually_timeout() {
+		BFTTest bftTest = BFTTest.builder()
+			.numNodesAndLatencies(4, 10, 10, 10, 160)
+			.checkNoTimeouts()
+			.build();
+		assertThatThrownBy(() -> bftTest.run(1, TimeUnit.MINUTES))
+			.isInstanceOf(AssertionError.class);
+	}
+
+	/**
 	 * Tests a static configuration of 4 correct nodes with no syncing with randomly latent in-order communication.
 	 * Running this bft should cause a timeout at some point and so an exception is expected.
 	 */
