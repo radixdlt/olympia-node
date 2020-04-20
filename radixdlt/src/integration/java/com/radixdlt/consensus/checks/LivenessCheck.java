@@ -34,14 +34,16 @@ public class LivenessCheck implements BFTCheck {
 	@Override
 	public Observable<Object> check(BFTTestNetwork network) {
 		// there should be a new highest QC every once in a while to ensure progress
-		// the minimum latency per round is determined using the network latency and a tolerance
-		int worstCaseLatencyPerRound = network.getMaximumNetworkLatency() * 2; // base latency: two rounds in the normal case
+		// the minimum latency per round is determined using the network latency
 		// a round can consist of 6 * MTT
 		double trips = 6.0;
-		int maximumLatencyPerRound = (int) (worstCaseLatencyPerRound * trips);
+		int maxLatencyPerRound = (int) (network.getMaximumNetworkLatency() * trips);
+		int maxNumRoundsBeforeProgress = 2;
+		int maxLatencyBeforeProgress = maxLatencyPerRound * maxNumRoundsBeforeProgress;
+
 		AtomicReference<View> highestQCView = new AtomicReference<>(View.genesis());
 		return Observable
-			.interval(maximumLatencyPerRound, maximumLatencyPerRound, TimeUnit.MILLISECONDS)
+			.interval(maxLatencyBeforeProgress, maxLatencyBeforeProgress, TimeUnit.MILLISECONDS)
 			.map(i -> network.getNodes().stream()
 				.map(network::getVertexStore)
 				.map(VertexStore::getHighestQC)
@@ -50,7 +52,7 @@ public class LivenessCheck implements BFTCheck {
 				.get()) // there must be some max highest QC unless allNodes is empty
 			.doOnNext(view -> assertThat(view)
 				.satisfies(new Condition<>(v -> v.compareTo(highestQCView.get()) > 0,
-					"The highest highestQC %s increased since last highestQC %s after %d ms", view, highestQCView.get(), maximumLatencyPerRound)))
+					"The highest highestQC %s increased since last highestQC %s after %d ms", view, highestQCView.get(), maxLatencyBeforeProgress)))
 			.doOnNext(highestQCView::set)
 			.doOnNext(newHighestQCView -> System.out.println("Progressed to new highest QC view " + highestQCView))
 			.map(o -> o);

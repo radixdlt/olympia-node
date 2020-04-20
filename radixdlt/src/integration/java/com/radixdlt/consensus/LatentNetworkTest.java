@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.consensus.BFTTest.BFTTestBuilder;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
@@ -26,14 +27,17 @@ import java.util.concurrent.TimeUnit;
  * These tests comprise only static configurations of exclusively correct nodes.
  */
 public class LatentNetworkTest {
-
 	/**
 	 * Tests a static configuration of 4 correct nodes with randomly latent in-order communication.
 	 * The intended behaviour is that all correct instances make progress and eventually align in their commits.
 	 */
 	@Test
 	public void given_3_correct_bfts_in_latent_network__then_all_instances_should_get_same_commits_consecutive_vertices_eventually_over_1_minute() {
-		BFTTest bftTest = new BFTTest(3, 1, TimeUnit.MINUTES);
+		BFTTest bftTest = new BFTTestBuilder()
+			.numNodes(3)
+			.time(1, TimeUnit.MINUTES)
+			.networkLatency(10, 160) // 6 times max latency should be less than BFTTestNetwork.TEST_PACEMAKER_TIMEOUT
+			.build();
 		bftTest.assertSafety();
 		bftTest.assertLiveness();
 		bftTest.assertAllProposalsHaveDirectParents();

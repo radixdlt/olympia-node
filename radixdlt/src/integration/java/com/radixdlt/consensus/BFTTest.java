@@ -32,49 +32,81 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class BFTTest {
+	private final int numNodes;
 	private final long time;
 	private final TimeUnit timeUnit;
-	private final BFTTestNetwork bftNetwork;
-	private final List<Observable<Object>> assertions = new ArrayList<>();
-	private static final int MINIMUM_NETWORK_LATENCY = 10;
-	// 6 times max latency should be less than BFTTestNetwork.TEST_PACEMAKER_TIMEOUT
-	// so we don't get unwanted pacemaker timeouts
-	private static final int MAXIMUM_NETWORK_LATENCY = 160;
+	private final int minNetworkLatency;
+	private final int maxNetworkLatency;
+	private final List<BFTCheck> checks = new ArrayList<>();
 
-	public BFTTest(int numNodes, long time, TimeUnit timeUnit) {
+
+	private BFTTest(int numNodes, long time, TimeUnit timeUnit, int minNetworkLatency, int maxNetworkLatency) {
+		this.numNodes = numNodes;
 		this.time = time;
 		this.timeUnit = timeUnit;
-		List<ECKeyPair> nodes = Stream.generate(ECKeyPair::generateNew)
-			.limit(numNodes)
-			.collect(Collectors.toList());
-		this.bftNetwork =  new BFTTestNetwork(
-			nodes,
-			TestEventCoordinatorNetwork.orderedRandomlyLatent(MINIMUM_NETWORK_LATENCY, MAXIMUM_NETWORK_LATENCY)
-		);
+		this.minNetworkLatency = minNetworkLatency;
+		this.maxNetworkLatency = maxNetworkLatency;
+	}
+
+	public static class BFTTestBuilder {
+		private int numNodes = 1;
+		private long time = 1;
+		private TimeUnit timeUnit = TimeUnit.MINUTES;
+		private int minNetworkLatency = 50;
+		private int maxNetworkLatency = 50;
+
+		public BFTTestBuilder numNodes(int numNodes) {
+			this.numNodes = numNodes;
+			return this;
+		}
+
+		public BFTTestBuilder time(long time, TimeUnit timeUnit) {
+			this.time = time;
+			this.timeUnit = timeUnit;
+			return this;
+		}
+
+		public BFTTestBuilder networkLatency(int minNetworkLatency, int maxNetworkLatency) {
+			this.minNetworkLatency = minNetworkLatency;
+			this.maxNetworkLatency = maxNetworkLatency;
+			return this;
+		}
+
+		public BFTTest build() {
+			return new BFTTest(numNodes, time, timeUnit, minNetworkLatency, maxNetworkLatency);
+		}
 	}
 
 	public void assertLiveness() {
-		this.assertions.add(new LivenessCheck().check(bftNetwork));
+		this.checks.add(new LivenessCheck());
 	}
 
 	public void assertSafety() {
-		this.assertions.add(new SafetyCheck().check(bftNetwork));
+		this.checks.add(new SafetyCheck());
 	}
 
 	public void assertNoTimeouts() {
-		this.assertions.add(new NoTimeoutCheck().check(bftNetwork));
+		this.checks.add(new NoTimeoutCheck());
 	}
 
 	public void assertNoSyncExceptions() {
-		this.assertions.add(new NoSyncExceptionCheck().check(bftNetwork));
+		this.checks.add(new NoSyncExceptionCheck());
 	}
 
 	public void assertAllProposalsHaveDirectParents() {
-		this.assertions.add(new AllProposalsHaveDirectParentsCheck().check(bftNetwork));
+		this.checks.add(new AllProposalsHaveDirectParentsCheck());
 	}
 
 	public void run() {
-		Observable.mergeArray(bftNetwork.processBFT(), Observable.merge(this.assertions))
+		List<ECKeyPair> nodes = Stream.generate(ECKeyPair::generateNew)
+			.limit(numNodes)
+			.collect(Collectors.toList());
+		BFTTestNetwork bftNetwork =  new BFTTestNetwork(
+			nodes,
+			TestEventCoordinatorNetwork.orderedRandomlyLatent(minNetworkLatency, maxNetworkLatency)
+		);
+		List<Observable<Object>> assertions = this.checks.stream().map(c -> c.check(bftNetwork)).collect(Collectors.toList());
+		Observable.mergeArray(bftNetwork.processBFT(), Observable.merge(assertions))
 			.take(time, timeUnit)
 			.blockingSubscribe();
 	}
