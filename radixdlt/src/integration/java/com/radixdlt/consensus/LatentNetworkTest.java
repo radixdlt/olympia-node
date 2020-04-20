@@ -18,6 +18,7 @@
 package com.radixdlt.consensus;
 
 import com.radixdlt.consensus.BFTTest.BFTTestBuilder;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
@@ -28,14 +29,32 @@ import java.util.concurrent.TimeUnit;
  */
 public class LatentNetworkTest {
 	/**
-	 * Tests a static configuration of 4 correct nodes with randomly latent in-order communication.
-	 * The intended behaviour is that all correct instances make progress and eventually align in their commits.
+	 * Tests a static configuration of 3 correct nodes with randomly latent in-order communication.
 	 */
 	@Test
-	public void given_3_correct_bfts_in_latent_network__then_all_instances_should_get_same_commits_consecutive_vertices_eventually_over_1_minute() {
+	public void given_3_correct_bfts_in_latent_network__then_all_normal_sanity_checks_should_pass() {
 		BFTTest bftTest = new BFTTestBuilder()
 			.numNodes(3)
 			.time(1, TimeUnit.MINUTES)
+			.networkLatency(10, 160) // 6 times max latency should be less than BFTTestNetwork.TEST_PACEMAKER_TIMEOUT
+			.build();
+		bftTest.assertSafety();
+		bftTest.assertLiveness();
+		bftTest.assertAllProposalsHaveDirectParents();
+		bftTest.assertNoSyncExceptions();
+		bftTest.assertNoTimeouts();
+		bftTest.run();
+	}
+
+	/**
+	 * Tests a static configuration of 4 correct nodes with randomly latent in-order communication.
+	 */
+	@Test
+	@Ignore("This test currently fails due to sync not being implemented and thus one node falling behind is possible.")
+	public void given_4_correct_bfts_in_latent_network__then_all_normal_sanity_checks_should_pass() {
+		BFTTest bftTest = new BFTTestBuilder()
+			.numNodes(4)
+			.time(10, TimeUnit.MINUTES)
 			.networkLatency(10, 160) // 6 times max latency should be less than BFTTestNetwork.TEST_PACEMAKER_TIMEOUT
 			.build();
 		bftTest.assertSafety();
