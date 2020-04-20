@@ -21,10 +21,9 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.Random;
-import java.util.function.LongSupplier;
-
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.common.annotations.VisibleForTesting;
+import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.utils.Longs;
 
 import io.netty.buffer.ByteBuf;
@@ -38,33 +37,22 @@ import org.apache.logging.log4j.Logger;
 /**
  * Class for NAT handling/discovery.
  */
-//FIXME: Should not be a singleton.  Fix this.
-public final class PublicInetAddress {
+public final class NatHandlerRemoteImpl implements NatHandler {
 	@VisibleForTesting
 	static final int SECRET_LIFETIME_MS = 60_000;
-	private static final Logger log = LogManager.getLogger("transport.udp");
+	private static final Logger log = LogManager.getLogger();
 
-	public static boolean isPublicUnicastInetAddress(InetAddress address) {
+	static boolean isPublicUnicastInetAddress(InetAddress address) {
 		return !(address.isSiteLocalAddress() || address.isLinkLocalAddress()
 			 || address.isLoopbackAddress() || address.isMulticastAddress());
 	}
 
-	private static PublicInetAddress instance = null;
-	private static final Object INSTANCE_LOCK = new Object();
-
-	public static PublicInetAddress getInstance() {
-		synchronized (INSTANCE_LOCK) {
-			if (instance == null) {
-				throw new IllegalStateException("instance not configured");
-			}
-			return instance;
-		}
+	static NatHandler create(InetAddress localAddress, int localPort) {
+		return create(localAddress, localPort, System::currentTimeMillis);
 	}
 
-	public static void configure(int localPort) {
-		synchronized (INSTANCE_LOCK) {
-			instance = new PublicInetAddress(localPort, System::currentTimeMillis);
-		}
+	static NatHandler create(InetAddress localAddress, int localPort, TimeSupplier timeSource) {
+		return new NatHandlerRemoteImpl(localAddress, localPort, timeSource);
 	}
 
 	private final Object lock = new Object();
@@ -72,45 +60,35 @@ public final class PublicInetAddress {
 
 	private final InetAddress localAddress;
 	private final int localPort;
-	private final LongSupplier timeSource;
+	private final TimeSupplier timeSource;
 
 	private InetAddress confirmedAddress;
 	private InetAddress unconfirmedAddress;
 	private long secret;
 	private long secretEndOfLife = Long.MIN_VALUE; // Very much expired
 
-	@VisibleForTesting
-	PublicInetAddress(int localPort, LongSupplier timeSource) {
-		this.localAddress = getLocalAddress();
+	NatHandlerRemoteImpl(InetAddress localAddress, int localPort, TimeSupplier timeSource) {
+		this.localAddress = localAddress;
 		this.localPort = localPort;
 		this.timeSource = timeSource;
 	}
 
-	public InetAddress get() {
+	@Override
+	public InetAddress getAddress() {
 		synchronized (lock) {
 			return confirmedAddress == null ? localAddress : confirmedAddress;
 		}
 	}
 
-	/**
-	 * Reset confirmed address.
-	 */
-	void reset() {
+	@Override
+	public void reset() {
 		synchronized (lock) {
 			confirmedAddress = null;
 		}
 	}
 
-	/**
-	 * Handle an inbound packet to check if address checking/challenge is required.
-	 * <p>
-	 * Note that data will be consumed from {@code buf} as required to handle NAT processing.
-	 *
-	 * @param ctx channel context to write any required address challenges on
-	 * @param peerAddress the address of the sending peer
-	 * @param buf the inbound packet
-	 */
-	void handleInboundPacket(ChannelHandlerContext ctx, InetAddress peerAddress, ByteBuf buf) {
+	@Override
+	public void handleInboundPacket(ChannelHandlerContext ctx, InetAddress peerAddress, ByteBuf buf) {
 		int length = buf.readableBytes();
 		if (length > 0) {
 			byte firstByte = buf.getByte(0); // peek
@@ -147,15 +125,8 @@ public final class PublicInetAddress {
 		}
 	}
 
-	/**
-	 * The caller needs to filter all packets with this method to catch validation UDP frames.
-	 * <p>
-	 * Note that no data will be consumed from {@code buf}.
-	 *
-	 * @param bytes packet previously sent by start validation.
-	 * @return true when packet was part of the validation process(and can be ignored by the caller) false otherwise.
-	 */
-	boolean endValidation(ByteBuf buf) {
+	@Override
+	public boolean endValidation(ByteBuf buf) {
 		// Make sure secret doesn't change mid-check
 		long localSecret = this.secret;
 
@@ -202,7 +173,7 @@ public final class PublicInetAddress {
 		// update state in a thread-safe manner
 		synchronized (lock) {
 			// If we are already matched, or our secret has not yet expired, just exit
-			long now = timeSource.getAsLong();
+			long now = timeSource.currentTime();
 			if (address.equals(confirmedAddress) || secretEndOfLife > now) {
 				return;
 			}
@@ -223,20 +194,12 @@ public final class PublicInetAddress {
 	@Override
 	@JsonValue
 	public String toString() {
-		return get().getHostAddress();
+		return getAddress().getHostAddress();
 	}
 
 	private void sendSecret(ChannelHandlerContext ctx, InetAddress address, long secret) {
 		ByteBuf data = Unpooled.wrappedBuffer(Longs.toByteArray(secret));
 		DatagramPacket packet = new DatagramPacket(data, new InetSocketAddress(address, this.localPort));
 		ctx.writeAndFlush(packet);
-	}
-
-	private InetAddress getLocalAddress() {
-		try {
-			return InetAddress.getLocalHost();
-		} catch (UnknownHostException e) {
-			return InetAddress.getLoopbackAddress();
-		}
 	}
 }

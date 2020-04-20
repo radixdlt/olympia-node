@@ -23,5 +23,5 @@ import com.radixdlt.network.transport.TransportOutboundConnection;
 import io.netty.channel.socket.DatagramChannel;
 
 interface UDPTransportOutboundConnectionFactory {
-	TransportOutboundConnection create(DatagramChannel channel, TransportMetadata metadata);
+	TransportOutboundConnection create(DatagramChannel channel, TransportMetadata metadata, NatHandler natHandler);
 }

@@ -42,10 +42,10 @@ final class UDPNettyMessageHandler extends SimpleChannelInboundHandler<DatagramP
 	private static final Logger log = LogManager.getLogger("transport.udp");
 
 	private final InboundMessageConsumer messageSink;
-	private final PublicInetAddress natHandler;
+	private final NatHandler natHandler;
 
 
-	UDPNettyMessageHandler(PublicInetAddress natHandler, InboundMessageConsumer messageSink) {
+	UDPNettyMessageHandler(NatHandler natHandler, InboundMessageConsumer messageSink) {
 		this.messageSink = messageSink;
 		this.natHandler = natHandler;
 	}

@@ -39,9 +39,9 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 
-public class PublicInetAddressTest {
+public class NatHandlerRemoteImplTest {
 
-	private PublicInetAddress dut;
+	private NatHandlerRemoteImpl dut;
 	private AtomicLong clock;
 
 	static class FakeDatagramSocket extends DatagramSocket {
@@ -61,28 +61,29 @@ public class PublicInetAddressTest {
 	}
 
 	@Before
-	public void setUp() {
+	public void setUp() throws UnknownHostException {
 		clock = new AtomicLong(0);
-		dut = new PublicInetAddress(30000, clock::get);
+		InetAddress localAddress = InetAddress.getByName("127.0.0.1");
+		dut = new NatHandlerRemoteImpl(localAddress, 30000, clock::get);
 	}
 
 	@Test
 	public void testGet() {
-		assertNotNull(dut.get());
+		assertNotNull(dut.getAddress());
 	}
 
 	@Test
 	public void testIsPublicUnicastInetAddress() throws UnknownHostException {
-		assertFalse(PublicInetAddress.isPublicUnicastInetAddress(InetAddress.getByName("172.31.0.1")));  // Site-local
-		assertFalse(PublicInetAddress.isPublicUnicastInetAddress(InetAddress.getByName("192.168.1.1"))); // Site-local
-		assertFalse(PublicInetAddress.isPublicUnicastInetAddress(InetAddress.getByName("10.10.10.10"))); // Site-local
-		assertFalse(PublicInetAddress.isPublicUnicastInetAddress(InetAddress.getByName("169.254.0.0"))); // Link-local
-		assertFalse(PublicInetAddress.isPublicUnicastInetAddress(InetAddress.getByName("127.0.0.1")));   // Localhost
-		assertFalse(PublicInetAddress.isPublicUnicastInetAddress(InetAddress.getByName("224.0.0.101"))); // Multicast
-		assertFalse(PublicInetAddress.isPublicUnicastInetAddress(InetAddress.getByName("::1")));
-		assertTrue(PublicInetAddress.isPublicUnicastInetAddress(InetAddress.getByName("1.1.1.1")));
-		assertTrue(PublicInetAddress.isPublicUnicastInetAddress(InetAddress.getByName("192.169.1.1")));
-		assertTrue(PublicInetAddress.isPublicUnicastInetAddress(InetAddress.getByName("2260::1")));
+		assertFalse(NatHandlerRemoteImpl.isPublicUnicastInetAddress(InetAddress.getByName("172.31.0.1")));  // Site-local
+		assertFalse(NatHandlerRemoteImpl.isPublicUnicastInetAddress(InetAddress.getByName("192.168.1.1"))); // Site-local
+		assertFalse(NatHandlerRemoteImpl.isPublicUnicastInetAddress(InetAddress.getByName("10.10.10.10"))); // Site-local
+		assertFalse(NatHandlerRemoteImpl.isPublicUnicastInetAddress(InetAddress.getByName("169.254.0.0"))); // Link-local
+		assertFalse(NatHandlerRemoteImpl.isPublicUnicastInetAddress(InetAddress.getByName("127.0.0.1")));   // Localhost
+		assertFalse(NatHandlerRemoteImpl.isPublicUnicastInetAddress(InetAddress.getByName("224.0.0.101"))); // Multicast
+		assertFalse(NatHandlerRemoteImpl.isPublicUnicastInetAddress(InetAddress.getByName("::1")));
+		assertTrue(NatHandlerRemoteImpl.isPublicUnicastInetAddress(InetAddress.getByName("1.1.1.1")));
+		assertTrue(NatHandlerRemoteImpl.isPublicUnicastInetAddress(InetAddress.getByName("192.169.1.1")));
+		assertTrue(NatHandlerRemoteImpl.isPublicUnicastInetAddress(InetAddress.getByName("2260::1")));
 	}
 
 	@Test
@@ -95,8 +96,8 @@ public class PublicInetAddressTest {
 
 		// single validation until confirmed or time has elapsed
 		dut.handleInboundPacket(ctx, from, packetFromTo(from, "1.1.1.1"));
-		long expectedTime = (long) Whitebox.getField(PublicInetAddress.class, "secretEndOfLife").get(dut);
-		long expectedSecret = (long) Whitebox.getField(PublicInetAddress.class, "secret").get(dut);
+		long expectedTime = (long) Whitebox.getField(NatHandlerRemoteImpl.class, "secretEndOfLife").get(dut);
+		long expectedSecret = (long) Whitebox.getField(NatHandlerRemoteImpl.class, "secret").get(dut);
 
 		// make sure our clock returns something new.
 		clock.incrementAndGet();
@@ -111,25 +112,25 @@ public class PublicInetAddressTest {
 		dut.handleInboundPacket(ctx, from, packetFromTo(from, "2.2.2.2"));
 
 		// make sure secretEndOfLife did not change since the first valid invocation
-		assertEquals(expectedTime, Whitebox.getField(PublicInetAddress.class, "secretEndOfLife").get(dut));
+		assertEquals(expectedTime, Whitebox.getField(NatHandlerRemoteImpl.class, "secretEndOfLife").get(dut));
 		// make sure secret did not change since the first valid invocation
-		assertEquals(expectedSecret, Whitebox.getField(PublicInetAddress.class, "secret").get(dut));
+		assertEquals(expectedSecret, Whitebox.getField(NatHandlerRemoteImpl.class, "secret").get(dut));
 
 		// make sure unconfirmedAddress did not change since the first valid invocation
-		assertEquals(InetAddress.getByName("1.1.1.1"), Whitebox.getField(PublicInetAddress.class, "unconfirmedAddress").get(dut));
+		assertEquals(InetAddress.getByName("1.1.1.1"), Whitebox.getField(NatHandlerRemoteImpl.class, "unconfirmedAddress").get(dut));
 
 		// Timeout the secret
-		clock.addAndGet(PublicInetAddress.SECRET_LIFETIME_MS);
+		clock.addAndGet(NatHandlerRemoteImpl.SECRET_LIFETIME_MS);
 
 		// trigger validation again with a different address
 		dut.handleInboundPacket(ctx, from, packetFromTo(from, "3.3.3.3"));
 
 		// make sure secretEndOfLife changed
-		assertNotEquals(expectedTime, Whitebox.getField(PublicInetAddress.class, "secretEndOfLife").get(dut));
+		assertNotEquals(expectedTime, Whitebox.getField(NatHandlerRemoteImpl.class, "secretEndOfLife").get(dut));
 		// make sure secret changed
-		assertNotEquals(expectedSecret, Whitebox.getField(PublicInetAddress.class, "secret").get(dut));
+		assertNotEquals(expectedSecret, Whitebox.getField(NatHandlerRemoteImpl.class, "secret").get(dut));
 		// make sure unconfirmedAddress changed
-		assertEquals(InetAddress.getByName("3.3.3.3"), Whitebox.getField(PublicInetAddress.class, "unconfirmedAddress").get(dut));
+		assertEquals(InetAddress.getByName("3.3.3.3"), Whitebox.getField(NatHandlerRemoteImpl.class, "unconfirmedAddress").get(dut));
 	}
 
 	@Test
@@ -138,33 +139,33 @@ public class PublicInetAddressTest {
 		InetAddress from = InetAddress.getByName("127.0.0.1");
 
 		long secret = -1L;
-		Whitebox.getField(PublicInetAddress.class, "secret").set(dut, secret);
-		Whitebox.getField(PublicInetAddress.class, "unconfirmedAddress").set(dut, InetAddress.getByName("1.1.1.1"));
+		Whitebox.getField(NatHandlerRemoteImpl.class, "secret").set(dut, secret);
+		Whitebox.getField(NatHandlerRemoteImpl.class, "unconfirmedAddress").set(dut, InetAddress.getByName("1.1.1.1"));
 
 		// Check initial conditions
-		assertNotEquals(InetAddress.getByName("1.1.1.1"), Whitebox.getField(PublicInetAddress.class, "confirmedAddress").get(dut));
+		assertNotEquals(InetAddress.getByName("1.1.1.1"), Whitebox.getField(NatHandlerRemoteImpl.class, "confirmedAddress").get(dut));
 
 		assertFalse(dut.endValidation(null));
 		assertFalse(dut.endValidation(byteBufFrom(new byte[] {1, 2, 3})));
 		assertTrue(dut.endValidation(byteBufFrom(Longs.toByteArray(0L))));
 		// make sure that confirmedAddress not set yet
-		assertNull(Whitebox.getField(PublicInetAddress.class, "confirmedAddress").get(dut));
+		assertNull(Whitebox.getField(NatHandlerRemoteImpl.class, "confirmedAddress").get(dut));
 		assertTrue(dut.endValidation(byteBufFrom(Longs.toByteArray(secret))));
 		// make sure that confirmedAddress got updated
-		assertEquals(InetAddress.getByName("1.1.1.1"), Whitebox.getField(PublicInetAddress.class, "confirmedAddress").get(dut));
+		assertEquals(InetAddress.getByName("1.1.1.1"), Whitebox.getField(NatHandlerRemoteImpl.class, "confirmedAddress").get(dut));
 
 		// get should return confirmed address
-		assertEquals(InetAddress.getByName("1.1.1.1"), dut.get());
+		assertEquals(InetAddress.getByName("1.1.1.1"), dut.getAddress());
 		assertEquals("1.1.1.1", dut.toString());
 
 		// no new secret now if we start again with the same address
-		long oldSecret = Whitebox.getField(PublicInetAddress.class, "secret").getLong(dut);
+		long oldSecret = Whitebox.getField(NatHandlerRemoteImpl.class, "secret").getLong(dut);
 		dut.handleInboundPacket(ctx, from, packetFromTo(from, "1.1.1.1"));
-		assertEquals(oldSecret, Whitebox.getField(PublicInetAddress.class, "secret").getLong(dut));
+		assertEquals(oldSecret, Whitebox.getField(NatHandlerRemoteImpl.class, "secret").getLong(dut));
 
 		// ... but should get a new secret if we start again with a new host
 		dut.handleInboundPacket(ctx, from, packetFromTo(from, "2.2.2.2"));
-		assertNotEquals(oldSecret, Whitebox.getField(PublicInetAddress.class, "secret").getLong(dut));
+		assertNotEquals(oldSecret, Whitebox.getField(NatHandlerRemoteImpl.class, "secret").getLong(dut));
 	}
 
 	private ByteBuf byteBufFrom(byte[] bs) {

@@ -33,13 +33,15 @@ import io.netty.channel.socket.DatagramPacket;
 final class UDPTransportOutboundConnection implements TransportOutboundConnection {
 	private final InetSocketAddress remoteAddr;
 	private final DatagramChannel channel;
+	private final NatHandler inetAddress;
 
-	UDPTransportOutboundConnection(DatagramChannel channel, TransportMetadata metadata) {
+	UDPTransportOutboundConnection(DatagramChannel channel, TransportMetadata metadata, NatHandler inetAddress) {
 		this.remoteAddr = new InetSocketAddress(
 			metadata.get(UDPConstants.METADATA_HOST),
 			Integer.valueOf(metadata.get(UDPConstants.METADATA_PORT))
 		);
 		this.channel = channel;
+		this.inetAddress = inetAddress;
 	}
 
 	@Override
@@ -52,7 +54,7 @@ final class UDPTransportOutboundConnection implements TransportOutboundConnectio
 	public CompletableFuture<SendResult> send(byte[] data) {
 		final CompletableFuture<SendResult> cfsr = new CompletableFuture<>();
 		// NAT: encode source and dest address to work behind NAT and userland proxies (Docker for Windows/Mac)
-		InetAddress sourceAddress = PublicInetAddress.getInstance().get();
+		InetAddress sourceAddress = inetAddress.getAddress();
 		byte[] rawSourceAddress = sourceAddress.getAddress();
 		byte[] rawDestAddress = remoteAddr.getAddress().getAddress();
 

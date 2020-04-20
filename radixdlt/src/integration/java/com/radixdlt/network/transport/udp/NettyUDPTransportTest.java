@@ -46,8 +46,6 @@ public class NettyUDPTransportTest {
 
 	@Before
 	public void setup() {
-		PublicInetAddress.configure(30000);
-
 		transport1 = createTransport("127.0.0.1", 12345);
 		transport2 = createTransport("127.0.0.1", 23456);
 

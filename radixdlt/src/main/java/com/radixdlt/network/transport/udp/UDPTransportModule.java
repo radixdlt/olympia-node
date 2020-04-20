@@ -17,15 +17,23 @@
 
 package com.radixdlt.network.transport.udp;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.Objects;
+import java.util.Optional;
+
+import javax.inject.Singleton;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.name.Names;
+import com.radixdlt.network.hostip.HostIp;
 import com.radixdlt.network.transport.StaticTransportMetadata;
 import com.radixdlt.network.transport.Transport;
 import com.radixdlt.network.transport.TransportMetadata;
 import com.radixdlt.properties.RuntimeProperties;
+import com.radixdlt.universe.Universe;
 
 /**
  * Guice configuration for the UDP transport subsystem.
@@ -52,7 +60,14 @@ public class UDPTransportModule extends AbstractModule {
 		bind(TransportMetadata.class).annotatedWith(Names.named("local")).toInstance(StaticTransportMetadata.empty()); // Use defaults for now
 		bind(UDPTransportControlFactory.class).toProvider(this::udpTransportControlFactoryProvider);
 		bind(UDPTransportOutboundConnectionFactory.class).toProvider(this::udpTransportOutboundConnectionFactoryProvider);
-		bind(PublicInetAddress.class).toProvider(PublicInetAddress::getInstance);
+	}
+
+	@Provides
+	@Singleton
+	private NatHandler natHandlerProvider(HostIp hostip, Universe universe) throws UnknownHostException {
+		Optional<String> localAddressString = hostip.hostIp();
+		InetAddress localAddress = InetAddress.getByName(localAddressString.get());
+		return NatHandlerRemoteImpl.create(localAddress, universe.getPort(), System::currentTimeMillis);
 	}
 
 	private UDPTransportControlFactory udpTransportControlFactoryProvider() {

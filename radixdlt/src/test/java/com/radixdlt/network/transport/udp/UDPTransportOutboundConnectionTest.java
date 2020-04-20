@@ -28,8 +28,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 import org.mockito.ArgumentCaptor;
-import org.powermock.reflect.Whitebox;
-
 import com.radixdlt.network.transport.SendResult;
 import com.radixdlt.network.transport.TransportMetadata;
 
@@ -53,12 +51,14 @@ public class UDPTransportOutboundConnectionTest {
 
 	private DatagramChannel channel;
 	private TransportMetadata metadata;
+	private NatHandler natHandler;
 	private ArgumentCaptor<DatagramPacket> datagramPacketArgumentCaptor;
 	private DefaultChannelPromise channelFuture;
 	private String testMessage = "TestMessage";
 
 	private String sourceAddressStr;
 	private String destinationAddressStr;
+	private InetAddress sourceAddress;
 	private byte addressFormatFlag;
 	private Exception exception;
 
@@ -85,12 +85,12 @@ public class UDPTransportOutboundConnectionTest {
 
 	@Before
 	public void setUp() throws UnknownHostException {
-
-		PublicInetAddress.configure(12345);
-		Whitebox.setInternalState(PublicInetAddress.getInstance(), "localAddress", InetAddress.getByName(this.sourceAddressStr));
-
 		channel = mock(DatagramChannel.class);
 		channelFuture = spy(new DefaultChannelPromise(channel, new DefaultEventExecutor()));
+
+		sourceAddress = InetAddress.getByName(this.sourceAddressStr);
+		natHandler = mock(NatHandler.class);
+		when(natHandler.getAddress()).thenReturn(sourceAddress);
 
 		when(channel.alloc()).thenReturn(ByteBufAllocator.DEFAULT);
 		datagramPacketArgumentCaptor = ArgumentCaptor.forClass(DatagramPacket.class);
@@ -103,7 +103,7 @@ public class UDPTransportOutboundConnectionTest {
 
 	@Test
 	public void sendTest() throws ExecutionException, InterruptedException, IOException {
-		try (UDPTransportOutboundConnection udpTransportOutboundConnection = new UDPTransportOutboundConnection(channel, metadata)) {
+		try (UDPTransportOutboundConnection udpTransportOutboundConnection = new UDPTransportOutboundConnection(channel, metadata, natHandler)) {
 			CompletableFuture<SendResult> completableFuture = udpTransportOutboundConnection.send(testMessage.getBytes());
 
 			channelFuture.setSuccess();
@@ -116,7 +116,7 @@ public class UDPTransportOutboundConnectionTest {
 			datagramPacket.content().getBytes(0, actualMessage);
 
 
-			byte[] sourceAddress = PublicInetAddress.getInstance().get().getAddress();
+			byte[] sourceAddress = InetAddress.getByName(this.sourceAddressStr).getAddress();
 			byte[] destinationAddress = new InetSocketAddress(
 				metadata.get(UDPConstants.METADATA_HOST),
 				Integer.valueOf(metadata.get(UDPConstants.METADATA_PORT))
@@ -136,7 +136,7 @@ public class UDPTransportOutboundConnectionTest {
 	@Test
 	public void sendFailureTest() throws ExecutionException, InterruptedException, IOException {
 		if (exception != null) {
-			try (UDPTransportOutboundConnection udpTransportOutboundConnection = new UDPTransportOutboundConnection(channel, metadata)) {
+			try (UDPTransportOutboundConnection udpTransportOutboundConnection = new UDPTransportOutboundConnection(channel, metadata, natHandler)) {
 				CompletableFuture<SendResult> completableFuture = udpTransportOutboundConnection.send(testMessage.getBytes());
 				channelFuture.setFailure(exception);
 				SendResult result = completableFuture.get();

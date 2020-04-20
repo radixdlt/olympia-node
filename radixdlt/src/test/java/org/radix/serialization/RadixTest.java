@@ -19,7 +19,6 @@ package org.radix.serialization;
 
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.network.transport.udp.PublicInetAddress;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.universe.Universe;
@@ -59,7 +58,6 @@ public abstract class RadixTest
 
 		serialization = DefaultSerialization.getInstance();
 
-		PublicInetAddress.configure(30000);
 		counters = mock(SystemCounters.class);
 		localSystem = LocalSystem.create(counters, getProperties(), universe, "127.0.0.1");
 	}
