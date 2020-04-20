@@ -56,6 +56,32 @@ public class TestEventCoordinatorNetworkTest {
 	}
 
 	@Test
+	public void when_send_new_view_to_self_twice__then_should_receive_both() {
+		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.builder().build();
+		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
+		network.getNetworkRx(validatorId).consensusEvents()
+			.subscribe(testObserver);
+		NewView newView = mock(NewView.class);
+		network.getNetworkSender(validatorId).sendNewView(newView, validatorId);
+		network.getNetworkSender(validatorId).sendNewView(newView, validatorId);
+		testObserver.awaitCount(2);
+		testObserver.assertValues(newView, newView);
+	}
+
+	@Test
+	public void when_self_and_other_send_new_view_to_self__then_should_receive_both() {
+		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.builder().build();
+		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
+		network.getNetworkRx(validatorId).consensusEvents()
+			.subscribe(testObserver);
+		NewView newView = mock(NewView.class);
+		network.getNetworkSender(validatorId).sendNewView(newView, validatorId);
+		network.getNetworkSender(validatorId2).sendNewView(newView, validatorId);
+		testObserver.awaitCount(2);
+		testObserver.assertValues(newView, newView);
+	}
+
+	@Test
 	public void when_send_vote_to_self__then_should_receive_it() {
 		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.builder().build();
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
