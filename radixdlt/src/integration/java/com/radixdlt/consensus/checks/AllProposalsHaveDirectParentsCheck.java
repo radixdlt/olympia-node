@@ -23,6 +23,7 @@ import com.radixdlt.consensus.EventCoordinatorNetworkRx;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.crypto.ECKeyPair;
+import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -36,7 +37,7 @@ import org.assertj.core.api.Condition;
 public class AllProposalsHaveDirectParentsCheck implements BFTCheck {
 
 	@Override
-	public Observable<Object> check(BFTTestNetwork network) {
+	public Completable check(BFTTestNetwork network) {
 		List<Observable<Vertex>> correctProposals = network.getNodes().stream()
 			.map(ECKeyPair::getPublicKey)
 			.map(network.getUnderlyingNetwork()::getNetworkRx)
@@ -49,6 +50,6 @@ public class AllProposalsHaveDirectParentsCheck implements BFTCheck {
 				.satisfies(new Condition<>(vtx -> vtx.getView().equals(vtx.getParentView().next()),
 					"Vertex %s at %s has direct parent",
 					network.getProposerElection().getProposer(v.getParentView()).euid(), v.getParentView())))
-			.map(o -> o);
+			.flatMapCompletable(v -> Completable.complete());
 	}
 }

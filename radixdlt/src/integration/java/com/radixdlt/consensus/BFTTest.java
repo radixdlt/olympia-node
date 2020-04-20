@@ -24,7 +24,7 @@ import com.radixdlt.consensus.checks.NoTimeoutCheck;
 import com.radixdlt.consensus.checks.SafetyCheck;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork;
-import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.core.Completable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -114,9 +114,8 @@ public class BFTTest {
 			.build();
 
 		BFTTestNetwork bftNetwork =  new BFTTestNetwork(nodes, network);
-		List<Observable<Object>> assertions = this.checks.stream().map(c -> c.check(bftNetwork)).collect(Collectors.toList());
-		Observable.mergeArray(bftNetwork.processBFT(), Observable.merge(assertions))
-			.take(time, timeUnit)
-			.blockingSubscribe();
+		List<Completable> assertions = this.checks.stream().map(c -> c.check(bftNetwork)).collect(Collectors.toList());
+		Completable.mergeArray(bftNetwork.processBFT().flatMapCompletable(e -> Completable.complete()), Completable.merge(assertions))
+			.blockingAwait(time, timeUnit);
 	}
 }

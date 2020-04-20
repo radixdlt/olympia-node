@@ -22,6 +22,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import com.radixdlt.consensus.BFTCheck;
 import com.radixdlt.consensus.BFTTestNetwork;
 import com.radixdlt.counters.SystemCounters.CounterType;
+import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.Condition;
@@ -33,7 +34,7 @@ import org.assertj.core.api.Condition;
 public class NoTimeoutCheck implements BFTCheck {
 
 	@Override
-	public Observable<Object> check(BFTTestNetwork network) {
+	public Completable check(BFTTestNetwork network) {
 		return Observable.interval(1, TimeUnit.SECONDS)
 			.flatMapIterable(i -> network.getNodes())
 			.map(network::getCounters)
@@ -43,6 +44,6 @@ public class NoTimeoutCheck implements BFTCheck {
 				assertThat(counters.get(CounterType.CONSENSUS_REJECTED))
 					.satisfies(new Condition<>(c -> c == 0, "Rejected Proposal counter is zero."));
 			})
-			.map(o -> o);
+			.flatMapCompletable(c -> Completable.complete());
 	}
 }

@@ -24,6 +24,7 @@ import com.radixdlt.consensus.BFTTestNetwork;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.VertexStore;
 import com.radixdlt.consensus.View;
+import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -35,7 +36,7 @@ import org.assertj.core.api.Condition;
  */
 public class StrongLivenessCheck implements BFTCheck {
 	@Override
-	public Observable<Object> check(BFTTestNetwork network) {
+	public Completable check(BFTTestNetwork network) {
 		// there should be a new highest QC every once in a while to ensure progress
 		// the minimum latency per round is determined using the network latency
 		// a round can consist of 6 * max_transmission_time
@@ -56,6 +57,6 @@ public class StrongLivenessCheck implements BFTCheck {
 					"The highest highestQC %s increased since last highestQC %s after %d ms", view, highestQCView.get(), maxLatencyPerRound)))
 			.doOnNext(highestQCView::set)
 			.doOnNext(newHighestQCView -> System.out.println("Progressed to new highest QC view " + highestQCView))
-			.map(o -> o);
+			.flatMapCompletable(v -> Completable.complete());
 	}
 }
