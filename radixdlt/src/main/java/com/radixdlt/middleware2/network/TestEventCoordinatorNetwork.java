@@ -132,15 +132,23 @@ public class TestEventCoordinatorNetwork {
 			.filter(msg -> !sendingDisabled.contains(msg.sender))
 			.filter(msg -> !receivingDisabled.contains(msg.target))
 			.filter(msg -> msg.target.equals(forNode))
+			.map(msg -> {
+				if (msg.sender.equals(forNode)) {
+					return msg;
+				} else {
+					int nextDelay = minimumLatency + rng.nextInt(maximumLatency - minimumLatency + 1);
+					return msg.delayed(nextDelay);
+				}
+			})
 			.timestamp(TimeUnit.MILLISECONDS)
 			.scan((msg1, msg2) -> {
-				if (msg2.value().sender.equals(forNode)) {
+				int delayCarryover = (int) Math.max(msg1.time() + msg1.value().delay - msg2.time(), 0);
+				int additionalDelay = (int) (msg2.value().delay - delayCarryover);
+				if (additionalDelay > 0) {
+					return new Timed<>(msg2.value().delayed(additionalDelay), msg2.time(), msg2.unit());
+				} else {
 					return msg2;
 				}
-				int delayCarryover = (int) Math.max(msg1.time() + msg1.value().delay - msg2.time(), 0);
-				int range = maximumLatency - delayCarryover - minimumLatency + 1;
-				int nextDelay = range > 0 ? minimumLatency + rng.nextInt(range) : minimumLatency + range;
-				return new Timed<>(msg2.value().delayed(nextDelay), msg2.time(), msg2.unit());
 			})
 			.delay(p -> Observable.timer(p.value().delay, TimeUnit.MILLISECONDS))
 			.map(Timed::value)
