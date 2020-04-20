@@ -23,6 +23,7 @@ import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
@@ -52,6 +53,12 @@ public class VoteTest {
 	public void testGetters() {
 		assertEquals(this.voteData, this.testObject.getVoteData());
 		assertEquals(ADDRESS.getPublicKey(), this.testObject.getAuthor());
+	}
+
+
+	@Test
+	public void testToString() {
+		assertThat(this.testObject).isNotNull();
 	}
 
 	@Test
