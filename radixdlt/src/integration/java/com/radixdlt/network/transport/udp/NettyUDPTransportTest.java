@@ -19,6 +19,7 @@ package com.radixdlt.network.transport.udp;
 
 import java.io.IOException;
 import java.util.LinkedList;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
@@ -27,8 +28,11 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.inject.Module;
+import com.radixdlt.network.hostip.HostIp;
 import com.radixdlt.network.messaging.InboundMessage;
 import com.radixdlt.network.transport.SendResult;
 import com.radixdlt.network.transport.TransportControl;
@@ -55,8 +59,12 @@ public class NettyUDPTransportTest {
 
 	@After
 	public void teardown() throws IOException, InterruptedException {
-		transport2.close();
-		transport1.close();
+		if (transport2 != null) {
+			transport2.close();
+		}
+		if (transport1 != null) {
+			transport1.close();
+		}
 		Thread.sleep(500);
 	}
 
@@ -152,7 +160,14 @@ public class NettyUDPTransportTest {
 				return 0;
 			}
 		};
-		Injector injector = Guice.createInjector(new UDPTransportModule(config));
+		HostIp hostip = () -> Optional.of("127.0.0.1");
+		Module hostIpModule = new AbstractModule() {
+			@Override
+			protected void configure() {
+				bind(HostIp.class).toInstance(hostip);
+			}
+		};
+		Injector injector = Guice.createInjector(hostIpModule, new UDPTransportModule(config));
 		return injector.getInstance(NettyUDPTransportImpl.class);
 	}
 }
