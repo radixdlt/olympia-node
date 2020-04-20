@@ -91,7 +91,7 @@ public final class VertexStore {
 			} catch (VertexInsertionException e) {
 				// Currently only looking to sync one vertex away from known QC
 				// so this should never throw the MissingParentException
-				throw new IllegalStateException("Should not go here.");
+				throw new IllegalStateException("Should not go here.", e);
 			}
 		}
 

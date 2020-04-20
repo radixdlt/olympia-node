@@ -139,7 +139,6 @@ public class TestEventCoordinatorNetwork {
 				}
 				int delayCarryover = (int) Math.max(msg1.time() + msg1.value().delay - msg2.time(), 0);
 				int range = maximumLatency - delayCarryover - minimumLatency + 1;
-				// Currently a gaussian distribution
 				int nextDelay = range > 0 ? minimumLatency + rng.nextInt(range) : 0;
 				return new Timed<>(msg2.value().delayed(nextDelay), msg2.time(), msg2.unit());
 			})

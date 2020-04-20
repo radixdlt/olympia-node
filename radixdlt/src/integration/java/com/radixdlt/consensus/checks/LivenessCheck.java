@@ -34,15 +34,16 @@ import org.assertj.core.api.Condition;
  * increasing.
  */
 public class LivenessCheck implements BFTCheck {
+	private static int MAX_ROUNDS_BEFORE_PROGRESS_EXPECTED = 2;
 
 	@Override
 	public Observable<Object> check(BFTTestNetwork network) {
 		// there should be a new highest QC every once in a while to ensure progress
 		// the minimum latency per round is determined using the network latency
-		// a round can consist of 6 * MTT
+		// a round can consist of 6 * max_transmission_time
 		double trips = 6.0;
 		int maxLatencyPerRound = (int) (network.getMaximumNetworkLatency() * trips);
-		int maxLatencyBeforeProgress = maxLatencyPerRound * 2;
+		int maxLatencyBeforeProgress = maxLatencyPerRound * MAX_ROUNDS_BEFORE_PROGRESS_EXPECTED;
 
 		AtomicReference<View> highestQCView = new AtomicReference<>(View.genesis());
 		return Observable
