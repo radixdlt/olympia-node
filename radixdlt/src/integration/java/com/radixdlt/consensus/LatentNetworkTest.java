@@ -41,9 +41,9 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 public class LatentNetworkTest {
 
 	private static final int MINIMUM_NETWORK_LATENCY = 10;
-	// 2 times max latency should be less than BFTTestNetwork.TEST_PACEMAKER_TIMEOUT
+	// 6 times max latency should be less than BFTTestNetwork.TEST_PACEMAKER_TIMEOUT
 	// so we don't get unwanted pacemaker timeouts
-	private static final int MAXIMUM_NETWORK_LATENCY = 200;
+	private static final int MAXIMUM_NETWORK_LATENCY = 160;
 
 	static List<ECKeyPair> createNodes(int numNodes) {
 		return Stream.generate(ECKeyPair::generateNew).limit(numNodes).collect(Collectors.toList());
@@ -61,9 +61,9 @@ public class LatentNetworkTest {
 	 * The intended behaviour is that all correct instances make progress and eventually align in their commits.
 	 */
 	@Test
-	public void given_4_correct_bfts_in_latent_network__then_all_instances_should_get_same_commits_consecutive_vertices_eventually_over_1_minute() {
-		final int numNodes = 4;
-		final long time = 3;
+	public void given_3_correct_bfts_in_latent_network__then_all_instances_should_get_same_commits_consecutive_vertices_eventually_over_1_minute() {
+		final int numNodes = 3;
+		final long time = 1;
 		final TimeUnit timeUnit = TimeUnit.MINUTES;
 
 		final List<ECKeyPair> allNodes = createNodes(numNodes);
@@ -72,8 +72,8 @@ public class LatentNetworkTest {
 		// there should be a new highest QC every once in a while to ensure progress
 		// the minimum latency per round is determined using the network latency and a tolerance
 		int worstCaseLatencyPerRound = bftNetwork.getMaximumNetworkLatency() * 2; // base latency: two rounds in the normal case
-		// a round consists of 3 message trips
-		double trips = 3.0;
+		// a round can consist of 6 * MTT
+		double trips = 6.0;
 		int maximumLatencyPerRound = (int) (worstCaseLatencyPerRound * trips);
 		AtomicReference<View> highestQCView = new AtomicReference<>(View.genesis());
 		Observable<Object> progressCheck = Observable.interval(maximumLatencyPerRound, maximumLatencyPerRound, TimeUnit.MILLISECONDS)

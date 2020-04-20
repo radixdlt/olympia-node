@@ -119,21 +119,22 @@ public class TestEventCoordinatorNetwork {
 				return;
 			}
 
+			final int nextLatency;
 			if (message.target.equals(forNode)) {
-				receivedMessages.onNext(message);
-				return;
-			}
-
-			final long curTime = System.currentTimeMillis();
-			final Long lastTimestamp = lastTimestamps.get(message.target);
-			final int minimumLatency;
-			if (lastTimestamp != null && lastTimestamp > curTime) {
-				minimumLatency = Math.min(this.minimumLatency, (int)(lastTimestamp - curTime));
+				nextLatency = 0;
 			} else {
-				minimumLatency = this.minimumLatency;
+
+				final long curTime = System.currentTimeMillis();
+				final Long lastTimestamp = lastTimestamps.get(message.target);
+				final int minimumLatency;
+				if (lastTimestamp != null && lastTimestamp > curTime) {
+					minimumLatency = Math.min(this.minimumLatency, (int) (lastTimestamp - curTime));
+				} else {
+					minimumLatency = this.minimumLatency;
+				}
+				nextLatency = minimumLatency + rng.nextInt(maximumLatency - minimumLatency + 1);
+				lastTimestamps.put(message.target, curTime + nextLatency);
 			}
-			final int nextLatency = minimumLatency + rng.nextInt(maximumLatency - minimumLatency + 1);
-			lastTimestamps.put(message.target, curTime + nextLatency);
 
 			executorService.schedule(() -> receivedMessages.onNext(message), nextLatency, TimeUnit.MILLISECONDS);
 		};
