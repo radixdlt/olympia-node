@@ -28,6 +28,7 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Vote;
 import io.reactivex.rxjava3.observers.TestObserver;
+import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 
 public class TestEventCoordinatorNetworkTest {
@@ -120,7 +121,7 @@ public class TestEventCoordinatorNetworkTest {
 	}
 
 	@Test
-	public void when_disable_and_then_send_new_view_to_self__then_should_receive_it() {
+	public void when_disable_and_then_send_new_view_to_self__then_should_not_receive_it() throws Exception {
 		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.builder().build();
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
 		network.setSendingDisable(validatorId, true);
@@ -128,6 +129,7 @@ public class TestEventCoordinatorNetworkTest {
 			.subscribe(testObserver);
 		NewView newView = mock(NewView.class);
 		network.getNetworkSender(validatorId).sendNewView(newView, validatorId);
+		testObserver.await(10, TimeUnit.MILLISECONDS);
 		testObserver.assertEmpty();
 	}
 

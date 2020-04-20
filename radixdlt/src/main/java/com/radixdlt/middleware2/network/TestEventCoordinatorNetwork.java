@@ -129,8 +129,9 @@ public class TestEventCoordinatorNetwork {
 		readers.add(forNode);
 		// filter only relevant messages (appropriate target and if receiving is allowed)
 		Observable<ConsensusEvent> myMessages = receivedMessages
+			.filter(msg -> !sendingDisabled.contains(msg.sender))
+			.filter(msg -> !receivingDisabled.contains(msg.target))
 			.filter(msg -> msg.target.equals(forNode))
-			.filter(msg -> !receivingDisabled.contains(forNode))
 			.timestamp(TimeUnit.MILLISECONDS)
 			.scan((msg1, msg2) -> {
 				if (msg2.value().sender.equals(forNode)) {
