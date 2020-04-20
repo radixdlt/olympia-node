@@ -30,12 +30,10 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.assertj.core.api.Condition;
 
 /**
- * Check that the network is making progress by ensuring that QCs are progressively
- * increasing.
+ * Check that the network is making strong progress by ensuring that new QCs are
+ * being created every round.
  */
-public class LivenessCheck implements BFTCheck {
-	private static int MAX_ROUNDS_BEFORE_PROGRESS_EXPECTED = 2;
-
+public class StrongLivenessCheck implements BFTCheck {
 	@Override
 	public Observable<Object> check(BFTTestNetwork network) {
 		// there should be a new highest QC every once in a while to ensure progress
@@ -43,11 +41,10 @@ public class LivenessCheck implements BFTCheck {
 		// a round can consist of 6 * max_transmission_time
 		double trips = 6.0;
 		int maxLatencyPerRound = (int) (network.getMaximumNetworkLatency() * trips);
-		int maxLatencyBeforeProgress = maxLatencyPerRound * MAX_ROUNDS_BEFORE_PROGRESS_EXPECTED;
 
 		AtomicReference<View> highestQCView = new AtomicReference<>(View.genesis());
 		return Observable
-			.interval(maxLatencyBeforeProgress, maxLatencyBeforeProgress, TimeUnit.MILLISECONDS)
+			.interval(maxLatencyPerRound, maxLatencyPerRound, TimeUnit.MILLISECONDS)
 			.map(i -> network.getNodes().stream()
 				.map(network::getVertexStore)
 				.map(VertexStore::getHighestQC)
@@ -56,7 +53,7 @@ public class LivenessCheck implements BFTCheck {
 				.get()) // there must be some max highest QC unless allNodes is empty
 			.doOnNext(view -> assertThat(view)
 				.satisfies(new Condition<>(v -> v.compareTo(highestQCView.get()) > 0,
-					"The highest highestQC %s increased since last highestQC %s after %d ms", view, highestQCView.get(), maxLatencyBeforeProgress)))
+					"The highest highestQC %s increased since last highestQC %s after %d ms", view, highestQCView.get(), maxLatencyPerRound)))
 			.doOnNext(highestQCView::set)
 			.doOnNext(newHighestQCView -> System.out.println("Progressed to new highest QC view " + highestQCView))
 			.map(o -> o);

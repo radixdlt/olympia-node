@@ -43,6 +43,7 @@ public class AllProposalsHaveDirectParentsCheck implements BFTCheck {
 			.map(EventCoordinatorNetworkRx::consensusEvents)
 			.map(p -> p.ofType(Proposal.class).map(Proposal::getVertex))
 			.collect(Collectors.toList());
+
 		return Observable.merge(correctProposals)
 			.doOnNext(v -> AssertionsForClassTypes.assertThat(v)
 				.satisfies(new Condition<>(vtx -> vtx.getView().equals(vtx.getParentView().next()),

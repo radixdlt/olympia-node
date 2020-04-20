@@ -18,7 +18,7 @@
 package com.radixdlt.consensus;
 
 import com.radixdlt.consensus.checks.AllProposalsHaveDirectParentsCheck;
-import com.radixdlt.consensus.checks.LivenessCheck;
+import com.radixdlt.consensus.checks.StrongLivenessCheck;
 import com.radixdlt.consensus.checks.NoSyncExceptionCheck;
 import com.radixdlt.consensus.checks.NoTimeoutCheck;
 import com.radixdlt.consensus.checks.SafetyCheck;
@@ -85,7 +85,7 @@ public class BFTTest {
 	}
 
 	public void assertLiveness() {
-		this.checks.add(new LivenessCheck());
+		this.checks.add(new StrongLivenessCheck());
 	}
 
 	public void assertSafety() {
