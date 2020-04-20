@@ -42,8 +42,7 @@ public class LivenessCheck implements BFTCheck {
 		// a round can consist of 6 * MTT
 		double trips = 6.0;
 		int maxLatencyPerRound = (int) (network.getMaximumNetworkLatency() * trips);
-		int maxNumRoundsBeforeProgress = 2;
-		int maxLatencyBeforeProgress = maxLatencyPerRound * maxNumRoundsBeforeProgress;
+		int maxLatencyBeforeProgress = maxLatencyPerRound * 2;
 
 		AtomicReference<View> highestQCView = new AtomicReference<>(View.genesis());
 		return Observable

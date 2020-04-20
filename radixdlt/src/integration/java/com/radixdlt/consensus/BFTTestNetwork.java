@@ -75,7 +75,7 @@ public class BFTTestNetwork {
 	 * @param nodes The nodes to populate the network with
 	 */
 	public BFTTestNetwork(List<ECKeyPair> nodes) {
-		this(nodes, new TestEventCoordinatorNetwork.Builder().build());
+		this(nodes, TestEventCoordinatorNetwork.builder().build());
 	}
 
 	/**

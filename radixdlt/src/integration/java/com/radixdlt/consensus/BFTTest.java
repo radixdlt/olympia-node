@@ -24,7 +24,6 @@ import com.radixdlt.consensus.checks.NoTimeoutCheck;
 import com.radixdlt.consensus.checks.SafetyCheck;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork;
-import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork.Builder;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.ArrayList;
 import java.util.List;
@@ -56,6 +55,9 @@ public class BFTTest {
 		private int minNetworkLatency = 50;
 		private int maxNetworkLatency = 50;
 
+		private Builder() {
+		}
+
 		public Builder numNodes(int numNodes) {
 			this.numNodes = numNodes;
 			return this;
@@ -76,6 +78,10 @@ public class BFTTest {
 		public BFTTest build() {
 			return new BFTTest(numNodes, time, timeUnit, minNetworkLatency, maxNetworkLatency);
 		}
+	}
+
+	public static Builder builder() {
+		return new Builder();
 	}
 
 	public void assertLiveness() {
@@ -102,7 +108,7 @@ public class BFTTest {
 		List<ECKeyPair> nodes = Stream.generate(ECKeyPair::generateNew)
 			.limit(numNodes)
 			.collect(Collectors.toList());
-		TestEventCoordinatorNetwork network = new TestEventCoordinatorNetwork.Builder()
+		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.builder()
 			.minLatency(minNetworkLatency)
 			.maxLatency(maxNetworkLatency)
 			.build();

@@ -17,6 +17,7 @@
 
 package com.radixdlt.middleware2.network;
 
+import com.google.common.collect.Sets;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.crypto.ECPublicKey;
@@ -29,11 +30,9 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.schedulers.Timed;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
-import java.util.Collections;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -45,9 +44,9 @@ public class TestEventCoordinatorNetwork {
 	private final int maximumLatency;
 
 	private final Subject<MessageInTransit> receivedMessages;
-	private final Set<ECPublicKey> readers = Collections.newSetFromMap(new ConcurrentHashMap<>());
-	private final Set<ECPublicKey> sendingDisabled = Collections.newSetFromMap(new ConcurrentHashMap<>());
-	private final Set<ECPublicKey> receivingDisabled = Collections.newSetFromMap(new ConcurrentHashMap<>());
+	private final Set<ECPublicKey> readers = Sets.newConcurrentHashSet();
+	private final Set<ECPublicKey> sendingDisabled = Sets.newConcurrentHashSet();
+	private final Set<ECPublicKey> receivingDisabled = Sets.newConcurrentHashSet();
 
 	private TestEventCoordinatorNetwork(int minimumLatency, int maximumLatency, long rngSeed) {
 		if (minimumLatency < 0) {
@@ -67,6 +66,9 @@ public class TestEventCoordinatorNetwork {
 		private int minLatency = 50;
 		private int maxLatency = 50;
 
+		private Builder() {
+		}
+
 		public Builder minLatency(int minLatency) {
 			this.minLatency = minLatency;
 			return this;
@@ -80,6 +82,10 @@ public class TestEventCoordinatorNetwork {
 		public TestEventCoordinatorNetwork build() {
 			return new TestEventCoordinatorNetwork(minLatency, maxLatency, System.currentTimeMillis());
 		}
+	}
+
+	public static Builder builder() {
+		return new Builder();
 	}
 
 	public void setSendingDisable(ECPublicKey validatorId, boolean disable) {
@@ -124,6 +130,7 @@ public class TestEventCoordinatorNetwork {
 		// filter only relevant messages (appropriate target and if receiving is allowed)
 		Observable<ConsensusEvent> myMessages = receivedMessages
 			.filter(msg -> msg.target.equals(forNode))
+			.filter(msg -> !receivingDisabled.contains(forNode))
 			.timestamp(TimeUnit.MILLISECONDS)
 			.scan((msg1, msg2) -> {
 				if (msg2.value().sender.equals(forNode)) {
@@ -136,10 +143,10 @@ public class TestEventCoordinatorNetwork {
 				return new Timed<>(msg2.value().delayed(nextDelay), msg2.time(), msg2.unit());
 			})
 			.delay(p -> Observable.timer(p.value().delay, TimeUnit.MILLISECONDS))
-			.filter(msg -> !receivingDisabled.contains(forNode))
 			.map(Timed::value)
 			.map(MessageInTransit::getContent)
 			.ofType(ConsensusEvent.class);
+
 		return () -> myMessages;
 	}
 

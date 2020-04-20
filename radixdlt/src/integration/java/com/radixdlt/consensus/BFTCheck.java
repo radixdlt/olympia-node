@@ -25,7 +25,10 @@ import io.reactivex.rxjava3.core.Observable;
 public interface BFTCheck {
 
 	/**
-	 * Creates an observable which runs assertions against a bft network
+	 * Creates an observable which runs assertions against a bft network.
+	 * Assertions errors are expected to propagate down the observable.
+	 * TODO: Cleanup interface a bit
+	 *
 	 * @param network network to check
 	 * @return observable to subscribe to enable checking
 	 */

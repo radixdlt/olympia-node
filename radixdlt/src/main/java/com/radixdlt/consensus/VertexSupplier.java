@@ -26,7 +26,7 @@ import io.reactivex.rxjava3.core.Single;
 public interface VertexSupplier {
 
 	/**
-	 * Retrieve vertex data from it's id
+	 * Retrieve vertex data from it's id.
 	 * @param id the id of vertex to retrieve
 	 * @return vertex data once available
 	 */
