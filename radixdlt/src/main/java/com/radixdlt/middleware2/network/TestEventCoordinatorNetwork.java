@@ -23,10 +23,13 @@ import com.radixdlt.consensus.EventCoordinatorNetworkRx;
 import com.radixdlt.consensus.EventCoordinatorNetworkSender;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.Hash;
 import io.reactivex.rxjava3.core.Observable;
 
+import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.schedulers.Timed;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
@@ -111,6 +114,11 @@ public class TestEventCoordinatorNetwork {
 			@Override
 			public void sendVote(Vote vote, ECPublicKey leader) {
 				receivedMessages.onNext(MessageInTransit.send(vote, forNode, leader));
+			}
+
+			@Override
+			public Single<Vertex> getVertex(Hash vertexId, ECPublicKey node) {
+				return Single.never();
 			}
 		};
 	}

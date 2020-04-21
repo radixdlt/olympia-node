@@ -17,6 +17,9 @@
 
 package com.radixdlt.middleware2.network;
 
+import com.radixdlt.consensus.Vertex;
+import com.radixdlt.crypto.Hash;
+import io.reactivex.rxjava3.core.Single;
 import java.util.Objects;
 
 import java.util.Optional;
@@ -104,6 +107,26 @@ public class SimpleEventCoordinatorNetwork implements EventCoordinatorNetworkSen
 			ConsensusEventMessage message = new ConsensusEventMessage(this.magic, vote);
 			send(message, leader);
 		}
+	}
+
+	@Override
+	public Single<Vertex> getVertex(Hash vertexId, ECPublicKey node) {
+		if (this.selfPublicKey.equals(node)) {
+			throw new IllegalStateException("Should never need to retrieve a vertex from self.");
+		}
+
+		return Single.create(emitter -> {
+			MessageListener<GetVertexResponse> listener =
+				(src, msg) -> {
+					if (msg.getVertex().getId().equals(vertexId)) {
+						emitter.onSuccess(msg.getVertex());
+					}
+				};
+			this.messageCentral.addListener(GetVertexResponse.class, listener);
+			emitter.setCancellable(() -> this.messageCentral.removeListener(listener));
+			GetVertexRequest vertexRequest = new GetVertexRequest(this.magic, vertexId);
+			send(vertexRequest, node);
+		});
 	}
 
 	private void send(Message message, ECPublicKey recipient) {

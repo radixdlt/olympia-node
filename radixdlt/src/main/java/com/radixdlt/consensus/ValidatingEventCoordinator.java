@@ -106,10 +106,12 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 		this.networkSender.sendNewView(newView, nextLeader);
 	}
 
-	private void syncToQC(QuorumCertificate qc) throws SyncException {
+	private void sync(QuorumCertificate qc, ECPublicKey node) throws SyncException {
 		// sync up to QC if necessary
 		try {
-			this.vertexStore.syncToQC(qc, hash -> Single.error(new RuntimeException("Could not retrieve vertex " + hash)));
+			this.vertexStore.syncToQC(qc, vertexId ->
+				networkSender.getVertex(vertexId, node).takeUntil(this.pacemaker.nextLocalTimeout())
+			);
 		} catch (SyncException e) {
 			counters.increment(CounterType.CONSENSUS_SYNC_EXCEPTION);
 			throw e;
@@ -150,7 +152,7 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 		potentialQc.ifPresent(qc -> {
 			log.info("{}: VOTE: Formed QC: {}", this.getShortName(), qc);
 			try {
-				this.syncToQC(qc);
+				this.sync(qc, vote.getAuthor());
 			} catch (SyncException e) {
 				// Should never go here
 				throw new IllegalStateException("Could not process QC " + e.getQC() + " which was created.");
@@ -177,7 +179,7 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 
 		this.counters.set(CounterType.CONSENSUS_VIEW, newView.getView().number());
 		try {
-			this.syncToQC(newView.getQC());
+			this.sync(newView.getQC(), newView.getAuthor());
 		} catch (SyncException e) {
 			log.warn("{}: NEW_VIEW: Ignoring new view because unable to sync to QC {}", this.getShortName(), e.getQC());
 			return;
@@ -205,7 +207,7 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 		}
 
 		try {
-			syncToQC(proposedVertex.getQC());
+			sync(proposedVertex.getQC(), proposal.getAuthor());
 		} catch (SyncException e) {
 			log.warn("{}: PROPOSAL: Ignoring because unable to sync to QC {}", this.getShortName(), e.getQC());
 			return;
