@@ -18,18 +18,12 @@
 package com.radixdlt.network.transport.udp;
 
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.net.SocketAddress;
-import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.powermock.reflect.Whitebox;
-
 import com.radixdlt.utils.Longs;
 
 import static org.junit.Assert.*;
@@ -43,22 +37,6 @@ public class NatHandlerRemoteImplTest {
 
 	private NatHandlerRemoteImpl dut;
 	private AtomicLong clock;
-
-	static class FakeDatagramSocket extends DatagramSocket {
-		FakeDatagramSocket(SocketAddress address) throws SocketException {
-			super((SocketAddress) null); // ensure created unbound
-		}
-
-		@Override
-		public void send(DatagramPacket p) throws IOException {
-			// Do nothing
-		}
-
-		@Override
-		public void close() {
-			// Do nothing
-		}
-	}
 
 	@Before
 	public void setUp() throws UnknownHostException {
@@ -87,7 +65,7 @@ public class NatHandlerRemoteImplTest {
 	}
 
 	@Test
-	public void testStartValidation() throws UnknownHostException, IllegalAccessException {
+	public void testStartValidation() throws UnknownHostException {
 		ChannelHandlerContext ctx = mock(ChannelHandlerContext.class);
 		InetAddress from = InetAddress.getByName("127.0.0.1");
 
@@ -96,8 +74,8 @@ public class NatHandlerRemoteImplTest {
 
 		// single validation until confirmed or time has elapsed
 		dut.handleInboundPacket(ctx, from, packetFromTo(from, "1.1.1.1"));
-		long expectedTime = (long) Whitebox.getField(NatHandlerRemoteImpl.class, "secretEndOfLife").get(dut);
-		long expectedSecret = (long) Whitebox.getField(NatHandlerRemoteImpl.class, "secret").get(dut);
+		long expectedTime = dut.secretEndOfLife();
+		long expectedSecret = dut.secret();
 
 		// make sure our clock returns something new.
 		clock.incrementAndGet();
@@ -112,12 +90,12 @@ public class NatHandlerRemoteImplTest {
 		dut.handleInboundPacket(ctx, from, packetFromTo(from, "2.2.2.2"));
 
 		// make sure secretEndOfLife did not change since the first valid invocation
-		assertEquals(expectedTime, Whitebox.getField(NatHandlerRemoteImpl.class, "secretEndOfLife").get(dut));
+		assertEquals(expectedTime, dut.secretEndOfLife());
 		// make sure secret did not change since the first valid invocation
-		assertEquals(expectedSecret, Whitebox.getField(NatHandlerRemoteImpl.class, "secret").get(dut));
+		assertEquals(expectedSecret, dut.secret());
 
 		// make sure unconfirmedAddress did not change since the first valid invocation
-		assertEquals(InetAddress.getByName("1.1.1.1"), Whitebox.getField(NatHandlerRemoteImpl.class, "unconfirmedAddress").get(dut));
+		assertEquals(InetAddress.getByName("1.1.1.1"), dut.unconfirmedAddress());
 
 		// Timeout the secret
 		clock.addAndGet(NatHandlerRemoteImpl.SECRET_LIFETIME_MS);
@@ -126,46 +104,83 @@ public class NatHandlerRemoteImplTest {
 		dut.handleInboundPacket(ctx, from, packetFromTo(from, "3.3.3.3"));
 
 		// make sure secretEndOfLife changed
-		assertNotEquals(expectedTime, Whitebox.getField(NatHandlerRemoteImpl.class, "secretEndOfLife").get(dut));
+		assertNotEquals(expectedTime, dut.secretEndOfLife());
 		// make sure secret changed
-		assertNotEquals(expectedSecret, Whitebox.getField(NatHandlerRemoteImpl.class, "secret").get(dut));
+		assertNotEquals(expectedSecret, dut.secret());
 		// make sure unconfirmedAddress changed
-		assertEquals(InetAddress.getByName("3.3.3.3"), Whitebox.getField(NatHandlerRemoteImpl.class, "unconfirmedAddress").get(dut));
+		assertEquals(InetAddress.getByName("3.3.3.3"), dut.unconfirmedAddress());
 	}
 
 	@Test
-	public void testEndValidation() throws IllegalAccessException, IOException {
+	public void testEndValidation() throws IOException {
 		ChannelHandlerContext ctx = mock(ChannelHandlerContext.class);
 		InetAddress from = InetAddress.getByName("127.0.0.1");
 
-		long secret = -1L;
-		Whitebox.getField(NatHandlerRemoteImpl.class, "secret").set(dut, secret);
-		Whitebox.getField(NatHandlerRemoteImpl.class, "unconfirmedAddress").set(dut, InetAddress.getByName("1.1.1.1"));
+		dut.unconfirmedAddress(InetAddress.getByName("1.1.1.1"));
 
 		// Check initial conditions
-		assertNotEquals(InetAddress.getByName("1.1.1.1"), Whitebox.getField(NatHandlerRemoteImpl.class, "confirmedAddress").get(dut));
+		assertNotEquals(InetAddress.getByName("1.1.1.1"), dut.confirmedAddress());
 
 		assertFalse(dut.endInboundValidation(null));
 		assertFalse(dut.endInboundValidation(byteBufFrom(new byte[] {1, 2, 3})));
-		assertTrue(dut.endInboundValidation(byteBufFrom(Longs.toByteArray(0L))));
+		assertTrue(dut.endInboundValidation(byteBufFrom(Longs.toByteArray(-1L))));
 		// make sure that confirmedAddress not set yet
-		assertNull(Whitebox.getField(NatHandlerRemoteImpl.class, "confirmedAddress").get(dut));
-		assertTrue(dut.endInboundValidation(byteBufFrom(Longs.toByteArray(secret))));
+		assertNull(dut.confirmedAddress());
+		assertTrue(dut.endInboundValidation(byteBufFrom(Longs.toByteArray(dut.secret()))));
 		// make sure that confirmedAddress got updated
-		assertEquals(InetAddress.getByName("1.1.1.1"), Whitebox.getField(NatHandlerRemoteImpl.class, "confirmedAddress").get(dut));
+		assertEquals(InetAddress.getByName("1.1.1.1"), dut.confirmedAddress());
 
 		// get should return confirmed address
 		assertEquals(InetAddress.getByName("1.1.1.1"), dut.getAddress());
 		assertEquals("1.1.1.1", dut.toString());
 
 		// no new secret now if we start again with the same address
-		long oldSecret = Whitebox.getField(NatHandlerRemoteImpl.class, "secret").getLong(dut);
+		long oldSecret = dut.secret();
 		dut.handleInboundPacket(ctx, from, packetFromTo(from, "1.1.1.1"));
-		assertEquals(oldSecret, Whitebox.getField(NatHandlerRemoteImpl.class, "secret").getLong(dut));
+		assertEquals(oldSecret, dut.secret());
 
 		// ... but should get a new secret if we start again with a new host
 		dut.handleInboundPacket(ctx, from, packetFromTo(from, "2.2.2.2"));
-		assertNotEquals(oldSecret, Whitebox.getField(NatHandlerRemoteImpl.class, "secret").getLong(dut));
+		assertNotEquals(oldSecret, dut.secret());
+	}
+
+	@Test
+	public void testComputeSizeLocalIp4() throws UnknownHostException {
+		assertEquals(1L + 4 + 4, dut.computeSize(InetAddress.getByName("127.0.0.1")));
+		assertEquals(1L + 4 + 16, dut.computeSize(InetAddress.getByName("::1")));
+	}
+
+	@Test
+	public void testComputeSizeLocalIp6() throws UnknownHostException {
+		InetAddress localAddress = InetAddress.getByName("::1");
+		NatHandlerRemoteImpl dut2 = new NatHandlerRemoteImpl(localAddress, 30000, clock::get);
+		assertEquals(1L + 16 + 4, dut2.computeSize(InetAddress.getByName("127.0.0.1")));
+		assertEquals(1L + 16 + 16, dut2.computeSize(InetAddress.getByName("::1")));
+	}
+
+	@Test
+	public void testWriteAddressesLocalIp4() throws UnknownHostException {
+		ByteBuf result1 = Unpooled.wrappedBuffer(new byte[1024]).clear();
+		dut.writeAddresses(result1, InetAddress.getByName("127.0.0.1"));
+		assertEquals(1L + 4 + 4, result1.writerIndex());
+
+		ByteBuf result2 = Unpooled.wrappedBuffer(new byte[1024]).clear();
+		dut.writeAddresses(result2, InetAddress.getByName("::1"));
+		assertEquals(1L + 4 + 16, result2.writerIndex());
+	}
+
+	@Test
+	public void testWriteAddressesLocalIp6() throws UnknownHostException {
+		InetAddress localAddress = InetAddress.getByName("::1");
+		NatHandlerRemoteImpl dut2 = new NatHandlerRemoteImpl(localAddress, 30000, clock::get);
+
+		ByteBuf result1 = Unpooled.wrappedBuffer(new byte[1024]).clear();
+		dut2.writeAddresses(result1, InetAddress.getByName("127.0.0.1"));
+		assertEquals(1L + 16 + 4, result1.writerIndex());
+
+		ByteBuf result2 = Unpooled.wrappedBuffer(new byte[1024]).clear();
+		dut2.writeAddresses(result2, InetAddress.getByName("::1"));
+		assertEquals(1L + 16 + 16, result2.writerIndex());
 	}
 
 	private ByteBuf byteBufFrom(byte[] bs) {

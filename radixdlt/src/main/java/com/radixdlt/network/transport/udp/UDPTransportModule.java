@@ -20,8 +20,6 @@ package com.radixdlt.network.transport.udp;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Objects;
-import java.util.Optional;
-
 import javax.inject.Singleton;
 
 import com.google.inject.AbstractModule;
@@ -64,10 +62,17 @@ public class UDPTransportModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private NatHandler natHandlerProvider(HostIp hostip, Universe universe) throws UnknownHostException {
-		Optional<String> localAddressString = hostip.hostIp();
-		InetAddress localAddress = InetAddress.getByName(localAddressString.get());
-		return NatHandlerRemoteImpl.create(localAddress, universe.getPort(), System::currentTimeMillis);
+	private NatHandler natHandlerProvider(HostIp hostip, Universe universe) {
+		return hostip.hostIp()
+			.map(hostName -> {
+				try {
+					return InetAddress.getByName(hostName);
+				} catch (UnknownHostException ex) {
+					throw new IllegalStateException("Could not determine host IP address", ex);
+				}
+			})
+			.map(hostAddress -> NatHandlerRemoteImpl.create(hostAddress, universe.getPort(), System::currentTimeMillis))
+			.orElseThrow(() -> new IllegalStateException("Could not determine host IP address"));
 	}
 
 	private UDPTransportControlFactory udpTransportControlFactoryProvider() {

@@ -105,14 +105,6 @@ public final class NatHandlerRemoteImpl implements NatHandler {
 						buf.readBytes(rawPeerAddress);
 						buf.readBytes(rawLocalAddress);
 
-						InetAddress addr = InetAddress.getByAddress(rawPeerAddress);
-						// TODO: if addr is previously unknown we need to challenge it to prevent peer table poisoning:
-						// See "Proposed solution for Routing Table Poisoning" in
-						// https://pdfs.semanticscholar.org/3990/e316c8ecedf8398bd6dc167d92f094525920.pdf
-						if (!isPublicUnicastInetAddress(peerAddress) && isPublicUnicastInetAddress(addr)) {
-							peerAddress = addr;
-						}
-
 						InetAddress localAddr = InetAddress.getByAddress(rawLocalAddress);
 						if (isPublicUnicastInetAddress(localAddr)) {
 							startValidation(ctx, localAddr);
@@ -226,6 +218,31 @@ public final class NatHandlerRemoteImpl implements NatHandler {
 		ByteBuf data = Unpooled.wrappedBuffer(Longs.toByteArray(secret));
 		DatagramPacket packet = new DatagramPacket(data, new InetSocketAddress(address, this.localPort));
 		ctx.writeAndFlush(packet);
+	}
+
+	@VisibleForTesting
+	long secret() {
+		return this.secret;
+	}
+
+	@VisibleForTesting
+	long secretEndOfLife() {
+		return this.secretEndOfLife;
+	}
+
+	@VisibleForTesting
+	InetAddress unconfirmedAddress() {
+		return this.unconfirmedAddress;
+	}
+
+	@VisibleForTesting
+	void unconfirmedAddress(InetAddress address) {
+		this.unconfirmedAddress = address;
+	}
+
+	@VisibleForTesting
+	InetAddress confirmedAddress() {
+		return this.confirmedAddress;
 	}
 
 	private byte getAddressFormat(int srclen, int dstlen) {
