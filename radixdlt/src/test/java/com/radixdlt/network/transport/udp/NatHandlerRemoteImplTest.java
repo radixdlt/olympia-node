@@ -145,12 +145,12 @@ public class NatHandlerRemoteImplTest {
 		// Check initial conditions
 		assertNotEquals(InetAddress.getByName("1.1.1.1"), Whitebox.getField(NatHandlerRemoteImpl.class, "confirmedAddress").get(dut));
 
-		assertFalse(dut.endValidation(null));
-		assertFalse(dut.endValidation(byteBufFrom(new byte[] {1, 2, 3})));
-		assertTrue(dut.endValidation(byteBufFrom(Longs.toByteArray(0L))));
+		assertFalse(dut.endInboundValidation(null));
+		assertFalse(dut.endInboundValidation(byteBufFrom(new byte[] {1, 2, 3})));
+		assertTrue(dut.endInboundValidation(byteBufFrom(Longs.toByteArray(0L))));
 		// make sure that confirmedAddress not set yet
 		assertNull(Whitebox.getField(NatHandlerRemoteImpl.class, "confirmedAddress").get(dut));
-		assertTrue(dut.endValidation(byteBufFrom(Longs.toByteArray(secret))));
+		assertTrue(dut.endInboundValidation(byteBufFrom(Longs.toByteArray(secret))));
 		// make sure that confirmedAddress got updated
 		assertEquals(InetAddress.getByName("1.1.1.1"), Whitebox.getField(NatHandlerRemoteImpl.class, "confirmedAddress").get(dut));
 

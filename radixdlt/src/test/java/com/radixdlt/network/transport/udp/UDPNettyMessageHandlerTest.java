@@ -37,7 +37,7 @@ public class UDPNettyMessageHandlerTest {
 	public void testChannelRead0() throws Exception {
 		InboundMessageConsumer messageSink = mock(InboundMessageConsumer.class);
 		NatHandler inetAddress = mock(NatHandler.class);
-		when(inetAddress.endValidation(any())).thenReturn(false);
+		when(inetAddress.endInboundValidation(any())).thenReturn(false);
 		UDPNettyMessageHandler mh = new UDPNettyMessageHandler(inetAddress, messageSink);
 
 		ChannelHandlerContext ctx = createContext("127.0.0.1", 1234);
@@ -60,7 +60,7 @@ public class UDPNettyMessageHandlerTest {
 	public void testChannelRead0NotConnected() throws Exception {
 		InboundMessageConsumer messageSink = mock(InboundMessageConsumer.class);
 		NatHandler inetAddress = mock(NatHandler.class);
-		when(inetAddress.endValidation(any())).thenReturn(true);
+		when(inetAddress.endInboundValidation(any())).thenReturn(true);
 		UDPNettyMessageHandler mh = new UDPNettyMessageHandler(inetAddress, messageSink);
 
 		ChannelHandlerContext ctx = createContext("127.0.0.1", 1234);

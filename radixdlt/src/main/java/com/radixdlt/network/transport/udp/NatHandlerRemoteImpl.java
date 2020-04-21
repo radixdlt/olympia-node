@@ -126,7 +126,7 @@ public final class NatHandlerRemoteImpl implements NatHandler {
 	}
 
 	@Override
-	public boolean endValidation(ByteBuf buf) {
+	public boolean endInboundValidation(ByteBuf buf) {
 		// Make sure secret doesn't change mid-check
 		long localSecret = this.secret;
 
@@ -156,6 +156,31 @@ public final class NatHandlerRemoteImpl implements NatHandler {
 
 		// tell the caller that this packet should be ignored.
 		return true;
+	}
+
+	@Override
+	public int computeSize(InetAddress destAddress) {
+		byte[] rawSourceAddress = getAddress().getAddress();
+		byte[] rawDestAddress = destAddress.getAddress();
+
+		assert rawSourceAddress.length == 4 || rawSourceAddress.length == 16;
+		assert rawDestAddress.length == 4 || rawDestAddress.length == 16;
+
+		return 1 + rawSourceAddress.length + rawDestAddress.length;
+	}
+
+	@Override
+	public void writeAddresses(ByteBuf buffer, InetAddress destAddress) {
+		byte[] rawSourceAddress = getAddress().getAddress();
+		byte[] rawDestAddress = destAddress.getAddress();
+
+		assert rawSourceAddress.length == 4 || rawSourceAddress.length == 16;
+		assert rawDestAddress.length == 4 || rawDestAddress.length == 16;
+
+		buffer
+			.writeByte(getAddressFormat(rawSourceAddress.length, rawDestAddress.length))
+			.writeBytes(rawSourceAddress)
+			.writeBytes(rawDestAddress);
 	}
 
 	/**
@@ -201,5 +226,10 @@ public final class NatHandlerRemoteImpl implements NatHandler {
 		ByteBuf data = Unpooled.wrappedBuffer(Longs.toByteArray(secret));
 		DatagramPacket packet = new DatagramPacket(data, new InetSocketAddress(address, this.localPort));
 		ctx.writeAndFlush(packet);
+	}
+
+	private byte getAddressFormat(int srclen, int dstlen) {
+		// MSB: switch between old/new protocol format
+		return (byte) (0x80 | (srclen != 4 ? 0x02 : 0x00) | (dstlen != 4 ? 0x01 : 0x00));
 	}
 }

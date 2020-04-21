@@ -65,10 +65,11 @@ public class UDPTransportOutboundConnectionTest2 {
 			UDPConstants.METADATA_PORT, "443"
 		);
 		DatagramChannel channel = mock(DatagramChannel.class);
+		NatHandler natHandler = mock(NatHandler.class);
 
 		// No resource issues as everything is mocked
 		@SuppressWarnings("resource")
-		UDPTransportOutboundConnection oci = new UDPTransportOutboundConnection(channel, metadata);
+		UDPTransportOutboundConnection oci = new UDPTransportOutboundConnection(channel, metadata, natHandler);
 		String s = oci.toString();
 
 		assertThat(s, containsString(UDPConstants.NAME));

@@ -18,7 +18,6 @@
 package com.radixdlt.network.transport.udp;
 
 import java.net.InetAddress;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 
@@ -51,9 +50,33 @@ public interface NatHandler {
 	 * @param bytes packet previously sent by start validation.
 	 * @return true when packet was part of the validation process(and can be ignored by the caller) false otherwise.
 	 */
-	boolean endValidation(ByteBuf buf);
+	boolean endInboundValidation(ByteBuf buf);
 
 
+	/**
+	 * Retrieve the address that this {@code NatHandler} has determined is
+	 * our public address.
+	 *
+	 * @return Our public address, as determined by the NAT handler
+	 */
 	InetAddress getAddress();
+
+	/**
+	 * Calculate additional size required in an outbound packet in order
+	 * to include the source and destination addresses.
+	 *
+	 * @param destAddress destination public IP (remote address)
+	 * @return the size of the additional space required to encode addresses
+	 */
+	int computeSize(InetAddress destAddress);
+
+	/**
+	 * Write additional information in an outbound packet in order to include
+	 * the source and destination addresses.
+	 *
+	 * @param buffer the outbound packet
+	 * @param destAddress destination public IP (remote address)
+	 */
+	void writeAddresses(ByteBuf buffer, InetAddress destAddress);
 
 }
