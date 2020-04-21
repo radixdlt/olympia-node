@@ -37,7 +37,8 @@ public final class ChainedBFT {
 		LOCAL_TIMEOUT,
 		NEW_VIEW_MESSAGE,
 		PROPOSAL_MESSAGE,
-		VOTE_MESSAGE
+		VOTE_MESSAGE,
+		GET_VERTEX_REQUEST,
 	}
 
 	public static class Event {
@@ -91,15 +92,15 @@ public final class ChainedBFT {
 			.map(o -> new Event(EventType.EPOCH, o))
 			.subscribeOn(this.singleThreadScheduler);
 
-		final Observable<EventCoordinator> epochCoordinators = epochEvents
+		final Observable<EventCoordinator> eventCoordinators = epochEvents
 			.map(epochManager::nextEpoch)
 			.startWithItem(epochManager.start())
 			.doOnNext(EventCoordinator::start)
 			.publish()
-			.autoConnect(2); // timeouts and consensusMessages below
+			.autoConnect(3); // timeouts and consensusMessages below
 
 		final Observable<Event> timeouts = Observable.combineLatest(
-			epochCoordinators,
+			eventCoordinators,
 			this.pacemakerRx.localTimeouts(),
 			(e, timeout) -> {
 				e.processLocalTimeout(timeout);
@@ -107,8 +108,18 @@ public final class ChainedBFT {
 			}
 		).subscribeOn(this.singleThreadScheduler);
 
+		// Not sure if EventCoordinator is right place to handle rpc?
+		final Observable<Event> rpcRequests = Observable.combineLatest(
+			eventCoordinators,
+			this.network.rpcRequests(),
+			(e, req) -> {
+				e.processGetVertexRequest(req);
+				return new Event(EventType.GET_VERTEX_REQUEST, req);
+			}
+		);
+
 		final Observable<Event> consensusMessages = Observable.combineLatest(
-			epochCoordinators,
+			eventCoordinators,
 			this.network.consensusEvents(),
 			(e, msg) -> {
 				final EventType eventType;
@@ -129,6 +140,6 @@ public final class ChainedBFT {
 			}
 		).subscribeOn(this.singleThreadScheduler);
 
-		return Observable.merge(epochs, timeouts, consensusMessages);
+		return Observable.merge(epochs, timeouts, consensusMessages, rpcRequests);
 	}
 }

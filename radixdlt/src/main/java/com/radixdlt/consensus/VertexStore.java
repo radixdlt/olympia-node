@@ -164,6 +164,10 @@ public final class VertexStore {
 		return this.highestQC;
 	}
 
+	public Vertex getVertex(Hash vertexId) {
+		return this.vertices.get(vertexId);
+	}
+
 	public int getSize() {
 		return vertices.size();
 	}

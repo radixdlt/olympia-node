@@ -25,5 +25,12 @@ public interface EventCoordinator {
 	void processNewView(NewView newView);
 	void processProposal(Proposal proposal);
 	void processLocalTimeout(View view);
+
+	/**
+	 * TODO: Is this the right place for this?
+	 */
+	void processGetVertexRequest(GetVertexRequest request);
+
+
 	void start();
 }

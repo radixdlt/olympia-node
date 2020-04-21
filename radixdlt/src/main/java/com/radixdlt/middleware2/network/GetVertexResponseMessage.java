@@ -18,7 +18,7 @@
 package com.radixdlt.middleware2.network;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.consensus.Vertex;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
@@ -26,27 +26,31 @@ import java.util.Objects;
 import org.radix.network.messaging.Message;
 
 /**
- * RPC Message to get request for a vertex
+ * RPC Response message for GetVertex call
  */
-@SerializerId2("message.consensus.vertex_request")
-public final class GetVertexRequest extends Message {
-	@JsonProperty("vertexId")
+@SerializerId2("message.consensus.vertex_response")
+public final class GetVertexResponseMessage extends Message {
+	@JsonProperty("vertex")
 	@DsonOutput(Output.ALL)
-	private final Hash vertexId;
+	private final Vertex vertex;
 
-	GetVertexRequest() {
+	GetVertexResponseMessage() {
 		// Serializer only
 		super(0);
-		this.vertexId = null;
+		this.vertex = null;
 	}
 
-	GetVertexRequest(int magic, Hash vertexId) {
+	GetVertexResponseMessage(int magic, Vertex vertex) {
 		super(magic);
-		this.vertexId = Objects.requireNonNull(vertexId);
+		this.vertex = Objects.requireNonNull(vertex);
+	}
+
+	public Vertex getVertex() {
+		return vertex;
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s]", getClass().getSimpleName(), vertexId);
+		return String.format("%s[%s]", getClass().getSimpleName(), vertex);
 	}
 }

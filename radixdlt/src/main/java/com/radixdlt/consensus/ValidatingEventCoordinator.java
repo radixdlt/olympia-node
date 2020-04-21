@@ -36,7 +36,6 @@ import com.radixdlt.crypto.Hash;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.utils.Longs;
 
-import io.reactivex.rxjava3.core.Single;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -109,9 +108,11 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 	private void sync(QuorumCertificate qc, ECPublicKey node) throws SyncException {
 		// sync up to QC if necessary
 		try {
-			this.vertexStore.syncToQC(qc, vertexId ->
-				networkSender.getVertex(vertexId, node).takeUntil(this.pacemaker.nextLocalTimeout())
-			);
+			this.vertexStore.syncToQC(qc, vertexId -> {
+				log.info("{}: Sending GetVertex Request to {}: {}",
+					this.getShortName(), this.getShortName(node.euid()), vertexId.toString().substring(0, 6));
+				return networkSender.getVertex(vertexId, node).takeUntil(this.pacemaker.nextLocalTimeout());
+			});
 		} catch (SyncException e) {
 			counters.increment(CounterType.CONSENSUS_SYNC_EXCEPTION);
 			throw e;
@@ -264,6 +265,15 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 		} else {
 			log.info("{}: LOCAL_TIMEOUT: Ignoring {}", this.getShortName(), view);
 		}
+	}
+
+	@Override
+	public void processGetVertexRequest(GetVertexRequest request) {
+		log.info("{}: GET_VERTEX_REQUEST: Processing: {}", this.getShortName(), request);
+		Vertex vertex = this.vertexStore.getVertex(request.getVertexId());
+		log.info("{}: GET_VERTEX_REQUEST: Sending Response to {}: {}",
+			this.getShortName(), this.getShortName(request.getRequestor().euid()), vertex);
+		this.networkSender.sendGetVertexResponse(vertex, request.getRequestor());
 	}
 
 	@Override

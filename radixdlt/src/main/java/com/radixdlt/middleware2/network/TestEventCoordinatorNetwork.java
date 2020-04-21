@@ -21,6 +21,7 @@ import com.google.common.collect.Sets;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.EventCoordinatorNetworkRx;
 import com.radixdlt.consensus.EventCoordinatorNetworkSender;
+import com.radixdlt.consensus.GetVertexRequest;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vertex;
@@ -118,40 +119,59 @@ public class TestEventCoordinatorNetwork {
 
 			@Override
 			public Single<Vertex> getVertex(Hash vertexId, ECPublicKey node) {
-				return Single.never();
+				final GetVertexRequest request = new GetVertexRequest(vertexId, forNode);
+				return receivedMessages.map(MessageInTransit::getContent)
+					.ofType(Vertex.class)
+					.filter(v -> v.getId().equals(vertexId))
+					.firstOrError()
+					.doOnSubscribe(d -> receivedMessages.onNext(MessageInTransit.send(request, forNode, node)));
+			}
+
+			@Override
+			public void sendGetVertexResponse(Vertex vertex, ECPublicKey node) {
+				receivedMessages.onNext(MessageInTransit.send(vertex, forNode, node));
 			}
 		};
 	}
 
 	public EventCoordinatorNetworkRx getNetworkRx(ECPublicKey forNode) {
 		// filter only relevant messages (appropriate target and if receiving is allowed)
-		return readers.computeIfAbsent(forNode, node -> () ->
-			receivedMessages
-				.filter(msg -> !sendingDisabled.contains(msg.sender))
-				.filter(msg -> !receivingDisabled.contains(msg.target))
-				.filter(msg -> msg.target.equals(node))
-				.map(msg -> {
-					if (msg.sender.equals(node)) {
-						return msg;
-					} else {
-						return msg.delayed(latencyProvider.nextLatency(msg.sender, msg.target));
-					}
-				})
-				.timestamp(TimeUnit.MILLISECONDS)
-				.scan((msg1, msg2) -> {
-					int delayCarryover = (int) Math.max(msg1.time() + msg1.value().delay - msg2.time(), 0);
-					int additionalDelay = (int) (msg2.value().delay - delayCarryover);
-					if (additionalDelay > 0) {
-						return new Timed<>(msg2.value().delayed(additionalDelay), msg2.time(), msg2.unit());
-					} else {
-						return msg2;
-					}
-				})
-				.delay(p -> Observable.timer(p.value().delay, TimeUnit.MILLISECONDS))
-				.map(Timed::value)
-				.map(MessageInTransit::getContent)
-				.ofType(ConsensusEvent.class)
-		);
+		return readers.computeIfAbsent(forNode, node -> new EventCoordinatorNetworkRx() {
+			final Observable<Object> myMessages = receivedMessages
+					.filter(msg -> !sendingDisabled.contains(msg.sender))
+					.filter(msg -> !receivingDisabled.contains(msg.target))
+					.filter(msg -> msg.target.equals(node))
+					.map(msg -> {
+						if (msg.sender.equals(node)) {
+							return msg;
+						} else {
+							return msg.delayed(latencyProvider.nextLatency(msg.sender, msg.target));
+						}
+					})
+					.timestamp(TimeUnit.MILLISECONDS)
+					.scan((msg1, msg2) -> {
+						int delayCarryover = (int) Math.max(msg1.time() + msg1.value().delay - msg2.time(), 0);
+						int additionalDelay = (int) (msg2.value().delay - delayCarryover);
+						if (additionalDelay > 0) {
+							return new Timed<>(msg2.value().delayed(additionalDelay), msg2.time(), msg2.unit());
+						} else {
+							return msg2;
+						}
+					})
+					.delay(p -> Observable.timer(p.value().delay, TimeUnit.MILLISECONDS))
+					.map(Timed::value)
+					.map(MessageInTransit::getContent);
+
+			@Override
+			public Observable<ConsensusEvent> consensusEvents() {
+				return myMessages.ofType(ConsensusEvent.class);
+			}
+
+			@Override
+			public Observable<GetVertexRequest> rpcRequests() {
+				return myMessages.ofType(GetVertexRequest.class);
+			}
+		});
 	}
 
 	private static final class MessageInTransit {
