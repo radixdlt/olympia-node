@@ -35,10 +35,16 @@ final class UDPTransportControlImpl implements TransportControl {
 
 	private final DatagramChannel channel;
 	private final UDPTransportOutboundConnectionFactory outboundFactory;
+	private final NatHandler natHandler;
 
-	UDPTransportControlImpl(DatagramChannel channel, UDPTransportOutboundConnectionFactory outboundFactory) {
+	UDPTransportControlImpl(
+		DatagramChannel channel,
+		UDPTransportOutboundConnectionFactory outboundFactory,
+		NatHandler natHandler
+	) {
 		this.channel = channel;
 		this.outboundFactory = outboundFactory;
+		this.natHandler = natHandler;
 	}
 
 	@Override
@@ -46,7 +52,7 @@ final class UDPTransportControlImpl implements TransportControl {
 		// Note that this only works because UDP "connections" are actually connectionless and use
 		// a single shared DatagramSocket to communicate.  Don't try this with TCP, you need to
 		// remember the connections and close them at some point.
-		return CompletableFuture.completedFuture(outboundFactory.create(channel, endpointMetadata));
+		return CompletableFuture.completedFuture(outboundFactory.create(channel, endpointMetadata, natHandler));
 	}
 
 	@Override

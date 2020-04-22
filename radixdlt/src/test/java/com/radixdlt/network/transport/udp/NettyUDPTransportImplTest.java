@@ -39,7 +39,7 @@ public class NettyUDPTransportImplTest {
 		);
 		UDPTransportControlFactory controlFactory = mock(UDPTransportControlFactory.class);
 		UDPTransportOutboundConnectionFactory connectionFactory = mock(UDPTransportOutboundConnectionFactory.class);
-		PublicInetAddress natHandler = mock(PublicInetAddress.class);
+		NatHandler natHandler = mock(NatHandler.class);
 
 		try (NettyUDPTransportImpl testInstance = new NettyUDPTransportImpl(config, localMetadata, controlFactory, connectionFactory, natHandler)) {
 			assertEquals("127.0.0.1", testInstance.localMetadata().get(UDPConstants.METADATA_HOST));
@@ -56,7 +56,7 @@ public class NettyUDPTransportImplTest {
 		);
 		UDPTransportControlFactory controlFactory = mock(UDPTransportControlFactory.class);
 		UDPTransportOutboundConnectionFactory connectionFactory = mock(UDPTransportOutboundConnectionFactory.class);
-		PublicInetAddress natHandler = mock(PublicInetAddress.class);
+		NatHandler natHandler = mock(NatHandler.class);
 
 		try (NettyUDPTransportImpl testInstance = new NettyUDPTransportImpl(config, localMetadata, controlFactory, connectionFactory, natHandler)) {
 			assertEquals(NettyUDPTransportImpl.DEFAULT_HOST, testInstance.localMetadata().get(UDPConstants.METADATA_HOST));
@@ -73,7 +73,7 @@ public class NettyUDPTransportImplTest {
 		);
 		UDPTransportControlFactory controlFactory = mock(UDPTransportControlFactory.class);
 		UDPTransportOutboundConnectionFactory connectionFactory = mock(UDPTransportOutboundConnectionFactory.class);
-		PublicInetAddress natHandler = mock(PublicInetAddress.class);
+		NatHandler natHandler = mock(NatHandler.class);
 
 		try (NettyUDPTransportImpl testInstance = new NettyUDPTransportImpl(config, localMetadata, controlFactory, connectionFactory, natHandler)) {
 			assertEquals("127.0.0.2", testInstance.localMetadata().get(UDPConstants.METADATA_HOST));
@@ -89,7 +89,7 @@ public class NettyUDPTransportImplTest {
 		TransportMetadata localMetadata = StaticTransportMetadata.empty();
 		UDPTransportControlFactory controlFactory = mock(UDPTransportControlFactory.class);
 		UDPTransportOutboundConnectionFactory connectionFactory = mock(UDPTransportOutboundConnectionFactory.class);
-		PublicInetAddress natHandler = mock(PublicInetAddress.class);
+		NatHandler natHandler = mock(NatHandler.class);
 
 		try (NettyUDPTransportImpl testInstance = new NettyUDPTransportImpl(config, localMetadata, controlFactory, connectionFactory, natHandler)) {
 			assertEquals(UDPConstants.NAME, testInstance.name());
@@ -105,7 +105,7 @@ public class NettyUDPTransportImplTest {
 		TransportMetadata localMetadata = StaticTransportMetadata.empty();
 		UDPTransportControlFactory controlFactory = mock(UDPTransportControlFactory.class);
 		UDPTransportOutboundConnectionFactory connectionFactory = mock(UDPTransportOutboundConnectionFactory.class);
-		PublicInetAddress natHandler = mock(PublicInetAddress.class);
+		NatHandler natHandler = mock(NatHandler.class);
 
 		try (NettyUDPTransportImpl testInstance = new NettyUDPTransportImpl(config, localMetadata, controlFactory, connectionFactory, natHandler)) {
 			// Always null until started
@@ -121,7 +121,7 @@ public class NettyUDPTransportImplTest {
 		TransportMetadata localMetadata = StaticTransportMetadata.empty();
 		UDPTransportControlFactory controlFactory = mock(UDPTransportControlFactory.class);
 		UDPTransportOutboundConnectionFactory connectionFactory = mock(UDPTransportOutboundConnectionFactory.class);
-		PublicInetAddress natHandler = mock(PublicInetAddress.class);
+		NatHandler natHandler = mock(NatHandler.class);
 
 		try (NettyUDPTransportImpl testInstance = new NettyUDPTransportImpl(config, localMetadata, controlFactory, connectionFactory, natHandler)) {
 			byte[] max = new byte[UDPConstants.MAX_PACKET_LENGTH];
@@ -141,7 +141,7 @@ public class NettyUDPTransportImplTest {
 		TransportMetadata localMetadata = StaticTransportMetadata.empty();
 		UDPTransportControlFactory controlFactory = mock(UDPTransportControlFactory.class);
 		UDPTransportOutboundConnectionFactory connectionFactory = mock(UDPTransportOutboundConnectionFactory.class);
-		PublicInetAddress natHandler = mock(PublicInetAddress.class);
+		NatHandler natHandler = mock(NatHandler.class);
 
 		try (NettyUDPTransportImpl testInstance = new NettyUDPTransportImpl(config, localMetadata, controlFactory, connectionFactory, natHandler)) {
 			assertEquals(1234, testInstance.priority());
@@ -157,7 +157,7 @@ public class NettyUDPTransportImplTest {
 		TransportMetadata localMetadata = StaticTransportMetadata.empty();
 		UDPTransportControlFactory controlFactory = mock(UDPTransportControlFactory.class);
 		UDPTransportOutboundConnectionFactory connectionFactory = mock(UDPTransportOutboundConnectionFactory.class);
-		PublicInetAddress natHandler = mock(PublicInetAddress.class);
+		NatHandler natHandler = mock(NatHandler.class);
 
 		try (NettyUDPTransportImpl testInstance = new NettyUDPTransportImpl(config, localMetadata, controlFactory, connectionFactory, natHandler)) {
 			String s = testInstance.toString();

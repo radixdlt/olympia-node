@@ -182,6 +182,9 @@ public class PeerManagerTest extends RadixTest {
         	properties,
         	getUniverse()
         );
+
+        // Ensure interrupted flag cleared
+        Thread.interrupted();
     }
 
     @After

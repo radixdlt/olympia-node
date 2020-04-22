@@ -42,10 +42,10 @@ final class UDPNettyMessageHandler extends SimpleChannelInboundHandler<DatagramP
 	private static final Logger log = LogManager.getLogger("transport.udp");
 
 	private final InboundMessageConsumer messageSink;
-	private final PublicInetAddress natHandler;
+	private final NatHandler natHandler;
 
 
-	UDPNettyMessageHandler(PublicInetAddress natHandler, InboundMessageConsumer messageSink) {
+	UDPNettyMessageHandler(NatHandler natHandler, InboundMessageConsumer messageSink) {
 		this.messageSink = messageSink;
 		this.natHandler = natHandler;
 	}
@@ -54,7 +54,7 @@ final class UDPNettyMessageHandler extends SimpleChannelInboundHandler<DatagramP
 	protected void channelRead0(ChannelHandlerContext ctx, DatagramPacket msg) throws Exception {
 		final ByteBuf buf = msg.content();
 		// part of the NAT address validation process
-		if (!natHandler.endValidation(buf)) {
+		if (!natHandler.endInboundValidation(buf)) {
 			InetSocketAddress sender = msg.sender();
 			InetAddress peerAddress = sender.getAddress();
 			natHandler.handleInboundPacket(ctx, peerAddress, buf);
