@@ -109,7 +109,7 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 		// sync up to QC if necessary
 		try {
 			this.vertexStore.syncToQC(qc, vertexId -> {
-				log.info("{}: Sending GetVertex Request to {}: {}",
+				log.info("{}: Sending GET_VERTEX Request to {}: {}",
 					this.getShortName(), this.getShortName(node.euid()), vertexId.toString().substring(0, 6));
 				return networkSender.getVertex(vertexId, node).takeUntil(this.pacemaker.nextLocalTimeout());
 			});
@@ -182,7 +182,7 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 		try {
 			this.sync(newView.getQC(), newView.getAuthor());
 		} catch (SyncException e) {
-			log.warn("{}: NEW_VIEW: Ignoring new view because unable to sync to QC {}", this.getShortName(), e.getQC());
+			log.warn("{}: NEW_VIEW: Ignoring new view because unable to sync to QC {} {}", this.getShortName(), e.getQC(), e.getCause());
 			return;
 		}
 
@@ -210,7 +210,7 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 		try {
 			sync(proposedVertex.getQC(), proposal.getAuthor());
 		} catch (SyncException e) {
-			log.warn("{}: PROPOSAL: Ignoring because unable to sync to QC {}", this.getShortName(), e.getQC());
+			log.warn("{}: PROPOSAL: Ignoring because unable to sync to QC {} {}", this.getShortName(), e.getQC(), e.getCause());
 			return;
 		}
 
@@ -273,7 +273,7 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 		Vertex vertex = this.vertexStore.getVertex(request.getVertexId());
 		log.info("{}: GET_VERTEX_REQUEST: Sending Response to {}: {}",
 			this.getShortName(), this.getShortName(request.getRequestor().euid()), vertex);
-		this.networkSender.sendGetVertexResponse(vertex, request.getRequestor());
+		request.getResponder().accept(vertex);
 	}
 
 	@Override

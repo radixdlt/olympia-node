@@ -54,6 +54,4 @@ public interface EventCoordinatorNetworkSender {
 	 * @return single of a vertex which will complete once retrieved
 	 */
 	Single<Vertex> getVertex(Hash vertexId, ECPublicKey node);
-
-	void sendGetVertexResponse(Vertex vertex, ECPublicKey node);
 }

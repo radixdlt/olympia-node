@@ -22,6 +22,7 @@ import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.EventCoordinatorNetworkRx;
 import com.radixdlt.consensus.EventCoordinatorNetworkSender;
 import com.radixdlt.consensus.GetVertexRequest;
+import com.radixdlt.consensus.GetVertexResponse;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vertex;
@@ -31,6 +32,8 @@ import com.radixdlt.crypto.Hash;
 import io.reactivex.rxjava3.core.Observable;
 
 import io.reactivex.rxjava3.core.Single;
+import io.reactivex.rxjava3.disposables.Disposable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import io.reactivex.rxjava3.schedulers.Timed;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
@@ -51,9 +54,10 @@ public class TestEventCoordinatorNetwork {
 	}
 
 	private final Subject<MessageInTransit> receivedMessages;
-	private final Map<ECPublicKey, EventCoordinatorNetworkRx> readers = new ConcurrentHashMap<>();
+	private final Map<ECPublicKey, SimulatedReceiver> receivers = new ConcurrentHashMap<>();
 	private final Set<ECPublicKey> sendingDisabled = Sets.newConcurrentHashSet();
 	private final Set<ECPublicKey> receivingDisabled = Sets.newConcurrentHashSet();
+
 	private final LatencyProvider latencyProvider;
 
 	private TestEventCoordinatorNetwork(LatencyProvider latencyProvider) {
@@ -102,7 +106,7 @@ public class TestEventCoordinatorNetwork {
 		return new EventCoordinatorNetworkSender() {
 			@Override
 			public void broadcastProposal(Proposal proposal) {
-				for (ECPublicKey reader : readers.keySet()) {
+				for (ECPublicKey reader : receivers.keySet()) {
 					receivedMessages.onNext(MessageInTransit.send(proposal, forNode, reader));
 				}
 			}
@@ -119,59 +123,75 @@ public class TestEventCoordinatorNetwork {
 
 			@Override
 			public Single<Vertex> getVertex(Hash vertexId, ECPublicKey node) {
-				final GetVertexRequest request = new GetVertexRequest(vertexId, forNode);
-				return receivedMessages.map(MessageInTransit::getContent)
-					.ofType(Vertex.class)
-					.filter(v -> v.getId().equals(vertexId))
-					.firstOrError()
-					.doOnSubscribe(d -> receivedMessages.onNext(MessageInTransit.send(request, forNode, node)));
-			}
+				return Single.create(emitter -> {
+					Disposable d = receivers.computeIfAbsent(forNode, SimulatedReceiver::new).myMessages
+						.ofType(GetVertexResponse.class)
+						.filter(v -> v.getVertexId().equals(vertexId))
+						.firstOrError()
+						.map(GetVertexResponse::getVertex)
+						.subscribe(emitter::onSuccess);
+					emitter.setDisposable(d);
 
-			@Override
-			public void sendGetVertexResponse(Vertex vertex, ECPublicKey node) {
-				receivedMessages.onNext(MessageInTransit.send(vertex, forNode, node));
+					final GetVertexRequest request = new GetVertexRequest(
+						vertexId,
+						forNode,
+						vertex -> {
+							GetVertexResponse vertexResponse = new GetVertexResponse(vertexId, vertex);
+							receivedMessages.onNext(MessageInTransit.send(vertexResponse, node, forNode));
+						}
+					);
+					receivedMessages.onNext(MessageInTransit.send(request, forNode, node));
+				});
 			}
 		};
 	}
 
+	private class SimulatedReceiver implements EventCoordinatorNetworkRx {
+		private final Observable<Object> myMessages;
+
+		private SimulatedReceiver(ECPublicKey node) {
+			// filter only relevant messages (appropriate target and if receiving is allowed)
+			this.myMessages = receivedMessages
+				.filter(msg -> !sendingDisabled.contains(msg.sender))
+				.filter(msg -> !receivingDisabled.contains(msg.target))
+				.filter(msg -> msg.target.equals(node))
+				.map(msg -> {
+					if (msg.sender.equals(node)) {
+						return msg;
+					} else {
+						return msg.delayed(latencyProvider.nextLatency(msg.sender, msg.target));
+					}
+				})
+				.timestamp(TimeUnit.MILLISECONDS)
+				.scan((msg1, msg2) -> {
+					int delayCarryover = (int) Math.max(msg1.time() + msg1.value().delay - msg2.time(), 0);
+					int additionalDelay = (int) (msg2.value().delay - delayCarryover);
+					if (additionalDelay > 0) {
+						return new Timed<>(msg2.value().delayed(additionalDelay), msg2.time(), msg2.unit());
+					} else {
+						return msg2;
+					}
+				})
+				.delay(p -> Observable.timer(p.value().delay, TimeUnit.MILLISECONDS))
+				.map(Timed::value)
+				.map(MessageInTransit::getContent)
+				.publish()
+				.refCount();
+		}
+
+		@Override
+		public Observable<ConsensusEvent> consensusEvents() {
+			return myMessages.ofType(ConsensusEvent.class);
+		}
+
+		@Override
+		public Observable<GetVertexRequest> rpcRequests() {
+			return myMessages.ofType(GetVertexRequest.class).observeOn(Schedulers.io());
+		}
+	}
+
 	public EventCoordinatorNetworkRx getNetworkRx(ECPublicKey forNode) {
-		// filter only relevant messages (appropriate target and if receiving is allowed)
-		return readers.computeIfAbsent(forNode, node -> new EventCoordinatorNetworkRx() {
-			final Observable<Object> myMessages = receivedMessages
-					.filter(msg -> !sendingDisabled.contains(msg.sender))
-					.filter(msg -> !receivingDisabled.contains(msg.target))
-					.filter(msg -> msg.target.equals(node))
-					.map(msg -> {
-						if (msg.sender.equals(node)) {
-							return msg;
-						} else {
-							return msg.delayed(latencyProvider.nextLatency(msg.sender, msg.target));
-						}
-					})
-					.timestamp(TimeUnit.MILLISECONDS)
-					.scan((msg1, msg2) -> {
-						int delayCarryover = (int) Math.max(msg1.time() + msg1.value().delay - msg2.time(), 0);
-						int additionalDelay = (int) (msg2.value().delay - delayCarryover);
-						if (additionalDelay > 0) {
-							return new Timed<>(msg2.value().delayed(additionalDelay), msg2.time(), msg2.unit());
-						} else {
-							return msg2;
-						}
-					})
-					.delay(p -> Observable.timer(p.value().delay, TimeUnit.MILLISECONDS))
-					.map(Timed::value)
-					.map(MessageInTransit::getContent);
-
-			@Override
-			public Observable<ConsensusEvent> consensusEvents() {
-				return myMessages.ofType(ConsensusEvent.class);
-			}
-
-			@Override
-			public Observable<GetVertexRequest> rpcRequests() {
-				return myMessages.ofType(GetVertexRequest.class);
-			}
-		});
+		return receivers.computeIfAbsent(forNode, SimulatedReceiver::new);
 	}
 
 	private static final class MessageInTransit {
@@ -197,6 +217,11 @@ public class TestEventCoordinatorNetwork {
 
 		private Object getContent() {
 			return this.content;
+		}
+
+		@Override
+		public String toString() {
+			return String.format("%s %s -> %s %d", content, sender.euid().toString().substring(0, 6), target.euid().toString().substring(0, 6), delay);
 		}
 	}
 }

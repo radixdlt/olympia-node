@@ -87,7 +87,13 @@ public class SimpleEventCoordinatorNetwork implements EventCoordinatorNetworkSen
 		return Observable.create(emitter -> {
 			MessageListener<GetVertexRequestMessage> listener = (src, msg) -> {
 				if (src.hasSystem()) {
-					emitter.onNext(new GetVertexRequest(msg.getVertexId(), src.getSystem().getKey()));
+					final ECPublicKey requestor = src.getSystem().getKey();
+					final GetVertexRequest request = new GetVertexRequest(
+						msg.getVertexId(),
+						requestor,
+						vertex -> send(new GetVertexResponseMessage(this.magic, vertex), requestor)
+					);
+					emitter.onNext(request);
 				}
 			};
 			this.messageCentral.addListener(GetVertexRequestMessage.class, listener);
@@ -142,16 +148,6 @@ public class SimpleEventCoordinatorNetwork implements EventCoordinatorNetworkSen
 				emitter.onError(new RuntimeException(String.format("Peer with pubkey %s not present", node)));
 			}
 		});
-	}
-
-	@Override
-	public void sendGetVertexResponse(Vertex vertex, ECPublicKey node) {
-		if (this.selfPublicKey.equals(node)) {
-			throw new IllegalStateException("Should never need to send a vertex to self.");
-		}
-
-		GetVertexResponseMessage responseMessage = new GetVertexResponseMessage(this.magic, vertex);
-		send(responseMessage, node);
 	}
 
 	private boolean send(Message message, ECPublicKey recipient) {
