@@ -19,9 +19,9 @@ package com.radixdlt.consensus.liveness;
 
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.validators.ValidationState;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.utils.Longs;
 
@@ -50,7 +50,7 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 	private final Observable<View> timeoutsObservable;
 	private final ScheduledExecutorService executorService;
 
-	private final Map<View, ECDSASignatures> pendingNewViews = new HashMap<>();
+	private final Map<View, ValidationState> pendingNewViews = new HashMap<>();
 	private View currentView = View.of(0L);
 	private View lastSyncView = View.of(0L);
 
@@ -68,7 +68,7 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 	}
 
 	private void scheduleTimeout(final View timeoutView) {
-		log.info("Starting View: " + timeoutView);
+		log.info("Starting View: {}", timeoutView);
 		executorService.schedule(() -> timeouts.onNext(timeoutView), timeoutMilliseconds, TimeUnit.MILLISECONDS);
 	}
 
@@ -103,25 +103,21 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 		if (!highestQC) {
 			Hash newViewId = Hash.of(Longs.toByteArray(newView.getView().number()));
 			ECDSASignature signature = newView.getSignature().orElseThrow(() -> new IllegalArgumentException("new-view is missing signature"));
-			ECDSASignatures signatures = pendingNewViews.getOrDefault(newView.getView(), new ECDSASignatures());
-			signatures = (ECDSASignatures) signatures.concatenate(newView.getAuthor(), signature);
+			ValidationState validationState = pendingNewViews.computeIfAbsent(newView.getView(), k -> validatorSet.newValidationState(newViewId));
 
 			// check if we have gotten enough new-views to proceed
-			if (!validatorSet.validate(newViewId, signatures).valid()) {
+			if (!validationState.addSignature(newView.getAuthor(), signature)) {
 				// if we haven't got enough new-views yet, do nothing
-				pendingNewViews.put(newView.getView(), signatures);
 				return Optional.empty();
 			}
 		}
 
 		if (newView.getView().equals(this.currentView)) {
 			pendingNewViews.remove(newView.getView());
-
 			this.lastSyncView = this.currentView;
-
 			return Optional.of(this.currentView);
 		} else {
-			log.info("Ignoring New View Quorum: " + newView.getView() + " Current is: " + this.currentView);
+			log.info("Ignoring New View Quorum: {} Current is: {}", newView.getView(), this.currentView);
 			return Optional.empty();
 		}
 	}

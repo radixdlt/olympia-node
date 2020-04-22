@@ -17,11 +17,11 @@
 
 package com.radixdlt.consensus;
 
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.validators.ValidationResult;
+import com.radixdlt.consensus.validators.ValidationState;
 import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
 import java.util.Collections;
@@ -38,13 +38,12 @@ import static org.mockito.Mockito.when;
 
 public class PendingVotesTest {
 	private PendingVotes pendingVotes;
-	private Hasher hasher;
 
 	@Before
 	public void setup() {
-		this.hasher = mock(Hasher.class);
-		when(this.hasher.hash(any())).thenReturn(Hash.random());
-		this.pendingVotes = new PendingVotes(this.hasher);
+		Hasher hasher = mock(Hasher.class);
+		when(hasher.hash(any())).thenReturn(Hash.random());
+		this.pendingVotes = new PendingVotes(hasher);
 	}
 
 	@Test
@@ -70,7 +69,11 @@ public class PendingVotesTest {
 		Hash vertexId = Hash.random();
 		Vote vote1 = makeVoteFor(vertexId);
 		ValidatorSet validatorSet = mock(ValidatorSet.class);
-		when(validatorSet.validate(any(), any())).thenReturn(ValidationResult.passed(ImmutableList.of(mock(Validator.class))));
+		ValidationState validationState = mock(ValidationState.class);
+		ECDSASignatures signatures = mock(ECDSASignatures.class);
+		when(validationState.addSignature(any(), any())).thenReturn(true);
+		when(validationState.signatures()).thenReturn(signatures);
+		when(validatorSet.newValidationState(any())).thenReturn(validationState);
 		assertThat(this.pendingVotes.insertVote(vote1, validatorSet)).isPresent();
 	}
 
