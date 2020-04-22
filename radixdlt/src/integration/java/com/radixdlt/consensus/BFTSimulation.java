@@ -58,6 +58,7 @@ import java.util.stream.Collectors;
 public class BFTSimulation {
 	private static final int TEST_PACEMAKER_TIMEOUT = 1000;
 
+	private final int pacemakerTimeout;
 	private final TestEventCoordinatorNetwork underlyingNetwork;
 	private final Atom genesis;
 	private final Vertex genesisVertex;
@@ -85,6 +86,7 @@ public class BFTSimulation {
 	public BFTSimulation(List<ECKeyPair> nodes, TestEventCoordinatorNetwork underlyingNetwork, int fixedPacemakerTimeout) {
 		this.nodes = nodes;
 		this.underlyingNetwork = Objects.requireNonNull(underlyingNetwork);
+		this.pacemakerTimeout = fixedPacemakerTimeout;
 		this.genesis = null;
 		this.genesisVertex = Vertex.createGenesis(genesis);
 		this.genesisQC = new QuorumCertificate(
@@ -174,6 +176,6 @@ public class BFTSimulation {
 	}
 
 	public int getPacemakerTimeout() {
-		return TEST_PACEMAKER_TIMEOUT;
+		return pacemakerTimeout;
 	}
 }

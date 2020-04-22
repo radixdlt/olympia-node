@@ -128,7 +128,7 @@ public class BFTTest {
 		}
 
 		public BFTTest build() {
-			return new BFTTest(ImmutableList.copyOf(nodes), latencyProvider, pacemakerTimeout, ImmutableList.copyOf(checks));
+			return new BFTTest(ImmutableList.copyOf(nodes), latencyProvider.copyOf(), pacemakerTimeout, ImmutableList.copyOf(checks));
 		}
 	}
 

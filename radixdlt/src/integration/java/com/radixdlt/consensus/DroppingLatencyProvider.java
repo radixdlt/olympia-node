@@ -35,6 +35,13 @@ public final class DroppingLatencyProvider implements LatencyProvider {
 		this.base.set(msg -> TestEventCoordinatorNetwork.DEFAULT_LATENCY);
 	}
 
+	public DroppingLatencyProvider copyOf() {
+		DroppingLatencyProvider provider = new DroppingLatencyProvider();
+		provider.setBase(this.base.get());
+		provider.droppingFunctions.addAll(this.droppingFunctions);
+		return provider;
+	}
+
 	public void setBase(LatencyProvider base) {
 		this.base.set(base);
 	}

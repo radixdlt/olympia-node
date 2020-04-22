@@ -32,18 +32,23 @@ import io.reactivex.rxjava3.core.Observable;
 
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.disposables.Disposable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import io.reactivex.rxjava3.schedulers.Timed;
+import io.reactivex.rxjava3.subjects.PublishSubject;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Simple simulated network implementation that just sends messages to itself with a configurable latency.
  */
 public class TestEventCoordinatorNetwork {
+	private static final Logger log = LogManager.getLogger("EC");
 	public static final int DEFAULT_LATENCY = 50;
 
 	public static final class MessageInTransit {
@@ -204,7 +209,13 @@ public class TestEventCoordinatorNetwork {
 						return msg2;
 					}
 				})
-				.delay(p -> Observable.timer(p.value().delay, TimeUnit.MILLISECONDS))
+				.delay(p -> {
+					if (p.value().delay > 0) {
+						return Observable.timer(p.value().delay, TimeUnit.MILLISECONDS, Schedulers.io());
+					} else {
+						return Observable.just(0L);
+					}
+				})
 				.map(Timed::value)
 				.map(MessageInTransit::getContent)
 				.publish()

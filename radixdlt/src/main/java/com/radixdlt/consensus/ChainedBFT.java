@@ -98,47 +98,29 @@ public final class ChainedBFT {
 			.startWithItem(epochManager.start())
 			.doOnNext(EventCoordinator::start)
 			.replay(1)
-			.autoConnect(3); // timeouts, rpcs and consensusMessages below
+			.autoConnect(); // timeouts, rpcs and consensusMessages below
 
 		// Need to ensure that first event coordinator is emitted otherwise we may not process
 		// initial events due to the .withLatestFrom() drops events
 		final Completable firstEventCoordinator = Completable.fromSingle(eventCoordinators.firstOrError());
-
-		final Observable<Event> timeouts = firstEventCoordinator
+		final Observable<Event> ecMessages = firstEventCoordinator
 			.andThen(
-				this.pacemakerRx.localTimeouts()
-					.observeOn(this.singleThreadScheduler)
-					.withLatestFrom(
-						eventCoordinators,
-						(timeout, e) -> {
-							e.processLocalTimeout(timeout);
-							return new Event(EventType.LOCAL_TIMEOUT, timeout);
-						}
-					)
-			);
-
-		final Observable<Event> rpcRequests = firstEventCoordinator
-			.andThen(
-				this.network.rpcRequests()
-					.observeOn(this.singleThreadScheduler)
-					.withLatestFrom(
-						eventCoordinators,
-						(req, e) -> {
-							e.processGetVertexRequest(req);
-							return new Event(EventType.GET_VERTEX_REQUEST, req);
-						}
-					)
-			);
-
-		final Observable<Event> consensusMessages = firstEventCoordinator
-			.andThen(
-				this.network.consensusEvents()
-					.observeOn(this.singleThreadScheduler)
+				Observable.merge(
+					this.pacemakerRx.localTimeouts().observeOn(this.singleThreadScheduler),
+					this.network.consensusEvents().observeOn(this.singleThreadScheduler),
+					this.network.rpcRequests().observeOn(this.singleThreadScheduler)
+				)
 					.withLatestFrom(
 						eventCoordinators,
 						(msg, e) -> {
 							final EventType eventType;
-							if (msg instanceof NewView) {
+							if (msg instanceof GetVertexRequest) {
+								e.processGetVertexRequest((GetVertexRequest) msg);
+								return new Event(EventType.GET_VERTEX_REQUEST, msg);
+							} else if (msg instanceof View) {
+								e.processLocalTimeout((View) msg);
+								return new Event(EventType.LOCAL_TIMEOUT, msg);
+							} if (msg instanceof NewView) {
 								e.processNewView((NewView) msg);
 								eventType = EventType.NEW_VIEW_MESSAGE;
 							} else if (msg instanceof Proposal) {
@@ -156,6 +138,6 @@ public final class ChainedBFT {
 					)
 			);
 
-		return Observable.merge(epochs, timeouts, consensusMessages, rpcRequests);
+		return Observable.merge(epochs, ecMessages);
 	}
 }

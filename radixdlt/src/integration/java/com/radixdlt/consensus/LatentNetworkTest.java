@@ -34,6 +34,7 @@ public class LatentNetworkTest {
 	 */
 	@Test
 	public void given_3_correct_bfts_in_latent_network__then_all_normal_sanity_checks_should_pass() {
+		final int minLatency = 10;
 		final int maxLatency = 160;
 		// there should be a new highest QC every once in a while to ensure progress
 		// the minimum latency per round is determined using the network latency
@@ -42,7 +43,8 @@ public class LatentNetworkTest {
 
 		BFTTest bftTest = BFTTest.builder()
 			.numNodes(3)
-			.randomLatency(10, maxLatency) // 6 times max latency should be less than BFTTestNetwork.TEST_PACEMAKER_TIMEOUT
+			.pacemakerTimeout(maxLatency * trips) // Since no syncing needed 6*MTT required
+			.randomLatency(minLatency, maxLatency)
 			.checkLiveness(maxLatency * trips, TimeUnit.MILLISECONDS)
 			.checkSafety()
 			.checkAllProposalsHaveDirectParents()
@@ -59,15 +61,18 @@ public class LatentNetworkTest {
 	 */
 	@Test
 	public void given_4_nodes_3_fast_and_1_slow_node__then_whether_a_timeout_occurs_is_dependent_on_if_sync_is_enabled() {
+		final int minLatency = 10;
+		final int maxLatency = 160;
+
 		Builder bftTestBuilder = BFTTest.builder()
-			.numNodesAndLatencies(4, 10, 10, 10, 160)
-			.pacemakerTimeout(10000)
+			.numNodesAndLatencies(4, minLatency, minLatency, minLatency, maxLatency)
+			.pacemakerTimeout(maxLatency * 8)
 			.checkNoTimeouts();
 
-		BFTTest syncDisabledTest = bftTestBuilder.disableSync().build();
 		BFTTest syncEnabledTest = bftTestBuilder.build();
+		BFTTest syncDisabledTest = bftTestBuilder.disableSync().build();
 
-		//assertThatThrownBy(() -> syncDisabledTest.run(1, TimeUnit.MINUTES)).isInstanceOf(AssertionError.class);
+		assertThatThrownBy(() -> syncDisabledTest.run(1, TimeUnit.MINUTES)).isInstanceOf(AssertionError.class);
 		syncEnabledTest.run(1, TimeUnit.MINUTES);
 	}
 
@@ -77,9 +82,13 @@ public class LatentNetworkTest {
 	 */
 	@Test
 	public void given_4_correct_bfts_in_latent_network_with_no_syncing__then_network_should_eventually_timeout() {
+		final int minLatency = 10;
+		final int maxLatency = 160;
+
 		BFTTest bftTest = BFTTest.builder()
 			.numNodes(4)
-			.randomLatency(10, 160) // 6 times max latency should be less than BFTTestNetwork.TEST_PACEMAKER_TIMEOUT
+			.pacemakerTimeout(maxLatency * 8)
+			.randomLatency(minLatency, maxLatency)
 			.disableSync()
 			.checkNoTimeouts()
 			.build();
