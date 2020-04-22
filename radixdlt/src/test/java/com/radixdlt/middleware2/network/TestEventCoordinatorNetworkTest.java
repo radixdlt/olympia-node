@@ -94,43 +94,4 @@ public class TestEventCoordinatorNetworkTest {
 		testObserver.awaitCount(1);
 		testObserver.assertValue(proposal);
 	}
-
-	@Test
-	public void when_disable_and_then_send_new_view_to_self__then_should_not_receive_it() throws Exception {
-		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.builder().build();
-		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
-		network.setSendingDisable(validatorId, true);
-		network.getNetworkRx(validatorId).consensusEvents()
-			.subscribe(testObserver);
-		NewView newView = mock(NewView.class);
-		network.getNetworkSender(validatorId).sendNewView(newView, validatorId);
-		testObserver.await(10, TimeUnit.MILLISECONDS);
-		testObserver.assertEmpty();
-	}
-
-	@Test
-	public void when_disable_receive_and_other_sends_view_to_self__then_should_receive_it() {
-		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.builder().build();
-		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
-		network.setReceivingDisable(validatorId, true);
-		network.getNetworkRx(validatorId).consensusEvents()
-			.subscribe(testObserver);
-		NewView newView = mock(NewView.class);
-		network.getNetworkSender(validatorId2).sendNewView(newView, validatorId);
-		testObserver.assertEmpty();
-	}
-
-	@Test
-	public void when_disable_then_reenable_receive_and_other_sends_view_to_self__then_should_receive_it() {
-		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.builder().build();
-		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
-		network.setReceivingDisable(validatorId, true);
-		network.setReceivingDisable(validatorId, false);
-		network.getNetworkRx(validatorId).consensusEvents()
-			.subscribe(testObserver);
-		NewView newView = mock(NewView.class);
-		network.getNetworkSender(validatorId2).sendNewView(newView, validatorId);
-		testObserver.awaitCount(1);
-		testObserver.assertValue(newView);
-	}
 }

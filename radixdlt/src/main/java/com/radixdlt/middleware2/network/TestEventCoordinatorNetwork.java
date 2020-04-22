@@ -17,7 +17,6 @@
 
 package com.radixdlt.middleware2.network;
 
-import com.google.common.collect.Sets;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.EventCoordinatorNetworkRx;
 import com.radixdlt.consensus.EventCoordinatorNetworkSender;
@@ -38,7 +37,6 @@ import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
@@ -87,6 +85,9 @@ public class TestEventCoordinatorNetwork {
 		}
 	}
 
+	/**
+	 * The latency configuration for a network
+	 */
 	public interface LatencyProvider {
 
 		/**
@@ -101,9 +102,6 @@ public class TestEventCoordinatorNetwork {
 
 	private final Subject<MessageInTransit> receivedMessages;
 	private final Map<ECPublicKey, SimulatedReceiver> receivers = new ConcurrentHashMap<>();
-	private final Set<ECPublicKey> sendingDisabled = Sets.newConcurrentHashSet();
-	private final Set<ECPublicKey> receivingDisabled = Sets.newConcurrentHashSet();
-
 	private final LatencyProvider latencyProvider;
 
 	private TestEventCoordinatorNetwork(LatencyProvider latencyProvider) {
@@ -130,22 +128,6 @@ public class TestEventCoordinatorNetwork {
 
 	public static Builder builder() {
 		return new Builder();
-	}
-
-	public void setSendingDisable(ECPublicKey validatorId, boolean disable) {
-		if (disable) {
-			sendingDisabled.add(validatorId);
-		} else {
-			sendingDisabled.remove(validatorId);
-		}
-	}
-
-	public void setReceivingDisable(ECPublicKey validatorId, boolean disable) {
-		if (disable) {
-			receivingDisabled.add(validatorId);
-		} else {
-			receivingDisabled.remove(validatorId);
-		}
 	}
 
 	public EventCoordinatorNetworkSender getNetworkSender(ECPublicKey forNode) {
@@ -198,8 +180,6 @@ public class TestEventCoordinatorNetwork {
 		private SimulatedReceiver(ECPublicKey node) {
 			// filter only relevant messages (appropriate target and if receiving is allowed)
 			this.myMessages = receivedMessages
-				.filter(msg -> !sendingDisabled.contains(msg.sender))
-				.filter(msg -> !receivingDisabled.contains(msg.receiver))
 				.filter(msg -> msg.receiver.equals(node))
 				.map(msg -> {
 					if (msg.sender.equals(node)) {

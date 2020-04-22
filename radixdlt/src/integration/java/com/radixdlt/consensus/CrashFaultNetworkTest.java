@@ -48,11 +48,6 @@ public class CrashFaultNetworkTest {
 		return Stream.generate(ECKeyPair::generateNew).limit(numNodes).collect(Collectors.toList());
 	}
 
-	private void crashNode(ECKeyPair node, BFTTestNetwork bftNetwork) {
-		bftNetwork.getUnderlyingNetwork().setReceivingDisable(node.getPublicKey(), true);
-		bftNetwork.getUnderlyingNetwork().setSendingDisable(node.getPublicKey(), true);
-	}
-
 	/**
 	 * Tests a static configuration of 3 nodes (1 crash-stopped), meaning a QC can never be formed.
 	 * The intended behaviour is that all instances retain the genesis commit as their latest committed vertex
@@ -60,6 +55,7 @@ public class CrashFaultNetworkTest {
 	 */
 	@Test
 	public void given_2_out_of_3_correct_bft_instances__then_all_instances_should_only_get_genesis_commit_over_1_minute() {
+		final int latency = 20;
 		final int numNodes = 3;
 		final int numCrashed = 1;
 		final int numCorrect = numNodes - numCrashed;
@@ -69,8 +65,13 @@ public class CrashFaultNetworkTest {
 		final List<ECKeyPair> correctNodes = createNodes(numCorrect);
 		final List<ECKeyPair> faultyNodes = createNodes(numCrashed);
 		final List<ECKeyPair> allNodes = Stream.concat(correctNodes.stream(), faultyNodes.stream()).collect(Collectors.toList());
-		final BFTTestNetwork bftNetwork = new BFTTestNetwork(allNodes);
-		crashNode(allNodes.get(2), bftNetwork);
+		final CrashLatencyProvider crashLatencyProvider = new CrashLatencyProvider(latency);
+		final TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.builder()
+			.latencyProvider(crashLatencyProvider)
+			.build();
+
+		final BFTTestNetwork bftNetwork = new BFTTestNetwork(allNodes, network);
+		crashLatencyProvider.crashNode(allNodes.get(2).getPublicKey());
 
 		List<Observable<Vertex>> committedObservables = allNodes.stream()
 			.map(bftNetwork::getVertexStore)
@@ -97,6 +98,7 @@ public class CrashFaultNetworkTest {
 	 */
 	@Test
 	public void given_3_out_of_4_correct_bfts__then_correct_instances_should_get_same_commits_consecutive_vertices_over_1_minute() {
+		final int latency = 20;
 		final int numNodes = 4;
 		final int numCrashed = 1;
 		final int numCorrect = numNodes - numCrashed;
@@ -109,9 +111,13 @@ public class CrashFaultNetworkTest {
 		final Set<ECPublicKey> correctNodesPubs = correctNodes.stream()
 			.map(ECKeyPair::getPublicKey)
 			.collect(Collectors.toSet());
-		final BFTTestNetwork bftNetwork = new BFTTestNetwork(allNodes);
+		final CrashLatencyProvider crashLatencyProvider = new CrashLatencyProvider(latency);
+		final TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.builder()
+			.latencyProvider(crashLatencyProvider)
+			.build();
+		final BFTTestNetwork bftNetwork = new BFTTestNetwork(allNodes, network);
 		// "crash" all faulty nodes by disallowing any communication
-		faultyNodes.forEach(node -> crashNode(node, bftNetwork));
+		faultyNodes.forEach(node -> crashLatencyProvider.crashNode(node.getPublicKey()));
 
 
 		// there should be a new highest QC every once in a while to ensure progress
@@ -197,6 +203,7 @@ public class CrashFaultNetworkTest {
 	 */
 	@Test
 	public void given_7_correct_bfts_that_randomly_crash__then_correct_instances_should_make_progress_as_possible_over_1_minute() {
+		final int latency = 20;
 		final int numNodes = 7;
 		final int maxToleratedFaultyNodes = (numNodes - 1) / 3;
 		final long time = 1;
@@ -207,7 +214,11 @@ public class CrashFaultNetworkTest {
 
 		final List<ECKeyPair> allNodes = createNodes(numNodes);
 		final Set<ECPublicKey> faultyNodesPubs = new HashSet<>();
-		final BFTTestNetwork bftNetwork = new BFTTestNetwork(allNodes);
+		final CrashLatencyProvider crashLatencyProvider = new CrashLatencyProvider(latency);
+		final TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.builder()
+			.latencyProvider(crashLatencyProvider)
+			.build();
+		final BFTTestNetwork bftNetwork = new BFTTestNetwork(allNodes, network);
 
 		// correct nodes should all get the same commits in the same order
 		Observable<Object> correctCommitCheck = Observable.zip(
@@ -257,7 +268,7 @@ public class CrashFaultNetworkTest {
 			.map(i -> rng.nextInt(allNodes.size() - faultyNodesPubs.size()))
 			.map(allNodes::get)
 			.doOnNext(node -> faultyNodesPubs.add(node.getPublicKey()))
-			.doOnNext(node -> crashNode(node, bftNetwork))
+			.doOnNext(node -> crashLatencyProvider.crashNode(node.getPublicKey()))
 			.doAfterNext(node -> System.out.println("Crashed " + node.euid()))
 			.map(o -> o);
 
