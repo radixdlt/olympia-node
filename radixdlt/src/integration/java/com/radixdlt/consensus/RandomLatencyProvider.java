@@ -18,7 +18,7 @@
 package com.radixdlt.consensus;
 
 import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork.LatencyProvider;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork.MessageInTransit;
 import java.util.Random;
 
 public final class RandomLatencyProvider implements LatencyProvider {
@@ -39,7 +39,7 @@ public final class RandomLatencyProvider implements LatencyProvider {
 	}
 
 	@Override
-	public Integer nextLatency(ECPublicKey from, ECPublicKey to) {
+	public int nextLatency(MessageInTransit msg) {
 		return minLatency + rng.nextInt(maxLatency - minLatency + 1);
 	}
 }

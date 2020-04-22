@@ -33,7 +33,6 @@ import io.reactivex.rxjava3.core.Observable;
 
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.disposables.Disposable;
-import io.reactivex.rxjava3.schedulers.Schedulers;
 import io.reactivex.rxjava3.schedulers.Timed;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
@@ -49,8 +48,55 @@ import java.util.concurrent.TimeUnit;
 public class TestEventCoordinatorNetwork {
 	public static final int DEFAULT_LATENCY = 50;
 
+	public static final class MessageInTransit {
+		private final Object content;
+		private final ECPublicKey sender;
+		private final ECPublicKey receiver;
+		private final long delay;
+
+		private MessageInTransit(Object content, ECPublicKey sender, ECPublicKey receiver, long delay) {
+			this.content = Objects.requireNonNull(content);
+			this.sender = sender;
+			this.receiver = receiver;
+			this.delay = delay;
+		}
+
+		private static MessageInTransit newMessage(Object content, ECPublicKey sender, ECPublicKey receiver) {
+			return new MessageInTransit(content, sender, receiver, 0);
+		}
+
+		private MessageInTransit delayed(long delay) {
+			return new MessageInTransit(content, sender, receiver, delay);
+		}
+
+		public Object getContent() {
+			return this.content;
+		}
+
+		public ECPublicKey getSender() {
+			return sender;
+		}
+
+		public ECPublicKey getReceiver() {
+			return receiver;
+		}
+
+		@Override
+		public String toString() {
+			return String.format("%s %s -> %s %d", content, sender.euid().toString().substring(0, 6), receiver.euid().toString().substring(0, 6), delay);
+		}
+	}
+
 	public interface LatencyProvider {
-		Integer nextLatency(ECPublicKey from, ECPublicKey to);
+
+		/**
+		 * If >= 0, returns the latency in milliseconds of the next message.
+		 * If < 0, signifies to drop the next message.
+		 *
+		 * @param msg the next message
+		 * @return the latency in milliseconds if >= 0, otherwise a negative number signifies a drop
+		 */
+		int nextLatency(MessageInTransit msg);
 	}
 
 	private final Subject<MessageInTransit> receivedMessages;
@@ -67,7 +113,7 @@ public class TestEventCoordinatorNetwork {
 	}
 
 	public static class Builder {
-		private LatencyProvider latencyProvider = (from, to) -> DEFAULT_LATENCY;
+		private LatencyProvider latencyProvider = msg -> DEFAULT_LATENCY;
 
 		private Builder() {
 		}
@@ -107,18 +153,18 @@ public class TestEventCoordinatorNetwork {
 			@Override
 			public void broadcastProposal(Proposal proposal) {
 				for (ECPublicKey reader : receivers.keySet()) {
-					receivedMessages.onNext(MessageInTransit.send(proposal, forNode, reader));
+					receivedMessages.onNext(MessageInTransit.newMessage(proposal, forNode, reader));
 				}
 			}
 
 			@Override
 			public void sendNewView(NewView newView, ECPublicKey newViewLeader) {
-				receivedMessages.onNext(MessageInTransit.send(newView, forNode, newViewLeader));
+				receivedMessages.onNext(MessageInTransit.newMessage(newView, forNode, newViewLeader));
 			}
 
 			@Override
 			public void sendVote(Vote vote, ECPublicKey leader) {
-				receivedMessages.onNext(MessageInTransit.send(vote, forNode, leader));
+				receivedMessages.onNext(MessageInTransit.newMessage(vote, forNode, leader));
 			}
 
 			@Override
@@ -137,10 +183,10 @@ public class TestEventCoordinatorNetwork {
 						forNode,
 						vertex -> {
 							GetVertexResponse vertexResponse = new GetVertexResponse(vertexId, vertex);
-							receivedMessages.onNext(MessageInTransit.send(vertexResponse, node, forNode));
+							receivedMessages.onNext(MessageInTransit.newMessage(vertexResponse, node, forNode));
 						}
 					);
-					receivedMessages.onNext(MessageInTransit.send(request, forNode, node));
+					receivedMessages.onNext(MessageInTransit.newMessage(request, forNode, node));
 				});
 			}
 		};
@@ -153,15 +199,16 @@ public class TestEventCoordinatorNetwork {
 			// filter only relevant messages (appropriate target and if receiving is allowed)
 			this.myMessages = receivedMessages
 				.filter(msg -> !sendingDisabled.contains(msg.sender))
-				.filter(msg -> !receivingDisabled.contains(msg.target))
-				.filter(msg -> msg.target.equals(node))
+				.filter(msg -> !receivingDisabled.contains(msg.receiver))
+				.filter(msg -> msg.receiver.equals(node))
 				.map(msg -> {
 					if (msg.sender.equals(node)) {
 						return msg;
 					} else {
-						return msg.delayed(latencyProvider.nextLatency(msg.sender, msg.target));
+						return msg.delayed(latencyProvider.nextLatency(msg));
 					}
 				})
+				.filter(msg -> msg.delay >= 0)
 				.timestamp(TimeUnit.MILLISECONDS)
 				.scan((msg1, msg2) -> {
 					int delayCarryover = (int) Math.max(msg1.time() + msg1.value().delay - msg2.time(), 0);
@@ -186,42 +233,11 @@ public class TestEventCoordinatorNetwork {
 
 		@Override
 		public Observable<GetVertexRequest> rpcRequests() {
-			return myMessages.ofType(GetVertexRequest.class).observeOn(Schedulers.io());
+			return myMessages.ofType(GetVertexRequest.class);
 		}
 	}
 
 	public EventCoordinatorNetworkRx getNetworkRx(ECPublicKey forNode) {
 		return receivers.computeIfAbsent(forNode, SimulatedReceiver::new);
-	}
-
-	private static final class MessageInTransit {
-		private final Object content;
-		private final ECPublicKey sender;
-		private final ECPublicKey target;
-		private final long delay;
-
-		private MessageInTransit(Object content, ECPublicKey sender, ECPublicKey target, long delay) {
-			this.content = Objects.requireNonNull(content);
-			this.sender = sender;
-			this.target = target;
-			this.delay = delay;
-		}
-
-		private static MessageInTransit send(Object content, ECPublicKey sender, ECPublicKey receiver) {
-			return new MessageInTransit(content, sender, receiver, 0);
-		}
-
-		private MessageInTransit delayed(long delay) {
-			return new MessageInTransit(content, sender, target, delay);
-		}
-
-		private Object getContent() {
-			return this.content;
-		}
-
-		@Override
-		public String toString() {
-			return String.format("%s %s -> %s %d", content, sender.euid().toString().substring(0, 6), target.euid().toString().substring(0, 6), delay);
-		}
 	}
 }

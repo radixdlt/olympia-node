@@ -49,7 +49,7 @@ public class BFTTest {
 	}
 
 	public static class Builder {
-		private LatencyProvider latencyProvider = (from, to) -> TestEventCoordinatorNetwork.DEFAULT_LATENCY;
+		private LatencyProvider latencyProvider = msg -> TestEventCoordinatorNetwork.DEFAULT_LATENCY;
 		private final List<BFTCheck> checks = new ArrayList<>();
 		private List<ECKeyPair> nodes = Collections.singletonList(ECKeyPair.generateNew());
 
@@ -69,7 +69,7 @@ public class BFTTest {
 			Map<ECPublicKey, Integer> nodeLatencies = IntStream.range(0, numNodes)
 				.boxed()
 				.collect(Collectors.toMap(i -> this.nodes.get(i).getPublicKey(), i -> latencies[i]));
-			this.latencyProvider = (from, to) -> Math.max(nodeLatencies.get(from), nodeLatencies.get(to));
+			this.latencyProvider = msg -> Math.max(nodeLatencies.get(msg.getSender()), nodeLatencies.get(msg.getReceiver()));
 			return this;
 		}
 
