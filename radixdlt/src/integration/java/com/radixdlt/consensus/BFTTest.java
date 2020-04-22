@@ -41,19 +41,32 @@ public class BFTTest {
 	private final ImmutableList<ECKeyPair> nodes;
 	private final LatencyProvider latencyProvider;
 	private final ImmutableList<BFTCheck> checks;
+	private final int pacemakerTimeout;
 
-	private BFTTest(ImmutableList<ECKeyPair> nodes, LatencyProvider latencyProvider, ImmutableList<BFTCheck> checks) {
+	private BFTTest(
+		ImmutableList<ECKeyPair> nodes,
+		LatencyProvider latencyProvider,
+		int pacemakerTimeout,
+		ImmutableList<BFTCheck> checks
+	) {
 		this.nodes = nodes;
 		this.latencyProvider = latencyProvider;
 		this.checks = checks;
+		this.pacemakerTimeout = pacemakerTimeout;
 	}
 
 	public static class Builder {
 		private final DroppingLatencyProvider latencyProvider = new DroppingLatencyProvider();
 		private final List<BFTCheck> checks = new ArrayList<>();
 		private List<ECKeyPair> nodes = Collections.singletonList(ECKeyPair.generateNew());
+		private int pacemakerTimeout = 8 * TestEventCoordinatorNetwork.DEFAULT_LATENCY;
 
 		private Builder() {
+		}
+
+		public Builder pacemakerTimeout(int pacemakerTimeout) {
+			this.pacemakerTimeout = pacemakerTimeout;
+			return this;
 		}
 
 		public Builder numNodes(int numNodes) {
@@ -115,7 +128,7 @@ public class BFTTest {
 		}
 
 		public BFTTest build() {
-			return new BFTTest(ImmutableList.copyOf(nodes), latencyProvider, ImmutableList.copyOf(checks));
+			return new BFTTest(ImmutableList.copyOf(nodes), latencyProvider, pacemakerTimeout, ImmutableList.copyOf(checks));
 		}
 	}
 
@@ -127,7 +140,7 @@ public class BFTTest {
 		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.builder()
 			.latencyProvider(this.latencyProvider)
 			.build();
-		BFTTestNetwork bftNetwork =  new BFTTestNetwork(nodes, network);
+		BFTSimulation bftNetwork =  new BFTSimulation(nodes, network, pacemakerTimeout);
 		List<Completable> assertions = this.checks.stream().map(c -> c.check(bftNetwork)).collect(Collectors.toList());
 		Completable.mergeArray(bftNetwork.processBFT().flatMapCompletable(e -> Completable.complete()), Completable.merge(assertions))
 			.blockingAwait(time, timeUnit);

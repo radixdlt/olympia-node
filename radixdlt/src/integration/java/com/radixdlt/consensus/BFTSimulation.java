@@ -55,7 +55,7 @@ import java.util.stream.Collectors;
 /**
  * A multi-node bft test network where the network is simulated.
  */
-public class BFTTestNetwork {
+public class BFTSimulation {
 	private static final int TEST_PACEMAKER_TIMEOUT = 1000;
 
 	private final TestEventCoordinatorNetwork underlyingNetwork;
@@ -74,15 +74,15 @@ public class BFTTestNetwork {
 	 * Create a BFT test network with a perfect underlying network and the default latency.
 	 * @param nodes The nodes to populate the network with
 	 */
-	public BFTTestNetwork(List<ECKeyPair> nodes) {
-		this(nodes, TestEventCoordinatorNetwork.builder().build());
+	public BFTSimulation(List<ECKeyPair> nodes, TestEventCoordinatorNetwork underlyingNetwork) {
+		this(nodes, underlyingNetwork, TEST_PACEMAKER_TIMEOUT);
 	}
 
 	/**
 	 * Create a BFT test network with a specific underlying network.
 	 * @param nodes The nodes to populate the network with
 	 */
-	public BFTTestNetwork(List<ECKeyPair> nodes, TestEventCoordinatorNetwork underlyingNetwork) {
+	public BFTSimulation(List<ECKeyPair> nodes, TestEventCoordinatorNetwork underlyingNetwork, int fixedPacemakerTimeout) {
 		this.nodes = nodes;
 		this.underlyingNetwork = Objects.requireNonNull(underlyingNetwork);
 		this.genesis = null;
@@ -109,7 +109,7 @@ public class BFTTestNetwork {
 				})
 			);
 		this.pacemakers = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e,
-			e -> new PacemakerImpl(TEST_PACEMAKER_TIMEOUT, Executors.newSingleThreadScheduledExecutor())));
+			e -> new PacemakerImpl(fixedPacemakerTimeout, Executors.newSingleThreadScheduledExecutor())));
 		this.bftEvents = Observable.merge(this.vertexStores.keySet().stream()
 			.map(vertexStore -> createBFTInstance(vertexStore).processEvents())
 			.collect(Collectors.toList()));

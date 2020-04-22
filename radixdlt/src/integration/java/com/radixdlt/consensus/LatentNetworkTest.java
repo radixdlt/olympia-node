@@ -19,6 +19,7 @@ package com.radixdlt.consensus;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
+import com.radixdlt.consensus.BFTTest.Builder;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
@@ -57,14 +58,17 @@ public class LatentNetworkTest {
 	 * Running this bft should cause a timeout at some point and so an exception is expected.
 	 */
 	@Test
-	public void given_3_fast_nodes_and_1_slow_node_with_no_syncing__then_network_should_eventually_timeout() {
-		BFTTest bftTest = BFTTest.builder()
+	public void given_4_nodes_3_fast_and_1_slow_node__then_whether_a_timeout_occurs_is_dependent_on_if_sync_is_enabled() {
+		Builder bftTestBuilder = BFTTest.builder()
 			.numNodesAndLatencies(4, 10, 10, 10, 160)
-			.disableSync()
-			.checkNoTimeouts()
-			.build();
-		assertThatThrownBy(() -> bftTest.run(1, TimeUnit.MINUTES))
-			.isInstanceOf(AssertionError.class);
+			.pacemakerTimeout(10000)
+			.checkNoTimeouts();
+
+		BFTTest syncDisabledTest = bftTestBuilder.disableSync().build();
+		BFTTest syncEnabledTest = bftTestBuilder.build();
+
+		//assertThatThrownBy(() -> syncDisabledTest.run(1, TimeUnit.MINUTES)).isInstanceOf(AssertionError.class);
+		syncEnabledTest.run(1, TimeUnit.MINUTES);
 	}
 
 	/**

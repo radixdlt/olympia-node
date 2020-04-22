@@ -69,7 +69,7 @@ public class CrashFaultNetworkTest {
 			.latencyProvider(crashLatencyProvider)
 			.build();
 
-		final BFTTestNetwork bftNetwork = new BFTTestNetwork(allNodes, network);
+		final BFTSimulation bftNetwork = new BFTSimulation(allNodes, network);
 		crashLatencyProvider.crashNode(allNodes.get(2).getPublicKey());
 
 		List<Observable<Vertex>> committedObservables = allNodes.stream()
@@ -113,7 +113,7 @@ public class CrashFaultNetworkTest {
 		final TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.builder()
 			.latencyProvider(crashLatencyProvider)
 			.build();
-		final BFTTestNetwork bftNetwork = new BFTTestNetwork(allNodes, network);
+		final BFTSimulation bftNetwork = new BFTSimulation(allNodes, network);
 		// "crash" all faulty nodes by disallowing any communication
 		faultyNodes.forEach(node -> crashLatencyProvider.crashNode(node.getPublicKey()));
 
@@ -215,7 +215,7 @@ public class CrashFaultNetworkTest {
 		final TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.builder()
 			.latencyProvider(crashLatencyProvider)
 			.build();
-		final BFTTestNetwork bftNetwork = new BFTTestNetwork(allNodes, network);
+		final BFTSimulation bftNetwork = new BFTSimulation(allNodes, network);
 
 		// correct nodes should all get the same commits in the same order
 		Observable<Object> correctCommitCheck = Observable.zip(
