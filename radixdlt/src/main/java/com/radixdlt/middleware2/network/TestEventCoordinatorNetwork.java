@@ -81,7 +81,12 @@ public class TestEventCoordinatorNetwork {
 
 		@Override
 		public String toString() {
-			return String.format("%s %s -> %s %d", content, sender.euid().toString().substring(0, 6), receiver.euid().toString().substring(0, 6), delay);
+			return String.format("%s %s -> %s %d",
+				content,
+				sender.euid().toString().substring(0, 6),
+				receiver.euid().toString().substring(0, 6),
+				delay
+			);
 		}
 	}
 

@@ -19,28 +19,41 @@ package com.radixdlt.consensus;
 
 import com.google.common.collect.Sets;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.middleware2.network.GetVertexRequestMessage;
+import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork;
 import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork.LatencyProvider;
 import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork.MessageInTransit;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Predicate;
 
-public class CrashLatencyProvider implements LatencyProvider {
-	private final Set<ECPublicKey> crashed = Sets.newConcurrentHashSet();
-	private final int latency;
+public final class DroppingLatencyProvider implements LatencyProvider {
+	private final Set<Predicate<MessageInTransit>> droppingFunctions = Sets.newConcurrentHashSet();
+	private AtomicReference<LatencyProvider> base = new AtomicReference<>();
 
-	public CrashLatencyProvider(int latency) {
-		this.latency = latency;
+	public DroppingLatencyProvider() {
+		this.base.set(msg -> TestEventCoordinatorNetwork.DEFAULT_LATENCY);
+	}
+
+	public void setBase(LatencyProvider base) {
+		this.base.set(base);
 	}
 
 	public void crashNode(ECPublicKey node) {
-		crashed.add(node);
+		droppingFunctions.add(msg -> msg.getReceiver().equals(node) || msg.getSender().equals(node));
+	}
+
+	public void disableSync() {
+		droppingFunctions.add(msg -> msg.getContent() instanceof GetVertexResponse);
+		droppingFunctions.add(msg -> msg.getContent() instanceof GetVertexRequestMessage);
 	}
 
 	@Override
 	public int nextLatency(MessageInTransit msg) {
-		if (crashed.contains(msg.getReceiver()) || crashed.contains(msg.getSender())) {
+		if (droppingFunctions.stream().anyMatch(f -> f.test(msg))) {
 			return -1;
 		}
 
-		return latency;
+		return base.get().nextLatency(msg);
 	}
 }

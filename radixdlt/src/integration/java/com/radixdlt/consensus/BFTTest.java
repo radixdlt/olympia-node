@@ -49,7 +49,7 @@ public class BFTTest {
 	}
 
 	public static class Builder {
-		private LatencyProvider latencyProvider = msg -> TestEventCoordinatorNetwork.DEFAULT_LATENCY;
+		private final DroppingLatencyProvider latencyProvider = new DroppingLatencyProvider();
 		private final List<BFTCheck> checks = new ArrayList<>();
 		private List<ECKeyPair> nodes = Collections.singletonList(ECKeyPair.generateNew());
 
@@ -69,12 +69,17 @@ public class BFTTest {
 			Map<ECPublicKey, Integer> nodeLatencies = IntStream.range(0, numNodes)
 				.boxed()
 				.collect(Collectors.toMap(i -> this.nodes.get(i).getPublicKey(), i -> latencies[i]));
-			this.latencyProvider = msg -> Math.max(nodeLatencies.get(msg.getSender()), nodeLatencies.get(msg.getReceiver()));
+			this.latencyProvider.setBase(msg -> Math.max(nodeLatencies.get(msg.getSender()), nodeLatencies.get(msg.getReceiver())));
+			return this;
+		}
+
+		public Builder disableSync() {
+			this.latencyProvider.disableSync();
 			return this;
 		}
 
 		public Builder randomLatency(int minLatency, int maxLatency) {
-			this.latencyProvider = new RandomLatencyProvider(minLatency, maxLatency);
+			this.latencyProvider.setBase(new RandomLatencyProvider(minLatency, maxLatency));
 			return this;
 		}
 

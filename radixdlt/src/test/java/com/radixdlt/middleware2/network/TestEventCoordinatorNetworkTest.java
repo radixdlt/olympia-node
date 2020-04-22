@@ -26,7 +26,6 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Vote;
 import io.reactivex.rxjava3.observers.TestObserver;
-import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 
 public class TestEventCoordinatorNetworkTest {

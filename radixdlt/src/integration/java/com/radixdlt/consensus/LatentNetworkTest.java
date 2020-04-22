@@ -60,6 +60,7 @@ public class LatentNetworkTest {
 	public void given_3_fast_nodes_and_1_slow_node_with_no_syncing__then_network_should_eventually_timeout() {
 		BFTTest bftTest = BFTTest.builder()
 			.numNodesAndLatencies(4, 10, 10, 10, 160)
+			.disableSync()
 			.checkNoTimeouts()
 			.build();
 		assertThatThrownBy(() -> bftTest.run(1, TimeUnit.MINUTES))
@@ -75,6 +76,7 @@ public class LatentNetworkTest {
 		BFTTest bftTest = BFTTest.builder()
 			.numNodes(4)
 			.randomLatency(10, 160) // 6 times max latency should be less than BFTTestNetwork.TEST_PACEMAKER_TIMEOUT
+			.disableSync()
 			.checkNoTimeouts()
 			.build();
 		assertThatThrownBy(() -> bftTest.run(10, TimeUnit.MINUTES))

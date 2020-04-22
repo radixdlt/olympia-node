@@ -55,7 +55,6 @@ public class CrashFaultNetworkTest {
 	 */
 	@Test
 	public void given_2_out_of_3_correct_bft_instances__then_all_instances_should_only_get_genesis_commit_over_1_minute() {
-		final int latency = 20;
 		final int numNodes = 3;
 		final int numCrashed = 1;
 		final int numCorrect = numNodes - numCrashed;
@@ -65,7 +64,7 @@ public class CrashFaultNetworkTest {
 		final List<ECKeyPair> correctNodes = createNodes(numCorrect);
 		final List<ECKeyPair> faultyNodes = createNodes(numCrashed);
 		final List<ECKeyPair> allNodes = Stream.concat(correctNodes.stream(), faultyNodes.stream()).collect(Collectors.toList());
-		final CrashLatencyProvider crashLatencyProvider = new CrashLatencyProvider(latency);
+		final DroppingLatencyProvider crashLatencyProvider = new DroppingLatencyProvider();
 		final TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.builder()
 			.latencyProvider(crashLatencyProvider)
 			.build();
@@ -98,7 +97,6 @@ public class CrashFaultNetworkTest {
 	 */
 	@Test
 	public void given_3_out_of_4_correct_bfts__then_correct_instances_should_get_same_commits_consecutive_vertices_over_1_minute() {
-		final int latency = 20;
 		final int numNodes = 4;
 		final int numCrashed = 1;
 		final int numCorrect = numNodes - numCrashed;
@@ -111,7 +109,7 @@ public class CrashFaultNetworkTest {
 		final Set<ECPublicKey> correctNodesPubs = correctNodes.stream()
 			.map(ECKeyPair::getPublicKey)
 			.collect(Collectors.toSet());
-		final CrashLatencyProvider crashLatencyProvider = new CrashLatencyProvider(latency);
+		final DroppingLatencyProvider crashLatencyProvider = new DroppingLatencyProvider();
 		final TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.builder()
 			.latencyProvider(crashLatencyProvider)
 			.build();
@@ -203,7 +201,6 @@ public class CrashFaultNetworkTest {
 	 */
 	@Test
 	public void given_7_correct_bfts_that_randomly_crash__then_correct_instances_should_make_progress_as_possible_over_1_minute() {
-		final int latency = 20;
 		final int numNodes = 7;
 		final int maxToleratedFaultyNodes = (numNodes - 1) / 3;
 		final long time = 1;
@@ -214,7 +211,7 @@ public class CrashFaultNetworkTest {
 
 		final List<ECKeyPair> allNodes = createNodes(numNodes);
 		final Set<ECPublicKey> faultyNodesPubs = new HashSet<>();
-		final CrashLatencyProvider crashLatencyProvider = new CrashLatencyProvider(latency);
+		final DroppingLatencyProvider crashLatencyProvider = new DroppingLatencyProvider();
 		final TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.builder()
 			.latencyProvider(crashLatencyProvider)
 			.build();
