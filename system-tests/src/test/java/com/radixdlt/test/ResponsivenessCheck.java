@@ -1,8 +1,7 @@
 package com.radixdlt.test;
 
 import io.reactivex.Observable;
-import io.reactivex.Single;
-import org.json.JSONObject;
+import io.reactivex.disposables.Disposable;
 
 import java.util.List;
 import java.util.Objects;
@@ -30,9 +29,12 @@ public class ResponsivenessCheck implements RemoteBFTCheck {
 
 	@Override
 	public Observable<Object> check(DockerBFTTestNetwork network) {
-		List<Observable<Single<JSONObject>>> individualChecks = network.getNodeNames().stream()
+		List<Observable<Disposable>> individualChecks = network.getNodeNames().stream()
 			.map(nodeName -> Observable.interval(checkInterval, checkIntervalUnit)
-				.map(i -> network.fetchSystem(nodeName).timeout(timeoutInterval, timeoutIntervalUnit))
+				.doOnNext(i -> System.out.printf("ping %s", nodeName))
+				.map(i -> network.queryJson(nodeName, "api/ping")
+					.timeout(timeoutInterval, timeoutIntervalUnit)
+					.subscribe(response -> System.out.printf("got pong from %s: %s", nodeName, response)))
 				.map(o -> o))
 			.collect(Collectors.toList());
 		return Observable.merge(individualChecks);

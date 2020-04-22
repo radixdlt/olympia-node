@@ -1,6 +1,8 @@
 package com.radixdlt.test;
 
 import com.radixdlt.client.core.network.HttpClients;
+import io.reactivex.Completable;
+import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.subjects.SingleSubject;
 import okhttp3.Call;
@@ -12,10 +14,12 @@ import utils.CmdHelper;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -25,19 +29,20 @@ public class DockerBFTTestNetwork implements Closeable {
 
 	private final int numNodes;
 	private final String networkName;
-	private Map<String, Request> preparedApiRequests; // api requests by node name
+	private final Map<String, Map<String, Object>> dockerOptionsPerNode;
 
 	private DockerBFTTestNetwork(String networkName, int numNodes) {
 		this.networkName = Objects.requireNonNull(networkName);
 		this.numNodes = numNodes;
 
-		this.setup();
+		this.dockerOptionsPerNode = this.setup();
 	}
 
 	// setup the network and prepare anything required to run it
 	// this will also kill any other network with the same name (but not networks with a different name)
-	private void setup() {
+	private Map<String, Map<String, Object>> setup() {
 		Map<String, Map<String, Object>> dockerOptionsPerNode = CmdHelper.getDockerOptions(numNodes, numNodes);
+		CmdHelper.removeAllDockerContainers(); // TODO do we need this? if yes, document it
 		CmdHelper.runCommand("docker network rm " + networkName);
 		CmdHelper.runCommand("docker network create " + networkName ,null, true);
 		dockerOptionsPerNode.forEach((nodeName, options) -> {
@@ -49,27 +54,30 @@ public class DockerBFTTestNetwork implements Closeable {
 		});
 		CmdHelper.checkNGenerateKey();
 
-		// prepare the api requests for use in checks
-		this.preparedApiRequests = dockerOptionsPerNode.values().stream()
-			.collect(Collectors.toMap(
-				nodeOptions -> (String) nodeOptions.get(OPTIONS_KEY_NAME),
-				nodeOptions -> new Request.Builder().url(extractHttpApiSystemEndpoint(nodeOptions)).build())
-			);
+		return Collections.unmodifiableMap(dockerOptionsPerNode);
 	}
 
 	@Override
 	public void close() {
+		CmdHelper.removeAllDockerContainers();
 		CmdHelper.runCommand("docker network rm " + networkName);
 	}
 
-	// TODO revisit, might want to ping other node APIs (wouldn't be hard to generalise)
-	public Single<JSONObject> fetchSystem(String nodeName) {
-		Request request = this.preparedApiRequests.get(nodeName);
-		if (request == null) {
-			throw new IllegalArgumentException("Unknown node " + nodeName);
-		}
+	public Completable checkResponsive(long timeoutInterval, TimeUnit timeoutIntervalUnit) {
+		List<Completable> nodeResponseCompletables = getNodeNames().stream()
+			.map(nodeName -> queryJson(nodeName, "api/ping")
+				.timeout(timeoutInterval, timeoutIntervalUnit)
+				.ignoreElement())
+			.collect(Collectors.toList());
+		return Completable.merge(nodeResponseCompletables);
+	}
 
-		SingleSubject<JSONObject> responseSubject = SingleSubject.create();
+	public Single<String> query(String nodeName, String endpoint) {
+		Objects.requireNonNull(nodeName, "nodeName");
+		Objects.requireNonNull(endpoint, "endpoint");
+
+		Request request = new Request.Builder().url(getNodeEndpoint(nodeName, endpoint)).build();
+		SingleSubject<String> responseSubject = SingleSubject.create();
 		Call call = HttpClients.getSslAllTrustingClient().newCall(request);
 		call.enqueue(new Callback() {
 			@Override
@@ -81,8 +89,7 @@ public class DockerBFTTestNetwork implements Closeable {
 			public void onResponse(Call call, Response response) throws IOException {
 				try {
 					String responseString = response.body().string();
-					JSONObject responseJson = new JSONObject(responseString);
-					responseSubject.onSuccess(responseJson);
+					responseSubject.onSuccess(responseString);
 				} catch (IOException e) {
 					responseSubject.onError(new IllegalArgumentException("Failed to parse response to " + request, e));
 				}
@@ -91,34 +98,42 @@ public class DockerBFTTestNetwork implements Closeable {
 		return responseSubject;
 	}
 
+	public Single<JSONObject> queryJson(String nodeName, String endpoint) {
+		return query(nodeName, endpoint)
+			.map(JSONObject::new);
+	}
+
 	// TODO document and revisit
-	// utility for fetching the consensus counter values through the node api given a certain request
-	public Single<Map<String, Integer>> fetchConsensusCounters(String nodeName) {
-		return fetchSystem(nodeName)
+	// utility for querying the consensus counter values through the node api given a certain request
+	public Single<Map<String, Integer>> queryConsensusCounters(String nodeName) {
+		return queryJson(nodeName, "api/system")
 			.map(json -> json.getJSONObject("counters"))
 			.map(counters -> counters.getJSONObject("consensus"))
 			.map(consensusCounters -> consensusCounters.keySet().stream()
 				.collect(Collectors.toMap(c -> c, consensusCounters::getInt)));
 	}
 
+	private String getNodeEndpoint(String nodeName, String endpoint) {
+		return getNodeEndpoint(this.dockerOptionsPerNode.get(nodeName), endpoint);
+	}
+
 	// utility for getting the API endpoint (as a string) out of generated node options
-	private static String extractHttpApiSystemEndpoint(Map<String, Object> nodeOptions) {
-		String nodeName = (String) nodeOptions.get(OPTIONS_KEY_NAME);
+	private static String getNodeEndpoint(Map<String, Object> nodeOptions, final String endpoint) {
 		int nodePort = (Integer) nodeOptions.get(OPTIONS_KEY_PORT);
 
-		return String.format("https://%s:%d/api/system", nodeName, nodePort);
+		return String.format("http://localhost:%d/%s", nodePort, endpoint);
 	}
 
 	public Set<String> getNodeNames() {
-		return this.preparedApiRequests.keySet();
+		return this.dockerOptionsPerNode.keySet();
 	}
 
 	public String getNetworkName() {
-		return networkName;
+		return this.networkName;
 	}
 
 	public int getNumNodes() {
-		return numNodes;
+		return this.numNodes;
 	}
 
 	public static Builder builder() {

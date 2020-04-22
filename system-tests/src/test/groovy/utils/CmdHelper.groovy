@@ -43,13 +43,15 @@ class CmdHelper {
     static List node(options) {
         String[] env = ["JAVA_OPTS=-server -Xms2g -Xmx2g -Djava.security.egd=file:/dev/urandom -Dcom.sun.management.jmxremote.port=${options.rmiPort} -Dcom.sun.management.jmxremote.rmi.port=${options.rmiPort} -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=localhost -agentlib:jdwp=transport=dt_socket,address=${options.socketAddressPort},suspend=n,server=y",
                         "RADIXDLT_NETWORK_SEEDS_REMOTE=${listToDelimitedString(options.remoteSeeds)}",
-                        "RADIXDLT_CONSENSUS_FIXED_QUORUM_SIZE=${options.quorumSize}",
+                        "RADIXDLT_CONSENSUS_FIXED_NODE_COUNT=${options.quorumSize}",
+                        "RADIXDLT_HOST_IP_ADDRESS=${options.nodeName}"
 
         ]
         String dockerContainer = "docker run -d " +
                 "-e RADIXDLT_NETWORK_SEEDS_REMOTE " +
                 "--name ${options.nodeName}  " +
-                "-e RADIXDLT_CONSENSUS_FIXED_QUORUM_SIZE " +
+                "-e RADIXDLT_CONSENSUS_FIXED_NODE_COUNT " +
+                "-e RADIXDLT_HOST_IP_ADDRESS " +
                 "-e JAVA_OPTS " +
                 "-l com.radixdlt.roles='core' " +
                 "-p ${options.hostPort}:8080 " +
