@@ -20,13 +20,17 @@ package com.radixdlt.consensus.validators;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 
-import nl.jqno.equalsverifier.EqualsVerifier;
-
+import static com.google.common.collect.Collections2.transform;
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
+import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class ValidationStateTest {
 	@Test
@@ -65,5 +69,52 @@ public class ValidationStateTest {
 		assertEquals(7, ValidationState.threshold(10));
 		assertEquals(67, ValidationState.threshold(100));
 		assertEquals(667, ValidationState.threshold(1000));
+	}
+
+	@Test
+	public void testLinearSignatureValidation() {
+		ECKeyPair k1 = ECKeyPair.generateNew();
+		ECPublicKey kp1 = spy(k1.getPublicKey());
+
+		ECKeyPair k2 = ECKeyPair.generateNew();
+		ECPublicKey kp2 = spy(k2.getPublicKey());
+
+		ECKeyPair k3 = ECKeyPair.generateNew();
+		ECPublicKey kp3 = spy(k3.getPublicKey());
+
+		ECKeyPair k4 = ECKeyPair.generateNew();
+		ECPublicKey kp4 = spy(k4.getPublicKey());
+
+		ECKeyPair k5 = ECKeyPair.generateNew();
+		ECPublicKey kp5 = spy(k5.getPublicKey());
+
+		ValidatorSet vset = ValidatorSet.from(transform(ImmutableList.of(kp1, kp2, kp3, kp4), Validator::from));
+
+		Hash hash = Hash.random();
+
+		ValidationState vstate = vset.newValidationState(hash);
+		assertFalse(vstate.addSignature(kp1, k1.sign(hash)));
+		assertFalse(vstate.addSignature(kp2, k2.sign(hash)));
+		assertTrue(vstate.addSignature(kp3, k3.sign(hash)));
+		assertTrue(vstate.addSignature(kp4, k4.sign(hash)));
+		assertTrue(vstate.addSignature(kp5, k5.sign(hash)));
+
+		assertTrue(vstate.complete());
+		assertEquals(4, vstate.signatures().count());
+
+		// verify(Hash, ECDSASignature) calls verify(Hash, byte[]), so we have to include those
+		verify(kp1, times(1)).verify(any(Hash.class), any());
+		verify(kp1, times(1)).verify(any(byte[].class), any());
+		verify(kp2, times(1)).verify(any(Hash.class), any());
+		verify(kp2, times(1)).verify(any(byte[].class), any());
+		verify(kp3, times(1)).verify(any(Hash.class), any());
+		verify(kp3, times(1)).verify(any(byte[].class), any());
+		verify(kp4, times(1)).verify(any(Hash.class), any());
+		verify(kp4, times(1)).verify(any(byte[].class), any());
+		// This one was not in the validator set, so make sure we didn't verify
+		verify(kp5, never()).verify(any(Hash.class), any());
+		verify(kp5, never()).verify(any(byte[].class), any());
+
+		verifyNoMoreInteractions(kp1, kp2, kp3, kp4, kp5);
 	}
 }
