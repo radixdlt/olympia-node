@@ -146,26 +146,26 @@ public class NatHandlerRemoteImplTest {
 
 	@Test
 	public void testComputeSizeLocalIp4() throws UnknownHostException {
-		assertEquals(1L + 4 + 4, dut.computeSize(InetAddress.getByName("127.0.0.1")));
-		assertEquals(1L + 4 + 16, dut.computeSize(InetAddress.getByName("::1")));
+		assertEquals(1L + 4 + 4, dut.computeExtraSize(InetAddress.getByName("127.0.0.1")));
+		assertEquals(1L + 4 + 16, dut.computeExtraSize(InetAddress.getByName("::1")));
 	}
 
 	@Test
 	public void testComputeSizeLocalIp6() throws UnknownHostException {
 		InetAddress localAddress = InetAddress.getByName("::1");
 		NatHandlerRemoteImpl dut2 = new NatHandlerRemoteImpl(localAddress, 30000, clock::get);
-		assertEquals(1L + 16 + 4, dut2.computeSize(InetAddress.getByName("127.0.0.1")));
-		assertEquals(1L + 16 + 16, dut2.computeSize(InetAddress.getByName("::1")));
+		assertEquals(1L + 16 + 4, dut2.computeExtraSize(InetAddress.getByName("127.0.0.1")));
+		assertEquals(1L + 16 + 16, dut2.computeExtraSize(InetAddress.getByName("::1")));
 	}
 
 	@Test
 	public void testWriteAddressesLocalIp4() throws UnknownHostException {
 		ByteBuf result1 = Unpooled.wrappedBuffer(new byte[1024]).clear();
-		dut.writeAddresses(result1, InetAddress.getByName("127.0.0.1"));
+		dut.writeExtraData(result1, InetAddress.getByName("127.0.0.1"));
 		assertEquals(1L + 4 + 4, result1.writerIndex());
 
 		ByteBuf result2 = Unpooled.wrappedBuffer(new byte[1024]).clear();
-		dut.writeAddresses(result2, InetAddress.getByName("::1"));
+		dut.writeExtraData(result2, InetAddress.getByName("::1"));
 		assertEquals(1L + 4 + 16, result2.writerIndex());
 	}
 
@@ -175,11 +175,11 @@ public class NatHandlerRemoteImplTest {
 		NatHandlerRemoteImpl dut2 = new NatHandlerRemoteImpl(localAddress, 30000, clock::get);
 
 		ByteBuf result1 = Unpooled.wrappedBuffer(new byte[1024]).clear();
-		dut2.writeAddresses(result1, InetAddress.getByName("127.0.0.1"));
+		dut2.writeExtraData(result1, InetAddress.getByName("127.0.0.1"));
 		assertEquals(1L + 16 + 4, result1.writerIndex());
 
 		ByteBuf result2 = Unpooled.wrappedBuffer(new byte[1024]).clear();
-		dut2.writeAddresses(result2, InetAddress.getByName("::1"));
+		dut2.writeExtraData(result2, InetAddress.getByName("::1"));
 		assertEquals(1L + 16 + 16, result2.writerIndex());
 	}
 

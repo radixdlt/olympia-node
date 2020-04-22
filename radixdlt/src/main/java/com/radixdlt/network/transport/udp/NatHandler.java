@@ -63,20 +63,20 @@ public interface NatHandler {
 
 	/**
 	 * Calculate additional size required in an outbound packet in order
-	 * to include the source and destination addresses.
+	 * to include data used by this {@code NatHandler}.
 	 *
 	 * @param destAddress destination public IP (remote address)
 	 * @return the size of the additional space required to encode addresses
 	 */
-	int computeSize(InetAddress destAddress);
+	int computeExtraSize(InetAddress destAddress);
 
 	/**
-	 * Write additional information in an outbound packet in order to include
-	 * the source and destination addresses.
+	 * Write additional data in an outbound packet required by this
+	 * {@code NatHandler}.
 	 *
 	 * @param buffer the outbound packet
 	 * @param destAddress destination public IP (remote address)
 	 */
-	void writeAddresses(ByteBuf buffer, InetAddress destAddress);
+	void writeExtraData(ByteBuf buffer, InetAddress destAddress);
 
 }

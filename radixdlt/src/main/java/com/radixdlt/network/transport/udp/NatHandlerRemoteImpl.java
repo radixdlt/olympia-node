@@ -151,7 +151,7 @@ public final class NatHandlerRemoteImpl implements NatHandler {
 	}
 
 	@Override
-	public int computeSize(InetAddress destAddress) {
+	public int computeExtraSize(InetAddress destAddress) {
 		byte[] rawSourceAddress = getAddress().getAddress();
 		byte[] rawDestAddress = destAddress.getAddress();
 
@@ -162,7 +162,7 @@ public final class NatHandlerRemoteImpl implements NatHandler {
 	}
 
 	@Override
-	public void writeAddresses(ByteBuf buffer, InetAddress destAddress) {
+	public void writeExtraData(ByteBuf buffer, InetAddress destAddress) {
 		byte[] rawSourceAddress = getAddress().getAddress();
 		byte[] rawDestAddress = destAddress.getAddress();
 

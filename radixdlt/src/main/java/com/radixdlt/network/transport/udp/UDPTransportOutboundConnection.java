@@ -57,12 +57,12 @@ final class UDPTransportOutboundConnection implements TransportOutboundConnectio
 		// NAT: encode source and dest address to work behind NAT and userland proxies (Docker for Windows/Mac)
 		InetAddress remoteAddress = remoteAddr.getAddress();
 
-		int totalSize = data.length + inetAddress.computeSize(remoteAddress);
+		int totalSize = data.length + inetAddress.computeExtraSize(remoteAddress);
 		if (totalSize > UDPConstants.MAX_PACKET_LENGTH) {
 			cfsr.complete(SendResult.failure(new IOException("Datagram packet to " + remoteAddr + " of size " + totalSize + " is too large")));
 		} else {
 			ByteBuf buffer = this.channel.alloc().directBuffer(totalSize);
-			inetAddress.writeAddresses(buffer, remoteAddress);
+			inetAddress.writeExtraData(buffer, remoteAddress);
 			buffer.writeBytes(data);
 
 			DatagramPacket msg = new DatagramPacket(buffer, remoteAddr);
