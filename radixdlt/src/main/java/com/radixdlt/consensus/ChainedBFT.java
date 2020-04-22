@@ -22,6 +22,7 @@ import com.google.inject.Inject;
 import com.radixdlt.consensus.liveness.PacemakerRx;
 
 import com.radixdlt.consensus.validators.ValidatorSet;
+import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.schedulers.Schedulers;
@@ -90,56 +91,70 @@ public final class ChainedBFT {
 			.autoConnect(2);
 
 		final Observable<Event> epochs = epochEvents
-			.map(o -> new Event(EventType.EPOCH, o))
-			.observeOn(this.singleThreadScheduler);
+			.map(o -> new Event(EventType.EPOCH, o));
 
 		final Observable<EventCoordinator> eventCoordinators = epochEvents
 			.map(epochManager::nextEpoch)
 			.startWithItem(epochManager.start())
 			.doOnNext(EventCoordinator::start)
-			.publish()
-			.autoConnect(3); // timeouts and consensusMessages below
+			.replay(1)
+			.autoConnect(3); // timeouts, rpcs and consensusMessages below
 
-		final Observable<Event> timeouts = Observable.combineLatest(
-			eventCoordinators.observeOn(this.singleThreadScheduler),
-			this.pacemakerRx.localTimeouts().observeOn(this.singleThreadScheduler),
-			(e, timeout) -> {
-				e.processLocalTimeout(timeout);
-				return new Event(EventType.LOCAL_TIMEOUT, timeout);
-			}
-		);
+		// Need to ensure that first event coordinator is emitted otherwise we may not process
+		// initial events due to the .withLatestFrom() drops events
+		final Completable firstEventCoordinator = Completable.fromSingle(eventCoordinators.firstOrError());
 
-		// Not sure if EventCoordinator is right place to handle rpc?
-		final Observable<Event> rpcRequests = Observable.combineLatest(
-			eventCoordinators.observeOn(this.singleThreadScheduler),
-			this.network.rpcRequests().observeOn(this.singleThreadScheduler),
-			(e, req) -> {
-				e.processGetVertexRequest(req);
-				return new Event(EventType.GET_VERTEX_REQUEST, req);
-			}
-		);
+		final Observable<Event> timeouts = firstEventCoordinator
+			.andThen(
+				this.pacemakerRx.localTimeouts()
+					.observeOn(this.singleThreadScheduler)
+					.withLatestFrom(
+						eventCoordinators,
+						(timeout, e) -> {
+							e.processLocalTimeout(timeout);
+							return new Event(EventType.LOCAL_TIMEOUT, timeout);
+						}
+					)
+			);
 
-		final Observable<Event> consensusMessages = Observable.combineLatest(
-			eventCoordinators.observeOn(this.singleThreadScheduler),
-			this.network.consensusEvents().observeOn(this.singleThreadScheduler),
-			(e, msg) -> {
-				final EventType eventType;
-				if (msg instanceof NewView) {
-					e.processNewView((NewView) msg);
-					eventType = EventType.NEW_VIEW_MESSAGE;
-				} else if (msg instanceof Proposal) {
-					e.processProposal((Proposal) msg);
-					eventType = EventType.PROPOSAL_MESSAGE;
-				} else if (msg instanceof Vote) {
-					e.processVote((Vote) msg);
-					eventType = EventType.VOTE_MESSAGE;
-				} else {
-					throw new IllegalStateException("Unknown Consensus Message: " + msg);
-				}
+		final Observable<Event> rpcRequests = firstEventCoordinator
+			.andThen(
+				this.network.rpcRequests()
+					.observeOn(this.singleThreadScheduler)
+					.withLatestFrom(
+						eventCoordinators,
+						(req, e) -> {
+							e.processGetVertexRequest(req);
+							return new Event(EventType.GET_VERTEX_REQUEST, req);
+						}
+					)
+			);
 
-				return new Event(eventType, msg);
-			}
-		);
+		final Observable<Event> consensusMessages = firstEventCoordinator
+			.andThen(
+				this.network.consensusEvents()
+					.observeOn(this.singleThreadScheduler)
+					.withLatestFrom(
+						eventCoordinators,
+						(msg, e) -> {
+							final EventType eventType;
+							if (msg instanceof NewView) {
+								e.processNewView((NewView) msg);
+								eventType = EventType.NEW_VIEW_MESSAGE;
+							} else if (msg instanceof Proposal) {
+								e.processProposal((Proposal) msg);
+								eventType = EventType.PROPOSAL_MESSAGE;
+							} else if (msg instanceof Vote) {
+								e.processVote((Vote) msg);
+								eventType = EventType.VOTE_MESSAGE;
+							} else {
+								throw new IllegalStateException("Unknown Consensus Message: " + msg);
+							}
+
+							return new Event(eventType, msg);
+						}
+					)
+			);
 
 		return Observable.merge(epochs, timeouts, consensusMessages, rpcRequests);
 	}
