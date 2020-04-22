@@ -26,6 +26,7 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import java.util.Objects;
+import java.util.concurrent.Executors;
 
 /**
  * A three-chain BFT. The inputs are events via rx streams from a pacemaker and
@@ -61,7 +62,7 @@ public final class ChainedBFT {
 	private final EpochRx epochRx;
 	private final EpochManager epochManager;
 
-	private final Scheduler singleThreadScheduler = Schedulers.single();
+	private final Scheduler singleThreadScheduler = Schedulers.from(Executors.newSingleThreadExecutor());
 
 	@Inject
 	public ChainedBFT(
@@ -90,7 +91,7 @@ public final class ChainedBFT {
 
 		final Observable<Event> epochs = epochEvents
 			.map(o -> new Event(EventType.EPOCH, o))
-			.subscribeOn(this.singleThreadScheduler);
+			.observeOn(this.singleThreadScheduler);
 
 		final Observable<EventCoordinator> eventCoordinators = epochEvents
 			.map(epochManager::nextEpoch)
@@ -100,18 +101,18 @@ public final class ChainedBFT {
 			.autoConnect(3); // timeouts and consensusMessages below
 
 		final Observable<Event> timeouts = Observable.combineLatest(
-			eventCoordinators,
-			this.pacemakerRx.localTimeouts(),
+			eventCoordinators.observeOn(this.singleThreadScheduler),
+			this.pacemakerRx.localTimeouts().observeOn(this.singleThreadScheduler),
 			(e, timeout) -> {
 				e.processLocalTimeout(timeout);
 				return new Event(EventType.LOCAL_TIMEOUT, timeout);
 			}
-		).subscribeOn(this.singleThreadScheduler);
+		);
 
 		// Not sure if EventCoordinator is right place to handle rpc?
 		final Observable<Event> rpcRequests = Observable.combineLatest(
-			eventCoordinators,
-			this.network.rpcRequests(),
+			eventCoordinators.observeOn(this.singleThreadScheduler),
+			this.network.rpcRequests().observeOn(this.singleThreadScheduler),
 			(e, req) -> {
 				e.processGetVertexRequest(req);
 				return new Event(EventType.GET_VERTEX_REQUEST, req);
@@ -119,8 +120,8 @@ public final class ChainedBFT {
 		);
 
 		final Observable<Event> consensusMessages = Observable.combineLatest(
-			eventCoordinators,
-			this.network.consensusEvents(),
+			eventCoordinators.observeOn(this.singleThreadScheduler),
+			this.network.consensusEvents().observeOn(this.singleThreadScheduler),
 			(e, msg) -> {
 				final EventType eventType;
 				if (msg instanceof NewView) {
@@ -138,7 +139,7 @@ public final class ChainedBFT {
 
 				return new Event(eventType, msg);
 			}
-		).subscribeOn(this.singleThreadScheduler);
+		);
 
 		return Observable.merge(epochs, timeouts, consensusMessages, rpcRequests);
 	}
