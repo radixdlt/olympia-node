@@ -78,6 +78,31 @@ public final class ChainedBFT {
 		this.epochManager = Objects.requireNonNull(epochManager);
 	}
 
+	private Event processEvent(Object msg, EventCoordinator eventCoordinator) {
+		final EventType eventType;
+		if (msg instanceof GetVertexRequest) {
+			eventCoordinator.processGetVertexRequest((GetVertexRequest) msg);
+			return new Event(EventType.GET_VERTEX_REQUEST, msg);
+		} else if (msg instanceof View) {
+			eventCoordinator.processLocalTimeout((View) msg);
+			return new Event(EventType.LOCAL_TIMEOUT, msg);
+		} else if (msg instanceof NewView) {
+			eventCoordinator.processNewView((NewView) msg);
+			eventType = EventType.NEW_VIEW_MESSAGE;
+		} else if (msg instanceof Proposal) {
+			eventCoordinator.processProposal((Proposal) msg);
+			eventType = EventType.PROPOSAL_MESSAGE;
+		} else if (msg instanceof Vote) {
+			eventCoordinator.processVote((Vote) msg);
+			eventType = EventType.VOTE_MESSAGE;
+		} else {
+			throw new IllegalStateException("Unknown Consensus Message: " + msg);
+		}
+
+		return new Event(eventType, msg);
+	}
+
+
 	/**
 	 * Returns a cold observable which when subscribed to begins consuming
 	 * and processing bft events. Does not begin processing until the observable
@@ -98,45 +123,19 @@ public final class ChainedBFT {
 			.startWithItem(epochManager.start())
 			.doOnNext(EventCoordinator::start)
 			.replay(1)
-			.autoConnect(); // timeouts, rpcs and consensusMessages below
+			.autoConnect();
 
 		// Need to ensure that first event coordinator is emitted otherwise we may not process
 		// initial events due to the .withLatestFrom() drops events
 		final Completable firstEventCoordinator = Completable.fromSingle(eventCoordinators.firstOrError());
-		final Observable<Event> ecMessages = firstEventCoordinator
-			.andThen(
-				Observable.merge(
-					this.pacemakerRx.localTimeouts().observeOn(this.singleThreadScheduler),
-					this.network.consensusEvents().observeOn(this.singleThreadScheduler),
-					this.network.rpcRequests().observeOn(this.singleThreadScheduler)
-				)
-					.withLatestFrom(
-						eventCoordinators,
-						(msg, e) -> {
-							final EventType eventType;
-							if (msg instanceof GetVertexRequest) {
-								e.processGetVertexRequest((GetVertexRequest) msg);
-								return new Event(EventType.GET_VERTEX_REQUEST, msg);
-							} else if (msg instanceof View) {
-								e.processLocalTimeout((View) msg);
-								return new Event(EventType.LOCAL_TIMEOUT, msg);
-							} else if (msg instanceof NewView) {
-								e.processNewView((NewView) msg);
-								eventType = EventType.NEW_VIEW_MESSAGE;
-							} else if (msg instanceof Proposal) {
-								e.processProposal((Proposal) msg);
-								eventType = EventType.PROPOSAL_MESSAGE;
-							} else if (msg instanceof Vote) {
-								e.processVote((Vote) msg);
-								eventType = EventType.VOTE_MESSAGE;
-							} else {
-								throw new IllegalStateException("Unknown Consensus Message: " + msg);
-							}
-
-							return new Event(eventType, msg);
-						}
-					)
-			);
+		final Observable<Object> eventCoordinatorEvents = Observable.merge(
+			this.pacemakerRx.localTimeouts().observeOn(this.singleThreadScheduler),
+			this.network.consensusEvents().observeOn(this.singleThreadScheduler),
+			this.network.rpcRequests().observeOn(this.singleThreadScheduler)
+		);
+		final Observable<Event> ecMessages = firstEventCoordinator.andThen(
+			eventCoordinatorEvents.withLatestFrom(eventCoordinators, this::processEvent)
+		);
 
 		return Observable.merge(epochs, ecMessages);
 	}

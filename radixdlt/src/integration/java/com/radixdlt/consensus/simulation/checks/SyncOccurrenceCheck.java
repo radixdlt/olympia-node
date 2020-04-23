@@ -18,30 +18,36 @@
 package com.radixdlt.consensus.simulation.checks;
 
 import com.radixdlt.consensus.simulation.BFTCheck;
-import com.radixdlt.consensus.simulation.BFTSimulation;
+import com.radixdlt.consensus.simulation.BFTNetworkSimulation;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
+import java.util.function.LongConsumer;
 
 /**
  * Periodically checks new occurences of syncing success
  */
 public final class SyncOccurrenceCheck implements BFTCheck {
-	private final long time;
+	private final long duration;
 	private final TimeUnit timeUnit;
-	private final Consumer<Long> assertion;
+	private final LongConsumer syncsInPeriodAssertion;
 
-	public SyncOccurrenceCheck(Consumer<Long> assertion, long time, TimeUnit timeUnit) {
-		this.time = time;
+	/**
+	 * Creates a new check on syncs that have occurred in a given period
+	 * @param syncsInPeriodAssertion assertion to be run every period
+	 * @param duration duration of the period
+	 * @param timeUnit time unit of the period
+	 */
+	public SyncOccurrenceCheck(LongConsumer syncsInPeriodAssertion, long duration, TimeUnit timeUnit) {
+		this.duration = duration;
 		this.timeUnit = timeUnit;
-		this.assertion = assertion;
+		this.syncsInPeriodAssertion = syncsInPeriodAssertion;
 	}
 
 	@Override
-	public Completable check(BFTSimulation network) {
-		return Observable.interval(time, timeUnit)
+	public Completable check(BFTNetworkSimulation network) {
+		return Observable.interval(duration, timeUnit)
 			.map(i -> network.getNodes().stream()
 				.map(network::getCounters)
 				.mapToLong(c -> c.get(CounterType.CONSENSUS_SYNC_SUCCESS))
@@ -49,7 +55,7 @@ public final class SyncOccurrenceCheck implements BFTCheck {
 			)
 			.buffer(2, 1)
 			.map(l -> l.get(1) - l.get(0))
-			.doOnNext(assertion::accept)
+			.doOnNext(syncsInPeriodAssertion::accept)
 			.flatMapCompletable(p -> Completable.complete());
 	}
 }

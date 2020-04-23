@@ -40,14 +40,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Simple simulated network implementation that just sends messages to itself with a configurable latency.
  */
 public class TestEventCoordinatorNetwork {
-	private static final Logger log = LogManager.getLogger("EC");
 	public static final int DEFAULT_LATENCY = 50;
 
 	public static final class MessageInTransit {

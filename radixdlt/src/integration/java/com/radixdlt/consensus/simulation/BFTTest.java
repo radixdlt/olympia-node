@@ -39,6 +39,9 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
+/**
+ * High level BFT Simulation Test Runner
+ */
 public class BFTTest {
 	private final ImmutableList<ECKeyPair> nodes;
 	private final LatencyProvider latencyProvider;
@@ -113,8 +116,8 @@ public class BFTTest {
 			return this;
 		}
 
-		public Builder checkLiveness(long time, TimeUnit timeUnit) {
-			this.checks.add(new LivenessCheck(time, timeUnit));
+		public Builder checkLiveness(long duration, TimeUnit timeUnit) {
+			this.checks.add(new LivenessCheck(duration, timeUnit));
 			return this;
 		}
 
@@ -149,16 +152,16 @@ public class BFTTest {
 	}
 
 	// TODO: return list of results
-	public void run(long time, TimeUnit timeUnit) {
+	public void run(long duration, TimeUnit timeUnit) {
 		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.builder()
 			.latencyProvider(this.latencyProvider)
 			.build();
-		BFTSimulation bftNetwork =  new BFTSimulation(nodes, network, pacemakerTimeout);
+		BFTNetworkSimulation bftNetwork =  new BFTNetworkSimulation(nodes, network, pacemakerTimeout);
 		List<Completable> assertions = this.checks.stream().map(c -> c.check(bftNetwork)).collect(Collectors.toList());
 		Completable.mergeArray(
 			bftNetwork.processBFT().flatMapCompletable(e -> Completable.complete()),
 			Completable.merge(assertions)
 		)
-			.blockingAwait(time, timeUnit);
+			.blockingAwait(duration, timeUnit);
 	}
 }

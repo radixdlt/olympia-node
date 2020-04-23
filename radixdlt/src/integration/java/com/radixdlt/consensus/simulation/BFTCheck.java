@@ -32,5 +32,5 @@ public interface BFTCheck {
 	 * @param network network to check
 	 * @return completable to subscribe to enable checking
 	 */
-	Completable check(BFTSimulation network);
+	Completable check(BFTNetworkSimulation network);
 }

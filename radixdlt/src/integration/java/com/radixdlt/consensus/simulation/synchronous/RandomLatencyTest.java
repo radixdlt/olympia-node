@@ -35,10 +35,12 @@ public class RandomLatencyTest {
 	 */
 	@Test
 	public void given_3_correct_nodes_in_random_network_and_no_sync__then_all_synchronous_checks_should_pass() {
+		// use a maxLatency of 20x the min latency since we know a round can take up to
+		// atleast 6x transmission time. 20x so that we can hit these cases more often
 		final int minLatency = 10;
 		final int maxLatency = 200;
 		// the minimum latency per round is determined using the network latency
-		// a round can consist of 6 * max_transmission_time
+		// a round can consist of 6 * max_transmission_time (MTT)
 		final int trips = 6;
 		final int synchronousTimeout = maxLatency * trips;
 
@@ -64,7 +66,7 @@ public class RandomLatencyTest {
 	@Test
 	public void given_4_correct_bfts_in_random_network_and_no_sync__then_network_should_eventually_timeout() {
 		final int minLatency = 10;
-		final int maxLatency = 160;
+		final int maxLatency = 200;
 		final int trips = 8;
 		final int synchronousTimeout = maxLatency * trips;
 

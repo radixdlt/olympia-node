@@ -64,9 +64,9 @@ import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 /**
- * A multi-node bft test network where the network is simulated.
+ * A multi-node bft test network where the network and latencies of each message is simulated.
  */
-public class BFTSimulation {
+public class BFTNetworkSimulation {
 	private static final int TEST_PACEMAKER_TIMEOUT = 1000;
 
 	private final int pacemakerTimeout;
@@ -83,21 +83,24 @@ public class BFTSimulation {
 	private final List<ECKeyPair> nodes;
 
 	/**
-	 * Create a BFT test network with a perfect underlying network and the default latency.
+	 * Create a BFT test network with an underlying simulated network
 	 * @param nodes The nodes to populate the network with
+	 * @param underlyingNetwork the network simulator
 	 */
-	public BFTSimulation(List<ECKeyPair> nodes, TestEventCoordinatorNetwork underlyingNetwork) {
+	public BFTNetworkSimulation(List<ECKeyPair> nodes, TestEventCoordinatorNetwork underlyingNetwork) {
 		this(nodes, underlyingNetwork, TEST_PACEMAKER_TIMEOUT);
 	}
 
 	/**
-	 * Create a BFT test network with a specific underlying network.
+	 * Create a BFT test network with an underlying simulated network.
 	 * @param nodes The nodes to populate the network with
+	 * @param underlyingNetwork the network simulator
+	 * @param pacemakerTimeout a fixed pacemaker timeout used for all nodes
 	 */
-	public BFTSimulation(List<ECKeyPair> nodes, TestEventCoordinatorNetwork underlyingNetwork, int fixedPacemakerTimeout) {
+	public BFTNetworkSimulation(List<ECKeyPair> nodes, TestEventCoordinatorNetwork underlyingNetwork, int pacemakerTimeout) {
 		this.nodes = nodes;
 		this.underlyingNetwork = Objects.requireNonNull(underlyingNetwork);
-		this.pacemakerTimeout = fixedPacemakerTimeout;
+		this.pacemakerTimeout = pacemakerTimeout;
 		this.genesis = null;
 		this.genesisVertex = Vertex.createGenesis(genesis);
 		this.genesisQC = new QuorumCertificate(
@@ -122,7 +125,7 @@ public class BFTSimulation {
 				})
 			);
 		this.pacemakers = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e,
-			e -> new PacemakerImpl(fixedPacemakerTimeout, Executors.newSingleThreadScheduledExecutor())));
+			e -> new PacemakerImpl(this.pacemakerTimeout, Executors.newSingleThreadScheduledExecutor())));
 		this.bftEvents = Observable.merge(this.vertexStores.keySet().stream()
 			.map(vertexStore -> createBFTInstance(vertexStore).processEvents())
 			.collect(Collectors.toList()));

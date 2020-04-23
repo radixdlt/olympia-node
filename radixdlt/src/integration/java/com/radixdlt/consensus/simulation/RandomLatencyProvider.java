@@ -20,11 +20,15 @@ package com.radixdlt.consensus.simulation;
 import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork.LatencyProvider;
 import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork.MessageInTransit;
 import java.util.Random;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Latency Provider which uniformly distributes latency across a minimum and maximum
  */
 public final class RandomLatencyProvider implements LatencyProvider {
+	private static final Logger log = LogManager.getLogger("RLP");
+
 	private final int minLatency;
 	private final int maxLatency;
 	private final Random rng;
@@ -36,7 +40,11 @@ public final class RandomLatencyProvider implements LatencyProvider {
 		if (maxLatency < 0) {
 			throw new IllegalArgumentException("maximumLatency must be >= 0 but was " + maxLatency);
 		}
-		this.rng = new Random(System.currentTimeMillis());
+
+		final long seed = System.currentTimeMillis();
+		log.info("{} using seed {}", this.getClass().getSimpleName(), seed);
+
+		this.rng = new Random(seed);
 		this.minLatency = minLatency;
 		this.maxLatency = maxLatency;
 	}

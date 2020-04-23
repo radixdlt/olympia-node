@@ -133,7 +133,8 @@ public class SimpleEventCoordinatorNetwork implements EventCoordinatorNetworkSen
 		return Single.create(emitter -> {
 			final Optional<Peer> peer = this.addressBook.peer(node.euid());
 			if (!peer.isPresent()) {
-				emitter.onError(new RuntimeException(String.format("Peer with pubkey %s not present", node)));
+				// TODO: Change to more appropriate exception type
+				emitter.onError(new IllegalStateException(String.format("Peer with pubkey %s not present", node)));
 				return;
 			}
 

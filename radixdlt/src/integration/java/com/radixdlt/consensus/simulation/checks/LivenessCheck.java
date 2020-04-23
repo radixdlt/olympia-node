@@ -20,7 +20,7 @@ package com.radixdlt.consensus.simulation.checks;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.radixdlt.consensus.simulation.BFTCheck;
-import com.radixdlt.consensus.simulation.BFTSimulation;
+import com.radixdlt.consensus.simulation.BFTNetworkSimulation;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.VertexStore;
 import com.radixdlt.consensus.View;
@@ -35,19 +35,19 @@ import org.assertj.core.api.Condition;
  * progressively increasing in view number.
  */
 public class LivenessCheck implements BFTCheck {
-	private final long time;
+	private final long duration;
 	private final TimeUnit timeUnit;
 
-	public LivenessCheck(long time, TimeUnit timeUnit) {
-		this.time = time;
+	public LivenessCheck(long duration, TimeUnit timeUnit) {
+		this.duration = duration;
 		this.timeUnit = timeUnit;
 	}
 
 	@Override
-	public Completable check(BFTSimulation network) {
+	public Completable check(BFTNetworkSimulation network) {
 		AtomicReference<View> highestQCView = new AtomicReference<>(View.genesis());
 		return Observable
-			.interval(time, time, timeUnit)
+			.interval(duration, duration, timeUnit)
 			.map(i -> network.getNodes().stream()
 				.map(network::getVertexStore)
 				.map(VertexStore::getHighestQC)
@@ -56,7 +56,7 @@ public class LivenessCheck implements BFTCheck {
 				.get()) // there must be some max highest QC unless allNodes is empty
 			.doOnNext(view -> assertThat(view)
 				.satisfies(new Condition<>(v -> v.compareTo(highestQCView.get()) > 0,
-					"The highest highestQC %s increased since last highestQC %s after %d %s", view, highestQCView.get(), time, timeUnit)))
+					"The highest highestQC %s increased since last highestQC %s after %d %s", view, highestQCView.get(), duration, timeUnit)))
 			.doOnNext(highestQCView::set)
 			.doOnNext(newHighestQCView -> System.out.println("Progressed to new highest QC view " + highestQCView))
 			.flatMapCompletable(v -> Completable.complete());

@@ -39,6 +39,7 @@ public final class GetVertexResponse {
 		return vertex;
 	}
 
+	@Override
 	public String toString() {
 		return String.format("%s{vertex=%s}", this.getClass().getSimpleName(), vertex);
 	}

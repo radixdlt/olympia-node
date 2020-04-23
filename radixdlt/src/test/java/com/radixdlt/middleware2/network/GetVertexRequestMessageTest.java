@@ -26,9 +26,11 @@ import org.junit.Test;
 public class GetVertexRequestMessageTest {
 	@Test
 	public void sensibleToString() {
-		GetVertexRequestMessage msg1 = new GetVertexRequestMessage(0, Hash.random());
+		Hash vertexId = Hash.random();
+		GetVertexRequestMessage msg1 = new GetVertexRequestMessage(0, vertexId);
 		String s1 = msg1.toString();
 		assertThat(s1, containsString(GetVertexRequestMessage.class.getSimpleName()));
+		assertThat(s1, containsString(vertexId.toString()));
 	}
 
 }

@@ -20,7 +20,7 @@ package com.radixdlt.consensus.simulation.checks;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.radixdlt.consensus.simulation.BFTCheck;
-import com.radixdlt.consensus.simulation.BFTSimulation;
+import com.radixdlt.consensus.simulation.BFTNetworkSimulation;
 import com.radixdlt.consensus.VertexStore;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
 public class SafetyCheck implements BFTCheck {
 
 	@Override
-	public Completable check(BFTSimulation network) {
+	public Completable check(BFTNetworkSimulation network) {
 		return Observable.zip(
 			network.getNodes().stream()
 				.map(network::getVertexStore)

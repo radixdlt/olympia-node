@@ -20,7 +20,7 @@ package com.radixdlt.consensus.simulation.checks;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.radixdlt.consensus.simulation.BFTCheck;
-import com.radixdlt.consensus.simulation.BFTSimulation;
+import com.radixdlt.consensus.simulation.BFTNetworkSimulation;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
@@ -34,7 +34,7 @@ import org.assertj.core.api.Condition;
 public class NoTimeoutCheck implements BFTCheck {
 
 	@Override
-	public Completable check(BFTSimulation network) {
+	public Completable check(BFTNetworkSimulation network) {
 		return Observable.interval(1, TimeUnit.SECONDS)
 			.flatMapIterable(i -> network.getNodes())
 			.map(network::getCounters)

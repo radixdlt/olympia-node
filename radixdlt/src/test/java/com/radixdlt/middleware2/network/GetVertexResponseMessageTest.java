@@ -30,5 +30,6 @@ public class GetVertexResponseMessageTest {
 		GetVertexResponseMessage msg1 = new GetVertexResponseMessage(0, vertex);
 		String s1 = msg1.toString();
 		assertThat(s1, containsString(GetVertexResponseMessage.class.getSimpleName()));
+		assertThat(s1, containsString(vertex.toString()));
 	}
 }
