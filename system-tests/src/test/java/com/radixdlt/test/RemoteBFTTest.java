@@ -37,17 +37,19 @@ public class RemoteBFTTest {
 	}
 
 	public void waitUntilResponsive(long maxWaitTime, TimeUnit maxWaitTimeUnits) {
-		Observable.interval(5, TimeUnit.SECONDS)
-			.map(i -> testNetwork.checkResponsive(1, TimeUnit.SECONDS))
-			.retry()
+		new ResponsivenessCheck(5, TimeUnit.SECONDS, 1, TimeUnit.SECONDS)
+			.check(this.testNetwork)
+			.takeUntil(RemoteBFTCheckResult::isSuccess)
 			.timeout(maxWaitTime, maxWaitTimeUnits)
-			.take(1)
 			.blockingSubscribe();
 	}
 
 	public void run(long runtime, TimeUnit runtimeUnit) {
-		List<Observable<Object>> assertions = checks.stream().map(check -> check.check(testNetwork)).collect(Collectors.toList());
-		Observable.merge(assertions)
+		List<Observable<RemoteBFTCheckResult>> ongoingChecks = this.checks.stream()
+			.map(check -> check.check(testNetwork)
+				.doOnNext(result -> result.assertSuccess(check)))
+			.collect(Collectors.toList());
+		Observable.merge(ongoingChecks)
 			.take(runtime, runtimeUnit)
 			.blockingSubscribe();
 	}

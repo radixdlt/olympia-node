@@ -18,10 +18,9 @@
 
 package com.radixdlt.test;
 
+import io.reactivex.Completable;
 import io.reactivex.Observable;
-import io.reactivex.disposables.Disposable;
 
-import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -46,15 +45,16 @@ public class ResponsivenessCheck implements RemoteBFTCheck {
 	}
 
 	@Override
-	public Observable<Object> check(DockerBFTTestNetwork network) {
-		List<Observable<Disposable>> individualChecks = network.getNodeNames().stream()
-			.map(nodeName -> Observable.interval(checkInterval, checkIntervalUnit)
-				.doOnNext(i -> System.out.printf("ping %s", nodeName))
-				.map(i -> network.queryJson(nodeName, "api/ping")
+	public Observable<RemoteBFTCheckResult> check(DockerBFTTestNetwork network) {
+		Observable<RemoteBFTCheckResult> periodicChecks = Observable.interval(checkInterval, checkIntervalUnit)
+			.map(i -> network.getNodeNames().stream()
+				.map(nodeName -> network.queryJson(nodeName, "api/ping")
 					.timeout(timeoutInterval, timeoutIntervalUnit)
-					.subscribe(response -> System.out.printf("got pong from %s: %s", nodeName, response)))
-				.map(o -> o))
-			.collect(Collectors.toList());
-		return Observable.merge(individualChecks);
+					.ignoreElement())
+				.collect(Collectors.toList()))
+			.map(Completable::merge)
+			.map(c -> RemoteBFTCheckResult.success())
+			.onErrorReturn(RemoteBFTCheckResult::error);
+		return periodicChecks;
 	}
 }

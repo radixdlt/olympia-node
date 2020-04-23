@@ -34,10 +34,8 @@ public class LatentDockerNetworkTest {
 				.network(network)
 				.assertResponsiveness()
 				.build();
-			System.out.println("waiting until responsive..");
 			test.waitUntilResponsive(2, TimeUnit.MINUTES);
-			System.out.println("responsive!");
-//			test.run(60, TimeUnit.SECONDS);
+			test.run(60, TimeUnit.SECONDS);
 		}
 	}
 }

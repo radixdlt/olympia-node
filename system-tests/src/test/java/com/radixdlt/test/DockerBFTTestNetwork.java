@@ -81,15 +81,6 @@ public class DockerBFTTestNetwork implements Closeable {
 		CmdHelper.runCommand("docker network rm " + networkName);
 	}
 
-	public Completable checkResponsive(long timeoutInterval, TimeUnit timeoutIntervalUnit) {
-		List<Completable> nodeResponseCompletables = getNodeNames().stream()
-			.map(nodeName -> queryJson(nodeName, "api/ping")
-				.timeout(timeoutInterval, timeoutIntervalUnit)
-				.ignoreElement())
-			.collect(Collectors.toList());
-		return Completable.merge(nodeResponseCompletables);
-	}
-
 	public Single<String> query(String nodeName, String endpoint) {
 		Objects.requireNonNull(nodeName, "nodeName");
 		Objects.requireNonNull(endpoint, "endpoint");
