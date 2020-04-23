@@ -54,10 +54,12 @@ public class RemoteBFTTest {
 			List<Observable<RemoteBFTCheckResult>> prerequisiteChecks = this.prerequisites.stream()
 				.map(prerequisite -> prerequisite.check(this.testNetwork))
 				.collect(Collectors.toList());
-			Observable.combineLatest(prerequisiteChecks, results -> Arrays.stream(results).map(result -> (RemoteBFTCheckResult) result))
-				.takeUntil((Predicate<? super Stream<RemoteBFTCheckResult>>) results -> results.allMatch(RemoteBFTCheckResult::isSuccess))
+			Observable.combineLatest(prerequisiteChecks, results -> Arrays.stream(results).map(RemoteBFTCheckResult.class::cast))
+				.filter(results -> results.allMatch(RemoteBFTCheckResult::isSuccess))
+				.firstOrError()
 				.timeout(this.prerequisiteTimeout, this.prerequisiteTimeoutUnit)
-				.blockingSubscribe();
+				.ignoreElement()
+				.blockingAwait();
 		}
 
 		List<Observable<RemoteBFTCheckResult>> ongoingChecks = this.checks.stream()
@@ -111,8 +113,11 @@ public class RemoteBFTTest {
 		}
 
 		public Builder assertResponsiveness() {
-			this.checks.add(new ResponsivenessCheck(1, TimeUnit.SECONDS, 1, TimeUnit.SECONDS));
-			return this;
+			return addCheck(new ResponsivenessCheck(1, TimeUnit.SECONDS, 1, TimeUnit.SECONDS));
+		}
+
+		public Builder assertNoTimeouts() {
+			return addCheck(new NoTimeoutCheck(1, TimeUnit.SECONDS));
 		}
 
 		public Builder addCheck(RemoteBFTCheck check) {
@@ -132,5 +137,4 @@ public class RemoteBFTTest {
 				ImmutableList.copyOf(this.checks));
 		}
 	}
-
 }

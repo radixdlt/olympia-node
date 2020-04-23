@@ -109,17 +109,8 @@ public class DockerBFTTestNetwork implements Closeable {
 
 	public Single<JSONObject> queryJson(String nodeName, String endpoint) {
 		return query(nodeName, endpoint)
+			.doOnSuccess(s -> System.out.println(s))
 			.map(JSONObject::new);
-	}
-
-	// TODO document and revisit
-	// utility for querying the consensus counter values through the node api given a certain request
-	public Single<Map<String, Integer>> queryConsensusCounters(String nodeName) {
-		return queryJson(nodeName, "api/system")
-			.map(json -> json.getJSONObject("counters"))
-			.map(counters -> counters.getJSONObject("consensus"))
-			.map(consensusCounters -> consensusCounters.keySet().stream()
-				.collect(Collectors.toMap(c -> c, consensusCounters::getInt)));
 	}
 
 	private String getNodeEndpoint(String nodeName, String endpoint) {
