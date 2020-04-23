@@ -184,7 +184,7 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 		try {
 			this.sync(newView.getQC(), newView.getAuthor());
 		} catch (SyncException e) {
-			log.warn("{}: NEW_VIEW: Ignoring new view because unable to sync to QC {} {}", this.getShortName(), e.getQC(), e.getCause());
+			log.warn("{}: NEW_VIEW: Ignoring new view because unable to sync to QC {}", this.getShortName(), e.getQC(), e.getCause());
 			return;
 		}
 
@@ -212,7 +212,7 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 		try {
 			sync(proposedVertex.getQC(), proposal.getAuthor());
 		} catch (SyncException e) {
-			log.warn("{}: PROPOSAL: Ignoring because unable to sync to QC {} {}", this.getShortName(), e.getQC(), e.getCause());
+			log.warn("{}: PROPOSAL: Ignoring because unable to sync to QC {}", this.getShortName(), e.getQC(), e.getCause());
 			return;
 		}
 
