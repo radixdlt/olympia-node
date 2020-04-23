@@ -62,6 +62,10 @@ public final class Proposal implements ConsensusEvent {
 		this.signature = Objects.requireNonNull(signature);
 	}
 
+	public ECPublicKey getAuthor() {
+		return author;
+	}
+
 	public Vertex getVertex() {
 		return vertex;
 	}

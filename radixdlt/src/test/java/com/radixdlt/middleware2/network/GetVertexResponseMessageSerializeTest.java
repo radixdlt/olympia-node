@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,39 +15,19 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.middleware2.network;
 
-/**
- * An empty BFT event processor
- */
-public class EmptyEventCoordinator implements EventCoordinator {
-	@Override
-	public void processVote(Vote vote) {
-		// No-op
+
+import com.radixdlt.consensus.Vertex;
+import org.radix.serialization.SerializeMessageObject;
+
+public class GetVertexResponseMessageSerializeTest  extends SerializeMessageObject<GetVertexResponseMessage> {
+	public GetVertexResponseMessageSerializeTest() {
+		super(GetVertexResponseMessage.class, GetVertexResponseMessageSerializeTest::get);
 	}
 
-	@Override
-	public void processNewView(NewView newView) {
-		// No-op
+	private static GetVertexResponseMessage get() {
+		return new GetVertexResponseMessage(1234, Vertex.createGenesis(null));
 	}
 
-	@Override
-	public void processProposal(Proposal proposal) {
-		// No-op
-	}
-
-	@Override
-	public void processLocalTimeout(View view) {
-		// No-op
-	}
-
-	@Override
-	public void processGetVertexRequest(GetVertexRequest request) {
-		// No-op
-	}
-
-	@Override
-	public void start() {
-		// No-op
-	}
 }

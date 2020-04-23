@@ -15,14 +15,14 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.checks;
+package com.radixdlt.consensus.simulation.checks;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-import com.radixdlt.consensus.BFTCheck;
-import com.radixdlt.consensus.BFTTestNetwork;
-import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.simulation.BFTCheck;
+import com.radixdlt.consensus.simulation.BFTNetworkSimulation;
 import com.radixdlt.consensus.VertexStore;
+import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.Arrays;
 import java.util.stream.Collectors;
@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
 public class SafetyCheck implements BFTCheck {
 
 	@Override
-	public Observable<Object> check(BFTTestNetwork network) {
+	public Completable check(BFTNetworkSimulation network) {
 		return Observable.zip(
 			network.getNodes().stream()
 				.map(network::getVertexStore)
@@ -42,7 +42,6 @@ public class SafetyCheck implements BFTCheck {
 			Arrays::stream)
 			.map(committedVertices -> committedVertices.distinct().collect(Collectors.toList()))
 			.doOnNext(committedVertices -> assertThat(committedVertices).hasSize(1))
-			.map(vertices -> (Vertex) vertices.get(0))
-			.map(o -> o);
+			.flatMapCompletable(v -> Completable.complete());
 	}
 }

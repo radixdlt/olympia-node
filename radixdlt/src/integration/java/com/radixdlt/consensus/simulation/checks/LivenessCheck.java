@@ -15,36 +15,39 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.checks;
+package com.radixdlt.consensus.simulation.checks;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-import com.radixdlt.consensus.BFTCheck;
-import com.radixdlt.consensus.BFTTestNetwork;
+import com.radixdlt.consensus.simulation.BFTCheck;
+import com.radixdlt.consensus.simulation.BFTNetworkSimulation;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.VertexStore;
 import com.radixdlt.consensus.View;
+import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import org.assertj.core.api.Condition;
 
 /**
- * Check that the network is making strong progress by ensuring that new QCs are
- * being created every round.
+ * Check that the network is making progress by ensuring that new QCs are
+ * progressively increasing in view number.
  */
-public class StrongLivenessCheck implements BFTCheck {
-	@Override
-	public Observable<Object> check(BFTTestNetwork network) {
-		// there should be a new highest QC every once in a while to ensure progress
-		// the minimum latency per round is determined using the network latency
-		// a round can consist of 6 * max_transmission_time
-		double trips = 6.0;
-		int maxLatencyPerRound = (int) (network.getMaximumNetworkLatency() * trips);
+public class LivenessCheck implements BFTCheck {
+	private final long duration;
+	private final TimeUnit timeUnit;
 
+	public LivenessCheck(long duration, TimeUnit timeUnit) {
+		this.duration = duration;
+		this.timeUnit = timeUnit;
+	}
+
+	@Override
+	public Completable check(BFTNetworkSimulation network) {
 		AtomicReference<View> highestQCView = new AtomicReference<>(View.genesis());
 		return Observable
-			.interval(maxLatencyPerRound, maxLatencyPerRound, TimeUnit.MILLISECONDS)
+			.interval(duration, duration, timeUnit)
 			.map(i -> network.getNodes().stream()
 				.map(network::getVertexStore)
 				.map(VertexStore::getHighestQC)
@@ -53,9 +56,9 @@ public class StrongLivenessCheck implements BFTCheck {
 				.get()) // there must be some max highest QC unless allNodes is empty
 			.doOnNext(view -> assertThat(view)
 				.satisfies(new Condition<>(v -> v.compareTo(highestQCView.get()) > 0,
-					"The highest highestQC %s increased since last highestQC %s after %d ms", view, highestQCView.get(), maxLatencyPerRound)))
+					"The highest highestQC %s increased since last highestQC %s after %d %s", view, highestQCView.get(), duration, timeUnit)))
 			.doOnNext(highestQCView::set)
 			.doOnNext(newHighestQCView -> System.out.println("Progressed to new highest QC view " + highestQCView))
-			.map(o -> o);
+			.flatMapCompletable(v -> Completable.complete());
 	}
 }

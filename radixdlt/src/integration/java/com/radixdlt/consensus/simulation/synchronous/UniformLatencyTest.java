@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,15 +15,16 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.consensus.simulation.synchronous;
 
+import com.radixdlt.consensus.simulation.BFTTest;
 import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 
 /**
- * Tests with a perfect network
+ * Simulation test which has the same latency for every message
  */
-public class PerfectNetworkTest {
+public class UniformLatencyTest {
 	/**
 	 * Sanity test check for a perfect network. 4 is the size used because it is
 	 * the smallest network size where quorum size (3) != network size. The sanity checks
@@ -37,13 +38,12 @@ public class PerfectNetworkTest {
 	public void given_4_correct_bfts__then_should_pass_sanity_tests_over_1_minute() {
 		BFTTest bftTest = BFTTest.builder()
 			.numNodes(4)
-			.time(1, TimeUnit.MINUTES)
+			.checkSafety()
+			.checkLiveness()
+			.checkNoTimeouts()
+			.checkNoSyncExceptions()
+			.checkAllProposalsHaveDirectParents()
 			.build();
-		bftTest.assertSafety();
-		bftTest.assertLiveness();
-		bftTest.assertNoTimeouts();
-		bftTest.assertNoSyncExceptions();
-		bftTest.assertAllProposalsHaveDirectParents();
-		bftTest.run();
+		bftTest.run(1, TimeUnit.MINUTES);
 	}
 }

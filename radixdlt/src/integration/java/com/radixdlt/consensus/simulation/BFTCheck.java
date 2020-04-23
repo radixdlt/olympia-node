@@ -15,9 +15,9 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.consensus.simulation;
 
-import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.core.Completable;
 
 /**
  * A running BFT check given access to network
@@ -30,7 +30,7 @@ public interface BFTCheck {
 	 * TODO: Cleanup interface a bit
 	 *
 	 * @param network network to check
-	 * @return observable to subscribe to enable checking
+	 * @return completable to subscribe to enable checking
 	 */
-	Observable<Object> check(BFTTestNetwork network);
+	Completable check(BFTNetworkSimulation network);
 }

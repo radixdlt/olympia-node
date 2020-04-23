@@ -17,46 +17,24 @@
 
 package com.radixdlt.middleware2.network;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
+import static org.powermock.api.mockito.PowerMockito.when;
 
 import com.radixdlt.consensus.ConsensusEvent;
+import com.radixdlt.consensus.GetVertexRequest;
 import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.Vertex;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Vote;
+import com.radixdlt.crypto.Hash;
 import io.reactivex.rxjava3.observers.TestObserver;
-import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 
 public class TestEventCoordinatorNetworkTest {
 	private ECPublicKey validatorId = ECKeyPair.generateNew().getPublicKey();
 	private ECPublicKey validatorId2 = ECKeyPair.generateNew().getPublicKey();
-
-	@Test
-	public void when_building_with_negative_latencies__then_illegal_argument_exception_thrown() {
-		assertThatThrownBy(() -> TestEventCoordinatorNetwork.builder()
-			.minLatency(-1)
-			.maxLatency(100)
-			.build()).isInstanceOf(IllegalArgumentException.class);
-
-		assertThatThrownBy(() -> TestEventCoordinatorNetwork.builder()
-			.minLatency(10)
-			.maxLatency(-1)
-			.build()).isInstanceOf(IllegalArgumentException.class);
-	}
-
-	@Test
-	public void when_builder_with_max_latency__then_created_object_should_have_max_latency() {
-		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.builder()
-			.minLatency(50)
-			.maxLatency(100)
-			.build();
-
-		assertThat(network.getMaxLatency()).isEqualTo(100);
-	}
 
 	@Test
 	public void when_send_new_view_to_self__then_should_receive_it() {
@@ -121,41 +99,40 @@ public class TestEventCoordinatorNetworkTest {
 	}
 
 	@Test
-	public void when_disable_and_then_send_new_view_to_self__then_should_not_receive_it() throws Exception {
-		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.builder().build();
+	public void when_disabling_messages_and_send_new_view_message_to_other_node__then_should_not_receive_it() {
+		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.builder()
+			.latencyProvider(msg -> -1)
+			.build();
+
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
-		network.setSendingDisable(validatorId, true);
-		network.getNetworkRx(validatorId).consensusEvents()
+		network.getNetworkRx(validatorId2).consensusEvents()
 			.subscribe(testObserver);
 		NewView newView = mock(NewView.class);
 		network.getNetworkSender(validatorId).sendNewView(newView, validatorId);
-		testObserver.await(10, TimeUnit.MILLISECONDS);
-		testObserver.assertEmpty();
-	}
-
-	@Test
-	public void when_disable_receive_and_other_sends_view_to_self__then_should_receive_it() {
-		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.builder().build();
-		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
-		network.setReceivingDisable(validatorId, true);
-		network.getNetworkRx(validatorId).consensusEvents()
-			.subscribe(testObserver);
-		NewView newView = mock(NewView.class);
-		network.getNetworkSender(validatorId2).sendNewView(newView, validatorId);
-		testObserver.assertEmpty();
-	}
-
-	@Test
-	public void when_disable_then_reenable_receive_and_other_sends_view_to_self__then_should_receive_it() {
-		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.builder().build();
-		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
-		network.setReceivingDisable(validatorId, true);
-		network.setReceivingDisable(validatorId, false);
-		network.getNetworkRx(validatorId).consensusEvents()
-			.subscribe(testObserver);
-		NewView newView = mock(NewView.class);
-		network.getNetworkSender(validatorId2).sendNewView(newView, validatorId);
 		testObserver.awaitCount(1);
-		testObserver.assertValue(newView);
+		testObserver.assertEmpty();
+	}
+
+	@Test
+	public void when_send_get_vertex_request_to_another_node__then_should_receive_it() {
+		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.builder().build();
+		Hash vertexId = mock(Hash.class);
+
+		TestObserver<GetVertexRequest> rpcRequestListener = TestObserver.create();
+		network.getNetworkRx(validatorId2).rpcRequests().subscribe(rpcRequestListener);
+		TestObserver<Vertex> testObserver = TestObserver.create();
+		network.getNetworkSender(validatorId).getVertex(vertexId, validatorId2)
+			.subscribe(testObserver);
+
+		rpcRequestListener.awaitCount(1);
+		rpcRequestListener.assertValueAt(0, r -> r.getVertexId().equals(vertexId));
+
+		Vertex response = mock(Vertex.class);
+		when(response.getId()).thenReturn(vertexId);
+		rpcRequestListener.values().get(0).getResponder().accept(response);
+
+		testObserver.awaitCount(1);
+		testObserver.assertComplete();
+		testObserver.assertValue(response);
 	}
 }

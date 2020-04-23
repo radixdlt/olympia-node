@@ -15,34 +15,29 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.checks;
+package com.radixdlt.consensus.simulation.checks;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-
-import com.radixdlt.consensus.BFTCheck;
-import com.radixdlt.consensus.BFTTestNetwork;
+import com.radixdlt.consensus.simulation.BFTCheck;
+import com.radixdlt.consensus.simulation.BFTNetworkSimulation;
 import com.radixdlt.counters.SystemCounters.CounterType;
+import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.concurrent.TimeUnit;
+import org.assertj.core.api.AssertionsForClassTypes;
 import org.assertj.core.api.Condition;
 
 /**
- * Checks that no local timeouts are occurring.
- * Only makes sense to check in networks where there are no failing nodes.
+ * Checks that there are no synchronisation errors.
  */
-public class NoTimeoutCheck implements BFTCheck {
+public class NoSyncExceptionCheck implements BFTCheck {
 
 	@Override
-	public Observable<Object> check(BFTTestNetwork network) {
+	public Completable check(BFTNetworkSimulation network) {
 		return Observable.interval(1, TimeUnit.SECONDS)
 			.flatMapIterable(i -> network.getNodes())
-			.map(network::getCounters)
-			.doOnNext(counters -> {
-				assertThat(counters.get(CounterType.CONSENSUS_TIMEOUT))
-					.satisfies(new Condition<>(c -> c == 0, "Timeout counter is zero."));
-				assertThat(counters.get(CounterType.CONSENSUS_REJECTED))
-					.satisfies(new Condition<>(c -> c == 0, "Rejected Proposal counter is zero."));
-			})
-			.map(o -> o);
+			.doOnNext(cn -> AssertionsForClassTypes.assertThat(network.getCounters(cn).get(CounterType.CONSENSUS_SYNC_EXCEPTION))
+				.satisfies(new Condition<>(c -> c == 0,
+					"Sync Exception counter is zero in correct node %s", cn.getPublicKey().euid())))
+			.flatMapCompletable(p -> Completable.complete());
 	}
 }

@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -17,37 +17,32 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.crypto.Hash;
+import java.util.function.Consumer;
+
 /**
- * An empty BFT event processor
+ * An RPC request to retrieve a given vertex
  */
-public class EmptyEventCoordinator implements EventCoordinator {
-	@Override
-	public void processVote(Vote vote) {
-		// No-op
+public final class GetVertexRequest {
+	private final Hash vertexId;
+	private final Consumer<Vertex> responder;
+
+	public GetVertexRequest(Hash vertexId, Consumer<Vertex> responder) {
+		this.vertexId = vertexId;
+		this.responder = responder;
+	}
+
+	public Consumer<Vertex> getResponder() {
+		return responder;
+	}
+
+	public Hash getVertexId() {
+		return vertexId;
 	}
 
 	@Override
-	public void processNewView(NewView newView) {
-		// No-op
-	}
-
-	@Override
-	public void processProposal(Proposal proposal) {
-		// No-op
-	}
-
-	@Override
-	public void processLocalTimeout(View view) {
-		// No-op
-	}
-
-	@Override
-	public void processGetVertexRequest(GetVertexRequest request) {
-		// No-op
-	}
-
-	@Override
-	public void start() {
-		// No-op
+	public String toString() {
+		return String.format("%s{vertexId=%s}",
+			getClass().getSimpleName(), vertexId.toString().substring(0, 6));
 	}
 }

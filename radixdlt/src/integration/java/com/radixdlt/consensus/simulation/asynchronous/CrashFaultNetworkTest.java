@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,13 +15,22 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.consensus.simulation.asynchronous;
 
+import com.radixdlt.consensus.EventCoordinatorNetworkRx;
+import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.VertexStore;
+import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.simulation.BFTNetworkSimulation;
+import com.radixdlt.consensus.simulation.DroppingLatencyProvider;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.examples.tictactoe.Pair;
 
+import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork;
 import io.reactivex.rxjava3.core.Observable;
 import org.assertj.core.api.Condition;
 import org.junit.Test;
@@ -47,11 +56,6 @@ public class CrashFaultNetworkTest {
 		return Stream.generate(ECKeyPair::generateNew).limit(numNodes).collect(Collectors.toList());
 	}
 
-	private void crashNode(ECKeyPair node, BFTTestNetwork bftNetwork) {
-		bftNetwork.getUnderlyingNetwork().setReceivingDisable(node.getPublicKey(), true);
-		bftNetwork.getUnderlyingNetwork().setSendingDisable(node.getPublicKey(), true);
-	}
-
 	/**
 	 * Tests a static configuration of 3 nodes (1 crash-stopped), meaning a QC can never be formed.
 	 * The intended behaviour is that all instances retain the genesis commit as their latest committed vertex
@@ -68,8 +72,13 @@ public class CrashFaultNetworkTest {
 		final List<ECKeyPair> correctNodes = createNodes(numCorrect);
 		final List<ECKeyPair> faultyNodes = createNodes(numCrashed);
 		final List<ECKeyPair> allNodes = Stream.concat(correctNodes.stream(), faultyNodes.stream()).collect(Collectors.toList());
-		final BFTTestNetwork bftNetwork = new BFTTestNetwork(allNodes);
-		crashNode(allNodes.get(2), bftNetwork);
+		final DroppingLatencyProvider crashLatencyProvider = new DroppingLatencyProvider();
+		final TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.builder()
+			.latencyProvider(crashLatencyProvider)
+			.build();
+
+		final BFTNetworkSimulation bftNetwork = new BFTNetworkSimulation(allNodes, network);
+		crashLatencyProvider.crashNode(allNodes.get(2).getPublicKey());
 
 		List<Observable<Vertex>> committedObservables = allNodes.stream()
 			.map(bftNetwork::getVertexStore)
@@ -108,14 +117,20 @@ public class CrashFaultNetworkTest {
 		final Set<ECPublicKey> correctNodesPubs = correctNodes.stream()
 			.map(ECKeyPair::getPublicKey)
 			.collect(Collectors.toSet());
-		final BFTTestNetwork bftNetwork = new BFTTestNetwork(allNodes);
+		final DroppingLatencyProvider crashLatencyProvider = new DroppingLatencyProvider();
+		final TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.builder()
+			.latencyProvider(crashLatencyProvider)
+			.build();
+		final BFTNetworkSimulation bftNetwork = new BFTNetworkSimulation(allNodes, network);
 		// "crash" all faulty nodes by disallowing any communication
-		faultyNodes.forEach(node -> crashNode(node, bftNetwork));
+		faultyNodes.forEach(node -> crashLatencyProvider.crashNode(node.getPublicKey()));
+
 
 		// there should be a new highest QC every once in a while to ensure progress
 		// the minimum latency per round is determined using the network latency and a tolerance
-		int worstCaseLatencyPerRound = bftNetwork.getMaximumNetworkLatency() * 2 // base latency: two rounds in the normal case
-			+ numCrashed * (bftNetwork.getMaximumNetworkLatency() * 4 + bftNetwork.getPacemakerTimeout()); // four rounds plus timeout in bad case
+		final int maxLatency = TestEventCoordinatorNetwork.DEFAULT_LATENCY;
+		int worstCaseLatencyPerRound = maxLatency * 2 // base latency: two rounds in the normal case
+			+ numCrashed * (maxLatency * 4 + bftNetwork.getPacemakerTimeout()); // four rounds plus timeout in bad case
 		// account for any inaccuracies, execution time, scheduling inefficiencies..
 		// the tolerance is high since we're only interested in qualitative progress in this test
 		double tolerance = 2.0;
@@ -204,7 +219,11 @@ public class CrashFaultNetworkTest {
 
 		final List<ECKeyPair> allNodes = createNodes(numNodes);
 		final Set<ECPublicKey> faultyNodesPubs = new HashSet<>();
-		final BFTTestNetwork bftNetwork = new BFTTestNetwork(allNodes);
+		final DroppingLatencyProvider crashLatencyProvider = new DroppingLatencyProvider();
+		final TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.builder()
+			.latencyProvider(crashLatencyProvider)
+			.build();
+		final BFTNetworkSimulation bftNetwork = new BFTNetworkSimulation(allNodes, network);
 
 		// correct nodes should all get the same commits in the same order
 		Observable<Object> correctCommitCheck = Observable.zip(
@@ -224,8 +243,9 @@ public class CrashFaultNetworkTest {
 
 		// there should be a new highest QC every once in a while to ensure progress
 		// the minimum latency per round is determined using the network latency and a tolerance
-		int worstCaseLatencyPerRound = bftNetwork.getMaximumNetworkLatency() * 2 // base latency: two rounds in the normal case
-			+ numNodes * (bftNetwork.getMaximumNetworkLatency() * 4 + bftNetwork.getPacemakerTimeout()); // four rounds plus timeout in bad case
+		final int maxLatency = TestEventCoordinatorNetwork.DEFAULT_LATENCY;
+		int worstCaseLatencyPerRound = maxLatency * 2 // base latency: two rounds in the normal case
+			+ numNodes * (maxLatency * 4 + bftNetwork.getPacemakerTimeout()); // four rounds plus timeout in bad case
 		// account for any inaccuracies, execution time, scheduling inefficiencies..
 		// the tolerance is high since we're only interested in qualitative progress in this test
 		double tolerance = 2.0;
@@ -253,7 +273,7 @@ public class CrashFaultNetworkTest {
 			.map(i -> rng.nextInt(allNodes.size() - faultyNodesPubs.size()))
 			.map(allNodes::get)
 			.doOnNext(node -> faultyNodesPubs.add(node.getPublicKey()))
-			.doOnNext(node -> crashNode(node, bftNetwork))
+			.doOnNext(node -> crashLatencyProvider.crashNode(node.getPublicKey()))
 			.doAfterNext(node -> System.out.println("Crashed " + node.euid()))
 			.map(o -> o);
 

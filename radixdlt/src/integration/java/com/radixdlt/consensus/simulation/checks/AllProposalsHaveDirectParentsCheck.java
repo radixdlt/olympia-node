@@ -15,14 +15,15 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.checks;
+package com.radixdlt.consensus.simulation.checks;
 
-import com.radixdlt.consensus.BFTCheck;
-import com.radixdlt.consensus.BFTTestNetwork;
+import com.radixdlt.consensus.simulation.BFTCheck;
+import com.radixdlt.consensus.simulation.BFTNetworkSimulation;
 import com.radixdlt.consensus.EventCoordinatorNetworkRx;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.crypto.ECKeyPair;
+import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -36,7 +37,7 @@ import org.assertj.core.api.Condition;
 public class AllProposalsHaveDirectParentsCheck implements BFTCheck {
 
 	@Override
-	public Observable<Object> check(BFTTestNetwork network) {
+	public Completable check(BFTNetworkSimulation network) {
 		List<Observable<Vertex>> correctProposals = network.getNodes().stream()
 			.map(ECKeyPair::getPublicKey)
 			.map(network.getUnderlyingNetwork()::getNetworkRx)
@@ -49,6 +50,6 @@ public class AllProposalsHaveDirectParentsCheck implements BFTCheck {
 				.satisfies(new Condition<>(vtx -> vtx.getView().equals(vtx.getParentView().next()),
 					"Vertex %s at %s has direct parent",
 					network.getProposerElection().getProposer(v.getParentView()).euid(), v.getParentView())))
-			.map(o -> o);
+			.flatMapCompletable(v -> Completable.complete());
 	}
 }
