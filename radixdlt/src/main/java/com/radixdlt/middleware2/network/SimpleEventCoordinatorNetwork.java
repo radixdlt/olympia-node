@@ -86,15 +86,12 @@ public class SimpleEventCoordinatorNetwork implements EventCoordinatorNetworkSen
 	public Observable<GetVertexRequest> rpcRequests() {
 		return Observable.create(emitter -> {
 			MessageListener<GetVertexRequestMessage> listener = (src, msg) -> {
-				if (src.hasSystem()) {
-					final ECPublicKey requestor = src.getSystem().getKey();
-					final GetVertexRequest request = new GetVertexRequest(
-						msg.getVertexId(),
-						requestor,
-						vertex -> send(new GetVertexResponseMessage(this.magic, vertex), requestor)
-					);
-					emitter.onNext(request);
-				}
+				log.error("Received GET_VERTEX_REQUEST {}", msg);
+				final GetVertexRequest request = new GetVertexRequest(
+					msg.getVertexId(),
+					vertex -> this.messageCentral.send(src, new GetVertexResponseMessage(this.magic, vertex))
+				);
+				emitter.onNext(request);
 			};
 			this.messageCentral.addListener(GetVertexRequestMessage.class, listener);
 			emitter.setCancellable(() -> this.messageCentral.removeListener(listener));

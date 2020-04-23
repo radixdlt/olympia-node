@@ -172,7 +172,6 @@ public class TestEventCoordinatorNetwork {
 
 					final GetVertexRequest request = new GetVertexRequest(
 						vertexId,
-						forNode,
 						vertex -> {
 							GetVertexResponse vertexResponse = new GetVertexResponse(vertexId, vertex);
 							receivedMessages.onNext(MessageInTransit.newMessage(vertexResponse, node, forNode));

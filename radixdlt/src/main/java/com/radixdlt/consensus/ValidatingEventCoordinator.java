@@ -111,7 +111,9 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 			this.vertexStore.syncToQC(qc, vertexId -> {
 				log.info("{}: Sending GET_VERTEX Request to {}: {}",
 					this.getShortName(), this.getShortName(node.euid()), vertexId.toString().substring(0, 6));
-				return networkSender.getVertex(vertexId, node).takeUntil(this.pacemaker.nextLocalTimeout());
+				return networkSender.getVertex(vertexId, node)
+					.doOnSuccess(v -> log.info("{}: Received GET_VERTEX Response: {}", this.getShortName(), v))
+					.takeUntil(this.pacemaker.nextLocalTimeout());
 			});
 		} catch (SyncException e) {
 			counters.increment(CounterType.CONSENSUS_SYNC_EXCEPTION);
@@ -269,10 +271,9 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 
 	@Override
 	public void processGetVertexRequest(GetVertexRequest request) {
-		log.info("{}: GET_VERTEX_REQUEST: Processing: {}", this.getShortName(), request);
+		log.info("{}: GET_VERTEX Request: Processing: {}", this.getShortName(), request);
 		Vertex vertex = this.vertexStore.getVertex(request.getVertexId());
-		log.info("{}: GET_VERTEX_REQUEST: Sending Response to {}: {}",
-			this.getShortName(), this.getShortName(request.getRequestor().euid()), vertex);
+		log.info("{}: GET_VERTEX Request: Sending Response: {}", this.getShortName(), vertex);
 		request.getResponder().accept(vertex);
 	}
 

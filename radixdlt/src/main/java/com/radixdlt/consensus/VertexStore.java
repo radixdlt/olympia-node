@@ -82,6 +82,7 @@ public final class VertexStore {
 			try {
 				// TODO: remove blocking
 				proposedVertex = vertexSupplier.getVertex(qc.getProposed().getId()).blockingGet();
+				this.counters.increment(CounterType.CONSENSUS_SYNC_SUCCESS);
 			} catch (Exception e) {
 				throw new SyncException(qc, e);
 			}

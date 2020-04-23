@@ -17,23 +17,16 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 import java.util.function.Consumer;
 
 public final class GetVertexRequest {
 	private final Hash vertexId;
-	private final ECPublicKey requestor;
 	private final Consumer<Vertex> responder;
 
-	public GetVertexRequest(Hash vertexId, ECPublicKey requestor, Consumer<Vertex> responder) {
+	public GetVertexRequest(Hash vertexId, Consumer<Vertex> responder) {
 		this.vertexId = vertexId;
-		this.requestor = requestor;
 		this.responder = responder;
-	}
-
-	public ECPublicKey getRequestor() {
-		return requestor;
 	}
 
 	public Consumer<Vertex> getResponder() {
@@ -46,7 +39,7 @@ public final class GetVertexRequest {
 
 	@Override
 	public String toString() {
-		return String.format("%s{vertexId=%s requestor=%s}",
-			getClass().getSimpleName(), vertexId.toString().substring(0, 6), requestor.euid().toString().substring(0, 6));
+		return String.format("%s{vertexId=%s}",
+			getClass().getSimpleName(), vertexId.toString().substring(0, 6));
 	}
 }
