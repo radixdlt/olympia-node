@@ -23,11 +23,8 @@ import java.util.Collection;
 import java.util.Objects;
 import java.util.function.Function;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableList;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.crypto.Signatures;
 
 /**
  * Set of validators for consensus.
@@ -54,39 +51,17 @@ public final class ValidatorSet {
 	}
 
 	/**
-	 * Validate the specified message hash against the specified signatures.
+	 * Create an initial validation state with no signatures for this validator set.
 	 *
-	 * @param message The message hash to verify signatures against
-	 * @param sigs The signatures to verify
-	 * @return A {@link ValidationResult}
+	 * @param anchor The hash to validate signatures against
+	 * @return An initial validation state with no signatures
 	 */
-	public ValidationResult validate(Hash message, Signatures sigs) {
-		final int threshold = threshold(this.validators.size());
-		final ImmutableList<Validator> signed = sigs.signedMessage(message).stream()
-			.map(this.validators::get)
-			.filter(Objects::nonNull)
-			.collect(ImmutableList.toImmutableList());
-		if (signed.isEmpty() || signed.size() < threshold) {
-			return ValidationResult.failure();
-		} else {
-			return ValidationResult.passed(signed);
-		}
+	public ValidationState newValidationState(Hash anchor) {
+		return ValidationState.forValidatorSet(anchor, validators.keySet());
 	}
 
 	public ImmutableSet<Validator> getValidators() {
 		return validators.values();
-	}
-
-	@VisibleForTesting
-	static int threshold(int n) {
-		return n - acceptableFaults(n);
-	}
-
-	@VisibleForTesting
-	static int acceptableFaults(int n) {
-		// Compute acceptable faults based on Byzantine limit n = 3f + 1
-		// i.e. f = (n - 1) / 3
-		return (n - 1) / 3;
 	}
 
 	@Override

@@ -20,7 +20,7 @@ package com.radixdlt.consensus.liveness;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.View;
-import com.radixdlt.consensus.validators.ValidationResult;
+import com.radixdlt.consensus.validators.ValidationState;
 import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.crypto.ECDSASignature;
@@ -182,9 +182,6 @@ public class PacemakerImplTest {
 		View view = View.of(0);
 		NewView newView = makeNewViewFor(view);
 		ValidatorSet validatorSet = mock(ValidatorSet.class);
-		ValidationResult result = mock(ValidationResult.class);
-		when(result.valid()).thenReturn(true);
-		when(validatorSet.validate(any(), any())).thenReturn(result);
 		ScheduledExecutorService executorService = getMockedExecutorService();
 		PacemakerImpl pacemaker = new PacemakerImpl(TEST_PACEMAKER_TIMEOUT, executorService);
 		pacemaker.processQC(View.of(0));
@@ -196,9 +193,9 @@ public class PacemakerImplTest {
 		View view = View.of(1);
 		NewView newView = makeNewViewFor(view);
 		ValidatorSet validatorSet = mock(ValidatorSet.class);
-		ValidationResult result = mock(ValidationResult.class);
-		when(result.valid()).thenReturn(true);
-		when(validatorSet.validate(any(), any())).thenReturn(result);
+		ValidationState validationState = mock(ValidationState.class);
+		when(validationState.addSignature(any(), any())).thenReturn(true);
+		when(validatorSet.newValidationState(any())).thenReturn(validationState);
 		ScheduledExecutorService executorService = getMockedExecutorService();
 		PacemakerImpl pacemaker = new PacemakerImpl(TEST_PACEMAKER_TIMEOUT, executorService);
 		pacemaker.processQC(View.of(0));
@@ -241,9 +238,10 @@ public class PacemakerImplTest {
 		when(qc.getView()).thenReturn(View.genesis());
 		when(newView.getQC()).thenReturn(qc);
 		ValidatorSet validatorSet = mock(ValidatorSet.class);
-		ValidationResult result = mock(ValidationResult.class);
-		when(result.valid()).thenReturn(true);
-		when(validatorSet.validate(any(), any())).thenReturn(result);
+		ValidationState validationState = mock(ValidationState.class);
+		when(validationState.complete()).thenReturn(true);
+		when(validatorSet.newValidationState(any())).thenReturn(validationState);
+
 		ScheduledExecutorService executorService = getMockedExecutorService();
 
 		PacemakerImpl pacemaker = new PacemakerImpl(TEST_PACEMAKER_TIMEOUT, executorService);
