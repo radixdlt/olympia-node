@@ -19,6 +19,7 @@ package org.radix;
 
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.consensus.ChainedBFT;
+import com.radixdlt.consensus.VertexStore;
 import com.radixdlt.mempool.MempoolReceiver;
 import com.radixdlt.mempool.SubmissionControl;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
@@ -148,7 +149,18 @@ public final class Radix
 		SubmissionControl submissionControl = globalInjector.getInjector().getInstance(SubmissionControl.class);
 		AtomToBinaryConverter atomToBinaryConverter = globalInjector.getInjector().getInstance(AtomToBinaryConverter.class);
 		LedgerEntryStore store = globalInjector.getInjector().getInstance(LedgerEntryStore.class);
-		RadixHttpServer httpServer = new RadixHttpServer(bft, store, submissionControl, atomToBinaryConverter, universe, serialization, properties, localSystem, addressBook);
+		VertexStore vstore = globalInjector.getInjector().getInstance(VertexStore.class);
+		RadixHttpServer httpServer = new RadixHttpServer(
+			bft,
+			store,
+			submissionControl,
+			atomToBinaryConverter,
+			universe, serialization,
+			properties,
+			localSystem,
+			addressBook,
+			vstore
+		);
 		httpServer.start(properties);
 
 		if (properties.get("consensus.start_on_boot", true)) {

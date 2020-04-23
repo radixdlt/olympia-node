@@ -203,9 +203,10 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 		log.info("{}: PROPOSAL: Processing {}", this.getShortName(), proposal);
 
 		final Vertex proposedVertex = proposal.getVertex();
+		final View proposedVertexView = proposedVertex.getView();
 		final View currentView = this.pacemaker.getCurrentView();
-		if (proposedVertex.getView().compareTo(currentView) < 0) {
-			log.info("{}: PROPOSAL: Ignoring view {} Current is: {}", this.getShortName(), proposedVertex.getView(), currentView);
+		if (proposedVertexView.compareTo(currentView) < 0) {
+			log.info("{}: PROPOSAL: Ignoring view {} Current is: {}", this.getShortName(), proposedVertexView, currentView);
 			return;
 		}
 
@@ -217,9 +218,13 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 		}
 
 		final View updatedView = this.pacemaker.getCurrentView();
-		if (proposedVertex.getView().compareTo(updatedView) != 0) {
-			log.info("{}: PROPOSAL: Ignoring view {} Current is: {}", this.getShortName(), proposedVertex.getView(), updatedView);
+		if (proposedVertexView.compareTo(updatedView) != 0) {
+			log.info("{}: PROPOSAL: Ignoring view {} Current is: {}", this.getShortName(), proposedVertexView, updatedView);
 			return;
+		}
+
+		if (proposedVertex.getParentView() != null && proposedVertexView.number() != proposedVertex.getParentView().number() + 1) {
+			counters.increment(CounterType.CONSENSUS_INDIRECT_PARENT);
 		}
 
 		try {
@@ -227,7 +232,7 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 		} catch (VertexInsertionException e) {
 			counters.increment(CounterType.CONSENSUS_REJECTED);
 
-			log.info(this.getShortName() + ": PROPOSAL: Rejected", e);
+			log.info(String.format("%s: PROPOSAL: Rejected", this.getShortName()), e);
 
 			// TODO: Better logic for removal on exception
 			final Atom atom = proposedVertex.getAtom();
@@ -243,7 +248,7 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 			log.info("{}: PROPOSAL: Sending VOTE to {}: {}", this.getShortName(), this.getShortName(leader.euid()), vote);
 			networkSender.sendVote(vote, leader);
 		} catch (SafetyViolationException e) {
-			log.error(this.getShortName() + ": PROPOSAL: Rejected " + proposedVertex, e);
+			log.error(String.format("%s: PROPOSAL: Rejected %s", this.getShortName(), proposedVertex), e);
 		}
 
 		// If not currently leader or next leader, Proceed to next view

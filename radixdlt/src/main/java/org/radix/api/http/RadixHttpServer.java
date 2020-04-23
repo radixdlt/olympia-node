@@ -18,17 +18,24 @@
 package org.radix.api.http;
 
 import com.radixdlt.consensus.ChainedBFT;
+import com.google.common.collect.EvictingQueue;
+import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.VertexStore;
+import com.radixdlt.consensus.View;
 import com.radixdlt.mempool.SubmissionControl;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.universe.Universe;
 import com.stijndewitt.undertow.cors.AllowAll;
 import com.stijndewitt.undertow.cors.Filter;
 
+import io.reactivex.rxjava3.disposables.Disposable;
 import io.undertow.Handlers;
 import io.undertow.Undertow;
 import io.undertow.server.HttpHandler;
@@ -49,6 +56,7 @@ import org.radix.api.jsonrpc.RadixJsonRpcServer;
 import org.radix.api.services.AtomsService;
 import org.radix.api.services.InternalService;
 import org.radix.api.services.NetworkService;
+import org.radix.time.Time;
 import org.radix.universe.system.LocalSystem;
 
 import java.io.IOException;
@@ -69,6 +77,9 @@ public final class RadixHttpServer {
 
 	private static final Logger logger = LogManager.getLogger("api");
 
+	private static final int VERTEX_RING_SIZE = 16;
+	private static final long VERTEX_UPDATE_FREQ = 1_000L;
+
 	private final ConcurrentHashMap<RadixJsonRpcPeer, WebSocketChannel> peers;
 	private final AtomsService atomsService;
 	private final RadixJsonRpcServer jsonRpcServer;
@@ -79,6 +90,11 @@ public final class RadixHttpServer {
 	private final LocalSystem localSystem;
 	private final Serialization serialization;
 
+	private final Disposable vertexDisposable;
+	private final EvictingQueue<Vertex> vertexRingBuffer = EvictingQueue.create(VERTEX_RING_SIZE);
+
+	private Undertow server;
+
 	public RadixHttpServer(
 		ChainedBFT chainedBFT,
 		LedgerEntryStore store,
@@ -88,7 +104,8 @@ public final class RadixHttpServer {
 		Serialization serialization,
 		RuntimeProperties properties,
 		LocalSystem localSystem,
-		AddressBook addressBook
+		AddressBook addressBook,
+		VertexStore vertexStore
 	) {
 		this.universe = Objects.requireNonNull(universe);
 		this.serialization = Objects.requireNonNull(serialization);
@@ -108,137 +125,147 @@ public final class RadixHttpServer {
 		);
 		this.internalService = new InternalService(submissionControl, properties, universe);
 		this.networkService = new NetworkService(serialization, localSystem, addressBook);
+
+		this.vertexDisposable = vertexStore.lastCommittedVertex()
+			.subscribe(this::vertexUpdate);
 	}
 
-    private Undertow server;
+	/**
+	 * Get the set of currently connected peers
+	 *
+	 * @return The currently connected peers
+	 */
+	public final Set<RadixJsonRpcPeer> getPeers() {
+		return Collections.unmodifiableSet(peers.keySet());
+	}
 
-    /**
-     * Get the set of currently connected peers
-     *
-     * @return The currently connected peers
-     */
-    public final Set<RadixJsonRpcPeer> getPeers() {
-        return Collections.unmodifiableSet(peers.keySet());
-    }
+	public final void start(RuntimeProperties properties) {
+		RoutingHandler handler = Handlers.routing(true); // add path params to query params with this flag
 
-    public final void start(RuntimeProperties properties) {
-        RoutingHandler handler = Handlers.routing(true); // add path params to query params with this flag
+		// add all REST routes
+		addRestRoutesTo(handler);
 
-        // add all REST routes
-        addRestRoutesTo(handler);
+		// handle POST requests
+		addPostRoutesTo(handler);
 
-        // handle POST requests
-        addPostRoutesTo(handler);
-
-        // handle websocket requests (which also uses GET method)
-        handler.add(
-        	Methods.GET,
+		// handle websocket requests (which also uses GET method)
+		handler.add(
+			Methods.GET,
 			"/rpc",
 			Handlers.websocket(new RadixHttpWebsocketHandler( this, jsonRpcServer, peers, atomsService, serialization))
 		);
 
-        // add appropriate error handlers for meaningful error messages (undertow is silent by default)
-        handler.setFallbackHandler(exchange ->
-        {
-            exchange.setStatusCode(StatusCodes.NOT_FOUND);
-            exchange.getResponseSender().send("No matching path found for " + exchange.getRequestMethod() + " " + exchange.getRequestPath());
-        });
-        handler.setInvalidMethodHandler(exchange -> {
-            exchange.setStatusCode(StatusCodes.NOT_ACCEPTABLE);
-            exchange.getResponseSender().send("Invalid method, path exists for " + exchange.getRequestMethod() + " " + exchange.getRequestPath());
-        });
+		// add appropriate error handlers for meaningful error messages (undertow is silent by default)
+		handler.setFallbackHandler(exchange ->
+		{
+			exchange.setStatusCode(StatusCodes.NOT_FOUND);
+			exchange.getResponseSender().send("No matching path found for " + exchange.getRequestMethod() + " " + exchange.getRequestPath());
+		});
+		handler.setInvalidMethodHandler(exchange -> {
+			exchange.setStatusCode(StatusCodes.NOT_ACCEPTABLE);
+			exchange.getResponseSender().send("Invalid method, path exists for " + exchange.getRequestMethod() + " " + exchange.getRequestPath());
+		});
 
-        // if we are in a development universe, add the dev only routes (e.g. for spamathons)
-        if (this.universe.isDevelopment()) {
-            addDevelopmentOnlyRoutesTo(handler);
-        }
-        if (this.universe.isDevelopment() || this.universe.isTest()) {
-        	addTestRoutesTo(handler);
-        }
+		// if we are in a development universe, add the dev only routes (e.g. for spamathons)
+		if (this.universe.isDevelopment()) {
+			addDevelopmentOnlyRoutesTo(handler);
+		}
+		if (this.universe.isDevelopment() || this.universe.isTest()) {
+			addTestRoutesTo(handler);
+		}
 
-        Integer port = properties.get("cp.port", DEFAULT_PORT);
-        Filter corsFilter = new Filter(handler);
-        // Disable INFO logging for CORS filter, as it's a bit distracting
-        java.util.logging.Logger.getLogger(corsFilter.getClass().getName()).setLevel(java.util.logging.Level.WARNING);
-        corsFilter.setPolicyClass(AllowAll.class.getName());
-        corsFilter.setUrlPattern("^.*$");
-        server = Undertow.builder()
-                .addHttpListener(port, "0.0.0.0")
-                .setHandler(corsFilter)
-                .build();
-        server.start();
-    }
-
-    public final void stop() {
-        server.stop();
-    }
-
-    private void addDevelopmentOnlyRoutesTo(RoutingHandler handler) {
-	    addGetRoute("/api/internal/spamathon", exchange -> {
-            String iterations = getParameter(exchange, "iterations").orElse(null);
-            String batching = getParameter(exchange, "batching").orElse(null);
-            String rate = getParameter(exchange, "rate").orElse(null);
-
-            respond(internalService.spamathon(iterations, batching, rate), exchange);
-        }, handler);
+		Integer port = properties.get("cp.port", DEFAULT_PORT);
+		Filter corsFilter = new Filter(handler);
+		// Disable INFO logging for CORS filter, as it's a bit distracting
+		java.util.logging.Logger.getLogger(corsFilter.getClass().getName()).setLevel(java.util.logging.Level.WARNING);
+		corsFilter.setPolicyClass(AllowAll.class.getName());
+		corsFilter.setUrlPattern("^.*$");
+		server = Undertow.builder()
+				.addHttpListener(port, "0.0.0.0")
+				.setHandler(corsFilter)
+				.build();
+		server.start();
 	}
 
-    private void addTestRoutesTo(RoutingHandler handler) {
+	public final void stop() {
+		server.stop();
+		this.vertexDisposable.dispose();
+	}
 
-    }
+	private void addDevelopmentOnlyRoutesTo(RoutingHandler handler) {
+		addGetRoute("/api/internal/spamathon", exchange -> {
+			String iterations = getParameter(exchange, "iterations").orElse(null);
+			String batching = getParameter(exchange, "batching").orElse(null);
+			String rate = getParameter(exchange, "rate").orElse(null);
 
-    private void addPostRoutesTo(RoutingHandler handler) {
-        HttpHandler rpcPostHandler = new HttpHandler() {
-            @Override
-            public void handleRequest(HttpServerExchange exchange) {
-                // we need to be in another thread to do blocking io work, which is needed to extract the entire message body
-                if (exchange.isInIoThread()) {
-                    exchange.dispatch(this);
-                    return;
-                }
+			respond(internalService.spamathon(iterations, batching, rate), exchange);
+		}, handler);
+	}
 
-                exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, CONTENT_TYPE_JSON);
-	            try {
-		            exchange.getResponseSender().send(jsonRpcServer.handleChecked(exchange));
-	            } catch (IOException e) {
-		            exchange.setStatusCode(400);
-		            exchange.getResponseSender().send("Invalid request: " + e.getMessage());
-	            }
-            }
-        };
-        handler.add(Methods.POST, "/rpc", rpcPostHandler);
-        handler.add(Methods.POST, "/rpc/", rpcPostHandler); // handle both /rpc and /rpc/ for usability
-    }
+	private void addTestRoutesTo(RoutingHandler handler) {
+		addGetRoute("/api/vertices/committed", exchange -> {
+			JSONArray array = new JSONArray();
+			final ImmutableList<Vertex> vs;
+			synchronized (this.vertexRingBuffer) {
+				vs = ImmutableList.copyOf(this.vertexRingBuffer);
+			}
+			vs.stream()
+				.map(v -> this.serialization.toJsonObject(v, Output.API))
+				.forEachOrdered(array::put);
+			respond(array, exchange);
+		}, handler);
+	}
 
-    private void addRestRoutesTo(RoutingHandler handler) {
-        // TODO: organize routes in a nicer way
-        // System routes
-        addRestSystemRoutesTo(handler);
+	private void addPostRoutesTo(RoutingHandler handler) {
+		HttpHandler rpcPostHandler = new HttpHandler() {
+			@Override
+			public void handleRequest(HttpServerExchange exchange) {
+				// we need to be in another thread to do blocking io work, which is needed to extract the entire message body
+				if (exchange.isInIoThread()) {
+					exchange.dispatch(this);
+					return;
+				}
 
-        // Network routes
-        addRestNetworkRoutesTo(handler);
+				exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, CONTENT_TYPE_JSON);
+				try {
+					exchange.getResponseSender().send(jsonRpcServer.handleChecked(exchange));
+				} catch (IOException e) {
+					exchange.setStatusCode(400);
+					exchange.getResponseSender().send("Invalid request: " + e.getMessage());
+				}
+			}
+		};
+		handler.add(Methods.POST, "/rpc", rpcPostHandler);
+		handler.add(Methods.POST, "/rpc/", rpcPostHandler); // handle both /rpc and /rpc/ for usability
+	}
 
-        // Atom Model JSON schema
-        addGetRoute("/schemas/atom.schema.json", exchange -> {
-			respond(AtomSchemas.getJsonSchemaString(4), exchange);
-        }, handler);
+	private void addRestRoutesTo(RoutingHandler handler) {
+		// TODO: organize routes in a nicer way
+		// System routes
+		addRestSystemRoutesTo(handler);
 
-        addGetRoute("/api/events", exchange -> {
+		// Network routes
+		addRestNetworkRoutesTo(handler);
+
+		// Atom Model JSON schema
+		addGetRoute("/schemas/atom.schema.json", exchange
+			-> respond(AtomSchemas.getJsonSchemaString(4), exchange), handler);
+
+		addGetRoute("/api/events", exchange -> {
 			JSONObject eventCount = new JSONObject();
 			atomsService.getAtomEventCount().forEach((k, v) -> eventCount.put(k.name(), v));
 			respond(eventCount, exchange);
-        }, handler);
+		}, handler);
 
-        addGetRoute("/api/universe", exchange
-                -> respond(this.apiSerializedUniverse, exchange), handler);
+		addGetRoute("/api/universe", exchange
+			-> respond(this.apiSerializedUniverse, exchange), handler);
 
-        addGetRoute("/api/system/modules/api/tasks-waiting", exchange
-                -> {
-            JSONObject waiting = new JSONObject();
-            waiting.put("count", atomsService.getWaitingCount());
+		addGetRoute("/api/system/modules/api/tasks-waiting", exchange -> {
+			JSONObject waiting = new JSONObject();
+			waiting.put("count", atomsService.getWaitingCount());
 
-            respond(waiting, exchange);
-        }, handler);
+			respond(waiting, exchange);
+		}, handler);
 
 		addGetRoute("/api/system/modules/api/websockets", exchange -> {
 			JSONObject count = new JSONObject();
@@ -246,72 +273,72 @@ public final class RadixHttpServer {
 			respond(count, exchange);
 		}, handler);
 
-        // delete method to disconnect all peers
-        addRoute("/api/system/modules/api/websockets", Methods.DELETE_STRING, exchange -> {
-            JSONObject result = this.disconnectAllPeers();
-            respond(result, exchange);
-        }, handler);
+		// delete method to disconnect all peers
+		addRoute("/api/system/modules/api/websockets", Methods.DELETE_STRING, exchange -> {
+			JSONObject result = this.disconnectAllPeers();
+			respond(result, exchange);
+		}, handler);
 
-        addGetRoute("/api/latest-events", exchange -> {
-        	JSONArray events = new JSONArray();
-        	atomsService.getEvents().forEach(events::put);
-        	respond(events, exchange);
+		addGetRoute("/api/latest-events", exchange -> {
+			JSONArray events = new JSONArray();
+			atomsService.getEvents().forEach(events::put);
+			respond(events, exchange);
 		}, handler);
 
 		// keep-alive
-        addGetRoute("/api/ping", exchange
-            -> respond(
-                new JSONObject().put("response", "pong").put("timestamp", System.currentTimeMillis()),
-                exchange),
-            handler);
-    }
+		addGetRoute("/api/ping", exchange -> {
+			JSONObject obj = new JSONObject();
+			obj.put("response", "pong");
+			obj.put("timestamp", Time.currentTimestamp());
+			respond(obj, exchange);
+		}, handler);
+	}
 
-    private void addRestNetworkRoutesTo(RoutingHandler handler) {
-        addGetRoute("/api/network", exchange -> {
-            respond(this.networkService.getNetwork(), exchange);
-        }, handler);
-        addGetRoute("/api/network/peers/live", exchange
-                -> respond(this.networkService.getLivePeers().toString(), exchange), handler);
-        addGetRoute("/api/network/peers", exchange
-                -> respond(this.networkService.getPeers().toString(), exchange), handler);
-        addGetRoute("/api/network/peers/{id}", exchange
-                -> respond(this.networkService.getPeer(getParameter(exchange, "id").orElse(null)), exchange), handler);
+	private void addRestNetworkRoutesTo(RoutingHandler handler) {
+		addGetRoute("/api/network", exchange
+				-> respond(this.networkService.getNetwork(), exchange), handler);
+		addGetRoute("/api/network/peers/live", exchange
+				-> respond(this.networkService.getLivePeers().toString(), exchange), handler);
+		addGetRoute("/api/network/peers", exchange
+				-> respond(this.networkService.getPeers().toString(), exchange), handler);
+		addGetRoute("/api/network/peers/{id}", exchange
+				-> respond(this.networkService.getPeer(getParameter(exchange, "id").orElse(null)), exchange), handler);
 
-    }
+	}
 
-    private void addRestSystemRoutesTo(RoutingHandler handler) {
-        addGetRoute("/api/system", exchange
-                -> respond(this.serialization.toJsonObject(this.localSystem, DsonOutput.Output.API), exchange), handler);
-    }
+	private void addRestSystemRoutesTo(RoutingHandler handler) {
+		addGetRoute("/api/system", exchange
+				-> respond(this.serialization.toJsonObject(this.localSystem, DsonOutput.Output.API), exchange), handler);
+	}
 
-    // helper methods for responding to an exchange with various objects for readability
-    private void respond(String object, HttpServerExchange exchange) {
-        exchange.getResponseSender().send(object);
-    }
+	// helper methods for responding to an exchange with various objects for readability
+	private void respond(String object, HttpServerExchange exchange) {
+		exchange.getResponseSender().send(object);
+	}
 
-    private void respond(JSONObject object, HttpServerExchange exchange) {
-        exchange.getResponseSender().send(object.toString());
-    }
+	private void respond(JSONObject object, HttpServerExchange exchange) {
+		exchange.getResponseSender().send(object.toString());
+	}
 
-    private void respond(JSONArray object, HttpServerExchange exchange) {
-        exchange.getResponseSender().send(object.toString());
-    }
+	private void respond(JSONArray object, HttpServerExchange exchange) {
+		exchange.getResponseSender().send(object.toString());
+	}
 
-    /**
-     * Close and remove a certain peer
-     *
-     * @param peer The peer to remove
-     */
-    /*package*/ void closeAndRemovePeer(RadixJsonRpcPeer peer) {
-        peers.remove(peer);
-        peer.close();
-    }
+	/**
+	 * Close and remove a certain peer
+	 *
+	 * @param peer The peer to remove
+	 */
+	/*package*/ void closeAndRemovePeer(RadixJsonRpcPeer peer) {
+		peers.remove(peer);
+		peer.close();
+	}
 
-    /**
-     * Disconnect all currently connected peers
-     *
-     * @return Json object containing disconnect information
-     */
+	/**
+	 * Disconnect all currently connected peers
+	 *
+	 * @return Json object containing disconnect information
+	 */
 	public final JSONObject disconnectAllPeers() {
 		JSONObject result = new JSONObject();
 		JSONArray closed = new JSONArray();
@@ -329,7 +356,7 @@ public final class RadixHttpServer {
 			try {
 				ws.close();
 			} catch (IOException e) {
-				logger.error("Error while closing web socket: " + e, e);
+				logger.error("Error while closing web socket", e);
 			}
 		});
 
@@ -338,56 +365,65 @@ public final class RadixHttpServer {
 		return result;
 	}
 
-    /**
-     * Add a GET method route with JSON content a certain path and consumer to the given handler
-     *
-     * @param prefixPath       The prefix path
-     * @param responseFunction The consumer that processes incoming exchanges
-     * @param routingHandler   The routing handler to add the route to
-     */
-    private static void addGetRoute(String prefixPath, ManagedHttpExchangeConsumer responseFunction, RoutingHandler routingHandler) {
-        addRoute(prefixPath, Methods.GET_STRING, responseFunction, routingHandler);
-    }
+	/**
+	 * Add a GET method route with JSON content a certain path and consumer to the given handler
+	 *
+	 * @param prefixPath       The prefix path
+	 * @param responseFunction The consumer that processes incoming exchanges
+	 * @param routingHandler   The routing handler to add the route to
+	 */
+	private static void addGetRoute(String prefixPath, ManagedHttpExchangeConsumer responseFunction, RoutingHandler routingHandler) {
+		addRoute(prefixPath, Methods.GET_STRING, responseFunction, routingHandler);
+	}
 
-    /**
-     * Add a route with JSON content and a certain path, method, and consumer to the given handler
-     *
-     * @param prefixPath       The prefix path
-     * @param method           The HTTP method
-     * @param responseFunction The consumer that processes incoming exchanges
-     * @param routingHandler   The routing handler to add the route to
-     */
-    private static void addRoute(String prefixPath, String method, ManagedHttpExchangeConsumer responseFunction, RoutingHandler routingHandler) {
-        addRoute(prefixPath, method, CONTENT_TYPE_JSON, responseFunction::accept, routingHandler);
-    }
+	/**
+	 * Add a route with JSON content and a certain path, method, and consumer to the given handler
+	 *
+	 * @param prefixPath       The prefix path
+	 * @param method           The HTTP method
+	 * @param responseFunction The consumer that processes incoming exchanges
+	 * @param routingHandler   The routing handler to add the route to
+	 */
+	private static void addRoute(String prefixPath, String method, ManagedHttpExchangeConsumer responseFunction, RoutingHandler routingHandler) {
+		addRoute(prefixPath, method, CONTENT_TYPE_JSON, responseFunction::accept, routingHandler);
+	}
 
-    /**
-     * Add a route with a certain path, method, content type and consumer to the given handler
-     *
-     * @param prefixPath       The prefix path
-     * @param method           The HTTP method
-     * @param contentType      The MIME type
-     * @param responseFunction The consumer that processes incoming exchanges
-     * @param routingHandler   The routing handler to add the route to
-     */
-    private static void addRoute(String prefixPath, String method, String contentType, ManagedHttpExchangeConsumer responseFunction, RoutingHandler routingHandler) {
-        routingHandler.add(method, prefixPath, exchange -> {
-            exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, contentType);
-            responseFunction.accept(exchange);
-        });
-    }
+	/**
+	 * Add a route with a certain path, method, content type and consumer to the given handler
+	 *
+	 * @param prefixPath       The prefix path
+	 * @param method           The HTTP method
+	 * @param contentType      The MIME type
+	 * @param responseFunction The consumer that processes incoming exchanges
+	 * @param routingHandler   The routing handler to add the route to
+	 */
+	private static void addRoute(String prefixPath, String method, String contentType, ManagedHttpExchangeConsumer responseFunction, RoutingHandler routingHandler) {
+		routingHandler.add(method, prefixPath, exchange -> {
+			exchange.getResponseHeaders().add(Headers.CONTENT_TYPE, contentType);
+			responseFunction.accept(exchange);
+		});
+	}
 
-    /**
-     * Get a parameter from either path or query parameters from an http exchange.
-     * Note that path parameters are prioritised over query parameters in the event of a conflict.
-     *
-     * @param exchange The exchange to get the parameter from
-     * @param name     The name of the parameter
-     * @return The parameter with the given name from the path or query parameters, or empty if it doesn't exist
-     */
-    private static Optional<String> getParameter(HttpServerExchange exchange, String name) {
-        // our routing handler puts path params into query params by default so we don't need to include them manually
-        return Optional.ofNullable(exchange.getQueryParameters().get(name)).map(Deque::getFirst);
-    }
+	/**
+	 * Get a parameter from either path or query parameters from an http exchange.
+	 * Note that path parameters are prioritised over query parameters in the event of a conflict.
+	 *
+	 * @param exchange The exchange to get the parameter from
+	 * @param name     The name of the parameter
+	 * @return The parameter with the given name from the path or query parameters, or empty if it doesn't exist
+	 */
+	private static Optional<String> getParameter(HttpServerExchange exchange, String name) {
+		// our routing handler puts path params into query params by default so we don't need to include them manually
+		return Optional.ofNullable(exchange.getQueryParameters().get(name)).map(Deque::getFirst);
+	}
+
+	private void vertexUpdate(Vertex vertex) {
+		View v = vertex.getView();
+		if (v != null && (v.number() % VERTEX_UPDATE_FREQ) == 0) {
+			synchronized (this.vertexRingBuffer) {
+				this.vertexRingBuffer.add(vertex);
+			}
+		}
+	}
 }
 

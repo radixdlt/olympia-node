@@ -370,7 +370,7 @@ public class ValidatingEventCoordinatorTest {
 	public void when_processing_get_vertex_request__then_ec_callback_with_response() {
 		Hash vertexId = mock(Hash.class);
 		Vertex vertex = mock(Vertex.class);
-		Consumer<Vertex> callback = mock(Consumer.class);
+		Consumer<Vertex> callback = mockConsumer();
 
 		GetVertexRequest getVertexRequest = mock(GetVertexRequest.class);
 		when(getVertexRequest.getVertexId()).thenReturn(vertexId);
@@ -379,5 +379,10 @@ public class ValidatingEventCoordinatorTest {
 		when(vertexStore.getVertex(eq(vertexId))).thenReturn(vertex);
 		eventCoordinator.processGetVertexRequest(getVertexRequest);
 		verify(callback, times(1)).accept(eq(vertex));
+	}
+
+	@SuppressWarnings("unchecked")
+	private static <T> Consumer<T> mockConsumer() {
+		return mock(Consumer.class);
 	}
 }
