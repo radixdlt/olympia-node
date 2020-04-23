@@ -93,4 +93,19 @@ public class TestEventCoordinatorNetworkTest {
 		testObserver.awaitCount(1);
 		testObserver.assertValue(proposal);
 	}
+
+	@Test
+	public void when_disabling_messages_and_send_new_view_message_to_other_node__then_should_not_receive_it() {
+		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.builder()
+			.latencyProvider(msg -> -1)
+			.build();
+
+		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
+		network.getNetworkRx(validatorId2).consensusEvents()
+			.subscribe(testObserver);
+		NewView newView = mock(NewView.class);
+		network.getNetworkSender(validatorId).sendNewView(newView, validatorId);
+		testObserver.awaitCount(1);
+		testObserver.assertEmpty();
+	}
 }
