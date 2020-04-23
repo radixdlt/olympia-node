@@ -62,7 +62,7 @@ public class RandomLatencyTest {
 	 * due to the case of a node randomly falling behind.
 	 */
 	@Test
-	public void given_4_correct_bfts_in_variant_network__then_network_should_eventually_timeout() {
+	public void given_4_correct_bfts_in_random_network_and_no_sync__then_network_should_eventually_timeout() {
 		final int minLatency = 10;
 		final int maxLatency = 160;
 		final int trips = 8;

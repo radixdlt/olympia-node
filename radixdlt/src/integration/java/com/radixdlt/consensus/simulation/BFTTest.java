@@ -23,6 +23,7 @@ import com.radixdlt.consensus.simulation.checks.LivenessCheck;
 import com.radixdlt.consensus.simulation.checks.NoSyncExceptionCheck;
 import com.radixdlt.consensus.simulation.checks.NoTimeoutCheck;
 import com.radixdlt.consensus.simulation.checks.SafetyCheck;
+import com.radixdlt.consensus.simulation.checks.SyncOccurrenceCheck;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork;
@@ -36,6 +37,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 public class BFTTest {
 	private final ImmutableList<ECKeyPair> nodes;
@@ -96,6 +98,16 @@ public class BFTTest {
 			return this;
 		}
 
+		public Builder checkSyncsHaveOccurred(long time, TimeUnit timeUnit) {
+			this.checks.add(new SyncOccurrenceCheck(c -> assertThat(c).isGreaterThan(0), time, timeUnit));
+			return this;
+		}
+
+		public Builder checkSyncsHaveNotOccurred(long time, TimeUnit timeUnit) {
+			this.checks.add(new SyncOccurrenceCheck(c -> assertThat(c).isEqualTo(0), time, timeUnit));
+			return this;
+		}
+
 		public Builder checkLiveness() {
 			this.checks.add(new LivenessCheck(6 * TestEventCoordinatorNetwork.DEFAULT_LATENCY, TimeUnit.MILLISECONDS));
 			return this;
@@ -136,13 +148,17 @@ public class BFTTest {
 		return new Builder();
 	}
 
+	// TODO: return list of results
 	public void run(long time, TimeUnit timeUnit) {
 		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.builder()
 			.latencyProvider(this.latencyProvider)
 			.build();
 		BFTSimulation bftNetwork =  new BFTSimulation(nodes, network, pacemakerTimeout);
 		List<Completable> assertions = this.checks.stream().map(c -> c.check(bftNetwork)).collect(Collectors.toList());
-		Completable.mergeArray(bftNetwork.processBFT().flatMapCompletable(e -> Completable.complete()), Completable.merge(assertions))
+		Completable.mergeArray(
+			bftNetwork.processBFT().flatMapCompletable(e -> Completable.complete()),
+			Completable.merge(assertions)
+		)
 			.blockingAwait(time, timeUnit);
 	}
 }
