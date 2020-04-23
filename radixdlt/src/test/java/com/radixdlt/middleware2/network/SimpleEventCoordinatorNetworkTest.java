@@ -20,20 +20,26 @@ package com.radixdlt.middleware2.network;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import com.radixdlt.consensus.ConsensusEvent;
+import com.radixdlt.consensus.GetVertexRequest;
 import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.Vertex;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.Hash;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Vote;
+import com.radixdlt.network.messaging.MessageListener;
 import com.radixdlt.universe.Universe;
 import io.reactivex.rxjava3.observers.TestObserver;
 
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -112,5 +118,67 @@ public class SimpleEventCoordinatorNetworkTest {
 
 		network.sendVote(vote, leader);
 		verify(messageCentral, times(1)).send(eq(peer), any(ConsensusEventMessage.class));
+	}
+
+	@Test
+	public void when_send_rpc_to_self__then_illegal_state_exception_should_be_thrown() {
+		assertThatThrownBy(() -> network.getVertex(mock(Hash.class), selfKey))
+			.isInstanceOf(IllegalStateException.class);
+	}
+
+	@Test
+	public void when_get_vertex_and_peer_doesnt_exist__should_receive_error() {
+		ECPublicKey node = ECKeyPair.generateNew().getPublicKey();
+		when(addressBook.peer(node.euid())).thenReturn(Optional.empty());
+		TestObserver<Vertex> testObserver = TestObserver.create();
+		network.getVertex(mock(Hash.class), node).subscribe(testObserver);
+		testObserver.assertError(RuntimeException.class);
+	}
+
+	@Test
+	public void when_get_vertex_and_message_central_callback__should_receive_vertex() {
+		ECPublicKey node = ECKeyPair.generateNew().getPublicKey();
+		Peer peer = mock(Peer.class);
+		when(peer.getNID()).thenReturn(node.euid());
+		when(addressBook.peer(node.euid())).thenReturn(Optional.of(peer));
+
+		AtomicReference<MessageListener<GetVertexResponseMessage>> listener = new AtomicReference<>();
+
+		doAnswer(inv -> {
+			MessageListener<GetVertexResponseMessage> messageListener = inv.getArgument(1);
+			listener.set(messageListener);
+			return null;
+		}).when(messageCentral).addListener(eq(GetVertexResponseMessage.class), any());
+
+		GetVertexResponseMessage responseMessage = mock(GetVertexResponseMessage.class);
+		Vertex vertex = mock(Vertex.class);
+		when(responseMessage.getVertex()).thenReturn(vertex);
+
+		doAnswer(inv -> {
+			listener.get().handleMessage(peer, responseMessage);
+			return null;
+		}).when(messageCentral).send(eq(peer), any(GetVertexRequestMessage.class));
+
+		TestObserver<Vertex> testObserver = TestObserver.create();
+		network.getVertex(mock(Hash.class), node).subscribe(testObserver);
+		testObserver.assertValue(vertex);
+	}
+
+	@Test
+	public void when_subscribed_to_rpc_requests__then_should_receive_requests() {
+		Hash vertexId0 = mock(Hash.class);
+		Hash vertexId1 = mock(Hash.class);
+		doAnswer(inv -> {
+			MessageListener<GetVertexRequestMessage> messageListener = inv.getArgument(1);
+			messageListener.handleMessage(mock(Peer.class), new GetVertexRequestMessage(0, vertexId0));
+			messageListener.handleMessage(mock(Peer.class), new GetVertexRequestMessage(0, vertexId1));
+			return null;
+		}).when(messageCentral).addListener(eq(GetVertexRequestMessage.class), any());
+
+		TestObserver<GetVertexRequest> testObserver = TestObserver.create();
+		network.rpcRequests().subscribe(testObserver);
+		testObserver.awaitCount(2);
+		testObserver.assertValueAt(0, v -> v.getVertexId().equals(vertexId0));
+		testObserver.assertValueAt(1, v -> v.getVertexId().equals(vertexId1));
 	}
 }

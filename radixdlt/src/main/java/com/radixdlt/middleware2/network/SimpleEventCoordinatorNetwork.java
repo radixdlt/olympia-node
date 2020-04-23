@@ -86,7 +86,6 @@ public class SimpleEventCoordinatorNetwork implements EventCoordinatorNetworkSen
 	public Observable<GetVertexRequest> rpcRequests() {
 		return Observable.create(emitter -> {
 			MessageListener<GetVertexRequestMessage> listener = (src, msg) -> {
-				log.error("Received GET_VERTEX_REQUEST {}", msg);
 				final GetVertexRequest request = new GetVertexRequest(
 					msg.getVertexId(),
 					vertex -> this.messageCentral.send(src, new GetVertexResponseMessage(this.magic, vertex))
@@ -132,18 +131,24 @@ public class SimpleEventCoordinatorNetwork implements EventCoordinatorNetworkSen
 		}
 
 		return Single.create(emitter -> {
-			MessageListener<GetVertexResponseMessage> listener =
+			final Optional<Peer> peer = this.addressBook.peer(node.euid());
+			if (!peer.isPresent()) {
+				emitter.onError(new RuntimeException(String.format("Peer with pubkey %s not present", node)));
+				return;
+			}
+
+			final MessageListener<GetVertexResponseMessage> listener =
 				(src, msg) -> {
-					if (msg.getVertex().getId().equals(vertexId)) {
+					// TODO: implement more robust RPC request/response mapping
+					if (src.equals(peer.get())) {
 						emitter.onSuccess(msg.getVertex());
 					}
 				};
 			this.messageCentral.addListener(GetVertexResponseMessage.class, listener);
 			emitter.setCancellable(() -> this.messageCentral.removeListener(listener));
-			GetVertexRequestMessage vertexRequest = new GetVertexRequestMessage(this.magic, vertexId);
-			if (!send(vertexRequest, node)) {
-				emitter.onError(new RuntimeException(String.format("Peer with pubkey %s not present", node)));
-			}
+
+			final GetVertexRequestMessage vertexRequest = new GetVertexRequestMessage(this.magic, vertexId);
+			this.messageCentral.send(peer.get(), vertexRequest);
 		});
 	}
 
