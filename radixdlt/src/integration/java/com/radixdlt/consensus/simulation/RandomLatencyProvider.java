@@ -21,6 +21,9 @@ import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork.LatencyProvi
 import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork.MessageInTransit;
 import java.util.Random;
 
+/**
+ * Latency Provider which uniformly distributes latency across a minimum and maximum
+ */
 public final class RandomLatencyProvider implements LatencyProvider {
 	private final int minLatency;
 	private final int maxLatency;

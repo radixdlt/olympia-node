@@ -20,6 +20,9 @@ package com.radixdlt.consensus;
 import com.radixdlt.crypto.Hash;
 import java.util.function.Consumer;
 
+/**
+ * An RPC request to retrieve a given vertex
+ */
 public final class GetVertexRequest {
 	private final Hash vertexId;
 	private final Consumer<Vertex> responder;

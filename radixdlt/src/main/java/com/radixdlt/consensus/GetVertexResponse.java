@@ -19,6 +19,9 @@ package com.radixdlt.consensus;
 
 import com.radixdlt.crypto.Hash;
 
+/**
+ * An RPC response
+ */
 public final class GetVertexResponse {
 	private final Hash vertexId;
 	private final Vertex vertex;

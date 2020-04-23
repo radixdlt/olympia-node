@@ -29,6 +29,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 
+/**
+ * Latency Provider which makes it easy to drop certain messages
+ */
 public final class DroppingLatencyProvider implements LatencyProvider {
 	private final Set<Predicate<MessageInTransit>> droppingFunctions = Sets.newConcurrentHashSet();
 	private AtomicReference<LatencyProvider> base = new AtomicReference<>();
