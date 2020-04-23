@@ -48,7 +48,7 @@ public interface SystemCounters {
 
 		private final String jsonPath;
 
-		private CounterType(String jsonPath) {
+		CounterType(String jsonPath) {
 			this.jsonPath = jsonPath;
 		}
 
