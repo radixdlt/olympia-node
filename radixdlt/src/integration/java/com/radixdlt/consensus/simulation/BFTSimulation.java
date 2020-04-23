@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.consensus.simulation;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -27,7 +27,18 @@ import static org.mockito.Mockito.when;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atommodel.Atom;
+import com.radixdlt.consensus.ChainedBFT;
 import com.radixdlt.consensus.ChainedBFT.Event;
+import com.radixdlt.consensus.DefaultHasher;
+import com.radixdlt.consensus.EpochManager;
+import com.radixdlt.consensus.EpochRx;
+import com.radixdlt.consensus.Hasher;
+import com.radixdlt.consensus.PendingVotes;
+import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.VertexStore;
+import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.liveness.PacemakerImpl;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposerElection;

@@ -15,24 +15,29 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.consensus.simulation;
 
 import com.google.common.collect.Sets;
+import com.radixdlt.consensus.GetVertexResponse;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.middleware2.network.GetVertexRequestMessage;
 import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork;
 import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork.LatencyProvider;
 import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork.MessageInTransit;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 
 public final class DroppingLatencyProvider implements LatencyProvider {
 	private final Set<Predicate<MessageInTransit>> droppingFunctions = Sets.newConcurrentHashSet();
 	private AtomicReference<LatencyProvider> base = new AtomicReference<>();
+	private AtomicBoolean disableSync = new AtomicBoolean(false);
 
 	public DroppingLatencyProvider() {
 		this.base.set(msg -> TestEventCoordinatorNetwork.DEFAULT_LATENCY);
+		this.droppingFunctions.add(msg -> disableSync.get()
+			&& (msg.getContent() instanceof GetVertexResponse || msg.getContent() instanceof GetVertexRequestMessage));
 	}
 
 	public DroppingLatencyProvider copyOf() {
@@ -50,9 +55,8 @@ public final class DroppingLatencyProvider implements LatencyProvider {
 		droppingFunctions.add(msg -> msg.getReceiver().equals(node) || msg.getSender().equals(node));
 	}
 
-	public void disableSync() {
-		droppingFunctions.add(msg -> msg.getContent() instanceof GetVertexResponse);
-		droppingFunctions.add(msg -> msg.getContent() instanceof GetVertexRequestMessage);
+	public void disableSync(boolean disableSync) {
+		this.disableSync.set(disableSync);
 	}
 
 	@Override

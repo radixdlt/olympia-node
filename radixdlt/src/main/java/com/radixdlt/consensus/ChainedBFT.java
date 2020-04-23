@@ -120,7 +120,7 @@ public final class ChainedBFT {
 							} else if (msg instanceof View) {
 								e.processLocalTimeout((View) msg);
 								return new Event(EventType.LOCAL_TIMEOUT, msg);
-							} if (msg instanceof NewView) {
+							} else if (msg instanceof NewView) {
 								e.processNewView((NewView) msg);
 								eventType = EventType.NEW_VIEW_MESSAGE;
 							} else if (msg instanceof Proposal) {

@@ -15,10 +15,10 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.checks;
+package com.radixdlt.consensus.simulation.checks;
 
-import com.radixdlt.consensus.BFTCheck;
-import com.radixdlt.consensus.BFTSimulation;
+import com.radixdlt.consensus.simulation.BFTCheck;
+import com.radixdlt.consensus.simulation.BFTSimulation;
 import com.radixdlt.consensus.EventCoordinatorNetworkRx;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vertex;

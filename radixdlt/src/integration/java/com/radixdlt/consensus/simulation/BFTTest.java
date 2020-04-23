@@ -15,14 +15,14 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.consensus.simulation;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.checks.AllProposalsHaveDirectParentsCheck;
-import com.radixdlt.consensus.checks.LivenessCheck;
-import com.radixdlt.consensus.checks.NoSyncExceptionCheck;
-import com.radixdlt.consensus.checks.NoTimeoutCheck;
-import com.radixdlt.consensus.checks.SafetyCheck;
+import com.radixdlt.consensus.simulation.checks.AllProposalsHaveDirectParentsCheck;
+import com.radixdlt.consensus.simulation.checks.LivenessCheck;
+import com.radixdlt.consensus.simulation.checks.NoSyncExceptionCheck;
+import com.radixdlt.consensus.simulation.checks.NoTimeoutCheck;
+import com.radixdlt.consensus.simulation.checks.SafetyCheck;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork;
@@ -86,8 +86,8 @@ public class BFTTest {
 			return this;
 		}
 
-		public Builder disableSync() {
-			this.latencyProvider.disableSync();
+		public Builder disableSync(boolean disableSync) {
+			this.latencyProvider.disableSync(disableSync);
 			return this;
 		}
 

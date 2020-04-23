@@ -15,12 +15,12 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.checks;
+package com.radixdlt.consensus.simulation.checks;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-import com.radixdlt.consensus.BFTCheck;
-import com.radixdlt.consensus.BFTSimulation;
+import com.radixdlt.consensus.simulation.BFTCheck;
+import com.radixdlt.consensus.simulation.BFTSimulation;
 import com.radixdlt.consensus.VertexStore;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
