@@ -30,11 +30,13 @@ public class LatentDockerNetworkTest {
 			.numNodes(numNodes)
 			.build();
 		{
-			RemoteBFTTest test = new RemoteBFTTest(network);
+			RemoteBFTTest test = RemoteBFTTest.builder()
+				.network(network)
+				.assertResponsiveness()
+				.build();
 			System.out.println("waiting until responsive..");
 			test.waitUntilResponsive(2, TimeUnit.MINUTES);
 			System.out.println("responsive!");
-			test.assertResponsiveness();
 //			test.run(60, TimeUnit.SECONDS);
 		}
 	}

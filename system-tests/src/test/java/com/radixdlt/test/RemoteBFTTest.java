@@ -18,10 +18,10 @@
 
 package com.radixdlt.test;
 
+import com.google.common.collect.ImmutableList;
 import io.reactivex.Observable;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -29,10 +29,11 @@ import java.util.stream.Collectors;
 
 public class RemoteBFTTest {
 	private final DockerBFTTestNetwork testNetwork;
-	private final List<RemoteBFTCheck> checks = new ArrayList<>();
+	private final ImmutableList<RemoteBFTCheck> checks;
 
-	public RemoteBFTTest(DockerBFTTestNetwork testNetwork) {
-		this.testNetwork = Objects.requireNonNull(testNetwork);
+	private RemoteBFTTest(DockerBFTTestNetwork testNetwork, ImmutableList<RemoteBFTCheck> checks) {
+		this.testNetwork = testNetwork;
+		this.checks = checks;
 	}
 
 	public void waitUntilResponsive(long maxWaitTime, TimeUnit maxWaitTimeUnits) {
@@ -42,10 +43,6 @@ public class RemoteBFTTest {
 			.timeout(maxWaitTime, maxWaitTimeUnits)
 			.take(1)
 			.blockingSubscribe();
-	}
-
-	public void assertResponsiveness() {
-		this.checks.add(new ResponsivenessCheck(1, TimeUnit.SECONDS, 1, TimeUnit.SECONDS));
 	}
 
 	public void run(long runtime, TimeUnit runtimeUnit) {
@@ -58,4 +55,40 @@ public class RemoteBFTTest {
 	public DockerBFTTestNetwork getTestNetwork() {
 		return testNetwork;
 	}
+
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	public static class Builder {
+		private DockerBFTTestNetwork testNetwork;
+		private final List<RemoteBFTCheck> checks = new ArrayList<>();
+
+		private Builder() {
+		}
+
+		public Builder network(DockerBFTTestNetwork testNetwork) {
+			this.testNetwork = Objects.requireNonNull(testNetwork);
+			return this;
+		}
+
+		public Builder assertResponsiveness() {
+			this.checks.add(new ResponsivenessCheck(1, TimeUnit.SECONDS, 1, TimeUnit.SECONDS));
+			return this;
+		}
+
+		public Builder addCheck(RemoteBFTCheck check) {
+			this.checks.add(Objects.requireNonNull(check, "check"));
+			return this;
+		}
+
+		public RemoteBFTTest build() {
+			if (this.testNetwork == null) {
+				throw new IllegalStateException("testNetwork not set");
+			}
+
+			return new RemoteBFTTest(this.testNetwork, ImmutableList.copyOf(this.checks));
+		}
+	}
+
 }
