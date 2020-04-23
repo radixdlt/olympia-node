@@ -18,13 +18,17 @@
 package com.radixdlt.middleware2.network;
 
 import static org.mockito.Mockito.mock;
+import static org.powermock.api.mockito.PowerMockito.when;
 
 import com.radixdlt.consensus.ConsensusEvent;
+import com.radixdlt.consensus.GetVertexRequest;
 import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.Vertex;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Vote;
+import com.radixdlt.crypto.Hash;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.junit.Test;
 
@@ -107,5 +111,28 @@ public class TestEventCoordinatorNetworkTest {
 		network.getNetworkSender(validatorId).sendNewView(newView, validatorId);
 		testObserver.awaitCount(1);
 		testObserver.assertEmpty();
+	}
+
+	@Test
+	public void when_send_get_vertex_request_to_another_node__then_should_receive_it() {
+		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.builder().build();
+		Hash vertexId = mock(Hash.class);
+
+		TestObserver<GetVertexRequest> rpcRequestListener = TestObserver.create();
+		network.getNetworkRx(validatorId2).rpcRequests().subscribe(rpcRequestListener);
+		TestObserver<Vertex> testObserver = TestObserver.create();
+		network.getNetworkSender(validatorId).getVertex(vertexId, validatorId2)
+			.subscribe(testObserver);
+
+		rpcRequestListener.awaitCount(1);
+		rpcRequestListener.assertValueAt(0, r -> r.getVertexId().equals(vertexId));
+
+		Vertex response = mock(Vertex.class);
+		when(response.getId()).thenReturn(vertexId);
+		rpcRequestListener.values().get(0).getResponder().accept(response);
+
+		testObserver.awaitCount(1);
+		testObserver.assertComplete();
+		testObserver.assertValue(response);
 	}
 }
