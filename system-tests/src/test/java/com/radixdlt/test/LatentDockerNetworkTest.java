@@ -26,15 +26,15 @@ public class LatentDockerNetworkTest {
 	@Test
 	public void given_3_correct_bfts_in_latent_network__then_all_instances_should_get_same_commits_consecutive_vertices_eventually_over_1_minute() {
 		final int numNodes = 3;
-		DockerBFTTestNetwork network = DockerBFTTestNetwork.builder()
+		try (DockerBFTTestNetwork network = DockerBFTTestNetwork.builder()
 			.numNodes(numNodes)
-			.build();
+			.build())
 		{
 			RemoteBFTTest test = RemoteBFTTest.builder()
 				.network(network)
+				.waitUntilResponsive()
 				.assertResponsiveness()
 				.build();
-			test.waitUntilResponsive(2, TimeUnit.MINUTES);
 			test.run(60, TimeUnit.SECONDS);
 		}
 	}

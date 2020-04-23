@@ -20,31 +20,46 @@ package com.radixdlt.test;
 
 import com.google.common.collect.ImmutableList;
 import io.reactivex.Observable;
+import io.reactivex.functions.Predicate;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class RemoteBFTTest {
 	private final DockerBFTTestNetwork testNetwork;
+	private final ImmutableList<RemoteBFTCheck> prerequisites;
+	private final long prerequisiteTimeout;
+	private final TimeUnit prerequisiteTimeoutUnit;
 	private final ImmutableList<RemoteBFTCheck> checks;
 
-	private RemoteBFTTest(DockerBFTTestNetwork testNetwork, ImmutableList<RemoteBFTCheck> checks) {
+	private RemoteBFTTest(DockerBFTTestNetwork testNetwork,
+	                      ImmutableList<RemoteBFTCheck> prerequisites,
+	                      long prerequisiteTimeout,
+	                      TimeUnit prerequisiteTimeoutUnit,
+	                      ImmutableList<RemoteBFTCheck> checks) {
 		this.testNetwork = testNetwork;
+		this.prerequisites = prerequisites;
+		this.prerequisiteTimeout = prerequisiteTimeout;
+		this.prerequisiteTimeoutUnit = prerequisiteTimeoutUnit;
 		this.checks = checks;
 	}
 
-	public void waitUntilResponsive(long maxWaitTime, TimeUnit maxWaitTimeUnits) {
-		new ResponsivenessCheck(5, TimeUnit.SECONDS, 1, TimeUnit.SECONDS)
-			.check(this.testNetwork)
-			.takeUntil(RemoteBFTCheckResult::isSuccess)
-			.timeout(maxWaitTime, maxWaitTimeUnits)
-			.blockingSubscribe();
-	}
-
 	public void run(long runtime, TimeUnit runtimeUnit) {
+		if (!this.prerequisites.isEmpty()) {
+			List<Observable<RemoteBFTCheckResult>> prerequisiteChecks = this.prerequisites.stream()
+				.map(prerequisite -> prerequisite.check(this.testNetwork))
+				.collect(Collectors.toList());
+			Observable.combineLatest(prerequisiteChecks, results -> Arrays.stream(results).map(result -> (RemoteBFTCheckResult) result))
+				.takeUntil((Predicate<? super Stream<RemoteBFTCheckResult>>) results -> results.allMatch(RemoteBFTCheckResult::isSuccess))
+				.timeout(this.prerequisiteTimeout, this.prerequisiteTimeoutUnit)
+				.blockingSubscribe();
+		}
+
 		List<Observable<RemoteBFTCheckResult>> ongoingChecks = this.checks.stream()
 			.map(check -> check.check(testNetwork)
 				.doOnNext(result -> result.assertSuccess(check)))
@@ -65,8 +80,29 @@ public class RemoteBFTTest {
 	public static class Builder {
 		private DockerBFTTestNetwork testNetwork;
 		private final List<RemoteBFTCheck> checks = new ArrayList<>();
+		private final List<RemoteBFTCheck> prerequisites = new ArrayList<>();
+		private long prerequisiteTimeout = 2;
+		private TimeUnit prerequisiteTimeoutUnit = TimeUnit.MINUTES;
 
 		private Builder() {
+		}
+
+		public Builder prerequisiteTimeout(long prerequisiteTimeout, TimeUnit prerequisiteTimeoutUnit) {
+			if (prerequisiteTimeout < 1) {
+				throw new IllegalArgumentException("prerequisiteTimeout must be > 0 but was " + prerequisiteTimeout);
+			}
+			this.prerequisiteTimeout = prerequisiteTimeout;
+			this.prerequisiteTimeoutUnit = Objects.requireNonNull(prerequisiteTimeoutUnit);
+			return this;
+		}
+
+		public Builder waitUntilResponsive() {
+			return waitUntil(new ResponsivenessCheck(5, TimeUnit.SECONDS, 1, TimeUnit.SECONDS));
+		}
+
+		public Builder waitUntil(RemoteBFTCheck prerequisite) {
+			this.prerequisites.add(Objects.requireNonNull(prerequisite, "prerequisite"));
+			return this;
 		}
 
 		public Builder network(DockerBFTTestNetwork testNetwork) {
@@ -89,7 +125,11 @@ public class RemoteBFTTest {
 				throw new IllegalStateException("testNetwork not set");
 			}
 
-			return new RemoteBFTTest(this.testNetwork, ImmutableList.copyOf(this.checks));
+			return new RemoteBFTTest(this.testNetwork,
+				ImmutableList.copyOf(this.prerequisites),
+				this.prerequisiteTimeout,
+				this.prerequisiteTimeoutUnit,
+				ImmutableList.copyOf(this.checks));
 		}
 	}
 
