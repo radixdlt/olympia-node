@@ -183,7 +183,7 @@ public class BFTNetworkSimulation {
 	}
 
 	public void start() {
-		this.bfts.forEach((e, bft) -> bft.start());
+		this.bfts.values().forEach(ChainedBFT::start);
 	}
 
 	public TestEventCoordinatorNetwork getUnderlyingNetwork() {

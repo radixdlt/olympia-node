@@ -170,7 +170,7 @@ public final class RadixJsonRpcServer {
 				case "BFT.start":
 					chainedBFT.start();
 					result = new JSONObject()
-                        .put("response", "success");
+						.put("response", "success");
 					break;
 				case "Ledger.getAtom":
 					if (!(paramsObject instanceof JSONObject)) {
