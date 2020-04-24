@@ -19,16 +19,14 @@ package org.radix.api.http;
 
 import com.radixdlt.consensus.ChainedBFT;
 import com.google.common.collect.EvictingQueue;
-import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Queues;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexStore;
-import com.radixdlt.consensus.View;
 import com.radixdlt.mempool.SubmissionControl;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.universe.Universe;
@@ -48,6 +46,7 @@ import io.undertow.websockets.core.WebSocketChannel;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.assertj.core.util.Lists;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.radix.api.AtomSchemas;
@@ -63,8 +62,10 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -91,7 +92,7 @@ public final class RadixHttpServer {
 	private final Serialization serialization;
 
 	private final Disposable vertexDisposable;
-	private final EvictingQueue<Vertex> vertexRingBuffer = EvictingQueue.create(VERTEX_RING_SIZE);
+	private final Queue<Vertex> vertexRingBuffer = Queues.synchronizedQueue(EvictingQueue.create(VERTEX_RING_SIZE));
 
 	private Undertow server;
 
@@ -127,17 +128,18 @@ public final class RadixHttpServer {
 		this.networkService = new NetworkService(serialization, localSystem, addressBook);
 
 		this.vertexDisposable = vertexStore.lastCommittedVertex()
-			.subscribe(this::vertexUpdate);
+			.filter(v -> (v.getView().number() % VERTEX_UPDATE_FREQ) == 0)
+			.subscribe(this.vertexRingBuffer::add);
 	}
 
-	/**
-	 * Get the set of currently connected peers
-	 *
-	 * @return The currently connected peers
-	 */
-	public final Set<RadixJsonRpcPeer> getPeers() {
-		return Collections.unmodifiableSet(peers.keySet());
-	}
+    /**
+     * Get the set of currently connected peers
+     *
+     * @return The currently connected peers
+     */
+    public final Set<RadixJsonRpcPeer> getPeers() {
+        return Collections.unmodifiableSet(peers.keySet());
+    }
 
 	public final void start(RuntimeProperties properties) {
 		RoutingHandler handler = Handlers.routing(true); // add path params to query params with this flag
@@ -204,13 +206,13 @@ public final class RadixHttpServer {
 
 	private void addTestRoutesTo(RoutingHandler handler) {
 		addGetRoute("/api/vertices/committed", exchange -> {
+			List<Vertex> vertices = Lists.newArrayList();
+			// Use internal iteration for thread safety
+			this.vertexRingBuffer.forEach(vertices::add);
+
 			JSONArray array = new JSONArray();
-			final ImmutableList<Vertex> vs;
-			synchronized (this.vertexRingBuffer) {
-				vs = ImmutableList.copyOf(this.vertexRingBuffer);
-			}
-			vs.stream()
-				.map(v -> this.serialization.toJsonObject(v, Output.API))
+			vertices.stream()
+				.map(v -> new JSONObject().put("view", v.getView().number()).put("hash", v.getId().toString()))
 				.forEachOrdered(array::put);
 			respond(array, exchange);
 		}, handler);
@@ -415,15 +417,6 @@ public final class RadixHttpServer {
 	private static Optional<String> getParameter(HttpServerExchange exchange, String name) {
 		// our routing handler puts path params into query params by default so we don't need to include them manually
 		return Optional.ofNullable(exchange.getQueryParameters().get(name)).map(Deque::getFirst);
-	}
-
-	private void vertexUpdate(Vertex vertex) {
-		View v = vertex.getView();
-		if (v != null && (v.number() % VERTEX_UPDATE_FREQ) == 0) {
-			synchronized (this.vertexRingBuffer) {
-				this.vertexRingBuffer.add(vertex);
-			}
-		}
 	}
 }
 

@@ -30,6 +30,7 @@ public interface SystemCounters {
 		CONSENSUS_SYNC_SUCCESS("consensus.sync_success"),
 		CONSENSUS_SYNC_EXCEPTION("consensus.sync_exception"),
 		CONSENSUS_TIMEOUT("consensus.timeout"),
+		CONSENSUS_TIMEOUT_VIEW("consensus.timeout_view"),
 		CONSENSUS_VERTEXSTORE_SIZE("consensus.vertexstore_size"),
 		CONSENSUS_VIEW("consensus.view"),
 		LEDGER_PROCESSED("ledger.processed"),
