@@ -19,6 +19,7 @@ package org.radix;
 
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.consensus.ChainedBFT;
+import com.radixdlt.consensus.ChainedBFT.Event;
 import com.radixdlt.mempool.MempoolReceiver;
 import com.radixdlt.mempool.SubmissionControl;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
@@ -32,6 +33,7 @@ import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.Bytes;
 
+import io.reactivex.rxjava3.observables.ConnectableObservable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.commons.cli.ParseException;
@@ -145,15 +147,7 @@ public final class Radix
 
 		// start API services
 		ChainedBFT bft = globalInjector.getInjector().getInstance(ChainedBFT.class);
-		bft.processEvents()
-			.subscribe(
-				event -> {
-				},
-				e -> {
-					log.error("BFT Unexpected Error", e);
-					System.exit(-1);
-				}
-			);
+		bft.start();
 
 		SubmissionControl submissionControl = globalInjector.getInjector().getInstance(SubmissionControl.class);
 		AtomToBinaryConverter atomToBinaryConverter = globalInjector.getInjector().getInstance(AtomToBinaryConverter.class);

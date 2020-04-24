@@ -28,7 +28,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.consensus.ChainedBFT;
-import com.radixdlt.consensus.ChainedBFT.Event;
 import com.radixdlt.consensus.DefaultHasher;
 import com.radixdlt.consensus.EpochManager;
 import com.radixdlt.consensus.EpochRx;
@@ -77,7 +76,7 @@ public class BFTNetworkSimulation {
 	private final ImmutableMap<ECKeyPair, VertexStore> vertexStores;
 	private final ImmutableMap<ECKeyPair, SystemCounters> counters;
 	private final ImmutableMap<ECKeyPair, PacemakerImpl> pacemakers;
-	private final Observable<Event> bftEvents;
+	private final ImmutableMap<ECKeyPair, ChainedBFT> bfts;
 	private final ProposerElection proposerElection;
 	private final ValidatorSet validatorSet;
 	private final List<ECKeyPair> nodes;
@@ -126,9 +125,11 @@ public class BFTNetworkSimulation {
 			);
 		this.pacemakers = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e,
 			e -> new PacemakerImpl(this.pacemakerTimeout, Executors.newSingleThreadScheduledExecutor())));
-		this.bftEvents = Observable.merge(this.vertexStores.keySet().stream()
-			.map(vertexStore -> createBFTInstance(vertexStore).processEvents())
-			.collect(Collectors.toList()));
+		this.bfts = this.vertexStores.keySet().stream()
+			.collect(ImmutableMap.toImmutableMap(
+				e -> e,
+				this::createBFTInstance
+			));
 	}
 
 	public List<ECKeyPair> getNodes() {
@@ -181,12 +182,12 @@ public class BFTNetworkSimulation {
 		return pacemakers.get(keyPair);
 	}
 
-	public TestEventCoordinatorNetwork getUnderlyingNetwork() {
-		return underlyingNetwork;
+	public void start() {
+		this.bfts.forEach((e, bft) -> bft.start());
 	}
 
-	public Observable<Event> processBFT() {
-		return this.bftEvents;
+	public TestEventCoordinatorNetwork getUnderlyingNetwork() {
+		return underlyingNetwork;
 	}
 
 	public int getPacemakerTimeout() {
