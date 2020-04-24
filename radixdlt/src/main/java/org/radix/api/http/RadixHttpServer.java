@@ -19,6 +19,7 @@ package org.radix.api.http;
 
 import com.radixdlt.consensus.ChainedBFT;
 import com.google.common.collect.EvictingQueue;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexStore;
@@ -46,7 +47,6 @@ import io.undertow.websockets.core.WebSocketChannel;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.assertj.core.util.Lists;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.radix.api.AtomSchemas;
@@ -78,8 +78,8 @@ public final class RadixHttpServer {
 
 	private static final Logger logger = LogManager.getLogger("api");
 
-	private static final int VERTEX_RING_SIZE = 16;
-	private static final long VERTEX_UPDATE_FREQ = 1_000L;
+	private static final int DEFAULT_VERTEX_BUFFER_SIZE = 16;
+	private static final long DEFAULT_VERTEX_UPDATE_FREQ = 1_000L;
 
 	private final ConcurrentHashMap<RadixJsonRpcPeer, WebSocketChannel> peers;
 	private final AtomsService atomsService;
@@ -92,7 +92,7 @@ public final class RadixHttpServer {
 	private final Serialization serialization;
 
 	private final Disposable vertexDisposable;
-	private final Queue<Vertex> vertexRingBuffer = Queues.synchronizedQueue(EvictingQueue.create(VERTEX_RING_SIZE));
+	private final Queue<Vertex> vertexRingBuffer;
 
 	private Undertow server;
 
@@ -127,8 +127,13 @@ public final class RadixHttpServer {
 		this.internalService = new InternalService(submissionControl, properties, universe);
 		this.networkService = new NetworkService(serialization, localSystem, addressBook);
 
+		final int vertexBufferSize = properties.get("api.debug.vertex_buffer_size", DEFAULT_VERTEX_BUFFER_SIZE);
+		final long vertexUpdateFreq = properties.get("api.debug.vertex_update_freq", DEFAULT_VERTEX_UPDATE_FREQ);
+		logger.debug("Vertex buffer size {}, frequency {} views", vertexBufferSize, vertexUpdateFreq);
+
+		this.vertexRingBuffer = Queues.synchronizedQueue(EvictingQueue.create(vertexBufferSize));
 		this.vertexDisposable = vertexStore.lastCommittedVertex()
-			.filter(v -> (v.getView().number() % VERTEX_UPDATE_FREQ) == 0)
+			.filter(v -> (v.getView().number() % vertexUpdateFreq) == 0)
 			.subscribe(this.vertexRingBuffer::add);
 	}
 
@@ -190,8 +195,11 @@ public final class RadixHttpServer {
 	}
 
 	public final void stop() {
-		server.stop();
-		this.vertexDisposable.dispose();
+		try {
+			server.stop();
+		} finally {
+			this.vertexDisposable.dispose();
+		}
 	}
 
 	private void addDevelopmentOnlyRoutesTo(RoutingHandler handler) {
