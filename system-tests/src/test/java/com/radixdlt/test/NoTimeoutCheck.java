@@ -47,8 +47,8 @@ public class NoTimeoutCheck implements RemoteBFTCheck {
 						.ignoreElement())
 				.collect(Collectors.toList()))
 			.map(Completable::mergeDelayError)
-			.flatMap(Completable::toObservable)
-			.map(c -> RemoteBFTCheckResult.success())
+			.map(c -> c.toSingleDefault(RemoteBFTCheckResult.success()))
+			.flatMap(Single::toObservable)
 			.onErrorReturn(RemoteBFTCheckResult::error);
 	}
 }

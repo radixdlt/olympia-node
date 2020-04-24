@@ -109,7 +109,6 @@ public class DockerBFTTestNetwork implements Closeable {
 
 	public Single<JSONObject> queryJson(String nodeName, String endpoint) {
 		return query(nodeName, endpoint)
-			.doOnSuccess(s -> System.out.println(s))
 			.map(JSONObject::new);
 	}
 

@@ -20,7 +20,6 @@ package com.radixdlt.test;
 
 import com.google.common.collect.ImmutableList;
 import io.reactivex.Observable;
-import io.reactivex.functions.Predicate;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,7 +27,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class RemoteBFTTest {
 	private final DockerBFTTestNetwork testNetwork;
@@ -51,17 +49,31 @@ public class RemoteBFTTest {
 
 	public void run(long runtime, TimeUnit runtimeUnit) {
 		if (!this.prerequisites.isEmpty()) {
+			// TODO do proper logging instead of using stdout/err
+			System.out.println("waiting for prerequisites to be satisfied: " + prerequisites);
 			List<Observable<RemoteBFTCheckResult>> prerequisiteChecks = this.prerequisites.stream()
 				.map(prerequisite -> prerequisite.check(this.testNetwork))
 				.collect(Collectors.toList());
-			Observable.combineLatest(prerequisiteChecks, results -> Arrays.stream(results).map(RemoteBFTCheckResult.class::cast))
-				.filter(results -> results.allMatch(RemoteBFTCheckResult::isSuccess))
+			Observable.combineLatest(prerequisiteChecks, results -> Arrays.stream(results)
+					.map(RemoteBFTCheckResult.class::cast)
+					.collect(Collectors.toList()))
+				.doOnNext(results -> {
+					if (results.stream().anyMatch(RemoteBFTCheckResult::isError)) {
+						System.out.println("prerequisites failing, retrying: " + results.stream()
+							.filter(RemoteBFTCheckResult::isError)
+							.map(RemoteBFTCheckResult::toString)
+							.collect(Collectors.joining(", ")));
+					}
+				})
+				.filter(results -> results.stream().allMatch(RemoteBFTCheckResult::isSuccess))
 				.firstOrError()
+				.retry()
 				.timeout(this.prerequisiteTimeout, this.prerequisiteTimeoutUnit)
 				.ignoreElement()
 				.blockingAwait();
 		}
 
+		System.out.printf("running test for %d %s:%s%n", this.prerequisiteTimeout, this.prerequisiteTimeoutUnit, this.checks);
 		List<Observable<RemoteBFTCheckResult>> ongoingChecks = this.checks.stream()
 			.map(check -> check.check(testNetwork)
 				.doOnNext(result -> result.assertSuccess(check)))
@@ -69,6 +81,7 @@ public class RemoteBFTTest {
 		Observable.merge(ongoingChecks)
 			.take(runtime, runtimeUnit)
 			.blockingSubscribe();
+		System.out.println("test done");
 	}
 
 	public DockerBFTTestNetwork getTestNetwork() {

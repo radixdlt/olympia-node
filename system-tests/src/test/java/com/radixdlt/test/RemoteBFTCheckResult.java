@@ -18,6 +18,10 @@
 
 package com.radixdlt.test;
 
+import io.reactivex.exceptions.CompositeException;
+
+import java.util.stream.Collectors;
+
 /**
  * A result of an ongoing {@link RemoteBFTCheck}
  */
@@ -49,6 +53,26 @@ public final class RemoteBFTCheckResult {
 
 	public Throwable getException() {
 		return exception;
+	}
+
+	private static String exceptionToString(Throwable exception) {
+		if (exception instanceof CompositeException) {
+			return ((CompositeException) exception).getExceptions().stream()
+				.map(RemoteBFTCheckResult::exceptionToString)
+				.map(s -> String.format("{%s}", s))
+				.collect(Collectors.joining(", "));
+		} else {
+			return exception.toString();
+		}
+	}
+
+	@Override
+	public String toString() {
+		if (isSuccess()) {
+			return "{success}";
+		} else {
+			return String.format("{error: %s}", exceptionToString(this.exception));
+		}
 	}
 
 	public static RemoteBFTCheckResult success() {

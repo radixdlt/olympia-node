@@ -20,6 +20,7 @@ package com.radixdlt.test;
 
 import io.reactivex.Completable;
 import io.reactivex.Observable;
+import io.reactivex.Single;
 
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -53,8 +54,8 @@ public class ResponsivenessCheck implements RemoteBFTCheck {
 					.ignoreElement())
 				.collect(Collectors.toList()))
 			.map(Completable::mergeDelayError)
-			.flatMap(Completable::toObservable)
-			.map(c -> RemoteBFTCheckResult.success())
+			.map(c -> c.toSingleDefault(RemoteBFTCheckResult.success()))
+			.flatMap(Single::toObservable)
 			.onErrorReturn(RemoteBFTCheckResult::error);
 	}
 }
