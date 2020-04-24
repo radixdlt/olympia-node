@@ -19,6 +19,7 @@
 package com.radixdlt.test;
 
 import com.google.common.collect.ImmutableMap;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.Map;
@@ -37,13 +38,18 @@ public final class SystemCounters {
 	public static SystemCounters from(JSONObject jsonCounters) {
 		ImmutableMap.Builder<SystemCounterType, Long> systemCounters = ImmutableMap.builder();
 		for (SystemCounterType value : SystemCounterType.values()) {
-			String[] path = value.toString().toLowerCase().split("_");
-			JSONObject parent = jsonCounters;
-			for (int i = 0; i < path.length - 1; i++) {
-				parent = parent.getJSONObject(path[i]);
+			try {
+				String[] path = value.toString().toLowerCase().split("_");
+				JSONObject parent = jsonCounters;
+				for (int i = 0; i < path.length - 1; i++) {
+					parent = parent.getJSONObject(path[i]);
+				}
+				long counterValue = parent.getLong(path[path.length - 1]);
+				systemCounters.put(value, counterValue);
+			} catch (JSONException e) {
+				System.err.println("failed to extract value for " + value + ": " + e);
+				systemCounters.put(value, 0L);
 			}
-			long counterValue = parent.getLong(path[path.length - 1]);
-			systemCounters.put(value, counterValue);
 		}
 		return new SystemCounters(systemCounters.build());
 	}
