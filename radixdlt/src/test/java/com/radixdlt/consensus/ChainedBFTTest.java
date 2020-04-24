@@ -18,7 +18,10 @@
 package com.radixdlt.consensus;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.radixdlt.consensus.ChainedBFT.Event;
@@ -35,9 +38,10 @@ public class ChainedBFTTest {
 
 		EpochRx epochRx = () -> Observable.just(mock(ValidatorSet.class)).concatWith(Observable.never());
 
+		EventCoordinator ec = mock(EventCoordinator.class);
 		EpochManager epochManager = mock(EpochManager.class);
-		when(epochManager.start()).thenReturn(mock(EventCoordinator.class));
-		when(epochManager.nextEpoch(any())).thenReturn(mock(EventCoordinator.class));
+		when(epochManager.start()).thenReturn(ec);
+		when(epochManager.nextEpoch(any())).thenReturn(ec);
 
 		View timeout = mock(View.class);
 		PacemakerRx pacemakerRx = mock(PacemakerRx.class);
@@ -62,9 +66,16 @@ public class ChainedBFTTest {
 		);
 
 		TestObserver<Event> testObserver = TestObserver.create();
-		chainedBFT.processEvents().subscribe(testObserver);
+		chainedBFT.events().subscribe(testObserver);
+		chainedBFT.start();
 		testObserver.awaitCount(6);
 		testObserver.assertValueCount(6);
 		testObserver.assertNotComplete();
+
+		verify(ec, times(1)).processVote(eq(vote));
+		verify(ec, times(1)).processProposal(eq(proposal));
+		verify(ec, times(1)).processNewView(eq(newView));
+		verify(ec, times(1)).processLocalTimeout(eq(timeout));
+		verify(ec, times(1)).processGetVertexRequest(eq(request));
 	}
 }

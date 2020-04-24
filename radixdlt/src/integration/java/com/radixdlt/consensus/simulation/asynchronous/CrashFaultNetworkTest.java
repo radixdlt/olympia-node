@@ -94,8 +94,8 @@ public class CrashFaultNetworkTest {
 			.doAfterSuccess(v -> System.out.println("Committed " + v))
 			.toObservable();
 
-		bftNetwork.processBFT().takeUntil(committed)
-			.blockingSubscribe();
+		bftNetwork.start();
+		committed.blockingSubscribe();
 	}
 
 	/**
@@ -197,7 +197,8 @@ public class CrashFaultNetworkTest {
 		List<Observable<Object>> checks = Arrays.asList(
 			correctCommitCheck, progressCheck, correctTimeoutCheck, directProposalsCheck, gapProposalsCheck
 		);
-		Observable.mergeArray(bftNetwork.processBFT(), Observable.merge(checks))
+		bftNetwork.start();
+		Observable.merge(checks)
 			.take(time, timeUnit)
 			.blockingSubscribe();
 	}
@@ -278,7 +279,8 @@ public class CrashFaultNetworkTest {
 			.map(o -> o);
 
 		List<Observable<Object>> checks = Arrays.asList(correctCommitCheck, progressCheck, seducer);
-		Observable.mergeArray(bftNetwork.processBFT(), Observable.merge(checks))
+		bftNetwork.start();
+		Observable.merge(checks)
 			.take(time, timeUnit)
 			.blockingSubscribe();
 	}

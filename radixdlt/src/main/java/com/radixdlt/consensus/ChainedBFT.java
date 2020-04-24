@@ -25,13 +25,13 @@ import com.radixdlt.consensus.validators.ValidatorSet;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Scheduler;
+import io.reactivex.rxjava3.observables.ConnectableObservable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
-import java.util.Objects;
 import java.util.concurrent.Executors;
 
 /**
- * A three-chain BFT. The inputs are events via rx streams from a pacemaker and
- * a network.
+ * Subscription Manager (Start/Stop) to the processing of BFT events under
+ * a single BFT node instance
  */
 public final class ChainedBFT {
 	public enum EventType {
@@ -58,12 +58,7 @@ public final class ChainedBFT {
 		}
 	}
 
-	private final EventCoordinatorNetworkRx network;
-	private final PacemakerRx pacemakerRx;
-	private final EpochRx epochRx;
-	private final EpochManager epochManager;
-
-	private final Scheduler singleThreadScheduler = Schedulers.from(Executors.newSingleThreadExecutor());
+	private final ConnectableObservable<Event> events;
 
 	@Inject
 	public ChainedBFT(
@@ -72,10 +67,34 @@ public final class ChainedBFT {
 		PacemakerRx pacemakerRx,
 		EpochManager epochManager
 	) {
-		this.pacemakerRx = Objects.requireNonNull(pacemakerRx);
-		this.network = Objects.requireNonNull(network);
-		this.epochRx = Objects.requireNonNull(epochRx);
-		this.epochManager = Objects.requireNonNull(epochManager);
+		final Scheduler singleThreadScheduler = Schedulers.from(Executors.newSingleThreadExecutor());
+		final Observable<ValidatorSet> epochEvents = epochRx.epochs()
+			.publish()
+			.autoConnect(2);
+
+		final Observable<Event> epochs = epochEvents
+			.map(o -> new Event(EventType.EPOCH, o));
+
+		final Observable<EventCoordinator> eventCoordinators = epochEvents
+			.map(epochManager::nextEpoch)
+			.startWithItem(epochManager.start())
+			.doOnNext(EventCoordinator::start)
+			.replay(1)
+			.autoConnect();
+
+		// Need to ensure that first event coordinator is emitted otherwise we may not process
+		// initial events due to the .withLatestFrom() drops events
+		final Completable firstEventCoordinator = Completable.fromSingle(eventCoordinators.firstOrError());
+		final Observable<Object> eventCoordinatorEvents = Observable.merge(
+			pacemakerRx.localTimeouts().observeOn(singleThreadScheduler),
+			network.consensusEvents().observeOn(singleThreadScheduler),
+			network.rpcRequests().observeOn(singleThreadScheduler)
+		);
+		final Observable<Event> ecMessages = firstEventCoordinator.andThen(
+			eventCoordinatorEvents.withLatestFrom(eventCoordinators, this::processEvent)
+		);
+
+		this.events = Observable.merge(epochs, ecMessages).publish();
 	}
 
 	private Event processEvent(Object msg, EventCoordinator eventCoordinator) {
@@ -102,41 +121,22 @@ public final class ChainedBFT {
 		return new Event(eventType, msg);
 	}
 
+	/**
+	 * Starts processing events. This call is idempotent in that multiple
+	 * calls will not affect execution, only one event handling stream will ever
+	 * occur.
+	 */
+	public void start() {
+		this.events.connect();
+	}
 
 	/**
-	 * Returns a cold observable which when subscribed to begins consuming
-	 * and processing bft events. Does not begin processing until the observable
-	 * is subscribed to.
+	 * For testing primarily, a way to retrieve events which have been
+	 * processed.
 	 *
-	 * @return observable of the events which are being processed
+	 * @return hot observable of the events which are being processed
 	 */
-	public Observable<Event> processEvents() {
-		final Observable<ValidatorSet> epochEvents = this.epochRx.epochs()
-			.publish()
-			.autoConnect(2);
-
-		final Observable<Event> epochs = epochEvents
-			.map(o -> new Event(EventType.EPOCH, o));
-
-		final Observable<EventCoordinator> eventCoordinators = epochEvents
-			.map(epochManager::nextEpoch)
-			.startWithItem(epochManager.start())
-			.doOnNext(EventCoordinator::start)
-			.replay(1)
-			.autoConnect();
-
-		// Need to ensure that first event coordinator is emitted otherwise we may not process
-		// initial events due to the .withLatestFrom() drops events
-		final Completable firstEventCoordinator = Completable.fromSingle(eventCoordinators.firstOrError());
-		final Observable<Object> eventCoordinatorEvents = Observable.merge(
-			this.pacemakerRx.localTimeouts().observeOn(this.singleThreadScheduler),
-			this.network.consensusEvents().observeOn(this.singleThreadScheduler),
-			this.network.rpcRequests().observeOn(this.singleThreadScheduler)
-		);
-		final Observable<Event> ecMessages = firstEventCoordinator.andThen(
-			eventCoordinatorEvents.withLatestFrom(eventCoordinators, this::processEvent)
-		);
-
-		return Observable.merge(epochs, ecMessages);
+	public Observable<Event> events() {
+		return this.events;
 	}
 }
