@@ -133,6 +133,10 @@ public class RemoteBFTTest {
 			return addCheck(new NoTimeoutCheck(1, TimeUnit.SECONDS));
 		}
 
+		public Builder assertNoSyncExceptions() {
+			return addCheck(new NoSyncExceptionsCheck(1, TimeUnit.SECONDS));
+		}
+
 		public Builder addCheck(RemoteBFTCheck check) {
 			this.checks.add(Objects.requireNonNull(check, "check"));
 			return this;
