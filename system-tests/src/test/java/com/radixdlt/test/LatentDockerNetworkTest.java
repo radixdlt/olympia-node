@@ -33,8 +33,8 @@ public class LatentDockerNetworkTest {
 			RemoteBFTTest test = RemoteBFTTest.builder()
 				.network(network)
 				.waitUntilResponsive()
-//				.assertResponsiveness()
-				.assertNoTimeouts()
+				.assertResponsiveness()
+//				.assertNoTimeouts()
 				.build();
 			test.run(1, TimeUnit.MINUTES);
 		}

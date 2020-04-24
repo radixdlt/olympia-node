@@ -21,18 +21,21 @@ package com.radixdlt.test;
 import io.reactivex.Completable;
 import io.reactivex.Observable;
 import io.reactivex.Single;
-import org.junit.Assert;
 
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-public class NoTimeoutCheck implements RemoteBFTCheck {
+public class CounterCheck implements RemoteBFTCheck {
 	private final long checkInterval;
 	private final TimeUnit checkIntervalUnit;
+	private final Consumer<SystemCounters> assertion;
 
-	public NoTimeoutCheck(long checkInterval, TimeUnit checkIntervalUnit) {
+	public CounterCheck(long checkInterval, TimeUnit checkIntervalUnit, Consumer<SystemCounters> assertion) {
+		this.assertion = Objects.requireNonNull(assertion);
 		this.checkInterval = checkInterval;
-		this.checkIntervalUnit = checkIntervalUnit;
+		this.checkIntervalUnit = Objects.requireNonNull(checkIntervalUnit);
 	}
 
 	@Override
@@ -42,8 +45,7 @@ public class NoTimeoutCheck implements RemoteBFTCheck {
 				.map(nodeName -> network.queryJson(nodeName, "api/system")
 						.map(system -> system.getJSONObject("counters"))
 						.map(SystemCounters::from)
-						.doOnSuccess(counters -> Assert.assertEquals("timeout counter is zero",
-							0, counters.get(SystemCounters.SystemCounterType.CONSENSUS_TIMEOUT)))
+						.doOnSuccess(assertion::accept)
 						.ignoreElement())
 				.collect(Collectors.toList()))
 			.map(Completable::mergeDelayError)
@@ -54,6 +56,6 @@ public class NoTimeoutCheck implements RemoteBFTCheck {
 
 	@Override
 	public String toString() {
-		return String.format("NoTimeoutCheck{checkInterval=%d %s}", checkInterval, checkIntervalUnit);
+		return String.format("CounterCheck{checkInterval=%d %s}", checkInterval, checkIntervalUnit);
 	}
 }

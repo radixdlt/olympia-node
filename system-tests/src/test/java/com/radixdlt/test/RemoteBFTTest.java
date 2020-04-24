@@ -20,6 +20,7 @@ package com.radixdlt.test;
 
 import com.google.common.collect.ImmutableList;
 import io.reactivex.Observable;
+import org.junit.Assert;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -73,7 +74,7 @@ public class RemoteBFTTest {
 				.blockingAwait();
 		}
 
-		System.out.printf("running test for %d %s:%s%n", this.prerequisiteTimeout, this.prerequisiteTimeoutUnit, this.checks);
+		System.out.printf("running test for %d %s: %s%n", this.prerequisiteTimeout, this.prerequisiteTimeoutUnit, this.checks);
 		List<Observable<RemoteBFTCheckResult>> ongoingChecks = this.checks.stream()
 			.map(check -> check.check(testNetwork)
 				.doOnNext(result -> result.assertSuccess(String.format("check %s failed", check))))
@@ -130,11 +131,21 @@ public class RemoteBFTTest {
 		}
 
 		public Builder assertNoTimeouts() {
-			return addCheck(new NoTimeoutCheck(1, TimeUnit.SECONDS));
+			return addCheck(new CounterCheck(1, TimeUnit.SECONDS, counters -> Assert.assertEquals(
+				"CONSENSUS_TIMEOUT counter is zero",
+				0, counters.get(SystemCounters.SystemCounterType.CONSENSUS_TIMEOUT))));
+		}
+
+		public Builder assertNoRejectedProposals() {
+			return addCheck(new CounterCheck(1, TimeUnit.SECONDS, counters -> Assert.assertEquals(
+				"CONSENSUS_REJECTED counter is zero",
+				0, counters.get(SystemCounters.SystemCounterType.CONSENSUS_REJECTED))));
 		}
 
 		public Builder assertNoSyncExceptions() {
-			return addCheck(new NoSyncExceptionsCheck(1, TimeUnit.SECONDS));
+			return addCheck(new CounterCheck(1, TimeUnit.SECONDS, counters -> Assert.assertEquals(
+				"CONSENSUS_SYNC_EXCEPTION counter is zero",
+				0, counters.get(SystemCounters.SystemCounterType.CONSENSUS_SYNC_EXCEPTION))));
 		}
 
 		public Builder addCheck(RemoteBFTCheck check) {
