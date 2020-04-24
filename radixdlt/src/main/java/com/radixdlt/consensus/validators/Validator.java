@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus.validators;
 
+import com.radixdlt.utils.UInt256;
 import java.util.Objects;
 import javax.annotation.concurrent.Immutable;
 
@@ -59,11 +60,6 @@ public final class Validator {
 	// Address for rewards
 	private final RadixAddress rewardAddress;
 
-	@JsonProperty("stake")
-	@DsonOutput(Output.ALL)
-	// Staked tokens
-	private final UInt256 stake;
-
 	@JsonProperty("bond_view")
 	@DsonOutput(Output.ALL)
 	// View when bonding occurred, possibly null
@@ -85,21 +81,29 @@ public final class Validator {
 	private final boolean jailed;
 */
 
+	@JsonProperty("stake")
+	@DsonOutput(Output.ALL)
+	// Staked tokens
+	private final UInt256 stake;
+
     // Public key for consensus
 	private ECPublicKey nodeKey;
 
 	Validator() {
 		// Serializer only
+		this.stake = null;
 	}
 
 	private Validator(
-		ECPublicKey nodeKey
+		ECPublicKey nodeKey,
+		UInt256 stake
 	) {
 		this.nodeKey = Objects.requireNonNull(nodeKey);
+		this.stake = Objects.requireNonNull(stake);
 	}
 
-	public static Validator from(ECPublicKey nodeKey) {
-		return new Validator(nodeKey);
+	public static Validator from(ECPublicKey nodeKey, UInt256 stake) {
+		return new Validator(nodeKey, stake);
 	}
 
 	public ECPublicKey nodeKey() {
@@ -124,7 +128,7 @@ public final class Validator {
 
 	@Override
 	public int hashCode() {
-		return Objects.hashCode(this.nodeKey);
+		return Objects.hash(this.nodeKey, this.stake);
 	}
 
 	@Override
@@ -134,13 +138,14 @@ public final class Validator {
 		}
 		if (obj instanceof Validator) {
 			Validator other = (Validator) obj;
-			return Objects.equals(this.nodeKey, other.nodeKey);
+			return Objects.equals(this.nodeKey, other.nodeKey)
+				&& Objects.equals(this.stake, other.stake);
 		}
 		return false;
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s[nodeKey=%s]", getClass().getSimpleName(), this.nodeKey);
+		return String.format("%s{nodeKey=%s stake=%s}", getClass().getSimpleName(), this.nodeKey, this.stake);
 	}
 }

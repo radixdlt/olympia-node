@@ -51,6 +51,7 @@ import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.universe.Universe;
 
+import com.radixdlt.utils.UInt256;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.concurrent.Executors;
@@ -98,7 +99,7 @@ public class CerberusModule extends AbstractModule {
 	private ValidatorSet validatorSet(
 		@Named("self") ECKeyPair selfKey
 	) {
-		return ValidatorSet.from(Collections.singleton(Validator.from(selfKey.getPublicKey())));
+		return ValidatorSet.from(Collections.singleton(Validator.from(selfKey.getPublicKey(), UInt256.ONE)));
 	}
 
 	@Provides

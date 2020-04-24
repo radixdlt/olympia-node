@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus.validators;
 
+import com.radixdlt.utils.UInt256;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
@@ -53,10 +54,10 @@ public class ValidatorSetTest {
 		ECKeyPair k4 = ECKeyPair.generateNew();
 		ECKeyPair k5 = ECKeyPair.generateNew(); // Rogue signature
 
-		Validator v1 = Validator.from(k1.getPublicKey());
-		Validator v2 = Validator.from(k2.getPublicKey());
-		Validator v3 = Validator.from(k3.getPublicKey());
-		Validator v4 = Validator.from(k4.getPublicKey());
+		Validator v1 = Validator.from(k1.getPublicKey(), UInt256.ONE);
+		Validator v2 = Validator.from(k2.getPublicKey(), UInt256.ONE);
+		Validator v3 = Validator.from(k3.getPublicKey(), UInt256.ONE);
+		Validator v4 = Validator.from(k4.getPublicKey(), UInt256.ONE);
 
 		ValidatorSet vs = ValidatorSet.from(ImmutableSet.of(v1, v2, v3, v4));
 		Hash message = Hash.random();

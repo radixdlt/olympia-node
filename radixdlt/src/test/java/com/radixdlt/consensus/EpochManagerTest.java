@@ -2,6 +2,7 @@ package com.radixdlt.consensus;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
@@ -11,13 +12,14 @@ import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.mempool.Mempool;
 import java.util.Collections;
 import org.junit.Test;
 
 public class EpochManagerTest {
 	@Test
-	public void when_next_epoch__then_should_create_new_event_coordinator() throws Exception {
+	public void when_next_epoch__then_should_create_new_event_coordinator() {
 		EpochManager epochManager = new EpochManager(
 			mock(ProposalGenerator.class),
 			mock(Mempool.class),
@@ -31,8 +33,8 @@ public class EpochManagerTest {
 			mock(SystemCounters.class)
 		);
 
-		ECKeyPair ecKeyPair = ECKeyPair.generateNew();
-		Validator validator = Validator.from(ecKeyPair.getPublicKey());
+		Validator validator = mock(Validator.class);
+		when(validator.nodeKey()).thenReturn(mock(ECPublicKey.class));
 		EventCoordinator eventCoordinator = epochManager.nextEpoch(ValidatorSet.from(Collections.singleton(validator)));
 		assertNotNull(eventCoordinator);
 	}

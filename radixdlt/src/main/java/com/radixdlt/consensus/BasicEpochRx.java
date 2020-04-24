@@ -25,6 +25,7 @@ import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.network.addressbook.PeersAddedEvent;
 
+import com.radixdlt.utils.UInt256;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.List;
 import java.util.Objects;
@@ -69,7 +70,7 @@ public class BasicEpochRx implements EpochRx {
 			.firstOrError()
 			.map(peers -> {
 				List<Validator> validators = peers.stream()
-					.map(Validator::from)
+					.map(p -> Validator.from(p, UInt256.ONE))
 					.collect(Collectors.toList());
 				return ValidatorSet.from(validators);
 			})
