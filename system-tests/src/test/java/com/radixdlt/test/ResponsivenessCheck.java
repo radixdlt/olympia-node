@@ -46,10 +46,10 @@ public class ResponsivenessCheck implements RemoteBFTCheck {
 	}
 
 	@Override
-	public Observable<RemoteBFTCheckResult> check(DockerBFTTestNetwork network) {
+	public Observable<RemoteBFTCheckResult> check(RemoteBFTNetworkBridge network) {
 		return Observable.interval(checkInterval, checkIntervalUnit)
-			.map(i -> network.getNodeNames().stream()
-				.map(nodeName -> network.queryJson(nodeName, "api/ping")
+			.map(i -> network.getNodeIds().stream()
+				.map(nodeName -> network.queryEndpointJson(nodeName, "api/ping")
 					.timeout(timeout, timeoutUnit)
 					.ignoreElement())
 				.collect(Collectors.toList()))

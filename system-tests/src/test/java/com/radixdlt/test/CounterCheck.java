@@ -39,10 +39,10 @@ public class CounterCheck implements RemoteBFTCheck {
 	}
 
 	@Override
-	public Observable<RemoteBFTCheckResult> check(DockerBFTTestNetwork network) {
+	public Observable<RemoteBFTCheckResult> check(RemoteBFTNetworkBridge network) {
 		return Observable.interval(checkInterval, checkIntervalUnit)
-			.map(i -> network.getNodeNames().stream()
-				.map(nodeName -> network.queryJson(nodeName, "api/system")
+			.map(i -> network.getNodeIds().stream()
+				.map(nodeName -> network.queryEndpointJson(nodeName, "api/system")
 						.map(system -> system.getJSONObject("counters"))
 						.map(SystemCounters::from)
 						.doOnSuccess(assertion::accept)

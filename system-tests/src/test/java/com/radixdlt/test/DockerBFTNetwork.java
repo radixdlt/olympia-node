@@ -18,38 +18,25 @@
 
 package com.radixdlt.test;
 
-import com.radixdlt.client.core.network.HttpClients;
-import io.reactivex.Completable;
-import io.reactivex.Observable;
-import io.reactivex.Single;
-import io.reactivex.subjects.SingleSubject;
-import okhttp3.Call;
-import okhttp3.Callback;
 import okhttp3.Request;
-import okhttp3.Response;
-import org.json.JSONObject;
 import utils.CmdHelper;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
-public class DockerBFTTestNetwork implements Closeable {
-	private static final String OPTIONS_KEY_NAME = "nodeName";
+public class DockerBFTNetwork implements Closeable, BFTNetwork {
 	private static final String OPTIONS_KEY_PORT = "hostPort";
 
 	private final int numNodes;
 	private final String networkName;
 	private final Map<String, Map<String, Object>> dockerOptionsPerNode;
 
-	private DockerBFTTestNetwork(String networkName, int numNodes) {
+	private DockerBFTNetwork(String networkName, int numNodes) {
 		this.networkName = Objects.requireNonNull(networkName);
 		this.numNodes = numNodes;
 
@@ -63,7 +50,7 @@ public class DockerBFTTestNetwork implements Closeable {
 		CmdHelper.removeAllDockerContainers(); // TODO do we need this? if yes, document it
 		CmdHelper.runCommand("docker network rm " + networkName);
 		CmdHelper.runCommand("docker network create " + networkName ,null, true);
-		dockerOptionsPerNode.forEach((nodeName, options) -> {
+		dockerOptionsPerNode.forEach((nodeId, options) -> {
 			options.put("network", networkName);
 			List<Object> dockerSetup = CmdHelper.node(options);
 			String[] dockerEnv = (String[]) dockerSetup.get(0);
@@ -81,39 +68,13 @@ public class DockerBFTTestNetwork implements Closeable {
 		CmdHelper.runCommand("docker network rm " + networkName);
 	}
 
-	public Single<String> query(String nodeName, String endpoint) {
-		Objects.requireNonNull(nodeName, "nodeName");
-		Objects.requireNonNull(endpoint, "endpoint");
-
-		Request request = new Request.Builder().url(getNodeEndpoint(nodeName, endpoint)).build();
-		SingleSubject<String> responseSubject = SingleSubject.create();
-		Call call = HttpClients.getSslAllTrustingClient().newCall(request);
-		call.enqueue(new Callback() {
-			@Override
-			public void onFailure(Call call, IOException e) {
-				responseSubject.onError(e);
-			}
-
-			@Override
-			public void onResponse(Call call, Response response) throws IOException {
-				try {
-					String responseString = response.body().string();
-					responseSubject.onSuccess(responseString);
-				} catch (IOException e) {
-					responseSubject.onError(new IllegalArgumentException("Failed to parse response to " + request, e));
-				}
-			}
-		});
-		return responseSubject;
+	@Override
+	public Request makeRequest(String nodeId, String endpoint) {
+		return new Request.Builder().url(getNodeEndpoint(nodeId, endpoint)).build();
 	}
 
-	public Single<JSONObject> queryJson(String nodeName, String endpoint) {
-		return query(nodeName, endpoint)
-			.map(JSONObject::new);
-	}
-
-	private String getNodeEndpoint(String nodeName, String endpoint) {
-		return getNodeEndpoint(this.dockerOptionsPerNode.get(nodeName), endpoint);
+	private String getNodeEndpoint(String nodeId, String endpoint) {
+		return getNodeEndpoint(this.dockerOptionsPerNode.get(nodeId), endpoint);
 	}
 
 	// utility for getting the API endpoint (as a string) out of generated node options
@@ -123,16 +84,13 @@ public class DockerBFTTestNetwork implements Closeable {
 		return String.format("http://localhost:%d/%s", nodePort, endpoint);
 	}
 
-	public Set<String> getNodeNames() {
+	@Override
+	public Set<String> getNodeIds() {
 		return this.dockerOptionsPerNode.keySet();
 	}
 
 	public String getNetworkName() {
 		return this.networkName;
-	}
-
-	public int getNumNodes() {
-		return this.numNodes;
 	}
 
 	public static Builder builder() {
@@ -157,12 +115,12 @@ public class DockerBFTTestNetwork implements Closeable {
 			return this;
 		}
 
-		public DockerBFTTestNetwork build() {
+		public DockerBFTNetwork build() {
 			if (numNodes == -1) {
 				throw new IllegalStateException("numNodes was not set");
 			}
 
-			return new DockerBFTTestNetwork(name, numNodes);
+			return new DockerBFTNetwork(name, numNodes);
 		}
 	}
 }

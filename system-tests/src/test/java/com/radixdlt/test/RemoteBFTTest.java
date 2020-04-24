@@ -30,13 +30,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 public class RemoteBFTTest {
-	private final DockerBFTTestNetwork testNetwork;
+	private final RemoteBFTNetworkBridge testNetwork;
 	private final ImmutableList<RemoteBFTCheck> prerequisites;
 	private final long prerequisiteTimeout;
 	private final TimeUnit prerequisiteTimeoutUnit;
 	private final ImmutableList<RemoteBFTCheck> checks;
 
-	private RemoteBFTTest(DockerBFTTestNetwork testNetwork,
+	private RemoteBFTTest(RemoteBFTNetworkBridge testNetwork,
 	                      ImmutableList<RemoteBFTCheck> prerequisites,
 	                      long prerequisiteTimeout,
 	                      TimeUnit prerequisiteTimeoutUnit,
@@ -85,7 +85,7 @@ public class RemoteBFTTest {
 		System.out.println("test done");
 	}
 
-	public DockerBFTTestNetwork getTestNetwork() {
+	public RemoteBFTNetworkBridge getTestNetwork() {
 		return testNetwork;
 	}
 
@@ -94,7 +94,7 @@ public class RemoteBFTTest {
 	}
 
 	public static class Builder {
-		private DockerBFTTestNetwork testNetwork;
+		private RemoteBFTNetworkBridge testNetwork;
 		private final List<RemoteBFTCheck> checks = new ArrayList<>();
 		private final List<RemoteBFTCheck> prerequisites = new ArrayList<>();
 		private long prerequisiteTimeout = 2;
@@ -121,7 +121,7 @@ public class RemoteBFTTest {
 			return this;
 		}
 
-		public Builder network(DockerBFTTestNetwork testNetwork) {
+		public Builder network(RemoteBFTNetworkBridge testNetwork) {
 			this.testNetwork = Objects.requireNonNull(testNetwork);
 			return this;
 		}

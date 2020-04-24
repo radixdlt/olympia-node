@@ -18,8 +18,12 @@
 
 package com.radixdlt.test;
 
-import io.reactivex.Observable;
+import okhttp3.Request;
 
-public interface RemoteBFTCheck {
-	Observable<RemoteBFTCheckResult> check(RemoteBFTNetworkBridge network);
+import java.util.Set;
+
+public interface BFTNetwork {
+	Request makeRequest(String nodeId, String endpoint);
+
+	Set<String> getNodeIds();
 }
