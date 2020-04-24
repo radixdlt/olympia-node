@@ -34,6 +34,8 @@ public class LatentDockerNetworkTest {
 				.network(network)
 				.waitUntilResponsive()
 				.assertResponsiveness()
+				.assertNoRejectedProposals()
+				.assertNoSyncExceptions()
 //				.assertNoTimeouts()
 				.build();
 			test.run(1, TimeUnit.MINUTES);

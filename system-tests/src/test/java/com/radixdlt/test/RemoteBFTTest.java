@@ -148,6 +148,12 @@ public class RemoteBFTTest {
 				0, counters.get(SystemCounters.SystemCounterType.CONSENSUS_SYNC_EXCEPTION))));
 		}
 
+		public Builder assertAllProposalsHaveDirectParents() {
+			return addCheck(new CounterCheck(1, TimeUnit.SECONDS, counters -> Assert.assertEquals(
+				"CONSENSUS_SYNC_EXCEPTION counter is zero",
+				0, counters.get(SystemCounters.SystemCounterType.CONSENSUS_SYNC_EXCEPTION))));
+		}
+
 		public Builder addCheck(RemoteBFTCheck check) {
 			this.checks.add(Objects.requireNonNull(check, "check"));
 			return this;
