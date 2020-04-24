@@ -17,6 +17,7 @@
 
 package org.radix.api.http;
 
+import com.radixdlt.consensus.ChainedBFT;
 import com.radixdlt.mempool.SubmissionControl;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.network.addressbook.AddressBook;
@@ -79,6 +80,7 @@ public final class RadixHttpServer {
 	private final Serialization serialization;
 
 	public RadixHttpServer(
+		ChainedBFT chainedBFT,
 		LedgerEntryStore store,
 		SubmissionControl submissionControl,
 		AtomToBinaryConverter atomToBinaryConverter,
@@ -95,6 +97,7 @@ public final class RadixHttpServer {
 		this.peers = new ConcurrentHashMap<>();
 		this.atomsService = new AtomsService(store, submissionControl, atomToBinaryConverter);
 		this.jsonRpcServer = new RadixJsonRpcServer(
+			chainedBFT,
 			serialization,
 			store,
 			atomsService,

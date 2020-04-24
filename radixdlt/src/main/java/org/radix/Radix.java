@@ -145,17 +145,20 @@ public final class Radix
 		// Start mempool receiver
 		globalInjector.getInjector().getInstance(MempoolReceiver.class).start();
 
+		final ChainedBFT bft = globalInjector.getInjector().getInstance(ChainedBFT.class);
 		// start API services
-		ChainedBFT bft = globalInjector.getInjector().getInstance(ChainedBFT.class);
-		bft.start();
-
 		SubmissionControl submissionControl = globalInjector.getInjector().getInstance(SubmissionControl.class);
 		AtomToBinaryConverter atomToBinaryConverter = globalInjector.getInjector().getInstance(AtomToBinaryConverter.class);
 		LedgerEntryStore store = globalInjector.getInjector().getInstance(LedgerEntryStore.class);
-		RadixHttpServer httpServer = new RadixHttpServer(store, submissionControl, atomToBinaryConverter, universe, serialization, properties, localSystem, addressBook);
+		RadixHttpServer httpServer = new RadixHttpServer(bft, store, submissionControl, atomToBinaryConverter, universe, serialization, properties, localSystem, addressBook);
 		httpServer.start(properties);
 
-		log.info("Node '{}' started successfully", localSystem.getNID());
+		if (properties.get("consensus.start_on_boot", true)) {
+			bft.start();
+			log.info("Node '{}' started successfully", localSystem.getNID());
+		} else {
+			log.info("Node '{}' ready, waiting for start signal", localSystem.getNID());
+		}
 	}
 
 	private static void dumpExecutionLocation() {

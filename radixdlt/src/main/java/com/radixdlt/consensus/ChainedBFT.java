@@ -30,7 +30,7 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
 import java.util.concurrent.Executors;
 
 /**
- * Subscription Manager (Start/Stop0 to the processing of BFT events under
+ * Subscription Manager (Start/Stop) to the processing of BFT events under
  * a single BFT node instance
  */
 public final class ChainedBFT {

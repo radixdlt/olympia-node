@@ -18,6 +18,7 @@
 package org.radix.api.jsonrpc;
 
 import com.google.common.io.CharStreams;
+import com.radixdlt.consensus.ChainedBFT;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.store.SearchCursor;
 import com.radixdlt.store.StoreIndex;
@@ -79,24 +80,33 @@ public final class RadixJsonRpcServer {
 	private final AddressBook addressBook;
 	private final Universe universe;
 
-	public RadixJsonRpcServer(Serialization serialization,
-	                          LedgerEntryStore ledger,
-	                          AtomsService atomsService,
-	                          Schema atomSchema,
-	                          LocalSystem localSystem,
-	                          AddressBook addressBook,
-	                          Universe universe) {
-		this(serialization, ledger, atomsService, atomSchema, localSystem, addressBook, universe, DEFAULT_MAX_REQUEST_SIZE);
+	private final ChainedBFT chainedBFT;
+
+	public RadixJsonRpcServer(
+		ChainedBFT chainedBFT,
+		Serialization serialization,
+		LedgerEntryStore ledger,
+		AtomsService atomsService,
+		Schema atomSchema,
+		LocalSystem localSystem,
+		AddressBook addressBook,
+		Universe universe
+	) {
+		this(chainedBFT, serialization, ledger, atomsService, atomSchema, localSystem, addressBook, universe, DEFAULT_MAX_REQUEST_SIZE);
 	}
 
-	public RadixJsonRpcServer(Serialization serialization,
-	                          LedgerEntryStore ledger,
-	                          AtomsService atomsService,
-	                          Schema atomSchema,
-	                          LocalSystem localSystem,
-	                          AddressBook addressBook,
-	                          Universe universe,
-	                          long maxRequestSizeBytes) {
+	public RadixJsonRpcServer(
+		ChainedBFT chainedBFT,
+		Serialization serialization,
+		LedgerEntryStore ledger,
+		AtomsService atomsService,
+		Schema atomSchema,
+		LocalSystem localSystem,
+		AddressBook addressBook,
+		Universe universe,
+		long maxRequestSizeBytes
+	) {
+		this.chainedBFT = Objects.requireNonNull(chainedBFT);
 		this.serialization = Objects.requireNonNull(serialization);
 		this.ledger = Objects.requireNonNull(ledger);
 		this.atomsService = Objects.requireNonNull(atomsService);
@@ -157,6 +167,11 @@ public final class RadixJsonRpcServer {
 			final String method = jsonRpcRequest.getString("method");
 			final Object paramsObject = jsonRpcRequest.get("params");
 			switch (method) {
+				case "BFT.start":
+					chainedBFT.start();
+					result = new JSONObject()
+                        .put("response", "success");
+					break;
 				case "Ledger.getAtom":
 					if (!(paramsObject instanceof JSONObject)) {
 						return JsonRpcUtil.errorResponse(id, -32000, "params should be a JSONObject" , new JSONObject());
