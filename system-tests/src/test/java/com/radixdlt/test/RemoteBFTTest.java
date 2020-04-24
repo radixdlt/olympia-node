@@ -76,7 +76,7 @@ public class RemoteBFTTest {
 		System.out.printf("running test for %d %s:%s%n", this.prerequisiteTimeout, this.prerequisiteTimeoutUnit, this.checks);
 		List<Observable<RemoteBFTCheckResult>> ongoingChecks = this.checks.stream()
 			.map(check -> check.check(testNetwork)
-				.doOnNext(result -> result.assertSuccess(check)))
+				.doOnNext(result -> result.assertSuccess(String.format("check %s failed", check))))
 			.collect(Collectors.toList());
 		Observable.merge(ongoingChecks)
 			.take(runtime, runtimeUnit)

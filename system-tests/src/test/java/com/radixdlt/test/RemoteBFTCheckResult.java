@@ -37,9 +37,9 @@ public final class RemoteBFTCheckResult {
 		this.exception = exception;
 	}
 
-	public void assertSuccess(RemoteBFTCheck check) {
+	public void assertSuccess(String message) {
 		if (!isSuccess()) {
-			throw new AssertionError(String.format("check %s failed", check), this.exception);
+			throw new AssertionError(message, this.exception);
 		}
 	}
 

@@ -29,20 +29,20 @@ import java.util.stream.Collectors;
 public class ResponsivenessCheck implements RemoteBFTCheck {
 	private final long checkInterval;
 	private final TimeUnit checkIntervalUnit;
-	private final long timeoutInterval;
-	private final TimeUnit timeoutIntervalUnit;
+	private final long timeout;
+	private final TimeUnit timeoutUnit;
 
-	public ResponsivenessCheck(long checkInterval, TimeUnit checkIntervalUnit, long timeoutInterval, TimeUnit timeoutIntervalUnit) {
+	public ResponsivenessCheck(long checkInterval, TimeUnit checkIntervalUnit, long timeout, TimeUnit timeoutUnit) {
 		if (checkInterval < 1) {
 			throw new IllegalArgumentException("checkInterval must be >= 1 but was " + checkInterval);
 		}
 		this.checkInterval = checkInterval;
 		this.checkIntervalUnit = Objects.requireNonNull(checkIntervalUnit);
-		if (timeoutInterval < 1) {
-			throw new IllegalArgumentException("timeoutInterval must be >= 1 but was " + timeoutInterval);
+		if (timeout < 1) {
+			throw new IllegalArgumentException("timeout must be >= 1 but was " + timeout);
 		}
-		this.timeoutInterval = timeoutInterval;
-		this.timeoutIntervalUnit = Objects.requireNonNull(timeoutIntervalUnit);
+		this.timeout = timeout;
+		this.timeoutUnit = Objects.requireNonNull(timeoutUnit);
 	}
 
 	@Override
@@ -50,12 +50,18 @@ public class ResponsivenessCheck implements RemoteBFTCheck {
 		return Observable.interval(checkInterval, checkIntervalUnit)
 			.map(i -> network.getNodeNames().stream()
 				.map(nodeName -> network.queryJson(nodeName, "api/ping")
-					.timeout(timeoutInterval, timeoutIntervalUnit)
+					.timeout(timeout, timeoutUnit)
 					.ignoreElement())
 				.collect(Collectors.toList()))
 			.map(Completable::mergeDelayError)
 			.map(c -> c.toSingleDefault(RemoteBFTCheckResult.success()))
 			.flatMap(Single::toObservable)
 			.onErrorReturn(RemoteBFTCheckResult::error);
+	}
+
+	@Override
+	public String toString() {
+		return String.format("ResponsivenessCheck{checkInterval=%d %s, timeout=%d %s}",
+			checkInterval, checkIntervalUnit, timeout, timeoutUnit);
 	}
 }

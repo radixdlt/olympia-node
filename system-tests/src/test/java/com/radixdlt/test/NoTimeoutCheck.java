@@ -51,4 +51,9 @@ public class NoTimeoutCheck implements RemoteBFTCheck {
 			.flatMap(Single::toObservable)
 			.onErrorReturn(RemoteBFTCheckResult::error);
 	}
+
+	@Override
+	public String toString() {
+		return String.format("NoTimeoutCheck{checkInterval=%d %s}", checkInterval, checkIntervalUnit);
+	}
 }
