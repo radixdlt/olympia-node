@@ -100,10 +100,9 @@ public final class Hash implements Comparable<Hash> {
 	}
 
 
-	private final byte[] 	data;
-	private Supplier<EUID>	idCached = Suppliers.memoize(this::computeId);
-
-	private final int hashCodeCached;
+	private final byte[] data;
+	private final transient Supplier<EUID> idCached = Suppliers.memoize(this::computeId);
+	private final transient int hashCodeCached;
 
 	/**
 	 * This does NOT perform any hashing, the byte array passed should be already hashed.
@@ -216,9 +215,7 @@ public final class Hash implements Comparable<Hash> {
 
 		if (o instanceof Hash) {
 			Hash other = (Hash) o;
-
-			// `hashCode()` uses `this.hashCodeCached`, which in turn is derived from `this.data`.
-			return this.hashCode() == other.hashCode();
+			return Arrays.equals(this.data, other.data);
 		}
 
 		return false;
