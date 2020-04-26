@@ -17,11 +17,11 @@
 
 package com.radixdlt.consensus.validators;
 
+import com.radixdlt.utils.UInt256;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentMap;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECDSASignatures;
@@ -35,22 +35,22 @@ import com.radixdlt.crypto.Hash;
 public final class ValidationState {
 
 	private final Hash hash;
-	private final ImmutableSet<ECPublicKey> validKeys;
+	private final ValidatorSet validatorSet;
 	private final ConcurrentMap<ECPublicKey, ECDSASignature> signedKeys;
 
 	/**
 	 * Construct empty validation state for given hash and set of validator keys.
 	 *
 	 * @param hash The hash to verify signatures against
-	 * @param validKeys The complete set of keys for all validators
+	 * @param validatorSet The validator set
 	 */
-	public static ValidationState forValidatorSet(Hash hash, ImmutableSet<ECPublicKey> validKeys) {
-		return new ValidationState(hash, validKeys);
+	public static ValidationState forValidatorSet(Hash hash, ValidatorSet validatorSet) {
+		return new ValidationState(hash, validatorSet);
 	}
 
-	private ValidationState(Hash hash, ImmutableSet<ECPublicKey> validKeys) {
+	private ValidationState(Hash hash, ValidatorSet validatorSet) {
 		this.hash = Objects.requireNonNull(hash);
-		this.validKeys = Objects.requireNonNull(validKeys);
+		this.validatorSet = Objects.requireNonNull(validatorSet);
 		this.signedKeys = Maps.newConcurrentMap();
 	}
 
@@ -64,7 +64,7 @@ public final class ValidationState {
 	 * @return whether a quorum has been formed or not
 	 */
 	public boolean addSignature(ECPublicKey key, ECDSASignature signature) {
-		if (this.validKeys.contains(key)
+		if (validatorSet.containsKey(key)
 			&& (this.signedKeys.containsKey(key) || key.verify(this.hash, signature))) {
 			this.signedKeys.put(key, signature);
 		}
@@ -77,7 +77,8 @@ public final class ValidationState {
 	 * @return {@code true} if we have enough valid signatures to form a quorum,
 	 */
 	public boolean complete() {
-		return this.signedKeys.size() >= threshold(this.validKeys.size());
+		UInt256 currentPower = this.validatorSet.getPower(this.signedKeys.keySet());
+		return currentPower.compareTo(threshold(this.validatorSet.getTotalPower())) >= 0;
 	}
 
 	/**
@@ -90,20 +91,20 @@ public final class ValidationState {
 	}
 
 	@VisibleForTesting
-	static int threshold(int n) {
-		return n - acceptableFaults(n);
+	static UInt256 threshold(UInt256 n) {
+		return n.subtract(acceptableFaults(n));
 	}
 
 	@VisibleForTesting
-	static int acceptableFaults(int n) {
+	static UInt256 acceptableFaults(UInt256 n) {
 		// Compute acceptable faults based on Byzantine limit n = 3f + 1
 		// i.e. f = (n - 1) / 3
-		return (n - 1) / 3;
+		return n.isZero() ? n : n.decrement().divide(UInt256.THREE);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(hash, validKeys, signedKeys);
+		return Objects.hash(hash, validatorSet, signedKeys);
 	}
 
 	@Override
@@ -114,7 +115,7 @@ public final class ValidationState {
 		if (obj instanceof ValidationState) {
 			ValidationState that = (ValidationState) obj;
 			return Objects.equals(this.hash, that.hash)
-				&& Objects.equals(this.validKeys, that.validKeys)
+				&& Objects.equals(this.validatorSet, that.validatorSet)
 				&& Objects.equals(this.signedKeys, that.signedKeys);
 		}
 		return false;
@@ -122,7 +123,7 @@ public final class ValidationState {
 
 	@Override
 	public String toString() {
-		return String.format("%s[hash=%s, validKeys=%s, signedKeys=%s]",
-			getClass().getSimpleName(), hash, validKeys, signedKeys);
+		return String.format("%s[hash=%s, validatorSet=%s, signedKeys=%s]",
+			getClass().getSimpleName(), hash, validatorSet, signedKeys);
 	}
 }

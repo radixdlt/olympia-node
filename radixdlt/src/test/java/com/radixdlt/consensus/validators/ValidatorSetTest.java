@@ -17,7 +17,9 @@
 
 package com.radixdlt.consensus.validators;
 
+import com.radixdlt.utils.UInt128;
 import com.radixdlt.utils.UInt256;
+import java.util.Collections;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
@@ -26,6 +28,7 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -44,6 +47,13 @@ public class ValidatorSetTest {
 	public void sensibleToString() {
 		String s = ValidatorSet.from(ImmutableList.of()).toString();
 		assertThat(s, containsString(ValidatorSet.class.getSimpleName()));
+	}
+
+	@Test
+	public void when_creating_a_validator_set_with_greater_than_max_allowed__then_illegal_argument_exception_is_thrown() {
+		Validator v = Validator.from(ECKeyPair.generateNew().getPublicKey(), UInt256.from(UInt128.MAX_VALUE).increment());
+		assertThatThrownBy(() -> ValidatorSet.from(Collections.singleton(v)))
+			.isInstanceOf(IllegalArgumentException.class);
 	}
 
 	@Test
@@ -93,5 +103,21 @@ public class ValidatorSetTest {
 		assertTrue(vst4.addSignature(k3.getPublicKey(), k3.sign(message)));
 		assertTrue(vst4.complete());
 		assertEquals(3, vst4.signatures().count());
+	}
+
+	@Test
+	public void testValidateWithUnequalPower() {
+		ECKeyPair k1 = ECKeyPair.generateNew();
+		ECKeyPair k2 = ECKeyPair.generateNew();
+
+		Validator v1 = Validator.from(k1.getPublicKey(), UInt256.THREE);
+		Validator v2 = Validator.from(k2.getPublicKey(), UInt256.ONE);
+
+		ValidatorSet vs = ValidatorSet.from(ImmutableSet.of(v1, v2));
+		Hash message = Hash.random();
+		ValidationState vst1 = vs.newValidationState(message);
+		assertTrue(vst1.addSignature(k1.getPublicKey(), k1.sign(message)));
+		assertTrue(vst1.complete());
+		assertEquals(1, vst1.signatures().count());
 	}
 }

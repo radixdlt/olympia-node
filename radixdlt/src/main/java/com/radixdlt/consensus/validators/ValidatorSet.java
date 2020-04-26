@@ -19,8 +19,10 @@ package com.radixdlt.consensus.validators;
 
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.utils.UInt256;
 import java.util.Collection;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 
 import com.radixdlt.crypto.ECPublicKey;
@@ -33,11 +35,23 @@ import com.radixdlt.crypto.Hash;
  * as long as all validators sign.
  */
 public final class ValidatorSet {
+	// We assume that we won't have more than 2^128 validators (2^32 is in fact the limit)
+	// in a single validator set so having this as the max power value will prevent overflows
+	private static final UInt256 POWER_MAX_VALUE = UInt256.MAX_VALUE.shiftRight(128);
 	private final ImmutableBiMap<ECPublicKey, Validator> validators;
+	private final transient UInt256 totalPower;
 
 	private ValidatorSet(Collection<Validator> validators) {
+		if (validators.stream().anyMatch(v -> v.getPower().compareTo(POWER_MAX_VALUE) > 0)) {
+			throw new IllegalArgumentException("There exists a validator with power greater than " + POWER_MAX_VALUE);
+		}
+
 		this.validators = validators.stream()
 			.collect(ImmutableBiMap.toImmutableBiMap(Validator::nodeKey, Function.identity()));
+		this.totalPower = validators.stream()
+			.map(Validator::getPower)
+			.reduce(UInt256::add)
+			.orElse(UInt256.ZERO);
 	}
 
 	/**
@@ -57,7 +71,23 @@ public final class ValidatorSet {
 	 * @return An initial validation state with no signatures
 	 */
 	public ValidationState newValidationState(Hash anchor) {
-		return ValidationState.forValidatorSet(anchor, validators.keySet());
+		return ValidationState.forValidatorSet(anchor, this);
+	}
+
+	public boolean containsKey(ECPublicKey key) {
+		return validators.containsKey(key);
+	}
+
+	public UInt256 getPower(Set<ECPublicKey> signedKeys) {
+		return signedKeys.stream()
+			.map(validators::get)
+			.map(Validator::getPower)
+			.reduce(UInt256::add)
+			.orElse(UInt256.ZERO);
+	}
+
+	public UInt256 getTotalPower() {
+		return totalPower;
 	}
 
 	public ImmutableSet<Validator> getValidators() {

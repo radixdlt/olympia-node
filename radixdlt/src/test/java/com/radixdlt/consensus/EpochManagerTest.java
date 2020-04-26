@@ -4,6 +4,7 @@ import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposerElection;
@@ -14,7 +15,6 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.mempool.Mempool;
-import java.util.Collections;
 import org.junit.Test;
 
 public class EpochManagerTest {
@@ -35,7 +35,9 @@ public class EpochManagerTest {
 
 		Validator validator = mock(Validator.class);
 		when(validator.nodeKey()).thenReturn(mock(ECPublicKey.class));
-		EventCoordinator eventCoordinator = epochManager.nextEpoch(ValidatorSet.from(Collections.singleton(validator)));
+		ValidatorSet validatorSet = mock(ValidatorSet.class);
+		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of(validator));
+		EventCoordinator eventCoordinator = epochManager.nextEpoch(validatorSet);
 		assertNotNull(eventCoordinator);
 	}
 }

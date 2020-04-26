@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus.validators;
 
+import com.radixdlt.utils.UInt256;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
@@ -49,26 +50,26 @@ public class ValidationStateTest {
 
 	@Test
 	public void testAcceptableFaults() {
-		assertEquals(0, ValidationState.acceptableFaults(0));
-		assertEquals(0, ValidationState.acceptableFaults(1));
-		assertEquals(0, ValidationState.acceptableFaults(2));
-		assertEquals(0, ValidationState.acceptableFaults(3));
-		assertEquals(1, ValidationState.acceptableFaults(4));
-		assertEquals(3, ValidationState.acceptableFaults(10));
-		assertEquals(33, ValidationState.acceptableFaults(100));
-		assertEquals(333, ValidationState.acceptableFaults(1000));
+		assertEquals(UInt256.ZERO, ValidationState.acceptableFaults(UInt256.ZERO));
+		assertEquals(UInt256.ZERO, ValidationState.acceptableFaults(UInt256.ONE));
+		assertEquals(UInt256.ZERO, ValidationState.acceptableFaults(UInt256.TWO));
+		assertEquals(UInt256.ZERO, ValidationState.acceptableFaults(UInt256.THREE));
+		assertEquals(UInt256.ONE, ValidationState.acceptableFaults(UInt256.FOUR));
+		assertEquals(UInt256.THREE, ValidationState.acceptableFaults(UInt256.TEN));
+		assertEquals(UInt256.from(33), ValidationState.acceptableFaults(UInt256.from(100)));
+		assertEquals(UInt256.from(333), ValidationState.acceptableFaults(UInt256.from(1000)));
 	}
 
 	@Test
 	public void testThreshold() {
-		assertEquals(0, ValidationState.threshold(0));
-		assertEquals(1, ValidationState.threshold(1));
-		assertEquals(2, ValidationState.threshold(2));
-		assertEquals(3, ValidationState.threshold(3));
-		assertEquals(3, ValidationState.threshold(4));
-		assertEquals(7, ValidationState.threshold(10));
-		assertEquals(67, ValidationState.threshold(100));
-		assertEquals(667, ValidationState.threshold(1000));
+		assertEquals(UInt256.ZERO, ValidationState.threshold(UInt256.ZERO));
+		assertEquals(UInt256.ONE, ValidationState.threshold(UInt256.ONE));
+		assertEquals(UInt256.TWO, ValidationState.threshold(UInt256.TWO));
+		assertEquals(UInt256.THREE, ValidationState.threshold(UInt256.THREE));
+		assertEquals(UInt256.THREE, ValidationState.threshold(UInt256.FOUR));
+		assertEquals(UInt256.SEVEN, ValidationState.threshold(UInt256.from(10)));
+		assertEquals(UInt256.from(67), ValidationState.threshold(UInt256.from(100)));
+		assertEquals(UInt256.from(667), ValidationState.threshold(UInt256.from(1000)));
 	}
 
 	@Test
@@ -88,7 +89,7 @@ public class ValidationStateTest {
 		ECKeyPair k5 = ECKeyPair.generateNew();
 		ECPublicKey kp5 = spy(k5.getPublicKey());
 
-		ValidatorSet vset = ValidatorSet.from(transform(ImmutableList.of(kp1, kp2, kp3, kp4), Validator::from));
+		ValidatorSet vset = ValidatorSet.from(transform(ImmutableList.of(kp1, kp2, kp3, kp4), v -> Validator.from(v, UInt256.ONE)));
 
 		Hash hash = Hash.random();
 

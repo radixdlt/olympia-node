@@ -40,7 +40,6 @@ import com.radixdlt.serialization.DsonOutput.Output;
 @Immutable
 @SerializerId2("consensus.validator")
 public final class Validator {
-
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	private SerializerDummy serializer = SerializerDummy.DUMMY;
@@ -81,33 +80,38 @@ public final class Validator {
 	private final boolean jailed;
 */
 
-	@JsonProperty("stake")
+	@JsonProperty("power")
 	@DsonOutput(Output.ALL)
 	// Staked tokens
-	private final UInt256 stake;
+	private final UInt256 power;
 
     // Public key for consensus
 	private ECPublicKey nodeKey;
 
 	Validator() {
 		// Serializer only
-		this.stake = null;
+		this.power = null;
 	}
+
 
 	private Validator(
 		ECPublicKey nodeKey,
-		UInt256 stake
+		UInt256 power
 	) {
 		this.nodeKey = Objects.requireNonNull(nodeKey);
-		this.stake = Objects.requireNonNull(stake);
+		this.power = Objects.requireNonNull(power);
 	}
 
-	public static Validator from(ECPublicKey nodeKey, UInt256 stake) {
-		return new Validator(nodeKey, stake);
+	public static Validator from(ECPublicKey nodeKey, UInt256 power) {
+		return new Validator(nodeKey, power);
 	}
 
 	public ECPublicKey nodeKey() {
 		return this.nodeKey;
+	}
+
+	public UInt256 getPower() {
+		return power;
 	}
 
 	// Property "node_key" - 1 getter, 1 setter
@@ -128,7 +132,7 @@ public final class Validator {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.nodeKey, this.stake);
+		return Objects.hash(this.nodeKey, this.power);
 	}
 
 	@Override
@@ -139,13 +143,13 @@ public final class Validator {
 		if (obj instanceof Validator) {
 			Validator other = (Validator) obj;
 			return Objects.equals(this.nodeKey, other.nodeKey)
-				&& Objects.equals(this.stake, other.stake);
+				&& Objects.equals(this.power, other.power);
 		}
 		return false;
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{nodeKey=%s stake=%s}", getClass().getSimpleName(), this.nodeKey, this.stake);
+		return String.format("%s{nodeKey=%s power=%s}", getClass().getSimpleName(), this.nodeKey, this.power);
 	}
 }
