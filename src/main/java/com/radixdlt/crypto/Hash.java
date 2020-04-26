@@ -140,7 +140,7 @@ public final class Hash implements Comparable<Hash> {
 
 		this.data = new byte[BYTES];
 		System.arraycopy(alreadyHashedData, offset, this.data, 0, BYTES);
-		this.hashCodeCached = Arrays.hashCode(this.data);
+		this.hashCodeCached = calculateHashCode();
 	}
 
 
@@ -161,7 +161,12 @@ public final class Hash implements Comparable<Hash> {
 		}
 
 		this.data = Bytes.fromHexString(alreadyHashedDataAsHexString);
-		this.hashCodeCached = Arrays.hashCode(this.data);
+		this.hashCodeCached = calculateHashCode();
+	}
+
+	// Required for EqualsVerifier.withCachedHashCode
+	private int calculateHashCode() {
+		return Arrays.hashCode(this.data);
 	}
 
 	/**

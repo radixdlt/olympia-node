@@ -48,9 +48,9 @@ public class HashTest {
 	@Test
 	public void equalsContract() {
 		EqualsVerifier.forClass(Hash.class)
-				.withIgnoredFields("data") // other field(s) dependent on `data` is used
-				.withIgnoredFields("idCached") // `idCached` is derived from other field(s) in use.
-				.verify();
+			.withCachedHashCode("hashCodeCached", "calculateHashCode", Hash.random())
+			.withIgnoredFields("idCached") // `idCached` is derived from other field(s) in use.
+			.verify();
 	}
 
 	@Test
