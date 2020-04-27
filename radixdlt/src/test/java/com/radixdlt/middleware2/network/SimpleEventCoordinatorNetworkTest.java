@@ -152,6 +152,8 @@ public class SimpleEventCoordinatorNetworkTest {
 
 		GetVertexResponseMessage responseMessage = mock(GetVertexResponseMessage.class);
 		Vertex vertex = mock(Vertex.class);
+		Hash vertexId = mock(Hash.class);
+		when(vertex.getId()).thenReturn(vertexId);
 		when(responseMessage.getVertex()).thenReturn(vertex);
 
 		doAnswer(inv -> {
@@ -160,7 +162,8 @@ public class SimpleEventCoordinatorNetworkTest {
 		}).when(messageCentral).send(eq(peer), any(GetVertexRequestMessage.class));
 
 		TestObserver<Vertex> testObserver = TestObserver.create();
-		network.getVertex(mock(Hash.class), node).subscribe(testObserver);
+		network.getVertex(vertexId, node).subscribe(testObserver);
+		testObserver.awaitCount(1);
 		testObserver.assertValue(vertex);
 	}
 

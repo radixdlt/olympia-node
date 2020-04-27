@@ -141,7 +141,7 @@ public class SimpleEventCoordinatorNetwork implements EventCoordinatorNetworkSen
 			final MessageListener<GetVertexResponseMessage> listener =
 				(src, msg) -> {
 					// TODO: implement more robust RPC request/response mapping
-					if (src.equals(peer.get())) {
+					if (msg.getVertex().getId().equals(vertexId)) {
 						emitter.onSuccess(msg.getVertex());
 					}
 				};
