@@ -25,8 +25,9 @@ import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.utils.Longs;
 
+import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.subjects.PublishSubject;
+import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import io.reactivex.rxjava3.subjects.Subject;
 
 import org.apache.logging.log4j.LogManager;
@@ -60,7 +61,8 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 		}
 		this.timeoutMilliseconds = timeoutMilliseconds;
 		this.executorService = Objects.requireNonNull(executorService);
-		this.timeouts = PublishSubject.<View>create().toSerialized();
+		// BehaviorSubject so that nextLocalTimeout will complete if timeout already occurred
+		this.timeouts = BehaviorSubject.<View>create().toSerialized();
 		this.timeoutsObservable = this.timeouts
 			.publish()
 			.refCount()
@@ -70,6 +72,15 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 	private void scheduleTimeout(final View timeoutView) {
 		log.info("Starting View: {}", timeoutView);
 		executorService.schedule(() -> timeouts.onNext(timeoutView), timeoutMilliseconds, TimeUnit.MILLISECONDS);
+	}
+
+	@Override
+	public Completable nextLocalTimeout() {
+		return Completable.fromSingle(
+			timeouts
+				.filter(this.currentView::equals)
+				.firstOrError()
+		);
 	}
 
 	@Override

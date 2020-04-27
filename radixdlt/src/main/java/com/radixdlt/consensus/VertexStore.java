@@ -82,6 +82,7 @@ public final class VertexStore {
 			try {
 				// TODO: remove blocking
 				proposedVertex = vertexSupplier.getVertex(qc.getProposed().getId()).blockingGet();
+				this.counters.increment(CounterType.CONSENSUS_SYNC_SUCCESS);
 			} catch (Exception e) {
 				throw new SyncException(qc, e);
 			}
@@ -162,6 +163,10 @@ public final class VertexStore {
 
 	public QuorumCertificate getHighestQC() {
 		return this.highestQC;
+	}
+
+	public Vertex getVertex(Hash vertexId) {
+		return this.vertices.get(vertexId);
 	}
 
 	public int getSize() {

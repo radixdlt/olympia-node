@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -17,70 +17,118 @@
 
 package com.radixdlt.middleware2.network;
 
-import com.google.common.collect.Sets;
 import com.radixdlt.consensus.ConsensusEvent;
-import com.radixdlt.consensus.Proposal;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.consensus.EventCoordinatorNetworkRx;
 import com.radixdlt.consensus.EventCoordinatorNetworkSender;
+import com.radixdlt.consensus.GetVertexRequest;
+import com.radixdlt.consensus.GetVertexResponse;
 import com.radixdlt.consensus.NewView;
+import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.Vote;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.Hash;
 import io.reactivex.rxjava3.core.Observable;
 
+import io.reactivex.rxjava3.core.Single;
+import io.reactivex.rxjava3.disposables.Disposable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import io.reactivex.rxjava3.schedulers.Timed;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
+import java.util.Map;
 import java.util.Objects;
-import java.util.Random;
-import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 /**
  * Simple simulated network implementation that just sends messages to itself with a configurable latency.
  */
 public class TestEventCoordinatorNetwork {
-	private final Random rng;
-	private final int minimumLatency;
-	private final int maximumLatency;
+	public static final int DEFAULT_LATENCY = 50;
+
+	public static final class MessageInTransit {
+		private final Object content;
+		private final ECPublicKey sender;
+		private final ECPublicKey receiver;
+		private final long delay;
+
+		private MessageInTransit(Object content, ECPublicKey sender, ECPublicKey receiver, long delay) {
+			this.content = Objects.requireNonNull(content);
+			this.sender = sender;
+			this.receiver = receiver;
+			this.delay = delay;
+		}
+
+		private static MessageInTransit newMessage(Object content, ECPublicKey sender, ECPublicKey receiver) {
+			return new MessageInTransit(content, sender, receiver, 0);
+		}
+
+		private MessageInTransit delayed(long delay) {
+			return new MessageInTransit(content, sender, receiver, delay);
+		}
+
+		public Object getContent() {
+			return this.content;
+		}
+
+		public ECPublicKey getSender() {
+			return sender;
+		}
+
+		public ECPublicKey getReceiver() {
+			return receiver;
+		}
+
+		@Override
+		public String toString() {
+			return String.format("%s %s -> %s %d",
+				content,
+				sender.euid().toString().substring(0, 6),
+				receiver.euid().toString().substring(0, 6),
+				delay
+			);
+		}
+	}
+
+	/**
+	 * The latency configuration for a network
+	 */
+	public interface LatencyProvider {
+
+		/**
+		 * If >= 0, returns the latency in milliseconds of the next message.
+		 * If < 0, signifies to drop the next message.
+		 *
+		 * @param msg the next message
+		 * @return the latency in milliseconds if >= 0, otherwise a negative number signifies a drop
+		 */
+		int nextLatency(MessageInTransit msg);
+	}
 
 	private final Subject<MessageInTransit> receivedMessages;
-	private final Set<ECPublicKey> readers = Sets.newConcurrentHashSet();
-	private final Set<ECPublicKey> sendingDisabled = Sets.newConcurrentHashSet();
-	private final Set<ECPublicKey> receivingDisabled = Sets.newConcurrentHashSet();
+	private final Map<ECPublicKey, SimulatedReceiver> receivers = new ConcurrentHashMap<>();
+	private final LatencyProvider latencyProvider;
 
-	private TestEventCoordinatorNetwork(int minimumLatency, int maximumLatency, long rngSeed) {
-		if (minimumLatency < 0) {
-			throw new IllegalArgumentException("minimumLatency must be >= 0 but was " + minimumLatency);
-		}
-		if (maximumLatency < 0) {
-			throw new IllegalArgumentException("maximumLatency must be >= 0 but was " + maximumLatency);
-		}
-		this.minimumLatency = minimumLatency;
-		this.maximumLatency = maximumLatency;
-		this.rng = new Random(rngSeed);
+	private TestEventCoordinatorNetwork(LatencyProvider latencyProvider) {
+		this.latencyProvider = latencyProvider;
 		this.receivedMessages = ReplaySubject.<MessageInTransit>create(5) // To catch startup timing issues
 			.toSerialized();
 	}
 
 	public static class Builder {
-		private int minLatency = 50;
-		private int maxLatency = 50;
+		private LatencyProvider latencyProvider = msg -> DEFAULT_LATENCY;
 
 		private Builder() {
 		}
 
-		public Builder minLatency(int minLatency) {
-			this.minLatency = minLatency;
-			return this;
-		}
-
-		public Builder maxLatency(int maxLatency) {
-			this.maxLatency = maxLatency;
+		public Builder latencyProvider(LatencyProvider latencyProvider) {
+			this.latencyProvider = latencyProvider;
 			return this;
 		}
 
 		public TestEventCoordinatorNetwork build() {
-			return new TestEventCoordinatorNetwork(minLatency, maxLatency, System.currentTimeMillis());
+			return new TestEventCoordinatorNetwork(latencyProvider);
 		}
 	}
 
@@ -88,95 +136,99 @@ public class TestEventCoordinatorNetwork {
 		return new Builder();
 	}
 
-	public void setSendingDisable(ECPublicKey validatorId, boolean disable) {
-		if (disable) {
-			sendingDisabled.add(validatorId);
-		} else {
-			sendingDisabled.remove(validatorId);
-		}
-	}
-
-	public void setReceivingDisable(ECPublicKey validatorId, boolean disable) {
-		if (disable) {
-			receivingDisabled.add(validatorId);
-		} else {
-			receivingDisabled.remove(validatorId);
-		}
-	}
-
 	public EventCoordinatorNetworkSender getNetworkSender(ECPublicKey forNode) {
 		return new EventCoordinatorNetworkSender() {
 			@Override
 			public void broadcastProposal(Proposal proposal) {
-				for (ECPublicKey reader : readers) {
-					receivedMessages.onNext(MessageInTransit.send(proposal, forNode, reader));
+				for (ECPublicKey reader : receivers.keySet()) {
+					receivedMessages.onNext(MessageInTransit.newMessage(proposal, forNode, reader));
 				}
 			}
 
 			@Override
 			public void sendNewView(NewView newView, ECPublicKey newViewLeader) {
-				receivedMessages.onNext(MessageInTransit.send(newView, forNode, newViewLeader));
+				receivedMessages.onNext(MessageInTransit.newMessage(newView, forNode, newViewLeader));
 			}
 
 			@Override
 			public void sendVote(Vote vote, ECPublicKey leader) {
-				receivedMessages.onNext(MessageInTransit.send(vote, forNode, leader));
+				receivedMessages.onNext(MessageInTransit.newMessage(vote, forNode, leader));
+			}
+
+			@Override
+			public Single<Vertex> getVertex(Hash vertexId, ECPublicKey node) {
+				return Single.create(emitter -> {
+					Disposable d = receivers.computeIfAbsent(forNode, SimulatedReceiver::new).myMessages
+						.ofType(GetVertexResponse.class)
+						.filter(v -> v.getVertexId().equals(vertexId))
+						.firstOrError()
+						.map(GetVertexResponse::getVertex)
+						.subscribe(emitter::onSuccess);
+					emitter.setDisposable(d);
+
+					final GetVertexRequest request = new GetVertexRequest(
+						vertexId,
+						vertex -> {
+							GetVertexResponse vertexResponse = new GetVertexResponse(vertexId, vertex);
+							receivedMessages.onNext(MessageInTransit.newMessage(vertexResponse, node, forNode));
+						}
+					);
+					receivedMessages.onNext(MessageInTransit.newMessage(request, forNode, node));
+				});
 			}
 		};
 	}
 
+	private class SimulatedReceiver implements EventCoordinatorNetworkRx {
+		private final Observable<Object> myMessages;
+
+		private SimulatedReceiver(ECPublicKey node) {
+			// filter only relevant messages (appropriate target and if receiving is allowed)
+			this.myMessages = receivedMessages
+				.filter(msg -> msg.receiver.equals(node))
+				.map(msg -> {
+					if (msg.sender.equals(node)) {
+						return msg;
+					} else {
+						return msg.delayed(latencyProvider.nextLatency(msg));
+					}
+				})
+				.filter(msg -> msg.delay >= 0)
+				.timestamp(TimeUnit.MILLISECONDS)
+				.scan((msg1, msg2) -> {
+					int delayCarryover = (int) Math.max(msg1.time() + msg1.value().delay - msg2.time(), 0);
+					int additionalDelay = (int) (msg2.value().delay - delayCarryover);
+					if (additionalDelay > 0) {
+						return new Timed<>(msg2.value().delayed(additionalDelay), msg2.time(), msg2.unit());
+					} else {
+						return msg2;
+					}
+				})
+				.delay(p -> {
+					if (p.value().delay > 0) {
+						return Observable.timer(p.value().delay, TimeUnit.MILLISECONDS, Schedulers.io());
+					} else {
+						return Observable.just(0L);
+					}
+				})
+				.map(Timed::value)
+				.map(MessageInTransit::getContent)
+				.publish()
+				.refCount();
+		}
+
+		@Override
+		public Observable<ConsensusEvent> consensusEvents() {
+			return myMessages.ofType(ConsensusEvent.class);
+		}
+
+		@Override
+		public Observable<GetVertexRequest> rpcRequests() {
+			return myMessages.ofType(GetVertexRequest.class);
+		}
+	}
+
 	public EventCoordinatorNetworkRx getNetworkRx(ECPublicKey forNode) {
-		readers.add(forNode);
-		// filter only relevant messages (appropriate target and if receiving is allowed)
-		Observable<ConsensusEvent> myMessages = receivedMessages
-			.filter(msg -> !sendingDisabled.contains(msg.sender))
-			.filter(msg -> !receivingDisabled.contains(msg.target))
-			.filter(msg -> msg.target.equals(forNode))
-			.timestamp(TimeUnit.MILLISECONDS)
-			.scan((msg1, msg2) -> {
-				if (msg2.value().sender.equals(forNode)) {
-					return msg2;
-				}
-				int delayCarryover = (int) Math.max(msg1.time() + msg1.value().delay - msg2.time(), 0);
-				int range = maximumLatency - delayCarryover - minimumLatency + 1;
-				int nextDelay = range > 0 ? minimumLatency + rng.nextInt(range) : minimumLatency + range;
-				return new Timed<>(msg2.value().delayed(nextDelay), msg2.time(), msg2.unit());
-			})
-			.delay(p -> Observable.timer(p.value().delay, TimeUnit.MILLISECONDS))
-			.map(Timed::value)
-			.map(MessageInTransit::getContent)
-			.ofType(ConsensusEvent.class);
-
-		return () -> myMessages;
-	}
-
-	public int getMaxLatency() {
-		return maximumLatency;
-	}
-
-	private static final class MessageInTransit {
-		private final Object content;
-		private final ECPublicKey sender;
-		private final ECPublicKey target;
-		private final long delay;
-
-		private MessageInTransit(Object content, ECPublicKey sender, ECPublicKey target, long delay) {
-			this.content = Objects.requireNonNull(content);
-			this.sender = sender;
-			this.target = target;
-			this.delay = delay;
-		}
-
-		private static MessageInTransit send(Object content, ECPublicKey sender, ECPublicKey receiver) {
-			return new MessageInTransit(content, sender, receiver, 0);
-		}
-
-		private MessageInTransit delayed(long delay) {
-			return new MessageInTransit(content, sender, target, delay);
-		}
-
-		private Object getContent() {
-			return this.content;
-		}
+		return receivers.computeIfAbsent(forNode, SimulatedReceiver::new);
 	}
 }

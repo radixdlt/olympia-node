@@ -17,6 +17,10 @@
 
 package com.radixdlt.middleware2.network;
 
+import com.radixdlt.consensus.GetVertexRequest;
+import com.radixdlt.consensus.Vertex;
+import com.radixdlt.crypto.Hash;
+import io.reactivex.rxjava3.core.Single;
 import java.util.Objects;
 
 import java.util.Optional;
@@ -72,11 +76,25 @@ public class SimpleEventCoordinatorNetwork implements EventCoordinatorNetworkSen
 	@Override
 	public Observable<ConsensusEvent> consensusEvents() {
 		return Observable.<ConsensusEvent>create(emitter -> {
-			MessageListener<ConsensusEventMessage> listener =
-				(src, msg) -> emitter.onNext(msg.getConsensusMessage());
+			MessageListener<ConsensusEventMessage> listener = (src, msg) -> emitter.onNext(msg.getConsensusMessage());
 			this.messageCentral.addListener(ConsensusEventMessage.class, listener);
 			emitter.setCancellable(() -> this.messageCentral.removeListener(listener));
 		}).mergeWith(localMessages);
+	}
+
+	@Override
+	public Observable<GetVertexRequest> rpcRequests() {
+		return Observable.create(emitter -> {
+			MessageListener<GetVertexRequestMessage> listener = (src, msg) -> {
+				final GetVertexRequest request = new GetVertexRequest(
+					msg.getVertexId(),
+					vertex -> this.messageCentral.send(src, new GetVertexResponseMessage(this.magic, vertex))
+				);
+				emitter.onNext(request);
+			};
+			this.messageCentral.addListener(GetVertexRequestMessage.class, listener);
+			emitter.setCancellable(() -> this.messageCentral.removeListener(listener));
+		});
 	}
 
 	@Override
@@ -106,13 +124,44 @@ public class SimpleEventCoordinatorNetwork implements EventCoordinatorNetworkSen
 		}
 	}
 
-	private void send(Message message, ECPublicKey recipient) {
+	@Override
+	public Single<Vertex> getVertex(Hash vertexId, ECPublicKey node) {
+		if (this.selfPublicKey.equals(node)) {
+			throw new IllegalStateException("Should never need to retrieve a vertex from self.");
+		}
+
+		return Single.create(emitter -> {
+			final Optional<Peer> peer = this.addressBook.peer(node.euid());
+			if (!peer.isPresent()) {
+				// TODO: Change to more appropriate exception type
+				emitter.onError(new IllegalStateException(String.format("Peer with pubkey %s not present", node)));
+				return;
+			}
+
+			final MessageListener<GetVertexResponseMessage> listener =
+				(src, msg) -> {
+					// TODO: implement more robust RPC request/response mapping
+					if (src.equals(peer.get())) {
+						emitter.onSuccess(msg.getVertex());
+					}
+				};
+			this.messageCentral.addListener(GetVertexResponseMessage.class, listener);
+			emitter.setCancellable(() -> this.messageCentral.removeListener(listener));
+
+			final GetVertexRequestMessage vertexRequest = new GetVertexRequestMessage(this.magic, vertexId);
+			this.messageCentral.send(peer.get(), vertexRequest);
+		});
+	}
+
+	private boolean send(Message message, ECPublicKey recipient) {
 		Optional<Peer> peer = this.addressBook.peer(recipient.euid());
 
 		if (!peer.isPresent()) {
 			log.error("Peer with pubkey {} not present", recipient);
+			return false;
 		} else {
 			this.messageCentral.send(peer.get(), message);
+			return true;
 		}
 	}
 

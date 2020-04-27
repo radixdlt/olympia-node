@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -17,23 +17,30 @@
 
 package com.radixdlt.consensus;
 
-import io.reactivex.rxjava3.core.Observable;
+import com.radixdlt.crypto.Hash;
 
 /**
- * Network accessor for the EventCoordinator
+ * An RPC response
  */
-public interface EventCoordinatorNetworkRx {
-	/**
-	 * Accessor to the stream of consensus message events as they are received
-	 * from the network.
-	 * @return observable of consensus message events
-	 */
-	Observable<ConsensusEvent> consensusEvents();
+public final class GetVertexResponse {
+	private final Hash vertexId;
+	private final Vertex vertex;
 
-	/**
-	 * Accessor to the stream of rpc requests as they are received from
-	 * the network.
-	 * @return observable of rpc requests
-	 */
-	Observable<GetVertexRequest> rpcRequests();
+	public GetVertexResponse(Hash vertexId, Vertex vertex) {
+		this.vertexId = vertexId;
+		this.vertex = vertex;
+	}
+
+	public Hash getVertexId() {
+		return vertexId;
+	}
+
+	public Vertex getVertex() {
+		return vertex;
+	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{vertex=%s}", this.getClass().getSimpleName(), vertex);
+	}
 }
