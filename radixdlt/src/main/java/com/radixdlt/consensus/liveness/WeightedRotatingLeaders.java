@@ -27,59 +27,108 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.stream.Collectors;
 
 /**
  * Rotates leaders with those having more power being proposed more often
  * in proportion to the amount of power they have.
  *
+ * Calculation of the next leader is dependent on the weight state of the
+ * previous view and thus computing the leader for an arbitrary view can
+ * be quite expensive.
+ *
+ * We resolve this by keeping a cache of some given size of the previous
+ * views closest to the highest view calculated.
+ *
  * This class stateful and is NOT thread-safe.
  */
 public final class WeightedRotatingLeaders implements ProposerElection {
-	private final Map<View, Validator> leaders = new HashMap<>();
-	private final ValidatorSet validatorSet;
-	private final Map<Validator, UInt256> weights;
-	private final Comparator<Entry<Validator, UInt256>> weightsComparator;
-	private View nextView;
-	private Validator curLeader;
 
-	WeightedRotatingLeaders(ValidatorSet validatorSet, Comparator<Validator> comparator) {
+	private final ValidatorSet validatorSet;
+	private final Comparator<Entry<Validator, UInt256>> weightsComparator;
+	private final CachingNextLeaderComputer highViewComputer;
+
+	WeightedRotatingLeaders(ValidatorSet validatorSet, Comparator<Validator> comparator, int sizeOfCache) {
 		this.validatorSet = validatorSet;
-		this.weights = validatorSet.getValidators().stream()
-			.collect(Collectors.toMap(
-				v -> v,
-				v -> UInt256.from(UInt128.ONE, UInt128.ZERO).subtract(v.getPower()) // initial round-robin
-			));
-		this.nextView = View.of(0);
 		this.weightsComparator = Comparator
 			.comparing(Entry<Validator, UInt256>::getValue)
 			.thenComparing(Entry::getKey, comparator);
+		this.highViewComputer = new CachingNextLeaderComputer(validatorSet, weightsComparator, sizeOfCache);
 	}
 
-	private void next() {
-		if (curLeader != null) {
+	private static class CachingNextLeaderComputer {
+		private final ValidatorSet validatorSet;
+		private final Comparator<Entry<Validator, UInt256>> weightsComparator;
+		private final Map<Validator, UInt256> weights;
+		private final Validator[] cache;
+		private View curView;
+
+		private CachingNextLeaderComputer(ValidatorSet validatorSet, Comparator<Entry<Validator, UInt256>> weightsComparator, int sizeOfCache) {
+			this.validatorSet = validatorSet;
+			this.weightsComparator = weightsComparator;
+			this.weights = new HashMap<>();
+			this.cache = new Validator[sizeOfCache];
+			this.resetToView(View.of(0));
+		}
+
+		private Validator computeHeaviest() {
+			final Entry<Validator, UInt256> max = weights.entrySet().stream()
+				.max(weightsComparator)
+				.orElseThrow(() -> new IllegalStateException("Weights cannot be empty"));
+			return max.getKey();
+		}
+
+		private void computeNext() {
+			final int curIndex = (int) (this.curView.number() % cache.length);
+			final Validator curLeader = cache[curIndex];
 			weights.merge(curLeader, validatorSet.getTotalPower(), UInt256::subtract);
+
+			for (Validator validator : validatorSet.getValidators()) {
+				weights.merge(validator, validator.getPower(), UInt256::add);
+			}
+
+			this.curView = this.curView.next();
+			int index = (int) (this.curView.number() % cache.length);
+			cache[index] = computeHeaviest();
 		}
 
-		for (Validator validator : validatorSet.getValidators()) {
-			weights.merge(validator, validator.getPower(), UInt256::add);
+		private Validator checkCacheForProposer(View view) {
+			if (view.compareTo(curView) <= 0 && view.number() > curView.number() - cache.length) {
+				return cache[(int) (view.number() % cache.length)];
+			}
+
+			return null;
 		}
 
-		final Entry<Validator, UInt256> max = weights.entrySet().stream()
-			.max(weightsComparator)
-			.orElseThrow(() -> new IllegalStateException("Weights cannot be empty"));
+		private void computeToView(View view) {
+			while (view.compareTo(curView) > 0) {
+				computeNext();
+			}
+		}
 
-		this.curLeader = max.getKey();
-		this.leaders.put(this.nextView, this.curLeader);
-		this.nextView = this.nextView.next();
+		private void resetToView(View view) {
+			if (curView == null || view.number() < curView.number() - ((curView.number() / cache.length) * cache.length)) {
+				curView = View.of(0);
+				for (Validator validator : validatorSet.getValidators()) {
+					weights.put(validator, UInt256.from(UInt128.ONE, UInt128.ZERO).subtract(validator.getPower()));
+				}
+				cache[0] = computeHeaviest();
+			}
+			computeToView(view);
+		}
 	}
 
 	@Override
 	public ECPublicKey getProposer(View view) {
-		while (view.compareTo(nextView) >= 0) {
-			next();
+		highViewComputer.computeToView(view);
+		Validator validator = highViewComputer.checkCacheForProposer(view);
+		if (validator != null) {
+			// dynamic program cache successful
+			return validator.nodeKey();
+		} else {
+			// cache doesn't have value, do the expensive operation
+			CachingNextLeaderComputer computer = new CachingNextLeaderComputer(validatorSet, weightsComparator, 1);
+			computer.computeToView(view);
+			return computer.checkCacheForProposer(view).nodeKey();
 		}
-
-		return leaders.get(view).nodeKey();
 	}
 }

@@ -144,6 +144,10 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 
 		// only do something if we're actually the leader for the vote
 		final View view = vote.getVoteData().getProposed().getView();
+		// TODO: currently we don't check view of vote relative to our pacemaker. This opens
+		// TODO: up to dos attacks on calculation of next proposer if ProposerElection is
+		// TODO: an expensive operation. Need to figure out a way of mitigating this problem
+		// TODO: perhaps through filter views too out of bounds
 		if (!Objects.equals(proposerElection.getProposer(view), selfKey.getPublicKey())) {
 			log.warn("{}: VOTE: Ignoring confused vote {} for {}",
 				getShortName(), vote.hashCode(), vote.getVoteData().getProposed().getView());

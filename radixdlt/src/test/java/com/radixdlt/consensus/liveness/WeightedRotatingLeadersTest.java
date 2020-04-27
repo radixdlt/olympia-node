@@ -27,8 +27,6 @@ import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.utils.UInt256;
 import java.util.Comparator;
-import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.junit.Before;
 import org.junit.Test;
@@ -38,18 +36,19 @@ public class WeightedRotatingLeadersTest {
 	private WeightedRotatingLeaders weightedRotatingLeaders;
 	private WeightedRotatingLeaders weightedRotatingLeaders2;
 	private ImmutableList<Validator> validatorsInOrder;
-	private ValidatorSet validatorSet;
 
 	@Before
 	public void setUp() {
+		final int sizeOfCache = 100;
+
 		validatorsInOrder = IntStream.range(0, validatorSetSize)
 			.boxed().map(i -> mock(ECPublicKey.class))
 			.map(pk -> Validator.from(pk, UInt256.ONE))
 			.collect(ImmutableList.toImmutableList());
 
-		this.validatorSet = ValidatorSet.from(validatorsInOrder);
-		this.weightedRotatingLeaders = new WeightedRotatingLeaders(validatorSet, Comparator.comparingInt(validatorsInOrder::indexOf));
-		this.weightedRotatingLeaders2 = new WeightedRotatingLeaders(validatorSet, Comparator.comparingInt(validatorsInOrder::indexOf));
+		ValidatorSet validatorSet = ValidatorSet.from(validatorsInOrder);
+		this.weightedRotatingLeaders = new WeightedRotatingLeaders(validatorSet, Comparator.comparingInt(validatorsInOrder::indexOf), sizeOfCache);
+		this.weightedRotatingLeaders2 = new WeightedRotatingLeaders(validatorSet, Comparator.comparingInt(validatorsInOrder::indexOf), sizeOfCache);
 	}
 
 	@Test
@@ -66,15 +65,11 @@ public class WeightedRotatingLeadersTest {
 	public void when_get_proposer_multiple_times__then_should_return_the_same_key() {
 		final int viewsToTest = 1000;
 
-		List<ECPublicKey> proposerMap = IntStream.range(0, viewsToTest)
-			.mapToObj(View::of)
-			.map(weightedRotatingLeaders::getProposer)
-			.collect(Collectors.toList());
-
-		for (int view = 0; view < proposerMap.size(); view++) {
-			ECPublicKey expectedKeyForView = proposerMap.get(view);
-			assertThat(weightedRotatingLeaders.getProposer(View.of(view))).isEqualTo(expectedKeyForView);
+		ECPublicKey expectedKeyForView0 = weightedRotatingLeaders.getProposer(View.of(0));
+		for (View view = View.of(1); view.compareTo(View.of(viewsToTest)) <= 0; view = view.next()) {
+			weightedRotatingLeaders.getProposer(view);
 		}
+		assertThat(weightedRotatingLeaders.getProposer(View.of(0))).isEqualTo(expectedKeyForView0);
 	}
 
 	@Test
