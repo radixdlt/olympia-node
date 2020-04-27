@@ -47,12 +47,12 @@ public final class WeightedRotatingLeaders implements ProposerElection {
 	private final Comparator<Entry<Validator, UInt256>> weightsComparator;
 	private final CachingNextLeaderComputer highViewComputer;
 
-	WeightedRotatingLeaders(ValidatorSet validatorSet, Comparator<Validator> comparator, int sizeOfCache) {
+	public WeightedRotatingLeaders(ValidatorSet validatorSet, Comparator<Validator> comparator, int cacheSize) {
 		this.validatorSet = validatorSet;
 		this.weightsComparator = Comparator
 			.comparing(Entry<Validator, UInt256>::getValue)
 			.thenComparing(Entry::getKey, comparator);
-		this.highViewComputer = new CachingNextLeaderComputer(validatorSet, weightsComparator, sizeOfCache);
+		this.highViewComputer = new CachingNextLeaderComputer(validatorSet, weightsComparator, cacheSize);
 	}
 
 	private static class CachingNextLeaderComputer {
@@ -62,11 +62,11 @@ public final class WeightedRotatingLeaders implements ProposerElection {
 		private final Validator[] cache;
 		private View curView;
 
-		private CachingNextLeaderComputer(ValidatorSet validatorSet, Comparator<Entry<Validator, UInt256>> weightsComparator, int sizeOfCache) {
+		private CachingNextLeaderComputer(ValidatorSet validatorSet, Comparator<Entry<Validator, UInt256>> weightsComparator, int cacheSize) {
 			this.validatorSet = validatorSet;
 			this.weightsComparator = weightsComparator;
 			this.weights = new HashMap<>();
-			this.cache = new Validator[sizeOfCache];
+			this.cache = new Validator[cacheSize];
 			this.resetToView(View.of(0));
 		}
 
