@@ -220,6 +220,7 @@ public final class Hash implements Comparable<Hash> {
 
 		if (o instanceof Hash) {
 			Hash other = (Hash) o;
+			 // Need to do full byte area comparison otherwise, susceptible to birthday attack
 			return Arrays.equals(this.data, other.data);
 		}
 
