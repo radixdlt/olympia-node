@@ -19,6 +19,7 @@ package com.radixdlt.crypto;
 
 import com.google.common.base.Suppliers;
 import com.google.common.primitives.UnsignedBytes;
+import com.radixdlt.SecurityCritical;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.utils.Bytes;
 import java.security.SecureRandom;
@@ -27,8 +28,8 @@ import java.util.Comparator;
 import java.util.Objects;
 import java.util.function.Supplier;
 
+@SecurityCritical
 public final class Hash implements Comparable<Hash> {
-
 	private static final Comparator<byte[]> COMPARATOR = UnsignedBytes.lexicographicalComparator();
 	private static final SecureRandom secureRandom = new SecureRandom();
 	private static HashHandler hasher = new SHAHashHandler();
