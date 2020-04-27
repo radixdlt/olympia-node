@@ -20,7 +20,6 @@ package com.radixdlt.test;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import io.reactivex.Observable;
 import io.reactivex.Single;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -36,36 +35,34 @@ import java.util.stream.Collectors;
  * Checks that nodes are committed to the same vertex given selected samples provided by the nodes.
  */
 public class SafetyCheck implements RemoteBFTCheck {
-	private final long checkInterval;
-	private final TimeUnit checkIntervalUnit;
 	private final int timeout;
 	private final TimeUnit timeoutUnit;
 
-	public SafetyCheck(long checkInterval, TimeUnit checkIntervalUnit, int timeout, TimeUnit timeoutUnit) {
-		this.checkInterval = checkInterval;
-		this.checkIntervalUnit = Objects.requireNonNull(checkIntervalUnit);
+	public SafetyCheck(int timeout, TimeUnit timeoutUnit) {
 		this.timeout = timeout;
 		this.timeoutUnit = Objects.requireNonNull(timeoutUnit);
 	}
 
 	@Override
-	public Observable<RemoteBFTCheckResult> check(RemoteBFTNetworkBridge network) {
-		return Observable.interval(this.checkInterval, this.checkIntervalUnit)
-			.map(i -> network.getNodeIds().stream()
+	public Single<RemoteBFTCheckResult> check(RemoteBFTNetworkBridge network) {
+		return Single.mergeDelayError(
+			network.getNodeIds().stream()
 				.map(node -> network.queryEndpoint(node, "api/vertices/committed")
-						.map(JSONArray::new)
-						.map(verticesJson -> extractVertices(verticesJson, node))
-						.timeout(timeout, timeoutUnit)
-						.onErrorReturnItem(ImmutableSet.of())) // unresponsive nodes are not our concern here
+					.map(JSONArray::new)
+					.map(verticesJson -> extractVertices(verticesJson, node))
+					.timeout(timeout, timeoutUnit)
+					.onErrorReturnItem(ImmutableSet.of())) // unresponsive nodes are not our concern here
 				.collect(Collectors.toList()))
-			.map(Single::merge)
-			.map(vertices -> vertices // aggregate all responses (including empty ones due to timeout)
-				.collectInto(ImmutableSet.<Vertex>builder(), ImmutableSet.Builder::addAll)
-				.map(ImmutableSet.Builder::build)
-				.map(SafetyCheck::getDissentingVertices))
-			.flatMap(Single::toObservable)
-			.doOnNext(SafetyViolationError::throwIfAny)
-			.map(x -> RemoteBFTCheckResult.success());
+			.collectInto(ImmutableSet.<Vertex>builder(), ImmutableSet.Builder::addAll)
+			.map(ImmutableSet.Builder::build)
+			.map(SafetyCheck::getDissentingVertices)
+			.map(dissentingVertices -> {
+				if (dissentingVertices.isEmpty()) {
+					return RemoteBFTCheckResult.success();
+				} else {
+					return RemoteBFTCheckResult.error(new SafetyViolationError(dissentingVertices));
+				}
+			});
 	}
 
 	private static Set<Vertex> extractVertices(JSONArray verticesJson, String node) {
@@ -131,13 +128,12 @@ public class SafetyCheck implements RemoteBFTCheck {
 		private final Map<Long, Map<String, List<Vertex>>> dissentingVertices;
 
 		public SafetyViolationError(Map<Long, Map<String, List<Vertex>>> dissentingVertices) {
+			super(dissentingVertices.entrySet().stream()
+					.map(verticesAtView -> String.format("%d={%s}",
+						verticesAtView.getKey(),
+						String.join(", ", verticesAtView.getValue().keySet())))
+					.collect(Collectors.joining("; ")));
 			this.dissentingVertices = dissentingVertices;
-		}
-
-		private static void throwIfAny(Map<Long, Map<String, List<Vertex>>> dissentingVertices) {
-			if (!dissentingVertices.isEmpty()) {
-				throw new SafetyViolationError(dissentingVertices);
-			}
 		}
 
 		public Map<Long, Map<String, List<Vertex>>> getDissentingVertices() {

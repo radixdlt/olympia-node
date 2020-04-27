@@ -18,10 +18,21 @@
 
 package com.radixdlt.test;
 
-import io.reactivex.Single;
+import io.reactivex.Observable;
 
-public interface RemoteBFTCheck {
-	// given a check to run, returns a cold observable emitting the check whenever it should be run
+import java.util.concurrent.TimeUnit;
 
-	Single<RemoteBFTCheckResult> check(RemoteBFTNetworkBridge network);
+@FunctionalInterface
+public interface RemoteBFTCheckSchedule {
+	<T extends RemoteBFTCheck> Observable<T> schedule(T check);
+
+	static RemoteBFTCheckSchedule interval(long interval, TimeUnit intervalUnit) {
+		return new RemoteBFTCheckSchedule() {
+			@Override
+			public <T extends RemoteBFTCheck> Observable<T> schedule(T check) {
+				return Observable.interval(interval, intervalUnit)
+					.map(i -> check);
+			}
+		};
+	}
 }

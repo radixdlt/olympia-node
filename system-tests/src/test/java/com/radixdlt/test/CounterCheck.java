@@ -19,43 +19,46 @@
 package com.radixdlt.test;
 
 import io.reactivex.Completable;
-import io.reactivex.Observable;
 import io.reactivex.Single;
+import org.junit.Assert;
 
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class CounterCheck implements RemoteBFTCheck {
-	private final long checkInterval;
-	private final TimeUnit checkIntervalUnit;
 	private final Consumer<SystemCounters> assertion;
+	private final String assertionDescription;
 
-	public CounterCheck(long checkInterval, TimeUnit checkIntervalUnit, Consumer<SystemCounters> assertion) {
+	public CounterCheck(Consumer<SystemCounters> assertion, String assertionDescription) {
 		this.assertion = Objects.requireNonNull(assertion);
-		this.checkInterval = checkInterval;
-		this.checkIntervalUnit = Objects.requireNonNull(checkIntervalUnit);
+		this.assertionDescription = assertionDescription;
 	}
 
 	@Override
-	public Observable<RemoteBFTCheckResult> check(RemoteBFTNetworkBridge network) {
-		return Observable.interval(checkInterval, checkIntervalUnit)
-			.map(i -> network.getNodeIds().stream()
-				.map(nodeName -> network.queryEndpointJson(nodeName, "api/system")
-						.map(system -> system.getJSONObject("counters"))
-						.map(SystemCounters::from)
-						.doOnSuccess(assertion::accept)
-						.ignoreElement())
-				.collect(Collectors.toList()))
-			.map(Completable::mergeDelayError)
-			.map(c -> c.toSingleDefault(RemoteBFTCheckResult.success()))
-			.flatMap(Single::toObservable)
+	public Single<RemoteBFTCheckResult> check(RemoteBFTNetworkBridge network) {
+		return Completable.mergeDelayError(network.getNodeIds().stream()
+			.map(nodeName -> network.queryEndpointJson(nodeName, "api/system")
+				.map(system -> system.getJSONObject("counters"))
+				.map(SystemCounters::from)
+				.doOnSuccess(assertion::accept)
+				.ignoreElement())
+			.collect(Collectors.toList()))
+			.toSingleDefault(RemoteBFTCheckResult.success())
 			.onErrorReturn(RemoteBFTCheckResult::error);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("CounterCheck{checkInterval=%d %s}", checkInterval, checkIntervalUnit);
+		return String.format("CounterCheck{%s}", Optional.of(assertionDescription).orElse("<no description>"));
+	}
+
+	public static CounterCheck checkEquals(SystemCounters.SystemCounterType counterType, Object value) {
+		final String assertionDescription = String.format("%s is %s", counterType.toString(), value.toString());
+		return new CounterCheck(counters -> Assert.assertEquals(
+			assertionDescription,
+			value, counters.get(SystemCounters.SystemCounterType.CONSENSUS_REJECTED)),
+			assertionDescription);
 	}
 }

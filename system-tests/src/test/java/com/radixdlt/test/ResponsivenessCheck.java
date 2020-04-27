@@ -27,17 +27,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 public class ResponsivenessCheck implements RemoteBFTCheck {
-	private final long checkInterval;
-	private final TimeUnit checkIntervalUnit;
 	private final long timeout;
 	private final TimeUnit timeoutUnit;
 
-	public ResponsivenessCheck(long checkInterval, TimeUnit checkIntervalUnit, long timeout, TimeUnit timeoutUnit) {
-		if (checkInterval < 1) {
-			throw new IllegalArgumentException("checkInterval must be >= 1 but was " + checkInterval);
-		}
-		this.checkInterval = checkInterval;
-		this.checkIntervalUnit = Objects.requireNonNull(checkIntervalUnit);
+	public ResponsivenessCheck(long timeout, TimeUnit timeoutUnit) {
 		if (timeout < 1) {
 			throw new IllegalArgumentException("timeout must be >= 1 but was " + timeout);
 		}
@@ -46,22 +39,19 @@ public class ResponsivenessCheck implements RemoteBFTCheck {
 	}
 
 	@Override
-	public Observable<RemoteBFTCheckResult> check(RemoteBFTNetworkBridge network) {
-		return Observable.interval(checkInterval, checkIntervalUnit)
-			.map(i -> network.getNodeIds().stream()
+	public Single<RemoteBFTCheckResult> check(RemoteBFTNetworkBridge network) {
+		return Completable.mergeDelayError(
+			network.getNodeIds().stream()
 				.map(nodeName -> network.queryEndpointJson(nodeName, "api/ping")
 					.timeout(timeout, timeoutUnit)
 					.ignoreElement())
 				.collect(Collectors.toList()))
-			.map(Completable::mergeDelayError)
-			.map(c -> c.toSingleDefault(RemoteBFTCheckResult.success()))
-			.flatMap(Single::toObservable)
+			.toSingleDefault(RemoteBFTCheckResult.success())
 			.onErrorReturn(RemoteBFTCheckResult::error);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("ResponsivenessCheck{checkInterval=%d %s, timeout=%d %s}",
-			checkInterval, checkIntervalUnit, timeout, timeoutUnit);
+		return String.format("ResponsivenessCheck{timeout=%d %s}", timeout, timeoutUnit);
 	}
 }
