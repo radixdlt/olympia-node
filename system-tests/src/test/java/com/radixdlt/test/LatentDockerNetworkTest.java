@@ -38,7 +38,7 @@ public class LatentDockerNetworkTest {
 				.assertNoSyncExceptions()
 //				.assertNoTimeouts()
 				.build();
-			test.run(1, TimeUnit.MINUTES);
+			test.run(10, TimeUnit.MINUTES);
 		}
 	}
 }

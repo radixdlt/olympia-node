@@ -97,7 +97,7 @@ public class RemoteBFTTest {
 		private RemoteBFTNetworkBridge testNetwork;
 		private final List<RemoteBFTCheck> checks = new ArrayList<>();
 		private final List<RemoteBFTCheck> prerequisites = new ArrayList<>();
-		private long prerequisiteTimeout = 2;
+		private long prerequisiteTimeout = 5;
 		private TimeUnit prerequisiteTimeoutUnit = TimeUnit.MINUTES;
 
 		private Builder() {
