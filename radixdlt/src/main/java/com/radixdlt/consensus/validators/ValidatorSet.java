@@ -19,6 +19,7 @@ package com.radixdlt.consensus.validators;
 
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.utils.UInt128;
 import com.radixdlt.utils.UInt256;
 import java.util.Collection;
 import java.util.Objects;
@@ -37,7 +38,7 @@ import com.radixdlt.crypto.Hash;
 public final class ValidatorSet {
 	// We assume that we won't have more than 2^128 validators (2^32 is in fact the limit)
 	// in a single validator set so having this as the max power value will prevent overflows
-	private static final UInt256 POWER_MAX_VALUE = UInt256.MAX_VALUE.shiftRight(128);
+	private static final UInt256 POWER_MAX_VALUE = UInt256.from(UInt128.MAX_VALUE);
 	private final ImmutableBiMap<ECPublicKey, Validator> validators;
 	private final transient UInt256 totalPower;
 
