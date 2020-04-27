@@ -21,10 +21,9 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.util.Random;
-import java.util.function.LongSupplier;
-
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.common.annotations.VisibleForTesting;
+import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.utils.Longs;
 
 import io.netty.buffer.ByteBuf;
@@ -38,33 +37,22 @@ import org.apache.logging.log4j.Logger;
 /**
  * Class for NAT handling/discovery.
  */
-//FIXME: Should not be a singleton.  Fix this.
-public final class PublicInetAddress {
+public final class NatHandlerRemoteImpl implements NatHandler {
 	@VisibleForTesting
 	static final int SECRET_LIFETIME_MS = 60_000;
-	private static final Logger log = LogManager.getLogger("transport.udp");
+	private static final Logger log = LogManager.getLogger();
 
-	public static boolean isPublicUnicastInetAddress(InetAddress address) {
+	static boolean isPublicUnicastInetAddress(InetAddress address) {
 		return !(address.isSiteLocalAddress() || address.isLinkLocalAddress()
 			 || address.isLoopbackAddress() || address.isMulticastAddress());
 	}
 
-	private static PublicInetAddress instance = null;
-	private static final Object INSTANCE_LOCK = new Object();
-
-	public static PublicInetAddress getInstance() {
-		synchronized (INSTANCE_LOCK) {
-			if (instance == null) {
-				throw new IllegalStateException("instance not configured");
-			}
-			return instance;
-		}
+	static NatHandler create(InetAddress localAddress, int localPort) {
+		return create(localAddress, localPort, System::currentTimeMillis);
 	}
 
-	public static void configure(int localPort) {
-		synchronized (INSTANCE_LOCK) {
-			instance = new PublicInetAddress(localPort, System::currentTimeMillis);
-		}
+	static NatHandler create(InetAddress localAddress, int localPort, TimeSupplier timeSource) {
+		return new NatHandlerRemoteImpl(localAddress, localPort, timeSource);
 	}
 
 	private final Object lock = new Object();
@@ -72,45 +60,35 @@ public final class PublicInetAddress {
 
 	private final InetAddress localAddress;
 	private final int localPort;
-	private final LongSupplier timeSource;
+	private final TimeSupplier timeSource;
 
 	private InetAddress confirmedAddress;
 	private InetAddress unconfirmedAddress;
 	private long secret;
 	private long secretEndOfLife = Long.MIN_VALUE; // Very much expired
 
-	@VisibleForTesting
-	PublicInetAddress(int localPort, LongSupplier timeSource) {
-		this.localAddress = getLocalAddress();
+	NatHandlerRemoteImpl(InetAddress localAddress, int localPort, TimeSupplier timeSource) {
+		this.localAddress = localAddress;
 		this.localPort = localPort;
 		this.timeSource = timeSource;
 	}
 
-	public InetAddress get() {
+	@Override
+	public InetAddress getAddress() {
 		synchronized (lock) {
 			return confirmedAddress == null ? localAddress : confirmedAddress;
 		}
 	}
 
-	/**
-	 * Reset confirmed address.
-	 */
-	void reset() {
+	@Override
+	public void reset() {
 		synchronized (lock) {
 			confirmedAddress = null;
 		}
 	}
 
-	/**
-	 * Handle an inbound packet to check if address checking/challenge is required.
-	 * <p>
-	 * Note that data will be consumed from {@code buf} as required to handle NAT processing.
-	 *
-	 * @param ctx channel context to write any required address challenges on
-	 * @param peerAddress the address of the sending peer
-	 * @param buf the inbound packet
-	 */
-	void handleInboundPacket(ChannelHandlerContext ctx, InetAddress peerAddress, ByteBuf buf) {
+	@Override
+	public void handleInboundPacket(ChannelHandlerContext ctx, InetAddress peerAddress, ByteBuf buf) {
 		int length = buf.readableBytes();
 		if (length > 0) {
 			byte firstByte = buf.getByte(0); // peek
@@ -127,14 +105,6 @@ public final class PublicInetAddress {
 						buf.readBytes(rawPeerAddress);
 						buf.readBytes(rawLocalAddress);
 
-						InetAddress addr = InetAddress.getByAddress(rawPeerAddress);
-						// TODO: if addr is previously unknown we need to challenge it to prevent peer table poisoning:
-						// See "Proposed solution for Routing Table Poisoning" in
-						// https://pdfs.semanticscholar.org/3990/e316c8ecedf8398bd6dc167d92f094525920.pdf
-						if (!isPublicUnicastInetAddress(peerAddress) && isPublicUnicastInetAddress(addr)) {
-							peerAddress = addr;
-						}
-
 						InetAddress localAddr = InetAddress.getByAddress(rawLocalAddress);
 						if (isPublicUnicastInetAddress(localAddr)) {
 							startValidation(ctx, localAddr);
@@ -147,15 +117,8 @@ public final class PublicInetAddress {
 		}
 	}
 
-	/**
-	 * The caller needs to filter all packets with this method to catch validation UDP frames.
-	 * <p>
-	 * Note that no data will be consumed from {@code buf}.
-	 *
-	 * @param bytes packet previously sent by start validation.
-	 * @return true when packet was part of the validation process(and can be ignored by the caller) false otherwise.
-	 */
-	boolean endValidation(ByteBuf buf) {
+	@Override
+	public boolean endInboundValidation(ByteBuf buf) {
 		// Make sure secret doesn't change mid-check
 		long localSecret = this.secret;
 
@@ -187,6 +150,31 @@ public final class PublicInetAddress {
 		return true;
 	}
 
+	@Override
+	public int computeExtraSize(InetAddress destAddress) {
+		byte[] rawSourceAddress = getAddress().getAddress();
+		byte[] rawDestAddress = destAddress.getAddress();
+
+		assert rawSourceAddress.length == 4 || rawSourceAddress.length == 16;
+		assert rawDestAddress.length == 4 || rawDestAddress.length == 16;
+
+		return 1 + rawSourceAddress.length + rawDestAddress.length;
+	}
+
+	@Override
+	public void writeExtraData(ByteBuf buffer, InetAddress destAddress) {
+		byte[] rawSourceAddress = getAddress().getAddress();
+		byte[] rawDestAddress = destAddress.getAddress();
+
+		assert rawSourceAddress.length == 4 || rawSourceAddress.length == 16;
+		assert rawDestAddress.length == 4 || rawDestAddress.length == 16;
+
+		buffer
+			.writeByte(getAddressFormat(rawSourceAddress.length, rawDestAddress.length))
+			.writeBytes(rawSourceAddress)
+			.writeBytes(rawDestAddress);
+	}
+
 	/**
 	 * Sends a challenge to the given address if necessary.
 	 * <p>
@@ -202,7 +190,7 @@ public final class PublicInetAddress {
 		// update state in a thread-safe manner
 		synchronized (lock) {
 			// If we are already matched, or our secret has not yet expired, just exit
-			long now = timeSource.getAsLong();
+			long now = timeSource.currentTime();
 			if (address.equals(confirmedAddress) || secretEndOfLife > now) {
 				return;
 			}
@@ -223,7 +211,7 @@ public final class PublicInetAddress {
 	@Override
 	@JsonValue
 	public String toString() {
-		return get().getHostAddress();
+		return getAddress().getHostAddress();
 	}
 
 	private void sendSecret(ChannelHandlerContext ctx, InetAddress address, long secret) {
@@ -232,11 +220,33 @@ public final class PublicInetAddress {
 		ctx.writeAndFlush(packet);
 	}
 
-	private InetAddress getLocalAddress() {
-		try {
-			return InetAddress.getLocalHost();
-		} catch (UnknownHostException e) {
-			return InetAddress.getLoopbackAddress();
-		}
+	@VisibleForTesting
+	long secret() {
+		return this.secret;
+	}
+
+	@VisibleForTesting
+	long secretEndOfLife() {
+		return this.secretEndOfLife;
+	}
+
+	@VisibleForTesting
+	InetAddress unconfirmedAddress() {
+		return this.unconfirmedAddress;
+	}
+
+	@VisibleForTesting
+	void unconfirmedAddress(InetAddress address) {
+		this.unconfirmedAddress = address;
+	}
+
+	@VisibleForTesting
+	InetAddress confirmedAddress() {
+		return this.confirmedAddress;
+	}
+
+	private byte getAddressFormat(int srclen, int dstlen) {
+		// MSB: switch between old/new protocol format
+		return (byte) (0x80 | (srclen != 4 ? 0x02 : 0x00) | (dstlen != 4 ? 0x01 : 0x00));
 	}
 }

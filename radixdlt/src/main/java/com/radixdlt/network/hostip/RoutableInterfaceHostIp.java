@@ -25,12 +25,14 @@ import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Streams;
@@ -47,8 +49,14 @@ public class RoutableInterfaceHostIp implements HostIp {
 		return new RoutableInterfaceHostIp();
 	}
 
+	private final Supplier<Optional<String>> result = Suppliers.memoize(this::get);
+
 	@Override
 	public Optional<String> hostIp() {
+		return result.get();
+	}
+
+	private Optional<String> get() {
 		try {
 			return hostIp(Iterators.forEnumeration(NetworkInterface.getNetworkInterfaces()));
 		} catch (SocketException e) {

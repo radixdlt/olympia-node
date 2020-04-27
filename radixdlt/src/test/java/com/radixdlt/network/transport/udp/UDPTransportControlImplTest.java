@@ -31,6 +31,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.netty.channel.socket.DatagramChannel;
+
 public class UDPTransportControlImplTest {
     private UDPTransportOutboundConnectionFactory outboundFactory;
     private TransportOutboundConnection transportOutboundConnection;
@@ -39,12 +41,14 @@ public class UDPTransportControlImplTest {
     public void setUp() {
         transportOutboundConnection = mock(TransportOutboundConnection.class);
         outboundFactory = mock(UDPTransportOutboundConnectionFactory.class);
-        when(outboundFactory.create(any(), any())).thenReturn(transportOutboundConnection);
+        when(outboundFactory.create(any(), any(), any())).thenReturn(transportOutboundConnection);
     }
 
     @Test
     public void open() throws ExecutionException, InterruptedException, IOException {
-        try (UDPTransportControlImpl udpTransportControl = new UDPTransportControlImpl(null, outboundFactory)) {
+    	DatagramChannel ch = mock(DatagramChannel.class);
+    	NatHandler natHandler = mock(NatHandler.class);
+        try (UDPTransportControlImpl udpTransportControl = new UDPTransportControlImpl(ch, outboundFactory, natHandler)) {
         	CompletableFuture<TransportOutboundConnection> result = udpTransportControl.open(null);
         	assertThat(result.get()).isEqualTo(transportOutboundConnection);
         }

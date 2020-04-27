@@ -24,7 +24,6 @@ import com.radixdlt.mempool.SubmissionControl;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.PeerManager;
-import com.radixdlt.network.transport.udp.PublicInetAddress;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
@@ -117,9 +116,6 @@ public final class Radix
 	public static void start(RuntimeProperties properties) {
 		Serialization serialization = DefaultSerialization.getInstance();
 		Universe universe = extractUniverseFrom(properties, serialization);
-
-		// TODO this is awful, PublicInetAddress shouldn't be a singleton
-		PublicInetAddress.configure(universe.getPort());
 
 		// set up time services
 		Time.start(properties);

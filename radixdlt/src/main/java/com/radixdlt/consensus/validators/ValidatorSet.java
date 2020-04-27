@@ -19,15 +19,15 @@ package com.radixdlt.consensus.validators;
 
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.utils.UInt128;
+import com.radixdlt.utils.UInt256;
 import java.util.Collection;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableList;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.crypto.Signatures;
 
 /**
  * Set of validators for consensus.
@@ -36,11 +36,23 @@ import com.radixdlt.crypto.Signatures;
  * as long as all validators sign.
  */
 public final class ValidatorSet {
+	// We assume that we won't have more than 2^128 validators (2^32 is in fact the limit)
+	// in a single validator set so having this as the max power value will prevent overflows
+	private static final UInt256 POWER_MAX_VALUE = UInt256.from(UInt128.MAX_VALUE);
 	private final ImmutableBiMap<ECPublicKey, Validator> validators;
+	private final transient UInt256 totalPower;
 
 	private ValidatorSet(Collection<Validator> validators) {
+		if (validators.stream().anyMatch(v -> v.getPower().compareTo(POWER_MAX_VALUE) > 0)) {
+			throw new IllegalArgumentException("There exists a validator with power greater than " + POWER_MAX_VALUE);
+		}
+
 		this.validators = validators.stream()
 			.collect(ImmutableBiMap.toImmutableBiMap(Validator::nodeKey, Function.identity()));
+		this.totalPower = validators.stream()
+			.map(Validator::getPower)
+			.reduce(UInt256::add)
+			.orElse(UInt256.ZERO);
 	}
 
 	/**
@@ -54,39 +66,33 @@ public final class ValidatorSet {
 	}
 
 	/**
-	 * Validate the specified message hash against the specified signatures.
+	 * Create an initial validation state with no signatures for this validator set.
 	 *
-	 * @param message The message hash to verify signatures against
-	 * @param sigs The signatures to verify
-	 * @return A {@link ValidationResult}
+	 * @param anchor The hash to validate signatures against
+	 * @return An initial validation state with no signatures
 	 */
-	public ValidationResult validate(Hash message, Signatures sigs) {
-		final int threshold = threshold(this.validators.size());
-		final ImmutableList<Validator> signed = sigs.signedMessage(message).stream()
-			.map(this.validators::get)
-			.filter(Objects::nonNull)
-			.collect(ImmutableList.toImmutableList());
-		if (signed.isEmpty() || signed.size() < threshold) {
-			return ValidationResult.failure();
-		} else {
-			return ValidationResult.passed(signed);
-		}
+	public ValidationState newValidationState(Hash anchor) {
+		return ValidationState.forValidatorSet(anchor, this);
+	}
+
+	public boolean containsKey(ECPublicKey key) {
+		return validators.containsKey(key);
+	}
+
+	public UInt256 getPower(Set<ECPublicKey> signedKeys) {
+		return signedKeys.stream()
+			.map(validators::get)
+			.map(Validator::getPower)
+			.reduce(UInt256::add)
+			.orElse(UInt256.ZERO);
+	}
+
+	public UInt256 getTotalPower() {
+		return totalPower;
 	}
 
 	public ImmutableSet<Validator> getValidators() {
 		return validators.values();
-	}
-
-	@VisibleForTesting
-	static int threshold(int n) {
-		return n - acceptableFaults(n);
-	}
-
-	@VisibleForTesting
-	static int acceptableFaults(int n) {
-		// Compute acceptable faults based on Byzantine limit n = 3f + 1
-		// i.e. f = (n - 1) / 3
-		return (n - 1) / 3;
 	}
 
 	@Override

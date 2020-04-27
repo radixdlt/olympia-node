@@ -20,10 +20,13 @@ package com.radixdlt.network.hostip;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Optional;
+import java.util.function.Supplier;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Suppliers;
 import com.google.common.net.HostAndPort;
 
 /**
@@ -35,13 +38,15 @@ final class EnvironmentHostIp implements HostIp {
 	@VisibleForTesting
 	static final String ENV_VAR = "RADIXDLT_HOST_IP_ADDRESS";
 
+	private final Supplier<Optional<String>> result = Suppliers.memoize(() -> hostIp(System.getenv(ENV_VAR)));
+
 	static HostIp create() {
 		return new EnvironmentHostIp();
 	}
 
 	@Override
 	public Optional<String> hostIp() {
-		return hostIp(System.getenv(ENV_VAR));
+		return result.get();
 	}
 
 	// Broken out for testing as environment is immutable from Java runtime

@@ -37,7 +37,7 @@ import com.radixdlt.serialization.DsonOutput.Output;
  * a peer type with full system information.
  */
 @SerializerId2("network.peer.transport")
-final class PeerWithTransport extends Peer {
+public final class PeerWithTransport extends Peer {
 
 	@JsonProperty("transport")
 	@DsonOutput(Output.ALL)
@@ -53,7 +53,7 @@ final class PeerWithTransport extends Peer {
 		this.transportInfo = null;
 	}
 
-	PeerWithTransport(TransportInfo transportInfo) {
+	public PeerWithTransport(TransportInfo transportInfo) {
 		this.transportInfo = transportInfo;
 	}
 

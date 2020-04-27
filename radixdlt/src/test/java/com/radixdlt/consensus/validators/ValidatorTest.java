@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus.validators;
 
+import com.radixdlt.utils.UInt256;
 import org.junit.Test;
 import org.radix.serialization.SerializeObject;
 
@@ -52,6 +53,6 @@ public class ValidatorTest extends SerializeObject<Validator> {
 
 	private static Validator create() {
 		ECKeyPair nodeKey = ECKeyPair.generateNew();
-		return Validator.from(nodeKey.getPublicKey());
+		return Validator.from(nodeKey.getPublicKey(), UInt256.ONE);
 	}
 }

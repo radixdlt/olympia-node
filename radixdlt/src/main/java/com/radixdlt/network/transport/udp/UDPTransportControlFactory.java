@@ -22,6 +22,6 @@ import io.netty.channel.socket.DatagramChannel;
 @FunctionalInterface
 interface UDPTransportControlFactory {
 
-	UDPTransportControlImpl create(DatagramChannel channel, UDPTransportOutboundConnectionFactory outboundFactory);
+	UDPTransportControlImpl create(DatagramChannel channel, UDPTransportOutboundConnectionFactory outboundFactory, NatHandler natHandler);
 
 }

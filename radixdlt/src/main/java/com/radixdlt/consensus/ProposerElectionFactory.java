@@ -18,18 +18,16 @@
 package com.radixdlt.consensus;
 
 import com.radixdlt.consensus.liveness.ProposerElection;
-import com.radixdlt.crypto.ECPublicKey;
-
-import java.util.List;
+import com.radixdlt.consensus.validators.ValidatorSet;
 
 /**
  * Factory for creating {@link ProposerElection}s for specific lists of proposeres
  */
 public interface ProposerElectionFactory {
 	/**
-	 * Create a {@link ProposerElection} for a certain list of proposers
-	 * @param proposers The (ordered) list of proposers
+	 * Create a {@link ProposerElection} for a given validatorSet
+	 * @param validatorSet The validatorSet
 	 * @return The created {@link ProposerElection} instance
 	 */
-	ProposerElection create(List<ECPublicKey> proposers);
+	ProposerElection create(ValidatorSet validatorSet);
 }

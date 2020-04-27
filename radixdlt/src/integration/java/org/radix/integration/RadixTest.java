@@ -18,7 +18,6 @@
 package org.radix.integration;
 
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.network.transport.udp.PublicInetAddress;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.universe.Universe;
@@ -63,7 +62,6 @@ public class RadixTest {
 		properties.set("db.location", dbLocation);
 
 		universe = new GenerateUniverses(properties).generateUniverses().stream().filter(Universe::isTest).findAny().get();
-		PublicInetAddress.configure(universe.getPort());
 	}
 
 	@AfterClass
