@@ -83,8 +83,7 @@ jacocoTestReport {
 }
 
 dependencies {
-    compile 'com.radixdlt:radix-engine-library:1.0-beta.8'
-
+    compile 'com.radixdlt:radix-engine-library:rc~1.0-beta.9-SNAPSHOT'
     compile 'io.reactivex.rxjava3:rxjava:3.0.0'
     compile 'com.sleepycat:je:18.3.12'
 
