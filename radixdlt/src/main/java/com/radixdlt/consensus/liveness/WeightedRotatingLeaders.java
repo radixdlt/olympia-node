@@ -45,14 +45,14 @@ public final class WeightedRotatingLeaders implements ProposerElection {
 
 	private final ValidatorSet validatorSet;
 	private final Comparator<Entry<Validator, UInt256>> weightsComparator;
-	private final CachingNextLeaderComputer highViewComputer;
+	private final CachingNextLeaderComputer nextLeaderComputer;
 
 	public WeightedRotatingLeaders(ValidatorSet validatorSet, Comparator<Validator> comparator, int cacheSize) {
 		this.validatorSet = validatorSet;
 		this.weightsComparator = Comparator
 			.comparing(Entry<Validator, UInt256>::getValue)
 			.thenComparing(Entry::getKey, comparator);
-		this.highViewComputer = new CachingNextLeaderComputer(validatorSet, weightsComparator, cacheSize);
+		this.nextLeaderComputer = new CachingNextLeaderComputer(validatorSet, weightsComparator, cacheSize);
 	}
 
 	private static class CachingNextLeaderComputer {
@@ -78,14 +78,17 @@ public final class WeightedRotatingLeaders implements ProposerElection {
 		}
 
 		private void computeNext() {
+			// Reset last leader
 			final int curIndex = (int) (this.curView.number() % cache.length);
 			final Validator curLeader = cache[curIndex];
 			weights.merge(curLeader, validatorSet.getTotalPower(), UInt256::subtract);
 
+			// Add weight
 			for (Validator validator : validatorSet.getValidators()) {
 				weights.merge(validator, validator.getPower(), UInt256::add);
 			}
 
+			// Compute next leader
 			this.curView = this.curView.next();
 			int index = (int) (this.curView.number() % cache.length);
 			cache[index] = computeHeaviest();
@@ -105,30 +108,35 @@ public final class WeightedRotatingLeaders implements ProposerElection {
 			}
 		}
 
-		private void resetToView(View view) {
-			if (curView == null || view.number() < curView.number() - ((curView.number() / cache.length) * cache.length)) {
+		private Validator resetToView(View view) {
+			// reset if view isn't in cache
+			if (curView == null || view.number() < curView.number() - cache.length) {
 				curView = View.of(0);
 				for (Validator validator : validatorSet.getValidators()) {
 					weights.put(validator, UInt256.from(UInt128.ONE, UInt128.ZERO).subtract(validator.getPower()));
 				}
 				cache[0] = computeHeaviest();
 			}
+
+			// compute to view
 			computeToView(view);
+
+			// guaranteed to return non-null;
+			return cache[(int) (view.number() % cache.length)];
 		}
 	}
 
 	@Override
 	public ECPublicKey getProposer(View view) {
-		highViewComputer.computeToView(view);
-		Validator validator = highViewComputer.checkCacheForProposer(view);
+		nextLeaderComputer.computeToView(view);
+		Validator validator = nextLeaderComputer.checkCacheForProposer(view);
 		if (validator != null) {
 			// dynamic program cache successful
 			return validator.nodeKey();
 		} else {
 			// cache doesn't have value, do the expensive operation
 			CachingNextLeaderComputer computer = new CachingNextLeaderComputer(validatorSet, weightsComparator, 1);
-			computer.computeToView(view);
-			return computer.checkCacheForProposer(view).nodeKey();
+			return computer.resetToView(view).nodeKey();
 		}
 	}
 }
