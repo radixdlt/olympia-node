@@ -21,7 +21,11 @@ import com.google.common.base.Strings;
 import com.radixdlt.TestSetupUtils;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.Longs;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import nl.jqno.equalsverifier.EqualsVerifier;
+import org.assertj.core.api.Assertions;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -48,9 +52,9 @@ public class HashTest {
 	@Test
 	public void equalsContract() {
 		EqualsVerifier.forClass(Hash.class)
-				.withIgnoredFields("data") // other field(s) dependent on `data` is used
-				.withIgnoredFields("idCached") // `idCached` is derived from other field(s) in use.
-				.verify();
+			.withCachedHashCode("hashCodeCached", "calculateHashCode", Hash.random())
+			.withIgnoredFields("idCached") // `idCached` is derived from other field(s) in use.
+			.verify();
 	}
 
 	@Test
@@ -210,6 +214,18 @@ public class HashTest {
 
 		assertNotEquals(deadbeef, Hash.of(deadbeef).toByteArray());
 		assertNotEquals(deadbeef, Hash.hash256(deadbeef));
+	}
+
+	@Test
+	public void birthday_attack_test() {
+		// 32-bit hashes + 300000 hashes will have a collision 99.997% of the time.
+		// Practically high enough to catch any issues we have with hash collisions
+		final int numHashes = 300000;
+		Set<Hash> hashes = Stream.generate(Hash::random)
+			.limit(numHashes)
+			.collect(Collectors.toSet());
+
+		Assertions.assertThat(hashes).hasSize(numHashes);
 	}
 
 	private void testEncodeToHashedBytesFromString(String message, Function<byte[], byte[]> hashFunction, String expectedHashHex) {

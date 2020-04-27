@@ -19,6 +19,7 @@ package com.radixdlt.crypto;
 
 import com.google.common.base.Suppliers;
 import com.google.common.primitives.UnsignedBytes;
+import com.radixdlt.SecurityCritical;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.utils.Bytes;
 import java.security.SecureRandom;
@@ -27,8 +28,8 @@ import java.util.Comparator;
 import java.util.Objects;
 import java.util.function.Supplier;
 
+@SecurityCritical
 public final class Hash implements Comparable<Hash> {
-
 	private static final Comparator<byte[]> COMPARATOR = UnsignedBytes.lexicographicalComparator();
 	private static final SecureRandom secureRandom = new SecureRandom();
 	private static HashHandler hasher = new SHAHashHandler();
@@ -100,10 +101,9 @@ public final class Hash implements Comparable<Hash> {
 	}
 
 
-	private final byte[] 	data;
-	private Supplier<EUID>	idCached = Suppliers.memoize(this::computeId);
-
-	private final int hashCodeCached;
+	private final byte[] data;
+	private final transient Supplier<EUID> idCached = Suppliers.memoize(this::computeId);
+	private final transient int hashCodeCached;
 
 	/**
 	 * This does NOT perform any hashing, the byte array passed should be already hashed.
@@ -141,7 +141,7 @@ public final class Hash implements Comparable<Hash> {
 
 		this.data = new byte[BYTES];
 		System.arraycopy(alreadyHashedData, offset, this.data, 0, BYTES);
-		this.hashCodeCached = Arrays.hashCode(this.data);
+		this.hashCodeCached = calculateHashCode();
 	}
 
 
@@ -162,7 +162,12 @@ public final class Hash implements Comparable<Hash> {
 		}
 
 		this.data = Bytes.fromHexString(alreadyHashedDataAsHexString);
-		this.hashCodeCached = Arrays.hashCode(this.data);
+		this.hashCodeCached = calculateHashCode();
+	}
+
+	// Required for EqualsVerifier.withCachedHashCode
+	private int calculateHashCode() {
+		return Arrays.hashCode(this.data);
 	}
 
 	/**
@@ -216,9 +221,8 @@ public final class Hash implements Comparable<Hash> {
 
 		if (o instanceof Hash) {
 			Hash other = (Hash) o;
-
-			// `hashCode()` uses `this.hashCodeCached`, which in turn is derived from `this.data`.
-			return this.hashCode() == other.hashCode();
+			 // Need to do full byte area comparison otherwise, susceptible to birthday attack
+			return Arrays.equals(this.data, other.data);
 		}
 
 		return false;
