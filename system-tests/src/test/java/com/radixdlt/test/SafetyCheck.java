@@ -24,6 +24,8 @@ import io.reactivex.Single;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -45,16 +47,19 @@ public class SafetyCheck implements RemoteBFTCheck {
 
 	@Override
 	public Single<RemoteBFTCheckResult> check(RemoteBFTNetworkBridge network) {
-		return Single.mergeDelayError(
+		return Single.zip(
 			network.getNodeIds().stream()
 				.map(node -> network.queryEndpoint(node, "api/vertices/committed")
-					.map(JSONArray::new)
-					.map(verticesJson -> extractVertices(verticesJson, node))
 					.timeout(timeout, timeoutUnit)
+					.map(verticesString -> extractVertices(verticesString, node))
+					.doOnError(err -> System.err.printf(
+						"error while querying %s for committed vertices, excluding from evaluation due to: %s%n",
+						node, err))
 					.onErrorReturnItem(ImmutableSet.of())) // unresponsive nodes are not our concern here
+				.collect(Collectors.toList()),
+			verticesAtNodes -> Arrays.stream(verticesAtNodes)
+				.flatMap(vertices -> ((Set<Vertex>) vertices).stream())
 				.collect(Collectors.toList()))
-			.collectInto(ImmutableSet.<Vertex>builder(), ImmutableSet.Builder::addAll)
-			.map(ImmutableSet.Builder::build)
 			.map(SafetyCheck::getDissentingVertices)
 			.map(dissentingVertices -> {
 				if (dissentingVertices.isEmpty()) {
@@ -65,7 +70,13 @@ public class SafetyCheck implements RemoteBFTCheck {
 			});
 	}
 
-	private static Set<Vertex> extractVertices(JSONArray verticesJson, String node) {
+	@Override
+	public String toString() {
+		return String.format("SafetyCheck{timeout=%d %s}", timeout, timeoutUnit);
+	}
+
+	private static Set<Vertex> extractVertices(String verticesString, String node) {
+		JSONArray verticesJson = new JSONArray(verticesString);
 		ImmutableSet.Builder<Vertex> vertices = ImmutableSet.builder();
 		for (int j = 0; j < verticesJson.length(); j++) {
 			JSONObject vertexJson = verticesJson.getJSONObject(j);
@@ -75,7 +86,7 @@ public class SafetyCheck implements RemoteBFTCheck {
 		return vertices.build();
 	}
 
-	private static Map<Long, Map<String, List<Vertex>>> getDissentingVertices(Set<Vertex> vertices) {
+	private static Map<Long, Map<String, List<Vertex>>> getDissentingVertices(Collection<Vertex> vertices) {
 		ImmutableMap.Builder<Long, Map<String, List<Vertex>>> dissentingVertices = ImmutableMap.builder();
 		Map<Long, List<Vertex>> verticesByView = vertices.stream()
 			.collect(Collectors.groupingBy(Vertex::getView));

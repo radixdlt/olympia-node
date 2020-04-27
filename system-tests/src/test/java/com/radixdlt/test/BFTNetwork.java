@@ -22,7 +22,16 @@ import okhttp3.Request;
 
 import java.util.Set;
 
+/**
+ * An abstraction over network of a set of BFT nodes
+ */
 public interface BFTNetwork {
+	/**
+	 * Make a request to a certain node's endpoint
+	 * @param nodeId The node id as given by getNodeIds
+	 * @param endpoint
+	 * @return
+	 */
 	Request makeRequest(String nodeId, String endpoint);
 
 	Set<String> getNodeIds();

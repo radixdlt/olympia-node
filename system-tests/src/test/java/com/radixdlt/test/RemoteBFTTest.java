@@ -86,7 +86,7 @@ public class RemoteBFTTest {
 					.map(checkToRun -> checkToRun.check(this.testNetwork)
 						.onErrorReturn(RemoteBFTCheckResult::error)
 						.doOnSuccess(result -> result.assertSuccess(String.format("check %s failed", checkToRun))))
-					.map(Single::toObservable))
+					.flatMap(Single::toObservable))
 				.collect(Collectors.toList()))
 			.take(runtime, runtimeUnit)
 			.blockingSubscribe();
