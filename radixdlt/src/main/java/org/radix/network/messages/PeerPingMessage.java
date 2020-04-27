@@ -25,6 +25,7 @@ import org.radix.universe.system.RadixSystem;
 import org.radix.universe.system.SystemMessage;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.primitives.UnsignedLong;
 
 @SerializerId2("peer.ping")
 public final class PeerPingMessage extends SystemMessage {
@@ -43,5 +44,10 @@ public final class PeerPingMessage extends SystemMessage {
 
 	public long getNonce() {
 		return nonce;
+	}
+
+	@Override
+	public String toString() {
+		return String.format("%s[%s:%s]", getClass().getSimpleName(), getSystem().getNID(), UnsignedLong.fromLongBits(nonce));
 	}
 }

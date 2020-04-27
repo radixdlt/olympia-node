@@ -52,7 +52,7 @@ import static org.powermock.api.mockito.PowerMockito.spy;
 import static org.powermock.api.mockito.PowerMockito.when;
 
 @RunWith(PowerMockRunner.class)
-@PowerMockIgnore({"java.security.*", "javax.security.*", "org.bouncycastle.*"})
+@PowerMockIgnore({"java.security.*", "javax.security.*", "org.bouncycastle.*", "javax.management.*"})
 @PrepareForTest({BootstrapDiscovery.class, URL.class, URLConnection.class, RuntimeProperties.class, Universe.class, Thread.class})
 public class BootstrapDiscoveryTest {
     // Mocks

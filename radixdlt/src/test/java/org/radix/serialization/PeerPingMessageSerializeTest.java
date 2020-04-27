@@ -20,8 +20,16 @@ package org.radix.serialization;
 import com.google.common.base.Strings;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.utils.Bytes;
+
+import org.junit.Test;
 import org.radix.network.messages.PeerPingMessage;
+import org.radix.universe.system.RadixSystem;
+
+import static org.hamcrest.CoreMatchers.*;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
 /**
  * Check serialization of PeerPingMessage
@@ -40,5 +48,16 @@ public class PeerPingMessageSerializeTest extends SerializeMessageObject<PeerPin
 		} catch (CryptoException e) {
 			throw new IllegalStateException("Failed to create key", e);
 		}
+	}
+
+	@Test
+	public void sensibleToString() {
+		RadixSystem system = mock(RadixSystem.class);
+		when(system.getNID()).thenReturn(EUID.TWO);
+		String s = new PeerPingMessage(1234L, system, 0).toString();
+
+		assertThat(s, containsString(PeerPingMessage.class.getSimpleName()));
+		assertThat(s, containsString(EUID.TWO.toString()));
+		assertThat(s, containsString("1234"));
 	}
 }

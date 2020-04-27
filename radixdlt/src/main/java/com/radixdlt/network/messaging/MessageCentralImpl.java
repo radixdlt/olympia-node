@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.logging.log4j.LogManager;
@@ -76,11 +75,11 @@ final class MessageCentralImpl implements MessageCentral {
 	private final RateLimiter outboundLogRateLimiter = RateLimiter.create(1.0);
 
 	// Inbound message handling
-	private final BlockingQueue<MessageEvent> inboundQueue;
+	private final SimpleBlockingQueue<MessageEvent> inboundQueue;
 	private final SimpleThreadPool<MessageEvent> inboundThreadPool;
 
 	// Outbound message handling
-	private final BlockingQueue<MessageEvent> outboundQueue;
+	private final SimpleBlockingQueue<MessageEvent> outboundQueue;
 	private final SimpleThreadPool<MessageEvent> outboundThreadPool;
 
 
@@ -97,8 +96,8 @@ final class MessageCentralImpl implements MessageCentral {
 		SystemCounters counters
 	) {
 		this.counters = Objects.requireNonNull(counters);
-		this.inboundQueue = eventQueueFactory.createEventQueue(config.messagingInboundQueueMax(8192));
-		this.outboundQueue = eventQueueFactory.createEventQueue(config.messagingOutboundQueueMax(16384));
+		this.inboundQueue = eventQueueFactory.createEventQueue(config.messagingInboundQueueMax(8192), MessageEvent.comparator());
+		this.outboundQueue = eventQueueFactory.createEventQueue(config.messagingOutboundQueueMax(16384), MessageEvent.comparator());
 
 		this.serialization = Objects.requireNonNull(serialization);
 		this.connectionManager = Objects.requireNonNull(transportManager);
@@ -145,7 +144,7 @@ final class MessageCentralImpl implements MessageCentral {
 
 	@Override
 	public void send(Peer peer, Message message) {
-		if (!outboundQueue.offer(new MessageEvent(peer, null, message, System.nanoTime() - timeBase))) {
+		if (!outboundQueue.offer(new MessageEvent(peer, message, System.nanoTime() - timeBase))) {
 			if (outboundLogRateLimiter.tryAcquire()) {
 				log.error("Outbound message to {} dropped", peer);
 			}
@@ -155,7 +154,7 @@ final class MessageCentralImpl implements MessageCentral {
 
 	@Override
 	public void inject(Peer peer, Message message) {
-		MessageEvent event = new MessageEvent(peer, null, message, System.nanoTime() - timeBase);
+		MessageEvent event = new MessageEvent(peer, message, System.nanoTime() - timeBase);
 		if (!inboundQueue.offer(event)) {
 			if (inboundLogRateLimiter.tryAcquire()) {
 				log.error("Injected message from {} dropped", peer);

@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,21 +15,22 @@
  * language governing permissions and limitations under the License.
  */
 
-package org.radix.universe.system;
+package com.radixdlt.consensus.simulation;
 
-import org.radix.serialization.SerializeMessageObject;
+import io.reactivex.rxjava3.core.Completable;
 
 /**
- * Check serialization of org.radix.universe.system.System
+ * A running BFT check given access to network
  */
-public class SystemSerializeTest extends SerializeMessageObject<RadixSystem> {
-	public SystemSerializeTest() {
-		super(RadixSystem.class, SystemSerializeTest::getSystem);
-	}
+public interface BFTCheck {
 
-	private static RadixSystem getSystem() {
-		RadixSystem newSystem = new RadixSystem();
-		newSystem.setPlanck(101);
-		return newSystem;
-	}
+	/**
+	 * Creates an observable which runs assertions against a bft network.
+	 * Assertions errors are expected to propagate down the observable.
+	 * TODO: Cleanup interface a bit
+	 *
+	 * @param network network to check
+	 * @return completable to subscribe to enable checking
+	 */
+	Completable check(BFTNetworkSimulation network);
 }

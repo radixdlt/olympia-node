@@ -62,6 +62,10 @@ public final class Proposal implements ConsensusEvent {
 		this.signature = Objects.requireNonNull(signature);
 	}
 
+	public ECPublicKey getAuthor() {
+		return author;
+	}
+
 	public Vertex getVertex() {
 		return vertex;
 	}
@@ -79,8 +83,8 @@ public final class Proposal implements ConsensusEvent {
 
 	@Override
 	public String toString() {
-		return String.format("%s{author=%s view=%s}", getClass().getSimpleName(),
-			author.euid().toString().substring(0, 6), vertex.getView());
+		String who = author == null ? null : author.euid().toString().substring(0, 6);
+		return String.format("%s{vertex=%s author=%s}", getClass().getSimpleName(), vertex, who);
 	}
 
 	@Override

@@ -72,14 +72,12 @@ final class NetworkQueryHostIp implements HostIp {
 	static HostIp create(RuntimeProperties properties) {
 		String urlsProperty = properties.get(QUERY_URLS_PROPERTY, "");
 		if (urlsProperty == null || urlsProperty.trim().isEmpty()) {
-			log.info("Using default URL list {}", DEFAULT_QUERY_URLS);
 			return create(DEFAULT_QUERY_URLS);
 		}
 		ImmutableList<URL> urls = Arrays.asList(urlsProperty.split(","))
 			.stream()
 			.map(NetworkQueryHostIp::makeurl)
 			.collect(ImmutableList.toImmutableList());
-		log.info("Using URL list {}", urls);
 		return create(urls);
 	}
 
@@ -104,6 +102,7 @@ final class NetworkQueryHostIp implements HostIp {
 	Optional<String> publicIp(int threshold) {
 		// Make sure we don't DoS the first one on the list
 		Collections.shuffle(this.hosts);
+		log.debug("Using hosts {}", this.hosts);
 		final Map<HostAndPort, AtomicInteger> ips = Maps.newHashMap();
 		for (URL url : this.hosts) {
 			HostAndPort q = query(url);
@@ -150,7 +149,7 @@ final class NetworkQueryHostIp implements HostIp {
 		} catch (IOException | IllegalArgumentException ex) {
 			// Ignored
 			if (log.isDebugEnabled()) {
-				log.debug("Host " + url + " failed with exception", ex);
+				log.debug(String.format("Host %s failed with exception", url), ex);
 			}
 			return null;
 		}

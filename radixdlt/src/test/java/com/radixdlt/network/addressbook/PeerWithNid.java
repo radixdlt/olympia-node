@@ -21,36 +21,18 @@ import java.util.stream.Stream;
 
 import org.radix.universe.system.RadixSystem;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.network.transport.TransportException;
 import com.radixdlt.network.transport.TransportInfo;
 import com.radixdlt.network.transport.TransportMetadata;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.SerializerId2;
 
-/**
- * Stub peer used when we only have a NID for the peer.
- * Here so we can satisfy Tempo2 requirements to remember NIDs received
- * in temporal proofs.  Will be replaced with a peer type with full system
- * information once this has been discovered.
- */
-@SerializerId2("network.peer.nid")
 final class PeerWithNid extends Peer {
 
-	@JsonProperty("nid")
-	@DsonOutput(Output.ALL)
 	private final EUID nid;
 
 	@Override
 	public short VERSION() {
 		return 100;
-	}
-
-	PeerWithNid() {
-		// Serializer only
-		this.nid = null;
 	}
 
 	PeerWithNid(EUID nid) {

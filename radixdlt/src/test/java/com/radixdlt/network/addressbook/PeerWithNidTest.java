@@ -30,6 +30,7 @@ import com.radixdlt.network.transport.TransportInfo;
 import static org.junit.Assert.*;
 import static org.hamcrest.Matchers.*;
 
+// Retaining these tests, even though PeerWithNid has moved into tests
 public class PeerWithNidTest {
 
 	private EUID nid;
@@ -91,6 +92,14 @@ public class PeerWithNidTest {
 		long now = Time.currentTimestamp();
 		this.pwn.ban("Reason for ban");
 		assertThat(this.pwn.getTimestamp(Timestamps.BANNED), greaterThanOrEqualTo(now));
+		assertThat(this.pwn.getBanReason(), is("Reason for ban"));
+	}
+
+	@Test
+	public void testBanCopy() {
+		long now = Time.currentTimestamp();
+		this.pwn.setBan("Reason for ban", now);
+		assertThat(this.pwn.getTimestamp(Timestamps.BANNED), is(now));
 		assertThat(this.pwn.getBanReason(), is("Reason for ban"));
 	}
 }

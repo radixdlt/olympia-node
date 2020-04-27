@@ -151,9 +151,8 @@ final class NettyUDPTransportImpl implements Transport {
 	            		.setSendBufferSize(SND_BUF_SIZE)
 	            		.setOption(ChannelOption.RCVBUF_ALLOCATOR, new FixedRecvByteBufAllocator(MAX_DATAGRAM_SIZE));
 	        		if (log.isDebugEnabled()) {
-	        			LogSink ls = LogSink.forDebug(log);
 	        			ch.pipeline()
-	        				.addLast(new LoggingHandler(ls, DEBUG_DATA));
+	        				.addLast(new LoggingHandler(LogSink.using(log), DEBUG_DATA));
 	        		}
 	                ch.pipeline()
 	                	.addLast("onboard", new UDPNettyMessageHandler(natHandler, messageSink));

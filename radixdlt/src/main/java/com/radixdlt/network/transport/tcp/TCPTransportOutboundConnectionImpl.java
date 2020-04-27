@@ -73,4 +73,9 @@ final class TCPTransportOutboundConnectionImpl implements TransportOutboundConne
 		}
 		return cfsr;
 	}
+
+	@Override
+	public String toString() {
+		return String.format("%s:%s:%s", TCPConstants.NAME, remoteAddr.getHostString(), remoteAddr.getPort());
+	}
 }

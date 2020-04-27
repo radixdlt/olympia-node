@@ -18,6 +18,8 @@
 package com.radixdlt.consensus;
 
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.Hash;
+import io.reactivex.rxjava3.core.Single;
 
 /**
  * Interface for Event Coordinator to send things through a network
@@ -43,4 +45,13 @@ public interface EventCoordinatorNetworkSender {
 	 * @param leader the validator the message gets sent to
 	 */
 	void sendVote(Vote vote, ECPublicKey leader);
+
+	/**
+	 * Execute an RPC to retrieve a vertex given an Id from a node
+	 * TODO: refactor to maintain a unidirectional data flow
+	 *
+	 * @param node the node to retrieve the vertex info from
+	 * @return single of a vertex which will complete once retrieved
+	 */
+	Single<Vertex> getVertex(Hash vertexId, ECPublicKey node);
 }

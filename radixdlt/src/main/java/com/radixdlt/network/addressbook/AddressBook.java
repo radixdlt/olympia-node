@@ -18,6 +18,7 @@
 package com.radixdlt.network.addressbook;
 
 import java.io.IOException;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.radix.universe.system.RadixSystem;
@@ -77,15 +78,15 @@ public interface AddressBook {
 	Peer updatePeerSystem(Peer peer, RadixSystem system);
 
 	/**
-	 * Retrieve the {@link Peer} with the specified Node ID.
+	 * Retrieve the {@link Peer} with the specified Node ID, if known.
 	 * <p>
 	 * This method is thread-safe, although the returned {@link Peer}, if any, may
 	 * change status at any time due to external events.
 	 *
 	 * @param nid The Node ID of the peer to retrieve
-	 * @return the {@link Peer} with matching Node ID
+	 * @return the optional {@link Peer} with matching Node ID
 	 */
-	Peer peer(EUID nid);
+	Optional<Peer> peer(EUID nid);
 
 	/**
 	 * Retrieve or create the {@link Peer} with the specified URI.
