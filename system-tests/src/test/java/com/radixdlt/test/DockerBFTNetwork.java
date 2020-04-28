@@ -19,7 +19,6 @@
 package com.radixdlt.test;
 
 import okhttp3.HttpUrl;
-import okhttp3.Request;
 import utils.CmdHelper;
 
 import java.io.Closeable;
@@ -30,6 +29,13 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * A Docker-backed implementation of a {@link BFTNetwork}. Upon construction an instance of this class
+ * automatically sets up a local Docker network with the configured arguments. When an instance is closed,
+ * the underlying Docker network is shut down gracefully.
+ *
+ * Note that successful Docker setup requires the tag 'radixdlt/radixdlt-core:develop' to be present.
+ */
 public class DockerBFTNetwork implements Closeable, BFTNetwork {
 	private static final String OPTIONS_KEY_PORT = "hostPort";
 
@@ -46,6 +52,7 @@ public class DockerBFTNetwork implements Closeable, BFTNetwork {
 
 	// setup the network and prepare anything required to run it
 	// this will also kill any other network with the same name (but not networks with a different name)
+	//  as well as kill all active docker contains
 	private Map<String, Map<String, Object>> setup() {
 		Map<String, Map<String, Object>> dockerOptionsPerNode = CmdHelper.getDockerOptions(numNodes, numNodes);
 		CmdHelper.removeAllDockerContainers(); // TODO do we need this? if yes, document it
@@ -98,16 +105,29 @@ public class DockerBFTNetwork implements Closeable, BFTNetwork {
 		return new Builder();
 	}
 
+	/**
+	 * A builder for {@link DockerBFTNetwork}s
+	 */
 	public static class Builder {
 		private static AtomicInteger networkIdCounter = new AtomicInteger(0);
 		private String name = "test-network-" + networkIdCounter.getAndIncrement();
 		private int numNodes = -1;
 
+		/**
+		 * Sets a certain name to used for the Docker network
+		 * @param name The name
+		 * @return This builder
+		 */
 		public Builder name(String name) {
 			this.name = Objects.requireNonNull(name);
 			return this;
 		}
 
+		/**
+		 * Sets the number of nodes to build in this network
+		 * @param numNodes The number of nodes
+		 * @return This builder
+		 */
 		public Builder numNodes(int numNodes) {
 			if (numNodes < 1) {
 				throw new IllegalArgumentException("numNodes must be >= 1 but was " + numNodes);
@@ -116,6 +136,10 @@ public class DockerBFTNetwork implements Closeable, BFTNetwork {
 			return this;
 		}
 
+		/**
+		 * Builds a {@link DockerBFTNetwork} with the specified configuration, setting up the underlying network.
+		 * @return The created {@link DockerBFTNetwork}
+		 */
 		public DockerBFTNetwork build() {
 			if (numNodes == -1) {
 				throw new IllegalStateException("numNodes was not set");
