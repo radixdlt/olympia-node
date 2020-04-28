@@ -46,7 +46,7 @@ class CmdHelper {
         }
 
         if (serr) {
-            println "-----------error---------"
+            println "-----------Error---------"
 
             serr.each { println it }
             error = serr.toString().split(System.lineSeparator()).collect({ it })
@@ -62,7 +62,8 @@ class CmdHelper {
         String[] env = ["JAVA_OPTS=-server -Xms2g -Xmx2g -Djava.security.egd=file:/dev/urandom -Dcom.sun.management.jmxremote.port=${options.rmiPort} -Dcom.sun.management.jmxremote.rmi.port=${options.rmiPort} -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.ssl=false -Djava.rmi.server.hostname=localhost -agentlib:jdwp=transport=dt_socket,address=${options.socketAddressPort},suspend=n,server=y",
                         "RADIXDLT_NETWORK_SEEDS_REMOTE=${listToDelimitedString(options.remoteSeeds)}",
                         "RADIXDLT_CONSENSUS_FIXED_NODE_COUNT=${options.quorumSize}",
-                        "RADIXDLT_HOST_IP_ADDRESS=${options.nodeName}"
+                        "RADIXDLT_HOST_IP_ADDRESS=${options.nodeName}",
+                        "RADIXDLT_CONSENSUS_START_ON_BOOT=${options.startConsensusOnBoot}",
 
         ]
         String dockerContainer = "docker run -d " +
@@ -70,6 +71,7 @@ class CmdHelper {
                 "--name ${options.nodeName}  " +
                 "-e RADIXDLT_CONSENSUS_FIXED_NODE_COUNT " +
                 "-e RADIXDLT_HOST_IP_ADDRESS " +
+                "-e RADIXDLT_CONSENSUS_START_ON_BOOT " +
                 "-e JAVA_OPTS " +
                 "-l com.radixdlt.roles='core' " +
                 "-p ${options.hostPort}:8080 " +
@@ -79,7 +81,7 @@ class CmdHelper {
     }
 
 
-    static Map getDockerOptions(int numberOfnode, int quorumSize) {
+    static Map getDockerOptions(int numberOfnode, int quorumSize, boolean startConsensusOnBoot) {
 
         List<String> nodeNames = (1..numberOfnode).collect({ return "core${it}".toString() })
         return nodeNames.withIndex().collectEntries { node, index ->
@@ -90,6 +92,7 @@ class CmdHelper {
             options.hostPort = 1080 + index
             options.rmiPort = 9010 + index
             options.socketAddressPort = 50505 + index
+            options.startConsensusOnBoot = startConsensusOnBoot
             return [(node): options]
         }
 

@@ -19,17 +19,21 @@
 package com.radixdlt.test;
 
 import com.radixdlt.client.core.network.HttpClients;
+import io.reactivex.Completable;
 import io.reactivex.Single;
 import io.reactivex.subjects.SingleSubject;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.Request;
+import okhttp3.RequestBody;
 import okhttp3.Response;
 import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * A bridge between a test and a certain {@link RemoteBFTNetwork} implementation,
@@ -43,18 +47,14 @@ public final class RemoteBFTNetworkBridge {
 	}
 
 	/**
-	 * Queries the specified endpoint of the given node when subscribed to.
-	 * @param nodeId The node identifier to query
-	 * @param endpoint The endpoint to query at that node
-	 * @return A cold {@link Single}, executing the query once when subscribed to
+	 * Creates a cold {@link Single} which makes the specified request and returns its response when subscribed to.
+	 *
+	 * @param request The request to make upon subscription
+	 * @return The cold {@link Single} that will contain the response body if successful or error if failure
 	 */
-	public Single<String> queryEndpoint(String nodeId, String endpoint) {
-		Objects.requireNonNull(nodeId, "nodeId");
-		Objects.requireNonNull(endpoint, "endpoint");
-
+	private Single<String> makeRequest(Request request) {
 		SingleSubject<String> responseSubject = SingleSubject.create();
 		return responseSubject.doOnSubscribe(x -> {
-			Request request = new Request.Builder().url(this.network.getEndpointUrl(nodeId, endpoint)).build();
 			Call call = HttpClients.getSslAllTrustingClient().newCall(request);
 			call.enqueue(new Callback() {
 				@Override
@@ -76,8 +76,24 @@ public final class RemoteBFTNetworkBridge {
 	}
 
 	/**
+	 * Queries the specified endpoint of the given node when subscribed to.
+	 *
+	 * @param nodeId   The node identifier to query
+	 * @param endpoint The endpoint to query at that node
+	 * @return A cold {@link Single}, executing the query once when subscribed to
+	 */
+	public Single<String> queryEndpoint(String nodeId, String endpoint) {
+		Objects.requireNonNull(nodeId, "nodeId");
+		Objects.requireNonNull(endpoint, "endpoint");
+
+		Request request = new Request.Builder().url(this.network.getEndpointUrl(nodeId, endpoint)).build();
+		return makeRequest(request);
+	}
+
+	/**
 	 * Queries the specified endpoint of the given node and interprets the result as a {@link JSONObject}
-	 * @param nodeId The node identifier to query
+	 *
+	 * @param nodeId   The node identifier to query
 	 * @param endpoint The endpoint to query at that node
 	 * @return A cold {@link Single}, executing the query once when subscribed to
 	 */
@@ -87,7 +103,39 @@ public final class RemoteBFTNetworkBridge {
 	}
 
 	/**
+	 * Starts the consensus process in all nodes in an idempotent way when subscribed to.
+	 *
+	 * @return A cold {@link Completable} that completes when all requests were successful
+	 */
+	public Completable startConsensus() {
+		return Completable.mergeDelayError(
+			getNodeIds().stream()
+				.map(this::startConsensus)
+				.collect(Collectors.toList())
+		);
+	}
+
+	/**
+	 * Starts the consensus process in a specified node when subscribed to.
+	 * @param nodeId The node
+	 * @return A cold {@link Completable} that completes when the request was successful
+	 */
+	public Completable startConsensus(String nodeId) {
+		JSONObject jsonRpcStartRequest = new JSONObject();
+		jsonRpcStartRequest.append("id", UUID.randomUUID());
+		jsonRpcStartRequest.append("method", "BFT.start");
+		jsonRpcStartRequest.append("params", new JSONObject());
+		Request startRequest = new Request.Builder()
+			.url(network.getEndpointUrl(nodeId, "rpc"))
+			.method("POST", RequestBody.create(null, jsonRpcStartRequest.toString()))
+			.build();
+		return makeRequest(startRequest)
+			.ignoreElement();
+	}
+
+	/**
 	 * Gets the node identifiers in the underlying network
+	 *
 	 * @return The node identifiers
 	 */
 	public Set<String> getNodeIds() {
@@ -96,6 +144,7 @@ public final class RemoteBFTNetworkBridge {
 
 	/**
 	 * Gets the number of nodes in the underlying network
+	 *
 	 * @return The number of ndoes
 	 */
 	public int getNumNodes() {
@@ -104,6 +153,7 @@ public final class RemoteBFTNetworkBridge {
 
 	/**
 	 * Creates a network bridge encapsulating a certain {@link RemoteBFTNetwork} implementation.
+	 *
 	 * @param network The network to bridge
 	 * @return A bridge to the given network
 	 */

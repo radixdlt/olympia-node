@@ -36,56 +36,34 @@ import java.util.stream.Collectors;
 public final class RemoteBFTTest {
 	private final RemoteBFTNetworkBridge testNetwork;
 	private final ImmutableList<RemoteBFTCheck> prerequisites;
-	private final long prerequisiteTimeout;
-	private final TimeUnit prerequisiteTimeoutUnit;
 	private final ImmutableList<RemoteBFTCheck> checks;
 	private final RemoteBFTCheckSchedule schedule;
+	private final long prerequisiteTimeout;
+	private final TimeUnit prerequisiteTimeoutUnit;
+	private final boolean startConsensusOnRun;
 
 	private RemoteBFTTest(RemoteBFTNetworkBridge testNetwork,
 	                      ImmutableList<RemoteBFTCheck> prerequisites,
+	                      ImmutableList<RemoteBFTCheck> checks,
+	                      RemoteBFTCheckSchedule schedule,
 	                      long prerequisiteTimeout,
 	                      TimeUnit prerequisiteTimeoutUnit,
-	                      ImmutableList<RemoteBFTCheck> checks,
-	                      RemoteBFTCheckSchedule schedule) {
+	                      boolean startConsensusOnRun) {
 		this.testNetwork = testNetwork;
 		this.prerequisites = prerequisites;
 		this.prerequisiteTimeout = prerequisiteTimeout;
 		this.prerequisiteTimeoutUnit = prerequisiteTimeoutUnit;
 		this.checks = checks;
 		this.schedule = schedule;
-	}
-
-	/**
-	 * Run this test as configured, waiting for prerequisites if required.
-	 * This method blocks and completes when the test has concluded or throws an exception if there were errors.
-	 * @param runtime The runtime of this test
-	 * @param runtimeUnit The unit of the runtime
-	 */
-	public void runBlocking(long runtime, TimeUnit runtimeUnit) {
-		// if required, wait for prerequisites
-		if (!this.prerequisites.isEmpty()) {
-			waitForPrerequisitesBlocking();
-		}
-
-		// TODO do proper logging instead of using stdout/err
-		System.out.printf("running test for %d %s: %s%n", this.prerequisiteTimeout, this.prerequisiteTimeoutUnit, this.checks);
-		Observable.merge(
-			this.checks.stream()
-				.map(check -> this.schedule.schedule(check)
-					.map(checkToRun -> checkToRun.check(this.testNetwork)
-						.onErrorReturn(error -> RemoteBFTCheckResult.error(InternalBFTCheckError.from(check, error)))
-						.doOnSuccess(result -> result.assertSuccess(String.format("check %s failed", checkToRun))))
-					.flatMap(Single::toObservable))
-				.collect(Collectors.toList()))
-			.take(runtime, runtimeUnit)
-			.blockingSubscribe();
-		System.out.println("test done");
+		this.startConsensusOnRun = startConsensusOnRun;
 	}
 
 	/**
 	 * Waits for all configured prerequisites to be satisfied simultaneously with the configured timeout.
+	 * @param timeout The wait timeout
+	 * @param timeoutUnit The unit of the wait timeout
 	 */
-	private void waitForPrerequisitesBlocking() {
+	public void waitForPrerequisitesBlocking(long timeout, TimeUnit timeoutUnit) {
 		System.out.println("waiting for prerequisites to be satisfied: " + prerequisites);
 		// create cold observables containing the prerequisite check schedules
 		List<Observable<RemoteBFTCheckResult>> prerequisiteRuns = this.prerequisites.stream()
@@ -108,9 +86,44 @@ public final class RemoteBFTTest {
 			.filter(results -> results.stream().allMatch(RemoteBFTCheckResult::isSuccess))
 			.firstOrError() // error and retry if not all check were successful
 			.retry()
-			.timeout(this.prerequisiteTimeout, this.prerequisiteTimeoutUnit)
+			.timeout(timeout, timeoutUnit)
 			.ignoreElement()
 			.blockingAwait();
+	}
+
+	/**
+	 * Run this test as configured for the specified duration, waiting for prerequisites if required.
+	 * This method blocks and completes when the test has concluded or throws an exception if there were errors.
+	 * @param duration The duration this test should be run for
+	 * @param durationUnit The unit of the duration
+	 */
+	public void runBlocking(long duration, TimeUnit durationUnit) {
+		// wait for prerequisites with the configured timeout if any were specified
+		if (!this.prerequisites.isEmpty()) {
+			waitForPrerequisitesBlocking(this.prerequisiteTimeout, this.prerequisiteTimeoutUnit);
+		}
+
+		// start consensus if required, waiting until all requests have come through (important for some checks)
+		if (this.startConsensusOnRun) {
+			System.out.println("starting consensus in all nodes");
+			testNetwork.startConsensus()
+				.blockingAwait();
+		}
+
+		// run the actual tests for the configured duration
+		// TODO do proper logging instead of using stdout/err
+		System.out.printf("running test for %d %s: %s%n", duration, durationUnit, this.checks);
+		Observable.merge(
+			this.checks.stream()
+				.map(check -> this.schedule.schedule(check)
+					.map(checkToRun -> checkToRun.check(this.testNetwork)
+						.onErrorReturn(error -> RemoteBFTCheckResult.error(InternalBFTCheckError.from(check, error)))
+						.doOnSuccess(result -> result.assertSuccess(String.format("check %s failed", checkToRun))))
+					.flatMap(Single::toObservable))
+				.collect(Collectors.toList()))
+			.take(duration, durationUnit)
+			.blockingSubscribe();
+		System.out.println("test done");
 	}
 
 	/**
@@ -131,8 +144,18 @@ public final class RemoteBFTTest {
 		private long prerequisiteTimeout = 5;
 		private TimeUnit prerequisiteTimeoutUnit = TimeUnit.MINUTES;
 		private RemoteBFTCheckSchedule schedule = RemoteBFTCheckSchedule.interval(3, TimeUnit.SECONDS);
+		private boolean startConsensusOnRun;
 
 		private Builder() {
+		}
+
+		/**
+		 * Configures this test to start consensus in all nodes first when run.
+		 * @return This builder
+		 */
+		public Builder startConsensusOnRun() {
+			this.startConsensusOnRun = true;
+			return this;
 		}
 
 		/**
@@ -260,11 +283,11 @@ public final class RemoteBFTTest {
 			return new RemoteBFTTest(
 				this.testNetwork,
 				ImmutableList.copyOf(this.prerequisites),
+				ImmutableList.copyOf(this.checks),
+				this.schedule,
 				this.prerequisiteTimeout,
 				this.prerequisiteTimeoutUnit,
-				ImmutableList.copyOf(this.checks),
-				this.schedule
-			);
+				startConsensusOnRun);
 		}
 	}
 
