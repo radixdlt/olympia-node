@@ -32,9 +32,9 @@ import java.util.Objects;
 import java.util.Set;
 
 public final class RemoteBFTNetworkBridge {
-	private final BFTNetwork network;
+	private final RemoteBFTNetwork network;
 
-	private RemoteBFTNetworkBridge(BFTNetwork network) {
+	private RemoteBFTNetworkBridge(RemoteBFTNetwork network) {
 		this.network = network;
 	}
 
@@ -77,7 +77,7 @@ public final class RemoteBFTNetworkBridge {
 		return this.network.getNodeIds().size();
 	}
 
-	public static RemoteBFTNetworkBridge of(BFTNetwork network) {
+	public static RemoteBFTNetworkBridge of(RemoteBFTNetwork network) {
 		return new RemoteBFTNetworkBridge(network);
 	}
 }

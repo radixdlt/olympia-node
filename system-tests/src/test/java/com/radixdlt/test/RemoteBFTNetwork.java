@@ -23,9 +23,9 @@ import okhttp3.HttpUrl;
 import java.util.Set;
 
 /**
- * An abstraction over network of a set of BFT nodes
+ * An abstraction over a remote, networked set of BFT nodes
  */
-public interface BFTNetwork {
+public interface RemoteBFTNetwork {
 	/**
 	 * Gets an {@link HttpUrl} to talk to a specific endpoint of a node
 	 * @param nodeId The node

@@ -30,20 +30,20 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * A Docker-backed implementation of a {@link BFTNetwork}. Upon construction an instance of this class
+ * A Docker-backed implementation of a {@link RemoteBFTNetwork}. Upon construction an instance of this class
  * automatically sets up a local Docker network with the configured arguments. When an instance is closed,
  * the underlying Docker network is shut down gracefully.
  *
  * Note that successful Docker setup requires the tag 'radixdlt/radixdlt-core:develop' to be present.
  */
-public class DockerBFTNetwork implements Closeable, BFTNetwork {
+public class DockerRemoteBFTNetwork implements Closeable, RemoteBFTNetwork {
 	private static final String OPTIONS_KEY_PORT = "hostPort";
 
 	private final int numNodes;
 	private final String networkName;
 	private final Map<String, Map<String, Object>> dockerOptionsPerNode;
 
-	private DockerBFTNetwork(String networkName, int numNodes) {
+	private DockerRemoteBFTNetwork(String networkName, int numNodes) {
 		this.networkName = Objects.requireNonNull(networkName);
 		this.numNodes = numNodes;
 
@@ -106,7 +106,7 @@ public class DockerBFTNetwork implements Closeable, BFTNetwork {
 	}
 
 	/**
-	 * A builder for {@link DockerBFTNetwork}s
+	 * A builder for {@link DockerRemoteBFTNetwork}s
 	 */
 	public static class Builder {
 		private static AtomicInteger networkIdCounter = new AtomicInteger(0);
@@ -137,15 +137,15 @@ public class DockerBFTNetwork implements Closeable, BFTNetwork {
 		}
 
 		/**
-		 * Builds a {@link DockerBFTNetwork} with the specified configuration, setting up the underlying network.
-		 * @return The created {@link DockerBFTNetwork}
+		 * Builds a {@link DockerRemoteBFTNetwork} with the specified configuration, setting up the underlying network.
+		 * @return The created {@link DockerRemoteBFTNetwork}
 		 */
-		public DockerBFTNetwork build() {
+		public DockerRemoteBFTNetwork build() {
 			if (numNodes == -1) {
 				throw new IllegalStateException("numNodes was not set");
 			}
 
-			return new DockerBFTNetwork(name, numNodes);
+			return new DockerRemoteBFTNetwork(name, numNodes);
 		}
 	}
 }
