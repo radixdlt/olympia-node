@@ -114,7 +114,7 @@ public final class Vertex {
 	}
 
 	public boolean hasDirectParent() {
-		return this.view.equals(this.getParentView().next());
+		return this.view.number() == this.getParentView().number() + 1;
 	}
 
 	public View getView() {

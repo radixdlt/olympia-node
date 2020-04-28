@@ -223,7 +223,7 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 			return;
 		}
 
-		if (proposedVertex.getParentView() != null && proposedVertexView.number() != proposedVertex.getParentView().number() + 1) {
+		if (!proposedVertex.hasDirectParent()) {
 			counters.increment(CounterType.CONSENSUS_INDIRECT_PARENT);
 		}
 
