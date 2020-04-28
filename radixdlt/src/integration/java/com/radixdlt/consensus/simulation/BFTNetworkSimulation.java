@@ -38,11 +38,12 @@ import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.VertexStore;
 import com.radixdlt.consensus.VoteData;
-import com.radixdlt.consensus.liveness.PacemakerImpl;
+import com.radixdlt.consensus.liveness.FixedTimeout;
 import com.radixdlt.consensus.liveness.MempoolProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.RotatingLeaders;
+import com.radixdlt.consensus.liveness.ScheduledTimeoutSender;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.consensus.validators.Validator;
@@ -76,7 +77,8 @@ public class BFTNetworkSimulation {
 	private final QuorumCertificate genesisQC;
 	private final ImmutableMap<ECKeyPair, VertexStore> vertexStores;
 	private final ImmutableMap<ECKeyPair, SystemCounters> counters;
-	private final ImmutableMap<ECKeyPair, PacemakerImpl> pacemakers;
+	private final ImmutableMap<ECKeyPair, ScheduledTimeoutSender> timeoutSenders;
+	private final ImmutableMap<ECKeyPair, FixedTimeout> pacemakers;
 	private final Observable<Event> bftEvents;
 	private final ProposerElection proposerElection;
 	private final ValidatorSet validatorSet;
@@ -126,8 +128,10 @@ public class BFTNetworkSimulation {
 					return new VertexStore(genesisVertex, genesisQC, radixEngine, this.counters.get(e));
 				})
 			);
+		this.timeoutSenders = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e,
+			e -> new ScheduledTimeoutSender(Executors.newSingleThreadScheduledExecutor())));
 		this.pacemakers = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e,
-			e -> new PacemakerImpl(this.pacemakerTimeout, Executors.newSingleThreadScheduledExecutor())));
+			e -> new FixedTimeout(this.pacemakerTimeout, this.timeoutSenders.get(e))));
 		this.bftEvents = Observable.merge(this.vertexStores.keySet().stream()
 			.map(vertexStore -> createBFTInstance(vertexStore).processEvents())
 			.collect(Collectors.toList()));
@@ -143,7 +147,8 @@ public class BFTNetworkSimulation {
 		ProposalGenerator proposalGenerator = new MempoolProposalGenerator(vertexStores.get(key), mempool);
 		Hasher hasher = new DefaultHasher();
 		SafetyRules safetyRules = new SafetyRules(key, SafetyState.initialState(), hasher);
-		PacemakerImpl pacemaker = pacemakers.get(key);
+		ScheduledTimeoutSender timeoutSender = timeoutSenders.get(key);
+		FixedTimeout pacemaker = pacemakers.get(key);
 		PendingVotes pendingVotes = new PendingVotes(hasher);
 		EpochRx epochRx = () -> Observable.just(validatorSet).concatWith(Observable.never());
 		EpochManager epochManager = new EpochManager(
@@ -152,7 +157,7 @@ public class BFTNetworkSimulation {
 			underlyingNetwork.getNetworkSender(key.getPublicKey()),
 			safetyRules,
 			pacemaker,
-			pacemaker,
+			timeoutSender,
 			vertexStores.get(key),
 			pendingVotes,
 			proposers -> proposerElection, // assumes all instances use the same validators
@@ -163,7 +168,7 @@ public class BFTNetworkSimulation {
 		return new ChainedBFT(
 			epochRx,
 			underlyingNetwork.getNetworkRx(key.getPublicKey()),
-			pacemaker,
+			timeoutSender,
 			epochManager
 		);
 	}
@@ -180,7 +185,7 @@ public class BFTNetworkSimulation {
 		return counters.get(keyPair);
 	}
 
-	public PacemakerImpl getPacemaker(ECKeyPair keyPair) {
+	public FixedTimeout getPacemaker(ECKeyPair keyPair) {
 		return pacemakers.get(keyPair);
 	}
 

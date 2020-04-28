@@ -117,7 +117,7 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 					this.getShortName(), this.getShortName(node.euid()), vertexId.toString().substring(0, 6));
 				return networkSender.getVertex(vertexId, node)
 					.doOnSuccess(v -> log.info("{}: Received GET_VERTEX Response: {}", this.getShortName(), v))
-					.takeUntil(this.pacemakerRx.nextLocalTimeout());
+					.takeUntil(this.pacemakerRx.timeout(this.pacemaker.getCurrentView()));
 			});
 		} catch (SyncException e) {
 			counters.increment(CounterType.CONSENSUS_SYNC_EXCEPTION);

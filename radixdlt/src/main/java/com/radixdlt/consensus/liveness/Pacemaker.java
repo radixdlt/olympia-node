@@ -24,7 +24,7 @@ import com.radixdlt.consensus.validators.ValidatorSet;
 import java.util.Optional;
 
 /**
- * Interface for an event coordinator to manage the pacemaker
+ * Manages the pacemaker state machine.
  */
 public interface Pacemaker {
 	/**

@@ -33,11 +33,13 @@ import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.VertexStore;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.VoteData;
+import com.radixdlt.consensus.liveness.FixedTimeout.TimeoutSender;
 import com.radixdlt.consensus.liveness.MempoolProposalGenerator;
 import com.radixdlt.consensus.liveness.Pacemaker;
-import com.radixdlt.consensus.liveness.PacemakerImpl;
+import com.radixdlt.consensus.liveness.FixedTimeout;
 import com.radixdlt.consensus.liveness.PacemakerRx;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
+import com.radixdlt.consensus.liveness.ScheduledTimeoutSender;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.tempo.Scheduler;
@@ -74,8 +76,9 @@ public class CerberusModule extends AbstractModule {
 	protected void configure() {
 		// dependencies
 		bind(Scheduler.class).toProvider(SingleThreadedScheduler::new);
-		bind(PacemakerRx.class).to(PacemakerImpl.class);
-		bind(Pacemaker.class).to(PacemakerImpl.class);
+		bind(TimeoutSender.class).to(ScheduledTimeoutSender.class);
+		bind(PacemakerRx.class).to(ScheduledTimeoutSender.class);
+		bind(Pacemaker.class).to(FixedTimeout.class);
 		bind(SafetyRules.class).in(Scopes.SINGLETON);
 		bind(Hasher.class).to(DefaultHasher.class);
 		bind(ProposalGenerator.class).to(MempoolProposalGenerator.class);
@@ -108,9 +111,17 @@ public class CerberusModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private PacemakerImpl pacemaker() {
+	private ScheduledTimeoutSender timeoutSender() {
+		return new ScheduledTimeoutSender(Executors.newSingleThreadScheduledExecutor());
+	}
+
+	@Provides
+	@Singleton
+	private FixedTimeout pacemaker(
+		TimeoutSender timeoutSender
+	) {
 		final int pacemakerTimeout = runtimeProperties.get("consensus.pacemaker_timeout_millis", 5000);
-		return new PacemakerImpl(pacemakerTimeout, Executors.newSingleThreadScheduledExecutor());
+		return new FixedTimeout(pacemakerTimeout, timeoutSender);
 	}
 
 	@Provides
