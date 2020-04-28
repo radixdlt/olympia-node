@@ -31,6 +31,10 @@ import java.io.IOException;
 import java.util.Objects;
 import java.util.Set;
 
+/**
+ * A bridge between a test and a certain {@link RemoteBFTNetwork} implementation,
+ * providing utility methods to operate on remote networks while abstracting away the details of the network.
+ */
 public final class RemoteBFTNetworkBridge {
 	private final RemoteBFTNetwork network;
 
@@ -38,45 +42,71 @@ public final class RemoteBFTNetworkBridge {
 		this.network = network;
 	}
 
+	/**
+	 * Queries the specified endpoint of the given node when subscribed to.
+	 * @param nodeId The node identifier to query
+	 * @param endpoint The endpoint to query at that node
+	 * @return A cold {@link Single}, executing the query once when subscribed to
+	 */
 	public Single<String> queryEndpoint(String nodeId, String endpoint) {
 		Objects.requireNonNull(nodeId, "nodeId");
 		Objects.requireNonNull(endpoint, "endpoint");
 
-		Request request = new Request.Builder().url(this.network.getEndpointUrl(nodeId, endpoint)).build();
 		SingleSubject<String> responseSubject = SingleSubject.create();
-		Call call = HttpClients.getSslAllTrustingClient().newCall(request);
-		call.enqueue(new Callback() {
-			@Override
-			public void onFailure(Call call, IOException e) {
-				responseSubject.onError(e);
-			}
-
-			@Override
-			public void onResponse(Call call, Response response) throws IOException {
-				try {
-					String responseString = response.body().string();
-					responseSubject.onSuccess(responseString);
-				} catch (IOException e) {
-					responseSubject.onError(new IllegalArgumentException("Failed to parse response to " + request, e));
+		return responseSubject.doOnSubscribe(x -> {
+			Request request = new Request.Builder().url(this.network.getEndpointUrl(nodeId, endpoint)).build();
+			Call call = HttpClients.getSslAllTrustingClient().newCall(request);
+			call.enqueue(new Callback() {
+				@Override
+				public void onFailure(Call call, IOException e) {
+					responseSubject.onError(e);
 				}
-			}
+
+				@Override
+				public void onResponse(Call call, Response response) throws IOException {
+					try {
+						String responseString = response.body().string();
+						responseSubject.onSuccess(responseString);
+					} catch (IOException e) {
+						responseSubject.onError(new IllegalArgumentException("Failed to parse response to " + request, e));
+					}
+				}
+			});
 		});
-		return responseSubject;
 	}
 
+	/**
+	 * Queries the specified endpoint of the given node and interprets the result as a {@link JSONObject}
+	 * @param nodeId The node identifier to query
+	 * @param endpoint The endpoint to query at that node
+	 * @return A cold {@link Single}, executing the query once when subscribed to
+	 */
 	public Single<JSONObject> queryEndpointJson(String nodeId, String endpoint) {
 		return queryEndpoint(nodeId, endpoint)
 			.map(JSONObject::new);
 	}
 
+	/**
+	 * Gets the node identifiers in the underlying network
+	 * @return The node identifiers
+	 */
 	public Set<String> getNodeIds() {
 		return this.network.getNodeIds();
 	}
 
+	/**
+	 * Gets the number of nodes in the underlying network
+	 * @return The number of ndoes
+	 */
 	public int getNumNodes() {
 		return this.network.getNodeIds().size();
 	}
 
+	/**
+	 * Creates a network bridge encapsulating a certain {@link RemoteBFTNetwork} implementation.
+	 * @param network The network to bridge
+	 * @return A bridge to the given network
+	 */
 	public static RemoteBFTNetworkBridge of(RemoteBFTNetwork network) {
 		return new RemoteBFTNetworkBridge(network);
 	}
