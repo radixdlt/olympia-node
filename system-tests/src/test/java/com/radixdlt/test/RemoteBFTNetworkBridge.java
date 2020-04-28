@@ -122,9 +122,9 @@ public final class RemoteBFTNetworkBridge {
 	 */
 	public Completable startConsensus(String nodeId) {
 		JSONObject jsonRpcStartRequest = new JSONObject();
-		jsonRpcStartRequest.append("id", UUID.randomUUID());
-		jsonRpcStartRequest.append("method", "BFT.start");
-		jsonRpcStartRequest.append("params", new JSONObject());
+		jsonRpcStartRequest.put("id", UUID.randomUUID());
+		jsonRpcStartRequest.put("method", "BFT.start");
+		jsonRpcStartRequest.put("params", new JSONObject());
 		Request startRequest = new Request.Builder()
 			.url(network.getEndpointUrl(nodeId, "rpc"))
 			.method("POST", RequestBody.create(null, jsonRpcStartRequest.toString()))
