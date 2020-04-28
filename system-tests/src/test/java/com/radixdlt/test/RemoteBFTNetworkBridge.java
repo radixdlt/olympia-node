@@ -42,7 +42,7 @@ public final class RemoteBFTNetworkBridge {
 		Objects.requireNonNull(nodeId, "nodeId");
 		Objects.requireNonNull(endpoint, "endpoint");
 
-		Request request = network.makeRequest(nodeId, endpoint);
+		Request request = new Request.Builder().url(this.network.getEndpointUrl(nodeId, endpoint)).build();
 		SingleSubject<String> responseSubject = SingleSubject.create();
 		Call call = HttpClients.getSslAllTrustingClient().newCall(request);
 		call.enqueue(new Callback() {

@@ -18,6 +18,7 @@
 
 package com.radixdlt.test;
 
+import okhttp3.HttpUrl;
 import okhttp3.Request;
 import utils.CmdHelper;
 
@@ -69,8 +70,8 @@ public class DockerBFTNetwork implements Closeable, BFTNetwork {
 	}
 
 	@Override
-	public Request makeRequest(String nodeId, String endpoint) {
-		return new Request.Builder().url(getNodeEndpoint(nodeId, endpoint)).build();
+	public HttpUrl getEndpointUrl(String nodeId, String endpoint) {
+		return HttpUrl.parse(getNodeEndpoint(nodeId, endpoint));
 	}
 
 	private String getNodeEndpoint(String nodeId, String endpoint) {

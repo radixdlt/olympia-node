@@ -23,7 +23,7 @@ import io.reactivex.exceptions.CompositeException;
 import java.util.stream.Collectors;
 
 /**
- * A result of an ongoing {@link RemoteBFTCheck}
+ * A result of a single call to a {@link RemoteBFTCheck}
  */
 public final class RemoteBFTCheckResult {
 	private static final RemoteBFTCheckResult SUCCESS = new RemoteBFTCheckResult();

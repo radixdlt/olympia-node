@@ -29,7 +29,11 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-public class RemoteBFTTest {
+/**
+ * A BFT test running checks against a test network on a specific schedule.
+ * Optionally this test can wait for certain conditions to be met before running the actual checks.
+ */
+public final class RemoteBFTTest {
 	private final RemoteBFTNetworkBridge testNetwork;
 	private final ImmutableList<RemoteBFTCheck> prerequisites;
 	private final long prerequisiteTimeout;
@@ -51,34 +55,18 @@ public class RemoteBFTTest {
 		this.schedule = schedule;
 	}
 
-	public void run(long runtime, TimeUnit runtimeUnit) {
+	/**
+	 * Run this test as configured, waiting for prerequisites if required.
+	 * This method blocks and completes when the test has concluded or throws an exception if there were errors.
+	 * @param runtime The runtime of this test
+	 * @param runtimeUnit The unit of the runtime
+	 */
+	public void runBlocking(long runtime, TimeUnit runtimeUnit) {
 		if (!this.prerequisites.isEmpty()) {
-			// TODO do proper logging instead of using stdout/err
-			System.out.println("waiting for prerequisites to be satisfied: " + prerequisites);
-			List<Observable<RemoteBFTCheckResult>> prerequisiteRuns = this.prerequisites.stream()
-				.map(prerequisite -> this.schedule.schedule(prerequisite)
-					.map(prerequisiteToRun -> prerequisiteToRun.check(this.testNetwork))
-					.flatMap(Single::toObservable))
-				.collect(Collectors.toList());
-			Observable.combineLatest(prerequisiteRuns, results -> Arrays.stream(results)
-				.map(RemoteBFTCheckResult.class::cast)
-				.collect(Collectors.toList()))
-				.doOnNext(results -> {
-					if (results.stream().anyMatch(RemoteBFTCheckResult::isError)) {
-						System.out.println("prerequisites failing, retrying: " + results.stream()
-							.filter(RemoteBFTCheckResult::isError)
-							.map(RemoteBFTCheckResult::toString)
-							.collect(Collectors.joining(", ")));
-					}
-				})
-				.filter(results -> results.stream().allMatch(RemoteBFTCheckResult::isSuccess))
-				.firstOrError()
-				.retry()
-				.timeout(this.prerequisiteTimeout, this.prerequisiteTimeoutUnit)
-				.ignoreElement()
-				.blockingAwait();
+			waitForPrerequisitesBlocking();
 		}
 
+		// TODO do proper logging instead of using stdout/err
 		System.out.printf("running test for %d %s: %s%n", this.prerequisiteTimeout, this.prerequisiteTimeoutUnit, this.checks);
 		Observable.merge(
 			this.checks.stream()
@@ -93,14 +81,43 @@ public class RemoteBFTTest {
 		System.out.println("test done");
 	}
 
-	public RemoteBFTNetworkBridge getTestNetwork() {
-		return testNetwork;
+	private void waitForPrerequisitesBlocking() {
+		System.out.println("waiting for prerequisites to be satisfied: " + prerequisites);
+		List<Observable<RemoteBFTCheckResult>> prerequisiteRuns = this.prerequisites.stream()
+			.map(prerequisite -> this.schedule.schedule(prerequisite)
+				.map(prerequisiteToRun -> prerequisiteToRun.check(this.testNetwork))
+				.flatMap(Single::toObservable))
+			.collect(Collectors.toList());
+		Observable.combineLatest(prerequisiteRuns, results -> Arrays.stream(results)
+			.map(RemoteBFTCheckResult.class::cast)
+			.collect(Collectors.toList()))
+			.doOnNext(results -> {
+				if (results.stream().anyMatch(RemoteBFTCheckResult::isError)) {
+					System.out.println("prerequisites failing, retrying: " + results.stream()
+						.filter(RemoteBFTCheckResult::isError)
+						.map(RemoteBFTCheckResult::toString)
+						.collect(Collectors.joining(", ")));
+				}
+			})
+			.filter(results -> results.stream().allMatch(RemoteBFTCheckResult::isSuccess))
+			.firstOrError()
+			.retry()
+			.timeout(this.prerequisiteTimeout, this.prerequisiteTimeoutUnit)
+			.ignoreElement()
+			.blockingAwait();
 	}
 
+	/**
+	 * Create a {@link Builder} for creating {@link RemoteBFTTest}s.
+	 * @return The builder
+	 */
 	public static Builder builder() {
 		return new Builder();
 	}
 
+	/**
+	 * A builder for {@link RemoteBFTTest} objects.
+	 */
 	public static class Builder {
 		private RemoteBFTNetworkBridge testNetwork;
 		private final List<RemoteBFTCheck> checks = new ArrayList<>();
@@ -112,6 +129,12 @@ public class RemoteBFTTest {
 		private Builder() {
 		}
 
+		/**
+		 * Sets the timeout used when waiting for prerequisites to be satisfied before running the actual test
+		 * @param prerequisiteTimeout The prerequisite timeout
+		 * @param prerequisiteTimeoutUnit The unit of the prerequisite timeout
+		 * @return This builder
+		 */
 		public Builder prerequisiteTimeout(long prerequisiteTimeout, TimeUnit prerequisiteTimeoutUnit) {
 			if (prerequisiteTimeout < 1) {
 				throw new IllegalArgumentException("prerequisiteTimeout must be > 0 but was " + prerequisiteTimeout);
@@ -121,54 +144,108 @@ public class RemoteBFTTest {
 			return this;
 		}
 
+		/**
+		 * Sets a given schedule to use for scheduling the individual checks
+		 * @param schedule The schedule
+		 * @return This builder
+		 */
 		public Builder schedule(RemoteBFTCheckSchedule schedule) {
 			this.schedule = Objects.requireNonNull(schedule, "schedule");
 			return this;
 		}
 
+		/**
+		 * Configures the test to wait until a {@link ResponsivenessCheck} is satisfied with the configured timeout.
+		 * @return This builder
+		 */
 		public Builder waitUntilResponsive() {
 			return waitUntil(new ResponsivenessCheck(1, TimeUnit.SECONDS));
 		}
 
+		/**
+		 * Configures the test to wait until the given prerequisite is satisfied before running the actual test.
+		 * This waiting observes the timeout set in prerequisiteTimeout.
+		 * @param prerequisite The prerequisite to wait on
+		 * @return This builder
+		 */
 		public Builder waitUntil(RemoteBFTCheck prerequisite) {
 			this.prerequisites.add(Objects.requireNonNull(prerequisite, "prerequisite"));
 			return this;
 		}
 
+		/**
+		 * Sets the test network to use.
+		 * @param testNetwork The test network
+		 * @return This builder
+		 */
 		public Builder network(RemoteBFTNetworkBridge testNetwork) {
 			this.testNetwork = Objects.requireNonNull(testNetwork);
 			return this;
 		}
 
+		/**
+		 * Asserts responsiveness using the {@link ResponsivenessCheck}
+		 * @return This builder
+		 */
 		public Builder assertResponsiveness() {
 			return addCheck(new ResponsivenessCheck(1, TimeUnit.SECONDS));
 		}
 
+		/**
+		 * Asserts safety using the {@link SafetyCheck}
+		 * @return This builder
+		 */
 		public Builder assertSafety() {
 			return addCheck(new SafetyCheck(1, TimeUnit.SECONDS));
 		}
 
+		/**
+		 * Asserts that CONSENSUS_TIMEOUT is zero.
+		 * @return This builder
+		 */
 		public Builder assertNoTimeouts() {
-			return addCheck(CounterCheck.checkEquals(SystemCounters.SystemCounterType.CONSENSUS_TIMEOUT, 0L));
+			return addCheck(CounterCheck.checkEquals(SystemCounters.CounterType.CONSENSUS_TIMEOUT, 0L));
 		}
 
+		/**
+		 * Asserts that CONSENSUS_SYNC_EXCEPTION is zero.
+		 * @return This builder
+		 */
 		public Builder assertNoRejectedProposals() {
-			return addCheck(CounterCheck.checkEquals(SystemCounters.SystemCounterType.CONSENSUS_REJECTED, 0L));
+			return addCheck(CounterCheck.checkEquals(SystemCounters.CounterType.CONSENSUS_SYNC_EXCEPTION, 0L));
 		}
 
+		/**
+		 * Asserts that CONSENSUS_SYNC_EXCEPTION is zero.
+		 * @return This builder
+		 */
 		public Builder assertNoSyncExceptions() {
-			return addCheck(CounterCheck.checkEquals(SystemCounters.SystemCounterType.CONSENSUS_SYNC_EXCEPTION, 0L));
+			return addCheck(CounterCheck.checkEquals(SystemCounters.CounterType.CONSENSUS_SYNC_EXCEPTION, 0L));
 		}
 
+		/**
+		 * Asserts that CONSENSUS_INDIRECT_PARENT is zero.
+		 * @return This builder
+		 */
 		public Builder assertAllProposalsHaveDirectParents() {
-			return addCheck(CounterCheck.checkEquals(SystemCounters.SystemCounterType.CONSENSUS_INDIRECT_PARENT, 0L));
+			return addCheck(CounterCheck.checkEquals(SystemCounters.CounterType.CONSENSUS_INDIRECT_PARENT, 0L));
 		}
 
+		/**
+		 * Adds the given check to be asserted during this test
+		 * @param check The check to add
+		 * @return This builder
+		 */
 		public Builder addCheck(RemoteBFTCheck check) {
 			this.checks.add(Objects.requireNonNull(check, "check"));
 			return this;
 		}
 
+		/**
+		 * Builds the configured test.
+		 * This requires a testNetwork to be set using the network method.
+		 * @return This builder
+		 */
 		public RemoteBFTTest build() {
 			if (this.testNetwork == null) {
 				throw new IllegalStateException("testNetwork not set");

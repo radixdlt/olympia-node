@@ -26,6 +26,9 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+/**
+ * A responsiveness check using the "api/ping" endpoint, interpreting any response as a success.
+ */
 public class ResponsivenessCheck implements RemoteBFTCheck {
 	private final long timeout;
 	private final TimeUnit timeoutUnit;

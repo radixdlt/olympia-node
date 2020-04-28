@@ -39,7 +39,7 @@ public class LatentDockerNetworkTest {
 //				.assertNoTimeouts()
 				.assertSafety()
 				.build();
-			test.run(10, TimeUnit.MINUTES);
+			test.runBlocking(10, TimeUnit.MINUTES);
 		}
 	}
 }

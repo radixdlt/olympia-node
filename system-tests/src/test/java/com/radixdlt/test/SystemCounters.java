@@ -24,20 +24,34 @@ import org.json.JSONObject;
 
 import java.util.Map;
 
+/**
+ * A mirror of RadixCore's SystemCounters class, used to manage system counters exposed through the API.
+ * Note that both SystemCounters.from and {@link CounterType} must be kept in sync with their core counterparts.
+ */
 public final class SystemCounters {
-	private final Map<SystemCounterType, Long> systemCounters;
+	private final Map<CounterType, Long> systemCounters;
 
-	private SystemCounters(Map<SystemCounterType, Long> systemCounters) {
+	private SystemCounters(Map<CounterType, Long> systemCounters) {
 		this.systemCounters = systemCounters;
 	}
 
-	public long get(SystemCounterType counterType) {
+	/**
+	 * Gets the value of the given {@link CounterType}
+	 * @param counterType The counter type
+	 * @return The value of that type
+	 */
+	public long get(CounterType counterType) {
 		return systemCounters.get(counterType);
 	}
 
+	/**
+	 * Extracts {@link SystemCounters} from the given {@link JSONObject} (e.g. "counters" in the "/api/system" endpoint).
+	 * @param jsonCounters The {@link JSONObject} representing the counters
+	 * @return The parsed instance of {@link SystemCounters}
+	 */
 	public static SystemCounters from(JSONObject jsonCounters) {
-		ImmutableMap.Builder<SystemCounterType, Long> systemCounters = ImmutableMap.builder();
-		for (SystemCounterType value : SystemCounterType.values()) {
+		ImmutableMap.Builder<CounterType, Long> systemCounters = ImmutableMap.builder();
+		for (CounterType value : CounterType.values()) {
 			try {
 				String[] path = value.jsonPath().split("\\.");
 				JSONObject parent = jsonCounters;
@@ -54,7 +68,10 @@ public final class SystemCounters {
 		return new SystemCounters(systemCounters.build());
 	}
 
-	public enum SystemCounterType {
+	/**
+	 * A mirror of RadixCore's CounterType, representing internal system counters
+	 */
+	public enum CounterType {
 		CONSENSUS_INDIRECT_PARENT("consensus.indirect_parent"),
 		CONSENSUS_REJECTED("consensus.rejected"),
 		CONSENSUS_SYNC_SUCCESS("consensus.sync_success"),
@@ -78,11 +95,11 @@ public final class SystemCounters {
 
 		private final String jsonPath;
 
-		SystemCounterType(String jsonPath) {
+		CounterType(String jsonPath) {
 			this.jsonPath = jsonPath;
 		}
 
-		public String jsonPath() {
+		private String jsonPath() {
 			return this.jsonPath;
 		}
 	}

@@ -18,7 +18,7 @@
 
 package com.radixdlt.test;
 
-import okhttp3.Request;
+import okhttp3.HttpUrl;
 
 import java.util.Set;
 
@@ -27,12 +27,16 @@ import java.util.Set;
  */
 public interface BFTNetwork {
 	/**
-	 * Make a request to a certain node's endpoint
-	 * @param nodeId The node id as given by getNodeIds
-	 * @param endpoint
-	 * @return
+	 * Gets an {@link HttpUrl} to talk to a specific endpoint of a node
+	 * @param nodeId The node
+	 * @param endpoint The endpoint
+	 * @return The {@link HttpUrl} to talk to that endpoint
 	 */
-	Request makeRequest(String nodeId, String endpoint);
+	HttpUrl getEndpointUrl(String nodeId, String endpoint);
 
+	/**
+	 * Gets all node identifiers in the network.
+	 * @return All node identifier strings
+	 */
 	Set<String> getNodeIds();
 }

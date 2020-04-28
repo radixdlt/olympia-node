@@ -22,10 +22,24 @@ import io.reactivex.Observable;
 
 import java.util.concurrent.TimeUnit;
 
-@FunctionalInterface
+/**
+ * A schedule for executing {@link RemoteBFTCheck}s in a test
+ */
 public interface RemoteBFTCheckSchedule {
+	/**
+	 * Creates a cold {@link Observable} emitting the given check whenever it should be run
+	 * @param check The check
+	 * @param <T> The type of the check
+	 * @return A cold {@link Observable} emitting the given check whenever it should be run
+	 */
 	<T extends RemoteBFTCheck> Observable<T> schedule(T check);
 
+	/**
+	 * Create a basic {@link RemoteBFTCheckSchedule} that schedules every check with a certain infinite interval.
+	 * @param interval The interval
+	 * @param intervalUnit The unit of the interval
+	 * @return The schedule
+	 */
 	static RemoteBFTCheckSchedule interval(long interval, TimeUnit intervalUnit) {
 		return new RemoteBFTCheckSchedule() {
 			@Override

@@ -34,7 +34,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
- * Checks that nodes are committed to the same vertex given selected samples provided by the nodes.
+ * A safety check scanning the nodes for any safety violation. This check uses the "api/vertices/committed" endpoint
+ * to assert that nodes are committed to the same vertex given selected samples provided by the nodes.
+ *
+ * Note that the "api/vertices/committed" endpoint returns only a (deterministic) subset of committed vertices as
+ * configured in RadixCore and this test therefore relies on the implicit hash chain formed by vertices to
+ * assert safety (where every vertex includes a reference to the last).
  */
 public class SafetyCheck implements RemoteBFTCheck {
 	private final int timeout;
@@ -75,6 +80,12 @@ public class SafetyCheck implements RemoteBFTCheck {
 		return String.format("SafetyCheck{timeout=%d %s}", timeout, timeoutUnit);
 	}
 
+	/**
+	 * Extracts vertices from a given string and node
+	 * @param verticesString The string representing the vertices
+	 * @param node The node the string originates from
+	 * @return An extracted set of {@link Vertex}
+	 */
 	private static Set<Vertex> extractVertices(String verticesString, String node) {
 		JSONArray verticesJson = new JSONArray(verticesString);
 		ImmutableSet.Builder<Vertex> vertices = ImmutableSet.builder();
@@ -86,6 +97,12 @@ public class SafetyCheck implements RemoteBFTCheck {
 		return vertices.build();
 	}
 
+	/**
+	 * Gets the dissenting vertices given a collection of vertices, where a {@link Vertex} is considered to dissent
+	 * from another {@link Vertex} if its view is the same but hash is different.
+	 * @param vertices The vertices
+	 * @return The dissenting vertices, grouped by hash, grouped by view
+	 */
 	private static Map<Long, Map<String, List<Vertex>>> getDissentingVertices(Collection<Vertex> vertices) {
 		ImmutableMap.Builder<Long, Map<String, List<Vertex>>> dissentingVertices = ImmutableMap.builder();
 		Map<Long, List<Vertex>> verticesByView = vertices.stream()
@@ -100,9 +117,12 @@ public class SafetyCheck implements RemoteBFTCheck {
 		return dissentingVertices.build();
 	}
 
+	/**
+	 * A simplified representation of a Cerberus vertex.
+	 */
 	private static final class Vertex {
 		private final long view;
-		private final String hash;
+		private final String hash; // TODO reconsider String for "hash"
 		private final String node;
 
 		private Vertex(long view, String hash, String node) {
@@ -135,6 +155,9 @@ public class SafetyCheck implements RemoteBFTCheck {
 		}
 	}
 
+	/**
+	 * An error thrown if a safety violation occurs
+	 */
 	public static class SafetyViolationError extends AssertionError {
 		private final Map<Long, Map<String, List<Vertex>>> dissentingVertices;
 

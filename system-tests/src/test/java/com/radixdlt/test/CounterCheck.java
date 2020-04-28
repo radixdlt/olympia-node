@@ -27,6 +27,9 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+/**
+ * An implementation of {@link RemoteBFTCheck} for easily checking values of {@link SystemCounters}
+ */
 public class CounterCheck implements RemoteBFTCheck {
 	private final Consumer<SystemCounters> assertion;
 	private final String assertionDescription;
@@ -54,11 +57,17 @@ public class CounterCheck implements RemoteBFTCheck {
 		return String.format("CounterCheck{%s}", Optional.of(assertionDescription).orElse("<no description>"));
 	}
 
-	public static CounterCheck checkEquals(SystemCounters.SystemCounterType counterType, Object value) {
+	/**
+	 * Create a check that asserts the given counterType to equal the given value
+	 * @param counterType The {@link SystemCounters.CounterType}
+	 * @param value The value
+	 * @return The check
+	 */
+	public static CounterCheck checkEquals(SystemCounters.CounterType counterType, Object value) {
 		final String assertionDescription = String.format("%s is %s", counterType.toString(), value.toString());
 		return new CounterCheck(counters -> Assert.assertEquals(
 			assertionDescription,
-			value, counters.get(SystemCounters.SystemCounterType.CONSENSUS_REJECTED)),
+			value, counters.get(SystemCounters.CounterType.CONSENSUS_REJECTED)),
 			assertionDescription);
 	}
 }

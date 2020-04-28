@@ -20,8 +20,18 @@ package com.radixdlt.test;
 
 import io.reactivex.Single;
 
+/**
+ * Checks for verifying certain conditions in {@link RemoteBFTNetworkBridge}s
+ */
 public interface RemoteBFTCheck {
-	// given a check to run, returns a cold observable emitting the check whenever it should be run
-
+	/**
+	 * Creates a cold {@link Single} that runs this check once against the given network when subscribed to,
+	 * returning either a success or error {@link RemoteBFTCheckResult} value.
+	 * Calling this method or the produced {@link Single} should only throw an exception in the case of internal error,
+	 * not in the general case of the check itself failing.
+	 *
+	 * @param network The network to check
+	 * @return A {@link RemoteBFTCheckResult} encapsulating the result of this check
+	 */
 	Single<RemoteBFTCheckResult> check(RemoteBFTNetworkBridge network);
 }
