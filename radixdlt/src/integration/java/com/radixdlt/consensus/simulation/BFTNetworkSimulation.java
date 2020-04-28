@@ -152,6 +152,7 @@ public class BFTNetworkSimulation {
 			underlyingNetwork.getNetworkSender(key.getPublicKey()),
 			safetyRules,
 			pacemaker,
+			pacemaker,
 			vertexStores.get(key),
 			pendingVotes,
 			proposers -> proposerElection, // assumes all instances use the same validators

@@ -18,6 +18,7 @@
 package com.radixdlt.consensus;
 
 import com.google.common.collect.Lists;
+import com.radixdlt.consensus.liveness.PacemakerRx;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.atommodel.Atom;
@@ -59,6 +60,7 @@ public class ValidatingEventCoordinatorTest {
 	private ProposerElection proposerElection;
 	private SafetyRules safetyRules;
 	private Pacemaker pacemaker;
+	private PacemakerRx pacemakerRx;
 	private PendingVotes pendingVotes;
 	private Mempool mempool;
 	private EventCoordinatorNetworkSender networkSender;
@@ -73,6 +75,7 @@ public class ValidatingEventCoordinatorTest {
 		this.networkSender = mock(EventCoordinatorNetworkSender.class);
 		this.safetyRules = mock(SafetyRules.class);
 		this.pacemaker = mock(Pacemaker.class);
+		this.pacemakerRx = mock(PacemakerRx.class);
 		this.vertexStore = mock(VertexStore.class);
 		this.pendingVotes = mock(PendingVotes.class);
 		this.proposerElection = mock(ProposerElection.class);
@@ -85,6 +88,7 @@ public class ValidatingEventCoordinatorTest {
 			networkSender,
 			safetyRules,
 			pacemaker,
+			pacemakerRx,
 			vertexStore,
 			pendingVotes,
 			proposerElection,

@@ -84,6 +84,11 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 	}
 
 	@Override
+	public Observable<View> localTimeouts() {
+		return this.timeoutsObservable;
+	}
+
+	@Override
 	public View getCurrentView() {
 		return currentView;
 	}
@@ -100,6 +105,7 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 		return Optional.of(this.currentView);
 	}
 
+	// TODO: Move this into Event Coordinator
 	@Override
 	public Optional<View> processNewView(NewView newView, ValidatorSet validatorSet) {
 		if (newView.getView().compareTo(this.lastSyncView) <= 0) {
@@ -149,8 +155,5 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 		}
 	}
 
-	@Override
-	public Observable<View> localTimeouts() {
-		return this.timeoutsObservable;
-	}
+
 }
