@@ -47,6 +47,7 @@ import org.radix.universe.system.LocalSystem;
 import org.radix.utils.IOUtils;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.net.URISyntaxException;
@@ -203,10 +204,11 @@ public final class Radix
 
 	private static RuntimeProperties loadProperties(String[] args) throws IOException, ParseException {
 		JSONObject runtimeConfigurationJSON = new JSONObject();
-		if (Radix.class.getResourceAsStream("/runtime_options.json") != null) {
-			runtimeConfigurationJSON = new JSONObject(IOUtils.toString(Radix.class.getResourceAsStream("/runtime_options.json")));
+		try (InputStream is = Radix.class.getResourceAsStream("/runtime_options.json")) {
+			if (is != null) {
+				runtimeConfigurationJSON = new JSONObject(IOUtils.toString(is));
+			}
 		}
-
 		return new RuntimeProperties(runtimeConfigurationJSON, args);
 	}
 }

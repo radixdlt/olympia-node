@@ -18,7 +18,6 @@
 package org.radix.utils;
 
 import org.junit.Test;
-import org.radix.utils.Locking;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
