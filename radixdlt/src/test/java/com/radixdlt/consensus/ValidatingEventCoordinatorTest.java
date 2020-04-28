@@ -18,10 +18,10 @@
 package com.radixdlt.consensus;
 
 import com.google.common.collect.Lists;
+import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.consensus.liveness.Pacemaker;
-import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyViolationException;

@@ -26,7 +26,6 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.atommodel.Atom;
 import com.radixdlt.consensus.ChainedBFT;
 import com.radixdlt.consensus.ChainedBFT.Event;
 import com.radixdlt.consensus.DefaultHasher;
@@ -40,6 +39,7 @@ import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.VertexStore;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.liveness.PacemakerImpl;
+import com.radixdlt.consensus.liveness.MempoolProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.RotatingLeaders;
@@ -72,7 +72,6 @@ public class BFTNetworkSimulation {
 
 	private final int pacemakerTimeout;
 	private final TestEventCoordinatorNetwork underlyingNetwork;
-	private final Atom genesis;
 	private final Vertex genesisVertex;
 	private final QuorumCertificate genesisQC;
 	private final ImmutableMap<ECKeyPair, VertexStore> vertexStores;
@@ -102,8 +101,7 @@ public class BFTNetworkSimulation {
 		this.nodes = nodes;
 		this.underlyingNetwork = Objects.requireNonNull(underlyingNetwork);
 		this.pacemakerTimeout = pacemakerTimeout;
-		this.genesis = null;
-		this.genesisVertex = Vertex.createGenesis(genesis);
+		this.genesisVertex = Vertex.createGenesis(null);
 		this.genesisQC = new QuorumCertificate(
 			new VoteData(VertexMetadata.ofVertex(genesisVertex), null, null),
 			new ECDSASignatures()
@@ -142,7 +140,7 @@ public class BFTNetworkSimulation {
 	private ChainedBFT createBFTInstance(ECKeyPair key) {
 		Mempool mempool = mock(Mempool.class);
 		doAnswer(inv -> Collections.emptyList()).when(mempool).getAtoms(anyInt(), anySet());
-		ProposalGenerator proposalGenerator = new ProposalGenerator(vertexStores.get(key), mempool);
+		ProposalGenerator proposalGenerator = new MempoolProposalGenerator(vertexStores.get(key), mempool);
 		Hasher hasher = new DefaultHasher();
 		SafetyRules safetyRules = new SafetyRules(key, SafetyState.initialState(), hasher);
 		PacemakerImpl pacemaker = pacemakers.get(key);

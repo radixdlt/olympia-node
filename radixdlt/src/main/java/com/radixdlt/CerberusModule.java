@@ -33,9 +33,11 @@ import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.VertexStore;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.VoteData;
+import com.radixdlt.consensus.liveness.MempoolProposalGenerator;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.PacemakerImpl;
 import com.radixdlt.consensus.liveness.PacemakerRx;
+import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.tempo.Scheduler;
@@ -76,6 +78,7 @@ public class CerberusModule extends AbstractModule {
 		bind(Pacemaker.class).to(PacemakerImpl.class);
 		bind(SafetyRules.class).in(Scopes.SINGLETON);
 		bind(Hasher.class).to(DefaultHasher.class);
+		bind(ProposalGenerator.class).to(MempoolProposalGenerator.class);
 	}
 
 	@Provides
