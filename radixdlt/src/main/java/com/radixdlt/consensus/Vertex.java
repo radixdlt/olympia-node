@@ -99,11 +99,14 @@ public final class Vertex {
 	}
 
 	public View getParentView() {
-		return qc == null ? View.of(0) : qc.getView();
+		return qc == null ? View.genesis() : qc.getView();
 	}
 
 	public View getGrandParentView() {
-		return qc == null ? View.of(0) : qc.getParent() == null ? View.of(0) : qc.getParent().getView();
+		if (qc == null || qc.getParent() == null) {
+			return View.genesis();
+		}
+		return qc.getParent().getView();
 	}
 
 	public QuorumCertificate getQC() {
@@ -111,7 +114,7 @@ public final class Vertex {
 	}
 
 	public boolean hasDirectParent() {
-		return this.view.equals(this.getParentView().next());
+		return this.view.number() == this.getParentView().number() + 1;
 	}
 
 	public View getView() {
@@ -124,6 +127,12 @@ public final class Vertex {
 
 	public boolean isGenesis() {
 		return this.view.isGenesis();
+	}
+
+	@JsonProperty("id")
+	@DsonOutput(Output.API)
+	private Hash getSerializerId() {
+		return getId();
 	}
 
 	@JsonProperty("view")

@@ -25,30 +25,30 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 public class VertexTest {
 
 	private Vertex testObject;
 	private QuorumCertificate qc;
 	private Atom atom;
-	private VertexMetadata vertexMetadata;
-	private Hash id;
 
 	@Before
-	public void setUp() throws Exception {
-		View view = View.of(1234567891L);
-		this.id = Hash.random();
+	public void setUp() {
+		View baseView = View.of(1234567890L);
+		Hash id = Hash.random();
 
-		this.vertexMetadata = new VertexMetadata(view, id);
-		VertexMetadata parent = new VertexMetadata(View.of(1234567890L), Hash.random());
+		VertexMetadata vertexMetadata = new VertexMetadata(baseView.next(), id);
+		VertexMetadata parent = new VertexMetadata(baseView, Hash.random());
 		VoteData voteData = new VoteData(vertexMetadata, parent);
 
 		this.qc = new QuorumCertificate(voteData, new ECDSASignatures());
 
 		this.atom = new Atom();
 
-		this.testObject = Vertex.createVertex(this.qc, view, this.atom);
+		this.testObject = Vertex.createVertex(this.qc, baseView.next().next(), this.atom);
 	}
 
 	@Test
@@ -58,10 +58,31 @@ public class VertexTest {
 	}
 
 	@Test
+	public void testDirectParentTrue() {
+		assertTrue(testObject.hasDirectParent());
+	}
+
+	@Test
+	public void testDirectParentFalse() {
+		View baseView = View.of(1234567890L);
+		Hash id = Hash.random();
+
+		VertexMetadata vertexMetadata = new VertexMetadata(baseView.next(), id);
+		VertexMetadata parent = new VertexMetadata(baseView, Hash.random());
+		VoteData voteData = new VoteData(vertexMetadata, parent);
+		QuorumCertificate qc2 = new QuorumCertificate(voteData, new ECDSASignatures());
+		Atom atom2 = new Atom();
+
+		Vertex v = Vertex.createVertex(qc2, baseView.next().next().next(), atom2);
+
+		assertFalse(v.hasDirectParent());
+	}
+
+	@Test
 	public void testGetters() {
 		assertEquals(this.atom, this.testObject.getAtom());
 		assertEquals(this.qc, this.testObject.getQC());
-		assertEquals(View.of(1234567891L), this.testObject.getView());
+		assertEquals(View.of(1234567892L), this.testObject.getView());
 	}
 
 	@Test

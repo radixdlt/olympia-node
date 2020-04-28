@@ -121,6 +121,7 @@ public final class VertexStore {
 		}
 
 		vertices.put(vertex.getId(), vertex);
+		updateVertexStoreSize();
 	}
 
 	public Vertex commitVertex(Hash vertexId) {
@@ -142,6 +143,7 @@ public final class VertexStore {
 		vertices.remove(root.getId());
 		root = tipVertex;
 
+		updateVertexStoreSize();
 		return tipVertex;
 	}
 
@@ -171,5 +173,9 @@ public final class VertexStore {
 
 	public int getSize() {
 		return vertices.size();
+	}
+
+	private void updateVertexStoreSize() {
+		this.counters.set(CounterType.CONSENSUS_VERTEXSTORE_SIZE, this.vertices.size());
 	}
 }
