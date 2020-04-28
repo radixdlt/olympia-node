@@ -62,6 +62,7 @@ public final class RemoteBFTTest {
 	 * @param runtimeUnit The unit of the runtime
 	 */
 	public void runBlocking(long runtime, TimeUnit runtimeUnit) {
+		// if required, wait for prerequisites
 		if (!this.prerequisites.isEmpty()) {
 			waitForPrerequisitesBlocking();
 		}
@@ -72,7 +73,7 @@ public final class RemoteBFTTest {
 			this.checks.stream()
 				.map(check -> this.schedule.schedule(check)
 					.map(checkToRun -> checkToRun.check(this.testNetwork)
-						.onErrorReturn(RemoteBFTCheckResult::error)
+						.onErrorReturn(error -> RemoteBFTCheckResult.error(InternalBFTCheckError.from(check, error)))
 						.doOnSuccess(result -> result.assertSuccess(String.format("check %s failed", checkToRun))))
 					.flatMap(Single::toObservable))
 				.collect(Collectors.toList()))
@@ -81,13 +82,18 @@ public final class RemoteBFTTest {
 		System.out.println("test done");
 	}
 
+	/**
+	 * Waits for all configured prerequisites to be satisfied simultaneously with the configured timeout.
+	 */
 	private void waitForPrerequisitesBlocking() {
 		System.out.println("waiting for prerequisites to be satisfied: " + prerequisites);
+		// create cold observables containing the prerequisite check schedules
 		List<Observable<RemoteBFTCheckResult>> prerequisiteRuns = this.prerequisites.stream()
 			.map(prerequisite -> this.schedule.schedule(prerequisite)
 				.map(prerequisiteToRun -> prerequisiteToRun.check(this.testNetwork))
 				.flatMap(Single::toObservable))
 			.collect(Collectors.toList());
+		// combine the latest results of executing all prerequisite schedules
 		Observable.combineLatest(prerequisiteRuns, results -> Arrays.stream(results)
 			.map(RemoteBFTCheckResult.class::cast)
 			.collect(Collectors.toList()))
@@ -100,7 +106,7 @@ public final class RemoteBFTTest {
 				}
 			})
 			.filter(results -> results.stream().allMatch(RemoteBFTCheckResult::isSuccess))
-			.firstOrError()
+			.firstOrError() // error and retry if not all check were successful
 			.retry()
 			.timeout(this.prerequisiteTimeout, this.prerequisiteTimeoutUnit)
 			.ignoreElement()
@@ -259,6 +265,29 @@ public final class RemoteBFTTest {
 				ImmutableList.copyOf(this.checks),
 				this.schedule
 			);
+		}
+	}
+
+	/**
+	 * An internal {@link RemoteBFTCheck} error thrown by a check and wrapped by the managing test
+	 */
+	public static final class InternalBFTCheckError extends AssertionError {
+		private final RemoteBFTCheck failedCheck;
+		private final Throwable error;
+
+		private InternalBFTCheckError(RemoteBFTCheck failedCheck, Throwable error) {
+			this.failedCheck = failedCheck;
+			this.error = error;
+		}
+
+		/**
+		 * Creates an {@link InternalBFTCheckError} wrapping the specified error of the given check
+		 * @param failedCheck The check that failed
+		 * @param error The error the check threw
+		 * @return An {@link InternalBFTCheckError} wrapping the given error
+		 */
+		private static InternalBFTCheckError from(RemoteBFTCheck failedCheck, Throwable error) {
+			return new InternalBFTCheckError(failedCheck, error);
 		}
 	}
 }
