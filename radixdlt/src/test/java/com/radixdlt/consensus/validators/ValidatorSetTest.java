@@ -18,8 +18,6 @@
 package com.radixdlt.consensus.validators;
 
 import com.radixdlt.utils.UInt128;
-import com.radixdlt.utils.UInt256;
-import java.util.Collections;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
@@ -28,7 +26,6 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
 import nl.jqno.equalsverifier.EqualsVerifier;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -50,13 +47,6 @@ public class ValidatorSetTest {
 	}
 
 	@Test
-	public void when_creating_a_validator_set_with_greater_than_max_allowed__then_illegal_argument_exception_is_thrown() {
-		Validator v = Validator.from(ECKeyPair.generateNew().getPublicKey(), UInt256.from(UInt128.MAX_VALUE).increment());
-		assertThatThrownBy(() -> ValidatorSet.from(Collections.singleton(v)))
-			.isInstanceOf(IllegalArgumentException.class);
-	}
-
-	@Test
 	public void testValidate() {
 		ECKeyPair k1 = ECKeyPair.generateNew();
 		ECKeyPair k2 = ECKeyPair.generateNew();
@@ -64,10 +54,10 @@ public class ValidatorSetTest {
 		ECKeyPair k4 = ECKeyPair.generateNew();
 		ECKeyPair k5 = ECKeyPair.generateNew(); // Rogue signature
 
-		Validator v1 = Validator.from(k1.getPublicKey(), UInt256.ONE);
-		Validator v2 = Validator.from(k2.getPublicKey(), UInt256.ONE);
-		Validator v3 = Validator.from(k3.getPublicKey(), UInt256.ONE);
-		Validator v4 = Validator.from(k4.getPublicKey(), UInt256.ONE);
+		Validator v1 = Validator.from(k1.getPublicKey(), UInt128.ONE);
+		Validator v2 = Validator.from(k2.getPublicKey(), UInt128.ONE);
+		Validator v3 = Validator.from(k3.getPublicKey(), UInt128.ONE);
+		Validator v4 = Validator.from(k4.getPublicKey(), UInt128.ONE);
 
 		ValidatorSet vs = ValidatorSet.from(ImmutableSet.of(v1, v2, v3, v4));
 		Hash message = Hash.random();
@@ -110,8 +100,8 @@ public class ValidatorSetTest {
 		ECKeyPair k1 = ECKeyPair.generateNew();
 		ECKeyPair k2 = ECKeyPair.generateNew();
 
-		Validator v1 = Validator.from(k1.getPublicKey(), UInt256.THREE);
-		Validator v2 = Validator.from(k2.getPublicKey(), UInt256.ONE);
+		Validator v1 = Validator.from(k1.getPublicKey(), UInt128.THREE);
+		Validator v2 = Validator.from(k2.getPublicKey(), UInt128.ONE);
 
 		ValidatorSet vs = ValidatorSet.from(ImmutableSet.of(v1, v2));
 		Hash message = Hash.random();

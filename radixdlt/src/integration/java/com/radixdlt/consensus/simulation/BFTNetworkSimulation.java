@@ -55,7 +55,7 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.mempool.Mempool;
 
 import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork;
-import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.UInt128;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.Collections;
 import java.util.List;
@@ -111,7 +111,7 @@ public class BFTNetworkSimulation {
 		this.validatorSet = ValidatorSet.from(
 			nodes.stream()
 				.map(ECKeyPair::getPublicKey)
-				.map(pk -> Validator.from(pk, UInt256.ONE))
+				.map(pk -> Validator.from(pk, UInt128.ONE))
 				.collect(Collectors.toList())
 		);
 		this.proposerElection = new RotatingLeaders(validatorSet.getValidators().stream()

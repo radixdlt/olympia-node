@@ -78,17 +78,17 @@ public final class WeightedRotatingLeaders implements ProposerElection {
 		}
 
 		private void computeNext() {
-			// Reset last leader
+			// Reset current leader by subtracting total power
 			final int curIndex = (int) (this.curView.number() % cache.length);
 			final Validator curLeader = cache[curIndex];
 			weights.merge(curLeader, validatorSet.getTotalPower(), UInt256::subtract);
 
-			// Add weight
+			// Add weights relative to each validator's power
 			for (Validator validator : validatorSet.getValidators()) {
-				weights.merge(validator, validator.getPower(), UInt256::add);
+				weights.merge(validator, UInt256.from(validator.getPower()), UInt256::add);
 			}
 
-			// Compute next leader
+			// Compute next leader by getting heaviest validator
 			this.curView = this.curView.next();
 			int index = (int) (this.curView.number() % cache.length);
 			cache[index] = computeHeaviest();
@@ -129,6 +129,9 @@ public final class WeightedRotatingLeaders implements ProposerElection {
 	@Override
 	public ECPublicKey getProposer(View view) {
 		nextLeaderComputer.computeToView(view);
+
+		// validator will only be null if the view supplied is before the cache
+		// window
 		Validator validator = nextLeaderComputer.checkCacheForProposer(view);
 		if (validator != null) {
 			// dynamic program cache successful

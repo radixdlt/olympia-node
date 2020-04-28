@@ -24,7 +24,7 @@ import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.UInt128;
 import java.util.Collections;
 import org.junit.Before;
 import org.junit.Test;
@@ -61,7 +61,7 @@ public class PendingVotesTest {
 		Hash vertexId = Hash.random();
 		Vote vote1 = makeVoteFor(vertexId);
 		Vote vote2 = makeVoteFor(vertexId);
-		ValidatorSet validatorSet = ValidatorSet.from(Collections.singleton(Validator.from(vote1.getAuthor(), UInt256.ONE)));
+		ValidatorSet validatorSet = ValidatorSet.from(Collections.singleton(Validator.from(vote1.getAuthor(), UInt128.ONE)));
 		assertThat(this.pendingVotes.insertVote(vote2, validatorSet)).isEmpty();
 	}
 

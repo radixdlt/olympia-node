@@ -29,7 +29,7 @@ import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.UInt128;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -45,7 +45,7 @@ public class WeightedRotatingLeadersTest {
 	private void setUp(int validatorSetSize, int sizeOfCache) {
 		this.validatorsInOrder = Stream.generate(() -> mock(ECPublicKey.class))
 			.limit(validatorSetSize)
-			.map(pk -> Validator.from(pk, UInt256.ONE))
+			.map(pk -> Validator.from(pk, UInt128.ONE))
 			.collect(ImmutableList.toImmutableList());
 
 		ValidatorSet validatorSet = ValidatorSet.from(validatorsInOrder);
@@ -119,19 +119,19 @@ public class WeightedRotatingLeadersTest {
 
 		final int sumOfPower = fibonacci.get().sum();
 		this.validatorsInOrder = fibonacci.get()
-			.mapToObj(p -> Validator.from(mock(ECPublicKey.class), UInt256.from(p)))
+			.mapToObj(p -> Validator.from(mock(ECPublicKey.class), UInt128.from(p)))
 			.collect(ImmutableList.toImmutableList());
 
 		ValidatorSet validatorSet = ValidatorSet.from(validatorsInOrder);
 		Comparator<Validator> validatorComparator = mock(Comparator.class);
 		this.weightedRotatingLeaders = new WeightedRotatingLeaders(validatorSet, validatorComparator, sizeOfCache);
 
-		Map<ECPublicKey, UInt256> proposerCounts = Stream.iterate(View.of(0), View::next)
+		Map<ECPublicKey, UInt128> proposerCounts = Stream.iterate(View.of(0), View::next)
 			.limit(sumOfPower)
 			.map(this.weightedRotatingLeaders::getProposer)
-			.collect(groupingBy(p -> p, collectingAndThen(counting(), UInt256::from)));
+			.collect(groupingBy(p -> p, collectingAndThen(counting(), UInt128::from)));
 
-		Map<ECPublicKey, UInt256> expected = validatorsInOrder.stream()
+		Map<ECPublicKey, UInt128> expected = validatorsInOrder.stream()
 			.collect(toMap(Validator::nodeKey, Validator::getPower));
 
 		assertThat(proposerCounts).isEqualTo(expected);

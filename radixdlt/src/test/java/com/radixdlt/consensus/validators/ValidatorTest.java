@@ -17,9 +17,8 @@
 
 package com.radixdlt.consensus.validators;
 
-import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.UInt128;
 import org.junit.Test;
-import org.radix.serialization.SerializeObject;
 
 import com.radixdlt.crypto.ECKeyPair;
 import nl.jqno.equalsverifier.EqualsVerifier;
@@ -28,12 +27,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 
-public class ValidatorTest extends SerializeObject<Validator> {
-
-	public ValidatorTest() {
-		super(Validator.class, ValidatorTest::create);
-	}
-
+public class ValidatorTest {
 	@Test
 	public void equalsContract() {
 		EqualsVerifier.forClass(Validator.class)
@@ -53,6 +47,6 @@ public class ValidatorTest extends SerializeObject<Validator> {
 
 	private static Validator create() {
 		ECKeyPair nodeKey = ECKeyPair.generateNew();
-		return Validator.from(nodeKey.getPublicKey(), UInt256.ONE);
+		return Validator.from(nodeKey.getPublicKey(), UInt128.ONE);
 	}
 }

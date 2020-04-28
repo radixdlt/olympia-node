@@ -26,7 +26,7 @@ import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.UInt128;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.junit.Test;
 
@@ -172,7 +172,7 @@ public class PacemakerImplTest {
 		View view = View.of(2);
 		NewView newView1 = makeNewViewFor(view);
 		NewView newView2 = makeNewViewFor(view);
-		ValidatorSet validatorSet = ValidatorSet.from(Collections.singleton(Validator.from(newView1.getAuthor(), UInt256.ONE)));
+		ValidatorSet validatorSet = ValidatorSet.from(Collections.singleton(Validator.from(newView1.getAuthor(), UInt128.ONE)));
 		ScheduledExecutorService executorService = getMockedExecutorService();
 		PacemakerImpl pacemaker = new PacemakerImpl(TEST_PACEMAKER_TIMEOUT, executorService);
 		assertThat(pacemaker.processNewView(newView2, validatorSet)).isEmpty();
