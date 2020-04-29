@@ -19,7 +19,7 @@ package com.radixdlt.consensus.simulation.synchronous;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
-import com.radixdlt.consensus.simulation.BFTTest;
+import com.radixdlt.consensus.simulation.BFTSimulatedTest;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
@@ -44,7 +44,7 @@ public class RandomLatencyTest {
 		final int trips = 6;
 		final int synchronousTimeout = maxLatency * trips;
 
-		BFTTest bftTest = BFTTest.builder()
+		BFTSimulatedTest bftTest = BFTSimulatedTest.builder()
 			.numNodes(3)
 			.randomLatency(minLatency, maxLatency)
 			.disableSync(true)
@@ -70,7 +70,7 @@ public class RandomLatencyTest {
 		final int trips = 8;
 		final int synchronousTimeout = maxLatency * trips;
 
-		BFTTest bftTest = BFTTest.builder()
+		BFTSimulatedTest bftTest = BFTSimulatedTest.builder()
 			.numNodes(4)
 			.pacemakerTimeout(synchronousTimeout)
 			.randomLatency(minLatency, maxLatency)

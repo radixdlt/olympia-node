@@ -68,7 +68,7 @@ import java.util.stream.Collectors;
 /**
  * A multi-node bft test network where the network and latencies of each message is simulated.
  */
-public class BFTNetworkSimulation {
+public class SimulatedBFTNetwork {
 	private static final int TEST_PACEMAKER_TIMEOUT = 1000;
 
 	private final int pacemakerTimeout;
@@ -89,7 +89,7 @@ public class BFTNetworkSimulation {
 	 * @param nodes The nodes to populate the network with
 	 * @param underlyingNetwork the network simulator
 	 */
-	public BFTNetworkSimulation(List<ECKeyPair> nodes, TestEventCoordinatorNetwork underlyingNetwork) {
+	public SimulatedBFTNetwork(List<ECKeyPair> nodes, TestEventCoordinatorNetwork underlyingNetwork) {
 		this(nodes, underlyingNetwork, TEST_PACEMAKER_TIMEOUT);
 	}
 
@@ -99,7 +99,7 @@ public class BFTNetworkSimulation {
 	 * @param underlyingNetwork the network simulator
 	 * @param pacemakerTimeout a fixed pacemaker timeout used for all nodes
 	 */
-	public BFTNetworkSimulation(List<ECKeyPair> nodes, TestEventCoordinatorNetwork underlyingNetwork, int pacemakerTimeout) {
+	public SimulatedBFTNetwork(List<ECKeyPair> nodes, TestEventCoordinatorNetwork underlyingNetwork, int pacemakerTimeout) {
 		this.nodes = nodes;
 		this.underlyingNetwork = Objects.requireNonNull(underlyingNetwork);
 		this.pacemakerTimeout = pacemakerTimeout;

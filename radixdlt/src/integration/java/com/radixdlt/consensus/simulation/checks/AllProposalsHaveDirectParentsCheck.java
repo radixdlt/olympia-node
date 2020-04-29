@@ -18,7 +18,7 @@
 package com.radixdlt.consensus.simulation.checks;
 
 import com.radixdlt.consensus.simulation.BFTCheck;
-import com.radixdlt.consensus.simulation.BFTNetworkSimulation;
+import com.radixdlt.consensus.simulation.SimulatedBFTNetwork;
 import com.radixdlt.consensus.EventCoordinatorNetworkRx;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vertex;
@@ -37,7 +37,7 @@ import org.assertj.core.api.Condition;
 public class AllProposalsHaveDirectParentsCheck implements BFTCheck {
 
 	@Override
-	public Completable check(BFTNetworkSimulation network) {
+	public Completable check(SimulatedBFTNetwork network) {
 		List<Observable<Vertex>> correctProposals = network.getNodes().stream()
 			.map(ECKeyPair::getPublicKey)
 			.map(network.getUnderlyingNetwork()::getNetworkRx)

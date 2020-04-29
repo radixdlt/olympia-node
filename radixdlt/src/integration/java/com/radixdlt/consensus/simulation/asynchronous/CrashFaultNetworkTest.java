@@ -23,7 +23,7 @@ import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexStore;
 import com.radixdlt.consensus.View;
-import com.radixdlt.consensus.simulation.BFTNetworkSimulation;
+import com.radixdlt.consensus.simulation.SimulatedBFTNetwork;
 import com.radixdlt.consensus.simulation.DroppingLatencyProvider;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
@@ -77,7 +77,7 @@ public class CrashFaultNetworkTest {
 			.latencyProvider(crashLatencyProvider)
 			.build();
 
-		final BFTNetworkSimulation bftNetwork = new BFTNetworkSimulation(allNodes, network);
+		final SimulatedBFTNetwork bftNetwork = new SimulatedBFTNetwork(allNodes, network);
 		crashLatencyProvider.crashNode(allNodes.get(2).getPublicKey());
 
 		List<Observable<Vertex>> committedObservables = allNodes.stream()
@@ -121,7 +121,7 @@ public class CrashFaultNetworkTest {
 		final TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.builder()
 			.latencyProvider(crashLatencyProvider)
 			.build();
-		final BFTNetworkSimulation bftNetwork = new BFTNetworkSimulation(allNodes, network);
+		final SimulatedBFTNetwork bftNetwork = new SimulatedBFTNetwork(allNodes, network);
 		// "crash" all faulty nodes by disallowing any communication
 		faultyNodes.forEach(node -> crashLatencyProvider.crashNode(node.getPublicKey()));
 
@@ -223,7 +223,7 @@ public class CrashFaultNetworkTest {
 		final TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.builder()
 			.latencyProvider(crashLatencyProvider)
 			.build();
-		final BFTNetworkSimulation bftNetwork = new BFTNetworkSimulation(allNodes, network);
+		final SimulatedBFTNetwork bftNetwork = new SimulatedBFTNetwork(allNodes, network);
 
 		// correct nodes should all get the same commits in the same order
 		Observable<Object> correctCommitCheck = Observable.zip(

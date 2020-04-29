@@ -18,7 +18,7 @@
 package com.radixdlt.consensus.simulation.checks;
 
 import com.radixdlt.consensus.simulation.BFTCheck;
-import com.radixdlt.consensus.simulation.BFTNetworkSimulation;
+import com.radixdlt.consensus.simulation.SimulatedBFTNetwork;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
@@ -46,7 +46,7 @@ public final class SyncOccurrenceCheck implements BFTCheck {
 	}
 
 	@Override
-	public Completable check(BFTNetworkSimulation network) {
+	public Completable check(SimulatedBFTNetwork network) {
 		return Observable.interval(duration, timeUnit)
 			.map(i -> network.getNodes().stream()
 				.map(network::getCounters)
