@@ -29,7 +29,8 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 
 /**
- * Set of validators for consensus.
+ * Set of validators for consensus. Only validators with power >= 1 will
+ * be part of the set.
  * <p>
  * Note that this set will validate for set sizes less than 4,
  * as long as all validators sign.
@@ -43,6 +44,7 @@ public final class ValidatorSet {
 
 	private ValidatorSet(Collection<Validator> validators) {
 		this.validators = validators.stream()
+			.filter(v -> !v.getPower().isZero())
 			.collect(ImmutableBiMap.toImmutableBiMap(Validator::nodeKey, Function.identity()));
 		this.totalPower = validators.stream()
 			.map(Validator::getPower)
