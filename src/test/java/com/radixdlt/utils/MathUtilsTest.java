@@ -43,7 +43,7 @@ public class MathUtilsTest {
 
 			final UInt128 expected;
 			if (biExpected.compareTo(UINT128_MAX_BI) > 0) {
-				expected = UInt128.MAX_VALUE;
+				expected = null;
 			} else {
 				expected = primeNumbers.apply(size)
 					.mapToObj(UInt128::from)
@@ -67,7 +67,7 @@ public class MathUtilsTest {
 				final BigInteger biExpected = BigInteger.valueOf(base).pow(exponent);
 				final UInt128 expected;
 				if (biExpected.compareTo(UINT128_MAX_BI) > 0) {
-					expected = UInt128.MAX_VALUE;
+					expected = null;
 				} else {
 					expected = UInt128.from(base).pow(exponent);
 				}

@@ -37,14 +37,14 @@ public final class MathUtils {
 
 	/**
 	 * Returns a capped least common multiple between an array of UInt128 numbers.
-	 * The cap acts as a ceiling and will be returned if the result is greater
-	 * than it.
+	 * The cap acts as a ceiling. If the result exceeds cap, then this will return
+	 * null.
 	 *
 	 * numbers must be non-null and non-zero. Otherwise, result is undefined.
 	 *
 	 * @param cap the cap to be used for the computation
 	 * @param numbers array of numbers of size atleast 1
-	 * @return the least common multiple
+	 * @return null, if the least common multiple is greater than cap, otherwise the least common multiple
 	 * @throws ArrayIndexOutOfBoundsException if numbers is a zero length array
 	 * @throws NullPointerException if cap or numbers is null
 	 */
@@ -53,8 +53,8 @@ public final class MathUtils {
 		UInt128 r = numbers[0];
 		for (int i = 1; i < numbers.length; i++) {
 			r = lcm(r, numbers[i]);
-			if (r == null || r.compareTo(cap) >= 0) {
-				return cap;
+			if (r == null || r.compareTo(cap) > 0) {
+				return null;
 			}
 		}
 		return r;
