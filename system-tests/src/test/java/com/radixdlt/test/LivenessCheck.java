@@ -19,6 +19,8 @@
 package com.radixdlt.test;
 
 import io.reactivex.Single;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
 
 import java.util.Arrays;
@@ -29,11 +31,13 @@ import java.util.stream.Collectors;
 /**
  * A liveness check that scans all nodes for the overall highest QC twice (with a delay) at the "api/vertices/highestqc"
  * endpoint, interpreting an increase in the overall highest QC between two invocations as "liveness".
- *
+ * <p>
  * Note that if some nodes fail to respond to the query, they will be ignored; however, that may lead to inadvertent
  * failure of this test where liveness did not actually fail but nodes failed to respond.
  */
 public class LivenessCheck implements RemoteBFTCheck {
+	private final Logger logger = LogManager.getLogger(this.getClass());
+
 	private final long patience;
 	private final TimeUnit patienceUnit;
 
@@ -65,6 +69,7 @@ public class LivenessCheck implements RemoteBFTCheck {
 
 	/**
 	 * Gets the highest highest QC view across the entire network, returning 0 if all queries were unsuccessful.
+	 *
 	 * @param network The network to query
 	 * @return The highest highest QC view
 	 */
@@ -74,8 +79,8 @@ public class LivenessCheck implements RemoteBFTCheck {
 				.map(node -> network.queryEndpointJson(node, "api/vertices/highestqc")
 					.map(LivenessCheck::extractView)
 					.timeout(this.timeout, this.timeoutUnit)
-					.doOnError(err -> System.err.printf(
-						"error while querying %s for highest QC, excluding from evaluation due to: %s%n",
+					.doOnError(err -> logger.warn(
+						"error while querying {} for highest QC, excluding from evaluation due to: {}",
 						node, err))
 					.onErrorReturnItem(0L)) // unresponsive nodes are not our concern here
 				.collect(Collectors.toList()),
@@ -87,6 +92,7 @@ public class LivenessCheck implements RemoteBFTCheck {
 
 	/**
 	 * Extracts the view out of a QC
+	 *
 	 * @param qcJson The QC, represented as a {@link JSONObject}
 	 * @return The QC's view
 	 */

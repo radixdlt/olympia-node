@@ -21,6 +21,8 @@ package com.radixdlt.test;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import io.reactivex.Single;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -42,6 +44,8 @@ import java.util.stream.Collectors;
  * assert safety (where every vertex includes a reference to the last).
  */
 public class SafetyCheck implements RemoteBFTCheck {
+	private final Logger logger = LogManager.getLogger(this.getClass());
+
 	private final long timeout;
 	private final TimeUnit timeoutUnit;
 
@@ -57,8 +61,8 @@ public class SafetyCheck implements RemoteBFTCheck {
 				.map(node -> network.queryEndpoint(node, "api/vertices/committed")
 					.timeout(timeout, timeoutUnit)
 					.map(verticesString -> extractVertices(verticesString, node))
-					.doOnError(err -> System.err.printf(
-						"error while querying %s for committed vertices, excluding from evaluation due to: %s%n",
+					.doOnError(err -> logger.warn(
+						"error while querying {} for committed vertices, excluding from evaluation due to: {}",
 						node, err))
 					.onErrorReturnItem(ImmutableSet.of())) // unresponsive nodes are not our concern here
 				.collect(Collectors.toList()),

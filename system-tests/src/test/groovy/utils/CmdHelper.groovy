@@ -18,18 +18,23 @@
 
 package utils
 
+import org.apache.logging.log4j.LogManager
+import org.apache.logging.log4j.Logger
+
 import static utils.Generic.listToDelimitedString
 
 class CmdHelper {
+    private static final Logger logger = LogManager.getLogger(CmdHelper.class)
+
     static List<String[]> runCommand(cmd, String[] env = null, failOnError = false) {
 
         Thread.sleep(1000)
         def sout = new StringBuffer()
         def serr = new StringBuffer()
         def process
-        println "------Executing command ${cmd}-----"
+        logger.info("------Executing command ${cmd}-----")
         if (env) {
-            println "------Environment variables ${env}-----"
+            logger.info("------Environment variables ${env}-----")
             process = cmd.execute(env as String[], null)
         } else {
             process = cmd.execute()
@@ -41,14 +46,14 @@ class CmdHelper {
         List outPut, error
         if (sout) {
             outPut = sout.toString().split(System.lineSeparator()).collect({ it })
-            println "-----------Output---------"
-            sout.each { println it }
+            logger.info("-----------Output---------")
+            sout.each { logger.info(it) }
         }
 
         if (serr) {
-            println "-----------Error---------"
+            logger.error("-----------Error---------")
 
-            serr.each { println it }
+            serr.each { logger.error(it) }
             error = serr.toString().split(System.lineSeparator()).collect({ it })
             if (failOnError) {
                 throw new Exception(error.toString())

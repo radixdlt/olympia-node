@@ -21,6 +21,8 @@ package com.radixdlt.test;
 import com.google.common.collect.ImmutableList;
 import io.reactivex.Observable;
 import io.reactivex.Single;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,6 +36,8 @@ import java.util.stream.Collectors;
  * Optionally this test can wait for certain conditions to be met before running the actual checks.
  */
 public final class RemoteBFTTest {
+	private final Logger logger = LogManager.getLogger(this.getClass());
+
 	private final RemoteBFTNetworkBridge testNetwork;
 	private final ImmutableList<RemoteBFTCheck> prerequisites;
 	private final ImmutableList<RemoteBFTCheck> checks;
@@ -64,7 +68,7 @@ public final class RemoteBFTTest {
 	 * @param timeoutUnit The unit of the wait timeout
 	 */
 	public void waitForPrerequisitesBlocking(long timeout, TimeUnit timeoutUnit) {
-		System.out.println("waiting for prerequisites to be satisfied: " + prerequisites);
+		logger.info("waiting for prerequisites to be satisfied: " + prerequisites);
 		// create cold observables containing the prerequisite check schedules
 		List<Observable<RemoteBFTCheckResult>> prerequisiteRuns = this.prerequisites.stream()
 			.map(prerequisite -> this.schedule.schedule(prerequisite)
@@ -77,7 +81,7 @@ public final class RemoteBFTTest {
 			.collect(Collectors.toList()))
 			.doOnNext(results -> {
 				if (results.stream().anyMatch(RemoteBFTCheckResult::isError)) {
-					System.out.println("prerequisites failing, retrying: " + results.stream()
+					logger.info("prerequisites unsatisfied, retrying: " + results.stream()
 						.filter(RemoteBFTCheckResult::isError)
 						.map(RemoteBFTCheckResult::toString)
 						.collect(Collectors.joining(", ")));
@@ -105,14 +109,13 @@ public final class RemoteBFTTest {
 
 		// start consensus if required, waiting until all requests have come through (important for some checks)
 		if (this.startConsensusOnRun) {
-			System.out.println("starting consensus in all nodes");
+			logger.info("starting consensus in all nodes");
 			testNetwork.startConsensus()
 				.blockingAwait();
 		}
 
 		// run the actual tests for the configured duration
-		// TODO do proper logging instead of using stdout/err
-		System.out.printf("running test for %d %s: %s%n", duration, durationUnit, this.checks);
+		logger.info("running for {} {}: {}", duration, durationUnit, this.checks);
 		Observable.merge(
 			this.checks.stream()
 				.map(check -> this.schedule.schedule(check)
@@ -123,7 +126,7 @@ public final class RemoteBFTTest {
 				.collect(Collectors.toList()))
 			.take(duration, durationUnit)
 			.blockingSubscribe();
-		System.out.println("test done");
+		logger.info("done");
 	}
 
 	/**

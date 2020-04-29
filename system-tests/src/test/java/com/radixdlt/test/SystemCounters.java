@@ -19,6 +19,8 @@
 package com.radixdlt.test;
 
 import com.google.common.collect.ImmutableMap;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -29,6 +31,8 @@ import java.util.Map;
  * Note that both SystemCounters.from and {@link CounterType} must be kept in sync with their core counterparts.
  */
 public final class SystemCounters {
+	private static final Logger logger = LogManager.getLogger(SystemCounters.class);
+
 	private final Map<CounterType, Long> systemCounters;
 
 	private SystemCounters(Map<CounterType, Long> systemCounters) {
@@ -61,7 +65,7 @@ public final class SystemCounters {
 				long counterValue = parent.getLong(path[path.length - 1]);
 				systemCounters.put(value, counterValue);
 			} catch (JSONException e) {
-				System.err.printf("failed to extract value for %s at '%s': %s%n", value, value.jsonPath(), e);
+				logger.warn("failed to extract value for {} at '{}': {}", value, value.jsonPath(), e);
 				systemCounters.put(value, 0L);
 			}
 		}
