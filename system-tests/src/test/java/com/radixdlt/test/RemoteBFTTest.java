@@ -233,7 +233,7 @@ public final class RemoteBFTTest {
 		 * @return This builder
 		 */
 		public Builder assertLiveness() {
-			return addCheck(new LivenessCheck(1, TimeUnit.SECONDS, patience, patienceUnit));
+			return addCheck(new LivenessCheck(10, TimeUnit.SECONDS, 1, TimeUnit.SECONDS));
 		}
 
 		/**

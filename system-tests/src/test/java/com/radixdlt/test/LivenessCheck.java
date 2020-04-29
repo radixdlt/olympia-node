@@ -34,24 +34,24 @@ import java.util.stream.Collectors;
  * failure of this test where liveness did not actually fail but nodes failed to respond.
  */
 public class LivenessCheck implements RemoteBFTCheck {
-	private final long timeout;
-	private final TimeUnit timeoutUnit;
-
 	private final long patience;
 	private final TimeUnit patienceUnit;
 
-	public LivenessCheck(long timeout, TimeUnit timeoutUnit, long patience, TimeUnit patienceUnit) {
-		this.timeout = timeout;
-		this.timeoutUnit = Objects.requireNonNull(timeoutUnit);
+	private final long timeout;
+	private final TimeUnit timeoutUnit;
+
+	public LivenessCheck(long patience, TimeUnit patienceUnit, long timeout, TimeUnit timeoutUnit) {
 		this.patience = patience;
 		this.patienceUnit = Objects.requireNonNull(patienceUnit);
+		this.timeout = timeout;
+		this.timeoutUnit = Objects.requireNonNull(timeoutUnit);
 	}
 
 	@Override
 	public Single<RemoteBFTCheckResult> check(RemoteBFTNetworkBridge network) {
 		return Single.zip(
 			getHighestHighestQCView(network),
-			getHighestHighestQCView(network).delay(patience, patienceUnit),
+			Single.timer(patience, patienceUnit).flatMap(l -> getHighestHighestQCView(network)),
 			(previousHighestView, currentHighestView) -> {
 				if (currentHighestView <= previousHighestView) { // didn't advance during patience interval
 					return RemoteBFTCheckResult.error(new LivenessError(
@@ -96,7 +96,7 @@ public class LivenessCheck implements RemoteBFTCheck {
 
 	@Override
 	public String toString() {
-		return String.format("LivenessCheck{timeout=%d %s}", timeout, timeoutUnit);
+		return String.format("LivenessCheck{patience=%d %s, timeout=%d %s}", patience, patienceUnit, timeout, timeoutUnit);
 	}
 
 	/**
