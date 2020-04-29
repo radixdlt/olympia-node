@@ -119,6 +119,7 @@ public final class ChainedBFT {
 			.map(o -> new Event(EventType.EPOCH, o));
 
 		final Observable<EventCoordinator> eventCoordinators = epochEvents
+			.observeOn(this.singleThreadScheduler)
 			.map(epochManager::nextEpoch)
 			.startWithItem(epochManager.start())
 			.doOnNext(EventCoordinator::start)

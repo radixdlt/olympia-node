@@ -245,20 +245,21 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 			return;
 		}
 
+		final ECPublicKey currentLeader = this.proposerElection.getProposer(updatedView);
 		try {
 			final Vote vote = safetyRules.voteFor(proposedVertex);
-			final ECPublicKey leader = this.proposerElection.getProposer(updatedView);
-			log.info("{}: PROPOSAL: Sending VOTE to {}: {}", this.getShortName(), this.getShortName(leader.euid()), vote);
-			networkSender.sendVote(vote, leader);
+			log.info("{}: PROPOSAL: Sending VOTE to {}: {}", this.getShortName(), this.getShortName(currentLeader.euid()), vote);
+			networkSender.sendVote(vote, currentLeader);
 		} catch (SafetyViolationException e) {
 			log.error(this.getShortName() + ": PROPOSAL: Rejected " + proposedVertex, e);
 		}
 
 		// If not currently leader or next leader, Proceed to next view
-		if (!Objects.equals(proposerElection.getProposer(updatedView), selfKey.getPublicKey())
-			&& !Objects.equals(proposerElection.getProposer(updatedView.next()), selfKey.getPublicKey())) {
-			this.pacemaker.processQC(updatedView)
-				.ifPresent(this::proceedToView);
+		if (!Objects.equals(currentLeader, selfKey.getPublicKey())) {
+			final ECPublicKey nextLeader = this.proposerElection.getProposer(updatedView.next());
+			if (!Objects.equals(nextLeader, selfKey.getPublicKey())) {
+				this.pacemaker.processQC(updatedView).ifPresent(this::proceedToView);
+			}
 		}
 	}
 
