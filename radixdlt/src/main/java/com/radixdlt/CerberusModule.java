@@ -33,10 +33,10 @@ import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.VertexStore;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.VoteData;
-import com.radixdlt.consensus.liveness.FixedTimeout.TimeoutSender;
+import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker.TimeoutSender;
 import com.radixdlt.consensus.liveness.MempoolProposalGenerator;
 import com.radixdlt.consensus.liveness.Pacemaker;
-import com.radixdlt.consensus.liveness.FixedTimeout;
+import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
 import com.radixdlt.consensus.liveness.PacemakerRx;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ScheduledTimeoutSender;
@@ -78,7 +78,7 @@ public class CerberusModule extends AbstractModule {
 		bind(Scheduler.class).toProvider(SingleThreadedScheduler::new);
 		bind(TimeoutSender.class).to(ScheduledTimeoutSender.class);
 		bind(PacemakerRx.class).to(ScheduledTimeoutSender.class);
-		bind(Pacemaker.class).to(FixedTimeout.class);
+		bind(Pacemaker.class).to(FixedTimeoutPacemaker.class);
 		bind(SafetyRules.class).in(Scopes.SINGLETON);
 		bind(Hasher.class).to(DefaultHasher.class);
 		bind(ProposalGenerator.class).to(MempoolProposalGenerator.class);
@@ -117,11 +117,11 @@ public class CerberusModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private FixedTimeout pacemaker(
+	private FixedTimeoutPacemaker pacemaker(
 		TimeoutSender timeoutSender
 	) {
 		final int pacemakerTimeout = runtimeProperties.get("consensus.pacemaker_timeout_millis", 5000);
-		return new FixedTimeout(pacemakerTimeout, timeoutSender);
+		return new FixedTimeoutPacemaker(pacemakerTimeout, timeoutSender);
 	}
 
 	@Provides

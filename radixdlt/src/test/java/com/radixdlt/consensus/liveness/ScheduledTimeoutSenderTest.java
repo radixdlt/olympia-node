@@ -55,8 +55,7 @@ public class ScheduledTimeoutSenderTest {
 
 	@Test
 	public void when_subscribed_to_local_timeouts_and_schedule_timeout__then_a_timeout_event_with_view_is_emitted() {
-		TestObserver<View> testObserver = TestObserver.create();
-		scheduledTimeoutSender.localTimeouts().subscribe(testObserver);
+		TestObserver<View> testObserver = scheduledTimeoutSender.localTimeouts().test();
 		View view = mock(View.class);
 		long timeout = 10;
 		scheduledTimeoutSender.scheduleTimeout(view, timeout);
@@ -68,8 +67,7 @@ public class ScheduledTimeoutSenderTest {
 
 	@Test
 	public void when_subscribed_to_local_timeouts_and_schedule_timeout_twice__then_two_timeout_events_are_emitted() {
-		TestObserver<View> testObserver = TestObserver.create();
-		scheduledTimeoutSender.localTimeouts().subscribe(testObserver);
+		TestObserver<View> testObserver = scheduledTimeoutSender.localTimeouts().test();
 		View view1 = mock(View.class);
 		View view2 = mock(View.class);
 		long timeout = 10;
@@ -84,8 +82,7 @@ public class ScheduledTimeoutSenderTest {
 	@Test
 	public void when_subscribed_to_timeout_and_timeout_occurs_for_view__then_should_complete() throws Exception {
 		View view = View.of(0);
-		TestObserver testObserver = TestObserver.create();
-		scheduledTimeoutSender.timeout(view).subscribe(testObserver);
+		TestObserver<Void> testObserver = scheduledTimeoutSender.timeout(view).test();
 		scheduledTimeoutSender.scheduleTimeout(view, 10);
 		testObserver.await();
 		testObserver.assertComplete();
@@ -96,8 +93,7 @@ public class ScheduledTimeoutSenderTest {
 		View view = View.of(0);
 		scheduledTimeoutSender.scheduleTimeout(view, 10);
 		scheduledTimeoutSender.scheduleTimeout(view.next(), 10);
-		TestObserver testObserver = TestObserver.create();
-		scheduledTimeoutSender.timeout(view).subscribe(testObserver);
+		TestObserver<Void> testObserver = scheduledTimeoutSender.timeout(view).test();
 		testObserver.await();
 		testObserver.assertComplete();
 	}
