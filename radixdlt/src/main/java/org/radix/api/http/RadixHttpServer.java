@@ -21,6 +21,7 @@ import com.radixdlt.consensus.ChainedBFT;
 import com.google.common.collect.EvictingQueue;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
+import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexStore;
 import com.radixdlt.mempool.SubmissionControl;
@@ -89,6 +90,7 @@ public final class RadixHttpServer {
 	private final Universe universe;
 	private final JSONObject apiSerializedUniverse;
 	private final LocalSystem localSystem;
+	private final VertexStore vertexStore;
 	private final Serialization serialization;
 
 	private final Disposable vertexDisposable;
@@ -112,6 +114,7 @@ public final class RadixHttpServer {
 		this.serialization = Objects.requireNonNull(serialization);
 		this.apiSerializedUniverse = serialization.toJsonObject(this.universe, DsonOutput.Output.API);
 		this.localSystem = Objects.requireNonNull(localSystem);
+		this.vertexStore = Objects.requireNonNull(vertexStore);
 		this.peers = new ConcurrentHashMap<>();
 		this.atomsService = new AtomsService(store, submissionControl, atomToBinaryConverter);
 		this.jsonRpcServer = new RadixJsonRpcServer(
@@ -223,6 +226,14 @@ public final class RadixHttpServer {
 				.map(v -> new JSONObject().put("view", v.getView().number()).put("hash", v.getId().toString()))
 				.forEachOrdered(array::put);
 			respond(array, exchange);
+		}, handler);
+
+		addGetRoute("/api/vertices/highestqc", exchange -> {
+			QuorumCertificate highestQC = this.vertexStore.getHighestQC();
+			JSONObject highestQCJson = new JSONObject();
+			highestQCJson.put("view", highestQC.getView());
+			highestQCJson.put("vertexId", highestQC.getProposed().getId());
+			respond(highestQCJson, exchange);
 		}, handler);
 	}
 
