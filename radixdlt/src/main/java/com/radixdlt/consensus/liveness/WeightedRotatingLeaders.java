@@ -24,6 +24,7 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.utils.MathUtils;
 import com.radixdlt.utils.UInt128;
 import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.UInt384;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
@@ -45,36 +46,36 @@ import java.util.Map.Entry;
 public final class WeightedRotatingLeaders implements ProposerElection {
 
 	private final ValidatorSet validatorSet;
-	private final Comparator<Entry<Validator, UInt256>> weightsComparator;
+	private final Comparator<Entry<Validator, UInt384>> weightsComparator;
 	private final CachingNextLeaderComputer nextLeaderComputer;
 
 	public WeightedRotatingLeaders(ValidatorSet validatorSet, Comparator<Validator> comparator, int cacheSize) {
 		this.validatorSet = validatorSet;
 		this.weightsComparator = Comparator
-			.comparing(Entry<Validator, UInt256>::getValue)
+			.comparing(Entry<Validator, UInt384>::getValue)
 			.thenComparing(Entry::getKey, comparator);
 		this.nextLeaderComputer = new CachingNextLeaderComputer(validatorSet, weightsComparator, cacheSize);
 	}
 
 	private static class CachingNextLeaderComputer {
 		private final ValidatorSet validatorSet;
-		private final Comparator<Entry<Validator, UInt256>> weightsComparator;
-		private final Map<Validator, UInt256> weights;
+		private final Comparator<Entry<Validator, UInt384>> weightsComparator;
+		private final Map<Validator, UInt384> weights;
 		private final Validator[] cache;
-		private final UInt128[] powerArray;
+		private final UInt256[] powerArray;
 		private View curView;
 
-		private CachingNextLeaderComputer(ValidatorSet validatorSet, Comparator<Entry<Validator, UInt256>> weightsComparator, int cacheSize) {
+		private CachingNextLeaderComputer(ValidatorSet validatorSet, Comparator<Entry<Validator, UInt384>> weightsComparator, int cacheSize) {
 			this.validatorSet = validatorSet;
 			this.weightsComparator = weightsComparator;
 			this.weights = new HashMap<>();
 			this.cache = new Validator[cacheSize];
-			this.powerArray = validatorSet.getValidators().stream().map(Validator::getPower).toArray(UInt128[]::new);
+			this.powerArray = validatorSet.getValidators().stream().map(Validator::getPower).toArray(UInt256[]::new);
 			this.resetToView(View.of(0));
 		}
 
 		private Validator computeHeaviest() {
-			final Entry<Validator, UInt256> max = weights.entrySet().stream()
+			final Entry<Validator, UInt384> max = weights.entrySet().stream()
 				.max(weightsComparator)
 				.orElseThrow(() -> new IllegalStateException("Weights cannot be empty"));
 			return max.getKey();
@@ -84,11 +85,11 @@ public final class WeightedRotatingLeaders implements ProposerElection {
 			// Reset current leader by subtracting total power
 			final int curIndex = (int) (this.curView.number() % cache.length);
 			final Validator curLeader = cache[curIndex];
-			weights.merge(curLeader, validatorSet.getTotalPower(), UInt256::subtract);
+			weights.merge(curLeader, UInt384.from(validatorSet.getTotalPower()), UInt384::subtract);
 
 			// Add weights relative to each validator's power
 			for (Validator validator : validatorSet.getValidators()) {
-				weights.merge(validator, UInt256.from(validator.getPower()), UInt256::add);
+				weights.merge(validator, UInt384.from(validator.getPower()), UInt384::add);
 			}
 
 			// Compute next leader by getting heaviest validator
@@ -118,17 +119,17 @@ public final class WeightedRotatingLeaders implements ProposerElection {
 				// (lcm > 0 && lcm < 2^64) || lcm == null
 				// This is due to use of 2^64 cap and also the invariant from ValidatorSet
 				// that powerArray will always be non-zero
-				UInt128 lcm = MathUtils.cappedLCM(UInt128.from(view.number()), powerArray);
+				UInt256 lcm = MathUtils.cappedLCM(UInt256.from(view.number()), powerArray);
 				if (lcm == null) {
 					curView = View.of(0);
 				} else {
-					long lcmLong = lcm.getLow();
+					long lcmLong = lcm.getLow().getLow();
 					long multipleOfLCM = view.number() / lcmLong;
 					curView = View.of(multipleOfLCM * lcmLong);
 				}
 
 				for (Validator validator : validatorSet.getValidators()) {
-					weights.put(validator, UInt256.from(UInt128.ONE, UInt128.ZERO).subtract(validator.getPower()));
+					weights.put(validator, UInt384.from(UInt128.ONE, UInt256.ZERO).subtract(validator.getPower()));
 				}
 				cache[0] = computeHeaviest();
 			}

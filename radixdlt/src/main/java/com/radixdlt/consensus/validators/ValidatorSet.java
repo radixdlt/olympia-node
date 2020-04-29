@@ -48,13 +48,16 @@ public final class ValidatorSet {
 			.collect(ImmutableBiMap.toImmutableBiMap(Validator::nodeKey, Function.identity()));
 		this.totalPower = validators.stream()
 			.map(Validator::getPower)
-			.map(UInt256::from)
 			.reduce(UInt256::add)
 			.orElse(UInt256.ZERO);
 	}
 
 	/**
-	 * Create a validator set from a collection of validators.
+	 * Create a validator set from a collection of validators. The sum
+	 * of power of all validator should not exceed UInt256.MAX_VALUE otherwise
+	 * the resulting ValidatorSet will perform in an undefined way.
+	 * This invariant should be upheld within the system due to max number of
+	 * tokens being constrained to UInt256.MAX_VALUE.
 	 *
 	 * @param validators the collection of validators
 	 * @return The new {@code ValidatorSet}.
@@ -81,7 +84,6 @@ public final class ValidatorSet {
 		return signedKeys.stream()
 			.map(validators::get)
 			.map(Validator::getPower)
-			.map(UInt256::from)
 			.reduce(UInt256::add)
 			.orElse(UInt256.ZERO);
 	}

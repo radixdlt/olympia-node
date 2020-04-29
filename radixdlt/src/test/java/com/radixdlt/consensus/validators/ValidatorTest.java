@@ -17,7 +17,7 @@
 
 package com.radixdlt.consensus.validators;
 
-import com.radixdlt.utils.UInt128;
+import com.radixdlt.utils.UInt256;
 import org.junit.Test;
 
 import com.radixdlt.crypto.ECKeyPair;
@@ -47,6 +47,6 @@ public class ValidatorTest {
 
 	private static Validator create() {
 		ECKeyPair nodeKey = ECKeyPair.generateNew();
-		return Validator.from(nodeKey.getPublicKey(), UInt128.ONE);
+		return Validator.from(nodeKey.getPublicKey(), UInt256.ONE);
 	}
 }
