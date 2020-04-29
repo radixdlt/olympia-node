@@ -58,16 +58,16 @@ public class CounterCheck implements RemoteBFTCheck {
 	}
 
 	/**
-	 * Create a check that asserts the given counterType to equal the given value
+	 * Create a check that asserts the given counterType to equal the given expected value
 	 * @param counterType The {@link SystemCounters.CounterType}
-	 * @param value The value
+	 * @param expectedValue The expected value
 	 * @return The check
 	 */
-	public static CounterCheck checkEquals(SystemCounters.CounterType counterType, Object value) {
-		final String assertionDescription = String.format("%s is %s", counterType.toString(), value.toString());
+	public static CounterCheck checkEquals(SystemCounters.CounterType counterType, long expectedValue) {
+		final String assertionDescription = String.format("%s is %d", counterType.toString(), expectedValue);
 		return new CounterCheck(counters -> Assert.assertEquals(
 			assertionDescription,
-			value, counters.get(SystemCounters.CounterType.CONSENSUS_REJECTED)),
+			expectedValue, counters.get(SystemCounters.CounterType.CONSENSUS_REJECTED)),
 			assertionDescription);
 	}
 }
