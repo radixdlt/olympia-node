@@ -21,6 +21,7 @@ import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.utils.MathUtils;
 import com.radixdlt.utils.UInt128;
 import com.radixdlt.utils.UInt256;
 import java.util.Comparator;
@@ -60,6 +61,7 @@ public final class WeightedRotatingLeaders implements ProposerElection {
 		private final Comparator<Entry<Validator, UInt256>> weightsComparator;
 		private final Map<Validator, UInt256> weights;
 		private final Validator[] cache;
+		private final UInt128[] powerArray;
 		private View curView;
 
 		private CachingNextLeaderComputer(ValidatorSet validatorSet, Comparator<Entry<Validator, UInt256>> weightsComparator, int cacheSize) {
@@ -67,6 +69,7 @@ public final class WeightedRotatingLeaders implements ProposerElection {
 			this.weightsComparator = weightsComparator;
 			this.weights = new HashMap<>();
 			this.cache = new Validator[cacheSize];
+			this.powerArray = validatorSet.getValidators().stream().map(Validator::getPower).toArray(UInt128[]::new);
 			this.resetToView(View.of(0));
 		}
 
@@ -111,7 +114,19 @@ public final class WeightedRotatingLeaders implements ProposerElection {
 		private Validator resetToView(View view) {
 			// reset if view isn't in cache
 			if (curView == null || view.number() < curView.number() - cache.length) {
-				curView = View.of(0);
+				// after cappedLCM is executed, the following invariant will be true:
+				// (lcm > 0 && lcm < 2^64) || lcm == null
+				// This is due to use of 2^64 cap and also the invariant from ValidatorSet
+				// that powerArray will always be non-zero
+				UInt128 lcm = MathUtils.cappedLCM(UInt128.from(view.number()), powerArray);
+				if (lcm == null) {
+					curView = View.of(0);
+				} else {
+					long lcmLong = lcm.getLow();
+					long multipleOfLCM = view.number() / lcmLong;
+					curView = View.of(multipleOfLCM * lcmLong);
+				}
+
 				for (Validator validator : validatorSet.getValidators()) {
 					weights.put(validator, UInt256.from(UInt128.ONE, UInt128.ZERO).subtract(validator.getPower()));
 				}
