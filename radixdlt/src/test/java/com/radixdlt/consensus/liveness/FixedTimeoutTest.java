@@ -26,8 +26,8 @@ import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.utils.UInt256;
 import org.junit.Before;
+import com.radixdlt.utils.UInt128;
 import org.junit.Test;
 
 import java.util.Collections;
@@ -119,7 +119,7 @@ public class FixedTimeoutTest {
 		View view = View.of(2);
 		NewView newView1 = makeNewViewFor(view);
 		NewView newView2 = makeNewViewFor(view);
-		ValidatorSet validatorSet = ValidatorSet.from(Collections.singleton(Validator.from(newView1.getAuthor(), UInt256.ONE)));
+		ValidatorSet validatorSet = ValidatorSet.from(Collections.singleton(Validator.from(newView1.getAuthor(), UInt128.ONE)));
 		assertThat(pacemaker.processNewView(newView2, validatorSet)).isEmpty();
 	}
 

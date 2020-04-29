@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus.validators;
 
+import com.radixdlt.utils.UInt128;
 import com.radixdlt.utils.UInt256;
 import org.junit.Test;
 
@@ -89,7 +90,7 @@ public class ValidationStateTest {
 		ECKeyPair k5 = ECKeyPair.generateNew();
 		ECPublicKey kp5 = spy(k5.getPublicKey());
 
-		ValidatorSet vset = ValidatorSet.from(transform(ImmutableList.of(kp1, kp2, kp3, kp4), v -> Validator.from(v, UInt256.ONE)));
+		ValidatorSet vset = ValidatorSet.from(transform(ImmutableList.of(kp1, kp2, kp3, kp4), v -> Validator.from(v, UInt128.ONE)));
 
 		Hash hash = Hash.random();
 
