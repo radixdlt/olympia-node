@@ -62,7 +62,7 @@ public final class WeightedRotatingLeaders implements ProposerElection {
 		private final Comparator<Entry<Validator, UInt384>> weightsComparator;
 		private final Map<Validator, UInt384> weights;
 		private final Validator[] cache;
-		private final UInt256[] powerArray;
+		private final Long lcm;
 		private View curView;
 
 		private CachingNextLeaderComputer(ValidatorSet validatorSet, Comparator<Entry<Validator, UInt384>> weightsComparator, int cacheSize) {
@@ -70,7 +70,15 @@ public final class WeightedRotatingLeaders implements ProposerElection {
 			this.weightsComparator = weightsComparator;
 			this.weights = new HashMap<>();
 			this.cache = new Validator[cacheSize];
-			this.powerArray = validatorSet.getValidators().stream().map(Validator::getPower).toArray(UInt256[]::new);
+
+			UInt256[] powerArray = validatorSet.getValidators().stream().map(Validator::getPower).toArray(UInt256[]::new);
+			// after cappedLCM is executed, the following invariant will be true:
+			// (lcm > 0 && lcm < 2^63 -1 ) || lcm == null
+			// This is due to use of 2^63 - 1 cap and also the invariant from ValidatorSet
+			// that powerArray will always be non-zero
+			UInt256 lcm256 = MathUtils.cappedLCM(UInt256.from(Long.MAX_VALUE), powerArray);
+			this.lcm = lcm256 == null ? null : lcm256.getLow().getLow();
+
 			this.resetToView(View.of(0));
 		}
 
@@ -115,17 +123,11 @@ public final class WeightedRotatingLeaders implements ProposerElection {
 		private Validator resetToView(View view) {
 			// reset if view isn't in cache
 			if (curView == null || view.number() < curView.number() - cache.length) {
-				// after cappedLCM is executed, the following invariant will be true:
-				// (lcm > 0 && lcm < 2^64) || lcm == null
-				// This is due to use of 2^64 cap and also the invariant from ValidatorSet
-				// that powerArray will always be non-zero
-				UInt256 lcm = MathUtils.cappedLCM(UInt256.from(view.number()), powerArray);
-				if (lcm == null) {
-					curView = View.of(0);
+				if (lcm == null || lcm > view.number()) {
+					curView = View.genesis();
 				} else {
-					long lcmLong = lcm.getLow().getLow();
-					long multipleOfLCM = view.number() / lcmLong;
-					curView = View.of(multipleOfLCM * lcmLong);
+					long multipleOfLCM = view.number() / lcm;
+					curView = View.of(multipleOfLCM * lcm);
 				}
 
 				for (Validator validator : validatorSet.getValidators()) {

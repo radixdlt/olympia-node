@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.utils.UInt256;
 import java.util.Collection;
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.Function;
 
 import com.radixdlt.crypto.ECPublicKey;
@@ -80,12 +79,8 @@ public final class ValidatorSet {
 		return validators.containsKey(key);
 	}
 
-	public UInt256 getPower(Set<ECPublicKey> signedKeys) {
-		return signedKeys.stream()
-			.map(validators::get)
-			.map(Validator::getPower)
-			.reduce(UInt256::add)
-			.orElse(UInt256.ZERO);
+	public UInt256 getPower(ECPublicKey key) {
+		return validators.get(key).getPower();
 	}
 
 	public UInt256 getTotalPower() {
