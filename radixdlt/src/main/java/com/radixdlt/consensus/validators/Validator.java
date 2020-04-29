@@ -17,8 +17,8 @@
 
 package com.radixdlt.consensus.validators;
 
-import com.radixdlt.utils.UInt128;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.utils.UInt256;
 import java.util.Objects;
 import javax.annotation.concurrent.Immutable;
 
@@ -65,20 +65,20 @@ public final class Validator {
 */
 
 	// Power associated with each validator, could e.g. be based on staked tokens
-	private final UInt128 power;
+	private final UInt256 power;
 
     // Public key for consensus
 	private final ECPublicKey nodeKey;
 
 	private Validator(
 		ECPublicKey nodeKey,
-		UInt128 power
+		UInt256 power
 	) {
 		this.nodeKey = Objects.requireNonNull(nodeKey);
 		this.power = Objects.requireNonNull(power);
 	}
 
-	public static Validator from(ECPublicKey nodeKey, UInt128 power) {
+	public static Validator from(ECPublicKey nodeKey, UInt256 power) {
 		return new Validator(nodeKey, power);
 	}
 
@@ -86,7 +86,7 @@ public final class Validator {
 		return this.nodeKey;
 	}
 
-	public UInt128 getPower() {
+	public UInt256 getPower() {
 		return power;
 	}
 

@@ -24,7 +24,6 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.consensus.ChainedBFT;
 import com.radixdlt.consensus.ChainedBFT.Event;
@@ -42,8 +41,8 @@ import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
 import com.radixdlt.consensus.liveness.MempoolProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposerElection;
-import com.radixdlt.consensus.liveness.RotatingLeaders;
 import com.radixdlt.consensus.liveness.ScheduledTimeoutSender;
+import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.consensus.validators.Validator;
@@ -56,9 +55,10 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.mempool.Mempool;
 
 import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork;
-import com.radixdlt.utils.UInt128;
+import com.radixdlt.utils.UInt256;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -80,7 +80,6 @@ public class SimulatedBFTNetwork {
 	private final ImmutableMap<ECKeyPair, ScheduledTimeoutSender> timeoutSenders;
 	private final ImmutableMap<ECKeyPair, FixedTimeoutPacemaker> pacemakers;
 	private final Observable<Event> bftEvents;
-	private final ProposerElection proposerElection;
 	private final ValidatorSet validatorSet;
 	private final List<ECKeyPair> nodes;
 
@@ -111,12 +110,8 @@ public class SimulatedBFTNetwork {
 		this.validatorSet = ValidatorSet.from(
 			nodes.stream()
 				.map(ECKeyPair::getPublicKey)
-				.map(pk -> Validator.from(pk, UInt128.ONE))
+				.map(pk -> Validator.from(pk, UInt256.ONE))
 				.collect(Collectors.toList())
-		);
-		this.proposerElection = new RotatingLeaders(validatorSet.getValidators().stream()
-			.map(Validator::nodeKey)
-			.collect(ImmutableList.toImmutableList())
 		);
 		this.counters = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e, e -> new SystemCountersImpl()));
 		this.vertexStores = nodes.stream()
@@ -160,7 +155,7 @@ public class SimulatedBFTNetwork {
 			timeoutSender,
 			vertexStores.get(key),
 			pendingVotes,
-			proposers -> proposerElection, // assumes all instances use the same validators
+			proposers -> getProposerElection(), // create a new ProposerElection per node
 			key,
 			counters.get(key)
 		);
@@ -174,7 +169,7 @@ public class SimulatedBFTNetwork {
 	}
 
 	public ProposerElection getProposerElection() {
-		return proposerElection;
+		return new WeightedRotatingLeaders(validatorSet, Comparator.comparing(v -> v.nodeKey().euid()), 5);
 	}
 
 	public VertexStore getVertexStore(ECKeyPair keyPair) {
@@ -183,10 +178,6 @@ public class SimulatedBFTNetwork {
 
 	public SystemCounters getCounters(ECKeyPair keyPair) {
 		return counters.get(keyPair);
-	}
-
-	public FixedTimeoutPacemaker getPacemaker(ECKeyPair keyPair) {
-		return pacemakers.get(keyPair);
 	}
 
 	public TestEventCoordinatorNetwork getUnderlyingNetwork() {

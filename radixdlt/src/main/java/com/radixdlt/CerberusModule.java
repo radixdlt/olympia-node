@@ -54,7 +54,7 @@ import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.universe.Universe;
 
-import com.radixdlt.utils.UInt128;
+import com.radixdlt.utils.UInt256;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Objects;
@@ -78,7 +78,6 @@ public class CerberusModule extends AbstractModule {
 		bind(Scheduler.class).toProvider(SingleThreadedScheduler::new);
 		bind(TimeoutSender.class).to(ScheduledTimeoutSender.class);
 		bind(PacemakerRx.class).to(ScheduledTimeoutSender.class);
-		bind(Pacemaker.class).to(FixedTimeoutPacemaker.class);
 		bind(SafetyRules.class).in(Scopes.SINGLETON);
 		bind(Hasher.class).to(DefaultHasher.class);
 		bind(ProposalGenerator.class).to(MempoolProposalGenerator.class);
@@ -106,7 +105,7 @@ public class CerberusModule extends AbstractModule {
 	private ValidatorSet validatorSet(
 		@Named("self") ECKeyPair selfKey
 	) {
-		return ValidatorSet.from(Collections.singleton(Validator.from(selfKey.getPublicKey(), UInt128.ONE)));
+		return ValidatorSet.from(Collections.singleton(Validator.from(selfKey.getPublicKey(), UInt256.ONE)));
 	}
 
 	@Provides
@@ -117,7 +116,7 @@ public class CerberusModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private FixedTimeoutPacemaker pacemaker(
+	private Pacemaker pacemaker(
 		TimeoutSender timeoutSender
 	) {
 		final int pacemakerTimeout = runtimeProperties.get("consensus.pacemaker_timeout_millis", 5000);

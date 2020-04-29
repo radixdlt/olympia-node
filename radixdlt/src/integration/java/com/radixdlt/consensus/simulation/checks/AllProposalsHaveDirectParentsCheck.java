@@ -48,8 +48,7 @@ public class AllProposalsHaveDirectParentsCheck implements BFTCheck {
 		return Observable.merge(correctProposals)
 			.doOnNext(v -> AssertionsForClassTypes.assertThat(v)
 				.satisfies(new Condition<>(vtx -> vtx.getView().equals(vtx.getParentView().next()),
-					"Vertex %s at %s has direct parent",
-					network.getProposerElection().getProposer(v.getParentView()).euid(), v.getParentView())))
+					"Vertex %s at %s has direct parent", v, v.getParentView())))
 			.flatMapCompletable(v -> Completable.complete());
 	}
 }

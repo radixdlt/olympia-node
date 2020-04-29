@@ -83,8 +83,7 @@ jacocoTestReport {
 }
 
 dependencies {
-    compile 'com.radixdlt:radixdlt-java-common:feature~lcm-SNAPSHOT'
-
+    compile 'com.radixdlt:radixdlt-java-common:63d1dec1c7'
     compile ('com.radixdlt:radix-engine-library:1.0-beta.8') {
         exclude group: 'com.radixdlt', module: 'radixdlt-java-common'
     }

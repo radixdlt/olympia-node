@@ -37,6 +37,8 @@ public final class ValidationState {
 	private final Hash hash;
 	private final ValidatorSet validatorSet;
 	private final ConcurrentMap<ECPublicKey, ECDSASignature> signedKeys;
+	private transient UInt256 signedPower;
+	private final transient UInt256 threshold;
 
 	/**
 	 * Construct empty validation state for given hash and set of validator keys.
@@ -52,6 +54,8 @@ public final class ValidationState {
 		this.hash = Objects.requireNonNull(hash);
 		this.validatorSet = Objects.requireNonNull(validatorSet);
 		this.signedKeys = Maps.newConcurrentMap();
+		this.signedPower = UInt256.ZERO;
+		this.threshold = threshold(validatorSet.getTotalPower());
 	}
 
 	/**
@@ -65,9 +69,13 @@ public final class ValidationState {
 	 */
 	public boolean addSignature(ECPublicKey key, ECDSASignature signature) {
 		if (validatorSet.containsKey(key)
-			&& (this.signedKeys.containsKey(key) || key.verify(this.hash, signature))) {
+			&& !this.signedKeys.containsKey(key)
+			&& key.verify(this.hash, signature)) {
+
 			this.signedKeys.put(key, signature);
+			this.signedPower = this.signedPower.add(this.validatorSet.getPower(key));
 		}
+
 		return complete();
 	}
 
@@ -77,8 +85,7 @@ public final class ValidationState {
 	 * @return {@code true} if we have enough valid signatures to form a quorum,
 	 */
 	public boolean complete() {
-		UInt256 currentPower = this.validatorSet.getPower(this.signedKeys.keySet());
-		return currentPower.compareTo(threshold(this.validatorSet.getTotalPower())) >= 0;
+		return signedPower.compareTo(threshold) >= 0;
 	}
 
 	/**

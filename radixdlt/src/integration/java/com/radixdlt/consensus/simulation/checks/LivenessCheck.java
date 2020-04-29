@@ -47,7 +47,7 @@ public class LivenessCheck implements BFTCheck {
 	public Completable check(SimulatedBFTNetwork network) {
 		AtomicReference<View> highestQCView = new AtomicReference<>(View.genesis());
 		return Observable
-			.interval(duration, duration, timeUnit)
+			.interval(duration * 2, duration, timeUnit) // 2 times initial duration to account for boot up
 			.map(i -> network.getNodes().stream()
 				.map(network::getVertexStore)
 				.map(VertexStore::getHighestQC)
