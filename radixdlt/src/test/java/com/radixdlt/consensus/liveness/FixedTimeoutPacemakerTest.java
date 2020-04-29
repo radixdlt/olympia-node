@@ -26,8 +26,8 @@ import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.utils.UInt256;
 import org.junit.Before;
+import com.radixdlt.utils.UInt128;
 import org.junit.Test;
 
 import java.util.Collections;
@@ -43,23 +43,23 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class FixedTimeoutTest {
-	private FixedTimeout pacemaker;
-	private FixedTimeout.TimeoutSender timeoutSender;
+public class FixedTimeoutPacemakerTest {
+	private FixedTimeoutPacemaker pacemaker;
+	private FixedTimeoutPacemaker.TimeoutSender timeoutSender;
 	private long timeout;
 
 	@Before
 	public void setUp() {
 		this.timeout = 100;
-		this.timeoutSender = mock(FixedTimeout.TimeoutSender.class);
-		this.pacemaker = new FixedTimeout(timeout, this.timeoutSender);
+		this.timeoutSender = mock(FixedTimeoutPacemaker.TimeoutSender.class);
+		this.pacemaker = new FixedTimeoutPacemaker(timeout, this.timeoutSender);
 	}
 
 	@Test
 	public void when_creating_pacemaker_with_invalid_timeout__then_exception_is_thrown() {
-		assertThatThrownBy(() -> new FixedTimeout(0, mock(FixedTimeout.TimeoutSender.class)));
-		assertThatThrownBy(() -> new FixedTimeout(-1, mock(FixedTimeout.TimeoutSender.class)));
-		assertThatThrownBy(() -> new FixedTimeout(-100, mock(FixedTimeout.TimeoutSender.class)));
+		assertThatThrownBy(() -> new FixedTimeoutPacemaker(0, mock(FixedTimeoutPacemaker.TimeoutSender.class)));
+		assertThatThrownBy(() -> new FixedTimeoutPacemaker(-1, mock(FixedTimeoutPacemaker.TimeoutSender.class)));
+		assertThatThrownBy(() -> new FixedTimeoutPacemaker(-100, mock(FixedTimeoutPacemaker.TimeoutSender.class)));
 	}
 
 	@Test
@@ -108,10 +108,14 @@ public class FixedTimeoutTest {
 	@Test
 	public void when_inserting_a_new_view_without_signature__then_exception_is_thrown() {
 		NewView newViewWithoutSignature = mock(NewView.class);
+		QuorumCertificate qc = mock(QuorumCertificate.class);
+		when(qc.getView()).thenReturn(View.of(1L));
+		when(newViewWithoutSignature.getQC()).thenReturn(qc);
 		when(newViewWithoutSignature.getView()).thenReturn(View.of(2L));
 		when(newViewWithoutSignature.getSignature()).thenReturn(Optional.empty());
 
-		assertThatThrownBy(() -> pacemaker.processNewView(newViewWithoutSignature, mock(ValidatorSet.class)));
+		assertThatThrownBy(() -> pacemaker.processNewView(newViewWithoutSignature, mock(ValidatorSet.class)))
+			.isInstanceOf(IllegalArgumentException.class);
 	}
 
 	@Test
@@ -119,7 +123,7 @@ public class FixedTimeoutTest {
 		View view = View.of(2);
 		NewView newView1 = makeNewViewFor(view);
 		NewView newView2 = makeNewViewFor(view);
-		ValidatorSet validatorSet = ValidatorSet.from(Collections.singleton(Validator.from(newView1.getAuthor(), UInt256.ONE)));
+		ValidatorSet validatorSet = ValidatorSet.from(Collections.singleton(Validator.from(newView1.getAuthor(), UInt128.ONE)));
 		assertThat(pacemaker.processNewView(newView2, validatorSet)).isEmpty();
 	}
 

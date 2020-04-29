@@ -36,7 +36,7 @@ import java.util.Optional;
 /**
  * A pacemaker which utilizes a fixed timeout (aka requires a synchronous network).
  */
-public final class FixedTimeout implements Pacemaker {
+public final class FixedTimeoutPacemaker implements Pacemaker {
 
 	/**
 	 * Callback to the issuer of timeout events
@@ -60,7 +60,7 @@ public final class FixedTimeout implements Pacemaker {
 	private View currentView = View.of(0L);
 	private View lastSyncView = View.of(0L);
 
-	public FixedTimeout(long timeoutMilliseconds, TimeoutSender timeoutSender) {
+	public FixedTimeoutPacemaker(long timeoutMilliseconds, TimeoutSender timeoutSender) {
 		if (timeoutMilliseconds <= 0) {
 			throw new IllegalArgumentException("timeoutMilliseconds must be > 0 but was " + timeoutMilliseconds);
 		}

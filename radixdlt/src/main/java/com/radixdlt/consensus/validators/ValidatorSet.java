@@ -19,7 +19,6 @@ package com.radixdlt.consensus.validators;
 
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.utils.UInt128;
 import com.radixdlt.utils.UInt256;
 import java.util.Collection;
 import java.util.Objects;
@@ -36,21 +35,18 @@ import com.radixdlt.crypto.Hash;
  * as long as all validators sign.
  */
 public final class ValidatorSet {
-	// We assume that we won't have more than 2^128 validators (2^32 is in fact the limit)
-	// in a single validator set so having this as the max power value will prevent overflows
-	private static final UInt256 POWER_MAX_VALUE = UInt256.from(UInt128.MAX_VALUE);
 	private final ImmutableBiMap<ECPublicKey, Validator> validators;
+
+	// We assume that we won't have more than 2^128 validators (2^32 is in fact the limit)
+	// so 2^256 is big enough here
 	private final transient UInt256 totalPower;
 
 	private ValidatorSet(Collection<Validator> validators) {
-		if (validators.stream().anyMatch(v -> v.getPower().compareTo(POWER_MAX_VALUE) > 0)) {
-			throw new IllegalArgumentException("There exists a validator with power greater than " + POWER_MAX_VALUE);
-		}
-
 		this.validators = validators.stream()
 			.collect(ImmutableBiMap.toImmutableBiMap(Validator::nodeKey, Function.identity()));
 		this.totalPower = validators.stream()
 			.map(Validator::getPower)
+			.map(UInt256::from)
 			.reduce(UInt256::add)
 			.orElse(UInt256.ZERO);
 	}
@@ -83,6 +79,7 @@ public final class ValidatorSet {
 		return signedKeys.stream()
 			.map(validators::get)
 			.map(Validator::getPower)
+			.map(UInt256::from)
 			.reduce(UInt256::add)
 			.orElse(UInt256.ZERO);
 	}

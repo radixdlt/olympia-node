@@ -31,7 +31,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * Schedules timeouts and exposes the events as an rx stream
  */
-public final class ScheduledTimeoutSender implements FixedTimeout.TimeoutSender, PacemakerRx {
+public final class ScheduledTimeoutSender implements FixedTimeoutPacemaker.TimeoutSender, PacemakerRx {
 	private static final Logger log = LogManager.getLogger();
 
 	private final ScheduledExecutorService executorService;
