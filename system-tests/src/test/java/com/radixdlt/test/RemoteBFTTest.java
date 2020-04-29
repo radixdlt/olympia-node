@@ -229,6 +229,14 @@ public final class RemoteBFTTest {
 		}
 
 		/**
+		 * Asserts liveness using the {@link LivenessCheck}
+		 * @return This builder
+		 */
+		public Builder assertLiveness() {
+			return addCheck(new LivenessCheck(1, TimeUnit.SECONDS, patience, patienceUnit));
+		}
+
+		/**
 		 * Asserts that CONSENSUS_TIMEOUT is zero.
 		 * @return This builder
 		 */

@@ -42,10 +42,10 @@ import java.util.stream.Collectors;
  * assert safety (where every vertex includes a reference to the last).
  */
 public class SafetyCheck implements RemoteBFTCheck {
-	private final int timeout;
+	private final long timeout;
 	private final TimeUnit timeoutUnit;
 
-	public SafetyCheck(int timeout, TimeUnit timeoutUnit) {
+	public SafetyCheck(long timeout, TimeUnit timeoutUnit) {
 		this.timeout = timeout;
 		this.timeoutUnit = Objects.requireNonNull(timeoutUnit);
 	}
@@ -156,12 +156,12 @@ public class SafetyCheck implements RemoteBFTCheck {
 	}
 
 	/**
-	 * An error thrown if a safety violation occurs
+	 * An error that is thrown if a safety violation occurs
 	 */
 	public static class SafetyViolationError extends AssertionError {
 		private final Map<Long, Map<String, List<Vertex>>> dissentingVertices;
 
-		public SafetyViolationError(Map<Long, Map<String, List<Vertex>>> dissentingVertices) {
+		private SafetyViolationError(Map<Long, Map<String, List<Vertex>>> dissentingVertices) {
 			super(dissentingVertices.entrySet().stream()
 					.map(verticesAtView -> String.format("%d={%s}",
 						verticesAtView.getKey(),
