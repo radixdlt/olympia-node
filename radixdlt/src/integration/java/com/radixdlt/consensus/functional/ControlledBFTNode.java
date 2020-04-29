@@ -37,8 +37,8 @@ import com.radixdlt.consensus.VertexStore;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.VoteData;
-import com.radixdlt.consensus.liveness.FixedTimeout;
-import com.radixdlt.consensus.liveness.FixedTimeout.TimeoutSender;
+import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
+import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker.TimeoutSender;
 import com.radixdlt.consensus.liveness.MempoolProposalGenerator;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.PacemakerRx;
@@ -82,7 +82,7 @@ class ControlledBFTNode {
 		ProposalGenerator proposalGenerator = new MempoolProposalGenerator(vertexStore, mempool);
 		TimeoutSender timeoutSender = mock(TimeoutSender.class);
 		// Timeout doesn't matter here
-		Pacemaker pacemaker = new FixedTimeout(1, timeoutSender);
+		Pacemaker pacemaker = new FixedTimeoutPacemaker(1, timeoutSender);
 		PacemakerRx pacemakerRx = mock(PacemakerRx.class);
 		when(pacemakerRx.timeout(any())).thenReturn(Completable.never());
 		Hasher hasher = new DefaultHasher();

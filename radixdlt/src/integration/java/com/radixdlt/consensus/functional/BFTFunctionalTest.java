@@ -25,7 +25,7 @@ import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.UInt128;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -47,7 +47,7 @@ public class BFTFunctionalTest {
 		ControlledBFTNetwork network = new ControlledBFTNetwork(pks);
 		ProposerElection proposerElection = new RotatingLeaders(pks);
 		ValidatorSet validatorSet = ValidatorSet.from(
-			pks.stream().map(pk -> Validator.from(pk, UInt256.ONE)).collect(Collectors.toList())
+			pks.stream().map(pk -> Validator.from(pk, UInt128.ONE)).collect(Collectors.toList())
 		);
 		this.nodes = keys.stream()
 			.map(key -> new ControlledBFTNode(
