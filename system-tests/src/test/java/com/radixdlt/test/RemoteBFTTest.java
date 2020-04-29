@@ -26,6 +26,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -97,11 +98,24 @@ public final class RemoteBFTTest {
 
 	/**
 	 * Run this test as configured for the specified duration, waiting for prerequisites if required.
-	 * This method blocks and completes when the test has concluded or throws an exception if there were errors.
-	 * @param duration The duration this test should be run for
+	 * This method blocks and completes when the test has concluded or immediately throws an exception if there are errors.
+ * @param duration The duration this test should be run for
 	 * @param durationUnit The unit of the duration
 	 */
 	public void runBlocking(long duration, TimeUnit durationUnit) {
+		runBlocking(duration, durationUnit, false);
+	}
+
+	/**
+	 * Run this test as configured for the specified duration, waiting for prerequisites if required.
+	 * This method blocks and completes when the test has concluded successfully. In case of errors,
+	 *  - if delayErrors is true, an exception is thrown immediately upon encountering the first error
+	 *  - if delayErrors is false, a composite exception containing all errors is thrown after the test has concluded
+	 * @param duration The duration this test should be run for
+	 * @param durationUnit The unit of the duration
+	 * @param delayErrors Whether to delay errors (and fail at the end) or fail immediately on first error
+	 */
+	public void runBlocking(long duration, TimeUnit durationUnit, boolean delayErrors) {
 		// wait for prerequisites with the configured timeout if any were specified
 		if (!this.prerequisites.isEmpty()) {
 			waitForPrerequisitesBlocking(this.prerequisiteTimeout, this.prerequisiteTimeoutUnit);
@@ -116,16 +130,26 @@ public final class RemoteBFTTest {
 
 		// run the actual tests for the configured duration
 		logger.info("running for {} {}: {}", duration, durationUnit, this.checks);
-		Observable.merge(
+		ArrayList<RemoteBFTCheckResult> failingChecks = Observable.merge(
 			this.checks.stream()
 				.map(check -> this.schedule.schedule(check)
 					.map(checkToRun -> checkToRun.check(this.testNetwork)
 						.onErrorReturn(error -> RemoteBFTCheckResult.error(InternalBFTCheckError.from(check, error)))
-						.doOnSuccess(result -> result.assertSuccess(String.format("check %s failed", checkToRun))))
+						.doOnSuccess(result -> {
+							if (!delayErrors) {
+								result.assertSuccess(String.format("check %s failed, failing immediately (delayErrors=false)", checkToRun));
+							}
+						}))
 					.flatMap(Single::toObservable))
 				.collect(Collectors.toList()))
 			.take(duration, durationUnit)
-			.blockingSubscribe();
+			.filter(RemoteBFTCheckResult::isError)
+			.doOnNext(failedCheck -> logger.error("check failed, delaying until completion (delayErrors=true)", failedCheck.getException()))
+			.collectInto(new ArrayList<RemoteBFTCheckResult>(), List::add)
+			.blockingGet();
+		if (!failingChecks.isEmpty()) {
+			throw new CompositeError(failingChecks);
+		}
 		logger.info("done");
 	}
 
@@ -322,6 +346,25 @@ public final class RemoteBFTTest {
 		 */
 		private static InternalBFTCheckError from(RemoteBFTCheck failedCheck, Throwable error) {
 			return new InternalBFTCheckError(failedCheck, error);
+		}
+	}
+
+	/**
+	 * A composite error containing a collection of check errors
+	 */
+	public static final class CompositeError extends AssertionError {
+		private final List<RemoteBFTCheckResult> failedChecks;
+
+		public CompositeError(Collection<RemoteBFTCheckResult> failedChecks) {
+			super(String.format(
+				"%d checks failed: %s",
+				failedChecks.size(),
+				failedChecks.stream()
+					.map(RemoteBFTCheckResult::getException)
+					.map(Throwable::toString)
+					.collect(Collectors.joining("%n"))
+			));
+			this.failedChecks = ImmutableList.copyOf(failedChecks);
 		}
 	}
 }

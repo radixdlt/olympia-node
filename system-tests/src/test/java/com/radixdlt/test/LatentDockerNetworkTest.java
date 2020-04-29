@@ -34,15 +34,15 @@ public class LatentDockerNetworkTest {
 				.network(RemoteBFTNetworkBridge.of(network))
 				.waitUntilResponsive()
 				.startConsensusOnRun()
-//				.assertResponsiveness()
-//				.assertAllProposalsHaveDirectParents()
-//				.assertNoRejectedProposals()
-//				.assertNoSyncExceptions()
-//				.assertNoTimeouts()
-//				.assertSafety()
+				.assertResponsiveness()
+				.assertAllProposalsHaveDirectParents()
+				.assertNoRejectedProposals()
+				.assertNoSyncExceptions()
+				.assertNoTimeouts()
+				.assertSafety()
 				.assertLiveness()
 				.build();
-			test.runBlocking(10, TimeUnit.MINUTES);
+			test.runBlocking(3, TimeUnit.MINUTES);
 		}
 	}
 }
