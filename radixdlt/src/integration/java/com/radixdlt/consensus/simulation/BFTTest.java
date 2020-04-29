@@ -112,7 +112,7 @@ public class BFTTest {
 		}
 
 		public Builder checkLiveness() {
-			this.checks.add(new LivenessCheck(6 * TestEventCoordinatorNetwork.DEFAULT_LATENCY, TimeUnit.MILLISECONDS));
+			this.checks.add(new LivenessCheck(8 * TestEventCoordinatorNetwork.DEFAULT_LATENCY, TimeUnit.MILLISECONDS));
 			return this;
 		}
 

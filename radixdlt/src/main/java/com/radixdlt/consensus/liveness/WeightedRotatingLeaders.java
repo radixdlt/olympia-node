@@ -25,6 +25,7 @@ import com.radixdlt.utils.MathUtils;
 import com.radixdlt.utils.UInt128;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
@@ -44,7 +45,6 @@ import java.util.Map.Entry;
  * This class stateful and is NOT thread-safe.
  */
 public final class WeightedRotatingLeaders implements ProposerElection {
-
 	private final ValidatorSet validatorSet;
 	private final Comparator<Entry<Validator, UInt384>> weightsComparator;
 	private final CachingNextLeaderComputer nextLeaderComputer;
@@ -108,7 +108,8 @@ public final class WeightedRotatingLeaders implements ProposerElection {
 
 		private Validator checkCacheForProposer(View view) {
 			if (view.compareTo(curView) <= 0 && view.number() > curView.number() - cache.length) {
-				return cache[(int) (view.number() % cache.length)];
+				final int index = (int) (view.number() % cache.length);
+				return cache[index];
 			}
 
 			return null;
@@ -142,6 +143,11 @@ public final class WeightedRotatingLeaders implements ProposerElection {
 			// guaranteed to return non-null;
 			return cache[(int) (view.number() % cache.length)];
 		}
+
+		@Override
+		public String toString() {
+			return String.format("%s %s %s", this.curView, Arrays.toString(this.cache), this.weights);
+		}
 	}
 
 	@Override
@@ -159,5 +165,10 @@ public final class WeightedRotatingLeaders implements ProposerElection {
 			CachingNextLeaderComputer computer = new CachingNextLeaderComputer(validatorSet, weightsComparator, 1);
 			return computer.resetToView(view).nodeKey();
 		}
+	}
+
+	@Override
+	public String toString() {
+		return String.format("%s %s", this.getClass().getSimpleName(), this.nextLeaderComputer);
 	}
 }
