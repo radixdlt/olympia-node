@@ -48,12 +48,12 @@ public final class RemoteBFTTest {
 	private final boolean startConsensusOnRun;
 
 	private RemoteBFTTest(RemoteBFTNetworkBridge testNetwork,
-	                      ImmutableList<RemoteBFTCheck> prerequisites,
-	                      ImmutableList<RemoteBFTCheck> checks,
-	                      RemoteBFTCheckSchedule schedule,
-	                      long prerequisiteTimeout,
-	                      TimeUnit prerequisiteTimeoutUnit,
-	                      boolean startConsensusOnRun) {
+						  ImmutableList<RemoteBFTCheck> prerequisites,
+						  ImmutableList<RemoteBFTCheck> checks,
+						  RemoteBFTCheckSchedule schedule,
+						  long prerequisiteTimeout,
+						  TimeUnit prerequisiteTimeoutUnit,
+						  boolean startConsensusOnRun) {
 		this.testNetwork = testNetwork;
 		this.prerequisites = prerequisites;
 		this.prerequisiteTimeout = prerequisiteTimeout;
