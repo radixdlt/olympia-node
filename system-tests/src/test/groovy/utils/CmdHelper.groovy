@@ -86,13 +86,13 @@ class CmdHelper {
     }
 
 
-    static Map getDockerOptions(int numberOfnode, int quorumSize, boolean startConsensusOnBoot) {
+    static Map getDockerOptions(int nodeCount, boolean startConsensusOnBoot) {
 
-        List<String> nodeNames = (1..numberOfnode).collect({ return "core${it}".toString() })
+        List<String> nodeNames = (1..nodeCount).collect({ return "core${it}".toString() })
         return nodeNames.withIndex().collectEntries { node, index ->
             Map options = [:]
             options.nodeName = node
-            options.quorumSize = quorumSize
+            options.quorumSize = nodeCount
             options.remoteSeeds = nodeNames.findAll({ it != node })
             options.hostPort = 1080 + index
             options.rmiPort = 9010 + index

@@ -26,8 +26,6 @@ import utils.Generic
 
 import static utils.CmdHelper.node
 import static utils.CmdHelper.runCommand
-import static utils.Generic.listToDelimitedString
-
 
 class Consensus {
 
@@ -38,7 +36,7 @@ class Consensus {
     @Given('^I have (.*) network with (.*) nodes and quorumsize of (.*) nodes$')
     void i_have_network_with_n_nodes_and_quorumsize_of_n_nodes(String networkName, int numberOfNodes, int quorumSize) {
 
-        SetupOptions = CmdHelper.getDockerOptions(numberOfNodes, quorumSize, true)
+        SetupOptions = CmdHelper.getDockerOptions(numberOfNodes, true)
         CmdHelper.removeAllDockerContainers()
         runCommand("docker network rm ${networkName}", null, true)
         runCommand("docker network create ${networkName}")

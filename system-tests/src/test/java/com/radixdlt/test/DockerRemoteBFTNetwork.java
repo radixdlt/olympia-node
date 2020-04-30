@@ -56,7 +56,7 @@ public class DockerRemoteBFTNetwork implements Closeable, RemoteBFTNetwork {
 	// this will also kill any other network with the same name (but not networks with a different name)
 	//  as well as kill all active docker contains
 	private Map<String, Map<String, Object>> setup() {
-		Map<String, Map<String, Object>> dockerOptionsPerNode = CmdHelper.getDockerOptions(this.numNodes, this.numNodes, this.startConsensusOnBoot);
+		Map<String, Map<String, Object>> dockerOptionsPerNode = CmdHelper.getDockerOptions(this.numNodes, this.startConsensusOnBoot);
 		CmdHelper.removeAllDockerContainers(); // TODO do we need this? if yes, document it
 		CmdHelper.runCommand("docker network rm " + this.networkName);
 		CmdHelper.runCommand("docker network create " + this.networkName ,null, true);
