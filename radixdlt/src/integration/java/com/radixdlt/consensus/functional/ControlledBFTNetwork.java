@@ -19,7 +19,7 @@ package com.radixdlt.consensus.functional;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.consensus.EventCoordinatorNetworkSender;
+import com.radixdlt.consensus.BFTEventSender;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
@@ -56,8 +56,8 @@ public final class ControlledBFTNetwork {
 		return sender -> this.messages.get(sender).get(receiver).pop();
 	}
 
-	public EventCoordinatorNetworkSender getSender(ECPublicKey sender) {
-		return new EventCoordinatorNetworkSender() {
+	public BFTEventSender getSender(ECPublicKey sender) {
+		return new BFTEventSender() {
 			@Override
 			public void broadcastProposal(Proposal proposal) {
 				for (ECPublicKey receiver : nodes) {

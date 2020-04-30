@@ -24,7 +24,7 @@ public class EpochManagerTest {
 		EpochManager epochManager = new EpochManager(
 			mock(ProposalGenerator.class),
 			mock(Mempool.class),
-			mock(EventCoordinatorNetworkSender.class),
+			mock(BFTEventSender.class),
 			mock(SafetyRules.class),
 			mock(Pacemaker.class),
 			mock(PacemakerRx.class),
@@ -39,7 +39,7 @@ public class EpochManagerTest {
 		when(validator.nodeKey()).thenReturn(mock(ECPublicKey.class));
 		ValidatorSet validatorSet = mock(ValidatorSet.class);
 		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of(validator));
-		EventCoordinator eventCoordinator = epochManager.nextEpoch(validatorSet);
-		assertNotNull(eventCoordinator);
+		BFTEventProcessor processor = epochManager.nextEpoch(validatorSet);
+		assertNotNull(processor);
 	}
 }

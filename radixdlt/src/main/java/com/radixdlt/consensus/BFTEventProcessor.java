@@ -18,9 +18,9 @@
 package com.radixdlt.consensus;
 
 /**
- * Processor of BFT events
+ * Processor of BFT events.
  */
-public interface EventCoordinator {
+public interface BFTEventProcessor {
 
 	/**
 	 * Process a consensus vote message
@@ -48,12 +48,12 @@ public interface EventCoordinator {
 
 	/**
 	 * Process an incoming RPC request for a Vertex
-	 * TODO: Is this the right place for this?
+	 * @param request the RPC request
 	 */
 	void processGetVertexRequest(GetVertexRequest request);
 
 	/**
-	 * Initialize the event coordinator
+	 * Initialize
 	 */
 	void start();
 }

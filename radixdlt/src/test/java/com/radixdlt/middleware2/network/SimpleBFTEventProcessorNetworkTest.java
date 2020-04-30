@@ -43,11 +43,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Before;
 import org.junit.Test;
 
-public class SimpleEventCoordinatorNetworkTest {
+public class SimpleBFTEventProcessorNetworkTest {
 	private ECPublicKey selfKey;
 	private AddressBook addressBook;
 	private MessageCentral messageCentral;
-	private SimpleEventCoordinatorNetwork network;
+	private MessageCentralBFTNetwork network;
 
 	@Before
 	public void setUp() {
@@ -55,7 +55,7 @@ public class SimpleEventCoordinatorNetworkTest {
 		Universe universe = mock(Universe.class);
 		this.addressBook = mock(AddressBook.class);
 		this.messageCentral = mock(MessageCentral.class);
-		this.network = new SimpleEventCoordinatorNetwork(selfKey, universe, addressBook, messageCentral);
+		this.network = new MessageCentralBFTNetwork(selfKey, universe, addressBook, messageCentral);
 	}
 
 	@Test

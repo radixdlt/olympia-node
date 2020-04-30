@@ -19,7 +19,7 @@ package com.radixdlt.middleware2.network;
 
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.EventCoordinatorNetworkRx;
-import com.radixdlt.consensus.EventCoordinatorNetworkSender;
+import com.radixdlt.consensus.BFTEventSender;
 import com.radixdlt.consensus.GetVertexRequest;
 import com.radixdlt.consensus.GetVertexResponse;
 import com.radixdlt.consensus.NewView;
@@ -135,8 +135,8 @@ public class TestEventCoordinatorNetwork {
 		return new Builder();
 	}
 
-	public EventCoordinatorNetworkSender getNetworkSender(ECPublicKey forNode) {
-		return new EventCoordinatorNetworkSender() {
+	public BFTEventSender getNetworkSender(ECPublicKey forNode) {
+		return new BFTEventSender() {
 			@Override
 			public void broadcastProposal(Proposal proposal) {
 				for (ECPublicKey reader : receivers.keySet()) {

@@ -32,7 +32,7 @@ import com.radixdlt.crypto.Hash;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.junit.Test;
 
-public class TestEventCoordinatorNetworkTest {
+public class TestBFTEventProcessorNetworkTest {
 	private ECPublicKey validatorId = ECKeyPair.generateNew().getPublicKey();
 	private ECPublicKey validatorId2 = ECKeyPair.generateNew().getPublicKey();
 

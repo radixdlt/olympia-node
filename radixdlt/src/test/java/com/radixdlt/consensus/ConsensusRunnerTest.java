@@ -24,21 +24,21 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.radixdlt.consensus.ChainedBFT.Event;
+import com.radixdlt.consensus.ConsensusRunner.Event;
 import com.radixdlt.consensus.liveness.PacemakerRx;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.junit.Test;
 
-public class ChainedBFTTest {
+public class ConsensusRunnerTest {
 	@Test
 	public void when_events_get_emitted__then_event_coordinator_should_be_called() {
 		EventCoordinatorNetworkRx networkRx = mock(EventCoordinatorNetworkRx.class);
 
 		EpochRx epochRx = () -> Observable.just(mock(ValidatorSet.class)).concatWith(Observable.never());
 
-		EventCoordinator ec = mock(EventCoordinator.class);
+		BFTEventProcessor ec = mock(BFTEventProcessor.class);
 		EpochManager epochManager = mock(EpochManager.class);
 		when(epochManager.start()).thenReturn(ec);
 		when(epochManager.nextEpoch(any())).thenReturn(ec);
@@ -58,7 +58,7 @@ public class ChainedBFTTest {
 		when(networkRx.rpcRequests())
 			.thenReturn(Observable.just(request).concatWith(Observable.never()));
 
-		ChainedBFT chainedBFT = new ChainedBFT(
+		ConsensusRunner consensusRunner = new ConsensusRunner(
 			epochRx,
 			networkRx,
 			pacemakerRx,
@@ -66,8 +66,8 @@ public class ChainedBFTTest {
 		);
 
 		TestObserver<Event> testObserver = TestObserver.create();
-		chainedBFT.events().subscribe(testObserver);
-		chainedBFT.start();
+		consensusRunner.events().subscribe(testObserver);
+		consensusRunner.start();
 		testObserver.awaitCount(6);
 		testObserver.assertValueCount(6);
 		testObserver.assertNotComplete();

@@ -25,7 +25,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.consensus.ChainedBFT;
+import com.radixdlt.consensus.ConsensusRunner;
 import com.radixdlt.consensus.DefaultHasher;
 import com.radixdlt.consensus.EpochManager;
 import com.radixdlt.consensus.EpochRx;
@@ -79,7 +79,7 @@ public class SimulatedBFTNetwork {
 	private final ImmutableMap<ECKeyPair, SystemCounters> counters;
 	private final ImmutableMap<ECKeyPair, ScheduledTimeoutSender> timeoutSenders;
 	private final ImmutableMap<ECKeyPair, FixedTimeoutPacemaker> pacemakers;
-	private final ImmutableMap<ECKeyPair, ChainedBFT> bfts;
+	private final ImmutableMap<ECKeyPair, ConsensusRunner> bfts;
 	private final ValidatorSet validatorSet;
 	private final List<ECKeyPair> nodes;
 
@@ -139,7 +139,7 @@ public class SimulatedBFTNetwork {
 		return nodes;
 	}
 
-	private ChainedBFT createBFTInstance(ECKeyPair key) {
+	private ConsensusRunner createBFTInstance(ECKeyPair key) {
 		Mempool mempool = mock(Mempool.class);
 		doAnswer(inv -> Collections.emptyList()).when(mempool).getAtoms(anyInt(), anySet());
 		ProposalGenerator proposalGenerator = new MempoolProposalGenerator(vertexStores.get(key), mempool);
@@ -163,7 +163,7 @@ public class SimulatedBFTNetwork {
 			counters.get(key)
 		);
 
-		return new ChainedBFT(
+		return new ConsensusRunner(
 			epochRx,
 			underlyingNetwork.getNetworkRx(key.getPublicKey()),
 			timeoutSender,
@@ -184,7 +184,7 @@ public class SimulatedBFTNetwork {
 	}
 
 	public void start() {
-		this.bfts.values().forEach(ChainedBFT::start);
+		this.bfts.values().forEach(ConsensusRunner::start);
 	}
 
 	public TestEventCoordinatorNetwork getUnderlyingNetwork() {

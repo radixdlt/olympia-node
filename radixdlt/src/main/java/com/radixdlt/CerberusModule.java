@@ -51,7 +51,7 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.middleware2.network.SimpleEventCoordinatorNetwork;
+import com.radixdlt.middleware2.network.MessageCentralBFTNetwork;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.universe.Universe;
@@ -81,7 +81,7 @@ public class CerberusModule extends AbstractModule {
 		bind(TimeoutSender.class).to(ScheduledTimeoutSender.class);
 		bind(PacemakerRx.class).to(ScheduledTimeoutSender.class);
 		bind(SafetyRules.class).in(Scopes.SINGLETON);
-		bind(VertexSupplier.class).to(SimpleEventCoordinatorNetwork.class);
+		bind(VertexSupplier.class).to(MessageCentralBFTNetwork.class);
 		bind(Hasher.class).to(DefaultHasher.class);
 		bind(ProposalGenerator.class).to(MempoolProposalGenerator.class);
 	}

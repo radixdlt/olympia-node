@@ -40,7 +40,7 @@ public class EpochManager {
 
 	private final ProposalGenerator proposalGenerator;
 	private final Mempool mempool;
-	private final EventCoordinatorNetworkSender networkSender;
+	private final BFTEventSender sender;
 	private final SafetyRules safetyRules;
 	private final Pacemaker pacemaker;
 	private final PacemakerRx pacemakerRx;
@@ -54,7 +54,7 @@ public class EpochManager {
 	public EpochManager(
 		ProposalGenerator proposalGenerator,
 		Mempool mempool,
-		EventCoordinatorNetworkSender networkSender,
+		BFTEventSender sender,
 		SafetyRules safetyRules,
 		Pacemaker pacemaker,
 		PacemakerRx pacemakerRx,
@@ -66,7 +66,7 @@ public class EpochManager {
 	) {
 		this.proposalGenerator = Objects.requireNonNull(proposalGenerator);
 		this.mempool = Objects.requireNonNull(mempool);
-		this.networkSender = Objects.requireNonNull(networkSender);
+		this.sender = Objects.requireNonNull(sender);
 		this.safetyRules = Objects.requireNonNull(safetyRules);
 		this.pacemaker = Objects.requireNonNull(pacemaker);
 		this.pacemakerRx = Objects.requireNonNull(pacemakerRx);
@@ -77,19 +77,19 @@ public class EpochManager {
 		this.counters = Objects.requireNonNull(counters);
 	}
 
-	public EventCoordinator start() {
-		return new EmptyEventCoordinator();
+	public BFTEventProcessor start() {
+		return new EmptyBFTEventProcessor();
 	}
 
-	public EventCoordinator nextEpoch(ValidatorSet validatorSet) {
+	public BFTEventProcessor nextEpoch(ValidatorSet validatorSet) {
 
 		ProposerElection proposerElection = proposerElectionFactory.create(validatorSet);
 		log.info("NEXT_EPOCH: ProposerElection: {}", proposerElection);
 
-		return new ValidatingEventCoordinator(
+		return new BFTEventReducer(
 			this.proposalGenerator,
 			this.mempool,
-			this.networkSender,
+			this.sender,
 			this.safetyRules,
 			this.pacemaker,
 			this.pacemakerRx,

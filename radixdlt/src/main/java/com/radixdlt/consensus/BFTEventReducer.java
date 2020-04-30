@@ -44,16 +44,18 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * Processes BFT events with correct validation logic and message sending
+ * Processes and reduces BFT events to the BFT state based on core
+ * BFT validation logic, any messages which must be sent to other nodes
+ * are then forwarded to the BFT sender.
  */
-public final class ValidatingEventCoordinator implements EventCoordinator {
+public final class BFTEventReducer implements BFTEventProcessor {
 	private static final Logger log = LogManager.getLogger();
 
 	private final VertexStore vertexStore;
 	private final PendingVotes pendingVotes;
 	private final ProposalGenerator proposalGenerator;
 	private final Mempool mempool;
-	private final EventCoordinatorNetworkSender networkSender;
+	private final BFTEventSender sender;
 	private final Pacemaker pacemaker;
 	private final PacemakerRx pacemakerRx;
 	private final ProposerElection proposerElection;
@@ -63,10 +65,10 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 	private final SystemCounters counters;
 
 	@Inject
-	public ValidatingEventCoordinator(
+	public BFTEventReducer(
 		ProposalGenerator proposalGenerator,
 		Mempool mempool,
-		EventCoordinatorNetworkSender networkSender,
+		BFTEventSender sender,
 		SafetyRules safetyRules,
 		Pacemaker pacemaker,
 		PacemakerRx pacemakerRx, // TODO: Remove this once non-blocking implemented
@@ -79,7 +81,7 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 	) {
 		this.proposalGenerator = Objects.requireNonNull(proposalGenerator);
 		this.mempool = Objects.requireNonNull(mempool);
-		this.networkSender = Objects.requireNonNull(networkSender);
+		this.sender = Objects.requireNonNull(sender);
 		this.safetyRules = Objects.requireNonNull(safetyRules);
 		this.pacemaker = Objects.requireNonNull(pacemaker);
 		this.pacemakerRx = Objects.requireNonNull(pacemakerRx);
@@ -106,7 +108,7 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 		NewView newView = new NewView(selfKey.getPublicKey(), nextView, this.vertexStore.getHighestQC(), signature);
 		ECPublicKey nextLeader = this.proposerElection.getProposer(nextView);
 		log.debug("{}: Sending NEW_VIEW to {}: {}", this.getShortName(), this.getShortName(nextLeader.euid()), newView);
-		this.networkSender.sendNewView(newView, nextLeader);
+		this.sender.sendNewView(newView, nextLeader);
 	}
 
 	private void sync(QuorumCertificate qc, ECPublicKey node) throws SyncException {
@@ -196,7 +198,7 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 				final Vertex proposedVertex = proposalGenerator.generateProposal(view);
 				final Proposal proposal = safetyRules.signProposal(proposedVertex);
 				log.info("{}: Broadcasting PROPOSAL: {}", getShortName(), proposal);
-				this.networkSender.broadcastProposal(proposal);
+				this.sender.broadcastProposal(proposal);
 			});
 	}
 
@@ -248,7 +250,7 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 		try {
 			final Vote vote = safetyRules.voteFor(proposedVertex);
 			log.debug("{}: PROPOSAL: Sending VOTE to {}: {}", this.getShortName(), this.getShortName(currentLeader.euid()), vote);
-			networkSender.sendVote(vote, currentLeader);
+			sender.sendVote(vote, currentLeader);
 		} catch (SafetyViolationException e) {
 			log.error(String.format("%s: PROPOSAL: Rejected %s", this.getShortName(), proposedVertex), e);
 		}

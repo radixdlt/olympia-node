@@ -34,7 +34,7 @@ import org.radix.network.messaging.Message;
 import com.google.inject.name.Named;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.EventCoordinatorNetworkRx;
-import com.radixdlt.consensus.EventCoordinatorNetworkSender;
+import com.radixdlt.consensus.BFTEventSender;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
@@ -49,9 +49,10 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 
 /**
- * Simple network that publishes messages to known nodes.
+ * BFT Network sending and receiving layer used on top of the MessageCentral
+ * layer.
  */
-public class SimpleEventCoordinatorNetwork implements EventCoordinatorNetworkSender, EventCoordinatorNetworkRx, VertexSupplier {
+public final class MessageCentralBFTNetwork implements BFTEventSender, EventCoordinatorNetworkRx, VertexSupplier {
 	private static final Logger log = LogManager.getLogger();
 
 	private final ECPublicKey selfPublicKey;
@@ -61,7 +62,7 @@ public class SimpleEventCoordinatorNetwork implements EventCoordinatorNetworkSen
 	private final PublishSubject<ConsensusEvent> localMessages;
 
 	@Inject
-	public SimpleEventCoordinatorNetwork(
+	public MessageCentralBFTNetwork(
 		@Named("self") ECPublicKey selfPublicKey,
 		Universe universe,
 		AddressBook addressBook,

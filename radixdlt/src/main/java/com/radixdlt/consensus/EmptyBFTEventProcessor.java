@@ -20,7 +20,7 @@ package com.radixdlt.consensus;
 /**
  * An empty BFT event processor
  */
-public class EmptyEventCoordinator implements EventCoordinator {
+public class EmptyBFTEventProcessor implements BFTEventProcessor {
 	@Override
 	public void processVote(Vote vote) {
 		// No-op

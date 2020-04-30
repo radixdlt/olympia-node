@@ -30,10 +30,10 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
 import java.util.concurrent.Executors;
 
 /**
- * Subscription Manager (Start/Stop) to the processing of BFT events under
- * a single BFT node instance
+ * Subscription Manager (Start/Stop) to the processing of Consensus events under
+ * a single BFT Consensus node instance
  */
-public final class ChainedBFT {
+public final class ConsensusRunner {
 	public enum EventType {
 		EPOCH,
 		LOCAL_TIMEOUT,
@@ -61,7 +61,7 @@ public final class ChainedBFT {
 	private final ConnectableObservable<Event> events;
 
 	@Inject
-	public ChainedBFT(
+	public ConsensusRunner(
 		EpochRx epochRx,
 		EventCoordinatorNetworkRx network,
 		PacemakerRx pacemakerRx,
@@ -75,11 +75,11 @@ public final class ChainedBFT {
 		final Observable<Event> epochs = epochEvents
 			.map(o -> new Event(EventType.EPOCH, o));
 
-		final Observable<EventCoordinator> eventCoordinators = epochEvents
+		final Observable<BFTEventProcessor> eventCoordinators = epochEvents
 			.observeOn(singleThreadScheduler)
 			.map(epochManager::nextEpoch)
 			.startWithItem(epochManager.start())
-			.doOnNext(EventCoordinator::start)
+			.doOnNext(BFTEventProcessor::start)
 			.replay(1)
 			.autoConnect();
 
@@ -98,22 +98,22 @@ public final class ChainedBFT {
 		this.events = Observable.merge(epochs, ecMessages).publish();
 	}
 
-	private Event processEvent(Object msg, EventCoordinator eventCoordinator) {
+	private Event processEvent(Object msg, BFTEventProcessor processor) {
 		final EventType eventType;
 		if (msg instanceof GetVertexRequest) {
-			eventCoordinator.processGetVertexRequest((GetVertexRequest) msg);
+			processor.processGetVertexRequest((GetVertexRequest) msg);
 			return new Event(EventType.GET_VERTEX_REQUEST, msg);
 		} else if (msg instanceof View) {
-			eventCoordinator.processLocalTimeout((View) msg);
+			processor.processLocalTimeout((View) msg);
 			return new Event(EventType.LOCAL_TIMEOUT, msg);
 		} else if (msg instanceof NewView) {
-			eventCoordinator.processNewView((NewView) msg);
+			processor.processNewView((NewView) msg);
 			eventType = EventType.NEW_VIEW_MESSAGE;
 		} else if (msg instanceof Proposal) {
-			eventCoordinator.processProposal((Proposal) msg);
+			processor.processProposal((Proposal) msg);
 			eventType = EventType.PROPOSAL_MESSAGE;
 		} else if (msg instanceof Vote) {
-			eventCoordinator.processVote((Vote) msg);
+			processor.processVote((Vote) msg);
 			eventType = EventType.VOTE_MESSAGE;
 		} else {
 			throw new IllegalStateException("Unknown Consensus Message: " + msg);

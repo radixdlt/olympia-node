@@ -52,10 +52,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class ValidatingEventCoordinatorTest {
+public class BFTEventReducerTest {
     private static final ECKeyPair SELF_KEY = ECKeyPair.generateNew();
 
-	private ValidatingEventCoordinator eventCoordinator;
+	private BFTEventReducer eventCoordinator;
 	private ProposalGenerator proposalGenerator;
 	private ProposerElection proposerElection;
 	private SafetyRules safetyRules;
@@ -63,7 +63,7 @@ public class ValidatingEventCoordinatorTest {
 	private PacemakerRx pacemakerRx;
 	private PendingVotes pendingVotes;
 	private Mempool mempool;
-	private EventCoordinatorNetworkSender networkSender;
+	private BFTEventSender sender;
 	private VertexStore vertexStore;
 	private ValidatorSet validatorSet;
 	private SystemCounters counters;
@@ -72,7 +72,7 @@ public class ValidatingEventCoordinatorTest {
 	public void setUp() {
 		this.proposalGenerator = mock(ProposalGenerator.class);
 		this.mempool = mock(Mempool.class);
-		this.networkSender = mock(EventCoordinatorNetworkSender.class);
+		this.sender = mock(BFTEventSender.class);
 		this.safetyRules = mock(SafetyRules.class);
 		this.pacemaker = mock(Pacemaker.class);
 		this.pacemakerRx = mock(PacemakerRx.class);
@@ -82,10 +82,9 @@ public class ValidatingEventCoordinatorTest {
 		this.validatorSet = mock(ValidatorSet.class);
 		this.counters = mock(SystemCounters.class);
 
-		this.eventCoordinator = new ValidatingEventCoordinator(
+		this.eventCoordinator = new BFTEventReducer(
 			proposalGenerator,
-			mempool,
-			networkSender,
+			mempool, sender,
 			safetyRules,
 			pacemaker,
 			pacemakerRx,
@@ -114,7 +113,7 @@ public class ValidatingEventCoordinatorTest {
 		when(pacemaker.processQC(eq(view))).thenReturn(Optional.of(mock(View.class)));
 		eventCoordinator.start();
 		verify(pacemaker, times(1)).processQC(eq(view));
-		verify(networkSender, times(1)).sendNewView(any(), any());
+		verify(sender, times(1)).sendNewView(any(), any());
 	}
 
 	@Test
@@ -150,7 +149,7 @@ public class ValidatingEventCoordinatorTest {
 
 		eventCoordinator.processVote(vote);
 
-		verify(networkSender, times(1)).sendNewView(any(), any());
+		verify(sender, times(1)).sendNewView(any(), any());
 	}
 
 	@Test
@@ -159,7 +158,7 @@ public class ValidatingEventCoordinatorTest {
 		when(pacemaker.processLocalTimeout(any())).thenReturn(Optional.of(View.of(1)));
 		when(pacemaker.getCurrentView()).thenReturn(View.of(1));
 		eventCoordinator.processLocalTimeout(View.of(0L));
-		verify(networkSender, times(1)).sendNewView(any(), any());
+		verify(sender, times(1)).sendNewView(any(), any());
 		verify(counters, times(1)).increment(eq(CounterType.CONSENSUS_TIMEOUT));
 	}
 
@@ -167,7 +166,7 @@ public class ValidatingEventCoordinatorTest {
 	public void when_processing_irrelevant_local_timeout__then_new_view_is_not_emitted_and_no_counter_increment() {
 		when(pacemaker.processLocalTimeout(any())).thenReturn(Optional.empty());
 		eventCoordinator.processLocalTimeout(View.of(0L));
-		verify(networkSender, times(0)).sendNewView(any(), any());
+		verify(sender, times(0)).sendNewView(any(), any());
 		verify(counters, times(0)).increment(eq(CounterType.CONSENSUS_TIMEOUT));
 	}
 
@@ -192,7 +191,7 @@ public class ValidatingEventCoordinatorTest {
 		when(proposalGenerator.generateProposal(eq(View.of(1L)))).thenReturn(mock(Vertex.class));
 		eventCoordinator.processNewView(newView);
 		verify(pacemaker, times(1)).processNewView(any(), any());
-		verify(networkSender, times(1)).broadcastProposal(any());
+		verify(sender, times(1)).broadcastProposal(any());
 	}
 
 	@Test
@@ -267,8 +266,8 @@ public class ValidatingEventCoordinatorTest {
 
 		eventCoordinator.processProposal(proposal);
 
-		verify(networkSender, times(1)).sendVote(eq(vote), any());
-		verify(networkSender, times(1)).sendNewView(any(), any());
+		verify(sender, times(1)).sendVote(eq(vote), any());
+		verify(sender, times(1)).sendNewView(any(), any());
 	}
 
 	@Test
@@ -300,8 +299,8 @@ public class ValidatingEventCoordinatorTest {
 
 		eventCoordinator.processProposal(proposal);
 
-		verify(networkSender, times(1)).sendVote(eq(vote), any());
-		verify(networkSender, times(0)).sendNewView(any(), any());
+		verify(sender, times(1)).sendVote(eq(vote), any());
+		verify(sender, times(0)).sendNewView(any(), any());
 	}
 
 	@Test
@@ -332,8 +331,8 @@ public class ValidatingEventCoordinatorTest {
 
 		eventCoordinator.processProposal(proposal);
 
-		verify(networkSender, times(1)).sendVote(eq(vote), any());
-		verify(networkSender, times(0)).sendNewView(any(), any());
+		verify(sender, times(1)).sendVote(eq(vote), any());
+		verify(sender, times(0)).sendNewView(any(), any());
 	}
 
 

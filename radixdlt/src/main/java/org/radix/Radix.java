@@ -18,7 +18,7 @@
 package org.radix;
 
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.consensus.ChainedBFT;
+import com.radixdlt.consensus.ConsensusRunner;
 import com.radixdlt.consensus.VertexStore;
 import com.radixdlt.mempool.MempoolReceiver;
 import com.radixdlt.mempool.SubmissionControl;
@@ -141,7 +141,7 @@ public final class Radix
 		// Start mempool receiver
 		globalInjector.getInjector().getInstance(MempoolReceiver.class).start();
 
-		final ChainedBFT bft = globalInjector.getInjector().getInstance(ChainedBFT.class);
+		final ConsensusRunner bft = globalInjector.getInjector().getInstance(ConsensusRunner.class);
 		// start API services
 		SubmissionControl submissionControl = globalInjector.getInjector().getInstance(SubmissionControl.class);
 		AtomToBinaryConverter atomToBinaryConverter = globalInjector.getInjector().getInstance(AtomToBinaryConverter.class);

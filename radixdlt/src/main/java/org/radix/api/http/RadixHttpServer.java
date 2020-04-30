@@ -17,7 +17,7 @@
 
 package org.radix.api.http;
 
-import com.radixdlt.consensus.ChainedBFT;
+import com.radixdlt.consensus.ConsensusRunner;
 import com.google.common.collect.EvictingQueue;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
@@ -97,7 +97,7 @@ public final class RadixHttpServer {
 	private Undertow server;
 
 	public RadixHttpServer(
-		ChainedBFT chainedBFT,
+		ConsensusRunner consensusRunner,
 		LedgerEntryStore store,
 		SubmissionControl submissionControl,
 		AtomToBinaryConverter atomToBinaryConverter,
@@ -114,8 +114,7 @@ public final class RadixHttpServer {
 		this.localSystem = Objects.requireNonNull(localSystem);
 		this.peers = new ConcurrentHashMap<>();
 		this.atomsService = new AtomsService(store, submissionControl, atomToBinaryConverter);
-		this.jsonRpcServer = new RadixJsonRpcServer(
-			chainedBFT,
+		this.jsonRpcServer = new RadixJsonRpcServer(consensusRunner,
 			serialization,
 			store,
 			atomsService,
