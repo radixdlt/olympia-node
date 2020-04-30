@@ -53,22 +53,21 @@ public final class RemoteBFTNetworkBridge {
 	 * @return The cold {@link Single} that will contain the response body if successful or error if failure
 	 */
 	private Single<String> makeRequest(Request request) {
-		SingleSubject<String> responseSubject = SingleSubject.create();
-		return responseSubject.doOnSubscribe(x -> {
+		return Single.create(emitter -> {
 			Call call = HttpClients.getSslAllTrustingClient().newCall(request);
 			call.enqueue(new Callback() {
 				@Override
 				public void onFailure(Call call, IOException e) {
-					responseSubject.onError(e);
+					emitter.onError(e);
 				}
 
 				@Override
 				public void onResponse(Call call, Response response) throws IOException {
 					try {
 						String responseString = response.body().string();
-						responseSubject.onSuccess(responseString);
+						emitter.onSuccess(responseString);
 					} catch (IOException e) {
-						responseSubject.onError(new IllegalArgumentException("Failed to parse response to " + request, e));
+						emitter.onError(new IllegalArgumentException("Failed to parse response to " + request, e));
 					}
 				}
 			});
