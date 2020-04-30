@@ -44,11 +44,15 @@ public class LivenessCheck implements RemoteBFTCheck {
 	private final long timeout;
 	private final TimeUnit timeoutUnit;
 
-	public LivenessCheck(long patience, TimeUnit patienceUnit, long timeout, TimeUnit timeoutUnit) {
+	private LivenessCheck(long patience, TimeUnit patienceUnit, long timeout, TimeUnit timeoutUnit) {
 		this.patience = patience;
 		this.patienceUnit = Objects.requireNonNull(patienceUnit);
 		this.timeout = timeout;
 		this.timeoutUnit = Objects.requireNonNull(timeoutUnit);
+	}
+
+	public static LivenessCheck with(long patience, TimeUnit patienceUnit, long timeout, TimeUnit timeoutUnit) {
+		return new LivenessCheck(patience, patienceUnit, timeout, timeoutUnit);
 	}
 
 	@Override

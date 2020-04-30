@@ -51,9 +51,16 @@ public class SafetyCheck implements RemoteBFTCheck {
 	private final long timeout;
 	private final TimeUnit timeoutUnit;
 
-	public SafetyCheck(long timeout, TimeUnit timeoutUnit) {
+	private SafetyCheck(long timeout, TimeUnit timeoutUnit) {
+		if (timeout < 1) {
+			throw new IllegalArgumentException("timeout must be >= 1 but was " + timeout);
+		}
 		this.timeout = timeout;
 		this.timeoutUnit = Objects.requireNonNull(timeoutUnit);
+	}
+
+	public static SafetyCheck with(long timeout, TimeUnit timeoutUnit) {
+		return new SafetyCheck(timeout, timeoutUnit);
 	}
 
 	@Override

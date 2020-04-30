@@ -33,12 +33,16 @@ public class ResponsivenessCheck implements RemoteBFTCheck {
 	private final long timeout;
 	private final TimeUnit timeoutUnit;
 
-	public ResponsivenessCheck(long timeout, TimeUnit timeoutUnit) {
+	private ResponsivenessCheck(long timeout, TimeUnit timeoutUnit) {
 		if (timeout < 1) {
 			throw new IllegalArgumentException("timeout must be >= 1 but was " + timeout);
 		}
 		this.timeout = timeout;
 		this.timeoutUnit = Objects.requireNonNull(timeoutUnit);
+	}
+
+	public static ResponsivenessCheck with(long timeout, TimeUnit timeoutUnit) {
+		return new ResponsivenessCheck(timeout, timeoutUnit);
 	}
 
 	@Override
