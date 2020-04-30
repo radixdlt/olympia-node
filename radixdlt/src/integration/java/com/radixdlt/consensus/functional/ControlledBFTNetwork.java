@@ -20,14 +20,10 @@ package com.radixdlt.consensus.functional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.consensus.EventCoordinatorNetworkSender;
-import com.radixdlt.consensus.GetVertexRequest;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.Hash;
-import io.reactivex.rxjava3.core.Single;
 import java.util.LinkedList;
 import java.util.function.Function;
 
@@ -77,14 +73,6 @@ public final class ControlledBFTNetwork {
 			@Override
 			public void sendVote(Vote vote, ECPublicKey leader) {
 				putMesssage(sender, leader, vote);
-			}
-
-			@Override
-			public Single<Vertex> getVertex(Hash vertexId, ECPublicKey node) {
-				return Single.create(emitter -> {
-					GetVertexRequest request = new GetVertexRequest(vertexId, emitter::onSuccess);
-					putMesssage(sender, node, request);
-				});
 			}
 		};
 	}

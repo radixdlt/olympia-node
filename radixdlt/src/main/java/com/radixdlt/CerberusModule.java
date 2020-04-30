@@ -31,6 +31,7 @@ import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.VertexStore;
+import com.radixdlt.consensus.VertexSupplier;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker.TimeoutSender;
@@ -50,6 +51,7 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.middleware2.network.SimpleEventCoordinatorNetwork;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.universe.Universe;
@@ -79,6 +81,7 @@ public class CerberusModule extends AbstractModule {
 		bind(TimeoutSender.class).to(ScheduledTimeoutSender.class);
 		bind(PacemakerRx.class).to(ScheduledTimeoutSender.class);
 		bind(SafetyRules.class).in(Scopes.SINGLETON);
+		bind(VertexSupplier.class).to(SimpleEventCoordinatorNetwork.class);
 		bind(Hasher.class).to(DefaultHasher.class);
 		bind(ProposalGenerator.class).to(MempoolProposalGenerator.class);
 	}
@@ -128,7 +131,8 @@ public class CerberusModule extends AbstractModule {
 	private VertexStore getVertexStore(
 		Universe universe,
 		RadixEngine radixEngine,
-		SystemCounters counters
+		SystemCounters counters,
+		VertexSupplier vertexSupplier
 	) {
 		if (universe.getGenesis().size() != 1) {
 			throw new IllegalStateException("Can only support one genesis atom.");
@@ -140,6 +144,6 @@ public class CerberusModule extends AbstractModule {
 		final QuorumCertificate rootQC = new QuorumCertificate(voteData, new ECDSASignatures());
 
 		log.info("Genesis Vertex Id: {}", genesisVertex.getId());
-		return new VertexStore(genesisVertex, rootQC, radixEngine, counters);
+		return new VertexStore(genesisVertex, rootQC, radixEngine, counters, vertexSupplier);
 	}
 }

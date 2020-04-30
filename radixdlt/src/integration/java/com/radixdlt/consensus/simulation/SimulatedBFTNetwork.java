@@ -35,6 +35,7 @@ import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.VertexStore;
+import com.radixdlt.consensus.VertexSupplier;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
 import com.radixdlt.consensus.liveness.MempoolProposalGenerator;
@@ -119,7 +120,8 @@ public class SimulatedBFTNetwork {
 				e -> {
 					RadixEngine radixEngine = mock(RadixEngine.class);
 					when(radixEngine.staticCheck(any())).thenReturn(Optional.empty());
-					return new VertexStore(genesisVertex, genesisQC, radixEngine, this.counters.get(e));
+					VertexSupplier vertexSupplier = underlyingNetwork.getVertexSupplier(e.getPublicKey());
+					return new VertexStore(genesisVertex, genesisQC, radixEngine, this.counters.get(e), vertexSupplier);
 				})
 			);
 		this.timeoutSenders = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e,

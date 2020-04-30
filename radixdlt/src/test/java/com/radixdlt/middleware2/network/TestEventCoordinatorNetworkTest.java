@@ -121,7 +121,7 @@ public class TestEventCoordinatorNetworkTest {
 		TestObserver<GetVertexRequest> rpcRequestListener = TestObserver.create();
 		network.getNetworkRx(validatorId2).rpcRequests().subscribe(rpcRequestListener);
 		TestObserver<Vertex> testObserver = TestObserver.create();
-		network.getNetworkSender(validatorId).getVertex(vertexId, validatorId2)
+		network.getVertexSupplier(validatorId).getVertex(vertexId, validatorId2)
 			.subscribe(testObserver);
 
 		rpcRequestListener.awaitCount(1);

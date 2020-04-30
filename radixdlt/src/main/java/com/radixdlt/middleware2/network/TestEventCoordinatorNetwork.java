@@ -24,10 +24,9 @@ import com.radixdlt.consensus.GetVertexRequest;
 import com.radixdlt.consensus.GetVertexResponse;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.VertexSupplier;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.Hash;
 import io.reactivex.rxjava3.core.Observable;
 
 import io.reactivex.rxjava3.core.Single;
@@ -154,29 +153,28 @@ public class TestEventCoordinatorNetwork {
 			public void sendVote(Vote vote, ECPublicKey leader) {
 				receivedMessages.onNext(MessageInTransit.newMessage(vote, forNode, leader));
 			}
-
-			@Override
-			public Single<Vertex> getVertex(Hash vertexId, ECPublicKey node) {
-				return Single.create(emitter -> {
-					Disposable d = receivers.computeIfAbsent(forNode, SimulatedReceiver::new).myMessages
-						.ofType(GetVertexResponse.class)
-						.filter(v -> v.getVertexId().equals(vertexId))
-						.firstOrError()
-						.map(GetVertexResponse::getVertex)
-						.subscribe(emitter::onSuccess);
-					emitter.setDisposable(d);
-
-					final GetVertexRequest request = new GetVertexRequest(
-						vertexId,
-						vertex -> {
-							GetVertexResponse vertexResponse = new GetVertexResponse(vertexId, vertex);
-							receivedMessages.onNext(MessageInTransit.newMessage(vertexResponse, node, forNode));
-						}
-					);
-					receivedMessages.onNext(MessageInTransit.newMessage(request, forNode, node));
-				});
-			}
 		};
+	}
+
+	public VertexSupplier getVertexSupplier(ECPublicKey forNode) {
+		return (vertexId, node) -> Single.create(emitter -> {
+			Disposable d = receivers.computeIfAbsent(forNode, SimulatedReceiver::new).myMessages
+				.ofType(GetVertexResponse.class)
+				.filter(v -> v.getVertexId().equals(vertexId))
+				.firstOrError()
+				.map(GetVertexResponse::getVertex)
+				.subscribe(emitter::onSuccess);
+			emitter.setDisposable(d);
+
+			final GetVertexRequest request = new GetVertexRequest(
+				vertexId,
+				vertex -> {
+					GetVertexResponse vertexResponse = new GetVertexResponse(vertexId, vertex);
+					receivedMessages.onNext(MessageInTransit.newMessage(vertexResponse, node, forNode));
+				}
+			);
+			receivedMessages.onNext(MessageInTransit.newMessage(request, forNode, node));
+		});
 	}
 
 	private class SimulatedReceiver implements EventCoordinatorNetworkRx {

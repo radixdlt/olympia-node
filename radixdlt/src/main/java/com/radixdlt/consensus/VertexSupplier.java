@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 import io.reactivex.rxjava3.core.Single;
 
@@ -26,9 +27,11 @@ import io.reactivex.rxjava3.core.Single;
 public interface VertexSupplier {
 
 	/**
-	 * Retrieve vertex data from it's id.
-	 * @param id the id of vertex to retrieve
-	 * @return vertex data once available
+	 * Execute an RPC to retrieve a vertex given an Id from a node
+	 * TODO: refactor to maintain a unidirectional data flow
+	 *
+	 * @param node the node to retrieve the vertex info from
+	 * @return single of a vertex which will complete once retrieved
 	 */
-	Single<Vertex> getVertex(Hash id);
+	Single<Vertex> getVertex(Hash id, ECPublicKey node);
 }

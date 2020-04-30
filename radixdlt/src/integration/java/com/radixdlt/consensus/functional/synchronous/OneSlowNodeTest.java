@@ -28,6 +28,27 @@ import org.junit.Test;
 
 public class OneSlowNodeTest {
 
+	@Test
+	public void when_three_fast_nodes_and_one_slow_node_two_cycles__then_missing_parent_will_cause_sync_exception() {
+		final BFTFunctionalTest test = new BFTFunctionalTest(4);
+		for (int curLeader = 1; curLeader <= 2; curLeader++) {
+			test.processNextMsg(curLeader, 1, NewView.class);
+			test.processNextMsg(curLeader, 2, NewView.class);
+			test.processNextMsg(curLeader, 3, NewView.class);
+
+			test.processNextMsg(1, curLeader, Proposal.class);
+			test.processNextMsg(2, curLeader, Proposal.class);
+			test.processNextMsg(3, curLeader, Proposal.class);
+
+			test.processNextMsg(curLeader, 1, Vote.class);
+			test.processNextMsg(curLeader, 2, Vote.class);
+			test.processNextMsg(curLeader, 3, Vote.class);
+		}
+
+		test.processNextMsg(0, 2, Proposal.class);
+		assertThat(test.getSystemCounters(0).get(CounterType.CONSENSUS_SYNC_EXCEPTION)).isEqualTo(0);
+	}
+
 	/**
 	 * Because syncing more than 1 vertex is not yet supported, this
 	 * tests for sync exception when three nodes go way ahead of one slow node.

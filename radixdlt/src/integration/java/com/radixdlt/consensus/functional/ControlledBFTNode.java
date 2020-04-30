@@ -34,6 +34,7 @@ import com.radixdlt.consensus.ValidatingEventCoordinator;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.VertexStore;
+import com.radixdlt.consensus.VertexSupplier;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.VoteData;
@@ -66,9 +67,16 @@ class ControlledBFTNode {
 	private final ValidatingEventCoordinator ec;
 	private final Function<ECPublicKey, Object> receiver;
 	private final SystemCounters systemCounters;
+	private final VertexStore vertexStore;
 
-	ControlledBFTNode(ECKeyPair key, EventCoordinatorNetworkSender sender, Function<ECPublicKey, Object> receiver, ProposerElection proposerElection,
-		ValidatorSet validatorSet) {
+	ControlledBFTNode(
+		ECKeyPair key,
+		EventCoordinatorNetworkSender sender,
+		Function<ECPublicKey, Object> receiver,
+		ProposerElection proposerElection,
+		ValidatorSet validatorSet,
+		VertexSupplier vertexSupplier
+	) {
 		this.receiver = receiver;
 		this.systemCounters = new SystemCountersImpl();
 		Vertex genesisVertex = Vertex.createGenesis(null);
@@ -77,7 +85,7 @@ class ControlledBFTNode {
 			new ECDSASignatures()
 		);
 		RadixEngine re = mock(RadixEngine.class);
-		VertexStore vertexStore = new VertexStore(genesisVertex, genesisQC, re, systemCounters);
+		this.vertexStore = new VertexStore(genesisVertex, genesisQC, re, systemCounters, vertexSupplier);
 		Mempool mempool = new EmptyMempool();
 		ProposalGenerator proposalGenerator = new MempoolProposalGenerator(vertexStore, mempool);
 		TimeoutSender timeoutSender = mock(TimeoutSender.class);
@@ -102,6 +110,10 @@ class ControlledBFTNode {
 			validatorSet,
 			systemCounters
 		);
+	}
+
+	VertexStore getVertexStore() {
+		return vertexStore;
 	}
 
 	SystemCounters getSystemCounters() {

@@ -19,10 +19,12 @@ package com.radixdlt.consensus;
 
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 
+import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import java.util.ArrayList;
@@ -31,17 +33,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
- * Manages the BFT Vertex chain. NOT thread-safe.
+ * Manages the BFT Vertex chain.
+ *
+ * In general this class is NOT thread-safe except for getVertex().
+ * TODO: make thread-safe
  */
 public final class VertexStore {
+	private static final Logger log = LogManager.getLogger();
 
 	private final RadixEngine engine;
 	private final SystemCounters counters;
-
 	private final Map<Hash, Vertex> vertices = new ConcurrentHashMap<>();
 	private final BehaviorSubject<Vertex> lastCommittedVertex = BehaviorSubject.create();
+	private final VertexSupplier vertexSupplier;
 
 	// Should never be null
 	private Vertex root;
@@ -54,11 +62,13 @@ public final class VertexStore {
 		Vertex genesisVertex,
 		QuorumCertificate rootQC,
 		RadixEngine engine,
-		SystemCounters counters
+		SystemCounters counters,
+		VertexSupplier vertexSupplier
 	) {
 		this.engine = Objects.requireNonNull(engine);
 		this.counters = Objects.requireNonNull(counters);
 		this.highestQC = Objects.requireNonNull(rootQC);
+		this.vertexSupplier = Objects.requireNonNull(vertexSupplier);
 		try {
 			this.engine.store(genesisVertex.getAtom());
 		} catch (RadixEngineException e) {
@@ -69,7 +79,7 @@ public final class VertexStore {
 		this.lastCommittedVertex.onNext(genesisVertex);
 	}
 
-	public void syncToQC(QuorumCertificate qc, VertexSupplier vertexSupplier) throws SyncException {
+	public void syncToQC(QuorumCertificate qc, ECPublicKey author, Completable cancelSignal) throws SyncException {
 		final Vertex vertex = vertices.get(qc.getProposed().getId());
 		if (vertex == null) {
 			if (!vertices.containsKey(qc.getParent().getId())) {
@@ -80,8 +90,12 @@ public final class VertexStore {
 
 			final Vertex proposedVertex;
 			try {
+				log.info("Sending GET_VERTEX Request to {}", author.toString().substring(0, 6));
 				// TODO: remove blocking
-				proposedVertex = vertexSupplier.getVertex(qc.getProposed().getId()).blockingGet();
+				proposedVertex = vertexSupplier.getVertex(qc.getProposed().getId(), author)
+					.takeUntil(cancelSignal)
+					.doOnSuccess(v -> log.info("Received GET_VERTEX Response: {}", v))
+					.blockingGet();
 				this.counters.increment(CounterType.CONSENSUS_SYNC_SUCCESS);
 			} catch (Exception e) {
 				throw new SyncException(qc, e);
@@ -167,6 +181,13 @@ public final class VertexStore {
 		return this.highestQC;
 	}
 
+	/**
+	 * Retrieves the vertex with the given vertexId if it exists in the store.
+	 * Thread-safe.
+	 *
+	 * @param vertexId the id of the vertex
+	 * @return the vertex
+	 */
 	public Vertex getVertex(Hash vertexId) {
 		return this.vertices.get(vertexId);
 	}

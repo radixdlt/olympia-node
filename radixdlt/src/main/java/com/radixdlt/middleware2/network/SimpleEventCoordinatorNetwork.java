@@ -19,6 +19,7 @@ package com.radixdlt.middleware2.network;
 
 import com.radixdlt.consensus.GetVertexRequest;
 import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.VertexSupplier;
 import com.radixdlt.crypto.Hash;
 import io.reactivex.rxjava3.core.Single;
 import java.util.Objects;
@@ -50,7 +51,7 @@ import io.reactivex.rxjava3.subjects.PublishSubject;
 /**
  * Simple network that publishes messages to known nodes.
  */
-public class SimpleEventCoordinatorNetwork implements EventCoordinatorNetworkSender, EventCoordinatorNetworkRx {
+public class SimpleEventCoordinatorNetwork implements EventCoordinatorNetworkSender, EventCoordinatorNetworkRx, VertexSupplier {
 	private static final Logger log = LogManager.getLogger();
 
 	private final ECPublicKey selfPublicKey;
