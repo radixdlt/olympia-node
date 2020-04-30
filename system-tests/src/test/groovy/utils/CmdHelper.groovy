@@ -43,13 +43,14 @@ class CmdHelper {
         process.consumeProcessOutput(sout, serr)
         process.waitFor()
 
-        List outPut, error
+        List output
         if (sout) {
-            outPut = sout.toString().split(System.lineSeparator()).collect({ it })
+            output = sout.toString().split(System.lineSeparator()).collect({ it })
             logger.info("-----------Output---------")
             sout.each { logger.info(it) }
         }
 
+        List error
         if (serr) {
             logger.error("-----------Error---------")
 
@@ -59,7 +60,7 @@ class CmdHelper {
                 throw new Exception(error.toString())
             }
         }
-        return [outPut, error]
+        return [output, error]
     }
 
 
