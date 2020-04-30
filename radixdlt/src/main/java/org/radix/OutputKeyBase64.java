@@ -58,6 +58,7 @@ public final class OutputKeyBase64 {
 			isRestricted.setBoolean(null, false);
 			isRestricted.setAccessible(false);
 		} catch (ReflectiveOperationException | SecurityException ex) {
+			System.err.println("Exception while disabling JceSecurity restrictions");
 			ex.printStackTrace(System.err);
 		}
 
