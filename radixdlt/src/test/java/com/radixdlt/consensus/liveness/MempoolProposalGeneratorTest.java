@@ -34,7 +34,7 @@ import com.radixdlt.mempool.Mempool;
 import java.util.Collections;
 import org.junit.Test;
 
-public class ProposalGeneratorTest {
+public class MempoolProposalGeneratorTest {
 	@Test
 	public void when_vertex_store_contains_vertices_with_no_atom__then_generate_proposal_should_still_work() {
 		Mempool mempool = mock(Mempool.class);
@@ -49,7 +49,7 @@ public class ProposalGeneratorTest {
 		when(vertex.getAtom()).thenReturn(null);
 		when(vertexStore.getPathFromRoot(any())).thenReturn(Collections.singletonList(vertex));
 
-		ProposalGenerator proposalGenerator = new ProposalGenerator(vertexStore, mempool);
+		MempoolProposalGenerator proposalGenerator = new MempoolProposalGenerator(vertexStore, mempool);
 		Vertex proposal = proposalGenerator.generateProposal(View.of(1));
 		assertThat(proposal.getAtom()).isEqualTo(atom);
 	}

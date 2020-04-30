@@ -25,11 +25,6 @@ import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.utils.Longs;
 
-import io.reactivex.rxjava3.core.Completable;
-import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.subjects.BehaviorSubject;
-import io.reactivex.rxjava3.subjects.Subject;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -37,50 +32,40 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 /**
- * Overly simplistic pacemaker
+ * A pacemaker which utilizes a fixed timeout (aka requires a synchronous network).
  */
-public final class PacemakerImpl implements Pacemaker, PacemakerRx {
+public final class FixedTimeoutPacemaker implements Pacemaker {
+
+	/**
+	 * Callback to the issuer of timeout events
+	 */
+	public interface TimeoutSender {
+
+		/**
+		 * Schedules a timeout event for a particular view
+		 * @param view the view to schedule a timeout for
+		 * @param milliseconds the milliseconds to wait before timeout occurs
+		 */
+		void scheduleTimeout(View view, long milliseconds);
+	}
+
 	private static final Logger log = LogManager.getLogger("PM");
 
-	private final int timeoutMilliseconds;
-	private final Subject<View> timeouts;
-	private final Observable<View> timeoutsObservable;
-	private final ScheduledExecutorService executorService;
+	private final long timeoutMilliseconds;
+	private final TimeoutSender timeoutSender;
 
 	private final Map<View, ValidationState> pendingNewViews = new HashMap<>();
 	private View currentView = View.of(0L);
 	private View lastSyncView = View.of(0L);
 
-	public PacemakerImpl(int timeoutMilliseconds, ScheduledExecutorService executorService) {
+	public FixedTimeoutPacemaker(long timeoutMilliseconds, TimeoutSender timeoutSender) {
 		if (timeoutMilliseconds <= 0) {
 			throw new IllegalArgumentException("timeoutMilliseconds must be > 0 but was " + timeoutMilliseconds);
 		}
 		this.timeoutMilliseconds = timeoutMilliseconds;
-		this.executorService = Objects.requireNonNull(executorService);
-		// BehaviorSubject so that nextLocalTimeout will complete if timeout already occurred
-		this.timeouts = BehaviorSubject.<View>create().toSerialized();
-		this.timeoutsObservable = this.timeouts
-			.publish()
-			.refCount()
-			.doOnSubscribe(d -> scheduleTimeout(this.currentView));
-	}
-
-	private void scheduleTimeout(final View timeoutView) {
-		log.info("Starting View: {}", timeoutView);
-		executorService.schedule(() -> timeouts.onNext(timeoutView), timeoutMilliseconds, TimeUnit.MILLISECONDS);
-	}
-
-	@Override
-	public Completable nextLocalTimeout() {
-		return Completable.fromSingle(
-			timeouts
-				.filter(this.currentView::equals)
-				.firstOrError()
-		);
+		this.timeoutSender = Objects.requireNonNull(timeoutSender);
 	}
 
 	@Override
@@ -96,10 +81,12 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 
 		this.currentView = currentView.next();
 
-		scheduleTimeout(this.currentView);
+		timeoutSender.scheduleTimeout(this.currentView, timeoutMilliseconds);
+
 		return Optional.of(this.currentView);
 	}
 
+	// TODO: Move this into Event Coordinator
 	@Override
 	public Optional<View> processNewView(NewView newView, ValidatorSet validatorSet) {
 		if (newView.getView().compareTo(this.lastSyncView) <= 0) {
@@ -141,16 +128,11 @@ public final class PacemakerImpl implements Pacemaker, PacemakerRx {
 			// start new view
 			this.currentView = newView;
 
-			scheduleTimeout(this.currentView);
+			timeoutSender.scheduleTimeout(this.currentView, timeoutMilliseconds);
 
 			return Optional.of(this.currentView);
 		} else {
 			return Optional.empty();
 		}
-	}
-
-	@Override
-	public Observable<View> localTimeouts() {
-		return this.timeoutsObservable;
 	}
 }
