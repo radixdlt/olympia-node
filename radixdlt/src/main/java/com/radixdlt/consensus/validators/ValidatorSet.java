@@ -19,18 +19,17 @@ package com.radixdlt.consensus.validators;
 
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.utils.UInt256;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.function.Function;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableList;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.crypto.Signatures;
 
 /**
- * Set of validators for consensus.
+ * Set of validators for consensus. Only validators with power >= 1 will
+ * be part of the set.
  * <p>
  * Note that this set will validate for set sizes less than 4,
  * as long as all validators sign.
@@ -38,13 +37,26 @@ import com.radixdlt.crypto.Signatures;
 public final class ValidatorSet {
 	private final ImmutableBiMap<ECPublicKey, Validator> validators;
 
+	// We assume that we won't have more than 2^128 validators (2^32 is in fact the limit)
+	// so 2^256 is big enough here
+	private final transient UInt256 totalPower;
+
 	private ValidatorSet(Collection<Validator> validators) {
 		this.validators = validators.stream()
+			.filter(v -> !v.getPower().isZero())
 			.collect(ImmutableBiMap.toImmutableBiMap(Validator::nodeKey, Function.identity()));
+		this.totalPower = validators.stream()
+			.map(Validator::getPower)
+			.reduce(UInt256::add)
+			.orElse(UInt256.ZERO);
 	}
 
 	/**
-	 * Create a validator set from a collection of validators.
+	 * Create a validator set from a collection of validators. The sum
+	 * of power of all validator should not exceed UInt256.MAX_VALUE otherwise
+	 * the resulting ValidatorSet will perform in an undefined way.
+	 * This invariant should be upheld within the system due to max number of
+	 * tokens being constrained to UInt256.MAX_VALUE.
 	 *
 	 * @param validators the collection of validators
 	 * @return The new {@code ValidatorSet}.
@@ -54,39 +66,29 @@ public final class ValidatorSet {
 	}
 
 	/**
-	 * Validate the specified message hash against the specified signatures.
+	 * Create an initial validation state with no signatures for this validator set.
 	 *
-	 * @param message The message hash to verify signatures against
-	 * @param sigs The signatures to verify
-	 * @return A {@link ValidationResult}
+	 * @param anchor The hash to validate signatures against
+	 * @return An initial validation state with no signatures
 	 */
-	public ValidationResult validate(Hash message, Signatures sigs) {
-		final int threshold = threshold(this.validators.size());
-		final ImmutableList<Validator> signed = sigs.signedMessage(message).stream()
-			.map(this.validators::get)
-			.filter(Objects::nonNull)
-			.collect(ImmutableList.toImmutableList());
-		if (signed.isEmpty() || signed.size() < threshold) {
-			return ValidationResult.failure();
-		} else {
-			return ValidationResult.passed(signed);
-		}
+	public ValidationState newValidationState(Hash anchor) {
+		return ValidationState.forValidatorSet(anchor, this);
+	}
+
+	public boolean containsKey(ECPublicKey key) {
+		return validators.containsKey(key);
+	}
+
+	public UInt256 getPower(ECPublicKey key) {
+		return validators.get(key).getPower();
+	}
+
+	public UInt256 getTotalPower() {
+		return totalPower;
 	}
 
 	public ImmutableSet<Validator> getValidators() {
 		return validators.values();
-	}
-
-	@VisibleForTesting
-	static int threshold(int n) {
-		return n - acceptableFaults(n);
-	}
-
-	@VisibleForTesting
-	static int acceptableFaults(int n) {
-		// Compute acceptable faults based on Byzantine limit n = 3f + 1
-		// i.e. f = (n - 1) / 3
-		return (n - 1) / 3;
 	}
 
 	@Override

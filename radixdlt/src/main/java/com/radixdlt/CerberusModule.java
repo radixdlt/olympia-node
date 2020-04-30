@@ -17,7 +17,6 @@
 
 package com.radixdlt;
 
-import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
@@ -37,7 +36,7 @@ import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.PacemakerImpl;
 import com.radixdlt.consensus.liveness.PacemakerRx;
-import com.radixdlt.consensus.liveness.RotatingLeaders;
+import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.tempo.Scheduler;
 import com.radixdlt.consensus.tempo.SingleThreadedScheduler;
@@ -51,7 +50,9 @@ import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.universe.Universe;
 
+import com.radixdlt.utils.UInt256;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Objects;
 import java.util.concurrent.Executors;
 
@@ -80,7 +81,8 @@ public class CerberusModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private ProposerElectionFactory proposerElectionFactory() {
-		return keys -> new RotatingLeaders(ImmutableList.copyOf(keys));
+		final int cacheSize = runtimeProperties.get("consensus.weighted_rotating_leaders.cache_size", 10);
+		return validatorSet -> new WeightedRotatingLeaders(validatorSet, Comparator.comparing(v -> v.nodeKey().euid()), cacheSize);
 	}
 
 	@Provides
@@ -98,7 +100,7 @@ public class CerberusModule extends AbstractModule {
 	private ValidatorSet validatorSet(
 		@Named("self") ECKeyPair selfKey
 	) {
-		return ValidatorSet.from(Collections.singleton(Validator.from(selfKey.getPublicKey())));
+		return ValidatorSet.from(Collections.singleton(Validator.from(selfKey.getPublicKey(), UInt256.ONE)));
 	}
 
 	@Provides

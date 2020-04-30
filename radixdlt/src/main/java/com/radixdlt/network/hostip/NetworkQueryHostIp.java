@@ -32,11 +32,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.common.io.CharStreams;
@@ -82,6 +84,7 @@ final class NetworkQueryHostIp implements HostIp {
 	}
 
 	private final List<URL> hosts;
+	private final Supplier<Optional<String>> result = Suppliers.memoize(this::get);
 
 	NetworkQueryHostIp(Collection<URL> urls) {
 		if (urls.isEmpty()) {
@@ -96,6 +99,10 @@ final class NetworkQueryHostIp implements HostIp {
 
 	@Override
 	public Optional<String> hostIp() {
+		return result.get();
+	}
+
+	Optional<String> get() {
 		return publicIp((count() + 1) / 2); // Round up
 	}
 

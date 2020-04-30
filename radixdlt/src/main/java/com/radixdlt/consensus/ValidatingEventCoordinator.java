@@ -144,6 +144,10 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 
 		// only do something if we're actually the leader for the vote
 		final View view = vote.getVoteData().getProposed().getView();
+		// TODO: currently we don't check view of vote relative to our pacemaker. This opens
+		// TODO: up to dos attacks on calculation of next proposer if ProposerElection is
+		// TODO: an expensive operation. Need to figure out a way of mitigating this problem
+		// TODO: perhaps through filter views too out of bounds
 		if (!Objects.equals(proposerElection.getProposer(view), selfKey.getPublicKey())) {
 			log.warn("{}: VOTE: Ignoring confused vote {} for {}",
 				getShortName(), vote.hashCode(), vote.getVoteData().getProposed().getView());
@@ -242,20 +246,21 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 			return;
 		}
 
+		final ECPublicKey currentLeader = this.proposerElection.getProposer(updatedView);
 		try {
 			final Vote vote = safetyRules.voteFor(proposedVertex);
-			final ECPublicKey leader = this.proposerElection.getProposer(updatedView);
-			log.debug("{}: PROPOSAL: Sending VOTE to {}: {}", this.getShortName(), this.getShortName(leader.euid()), vote);
-			networkSender.sendVote(vote, leader);
+			log.debug("{}: PROPOSAL: Sending VOTE to {}: {}", this.getShortName(), this.getShortName(currentLeader.euid()), vote);
+			networkSender.sendVote(vote, currentLeader);
 		} catch (SafetyViolationException e) {
 			log.error(String.format("%s: PROPOSAL: Rejected %s", this.getShortName(), proposedVertex), e);
 		}
 
 		// If not currently leader or next leader, Proceed to next view
-		if (!Objects.equals(proposerElection.getProposer(updatedView), selfKey.getPublicKey())
-			&& !Objects.equals(proposerElection.getProposer(updatedView.next()), selfKey.getPublicKey())) {
-			this.pacemaker.processQC(updatedView)
-				.ifPresent(this::proceedToView);
+		if (!Objects.equals(currentLeader, selfKey.getPublicKey())) {
+			final ECPublicKey nextLeader = this.proposerElection.getProposer(updatedView.next());
+			if (!Objects.equals(nextLeader, selfKey.getPublicKey())) {
+				this.pacemaker.processQC(updatedView).ifPresent(this::proceedToView);
+			}
 		}
 	}
 

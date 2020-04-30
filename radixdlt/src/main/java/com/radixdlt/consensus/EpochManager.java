@@ -17,20 +17,16 @@
 
 package com.radixdlt.consensus;
 
-import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.safety.SafetyRules;
-import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.mempool.Mempool;
-import java.util.Comparator;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -82,11 +78,8 @@ public class EpochManager {
 	}
 
 	public EventCoordinator nextEpoch(ValidatorSet validatorSet) {
-		ImmutableList<ECPublicKey> proposers = validatorSet.getValidators().stream()
-			.map(Validator::nodeKey)
-			.sorted(Comparator.comparing(ECPublicKey::euid))
-			.collect(ImmutableList.toImmutableList());
-		ProposerElection proposerElection = proposerElectionFactory.create(proposers);
+
+		ProposerElection proposerElection = proposerElectionFactory.create(validatorSet);
 		log.info("NEXT_EPOCH: ProposerElection: {}", proposerElection);
 
 		return new ValidatingEventCoordinator(

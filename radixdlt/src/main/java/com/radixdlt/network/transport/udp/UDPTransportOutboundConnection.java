@@ -33,13 +33,15 @@ import io.netty.channel.socket.DatagramPacket;
 final class UDPTransportOutboundConnection implements TransportOutboundConnection {
 	private final InetSocketAddress remoteAddr;
 	private final DatagramChannel channel;
+	private final NatHandler inetAddress;
 
-	UDPTransportOutboundConnection(DatagramChannel channel, TransportMetadata metadata) {
+	UDPTransportOutboundConnection(DatagramChannel channel, TransportMetadata metadata, NatHandler inetAddress) {
 		this.remoteAddr = new InetSocketAddress(
 			metadata.get(UDPConstants.METADATA_HOST),
 			Integer.valueOf(metadata.get(UDPConstants.METADATA_PORT))
 		);
 		this.channel = channel;
+		this.inetAddress = inetAddress;
 	}
 
 	@Override
@@ -51,23 +53,17 @@ final class UDPTransportOutboundConnection implements TransportOutboundConnectio
 	@Override
 	public CompletableFuture<SendResult> send(byte[] data) {
 		final CompletableFuture<SendResult> cfsr = new CompletableFuture<>();
+
 		// NAT: encode source and dest address to work behind NAT and userland proxies (Docker for Windows/Mac)
-		InetAddress sourceAddress = PublicInetAddress.getInstance().get();
-		byte[] rawSourceAddress = sourceAddress.getAddress();
-		byte[] rawDestAddress = remoteAddr.getAddress().getAddress();
+		InetAddress remoteAddress = remoteAddr.getAddress();
 
-		assert rawSourceAddress.length == 4 || rawSourceAddress.length == 16;
-		assert rawDestAddress.length == 4 || rawDestAddress.length == 16;
-
-		int totalSize = data.length + rawSourceAddress.length + rawDestAddress.length + 1;
+		int totalSize = data.length + inetAddress.computeExtraSize(remoteAddress);
 		if (totalSize > UDPConstants.MAX_PACKET_LENGTH) {
 			cfsr.complete(SendResult.failure(new IOException("Datagram packet to " + remoteAddr + " of size " + totalSize + " is too large")));
 		} else {
-			ByteBuf buffer = this.channel.alloc().directBuffer(totalSize)
-				.writeByte(getAddressFormat(rawSourceAddress.length, rawDestAddress.length))
-				.writeBytes(rawSourceAddress)
-				.writeBytes(rawDestAddress)
-				.writeBytes(data);
+			ByteBuf buffer = this.channel.alloc().directBuffer(totalSize);
+			inetAddress.writeExtraData(buffer, remoteAddress);
+			buffer.writeBytes(data);
 
 			DatagramPacket msg = new DatagramPacket(buffer, remoteAddr);
 			this.channel.writeAndFlush(msg).addListener(f -> {
@@ -80,11 +76,6 @@ final class UDPTransportOutboundConnection implements TransportOutboundConnectio
 			});
 		}
 		return cfsr;
-	}
-
-	private byte getAddressFormat(int srclen, int dstlen) {
-		// MSB: switch between old/new protocol format
-		return (byte) (0x80 | (srclen != 4 ? 0x02 : 0x00) | (dstlen != 4 ? 0x01 : 0x00));
 	}
 
 	@Override

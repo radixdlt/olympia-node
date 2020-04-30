@@ -28,16 +28,12 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 import org.mockito.ArgumentCaptor;
-import org.powermock.reflect.Whitebox;
-
 import com.radixdlt.network.transport.SendResult;
 import com.radixdlt.network.transport.TransportMetadata;
 
 import java.io.IOException;
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -53,44 +49,44 @@ public class UDPTransportOutboundConnectionTest {
 
 	private DatagramChannel channel;
 	private TransportMetadata metadata;
+	private NatHandler natHandler;
 	private ArgumentCaptor<DatagramPacket> datagramPacketArgumentCaptor;
 	private DefaultChannelPromise channelFuture;
 	private String testMessage = "TestMessage";
 
 	private String sourceAddressStr;
 	private String destinationAddressStr;
-	private byte addressFormatFlag;
+	private InetAddress sourceAddress;
 	private Exception exception;
 
-	@Parameters(name = "{index}: Source address: {0}, Destination address {1} points, AddressFormatFlag {2}, Exception {3}")
+	@Parameters(name = "{index}: Source address: {0}, Destination address {1} points, Exception {2}")
 	public static Iterable<Object[]> data() {
 		return Arrays.asList(new Object[][] {
 			//testing success
-			{"192.168.1.1", "192.168.1.2", (byte) -128, null},
-			{"192.168.1.1", "2001:0db8:85a3:0000:0000:8a2e:0370:7335", (byte) -127, null},
-			{"2001:0db8:85a3:0000:0000:8a2e:0370:7334", "192.168.1.2", (byte) -126, null},
-			{"2001:0db8:85a3:0000:0000:8a2e:0370:7334", "2001:0db8:85a3:0000:0000:8a2e:0370:7335", (byte) -125, null},
+			{"192.168.1.1", "192.168.1.2", null},
+			{"192.168.1.1", "2001:0db8:85a3:0000:0000:8a2e:0370:7335", null},
+			{"2001:0db8:85a3:0000:0000:8a2e:0370:7334", "192.168.1.2", null},
+			{"2001:0db8:85a3:0000:0000:8a2e:0370:7334", "2001:0db8:85a3:0000:0000:8a2e:0370:7335", null},
 
 			//testing failures
-			{"192.168.1.1", "192.168.1.2", (byte) -128, new Exception("Expected exception")}
+			{"192.168.1.1", "192.168.1.2", new Exception("Expected exception")}
 		});
 	}
 
-	public UDPTransportOutboundConnectionTest(String sourceAddressStr, String destinationAddressStr, byte addressFormatFlag, Exception exception) {
+	public UDPTransportOutboundConnectionTest(String sourceAddressStr, String destinationAddressStr, Exception exception) {
 		this.sourceAddressStr = sourceAddressStr;
 		this.destinationAddressStr = destinationAddressStr;
-		this.addressFormatFlag = addressFormatFlag;
 		this.exception = exception;
 	}
 
 	@Before
 	public void setUp() throws UnknownHostException {
-
-		PublicInetAddress.configure(12345);
-		Whitebox.setInternalState(PublicInetAddress.getInstance(), "localAddress", InetAddress.getByName(this.sourceAddressStr));
-
 		channel = mock(DatagramChannel.class);
 		channelFuture = spy(new DefaultChannelPromise(channel, new DefaultEventExecutor()));
+
+		sourceAddress = InetAddress.getByName(this.sourceAddressStr);
+		natHandler = mock(NatHandler.class);
+		when(natHandler.getAddress()).thenReturn(sourceAddress);
 
 		when(channel.alloc()).thenReturn(ByteBufAllocator.DEFAULT);
 		datagramPacketArgumentCaptor = ArgumentCaptor.forClass(DatagramPacket.class);
@@ -103,7 +99,7 @@ public class UDPTransportOutboundConnectionTest {
 
 	@Test
 	public void sendTest() throws ExecutionException, InterruptedException, IOException {
-		try (UDPTransportOutboundConnection udpTransportOutboundConnection = new UDPTransportOutboundConnection(channel, metadata)) {
+		try (UDPTransportOutboundConnection udpTransportOutboundConnection = new UDPTransportOutboundConnection(channel, metadata, natHandler)) {
 			CompletableFuture<SendResult> completableFuture = udpTransportOutboundConnection.send(testMessage.getBytes());
 
 			channelFuture.setSuccess();
@@ -115,28 +111,14 @@ public class UDPTransportOutboundConnectionTest {
 			byte[] actualMessage = new byte[datagramPacket.content().capacity()];
 			datagramPacket.content().getBytes(0, actualMessage);
 
-
-			byte[] sourceAddress = PublicInetAddress.getInstance().get().getAddress();
-			byte[] destinationAddress = new InetSocketAddress(
-				metadata.get(UDPConstants.METADATA_HOST),
-				Integer.valueOf(metadata.get(UDPConstants.METADATA_PORT))
-			).getAddress().getAddress();
-			byte[] data = testMessage.getBytes();
-			ByteBuffer expectedMessageBuffer = ByteBuffer.allocate(datagramPacket.content().capacity());
-			expectedMessageBuffer.put(addressFormatFlag);
-			expectedMessageBuffer.put(sourceAddress);
-			expectedMessageBuffer.put(destinationAddress);
-			expectedMessageBuffer.put(data);
-			byte[] expectedMessage = expectedMessageBuffer.array();
-
-			assertArrayEquals(actualMessage, expectedMessage);
+			assertArrayEquals(testMessage.getBytes(), actualMessage);
 		}
 	}
 
 	@Test
 	public void sendFailureTest() throws ExecutionException, InterruptedException, IOException {
 		if (exception != null) {
-			try (UDPTransportOutboundConnection udpTransportOutboundConnection = new UDPTransportOutboundConnection(channel, metadata)) {
+			try (UDPTransportOutboundConnection udpTransportOutboundConnection = new UDPTransportOutboundConnection(channel, metadata, natHandler)) {
 				CompletableFuture<SendResult> completableFuture = udpTransportOutboundConnection.send(testMessage.getBytes());
 				channelFuture.setFailure(exception);
 				SendResult result = completableFuture.get();

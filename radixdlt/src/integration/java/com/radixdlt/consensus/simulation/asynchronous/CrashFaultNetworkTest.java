@@ -25,7 +25,6 @@ import com.radixdlt.consensus.VertexStore;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.simulation.BFTNetworkSimulation;
 import com.radixdlt.consensus.simulation.DroppingLatencyProvider;
-import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.examples.tictactoe.Pair;
@@ -136,7 +135,7 @@ public class CrashFaultNetworkTest {
 		double tolerance = 2.0;
 		int minimumLatencyPerRound = (int) (worstCaseLatencyPerRound * tolerance);
 		AtomicReference<View> highestQCView = new AtomicReference<>(View.genesis());
-		Observable<Object> progressCheck = Observable.interval(minimumLatencyPerRound, minimumLatencyPerRound, TimeUnit.MILLISECONDS)
+		Observable<Object> progressCheck = Observable.interval(minimumLatencyPerRound * 2, minimumLatencyPerRound, TimeUnit.MILLISECONDS)
 			.map(i -> allNodes.stream()
 				.map(bftNetwork::getVertexStore)
 				.map(VertexStore::getHighestQC)
@@ -162,16 +161,6 @@ public class CrashFaultNetworkTest {
 			.map(vertices -> (Vertex) vertices.get(0))
 			.map(o -> o);
 
-		// correct nodes should only get timeouts when crashed nodes were a proposer
-		Observable<Object> correctTimeoutCheck = Observable.interval(1, TimeUnit.SECONDS)
-			.flatMapIterable(i -> correctNodes)
-			// there is a race condition between getCount(TIMEOUT) and getCurrentView in pacemaker
-			// however, since we're only interested in having at most X timeouts, we can safely just check for <=
-			.doOnNext(cn -> assertThat(bftNetwork.getCounters(cn).get(SystemCounters.CounterType.CONSENSUS_TIMEOUT))
-				.satisfies(new Condition<>(c -> c <= (bftNetwork.getPacemaker(cn).getCurrentView().number() / numNodes) * numCrashed,
-					"Timeout counter is less or equal to number of times crashed nodes were proposer.")))
-			.map(o -> o);
-
 		// correct proposals should be direct if generated after another correct proposal, otherwise there should be a gap
 		List<Observable<Vertex>> correctProposals = correctNodes.stream()
 			.map(ECKeyPair::getPublicKey)
@@ -180,22 +169,22 @@ public class CrashFaultNetworkTest {
 			.map(p -> p.ofType(Proposal.class).map(Proposal::getVertex))
 			.collect(Collectors.toList());
 		Observable<Object> directProposalsCheck = Observable.merge(correctProposals)
+			.filter(v -> !v.getView().previous().isGenesis())
 			.filter(v -> correctNodesPubs.contains(bftNetwork.getProposerElection().getProposer(v.getView().previous())))
 			.doOnNext(v -> assertThat(v)
 				.satisfies(new Condition<>(vtx -> vtx.getView().equals(vtx.getParentView().next()),
-					"Vertex after correct %s at %s has direct parent",
-					bftNetwork.getProposerElection().getProposer(v.getParentView()).euid(), v.getParentView())))
+					"Vertex after correct node at %s has direct parent", v.getParentView())))
 			.map(o -> o);
 		Observable<Object> gapProposalsCheck = Observable.merge(correctProposals)
+			.filter(v -> !v.getView().previous().isGenesis())
 			.filter(v -> !correctNodesPubs.contains(bftNetwork.getProposerElection().getProposer(v.getView().previous())))
 			.doOnNext(v -> assertThat(v)
 				.satisfies(new Condition<>(vtx -> !vtx.getView().equals(vtx.getParentView().next()),
-					"Vertex after faulty %s at %s has gap",
-					bftNetwork.getProposerElection().getProposer(v.getParentView()).euid(), v.getParentView())))
+					"Vertex after faulty node at %s has gap", v.getParentView())))
 			.map(o -> o);
 
 		List<Observable<Object>> checks = Arrays.asList(
-			correctCommitCheck, progressCheck, correctTimeoutCheck, directProposalsCheck, gapProposalsCheck
+			correctCommitCheck, progressCheck, directProposalsCheck, gapProposalsCheck
 		);
 		bftNetwork.start();
 		Observable.merge(checks)

@@ -17,33 +17,17 @@
 
 package com.radixdlt.consensus.validators;
 
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.utils.UInt256;
 import java.util.Objects;
 import javax.annotation.concurrent.Immutable;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.crypto.CryptoException;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.SerializationException;
-import com.radixdlt.serialization.SerializerConstants;
-import com.radixdlt.serialization.SerializerDummy;
-import com.radixdlt.serialization.SerializerId2;
-import com.radixdlt.serialization.DsonOutput.Output;
 
 /**
  * Represents a validator and their Proof-of-Stake status.
- * <p>
- * Serializable on the assumption that this will somehow need
- * to be persisted at some point.
  */
 @Immutable
-@SerializerId2("consensus.validator")
 public final class Validator {
-
-	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
-	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
-	private SerializerDummy serializer = SerializerDummy.DUMMY;
-
 /*	FIXME: Functionality not required until drop 2
 	public enum BondStatus {
 		UNBONDED,
@@ -58,11 +42,6 @@ public final class Validator {
 	@DsonOutput(Output.ALL)
 	// Address for rewards
 	private final RadixAddress rewardAddress;
-
-	@JsonProperty("stake")
-	@DsonOutput(Output.ALL)
-	// Staked tokens
-	private final UInt256 stake;
 
 	@JsonProperty("bond_view")
 	@DsonOutput(Output.ALL)
@@ -85,46 +64,35 @@ public final class Validator {
 	private final boolean jailed;
 */
 
-    // Public key for consensus
-	private ECPublicKey nodeKey;
+	// Power associated with each validator, could e.g. be based on staked tokens
+	private final UInt256 power;
 
-	Validator() {
-		// Serializer only
-	}
+    // Public key for consensus
+	private final ECPublicKey nodeKey;
 
 	private Validator(
-		ECPublicKey nodeKey
+		ECPublicKey nodeKey,
+		UInt256 power
 	) {
 		this.nodeKey = Objects.requireNonNull(nodeKey);
+		this.power = Objects.requireNonNull(power);
 	}
 
-	public static Validator from(ECPublicKey nodeKey) {
-		return new Validator(nodeKey);
+	public static Validator from(ECPublicKey nodeKey, UInt256 power) {
+		return new Validator(nodeKey, power);
 	}
 
 	public ECPublicKey nodeKey() {
 		return this.nodeKey;
 	}
 
-	// Property "node_key" - 1 getter, 1 setter
-	@JsonProperty("node_key")
-	@DsonOutput(Output.ALL)
-	byte[] getJsonNodeKey() {
-		return (this.nodeKey == null) ? null : nodeKey.getBytes();
-	}
-
-	@JsonProperty("node_key")
-	void setJsonKey(byte[] newKey) throws SerializationException {
-		try {
-			this.nodeKey = new ECPublicKey(newKey);
-		} catch (CryptoException cex) {
-			throw new SerializationException("Invalid key", cex);
-		}
+	public UInt256 getPower() {
+		return power;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hashCode(this.nodeKey);
+		return Objects.hash(this.nodeKey, this.power);
 	}
 
 	@Override
@@ -134,13 +102,14 @@ public final class Validator {
 		}
 		if (obj instanceof Validator) {
 			Validator other = (Validator) obj;
-			return Objects.equals(this.nodeKey, other.nodeKey);
+			return Objects.equals(this.nodeKey, other.nodeKey)
+				&& Objects.equals(this.power, other.power);
 		}
 		return false;
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s[nodeKey=%s]", getClass().getSimpleName(), this.nodeKey);
+		return String.format("%s{nodeKey=%s power=%s}", getClass().getSimpleName(), this.nodeKey, this.power);
 	}
 }

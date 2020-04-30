@@ -38,6 +38,7 @@ import com.google.inject.Inject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.net.HostAndPort;
 import com.radixdlt.network.addressbook.AddressBook;
@@ -71,12 +72,13 @@ public class BootstrapDiscovery
 	 * - contained in non-internationalized DNS names: [a-zA-Z0-9]
 	 *   https://www.icann.org/resources/pages/beginners-guides-2012-03-06-en
 	 */
-	private static String toHost(byte[] buf, int len)
+	@VisibleForTesting
+	static String toHost(byte[] buf, int len)
 	{
 		for (int i = 0; i < len; i++)
 		{
 			if ('0' <= buf[i] && '9' >= buf[i] || 'a' <= buf[i] && 'z' >= buf[i] ||
-				'A' <= buf[i] && 'Z' >= buf[i] || '.' == buf[i] || '-' == buf[i])
+				'A' <= buf[i] && 'Z' >= buf[i] || '.' == buf[i] || '-' == buf[i] || ':' == buf[i])
 			{
 				continue;
 			}
@@ -142,9 +144,10 @@ public class BootstrapDiscovery
 	 * The node service:
 	 * - might return a stale node
 	 * - might be temporary unreachable
-	 * - might be compromized (don't trust it)
+	 * - might be compromised (don't trust it)
 	 */
-	private String getNextNode(URL nodeFinderURL)
+	@VisibleForTesting
+	String getNextNode(URL nodeFinderURL)
 	{
 		// Default retry total time = 30 * 10 = 300 seconds = 5 minutes
 		long retries = properties.get("network.discovery.connection.retries", 30);
@@ -244,7 +247,8 @@ public class BootstrapDiscovery
 		return results;
 	}
 
-	private TransportInfo toDefaultTransportInfo(String host) throws UnknownHostException {
+	@VisibleForTesting
+	TransportInfo toDefaultTransportInfo(String host) throws UnknownHostException {
 		HostAndPort hap = HostAndPort.fromString(host).withDefaultPort(universe.getPort());
 		// Resolve any names so we don't have to do it again and again, and we will also be more
 		// likely to have a canonical representation.
