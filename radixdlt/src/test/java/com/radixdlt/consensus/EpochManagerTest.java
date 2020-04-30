@@ -6,6 +6,7 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.liveness.Pacemaker;
+import com.radixdlt.consensus.liveness.PacemakerRx;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.safety.SafetyRules;
@@ -26,6 +27,7 @@ public class EpochManagerTest {
 			mock(EventCoordinatorNetworkSender.class),
 			mock(SafetyRules.class),
 			mock(Pacemaker.class),
+			mock(PacemakerRx.class),
 			mock(VertexStore.class),
 			mock(PendingVotes.class),
 			proposers -> mock(ProposerElection.class),

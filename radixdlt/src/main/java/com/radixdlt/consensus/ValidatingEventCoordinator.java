@@ -20,9 +20,10 @@ package com.radixdlt.consensus;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import com.radixdlt.atommodel.Atom;
+import com.radixdlt.consensus.liveness.PacemakerRx;
+import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.consensus.liveness.Pacemaker;
-import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyViolationException;
@@ -54,6 +55,7 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 	private final Mempool mempool;
 	private final EventCoordinatorNetworkSender networkSender;
 	private final Pacemaker pacemaker;
+	private final PacemakerRx pacemakerRx;
 	private final ProposerElection proposerElection;
 	private final ECKeyPair selfKey; // TODO remove signing/address to separate identity management
 	private final SafetyRules safetyRules;
@@ -67,6 +69,7 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 		EventCoordinatorNetworkSender networkSender,
 		SafetyRules safetyRules,
 		Pacemaker pacemaker,
+		PacemakerRx pacemakerRx, // TODO: Remove this once non-blocking implemented
 		VertexStore vertexStore,
 		PendingVotes pendingVotes,
 		ProposerElection proposerElection,
@@ -79,6 +82,7 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 		this.networkSender = Objects.requireNonNull(networkSender);
 		this.safetyRules = Objects.requireNonNull(safetyRules);
 		this.pacemaker = Objects.requireNonNull(pacemaker);
+		this.pacemakerRx = Objects.requireNonNull(pacemakerRx);
 		this.vertexStore = Objects.requireNonNull(vertexStore);
 		this.pendingVotes = Objects.requireNonNull(pendingVotes);
 		this.proposerElection = Objects.requireNonNull(proposerElection);
@@ -113,7 +117,7 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 					this.getShortName(), this.getShortName(node.euid()), vertexId.toString().substring(0, 6));
 				return networkSender.getVertex(vertexId, node)
 					.doOnSuccess(v -> log.info("{}: Received GET_VERTEX Response: {}", this.getShortName(), v))
-					.takeUntil(this.pacemaker.nextLocalTimeout());
+					.takeUntil(this.pacemakerRx.timeout(this.pacemaker.getCurrentView()));
 			});
 		} catch (SyncException e) {
 			counters.increment(CounterType.CONSENSUS_SYNC_EXCEPTION);

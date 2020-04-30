@@ -21,20 +21,12 @@ import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.View;
 
 import com.radixdlt.consensus.validators.ValidatorSet;
-import io.reactivex.rxjava3.core.Completable;
 import java.util.Optional;
 
 /**
- * Interface for an event coordinator to manage the pacemaker
+ * Manages the pacemaker state machine.
  */
 public interface Pacemaker {
-
-	/**
-	 * Returns a completable which will complete on the current next deadline
-	 * @return completable which will complete on the current next deadline
-	 */
-	Completable nextLocalTimeout();
-
 	/**
 	 * Retrieves the local current view the pacemaker is at
 	 * @return view of the pacemaker
