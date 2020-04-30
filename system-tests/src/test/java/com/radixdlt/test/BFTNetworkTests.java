@@ -18,25 +18,15 @@
 
 package com.radixdlt.test;
 
-import org.junit.Test;
-
-import java.util.concurrent.TimeUnit;
-
-public class LatentDockerNetworkTest {
-	@Test
-	public void given_3_correct_bfts_in_latent_network__then_all_instances_should_get_same_commits_and_progress_should_be_made() {
-		final int numNodes = 3;
-		try (DockerRemoteBFTNetwork network = DockerRemoteBFTNetwork.builder()
-			.numNodes(numNodes)
-			.build())
-		{
-			network.startBlocking();
-			RemoteBFTTest test = BFTNetworkTests.latentTestBuilder()
-				.network(RemoteBFTNetworkBridge.of(network))
-				.waitUntilResponsive()
-				.startConsensusOnRun()
-				.build();
-			test.runBlocking(1, TimeUnit.MINUTES);
-		}
+public final class BFTNetworkTests {
+	static RemoteBFTTest.Builder latentTestBuilder() {
+		return RemoteBFTTest.builder()
+			.assertResponsiveness()
+			.assertAllProposalsHaveDirectParents()
+			.assertNoRejectedProposals()
+			.assertNoSyncExceptions()
+			.assertNoTimeouts()
+			.assertSafety()
+			.assertLiveness();
 	}
 }

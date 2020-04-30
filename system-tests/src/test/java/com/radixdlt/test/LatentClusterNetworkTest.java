@@ -22,21 +22,17 @@ import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
 
-public class LatentDockerNetworkTest {
+public class LatentClusterNetworkTest {
 	@Test
 	public void given_3_correct_bfts_in_latent_network__then_all_instances_should_get_same_commits_and_progress_should_be_made() {
-		final int numNodes = 3;
-		try (DockerRemoteBFTNetwork network = DockerRemoteBFTNetwork.builder()
-			.numNodes(numNodes)
-			.build())
-		{
-			network.startBlocking();
-			RemoteBFTTest test = BFTNetworkTests.latentTestBuilder()
-				.network(RemoteBFTNetworkBridge.of(network))
-				.waitUntilResponsive()
-				.startConsensusOnRun()
-				.build();
-			test.runBlocking(1, TimeUnit.MINUTES);
-		}
+		final int expectedNumNodes = 3;
+		// TODO feed in list of node ips + ports from somewhere (config)
+		final StaticRemoteBFTNetwork network = StaticRemoteBFTNetwork.from();
+		RemoteBFTTest test = BFTNetworkTests.latentTestBuilder()
+			.network(RemoteBFTNetworkBridge.of(network))
+			.waitUntilResponsive()
+			.startConsensusOnRun()
+			.build();
+		test.runBlocking(1, TimeUnit.MINUTES);
 	}
 }
