@@ -39,29 +39,32 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class DockerRemoteBFTNetwork implements Closeable, RemoteBFTNetwork {
 	private static final String OPTIONS_KEY_PORT = "hostPort";
 
-	private final int numNodes;
 	private final String networkName;
 	private final Map<String, Map<String, Object>> dockerOptionsPerNode;
-	private final boolean startConsensusOnBoot;
 
-	private DockerRemoteBFTNetwork(String networkName, int numNodes, boolean startConsensusOnBoot) {
+	private DockerRemoteBFTNetwork(String networkName,
+	                               Map<String, Map<String, Object>> dockerOptionsPerNode) {
 		this.networkName = Objects.requireNonNull(networkName);
-		this.numNodes = numNodes;
-		this.startConsensusOnBoot = startConsensusOnBoot;
-
-		this.dockerOptionsPerNode = this.setup();
+		this.dockerOptionsPerNode = Objects.requireNonNull(dockerOptionsPerNode);
 	}
 
-	// setup the network and prepare anything required to run it
-	// this will also kill any other network with the same name (but not networks with a different name)
-	//  as well as kill all active docker contains
-	private Map<String, Map<String, Object>> setup() {
-		Map<String, Map<String, Object>> dockerOptionsPerNode = CmdHelper.getDockerOptions(this.numNodes, this.startConsensusOnBoot);
-		CmdHelper.removeAllDockerContainers(); // TODO do we need this? if yes, document it
-		CmdHelper.runCommand("docker network rm " + this.networkName);
-		CmdHelper.runCommand("docker network create " + this.networkName ,null, true);
+	/**
+	 * Sets up and runs the Docker network, storing the data required to maintain it.
+	 *
+	 * Note that This will also kill any other network with the same name (but not networks with a different name)
+	 * as well as kill all active docker contains.
+	 * @param networkName The name of the network
+	 * @param numNodes The number of nodes
+	 * @param startConsensusOnBoot Whether to start consensus on boot or wait for a start signal
+	 * @return The per-node docker options
+	 */
+	private static Map<String, Map<String, Object>> setupBlocking(String networkName, int numNodes, boolean startConsensusOnBoot) {
+		Map<String, Map<String, Object>> dockerOptionsPerNode = CmdHelper.getDockerOptions(numNodes, startConsensusOnBoot);
+		CmdHelper.removeAllDockerContainers(); // TODO do we need  if yes, document it
+		CmdHelper.runCommand("docker network rm " + networkName);
+		CmdHelper.runCommand("docker network create " + networkName ,null, true);
 		dockerOptionsPerNode.forEach((nodeId, options) -> {
-			options.put("network", this.networkName);
+			options.put("network", networkName);
 			List<Object> dockerSetup = CmdHelper.node(options);
 			String[] dockerEnv = (String[]) dockerSetup.get(0);
 			String dockerCommand = (String) dockerSetup.get(1);
@@ -150,15 +153,17 @@ public class DockerRemoteBFTNetwork implements Closeable, RemoteBFTNetwork {
 		}
 
 		/**
-		 * Builds a {@link DockerRemoteBFTNetwork} with the specified configuration, setting up the underlying network.
+		 * Builds a {@link DockerRemoteBFTNetwork} with the specified configuration, setting up the underlying network
+		 * in a blocking manner. This method completes when the network has been set up and the instance constructed.
 		 * @return The created {@link DockerRemoteBFTNetwork}
 		 */
-		public DockerRemoteBFTNetwork build() {
+		public DockerRemoteBFTNetwork buildBlocking() {
 			if (numNodes == -1) {
 				throw new IllegalStateException("numNodes was not set");
 			}
 
-			return new DockerRemoteBFTNetwork(name, numNodes, startConsensusOnBoot);
+			Map<String, Map<String, Object>> dockerOptions = setupBlocking(this.name, this.numNodes, this.startConsensusOnBoot);
+			return new DockerRemoteBFTNetwork(name, dockerOptions);
 		}
 	}
 }

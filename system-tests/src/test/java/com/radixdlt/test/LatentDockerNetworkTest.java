@@ -28,7 +28,7 @@ public class LatentDockerNetworkTest {
 		final int numNodes = 3;
 		try (DockerRemoteBFTNetwork network = DockerRemoteBFTNetwork.builder()
 			.numNodes(numNodes)
-			.build())
+			.buildBlocking())
 		{
 			RemoteBFTTest test = RemoteBFTTest.builder()
 				.network(RemoteBFTNetworkBridge.of(network))
