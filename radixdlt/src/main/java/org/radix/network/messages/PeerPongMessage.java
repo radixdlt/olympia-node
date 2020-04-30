@@ -18,6 +18,7 @@
 package org.radix.network.messages;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.primitives.UnsignedLong;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
@@ -39,7 +40,13 @@ public final class PeerPongMessage extends SystemMessage {
 
 		this.nonce = nonce;
 	}
+
 	public long getNonce() {
 		return nonce;
+	}
+
+	@Override
+	public String toString() {
+		return String.format("%s[%s:%s]", getClass().getSimpleName(), getSystem().getNID(), UnsignedLong.fromLongBits(nonce));
 	}
 }

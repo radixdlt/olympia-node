@@ -26,6 +26,7 @@ debug.profiler=$RADIXDLT_DEBUG_PROFILER
 consensus.fixed_quorum_size=$RADIXDLT_CONSENSUS_FIXED_QUORUM_SIZE
 consensus.pacemaker_timeout_millis=$RADIXDLT_PACEMAKER_TIMEOUT_MILLIS
 consensus.fixed_node_count=$RADIXDLT_CONSENSUS_FIXED_NODE_COUNT
+consensus.start_on_boot=$RADIXDLT_CONSENSUS_START_ON_BOOT
 
 # Host IP
 host.ip=$RADIXDLT_HOST_IP_ADDRESS

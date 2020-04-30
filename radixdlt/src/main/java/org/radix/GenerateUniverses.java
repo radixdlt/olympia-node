@@ -51,6 +51,7 @@ import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.Bytes;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.security.Security;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -237,9 +238,9 @@ public final class GenerateUniverses
 	private static RuntimeProperties loadProperties(String[] arguments) throws IOException {
 		try {
 			JSONObject runtimeConfigurationJSON = new JSONObject();
-			if (Radix.class.getResourceAsStream("/runtime_options.json") != null)
-				runtimeConfigurationJSON = new JSONObject(IOUtils.toString(Radix.class.getResourceAsStream("/runtime_options.json")));
-
+			try (InputStream is = Radix.class.getResourceAsStream("/runtime_options.json")) {
+				runtimeConfigurationJSON = new JSONObject(IOUtils.toString(is));
+			}
 			return new RuntimeProperties(runtimeConfigurationJSON, arguments);
 		} catch (Exception ex) {
 			throw new IOException("while loading runtime properties", ex);

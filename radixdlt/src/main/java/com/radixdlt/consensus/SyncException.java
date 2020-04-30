@@ -28,6 +28,11 @@ class SyncException extends Exception {
 		this.qc = qc;
 	}
 
+	SyncException(QuorumCertificate qc, Exception cause) {
+		super("Unable to sync qc " + qc, cause);
+		this.qc = qc;
+	}
+
 	public QuorumCertificate getQC() {
 		return qc;
 	}

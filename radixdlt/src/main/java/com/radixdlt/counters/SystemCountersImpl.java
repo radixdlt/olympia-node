@@ -74,7 +74,7 @@ public final class SystemCountersImpl implements SystemCounters {
 		for (int i = 0; i < path.length - 1; ++i) {
 			@SuppressWarnings("unchecked")
 			// Needs exhaustive testing to ensure correctness.
-			// Will fail if there is a counter called FOO_BAR and a counter called FOO_BAR_BAZ.
+			// Will fail if there is a counter called foo.bar and a counter called foo.bar.baz.
 			Map<String, Object> newValues = (Map<String, Object>) values.computeIfAbsent(path[i], k -> Maps.newTreeMap());
 			values = newValues;
 		}
@@ -82,7 +82,7 @@ public final class SystemCountersImpl implements SystemCounters {
 	}
 
 	private String[] makePath(CounterType counter) {
-		return counter.name().toLowerCase().split("_");
+		return counter.jsonPath().split("\\.");
 	}
 
 	@Override

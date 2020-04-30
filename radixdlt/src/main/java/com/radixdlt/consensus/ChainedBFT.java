@@ -22,14 +22,16 @@ import com.google.inject.Inject;
 import com.radixdlt.consensus.liveness.PacemakerRx;
 
 import com.radixdlt.consensus.validators.ValidatorSet;
+import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Scheduler;
+import io.reactivex.rxjava3.observables.ConnectableObservable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
-import java.util.Objects;
+import java.util.concurrent.Executors;
 
 /**
- * A three-chain BFT. The inputs are events via rx streams from a pacemaker and
- * a network.
+ * Subscription Manager (Start/Stop) to the processing of BFT events under
+ * a single BFT node instance
  */
 public final class ChainedBFT {
 	public enum EventType {
@@ -37,7 +39,8 @@ public final class ChainedBFT {
 		LOCAL_TIMEOUT,
 		NEW_VIEW_MESSAGE,
 		PROPOSAL_MESSAGE,
-		VOTE_MESSAGE
+		VOTE_MESSAGE,
+		GET_VERTEX_REQUEST,
 	}
 
 	public static class Event {
@@ -55,12 +58,7 @@ public final class ChainedBFT {
 		}
 	}
 
-	private final EventCoordinatorNetworkRx network;
-	private final PacemakerRx pacemakerRx;
-	private final EpochRx epochRx;
-	private final EpochManager epochManager;
-
-	private final Scheduler singleThreadScheduler = Schedulers.single();
+	private final ConnectableObservable<Event> events;
 
 	@Inject
 	public ChainedBFT(
@@ -69,66 +67,76 @@ public final class ChainedBFT {
 		PacemakerRx pacemakerRx,
 		EpochManager epochManager
 	) {
-		this.pacemakerRx = Objects.requireNonNull(pacemakerRx);
-		this.network = Objects.requireNonNull(network);
-		this.epochRx = Objects.requireNonNull(epochRx);
-		this.epochManager = Objects.requireNonNull(epochManager);
-	}
-
-	/**
-	 * Returns a cold observable which when subscribed to begins consuming
-	 * and processing bft events. Does not begin processing until the observable
-	 * is subscribed to.
-	 *
-	 * @return observable of the events which are being processed
-	 */
-	public Observable<Event> processEvents() {
-		final Observable<ValidatorSet> epochEvents = this.epochRx.epochs()
+		final Scheduler singleThreadScheduler = Schedulers.from(Executors.newSingleThreadExecutor());
+		final Observable<ValidatorSet> epochEvents = epochRx.epochs()
 			.publish()
 			.autoConnect(2);
 
 		final Observable<Event> epochs = epochEvents
-			.map(o -> new Event(EventType.EPOCH, o))
-			.subscribeOn(this.singleThreadScheduler);
+			.map(o -> new Event(EventType.EPOCH, o));
 
-		final Observable<EventCoordinator> epochCoordinators = epochEvents
+		final Observable<EventCoordinator> eventCoordinators = epochEvents
 			.map(epochManager::nextEpoch)
 			.startWithItem(epochManager.start())
 			.doOnNext(EventCoordinator::start)
-			.publish()
-			.autoConnect(2); // timeouts and consensusMessages below
+			.replay(1)
+			.autoConnect();
 
-		final Observable<Event> timeouts = Observable.combineLatest(
-			epochCoordinators,
-			this.pacemakerRx.localTimeouts(),
-			(e, timeout) -> {
-				e.processLocalTimeout(timeout);
-				return new Event(EventType.LOCAL_TIMEOUT, timeout);
-			}
-		).subscribeOn(this.singleThreadScheduler);
+		// Need to ensure that first event coordinator is emitted otherwise we may not process
+		// initial events due to the .withLatestFrom() drops events
+		final Completable firstEventCoordinator = Completable.fromSingle(eventCoordinators.firstOrError());
+		final Observable<Object> eventCoordinatorEvents = Observable.merge(
+			pacemakerRx.localTimeouts().observeOn(singleThreadScheduler),
+			network.consensusEvents().observeOn(singleThreadScheduler),
+			network.rpcRequests().observeOn(singleThreadScheduler)
+		);
+		final Observable<Event> ecMessages = firstEventCoordinator.andThen(
+			eventCoordinatorEvents.withLatestFrom(eventCoordinators, this::processEvent)
+		);
 
-		final Observable<Event> consensusMessages = Observable.combineLatest(
-			epochCoordinators,
-			this.network.consensusEvents(),
-			(e, msg) -> {
-				final EventType eventType;
-				if (msg instanceof NewView) {
-					e.processNewView((NewView) msg);
-					eventType = EventType.NEW_VIEW_MESSAGE;
-				} else if (msg instanceof Proposal) {
-					e.processProposal((Proposal) msg);
-					eventType = EventType.PROPOSAL_MESSAGE;
-				} else if (msg instanceof Vote) {
-					e.processVote((Vote) msg);
-					eventType = EventType.VOTE_MESSAGE;
-				} else {
-					throw new IllegalStateException("Unknown Consensus Message: " + msg);
-				}
+		this.events = Observable.merge(epochs, ecMessages).publish();
+	}
 
-				return new Event(eventType, msg);
-			}
-		).subscribeOn(this.singleThreadScheduler);
+	private Event processEvent(Object msg, EventCoordinator eventCoordinator) {
+		final EventType eventType;
+		if (msg instanceof GetVertexRequest) {
+			eventCoordinator.processGetVertexRequest((GetVertexRequest) msg);
+			return new Event(EventType.GET_VERTEX_REQUEST, msg);
+		} else if (msg instanceof View) {
+			eventCoordinator.processLocalTimeout((View) msg);
+			return new Event(EventType.LOCAL_TIMEOUT, msg);
+		} else if (msg instanceof NewView) {
+			eventCoordinator.processNewView((NewView) msg);
+			eventType = EventType.NEW_VIEW_MESSAGE;
+		} else if (msg instanceof Proposal) {
+			eventCoordinator.processProposal((Proposal) msg);
+			eventType = EventType.PROPOSAL_MESSAGE;
+		} else if (msg instanceof Vote) {
+			eventCoordinator.processVote((Vote) msg);
+			eventType = EventType.VOTE_MESSAGE;
+		} else {
+			throw new IllegalStateException("Unknown Consensus Message: " + msg);
+		}
 
-		return Observable.merge(epochs, timeouts, consensusMessages);
+		return new Event(eventType, msg);
+	}
+
+	/**
+	 * Starts processing events. This call is idempotent in that multiple
+	 * calls will not affect execution, only one event handling stream will ever
+	 * occur.
+	 */
+	public void start() {
+		this.events.connect();
+	}
+
+	/**
+	 * For testing primarily, a way to retrieve events which have been
+	 * processed.
+	 *
+	 * @return hot observable of the events which are being processed
+	 */
+	public Observable<Event> events() {
+		return this.events;
 	}
 }

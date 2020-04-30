@@ -36,6 +36,7 @@ import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.utils.Ints;
 import java.util.Optional;
+import java.util.function.Consumer;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -363,5 +364,25 @@ public class ValidatingEventCoordinatorTest {
 
 		eventCoordinator.processProposal(proposal);
 		verify(mempool, times(1)).removeCommittedAtom(eq(aid));
+	}
+
+	@Test
+	public void when_processing_get_vertex_request__then_ec_callback_with_response() {
+		Hash vertexId = mock(Hash.class);
+		Vertex vertex = mock(Vertex.class);
+		Consumer<Vertex> callback = mockConsumer();
+
+		GetVertexRequest getVertexRequest = mock(GetVertexRequest.class);
+		when(getVertexRequest.getVertexId()).thenReturn(vertexId);
+		when(getVertexRequest.getResponder()).thenReturn(callback);
+
+		when(vertexStore.getVertex(eq(vertexId))).thenReturn(vertex);
+		eventCoordinator.processGetVertexRequest(getVertexRequest);
+		verify(callback, times(1)).accept(eq(vertex));
+	}
+
+	@SuppressWarnings("unchecked")
+	private static <T> Consumer<T> mockConsumer() {
+		return mock(Consumer.class);
 	}
 }

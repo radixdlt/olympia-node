@@ -30,4 +30,9 @@ public final class GetPeersMessage extends Message {
 	public GetPeersMessage(int magic) {
 		super(magic);
 	}
+
+	@Override
+	public String toString() {
+		return getClass().getSimpleName();
+	}
 }

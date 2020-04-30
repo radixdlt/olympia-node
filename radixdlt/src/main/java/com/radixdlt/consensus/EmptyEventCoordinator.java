@@ -42,6 +42,11 @@ public class EmptyEventCoordinator implements EventCoordinator {
 	}
 
 	@Override
+	public void processGetVertexRequest(GetVertexRequest request) {
+		// No-op
+	}
+
+	@Override
 	public void start() {
 		// No-op
 	}

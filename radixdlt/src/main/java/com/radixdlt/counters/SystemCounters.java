@@ -25,22 +25,37 @@ import java.util.Map;
 public interface SystemCounters {
 
 	enum CounterType {
-		CONSENSUS_REJECTED,
-		CONSENSUS_TIMEOUT,
-		CONSENSUS_VIEW,
-		LEDGER_PROCESSED,
-		LEDGER_STORED,
-		MEMPOOL_COUNT,
-		MEMPOOL_MAXCOUNT,
-		MESSAGES_INBOUND_BADSIGNATURE,
-		MESSAGES_INBOUND_DISCARDED,
-		MESSAGES_INBOUND_PENDING,
-		MESSAGES_INBOUND_PROCESSED,
-		MESSAGES_INBOUND_RECEIVED,
-		MESSAGES_OUTBOUND_ABORTED,
-		MESSAGES_OUTBOUND_PENDING,
-		MESSAGES_OUTBOUND_PROCESSED,
-		MESSAGES_OUTBOUND_SENT,
+		CONSENSUS_INDIRECT_PARENT("consensus.indirect_parent"),
+		CONSENSUS_REJECTED("consensus.rejected"),
+		CONSENSUS_SYNC_SUCCESS("consensus.sync_success"),
+		CONSENSUS_SYNC_EXCEPTION("consensus.sync_exception"),
+		CONSENSUS_TIMEOUT("consensus.timeout"),
+		CONSENSUS_TIMEOUT_VIEW("consensus.timeout_view"),
+		CONSENSUS_VERTEXSTORE_SIZE("consensus.vertexstore_size"),
+		CONSENSUS_VIEW("consensus.view"),
+		LEDGER_PROCESSED("ledger.processed"),
+		LEDGER_STORED("ledger.stored"),
+		MEMPOOL_COUNT("mempool.count"),
+		MEMPOOL_MAXCOUNT("mempool.maxcount"),
+		MESSAGES_INBOUND_BADSIGNATURE("messages.inbound.badsignature"),
+		MESSAGES_INBOUND_DISCARDED("messages.inbound.discarded"),
+		MESSAGES_INBOUND_PENDING("messages.inbound.pending"),
+		MESSAGES_INBOUND_PROCESSED("messages.inbound.processed"),
+		MESSAGES_INBOUND_RECEIVED("messages.inbound.received"),
+		MESSAGES_OUTBOUND_ABORTED("messages.outbound.aborted"),
+		MESSAGES_OUTBOUND_PENDING("messages.outbound.pending"),
+		MESSAGES_OUTBOUND_PROCESSED("messages.outbound.processed"),
+		MESSAGES_OUTBOUND_SENT("messages.outbound.sent");
+
+		private final String jsonPath;
+
+		CounterType(String jsonPath) {
+			this.jsonPath = jsonPath;
+		}
+
+		public String jsonPath() {
+			return this.jsonPath;
+		}
 	}
 
 	/**

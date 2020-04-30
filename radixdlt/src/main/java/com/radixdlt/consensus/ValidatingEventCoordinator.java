@@ -46,7 +46,7 @@ import java.util.Optional;
  * Processes BFT events with correct validation logic and message sending
  */
 public final class ValidatingEventCoordinator implements EventCoordinator {
-	private static final Logger log = LogManager.getLogger("EC");
+	private static final Logger log = LogManager.getLogger();
 
 	private final VertexStore vertexStore;
 	private final PendingVotes pendingVotes;
@@ -101,13 +101,24 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 		ECDSASignature signature = this.selfKey.sign(Hash.hash256(Longs.toByteArray(nextView.number())));
 		NewView newView = new NewView(selfKey.getPublicKey(), nextView, this.vertexStore.getHighestQC(), signature);
 		ECPublicKey nextLeader = this.proposerElection.getProposer(nextView);
-		log.info("{}: Sending NEW_VIEW to {}: {}", this.getShortName(), this.getShortName(nextLeader.euid()), newView);
+		log.debug("{}: Sending NEW_VIEW to {}: {}", this.getShortName(), this.getShortName(nextLeader.euid()), newView);
 		this.networkSender.sendNewView(newView, nextLeader);
 	}
 
-	private void processQC(QuorumCertificate qc) throws SyncException {
+	private void sync(QuorumCertificate qc, ECPublicKey node) throws SyncException {
 		// sync up to QC if necessary
-		this.vertexStore.syncToQC(qc);
+		try {
+			this.vertexStore.syncToQC(qc, vertexId -> {
+				log.debug("{}: Sending GET_VERTEX Request to {}: {}",
+					this.getShortName(), this.getShortName(node.euid()), vertexId.toString().substring(0, 6));
+				return networkSender.getVertex(vertexId, node)
+					.doOnSuccess(v -> log.info("{}: Received GET_VERTEX Response: {}", this.getShortName(), v))
+					.takeUntil(this.pacemaker.nextLocalTimeout());
+			});
+		} catch (SyncException e) {
+			counters.increment(CounterType.CONSENSUS_SYNC_EXCEPTION);
+			throw e;
+		}
 
 		// commit any newly committable vertices
 		this.safetyRules.process(qc)
@@ -129,7 +140,7 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 
 	@Override
 	public void processVote(Vote vote) {
-		log.info("{}: VOTE: Processing {}", this.getShortName(), vote);
+		log.trace("{}: VOTE: Processing {}", this.getShortName(), vote);
 
 		// only do something if we're actually the leader for the vote
 		final View view = vote.getVoteData().getProposed().getView();
@@ -144,7 +155,7 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 		potentialQc.ifPresent(qc -> {
 			log.info("{}: VOTE: Formed QC: {}", this.getShortName(), qc);
 			try {
-				this.processQC(qc);
+				this.sync(qc, vote.getAuthor());
 			} catch (SyncException e) {
 				// Should never go here
 				throw new IllegalStateException("Could not process QC " + e.getQC() + " which was created.");
@@ -154,7 +165,7 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 
 	@Override
 	public void processNewView(NewView newView) {
-		log.info("{}: NEW_VIEW: Processing: {}", this.getShortName(), newView);
+		log.trace("{}: NEW_VIEW: Processing: {}", this.getShortName(), newView);
 
 		final View currentView = this.pacemaker.getCurrentView();
 		if (newView.getView().compareTo(currentView) < 0) {
@@ -171,9 +182,9 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 
 		this.counters.set(CounterType.CONSENSUS_VIEW, newView.getView().number());
 		try {
-			this.processQC(newView.getQC());
+			this.sync(newView.getQC(), newView.getAuthor());
 		} catch (SyncException e) {
-			log.warn("{}: NEW_VIEW: Ignoring new view because unable to sync to QC {}", this.getShortName(), e.getQC());
+			log.warn("{}: NEW_VIEW: Ignoring new view because unable to sync to QC {}", this.getShortName(), e.getQC(), e.getCause());
 			return;
 		}
 
@@ -189,28 +200,31 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 
 	@Override
 	public void processProposal(Proposal proposal) {
-		log.info("{}: PROPOSAL: Processing {}", this.getShortName(), proposal);
+		log.trace("{}: PROPOSAL: Processing {}", this.getShortName(), proposal);
 
 		final Vertex proposedVertex = proposal.getVertex();
+		final View proposedVertexView = proposedVertex.getView();
 		final View currentView = this.pacemaker.getCurrentView();
-		if (proposedVertex.getView().compareTo(currentView) < 0) {
-			log.info("{}: PROPOSAL: Ignoring view {} Current is: {}", this.getShortName(), proposedVertex.getView(), currentView);
+		if (proposedVertexView.compareTo(currentView) < 0) {
+			log.info("{}: PROPOSAL: Ignoring view {} Current is: {}", this.getShortName(), proposedVertexView, currentView);
 			return;
 		}
 
 		try {
-			processQC(proposedVertex.getQC());
+			sync(proposedVertex.getQC(), proposal.getAuthor());
 		} catch (SyncException e) {
-			log.warn("{}: PROPOSAL: Ignoring because unable to sync to QC {}", this.getShortName(), e.getQC());
+			log.warn("{}: PROPOSAL: Ignoring because unable to sync to QC {}", this.getShortName(), e.getQC(), e.getCause());
 			return;
 		}
 
-		// TODO: Sync at this point
-
 		final View updatedView = this.pacemaker.getCurrentView();
-		if (proposedVertex.getView().compareTo(updatedView) != 0) {
-			log.info("{}: PROPOSAL: Ignoring view {} Current is: {}", this.getShortName(), proposedVertex.getView(), updatedView);
+		if (proposedVertexView.compareTo(updatedView) != 0) {
+			log.info("{}: PROPOSAL: Ignoring view {} Current is: {}", this.getShortName(), proposedVertexView, updatedView);
 			return;
+		}
+
+		if (!proposedVertex.hasDirectParent()) {
+			counters.increment(CounterType.CONSENSUS_INDIRECT_PARENT);
 		}
 
 		try {
@@ -218,7 +232,7 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 		} catch (VertexInsertionException e) {
 			counters.increment(CounterType.CONSENSUS_REJECTED);
 
-			log.info(this.getShortName() + ": PROPOSAL: Rejected", e);
+			log.info(String.format("%s: PROPOSAL: Rejected", this.getShortName()), e);
 
 			// TODO: Better logic for removal on exception
 			final Atom atom = proposedVertex.getAtom();
@@ -231,10 +245,10 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 		try {
 			final Vote vote = safetyRules.voteFor(proposedVertex);
 			final ECPublicKey leader = this.proposerElection.getProposer(updatedView);
-			log.info("{}: PROPOSAL: Sending VOTE to {}: {}", this.getShortName(), this.getShortName(leader.euid()), vote);
+			log.debug("{}: PROPOSAL: Sending VOTE to {}: {}", this.getShortName(), this.getShortName(leader.euid()), vote);
 			networkSender.sendVote(vote, leader);
 		} catch (SafetyViolationException e) {
-			log.error(this.getShortName() + ": PROPOSAL: Rejected " + proposedVertex, e);
+			log.error(String.format("%s: PROPOSAL: Rejected %s", this.getShortName(), proposedVertex), e);
 		}
 
 		// If not currently leader or next leader, Proceed to next view
@@ -247,17 +261,26 @@ public final class ValidatingEventCoordinator implements EventCoordinator {
 
 	@Override
 	public void processLocalTimeout(View view) {
-		log.info("{}: LOCAL_TIMEOUT: Processing {}", this.getShortName(), view);
+		log.trace("{}: LOCAL_TIMEOUT: Processing {}", this.getShortName(), view);
 
 		// proceed to next view if pacemaker feels like it
 		Optional<View> nextView = this.pacemaker.processLocalTimeout(view);
 		if (nextView.isPresent()) {
+			counters.set(CounterType.CONSENSUS_TIMEOUT_VIEW, view.number());
 			counters.increment(CounterType.CONSENSUS_TIMEOUT);
 			this.proceedToView(nextView.get());
 			log.info("{}: LOCAL_TIMEOUT: Processed {}", this.getShortName(), view);
 		} else {
-			log.info("{}: LOCAL_TIMEOUT: Ignoring {}", this.getShortName(), view);
+			log.debug("{}: LOCAL_TIMEOUT: Ignoring {}", this.getShortName(), view);
 		}
+	}
+
+	@Override
+	public void processGetVertexRequest(GetVertexRequest request) {
+		log.trace("{}: GET_VERTEX Request: Processing: {}", this.getShortName(), request);
+		Vertex vertex = this.vertexStore.getVertex(request.getVertexId());
+		log.debug("{}: GET_VERTEX Request: Sending Response: {}", this.getShortName(), vertex);
+		request.getResponder().accept(vertex);
 	}
 
 	@Override

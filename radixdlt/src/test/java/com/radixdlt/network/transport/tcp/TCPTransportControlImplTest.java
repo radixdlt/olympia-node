@@ -70,6 +70,11 @@ public class TCPTransportControlImplTest {
 			public int priority(int defaultValue) {
 				return 0;
 			}
+
+			@Override
+			public boolean debugData(boolean defaultValue) {
+				return false;
+			}
 		};
 
 		transportOutboundConnection = mock(TransportOutboundConnection.class);

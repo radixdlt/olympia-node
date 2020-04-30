@@ -61,6 +61,16 @@ public interface TCPConfiguration {
 	int priority(int defaultValue);
 
 	/**
+	 * Provide hexdump of sent and received data.
+	 * Note that both "trace" logging level, and this flag will
+	 * need to be enabled to get hexdumps in log output.
+	 *
+	 * @param defaultValue a default value if no special configuration value is set
+	 * @return {@code true} if hexdump data is required, {@code false} otherwise
+	 */
+	boolean debugData(boolean defaultValue);
+
+	/**
 	 * Create a configuration from specified {@link RuntimeProperties}.
 	 *
 	 * @param properties the properties to read the configuration from
@@ -86,6 +96,11 @@ public interface TCPConfiguration {
 			@Override
 			public int priority(int defaultValue) {
 				return properties.get("network.tcp.priority", defaultValue);
+			}
+
+			@Override
+			public boolean debugData(boolean defaultValue) {
+				return properties.get("network.tcp.debug_data", defaultValue);
 			}
 		};
 	}

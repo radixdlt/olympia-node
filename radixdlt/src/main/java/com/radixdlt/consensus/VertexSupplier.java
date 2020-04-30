@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,20 +15,20 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.network.addressbook;
+package com.radixdlt.consensus;
 
-import org.radix.serialization.SerializeMessageObject;
-import com.radixdlt.identifiers.EUID;
+import com.radixdlt.crypto.Hash;
+import io.reactivex.rxjava3.core.Single;
 
 /**
- * Check serialization of PeerWithNid
+ * An asynchronous supplier which retrieves data for a vertex with a given id
  */
-public class PeerWithNidSerializeTest extends SerializeMessageObject<PeerWithNid> {
-	public PeerWithNidSerializeTest() {
-		super(PeerWithNid.class, PeerWithNidSerializeTest::get);
-	}
+public interface VertexSupplier {
 
-	private static PeerWithNid get() {
-		return new PeerWithNid(EUID.ONE);
-	}
+	/**
+	 * Retrieve vertex data from it's id.
+	 * @param id the id of vertex to retrieve
+	 * @return vertex data once available
+	 */
+	Single<Vertex> getVertex(Hash id);
 }

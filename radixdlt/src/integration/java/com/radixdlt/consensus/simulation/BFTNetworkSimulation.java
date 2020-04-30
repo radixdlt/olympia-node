@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.consensus.simulation;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -27,7 +27,17 @@ import static org.mockito.Mockito.when;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atommodel.Atom;
-import com.radixdlt.consensus.ChainedBFT.Event;
+import com.radixdlt.consensus.ChainedBFT;
+import com.radixdlt.consensus.DefaultHasher;
+import com.radixdlt.consensus.EpochManager;
+import com.radixdlt.consensus.EpochRx;
+import com.radixdlt.consensus.Hasher;
+import com.radixdlt.consensus.PendingVotes;
+import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.VertexStore;
+import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.liveness.PacemakerImpl;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposerElection;
@@ -42,8 +52,8 @@ import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.mempool.Mempool;
-import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork;
 
+import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.Collections;
 import java.util.List;
@@ -53,12 +63,12 @@ import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 /**
- * A multi-node bft test network where the network is simulated.
+ * A multi-node bft test network where the network and latencies of each message is simulated.
  */
-public class BFTTestNetwork {
-	private static final int DEFAULT_TEST_NETWORK_LATENCY = 50;
+public class BFTNetworkSimulation {
 	private static final int TEST_PACEMAKER_TIMEOUT = 1000;
 
+	private final int pacemakerTimeout;
 	private final TestEventCoordinatorNetwork underlyingNetwork;
 	private final Atom genesis;
 	private final Vertex genesisVertex;
@@ -66,24 +76,30 @@ public class BFTTestNetwork {
 	private final ImmutableMap<ECKeyPair, VertexStore> vertexStores;
 	private final ImmutableMap<ECKeyPair, SystemCounters> counters;
 	private final ImmutableMap<ECKeyPair, PacemakerImpl> pacemakers;
-	private final Observable<Event> bftEvents;
+	private final ImmutableMap<ECKeyPair, ChainedBFT> bfts;
 	private final ProposerElection proposerElection;
 	private final ValidatorSet validatorSet;
+	private final List<ECKeyPair> nodes;
 
 	/**
-	 * Create a BFT test network with a perfect underlying network and the default latency.
+	 * Create a BFT test network with an underlying simulated network
 	 * @param nodes The nodes to populate the network with
+	 * @param underlyingNetwork the network simulator
 	 */
-	public BFTTestNetwork(List<ECKeyPair> nodes) {
-		this(nodes, TestEventCoordinatorNetwork.orderedLatent(DEFAULT_TEST_NETWORK_LATENCY));
+	public BFTNetworkSimulation(List<ECKeyPair> nodes, TestEventCoordinatorNetwork underlyingNetwork) {
+		this(nodes, underlyingNetwork, TEST_PACEMAKER_TIMEOUT);
 	}
 
 	/**
-	 * Create a BFT test network with a specific underlying network.
+	 * Create a BFT test network with an underlying simulated network.
 	 * @param nodes The nodes to populate the network with
+	 * @param underlyingNetwork the network simulator
+	 * @param pacemakerTimeout a fixed pacemaker timeout used for all nodes
 	 */
-	public BFTTestNetwork(List<ECKeyPair> nodes, TestEventCoordinatorNetwork underlyingNetwork) {
+	public BFTNetworkSimulation(List<ECKeyPair> nodes, TestEventCoordinatorNetwork underlyingNetwork, int pacemakerTimeout) {
+		this.nodes = nodes;
 		this.underlyingNetwork = Objects.requireNonNull(underlyingNetwork);
+		this.pacemakerTimeout = pacemakerTimeout;
 		this.genesis = null;
 		this.genesisVertex = Vertex.createGenesis(genesis);
 		this.genesisQC = new QuorumCertificate(
@@ -108,10 +124,16 @@ public class BFTTestNetwork {
 				})
 			);
 		this.pacemakers = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e,
-			e -> new PacemakerImpl(TEST_PACEMAKER_TIMEOUT, Executors.newSingleThreadScheduledExecutor())));
-		this.bftEvents = Observable.merge(this.vertexStores.keySet().stream()
-			.map(vertexStore -> createBFTInstance(vertexStore).processEvents())
-			.collect(Collectors.toList()));
+			e -> new PacemakerImpl(this.pacemakerTimeout, Executors.newSingleThreadScheduledExecutor())));
+		this.bfts = this.vertexStores.keySet().stream()
+			.collect(ImmutableMap.toImmutableMap(
+				e -> e,
+				this::createBFTInstance
+			));
+	}
+
+	public List<ECKeyPair> getNodes() {
+		return nodes;
 	}
 
 	private ChainedBFT createBFTInstance(ECKeyPair key) {
@@ -160,19 +182,15 @@ public class BFTTestNetwork {
 		return pacemakers.get(keyPair);
 	}
 
+	public void start() {
+		this.bfts.values().forEach(ChainedBFT::start);
+	}
+
 	public TestEventCoordinatorNetwork getUnderlyingNetwork() {
 		return underlyingNetwork;
 	}
 
-	public Observable<Event> processBFT() {
-		return this.bftEvents;
-	}
-
-	public int getMaximumNetworkLatency() {
-		return underlyingNetwork.getMaximumLatency();
-	}
-
 	public int getPacemakerTimeout() {
-		return TEST_PACEMAKER_TIMEOUT;
+		return pacemakerTimeout;
 	}
 }

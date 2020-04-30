@@ -26,8 +26,6 @@ import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.network.addressbook.PeerWithSystem;
 import com.radixdlt.network.transport.SendResult;
 import com.radixdlt.network.transport.Transport;
-import com.radixdlt.network.transport.TransportInfo;
-import com.radixdlt.network.transport.TransportMetadata;
 import com.radixdlt.network.transport.TransportOutboundConnection;
 import com.radixdlt.serialization.Serialization;
 import org.hamcrest.Matchers;
@@ -43,6 +41,7 @@ import org.radix.universe.system.RadixSystem;
 import org.radix.universe.system.SystemMessage;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
@@ -71,222 +70,237 @@ public class MessageDispatcherTest extends RadixTest {
 		}
 	}
 
-    private MessageDispatcher messageDispatcher;
-    private TransportManager transportManager;
-    private Peer peer1;
-    private Peer peer2;
-    private TransportInfo transportInfo;
-    private SystemCounters counters;
+	private MessageDispatcher messageDispatcher;
+	private TransportManager transportManager;
+	private AddressBook addressBook;
+	private Peer peer1;
+	private Peer peer2;
+	private SystemCounters counters;
 
-    @Before
-    public void setup() {
-        when(getNtpService().getUTCTimeMS()).thenAnswer((Answer<Long>) invocation -> System.currentTimeMillis());
-        Serialization serialization = DefaultSerialization.getInstance();
-        MessageCentralConfiguration conf = new MessagingDummyConfigurations.DummyMessageCentralConfiguration();
+	@Before
+	public void setup() {
+		when(getNtpService().getUTCTimeMS()).thenAnswer((Answer<Long>) invocation -> System.currentTimeMillis());
+		Serialization serialization = DefaultSerialization.getInstance();
+		MessageCentralConfiguration conf = new MessagingDummyConfigurations.DummyMessageCentralConfiguration();
 
-        peer1 = spy(new PeerWithSystem(getLocalSystem()));
-        peer2 = spy(new PeerWithSystem(getLocalSystem()));
+		peer1 = spy(new PeerWithSystem(getLocalSystem()));
+		peer2 = spy(new PeerWithSystem(getLocalSystem()));
 
-        AddressBook addressBook = mock(AddressBook.class);
-        when(addressBook.updatePeerSystem(peer1, peer1.getSystem())).thenReturn(peer1);
-        when(addressBook.updatePeerSystem(peer2, peer2.getSystem())).thenReturn(peer2);
+		addressBook = mock(AddressBook.class);
+		when(addressBook.updatePeerSystem(peer1, peer1.getSystem())).thenReturn(peer1);
+		when(addressBook.updatePeerSystem(peer2, peer2.getSystem())).thenReturn(peer2);
 
-        counters = mock(SystemCounters.class);
-        messageDispatcher = new MessageDispatcher(counters, conf, serialization, () -> 30_000, getLocalSystem(), addressBook);
+		counters = mock(SystemCounters.class);
+		messageDispatcher = new MessageDispatcher(counters, conf, serialization, () -> 30_000, getLocalSystem(), addressBook);
 
-        // Suppression safe here - dummy outbound connection does not need closing
-        @SuppressWarnings("resource")
+		// Suppression safe here - dummy outbound connection does not need closing
+		@SuppressWarnings("resource")
 		TransportOutboundConnection transportOutboundConnection = new MessagingDummyConfigurations.DummyTransportOutboundConnection();
-        // Suppression safe here - dummy transport does not need closing
-        @SuppressWarnings("resource")
+		// Suppression safe here - dummy transport does not need closing
+		@SuppressWarnings("resource")
 		Transport transport = new MessagingDummyConfigurations.DummyTransport(transportOutboundConnection);
-        transportManager = new MessagingDummyConfigurations.DummyTransportManager(transport);
+		transportManager = new MessagingDummyConfigurations.DummyTransportManager(transport);
+	}
 
-        TransportMetadata transportMetadata = mock(TransportMetadata.class);
-        when(transportMetadata.get("host")).thenReturn("localhost");
-        transportInfo = mock(TransportInfo.class);
-        when(transportInfo.metadata()).thenReturn(transportMetadata);
-    }
+	@Test
+	public void sendSuccessfullyMessage() {
+		SystemMessage message = spy(new SystemMessage(getLocalSystem(), 0));
+		MessageEvent messageEvent = new MessageEvent(peer1, message, 10_000);
 
-    @Test
-    public void sendSuccessfullyMessage() {
-        SystemMessage message = spy(new SystemMessage(getLocalSystem(), 0));
-        MessageEvent messageEvent = new MessageEvent(peer1, transportInfo, message, 10_000);
+		SendResult sendResult = messageDispatcher.send(transportManager, messageEvent);
 
-        SendResult sendResult = messageDispatcher.send(transportManager, messageEvent);
+		assertTrue(sendResult.isComplete());
+		verify(message, times(1)).sign(getLocalSystem().getKeyPair());
+	}
 
-        assertTrue(sendResult.isComplete());
-        verify(message, times(1)).sign(getLocalSystem().getKeyPair());
-    }
+	@Test
+	public void sendExpiredMessage() {
+		Message message = spy(new TestMessage(0));
+		when(message.getTimestamp()).thenReturn(10_000L);
+		MessageEvent messageEvent = new MessageEvent(peer1, message, 10_000);
 
-    @Test
-    public void sendExpiredMessage() {
-        Message message = spy(new TestMessage(0));
-        when(message.getTimestamp()).thenReturn(10_000L);
-        MessageEvent messageEvent = new MessageEvent(peer1, transportInfo, message, 10_000);
+		SendResult sendResult = messageDispatcher.send(transportManager, messageEvent);
 
-        SendResult sendResult = messageDispatcher.send(transportManager, messageEvent);
+		assertThat(sendResult.getThrowable().getMessage(), Matchers.equalTo("TTL for TestMessage message to " + peer1 + " has expired"));
+		verify(counters, times(1)).increment(CounterType.MESSAGES_OUTBOUND_ABORTED);
+	}
 
-        assertThat(sendResult.getThrowable().getMessage(), Matchers.equalTo("TTL for TestMessage message to " + peer1 + " has expired"));
-        verify(counters, times(1)).increment(CounterType.MESSAGES_OUTBOUND_ABORTED);
-    }
+	@Test
+	public void receiveSuccessfully() throws InterruptedException {
+		SystemMessage testMessage = spy(new SystemMessage(getLocalSystem(), 0));
+		RadixSystem radixSystem = spy(testMessage.getSystem());
+		doReturn(radixSystem).when(testMessage).getSystem();
+		doReturn(true).when(testMessage).verify(any());
+		doReturn(EUID.ONE).when(radixSystem).getNID();
 
-    @Test
-    public void receiveSuccessfully() throws InterruptedException {
-        SystemMessage testMessage = spy(new SystemMessage(getLocalSystem(), 0));
-        RadixSystem radixSystem = spy(testMessage.getSystem());
-        doReturn(radixSystem).when(testMessage).getSystem();
-        doReturn(true).when(testMessage).verify(any());
-        doReturn(EUID.ONE).when(radixSystem).getNID();
+		MessageEvent messageEvent = new MessageEvent(peer1, testMessage, 10_000);
 
-        MessageEvent messageEvent = new MessageEvent(peer1, transportInfo, testMessage, 10_000);
+		Semaphore receivedFlag = new Semaphore(0);
+		List<Message> messages = new ArrayList<>();
+		MessageListenerList messageListenerList = new MessageListenerList();
+		messageListenerList.addMessageListener((source, message) -> {
+			messages.add(message);
+			receivedFlag.release();
+		});
 
-        Semaphore receivedFlag = new Semaphore(0);
-        List<Message> messages = new ArrayList<>();
-        MessageListenerList messageListenerList = new MessageListenerList();
-        messageListenerList.addMessageListener((source, message) -> {
-            messages.add(message);
-            receivedFlag.release();
-        });
+		messageDispatcher.receive(messageListenerList, messageEvent);
 
-        messageDispatcher.receive(messageListenerList, messageEvent);
+		assertTrue(receivedFlag.tryAcquire(10, TimeUnit.SECONDS));
+		assertThat(messages.get(0), Matchers.equalTo(testMessage));
+	}
 
-        assertTrue(receivedFlag.tryAcquire(10, TimeUnit.SECONDS));
-        assertThat(messages.get(0), Matchers.equalTo(testMessage));
-    }
+	@Test
+	public void receiveExpiredMessage() {
+		SystemMessage testMessage = spy(new SystemMessage(getLocalSystem(), 0));
+		when(testMessage.getTimestamp()).thenReturn(10_000L);
+		MessageEvent messageEvent = new MessageEvent(peer1, testMessage, 10_000);
 
-    @Test
-    public void receiveExpiredMessage() {
-        SystemMessage testMessage = spy(new SystemMessage(getLocalSystem(), 0));
-        when(testMessage.getTimestamp()).thenReturn(10_000L);
-        MessageEvent messageEvent = new MessageEvent(peer1, transportInfo, testMessage, 10_000);
+		messageDispatcher.receive(null, messageEvent);
 
-        messageDispatcher.receive(null, messageEvent);
+		// execution is terminated before message.getSystem() method
+		verify(testMessage, times(0)).getSystem();
+		verify(counters, times(1)).increment(CounterType.MESSAGES_INBOUND_DISCARDED);
+	}
 
-        //execution is terminated before message.getSystem() method
-        verify(testMessage, times(0)).getSystem();
-        verify(counters, times(1)).increment(CounterType.MESSAGES_INBOUND_DISCARDED);
-    }
+	@Test
+	public void receiveMessageFromBannedPeer() {
+		// Banned for a long time
+		peer1.setBan("Test", System.currentTimeMillis() + 86_400_000L);
+		when(this.addressBook.peer(any(EUID.class))).thenReturn(Optional.of(peer1));
+		RadixSystem system = mock(RadixSystem.class);
+		doReturn(EUID.TWO).when(system).getNID();
+		doReturn(Radix.AGENT_VERSION).when(system).getAgentVersion();
+		SystemMessage testMessage = spy(new SystemMessage(system, 0));
+		doReturn(true).when(testMessage).verify(any());
+		MessageEvent messageEvent = new MessageEvent(peer1, testMessage, 10_000);
 
-    @Test
-    public void receiveDisconnectNullZeroSystem() {
-        SystemMessage testMessage1 = spy(new SystemMessage(getLocalSystem(), 0));
-        RadixSystem radixSystem1 = spy(testMessage1.getSystem());
-        doReturn(radixSystem1).when(testMessage1).getSystem();
-        doReturn(true).when(testMessage1).verify(any());
-        doReturn(EUID.ZERO).when(radixSystem1).getNID();
-        MessageEvent messageEvent1 = new MessageEvent(peer1, transportInfo, testMessage1, 10_000);
+		messageDispatcher.receive(null, messageEvent);
 
-        SystemMessage testMessage2 = spy(new SystemMessage(getLocalSystem(), 0));
-        RadixSystem radixSystem2 = spy(testMessage2.getSystem());
-        doReturn(radixSystem2).when(testMessage2).getSystem();
-        doReturn(true).when(testMessage2).verify(any());
-        doReturn(null).when(radixSystem2).getNID();
-        MessageEvent messageEvent2 = new MessageEvent(peer2, transportInfo, testMessage2, 10_000);
+		// Received message not counted as discarded or processed
+		verify(counters, times(1)).increment(CounterType.MESSAGES_INBOUND_RECEIVED);
+		verify(counters, never()).increment(CounterType.MESSAGES_INBOUND_DISCARDED);
+		verify(counters, never()).increment(CounterType.MESSAGES_INBOUND_PROCESSED);
+	}
 
-        messageDispatcher.receive(null, messageEvent1);
-        messageDispatcher.receive(null, messageEvent2);
+	@Test
+	public void receiveDisconnectNullZeroSystem() {
+		SystemMessage testMessage1 = spy(new SystemMessage(getLocalSystem(), 0));
+		RadixSystem radixSystem1 = spy(testMessage1.getSystem());
+		doReturn(radixSystem1).when(testMessage1).getSystem();
+		doReturn(true).when(testMessage1).verify(any());
+		doReturn(EUID.ZERO).when(radixSystem1).getNID();
+		MessageEvent messageEvent1 = new MessageEvent(peer1, testMessage1, 10_000);
 
-        String banMessage = "%s:SystemMessage gave null NID";
-        String msg1 = String.format(banMessage, peer1);
-        String msg2 = String.format(banMessage, peer2);
-        verify(peer1, times(1)).ban(msg1);
-        verify(peer2, times(1)).ban(msg2);
-    }
+		SystemMessage testMessage2 = spy(new SystemMessage(getLocalSystem(), 0));
+		RadixSystem radixSystem2 = spy(testMessage2.getSystem());
+		doReturn(radixSystem2).when(testMessage2).getSystem();
+		doReturn(true).when(testMessage2).verify(any());
+		doReturn(null).when(radixSystem2).getNID();
+		MessageEvent messageEvent2 = new MessageEvent(peer2, testMessage2, 10_000);
 
-    @Test
-    public void receiveDisconnectOldPeer() {
-        SystemMessage testMessage = spy(new SystemMessage(getLocalSystem(), 0));
-        RadixSystem radixSystem = spy(testMessage.getSystem());
-        doReturn(radixSystem).when(testMessage).getSystem();
-        doReturn(EUID.ONE).when(radixSystem).getNID();
-        doReturn(true).when(testMessage).verify(any());
-        doReturn(Radix.REFUSE_AGENT_VERSION).when(radixSystem).getAgentVersion();
-        MessageEvent messageEvent = new MessageEvent(peer1, transportInfo, testMessage, 10_000);
+		messageDispatcher.receive(null, messageEvent1);
+		messageDispatcher.receive(null, messageEvent2);
 
-        messageDispatcher.receive(null, messageEvent);
+		String banMessage = "%s:SystemMessage gave null NID";
+		String msg1 = String.format(banMessage, peer1);
+		String msg2 = String.format(banMessage, peer2);
+		verify(peer1, times(1)).ban(msg1);
+		verify(peer2, times(1)).ban(msg2);
+	}
 
-        String banMessage = "Old peer " + peer1 + " /Radix:/2710000:100";
-        verify(peer1, times(1)).ban(banMessage);
-    }
+	@Test
+	public void receiveDisconnectOldPeer() {
+		SystemMessage testMessage = spy(new SystemMessage(getLocalSystem(), 0));
+		RadixSystem radixSystem = spy(testMessage.getSystem());
+		doReturn(radixSystem).when(testMessage).getSystem();
+		doReturn(EUID.ONE).when(radixSystem).getNID();
+		doReturn(true).when(testMessage).verify(any());
+		doReturn(Radix.REFUSE_AGENT_VERSION).when(radixSystem).getAgentVersion();
+		MessageEvent messageEvent = new MessageEvent(peer1, testMessage, 10_000);
 
-    @Test
-    public void receiveSelf() {
-        SystemMessage testMessage = spy(new SystemMessage(getLocalSystem(), 0));
-        RadixSystem radixSystem = spy(testMessage.getSystem());
-        doReturn(radixSystem).when(testMessage).getSystem();
-        doReturn(true).when(testMessage).verify(any());
-        doReturn(getLocalSystem().getNID()).when(radixSystem).getNID();
-        MessageEvent messageEvent = new MessageEvent(peer1, transportInfo, testMessage, 10_000);
-        MessageListenerList listeners = mock(MessageListenerList.class);
+		messageDispatcher.receive(null, messageEvent);
 
-        messageDispatcher.receive(listeners, messageEvent);
+		String banMessage = "Old peer " + peer1 + " /Radix:/2710000:100";
+		verify(peer1, times(1)).ban(banMessage);
+	}
 
-        verify(listeners, never()).messageReceived(any(), any());
-    }
+	@Test
+	public void receiveSelf() {
+		SystemMessage testMessage = spy(new SystemMessage(getLocalSystem(), 0));
+		RadixSystem radixSystem = spy(testMessage.getSystem());
+		doReturn(radixSystem).when(testMessage).getSystem();
+		doReturn(true).when(testMessage).verify(any());
+		doReturn(getLocalSystem().getNID()).when(radixSystem).getNID();
+		MessageEvent messageEvent = new MessageEvent(peer1, testMessage, 10_000);
+		MessageListenerList listeners = mock(MessageListenerList.class);
 
-    @Test
-    public void receiveSystemMessageBadSignature() {
-        SystemMessage testMessage = spy(new SystemMessage(getLocalSystem(), 0));
-        RadixSystem radixSystem = spy(testMessage.getSystem());
-        doReturn(radixSystem).when(testMessage).getSystem();
-        doReturn(false).when(testMessage).verify(any());
-        doReturn(getLocalSystem().getNID()).when(radixSystem).getNID();
-        MessageEvent messageEvent = new MessageEvent(peer1, transportInfo, testMessage, 10_000);
-        MessageListenerList listeners = mock(MessageListenerList.class);
+		messageDispatcher.receive(listeners, messageEvent);
 
-        messageDispatcher.receive(listeners, messageEvent);
+		verify(listeners, never()).messageReceived(any(), any());
+	}
 
-        verify(this.counters, times(1)).increment(CounterType.MESSAGES_INBOUND_BADSIGNATURE);
-        verify(listeners, never()).messageReceived(any(), any());
-    }
+	@Test
+	public void receiveSystemMessageBadSignature() {
+		SystemMessage testMessage = spy(new SystemMessage(getLocalSystem(), 0));
+		RadixSystem radixSystem = spy(testMessage.getSystem());
+		doReturn(radixSystem).when(testMessage).getSystem();
+		doReturn(false).when(testMessage).verify(any());
+		doReturn(getLocalSystem().getNID()).when(radixSystem).getNID();
+		MessageEvent messageEvent = new MessageEvent(peer1, testMessage, 10_000);
+		MessageListenerList listeners = mock(MessageListenerList.class);
 
-    @Test
-    public void receiveSignedMessageGoodSignature() {
-        SignedMessage testMessage = spy(new DummySignedMessage());
-        doReturn(true).when(testMessage).verify(any());
-        MessageEvent messageEvent = new MessageEvent(peer1, transportInfo, testMessage, 10_000);
-        MessageListenerList listeners = mock(MessageListenerList.class);
+		messageDispatcher.receive(listeners, messageEvent);
 
-        messageDispatcher.receive(listeners, messageEvent);
+		verify(this.counters, times(1)).increment(CounterType.MESSAGES_INBOUND_BADSIGNATURE);
+		verify(listeners, never()).messageReceived(any(), any());
+	}
 
-        verify(listeners, times(1)).messageReceived(any(), any());
-    }
+	@Test
+	public void receiveSignedMessageGoodSignature() {
+		SignedMessage testMessage = spy(new DummySignedMessage());
+		doReturn(true).when(testMessage).verify(any());
+		MessageEvent messageEvent = new MessageEvent(peer1, testMessage, 10_000);
+		MessageListenerList listeners = mock(MessageListenerList.class);
 
-    @Test
-    public void receiveSignedMessageBadSignature() {
-        SignedMessage testMessage = spy(new DummySignedMessage());
-        doReturn(false).when(testMessage).verify(any());
-        MessageEvent messageEvent = new MessageEvent(peer1, transportInfo, testMessage, 10_000);
-        MessageListenerList listeners = mock(MessageListenerList.class);
+		messageDispatcher.receive(listeners, messageEvent);
 
-        messageDispatcher.receive(listeners, messageEvent);
+		verify(listeners, times(1)).messageReceived(any(), any());
+	}
 
-        verify(this.counters, times(1)).increment(CounterType.MESSAGES_INBOUND_BADSIGNATURE);
-        verify(listeners, never()).messageReceived(any(), any());
-    }
+	@Test
+	public void receiveSignedMessageBadSignature() {
+		SignedMessage testMessage = spy(new DummySignedMessage());
+		doReturn(false).when(testMessage).verify(any());
+		MessageEvent messageEvent = new MessageEvent(peer1, testMessage, 10_000);
+		MessageListenerList listeners = mock(MessageListenerList.class);
 
-    @Test
-    public void receiveSignedMessageNoPeer() {
-    	Peer noSystemPeer = mock(Peer.class);
-    	doReturn(false).when(noSystemPeer).hasSystem();
-        SignedMessage testMessage = new DummySignedMessage();
-        MessageEvent messageEvent = new MessageEvent(noSystemPeer, transportInfo, testMessage, 10_000);
-        MessageListenerList listeners = mock(MessageListenerList.class);
+		messageDispatcher.receive(listeners, messageEvent);
 
-        messageDispatcher.receive(listeners, messageEvent);
+		verify(this.counters, times(1)).increment(CounterType.MESSAGES_INBOUND_BADSIGNATURE);
+		verify(listeners, never()).messageReceived(any(), any());
+	}
 
-        verify(listeners, never()).messageReceived(any(), any());
-    }
+	@Test
+	public void receiveSignedMessageNoPeer() {
+		Peer noSystemPeer = mock(Peer.class);
+		doReturn(false).when(noSystemPeer).hasSystem();
+		SignedMessage testMessage = new DummySignedMessage();
+		MessageEvent messageEvent = new MessageEvent(noSystemPeer, testMessage, 10_000);
+		MessageListenerList listeners = mock(MessageListenerList.class);
 
-    @Test
-    public void receiveUnsignedMessage() {
-        Message testMessage = spy(new DummyMessage());
-        MessageEvent messageEvent = new MessageEvent(peer1, transportInfo, testMessage, 10_000);
-        MessageListenerList listeners = mock(MessageListenerList.class);
+		messageDispatcher.receive(listeners, messageEvent);
 
-        messageDispatcher.receive(listeners, messageEvent);
+		verify(listeners, never()).messageReceived(any(), any());
+	}
 
-        verify(listeners, times(1)).messageReceived(any(), any());
-    }
+	@Test
+	public void receiveUnsignedMessage() {
+		Message testMessage = spy(new DummyMessage());
+		MessageEvent messageEvent = new MessageEvent(peer1, testMessage, 10_000);
+		MessageListenerList listeners = mock(MessageListenerList.class);
+
+		messageDispatcher.receive(listeners, messageEvent);
+
+		verify(listeners, times(1)).messageReceived(any(), any());
+	}
 }

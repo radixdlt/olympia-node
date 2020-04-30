@@ -43,7 +43,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -63,12 +62,12 @@ import static org.mockito.Mockito.verify;
 
 public class MessageCentralImplTest {
 
-	static class TestBlockingQueue extends PriorityBlockingQueue<MessageEvent> {
+	static class TestBlockingQueue extends SimplePriorityBlockingQueue<MessageEvent> {
 		private final AtomicLong offered = new AtomicLong(0);
 		private final AtomicBoolean full = new AtomicBoolean(false);
 
 		TestBlockingQueue() {
-			super();
+			super(100, MessageEvent.comparator()); // Close enough for jazz
 		}
 
 		@Override
@@ -94,8 +93,8 @@ public class MessageCentralImplTest {
 	private DummyTransportOutboundConnection toc;
 	private DummyTransport dt;
 	private MessageCentralImpl mci;
-	private TestBlockingQueue inboundQueuex;
-	private TestBlockingQueue outboundQueuex;
+	private TestBlockingQueue inboundQueue;
+	private TestBlockingQueue outboundQueue;
 	private Events events;
 
 	@Before
@@ -118,14 +117,14 @@ public class MessageCentralImplTest {
 
 		// Safe, as this is a dummy transport with no underlying resources
 		@SuppressWarnings("resource")
-		MessagingDummyConfigurations.DummyTransportManager transportManager = new MessagingDummyConfigurations.DummyTransportManager(this.dt);
+		TransportManager transportManager = new MessagingDummyConfigurations.DummyTransportManager(this.dt);
 
 		this.events = mock(Events.class);
-		inboundQueuex = new TestBlockingQueue();
-		outboundQueuex = new TestBlockingQueue();
+		inboundQueue = new TestBlockingQueue();
+		outboundQueue = new TestBlockingQueue();
 		EventQueueFactory<MessageEvent> queueFactory = eventQueueFactoryMock();
-		doReturn(inboundQueuex).when(queueFactory).createEventQueue(conf.messagingInboundQueueMax(0));
-		doReturn(outboundQueuex).when(queueFactory).createEventQueue(conf.messagingOutboundQueueMax(0));
+		doReturn(inboundQueue).when(queueFactory).createEventQueue(eq(conf.messagingInboundQueueMax(0)), any());
+		doReturn(outboundQueue).when(queueFactory).createEventQueue(eq(conf.messagingOutboundQueueMax(0)), any());
 		LocalSystem localSystem = mock(LocalSystem.class);
 		SystemCounters counters = mock(SystemCounters.class);
 		this.mci = new MessageCentralImpl(
@@ -197,17 +196,17 @@ public class MessageCentralImplTest {
 		}
 		assertTrue(receivedFlag.await(10, TimeUnit.SECONDS));
 		assertEquals(numberOfRequests, messages.size());
-		assertEquals(numberOfRequests, inboundQueuex.offered());
+		assertEquals(numberOfRequests, inboundQueue.offered());
 	}
 
 	@Test
 	public void testInjectQueueIsFull() {
-		testQueueIsFull(inboundQueuex, (peer, message) -> mci.inject(peer, message));
+		testQueueIsFull(inboundQueue, (peer, message) -> mci.inject(peer, message));
 	}
 
 	@Test
 	public void testSendQueueIsFull() {
-		testQueueIsFull(outboundQueuex, (peer, message) -> mci.send(peer, message));
+		testQueueIsFull(outboundQueue, (peer, message) -> mci.send(peer, message));
 	}
 
 	private void testQueueIsFull(TestBlockingQueue queue, BiConsumer<Peer, Message> biConsumer) {

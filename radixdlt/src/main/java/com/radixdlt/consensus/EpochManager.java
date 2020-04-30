@@ -32,11 +32,14 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.mempool.Mempool;
 import java.util.Comparator;
 import java.util.Objects;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Manages creation of EventCoordinators given a ValidatorSet
  */
 public class EpochManager {
+	private static final Logger log = LogManager.getLogger("EM");
 
 	private final ProposalGenerator proposalGenerator;
 	private final Mempool mempool;
@@ -84,6 +87,7 @@ public class EpochManager {
 			.sorted(Comparator.comparing(ECPublicKey::euid))
 			.collect(ImmutableList.toImmutableList());
 		ProposerElection proposerElection = proposerElectionFactory.create(proposers);
+		log.info("NEXT_EPOCH: ProposerElection: {}", proposerElection);
 
 		return new ValidatingEventCoordinator(
 			this.proposalGenerator,

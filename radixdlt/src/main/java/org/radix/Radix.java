@@ -19,6 +19,7 @@ package org.radix;
 
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.consensus.ChainedBFT;
+import com.radixdlt.consensus.VertexStore;
 import com.radixdlt.mempool.MempoolReceiver;
 import com.radixdlt.mempool.SubmissionControl;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
@@ -46,6 +47,7 @@ import org.radix.universe.system.LocalSystem;
 import org.radix.utils.IOUtils;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.net.URISyntaxException;
@@ -143,25 +145,31 @@ public final class Radix
 		// Start mempool receiver
 		globalInjector.getInjector().getInstance(MempoolReceiver.class).start();
 
+		final ChainedBFT bft = globalInjector.getInjector().getInstance(ChainedBFT.class);
 		// start API services
-		ChainedBFT bft = globalInjector.getInjector().getInstance(ChainedBFT.class);
-		bft.processEvents()
-			.subscribe(
-				event -> {
-				},
-				e -> {
-					log.error("BFT Unexpected Error", e);
-					System.exit(-1);
-				}
-			);
-
 		SubmissionControl submissionControl = globalInjector.getInjector().getInstance(SubmissionControl.class);
 		AtomToBinaryConverter atomToBinaryConverter = globalInjector.getInjector().getInstance(AtomToBinaryConverter.class);
 		LedgerEntryStore store = globalInjector.getInjector().getInstance(LedgerEntryStore.class);
-		RadixHttpServer httpServer = new RadixHttpServer(store, submissionControl, atomToBinaryConverter, universe, serialization, properties, localSystem, addressBook);
+		VertexStore vstore = globalInjector.getInjector().getInstance(VertexStore.class);
+		RadixHttpServer httpServer = new RadixHttpServer(
+			bft,
+			store,
+			submissionControl,
+			atomToBinaryConverter,
+			universe, serialization,
+			properties,
+			localSystem,
+			addressBook,
+			vstore
+		);
 		httpServer.start(properties);
 
-		log.info("Node '{}' started successfully", localSystem.getNID());
+		if (properties.get("consensus.start_on_boot", true)) {
+			bft.start();
+			log.info("Node '{}' started successfully", localSystem.getNID());
+		} else {
+			log.info("Node '{}' ready, waiting for start signal", localSystem.getNID());
+		}
 	}
 
 	private static void dumpExecutionLocation() {
@@ -196,10 +204,11 @@ public final class Radix
 
 	private static RuntimeProperties loadProperties(String[] args) throws IOException, ParseException {
 		JSONObject runtimeConfigurationJSON = new JSONObject();
-		if (Radix.class.getResourceAsStream("/runtime_options.json") != null) {
-			runtimeConfigurationJSON = new JSONObject(IOUtils.toString(Radix.class.getResourceAsStream("/runtime_options.json")));
+		try (InputStream is = Radix.class.getResourceAsStream("/runtime_options.json")) {
+			if (is != null) {
+				runtimeConfigurationJSON = new JSONObject(IOUtils.toString(is));
+			}
 		}
-
 		return new RuntimeProperties(runtimeConfigurationJSON, args);
 	}
 }
