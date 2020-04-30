@@ -111,15 +111,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		this.sender.sendNewView(newView, nextLeader);
 	}
 
-	private void sync(QuorumCertificate qc, ECPublicKey node) throws SyncException {
-		// sync up to QC if necessary
-		try {
-			this.vertexStore.syncToQC(qc, node, this.pacemakerRx.timeout(this.pacemaker.getCurrentView()));
-		} catch (SyncException e) {
-			counters.increment(CounterType.CONSENSUS_SYNC_EXCEPTION);
-			throw e;
-		}
-
+	private void processQC(QuorumCertificate qc) {
 		// commit any newly committable vertices
 		this.safetyRules.process(qc)
 			.ifPresent(vertexId -> {
@@ -136,6 +128,16 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		// proceed to next view if pacemaker feels like it
 		this.pacemaker.processQC(qc.getView())
 			.ifPresent(this::proceedToView);
+	}
+
+	private void sync(QuorumCertificate qc, ECPublicKey node) throws SyncException {
+		// sync up to QC if necessary
+		try {
+			this.vertexStore.syncToQC(qc, node, this.pacemakerRx.timeout(this.pacemaker.getCurrentView()));
+		} catch (SyncException e) {
+			counters.increment(CounterType.CONSENSUS_SYNC_EXCEPTION);
+			throw e;
+		}
 	}
 
 	@Override
@@ -158,12 +160,8 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		Optional<QuorumCertificate> potentialQc = this.pendingVotes.insertVote(vote, validatorSet);
 		potentialQc.ifPresent(qc -> {
 			log.info("{}: VOTE: Formed QC: {}", this.getShortName(), qc);
-			try {
-				this.sync(qc, vote.getAuthor());
-			} catch (SyncException e) {
-				// Should never go here
-				throw new IllegalStateException("Could not process QC " + e.getQC() + " which was created.");
-			}
+			vertexStore.addQC(qc);
+			processQC(qc);
 		});
 	}
 
@@ -191,6 +189,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 			log.warn("{}: NEW_VIEW: Ignoring new view because unable to sync to QC {}", this.getShortName(), e.getQC(), e.getCause());
 			return;
 		}
+		this.processQC(newView.getQC());
 
 		this.pacemaker.processNewView(newView, validatorSet)
 			.ifPresent(syncedView -> {
@@ -215,11 +214,12 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		}
 
 		try {
-			sync(proposedVertex.getQC(), proposal.getAuthor());
+			this.sync(proposedVertex.getQC(), proposal.getAuthor());
 		} catch (SyncException e) {
 			log.warn("{}: PROPOSAL: Ignoring because unable to sync to QC {}", this.getShortName(), e.getQC(), e.getCause());
 			return;
 		}
+		this.processQC(proposedVertex.getQC());
 
 		final View updatedView = this.pacemaker.getCurrentView();
 		if (proposedVertexView.compareTo(updatedView) != 0) {

@@ -110,6 +110,10 @@ public final class VertexStore {
 			}
 		}
 
+		addQC(qc);
+	}
+
+	public void addQC(QuorumCertificate qc) {
 		if (highestQC.getView().compareTo(qc.getView()) < 0) {
 			highestQC = qc;
 		}
