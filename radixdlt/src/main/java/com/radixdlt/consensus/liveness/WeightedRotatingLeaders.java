@@ -22,7 +22,6 @@ import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.utils.MathUtils;
-import com.radixdlt.utils.UInt128;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt384;
 import java.util.Arrays;
@@ -45,6 +44,8 @@ import java.util.Map.Entry;
  * This class stateful and is NOT thread-safe.
  */
 public final class WeightedRotatingLeaders implements ProposerElection {
+	private static final UInt384 POW_2_256 = UInt384.from(UInt256.MAX_VALUE).increment();
+
 	private final ValidatorSet validatorSet;
 	private final Comparator<Entry<Validator, UInt384>> weightsComparator;
 	private final CachingNextLeaderComputer nextLeaderComputer;
@@ -132,7 +133,7 @@ public final class WeightedRotatingLeaders implements ProposerElection {
 				}
 
 				for (Validator validator : validatorSet.getValidators()) {
-					weights.put(validator, UInt384.from(UInt128.ONE, UInt256.ZERO).subtract(validator.getPower()));
+					weights.put(validator, POW_2_256.subtract(validator.getPower()));
 				}
 				cache[0] = computeHeaviest();
 			}
