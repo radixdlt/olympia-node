@@ -15,22 +15,38 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.simulation;
+package com.radixdlt.mempool;
 
-import io.reactivex.rxjava3.core.Completable;
+import com.radixdlt.atommodel.Atom;
+import com.radixdlt.identifiers.AID;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 
-/**
- * A running BFT check given access to network
- */
-public interface BFTCheck {
+public class EmptyMempool implements Mempool {
 
-	/**
-	 * Creates an observable which runs assertions against a bft network.
-	 * Assertions errors are expected to propagate down the observable.
-	 * TODO: Cleanup interface a bit
-	 *
-	 * @param network network to check
-	 * @return completable to subscribe to enable checking
-	 */
-	Completable check(SimulatedBFTNetwork network);
+	@Override
+	public void addAtom(Atom atom) {
+
+	}
+
+	@Override
+	public void removeCommittedAtom(AID aid) {
+
+	}
+
+	@Override
+	public void removeRejectedAtom(AID aid) {
+
+	}
+
+	@Override
+	public List<Atom> getAtoms(int count, Set<AID> seen) {
+		return Collections.emptyList();
+	}
+
+	@Override
+	public int atomCount() {
+		return 0;
+	}
 }

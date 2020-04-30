@@ -42,13 +42,13 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 /**
  * High level BFT Simulation Test Runner
  */
-public class BFTTest {
+public class BFTSimulatedTest {
 	private final ImmutableList<ECKeyPair> nodes;
 	private final LatencyProvider latencyProvider;
 	private final ImmutableList<BFTCheck> checks;
 	private final int pacemakerTimeout;
 
-	private BFTTest(
+	private BFTSimulatedTest(
 		ImmutableList<ECKeyPair> nodes,
 		LatencyProvider latencyProvider,
 		int pacemakerTimeout,
@@ -142,8 +142,8 @@ public class BFTTest {
 
 		}
 
-		public BFTTest build() {
-			return new BFTTest(ImmutableList.copyOf(nodes), latencyProvider.copyOf(), pacemakerTimeout, ImmutableList.copyOf(checks));
+		public BFTSimulatedTest build() {
+			return new BFTSimulatedTest(ImmutableList.copyOf(nodes), latencyProvider.copyOf(), pacemakerTimeout, ImmutableList.copyOf(checks));
 		}
 	}
 
@@ -156,7 +156,7 @@ public class BFTTest {
 		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.builder()
 			.latencyProvider(this.latencyProvider)
 			.build();
-		BFTNetworkSimulation bftNetwork =  new BFTNetworkSimulation(nodes, network, pacemakerTimeout);
+		SimulatedBFTNetwork bftNetwork =  new SimulatedBFTNetwork(nodes, network, pacemakerTimeout);
 		List<Completable> assertions = this.checks.stream().map(c -> c.check(bftNetwork)).collect(Collectors.toList());
 		Completable.merge(assertions)
 			.doOnSubscribe(d -> bftNetwork.start())
