@@ -24,7 +24,7 @@ import org.apache.logging.log4j.Logger
 import static utils.Generic.listToDelimitedString
 
 class CmdHelper {
-    private static final Logger logger = LogManager.getLogger(CmdHelper.class)
+    private static final Logger logger = LogManager.getLogger()
 
     static List<String[]> runCommand(cmd, String[] env = null, failOnError = false) {
 

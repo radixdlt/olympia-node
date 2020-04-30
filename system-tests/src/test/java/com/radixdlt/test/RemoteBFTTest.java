@@ -37,7 +37,7 @@ import java.util.stream.Collectors;
  * Optionally this test can wait for certain conditions to be met before running the actual checks.
  */
 public final class RemoteBFTTest {
-	private final Logger logger = LogManager.getLogger(this.getClass());
+	private static final Logger logger = LogManager.getLogger();
 
 	private final RemoteBFTNetworkBridge testNetwork;
 	private final ImmutableList<RemoteBFTCheck> prerequisites;

@@ -36,7 +36,7 @@ import java.util.stream.Collectors;
  * failure of this test where liveness did not actually fail but nodes failed to respond.
  */
 public class LivenessCheck implements RemoteBFTCheck {
-	private final Logger logger = LogManager.getLogger(this.getClass());
+	private static final Logger logger = LogManager.getLogger();
 
 	private final long patience;
 	private final TimeUnit patienceUnit;

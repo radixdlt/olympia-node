@@ -44,7 +44,7 @@ import java.util.stream.Collectors;
  * assert safety (where every vertex includes a reference to the last).
  */
 public class SafetyCheck implements RemoteBFTCheck {
-	private final Logger logger = LogManager.getLogger(this.getClass());
+	private static final Logger logger = LogManager.getLogger();
 
 	private final long timeout;
 	private final TimeUnit timeoutUnit;
