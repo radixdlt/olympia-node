@@ -54,7 +54,7 @@ public class CounterCheck implements RemoteBFTCheck {
 
 	@Override
 	public String toString() {
-		return String.format("CounterCheck{%s}", Optional.of(assertionDescription).orElse("<no description>"));
+		return String.format("CounterCheck{%s}", assertionDescription == null ? "<no description>" : assertionDescription);
 	}
 
 	/**
