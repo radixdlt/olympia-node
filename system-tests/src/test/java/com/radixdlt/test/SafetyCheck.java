@@ -37,7 +37,9 @@ import java.util.stream.Collectors;
 
 /**
  * A safety check scanning the nodes for any safety violation. This check uses the "api/vertices/committed" endpoint
- * to assert that nodes are committed to the same vertex given selected samples provided by the nodes.
+ * to assert that nodes are committed to the same vertex given selected samples provided by the nodes. Specifically,
+ * this check fails if there is any pair of [{"view": 1, "hash": "abc"}] and [{"view": 1, "hash": "xyz"}] with
+ * the same "view" but a different "hash" returned by the network (could even be a single node if malfunctioning).
  *
  * Note that the "api/vertices/committed" endpoint returns only a (deterministic) subset of committed vertices as
  * configured in RadixCore and this test therefore relies on the implicit hash chain formed by vertices to
