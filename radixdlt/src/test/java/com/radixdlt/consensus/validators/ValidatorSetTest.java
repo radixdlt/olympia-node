@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus.validators;
 
+import com.radixdlt.utils.UInt256;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
@@ -53,10 +54,10 @@ public class ValidatorSetTest {
 		ECKeyPair k4 = ECKeyPair.generateNew();
 		ECKeyPair k5 = ECKeyPair.generateNew(); // Rogue signature
 
-		Validator v1 = Validator.from(k1.getPublicKey());
-		Validator v2 = Validator.from(k2.getPublicKey());
-		Validator v3 = Validator.from(k3.getPublicKey());
-		Validator v4 = Validator.from(k4.getPublicKey());
+		Validator v1 = Validator.from(k1.getPublicKey(), UInt256.ONE);
+		Validator v2 = Validator.from(k2.getPublicKey(), UInt256.ONE);
+		Validator v3 = Validator.from(k3.getPublicKey(), UInt256.ONE);
+		Validator v4 = Validator.from(k4.getPublicKey(), UInt256.ONE);
 
 		ValidatorSet vs = ValidatorSet.from(ImmutableSet.of(v1, v2, v3, v4));
 		Hash message = Hash.random();
@@ -92,5 +93,21 @@ public class ValidatorSetTest {
 		assertTrue(vst4.addSignature(k3.getPublicKey(), k3.sign(message)));
 		assertTrue(vst4.complete());
 		assertEquals(3, vst4.signatures().count());
+	}
+
+	@Test
+	public void testValidateWithUnequalPower() {
+		ECKeyPair k1 = ECKeyPair.generateNew();
+		ECKeyPair k2 = ECKeyPair.generateNew();
+
+		Validator v1 = Validator.from(k1.getPublicKey(), UInt256.THREE);
+		Validator v2 = Validator.from(k2.getPublicKey(), UInt256.ONE);
+
+		ValidatorSet vs = ValidatorSet.from(ImmutableSet.of(v1, v2));
+		Hash message = Hash.random();
+		ValidationState vst1 = vs.newValidationState(message);
+		assertTrue(vst1.addSignature(k1.getPublicKey(), k1.sign(message)));
+		assertTrue(vst1.complete());
+		assertEquals(1, vst1.signatures().count());
 	}
 }
