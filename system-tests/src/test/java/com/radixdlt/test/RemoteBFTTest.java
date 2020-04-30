@@ -99,7 +99,7 @@ public final class RemoteBFTTest {
 	/**
 	 * Run this test as configured for the specified duration, waiting for prerequisites if required.
 	 * This method blocks and completes when the test has concluded or immediately throws an exception if there are errors.
- * @param duration The duration this test should be run for
+	 * @param duration The duration this test should be run for
 	 * @param durationUnit The unit of the duration
 	 */
 	public void runBlocking(long duration, TimeUnit durationUnit) {
