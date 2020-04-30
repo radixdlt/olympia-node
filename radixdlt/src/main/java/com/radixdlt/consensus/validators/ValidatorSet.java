@@ -37,8 +37,8 @@ import com.radixdlt.crypto.Hash;
 public final class ValidatorSet {
 	private final ImmutableBiMap<ECPublicKey, Validator> validators;
 
-	// We assume that we won't have more than 2^128 validators (2^32 is in fact the limit)
-	// so 2^256 is big enough here
+	// Because we will base power on tokens and because tokens have a max limit
+	// of 2^256 this should never overflow
 	private final transient UInt256 totalPower;
 
 	private ValidatorSet(Collection<Validator> validators) {
