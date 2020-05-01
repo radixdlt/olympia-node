@@ -21,38 +21,38 @@ package com.radixdlt.test;
 import com.google.common.collect.ImmutableSet;
 import okhttp3.HttpUrl;
 
-import java.util.Collection;
 import java.util.Objects;
 import java.util.Set;
 
 // TODO ideally should be able to manage a clusters lifecycle the same way a docker net is managed
 public class StaticRemoteBFTNetwork implements RemoteBFTNetwork {
-	private final Set<String> nodeIps;
+	private final Set<String> nodeUrls;
 
-	private StaticRemoteBFTNetwork(Set<String> nodeIps) {
-		this.nodeIps = nodeIps;
+	private StaticRemoteBFTNetwork(Set<String> nodeUrls) {
+		this.nodeUrls = nodeUrls;
 	}
 
 	@Override
 	public HttpUrl getEndpointUrl(String nodeId, String endpoint) {
-		if (!nodeIps.contains(nodeId)) {
+		if (!nodeUrls.contains(nodeId)) {
 			throw new IllegalArgumentException("unknown nodeId: " + nodeId);
 		}
 
-		String endpointUrl = String.format("http://%s/%s", nodeId, endpoint);
+		String endpointUrl = String.format("%s/%s", nodeId, endpoint);
 		return HttpUrl.parse(endpointUrl);
 	}
 
 	@Override
 	public Set<String> getNodeIds() {
-		return nodeIps; // TODO is using node IPs as their ids fine?
+		return nodeUrls; // TODO is using node URLs as their ids fine?
 	}
 
-	public static StaticRemoteBFTNetwork from(Collection<String> nodeIps) {
+	public static StaticRemoteBFTNetwork from(Iterable<String> nodeIps) {
 		Objects.requireNonNull(nodeIps);
-		if (nodeIps.isEmpty()) {
+		ImmutableSet<String> nodeIpsSet = ImmutableSet.copyOf(nodeIps);
+		if (nodeIpsSet.isEmpty()) {
 			throw new IllegalArgumentException("network must contain at least one node ip");
 		}
-		return new StaticRemoteBFTNetwork(ImmutableSet.copyOf(nodeIps));
+		return new StaticRemoteBFTNetwork(nodeIpsSet);
 	}
 }
