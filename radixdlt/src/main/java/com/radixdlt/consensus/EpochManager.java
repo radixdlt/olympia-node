@@ -86,18 +86,27 @@ public class EpochManager {
 		ProposerElection proposerElection = proposerElectionFactory.create(validatorSet);
 		log.info("NEXT_EPOCH: ProposerElection: {}", proposerElection);
 
-		return new BFTEventReducer(
+		BFTEventReducer reducer = new BFTEventReducer(
 			this.proposalGenerator,
 			this.mempool,
 			this.sender,
 			this.safetyRules,
 			this.pacemaker,
-			this.pacemakerRx,
 			this.vertexStore,
 			this.pendingVotes,
 			proposerElection,
 			this.selfKey,
 			validatorSet,
+			counters
+		);
+
+		return new BFTEventPreprocessor(
+			this.selfKey.getPublicKey(),
+			reducer,
+			this.pacemaker,
+			this.pacemakerRx,
+			this.vertexStore,
+			proposerElection,
 			counters
 		);
 	}

@@ -26,13 +26,7 @@ import java.util.Optional;
 /**
  * Manages the pacemaker state machine.
  */
-public interface Pacemaker {
-	/**
-	 * Retrieves the local current view the pacemaker is at
-	 * @return view of the pacemaker
-	 */
-	View getCurrentView();
-
+public interface Pacemaker extends PacemakerState {
 	/**
 	 * Signifies to the pacemaker that a timeout for a given view is processed
 	 * @param view the view to timeout

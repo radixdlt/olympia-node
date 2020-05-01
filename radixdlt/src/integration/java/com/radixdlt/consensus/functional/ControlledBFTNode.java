@@ -22,6 +22,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.powermock.api.mockito.PowerMockito.when;
 
+import com.radixdlt.consensus.BFTEventPreprocessor;
+import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.DefaultHasher;
 import com.radixdlt.consensus.BFTEventSender;
 import com.radixdlt.consensus.GetVertexRequest;
@@ -64,7 +66,7 @@ import java.util.function.Function;
  * processNext() call.
  */
 class ControlledBFTNode {
-	private final BFTEventReducer ec;
+	private final BFTEventProcessor ec;
 	private final Function<ECPublicKey, Object> receiver;
 	private final SystemCounters systemCounters;
 	private final VertexStore vertexStore;
@@ -96,18 +98,27 @@ class ControlledBFTNode {
 		Hasher hasher = new DefaultHasher();
 		SafetyRules safetyRules = new SafetyRules(key, SafetyState.initialState(), hasher);
 		PendingVotes pendingVotes = new PendingVotes(hasher);
-		this.ec = new BFTEventReducer(
+		BFTEventReducer reducer = new BFTEventReducer(
 			proposalGenerator,
 			mempool,
 			sender,
 			safetyRules,
 			pacemaker,
-			pacemakerRx,
 			vertexStore,
 			pendingVotes,
 			proposerElection,
 			key,
 			validatorSet,
+			systemCounters
+		);
+
+		this.ec = new BFTEventPreprocessor(
+			key.getPublicKey(),
+			reducer,
+			pacemaker,
+			pacemakerRx,
+			vertexStore,
+			proposerElection,
 			systemCounters
 		);
 	}

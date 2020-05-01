@@ -21,6 +21,9 @@ import org.junit.Test;
 public class EpochManagerTest {
 	@Test
 	public void when_next_epoch__then_should_create_new_event_coordinator() {
+		ECKeyPair keyPair = mock(ECKeyPair.class);
+		when(keyPair.getPublicKey()).thenReturn(mock(ECPublicKey.class));
+
 		EpochManager epochManager = new EpochManager(
 			mock(ProposalGenerator.class),
 			mock(Mempool.class),
@@ -31,7 +34,7 @@ public class EpochManagerTest {
 			mock(VertexStore.class),
 			mock(PendingVotes.class),
 			proposers -> mock(ProposerElection.class),
-			mock(ECKeyPair.class),
+			keyPair,
 			mock(SystemCounters.class)
 		);
 
