@@ -26,6 +26,21 @@ import java.util.concurrent.TimeUnit;
  * Latent network tests.
  */
 public class LatentNetworkTest {
+	/**
+	 * Gets the test builder for latent BFT network tests.
+	 * @return The test builder
+	 */
+	static RemoteBFTTest.Builder latentTestBuilder() {
+		return RemoteBFTTest.builder()
+			.assertResponsiveness()
+			.assertAllProposalsHaveDirectParents()
+			.assertNoRejectedProposals()
+			.assertNoSyncExceptions()
+			.assertNoTimeouts()
+			.assertSafety()
+			.assertLiveness();
+	}
+
 	@Test
 	public void given_3_correct_bfts_in_latent_docker_network__then_all_instances_should_get_same_commits_and_progress_should_be_made() {
 		try (DockerNetwork network = DockerNetwork.builder()
@@ -33,7 +48,7 @@ public class LatentNetworkTest {
 			.build())
 		{
 			network.startBlocking();
-			RemoteBFTTest test = BFTNetworkTests.latentTestBuilder()
+			RemoteBFTTest test = latentTestBuilder()
 				.network(RemoteBFTNetworkBridge.of(network))
 				.waitUntilResponsive()
 				.startConsensusOnRun()
@@ -45,7 +60,7 @@ public class LatentNetworkTest {
 	@Test
 	public void given_3_correct_bfts_in_latent_cluster_network__then_all_instances_should_get_same_commits_and_progress_should_be_made() {
 		final StaticClusterNetwork network = StaticClusterNetwork.extractFromProperty(3);
-		RemoteBFTTest test = BFTNetworkTests.latentTestBuilder()
+		RemoteBFTTest test = latentTestBuilder()
 			.network(RemoteBFTNetworkBridge.of(network))
 			.waitUntilResponsive()
 			.startConsensusOnRun() // in case we're the first to access the cluster
