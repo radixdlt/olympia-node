@@ -23,7 +23,7 @@ import org.junit.Test;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Latent network tests.
+ * BFT tests against static, non-byzantine networks with random latency.
  */
 public class LatentNetworkTest {
 	/**
