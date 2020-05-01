@@ -47,9 +47,6 @@ public final class VertexStore {
 	private final SystemCounters counters;
 	private final Map<Hash, Vertex> vertices = new ConcurrentHashMap<>();
 	private final BehaviorSubject<Vertex> lastCommittedVertex = BehaviorSubject.create();
-	/*
-	private final VertexSupplier vertexSupplier;
-	*/
 
 	// Should never be null
 	private Vertex root;
@@ -63,16 +60,10 @@ public final class VertexStore {
 		QuorumCertificate rootQC,
 		RadixEngine engine,
 		SystemCounters counters
-		/*
-		VertexSupplier vertexSupplier
-		*/
 	) {
 		this.engine = Objects.requireNonNull(engine);
 		this.counters = Objects.requireNonNull(counters);
 		this.highestQC = Objects.requireNonNull(rootQC);
-		/*
-		this.vertexSupplier = Objects.requireNonNull(vertexSupplier);
-		*/
 		try {
 			this.engine.store(genesisVertex.getAtom());
 		} catch (RadixEngineException e) {
@@ -83,41 +74,12 @@ public final class VertexStore {
 		this.lastCommittedVertex.onNext(genesisVertex);
 	}
 
-	public boolean syncToQC(QuorumCertificate qc/*, ECPublicKey author, Completable cancelSignal*/) {
+	public boolean syncToQC(QuorumCertificate qc) {
 		final Vertex vertex = vertices.get(qc.getProposed().getId());
 		if (vertex != null) {
 			addQC(qc);
 			return true;
 		}
-
-		if (!vertices.containsKey(qc.getParent().getId())) {
-			// Too far behind
-			// TODO: more syncing
-			return false;
-		}
-
-		/*
-		log.info("Sending GET_VERTEX Request to {}", author.toString().substring(0, 6));
-		vertexSupplier.getVertex(qc.getProposed().getId(), author)
-			.takeUntil(cancelSignal)
-			.subscribe(
-				v -> {
-					this.counters.increment(CounterType.CONSENSUS_SYNC_SUCCESS);
-					log.info("Received GET_VERTEX Response: {}", v);
-					try {
-						this.insertVertex(v);
-					} catch (VertexInsertionException e) {
-						// Currently only looking to sync one vertex away from known QC
-						// so this should never throw the MissingParentException
-						throw new IllegalStateException("Should not go here.", e);
-					}
-					addQC(qc);
-				},
-				e -> {
-					log.warn("Unable to sync to QC {}", qc, e.getCause());
-					this.counters.increment(CounterType.CONSENSUS_SYNC_EXCEPTION);
-				});
-		*/
 
 		return false;
 	}

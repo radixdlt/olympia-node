@@ -53,16 +53,6 @@ public class BFTFunctionalTest {
 
 		AtomicReference<ImmutableList<ControlledBFTNode>> nodesForVertexSupplier = new AtomicReference<>();
 
-		/*
-		VertexSupplier shortCircuitVertexSupplier = (vertexId, node) -> Single.create(emitter -> {
-			ImmutableList<ControlledBFTNode> nodes = nodesForVertexSupplier.get();
-			if (nodes != null) {
-				Vertex vertex = nodes.get(pks.indexOf(node)).getVertexStore().getVertex(vertexId);
-				emitter.onSuccess(vertex);
-			}
-		});
-		*/
-
 		this.nodes = keys.stream()
 			.map(key -> new ControlledBFTNode(
 				key,
@@ -70,7 +60,6 @@ public class BFTFunctionalTest {
 				network.getReceiver(key.getPublicKey()),
 				proposerElection,
 				validatorSet
-				//shortCircuitVertexSupplier
 			))
 			.collect(ImmutableList.toImmutableList());
 
