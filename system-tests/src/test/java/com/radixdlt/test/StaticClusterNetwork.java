@@ -32,12 +32,12 @@ import java.util.Set;
  * Note that unmanaged implies that the lifecycle of the network and the nodes within it is not managed here.
  */
 // TODO ideally should be able to manage a clusters lifecycle the same way a docker net is managed
-public class StaticClusterBFTNetwork implements RemoteBFTNetwork {
+public class StaticClusterNetwork implements RemoteBFTNetwork {
 	private static final String STATIC_CLUSTER_NODE_URLS_PROPERTY = "clusterNodeUrls";
 
 	private final Set<String> nodeUrls;
 
-	private StaticClusterBFTNetwork(Set<String> nodeUrls) {
+	private StaticClusterNetwork(Set<String> nodeUrls) {
 		this.nodeUrls = nodeUrls;
 	}
 
@@ -64,13 +64,13 @@ public class StaticClusterBFTNetwork implements RemoteBFTNetwork {
 	 * @param nodeUrls The node URLs
 	 * @return A static BFT network comprising the given ndoes
 	 */
-	public static StaticClusterBFTNetwork from(Iterable<String> nodeUrls) {
+	public static StaticClusterNetwork from(Iterable<String> nodeUrls) {
 		Objects.requireNonNull(nodeUrls);
 		ImmutableSet<String> nodeIpsSet = ImmutableSet.copyOf(nodeUrls);
 		if (nodeIpsSet.isEmpty()) {
 			throw new IllegalArgumentException("network must contain at least one node ip");
 		}
-		return new StaticClusterBFTNetwork(nodeIpsSet);
+		return new StaticClusterNetwork(nodeIpsSet);
 	}
 
 	/**
@@ -80,9 +80,9 @@ public class StaticClusterBFTNetwork implements RemoteBFTNetwork {
 	 * @param expectedNumNodes The expected number of nodes
 	 * @return A static cluster network
 	 */
-	public static StaticClusterBFTNetwork extractFromProperty(int expectedNumNodes) {
+	public static StaticClusterNetwork extractFromProperty(int expectedNumNodes) {
 		ImmutableList<String> nodeUrls = getClusterNodeUrls(expectedNumNodes);
-		return StaticClusterBFTNetwork.from(nodeUrls);
+		return StaticClusterNetwork.from(nodeUrls);
 	}
 
 	/**
