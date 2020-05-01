@@ -18,7 +18,15 @@
 
 package com.radixdlt.test;
 
+/**
+ * A collection of base network test templates with required assertions pre-added for common scenarios.
+ * These test templates are used to ensure consistency between tests with different targets.
+ */
 public final class BFTNetworkTests {
+	/**
+	 * Gets the test builder for latent BFT network tests.
+	 * @return The test builder
+	 */
 	static RemoteBFTTest.Builder latentTestBuilder() {
 		return RemoteBFTTest.builder()
 			.assertResponsiveness()
