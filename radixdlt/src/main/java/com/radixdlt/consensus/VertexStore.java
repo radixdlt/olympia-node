@@ -19,12 +19,10 @@ package com.radixdlt.consensus;
 
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 
-import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import java.util.ArrayList;
@@ -49,7 +47,9 @@ public final class VertexStore {
 	private final SystemCounters counters;
 	private final Map<Hash, Vertex> vertices = new ConcurrentHashMap<>();
 	private final BehaviorSubject<Vertex> lastCommittedVertex = BehaviorSubject.create();
+	/*
 	private final VertexSupplier vertexSupplier;
+	*/
 
 	// Should never be null
 	private Vertex root;
@@ -62,13 +62,17 @@ public final class VertexStore {
 		Vertex genesisVertex,
 		QuorumCertificate rootQC,
 		RadixEngine engine,
-		SystemCounters counters,
+		SystemCounters counters
+		/*
 		VertexSupplier vertexSupplier
+		*/
 	) {
 		this.engine = Objects.requireNonNull(engine);
 		this.counters = Objects.requireNonNull(counters);
 		this.highestQC = Objects.requireNonNull(rootQC);
+		/*
 		this.vertexSupplier = Objects.requireNonNull(vertexSupplier);
+		*/
 		try {
 			this.engine.store(genesisVertex.getAtom());
 		} catch (RadixEngineException e) {
@@ -79,38 +83,43 @@ public final class VertexStore {
 		this.lastCommittedVertex.onNext(genesisVertex);
 	}
 
-	public void syncToQC(QuorumCertificate qc, ECPublicKey author, Completable cancelSignal) throws SyncException {
+	public boolean syncToQC(QuorumCertificate qc/*, ECPublicKey author, Completable cancelSignal*/) {
 		final Vertex vertex = vertices.get(qc.getProposed().getId());
-		if (vertex == null) {
-			if (!vertices.containsKey(qc.getParent().getId())) {
-				// Too far behind
-				// TODO: more syncing
-				throw new SyncException(qc);
-			}
-
-			final Vertex proposedVertex;
-			try {
-				log.info("Sending GET_VERTEX Request to {}", author.toString().substring(0, 6));
-				// TODO: remove blocking
-				proposedVertex = vertexSupplier.getVertex(qc.getProposed().getId(), author)
-					.takeUntil(cancelSignal)
-					.doOnSuccess(v -> log.info("Received GET_VERTEX Response: {}", v))
-					.blockingGet();
-				this.counters.increment(CounterType.CONSENSUS_SYNC_SUCCESS);
-			} catch (Exception e) {
-				throw new SyncException(qc, e);
-			}
-
-			try {
-				this.insertVertex(proposedVertex);
-			} catch (VertexInsertionException e) {
-				// Currently only looking to sync one vertex away from known QC
-				// so this should never throw the MissingParentException
-				throw new IllegalStateException("Should not go here.", e);
-			}
+		if (vertex != null) {
+			addQC(qc);
+			return true;
 		}
 
-		addQC(qc);
+		if (!vertices.containsKey(qc.getParent().getId())) {
+			// Too far behind
+			// TODO: more syncing
+			return false;
+		}
+
+		/*
+		log.info("Sending GET_VERTEX Request to {}", author.toString().substring(0, 6));
+		vertexSupplier.getVertex(qc.getProposed().getId(), author)
+			.takeUntil(cancelSignal)
+			.subscribe(
+				v -> {
+					this.counters.increment(CounterType.CONSENSUS_SYNC_SUCCESS);
+					log.info("Received GET_VERTEX Response: {}", v);
+					try {
+						this.insertVertex(v);
+					} catch (VertexInsertionException e) {
+						// Currently only looking to sync one vertex away from known QC
+						// so this should never throw the MissingParentException
+						throw new IllegalStateException("Should not go here.", e);
+					}
+					addQC(qc);
+				},
+				e -> {
+					log.warn("Unable to sync to QC {}", qc, e.getCause());
+					this.counters.increment(CounterType.CONSENSUS_SYNC_EXCEPTION);
+				});
+		*/
+
+		return false;
 	}
 
 	public void addQC(QuorumCertificate qc) {

@@ -20,7 +20,6 @@ package com.radixdlt.consensus;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -28,12 +27,9 @@ import static org.mockito.Mockito.when;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECDSASignatures;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
-import io.reactivex.rxjava3.core.Completable;
-import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.observers.TestObserver;
 import java.util.Arrays;
 import org.junit.Before;
@@ -46,7 +42,6 @@ public class VertexStoreTest {
 	private QuorumCertificate rootQC;
 	private VertexStore vertexStore;
 	private RadixEngine radixEngine;
-	private VertexSupplier vertexSupplier;
 
 	@Before
 	public void setUp() {
@@ -56,12 +51,12 @@ public class VertexStoreTest {
 		this.rootQC = new QuorumCertificate(voteData, new ECDSASignatures());
 		this.radixEngine = mock(RadixEngine.class);
 		SystemCounters counters = mock(SystemCounters.class);
-		this.vertexSupplier = mock(VertexSupplier.class);
-		this.vertexStore = new VertexStore(genesisVertex, rootQC, radixEngine, counters, vertexSupplier);
+		this.vertexStore = new VertexStore(genesisVertex, rootQC, radixEngine, counters);
 	}
 
+	/*
 	@Test
-	public void when_vertex_retriever_succeeds__then_vertex_is_inserted() throws Exception {
+	public void when_vertex_retriever_succeeds__then_vertex_is_inserted() {
 		Vertex vertex = Vertex.createVertex(rootQC, View.of(1), mock(Atom.class));
 		VoteData voteData = new VoteData(VertexMetadata.ofVertex(vertex), genesisVertexMetadata);
 		QuorumCertificate qc = new QuorumCertificate(voteData, new ECDSASignatures());
@@ -70,7 +65,7 @@ public class VertexStoreTest {
 
 		ECPublicKey author = mock(ECPublicKey.class);
 		when(vertexSupplier.getVertex(eq(vertex.getId()), eq(author))).thenReturn(Single.just(vertex));
-		vertexStore.syncToQC(qc, author, Completable.never());
+		vertexStore.syncToQC(qc);
 
 		assertThat(vertexStore.getHighestQC()).isEqualTo(qc);
 	}
@@ -86,9 +81,10 @@ public class VertexStoreTest {
 
 		ECPublicKey author = mock(ECPublicKey.class);
 		when(vertexSupplier.getVertex(eq(vertexId), eq(author))).thenReturn(Single.error(new RuntimeException()));
-		assertThatThrownBy(() -> vertexStore.syncToQC(qc, author, Completable.never()))
+		assertThatThrownBy(() -> vertexStore.syncToQC(qc))
 			.isInstanceOf(SyncException.class);
 	}
+	*/
 
 	@Test
 	public void when_inserting_vertex_with_missing_parent__then_missing_parent_exception_is_thrown() {

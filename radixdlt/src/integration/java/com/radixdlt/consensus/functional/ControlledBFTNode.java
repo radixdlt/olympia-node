@@ -18,9 +18,7 @@
 package com.radixdlt.consensus.functional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.powermock.api.mockito.PowerMockito.when;
 
 import com.radixdlt.consensus.BFTEventPreprocessor;
 import com.radixdlt.consensus.BFTEventProcessor;
@@ -36,7 +34,6 @@ import com.radixdlt.consensus.BFTEventReducer;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.VertexStore;
-import com.radixdlt.consensus.VertexSupplier;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.VoteData;
@@ -44,7 +41,6 @@ import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker.TimeoutSender;
 import com.radixdlt.consensus.liveness.MempoolProposalGenerator;
 import com.radixdlt.consensus.liveness.Pacemaker;
-import com.radixdlt.consensus.liveness.PacemakerRx;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.safety.SafetyRules;
@@ -58,7 +54,6 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.mempool.EmptyMempool;
 import com.radixdlt.mempool.Mempool;
-import io.reactivex.rxjava3.core.Completable;
 import java.util.function.Function;
 
 /**
@@ -76,8 +71,7 @@ class ControlledBFTNode {
 		BFTEventSender sender,
 		Function<ECPublicKey, Object> receiver,
 		ProposerElection proposerElection,
-		ValidatorSet validatorSet,
-		VertexSupplier vertexSupplier
+		ValidatorSet validatorSet
 	) {
 		this.receiver = receiver;
 		this.systemCounters = new SystemCountersImpl();
@@ -87,14 +81,12 @@ class ControlledBFTNode {
 			new ECDSASignatures()
 		);
 		RadixEngine re = mock(RadixEngine.class);
-		this.vertexStore = new VertexStore(genesisVertex, genesisQC, re, systemCounters, vertexSupplier);
+		this.vertexStore = new VertexStore(genesisVertex, genesisQC, re, systemCounters);
 		Mempool mempool = new EmptyMempool();
 		ProposalGenerator proposalGenerator = new MempoolProposalGenerator(vertexStore, mempool);
 		TimeoutSender timeoutSender = mock(TimeoutSender.class);
 		// Timeout doesn't matter here
 		Pacemaker pacemaker = new FixedTimeoutPacemaker(1, timeoutSender);
-		PacemakerRx pacemakerRx = mock(PacemakerRx.class);
-		when(pacemakerRx.timeout(any())).thenReturn(Completable.never());
 		Hasher hasher = new DefaultHasher();
 		SafetyRules safetyRules = new SafetyRules(key, SafetyState.initialState(), hasher);
 		PendingVotes pendingVotes = new PendingVotes(hasher);
@@ -116,9 +108,9 @@ class ControlledBFTNode {
 			key.getPublicKey(),
 			reducer,
 			pacemaker,
-			pacemakerRx,
 			vertexStore,
 			proposerElection,
+			validatorSet,
 			systemCounters
 		);
 	}

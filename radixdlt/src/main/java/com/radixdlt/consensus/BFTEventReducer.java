@@ -127,6 +127,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 
 	@Override
 	public void processVote(Vote vote) {
+		log.trace("{}: VOTE: Processing {}", this.getShortName(), vote);
 		// accumulate votes into QCs in store
 		Optional<QuorumCertificate> potentialQc = this.pendingVotes.insertVote(vote, validatorSet);
 		if (potentialQc.isPresent()) {
@@ -139,6 +140,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 
 	@Override
 	public void processNewView(NewView newView) {
+		log.trace("{}: NEW_VIEW: Processing {}", this.getShortName(), newView);
 		processQC(newView.getQC());
 		final Optional<View> nextView = this.pacemaker.processNewView(newView, validatorSet);
 		if (nextView.isPresent()) {
@@ -152,6 +154,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 
 	@Override
 	public void processProposal(Proposal proposal) {
+		log.trace("{}: PROPOSAL: Processing {}", this.getShortName(), proposal);
 		final Vertex proposedVertex = proposal.getVertex();
 		final View proposedVertexView = proposedVertex.getView();
 

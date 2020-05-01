@@ -29,6 +29,8 @@ public interface SystemCounters {
 		CONSENSUS_REJECTED("consensus.rejected"),
 		CONSENSUS_SYNC_SUCCESS("consensus.sync_success"),
 		CONSENSUS_SYNC_EXCEPTION("consensus.sync_exception"),
+		CONSENSUS_EVENTS_QUEUE_REQUIRED("consensus.events_queued_required"),
+		CONSENSUS_EVENTS_QUEUE_NOT_REQUIRED("consensus.events_queued_not_required"),
 		CONSENSUS_TIMEOUT("consensus.timeout"),
 		CONSENSUS_TIMEOUT_VIEW("consensus.timeout_view"),
 		CONSENSUS_VERTEXSTORE_SIZE("consensus.vertexstore_size"),

@@ -144,6 +144,6 @@ public class CerberusModule extends AbstractModule {
 		final QuorumCertificate rootQC = new QuorumCertificate(voteData, new ECDSASignatures());
 
 		log.info("Genesis Vertex Id: {}", genesisVertex.getId());
-		return new VertexStore(genesisVertex, rootQC, radixEngine, counters, vertexSupplier);
+		return new VertexStore(genesisVertex, rootQC, radixEngine, counters);
 	}
 }

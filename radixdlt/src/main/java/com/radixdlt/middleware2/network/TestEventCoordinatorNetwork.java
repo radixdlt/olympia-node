@@ -31,7 +31,6 @@ import io.reactivex.rxjava3.core.Observable;
 
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.disposables.Disposable;
-import io.reactivex.rxjava3.schedulers.Schedulers;
 import io.reactivex.rxjava3.schedulers.Timed;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
@@ -202,14 +201,7 @@ public class TestEventCoordinatorNetwork {
 						return msg2;
 					}
 				})
-				.delay(p -> {
-					if (p.value().delay > 0) {
-						return Observable.timer(p.value().delay, TimeUnit.MILLISECONDS, Schedulers.io());
-					} else {
-						return Observable.just(0L);
-					}
-				})
-				.map(Timed::value)
+				.concatMap(p -> Observable.just(p.value()).delay(p.value().delay, TimeUnit.MILLISECONDS))
 				.map(MessageInTransit::getContent)
 				.publish()
 				.refCount();

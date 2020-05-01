@@ -17,8 +17,6 @@
 
 package com.radixdlt.consensus.simulation.synchronous;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
-
 import com.radixdlt.consensus.simulation.BFTSimulatedTest;
 import org.junit.Test;
 
@@ -64,7 +62,7 @@ public class RandomLatencyTest {
 	 * due to the case of a node randomly falling behind.
 	 */
 	@Test
-	public void given_4_correct_bfts_in_random_network_and_no_sync__then_network_should_eventually_timeout() {
+	public void given_4_correct_bfts_in_random_network_and_no_sync__then_all_synchronous_checks_should_pass() {
 		final int minLatency = 10;
 		final int maxLatency = 200;
 		final int trips = 8;
@@ -77,7 +75,7 @@ public class RandomLatencyTest {
 			.disableSync(true)
 			.checkNoTimeouts()
 			.build();
-		assertThatThrownBy(() -> bftTest.run(10, TimeUnit.MINUTES))
-			.isInstanceOf(AssertionError.class);
+
+		bftTest.run(1, TimeUnit.MINUTES);
 	}
 }

@@ -18,8 +18,6 @@
 package com.radixdlt.consensus.functional;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.VertexSupplier;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.RotatingLeaders;
 import com.radixdlt.consensus.validators.Validator;
@@ -28,7 +26,6 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.utils.UInt256;
-import io.reactivex.rxjava3.core.Single;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -56,6 +53,7 @@ public class BFTFunctionalTest {
 
 		AtomicReference<ImmutableList<ControlledBFTNode>> nodesForVertexSupplier = new AtomicReference<>();
 
+		/*
 		VertexSupplier shortCircuitVertexSupplier = (vertexId, node) -> Single.create(emitter -> {
 			ImmutableList<ControlledBFTNode> nodes = nodesForVertexSupplier.get();
 			if (nodes != null) {
@@ -63,6 +61,7 @@ public class BFTFunctionalTest {
 				emitter.onSuccess(vertex);
 			}
 		});
+		*/
 
 		this.nodes = keys.stream()
 			.map(key -> new ControlledBFTNode(
@@ -70,8 +69,8 @@ public class BFTFunctionalTest {
 				network.getSender(key.getPublicKey()),
 				network.getReceiver(key.getPublicKey()),
 				proposerElection,
-				validatorSet,
-				shortCircuitVertexSupplier
+				validatorSet
+				//shortCircuitVertexSupplier
 			))
 			.collect(ImmutableList.toImmutableList());
 

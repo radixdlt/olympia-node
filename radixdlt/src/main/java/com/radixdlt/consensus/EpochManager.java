@@ -20,7 +20,6 @@ package com.radixdlt.consensus;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import com.radixdlt.consensus.liveness.Pacemaker;
-import com.radixdlt.consensus.liveness.PacemakerRx;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.safety.SafetyRules;
@@ -43,7 +42,6 @@ public class EpochManager {
 	private final BFTEventSender sender;
 	private final SafetyRules safetyRules;
 	private final Pacemaker pacemaker;
-	private final PacemakerRx pacemakerRx;
 	private final VertexStore vertexStore;
 	private final PendingVotes pendingVotes;
 	private final ProposerElectionFactory proposerElectionFactory;
@@ -57,7 +55,6 @@ public class EpochManager {
 		BFTEventSender sender,
 		SafetyRules safetyRules,
 		Pacemaker pacemaker,
-		PacemakerRx pacemakerRx,
 		VertexStore vertexStore,
 		PendingVotes pendingVotes,
 		ProposerElectionFactory proposerElectionFactory,
@@ -69,7 +66,6 @@ public class EpochManager {
 		this.sender = Objects.requireNonNull(sender);
 		this.safetyRules = Objects.requireNonNull(safetyRules);
 		this.pacemaker = Objects.requireNonNull(pacemaker);
-		this.pacemakerRx = Objects.requireNonNull(pacemakerRx);
 		this.vertexStore = Objects.requireNonNull(vertexStore);
 		this.pendingVotes = Objects.requireNonNull(pendingVotes);
 		this.proposerElectionFactory = Objects.requireNonNull(proposerElectionFactory);
@@ -104,9 +100,9 @@ public class EpochManager {
 			this.selfKey.getPublicKey(),
 			reducer,
 			this.pacemaker,
-			this.pacemakerRx,
 			this.vertexStore,
 			proposerElection,
+			validatorSet,
 			counters
 		);
 	}

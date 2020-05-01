@@ -121,7 +121,7 @@ public class SimulatedBFTNetwork {
 					RadixEngine radixEngine = mock(RadixEngine.class);
 					when(radixEngine.staticCheck(any())).thenReturn(Optional.empty());
 					VertexSupplier vertexSupplier = underlyingNetwork.getVertexSupplier(e.getPublicKey());
-					return new VertexStore(genesisVertex, genesisQC, radixEngine, this.counters.get(e), vertexSupplier);
+					return new VertexStore(genesisVertex, genesisQC, radixEngine, this.counters.get(e));
 				})
 			);
 		this.timeoutSenders = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e,
@@ -155,7 +155,6 @@ public class SimulatedBFTNetwork {
 			underlyingNetwork.getNetworkSender(key.getPublicKey()),
 			safetyRules,
 			pacemaker,
-			timeoutSender,
 			vertexStores.get(key),
 			pendingVotes,
 			proposers -> getProposerElection(), // create a new ProposerElection per node
