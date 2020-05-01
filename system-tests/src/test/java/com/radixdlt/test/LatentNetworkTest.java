@@ -22,12 +22,14 @@ import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
 
-public class LatentDockerNetworkTest {
+/**
+ * Latent network tests.
+ */
+public class LatentNetworkTest {
 	@Test
-	public void given_3_correct_bfts_in_latent_network__then_all_instances_should_get_same_commits_and_progress_should_be_made() {
-		final int numNodes = 3;
-		try (DockerRemoteBFTNetwork network = DockerRemoteBFTNetwork.builder()
-			.numNodes(numNodes)
+	public void given_3_correct_bfts_in_latent_docker_network__then_all_instances_should_get_same_commits_and_progress_should_be_made() {
+		try (DockerBFTNetwork network = DockerBFTNetwork.builder()
+			.numNodes(3)
 			.build())
 		{
 			network.startBlocking();
@@ -38,5 +40,16 @@ public class LatentDockerNetworkTest {
 				.build();
 			test.runBlocking(1, TimeUnit.MINUTES);
 		}
+	}
+
+	@Test
+	public void given_3_correct_bfts_in_latent_cluster_network__then_all_instances_should_get_same_commits_and_progress_should_be_made() {
+		final StaticClusterBFTNetwork network = StaticClusterBFTNetwork.extractFromProperty(3);
+		RemoteBFTTest test = BFTNetworkTests.latentTestBuilder()
+			.network(RemoteBFTNetworkBridge.of(network))
+			.waitUntilResponsive()
+			.startConsensusOnRun() // in case we're the first to access the cluster
+			.build();
+		test.runBlocking(1, TimeUnit.MINUTES);
 	}
 }
