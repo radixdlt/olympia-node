@@ -186,6 +186,10 @@ public class SimulatedBFTNetwork {
 		this.bfts.values().forEach(ConsensusRunner::start);
 	}
 
+	public void stop() {
+		this.bfts.values().forEach(ConsensusRunner::stop);
+	}
+
 	public TestEventCoordinatorNetwork getUnderlyingNetwork() {
 		return underlyingNetwork;
 	}

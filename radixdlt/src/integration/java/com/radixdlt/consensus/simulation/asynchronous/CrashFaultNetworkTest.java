@@ -95,6 +95,7 @@ public class CrashFaultNetworkTest {
 
 		bftNetwork.start();
 		committed.blockingSubscribe();
+		bftNetwork.stop();
 	}
 
 	/**
@@ -190,6 +191,7 @@ public class CrashFaultNetworkTest {
 		Observable.merge(checks)
 			.take(time, timeUnit)
 			.blockingSubscribe();
+		bftNetwork.stop();
 	}
 
 	/**
@@ -272,6 +274,7 @@ public class CrashFaultNetworkTest {
 		Observable.merge(checks)
 			.take(time, timeUnit)
 			.blockingSubscribe();
+		bftNetwork.stop();
 	}
 
 	private Stream<Pair<ECKeyPair, Vertex>> toStream(Object[] input) {

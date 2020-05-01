@@ -25,6 +25,7 @@ import com.radixdlt.consensus.validators.ValidatorSet;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Scheduler;
+import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.observables.ConnectableObservable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import java.util.concurrent.Executors;
@@ -59,6 +60,8 @@ public final class ConsensusRunner {
 	}
 
 	private final ConnectableObservable<Event> events;
+	private final Object lock = new Object();
+	private Disposable disposable;
 
 	@Inject
 	public ConsensusRunner(
@@ -128,7 +131,23 @@ public final class ConsensusRunner {
 	 * occur.
 	 */
 	public void start() {
-		this.events.connect();
+		synchronized (lock) {
+			if (disposable == null) {
+				disposable = this.events.connect();
+			}
+		}
+	}
+
+	/**
+	 * Stop processing events.
+	 */
+	public void stop() {
+		synchronized (lock) {
+			if (disposable != null) {
+				disposable.dispose();
+				disposable = null;
+			}
+		}
 	}
 
 	/**

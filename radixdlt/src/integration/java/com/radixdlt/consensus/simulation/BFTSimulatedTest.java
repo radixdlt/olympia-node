@@ -161,5 +161,6 @@ public class BFTSimulatedTest {
 		Completable.merge(assertions)
 			.doOnSubscribe(d -> bftNetwork.start())
 			.blockingAwait(duration, timeUnit);
+		bftNetwork.stop();
 	}
 }
