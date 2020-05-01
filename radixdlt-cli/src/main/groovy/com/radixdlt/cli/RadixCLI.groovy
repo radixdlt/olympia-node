@@ -21,10 +21,8 @@
  */
 package com.radixdlt.cli
 
-
 import picocli.CommandLine
 import picocli.CommandLine.Command
-import picocli.CommandLine.Parameters
 
 //@Grab('info.picocli:picocli:2.0.3')
 
@@ -35,10 +33,6 @@ import picocli.CommandLine.Parameters
                 SendMessage.class, GetDetails.class,
                 GetStoredAtoms.class, CreateAndMintToken.class])
 class RadixCLI implements Runnable {
-
-
-    @Parameters(hidden = true)
-    List<String> allParameters
 
     void run() {
         print "Running Radix CLI"
