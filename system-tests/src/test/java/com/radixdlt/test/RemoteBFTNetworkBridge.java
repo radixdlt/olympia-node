@@ -63,11 +63,21 @@ public final class RemoteBFTNetworkBridge {
 
 				@Override
 				public void onResponse(Call call, Response response) throws IOException {
-					try {
-						String responseString = response.body().string();
-						emitter.onSuccess(responseString);
-					} catch (IOException e) {
-						emitter.onError(new IllegalArgumentException("Failed to parse response to " + request, e));
+					if (response.isSuccessful()) {
+						try {
+							String responseString = response.body().string();
+							emitter.onSuccess(responseString);
+						} catch (IOException e) {
+							emitter.onError(new IllegalArgumentException(String.format(
+								"Request %s failed, cannot parse response: %s",
+								request, response.body().string()
+							), e));
+						}
+					} else {
+						emitter.onError(new IllegalArgumentException(String.format(
+							"Request %s failed with code %d: %s",
+							request, response.code(), response.body().string()
+						)));
 					}
 				}
 			});

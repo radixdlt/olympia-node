@@ -38,7 +38,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * <p>
  * Note that successful Docker setup requires the tag 'radixdlt/radixdlt-core:develop' to be present.
  */
-public class DockerRemoteBFTNetwork implements Closeable, RemoteBFTNetwork {
+public class DockerNetwork implements Closeable, RemoteBFTNetwork {
 	private static final String OPTIONS_KEY_PORT = "hostPort";
 
 	private final String name;
@@ -49,7 +49,7 @@ public class DockerRemoteBFTNetwork implements Closeable, RemoteBFTNetwork {
 
 	private Map<String, Map<String, Object>> dockerOptionsPerNode;
 
-	private DockerRemoteBFTNetwork(String name, int numNodes, boolean startConsensusOnBoot) {
+	private DockerNetwork(String name, int numNodes, boolean startConsensusOnBoot) {
 		this.name = Objects.requireNonNull(name);
 		this.numNodes = numNodes;
 		this.startConsensusOnBoot = startConsensusOnBoot;
@@ -140,7 +140,7 @@ public class DockerRemoteBFTNetwork implements Closeable, RemoteBFTNetwork {
 	}
 
 	/**
-	 * A builder for {@link DockerRemoteBFTNetwork}s
+	 * A builder for {@link DockerNetwork}s
 	 */
 	public static class Builder {
 		private static AtomicInteger networkIdCounter = new AtomicInteger(0);
@@ -185,16 +185,16 @@ public class DockerRemoteBFTNetwork implements Closeable, RemoteBFTNetwork {
 		}
 
 		/**
-		 * Builds a {@link DockerRemoteBFTNetwork} with the specified configuration without running the underlying network.
+		 * Builds a {@link DockerNetwork} with the specified configuration without running the underlying network.
 		 *
-		 * @return The created {@link DockerRemoteBFTNetwork}
+		 * @return The created {@link DockerNetwork}
 		 */
-		public DockerRemoteBFTNetwork build() {
+		public DockerNetwork build() {
 			if (numNodes == -1) {
 				throw new IllegalStateException("numNodes was not set");
 			}
 
-			return new DockerRemoteBFTNetwork(name, numNodes, startConsensusOnBoot);
+			return new DockerNetwork(name, numNodes, startConsensusOnBoot);
 		}
 	}
 

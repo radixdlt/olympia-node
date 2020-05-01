@@ -19,7 +19,6 @@
 package com.radixdlt.test;
 
 import io.reactivex.Completable;
-import io.reactivex.Observable;
 import io.reactivex.Single;
 
 import java.util.Objects;
