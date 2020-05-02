@@ -17,20 +17,12 @@
 
 package com.radixdlt.consensus;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableMap;
+import com.radixdlt.consensus.SyncQueues.SyncQueue;
 import com.radixdlt.consensus.liveness.PacemakerState;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -56,7 +48,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 	private final PacemakerState pacemakerState;
 	private final ProposerElection proposerElection;
 	private final SystemCounters counters;
-	private final ImmutableMap<ECPublicKey, LinkedList<ConsensusEvent>> queues;
+	private final SyncQueues queues;
 
 	public BFTEventPreprocessor(
 		ECPublicKey myKey,
@@ -64,55 +56,24 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		PacemakerState pacemakerState,
 		VertexStore vertexStore,
 		ProposerElection proposerElection,
-		Map<ECPublicKey, List<ConsensusEvent>> initialQueues,
+		SyncQueues queues,
 		SystemCounters counters
 	) {
 		this.myKey = Objects.requireNonNull(myKey);
 		this.pacemakerState = Objects.requireNonNull(pacemakerState);
 		this.vertexStore = Objects.requireNonNull(vertexStore);
 		this.proposerElection = Objects.requireNonNull(proposerElection);
-		this.queues = initialQueues.entrySet().stream()
-			.collect(ImmutableMap.toImmutableMap(
-				Entry::getKey,
-				e -> new LinkedList<>(e.getValue())
-			));
-
+		this.queues = queues;
 		this.counters = Objects.requireNonNull(counters);
 		this.forwardTo = forwardTo;
-	}
-
-	public BFTEventPreprocessor(
-		ECPublicKey myKey,
-		BFTEventProcessor forwardTo,
-		PacemakerState pacemakerState,
-		VertexStore vertexStore,
-		ProposerElection proposerElection,
-		Collection<ECPublicKey> nodes,
-		SystemCounters counters
-	) {
-		this(
-			myKey,
-			forwardTo,
-			pacemakerState,
-			vertexStore,
-			proposerElection,
-			nodes.stream().collect(ImmutableMap.toImmutableMap(n -> n, n -> Collections.emptyList())),
-			counters
-		);
-	}
-
-	@VisibleForTesting
-	ImmutableMap<ECPublicKey, LinkedList<ConsensusEvent>> getQueues() {
-		return queues;
 	}
 
 	private String getShortName() {
 		return myKey.euid().toString().substring(0, 6);
 	}
 
-	private boolean peekAndExecute(LinkedList<ConsensusEvent> queue, Hash vertexId) {
-		ConsensusEvent event = queue.peek();
-
+	private boolean peekAndExecute(SyncQueue queue, Hash vertexId) {
+		final HasSyncConsensusEvent event = queue.peek(vertexId);
 		if (event == null) {
 			return false;
 		}
@@ -121,21 +82,11 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		// to process these events due to much better performance
 		if (event instanceof NewView) {
 			final NewView newView = (NewView) event;
-			if (vertexId != null && !newView.getQC().getProposed().getId().equals(vertexId)) {
-				log.info("{}: Dequeue Check: {} hash does not match", getShortName(), newView);
-				return false;
-			}
-
 			return this.processNewViewInternal(newView, false);
 		}
 
 		if (event instanceof Proposal) {
 			final Proposal proposal = (Proposal) event;
-			if (vertexId != null && !proposal.getVertex().getQC().getProposed().getId().equals(vertexId)) {
-				log.info("{}: Dequeue Check: {} hash does not match", getShortName(), proposal);
-				return false;
-			}
-
 			return this.processProposalInternal(proposal, false);
 		}
 
@@ -149,7 +100,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 	 * @param vertexId the id of the vertex which is now guaranteed be synced.
 	 */
 	public void signalSync(Hash vertexId) {
-		for (LinkedList<ConsensusEvent> queue : queues.values()) {
+		for (SyncQueue queue : queues.getQueues()) {
 			boolean first = true;
 			while (peekAndExecute(queue, first ? vertexId : null)) {
 				queue.pop();
@@ -198,9 +149,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		} else {
 			if (enqueueIfFail) {
 				log.info("{}: NEW_VIEW: Queuing {} Waiting for Sync", getShortName(), newView);
-				counters.increment(CounterType.CONSENSUS_EVENTS_QUEUED_SYNC);
-				final LinkedList<ConsensusEvent> queue = queues.get(newView.getAuthor());
-				queue.addFirst(newView);
+				queues.add(newView);
 			}
 
 			return false;
@@ -210,11 +159,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 	@Override
 	public void processNewView(NewView newView) {
 		log.trace("{}: NEW_VIEW: Queueing {}", this.getShortName(), newView);
-		final LinkedList<ConsensusEvent> queue = queues.get(newView.getAuthor());
-		if (!queue.isEmpty()) {
-			counters.increment(CounterType.CONSENSUS_EVENTS_QUEUED_INITIAL);
-			queue.addLast(newView);
-		} else {
+		if (queues.checkOrAdd(newView)) {
 			processNewViewInternal(newView, true);
 		}
 	}
@@ -239,9 +184,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		} else {
 			if (enqueueIfFail) {
 				log.info("{}: PROPOSAL: Queuing {} Waiting for Sync", getShortName(), proposal);
-				final LinkedList<ConsensusEvent> queue = queues.get(proposal.getAuthor());
-				counters.increment(CounterType.CONSENSUS_EVENTS_QUEUED_SYNC);
-				queue.addFirst(proposal);
+				queues.add(proposal);
 			}
 			return false;
 		}
@@ -250,12 +193,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 	@Override
 	public void processProposal(Proposal proposal) {
 		log.trace("{}: PROPOSAL: Queueing {}", this.getShortName(), proposal);
-
-		final LinkedList<ConsensusEvent> queue = queues.get(proposal.getAuthor());
-		if (!queue.isEmpty()) {
-			counters.increment(CounterType.CONSENSUS_EVENTS_QUEUED_INITIAL);
-			queue.addLast(proposal);
-		} else {
+		if (queues.checkOrAdd(proposal)) {
 			processProposalInternal(proposal, true);
 		}
 	}
@@ -267,7 +205,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		final View nextView = this.pacemakerState.getCurrentView();
 		if (!curView.equals(nextView)) {
 			// Could probably forward some of these but don't worry for now
-			queues.values().forEach(LinkedList::clear);
+			queues.clear();
 		}
 	}
 

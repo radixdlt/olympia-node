@@ -31,6 +31,7 @@ import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.BFTEventReducer;
+import com.radixdlt.consensus.SyncQueues;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.VertexStore;
@@ -105,6 +106,10 @@ class ControlledBFTNode {
 			validatorSet,
 			systemCounters
 		);
+		SyncQueues syncQueues = new SyncQueues(
+			validatorSet.getValidators().stream().map(Validator::nodeKey).collect(Collectors.toSet()),
+			systemCounters
+		);
 
 		this.ec = new BFTEventPreprocessor(
 			key.getPublicKey(),
@@ -112,7 +117,7 @@ class ControlledBFTNode {
 			pacemaker,
 			vertexStore,
 			proposerElection,
-			validatorSet.getValidators().stream().map(Validator::nodeKey).collect(Collectors.toSet()),
+			syncQueues,
 			systemCounters
 		);
 	}

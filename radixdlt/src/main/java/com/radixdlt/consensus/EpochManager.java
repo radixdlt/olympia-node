@@ -98,15 +98,20 @@ public class EpochManager {
 			counters
 		);
 
+		SyncQueues syncQueues = new SyncQueues(
+			validatorSet.getValidators().stream()
+				.map(Validator::nodeKey)
+				.collect(ImmutableSet.toImmutableSet()),
+			counters
+		);
+
 		return new BFTEventPreprocessor(
 			this.selfKey.getPublicKey(),
 			reducer,
 			this.pacemaker,
 			this.vertexStore,
 			proposerElection,
-			validatorSet.getValidators().stream()
-				.map(Validator::nodeKey)
-				.collect(ImmutableSet.toImmutableSet()),
+			syncQueues,
 			counters
 		);
 	}

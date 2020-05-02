@@ -34,7 +34,7 @@ import java.util.Objects;
  */
 @SerializerId2("consensus.proposal")
 @Immutable // author cannot be but is effectively final because of serializer
-public final class Proposal implements ConsensusEvent {
+public final class Proposal implements HasSyncConsensusEvent {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
@@ -62,6 +62,12 @@ public final class Proposal implements ConsensusEvent {
 		this.signature = Objects.requireNonNull(signature);
 	}
 
+	@Override
+	public QuorumCertificate getQC() {
+		return vertex.getQC();
+	}
+
+	@Override
 	public ECPublicKey getAuthor() {
 		return author;
 	}
