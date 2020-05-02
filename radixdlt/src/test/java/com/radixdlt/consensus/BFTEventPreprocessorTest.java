@@ -22,6 +22,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -76,7 +77,6 @@ public class BFTEventPreprocessorTest {
 
 	private void setInitialQueue(ECPublicKey key, ConsensusEvent... events) {
 		initialQueues.put(key, Arrays.asList(events));
-
 		this.preprocessor = new BFTEventPreprocessor(
 			SELF_KEY.getPublicKey(),
 			forwardTo,
@@ -88,31 +88,83 @@ public class BFTEventPreprocessorTest {
 		);
 	}
 
-	@Test
-	public void when_process_irrelevant_new_view__then_no_event_occurs() {
+	private NewView createNewView(boolean goodView, boolean synced) {
 		NewView newView = mock(NewView.class);
 		when(newView.getAuthor()).thenReturn(SELF_KEY.getPublicKey());
-		when(newView.getView()).thenReturn(View.of(0L));
-		when(pacemaker.getCurrentView()).thenReturn(View.of(1L));
-		preprocessor.processNewView(newView);
-		verify(forwardTo, never()).processNewView(any());
-	}
-
-	@Test
-	public void when_process_new_view_not_synced__then_new_view_is_queued() {
-		NewView newView = mock(NewView.class);
-		when(newView.getAuthor()).thenReturn(SELF_KEY.getPublicKey());
-		when(newView.getView()).thenReturn(View.of(2));
+		when(newView.getView()).thenReturn(goodView ? View.of(2) : View.of(0));
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		Hash vertexId = mock(Hash.class);
 		VertexMetadata proposed = mock(VertexMetadata.class);
 		when(qc.getProposed()).thenReturn(proposed);
 		when(proposed.getId()).thenReturn(vertexId);
 		when(newView.getQC()).thenReturn(qc);
-		when(pacemaker.getCurrentView()).thenReturn(View.of(1));
-		when(vertexStore.syncToQC(eq(qc))).thenReturn(false);
+		when(vertexStore.syncToQC(eq(qc))).thenReturn(synced);
+		return newView;
+	}
+
+	private Proposal createProposal(boolean goodView, boolean synced) {
+		Proposal proposal = mock(Proposal.class);
+		when(proposal.getAuthor()).thenReturn(SELF_KEY.getPublicKey());
+		Vertex vertex = mock(Vertex.class);
+		when(proposal.getVertex()).thenReturn(vertex);
+		when(vertex.getView()).thenReturn(goodView ? View.of(1) : View.of(0));
+		QuorumCertificate qc = mock(QuorumCertificate.class);
+		Hash vertexId = mock(Hash.class);
+		when(vertex.getId()).thenReturn(vertexId);
+		VertexMetadata proposed = mock(VertexMetadata.class);
+		when(qc.getProposed()).thenReturn(proposed);
+		when(proposed.getId()).thenReturn(vertexId);
+		when(vertex.getQC()).thenReturn(qc);
+		when(vertexStore.syncToQC(eq(qc))).thenReturn(synced);
+		return proposal;
+	}
+
+	@Test
+	public void when_process_irrelevant_new_view__event_gets_thrown_away() {
+		NewView newView = createNewView(false, true);
+		preprocessor.processNewView(newView);
+		assertThat(preprocessor.getQueues().get(SELF_KEY.getPublicKey())).isEmpty();
+		verify(forwardTo, never()).processNewView(any());
+	}
+
+	@Test
+	public void when_process_irrelevant_proposal__event_gets_thrown_away() {
+		Proposal proposal = createProposal(false, true);
+		preprocessor.processProposal(proposal);
+		assertThat(preprocessor.getQueues().get(SELF_KEY.getPublicKey())).isEmpty();
+		verify(forwardTo, never()).processProposal(any());
+	}
+
+	@Test
+	public void when_process_new_view_not_synced__then_new_view_is_queued() {
+		NewView newView = createNewView(true, false);
 		preprocessor.processNewView(newView);
 		assertThat(preprocessor.getQueues().get(SELF_KEY.getPublicKey())).containsExactly(newView);
+		verify(forwardTo, never()).processNewView(any());
+	}
+
+	@Test
+	public void when_process_proposal_not_synced__then_proposal_is_queued() {
+		Proposal proposal = createProposal(true, false);
+		preprocessor.processProposal(proposal);
+		assertThat(preprocessor.getQueues().get(SELF_KEY.getPublicKey())).containsExactly(proposal);
+		verify(forwardTo, never()).processProposal(any());
+	}
+
+	@Test
+	public void when_process_new_view_synced__then_new_view_is_forwarded() {
+		NewView newView = createNewView(true, true);
+		preprocessor.processNewView(newView);
+		assertThat(preprocessor.getQueues().get(SELF_KEY.getPublicKey())).isEmpty();
+		verify(forwardTo, times(1)).processNewView(eq(newView));
+	}
+
+	@Test
+	public void when_process_proposal_synced__then_proposal_is_forwarded() {
+		Proposal proposal = createProposal(true, true);
+		preprocessor.processProposal(proposal);
+		assertThat(preprocessor.getQueues().get(SELF_KEY.getPublicKey())).isEmpty();
+		verify(forwardTo, times(1)).processProposal(eq(proposal));
 	}
 
 	@Test

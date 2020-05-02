@@ -44,16 +44,18 @@ import org.apache.logging.log4j.Logger;
  *
  * A lot of the queue logic could be done more "cleanly" and functionally using
  * lambdas and Functions but the performance impact is too great.
+ *
+ * This class is NOT thread-safe.
  */
 public final class BFTEventPreprocessor implements BFTEventProcessor {
 	private static final Logger log = LogManager.getLogger();
 
+	private final ECPublicKey myKey;
 	private final BFTEventProcessor forwardTo;
 	private final VertexStore vertexStore;
 	private final PacemakerState pacemakerState;
 	private final ProposerElection proposerElection;
 	private final SystemCounters counters;
-	private final ECPublicKey myKey;
 	private final ImmutableMap<ECPublicKey, LinkedList<ConsensusEvent>> queues;
 
 	public BFTEventPreprocessor(
@@ -140,7 +142,13 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		throw new IllegalStateException("Unexpected consensus event: " + event);
 	}
 
-	private void syncedVertex(Hash vertexId) {
+	/**
+	 * Signal that vertexStore now contains the given vertexId.
+	 * Executes events which are dependent on this vertex
+	 *
+	 * @param vertexId the id of the vertex which is now guaranteed be synced.
+	 */
+	public void signalSync(Hash vertexId) {
 		for (LinkedList<ConsensusEvent> queue : queues.values()) {
 			boolean first = true;
 			while (peekAndExecute(queue, first ? vertexId : null)) {
@@ -225,7 +233,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		if (this.vertexStore.syncToQC(proposedVertex.getQC())) {
 			forwardTo.processProposal(proposal);
 			if (vertexStore.getVertex(proposedVertex.getId()) != null) {
-				syncedVertex(proposal.getVertex().getId());
+				signalSync(proposal.getVertex().getId());
 			}
 			return true;
 		} else {
