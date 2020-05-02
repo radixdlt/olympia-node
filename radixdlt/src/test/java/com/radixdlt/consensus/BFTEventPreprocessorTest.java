@@ -17,30 +17,37 @@
 
 package com.radixdlt.consensus;
 
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
-import com.radixdlt.consensus.validators.Validator;
-import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.Hash;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 
 public class BFTEventPreprocessorTest {
 	private static final ECKeyPair SELF_KEY = ECKeyPair.generateNew();
+	private static final ECKeyPair OTHER_KEY = ECKeyPair.generateNew();
 	private BFTEventPreprocessor preprocessor;
 	private ProposerElection proposerElection;
 	private Pacemaker pacemaker;
 	private VertexStore vertexStore;
 	private SystemCounters counters;
 	private BFTEventProcessor forwardTo;
+	private HashMap<ECPublicKey, List<ConsensusEvent>> initialQueues;
 
 	@Before
 	public void setUp() {
@@ -49,11 +56,12 @@ public class BFTEventPreprocessorTest {
 		this.proposerElection = mock(ProposerElection.class);
 		this.counters = mock(SystemCounters.class);
 		this.forwardTo = mock(BFTEventProcessor.class);
+		this.initialQueues = new HashMap<>();
+		this.initialQueues.put(SELF_KEY.getPublicKey(), Collections.emptyList());
+		this.initialQueues.put(OTHER_KEY.getPublicKey(), Collections.emptyList());
 
-		Validator validator = mock(Validator.class);
-		when(validator.nodeKey()).thenReturn(SELF_KEY.getPublicKey());
-		ValidatorSet validatorSet = mock(ValidatorSet.class);
-		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of(validator));
+		when(proposerElection.getProposer(any())).thenReturn(SELF_KEY.getPublicKey());
+		when(pacemaker.getCurrentView()).thenReturn(View.of(1));
 
 		this.preprocessor = new BFTEventPreprocessor(
 			SELF_KEY.getPublicKey(),
@@ -61,7 +69,21 @@ public class BFTEventPreprocessorTest {
 			pacemaker,
 			vertexStore,
 			proposerElection,
-			validatorSet,
+			initialQueues,
+			counters
+		);
+	}
+
+	private void setInitialQueue(ECPublicKey key, ConsensusEvent... events) {
+		initialQueues.put(key, Arrays.asList(events));
+
+		this.preprocessor = new BFTEventPreprocessor(
+			SELF_KEY.getPublicKey(),
+			forwardTo,
+			pacemaker,
+			vertexStore,
+			proposerElection,
+			initialQueues,
 			counters
 		);
 	}
@@ -74,6 +96,163 @@ public class BFTEventPreprocessorTest {
 		when(pacemaker.getCurrentView()).thenReturn(View.of(1L));
 		preprocessor.processNewView(newView);
 		verify(forwardTo, never()).processNewView(any());
+	}
+
+	@Test
+	public void when_process_new_view_not_synced__then_new_view_is_queued() {
+		NewView newView = mock(NewView.class);
+		when(newView.getAuthor()).thenReturn(SELF_KEY.getPublicKey());
+		when(newView.getView()).thenReturn(View.of(2));
+		QuorumCertificate qc = mock(QuorumCertificate.class);
+		Hash vertexId = mock(Hash.class);
+		VertexMetadata proposed = mock(VertexMetadata.class);
+		when(qc.getProposed()).thenReturn(proposed);
+		when(proposed.getId()).thenReturn(vertexId);
+		when(newView.getQC()).thenReturn(qc);
+		when(pacemaker.getCurrentView()).thenReturn(View.of(1));
+		when(vertexStore.syncToQC(eq(qc))).thenReturn(false);
+		preprocessor.processNewView(newView);
+		assertThat(preprocessor.getQueues().get(SELF_KEY.getPublicKey())).containsExactly(newView);
+	}
+
+	@Test
+	public void when_initial_queue_and_a_proposal_store_with_unequal_hash__then_queue_remains_the_same() {
+		NewView newView = mock(NewView.class);
+		when(newView.getAuthor()).thenReturn(SELF_KEY.getPublicKey());
+		when(newView.getView()).thenReturn(View.of(2));
+		QuorumCertificate qc = mock(QuorumCertificate.class);
+		Hash vertexId = mock(Hash.class);
+		VertexMetadata proposed = mock(VertexMetadata.class);
+		when(qc.getProposed()).thenReturn(proposed);
+		when(proposed.getId()).thenReturn(vertexId);
+		when(newView.getQC()).thenReturn(qc);
+
+		setInitialQueue(SELF_KEY.getPublicKey(), newView);
+
+		Proposal proposal = mock(Proposal.class);
+		Vertex vertex = mock(Vertex.class);
+		when(vertex.getView()).thenReturn(View.of(1));
+		QuorumCertificate otherQc = mock(QuorumCertificate.class);
+		when(vertex.getQC()).thenReturn(otherQc);
+		Hash otherId = mock(Hash.class);
+		when(vertex.getId()).thenReturn(otherId);
+		when(proposal.getVertex()).thenReturn(vertex);
+		when(vertexStore.syncToQC(eq(otherQc))).thenReturn(true);
+		when(vertexStore.getVertex(eq(otherId))).thenReturn(vertex);
+		when(proposal.getAuthor()).thenReturn(OTHER_KEY.getPublicKey());
+		preprocessor.processProposal(proposal);
+		assertThat(preprocessor.getQueues().get(SELF_KEY.getPublicKey())).containsExactly(newView);
+	}
+
+	@Test
+	public void when_initial_queue_and_a_proposal_store_with_equal_hash__then_queue_becomes_empty() {
+		NewView newView = mock(NewView.class);
+		when(newView.getAuthor()).thenReturn(SELF_KEY.getPublicKey());
+		when(newView.getView()).thenReturn(View.of(2));
+		QuorumCertificate qc = mock(QuorumCertificate.class);
+		Hash vertexId = mock(Hash.class);
+		VertexMetadata proposed = mock(VertexMetadata.class);
+		when(qc.getProposed()).thenReturn(proposed);
+		when(proposed.getId()).thenReturn(vertexId);
+		when(newView.getQC()).thenReturn(qc);
+
+		setInitialQueue(SELF_KEY.getPublicKey(), newView);
+
+		Proposal proposal = mock(Proposal.class);
+		Vertex vertex = mock(Vertex.class);
+		when(vertex.getView()).thenReturn(View.of(1));
+		QuorumCertificate otherQc = mock(QuorumCertificate.class);
+		when(vertex.getQC()).thenReturn(otherQc);
+		when(vertex.getId()).thenReturn(vertexId);
+		when(proposal.getVertex()).thenReturn(vertex);
+		when(vertexStore.syncToQC(eq(otherQc))).thenReturn(true);
+		when(vertexStore.syncToQC(eq(qc))).thenReturn(true);
+		when(vertexStore.getVertex(eq(vertexId))).thenReturn(vertex);
+		when(proposal.getAuthor()).thenReturn(OTHER_KEY.getPublicKey());
+		preprocessor.processProposal(proposal);
+		assertThat(preprocessor.getQueues().get(SELF_KEY.getPublicKey())).isEmpty();
+	}
+
+	@Test
+	public void when_initial_queue_with_two_and_a_proposal_store_with_equal_hash__then_queue_becomes_empty() {
+		NewView newView = mock(NewView.class);
+		when(newView.getAuthor()).thenReturn(SELF_KEY.getPublicKey());
+		when(newView.getView()).thenReturn(View.of(2));
+		QuorumCertificate qc = mock(QuorumCertificate.class);
+		Hash vertexId = mock(Hash.class);
+		VertexMetadata proposed = mock(VertexMetadata.class);
+		when(qc.getProposed()).thenReturn(proposed);
+		when(proposed.getId()).thenReturn(vertexId);
+		when(newView.getQC()).thenReturn(qc);
+
+		NewView newView2 = mock(NewView.class);
+		when(newView2.getAuthor()).thenReturn(SELF_KEY.getPublicKey());
+		when(newView2.getView()).thenReturn(View.of(2));
+		QuorumCertificate qc2 = mock(QuorumCertificate.class);
+		Hash vertexId2 = mock(Hash.class);
+		VertexMetadata proposed2 = mock(VertexMetadata.class);
+		when(qc2.getProposed()).thenReturn(proposed2);
+		when(proposed2.getId()).thenReturn(vertexId2);
+		when(newView2.getQC()).thenReturn(qc2);
+
+		setInitialQueue(SELF_KEY.getPublicKey(), newView, newView2);
+
+		Proposal proposal = mock(Proposal.class);
+		Vertex vertex = mock(Vertex.class);
+		when(vertex.getView()).thenReturn(View.of(1));
+		QuorumCertificate otherQc = mock(QuorumCertificate.class);
+		when(vertex.getQC()).thenReturn(otherQc);
+		when(vertex.getId()).thenReturn(vertexId);
+		when(proposal.getVertex()).thenReturn(vertex);
+		when(vertexStore.syncToQC(eq(otherQc))).thenReturn(true);
+		when(vertexStore.syncToQC(eq(qc))).thenReturn(true);
+		when(vertexStore.syncToQC(eq(qc2))).thenReturn(true);
+		when(vertexStore.getVertex(eq(vertexId))).thenReturn(vertex);
+		when(proposal.getAuthor()).thenReturn(OTHER_KEY.getPublicKey());
+		preprocessor.processProposal(proposal);
+
+		assertThat(preprocessor.getQueues().get(SELF_KEY.getPublicKey())).isEmpty();
+	}
+
+	@Test
+	public void when_initial_queue_with_two_and_a_proposal_store_with_equal_hash_but_next_fails_sync__then_queue_contains_one() {
+		NewView newView = mock(NewView.class);
+		when(newView.getAuthor()).thenReturn(SELF_KEY.getPublicKey());
+		when(newView.getView()).thenReturn(View.of(2));
+		QuorumCertificate qc = mock(QuorumCertificate.class);
+		Hash vertexId = mock(Hash.class);
+		VertexMetadata proposed = mock(VertexMetadata.class);
+		when(qc.getProposed()).thenReturn(proposed);
+		when(proposed.getId()).thenReturn(vertexId);
+		when(newView.getQC()).thenReturn(qc);
+
+		NewView newView2 = mock(NewView.class);
+		when(newView2.getAuthor()).thenReturn(SELF_KEY.getPublicKey());
+		when(newView2.getView()).thenReturn(View.of(2));
+		QuorumCertificate qc2 = mock(QuorumCertificate.class);
+		Hash vertexId2 = mock(Hash.class);
+		VertexMetadata proposed2 = mock(VertexMetadata.class);
+		when(qc2.getProposed()).thenReturn(proposed2);
+		when(proposed2.getId()).thenReturn(vertexId2);
+		when(newView2.getQC()).thenReturn(qc2);
+
+		setInitialQueue(SELF_KEY.getPublicKey(), newView, newView2);
+
+		Proposal proposal = mock(Proposal.class);
+		Vertex vertex = mock(Vertex.class);
+		when(vertex.getView()).thenReturn(View.of(1));
+		QuorumCertificate otherQc = mock(QuorumCertificate.class);
+		when(vertex.getQC()).thenReturn(otherQc);
+		when(vertex.getId()).thenReturn(vertexId);
+		when(proposal.getVertex()).thenReturn(vertex);
+		when(vertexStore.syncToQC(eq(otherQc))).thenReturn(true);
+		when(vertexStore.syncToQC(eq(qc))).thenReturn(true);
+		when(vertexStore.syncToQC(eq(qc2))).thenReturn(false);
+		when(vertexStore.getVertex(eq(vertexId))).thenReturn(vertex);
+		when(proposal.getAuthor()).thenReturn(OTHER_KEY.getPublicKey());
+		preprocessor.processProposal(proposal);
+
+		assertThat(preprocessor.getQueues().get(SELF_KEY.getPublicKey())).containsExactly(newView2);
 	}
 
 	@Test

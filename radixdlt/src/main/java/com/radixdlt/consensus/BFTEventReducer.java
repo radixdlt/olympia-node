@@ -217,7 +217,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 			this.proceedToView(nextView.get());
 			log.info("{}: LOCAL_TIMEOUT: Processed {}", this.getShortName(), view);
 		} else {
-			log.debug("{}: LOCAL_TIMEOUT: Ignoring {}", this.getShortName(), view);
+			log.trace("{}: LOCAL_TIMEOUT: Ignoring {}", this.getShortName(), view);
 		}
 	}
 

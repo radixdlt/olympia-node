@@ -45,6 +45,7 @@ import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyState;
+import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
@@ -55,6 +56,7 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.mempool.EmptyMempool;
 import com.radixdlt.mempool.Mempool;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Controlled BFT Node where its state machine is managed by a synchronous
@@ -110,7 +112,7 @@ class ControlledBFTNode {
 			pacemaker,
 			vertexStore,
 			proposerElection,
-			validatorSet,
+			validatorSet.getValidators().stream().map(Validator::nodeKey).collect(Collectors.toSet()),
 			systemCounters
 		);
 	}

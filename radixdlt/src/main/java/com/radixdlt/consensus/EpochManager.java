@@ -17,12 +17,14 @@
 
 package com.radixdlt.consensus;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.safety.SafetyRules;
+import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
@@ -102,7 +104,9 @@ public class EpochManager {
 			this.pacemaker,
 			this.vertexStore,
 			proposerElection,
-			validatorSet,
+			validatorSet.getValidators().stream()
+				.map(Validator::nodeKey)
+				.collect(ImmutableSet.toImmutableSet()),
 			counters
 		);
 	}
