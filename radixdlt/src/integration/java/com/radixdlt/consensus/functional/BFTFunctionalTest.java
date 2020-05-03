@@ -17,16 +17,21 @@
 
 package com.radixdlt.consensus.functional;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.liveness.ProposerElection;
-import com.radixdlt.consensus.liveness.RotatingLeaders;
+import com.radixdlt.consensus.functional.ControlledBFTNetwork.MailboxId;
+import com.radixdlt.consensus.functional.ControlledBFTNetwork.Message;
+import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.utils.UInt256;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -37,6 +42,7 @@ import java.util.stream.Stream;
 public class BFTFunctionalTest {
 	private final ImmutableList<ControlledBFTNode> nodes;
 	private final ImmutableList<ECPublicKey> pks;
+	private final ControlledBFTNetwork network;
 
 	public BFTFunctionalTest(int numNodes) {
 		ImmutableList<ECKeyPair> keys = Stream.generate(ECKeyPair::generateNew)
@@ -45,31 +51,38 @@ public class BFTFunctionalTest {
 		this.pks = keys.stream()
 			.map(ECKeyPair::getPublicKey)
 			.collect(ImmutableList.toImmutableList());
-		ControlledBFTNetwork network = new ControlledBFTNetwork(pks);
-		ProposerElection proposerElection = new RotatingLeaders(pks);
+		this.network = new ControlledBFTNetwork(pks);
 		ValidatorSet validatorSet = ValidatorSet.from(
 			pks.stream().map(pk -> Validator.from(pk, UInt256.ONE)).collect(Collectors.toList())
 		);
-
-		AtomicReference<ImmutableList<ControlledBFTNode>> nodesForVertexSupplier = new AtomicReference<>();
 
 		this.nodes = keys.stream()
 			.map(key -> new ControlledBFTNode(
 				key,
 				network.getSender(key.getPublicKey()),
-				network.getReceiver(key.getPublicKey()),
-				proposerElection,
+				new WeightedRotatingLeaders(validatorSet, Comparator.comparingInt(v -> pks.size() - pks.indexOf(v.nodeKey())), 5),
 				validatorSet
 			))
 			.collect(ImmutableList.toImmutableList());
+	}
 
-		nodesForVertexSupplier.set(this.nodes);
-
+	public void start() {
 		nodes.forEach(ControlledBFTNode::start);
 	}
 
 	public void processNextMsg(int toIndex, int fromIndex, Class<?> expectedClass) {
-		nodes.get(toIndex).processNext(this.pks.get(fromIndex), expectedClass);
+		MailboxId mailboxId = new MailboxId(pks.get(fromIndex), pks.get(toIndex));
+		Object msg = network.popNextMessage(mailboxId);
+		assertThat(msg).isInstanceOf(expectedClass);
+		nodes.get(toIndex).processNext(msg);
+	}
+
+	public void processNextMsg(Random random) {
+		List<Message> possibleMsgs = network.peekNextMessages();
+		int nextIndex =  random.nextInt(possibleMsgs.size());
+		MailboxId mailboxId = possibleMsgs.get(nextIndex).getMailboxId();
+		Object msg = network.popNextMessage(mailboxId);
+		nodes.get(pks.indexOf(mailboxId.getReceiver())).processNext(msg);
 	}
 
 	public SystemCounters getSystemCounters(int nodeIndex) {

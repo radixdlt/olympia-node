@@ -31,6 +31,9 @@ public class OneSlowNodeTest {
 	@Test
 	public void when_three_fast_nodes_and_one_slow_node_two_cycles__then_missing_parent_should_not_cause_sync_exception() {
 		final BFTFunctionalTest test = new BFTFunctionalTest(4);
+
+		test.start();
+
 		for (int curLeader = 1; curLeader <= 2; curLeader++) {
 			test.processNextMsg(curLeader, 1, NewView.class);
 			test.processNextMsg(curLeader, 2, NewView.class);
@@ -56,6 +59,9 @@ public class OneSlowNodeTest {
 	@Test
 	public void when_three_fast_nodes_and_one_slow_node__then_missing_parent_should_not_cause_exception() {
 		final BFTFunctionalTest test = new BFTFunctionalTest(4);
+
+		test.start();
+
 		for (int curLeader = 1; curLeader <= 3; curLeader++) {
 			test.processNextMsg(curLeader, 1, NewView.class);
 			test.processNextMsg(curLeader, 2, NewView.class);

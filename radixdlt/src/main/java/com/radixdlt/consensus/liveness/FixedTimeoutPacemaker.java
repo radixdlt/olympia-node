@@ -115,7 +115,7 @@ public final class FixedTimeoutPacemaker implements Pacemaker {
 			this.lastSyncView = this.currentView;
 			return Optional.of(this.currentView);
 		} else {
-			log.info("Ignoring New View Quorum: {} Current is: {}", newView, this.currentView);
+			log.trace("Ignoring New View Quorum: {} Current is: {}", newView, this.currentView);
 			return Optional.empty();
 		}
 	}

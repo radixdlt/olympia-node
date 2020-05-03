@@ -17,7 +17,6 @@
 
 package com.radixdlt.consensus.functional;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import com.radixdlt.consensus.BFTEventPreprocessor;
@@ -52,11 +51,9 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.mempool.EmptyMempool;
 import com.radixdlt.mempool.Mempool;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -65,18 +62,15 @@ import java.util.stream.Collectors;
  */
 class ControlledBFTNode {
 	private final BFTEventProcessor ec;
-	private final Function<ECPublicKey, Object> receiver;
 	private final SystemCounters systemCounters;
 	private final VertexStore vertexStore;
 
 	ControlledBFTNode(
 		ECKeyPair key,
 		BFTEventSender sender,
-		Function<ECPublicKey, Object> receiver,
 		ProposerElection proposerElection,
 		ValidatorSet validatorSet
 	) {
-		this.receiver = receiver;
 		this.systemCounters = new SystemCountersImpl();
 		Vertex genesisVertex = Vertex.createGenesis(null);
 		QuorumCertificate genesisQC = new QuorumCertificate(
@@ -122,10 +116,6 @@ class ControlledBFTNode {
 		);
 	}
 
-	VertexStore getVertexStore() {
-		return vertexStore;
-	}
-
 	SystemCounters getSystemCounters() {
 		return systemCounters;
 	}
@@ -134,11 +124,7 @@ class ControlledBFTNode {
 		ec.start();
 	}
 
-	void processNext(ECPublicKey from, Class<?> expectedClass) {
-		Object msg = this.receiver.apply(from);
-
-		assertThat(msg).isInstanceOf(expectedClass);
-
+	void processNext(Object msg) {
 		if (msg instanceof GetVertexRequest) {
 			ec.processGetVertexRequest((GetVertexRequest) msg);
 		} else if (msg instanceof View) {

@@ -17,6 +17,8 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.crypto.Hash;
+
 /**
  * An empty BFT event processor
  */
@@ -38,6 +40,11 @@ public class EmptyBFTEventProcessor implements BFTEventProcessor {
 
 	@Override
 	public void processLocalTimeout(View view) {
+		// No-op
+	}
+
+	@Override
+	public void processLocalSync(Hash vertexId) {
 		// No-op
 	}
 

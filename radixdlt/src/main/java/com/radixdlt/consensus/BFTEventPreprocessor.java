@@ -99,7 +99,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 	 *
 	 * @param vertexId the id of the vertex which is now guaranteed be synced.
 	 */
-	public void signalSync(Hash vertexId) {
+	public void processLocalSync(Hash vertexId) {
 		for (SyncQueue queue : queues.getQueues()) {
 			boolean first = true;
 			while (peekAndExecute(queue, first ? vertexId : null)) {
@@ -107,6 +107,8 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 				first = false;
 			}
 		}
+
+		forwardTo.processLocalSync(vertexId);
 	}
 
 	@Override
@@ -139,7 +141,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 
 		final View currentView = pacemakerState.getCurrentView();
 		if (newView.getView().compareTo(currentView) < 0) {
-			log.info("{}: NEW_VIEW: Ignoring {} Current is: {}", getShortName(), newView.getView(), currentView);
+			log.trace("{}: NEW_VIEW: Ignoring {} Current is: {}", getShortName(), newView.getView(), currentView);
 			return true;
 		}
 
@@ -178,7 +180,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		if (this.vertexStore.syncToQC(proposedVertex.getQC())) {
 			forwardTo.processProposal(proposal);
 			if (vertexStore.getVertex(proposedVertex.getId()) != null) {
-				signalSync(proposal.getVertex().getId());
+				processLocalSync(proposal.getVertex().getId());
 			}
 			return true;
 		} else {

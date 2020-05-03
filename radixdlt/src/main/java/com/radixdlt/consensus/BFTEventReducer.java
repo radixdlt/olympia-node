@@ -36,6 +36,8 @@ import com.radixdlt.crypto.Hash;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.utils.Longs;
 
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -61,6 +63,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	private final SafetyRules safetyRules;
 	private final ValidatorSet validatorSet;
 	private final SystemCounters counters;
+	private final Map<Hash, QuorumCertificate> unsyncedQCs = new HashMap<>();
 
 	@Inject
 	public BFTEventReducer(
@@ -126,6 +129,16 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	}
 
 	@Override
+	public void processLocalSync(Hash vertexId) {
+		QuorumCertificate qc = unsyncedQCs.remove(vertexId);
+		if (qc != null) {
+			vertexStore.addQC(qc);
+			processQC(qc);
+			log.info("{}: LOCAL_SYNC: processed QC: {}", this.getShortName(), qc);
+		}
+	}
+
+	@Override
 	public void processVote(Vote vote) {
 		log.trace("{}: VOTE: Processing {}", this.getShortName(), vote);
 		// accumulate votes into QCs in store
@@ -133,8 +146,12 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		if (potentialQc.isPresent()) {
 			QuorumCertificate qc = potentialQc.get();
 			log.info("{}: VOTE: Formed QC: {}", this.getShortName(), qc);
-			vertexStore.addQC(qc);
-			processQC(qc);
+			if (vertexStore.syncToQC(qc)) {
+				processQC(qc);
+			} else {
+				log.info("{}: VOTE: QC Not synced: {}", this.getShortName(), qc);
+				unsyncedQCs.put(qc.getProposed().getId(), qc);
+			}
 		}
 	}
 

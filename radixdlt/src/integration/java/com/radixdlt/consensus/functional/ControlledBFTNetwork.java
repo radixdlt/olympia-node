@@ -25,7 +25,9 @@ import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.crypto.ECPublicKey;
 import java.util.LinkedList;
-import java.util.function.Function;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * A BFT network supporting the EventCoordinatorNetworkSender interface which
@@ -35,25 +37,94 @@ import java.util.function.Function;
  */
 public final class ControlledBFTNetwork {
 	private final ImmutableList<ECPublicKey> nodes;
-	private final ImmutableMap<ECPublicKey, ImmutableMap<ECPublicKey, LinkedList<Object>>> messages;
+	private final ImmutableMap<MailboxId, LinkedList<Message>> messageQueue;
 
-	public ControlledBFTNetwork(ImmutableList<ECPublicKey> nodes) {
+	ControlledBFTNetwork(ImmutableList<ECPublicKey> nodes) {
 		this.nodes = nodes;
-		this.messages = nodes.stream()
+		this.messageQueue = nodes.stream()
+			.flatMap(n0 -> nodes.stream().map(n1 -> new MailboxId(n0, n1)))
 			.collect(
 				ImmutableMap.toImmutableMap(
-					sender -> sender,
-					sender -> nodes.stream().collect(ImmutableMap.toImmutableMap(receiver -> receiver, receiver -> new LinkedList<>()))
+					key -> key,
+					key -> new LinkedList<>()
 				)
 			);
 	}
 
-	private void putMesssage(ECPublicKey sender, ECPublicKey receiver, Object message) {
-		this.messages.get(sender).get(receiver).add(message);
+	static final class MailboxId {
+		private final ECPublicKey sender;
+		private final ECPublicKey receiver;
+
+		MailboxId(ECPublicKey sender, ECPublicKey receiver) {
+			this.sender = sender;
+			this.receiver = receiver;
+		}
+
+		public ECPublicKey getReceiver() {
+			return receiver;
+		}
+
+		public ECPublicKey getSender() {
+			return sender;
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(sender, receiver);
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (!(obj instanceof MailboxId)) {
+				return false;
+			}
+
+			MailboxId other = (MailboxId) obj;
+			return this.sender.equals(other.sender) && this.receiver.equals(other.receiver);
+		}
+
+		@Override
+		public String toString() {
+			return sender.euid().toString().substring(0, 6) + " -> " + receiver.euid().toString().substring(0, 6);
+		}
 	}
 
-	public Function<ECPublicKey, Object> getReceiver(ECPublicKey receiver) {
-		return sender -> this.messages.get(sender).get(receiver).pop();
+	static final class Message {
+		private final MailboxId mailboxId;
+		private final Object msg;
+
+		Message(ECPublicKey sender, ECPublicKey receiver, Object msg) {
+			this.mailboxId = new MailboxId(sender, receiver);
+			this.msg = msg;
+		}
+
+		public MailboxId getMailboxId() {
+			return mailboxId;
+		}
+
+		public Object getMsg() {
+			return msg;
+		}
+
+		public String toString() {
+			return mailboxId + " " + msg;
+		}
+	}
+
+	private void putMesssage(Message message) {
+		messageQueue.get(message.getMailboxId()).add(message);
+	}
+
+	public List<Message> peekNextMessages() {
+		return messageQueue.values()
+			.stream()
+			.filter(l -> !l.isEmpty())
+			.map(LinkedList::getFirst)
+			.collect(Collectors.toList());
+	}
+
+	public Object popNextMessage(MailboxId mailboxId) {
+		return messageQueue.get(mailboxId).pop().getMsg();
 	}
 
 	public BFTEventSender getSender(ECPublicKey sender) {
@@ -61,18 +132,18 @@ public final class ControlledBFTNetwork {
 			@Override
 			public void broadcastProposal(Proposal proposal) {
 				for (ECPublicKey receiver : nodes) {
-					putMesssage(sender, receiver, proposal);
+					putMesssage(new Message(sender, receiver, proposal));
 				}
 			}
 
 			@Override
 			public void sendNewView(NewView newView, ECPublicKey newViewLeader) {
-				putMesssage(sender, newViewLeader, newView);
+				putMesssage(new Message(sender, newViewLeader, newView));
 			}
 
 			@Override
 			public void sendVote(Vote vote, ECPublicKey leader) {
-				putMesssage(sender, leader, vote);
+				putMesssage(new Message(sender, leader, vote));
 			}
 		};
 	}
