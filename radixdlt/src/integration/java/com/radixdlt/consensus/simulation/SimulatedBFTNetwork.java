@@ -18,9 +18,6 @@
 package com.radixdlt.consensus.simulation;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anySet;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -35,7 +32,6 @@ import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.VertexStore;
-import com.radixdlt.consensus.VertexSupplier;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
 import com.radixdlt.consensus.liveness.MempoolProposalGenerator;
@@ -52,12 +48,12 @@ import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.mempool.EmptyMempool;
 import com.radixdlt.mempool.Mempool;
 
 import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork;
 import com.radixdlt.utils.UInt256;
 import io.reactivex.rxjava3.core.Observable;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -120,7 +116,6 @@ public class SimulatedBFTNetwork {
 				e -> {
 					RadixEngine radixEngine = mock(RadixEngine.class);
 					when(radixEngine.staticCheck(any())).thenReturn(Optional.empty());
-					VertexSupplier vertexSupplier = underlyingNetwork.getVertexSupplier(e.getPublicKey());
 					return new VertexStore(genesisVertex, genesisQC, radixEngine, this.counters.get(e));
 				})
 			);
@@ -140,8 +135,7 @@ public class SimulatedBFTNetwork {
 	}
 
 	private ConsensusRunner createBFTInstance(ECKeyPair key) {
-		Mempool mempool = mock(Mempool.class);
-		doAnswer(inv -> Collections.emptyList()).when(mempool).getAtoms(anyInt(), anySet());
+		Mempool mempool = new EmptyMempool();
 		ProposalGenerator proposalGenerator = new MempoolProposalGenerator(vertexStores.get(key), mempool);
 		Hasher hasher = new DefaultHasher();
 		SafetyRules safetyRules = new SafetyRules(key, SafetyState.initialState(), hasher);

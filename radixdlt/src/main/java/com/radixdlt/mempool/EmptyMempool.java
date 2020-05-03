@@ -23,6 +23,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Mempool which is always empty
+ */
 public class EmptyMempool implements Mempool {
 
 	@Override
