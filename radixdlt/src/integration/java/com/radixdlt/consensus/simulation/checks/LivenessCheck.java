@@ -20,7 +20,7 @@ package com.radixdlt.consensus.simulation.checks;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.radixdlt.consensus.simulation.BFTCheck;
-import com.radixdlt.consensus.simulation.BFTNetworkSimulation;
+import com.radixdlt.consensus.simulation.SimulatedBFTNetwork;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.VertexStore;
 import com.radixdlt.consensus.View;
@@ -44,7 +44,7 @@ public class LivenessCheck implements BFTCheck {
 	}
 
 	@Override
-	public Completable check(BFTNetworkSimulation network) {
+	public Completable check(SimulatedBFTNetwork network) {
 		AtomicReference<View> highestQCView = new AtomicReference<>(View.genesis());
 		return Observable
 			.interval(duration * 2, duration, timeUnit) // 2 times initial duration to account for boot up

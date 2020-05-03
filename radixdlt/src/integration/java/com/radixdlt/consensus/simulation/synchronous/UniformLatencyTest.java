@@ -17,7 +17,7 @@
 
 package com.radixdlt.consensus.simulation.synchronous;
 
-import com.radixdlt.consensus.simulation.BFTTest;
+import com.radixdlt.consensus.simulation.BFTSimulatedTest;
 import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 
@@ -36,7 +36,7 @@ public class UniformLatencyTest {
 	 */
 	@Test
 	public void given_4_correct_bfts__then_should_pass_sanity_tests_over_1_minute() {
-		BFTTest bftTest = BFTTest.builder()
+		BFTSimulatedTest bftTest = BFTSimulatedTest.builder()
 			.numNodes(4)
 			.checkSafety()
 			.checkLiveness()
