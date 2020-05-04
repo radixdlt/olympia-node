@@ -84,7 +84,7 @@ public final class SyncQueues {
 			queue.pop();
 		}
 
-		boolean checkOrAdd(RequiresSyncConsensusEvent event) {
+		boolean isEmptyElseAdd(RequiresSyncConsensusEvent event) {
 			if (queue.isEmpty()) {
 				return true;
 			}
@@ -104,8 +104,8 @@ public final class SyncQueues {
 		return queues.values();
 	}
 
-	boolean checkOrAdd(RequiresSyncConsensusEvent event) {
-		return queues.get(event.getAuthor()).checkOrAdd(event);
+	boolean isEmptyElseAdd(RequiresSyncConsensusEvent event) {
+		return queues.get(event.getAuthor()).isEmptyElseAdd(event);
 	}
 
 	void add(RequiresSyncConsensusEvent event) {

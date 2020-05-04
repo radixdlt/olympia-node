@@ -161,7 +161,7 @@ public final class VertexStore {
 	 * Thread-safe.
 	 *
 	 * @param vertexId the id of the vertex
-	 * @return the vertex
+	 * @return the vertex or null, if it is not stored
 	 */
 	public Vertex getVertex(Hash vertexId) {
 		return this.vertices.get(vertexId);

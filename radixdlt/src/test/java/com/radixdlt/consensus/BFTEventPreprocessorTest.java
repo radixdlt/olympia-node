@@ -132,7 +132,7 @@ public class BFTEventPreprocessorTest {
 	@Test
 	public void when_process_irrelevant_new_view__event_gets_thrown_away() {
 		NewView newView = createNewView(false, true);
-		when(syncQueues.checkOrAdd(any())).thenReturn(true);
+		when(syncQueues.isEmptyElseAdd(any())).thenReturn(true);
 		preprocessor.processNewView(newView);
 		verify(syncQueues, never()).add(any());
 		verify(forwardTo, never()).processNewView(any());
@@ -141,7 +141,7 @@ public class BFTEventPreprocessorTest {
 	@Test
 	public void when_process_irrelevant_proposal__event_gets_thrown_away() {
 		Proposal proposal = createProposal(false, true);
-		when(syncQueues.checkOrAdd(any())).thenReturn(true);
+		when(syncQueues.isEmptyElseAdd(any())).thenReturn(true);
 		preprocessor.processProposal(proposal);
 		verify(syncQueues, never()).add(any());
 		verify(forwardTo, never()).processProposal(any());
@@ -150,7 +150,7 @@ public class BFTEventPreprocessorTest {
 	@Test
 	public void when_processing_new_view_as_not_proposer__then_new_view_get_thrown_away() {
 		NewView newView = createNewView(true, true);
-		when(syncQueues.checkOrAdd(eq(newView))).thenReturn(true);
+		when(syncQueues.isEmptyElseAdd(eq(newView))).thenReturn(true);
 		when(proposerElection.getProposer(View.of(2))).thenReturn(mock(ECPublicKey.class));
 		when(newView.getAuthor()).thenReturn(SELF_KEY.getPublicKey());
 		preprocessor.processNewView(newView);
@@ -160,7 +160,7 @@ public class BFTEventPreprocessorTest {
 	@Test
 	public void when_process_new_view_not_synced__then_new_view_is_queued() {
 		NewView newView = createNewView(true, false);
-		when(syncQueues.checkOrAdd(eq(newView))).thenReturn(true);
+		when(syncQueues.isEmptyElseAdd(eq(newView))).thenReturn(true);
 		preprocessor.processNewView(newView);
 		verify(syncQueues, times(1)).add(eq(newView));
 		verify(forwardTo, never()).processNewView(any());
@@ -169,7 +169,7 @@ public class BFTEventPreprocessorTest {
 	@Test
 	public void when_process_proposal_not_synced__then_proposal_is_queued() {
 		Proposal proposal = createProposal(true, false);
-		when(syncQueues.checkOrAdd(eq(proposal))).thenReturn(true);
+		when(syncQueues.isEmptyElseAdd(eq(proposal))).thenReturn(true);
 		preprocessor.processProposal(proposal);
 		verify(syncQueues, times(1)).add(eq(proposal));
 		verify(forwardTo, never()).processProposal(any());
@@ -178,7 +178,7 @@ public class BFTEventPreprocessorTest {
 	@Test
 	public void when_process_new_view_synced__then_new_view_is_forwarded() {
 		NewView newView = createNewView(true, true);
-		when(syncQueues.checkOrAdd(eq(newView))).thenReturn(true);
+		when(syncQueues.isEmptyElseAdd(eq(newView))).thenReturn(true);
 		preprocessor.processNewView(newView);
 		verify(syncQueues, never()).add(any());
 		verify(forwardTo, times(1)).processNewView(eq(newView));
@@ -187,7 +187,7 @@ public class BFTEventPreprocessorTest {
 	@Test
 	public void when_process_proposal_synced__then_proposal_is_forwarded() {
 		Proposal proposal = createProposal(true, true);
-		when(syncQueues.checkOrAdd(eq(proposal))).thenReturn(true);
+		when(syncQueues.isEmptyElseAdd(eq(proposal))).thenReturn(true);
 		preprocessor.processProposal(proposal);
 		verify(syncQueues, never()).add(any());
 		verify(forwardTo, times(1)).processProposal(eq(proposal));
@@ -206,7 +206,7 @@ public class BFTEventPreprocessorTest {
 		when(proposal.getVertex()).thenReturn(vertex);
 		when(proposal.getAuthor()).thenReturn(OTHER_KEY.getPublicKey());
 		when(vertexStore.getVertex(eq(vertexId))).thenReturn(vertex);
-		when(syncQueues.checkOrAdd(eq(proposal))).thenReturn(true);
+		when(syncQueues.isEmptyElseAdd(eq(proposal))).thenReturn(true);
 		SyncQueue syncQueue = mock(SyncQueue.class);
 		NewView newView = createNewView(true, true);
 		when(syncQueue.peek(eq(vertexId))).thenReturn(newView);
@@ -235,7 +235,7 @@ public class BFTEventPreprocessorTest {
 		when(proposal.getVertex()).thenReturn(vertex);
 		when(proposal.getAuthor()).thenReturn(OTHER_KEY.getPublicKey());
 		when(vertexStore.getVertex(eq(vertexId))).thenReturn(vertex);
-		when(syncQueues.checkOrAdd(eq(proposal))).thenReturn(true);
+		when(syncQueues.isEmptyElseAdd(eq(proposal))).thenReturn(true);
 		SyncQueue syncQueue = mock(SyncQueue.class);
 		NewView newView = createNewView(true, true);
 		when(syncQueue.peek(eq(vertexId))).thenReturn(null);
@@ -265,7 +265,7 @@ public class BFTEventPreprocessorTest {
 		when(proposal.getVertex()).thenReturn(vertex);
 		when(proposal.getAuthor()).thenReturn(OTHER_KEY.getPublicKey());
 		when(vertexStore.getVertex(eq(vertexId))).thenReturn(vertex);
-		when(syncQueues.checkOrAdd(eq(proposal))).thenReturn(true);
+		when(syncQueues.isEmptyElseAdd(eq(proposal))).thenReturn(true);
 		SyncQueue syncQueue = mock(SyncQueue.class);
 
 		NewView newView = createNewView(true, false);

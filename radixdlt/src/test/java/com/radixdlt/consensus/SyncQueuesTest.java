@@ -40,7 +40,7 @@ public class SyncQueuesTest {
 		RequiresSyncConsensusEvent event = mock(RequiresSyncConsensusEvent.class);
 		when(event.getAuthor()).thenReturn(key);
 
-		assertThat(syncQueues.checkOrAdd(event)).isTrue();
+		assertThat(syncQueues.isEmptyElseAdd(event)).isTrue();
 	}
 
 	@Test
@@ -56,7 +56,7 @@ public class SyncQueuesTest {
 		RequiresSyncConsensusEvent event1 = mock(RequiresSyncConsensusEvent.class);
 		when(event1.getAuthor()).thenReturn(key);
 		syncQueues.add(event0);
-		assertThat(syncQueues.checkOrAdd(event1)).isFalse();
+		assertThat(syncQueues.isEmptyElseAdd(event1)).isFalse();
 	}
 
 	@Test

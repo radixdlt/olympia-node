@@ -101,10 +101,11 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 	 */
 	public void processLocalSync(Hash vertexId) {
 		for (SyncQueue queue : queues.getQueues()) {
-			boolean first = true;
-			while (peekAndExecute(queue, first ? vertexId : null)) {
+			if (peekAndExecute(queue, vertexId)) {
 				queue.pop();
-				first = false;
+				while (peekAndExecute(queue, null)) {
+					queue.pop();
+				}
 			}
 		}
 
@@ -157,7 +158,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 	@Override
 	public void processNewView(NewView newView) {
 		log.trace("{}: NEW_VIEW: Queueing {}", this.getShortName(), newView);
-		if (queues.checkOrAdd(newView)) {
+		if (queues.isEmptyElseAdd(newView)) {
 			if (!processNewViewInternal(newView)) {
 				log.info("{}: NEW_VIEW: Queuing {} Waiting for Sync", getShortName(), newView);
 				queues.add(newView);
@@ -190,7 +191,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 	@Override
 	public void processProposal(Proposal proposal) {
 		log.trace("{}: PROPOSAL: Queueing {}", this.getShortName(), proposal);
-		if (queues.checkOrAdd(proposal)) {
+		if (queues.isEmptyElseAdd(proposal)) {
 			if (!processProposalInternal(proposal)) {
 				log.info("{}: PROPOSAL: Queuing {} Waiting for Sync", getShortName(), proposal);
 				queues.add(proposal);
@@ -204,7 +205,6 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		forwardTo.processLocalTimeout(view);
 		final View nextView = this.pacemakerState.getCurrentView();
 		if (!curView.equals(nextView)) {
-			// Could probably forward some of these but don't worry for now
 			queues.clear();
 		}
 	}
