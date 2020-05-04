@@ -103,6 +103,20 @@ public class BFTEventPreprocessorTest {
 		return proposal;
 	}
 
+
+	@Test
+	public void when_process_vote_as_not_proposer__then_vote_gets_thrown_away() {
+		Vote vote = mock(Vote.class);
+		VoteData voteData = mock(VoteData.class);
+		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
+		when(vertexMetadata.getView()).thenReturn(View.of(1));
+		when(voteData.getProposed()).thenReturn(vertexMetadata);
+		when(vote.getVoteData()).thenReturn(voteData);
+		when(proposerElection.getProposer(eq(View.of(1)))).thenReturn(mock(ECPublicKey.class));
+		preprocessor.processVote(vote);
+		verify(forwardTo, never()).processVote(vote);
+	}
+
 	@Test
 	public void when_process_vote__event_gets_forwarded() {
 		Vote vote = mock(Vote.class);
@@ -134,7 +148,7 @@ public class BFTEventPreprocessorTest {
 	}
 
 	@Test
-	public void when_processing_new_view_as_not_proposer__then_new_view_is_not_emitted() {
+	public void when_processing_new_view_as_not_proposer__then_new_view_get_thrown_away() {
 		NewView newView = createNewView(true, true);
 		when(syncQueues.checkOrAdd(eq(newView))).thenReturn(true);
 		when(proposerElection.getProposer(View.of(2))).thenReturn(mock(ECPublicKey.class));

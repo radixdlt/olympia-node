@@ -21,8 +21,15 @@ import com.radixdlt.crypto.Hash;
 
 /**
  * Processor of BFT events.
+ *
+ * Implementations are not expected to be thread-safe.
  */
 public interface BFTEventProcessor {
+	/**
+	 * The initialization call. Must be called first and only once at
+	 * the beginning of the BFT's lifetime.
+	 */
+	void start();
 
 	/**
 	 * Process a consensus vote message
@@ -59,9 +66,4 @@ public interface BFTEventProcessor {
 	 * @param request the RPC request
 	 */
 	void processGetVertexRequest(GetVertexRequest request);
-
-	/**
-	 * Initialize
-	 */
-	void start();
 }

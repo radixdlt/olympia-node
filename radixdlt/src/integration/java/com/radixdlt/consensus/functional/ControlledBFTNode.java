@@ -135,6 +135,8 @@ class ControlledBFTNode {
 			ec.processProposal((Proposal) msg);
 		} else if (msg instanceof Vote) {
 			ec.processVote((Vote) msg);
+		} else {
+			throw new IllegalStateException("Unknown msg: " + msg);
 		}
 	}
 }

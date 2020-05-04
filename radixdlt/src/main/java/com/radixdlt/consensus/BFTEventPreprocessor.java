@@ -73,7 +73,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 	}
 
 	private boolean peekAndExecute(SyncQueue queue, Hash vertexId) {
-		final HasSyncConsensusEvent event = queue.peek(vertexId);
+		final RequiresSyncConsensusEvent event = queue.peek(vertexId);
 		if (event == null) {
 			return false;
 		}
@@ -82,12 +82,12 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		// to process these events due to much better performance
 		if (event instanceof NewView) {
 			final NewView newView = (NewView) event;
-			return this.processNewViewInternal(newView, false);
+			return this.processNewViewInternal(newView);
 		}
 
 		if (event instanceof Proposal) {
 			final Proposal proposal = (Proposal) event;
-			return this.processProposalInternal(proposal, false);
+			return this.processProposalInternal(proposal);
 		}
 
 		throw new IllegalStateException("Unexpected consensus event: " + event);
@@ -124,12 +124,13 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		if (!Objects.equals(proposerElection.getProposer(view), myKey)) {
 			log.warn("{}: VOTE: Ignoring confused vote {} for {}",
 				getShortName(), vote.hashCode(), vote.getVoteData().getProposed().getView());
+			return;
 		}
 
 		forwardTo.processVote(vote);
 	}
 
-	private boolean processNewViewInternal(NewView newView, boolean enqueueIfFail) {
+	private boolean processNewViewInternal(NewView newView) {
 		log.trace("{}: NEW_VIEW: PreProcessing {}", getShortName(), newView);
 
 		// only do something if we're actually the leader for the view
@@ -149,11 +150,6 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 			forwardTo.processNewView(newView);
 			return true;
 		} else {
-			if (enqueueIfFail) {
-				log.info("{}: NEW_VIEW: Queuing {} Waiting for Sync", getShortName(), newView);
-				queues.add(newView);
-			}
-
 			return false;
 		}
 	}
@@ -162,11 +158,14 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 	public void processNewView(NewView newView) {
 		log.trace("{}: NEW_VIEW: Queueing {}", this.getShortName(), newView);
 		if (queues.checkOrAdd(newView)) {
-			processNewViewInternal(newView, true);
+			if (!processNewViewInternal(newView)) {
+				log.info("{}: NEW_VIEW: Queuing {} Waiting for Sync", getShortName(), newView);
+				queues.add(newView);
+			}
 		}
 	}
 
-	private boolean processProposalInternal(Proposal proposal, boolean enqueueIfFail) {
+	private boolean processProposalInternal(Proposal proposal) {
 		log.trace("{}: PROPOSAL: PreProcessing {}", this.getShortName(), proposal);
 
 		final Vertex proposedVertex = proposal.getVertex();
@@ -184,10 +183,6 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 			}
 			return true;
 		} else {
-			if (enqueueIfFail) {
-				log.info("{}: PROPOSAL: Queuing {} Waiting for Sync", getShortName(), proposal);
-				queues.add(proposal);
-			}
 			return false;
 		}
 	}
@@ -196,7 +191,10 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 	public void processProposal(Proposal proposal) {
 		log.trace("{}: PROPOSAL: Queueing {}", this.getShortName(), proposal);
 		if (queues.checkOrAdd(proposal)) {
-			processProposalInternal(proposal, true);
+			if (!processProposalInternal(proposal)) {
+				log.info("{}: PROPOSAL: Queuing {} Waiting for Sync", getShortName(), proposal);
+				queues.add(proposal);
+			}
 		}
 	}
 

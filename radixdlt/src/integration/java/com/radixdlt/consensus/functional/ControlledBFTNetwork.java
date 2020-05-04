@@ -37,12 +37,12 @@ import java.util.stream.Collectors;
  */
 public final class ControlledBFTNetwork {
 	private final ImmutableList<ECPublicKey> nodes;
-	private final ImmutableMap<MailboxId, LinkedList<Message>> messageQueue;
+	private final ImmutableMap<ChannelId, LinkedList<Message>> messageQueue;
 
 	ControlledBFTNetwork(ImmutableList<ECPublicKey> nodes) {
 		this.nodes = nodes;
 		this.messageQueue = nodes.stream()
-			.flatMap(n0 -> nodes.stream().map(n1 -> new MailboxId(n0, n1)))
+			.flatMap(n0 -> nodes.stream().map(n1 -> new ChannelId(n0, n1)))
 			.collect(
 				ImmutableMap.toImmutableMap(
 					key -> key,
@@ -51,11 +51,11 @@ public final class ControlledBFTNetwork {
 			);
 	}
 
-	static final class MailboxId {
+	static final class ChannelId {
 		private final ECPublicKey sender;
 		private final ECPublicKey receiver;
 
-		MailboxId(ECPublicKey sender, ECPublicKey receiver) {
+		ChannelId(ECPublicKey sender, ECPublicKey receiver) {
 			this.sender = sender;
 			this.receiver = receiver;
 		}
@@ -75,11 +75,11 @@ public final class ControlledBFTNetwork {
 
 		@Override
 		public boolean equals(Object obj) {
-			if (!(obj instanceof MailboxId)) {
+			if (!(obj instanceof ChannelId)) {
 				return false;
 			}
 
-			MailboxId other = (MailboxId) obj;
+			ChannelId other = (ChannelId) obj;
 			return this.sender.equals(other.sender) && this.receiver.equals(other.receiver);
 		}
 
@@ -90,16 +90,16 @@ public final class ControlledBFTNetwork {
 	}
 
 	static final class Message {
-		private final MailboxId mailboxId;
+		private final ChannelId channelId;
 		private final Object msg;
 
 		Message(ECPublicKey sender, ECPublicKey receiver, Object msg) {
-			this.mailboxId = new MailboxId(sender, receiver);
+			this.channelId = new ChannelId(sender, receiver);
 			this.msg = msg;
 		}
 
-		public MailboxId getMailboxId() {
-			return mailboxId;
+		public ChannelId getChannelId() {
+			return channelId;
 		}
 
 		public Object getMsg() {
@@ -107,12 +107,12 @@ public final class ControlledBFTNetwork {
 		}
 
 		public String toString() {
-			return mailboxId + " " + msg;
+			return channelId + " " + msg;
 		}
 	}
 
 	private void putMesssage(Message message) {
-		messageQueue.get(message.getMailboxId()).add(message);
+		messageQueue.get(message.getChannelId()).add(message);
 	}
 
 	public List<Message> peekNextMessages() {
@@ -123,8 +123,8 @@ public final class ControlledBFTNetwork {
 			.collect(Collectors.toList());
 	}
 
-	public Object popNextMessage(MailboxId mailboxId) {
-		return messageQueue.get(mailboxId).pop().getMsg();
+	public Object popNextMessage(ChannelId channelId) {
+		return messageQueue.get(channelId).pop().getMsg();
 	}
 
 	public BFTEventSender getSender(ECPublicKey sender) {

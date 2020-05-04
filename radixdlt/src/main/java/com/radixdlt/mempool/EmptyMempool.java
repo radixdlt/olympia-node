@@ -30,17 +30,17 @@ public class EmptyMempool implements Mempool {
 
 	@Override
 	public void addAtom(Atom atom) {
-
+		// No-op
 	}
 
 	@Override
 	public void removeCommittedAtom(AID aid) {
-
+		// No-op
 	}
 
 	@Override
 	public void removeRejectedAtom(AID aid) {
-
+		// No-op
 	}
 
 	@Override

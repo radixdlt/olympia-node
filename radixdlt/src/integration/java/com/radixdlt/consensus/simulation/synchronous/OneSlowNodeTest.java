@@ -39,29 +39,12 @@ public class OneSlowNodeTest {
 
 	/**
 	 * Tests a static configuration of 3 fast, equal nodes and 1 slow node.
-	 * With syncing disabled, the slow node will always fall behind by at most a single
-	 * quorum and issue a local timeout across all nodes.
 	 */
 	@Test
 	public void given_4_nodes_3_fast_and_1_slow_node_and_sync_disabled__then_a_timeout_wont_occur() {
 		BFTSimulatedTest syncDisabledTest = bftTestBuilder
-			.disableSync(true)
+			.setSync(false)
 			.build();
 		syncDisabledTest.run(1, TimeUnit.MINUTES);
 	}
-
-	/**
-	 * Tests a static configuration of 3 fast, equal nodes and 1 slow node.
-	 * With syncing enabled, because all nodes are within synchronous bounds
-	 * there should be no timeout.
-	 */
-	@Test
-	public void given_4_nodes_3_fast_and_1_slow_node_and_sync_enabled__then_a_timeout_wont_occur() {
-		BFTSimulatedTest syncEnabledTest = bftTestBuilder
-			.disableSync(false)
-			//.checkSyncsHaveOccurred(20, TimeUnit.SECONDS)
-			.build();
-		syncEnabledTest.run(1, TimeUnit.MINUTES);
-	}
-
 }

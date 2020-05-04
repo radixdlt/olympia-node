@@ -23,7 +23,7 @@ import com.radixdlt.crypto.ECPublicKey;
  * A consensus event which requires syncing to be effectively
  * processed
  */
-public interface HasSyncConsensusEvent extends ConsensusEvent {
+public interface RequiresSyncConsensusEvent extends ConsensusEvent {
 
 	/**
 	 * Get the QC associated with event

@@ -20,7 +20,7 @@ package com.radixdlt.consensus.functional;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.functional.ControlledBFTNetwork.MailboxId;
+import com.radixdlt.consensus.functional.ControlledBFTNetwork.ChannelId;
 import com.radixdlt.consensus.functional.ControlledBFTNetwork.Message;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.validators.Validator;
@@ -71,8 +71,8 @@ public class BFTFunctionalTest {
 	}
 
 	public void processNextMsg(int toIndex, int fromIndex, Class<?> expectedClass) {
-		MailboxId mailboxId = new MailboxId(pks.get(fromIndex), pks.get(toIndex));
-		Object msg = network.popNextMessage(mailboxId);
+		ChannelId channelId = new ChannelId(pks.get(fromIndex), pks.get(toIndex));
+		Object msg = network.popNextMessage(channelId);
 		assertThat(msg).isInstanceOf(expectedClass);
 		nodes.get(toIndex).processNext(msg);
 	}
@@ -80,9 +80,9 @@ public class BFTFunctionalTest {
 	public void processNextMsg(Random random) {
 		List<Message> possibleMsgs = network.peekNextMessages();
 		int nextIndex =  random.nextInt(possibleMsgs.size());
-		MailboxId mailboxId = possibleMsgs.get(nextIndex).getMailboxId();
-		Object msg = network.popNextMessage(mailboxId);
-		nodes.get(pks.indexOf(mailboxId.getReceiver())).processNext(msg);
+		ChannelId channelId = possibleMsgs.get(nextIndex).getChannelId();
+		Object msg = network.popNextMessage(channelId);
+		nodes.get(pks.indexOf(channelId.getReceiver())).processNext(msg);
 	}
 
 	public SystemCounters getSystemCounters(int nodeIndex) {

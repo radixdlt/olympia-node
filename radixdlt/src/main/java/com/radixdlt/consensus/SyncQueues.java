@@ -33,6 +33,8 @@ import java.util.Set;
  * before being able to effectively process it.
  *
  * A separate queue is created for each node in order to keep the message ordering invariant.
+ *
+ * This class is NOT thread-safe.
  */
 public final class SyncQueues {
 	private final ImmutableMap<ECPublicKey, SyncQueue> queues;
@@ -48,7 +50,7 @@ public final class SyncQueues {
 	}
 
 	class SyncQueue {
-		private final LinkedList<HasSyncConsensusEvent> queue;
+		private final LinkedList<RequiresSyncConsensusEvent> queue;
 
 		private SyncQueue() {
 			this.queue = new LinkedList<>();
@@ -64,8 +66,8 @@ public final class SyncQueues {
 		 * @return the top of the queue if requirements are met
 		 */
 		@Nullable
-		public HasSyncConsensusEvent peek(@Nullable Hash vertexId) {
-			HasSyncConsensusEvent e = queue.peek();
+		public RequiresSyncConsensusEvent peek(@Nullable Hash vertexId) {
+			RequiresSyncConsensusEvent e = queue.peek();
 
 			if (e == null) {
 				return null;
@@ -82,7 +84,7 @@ public final class SyncQueues {
 			queue.pop();
 		}
 
-		boolean checkOrAdd(HasSyncConsensusEvent event) {
+		boolean checkOrAdd(RequiresSyncConsensusEvent event) {
 			if (queue.isEmpty()) {
 				return true;
 			}
@@ -92,7 +94,7 @@ public final class SyncQueues {
 			return false;
 		}
 
-		public void add(HasSyncConsensusEvent event) {
+		public void add(RequiresSyncConsensusEvent event) {
 			counters.increment(CounterType.CONSENSUS_EVENTS_QUEUED_SYNC);
 			queue.addLast(event);
 		}
@@ -102,11 +104,11 @@ public final class SyncQueues {
 		return queues.values();
 	}
 
-	boolean checkOrAdd(HasSyncConsensusEvent event) {
+	boolean checkOrAdd(RequiresSyncConsensusEvent event) {
 		return queues.get(event.getAuthor()).checkOrAdd(event);
 	}
 
-	void add(HasSyncConsensusEvent event) {
+	void add(RequiresSyncConsensusEvent event) {
 		queues.get(event.getAuthor()).add(event);
 	}
 

@@ -45,7 +45,7 @@ public class RandomLatencyTest {
 		BFTSimulatedTest bftTest = BFTSimulatedTest.builder()
 			.numNodes(3)
 			.randomLatency(minLatency, maxLatency)
-			.disableSync(true)
+			.setSync(false)
 			.pacemakerTimeout(synchronousTimeout) // Since no syncing needed 6*MTT required
 			.checkLiveness(synchronousTimeout, TimeUnit.MILLISECONDS)
 			.checkSafety()
@@ -72,7 +72,7 @@ public class RandomLatencyTest {
 			.numNodes(4)
 			.pacemakerTimeout(synchronousTimeout)
 			.randomLatency(minLatency, maxLatency)
-			.disableSync(true)
+			.setSync(false)
 			.checkNoTimeouts()
 			.build();
 

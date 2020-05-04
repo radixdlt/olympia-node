@@ -91,8 +91,8 @@ public class BFTSimulatedTest {
 			return this;
 		}
 
-		public Builder disableSync(boolean disableSync) {
-			this.latencyProvider.disableSync(disableSync);
+		public Builder setSync(boolean syncEnabled) {
+			this.latencyProvider.setSync(syncEnabled);
 			return this;
 		}
 

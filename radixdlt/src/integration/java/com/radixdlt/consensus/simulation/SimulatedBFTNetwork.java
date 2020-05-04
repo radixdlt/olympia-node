@@ -75,7 +75,7 @@ public class SimulatedBFTNetwork {
 	private final ImmutableMap<ECKeyPair, SystemCounters> counters;
 	private final ImmutableMap<ECKeyPair, ScheduledTimeoutSender> timeoutSenders;
 	private final ImmutableMap<ECKeyPair, FixedTimeoutPacemaker> pacemakers;
-	private final ImmutableMap<ECKeyPair, ConsensusRunner> bfts;
+	private final ImmutableMap<ECKeyPair, ConsensusRunner> runners;
 	private final ValidatorSet validatorSet;
 	private final List<ECKeyPair> nodes;
 
@@ -123,7 +123,7 @@ public class SimulatedBFTNetwork {
 			e -> new ScheduledTimeoutSender(Executors.newSingleThreadScheduledExecutor())));
 		this.pacemakers = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e,
 			e -> new FixedTimeoutPacemaker(this.pacemakerTimeout, this.timeoutSenders.get(e))));
-		this.bfts = this.vertexStores.keySet().stream()
+		this.runners = this.vertexStores.keySet().stream()
 			.collect(ImmutableMap.toImmutableMap(
 				e -> e,
 				this::createBFTInstance
@@ -177,11 +177,11 @@ public class SimulatedBFTNetwork {
 	}
 
 	public void start() {
-		this.bfts.values().forEach(ConsensusRunner::start);
+		this.runners.values().forEach(ConsensusRunner::start);
 	}
 
 	public void stop() {
-		this.bfts.values().forEach(ConsensusRunner::stop);
+		this.runners.values().forEach(ConsensusRunner::stop);
 	}
 
 	public TestEventCoordinatorNetwork getUnderlyingNetwork() {

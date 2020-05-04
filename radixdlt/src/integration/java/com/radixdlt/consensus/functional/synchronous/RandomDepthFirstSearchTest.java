@@ -21,10 +21,10 @@ import com.radixdlt.consensus.functional.BFTFunctionalTest;
 import java.util.Random;
 import org.junit.Test;
 
-public class TimeoutsDisabledTest {
+public class RandomDepthFirstSearchTest {
 
 	@Test
-	public void when_run_4_correct_nodes_with_random_latency_and_timeouts_disabled__then_bft_should_be_responsive() {
+	public void when_run_4_correct_nodes_with_channel_order_random_and_timeouts_disabled__then_bft_should_be_responsive() {
 		final Random random = new Random(12345);
 		final BFTFunctionalTest test = new BFTFunctionalTest(4);
 
@@ -35,7 +35,7 @@ public class TimeoutsDisabledTest {
 	}
 
 	@Test
-	public void when_run_100_correct_nodes_with_random_latency_and_timeouts_disabled__then_bft_should_be_responsive() {
+	public void when_run_100_correct_nodes_with_channel_order_random_and_timeouts_disabled__then_bft_should_be_responsive() {
 		final Random random = new Random(12345);
 		final BFTFunctionalTest test = new BFTFunctionalTest(100);
 

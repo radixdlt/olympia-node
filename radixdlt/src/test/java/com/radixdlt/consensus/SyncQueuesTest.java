@@ -37,7 +37,7 @@ public class SyncQueuesTest {
 			mock(SystemCounters.class)
 		);
 
-		HasSyncConsensusEvent event = mock(HasSyncConsensusEvent.class);
+		RequiresSyncConsensusEvent event = mock(RequiresSyncConsensusEvent.class);
 		when(event.getAuthor()).thenReturn(key);
 
 		assertThat(syncQueues.checkOrAdd(event)).isTrue();
@@ -51,9 +51,9 @@ public class SyncQueuesTest {
 			mock(SystemCounters.class)
 		);
 
-		HasSyncConsensusEvent event0 = mock(HasSyncConsensusEvent.class);
+		RequiresSyncConsensusEvent event0 = mock(RequiresSyncConsensusEvent.class);
 		when(event0.getAuthor()).thenReturn(key);
-		HasSyncConsensusEvent event1 = mock(HasSyncConsensusEvent.class);
+		RequiresSyncConsensusEvent event1 = mock(RequiresSyncConsensusEvent.class);
 		when(event1.getAuthor()).thenReturn(key);
 		syncQueues.add(event0);
 		assertThat(syncQueues.checkOrAdd(event1)).isFalse();
@@ -67,7 +67,7 @@ public class SyncQueuesTest {
 			mock(SystemCounters.class)
 		);
 
-		HasSyncConsensusEvent event0 = mock(HasSyncConsensusEvent.class);
+		RequiresSyncConsensusEvent event0 = mock(RequiresSyncConsensusEvent.class);
 		Hash vertexId = mock(Hash.class);
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
