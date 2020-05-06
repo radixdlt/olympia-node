@@ -91,8 +91,8 @@ public class BFTSimulatedTest {
 			return this;
 		}
 
-		public Builder disableSync(boolean disableSync) {
-			this.latencyProvider.disableSync(disableSync);
+		public Builder setSync(boolean syncEnabled) {
+			this.latencyProvider.setSyncEnabled(syncEnabled);
 			return this;
 		}
 
@@ -161,5 +161,6 @@ public class BFTSimulatedTest {
 		Completable.merge(assertions)
 			.doOnSubscribe(d -> bftNetwork.start())
 			.blockingAwait(duration, timeUnit);
+		bftNetwork.stop();
 	}
 }

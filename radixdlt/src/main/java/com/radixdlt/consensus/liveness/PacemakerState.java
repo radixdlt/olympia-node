@@ -15,24 +15,17 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.consensus.liveness;
 
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.Hash;
-import io.reactivex.rxjava3.core.Single;
+import com.radixdlt.consensus.View;
 
 /**
- * An asynchronous supplier which retrieves data for a vertex with a given id
+ * State of a pacemaker
  */
-public interface VertexSupplier {
-
+public interface PacemakerState {
 	/**
-	 * Execute an RPC to retrieve a vertex given an Id from a node
-	 * TODO: refactor to maintain a unidirectional data flow
-	 *
-	 * @param id the id of the vertex to retrieve
-	 * @param node the node to retrieve the vertex info from
-	 * @return single of a vertex which will complete once retrieved
+	 * Retrieves the local current view the pacemaker is at
+	 * @return view of the pacemaker
 	 */
-	Single<Vertex> getVertex(Hash id, ECPublicKey node);
+	View getCurrentView();
 }

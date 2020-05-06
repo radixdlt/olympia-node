@@ -25,15 +25,16 @@ import com.radixdlt.consensus.validators.ValidatorSet;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Scheduler;
+import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.observables.ConnectableObservable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import java.util.concurrent.Executors;
 
 /**
- * Subscription Manager (Start/Stop) to the processing of BFT events under
- * a single BFT node instance
+ * Subscription Manager (Start/Stop) to the processing of Consensus events under
+ * a single BFT Consensus node instance
  */
-public final class ChainedBFT {
+public final class ConsensusRunner {
 	public enum EventType {
 		EPOCH,
 		LOCAL_TIMEOUT,
@@ -59,9 +60,11 @@ public final class ChainedBFT {
 	}
 
 	private final ConnectableObservable<Event> events;
+	private final Object lock = new Object();
+	private Disposable disposable;
 
 	@Inject
-	public ChainedBFT(
+	public ConsensusRunner(
 		EpochRx epochRx,
 		EventCoordinatorNetworkRx network,
 		PacemakerRx pacemakerRx,
@@ -75,11 +78,11 @@ public final class ChainedBFT {
 		final Observable<Event> epochs = epochEvents
 			.map(o -> new Event(EventType.EPOCH, o));
 
-		final Observable<EventCoordinator> eventCoordinators = epochEvents
+		final Observable<BFTEventProcessor> eventCoordinators = epochEvents
 			.observeOn(singleThreadScheduler)
 			.map(epochManager::nextEpoch)
 			.startWithItem(epochManager.start())
-			.doOnNext(EventCoordinator::start)
+			.doOnNext(BFTEventProcessor::start)
 			.replay(1)
 			.autoConnect();
 
@@ -98,22 +101,22 @@ public final class ChainedBFT {
 		this.events = Observable.merge(epochs, ecMessages).publish();
 	}
 
-	private Event processEvent(Object msg, EventCoordinator eventCoordinator) {
+	private Event processEvent(Object msg, BFTEventProcessor processor) {
 		final EventType eventType;
 		if (msg instanceof GetVertexRequest) {
-			eventCoordinator.processGetVertexRequest((GetVertexRequest) msg);
+			processor.processGetVertexRequest((GetVertexRequest) msg);
 			return new Event(EventType.GET_VERTEX_REQUEST, msg);
 		} else if (msg instanceof View) {
-			eventCoordinator.processLocalTimeout((View) msg);
+			processor.processLocalTimeout((View) msg);
 			return new Event(EventType.LOCAL_TIMEOUT, msg);
 		} else if (msg instanceof NewView) {
-			eventCoordinator.processNewView((NewView) msg);
+			processor.processNewView((NewView) msg);
 			eventType = EventType.NEW_VIEW_MESSAGE;
 		} else if (msg instanceof Proposal) {
-			eventCoordinator.processProposal((Proposal) msg);
+			processor.processProposal((Proposal) msg);
 			eventType = EventType.PROPOSAL_MESSAGE;
 		} else if (msg instanceof Vote) {
-			eventCoordinator.processVote((Vote) msg);
+			processor.processVote((Vote) msg);
 			eventType = EventType.VOTE_MESSAGE;
 		} else {
 			throw new IllegalStateException("Unknown Consensus Message: " + msg);
@@ -128,7 +131,23 @@ public final class ChainedBFT {
 	 * occur.
 	 */
 	public void start() {
-		this.events.connect();
+		synchronized (lock) {
+			if (disposable == null) {
+				disposable = this.events.connect();
+			}
+		}
+	}
+
+	/**
+	 * Stop processing events.
+	 */
+	public void stop() {
+		synchronized (lock) {
+			if (disposable != null) {
+				disposable.dispose();
+				disposable = null;
+			}
+		}
 	}
 
 	/**

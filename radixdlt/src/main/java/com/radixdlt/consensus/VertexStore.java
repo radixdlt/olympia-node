@@ -33,13 +33,14 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Manages the BFT Vertex chain. NOT thread-safe.
+ * Manages the BFT Vertex chain.
+ *
+ * In general this class is NOT thread-safe except for getVertex().
+ * TODO: make thread-safe
  */
 public final class VertexStore {
-
 	private final RadixEngine engine;
 	private final SystemCounters counters;
-
 	private final Map<Hash, Vertex> vertices = new ConcurrentHashMap<>();
 	private final BehaviorSubject<Vertex> lastCommittedVertex = BehaviorSubject.create();
 
@@ -69,33 +70,17 @@ public final class VertexStore {
 		this.lastCommittedVertex.onNext(genesisVertex);
 	}
 
-	public void syncToQC(QuorumCertificate qc, VertexSupplier vertexSupplier) throws SyncException {
+	public boolean syncToQC(QuorumCertificate qc) {
 		final Vertex vertex = vertices.get(qc.getProposed().getId());
-		if (vertex == null) {
-			if (!vertices.containsKey(qc.getParent().getId())) {
-				// Too far behind
-				// TODO: more syncing
-				throw new SyncException(qc);
-			}
-
-			final Vertex proposedVertex;
-			try {
-				// TODO: remove blocking
-				proposedVertex = vertexSupplier.getVertex(qc.getProposed().getId()).blockingGet();
-				this.counters.increment(CounterType.CONSENSUS_SYNC_SUCCESS);
-			} catch (Exception e) {
-				throw new SyncException(qc, e);
-			}
-
-			try {
-				this.insertVertex(proposedVertex);
-			} catch (VertexInsertionException e) {
-				// Currently only looking to sync one vertex away from known QC
-				// so this should never throw the MissingParentException
-				throw new IllegalStateException("Should not go here.", e);
-			}
+		if (vertex != null) {
+			addQC(qc);
+			return true;
 		}
 
+		return false;
+	}
+
+	public void addQC(QuorumCertificate qc) {
 		if (highestQC.getView().compareTo(qc.getView()) < 0) {
 			highestQC = qc;
 		}
@@ -167,6 +152,13 @@ public final class VertexStore {
 		return this.highestQC;
 	}
 
+	/**
+	 * Retrieves the vertex with the given vertexId if it exists in the store.
+	 * Thread-safe.
+	 *
+	 * @param vertexId the id of the vertex
+	 * @return the vertex or null, if it is not stored
+	 */
 	public Vertex getVertex(Hash vertexId) {
 		return this.vertices.get(vertexId);
 	}

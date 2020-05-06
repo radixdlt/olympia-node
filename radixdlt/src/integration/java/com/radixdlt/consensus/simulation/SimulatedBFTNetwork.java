@@ -18,14 +18,11 @@
 package com.radixdlt.consensus.simulation;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anySet;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.consensus.ChainedBFT;
+import com.radixdlt.consensus.ConsensusRunner;
 import com.radixdlt.consensus.DefaultHasher;
 import com.radixdlt.consensus.EpochManager;
 import com.radixdlt.consensus.EpochRx;
@@ -51,12 +48,12 @@ import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.mempool.EmptyMempool;
 import com.radixdlt.mempool.Mempool;
 
 import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork;
 import com.radixdlt.utils.UInt256;
 import io.reactivex.rxjava3.core.Observable;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -78,7 +75,7 @@ public class SimulatedBFTNetwork {
 	private final ImmutableMap<ECKeyPair, SystemCounters> counters;
 	private final ImmutableMap<ECKeyPair, ScheduledTimeoutSender> timeoutSenders;
 	private final ImmutableMap<ECKeyPair, FixedTimeoutPacemaker> pacemakers;
-	private final ImmutableMap<ECKeyPair, ChainedBFT> bfts;
+	private final ImmutableMap<ECKeyPair, ConsensusRunner> runners;
 	private final ValidatorSet validatorSet;
 	private final List<ECKeyPair> nodes;
 
@@ -126,7 +123,7 @@ public class SimulatedBFTNetwork {
 			e -> new ScheduledTimeoutSender(Executors.newSingleThreadScheduledExecutor())));
 		this.pacemakers = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e,
 			e -> new FixedTimeoutPacemaker(this.pacemakerTimeout, this.timeoutSenders.get(e))));
-		this.bfts = this.vertexStores.keySet().stream()
+		this.runners = this.vertexStores.keySet().stream()
 			.collect(ImmutableMap.toImmutableMap(
 				e -> e,
 				this::createBFTInstance
@@ -137,9 +134,8 @@ public class SimulatedBFTNetwork {
 		return nodes;
 	}
 
-	private ChainedBFT createBFTInstance(ECKeyPair key) {
-		Mempool mempool = mock(Mempool.class);
-		doAnswer(inv -> Collections.emptyList()).when(mempool).getAtoms(anyInt(), anySet());
+	private ConsensusRunner createBFTInstance(ECKeyPair key) {
+		Mempool mempool = new EmptyMempool();
 		ProposalGenerator proposalGenerator = new MempoolProposalGenerator(vertexStores.get(key), mempool);
 		Hasher hasher = new DefaultHasher();
 		SafetyRules safetyRules = new SafetyRules(key, SafetyState.initialState(), hasher);
@@ -153,7 +149,6 @@ public class SimulatedBFTNetwork {
 			underlyingNetwork.getNetworkSender(key.getPublicKey()),
 			safetyRules,
 			pacemaker,
-			timeoutSender,
 			vertexStores.get(key),
 			pendingVotes,
 			proposers -> getProposerElection(), // create a new ProposerElection per node
@@ -161,7 +156,7 @@ public class SimulatedBFTNetwork {
 			counters.get(key)
 		);
 
-		return new ChainedBFT(
+		return new ConsensusRunner(
 			epochRx,
 			underlyingNetwork.getNetworkRx(key.getPublicKey()),
 			timeoutSender,
@@ -182,7 +177,11 @@ public class SimulatedBFTNetwork {
 	}
 
 	public void start() {
-		this.bfts.values().forEach(ChainedBFT::start);
+		this.runners.values().forEach(ConsensusRunner::start);
+	}
+
+	public void stop() {
+		this.runners.values().forEach(ConsensusRunner::stop);
 	}
 
 	public TestEventCoordinatorNetwork getUnderlyingNetwork() {

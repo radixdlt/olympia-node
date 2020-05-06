@@ -32,7 +32,7 @@ import com.radixdlt.crypto.Hash;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.junit.Test;
 
-public class TestEventCoordinatorNetworkTest {
+public class TestBFTEventProcessorNetworkTest {
 	private ECPublicKey validatorId = ECKeyPair.generateNew().getPublicKey();
 	private ECPublicKey validatorId2 = ECKeyPair.generateNew().getPublicKey();
 
@@ -121,7 +121,7 @@ public class TestEventCoordinatorNetworkTest {
 		TestObserver<GetVertexRequest> rpcRequestListener = TestObserver.create();
 		network.getNetworkRx(validatorId2).rpcRequests().subscribe(rpcRequestListener);
 		TestObserver<Vertex> testObserver = TestObserver.create();
-		network.getNetworkSender(validatorId).getVertex(vertexId, validatorId2)
+		network.getVertexSupplier(validatorId).getVertex(vertexId, validatorId2)
 			.subscribe(testObserver);
 
 		rpcRequestListener.awaitCount(1);

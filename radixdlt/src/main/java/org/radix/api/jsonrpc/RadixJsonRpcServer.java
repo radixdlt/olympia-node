@@ -18,7 +18,7 @@
 package org.radix.api.jsonrpc;
 
 import com.google.common.io.CharStreams;
-import com.radixdlt.consensus.ChainedBFT;
+import com.radixdlt.consensus.ConsensusRunner;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.store.SearchCursor;
 import com.radixdlt.store.StoreIndex;
@@ -80,10 +80,10 @@ public final class RadixJsonRpcServer {
 	private final AddressBook addressBook;
 	private final Universe universe;
 
-	private final ChainedBFT chainedBFT;
+	private final ConsensusRunner consensusRunner;
 
 	public RadixJsonRpcServer(
-		ChainedBFT chainedBFT,
+		ConsensusRunner consensusRunner,
 		Serialization serialization,
 		LedgerEntryStore ledger,
 		AtomsService atomsService,
@@ -92,11 +92,11 @@ public final class RadixJsonRpcServer {
 		AddressBook addressBook,
 		Universe universe
 	) {
-		this(chainedBFT, serialization, ledger, atomsService, atomSchema, localSystem, addressBook, universe, DEFAULT_MAX_REQUEST_SIZE);
+		this(consensusRunner, serialization, ledger, atomsService, atomSchema, localSystem, addressBook, universe, DEFAULT_MAX_REQUEST_SIZE);
 	}
 
 	public RadixJsonRpcServer(
-		ChainedBFT chainedBFT,
+		ConsensusRunner consensusRunner,
 		Serialization serialization,
 		LedgerEntryStore ledger,
 		AtomsService atomsService,
@@ -106,7 +106,7 @@ public final class RadixJsonRpcServer {
 		Universe universe,
 		long maxRequestSizeBytes
 	) {
-		this.chainedBFT = Objects.requireNonNull(chainedBFT);
+		this.consensusRunner = Objects.requireNonNull(consensusRunner);
 		this.serialization = Objects.requireNonNull(serialization);
 		this.ledger = Objects.requireNonNull(ledger);
 		this.atomsService = Objects.requireNonNull(atomsService);
@@ -168,7 +168,7 @@ public final class RadixJsonRpcServer {
 			final Object paramsObject = jsonRpcRequest.get("params");
 			switch (method) {
 				case "BFT.start":
-					chainedBFT.start();
+					consensusRunner.start();
 					result = new JSONObject()
 						.put("response", "success");
 					break;

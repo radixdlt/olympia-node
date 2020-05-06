@@ -19,17 +19,15 @@ package com.radixdlt.consensus.functional;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.consensus.EventCoordinatorNetworkSender;
-import com.radixdlt.consensus.GetVertexRequest;
+import com.radixdlt.consensus.BFTEventSender;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.Hash;
-import io.reactivex.rxjava3.core.Single;
 import java.util.LinkedList;
-import java.util.function.Function;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * A BFT network supporting the EventCoordinatorNetworkSender interface which
@@ -39,52 +37,113 @@ import java.util.function.Function;
  */
 public final class ControlledBFTNetwork {
 	private final ImmutableList<ECPublicKey> nodes;
-	private final ImmutableMap<ECPublicKey, ImmutableMap<ECPublicKey, LinkedList<Object>>> messages;
+	private final ImmutableMap<ChannelId, LinkedList<ControlledMessage>> messageQueue;
 
-	public ControlledBFTNetwork(ImmutableList<ECPublicKey> nodes) {
+	ControlledBFTNetwork(ImmutableList<ECPublicKey> nodes) {
 		this.nodes = nodes;
-		this.messages = nodes.stream()
+		this.messageQueue = nodes.stream()
+			.flatMap(n0 -> nodes.stream().map(n1 -> new ChannelId(n0, n1)))
 			.collect(
 				ImmutableMap.toImmutableMap(
-					sender -> sender,
-					sender -> nodes.stream().collect(ImmutableMap.toImmutableMap(receiver -> receiver, receiver -> new LinkedList<>()))
+					key -> key,
+					key -> new LinkedList<>()
 				)
 			);
 	}
 
-	private void putMesssage(ECPublicKey sender, ECPublicKey receiver, Object message) {
-		this.messages.get(sender).get(receiver).add(message);
+	static final class ChannelId {
+		private final ECPublicKey sender;
+		private final ECPublicKey receiver;
+
+		ChannelId(ECPublicKey sender, ECPublicKey receiver) {
+			this.sender = sender;
+			this.receiver = receiver;
+		}
+
+		public ECPublicKey getReceiver() {
+			return receiver;
+		}
+
+		public ECPublicKey getSender() {
+			return sender;
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(sender, receiver);
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (!(obj instanceof ChannelId)) {
+				return false;
+			}
+
+			ChannelId other = (ChannelId) obj;
+			return this.sender.equals(other.sender) && this.receiver.equals(other.receiver);
+		}
+
+		@Override
+		public String toString() {
+			return sender.euid().toString().substring(0, 6) + " -> " + receiver.euid().toString().substring(0, 6);
+		}
 	}
 
-	public Function<ECPublicKey, Object> getReceiver(ECPublicKey receiver) {
-		return sender -> this.messages.get(sender).get(receiver).pop();
+	static final class ControlledMessage {
+		private final ChannelId channelId;
+		private final Object msg;
+
+		ControlledMessage(ECPublicKey sender, ECPublicKey receiver, Object msg) {
+			this.channelId = new ChannelId(sender, receiver);
+			this.msg = msg;
+		}
+
+		public ChannelId getChannelId() {
+			return channelId;
+		}
+
+		public Object getMsg() {
+			return msg;
+		}
+
+		public String toString() {
+			return channelId + " " + msg;
+		}
 	}
 
-	public EventCoordinatorNetworkSender getSender(ECPublicKey sender) {
-		return new EventCoordinatorNetworkSender() {
+	private void putMesssage(ControlledMessage controlledMessage) {
+		messageQueue.get(controlledMessage.getChannelId()).add(controlledMessage);
+	}
+
+	public List<ControlledMessage> peekNextMessages() {
+		return messageQueue.values()
+			.stream()
+			.filter(l -> !l.isEmpty())
+			.map(LinkedList::getFirst)
+			.collect(Collectors.toList());
+	}
+
+	public Object popNextMessage(ChannelId channelId) {
+		return messageQueue.get(channelId).pop().getMsg();
+	}
+
+	public BFTEventSender getSender(ECPublicKey sender) {
+		return new BFTEventSender() {
 			@Override
 			public void broadcastProposal(Proposal proposal) {
 				for (ECPublicKey receiver : nodes) {
-					putMesssage(sender, receiver, proposal);
+					putMesssage(new ControlledMessage(sender, receiver, proposal));
 				}
 			}
 
 			@Override
 			public void sendNewView(NewView newView, ECPublicKey newViewLeader) {
-				putMesssage(sender, newViewLeader, newView);
+				putMesssage(new ControlledMessage(sender, newViewLeader, newView));
 			}
 
 			@Override
 			public void sendVote(Vote vote, ECPublicKey leader) {
-				putMesssage(sender, leader, vote);
-			}
-
-			@Override
-			public Single<Vertex> getVertex(Hash vertexId, ECPublicKey node) {
-				return Single.create(emitter -> {
-					GetVertexRequest request = new GetVertexRequest(vertexId, emitter::onSuccess);
-					putMesssage(sender, node, request);
-				});
+				putMesssage(new ControlledMessage(sender, leader, vote));
 			}
 		};
 	}

@@ -19,20 +19,18 @@ package com.radixdlt.middleware2.network;
 
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.EventCoordinatorNetworkRx;
-import com.radixdlt.consensus.EventCoordinatorNetworkSender;
+import com.radixdlt.consensus.BFTEventSender;
 import com.radixdlt.consensus.GetVertexRequest;
 import com.radixdlt.consensus.GetVertexResponse;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.VertexSupplier;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.Hash;
 import io.reactivex.rxjava3.core.Observable;
 
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.disposables.Disposable;
-import io.reactivex.rxjava3.schedulers.Schedulers;
 import io.reactivex.rxjava3.schedulers.Timed;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
@@ -136,8 +134,8 @@ public class TestEventCoordinatorNetwork {
 		return new Builder();
 	}
 
-	public EventCoordinatorNetworkSender getNetworkSender(ECPublicKey forNode) {
-		return new EventCoordinatorNetworkSender() {
+	public BFTEventSender getNetworkSender(ECPublicKey forNode) {
+		return new BFTEventSender() {
 			@Override
 			public void broadcastProposal(Proposal proposal) {
 				for (ECPublicKey reader : receivers.keySet()) {
@@ -154,29 +152,28 @@ public class TestEventCoordinatorNetwork {
 			public void sendVote(Vote vote, ECPublicKey leader) {
 				receivedMessages.onNext(MessageInTransit.newMessage(vote, forNode, leader));
 			}
-
-			@Override
-			public Single<Vertex> getVertex(Hash vertexId, ECPublicKey node) {
-				return Single.create(emitter -> {
-					Disposable d = receivers.computeIfAbsent(forNode, SimulatedReceiver::new).myMessages
-						.ofType(GetVertexResponse.class)
-						.filter(v -> v.getVertexId().equals(vertexId))
-						.firstOrError()
-						.map(GetVertexResponse::getVertex)
-						.subscribe(emitter::onSuccess);
-					emitter.setDisposable(d);
-
-					final GetVertexRequest request = new GetVertexRequest(
-						vertexId,
-						vertex -> {
-							GetVertexResponse vertexResponse = new GetVertexResponse(vertexId, vertex);
-							receivedMessages.onNext(MessageInTransit.newMessage(vertexResponse, node, forNode));
-						}
-					);
-					receivedMessages.onNext(MessageInTransit.newMessage(request, forNode, node));
-				});
-			}
 		};
+	}
+
+	public VertexSupplier getVertexSupplier(ECPublicKey forNode) {
+		return (vertexId, node) -> Single.create(emitter -> {
+			Disposable d = receivers.computeIfAbsent(forNode, SimulatedReceiver::new).myMessages
+				.ofType(GetVertexResponse.class)
+				.filter(v -> v.getVertexId().equals(vertexId))
+				.firstOrError()
+				.map(GetVertexResponse::getVertex)
+				.subscribe(emitter::onSuccess);
+			emitter.setDisposable(d);
+
+			final GetVertexRequest request = new GetVertexRequest(
+				vertexId,
+				vertex -> {
+					GetVertexResponse vertexResponse = new GetVertexResponse(vertexId, vertex);
+					receivedMessages.onNext(MessageInTransit.newMessage(vertexResponse, node, forNode));
+				}
+			);
+			receivedMessages.onNext(MessageInTransit.newMessage(request, forNode, node));
+		});
 	}
 
 	private class SimulatedReceiver implements EventCoordinatorNetworkRx {
@@ -204,14 +201,7 @@ public class TestEventCoordinatorNetwork {
 						return msg2;
 					}
 				})
-				.delay(p -> {
-					if (p.value().delay > 0) {
-						return Observable.timer(p.value().delay, TimeUnit.MILLISECONDS, Schedulers.io());
-					} else {
-						return Observable.just(0L);
-					}
-				})
-				.map(Timed::value)
+				.concatMap(p -> Observable.just(p.value()).delay(p.value().delay, TimeUnit.MILLISECONDS))
 				.map(MessageInTransit::getContent)
 				.publish()
 				.refCount();

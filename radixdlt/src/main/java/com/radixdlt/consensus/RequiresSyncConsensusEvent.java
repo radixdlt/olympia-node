@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -17,37 +17,23 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.crypto.ECPublicKey;
+
 /**
- * An empty BFT event processor
+ * A consensus event which requires syncing to be effectively
+ * processed
  */
-public class EmptyEventCoordinator implements EventCoordinator {
-	@Override
-	public void processVote(Vote vote) {
-		// No-op
-	}
+public interface RequiresSyncConsensusEvent extends ConsensusEvent {
 
-	@Override
-	public void processNewView(NewView newView) {
-		// No-op
-	}
+	/**
+	 * Get the QC associated with event
+	 * @return qc associated with event
+	 */
+	QuorumCertificate getQC();
 
-	@Override
-	public void processProposal(Proposal proposal) {
-		// No-op
-	}
-
-	@Override
-	public void processLocalTimeout(View view) {
-		// No-op
-	}
-
-	@Override
-	public void processGetVertexRequest(GetVertexRequest request) {
-		// No-op
-	}
-
-	@Override
-	public void start() {
-		// No-op
-	}
+	/**
+	 * Get the author of the event
+	 * @return the author of the event
+	 */
+	ECPublicKey getAuthor();
 }

@@ -35,12 +35,12 @@ import java.util.function.Predicate;
 public final class DroppingLatencyProvider implements LatencyProvider {
 	private final Set<Predicate<MessageInTransit>> droppingFunctions = Sets.newConcurrentHashSet();
 	private final AtomicReference<LatencyProvider> base = new AtomicReference<>();
-	private final AtomicBoolean disableSync = new AtomicBoolean(false);
+	private final AtomicBoolean syncEnabled = new AtomicBoolean(true);
 
 	public DroppingLatencyProvider() {
 		this.base.set(msg -> TestEventCoordinatorNetwork.DEFAULT_LATENCY);
 		// Implement it in this way for now so that sync disable is mutable
-		this.droppingFunctions.add(msg -> disableSync.get()
+		this.droppingFunctions.add(msg -> syncEnabled.get()
 			&& (msg.getContent() instanceof GetVertexResponse || msg.getContent() instanceof GetVertexRequestMessage));
 	}
 
@@ -59,8 +59,8 @@ public final class DroppingLatencyProvider implements LatencyProvider {
 		droppingFunctions.add(msg -> msg.getReceiver().equals(node) || msg.getSender().equals(node));
 	}
 
-	public void disableSync(boolean disableSync) {
-		this.disableSync.set(disableSync);
+	public void setSyncEnabled(boolean syncEnabled) {
+		this.syncEnabled.set(syncEnabled);
 	}
 
 	@Override

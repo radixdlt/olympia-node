@@ -17,10 +17,19 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.crypto.Hash;
+
 /**
- * Processor of BFT events
+ * Processor of BFT events.
+ *
+ * Implementations are not expected to be thread-safe.
  */
-public interface EventCoordinator {
+public interface BFTEventProcessor {
+	/**
+	 * The initialization call. Must be called first and only once at
+	 * the beginning of the BFT's lifetime.
+	 */
+	void start();
 
 	/**
 	 * Process a consensus vote message
@@ -41,19 +50,20 @@ public interface EventCoordinator {
 	void processProposal(Proposal proposal);
 
 	/**
-	 * Process a consensus timeout message
+	 * Process a local consensus timeout message
 	 * @param view the view corresponding to the timeout
 	 */
 	void processLocalTimeout(View view);
 
 	/**
-	 * Process an incoming RPC request for a Vertex
-	 * TODO: Is this the right place for this?
+	 * Process a local consensus sync message
+	 * @param vertexId the id of vertex which has been synced
 	 */
-	void processGetVertexRequest(GetVertexRequest request);
+	void processLocalSync(Hash vertexId);
 
 	/**
-	 * Initialize the event coordinator
+	 * Process an incoming RPC request for a Vertex
+	 * @param request the RPC request
 	 */
-	void start();
+	void processGetVertexRequest(GetVertexRequest request);
 }

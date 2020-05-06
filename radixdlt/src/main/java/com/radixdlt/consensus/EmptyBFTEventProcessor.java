@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *  http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -17,22 +17,44 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
-import io.reactivex.rxjava3.core.Single;
 
 /**
- * An asynchronous supplier which retrieves data for a vertex with a given id
+ * An empty BFT event processor
  */
-public interface VertexSupplier {
+public class EmptyBFTEventProcessor implements BFTEventProcessor {
+	@Override
+	public void processVote(Vote vote) {
+		// No-op
+	}
 
-	/**
-	 * Execute an RPC to retrieve a vertex given an Id from a node
-	 * TODO: refactor to maintain a unidirectional data flow
-	 *
-	 * @param id the id of the vertex to retrieve
-	 * @param node the node to retrieve the vertex info from
-	 * @return single of a vertex which will complete once retrieved
-	 */
-	Single<Vertex> getVertex(Hash id, ECPublicKey node);
+	@Override
+	public void processNewView(NewView newView) {
+		// No-op
+	}
+
+	@Override
+	public void processProposal(Proposal proposal) {
+		// No-op
+	}
+
+	@Override
+	public void processLocalTimeout(View view) {
+		// No-op
+	}
+
+	@Override
+	public void processLocalSync(Hash vertexId) {
+		// No-op
+	}
+
+	@Override
+	public void processGetVertexRequest(GetVertexRequest request) {
+		// No-op
+	}
+
+	@Override
+	public void start() {
+		// No-op
+	}
 }

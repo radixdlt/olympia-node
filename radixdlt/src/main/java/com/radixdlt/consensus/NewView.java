@@ -36,7 +36,7 @@ import java.util.Optional;
  */
 @SerializerId2("consensus.newview")
 @Immutable // view and author cannot be but are effectively final because of serializer
-public final class NewView implements ConsensusEvent {
+public final class NewView implements RequiresSyncConsensusEvent {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
@@ -67,10 +67,12 @@ public final class NewView implements ConsensusEvent {
 		this.signature = signature;
 	}
 
+	@Override
 	public QuorumCertificate getQC() {
 		return qc;
 	}
 
+	@Override
 	public ECPublicKey getAuthor() {
 		return author;
 	}
