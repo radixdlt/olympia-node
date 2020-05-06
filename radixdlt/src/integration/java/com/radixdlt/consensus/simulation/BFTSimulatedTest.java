@@ -92,7 +92,7 @@ public class BFTSimulatedTest {
 		}
 
 		public Builder setSync(boolean syncEnabled) {
-			this.latencyProvider.setSync(syncEnabled);
+			this.latencyProvider.setSyncEnabled(syncEnabled);
 			return this;
 		}
 

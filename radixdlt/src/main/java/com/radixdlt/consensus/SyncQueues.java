@@ -23,10 +23,10 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
-import io.reactivex.rxjava3.annotations.Nullable;
 import java.util.LinkedList;
 import java.util.Objects;
 import java.util.Set;
+import javax.annotation.Nullable;
 
 /**
  * Synchronous queuing mechanism for consensus events which require syncing

@@ -114,7 +114,8 @@ public final class RadixHttpServer {
 		this.localSystem = Objects.requireNonNull(localSystem);
 		this.peers = new ConcurrentHashMap<>();
 		this.atomsService = new AtomsService(store, submissionControl, atomToBinaryConverter);
-		this.jsonRpcServer = new RadixJsonRpcServer(consensusRunner,
+		this.jsonRpcServer = new RadixJsonRpcServer(
+			consensusRunner,
 			serialization,
 			store,
 			atomsService,

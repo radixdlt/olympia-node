@@ -37,7 +37,7 @@ import java.util.stream.Collectors;
  */
 public final class ControlledBFTNetwork {
 	private final ImmutableList<ECPublicKey> nodes;
-	private final ImmutableMap<ChannelId, LinkedList<Message>> messageQueue;
+	private final ImmutableMap<ChannelId, LinkedList<ControlledMessage>> messageQueue;
 
 	ControlledBFTNetwork(ImmutableList<ECPublicKey> nodes) {
 		this.nodes = nodes;
@@ -89,11 +89,11 @@ public final class ControlledBFTNetwork {
 		}
 	}
 
-	static final class Message {
+	static final class ControlledMessage {
 		private final ChannelId channelId;
 		private final Object msg;
 
-		Message(ECPublicKey sender, ECPublicKey receiver, Object msg) {
+		ControlledMessage(ECPublicKey sender, ECPublicKey receiver, Object msg) {
 			this.channelId = new ChannelId(sender, receiver);
 			this.msg = msg;
 		}
@@ -111,11 +111,11 @@ public final class ControlledBFTNetwork {
 		}
 	}
 
-	private void putMesssage(Message message) {
-		messageQueue.get(message.getChannelId()).add(message);
+	private void putMesssage(ControlledMessage controlledMessage) {
+		messageQueue.get(controlledMessage.getChannelId()).add(controlledMessage);
 	}
 
-	public List<Message> peekNextMessages() {
+	public List<ControlledMessage> peekNextMessages() {
 		return messageQueue.values()
 			.stream()
 			.filter(l -> !l.isEmpty())
@@ -132,18 +132,18 @@ public final class ControlledBFTNetwork {
 			@Override
 			public void broadcastProposal(Proposal proposal) {
 				for (ECPublicKey receiver : nodes) {
-					putMesssage(new Message(sender, receiver, proposal));
+					putMesssage(new ControlledMessage(sender, receiver, proposal));
 				}
 			}
 
 			@Override
 			public void sendNewView(NewView newView, ECPublicKey newViewLeader) {
-				putMesssage(new Message(sender, newViewLeader, newView));
+				putMesssage(new ControlledMessage(sender, newViewLeader, newView));
 			}
 
 			@Override
 			public void sendVote(Vote vote, ECPublicKey leader) {
-				putMesssage(new Message(sender, leader, vote));
+				putMesssage(new ControlledMessage(sender, leader, vote));
 			}
 		};
 	}

@@ -21,13 +21,14 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.functional.ControlledBFTNetwork.ChannelId;
-import com.radixdlt.consensus.functional.ControlledBFTNetwork.Message;
+import com.radixdlt.consensus.functional.ControlledBFTNetwork.ControlledMessage;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.utils.UInt256;
 import java.util.Comparator;
 import java.util.List;
@@ -47,6 +48,7 @@ public class BFTFunctionalTest {
 	public BFTFunctionalTest(int numNodes) {
 		ImmutableList<ECKeyPair> keys = Stream.generate(ECKeyPair::generateNew)
 			.limit(numNodes)
+			.sorted(Comparator.<ECKeyPair, EUID>comparing(k -> k.getPublicKey().euid()).reversed())
 			.collect(ImmutableList.toImmutableList());
 		this.pks = keys.stream()
 			.map(ECKeyPair::getPublicKey)
@@ -60,7 +62,7 @@ public class BFTFunctionalTest {
 			.map(key -> new ControlledBFTNode(
 				key,
 				network.getSender(key.getPublicKey()),
-				new WeightedRotatingLeaders(validatorSet, Comparator.comparingInt(v -> pks.size() - pks.indexOf(v.nodeKey())), 5),
+				new WeightedRotatingLeaders(validatorSet, Comparator.comparing(v -> v.nodeKey().euid()), 5),
 				validatorSet
 			))
 			.collect(ImmutableList.toImmutableList());
@@ -78,7 +80,7 @@ public class BFTFunctionalTest {
 	}
 
 	public void processNextMsg(Random random) {
-		List<Message> possibleMsgs = network.peekNextMessages();
+		List<ControlledMessage> possibleMsgs = network.peekNextMessages();
 		int nextIndex =  random.nextInt(possibleMsgs.size());
 		ChannelId channelId = possibleMsgs.get(nextIndex).getChannelId();
 		Object msg = network.popNextMessage(channelId);

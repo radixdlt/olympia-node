@@ -59,7 +59,7 @@ public final class DroppingLatencyProvider implements LatencyProvider {
 		droppingFunctions.add(msg -> msg.getReceiver().equals(node) || msg.getSender().equals(node));
 	}
 
-	public void setSync(boolean syncEnabled) {
+	public void setSyncEnabled(boolean syncEnabled) {
 		this.syncEnabled.set(syncEnabled);
 	}
 

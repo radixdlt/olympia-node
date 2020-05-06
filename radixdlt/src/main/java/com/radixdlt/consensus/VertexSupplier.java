@@ -30,6 +30,7 @@ public interface VertexSupplier {
 	 * Execute an RPC to retrieve a vertex given an Id from a node
 	 * TODO: refactor to maintain a unidirectional data flow
 	 *
+	 * @param id the id of the vertex to retrieve
 	 * @param node the node to retrieve the vertex info from
 	 * @return single of a vertex which will complete once retrieved
 	 */

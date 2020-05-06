@@ -31,8 +31,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Manages the BFT Vertex chain.
@@ -41,8 +39,6 @@ import org.apache.logging.log4j.Logger;
  * TODO: make thread-safe
  */
 public final class VertexStore {
-	private static final Logger log = LogManager.getLogger();
-
 	private final RadixEngine engine;
 	private final SystemCounters counters;
 	private final Map<Hash, Vertex> vertices = new ConcurrentHashMap<>();
