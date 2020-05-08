@@ -39,52 +39,125 @@ import static org.mockito.Mockito.when;
 
 public class PendingVotesTest {
 	private PendingVotes pendingVotes;
+	private Hasher hasher;
 
 	@Before
 	public void setup() {
-		Hasher hasher = mock(Hasher.class);
+		this.hasher = mock(Hasher.class);
 		when(hasher.hash(any())).thenReturn(Hash.random());
 		this.pendingVotes = new PendingVotes(hasher);
 	}
 
 	@Test
 	public void when_inserting_a_vote_without_signature__then_exception_is_thrown() {
-		Vote voteWithoutSignature = mock(Vote.class);
-		when(voteWithoutSignature.getVoteData()).thenReturn(mock(VoteData.class));
-		when(voteWithoutSignature.getSignature()).thenReturn(Optional.empty());
+		Vote voteWithoutSignature = makeUnsignedVoteFor(Hash.random());
 
-		assertThatThrownBy(() -> pendingVotes.insertVote(voteWithoutSignature, mock(ValidatorSet.class)));
+		VoteData voteData = mock(VoteData.class);
+		ValidatorSet validatorSet = mock(ValidatorSet.class);
+		VertexMetadata proposed = voteWithoutSignature.getVoteData().getProposed();
+		when(voteData.getProposed()).thenReturn(proposed);
+
+		this.pendingVotes.startVotingOn(voteData, validatorSet);
+		assertThatThrownBy(() -> pendingVotes.insertVote(voteWithoutSignature)).isInstanceOf(IllegalArgumentException.class);
 	}
 
 	@Test
 	public void when_inserting_valid_but_unaccepted_votes__then_no_qc_is_returned() {
 		Hash vertexId = Hash.random();
-		Vote vote1 = makeVoteFor(vertexId);
-		Vote vote2 = makeVoteFor(vertexId);
+		Vote vote1 = makeSignedVoteFor(vertexId);
+		Vote vote2 = makeSignedVoteFor(vertexId);
+
 		ValidatorSet validatorSet = ValidatorSet.from(Collections.singleton(Validator.from(vote1.getAuthor(), UInt256.ONE)));
-		assertThat(this.pendingVotes.insertVote(vote2, validatorSet)).isEmpty();
+		VoteData voteData = mock(VoteData.class);
+		VertexMetadata proposed = vote1.getVoteData().getProposed();
+		when(voteData.getProposed()).thenReturn(proposed);
+
+		this.pendingVotes.startVotingOn(voteData, validatorSet);
+		assertThat(this.pendingVotes.insertVote(vote2)).isEmpty();
 	}
 
 	@Test
 	public void when_inserting_valid_and_accepted_votes__then_qc_is_formed() {
-		Hash vertexId = Hash.random();
-		Vote vote1 = makeVoteFor(vertexId);
+		Vote vote = makeSignedVoteFor(Hash.random());
+
 		ValidatorSet validatorSet = mock(ValidatorSet.class);
 		ValidationState validationState = mock(ValidationState.class);
 		ECDSASignatures signatures = mock(ECDSASignatures.class);
 		when(validationState.addSignature(any(), any())).thenReturn(true);
 		when(validationState.signatures()).thenReturn(signatures);
 		when(validatorSet.newValidationState(any())).thenReturn(validationState);
-		assertThat(this.pendingVotes.insertVote(vote1, validatorSet)).isPresent();
+
+		VoteData voteData = mock(VoteData.class);
+		VertexMetadata proposed = vote.getVoteData().getProposed();
+		when(voteData.getProposed()).thenReturn(proposed);
+
+		this.pendingVotes.startVotingOn(voteData, validatorSet);
+		assertThat(this.pendingVotes.insertVote(vote)).isPresent();
 	}
 
-	private Vote makeVoteFor(Hash vertexId) {
+	@Test
+	public void when_inserting_vote_with_wrong_hash__then_no_qc_is_returned() {
+		Vote vote = makeSignedVoteFor(Hash.random());
+
+		ValidatorSet validatorSet = mock(ValidatorSet.class);
+		ValidationState validationState = mock(ValidationState.class);
+		ECDSASignatures signatures = mock(ECDSASignatures.class);
+		when(validationState.addSignature(any(), any())).thenReturn(true);
+		when(validationState.signatures()).thenReturn(signatures);
+		when(validatorSet.newValidationState(any())).thenReturn(validationState);
+
+		VoteData voteData = mock(VoteData.class);
+		VertexMetadata proposed = vote.getVoteData().getProposed();
+		when(voteData.getProposed()).thenReturn(proposed);
+		when(this.hasher.hash(voteData)).thenReturn(Hash.random());
+
+		this.pendingVotes.startVotingOn(voteData, validatorSet);
+		assertThat(this.pendingVotes.insertVote(vote)).isNotPresent();
+	}
+
+	@Test
+	public void when_inserting_vote_for_unstarted_round__then_no_qc_is_returned() {
+		Vote vote = makeSignedVoteFor(Hash.random());
+		assertThat(this.pendingVotes.insertVote(vote)).isNotPresent();
+	}
+
+	@Test
+	public void when_inserting_vote_for_completed_round__then_no_qc_is_returned() {
+		Vote vote = makeSignedVoteFor(Hash.random());
+		ValidatorSet validatorSet = mock(ValidatorSet.class);
+		ValidationState validationState = mock(ValidationState.class);
+		ECDSASignatures signatures = mock(ECDSASignatures.class);
+		when(validationState.addSignature(any(), any())).thenReturn(true);
+		when(validationState.signatures()).thenReturn(signatures);
+		when(validatorSet.newValidationState(any())).thenReturn(validationState);
+
+		VoteData voteData = mock(VoteData.class);
+		VertexMetadata proposed = vote.getVoteData().getProposed();
+		when(voteData.getProposed()).thenReturn(proposed);
+
+		this.pendingVotes.startVotingOn(voteData, validatorSet);
+		this.pendingVotes.finishVotingFor(vote.getVoteData().getProposed().getView());
+		assertThat(this.pendingVotes.insertVote(vote)).isNotPresent();
+	}
+
+	private Vote makeUnsignedVoteFor(Hash vertexId) {
+		Vote vote = makeVoteWithoutSignatureFor(vertexId);
+		when(vote.getSignature()).thenReturn(Optional.empty());
+		return vote;
+	}
+
+	private Vote makeSignedVoteFor(Hash vertexId) {
+		Vote vote = makeVoteWithoutSignatureFor(vertexId);
+		when(vote.getSignature()).thenReturn(Optional.of(new ECDSASignature()));
+		return vote;
+	}
+
+	private Vote makeVoteWithoutSignatureFor(Hash vertexId) {
 		Vote vote = mock(Vote.class);
 		VertexMetadata proposed = new VertexMetadata(View.of(1), vertexId, 1);
 		VertexMetadata parent = new VertexMetadata(View.of(0), Hash.random(), 0);
 		VoteData voteData = new VoteData(proposed, parent);
 		when(vote.getVoteData()).thenReturn(voteData);
-		when(vote.getSignature()).thenReturn(Optional.of(new ECDSASignature()));
 		when(vote.getAuthor()).thenReturn(ECKeyPair.generateNew().getPublicKey());
 		return vote;
 	}
