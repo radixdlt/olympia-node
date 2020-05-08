@@ -31,7 +31,6 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.SyncQueues.SyncQueue;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
-import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
@@ -45,7 +44,6 @@ public class BFTEventPreprocessorTest {
 	private ProposerElection proposerElection;
 	private Pacemaker pacemaker;
 	private VertexStore vertexStore;
-	private SystemCounters counters;
 	private BFTEventProcessor forwardTo;
 	private SyncQueues syncQueues;
 
@@ -54,7 +52,6 @@ public class BFTEventPreprocessorTest {
 		this.pacemaker = mock(Pacemaker.class);
 		this.vertexStore = mock(VertexStore.class);
 		this.proposerElection = mock(ProposerElection.class);
-		this.counters = mock(SystemCounters.class);
 		this.forwardTo = mock(BFTEventProcessor.class);
 		this.syncQueues = mock(SyncQueues.class);
 
@@ -67,8 +64,7 @@ public class BFTEventPreprocessorTest {
 			pacemaker,
 			vertexStore,
 			proposerElection,
-			syncQueues,
-			counters
+			syncQueues
 		);
 	}
 

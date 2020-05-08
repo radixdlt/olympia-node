@@ -111,8 +111,7 @@ public class EpochManager {
 			this.pacemaker,
 			this.vertexStore,
 			proposerElection,
-			syncQueues,
-			counters
+			syncQueues
 		);
 	}
 }
