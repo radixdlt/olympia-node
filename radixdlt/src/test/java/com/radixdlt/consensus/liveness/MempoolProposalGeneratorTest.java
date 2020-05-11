@@ -54,6 +54,6 @@ public class MempoolProposalGeneratorTest {
 
 		MempoolProposalGenerator proposalGenerator = new MempoolProposalGenerator(vertexStore, mempool);
 		Vertex proposal = proposalGenerator.generateProposal(View.of(1));
-		assertThat(proposal.getRawAtom()).isEqualTo(atom);
+		assertThat(proposal.getAtom()).isEqualTo(reAtom);
 	}
 }

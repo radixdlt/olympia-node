@@ -85,7 +85,7 @@ public class VertexTest {
 
 	@Test
 	public void testGetters() {
-		assertEquals(this.rawAtom, this.testObject.getRawAtom());
+		assertEquals(this.atom, this.testObject.getAtom());
 		assertEquals(this.qc, this.testObject.getQC());
 		assertEquals(View.of(1234567892L), this.testObject.getView());
 	}

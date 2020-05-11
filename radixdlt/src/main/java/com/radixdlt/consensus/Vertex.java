@@ -26,6 +26,7 @@ import com.radixdlt.middleware.RadixEngineUtils;
 import com.radixdlt.middleware.RadixEngineUtils.CMAtomConversionException;
 import com.radixdlt.middleware.SimpleRadixEngineAtom;
 import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
@@ -51,25 +52,42 @@ public final class Vertex {
 	private final QuorumCertificate qc;
 
 	private View view;
-
-	@JsonProperty("atom")
-	@DsonOutput(Output.ALL)
-	private final Atom atom;
+	private SimpleRadixEngineAtom reAtom;
 
 	private final transient Supplier<Hash> cachedHash = Suppliers.memoize(this::doGetHash);
-	private final transient Supplier<SimpleRadixEngineAtom> cachedAtom = Suppliers.memoize(this::doGetAtom);
 
 	Vertex() {
 		// Serializer only
 		this.qc = null;
 		this.view = null;
-		this.atom = null;
+		this.reAtom = null;
 	}
 
 	public Vertex(QuorumCertificate qc, View view, SimpleRadixEngineAtom reAtom) {
 		this.qc = qc;
 		this.view = Objects.requireNonNull(view);
-		this.atom = reAtom == null ? null : reAtom.getAtom();
+		this.reAtom = reAtom;
+	}
+
+
+	@JsonProperty("atom")
+	@DsonOutput(Output.ALL)
+	private byte[] getSerializerAtom() {
+		try {
+			return this.reAtom == null ? null : DefaultSerialization.getInstance().toDson(reAtom.getAtom(), Output.WIRE);
+		} catch (SerializationException e) {
+			throw new IllegalStateException("Failed to serialize " + this.reAtom);
+		}
+	}
+
+	@JsonProperty("atom")
+	private void setSerializerAtom(byte[] atomBytes) {
+		try {
+			Atom rawAtom = atomBytes == null ? null : DefaultSerialization.getInstance().fromDson(atomBytes, Atom.class);
+			this.reAtom = rawAtom == null ? null : RadixEngineUtils.toCMAtom(rawAtom);
+		} catch (SerializationException | CMAtomConversionException e) {
+			throw new IllegalStateException("Failed to deserialize atomBytes");
+		}
 	}
 
 	public static Vertex createGenesis(SimpleRadixEngineAtom reAtom) {
@@ -84,18 +102,6 @@ public final class Vertex {
 		}
 
 		return new Vertex(qc, view, reAtom);
-	}
-
-	private SimpleRadixEngineAtom doGetAtom() {
-		if (atom == null) {
-			return null;
-		}
-
-		try {
-			return RadixEngineUtils.toCMAtom(atom);
-		} catch (CMAtomConversionException e) {
-			throw new IllegalStateException("Should not get here");
-		}
 	}
 
 	private Hash doGetHash() {
@@ -139,12 +145,7 @@ public final class Vertex {
 
 	// TODO: This is a hack. Fix when we can serialize SimpleRadixEngineAtom
 	public SimpleRadixEngineAtom getAtom() {
-		return cachedAtom.get();
-	}
-
-	// TODO: This is a hack. Remove when we can serialize SimpleRadixEngineAtom
-	public Atom getRawAtom() {
-		return atom;
+		return reAtom;
 	}
 
 	public boolean isGenesis() {
@@ -165,17 +166,17 @@ public final class Vertex {
 
 	@JsonProperty("view")
 	private void setSerializerView(Long number) {
-		this.view = number == null ? null : View.of(number.longValue());
+		this.view = number == null ? null : View.of(number);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("Vertex{view=%s, qc=%s, atom=%s}", view, qc, atom == null ? null : atom.getAID());
+		return String.format("Vertex{view=%s, qc=%s, atom=%s}", view, qc, reAtom == null ? null : reAtom.getAID());
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(qc, view, atom);
+		return Objects.hash(qc, view, reAtom == null ? null : reAtom.getAID());
 	}
 
 	@Override
@@ -186,7 +187,7 @@ public final class Vertex {
 
 		Vertex v = (Vertex) o;
 		return Objects.equals(v.view, view)
-			&& Objects.equals(v.atom, this.atom)
+			&& Objects.equals(v.reAtom == null ? null : v.reAtom.getAID(), this.reAtom == null ? null : this.reAtom.getAID())
 			&& Objects.equals(v.qc, this.qc);
 	}
 }

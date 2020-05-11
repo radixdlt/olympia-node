@@ -17,9 +17,6 @@
 
 package org.radix.serialization;
 
-import static org.mockito.Mockito.mock;
-import static org.powermock.api.mockito.PowerMockito.when;
-
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.atommodel.message.MessageParticle;
 import com.radixdlt.consensus.Proposal;
@@ -34,6 +31,8 @@ import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.middleware.RadixEngineUtils;
+import com.radixdlt.middleware.RadixEngineUtils.CMAtomConversionException;
 import com.radixdlt.middleware.SimpleRadixEngineAtom;
 
 public class ProposalSerializeTest extends SerializeObject<Proposal> {
@@ -52,14 +51,16 @@ public class ProposalSerializeTest extends SerializeObject<Proposal> {
 		QuorumCertificate qc = new QuorumCertificate(voteData, new ECDSASignatures());
 
 		RadixAddress address = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
-		SimpleRadixEngineAtom reAtom = mock(SimpleRadixEngineAtom.class);
 		Atom atom = new Atom();
-		when(reAtom.getAtom()).thenReturn(atom);
-		// add a particle to ensure atom is valid and has at least one shard
 		atom.addParticleGroupWith(new MessageParticle(address, address, "Hello".getBytes()), Spin.UP);
+		final SimpleRadixEngineAtom reAtom;
+		try {
+			reAtom = RadixEngineUtils.toCMAtom(atom);
+		} catch (CMAtomConversionException e) {
+			throw new IllegalStateException();
+		}
+		// add a particle to ensure atom is valid and has at least one shard
 		Vertex vertex = Vertex.createVertex(qc, view, reAtom);
-
-
 		return new Proposal(vertex, ECKeyPair.generateNew().getPublicKey(), new ECDSASignature());
 	}
 }

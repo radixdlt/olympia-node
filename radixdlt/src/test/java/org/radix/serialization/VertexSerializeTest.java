@@ -17,9 +17,6 @@
 
 package org.radix.serialization;
 
-import static org.powermock.api.mockito.PowerMockito.mock;
-import static org.powermock.api.mockito.PowerMockito.when;
-
 import com.radixdlt.atommodel.message.MessageParticle;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.identifiers.RadixAddress;
@@ -31,6 +28,8 @@ import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.Hash;
+import com.radixdlt.middleware.RadixEngineUtils;
+import com.radixdlt.middleware.RadixEngineUtils.CMAtomConversionException;
 import com.radixdlt.middleware.SimpleRadixEngineAtom;
 
 public class VertexSerializeTest extends SerializeObject<Vertex> {
@@ -52,8 +51,12 @@ public class VertexSerializeTest extends SerializeObject<Vertex> {
 		Atom atom = new Atom();
 		// add a particle to ensure atom is valid and has at least one shard
 		atom.addParticleGroupWith(new MessageParticle(address, address, "Hello".getBytes()), Spin.UP);
-		SimpleRadixEngineAtom reAtom = mock(SimpleRadixEngineAtom.class);
-		when(reAtom.getAtom()).thenReturn(atom);
+		final SimpleRadixEngineAtom reAtom;
+		try {
+			reAtom = RadixEngineUtils.toCMAtom(atom);
+		} catch (CMAtomConversionException e) {
+			throw new IllegalStateException();
+		}
 
 		return Vertex.createVertex(qc, view, reAtom);
 	}
