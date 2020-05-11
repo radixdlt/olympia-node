@@ -31,11 +31,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Manages the BFT Vertex chain.
  *
- * In general this class is NOT thread-safe except for getVertex().
+ * In general this class is NOT thread-safe except for getVertex() and getHighestQC().
  * TODO: make thread-safe
  */
 public final class VertexStore {
@@ -47,8 +48,7 @@ public final class VertexStore {
 	// Should never be null
 	private Vertex root;
 
-	// Should never be null
-	private QuorumCertificate highestQC;
+	private AtomicReference<QuorumCertificate> highestQC = new AtomicReference<>();
 
 	// TODO: Cleanup this interface
 	public VertexStore(
@@ -59,7 +59,7 @@ public final class VertexStore {
 	) {
 		this.engine = Objects.requireNonNull(engine);
 		this.counters = Objects.requireNonNull(counters);
-		this.highestQC = Objects.requireNonNull(rootQC);
+		this.highestQC.set(Objects.requireNonNull(rootQC));
 		try {
 			this.engine.store(genesisVertex.getAtom());
 		} catch (RadixEngineException e) {
@@ -81,8 +81,8 @@ public final class VertexStore {
 	}
 
 	public void addQC(QuorumCertificate qc) {
-		if (highestQC.getView().compareTo(qc.getView()) < 0) {
-			highestQC = qc;
+		if (highestQC.get().getView().compareTo(qc.getView()) < 0) {
+			highestQC.set(qc);
 		}
 	}
 
@@ -148,8 +148,14 @@ public final class VertexStore {
 		return path;
 	}
 
+	/**
+	 * Retrieves the highest qc in the store
+	 * Thread-safe.
+	 *
+	 * @return the highest quorum certificate
+	 */
 	public QuorumCertificate getHighestQC() {
-		return this.highestQC;
+		return this.highestQC.get();
 	}
 
 	/**
