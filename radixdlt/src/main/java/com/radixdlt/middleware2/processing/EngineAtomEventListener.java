@@ -59,7 +59,8 @@ public class EngineAtomEventListener implements AtomEventListener<SimpleRadixEng
 		try {
 			EngineAtomIndices engineAtomIndices = EngineAtomIndices.from(atom.getAtom(), serialization);
 			Events.getInstance().broadcastWithException(new AtomStoredEvent(atom.getAtom(), () ->
-					engineAtomIndices.getDuplicateIndices().stream().filter(e -> e.getPrefix() == EngineAtomIndices.IndexType.DESTINATION.getValue())
+				engineAtomIndices.getDuplicateIndices().stream()
+					.filter(e -> e.getPrefix() == EngineAtomIndices.IndexType.DESTINATION.getValue())
 					.map(e -> EngineAtomIndices.toEUID(e.asKey()))
 					.collect(Collectors.toSet()))
 			);

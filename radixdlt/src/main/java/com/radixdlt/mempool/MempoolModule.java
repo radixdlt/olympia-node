@@ -41,7 +41,7 @@ public class MempoolModule extends AbstractModule {
 			try {
 				return RadixEngineUtils.toCMAtom(atom);
 			} catch (CMAtomConversionException e) {
-				throw new AtomConversionException(e);
+				throw new AtomConversionException(e.getDataPointer(), e);
 			}
 		};
 	}

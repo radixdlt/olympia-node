@@ -17,8 +17,18 @@
 
 package com.radixdlt.middleware2.converters;
 
-public class AtomConversionException extends Exception {
-	public AtomConversionException(Exception cause) {
+import com.radixdlt.constraintmachine.DataPointer;
+import java.util.Objects;
+
+public final class AtomConversionException extends Exception {
+	private final DataPointer dataPointer;
+
+	public AtomConversionException(DataPointer dataPointer, Exception cause) {
 		super(cause);
+		this.dataPointer = Objects.requireNonNull(dataPointer);
+	}
+
+	public String getPointerToIssue() {
+		return dataPointer.toString();
 	}
 }

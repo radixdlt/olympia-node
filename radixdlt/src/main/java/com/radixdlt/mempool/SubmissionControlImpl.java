@@ -69,6 +69,10 @@ class SubmissionControlImpl implements SubmissionControl {
 		try {
 			reAtom = converter.convert(atom);
 		} catch (AtomConversionException e) {
+			log.info(
+				"Rejecting atom {} due to conversion issues.",
+				atom.getAID()
+			);
 			this.events.broadcast(new AtomExceptionEvent(e, atom.getAID()));
 			return;
 		}
