@@ -92,6 +92,11 @@ public final class VertexStore {
 			throw new MissingParentException(vertex.getParentId());
 		}
 
+		// TODO: Don't check for state computer errors for now so that we don't
+		// TODO: have to deal with failing leader proposals
+		// TODO: Reinstate this when ProposalGenerator + Mempool can guarantee correct proposals
+		// TODO: (also see commitVertex->storeAtom)
+
 		vertices.put(vertex.getId(), vertex);
 		updateVertexStoreSize();
 	}
@@ -129,11 +134,9 @@ public final class VertexStore {
 			this.engine.store(vertexWithAtom.getAtom());
 			this.counters.increment(CounterType.LEDGER_STORED);
 		} catch (RadixEngineException e) {
-			// TODO: revisit TODO below since this moved from insertVertex to commitVertex
 			// TODO: Don't check for state computer errors for now so that we don't
 			// TODO: have to deal with failing leader proposals
 			// TODO: Reinstate this when ProposalGenerator + Mempool can guarantee correct proposals
-			//throw new VertexInsertionException("Failed to execute", e);
 		}
 	}
 
