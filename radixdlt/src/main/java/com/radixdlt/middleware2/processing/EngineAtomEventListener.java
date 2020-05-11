@@ -50,7 +50,7 @@ public class EngineAtomEventListener implements AtomEventListener<SimpleRadixEng
 
 	@Override
 	public void onCMError(SimpleRadixEngineAtom atom, CMError error) {
-		ConstraintMachineValidationException ex = new ConstraintMachineValidationException(atom.getAtom(), error.getErrMsg(), error.getDataPointer());
+		ConstraintMachineValidationException ex = new ConstraintMachineValidationException(atom, error.getErrMsg(), error.getDataPointer());
 		Events.getInstance().broadcast(new AtomExceptionEvent(ex, atom.getAID()));
 	}
 
@@ -71,7 +71,7 @@ public class EngineAtomEventListener implements AtomEventListener<SimpleRadixEng
 
 	@Override
 	public void onVirtualStateConflict(SimpleRadixEngineAtom atom, DataPointer issueParticle) {
-		ConstraintMachineValidationException e = new ConstraintMachineValidationException(atom.getAtom(), "Virtual state conflict", issueParticle);
+		ConstraintMachineValidationException e = new ConstraintMachineValidationException(atom, "Virtual state conflict", issueParticle);
 		log.error("Virtual state conflict", e);
 		Events.getInstance().broadcast(new AtomExceptionEvent(e, atom.getAID()));
 	}

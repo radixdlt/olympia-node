@@ -28,6 +28,8 @@ import com.radixdlt.identifiers.EUID;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.middleware.ParticleGroup;
+import com.radixdlt.middleware.RadixEngineUtils;
+import com.radixdlt.middleware.SimpleRadixEngineAtom;
 import com.radixdlt.middleware.SpunParticle;
 import org.junit.Test;
 
@@ -39,7 +41,7 @@ public class AtomToBinaryConverterTest {
 	private AtomToBinaryConverter atomToBinaryConverter = new AtomToBinaryConverter(DefaultSerialization.getInstance());
 
 	@Test
-	public void test_atom_content_transformation_to_byte_array_and_back() {
+	public void test_atom_content_transformation_to_byte_array_and_back() throws Exception {
 		ECDSASignature ecSignature = new ECDSASignature(BigInteger.ONE, BigInteger.ONE);
 		ECKeyPair key = ECKeyPair.generateNew();
 		RadixAddress radixAddress = new RadixAddress((byte) 1, key.getPublicKey());
@@ -53,9 +55,11 @@ public class AtomToBinaryConverterTest {
 			ImmutableMap.of("timestamp", "0")
 		);
 
-		byte[] serializedAtom = atomToBinaryConverter.toLedgerEntryContent(atom);
-		Atom deserializedAtom = atomToBinaryConverter.toAtom(serializedAtom);
-		assertEquals(atom, deserializedAtom);
+		SimpleRadixEngineAtom reAtom = RadixEngineUtils.toCMAtom(atom);
+
+		byte[] serializedAtom = atomToBinaryConverter.toLedgerEntryContent(reAtom);
+		SimpleRadixEngineAtom deserializedAtom = atomToBinaryConverter.toAtom(serializedAtom);
+		assertEquals(reAtom.getAtom(), deserializedAtom.getAtom());
 	}
 
 }

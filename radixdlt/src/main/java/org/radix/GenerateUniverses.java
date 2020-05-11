@@ -22,6 +22,8 @@ import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.Atom;
+import com.radixdlt.middleware.RadixEngineUtils;
+import com.radixdlt.middleware.SimpleRadixEngineAtom;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.identifiers.RadixAddress;
@@ -164,6 +166,8 @@ public final class GenerateUniverses
 		);
 		genesisAtom.sign(universeKey);
 
+		SimpleRadixEngineAtom reAtom = RadixEngineUtils.toCMAtom(genesisAtom);
+
 		if (standalone) {
 			byte[] sigBytes = serialization.toDson(genesisAtom.getSignature(universeKey.euid()), Output.WIRE);
 			byte[] transactionBytes = serialization.toDson(genesisAtom, Output.HASH);
@@ -175,7 +179,7 @@ public final class GenerateUniverses
 
 		if (!genesisAtom.verify(universeKey.getPublicKey())) {
 			throw new ConstraintMachineValidationException(
-				genesisAtom,
+				reAtom,
 				"Signature generation failed - GENESIS TRANSACTION HASH: " + genesisAtom.getHash().toString(),
 				DataPointer.ofAtom()
 			);

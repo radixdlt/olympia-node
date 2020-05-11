@@ -18,6 +18,9 @@
 package com.radixdlt.middleware2.converters;
 
 import com.radixdlt.atommodel.Atom;
+import com.radixdlt.middleware.RadixEngineUtils;
+import com.radixdlt.middleware.RadixEngineUtils.CMAtomConversionException;
+import com.radixdlt.middleware.SimpleRadixEngineAtom;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
@@ -29,18 +32,19 @@ public final class AtomToBinaryConverter {
 		this.serializer = serializer;
 	}
 
-	public byte[] toLedgerEntryContent(Atom atom) {
+	public byte[] toLedgerEntryContent(SimpleRadixEngineAtom reAtom) {
 		try {
-			return serializer.toDson(atom, DsonOutput.Output.PERSIST);
+			return serializer.toDson(reAtom.getAtom(), DsonOutput.Output.PERSIST);
 		} catch (SerializationException e) {
-			throw new RuntimeException(String.format("Serialization for Atom with ID: %s failed", atom.getAID()));
+			throw new RuntimeException(String.format("Serialization for Atom with ID: %s failed", reAtom.getAID()));
 		}
 	}
 
-	public Atom toAtom(byte[] ledgerEntryContent) {
+	public SimpleRadixEngineAtom toAtom(byte[] ledgerEntryContent) {
 		try {
-			return serializer.fromDson(ledgerEntryContent, Atom.class);
-		} catch (SerializationException e) {
+			Atom rawAtom =  serializer.fromDson(ledgerEntryContent, Atom.class);
+			return RadixEngineUtils.toCMAtom(rawAtom);
+		} catch (SerializationException | CMAtomConversionException e) {
 			throw new RuntimeException("Deserialization of Atom failed");
 		}
 	}

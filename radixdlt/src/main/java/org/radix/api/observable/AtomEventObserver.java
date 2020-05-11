@@ -20,7 +20,7 @@ package org.radix.api.observable;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.atommodel.Atom;
+import com.radixdlt.middleware.SimpleRadixEngineAtom;
 import com.radixdlt.store.SearchCursor;
 import com.radixdlt.store.StoreIndex;
 import com.radixdlt.store.LedgerSearchMode;
@@ -147,14 +147,14 @@ public class AtomEventObserver {
 					return;
 				}
 
-				List<Atom> atoms = new ArrayList<>();
+				List<SimpleRadixEngineAtom> atoms = new ArrayList<>();
 				while (cursor != null && atoms.size() < BATCH_SIZE) {
 					AID aid = cursor.get();
 					processedAids.add(aid);
 					Optional<LedgerEntry> ledgerEntry = store.get(aid);
 					ledgerEntry.ifPresent(
 						entry -> {
-							Atom atom = atomToBinaryConverter.toAtom(entry.getContent());
+							SimpleRadixEngineAtom atom = atomToBinaryConverter.toAtom(entry.getContent());
 							atoms.add(atom);
 						}
 					);
@@ -162,7 +162,7 @@ public class AtomEventObserver {
 				}
 				if (!atoms.isEmpty()) {
 					final Stream<AtomEventDto> atomEvents = atoms.stream()
-						.map(atom -> new AtomEventDto(AtomEventType.STORE, atom));
+						.map(atom -> new AtomEventDto(AtomEventType.STORE, atom.getAtom()));
 					onNext.accept(new ObservedAtomEvents(false, atomEvents));
 					count += atoms.size();
 				}
