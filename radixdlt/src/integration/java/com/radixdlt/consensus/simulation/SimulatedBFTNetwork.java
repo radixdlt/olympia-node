@@ -185,12 +185,12 @@ public class SimulatedBFTNetwork {
 		final CompletableSubject completableSubject = CompletableSubject.create();
 		List<Completable> startedList = this.runners.values().stream()
 			.map(ConsensusRunner::events)
-			.map(o -> Completable.fromSingle(
+			.map(o ->
 				o.map(Event::getEventType)
 					.filter(e -> e.equals(EventType.EPOCH))
 					.skip(1)
 					.firstOrError()
-				)
+					.ignoreElement()
 			).collect(Collectors.toList());
 
 		Completable.merge(startedList).subscribe(completableSubject::onComplete);
