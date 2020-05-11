@@ -22,6 +22,9 @@ import com.google.common.base.Suppliers;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.crypto.Hash;
+import com.radixdlt.middleware.RadixEngineUtils;
+import com.radixdlt.middleware.RadixEngineUtils.CMAtomConversionException;
+import com.radixdlt.middleware.SimpleRadixEngineAtom;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
@@ -54,6 +57,7 @@ public final class Vertex {
 	private final Atom atom;
 
 	private final transient Supplier<Hash> cachedHash = Suppliers.memoize(this::doGetHash);
+	private final transient Supplier<SimpleRadixEngineAtom> cachedAtom = Suppliers.memoize(this::doGetAtom);
 
 	Vertex() {
 		// Serializer only
@@ -62,24 +66,36 @@ public final class Vertex {
 		this.atom = null;
 	}
 
-	public Vertex(QuorumCertificate qc, View view, Atom atom) {
+	public Vertex(QuorumCertificate qc, View view, SimpleRadixEngineAtom reAtom) {
 		this.qc = qc;
 		this.view = Objects.requireNonNull(view);
-		this.atom = atom;
+		this.atom = reAtom == null ? null : reAtom.getAtom();
 	}
 
-	public static Vertex createGenesis(Atom atom) {
-		return new Vertex(null, View.of(0), atom);
+	public static Vertex createGenesis(SimpleRadixEngineAtom reAtom) {
+		return new Vertex(null, View.of(0), reAtom);
 	}
 
-	public static Vertex createVertex(QuorumCertificate qc, View view, Atom atom) {
+	public static Vertex createVertex(QuorumCertificate qc, View view, SimpleRadixEngineAtom reAtom) {
 		Objects.requireNonNull(qc);
 
 		if (view.number() == 0) {
 			throw new IllegalArgumentException("Only genesis can have view 0.");
 		}
 
-		return new Vertex(qc, view, atom);
+		return new Vertex(qc, view, reAtom);
+	}
+
+	private SimpleRadixEngineAtom doGetAtom() {
+		if (atom == null) {
+			return null;
+		}
+
+		try {
+			return RadixEngineUtils.toCMAtom(atom);
+		} catch (CMAtomConversionException e) {
+			throw new IllegalStateException("Should not get here");
+		}
 	}
 
 	private Hash doGetHash() {
@@ -121,7 +137,13 @@ public final class Vertex {
 		return view;
 	}
 
-	public Atom getAtom() {
+	// TODO: This is a hack. Fix when we can serialize SimpleRadixEngineAtom
+	public SimpleRadixEngineAtom getAtom() {
+		return cachedAtom.get();
+	}
+
+	// TODO: This is a hack. Remove when we can serialize SimpleRadixEngineAtom
+	public Atom getRawAtom() {
 		return atom;
 	}
 

@@ -21,6 +21,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
+import com.google.inject.TypeLiteral;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atommodel.message.MessageParticleConstraintScrypt;
 import com.radixdlt.atommodel.tokens.TokensConstraintScrypt;
@@ -30,6 +31,7 @@ import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.middleware.AtomCheckHook;
+import com.radixdlt.middleware.SimpleRadixEngineAtom;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.middleware2.processing.EngineAtomEventListener;
 import com.radixdlt.middleware2.store.LedgerEngineStore;
@@ -63,9 +65,9 @@ public class MiddlewareModule extends AbstractModule {
 	@Singleton
 	private ConstraintMachine buildConstraintMachine(CMAtomOS os) {
 		final ConstraintMachine constraintMachine = new ConstraintMachine.Builder()
-				.setParticleTransitionProcedures(os.buildTransitionProcedures())
-				.setParticleStaticCheck(os.buildParticleStaticCheck())
-				.build();
+			.setParticleTransitionProcedures(os.buildTransitionProcedures())
+			.setParticleStaticCheck(os.buildParticleStaticCheck())
+			.build();
 		return constraintMachine;
 	}
 
@@ -76,15 +78,15 @@ public class MiddlewareModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private RadixEngine getRadixEngine(
+	private RadixEngine<SimpleRadixEngineAtom> getRadixEngine(
 			ConstraintMachine constraintMachine,
 			UnaryOperator<CMStore> virtualStoreLayer,
-			EngineStore engineStore,
+			EngineStore<SimpleRadixEngineAtom> engineStore,
 			Serialization serialization,
 			RuntimeProperties properties,
 			Universe universe
 	) {
-		RadixEngine radixEngine = new RadixEngine(
+		RadixEngine<SimpleRadixEngineAtom> radixEngine = new RadixEngine<SimpleRadixEngineAtom>(
 			constraintMachine,
 			virtualStoreLayer,
 			engineStore
@@ -108,7 +110,7 @@ public class MiddlewareModule extends AbstractModule {
 
 	@Override
 	protected void configure() {
-		bind(EngineStore.class).to(LedgerEngineStore.class).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<EngineStore<SimpleRadixEngineAtom>>() { }).to(LedgerEngineStore.class).in(Scopes.SINGLETON);
 		bind(AtomToBinaryConverter.class).toInstance(new AtomToBinaryConverter(DefaultSerialization.getInstance()));
 	}
 }

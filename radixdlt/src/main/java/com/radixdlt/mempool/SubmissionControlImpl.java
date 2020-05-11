@@ -17,6 +17,9 @@
 
 package com.radixdlt.mempool;
 
+import com.radixdlt.middleware.SimpleRadixEngineAtom;
+import com.radixdlt.middleware2.converters.AtomConversionException;
+import com.radixdlt.middleware2.converters.AtomToRadixEngineAtomConverter;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -40,21 +43,38 @@ class SubmissionControlImpl implements SubmissionControl {
 	private static final Logger log = LogManager.getLogger("submission");
 
 	private final Mempool mempool;
-	private final RadixEngine radixEngine;
+	private final RadixEngine<SimpleRadixEngineAtom> radixEngine;
 	private final Serialization serialization;
 	private final Events events;
+	private final AtomToRadixEngineAtomConverter converter;
 
 	@Inject
-	SubmissionControlImpl(Mempool mempool, RadixEngine radixEngine, Serialization serialization, Events events) {
+	SubmissionControlImpl(
+		Mempool mempool,
+		RadixEngine<SimpleRadixEngineAtom> radixEngine,
+		Serialization serialization,
+		Events events,
+		AtomToRadixEngineAtomConverter converter
+	) {
 		this.mempool = Objects.requireNonNull(mempool);
 		this.radixEngine = Objects.requireNonNull(radixEngine);
 		this.serialization = Objects.requireNonNull(serialization);
 		this.events = Objects.requireNonNull(events);
+		this.converter = Objects.requireNonNull(converter);
 	}
 
 	@Override
 	public void submitAtom(Atom atom) throws MempoolFullException, MempoolDuplicateException {
-		Optional<CMError> validationError = this.radixEngine.staticCheck(atom);
+		final SimpleRadixEngineAtom reAtom;
+		try {
+			reAtom = converter.convert(atom);
+		} catch (AtomConversionException e) {
+			this.events.broadcast(new AtomExceptionEvent(e, atom.getAID()));
+			return;
+		}
+
+		Optional<CMError> validationError = this.radixEngine.staticCheck(reAtom);
+
 		if (validationError.isPresent()) {
 			CMError error = validationError.get();
 			ConstraintMachineValidationException ex = new ConstraintMachineValidationException(atom, error.getErrMsg(), error.getDataPointer());
@@ -66,7 +86,7 @@ class SubmissionControlImpl implements SubmissionControl {
 			);
 			this.events.broadcast(new AtomExceptionEvent(ex, atom.getAID()));
 		} else {
-			this.mempool.addAtom(atom);
+			this.mempool.addAtom(reAtom);
 		}
 	}
 

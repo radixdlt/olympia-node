@@ -18,7 +18,13 @@
 package com.radixdlt.mempool;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
 import com.google.inject.Scopes;
+import com.google.inject.Singleton;
+import com.radixdlt.middleware.RadixEngineUtils;
+import com.radixdlt.middleware.RadixEngineUtils.CMAtomConversionException;
+import com.radixdlt.middleware2.converters.AtomConversionException;
+import com.radixdlt.middleware2.converters.AtomToRadixEngineAtomConverter;
 
 public class MempoolModule extends AbstractModule {
 	@Override
@@ -26,5 +32,17 @@ public class MempoolModule extends AbstractModule {
 		// provides
 		bind(Mempool.class).to(SharedMempool.class).in(Scopes.SINGLETON);
 		bind(SubmissionControl.class).to(SubmissionControlImpl.class).in(Scopes.SINGLETON);
+	}
+
+	@Provides
+	@Singleton
+	private AtomToRadixEngineAtomConverter converter() {
+		return atom -> {
+			try {
+				return RadixEngineUtils.toCMAtom(atom);
+			} catch (CMAtomConversionException e) {
+				throw new AtomConversionException(e);
+			}
+		};
 	}
 }

@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,16 +15,10 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.mempool;
+package com.radixdlt.middleware2.converters;
 
-import com.radixdlt.middleware.SimpleRadixEngineAtom;
-
-/**
- * Exception thrown when an attempt to add new items would
- * exceed the mempool's maximum capacity.
- */
-public class MempoolDuplicateException extends MempoolRejectedException {
-	public MempoolDuplicateException(SimpleRadixEngineAtom atom, String message) {
-		super(atom, message);
+public class AtomConversionException extends Exception {
+	public AtomConversionException(Exception cause) {
+		super(cause);
 	}
 }

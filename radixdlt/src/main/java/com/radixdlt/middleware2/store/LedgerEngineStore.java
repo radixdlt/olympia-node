@@ -23,6 +23,9 @@ import com.radixdlt.atommodel.Atom;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.middleware.RadixEngineUtils;
+import com.radixdlt.middleware.RadixEngineUtils.CMAtomConversionException;
+import com.radixdlt.middleware.SimpleRadixEngineAtom;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.SearchCursor;
 import com.radixdlt.store.StoreIndex;
@@ -39,7 +42,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 
-public class LedgerEngineStore implements EngineStore {
+public class LedgerEngineStore implements EngineStore<SimpleRadixEngineAtom> {
     private static final Logger log = LogManager.getLogger("middleware2.store");
 
     private final Serialization serialization;
@@ -56,10 +59,15 @@ public class LedgerEngineStore implements EngineStore {
     }
 
     @Override
-    public void getAtomContaining(Particle particle, boolean isInput, Consumer<Atom> callback) {
+    public void getAtomContaining(Particle particle, boolean isInput, Consumer<SimpleRadixEngineAtom> callback) {
         Optional<Atom> atomOptional = getAtomByParticle(particle, isInput);
         if (atomOptional.isPresent()) {
-            callback.accept(atomOptional.get());
+            try {
+                SimpleRadixEngineAtom reAtom = RadixEngineUtils.toCMAtom(atomOptional.get());
+                callback.accept(reAtom);
+            } catch (CMAtomConversionException e) {
+                throw new IllegalStateException("Could not construct atom", e);
+            }
         }
     }
 
@@ -78,10 +86,10 @@ public class LedgerEngineStore implements EngineStore {
     }
 
     @Override
-    public void storeAtom(Atom atom) {
-        byte[] binaryAtom = atomToBinaryConverter.toLedgerEntryContent(atom);
-        LedgerEntry ledgerEntry = new LedgerEntry(binaryAtom, atom.getAID());
-        EngineAtomIndices engineAtomIndices = EngineAtomIndices.from(atom, serialization);
+    public void storeAtom(SimpleRadixEngineAtom reAtom) {
+        byte[] binaryAtom = atomToBinaryConverter.toLedgerEntryContent(reAtom.getAtom());
+        LedgerEntry ledgerEntry = new LedgerEntry(binaryAtom, reAtom.getAID());
+        EngineAtomIndices engineAtomIndices = EngineAtomIndices.from(reAtom.getAtom(), serialization);
         store.store(ledgerEntry, engineAtomIndices.getUniqueIndices(), engineAtomIndices.getDuplicateIndices());
     }
 

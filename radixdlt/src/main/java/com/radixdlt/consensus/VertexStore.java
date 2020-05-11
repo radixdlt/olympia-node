@@ -23,6 +23,7 @@ import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 
+import com.radixdlt.middleware.SimpleRadixEngineAtom;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import java.util.ArrayList;
@@ -40,7 +41,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * TODO: make thread-safe
  */
 public final class VertexStore {
-	private final RadixEngine engine;
+	private final RadixEngine<SimpleRadixEngineAtom> engine;
 	private final SystemCounters counters;
 	private final Map<Hash, Vertex> vertices = new ConcurrentHashMap<>();
 	private final BehaviorSubject<Vertex> lastCommittedVertex = BehaviorSubject.create();
@@ -54,7 +55,7 @@ public final class VertexStore {
 	public VertexStore(
 		Vertex genesisVertex,
 		QuorumCertificate rootQC,
-		RadixEngine engine,
+		RadixEngine<SimpleRadixEngineAtom> engine,
 		SystemCounters counters
 	) {
 		this.engine = Objects.requireNonNull(engine);

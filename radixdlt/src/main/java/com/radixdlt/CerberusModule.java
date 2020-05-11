@@ -51,6 +51,9 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.middleware.RadixEngineUtils;
+import com.radixdlt.middleware.RadixEngineUtils.CMAtomConversionException;
+import com.radixdlt.middleware.SimpleRadixEngineAtom;
 import com.radixdlt.middleware2.network.MessageCentralBFTNetwork;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.properties.RuntimeProperties;
@@ -130,15 +133,16 @@ public class CerberusModule extends AbstractModule {
 	@Singleton
 	private VertexStore getVertexStore(
 		Universe universe,
-		RadixEngine radixEngine,
+		RadixEngine<SimpleRadixEngineAtom> radixEngine,
 		SystemCounters counters,
 		VertexSupplier vertexSupplier
-	) {
+	) throws CMAtomConversionException {
 		if (universe.getGenesis().size() != 1) {
 			throw new IllegalStateException("Can only support one genesis atom.");
 		}
 
-		final Vertex genesisVertex = Vertex.createGenesis(universe.getGenesis().get(0));
+		SimpleRadixEngineAtom genesisAtom = RadixEngineUtils.toCMAtom(universe.getGenesis().get(0));
+		final Vertex genesisVertex = Vertex.createGenesis(genesisAtom);
 		final VertexMetadata genesisMetadata = new VertexMetadata(View.genesis(), genesisVertex.getId(), 0);
 		final VoteData voteData = new VoteData(genesisMetadata, null);
 		final QuorumCertificate rootQC = new QuorumCertificate(voteData, new ECDSASignatures());

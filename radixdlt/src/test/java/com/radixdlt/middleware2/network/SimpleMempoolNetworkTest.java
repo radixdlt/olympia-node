@@ -17,6 +17,7 @@
 
 package com.radixdlt.middleware2.network;
 
+import com.radixdlt.middleware.SimpleRadixEngineAtom;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
@@ -55,8 +56,10 @@ public class SimpleMempoolNetworkTest {
 		MessageCentral messageCentral = mock(MessageCentral.class);
 		SimpleMempoolNetwork smn = new SimpleMempoolNetwork(system, universe, addressBook, messageCentral);
 
-		Atom atom = mock(Atom.class);
-		smn.sendMempoolSubmission(atom);
+		SimpleRadixEngineAtom reAtom = mock(SimpleRadixEngineAtom.class);
+		Atom rawAtom = mock(Atom.class);
+		when(reAtom.getAtom()).thenReturn(rawAtom);
+		smn.sendMempoolSubmission(reAtom);
 
 		verify(messageCentral, times(1)).send(any(), any());
 	}

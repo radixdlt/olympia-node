@@ -31,6 +31,7 @@ import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.VertexStore;
 import com.radixdlt.consensus.View;
 import com.radixdlt.mempool.Mempool;
+import com.radixdlt.middleware.SimpleRadixEngineAtom;
 import java.util.Collections;
 import org.junit.Test;
 
@@ -39,7 +40,9 @@ public class MempoolProposalGeneratorTest {
 	public void when_vertex_store_contains_vertices_with_no_atom__then_generate_proposal_should_still_work() {
 		Mempool mempool = mock(Mempool.class);
 		Atom atom = mock(Atom.class);
-		when(mempool.getAtoms(anyInt(), anySet())).thenReturn(Collections.singletonList(atom));
+		SimpleRadixEngineAtom reAtom = mock(SimpleRadixEngineAtom.class);
+		when(reAtom.getAtom()).thenReturn(atom);
+		when(mempool.getAtoms(anyInt(), anySet())).thenReturn(Collections.singletonList(reAtom));
 
 		VertexStore vertexStore = mock(VertexStore.class);
 		QuorumCertificate qc = mock(QuorumCertificate.class);
@@ -51,6 +54,6 @@ public class MempoolProposalGeneratorTest {
 
 		MempoolProposalGenerator proposalGenerator = new MempoolProposalGenerator(vertexStore, mempool);
 		Vertex proposal = proposalGenerator.generateProposal(View.of(1));
-		assertThat(proposal.getAtom()).isEqualTo(atom);
+		assertThat(proposal.getRawAtom()).isEqualTo(atom);
 	}
 }

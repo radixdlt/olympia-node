@@ -17,6 +17,8 @@
 
 package com.radixdlt.mempool;
 
+import com.radixdlt.middleware.SimpleRadixEngineAtom;
+import com.radixdlt.middleware2.converters.AtomToRadixEngineAtomConverter;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.json.JSONObject;
@@ -40,11 +42,11 @@ import static org.hamcrest.Matchers.*;
 public class SubmissionControlTest {
 
 	private Mempool mempool;
-	private RadixEngine radixEngine;
+	private RadixEngine<SimpleRadixEngineAtom> radixEngine;
 	private Serialization serialization;
 	private Events events;
-
-	private SubmissionControl submissionControl;
+	private SubmissionControlImpl submissionControl;
+	private AtomToRadixEngineAtomConverter converter;
 
 	@Before
 	public void setUp() {
@@ -52,12 +54,12 @@ public class SubmissionControlTest {
 		this.radixEngine = throwingMock(RadixEngine.class);
 		this.serialization = throwingMock(Serialization.class);
 		this.events = throwingMock(Events.class);
-		this.submissionControl = new SubmissionControlImpl(this.mempool, this.radixEngine, this.serialization, this.events);
+		this.converter = mock(AtomToRadixEngineAtomConverter.class);
+		this.submissionControl = new SubmissionControlImpl(this.mempool, this.radixEngine, this.serialization, this.events, this.converter);
 	}
 
 	@Test
-	public void when_radix_engine_returns_error__then_event_is_broadcast()
-		throws MempoolFullException, MempoolDuplicateException {
+	public void when_radix_engine_returns_error__then_event_is_broadcast() throws Exception {
 		CMError cmError = throwingMock(CMError.class);
 		doReturn("dummy").when(cmError).getErrMsg();
 		doReturn("dummy error").when(cmError).getErrorDescription();
@@ -68,6 +70,8 @@ public class SubmissionControlTest {
 
 		Atom atom = throwingMock(Atom.class);
 		doReturn(AID.ZERO).when(atom).getAID();
+		SimpleRadixEngineAtom reAtom = mock(SimpleRadixEngineAtom.class);
+		when(converter.convert(eq(atom))).thenReturn(reAtom);
 
 		this.submissionControl.submitAtom(atom);
 
@@ -76,15 +80,17 @@ public class SubmissionControlTest {
 	}
 
 	@Test
-	public void when_radix_engine_returns_ok__then_atom_is_added_to_mempool()
-		throws MempoolFullException, MempoolDuplicateException {
+	public void when_radix_engine_returns_ok__then_atom_is_added_to_mempool() throws Exception {
 		doReturn(Optional.empty()).when(this.radixEngine).staticCheck(any());
 		doNothing().when(this.mempool).addAtom(any());
 
-		this.submissionControl.submitAtom(throwingMock(Atom.class));
+		Atom atom = throwingMock(Atom.class);
+		SimpleRadixEngineAtom reAtom = mock(SimpleRadixEngineAtom.class);
+		when(converter.convert(eq(atom))).thenReturn(reAtom);
+		this.submissionControl.submitAtom(atom);
 
 		verify(this.events, never()).broadcast(any());
-		verify(this.mempool, times(1)).addAtom(ArgumentMatchers.any(Atom.class));
+		verify(this.mempool, times(1)).addAtom(eq(reAtom));
 	}
 
 	@Test

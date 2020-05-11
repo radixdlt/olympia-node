@@ -19,11 +19,11 @@ package com.radixdlt.middleware2.processing;
 
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.atommodel.Atom;
 import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.AtomEventListener;
+import com.radixdlt.middleware.SimpleRadixEngineAtom;
 import com.radixdlt.middleware2.store.EngineAtomIndices;
 import com.radixdlt.serialization.Serialization;
 
@@ -40,7 +40,7 @@ import org.radix.validation.ConstraintMachineValidationException;
 import java.util.Collections;
 import java.util.stream.Collectors;
 
-public class EngineAtomEventListener implements AtomEventListener {
+public class EngineAtomEventListener implements AtomEventListener<SimpleRadixEngineAtom> {
 	private static final Logger log = LogManager.getLogger("middleware2.eventListener");
 	private final Serialization serialization;
 
@@ -49,16 +49,16 @@ public class EngineAtomEventListener implements AtomEventListener {
 	}
 
 	@Override
-	public void onCMError(Atom atom, CMError error) {
-		ConstraintMachineValidationException ex = new ConstraintMachineValidationException(atom, error.getErrMsg(), error.getDataPointer());
+	public void onCMError(SimpleRadixEngineAtom atom, CMError error) {
+		ConstraintMachineValidationException ex = new ConstraintMachineValidationException(atom.getAtom(), error.getErrMsg(), error.getDataPointer());
 		Events.getInstance().broadcast(new AtomExceptionEvent(ex, atom.getAID()));
 	}
 
 	@Override
-	public void onStateStore(Atom atom) {
+	public void onStateStore(SimpleRadixEngineAtom atom) {
 		try {
-			EngineAtomIndices engineAtomIndices = EngineAtomIndices.from(atom, serialization);
-			Events.getInstance().broadcastWithException(new AtomStoredEvent(atom, () ->
+			EngineAtomIndices engineAtomIndices = EngineAtomIndices.from(atom.getAtom(), serialization);
+			Events.getInstance().broadcastWithException(new AtomStoredEvent(atom.getAtom(), () ->
 					engineAtomIndices.getDuplicateIndices().stream().filter(e -> e.getPrefix() == EngineAtomIndices.IndexType.DESTINATION.getValue())
 					.map(e -> EngineAtomIndices.toEUID(e.asKey()))
 					.collect(Collectors.toSet()))
@@ -69,14 +69,14 @@ public class EngineAtomEventListener implements AtomEventListener {
 	}
 
 	@Override
-	public void onVirtualStateConflict(Atom atom, DataPointer issueParticle) {
-		ConstraintMachineValidationException e = new ConstraintMachineValidationException(atom, "Virtual state conflict", issueParticle);
+	public void onVirtualStateConflict(SimpleRadixEngineAtom atom, DataPointer issueParticle) {
+		ConstraintMachineValidationException e = new ConstraintMachineValidationException(atom.getAtom(), "Virtual state conflict", issueParticle);
 		log.error("Virtual state conflict", e);
 		Events.getInstance().broadcast(new AtomExceptionEvent(e, atom.getAID()));
 	}
 
 	@Override
-	public void onStateConflict(Atom atom, DataPointer dp, Atom conflictingAtom) {
+	public void onStateConflict(SimpleRadixEngineAtom atom, DataPointer dp, SimpleRadixEngineAtom conflictingAtom) {
 		final ParticleConflictException conflict = new ParticleConflictException(
 				new ParticleConflict(dp, ImmutableSet.of(atom.getAID(), conflictingAtom.getAID())
 				));
