@@ -17,20 +17,20 @@
 
 package org.radix.atoms.events;
 
-import com.radixdlt.middleware.SimpleRadixEngineAtom;
+import com.radixdlt.middleware2.LedgerAtom;
 import org.radix.common.Syncronicity;
 import org.radix.events.Event;
 
 public abstract class AtomEvent extends Event {
-	private final SimpleRadixEngineAtom atom;
+	private final LedgerAtom atom;
 
-	public AtomEvent(SimpleRadixEngineAtom atom) {
+	public AtomEvent(LedgerAtom atom) {
 		super();
 
 		this.atom = atom;
 	}
 
-	public SimpleRadixEngineAtom getAtom() {
+	public LedgerAtom getAtom() {
 		return atom;
 	}
 

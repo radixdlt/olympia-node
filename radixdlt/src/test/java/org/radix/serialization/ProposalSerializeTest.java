@@ -31,9 +31,8 @@ import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.middleware.RadixEngineUtils;
-import com.radixdlt.middleware.RadixEngineUtils.CMAtomConversionException;
-import com.radixdlt.middleware.SimpleRadixEngineAtom;
+import com.radixdlt.middleware2.LedgerAtom;
+import com.radixdlt.middleware2.LedgerAtom.CMAtomConversionException;
 
 public class ProposalSerializeTest extends SerializeObject<Proposal> {
 	public ProposalSerializeTest() {
@@ -53,9 +52,9 @@ public class ProposalSerializeTest extends SerializeObject<Proposal> {
 		RadixAddress address = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
 		Atom atom = new Atom();
 		atom.addParticleGroupWith(new MessageParticle(address, address, "Hello".getBytes()), Spin.UP);
-		final SimpleRadixEngineAtom reAtom;
+		final LedgerAtom reAtom;
 		try {
-			reAtom = RadixEngineUtils.toCMAtom(atom);
+			reAtom = LedgerAtom.convert(atom);
 		} catch (CMAtomConversionException e) {
 			throw new IllegalStateException();
 		}

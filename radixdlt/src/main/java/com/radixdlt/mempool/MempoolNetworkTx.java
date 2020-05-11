@@ -17,7 +17,7 @@
 
 package com.radixdlt.mempool;
 
-import com.radixdlt.middleware.SimpleRadixEngineAtom;
+import com.radixdlt.middleware2.LedgerAtom;
 
 /**
  * Interface for Mempool to send things through a network
@@ -28,5 +28,5 @@ public interface MempoolNetworkTx {
 	 *
 	 * @param atom the submission to send
 	 */
-	void sendMempoolSubmission(SimpleRadixEngineAtom atom);
+	void sendMempoolSubmission(LedgerAtom atom);
 }

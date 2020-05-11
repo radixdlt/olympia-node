@@ -20,7 +20,7 @@ package org.radix.api.observable;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.middleware.SimpleRadixEngineAtom;
+import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.store.SearchCursor;
 import com.radixdlt.store.StoreIndex;
 import com.radixdlt.store.LedgerSearchMode;
@@ -111,7 +111,7 @@ public class AtomEventObserver {
 		if (atomEvent instanceof AtomStoredEvent) {
 			if (atomQuery.filter(atomEvent.getDestinations())) {
 				final AtomEventType atomEventType = atomEvent instanceof AtomStoredEvent ? AtomEventType.STORE : AtomEventType.DELETE;
-				final AtomEventDto atomEventDto = new AtomEventDto(atomEventType, atomEvent.getAtom().getAtom());
+				final AtomEventDto atomEventDto = new AtomEventDto(atomEventType, atomEvent.getAtom().getRaw());
 				synchronized (this) {
 					this.currentRunnable = currentRunnable.thenRunAsync(() -> update(atomEventDto), executorService);
 				}
@@ -147,14 +147,14 @@ public class AtomEventObserver {
 					return;
 				}
 
-				List<SimpleRadixEngineAtom> atoms = new ArrayList<>();
+				List<LedgerAtom> atoms = new ArrayList<>();
 				while (cursor != null && atoms.size() < BATCH_SIZE) {
 					AID aid = cursor.get();
 					processedAids.add(aid);
 					Optional<LedgerEntry> ledgerEntry = store.get(aid);
 					ledgerEntry.ifPresent(
 						entry -> {
-							SimpleRadixEngineAtom atom = atomToBinaryConverter.toAtom(entry.getContent());
+							LedgerAtom atom = atomToBinaryConverter.toAtom(entry.getContent());
 							atoms.add(atom);
 						}
 					);
@@ -162,7 +162,7 @@ public class AtomEventObserver {
 				}
 				if (!atoms.isEmpty()) {
 					final Stream<AtomEventDto> atomEvents = atoms.stream()
-						.map(atom -> new AtomEventDto(AtomEventType.STORE, atom.getAtom()));
+						.map(atom -> new AtomEventDto(AtomEventType.STORE, atom.getRaw()));
 					onNext.accept(new ObservedAtomEvents(false, atomEvents));
 					count += atoms.size();
 				}

@@ -30,8 +30,6 @@ import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.middleware.AtomCheckHook;
-import com.radixdlt.middleware.SimpleRadixEngineAtom;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.middleware2.processing.EngineAtomEventListener;
 import com.radixdlt.middleware2.store.LedgerEngineStore;
@@ -78,15 +76,15 @@ public class MiddlewareModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private RadixEngine<SimpleRadixEngineAtom> getRadixEngine(
+	private RadixEngine<LedgerAtom> getRadixEngine(
 			ConstraintMachine constraintMachine,
 			UnaryOperator<CMStore> virtualStoreLayer,
-			EngineStore<SimpleRadixEngineAtom> engineStore,
+			EngineStore<LedgerAtom> engineStore,
 			Serialization serialization,
 			RuntimeProperties properties,
 			Universe universe
 	) {
-		RadixEngine<SimpleRadixEngineAtom> radixEngine = new RadixEngine<SimpleRadixEngineAtom>(
+		RadixEngine<LedgerAtom> radixEngine = new RadixEngine<>(
 			constraintMachine,
 			virtualStoreLayer,
 			engineStore
@@ -95,12 +93,12 @@ public class MiddlewareModule extends AbstractModule {
 		final boolean skipAtomFeeCheck = properties.get("debug.nopow", false);
 
 		radixEngine.addCMSuccessHook(
-				new AtomCheckHook(
-						() -> universe,
-						Time::currentTimestamp,
-						skipAtomFeeCheck,
-						Time.MAXIMUM_DRIFT
-				)
+			new AtomCheckHook(
+				() -> universe,
+				Time::currentTimestamp,
+				skipAtomFeeCheck,
+				Time.MAXIMUM_DRIFT
+			)
 		);
 
 		radixEngine.addAtomEventListener(new EngineAtomEventListener(serialization));
@@ -110,7 +108,7 @@ public class MiddlewareModule extends AbstractModule {
 
 	@Override
 	protected void configure() {
-		bind(new TypeLiteral<EngineStore<SimpleRadixEngineAtom>>() { }).to(LedgerEngineStore.class).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<EngineStore<LedgerAtom>>() { }).to(LedgerEngineStore.class).in(Scopes.SINGLETON);
 		bind(AtomToBinaryConverter.class).toInstance(new AtomToBinaryConverter(DefaultSerialization.getInstance()));
 	}
 }

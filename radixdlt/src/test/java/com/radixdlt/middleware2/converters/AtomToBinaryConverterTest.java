@@ -28,9 +28,8 @@ import com.radixdlt.identifiers.EUID;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.middleware.ParticleGroup;
-import com.radixdlt.middleware.RadixEngineUtils;
-import com.radixdlt.middleware.SimpleRadixEngineAtom;
 import com.radixdlt.middleware.SpunParticle;
+import com.radixdlt.middleware2.LedgerAtom;
 import org.junit.Test;
 
 import java.math.BigInteger;
@@ -55,11 +54,11 @@ public class AtomToBinaryConverterTest {
 			ImmutableMap.of("timestamp", "0")
 		);
 
-		SimpleRadixEngineAtom reAtom = RadixEngineUtils.toCMAtom(atom);
+		LedgerAtom reAtom = LedgerAtom.convert(atom);
 
 		byte[] serializedAtom = atomToBinaryConverter.toLedgerEntryContent(reAtom);
-		SimpleRadixEngineAtom deserializedAtom = atomToBinaryConverter.toAtom(serializedAtom);
-		assertEquals(reAtom.getAtom(), deserializedAtom.getAtom());
+		LedgerAtom deserializedAtom = atomToBinaryConverter.toAtom(serializedAtom);
+		assertEquals(reAtom, deserializedAtom);
 	}
 
 }

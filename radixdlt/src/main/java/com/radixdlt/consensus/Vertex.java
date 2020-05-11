@@ -22,9 +22,8 @@ import com.google.common.base.Suppliers;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.middleware.RadixEngineUtils;
-import com.radixdlt.middleware.RadixEngineUtils.CMAtomConversionException;
-import com.radixdlt.middleware.SimpleRadixEngineAtom;
+import com.radixdlt.middleware2.LedgerAtom;
+import com.radixdlt.middleware2.LedgerAtom.CMAtomConversionException;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.serialization.SerializerConstants;
@@ -52,7 +51,7 @@ public final class Vertex {
 	private final QuorumCertificate qc;
 
 	private View view;
-	private SimpleRadixEngineAtom reAtom;
+	private LedgerAtom reAtom;
 
 	private final transient Supplier<Hash> cachedHash = Suppliers.memoize(this::doGetHash);
 
@@ -63,7 +62,7 @@ public final class Vertex {
 		this.reAtom = null;
 	}
 
-	public Vertex(QuorumCertificate qc, View view, SimpleRadixEngineAtom reAtom) {
+	public Vertex(QuorumCertificate qc, View view, LedgerAtom reAtom) {
 		this.qc = qc;
 		this.view = Objects.requireNonNull(view);
 		this.reAtom = reAtom;
@@ -74,7 +73,7 @@ public final class Vertex {
 	@DsonOutput(Output.ALL)
 	private byte[] getSerializerAtom() {
 		try {
-			return this.reAtom == null ? null : DefaultSerialization.getInstance().toDson(reAtom.getAtom(), Output.WIRE);
+			return this.reAtom == null ? null : DefaultSerialization.getInstance().toDson(reAtom.getRaw(), Output.WIRE);
 		} catch (SerializationException e) {
 			throw new IllegalStateException("Failed to serialize " + this.reAtom);
 		}
@@ -84,17 +83,17 @@ public final class Vertex {
 	private void setSerializerAtom(byte[] atomBytes) {
 		try {
 			Atom rawAtom = atomBytes == null ? null : DefaultSerialization.getInstance().fromDson(atomBytes, Atom.class);
-			this.reAtom = rawAtom == null ? null : RadixEngineUtils.toCMAtom(rawAtom);
+			this.reAtom = rawAtom == null ? null : LedgerAtom.convert(rawAtom);
 		} catch (SerializationException | CMAtomConversionException e) {
 			throw new IllegalStateException("Failed to deserialize atomBytes");
 		}
 	}
 
-	public static Vertex createGenesis(SimpleRadixEngineAtom reAtom) {
-		return new Vertex(null, View.of(0), reAtom);
+	public static Vertex createGenesis(LedgerAtom atom) {
+		return new Vertex(null, View.of(0), atom);
 	}
 
-	public static Vertex createVertex(QuorumCertificate qc, View view, SimpleRadixEngineAtom reAtom) {
+	public static Vertex createVertex(QuorumCertificate qc, View view, LedgerAtom reAtom) {
 		Objects.requireNonNull(qc);
 
 		if (view.number() == 0) {
@@ -144,7 +143,7 @@ public final class Vertex {
 	}
 
 	// TODO: This is a hack. Fix when we can serialize SimpleRadixEngineAtom
-	public SimpleRadixEngineAtom getAtom() {
+	public LedgerAtom getAtom() {
 		return reAtom;
 	}
 

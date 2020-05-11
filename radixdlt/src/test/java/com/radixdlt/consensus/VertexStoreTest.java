@@ -29,7 +29,7 @@ import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.middleware.SimpleRadixEngineAtom;
+import com.radixdlt.middleware2.LedgerAtom;
 import io.reactivex.rxjava3.observers.TestObserver;
 import java.util.Arrays;
 import org.junit.Before;
@@ -41,7 +41,7 @@ public class VertexStoreTest {
 	private VertexMetadata genesisVertexMetadata;
 	private QuorumCertificate rootQC;
 	private VertexStore vertexStore;
-	private RadixEngine<SimpleRadixEngineAtom> radixEngine;
+	private RadixEngine<LedgerAtom> radixEngine;
 
 	@Before
 	public void setUp() {
@@ -91,7 +91,7 @@ public class VertexStoreTest {
 		VertexMetadata vertexMetadata = new VertexMetadata(View.genesis(), Hash.ZERO_HASH, 0);
 		VoteData voteData = new VoteData(vertexMetadata, null);
 		QuorumCertificate qc = new QuorumCertificate(voteData, new ECDSASignatures());
-		Vertex nextVertex = Vertex.createVertex(qc, View.of(1), mock(SimpleRadixEngineAtom.class));
+		Vertex nextVertex = Vertex.createVertex(qc, View.of(1), mock(LedgerAtom.class));
 		assertThatThrownBy(() -> vertexStore.insertVertex(nextVertex))
 			.isInstanceOf(MissingParentException.class);
 	}
@@ -101,7 +101,7 @@ public class VertexStoreTest {
 	public void when_inserting_vertex_which_fails_to_pass_re__then_vertex_insertion_exception_is_thrown() throws Exception {
 		doThrow(mock(RadixEngineException.class)).when(radixEngine).store(any());
 
-		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), mock(SimpleRadixEngineAtom.class));
+		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), mock(LedgerAtom.class));
 		assertThatThrownBy(() -> vertexStore.insertVertex(nextVertex))
 			.isInstanceOf(VertexInsertionException.class);
 	}

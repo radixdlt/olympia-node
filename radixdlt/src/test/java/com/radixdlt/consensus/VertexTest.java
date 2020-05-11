@@ -20,7 +20,7 @@ package com.radixdlt.consensus;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.middleware.SimpleRadixEngineAtom;
+import com.radixdlt.middleware2.LedgerAtom;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Before;
 import org.junit.Test;
@@ -36,7 +36,7 @@ public class VertexTest {
 
 	private Vertex testObject;
 	private QuorumCertificate qc;
-	private SimpleRadixEngineAtom atom;
+	private LedgerAtom atom;
 	private Atom rawAtom;
 
 	@Before
@@ -51,8 +51,8 @@ public class VertexTest {
 		this.qc = new QuorumCertificate(voteData, new ECDSASignatures());
 
 		this.rawAtom = mock(Atom.class);
-		this.atom = mock(SimpleRadixEngineAtom.class);
-		when(atom.getAtom()).thenReturn(rawAtom);
+		this.atom = mock(LedgerAtom.class);
+		when(atom.getRaw()).thenReturn(rawAtom);
 
 		this.testObject = Vertex.createVertex(this.qc, baseView.next().next(), this.atom);
 	}

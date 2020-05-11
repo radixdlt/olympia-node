@@ -17,9 +17,9 @@
 
 package com.radixdlt.mempool;
 
-import com.radixdlt.middleware.SimpleRadixEngineAtom;
+import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.converters.AtomConversionException;
-import com.radixdlt.middleware2.converters.AtomToRadixEngineAtomConverter;
+import com.radixdlt.middleware2.converters.AtomToLedgerAtomConverter;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -43,18 +43,18 @@ class SubmissionControlImpl implements SubmissionControl {
 	private static final Logger log = LogManager.getLogger("submission");
 
 	private final Mempool mempool;
-	private final RadixEngine<SimpleRadixEngineAtom> radixEngine;
+	private final RadixEngine<LedgerAtom> radixEngine;
 	private final Serialization serialization;
 	private final Events events;
-	private final AtomToRadixEngineAtomConverter converter;
+	private final AtomToLedgerAtomConverter converter;
 
 	@Inject
 	SubmissionControlImpl(
 		Mempool mempool,
-		RadixEngine<SimpleRadixEngineAtom> radixEngine,
+		RadixEngine<LedgerAtom> radixEngine,
 		Serialization serialization,
 		Events events,
-		AtomToRadixEngineAtomConverter converter
+		AtomToLedgerAtomConverter converter
 	) {
 		this.mempool = Objects.requireNonNull(mempool);
 		this.radixEngine = Objects.requireNonNull(radixEngine);
@@ -65,7 +65,7 @@ class SubmissionControlImpl implements SubmissionControl {
 
 	@Override
 	public void submitAtom(Atom atom) throws MempoolFullException, MempoolDuplicateException {
-		final SimpleRadixEngineAtom reAtom;
+		final LedgerAtom reAtom;
 		try {
 			reAtom = converter.convert(atom);
 		} catch (AtomConversionException e) {

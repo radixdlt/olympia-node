@@ -22,8 +22,7 @@ import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.Atom;
-import com.radixdlt.middleware.RadixEngineUtils;
-import com.radixdlt.middleware.SimpleRadixEngineAtom;
+import com.radixdlt.middleware2.LedgerAtom;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.identifiers.RadixAddress;
@@ -61,8 +60,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
-public final class GenerateUniverses
-{
+public final class GenerateUniverses {
 	private static final Logger LOGGER = LogManager.getLogger("GenerateUniverses");
 
 	public static final String RADIX_ICON_URL = "https://assets.radixdlt.com/icons/icon-xrd-32x32.png";
@@ -166,7 +164,7 @@ public final class GenerateUniverses
 		);
 		genesisAtom.sign(universeKey);
 
-		SimpleRadixEngineAtom reAtom = RadixEngineUtils.toCMAtom(genesisAtom);
+		LedgerAtom reAtom = LedgerAtom.convert(genesisAtom);
 
 		if (standalone) {
 			byte[] sigBytes = serialization.toDson(genesisAtom.getSignature(universeKey.euid()), Output.WIRE);

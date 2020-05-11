@@ -17,8 +17,8 @@
 
 package com.radixdlt.mempool;
 
-import com.radixdlt.middleware.SimpleRadixEngineAtom;
-import com.radixdlt.middleware2.converters.AtomToRadixEngineAtomConverter;
+import com.radixdlt.middleware2.LedgerAtom;
+import com.radixdlt.middleware2.converters.AtomToLedgerAtomConverter;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.json.JSONObject;
@@ -42,11 +42,11 @@ import static org.hamcrest.Matchers.*;
 public class SubmissionControlTest {
 
 	private Mempool mempool;
-	private RadixEngine<SimpleRadixEngineAtom> radixEngine;
+	private RadixEngine<LedgerAtom> radixEngine;
 	private Serialization serialization;
 	private Events events;
 	private SubmissionControlImpl submissionControl;
-	private AtomToRadixEngineAtomConverter converter;
+	private AtomToLedgerAtomConverter converter;
 
 	@Before
 	public void setUp() {
@@ -54,7 +54,7 @@ public class SubmissionControlTest {
 		this.radixEngine = throwingMock(RadixEngine.class);
 		this.serialization = throwingMock(Serialization.class);
 		this.events = throwingMock(Events.class);
-		this.converter = mock(AtomToRadixEngineAtomConverter.class);
+		this.converter = mock(AtomToLedgerAtomConverter.class);
 		this.submissionControl = new SubmissionControlImpl(this.mempool, this.radixEngine, this.serialization, this.events, this.converter);
 	}
 
@@ -70,7 +70,7 @@ public class SubmissionControlTest {
 
 		Atom atom = throwingMock(Atom.class);
 		doReturn(AID.ZERO).when(atom).getAID();
-		SimpleRadixEngineAtom reAtom = mock(SimpleRadixEngineAtom.class);
+		LedgerAtom reAtom = mock(LedgerAtom.class);
 		when(converter.convert(eq(atom))).thenReturn(reAtom);
 
 		this.submissionControl.submitAtom(atom);
@@ -85,7 +85,7 @@ public class SubmissionControlTest {
 		doNothing().when(this.mempool).addAtom(any());
 
 		Atom atom = throwingMock(Atom.class);
-		SimpleRadixEngineAtom reAtom = mock(SimpleRadixEngineAtom.class);
+		LedgerAtom reAtom = mock(LedgerAtom.class);
 		when(converter.convert(eq(atom))).thenReturn(reAtom);
 		this.submissionControl.submitAtom(atom);
 

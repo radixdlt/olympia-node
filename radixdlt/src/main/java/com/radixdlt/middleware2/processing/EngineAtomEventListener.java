@@ -23,7 +23,7 @@ import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.AtomEventListener;
-import com.radixdlt.middleware.SimpleRadixEngineAtom;
+import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.store.EngineAtomIndices;
 import com.radixdlt.serialization.Serialization;
 
@@ -40,7 +40,7 @@ import org.radix.validation.ConstraintMachineValidationException;
 import java.util.Collections;
 import java.util.stream.Collectors;
 
-public class EngineAtomEventListener implements AtomEventListener<SimpleRadixEngineAtom> {
+public class EngineAtomEventListener implements AtomEventListener<LedgerAtom> {
 	private static final Logger log = LogManager.getLogger("middleware2.eventListener");
 	private final Serialization serialization;
 
@@ -49,13 +49,13 @@ public class EngineAtomEventListener implements AtomEventListener<SimpleRadixEng
 	}
 
 	@Override
-	public void onCMError(SimpleRadixEngineAtom atom, CMError error) {
+	public void onCMError(LedgerAtom atom, CMError error) {
 		ConstraintMachineValidationException ex = new ConstraintMachineValidationException(atom, error.getErrMsg(), error.getDataPointer());
 		Events.getInstance().broadcast(new AtomExceptionEvent(ex, atom.getAID()));
 	}
 
 	@Override
-	public void onStateStore(SimpleRadixEngineAtom atom) {
+	public void onStateStore(LedgerAtom atom) {
 		try {
 			EngineAtomIndices engineAtomIndices = EngineAtomIndices.from(atom, serialization);
 			Events.getInstance().broadcastWithException(new AtomStoredEvent(atom, () ->
@@ -70,14 +70,14 @@ public class EngineAtomEventListener implements AtomEventListener<SimpleRadixEng
 	}
 
 	@Override
-	public void onVirtualStateConflict(SimpleRadixEngineAtom atom, DataPointer issueParticle) {
+	public void onVirtualStateConflict(LedgerAtom atom, DataPointer issueParticle) {
 		ConstraintMachineValidationException e = new ConstraintMachineValidationException(atom, "Virtual state conflict", issueParticle);
 		log.error("Virtual state conflict", e);
 		Events.getInstance().broadcast(new AtomExceptionEvent(e, atom.getAID()));
 	}
 
 	@Override
-	public void onStateConflict(SimpleRadixEngineAtom atom, DataPointer dp, SimpleRadixEngineAtom conflictingAtom) {
+	public void onStateConflict(LedgerAtom atom, DataPointer dp, LedgerAtom conflictingAtom) {
 		final ParticleConflictException conflict = new ParticleConflictException(
 				new ParticleConflict(dp, ImmutableSet.of(atom.getAID(), conflictingAtom.getAID())
 				));

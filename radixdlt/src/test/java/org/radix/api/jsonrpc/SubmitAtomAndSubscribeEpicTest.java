@@ -18,7 +18,7 @@
 package org.radix.api.jsonrpc;
 
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.middleware.SimpleRadixEngineAtom;
+import com.radixdlt.middleware2.LedgerAtom;
 import org.everit.json.schema.Schema;
 import org.json.JSONObject;
 import org.junit.Test;
@@ -54,7 +54,7 @@ public class SubmitAtomAndSubscribeEpicTest {
 		when(action.getJSONObject("params")).thenReturn(params);
 		when(params.getJSONObject("atom")).thenReturn(jsonAtom);
 
-		SimpleRadixEngineAtom atom = mock(SimpleRadixEngineAtom.class);
+		LedgerAtom atom = mock(LedgerAtom.class);
 
 		doAnswer((invocation) -> {
 			((SingleAtomListener) invocation.getArguments()[1]).onError(AID.ZERO, new ConstraintMachineValidationException(atom, "", DataPointer.ofAtom()));

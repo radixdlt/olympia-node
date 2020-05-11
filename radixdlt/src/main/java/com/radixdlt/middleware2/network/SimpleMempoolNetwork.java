@@ -19,7 +19,7 @@ package com.radixdlt.middleware2.network;
 
 import com.radixdlt.mempool.MempoolNetworkRx;
 import com.radixdlt.mempool.MempoolNetworkTx;
-import com.radixdlt.middleware.SimpleRadixEngineAtom;
+import com.radixdlt.middleware2.LedgerAtom;
 import java.util.Objects;
 
 import javax.inject.Inject;
@@ -69,8 +69,8 @@ public class SimpleMempoolNetwork implements MempoolNetworkRx, MempoolNetworkTx 
 
 
 	@Override
-	public void sendMempoolSubmission(SimpleRadixEngineAtom atom) {
-		MempoolAtomAddedMessage message = new MempoolAtomAddedMessage(this.magic, atom.getAtom());
+	public void sendMempoolSubmission(LedgerAtom atom) {
+		MempoolAtomAddedMessage message = new MempoolAtomAddedMessage(this.magic, atom.getRaw());
 		final EUID self = this.localPeer.getNID();
 		this.addressBook.peers()
 			.filter(Peer::hasSystem) // Only peers with systems (and therefore transports)

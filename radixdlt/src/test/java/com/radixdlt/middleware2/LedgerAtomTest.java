@@ -15,11 +15,15 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.middleware2.converters;
+package com.radixdlt.middleware2;
 
-import com.radixdlt.atommodel.Atom;
-import com.radixdlt.middleware.SimpleRadixEngineAtom;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Test;
 
-public interface AtomToRadixEngineAtomConverter {
-	SimpleRadixEngineAtom convert(Atom atom) throws AtomConversionException;
+public class LedgerAtomTest {
+	@Test
+	public void equalsContract() {
+		EqualsVerifier.forClass(LedgerAtom.class)
+			.verify();
+	}
 }

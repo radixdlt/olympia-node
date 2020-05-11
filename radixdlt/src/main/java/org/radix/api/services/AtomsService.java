@@ -23,7 +23,7 @@ import com.radixdlt.atommodel.Atom;
 import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.mempool.SubmissionControl;
 
-import com.radixdlt.middleware.SimpleRadixEngineAtom;
+import com.radixdlt.middleware2.LedgerAtom;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -94,7 +94,7 @@ public class AtomsService {
 				}
 
 				final AtomEvent atomEvent = (AtomEvent) event;
-				final SimpleRadixEngineAtom atom = atomEvent.getAtom();
+				final LedgerAtom atom = atomEvent.getAtom();
 
 				// TODO: Clean this up
 				final String eventName;
@@ -225,8 +225,8 @@ public class AtomsService {
 		Optional<LedgerEntry> ledgerEntryOptional = store.get(atomId);
 		if (ledgerEntryOptional.isPresent()) {
 			LedgerEntry ledgerEntry = ledgerEntryOptional.get();
-			SimpleRadixEngineAtom atom = atomToBinaryConverter.toAtom(ledgerEntry.getContent());
-			return serialization.toJsonObject(atom.getAtom(), DsonOutput.Output.API);
+			LedgerAtom atom = atomToBinaryConverter.toAtom(ledgerEntry.getContent());
+			return serialization.toJsonObject(atom.getRaw(), DsonOutput.Output.API);
 		}
 		throw new RuntimeException("Atom not found");
 	}

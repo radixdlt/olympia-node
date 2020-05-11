@@ -17,21 +17,21 @@
 
 package com.radixdlt.mempool;
 
-import com.radixdlt.middleware.SimpleRadixEngineAtom;
+import com.radixdlt.middleware2.LedgerAtom;
 
 /**
  * Exception thrown when mempool rejects an atom.
  */
 public class MempoolRejectedException extends Exception {
 
-	private final SimpleRadixEngineAtom atom;
+	private final LedgerAtom atom;
 
-	public MempoolRejectedException(SimpleRadixEngineAtom atom, String message) {
+	public MempoolRejectedException(LedgerAtom atom, String message) {
 		super(message);
 		this.atom = atom;
 	}
 
-	public SimpleRadixEngineAtom atom() {
+	public LedgerAtom atom() {
 		return atom;
 	}
 }

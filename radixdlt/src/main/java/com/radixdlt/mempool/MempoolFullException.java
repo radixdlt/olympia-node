@@ -17,14 +17,14 @@
 
 package com.radixdlt.mempool;
 
-import com.radixdlt.middleware.SimpleRadixEngineAtom;
+import com.radixdlt.middleware2.LedgerAtom;
 
 /**
  * Exception thrown when an attempt to add new items would
  * exceed the mempool's maximum capacity.
  */
 public class MempoolFullException extends MempoolRejectedException {
-	public MempoolFullException(SimpleRadixEngineAtom atom, String message) {
+	public MempoolFullException(LedgerAtom atom, String message) {
 		super(atom, message);
 	}
 }
