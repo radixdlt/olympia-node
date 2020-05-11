@@ -110,17 +110,7 @@ public final class VertexStore {
 
 		for (Vertex committed : path) {
 			if (committed.getAtom() != null) {
-				try {
-					this.counters.increment(CounterType.LEDGER_PROCESSED);
-					this.engine.store(committed.getAtom());
-					this.counters.increment(CounterType.LEDGER_STORED);
-				} catch (RadixEngineException e) {
-					// TODO: revisit TODO below since this moved from insertVertex to commitVertex
-					// TODO: Don't check for state computer errors for now so that we don't
-					// TODO: have to deal with failing leader proposals
-					// TODO: Reinstate this when ProposalGenerator + Mempool can guarantee correct proposals
-					//throw new VertexInsertionException("Failed to execute", e);
-				}
+				storeAtom(committed);
 			}
 
 			lastCommittedVertex.onNext(committed);
@@ -131,6 +121,20 @@ public final class VertexStore {
 
 		updateVertexStoreSize();
 		return tipVertex;
+	}
+
+	private void storeAtom(Vertex vertexWithAtom) {
+		try {
+			this.counters.increment(CounterType.LEDGER_PROCESSED);
+			this.engine.store(vertexWithAtom.getAtom());
+			this.counters.increment(CounterType.LEDGER_STORED);
+		} catch (RadixEngineException e) {
+			// TODO: revisit TODO below since this moved from insertVertex to commitVertex
+			// TODO: Don't check for state computer errors for now so that we don't
+			// TODO: have to deal with failing leader proposals
+			// TODO: Reinstate this when ProposalGenerator + Mempool can guarantee correct proposals
+			//throw new VertexInsertionException("Failed to execute", e);
+		}
 	}
 
 	public Observable<Vertex> lastCommittedVertex() {

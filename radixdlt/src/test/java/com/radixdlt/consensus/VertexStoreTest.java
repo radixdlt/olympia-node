@@ -22,6 +22,8 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.radixdlt.atommodel.Atom;
@@ -110,6 +112,34 @@ public class VertexStoreTest {
 	public void when_committing_vertex_which_was_not_inserted__then_illegal_state_exception_is_thrown() {
 		assertThatThrownBy(() -> vertexStore.commitVertex(mock(Hash.class)))
 			.isInstanceOf(IllegalStateException.class);
+	}
+
+	@Test
+	public void when_insert_vertex__then_it_should_not_be_committed_or_stored_in_engine() throws VertexInsertionException, RadixEngineException {
+		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), null);
+		vertexStore.insertVertex(nextVertex);
+
+		TestObserver<Vertex> testObserver = TestObserver.create();
+		vertexStore.lastCommittedVertex().subscribe(testObserver);
+		testObserver.awaitCount(1); // genesis only
+		testObserver.assertValues(genesisVertex); // not committed
+		verify(radixEngine, times(1)).store(genesisVertex.getAtom()); // not stored (genesis only)
+	}
+
+	@Test
+	public void when_insert_and_commit_vertex__then_it_should_be_committed_and_stored_in_engine() throws VertexInsertionException, RadixEngineException {
+		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), mock(Atom.class));
+		vertexStore.insertVertex(nextVertex);
+		TestObserver<Vertex> testObserver = TestObserver.create();
+		vertexStore.lastCommittedVertex().subscribe(testObserver);
+		testObserver.awaitCount(1); // genesis first
+
+		assertThat(vertexStore.commitVertex(nextVertex.getId())).isEqualTo(nextVertex);
+		testObserver.awaitCount(2); // both committed
+		testObserver.assertValues(genesisVertex, nextVertex); // both committed
+
+		verify(radixEngine, times(1)).store(genesisVertex.getAtom()); // genesis atom stored
+		verify(radixEngine, times(1)).store(nextVertex.getAtom()); // next atom stored
 	}
 
 	@Test
