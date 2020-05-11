@@ -89,7 +89,7 @@ public class LedgerEngineStore implements EngineStore<SimpleRadixEngineAtom> {
     public void storeAtom(SimpleRadixEngineAtom reAtom) {
         byte[] binaryAtom = atomToBinaryConverter.toLedgerEntryContent(reAtom.getAtom());
         LedgerEntry ledgerEntry = new LedgerEntry(binaryAtom, reAtom.getAID());
-        EngineAtomIndices engineAtomIndices = EngineAtomIndices.from(reAtom.getAtom(), serialization);
+        EngineAtomIndices engineAtomIndices = EngineAtomIndices.from(reAtom, serialization);
         store.store(ledgerEntry, engineAtomIndices.getUniqueIndices(), engineAtomIndices.getDuplicateIndices());
     }
 

@@ -23,6 +23,7 @@ import com.radixdlt.atommodel.Atom;
 import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.mempool.SubmissionControl;
 
+import com.radixdlt.middleware.SimpleRadixEngineAtom;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -93,7 +94,7 @@ public class AtomsService {
 				}
 
 				final AtomEvent atomEvent = (AtomEvent) event;
-				final Atom atom = atomEvent.getAtom();
+				final SimpleRadixEngineAtom atom = atomEvent.getAtom();
 
 				// TODO: Clean this up
 				final String eventName;

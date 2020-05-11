@@ -17,15 +17,15 @@
 
 package org.radix.atoms.events;
 
-import com.radixdlt.atommodel.Atom;
 import com.radixdlt.identifiers.EUID;
 
+import com.radixdlt.middleware.SimpleRadixEngineAtom;
 import java.util.Set;
 import java.util.function.Supplier;
 
 public final class AtomStoredEvent extends AtomEventWithDestinations {
 
-	public AtomStoredEvent(Atom atom, Supplier<Set<EUID>> destinationsSupplier) {
+	public AtomStoredEvent(SimpleRadixEngineAtom atom, Supplier<Set<EUID>> destinationsSupplier) {
 		super(atom, destinationsSupplier);
 	}
 }

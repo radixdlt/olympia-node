@@ -111,7 +111,7 @@ public class AtomEventObserver {
 		if (atomEvent instanceof AtomStoredEvent) {
 			if (atomQuery.filter(atomEvent.getDestinations())) {
 				final AtomEventType atomEventType = atomEvent instanceof AtomStoredEvent ? AtomEventType.STORE : AtomEventType.DELETE;
-				final AtomEventDto atomEventDto = new AtomEventDto(atomEventType, atomEvent.getAtom());
+				final AtomEventDto atomEventDto = new AtomEventDto(atomEventType, atomEvent.getAtom().getAtom());
 				synchronized (this) {
 					this.currentRunnable = currentRunnable.thenRunAsync(() -> update(atomEventDto), executorService);
 				}

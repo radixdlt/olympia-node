@@ -57,8 +57,8 @@ public class EngineAtomEventListener implements AtomEventListener<SimpleRadixEng
 	@Override
 	public void onStateStore(SimpleRadixEngineAtom atom) {
 		try {
-			EngineAtomIndices engineAtomIndices = EngineAtomIndices.from(atom.getAtom(), serialization);
-			Events.getInstance().broadcastWithException(new AtomStoredEvent(atom.getAtom(), () ->
+			EngineAtomIndices engineAtomIndices = EngineAtomIndices.from(atom, serialization);
+			Events.getInstance().broadcastWithException(new AtomStoredEvent(atom, () ->
 				engineAtomIndices.getDuplicateIndices().stream()
 					.filter(e -> e.getPrefix() == EngineAtomIndices.IndexType.DESTINATION.getValue())
 					.map(e -> EngineAtomIndices.toEUID(e.asKey()))
