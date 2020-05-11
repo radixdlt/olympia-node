@@ -20,6 +20,9 @@ package com.radixdlt.middleware;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atommodel.Atom;
+import com.radixdlt.constraintmachine.CMInstruction;
+import com.radixdlt.constraintmachine.CMMicroInstruction;
+import com.radixdlt.crypto.Hash;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.universe.Universe;
@@ -51,7 +54,14 @@ public class AtomCheckHookTest {
 					ecdsaSignature), ImmutableMap.of("timestamp", "0")
 		);
 
-		assertThat(atomCheckHook.hook(atom).isSuccess()).isTrue();
+		SimpleRadixEngineAtom reAtom = mock(SimpleRadixEngineAtom.class);
+		CMInstruction cmInstruction = new CMInstruction(
+			ImmutableList.of(mock(CMMicroInstruction.class)), Hash.random(), ImmutableMap.of()
+		);
+		when(reAtom.getAtom()).thenReturn(atom);
+		when(reAtom.getCMInstruction()).thenReturn(cmInstruction);
+
+		assertThat(atomCheckHook.hook(reAtom).isSuccess()).isTrue();
 	}
 
 	@Test
@@ -72,8 +82,14 @@ public class AtomCheckHookTest {
 			ImmutableMap.of(mock(EUID.class),
 					ecdsaSignature), ImmutableMap.of("timestamp", "0")
 		);
+		SimpleRadixEngineAtom reAtom = mock(SimpleRadixEngineAtom.class);
+		CMInstruction cmInstruction = new CMInstruction(
+			ImmutableList.of(), Hash.random(), ImmutableMap.of()
+		);
+		when(reAtom.getAtom()).thenReturn(atom);
+		when(reAtom.getCMInstruction()).thenReturn(cmInstruction);
 
-		assertThat(atomCheckHook.hook(atom).getErrorMessage())
+		assertThat(atomCheckHook.hook(reAtom).getErrorMessage())
 			.contains("instructions");
 	}
 
@@ -95,8 +111,14 @@ public class AtomCheckHookTest {
 			ImmutableMap.of(mock(EUID.class),
 					ecdsaSignature), ImmutableMap.of()
 		);
+		SimpleRadixEngineAtom reAtom = mock(SimpleRadixEngineAtom.class);
+		CMInstruction cmInstruction = new CMInstruction(
+			ImmutableList.of(mock(CMMicroInstruction.class)), Hash.random(), ImmutableMap.of()
+		);
+		when(reAtom.getAtom()).thenReturn(atom);
+		when(reAtom.getCMInstruction()).thenReturn(cmInstruction);
 
-		assertThat(atomCheckHook.hook(atom).getErrorMessage())
+		assertThat(atomCheckHook.hook(reAtom).getErrorMessage())
 			.contains("metadata does not contain");
 	}
 
@@ -118,8 +140,14 @@ public class AtomCheckHookTest {
 			ImmutableMap.of(mock(EUID.class),
 					ecdsaSignature), ImmutableMap.of("timestamp", "badinput")
 		);
+		SimpleRadixEngineAtom reAtom = mock(SimpleRadixEngineAtom.class);
+		CMInstruction cmInstruction = new CMInstruction(
+			ImmutableList.of(mock(CMMicroInstruction.class)), Hash.random(), ImmutableMap.of()
+		);
+		when(reAtom.getAtom()).thenReturn(atom);
+		when(reAtom.getCMInstruction()).thenReturn(cmInstruction);
 
-		assertThat(atomCheckHook.hook(atom).getErrorMessage())
+		assertThat(atomCheckHook.hook(reAtom).getErrorMessage())
 			.contains("invalid timestamp");
 	}
 }

@@ -18,8 +18,7 @@
 package com.radixdlt.engine;
 
 import com.radixdlt.atomos.Result;
-import com.radixdlt.atommodel.Atom;
 
-public interface CMSuccessHook {
-	Result hook(Atom atom);
+public interface CMSuccessHook<T extends RadixEngineAtom> {
+	Result hook(T atom);
 }

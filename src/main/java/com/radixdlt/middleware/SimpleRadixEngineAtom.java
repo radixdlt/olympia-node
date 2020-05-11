@@ -20,6 +20,7 @@ package com.radixdlt.middleware;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.engine.RadixEngineAtom;
+import com.radixdlt.identifiers.AID;
 
 public final class SimpleRadixEngineAtom implements RadixEngineAtom {
 	private final CMInstruction	cmInstruction;
@@ -37,5 +38,10 @@ public final class SimpleRadixEngineAtom implements RadixEngineAtom {
 
 	public Atom getAtom() {
 		return atom;
+	}
+
+	@Override
+	public AID getAID() {
+		return atom.getAID();
 	}
 }
