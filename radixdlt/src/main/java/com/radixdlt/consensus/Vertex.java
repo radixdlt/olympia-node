@@ -20,12 +20,9 @@ package com.radixdlt.consensus;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Suppliers;
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.atommodel.Atom;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.middleware2.LedgerAtom;
-import com.radixdlt.middleware2.LedgerAtom.CMAtomConversionException;
 import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
@@ -51,7 +48,10 @@ public final class Vertex {
 	private final QuorumCertificate qc;
 
 	private View view;
-	private LedgerAtom reAtom;
+
+	@JsonProperty("atom")
+	@DsonOutput(Output.ALL)
+	private final LedgerAtom atom;
 
 	private final transient Supplier<Hash> cachedHash = Suppliers.memoize(this::doGetHash);
 
@@ -59,34 +59,13 @@ public final class Vertex {
 		// Serializer only
 		this.qc = null;
 		this.view = null;
-		this.reAtom = null;
+		this.atom = null;
 	}
 
-	public Vertex(QuorumCertificate qc, View view, LedgerAtom reAtom) {
+	public Vertex(QuorumCertificate qc, View view, LedgerAtom atom) {
 		this.qc = qc;
 		this.view = Objects.requireNonNull(view);
-		this.reAtom = reAtom;
-	}
-
-
-	@JsonProperty("atom")
-	@DsonOutput(Output.ALL)
-	private byte[] getSerializerAtom() {
-		try {
-			return this.reAtom == null ? null : DefaultSerialization.getInstance().toDson(reAtom.getRaw(), Output.WIRE);
-		} catch (SerializationException e) {
-			throw new IllegalStateException("Failed to serialize " + this.reAtom);
-		}
-	}
-
-	@JsonProperty("atom")
-	private void setSerializerAtom(byte[] atomBytes) {
-		try {
-			Atom rawAtom = atomBytes == null ? null : DefaultSerialization.getInstance().fromDson(atomBytes, Atom.class);
-			this.reAtom = rawAtom == null ? null : LedgerAtom.convert(rawAtom);
-		} catch (SerializationException | CMAtomConversionException e) {
-			throw new IllegalStateException("Failed to deserialize atomBytes");
-		}
+		this.atom = atom;
 	}
 
 	public static Vertex createGenesis(LedgerAtom atom) {
@@ -142,9 +121,8 @@ public final class Vertex {
 		return view;
 	}
 
-	// TODO: This is a hack. Fix when we can serialize SimpleRadixEngineAtom
 	public LedgerAtom getAtom() {
-		return reAtom;
+		return atom;
 	}
 
 	public boolean isGenesis() {
@@ -170,12 +148,12 @@ public final class Vertex {
 
 	@Override
 	public String toString() {
-		return String.format("Vertex{view=%s, qc=%s, atom=%s}", view, qc, reAtom == null ? null : reAtom.getAID());
+		return String.format("Vertex{view=%s, qc=%s, atom=%s}", view, qc, atom == null ? null : atom.getAID());
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(qc, view, reAtom == null ? null : reAtom.getAID());
+		return Objects.hash(qc, view, atom);
 	}
 
 	@Override
@@ -186,7 +164,7 @@ public final class Vertex {
 
 		Vertex v = (Vertex) o;
 		return Objects.equals(v.view, view)
-			&& Objects.equals(v.reAtom == null ? null : v.reAtom.getAID(), this.reAtom == null ? null : this.reAtom.getAID())
+			&& Objects.equals(v.atom, atom)
 			&& Objects.equals(v.qc, this.qc);
 	}
 }

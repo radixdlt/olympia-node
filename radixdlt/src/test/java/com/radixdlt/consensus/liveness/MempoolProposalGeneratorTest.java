@@ -24,7 +24,6 @@ import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.radixdlt.atommodel.Atom;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
@@ -39,9 +38,7 @@ public class MempoolProposalGeneratorTest {
 	@Test
 	public void when_vertex_store_contains_vertices_with_no_atom__then_generate_proposal_should_still_work() {
 		Mempool mempool = mock(Mempool.class);
-		Atom atom = mock(Atom.class);
 		LedgerAtom reAtom = mock(LedgerAtom.class);
-		when(reAtom.getRaw()).thenReturn(atom);
 		when(mempool.getAtoms(anyInt(), anySet())).thenReturn(Collections.singletonList(reAtom));
 
 		VertexStore vertexStore = mock(VertexStore.class);

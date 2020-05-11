@@ -22,7 +22,7 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.radixdlt.middleware2.LedgerAtom;
-import com.radixdlt.middleware2.LedgerAtom.CMAtomConversionException;
+import com.radixdlt.middleware2.LedgerAtom.LedgerAtomConversionException;
 import com.radixdlt.middleware2.converters.AtomConversionException;
 import com.radixdlt.middleware2.converters.AtomToLedgerAtomConverter;
 
@@ -40,7 +40,7 @@ public class MempoolModule extends AbstractModule {
 		return atom -> {
 			try {
 				return LedgerAtom.convert(atom);
-			} catch (CMAtomConversionException e) {
+			} catch (LedgerAtomConversionException e) {
 				throw new AtomConversionException(e.getDataPointer(), e);
 			}
 		};

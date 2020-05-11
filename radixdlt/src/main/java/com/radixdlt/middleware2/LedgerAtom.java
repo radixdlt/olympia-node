@@ -17,6 +17,7 @@
 
 package com.radixdlt.middleware2;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.ImmutableMap;
@@ -27,28 +28,77 @@ import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.RadixEngineAtom;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.middleware.ParticleGroup;
 import com.radixdlt.middleware.SpunParticle;
+import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializationException;
+import com.radixdlt.serialization.SerializerConstants;
+import com.radixdlt.serialization.SerializerDummy;
+import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.store.SpinStateMachine;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import javax.annotation.concurrent.Immutable;
 
+@Immutable
+@SerializerId2("consensus.ledger_atom")
 public final class LedgerAtom implements RadixEngineAtom {
-	private static final int MAX_ATOM_SIZE = 1024 * 1024;
-	private final transient CMInstruction cmInstruction;
-	private final transient ImmutableMap<String, String> metaData;
-	private final Atom atom;
+	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
+	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
+	SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	private LedgerAtom(Atom atom, CMInstruction cmInstruction) {
-		this.atom = Objects.requireNonNull(atom);
+	private static final int MAX_ATOM_SIZE = 1024 * 1024;
+	private transient AID aid;
+	private transient CMInstruction cmInstruction;
+	private transient ImmutableMap<String, String> metaData;
+	private transient Hash powFeeHash;
+	private byte[] rawAtom;
+
+	private LedgerAtom() {
+		// Serializer only
+	}
+
+	private LedgerAtom(
+		AID aid,
+		CMInstruction cmInstruction,
+		ImmutableMap<String, String> metaData,
+		Hash powFeeHash,
+		byte[] rawAtom
+	) {
+		this.aid = Objects.requireNonNull(aid);
+		this.metaData = Objects.requireNonNull(metaData);
 		this.cmInstruction = Objects.requireNonNull(cmInstruction);
-		this.metaData = ImmutableMap.copyOf(atom.getMetaData());
+		this.powFeeHash = Objects.requireNonNull(powFeeHash);
+		this.rawAtom = Objects.requireNonNull(rawAtom);
+	}
+
+
+	@JsonProperty("raw")
+	@DsonOutput(Output.ALL)
+	private byte[] getSerializerAtom() {
+		return rawAtom;
+	}
+
+	@JsonProperty("raw")
+	private void setSerializerAtom(byte[] atomBytes) {
+		Objects.requireNonNull(atomBytes);
+		try {
+			this.rawAtom = atomBytes;
+			final Atom atom = DefaultSerialization.getInstance().fromDson(atomBytes, Atom.class);
+			this.aid = atom.getAID();
+			this.metaData = ImmutableMap.copyOf(atom.getMetaData());
+			this.cmInstruction = convertToCMInstruction(atom);
+			this.powFeeHash = atom.copyExcludingMetadata(Atom.METADATA_POW_NONCE_KEY).getHash();
+		} catch (SerializationException | LedgerAtomConversionException e) {
+			throw new IllegalStateException("Failed to deserialize atomBytes");
+		}
 	}
 
 	@Override
@@ -58,20 +108,24 @@ public final class LedgerAtom implements RadixEngineAtom {
 
 	@Override
 	public AID getAID() {
-		return atom.getAID();
+		return aid;
 	}
 
 	public ImmutableMap<String, String> getMetaData() {
 		return metaData;
 	}
 
-	public Atom getRaw() {
-		return atom;
+	public byte[] getRaw() {
+		return rawAtom;
+	}
+
+	public Hash getPowFeeHash() {
+		return powFeeHash;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(atom);
+		return Objects.hash(Arrays.hashCode(rawAtom));
 	}
 
 	@Override
@@ -81,12 +135,12 @@ public final class LedgerAtom implements RadixEngineAtom {
 		}
 
 		LedgerAtom other = (LedgerAtom) o;
-		return Objects.equals(other.atom, this.atom);
+		return Arrays.equals(other.rawAtom, this.rawAtom);
 	}
 
-	public static class CMAtomConversionException extends Exception {
+	public static class LedgerAtomConversionException extends Exception {
 		private final DataPointer dataPointer;
-		CMAtomConversionException(DataPointer dataPointer, String error) {
+		LedgerAtomConversionException(DataPointer dataPointer, String error) {
 			super(error);
 			this.dataPointer = dataPointer;
 		}
@@ -96,7 +150,7 @@ public final class LedgerAtom implements RadixEngineAtom {
 		}
 	}
 
-	static ImmutableList<CMMicroInstruction> toCMMicroInstructions(List<ParticleGroup> particleGroups) throws CMAtomConversionException {
+	static ImmutableList<CMMicroInstruction> toCMMicroInstructions(List<ParticleGroup> particleGroups) throws LedgerAtomConversionException {
 		final HashMap<Particle, Spin> spins = new HashMap<>();
 		final ImmutableList.Builder<CMMicroInstruction> microInstructionsBuilder = new Builder<>();
 		for (int i = 0; i < particleGroups.size(); i++) {
@@ -107,7 +161,7 @@ public final class LedgerAtom implements RadixEngineAtom {
 				Particle particle = sp.getParticle();
 
 				if (seen.contains(particle)) {
-					throw new CMAtomConversionException(DataPointer.ofParticle(i, j), "Particle transition must be unique in group");
+					throw new LedgerAtomConversionException(DataPointer.ofParticle(i, j), "Particle transition must be unique in group");
 				}
 				seen.add(particle);
 
@@ -117,7 +171,7 @@ public final class LedgerAtom implements RadixEngineAtom {
 					microInstructionsBuilder.add(CMMicroInstruction.checkSpin(particle, checkSpin));
 				} else {
 					if (!SpinStateMachine.canTransition(currentSpin, sp.getSpin())) {
-						throw new CMAtomConversionException(DataPointer.ofParticle(i, j), "Invalid internal spin");
+						throw new LedgerAtomConversionException(DataPointer.ofParticle(i, j), "Invalid internal spin");
 					}
 				}
 
@@ -130,24 +184,36 @@ public final class LedgerAtom implements RadixEngineAtom {
 		return microInstructionsBuilder.build();
 	}
 
-	public static LedgerAtom convert(Atom atom) throws CMAtomConversionException {
-		final int computedSize;
-		try {
-			computedSize = DefaultSerialization.getInstance().toDson(atom, Output.PERSIST).length;
-		} catch (SerializationException e) {
-			throw new IllegalStateException("Could not compute size", e);
-		}
-		if (computedSize > MAX_ATOM_SIZE) {
-			throw new CMAtomConversionException(DataPointer.ofAtom(), "Atom too big");
-		}
-
+	static CMInstruction convertToCMInstruction(Atom atom) throws LedgerAtomConversionException {
 		final ImmutableList<CMMicroInstruction> microInstructions = toCMMicroInstructions(atom.getParticleGroups());
-		final CMInstruction cmInstruction = new CMInstruction(
+		return new CMInstruction(
 			microInstructions,
 			atom.getHash(),
 			ImmutableMap.copyOf(atom.getSignatures())
 		);
+	}
 
-		return new LedgerAtom(atom, cmInstruction);
+	public static LedgerAtom convert(Atom atom) throws LedgerAtomConversionException {
+		final byte[] rawAtom;
+		try {
+			rawAtom = DefaultSerialization.getInstance().toDson(atom, Output.PERSIST);
+		} catch (SerializationException e) {
+			throw new IllegalStateException("Could not compute size", e);
+		}
+		final int computedSize = rawAtom.length;
+
+		if (computedSize > MAX_ATOM_SIZE) {
+			throw new LedgerAtomConversionException(DataPointer.ofAtom(), "Atom too big");
+		}
+
+		final CMInstruction cmInstruction = convertToCMInstruction(atom);
+
+		return new LedgerAtom(
+			atom.getAID(),
+			cmInstruction,
+			ImmutableMap.copyOf(atom.getMetaData()),
+			atom.copyExcludingMetadata(Atom.METADATA_POW_NONCE_KEY).getHash(),
+			rawAtom
+		);
 	}
 }

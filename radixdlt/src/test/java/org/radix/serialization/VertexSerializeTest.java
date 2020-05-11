@@ -29,7 +29,7 @@ import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.middleware2.LedgerAtom;
-import com.radixdlt.middleware2.LedgerAtom.CMAtomConversionException;
+import com.radixdlt.middleware2.LedgerAtom.LedgerAtomConversionException;
 
 public class VertexSerializeTest extends SerializeObject<Vertex> {
 	public VertexSerializeTest() {
@@ -53,7 +53,7 @@ public class VertexSerializeTest extends SerializeObject<Vertex> {
 		final LedgerAtom reAtom;
 		try {
 			reAtom = LedgerAtom.convert(atom);
-		} catch (CMAtomConversionException e) {
+		} catch (LedgerAtomConversionException e) {
 			throw new IllegalStateException();
 		}
 

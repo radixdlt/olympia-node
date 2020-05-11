@@ -64,24 +64,12 @@ class SubmissionControlImpl implements SubmissionControl {
 	}
 
 	@Override
-	public void submitAtom(Atom atom) throws MempoolFullException, MempoolDuplicateException {
-		final LedgerAtom reAtom;
-		try {
-			reAtom = converter.convert(atom);
-		} catch (AtomConversionException e) {
-			log.info(
-				"Rejecting atom {} due to conversion issues.",
-				atom.getAID()
-			);
-			this.events.broadcast(new AtomExceptionEvent(e, atom.getAID()));
-			return;
-		}
-
-		Optional<CMError> validationError = this.radixEngine.staticCheck(reAtom);
+	public void submitAtom(LedgerAtom atom) throws MempoolFullException, MempoolDuplicateException {
+		Optional<CMError> validationError = this.radixEngine.staticCheck(atom);
 
 		if (validationError.isPresent()) {
 			CMError error = validationError.get();
-			ConstraintMachineValidationException ex = new ConstraintMachineValidationException(reAtom, error.getErrMsg(), error.getDataPointer());
+			ConstraintMachineValidationException ex = new ConstraintMachineValidationException(atom, error.getErrMsg(), error.getDataPointer());
 			log.info(
 				"Rejecting atom {} with constraint machine error '{}' at '{}'.",
 				atom.getAID(),
@@ -90,14 +78,25 @@ class SubmissionControlImpl implements SubmissionControl {
 			);
 			this.events.broadcast(new AtomExceptionEvent(ex, atom.getAID()));
 		} else {
-			this.mempool.addAtom(reAtom);
+			this.mempool.addAtom(atom);
 		}
 	}
 
 	@Override
-	public AID submitAtom(JSONObject atomJson, Consumer<Atom> deserialisationCallback)
-		throws MempoolFullException, MempoolDuplicateException {
-		Atom atom = this.serialization.fromJsonObject(atomJson, Atom.class);
+	public AID submitAtom(JSONObject atomJson, Consumer<LedgerAtom> deserialisationCallback) throws MempoolFullException, MempoolDuplicateException {
+		final Atom rawAtom = this.serialization.fromJsonObject(atomJson, Atom.class);
+		final LedgerAtom atom;
+		try {
+			atom = converter.convert(rawAtom);
+		} catch (AtomConversionException e) {
+			log.info(
+				"Rejecting atom {} due to conversion issues.",
+				rawAtom.getAID()
+			);
+			this.events.broadcast(new AtomExceptionEvent(e, rawAtom.getAID()));
+			return rawAtom.getAID();
+		}
+
 		deserialisationCallback.accept(atom);
 		submitAtom(atom);
 		return atom.getAID();

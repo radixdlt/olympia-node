@@ -52,7 +52,7 @@ import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.middleware2.LedgerAtom;
-import com.radixdlt.middleware2.LedgerAtom.CMAtomConversionException;
+import com.radixdlt.middleware2.LedgerAtom.LedgerAtomConversionException;
 import com.radixdlt.middleware2.network.MessageCentralBFTNetwork;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.properties.RuntimeProperties;
@@ -135,7 +135,7 @@ public class CerberusModule extends AbstractModule {
 		RadixEngine<LedgerAtom> radixEngine,
 		SystemCounters counters,
 		VertexSupplier vertexSupplier
-	) throws CMAtomConversionException {
+	) throws LedgerAtomConversionException {
 		if (universe.getGenesis().size() != 1) {
 			throw new IllegalStateException("Can only support one genesis atom.");
 		}

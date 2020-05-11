@@ -17,10 +17,10 @@
 
 package com.radixdlt.mempool;
 
+import com.radixdlt.middleware2.LedgerAtom;
 import java.util.Objects;
 
 import com.google.inject.Inject;
-import com.radixdlt.atommodel.Atom;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -74,7 +74,7 @@ public final class MempoolReceiver {
 		}
 	}
 
-	private void processAtom(Atom atom) {
+	private void processAtom(LedgerAtom atom) {
 		try {
 			this.submissionControl.submitAtom(atom);
 		} catch (MempoolRejectedException ex) {

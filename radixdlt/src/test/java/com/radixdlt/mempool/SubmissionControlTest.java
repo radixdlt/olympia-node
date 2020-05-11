@@ -68,11 +68,7 @@ public class SubmissionControlTest {
 		doReturn(error).when(this.radixEngine).staticCheck(any());
 		doNothing().when(this.events).broadcast(any());
 
-		Atom atom = throwingMock(Atom.class);
-		doReturn(AID.ZERO).when(atom).getAID();
-		LedgerAtom reAtom = mock(LedgerAtom.class);
-		when(converter.convert(eq(atom))).thenReturn(reAtom);
-
+		LedgerAtom atom = mock(LedgerAtom.class);
 		this.submissionControl.submitAtom(atom);
 
 		verify(this.events, times(1)).broadcast(ArgumentMatchers.any(AtomExceptionEvent.class));
@@ -84,13 +80,11 @@ public class SubmissionControlTest {
 		doReturn(Optional.empty()).when(this.radixEngine).staticCheck(any());
 		doNothing().when(this.mempool).addAtom(any());
 
-		Atom atom = throwingMock(Atom.class);
-		LedgerAtom reAtom = mock(LedgerAtom.class);
-		when(converter.convert(eq(atom))).thenReturn(reAtom);
+		LedgerAtom atom = mock(LedgerAtom.class);
 		this.submissionControl.submitAtom(atom);
 
 		verify(this.events, never()).broadcast(any());
-		verify(this.mempool, times(1)).addAtom(eq(reAtom));
+		verify(this.mempool, times(1)).addAtom(eq(atom));
 	}
 
 	@Test
@@ -113,7 +107,7 @@ public class SubmissionControlTest {
 
 	@Test
 	public void after_json_deserialised__then_callback_is_called_and_aid_returned()
-		throws MempoolFullException, MempoolDuplicateException {
+		throws Exception {
 		doReturn(Optional.empty()).when(this.radixEngine).staticCheck(any());
 		Atom atomMock = throwingMock(Atom.class);
 		doReturn(AID.ZERO).when(atomMock).getAID();
@@ -122,6 +116,9 @@ public class SubmissionControlTest {
 
 		AtomicBoolean called = new AtomicBoolean(false);
 
+		LedgerAtom ledgerAtom = mock(LedgerAtom.class);
+		when(ledgerAtom.getAID()).thenReturn(AID.ZERO);
+		when(converter.convert(eq(atomMock))).thenReturn(ledgerAtom);
 		AID result = this.submissionControl.submitAtom(throwingMock(JSONObject.class), a -> called.set(true));
 
 		assertSame(AID.ZERO, result);

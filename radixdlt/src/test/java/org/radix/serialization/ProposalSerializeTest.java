@@ -32,7 +32,7 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.middleware2.LedgerAtom;
-import com.radixdlt.middleware2.LedgerAtom.CMAtomConversionException;
+import com.radixdlt.middleware2.LedgerAtom.LedgerAtomConversionException;
 
 public class ProposalSerializeTest extends SerializeObject<Proposal> {
 	public ProposalSerializeTest() {
@@ -55,7 +55,7 @@ public class ProposalSerializeTest extends SerializeObject<Proposal> {
 		final LedgerAtom reAtom;
 		try {
 			reAtom = LedgerAtom.convert(atom);
-		} catch (CMAtomConversionException e) {
+		} catch (LedgerAtomConversionException e) {
 			throw new IllegalStateException();
 		}
 		// add a particle to ensure atom is valid and has at least one shard

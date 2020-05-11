@@ -72,7 +72,7 @@ public class AtomCheckHook implements CMSuccessHook<LedgerAtom> {
 					return Result.error("atom fee invalid, metadata contains invalid powNonce: " + powNonceString);
 				}
 
-				final Hash powFeeHash = atom.getRaw().copyExcludingMetadata(Atom.METADATA_POW_NONCE_KEY).getHash();
+				final Hash powFeeHash = atom.getPowFeeHash();
 				POW pow = new POW(universeSupplier.get().getMagic(), powFeeHash, powNonce);
 				Result powResult = checkPow(pow, powFeeHash, DEFAULT_TARGET, universeSupplier.get().getMagic());
 				if (powResult.isError()) {

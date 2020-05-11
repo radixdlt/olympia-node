@@ -184,7 +184,7 @@ public class AtomsService {
 		}
 	}
 
-	private void subscribeToSubmission(SingleAtomListener subscriber, Atom atom) {
+	private void subscribeToSubmission(SingleAtomListener subscriber, LedgerAtom atom) {
 		if (subscriber != null) {
 			this.deleteOnEventSingleAtomObservers.compute(atom.getAID(), (aid, oldSubscribers) -> {
 				List<SingleAtomListener> subscribers = oldSubscribers == null ? new ArrayList<>() : oldSubscribers;

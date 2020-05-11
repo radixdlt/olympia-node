@@ -24,7 +24,6 @@ import java.util.stream.Stream;
 import org.junit.Test;
 import org.radix.universe.system.LocalSystem;
 
-import com.radixdlt.atommodel.Atom;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.mempool.messages.MempoolAtomAddedMessage;
 import com.radixdlt.network.addressbook.AddressBook;
@@ -56,10 +55,8 @@ public class SimpleMempoolNetworkTest {
 		MessageCentral messageCentral = mock(MessageCentral.class);
 		SimpleMempoolNetwork smn = new SimpleMempoolNetwork(system, universe, addressBook, messageCentral);
 
-		LedgerAtom reAtom = mock(LedgerAtom.class);
-		Atom rawAtom = mock(Atom.class);
-		when(reAtom.getRaw()).thenReturn(rawAtom);
-		smn.sendMempoolSubmission(reAtom);
+		LedgerAtom atom = mock(LedgerAtom.class);
+		smn.sendMempoolSubmission(atom);
 
 		verify(messageCentral, times(1)).send(any(), any());
 	}
@@ -82,12 +79,12 @@ public class SimpleMempoolNetworkTest {
 		assertNotNull(callbackRef.get());
 		MessageListener<MempoolAtomAddedMessage> callback = callbackRef.get();
 
-		TestObserver<Atom> obs = TestObserver.create();
+		TestObserver<LedgerAtom> obs = TestObserver.create();
 		smn.atomMessages()
 			.subscribe(obs);
 
 		Peer peer = mock(Peer.class);
-		Atom atom = mock(Atom.class);
+		LedgerAtom atom = mock(LedgerAtom.class);
 		MempoolAtomAddedMessage message = mock(MempoolAtomAddedMessage.class);
 		when(message.atom()).thenReturn(atom);
 		callback.handleMessage(peer, message);
