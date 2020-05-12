@@ -21,7 +21,6 @@ import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.constraintmachine.CMErrorCode;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
@@ -73,31 +72,25 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 		this.atomEventListeners.add(acceptor);
 	}
 
-	public Optional<CMError> staticCheck(T atom) {
-		return constraintMachine.validate(atom.getCMInstruction());
-	}
-
-	public void store(T atom) throws RadixEngineException {
-		Objects.requireNonNull(atom);
-
+	public void staticCheck(T atom) throws RadixEngineException {
 		final Optional<CMError> error = constraintMachine.validate(atom.getCMInstruction());
 		if (error.isPresent()) {
-			log.error("Atom is not valid: {}", error.get());
-			this.atomEventListeners.forEach(acceptor -> acceptor.onCMError(atom, error.get()));
 			throw new RadixEngineException(RadixEngineErrorCode.CM_ERROR, error.get().getDataPointer());
 		}
 
 		for (CMSuccessHook<T> hook : cmSuccessHooks) {
 			Result hookResult = hook.hook(atom);
 			if (hookResult.isError()) {
-				CMError cmError = new CMError(DataPointer.ofAtom(), CMErrorCode.HOOK_ERROR, null, hookResult.getErrorMessage());
-				this.atomEventListeners.forEach(acceptor -> acceptor.onCMError(atom, cmError));
 				throw new RadixEngineException(RadixEngineErrorCode.HOOK_ERROR, DataPointer.ofAtom());
 			}
 		}
+	}
 
+	public void store(T atom) throws RadixEngineException {
+		Objects.requireNonNull(atom);
+
+		this.staticCheck(atom);
 		this.atomEventListeners.forEach(acceptor -> acceptor.onCMSuccess(atom));
-
 		synchronized (stateUpdateEngineLock) {
 			stateCheckAndStore(atom);
 		}
