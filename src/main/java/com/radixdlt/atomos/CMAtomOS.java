@@ -31,8 +31,8 @@ import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.store.CMStores;
 import com.radixdlt.identifiers.EUID;
+import com.radixdlt.store.SpinStateMachine;
 
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -49,6 +49,7 @@ public final class CMAtomOS {
 			throw new UnsupportedOperationException("Should not ever call here");
 		},
 		v -> null,
+		v -> null,
 		true
 	);
 
@@ -56,6 +57,7 @@ public final class CMAtomOS {
 		rri -> Stream.of(((RRIParticle) rri).getRri().getAddress()),
 		rri -> Result.success(),
 		rri -> ((RRIParticle) rri).getRri(),
+		v -> ((RRIParticle) v).getNonce() == 0 ? Spin.UP : null,
 		true
 	);
 
@@ -121,6 +123,31 @@ public final class CMAtomOS {
 	}
 
 	public UnaryOperator<CMStore> buildVirtualLayer() {
-		return base -> CMStores.virtualizeDefault(base, p -> p instanceof RRIParticle && ((RRIParticle) p).getNonce() == 0, Spin.UP);
+		Map<? extends Class<? extends Particle>, Function<Particle, Spin>> virtualizedParticles = particleDefinitions.entrySet().stream()
+			.filter(def -> def.getValue().getVirtualizeSpin() != null)
+			.collect(Collectors.toMap(Map.Entry::getKey, def -> def.getValue().getVirtualizeSpin()));
+		return base -> new CMStore() {
+			@Override
+			public boolean supports(Set<EUID> destinations) {
+				return base.supports(destinations);
+			}
+
+			@Override
+			public Spin getSpin(Particle particle) {
+				Spin curSpin = base.getSpin(particle);
+
+				if (base.supports(particle.getDestinations())) {
+					Function<Particle, Spin> virtualizer = virtualizedParticles.get(particle.getClass());
+					if (virtualizer != null) {
+						Spin virtualizedSpin = virtualizer.apply(particle);
+						if (virtualizedSpin != null && SpinStateMachine.isAfter(virtualizedSpin, curSpin)) {
+							return virtualizedSpin;
+						}
+					}
+				}
+
+				return curSpin;
+			}
+		};
 	}
 }

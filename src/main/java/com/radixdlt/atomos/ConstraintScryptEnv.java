@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.atommodel.routines.CreateCombinedTransitionRoutine;
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.constraintmachine.TransitionToken;
 import com.radixdlt.constraintmachine.UsedCompute;
 import com.radixdlt.constraintmachine.UsedData;
@@ -105,6 +106,16 @@ final class ConstraintScryptEnv implements SysCalls {
 		registerParticleMultipleAddresses(particleClass, mapper, staticCheck, null);
 	}
 
+	@Override
+	public <T extends Particle> void registerParticleMultipleAddresses(
+		Class<T> particleClass,
+		Function<T, Set<RadixAddress>> mapper,
+		Function<T, Result> staticCheck,
+		Function<T, RRI> rriMapper
+	) {
+		registerParticleMultipleAddresses(particleClass, mapper, staticCheck, rriMapper, null);
+	}
+
 	private <T extends Particle> boolean particleDefinitionExists(Class<T> particleClass) {
 		return particleDefinitions.containsKey(particleClass) || scryptParticleDefinitions.containsKey(particleClass);
 	}
@@ -131,7 +142,8 @@ final class ConstraintScryptEnv implements SysCalls {
 		Class<T> particleClass,
 		Function<T, Set<RadixAddress>> mapper,
 		Function<T, Result> staticCheck,
-		Function<T, RRI> rriMapper
+		Function<T, RRI> rriMapper,
+		Function<T, Spin> virtualizeSpin
 	) {
 		if (particleDefinitionExists(particleClass)) {
 			throw new IllegalStateException("Particle " + particleClass + " is already registered");
@@ -167,6 +179,7 @@ final class ConstraintScryptEnv implements SysCalls {
 				return staticCheck.apply((T) p);
 			},
 			rriMapper == null ? null : p -> rriMapper.apply((T) p),
+			virtualizeSpin == null ? null : p -> virtualizeSpin.apply((T) p),
 			false
 		));
 	}

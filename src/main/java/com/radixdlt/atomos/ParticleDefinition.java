@@ -18,6 +18,7 @@
 package com.radixdlt.atomos;
 
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 
@@ -32,17 +33,21 @@ class ParticleDefinition<T extends Particle> {
 	private final Function<T, Stream<RadixAddress>> addressMapper;
 	private final Function<T, Result> staticValidation;
 	private final Function<T, RRI> rriMapper;
+	private final Function<T, Spin> virtualizeSpin;
 	private final boolean allowsTransitionsFromOutsideScrypts;
 
+	// TODO convert to builder to simplify API/reduce number of method variations
 	ParticleDefinition(
 		Function<T, Stream<RadixAddress>> addressMapper,
 		Function<T, Result> staticValidation,
 		Function<T, RRI> rriMapper,
+		Function<T, Spin> virtualizeSpin,
 		boolean allowsTransitionsFromOutsideScrypts
 	) {
 		this.staticValidation = staticValidation;
 		this.addressMapper = addressMapper;
 		this.rriMapper = rriMapper;
+		this.virtualizeSpin = virtualizeSpin;
 		this.allowsTransitionsFromOutsideScrypts = allowsTransitionsFromOutsideScrypts;
 	}
 
@@ -56,6 +61,10 @@ class ParticleDefinition<T extends Particle> {
 
 	Function<T, RRI> getRriMapper() {
 		return rriMapper;
+	}
+
+	Function<T, Spin> getVirtualizeSpin() {
+		return virtualizeSpin;
 	}
 
 	public boolean allowsTransitionsFromOutsideScrypts() {

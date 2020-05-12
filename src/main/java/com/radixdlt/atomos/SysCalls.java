@@ -18,6 +18,7 @@
 package com.radixdlt.atomos;
 
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 
@@ -77,6 +78,20 @@ public interface SysCalls extends RoutineCalls {
 		Function<T, Set<RadixAddress>> mapper,
 		Function<T, Result> staticCheck,
 		Function<T, RRI> rriMapper
+	);
+
+	/**
+	 * Registers a Particle with a given identifier.
+	 * This is required for all other system calls using the particle.
+	 * @param particleClass The particle class
+	 * @param mapper Mapping to the destinations a particle will be stored in
+	 */
+	<T extends Particle> void registerParticleMultipleAddresses(
+		Class<T> particleClass,
+		Function<T, Set<RadixAddress>> mapper,
+		Function<T, Result> staticCheck,
+		Function<T, RRI> rriMapper,
+		Function<T, Spin> virtualizeSpin
 	);
 
 
