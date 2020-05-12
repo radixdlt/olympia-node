@@ -31,7 +31,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Manages the BFT Vertex chain.
@@ -48,7 +47,8 @@ public final class VertexStore {
 	// Should never be null
 	private Vertex root;
 
-	private AtomicReference<QuorumCertificate> highestQC = new AtomicReference<>();
+	// Should never be null
+	private volatile QuorumCertificate highestQC;
 
 	// TODO: Cleanup this interface
 	public VertexStore(
@@ -59,7 +59,7 @@ public final class VertexStore {
 	) {
 		this.engine = Objects.requireNonNull(engine);
 		this.counters = Objects.requireNonNull(counters);
-		this.highestQC.set(Objects.requireNonNull(rootQC));
+		this.highestQC = Objects.requireNonNull(rootQC);
 		try {
 			this.engine.store(genesisVertex.getAtom());
 		} catch (RadixEngineException e) {
@@ -81,8 +81,8 @@ public final class VertexStore {
 	}
 
 	public void addQC(QuorumCertificate qc) {
-		if (highestQC.get().getView().compareTo(qc.getView()) < 0) {
-			highestQC.set(qc);
+		if (highestQC.getView().compareTo(qc.getView()) < 0) {
+			highestQC = qc;
 		}
 	}
 
@@ -163,7 +163,7 @@ public final class VertexStore {
 	 * @return the highest quorum certificate
 	 */
 	public QuorumCertificate getHighestQC() {
-		return this.highestQC.get();
+		return this.highestQC;
 	}
 
 	/**
