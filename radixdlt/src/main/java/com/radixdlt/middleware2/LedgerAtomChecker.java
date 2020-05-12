@@ -28,14 +28,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
-public class AtomCheckHook implements CMSuccessHook<LedgerAtom> {
+public class LedgerAtomChecker implements CMSuccessHook<LedgerAtom> {
 	private final boolean skipAtomFeeCheck;
 	private final Supplier<Universe> universeSupplier;
 	private final LongSupplier timestampSupplier;
 	private static final Hash DEFAULT_TARGET = new Hash("0000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
 	private final int maximumDrift;
 
-	public AtomCheckHook(
+	public LedgerAtomChecker(
 		Supplier<Universe> universeSupplier,
 		LongSupplier timestampSupplier,
 		boolean skipAtomFeeCheck,

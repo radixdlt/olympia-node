@@ -93,7 +93,7 @@ public class MiddlewareModule extends AbstractModule {
 		final boolean skipAtomFeeCheck = properties.get("debug.nopow", false);
 
 		radixEngine.addCMSuccessHook(
-			new AtomCheckHook(
+			new LedgerAtomChecker(
 				() -> universe,
 				Time::currentTimestamp,
 				skipAtomFeeCheck,
