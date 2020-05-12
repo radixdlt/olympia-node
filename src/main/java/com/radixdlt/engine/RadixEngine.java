@@ -31,21 +31,14 @@ import com.radixdlt.store.CMStores;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.SpinStateMachine;
 
-import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.UnaryOperator;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Top Level Class for the Radix Engine, a real-time, shardable, distributed state machine.
  */
 public final class RadixEngine<T extends RadixEngineAtom> {
-
-	private static final Logger log = LogManager.getLogger(RadixEngine.class);
-
 	private final ConstraintMachine constraintMachine;
 	private final CMStore virtualizedCMStore;
 	private final EngineStore<T> engineStore;
@@ -87,8 +80,6 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 	}
 
 	public void store(T atom) throws RadixEngineException {
-		Objects.requireNonNull(atom);
-
 		this.staticCheck(atom);
 		this.atomEventListeners.forEach(acceptor -> acceptor.onCMSuccess(atom));
 		synchronized (stateUpdateEngineLock) {

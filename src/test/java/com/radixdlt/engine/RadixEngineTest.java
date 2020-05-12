@@ -52,7 +52,7 @@ public class RadixEngineTest {
 	public void when_validating_an_atom_with_particle_which_conflicts_with_virtual_state__an_internal_spin_conflict_is_returned() {
 		ConstraintMachine constraintMachine = mock(ConstraintMachine.class);
 		when(constraintMachine.validate(any())).thenReturn(Optional.empty());
-		EngineStore engineStore = mock(EngineStore.class);
+		EngineStore<RadixEngineAtom> engineStore = mock(EngineStore.class);
 		when(engineStore.supports(any())).thenReturn(true);
 		RadixEngine<RadixEngineAtom> engine = new RadixEngine<>(
 			constraintMachine,

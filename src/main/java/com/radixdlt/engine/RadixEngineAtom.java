@@ -21,7 +21,7 @@ import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.identifiers.AID;
 
 /**
- * Radix Engine interface for retrieving a sequence of instruction to
+ * Radix Engine interface for retrieving a sequence of instructions to
  * verify and store in the engine.
  */
 public interface RadixEngineAtom {
