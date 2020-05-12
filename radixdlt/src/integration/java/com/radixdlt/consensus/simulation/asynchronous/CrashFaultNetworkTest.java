@@ -240,7 +240,7 @@ public class CrashFaultNetworkTest {
 			+ numNodes * (maxLatency * 4 + bftNetwork.getPacemakerTimeout()); // four rounds plus timeout in bad case
 		// account for any inaccuracies, execution time, scheduling inefficiencies..
 		// the tolerance is high since we're only interested in qualitative progress in this test
-		double tolerance = 2.0;
+		double tolerance = 3.0;
 		int minimumLatencyPerRound = (int) (worstCaseLatencyPerRound * tolerance);
 		AtomicReference<View> highestQCView = new AtomicReference<>(View.genesis());
 		Observable<Object> progressCheck = Observable.interval(minimumLatencyPerRound, minimumLatencyPerRound, TimeUnit.MILLISECONDS)
