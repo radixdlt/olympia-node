@@ -18,13 +18,14 @@
 package com.radixdlt.engine;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.atommodel.Atom;
+import com.google.common.collect.ImmutableMap;
+import com.radixdlt.constraintmachine.CMInstruction;
+import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.middleware.ParticleGroup;
-import com.radixdlt.middleware.SpunParticle;
+import com.radixdlt.crypto.Hash;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.store.CMStores;
 import com.radixdlt.store.EngineStore;
@@ -35,7 +36,6 @@ import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 public class RadixEngineTest {
@@ -52,16 +52,17 @@ public class RadixEngineTest {
 	public void when_validating_an_atom_with_particle_which_conflicts_with_virtual_state__an_internal_spin_conflict_is_returned() {
 		ConstraintMachine constraintMachine = mock(ConstraintMachine.class);
 		when(constraintMachine.validate(any())).thenReturn(Optional.empty());
-		EngineStore engineStore = mock(EngineStore.class);
+		EngineStore<RadixEngineAtom> engineStore = mock(EngineStore.class);
 		when(engineStore.supports(any())).thenReturn(true);
-		RadixEngine engine = new RadixEngine(
+		RadixEngine<RadixEngineAtom> engine = new RadixEngine<>(
 			constraintMachine,
 			state -> CMStores.virtualizeDefault(state, p -> true, Spin.DOWN),
 			engineStore
 		);
 
-		Atom atom = spy(new Atom());
-		when(atom.getParticleGroups()).thenReturn(ImmutableList.of(ParticleGroup.of(SpunParticle.of(mock(IndexedParticle.class), Spin.UP))));
+		RadixEngineAtom atom = mock(RadixEngineAtom.class);
+		ImmutableList<CMMicroInstruction> insts = ImmutableList.of(CMMicroInstruction.checkSpin(mock(IndexedParticle.class), Spin.UP));
+		when(atom.getCMInstruction()).thenReturn(new CMInstruction(insts, Hash.random(), ImmutableMap.of()));
 		Assertions.assertThatThrownBy(() -> engine.store(atom))
 			.isInstanceOf(RadixEngineException.class)
 			.matches(e -> ((RadixEngineException) e).getDataPointer().equals(DataPointer.ofParticle(0, 0)), "points to 1st particle")

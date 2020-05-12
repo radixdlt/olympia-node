@@ -18,7 +18,6 @@
 package com.radixdlt.engine;
 
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.atommodel.Atom;
 import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.Particle;
@@ -26,20 +25,20 @@ import com.radixdlt.constraintmachine.Particle;
 /**
  * Listener for atom events as they go through the Radix Engine pipeline.
  */
-public interface AtomEventListener {
-	default void onCMSuccess(Atom atom) {
+public interface AtomEventListener<T extends RadixEngineAtom> {
+	default void onCMSuccess(T atom) {
 	}
 
-	default void onCMError(Atom atom, CMError error) {
+	default void onCMError(T atom, CMError error) {
 	}
 
-	default void onStateStore(Atom atom) {
+	default void onStateStore(T atom) {
 	}
 
-	default void onVirtualStateConflict(Atom atom, DataPointer issueParticle) {
+	default void onVirtualStateConflict(T atom, DataPointer issueParticle) {
 	}
 
-	default void onStateConflict(Atom atom, DataPointer issueParticle, Atom conflictingAtom) {
+	default void onStateConflict(T atom, DataPointer issueParticle, T conflictingAtom) {
 	}
 
 	default void onStateMissingDependency(AID atomId, Particle particle) {
