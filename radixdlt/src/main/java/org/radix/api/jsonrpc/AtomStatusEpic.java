@@ -18,10 +18,12 @@
 package org.radix.api.jsonrpc;
 
 import com.radixdlt.engine.AtomStatus;
+import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
+import com.radixdlt.middleware2.converters.AtomConversionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -97,7 +99,23 @@ public class AtomStatusEpic {
 
 			@Override
 			public void onError(Throwable e) {
-				if (e instanceof ConstraintMachineValidationException) {
+				if (e instanceof AtomConversionException) {
+					AtomConversionException conversionException = (AtomConversionException) e;
+					String pointerToIssue = conversionException.getPointerToIssue();
+
+					JSONObject data = new JSONObject();
+					data.put("message", e.getMessage());
+					data.put("pointerToIssue", pointerToIssue);
+					sendAtomSubmissionState.accept(AtomStatus.EVICTED_FAILED_CM_VERIFICATION, data);
+				} else if (e instanceof RadixEngineException) {
+					RadixEngineException reException = (RadixEngineException) e;
+					String pointerToIssue = reException.getDataPointer().toString();
+
+					JSONObject data = new JSONObject();
+					data.put("message", reException.getErrorCode().toString());
+					data.put("pointerToIssue", pointerToIssue);
+					sendAtomSubmissionState.accept(AtomStatus.EVICTED_FAILED_CM_VERIFICATION, data);
+				} else if (e instanceof ConstraintMachineValidationException) {
 					ConstraintMachineValidationException cmException = (ConstraintMachineValidationException) e;
 					String pointerToIssue = cmException.getPointerToIssue();
 

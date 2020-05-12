@@ -53,6 +53,10 @@ public final class ConsensusRunner {
 			this.eventObject = eventObject;
 		}
 
+		public EventType getEventType() {
+			return eventType;
+		}
+
 		@Override
 		public String toString() {
 			return eventType + ": " + eventObject;

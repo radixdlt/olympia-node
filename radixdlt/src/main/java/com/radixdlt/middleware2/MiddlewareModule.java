@@ -21,6 +21,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
+import com.google.inject.TypeLiteral;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atommodel.message.MessageParticleConstraintScrypt;
 import com.radixdlt.atommodel.tokens.TokensConstraintScrypt;
@@ -28,8 +29,8 @@ import com.radixdlt.atommodel.unique.UniqueParticleConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.ConstraintMachine;
+import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.middleware.AtomCheckHook;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.middleware2.processing.EngineAtomEventListener;
 import com.radixdlt.middleware2.store.LedgerEngineStore;
@@ -43,6 +44,8 @@ import org.radix.time.Time;
 import java.util.function.UnaryOperator;
 
 public class MiddlewareModule extends AbstractModule {
+	private static final Hash DEFAULT_FEE_TARGET = new Hash("0000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
+
 	@Provides
 	@Singleton
 	private CMAtomOS buildCMAtomOS(Universe universe) {
@@ -62,11 +65,10 @@ public class MiddlewareModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private ConstraintMachine buildConstraintMachine(CMAtomOS os) {
-		final ConstraintMachine constraintMachine = new ConstraintMachine.Builder()
-				.setParticleTransitionProcedures(os.buildTransitionProcedures())
-				.setParticleStaticCheck(os.buildParticleStaticCheck())
-				.build();
-		return constraintMachine;
+		return new ConstraintMachine.Builder()
+			.setParticleTransitionProcedures(os.buildTransitionProcedures())
+			.setParticleStaticCheck(os.buildParticleStaticCheck())
+			.build();
 	}
 
 	@Provides
@@ -76,31 +78,32 @@ public class MiddlewareModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private RadixEngine getRadixEngine(
+	private RadixEngine<LedgerAtom> getRadixEngine(
 			ConstraintMachine constraintMachine,
 			UnaryOperator<CMStore> virtualStoreLayer,
-			EngineStore engineStore,
+			EngineStore<LedgerAtom> engineStore,
 			Serialization serialization,
 			RuntimeProperties properties,
 			Universe universe
 	) {
-		RadixEngine radixEngine = new RadixEngine(
+		final boolean skipAtomFeeCheck = properties.get("debug.nopow", false);
+		final PowFeeComputer powFeeComputer = new PowFeeComputer(() -> universe);
+		final LedgerAtomChecker ledgerAtomChecker =
+			new LedgerAtomChecker(
+				() -> universe,
+				Time::currentTimestamp,
+				powFeeComputer,
+				DEFAULT_FEE_TARGET,
+				skipAtomFeeCheck,
+				Time.MAXIMUM_DRIFT
+			);
+
+		RadixEngine<LedgerAtom> radixEngine = new RadixEngine<>(
 			constraintMachine,
 			virtualStoreLayer,
 			engineStore
 		);
-
-		final boolean skipAtomFeeCheck = properties.get("debug.nopow", false);
-
-		radixEngine.addCMSuccessHook(
-				new AtomCheckHook(
-						() -> universe,
-						Time::currentTimestamp,
-						skipAtomFeeCheck,
-						Time.MAXIMUM_DRIFT
-				)
-		);
-
+		radixEngine.addCMSuccessHook(ledgerAtomChecker);
 		radixEngine.addAtomEventListener(new EngineAtomEventListener(serialization));
 
 		return radixEngine;
@@ -108,7 +111,7 @@ public class MiddlewareModule extends AbstractModule {
 
 	@Override
 	protected void configure() {
-		bind(EngineStore.class).to(LedgerEngineStore.class).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<EngineStore<LedgerAtom>>() { }).to(LedgerEngineStore.class).in(Scopes.SINGLETON);
 		bind(AtomToBinaryConverter.class).toInstance(new AtomToBinaryConverter(DefaultSerialization.getInstance()));
 	}
 }

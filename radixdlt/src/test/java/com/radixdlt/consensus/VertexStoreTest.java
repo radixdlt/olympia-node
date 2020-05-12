@@ -24,12 +24,12 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.radixdlt.atommodel.Atom;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.middleware2.LedgerAtom;
 import io.reactivex.rxjava3.observers.TestObserver;
 import java.util.Arrays;
 import org.junit.Before;
@@ -41,12 +41,12 @@ public class VertexStoreTest {
 	private VertexMetadata genesisVertexMetadata;
 	private QuorumCertificate rootQC;
 	private VertexStore vertexStore;
-	private RadixEngine radixEngine;
+	private RadixEngine<LedgerAtom> radixEngine;
 
 	@Before
 	public void setUp() {
 		this.genesisVertex = Vertex.createGenesis(null);
-		this.genesisVertexMetadata = new VertexMetadata(View.genesis(), genesisVertex.getId());
+		this.genesisVertexMetadata = new VertexMetadata(View.genesis(), genesisVertex.getId(), 0);
 		VoteData voteData = new VoteData(genesisVertexMetadata, null);
 		this.rootQC = new QuorumCertificate(voteData, new ECDSASignatures());
 		this.radixEngine = mock(RadixEngine.class);
@@ -88,10 +88,10 @@ public class VertexStoreTest {
 
 	@Test
 	public void when_inserting_vertex_with_missing_parent__then_missing_parent_exception_is_thrown() {
-		VertexMetadata vertexMetadata = new VertexMetadata(View.genesis(), Hash.ZERO_HASH);
+		VertexMetadata vertexMetadata = new VertexMetadata(View.genesis(), Hash.ZERO_HASH, 0);
 		VoteData voteData = new VoteData(vertexMetadata, null);
 		QuorumCertificate qc = new QuorumCertificate(voteData, new ECDSASignatures());
-		Vertex nextVertex = Vertex.createVertex(qc, View.of(1), mock(Atom.class));
+		Vertex nextVertex = Vertex.createVertex(qc, View.of(1), mock(LedgerAtom.class));
 		assertThatThrownBy(() -> vertexStore.insertVertex(nextVertex))
 			.isInstanceOf(MissingParentException.class);
 	}
@@ -101,7 +101,7 @@ public class VertexStoreTest {
 	public void when_inserting_vertex_which_fails_to_pass_re__then_vertex_insertion_exception_is_thrown() throws Exception {
 		doThrow(mock(RadixEngineException.class)).when(radixEngine).store(any());
 
-		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), mock(Atom.class));
+		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), mock(LedgerAtom.class));
 		assertThatThrownBy(() -> vertexStore.insertVertex(nextVertex))
 			.isInstanceOf(VertexInsertionException.class);
 	}
@@ -115,7 +115,7 @@ public class VertexStoreTest {
 	@Test
 	public void when_insert_two_vertices__then_get_path_from_root_should_return_the_two_vertices() throws Exception {
 		Vertex nextVertex0 = Vertex.createVertex(rootQC, View.of(1), null);
-		VertexMetadata vertexMetadata = new VertexMetadata(View.of(1), nextVertex0.getId());
+		VertexMetadata vertexMetadata = new VertexMetadata(View.of(1), nextVertex0.getId(), 1);
 		VoteData voteData = new VoteData(vertexMetadata, rootQC.getProposed());
 		QuorumCertificate qc = new QuorumCertificate(voteData, new ECDSASignatures());
 		Vertex nextVertex1 = Vertex.createVertex(qc, View.of(2), null);

@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,16 +15,20 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.mempool;
+package com.radixdlt.middleware2.converters;
 
-import com.radixdlt.middleware2.LedgerAtom;
+import com.radixdlt.constraintmachine.DataPointer;
+import java.util.Objects;
 
-/**
- * Exception thrown when an attempt to add new items would
- * exceed the mempool's maximum capacity.
- */
-public class MempoolDuplicateException extends MempoolRejectedException {
-	public MempoolDuplicateException(LedgerAtom atom, String message) {
-		super(atom, message);
+public final class AtomConversionException extends Exception {
+	private final DataPointer dataPointer;
+
+	public AtomConversionException(DataPointer dataPointer, Exception cause) {
+		super(cause);
+		this.dataPointer = Objects.requireNonNull(dataPointer);
+	}
+
+	public String getPointerToIssue() {
+		return dataPointer.toString();
 	}
 }

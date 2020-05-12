@@ -28,6 +28,8 @@ import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.Hash;
+import com.radixdlt.middleware2.LedgerAtom;
+import com.radixdlt.middleware2.LedgerAtom.LedgerAtomConversionException;
 
 public class VertexSerializeTest extends SerializeObject<Vertex> {
 	public VertexSerializeTest() {
@@ -38,8 +40,8 @@ public class VertexSerializeTest extends SerializeObject<Vertex> {
 		View view = View.of(1234567891L);
 		Hash id = Hash.random();
 
-		VertexMetadata vertexMetadata = new VertexMetadata(view, id);
-		VertexMetadata parent = new VertexMetadata(View.of(1234567890L), Hash.random());
+		VertexMetadata vertexMetadata = new VertexMetadata(view, id, 1);
+		VertexMetadata parent = new VertexMetadata(View.of(1234567890L), Hash.random(), 0);
 		VoteData voteData = new VoteData(vertexMetadata, parent);
 
 		QuorumCertificate qc = new QuorumCertificate(voteData, new ECDSASignatures());
@@ -48,7 +50,13 @@ public class VertexSerializeTest extends SerializeObject<Vertex> {
 		Atom atom = new Atom();
 		// add a particle to ensure atom is valid and has at least one shard
 		atom.addParticleGroupWith(new MessageParticle(address, address, "Hello".getBytes()), Spin.UP);
+		final LedgerAtom ledgerAtom;
+		try {
+			ledgerAtom = LedgerAtom.convertFromApiAtom(atom);
+		} catch (LedgerAtomConversionException e) {
+			throw new IllegalStateException();
+		}
 
-		return Vertex.createVertex(qc, view, atom);
+		return Vertex.createVertex(qc, view, ledgerAtom);
 	}
 }

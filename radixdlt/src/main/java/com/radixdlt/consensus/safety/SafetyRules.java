@@ -103,6 +103,26 @@ public final class SafetyRules {
 		return new Proposal(proposedVertex, this.selfKey.getPublicKey(), signature);
 	}
 
+	private static VoteData constructVoteData(Vertex proposedVertex) {
+		final VertexMetadata proposed = VertexMetadata.ofVertex(proposedVertex);
+		final VertexMetadata parent = proposedVertex.getQC().getProposed();
+
+		final VertexMetadata toCommit;
+
+		// Add a vertex to commit if creating a quorum for the proposed vertex would
+		// create three consecutive qcs.
+		if (proposedVertex.getView().equals(proposedVertex.getParentView().next())
+			&& !proposedVertex.getParentView().isGenesis() && !proposedVertex.getGrandParentView().isGenesis()
+			&& proposedVertex.getParentView().equals(proposedVertex.getGrandParentView().next())
+		) {
+			toCommit = proposedVertex.getQC().getParent();
+		} else {
+			toCommit = null;
+		}
+
+		return new VoteData(proposed, parent, toCommit);
+	}
+
 	/**
 	 * Vote for a proposed vertex while ensuring that safety invariants are upheld.
 	 * @param proposedVertex The proposed vertex
@@ -125,22 +145,8 @@ public final class SafetyRules {
 		Builder safetyStateBuilder = this.state.toBuilder();
 		safetyStateBuilder.lastVotedView(proposedVertex.getView());
 
-		final VertexMetadata proposed = VertexMetadata.ofVertex(proposedVertex);
-		final VertexMetadata parent = VertexMetadata.ofParent(proposedVertex);
-		final VertexMetadata toCommit;
+		final VoteData voteData = constructVoteData(proposedVertex);
 
-		// Add a vertex to commit if creating a quorum for the proposed vertex would
-		// create three consecutive qcs.
-		if (proposedVertex.getView().equals(proposedVertex.getParentView().next())
-			&& !proposedVertex.getParentView().isGenesis() && !proposedVertex.getGrandParentView().isGenesis()
-			&& proposedVertex.getParentView().equals(proposedVertex.getGrandParentView().next())
-		) {
-			toCommit = proposedVertex.getQC().getParent();
-		} else {
-			toCommit = null;
-		}
-
-		final VoteData voteData = new VoteData(proposed, parent, toCommit);
 		final Hash voteHash = hasher.hash(voteData);
 
 		this.state = safetyStateBuilder.build();

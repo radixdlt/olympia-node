@@ -17,9 +17,9 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.atommodel.Atom;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.Hash;
+import com.radixdlt.middleware2.LedgerAtom;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Before;
 import org.junit.Test;
@@ -28,25 +28,26 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
 
 public class VertexTest {
 
 	private Vertex testObject;
 	private QuorumCertificate qc;
-	private Atom atom;
+	private LedgerAtom atom;
 
 	@Before
 	public void setUp() {
 		View baseView = View.of(1234567890L);
 		Hash id = Hash.random();
 
-		VertexMetadata vertexMetadata = new VertexMetadata(baseView.next(), id);
-		VertexMetadata parent = new VertexMetadata(baseView, Hash.random());
+		VertexMetadata vertexMetadata = new VertexMetadata(baseView.next(), id, 1);
+		VertexMetadata parent = new VertexMetadata(baseView, Hash.random(), 0);
 		VoteData voteData = new VoteData(vertexMetadata, parent);
 
 		this.qc = new QuorumCertificate(voteData, new ECDSASignatures());
 
-		this.atom = new Atom();
+		this.atom = mock(LedgerAtom.class);
 
 		this.testObject = Vertex.createVertex(this.qc, baseView.next().next(), this.atom);
 	}
@@ -67,13 +68,12 @@ public class VertexTest {
 		View baseView = View.of(1234567890L);
 		Hash id = Hash.random();
 
-		VertexMetadata vertexMetadata = new VertexMetadata(baseView.next(), id);
-		VertexMetadata parent = new VertexMetadata(baseView, Hash.random());
+		VertexMetadata vertexMetadata = new VertexMetadata(baseView.next(), id, 1);
+		VertexMetadata parent = new VertexMetadata(baseView, Hash.random(), 0);
 		VoteData voteData = new VoteData(vertexMetadata, parent);
 		QuorumCertificate qc2 = new QuorumCertificate(voteData, new ECDSASignatures());
-		Atom atom2 = new Atom();
 
-		Vertex v = Vertex.createVertex(qc2, baseView.next().next().next(), atom2);
+		Vertex v = Vertex.createVertex(qc2, baseView.next().next().next(), null);
 
 		assertFalse(v.hasDirectParent());
 	}

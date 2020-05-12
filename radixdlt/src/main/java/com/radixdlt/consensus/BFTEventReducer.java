@@ -19,7 +19,6 @@ package com.radixdlt.consensus;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
-import com.radixdlt.atommodel.Atom;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.consensus.liveness.Pacemaker;
@@ -34,6 +33,7 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.mempool.Mempool;
+import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.utils.Longs;
 
 import java.util.HashMap;
@@ -117,7 +117,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 			.ifPresent(vertexId -> {
 				final Vertex vertex = vertexStore.commitVertex(vertexId);
 				log.info("{}: Committed vertex: {}", this.getShortName(), vertex);
-				final Atom committedAtom = vertex.getAtom();
+				final LedgerAtom committedAtom = vertex.getAtom();
 				if (committedAtom != null) {
 					mempool.removeCommittedAtom(committedAtom.getAID());
 				}
@@ -195,7 +195,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 			log.info(String.format("%s: PROPOSAL: Rejected", this.getShortName()), e);
 
 			// TODO: Better logic for removal on exception
-			final Atom atom = proposedVertex.getAtom();
+			final LedgerAtom atom = proposedVertex.getAtom();
 			if (atom != null) {
 				mempool.removeRejectedAtom(atom.getAID());
 			}

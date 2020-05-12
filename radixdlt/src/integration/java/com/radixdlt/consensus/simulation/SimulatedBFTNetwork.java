@@ -17,12 +17,12 @@
 
 package com.radixdlt.consensus.simulation;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.consensus.ConsensusRunner;
+import com.radixdlt.consensus.ConsensusRunner.Event;
+import com.radixdlt.consensus.ConsensusRunner.EventType;
 import com.radixdlt.consensus.DefaultHasher;
 import com.radixdlt.consensus.EpochManager;
 import com.radixdlt.consensus.EpochRx;
@@ -51,13 +51,15 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.mempool.EmptyMempool;
 import com.radixdlt.mempool.Mempool;
 
+import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork;
 import com.radixdlt.utils.UInt256;
+import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.subjects.CompletableSubject;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
@@ -114,8 +116,7 @@ public class SimulatedBFTNetwork {
 			.collect(ImmutableMap.toImmutableMap(
 				e -> e,
 				e -> {
-					RadixEngine radixEngine = mock(RadixEngine.class);
-					when(radixEngine.staticCheck(any())).thenReturn(Optional.empty());
+					RadixEngine<LedgerAtom> radixEngine = mock(RadixEngine.class);
 					return new VertexStore(genesisVertex, genesisQC, radixEngine, this.counters.get(e));
 				})
 			);
@@ -176,8 +177,24 @@ public class SimulatedBFTNetwork {
 		return counters.get(keyPair);
 	}
 
-	public void start() {
+	public Completable start() {
+		// Send start event once all nodes have reached real epoch event (first epoch event is empty)
+		final CompletableSubject completableSubject = CompletableSubject.create();
+		List<Completable> startedList = this.runners.values().stream()
+			.map(ConsensusRunner::events)
+			.map(o ->
+				o.map(Event::getEventType)
+					.filter(e -> e.equals(EventType.EPOCH))
+					.skip(1)
+					.firstOrError()
+					.ignoreElement()
+			).collect(Collectors.toList());
+
+		Completable.merge(startedList).subscribe(completableSubject::onComplete);
+
 		this.runners.values().forEach(ConsensusRunner::start);
+
+		return completableSubject;
 	}
 
 	public void stop() {

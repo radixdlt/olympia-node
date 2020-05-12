@@ -19,10 +19,10 @@ package com.radixdlt.middleware2.store;
 
 import com.google.inject.Inject;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.atommodel.Atom;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.SearchCursor;
 import com.radixdlt.store.StoreIndex;
@@ -39,7 +39,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 
-public class LedgerEngineStore implements EngineStore {
+public class LedgerEngineStore implements EngineStore<LedgerAtom> {
     private static final Logger log = LogManager.getLogger("middleware2.store");
 
     private final Serialization serialization;
@@ -56,14 +56,12 @@ public class LedgerEngineStore implements EngineStore {
     }
 
     @Override
-    public void getAtomContaining(Particle particle, boolean isInput, Consumer<Atom> callback) {
-        Optional<Atom> atomOptional = getAtomByParticle(particle, isInput);
-        if (atomOptional.isPresent()) {
-            callback.accept(atomOptional.get());
-        }
+    public void getAtomContaining(Particle particle, boolean isInput, Consumer<LedgerAtom> callback) {
+        Optional<LedgerAtom> atomOptional = getAtomByParticle(particle, isInput);
+        atomOptional.ifPresent(callback);
     }
 
-    private Optional<Atom> getAtomByParticle(Particle particle, boolean isInput) {
+    private Optional<LedgerAtom> getAtomByParticle(Particle particle, boolean isInput) {
         final byte[] indexableBytes = EngineAtomIndices.toByteArray(
         	isInput ? EngineAtomIndices.IndexType.PARTICLE_DOWN : EngineAtomIndices.IndexType.PARTICLE_UP,
         	particle.euid()
@@ -78,10 +76,10 @@ public class LedgerEngineStore implements EngineStore {
     }
 
     @Override
-    public void storeAtom(Atom atom) {
-        byte[] binaryAtom = atomToBinaryConverter.toLedgerEntryContent(atom);
-        LedgerEntry ledgerEntry = new LedgerEntry(binaryAtom, atom.getAID());
-        EngineAtomIndices engineAtomIndices = EngineAtomIndices.from(atom, serialization);
+    public void storeAtom(LedgerAtom reAtom) {
+        byte[] binaryAtom = atomToBinaryConverter.toLedgerEntryContent(reAtom);
+        LedgerEntry ledgerEntry = new LedgerEntry(binaryAtom, reAtom.getAID());
+        EngineAtomIndices engineAtomIndices = EngineAtomIndices.from(reAtom, serialization);
         store.store(ledgerEntry, engineAtomIndices.getUniqueIndices(), engineAtomIndices.getDuplicateIndices());
     }
 

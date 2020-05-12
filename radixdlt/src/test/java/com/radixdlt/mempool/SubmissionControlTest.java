@@ -17,7 +17,9 @@
 
 package com.radixdlt.mempool;
 
-import java.util.Optional;
+import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.middleware2.LedgerAtom;
+import com.radixdlt.middleware2.converters.AtomToLedgerAtomConverter;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.json.JSONObject;
 import org.junit.Before;
@@ -28,7 +30,6 @@ import org.radix.atoms.events.AtomExceptionEvent;
 import org.radix.events.Events;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.atommodel.Atom;
-import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.serialization.Serialization;
@@ -40,11 +41,11 @@ import static org.hamcrest.Matchers.*;
 public class SubmissionControlTest {
 
 	private Mempool mempool;
-	private RadixEngine radixEngine;
+	private RadixEngine<LedgerAtom> radixEngine;
 	private Serialization serialization;
 	private Events events;
-
-	private SubmissionControl submissionControl;
+	private SubmissionControlImpl submissionControl;
+	private AtomToLedgerAtomConverter converter;
 
 	@Before
 	public void setUp() {
@@ -52,23 +53,18 @@ public class SubmissionControlTest {
 		this.radixEngine = throwingMock(RadixEngine.class);
 		this.serialization = throwingMock(Serialization.class);
 		this.events = throwingMock(Events.class);
-		this.submissionControl = new SubmissionControlImpl(this.mempool, this.radixEngine, this.serialization, this.events);
+		this.converter = mock(AtomToLedgerAtomConverter.class);
+		this.submissionControl = new SubmissionControlImpl(this.mempool, this.radixEngine, this.serialization, this.events, this.converter);
 	}
 
 	@Test
-	public void when_radix_engine_returns_error__then_event_is_broadcast()
-		throws MempoolFullException, MempoolDuplicateException {
-		CMError cmError = throwingMock(CMError.class);
-		doReturn("dummy").when(cmError).getErrMsg();
-		doReturn("dummy error").when(cmError).getErrorDescription();
-		doReturn(DataPointer.ofAtom()).when(cmError).getDataPointer();
-		Optional<CMError> error = Optional.of(cmError);
-		doReturn(error).when(this.radixEngine).staticCheck(any());
+	public void when_radix_engine_returns_error__then_event_is_broadcast() throws Exception {
+		RadixEngineException e = mock(RadixEngineException.class);
+		when(e.getDataPointer()).thenReturn(DataPointer.ofAtom());
+		doThrow(e).when(this.radixEngine).staticCheck(any());
 		doNothing().when(this.events).broadcast(any());
 
-		Atom atom = throwingMock(Atom.class);
-		doReturn(AID.ZERO).when(atom).getAID();
-
+		LedgerAtom atom = mock(LedgerAtom.class);
 		this.submissionControl.submitAtom(atom);
 
 		verify(this.events, times(1)).broadcast(ArgumentMatchers.any(AtomExceptionEvent.class));
@@ -76,21 +72,19 @@ public class SubmissionControlTest {
 	}
 
 	@Test
-	public void when_radix_engine_returns_ok__then_atom_is_added_to_mempool()
-		throws MempoolFullException, MempoolDuplicateException {
-		doReturn(Optional.empty()).when(this.radixEngine).staticCheck(any());
+	public void when_radix_engine_returns_ok__then_atom_is_added_to_mempool() throws Exception {
+		doNothing().when(this.radixEngine).staticCheck(any());
 		doNothing().when(this.mempool).addAtom(any());
 
-		this.submissionControl.submitAtom(throwingMock(Atom.class));
+		LedgerAtom atom = mock(LedgerAtom.class);
+		this.submissionControl.submitAtom(atom);
 
 		verify(this.events, never()).broadcast(any());
-		verify(this.mempool, times(1)).addAtom(ArgumentMatchers.any(Atom.class));
+		verify(this.mempool, times(1)).addAtom(eq(atom));
 	}
 
 	@Test
-	public void if_deserialisation_fails__then_callback_is_not_called()
-		throws MempoolFullException, MempoolDuplicateException {
-		doReturn(Optional.empty()).when(this.radixEngine).staticCheck(any());
+	public void if_deserialisation_fails__then_callback_is_not_called() throws Exception {
 		doThrow(new IllegalArgumentException()).when(this.serialization).fromJsonObject(any(), any());
 
 		AtomicBoolean called = new AtomicBoolean(false);
@@ -107,8 +101,8 @@ public class SubmissionControlTest {
 
 	@Test
 	public void after_json_deserialised__then_callback_is_called_and_aid_returned()
-		throws MempoolFullException, MempoolDuplicateException {
-		doReturn(Optional.empty()).when(this.radixEngine).staticCheck(any());
+		throws Exception {
+		doNothing().when(this.radixEngine).staticCheck(any());
 		Atom atomMock = throwingMock(Atom.class);
 		doReturn(AID.ZERO).when(atomMock).getAID();
 		doReturn(atomMock).when(this.serialization).fromJsonObject(any(), any());
@@ -116,6 +110,9 @@ public class SubmissionControlTest {
 
 		AtomicBoolean called = new AtomicBoolean(false);
 
+		LedgerAtom ledgerAtom = mock(LedgerAtom.class);
+		when(ledgerAtom.getAID()).thenReturn(AID.ZERO);
+		when(converter.convert(eq(atomMock))).thenReturn(ledgerAtom);
 		AID result = this.submissionControl.submitAtom(throwingMock(JSONObject.class), a -> called.set(true));
 
 		assertSame(AID.ZERO, result);
