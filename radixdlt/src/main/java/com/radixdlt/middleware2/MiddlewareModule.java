@@ -29,6 +29,7 @@ import com.radixdlt.atommodel.unique.UniqueParticleConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.ConstraintMachine;
+import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.middleware2.processing.EngineAtomEventListener;
@@ -43,6 +44,8 @@ import org.radix.time.Time;
 import java.util.function.UnaryOperator;
 
 public class MiddlewareModule extends AbstractModule {
+	private static final Hash DEFAULT_FEE_TARGET = new Hash("0000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
+
 	@Provides
 	@Singleton
 	private CMAtomOS buildCMAtomOS(Universe universe) {
@@ -62,11 +65,10 @@ public class MiddlewareModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private ConstraintMachine buildConstraintMachine(CMAtomOS os) {
-		final ConstraintMachine constraintMachine = new ConstraintMachine.Builder()
+		return new ConstraintMachine.Builder()
 			.setParticleTransitionProcedures(os.buildTransitionProcedures())
 			.setParticleStaticCheck(os.buildParticleStaticCheck())
 			.build();
-		return constraintMachine;
 	}
 
 	@Provides
@@ -84,23 +86,24 @@ public class MiddlewareModule extends AbstractModule {
 			RuntimeProperties properties,
 			Universe universe
 	) {
+		final boolean skipAtomFeeCheck = properties.get("debug.nopow", false);
+		final PowFeeComputer powFeeComputer = new PowFeeComputer(() -> universe);
+		final LedgerAtomChecker ledgerAtomChecker =
+			new LedgerAtomChecker(
+				() -> universe,
+				Time::currentTimestamp,
+				powFeeComputer,
+				DEFAULT_FEE_TARGET,
+				skipAtomFeeCheck,
+				Time.MAXIMUM_DRIFT
+			);
+
 		RadixEngine<LedgerAtom> radixEngine = new RadixEngine<>(
 			constraintMachine,
 			virtualStoreLayer,
 			engineStore
 		);
-
-		final boolean skipAtomFeeCheck = properties.get("debug.nopow", false);
-
-		radixEngine.addCMSuccessHook(
-			new LedgerAtomChecker(
-				() -> universe,
-				Time::currentTimestamp,
-				skipAtomFeeCheck,
-				Time.MAXIMUM_DRIFT
-			)
-		);
-
+		radixEngine.addCMSuccessHook(ledgerAtomChecker);
 		radixEngine.addAtomEventListener(new EngineAtomEventListener(serialization));
 
 		return radixEngine;

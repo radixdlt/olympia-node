@@ -22,7 +22,6 @@ import com.radixdlt.atommodel.Atom;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.CMSuccessHook;
 import com.radixdlt.universe.Universe;
-import com.radixdlt.utils.POW;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.LongSupplier;
@@ -32,17 +31,23 @@ public class LedgerAtomChecker implements CMSuccessHook<LedgerAtom> {
 	private final boolean skipAtomFeeCheck;
 	private final Supplier<Universe> universeSupplier;
 	private final LongSupplier timestampSupplier;
-	private static final Hash DEFAULT_TARGET = new Hash("0000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
+	private final PowFeeComputer powFeeComputer;
+
 	private final int maximumDrift;
+	private final Hash target;
 
 	public LedgerAtomChecker(
 		Supplier<Universe> universeSupplier,
 		LongSupplier timestampSupplier,
+		PowFeeComputer powFeeComputer,
+		Hash target,
 		boolean skipAtomFeeCheck,
 		int maximumDrift
 	) {
 		this.universeSupplier = universeSupplier;
 		this.timestampSupplier = timestampSupplier;
+		this.powFeeComputer = powFeeComputer;
+		this.target = target;
 		this.skipAtomFeeCheck = skipAtomFeeCheck;
 		this.maximumDrift = maximumDrift;
 	}
@@ -57,8 +62,8 @@ public class LedgerAtomChecker implements CMSuccessHook<LedgerAtom> {
 
 		// Atom has fee
 		if (!skipAtomFeeCheck) {
-			if (universeSupplier.get().getGenesis().stream().map(Atom::getAID).noneMatch(atom.getAID()::equals)
-				&& !isMagic) {
+			boolean isGenesis = universeSupplier.get().getGenesis().stream().map(Atom::getAID).anyMatch(atom.getAID()::equals);
+			if (!isGenesis && !isMagic) {
 
 				String powNonceString = atom.getMetaData().get(Atom.METADATA_POW_NONCE_KEY);
 				if (powNonceString == null) {
@@ -72,11 +77,9 @@ public class LedgerAtomChecker implements CMSuccessHook<LedgerAtom> {
 					return Result.error("atom fee invalid, metadata contains invalid powNonce: " + powNonceString);
 				}
 
-				final Hash powFeeHash = atom.getPowFeeHash();
-				POW pow = new POW(universeSupplier.get().getMagic(), powFeeHash, powNonce);
-				Result powResult = checkPow(pow, powFeeHash, DEFAULT_TARGET, universeSupplier.get().getMagic());
-				if (powResult.isError()) {
-					return powResult;
+				Hash powSpent = powFeeComputer.computePowSpent(atom, powNonce);
+				if (powSpent.compareTo(target) >= 0) {
+					return Result.error("atom fee invalid: '" + powSpent + "' does not meet target '" + target + "'");
 				}
 			}
 		}
@@ -97,22 +100,6 @@ public class LedgerAtomChecker implements CMSuccessHook<LedgerAtom> {
 			}
 		} catch (NumberFormatException e) {
 			return Result.error("atom metadata contains invalid timestamp: " + timestampString);
-		}
-
-		return Result.success();
-	}
-
-	private static Result checkPow(POW pow, Hash hash, Hash target, int universeMagic) {
-		if (!pow.getSeed().equals(hash)) {
-			return Result.error("atom fee invalid: seed does not match validation parameter seed (" + pow.getSeed() + ") + hash(" + hash + ")");
-		}
-
-		if (pow.getMagic() != universeMagic) {
-			return Result.error("atom fee invalid: magic '" + pow.getMagic() + "' does not match Universe magic '");
-		}
-
-		if (pow.getHash().compareTo(target) >= 0) {
-			return Result.error("atom fee invalid: '" + pow.getHash() + "' does not meet target '" + target + "'");
 		}
 
 		return Result.success();
