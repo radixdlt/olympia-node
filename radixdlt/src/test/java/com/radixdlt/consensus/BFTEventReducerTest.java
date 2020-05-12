@@ -138,7 +138,7 @@ public class BFTEventReducerTest {
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		View view = mock(View.class);
 		when(qc.getView()).thenReturn(view);
-		when(pendingVotes.insertVote(eq(vote))).thenReturn(Optional.of(qc));
+		when(pendingVotes.insertVote(eq(vote), any())).thenReturn(Optional.of(qc));
 		when(mempool.getAtoms(anyInt(), any())).thenReturn(Lists.newArrayList());
 		when(pacemaker.getCurrentView()).thenReturn(mock(View.class));
 		when(pacemaker.processQC(eq(view))).thenReturn(Optional.of(mock(View.class)));

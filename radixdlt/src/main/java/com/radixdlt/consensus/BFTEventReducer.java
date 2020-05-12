@@ -113,15 +113,15 @@ public final class BFTEventReducer implements BFTEventProcessor {
 
 	private void processQC(QuorumCertificate qc) {
 		// commit any newly committable vertices
-		this.safetyRules.process(qc)
-			.ifPresent(vertexId -> {
-				final Vertex vertex = vertexStore.commitVertex(vertexId);
-				log.info("{}: Committed vertex: {}", this.getShortName(), vertex);
-				final Atom committedAtom = vertex.getAtom();
-				if (committedAtom != null) {
-					mempool.removeCommittedAtom(committedAtom.getAID());
-				}
-			});
+		this.safetyRules.process(qc).ifPresent(vertexId -> {
+			final Vertex vertex = vertexStore.commitVertex(vertexId);
+			log.info("{}: Committed vertex: {}", this.getShortName(), vertex);
+			final Atom committedAtom = vertex.getAtom();
+			if (committedAtom != null) {
+				mempool.removeCommittedAtom(committedAtom.getAID());
+			}
+			this.pendingVotes.removeVotesUpto(qc.getView());
+		});
 
 		// proceed to next view if pacemaker feels like it
 		this.pacemaker.processQC(qc.getView())
@@ -142,7 +142,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	public void processVote(Vote vote) {
 		log.trace("{}: VOTE: Processing {}", this.getShortName(), vote);
 		// accumulate votes into QCs in store
-		this.pendingVotes.insertVote(vote).ifPresent(qc -> {
+		this.pendingVotes.insertVote(vote, this.validatorSet).ifPresent(qc -> {
 			log.info("{}: VOTE: Formed QC: {}", this.getShortName(), qc);
 			if (vertexStore.syncToQC(qc)) {
 				processQC(qc);
@@ -161,7 +161,6 @@ public final class BFTEventReducer implements BFTEventProcessor {
 			// Hotstuff's Event-Driven OnBeat
 			final Vertex proposedVertex = proposalGenerator.generateProposal(view);
 			final Proposal proposal = safetyRules.signProposal(proposedVertex);
-			this.pendingVotes.startVotingOn(this.safetyRules.voteDataFor(proposedVertex), this.validatorSet);
 			log.info("{}: Broadcasting PROPOSAL: {}", getShortName(), proposal);
 			this.sender.broadcastProposal(proposal);
 		});
@@ -229,7 +228,6 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		if (nextView.isPresent()) {
 			counters.set(CounterType.CONSENSUS_TIMEOUT_VIEW, view.number());
 			counters.increment(CounterType.CONSENSUS_TIMEOUT);
-			this.pendingVotes.finishVotingFor(view);
 			this.proceedToView(nextView.get());
 			log.info("{}: LOCAL_TIMEOUT: Processed {}", this.getShortName(), view);
 		} else {

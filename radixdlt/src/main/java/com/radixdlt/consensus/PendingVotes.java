@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
 import com.google.inject.Inject;
 import com.radixdlt.consensus.validators.ValidationState;
@@ -24,22 +25,16 @@ import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.utils.Pair;
-
-import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.SortedMap;
 
 /**
  * Manages pending votes for various vertices
  */
 public final class PendingVotes {
-	private static final Logger log = LogManager.getLogger();
-
-	private final HashMap<View, Pair<Hash, ValidationState>> state = Maps.newHashMap();
+	private final SortedMap<View, Map<Hash, ValidationState>> state = Maps.newTreeMap();
 	private final Hasher hasher;
 
 	@Inject
@@ -48,55 +43,34 @@ public final class PendingVotes {
 	}
 
 	/**
-	 * Prepare for a round of voting on the specified vote data by the specified validator set.
+	 * Removed any validation states before valid QC's view.
 	 *
-	 * @param voteData The data to be voted on
-	 * @param validatorSet The {@link ValidatorSet} that will be voting
+	 * @param view The view of the last valid QC received.
 	 */
-	public void startVotingOn(VoteData voteData, ValidatorSet validatorSet) {
-		View voteView = voteData.getProposed().getView();
-		final Hash voteHash = hasher.hash(voteData);
-		this.state.put(voteView, Pair.of(voteHash,  validatorSet.newValidationState(voteHash)));
-	}
-
-	/**
-	 * Finish a round of voting for the specified view.
-	 *
-	 * @param view The view to finish voting for
-	 */
-	public void finishVotingFor(View view) {
-		this.state.remove(view);
+	public void removeVotesUpto(View view) {
+		this.state.headMap(view.next()).clear();
 	}
 
 	/**
 	 * Inserts a vote for a given vertex, attempting to form a quorum certificate for that vertex.
-	 *
+	 * <p>
 	 * A QC will only be formed if permitted by the {@link ValidatorSet}.
+	 *
 	 * @param vote The vote to be inserted
 	 * @return The generated QC, if any
 	 */
-	public Optional<QuorumCertificate> insertVote(Vote vote) {
-		View voteView = vote.getVoteData().getProposed().getView();
-		Pair<Hash, ValidationState> votingState = this.state.get(voteView);
+	public Optional<QuorumCertificate> insertVote(Vote vote, ValidatorSet validatorSet) {
+		final View voteView = vote.getVoteData().getProposed().getView();
+		final Hash voteHash = hasher.hash(vote.getVoteData());
+
+
+		ValidationState validationState = this.state
+			.computeIfAbsent(voteView, k -> Maps.newHashMap())
+			.computeIfAbsent(voteHash, validatorSet::newValidationState);
+
+		final ECDSASignature signature = vote.getSignature().orElseThrow(() -> new IllegalArgumentException("vote is missing signature"));
 
 		final ECPublicKey voteAuthor = vote.getAuthor();
-		if (votingState == null) {
-			String replicaId = replicaId(voteAuthor);
-			log.warn("Ignoring invalid vote from {} for view {}", replicaId, voteView);
-			return Optional.empty();
-		}
-
-		final Hash voteHash = hasher.hash(vote.getVoteData());
-		if (!voteHash.equals(votingState.getFirst())) {
-			String replicaId = replicaId(voteAuthor);
-			String wantedHash = votingState.getFirst().toString();
-			log.warn("Ignoring invalid vote from {} for view {} for unknown hash {} (wanted {})", replicaId, voteView, voteHash, wantedHash);
-			return Optional.empty();
-		}
-
-		ECDSASignature signature = vote.getSignature().orElseThrow(() -> new IllegalArgumentException("vote is missing signature"));
-
-		ValidationState validationState = votingState.getSecond();
 		// try to form a QC with the added signature according to the requirements
 		if (!validationState.addSignature(voteAuthor, signature)) {
 			// if no QC could be formed, update pending and return nothing
@@ -104,13 +78,14 @@ public final class PendingVotes {
 		} else {
 			// if QC could be formed, remove validation state
 			// Could continue to accumulate votes until timeout if desired
-			finishVotingFor(voteView);
+			removeVotesUpto(voteView);
 			QuorumCertificate qc = new QuorumCertificate(vote.getVoteData(), validationState.signatures());
 			return Optional.of(qc);
 		}
 	}
 
-	private static String replicaId(ECPublicKey key) {
-		return key.euid().toString().substring(0, 6);
+	@VisibleForTesting
+	int stateSize() {
+		return this.state.size();
 	}
 }

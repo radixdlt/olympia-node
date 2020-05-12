@@ -33,6 +33,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -57,8 +58,8 @@ public class PendingVotesTest {
 		VertexMetadata proposed = voteWithoutSignature.getVoteData().getProposed();
 		when(voteData.getProposed()).thenReturn(proposed);
 
-		this.pendingVotes.startVotingOn(voteData, validatorSet);
-		assertThatThrownBy(() -> pendingVotes.insertVote(voteWithoutSignature)).isInstanceOf(IllegalArgumentException.class);
+		assertThatThrownBy(() -> pendingVotes.insertVote(voteWithoutSignature, validatorSet))
+			.isInstanceOf(IllegalArgumentException.class);
 	}
 
 	@Test
@@ -72,8 +73,7 @@ public class PendingVotesTest {
 		VertexMetadata proposed = vote1.getVoteData().getProposed();
 		when(voteData.getProposed()).thenReturn(proposed);
 
-		this.pendingVotes.startVotingOn(voteData, validatorSet);
-		assertThat(this.pendingVotes.insertVote(vote2)).isEmpty();
+		assertThat(this.pendingVotes.insertVote(vote2, validatorSet)).isEmpty();
 	}
 
 	@Test
@@ -91,43 +91,17 @@ public class PendingVotesTest {
 		VertexMetadata proposed = vote.getVoteData().getProposed();
 		when(voteData.getProposed()).thenReturn(proposed);
 
-		this.pendingVotes.startVotingOn(voteData, validatorSet);
-		assertThat(this.pendingVotes.insertVote(vote)).isPresent();
+		assertThat(this.pendingVotes.insertVote(vote, validatorSet)).isPresent();
 	}
 
 	@Test
-	public void when_inserting_vote_with_wrong_hash__then_no_qc_is_returned() {
+	public void when_removing_state__state_is_removed() {
 		Vote vote = makeSignedVoteFor(Hash.random());
 
 		ValidatorSet validatorSet = mock(ValidatorSet.class);
 		ValidationState validationState = mock(ValidationState.class);
 		ECDSASignatures signatures = mock(ECDSASignatures.class);
-		when(validationState.addSignature(any(), any())).thenReturn(true);
-		when(validationState.signatures()).thenReturn(signatures);
-		when(validatorSet.newValidationState(any())).thenReturn(validationState);
-
-		VoteData voteData = mock(VoteData.class);
-		VertexMetadata proposed = vote.getVoteData().getProposed();
-		when(voteData.getProposed()).thenReturn(proposed);
-		when(this.hasher.hash(voteData)).thenReturn(Hash.random());
-
-		this.pendingVotes.startVotingOn(voteData, validatorSet);
-		assertThat(this.pendingVotes.insertVote(vote)).isNotPresent();
-	}
-
-	@Test
-	public void when_inserting_vote_for_unstarted_round__then_no_qc_is_returned() {
-		Vote vote = makeSignedVoteFor(Hash.random());
-		assertThat(this.pendingVotes.insertVote(vote)).isNotPresent();
-	}
-
-	@Test
-	public void when_inserting_vote_for_completed_round__then_no_qc_is_returned() {
-		Vote vote = makeSignedVoteFor(Hash.random());
-		ValidatorSet validatorSet = mock(ValidatorSet.class);
-		ValidationState validationState = mock(ValidationState.class);
-		ECDSASignatures signatures = mock(ECDSASignatures.class);
-		when(validationState.addSignature(any(), any())).thenReturn(true);
+		when(validationState.addSignature(any(), any())).thenReturn(false);
 		when(validationState.signatures()).thenReturn(signatures);
 		when(validatorSet.newValidationState(any())).thenReturn(validationState);
 
@@ -135,9 +109,17 @@ public class PendingVotesTest {
 		VertexMetadata proposed = vote.getVoteData().getProposed();
 		when(voteData.getProposed()).thenReturn(proposed);
 
-		this.pendingVotes.startVotingOn(voteData, validatorSet);
-		this.pendingVotes.finishVotingFor(vote.getVoteData().getProposed().getView());
-		assertThat(this.pendingVotes.insertVote(vote)).isNotPresent();
+		// Preconditions
+		assertThat(this.pendingVotes.insertVote(vote, validatorSet)).isNotPresent();
+		assertEquals(1, this.pendingVotes.stateSize());
+
+		// Removing prior to inserted vote should remove nothing
+		this.pendingVotes.removeVotesUpto(View.genesis());
+		assertEquals(1, this.pendingVotes.stateSize());
+
+		// Removing inserted vote should empty state
+		this.pendingVotes.removeVotesUpto(View.of(1));
+		assertEquals(0, this.pendingVotes.stateSize());
 	}
 
 	private Vote makeUnsignedVoteFor(Hash vertexId) {
