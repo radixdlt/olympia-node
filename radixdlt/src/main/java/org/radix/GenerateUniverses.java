@@ -164,7 +164,7 @@ public final class GenerateUniverses {
 		);
 		genesisAtom.sign(universeKey);
 
-		LedgerAtom reAtom = LedgerAtom.convert(genesisAtom);
+		LedgerAtom ledgerAtom = LedgerAtom.convertFromApiAtom(genesisAtom);
 
 		if (standalone) {
 			byte[] sigBytes = serialization.toDson(genesisAtom.getSignature(universeKey.euid()), Output.WIRE);
@@ -177,7 +177,7 @@ public final class GenerateUniverses {
 
 		if (!genesisAtom.verify(universeKey.getPublicKey())) {
 			throw new ConstraintMachineValidationException(
-				reAtom,
+				ledgerAtom,
 				"Signature generation failed - GENESIS TRANSACTION HASH: " + genesisAtom.getHash().toString(),
 				DataPointer.ofAtom()
 			);

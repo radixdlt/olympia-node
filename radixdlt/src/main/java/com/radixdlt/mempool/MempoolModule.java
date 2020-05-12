@@ -39,7 +39,7 @@ public class MempoolModule extends AbstractModule {
 	private AtomToLedgerAtomConverter converter() {
 		return atom -> {
 			try {
-				return LedgerAtom.convert(atom);
+				return LedgerAtom.convertFromApiAtom(atom);
 			} catch (LedgerAtomConversionException e) {
 				throw new AtomConversionException(e.getDataPointer(), e);
 			}

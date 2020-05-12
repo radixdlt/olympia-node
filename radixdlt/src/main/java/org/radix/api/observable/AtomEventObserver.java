@@ -114,12 +114,7 @@ public class AtomEventObserver {
 	public void tryNext(AtomEventWithDestinations atomEvent) {
 		if (atomEvent instanceof AtomStoredEvent) {
 			if (atomQuery.filter(atomEvent.getDestinations())) {
-				final Atom rawAtom;
-				try {
-					rawAtom = DefaultSerialization.getInstance().fromDson(atomEvent.getAtom().getRaw(), Atom.class);
-				} catch (SerializationException e) {
-					return;
-				}
+				final Atom rawAtom = LedgerAtom.convertToApiAtom(atomEvent.getAtom());
 				final AtomEventDto atomEventDto = new AtomEventDto(AtomEventType.STORE, rawAtom);
 				synchronized (this) {
 					this.currentRunnable = currentRunnable.thenRunAsync(() -> update(atomEventDto), executorService);
@@ -171,13 +166,7 @@ public class AtomEventObserver {
 				}
 				if (!atoms.isEmpty()) {
 					final Stream<AtomEventDto> atomEvents = atoms.stream()
-						.map(atom -> {
-							try {
-								return DefaultSerialization.getInstance().fromDson(atom.getRaw(), Atom.class);
-							} catch (SerializationException e) {
-								return null;
-							}
-						})
+						.map(LedgerAtom::convertToApiAtom)
 						.filter(Objects::nonNull)
 						.map(atom -> new AtomEventDto(AtomEventType.STORE, atom));
 					onNext.accept(new ObservedAtomEvents(false, atomEvents));

@@ -54,11 +54,11 @@ public class AtomToBinaryConverterTest {
 			ImmutableMap.of("timestamp", "0")
 		);
 
-		LedgerAtom reAtom = LedgerAtom.convert(atom);
+		LedgerAtom ledgerAtom = LedgerAtom.convertFromApiAtom(atom);
 
-		byte[] serializedAtom = atomToBinaryConverter.toLedgerEntryContent(reAtom);
+		byte[] serializedAtom = atomToBinaryConverter.toLedgerEntryContent(ledgerAtom);
 		LedgerAtom deserializedAtom = atomToBinaryConverter.toAtom(serializedAtom);
-		assertEquals(reAtom, deserializedAtom);
+		assertEquals(ledgerAtom, deserializedAtom);
 	}
 
 }

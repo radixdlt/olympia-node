@@ -19,7 +19,6 @@ package org.radix.serialization;
 
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.atommodel.message.MessageParticle;
-import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.messages.MempoolAtomAddedMessage;
@@ -37,7 +36,7 @@ public class MempoolAtomAddedMessageSerializeTest extends SerializeMessageObject
 		atom.addParticleGroupWith(new MessageParticle(address, address, "Hello".getBytes()), Spin.UP);
 		final LedgerAtom ledgerAtom;
 		try {
-			ledgerAtom = LedgerAtom.convert(atom);
+			ledgerAtom = LedgerAtom.convertFromApiAtom(atom);
 		} catch (LedgerAtomConversionException e) {
 			throw new IllegalStateException();
 		}

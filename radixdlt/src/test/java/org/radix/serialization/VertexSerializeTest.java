@@ -50,13 +50,13 @@ public class VertexSerializeTest extends SerializeObject<Vertex> {
 		Atom atom = new Atom();
 		// add a particle to ensure atom is valid and has at least one shard
 		atom.addParticleGroupWith(new MessageParticle(address, address, "Hello".getBytes()), Spin.UP);
-		final LedgerAtom reAtom;
+		final LedgerAtom ledgerAtom;
 		try {
-			reAtom = LedgerAtom.convert(atom);
+			ledgerAtom = LedgerAtom.convertFromApiAtom(atom);
 		} catch (LedgerAtomConversionException e) {
 			throw new IllegalStateException();
 		}
 
-		return Vertex.createVertex(qc, view, reAtom);
+		return Vertex.createVertex(qc, view, ledgerAtom);
 	}
 }

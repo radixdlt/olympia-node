@@ -124,7 +124,7 @@ public final class InternalService {
 
 							atom.sign(this.owner);
 
-							LedgerAtom ledgerAtom = LedgerAtom.convert(atom);
+							LedgerAtom ledgerAtom = LedgerAtom.convertFromApiAtom(atom);
 							submissionControl.submitAtom(ledgerAtom);
 
 							remainingIterations--;

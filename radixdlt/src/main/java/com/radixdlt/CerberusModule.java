@@ -140,7 +140,7 @@ public class CerberusModule extends AbstractModule {
 			throw new IllegalStateException("Can only support one genesis atom.");
 		}
 
-		LedgerAtom genesisAtom = LedgerAtom.convert(universe.getGenesis().get(0));
+		final LedgerAtom genesisAtom = LedgerAtom.convertFromApiAtom(universe.getGenesis().get(0));
 		final Vertex genesisVertex = Vertex.createGenesis(genesisAtom);
 		final VertexMetadata genesisMetadata = new VertexMetadata(View.genesis(), genesisVertex.getId(), 0);
 		final VoteData voteData = new VoteData(genesisMetadata, null);

@@ -226,7 +226,8 @@ public class AtomsService {
 		if (ledgerEntryOptional.isPresent()) {
 			LedgerEntry ledgerEntry = ledgerEntryOptional.get();
 			LedgerAtom atom = atomToBinaryConverter.toAtom(ledgerEntry.getContent());
-			return serialization.toJsonObject(atom.getRaw(), DsonOutput.Output.API);
+			Atom apiAtom = LedgerAtom.convertToApiAtom(atom);
+			return serialization.toJsonObject(apiAtom, DsonOutput.Output.API);
 		}
 		throw new RuntimeException("Atom not found");
 	}

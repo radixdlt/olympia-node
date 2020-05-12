@@ -47,6 +47,10 @@ import java.util.List;
 import java.util.Objects;
 import javax.annotation.concurrent.Immutable;
 
+/**
+ * An atom which can be processed by the radix engine and to be stored on
+ * ledger.
+ */
 @Immutable
 @SerializerId2("consensus.ledger_atom")
 public final class LedgerAtom implements RadixEngineAtom {
@@ -113,10 +117,6 @@ public final class LedgerAtom implements RadixEngineAtom {
 
 	public ImmutableMap<String, String> getMetaData() {
 		return metaData;
-	}
-
-	public byte[] getRaw() {
-		return rawAtom;
 	}
 
 	public Hash getPowFeeHash() {
@@ -193,7 +193,27 @@ public final class LedgerAtom implements RadixEngineAtom {
 		);
 	}
 
-	public static LedgerAtom convert(Atom atom) throws LedgerAtomConversionException {
+	/**
+	 * Converts a ledger atom back to an api atom (to be deprecated)
+	 * @param atom the ledger atom to convert
+	 * @return an api atom
+	 */
+	public static Atom convertToApiAtom(LedgerAtom atom) {
+		try {
+			return DefaultSerialization.getInstance().fromDson(atom.rawAtom, Atom.class);
+		} catch (SerializationException e) {
+			throw new IllegalStateException("Could not convert back to api atom " + atom);
+		}
+	}
+
+	/**
+	 * Convert an api atom (to be deprecated) into a ledger atom.
+	 *
+	 * @param atom the atom to convert
+	 * @return an atom to be stored on ledger
+	 * @throws LedgerAtomConversionException on conversion errors
+	 */
+	public static LedgerAtom convertFromApiAtom(Atom atom) throws LedgerAtomConversionException {
 		final byte[] rawAtom;
 		try {
 			rawAtom = DefaultSerialization.getInstance().toDson(atom, Output.PERSIST);
