@@ -22,6 +22,8 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.radixdlt.counters.SystemCounters;
@@ -98,7 +100,8 @@ public class VertexStoreTest {
 
 	@Test
 	@Ignore("Reinstate once better ProposalGenerator + Mempool is implemented")
-	public void when_inserting_vertex_which_fails_to_pass_re__then_vertex_insertion_exception_is_thrown() throws Exception {
+	public void when_inserting_vertex_which_fails_to_pass_re__then_vertex_insertion_exception_is_thrown()
+		throws Exception {
 		doThrow(mock(RadixEngineException.class)).when(radixEngine).store(any());
 
 		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), mock(LedgerAtom.class));
@@ -113,7 +116,38 @@ public class VertexStoreTest {
 	}
 
 	@Test
-	public void when_insert_two_vertices__then_get_path_from_root_should_return_the_two_vertices() throws Exception {
+	public void when_insert_vertex__then_it_should_not_be_committed_or_stored_in_engine()
+		throws VertexInsertionException, RadixEngineException {
+		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), null);
+		vertexStore.insertVertex(nextVertex);
+
+		TestObserver<Vertex> testObserver = TestObserver.create();
+		vertexStore.lastCommittedVertex().subscribe(testObserver);
+		testObserver.awaitCount(1); // genesis only
+		testObserver.assertValues(genesisVertex); // not committed
+		verify(radixEngine, times(1)).store(genesisVertex.getAtom()); // not stored (genesis only)
+	}
+
+	@Test
+	public void when_insert_and_commit_vertex__then_it_should_be_committed_and_stored_in_engine()
+		throws VertexInsertionException, RadixEngineException {
+		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), mock(Atom.class));
+		vertexStore.insertVertex(nextVertex);
+		TestObserver<Vertex> testObserver = TestObserver.create();
+		vertexStore.lastCommittedVertex().subscribe(testObserver);
+		testObserver.awaitCount(1); // genesis first
+
+		assertThat(vertexStore.commitVertex(nextVertex.getId())).isEqualTo(nextVertex);
+		testObserver.awaitCount(2); // both committed
+		testObserver.assertValues(genesisVertex, nextVertex); // both committed
+
+		verify(radixEngine, times(1)).store(genesisVertex.getAtom()); // genesis atom stored
+		verify(radixEngine, times(1)).store(nextVertex.getAtom()); // next atom stored
+	}
+
+	@Test
+	public void when_insert_two_vertices__then_get_path_from_root_should_return_the_two_vertices()
+		throws Exception {
 		Vertex nextVertex0 = Vertex.createVertex(rootQC, View.of(1), null);
 		VertexMetadata vertexMetadata = new VertexMetadata(View.of(1), nextVertex0.getId(), 1);
 		VoteData voteData = new VoteData(vertexMetadata, rootQC.getProposed());
@@ -126,7 +160,8 @@ public class VertexStoreTest {
 	}
 
 	@Test
-	public void when_insert_and_commit_vertex__then_committed_vertex_should_emit_and_store_should_have_size_1() throws Exception {
+	public void when_insert_and_commit_vertex__then_committed_vertex_should_emit_and_store_should_have_size_1()
+		throws Exception {
 		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), null);
 		vertexStore.insertVertex(nextVertex);
 
@@ -141,7 +176,8 @@ public class VertexStoreTest {
 	}
 
 	@Test
-	public void when_insert_and_commit_vertex_2x__then_committed_vertex_should_emit_in_order_and_store_should_have_size_1() throws Exception {
+	public void when_insert_and_commit_vertex_2x__then_committed_vertex_should_emit_in_order_and_store_should_have_size_1()
+		throws Exception {
 		TestObserver<Vertex> testObserver = TestObserver.create();
 		vertexStore.lastCommittedVertex().subscribe(testObserver);
 		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), null);
@@ -160,7 +196,8 @@ public class VertexStoreTest {
 	}
 
 	@Test
-	public void when_insert_two_and_commit_vertex__then_two_committed_vertices_should_emit_in_order_and_store_should_have_size_1() throws Exception {
+	public void when_insert_two_and_commit_vertex__then_two_committed_vertices_should_emit_in_order_and_store_should_have_size_1()
+		throws Exception {
 		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), null);
 		vertexStore.insertVertex(nextVertex);
 
