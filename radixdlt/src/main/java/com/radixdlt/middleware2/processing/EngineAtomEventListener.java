@@ -19,7 +19,6 @@ package com.radixdlt.middleware2.processing;
 
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.engine.AtomEventListener;
@@ -46,12 +45,6 @@ public class EngineAtomEventListener implements AtomEventListener<LedgerAtom> {
 
 	public EngineAtomEventListener(Serialization serialization) {
 		this.serialization = serialization;
-	}
-
-	@Override
-	public void onCMError(LedgerAtom atom, CMError error) {
-		ConstraintMachineValidationException ex = new ConstraintMachineValidationException(atom, error.getErrMsg(), error.getDataPointer());
-		Events.getInstance().broadcast(new AtomExceptionEvent(ex, atom.getAID()));
 	}
 
 	@Override

@@ -17,11 +17,11 @@
 
 package com.radixdlt.mempool;
 
+import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.converters.AtomConversionException;
 import com.radixdlt.middleware2.converters.AtomToLedgerAtomConverter;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.function.Consumer;
 
 import javax.inject.Inject;
@@ -31,11 +31,9 @@ import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
 import org.radix.atoms.events.AtomExceptionEvent;
 import org.radix.events.Events;
-import org.radix.validation.ConstraintMachineValidationException;
 
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.atommodel.Atom;
-import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.serialization.Serialization;
 
@@ -65,21 +63,20 @@ class SubmissionControlImpl implements SubmissionControl {
 
 	@Override
 	public void submitAtom(LedgerAtom atom) throws MempoolFullException, MempoolDuplicateException {
-		Optional<CMError> validationError = this.radixEngine.staticCheck(atom);
-
-		if (validationError.isPresent()) {
-			CMError error = validationError.get();
-			ConstraintMachineValidationException ex = new ConstraintMachineValidationException(atom, error.getErrMsg(), error.getDataPointer());
+		try {
+			this.radixEngine.staticCheck(atom);
+		} catch (RadixEngineException e) {
 			log.info(
-				"Rejecting atom {} with constraint machine error '{}' at '{}'.",
+				"Rejecting atom {} with error '{}' at '{}'.",
 				atom.getAID(),
-				error.getErrorDescription(),
-				error.getDataPointer()
+				e.getErrorCode(),
+				e.getDataPointer()
 			);
-			this.events.broadcast(new AtomExceptionEvent(ex, atom.getAID()));
-		} else {
-			this.mempool.addAtom(atom);
+			this.events.broadcast(new AtomExceptionEvent(e, atom.getAID()));
+			return;
 		}
+
+		this.mempool.addAtom(atom);
 	}
 
 	@Override
