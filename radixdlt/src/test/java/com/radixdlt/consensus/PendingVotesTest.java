@@ -23,6 +23,7 @@ import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.utils.UInt256;
 import java.util.Collections;
@@ -35,8 +36,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
+import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class PendingVotesTest {
 	private PendingVotes pendingVotes;
@@ -50,11 +54,18 @@ public class PendingVotesTest {
 	}
 
 	@Test
+	public void equalsContractForPreviousVote() {
+		EqualsVerifier.forClass(PendingVotes.PreviousVote.class)
+			.verify();
+	}
+
+	@Test
 	public void when_inserting_a_vote_without_signature__then_exception_is_thrown() {
-		Vote voteWithoutSignature = makeUnsignedVoteFor(Hash.random());
+		Vote voteWithoutSignature = makeUnsignedVoteFor(ECKeyPair.generateNew().getPublicKey(), View.genesis(), Hash.random());
 
 		VoteData voteData = mock(VoteData.class);
 		ValidatorSet validatorSet = mock(ValidatorSet.class);
+		when(validatorSet.containsKey(any())).thenReturn(true);
 		VertexMetadata proposed = voteWithoutSignature.getVoteData().getProposed();
 		when(voteData.getProposed()).thenReturn(proposed);
 
@@ -65,8 +76,8 @@ public class PendingVotesTest {
 	@Test
 	public void when_inserting_valid_but_unaccepted_votes__then_no_qc_is_returned() {
 		Hash vertexId = Hash.random();
-		Vote vote1 = makeSignedVoteFor(vertexId);
-		Vote vote2 = makeSignedVoteFor(vertexId);
+		Vote vote1 = makeSignedVoteFor(ECKeyPair.generateNew().getPublicKey(), View.genesis(), vertexId);
+		Vote vote2 = makeSignedVoteFor(ECKeyPair.generateNew().getPublicKey(), View.genesis(), vertexId);
 
 		ValidatorSet validatorSet = ValidatorSet.from(Collections.singleton(Validator.from(vote1.getAuthor(), UInt256.ONE)));
 		VoteData voteData = mock(VoteData.class);
@@ -78,14 +89,18 @@ public class PendingVotesTest {
 
 	@Test
 	public void when_inserting_valid_and_accepted_votes__then_qc_is_formed() {
-		Vote vote = makeSignedVoteFor(Hash.random());
+		ECPublicKey author = mock(ECPublicKey.class);
+		when(author.verify(any(Hash.class), any())).thenReturn(true);
+		Vote vote = makeSignedVoteFor(author, View.genesis(), Hash.random());
 
 		ValidatorSet validatorSet = mock(ValidatorSet.class);
 		ValidationState validationState = mock(ValidationState.class);
 		ECDSASignatures signatures = mock(ECDSASignatures.class);
 		when(validationState.addSignature(any(), any())).thenReturn(true);
+		when(validationState.complete()).thenReturn(true);
 		when(validationState.signatures()).thenReturn(signatures);
-		when(validatorSet.newValidationState(any())).thenReturn(validationState);
+		when(validatorSet.newValidationState()).thenReturn(validationState);
+		when(validatorSet.containsKey(any())).thenReturn(true);
 
 		VoteData voteData = mock(VoteData.class);
 		VertexMetadata proposed = vote.getVoteData().getProposed();
@@ -95,15 +110,18 @@ public class PendingVotesTest {
 	}
 
 	@Test
-	public void when_removing_state__state_is_removed() {
-		Vote vote = makeSignedVoteFor(Hash.random());
+	public void when_voting_again__previous_vote_is_removed() {
+		ECPublicKey author = mock(ECPublicKey.class);
+		when(author.verify(any(Hash.class), any())).thenReturn(true);
+		Vote vote = makeSignedVoteFor(author, View.genesis(), Hash.random());
 
 		ValidatorSet validatorSet = mock(ValidatorSet.class);
 		ValidationState validationState = mock(ValidationState.class);
 		ECDSASignatures signatures = mock(ECDSASignatures.class);
-		when(validationState.addSignature(any(), any())).thenReturn(false);
 		when(validationState.signatures()).thenReturn(signatures);
-		when(validatorSet.newValidationState(any())).thenReturn(validationState);
+		when(validationState.isEmpty()).thenReturn(true);
+		when(validatorSet.newValidationState()).thenReturn(validationState);
+		when(validatorSet.containsKey(any())).thenReturn(true);
 
 		VoteData voteData = mock(VoteData.class);
 		VertexMetadata proposed = vote.getVoteData().getProposed();
@@ -111,36 +129,36 @@ public class PendingVotesTest {
 
 		// Preconditions
 		assertThat(this.pendingVotes.insertVote(vote, validatorSet)).isNotPresent();
-		assertEquals(1, this.pendingVotes.stateSize());
+		assertEquals(1, this.pendingVotes.voteStateSize());
+		assertEquals(1, this.pendingVotes.previousVotesSize());
 
-		// Removing prior to inserted vote should remove nothing
-		this.pendingVotes.removeVotesUpto(View.genesis());
-		assertEquals(1, this.pendingVotes.stateSize());
-
-		// Removing inserted vote should empty state
-		this.pendingVotes.removeVotesUpto(View.of(1));
-		assertEquals(0, this.pendingVotes.stateSize());
+		Vote vote2 = makeSignedVoteFor(author, View.of(1), Hash.random());
+		// Need a different hash for this (different) vote
+		when(hasher.hash(eq(vote2.getVoteData()))).thenReturn(Hash.random());
+		assertThat(this.pendingVotes.insertVote(vote2, validatorSet)).isNotPresent();
+		assertEquals(1, this.pendingVotes.voteStateSize());
+		assertEquals(1, this.pendingVotes.previousVotesSize());
 	}
 
-	private Vote makeUnsignedVoteFor(Hash vertexId) {
-		Vote vote = makeVoteWithoutSignatureFor(vertexId);
+	private Vote makeUnsignedVoteFor(ECPublicKey author, View parentView, Hash vertexId) {
+		Vote vote = makeVoteWithoutSignatureFor(author, parentView, vertexId);
 		when(vote.getSignature()).thenReturn(Optional.empty());
 		return vote;
 	}
 
-	private Vote makeSignedVoteFor(Hash vertexId) {
-		Vote vote = makeVoteWithoutSignatureFor(vertexId);
+	private Vote makeSignedVoteFor(ECPublicKey author, View parentView, Hash vertexId) {
+		Vote vote = makeVoteWithoutSignatureFor(author, parentView, vertexId);
 		when(vote.getSignature()).thenReturn(Optional.of(new ECDSASignature()));
 		return vote;
 	}
 
-	private Vote makeVoteWithoutSignatureFor(Hash vertexId) {
+	private Vote makeVoteWithoutSignatureFor(ECPublicKey author, View parentView, Hash vertexId) {
 		Vote vote = mock(Vote.class);
-		VertexMetadata proposed = new VertexMetadata(View.of(1), vertexId, 1);
-		VertexMetadata parent = new VertexMetadata(View.of(0), Hash.random(), 0);
+		VertexMetadata proposed = new VertexMetadata(parentView.next(), vertexId, 1);
+		VertexMetadata parent = new VertexMetadata(parentView, Hash.random(), 0);
 		VoteData voteData = new VoteData(proposed, parent);
 		when(vote.getVoteData()).thenReturn(voteData);
-		when(vote.getAuthor()).thenReturn(ECKeyPair.generateNew().getPublicKey());
+		when(vote.getAuthor()).thenReturn(author);
 		return vote;
 	}
 }

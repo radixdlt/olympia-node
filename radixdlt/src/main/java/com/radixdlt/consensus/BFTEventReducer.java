@@ -120,7 +120,6 @@ public final class BFTEventReducer implements BFTEventProcessor {
 			if (committedAtom != null) {
 				mempool.removeCommittedAtom(committedAtom.getAID());
 			}
-			this.pendingVotes.removeVotesUpto(qc.getView());
 		});
 
 		// proceed to next view if pacemaker feels like it

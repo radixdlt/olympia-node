@@ -17,38 +17,66 @@
 
 package com.radixdlt.consensus;
 
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+
+import javax.annotation.concurrent.NotThreadSafe;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
 import com.google.inject.Inject;
+import com.radixdlt.SecurityCritical;
 import com.radixdlt.consensus.validators.ValidationState;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.SortedMap;
 
 /**
- * Manages pending votes for various vertices
+ * Manages pending votes for various vertices.
+ * <p>
+ * This class is NOT thread-safe.
+ * <p>
+ * This class is security critical (signature checks, validator set membership checks).
  */
+@NotThreadSafe
+@SecurityCritical
 public final class PendingVotes {
-	private final SortedMap<View, Map<Hash, ValidationState>> state = Maps.newTreeMap();
+
+	@VisibleForTesting
+	// Make sure equals tester can access.
+	static final class PreviousVote {
+		private final View view;
+		private final Hash hash;
+
+		PreviousVote(View view, Hash hash) {
+			this.view = view;
+			this.hash = hash;
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(this.view, this.hash);
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (obj instanceof PreviousVote) {
+				PreviousVote that = (PreviousVote) obj;
+				return Objects.equals(this.view, that.view) && Objects.equals(this.hash, that.hash);
+			}
+			return false;
+		}
+	}
+
+	private final Map<Hash, ValidationState> voteState = Maps.newHashMap();
+	private final Map<ECPublicKey, PreviousVote> previousVotes = Maps.newHashMap();
 	private final Hasher hasher;
 
 	@Inject
 	public PendingVotes(Hasher hasher) {
 		this.hasher = Objects.requireNonNull(hasher);
-	}
-
-	/**
-	 * Removed any validation states before valid QC's view.
-	 *
-	 * @param view The view of the last valid QC received.
-	 */
-	public void removeVotesUpto(View view) {
-		this.state.headMap(view.next()).clear();
 	}
 
 	/**
@@ -60,32 +88,67 @@ public final class PendingVotes {
 	 * @return The generated QC, if any
 	 */
 	public Optional<QuorumCertificate> insertVote(Vote vote, ValidatorSet validatorSet) {
-		final View voteView = vote.getVoteData().getProposed().getView();
-		final Hash voteHash = hasher.hash(vote.getVoteData());
-
-
-		ValidationState validationState = this.state
-			.computeIfAbsent(voteView, k -> Maps.newHashMap())
-			.computeIfAbsent(voteHash, validatorSet::newValidationState);
-
-		final ECDSASignature signature = vote.getSignature().orElseThrow(() -> new IllegalArgumentException("vote is missing signature"));
-
 		final ECPublicKey voteAuthor = vote.getAuthor();
-		// try to form a QC with the added signature according to the requirements
-		if (!validationState.addSignature(voteAuthor, signature)) {
-			// if no QC could be formed, update pending and return nothing
-			return Optional.empty();
-		} else {
-			// if QC could be formed, remove validation state
-			// Could continue to accumulate votes until timeout if desired
-			removeVotesUpto(voteView);
-			QuorumCertificate qc = new QuorumCertificate(vote.getVoteData(), validationState.signatures());
-			return Optional.of(qc);
+		final VoteData voteData = vote.getVoteData();
+		final Hash voteHash = this.hasher.hash(voteData);
+		final ECDSASignature signature = vote.getSignature().orElseThrow(() -> new IllegalArgumentException("vote is missing signature"));
+		// Only process for valid validators and signatures
+		if (validatorSet.containsKey(voteAuthor) && voteAuthor.verify(voteHash, signature)) {
+			final View voteView = voteData.getProposed().getView();
+			if (replacePreviousVote(voteAuthor, voteView, voteHash)) {
+				// If there is no equivocation or duplication, we process the vote.
+				ValidationState validationState = this.voteState.computeIfAbsent(voteHash, k -> validatorSet.newValidationState());
+
+				// try to form a QC with the added signature according to the requirements
+				if (validationState.addSignature(voteAuthor, signature) && validationState.complete()) {
+					// QC can be formed, so return it
+					QuorumCertificate qc = new QuorumCertificate(vote.getVoteData(), validationState.signatures());
+					return Optional.of(qc);
+				}
+			}
 		}
+		// No QC could be formed, so return nothing
+		return Optional.empty();
+	}
+
+	private boolean replacePreviousVote(ECPublicKey author, View voteView, Hash voteHash) {
+		PreviousVote thisVote = new PreviousVote(voteView, voteHash);
+		PreviousVote previousVote = this.previousVotes.put(author, thisVote);
+		if (previousVote == null) {
+			// No previous vote for this author, all good here
+			return true;
+		}
+
+		if (thisVote.equals(previousVote)) {
+			// Just going to ignore this duplicate vote for now.
+			// However, we can't count duplicate votes multiple times.
+			return false;
+		}
+
+		// Prune last pending vote from the pending votes.
+		ValidationState validationState = this.voteState.get(previousVote.hash);
+		if (validationState != null) {
+			validationState.removeSignature(author);
+			if (validationState.isEmpty()) {
+				this.voteState.remove(previousVote.hash);
+			}
+		}
+
+		// If the validator already voted in this view for something else,
+		// then it should be slashed, once we have that infrastructure in place.
+		// In any case, equivocating votes should not be counted.
+		return !voteView.equals(previousVote.view);
 	}
 
 	@VisibleForTesting
-	int stateSize() {
-		return this.state.size();
+	// Greybox stuff for testing
+	int voteStateSize() {
+		return this.voteState.size();
+	}
+
+	@VisibleForTesting
+	// Greybox stuff for testing
+	int previousVotesSize() {
+		return this.previousVotes.size();
 	}
 }

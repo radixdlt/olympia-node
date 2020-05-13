@@ -25,7 +25,6 @@ import java.util.Objects;
 import java.util.function.Function;
 
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.Hash;
 
 /**
  * Set of validators for consensus. Only validators with power >= 1 will
@@ -68,11 +67,10 @@ public final class ValidatorSet {
 	/**
 	 * Create an initial validation state with no signatures for this validator set.
 	 *
-	 * @param anchor The hash to validate signatures against
 	 * @return An initial validation state with no signatures
 	 */
-	public ValidationState newValidationState(Hash anchor) {
-		return ValidationState.forValidatorSet(anchor, this);
+	public ValidationState newValidationState() {
+		return ValidationState.forValidatorSet(this);
 	}
 
 	public boolean containsKey(ECPublicKey key) {

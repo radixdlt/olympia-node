@@ -28,7 +28,6 @@ import com.radixdlt.crypto.Hash;
 import static com.google.common.collect.Collections2.transform;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.*;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
@@ -42,10 +41,8 @@ public class ValidationStateTest {
 
 	@Test
 	public void sensibleToString() {
-		Hash hash = Hash.random();
-		String s = ValidatorSet.from(ImmutableList.of()).newValidationState(hash).toString();
+		String s = ValidatorSet.from(ImmutableList.of()).newValidationState().toString();
 		assertThat(s, containsString(ValidationState.class.getSimpleName()));
-		assertThat(s, containsString(hash.toString()));
 	}
 
 	@Test
@@ -93,28 +90,19 @@ public class ValidationStateTest {
 
 		Hash hash = Hash.random();
 
-		ValidationState vstate = vset.newValidationState(hash);
-		assertFalse(vstate.addSignature(kp1, k1.sign(hash)));
-		assertFalse(vstate.addSignature(kp2, k2.sign(hash)));
+		ValidationState vstate = vset.newValidationState();
+		assertTrue(vstate.addSignature(kp1, k1.sign(hash)));
+		assertFalse(vstate.complete());
+		assertTrue(vstate.addSignature(kp2, k2.sign(hash)));
+		assertFalse(vstate.complete());
 		assertTrue(vstate.addSignature(kp3, k3.sign(hash)));
-		assertTrue(vstate.addSignature(kp4, k4.sign(hash)));
-		assertTrue(vstate.addSignature(kp5, k5.sign(hash)));
-
 		assertTrue(vstate.complete());
-		assertEquals(4, vstate.signatures().count());
+		assertTrue(vstate.addSignature(kp4, k4.sign(hash)));
+		assertTrue(vstate.complete());
+		assertFalse(vstate.addSignature(kp5, k5.sign(hash)));
+		assertTrue(vstate.complete());
 
-		// verify(Hash, ECDSASignature) calls verify(Hash, byte[]), so we have to include those
-		verify(kp1, times(1)).verify(any(Hash.class), any());
-		verify(kp1, times(1)).verify(any(byte[].class), any());
-		verify(kp2, times(1)).verify(any(Hash.class), any());
-		verify(kp2, times(1)).verify(any(byte[].class), any());
-		verify(kp3, times(1)).verify(any(Hash.class), any());
-		verify(kp3, times(1)).verify(any(byte[].class), any());
-		verify(kp4, times(1)).verify(any(Hash.class), any());
-		verify(kp4, times(1)).verify(any(byte[].class), any());
-		// This one was not in the validator set, so make sure we didn't verify
-		verify(kp5, never()).verify(any(Hash.class), any());
-		verify(kp5, never()).verify(any(byte[].class), any());
+		assertEquals(4, vstate.signatures().count());
 
 		verifyNoMoreInteractions(kp1, kp2, kp3, kp4, kp5);
 	}

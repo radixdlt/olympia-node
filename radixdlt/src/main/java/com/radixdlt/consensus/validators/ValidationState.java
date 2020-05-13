@@ -26,7 +26,6 @@ import com.google.common.collect.Maps;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.Hash;
 
 /**
  * Keeps track of current validation state for a thing that
@@ -34,7 +33,6 @@ import com.radixdlt.crypto.Hash;
  */
 public final class ValidationState {
 
-	private final Hash hash;
 	private final ValidatorSet validatorSet;
 	private final ConcurrentMap<ECPublicKey, ECDSASignature> signedKeys;
 	private transient UInt256 signedPower;
@@ -43,15 +41,13 @@ public final class ValidationState {
 	/**
 	 * Construct empty validation state for given hash and set of validator keys.
 	 *
-	 * @param hash The hash to verify signatures against
 	 * @param validatorSet The validator set
 	 */
-	public static ValidationState forValidatorSet(Hash hash, ValidatorSet validatorSet) {
-		return new ValidationState(hash, validatorSet);
+	public static ValidationState forValidatorSet(ValidatorSet validatorSet) {
+		return new ValidationState(validatorSet);
 	}
 
-	private ValidationState(Hash hash, ValidatorSet validatorSet) {
-		this.hash = Objects.requireNonNull(hash);
+	private ValidationState(ValidatorSet validatorSet) {
 		this.validatorSet = Objects.requireNonNull(validatorSet);
 		this.signedKeys = Maps.newConcurrentMap();
 		this.signedPower = UInt256.ZERO;
@@ -59,24 +55,46 @@ public final class ValidationState {
 	}
 
 	/**
-	 * Verifies the specified signature and key against our hash.
-	 * If the key and signature passes verification, they are added to the list
-	 * of signing keys and signatures.
+	 * Removes the signature for the specified key, if present.
+	 *
+	 * @param key the public key for the signature to be removed
+	 */
+	public void removeSignature(ECPublicKey key) {
+		if (this.validatorSet.containsKey(key)) {
+			this.signedKeys.computeIfPresent(key, (k, v) -> {
+				this.signedPower = this.signedPower.subtract(this.validatorSet.getPower(key));
+				return null;
+			});
+		}
+	}
+
+	/**
+	 * Adds key and signature to our list of signing keys and signatures.
+	 * Note that it is assumed that signature validation is performed
+	 * elsewhere.
 	 *
 	 * @param key The public key to use for signature verification
 	 * @param signature The signature to verify
-	 * @return whether a quorum has been formed or not
+	 * @return whether the key was added or not
 	 */
 	public boolean addSignature(ECPublicKey key, ECDSASignature signature) {
 		if (validatorSet.containsKey(key)
-			&& !this.signedKeys.containsKey(key)
-			&& key.verify(this.hash, signature)) {
-
-			this.signedKeys.put(key, signature);
-			this.signedPower = this.signedPower.add(this.validatorSet.getPower(key));
+			&& !this.signedKeys.containsKey(key)) {
+			this.signedKeys.compute(key, (k, v) -> {
+				this.signedPower = this.signedPower.add(this.validatorSet.getPower(key));
+				return signature;
+			});
+			return true;
 		}
+		return false;
+	}
 
-		return complete();
+	/**
+	 * Return {@code true} if we have not yet accumulated any valid signatures.
+	 * @return {@code true} if we have not accumulated any signatures, {@code false} otherwise.
+	 */
+	public boolean isEmpty() {
+		return this.signedKeys.isEmpty();
 	}
 
 	/**
@@ -111,7 +129,7 @@ public final class ValidationState {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(hash, validatorSet, signedKeys);
+		return Objects.hash(validatorSet, signedKeys);
 	}
 
 	@Override
@@ -121,8 +139,7 @@ public final class ValidationState {
 		}
 		if (obj instanceof ValidationState) {
 			ValidationState that = (ValidationState) obj;
-			return Objects.equals(this.hash, that.hash)
-				&& Objects.equals(this.validatorSet, that.validatorSet)
+			return Objects.equals(this.validatorSet, that.validatorSet)
 				&& Objects.equals(this.signedKeys, that.signedKeys);
 		}
 		return false;
@@ -130,7 +147,7 @@ public final class ValidationState {
 
 	@Override
 	public String toString() {
-		return String.format("%s[hash=%s, validatorSet=%s, signedKeys=%s]",
-			getClass().getSimpleName(), hash, validatorSet, signedKeys);
+		return String.format("%s[validatorSet=%s, signedKeys=%s]",
+			getClass().getSimpleName(), validatorSet, signedKeys);
 	}
 }
