@@ -19,6 +19,7 @@ package com.radixdlt.engine;
 
 import com.radixdlt.constraintmachine.DataPointer;
 import java.util.Objects;
+import javax.annotation.Nullable;
 
 /**
  * Exception thrown by Radix Engine
@@ -26,17 +27,43 @@ import java.util.Objects;
 public final class RadixEngineException extends Exception {
 	private final RadixEngineErrorCode errorCode;
 	private final DataPointer dp;
+	private final RadixEngineAtom related;
 
-	public RadixEngineException(RadixEngineErrorCode errorCode, DataPointer dp) {
-		this.errorCode = Objects.requireNonNull(errorCode);
-		this.dp = dp;
+	RadixEngineException(RadixEngineErrorCode errorCode, DataPointer dp) {
+		this(errorCode, dp, null);
 	}
 
+	RadixEngineException(RadixEngineErrorCode errorCode, DataPointer dp, RadixEngineAtom related) {
+		this.errorCode = Objects.requireNonNull(errorCode);
+		this.dp = dp;
+		this.related = related;
+	}
+
+	/**
+	 * Retrieve the data pointer signifying where in the atom
+	 * the exception occurred
+	 * @return the data pointer
+	 */
 	public DataPointer getDataPointer() {
 		return dp;
 	}
 
+	/**
+	 * Retrieve the high-level error code associated with the exception
+	 * @return the error code
+	 */
 	public RadixEngineErrorCode getErrorCode() {
 		return errorCode;
+	}
+
+	/**
+	 * Get the atom which is related to this exception
+	 * (e.g. the conflict atom on conflict exceptions)
+	 *
+	 * @return the related atom
+	 */
+	@Nullable
+	public RadixEngineAtom getRelated() {
+		return related;
 	}
 }

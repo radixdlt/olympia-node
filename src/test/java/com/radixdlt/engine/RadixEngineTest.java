@@ -63,7 +63,7 @@ public class RadixEngineTest {
 		RadixEngineAtom atom = mock(RadixEngineAtom.class);
 		ImmutableList<CMMicroInstruction> insts = ImmutableList.of(CMMicroInstruction.checkSpin(mock(IndexedParticle.class), Spin.UP));
 		when(atom.getCMInstruction()).thenReturn(new CMInstruction(insts, Hash.random(), ImmutableMap.of()));
-		Assertions.assertThatThrownBy(() -> engine.store(atom))
+		Assertions.assertThatThrownBy(() -> engine.checkAndStore(atom))
 			.isInstanceOf(RadixEngineException.class)
 			.matches(e -> ((RadixEngineException) e).getDataPointer().equals(DataPointer.ofParticle(0, 0)), "points to 1st particle")
 			.extracting(e -> ((RadixEngineException) e).getErrorCode())
