@@ -98,9 +98,9 @@ public class MiddlewareModule extends AbstractModule {
 		RadixEngine<LedgerAtom> radixEngine = new RadixEngine<>(
 			constraintMachine,
 			virtualStoreLayer,
-			engineStore
+			engineStore,
+			ledgerAtomChecker
 		);
-		radixEngine.addCMSuccessHook(ledgerAtomChecker);
 
 		return radixEngine;
 	}

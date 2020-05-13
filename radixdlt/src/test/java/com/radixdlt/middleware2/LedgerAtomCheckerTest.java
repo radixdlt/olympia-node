@@ -74,7 +74,7 @@ public class LedgerAtomCheckerTest {
 		Hash powSpent = mock(Hash.class);
 		when(powFeeComputer.computePowSpent(eq(ledgerAtom), eq(0L))).thenReturn(powSpent);
 		when(powSpent.compareTo(eq(target))).thenReturn(-1);
-		assertThat(checker.hook(ledgerAtom).isSuccess()).isTrue();
+		assertThat(checker.check(ledgerAtom).isSuccess()).isTrue();
 	}
 
 	@Test
@@ -87,7 +87,7 @@ public class LedgerAtomCheckerTest {
 		when(ledgerAtom.getCMInstruction()).thenReturn(cmInstruction);
 		when(ledgerAtom.getMetaData()).thenReturn(ImmutableMap.of("timestamp", "0"));
 
-		assertThat(checker.hook(ledgerAtom).getErrorMessage())
+		assertThat(checker.check(ledgerAtom).getErrorMessage())
 			.contains("instructions");
 	}
 
@@ -101,7 +101,7 @@ public class LedgerAtomCheckerTest {
 		when(ledgerAtom.getCMInstruction()).thenReturn(cmInstruction);
 		when(ledgerAtom.getMetaData()).thenReturn(ImmutableMap.of());
 
-		assertThat(checker.hook(ledgerAtom).getErrorMessage())
+		assertThat(checker.check(ledgerAtom).getErrorMessage())
 			.contains("metadata does not contain");
 	}
 
@@ -124,7 +124,7 @@ public class LedgerAtomCheckerTest {
 		when(powFeeComputer.computePowSpent(eq(ledgerAtom), eq(0L))).thenReturn(powFeeHash);
 		when(powFeeHash.compareTo(eq(target))).thenReturn(-1);
 
-		assertThat(checker.hook(ledgerAtom).getErrorMessage())
+		assertThat(checker.check(ledgerAtom).getErrorMessage())
 			.contains("invalid timestamp");
 	}
 }

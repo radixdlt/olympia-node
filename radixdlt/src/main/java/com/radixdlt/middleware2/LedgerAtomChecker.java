@@ -20,14 +20,14 @@ package com.radixdlt.middleware2;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.engine.CMSuccessHook;
+import com.radixdlt.engine.AtomChecker;
 import com.radixdlt.universe.Universe;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
-public class LedgerAtomChecker implements CMSuccessHook<LedgerAtom> {
+public class LedgerAtomChecker implements AtomChecker<LedgerAtom> {
 	private final boolean skipAtomFeeCheck;
 	private final Supplier<Universe> universeSupplier;
 	private final LongSupplier timestampSupplier;
@@ -53,7 +53,7 @@ public class LedgerAtomChecker implements CMSuccessHook<LedgerAtom> {
 	}
 
 	@Override
-	public Result hook(LedgerAtom atom) {
+	public Result check(LedgerAtom atom) {
 		if (atom.getCMInstruction().getMicroInstructions().isEmpty()) {
 			return Result.error("atom has no instructions");
 		}
