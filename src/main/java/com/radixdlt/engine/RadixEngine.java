@@ -32,7 +32,6 @@ import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.SpinStateMachine;
 
 import java.util.Optional;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.UnaryOperator;
 
@@ -43,7 +42,7 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 	private final ConstraintMachine constraintMachine;
 	private final CMStore virtualizedCMStore;
 	private final EngineStore<T> engineStore;
-	private final CopyOnWriteArrayList<CMSuccessHook<T>> cmSuccessHooks = new CopyOnWriteArrayList<>();
+	private final AtomChecker<T> checker;
 	private final Object stateUpdateEngineLock = new Object();
 
 	public RadixEngine(
@@ -51,14 +50,19 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 		UnaryOperator<CMStore> virtualStoreLayer,
 		EngineStore<T> engineStore
 	) {
-		this.constraintMachine = constraintMachine;
-		// Remove cm virtual checkAndStore
-		this.virtualizedCMStore = virtualStoreLayer.apply(CMStores.empty());
-		this.engineStore = engineStore;
+		this(constraintMachine, virtualStoreLayer, engineStore, null);
 	}
 
-	public void addCMSuccessHook(CMSuccessHook<T> hook) {
-		this.cmSuccessHooks.add(hook);
+	public RadixEngine(
+		ConstraintMachine constraintMachine,
+		UnaryOperator<CMStore> virtualStoreLayer,
+		EngineStore<T> engineStore,
+		AtomChecker<T> checker
+	) {
+		this.constraintMachine = constraintMachine;
+		this.virtualizedCMStore = virtualStoreLayer.apply(CMStores.empty());
+		this.engineStore = engineStore;
+		this.checker = checker;
 	}
 
 	public void staticCheck(T atom) throws RadixEngineException {
@@ -67,14 +71,21 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 			throw new RadixEngineException(RadixEngineErrorCode.CM_ERROR, error.get().getDataPointer());
 		}
 
-		for (CMSuccessHook<T> hook : cmSuccessHooks) {
-			Result hookResult = hook.hook(atom);
+		if (checker != null) {
+			Result hookResult = checker.check(atom);
 			if (hookResult.isError()) {
 				throw new RadixEngineException(RadixEngineErrorCode.HOOK_ERROR, DataPointer.ofAtom());
 			}
 		}
 	}
 
+	/**
+	 * Atomically stores the given atom into the store. If the atom
+	 * has any conflicts or dependency issues the atom will not be stored.
+	 *
+	 * @param atom the atom to store
+	 * @throws RadixEngineException on state conflict or dependency issues
+	 */
 	public void checkAndStore(T atom) throws RadixEngineException {
 		this.staticCheck(atom);
 
@@ -107,7 +118,7 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 
 			final DataPointer dp = DataPointer.ofParticle(particleGroupIndex, particleIndex);
 
-			// First spun is the only one we need to check
+			// First spin is the only one we need to check
 			final Spin checkSpin = microInstruction.getCheckSpin();
 			final Spin virtualSpin = virtualizedCMStore.getSpin(particle);
 			// TODO: Move virtual state checks into static check
