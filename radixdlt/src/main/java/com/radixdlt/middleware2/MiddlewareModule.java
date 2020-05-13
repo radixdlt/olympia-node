@@ -29,14 +29,20 @@ import com.radixdlt.atommodel.unique.UniqueParticleConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.ConstraintMachine;
+import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.identifiers.AID;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.universe.Universe;
+import java.util.Set;
+import java.util.function.Consumer;
 import org.radix.time.Time;
 
 import java.util.function.UnaryOperator;
@@ -76,6 +82,44 @@ public class MiddlewareModule extends AbstractModule {
 
 	@Provides
 	@Singleton
+	private EngineStore<LedgerAtom> engineStore(
+		CommittedAtomsStore committedAtomsStore
+	) {
+		return new EngineStore<LedgerAtom>() {
+			@Override
+			public void getAtomContaining(Particle particle, boolean b, Consumer<LedgerAtom> consumer) {
+				committedAtomsStore.getAtomContaining(particle, b, consumer::accept);
+			}
+
+			@Override
+			public void storeAtom(LedgerAtom ledgerAtom) {
+				if (!(ledgerAtom instanceof CommittedAtom)) {
+					throw new IllegalStateException("Should not be storing atoms which aren't committed");
+				}
+
+				CommittedAtom committedAtom = (CommittedAtom) ledgerAtom;
+				committedAtomsStore.storeAtom(committedAtom);
+			}
+
+			@Override
+			public void deleteAtom(AID aid) {
+				committedAtomsStore.deleteAtom(aid);
+			}
+
+			@Override
+			public boolean supports(Set<EUID> set) {
+				return committedAtomsStore.supports(set);
+			}
+
+			@Override
+			public Spin getSpin(Particle particle) {
+				return committedAtomsStore.getSpin(particle);
+			}
+		};
+	}
+
+	@Provides
+	@Singleton
 	private RadixEngine<LedgerAtom> getRadixEngine(
 			ConstraintMachine constraintMachine,
 			UnaryOperator<CMStore> virtualStoreLayer,
@@ -95,19 +139,17 @@ public class MiddlewareModule extends AbstractModule {
 				Time.MAXIMUM_DRIFT
 			);
 
-		RadixEngine<LedgerAtom> radixEngine = new RadixEngine<>(
+		return new RadixEngine<>(
 			constraintMachine,
 			virtualStoreLayer,
 			engineStore,
 			ledgerAtomChecker
 		);
-
-		return radixEngine;
 	}
 
 	@Override
 	protected void configure() {
-		bind(new TypeLiteral<EngineStore<LedgerAtom>>() { }).to(CommittedAtomsStore.class).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<EngineStore<CommittedAtom>>() { }).to(CommittedAtomsStore.class).in(Scopes.SINGLETON);
 		bind(AtomToBinaryConverter.class).toInstance(new AtomToBinaryConverter(DefaultSerialization.getInstance()));
 	}
 }

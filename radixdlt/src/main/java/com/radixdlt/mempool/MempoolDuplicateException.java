@@ -17,14 +17,14 @@
 
 package com.radixdlt.mempool;
 
-import com.radixdlt.middleware2.LedgerAtom;
+import com.radixdlt.middleware2.ClientAtom;
 
 /**
  * Exception thrown when an attempt to add new items would
  * exceed the mempool's maximum capacity.
  */
 public class MempoolDuplicateException extends MempoolRejectedException {
-	public MempoolDuplicateException(LedgerAtom atom, String message) {
+	public MempoolDuplicateException(ClientAtom atom, String message) {
 		super(atom, message);
 	}
 }

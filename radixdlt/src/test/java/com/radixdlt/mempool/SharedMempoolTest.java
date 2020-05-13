@@ -18,6 +18,7 @@
 package com.radixdlt.mempool;
 
 import com.google.inject.TypeLiteral;
+import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import java.util.Set;
 
@@ -80,7 +81,7 @@ public class SharedMempoolTest {
 	@Test
 	public void when_adding_atom__then_atom_is_added_and_sent()
 		throws MempoolFullException, MempoolDuplicateException {
-		LedgerAtom mockAtom = mock(LedgerAtom.class);
+		ClientAtom mockAtom = mock(ClientAtom.class);
 		when(mockAtom.getAID()).thenReturn(TEST_AID);
 		this.sharedMempool.addAtom(mockAtom);
 		verify(this.localMempool, times(1)).addAtom(any());

@@ -30,7 +30,7 @@ import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.VertexStore;
 import com.radixdlt.consensus.View;
 import com.radixdlt.mempool.Mempool;
-import com.radixdlt.middleware2.LedgerAtom;
+import com.radixdlt.middleware2.ClientAtom;
 import java.util.Collections;
 import org.junit.Test;
 
@@ -38,7 +38,7 @@ public class MempoolProposalGeneratorTest {
 	@Test
 	public void when_vertex_store_contains_vertices_with_no_atom__then_generate_proposal_should_still_work() {
 		Mempool mempool = mock(Mempool.class);
-		LedgerAtom reAtom = mock(LedgerAtom.class);
+		ClientAtom reAtom = mock(ClientAtom.class);
 		when(mempool.getAtoms(anyInt(), anySet())).thenReturn(Collections.singletonList(reAtom));
 
 		VertexStore vertexStore = mock(VertexStore.class);

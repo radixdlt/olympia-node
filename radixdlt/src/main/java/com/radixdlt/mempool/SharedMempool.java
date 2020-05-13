@@ -17,7 +17,7 @@
 
 package com.radixdlt.mempool;
 
-import com.radixdlt.middleware2.LedgerAtom;
+import com.radixdlt.middleware2.ClientAtom;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -47,7 +47,7 @@ public class SharedMempool implements Mempool {
 	}
 
 	@Override
-	public void addAtom(LedgerAtom atom) throws MempoolFullException, MempoolDuplicateException {
+	public void addAtom(ClientAtom atom) throws MempoolFullException, MempoolDuplicateException {
 		this.localMempool.addAtom(atom);
 		updateCounts();
 		this.networkSender.sendMempoolSubmission(atom);
@@ -66,7 +66,7 @@ public class SharedMempool implements Mempool {
 	}
 
 	@Override
-	public List<LedgerAtom> getAtoms(int count, Set<AID> seen) {
+	public List<ClientAtom> getAtoms(int count, Set<AID> seen) {
 		return this.localMempool.getAtoms(count, seen);
 	}
 

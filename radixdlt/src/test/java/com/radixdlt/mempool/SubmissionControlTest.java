@@ -18,8 +18,9 @@
 package com.radixdlt.mempool;
 
 import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.LedgerAtom;
-import com.radixdlt.middleware2.converters.AtomToLedgerAtomConverter;
+import com.radixdlt.middleware2.converters.AtomToClientAtomConverter;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.json.JSONObject;
 import org.junit.Before;
@@ -45,7 +46,7 @@ public class SubmissionControlTest {
 	private Serialization serialization;
 	private Events events;
 	private SubmissionControlImpl submissionControl;
-	private AtomToLedgerAtomConverter converter;
+	private AtomToClientAtomConverter converter;
 
 	@Before
 	public void setUp() {
@@ -53,7 +54,7 @@ public class SubmissionControlTest {
 		this.radixEngine = throwingMock(RadixEngine.class);
 		this.serialization = throwingMock(Serialization.class);
 		this.events = throwingMock(Events.class);
-		this.converter = mock(AtomToLedgerAtomConverter.class);
+		this.converter = mock(AtomToClientAtomConverter.class);
 		this.submissionControl = new SubmissionControlImpl(this.mempool, this.radixEngine, this.serialization, this.events, this.converter);
 	}
 
@@ -64,7 +65,7 @@ public class SubmissionControlTest {
 		doThrow(e).when(this.radixEngine).staticCheck(any());
 		doNothing().when(this.events).broadcast(any());
 
-		LedgerAtom atom = mock(LedgerAtom.class);
+		ClientAtom atom = mock(ClientAtom.class);
 		this.submissionControl.submitAtom(atom);
 
 		verify(this.events, times(1)).broadcast(ArgumentMatchers.any(AtomExceptionEvent.class));
@@ -76,7 +77,7 @@ public class SubmissionControlTest {
 		doNothing().when(this.radixEngine).staticCheck(any());
 		doNothing().when(this.mempool).addAtom(any());
 
-		LedgerAtom atom = mock(LedgerAtom.class);
+		ClientAtom atom = mock(ClientAtom.class);
 		this.submissionControl.submitAtom(atom);
 
 		verify(this.events, never()).broadcast(any());
@@ -110,9 +111,9 @@ public class SubmissionControlTest {
 
 		AtomicBoolean called = new AtomicBoolean(false);
 
-		LedgerAtom ledgerAtom = mock(LedgerAtom.class);
-		when(ledgerAtom.getAID()).thenReturn(AID.ZERO);
-		when(converter.convert(eq(atomMock))).thenReturn(ledgerAtom);
+		ClientAtom clientAtom = mock(ClientAtom.class);
+		when(clientAtom.getAID()).thenReturn(AID.ZERO);
+		when(converter.convert(eq(atomMock))).thenReturn(clientAtom);
 		AID result = this.submissionControl.submitAtom(throwingMock(JSONObject.class), a -> called.set(true));
 
 		assertSame(AID.ZERO, result);

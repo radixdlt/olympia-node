@@ -51,8 +51,9 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.middleware2.ClientAtom.LedgerAtomConversionException;
 import com.radixdlt.middleware2.LedgerAtom;
-import com.radixdlt.middleware2.LedgerAtom.LedgerAtomConversionException;
 import com.radixdlt.middleware2.network.MessageCentralBFTNetwork;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.properties.RuntimeProperties;
@@ -140,7 +141,7 @@ public class CerberusModule extends AbstractModule {
 			throw new IllegalStateException("Can only support one genesis atom.");
 		}
 
-		final LedgerAtom genesisAtom = LedgerAtom.convertFromApiAtom(universe.getGenesis().get(0));
+		final ClientAtom genesisAtom = ClientAtom.convertFromApiAtom(universe.getGenesis().get(0));
 		final Vertex genesisVertex = Vertex.createGenesis(genesisAtom);
 		final VertexMetadata genesisMetadata = new VertexMetadata(View.genesis(), genesisVertex.getId(), 0);
 		final VoteData voteData = new VoteData(genesisMetadata, null);

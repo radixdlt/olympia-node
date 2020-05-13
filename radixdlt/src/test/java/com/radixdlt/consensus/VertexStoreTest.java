@@ -20,6 +20,7 @@ package com.radixdlt.consensus;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -31,6 +32,8 @@ import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import io.reactivex.rxjava3.observers.TestObserver;
 import java.util.Arrays;
@@ -93,7 +96,7 @@ public class VertexStoreTest {
 		VertexMetadata vertexMetadata = new VertexMetadata(View.genesis(), Hash.ZERO_HASH, 0);
 		VoteData voteData = new VoteData(vertexMetadata, null);
 		QuorumCertificate qc = new QuorumCertificate(voteData, new ECDSASignatures());
-		Vertex nextVertex = Vertex.createVertex(qc, View.of(1), mock(LedgerAtom.class));
+		Vertex nextVertex = Vertex.createVertex(qc, View.of(1), mock(ClientAtom.class));
 		assertThatThrownBy(() -> vertexStore.insertVertex(nextVertex))
 			.isInstanceOf(MissingParentException.class);
 	}
@@ -104,14 +107,16 @@ public class VertexStoreTest {
 		throws Exception {
 		doThrow(mock(RadixEngineException.class)).when(radixEngine).checkAndStore(any());
 
-		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), mock(LedgerAtom.class));
+		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), mock(ClientAtom.class));
 		assertThatThrownBy(() -> vertexStore.insertVertex(nextVertex))
 			.isInstanceOf(VertexInsertionException.class);
 	}
 
 	@Test
 	public void when_committing_vertex_which_was_not_inserted__then_illegal_state_exception_is_thrown() {
-		assertThatThrownBy(() -> vertexStore.commitVertex(mock(Hash.class)))
+		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
+		when(vertexMetadata.getId()).thenReturn(mock(Hash.class));
+		assertThatThrownBy(() -> vertexStore.commitVertex(vertexMetadata))
 			.isInstanceOf(IllegalStateException.class);
 	}
 
@@ -125,24 +130,28 @@ public class VertexStoreTest {
 		vertexStore.lastCommittedVertex().subscribe(testObserver);
 		testObserver.awaitCount(1); // genesis only
 		testObserver.assertValues(genesisVertex); // not committed
-		verify(radixEngine, times(1)).checkAndStore(genesisVertex.getAtom()); // not stored (genesis only)
+		verify(radixEngine, times(0)).checkAndStore(any()); // not stored
 	}
 
 	@Test
 	public void when_insert_and_commit_vertex__then_it_should_be_committed_and_stored_in_engine()
 		throws VertexInsertionException, RadixEngineException {
-		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), mock(LedgerAtom.class));
+		ClientAtom clientAtom = mock(ClientAtom.class);
+		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), clientAtom);
 		vertexStore.insertVertex(nextVertex);
 		TestObserver<Vertex> testObserver = TestObserver.create();
 		vertexStore.lastCommittedVertex().subscribe(testObserver);
 		testObserver.awaitCount(1); // genesis first
 
-		assertThat(vertexStore.commitVertex(nextVertex.getId())).isEqualTo(nextVertex);
+		VertexMetadata vertexMetadata = VertexMetadata.ofVertex(nextVertex);
+		CommittedAtom committedAtom = mock(CommittedAtom.class);
+		when(clientAtom.committed(eq(vertexMetadata))).thenReturn(committedAtom);
+		assertThat(vertexStore.commitVertex(vertexMetadata)).isEqualTo(nextVertex);
 		testObserver.awaitCount(2); // both committed
 		testObserver.assertValues(genesisVertex, nextVertex); // both committed
 
-		verify(radixEngine, times(1)).checkAndStore(genesisVertex.getAtom()); // genesis atom stored
-		verify(radixEngine, times(1)).checkAndStore(nextVertex.getAtom()); // next atom stored
+		verify(radixEngine, times(1))
+			.checkAndStore(eq(committedAtom)); // next atom stored
 	}
 
 	@Test
@@ -169,7 +178,8 @@ public class VertexStoreTest {
 		vertexStore.lastCommittedVertex().subscribe(testObserver);
 		testObserver.awaitCount(1);
 
-		assertThat(vertexStore.commitVertex(nextVertex.getId())).isEqualTo(nextVertex);
+		VertexMetadata vertexMetadata = VertexMetadata.ofVertex(nextVertex);
+		assertThat(vertexStore.commitVertex(vertexMetadata)).isEqualTo(nextVertex);
 		testObserver.awaitCount(2);
 		testObserver.assertValues(genesisVertex, nextVertex);
 		assertThat(vertexStore.getSize()).isEqualTo(1);
@@ -182,13 +192,15 @@ public class VertexStoreTest {
 		vertexStore.lastCommittedVertex().subscribe(testObserver);
 		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), null);
 		vertexStore.insertVertex(nextVertex);
-		vertexStore.commitVertex(nextVertex.getId());
+		VertexMetadata vertexMetadata = VertexMetadata.ofVertex(nextVertex);
+		vertexStore.commitVertex(vertexMetadata);
 
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		when(qc.getProposed()).thenReturn(VertexMetadata.ofVertex(nextVertex));
 		Vertex nextVertex2 = Vertex.createVertex(qc, View.of(2), null);
 		vertexStore.insertVertex(nextVertex2);
-		vertexStore.commitVertex(nextVertex2.getId());
+		VertexMetadata vertexMetadata2 = VertexMetadata.ofVertex(nextVertex2);
+		vertexStore.commitVertex(vertexMetadata2);
 
 		testObserver.awaitCount(3);
 		testObserver.assertValues(genesisVertex, nextVertex, nextVertex2);
@@ -210,7 +222,8 @@ public class VertexStoreTest {
 		vertexStore.lastCommittedVertex().subscribe(testObserver);
 		testObserver.awaitCount(1);
 
-		vertexStore.commitVertex(nextVertex2.getId());
+		VertexMetadata vertexMetadata2 = VertexMetadata.ofVertex(nextVertex2);
+		vertexStore.commitVertex(vertexMetadata2);
 		testObserver.awaitCount(3);
 		testObserver.assertValues(genesisVertex, nextVertex, nextVertex2);
 		assertThat(vertexStore.getSize()).isEqualTo(1);

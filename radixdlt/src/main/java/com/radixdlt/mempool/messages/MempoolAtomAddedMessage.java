@@ -17,7 +17,7 @@
 
 package com.radixdlt.mempool.messages;
 
-import com.radixdlt.middleware2.LedgerAtom;
+import com.radixdlt.middleware2.ClientAtom;
 import java.util.Objects;
 
 import org.radix.network.messaging.Message;
@@ -31,7 +31,7 @@ import com.radixdlt.serialization.SerializerId2;
 public class MempoolAtomAddedMessage extends Message {
 	@JsonProperty("atom")
 	@DsonOutput(Output.ALL)
-	private final LedgerAtom atom;
+	private final ClientAtom atom;
 
 	MempoolAtomAddedMessage() {
 		// Serializer only
@@ -39,12 +39,12 @@ public class MempoolAtomAddedMessage extends Message {
 		this.atom = null;
 	}
 
-	public MempoolAtomAddedMessage(int magic, LedgerAtom vertex) {
+	public MempoolAtomAddedMessage(int magic, ClientAtom vertex) {
 		super(magic);
 		this.atom = Objects.requireNonNull(vertex);
 	}
 
-	public LedgerAtom atom() {
+	public ClientAtom atom() {
 		return this.atom;
 	}
 

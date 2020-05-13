@@ -23,7 +23,7 @@ import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexStore;
 import com.radixdlt.consensus.View;
 import com.radixdlt.mempool.Mempool;
-import com.radixdlt.middleware2.LedgerAtom;
+import com.radixdlt.middleware2.ClientAtom;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -54,10 +54,10 @@ public final class MempoolProposalGenerator implements ProposalGenerator {
 		final Set<AID> preparedAtoms = preparedVertices.stream()
 			.map(Vertex::getAtom)
 			.filter(Objects::nonNull)
-			.map(LedgerAtom::getAID)
+			.map(ClientAtom::getAID)
 			.collect(Collectors.toSet());
 
-		final List<LedgerAtom> atoms = mempool.getAtoms(1, preparedAtoms);
+		final List<ClientAtom> atoms = mempool.getAtoms(1, preparedAtoms);
 
 		return Vertex.createVertex(highestQC, view, !atoms.isEmpty() ? atoms.get(0) : null);
 	}

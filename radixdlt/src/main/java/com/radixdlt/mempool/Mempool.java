@@ -16,7 +16,7 @@
  */
 package com.radixdlt.mempool;
 
-import com.radixdlt.middleware2.LedgerAtom;
+import com.radixdlt.middleware2.ClientAtom;
 import java.util.List;
 import java.util.Set;
 
@@ -27,7 +27,7 @@ import com.radixdlt.identifiers.AID;
  * Implementations are expected to be thread safe.
  * <p>
  * Note that conceptually, a mempoolcan be thought of as a list indexable
- * by {@link AID} and ordered FIFO by {@link #addAtom(LedgerAtom)} call order.
+ * by {@link AID} and ordered FIFO by {@link #addAtom(ClientAtom)} call order.
  */
 public interface Mempool {
 	/**
@@ -38,7 +38,7 @@ public interface Mempool {
 	 * @throws MempoolFullException if the mempool cannot accept new submissions.
 	 * @throws MempoolDuplicateException if the mempool already has the specified atom
 	 */
-	void addAtom(LedgerAtom atom) throws MempoolFullException, MempoolDuplicateException;
+	void addAtom(ClientAtom atom) throws MempoolFullException, MempoolDuplicateException;
 
 	/**
 	 * Remove the referenced atom from the local mempool after it has
@@ -67,7 +67,7 @@ public interface Mempool {
 	 * @param seen IDs of atoms seen by consensus, but not yet committed to the ledger
 	 * @return A list of atoms for processing by consensus
 	 */
-	List<LedgerAtom> getAtoms(int count, Set<AID> seen);
+	List<ClientAtom> getAtoms(int count, Set<AID> seen);
 
 	/**
 	 * Return approximate count of atoms in the mempool.

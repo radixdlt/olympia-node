@@ -25,21 +25,21 @@ import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.middleware.ParticleGroup;
 import com.radixdlt.middleware.SpunParticle;
-import com.radixdlt.middleware2.LedgerAtom.LedgerAtomConversionException;
+import com.radixdlt.middleware2.ClientAtom.LedgerAtomConversionException;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
-public class LedgerAtomTest {
+public class ClientAtomTest {
 	@Test
 	public void equalsContract() {
-		EqualsVerifier.forClass(LedgerAtom.class)
+		EqualsVerifier.forClass(ClientAtom.class)
 			.verify();
 	}
 
 	@Test
 	public void when_validating_an_up_cm_particle__no_issue_is_returned() throws Exception {
 		Particle particle0 = mock(Particle.class);
-		LedgerAtom.toCMMicroInstructions(
+		ClientAtom.toCMMicroInstructions(
 			ImmutableList.of(ParticleGroup.of(
 				SpunParticle.up(particle0)
 			))
@@ -49,7 +49,7 @@ public class LedgerAtomTest {
 	@Test
 	public void when_validating_an_up_to_down_cm_particle__no_issue_is_returned() throws Exception {
 		Particle particle0 = mock(Particle.class);
-		LedgerAtom.toCMMicroInstructions(
+		ClientAtom.toCMMicroInstructions(
 			ImmutableList.of(
 				ParticleGroup.of(
 					SpunParticle.up(particle0)
@@ -66,7 +66,7 @@ public class LedgerAtomTest {
 		Particle particle0 = mock(Particle.class);
 
 		assertThatThrownBy(() ->
-			LedgerAtom.toCMMicroInstructions(
+			ClientAtom.toCMMicroInstructions(
 				ImmutableList.of(
 					ParticleGroup.of(
 						SpunParticle.up(particle0)
@@ -85,7 +85,7 @@ public class LedgerAtomTest {
 	public void when_validating_a_down_to_down_cm_particle__conflict_is_returned() {
 		Particle particle0 = mock(Particle.class);
 		assertThatThrownBy(() ->
-			LedgerAtom.toCMMicroInstructions(
+			ClientAtom.toCMMicroInstructions(
 				ImmutableList.of(
 					ParticleGroup.of(
 						SpunParticle.down(particle0)
@@ -102,7 +102,7 @@ public class LedgerAtomTest {
 	public void when_validating_a_down_to_up_cm_particle__single_conflict_is_returned() {
 		Particle particle0 = mock(Particle.class);
 		assertThatThrownBy(() ->
-			LedgerAtom.toCMMicroInstructions(
+			ClientAtom.toCMMicroInstructions(
 				ImmutableList.of(
 					ParticleGroup.of(
 						SpunParticle.down(particle0)
@@ -119,7 +119,7 @@ public class LedgerAtomTest {
 	public void when_checking_two_duplicate_particles__two_errors_are_returned() {
 		Particle particle0 = mock(Particle.class);
 		assertThatThrownBy(() ->
-			LedgerAtom.toCMMicroInstructions(
+			ClientAtom.toCMMicroInstructions(
 				ImmutableList.of(
 					ParticleGroup.of(
 						SpunParticle.up(particle0),

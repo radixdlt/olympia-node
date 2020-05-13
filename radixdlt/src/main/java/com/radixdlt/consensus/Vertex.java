@@ -21,7 +21,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Suppliers;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.middleware2.LedgerAtom;
+import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
@@ -51,7 +51,7 @@ public final class Vertex {
 
 	@JsonProperty("atom")
 	@DsonOutput(Output.ALL)
-	private final LedgerAtom atom;
+	private final ClientAtom atom;
 
 	private final transient Supplier<Hash> cachedHash = Suppliers.memoize(this::doGetHash);
 
@@ -62,17 +62,17 @@ public final class Vertex {
 		this.atom = null;
 	}
 
-	public Vertex(QuorumCertificate qc, View view, LedgerAtom atom) {
+	public Vertex(QuorumCertificate qc, View view, ClientAtom atom) {
 		this.qc = qc;
 		this.view = Objects.requireNonNull(view);
 		this.atom = atom;
 	}
 
-	public static Vertex createGenesis(LedgerAtom atom) {
+	public static Vertex createGenesis(ClientAtom atom) {
 		return new Vertex(null, View.of(0), atom);
 	}
 
-	public static Vertex createVertex(QuorumCertificate qc, View view, LedgerAtom reAtom) {
+	public static Vertex createVertex(QuorumCertificate qc, View view, ClientAtom reAtom) {
 		Objects.requireNonNull(qc);
 
 		if (view.number() == 0) {
@@ -121,7 +121,7 @@ public final class Vertex {
 		return view;
 	}
 
-	public LedgerAtom getAtom() {
+	public ClientAtom getAtom() {
 		return atom;
 	}
 

@@ -20,6 +20,9 @@ package com.radixdlt.middleware2.converters;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.DefaultSerialization;
+import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.View;
+import com.radixdlt.crypto.Hash;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.identifiers.RadixAddress;
@@ -29,7 +32,8 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.middleware.ParticleGroup;
 import com.radixdlt.middleware.SpunParticle;
-import com.radixdlt.middleware2.LedgerAtom;
+import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.middleware2.CommittedAtom;
 import org.junit.Test;
 
 import java.math.BigInteger;
@@ -54,11 +58,12 @@ public class AtomToBinaryConverterTest {
 			ImmutableMap.of("timestamp", "0")
 		);
 
-		LedgerAtom ledgerAtom = LedgerAtom.convertFromApiAtom(atom);
+		VertexMetadata vertexMetadata = new VertexMetadata(View.of(1), Hash.random(), 0);
+		CommittedAtom committedAtom = ClientAtom.convertFromApiAtom(atom).committed(vertexMetadata);
 
-		byte[] serializedAtom = atomToBinaryConverter.toLedgerEntryContent(ledgerAtom);
-		LedgerAtom deserializedAtom = atomToBinaryConverter.toAtom(serializedAtom);
-		assertEquals(ledgerAtom, deserializedAtom);
+		byte[] serializedAtom = atomToBinaryConverter.toLedgerEntryContent(committedAtom);
+		CommittedAtom deserializedAtom = atomToBinaryConverter.toAtom(serializedAtom);
+		assertEquals(committedAtom, deserializedAtom);
 	}
 
 }

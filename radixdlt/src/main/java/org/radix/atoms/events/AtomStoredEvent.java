@@ -19,13 +19,14 @@ package org.radix.atoms.events;
 
 import com.radixdlt.identifiers.EUID;
 
-import com.radixdlt.middleware2.LedgerAtom;
+import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.middleware2.CommittedAtom;
 import java.util.Set;
 import java.util.function.Supplier;
 
 public final class AtomStoredEvent extends AtomEventWithDestinations {
 
-	public AtomStoredEvent(LedgerAtom atom, Supplier<Set<EUID>> destinationsSupplier) {
+	public AtomStoredEvent(CommittedAtom atom, Supplier<Set<EUID>> destinationsSupplier) {
 		super(atom, destinationsSupplier);
 	}
 }

@@ -18,8 +18,11 @@
 package com.radixdlt.middleware2.converters;
 
 import com.radixdlt.atommodel.Atom;
-import com.radixdlt.middleware2.LedgerAtom;
+import com.radixdlt.middleware2.ClientAtom;
 
-public interface AtomToLedgerAtomConverter {
-	LedgerAtom convert(Atom atom) throws AtomConversionException;
+/**
+ * Converts an api atom to an atom which can be run in a RadixEngine.
+ */
+public interface AtomToClientAtomConverter {
+	ClientAtom convert(Atom atom) throws AtomConversionException;
 }

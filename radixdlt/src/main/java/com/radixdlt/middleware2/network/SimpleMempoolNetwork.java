@@ -19,7 +19,7 @@ package com.radixdlt.middleware2.network;
 
 import com.radixdlt.mempool.MempoolNetworkRx;
 import com.radixdlt.mempool.MempoolNetworkTx;
-import com.radixdlt.middleware2.LedgerAtom;
+import com.radixdlt.middleware2.ClientAtom;
 import java.util.Objects;
 
 import javax.inject.Inject;
@@ -46,7 +46,7 @@ public class SimpleMempoolNetwork implements MempoolNetworkRx, MempoolNetworkTx 
 	private final AddressBook addressBook;
 	private final MessageCentral messageCentral;
 
-	private final PublishSubject<LedgerAtom> atoms;
+	private final PublishSubject<ClientAtom> atoms;
 
 	@Inject
 	public SimpleMempoolNetwork(
@@ -68,7 +68,7 @@ public class SimpleMempoolNetwork implements MempoolNetworkRx, MempoolNetworkTx 
 
 
 	@Override
-	public void sendMempoolSubmission(LedgerAtom atom) {
+	public void sendMempoolSubmission(ClientAtom atom) {
 		MempoolAtomAddedMessage message = new MempoolAtomAddedMessage(this.magic, atom);
 		final EUID self = this.localPeer.getNID();
 		this.addressBook.peers()
@@ -78,7 +78,7 @@ public class SimpleMempoolNetwork implements MempoolNetworkRx, MempoolNetworkTx 
 	}
 
 	@Override
-	public Observable<LedgerAtom> atomMessages() {
+	public Observable<ClientAtom> atomMessages() {
 		return this.atoms;
 	}
 

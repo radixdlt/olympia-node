@@ -18,11 +18,11 @@
 package com.radixdlt.middleware2.store;
 
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.engine.RadixEngineAtom;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.store.StoreIndex;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationUtils;
@@ -60,7 +60,7 @@ public class EngineAtomIndices {
 		this.duplicateIndices = duplicateIndices;
 	}
 
-	public static EngineAtomIndices from(LedgerAtom radixEngineAtom, Serialization serialization) {
+	public static EngineAtomIndices from(RadixEngineAtom radixEngineAtom, Serialization serialization) {
 		ImmutableSet.Builder<StoreIndex> uniqueIndices = ImmutableSet.builder();
 		ImmutableSet.Builder<StoreIndex> duplicateIndices = ImmutableSet.builder();
 

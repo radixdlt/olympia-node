@@ -28,8 +28,8 @@ import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.middleware2.LedgerAtom;
-import com.radixdlt.middleware2.LedgerAtom.LedgerAtomConversionException;
+import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.middleware2.ClientAtom.LedgerAtomConversionException;
 
 public class VertexSerializeTest extends SerializeObject<Vertex> {
 	public VertexSerializeTest() {
@@ -50,13 +50,13 @@ public class VertexSerializeTest extends SerializeObject<Vertex> {
 		Atom atom = new Atom();
 		// add a particle to ensure atom is valid and has at least one shard
 		atom.addParticleGroupWith(new MessageParticle(address, address, "Hello".getBytes()), Spin.UP);
-		final LedgerAtom ledgerAtom;
+		final ClientAtom clientAtom;
 		try {
-			ledgerAtom = LedgerAtom.convertFromApiAtom(atom);
+			clientAtom = ClientAtom.convertFromApiAtom(atom);
 		} catch (LedgerAtomConversionException e) {
 			throw new IllegalStateException();
 		}
 
-		return Vertex.createVertex(qc, view, ledgerAtom);
+		return Vertex.createVertex(qc, view, clientAtom);
 	}
 }

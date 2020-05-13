@@ -19,11 +19,10 @@ package org.radix.api.observable;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.middleware2.LedgerAtom;
-import com.radixdlt.serialization.SerializationException;
+import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.store.SearchCursor;
 import com.radixdlt.store.StoreIndex;
 import com.radixdlt.store.LedgerSearchMode;
@@ -114,7 +113,7 @@ public class AtomEventObserver {
 	public void tryNext(AtomEventWithDestinations atomEvent) {
 		if (atomEvent instanceof AtomStoredEvent) {
 			if (atomQuery.filter(atomEvent.getDestinations())) {
-				final Atom rawAtom = LedgerAtom.convertToApiAtom(atomEvent.getAtom());
+				final Atom rawAtom = ClientAtom.convertToApiAtom(atomEvent.getAtom().getClientAtom());
 				final AtomEventDto atomEventDto = new AtomEventDto(AtomEventType.STORE, rawAtom);
 				synchronized (this) {
 					this.currentRunnable = currentRunnable.thenRunAsync(() -> update(atomEventDto), executorService);
@@ -151,22 +150,22 @@ public class AtomEventObserver {
 					return;
 				}
 
-				List<LedgerAtom> atoms = new ArrayList<>();
+				List<ClientAtom> atoms = new ArrayList<>();
 				while (cursor != null && atoms.size() < BATCH_SIZE) {
 					AID aid = cursor.get();
 					processedAids.add(aid);
 					Optional<LedgerEntry> ledgerEntry = store.get(aid);
 					ledgerEntry.ifPresent(
 						entry -> {
-							LedgerAtom atom = atomToBinaryConverter.toAtom(entry.getContent());
-							atoms.add(atom);
+							CommittedAtom committedAtom = atomToBinaryConverter.toAtom(entry.getContent());
+							atoms.add(committedAtom.getClientAtom());
 						}
 					);
 					cursor = cursor.next();
 				}
 				if (!atoms.isEmpty()) {
 					final Stream<AtomEventDto> atomEvents = atoms.stream()
-						.map(LedgerAtom::convertToApiAtom)
+						.map(ClientAtom::convertToApiAtom)
 						.filter(Objects::nonNull)
 						.map(atom -> new AtomEventDto(AtomEventType.STORE, atom));
 					onNext.accept(new ObservedAtomEvents(false, atomEvents));

@@ -69,7 +69,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -92,7 +91,6 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 	private final Serialization serialization;
 	private final DatabaseEnvironment dbEnv;
 
-	private final AtomicLong pendingLogicalClock;
 	private final Map<AID, LedgerEntryIndices> currentIndices = new ConcurrentHashMap<>();
 
 	private Database atoms; // TempoAtoms by primary keys (logical clock + AID bytes, no prefixes)
@@ -110,9 +108,6 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 		this.dbEnv = Objects.requireNonNull(dbEnv);
 
 		this.open();
-
-		// TODO is this LC persistence sufficient? might be reset if there are no pending at some point in time
-		this.pendingLogicalClock = new AtomicLong(getLastPendingCursor());
 	}
 
 	private void open() {
@@ -344,17 +339,15 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 	}
 
 	private LedgerEntryStoreResult doStorePending(
-		LedgerEntry atom,
+		LedgerEntry entry,
 		Set<StoreIndex> uniqueIndices,
 		Set<StoreIndex> duplicateIndices,
 		Transaction transaction
 	) throws SerializationException {
-		byte[] atomData = serialization.toDson(atom, Output.PERSIST);
-		LedgerEntryIndices indices = LedgerEntryIndices.from(atom, uniqueIndices, duplicateIndices);
-		// TODO should probably do some ordering on pending atoms
-		long pendingLC = pendingLogicalClock.incrementAndGet();
-		doAddPending(atom.getAID(), pendingLC, transaction);
-		return doStore(PREFIX_PENDING, pendingLC, atom.getAID(), atomData, indices, transaction);
+		byte[] atomData = serialization.toDson(entry, Output.PERSIST);
+		LedgerEntryIndices indices = LedgerEntryIndices.from(entry, uniqueIndices, duplicateIndices);
+		doAddPending(entry.getAID(), entry.getStateVersion(), transaction);
+		return doStore(PREFIX_PENDING, entry.getStateVersion(), entry.getAID(), atomData, indices, transaction);
 	}
 
 	private LedgerEntryStoreResult doStore(

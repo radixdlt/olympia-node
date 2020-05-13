@@ -17,7 +17,7 @@
 
 package com.radixdlt.middleware2.network;
 
-import com.radixdlt.middleware2.LedgerAtom;
+import com.radixdlt.middleware2.ClientAtom;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
@@ -55,7 +55,7 @@ public class SimpleMempoolNetworkTest {
 		MessageCentral messageCentral = mock(MessageCentral.class);
 		SimpleMempoolNetwork smn = new SimpleMempoolNetwork(system, universe, addressBook, messageCentral);
 
-		LedgerAtom atom = mock(LedgerAtom.class);
+		ClientAtom atom = mock(ClientAtom.class);
 		smn.sendMempoolSubmission(atom);
 
 		verify(messageCentral, times(1)).send(any(), any());
@@ -79,12 +79,12 @@ public class SimpleMempoolNetworkTest {
 		assertNotNull(callbackRef.get());
 		MessageListener<MempoolAtomAddedMessage> callback = callbackRef.get();
 
-		TestObserver<LedgerAtom> obs = TestObserver.create();
+		TestObserver<ClientAtom> obs = TestObserver.create();
 		smn.atomMessages()
 			.subscribe(obs);
 
 		Peer peer = mock(Peer.class);
-		LedgerAtom atom = mock(LedgerAtom.class);
+		ClientAtom atom = mock(ClientAtom.class);
 		MempoolAtomAddedMessage message = mock(MempoolAtomAddedMessage.class);
 		when(message.atom()).thenReturn(atom);
 		callback.handleMessage(peer, message);
