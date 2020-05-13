@@ -102,7 +102,7 @@ public class VertexStoreTest {
 	@Ignore("Reinstate once better ProposalGenerator + Mempool is implemented")
 	public void when_inserting_vertex_which_fails_to_pass_re__then_vertex_insertion_exception_is_thrown()
 		throws Exception {
-		doThrow(mock(RadixEngineException.class)).when(radixEngine).store(any());
+		doThrow(mock(RadixEngineException.class)).when(radixEngine).checkAndStore(any());
 
 		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), mock(LedgerAtom.class));
 		assertThatThrownBy(() -> vertexStore.insertVertex(nextVertex))
@@ -125,13 +125,13 @@ public class VertexStoreTest {
 		vertexStore.lastCommittedVertex().subscribe(testObserver);
 		testObserver.awaitCount(1); // genesis only
 		testObserver.assertValues(genesisVertex); // not committed
-		verify(radixEngine, times(1)).store(genesisVertex.getAtom()); // not stored (genesis only)
+		verify(radixEngine, times(1)).checkAndStore(genesisVertex.getAtom()); // not stored (genesis only)
 	}
 
 	@Test
 	public void when_insert_and_commit_vertex__then_it_should_be_committed_and_stored_in_engine()
 		throws VertexInsertionException, RadixEngineException {
-		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), mock(Atom.class));
+		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), mock(LedgerAtom.class));
 		vertexStore.insertVertex(nextVertex);
 		TestObserver<Vertex> testObserver = TestObserver.create();
 		vertexStore.lastCommittedVertex().subscribe(testObserver);
@@ -141,8 +141,8 @@ public class VertexStoreTest {
 		testObserver.awaitCount(2); // both committed
 		testObserver.assertValues(genesisVertex, nextVertex); // both committed
 
-		verify(radixEngine, times(1)).store(genesisVertex.getAtom()); // genesis atom stored
-		verify(radixEngine, times(1)).store(nextVertex.getAtom()); // next atom stored
+		verify(radixEngine, times(1)).checkAndStore(genesisVertex.getAtom()); // genesis atom stored
+		verify(radixEngine, times(1)).checkAndStore(nextVertex.getAtom()); // next atom stored
 	}
 
 	@Test

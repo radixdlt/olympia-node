@@ -17,10 +17,12 @@
 
 package com.radixdlt.consensus;
 
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.engine.RadixEngineErrorCode;
 import com.radixdlt.engine.RadixEngineException;
 
 import com.radixdlt.middleware2.LedgerAtom;
@@ -32,6 +34,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import org.radix.atoms.AtomDependencyNotFoundException;
+import org.radix.atoms.events.AtomExceptionEvent;
+import org.radix.atoms.particles.conflict.ParticleConflict;
+import org.radix.atoms.particles.conflict.ParticleConflictException;
+import org.radix.events.Events;
+import org.radix.validation.ConstraintMachineValidationException;
 
 /**
  * Manages the BFT Vertex chain.
@@ -62,7 +70,7 @@ public final class VertexStore {
 		this.counters = Objects.requireNonNull(counters);
 		this.highestQC = Objects.requireNonNull(rootQC);
 		try {
-			this.engine.store(genesisVertex.getAtom());
+			this.engine.checkAndStore(genesisVertex.getAtom());
 		} catch (RadixEngineException e) {
 			throw new IllegalStateException("Could not store genesis atom: " + genesisVertex.getAtom(), e);
 		}
@@ -116,7 +124,7 @@ public final class VertexStore {
 
 		for (Vertex committed : path) {
 			if (committed.getAtom() != null) {
-				storeAtom(committed);
+				storeAtom(committed.getAtom());
 			}
 
 			lastCommittedVertex.onNext(committed);
@@ -129,15 +137,37 @@ public final class VertexStore {
 		return tipVertex;
 	}
 
-	private void storeAtom(Vertex vertexWithAtom) {
+	private void storeAtom(LedgerAtom atom) {
 		try {
 			this.counters.increment(CounterType.LEDGER_PROCESSED);
-			this.engine.store(vertexWithAtom.getAtom());
+			this.engine.checkAndStore(atom);
 			this.counters.increment(CounterType.LEDGER_STORED);
 		} catch (RadixEngineException e) {
 			// TODO: Don't check for state computer errors for now so that we don't
 			// TODO: have to deal with failing leader proposals
 			// TODO: Reinstate this when ProposalGenerator + Mempool can guarantee correct proposals
+
+			// TODO: move VIRTUAL_STATE_CONFLICT to static check
+			if (e.getErrorCode() == RadixEngineErrorCode.VIRTUAL_STATE_CONFLICT) {
+				ConstraintMachineValidationException exception
+					= new ConstraintMachineValidationException(atom, "Virtual state conflict", e.getDataPointer());
+				Events.getInstance().broadcast(new AtomExceptionEvent(exception, atom.getAID()));
+			} else if (e.getErrorCode() == RadixEngineErrorCode.STATE_CONFLICT) {
+				final ParticleConflictException conflict = new ParticleConflictException(
+					new ParticleConflict(e.getDataPointer(), ImmutableSet.of(atom.getAID(), e.getRelated().getAID())
+				));
+				AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(conflict, atom.getAID());
+				Events.getInstance().broadcast(atomExceptionEvent);
+			} else if (e.getErrorCode() == RadixEngineErrorCode.MISSING_DEPENDENCY) {
+				final AtomDependencyNotFoundException notFoundException =
+					new AtomDependencyNotFoundException(
+						String.format("Atom has missing dependencies in transitions: %s", e.getDataPointer().toString()),
+						e.getDataPointer()
+					);
+
+				AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(notFoundException, atom.getAID());
+				Events.getInstance().broadcast(atomExceptionEvent);
+			}
 		}
 	}
 

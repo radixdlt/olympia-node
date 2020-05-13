@@ -32,10 +32,8 @@ import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
-import com.radixdlt.middleware2.processing.EngineAtomEventListener;
 import com.radixdlt.middleware2.store.LedgerEngineStore;
 import com.radixdlt.properties.RuntimeProperties;
-import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.universe.Universe;
@@ -82,7 +80,6 @@ public class MiddlewareModule extends AbstractModule {
 			ConstraintMachine constraintMachine,
 			UnaryOperator<CMStore> virtualStoreLayer,
 			EngineStore<LedgerAtom> engineStore,
-			Serialization serialization,
 			RuntimeProperties properties,
 			Universe universe
 	) {
@@ -104,7 +101,6 @@ public class MiddlewareModule extends AbstractModule {
 			engineStore
 		);
 		radixEngine.addCMSuccessHook(ledgerAtomChecker);
-		radixEngine.addAtomEventListener(new EngineAtomEventListener(serialization));
 
 		return radixEngine;
 	}

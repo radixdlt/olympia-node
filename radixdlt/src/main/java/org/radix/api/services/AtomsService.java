@@ -24,6 +24,9 @@ import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.mempool.SubmissionControl;
 
 import com.radixdlt.middleware2.LedgerAtom;
+import com.radixdlt.middleware2.store.LedgerEngineStore;
+import io.reactivex.rxjava3.disposables.CompositeDisposable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -52,9 +55,7 @@ import org.radix.api.observable.AtomEventObserver;
 import org.radix.api.observable.Disposable;
 import org.radix.api.observable.ObservedAtomEvents;
 import org.radix.api.observable.Observable;
-import org.radix.atoms.events.AtomEvent;
 import org.radix.atoms.events.AtomExceptionEvent;
-import org.radix.atoms.events.AtomStoredEvent;
 import com.radixdlt.identifiers.AID;
 import org.radix.events.Events;
 
@@ -81,55 +82,20 @@ public class AtomsService {
 	private final SubmissionControl submissionControl;
 	private final AtomToBinaryConverter atomToBinaryConverter;
 	private final LedgerEntryStore store;
+	private final LedgerEngineStore engineStore;
+	private final CompositeDisposable disposable;
 
-	public AtomsService(LedgerEntryStore store, SubmissionControl submissionControl, AtomToBinaryConverter atomToBinaryConverter) {
+	public AtomsService(
+		LedgerEntryStore store,
+		LedgerEngineStore engineStore,
+		SubmissionControl submissionControl,
+		AtomToBinaryConverter atomToBinaryConverter
+	) {
 		this.submissionControl = Objects.requireNonNull(submissionControl);
 		this.store = Objects.requireNonNull(store);
 		this.atomToBinaryConverter = Objects.requireNonNull(atomToBinaryConverter);
-
-		Events.getInstance().register(AtomEvent.class, (event) -> {
-			executorService.submit(() -> {
-				if (!(event instanceof AtomEvent)) {
-					return;
-				}
-
-				final AtomEvent atomEvent = (AtomEvent) event;
-				final LedgerAtom atom = atomEvent.getAtom();
-
-				// TODO: Clean this up
-				final String eventName;
-
-				if (event instanceof AtomStoredEvent) {
-					final AtomStoredEvent storedEvent = (AtomStoredEvent) atomEvent;
-					eventName = "STORED";
-
-					this.atomEventObservers.forEach(observer -> observer.tryNext(storedEvent));
-
-					List<SingleAtomListener> subscribers = this.deleteOnEventSingleAtomObservers.remove(atom.getAID());
-					if (subscribers != null) {
-						Iterator<SingleAtomListener> i = subscribers.iterator();
-						if (i.hasNext()) {
-							i.next().onStored(true);
-							while (i.hasNext()) {
-								i.next().onStored(false);
-							}
-						}
-					}
-
-					for (AtomStatusListener atomStatusListener : this.singleAtomObservers.getOrDefault(atom.getAID(), Collections.emptyList())) {
-						atomStatusListener.onStored();
-					}
-
-					this.atomEventCount.merge(AtomEventType.STORE, 1L, Long::sum);
-				} else {
-					eventName = "UNKNOWN";
-				}
-
-				synchronized (lock) {
-					eventRingBuffer.add(System.currentTimeMillis() + " " + eventName + " " + atomEvent.getAtom().getAID());
-				}
-			});
-		});
+		this.engineStore = Objects.requireNonNull(engineStore);
+		this.disposable = new CompositeDisposable();
 
 		Events.getInstance().register(AtomExceptionEvent.class, event -> {
 			executorService.submit(() -> {
@@ -152,6 +118,42 @@ public class AtomsService {
 				}
 			});
 		});
+	}
+
+	public void start() {
+		io.reactivex.rxjava3.disposables.Disposable lastStoredAtomDisposable = engineStore.lastStoredAtom()
+			.observeOn(Schedulers.io())
+			.subscribe(storedEvent -> {
+				LedgerAtom atom = storedEvent.getAtom();
+				this.atomEventObservers.forEach(observer -> observer.tryNext(storedEvent));
+
+				List<SingleAtomListener> subscribers = this.deleteOnEventSingleAtomObservers.remove(atom.getAID());
+				if (subscribers != null) {
+					Iterator<SingleAtomListener> i = subscribers.iterator();
+					if (i.hasNext()) {
+						i.next().onStored(true);
+						while (i.hasNext()) {
+							i.next().onStored(false);
+						}
+					}
+				}
+
+				for (AtomStatusListener atomStatusListener : this.singleAtomObservers.getOrDefault(atom.getAID(), Collections.emptyList())) {
+					atomStatusListener.onStored();
+				}
+
+				this.atomEventCount.merge(AtomEventType.STORE, 1L, Long::sum);
+
+				synchronized (lock) {
+					eventRingBuffer.add(System.currentTimeMillis() + " STORED " + atom.getAID());
+				}
+			});
+
+		this.disposable.add(lastStoredAtomDisposable);
+	}
+
+	public void stop() {
+		this.disposable.dispose();
 	}
 
 	/**

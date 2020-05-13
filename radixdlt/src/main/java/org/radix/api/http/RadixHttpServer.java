@@ -26,6 +26,7 @@ import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexStore;
 import com.radixdlt.mempool.SubmissionControl;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
+import com.radixdlt.middleware2.store.LedgerEngineStore;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.DsonOutput;
@@ -101,6 +102,7 @@ public final class RadixHttpServer {
 	public RadixHttpServer(
 		ConsensusRunner consensusRunner,
 		LedgerEntryStore store,
+		LedgerEngineStore engineStore,
 		SubmissionControl submissionControl,
 		AtomToBinaryConverter atomToBinaryConverter,
 		Universe universe,
@@ -116,7 +118,7 @@ public final class RadixHttpServer {
 		this.localSystem = Objects.requireNonNull(localSystem);
 		this.vertexStore = Objects.requireNonNull(vertexStore);
 		this.peers = new ConcurrentHashMap<>();
-		this.atomsService = new AtomsService(store, submissionControl, atomToBinaryConverter);
+		this.atomsService = new AtomsService(store, engineStore, submissionControl, atomToBinaryConverter);
 		this.jsonRpcServer = new RadixJsonRpcServer(
 			consensusRunner,
 			serialization,
@@ -150,6 +152,8 @@ public final class RadixHttpServer {
     }
 
 	public final void start(RuntimeProperties properties) {
+    	this.atomsService.start();
+
 		RoutingHandler handler = Handlers.routing(true); // add path params to query params with this flag
 
 		// add all REST routes
@@ -198,6 +202,8 @@ public final class RadixHttpServer {
 	}
 
 	public final void stop() {
+    	this.atomsService.stop();
+
 		try {
 			server.stop();
 		} finally {

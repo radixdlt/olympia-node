@@ -18,6 +18,7 @@
 package com.radixdlt.middleware2.store;
 
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.constraintmachine.Particle;
@@ -32,19 +33,26 @@ import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStore;
 
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.subjects.BehaviorSubject;
+import io.reactivex.rxjava3.subjects.Subject;
+import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
+import org.radix.atoms.events.AtomStoredEvent;
 
+@Singleton
 public class LedgerEngineStore implements EngineStore<LedgerAtom> {
     private static final Logger log = LogManager.getLogger("middleware2.store");
 
     private final Serialization serialization;
     private final LedgerEntryStore store;
-    private AtomToBinaryConverter atomToBinaryConverter;
+    private final AtomToBinaryConverter atomToBinaryConverter;
+    private final Subject<AtomStoredEvent> lastStoredAtom = BehaviorSubject.create();
 
     @Inject
     public LedgerEngineStore(LedgerEntryStore store,
@@ -76,11 +84,29 @@ public class LedgerEngineStore implements EngineStore<LedgerAtom> {
     }
 
     @Override
-    public void storeAtom(LedgerAtom reAtom) {
-        byte[] binaryAtom = atomToBinaryConverter.toLedgerEntryContent(reAtom);
-        LedgerEntry ledgerEntry = new LedgerEntry(binaryAtom, reAtom.getAID());
-        EngineAtomIndices engineAtomIndices = EngineAtomIndices.from(reAtom, serialization);
+    public void storeAtom(LedgerAtom atom) {
+        byte[] binaryAtom = atomToBinaryConverter.toLedgerEntryContent(atom);
+        LedgerEntry ledgerEntry = new LedgerEntry(binaryAtom, atom.getAID());
+        EngineAtomIndices engineAtomIndices = EngineAtomIndices.from(atom, serialization);
         store.store(ledgerEntry, engineAtomIndices.getUniqueIndices(), engineAtomIndices.getDuplicateIndices());
+
+        AtomStoredEvent storedEvent = new AtomStoredEvent(
+        	atom,
+            () -> engineAtomIndices.getDuplicateIndices().stream()
+                .filter(e -> e.getPrefix() == EngineAtomIndices.IndexType.DESTINATION.getValue())
+                .map(e -> EngineAtomIndices.toEUID(e.asKey()))
+                .collect(Collectors.toSet())
+        );
+
+        lastStoredAtom.onNext(storedEvent);
+    }
+
+    /**
+     * Retrieve a stream of the latest stored atoms
+     * @return hot observable of last stored atoms
+     */
+    public Observable<AtomStoredEvent> lastStoredAtom() {
+        return lastStoredAtom;
     }
 
     @Override
