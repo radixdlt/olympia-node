@@ -59,7 +59,7 @@ public final class VertexMetadata {
 		}
 
 		this.stateVersion = stateVersion;
-        this.view = view;
+		this.view = view;
 		this.id = id;
 	}
 
@@ -72,7 +72,8 @@ public final class VertexMetadata {
 			parentStateVersion = parent.getStateVersion();
 		}
 
-		final long newStateVersion = parentStateVersion + (vertex.getAtom() != null ? 1 : 0);
+		final int versionIncrement = vertex.getAtom() != null ? 1 : 0;
+		final long newStateVersion = parentStateVersion + versionIncrement;
 		return new VertexMetadata(vertex.getView(), vertex.getId(), newStateVersion);
 	}
 
