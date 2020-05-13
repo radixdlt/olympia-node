@@ -12,17 +12,26 @@ public class UnregisteredValidatorParticle extends Particle {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private RadixAddress address;
 
+	@JsonProperty("nonce")
+	@DsonOutput(DsonOutput.Output.ALL)
+	private long nonce;
+
 	private UnregisteredValidatorParticle() {
 		// for serializer
 	}
 
-	public UnregisteredValidatorParticle(RadixAddress address) {
+	public UnregisteredValidatorParticle(RadixAddress address, long nonce) {
 		super(address.euid());
 		this.address = address;
+		this.nonce = nonce;
 	}
 
 	public RadixAddress getAddress() {
 		return address;
+	}
+
+	public long getNonce() {
+		return nonce;
 	}
 
 	@Override
