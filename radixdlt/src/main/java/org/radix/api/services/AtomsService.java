@@ -24,7 +24,7 @@ import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.mempool.SubmissionControl;
 
 import com.radixdlt.middleware2.LedgerAtom;
-import com.radixdlt.middleware2.store.LedgerEngineStore;
+import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import java.util.ArrayList;
@@ -82,12 +82,12 @@ public class AtomsService {
 	private final SubmissionControl submissionControl;
 	private final AtomToBinaryConverter atomToBinaryConverter;
 	private final LedgerEntryStore store;
-	private final LedgerEngineStore engineStore;
+	private final CommittedAtomsStore engineStore;
 	private final CompositeDisposable disposable;
 
 	public AtomsService(
 		LedgerEntryStore store,
-		LedgerEngineStore engineStore,
+		CommittedAtomsStore engineStore,
 		SubmissionControl submissionControl,
 		AtomToBinaryConverter atomToBinaryConverter
 	) {

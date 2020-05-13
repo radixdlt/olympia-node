@@ -46,7 +46,7 @@ import java.util.function.Consumer;
 import org.radix.atoms.events.AtomStoredEvent;
 
 @Singleton
-public class LedgerEngineStore implements EngineStore<LedgerAtom> {
+public class CommittedAtomsStore implements EngineStore<LedgerAtom> {
     private static final Logger log = LogManager.getLogger("middleware2.store");
 
     private final Serialization serialization;
@@ -55,7 +55,7 @@ public class LedgerEngineStore implements EngineStore<LedgerAtom> {
     private final Subject<AtomStoredEvent> lastStoredAtom = BehaviorSubject.create();
 
     @Inject
-    public LedgerEngineStore(LedgerEntryStore store,
+    public CommittedAtomsStore(LedgerEntryStore store,
                              AtomToBinaryConverter atomToBinaryConverter,
                              Serialization serialization) {
         this.serialization = serialization;

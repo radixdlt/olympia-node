@@ -23,7 +23,7 @@ import com.radixdlt.consensus.VertexStore;
 import com.radixdlt.mempool.MempoolReceiver;
 import com.radixdlt.mempool.SubmissionControl;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
-import com.radixdlt.middleware2.store.LedgerEngineStore;
+import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.PeerManager;
 import com.radixdlt.properties.RuntimeProperties;
@@ -147,7 +147,7 @@ public final class Radix
 		SubmissionControl submissionControl = globalInjector.getInjector().getInstance(SubmissionControl.class);
 		AtomToBinaryConverter atomToBinaryConverter = globalInjector.getInjector().getInstance(AtomToBinaryConverter.class);
 		LedgerEntryStore store = globalInjector.getInjector().getInstance(LedgerEntryStore.class);
-		LedgerEngineStore engineStore = globalInjector.getInjector().getInstance(LedgerEngineStore.class);
+		CommittedAtomsStore engineStore = globalInjector.getInjector().getInstance(CommittedAtomsStore.class);
 		VertexStore vstore = globalInjector.getInjector().getInstance(VertexStore.class);
 		RadixHttpServer httpServer = new RadixHttpServer(
 			bft,

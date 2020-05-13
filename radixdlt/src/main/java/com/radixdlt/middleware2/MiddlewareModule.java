@@ -32,7 +32,7 @@ import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
-import com.radixdlt.middleware2.store.LedgerEngineStore;
+import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
@@ -107,7 +107,7 @@ public class MiddlewareModule extends AbstractModule {
 
 	@Override
 	protected void configure() {
-		bind(new TypeLiteral<EngineStore<LedgerAtom>>() { }).to(LedgerEngineStore.class).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<EngineStore<LedgerAtom>>() { }).to(CommittedAtomsStore.class).in(Scopes.SINGLETON);
 		bind(AtomToBinaryConverter.class).toInstance(new AtomToBinaryConverter(DefaultSerialization.getInstance()));
 	}
 }
