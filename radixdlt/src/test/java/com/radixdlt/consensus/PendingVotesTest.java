@@ -80,8 +80,8 @@ public class PendingVotesTest {
 
 	private Vote makeVoteFor(Hash vertexId) {
 		Vote vote = mock(Vote.class);
-		VertexMetadata proposed = new VertexMetadata(View.of(1), vertexId);
-		VertexMetadata parent = new VertexMetadata(View.of(0), Hash.random());
+		VertexMetadata proposed = new VertexMetadata(View.of(1), vertexId, 1);
+		VertexMetadata parent = new VertexMetadata(View.of(0), Hash.random(), 0);
 		VoteData voteData = new VoteData(proposed, parent);
 		when(vote.getVoteData()).thenReturn(voteData);
 		when(vote.getSignature()).thenReturn(Optional.of(new ECDSASignature()));

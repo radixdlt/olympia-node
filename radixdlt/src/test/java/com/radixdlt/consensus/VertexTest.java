@@ -40,8 +40,8 @@ public class VertexTest {
 		View baseView = View.of(1234567890L);
 		Hash id = Hash.random();
 
-		VertexMetadata vertexMetadata = new VertexMetadata(baseView.next(), id);
-		VertexMetadata parent = new VertexMetadata(baseView, Hash.random());
+		VertexMetadata vertexMetadata = new VertexMetadata(baseView.next(), id, 1);
+		VertexMetadata parent = new VertexMetadata(baseView, Hash.random(), 0);
 		VoteData voteData = new VoteData(vertexMetadata, parent);
 
 		this.qc = new QuorumCertificate(voteData, new ECDSASignatures());
@@ -67,8 +67,8 @@ public class VertexTest {
 		View baseView = View.of(1234567890L);
 		Hash id = Hash.random();
 
-		VertexMetadata vertexMetadata = new VertexMetadata(baseView.next(), id);
-		VertexMetadata parent = new VertexMetadata(baseView, Hash.random());
+		VertexMetadata vertexMetadata = new VertexMetadata(baseView.next(), id, 1);
+		VertexMetadata parent = new VertexMetadata(baseView, Hash.random(), 0);
 		VoteData voteData = new VoteData(vertexMetadata, parent);
 		QuorumCertificate qc2 = new QuorumCertificate(voteData, new ECDSASignatures());
 		Atom atom2 = new Atom();

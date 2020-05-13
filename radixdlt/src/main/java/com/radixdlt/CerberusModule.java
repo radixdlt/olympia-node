@@ -139,7 +139,7 @@ public class CerberusModule extends AbstractModule {
 		}
 
 		final Vertex genesisVertex = Vertex.createGenesis(universe.getGenesis().get(0));
-		final VertexMetadata genesisMetadata = new VertexMetadata(View.genesis(), genesisVertex.getId());
+		final VertexMetadata genesisMetadata = new VertexMetadata(View.genesis(), genesisVertex.getId(), 0);
 		final VoteData voteData = new VoteData(genesisMetadata, null);
 		final QuorumCertificate rootQC = new QuorumCertificate(voteData, new ECDSASignatures());
 
