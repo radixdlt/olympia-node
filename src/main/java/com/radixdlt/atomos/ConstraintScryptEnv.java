@@ -140,7 +140,7 @@ final class ConstraintScryptEnv implements SysCalls {
 	@Override
 	public <T extends Particle> void registerParticleMultipleAddresses(
 		Class<T> particleClass,
-		Function<T, Set<RadixAddress>> mapper,
+		Function<T, Set<RadixAddress>> addressMapper,
 		Function<T, Result> staticCheck,
 		Function<T, RRI> rriMapper,
 		Function<T, Spin> virtualizeSpin
@@ -149,11 +149,11 @@ final class ConstraintScryptEnv implements SysCalls {
 			throw new IllegalStateException("Particle " + particleClass + " is already registered");
 		}
 
-		scryptParticleDefinitions.put(particleClass, new ParticleDefinition<>(
-			p -> mapper.apply((T) p).stream(),
-			p -> {
+		ParticleDefinition<Particle> particleDefinition = ParticleDefinition.<T>builder()
+			.addressMapper(p -> addressMapper.apply(p).stream())
+			.staticValidation(p -> {
 				if (rriMapper != null) {
-					final RRI rri = rriMapper.apply((T) p);
+					final RRI rri = rriMapper.apply(p);
 					if (rri == null) {
 						return Result.error("rri cannot be null");
 					}
@@ -164,7 +164,7 @@ final class ConstraintScryptEnv implements SysCalls {
 					}
 				}
 
-				final Set<RadixAddress> addresses = mapper.apply((T) p);
+				final Set<RadixAddress> addresses = addressMapper.apply(p);
 				if (addresses.isEmpty()) {
 					return Result.error("address required");
 				}
@@ -176,12 +176,13 @@ final class ConstraintScryptEnv implements SysCalls {
 					}
 				}
 
-				return staticCheck.apply((T) p);
-			},
-			rriMapper == null ? null : p -> rriMapper.apply((T) p),
-			virtualizeSpin == null ? null : p -> virtualizeSpin.apply((T) p),
-			false
-		));
+				return staticCheck.apply(p);
+			})
+			.rriMapper(rriMapper)
+			.virtualizeSpin(virtualizeSpin)
+			.allowTransitionsFromOutsideScrypts()
+			.build();
+		scryptParticleDefinitions.put(particleClass, particleDefinition);
 	}
 
 	@Override

@@ -70,4 +70,54 @@ class ParticleDefinition<T extends Particle> {
 	public boolean allowsTransitionsFromOutsideScrypts() {
 		return allowsTransitionsFromOutsideScrypts;
 	}
+
+	public static <T extends Particle> Builder<T> builder() {
+		return new Builder<>();
+	}
+
+	public static class Builder<T extends Particle> {
+		private Function<T, Stream<RadixAddress>> addressMapper;
+		private Function<T, Result> staticValidation;
+		private Function<T, RRI> rriMapper;
+		private Function<T, Spin> virtualizeSpin;
+		private boolean allowsTransitionsFromOutsideScrypts;
+
+		private Builder() {
+		}
+
+		public Builder<T> addressMapper(Function<T, Stream<RadixAddress>> addressMapper) {
+			this.addressMapper = addressMapper;
+			return this;
+		}
+
+		public Builder<T> staticValidation(Function<T, Result> staticValidation) {
+			this.staticValidation = staticValidation;
+			return this;
+		}
+
+		public Builder<T> rriMapper(Function<T, RRI> rriMapper) {
+			this.rriMapper = rriMapper;
+			return this;
+		}
+
+		public Builder<T> virtualizeSpin(Function<T, Spin> virtualizeSpin) {
+			this.virtualizeSpin = virtualizeSpin;
+			return this;
+		}
+
+		public Builder<T> allowTransitionsFromOutsideScrypts() {
+			this.allowsTransitionsFromOutsideScrypts = true;
+			return this;
+		}
+
+		public <U extends Particle> ParticleDefinition<U> build() {
+			return new ParticleDefinition<>(
+				addressMapper == null ? null : p -> addressMapper.apply((T) p),
+				staticValidation == null ? null : p -> staticValidation.apply((T) p),
+				rriMapper == null ? null : p -> rriMapper.apply((T) p),
+				virtualizeSpin == null ? null : p -> virtualizeSpin.apply((T) p),
+				allowsTransitionsFromOutsideScrypts
+			);
+		}
+	}
 }

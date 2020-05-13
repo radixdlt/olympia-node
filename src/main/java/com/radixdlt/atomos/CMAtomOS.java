@@ -41,25 +41,23 @@ import java.util.stream.Stream;
  * Implementation of the AtomOS interface on top of a UTXO based Constraint Machine.
  */
 public final class CMAtomOS {
-	private static final ParticleDefinition<Particle> VOID_PARTICLE_DEF = new ParticleDefinition<>(
-		v -> {
+	private static final ParticleDefinition<Particle> VOID_PARTICLE_DEF = ParticleDefinition.builder()
+		.addressMapper(v -> {
 			throw new UnsupportedOperationException("Should not ever call here");
-		},
-		v -> {
+		})
+		.staticValidation(v -> {
 			throw new UnsupportedOperationException("Should not ever call here");
-		},
-		v -> null,
-		v -> null,
-		true
-	);
+		})
+		.allowTransitionsFromOutsideScrypts()
+		.build();
 
-	private static final ParticleDefinition<Particle> RRI_PARTICLE_DEF = new ParticleDefinition<>(
-		rri -> Stream.of(((RRIParticle) rri).getRri().getAddress()),
-		rri -> Result.success(),
-		rri -> ((RRIParticle) rri).getRri(),
-		v -> ((RRIParticle) v).getNonce() == 0 ? Spin.UP : null,
-		true
-	);
+	private static final ParticleDefinition<Particle> RRI_PARTICLE_DEF = ParticleDefinition.builder()
+		.addressMapper(rri -> Stream.of(((RRIParticle) rri).getRri().getAddress()))
+		.staticValidation(rri -> Result.success())
+		.rriMapper(rri -> ((RRIParticle) rri).getRri())
+		.virtualizeSpin(v -> ((RRIParticle) v).getNonce() == 0 ? Spin.UP : null)
+		.allowTransitionsFromOutsideScrypts()
+		.build();
 
 	private final Function<RadixAddress, Result> addressChecker;
 	private final Map<Class<? extends Particle>, ParticleDefinition<Particle>> particleDefinitions = new HashMap<>();
