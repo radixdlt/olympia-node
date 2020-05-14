@@ -26,6 +26,8 @@ import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.Hash;
+
 import org.junit.Before;
 import com.radixdlt.utils.UInt256;
 import org.junit.Test;
@@ -143,7 +145,8 @@ public class FixedTimeoutPacemakerTest {
 		ValidatorSet validatorSet = mock(ValidatorSet.class);
 		ValidationState validationState = mock(ValidationState.class);
 		when(validationState.addSignature(any(), any())).thenReturn(true);
-		when(validatorSet.newValidationState(any())).thenReturn(validationState);
+		when(validationState.complete()).thenReturn(true);
+		when(validatorSet.newValidationState()).thenReturn(validationState);
 		pacemaker.processQC(View.of(0));
 
 		assertThat(pacemaker.processNewView(newView, validatorSet)).isPresent().get().isEqualTo(View.of(1));
@@ -183,7 +186,7 @@ public class FixedTimeoutPacemakerTest {
 		ValidatorSet validatorSet = mock(ValidatorSet.class);
 		ValidationState validationState = mock(ValidationState.class);
 		when(validationState.complete()).thenReturn(true);
-		when(validatorSet.newValidationState(any())).thenReturn(validationState);
+		when(validatorSet.newValidationState()).thenReturn(validationState);
 
 		pacemaker.processQC(View.genesis());
 		verify(timeoutSender, times(1)).scheduleTimeout(any(), anyLong());
@@ -201,7 +204,9 @@ public class FixedTimeoutPacemakerTest {
 		when(newView.getQC()).thenReturn(qc);
 		when(newView.getView()).thenReturn(view);
 		when(newView.getSignature()).thenReturn(Optional.of(new ECDSASignature()));
-		when(newView.getAuthor()).thenReturn(ECKeyPair.generateNew().getPublicKey());
+		ECPublicKey author = mock(ECPublicKey.class);
+		when(author.verify(any(Hash.class), any())).thenReturn(true);
+		when(newView.getAuthor()).thenReturn(author);
 		return newView;
 	}
 }

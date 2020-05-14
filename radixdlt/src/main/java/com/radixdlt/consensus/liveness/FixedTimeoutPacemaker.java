@@ -22,6 +22,7 @@ import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.validators.ValidationState;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.utils.Longs;
 
@@ -101,11 +102,18 @@ public final class FixedTimeoutPacemaker implements Pacemaker {
 		if (!highestQC) {
 			Hash newViewId = Hash.of(Longs.toByteArray(newView.getView().number()));
 			ECDSASignature signature = newView.getSignature().orElseThrow(() -> new IllegalArgumentException("new-view is missing signature"));
-			ValidationState validationState = pendingNewViews.computeIfAbsent(newView.getView(), k -> validatorSet.newValidationState(newViewId));
+			ECPublicKey newViewAuthor = newView.getAuthor();
+			if (newViewAuthor.verify(newViewId, signature)) {
+				// Process if signature valid
+				ValidationState validationState = pendingNewViews.computeIfAbsent(newView.getView(), k -> validatorSet.newValidationState());
 
-			// check if we have gotten enough new-views to proceed
-			if (!validationState.addSignature(newView.getAuthor(), signature)) {
-				// if we haven't got enough new-views yet, do nothing
+				// check if we have gotten enough new-views to proceed
+				if (!validationState.addSignature(newViewAuthor, signature) || !validationState.complete()) {
+					// if we haven't got enough new-views yet, do nothing
+					return Optional.empty();
+				}
+			} else {
+				// Signature not valid, just ignore
 				return Optional.empty();
 			}
 		}

@@ -123,6 +123,8 @@ public class WeightedRotatingLeadersTest {
 			.collect(ImmutableList.toImmutableList());
 
 		ValidatorSet validatorSet = ValidatorSet.from(validatorsInOrder);
+		// SuppressWarnings is fine here for mocked Comparator
+		@SuppressWarnings("unchecked")
 		Comparator<Validator> validatorComparator = mock(Comparator.class);
 		this.weightedRotatingLeaders = new WeightedRotatingLeaders(validatorSet, validatorComparator, sizeOfCache);
 

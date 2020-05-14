@@ -106,6 +106,7 @@ public final class ControlledBFTNetwork {
 			return msg;
 		}
 
+		@Override
 		public String toString() {
 			return channelId + " " + msg;
 		}
