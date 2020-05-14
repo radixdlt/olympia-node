@@ -27,6 +27,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
+/**
+ * Checks that metadata in the ledger atom is well formed and follows what is
+ * needed for both consensus and governance.
+ */
 public class LedgerAtomChecker implements CMSuccessHook<LedgerAtom> {
 	private final boolean skipAtomFeeCheck;
 	private final Supplier<Universe> universeSupplier;
