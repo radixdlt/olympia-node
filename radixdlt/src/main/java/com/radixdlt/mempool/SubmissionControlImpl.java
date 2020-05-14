@@ -32,7 +32,6 @@ import org.json.JSONObject;
 import org.radix.atoms.events.AtomExceptionEvent;
 import org.radix.events.Events;
 
-import com.radixdlt.identifiers.AID;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.serialization.Serialization;
@@ -80,7 +79,7 @@ class SubmissionControlImpl implements SubmissionControl {
 	}
 
 	@Override
-	public AID submitAtom(JSONObject atomJson, Consumer<LedgerAtom> deserialisationCallback) throws MempoolFullException, MempoolDuplicateException {
+	public void submitAtom(JSONObject atomJson, Consumer<LedgerAtom> deserialisationCallback) throws MempoolFullException, MempoolDuplicateException {
 		final Atom rawAtom = this.serialization.fromJsonObject(atomJson, Atom.class);
 		final LedgerAtom atom;
 		try {
@@ -91,12 +90,11 @@ class SubmissionControlImpl implements SubmissionControl {
 				rawAtom.getAID()
 			);
 			this.events.broadcast(new AtomExceptionEvent(e, rawAtom.getAID()));
-			return rawAtom.getAID();
+			return;
 		}
 
 		deserialisationCallback.accept(atom);
 		submitAtom(atom);
-		return atom.getAID();
 	}
 
 	@Override

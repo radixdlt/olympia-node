@@ -20,6 +20,10 @@ package com.radixdlt.middleware2.converters;
 import com.radixdlt.constraintmachine.DataPointer;
 import java.util.Objects;
 
+/**
+ * Exception thrown when converting from the raw api Atom to
+ * a RadixEngine atom
+ */
 public final class AtomConversionException extends Exception {
 	private final DataPointer dataPointer;
 
