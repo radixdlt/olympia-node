@@ -23,6 +23,9 @@ import java.util.Optional;
 
 import javax.annotation.concurrent.NotThreadSafe;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
 import com.google.inject.Inject;
@@ -43,6 +46,7 @@ import com.radixdlt.crypto.Hash;
 @NotThreadSafe
 @SecurityCritical
 public final class PendingVotes {
+	private static final Logger log = LogManager.getLogger();
 
 	@VisibleForTesting
 	// Make sure equals tester can access.
@@ -93,19 +97,25 @@ public final class PendingVotes {
 		final Hash voteHash = this.hasher.hash(voteData);
 		final ECDSASignature signature = vote.getSignature().orElseThrow(() -> new IllegalArgumentException("vote is missing signature"));
 		// Only process for valid validators and signatures
-		if (validatorSet.containsKey(voteAuthor) && voteAuthor.verify(voteHash, signature)) {
-			final View voteView = voteData.getProposed().getView();
-			if (replacePreviousVote(voteAuthor, voteView, voteHash)) {
-				// If there is no equivocation or duplication, we process the vote.
-				ValidationState validationState = this.voteState.computeIfAbsent(voteHash, k -> validatorSet.newValidationState());
+		if (validatorSet.containsKey(voteAuthor)) {
+			if (voteAuthor.verify(voteHash, signature)) {
+				final View voteView = voteData.getProposed().getView();
+				if (replacePreviousVote(voteAuthor, voteView, voteHash)) {
+					// If there is no equivocation or duplication, we process the vote.
+					ValidationState validationState = this.voteState.computeIfAbsent(voteHash, k -> validatorSet.newValidationState());
 
-				// try to form a QC with the added signature according to the requirements
-				if (validationState.addSignature(voteAuthor, signature) && validationState.complete()) {
-					// QC can be formed, so return it
-					QuorumCertificate qc = new QuorumCertificate(vote.getVoteData(), validationState.signatures());
-					return Optional.of(qc);
+					// try to form a QC with the added signature according to the requirements
+					if (validationState.addSignature(voteAuthor, signature) && validationState.complete()) {
+						// QC can be formed, so return it
+						QuorumCertificate qc = new QuorumCertificate(vote.getVoteData(), validationState.signatures());
+						return Optional.of(qc);
+					}
 				}
+			} else {
+				log.info("Ignoring invalid signature from author {}", () -> hostId(voteAuthor));
 			}
+		} else {
+			log.info("Ignoring vote from invalid author {}", () -> hostId(voteAuthor));
 		}
 		// No QC could be formed, so return nothing
 		return Optional.empty();
@@ -126,6 +136,7 @@ public final class PendingVotes {
 		}
 
 		// Prune last pending vote from the pending votes.
+		// This limits the number of pending vertices that are in the pipeline.
 		ValidationState validationState = this.voteState.get(previousVote.hash);
 		if (validationState != null) {
 			validationState.removeSignature(author);
@@ -138,6 +149,10 @@ public final class PendingVotes {
 		// then it should be slashed, once we have that infrastructure in place.
 		// In any case, equivocating votes should not be counted.
 		return !voteView.equals(previousVote.view);
+	}
+
+	private static String hostId(ECPublicKey author) {
+		return author.euid().toString().substring(0, 6);
 	}
 
 	@VisibleForTesting

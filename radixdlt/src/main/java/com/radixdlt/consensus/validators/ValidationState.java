@@ -80,7 +80,7 @@ public final class ValidationState {
 	public boolean addSignature(ECPublicKey key, ECDSASignature signature) {
 		if (validatorSet.containsKey(key)
 			&& !this.signedKeys.containsKey(key)) {
-			this.signedKeys.compute(key, (k, v) -> {
+			this.signedKeys.computeIfAbsent(key, k -> {
 				this.signedPower = this.signedPower.add(this.validatorSet.getPower(key));
 				return signature;
 			});

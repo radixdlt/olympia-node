@@ -113,14 +113,15 @@ public final class BFTEventReducer implements BFTEventProcessor {
 
 	private void processQC(QuorumCertificate qc) {
 		// commit any newly committable vertices
-		this.safetyRules.process(qc).ifPresent(vertexId -> {
-			final Vertex vertex = vertexStore.commitVertex(vertexId);
-			log.info("{}: Committed vertex: {}", this.getShortName(), vertex);
-			final Atom committedAtom = vertex.getAtom();
-			if (committedAtom != null) {
-				mempool.removeCommittedAtom(committedAtom.getAID());
-			}
-		});
+		this.safetyRules.process(qc)
+			.ifPresent(vertexId -> {
+				final Vertex vertex = vertexStore.commitVertex(vertexId);
+				log.info("{}: Committed vertex: {}", this.getShortName(), vertex);
+				final Atom committedAtom = vertex.getAtom();
+				if (committedAtom != null) {
+					mempool.removeCommittedAtom(committedAtom.getAID());
+				}
+			});
 
 		// proceed to next view if pacemaker feels like it
 		this.pacemaker.processQC(qc.getView())
