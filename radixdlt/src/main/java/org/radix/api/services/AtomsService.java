@@ -45,6 +45,7 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStore;
 
+import java.util.concurrent.atomic.AtomicReference;
 import org.json.JSONException;
 import org.json.JSONObject;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -172,7 +173,12 @@ public class AtomsService {
 
 	public AID submitAtom(JSONObject jsonAtom, SingleAtomListener subscriber) {
 		try {
-			return this.submissionControl.submitAtom(jsonAtom, atom -> subscribeToSubmission(subscriber, atom));
+			AtomicReference<AID> aid = new AtomicReference<>();
+			this.submissionControl.submitAtom(jsonAtom, atom -> {
+				aid.set(atom.getAID());
+				subscribeToSubmission(subscriber, atom);
+			});
+			return aid.get();
 		} catch (MempoolRejectedException e) {
 			if (subscriber != null) {
 				AID atomId = e.atom().getAID();

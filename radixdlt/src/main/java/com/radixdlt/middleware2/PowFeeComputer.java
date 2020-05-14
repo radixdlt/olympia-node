@@ -23,7 +23,7 @@ import com.radixdlt.utils.POW;
 import java.util.function.Supplier;
 
 /**
- * Temporary class for computing pow spent in an atom
+ * Temporary (will be removing pow fees soon) class for computing pow spent in an atom
  */
 public final class PowFeeComputer {
 	private final Supplier<Universe> universeSupplier;

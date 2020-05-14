@@ -21,8 +21,6 @@ import java.util.function.Consumer;
 
 import org.json.JSONObject;
 
-import com.radixdlt.identifiers.AID;
-
 /**
  * Handle atom submission.
  */
@@ -41,10 +39,9 @@ public interface SubmissionControl {
 	 *
 	 * @param atomJson the {@link JSONObject} to deserialise for the atom
 	 * @param deserialisationCallback the callback to call after deserialisation has occurred
-	 * @return The {@link AID} of the submitted atom
 	 * @throws MempoolFullException if the underlying mempool is too full to accept new submissions
 	 * @throws MempoolDuplicateException if the underlying mempool already has the specified atom
 	 */
-	AID submitAtom(JSONObject atomJson, Consumer<LedgerAtom> deserialisationCallback)
+	void submitAtom(JSONObject atomJson, Consumer<LedgerAtom> deserialisationCallback)
 		throws MempoolFullException, MempoolDuplicateException;
 }

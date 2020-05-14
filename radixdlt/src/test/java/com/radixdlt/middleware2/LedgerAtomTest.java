@@ -17,12 +17,17 @@
 
 package com.radixdlt.middleware2;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.atommodel.Atom;
+import com.radixdlt.atommodel.message.MessageParticle;
 import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.middleware.ParticleGroup;
 import com.radixdlt.middleware.SpunParticle;
 import com.radixdlt.middleware2.LedgerAtom.LedgerAtomConversionException;
@@ -34,6 +39,31 @@ public class LedgerAtomTest {
 	public void equalsContract() {
 		EqualsVerifier.forClass(LedgerAtom.class)
 			.verify();
+	}
+
+	private static Atom createApiAtom() {
+		RadixAddress address = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
+		Atom atom = new Atom();
+		// add a particle to ensure atom is valid and has at least one shard
+		atom.addParticleGroupWith(new MessageParticle(address, address, "Hello".getBytes()), Spin.UP);
+		return atom;
+	}
+
+	@Test
+	public void testConvertToApiAtom() throws Exception {
+		Atom atom = createApiAtom();
+		final LedgerAtom ledgerAtom = LedgerAtom.convertFromApiAtom(atom);
+		Atom fromLedgerAtom = LedgerAtom.convertToApiAtom(ledgerAtom);
+		assertThat(atom).isEqualTo(fromLedgerAtom);
+	}
+
+	@Test
+	public void testGetters() throws Exception {
+		Atom atom = createApiAtom();
+		final LedgerAtom ledgerAtom = LedgerAtom.convertFromApiAtom(atom);
+		assertThat(atom.getAID()).isEqualTo(ledgerAtom.getAID());
+		assertThat(atom.getMetaData()).isEqualTo(ledgerAtom.getMetaData());
+		assertThat(ledgerAtom.getCMInstruction()).isNotNull();
 	}
 
 	@Test
@@ -62,7 +92,7 @@ public class LedgerAtomTest {
 	}
 
 	@Test
-	public void when_validating_an_up_to_up_cm_particle__internal_conflict_is_returned() {
+	public void when_validating_an_up_to_up_cm_particle__error_is_returned() {
 		Particle particle0 = mock(Particle.class);
 
 		assertThatThrownBy(() ->
@@ -82,7 +112,7 @@ public class LedgerAtomTest {
 	}
 
 	@Test
-	public void when_validating_a_down_to_down_cm_particle__conflict_is_returned() {
+	public void when_validating_a_down_to_down_cm_particle__error_is_returned() {
 		Particle particle0 = mock(Particle.class);
 		assertThatThrownBy(() ->
 			LedgerAtom.toCMMicroInstructions(
@@ -99,7 +129,7 @@ public class LedgerAtomTest {
 	}
 
 	@Test
-	public void when_validating_a_down_to_up_cm_particle__single_conflict_is_returned() {
+	public void when_validating_a_down_to_up_cm_particle__error_is_returned() {
 		Particle particle0 = mock(Particle.class);
 		assertThatThrownBy(() ->
 			LedgerAtom.toCMMicroInstructions(
@@ -116,7 +146,7 @@ public class LedgerAtomTest {
 	}
 
 	@Test
-	public void when_checking_two_duplicate_particles__two_errors_are_returned() {
+	public void when_checking_two_duplicate_particles__error_is_returned() {
 		Particle particle0 = mock(Particle.class);
 		assertThatThrownBy(() ->
 			LedgerAtom.toCMMicroInstructions(
