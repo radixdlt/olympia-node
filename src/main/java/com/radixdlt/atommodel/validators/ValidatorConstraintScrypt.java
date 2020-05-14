@@ -3,6 +3,7 @@ package com.radixdlt.atommodel.validators;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.atomos.ConstraintScrypt;
+import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.constraintmachine.Particle;
@@ -23,18 +24,17 @@ import java.util.function.ToLongFunction;
 public class ValidatorConstraintScrypt implements ConstraintScrypt {
 	@Override
 	public void main(SysCalls os) {
-		os.registerParticleMultipleAddresses(
-			UnregisteredValidatorParticle.class,
-			p -> ImmutableSet.of(p.getAddress()),
-			createStaticCheck(UnregisteredValidatorParticle::getAddress),
-			null,
-			p -> p.getNonce() == 0 ? Spin.UP : null // virtualise first instance as UP
+		os.registerParticle(UnregisteredValidatorParticle.class, ParticleDefinition.<UnregisteredValidatorParticle>builder()
+			.singleAddressMapper(UnregisteredValidatorParticle::getAddress)
+			.staticValidation(createStaticCheck(UnregisteredValidatorParticle::getAddress))
+			.virtualizeSpin(p -> p.getNonce() == 0 ? Spin.UP : null) // virtualize first instance as UP
+			.build()
 		);
 
-		os.registerParticle(
-			RegisteredValidatorParticle.class,
-			RegisteredValidatorParticle::getAddress,
-			createStaticCheck(RegisteredValidatorParticle::getAddress)
+		os.registerParticle(RegisteredValidatorParticle.class, ParticleDefinition.<RegisteredValidatorParticle>builder()
+			.singleAddressMapper(RegisteredValidatorParticle::getAddress)
+			.staticValidation(createStaticCheck(RegisteredValidatorParticle::getAddress))
+			.build()
 		);
 
 		// transition from unregistered => registered

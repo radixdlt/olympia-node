@@ -51,11 +51,11 @@ public final class CMAtomOS {
 		.allowTransitionsFromOutsideScrypts()
 		.build();
 
-	private static final ParticleDefinition<Particle> RRI_PARTICLE_DEF = ParticleDefinition.builder()
-		.addressMapper(rri -> Stream.of(((RRIParticle) rri).getRri().getAddress()))
+	private static final ParticleDefinition<Particle> RRI_PARTICLE_DEF = ParticleDefinition.<RRIParticle>builder()
+		.singleAddressMapper(rri -> rri.getRri().getAddress())
 		.staticValidation(rri -> Result.success())
-		.rriMapper(rri -> ((RRIParticle) rri).getRri())
-		.virtualizeSpin(v -> ((RRIParticle) v).getNonce() == 0 ? Spin.UP : null)
+		.rriMapper(RRIParticle::getRri)
+		.virtualizeSpin(v -> v.getNonce() == 0 ? Spin.UP : null)
 		.allowTransitionsFromOutsideScrypts()
 		.build();
 
@@ -105,8 +105,8 @@ public final class CMAtomOS {
 				return staticCheckResult;
 			}
 
-			final Function<Particle, Stream<RadixAddress>> mapper = particleDefinition.getAddressMapper();
-			final Set<EUID> destinations = mapper.apply(p).map(RadixAddress::euid).collect(Collectors.toSet());
+			final Function<Particle, Set<RadixAddress>> mapper = particleDefinition.getAddressMapper();
+			final Set<EUID> destinations = mapper.apply(p).stream().map(RadixAddress::euid).collect(Collectors.toSet());
 
 			if (!destinations.containsAll(p.getDestinations())) {
 				return Result.error("Address destinations does not contain all destinations");

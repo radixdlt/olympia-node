@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.atomos.ConstraintScrypt;
+import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.SysCalls;
@@ -148,35 +149,38 @@ public class TicTacToeConstraintScrypt implements ConstraintScrypt {
 
 	@Override
 	public void main(SysCalls os) {
-
 		// First, we must define and register each of the 5 qualitative states in the extended state machine.
 		// We also need to define the quantative aspects of each state, this is done in the staticCheck()
 		// call. During this process we also define where each of these states will "live". In our case we want
 		// the game to be stored in both player's addresses.
-		os.registerParticleMultipleAddresses(
-			XToMoveParticle.class,
-			ticTacToe -> ImmutableSet.of(ticTacToe.getXPlayer(), ticTacToe.getOPlayer()),
-			t -> staticCheck(t, GameStatus.IN_PROGRESS)
+		os.registerParticle(XToMoveParticle.class, ParticleDefinition.<XToMoveParticle>builder()
+			.addressMapper(TicTacToeBaseParticle::getPlayers)
+			.staticValidation(ttt -> staticCheck(ttt, GameStatus.IN_PROGRESS))
+			.build()
 		);
-		os.registerParticleMultipleAddresses(
-			OToMoveParticle.class,
-			ticTacToe -> ImmutableSet.of(ticTacToe.getXPlayer(), ticTacToe.getOPlayer()),
-			t -> staticCheck(t, GameStatus.IN_PROGRESS)
+
+		os.registerParticle(OToMoveParticle.class, ParticleDefinition.<XToMoveParticle>builder()
+			.addressMapper(TicTacToeBaseParticle::getPlayers)
+			.staticValidation(ttt -> staticCheck(ttt, GameStatus.IN_PROGRESS))
+			.build()
 		);
-		os.registerParticleMultipleAddresses(
-			XWinsParticle.class,
-			ticTacToe -> ImmutableSet.of(ticTacToe.getXPlayer(), ticTacToe.getOPlayer()),
-			t -> staticCheck(t, GameStatus.X_WINS)
+
+		os.registerParticle(XWinsParticle.class, ParticleDefinition.<XToMoveParticle>builder()
+			.addressMapper(TicTacToeBaseParticle::getPlayers)
+			.staticValidation(ttt -> staticCheck(ttt, GameStatus.X_WINS))
+			.build()
 		);
-		os.registerParticleMultipleAddresses(
-			OWinsParticle.class,
-			ticTacToe -> ImmutableSet.of(ticTacToe.getXPlayer(), ticTacToe.getOPlayer()),
-			t -> staticCheck(t, GameStatus.O_WINS)
+
+		os.registerParticle(OWinsParticle.class, ParticleDefinition.<OWinsParticle>builder()
+			.addressMapper(TicTacToeBaseParticle::getPlayers)
+			.staticValidation(ttt -> staticCheck(ttt, GameStatus.O_WINS))
+			.build()
 		);
-		os.registerParticleMultipleAddresses(
-			DrawParticle.class,
-			ticTacToe -> ImmutableSet.of(ticTacToe.getXPlayer(), ticTacToe.getOPlayer()),
-			t -> staticCheck(t, GameStatus.DRAW)
+
+		os.registerParticle(DrawParticle.class, ParticleDefinition.<DrawParticle>builder()
+			.addressMapper(TicTacToeBaseParticle::getPlayers)
+			.staticValidation(ttt -> staticCheck(ttt, GameStatus.DRAW))
+			.build()
 		);
 
 		// Next, we must define the state machine transitions which are allowed in our state machine.

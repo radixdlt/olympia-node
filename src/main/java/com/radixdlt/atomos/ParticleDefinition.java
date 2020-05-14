@@ -22,6 +22,8 @@ import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 
+import java.util.Collections;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -29,8 +31,8 @@ import java.util.stream.Stream;
  * Defines how to retrieve important properties from a given particle type.
  * @param <T> the particle class
  */
-class ParticleDefinition<T extends Particle> {
-	private final Function<T, Stream<RadixAddress>> addressMapper;
+public class ParticleDefinition<T extends Particle> {
+	private final Function<T, Set<RadixAddress>> addressMapper;
 	private final Function<T, Result> staticValidation;
 	private final Function<T, RRI> rriMapper;
 	private final Function<T, Spin> virtualizeSpin;
@@ -38,7 +40,7 @@ class ParticleDefinition<T extends Particle> {
 
 	// TODO convert to builder to simplify API/reduce number of method variations
 	ParticleDefinition(
-		Function<T, Stream<RadixAddress>> addressMapper,
+		Function<T, Set<RadixAddress>> addressMapper,
 		Function<T, Result> staticValidation,
 		Function<T, RRI> rriMapper,
 		Function<T, Spin> virtualizeSpin,
@@ -51,7 +53,7 @@ class ParticleDefinition<T extends Particle> {
 		this.allowsTransitionsFromOutsideScrypts = allowsTransitionsFromOutsideScrypts;
 	}
 
-	Function<T, Stream<RadixAddress>> getAddressMapper() {
+	Function<T, Set<RadixAddress>> getAddressMapper() {
 		return addressMapper;
 	}
 
@@ -76,8 +78,8 @@ class ParticleDefinition<T extends Particle> {
 	}
 
 	public static class Builder<T extends Particle> {
-		private Function<T, Stream<RadixAddress>> addressMapper;
-		private Function<T, Result> staticValidation;
+		private Function<T, Set<RadixAddress>> addressMapper;
+		private Function<T, Result> staticValidation = x -> Result.success();
 		private Function<T, RRI> rriMapper;
 		private Function<T, Spin> virtualizeSpin;
 		private boolean allowsTransitionsFromOutsideScrypts;
@@ -85,7 +87,12 @@ class ParticleDefinition<T extends Particle> {
 		private Builder() {
 		}
 
-		public Builder<T> addressMapper(Function<T, Stream<RadixAddress>> addressMapper) {
+		public Builder<T> singleAddressMapper(Function<T, RadixAddress> addressMapper) {
+			this.addressMapper = p -> Collections.singleton(addressMapper.apply(p));
+			return this;
+		}
+
+		public Builder<T> addressMapper(Function<T, Set<RadixAddress>> addressMapper) {
 			this.addressMapper = addressMapper;
 			return this;
 		}
@@ -111,6 +118,11 @@ class ParticleDefinition<T extends Particle> {
 		}
 
 		public <U extends Particle> ParticleDefinition<U> build() {
+			if (addressMapper == null) {
+				throw new IllegalStateException("addressMapper is required");
+			}
+
+			// cast as necessary
 			return new ParticleDefinition<>(
 				addressMapper == null ? null : p -> addressMapper.apply((T) p),
 				staticValidation == null ? null : p -> staticValidation.apply((T) p),

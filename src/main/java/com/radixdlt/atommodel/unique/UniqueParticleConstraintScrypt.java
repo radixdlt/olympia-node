@@ -17,6 +17,7 @@
 
 package com.radixdlt.atommodel.unique;
 
+import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.atomos.ConstraintScrypt;
@@ -24,11 +25,10 @@ import com.radixdlt.atomos.ConstraintScrypt;
 public class UniqueParticleConstraintScrypt implements ConstraintScrypt {
 	@Override
 	public void main(SysCalls os) {
-		os.registerParticle(
-			UniqueParticle.class,
-			UniqueParticle::getAddress,
-			u -> Result.success(),
-			UniqueParticle::getRRI
+		os.registerParticle(UniqueParticle.class, ParticleDefinition.<UniqueParticle>builder()
+			.singleAddressMapper(UniqueParticle::getAddress)
+			.rriMapper(UniqueParticle::getRRI)
+			.build()
 		);
 		os.createTransitionFromRRI(UniqueParticle.class);
 	}
