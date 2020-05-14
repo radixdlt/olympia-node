@@ -21,7 +21,9 @@ import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.converters.AtomToClientAtomConverter;
+import com.radixdlt.middleware2.converters.AtomConversionException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import org.json.JSONObject;
 import org.junit.Before;
 import org.junit.Test;
@@ -39,7 +41,7 @@ import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 import static org.hamcrest.Matchers.*;
 
-public class SubmissionControlTest {
+public class SubmissionControlImplTest {
 
 	private Mempool mempool;
 	private RadixEngine<LedgerAtom> radixEngine;
@@ -85,6 +87,22 @@ public class SubmissionControlTest {
 	}
 
 	@Test
+	public void when_conversion_fails_then_exception_is_broadcasted_and_atom_is_not_added_to_mempool() throws Exception {
+		doNothing().when(this.events).broadcast(any());
+
+		JSONObject atomJson = mock(JSONObject.class);
+		Atom atom = mock(Atom.class);
+		AID aid = mock(AID.class);
+		when(atom.getAID()).thenReturn(aid);
+		doReturn(atom).when(this.serialization).fromJsonObject(eq(atomJson), eq(Atom.class));
+		when(converter.convert(eq(atom))).thenThrow(mock(AtomConversionException.class));
+		Consumer<ClientAtom> callback = mock(Consumer.class);
+		this.submissionControl.submitAtom(atomJson, callback);
+		verify(this.events, times(1)).broadcast(argThat(AtomExceptionEvent.class::isInstance));
+		verify(this.mempool, never()).addAtom(any());
+	}
+
+	@Test
 	public void if_deserialisation_fails__then_callback_is_not_called() throws Exception {
 		doThrow(new IllegalArgumentException()).when(this.serialization).fromJsonObject(any(), any());
 
@@ -109,16 +127,14 @@ public class SubmissionControlTest {
 		doReturn(atomMock).when(this.serialization).fromJsonObject(any(), any());
 		doNothing().when(this.mempool).addAtom(any());
 
-		AtomicBoolean called = new AtomicBoolean(false);
 
 		ClientAtom clientAtom = mock(ClientAtom.class);
 		when(clientAtom.getAID()).thenReturn(AID.ZERO);
 		when(converter.convert(eq(atomMock))).thenReturn(clientAtom);
-		AID result = this.submissionControl.submitAtom(throwingMock(JSONObject.class), a -> called.set(true));
+		Consumer<ClientAtom> callback = mock(Consumer.class);
+		this.submissionControl.submitAtom(throwingMock(JSONObject.class), callback);
 
-		assertSame(AID.ZERO, result);
-
-		assertThat(called.get(), is(true));
+		verify(callback, times(1)).accept(argThat(a -> a.getAID().equals(AID.ZERO)));
 		verify(this.events, never()).broadcast(any());
 		verify(this.mempool, times(1)).addAtom(any());
 	}
