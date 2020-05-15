@@ -31,6 +31,7 @@ import com.radixdlt.store.CMStores;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.SpinStateMachine;
 
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.UnaryOperator;
@@ -59,9 +60,9 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 		EngineStore<T> engineStore,
 		AtomChecker<T> checker
 	) {
-		this.constraintMachine = constraintMachine;
+		this.constraintMachine = Objects.requireNonNull(constraintMachine);
 		this.virtualizedCMStore = virtualStoreLayer.apply(CMStores.empty());
-		this.engineStore = engineStore;
+		this.engineStore = Objects.requireNonNull(engineStore);
 		this.checker = checker;
 	}
 
