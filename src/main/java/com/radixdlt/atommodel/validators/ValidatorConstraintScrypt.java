@@ -1,5 +1,6 @@
 package com.radixdlt.atommodel.validators;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
@@ -74,59 +75,7 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 	) {
 		os.createTransition(
 			new TransitionToken<>(inputParticle, TypeToken.of(VoidUsedData.class), outputParticle, TypeToken.of(VoidUsedData.class)),
-			new TransitionProcedure<I, VoidUsedData, O, VoidUsedData>() {
-				@Override
-				public Result precondition(I inputParticle, VoidUsedData inputUsed, O outputParticle, VoidUsedData outputUsed) {
-					RadixAddress inputAddress = inputAddressMapper.apply(inputParticle);
-					RadixAddress outputAddress = outputAddressMapper.apply(outputParticle);
-					// ensure transition is between validator particles concerning the same validator address
-					if (!Objects.equals(inputAddress, outputAddressMapper.apply(outputParticle))) {
-						return Result.error(String.format(
-							"validator addresses do not match: %s != %s",
-							inputAddress, outputAddress
-						));
-					}
-
-					// ensure nonce is increased when transitioning between the two states
-					long inputNonce = inputNonceMapper.applyAsLong(inputParticle);
-					long outputNonce = outputNonceMapper.applyAsLong(outputParticle);
-					if (inputNonce + 1 != outputNonce) {
-						return Result.error(String.format(
-							"output nonce must be input nonce + 1, but %d != %d + 1",
-							outputNonce, inputNonce
-						));
-					}
-
-					return Result.success();
-				}
-
-				@Override
-				public UsedCompute<I, VoidUsedData, O, VoidUsedData> inputUsedCompute() {
-					return (input, inputUsed, output, outputUsed) -> Optional.empty();
-				}
-
-				@Override
-				public UsedCompute<I, VoidUsedData, O, VoidUsedData> outputUsedCompute() {
-					return (input, inputUsed, output, outputUsed) -> Optional.empty();
-				}
-
-				@Override
-				public WitnessValidator<I> inputWitnessValidator() {
-					// verify that the transition was authenticated by the validator address in question
-					return (i, meta) -> {
-						RadixAddress address = inputAddressMapper.apply(i);
-						return meta.isSignedBy(address.getPublicKey())
-							? WitnessValidatorResult.success()
-							: WitnessValidatorResult.error(String.format("validator %s not signed", address));
-					};
-				}
-
-				@Override
-				public WitnessValidator<O> outputWitnessValidator() {
-					// input.address == output.address, so no need to check signature twice
-					return (i, meta) -> WitnessValidatorResult.success();
-				}
-			}
+			new ValidatorTransitionProcedure<>(inputAddressMapper, inputNonceMapper, outputAddressMapper, outputNonceMapper)
 		);
 	}
 
@@ -139,5 +88,76 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 
 			return Result.success();
 		};
+	}
+
+	@VisibleForTesting
+	static class ValidatorTransitionProcedure<I extends Particle, O extends Particle> implements TransitionProcedure<I, VoidUsedData, O, VoidUsedData> {
+		private final Function<I, RadixAddress> inputAddressMapper;
+		private final ToLongFunction<I> inputNonceMapper;
+		private final Function<O, RadixAddress> outputAddressMapper;
+		private final ToLongFunction<O> outputNonceMapper;
+
+		private ValidatorTransitionProcedure(Function<I, RadixAddress> inputAddressMapper,
+		                                     ToLongFunction<I> inputNonceMapper,
+		                                     Function<O, RadixAddress> outputAddressMapper,
+		                                     ToLongFunction<O> outputNonceMapper) {
+
+			this.inputAddressMapper = inputAddressMapper;
+			this.inputNonceMapper = inputNonceMapper;
+			this.outputAddressMapper = outputAddressMapper;
+			this.outputNonceMapper = outputNonceMapper;
+		}
+
+		@Override
+		public Result precondition(I inputParticle, VoidUsedData inputUsed, O outputParticle, VoidUsedData outputUsed) {
+			RadixAddress inputAddress = inputAddressMapper.apply(inputParticle);
+			RadixAddress outputAddress = outputAddressMapper.apply(outputParticle);
+			// ensure transition is between validator particles concerning the same validator address
+			if (!Objects.equals(inputAddress, outputAddressMapper.apply(outputParticle))) {
+				return Result.error(String.format(
+					"validator addresses do not match: %s != %s",
+					inputAddress, outputAddress
+				));
+			}
+
+			// ensure nonce is increased when transitioning between the two states
+			long inputNonce = inputNonceMapper.applyAsLong(inputParticle);
+			long outputNonce = outputNonceMapper.applyAsLong(outputParticle);
+			if (inputNonce + 1 != outputNonce) {
+				return Result.error(String.format(
+					"output nonce must be input nonce + 1, but %d != %d + 1",
+					outputNonce, inputNonce
+				));
+			}
+
+			return Result.success();
+		}
+
+		@Override
+		public UsedCompute<I, VoidUsedData, O, VoidUsedData> inputUsedCompute() {
+			return (input, inputUsed, output, outputUsed) -> Optional.empty();
+		}
+
+		@Override
+		public UsedCompute<I, VoidUsedData, O, VoidUsedData> outputUsedCompute() {
+			return (input, inputUsed, output, outputUsed) -> Optional.empty();
+		}
+
+		@Override
+		public WitnessValidator<I> inputWitnessValidator() {
+			// verify that the transition was authenticated by the validator address in question
+			return (i, meta) -> {
+				RadixAddress address = inputAddressMapper.apply(i);
+				return meta.isSignedBy(address.getPublicKey())
+					? WitnessValidatorResult.success()
+					: WitnessValidatorResult.error(String.format("validator %s not signed", address));
+			};
+		}
+
+		@Override
+		public WitnessValidator<O> outputWitnessValidator() {
+			// input.address == output.address, so no need to check signature twice
+			return (i, meta) -> WitnessValidatorResult.success();
+		}
 	}
 }
