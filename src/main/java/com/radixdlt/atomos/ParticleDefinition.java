@@ -124,6 +124,14 @@ public class ParticleDefinition<T extends Particle> {
 			return this;
 		}
 
+		/**
+		 * Builds the {@link ParticleDefinition} with the given properties, casting as necessary.
+		 * All properties except the address mapper are optional.
+		 *
+		 * TODO Cleanup: Recasting the Particle type here is non-ideal, but fixing it would take too long.
+		 * @param <U> The type of the built ParticleDefinition (must be castable from builder type T)
+		 * @return The built {@link ParticleDefinition}
+		 */
 		public <U extends Particle> ParticleDefinition<U> build() {
 			if (addressMapper == null) {
 				throw new IllegalStateException("addressMapper is required");
