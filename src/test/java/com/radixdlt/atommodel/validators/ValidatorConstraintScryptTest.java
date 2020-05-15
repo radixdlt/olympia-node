@@ -4,12 +4,16 @@ import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt.ValidatorTran
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.constraintmachine.WitnessData;
 import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.store.CMStore;
+import com.radixdlt.store.CMStores;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -17,8 +21,21 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+/**
+ * Exercise the critical invariants of the {@link ValidatorConstraintScrypt}.
+ *
+ * The invariants tested here follow the flow of the validator FSM:
+ *  - unregistered validator with nonce 0 is virtualised as UP
+ *  - validator address must be specified
+ *  - validator transitions must be between validators of the same address
+ *  - the nonce must increase by exactly one with every transition
+ *  - validator transitions must be signed by the address
+ *
+ * These tests are implemented by either testing the static check directly or the generated transition procedure.
+ */
 public class ValidatorConstraintScryptTest {
 	private static Function<Particle, Result> staticCheck;
+	private static UnaryOperator<CMStore> virtualLayer;
 
 	@BeforeClass
 	public static void initializeConstraintScrypt() {
@@ -26,6 +43,19 @@ public class ValidatorConstraintScryptTest {
 		CMAtomOS cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(tokensConstraintScrypt);
 		staticCheck = cmAtomOS.buildParticleStaticCheck();
+		virtualLayer = cmAtomOS.buildVirtualLayer();
+	}
+
+	@Test
+	public void when_creating_unregistered_validator_with_zero_nonce__spin_is_virtualised_as_up() {
+		CMStore virtualisedStore = virtualLayer.apply(CMStores.empty());
+		assertThat(virtualisedStore.getSpin(createUnregistered(mock(RadixAddress.class), 0))).isEqualTo(Spin.UP);
+	}
+
+	@Test
+	public void when_creating_unregistered_validator_with_nonzero_nonce__spin_is_not_virtualised() {
+		CMStore virtualisedStore = virtualLayer.apply(CMStores.empty());
+		assertThat(virtualisedStore.getSpin(createUnregistered(mock(RadixAddress.class), 1))).isEqualTo(Spin.NEUTRAL);
 	}
 
 	@Test
