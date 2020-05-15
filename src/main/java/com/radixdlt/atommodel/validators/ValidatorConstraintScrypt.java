@@ -97,10 +97,10 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 		private final Function<O, RadixAddress> outputAddressMapper;
 		private final ToLongFunction<O> outputNonceMapper;
 
-		private ValidatorTransitionProcedure(Function<I, RadixAddress> inputAddressMapper,
-		                                     ToLongFunction<I> inputNonceMapper,
-		                                     Function<O, RadixAddress> outputAddressMapper,
-		                                     ToLongFunction<O> outputNonceMapper) {
+		ValidatorTransitionProcedure(Function<I, RadixAddress> inputAddressMapper,
+		                             ToLongFunction<I> inputNonceMapper,
+		                             Function<O, RadixAddress> outputAddressMapper,
+		                             ToLongFunction<O> outputNonceMapper) {
 
 			this.inputAddressMapper = inputAddressMapper;
 			this.inputNonceMapper = inputNonceMapper;
@@ -113,7 +113,7 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 			RadixAddress inputAddress = inputAddressMapper.apply(inputParticle);
 			RadixAddress outputAddress = outputAddressMapper.apply(outputParticle);
 			// ensure transition is between validator particles concerning the same validator address
-			if (!Objects.equals(inputAddress, outputAddressMapper.apply(outputParticle))) {
+			if (!Objects.equals(inputAddress, outputAddress)) {
 				return Result.error(String.format(
 					"validator addresses do not match: %s != %s",
 					inputAddress, outputAddress
