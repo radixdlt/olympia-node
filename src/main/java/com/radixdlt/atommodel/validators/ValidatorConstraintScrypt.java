@@ -1,6 +1,5 @@
 package com.radixdlt.atommodel.validators;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
@@ -21,6 +20,15 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.ToLongFunction;
 
+/**
+ * Constraint Scrypt defining the Validator FSM, specifically the registration/unregistration flow.
+ *
+ * The Validator FSM is implemented with two particles, UnregisteredValidatorParticle and RegisteredValidatorParticle,
+ * both carrying the address of the validator in question and a nonce. The first unregistered Validator particle
+ * for an address (with nonce 0) is virtualised as having an UP spin to initialise the FSM. Whenever a validator
+ * (identified by their address) transitions between the two states, the nonce must increase (to ensure uniqueness).
+ * The atom carrying a transition must be signed by the validator.
+ */
 public class ValidatorConstraintScrypt implements ConstraintScrypt {
 	@Override
 	public void main(SysCalls os) {
@@ -71,6 +79,7 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 				public Result precondition(I inputParticle, VoidUsedData inputUsed, O outputParticle, VoidUsedData outputUsed) {
 					RadixAddress inputAddress = inputAddressMapper.apply(inputParticle);
 					RadixAddress outputAddress = outputAddressMapper.apply(outputParticle);
+					// ensure transition is between validator particles concerning the same validator address
 					if (!Objects.equals(inputAddress, outputAddressMapper.apply(outputParticle))) {
 						return Result.error(String.format(
 							"validator addresses do not match: %s != %s",
@@ -78,6 +87,7 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 						));
 					}
 
+					// ensure nonce is increased when transitioning between the two states
 					long inputNonce = inputNonceMapper.applyAsLong(inputParticle);
 					long outputNonce = outputNonceMapper.applyAsLong(outputParticle);
 					if (inputNonce + 1 != outputNonce) {
@@ -102,6 +112,7 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 
 				@Override
 				public WitnessValidator<I> inputWitnessValidator() {
+					// verify that the transition was authenticated by the validator address in question
 					return (i, meta) -> {
 						RadixAddress address = inputAddressMapper.apply(i);
 						return meta.isSignedBy(address.getPublicKey())
@@ -119,7 +130,7 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 		);
 	}
 
-
+	// create a check verifying that the given address doesn't map to null
 	private static <I> Function<I, Result> createStaticCheck(Function<I, RadixAddress> addressMapper) {
 		return particle -> {
 			if (addressMapper.apply(particle) == null) {

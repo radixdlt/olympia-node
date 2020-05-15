@@ -33,9 +33,7 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.store.SpinStateMachine;
-
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Implementation of the AtomOS interface on top of a UTXO based Constraint Machine.

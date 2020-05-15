@@ -25,21 +25,19 @@ import com.radixdlt.identifiers.RadixAddress;
 import java.util.Collections;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.Stream;
 
 /**
  * Defines how to retrieve important properties from a given particle type.
  * @param <T> the particle class
  */
 public class ParticleDefinition<T extends Particle> {
-	private final Function<T, Set<RadixAddress>> addressMapper;
-	private final Function<T, Result> staticValidation;
-	private final Function<T, RRI> rriMapper;
-	private final Function<T, Spin> virtualizeSpin;
+	private final Function<T, Set<RadixAddress>> addressMapper; // must be set (since we need to route the particle)
+	private final Function<T, Result> staticValidation; // may be null
+	private final Function<T, RRI> rriMapper; // may be null
+	private final Function<T, Spin> virtualizeSpin; // may be null
 	private final boolean allowsTransitionsFromOutsideScrypts;
 
-	// TODO convert to builder to simplify API/reduce number of method variations
-	ParticleDefinition(
+	private ParticleDefinition(
 		Function<T, Set<RadixAddress>> addressMapper,
 		Function<T, Result> staticValidation,
 		Function<T, RRI> rriMapper,
@@ -73,10 +71,19 @@ public class ParticleDefinition<T extends Particle> {
 		return allowsTransitionsFromOutsideScrypts;
 	}
 
+	/**
+	 * Creates a Builder for {@link ParticleDefinition}s.
+	 * @param <T> The type of the {@link ParticleDefinition}
+	 * @return The builder
+	 */
 	public static <T extends Particle> Builder<T> builder() {
 		return new Builder<>();
 	}
 
+	/**
+	 * A Builder for {@link ParticleDefinition}s
+	 * @param <T> The type of the particle to be defined
+	 */
 	public static class Builder<T extends Particle> {
 		private Function<T, Set<RadixAddress>> addressMapper;
 		private Function<T, Result> staticValidation = x -> Result.success();
@@ -124,7 +131,7 @@ public class ParticleDefinition<T extends Particle> {
 
 			// cast as necessary
 			return new ParticleDefinition<>(
-				addressMapper == null ? null : p -> addressMapper.apply((T) p),
+				p -> addressMapper.apply((T) p),
 				staticValidation == null ? null : p -> staticValidation.apply((T) p),
 				rriMapper == null ? null : p -> rriMapper.apply((T) p),
 				virtualizeSpin == null ? null : p -> virtualizeSpin.apply((T) p),

@@ -119,8 +119,7 @@ public final class RadixEngine {
 		synchronized (stateUpdateEngineLock) {
 			stateCheckAndStore(atom, cmAtom);
 
-			// TODO update validator state here
-			// TODO return resulting validator state
+			// TODO Feature: Return updated state for some given query (e.g. for current validator set)
 		}
 	}
 
