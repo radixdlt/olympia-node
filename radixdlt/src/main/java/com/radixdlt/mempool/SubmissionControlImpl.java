@@ -64,6 +64,7 @@ class SubmissionControlImpl implements SubmissionControl {
 	public void submitAtom(LedgerAtom atom) throws MempoolFullException, MempoolDuplicateException {
 		try {
 			this.radixEngine.staticCheck(atom);
+			this.mempool.addAtom(atom);
 		} catch (RadixEngineException e) {
 			log.info(
 				"Rejecting atom {} with error '{}' at '{}'.",
@@ -72,29 +73,23 @@ class SubmissionControlImpl implements SubmissionControl {
 				e.getDataPointer()
 			);
 			this.events.broadcast(new AtomExceptionEvent(e, atom.getAID()));
-			return;
 		}
-
-		this.mempool.addAtom(atom);
 	}
 
 	@Override
 	public void submitAtom(JSONObject atomJson, Consumer<LedgerAtom> deserialisationCallback) throws MempoolFullException, MempoolDuplicateException {
 		final Atom rawAtom = this.serialization.fromJsonObject(atomJson, Atom.class);
-		final LedgerAtom atom;
 		try {
-			atom = converter.convert(rawAtom);
+			final LedgerAtom atom = converter.convert(rawAtom);
+			deserialisationCallback.accept(atom);
+			submitAtom(atom);
 		} catch (AtomConversionException e) {
 			log.info(
 				"Rejecting atom {} due to conversion issues.",
 				rawAtom.getAID()
 			);
 			this.events.broadcast(new AtomExceptionEvent(e, rawAtom.getAID()));
-			return;
 		}
-
-		deserialisationCallback.accept(atom);
-		submitAtom(atom);
 	}
 
 	@Override

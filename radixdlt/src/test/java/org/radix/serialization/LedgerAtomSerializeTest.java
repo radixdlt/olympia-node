@@ -17,15 +17,12 @@
 
 package org.radix.serialization;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.atommodel.message.MessageParticle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.LedgerAtom.LedgerAtomConversionException;
-import org.junit.Test;
 
 public class LedgerAtomSerializeTest extends SerializeObject<LedgerAtom> {
 	public LedgerAtomSerializeTest() {
