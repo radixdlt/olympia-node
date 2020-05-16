@@ -163,8 +163,8 @@ public final class Vertex {
 		}
 
 		Vertex v = (Vertex) o;
-		return Objects.equals(v.view, view)
-			&& Objects.equals(v.atom, atom)
+		return Objects.equals(v.view, this.view)
+			&& Objects.equals(v.atom, this.atom)
 			&& Objects.equals(v.qc, this.qc);
 	}
 }
