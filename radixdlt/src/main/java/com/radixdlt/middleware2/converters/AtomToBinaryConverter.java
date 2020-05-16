@@ -41,7 +41,7 @@ public final class AtomToBinaryConverter {
 		try {
 			return serializer.fromDson(ledgerEntryContent, LedgerAtom.class);
 		} catch (SerializationException e) {
-			throw new RuntimeException("Deserialization of Atom failed", e);
+			throw new IllegalStateException("Deserialization of Atom failed", e);
 		}
 	}
 }

@@ -77,11 +77,11 @@ public class MiddlewareModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private RadixEngine<LedgerAtom> getRadixEngine(
-			ConstraintMachine constraintMachine,
-			UnaryOperator<CMStore> virtualStoreLayer,
-			EngineStore<LedgerAtom> engineStore,
-			RuntimeProperties properties,
-			Universe universe
+		ConstraintMachine constraintMachine,
+		UnaryOperator<CMStore> virtualStoreLayer,
+		EngineStore<LedgerAtom> engineStore,
+		RuntimeProperties properties,
+		Universe universe
 	) {
 		final boolean skipAtomFeeCheck = properties.get("debug.nopow", false);
 		final PowFeeComputer powFeeComputer = new PowFeeComputer(() -> universe);
