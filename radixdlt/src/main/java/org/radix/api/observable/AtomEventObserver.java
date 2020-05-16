@@ -19,11 +19,9 @@ package org.radix.api.observable;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.middleware2.LedgerAtom;
-import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.store.SearchCursor;
 import com.radixdlt.store.StoreIndex;
 import com.radixdlt.store.LedgerSearchMode;
