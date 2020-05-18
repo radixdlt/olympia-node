@@ -19,8 +19,9 @@ package org.radix.api.observable;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import com.radixdlt.identifiers.AID;
 import com.radixdlt.atommodel.Atom;
+import com.radixdlt.identifiers.AID;
+import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.store.SearchCursor;
 import com.radixdlt.store.StoreIndex;
 import com.radixdlt.store.LedgerSearchMode;
@@ -30,6 +31,7 @@ import com.radixdlt.middleware2.store.EngineAtomIndices;
 import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStore;
 
+import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.radix.api.AtomQuery;
@@ -110,8 +112,8 @@ public class AtomEventObserver {
 	public void tryNext(AtomEventWithDestinations atomEvent) {
 		if (atomEvent instanceof AtomStoredEvent) {
 			if (atomQuery.filter(atomEvent.getDestinations())) {
-				final AtomEventType atomEventType = atomEvent instanceof AtomStoredEvent ? AtomEventType.STORE : AtomEventType.DELETE;
-				final AtomEventDto atomEventDto = new AtomEventDto(atomEventType, atomEvent.getAtom());
+				final Atom rawAtom = LedgerAtom.convertToApiAtom(atomEvent.getAtom());
+				final AtomEventDto atomEventDto = new AtomEventDto(AtomEventType.STORE, rawAtom);
 				synchronized (this) {
 					this.currentRunnable = currentRunnable.thenRunAsync(() -> update(atomEventDto), executorService);
 				}
@@ -147,14 +149,14 @@ public class AtomEventObserver {
 					return;
 				}
 
-				List<Atom> atoms = new ArrayList<>();
+				List<LedgerAtom> atoms = new ArrayList<>();
 				while (cursor != null && atoms.size() < BATCH_SIZE) {
 					AID aid = cursor.get();
 					processedAids.add(aid);
 					Optional<LedgerEntry> ledgerEntry = store.get(aid);
 					ledgerEntry.ifPresent(
 						entry -> {
-							Atom atom = atomToBinaryConverter.toAtom(entry.getContent());
+							LedgerAtom atom = atomToBinaryConverter.toAtom(entry.getContent());
 							atoms.add(atom);
 						}
 					);
@@ -162,6 +164,8 @@ public class AtomEventObserver {
 				}
 				if (!atoms.isEmpty()) {
 					final Stream<AtomEventDto> atomEvents = atoms.stream()
+						.map(LedgerAtom::convertToApiAtom)
+						.filter(Objects::nonNull)
 						.map(atom -> new AtomEventDto(AtomEventType.STORE, atom));
 					onNext.accept(new ObservedAtomEvents(false, atomEvents));
 					count += atoms.size();

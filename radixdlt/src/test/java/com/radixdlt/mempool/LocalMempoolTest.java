@@ -17,6 +17,7 @@
 
 package com.radixdlt.mempool;
 
+import com.radixdlt.middleware2.LedgerAtom;
 import java.util.List;
 
 import org.junit.Before;
@@ -28,7 +29,6 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.atommodel.Atom;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.utils.Ints;
 
@@ -67,7 +67,7 @@ public class LocalMempoolTest {
 	@Test(expected = MempoolDuplicateException.class)
 	public void when_adding_atom_with_same_aid__then_exception_is_thrown()
 		throws MempoolFullException, MempoolDuplicateException {
-		Atom atom = mock(Atom.class);
+		LedgerAtom atom = mock(LedgerAtom.class);
 		when(atom.getAID()).thenReturn(AID.ZERO);
 
 		this.mempool.addAtom(atom);
@@ -80,7 +80,7 @@ public class LocalMempoolTest {
 		throws MempoolFullException, MempoolDuplicateException {
 		this.mempool.addAtom(makeAtom(1));
 		this.mempool.addAtom(makeAtom(2));
-		Atom badAtom = makeAtom(3);
+		LedgerAtom badAtom = makeAtom(3);
 		try {
 			this.mempool.addAtom(badAtom);
 			fail();
@@ -92,7 +92,7 @@ public class LocalMempoolTest {
 	@Test
 	public void when_committed_atom_is_removed__then_mempool_size_decreases()
 		throws MempoolFullException, MempoolDuplicateException {
-		Atom atom = makeAtom(1234);
+		LedgerAtom atom = makeAtom(1234);
 		this.mempool.addAtom(atom);
 		assertEquals(1, this.mempool.atomCount());
 		this.mempool.removeCommittedAtom(atom.getAID());
@@ -102,7 +102,7 @@ public class LocalMempoolTest {
 	@Test
 	public void when_rejected_atom_is_removed__then_mempool_size_decreases()
 		throws MempoolFullException, MempoolDuplicateException {
-		Atom atom = makeAtom(1234);
+		LedgerAtom atom = makeAtom(1234);
 		this.mempool.addAtom(atom);
 		assertEquals(1, this.mempool.atomCount());
 		this.mempool.removeRejectedAtom(atom.getAID());
@@ -112,11 +112,11 @@ public class LocalMempoolTest {
 	@Test
 	public void when_an_atom_is_requested__then_mempool_returns_and_retains_atoms()
 		throws MempoolFullException, MempoolDuplicateException {
-		Atom atom = makeAtom(1234);
+		LedgerAtom atom = makeAtom(1234);
 		this.mempool.addAtom(atom);
 		assertEquals(1, this.mempool.atomCount()); // precondition
 
-		List<Atom> atoms = this.mempool.getAtoms(1, Sets.newHashSet());
+		List<LedgerAtom> atoms = this.mempool.getAtoms(1, Sets.newHashSet());
 		assertEquals(1, atoms.size());
 		assertSame(atom, atoms.get(0));
 		assertEquals(1, this.mempool.atomCount()); // postcondition
@@ -125,11 +125,11 @@ public class LocalMempoolTest {
 	@Test
 	public void when_too_many_atoms_requested__then_mempool_returns_fewer_atoms()
 		throws MempoolFullException, MempoolDuplicateException {
-		Atom atom = makeAtom(1234);
+		LedgerAtom atom = makeAtom(1234);
 		this.mempool.addAtom(atom);
 		assertEquals(1, this.mempool.atomCount()); // precondition
 
-		List<Atom> atoms = this.mempool.getAtoms(2, Sets.newHashSet());
+		List<LedgerAtom> atoms = this.mempool.getAtoms(2, Sets.newHashSet());
 		assertEquals(1, atoms.size());
 		assertSame(atom, atoms.get(0));
 		assertEquals(1, this.mempool.atomCount()); // postcondition
@@ -139,7 +139,7 @@ public class LocalMempoolTest {
 	public void when_atoms_requested_from_empty_mempool__then_mempool_returns_empty_list() {
 		assertEquals(0, this.mempool.atomCount()); // precondition
 
-		List<Atom> atoms = this.mempool.getAtoms(1, Sets.newHashSet());
+		List<LedgerAtom> atoms = this.mempool.getAtoms(1, Sets.newHashSet());
 		assertTrue(atoms.isEmpty());
 		assertEquals(0, this.mempool.atomCount()); // postcondition
 	}
@@ -147,11 +147,11 @@ public class LocalMempoolTest {
 	@Test
 	public void when_an_atom_is_requested__then_mempool_excludes_atoms()
 		throws MempoolFullException, MempoolDuplicateException {
-		Atom atom = makeAtom(1234);
+		LedgerAtom atom = makeAtom(1234);
 		this.mempool.addAtom(atom);
 		assertEquals(1, this.mempool.atomCount()); // precondition
 
-		List<Atom> atoms = this.mempool.getAtoms(1, Sets.newHashSet(atom.getAID()));
+		List<LedgerAtom> atoms = this.mempool.getAtoms(1, Sets.newHashSet(atom.getAID()));
 		assertTrue(atoms.isEmpty());
 		assertEquals(1, this.mempool.atomCount()); // postcondition
 	}
@@ -179,8 +179,8 @@ public class LocalMempoolTest {
 		return AID.from(temp);
 	}
 
-	private static Atom makeAtom(int n) {
-		Atom atom = mock(Atom.class);
+	private static LedgerAtom makeAtom(int n) {
+		LedgerAtom atom = mock(LedgerAtom.class);
 		when(atom.getAID()).thenReturn(makeAID(n));
 		return atom;
 	}

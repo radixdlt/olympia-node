@@ -26,12 +26,12 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.radixdlt.atommodel.Atom;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.middleware2.LedgerAtom;
 import io.reactivex.rxjava3.observers.TestObserver;
 import java.util.Arrays;
 import org.junit.Before;
@@ -43,7 +43,7 @@ public class VertexStoreTest {
 	private VertexMetadata genesisVertexMetadata;
 	private QuorumCertificate rootQC;
 	private VertexStore vertexStore;
-	private RadixEngine radixEngine;
+	private RadixEngine<LedgerAtom> radixEngine;
 
 	@Before
 	public void setUp() {
@@ -93,7 +93,7 @@ public class VertexStoreTest {
 		VertexMetadata vertexMetadata = new VertexMetadata(View.genesis(), Hash.ZERO_HASH, 0);
 		VoteData voteData = new VoteData(vertexMetadata, null);
 		QuorumCertificate qc = new QuorumCertificate(voteData, new ECDSASignatures());
-		Vertex nextVertex = Vertex.createVertex(qc, View.of(1), mock(Atom.class));
+		Vertex nextVertex = Vertex.createVertex(qc, View.of(1), mock(LedgerAtom.class));
 		assertThatThrownBy(() -> vertexStore.insertVertex(nextVertex))
 			.isInstanceOf(MissingParentException.class);
 	}
@@ -104,7 +104,7 @@ public class VertexStoreTest {
 		throws Exception {
 		doThrow(mock(RadixEngineException.class)).when(radixEngine).store(any());
 
-		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), mock(Atom.class));
+		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), mock(LedgerAtom.class));
 		assertThatThrownBy(() -> vertexStore.insertVertex(nextVertex))
 			.isInstanceOf(VertexInsertionException.class);
 	}

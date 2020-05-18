@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -17,39 +17,27 @@
 
 package org.radix.serialization;
 
-import com.radixdlt.atommodel.message.MessageParticle;
-import com.radixdlt.consensus.VoteData;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.atommodel.Atom;
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.View;
-import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.atommodel.message.MessageParticle;
 import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.crypto.ECDSASignatures;
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.LedgerAtom.LedgerAtomConversionException;
 
-public class VertexSerializeTest extends SerializeObject<Vertex> {
-	public VertexSerializeTest() {
-		super(Vertex.class, VertexSerializeTest::get);
+public class LedgerAtomSerializeTest extends SerializeObject<LedgerAtom> {
+	public LedgerAtomSerializeTest() {
+		super(LedgerAtom.class, LedgerAtomSerializeTest::get);
 	}
 
-	private static Vertex get() {
-		View view = View.of(1234567891L);
-		Hash id = Hash.random();
-
-		VertexMetadata vertexMetadata = new VertexMetadata(view, id, 1);
-		VertexMetadata parent = new VertexMetadata(View.of(1234567890L), Hash.random(), 0);
-		VoteData voteData = new VoteData(vertexMetadata, parent);
-
-		QuorumCertificate qc = new QuorumCertificate(voteData, new ECDSASignatures());
-
+	private static Atom createApiAtom() {
 		RadixAddress address = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
 		Atom atom = new Atom();
 		// add a particle to ensure atom is valid and has at least one shard
 		atom.addParticleGroupWith(new MessageParticle(address, address, "Hello".getBytes()), Spin.UP);
+		return atom;
+	}
+
+	private static LedgerAtom get(Atom atom) {
 		final LedgerAtom ledgerAtom;
 		try {
 			ledgerAtom = LedgerAtom.convertFromApiAtom(atom);
@@ -57,6 +45,11 @@ public class VertexSerializeTest extends SerializeObject<Vertex> {
 			throw new IllegalStateException();
 		}
 
-		return Vertex.createVertex(qc, view, ledgerAtom);
+		return ledgerAtom;
 	}
+
+	private static LedgerAtom get() {
+		return get(createApiAtom());
+	}
+
 }

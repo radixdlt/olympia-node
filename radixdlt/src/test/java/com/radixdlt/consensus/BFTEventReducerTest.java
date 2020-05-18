@@ -20,7 +20,6 @@ package com.radixdlt.consensus;
 import com.google.common.collect.Lists;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.atommodel.Atom;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.safety.SafetyRules;
@@ -34,6 +33,7 @@ import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.RadixEngineErrorCode;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.mempool.Mempool;
+import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.utils.Ints;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -188,7 +188,7 @@ public class BFTEventReducerTest {
 		View currentView = View.of(123);
 
 		Vertex proposedVertex = mock(Vertex.class);
-		Atom proposedAtom = mock(Atom.class);
+		LedgerAtom proposedAtom = mock(LedgerAtom.class);
 		AID aid = makeAID(7); // no special significance
 		when(proposedAtom.getAID()).thenReturn(aid);
 		when(proposedVertex.getAtom()).thenReturn(proposedAtom);
@@ -213,7 +213,7 @@ public class BFTEventReducerTest {
 		when(proposerElection.getProposer(any())).thenReturn(ECKeyPair.generateNew().getPublicKey());
 
 		Vertex proposedVertex = mock(Vertex.class);
-		Atom proposedAtom = mock(Atom.class);
+		LedgerAtom proposedAtom = mock(LedgerAtom.class);
 		AID aid = makeAID(7); // no special significance
 		when(proposedAtom.getAID()).thenReturn(aid);
 		when(proposedVertex.getAtom()).thenReturn(proposedAtom);
@@ -246,7 +246,7 @@ public class BFTEventReducerTest {
 		when(proposerElection.getProposer(eq(currentView.next()))).thenReturn(SELF_KEY.getPublicKey());
 
 		Vertex proposedVertex = mock(Vertex.class);
-		Atom proposedAtom = mock(Atom.class);
+		LedgerAtom proposedAtom = mock(LedgerAtom.class);
 		AID aid = makeAID(7); // no special significance
 		when(proposedAtom.getAID()).thenReturn(aid);
 		when(proposedVertex.getAtom()).thenReturn(proposedAtom);
@@ -278,7 +278,7 @@ public class BFTEventReducerTest {
 		when(proposerElection.getProposer(eq(currentView))).thenReturn(SELF_KEY.getPublicKey());
 
 		Vertex proposedVertex = mock(Vertex.class);
-		Atom proposedAtom = mock(Atom.class);
+		LedgerAtom proposedAtom = mock(LedgerAtom.class);
 		AID aid = makeAID(7); // no special significance
 		when(proposedAtom.getAID()).thenReturn(aid);
 		when(proposedVertex.getAtom()).thenReturn(proposedAtom);
@@ -324,7 +324,7 @@ public class BFTEventReducerTest {
 
 		Hash committedVertexId = mock(Hash.class);
 		Vertex committedVertex = mock(Vertex.class);
-		Atom atom = mock(Atom.class);
+		LedgerAtom atom = mock(LedgerAtom.class);
 		AID aid = mock(AID.class);
 		when(atom.getAID()).thenReturn(aid);
 		when(committedVertex.getAtom()).thenReturn(atom);

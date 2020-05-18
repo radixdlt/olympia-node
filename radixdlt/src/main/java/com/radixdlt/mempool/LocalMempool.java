@@ -16,6 +16,7 @@
  */
 package com.radixdlt.mempool;
 
+import com.radixdlt.middleware2.LedgerAtom;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -27,7 +28,6 @@ import javax.inject.Inject;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.atommodel.Atom;
 import com.radixdlt.properties.RuntimeProperties;
 
 /**
@@ -39,7 +39,7 @@ import com.radixdlt.properties.RuntimeProperties;
 final class LocalMempool implements Mempool {
 	private final Object lock = new Object();
 	@GuardedBy("lock")
-	private final LinkedHashMap<AID, Atom> data = Maps.newLinkedHashMap();
+	private final LinkedHashMap<AID, LedgerAtom> data = Maps.newLinkedHashMap();
 
 	private final int maxSize;
 
@@ -56,7 +56,7 @@ final class LocalMempool implements Mempool {
 	}
 
 	@Override
-	public void addAtom(Atom atom) throws MempoolFullException, MempoolDuplicateException {
+	public void addAtom(LedgerAtom atom) throws MempoolFullException, MempoolDuplicateException {
 		synchronized (this.lock) {
 			if (this.data.size() >= this.maxSize) {
 				throw new MempoolFullException(atom, String.format("Mempool full: %s of %s items", this.data.size(), this.maxSize));
@@ -83,14 +83,14 @@ final class LocalMempool implements Mempool {
 	}
 
 	@Override
-	public List<Atom> getAtoms(int count, Set<AID> seen) {
+	public List<LedgerAtom> getAtoms(int count, Set<AID> seen) {
 		synchronized (this.lock) {
 			int size = Math.min(count, this.data.size());
 			if (size > 0) {
-				List<Atom> atoms = Lists.newArrayList();
-				Iterator<Atom> i = this.data.values().iterator();
+				List<LedgerAtom> atoms = Lists.newArrayList();
+				Iterator<LedgerAtom> i = this.data.values().iterator();
 				while (atoms.size() < size && i.hasNext()) {
-					Atom a = i.next();
+					LedgerAtom a = i.next();
 					if (seen.add(a.getAID())) {
 						atoms.add(a);
 					}

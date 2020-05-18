@@ -18,7 +18,13 @@
 package com.radixdlt.mempool;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
 import com.google.inject.Scopes;
+import com.google.inject.Singleton;
+import com.radixdlt.middleware2.LedgerAtom;
+import com.radixdlt.middleware2.LedgerAtom.LedgerAtomConversionException;
+import com.radixdlt.middleware2.converters.AtomConversionException;
+import com.radixdlt.middleware2.converters.AtomToLedgerAtomConverter;
 
 public class MempoolModule extends AbstractModule {
 	@Override
@@ -26,5 +32,17 @@ public class MempoolModule extends AbstractModule {
 		// provides
 		bind(Mempool.class).to(SharedMempool.class).in(Scopes.SINGLETON);
 		bind(SubmissionControl.class).to(SubmissionControlImpl.class).in(Scopes.SINGLETON);
+	}
+
+	@Provides
+	@Singleton
+	private AtomToLedgerAtomConverter converter() {
+		return atom -> {
+			try {
+				return LedgerAtom.convertFromApiAtom(atom);
+			} catch (LedgerAtomConversionException e) {
+				throw new AtomConversionException(e.getDataPointer(), e);
+			}
+		};
 	}
 }

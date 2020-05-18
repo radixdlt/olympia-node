@@ -23,6 +23,7 @@ import com.radixdlt.atommodel.Atom;
 import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.mempool.SubmissionControl;
 
+import com.radixdlt.middleware2.LedgerAtom;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -41,6 +42,7 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStore;
 
+import java.util.concurrent.atomic.AtomicReference;
 import org.json.JSONException;
 import org.json.JSONObject;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -93,7 +95,7 @@ public class AtomsService {
 				}
 
 				final AtomEvent atomEvent = (AtomEvent) event;
-				final Atom atom = atomEvent.getAtom();
+				final LedgerAtom atom = atomEvent.getAtom();
 
 				// TODO: Clean this up
 				final String eventName;
@@ -169,7 +171,12 @@ public class AtomsService {
 
 	public AID submitAtom(JSONObject jsonAtom, SingleAtomListener subscriber) {
 		try {
-			return this.submissionControl.submitAtom(jsonAtom, atom -> subscribeToSubmission(subscriber, atom));
+			AtomicReference<AID> aid = new AtomicReference<>();
+			this.submissionControl.submitAtom(jsonAtom, atom -> {
+				aid.set(atom.getAID());
+				subscribeToSubmission(subscriber, atom);
+			});
+			return aid.get();
 		} catch (MempoolRejectedException e) {
 			if (subscriber != null) {
 				AID atomId = e.atom().getAID();
@@ -183,7 +190,7 @@ public class AtomsService {
 		}
 	}
 
-	private void subscribeToSubmission(SingleAtomListener subscriber, Atom atom) {
+	private void subscribeToSubmission(SingleAtomListener subscriber, LedgerAtom atom) {
 		if (subscriber != null) {
 			this.deleteOnEventSingleAtomObservers.compute(atom.getAID(), (aid, oldSubscribers) -> {
 				List<SingleAtomListener> subscribers = oldSubscribers == null ? new ArrayList<>() : oldSubscribers;
@@ -224,8 +231,9 @@ public class AtomsService {
 		Optional<LedgerEntry> ledgerEntryOptional = store.get(atomId);
 		if (ledgerEntryOptional.isPresent()) {
 			LedgerEntry ledgerEntry = ledgerEntryOptional.get();
-			Atom atom = atomToBinaryConverter.toAtom(ledgerEntry.getContent());
-			return serialization.toJsonObject(atom, DsonOutput.Output.API);
+			LedgerAtom atom = atomToBinaryConverter.toAtom(ledgerEntry.getContent());
+			Atom apiAtom = LedgerAtom.convertToApiAtom(atom);
+			return serialization.toJsonObject(apiAtom, DsonOutput.Output.API);
 		}
 		throw new RuntimeException("Atom not found");
 	}

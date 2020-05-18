@@ -17,7 +17,7 @@
 
 package com.radixdlt.mempool;
 
-import com.radixdlt.atommodel.Atom;
+import com.radixdlt.middleware2.LedgerAtom;
 import io.reactivex.rxjava3.core.Observable;
 
 /**
@@ -31,5 +31,5 @@ public interface MempoolNetworkRx {
 	 *
 	 * @return hot observable of atom messages
 	 */
-	Observable<Atom> atomMessages();
+	Observable<LedgerAtom> atomMessages();
 }

@@ -20,8 +20,8 @@ package com.radixdlt.consensus;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Suppliers;
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.atommodel.Atom;
 import com.radixdlt.crypto.Hash;
+import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
@@ -51,7 +51,7 @@ public final class Vertex {
 
 	@JsonProperty("atom")
 	@DsonOutput(Output.ALL)
-	private final Atom atom;
+	private final LedgerAtom atom;
 
 	private final transient Supplier<Hash> cachedHash = Suppliers.memoize(this::doGetHash);
 
@@ -62,24 +62,24 @@ public final class Vertex {
 		this.atom = null;
 	}
 
-	public Vertex(QuorumCertificate qc, View view, Atom atom) {
+	public Vertex(QuorumCertificate qc, View view, LedgerAtom atom) {
 		this.qc = qc;
 		this.view = Objects.requireNonNull(view);
 		this.atom = atom;
 	}
 
-	public static Vertex createGenesis(Atom atom) {
+	public static Vertex createGenesis(LedgerAtom atom) {
 		return new Vertex(null, View.of(0), atom);
 	}
 
-	public static Vertex createVertex(QuorumCertificate qc, View view, Atom atom) {
+	public static Vertex createVertex(QuorumCertificate qc, View view, LedgerAtom reAtom) {
 		Objects.requireNonNull(qc);
 
 		if (view.number() == 0) {
 			throw new IllegalArgumentException("Only genesis can have view 0.");
 		}
 
-		return new Vertex(qc, view, atom);
+		return new Vertex(qc, view, reAtom);
 	}
 
 	private Hash doGetHash() {
@@ -121,7 +121,7 @@ public final class Vertex {
 		return view;
 	}
 
-	public Atom getAtom() {
+	public LedgerAtom getAtom() {
 		return atom;
 	}
 
@@ -143,7 +143,7 @@ public final class Vertex {
 
 	@JsonProperty("view")
 	private void setSerializerView(Long number) {
-		this.view = number == null ? null : View.of(number.longValue());
+		this.view = number == null ? null : View.of(number);
 	}
 
 	@Override
@@ -163,7 +163,7 @@ public final class Vertex {
 		}
 
 		Vertex v = (Vertex) o;
-		return Objects.equals(v.view, view)
+		return Objects.equals(v.view, this.view)
 			&& Objects.equals(v.atom, this.atom)
 			&& Objects.equals(v.qc, this.qc);
 	}

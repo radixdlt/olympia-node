@@ -31,6 +31,8 @@ import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.middleware2.LedgerAtom;
+import com.radixdlt.middleware2.LedgerAtom.LedgerAtomConversionException;
 
 public class ProposalSerializeTest extends SerializeObject<Proposal> {
 	public ProposalSerializeTest() {
@@ -49,11 +51,15 @@ public class ProposalSerializeTest extends SerializeObject<Proposal> {
 
 		RadixAddress address = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
 		Atom atom = new Atom();
-		// add a particle to ensure atom is valid and has at least one shard
 		atom.addParticleGroupWith(new MessageParticle(address, address, "Hello".getBytes()), Spin.UP);
-		Vertex vertex = Vertex.createVertex(qc, view, atom);
-
-
+		final LedgerAtom ledgerAtom;
+		try {
+			ledgerAtom = LedgerAtom.convertFromApiAtom(atom);
+		} catch (LedgerAtomConversionException e) {
+			throw new IllegalStateException();
+		}
+		// add a particle to ensure atom is valid and has at least one shard
+		Vertex vertex = Vertex.createVertex(qc, view, ledgerAtom);
 		return new Proposal(vertex, ECKeyPair.generateNew().getPublicKey(), new ECDSASignature());
 	}
 }
