@@ -89,7 +89,7 @@ public class ParticleDefinition<T extends Particle> {
 		private Function<T, Result> staticValidation = x -> Result.success();
 		private Function<T, RRI> rriMapper;
 		private Function<T, Spin> virtualizeSpin;
-		private boolean allowsTransitionsFromOutsideScrypts;
+		private boolean allowsTransitionsFromOutsideScrypts = false;
 
 		private Builder() {
 		}

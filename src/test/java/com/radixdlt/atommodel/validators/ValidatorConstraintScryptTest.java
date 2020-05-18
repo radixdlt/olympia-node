@@ -1,3 +1,20 @@
+/*
+ * (C) Copyright 2020 Radix DLT Ltd
+ *
+ * Radix DLT Ltd licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License.  You may obtain a copy of the
+ * License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied.  See the License for the specific
+ * language governing permissions and limitations under the License.
+ */
+
 package com.radixdlt.atommodel.validators;
 
 import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt.ValidatorTransitionProcedure;
@@ -25,11 +42,13 @@ import static org.mockito.Mockito.when;
  * Exercise the critical invariants of the {@link ValidatorConstraintScrypt}.
  *
  * The invariants tested here follow the flow of the validator FSM:
- *  - unregistered validator with nonce 0 is virtualised as UP
- *  - validator address must be specified
- *  - validator transitions must be between validators of the same address
- *  - the nonce must increase by exactly one with every transition
- *  - validator transitions must be signed by the address
+ * <ul>
+ *     <li>unregistered validator with nonce 0 is virtualised as UP</li>
+ *     <li>validator address must be specified</li>
+ *     <li>validator transitions must be between validators of the same address</li>
+ *     <li>the nonce must increase by exactly one with every transition</li>
+ *     <li>validator transitions must be signed by the address</li>
+ * </ul>
  *
  * These tests are implemented by either testing the static check directly or the generated transition procedure.
  */

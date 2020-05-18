@@ -1,3 +1,20 @@
+/*
+ * (C) Copyright 2020 Radix DLT Ltd
+ *
+ * Radix DLT Ltd licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License.  You may obtain a copy of the
+ * License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied.  See the License for the specific
+ * language governing permissions and limitations under the License.
+ */
+
 package com.radixdlt.atommodel.validators;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -23,7 +40,7 @@ import java.util.function.ToLongFunction;
 
 /**
  * Constraint Scrypt defining the Validator FSM, specifically the registration/unregistration flow.
- *
+ * <p>
  * The Validator FSM is implemented with two particles, UnregisteredValidatorParticle and RegisteredValidatorParticle,
  * both carrying the address of the validator in question and a nonce. The first unregistered Validator particle
  * for an address (with nonce 0) is virtualised as having an UP spin to initialise the FSM. Whenever a validator
@@ -65,13 +82,14 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 			UnregisteredValidatorParticle::getNonce);
 	}
 
-	private <I extends Particle, O extends Particle> void createTransition(SysCalls os,
-	                                                                       Class<I> inputParticle,
-	                                                                       Function<I, RadixAddress> inputAddressMapper,
-	                                                                       ToLongFunction<I> inputNonceMapper,
-	                                                                       Class<O> outputParticle,
-	                                                                       Function<O, RadixAddress> outputAddressMapper,
-	                                                                       ToLongFunction<O> outputNonceMapper
+	private <I extends Particle, O extends Particle> void createTransition(
+		SysCalls os,
+		Class<I> inputParticle,
+		Function<I, RadixAddress> inputAddressMapper,
+		ToLongFunction<I> inputNonceMapper,
+		Class<O> outputParticle,
+		Function<O, RadixAddress> outputAddressMapper,
+		ToLongFunction<O> outputNonceMapper
 	) {
 		os.createTransition(
 			new TransitionToken<>(inputParticle, TypeToken.of(VoidUsedData.class), outputParticle, TypeToken.of(VoidUsedData.class)),
@@ -91,17 +109,19 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 	}
 
 	@VisibleForTesting
-	static class ValidatorTransitionProcedure<I extends Particle, O extends Particle> implements TransitionProcedure<I, VoidUsedData, O, VoidUsedData> {
+	static class ValidatorTransitionProcedure<I extends Particle, O extends Particle>
+		implements TransitionProcedure<I, VoidUsedData, O, VoidUsedData> {
 		private final Function<I, RadixAddress> inputAddressMapper;
 		private final ToLongFunction<I> inputNonceMapper;
 		private final Function<O, RadixAddress> outputAddressMapper;
 		private final ToLongFunction<O> outputNonceMapper;
 
-		ValidatorTransitionProcedure(Function<I, RadixAddress> inputAddressMapper,
-		                             ToLongFunction<I> inputNonceMapper,
-		                             Function<O, RadixAddress> outputAddressMapper,
-		                             ToLongFunction<O> outputNonceMapper) {
-
+		ValidatorTransitionProcedure(
+			Function<I, RadixAddress> inputAddressMapper,
+			ToLongFunction<I> inputNonceMapper,
+			Function<O, RadixAddress> outputAddressMapper,
+			ToLongFunction<O> outputNonceMapper
+		) {
 			this.inputAddressMapper = inputAddressMapper;
 			this.inputNonceMapper = inputNonceMapper;
 			this.outputAddressMapper = outputAddressMapper;
@@ -125,7 +145,7 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 			long outputNonce = outputNonceMapper.applyAsLong(outputParticle);
 			if (inputNonce + 1 != outputNonce) {
 				return Result.error(String.format(
-					"output nonce must be input nonce + 1, but %d != %d + 1",
+					"output nonce must be input nonce + 1, but %s != %s + 1",
 					outputNonce, inputNonce
 				));
 			}
