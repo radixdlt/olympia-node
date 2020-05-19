@@ -26,7 +26,7 @@ import com.radixdlt.constraintmachine.WitnessData;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.CMStores;
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.util.function.Function;
@@ -53,11 +53,11 @@ import static org.mockito.Mockito.when;
  * These tests are implemented by either testing the static check directly or the generated transition procedure.
  */
 public class ValidatorConstraintScryptTest {
-	private static Function<Particle, Result> staticCheck;
-	private static UnaryOperator<CMStore> virtualLayer;
+	private Function<Particle, Result> staticCheck;
+	private UnaryOperator<CMStore> virtualLayer;
 
-	@BeforeClass
-	public static void initializeConstraintScrypt() {
+	@Before
+	public void initializeConstraintScrypt() {
 		ValidatorConstraintScrypt tokensConstraintScrypt = new ValidatorConstraintScrypt();
 		CMAtomOS cmAtomOS = new CMAtomOS();
 		cmAtomOS.load(tokensConstraintScrypt);
