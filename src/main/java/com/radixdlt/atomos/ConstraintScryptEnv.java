@@ -31,9 +31,9 @@ import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
@@ -68,43 +68,6 @@ final class ConstraintScryptEnv implements SysCalls {
 		return scryptTransitionProcedures;
 	}
 
-	@Override
-	public <T extends Particle> void registerParticle(
-		Class<T> particleClass,
-		Function<T, RadixAddress> mapper,
-		Function<T, Result> staticCheck
-	) {
-		registerParticleMultipleAddresses(
-			particleClass,
-			(T particle) -> Collections.singleton(mapper.apply(particle)),
-			staticCheck
-		);
-	}
-
-	@Override
-	public <T extends Particle> void registerParticle(
-		Class<T> particleClass,
-		Function<T, RadixAddress> mapper,
-		Function<T, Result> staticCheck,
-		Function<T, RRI> rriMapper
-	) {
-		registerParticleMultipleAddresses(
-			particleClass,
-			(T particle) -> Collections.singleton(mapper.apply(particle)),
-			staticCheck,
-			rriMapper
-		);
-	}
-
-	@Override
-	public <T extends Particle> void registerParticleMultipleAddresses(
-		Class<T> particleClass,
-		Function<T, Set<RadixAddress>> mapper,
-		Function<T, Result> staticCheck
-	) {
-		registerParticleMultipleAddresses(particleClass, mapper, staticCheck, null);
-	}
-
 	private <T extends Particle> boolean particleDefinitionExists(Class<T> particleClass) {
 		return particleDefinitions.containsKey(particleClass) || scryptParticleDefinitions.containsKey(particleClass);
 	}
@@ -126,22 +89,23 @@ final class ConstraintScryptEnv implements SysCalls {
 		return particleDefinition;
 	}
 
+
 	@Override
-	public <T extends Particle> void registerParticleMultipleAddresses(
-		Class<T> particleClass,
-		Function<T, Set<RadixAddress>> mapper,
-		Function<T, Result> staticCheck,
-		Function<T, RRI> rriMapper
-	) {
+	public <T extends Particle> void registerParticle(Class<T> particleClass, ParticleDefinition<T> particleDefinition) {
 		if (particleDefinitionExists(particleClass)) {
 			throw new IllegalStateException("Particle " + particleClass + " is already registered");
 		}
+		Objects.requireNonNull(particleDefinition, "particleDefinition");
 
-		scryptParticleDefinitions.put(particleClass, new ParticleDefinition<>(
-			p -> mapper.apply((T) p).stream(),
-			p -> {
-				if (rriMapper != null) {
-					final RRI rri = rriMapper.apply((T) p);
+		// TODO Cleanup: This redefinition illustrates that there's some abstraction issues here, but
+		// TODO Cleanup: will leave for now since it's not critical and we anticipate a bigger refactor.
+		ParticleDefinition<Particle> particleRedefinition = ParticleDefinition.<T>builder()
+			.addressMapper(particleDefinition.getAddressMapper())
+			.rriMapper(particleDefinition.getRriMapper())
+			.virtualizeSpin(particleDefinition.getVirtualizeSpin())
+			.staticValidation(p -> {
+				if (particleDefinition.getRriMapper() != null) {
+					final RRI rri = particleDefinition.getRriMapper().apply(p);
 					if (rri == null) {
 						return Result.error("rri cannot be null");
 					}
@@ -152,7 +116,7 @@ final class ConstraintScryptEnv implements SysCalls {
 					}
 				}
 
-				final Set<RadixAddress> addresses = mapper.apply((T) p);
+				final Set<RadixAddress> addresses = particleDefinition.getAddressMapper().apply(p);
 				if (addresses.isEmpty()) {
 					return Result.error("address required");
 				}
@@ -164,11 +128,10 @@ final class ConstraintScryptEnv implements SysCalls {
 					}
 				}
 
-				return staticCheck.apply((T) p);
-			},
-			rriMapper == null ? null : p -> rriMapper.apply((T) p),
-			false
-		));
+				return particleDefinition.getStaticValidation().apply(p);
+			})
+			.build();
+		scryptParticleDefinitions.put(particleClass, particleRedefinition);
 	}
 
 	@Override

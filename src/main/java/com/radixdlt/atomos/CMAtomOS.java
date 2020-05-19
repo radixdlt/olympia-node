@@ -31,33 +31,31 @@ import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.store.CMStores;
 import com.radixdlt.identifiers.EUID;
-
+import com.radixdlt.store.SpinStateMachine;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Implementation of the AtomOS interface on top of a UTXO based Constraint Machine.
  */
 public final class CMAtomOS {
-	private static final ParticleDefinition<Particle> VOID_PARTICLE_DEF = new ParticleDefinition<>(
-		v -> {
+	private static final ParticleDefinition<Particle> VOID_PARTICLE_DEF = ParticleDefinition.builder()
+		.addressMapper(v -> {
 			throw new UnsupportedOperationException("Should not ever call here");
-		},
-		v -> {
+		})
+		.staticValidation(v -> {
 			throw new UnsupportedOperationException("Should not ever call here");
-		},
-		v -> null,
-		true
-	);
+		})
+		.allowTransitionsFromOutsideScrypts()
+		.build();
 
-	private static final ParticleDefinition<Particle> RRI_PARTICLE_DEF = new ParticleDefinition<>(
-		rri -> Stream.of(((RRIParticle) rri).getRri().getAddress()),
-		rri -> Result.success(),
-		rri -> ((RRIParticle) rri).getRri(),
-		true
-	);
+	private static final ParticleDefinition<Particle> RRI_PARTICLE_DEF = ParticleDefinition.<RRIParticle>builder()
+		.singleAddressMapper(rri -> rri.getRri().getAddress())
+		.staticValidation(rri -> Result.success())
+		.rriMapper(RRIParticle::getRri)
+		.virtualizeSpin(v -> v.getNonce() == 0 ? Spin.UP : null)
+		.allowTransitionsFromOutsideScrypts()
+		.build();
 
 	private final Function<RadixAddress, Result> addressChecker;
 	private final Map<Class<? extends Particle>, ParticleDefinition<Particle>> particleDefinitions = new HashMap<>();
@@ -105,8 +103,8 @@ public final class CMAtomOS {
 				return staticCheckResult;
 			}
 
-			final Function<Particle, Stream<RadixAddress>> mapper = particleDefinition.getAddressMapper();
-			final Set<EUID> destinations = mapper.apply(p).map(RadixAddress::euid).collect(Collectors.toSet());
+			final Function<Particle, Set<RadixAddress>> mapper = particleDefinition.getAddressMapper();
+			final Set<EUID> destinations = mapper.apply(p).stream().map(RadixAddress::euid).collect(Collectors.toSet());
 
 			if (!destinations.containsAll(p.getDestinations())) {
 				return Result.error("Address destinations does not contain all destinations");
@@ -121,6 +119,31 @@ public final class CMAtomOS {
 	}
 
 	public UnaryOperator<CMStore> buildVirtualLayer() {
-		return base -> CMStores.virtualizeDefault(base, p -> p instanceof RRIParticle && ((RRIParticle) p).getNonce() == 0, Spin.UP);
+		Map<? extends Class<? extends Particle>, Function<Particle, Spin>> virtualizedParticles = particleDefinitions.entrySet().stream()
+			.filter(def -> def.getValue().getVirtualizeSpin() != null)
+			.collect(Collectors.toMap(Map.Entry::getKey, def -> def.getValue().getVirtualizeSpin()));
+		return base -> new CMStore() {
+			@Override
+			public boolean supports(Set<EUID> destinations) {
+				return base.supports(destinations);
+			}
+
+			@Override
+			public Spin getSpin(Particle particle) {
+				Spin curSpin = base.getSpin(particle);
+
+				if (base.supports(particle.getDestinations())) {
+					Function<Particle, Spin> virtualizer = virtualizedParticles.get(particle.getClass());
+					if (virtualizer != null) {
+						Spin virtualizedSpin = virtualizer.apply(particle);
+						if (virtualizedSpin != null && SpinStateMachine.isAfter(virtualizedSpin, curSpin)) {
+							return virtualizedSpin;
+						}
+					}
+				}
+
+				return curSpin;
+			}
+		};
 	}
 }

@@ -18,12 +18,14 @@
 package com.radixdlt.atommodel.tokens;
 
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
+import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.atomos.SysCalls;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.atommodel.routines.CreateFungibleTransitionRoutine;
 import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
 import com.radixdlt.utils.UInt256;
+
 import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -37,30 +39,38 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 	public void main(SysCalls os) {
 		os.registerParticle(
 			MutableSupplyTokenDefinitionParticle.class,
-			particle -> particle.getRRI().getAddress(),
-			TokenDefinitionUtils::staticCheck,
-			MutableSupplyTokenDefinitionParticle::getRRI
+			ParticleDefinition.<MutableSupplyTokenDefinitionParticle>builder()
+				.singleAddressMapper(p -> p.getRRI().getAddress())
+				.staticValidation(TokenDefinitionUtils::staticCheck)
+				.rriMapper(MutableSupplyTokenDefinitionParticle::getRRI)
+				.build()
 		);
 
 		os.registerParticle(
 			FixedSupplyTokenDefinitionParticle.class,
-			particle -> particle.getRRI().getAddress(),
-			TokenDefinitionUtils::staticCheck,
-			FixedSupplyTokenDefinitionParticle::getRRI
+			ParticleDefinition.<FixedSupplyTokenDefinitionParticle>builder()
+				.singleAddressMapper(p -> p.getRRI().getAddress())
+				.staticValidation(TokenDefinitionUtils::staticCheck)
+				.rriMapper(FixedSupplyTokenDefinitionParticle::getRRI)
+				.build()
 		);
 
 		os.registerParticle(
 			UnallocatedTokensParticle.class,
-			UnallocatedTokensParticle::getAddress,
-			TokenDefinitionUtils::staticCheck,
-			UnallocatedTokensParticle::getTokDefRef
+			ParticleDefinition.<UnallocatedTokensParticle>builder()
+				.singleAddressMapper(UnallocatedTokensParticle::getAddress)
+				.staticValidation(TokenDefinitionUtils::staticCheck)
+				.rriMapper(UnallocatedTokensParticle::getTokDefRef)
+				.build()
 		);
 
 		os.registerParticle(
 			TransferrableTokensParticle.class,
-			TransferrableTokensParticle::getAddress,
-			TokenDefinitionUtils::staticCheck,
-			TransferrableTokensParticle::getTokDefRef
+			ParticleDefinition.<TransferrableTokensParticle>builder()
+				.singleAddressMapper(TransferrableTokensParticle::getAddress)
+				.staticValidation(TokenDefinitionUtils::staticCheck)
+				.rriMapper(TransferrableTokensParticle::getTokDefRef)
+				.build()
 		);
 
 		// Require Token Definition to be created with unallocated tokens of max supply

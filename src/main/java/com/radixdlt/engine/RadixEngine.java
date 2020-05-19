@@ -84,6 +84,8 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 		this.atomEventListeners.forEach(acceptor -> acceptor.onCMSuccess(atom));
 		synchronized (stateUpdateEngineLock) {
 			stateCheckAndStore(atom);
+
+			// TODO Feature: Return updated state for some given query (e.g. for current validator set)
 		}
 	}
 

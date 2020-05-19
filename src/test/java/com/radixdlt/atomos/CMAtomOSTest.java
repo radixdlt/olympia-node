@@ -71,7 +71,9 @@ public class CMAtomOSTest {
 		CMAtomOS os = new CMAtomOS();
 		TransitionProcedure<TestParticle0, VoidUsedData, TestParticle0, VoidUsedData> procedure = mock(TransitionProcedureTestParticle00.class);
 		os.load(syscalls -> {
-			syscalls.registerParticle(TestParticle0.class, (TestParticle0 p) -> mock(RadixAddress.class), t -> Result.success());
+			syscalls.registerParticle(TestParticle0.class, ParticleDefinition.<TestParticle>builder()
+				.singleAddressMapper(x -> mock(RadixAddress.class))
+				.build());
 			syscalls.createTransition(
 				new TransitionToken<>(
 					TestParticle0.class,
@@ -85,7 +87,9 @@ public class CMAtomOSTest {
 		TransitionProcedure<TestParticle1, VoidUsedData, TestParticle0, VoidUsedData> procedure0 = mock(TransitionProcedureTestParticle10.class);
 		assertThatThrownBy(() ->
 			os.load(syscalls -> {
-				syscalls.registerParticle(TestParticle1.class, (TestParticle1 p) -> mock(RadixAddress.class), t -> Result.success());
+				syscalls.registerParticle(TestParticle1.class, ParticleDefinition.<TestParticle>builder()
+					.singleAddressMapper(x -> mock(RadixAddress.class))
+					.build());
 				syscalls.createTransition(
 					new TransitionToken<>(
 						TestParticle1.class,
@@ -113,7 +117,9 @@ public class CMAtomOSTest {
 	public void when_a_particle_with_a_bad_address_is_validated__it_should_cause_errors() {
 		CMAtomOS os = new CMAtomOS(addr -> Result.error("Bad address"));
 		os.load(syscalls -> {
-			syscalls.registerParticle(TestParticle.class, p -> mock(RadixAddress.class), p -> Result.success());
+			syscalls.registerParticle(TestParticle.class, ParticleDefinition.<TestParticle>builder()
+				.singleAddressMapper(x -> mock(RadixAddress.class))
+				.build());
 		});
 		Function<Particle, Result> staticCheck = os.buildParticleStaticCheck();
 		TestParticle testParticle = new TestParticle();
