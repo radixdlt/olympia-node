@@ -18,7 +18,23 @@
 package com.radixdlt.engine;
 
 import com.radixdlt.constraintmachine.CMInstruction;
+import com.radixdlt.identifiers.AID;
 
+/**
+ * Radix Engine interface for retrieving a sequence of instructions to
+ * verify and store in the engine.
+ */
 public interface RadixEngineAtom {
+
+	/**
+	 * Retrieve the sequence of instructions
+	 * @return sequence of instructions
+	 */
 	CMInstruction getCMInstruction();
+
+	/**
+	 * Retrieve the unique id of this atom
+	 * @return unique id of atom
+	 */
+	AID getAID();
 }

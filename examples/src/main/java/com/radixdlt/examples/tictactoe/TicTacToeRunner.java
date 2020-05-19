@@ -19,25 +19,24 @@ package com.radixdlt.examples.tictactoe;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atomos.CMAtomOS;
+import com.radixdlt.constraintmachine.CMInstruction;
+import com.radixdlt.constraintmachine.CMMicroInstruction;
+import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.crypto.Hash;
+import com.radixdlt.engine.RadixEngineAtom;
+import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.atommodel.Atom;
-import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.ConstraintMachine;
-import com.radixdlt.constraintmachine.DataPointer;
-import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.engine.AtomEventListener;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.examples.tictactoe.TicTacToeConstraintScrypt.OToMoveParticle;
 import com.radixdlt.examples.tictactoe.TicTacToeConstraintScrypt.XToMoveParticle;
-import com.radixdlt.middleware.ParticleGroup;
-import com.radixdlt.middleware.SpunParticle;
 import com.radixdlt.store.EngineStore;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collections;
 
 import static com.radixdlt.examples.tictactoe.TicTacToeBaseParticle.TicTacToeSquareValue.EMPTY;
 import static com.radixdlt.examples.tictactoe.TicTacToeBaseParticle.TicTacToeSquareValue.O;
@@ -133,32 +132,56 @@ public class TicTacToeRunner {
 		);
 	}
 
-	/**
-	 * Builds an atom based on the transition from one board to another.
-	 */
-	@VisibleForTesting
-	static Atom buildAtom(
-		TicTacToeBaseParticle prevBoard,
-		TicTacToeBaseParticle nextBoard,
-		ECKeyPair player
-	) throws CryptoException {
-		List<SpunParticle> spunParticles = new ArrayList<>(2);
-		if (prevBoard != null) {
-			spunParticles.add(SpunParticle.down(prevBoard));
-		}
-		if (nextBoard != null) {
-			spunParticles.add(SpunParticle.up(nextBoard));
+	static class TicTacToeAtom implements RadixEngineAtom {
+		private final CMInstruction cmInstruction;
+		private final AID aid;
+		private final boolean shouldPass;
+
+		TicTacToeAtom(
+			TicTacToeBaseParticle prevBoard,
+			TicTacToeBaseParticle nextBoard,
+			ECKeyPair player,
+			Hash hash,
+			boolean shouldPass
+		) {
+			this.shouldPass = shouldPass;
+
+			ImmutableList.Builder<CMMicroInstruction> instructions = ImmutableList.builder();
+			if (prevBoard != null) {
+				instructions.add(CMMicroInstruction.checkSpin(prevBoard, Spin.UP));
+				instructions.add(CMMicroInstruction.push(prevBoard));
+			}
+			if (nextBoard != null) {
+				instructions.add(CMMicroInstruction.checkSpin(nextBoard, Spin.NEUTRAL));
+				instructions.add(CMMicroInstruction.push(nextBoard));
+			}
+			instructions.add(CMMicroInstruction.particleGroup());
+
+			this.cmInstruction = new CMInstruction(
+				instructions.build(),
+				hash,
+				ImmutableMap.of(player.euid(), player.sign(hash))
+			);
+			this.aid = AID.from(hash, Collections.singleton(0L));
 		}
 
-		ParticleGroup particleGroup =  ParticleGroup.of(spunParticles);
-		Atom atom = new Atom();
-		atom.addParticleGroup(particleGroup);
-		atom.sign(player);
+		@Override
+		public CMInstruction getCMInstruction() {
+			return cmInstruction;
+		}
 
-		return atom;
+		@Override
+		public AID getAID() {
+			return aid;
+		}
+
+		@Override
+		public String toString() {
+			return aid + " shouldPass: " + shouldPass;
+		}
 	}
 
-	public static void main(String[] args) throws CryptoException {
+	public static void main(String[] args) {
 
 		// Build the engine based on the constraint machine configured by the AtomOS
 		CMAtomOS cmAtomOS = new CMAtomOS();
@@ -167,8 +190,8 @@ public class TicTacToeRunner {
 			.setParticleStaticCheck(cmAtomOS.buildParticleStaticCheck())
 			.setParticleTransitionProcedures(cmAtomOS.buildTransitionProcedures())
 			.build();
-		EngineStore engineStore = new InMemoryEngineStore();
-		RadixEngine engine = new RadixEngine(
+		EngineStore<TicTacToeAtom> engineStore = new InMemoryEngineStore();
+		RadixEngine<TicTacToeAtom> engine = new RadixEngine<>(
 			cm,
 			cmAtomOS.buildVirtualLayer(),
 			engineStore
@@ -188,52 +211,52 @@ public class TicTacToeRunner {
 		XToMoveParticle legalOMove = buildLegalOMove(xPlayer, oPlayer);
 
 		// Build out the atoms which represent transition events
-		ImmutableList<Atom> atomsToTest = ImmutableList.of(
+		ImmutableList<TicTacToeAtom> atomsToTest = ImmutableList.of(
 			// [ , , ]
 			// [ , , ]
 			// [ , ]
 			//Illegal Initial board
-			buildAtom(null, illegalInitialBoard, xPlayer),
+			new TicTacToeAtom(null, illegalInitialBoard, xPlayer, Hash.random(), false),
 
 			// [ , , ]
 			// [ , , ]
 			// [ , , ]
 			//Legal Initial board
-			buildAtom(null, initialBoard, xPlayer),
+			new TicTacToeAtom(null, initialBoard, xPlayer, Hash.random(), true),
 
 			// [ , , ]    [ , , ]
 			// [ , , ] => [ ,X, ]
 			// [ , , ]    [ , , ]
 			//Legal first move
-			buildAtom(initialBoard, firstMove, xPlayer),
+			new TicTacToeAtom(initialBoard, firstMove, xPlayer, Hash.random(), true),
 
 			// [ , , ]    [ , , ]
 			// [ , , ] => [ , , ]
 			// [ , , ]    [ , ,X]
 			//Illegal takeback
-			buildAtom(initialBoard, illegalTakebackFirstMove, xPlayer),
+			new TicTacToeAtom(initialBoard, illegalTakebackFirstMove, xPlayer, Hash.random(), false),
 
 			// [ , , ]    [ , , ]
 			// [ ,X, ] => [ ,O, ]
 			// [ , , ]    [ , , ]
 			//Illegal overwrite
-			buildAtom(firstMove, illegalOMove, oPlayer),
+			new TicTacToeAtom(firstMove, illegalOMove, oPlayer, Hash.random(), false),
 
 			// [ , , ]    [ , , ]
 			// [ ,X, ] => [ ,X, ]
 			// [ , , ]    [ , ,O]
 			//Illegal O move to O move
-			buildAtom(firstMove, illegalOtoMoveOtoMove, oPlayer),
+			new TicTacToeAtom(firstMove, illegalOtoMoveOtoMove, oPlayer, Hash.random(), false),
 
 			// [ , , ]    [ , , ]
 			// [ ,X, ] => [ ,X, ]
 			// [ , , ]    [ , ,O]
 			//Legal second move
-			buildAtom(firstMove, legalOMove, oPlayer)
+			new TicTacToeAtom(firstMove, legalOMove, oPlayer, Hash.random(), true)
 		);
 
 		// Execute each atom on the engine and see what happens
-		for (Atom atom : atomsToTest) {
+		for (TicTacToeAtom atom : atomsToTest) {
 			try {
 				engine.store(atom);
 			} catch (RadixEngineException e) {

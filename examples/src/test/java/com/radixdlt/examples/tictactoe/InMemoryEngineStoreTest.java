@@ -17,53 +17,42 @@
 
 package com.radixdlt.examples.tictactoe;
 
-import com.radixdlt.atommodel.Atom;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.middleware.ParticleGroup;
-import com.radixdlt.middleware.SpunParticle;
+import com.radixdlt.crypto.Hash;
+import com.radixdlt.examples.tictactoe.TicTacToeRunner.TicTacToeAtom;
 import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 
 public class InMemoryEngineStoreTest {
 	@Test
-	public void verify_that_we_can_retrieve_spin_of_stored_particle() throws CryptoException {
+	public void verify_that_we_can_retrieve_spin_of_stored_particle() {
 		InMemoryEngineStore store = new InMemoryEngineStore();
 		assertNotNull(store);
 
-		Atom atom = initialBoardAtom();
+		TicTacToeAtom atom = initialBoardAtom();
 		store.storeAtom(atom);
 		Particle particle = firstParticleOfAtom(atom);
 		assertNotEquals(Spin.NEUTRAL, particle);
 		assertThat(particle, instanceOf(TicTacToeBaseParticle.class));
 	}
 
-	private static Atom initialBoardAtom() throws CryptoException {
+	private static TicTacToeAtom initialBoardAtom() {
 		// Our two tic toe players
 		ECKeyPair xPlayer = ECKeyPair.generateNew();
 		ECKeyPair oPlayer = ECKeyPair.generateNew();
 
 		// Build out real particle states for each of the boards
 		TicTacToeConstraintScrypt.XToMoveParticle initialBoard = TicTacToeRunner.buildInitialBoard(xPlayer, oPlayer);
-		Atom atom = TicTacToeRunner.buildAtom(null, initialBoard, xPlayer);
-		return atom;
+		return new TicTacToeRunner.TicTacToeAtom(null, initialBoard, xPlayer, Hash.random(), true);
 	}
 
-	private Particle firstParticleOfAtom(Atom atom) {
-		ParticleGroup particleGroup = atom.getParticleGroups().get(0);
-		assertNotNull(particleGroup);
-		assertFalse(particleGroup.isEmpty());
-		SpunParticle spunParticle = particleGroup.getParticles().get(0);
-		assertNotNull(spunParticle);
-		Particle particle = spunParticle.getParticle();
-		assertNotNull(particle);
-		return particle;
+	private Particle firstParticleOfAtom(TicTacToeAtom atom) {
+		return atom.getCMInstruction().getMicroInstructions().get(0).getParticle();
 	}
 }

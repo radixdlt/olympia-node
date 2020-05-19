@@ -17,15 +17,13 @@
 
 package com.radixdlt.examples.tictactoe;
 
+import com.radixdlt.examples.tictactoe.TicTacToeRunner.TicTacToeAtom;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.atommodel.Atom;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.CMMicroInstruction.CMMicroOp;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.engine.RadixEngineAtom;
-import com.radixdlt.middleware.RadixEngineUtils;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.SpinStateMachine;
 import java.util.HashMap;
@@ -38,8 +36,8 @@ import java.util.function.Consumer;
  *
  * TODO: Move into mainline code after audit
  */
-public class InMemoryEngineStore implements EngineStore {
-	private Map<Particle, Pair<Spin, Atom>> storedParticles = new HashMap<>();
+public class InMemoryEngineStore implements EngineStore<TicTacToeAtom> {
+	private Map<Particle, Pair<Spin, TicTacToeAtom>> storedParticles = new HashMap<>();
 
 	@Override
 	public boolean supports(Set<EUID> destinations) {
@@ -48,32 +46,27 @@ public class InMemoryEngineStore implements EngineStore {
 
 	@Override
 	public Spin getSpin(Particle particle) {
-		Pair<Spin, Atom> stored = storedParticles.get(particle);
+		Pair<Spin, TicTacToeAtom> stored = storedParticles.get(particle);
 		return stored == null ? Spin.NEUTRAL : stored.getFirst();
 	}
 
 	@Override
-	public void getAtomContaining(Particle particle, boolean isInput, Consumer<Atom> callback) {
+	public void getAtomContaining(Particle particle, boolean isInput, Consumer<TicTacToeAtom> callback) {
 		callback.accept(storedParticles.get(particle).getSecond());
 	}
 
 	@Override
-	public void storeAtom(Atom atom) {
-		try {
-			RadixEngineAtom radixEngineAtom = RadixEngineUtils.toCMAtom(atom);
-			for (CMMicroInstruction microInstruction : radixEngineAtom.getCMInstruction().getMicroInstructions()) {
-				if (microInstruction.getMicroOp() == CMMicroOp.PUSH) {
-					storedParticles.put(
-						microInstruction.getParticle(),
-						Pair.of(
-							SpinStateMachine.next(getSpin(microInstruction.getParticle())),
-							atom
-						)
-					);
-				}
+	public void storeAtom(TicTacToeAtom atom) {
+		for (CMMicroInstruction microInstruction : atom.getCMInstruction().getMicroInstructions()) {
+			if (microInstruction.getMicroOp() == CMMicroOp.PUSH) {
+				storedParticles.put(
+					microInstruction.getParticle(),
+					Pair.of(
+						SpinStateMachine.next(getSpin(microInstruction.getParticle())),
+						atom
+					)
+				);
 			}
-		} catch (RadixEngineUtils.CMAtomConversionException e) {
-			e.printStackTrace();
 		}
 	}
 
