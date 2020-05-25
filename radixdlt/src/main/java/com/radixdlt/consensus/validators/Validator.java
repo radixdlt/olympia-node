@@ -28,42 +28,6 @@ import javax.annotation.concurrent.Immutable;
  */
 @Immutable
 public final class Validator {
-/*	FIXME: Functionality not required until drop 2
-	public enum BondStatus {
-		UNBONDED,
-		BONDED,
-		UNBONDING;
-	}
-
-	// Current bonding status
-	private BondStatus bondStatus;
-
-	@JsonProperty("reward_address")
-	@DsonOutput(Output.ALL)
-	// Address for rewards
-	private final RadixAddress rewardAddress;
-
-	@JsonProperty("bond_view")
-	@DsonOutput(Output.ALL)
-	// View when bonding occurred, possibly null
-	private final View bondView;
-
-	@JsonProperty("unbond_view")
-	@DsonOutput(Output.ALL)
-	// View when unbonding started, possibly null
-	private final View unbondView;
-
-	@JsonProperty("unbond_completion")
-	@DsonOutput(Output.ALL)
-	// Unix millisecond time when unbonding finishes, only valid if unboundView != null
-	private final long unbondCompletion;
-
-	@JsonProperty("jailed")
-	@DsonOutput(Output.ALL)
-	// True if jailed, false otherwise
-	private final boolean jailed;
-*/
-
 	// Power associated with each validator, could e.g. be based on staked tokens
 	private final UInt256 power;
 
