@@ -18,66 +18,21 @@
 package com.radixdlt.atomos;
 
 import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.identifiers.RRI;
-import com.radixdlt.identifiers.RadixAddress;
 
-import java.util.Set;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 
 /**
  * The interface in which a constraint scrypt can be programmed against.
  */
 public interface SysCalls extends RoutineCalls {
 	/**
-	 * Registers a Particle with a given identifier.
+	 * Registers a Particle.
 	 * This is required for all other system calls using the particle.
 	 * @param particleClass The particle class
-	 * @param mapper Mapping to a destination the particle will be stored in
+	 * @param particleDefinition The particle definition
+	 * @param <T> The type of the particle
 	 */
-	<T extends Particle> void registerParticle(
-		Class<T> particleClass,
-		Function<T, RadixAddress> mapper,
-		Function<T, Result> staticCheck
-	);
-
-	/**
-	 * Registers a Particle with a given identifier.
-	 * This is required for all other system calls using the particle.
-	 * @param particleClass The particle class
-	 * @param mapper Mapping to a destination the particle will be stored in
-	 */
-	<T extends Particle> void registerParticle(
-		Class<T> particleClass,
-		Function<T, RadixAddress> mapper,
-		Function<T, Result> staticCheck,
-		Function<T, RRI> rriMapper
-	);
-
-	/**
-	 * Registers a Particle with a given identifier.
-	 * This is required for all other system calls using the particle.
-	 * @param particleClass The particle class
-	 * @param mapper Mapping to the destinations a particle will be stored in
-	 */
-	<T extends Particle> void registerParticleMultipleAddresses(
-		Class<T> particleClass,
-		Function<T, Set<RadixAddress>> mapper,
-		Function<T, Result> staticCheck
-	);
-
-	/**
-	 * Registers a Particle with a given identifier.
-	 * This is required for all other system calls using the particle.
-	 * @param particleClass The particle class
-	 * @param mapper Mapping to the destinations a particle will be stored in
-	 */
-	<T extends Particle> void registerParticleMultipleAddresses(
-		Class<T> particleClass,
-		Function<T, Set<RadixAddress>> mapper,
-		Function<T, Result> staticCheck,
-		Function<T, RRI> rriMapper
-	);
+	<T extends Particle> void registerParticle(Class<T> particleClass, ParticleDefinition<T> particleDefinition);
 
 
 	/**

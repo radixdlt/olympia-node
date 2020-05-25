@@ -20,10 +20,12 @@ package com.radixdlt.examples.tictactoe;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
+
+import java.util.Set;
 
 /**
  * Base particle for particles with tic tac toe board and players.
@@ -65,5 +67,9 @@ abstract class TicTacToeBaseParticle extends Particle {
 
 	public final RadixAddress getOPlayer() {
 		return oPlayer;
+	}
+
+	public final Set<RadixAddress> getPlayers() {
+		return ImmutableSet.of(getXPlayer(), getOPlayer());
 	}
 }
