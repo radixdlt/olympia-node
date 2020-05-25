@@ -151,6 +151,27 @@ public class VertexStoreTest {
 
 
 	@Test
+	public void when_insert_and_commit_vertex_with_engine_virtual_state_conflict__then_no_exception_should_be_thrown()
+		throws VertexInsertionException, RadixEngineException {
+		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), mock(LedgerAtom.class));
+		vertexStore.insertVertex(nextVertex);
+		TestObserver<Vertex> testObserver = vertexStore.lastCommittedVertex().test();
+		testObserver.awaitCount(1); // genesis first
+		RadixEngineException e = mock(RadixEngineException.class);
+		when(e.getErrorCode()).thenReturn(RadixEngineErrorCode.VIRTUAL_STATE_CONFLICT);
+		when(e.getDataPointer()).thenReturn(DataPointer.ofAtom());
+		doThrow(e).when(radixEngine).checkAndStore(eq(nextVertex.getAtom()));
+
+		assertThat(vertexStore.commitVertex(nextVertex.getId())).isEqualTo(nextVertex);
+		testObserver.awaitCount(2); // both vertices committed
+		testObserver.assertValues(genesisVertex, nextVertex); // both vertices committed
+
+		verify(radixEngine, times(1)).checkAndStore(genesisVertex.getAtom());
+		verify(radixEngine, times(1)).checkAndStore(nextVertex.getAtom());
+	}
+
+
+	@Test
 	public void when_insert_and_commit_vertex_with_engine_state_conflict__then_no_exception_should_be_thrown()
 		throws VertexInsertionException, RadixEngineException {
 		LedgerAtom atom = mock(LedgerAtom.class);

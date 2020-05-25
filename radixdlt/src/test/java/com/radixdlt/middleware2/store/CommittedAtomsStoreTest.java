@@ -17,17 +17,26 @@
 
 package com.radixdlt.middleware2.store;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.powermock.api.mockito.PowerMockito.when;
 
+import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.AID;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.middleware2.store.CommittedAtomsStore.AtomIndexer;
+import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStore;
+import com.radixdlt.store.SearchCursor;
 import io.reactivex.rxjava3.observers.TestObserver;
 import java.util.Collections;
+import java.util.Optional;
+import java.util.function.Consumer;
 import org.junit.Before;
 import org.junit.Test;
 import org.radix.atoms.events.AtomStoredEvent;
@@ -44,6 +53,25 @@ public class CommittedAtomsStoreTest {
 		this.atomToBinaryConverter = mock(AtomToBinaryConverter.class);
 		this.atomIndexer = mock(AtomIndexer.class);
 		this.committedAtomsStore = new CommittedAtomsStore(store, atomToBinaryConverter, atomIndexer);
+	}
+
+	@Test
+	public void when_get_atom_containing__then_should_return_atom() {
+		Particle particle = mock(Particle.class);
+		when(particle.euid()).thenReturn(EUID.ONE);
+		Consumer<LedgerAtom> callback = mock(Consumer.class);
+		SearchCursor searchCursor = mock(SearchCursor.class);
+		AID aid = mock(AID.class);
+		when(searchCursor.get()).thenReturn(aid);
+		when(store.search(any(), any(), any())).thenReturn(searchCursor);
+		LedgerEntry ledgerEntry = mock(LedgerEntry.class);
+		when(ledgerEntry.getContent()).thenReturn(new byte[0]);
+		LedgerAtom ledgerAtom = mock(LedgerAtom.class);
+		when(atomToBinaryConverter.toAtom(any())).thenReturn(ledgerAtom);
+		when(store.get(eq(aid))).thenReturn(Optional.of(ledgerEntry));
+
+		committedAtomsStore.getAtomContaining(particle, true, callback);
+		verify(callback, times(1)).accept(eq(ledgerAtom));
 	}
 
 	@Test
