@@ -19,6 +19,8 @@ package com.radixdlt.engine;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.radixdlt.atomos.Result;
+import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.ConstraintMachine;
@@ -27,14 +29,18 @@ import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.serialization.SerializerId2;
+import com.radixdlt.store.CMStore;
 import com.radixdlt.store.CMStores;
 import com.radixdlt.store.EngineStore;
-import org.assertj.core.api.Assertions;
+import java.util.function.UnaryOperator;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -48,22 +54,68 @@ public class RadixEngineTest {
 		}
 	}
 
+	private ConstraintMachine constraintMachine;
+	private EngineStore<RadixEngineAtom> engineStore;
+	private UnaryOperator<CMStore> virtualStore;
+	private RadixEngine<RadixEngineAtom> radixEngine;
+
+	@Before
+	public void setup() {
+		this.constraintMachine = mock(ConstraintMachine.class);
+		this.engineStore = mock(EngineStore.class);
+		this.virtualStore = mock(UnaryOperator.class);
+		this.radixEngine = new RadixEngine<>(
+			constraintMachine,
+			virtualStore,
+			engineStore
+		);
+	}
+
+	@Test
+	public void when_static_checking_an_atom_with_cm_error__then_an_exception_is_thrown() {
+		when(this.constraintMachine.validate(any())).thenReturn(Optional.of(mock(CMError.class)));
+		assertThatThrownBy(() -> radixEngine.staticCheck(mock(RadixEngineAtom.class)))
+			.hasFieldOrPropertyWithValue("errorCode", RadixEngineErrorCode.CM_ERROR)
+			.isInstanceOf(RadixEngineException.class);
+	}
+
+	@Test
+	public void when_static_checking_an_atom_with_a_atom_checker_error__then_an_exception_is_thrown() {
+		when(this.constraintMachine.validate(any())).thenReturn(Optional.empty());
+		AtomChecker<RadixEngineAtom> atomChecker = mock(AtomChecker.class);
+		RadixEngineAtom atom = mock(RadixEngineAtom.class);
+		when(atomChecker.check(atom)).thenReturn(Result.error("error"));
+		this.radixEngine = new RadixEngine<>(
+			constraintMachine,
+			virtualStore,
+			engineStore,
+			atomChecker
+		);
+
+		assertThatThrownBy(() -> radixEngine.staticCheck(atom))
+			.hasFieldOrPropertyWithValue("errorCode", RadixEngineErrorCode.HOOK_ERROR)
+			.isInstanceOf(RadixEngineException.class);
+	}
+
 	@Test
 	public void when_validating_an_atom_with_particle_which_conflicts_with_virtual_state__an_internal_spin_conflict_is_returned() {
-		ConstraintMachine constraintMachine = mock(ConstraintMachine.class);
-		when(constraintMachine.validate(any())).thenReturn(Optional.empty());
-		EngineStore<RadixEngineAtom> engineStore = mock(EngineStore.class);
+		when(this.constraintMachine.validate(any())).thenReturn(Optional.empty());
 		when(engineStore.supports(any())).thenReturn(true);
-		RadixEngine<RadixEngineAtom> engine = new RadixEngine<>(
+		doAnswer(invocation -> {
+			CMStore cmStore = invocation.getArgument(0);
+			return CMStores.virtualizeDefault(cmStore, p -> true, Spin.DOWN);
+		}).when(virtualStore).apply(any());
+
+		this.radixEngine = new RadixEngine<>(
 			constraintMachine,
-			state -> CMStores.virtualizeDefault(state, p -> true, Spin.DOWN),
+			virtualStore,
 			engineStore
 		);
 
 		RadixEngineAtom atom = mock(RadixEngineAtom.class);
 		ImmutableList<CMMicroInstruction> insts = ImmutableList.of(CMMicroInstruction.checkSpin(mock(IndexedParticle.class), Spin.UP));
 		when(atom.getCMInstruction()).thenReturn(new CMInstruction(insts, Hash.random(), ImmutableMap.of()));
-		Assertions.assertThatThrownBy(() -> engine.store(atom))
+		assertThatThrownBy(() -> radixEngine.checkAndStore(atom))
 			.isInstanceOf(RadixEngineException.class)
 			.matches(e -> ((RadixEngineException) e).getDataPointer().equals(DataPointer.ofParticle(0, 0)), "points to 1st particle")
 			.extracting(e -> ((RadixEngineException) e).getErrorCode())

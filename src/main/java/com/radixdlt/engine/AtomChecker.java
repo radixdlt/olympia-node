@@ -19,6 +19,17 @@ package com.radixdlt.engine;
 
 import com.radixdlt.atomos.Result;
 
-public interface CMSuccessHook<T extends RadixEngineAtom> {
-	Result hook(T atom);
+/**
+ * This module checks for constraints outside of the FSM constraint
+ * machine
+ * @param <T> the type of radix-engine-atom
+ */
+public interface AtomChecker<T extends RadixEngineAtom> {
+
+	/**
+	 * Checks that an atom is well-formed
+	 * @param atom the atom to verify
+	 * @return result of the check
+	 */
+	Result check(T atom);
 }
