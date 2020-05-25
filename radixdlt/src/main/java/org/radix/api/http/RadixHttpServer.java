@@ -152,7 +152,7 @@ public final class RadixHttpServer {
     }
 
 	public final void start(RuntimeProperties properties) {
-    	this.atomsService.start();
+		this.atomsService.start();
 
 		RoutingHandler handler = Handlers.routing(true); // add path params to query params with this flag
 
@@ -202,7 +202,7 @@ public final class RadixHttpServer {
 	}
 
 	public final void stop() {
-    	this.atomsService.stop();
+		this.atomsService.stop();
 
 		try {
 			server.stop();
