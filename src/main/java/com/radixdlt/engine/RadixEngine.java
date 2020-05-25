@@ -31,8 +31,9 @@ import com.radixdlt.store.CMStores;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.SpinStateMachine;
 
+import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.UnaryOperator;
 
 /**
@@ -42,8 +43,7 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 	private final ConstraintMachine constraintMachine;
 	private final CMStore virtualizedCMStore;
 	private final EngineStore<T> engineStore;
-	private final CopyOnWriteArrayList<AtomEventListener<T>> atomEventListeners = new CopyOnWriteArrayList<>();
-	private final CopyOnWriteArrayList<CMSuccessHook<T>> cmSuccessHooks = new CopyOnWriteArrayList<>();
+	private final AtomChecker<T> checker;
 	private final Object stateUpdateEngineLock = new Object();
 
 	public RadixEngine(
@@ -51,18 +51,19 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 		UnaryOperator<CMStore> virtualStoreLayer,
 		EngineStore<T> engineStore
 	) {
-		this.constraintMachine = constraintMachine;
-		// Remove cm virtual store
+		this(constraintMachine, virtualStoreLayer, engineStore, null);
+	}
+
+	public RadixEngine(
+		ConstraintMachine constraintMachine,
+		UnaryOperator<CMStore> virtualStoreLayer,
+		EngineStore<T> engineStore,
+		AtomChecker<T> checker
+	) {
+		this.constraintMachine = Objects.requireNonNull(constraintMachine);
 		this.virtualizedCMStore = virtualStoreLayer.apply(CMStores.empty());
-		this.engineStore = engineStore;
-	}
-
-	public void addCMSuccessHook(CMSuccessHook<T> hook) {
-		this.cmSuccessHooks.add(hook);
-	}
-
-	public void addAtomEventListener(AtomEventListener<T> acceptor) {
-		this.atomEventListeners.add(acceptor);
+		this.engineStore = Objects.requireNonNull(engineStore);
+		this.checker = checker;
 	}
 
 	public void staticCheck(T atom) throws RadixEngineException {
@@ -71,25 +72,31 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 			throw new RadixEngineException(RadixEngineErrorCode.CM_ERROR, error.get().getDataPointer());
 		}
 
-		for (CMSuccessHook<T> hook : cmSuccessHooks) {
-			Result hookResult = hook.hook(atom);
+		if (checker != null) {
+			Result hookResult = checker.check(atom);
 			if (hookResult.isError()) {
 				throw new RadixEngineException(RadixEngineErrorCode.HOOK_ERROR, DataPointer.ofAtom());
 			}
 		}
 	}
 
-	public void store(T atom) throws RadixEngineException {
+	/**
+	 * Atomically stores the given atom into the store. If the atom
+	 * has any conflicts or dependency issues the atom will not be stored.
+	 *
+	 * @param atom the atom to store
+	 * @throws RadixEngineException on state conflict or dependency issues
+	 */
+	public void checkAndStore(T atom) throws RadixEngineException {
 		this.staticCheck(atom);
-		this.atomEventListeners.forEach(acceptor -> acceptor.onCMSuccess(atom));
-		synchronized (stateUpdateEngineLock) {
-			stateCheckAndStore(atom);
 
+		synchronized (stateUpdateEngineLock) {
 			// TODO Feature: Return updated state for some given query (e.g. for current validator set)
+			stateCheckAndStoreInternal(atom);
 		}
 	}
 
-	private void stateCheckAndStore(T atom) throws RadixEngineException {
+	private void stateCheckAndStoreInternal(T atom) throws RadixEngineException {
 		final CMInstruction cmInstruction = atom.getCMInstruction();
 
 		long particleIndex = 0;
@@ -113,11 +120,11 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 
 			final DataPointer dp = DataPointer.ofParticle(particleGroupIndex, particleIndex);
 
-			// First spun is the only one we need to check
+			// First spin is the only one we need to check
 			final Spin checkSpin = microInstruction.getCheckSpin();
 			final Spin virtualSpin = virtualizedCMStore.getSpin(particle);
+			// TODO: Move virtual state checks into static check
 			if (SpinStateMachine.isBefore(checkSpin, virtualSpin)) {
-				atomEventListeners.forEach(listener -> listener.onVirtualStateConflict(atom, dp));
 				throw new RadixEngineException(RadixEngineErrorCode.VIRTUAL_STATE_CONFLICT, dp);
 			}
 
@@ -126,19 +133,17 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 			final Spin currentSpin = SpinStateMachine.isAfter(virtualSpin, physicalSpin) ? virtualSpin : physicalSpin;
 			if (!SpinStateMachine.canTransition(currentSpin, nextSpin)) {
 				if (!SpinStateMachine.isBefore(currentSpin, nextSpin)) {
-					engineStore.getAtomContaining(particle, nextSpin == Spin.DOWN, conflictAtom -> {
-						atomEventListeners.forEach(listener -> listener.onStateConflict(atom, dp, conflictAtom));
-					});
-
-					throw new RadixEngineException(RadixEngineErrorCode.STATE_CONFLICT, dp);
+					// Hack for now
+					// TODO: replace blocking callback with rx
+					final AtomicReference<T> conflictAtom = new AtomicReference<>();
+					engineStore.getAtomContaining(particle, nextSpin == Spin.DOWN, conflictAtom::set);
+					throw new RadixEngineException(RadixEngineErrorCode.STATE_CONFLICT, dp, conflictAtom.get());
 				} else {
-					atomEventListeners.forEach(listener -> listener.onStateMissingDependency(atom.getAID(), particle));
 					throw new RadixEngineException(RadixEngineErrorCode.MISSING_DEPENDENCY, dp);
 				}
 			}
 		}
 
 		engineStore.storeAtom(atom);
-		atomEventListeners.forEach(listener -> listener.onStateStore(atom));
 	}
 }
