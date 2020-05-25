@@ -59,6 +59,7 @@ import org.radix.api.observable.ObservedAtomEvents;
 import org.radix.api.observable.Observable;
 import org.radix.atoms.events.AtomExceptionEvent;
 import com.radixdlt.identifiers.AID;
+import org.radix.atoms.events.AtomStoredEvent;
 import org.radix.events.Events;
 
 public class AtomsService {
@@ -122,34 +123,36 @@ public class AtomsService {
 		});
 	}
 
+	private void processedStoredEvent(AtomStoredEvent storedEvent) {
+		LedgerAtom atom = storedEvent.getAtom();
+		this.atomEventObservers.forEach(observer -> observer.tryNext(storedEvent));
+
+		List<SingleAtomListener> subscribers = this.deleteOnEventSingleAtomObservers.remove(atom.getAID());
+		if (subscribers != null) {
+			Iterator<SingleAtomListener> i = subscribers.iterator();
+			if (i.hasNext()) {
+				i.next().onStored(true);
+				while (i.hasNext()) {
+					i.next().onStored(false);
+				}
+			}
+		}
+
+		for (AtomStatusListener atomStatusListener : this.singleAtomObservers.getOrDefault(atom.getAID(), Collections.emptyList())) {
+			atomStatusListener.onStored();
+		}
+
+		this.atomEventCount.merge(AtomEventType.STORE, 1L, Long::sum);
+
+		synchronized (lock) {
+			eventRingBuffer.add(System.currentTimeMillis() + " STORED " + atom.getAID());
+		}
+	}
+
 	public void start() {
 		io.reactivex.rxjava3.disposables.Disposable lastStoredAtomDisposable = engineStore.lastStoredAtom()
 			.observeOn(Schedulers.io())
-			.subscribe(storedEvent -> {
-				LedgerAtom atom = storedEvent.getAtom();
-				this.atomEventObservers.forEach(observer -> observer.tryNext(storedEvent));
-
-				List<SingleAtomListener> subscribers = this.deleteOnEventSingleAtomObservers.remove(atom.getAID());
-				if (subscribers != null) {
-					Iterator<SingleAtomListener> i = subscribers.iterator();
-					if (i.hasNext()) {
-						i.next().onStored(true);
-						while (i.hasNext()) {
-							i.next().onStored(false);
-						}
-					}
-				}
-
-				for (AtomStatusListener atomStatusListener : this.singleAtomObservers.getOrDefault(atom.getAID(), Collections.emptyList())) {
-					atomStatusListener.onStored();
-				}
-
-				this.atomEventCount.merge(AtomEventType.STORE, 1L, Long::sum);
-
-				synchronized (lock) {
-					eventRingBuffer.add(System.currentTimeMillis() + " STORED " + atom.getAID());
-				}
-			});
+			.subscribe(this::processedStoredEvent);
 
 		this.disposable.add(lastStoredAtomDisposable);
 	}

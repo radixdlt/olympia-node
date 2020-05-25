@@ -17,6 +17,7 @@
 
 package com.radixdlt.middleware2.store;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -26,6 +27,7 @@ import static org.powermock.api.mockito.PowerMockito.when;
 
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.middleware2.CommittedAtom;
@@ -73,6 +75,25 @@ public class CommittedAtomsStoreTest {
 
 		committedAtomsStore.getAtomContaining(particle, true, callback);
 		verify(callback, times(1)).accept(eq(committedAtom));
+	}
+
+
+	@Test
+	public void when_get_spin_and_particle_exists__then_should_return_spin() {
+		Particle particle = mock(Particle.class);
+		when(particle.euid()).thenReturn(EUID.ONE);
+		Consumer<LedgerAtom> callback = mock(Consumer.class);
+		SearchCursor searchCursor = mock(SearchCursor.class);
+		AID aid = mock(AID.class);
+		when(searchCursor.get()).thenReturn(aid);
+		when(store.search(any(), any(), any())).thenReturn(searchCursor);
+		LedgerEntry ledgerEntry = mock(LedgerEntry.class);
+		when(ledgerEntry.getContent()).thenReturn(new byte[0]);
+		LedgerAtom ledgerAtom = mock(LedgerAtom.class);
+		when(atomToBinaryConverter.toAtom(any())).thenReturn(ledgerAtom);
+		when(store.get(eq(aid))).thenReturn(Optional.of(ledgerEntry));
+
+		assertThat(committedAtomsStore.getSpin(particle)).isEqualTo(Spin.DOWN);
 	}
 
 	@Test
