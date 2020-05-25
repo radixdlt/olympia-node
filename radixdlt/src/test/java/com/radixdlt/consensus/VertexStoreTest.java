@@ -20,17 +20,21 @@ package com.radixdlt.consensus;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.engine.RadixEngineErrorCode;
 import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.identifiers.AID;
 import com.radixdlt.middleware2.LedgerAtom;
 import io.reactivex.rxjava3.observers.TestObserver;
 import java.util.Arrays;
@@ -102,7 +106,7 @@ public class VertexStoreTest {
 	@Ignore("Reinstate once better ProposalGenerator + Mempool is implemented")
 	public void when_inserting_vertex_which_fails_to_pass_re__then_vertex_insertion_exception_is_thrown()
 		throws Exception {
-		doThrow(mock(RadixEngineException.class)).when(radixEngine).store(any());
+		doThrow(mock(RadixEngineException.class)).when(radixEngine).checkAndStore(any());
 
 		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), mock(LedgerAtom.class));
 		assertThatThrownBy(() -> vertexStore.insertVertex(nextVertex))
@@ -125,13 +129,13 @@ public class VertexStoreTest {
 		vertexStore.lastCommittedVertex().subscribe(testObserver);
 		testObserver.awaitCount(1); // genesis only
 		testObserver.assertValues(genesisVertex); // not committed
-		verify(radixEngine, times(1)).store(genesisVertex.getAtom()); // not stored (genesis only)
+		verify(radixEngine, times(1)).checkAndStore(genesisVertex.getAtom()); // not stored (genesis only)
 	}
 
 	@Test
 	public void when_insert_and_commit_vertex__then_it_should_be_committed_and_stored_in_engine()
 		throws VertexInsertionException, RadixEngineException {
-		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), mock(Atom.class));
+		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), mock(LedgerAtom.class));
 		vertexStore.insertVertex(nextVertex);
 		TestObserver<Vertex> testObserver = TestObserver.create();
 		vertexStore.lastCommittedVertex().subscribe(testObserver);
@@ -141,8 +145,75 @@ public class VertexStoreTest {
 		testObserver.awaitCount(2); // both committed
 		testObserver.assertValues(genesisVertex, nextVertex); // both committed
 
-		verify(radixEngine, times(1)).store(genesisVertex.getAtom()); // genesis atom stored
-		verify(radixEngine, times(1)).store(nextVertex.getAtom()); // next atom stored
+		verify(radixEngine, times(1)).checkAndStore(genesisVertex.getAtom()); // genesis atom stored
+		verify(radixEngine, times(1)).checkAndStore(nextVertex.getAtom()); // next atom stored
+	}
+
+
+	@Test
+	public void when_insert_and_commit_vertex_with_engine_virtual_state_conflict__then_no_exception_should_be_thrown()
+		throws VertexInsertionException, RadixEngineException {
+		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), mock(LedgerAtom.class));
+		vertexStore.insertVertex(nextVertex);
+		TestObserver<Vertex> testObserver = vertexStore.lastCommittedVertex().test();
+		testObserver.awaitCount(1); // genesis first
+		RadixEngineException e = mock(RadixEngineException.class);
+		when(e.getErrorCode()).thenReturn(RadixEngineErrorCode.VIRTUAL_STATE_CONFLICT);
+		when(e.getDataPointer()).thenReturn(DataPointer.ofAtom());
+		doThrow(e).when(radixEngine).checkAndStore(eq(nextVertex.getAtom()));
+
+		assertThat(vertexStore.commitVertex(nextVertex.getId())).isEqualTo(nextVertex);
+		testObserver.awaitCount(2); // both vertices committed
+		testObserver.assertValues(genesisVertex, nextVertex); // both vertices committed
+
+		verify(radixEngine, times(1)).checkAndStore(genesisVertex.getAtom());
+		verify(radixEngine, times(1)).checkAndStore(nextVertex.getAtom());
+	}
+
+
+	@Test
+	public void when_insert_and_commit_vertex_with_engine_state_conflict__then_no_exception_should_be_thrown()
+		throws VertexInsertionException, RadixEngineException {
+		LedgerAtom atom = mock(LedgerAtom.class);
+		when(atom.getAID()).thenReturn(mock(AID.class));
+		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), atom);
+		vertexStore.insertVertex(nextVertex);
+		TestObserver<Vertex> testObserver = vertexStore.lastCommittedVertex().test();
+		testObserver.awaitCount(1); // genesis first
+		RadixEngineException e = mock(RadixEngineException.class);
+		when(e.getErrorCode()).thenReturn(RadixEngineErrorCode.STATE_CONFLICT);
+		when(e.getDataPointer()).thenReturn(DataPointer.ofAtom());
+		LedgerAtom related = mock(LedgerAtom.class);
+		when(related.getAID()).thenReturn(mock(AID.class));
+		when(e.getRelated()).thenReturn(related);
+		doThrow(e).when(radixEngine).checkAndStore(eq(nextVertex.getAtom()));
+
+		assertThat(vertexStore.commitVertex(nextVertex.getId())).isEqualTo(nextVertex);
+		testObserver.awaitCount(2); // both vertices committed
+		testObserver.assertValues(genesisVertex, nextVertex); // both vertices committed
+
+		verify(radixEngine, times(1)).checkAndStore(genesisVertex.getAtom());
+		verify(radixEngine, times(1)).checkAndStore(nextVertex.getAtom());
+	}
+
+	@Test
+	public void when_insert_and_commit_vertex_with_engine_missing_dependency__then_no_exception_should_be_thrown()
+		throws VertexInsertionException, RadixEngineException {
+		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), mock(LedgerAtom.class));
+		vertexStore.insertVertex(nextVertex);
+		TestObserver<Vertex> testObserver = vertexStore.lastCommittedVertex().test();
+		testObserver.awaitCount(1); // genesis first
+		RadixEngineException e = mock(RadixEngineException.class);
+		when(e.getErrorCode()).thenReturn(RadixEngineErrorCode.MISSING_DEPENDENCY);
+		when(e.getDataPointer()).thenReturn(DataPointer.ofAtom());
+		doThrow(e).when(radixEngine).checkAndStore(eq(nextVertex.getAtom()));
+
+		assertThat(vertexStore.commitVertex(nextVertex.getId())).isEqualTo(nextVertex);
+		testObserver.awaitCount(2); // both vertices committed
+		testObserver.assertValues(genesisVertex, nextVertex); // both vertices committed
+
+		verify(radixEngine, times(1)).checkAndStore(genesisVertex.getAtom());
+		verify(radixEngine, times(1)).checkAndStore(nextVertex.getAtom());
 	}
 
 	@Test

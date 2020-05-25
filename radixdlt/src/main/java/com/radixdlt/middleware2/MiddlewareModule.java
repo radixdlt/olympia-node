@@ -32,8 +32,9 @@ import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
-import com.radixdlt.middleware2.processing.EngineAtomEventListener;
-import com.radixdlt.middleware2.store.LedgerEngineStore;
+import com.radixdlt.middleware2.store.CommittedAtomsStore;
+import com.radixdlt.middleware2.store.CommittedAtomsStore.AtomIndexer;
+import com.radixdlt.middleware2.store.EngineAtomIndices;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.CMStore;
@@ -71,9 +72,16 @@ public class MiddlewareModule extends AbstractModule {
 			.build();
 	}
 
+
 	@Provides
 	private UnaryOperator<CMStore> buildVirtualLayer(CMAtomOS atomOS) {
 		return atomOS.buildVirtualLayer();
+	}
+
+	@Provides
+	@Singleton
+	private AtomIndexer buildAtomIndexer(Serialization serialization) {
+		return atom -> EngineAtomIndices.from(atom, serialization);
 	}
 
 	@Provides
@@ -82,7 +90,6 @@ public class MiddlewareModule extends AbstractModule {
 		ConstraintMachine constraintMachine,
 		UnaryOperator<CMStore> virtualStoreLayer,
 		EngineStore<LedgerAtom> engineStore,
-		Serialization serialization,
 		RuntimeProperties properties,
 		Universe universe
 	) {
@@ -101,17 +108,16 @@ public class MiddlewareModule extends AbstractModule {
 		RadixEngine<LedgerAtom> radixEngine = new RadixEngine<>(
 			constraintMachine,
 			virtualStoreLayer,
-			engineStore
+			engineStore,
+			ledgerAtomChecker
 		);
-		radixEngine.addCMSuccessHook(ledgerAtomChecker);
-		radixEngine.addAtomEventListener(new EngineAtomEventListener(serialization));
 
 		return radixEngine;
 	}
 
 	@Override
 	protected void configure() {
-		bind(new TypeLiteral<EngineStore<LedgerAtom>>() { }).to(LedgerEngineStore.class).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<EngineStore<LedgerAtom>>() { }).to(CommittedAtomsStore.class).in(Scopes.SINGLETON);
 		bind(AtomToBinaryConverter.class).toInstance(new AtomToBinaryConverter(DefaultSerialization.getInstance()));
 	}
 }

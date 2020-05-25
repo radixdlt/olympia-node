@@ -17,26 +17,19 @@
 
 package org.radix.atoms;
 
+import com.radixdlt.constraintmachine.DataPointer;
 import org.radix.exceptions.ValidationException;
 
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.identifiers.EUID;
-
-import java.util.List;
-import java.util.Set;
-
 @SuppressWarnings("serial")
-public class AtomDependencyNotFoundException extends ValidationException
-{
-	private final ImmutableList<EUID> dependencies;
+public final class AtomDependencyNotFoundException extends ValidationException {
+	private final DataPointer dependencyMissing;
 
-	public AtomDependencyNotFoundException(String message, Set<EUID> dependencies) {
+	public AtomDependencyNotFoundException(String message, DataPointer dependencyMissing) {
 		super(message);
-		this.dependencies = ImmutableList.copyOf(dependencies);
+		this.dependencyMissing = dependencyMissing;
 	}
 
-	public List<EUID> getDependencies()
-	{
-		return this.dependencies;
+	public DataPointer getDependencyMissing() {
+		return dependencyMissing;
 	}
 }

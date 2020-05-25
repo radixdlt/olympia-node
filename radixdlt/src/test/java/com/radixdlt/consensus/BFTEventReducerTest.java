@@ -25,12 +25,10 @@ import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyViolationException;
 import com.radixdlt.consensus.validators.ValidatorSet;
-import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.engine.RadixEngineErrorCode;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.LedgerAtom;
@@ -198,7 +196,8 @@ public class BFTEventReducerTest {
 		Proposal proposal = mock(Proposal.class);
 		when(proposal.getVertex()).thenReturn(proposedVertex);
 
-		doThrow(new VertexInsertionException("Test", new RadixEngineException(RadixEngineErrorCode.CM_ERROR, DataPointer.ofAtom())))
+		RadixEngineException e = mock(RadixEngineException.class);
+		doThrow(new VertexInsertionException("Test", e))
 			.when(vertexStore).insertVertex(any());
 		when(pacemaker.processQC(any())).thenReturn(Optional.empty());
 		when(pacemaker.getCurrentView()).thenReturn(currentView);

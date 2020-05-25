@@ -131,12 +131,7 @@ public class AtomStatusEpic {
 				} else if (e instanceof AtomDependencyNotFoundException) {
 					AtomDependencyNotFoundException dependencyNotFoundException = (AtomDependencyNotFoundException) e;
 					JSONObject data = new JSONObject();
-					JSONArray dependencies = new JSONArray();
-					for (EUID dependency : dependencyNotFoundException.getDependencies()) {
-						// TODO: use dson EUID serialization?
-						dependencies.put(dependency.toString());
-					}
-					data.put("missingDependencies", dependencies);
+					data.put("missingDependency", dependencyNotFoundException.getDependencyMissing());
 
 					sendAtomSubmissionState.accept(AtomStatus.MISSING_DEPENDENCY, data);
 				} else if (e instanceof MempoolFullException) {
