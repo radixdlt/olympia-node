@@ -24,7 +24,6 @@ import com.radixdlt.identifiers.EUID;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.middleware2.LedgerAtom;
-import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.SearchCursor;
 import com.radixdlt.store.StoreIndex;
 import com.radixdlt.store.LedgerSearchMode;
@@ -49,18 +48,24 @@ import org.radix.atoms.events.AtomStoredEvent;
 public class CommittedAtomsStore implements EngineStore<LedgerAtom> {
     private static final Logger log = LogManager.getLogger("middleware2.store");
 
-    private final Serialization serialization;
+    private final AtomIndexer atomIndexer;
     private final LedgerEntryStore store;
     private final AtomToBinaryConverter atomToBinaryConverter;
     private final Subject<AtomStoredEvent> lastStoredAtom = BehaviorSubject.create();
 
+    public interface AtomIndexer {
+        EngineAtomIndices getIndices(LedgerAtom atom);
+    }
+
     @Inject
-    public CommittedAtomsStore(LedgerEntryStore store,
-                             AtomToBinaryConverter atomToBinaryConverter,
-                             Serialization serialization) {
-        this.serialization = serialization;
+    public CommittedAtomsStore(
+        LedgerEntryStore store,
+        AtomToBinaryConverter atomToBinaryConverter,
+        AtomIndexer atomIndexer
+    ) {
         this.store = store;
         this.atomToBinaryConverter = atomToBinaryConverter;
+        this.atomIndexer = atomIndexer;
     }
 
     @Override
@@ -87,7 +92,7 @@ public class CommittedAtomsStore implements EngineStore<LedgerAtom> {
     public void storeAtom(LedgerAtom atom) {
         byte[] binaryAtom = atomToBinaryConverter.toLedgerEntryContent(atom);
         LedgerEntry ledgerEntry = new LedgerEntry(binaryAtom, atom.getAID());
-        EngineAtomIndices engineAtomIndices = EngineAtomIndices.from(atom, serialization);
+        EngineAtomIndices engineAtomIndices = atomIndexer.getIndices(atom);
         store.store(ledgerEntry, engineAtomIndices.getUniqueIndices(), engineAtomIndices.getDuplicateIndices());
 
         AtomStoredEvent storedEvent = new AtomStoredEvent(

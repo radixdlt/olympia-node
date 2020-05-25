@@ -33,7 +33,10 @@ import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
+import com.radixdlt.middleware2.store.CommittedAtomsStore.AtomIndexer;
+import com.radixdlt.middleware2.store.EngineAtomIndices;
 import com.radixdlt.properties.RuntimeProperties;
+import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.universe.Universe;
@@ -69,9 +72,16 @@ public class MiddlewareModule extends AbstractModule {
 			.build();
 	}
 
+
 	@Provides
 	private UnaryOperator<CMStore> buildVirtualLayer(CMAtomOS atomOS) {
 		return atomOS.buildVirtualLayer();
+	}
+
+	@Provides
+	@Singleton
+	private AtomIndexer buildAtomIndexer(Serialization serialization) {
+		return atom -> EngineAtomIndices.from(atom, serialization);
 	}
 
 	@Provides
