@@ -52,18 +52,18 @@ public class ClientAtomTest {
 	@Test
 	public void testConvertToApiAtom() throws Exception {
 		Atom atom = createApiAtom();
-		final LedgerAtom ledgerAtom = LedgerAtom.convertFromApiAtom(atom);
-		Atom fromLedgerAtom = LedgerAtom.convertToApiAtom(ledgerAtom);
+		final ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom);
+		Atom fromLedgerAtom = ClientAtom.convertToApiAtom(clientAtom);
 		assertThat(atom).isEqualTo(fromLedgerAtom);
 	}
 
 	@Test
 	public void testGetters() throws Exception {
 		Atom atom = createApiAtom();
-		final LedgerAtom ledgerAtom = LedgerAtom.convertFromApiAtom(atom);
-		assertThat(atom.getAID()).isEqualTo(ledgerAtom.getAID());
-		assertThat(atom.getMetaData()).isEqualTo(ledgerAtom.getMetaData());
-		assertThat(ledgerAtom.getCMInstruction()).isNotNull();
+		final ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom);
+		assertThat(atom.getAID()).isEqualTo(clientAtom.getAID());
+		assertThat(atom.getMetaData()).isEqualTo(clientAtom.getMetaData());
+		assertThat(clientAtom.getCMInstruction()).isNotNull();
 	}
 
 	@Test

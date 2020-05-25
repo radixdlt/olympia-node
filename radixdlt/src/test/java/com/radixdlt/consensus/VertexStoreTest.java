@@ -179,8 +179,7 @@ public class VertexStoreTest {
 		testObserver.awaitCount(2); // both vertices committed
 		testObserver.assertValues(genesisVertex, nextVertex); // both vertices committed
 
-		verify(radixEngine, times(1)).checkAndStore(genesisVertex.getAtom());
-		verify(radixEngine, times(1)).checkAndStore(nextVertex.getAtom());
+		verify(radixEngine, times(1)).checkAndStore(eq(committedAtom));
 	}
 
 
@@ -210,8 +209,7 @@ public class VertexStoreTest {
 		testObserver.awaitCount(2); // both vertices committed
 		testObserver.assertValues(genesisVertex, nextVertex); // both vertices committed
 
-		verify(radixEngine, times(1)).checkAndStore(genesisVertex.getAtom());
-		verify(radixEngine, times(1)).checkAndStore(nextVertex.getAtom());
+		verify(radixEngine, times(1)).checkAndStore(eq(committedAtom));
 	}
 
 	@Test
@@ -235,8 +233,7 @@ public class VertexStoreTest {
 		testObserver.awaitCount(2); // both vertices committed
 		testObserver.assertValues(genesisVertex, nextVertex); // both vertices committed
 
-		verify(radixEngine, times(1)).checkAndStore(genesisVertex.getAtom());
-		verify(radixEngine, times(1)).checkAndStore(nextVertex.getAtom());
+		verify(radixEngine, times(1)).checkAndStore(eq(committedAtom));
 	}
 
 	@Test
