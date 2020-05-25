@@ -37,7 +37,10 @@ import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
+import com.radixdlt.middleware2.store.CommittedAtomsStore.AtomIndexer;
+import com.radixdlt.middleware2.store.EngineAtomIndices;
 import com.radixdlt.properties.RuntimeProperties;
+import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.universe.Universe;
@@ -74,6 +77,7 @@ public class MiddlewareModule extends AbstractModule {
 			.setParticleStaticCheck(os.buildParticleStaticCheck())
 			.build();
 	}
+
 
 	@Provides
 	private UnaryOperator<CMStore> buildVirtualLayer(CMAtomOS atomOS) {
@@ -116,6 +120,12 @@ public class MiddlewareModule extends AbstractModule {
 				return committedAtomsStore.getSpin(particle);
 			}
 		};
+	}
+
+	@Provides
+	@Singleton
+	private AtomIndexer buildAtomIndexer(Serialization serialization) {
+		return atom -> EngineAtomIndices.from(atom, serialization);
 	}
 
 	@Provides

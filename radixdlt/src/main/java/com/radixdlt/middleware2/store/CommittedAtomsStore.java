@@ -25,7 +25,7 @@ import com.radixdlt.identifiers.EUID;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.middleware2.CommittedAtom;
-import com.radixdlt.serialization.Serialization;
+import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.store.SearchCursor;
 import com.radixdlt.store.StoreIndex;
 import com.radixdlt.store.LedgerSearchMode;
@@ -50,18 +50,24 @@ import org.radix.atoms.events.AtomStoredEvent;
 public class CommittedAtomsStore implements EngineStore<CommittedAtom> {
     private static final Logger log = LogManager.getLogger("middleware2.store");
 
-    private final Serialization serialization;
+    private final AtomIndexer atomIndexer;
     private final LedgerEntryStore store;
     private final AtomToBinaryConverter atomToBinaryConverter;
     private final Subject<AtomStoredEvent> lastStoredAtom = BehaviorSubject.create();
 
+    public interface AtomIndexer {
+        EngineAtomIndices getIndices(LedgerAtom atom);
+    }
+
     @Inject
-    public CommittedAtomsStore(LedgerEntryStore store,
-                             AtomToBinaryConverter atomToBinaryConverter,
-                             Serialization serialization) {
-        this.serialization = serialization;
+    public CommittedAtomsStore(
+        LedgerEntryStore store,
+        AtomToBinaryConverter atomToBinaryConverter,
+        AtomIndexer atomIndexer
+    ) {
         this.store = store;
         this.atomToBinaryConverter = atomToBinaryConverter;
+        this.atomIndexer = atomIndexer;
     }
 
     @Override
@@ -89,7 +95,7 @@ public class CommittedAtomsStore implements EngineStore<CommittedAtom> {
         byte[] binaryAtom = atomToBinaryConverter.toLedgerEntryContent(committedAtom);
         VertexMetadata vertexMetadata = committedAtom.getVertexMetadata();
         LedgerEntry ledgerEntry = new LedgerEntry(binaryAtom, vertexMetadata.getStateVersion(), committedAtom.getAID());
-        EngineAtomIndices engineAtomIndices = EngineAtomIndices.from(committedAtom, serialization);
+        EngineAtomIndices engineAtomIndices = atomIndexer.getIndices(committedAtom);
         store.store(ledgerEntry, engineAtomIndices.getUniqueIndices(), engineAtomIndices.getDuplicateIndices());
 
         AtomStoredEvent storedEvent = new AtomStoredEvent(
