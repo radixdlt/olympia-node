@@ -96,7 +96,11 @@ public class CommittedAtomsStore implements EngineStore<CommittedAtom> {
         VertexMetadata vertexMetadata = committedAtom.getVertexMetadata();
         LedgerEntry ledgerEntry = new LedgerEntry(binaryAtom, vertexMetadata.getStateVersion(), committedAtom.getAID());
         EngineAtomIndices engineAtomIndices = atomIndexer.getIndices(committedAtom);
+
+        // TODO: Replace Store + Commit with a single commit
+		// TODO: How it's done depends on how mempool and prepare phases are implemented
         store.store(ledgerEntry, engineAtomIndices.getUniqueIndices(), engineAtomIndices.getDuplicateIndices());
+        store.commit(committedAtom.getAID());
 
         AtomStoredEvent storedEvent = new AtomStoredEvent(
         	committedAtom,
