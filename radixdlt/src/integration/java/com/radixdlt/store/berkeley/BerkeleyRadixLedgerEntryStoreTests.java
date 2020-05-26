@@ -77,6 +77,9 @@ public class BerkeleyRadixLedgerEntryStoreTests extends RadixTestWithStores {
             // commit atom
             ledgerStore.commit(ledgerEntries.get(0).getAID());
 
+            softly.assertThat(ledgerStore.getNextCommitted(ledgerEntries.get(0).getStateVersion() - 1, 1))
+                .contains(ledgerEntries.get(0).getAID());
+
             // committed atom is committed
             softly.assertThat(ledgerStore.getStatus(ledgerEntries.get(0).getAID())).isEqualTo(LedgerEntryStatus.COMMITTED);
 

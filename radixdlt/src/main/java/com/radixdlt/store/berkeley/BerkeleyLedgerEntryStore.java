@@ -466,10 +466,10 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 
 	// TODO missing shardspace check, should be added?
 	@Override
-	public ImmutableList<AID> getNextCommitted(long logicalClock, int limit) {
+	public ImmutableList<AID> getNextCommitted(long stateVersion, int limit) {
 		try (Cursor cursor = this.atoms.openCursor(null, null)) {
 			ImmutableList.Builder<AID> aids = ImmutableList.builder();
-			DatabaseEntry search = toPKey(PREFIX_COMMITTED, logicalClock + 1);
+			DatabaseEntry search = toPKey(PREFIX_COMMITTED, stateVersion + 1);
 			OperationStatus status = cursor.getSearchKeyRange(search, null, LockMode.DEFAULT);
 
 			int size = 0;

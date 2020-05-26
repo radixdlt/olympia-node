@@ -82,10 +82,12 @@ public interface LedgerEntryStoreView {
 	boolean contains(StoreIndex.LedgerIndexType type, StoreIndex index, LedgerSearchMode mode);
 
 	/**
-	 * Advance the cursor to discover up to certain number of aids within a shard range
-	 * @param logicalClock The current cursor
+	 * Retrieve a chunk of AIDs with stateVersion greater than the given
+	 * stateVersion
+	 *
+	 * @param stateVersion The stateVersion of the client
 	 * @param limit The maximum number of aids
-	 * @return The relevant aids and the advanced cursor
+	 * @return The relevant aids
 	 */
-	ImmutableList<AID> getNextCommitted(long logicalClock, int limit);
+	ImmutableList<AID> getNextCommitted(long stateVersion, int limit);
 }
