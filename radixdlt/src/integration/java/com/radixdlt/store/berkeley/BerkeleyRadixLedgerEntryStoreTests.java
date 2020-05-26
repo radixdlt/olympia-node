@@ -24,7 +24,6 @@ import com.radixdlt.store.StoreIndex;
 import com.radixdlt.store.LedgerSearchMode;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.LedgerEntry;
-import com.radixdlt.consensus.tempo.LedgerEntryGenerator;
 import com.radixdlt.store.LedgerEntryStatus;
 import com.radixdlt.utils.Ints;
 import org.assertj.core.api.SoftAssertions;
@@ -39,7 +38,7 @@ public class BerkeleyRadixLedgerEntryStoreTests extends RadixTestWithStores {
 
     private LedgerEntryGenerator ledgerEntryGenerator = new LedgerEntryGenerator();
     private Serialization serialization = DefaultSerialization.getInstance();
-    private BerkeleyLedgerEntryStore tempoAtomStore;
+    private BerkeleyLedgerEntryStore ledgerStore;
 
     private List<LedgerEntry> ledgerEntries;
 
@@ -47,7 +46,7 @@ public class BerkeleyRadixLedgerEntryStoreTests extends RadixTestWithStores {
 
     @Before
     public void setup() {
-        tempoAtomStore = new BerkeleyLedgerEntryStore(serialization, this.getDbEnv());
+        ledgerStore = new BerkeleyLedgerEntryStore(serialization, this.getDbEnv());
 
         identity = ECKeyPair.generateNew();
         ledgerEntries = ledgerEntryGenerator.createLedgerEntries(identity, 5);
@@ -55,8 +54,8 @@ public class BerkeleyRadixLedgerEntryStoreTests extends RadixTestWithStores {
 
     @After
     public void teardown() {
-    	if (tempoAtomStore != null) {
-    		tempoAtomStore.close();
+    	if (ledgerStore != null) {
+    		ledgerStore.close();
     	}
     }
 
@@ -64,28 +63,28 @@ public class BerkeleyRadixLedgerEntryStoreTests extends RadixTestWithStores {
     public void storePendingCommitTest() {
         SoftAssertions.assertSoftly(softly -> {
             //atom added to store successfully
-            softly.assertThat(tempoAtomStore.store(ledgerEntries.get(0), ImmutableSet.of(), ImmutableSet.of()).isSuccess()).isTrue();
+            softly.assertThat(ledgerStore.store(ledgerEntries.get(0), ImmutableSet.of(), ImmutableSet.of()).isSuccess()).isTrue();
 
             //atom added to store is pending
-            softly.assertThat(tempoAtomStore.getStatus(ledgerEntries.get(0).getAID())).isEqualTo(LedgerEntryStatus.PENDING);
+            softly.assertThat(ledgerStore.getStatus(ledgerEntries.get(0).getAID())).isEqualTo(LedgerEntryStatus.PENDING);
 
             // atom added to store should be in pending
-            softly.assertThat(tempoAtomStore.getPending()).contains(ledgerEntries.get(0).getAID());
+            softly.assertThat(ledgerStore.getPending()).contains(ledgerEntries.get(0).getAID());
 
             //added atom is present in store
-            softly.assertThat(tempoAtomStore.contains(ledgerEntries.get(0).getAID())).isTrue();
+            softly.assertThat(ledgerStore.contains(ledgerEntries.get(0).getAID())).isTrue();
 
             // commit atom
-            tempoAtomStore.commit(ledgerEntries.get(0).getAID());
+            ledgerStore.commit(ledgerEntries.get(0).getAID());
 
             // committed atom is committed
-            softly.assertThat(tempoAtomStore.getStatus(ledgerEntries.get(0).getAID())).isEqualTo(LedgerEntryStatus.COMMITTED);
+            softly.assertThat(ledgerStore.getStatus(ledgerEntries.get(0).getAID())).isEqualTo(LedgerEntryStatus.COMMITTED);
 
             // committed atom is not in pending
-            softly.assertThat(tempoAtomStore.getPending()).doesNotContain(ledgerEntries.get(0).getAID());
+            softly.assertThat(ledgerStore.getPending()).doesNotContain(ledgerEntries.get(0).getAID());
 
             //not added atom is absent in store
-            softly.assertThat(tempoAtomStore.contains(ledgerEntries.get(1).getAID())).isFalse();
+            softly.assertThat(ledgerStore.contains(ledgerEntries.get(1).getAID())).isFalse();
         });
     }
 
@@ -93,13 +92,13 @@ public class BerkeleyRadixLedgerEntryStoreTests extends RadixTestWithStores {
     public void storeContainsTest() {
         SoftAssertions.assertSoftly(softly -> {
             //atom added to store successfully
-            softly.assertThat(tempoAtomStore.store(ledgerEntries.get(0), ImmutableSet.of(), ImmutableSet.of()).isSuccess()).isTrue();
+            softly.assertThat(ledgerStore.store(ledgerEntries.get(0), ImmutableSet.of(), ImmutableSet.of()).isSuccess()).isTrue();
 
             //added atom is present in store
-            softly.assertThat(tempoAtomStore.contains(ledgerEntries.get(0).getAID())).isTrue();
+            softly.assertThat(ledgerStore.contains(ledgerEntries.get(0).getAID())).isTrue();
 
             //not added atom is absent in store
-            softly.assertThat(tempoAtomStore.contains(ledgerEntries.get(1).getAID())).isFalse();
+            softly.assertThat(ledgerStore.contains(ledgerEntries.get(1).getAID())).isFalse();
         });
     }
 
@@ -107,13 +106,13 @@ public class BerkeleyRadixLedgerEntryStoreTests extends RadixTestWithStores {
     public void storeGetTest() {
         SoftAssertions.assertSoftly(softly -> {
             //atom added to store successfully
-            softly.assertThat(tempoAtomStore.store(ledgerEntries.get(0), ImmutableSet.of(), ImmutableSet.of()).isSuccess()).isTrue();
+            softly.assertThat(ledgerStore.store(ledgerEntries.get(0), ImmutableSet.of(), ImmutableSet.of()).isSuccess()).isTrue();
 
             //added atom is present in store
-            softly.assertThat(tempoAtomStore.get(ledgerEntries.get(0).getAID()).get()).isEqualTo(ledgerEntries.get(0));
+            softly.assertThat(ledgerStore.get(ledgerEntries.get(0).getAID()).get()).isEqualTo(ledgerEntries.get(0));
 
             //not added atom is absent in store
-            softly.assertThat(tempoAtomStore.get(ledgerEntries.get(1).getAID()).isPresent()).isFalse();
+            softly.assertThat(ledgerStore.get(ledgerEntries.get(1).getAID()).isPresent()).isFalse();
         });
     }
 
@@ -121,25 +120,25 @@ public class BerkeleyRadixLedgerEntryStoreTests extends RadixTestWithStores {
     public void storeGetReplaceTest() {
         SoftAssertions.assertSoftly(softly -> {
             //atom added to store successfully
-            softly.assertThat(tempoAtomStore.store(ledgerEntries.get(0), ImmutableSet.of(), ImmutableSet.of()).isSuccess()).isTrue();
+            softly.assertThat(ledgerStore.store(ledgerEntries.get(0), ImmutableSet.of(), ImmutableSet.of()).isSuccess()).isTrue();
 
             //added atom is present in store
-            softly.assertThat(tempoAtomStore.get(ledgerEntries.get(0).getAID()).isPresent()).isTrue();
+            softly.assertThat(ledgerStore.get(ledgerEntries.get(0).getAID()).isPresent()).isTrue();
 
             //not added atom is absent in store
-            softly.assertThat(tempoAtomStore.get(ledgerEntries.get(1).getAID()).isPresent()).isFalse();
+            softly.assertThat(ledgerStore.get(ledgerEntries.get(1).getAID()).isPresent()).isFalse();
 
             //atom replaced successfully
             softly.assertThat(
-            	tempoAtomStore.replace(ImmutableSet.of(ledgerEntries.get(0).getAID()), ledgerEntries.get(1), ImmutableSet.of(), ImmutableSet.of())
+            	ledgerStore.replace(ImmutableSet.of(ledgerEntries.get(0).getAID()), ledgerEntries.get(1), ImmutableSet.of(), ImmutableSet.of())
             		.isSuccess()
             ).isTrue();
 
             //replaced atom gone
-            softly.assertThat(tempoAtomStore.get(ledgerEntries.get(0).getAID()).isPresent()).isFalse();
+            softly.assertThat(ledgerStore.get(ledgerEntries.get(0).getAID()).isPresent()).isFalse();
 
             //new atom is present in store
-            softly.assertThat(tempoAtomStore.get(ledgerEntries.get(1).getAID()).isPresent()).isTrue();
+            softly.assertThat(ledgerStore.get(ledgerEntries.get(1).getAID()).isPresent()).isTrue();
         });
     }
 
@@ -149,7 +148,7 @@ public class BerkeleyRadixLedgerEntryStoreTests extends RadixTestWithStores {
         // LedgerIndex for shard 200
         StoreIndex storeIndex = new StoreIndex((byte) 200, Ints.toByteArray(200));
         validateShard200(() ->
-        	(BerkeleySearchCursor) tempoAtomStore.search(StoreIndex.LedgerIndexType.DUPLICATE, storeIndex, LedgerSearchMode.EXACT)
+        	(BerkeleySearchCursor) ledgerStore.search(StoreIndex.LedgerIndexType.DUPLICATE, storeIndex, LedgerSearchMode.EXACT)
         );
     }
 
@@ -160,7 +159,7 @@ public class BerkeleyRadixLedgerEntryStoreTests extends RadixTestWithStores {
         // LedgerIndex pointing to not existing shard 150.
         // But because ofLedgerSearchMode.RANGE Cursor will point it to next available shard - shard 200
         validateShard200(() ->
-        	(BerkeleySearchCursor) tempoAtomStore.search(StoreIndex.LedgerIndexType.DUPLICATE, storeIndex, LedgerSearchMode.RANGE)
+        	(BerkeleySearchCursor) ledgerStore.search(StoreIndex.LedgerIndexType.DUPLICATE, storeIndex, LedgerSearchMode.RANGE)
         );
     }
 
@@ -172,17 +171,17 @@ public class BerkeleyRadixLedgerEntryStoreTests extends RadixTestWithStores {
             StoreIndex storeIndex = new StoreIndex(LedgerEntryIndices.ENTRY_INDEX_PREFIX, ledgerEntries.get(3).getAID().getBytes());
 
             BerkeleySearchCursor tempoCursor =
-            	(BerkeleySearchCursor) tempoAtomStore.search(StoreIndex.LedgerIndexType.UNIQUE, storeIndex, LedgerSearchMode.EXACT);
+            	(BerkeleySearchCursor) ledgerStore.search(StoreIndex.LedgerIndexType.UNIQUE, storeIndex, LedgerSearchMode.EXACT);
             //Cursor pointing to unique single result.
             //getFirst and getLast pointing to the same value
             //getNext and getPrev are not available
             softly.assertThat(tempoCursor.get()).isEqualTo(ledgerEntries.get(3).getAID());
-            tempoCursor = tempoAtomStore.getFirst(tempoCursor);
+            tempoCursor = ledgerStore.getFirst(tempoCursor);
             softly.assertThat(tempoCursor.get()).isEqualTo(ledgerEntries.get(3).getAID());
-            tempoCursor = tempoAtomStore.getLast(tempoCursor);
+            tempoCursor = ledgerStore.getLast(tempoCursor);
             softly.assertThat(tempoCursor.get()).isEqualTo(ledgerEntries.get(3).getAID());
-            softly.assertThat((tempoAtomStore.getNext(tempoCursor))).isNull();
-            softly.assertThat((tempoAtomStore.getPrev(tempoCursor))).isNull();
+            softly.assertThat((ledgerStore.getNext(tempoCursor))).isNull();
+            softly.assertThat((ledgerStore.getPrev(tempoCursor))).isNull();
         });
     }
 
@@ -198,31 +197,31 @@ public class BerkeleyRadixLedgerEntryStoreTests extends RadixTestWithStores {
             //Pointing Atom[2] - first element in shard
             softly.assertThat(tempoCursor.get()).isEqualTo(ledgerEntries.get(2).getAID());
             //Atom[2] getNext -> cursor pointing to Atom[3] - second element in shard
-            tempoCursor = tempoAtomStore.getNext(tempoCursor);
+            tempoCursor = ledgerStore.getNext(tempoCursor);
             softly.assertThat(tempoCursor.get()).isEqualTo(ledgerEntries.get(3).getAID());
 
             //Atom[3] getNext -> cursor pointing to Atom[4] - third element in shard
-            tempoCursor = tempoAtomStore.getNext(tempoCursor);
+            tempoCursor = ledgerStore.getNext(tempoCursor);
             softly.assertThat(tempoCursor.get()).isEqualTo(ledgerEntries.get(4).getAID());
 
             //Atom[4] getFirst -> cursor pointing to Atom[2] - first element in shard
-            tempoCursor = tempoAtomStore.getFirst(tempoCursor);
+            tempoCursor = ledgerStore.getFirst(tempoCursor);
             softly.assertThat(tempoCursor.get()).isEqualTo(ledgerEntries.get(2).getAID());
 
             //Atom[2] getPrev -> cursor is null, no previous element for first element.
             // Cursor is not saved, tempoCursor still pointing to Atom[2] - first element
-            softly.assertThat((tempoAtomStore.getPrev(tempoCursor))).isNull();
+            softly.assertThat((ledgerStore.getPrev(tempoCursor))).isNull();
 
             //Atom[2] getLast -> cursor pointing to Atom[4] - last element in shard
-            tempoCursor = tempoAtomStore.getLast(tempoCursor);
+            tempoCursor = ledgerStore.getLast(tempoCursor);
             softly.assertThat(tempoCursor.get()).isEqualTo(ledgerEntries.get(4).getAID());
 
             //Atom[4] getNext -> cursor is null, no next element for last element.
             // Cursor is not saved, tempoCursor still pointing to Atom[4] - last element
-            softly.assertThat((tempoAtomStore.getNext(tempoCursor))).isNull();
+            softly.assertThat((ledgerStore.getNext(tempoCursor))).isNull();
 
             //Atom[4] getPrev -> cursor pointing to Atom[3] - element before last one
-            tempoCursor = tempoAtomStore.getPrev(tempoCursor);
+            tempoCursor = ledgerStore.getPrev(tempoCursor);
             softly.assertThat(tempoCursor.get()).isEqualTo(ledgerEntries.get(3).getAID());
         });
     }
@@ -238,8 +237,8 @@ public class BerkeleyRadixLedgerEntryStoreTests extends RadixTestWithStores {
             for (int i = 0; i < ledgerEntries.size(); i++) {
                 int shard = i < ledgerEntries.size() / 2 ? 100 : 200;
                 StoreIndex storeIndex = new StoreIndex((byte) 200, Ints.toByteArray(shard));
-                softly.assertThat(tempoAtomStore.store(ledgerEntries.get(i), ImmutableSet.of(), ImmutableSet.of(storeIndex)).isSuccess()).isTrue();
-                tempoAtomStore.commit(ledgerEntries.get(i).getAID());
+                softly.assertThat(ledgerStore.store(ledgerEntries.get(i), ImmutableSet.of(), ImmutableSet.of(storeIndex)).isSuccess()).isTrue();
+                ledgerStore.commit(ledgerEntries.get(i).getAID());
             }
         });
     }
