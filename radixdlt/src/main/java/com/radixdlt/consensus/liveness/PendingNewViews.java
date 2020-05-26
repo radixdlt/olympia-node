@@ -38,7 +38,7 @@ import com.radixdlt.crypto.Hash;
 import com.radixdlt.utils.Longs;
 
 /**
- * Manages pending votes for various vertices.
+ * Manages pending {@link NewView} items.
  * <p>
  * This class is NOT thread-safe.
  * <p>
@@ -53,11 +53,12 @@ public final class PendingNewViews {
 	private final Map<ECPublicKey, View> previousNewView = Maps.newHashMap();
 
 	/**
-	 * Inserts a vote for a given vertex, attempting to form a quorum certificate for that vertex.
+	 * Inserts a {@link NewView}, attempting to form a quorum certificate.
 	 * <p>
 	 * A QC will only be formed if permitted by the {@link ValidatorSet}.
 	 *
-	 * @param vote The vote to be inserted
+	 * @param newView The {@link NewView} to be inserted
+	 * @param validatorSet The validator set to form a quorum with
 	 * @return The generated QC, if any
 	 */
 	public Optional<View> insertNewView(NewView newView, ValidatorSet validatorSet) {
@@ -83,7 +84,7 @@ public final class PendingNewViews {
 			}
 		} else {
 			// Not a valid validator
-			log.info("Ignoring vote from invalid author {}", () -> hostId(newViewAuthor));
+			log.info("Ignoring new view from invalid author {}", () -> hostId(newViewAuthor));
 		}
 		return Optional.empty();
 	}
@@ -102,7 +103,7 @@ public final class PendingNewViews {
 		}
 
 		// Prune last pending NewView from pending.
-		// This limits the number of pending vertices that are in the pipeline.
+		// This limits the number of pending new views that are in the pipeline.
 		ValidationState validationState = this.newViewState.get(previousView);
 		if (validationState != null) {
 			validationState.removeSignature(author);
