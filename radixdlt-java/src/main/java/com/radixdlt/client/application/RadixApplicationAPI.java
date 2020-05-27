@@ -67,7 +67,8 @@ import com.radixdlt.client.application.translate.unique.PutUniqueIdAction;
 import com.radixdlt.client.application.translate.unique.PutUniqueIdToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.validators.RegisterValidatorAction;
 import com.radixdlt.client.application.translate.validators.UnregisterValidatorAction;
-import com.radixdlt.client.atommodel.validators.RegisterValidatorActionMapper;
+import com.radixdlt.client.application.translate.validators.RegisterValidatorActionMapper;
+import com.radixdlt.client.application.translate.validators.UnregisterValidatorActionMapper;
 import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
@@ -155,6 +156,7 @@ public class RadixApplicationAPI {
 			.addStatefulParticlesMapper(BurnTokensAction.class, new BurnTokensActionMapper())
 			.addStatefulParticlesMapper(TransferTokensAction.class, new TransferTokensToParticleGroupsMapper())
 			.addStatefulParticlesMapper(RegisterValidatorAction.class, new RegisterValidatorActionMapper())
+			.addStatefulParticlesMapper(UnregisterValidatorAction.class, new UnregisterValidatorActionMapper())
 			.addReducer(new TokenDefinitionsReducer())
 			.addReducer(new TokenBalanceReducer())
 			.addAtomMapper(new AtomToDecryptedMessageMapper())
@@ -800,7 +802,7 @@ public class RadixApplicationAPI {
 	 * @param validator the validator address to be unregistered
 	 * @return result of the transaction
 	 */
-	public Result uregisterValidator(
+	public Result unregisterValidator(
 		RadixAddress validator
 	) {
 		Objects.requireNonNull(validator, "validator");

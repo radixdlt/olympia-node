@@ -18,13 +18,18 @@
 package com.radixdlt.client.atommodel.validators;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableSet;
+import com.radixdlt.client.atommodel.Accountable;
+import com.radixdlt.client.atommodel.Ownable;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerId2;
 
+import java.util.Set;
+
 @SerializerId2("radix.particles.unregistered_validator")
-public class UnregisteredValidatorParticle extends Particle {
+public class UnregisteredValidatorParticle extends Particle implements Accountable, Ownable {
 	@JsonProperty("address")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private RadixAddress address;
@@ -54,5 +59,10 @@ public class UnregisteredValidatorParticle extends Particle {
 	@Override
 	public String toString() {
 		return String.format("%s[%s]", getClass().getSimpleName(), getAddress());
+	}
+
+	@Override
+	public Set<RadixAddress> getAddresses() {
+		return ImmutableSet.of(address);
 	}
 }
