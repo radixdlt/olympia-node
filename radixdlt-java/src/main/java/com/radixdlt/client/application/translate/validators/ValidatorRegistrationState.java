@@ -8,6 +8,9 @@ import com.radixdlt.identifiers.RadixAddress;
 import java.util.Comparator;
 import java.util.stream.Stream;
 
+/**
+ * The registration state of a certain validator address.
+ */
 final class ValidatorRegistrationState {
 	private final transient Particle particle;
 	private final RadixAddress address;
@@ -21,6 +24,11 @@ final class ValidatorRegistrationState {
 		this.nonce = nonce;
 	}
 
+	/**
+	 * Creates a {@link RegisteredValidatorParticle} to register this validator, if possible.
+	 * @throws IllegalStateException if validator is already registered
+	 * @return the well-formed {@link RegisteredValidatorParticle} to register this validator
+	 */
 	RegisteredValidatorParticle register() {
 		if (this.registered) {
 			throw new IllegalStateException(String.format(
@@ -32,6 +40,11 @@ final class ValidatorRegistrationState {
 		return new RegisteredValidatorParticle(this.address, this.nonce + 1);
 	}
 
+	/**
+	 * Creates an {@link UnregisteredValidatorParticle} to unregister this validator, if possible.
+	 * @throws IllegalStateException if validator is not registered
+	 * @return the well-formed {@link UnregisteredValidatorParticle} to register this validator
+	 */
 	UnregisteredValidatorParticle unregister() {
 		if (!this.registered) {
 			throw new IllegalStateException(String.format(
@@ -43,6 +56,13 @@ final class ValidatorRegistrationState {
 		return new UnregisteredValidatorParticle(this.address, this.nonce + 1);
 	}
 
+	/**
+	 * Extracts the latest validator registration of a given address state from a store of particles.
+	 * @param store the store of {@link RegisteredValidatorParticle}s and {@link UnregisteredValidatorParticle}s
+	 * @param address the address of the validator
+	 * @throws IllegalArgumentException if any particle is not of the correct type
+	 * @return the latest {@link ValidatorRegistrationState} (may be initial if none)
+	 */
 	static ValidatorRegistrationState from(Stream<Particle> store, RadixAddress address) {
 		return store
 			.map(ValidatorRegistrationState::from)
@@ -51,6 +71,12 @@ final class ValidatorRegistrationState {
 			.orElseGet(() -> ValidatorRegistrationState.initial(address));
 	}
 
+	/**
+	 * Extracts the validator registration state from a given validator registration particle
+	 * @param particle the {@link RegisteredValidatorParticle} or {@link UnregisteredValidatorParticle}
+	 * @throws IllegalArgumentException if the particle is not of the correct type
+	 * @return the extracted {@link ValidatorRegistrationState}
+	 */
 	static ValidatorRegistrationState from(Particle particle) {
 		if (particle instanceof RegisteredValidatorParticle) {
 			RegisteredValidatorParticle validator = (RegisteredValidatorParticle) particle;
@@ -63,11 +89,20 @@ final class ValidatorRegistrationState {
 		}
 	}
 
+	/**
+	 * Gets the initial validator registration state for a certain address.
+	 * The initial state is for a validator to be unregistered at nonce 0.
+	 * @param address the validator address
+	 * @return the initial {@link ValidatorRegistrationState} for the address
+	 */
 	static ValidatorRegistrationState initial(RadixAddress address) {
 		UnregisteredValidatorParticle initialState = new UnregisteredValidatorParticle(address, 0);
 		return ValidatorRegistrationState.from(initialState);
 	}
 
+	/**
+	 * Gets the underlying particle representing this state
+	 */
 	Particle asParticle() {
 		return this.particle;
 	}

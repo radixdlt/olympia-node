@@ -16,6 +16,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
+/**
+ * Action mapper for {@link RegisterValidatorAction}s, implemented using {@link ValidatorRegistrationState}.
+ */
 public class RegisterValidatorActionMapper implements StatefulActionToParticleGroupsMapper<RegisterValidatorAction> {
 	@Override
 	public Set<ShardedParticleStateId> requiredState(RegisterValidatorAction action) {

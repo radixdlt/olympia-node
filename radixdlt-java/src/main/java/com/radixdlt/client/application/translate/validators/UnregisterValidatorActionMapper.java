@@ -15,6 +15,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
+/**
+ * Action mapper for {@link UnregisterValidatorAction}s, implemented using {@link ValidatorRegistrationState}.
+ */
 public class UnregisterValidatorActionMapper implements StatefulActionToParticleGroupsMapper<UnregisterValidatorAction> {
 	@Override
 	public Set<ShardedParticleStateId> requiredState(UnregisterValidatorAction action) {
