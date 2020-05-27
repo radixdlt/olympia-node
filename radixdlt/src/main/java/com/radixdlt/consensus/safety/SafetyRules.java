@@ -95,12 +95,13 @@ public final class SafetyRules {
 	/**
 	 * Create a signed proposal from a vertex
 	 * @param proposedVertex vertex to sign
+	 * @param highestCommittedQC highest known committed QC
 	 * @return signed proposal object for consensus
 	 */
-	public Proposal signProposal(Vertex proposedVertex) {
+	public Proposal signProposal(Vertex proposedVertex, QuorumCertificate highestCommittedQC) {
 		final Hash vertexHash = this.hasher.hash(proposedVertex);
 		ECDSASignature signature = this.selfKey.sign(vertexHash);
-		return new Proposal(proposedVertex, this.selfKey.getPublicKey(), signature);
+		return new Proposal(proposedVertex, highestCommittedQC, this.selfKey.getPublicKey(), signature);
 	}
 
 	private static VoteData constructVoteData(Vertex proposedVertex) {

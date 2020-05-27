@@ -17,11 +17,20 @@
 
 package com.radixdlt.middleware2.network;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
 import org.radix.network.messaging.Message;
 
+/**
+ * Message to request for sync atoms
+ */
 @SerializerId2("message.sync.request")
-public class SyncRequestMessage extends Message {
+public final class SyncRequestMessage extends Message {
+
+	@JsonProperty("stateVersion")
+	@DsonOutput(Output.ALL)
 	private final long stateVersion;
 
 	SyncRequestMessage() {
@@ -37,5 +46,10 @@ public class SyncRequestMessage extends Message {
 
 	public long getStateVersion() {
 		return stateVersion;
+	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{stateVersion=%s}", getClass().getSimpleName(), stateVersion);
 	}
 }

@@ -45,13 +45,13 @@ import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyState;
+import com.radixdlt.consensus.sync.SyncedRadixEngine;
 import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.mempool.EmptyMempool;
 import com.radixdlt.mempool.Mempool;
 import java.util.stream.Collectors;
@@ -77,7 +77,7 @@ class ControlledBFTNode {
 			new VoteData(VertexMetadata.ofVertex(genesisVertex), null, null),
 			new ECDSASignatures()
 		);
-		RadixEngine re = mock(RadixEngine.class);
+		SyncedRadixEngine re = mock(SyncedRadixEngine.class);
 		this.vertexStore = new VertexStore(genesisVertex, genesisQC, re, systemCounters);
 		Mempool mempool = new EmptyMempool();
 		ProposalGenerator proposalGenerator = new MempoolProposalGenerator(vertexStore, mempool);

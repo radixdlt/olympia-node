@@ -49,6 +49,10 @@ public final class NewView implements RequiresSyncConsensusEvent {
 
 	private View view;
 
+	@JsonProperty("committedQC")
+	@DsonOutput(Output.ALL)
+	private final QuorumCertificate committedQC;
+
 	@JsonProperty("signature")
 	@DsonOutput(Output.ALL)
 	private final ECDSASignature signature; // may be null if not signed (e.g. for genesis)
@@ -58,13 +62,21 @@ public final class NewView implements RequiresSyncConsensusEvent {
 		this.author = null;
 		this.view = View.of(Long.MAX_VALUE);
 		this.signature = null;
+		this.committedQC = null;
 	}
 
-	public NewView(ECPublicKey author, View view, QuorumCertificate qc, ECDSASignature signature) {
+	public NewView(ECPublicKey author, View view, QuorumCertificate qc, QuorumCertificate commitedQC, ECDSASignature signature) {
 		this.author = Objects.requireNonNull(author);
 		this.view = Objects.requireNonNull(view);
 		this.qc = qc;
+		this.committedQC = commitedQC;
 		this.signature = signature;
+	}
+
+
+	@Override
+	public QuorumCertificate getCommittedQC() {
+		return committedQC;
 	}
 
 	@Override
@@ -118,12 +130,13 @@ public final class NewView implements RequiresSyncConsensusEvent {
 		return Objects.equals(author, newView.author)
 			&& Objects.equals(view, newView.view)
 			&& Objects.equals(qc, newView.qc)
-			&& Objects.equals(signature, newView.signature);
+			&& Objects.equals(signature, newView.signature)
+			&& Objects.equals(committedQC, newView.committedQC);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(author, view, qc, signature);
+		return Objects.hash(author, view, qc, signature, committedQC);
 	}
 
 	@Override

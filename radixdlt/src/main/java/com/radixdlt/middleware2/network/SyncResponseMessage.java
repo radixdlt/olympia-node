@@ -17,15 +17,24 @@
 
 package com.radixdlt.middleware2.network;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.middleware2.CommittedAtom;
+import com.radixdlt.serialization.DsonOutput;
+import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
+import java.util.Collections;
 import java.util.List;
 import org.radix.network.messaging.Message;
 
+/**
+ * Message with sync atoms as a response to sync request
+ */
 @SerializerId2("message.sync.response")
-public class SyncResponseMessage extends Message {
-	private final ImmutableList<CommittedAtom> atoms;
+public final class SyncResponseMessage extends Message {
+	@JsonProperty("atoms")
+	@DsonOutput(Output.ALL)
+	private final List<CommittedAtom> atoms;
 
 	SyncResponseMessage() {
 		// Serializer only
@@ -39,6 +48,11 @@ public class SyncResponseMessage extends Message {
 	}
 
 	public List<CommittedAtom> getAtoms() {
-		return atoms;
+		return atoms == null ? Collections.emptyList() : atoms;
+	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{atoms=%s}", getClass().getSimpleName(), atoms);
 	}
 }

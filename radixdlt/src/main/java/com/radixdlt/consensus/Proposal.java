@@ -49,15 +49,21 @@ public final class Proposal implements RequiresSyncConsensusEvent {
 	@DsonOutput(Output.ALL)
 	private final ECDSASignature signature;
 
+	@JsonProperty("committedQC")
+	@DsonOutput(Output.ALL)
+	private final QuorumCertificate committedQC;
+
 	Proposal() {
 		// Serializer only
 		this.vertex = null;
 		this.author = null;
 		this.signature = null;
+		this.committedQC = null;
 	}
 
-	public Proposal(Vertex vertex, ECPublicKey author, ECDSASignature signature) {
+	public Proposal(Vertex vertex, QuorumCertificate committedQC, ECPublicKey author, ECDSASignature signature) {
 		this.vertex = Objects.requireNonNull(vertex);
+		this.committedQC = committedQC;
 		this.author = Objects.requireNonNull(author);
 		this.signature = Objects.requireNonNull(signature);
 	}
@@ -65,6 +71,11 @@ public final class Proposal implements RequiresSyncConsensusEvent {
 	@Override
 	public QuorumCertificate getQC() {
 		return vertex.getQC();
+	}
+
+	@Override
+	public QuorumCertificate getCommittedQC() {
+		return committedQC;
 	}
 
 	@Override
@@ -95,7 +106,7 @@ public final class Proposal implements RequiresSyncConsensusEvent {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.author, this.vertex, this.signature);
+		return Objects.hash(this.author, this.vertex, this.signature, this.committedQC);
 	}
 
 	@Override
@@ -108,7 +119,8 @@ public final class Proposal implements RequiresSyncConsensusEvent {
 			return
 				Objects.equals(this.author, other.author)
 					&& Objects.equals(this.vertex, other.vertex)
-					&& Objects.equals(this.signature, other.signature);
+					&& Objects.equals(this.signature, other.signature)
+					&& Objects.equals(this.committedQC, other.committedQC);
 		}
 		return false;
 	}

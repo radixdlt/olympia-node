@@ -82,7 +82,9 @@ public class BFTEventPreprocessorTest {
 		when(qc.getProposed()).thenReturn(proposed);
 		when(proposed.getId()).thenReturn(vertexId);
 		when(newView.getQC()).thenReturn(qc);
-		when(vertexStore.syncToQC(eq(qc))).thenReturn(synced);
+		QuorumCertificate committedQC = mock(QuorumCertificate.class);
+		when(newView.getCommittedQC()).thenReturn(committedQC);
+		when(vertexStore.syncToQC(eq(qc), eq(committedQC))).thenReturn(synced);
 		return newView;
 	}
 
@@ -99,7 +101,12 @@ public class BFTEventPreprocessorTest {
 		VertexMetadata proposed = mock(VertexMetadata.class);
 		when(qc.getProposed()).thenReturn(proposed);
 		when(vertex.getQC()).thenReturn(qc);
-		when(vertexStore.syncToQC(eq(qc))).thenReturn(synced);
+
+		QuorumCertificate committedQC = mock(QuorumCertificate.class);
+		when(proposal.getCommittedQC()).thenReturn(committedQC);
+		when(proposal.getQC()).thenReturn(qc);
+
+		when(vertexStore.syncToQC(eq(qc), eq(committedQC))).thenReturn(synced);
 		return proposal;
 	}
 
@@ -202,7 +209,6 @@ public class BFTEventPreprocessorTest {
 		when(vertex.getView()).thenReturn(View.of(1));
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		when(vertex.getQC()).thenReturn(qc);
-		when(vertexStore.syncToQC(qc)).thenReturn(true);
 		when(proposal.getVertex()).thenReturn(vertex);
 		when(proposal.getAuthor()).thenReturn(OTHER_KEY.getPublicKey());
 		when(vertexStore.getVertex(eq(vertexId))).thenReturn(vertex);
@@ -231,7 +237,6 @@ public class BFTEventPreprocessorTest {
 		when(vertex.getView()).thenReturn(View.of(1));
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		when(vertex.getQC()).thenReturn(qc);
-		when(vertexStore.syncToQC(qc)).thenReturn(true);
 		when(proposal.getVertex()).thenReturn(vertex);
 		when(proposal.getAuthor()).thenReturn(OTHER_KEY.getPublicKey());
 		when(vertexStore.getVertex(eq(vertexId))).thenReturn(vertex);
@@ -261,7 +266,6 @@ public class BFTEventPreprocessorTest {
 		when(vertex.getView()).thenReturn(View.of(1));
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		when(vertex.getQC()).thenReturn(qc);
-		when(vertexStore.syncToQC(qc)).thenReturn(true);
 		when(proposal.getVertex()).thenReturn(vertex);
 		when(proposal.getAuthor()).thenReturn(OTHER_KEY.getPublicKey());
 		when(vertexStore.getVertex(eq(vertexId))).thenReturn(vertex);

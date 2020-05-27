@@ -17,9 +17,12 @@
 
 package com.radixdlt.middleware2.store;
 
+import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.constraintmachine.Particle;
@@ -37,6 +40,8 @@ import com.radixdlt.store.LedgerEntryStore;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import io.reactivex.rxjava3.subjects.Subject;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -54,6 +59,8 @@ public class CommittedAtomsStore implements EngineStore<CommittedAtom> {
     private final LedgerEntryStore store;
     private final AtomToBinaryConverter atomToBinaryConverter;
     private final Subject<AtomStoredEvent> lastStoredAtom = BehaviorSubject.create();
+    private final SystemCounters counters;
+    private final AtomicLong stateVersion = new AtomicLong(0);
 
     public interface AtomIndexer {
         EngineAtomIndices getIndices(LedgerAtom atom);
@@ -63,11 +70,13 @@ public class CommittedAtomsStore implements EngineStore<CommittedAtom> {
     public CommittedAtomsStore(
         LedgerEntryStore store,
         AtomToBinaryConverter atomToBinaryConverter,
-        AtomIndexer atomIndexer
+        AtomIndexer atomIndexer,
+        SystemCounters counters
     ) {
         this.store = store;
         this.atomToBinaryConverter = atomToBinaryConverter;
         this.atomIndexer = atomIndexer;
+        this.counters = counters;
     }
 
     @Override
@@ -101,6 +110,8 @@ public class CommittedAtomsStore implements EngineStore<CommittedAtom> {
 		// TODO: How it's done depends on how mempool and prepare phases are implemented
         store.store(ledgerEntry, engineAtomIndices.getUniqueIndices(), engineAtomIndices.getDuplicateIndices());
         store.commit(committedAtom.getAID());
+        stateVersion.set(committedAtom.getVertexMetadata().getStateVersion());
+        counters.set(CounterType.LEDGER_STATE_VERSION, committedAtom.getVertexMetadata().getStateVersion());
 
         AtomStoredEvent storedEvent = new AtomStoredEvent(
         	committedAtom,
@@ -111,6 +122,32 @@ public class CommittedAtomsStore implements EngineStore<CommittedAtom> {
         );
 
         lastStoredAtom.onNext(storedEvent);
+    }
+
+    /**
+     * Retrieve the committed atoms in the store after a given state version
+     * @param stateVersion the state version on which we will return atoms which are after
+     * @param limit limit to number of atoms to return
+     * @return list of committed atoms
+     */
+    public List<CommittedAtom> getCommittedAtoms(long stateVersion, int limit) {
+        // TODO: currently this is very inefficient, optimize so that we can make one pass through the store
+        return store.getNextCommitted(stateVersion, limit)
+            .stream()
+            .map(store::get)
+            .filter(Optional::isPresent)
+            .map(Optional::get)
+			.map(LedgerEntry::getContent)
+            .map(atomToBinaryConverter::toAtom)
+            .collect(ImmutableList.toImmutableList());
+    }
+
+    /**
+     * Retrieve the current state version of the store
+     * @return the state version of the store
+     */
+    public long getStateVersion() {
+        return stateVersion.get();
     }
 
     /**

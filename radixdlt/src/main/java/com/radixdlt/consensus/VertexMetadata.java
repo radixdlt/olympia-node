@@ -119,4 +119,9 @@ public final class VertexMetadata {
 		}
 		return false;
 	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{view=%s stateVersion=%s}", getClass().getSimpleName(), view, stateVersion);
+	}
 }

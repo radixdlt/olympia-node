@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStore;
-import com.radixdlt.store.berkeley.LedgerEntryGenerator;
 import org.junit.Assert;
 import org.junit.Test;
 import org.radix.integration.RadixTestWithStores;

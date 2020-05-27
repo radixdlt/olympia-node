@@ -18,13 +18,25 @@
 package com.radixdlt.consensus.sync;
 
 import com.radixdlt.network.addressbook.Peer;
+import java.util.Objects;
 
+/**
+ * A sync request from a peer
+ */
 public final class SyncRequest {
 	private final long stateVersion;
 	private final Peer peer;
 
 	public SyncRequest(Peer peer, long stateVersion) {
-		this.peer = peer;
+		this.peer = Objects.requireNonNull(peer);
 		this.stateVersion = stateVersion;
+	}
+
+	public Peer getPeer() {
+		return peer;
+	}
+
+	public long getStateVersion() {
+		return stateVersion;
 	}
 }

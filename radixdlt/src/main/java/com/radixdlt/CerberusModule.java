@@ -43,6 +43,7 @@ import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ScheduledTimeoutSender;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.safety.SafetyRules;
+import com.radixdlt.consensus.sync.SyncedRadixEngine;
 import com.radixdlt.consensus.tempo.Scheduler;
 import com.radixdlt.consensus.tempo.SingleThreadedScheduler;
 import com.radixdlt.consensus.validators.Validator;
@@ -133,9 +134,9 @@ public class CerberusModule extends AbstractModule {
 	@Singleton
 	private VertexStore getVertexStore(
 		Universe universe,
+		SyncedRadixEngine stateSynchronizer,
 		RadixEngine<LedgerAtom> radixEngine,
-		SystemCounters counters,
-		VertexSupplier vertexSupplier
+		SystemCounters counters
 	) throws LedgerAtomConversionException {
 		if (universe.getGenesis().size() != 1) {
 			throw new IllegalStateException("Can only support one genesis atom.");
@@ -148,6 +149,6 @@ public class CerberusModule extends AbstractModule {
 		final QuorumCertificate rootQC = new QuorumCertificate(voteData, new ECDSASignatures());
 
 		log.info("Genesis Vertex Id: {}", genesisVertex.getId());
-		return new VertexStore(genesisVertex, rootQC, radixEngine, counters);
+		return new VertexStore(genesisVertex, rootQC, stateSynchronizer, counters);
 	}
 }

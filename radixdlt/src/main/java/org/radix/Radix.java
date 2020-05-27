@@ -20,6 +20,7 @@ package org.radix;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.consensus.ConsensusRunner;
 import com.radixdlt.consensus.VertexStore;
+import com.radixdlt.consensus.sync.SyncedRadixEngine;
 import com.radixdlt.mempool.MempoolReceiver;
 import com.radixdlt.mempool.SubmissionControl;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
@@ -141,6 +142,9 @@ public final class Radix
 
 		// Start mempool receiver
 		globalInjector.getInjector().getInstance(MempoolReceiver.class).start();
+
+		SyncedRadixEngine stateSynchronizer = globalInjector.getInjector().getInstance(SyncedRadixEngine.class);
+		stateSynchronizer.start();
 
 		final ConsensusRunner bft = globalInjector.getInjector().getInstance(ConsensusRunner.class);
 		// start API services

@@ -106,4 +106,9 @@ public final class CommittedAtom implements LedgerAtom {
 	public Hash getPowFeeHash() {
 		return clientAtom.getPowFeeHash();
 	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{atom=%s meta=%s}", getClass().getSimpleName(), clientAtom.getAID(), vertexMetadata);
+	}
 }

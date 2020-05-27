@@ -41,17 +41,16 @@ import com.radixdlt.consensus.liveness.ScheduledTimeoutSender;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyState;
+import com.radixdlt.consensus.sync.SyncedRadixEngine;
 import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.mempool.EmptyMempool;
 import com.radixdlt.mempool.Mempool;
 
-import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork;
 import com.radixdlt.utils.UInt256;
 import io.reactivex.rxjava3.core.Completable;
@@ -116,8 +115,8 @@ public class SimulatedBFTNetwork {
 			.collect(ImmutableMap.toImmutableMap(
 				e -> e,
 				e -> {
-					RadixEngine<LedgerAtom> radixEngine = mock(RadixEngine.class);
-					return new VertexStore(genesisVertex, genesisQC, radixEngine, this.counters.get(e));
+					SyncedRadixEngine stateSynchronizer = mock(SyncedRadixEngine.class);
+					return new VertexStore(genesisVertex, genesisQC, stateSynchronizer, this.counters.get(e));
 				})
 			);
 		this.timeoutSenders = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e,

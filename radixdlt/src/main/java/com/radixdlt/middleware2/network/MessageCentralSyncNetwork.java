@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.sync.StateSyncNetwork;
 import com.radixdlt.consensus.sync.SyncRequest;
 import com.radixdlt.middleware2.CommittedAtom;
-import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.messaging.MessageListener;
@@ -31,6 +30,9 @@ import java.util.List;
 import java.util.Objects;
 import javax.inject.Inject;
 
+/**
+ * Sync Network interface using MessageCentral
+ */
 public class MessageCentralSyncNetwork implements StateSyncNetwork {
 	private final int magic;
 	private final MessageCentral messageCentral;
@@ -38,7 +40,6 @@ public class MessageCentralSyncNetwork implements StateSyncNetwork {
 	@Inject
 	public MessageCentralSyncNetwork(
 		Universe universe,
-		AddressBook addressBook,
 		MessageCentral messageCentral
 	) {
 		this.magic = universe.getMagic();
@@ -48,7 +49,9 @@ public class MessageCentralSyncNetwork implements StateSyncNetwork {
 	@Override
 	public Observable<List<CommittedAtom>> syncResponses() {
 		return Observable.create(emitter -> {
-			MessageListener<SyncResponseMessage> listener = (src, msg) -> emitter.onNext(msg.getAtoms());
+			MessageListener<SyncResponseMessage> listener = (src, msg) -> {
+				emitter.onNext(msg.getAtoms());
+			};
 			this.messageCentral.addListener(SyncResponseMessage.class, listener);
 			emitter.setCancellable(() -> this.messageCentral.removeListener(listener));
 		});

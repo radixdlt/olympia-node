@@ -104,7 +104,13 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	private void proceedToView(View nextView) {
 		// TODO make signing more robust by including author in signed hash
 		ECDSASignature signature = this.selfKey.sign(Hash.hash256(Longs.toByteArray(nextView.number())));
-		NewView newView = new NewView(selfKey.getPublicKey(), nextView, this.vertexStore.getHighestQC(), signature);
+		NewView newView = new NewView(
+			selfKey.getPublicKey(),
+			nextView,
+			this.vertexStore.getHighestQC(),
+			this.vertexStore.getHighestCommittedQC(),
+			signature
+		);
 		ECPublicKey nextLeader = this.proposerElection.getProposer(nextView);
 		log.debug("{}: Sending NEW_VIEW to {}: {}", this.getShortName(), this.getShortName(nextLeader.euid()), newView);
 		this.sender.sendNewView(newView, nextLeader);
@@ -163,7 +169,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		if (nextView.isPresent()) {
 			// Hotstuff's Event-Driven OnBeat
 			final Vertex proposedVertex = proposalGenerator.generateProposal(nextView.get());
-			final Proposal proposal = safetyRules.signProposal(proposedVertex);
+			final Proposal proposal = safetyRules.signProposal(proposedVertex, this.vertexStore.getHighestCommittedQC());
 			log.info("{}: Broadcasting PROPOSAL: {}", getShortName(), proposal);
 			this.sender.broadcastProposal(proposal);
 		}

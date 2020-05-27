@@ -17,16 +17,16 @@
 
 package com.radixdlt.consensus;
 
-import com.google.common.collect.ImmutableSet;
+import com.radixdlt.DefaultSerialization;
+import com.radixdlt.consensus.sync.SyncedRadixEngine;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.engine.RadixEngineErrorCode;
-import com.radixdlt.engine.RadixEngineException;
 
 import com.radixdlt.middleware2.CommittedAtom;
-import com.radixdlt.middleware2.LedgerAtom;
+import com.radixdlt.serialization.DsonOutput.Output;
+import com.radixdlt.serialization.SerializationException;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import java.util.ArrayList;
@@ -35,12 +35,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-import org.radix.atoms.AtomDependencyNotFoundException;
-import org.radix.atoms.events.AtomExceptionEvent;
-import org.radix.atoms.particles.conflict.ParticleConflict;
-import org.radix.atoms.particles.conflict.ParticleConflictException;
-import org.radix.events.Events;
-import org.radix.validation.ConstraintMachineValidationException;
 
 /**
  * Manages the BFT Vertex chain.
@@ -49,7 +43,7 @@ import org.radix.validation.ConstraintMachineValidationException;
  * TODO: make thread-safe
  */
 public final class VertexStore {
-	private final RadixEngine<LedgerAtom> engine;
+	private final SyncedRadixEngine stateSynchronizer;
 	private final SystemCounters counters;
 	private final Map<Hash, Vertex> vertices = new ConcurrentHashMap<>();
 	private final BehaviorSubject<Vertex> lastCommittedVertex = BehaviorSubject.create();
@@ -59,25 +53,23 @@ public final class VertexStore {
 
 	// Should never be null
 	private volatile QuorumCertificate highestQC;
+	private volatile QuorumCertificate highestCommittedQC;
 
 	// TODO: Cleanup this interface
 	public VertexStore(
 		Vertex genesisVertex,
 		QuorumCertificate rootQC,
-		RadixEngine<LedgerAtom> engine,
+		SyncedRadixEngine stateSynchronizer,
 		SystemCounters counters
 	) {
-		this.engine = Objects.requireNonNull(engine);
+		this.stateSynchronizer = stateSynchronizer;
 		this.counters = Objects.requireNonNull(counters);
 		this.highestQC = Objects.requireNonNull(rootQC);
+		this.highestCommittedQC = rootQC;
 
 		if (genesisVertex.getAtom() != null) {
 			CommittedAtom committedGenesis = genesisVertex.getAtom().committed(rootQC.getProposed());
-			try {
-				this.engine.checkAndStore(committedGenesis);
-			} catch (RadixEngineException e) {
-				throw new IllegalStateException("Could not store genesis atom: " + genesisVertex.getAtom(), e);
-			}
+			stateSynchronizer.storeAtom(committedGenesis);
 		}
 		this.vertices.put(genesisVertex.getId(), genesisVertex);
 		this.root = genesisVertex;
@@ -85,11 +77,28 @@ public final class VertexStore {
 	}
 
 	public boolean syncToQC(QuorumCertificate qc) {
+		return this.syncToQC(qc, this.getHighestCommittedQC());
+	}
+
+	public boolean syncToQC(QuorumCertificate qc, QuorumCertificate committedQC) {
 		final Vertex vertex = vertices.get(qc.getProposed().getId());
 		if (vertex != null) {
 			addQC(qc);
 			return true;
 		}
+
+		committedQC.getCommitted()
+			.map(VertexMetadata::getStateVersion)
+			.ifPresent(stateVersion -> {
+				try {
+					// TODO: Make it easier to retrieve signatures of QC
+					Hash hash = Hash.of(DefaultSerialization.getInstance().toDson(committedQC.getVoteData(), Output.HASH));
+					List<ECPublicKey> signers = committedQC.getSignatures().signedMessage(hash);
+					stateSynchronizer.syncTo(stateVersion, signers);
+				} catch (SerializationException e) {
+					throw new IllegalStateException("Failed to serialize");
+				}
+			});
 
 		return false;
 	}
@@ -98,6 +107,13 @@ public final class VertexStore {
 		if (highestQC.getView().compareTo(qc.getView()) < 0) {
 			highestQC = qc;
 		}
+
+		qc.getCommitted().ifPresent(vertexMetadata -> {
+			if (!highestCommittedQC.getCommitted().isPresent()
+				|| highestCommittedQC.getCommitted().get().getStateVersion() < vertexMetadata.getStateVersion()) {
+				this.highestCommittedQC = qc;
+			}
+		});
 	}
 
 	public void insertVertex(Vertex vertex) throws VertexInsertionException {
@@ -132,7 +148,8 @@ public final class VertexStore {
 		for (Vertex committed : path) {
 			if (committed.getAtom() != null) {
 				CommittedAtom committedAtom = committed.getAtom().committed(commitMetadata);
-				storeAtom(committedAtom);
+				this.counters.increment(CounterType.CONSENSUS_PROCESSED);
+				stateSynchronizer.storeAtom(committedAtom);
 			}
 
 			lastCommittedVertex.onNext(committed);
@@ -143,40 +160,6 @@ public final class VertexStore {
 
 		updateVertexStoreSize();
 		return tipVertex;
-	}
-
-	private void storeAtom(CommittedAtom atom) {
-		try {
-			this.counters.increment(CounterType.LEDGER_PROCESSED);
-			this.engine.checkAndStore(atom);
-			this.counters.increment(CounterType.LEDGER_STORED);
-		} catch (RadixEngineException e) {
-			// TODO: Don't check for state computer errors for now so that we don't
-			// TODO: have to deal with failing leader proposals
-			// TODO: Reinstate this when ProposalGenerator + Mempool can guarantee correct proposals
-
-			// TODO: move VIRTUAL_STATE_CONFLICT to static check
-			if (e.getErrorCode() == RadixEngineErrorCode.VIRTUAL_STATE_CONFLICT) {
-				ConstraintMachineValidationException exception
-					= new ConstraintMachineValidationException(atom.getClientAtom(), "Virtual state conflict", e.getDataPointer());
-				Events.getInstance().broadcast(new AtomExceptionEvent(exception, atom.getAID()));
-			} else if (e.getErrorCode() == RadixEngineErrorCode.STATE_CONFLICT) {
-				final ParticleConflictException conflict = new ParticleConflictException(
-					new ParticleConflict(e.getDataPointer(), ImmutableSet.of(atom.getAID(), e.getRelated().getAID())
-				));
-				AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(conflict, atom.getAID());
-				Events.getInstance().broadcast(atomExceptionEvent);
-			} else if (e.getErrorCode() == RadixEngineErrorCode.MISSING_DEPENDENCY) {
-				final AtomDependencyNotFoundException notFoundException =
-					new AtomDependencyNotFoundException(
-						String.format("Atom has missing dependencies in transitions: %s", e.getDataPointer().toString()),
-						e.getDataPointer()
-					);
-
-				AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(notFoundException, atom.getAID());
-				Events.getInstance().broadcast(atomExceptionEvent);
-			}
-		}
 	}
 
 	public Observable<Vertex> lastCommittedVertex() {
@@ -193,6 +176,14 @@ public final class VertexStore {
 		}
 
 		return path;
+	}
+
+	/**
+	 * Retrieves the highest committed qc in the store
+	 * @return the highest committed qc
+	 */
+	public QuorumCertificate getHighestCommittedQC() {
+		return this.highestCommittedQC;
 	}
 
 	/**

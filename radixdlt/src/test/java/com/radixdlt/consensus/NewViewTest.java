@@ -34,7 +34,7 @@ public class NewViewTest {
 	@Before
 	public void setUp() {
 		this.view = View.of(1L);
-		this.testObject = new NewView(ADDRESS.getPublicKey(), view, mock(QuorumCertificate.class), null);
+		this.testObject = new NewView(ADDRESS.getPublicKey(), view, mock(QuorumCertificate.class), mock(QuorumCertificate.class), null);
 	}
 
 	@Test
