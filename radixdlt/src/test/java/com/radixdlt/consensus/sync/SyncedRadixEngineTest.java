@@ -70,7 +70,7 @@ public class SyncedRadixEngineTest {
 		when(e.getDataPointer()).thenReturn(DataPointer.ofAtom());
 		doThrow(e).when(radixEngine).checkAndStore(eq(committedAtom));
 
-		stateSynchronizer.storeAtom(committedAtom);
+		stateSynchronizer.execute(committedAtom);
 		verify(radixEngine, times(1)).checkAndStore(eq(committedAtom));
 	}
 
@@ -89,7 +89,7 @@ public class SyncedRadixEngineTest {
 		when(committedAtom.getAID()).thenReturn(mock(AID.class));
 		doThrow(e).when(radixEngine).checkAndStore(eq(committedAtom));
 
-		stateSynchronizer.storeAtom(committedAtom);
+		stateSynchronizer.execute(committedAtom);
 		verify(radixEngine, times(1)).checkAndStore(eq(committedAtom));
 	}
 
@@ -101,7 +101,7 @@ public class SyncedRadixEngineTest {
 		CommittedAtom committedAtom = mock(CommittedAtom.class);
 		doThrow(e).when(radixEngine).checkAndStore(eq(committedAtom));
 
-		stateSynchronizer.storeAtom(committedAtom);
+		stateSynchronizer.execute(committedAtom);
 		verify(radixEngine, times(1)).checkAndStore(eq(committedAtom));
 	}
 

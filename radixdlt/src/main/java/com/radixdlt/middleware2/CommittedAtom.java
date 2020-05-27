@@ -19,6 +19,7 @@ package com.radixdlt.middleware2;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
+import com.radixdlt.consensus.SyncedStateComputer.CommittedInstruction;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.crypto.Hash;
@@ -38,7 +39,7 @@ import javax.annotation.concurrent.Immutable;
  */
 @Immutable
 @SerializerId2("consensus.committed_ledger_atom")
-public final class CommittedAtom implements LedgerAtom {
+public final class CommittedAtom implements LedgerAtom, CommittedInstruction {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
@@ -67,6 +68,7 @@ public final class CommittedAtom implements LedgerAtom {
 		return clientAtom;
 	}
 
+	@Override
 	public VertexMetadata getVertexMetadata() {
 		return vertexMetadata;
 	}

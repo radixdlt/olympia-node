@@ -17,10 +17,7 @@
 
 package com.radixdlt.consensus.functional;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
-import static org.powermock.api.mockito.PowerMockito.when;
 
 import com.radixdlt.consensus.BFTEventPreprocessor;
 import com.radixdlt.consensus.BFTEventProcessor;
@@ -34,6 +31,7 @@ import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.BFTEventReducer;
 import com.radixdlt.consensus.SyncQueues;
+import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.VertexStore;
@@ -48,15 +46,17 @@ import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyState;
-import com.radixdlt.consensus.sync.SyncedRadixEngine;
 import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.mempool.EmptyMempool;
 import com.radixdlt.mempool.Mempool;
+import com.radixdlt.middleware2.CommittedAtom;
+import java.util.List;
 import java.util.stream.Collectors;
 
 /**
@@ -80,10 +80,18 @@ class ControlledBFTNode {
 			new VoteData(VertexMetadata.ofVertex(genesisVertex), null, null),
 			new ECDSASignatures()
 		);
-		SyncedRadixEngine re = mock(SyncedRadixEngine.class);
-		when(re.syncTo(anyLong(), any())).thenReturn(true);
+		SyncedStateComputer<CommittedAtom> stateComputer = new SyncedStateComputer<CommittedAtom>() {
+			@Override
+			public boolean syncTo(long targetStateVersion, List<ECPublicKey> target) {
+				return true;
+			}
 
-		this.vertexStore = new VertexStore(genesisVertex, genesisQC, re, systemCounters);
+			@Override
+			public void execute(CommittedAtom instruction) {
+			}
+		};
+
+		this.vertexStore = new VertexStore(genesisVertex, genesisQC, stateComputer, systemCounters);
 		Mempool mempool = new EmptyMempool();
 		ProposalGenerator proposalGenerator = new MempoolProposalGenerator(vertexStore, mempool);
 		TimeoutSender timeoutSender = mock(TimeoutSender.class);

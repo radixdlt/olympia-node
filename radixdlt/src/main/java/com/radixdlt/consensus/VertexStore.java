@@ -18,7 +18,6 @@
 package com.radixdlt.consensus;
 
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.consensus.sync.SyncedRadixEngine;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.ECPublicKey;
@@ -44,7 +43,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * TODO: make thread-safe
  */
 public final class VertexStore {
-	private final SyncedRadixEngine stateSynchronizer;
+	private final SyncedStateComputer<CommittedAtom> syncedStateComputer;
 	private final SystemCounters counters;
 	private final Map<Hash, Vertex> uncommitted = new ConcurrentHashMap<>();
 	private final BehaviorSubject<Vertex> lastCommittedVertex = BehaviorSubject.create();
@@ -60,17 +59,17 @@ public final class VertexStore {
 	public VertexStore(
 		Vertex genesisVertex,
 		QuorumCertificate rootQC,
-		SyncedRadixEngine stateSynchronizer,
+		SyncedStateComputer<CommittedAtom> syncedStateComputer,
 		SystemCounters counters
 	) {
-		this.stateSynchronizer = stateSynchronizer;
+		this.syncedStateComputer = syncedStateComputer;
 		this.counters = Objects.requireNonNull(counters);
 		this.highestQC = Objects.requireNonNull(rootQC);
 		this.highestCommittedQC = rootQC;
 
 		if (genesisVertex.getAtom() != null) {
 			CommittedAtom committedGenesis = genesisVertex.getAtom().committed(rootQC.getProposed());
-			stateSynchronizer.storeAtom(committedGenesis);
+			syncedStateComputer.execute(committedGenesis);
 		}
 
 		this.root = VertexMetadata.ofVertex(genesisVertex);
@@ -82,6 +81,12 @@ public final class VertexStore {
 	}
 
 	public boolean syncToQC(QuorumCertificate qc, QuorumCertificate committedQC) {
+		final Vertex vertex = uncommitted.get(qc.getProposed().getId());
+		if (vertex != null || qc.getProposed().getId().equals(root.getId())) {
+			addQC(qc);
+			return true;
+		}
+
 		Optional<VertexMetadata> committed = committedQC.getCommitted();
 		if (committed.isPresent()) {
 			long stateVersion = committed.get().getStateVersion();
@@ -89,18 +94,12 @@ public final class VertexStore {
 				// TODO: Make it easier to retrieve signatures of QC
 				Hash hash = Hash.of(DefaultSerialization.getInstance().toDson(committedQC.getVoteData(), Output.HASH));
 				List<ECPublicKey> signers = committedQC.getSignatures().signedMessage(hash);
-				if (!stateSynchronizer.syncTo(stateVersion, signers)) {
+				if (!syncedStateComputer.syncTo(stateVersion, signers)) {
 					return false;
 				}
 			} catch (SerializationException e) {
 				throw new IllegalStateException("Failed to serialize");
 			}
-		}
-
-		final Vertex vertex = uncommitted.get(qc.getProposed().getId());
-		if (vertex != null || qc.getProposed().getId().equals(root.getId())) {
-			addQC(qc);
-			return true;
 		}
 
 		return false;
@@ -152,7 +151,7 @@ public final class VertexStore {
 			if (committed.getAtom() != null) {
 				CommittedAtom committedAtom = committed.getAtom().committed(commitMetadata);
 				this.counters.increment(CounterType.CONSENSUS_PROCESSED);
-				stateSynchronizer.storeAtom(committedAtom);
+				syncedStateComputer.execute(committedAtom);
 			}
 
 			lastCommittedVertex.onNext(committed);

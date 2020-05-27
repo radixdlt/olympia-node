@@ -116,7 +116,7 @@ public class VertexStoreTest {
 		vertexStore.lastCommittedVertex().subscribe(testObserver);
 		testObserver.awaitCount(1); // genesis only
 		testObserver.assertValues(genesisVertex); // not committed
-		verify(stateSynchronizer, times(0)).storeAtom(any()); // not stored
+		verify(stateSynchronizer, times(0)).execute(any()); // not stored
 	}
 
 	@Test
@@ -137,7 +137,7 @@ public class VertexStoreTest {
 		testObserver.assertValues(genesisVertex, nextVertex); // both committed
 
 		verify(stateSynchronizer, times(1))
-			.storeAtom(eq(committedAtom)); // next atom stored
+			.execute(eq(committedAtom)); // next atom stored
 	}
 
 	@Test

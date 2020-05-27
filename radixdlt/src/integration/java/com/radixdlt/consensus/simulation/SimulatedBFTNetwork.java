@@ -17,11 +17,6 @@
 
 package com.radixdlt.consensus.simulation;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.mock;
-import static org.powermock.api.mockito.PowerMockito.when;
-
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.consensus.ConsensusRunner;
 import com.radixdlt.consensus.ConsensusRunner.Event;
@@ -32,6 +27,7 @@ import com.radixdlt.consensus.EpochRx;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.VertexStore;
@@ -44,16 +40,17 @@ import com.radixdlt.consensus.liveness.ScheduledTimeoutSender;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyState;
-import com.radixdlt.consensus.sync.SyncedRadixEngine;
 import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.mempool.EmptyMempool;
 import com.radixdlt.mempool.Mempool;
 
+import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork;
 import com.radixdlt.utils.UInt256;
 import io.reactivex.rxjava3.core.Completable;
@@ -118,9 +115,17 @@ public class SimulatedBFTNetwork {
 			.collect(ImmutableMap.toImmutableMap(
 				e -> e,
 				e -> {
-					SyncedRadixEngine stateSynchronizer = mock(SyncedRadixEngine.class);
-					when(stateSynchronizer.syncTo(anyLong(), any())).thenReturn(true);
-					return new VertexStore(genesisVertex, genesisQC, stateSynchronizer, this.counters.get(e));
+					SyncedStateComputer<CommittedAtom> stateComputer = new SyncedStateComputer<CommittedAtom>() {
+						@Override
+						public boolean syncTo(long targetStateVersion, List<ECPublicKey> target) {
+							return true;
+						}
+
+						@Override
+						public void execute(CommittedAtom instruction) {
+						}
+					};
+					return new VertexStore(genesisVertex, genesisQC, stateComputer, this.counters.get(e));
 				})
 			);
 		this.timeoutSenders = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e,

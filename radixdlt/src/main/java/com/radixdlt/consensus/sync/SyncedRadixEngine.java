@@ -19,6 +19,7 @@ package com.radixdlt.consensus.sync;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
+import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineErrorCode;
@@ -45,7 +46,7 @@ import org.radix.validation.ConstraintMachineValidationException;
  *
  * TODO: Most of the logic here should go into RadixEngine itself
  */
-public class SyncedRadixEngine {
+public class SyncedRadixEngine implements SyncedStateComputer<CommittedAtom> {
 	private static final Logger log = LogManager.getLogger();
 	private final RadixEngine<LedgerAtom> radixEngine;
 	private final CommittedAtomsStore committedAtomsStore;
@@ -91,7 +92,7 @@ public class SyncedRadixEngine {
 				log.info("SYNC_RESPONSE: " + syncResponse);
 				for (CommittedAtom committedAtom : syncResponse) {
 					if (committedAtom.getVertexMetadata().getStateVersion() > this.committedAtomsStore.getStateVersion()) {
-						this.storeAtom(committedAtom);
+						this.execute(committedAtom);
 					}
 				}
 			});
@@ -107,6 +108,7 @@ public class SyncedRadixEngine {
 	 * @param target a list of potential targets
 	 * @return whether the is currently synced to the targetStateVersion
 	 */
+	@Override
 	public boolean syncTo(long targetStateVersion, List<ECPublicKey> target) {
 		final long currentStateVersion = committedAtomsStore.getStateVersion();
 		if (targetStateVersion <= currentStateVersion) {
@@ -128,7 +130,8 @@ public class SyncedRadixEngine {
 	 * Add an atom to the committed store
 	 * @param atom the atom to commit
 	 */
-	public void storeAtom(CommittedAtom atom) {
+	@Override
+	public void execute(CommittedAtom atom) {
 		try {
 			this.radixEngine.checkAndStore(atom);
 		} catch (RadixEngineException e) {
