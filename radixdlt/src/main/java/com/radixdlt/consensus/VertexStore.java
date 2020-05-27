@@ -34,6 +34,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -81,24 +82,26 @@ public final class VertexStore {
 	}
 
 	public boolean syncToQC(QuorumCertificate qc, QuorumCertificate committedQC) {
+		Optional<VertexMetadata> committed = committedQC.getCommitted();
+		if (committed.isPresent()) {
+			long stateVersion = committed.get().getStateVersion();
+			try {
+				// TODO: Make it easier to retrieve signatures of QC
+				Hash hash = Hash.of(DefaultSerialization.getInstance().toDson(committedQC.getVoteData(), Output.HASH));
+				List<ECPublicKey> signers = committedQC.getSignatures().signedMessage(hash);
+				if (!stateSynchronizer.syncTo(stateVersion, signers)) {
+					return false;
+				}
+			} catch (SerializationException e) {
+				throw new IllegalStateException("Failed to serialize");
+			}
+		}
+
 		final Vertex vertex = vertices.get(qc.getProposed().getId());
 		if (vertex != null) {
 			addQC(qc);
 			return true;
 		}
-
-		committedQC.getCommitted()
-			.map(VertexMetadata::getStateVersion)
-			.ifPresent(stateVersion -> {
-				try {
-					// TODO: Make it easier to retrieve signatures of QC
-					Hash hash = Hash.of(DefaultSerialization.getInstance().toDson(committedQC.getVoteData(), Output.HASH));
-					List<ECPublicKey> signers = committedQC.getSignatures().signedMessage(hash);
-					stateSynchronizer.syncTo(stateVersion, signers);
-				} catch (SerializationException e) {
-					throw new IllegalStateException("Failed to serialize");
-				}
-			});
 
 		return false;
 	}

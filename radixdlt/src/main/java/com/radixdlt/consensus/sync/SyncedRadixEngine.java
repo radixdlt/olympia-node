@@ -101,13 +101,16 @@ public class SyncedRadixEngine {
 	 * Initiate a sync to a target state version. Searches for a peer
 	 * given a target list and then requests for atom inventory.
 	 *
+	 * TODO: cancel previous unfinished requests
+	 *
 	 * @param targetStateVersion the target state version
 	 * @param target a list of potential targets
+	 * @return whether the is currently synced to the targetStateVersion
 	 */
-	public void syncTo(long targetStateVersion, List<ECPublicKey> target) {
+	public boolean syncTo(long targetStateVersion, List<ECPublicKey> target) {
 		final long currentStateVersion = committedAtomsStore.getStateVersion();
 		if (targetStateVersion <= currentStateVersion) {
-			return;
+			return true;
 		}
 
 		Peer peer = target.stream()
@@ -118,6 +121,7 @@ public class SyncedRadixEngine {
 			.findFirst()
 			.orElseThrow(() -> new RuntimeException("Unable to find peer"));
 		stateSyncNetwork.sendSyncRequest(peer, currentStateVersion);
+		return false;
 	}
 
 	/**

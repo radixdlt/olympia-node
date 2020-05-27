@@ -17,7 +17,10 @@
 
 package com.radixdlt.consensus.functional;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
+import static org.powermock.api.mockito.PowerMockito.when;
 
 import com.radixdlt.consensus.BFTEventPreprocessor;
 import com.radixdlt.consensus.BFTEventProcessor;
@@ -78,6 +81,8 @@ class ControlledBFTNode {
 			new ECDSASignatures()
 		);
 		SyncedRadixEngine re = mock(SyncedRadixEngine.class);
+		when(re.syncTo(anyLong(), any())).thenReturn(true);
+
 		this.vertexStore = new VertexStore(genesisVertex, genesisQC, re, systemCounters);
 		Mempool mempool = new EmptyMempool();
 		ProposalGenerator proposalGenerator = new MempoolProposalGenerator(vertexStore, mempool);

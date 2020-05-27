@@ -17,7 +17,10 @@
 
 package com.radixdlt.consensus.simulation;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
+import static org.powermock.api.mockito.PowerMockito.when;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.consensus.ConsensusRunner;
@@ -116,6 +119,7 @@ public class SimulatedBFTNetwork {
 				e -> e,
 				e -> {
 					SyncedRadixEngine stateSynchronizer = mock(SyncedRadixEngine.class);
+					when(stateSynchronizer.syncTo(anyLong(), any())).thenReturn(true);
 					return new VertexStore(genesisVertex, genesisQC, stateSynchronizer, this.counters.get(e));
 				})
 			);
