@@ -6,6 +6,7 @@ import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.identifiers.RadixAddress;
 
 import java.util.Comparator;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 /**
@@ -64,6 +65,8 @@ final class ValidatorRegistrationState {
 	 * @return the latest {@link ValidatorRegistrationState} (may be initial if none)
 	 */
 	static ValidatorRegistrationState from(Stream<Particle> store, RadixAddress address) {
+		Objects.requireNonNull(store, "store");
+		Objects.requireNonNull(address, "address");
 		return store
 			.map(ValidatorRegistrationState::from)
 			.filter(state -> state.getAddress().equals(address))
@@ -78,6 +81,7 @@ final class ValidatorRegistrationState {
 	 * @return the extracted {@link ValidatorRegistrationState}
 	 */
 	static ValidatorRegistrationState from(Particle particle) {
+		Objects.requireNonNull(particle, "particle");
 		if (particle instanceof RegisteredValidatorParticle) {
 			RegisteredValidatorParticle validator = (RegisteredValidatorParticle) particle;
 			return new ValidatorRegistrationState(particle, validator.getAddress(), true, validator.getNonce());
@@ -96,25 +100,55 @@ final class ValidatorRegistrationState {
 	 * @return the initial {@link ValidatorRegistrationState} for the address
 	 */
 	static ValidatorRegistrationState initial(RadixAddress address) {
+		Objects.requireNonNull(address, "address");
 		UnregisteredValidatorParticle initialState = new UnregisteredValidatorParticle(address, 0);
 		return ValidatorRegistrationState.from(initialState);
 	}
 
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		ValidatorRegistrationState that = (ValidatorRegistrationState) o;
+		return registered == that.registered &&
+			nonce == that.nonce &&
+			Objects.equals(particle, that.particle) &&
+			Objects.equals(address, that.address);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(particle, address, registered, nonce);
+	}
+
 	/**
-	 * Gets the underlying particle representing this state
+	 * Gets the underlying particle representing this state.
 	 */
 	Particle asParticle() {
 		return this.particle;
 	}
 
+	/**
+	 * Gets the address of this validator registration state.
+	 */
 	RadixAddress getAddress() {
 		return address;
 	}
 
+	/**
+	 * Tests whether this validator is registered at nonce.
+	 */
 	boolean isRegistered() {
 		return registered;
 	}
 
+	/**
+	 * Gets the nonce of this validator registration state.
+	 */
 	long getNonce() {
 		return nonce;
 	}
