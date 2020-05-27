@@ -46,11 +46,11 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class VertexStore {
 	private final SyncedRadixEngine stateSynchronizer;
 	private final SystemCounters counters;
-	private final Map<Hash, Vertex> vertices = new ConcurrentHashMap<>();
+	private final Map<Hash, Vertex> uncommitted = new ConcurrentHashMap<>();
 	private final BehaviorSubject<Vertex> lastCommittedVertex = BehaviorSubject.create();
 
 	// Should never be null
-	private Vertex root;
+	private VertexMetadata root;
 
 	// Should never be null
 	private volatile QuorumCertificate highestQC;
@@ -72,8 +72,8 @@ public final class VertexStore {
 			CommittedAtom committedGenesis = genesisVertex.getAtom().committed(rootQC.getProposed());
 			stateSynchronizer.storeAtom(committedGenesis);
 		}
-		this.vertices.put(genesisVertex.getId(), genesisVertex);
-		this.root = genesisVertex;
+
+		this.root = VertexMetadata.ofVertex(genesisVertex);
 		this.lastCommittedVertex.onNext(genesisVertex);
 	}
 
@@ -97,8 +97,8 @@ public final class VertexStore {
 			}
 		}
 
-		final Vertex vertex = vertices.get(qc.getProposed().getId());
-		if (vertex != null) {
+		final Vertex vertex = uncommitted.get(qc.getProposed().getId());
+		if (vertex != null || qc.getProposed().getId().equals(root.getId())) {
 			addQC(qc);
 			return true;
 		}
@@ -120,8 +120,8 @@ public final class VertexStore {
 	}
 
 	public void insertVertex(Vertex vertex) throws VertexInsertionException {
-		final Vertex parent = vertices.get(vertex.getParentId());
-		if (parent == null) {
+		final Vertex parent = uncommitted.get(vertex.getParentId());
+		if (parent == null && !vertex.getParentId().equals(root.getId())) {
 			throw new MissingParentException(vertex.getParentId());
 		}
 
@@ -130,22 +130,22 @@ public final class VertexStore {
 		// TODO: Reinstate this when ProposalGenerator + Mempool can guarantee correct proposals
 		// TODO: (also see commitVertex->storeAtom)
 
-		vertices.put(vertex.getId(), vertex);
+		uncommitted.put(vertex.getId(), vertex);
 		updateVertexStoreSize();
 	}
 
 	// TODO: add signature proof
 	public Vertex commitVertex(VertexMetadata commitMetadata) {
 		final Hash vertexId = commitMetadata.getId();
-		final Vertex tipVertex = vertices.get(vertexId);
+		final Vertex tipVertex = uncommitted.get(vertexId);
 		if (tipVertex == null) {
 			throw new IllegalStateException("Committing a vertex which was never inserted: " + vertexId);
 		}
 		final LinkedList<Vertex> path = new LinkedList<>();
 		Vertex vertex = tipVertex;
-		while (vertex != null && !root.equals(vertex)) {
+		while (vertex != null && !root.getId().equals(vertex.getId())) {
 			path.addFirst(vertex);
-			vertex = vertices.remove(vertex.getParentId());
+			vertex = uncommitted.remove(vertex.getParentId());
 		}
 
 		for (Vertex committed : path) {
@@ -158,8 +158,7 @@ public final class VertexStore {
 			lastCommittedVertex.onNext(committed);
 		}
 
-		vertices.remove(root.getId());
-		root = tipVertex;
+		root = commitMetadata;
 
 		updateVertexStoreSize();
 		return tipVertex;
@@ -172,10 +171,10 @@ public final class VertexStore {
 	public List<Vertex> getPathFromRoot(Hash vertexId) {
 		final List<Vertex> path = new ArrayList<>();
 
-		Vertex vertex = vertices.get(vertexId);
-		while (vertex != null && !vertex.getId().equals(root.getId())) {
+		Vertex vertex = uncommitted.get(vertexId);
+		while (vertex != null) {
 			path.add(vertex);
-			vertex = vertices.get(vertex.getParentId());
+			vertex = uncommitted.get(vertex.getParentId());
 		}
 
 		return path;
@@ -207,14 +206,14 @@ public final class VertexStore {
 	 * @return the vertex or null, if it is not stored
 	 */
 	public Vertex getVertex(Hash vertexId) {
-		return this.vertices.get(vertexId);
+		return this.uncommitted.get(vertexId);
 	}
 
 	public int getSize() {
-		return vertices.size();
+		return uncommitted.size();
 	}
 
 	private void updateVertexStoreSize() {
-		this.counters.set(CounterType.CONSENSUS_VERTEXSTORE_SIZE, this.vertices.size());
+		this.counters.set(CounterType.CONSENSUS_VERTEXSTORE_SIZE, this.uncommitted.size());
 	}
 }
