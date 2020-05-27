@@ -133,7 +133,9 @@
         { "$ref": "#/definitions/messageParticle" },
         { "$ref": "#/definitions/unallocatedTokensParticle" },
         { "$ref": "#/definitions/transferrableTokensParticle" },
-        { "$ref": "#/definitions/uniqueParticle" }
+        { "$ref": "#/definitions/uniqueParticle" },
+        { "$ref": "#/definitions/registeredValidatorParticle" },
+        { "$ref": "#/definitions/unregisteredValidatorParticle" }
       ],
       "description": "A particle which is a component which represents a substate of the ledger."
     },
@@ -334,6 +336,48 @@
         "nonce": { "type": "number" }
       },
       "description": "A particle which makes the containing Atom unique."
+    },
+    "registeredValidatorParticle": {
+      "type": "object",
+      "properties": {
+        "destinations": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/uid" },
+          "minItems": 1
+        },
+        "serializer": {
+          "type": "string",
+          "enum": [ "radix.particles.registered_validator" ]
+        },
+        "address": { "$ref": "#/definitions/address" },
+        "nonce": { "type": "number" }
+      },
+      "description": "A particle which marks a validator address as registered."
+    },
+    "unregisteredValidatorParticle": {
+      "type": "object",
+      "properties": {
+        "destinations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/uid"
+          },
+          "minItems": 1
+        },
+        "serializer": {
+          "type": "string",
+          "enum": [
+            "radix.particles.unregistered_validator"
+          ]
+        },
+        "address": {
+          "$ref": "#/definitions/address"
+        },
+        "nonce": {
+          "type": "number"
+        }
+      },
+      "description": "A particle which marks a validator address as unregistered."
     }
   }
 }
