@@ -43,7 +43,6 @@ import com.radixdlt.network.addressbook.Peer;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.observers.TestObserver;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
-import io.reactivex.rxjava3.subjects.PublishSubject;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
