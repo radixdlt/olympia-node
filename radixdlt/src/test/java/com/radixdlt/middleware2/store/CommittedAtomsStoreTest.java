@@ -17,7 +17,7 @@
 
 package com.radixdlt.middleware2.store;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -25,6 +25,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.powermock.api.mockito.PowerMockito.when;
 
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
@@ -41,6 +42,7 @@ import io.reactivex.rxjava3.observers.TestObserver;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.stream.Stream;
 import org.junit.Before;
 import org.junit.Test;
 import org.radix.atoms.events.AtomStoredEvent;
@@ -114,4 +116,20 @@ public class CommittedAtomsStoreTest {
 		testObserver.assertValue(e -> e.getAtom().equals(atom));
 	}
 
+	@Test
+	public void when_get_committed_atoms__should_return_atoms() {
+		ImmutableList<AID> aids = ImmutableList.of(mock(AID.class), mock(AID.class), mock(AID.class), mock(AID.class));
+		ImmutableList<LedgerEntry> entries = Stream.generate(() -> mock(LedgerEntry.class))
+			.limit(4)
+			.collect(ImmutableList.toImmutableList());
+		when(this.store.getNextCommitted(eq(3L), eq(4)))
+			.thenReturn(aids);
+		for (int i = 0; i < aids.size(); i++) {
+			when(this.store.get(eq(aids.get(i)))).thenReturn(Optional.of(entries.get(i)));
+			when(entries.get(i).getContent()).thenReturn(new byte[i]);
+			when(this.atomToBinaryConverter.toAtom(any())).thenReturn(mock(CommittedAtom.class));
+		}
+
+		assertThat(this.committedAtomsStore.getCommittedAtoms(3, 4)).hasSize(4);
+	}
 }

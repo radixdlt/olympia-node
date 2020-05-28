@@ -36,7 +36,6 @@ import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.utils.Longs;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -256,7 +255,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		log.info("{}: GET_VERTEX Request: Processing: {}", this.getShortName(), request);
 		List<Vertex> vertices = this.vertexStore.getVertices(request.getVertexId(), request.getCount());
 		log.info("{}: GET_VERTEX Request: Sending Response: {}", this.getShortName(), vertices);
-		request.getResponder().accept(vertices == null ? Collections.emptyList() : vertices);
+		request.getResponder().accept(vertices);
 	}
 
 	@Override

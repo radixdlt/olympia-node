@@ -33,7 +33,7 @@ import javax.inject.Inject;
 /**
  * Sync Network interface using MessageCentral
  */
-public class MessageCentralSyncNetwork implements StateSyncNetwork {
+public final class MessageCentralSyncNetwork implements StateSyncNetwork {
 	private final int magic;
 	private final MessageCentral messageCentral;
 

@@ -28,6 +28,7 @@ import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -93,9 +94,9 @@ public final class VertexStore {
 
 	private Observable<List<Vertex>> fetchVertices(QuorumCertificate qc, ECPublicKey author) {
 		if (!vertices.containsKey(qc.getProposed().getId())) {
-			log.info("Sending GET_VERTICES to " + author + ": " + qc);
+			log.info("Sending GET_VERTICES to {}: {}", author, qc);
 			return vertexSupplier.getVertices(qc.getProposed().getId(), author, 1)
-				.doOnSuccess(v -> log.info("Received GET_VERTICES: " + v))
+				.doOnSuccess(v -> log.info("Received GET_VERTICES: {}", v))
 				.toObservable()
 				.flatMap(v -> v.isEmpty()
 					? Observable.just(v)
@@ -123,7 +124,7 @@ public final class VertexStore {
 
 					// Failed to retrieve all ancestors
 					if (vertices.stream().anyMatch(List::isEmpty)) {
-						log.info("GET_VERTICES failed: " + qc);
+						log.info("GET_VERTICES failed: {}", qc);
 						return;
 					}
 
@@ -132,16 +133,15 @@ public final class VertexStore {
 						for (List<Vertex> vertexSingle : vertices) {
 							Vertex vertex = vertexSingle.get(0);
 							if (!addQC(vertex.getQC())) {
-								log.info("GET_VERTICES failed: " + qc);
+								log.info("GET_VERTICES failed: {}", qc);
 								return;
 							}
 							insertVertex(vertex);
 						}
+						addQC(qc);
 					}
-
-					syncSender.synced(vertexId);
 				},
-				e -> log.info("GET_VERTICES failed: " + e)
+				e -> log.info("GET_VERTICES failed: {} {}", qc, e.getMessage())
 			);
 
 		syncing.put(vertexId, d);
@@ -322,18 +322,18 @@ public final class VertexStore {
 	 */
 	public List<Vertex> getVertices(Hash vertexId, int count) {
 		Hash nextId = vertexId;
-		List<Vertex> vertices = new ArrayList<>(count);
+		List<Vertex> response = new ArrayList<>(count);
 		for (int i = 0; i < count; i++) {
 			Vertex vertex = this.vertices.get(nextId);
 			if (vertex == null) {
-				return null;
+				return Collections.emptyList();
 			}
 
-			vertices.add(vertex);
+			response.add(vertex);
 			nextId = vertex.getParentId();
 		}
 
-		return vertices;
+		return response;
 	}
 
 	public void clearSyncs() {
