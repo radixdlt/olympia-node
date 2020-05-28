@@ -82,7 +82,7 @@ public class BFTFunctionalTest {
 	public void processNextMsg(Random random) {
 		List<ControlledMessage> possibleMsgs = network.peekNextMessages();
 		if (possibleMsgs.isEmpty()) {
-			throw new IllegalStateException("No messages available");
+			throw new IllegalStateException("No messages available (Lost Responsiveness)");
 		}
 
 		int nextIndex =  random.nextInt(possibleMsgs.size());

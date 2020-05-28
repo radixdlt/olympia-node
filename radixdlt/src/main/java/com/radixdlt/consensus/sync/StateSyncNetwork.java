@@ -22,9 +22,35 @@ import com.radixdlt.network.addressbook.Peer;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.List;
 
+/**
+ * Network interface for state syncing
+ */
 public interface StateSyncNetwork {
+
+	/**
+	 * Retrieve stream of sync responses
+	 * @return an unending Observable of sync responses
+	 */
 	Observable<List<CommittedAtom>> syncResponses();
+
+	/**
+	 * Retrieve stream of sync requests
+ 	 * @return an unending Observable of sync requests
+	 */
 	Observable<SyncRequest> syncRequests();
+
+	/**
+	 * Sends a sync request to a peer
+	 *
+	 * @param peer peer to send request to
+	 * @param stateVersion this nodes current stateVersion
+	 */
 	void sendSyncRequest(Peer peer, long stateVersion);
+
+	/**
+	 * Sends a sync response to a peer
+	 * @param peer peer to send response to
+	 * @param atoms list of atoms in the response
+	 */
 	void sendSyncResponse(Peer peer, List<CommittedAtom> atoms);
 }

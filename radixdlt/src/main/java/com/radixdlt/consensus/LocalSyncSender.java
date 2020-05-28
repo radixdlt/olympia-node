@@ -25,6 +25,9 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import io.reactivex.rxjava3.subjects.Subject;
 
+/**
+ * Sends a local sync event and exposes it as a stream of sync events
+ */
 @Singleton
 public class LocalSyncSender implements LocalSyncRx, SyncSender {
 	private final Subject<Hash> subject = BehaviorSubject.<Hash>create().toSerialized();

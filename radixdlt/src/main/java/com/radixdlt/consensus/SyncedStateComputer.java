@@ -22,12 +22,38 @@ import com.radixdlt.crypto.ECPublicKey;
 import io.reactivex.rxjava3.core.Completable;
 import java.util.List;
 
+/**
+ * A distributed computer which manages the computed state in a BFT.
+ *
+ * @param <T> the instruction type
+ */
 public interface SyncedStateComputer<T extends CommittedInstruction> {
+
+	/**
+	 * A state computer instruction which has been committed by the BFT
+	 */
 	interface CommittedInstruction {
+
+		/**
+		 * Retrieve the BFT data for the instruction
+		 * @return the BFT data for the instruction
+		 */
 		VertexMetadata getVertexMetadata();
 	}
 
+	/**
+	 * Syncs the computer to a target version given the target version
+	 * and a list of peer targets
+	 *
+	 * @param targetStateVersion the target state version
+	 * @param target list of targets as hint of which peer has the state
+	 * @return a completable which completes when sync is complete
+	 */
 	Completable syncTo(long targetStateVersion, List<ECPublicKey> target);
 
+	/**
+	 * Execute a committed instruction
+	 * @param instruction the instruction to execute
+	 */
 	void execute(T instruction);
 }

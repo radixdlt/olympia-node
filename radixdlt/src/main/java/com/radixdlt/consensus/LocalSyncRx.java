@@ -20,6 +20,15 @@ package com.radixdlt.consensus;
 import com.radixdlt.crypto.Hash;
 import io.reactivex.rxjava3.core.Observable;
 
+/**
+ * Provider of Rx stream of local syncs which are emitted when
+ * the underlying VertexStore has synced to the vertex with the given hash.
+ */
 public interface LocalSyncRx {
+
+	/**
+	 * Retrieve rx flow of vertex hashes
+	 * @return flow of vertex hashes
+	 */
 	Observable<Hash> localSyncs();
 }

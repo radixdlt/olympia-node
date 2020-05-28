@@ -28,12 +28,14 @@ import java.util.List;
 public interface VertexSupplier {
 
 	/**
-	 * Execute an RPC to retrieve a vertex given an Id from a node
-	 * TODO: refactor to maintain a unidirectional data flow
+	 * Execute an RPC to retrieve vertices given an Id and number of
+	 * vertices. i.e. The vertex with the given id and (count - 1) ancestors
+	 * will be returned.
 	 *
 	 * @param id the id of the vertex to retrieve
 	 * @param node the node to retrieve the vertex info from
-	 * @return single of a vertex which will complete once retrieved
+	 * @param count number of vertices to retrieve
+	 * @return single of a vertex list which will complete once retrieved
 	 */
 	Single<List<Vertex>> getVertices(Hash id, ECPublicKey node, int count);
 }

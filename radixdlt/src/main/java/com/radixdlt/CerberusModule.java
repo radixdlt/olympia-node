@@ -139,7 +139,7 @@ public class CerberusModule extends AbstractModule {
 	@Singleton
 	private VertexStore getVertexStore(
 		Universe universe,
-		SyncedRadixEngine stateSynchronizer,
+		SyncedRadixEngine syncedRadixEngine,
 		VertexSupplier vertexSupplier,
 		SyncSender syncSender,
 		SystemCounters counters
@@ -155,6 +155,6 @@ public class CerberusModule extends AbstractModule {
 		final QuorumCertificate rootQC = new QuorumCertificate(voteData, new ECDSASignatures());
 
 		log.info("Genesis Vertex Id: {}", genesisVertex.getId());
-		return new VertexStore(genesisVertex, rootQC, stateSynchronizer, vertexSupplier, syncSender, counters);
+		return new VertexStore(genesisVertex, rootQC, syncedRadixEngine, vertexSupplier, syncSender, counters);
 	}
 }
