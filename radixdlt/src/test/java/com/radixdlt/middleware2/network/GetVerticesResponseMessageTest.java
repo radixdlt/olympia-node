@@ -18,19 +18,19 @@
 package com.radixdlt.middleware2.network;
 
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.*;
 
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.consensus.Vertex;
+import java.util.Collections;
 import org.junit.Test;
 
-public class GetVertexRequestMessageTest {
+public class GetVerticesResponseMessageTest {
 	@Test
 	public void sensibleToString() {
-		Hash vertexId = Hash.random();
-		GetVertexRequestMessage msg1 = new GetVertexRequestMessage(0, vertexId);
+		Vertex vertex = Vertex.createGenesis(null);
+		GetVerticesResponseMessage msg1 = new GetVerticesResponseMessage(0, Collections.singletonList(vertex));
 		String s1 = msg1.toString();
-		assertThat(s1, containsString(GetVertexRequestMessage.class.getSimpleName()));
-		assertThat(s1, containsString(vertexId.toString()));
+		assertThat(s1, containsString(GetVerticesResponseMessage.class.getSimpleName()));
+		assertThat(s1, containsString(vertex.toString()));
 	}
-
 }

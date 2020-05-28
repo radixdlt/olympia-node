@@ -25,12 +25,14 @@ import com.radixdlt.consensus.DefaultHasher;
 import com.radixdlt.consensus.EpochManager;
 import com.radixdlt.consensus.EpochRx;
 import com.radixdlt.consensus.Hasher;
+import com.radixdlt.consensus.LocalSyncSender;
 import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.VertexStore;
+import com.radixdlt.consensus.VertexSupplier;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
 import com.radixdlt.consensus.liveness.MempoolProposalGenerator;
@@ -75,6 +77,7 @@ public class SimulatedBFTNetwork {
 	private final ImmutableMap<ECKeyPair, VertexStore> vertexStores;
 	private final ImmutableMap<ECKeyPair, SystemCounters> counters;
 	private final ImmutableMap<ECKeyPair, ScheduledTimeoutSender> timeoutSenders;
+	private final ImmutableMap<ECKeyPair, LocalSyncSender> syncSenders;
 	private final ImmutableMap<ECKeyPair, FixedTimeoutPacemaker> pacemakers;
 	private final ImmutableMap<ECKeyPair, ConsensusRunner> runners;
 	private final ValidatorSet validatorSet;
@@ -111,21 +114,23 @@ public class SimulatedBFTNetwork {
 				.collect(Collectors.toList())
 		);
 		this.counters = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e, e -> new SystemCountersImpl()));
+		this.syncSenders = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e, e -> new LocalSyncSender()));
 		this.vertexStores = nodes.stream()
 			.collect(ImmutableMap.toImmutableMap(
 				e -> e,
 				e -> {
 					SyncedStateComputer<CommittedAtom> stateComputer = new SyncedStateComputer<CommittedAtom>() {
 						@Override
-						public boolean syncTo(long targetStateVersion, List<ECPublicKey> target) {
-							return true;
+						public Completable syncTo(long targetStateVersion, List<ECPublicKey> target) {
+							return Completable.complete();
 						}
 
 						@Override
 						public void execute(CommittedAtom instruction) {
 						}
 					};
-					return new VertexStore(genesisVertex, genesisQC, stateComputer, this.counters.get(e));
+					VertexSupplier vertexSupplier = underlyingNetwork.getVertexSupplier(e.getPublicKey());
+					return new VertexStore(genesisVertex, genesisQC, stateComputer, vertexSupplier, this.syncSenders.get(e), this.counters.get(e));
 				})
 			);
 		this.timeoutSenders = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e,
@@ -169,6 +174,7 @@ public class SimulatedBFTNetwork {
 			epochRx,
 			underlyingNetwork.getNetworkRx(key.getPublicKey()),
 			timeoutSender,
+			syncSenders.get(key),
 			epochManager
 		);
 	}

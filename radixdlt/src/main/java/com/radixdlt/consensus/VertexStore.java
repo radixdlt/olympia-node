@@ -17,52 +17,64 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.DefaultSerialization;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 
 import com.radixdlt.middleware2.CommittedAtom;
-import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.SerializationException;
 import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.disposables.Disposable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Manages the BFT Vertex chain.
  *
- * In general this class is NOT thread-safe except for getVertex() and getHighestQC().
+ * In general this class is NOT thread-safe except for getVertices() and getHighestQC().
  * TODO: make thread-safe
  */
 public final class VertexStore {
+	private static final Logger log = LogManager.getLogger();
+
+	public interface SyncSender {
+		void synced(Hash vertexId);
+	}
+
+	private final BehaviorSubject<Vertex> lastCommittedVertex = BehaviorSubject.create();
+	private final SyncSender syncSender;
+	private final VertexSupplier vertexSupplier;
 	private final SyncedStateComputer<CommittedAtom> syncedStateComputer;
 	private final SystemCounters counters;
-	private final Map<Hash, Vertex> uncommitted = new ConcurrentHashMap<>();
-	private final BehaviorSubject<Vertex> lastCommittedVertex = BehaviorSubject.create();
+
 
 	// Should never be null
-	private VertexMetadata root;
-
-	// Should never be null
+	private volatile VertexMetadata root;
 	private volatile QuorumCertificate highestQC;
 	private volatile QuorumCertificate highestCommittedQC;
+	private final Map<Hash, Vertex> uncommitted = new ConcurrentHashMap<>();
+	private final Map<Hash, Disposable> syncing = new ConcurrentHashMap<>();
 
 	// TODO: Cleanup this interface
 	public VertexStore(
 		Vertex genesisVertex,
 		QuorumCertificate rootQC,
 		SyncedStateComputer<CommittedAtom> syncedStateComputer,
+		VertexSupplier vertexSupplier,
+		SyncSender syncSender,
 		SystemCounters counters
 	) {
 		this.syncedStateComputer = syncedStateComputer;
+		this.vertexSupplier = vertexSupplier;
+		this.syncSender = syncSender;
 		this.counters = Objects.requireNonNull(counters);
 		this.highestQC = Objects.requireNonNull(rootQC);
 		this.highestCommittedQC = rootQC;
@@ -76,33 +88,115 @@ public final class VertexStore {
 		this.lastCommittedVertex.onNext(genesisVertex);
 	}
 
-	public boolean syncToQC(QuorumCertificate qc) {
-		return this.syncToQC(qc, this.getHighestCommittedQC());
+	private Observable<List<Vertex>> fetchVertices(QuorumCertificate qc, ECPublicKey author) {
+		if (!uncommitted.containsKey(qc.getProposed().getId()) && !qc.getProposed().getId().equals(root.getId())) {
+			log.info("Sending GET_VERTICES to " + author + ": " + qc);
+			return vertexSupplier.getVertices(qc.getProposed().getId(), author, 1)
+				.doOnSuccess(v -> log.info("Received GET_VERTICES: " + v))
+				.toObservable()
+				.flatMap(v -> v.isEmpty()
+					? Observable.just(v)
+					: fetchVertices(v.get(0).getQC(), author).concatWith(Observable.just(v))
+				);
+		} else {
+			return Observable.empty();
+		}
 	}
 
-	public boolean syncToQC(QuorumCertificate qc, QuorumCertificate committedQC) {
+	private void doSync(QuorumCertificate qc, ECPublicKey author) {
+		final Hash vertexId = qc.getProposed().getId();
+		if (syncing.containsKey(vertexId)) {
+			return;
+		}
+
+		Disposable d = this.fetchVertices(qc, author)
+			.observeOn(Schedulers.io())
+			.toList()
+			.subscribe(
+				vertices -> {
+					if (!syncing.containsKey(vertexId)) {
+						return;
+					}
+
+					// Failed to retrieve all ancestors
+					if (vertices.stream().anyMatch(List::isEmpty)) {
+						log.info("GET_VERTICES failed: " + qc);
+						return;
+					}
+
+					// TODO: Locking
+					for (List<Vertex> vertexSingle : vertices) {
+						Vertex vertex = vertexSingle.get(0);
+						addQC(vertex.getQC());
+						insertVertex(vertex);
+					}
+
+					syncSender.synced(vertexId);
+				},
+				e -> log.info("GET_VERTICES failed: " + e)
+			);
+
+		syncing.put(vertexId, d);
+	}
+
+	public void processLocalSync(Hash vertexId) {
+		syncing.remove(vertexId);
+	}
+
+	public boolean syncToQC(QuorumCertificate qc, QuorumCertificate committedQC, ECPublicKey author) {
 		final Vertex vertex = uncommitted.get(qc.getProposed().getId());
 		if (vertex != null || qc.getProposed().getId().equals(root.getId())) {
 			addQC(qc);
 			return true;
 		}
 
+		this.doSync(qc, author);
+
+		/*
 		Optional<VertexMetadata> committed = committedQC.getCommitted();
-		if (committed.isPresent()) {
-			long stateVersion = committed.get().getStateVersion();
-			try {
-				// TODO: Make it easier to retrieve signatures of QC
-				Hash hash = Hash.of(DefaultSerialization.getInstance().toDson(committedQC.getVoteData(), Output.HASH));
-				List<ECPublicKey> signers = committedQC.getSignatures().signedMessage(hash);
-				if (!syncedStateComputer.syncTo(stateVersion, signers)) {
-					return false;
-				}
-			} catch (SerializationException e) {
-				throw new IllegalStateException("Failed to serialize");
-			}
+		if (!committed.isPresent()) {
+			return false;
 		}
 
+		VertexMetadata committedMetadata = committed.get();
+		if (root.getView().compareTo(committedMetadata.getView()) < 0) {
+
+			long stateVersion = committed.get().getStateVersion();
+			final Hash hash;
+			try {
+				// TODO: Make it easier to retrieve signatures of QC
+				hash = Hash.of(DefaultSerialization.getInstance().toDson(committedQC.getVoteData(), Output.HASH));
+			} catch (SerializationException e) {
+				throw new IllegalStateException("Failed to serialize");
+			}				List<ECPublicKey> signers = committedQC.getSignatures().signedMessage(hash);
+
+			Observable.combineLatest(
+				vertexSupplier.getVertices(committedQC.getProposed().getId(), author, 3).toObservable(),
+				syncedStateComputer.syncTo(stateVersion, signers).toSingleDefault(0).toObservable(),
+				(v, l) -> v
+			).subscribe(vertices -> {
+				synchronized (lock) {
+					if (root.getView().compareTo(committedMetadata.getView()) < 0) {
+						uncommitted.clear();
+						for (Vertex v : vertices) {
+							if (!v.getId().equals(committedMetadata.getId())) {
+								uncommitted.put(v.getId(), v);
+							}
+						}
+						this.root = committedMetadata;
+						this.highestCommittedQC = committedQC;
+						this.highestQC = committedQC;
+					}
+				}
+			});
+		}
+		*/
+
 		return false;
+	}
+
+	public boolean syncToQC(QuorumCertificate qc, ECPublicKey author) {
+		return this.syncToQC(qc, this.getHighestCommittedQC(), author);
 	}
 
 	public void addQC(QuorumCertificate qc) {
@@ -131,6 +225,11 @@ public final class VertexStore {
 
 		uncommitted.put(vertex.getId(), vertex);
 		updateVertexStoreSize();
+
+		if (syncing.containsKey(vertex.getId())) {
+			syncing.get(vertex.getId()).dispose();
+			syncSender.synced(vertex.getId());
+		}
 	}
 
 	// TODO: add signature proof
@@ -202,10 +301,28 @@ public final class VertexStore {
 	 * Thread-safe.
 	 *
 	 * @param vertexId the id of the vertex
+	 * @param count the number of verticies to retrieve
 	 * @return the vertex or null, if it is not stored
 	 */
-	public Vertex getVertex(Hash vertexId) {
-		return this.uncommitted.get(vertexId);
+	public List<Vertex> getVertices(Hash vertexId, int count) {
+		Hash nextId = vertexId;
+		List<Vertex> vertices = new ArrayList<>(count);
+		for (int i = 0; i < count; i++) {
+			Vertex vertex = this.uncommitted.get(nextId);
+			if (vertex == null) {
+				return null;
+			}
+
+			vertices.add(vertex);
+			nextId = vertex.getParentId();
+		}
+
+		return vertices;
+	}
+
+	public void clearSyncs() {
+		syncing.forEach((h, d) -> d.dispose());
+		syncing.clear();
 	}
 
 	public int getSize() {

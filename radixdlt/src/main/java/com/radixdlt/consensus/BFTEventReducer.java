@@ -36,7 +36,9 @@ import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.utils.Longs;
 
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -142,6 +144,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 			processQC(qc);
 			log.info("{}: LOCAL_SYNC: processed QC: {}", this.getShortName(), qc);
 		}
+		vertexStore.processLocalSync(vertexId);
 	}
 
 	@Override
@@ -152,7 +155,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		if (potentialQc.isPresent()) {
 			QuorumCertificate qc = potentialQc.get();
 			log.info("{}: VOTE: Formed QC: {}", this.getShortName(), qc);
-			if (vertexStore.syncToQC(qc)) {
+			if (vertexStore.syncToQC(qc, vote.getAuthor())) {
 				processQC(qc);
 			} else {
 				log.info("{}: VOTE: QC Not synced: {}", this.getShortName(), qc);
@@ -245,11 +248,11 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	}
 
 	@Override
-	public void processGetVertexRequest(GetVertexRequest request) {
-		log.trace("{}: GET_VERTEX Request: Processing: {}", this.getShortName(), request);
-		Vertex vertex = this.vertexStore.getVertex(request.getVertexId());
-		log.debug("{}: GET_VERTEX Request: Sending Response: {}", this.getShortName(), vertex);
-		request.getResponder().accept(vertex);
+	public void processGetVertexRequest(GetVerticesRequest request) {
+		log.info("{}: GET_VERTEX Request: Processing: {}", this.getShortName(), request);
+		List<Vertex> vertices = this.vertexStore.getVertices(request.getVertexId(), request.getCount());
+		log.info("{}: GET_VERTEX Request: Sending Response: {}", this.getShortName(), vertices);
+		request.getResponder().accept(vertices == null ? Collections.emptyList() : vertices);
 	}
 
 	@Override

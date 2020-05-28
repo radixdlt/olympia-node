@@ -33,6 +33,8 @@ import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.utils.Ints;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import org.junit.Before;
@@ -40,6 +42,7 @@ import org.junit.Test;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
@@ -140,7 +143,7 @@ public class BFTEventReducerTest {
 		when(mempool.getAtoms(anyInt(), any())).thenReturn(Lists.newArrayList());
 		when(pacemaker.getCurrentView()).thenReturn(mock(View.class));
 		when(pacemaker.processQC(eq(view))).thenReturn(Optional.of(mock(View.class)));
-		when(vertexStore.syncToQC(eq(qc))).thenReturn(true);
+		when(vertexStore.syncToQC(eq(qc), any())).thenReturn(true);
 
 		reducer.processVote(vote);
 
@@ -342,15 +345,16 @@ public class BFTEventReducerTest {
 	public void when_processing_get_vertex_request__then_ec_callback_with_response() {
 		Hash vertexId = mock(Hash.class);
 		Vertex vertex = mock(Vertex.class);
-		Consumer<Vertex> callback = mockConsumer();
+		Consumer<List<Vertex>> callback = mockConsumer();
 
-		GetVertexRequest getVertexRequest = mock(GetVertexRequest.class);
-		when(getVertexRequest.getVertexId()).thenReturn(vertexId);
-		when(getVertexRequest.getResponder()).thenReturn(callback);
+		GetVerticesRequest getVerticesRequest = mock(GetVerticesRequest.class);
+		when(getVerticesRequest.getCount()).thenReturn(1);
+		when(getVerticesRequest.getVertexId()).thenReturn(vertexId);
+		when(getVerticesRequest.getResponder()).thenReturn(callback);
 
-		when(vertexStore.getVertex(eq(vertexId))).thenReturn(vertex);
-		reducer.processGetVertexRequest(getVertexRequest);
-		verify(callback, times(1)).accept(eq(vertex));
+		when(vertexStore.getVertices(eq(vertexId), anyInt())).thenReturn(Collections.singletonList(vertex));
+		reducer.processGetVertexRequest(getVerticesRequest);
+		verify(callback, times(1)).accept(argThat(list -> list.get(0).equals(vertex)));
 	}
 
 	@SuppressWarnings("unchecked")

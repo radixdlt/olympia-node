@@ -21,7 +21,7 @@ import static org.mockito.Mockito.mock;
 import static org.powermock.api.mockito.PowerMockito.when;
 
 import com.radixdlt.consensus.ConsensusEvent;
-import com.radixdlt.consensus.GetVertexRequest;
+import com.radixdlt.consensus.GetVerticesRequest;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.crypto.ECKeyPair;
@@ -30,6 +30,8 @@ import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.crypto.Hash;
 import io.reactivex.rxjava3.observers.TestObserver;
+import java.util.Collections;
+import java.util.List;
 import org.junit.Test;
 
 public class TestBFTEventProcessorNetworkTest {
@@ -118,10 +120,10 @@ public class TestBFTEventProcessorNetworkTest {
 		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.builder().build();
 		Hash vertexId = mock(Hash.class);
 
-		TestObserver<GetVertexRequest> rpcRequestListener = TestObserver.create();
+		TestObserver<GetVerticesRequest> rpcRequestListener = TestObserver.create();
 		network.getNetworkRx(validatorId2).rpcRequests().subscribe(rpcRequestListener);
-		TestObserver<Vertex> testObserver = TestObserver.create();
-		network.getVertexSupplier(validatorId).getVertex(vertexId, validatorId2)
+		TestObserver<List<Vertex>> testObserver = TestObserver.create();
+		network.getVertexSupplier(validatorId).getVertices(vertexId, validatorId2, 1)
 			.subscribe(testObserver);
 
 		rpcRequestListener.awaitCount(1);
@@ -129,10 +131,10 @@ public class TestBFTEventProcessorNetworkTest {
 
 		Vertex response = mock(Vertex.class);
 		when(response.getId()).thenReturn(vertexId);
-		rpcRequestListener.values().get(0).getResponder().accept(response);
+		rpcRequestListener.values().get(0).getResponder().accept(Collections.singletonList(response));
 
 		testObserver.awaitCount(1);
 		testObserver.assertComplete();
-		testObserver.assertValue(response);
+		testObserver.assertValue(Collections.singletonList(response));
 	}
 }

@@ -54,14 +54,18 @@ public class ConsensusRunnerTest {
 		when(networkRx.consensusEvents())
 			.thenReturn(Observable.just(newView, proposal, vote).concatWith(Observable.never()));
 
-		GetVertexRequest request = mock(GetVertexRequest.class);
+		GetVerticesRequest request = mock(GetVerticesRequest.class);
 		when(networkRx.rpcRequests())
 			.thenReturn(Observable.just(request).concatWith(Observable.never()));
+
+		LocalSyncRx localSyncRx = mock(LocalSyncRx.class);
+		when(localSyncRx.localSyncs()).thenReturn(Observable.never());
 
 		ConsensusRunner consensusRunner = new ConsensusRunner(
 			epochRx,
 			networkRx,
 			pacemakerRx,
+			localSyncRx,
 			epochManager
 		);
 

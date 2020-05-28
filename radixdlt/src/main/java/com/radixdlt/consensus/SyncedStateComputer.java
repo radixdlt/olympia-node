@@ -19,6 +19,7 @@ package com.radixdlt.consensus;
 
 import com.radixdlt.consensus.SyncedStateComputer.CommittedInstruction;
 import com.radixdlt.crypto.ECPublicKey;
+import io.reactivex.rxjava3.core.Completable;
 import java.util.List;
 
 public interface SyncedStateComputer<T extends CommittedInstruction> {
@@ -26,6 +27,7 @@ public interface SyncedStateComputer<T extends CommittedInstruction> {
 		VertexMetadata getVertexMetadata();
 	}
 
-	boolean syncTo(long targetStateVersion, List<ECPublicKey> target);
+	Completable syncTo(long targetStateVersion, List<ECPublicKey> target);
+
 	void execute(T instruction);
 }

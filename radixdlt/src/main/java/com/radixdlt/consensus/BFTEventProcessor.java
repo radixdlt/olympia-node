@@ -65,5 +65,5 @@ public interface BFTEventProcessor {
 	 * Process an incoming RPC request for a Vertex
 	 * @param request the RPC request
 	 */
-	void processGetVertexRequest(GetVertexRequest request);
+	void processGetVertexRequest(GetVerticesRequest request);
 }

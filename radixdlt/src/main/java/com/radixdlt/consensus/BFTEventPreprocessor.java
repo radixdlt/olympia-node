@@ -99,7 +99,9 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 	 *
 	 * @param vertexId the id of the vertex which is now guaranteed be synced.
 	 */
+	@Override
 	public void processLocalSync(Hash vertexId) {
+		log.info("{}: LOCAL_SYNC: {}", this.getShortName(), vertexId);
 		for (SyncQueue queue : queues.getQueues()) {
 			if (peekAndExecute(queue, vertexId)) {
 				queue.pop();
@@ -147,7 +149,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 			return true;
 		}
 
-		if (this.vertexStore.syncToQC(newView.getQC(), newView.getCommittedQC())) {
+		if (this.vertexStore.syncToQC(newView.getQC(), newView.getCommittedQC(), newView.getAuthor())) {
 			forwardTo.processNewView(newView);
 			return true;
 		} else {
@@ -177,11 +179,8 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 			return true;
 		}
 
-		if (this.vertexStore.syncToQC(proposal.getQC(), proposal.getCommittedQC())) {
+		if (this.vertexStore.syncToQC(proposal.getQC(), proposal.getCommittedQC(), proposal.getAuthor())) {
 			forwardTo.processProposal(proposal);
-			if (vertexStore.getVertex(proposedVertex.getId()) != null) {
-				processLocalSync(proposal.getVertex().getId());
-			}
 			return true;
 		} else {
 			return false;
@@ -206,11 +205,12 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		final View nextView = this.pacemakerState.getCurrentView();
 		if (!curView.equals(nextView)) {
 			queues.clear();
+			vertexStore.clearSyncs();
 		}
 	}
 
 	@Override
-	public void processGetVertexRequest(GetVertexRequest request) {
+	public void processGetVertexRequest(GetVerticesRequest request) {
 		forwardTo.processGetVertexRequest(request);
 	}
 

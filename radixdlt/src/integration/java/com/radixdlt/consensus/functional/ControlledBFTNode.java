@@ -22,8 +22,7 @@ import static org.mockito.Mockito.mock;
 import com.radixdlt.consensus.BFTEventPreprocessor;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.DefaultHasher;
-import com.radixdlt.consensus.BFTEventSender;
-import com.radixdlt.consensus.GetVertexRequest;
+import com.radixdlt.consensus.GetVerticesRequest;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.PendingVotes;
@@ -35,9 +34,11 @@ import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.VertexStore;
+import com.radixdlt.consensus.VertexSupplier;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.VoteData;
+import com.radixdlt.consensus.functional.ControlledBFTNetwork.ControlledSender;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker.TimeoutSender;
 import com.radixdlt.consensus.liveness.MempoolProposalGenerator;
@@ -53,9 +54,12 @@ import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.Hash;
 import com.radixdlt.mempool.EmptyMempool;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.CommittedAtom;
+import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.core.Single;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -70,7 +74,7 @@ class ControlledBFTNode {
 
 	ControlledBFTNode(
 		ECKeyPair key,
-		BFTEventSender sender,
+		ControlledSender sender,
 		ProposerElection proposerElection,
 		ValidatorSet validatorSet
 	) {
@@ -82,8 +86,8 @@ class ControlledBFTNode {
 		);
 		SyncedStateComputer<CommittedAtom> stateComputer = new SyncedStateComputer<CommittedAtom>() {
 			@Override
-			public boolean syncTo(long targetStateVersion, List<ECPublicKey> target) {
-				return true;
+			public Completable syncTo(long targetStateVersion, List<ECPublicKey> target) {
+				return Completable.complete();
 			}
 
 			@Override
@@ -91,7 +95,8 @@ class ControlledBFTNode {
 			}
 		};
 
-		this.vertexStore = new VertexStore(genesisVertex, genesisQC, stateComputer, systemCounters);
+		VertexSupplier vertexSupplier = (hash, node, id) -> Single.error(new RuntimeException("No supplier"));
+		this.vertexStore = new VertexStore(genesisVertex, genesisQC, stateComputer, vertexSupplier, sender, systemCounters);
 		Mempool mempool = new EmptyMempool();
 		ProposalGenerator proposalGenerator = new MempoolProposalGenerator(vertexStore, mempool);
 		TimeoutSender timeoutSender = mock(TimeoutSender.class);
@@ -138,8 +143,8 @@ class ControlledBFTNode {
 	}
 
 	void processNext(Object msg) {
-		if (msg instanceof GetVertexRequest) {
-			ec.processGetVertexRequest((GetVertexRequest) msg);
+		if (msg instanceof GetVerticesRequest) {
+			ec.processGetVertexRequest((GetVerticesRequest) msg);
 		} else if (msg instanceof View) {
 			ec.processLocalTimeout((View) msg);
 		} else if (msg instanceof NewView) {
@@ -148,6 +153,8 @@ class ControlledBFTNode {
 			ec.processProposal((Proposal) msg);
 		} else if (msg instanceof Vote) {
 			ec.processVote((Vote) msg);
+		} else if (msg instanceof Hash) {
+			ec.processLocalSync((Hash) msg);
 		} else {
 			throw new IllegalStateException("Unknown msg: " + msg);
 		}

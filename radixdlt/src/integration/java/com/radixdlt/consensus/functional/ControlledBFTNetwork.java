@@ -22,8 +22,10 @@ import com.google.common.collect.ImmutableMap;
 import com.radixdlt.consensus.BFTEventSender;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.VertexStore.SyncSender;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.Hash;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
@@ -127,8 +129,13 @@ public final class ControlledBFTNetwork {
 		return messageQueue.get(channelId).pop().getMsg();
 	}
 
-	public BFTEventSender getSender(ECPublicKey sender) {
-		return new BFTEventSender() {
+	public ControlledSender getSender(ECPublicKey sender) {
+		return new ControlledSender() {
+			@Override
+			public void synced(Hash vertexId) {
+				putMesssage(new ControlledMessage(sender, sender, vertexId));
+			}
+
 			@Override
 			public void broadcastProposal(Proposal proposal) {
 				for (ECPublicKey receiver : nodes) {
@@ -146,5 +153,8 @@ public final class ControlledBFTNetwork {
 				putMesssage(new ControlledMessage(sender, leader, vote));
 			}
 		};
+	}
+
+	interface ControlledSender extends BFTEventSender, SyncSender {
 	}
 }

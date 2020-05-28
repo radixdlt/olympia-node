@@ -35,5 +35,5 @@ public interface EventCoordinatorNetworkRx {
 	 * the network.
 	 * @return observable of rpc requests
 	 */
-	Observable<GetVertexRequest> rpcRequests();
+	Observable<GetVerticesRequest> rpcRequests();
 }

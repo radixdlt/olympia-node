@@ -17,30 +17,31 @@
 
 package com.radixdlt.consensus;
 
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
+import com.radixdlt.consensus.VertexStore.SyncSender;
 import com.radixdlt.crypto.Hash;
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.subjects.BehaviorSubject;
+import io.reactivex.rxjava3.subjects.Subject;
 
-/**
- * An RPC response
- */
-public final class GetVertexResponse {
-	private final Hash vertexId;
-	private final Vertex vertex;
+@Singleton
+public class LocalSyncSender implements LocalSyncRx, SyncSender {
+	private final Subject<Hash> subject = BehaviorSubject.<Hash>create().toSerialized();
+	private final Observable<Hash> localSyncs;
 
-	public GetVertexResponse(Hash vertexId, Vertex vertex) {
-		this.vertexId = vertexId;
-		this.vertex = vertex;
-	}
-
-	public Hash getVertexId() {
-		return vertexId;
-	}
-
-	public Vertex getVertex() {
-		return vertex;
+	@Inject
+	public LocalSyncSender() {
+		this.localSyncs = subject.publish().refCount();
 	}
 
 	@Override
-	public String toString() {
-		return String.format("%s{vertex=%s}", this.getClass().getSimpleName(), vertex);
+	public Observable<Hash> localSyncs() {
+		return localSyncs;
+	}
+
+	@Override
+	public void synced(Hash vertexId) {
+		subject.onNext(vertexId);
 	}
 }

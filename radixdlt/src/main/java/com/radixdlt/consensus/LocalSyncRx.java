@@ -15,17 +15,11 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.middleware2.network;
+package com.radixdlt.consensus;
 
 import com.radixdlt.crypto.Hash;
-import org.radix.serialization.SerializeMessageObject;
+import io.reactivex.rxjava3.core.Observable;
 
-public class GetVertexRequestMessageSerializeTest  extends SerializeMessageObject<GetVertexRequestMessage> {
-	public GetVertexRequestMessageSerializeTest() {
-		super(GetVertexRequestMessage.class, GetVertexRequestMessageSerializeTest::get);
-	}
-
-	private static GetVertexRequestMessage get() {
-		return new GetVertexRequestMessage(1234, Hash.random());
-	}
+public interface LocalSyncRx {
+	Observable<Hash> localSyncs();
 }

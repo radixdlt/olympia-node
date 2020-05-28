@@ -22,35 +22,36 @@ import com.radixdlt.consensus.Vertex;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
+import java.util.List;
 import java.util.Objects;
 import org.radix.network.messaging.Message;
 
 /**
  * RPC Response message for GetVertex call
  */
-@SerializerId2("message.consensus.vertex_response")
-public final class GetVertexResponseMessage extends Message {
-	@JsonProperty("vertex")
+@SerializerId2("message.consensus.vertices_response")
+public final class GetVerticesResponseMessage extends Message {
+	@JsonProperty("vertices")
 	@DsonOutput(Output.ALL)
-	private final Vertex vertex;
+	private final List<Vertex> vertices;
 
-	GetVertexResponseMessage() {
+	GetVerticesResponseMessage() {
 		// Serializer only
 		super(0);
-		this.vertex = null;
+		this.vertices = null;
 	}
 
-	GetVertexResponseMessage(int magic, Vertex vertex) {
+	GetVerticesResponseMessage(int magic, List<Vertex> vertices) {
 		super(magic);
-		this.vertex = Objects.requireNonNull(vertex);
+		this.vertices = Objects.requireNonNull(vertices);
 	}
 
-	public Vertex getVertex() {
-		return vertex;
+	public List<Vertex> getVertices() {
+		return vertices;
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s]", getClass().getSimpleName(), vertex);
+		return String.format("%s[%s]", getClass().getSimpleName(), vertices);
 	}
 }

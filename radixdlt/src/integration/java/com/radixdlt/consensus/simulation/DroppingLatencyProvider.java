@@ -18,9 +18,9 @@
 package com.radixdlt.consensus.simulation;
 
 import com.google.common.collect.Sets;
-import com.radixdlt.consensus.GetVertexResponse;
+import com.radixdlt.consensus.GetVerticesResponse;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.middleware2.network.GetVertexRequestMessage;
+import com.radixdlt.middleware2.network.GetVerticesRequestMessage;
 import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork;
 import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork.LatencyProvider;
 import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork.MessageInTransit;
@@ -41,7 +41,7 @@ public final class DroppingLatencyProvider implements LatencyProvider {
 		this.base.set(msg -> TestEventCoordinatorNetwork.DEFAULT_LATENCY);
 		// Implement it in this way for now so that sync disable is mutable
 		this.droppingFunctions.add(msg -> syncEnabled.get()
-			&& (msg.getContent() instanceof GetVertexResponse || msg.getContent() instanceof GetVertexRequestMessage));
+			&& (msg.getContent() instanceof GetVerticesResponse || msg.getContent() instanceof GetVerticesRequestMessage));
 	}
 
 	public DroppingLatencyProvider copyOf() {

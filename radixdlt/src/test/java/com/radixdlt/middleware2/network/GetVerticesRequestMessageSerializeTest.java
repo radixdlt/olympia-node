@@ -15,25 +15,17 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.middleware2.network;
 
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
-import io.reactivex.rxjava3.core.Single;
-import java.util.List;
+import org.radix.serialization.SerializeMessageObject;
 
-/**
- * An asynchronous supplier which retrieves data for a vertex with a given id
- */
-public interface VertexSupplier {
+public class GetVerticesRequestMessageSerializeTest extends SerializeMessageObject<GetVerticesRequestMessage> {
+	public GetVerticesRequestMessageSerializeTest() {
+		super(GetVerticesRequestMessage.class, GetVerticesRequestMessageSerializeTest::get);
+	}
 
-	/**
-	 * Execute an RPC to retrieve a vertex given an Id from a node
-	 * TODO: refactor to maintain a unidirectional data flow
-	 *
-	 * @param id the id of the vertex to retrieve
-	 * @param node the node to retrieve the vertex info from
-	 * @return single of a vertex which will complete once retrieved
-	 */
-	Single<List<Vertex>> getVertices(Hash id, ECPublicKey node, int count);
+	private static GetVerticesRequestMessage get() {
+		return new GetVerticesRequestMessage(1234, Hash.random(), 1);
+	}
 }

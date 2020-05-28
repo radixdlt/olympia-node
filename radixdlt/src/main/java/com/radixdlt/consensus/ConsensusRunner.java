@@ -22,6 +22,7 @@ import com.google.inject.Inject;
 import com.radixdlt.consensus.liveness.PacemakerRx;
 
 import com.radixdlt.consensus.validators.ValidatorSet;
+import com.radixdlt.crypto.Hash;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Scheduler;
@@ -38,6 +39,7 @@ public final class ConsensusRunner {
 	public enum EventType {
 		EPOCH,
 		LOCAL_TIMEOUT,
+		LOCAL_SYNC,
 		NEW_VIEW_MESSAGE,
 		PROPOSAL_MESSAGE,
 		VOTE_MESSAGE,
@@ -72,6 +74,7 @@ public final class ConsensusRunner {
 		EpochRx epochRx,
 		EventCoordinatorNetworkRx network,
 		PacemakerRx pacemakerRx,
+		LocalSyncRx localSyncRx,
 		EpochManager epochManager
 	) {
 		final Scheduler singleThreadScheduler = Schedulers.from(Executors.newSingleThreadExecutor());
@@ -96,7 +99,8 @@ public final class ConsensusRunner {
 		final Observable<Object> eventCoordinatorEvents = Observable.merge(
 			pacemakerRx.localTimeouts().observeOn(singleThreadScheduler),
 			network.consensusEvents().observeOn(singleThreadScheduler),
-			network.rpcRequests().observeOn(singleThreadScheduler)
+			network.rpcRequests().observeOn(singleThreadScheduler),
+			localSyncRx.localSyncs().observeOn(singleThreadScheduler)
 		);
 		final Observable<Event> ecMessages = firstEventCoordinator.andThen(
 			eventCoordinatorEvents.withLatestFrom(eventCoordinators, this::processEvent)
@@ -107,8 +111,8 @@ public final class ConsensusRunner {
 
 	private Event processEvent(Object msg, BFTEventProcessor processor) {
 		final EventType eventType;
-		if (msg instanceof GetVertexRequest) {
-			processor.processGetVertexRequest((GetVertexRequest) msg);
+		if (msg instanceof GetVerticesRequest) {
+			processor.processGetVertexRequest((GetVerticesRequest) msg);
 			return new Event(EventType.GET_VERTEX_REQUEST, msg);
 		} else if (msg instanceof View) {
 			processor.processLocalTimeout((View) msg);
@@ -122,6 +126,9 @@ public final class ConsensusRunner {
 		} else if (msg instanceof Vote) {
 			processor.processVote((Vote) msg);
 			eventType = EventType.VOTE_MESSAGE;
+		} else if (msg instanceof Hash) {
+			processor.processLocalSync((Hash) msg);
+			eventType = EventType.LOCAL_SYNC;
 		} else {
 			throw new IllegalStateException("Unknown Consensus Message: " + msg);
 		}

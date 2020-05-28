@@ -20,8 +20,8 @@ package com.radixdlt.middleware2.network;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.EventCoordinatorNetworkRx;
 import com.radixdlt.consensus.BFTEventSender;
-import com.radixdlt.consensus.GetVertexRequest;
-import com.radixdlt.consensus.GetVertexResponse;
+import com.radixdlt.consensus.GetVerticesRequest;
+import com.radixdlt.consensus.GetVerticesResponse;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.VertexSupplier;
@@ -163,19 +163,20 @@ public class TestEventCoordinatorNetwork {
 	}
 
 	public VertexSupplier getVertexSupplier(ECPublicKey forNode) {
-		return (vertexId, node) -> Single.create(emitter -> {
+		return (vertexId, node, count) -> Single.create(emitter -> {
 			Disposable d = receivers.computeIfAbsent(forNode, SimulatedReceiver::new).myMessages
-				.ofType(GetVertexResponse.class)
+				.ofType(GetVerticesResponse.class)
 				.filter(v -> v.getVertexId().equals(vertexId))
 				.firstOrError()
-				.map(GetVertexResponse::getVertex)
+				.map(GetVerticesResponse::getVertices)
 				.subscribe(emitter::onSuccess);
 			emitter.setDisposable(d);
 
-			final GetVertexRequest request = new GetVertexRequest(
+			final GetVerticesRequest request = new GetVerticesRequest(
 				vertexId,
-				vertex -> {
-					GetVertexResponse vertexResponse = new GetVertexResponse(vertexId, vertex);
+				count,
+				vertices -> {
+					GetVerticesResponse vertexResponse = new GetVerticesResponse(vertexId, vertices);
 					receivedMessages.onNext(MessageInTransit.newMessage(vertexResponse, node, forNode));
 				}
 			);
@@ -220,8 +221,8 @@ public class TestEventCoordinatorNetwork {
 		}
 
 		@Override
-		public Observable<GetVertexRequest> rpcRequests() {
-			return myMessages.ofType(GetVertexRequest.class);
+		public Observable<GetVerticesRequest> rpcRequests() {
+			return myMessages.ofType(GetVerticesRequest.class);
 		}
 	}
 

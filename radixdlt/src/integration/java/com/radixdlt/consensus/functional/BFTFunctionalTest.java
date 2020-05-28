@@ -81,6 +81,10 @@ public class BFTFunctionalTest {
 
 	public void processNextMsg(Random random) {
 		List<ControlledMessage> possibleMsgs = network.peekNextMessages();
+		if (possibleMsgs.isEmpty()) {
+			throw new IllegalStateException("No messages available");
+		}
+
 		int nextIndex =  random.nextInt(possibleMsgs.size());
 		ChannelId channelId = possibleMsgs.get(nextIndex).getChannelId();
 		Object msg = network.popNextMessage(channelId);

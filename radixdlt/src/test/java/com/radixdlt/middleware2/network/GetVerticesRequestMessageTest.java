@@ -17,17 +17,20 @@
 
 package com.radixdlt.middleware2.network;
 
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.junit.Assert.assertThat;
 
-import com.radixdlt.consensus.Vertex;
-import org.radix.serialization.SerializeMessageObject;
+import com.radixdlt.crypto.Hash;
+import org.junit.Test;
 
-public class GetVertexResponseMessageSerializeTest  extends SerializeMessageObject<GetVertexResponseMessage> {
-	public GetVertexResponseMessageSerializeTest() {
-		super(GetVertexResponseMessage.class, GetVertexResponseMessageSerializeTest::get);
-	}
-
-	private static GetVertexResponseMessage get() {
-		return new GetVertexResponseMessage(1234, Vertex.createGenesis(null));
+public class GetVerticesRequestMessageTest {
+	@Test
+	public void sensibleToString() {
+		Hash vertexId = Hash.random();
+		GetVerticesRequestMessage msg1 = new GetVerticesRequestMessage(0, vertexId, 1);
+		String s1 = msg1.toString();
+		assertThat(s1, containsString(GetVerticesRequestMessage.class.getSimpleName()));
+		assertThat(s1, containsString(vertexId.toString()));
 	}
 
 }

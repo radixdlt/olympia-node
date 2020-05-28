@@ -17,11 +17,12 @@
 
 package com.radixdlt.middleware2.network;
 
-import com.radixdlt.consensus.GetVertexRequest;
+import com.radixdlt.consensus.GetVerticesRequest;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexSupplier;
 import com.radixdlt.crypto.Hash;
 import io.reactivex.rxjava3.core.Single;
+import java.util.List;
 import java.util.Objects;
 
 import java.util.Optional;
@@ -85,16 +86,17 @@ public final class MessageCentralBFTNetwork implements BFTEventSender, EventCoor
 	}
 
 	@Override
-	public Observable<GetVertexRequest> rpcRequests() {
+	public Observable<GetVerticesRequest> rpcRequests() {
 		return Observable.create(emitter -> {
-			MessageListener<GetVertexRequestMessage> listener = (src, msg) -> {
-				final GetVertexRequest request = new GetVertexRequest(
+			MessageListener<GetVerticesRequestMessage> listener = (src, msg) -> {
+				final GetVerticesRequest request = new GetVerticesRequest(
 					msg.getVertexId(),
-					vertex -> this.messageCentral.send(src, new GetVertexResponseMessage(this.magic, vertex))
+					msg.getCount(),
+					vertices -> this.messageCentral.send(src, new GetVerticesResponseMessage(this.magic, vertices))
 				);
 				emitter.onNext(request);
 			};
-			this.messageCentral.addListener(GetVertexRequestMessage.class, listener);
+			this.messageCentral.addListener(GetVerticesRequestMessage.class, listener);
 			emitter.setCancellable(() -> this.messageCentral.removeListener(listener));
 		});
 	}
@@ -127,7 +129,7 @@ public final class MessageCentralBFTNetwork implements BFTEventSender, EventCoor
 	}
 
 	@Override
-	public Single<Vertex> getVertex(Hash vertexId, ECPublicKey node) {
+	public Single<List<Vertex>> getVertices(Hash vertexId, ECPublicKey node, int count) {
 		if (this.selfPublicKey.equals(node)) {
 			throw new IllegalStateException("Should never need to retrieve a vertex from self.");
 		}
@@ -140,17 +142,17 @@ public final class MessageCentralBFTNetwork implements BFTEventSender, EventCoor
 				return;
 			}
 
-			final MessageListener<GetVertexResponseMessage> listener =
+			final MessageListener<GetVerticesResponseMessage> listener =
 				(src, msg) -> {
 					// TODO: implement more robust RPC request/response mapping
-					if (msg.getVertex().getId().equals(vertexId)) {
-						emitter.onSuccess(msg.getVertex());
+					if (msg.getVertices().get(0).getId().equals(vertexId) && msg.getVertices().size() == count) {
+						emitter.onSuccess(msg.getVertices());
 					}
 				};
-			this.messageCentral.addListener(GetVertexResponseMessage.class, listener);
+			this.messageCentral.addListener(GetVerticesResponseMessage.class, listener);
 			emitter.setCancellable(() -> this.messageCentral.removeListener(listener));
 
-			final GetVertexRequestMessage vertexRequest = new GetVertexRequestMessage(this.magic, vertexId);
+			final GetVerticesRequestMessage vertexRequest = new GetVerticesRequestMessage(this.magic, vertexId, count);
 			this.messageCentral.send(peer.get(), vertexRequest);
 		});
 	}

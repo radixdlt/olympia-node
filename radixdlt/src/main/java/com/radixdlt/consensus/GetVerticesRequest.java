@@ -15,42 +15,41 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.middleware2.network;
+package com.radixdlt.consensus;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.SerializerId2;
-import java.util.Objects;
-import org.radix.network.messaging.Message;
+import java.util.List;
+import java.util.function.Consumer;
 
 /**
- * RPC Message to get request for a vertex
+ * An RPC request to retrieve a given vertex
  */
-@SerializerId2("message.consensus.vertex_request")
-public final class GetVertexRequestMessage extends Message {
-	@JsonProperty("vertexId")
-	@DsonOutput(Output.ALL)
+public final class GetVerticesRequest {
 	private final Hash vertexId;
+	private final int count;
+	private final Consumer<List<Vertex>> responder;
 
-	GetVertexRequestMessage() {
-		// Serializer only
-		super(0);
-		this.vertexId = null;
+	public GetVerticesRequest(Hash vertexId, int count, Consumer<List<Vertex>> responder) {
+		this.vertexId = vertexId;
+		this.count = count;
+		this.responder = responder;
 	}
 
-	GetVertexRequestMessage(int magic, Hash vertexId) {
-		super(magic);
-		this.vertexId = Objects.requireNonNull(vertexId);
+	public Consumer<List<Vertex>> getResponder() {
+		return responder;
 	}
 
 	public Hash getVertexId() {
 		return vertexId;
 	}
 
+	public int getCount() {
+		return count;
+	}
+
 	@Override
 	public String toString() {
-		return String.format("%s[%s]", getClass().getSimpleName(), vertexId);
+		return String.format("%s{vertexId=%s}",
+			getClass().getSimpleName(), vertexId.toString().substring(0, 6));
 	}
 }

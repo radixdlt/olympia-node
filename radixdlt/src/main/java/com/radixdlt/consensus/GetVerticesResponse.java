@@ -18,31 +18,31 @@
 package com.radixdlt.consensus;
 
 import com.radixdlt.crypto.Hash;
-import java.util.function.Consumer;
+import java.util.List;
+import java.util.Objects;
 
 /**
- * An RPC request to retrieve a given vertex
+ * An RPC response
  */
-public final class GetVertexRequest {
+public final class GetVerticesResponse {
 	private final Hash vertexId;
-	private final Consumer<Vertex> responder;
+	private final List<Vertex> vertices;
 
-	public GetVertexRequest(Hash vertexId, Consumer<Vertex> responder) {
-		this.vertexId = vertexId;
-		this.responder = responder;
-	}
-
-	public Consumer<Vertex> getResponder() {
-		return responder;
+	public GetVerticesResponse(Hash vertexId, List<Vertex> vertices) {
+		this.vertexId = Objects.requireNonNull(vertexId);
+		this.vertices = Objects.requireNonNull(vertices);
 	}
 
 	public Hash getVertexId() {
 		return vertexId;
 	}
 
+	public List<Vertex> getVertices() {
+		return vertices;
+	}
+
 	@Override
 	public String toString() {
-		return String.format("%s{vertexId=%s}",
-			getClass().getSimpleName(), vertexId.toString().substring(0, 6));
+		return String.format("%s{vertices=%s}", this.getClass().getSimpleName(), vertices);
 	}
 }

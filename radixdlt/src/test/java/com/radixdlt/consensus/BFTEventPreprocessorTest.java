@@ -19,16 +19,12 @@ package com.radixdlt.consensus;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.google.common.collect.ImmutableCollection;
-import com.google.common.collect.ImmutableSet;
-import com.radixdlt.consensus.SyncQueues.SyncQueue;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.counters.SystemCounters;
@@ -40,7 +36,6 @@ import org.junit.Test;
 
 public class BFTEventPreprocessorTest {
 	private static final ECKeyPair SELF_KEY = ECKeyPair.generateNew();
-	private static final ECKeyPair OTHER_KEY = ECKeyPair.generateNew();
 	private BFTEventPreprocessor preprocessor;
 	private ProposerElection proposerElection;
 	private Pacemaker pacemaker;
@@ -84,7 +79,7 @@ public class BFTEventPreprocessorTest {
 		when(newView.getQC()).thenReturn(qc);
 		QuorumCertificate committedQC = mock(QuorumCertificate.class);
 		when(newView.getCommittedQC()).thenReturn(committedQC);
-		when(vertexStore.syncToQC(eq(qc), eq(committedQC))).thenReturn(synced);
+		when(vertexStore.syncToQC(eq(qc), eq(committedQC), any())).thenReturn(synced);
 		return newView;
 	}
 
@@ -106,7 +101,7 @@ public class BFTEventPreprocessorTest {
 		when(proposal.getCommittedQC()).thenReturn(committedQC);
 		when(proposal.getQC()).thenReturn(qc);
 
-		when(vertexStore.syncToQC(eq(qc), eq(committedQC))).thenReturn(synced);
+		when(vertexStore.syncToQC(eq(qc), eq(committedQC), any())).thenReturn(synced);
 		return proposal;
 	}
 
@@ -198,90 +193,5 @@ public class BFTEventPreprocessorTest {
 		preprocessor.processProposal(proposal);
 		verify(syncQueues, never()).add(any());
 		verify(forwardTo, times(1)).processProposal(eq(proposal));
-	}
-
-	@Test
-	public void when_proposal_with_store_with_equal_hash_and_no_issues__then_remove_from_queue_and_forward() {
-		Proposal proposal = createProposal(true, true);
-		Vertex vertex = mock(Vertex.class);
-		Hash vertexId = mock(Hash.class);
-		when(vertex.getId()).thenReturn(vertexId);
-		when(vertex.getView()).thenReturn(View.of(1));
-		QuorumCertificate qc = mock(QuorumCertificate.class);
-		when(vertex.getQC()).thenReturn(qc);
-		when(proposal.getVertex()).thenReturn(vertex);
-		when(proposal.getAuthor()).thenReturn(OTHER_KEY.getPublicKey());
-		when(vertexStore.getVertex(eq(vertexId))).thenReturn(vertex);
-		when(syncQueues.isEmptyElseAdd(eq(proposal))).thenReturn(true);
-		SyncQueue syncQueue = mock(SyncQueue.class);
-		NewView newView = createNewView(true, true);
-		when(syncQueue.peek(eq(vertexId))).thenReturn(newView);
-		when(syncQueue.peek(isNull())).thenReturn(null);
-		ImmutableCollection<SyncQueue> queues = ImmutableSet.of(syncQueue);
-		when(syncQueues.getQueues()).thenReturn(queues);
-
-		preprocessor.processProposal(proposal);
-		verify(forwardTo, times(1)).processProposal(eq(proposal));
-		verify(forwardTo, times(1)).processNewView(eq(newView));
-		verify(syncQueue, times(1)).peek(eq(vertexId));
-		verify(syncQueue, times(1)).peek(isNull());
-		verify(syncQueue, times(1)).pop();
-	}
-
-	@Test
-	public void when_proposal_with_store_with_unequal_hash__then_queue_remains_the_same() {
-		Proposal proposal = createProposal(true, true);
-		Vertex vertex = mock(Vertex.class);
-		Hash vertexId = mock(Hash.class);
-		when(vertex.getId()).thenReturn(vertexId);
-		when(vertex.getView()).thenReturn(View.of(1));
-		QuorumCertificate qc = mock(QuorumCertificate.class);
-		when(vertex.getQC()).thenReturn(qc);
-		when(proposal.getVertex()).thenReturn(vertex);
-		when(proposal.getAuthor()).thenReturn(OTHER_KEY.getPublicKey());
-		when(vertexStore.getVertex(eq(vertexId))).thenReturn(vertex);
-		when(syncQueues.isEmptyElseAdd(eq(proposal))).thenReturn(true);
-		SyncQueue syncQueue = mock(SyncQueue.class);
-		NewView newView = createNewView(true, true);
-		when(syncQueue.peek(eq(vertexId))).thenReturn(null);
-		when(syncQueue.peek(isNull())).thenReturn(null);
-		ImmutableCollection<SyncQueue> queues = ImmutableSet.of(syncQueue);
-		when(syncQueues.getQueues()).thenReturn(queues);
-
-		preprocessor.processProposal(proposal);
-		verify(forwardTo, times(1)).processProposal(eq(proposal));
-		verify(forwardTo, times(0)).processNewView(eq(newView));
-		verify(syncQueue, times(1)).peek(eq(vertexId));
-		verify(syncQueue, times(0)).peek(isNull());
-		verify(syncQueue, times(0)).pop();
-	}
-
-
-	@Test
-	public void when_proposal_with_store_with_equal_hash_and_sync_issues__then_keep_in_queue() {
-		Proposal proposal = createProposal(true, true);
-		Vertex vertex = mock(Vertex.class);
-		Hash vertexId = mock(Hash.class);
-		when(vertex.getId()).thenReturn(vertexId);
-		when(vertex.getView()).thenReturn(View.of(1));
-		QuorumCertificate qc = mock(QuorumCertificate.class);
-		when(vertex.getQC()).thenReturn(qc);
-		when(proposal.getVertex()).thenReturn(vertex);
-		when(proposal.getAuthor()).thenReturn(OTHER_KEY.getPublicKey());
-		when(vertexStore.getVertex(eq(vertexId))).thenReturn(vertex);
-		when(syncQueues.isEmptyElseAdd(eq(proposal))).thenReturn(true);
-		SyncQueue syncQueue = mock(SyncQueue.class);
-
-		NewView newView = createNewView(true, false);
-		when(syncQueue.peek(eq(vertexId))).thenReturn(newView);
-		ImmutableCollection<SyncQueue> queues = ImmutableSet.of(syncQueue);
-		when(syncQueues.getQueues()).thenReturn(queues);
-
-		preprocessor.processProposal(proposal);
-		verify(forwardTo, times(1)).processProposal(eq(proposal));
-		verify(forwardTo, times(0)).processNewView(eq(newView));
-		verify(syncQueue, times(1)).peek(eq(vertexId));
-		verify(syncQueue, times(0)).peek(isNull());
-		verify(syncQueue, times(0)).pop();
 	}
 }

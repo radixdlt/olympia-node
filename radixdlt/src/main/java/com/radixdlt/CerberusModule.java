@@ -25,12 +25,15 @@ import com.google.inject.name.Named;
 import com.radixdlt.consensus.BasicEpochRx;
 import com.radixdlt.consensus.DefaultHasher;
 import com.radixdlt.consensus.EpochRx;
+import com.radixdlt.consensus.LocalSyncRx;
+import com.radixdlt.consensus.LocalSyncSender;
 import com.radixdlt.consensus.ProposerElectionFactory;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.VertexStore;
+import com.radixdlt.consensus.VertexStore.SyncSender;
 import com.radixdlt.consensus.VertexSupplier;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.VoteData;
@@ -51,10 +54,8 @@ import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.ClientAtom.LedgerAtomConversionException;
-import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.network.MessageCentralBFTNetwork;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.properties.RuntimeProperties;
@@ -84,6 +85,10 @@ public class CerberusModule extends AbstractModule {
 		bind(Scheduler.class).toProvider(SingleThreadedScheduler::new);
 		bind(TimeoutSender.class).to(ScheduledTimeoutSender.class);
 		bind(PacemakerRx.class).to(ScheduledTimeoutSender.class);
+
+		bind(LocalSyncRx.class).to(LocalSyncSender.class);
+		bind(SyncSender.class).to(LocalSyncSender.class);
+
 		bind(SafetyRules.class).in(Scopes.SINGLETON);
 		bind(VertexSupplier.class).to(MessageCentralBFTNetwork.class);
 		bind(Hasher.class).to(DefaultHasher.class);
@@ -135,7 +140,8 @@ public class CerberusModule extends AbstractModule {
 	private VertexStore getVertexStore(
 		Universe universe,
 		SyncedRadixEngine stateSynchronizer,
-		RadixEngine<LedgerAtom> radixEngine,
+		VertexSupplier vertexSupplier,
+		SyncSender syncSender,
 		SystemCounters counters
 	) throws LedgerAtomConversionException {
 		if (universe.getGenesis().size() != 1) {
@@ -149,6 +155,6 @@ public class CerberusModule extends AbstractModule {
 		final QuorumCertificate rootQC = new QuorumCertificate(voteData, new ECDSASignatures());
 
 		log.info("Genesis Vertex Id: {}", genesisVertex.getId());
-		return new VertexStore(genesisVertex, rootQC, stateSynchronizer, counters);
+		return new VertexStore(genesisVertex, rootQC, stateSynchronizer, vertexSupplier, syncSender, counters);
 	}
 }

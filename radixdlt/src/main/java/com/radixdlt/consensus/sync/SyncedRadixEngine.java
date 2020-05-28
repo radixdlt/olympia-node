@@ -29,6 +29,7 @@ import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
+import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import java.util.List;
 import java.util.Optional;
@@ -106,13 +107,13 @@ public class SyncedRadixEngine implements SyncedStateComputer<CommittedAtom> {
 	 *
 	 * @param targetStateVersion the target state version
 	 * @param target a list of potential targets
-	 * @return whether the is currently synced to the targetStateVersion
+	 * @return completable which completes when the store has completed syncing
 	 */
 	@Override
-	public boolean syncTo(long targetStateVersion, List<ECPublicKey> target) {
+	public Completable syncTo(long targetStateVersion, List<ECPublicKey> target) {
 		final long currentStateVersion = committedAtomsStore.getStateVersion();
 		if (targetStateVersion <= currentStateVersion) {
-			return true;
+			return Completable.complete();
 		}
 
 		Peer peer = target.stream()
@@ -123,7 +124,11 @@ public class SyncedRadixEngine implements SyncedStateComputer<CommittedAtom> {
 			.findFirst()
 			.orElseThrow(() -> new RuntimeException("Unable to find peer"));
 		stateSyncNetwork.sendSyncRequest(peer, currentStateVersion);
-		return false;
+
+		return committedAtomsStore.lastStoredAtom()
+			.map(e -> e.getAtom().getVertexMetadata().getStateVersion())
+			.filter(stateVersion -> stateVersion >= targetStateVersion)
+			.ignoreElements();
 	}
 
 	/**
