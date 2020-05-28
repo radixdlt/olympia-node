@@ -42,14 +42,23 @@ public final class LedgerEntry {
 	@DsonOutput(value = {DsonOutput.Output.ALL})
 	private final AID aid;
 
+	@JsonProperty("stateVersion")
+	@DsonOutput(value = {DsonOutput.Output.ALL})
+	private final long stateVersion;
+
 	LedgerEntry() {
 		// Serializer only
 		this.aid = null;
 		this.content = null;
+		this.stateVersion = 0;
 	}
 
-	public LedgerEntry(byte[] content, AID aid) {
+	public LedgerEntry(byte[] content, long stateVersion, AID aid) {
+		if (stateVersion < 0) {
+			throw new IllegalArgumentException("stateVersion must be >= 0");
+		}
 		this.content = Objects.requireNonNull(content, "content is required");
+		this.stateVersion = stateVersion;
 		this.aid = Objects.requireNonNull(aid, "aid is required");
 	}
 
@@ -61,6 +70,10 @@ public final class LedgerEntry {
 	 */
 	public byte[] getContent() {
 		return this.content;
+	}
+
+	public long getStateVersion() {
+		return stateVersion;
 	}
 
 	public AID getAID() {
@@ -76,12 +89,13 @@ public final class LedgerEntry {
 			return false;
 		}
 		LedgerEntry radixLedgerEntry = (LedgerEntry) o;
-		return Objects.equals(aid, radixLedgerEntry.aid);
+		return Objects.equals(aid, radixLedgerEntry.aid)
+			&& stateVersion == radixLedgerEntry.stateVersion;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hashCode(aid);
+		return Objects.hash(aid, stateVersion);
 	}
 
 	@Override

@@ -21,10 +21,10 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
-import com.radixdlt.middleware2.LedgerAtom;
-import com.radixdlt.middleware2.LedgerAtom.LedgerAtomConversionException;
+import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.middleware2.ClientAtom.LedgerAtomConversionException;
 import com.radixdlt.middleware2.converters.AtomConversionException;
-import com.radixdlt.middleware2.converters.AtomToLedgerAtomConverter;
+import com.radixdlt.middleware2.converters.AtomToClientAtomConverter;
 
 public class MempoolModule extends AbstractModule {
 	@Override
@@ -36,10 +36,10 @@ public class MempoolModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private AtomToLedgerAtomConverter converter() {
+	private AtomToClientAtomConverter converter() {
 		return atom -> {
 			try {
-				return LedgerAtom.convertFromApiAtom(atom);
+				return ClientAtom.convertFromApiAtom(atom);
 			} catch (LedgerAtomConversionException e) {
 				throw new AtomConversionException(e.getDataPointer(), e);
 			}

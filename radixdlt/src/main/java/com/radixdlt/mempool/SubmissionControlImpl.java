@@ -18,9 +18,10 @@
 package com.radixdlt.mempool;
 
 import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.converters.AtomConversionException;
-import com.radixdlt.middleware2.converters.AtomToLedgerAtomConverter;
+import com.radixdlt.middleware2.converters.AtomToClientAtomConverter;
 import java.util.Objects;
 import java.util.function.Consumer;
 
@@ -43,7 +44,7 @@ class SubmissionControlImpl implements SubmissionControl {
 	private final RadixEngine<LedgerAtom> radixEngine;
 	private final Serialization serialization;
 	private final Events events;
-	private final AtomToLedgerAtomConverter converter;
+	private final AtomToClientAtomConverter converter;
 
 	@Inject
 	SubmissionControlImpl(
@@ -51,7 +52,7 @@ class SubmissionControlImpl implements SubmissionControl {
 		RadixEngine<LedgerAtom> radixEngine,
 		Serialization serialization,
 		Events events,
-		AtomToLedgerAtomConverter converter
+		AtomToClientAtomConverter converter
 	) {
 		this.mempool = Objects.requireNonNull(mempool);
 		this.radixEngine = Objects.requireNonNull(radixEngine);
@@ -61,7 +62,7 @@ class SubmissionControlImpl implements SubmissionControl {
 	}
 
 	@Override
-	public void submitAtom(LedgerAtom atom) throws MempoolFullException, MempoolDuplicateException {
+	public void submitAtom(ClientAtom atom) throws MempoolFullException, MempoolDuplicateException {
 		try {
 			this.radixEngine.staticCheck(atom);
 			this.mempool.addAtom(atom);
@@ -77,10 +78,10 @@ class SubmissionControlImpl implements SubmissionControl {
 	}
 
 	@Override
-	public void submitAtom(JSONObject atomJson, Consumer<LedgerAtom> deserialisationCallback) throws MempoolFullException, MempoolDuplicateException {
+	public void submitAtom(JSONObject atomJson, Consumer<ClientAtom> deserialisationCallback) throws MempoolFullException, MempoolDuplicateException {
 		final Atom rawAtom = this.serialization.fromJsonObject(atomJson, Atom.class);
 		try {
-			final LedgerAtom atom = converter.convert(rawAtom);
+			final ClientAtom atom = converter.convert(rawAtom);
 			deserialisationCallback.accept(atom);
 			submitAtom(atom);
 		} catch (AtomConversionException e) {

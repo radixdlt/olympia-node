@@ -25,11 +25,12 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.powermock.api.mockito.PowerMockito.when;
 
+import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
-import com.radixdlt.middleware2.LedgerAtom;
+import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.middleware2.store.CommittedAtomsStore.AtomIndexer;
 import com.radixdlt.store.LedgerEntry;
@@ -61,19 +62,19 @@ public class CommittedAtomsStoreTest {
 	public void when_get_atom_containing__then_should_return_atom() {
 		Particle particle = mock(Particle.class);
 		when(particle.euid()).thenReturn(EUID.ONE);
-		Consumer<LedgerAtom> callback = mock(Consumer.class);
+		Consumer<CommittedAtom> callback = mock(Consumer.class);
 		SearchCursor searchCursor = mock(SearchCursor.class);
 		AID aid = mock(AID.class);
 		when(searchCursor.get()).thenReturn(aid);
 		when(store.search(any(), any(), any())).thenReturn(searchCursor);
 		LedgerEntry ledgerEntry = mock(LedgerEntry.class);
 		when(ledgerEntry.getContent()).thenReturn(new byte[0]);
-		LedgerAtom ledgerAtom = mock(LedgerAtom.class);
-		when(atomToBinaryConverter.toAtom(any())).thenReturn(ledgerAtom);
+		CommittedAtom committedAtom = mock(CommittedAtom.class);
+		when(atomToBinaryConverter.toAtom(any())).thenReturn(committedAtom);
 		when(store.get(eq(aid))).thenReturn(Optional.of(ledgerEntry));
 
 		committedAtomsStore.getAtomContaining(particle, true, callback);
-		verify(callback, times(1)).accept(eq(ledgerAtom));
+		verify(callback, times(1)).accept(eq(committedAtom));
 	}
 
 
@@ -81,15 +82,14 @@ public class CommittedAtomsStoreTest {
 	public void when_get_spin_and_particle_exists__then_should_return_spin() {
 		Particle particle = mock(Particle.class);
 		when(particle.euid()).thenReturn(EUID.ONE);
-		Consumer<LedgerAtom> callback = mock(Consumer.class);
 		SearchCursor searchCursor = mock(SearchCursor.class);
 		AID aid = mock(AID.class);
 		when(searchCursor.get()).thenReturn(aid);
 		when(store.search(any(), any(), any())).thenReturn(searchCursor);
 		LedgerEntry ledgerEntry = mock(LedgerEntry.class);
 		when(ledgerEntry.getContent()).thenReturn(new byte[0]);
-		LedgerAtom ledgerAtom = mock(LedgerAtom.class);
-		when(atomToBinaryConverter.toAtom(any())).thenReturn(ledgerAtom);
+		CommittedAtom committedAtom = mock(CommittedAtom.class);
+		when(atomToBinaryConverter.toAtom(any())).thenReturn(committedAtom);
 		when(store.get(eq(aid))).thenReturn(Optional.of(ledgerEntry));
 
 		assertThat(committedAtomsStore.getSpin(particle)).isEqualTo(Spin.DOWN);
@@ -97,8 +97,9 @@ public class CommittedAtomsStoreTest {
 
 	@Test
 	public void when_store__then_should_get_atom_stored_event() {
-		LedgerAtom atom = mock(LedgerAtom.class);
+		CommittedAtom atom = mock(CommittedAtom.class);
 		when(atom.getAID()).thenReturn(mock(AID.class));
+		when(atom.getVertexMetadata()).thenReturn(mock(VertexMetadata.class));
 		when(atomToBinaryConverter.toLedgerEntryContent(eq(atom))).thenReturn(new byte[0]);
 		EngineAtomIndices engineAtomIndices = mock(EngineAtomIndices.class);
 		when(atomIndexer.getIndices(eq(atom))).thenReturn(engineAtomIndices);

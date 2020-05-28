@@ -17,7 +17,7 @@
 
 package org.radix.api.services;
 
-import com.radixdlt.middleware2.LedgerAtom;
+import com.radixdlt.middleware2.ClientAtom;
 import java.util.Random;
 
 import org.apache.logging.log4j.LogManager;
@@ -124,8 +124,8 @@ public final class InternalService {
 
 							atom.sign(this.owner);
 
-							LedgerAtom ledgerAtom = LedgerAtom.convertFromApiAtom(atom);
-							submissionControl.submitAtom(ledgerAtom);
+							ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom);
+							submissionControl.submitAtom(clientAtom);
 
 							remainingIterations--;
 							if (remainingIterations <= 0) {

@@ -18,7 +18,7 @@
 package com.radixdlt.mempool;
 
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.middleware2.LedgerAtom;
+import com.radixdlt.middleware2.ClientAtom;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -29,7 +29,7 @@ import java.util.Set;
 public class EmptyMempool implements Mempool {
 
 	@Override
-	public void addAtom(LedgerAtom atom) {
+	public void addAtom(ClientAtom atom) {
 		// No-op
 	}
 
@@ -44,7 +44,7 @@ public class EmptyMempool implements Mempool {
 	}
 
 	@Override
-	public List<LedgerAtom> getAtoms(int count, Set<AID> seen) {
+	public List<ClientAtom> getAtoms(int count, Set<AID> seen) {
 		return Collections.emptyList();
 	}
 

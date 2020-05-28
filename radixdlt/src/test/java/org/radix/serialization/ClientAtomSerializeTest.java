@@ -21,12 +21,12 @@ import com.radixdlt.atommodel.Atom;
 import com.radixdlt.atommodel.message.MessageParticle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.middleware2.LedgerAtom;
-import com.radixdlt.middleware2.LedgerAtom.LedgerAtomConversionException;
+import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.middleware2.ClientAtom.LedgerAtomConversionException;
 
-public class LedgerAtomSerializeTest extends SerializeObject<LedgerAtom> {
-	public LedgerAtomSerializeTest() {
-		super(LedgerAtom.class, LedgerAtomSerializeTest::get);
+public class ClientAtomSerializeTest extends SerializeObject<ClientAtom> {
+	public ClientAtomSerializeTest() {
+		super(ClientAtom.class, ClientAtomSerializeTest::get);
 	}
 
 	private static Atom createApiAtom() {
@@ -37,18 +37,18 @@ public class LedgerAtomSerializeTest extends SerializeObject<LedgerAtom> {
 		return atom;
 	}
 
-	private static LedgerAtom get(Atom atom) {
-		final LedgerAtom ledgerAtom;
+	private static ClientAtom get(Atom atom) {
+		final ClientAtom clientAtom;
 		try {
-			ledgerAtom = LedgerAtom.convertFromApiAtom(atom);
+			clientAtom = ClientAtom.convertFromApiAtom(atom);
 		} catch (LedgerAtomConversionException e) {
 			throw new IllegalStateException();
 		}
 
-		return ledgerAtom;
+		return clientAtom;
 	}
 
-	private static LedgerAtom get() {
+	private static ClientAtom get() {
 		return get(createApiAtom());
 	}
 

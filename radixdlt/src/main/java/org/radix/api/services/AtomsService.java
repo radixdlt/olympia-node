@@ -27,6 +27,7 @@ import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
+import com.radixdlt.middleware2.ClientAtom;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -195,7 +196,7 @@ public class AtomsService {
 		}
 	}
 
-	private void subscribeToSubmission(SingleAtomListener subscriber, LedgerAtom atom) {
+	private void subscribeToSubmission(SingleAtomListener subscriber, ClientAtom atom) {
 		if (subscriber != null) {
 			this.deleteOnEventSingleAtomObservers.compute(atom.getAID(), (aid, oldSubscribers) -> {
 				List<SingleAtomListener> subscribers = oldSubscribers == null ? new ArrayList<>() : oldSubscribers;
@@ -236,8 +237,8 @@ public class AtomsService {
 		Optional<LedgerEntry> ledgerEntryOptional = store.get(atomId);
 		if (ledgerEntryOptional.isPresent()) {
 			LedgerEntry ledgerEntry = ledgerEntryOptional.get();
-			LedgerAtom atom = atomToBinaryConverter.toAtom(ledgerEntry.getContent());
-			Atom apiAtom = LedgerAtom.convertToApiAtom(atom);
+			ClientAtom atom = atomToBinaryConverter.toAtom(ledgerEntry.getContent()).getClientAtom();
+			Atom apiAtom = ClientAtom.convertToApiAtom(atom);
 			return serialization.toJsonObject(apiAtom, DsonOutput.Output.API);
 		}
 		throw new RuntimeException("Atom not found");

@@ -32,6 +32,8 @@ import java.util.Map;
 import java.util.Random;
 
 public class LedgerEntryGenerator {
+    private long stateVersion = 0;
+
     public List<LedgerEntry> createLedgerEntries(ECKeyPair identity, int n) {
         Random r = new Random(); // SecureRandom not required for test
         // Super paranoid way of doing things
@@ -58,6 +60,7 @@ public class LedgerEntryGenerator {
         try {
             LedgerEntry ledgerEntry = new LedgerEntry(
                 DefaultSerialization.getInstance().toDson(atom, DsonOutput.Output.API),
+                stateVersion++,
                 AID.from(pKey)
             );
             return ledgerEntry;

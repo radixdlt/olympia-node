@@ -25,6 +25,7 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineErrorCode;
 import com.radixdlt.engine.RadixEngineException;
 
+import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
@@ -69,10 +70,14 @@ public final class VertexStore {
 		this.engine = Objects.requireNonNull(engine);
 		this.counters = Objects.requireNonNull(counters);
 		this.highestQC = Objects.requireNonNull(rootQC);
-		try {
-			this.engine.checkAndStore(genesisVertex.getAtom());
-		} catch (RadixEngineException e) {
-			throw new IllegalStateException("Could not store genesis atom: " + genesisVertex.getAtom(), e);
+
+		if (genesisVertex.getAtom() != null) {
+			CommittedAtom committedGenesis = genesisVertex.getAtom().committed(rootQC.getProposed());
+			try {
+				this.engine.checkAndStore(committedGenesis);
+			} catch (RadixEngineException e) {
+				throw new IllegalStateException("Could not store genesis atom: " + genesisVertex.getAtom(), e);
+			}
 		}
 		this.vertices.put(genesisVertex.getId(), genesisVertex);
 		this.root = genesisVertex;
@@ -110,7 +115,9 @@ public final class VertexStore {
 		updateVertexStoreSize();
 	}
 
-	public Vertex commitVertex(Hash vertexId) {
+	// TODO: add signature proof
+	public Vertex commitVertex(VertexMetadata commitMetadata) {
+		final Hash vertexId = commitMetadata.getId();
 		final Vertex tipVertex = vertices.get(vertexId);
 		if (tipVertex == null) {
 			throw new IllegalStateException("Committing a vertex which was never inserted: " + vertexId);
@@ -124,7 +131,8 @@ public final class VertexStore {
 
 		for (Vertex committed : path) {
 			if (committed.getAtom() != null) {
-				storeAtom(committed.getAtom());
+				CommittedAtom committedAtom = committed.getAtom().committed(commitMetadata);
+				storeAtom(committedAtom);
 			}
 
 			lastCommittedVertex.onNext(committed);
@@ -137,7 +145,7 @@ public final class VertexStore {
 		return tipVertex;
 	}
 
-	private void storeAtom(LedgerAtom atom) {
+	private void storeAtom(CommittedAtom atom) {
 		try {
 			this.counters.increment(CounterType.LEDGER_PROCESSED);
 			this.engine.checkAndStore(atom);
@@ -150,7 +158,7 @@ public final class VertexStore {
 			// TODO: move VIRTUAL_STATE_CONFLICT to static check
 			if (e.getErrorCode() == RadixEngineErrorCode.VIRTUAL_STATE_CONFLICT) {
 				ConstraintMachineValidationException exception
-					= new ConstraintMachineValidationException(atom, "Virtual state conflict", e.getDataPointer());
+					= new ConstraintMachineValidationException(atom.getClientAtom(), "Virtual state conflict", e.getDataPointer());
 				Events.getInstance().broadcast(new AtomExceptionEvent(exception, atom.getAID()));
 			} else if (e.getErrorCode() == RadixEngineErrorCode.STATE_CONFLICT) {
 				final ParticleConflictException conflict = new ParticleConflictException(

@@ -59,7 +59,7 @@ public class LedgerAtomCheckerTest {
 	@Test
 	public void when_validating_atom_with_particles__result_has_no_error() {
 		when(universe.getGenesis()).thenReturn(Collections.emptyList());
-		LedgerAtom ledgerAtom = mock(LedgerAtom.class);
+		ClientAtom ledgerAtom = mock(ClientAtom.class);
 		CMInstruction cmInstruction = new CMInstruction(
 			ImmutableList.of(mock(CMMicroInstruction.class)), Hash.random(), ImmutableMap.of()
 		);
@@ -79,7 +79,7 @@ public class LedgerAtomCheckerTest {
 
 	@Test
 	public void when_validating_atom_without_particles__result_has_error() {
-		LedgerAtom ledgerAtom = mock(LedgerAtom.class);
+		ClientAtom ledgerAtom = mock(ClientAtom.class);
 		CMInstruction cmInstruction = new CMInstruction(
 			ImmutableList.of(), Hash.random(), ImmutableMap.of()
 		);
@@ -93,7 +93,7 @@ public class LedgerAtomCheckerTest {
 
 	@Test
 	public void when_validating_atom_without_metadata__result_has_error() {
-		LedgerAtom ledgerAtom = mock(LedgerAtom.class);
+		LedgerAtom ledgerAtom = mock(ClientAtom.class);
 		CMInstruction cmInstruction = new CMInstruction(
 			ImmutableList.of(mock(CMMicroInstruction.class)), Hash.random(), ImmutableMap.of()
 		);
@@ -107,7 +107,7 @@ public class LedgerAtomCheckerTest {
 
 	@Test
 	public void when_validating_atom_with_bad_timestamp__result_has_error() {
-		LedgerAtom ledgerAtom = mock(LedgerAtom.class);
+		LedgerAtom ledgerAtom = mock(ClientAtom.class);
 		CMInstruction cmInstruction = new CMInstruction(
 			ImmutableList.of(mock(CMMicroInstruction.class)), Hash.random(), ImmutableMap.of()
 		);

@@ -17,19 +17,19 @@
 
 package org.radix.validation;
 
-import com.radixdlt.middleware2.LedgerAtom;
+import com.radixdlt.middleware2.ClientAtom;
 import java.util.Objects;
 import com.radixdlt.constraintmachine.DataPointer;
 import org.radix.exceptions.ValidationException;
 
 /**
- * An exception during validation of an {@link LedgerAtom}
+ * An exception during validation of an {@link ClientAtom}
  */
 public class ConstraintMachineValidationException extends ValidationException {
-	private final LedgerAtom atom;
+	private final ClientAtom atom;
 	private final DataPointer dataPointer;
 
-	public ConstraintMachineValidationException(LedgerAtom atom, String message, DataPointer dataPointer) {
+	public ConstraintMachineValidationException(ClientAtom atom, String message, DataPointer dataPointer) {
 		super(message);
 
 		Objects.requireNonNull(atom);
@@ -43,7 +43,7 @@ public class ConstraintMachineValidationException extends ValidationException {
 		return dataPointer.toString();
 	}
 
-	public LedgerAtom getAtom() {
+	public ClientAtom getAtom() {
 		return atom;
 	}
 }

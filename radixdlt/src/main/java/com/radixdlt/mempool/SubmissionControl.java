@@ -16,7 +16,7 @@
  */
 package com.radixdlt.mempool;
 
-import com.radixdlt.middleware2.LedgerAtom;
+import com.radixdlt.middleware2.ClientAtom;
 import java.util.function.Consumer;
 
 import org.json.JSONObject;
@@ -26,13 +26,13 @@ import org.json.JSONObject;
  */
 public interface SubmissionControl {
 	/**
-	 * Handle atom submission from API or network as an {@link LedgerAtom}.
+	 * Handle atom submission from API or network as an {@link ClientAtom}.
 	 *
-	 * @param atom the {@link LedgerAtom} for the atom
+	 * @param atom the {@link ClientAtom} for the atom
 	 * @throws MempoolFullException if the underlying mempool is too full to accept new submissions
 	 * @throws MempoolDuplicateException if the underlying mempool already has the specified atom
 	 */
-	void submitAtom(LedgerAtom atom) throws MempoolFullException, MempoolDuplicateException;
+	void submitAtom(ClientAtom atom) throws MempoolFullException, MempoolDuplicateException;
 
 	/**
 	 * Handle atom submission from API or network as an {@link JSONObject}.
@@ -42,6 +42,6 @@ public interface SubmissionControl {
 	 * @throws MempoolFullException if the underlying mempool is too full to accept new submissions
 	 * @throws MempoolDuplicateException if the underlying mempool already has the specified atom
 	 */
-	void submitAtom(JSONObject atomJson, Consumer<LedgerAtom> deserialisationCallback)
+	void submitAtom(JSONObject atomJson, Consumer<ClientAtom> deserialisationCallback)
 		throws MempoolFullException, MempoolDuplicateException;
 }

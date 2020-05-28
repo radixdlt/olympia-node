@@ -19,10 +19,12 @@ package com.radixdlt.middleware2.store;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.store.SearchCursor;
 import com.radixdlt.store.StoreIndex;
@@ -45,7 +47,7 @@ import java.util.function.Consumer;
 import org.radix.atoms.events.AtomStoredEvent;
 
 @Singleton
-public class CommittedAtomsStore implements EngineStore<LedgerAtom> {
+public class CommittedAtomsStore implements EngineStore<CommittedAtom> {
     private static final Logger log = LogManager.getLogger("middleware2.store");
 
     private final AtomIndexer atomIndexer;
@@ -69,12 +71,12 @@ public class CommittedAtomsStore implements EngineStore<LedgerAtom> {
     }
 
     @Override
-    public void getAtomContaining(Particle particle, boolean isInput, Consumer<LedgerAtom> callback) {
-        Optional<LedgerAtom> atomOptional = getAtomByParticle(particle, isInput);
+    public void getAtomContaining(Particle particle, boolean isInput, Consumer<CommittedAtom> callback) {
+        Optional<CommittedAtom> atomOptional = getAtomByParticle(particle, isInput);
         atomOptional.ifPresent(callback);
     }
 
-    private Optional<LedgerAtom> getAtomByParticle(Particle particle, boolean isInput) {
+    private Optional<CommittedAtom> getAtomByParticle(Particle particle, boolean isInput) {
         final byte[] indexableBytes = EngineAtomIndices.toByteArray(
         	isInput ? EngineAtomIndices.IndexType.PARTICLE_DOWN : EngineAtomIndices.IndexType.PARTICLE_UP,
         	particle.euid()
@@ -89,14 +91,15 @@ public class CommittedAtomsStore implements EngineStore<LedgerAtom> {
     }
 
     @Override
-    public void storeAtom(LedgerAtom atom) {
-        byte[] binaryAtom = atomToBinaryConverter.toLedgerEntryContent(atom);
-        LedgerEntry ledgerEntry = new LedgerEntry(binaryAtom, atom.getAID());
-        EngineAtomIndices engineAtomIndices = atomIndexer.getIndices(atom);
+    public void storeAtom(CommittedAtom committedAtom) {
+        byte[] binaryAtom = atomToBinaryConverter.toLedgerEntryContent(committedAtom);
+        VertexMetadata vertexMetadata = committedAtom.getVertexMetadata();
+        LedgerEntry ledgerEntry = new LedgerEntry(binaryAtom, vertexMetadata.getStateVersion(), committedAtom.getAID());
+        EngineAtomIndices engineAtomIndices = atomIndexer.getIndices(committedAtom);
         store.store(ledgerEntry, engineAtomIndices.getUniqueIndices(), engineAtomIndices.getDuplicateIndices());
 
         AtomStoredEvent storedEvent = new AtomStoredEvent(
-        	atom,
+        	committedAtom,
             () -> engineAtomIndices.getDuplicateIndices().stream()
                 .filter(e -> e.getPrefix() == EngineAtomIndices.IndexType.DESTINATION.getValue())
                 .map(e -> EngineAtomIndices.toEUID(e.asKey()))

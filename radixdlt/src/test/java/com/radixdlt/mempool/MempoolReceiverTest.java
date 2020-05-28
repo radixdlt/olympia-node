@@ -17,7 +17,7 @@
 
 package com.radixdlt.mempool;
 
-import com.radixdlt.middleware2.LedgerAtom;
+import com.radixdlt.middleware2.ClientAtom;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
@@ -32,7 +32,7 @@ import io.reactivex.rxjava3.subjects.PublishSubject;
 
 public class MempoolReceiverTest {
 
-	private PublishSubject<LedgerAtom> atoms;
+	private PublishSubject<ClientAtom> atoms;
 
 	private SubmissionControl submissionControl;
 	private MempoolReceiver mempoolReceiver;
@@ -80,7 +80,7 @@ public class MempoolReceiverTest {
 		this.mempoolReceiver.start();
 		assertTrue(this.mempoolReceiver.running());
 
-		LedgerAtom atom = mock(LedgerAtom.class);
+		ClientAtom atom = mock(ClientAtom.class);
 		atoms.onNext(atom);
 
 		// Wait for everything to get pushed through the pipeline
