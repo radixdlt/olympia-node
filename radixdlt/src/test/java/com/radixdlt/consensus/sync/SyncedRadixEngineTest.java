@@ -28,10 +28,12 @@ import static org.mockito.Mockito.when;
 
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.constraintmachine.DataPointer;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineErrorCode;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.AID;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.middleware2.LedgerAtom;
@@ -39,10 +41,16 @@ import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
 import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.observers.TestObserver;
+import io.reactivex.rxjava3.subjects.BehaviorSubject;
+import io.reactivex.rxjava3.subjects.PublishSubject;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import org.junit.Before;
 import org.junit.Test;
+import org.radix.atoms.events.AtomStoredEvent;
 
 public class SyncedRadixEngineTest {
 
@@ -137,5 +145,40 @@ public class SyncedRadixEngineTest {
 		when(committedAtomsStore.getStateVersion()).thenReturn(12344L);
 		syncedRadixEngine.start();
 		verify(radixEngine, timeout(1000).times(1)).checkAndStore(eq(committedAtom));
+	}
+
+	@Test
+	public void when_sync_to__will_complete_when_higher_or_equal_state_version() throws Exception {
+		Peer peer = mock(Peer.class);
+		when(peer.hasSystem()).thenReturn(true);
+		ECPublicKey pk = mock(ECPublicKey.class);
+		EUID euid = mock(EUID.class);
+		when(pk.euid()).thenReturn(euid);
+		when(addressBook.peer(eq(euid))).thenReturn(Optional.of(peer));
+		when(committedAtomsStore.getStateVersion()).thenReturn(1233L);
+
+		CommittedAtom atom = mock(CommittedAtom.class);
+		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
+		when(vertexMetadata.getStateVersion()).thenReturn(1233L);
+		when(atom.getVertexMetadata()).thenReturn(vertexMetadata);
+		AtomStoredEvent atomStoredEvent = mock(AtomStoredEvent.class);
+		when(atomStoredEvent.getAtom()).thenReturn(atom);
+		BehaviorSubject<AtomStoredEvent> event = BehaviorSubject.createDefault(atomStoredEvent);
+
+		when(committedAtomsStore.lastStoredAtom()).thenReturn(event);
+
+		TestObserver<Void> testObserver = syncedRadixEngine.syncTo(1234, Collections.singletonList(pk)).test();
+		testObserver.assertNotComplete();
+
+		CommittedAtom nextAtom = mock(CommittedAtom.class);
+		VertexMetadata nextVertexMetadata = mock(VertexMetadata.class);
+		when(nextVertexMetadata.getStateVersion()).thenReturn(1234L);
+		when(nextAtom.getVertexMetadata()).thenReturn(nextVertexMetadata);
+		AtomStoredEvent nextAtomStoredEvent = mock(AtomStoredEvent.class);
+		when(nextAtomStoredEvent.getAtom()).thenReturn(nextAtom);
+
+		event.onNext(nextAtomStoredEvent);
+		testObserver.await(1, TimeUnit.SECONDS);
+		testObserver.assertComplete();
 	}
 }

@@ -130,7 +130,8 @@ public class SyncedRadixEngine implements SyncedStateComputer<CommittedAtom> {
 		return committedAtomsStore.lastStoredAtom()
 			.map(e -> e.getAtom().getVertexMetadata().getStateVersion())
 			.filter(stateVersion -> stateVersion >= targetStateVersion)
-			.ignoreElements();
+			.firstOrError()
+			.ignoreElement();
 	}
 
 	/**
