@@ -143,7 +143,7 @@ public class BFTEventReducerTest {
 		when(mempool.getAtoms(anyInt(), any())).thenReturn(Lists.newArrayList());
 		when(pacemaker.getCurrentView()).thenReturn(mock(View.class));
 		when(pacemaker.processQC(eq(view))).thenReturn(Optional.of(mock(View.class)));
-		when(vertexStore.syncToQC(eq(qc), any())).thenReturn(true);
+		when(vertexStore.syncToQC(eq(qc), any(), any())).thenReturn(true);
 
 		reducer.processVote(vote);
 

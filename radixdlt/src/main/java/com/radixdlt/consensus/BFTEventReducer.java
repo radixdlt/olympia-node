@@ -138,13 +138,17 @@ public final class BFTEventReducer implements BFTEventProcessor {
 
 	@Override
 	public void processLocalSync(Hash vertexId) {
+		vertexStore.processLocalSync(vertexId);
+
 		QuorumCertificate qc = unsyncedQCs.remove(vertexId);
 		if (qc != null) {
-			vertexStore.addQC(qc);
-			processQC(qc);
-			log.info("{}: LOCAL_SYNC: processed QC: {}", this.getShortName(), qc);
+			if (vertexStore.syncToQC(qc, vertexStore.getHighestCommittedQC(), null)) {
+				processQC(qc);
+				log.info("{}: LOCAL_SYNC: processed QC: {}", this.getShortName(), qc);
+			} else {
+				unsyncedQCs.put(qc.getProposed().getId(), qc);
+			}
 		}
-		vertexStore.processLocalSync(vertexId);
 	}
 
 	@Override
@@ -155,7 +159,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		if (potentialQc.isPresent()) {
 			QuorumCertificate qc = potentialQc.get();
 			log.info("{}: VOTE: Formed QC: {}", this.getShortName(), qc);
-			if (vertexStore.syncToQC(qc, vote.getAuthor())) {
+			if (vertexStore.syncToQC(qc, vertexStore.getHighestCommittedQC(), vote.getAuthor())) {
 				processQC(qc);
 			} else {
 				log.info("{}: VOTE: QC Not synced: {}", this.getShortName(), qc);
