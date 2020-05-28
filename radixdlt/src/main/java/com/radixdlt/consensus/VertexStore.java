@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -58,11 +59,11 @@ public final class VertexStore {
 	private final SystemCounters counters;
 	private final Object lock = new Object();
 
+	// These should never be empty
+	private final AtomicReference<Hash> rootId = new AtomicReference<>();
+	private final AtomicReference<QuorumCertificate> highestQC = new AtomicReference<>();
+	private final AtomicReference<QuorumCertificate> highestCommittedQC = new AtomicReference<>();
 
-	// Should never be null
-	private volatile Hash rootId;
-	private volatile QuorumCertificate highestQC;
-	private volatile QuorumCertificate highestCommittedQC;
 	private final Map<Hash, Vertex> vertices = new ConcurrentHashMap<>();
 	private final Map<Hash, Disposable> syncing = new ConcurrentHashMap<>();
 
@@ -79,16 +80,16 @@ public final class VertexStore {
 		this.vertexSupplier = vertexSupplier;
 		this.syncSender = syncSender;
 		this.counters = Objects.requireNonNull(counters);
-		this.highestQC = Objects.requireNonNull(rootQC);
-		this.highestCommittedQC = rootQC;
+		this.highestQC.set(Objects.requireNonNull(rootQC));
+		this.highestCommittedQC.set(rootQC);
 
 		if (genesisVertex.getAtom() != null) {
 			CommittedAtom committedGenesis = genesisVertex.getAtom().committed(rootQC.getProposed());
 			syncedStateComputer.execute(committedGenesis);
 		}
 
-		this.rootId = genesisVertex.getId();
-		this.vertices.put(rootId, genesisVertex);
+		this.rootId.set(genesisVertex.getId());
+		this.vertices.put(genesisVertex.getId(), genesisVertex);
 		this.lastCommittedVertex.onNext(genesisVertex);
 	}
 
@@ -210,14 +211,15 @@ public final class VertexStore {
 				return false;
 			}
 
-			if (highestQC.getView().compareTo(qc.getView()) < 0) {
-				highestQC = qc;
+			if (highestQC.get().getView().compareTo(qc.getView()) < 0) {
+				highestQC.set(qc);
 			}
 
+			QuorumCertificate highestCommitted = highestCommittedQC.get();
 			qc.getCommitted().ifPresent(vertexMetadata -> {
-				if (!highestCommittedQC.getCommitted().isPresent()
-					|| highestCommittedQC.getCommitted().get().getStateVersion() < vertexMetadata.getStateVersion()) {
-					this.highestCommittedQC = qc;
+				if (!highestCommitted.getCommitted().isPresent()
+					|| highestCommitted.getCommitted().get().getStateVersion() < vertexMetadata.getStateVersion()) {
+					this.highestCommittedQC.set(qc);
 				}
 			});
 
@@ -256,7 +258,7 @@ public final class VertexStore {
 			}
 			final LinkedList<Vertex> path = new LinkedList<>();
 			Vertex vertex = tipVertex;
-			while (vertex != null && !rootId.equals(vertex.getId())) {
+			while (vertex != null && !rootId.get().equals(vertex.getId())) {
 				path.addFirst(vertex);
 				vertex = vertices.remove(vertex.getParentId());
 			}
@@ -271,7 +273,7 @@ public final class VertexStore {
 				lastCommittedVertex.onNext(committed);
 			}
 
-			rootId = commitMetadata.getId();
+			rootId.set(commitMetadata.getId());
 
 			updateVertexStoreSize();
 			return tipVertex;
@@ -286,7 +288,7 @@ public final class VertexStore {
 		final List<Vertex> path = new ArrayList<>();
 
 		Vertex vertex = vertices.get(vertexId);
-		while (vertex != null && !vertex.getId().equals(rootId)) {
+		while (vertex != null && !vertex.getId().equals(rootId.get())) {
 			path.add(vertex);
 			vertex = vertices.get(vertex.getParentId());
 		}
@@ -299,7 +301,7 @@ public final class VertexStore {
 	 * @return the highest committed qc
 	 */
 	public QuorumCertificate getHighestCommittedQC() {
-		return this.highestCommittedQC;
+		return this.highestCommittedQC.get();
 	}
 
 	/**
@@ -309,7 +311,7 @@ public final class VertexStore {
 	 * @return the highest quorum certificate
 	 */
 	public QuorumCertificate getHighestQC() {
-		return this.highestQC;
+		return this.highestQC.get();
 	}
 
 	/**
