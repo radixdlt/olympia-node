@@ -57,6 +57,7 @@ import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork;
 import com.radixdlt.utils.UInt256;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.subjects.CompletableSubject;
 import java.util.Comparator;
 import java.util.List;
@@ -89,7 +90,7 @@ public class SimulatedBFTNetwork {
 	 * @param underlyingNetwork the network simulator
 	 */
 	public SimulatedBFTNetwork(List<ECKeyPair> nodes, TestEventCoordinatorNetwork underlyingNetwork) {
-		this(nodes, underlyingNetwork, TEST_PACEMAKER_TIMEOUT);
+		this(nodes, underlyingNetwork, TEST_PACEMAKER_TIMEOUT, true);
 	}
 
 	/**
@@ -98,7 +99,12 @@ public class SimulatedBFTNetwork {
 	 * @param underlyingNetwork the network simulator
 	 * @param pacemakerTimeout a fixed pacemaker timeout used for all nodes
 	 */
-	public SimulatedBFTNetwork(List<ECKeyPair> nodes, TestEventCoordinatorNetwork underlyingNetwork, int pacemakerTimeout) {
+	public SimulatedBFTNetwork(
+		List<ECKeyPair> nodes,
+		TestEventCoordinatorNetwork underlyingNetwork,
+		int pacemakerTimeout,
+		boolean getVerticesRPCEnabled
+	) {
 		this.nodes = nodes;
 		this.underlyingNetwork = Objects.requireNonNull(underlyingNetwork);
 		this.pacemakerTimeout = pacemakerTimeout;
@@ -129,7 +135,9 @@ public class SimulatedBFTNetwork {
 						public void execute(CommittedAtom instruction) {
 						}
 					};
-					VertexSupplier vertexSupplier = underlyingNetwork.getVertexSupplier(e.getPublicKey());
+					VertexSupplier vertexSupplier = getVerticesRPCEnabled
+						? underlyingNetwork.getVertexSupplier(e.getPublicKey())
+						: (hash, node, id) -> Single.error(new UnsupportedOperationException());
 					return new VertexStore(genesisVertex, genesisQC, stateComputer, vertexSupplier, this.syncSenders.get(e), this.counters.get(e));
 				})
 			);

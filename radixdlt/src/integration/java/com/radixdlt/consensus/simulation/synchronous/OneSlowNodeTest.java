@@ -43,7 +43,7 @@ public class OneSlowNodeTest {
 	@Test
 	public void given_4_nodes_3_fast_and_1_slow_node_and_sync_disabled__then_a_timeout_wont_occur() {
 		BFTSimulatedTest syncDisabledTest = bftTestBuilder
-			.setSync(false)
+			.setGetVerticesRPCEnabled(false)
 			.build();
 		syncDisabledTest.run(1, TimeUnit.MINUTES);
 	}

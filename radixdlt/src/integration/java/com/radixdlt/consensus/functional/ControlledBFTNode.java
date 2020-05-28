@@ -95,7 +95,7 @@ class ControlledBFTNode {
 			}
 		};
 
-		VertexSupplier vertexSupplier = (hash, node, id) -> Single.error(new RuntimeException("No supplier"));
+		VertexSupplier vertexSupplier = (hash, node, id) -> Single.error(new UnsupportedOperationException());
 		this.vertexStore = new VertexStore(genesisVertex, genesisQC, stateComputer, vertexSupplier, sender, systemCounters);
 		Mempool mempool = new EmptyMempool();
 		ProposalGenerator proposalGenerator = new MempoolProposalGenerator(vertexStore, mempool);

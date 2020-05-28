@@ -47,17 +47,20 @@ public class BFTSimulatedTest {
 	private final LatencyProvider latencyProvider;
 	private final ImmutableList<BFTCheck> checks;
 	private final int pacemakerTimeout;
+	private final boolean getVerticesRPCEnabled;
 
 	private BFTSimulatedTest(
 		ImmutableList<ECKeyPair> nodes,
 		LatencyProvider latencyProvider,
 		int pacemakerTimeout,
+		boolean getVerticesRPCEnabled,
 		ImmutableList<BFTCheck> checks
 	) {
 		this.nodes = nodes;
 		this.latencyProvider = latencyProvider;
 		this.checks = checks;
 		this.pacemakerTimeout = pacemakerTimeout;
+		this.getVerticesRPCEnabled = getVerticesRPCEnabled;
 	}
 
 	public static class Builder {
@@ -65,6 +68,7 @@ public class BFTSimulatedTest {
 		private final List<BFTCheck> checks = new ArrayList<>();
 		private List<ECKeyPair> nodes = Collections.singletonList(ECKeyPair.generateNew());
 		private int pacemakerTimeout = 8 * TestEventCoordinatorNetwork.DEFAULT_LATENCY;
+		private boolean getVerticesRPCEnabled = true;
 
 		private Builder() {
 		}
@@ -91,8 +95,8 @@ public class BFTSimulatedTest {
 			return this;
 		}
 
-		public Builder setSync(boolean syncEnabled) {
-			this.latencyProvider.setSyncEnabled(syncEnabled);
+		public Builder setGetVerticesRPCEnabled(boolean getVerticesRPCEnabled) {
+			this.getVerticesRPCEnabled = getVerticesRPCEnabled;
 			return this;
 		}
 
@@ -143,7 +147,7 @@ public class BFTSimulatedTest {
 		}
 
 		public BFTSimulatedTest build() {
-			return new BFTSimulatedTest(ImmutableList.copyOf(nodes), latencyProvider.copyOf(), pacemakerTimeout, ImmutableList.copyOf(checks));
+			return new BFTSimulatedTest(ImmutableList.copyOf(nodes), latencyProvider.copyOf(), pacemakerTimeout, getVerticesRPCEnabled, ImmutableList.copyOf(checks));
 		}
 	}
 
@@ -156,7 +160,7 @@ public class BFTSimulatedTest {
 		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.builder()
 			.latencyProvider(this.latencyProvider)
 			.build();
-		SimulatedBFTNetwork bftNetwork =  new SimulatedBFTNetwork(nodes, network, pacemakerTimeout);
+		SimulatedBFTNetwork bftNetwork =  new SimulatedBFTNetwork(nodes, network, pacemakerTimeout, getVerticesRPCEnabled);
 		List<Completable> assertions = this.checks.stream().map(c -> c.check(bftNetwork)).collect(Collectors.toList());
 		bftNetwork.start()
 			.andThen(Completable.merge(assertions))
