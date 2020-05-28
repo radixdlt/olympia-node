@@ -114,10 +114,10 @@ final class ValidatorRegistrationState {
 			return false;
 		}
 		ValidatorRegistrationState that = (ValidatorRegistrationState) o;
-		return registered == that.registered &&
-			nonce == that.nonce &&
-			Objects.equals(particle, that.particle) &&
-			Objects.equals(address, that.address);
+		return registered == that.registered
+			&& nonce == that.nonce
+			&& Objects.equals(particle, that.particle)
+			&& Objects.equals(address, that.address);
 	}
 
 	@Override
