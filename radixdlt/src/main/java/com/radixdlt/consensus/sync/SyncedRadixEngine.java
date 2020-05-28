@@ -19,6 +19,7 @@ package com.radixdlt.consensus.sync;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
@@ -47,6 +48,7 @@ import org.radix.validation.ConstraintMachineValidationException;
  *
  * TODO: Most of the logic here should go into RadixEngine itself
  */
+@Singleton
 public class SyncedRadixEngine implements SyncedStateComputer<CommittedAtom> {
 	private static final Logger log = LogManager.getLogger();
 	private final RadixEngine<LedgerAtom> radixEngine;
@@ -74,7 +76,7 @@ public class SyncedRadixEngine implements SyncedStateComputer<CommittedAtom> {
 		stateSyncNetwork.syncRequests()
 			.observeOn(Schedulers.io())
 			.subscribe(syncRequest -> {
-				log.info("SYNC_REQUEST: " + syncRequest + " " + this.committedAtomsStore.getStateVersion());
+				log.info("SYNC_REQUEST: {} {}", syncRequest, this.committedAtomsStore.getStateVersion());
 				Peer peer = syncRequest.getPeer();
 				long stateVersion = syncRequest.getStateVersion();
 				// TODO: This may still return an empty list as we still count state versions for atoms which
@@ -82,7 +84,7 @@ public class SyncedRadixEngine implements SyncedStateComputer<CommittedAtom> {
 				// TODO: validity on commit rather than on proposal/prepare.
 				// TODO: remove 100 hardcode limit
 				List<CommittedAtom> committedAtoms = committedAtomsStore.getCommittedAtoms(stateVersion, 100);
-				log.info("SYNC_REQUEST: SENDING_RESPONSE " + committedAtoms);
+				log.info("SYNC_REQUEST: SENDING_RESPONSE {}", committedAtoms);
 				stateSyncNetwork.sendSyncResponse(peer, committedAtoms);
 			});
 
@@ -90,7 +92,7 @@ public class SyncedRadixEngine implements SyncedStateComputer<CommittedAtom> {
 			.observeOn(Schedulers.io())
 			.subscribe(syncResponse -> {
 				// TODO: Check validity of response
-				log.info("SYNC_RESPONSE: " + syncResponse);
+				log.info("SYNC_RESPONSE: {}", syncResponse);
 				for (CommittedAtom committedAtom : syncResponse) {
 					if (committedAtom.getVertexMetadata().getStateVersion() > this.committedAtomsStore.getStateVersion()) {
 						this.execute(committedAtom);

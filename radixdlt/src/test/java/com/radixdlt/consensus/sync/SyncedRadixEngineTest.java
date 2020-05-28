@@ -17,13 +17,16 @@
 
 package com.radixdlt.consensus.sync;
 
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineErrorCode;
@@ -34,13 +37,17 @@ import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.network.addressbook.AddressBook;
+import com.radixdlt.network.addressbook.Peer;
+import io.reactivex.rxjava3.core.Observable;
+import java.util.Collections;
+import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 
 public class SyncedRadixEngineTest {
 
 	private RadixEngine<LedgerAtom> radixEngine;
-	private SyncedRadixEngine stateSynchronizer;
+	private SyncedRadixEngine syncedRadixEngine;
 	private CommittedAtomsStore committedAtomsStore;
 	private AddressBook addressBook;
 	private StateSyncNetwork stateSyncNetwork;
@@ -51,7 +58,7 @@ public class SyncedRadixEngineTest {
 		this.committedAtomsStore = mock(CommittedAtomsStore.class);
 		this.addressBook = mock(AddressBook.class);
 		this.stateSyncNetwork = mock(StateSyncNetwork.class);
-		this.stateSynchronizer = new SyncedRadixEngine(
+		this.syncedRadixEngine = new SyncedRadixEngine(
 			radixEngine,
 			committedAtomsStore,
 			addressBook,
@@ -70,7 +77,7 @@ public class SyncedRadixEngineTest {
 		when(e.getDataPointer()).thenReturn(DataPointer.ofAtom());
 		doThrow(e).when(radixEngine).checkAndStore(eq(committedAtom));
 
-		stateSynchronizer.execute(committedAtom);
+		syncedRadixEngine.execute(committedAtom);
 		verify(radixEngine, times(1)).checkAndStore(eq(committedAtom));
 	}
 
@@ -89,7 +96,7 @@ public class SyncedRadixEngineTest {
 		when(committedAtom.getAID()).thenReturn(mock(AID.class));
 		doThrow(e).when(radixEngine).checkAndStore(eq(committedAtom));
 
-		stateSynchronizer.execute(committedAtom);
+		syncedRadixEngine.execute(committedAtom);
 		verify(radixEngine, times(1)).checkAndStore(eq(committedAtom));
 	}
 
@@ -101,8 +108,34 @@ public class SyncedRadixEngineTest {
 		CommittedAtom committedAtom = mock(CommittedAtom.class);
 		doThrow(e).when(radixEngine).checkAndStore(eq(committedAtom));
 
-		stateSynchronizer.execute(committedAtom);
+		syncedRadixEngine.execute(committedAtom);
 		verify(radixEngine, times(1)).checkAndStore(eq(committedAtom));
 	}
 
+	@Test
+	public void when_sync_request__then_it_is_processed() {
+		when(stateSyncNetwork.syncResponses()).thenReturn(Observable.never());
+		Peer peer = mock(Peer.class);
+		long stateVersion = 12345;
+		SyncRequest syncRequest = new SyncRequest(peer, stateVersion);
+		when(stateSyncNetwork.syncRequests()).thenReturn(Observable.just(syncRequest).concatWith(Observable.never()));
+		List<CommittedAtom> committedAtomList = Collections.singletonList(mock(CommittedAtom.class));
+		when(committedAtomsStore.getCommittedAtoms(eq(stateVersion), anyInt())).thenReturn(committedAtomList);
+		syncedRadixEngine.start();
+		verify(stateSyncNetwork, timeout(1000).times(1)).sendSyncResponse(eq(peer), eq(committedAtomList));
+	}
+
+	@Test
+	public void when_sync_response__then_it_is_processed() throws Exception {
+		when(stateSyncNetwork.syncRequests()).thenReturn(Observable.never());
+		CommittedAtom committedAtom = mock(CommittedAtom.class);
+		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
+		when(vertexMetadata.getStateVersion()).thenReturn(12345L);
+		when(committedAtom.getVertexMetadata()).thenReturn(vertexMetadata);
+		List<CommittedAtom> committedAtomList = Collections.singletonList(committedAtom);
+		when(stateSyncNetwork.syncResponses()).thenReturn(Observable.just(committedAtomList).concatWith(Observable.never()));
+		when(committedAtomsStore.getStateVersion()).thenReturn(12344L);
+		syncedRadixEngine.start();
+		verify(radixEngine, timeout(1000).times(1)).checkAndStore(eq(committedAtom));
+	}
 }
