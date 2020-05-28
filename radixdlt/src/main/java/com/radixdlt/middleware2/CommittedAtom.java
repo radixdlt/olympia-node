@@ -38,7 +38,7 @@ import javax.annotation.concurrent.Immutable;
  * TODO: add commit signature proof
  */
 @Immutable
-@SerializerId2("consensus.committed_ledger_atom")
+@SerializerId2("consensus.committed_atom")
 public final class CommittedAtom implements LedgerAtom, CommittedInstruction {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})

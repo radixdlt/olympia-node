@@ -20,8 +20,8 @@ package com.radixdlt.mempool;
 import com.radixdlt.middleware2.ClientAtom;
 
 /**
- * Exception thrown when an attempt to add new items would
- * exceed the mempool's maximum capacity.
+ * Exception thrown when an attempt to add an item which
+ * already exists in the mempool
  */
 public class MempoolDuplicateException extends MempoolRejectedException {
 	public MempoolDuplicateException(ClientAtom atom, String message) {
