@@ -32,7 +32,6 @@ import java.util.Map;
 import java.util.Random;
 
 public class LedgerEntryGenerator {
-
     private long stateVersion = 0;
 
     public List<LedgerEntry> createLedgerEntries(ECKeyPair identity, int n) {
