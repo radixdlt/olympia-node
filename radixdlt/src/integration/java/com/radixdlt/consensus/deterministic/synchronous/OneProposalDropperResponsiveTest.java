@@ -29,7 +29,7 @@ import org.junit.Test;
 public class OneProposalDropperResponsiveTest {
 
 	@Test
-	public void when_run_4_correct_nodes_with_channel_order_random_and_timeouts_disabled__then_bft_should_be_responsive() {
+	public void when_run_4_correct_nodes_with_random_proposal_dropper_and_timeouts_disabled__then_bft_should_be_responsive() {
 		final Cache<View, Integer> proposalToDrop = CacheBuilder.newBuilder()
 			.maximumSize(100)
 			.build();
@@ -54,6 +54,16 @@ public class OneProposalDropperResponsiveTest {
 
 				return true;
 			});
+		}
+	}
+
+	@Test
+	public void when_run_4_correct_nodes_with_single_node_proposal_dropper_and_timeouts_disabled__then_bft_should_be_responsive() {
+		final Random random = new Random(12345);
+		final BFTDeterministicTest test = new BFTDeterministicTest(4, true);
+		test.start();
+		for (int step = 0; step < 100000; step++) {
+			test.processNextMsg(random, (receiverId, msg) -> !(msg instanceof Proposal) || !receiverId.equals(0));
 		}
 	}
 
