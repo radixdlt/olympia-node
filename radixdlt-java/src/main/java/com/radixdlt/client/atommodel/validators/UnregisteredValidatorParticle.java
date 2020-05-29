@@ -31,6 +31,7 @@ import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerId2;
 
+import java.util.Objects;
 import java.util.Set;
 
 @SerializerId2("radix.particles.unregistered_validator")
@@ -49,10 +50,11 @@ public class UnregisteredValidatorParticle extends Particle implements Accountab
 
 	public UnregisteredValidatorParticle(RadixAddress address, long nonce) {
 		super(address.euid());
-		this.address = address;
+		this.address = Objects.requireNonNull(address, "address");
 		this.nonce = nonce;
 	}
 
+	@Override
 	public RadixAddress getAddress() {
 		return address;
 	}

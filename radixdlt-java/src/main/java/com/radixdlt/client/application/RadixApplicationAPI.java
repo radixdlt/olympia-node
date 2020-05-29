@@ -789,8 +789,6 @@ public class RadixApplicationAPI {
 	public Result registerValidator(
 		RadixAddress validator
 	) {
-		Objects.requireNonNull(validator, "validator");
-
 		final RegisterValidatorAction registerValidatorAction = new RegisterValidatorAction(validator);
 
 		return this.execute(registerValidatorAction);
@@ -805,8 +803,6 @@ public class RadixApplicationAPI {
 	public Result unregisterValidator(
 		RadixAddress validator
 	) {
-		Objects.requireNonNull(validator, "validator");
-
 		final UnregisterValidatorAction unregisterValidatorAction = new UnregisterValidatorAction(validator);
 
 		return this.execute(unregisterValidatorAction);

@@ -35,7 +35,7 @@ import java.util.stream.Stream;
  * The registration state of a certain validator address.
  */
 final class ValidatorRegistrationState {
-	private final transient Particle particle;
+	private final Particle particle;
 	private final RadixAddress address;
 	private final boolean registered;
 	private final long nonce;
@@ -132,7 +132,7 @@ final class ValidatorRegistrationState {
 		if (this == o) {
 			return true;
 		}
-		if (o == null || getClass() != o.getClass()) {
+		if (!(o instanceof ValidatorRegistrationState)) {
 			return false;
 		}
 		ValidatorRegistrationState that = (ValidatorRegistrationState) o;
