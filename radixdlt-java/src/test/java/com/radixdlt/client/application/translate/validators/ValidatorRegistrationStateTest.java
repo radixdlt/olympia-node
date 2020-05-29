@@ -26,6 +26,7 @@ import com.radixdlt.client.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.client.atommodel.validators.UnregisteredValidatorParticle;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.identifiers.RadixAddress;
+import nl.jqno.equalsverifier.EqualsVerifier;
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
 
@@ -40,6 +41,12 @@ import static org.mockito.Mockito.mock;
 public class ValidatorRegistrationStateTest {
 	private static final RadixAddress ADDRESS_2 = RadixAddress.from("23B6fH3FekJeP6e5guhZAk6n9z4fmTo5Tngo3a11Wg5R8gsWTV2x");
 	private static final RadixAddress ADDRESS_1 = RadixAddress.from("JEbhKQzBn4qJzWJFBbaPioA2GTeaQhuUjYWkanTE6N8VvvPpvM8");
+
+	@Test
+	public void equalsContract() {
+		EqualsVerifier.forClass(ValidatorRegistrationState.class)
+			.verify();
+	}
 
 	@Test
 	public void when_creating_validator_registration_state_with_null__then_exception_is_thrown() {
