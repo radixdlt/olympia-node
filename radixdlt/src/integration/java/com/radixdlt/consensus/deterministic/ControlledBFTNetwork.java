@@ -20,8 +20,12 @@ package com.radixdlt.consensus.deterministic;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.consensus.BFTEventSender;
+import com.radixdlt.consensus.GetVerticesResponse;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.SyncVerticesRPCSender;
+import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.VertexStore.SyncSender;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.crypto.ECPublicKey;
@@ -129,8 +133,44 @@ public final class ControlledBFTNetwork {
 		return messageQueue.get(channelId).pop().getMsg();
 	}
 
+	private static class ControlledGetVerticesRequest implements GetVerticesRequest {
+		private final Hash id;
+		private final int count;
+		private final Object opaque;
+		private final ECPublicKey requestor;
+
+		private ControlledGetVerticesRequest(Hash id, int count, ECPublicKey requestor, Object opaque) {
+			this.id = id;
+			this.count = count;
+			this.requestor = requestor;
+			this.opaque = opaque;
+		}
+
+		@Override
+		public Hash getVertexId() {
+			return id;
+		}
+
+		@Override
+		public int getCount() {
+			return count;
+		}
+	}
+
 	public ControlledSender getSender(ECPublicKey sender) {
 		return new ControlledSender() {
+			@Override
+			public void sendGetVerticesRequest(Hash id, ECPublicKey node, int count, Object opaque) {
+				putMesssage(new ControlledMessage(sender, node, new ControlledGetVerticesRequest(id, count, sender, opaque)));
+			}
+
+			@Override
+			public void sendGetVerticesResponse(GetVerticesRequest originalRequest, List<Vertex> vertices) {
+				ControlledGetVerticesRequest request = (ControlledGetVerticesRequest) originalRequest;
+				GetVerticesResponse response = new GetVerticesResponse(request.getVertexId(), vertices, request.opaque);
+				putMesssage(new ControlledMessage(sender, request.requestor, response));
+			}
+
 			@Override
 			public void synced(Hash vertexId) {
 				putMesssage(new ControlledMessage(sender, sender, vertexId));
@@ -155,6 +195,6 @@ public final class ControlledBFTNetwork {
 		};
 	}
 
-	interface ControlledSender extends BFTEventSender, SyncSender {
+	interface ControlledSender extends BFTEventSender, SyncSender, SyncVerticesRPCSender {
 	}
 }

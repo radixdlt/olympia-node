@@ -76,7 +76,8 @@ class ControlledBFTNode {
 		ECKeyPair key,
 		ControlledSender sender,
 		ProposerElection proposerElection,
-		ValidatorSet validatorSet
+		ValidatorSet validatorSet,
+		boolean enableGetVerticesRPC
 	) {
 		this.systemCounters = new SystemCountersImpl();
 		Vertex genesisVertex = Vertex.createGenesis(null);
@@ -95,7 +96,7 @@ class ControlledBFTNode {
 			}
 		};
 
-		SyncVerticesRPCSender syncVerticesRPCSender = SyncVerticesRPCSender.EMPTY;
+		SyncVerticesRPCSender syncVerticesRPCSender = enableGetVerticesRPC ? sender : SyncVerticesRPCSender.EMPTY;
 		this.vertexStore = new VertexStore(genesisVertex, genesisQC, stateComputer, syncVerticesRPCSender, sender, systemCounters);
 		Mempool mempool = new EmptyMempool();
 		ProposalGenerator proposalGenerator = new MempoolProposalGenerator(vertexStore, mempool);
