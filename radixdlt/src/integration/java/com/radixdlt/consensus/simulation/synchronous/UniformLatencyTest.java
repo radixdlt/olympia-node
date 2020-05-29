@@ -38,11 +38,10 @@ public class UniformLatencyTest {
 	public void given_4_correct_bfts__then_should_pass_sanity_tests_over_1_minute() {
 		BFTSimulatedTest bftTest = BFTSimulatedTest.builder()
 			.numNodes(4)
-			.checkSafety()
-			.checkLiveness()
-			.checkNoTimeouts()
-			.checkNoSyncExceptions()
-			.checkAllProposalsHaveDirectParents()
+			.checkSafety("safety")
+			.checkLiveness("liveness")
+			.checkNoTimeouts("noTimeouts")
+			.checkAllProposalsHaveDirectParents("directParents")
 			.build();
 		bftTest.run(1, TimeUnit.MINUTES);
 	}

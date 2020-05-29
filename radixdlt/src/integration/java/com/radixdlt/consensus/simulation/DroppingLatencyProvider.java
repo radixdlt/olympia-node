@@ -18,14 +18,11 @@
 package com.radixdlt.consensus.simulation;
 
 import com.google.common.collect.Sets;
-import com.radixdlt.consensus.GetVerticesResponse;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.middleware2.network.GetVerticesRequestMessage;
 import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork;
 import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork.LatencyProvider;
 import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork.MessageInTransit;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
 
@@ -33,7 +30,7 @@ import java.util.function.Predicate;
  * Latency Provider which makes it easy to drop certain messages
  */
 public final class DroppingLatencyProvider implements LatencyProvider {
-	private final Set<Predicate<MessageInTransit>> droppingFunctions = Sets.newConcurrentHashSet();
+	private final Set<Predicate<MessageInTransit>> droppers = Sets.newConcurrentHashSet();
 	private final AtomicReference<LatencyProvider> base = new AtomicReference<>();
 
 	public DroppingLatencyProvider() {
@@ -43,7 +40,7 @@ public final class DroppingLatencyProvider implements LatencyProvider {
 	public DroppingLatencyProvider copyOf() {
 		DroppingLatencyProvider provider = new DroppingLatencyProvider();
 		provider.setBase(this.base.get());
-		provider.droppingFunctions.addAll(this.droppingFunctions);
+		provider.droppers.addAll(this.droppers);
 		return provider;
 	}
 
@@ -51,13 +48,17 @@ public final class DroppingLatencyProvider implements LatencyProvider {
 		this.base.set(base);
 	}
 
+	public void addDropper(Predicate<MessageInTransit> dropper) {
+		this.droppers.add(dropper);
+	}
+
 	public void crashNode(ECPublicKey node) {
-		droppingFunctions.add(msg -> msg.getReceiver().equals(node) || msg.getSender().equals(node));
+		droppers.add(msg -> msg.getReceiver().equals(node) || msg.getSender().equals(node));
 	}
 
 	@Override
 	public int nextLatency(MessageInTransit msg) {
-		if (droppingFunctions.stream().anyMatch(f -> f.test(msg))) {
+		if (droppers.stream().anyMatch(f -> f.test(msg))) {
 			return -1; // -1 Drops the message
 		}
 

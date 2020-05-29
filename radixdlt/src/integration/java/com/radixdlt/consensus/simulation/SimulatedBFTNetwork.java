@@ -200,16 +200,14 @@ public class SimulatedBFTNetwork {
 	}
 
 	public Completable start() {
-		// Send start event once all nodes have reached real epoch event (first epoch event is empty)
+		// Send start event once all nodes have reached real epoch event
 		final CompletableSubject completableSubject = CompletableSubject.create();
 		List<Completable> startedList = this.runners.values().stream()
 			.map(ConsensusRunner::events)
-			.map(o ->
-				o.map(Event::getEventType)
-					.filter(e -> e.equals(EventType.EPOCH))
-					.skip(1)
-					.firstOrError()
-					.ignoreElement()
+			.map(o -> o.map(Event::getEventType)
+				.filter(e -> e.equals(EventType.EPOCH))
+				.firstOrError()
+				.ignoreElement()
 			).collect(Collectors.toList());
 
 		Completable.merge(startedList).subscribe(completableSubject::onComplete);

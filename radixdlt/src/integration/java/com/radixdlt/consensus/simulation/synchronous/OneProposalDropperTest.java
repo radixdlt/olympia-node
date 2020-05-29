@@ -20,32 +20,33 @@ package com.radixdlt.consensus.simulation.synchronous;
 import com.radixdlt.consensus.simulation.BFTSimulatedTest;
 import com.radixdlt.consensus.simulation.BFTSimulatedTest.Builder;
 import java.util.concurrent.TimeUnit;
+import org.junit.Ignore;
 import org.junit.Test;
 
-/**
- * Simulation which tests for synchronous correctness if one node is significantly slower than
- * the others but is still within bounds of synchrony. Correctness depends on whether syncing is
- * enabled or not. Both cases are verified in this test.
- */
-public class OneSlowNodeTest {
+public class OneProposalDropperTest {
+
 	private final int minLatency = 10;
 	private final int maxLatency = 200;
-	private final int trips = 8;
+	private final int trips = 12;
 	private final int synchronousTimeout = maxLatency * trips;
 	private final Builder bftTestBuilder = BFTSimulatedTest.builder()
-		.numNodesAndLatencies(4, minLatency, minLatency, minLatency, maxLatency)
+		.numNodes(4)
+		.randomLatency(minLatency, maxLatency)
 		.pacemakerTimeout(synchronousTimeout)
+		.addProposalDropper()
 		.checkNoTimeouts("noTimeouts");
 
 	/**
-	 * Tests a static configuration of 3 fast, equal nodes and 1 slow node.
-	 * Test should pass even with GetVertices RPC disabled
+	 * Tests a configuration of 4 nodes with a dropping proposal adversary
+	 * Test should fail with GetVertices RPC disabled
 	 */
 	@Test
-	public void given_4_nodes_3_fast_and_1_slow_node_and_sync_disabled__then_a_timeout_wont_occur() {
+	@Ignore
+	public void given_get_vertices_disabled__then_test_should_fail_against_drop_proposal_adversary() {
 		BFTSimulatedTest oneSlowNodeTest = bftTestBuilder
 			.setGetVerticesRPCEnabled(false)
 			.build();
+
 		oneSlowNodeTest.run(1, TimeUnit.MINUTES);
 	}
 }
