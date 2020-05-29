@@ -15,13 +15,13 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.functional;
+package com.radixdlt.consensus.deterministic;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.functional.ControlledBFTNetwork.ChannelId;
-import com.radixdlt.consensus.functional.ControlledBFTNetwork.ControlledMessage;
+import com.radixdlt.consensus.deterministic.ControlledBFTNetwork.ChannelId;
+import com.radixdlt.consensus.deterministic.ControlledBFTNetwork.ControlledMessage;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
@@ -37,15 +37,15 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * A functional BFT test where each event that occurs in the BFT network
+ * A deterministic BFT test where each event that occurs in the BFT network
  * is emitted and processed synchronously by the caller.
  */
-public class BFTFunctionalTest {
+public class BFTDeterministicTest {
 	private final ImmutableList<ControlledBFTNode> nodes;
 	private final ImmutableList<ECPublicKey> pks;
 	private final ControlledBFTNetwork network;
 
-	public BFTFunctionalTest(int numNodes) {
+	public BFTDeterministicTest(int numNodes) {
 		ImmutableList<ECKeyPair> keys = Stream.generate(ECKeyPair::generateNew)
 			.limit(numNodes)
 			.sorted(Comparator.<ECKeyPair, EUID>comparing(k -> k.getPublicKey().euid()).reversed())

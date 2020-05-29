@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.functional;
+package com.radixdlt.consensus.deterministic;
 
 import static org.mockito.Mockito.mock;
 
@@ -39,7 +39,7 @@ import com.radixdlt.consensus.SyncVerticesRPCSender;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.VoteData;
-import com.radixdlt.consensus.functional.ControlledBFTNetwork.ControlledSender;
+import com.radixdlt.consensus.deterministic.ControlledBFTNetwork.ControlledSender;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker.TimeoutSender;
 import com.radixdlt.consensus.liveness.MempoolProposalGenerator;
