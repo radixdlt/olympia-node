@@ -17,14 +17,19 @@
 
 package com.radixdlt.consensus.simulation.synchronous;
 
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+
 import com.radixdlt.consensus.simulation.BFTSimulatedTest;
 import com.radixdlt.consensus.simulation.BFTSimulatedTest.Builder;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import org.junit.Ignore;
 import org.junit.Test;
 
+/**
+ * Simulation with a communication adversary which drops a random proposal message in every
+ * round.
+ */
 public class OneProposalDropperTest {
-
 	private final int minLatency = 10;
 	private final int maxLatency = 200;
 	private final int trips = 12;
@@ -34,6 +39,8 @@ public class OneProposalDropperTest {
 		.randomLatency(minLatency, maxLatency)
 		.pacemakerTimeout(synchronousTimeout)
 		.addProposalDropper()
+		.checkSafety("safety")
+		.checkAllProposalsHaveDirectParents("directParents")
 		.checkNoTimeouts("noTimeouts");
 
 	/**
@@ -41,12 +48,26 @@ public class OneProposalDropperTest {
 	 * Test should fail with GetVertices RPC disabled
 	 */
 	@Test
-	@Ignore
 	public void given_get_vertices_disabled__then_test_should_fail_against_drop_proposal_adversary() {
-		BFTSimulatedTest oneSlowNodeTest = bftTestBuilder
+		BFTSimulatedTest test = bftTestBuilder
 			.setGetVerticesRPCEnabled(false)
 			.build();
 
-		oneSlowNodeTest.run(1, TimeUnit.MINUTES);
+		Map<String, Boolean> results = test.run(1, TimeUnit.MINUTES);
+		assertThat(results).containsEntry("noTimeouts", false);
+	}
+
+	/**
+	 * Tests a configuration of 4 nodes with a dropping proposal adversary
+	 * Test should fail with GetVertices RPC disabled
+	 */
+	@Test
+	public void given_get_vertices_enabled__then_test_should_succeed_against_drop_proposal_adversary() {
+		BFTSimulatedTest test = bftTestBuilder
+			.setGetVerticesRPCEnabled(true)
+			.build();
+
+		Map<String, Boolean> results = test.run(1, TimeUnit.MINUTES);
+		assertThat(results).doesNotContainValue(false);
 	}
 }

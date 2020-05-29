@@ -17,8 +17,11 @@
 
 package com.radixdlt.consensus.simulation.synchronous;
 
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+
 import com.radixdlt.consensus.simulation.BFTSimulatedTest;
 import com.radixdlt.consensus.simulation.BFTSimulatedTest.Builder;
+import java.util.Map;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
@@ -52,11 +55,13 @@ public class RandomLatencyTest {
 	 */
 	@Test
 	public void given_3_correct_nodes_in_random_network_and_no_sync__then_all_synchronous_checks_should_pass() {
-		BFTSimulatedTest bftTest = bftTestBuilder
+		BFTSimulatedTest test = bftTestBuilder
 			.numNodes(3)
 			.build();
 
-		bftTest.run(1, TimeUnit.MINUTES);
+		test.run(1, TimeUnit.MINUTES);
+		Map<String, Boolean> results = test.run(1, TimeUnit.MINUTES);
+		assertThat(results).doesNotContainValue(false);
 	}
 
 	/**
@@ -64,10 +69,12 @@ public class RandomLatencyTest {
 	 */
 	@Test
 	public void given_4_correct_bfts_in_random_network_and_no_sync__then_all_synchronous_checks_should_pass() {
-		BFTSimulatedTest bftTest = bftTestBuilder
+		BFTSimulatedTest test = bftTestBuilder
 			.numNodes(4)
 			.build();
 
-		bftTest.run(1, TimeUnit.MINUTES);
+		test.run(1, TimeUnit.MINUTES);
+		Map<String, Boolean> results = test.run(1, TimeUnit.MINUTES);
+		assertThat(results).doesNotContainValue(false);
 	}
 }

@@ -24,13 +24,13 @@ import com.radixdlt.consensus.simulation.checks.LivenessCheck;
 import com.radixdlt.consensus.simulation.checks.NoSyncExceptionCheck;
 import com.radixdlt.consensus.simulation.checks.NoTimeoutCheck;
 import com.radixdlt.consensus.simulation.checks.SafetyCheck;
-import com.radixdlt.consensus.simulation.checks.SyncOccurrenceCheck;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork;
 import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork.LatencyProvider;
+import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Completable;
-import java.util.ArrayList;
+import io.reactivex.rxjava3.core.Single;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -40,7 +40,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 /**
  * High level BFT Simulation Test Runner
@@ -146,7 +145,13 @@ public class BFTSimulatedTest {
 		}
 
 		public BFTSimulatedTest build() {
-			return new BFTSimulatedTest(ImmutableList.copyOf(nodes), latencyProvider.copyOf(), pacemakerTimeout, getVerticesRPCEnabled, ImmutableMap.copyOf(checks));
+			return new BFTSimulatedTest(
+				ImmutableList.copyOf(nodes),
+				latencyProvider.copyOf(),
+				pacemakerTimeout,
+				getVerticesRPCEnabled,
+				ImmutableMap.copyOf(checks)
+			);
 		}
 	}
 
@@ -154,17 +159,34 @@ public class BFTSimulatedTest {
 		return new Builder();
 	}
 
-	// TODO: return list of results
-	public void run(long duration, TimeUnit timeUnit) {
+	/**
+	 * Runs the test for a given time. Returns either once the duration has passed or if a check has failed.
+	 * Returns a map from the check name to the result.
+	 *
+	 * @param duration duration to run test for
+	 * @param timeUnit time unit of duration
+	 * @return map of check results
+	 */
+	public Map<String, Boolean> run(long duration, TimeUnit timeUnit) {
 		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.builder()
 			.latencyProvider(this.latencyProvider)
 			.build();
 		SimulatedBFTNetwork bftNetwork =  new SimulatedBFTNetwork(nodes, network, pacemakerTimeout, getVerticesRPCEnabled);
-		List<Completable> assertions = this.checks.values().stream().map(c -> c.check(bftNetwork)).collect(Collectors.toList());
-		bftNetwork.start()
+		List<Single<Pair<String, Boolean>>> assertions = this.checks.keySet().stream()
+			.map(name -> {
+				BFTCheck check = this.checks.get(name);
+				return check.check(bftNetwork).takeUntil(Completable.timer(duration, timeUnit))
+						.toSingleDefault(true)
+						.onErrorReturnItem(false)
+						.map(result -> Pair.of(name, result));
+			})
+			.collect(Collectors.toList());
+
+		return bftNetwork.start()
 			.timeout(10, TimeUnit.SECONDS)
-			.andThen(Completable.merge(assertions))
-			.blockingAwait(duration, timeUnit);
-		bftNetwork.stop();
+			.andThen(Single.merge(assertions))
+			.doFinally(bftNetwork::stop)
+			.blockingStream()
+			.collect(Collectors.toMap(Pair::getFirst, Pair::getSecond));
 	}
 }
