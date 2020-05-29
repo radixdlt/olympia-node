@@ -37,15 +37,21 @@ public interface SyncVerticesRPCSender {
 	};
 
 	/**
-	 * Execute an RPC to retrieve vertices given an Id and number of
+	 * Send an RPC request to retrieve vertices given an Id and number of
 	 * vertices. i.e. The vertex with the given id and (count - 1) ancestors
 	 * will be returned.
 	 *
 	 * @param id the id of the vertex to retrieve
 	 * @param node the node to retrieve the vertex info from
 	 * @param count number of vertices to retrieve
+	 * @param opaque an object which is expected to be provided in the corresponding response
 	 */
 	void sendGetVerticesRequest(Hash id, ECPublicKey node, int count, Object opaque);
 
+	/**
+	 * Send an RPC response to a given request
+	 * @param originalRequest the original request which is being replied to
+	 * @param vertices the response data of vertices
+	 */
 	void sendGetVerticesResponse(GetVerticesRequest originalRequest, List<Vertex> vertices);
 }

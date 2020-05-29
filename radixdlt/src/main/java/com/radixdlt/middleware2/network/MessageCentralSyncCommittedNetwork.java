@@ -31,7 +31,7 @@ import java.util.Objects;
 import javax.inject.Inject;
 
 /**
- * Sync Network interface using MessageCentral
+ * Network interface for syncing committed state using the MessageCentral
  */
 public final class MessageCentralSyncCommittedNetwork implements StateSyncNetwork {
 	private final int magic;

@@ -40,6 +40,9 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
 
+/**
+ * Network interface for syncing vertices using the MessageCentral
+ */
 @Singleton
 public class MessageCentralSyncVerticesRPCNetwork implements SyncVerticesRPCSender, SyncVerticesRPCRx {
 
