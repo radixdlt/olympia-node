@@ -65,6 +65,10 @@ import com.radixdlt.client.application.translate.tokens.TransferTokensToParticle
 import com.radixdlt.client.application.translate.unique.AlreadyUsedUniqueIdReasonMapper;
 import com.radixdlt.client.application.translate.unique.PutUniqueIdAction;
 import com.radixdlt.client.application.translate.unique.PutUniqueIdToParticleGroupsMapper;
+import com.radixdlt.client.application.translate.validators.RegisterValidatorAction;
+import com.radixdlt.client.application.translate.validators.UnregisterValidatorAction;
+import com.radixdlt.client.application.translate.validators.RegisterValidatorActionMapper;
+import com.radixdlt.client.application.translate.validators.UnregisterValidatorActionMapper;
 import com.radixdlt.client.core.BootstrapConfig;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
@@ -151,6 +155,8 @@ public class RadixApplicationAPI {
 			.addStatefulParticlesMapper(MintTokensAction.class, new MintTokensActionMapper())
 			.addStatefulParticlesMapper(BurnTokensAction.class, new BurnTokensActionMapper())
 			.addStatefulParticlesMapper(TransferTokensAction.class, new TransferTokensToParticleGroupsMapper())
+			.addStatefulParticlesMapper(RegisterValidatorAction.class, new RegisterValidatorActionMapper())
+			.addStatefulParticlesMapper(UnregisterValidatorAction.class, new UnregisterValidatorActionMapper())
 			.addReducer(new TokenDefinitionsReducer())
 			.addReducer(new TokenBalanceReducer())
 			.addAtomMapper(new AtomToDecryptedMessageMapper())
@@ -772,6 +778,34 @@ public class RadixApplicationAPI {
 			TransferTokensAction.create(token, from, to, amount, attachment);
 
 		return this.execute(transferTokensAction);
+	}
+
+	/**
+	 * Registers the given address as a validator.
+	 *
+	 * @param validator the validator address to be registered
+	 * @return result of the transaction
+	 */
+	public Result registerValidator(
+		RadixAddress validator
+	) {
+		final RegisterValidatorAction registerValidatorAction = new RegisterValidatorAction(validator);
+
+		return this.execute(registerValidatorAction);
+	}
+
+	/**
+	 * Unregisters the given address as a validator.
+	 *
+	 * @param validator the validator address to be unregistered
+	 * @return result of the transaction
+	 */
+	public Result unregisterValidator(
+		RadixAddress validator
+	) {
+		final UnregisterValidatorAction unregisterValidatorAction = new UnregisterValidatorAction(validator);
+
+		return this.execute(unregisterValidatorAction);
 	}
 
 	/**

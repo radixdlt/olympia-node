@@ -24,6 +24,8 @@ package com.radixdlt.client.serialization;
 
 import com.radixdlt.client.atommodel.rri.RRIParticle;
 import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
+import com.radixdlt.client.atommodel.validators.RegisteredValidatorParticle;
+import com.radixdlt.client.atommodel.validators.UnregisteredValidatorParticle;
 import com.radixdlt.client.core.network.jsonrpc.ShardRange;
 import com.radixdlt.client.core.network.jsonrpc.ShardSpace;
 import java.util.Arrays;
@@ -76,6 +78,8 @@ public final class Serialize {
 				UnallocatedTokensParticle.class,
 				TransferrableTokensParticle.class,
 				UniqueParticle.class,
+				RegisteredValidatorParticle.class,
+				UnregisteredValidatorParticle.class,
 
 				ECDSASignature.class,
 				NodeRunnerData.class,
