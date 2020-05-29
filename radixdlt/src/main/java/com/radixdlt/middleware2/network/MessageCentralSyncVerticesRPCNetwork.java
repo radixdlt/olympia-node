@@ -86,8 +86,8 @@ public class MessageCentralSyncVerticesRPCNetwork implements SyncVerticesRPCSend
 	}
 
 	@Override
-	public void sendGetVerticesResponse(GetVerticesRequest request, List<Vertex> vertices) {
-		MessageCentralGetVerticesRequest messageCentralGetVerticesRequest = (MessageCentralGetVerticesRequest) request;
+	public void sendGetVerticesResponse(GetVerticesRequest originalRequest, List<Vertex> vertices) {
+		MessageCentralGetVerticesRequest messageCentralGetVerticesRequest = (MessageCentralGetVerticesRequest) originalRequest;
 		GetVerticesResponseMessage response = new GetVerticesResponseMessage(this.magic, vertices);
 		Peer peer = messageCentralGetVerticesRequest.getRequestor();
 		this.messageCentral.send(peer, response);
@@ -125,7 +125,7 @@ public class MessageCentralSyncVerticesRPCNetwork implements SyncVerticesRPCSend
 	/**
 	 * An RPC request to retrieve a given vertex
 	 */
-	private static final class MessageCentralGetVerticesRequest implements GetVerticesRequest {
+	static final class MessageCentralGetVerticesRequest implements GetVerticesRequest {
 		private final Peer requestor;
 		private final Hash vertexId;
 		private final int count;
@@ -152,8 +152,7 @@ public class MessageCentralSyncVerticesRPCNetwork implements SyncVerticesRPCSend
 
 		@Override
 		public String toString() {
-			return String.format("%s{vertexId=%s}",
-				getClass().getSimpleName(), vertexId.toString().substring(0, 6));
+			return String.format("%s{vertexId=%s}", getClass().getSimpleName(), vertexId.toString().substring(0, 6));
 		}
 	}
 }
