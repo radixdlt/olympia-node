@@ -17,6 +17,8 @@
 
 package com.radixdlt.crypto.encryption;
 
+import com.radixdlt.SecurityCritical;
+import com.radixdlt.SecurityCritical.SecurityKind;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECMultiplicationScalar;
 import com.radixdlt.crypto.ECPublicKey;
@@ -39,6 +41,7 @@ import java.util.Arrays;
  * Encrypt and Decrypt data using ECIES
  * (Elliptic Curve <a href="https://en.wikipedia.org/wiki/Integrated_Encryption_Scheme">Integrated Encryption Scheme</a>, subset of DHIES):
  */
+@SecurityCritical({ SecurityKind.PK_DECRYPT, SecurityKind.PK_ENCRYPT })
 public final class ECIES {
 
 	private static SecureRandom secureRandom;

@@ -71,7 +71,8 @@ public class ECKeyUtils {
 
 	static synchronized void install() {
 		if (RuntimeUtils.isAndroidRuntime()) {
-			new LinuxSecureRandom();
+			// Reference class so static initialiser is called.
+			LinuxSecureRandom.class.getName();
 			// Ensure the library version of BouncyCastle is used for Android
 			Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME);
 		}

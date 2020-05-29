@@ -18,6 +18,9 @@
 package com.radixdlt.utils;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.radixdlt.SecurityCritical;
+import com.radixdlt.SecurityCritical.SecurityKind;
+
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Objects;
@@ -26,6 +29,7 @@ import java.util.Objects;
  * A 256-bit unsigned integer, with comparison and some basic arithmetic
  * operations.
  */
+@SecurityCritical(SecurityKind.NUMERIC)
 public final class UInt256 implements Comparable<UInt256> {
 	// Some sizing constants in line with Integer, Long etc
 	/**

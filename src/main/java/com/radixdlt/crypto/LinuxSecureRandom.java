@@ -25,6 +25,9 @@ import java.security.Provider;
 import java.security.SecureRandomSpi;
 import java.security.Security;
 
+import com.radixdlt.SecurityCritical;
+import com.radixdlt.SecurityCritical.SecurityKind;
+
 /**
  * Implementation from
  * <a href="https://github.com/bitcoinj/bitcoinj/blob/master/core/src/main/java/org/bitcoinj/crypto/LinuxSecureRandom.java">
@@ -36,6 +39,7 @@ import java.security.Security;
  * set the seed are ignored. There is no difference between seed bytes and non-seed bytes, they are
  * all from the same source.
  */
+@SecurityCritical(SecurityKind.RANDOMNESS)
 public class LinuxSecureRandom extends SecureRandomSpi {
     private static final FileInputStream URANDOM;
 

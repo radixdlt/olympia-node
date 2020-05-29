@@ -59,6 +59,8 @@ import org.bouncycastle.operator.OperatorCreationException;
 import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.SecurityCritical;
+import com.radixdlt.SecurityCritical.SecurityKind;
 
 /**
  * A key store that provide basic integrity checks, plus an optional level
@@ -75,6 +77,7 @@ import com.google.common.collect.ImmutableSet;
  * default 5 character password, "radix" is used.  Clearly this is insecure,
  * and clients should make an effort to specify passwords in a secure way.
  */
+@SecurityCritical(SecurityKind.KEY_STORE)
 public final class RadixKeyStore implements Closeable {
 	// ASN.1 Object Identifiers for various things we use
 	private static final ASN1ObjectIdentifier OID_EC_ENCRYPTION     = new ASN1ObjectIdentifier("1.2.840.10045.2.1");

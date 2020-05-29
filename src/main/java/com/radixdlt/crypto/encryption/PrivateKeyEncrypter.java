@@ -37,6 +37,8 @@ import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import com.google.gson.stream.JsonReader;
+import com.radixdlt.SecurityCritical;
+import com.radixdlt.SecurityCritical.SecurityKind;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECKeyUtils;
 import com.radixdlt.crypto.Hash;
@@ -47,6 +49,7 @@ import com.radixdlt.crypto.keystore.Keystore;
 import com.radixdlt.crypto.keystore.Pbkdfparams;
 import com.radixdlt.utils.Bytes;
 
+@SecurityCritical({ SecurityKind.PK_DECRYPT, SecurityKind.PK_ENCRYPT })
 public final class PrivateKeyEncrypter {
 
     private static final int ITERATIONS = 100000;

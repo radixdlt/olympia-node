@@ -20,10 +20,14 @@ package com.radixdlt.utils;
 import java.util.Arrays;
 import java.util.Objects;
 
+import com.radixdlt.SecurityCritical;
+import com.radixdlt.SecurityCritical.SecurityKind;
+
 /**
  * A 384-bit unsigned integer, with comparison and some basic arithmetic
  * operations.
  */
+@SecurityCritical(SecurityKind.NUMERIC)
 public final class UInt384 implements Comparable<UInt384> {
 	// Some sizing constants in line with Integer, Long etc
 	/**
