@@ -19,18 +19,10 @@ package com.radixdlt.consensus.liveness;
 
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.View;
-import com.radixdlt.consensus.validators.ValidationState;
 import com.radixdlt.consensus.validators.ValidatorSet;
-import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.Hash;
-import com.radixdlt.utils.Longs;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -57,7 +49,7 @@ public final class FixedTimeoutPacemaker implements Pacemaker {
 	private final long timeoutMilliseconds;
 	private final TimeoutSender timeoutSender;
 
-	private final Map<View, ValidationState> pendingNewViews = new HashMap<>();
+	private final PendingNewViews pendingNewViews = new PendingNewViews();
 	private View currentView = View.of(0L);
 	private View lastSyncView = View.of(0L);
 
@@ -99,27 +91,11 @@ public final class FixedTimeoutPacemaker implements Pacemaker {
 		final View qcView = newView.getQC().getView();
 		final boolean highestQC = !qcView.isGenesis() && qcView.next().equals(this.currentView);
 
-		if (!highestQC) {
-			Hash newViewId = Hash.of(Longs.toByteArray(newView.getView().number()));
-			ECDSASignature signature = newView.getSignature().orElseThrow(() -> new IllegalArgumentException("new-view is missing signature"));
-			ECPublicKey newViewAuthor = newView.getAuthor();
-			if (newViewAuthor.verify(newViewId, signature)) {
-				// Process if signature valid
-				ValidationState validationState = pendingNewViews.computeIfAbsent(newView.getView(), k -> validatorSet.newValidationState());
-
-				// check if we have gotten enough new-views to proceed
-				if (!validationState.addSignature(newViewAuthor, signature) || !validationState.complete()) {
-					// if we haven't got enough new-views yet, do nothing
-					return Optional.empty();
-				}
-			} else {
-				// Signature not valid, just ignore
-				return Optional.empty();
-			}
+		if (!highestQC && !this.pendingNewViews.insertNewView(newView, validatorSet).isPresent()) {
+			return Optional.empty();
 		}
 
 		if (newView.getView().equals(this.currentView)) {
-			pendingNewViews.remove(newView.getView());
 			this.lastSyncView = this.currentView;
 			return Optional.of(this.currentView);
 		} else {

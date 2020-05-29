@@ -147,6 +147,7 @@ public class FixedTimeoutPacemakerTest {
 		when(validationState.addSignature(any(), any())).thenReturn(true);
 		when(validationState.complete()).thenReturn(true);
 		when(validatorSet.newValidationState()).thenReturn(validationState);
+		when(validatorSet.containsKey(any())).thenReturn(true);
 		pacemaker.processQC(View.of(0));
 
 		assertThat(pacemaker.processNewView(newView, validatorSet)).isPresent().get().isEqualTo(View.of(1));
@@ -187,6 +188,7 @@ public class FixedTimeoutPacemakerTest {
 		ValidationState validationState = mock(ValidationState.class);
 		when(validationState.complete()).thenReturn(true);
 		when(validatorSet.newValidationState()).thenReturn(validationState);
+		when(validatorSet.containsKey(any())).thenReturn(true);
 
 		pacemaker.processQC(View.genesis());
 		verify(timeoutSender, times(1)).scheduleTimeout(any(), anyLong());
