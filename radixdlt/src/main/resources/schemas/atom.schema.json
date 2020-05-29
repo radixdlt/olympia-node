@@ -352,6 +352,7 @@
         "address": { "$ref": "#/definitions/address" },
         "nonce": { "type": "number" }
       },
+      "required": [ "serializer", "address", "nonce" ],
       "description": "A particle which marks a validator address as registered."
     },
     "unregisteredValidatorParticle": {
@@ -377,6 +378,7 @@
           "type": "number"
         }
       },
+      "required": [ "serializer", "address", "nonce" ],
       "description": "A particle which marks a validator address as unregistered."
     }
   }
