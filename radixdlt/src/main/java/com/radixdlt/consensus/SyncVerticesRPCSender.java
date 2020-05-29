@@ -26,16 +26,6 @@ import java.util.List;
  * An asynchronous supplier which retrieves data for a vertex with a given id
  */
 public interface SyncVerticesRPCSender {
-	SyncVerticesRPCSender EMPTY = new SyncVerticesRPCSender() {
-		@Override
-		public void sendGetVerticesRequest(Hash id, ECPublicKey node, int count, Object opaque) {
-		}
-
-		@Override
-		public void sendGetVerticesResponse(GetVerticesRequest originalRequest, List<Vertex> vertices) {
-		}
-	};
-
 	/**
 	 * Send an RPC request to retrieve vertices given an Id and number of
 	 * vertices. i.e. The vertex with the given id and (count - 1) ancestors

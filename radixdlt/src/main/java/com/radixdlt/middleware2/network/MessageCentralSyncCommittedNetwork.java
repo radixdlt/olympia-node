@@ -49,9 +49,7 @@ public final class MessageCentralSyncCommittedNetwork implements StateSyncNetwor
 	@Override
 	public Observable<List<CommittedAtom>> syncResponses() {
 		return Observable.create(emitter -> {
-			MessageListener<SyncResponseMessage> listener = (src, msg) -> {
-				emitter.onNext(msg.getAtoms());
-			};
+			MessageListener<SyncResponseMessage> listener = (src, msg) -> emitter.onNext(msg.getAtoms());
 			this.messageCentral.addListener(SyncResponseMessage.class, listener);
 			emitter.setCancellable(() -> this.messageCentral.removeListener(listener));
 		});

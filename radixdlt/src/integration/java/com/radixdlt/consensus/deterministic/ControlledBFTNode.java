@@ -22,6 +22,7 @@ import static org.mockito.Mockito.mock;
 import com.radixdlt.consensus.BFTEventPreprocessor;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.DefaultHasher;
+import com.radixdlt.consensus.EmptySyncVerticesRPCSender;
 import com.radixdlt.consensus.GetVerticesResponse;
 import com.radixdlt.consensus.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.Hasher;
@@ -96,7 +97,7 @@ class ControlledBFTNode {
 			}
 		};
 
-		SyncVerticesRPCSender syncVerticesRPCSender = enableGetVerticesRPC ? sender : SyncVerticesRPCSender.EMPTY;
+		SyncVerticesRPCSender syncVerticesRPCSender = enableGetVerticesRPC ? sender : EmptySyncVerticesRPCSender.INSTANCE;
 		this.vertexStore = new VertexStore(genesisVertex, genesisQC, stateComputer, syncVerticesRPCSender, sender, systemCounters);
 		Mempool mempool = new EmptyMempool();
 		ProposalGenerator proposalGenerator = new MempoolProposalGenerator(vertexStore, mempool);

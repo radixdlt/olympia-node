@@ -22,6 +22,7 @@ import com.radixdlt.consensus.ConsensusRunner;
 import com.radixdlt.consensus.ConsensusRunner.Event;
 import com.radixdlt.consensus.ConsensusRunner.EventType;
 import com.radixdlt.consensus.DefaultHasher;
+import com.radixdlt.consensus.EmptySyncVerticesRPCSender;
 import com.radixdlt.consensus.EpochManager;
 import com.radixdlt.consensus.EpochRx;
 import com.radixdlt.consensus.Hasher;
@@ -137,7 +138,7 @@ public class SimulatedBFTNetwork {
 					};
 					SyncVerticesRPCSender syncVerticesRPCSender = getVerticesRPCEnabled
 						? underlyingNetwork.getVerticesRequestSender(e.getPublicKey())
-						: SyncVerticesRPCSender.EMPTY;
+						: EmptySyncVerticesRPCSender.INSTANCE;
 					return new VertexStore(
 						genesisVertex,
 						genesisQC,
