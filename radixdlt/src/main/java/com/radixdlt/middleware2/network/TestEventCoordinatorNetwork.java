@@ -20,20 +20,23 @@ package com.radixdlt.middleware2.network;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.EventCoordinatorNetworkRx;
 import com.radixdlt.consensus.BFTEventSender;
-import com.radixdlt.consensus.GetVerticesRequest;
 import com.radixdlt.consensus.GetVerticesResponse;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.VertexSupplier;
+import com.radixdlt.consensus.SyncVerticesRPCRx;
+import com.radixdlt.consensus.SyncVerticesRPCSender;
+import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.Hash;
 import io.reactivex.rxjava3.core.Observable;
 
-import io.reactivex.rxjava3.core.Single;
-import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Timed;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -112,7 +115,7 @@ public class TestEventCoordinatorNetwork {
 	}
 
 	private final Subject<MessageInTransit> receivedMessages;
-	private final Map<ECPublicKey, SimulatedReceiver> receivers = new ConcurrentHashMap<>();
+	private final Map<ECPublicKey, SimulatedNetworkImpl> receivers = new ConcurrentHashMap<>();
 	private final LatencyProvider latencyProvider;
 
 	private TestEventCoordinatorNetwork(LatencyProvider latencyProvider) {
@@ -162,32 +165,36 @@ public class TestEventCoordinatorNetwork {
 		};
 	}
 
-	public VertexSupplier getVertexSupplier(ECPublicKey forNode) {
-		return (vertexId, node, count) -> Single.create(emitter -> {
-			Disposable d = receivers.computeIfAbsent(forNode, SimulatedReceiver::new).myMessages
-				.ofType(GetVerticesResponse.class)
-				.filter(v -> v.getVertexId().equals(vertexId))
-				.firstOrError()
-				.map(GetVerticesResponse::getVertices)
-				.subscribe(emitter::onSuccess);
-			emitter.setDisposable(d);
+	private static final class SimulatedVerticesRequest implements GetVerticesRequest {
+		private final Hash vertexId;
+		private final int count;
+		private final ECPublicKey requestor;
 
-			final GetVerticesRequest request = new GetVerticesRequest(
-				vertexId,
-				count,
-				vertices -> {
-					GetVerticesResponse vertexResponse = new GetVerticesResponse(vertexId, vertices);
-					receivedMessages.onNext(MessageInTransit.newMessage(vertexResponse, node, forNode));
-				}
-			);
-			receivedMessages.onNext(MessageInTransit.newMessage(request, forNode, node));
-		});
+		private SimulatedVerticesRequest(ECPublicKey requestor, Hash vertexId, int count) {
+			this.requestor = requestor;
+			this.vertexId = vertexId;
+			this.count = count;
+		}
+
+		@Override
+		public Hash getVertexId() {
+			return vertexId;
+		}
+
+		@Override
+		public int getCount() {
+			return count;
+		}
 	}
 
-	private class SimulatedReceiver implements EventCoordinatorNetworkRx {
-		private final Observable<Object> myMessages;
 
-		private SimulatedReceiver(ECPublicKey node) {
+	private class SimulatedNetworkImpl implements SimulatedNetworkReceiver, SyncVerticesRPCSender {
+		private final Observable<Object> myMessages;
+		private final ECPublicKey thisNode;
+		private HashMap<Hash, Object> opaqueMap = new HashMap<>();
+
+		private SimulatedNetworkImpl(ECPublicKey node) {
+			this.thisNode = node;
 			// filter only relevant messages (appropriate target and if receiving is allowed)
 			this.myMessages = receivedMessages
 				.filter(msg -> msg.receiver.equals(node))
@@ -216,17 +223,45 @@ public class TestEventCoordinatorNetwork {
 		}
 
 		@Override
+		public void sendGetVerticesRequest(Hash id, ECPublicKey node, int count, Object opaque) {
+			final SimulatedVerticesRequest request = new SimulatedVerticesRequest(thisNode, id, count);
+			opaqueMap.put(id, opaque);
+			receivedMessages.onNext(MessageInTransit.newMessage(request, thisNode, node));
+		}
+
+		@Override
+		public void sendGetVerticesResponse(GetVerticesRequest originalRequest, List<Vertex> vertices) {
+			Hash vertexId = vertices.get(0).getId();
+			SimulatedVerticesRequest request = (SimulatedVerticesRequest) originalRequest;
+			Object opaque = receivers.computeIfAbsent(request.requestor, SimulatedNetworkImpl::new).opaqueMap.get(vertexId);
+			GetVerticesResponse vertexResponse = new GetVerticesResponse(vertexId, vertices, opaque);
+			receivedMessages.onNext(MessageInTransit.newMessage(vertexResponse, thisNode, request.requestor));
+		}
+
+		@Override
 		public Observable<ConsensusEvent> consensusEvents() {
 			return myMessages.ofType(ConsensusEvent.class);
 		}
 
 		@Override
-		public Observable<GetVerticesRequest> rpcRequests() {
+		public Observable<GetVerticesRequest> requests() {
 			return myMessages.ofType(GetVerticesRequest.class);
+		}
+
+		@Override
+		public Observable<GetVerticesResponse> responses() {
+			return myMessages.ofType(GetVerticesResponse.class);
 		}
 	}
 
-	public EventCoordinatorNetworkRx getNetworkRx(ECPublicKey forNode) {
-		return receivers.computeIfAbsent(forNode, SimulatedReceiver::new);
+	public SimulatedNetworkReceiver getNetworkRx(ECPublicKey forNode) {
+		return receivers.computeIfAbsent(forNode, SimulatedNetworkImpl::new);
+	}
+
+	public SyncVerticesRPCSender getVerticesRequestSender(ECPublicKey forNode) {
+		return receivers.computeIfAbsent(forNode, SimulatedNetworkImpl::new);
+	}
+
+	public interface SimulatedNetworkReceiver extends EventCoordinatorNetworkRx, SyncVerticesRPCRx {
 	}
 }

@@ -17,12 +17,7 @@
 
 package com.radixdlt.middleware2.network;
 
-import com.radixdlt.consensus.GetVerticesRequest;
-import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.VertexSupplier;
-import com.radixdlt.crypto.Hash;
-import io.reactivex.rxjava3.core.Single;
-import java.util.List;
+import com.google.inject.Singleton;
 import java.util.Objects;
 
 import java.util.Optional;
@@ -53,7 +48,8 @@ import io.reactivex.rxjava3.subjects.PublishSubject;
  * BFT Network sending and receiving layer used on top of the MessageCentral
  * layer.
  */
-public final class MessageCentralBFTNetwork implements BFTEventSender, EventCoordinatorNetworkRx, VertexSupplier {
+@Singleton
+public final class MessageCentralBFTNetwork implements BFTEventSender, EventCoordinatorNetworkRx {
 	private static final Logger log = LogManager.getLogger();
 
 	private final ECPublicKey selfPublicKey;
@@ -86,22 +82,6 @@ public final class MessageCentralBFTNetwork implements BFTEventSender, EventCoor
 	}
 
 	@Override
-	public Observable<GetVerticesRequest> rpcRequests() {
-		return Observable.create(emitter -> {
-			MessageListener<GetVerticesRequestMessage> listener = (src, msg) -> {
-				final GetVerticesRequest request = new GetVerticesRequest(
-					msg.getVertexId(),
-					msg.getCount(),
-					vertices -> this.messageCentral.send(src, new GetVerticesResponseMessage(this.magic, vertices))
-				);
-				emitter.onNext(request);
-			};
-			this.messageCentral.addListener(GetVerticesRequestMessage.class, listener);
-			emitter.setCancellable(() -> this.messageCentral.removeListener(listener));
-		});
-	}
-
-	@Override
 	public void broadcastProposal(Proposal proposal) {
 		this.localMessages.onNext(proposal);
 		ConsensusEventMessage message = new ConsensusEventMessage(this.magic, proposal);
@@ -126,35 +106,6 @@ public final class MessageCentralBFTNetwork implements BFTEventSender, EventCoor
 			ConsensusEventMessage message = new ConsensusEventMessage(this.magic, vote);
 			send(message, leader);
 		}
-	}
-
-	@Override
-	public Single<List<Vertex>> getVertices(Hash vertexId, ECPublicKey node, int count) {
-		if (this.selfPublicKey.equals(node)) {
-			throw new IllegalStateException("Should never need to retrieve a vertex from self.");
-		}
-
-		return Single.create(emitter -> {
-			final Optional<Peer> peer = this.addressBook.peer(node.euid());
-			if (!peer.isPresent()) {
-				// TODO: Change to more appropriate exception type
-				emitter.onError(new IllegalStateException(String.format("Peer with pubkey %s not present", node)));
-				return;
-			}
-
-			final MessageListener<GetVerticesResponseMessage> listener =
-				(src, msg) -> {
-					// TODO: implement more robust RPC request/response mapping
-					if (msg.getVertices().get(0).getId().equals(vertexId) && msg.getVertices().size() == count) {
-						emitter.onSuccess(msg.getVertices());
-					}
-				};
-			this.messageCentral.addListener(GetVerticesResponseMessage.class, listener);
-			emitter.setCancellable(() -> this.messageCentral.removeListener(listener));
-
-			final GetVerticesRequestMessage vertexRequest = new GetVerticesRequestMessage(this.magic, vertexId, count);
-			this.messageCentral.send(peer.get(), vertexRequest);
-		});
 	}
 
 	private boolean send(Message message, ECPublicKey recipient) {

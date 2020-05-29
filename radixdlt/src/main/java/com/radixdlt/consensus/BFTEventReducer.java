@@ -37,7 +37,6 @@ import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.utils.Longs;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -248,14 +247,6 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		} else {
 			log.trace("{}: LOCAL_TIMEOUT: Ignoring {}", this.getShortName(), view);
 		}
-	}
-
-	@Override
-	public void processGetVertexRequest(GetVerticesRequest request) {
-		log.info("{}: GET_VERTEX Request: Processing: {}", this.getShortName(), request);
-		List<Vertex> vertices = this.vertexStore.getVertices(request.getVertexId(), request.getCount());
-		log.info("{}: GET_VERTEX Request: Sending Response: {}", this.getShortName(), vertices);
-		request.getResponder().accept(vertices);
 	}
 
 	@Override

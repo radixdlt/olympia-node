@@ -22,7 +22,8 @@ import static org.mockito.Mockito.mock;
 import com.radixdlt.consensus.BFTEventPreprocessor;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.DefaultHasher;
-import com.radixdlt.consensus.GetVerticesRequest;
+import com.radixdlt.consensus.GetVerticesResponse;
+import com.radixdlt.consensus.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.PendingVotes;
@@ -34,7 +35,7 @@ import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.VertexStore;
-import com.radixdlt.consensus.VertexSupplier;
+import com.radixdlt.consensus.SyncVerticesRPCSender;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.VoteData;
@@ -59,7 +60,6 @@ import com.radixdlt.mempool.EmptyMempool;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.CommittedAtom;
 import io.reactivex.rxjava3.core.Completable;
-import io.reactivex.rxjava3.core.Single;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -95,8 +95,8 @@ class ControlledBFTNode {
 			}
 		};
 
-		VertexSupplier vertexSupplier = (hash, node, id) -> Single.error(new UnsupportedOperationException());
-		this.vertexStore = new VertexStore(genesisVertex, genesisQC, stateComputer, vertexSupplier, sender, systemCounters);
+		SyncVerticesRPCSender syncVerticesRPCSender = SyncVerticesRPCSender.EMPTY;
+		this.vertexStore = new VertexStore(genesisVertex, genesisQC, stateComputer, syncVerticesRPCSender, sender, systemCounters);
 		Mempool mempool = new EmptyMempool();
 		ProposalGenerator proposalGenerator = new MempoolProposalGenerator(vertexStore, mempool);
 		TimeoutSender timeoutSender = mock(TimeoutSender.class);
@@ -144,7 +144,9 @@ class ControlledBFTNode {
 
 	void processNext(Object msg) {
 		if (msg instanceof GetVerticesRequest) {
-			ec.processGetVertexRequest((GetVerticesRequest) msg);
+			vertexStore.processGetVerticesRequest((GetVerticesRequest) msg);
+		} else if (msg instanceof GetVerticesResponse) {
+			vertexStore.processGetVerticesResponse((GetVerticesResponse) msg);
 		} else if (msg instanceof View) {
 			ec.processLocalTimeout((View) msg);
 		} else if (msg instanceof NewView) {

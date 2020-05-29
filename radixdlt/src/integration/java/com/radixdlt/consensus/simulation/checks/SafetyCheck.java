@@ -17,12 +17,9 @@
 
 package com.radixdlt.consensus.simulation.checks;
 
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
-
 import com.radixdlt.consensus.simulation.BFTCheck;
 import com.radixdlt.consensus.simulation.SimulatedBFTNetwork;
 import com.radixdlt.consensus.VertexStore;
-import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.Arrays;
 import java.util.stream.Collectors;
@@ -33,15 +30,21 @@ import java.util.stream.Collectors;
 public class SafetyCheck implements BFTCheck {
 
 	@Override
-	public Completable check(SimulatedBFTNetwork network) {
+	public Observable<BFTCheckError> check(SimulatedBFTNetwork network) {
 		return Observable.zip(
 			network.getNodes().stream()
 				.map(network::getVertexStore)
 				.map(VertexStore::lastCommittedVertex)
 				.collect(Collectors.toList()),
-			Arrays::stream)
+				Arrays::stream
+		)
 			.map(committedVertices -> committedVertices.distinct().collect(Collectors.toList()))
-			.doOnNext(committedVertices -> assertThat(committedVertices).hasSize(1))
-			.flatMapCompletable(v -> Completable.complete());
+			.concatMap(committedVertices -> {
+				if (committedVertices.size() != 1) {
+					return Observable.just(new BFTCheckError("Committed vertices don't match"));
+				} else {
+					return Observable.empty();
+				}
+			});
 	}
 }

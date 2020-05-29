@@ -33,12 +33,12 @@ import javax.inject.Inject;
 /**
  * Sync Network interface using MessageCentral
  */
-public final class MessageCentralSyncNetwork implements StateSyncNetwork {
+public final class MessageCentralSyncCommittedNetwork implements StateSyncNetwork {
 	private final int magic;
 	private final MessageCentral messageCentral;
 
 	@Inject
-	public MessageCentralSyncNetwork(
+	public MessageCentralSyncCommittedNetwork(
 		Universe universe,
 		MessageCentral messageCentral
 	) {

@@ -17,15 +17,24 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.consensus.VertexStore.GetVerticesRequest;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
-import io.reactivex.rxjava3.core.Single;
 import java.util.List;
 
 /**
  * An asynchronous supplier which retrieves data for a vertex with a given id
  */
-public interface VertexSupplier {
+public interface SyncVerticesRPCSender {
+	SyncVerticesRPCSender EMPTY = new SyncVerticesRPCSender() {
+		@Override
+		public void sendGetVerticesRequest(Hash id, ECPublicKey node, int count, Object opaque) {
+		}
+
+		@Override
+		public void sendGetVerticesResponse(GetVerticesRequest originalRequest, List<Vertex> vertices) {
+		}
+	};
 
 	/**
 	 * Execute an RPC to retrieve vertices given an Id and number of
@@ -35,7 +44,8 @@ public interface VertexSupplier {
 	 * @param id the id of the vertex to retrieve
 	 * @param node the node to retrieve the vertex info from
 	 * @param count number of vertices to retrieve
-	 * @return single of a vertex list which will complete once retrieved
 	 */
-	Single<List<Vertex>> getVertices(Hash id, ECPublicKey node, int count);
+	void sendGetVerticesRequest(Hash id, ECPublicKey node, int count, Object opaque);
+
+	void sendGetVerticesResponse(GetVerticesRequest originalRequest, List<Vertex> vertices);
 }

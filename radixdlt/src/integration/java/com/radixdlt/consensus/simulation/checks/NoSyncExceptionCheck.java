@@ -20,11 +20,8 @@ package com.radixdlt.consensus.simulation.checks;
 import com.radixdlt.consensus.simulation.BFTCheck;
 import com.radixdlt.consensus.simulation.SimulatedBFTNetwork;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.concurrent.TimeUnit;
-import org.assertj.core.api.AssertionsForClassTypes;
-import org.assertj.core.api.Condition;
 
 /**
  * Checks that there are no synchronisation errors.
@@ -32,12 +29,15 @@ import org.assertj.core.api.Condition;
 public class NoSyncExceptionCheck implements BFTCheck {
 
 	@Override
-	public Completable check(SimulatedBFTNetwork network) {
+	public Observable<BFTCheckError> check(SimulatedBFTNetwork network) {
 		return Observable.interval(1, TimeUnit.SECONDS)
 			.flatMapIterable(i -> network.getNodes())
-			.doOnNext(cn -> AssertionsForClassTypes.assertThat(network.getCounters(cn).get(CounterType.CONSENSUS_SYNC_EXCEPTION))
-				.satisfies(new Condition<>(c -> c == 0,
-					"Sync Exception counter is zero in correct node %s", cn.getPublicKey().euid())))
-			.flatMapCompletable(p -> Completable.complete());
+			.concatMap(cn -> {
+				if (network.getCounters(cn).get(CounterType.CONSENSUS_SYNC_EXCEPTION) > 0) {
+					return Observable.just(new BFTCheckError("Sync Exception Count > 0"));
+				} else {
+					return Observable.empty();
+				}
+			});
 	}
 }

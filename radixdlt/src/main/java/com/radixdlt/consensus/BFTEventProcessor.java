@@ -60,10 +60,4 @@ public interface BFTEventProcessor {
 	 * @param vertexId the id of vertex which has been synced
 	 */
 	void processLocalSync(Hash vertexId);
-
-	/**
-	 * Process an incoming RPC request for a Vertex
-	 * @param request the RPC request
-	 */
-	void processGetVertexRequest(GetVerticesRequest request);
 }

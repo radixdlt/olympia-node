@@ -25,12 +25,18 @@ import java.util.Objects;
  * An RPC response
  */
 public final class GetVerticesResponse {
+	private final Object opaque;
 	private final Hash vertexId;
 	private final List<Vertex> vertices;
 
-	public GetVerticesResponse(Hash vertexId, List<Vertex> vertices) {
+	public GetVerticesResponse(Hash vertexId, List<Vertex> vertices, Object opaque) {
 		this.vertexId = Objects.requireNonNull(vertexId);
 		this.vertices = Objects.requireNonNull(vertices);
+		this.opaque = opaque;
+	}
+
+	public <T> T getOpaque(Class<T> c) {
+		return c.cast(opaque);
 	}
 
 	public Hash getVertexId() {
@@ -43,6 +49,6 @@ public final class GetVerticesResponse {
 
 	@Override
 	public String toString() {
-		return String.format("%s{vertices=%s}", this.getClass().getSimpleName(), vertices);
+		return String.format("%s{vertices=%s opaque=%s}", this.getClass().getSimpleName(), vertices, opaque);
 	}
 }

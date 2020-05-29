@@ -210,11 +210,6 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 	}
 
 	@Override
-	public void processGetVertexRequest(GetVerticesRequest request) {
-		forwardTo.processGetVertexRequest(request);
-	}
-
-	@Override
 	public void start() {
 		forwardTo.start();
 	}

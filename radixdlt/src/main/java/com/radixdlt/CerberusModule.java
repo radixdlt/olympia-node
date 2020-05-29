@@ -30,11 +30,12 @@ import com.radixdlt.consensus.LocalSyncSender;
 import com.radixdlt.consensus.ProposerElectionFactory;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.SyncVerticesRPCRx;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.VertexStore;
 import com.radixdlt.consensus.VertexStore.SyncSender;
-import com.radixdlt.consensus.VertexSupplier;
+import com.radixdlt.consensus.SyncVerticesRPCSender;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker.TimeoutSender;
@@ -56,7 +57,7 @@ import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.ClientAtom.LedgerAtomConversionException;
-import com.radixdlt.middleware2.network.MessageCentralBFTNetwork;
+import com.radixdlt.middleware2.network.MessageCentralSyncVerticesRPCNetwork;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.universe.Universe;
@@ -90,7 +91,10 @@ public class CerberusModule extends AbstractModule {
 		bind(SyncSender.class).to(LocalSyncSender.class);
 
 		bind(SafetyRules.class).in(Scopes.SINGLETON);
-		bind(VertexSupplier.class).to(MessageCentralBFTNetwork.class);
+
+		bind(SyncVerticesRPCSender.class).to(MessageCentralSyncVerticesRPCNetwork.class);
+		bind(SyncVerticesRPCRx.class).to(MessageCentralSyncVerticesRPCNetwork.class);
+
 		bind(Hasher.class).to(DefaultHasher.class);
 		bind(ProposalGenerator.class).to(MempoolProposalGenerator.class);
 	}
@@ -140,7 +144,7 @@ public class CerberusModule extends AbstractModule {
 	private VertexStore getVertexStore(
 		Universe universe,
 		SyncedRadixEngine syncedRadixEngine,
-		VertexSupplier vertexSupplier,
+		SyncVerticesRPCSender syncVerticesRPCSender,
 		SyncSender syncSender,
 		SystemCounters counters
 	) throws LedgerAtomConversionException {
@@ -155,6 +159,6 @@ public class CerberusModule extends AbstractModule {
 		final QuorumCertificate rootQC = new QuorumCertificate(voteData, new ECDSASignatures());
 
 		log.info("Genesis Vertex Id: {}", genesisVertex.getId());
-		return new VertexStore(genesisVertex, rootQC, syncedRadixEngine, vertexSupplier, syncSender, counters);
+		return new VertexStore(genesisVertex, rootQC, syncedRadixEngine, syncVerticesRPCSender, syncSender, counters);
 	}
 }

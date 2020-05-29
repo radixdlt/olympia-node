@@ -25,6 +25,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.radixdlt.consensus.ConsensusRunner.Event;
+import com.radixdlt.consensus.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.liveness.PacemakerRx;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import io.reactivex.rxjava3.core.Observable;
@@ -54,19 +55,25 @@ public class ConsensusRunnerTest {
 		when(networkRx.consensusEvents())
 			.thenReturn(Observable.just(newView, proposal, vote).concatWith(Observable.never()));
 
+		SyncVerticesRPCRx syncVerticesRPCRx = mock(SyncVerticesRPCRx.class);
 		GetVerticesRequest request = mock(GetVerticesRequest.class);
-		when(networkRx.rpcRequests())
-			.thenReturn(Observable.just(request).concatWith(Observable.never()));
+		when(syncVerticesRPCRx.requests()).thenReturn(Observable.just(request).concatWith(Observable.never()));
+		when(syncVerticesRPCRx.responses()).thenReturn(Observable.never());
+
 
 		LocalSyncRx localSyncRx = mock(LocalSyncRx.class);
 		when(localSyncRx.localSyncs()).thenReturn(Observable.never());
+
+		VertexStore vertexStore = mock(VertexStore.class);
 
 		ConsensusRunner consensusRunner = new ConsensusRunner(
 			epochRx,
 			networkRx,
 			pacemakerRx,
 			localSyncRx,
-			epochManager
+			syncVerticesRPCRx,
+			epochManager,
+			vertexStore
 		);
 
 		TestObserver<Event> testObserver = TestObserver.create();
@@ -80,6 +87,6 @@ public class ConsensusRunnerTest {
 		verify(ec, times(1)).processProposal(eq(proposal));
 		verify(ec, times(1)).processNewView(eq(newView));
 		verify(ec, times(1)).processLocalTimeout(eq(timeout));
-		verify(ec, times(1)).processGetVertexRequest(eq(request));
+		verify(vertexStore, times(1)).processGetVerticesRequest(eq(request));
 	}
 }

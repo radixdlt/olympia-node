@@ -17,15 +17,12 @@
 
 package com.radixdlt.consensus.simulation.checks;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-
 import com.radixdlt.consensus.simulation.BFTCheck;
 import com.radixdlt.consensus.simulation.SimulatedBFTNetwork;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import java.util.concurrent.TimeUnit;
-import org.assertj.core.api.Condition;
 
 /**
  * Checks that no local timeouts are occurring.
@@ -34,16 +31,16 @@ import org.assertj.core.api.Condition;
 public class NoTimeoutCheck implements BFTCheck {
 
 	@Override
-	public Completable check(SimulatedBFTNetwork network) {
-		return Observable.interval(1, TimeUnit.SECONDS)
+	public Observable<BFTCheckError> check(SimulatedBFTNetwork network) {
+		return Observable.interval(1, TimeUnit.SECONDS, Schedulers.io())
 			.flatMapIterable(i -> network.getNodes())
 			.map(network::getCounters)
-			.doOnNext(counters -> {
-				assertThat(counters.get(CounterType.CONSENSUS_TIMEOUT))
-					.satisfies(new Condition<>(c -> c == 0, "Timeout counter is zero."));
-				assertThat(counters.get(CounterType.CONSENSUS_REJECTED))
-					.satisfies(new Condition<>(c -> c == 0, "Rejected Proposal counter is zero."));
-			})
-			.flatMapCompletable(c -> Completable.complete());
+			.concatMap(counters -> {
+				if (counters.get(CounterType.CONSENSUS_TIMEOUT) > 0) {
+					return Observable.just(new BFTCheckError("Timeout counter > 0"));
+				} else {
+					return Observable.empty();
+				}
+			});
 	}
 }

@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -17,39 +17,12 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.consensus.VertexStore.GetVerticesRequest;
+import io.reactivex.rxjava3.core.Observable;
 
-/**
- * An empty BFT event processor
- */
-public class EmptyBFTEventProcessor implements BFTEventProcessor {
-	@Override
-	public void processVote(Vote vote) {
-		// No-op
-	}
+public interface SyncVerticesRPCRx {
 
-	@Override
-	public void processNewView(NewView newView) {
-		// No-op
-	}
+	Observable<GetVerticesRequest> requests();
 
-	@Override
-	public void processProposal(Proposal proposal) {
-		// No-op
-	}
-
-	@Override
-	public void processLocalTimeout(View view) {
-		// No-op
-	}
-
-	@Override
-	public void processLocalSync(Hash vertexId) {
-		// No-op
-	}
-
-	@Override
-	public void start() {
-		// No-op
-	}
+	Observable<GetVerticesResponse> responses();
 }

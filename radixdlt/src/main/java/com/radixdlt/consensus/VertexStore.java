@@ -24,8 +24,6 @@ import com.radixdlt.crypto.Hash;
 
 import com.radixdlt.middleware2.CommittedAtom;
 import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.disposables.Disposable;
-import io.reactivex.rxjava3.schedulers.Schedulers;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -48,13 +46,18 @@ import org.apache.logging.log4j.Logger;
 public final class VertexStore {
 	private static final Logger log = LogManager.getLogger();
 
+	public interface GetVerticesRequest {
+		Hash getVertexId();
+		int getCount();
+	}
+
 	public interface SyncSender {
 		void synced(Hash vertexId);
 	}
 
 	private final BehaviorSubject<Vertex> lastCommittedVertex = BehaviorSubject.create();
 	private final SyncSender syncSender;
-	private final VertexSupplier vertexSupplier;
+	private final SyncVerticesRPCSender syncVerticesRPCSender;
 	private final SyncedStateComputer<CommittedAtom> syncedStateComputer;
 	private final SystemCounters counters;
 	private final Object lock = new Object();
@@ -65,19 +68,19 @@ public final class VertexStore {
 	private final AtomicReference<QuorumCertificate> highestCommittedQC = new AtomicReference<>();
 
 	private final Map<Hash, Vertex> vertices = new ConcurrentHashMap<>();
-	private final Map<Hash, Disposable> syncing = new ConcurrentHashMap<>();
+	private final Map<Hash, SyncState> syncing = new ConcurrentHashMap<>();
 
 	// TODO: Cleanup this interface
 	public VertexStore(
 		Vertex genesisVertex,
 		QuorumCertificate rootQC,
 		SyncedStateComputer<CommittedAtom> syncedStateComputer,
-		VertexSupplier vertexSupplier,
+		SyncVerticesRPCSender syncVerticesRPCSender,
 		SyncSender syncSender,
 		SystemCounters counters
 	) {
 		this.syncedStateComputer = syncedStateComputer;
-		this.vertexSupplier = vertexSupplier;
+		this.syncVerticesRPCSender = syncVerticesRPCSender;
 		this.syncSender = syncSender;
 		this.counters = Objects.requireNonNull(counters);
 		this.highestQC.set(Objects.requireNonNull(rootQC));
@@ -93,18 +96,62 @@ public final class VertexStore {
 		this.lastCommittedVertex.onNext(genesisVertex);
 	}
 
-	private Observable<List<Vertex>> fetchVertices(QuorumCertificate qc, ECPublicKey author) {
-		if (!vertices.containsKey(qc.getProposed().getId())) {
-			log.info("Sending GET_VERTICES to {}: {}", author, qc);
-			return vertexSupplier.getVertices(qc.getProposed().getId(), author, 1)
-				.doOnSuccess(v -> log.info("Received GET_VERTICES: {}", v))
-				.toObservable()
-				.flatMap(v -> v.isEmpty()
-					? Observable.just(v)
-					: fetchVertices(v.get(0).getQC(), author).concatWith(Observable.just(v))
-				);
+	private static class SyncState {
+		private final QuorumCertificate qc;
+		private final ECPublicKey author;
+		private final LinkedList<Vertex> fetched = new LinkedList<>();
+
+		SyncState(QuorumCertificate qc, ECPublicKey author) {
+			this.qc = qc;
+			this.author = author;
+		}
+	}
+
+	public void processGetVerticesRequest(GetVerticesRequest request) {
+		log.info("SYNC_VERTICES: Received GetVerticesRequest {}", request);
+		List<Vertex> fetched = this.getVertices(request.getVertexId(), request.getCount());
+		log.info("SYNC_VERTICES: Sending Response {}", fetched);
+		this.syncVerticesRPCSender.sendGetVerticesResponse(request, fetched);
+	}
+
+	public void processGetVerticesResponse(GetVerticesResponse response) {
+		log.info("SYNC_VERTICES: Received GetVerticesResponse {}", response);
+
+		final Hash syncTo = response.getOpaque(Hash.class);
+		SyncState syncState = syncing.get(syncTo);
+		if (syncState == null) {
+			return;
+		}
+
+		final QuorumCertificate qc = syncState.qc;
+
+		if (response.getVertices().isEmpty()) {
+			log.info("GET_VERTICES failed: {}", qc);
+			// failed
+			return;
+		}
+
+		Vertex vertex = response.getVertices().get(0);
+		syncState.fetched.addFirst(vertex);
+		Hash nextVertexId = vertex.getQC().getProposed().getId();
+
+		if (vertices.containsKey(nextVertexId)) {
+			for (Vertex v: syncState.fetched) {
+				if (!addQC(v.getQC())) {
+					log.info("GET_VERTICES failed: {}", qc);
+					return;
+				}
+				try {
+					insertVertex(v);
+				} catch (VertexInsertionException e) {
+					log.info("GET_VERTICES failed: {}", e.getMessage());
+					return;
+				}
+			}
+			addQC(qc);
 		} else {
-			return Observable.empty();
+			log.info("SYNC_VERTICES: Sending further GetVerticesRequest {}", nextVertexId);
+			syncVerticesRPCSender.sendGetVerticesRequest(nextVertexId, syncState.author, 1, syncTo);
 		}
 	}
 
@@ -114,38 +161,11 @@ public final class VertexStore {
 			return;
 		}
 
-		Disposable d = this.fetchVertices(qc, author)
-			.observeOn(Schedulers.io())
-			.toList()
-			.subscribe(
-				vertices -> {
-					if (!syncing.containsKey(vertexId)) {
-						return;
-					}
+		SyncState syncState = new SyncState(qc, author);
+		syncing.put(vertexId, syncState);
 
-					// Failed to retrieve all ancestors
-					if (vertices.stream().anyMatch(List::isEmpty)) {
-						log.info("GET_VERTICES failed: {}", qc);
-						return;
-					}
-
-					// TODO: Better Locking mechanism
-					synchronized (lock) {
-						for (List<Vertex> vertexSingle : vertices) {
-							Vertex vertex = vertexSingle.get(0);
-							if (!addQC(vertex.getQC())) {
-								log.info("GET_VERTICES failed: {}", qc);
-								return;
-							}
-							insertVertex(vertex);
-						}
-						addQC(qc);
-					}
-				},
-				e -> log.info("GET_VERTICES failed: {} {}", qc, e.getMessage())
-			);
-
-		syncing.put(vertexId, d);
+		log.info("SYNC_VERTICES: Sending initial GetVerticesRequest {}", vertexId);
+		syncVerticesRPCSender.sendGetVerticesRequest(vertexId, syncState.author, 1, vertexId);
 	}
 
 	public void processLocalSync(Hash vertexId) {
@@ -181,7 +201,7 @@ public final class VertexStore {
 			}				List<ECPublicKey> signers = committedQC.getSignatures().signedMessage(hash);
 
 			Observable.combineLatest(
-				vertexSupplier.getVertices(committedQC.getProposed().getId(), author, 3).toObservable(),
+				vertexSupplier.sendGetVerticesRequest(committedQC.getProposed().getId(), author, 3).toObservable(),
 				syncedStateComputer.syncTo(stateVersion, signers).toSingleDefault(0).toObservable(),
 				(v, l) -> v
 			).subscribe(vertices -> {
@@ -242,7 +262,6 @@ public final class VertexStore {
 			updateVertexStoreSize();
 
 			if (syncing.containsKey(vertex.getId())) {
-				syncing.get(vertex.getId()).dispose();
 				syncSender.synced(vertex.getId());
 			}
 		}
@@ -322,7 +341,7 @@ public final class VertexStore {
 	 * @param count the number of verticies to retrieve
 	 * @return the vertex or null, if it is not stored
 	 */
-	public List<Vertex> getVertices(Hash vertexId, int count) {
+	private List<Vertex> getVertices(Hash vertexId, int count) {
 		Hash nextId = vertexId;
 		List<Vertex> response = new ArrayList<>(count);
 		for (int i = 0; i < count; i++) {
@@ -339,7 +358,6 @@ public final class VertexStore {
 	}
 
 	public void clearSyncs() {
-		syncing.forEach((h, d) -> d.dispose());
 		syncing.clear();
 	}
 

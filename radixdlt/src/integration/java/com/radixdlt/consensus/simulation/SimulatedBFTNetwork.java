@@ -32,7 +32,7 @@ import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.VertexStore;
-import com.radixdlt.consensus.VertexSupplier;
+import com.radixdlt.consensus.SyncVerticesRPCSender;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
 import com.radixdlt.consensus.liveness.MempoolProposalGenerator;
@@ -54,10 +54,10 @@ import com.radixdlt.mempool.Mempool;
 
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork;
+import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork.SimulatedNetworkReceiver;
 import com.radixdlt.utils.UInt256;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.subjects.CompletableSubject;
 import java.util.Comparator;
 import java.util.List;
@@ -135,10 +135,17 @@ public class SimulatedBFTNetwork {
 						public void execute(CommittedAtom instruction) {
 						}
 					};
-					VertexSupplier vertexSupplier = getVerticesRPCEnabled
-						? underlyingNetwork.getVertexSupplier(e.getPublicKey())
-						: (hash, node, id) -> Single.error(new UnsupportedOperationException());
-					return new VertexStore(genesisVertex, genesisQC, stateComputer, vertexSupplier, this.syncSenders.get(e), this.counters.get(e));
+					SyncVerticesRPCSender syncVerticesRPCSender = getVerticesRPCEnabled
+						? underlyingNetwork.getVerticesRequestSender(e.getPublicKey())
+						: SyncVerticesRPCSender.EMPTY;
+					return new VertexStore(
+						genesisVertex,
+						genesisQC,
+						stateComputer,
+						syncVerticesRPCSender,
+						this.syncSenders.get(e),
+						this.counters.get(e)
+					);
 				})
 			);
 		this.timeoutSenders = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e,
@@ -178,12 +185,16 @@ public class SimulatedBFTNetwork {
 			counters.get(key)
 		);
 
+		SimulatedNetworkReceiver rx = underlyingNetwork.getNetworkRx(key.getPublicKey());
+
 		return new ConsensusRunner(
 			epochRx,
-			underlyingNetwork.getNetworkRx(key.getPublicKey()),
+			rx,
 			timeoutSender,
 			syncSenders.get(key),
-			epochManager
+			rx,
+			epochManager,
+			vertexStores.get(key)
 		);
 	}
 

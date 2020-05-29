@@ -21,14 +21,14 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.radixdlt.consensus.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.VertexStore.SyncSender;
 import com.radixdlt.consensus.sync.SyncedRadixEngine;
 import com.radixdlt.counters.SystemCounters;
@@ -38,11 +38,10 @@ import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.CommittedAtom;
-import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.observers.TestObserver;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -52,8 +51,8 @@ public class VertexStoreTest {
 	private QuorumCertificate rootQC;
 	private VertexStore vertexStore;
 	private SyncedRadixEngine stateSynchronizer;
-	private VertexSupplier vertexSupplier;
 	private SyncSender syncSender;
+	private SyncVerticesRPCSender syncVerticesRPCSender;
 
 	@Before
 	public void setUp() {
@@ -62,11 +61,10 @@ public class VertexStoreTest {
 		VoteData voteData = new VoteData(genesisVertexMetadata, null);
 		this.rootQC = new QuorumCertificate(voteData, new ECDSASignatures());
 		this.stateSynchronizer = mock(SyncedRadixEngine.class);
-		this.vertexSupplier = mock(VertexSupplier.class);
-		when(this.vertexSupplier.getVertices(any(), any(), anyInt())).thenReturn(Single.error(new UnsupportedOperationException()));
+		this.syncVerticesRPCSender = mock(SyncVerticesRPCSender.class);
 		this.syncSender = mock(SyncSender.class);
 		SystemCounters counters = mock(SystemCounters.class);
-		this.vertexStore = new VertexStore(genesisVertex, rootQC, stateSynchronizer, vertexSupplier, syncSender, counters);
+		this.vertexStore = new VertexStore(genesisVertex, rootQC, stateSynchronizer, syncVerticesRPCSender, syncSender, counters);
 	}
 
 	@Test
@@ -78,10 +76,20 @@ public class VertexStoreTest {
 		when(vertexMetadata.getId()).thenReturn(vertex.getId());
 
 		ECPublicKey author = mock(ECPublicKey.class);
-		when(vertexSupplier.getVertices(eq(vertex.getId()), eq(author), eq(1))).thenReturn(Single.just(Collections.singletonList(vertex)));
-		assertThat(vertexStore.syncToQC(qc, vertexStore.getHighestCommittedQC(), author)).isFalse();
 
-		verify(syncSender, timeout(1000).times(1)).synced(eq(vertex.getId()));
+		AtomicReference<Object> opaque = new AtomicReference<>();
+		doAnswer(invocation -> {
+			opaque.set(invocation.getArgument(3));
+			return null;
+		}).when(syncVerticesRPCSender).sendGetVerticesRequest(eq(vertex.getId()), any(), eq(1), any());
+
+		assertThat(vertexStore.syncToQC(qc, vertexStore.getHighestCommittedQC(), author)).isFalse();
+		verify(syncVerticesRPCSender, times(1)).sendGetVerticesRequest(eq(vertex.getId()), any(), eq(1), any());
+
+		GetVerticesResponse getVerticesResponse = new GetVerticesResponse(vertex.getId(), Collections.singletonList(vertex), opaque.get());
+		vertexStore.processGetVerticesResponse(getVerticesResponse);
+
+		verify(syncSender, times(1)).synced(eq(vertex.getId()));
 		assertThat(vertexStore.getHighestQC()).isEqualTo(qc);
 	}
 
@@ -224,10 +232,13 @@ public class VertexStoreTest {
 	}
 
 	@Test
-	public void when_get_vertices_with_size_2__then_should_return_both() throws Exception {
+	public void when_rpc_call_to_get_vertices_with_size_2__then_should_return_both() throws Exception {
 		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), null);
 		vertexStore.insertVertex(nextVertex);
-		List<Vertex> vertices = vertexStore.getVertices(nextVertex.getId(), 2);
-		assertThat(vertices).containsExactly(nextVertex, genesisVertex);
+		GetVerticesRequest getVerticesRequest = mock(GetVerticesRequest.class);
+		when(getVerticesRequest.getCount()).thenReturn(2);
+		when(getVerticesRequest.getVertexId()).thenReturn(nextVertex.getId());
+		vertexStore.processGetVerticesRequest(getVerticesRequest);
+		verify(syncVerticesRPCSender, times(1)).sendGetVerticesResponse(eq(getVerticesRequest), eq(Arrays.asList(nextVertex, genesisVertex)));
 	}
 }

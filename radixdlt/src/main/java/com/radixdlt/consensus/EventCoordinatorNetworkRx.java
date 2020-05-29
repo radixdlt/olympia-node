@@ -29,11 +29,4 @@ public interface EventCoordinatorNetworkRx {
 	 * @return observable of consensus message events
 	 */
 	Observable<ConsensusEvent> consensusEvents();
-
-	/**
-	 * Accessor to the stream of rpc requests as they are received from
-	 * the network.
-	 * @return observable of rpc requests
-	 */
-	Observable<GetVerticesRequest> rpcRequests();
 }

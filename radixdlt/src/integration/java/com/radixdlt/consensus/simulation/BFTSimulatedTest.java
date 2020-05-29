@@ -19,6 +19,7 @@ package com.radixdlt.consensus.simulation;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.radixdlt.consensus.simulation.BFTCheck.BFTCheckError;
 import com.radixdlt.consensus.simulation.checks.AllProposalsHaveDirectParentsCheck;
 import com.radixdlt.consensus.simulation.checks.LivenessCheck;
 import com.radixdlt.consensus.simulation.checks.NoSyncExceptionCheck;
@@ -29,7 +30,7 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork;
 import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork.LatencyProvider;
 import com.radixdlt.utils.Pair;
-import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
 import java.util.Collections;
 import java.util.HashMap;
@@ -172,19 +173,34 @@ public class BFTSimulatedTest {
 			.latencyProvider(this.latencyProvider)
 			.build();
 		SimulatedBFTNetwork bftNetwork =  new SimulatedBFTNetwork(nodes, network, pacemakerTimeout, getVerticesRPCEnabled);
-		List<Single<Pair<String, Boolean>>> assertions = this.checks.keySet().stream()
+		List<Pair<String, Observable<Pair<String, BFTCheckError>>>> assertions = this.checks.keySet().stream()
 			.map(name -> {
 				BFTCheck check = this.checks.get(name);
-				return check.check(bftNetwork).takeUntil(Completable.timer(duration, timeUnit))
-						.toSingleDefault(true)
-						.onErrorReturnItem(false)
-						.map(result -> Pair.of(name, result));
+				return
+					Pair.of(
+						name,
+						check.check(bftNetwork).map(e -> Pair.of(name, e)).publish().autoConnect(2)
+					);
 			})
+			.collect(Collectors.toList());
+
+		Single<String> doneSignal = Observable.merge(assertions.stream().map(Pair::getSecond).collect(Collectors.toList()))
+			.firstOrError()
+			.map(Pair::getFirst);
+
+		List<Single<Pair<String, Boolean>>> results = assertions.stream()
+			.map(assertion -> assertion.getSecond()
+				.takeUntil(doneSignal.filter(done -> !assertion.getFirst().equals(done)).toObservable().concatWith(Observable.never()))
+				.takeUntil(Observable.timer(duration, timeUnit))
+				.map(e -> false)
+				.first(true)
+				.map(result -> Pair.of(assertion.getFirst(), result))
+			)
 			.collect(Collectors.toList());
 
 		return bftNetwork.start()
 			.timeout(10, TimeUnit.SECONDS)
-			.andThen(Single.merge(assertions))
+			.andThen(Single.merge(results))
 			.doFinally(bftNetwork::stop)
 			.blockingStream()
 			.collect(Collectors.toMap(Pair::getFirst, Pair::getSecond));
