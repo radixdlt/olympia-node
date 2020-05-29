@@ -32,7 +32,7 @@ import org.junit.Test;
 public class OneProposalDropperTest {
 	private final int minLatency = 10;
 	private final int maxLatency = 200;
-	private final int trips = 12;
+	private final int trips = 20;
 	private final int synchronousTimeout = maxLatency * trips;
 	private final Builder bftTestBuilder = BFTSimulatedTest.builder()
 		.numNodes(4)
