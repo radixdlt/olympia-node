@@ -60,9 +60,11 @@ public class ConsensusRunnerTest {
 		when(syncVerticesRPCRx.requests()).thenReturn(Observable.just(request).concatWith(Observable.never()));
 		when(syncVerticesRPCRx.responses()).thenReturn(Observable.never());
 
-
 		LocalSyncRx localSyncRx = mock(LocalSyncRx.class);
 		when(localSyncRx.localSyncs()).thenReturn(Observable.never());
+
+		CommittedStateSyncRx committedStateSyncRx = mock(CommittedStateSyncRx.class);
+		when(committedStateSyncRx.committedStateSyncs()).thenReturn(Observable.never());
 
 		VertexStore vertexStore = mock(VertexStore.class);
 
@@ -71,6 +73,7 @@ public class ConsensusRunnerTest {
 			networkRx,
 			pacemakerRx,
 			localSyncRx,
+			committedStateSyncRx,
 			syncVerticesRPCRx,
 			epochManager,
 			vertexStore

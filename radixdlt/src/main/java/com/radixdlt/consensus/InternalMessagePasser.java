@@ -20,22 +20,26 @@ package com.radixdlt.consensus;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.VertexStore.SyncSender;
+import com.radixdlt.consensus.sync.SyncedRadixEngine.CommittedStateSyncSender;
 import com.radixdlt.crypto.Hash;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import io.reactivex.rxjava3.subjects.Subject;
 
 /**
- * Sends a local sync event and exposes it as a stream of sync events
+ * Acts as the "ether" to messages passed from sender to receiver
  */
 @Singleton
-public final class LocalSyncSender implements LocalSyncRx, SyncSender {
-	private final Subject<Hash> subject = BehaviorSubject.<Hash>create().toSerialized();
+public final class InternalMessagePasser implements LocalSyncRx, SyncSender, CommittedStateSyncSender, CommittedStateSyncRx {
+	private final Subject<Hash> localSyncsSubject = BehaviorSubject.<Hash>create().toSerialized();
+	private final Subject<CommittedStateSync> committedStateSyncsSubject = BehaviorSubject.<CommittedStateSync>create().toSerialized();
 	private final Observable<Hash> localSyncs;
+	private final Observable<CommittedStateSync> committedStateSyncs;
 
 	@Inject
-	public LocalSyncSender() {
-		this.localSyncs = subject.publish().refCount();
+	public InternalMessagePasser() {
+		this.localSyncs = localSyncsSubject.publish().refCount();
+		this.committedStateSyncs = committedStateSyncsSubject.publish().refCount();
 	}
 
 	@Override
@@ -45,6 +49,16 @@ public final class LocalSyncSender implements LocalSyncRx, SyncSender {
 
 	@Override
 	public void synced(Hash vertexId) {
-		subject.onNext(vertexId);
+		localSyncsSubject.onNext(vertexId);
+	}
+
+	@Override
+	public Observable<CommittedStateSync> committedStateSyncs() {
+		return committedStateSyncs;
+	}
+
+	@Override
+	public void sendCommittedStateSync(long stateVersion, Object opaque) {
+		committedStateSyncsSubject.onNext(new CommittedStateSync(stateVersion, opaque));
 	}
 }

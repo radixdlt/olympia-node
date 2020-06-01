@@ -26,7 +26,7 @@ import com.radixdlt.consensus.EmptySyncVerticesRPCSender;
 import com.radixdlt.consensus.EpochManager;
 import com.radixdlt.consensus.EpochRx;
 import com.radixdlt.consensus.Hasher;
-import com.radixdlt.consensus.LocalSyncSender;
+import com.radixdlt.consensus.InternalMessagePasser;
 import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.SyncedStateComputer;
@@ -79,7 +79,7 @@ public class SimulatedBFTNetwork {
 	private final ImmutableMap<ECKeyPair, VertexStore> vertexStores;
 	private final ImmutableMap<ECKeyPair, SystemCounters> counters;
 	private final ImmutableMap<ECKeyPair, ScheduledTimeoutSender> timeoutSenders;
-	private final ImmutableMap<ECKeyPair, LocalSyncSender> syncSenders;
+	private final ImmutableMap<ECKeyPair, InternalMessagePasser> syncSenders;
 	private final ImmutableMap<ECKeyPair, FixedTimeoutPacemaker> pacemakers;
 	private final ImmutableMap<ECKeyPair, ConsensusRunner> runners;
 	private final ValidatorSet validatorSet;
@@ -121,15 +121,15 @@ public class SimulatedBFTNetwork {
 				.collect(Collectors.toList())
 		);
 		this.counters = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e, e -> new SystemCountersImpl()));
-		this.syncSenders = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e, e -> new LocalSyncSender()));
+		this.syncSenders = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e, e -> new InternalMessagePasser()));
 		this.vertexStores = nodes.stream()
 			.collect(ImmutableMap.toImmutableMap(
 				e -> e,
 				e -> {
 					SyncedStateComputer<CommittedAtom> stateComputer = new SyncedStateComputer<CommittedAtom>() {
 						@Override
-						public Completable syncTo(long targetStateVersion, List<ECPublicKey> target) {
-							return Completable.complete();
+						public boolean syncTo(long targetStateVersion, List<ECPublicKey> target, Object opaque) {
+							return true;
 						}
 
 						@Override
@@ -193,6 +193,7 @@ public class SimulatedBFTNetwork {
 			rx,
 			timeoutSender,
 			syncSenders.get(key),
+			Observable::never,
 			rx,
 			epochManager,
 			vertexStores.get(key)

@@ -30,7 +30,6 @@ import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
-import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import java.util.List;
 import java.util.Optional;
@@ -50,9 +49,15 @@ import org.radix.validation.ConstraintMachineValidationException;
  */
 @Singleton
 public class SyncedRadixEngine implements SyncedStateComputer<CommittedAtom> {
+
+	public interface CommittedStateSyncSender {
+		void sendCommittedStateSync(long stateVersion, Object opaque);
+	}
+
 	private static final Logger log = LogManager.getLogger();
 	private final RadixEngine<LedgerAtom> radixEngine;
 	private final CommittedAtomsStore committedAtomsStore;
+	private final CommittedStateSyncSender committedStateSyncSender;
 	private final AddressBook addressBook;
 	private final StateSyncNetwork stateSyncNetwork;
 
@@ -60,11 +65,13 @@ public class SyncedRadixEngine implements SyncedStateComputer<CommittedAtom> {
 	public SyncedRadixEngine(
 		RadixEngine<LedgerAtom> radixEngine,
 		CommittedAtomsStore committedAtomsStore,
+		CommittedStateSyncSender committedStateSyncSender,
 		AddressBook addressBook,
 		StateSyncNetwork stateSyncNetwork
 	) {
 		this.radixEngine = radixEngine;
 		this.committedAtomsStore = committedAtomsStore;
+		this.committedStateSyncSender = committedStateSyncSender;
 		this.addressBook = addressBook;
 		this.stateSyncNetwork = stateSyncNetwork;
 	}
@@ -101,21 +108,11 @@ public class SyncedRadixEngine implements SyncedStateComputer<CommittedAtom> {
 			});
 	}
 
-	/**
-	 * Initiate a sync to a target state version. Searches for a peer
-	 * given a target list and then requests for atom inventory.
-	 *
-	 * TODO: cancel previous unfinished requests
-	 *
-	 * @param targetStateVersion the target state version
-	 * @param target a list of potential targets
-	 * @return completable which completes when the store has completed syncing
-	 */
 	@Override
-	public Completable syncTo(long targetStateVersion, List<ECPublicKey> target) {
+	public boolean syncTo(long targetStateVersion, List<ECPublicKey> target, Object opaque) {
 		final long currentStateVersion = committedAtomsStore.getStateVersion();
 		if (targetStateVersion <= currentStateVersion) {
-			return Completable.complete();
+			return true;
 		}
 
 		Peer peer = target.stream()
@@ -127,11 +124,15 @@ public class SyncedRadixEngine implements SyncedStateComputer<CommittedAtom> {
 			.orElseThrow(() -> new RuntimeException("Unable to find peer"));
 		stateSyncNetwork.sendSyncRequest(peer, currentStateVersion);
 
-		return committedAtomsStore.lastStoredAtom()
+		committedAtomsStore.lastStoredAtom()
+			.observeOn(Schedulers.io())
 			.map(e -> e.getAtom().getVertexMetadata().getStateVersion())
 			.filter(stateVersion -> stateVersion >= targetStateVersion)
 			.firstOrError()
-			.ignoreElement();
+			.ignoreElement()
+			.subscribe(() -> committedStateSyncSender.sendCommittedStateSync(targetStateVersion, opaque));
+
+		return false;
 	}
 
 	/**

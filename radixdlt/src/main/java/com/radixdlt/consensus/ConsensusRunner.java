@@ -43,6 +43,7 @@ public final class ConsensusRunner {
 		EPOCH,
 		LOCAL_TIMEOUT,
 		LOCAL_SYNC,
+		COMMITTED_STATE_SYNC,
 		NEW_VIEW_MESSAGE,
 		PROPOSAL_MESSAGE,
 		VOTE_MESSAGE,
@@ -80,6 +81,7 @@ public final class ConsensusRunner {
 		EventCoordinatorNetworkRx network,
 		PacemakerRx pacemakerRx,
 		LocalSyncRx localSyncRx,
+		CommittedStateSyncRx committedStateSyncRx,
 		SyncVerticesRPCRx rpcRx,
 		EpochManager epochManager,
 		VertexStore vertexStore //TODO: remove this since it should only be provided by Epoch manager
@@ -109,7 +111,8 @@ public final class ConsensusRunner {
 			network.consensusEvents().observeOn(singleThreadScheduler),
 			rpcRx.requests().observeOn(singleThreadScheduler),
 			rpcRx.responses().observeOn(singleThreadScheduler),
-			localSyncRx.localSyncs().observeOn(singleThreadScheduler)
+			localSyncRx.localSyncs().observeOn(singleThreadScheduler),
+			committedStateSyncRx.committedStateSyncs().observeOn(singleThreadScheduler)
 		));
 		final Observable<Event> ecMessages = firstEventCoordinator.andThen(
 			eventCoordinatorEvents.withLatestFrom(bftEventProcessors, this::processEvent)
@@ -141,6 +144,9 @@ public final class ConsensusRunner {
 		} else if (msg instanceof Hash) {
 			processor.processLocalSync((Hash) msg);
 			eventType = EventType.LOCAL_SYNC;
+		} else if (msg instanceof CommittedStateSync) {
+			vertexStore.processCommittedStateSync((CommittedStateSync) msg);
+			eventType = EventType.COMMITTED_STATE_SYNC;
 		} else {
 			throw new IllegalStateException("Unknown Consensus Message: " + msg);
 		}

@@ -23,10 +23,11 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 import com.radixdlt.consensus.BasicEpochRx;
+import com.radixdlt.consensus.CommittedStateSyncRx;
 import com.radixdlt.consensus.DefaultHasher;
 import com.radixdlt.consensus.EpochRx;
 import com.radixdlt.consensus.LocalSyncRx;
-import com.radixdlt.consensus.LocalSyncSender;
+import com.radixdlt.consensus.InternalMessagePasser;
 import com.radixdlt.consensus.ProposerElectionFactory;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.QuorumCertificate;
@@ -48,6 +49,7 @@ import com.radixdlt.consensus.liveness.ScheduledTimeoutSender;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.sync.SyncedRadixEngine;
+import com.radixdlt.consensus.sync.SyncedRadixEngine.CommittedStateSyncSender;
 import com.radixdlt.consensus.tempo.Scheduler;
 import com.radixdlt.consensus.tempo.SingleThreadedScheduler;
 import com.radixdlt.consensus.validators.Validator;
@@ -87,8 +89,10 @@ public class CerberusModule extends AbstractModule {
 		bind(TimeoutSender.class).to(ScheduledTimeoutSender.class);
 		bind(PacemakerRx.class).to(ScheduledTimeoutSender.class);
 
-		bind(LocalSyncRx.class).to(LocalSyncSender.class);
-		bind(SyncSender.class).to(LocalSyncSender.class);
+		bind(LocalSyncRx.class).to(InternalMessagePasser.class);
+		bind(SyncSender.class).to(InternalMessagePasser.class);
+		bind(CommittedStateSyncSender.class).to(InternalMessagePasser.class);
+		bind(CommittedStateSyncRx.class).to(InternalMessagePasser.class);
 
 		bind(SafetyRules.class).in(Scopes.SINGLETON);
 

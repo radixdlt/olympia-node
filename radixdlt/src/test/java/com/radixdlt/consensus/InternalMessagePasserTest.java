@@ -23,13 +23,13 @@ import com.radixdlt.crypto.Hash;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.junit.Test;
 
-public class LocalSyncSenderTest {
+public class InternalMessagePasserTest {
 	@Test
 	public void when_send_sync_event__then_should_receive_it() {
-		LocalSyncSender localSyncSender = new LocalSyncSender();
-		TestObserver<Hash> testObserver = localSyncSender.localSyncs().test();
+		InternalMessagePasser internalMessagePasser = new InternalMessagePasser();
+		TestObserver<Hash> testObserver = internalMessagePasser.localSyncs().test();
 		Hash hash = mock(Hash.class);
-		localSyncSender.synced(hash);
+		internalMessagePasser.synced(hash);
 		testObserver.awaitCount(1);
 		testObserver.assertValue(hash);
 		testObserver.assertNotComplete();

@@ -226,7 +226,7 @@ public class VertexStoreTest {
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		when(qc.getProposed()).thenReturn(VertexMetadata.ofVertex(nextVertex));
 
-		assertThat(vertexStore.syncToQC(qc, qc, mock(ECPublicKey.class))).isFalse();
+		assertThat(vertexStore.syncToQC(qc, vertexStore.getHighestCommittedQC(), mock(ECPublicKey.class))).isFalse();
 		vertexStore.insertVertex(nextVertex);
 		verify(syncSender, times(1)).synced(eq(nextVertex.getId()));
 	}

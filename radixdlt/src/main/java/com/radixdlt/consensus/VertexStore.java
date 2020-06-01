@@ -31,6 +31,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Nullable;
@@ -82,6 +83,7 @@ public final class VertexStore {
 		this.syncVerticesRPCSender = syncVerticesRPCSender;
 		this.syncSender = syncSender;
 		this.counters = Objects.requireNonNull(counters);
+
 		this.highestQC.set(Objects.requireNonNull(rootQC));
 		this.highestCommittedQC.set(rootQC);
 
@@ -95,14 +97,24 @@ public final class VertexStore {
 		this.lastCommittedVertex.onNext(genesisVertex);
 	}
 
+	private enum SyncStage {
+		GET_COMMITTED_VERTICES,
+		SYNC_TO_COMMIT,
+		GET_PREPARED_VERTICES
+	}
+
 	private static class SyncState {
 		private final QuorumCertificate qc;
+		private final QuorumCertificate committedQC;
 		private final ECPublicKey author;
+		private SyncStage syncStage;
 		private final LinkedList<Vertex> fetched = new LinkedList<>();
 
-		SyncState(QuorumCertificate qc, ECPublicKey author) {
+		SyncState(QuorumCertificate qc, QuorumCertificate committedQC, ECPublicKey author, SyncStage syncStage) {
 			this.qc = qc;
+			this.committedQC = committedQC;
 			this.author = author;
+			this.syncStage = syncStage;
 		}
 	}
 
@@ -113,23 +125,48 @@ public final class VertexStore {
 		this.syncVerticesRPCSender.sendGetVerticesResponse(request, fetched);
 	}
 
-	public void processGetVerticesResponse(GetVerticesResponse response) {
-		log.info("SYNC_VERTICES: Received GetVerticesResponse {}", response);
+	private void rebuildStoreAndSyncQC(SyncState syncState) {
+		// TODO: check if there are any vertices which haven't been local sync processed yet
+		this.vertices.clear();
+		this.highestCommittedQC.set(syncState.qc);
+		this.highestQC.set(syncState.qc);
+		this.rootId.set(syncState.qc.getCommitted().get().getId());
+		for (Vertex vertex : syncState.fetched) {
+			try {
+				insertVertex(vertex);
+			} catch (VertexInsertionException e) {
+				throw new IllegalStateException("Could not insert vertex " + vertex);
+			}
+		}
 
-		final Hash syncTo = response.getOpaque(Hash.class);
+		syncToQC(syncState.qc, syncState.committedQC, syncState.author);
+	}
+
+	public void processCommittedStateSync(CommittedStateSync committedStateSync) {
+		Hash syncTo = committedStateSync.getOpaque(Hash.class);
 		SyncState syncState = syncing.get(syncTo);
-		if (syncState == null) {
-			return;
+		rebuildStoreAndSyncQC(syncState);
+	}
+
+	private void processVerticesResponseForCommittedSync(Hash syncTo, SyncState syncState, GetVerticesResponse response) {
+		if (!syncState.qc.getCommitted().isPresent()) {
+			throw new IllegalStateException();
 		}
 
-		final QuorumCertificate qc = syncState.qc;
+		syncState.fetched.addAll(response.getVertices());
 
-		if (response.getVertices().isEmpty()) {
-			log.info("GET_VERTICES failed: {}", qc);
-			// failed
-			return;
+		long stateVersion = syncState.qc.getCommitted().get().getStateVersion();
+		List<ECPublicKey> signers = Collections.singletonList(syncState.author);
+		syncState.fetched.addAll(response.getVertices());
+
+		if (syncedStateComputer.syncTo(stateVersion, signers, syncTo)) {
+			rebuildStoreAndSyncQC(syncState);
+		} else {
+			syncState.syncStage = SyncStage.SYNC_TO_COMMIT;
 		}
+	}
 
+	private void processVerticesResponseForVerticesSync(Hash syncTo, SyncState syncState, GetVerticesResponse response) {
 		Vertex vertex = response.getVertices().get(0);
 		syncState.fetched.addFirst(vertex);
 		Hash nextVertexId = vertex.getQC().getProposed().getId();
@@ -137,7 +174,7 @@ public final class VertexStore {
 		if (vertices.containsKey(nextVertexId)) {
 			for (Vertex v: syncState.fetched) {
 				if (!addQC(v.getQC())) {
-					log.info("GET_VERTICES failed: {}", qc);
+					log.info("GET_VERTICES failed: {}", syncState.qc);
 					return;
 				}
 				try {
@@ -147,25 +184,68 @@ public final class VertexStore {
 					return;
 				}
 			}
-			addQC(qc);
+			addQC(syncState.qc);
 		} else {
 			log.info("SYNC_VERTICES: Sending further GetVerticesRequest {}", nextVertexId);
 			syncVerticesRPCSender.sendGetVerticesRequest(nextVertexId, syncState.author, 1, syncTo);
 		}
 	}
 
-	private void doSync(QuorumCertificate qc, ECPublicKey author) {
+
+	public void processGetVerticesResponse(GetVerticesResponse response) {
+		log.info("SYNC_VERTICES: Received GetVerticesResponse {}", response);
+
+		final Hash syncTo = response.getOpaque(Hash.class);
+		SyncState syncState = syncing.get(syncTo);
+		if (syncState == null) {
+			return;
+		}
+
+		if (response.getVertices().isEmpty()) {
+			log.info("GET_VERTICES failed: {}", syncState.qc);
+			// failed
+			// TODO: retry
+			return;
+		}
+
+		switch (syncState.syncStage) {
+			case GET_COMMITTED_VERTICES:
+				processVerticesResponseForCommittedSync(syncTo, syncState, response);
+				break;
+			case GET_PREPARED_VERTICES:
+				processVerticesResponseForVerticesSync(syncTo, syncState, response);
+				break;
+			default:
+				throw new IllegalStateException("Unknown sync stage: " + syncState.syncStage);
+		}
+	}
+
+	private void doSync(QuorumCertificate qc, QuorumCertificate committedQC, ECPublicKey author) {
 		final Hash vertexId = qc.getProposed().getId();
 		if (syncing.containsKey(vertexId)) {
 			return;
 		}
 
-		SyncState syncState = new SyncState(qc, author);
+		SyncState syncState = new SyncState(qc, committedQC, author, SyncStage.GET_PREPARED_VERTICES);
 		syncing.put(vertexId, syncState);
 
 		log.info("SYNC_VERTICES: Sending initial GetVerticesRequest {}", vertexId);
 		syncVerticesRPCSender.sendGetVerticesRequest(vertexId, syncState.author, 1, vertexId);
 	}
+
+	private void doCommittedSync(QuorumCertificate qc, QuorumCertificate committedQc, ECPublicKey author) {
+		final Hash vertexId = committedQc.getProposed().getId();
+		if (syncing.containsKey(vertexId)) {
+			return;
+		}
+
+		SyncState syncState = new SyncState(qc, committedQc, author, SyncStage.GET_COMMITTED_VERTICES);
+		syncing.put(vertexId, syncState);
+
+		log.info("SYNC_VERTICES: Sending initial GetVerticesRequest {}", vertexId);
+		syncVerticesRPCSender.sendGetVerticesRequest(vertexId, syncState.author, 3, vertexId);
+	}
+
 
 	public void processLocalSync(Hash vertexId) {
 		syncing.remove(vertexId);
@@ -176,50 +256,23 @@ public final class VertexStore {
 			return true;
 		}
 
+		if (!committedQC.getView().equals(View.genesis())) {
+			Optional<VertexMetadata> committed = committedQC.getCommitted();
+			if (!committed.isPresent()) {
+				throw new IllegalStateException("CommittedQC should have a committed vertex.");
+			}
+
+			VertexMetadata committedMetadata = committed.get();
+			if (!vertices.containsKey(committedMetadata.getId())
+				&& vertices.get(rootId.get()).getView().compareTo(committedMetadata.getView()) < 0) {
+				doCommittedSync(qc, committedQC, author);
+				return false;
+			}
+		}
+
 		if (author != null) {
-			this.doSync(qc, author);
+			this.doSync(qc, committedQC, author);
 		}
-
-
-		/*
-		Optional<VertexMetadata> committed = committedQC.getCommitted();
-		if (!committed.isPresent()) {
-			return false;
-		}
-
-		VertexMetadata committedMetadata = committed.get();
-		if (root.getView().compareTo(committedMetadata.getView()) < 0) {
-
-			long stateVersion = committed.get().getStateVersion();
-			final Hash hash;
-			try {
-				// TODO: Make it easier to retrieve signatures of QC
-				hash = Hash.of(DefaultSerialization.getInstance().toDson(committedQC.getVoteData(), Output.HASH));
-			} catch (SerializationException e) {
-				throw new IllegalStateException("Failed to serialize");
-			}				List<ECPublicKey> signers = committedQC.getSignatures().signedMessage(hash);
-
-			Observable.combineLatest(
-				vertexSupplier.sendGetVerticesRequest(committedQC.getProposed().getId(), author, 3).toObservable(),
-				syncedStateComputer.syncTo(stateVersion, signers).toSingleDefault(0).toObservable(),
-				(v, l) -> v
-			).subscribe(vertices -> {
-				synchronized (lock) {
-					if (root.getView().compareTo(committedMetadata.getView()) < 0) {
-						uncommitted.clear();
-						for (Vertex v : vertices) {
-							if (!v.getId().equals(committedMetadata.getId())) {
-								uncommitted.put(v.getId(), v);
-							}
-						}
-						this.root = committedMetadata;
-						this.highestCommittedQC = committedQC;
-						this.highestQC = committedQC;
-					}
-				}
-			});
-		}
-		*/
 
 		return false;
 	}

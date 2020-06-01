@@ -60,7 +60,6 @@ import com.radixdlt.crypto.Hash;
 import com.radixdlt.mempool.EmptyMempool;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.CommittedAtom;
-import io.reactivex.rxjava3.core.Completable;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -88,8 +87,8 @@ class ControlledBFTNode {
 		);
 		SyncedStateComputer<CommittedAtom> stateComputer = new SyncedStateComputer<CommittedAtom>() {
 			@Override
-			public Completable syncTo(long targetStateVersion, List<ECPublicKey> target) {
-				return Completable.complete();
+			public boolean syncTo(long targetStateVersion, List<ECPublicKey> target, Object opaque) {
+				return true;
 			}
 
 			@Override
