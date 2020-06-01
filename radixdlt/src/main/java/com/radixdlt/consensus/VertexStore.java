@@ -60,7 +60,6 @@ public final class VertexStore {
 	private final SyncVerticesRPCSender syncVerticesRPCSender;
 	private final SyncedStateComputer<CommittedAtom> syncedStateComputer;
 	private final SystemCounters counters;
-	private final Object lock = new Object();
 
 	// These should never be empty
 	private final AtomicReference<Hash> rootId = new AtomicReference<>();
@@ -226,77 +225,71 @@ public final class VertexStore {
 	}
 
 	private boolean addQC(QuorumCertificate qc) {
-		synchronized (lock) {
-			if (!vertices.containsKey(qc.getProposed().getId())) {
-				return false;
-			}
-
-			if (highestQC.get().getView().compareTo(qc.getView()) < 0) {
-				highestQC.set(qc);
-			}
-
-			QuorumCertificate highestCommitted = highestCommittedQC.get();
-			qc.getCommitted().ifPresent(vertexMetadata -> {
-				if (!highestCommitted.getCommitted().isPresent()
-					|| highestCommitted.getCommitted().get().getStateVersion() < vertexMetadata.getStateVersion()) {
-					this.highestCommittedQC.set(qc);
-				}
-			});
-
-			return true;
+		if (!vertices.containsKey(qc.getProposed().getId())) {
+			return false;
 		}
+
+		if (highestQC.get().getView().compareTo(qc.getView()) < 0) {
+			highestQC.set(qc);
+		}
+
+		QuorumCertificate highestCommitted = highestCommittedQC.get();
+		qc.getCommitted().ifPresent(vertexMetadata -> {
+			if (!highestCommitted.getCommitted().isPresent()
+				|| highestCommitted.getCommitted().get().getStateVersion() < vertexMetadata.getStateVersion()) {
+				this.highestCommittedQC.set(qc);
+			}
+		});
+
+		return true;
 	}
 
 	public void insertVertex(Vertex vertex) throws VertexInsertionException {
-		synchronized (lock) {
-			if (!vertices.containsKey(vertex.getParentId())) {
-				throw new MissingParentException(vertex.getParentId());
-			}
+		if (!vertices.containsKey(vertex.getParentId())) {
+			throw new MissingParentException(vertex.getParentId());
+		}
 
-			// TODO: Don't check for state computer errors for now so that we don't
-			// TODO: have to deal with failing leader proposals
-			// TODO: Reinstate this when ProposalGenerator + Mempool can guarantee correct proposals
-			// TODO: (also see commitVertex->storeAtom)
+		// TODO: Don't check for state computer errors for now so that we don't
+		// TODO: have to deal with failing leader proposals
+		// TODO: Reinstate this when ProposalGenerator + Mempool can guarantee correct proposals
+		// TODO: (also see commitVertex->storeAtom)
 
-			vertices.put(vertex.getId(), vertex);
-			updateVertexStoreSize();
+		vertices.put(vertex.getId(), vertex);
+		updateVertexStoreSize();
 
-			if (syncing.containsKey(vertex.getId())) {
-				syncSender.synced(vertex.getId());
-			}
+		if (syncing.containsKey(vertex.getId())) {
+			syncSender.synced(vertex.getId());
 		}
 	}
 
 	// TODO: add signature proof
 	public Vertex commitVertex(VertexMetadata commitMetadata) {
-		synchronized (lock) {
-			final Hash vertexId = commitMetadata.getId();
-			final Vertex tipVertex = vertices.get(vertexId);
-			if (tipVertex == null) {
-				throw new IllegalStateException("Committing a vertex which was never inserted: " + vertexId);
-			}
-			final LinkedList<Vertex> path = new LinkedList<>();
-			Vertex vertex = tipVertex;
-			while (vertex != null && !rootId.get().equals(vertex.getId())) {
-				path.addFirst(vertex);
-				vertex = vertices.remove(vertex.getParentId());
-			}
-
-			for (Vertex committed : path) {
-				if (committed.getAtom() != null) {
-					CommittedAtom committedAtom = committed.getAtom().committed(commitMetadata);
-					this.counters.increment(CounterType.CONSENSUS_PROCESSED);
-					syncedStateComputer.execute(committedAtom);
-				}
-
-				lastCommittedVertex.onNext(committed);
-			}
-
-			rootId.set(commitMetadata.getId());
-
-			updateVertexStoreSize();
-			return tipVertex;
+		final Hash vertexId = commitMetadata.getId();
+		final Vertex tipVertex = vertices.get(vertexId);
+		if (tipVertex == null) {
+			throw new IllegalStateException("Committing a vertex which was never inserted: " + vertexId);
 		}
+		final LinkedList<Vertex> path = new LinkedList<>();
+		Vertex vertex = tipVertex;
+		while (vertex != null && !rootId.get().equals(vertex.getId())) {
+			path.addFirst(vertex);
+			vertex = vertices.remove(vertex.getParentId());
+		}
+
+		for (Vertex committed : path) {
+			if (committed.getAtom() != null) {
+				CommittedAtom committedAtom = committed.getAtom().committed(commitMetadata);
+				this.counters.increment(CounterType.CONSENSUS_PROCESSED);
+				syncedStateComputer.execute(committedAtom);
+			}
+
+			lastCommittedVertex.onNext(committed);
+		}
+
+		rootId.set(commitMetadata.getId());
+
+		updateVertexStoreSize();
+		return tipVertex;
 	}
 
 	public Observable<Vertex> lastCommittedVertex() {
