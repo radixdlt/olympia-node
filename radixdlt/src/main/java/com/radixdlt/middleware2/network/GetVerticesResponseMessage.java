@@ -19,9 +19,11 @@ package com.radixdlt.middleware2.network;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.consensus.Vertex;
+import com.radixdlt.crypto.Hash;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import org.radix.network.messaging.Message;
@@ -31,6 +33,10 @@ import org.radix.network.messaging.Message;
  */
 @SerializerId2("message.consensus.vertices_response")
 public final class GetVerticesResponseMessage extends Message {
+	@JsonProperty("vertexId")
+	@DsonOutput(Output.ALL)
+	private final Hash vertexId;
+
 	@JsonProperty("vertices")
 	@DsonOutput(Output.ALL)
 	private final List<Vertex> vertices;
@@ -38,16 +44,22 @@ public final class GetVerticesResponseMessage extends Message {
 	GetVerticesResponseMessage() {
 		// Serializer only
 		super(0);
+		this.vertexId = null;
 		this.vertices = null;
 	}
 
-	GetVerticesResponseMessage(int magic, List<Vertex> vertices) {
+	GetVerticesResponseMessage(int magic, Hash vertexId, List<Vertex> vertices) {
 		super(magic);
+		this.vertexId = Objects.requireNonNull(vertexId);
 		this.vertices = Objects.requireNonNull(vertices);
 	}
 
+	public Hash getVertexId() {
+		return vertexId;
+	}
+
 	public List<Vertex> getVertices() {
-		return vertices;
+		return vertices == null ? Collections.emptyList() : vertices;
 	}
 
 	@Override

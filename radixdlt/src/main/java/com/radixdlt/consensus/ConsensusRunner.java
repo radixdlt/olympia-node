@@ -118,7 +118,14 @@ public final class ConsensusRunner {
 			eventCoordinatorEvents.withLatestFrom(bftEventProcessors, this::processEvent)
 		);
 
-		this.events = Observable.merge(epochs, ecMessages).publish();
+		this.events = Observable.merge(epochs, ecMessages)
+			.doOnError(e -> {
+				// TODO: Implement better error handling especially against Byzantine nodes.
+				// TODO: Exit process for now.
+				e.printStackTrace();
+				System.exit(-1);
+			})
+			.publish();
 	}
 
 	private Event processEvent(Object msg, BFTEventProcessor processor) {

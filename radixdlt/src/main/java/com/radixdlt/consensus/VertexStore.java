@@ -27,6 +27,7 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -116,6 +117,11 @@ public final class VertexStore {
 			this.author = author;
 			this.syncStage = syncStage;
 		}
+
+		@Override
+		public String toString() {
+			return String.format("%s{qc=%s committedQC=%s syncState=%s}", this.getClass().getSimpleName(), qc, committedQC, syncStage);
+		}
 	}
 
 	public void processGetVerticesRequest(GetVerticesRequest request) {
@@ -126,36 +132,44 @@ public final class VertexStore {
 	}
 
 	private void rebuildStoreAndSyncQC(SyncState syncState) {
+		log.info("SYNC_STATE: Rebuilding and syncing QC: {}", syncState);
+
+		syncState.fetched.sort(Comparator.comparing(Vertex::getView));
+
 		// TODO: check if there are any vertices which haven't been local sync processed yet
 		this.vertices.clear();
-		this.highestCommittedQC.set(syncState.qc);
-		this.highestQC.set(syncState.qc);
-		this.rootId.set(syncState.qc.getCommitted().get().getId());
+		this.highestCommittedQC.set(syncState.committedQC);
+		this.highestQC.set(syncState.committedQC);
+		this.rootId.set(syncState.committedQC.getCommitted().get().getId());
+
 		for (Vertex vertex : syncState.fetched) {
 			try {
-				insertVertex(vertex);
+				insertVertexInternal(vertex, this.vertices.isEmpty());
 			} catch (VertexInsertionException e) {
 				throw new IllegalStateException("Could not insert vertex " + vertex);
 			}
 		}
 
-		syncToQC(syncState.qc, syncState.committedQC, syncState.author);
+		this.syncToQC(syncState.qc, syncState.committedQC, syncState.author);
 	}
 
 	public void processCommittedStateSync(CommittedStateSync committedStateSync) {
+		log.info("SYNC_STATE: synced {}", committedStateSync);
+
 		Hash syncTo = committedStateSync.getOpaque(Hash.class);
 		SyncState syncState = syncing.get(syncTo);
-		rebuildStoreAndSyncQC(syncState);
+		if (syncState != null) {
+			rebuildStoreAndSyncQC(syncState);
+		}
 	}
 
 	private void processVerticesResponseForCommittedSync(Hash syncTo, SyncState syncState, GetVerticesResponse response) {
-		if (!syncState.qc.getCommitted().isPresent()) {
+		log.info("SYNC_STATE: Processing vertices {}", syncState);
+		if (!syncState.committedQC.getCommitted().isPresent()) {
 			throw new IllegalStateException();
 		}
 
-		syncState.fetched.addAll(response.getVertices());
-
-		long stateVersion = syncState.qc.getCommitted().get().getStateVersion();
+		long stateVersion = syncState.committedQC.getCommitted().get().getStateVersion();
 		List<ECPublicKey> signers = Collections.singletonList(syncState.author);
 		syncState.fetched.addAll(response.getVertices());
 
@@ -178,7 +192,7 @@ public final class VertexStore {
 					return;
 				}
 				try {
-					insertVertex(v);
+					insertVertexInternal(v, false);
 				} catch (VertexInsertionException e) {
 					log.info("GET_VERTICES failed: {}", e.getMessage());
 					return;
@@ -186,11 +200,10 @@ public final class VertexStore {
 			}
 			addQC(syncState.qc);
 		} else {
-			log.info("SYNC_VERTICES: Sending further GetVerticesRequest {}", nextVertexId);
+			log.info("SYNC_VERTICES: Sending further GetVerticesRequest {} {}", syncState.qc, syncState.fetched.size());
 			syncVerticesRPCSender.sendGetVerticesRequest(nextVertexId, syncState.author, 1, syncTo);
 		}
 	}
-
 
 	public void processGetVerticesResponse(GetVerticesResponse response) {
 		log.info("SYNC_VERTICES: Received GetVerticesResponse {}", response);
@@ -229,7 +242,7 @@ public final class VertexStore {
 		SyncState syncState = new SyncState(qc, committedQC, author, SyncStage.GET_PREPARED_VERTICES);
 		syncing.put(vertexId, syncState);
 
-		log.info("SYNC_VERTICES: Sending initial GetVerticesRequest {}", vertexId);
+		log.info("SYNC_VERTICES: Vertices: Sending initial GetVerticesRequest {}", vertexId);
 		syncVerticesRPCSender.sendGetVerticesRequest(vertexId, syncState.author, 1, vertexId);
 	}
 
@@ -242,12 +255,13 @@ public final class VertexStore {
 		SyncState syncState = new SyncState(qc, committedQc, author, SyncStage.GET_COMMITTED_VERTICES);
 		syncing.put(vertexId, syncState);
 
-		log.info("SYNC_VERTICES: Sending initial GetVerticesRequest {}", vertexId);
+		log.info("SYNC_VERTICES: Committed: Sending initial GetVerticesRequest {}", vertexId);
 		syncVerticesRPCSender.sendGetVerticesRequest(vertexId, syncState.author, 3, vertexId);
 	}
 
 
 	public void processLocalSync(Hash vertexId) {
+		log.info("LOCAL_SYNC: Processed {}", vertexId);
 		syncing.remove(vertexId);
 	}
 
@@ -255,6 +269,8 @@ public final class VertexStore {
 		if (addQC(qc)) {
 			return true;
 		}
+
+		log.info("SYNC_TO_QC: Need sync: {} {}", qc, committedQC);
 
 		if (!committedQC.getView().equals(View.genesis())) {
 			Optional<VertexMetadata> committed = committedQC.getCommitted();
@@ -266,6 +282,7 @@ public final class VertexStore {
 			if (!vertices.containsKey(committedMetadata.getId())
 				&& vertices.get(rootId.get()).getView().compareTo(committedMetadata.getView()) < 0) {
 				doCommittedSync(qc, committedQC, author);
+				log.info("SYNC_TO_QC: Need committed sync: {} {}", qc, committedQC);
 				return false;
 			}
 		}
@@ -286,19 +303,24 @@ public final class VertexStore {
 			highestQC.set(qc);
 		}
 
-		QuorumCertificate highestCommitted = highestCommittedQC.get();
 		qc.getCommitted().ifPresent(vertexMetadata -> {
-			if (!highestCommitted.getCommitted().isPresent()
-				|| highestCommitted.getCommitted().get().getStateVersion() < vertexMetadata.getStateVersion()) {
+			QuorumCertificate highestCommitted = highestCommittedQC.get();
+			Optional<VertexMetadata> highest = highestCommitted.getCommitted();
+			if (highest.isPresent()) {
+				if (highest.get().getView().compareTo(vertexMetadata.getView()) < 0) {
+					this.highestCommittedQC.set(qc);
+				}
+			} else {
 				this.highestCommittedQC.set(qc);
 			}
 		});
 
+
 		return true;
 	}
 
-	public void insertVertex(Vertex vertex) throws VertexInsertionException {
-		if (!vertices.containsKey(vertex.getParentId())) {
+	private void insertVertexInternal(Vertex vertex, boolean force) throws VertexInsertionException {
+		if (!force && !vertices.containsKey(vertex.getParentId())) {
 			throw new MissingParentException(vertex.getParentId());
 		}
 
@@ -315,12 +337,16 @@ public final class VertexStore {
 		}
 	}
 
+	public void insertVertex(Vertex vertex) throws VertexInsertionException {
+		insertVertexInternal(vertex, false);
+	}
+
 	// TODO: add signature proof
 	public Vertex commitVertex(VertexMetadata commitMetadata) {
 		final Hash vertexId = commitMetadata.getId();
 		final Vertex tipVertex = vertices.get(vertexId);
 		if (tipVertex == null) {
-			throw new IllegalStateException("Committing a vertex which was never inserted: " + vertexId);
+			throw new IllegalStateException("Committing vertex not in store: " + commitMetadata);
 		}
 		final LinkedList<Vertex> path = new LinkedList<>();
 		Vertex vertex = tipVertex;

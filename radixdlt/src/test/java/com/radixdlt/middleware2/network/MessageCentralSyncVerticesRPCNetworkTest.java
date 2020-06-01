@@ -102,6 +102,7 @@ public class MessageCentralSyncVerticesRPCNetworkTest {
 		Vertex vertex = mock(Vertex.class);
 		when(vertex.getId()).thenReturn(id);
 		when(responseMessage.getVertices()).thenReturn(Collections.singletonList(vertex));
+		when(responseMessage.getVertexId()).thenReturn(id);
 		listener.get().handleMessage(mock(Peer.class), responseMessage);
 
 		testObserver.awaitCount(1);
@@ -113,7 +114,10 @@ public class MessageCentralSyncVerticesRPCNetworkTest {
 		MessageCentralGetVerticesRequest request = mock(MessageCentralGetVerticesRequest.class);
 		Peer peer = mock(Peer.class);
 		when(request.getRequestor()).thenReturn(peer);
-		List<Vertex> vertices = Collections.singletonList(mock(Vertex.class));
+		Vertex vertex = mock(Vertex.class);
+		when(vertex.getId()).thenReturn(mock(Hash.class));
+		when(request.getVertexId()).thenReturn(mock(Hash.class));
+		List<Vertex> vertices = Collections.singletonList(vertex);
 		network.sendGetVerticesResponse(request, vertices);
 		verify(messageCentral, times(1)).send(eq(peer), any(GetVerticesResponseMessage.class));
 	}

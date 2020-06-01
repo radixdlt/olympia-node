@@ -21,6 +21,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.*;
 
 import com.radixdlt.consensus.Vertex;
+import com.radixdlt.crypto.Hash;
 import java.util.Collections;
 import org.junit.Test;
 
@@ -28,7 +29,7 @@ public class GetVerticesResponseMessageTest {
 	@Test
 	public void sensibleToString() {
 		Vertex vertex = Vertex.createGenesis(null);
-		GetVerticesResponseMessage msg1 = new GetVerticesResponseMessage(0, Collections.singletonList(vertex));
+		GetVerticesResponseMessage msg1 = new GetVerticesResponseMessage(0, Hash.random(), Collections.singletonList(vertex));
 		String s1 = msg1.toString();
 		assertThat(s1, containsString(GetVerticesResponseMessage.class.getSimpleName()));
 		assertThat(s1, containsString(vertex.toString()));

@@ -33,4 +33,9 @@ public final class CommittedStateSync {
 	public <T> T getOpaque(Class<T> c) {
 		return c.cast(opaque);
 	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{version=%s opaque=%s", this.getClass().getSimpleName(), stateVersion, opaque);
+	}
 }

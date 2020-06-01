@@ -88,7 +88,7 @@ public class MessageCentralSyncVerticesRPCNetwork implements SyncVerticesRPCSend
 	@Override
 	public void sendGetVerticesResponse(GetVerticesRequest originalRequest, List<Vertex> vertices) {
 		MessageCentralGetVerticesRequest messageCentralGetVerticesRequest = (MessageCentralGetVerticesRequest) originalRequest;
-		GetVerticesResponseMessage response = new GetVerticesResponseMessage(this.magic, vertices);
+		GetVerticesResponseMessage response = new GetVerticesResponseMessage(this.magic, messageCentralGetVerticesRequest.getVertexId(), vertices);
 		Peer peer = messageCentralGetVerticesRequest.getRequestor();
 		this.messageCentral.send(peer, response);
 	}
@@ -109,12 +109,12 @@ public class MessageCentralSyncVerticesRPCNetwork implements SyncVerticesRPCSend
 	public Observable<GetVerticesResponse> responses() {
 		return Observable.create(emitter -> {
 			MessageListener<GetVerticesResponseMessage> listener = (src, msg) -> {
-				Object opaque = opaqueCache.getIfPresent(msg.getVertices().get(0).getId());
+				Object opaque = opaqueCache.getIfPresent(msg.getVertexId());
 				if (opaque == null) {
 					return; // TODO: send error?
 				}
 
-				GetVerticesResponse response = new GetVerticesResponse(msg.getVertices().get(0).getId(), msg.getVertices(), opaque);
+				GetVerticesResponse response = new GetVerticesResponse(msg.getVertexId(), msg.getVertices(), opaque);
 				emitter.onNext(response);
 			};
 			this.messageCentral.addListener(GetVerticesResponseMessage.class, listener);
@@ -152,7 +152,7 @@ public class MessageCentralSyncVerticesRPCNetwork implements SyncVerticesRPCSend
 
 		@Override
 		public String toString() {
-			return String.format("%s{vertexId=%s}", getClass().getSimpleName(), vertexId.toString().substring(0, 6));
+			return String.format("%s{vertexId=%s count=%d}", getClass().getSimpleName(), vertexId.toString().substring(0, 6), count);
 		}
 	}
 }
