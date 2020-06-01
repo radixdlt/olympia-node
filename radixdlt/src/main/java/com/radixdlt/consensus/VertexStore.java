@@ -132,7 +132,7 @@ public final class VertexStore {
 	}
 
 	private void rebuildStoreAndSyncQC(SyncState syncState) {
-		log.info("SYNC_STATE: Rebuilding and syncing QC: {}", syncState);
+		log.info("SYNC_STATE: Rebuilding and syncing QC: sync={} curRoot={}", syncState, vertices.get(rootId.get()));
 
 		syncState.fetched.sort(Comparator.comparing(Vertex::getView));
 
@@ -200,7 +200,8 @@ public final class VertexStore {
 			}
 			addQC(syncState.qc);
 		} else {
-			log.info("SYNC_VERTICES: Sending further GetVerticesRequest {} {}", syncState.qc, syncState.fetched.size());
+			log.info("SYNC_VERTICES: Sending further GetVerticesRequest for qc={} fetched={} root={}",
+				syncState.qc, syncState.fetched.size(), vertices.get(rootId.get()));
 			syncVerticesRPCSender.sendGetVerticesRequest(nextVertexId, syncState.author, 1, syncTo);
 		}
 	}
@@ -242,7 +243,7 @@ public final class VertexStore {
 		SyncState syncState = new SyncState(qc, committedQC, author, SyncStage.GET_PREPARED_VERTICES);
 		syncing.put(vertexId, syncState);
 
-		log.info("SYNC_VERTICES: Vertices: Sending initial GetVerticesRequest {}", vertexId);
+		log.info("SYNC_VERTICES: Vertices: Sending initial GetVerticesRequest for qc={}", qc);
 		syncVerticesRPCSender.sendGetVerticesRequest(vertexId, syncState.author, 1, vertexId);
 	}
 
@@ -279,11 +280,13 @@ public final class VertexStore {
 			}
 
 			VertexMetadata committedMetadata = committed.get();
-			if (!vertices.containsKey(committedMetadata.getId())
-				&& vertices.get(rootId.get()).getView().compareTo(committedMetadata.getView()) < 0) {
-				doCommittedSync(qc, committedQC, author);
-				log.info("SYNC_TO_QC: Need committed sync: {} {}", qc, committedQC);
-				return false;
+			if (!vertices.containsKey(committedMetadata.getId())) {
+				View rootView = vertices.get(rootId.get()).getView();
+				if (rootView.compareTo(committedMetadata.getView()) < 0) {
+					log.info("SYNC_TO_QC: Need committed sync: {} {} highestQC={} rootView={}", qc, committedMetadata, highestQC.get(), rootView);
+					doCommittedSync(qc, committedQC, author);
+					return false;
+				}
 			}
 		}
 
@@ -341,8 +344,19 @@ public final class VertexStore {
 		insertVertexInternal(vertex, false);
 	}
 
-	// TODO: add signature proof
-	public Vertex commitVertex(VertexMetadata commitMetadata) {
+	/**
+	 * Commit a vertex. Executes the atom and prunes the tree. Returns
+	 * the Vertex if commit was successful. If the store is ahead of
+	 * what is to be committed, returns an empty optional
+	 *
+	 * @param commitMetadata the metadata of the vertex to commit
+	 * @return the vertex if sucessful, otherwise an empty optional if vertex was already committed
+	 */
+	public Optional<Vertex> commitVertex(VertexMetadata commitMetadata) {
+		if (commitMetadata.getView().compareTo(vertices.get(rootId.get()).getView()) < 0) {
+			return Optional.empty();
+		}
+
 		final Hash vertexId = commitMetadata.getId();
 		final Vertex tipVertex = vertices.get(vertexId);
 		if (tipVertex == null) {
@@ -368,7 +382,7 @@ public final class VertexStore {
 		rootId.set(commitMetadata.getId());
 
 		updateVertexStoreSize();
-		return tipVertex;
+		return Optional.of(tipVertex);
 	}
 
 	public Observable<Vertex> lastCommittedVertex() {

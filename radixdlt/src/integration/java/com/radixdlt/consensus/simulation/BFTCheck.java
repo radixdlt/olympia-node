@@ -32,6 +32,11 @@ public interface BFTCheck {
 		public String getDescription() {
 			return description;
 		}
+
+		@Override
+		public String toString() {
+			return String.format("%s{desc=%s}", this.getClass().getSimpleName(), description);
+		}
 	}
 
 	/**

@@ -185,6 +185,11 @@ public class TestEventCoordinatorNetwork {
 		public int getCount() {
 			return count;
 		}
+
+		@Override
+		public String toString() {
+			return String.format("%s{vertexId=%s count=%d}", this.getClass().getSimpleName(), this.vertexId, this.count);
+		}
 	}
 
 

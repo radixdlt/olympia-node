@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 
 /**
  * Checks that nodes are committed on the same vertex.
+ * TODO: make into real safety check
  */
 public class SafetyCheck implements BFTCheck {
 

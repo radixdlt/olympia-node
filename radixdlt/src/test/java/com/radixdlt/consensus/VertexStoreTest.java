@@ -106,6 +106,7 @@ public class VertexStoreTest {
 	@Test
 	public void when_committing_vertex_which_was_not_inserted__then_illegal_state_exception_is_thrown() {
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
+		when(vertexMetadata.getView()).thenReturn(View.of(2));
 		when(vertexMetadata.getId()).thenReturn(mock(Hash.class));
 		assertThatThrownBy(() -> vertexStore.commitVertex(vertexMetadata))
 			.isInstanceOf(IllegalStateException.class);
@@ -137,7 +138,7 @@ public class VertexStoreTest {
 		VertexMetadata vertexMetadata = VertexMetadata.ofVertex(nextVertex);
 		CommittedAtom committedAtom = mock(CommittedAtom.class);
 		when(clientAtom.committed(eq(vertexMetadata))).thenReturn(committedAtom);
-		assertThat(vertexStore.commitVertex(vertexMetadata)).isEqualTo(nextVertex);
+		assertThat(vertexStore.commitVertex(vertexMetadata)).hasValue(nextVertex);
 		testObserver.awaitCount(2); // both committed
 		testObserver.assertValues(genesisVertex, nextVertex); // both committed
 
@@ -170,7 +171,7 @@ public class VertexStoreTest {
 		testObserver.awaitCount(1);
 
 		VertexMetadata vertexMetadata = VertexMetadata.ofVertex(nextVertex);
-		assertThat(vertexStore.commitVertex(vertexMetadata)).isEqualTo(nextVertex);
+		assertThat(vertexStore.commitVertex(vertexMetadata)).hasValue(nextVertex);
 		testObserver.awaitCount(2);
 		testObserver.assertValues(genesisVertex, nextVertex);
 		assertThat(vertexStore.getSize()).isEqualTo(1);

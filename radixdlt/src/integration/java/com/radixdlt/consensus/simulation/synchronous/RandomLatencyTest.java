@@ -19,9 +19,12 @@ package com.radixdlt.consensus.simulation.synchronous;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
+import com.radixdlt.consensus.simulation.BFTCheck.BFTCheckError;
 import com.radixdlt.consensus.simulation.BFTSimulatedTest;
 import com.radixdlt.consensus.simulation.BFTSimulatedTest.Builder;
 import java.util.Map;
+import java.util.Optional;
+import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
@@ -59,9 +62,8 @@ public class RandomLatencyTest {
 			.numNodes(3)
 			.build();
 
-		test.run(1, TimeUnit.MINUTES);
-		Map<String, Boolean> results = test.run(1, TimeUnit.MINUTES);
-		assertThat(results).doesNotContainValue(false);
+		Map<String, Optional<BFTCheckError>> results = test.run(1, TimeUnit.MINUTES);
+		assertThat(results).allSatisfy((name, error) -> AssertionsForClassTypes.assertThat(error).isNotPresent());
 	}
 
 	/**
@@ -73,8 +75,7 @@ public class RandomLatencyTest {
 			.numNodes(4)
 			.build();
 
-		test.run(1, TimeUnit.MINUTES);
-		Map<String, Boolean> results = test.run(1, TimeUnit.MINUTES);
-		assertThat(results).doesNotContainValue(false);
+		Map<String, Optional<BFTCheckError>> results = test.run(1, TimeUnit.MINUTES);
+		assertThat(results).allSatisfy((name, error) -> assertThat(error).isNotPresent());
 	}
 }

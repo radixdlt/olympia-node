@@ -19,9 +19,11 @@ package com.radixdlt.consensus.simulation.synchronous;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
+import com.radixdlt.consensus.simulation.BFTCheck.BFTCheckError;
 import com.radixdlt.consensus.simulation.BFTSimulatedTest;
 import com.radixdlt.consensus.simulation.BFTSimulatedTest.Builder;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 
@@ -39,7 +41,7 @@ public class OneProposalDropperTest {
 		.randomLatency(minLatency, maxLatency)
 		.pacemakerTimeout(synchronousTimeout)
 		.addProposalDropper()
-		.checkSafety("safety")
+		//.checkSafety("safety") // TODO: add once real safety check implemented
 		.checkNoTimeouts("noTimeouts");
 
 	/**
@@ -52,9 +54,8 @@ public class OneProposalDropperTest {
 			.setGetVerticesRPCEnabled(false)
 			.build();
 
-		Map<String, Boolean> results = test.run(1, TimeUnit.MINUTES);
-		System.out.println(results);
-		assertThat(results).containsEntry("noTimeouts", false);
+		Map<String, Optional<BFTCheckError>> results = test.run(1, TimeUnit.MINUTES);
+		assertThat(results).hasEntrySatisfying("noTimeouts", error -> assertThat(error).isPresent());
 	}
 
 	/**
@@ -67,8 +68,7 @@ public class OneProposalDropperTest {
 			.setGetVerticesRPCEnabled(true)
 			.build();
 
-		Map<String, Boolean> results = test.run(1, TimeUnit.MINUTES);
-		System.out.println(results);
-		assertThat(results).doesNotContainValue(false);
+		Map<String, Optional<BFTCheckError>> results = test.run(1, TimeUnit.MINUTES);
+		assertThat(results).allSatisfy((name, error) -> assertThat(error).isNotPresent());
 	}
 }
