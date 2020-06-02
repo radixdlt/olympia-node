@@ -28,8 +28,10 @@ import com.radixdlt.consensus.ConsensusRunner.Event;
 import com.radixdlt.consensus.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.liveness.PacemakerRx;
 import com.radixdlt.consensus.validators.ValidatorSet;
+import com.radixdlt.crypto.Hash;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.observers.TestObserver;
+import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 
 public class ConsensusRunnerTest {
@@ -61,10 +63,12 @@ public class ConsensusRunnerTest {
 		when(syncVerticesRPCRx.responses()).thenReturn(Observable.never());
 
 		LocalSyncRx localSyncRx = mock(LocalSyncRx.class);
-		when(localSyncRx.localSyncs()).thenReturn(Observable.never());
+		Hash id = mock(Hash.class);
+		when(localSyncRx.localSyncs()).thenReturn(Observable.just(id).concatWith(Observable.never()));
 
 		CommittedStateSyncRx committedStateSyncRx = mock(CommittedStateSyncRx.class);
-		when(committedStateSyncRx.committedStateSyncs()).thenReturn(Observable.never());
+		CommittedStateSync stateSync = mock(CommittedStateSync.class);
+		when(committedStateSyncRx.committedStateSyncs()).thenReturn(Observable.just(stateSync).concatWith(Observable.never()));
 
 		VertexStore vertexStore = mock(VertexStore.class);
 
@@ -79,17 +83,20 @@ public class ConsensusRunnerTest {
 			vertexStore
 		);
 
-		TestObserver<Event> testObserver = TestObserver.create();
-		consensusRunner.events().subscribe(testObserver);
+		TestObserver<Event> testObserver = consensusRunner.events().test();
 		consensusRunner.start();
-		testObserver.awaitCount(6);
-		testObserver.assertValueCount(6);
+		testObserver.awaitCount(8);
+		testObserver.assertValueCount(8);
 		testObserver.assertNotComplete();
 
 		verify(ec, times(1)).processVote(eq(vote));
 		verify(ec, times(1)).processProposal(eq(proposal));
 		verify(ec, times(1)).processNewView(eq(newView));
 		verify(ec, times(1)).processLocalTimeout(eq(timeout));
+		verify(ec, times(1)).processLocalSync(eq(id));
+		verify(vertexStore, times(1)).processCommittedStateSync(eq(stateSync));
 		verify(vertexStore, times(1)).processGetVerticesRequest(eq(request));
+
+		consensusRunner.stop();
 	}
 }

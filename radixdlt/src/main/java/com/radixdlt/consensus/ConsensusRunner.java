@@ -33,12 +33,16 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.concurrent.Executors;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Subscription Manager (Start/Stop) to the processing of Consensus events under
  * a single BFT Consensus node instance
  */
 public final class ConsensusRunner {
+	private static final Logger log = LogManager.getLogger();
+
 	public enum EventType {
 		EPOCH,
 		LOCAL_TIMEOUT,
@@ -122,7 +126,7 @@ public final class ConsensusRunner {
 			.doOnError(e -> {
 				// TODO: Implement better error handling especially against Byzantine nodes.
 				// TODO: Exit process for now.
-				e.printStackTrace();
+				log.error("Unexpected occurred", e);
 				System.exit(-1);
 			})
 			.publish();
