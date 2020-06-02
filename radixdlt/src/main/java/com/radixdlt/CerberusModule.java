@@ -52,8 +52,6 @@ import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.sync.SyncedRadixEngine;
 import com.radixdlt.consensus.sync.SyncedRadixEngine.CommittedStateSyncSender;
-import com.radixdlt.consensus.tempo.Scheduler;
-import com.radixdlt.consensus.tempo.SingleThreadedScheduler;
 import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
@@ -88,7 +86,6 @@ public class CerberusModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		// dependencies
-		bind(Scheduler.class).toProvider(SingleThreadedScheduler::new);
 		bind(TimeoutSender.class).to(ScheduledTimeoutSender.class);
 		bind(PacemakerRx.class).to(ScheduledTimeoutSender.class);
 
