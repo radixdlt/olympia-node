@@ -35,8 +35,8 @@ public final class GetVerticesResponse {
 		this.opaque = opaque;
 	}
 
-	public <T> T getOpaque(Class<T> c) {
-		return c.cast(opaque);
+	public Object getOpaque() {
+		return opaque;
 	}
 
 	public Hash getVertexId() {

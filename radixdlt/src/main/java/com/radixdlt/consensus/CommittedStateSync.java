@@ -33,8 +33,8 @@ public final class CommittedStateSync {
 		return stateVersion;
 	}
 
-	public <T> T getOpaque(Class<T> c) {
-		return c.cast(opaque);
+	public Object getOpaque() {
+		return opaque;
 	}
 
 	@Override

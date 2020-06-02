@@ -33,7 +33,6 @@ import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -69,7 +68,7 @@ public class BFTSimulatedTest {
 
 	public static class Builder {
 		private final DroppingLatencyProvider latencyProvider = new DroppingLatencyProvider();
-		private final Map<String, BFTCheck> checks = new HashMap<>();
+		private final ImmutableMap.Builder<String, BFTCheck> checksBuilder = ImmutableMap.builder();
 		private List<ECKeyPair> nodes = Collections.singletonList(ECKeyPair.generateNew());
 		private int pacemakerTimeout = 12 * TestEventCoordinatorNetwork.DEFAULT_LATENCY;
 		private boolean getVerticesRPCEnabled = true;
@@ -116,32 +115,32 @@ public class BFTSimulatedTest {
 		}
 
 		public Builder checkLiveness(String checkName) {
-			this.checks.put(checkName, new LivenessCheck(8 * TestEventCoordinatorNetwork.DEFAULT_LATENCY, TimeUnit.MILLISECONDS));
+			this.checksBuilder.put(checkName, new LivenessCheck(8 * TestEventCoordinatorNetwork.DEFAULT_LATENCY, TimeUnit.MILLISECONDS));
 			return this;
 		}
 
 		public Builder checkLiveness(String checkName, long duration, TimeUnit timeUnit) {
-			this.checks.put(checkName, new LivenessCheck(duration, timeUnit));
+			this.checksBuilder.put(checkName, new LivenessCheck(duration, timeUnit));
 			return this;
 		}
 
 		public Builder checkSafety(String checkName) {
-			this.checks.put(checkName, new SafetyCheck());
+			this.checksBuilder.put(checkName, new SafetyCheck());
 			return this;
 		}
 
 		public Builder checkNoTimeouts(String checkName) {
-			this.checks.put(checkName, new NoTimeoutCheck());
+			this.checksBuilder.put(checkName, new NoTimeoutCheck());
 			return this;
 		}
 
 		public Builder checkNoSyncExceptions(String checkName) {
-			this.checks.put(checkName, new NoSyncExceptionCheck());
+			this.checksBuilder.put(checkName, new NoSyncExceptionCheck());
 			return this;
 		}
 
 		public Builder checkAllProposalsHaveDirectParents(String checkName) {
-			this.checks.put(checkName, new AllProposalsHaveDirectParentsCheck());
+			this.checksBuilder.put(checkName, new AllProposalsHaveDirectParentsCheck());
 			return this;
 
 		}
@@ -152,7 +151,7 @@ public class BFTSimulatedTest {
 				latencyProvider.copyOf(),
 				pacemakerTimeout,
 				getVerticesRPCEnabled,
-				ImmutableMap.copyOf(checks)
+				this.checksBuilder.build()
 			);
 		}
 	}

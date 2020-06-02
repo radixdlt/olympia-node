@@ -22,10 +22,12 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
+import com.radixdlt.consensus.BFTEventSender;
 import com.radixdlt.consensus.BasicEpochRx;
 import com.radixdlt.consensus.CommittedStateSyncRx;
 import com.radixdlt.consensus.DefaultHasher;
 import com.radixdlt.consensus.EpochRx;
+import com.radixdlt.consensus.EventCoordinatorNetworkRx;
 import com.radixdlt.consensus.LocalSyncRx;
 import com.radixdlt.consensus.InternalMessagePasser;
 import com.radixdlt.consensus.ProposerElectionFactory;
@@ -59,6 +61,7 @@ import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.ClientAtom.LedgerAtomConversionException;
+import com.radixdlt.middleware2.network.MessageCentralBFTNetwork;
 import com.radixdlt.middleware2.network.MessageCentralSyncVerticesRPCNetwork;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.properties.RuntimeProperties;
@@ -96,6 +99,14 @@ public class CerberusModule extends AbstractModule {
 
 		bind(SafetyRules.class).in(Scopes.SINGLETON);
 
+		bind(SyncVerticesRPCSender.class).to(MessageCentralSyncVerticesRPCNetwork.class);
+		bind(SyncVerticesRPCRx.class).to(MessageCentralSyncVerticesRPCNetwork.class);
+
+		bind(MessageCentralBFTNetwork.class).in(Scopes.SINGLETON);
+		bind(BFTEventSender.class).to(MessageCentralBFTNetwork.class);
+		bind(EventCoordinatorNetworkRx.class).to(MessageCentralBFTNetwork.class);
+
+		bind(MessageCentralSyncVerticesRPCNetwork.class).in(Scopes.SINGLETON);
 		bind(SyncVerticesRPCSender.class).to(MessageCentralSyncVerticesRPCNetwork.class);
 		bind(SyncVerticesRPCRx.class).to(MessageCentralSyncVerticesRPCNetwork.class);
 

@@ -174,6 +174,8 @@ public final class VertexStore {
 	}
 
 	public void processGetVerticesRequest(GetVerticesRequest request) {
+		// TODO: Handle nodes trying to DDOS this endpoint
+
 		log.info("SYNC_VERTICES: Received GetVerticesRequest {}", request);
 		List<Vertex> fetched = this.getVertices(request.getVertexId(), request.getCount());
 		log.info("SYNC_VERTICES: Sending Response {}", fetched);
@@ -195,7 +197,7 @@ public final class VertexStore {
 	public void processCommittedStateSync(CommittedStateSync committedStateSync) {
 		log.info("SYNC_STATE: synced {}", committedStateSync);
 
-		Hash syncTo = committedStateSync.getOpaque(Hash.class);
+		final Hash syncTo = (Hash) committedStateSync.getOpaque();
 		SyncState syncState = syncing.get(syncTo);
 		if (syncState != null) {
 			rebuildAndSyncQC(syncState);
@@ -245,7 +247,7 @@ public final class VertexStore {
 	public void processGetVerticesResponse(GetVerticesResponse response) {
 		log.info("SYNC_VERTICES: Received GetVerticesResponse {}", response);
 
-		final Hash syncTo = response.getOpaque(Hash.class);
+		final Hash syncTo = (Hash) response.getOpaque();
 		SyncState syncState = syncing.get(syncTo);
 		if (syncState == null) {
 			return;
