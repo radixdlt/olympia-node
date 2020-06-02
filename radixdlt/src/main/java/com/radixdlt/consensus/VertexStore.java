@@ -73,23 +73,34 @@ public final class VertexStore {
 
 	// TODO: Cleanup this interface
 	public VertexStore(
-		Vertex genesisVertex,
+		Vertex rootVertex,
 		QuorumCertificate rootQC,
 		SyncedStateComputer<CommittedAtom> syncedStateComputer,
 		SyncVerticesRPCSender syncVerticesRPCSender,
 		SyncSender syncSender,
 		SystemCounters counters
 	) {
-		this.syncedStateComputer = syncedStateComputer;
-		this.syncVerticesRPCSender = syncVerticesRPCSender;
-		this.syncSender = syncSender;
+		this.syncedStateComputer = Objects.requireNonNull(syncedStateComputer);
+		this.syncVerticesRPCSender = Objects.requireNonNull(syncVerticesRPCSender);
+		this.syncSender = Objects.requireNonNull(syncSender);
 		this.counters = Objects.requireNonNull(counters);
 
-		this.highestQC.set(Objects.requireNonNull(rootQC));
+		Objects.requireNonNull(rootQC);
+		Objects.requireNonNull(rootVertex);
+
+		this.buildRoot(rootVertex, rootQC);
+	}
+
+	private void buildRoot(Vertex rootVertex, QuorumCertificate rootQC) {
+		if (!rootQC.getProposed().getId().equals(rootVertex.getId())) {
+			throw new IllegalStateException(String.format("rootQC=%s does not match rootVertex=%s", rootQC, rootVertex));
+		}
+
+		this.vertices.clear();
 		this.highestCommittedQC.set(rootQC);
-		this.rootId.set(genesisVertex.getId());
-		this.vertices.put(genesisVertex.getId(), genesisVertex);
-		this.lastCommittedVertex.onNext(genesisVertex);
+		this.highestQC.set(rootQC);
+		this.rootId.set(rootVertex.getId());
+		this.vertices.put(rootVertex.getId(), rootVertex);
 	}
 
 	private enum SyncStage {
@@ -121,15 +132,15 @@ public final class VertexStore {
 			this.syncStage = SyncStage.PREPARING;
 		}
 
-		public void setSyncStage(SyncStage syncStage) {
+		void setSyncStage(SyncStage syncStage) {
 			this.syncStage = syncStage;
 		}
 
-		public QuorumCertificate getQC() {
+		QuorumCertificate getQC() {
 			return qc;
 		}
 
-		public QuorumCertificate getCommittedQC() {
+		QuorumCertificate getCommittedQC() {
 			return committedQC;
 		}
 
@@ -149,18 +160,15 @@ public final class VertexStore {
 	private void rebuildStoreAndSyncQC(SyncState syncState) {
 		log.info("SYNC_STATE: Rebuilding and syncing QC: sync={} curRoot={}", syncState, vertices.get(rootId.get()));
 
-		syncState.fetched.sort(Comparator.comparing(Vertex::getView));
-
 		// TODO: check if there are any vertices which haven't been local sync processed yet
 		// TODO: cleanup syncs which have views lower than this
-		this.vertices.clear();
-		this.highestCommittedQC.set(syncState.committedQC);
-		this.highestQC.set(syncState.committedQC);
-		this.rootId.set(syncState.committedVertexMetadata.getId());
+		syncState.fetched.sort(Comparator.comparing(Vertex::getView));
+		buildRoot(syncState.fetched.get(0), syncState.fetched.get(1).getQC());
 
-		for (Vertex vertex : syncState.fetched) {
+		for (int i = 1; i < syncState.fetched.size(); i++) {
+			Vertex vertex = syncState.fetched.get(i);
 			try {
-				insertVertexInternal(vertex, this.vertices.isEmpty());
+				insertVertexInternal(vertex);
 			} catch (VertexInsertionException e) {
 				throw new IllegalStateException("Could not insert vertex " + vertex);
 			}
@@ -205,7 +213,7 @@ public final class VertexStore {
 					return;
 				}
 				try {
-					insertVertexInternal(v, false);
+					insertVertexInternal(v);
 				} catch (VertexInsertionException e) {
 					log.info("GET_VERTICES failed: {}", e.getMessage());
 					return;
@@ -343,8 +351,8 @@ public final class VertexStore {
 		return true;
 	}
 
-	private void insertVertexInternal(Vertex vertex, boolean force) throws VertexInsertionException {
-		if (!force && !vertices.containsKey(vertex.getParentId())) {
+	private void insertVertexInternal(Vertex vertex) throws VertexInsertionException {
+		if (!vertices.containsKey(vertex.getParentId())) {
 			throw new MissingParentException(vertex.getParentId());
 		}
 
@@ -362,7 +370,7 @@ public final class VertexStore {
 	}
 
 	public void insertVertex(Vertex vertex) throws VertexInsertionException {
-		insertVertexInternal(vertex, false);
+		insertVertexInternal(vertex);
 	}
 
 	/**

@@ -53,6 +53,7 @@ public class VertexStoreTest {
 	private SyncedRadixEngine stateSynchronizer;
 	private SyncSender syncSender;
 	private SyncVerticesRPCSender syncVerticesRPCSender;
+	private SystemCounters counters;
 
 	@Before
 	public void setUp() {
@@ -63,8 +64,19 @@ public class VertexStoreTest {
 		this.stateSynchronizer = mock(SyncedRadixEngine.class);
 		this.syncVerticesRPCSender = mock(SyncVerticesRPCSender.class);
 		this.syncSender = mock(SyncSender.class);
-		SystemCounters counters = mock(SystemCounters.class);
+		this.counters = mock(SystemCounters.class);
 		this.vertexStore = new VertexStore(genesisVertex, rootQC, stateSynchronizer, syncVerticesRPCSender, syncSender, counters);
+	}
+
+	@Test
+	public void when_vertex_store_created_with_incorrect_roots__then_exception_is_thrown() {
+		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), null);
+		VertexMetadata nextVertexMetadata = VertexMetadata.ofVertex(nextVertex);
+
+		VoteData voteData = new VoteData(nextVertexMetadata, genesisVertexMetadata);
+		QuorumCertificate badRootQC = new QuorumCertificate(voteData, new ECDSASignatures());
+		assertThatThrownBy(() -> new VertexStore(genesisVertex, badRootQC, stateSynchronizer, syncVerticesRPCSender, syncSender, counters))
+			.isInstanceOf(IllegalStateException.class);
 	}
 
 	@Test
@@ -120,8 +132,7 @@ public class VertexStoreTest {
 
 		TestObserver<Vertex> testObserver = TestObserver.create();
 		vertexStore.lastCommittedVertex().subscribe(testObserver);
-		testObserver.awaitCount(1); // genesis only
-		testObserver.assertValues(genesisVertex); // not committed
+		testObserver.assertEmpty();
 		verify(stateSynchronizer, times(0)).execute(any()); // not stored
 	}
 
@@ -139,8 +150,8 @@ public class VertexStoreTest {
 		CommittedAtom committedAtom = mock(CommittedAtom.class);
 		when(clientAtom.committed(eq(vertexMetadata))).thenReturn(committedAtom);
 		assertThat(vertexStore.commitVertex(vertexMetadata)).hasValue(nextVertex);
-		testObserver.awaitCount(2); // both committed
-		testObserver.assertValues(genesisVertex, nextVertex); // both committed
+		testObserver.awaitCount(1); // both committed
+		testObserver.assertValues(nextVertex);
 
 		verify(stateSynchronizer, times(1))
 			.execute(eq(committedAtom)); // next atom stored
@@ -172,8 +183,8 @@ public class VertexStoreTest {
 
 		VertexMetadata vertexMetadata = VertexMetadata.ofVertex(nextVertex);
 		assertThat(vertexStore.commitVertex(vertexMetadata)).hasValue(nextVertex);
-		testObserver.awaitCount(2);
-		testObserver.assertValues(genesisVertex, nextVertex);
+		testObserver.awaitCount(1);
+		testObserver.assertValues(nextVertex);
 		assertThat(vertexStore.getSize()).isEqualTo(1);
 	}
 
@@ -194,8 +205,8 @@ public class VertexStoreTest {
 		VertexMetadata vertexMetadata2 = VertexMetadata.ofVertex(nextVertex2);
 		vertexStore.commitVertex(vertexMetadata2);
 
-		testObserver.awaitCount(3);
-		testObserver.assertValues(genesisVertex, nextVertex, nextVertex2);
+		testObserver.awaitCount(2);
+		testObserver.assertValues(nextVertex, nextVertex2);
 		assertThat(vertexStore.getSize()).isEqualTo(1);
 	}
 
@@ -216,8 +227,8 @@ public class VertexStoreTest {
 
 		VertexMetadata vertexMetadata2 = VertexMetadata.ofVertex(nextVertex2);
 		vertexStore.commitVertex(vertexMetadata2);
-		testObserver.awaitCount(3);
-		testObserver.assertValues(genesisVertex, nextVertex, nextVertex2);
+		testObserver.awaitCount(2);
+		testObserver.assertValues(nextVertex, nextVertex2);
 		assertThat(vertexStore.getSize()).isEqualTo(1);
 	}
 
