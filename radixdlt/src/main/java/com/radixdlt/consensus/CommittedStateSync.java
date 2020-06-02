@@ -17,6 +17,9 @@
 
 package com.radixdlt.consensus;
 
+/**
+ * Event which represents that the committed state has been synced
+ */
 public final class CommittedStateSync {
 	private final long stateVersion;
 	private final Object opaque;

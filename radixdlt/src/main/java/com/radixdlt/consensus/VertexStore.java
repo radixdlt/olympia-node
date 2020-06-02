@@ -99,6 +99,7 @@ public final class VertexStore {
 	}
 
 	private enum SyncStage {
+		PREPARING,
 		GET_COMMITTED_VERTICES,
 		SYNC_TO_COMMIT,
 		GET_PREPARED_VERTICES
@@ -107,15 +108,37 @@ public final class VertexStore {
 	private static class SyncState {
 		private final QuorumCertificate qc;
 		private final QuorumCertificate committedQC;
+		private final VertexMetadata committedVertexMetadata;
 		private final ECPublicKey author;
 		private SyncStage syncStage;
 		private final LinkedList<Vertex> fetched = new LinkedList<>();
 
-		SyncState(QuorumCertificate qc, QuorumCertificate committedQC, ECPublicKey author, SyncStage syncStage) {
+		SyncState(QuorumCertificate qc, QuorumCertificate committedQC, ECPublicKey author) {
+			if (committedQC.getView().equals(View.genesis())) {
+				this.committedVertexMetadata = committedQC.getProposed();
+			} else {
+				if (!committedQC.getCommitted().isPresent()) {
+					throw new IllegalStateException("committedQC must have a commit");
+				}
+				this.committedVertexMetadata = committedQC.getCommitted().get();
+			}
+
 			this.qc = qc;
 			this.committedQC = committedQC;
 			this.author = author;
+			this.syncStage = SyncStage.PREPARING;
+		}
+
+		public void setSyncStage(SyncStage syncStage) {
 			this.syncStage = syncStage;
+		}
+
+		public QuorumCertificate getQC() {
+			return qc;
+		}
+
+		public QuorumCertificate getCommittedQC() {
+			return committedQC;
 		}
 
 		@Override
@@ -137,10 +160,11 @@ public final class VertexStore {
 		syncState.fetched.sort(Comparator.comparing(Vertex::getView));
 
 		// TODO: check if there are any vertices which haven't been local sync processed yet
+		// TODO: cleanup syncs which have views lower than this
 		this.vertices.clear();
 		this.highestCommittedQC.set(syncState.committedQC);
 		this.highestQC.set(syncState.committedQC);
-		this.rootId.set(syncState.committedQC.getCommitted().get().getId());
+		this.rootId.set(syncState.committedVertexMetadata.getId());
 
 		for (Vertex vertex : syncState.fetched) {
 			try {
@@ -165,11 +189,8 @@ public final class VertexStore {
 
 	private void processVerticesResponseForCommittedSync(Hash syncTo, SyncState syncState, GetVerticesResponse response) {
 		log.info("SYNC_STATE: Processing vertices {}", syncState);
-		if (!syncState.committedQC.getCommitted().isPresent()) {
-			throw new IllegalStateException();
-		}
 
-		long stateVersion = syncState.committedQC.getCommitted().get().getStateVersion();
+		long stateVersion = syncState.committedVertexMetadata.getStateVersion();
 		List<ECPublicKey> signers = Collections.singletonList(syncState.author);
 		syncState.fetched.addAll(response.getVertices());
 
@@ -234,29 +255,30 @@ public final class VertexStore {
 		}
 	}
 
-	private void doSync(QuorumCertificate qc, QuorumCertificate committedQC, ECPublicKey author) {
-		final Hash vertexId = qc.getProposed().getId();
+	private void doSync(SyncState syncState) {
+		final Hash vertexId = syncState.getQC().getProposed().getId();
 		if (syncing.containsKey(vertexId)) {
 			return;
 		}
 
-		SyncState syncState = new SyncState(qc, committedQC, author, SyncStage.GET_PREPARED_VERTICES);
+		syncState.setSyncStage(SyncStage.GET_PREPARED_VERTICES);
 		syncing.put(vertexId, syncState);
 
-		log.info("SYNC_VERTICES: Vertices: Sending initial GetVerticesRequest for qc={}", qc);
+		log.info("SYNC_VERTICES: Vertices: Sending initial GetVerticesRequest for qc={}", syncState.getQC());
 		syncVerticesRPCSender.sendGetVerticesRequest(vertexId, syncState.author, 1, vertexId);
 	}
 
-	private void doCommittedSync(QuorumCertificate qc, QuorumCertificate committedQc, ECPublicKey author) {
-		final Hash vertexId = committedQc.getProposed().getId();
+	private void doCommittedSync(SyncState syncState) {
+		final Hash vertexId = syncState.getCommittedQC().getProposed().getId();
 		if (syncing.containsKey(vertexId)) {
+			// TODO: what if current sync isn't for commit?
 			return;
 		}
 
-		SyncState syncState = new SyncState(qc, committedQc, author, SyncStage.GET_COMMITTED_VERTICES);
+		syncState.setSyncStage(SyncStage.GET_COMMITTED_VERTICES);
 		syncing.put(vertexId, syncState);
 
-		log.info("SYNC_VERTICES: Committed: Sending initial GetVerticesRequest {}", vertexId);
+		log.info("SYNC_VERTICES: Committed: Sending initial GetVerticesRequest {}", syncState.getCommittedQC());
 		syncVerticesRPCSender.sendGetVerticesRequest(vertexId, syncState.author, 3, vertexId);
 	}
 
@@ -272,26 +294,19 @@ public final class VertexStore {
 		}
 
 		log.info("SYNC_TO_QC: Need sync: {} {}", qc, committedQC);
-
-		if (!committedQC.getView().equals(View.genesis())) {
-			Optional<VertexMetadata> committed = committedQC.getCommitted();
-			if (!committed.isPresent()) {
-				throw new IllegalStateException("CommittedQC should have a committed vertex.");
-			}
-
-			VertexMetadata committedMetadata = committed.get();
-			if (!vertices.containsKey(committedMetadata.getId())) {
-				View rootView = vertices.get(rootId.get()).getView();
-				if (rootView.compareTo(committedMetadata.getView()) < 0) {
-					log.info("SYNC_TO_QC: Need committed sync: {} {} highestQC={} rootView={}", qc, committedMetadata, highestQC.get(), rootView);
-					doCommittedSync(qc, committedQC, author);
-					return false;
-				}
+		final SyncState syncState = new SyncState(qc, committedQC, author);
+		final VertexMetadata committedMetadata = syncState.committedVertexMetadata;
+		if (!vertices.containsKey(committedMetadata.getId())) {
+			View rootView = vertices.get(rootId.get()).getView();
+			if (rootView.compareTo(committedMetadata.getView()) < 0) {
+				log.info("SYNC_TO_QC: Need committed sync: {} {} highestQC={} rootView={}", qc, committedMetadata, highestQC.get(), rootView);
+				doCommittedSync(syncState);
+				return false;
 			}
 		}
 
 		if (author != null) {
-			this.doSync(qc, committedQC, author);
+			this.doSync(syncState);
 		}
 
 		return false;

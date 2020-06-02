@@ -19,6 +19,14 @@ package com.radixdlt.consensus;
 
 import io.reactivex.rxjava3.core.Observable;
 
+/**
+ * Provider of a stream of committed state sync events
+ */
 public interface CommittedStateSyncRx {
+
+	/**
+	 * retrieve the stream of committed state syncs
+	 * @return observable of committed state syncs
+	 */
 	Observable<CommittedStateSync> committedStateSyncs();
 }
