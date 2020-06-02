@@ -120,7 +120,7 @@ public class TestEventCoordinatorNetwork {
 
 	private TestEventCoordinatorNetwork(LatencyProvider latencyProvider) {
 		this.latencyProvider = latencyProvider;
-		this.receivedMessages = ReplaySubject.<MessageInTransit>create(5) // To catch startup timing issues
+		this.receivedMessages = ReplaySubject.<MessageInTransit>create(20) // To catch startup timing issues
 			.toSerialized();
 	}
 
