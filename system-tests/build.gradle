@@ -53,7 +53,20 @@ task bddTest(type: Test) {
 }
 test.enabled = false
 
-task jUnitTest(type: Test) {
+task dockerSystemTests(type: Test) {
+    useJUnit {
+        includeCategories 'com.radixdlt.test.Docker'
+    }
+    testLogging.showStandardStreams = true
+    systemProperties System.getProperties()
+    exclude "Runner.class"
+}
+
+
+task clusterSystemTests(type: Test) {
+    useJUnit {
+        includeCategories 'com.radixdlt.test.Cluster'
+    }
     testLogging.showStandardStreams = true
     systemProperties System.getProperties()
     exclude "Runner.class"
