@@ -35,6 +35,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -43,7 +44,6 @@ import org.apache.logging.log4j.Logger;
  * Manages the BFT Vertex chain.
  *
  * In general this class is NOT thread-safe except for getVertices() and getHighestQC().
- * TODO: make thread-safe
  */
 public final class VertexStore {
 	private static final Logger log = LogManager.getLogger();
@@ -71,10 +71,21 @@ public final class VertexStore {
 	private final Map<Hash, Vertex> vertices = new ConcurrentHashMap<>();
 	private final Map<Hash, SyncState> syncing = new ConcurrentHashMap<>();
 
-	// TODO: Cleanup this interface
 	public VertexStore(
 		Vertex rootVertex,
 		QuorumCertificate rootQC,
+		SyncedStateComputer<CommittedAtom> syncedStateComputer,
+		SyncVerticesRPCSender syncVerticesRPCSender,
+		SyncSender syncSender,
+		SystemCounters counters
+	) {
+		this(rootVertex, rootQC, Collections.emptyList(), syncedStateComputer, syncVerticesRPCSender, syncSender, counters);
+	}
+
+	public VertexStore(
+		Vertex rootVertex,
+		QuorumCertificate rootQC,
+		List<Vertex> vertices,
 		SyncedStateComputer<CommittedAtom> syncedStateComputer,
 		SyncVerticesRPCSender syncVerticesRPCSender,
 		SyncSender syncSender,
@@ -88,10 +99,10 @@ public final class VertexStore {
 		Objects.requireNonNull(rootQC);
 		Objects.requireNonNull(rootVertex);
 
-		this.buildRoot(rootVertex, rootQC);
+		this.rebuild(rootVertex, rootQC, vertices);
 	}
 
-	private void buildRoot(Vertex rootVertex, QuorumCertificate rootQC) {
+	private void rebuild(Vertex rootVertex, QuorumCertificate rootQC, List<Vertex> vertices) {
 		if (!rootQC.getProposed().getId().equals(rootVertex.getId())) {
 			throw new IllegalStateException(String.format("rootQC=%s does not match rootVertex=%s", rootQC, rootVertex));
 		}
@@ -101,6 +112,18 @@ public final class VertexStore {
 		this.highestQC.set(rootQC);
 		this.rootId.set(rootVertex.getId());
 		this.vertices.put(rootVertex.getId(), rootVertex);
+
+		for (Vertex vertex : vertices) {
+			if (!addQC(vertex.getQC())) {
+				throw new IllegalStateException(String.format("Missing qc=%s", vertex.getQC()));
+			}
+
+			try {
+				insertVertexInternal(vertex);
+			} catch (VertexInsertionException e) {
+				throw new IllegalStateException("Could not insert vertex " + vertex);
+			}
+		}
 	}
 
 	private enum SyncStage {
@@ -157,22 +180,14 @@ public final class VertexStore {
 		this.syncVerticesRPCSender.sendGetVerticesResponse(request, fetched);
 	}
 
-	private void rebuildStoreAndSyncQC(SyncState syncState) {
+	private void rebuildAndSyncQC(SyncState syncState) {
 		log.info("SYNC_STATE: Rebuilding and syncing QC: sync={} curRoot={}", syncState, vertices.get(rootId.get()));
 
 		// TODO: check if there are any vertices which haven't been local sync processed yet
 		// TODO: cleanup syncs which have views lower than this
 		syncState.fetched.sort(Comparator.comparing(Vertex::getView));
-		buildRoot(syncState.fetched.get(0), syncState.fetched.get(1).getQC());
-
-		for (int i = 1; i < syncState.fetched.size(); i++) {
-			Vertex vertex = syncState.fetched.get(i);
-			try {
-				insertVertexInternal(vertex);
-			} catch (VertexInsertionException e) {
-				throw new IllegalStateException("Could not insert vertex " + vertex);
-			}
-		}
+		List<Vertex> nonRootVertices = syncState.fetched.stream().skip(1).collect(Collectors.toList());
+		rebuild(syncState.fetched.get(0), syncState.fetched.get(1).getQC(), nonRootVertices);
 
 		this.syncToQC(syncState.qc, syncState.committedQC, syncState.author);
 	}
@@ -183,7 +198,7 @@ public final class VertexStore {
 		Hash syncTo = committedStateSync.getOpaque(Hash.class);
 		SyncState syncState = syncing.get(syncTo);
 		if (syncState != null) {
-			rebuildStoreAndSyncQC(syncState);
+			rebuildAndSyncQC(syncState);
 		}
 	}
 
@@ -195,7 +210,7 @@ public final class VertexStore {
 		syncState.fetched.addAll(response.getVertices());
 
 		if (syncedStateComputer.syncTo(stateVersion, signers, syncTo)) {
-			rebuildStoreAndSyncQC(syncState);
+			rebuildAndSyncQC(syncState);
 		} else {
 			syncState.syncStage = SyncStage.SYNC_TO_COMMIT;
 		}
