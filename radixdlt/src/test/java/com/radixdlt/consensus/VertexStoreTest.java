@@ -233,6 +233,27 @@ public class VertexStoreTest {
 	}
 
 	@Test
+	public void when_sync_to_qc_with_no_author_and_synced__then_should_return_true() throws Exception {
+		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), null);
+		vertexStore.insertVertex(nextVertex);
+
+		QuorumCertificate qc = mock(QuorumCertificate.class);
+		when(qc.getView()).thenReturn(View.of(1));
+		when(qc.getProposed()).thenReturn(VertexMetadata.ofVertex(nextVertex));
+		assertThat(vertexStore.syncToQC(qc, vertexStore.getHighestCommittedQC(), null)).isTrue();
+	}
+
+	@Test
+	public void when_sync_to_qc_with_no_author_and_not_synced__then_should_throw_illegal_state_exception() {
+		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), null);
+		QuorumCertificate qc = mock(QuorumCertificate.class);
+		when(qc.getProposed()).thenReturn(VertexMetadata.ofVertex(nextVertex));
+
+		assertThatThrownBy(() -> vertexStore.syncToQC(qc, vertexStore.getHighestCommittedQC(), null))
+			.isInstanceOf(IllegalStateException.class);
+	}
+
+	@Test
 	public void when_rpc_call_to_get_vertices_with_size_2__then_should_return_both() throws Exception {
 		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), null);
 		vertexStore.insertVertex(nextVertex);

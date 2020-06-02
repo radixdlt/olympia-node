@@ -288,12 +288,28 @@ public final class VertexStore {
 		syncing.remove(vertexId);
 	}
 
+	/**
+	 * Initiate a sync to a given QC and a committedQC. Returns true if already synced
+	 * otherwise will initiate a syncing process.
+	 * An author is used because the author will most likely have the corresponding vertices
+	 * still in memory.
+	 *
+	 * @param qc the qc to sync to
+	 * @param committedQC the committedQC to commit sync to
+	 * @param author the original author of the qc
+	 * @return true if already synced, false otherwise
+	 */
 	public boolean syncToQC(QuorumCertificate qc, QuorumCertificate committedQC, @Nullable ECPublicKey author) {
 		if (addQC(qc)) {
 			return true;
 		}
 
 		log.info("SYNC_TO_QC: Need sync: {} {}", qc, committedQC);
+
+		if (author == null) {
+			throw new IllegalStateException("Syncing required but author doesn't exist");
+		}
+
 		final SyncState syncState = new SyncState(qc, committedQC, author);
 		final VertexMetadata committedMetadata = syncState.committedVertexMetadata;
 		if (!vertices.containsKey(committedMetadata.getId())) {
@@ -305,9 +321,7 @@ public final class VertexStore {
 			}
 		}
 
-		if (author != null) {
-			this.doSync(syncState);
-		}
+		this.doSync(syncState);
 
 		return false;
 	}
