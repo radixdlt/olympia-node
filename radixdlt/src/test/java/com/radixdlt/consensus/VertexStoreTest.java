@@ -175,6 +175,33 @@ public class VertexStoreTest {
 	}
 
 	@Test
+	public void when_committing_vertex_which_is_lower_than_root__then_empty_optional_is_returned() {
+		Vertex vertex1 = nextVertex.get();
+		Vertex vertex2 = nextVertex.get();
+		Vertex vertex3 = nextVertex.get();
+		Vertex vertex4 = nextVertex.get();
+		Vertex vertex5 = nextVertex.get();
+
+		vertexStore =
+			new VertexStore(
+				genesisVertex,
+				rootQC,
+				Arrays.asList(vertex1, vertex2, vertex3, vertex4, vertex5),
+				syncedStateComputer,
+				syncVerticesRPCSender,
+				syncSender,
+				counters
+			);
+
+		VertexMetadata vertexMetadata2 = VertexMetadata.ofVertex(vertex2);
+		vertexStore.commitVertex(vertexMetadata2);
+		assertThat(vertexStore.commitVertex(vertexMetadata2)).isPresent();
+
+		VertexMetadata vertexMetadata1 = VertexMetadata.ofVertex(vertex1);
+		assertThat(vertexStore.commitVertex(vertexMetadata1)).isNotPresent();
+	}
+
+	@Test
 	public void when_insert_vertex__then_it_should_not_be_committed_or_stored_in_engine()
 		throws VertexInsertionException, RadixEngineException {
 		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), null);
@@ -208,8 +235,7 @@ public class VertexStoreTest {
 	}
 
 	@Test
-	public void when_insert_two_vertices__then_get_path_from_root_should_return_the_two_vertices()
-		throws Exception {
+	public void when_insert_two_vertices__then_get_path_from_root_should_return_the_two_vertices() throws Exception {
 		Vertex nextVertex0 = nextVertex.get();
 		Vertex nextVertex1 = nextVertex.get();
 		vertexStore.insertVertex(nextVertex0);
