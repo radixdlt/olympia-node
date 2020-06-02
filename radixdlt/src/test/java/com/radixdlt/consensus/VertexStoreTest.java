@@ -21,6 +21,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -30,7 +31,6 @@ import static org.mockito.Mockito.when;
 
 import com.radixdlt.consensus.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.VertexStore.SyncSender;
-import com.radixdlt.consensus.sync.SyncedRadixEngine;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECPublicKey;
@@ -41,6 +41,7 @@ import com.radixdlt.middleware2.CommittedAtom;
 import io.reactivex.rxjava3.observers.TestObserver;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Before;
 import org.junit.Test;
@@ -50,7 +51,7 @@ public class VertexStoreTest {
 	private VertexMetadata genesisVertexMetadata;
 	private QuorumCertificate rootQC;
 	private VertexStore vertexStore;
-	private SyncedRadixEngine stateSynchronizer;
+	private SyncedStateComputer<CommittedAtom> syncedStateComputer;
 	private SyncSender syncSender;
 	private SyncVerticesRPCSender syncVerticesRPCSender;
 	private SystemCounters counters;
@@ -61,11 +62,11 @@ public class VertexStoreTest {
 		this.genesisVertexMetadata = new VertexMetadata(View.genesis(), genesisVertex.getId(), 0);
 		VoteData voteData = new VoteData(genesisVertexMetadata, null);
 		this.rootQC = new QuorumCertificate(voteData, new ECDSASignatures());
-		this.stateSynchronizer = mock(SyncedRadixEngine.class);
+		this.syncedStateComputer = mock(SyncedStateComputer.class);
 		this.syncVerticesRPCSender = mock(SyncVerticesRPCSender.class);
 		this.syncSender = mock(SyncSender.class);
 		this.counters = mock(SystemCounters.class);
-		this.vertexStore = new VertexStore(genesisVertex, rootQC, stateSynchronizer, syncVerticesRPCSender, syncSender, counters);
+		this.vertexStore = new VertexStore(genesisVertex, rootQC, syncedStateComputer, syncVerticesRPCSender, syncSender, counters);
 	}
 
 	@Test
@@ -75,8 +76,43 @@ public class VertexStoreTest {
 
 		VoteData voteData = new VoteData(nextVertexMetadata, genesisVertexMetadata);
 		QuorumCertificate badRootQC = new QuorumCertificate(voteData, new ECDSASignatures());
-		assertThatThrownBy(() -> new VertexStore(genesisVertex, badRootQC, stateSynchronizer, syncVerticesRPCSender, syncSender, counters))
+		assertThatThrownBy(() -> new VertexStore(genesisVertex, badRootQC, syncedStateComputer, syncVerticesRPCSender, syncSender, counters))
 			.isInstanceOf(IllegalStateException.class);
+	}
+
+	@Test
+	public void when_vertex_store_created_with_correct_vertices__then_exception_is_not_thrown() {
+		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), null);
+		this.vertexStore = new VertexStore(
+			genesisVertex,
+			rootQC,
+			Collections.singletonList(nextVertex),
+			syncedStateComputer,
+			syncVerticesRPCSender,
+			syncSender,
+			counters
+		);
+	}
+
+	@Test
+	public void when_vertex_store_created_with_incorrect_vertices__then_exception_is_thrown() {
+		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), null);
+		VertexMetadata nextVertexMetadata = VertexMetadata.ofVertex(nextVertex);
+		VoteData voteData = new VoteData(nextVertexMetadata, genesisVertexMetadata);
+		QuorumCertificate nextQC = new QuorumCertificate(voteData, new ECDSASignatures());
+		Vertex nextVertex2 = Vertex.createVertex(nextQC, View.of(2), null);
+
+		assertThatThrownBy(() ->
+			new VertexStore(
+				genesisVertex,
+				rootQC,
+				Collections.singletonList(nextVertex2),
+				syncedStateComputer,
+				syncVerticesRPCSender,
+				syncSender,
+				counters
+			)
+		).isInstanceOf(IllegalStateException.class);
 	}
 
 	@Test
@@ -133,7 +169,7 @@ public class VertexStoreTest {
 		TestObserver<Vertex> testObserver = TestObserver.create();
 		vertexStore.lastCommittedVertex().subscribe(testObserver);
 		testObserver.assertEmpty();
-		verify(stateSynchronizer, times(0)).execute(any()); // not stored
+		verify(syncedStateComputer, times(0)).execute(any()); // not stored
 	}
 
 	@Test
@@ -153,7 +189,7 @@ public class VertexStoreTest {
 		testObserver.awaitCount(1); // both committed
 		testObserver.assertValues(nextVertex);
 
-		verify(stateSynchronizer, times(1))
+		verify(syncedStateComputer, times(1))
 			.execute(eq(committedAtom)); // next atom stored
 	}
 
@@ -262,6 +298,35 @@ public class VertexStoreTest {
 
 		assertThatThrownBy(() -> vertexStore.syncToQC(qc, vertexStore.getHighestCommittedQC(), null))
 			.isInstanceOf(IllegalStateException.class);
+	}
+
+	@Test
+	public void when_sync_tq_qc_and_need_sync_but_have_committed__then_should_request_for_qc_sync() {
+		Vertex vertex1 = Vertex.createVertex(rootQC, View.of(1), null);
+		VertexMetadata vertexMetadata1 = VertexMetadata.ofVertex(vertex1);
+		QuorumCertificate qc1 = mock(QuorumCertificate.class);
+		when(qc1.getProposed()).thenReturn(vertexMetadata1);
+
+		vertexStore =
+			new VertexStore(
+				genesisVertex,
+				rootQC,
+				Collections.singletonList(vertex1),
+				syncedStateComputer,
+				syncVerticesRPCSender,
+				syncSender,
+				counters
+			);
+
+		Vertex vertex2 = Vertex.createVertex(rootQC, View.of(2), null);
+		QuorumCertificate qc2 = mock(QuorumCertificate.class);
+		when(qc2.getCommitted()).thenReturn(Optional.of(vertexMetadata1));
+		when(qc2.getProposed()).thenReturn(VertexMetadata.ofVertex(vertex2));
+		when(qc2.getView()).thenReturn(View.of(2));
+
+		assertThat(vertexStore.syncToQC(qc2, qc2, mock(ECPublicKey.class))).isFalse();
+
+		verify(syncVerticesRPCSender, times(1)).sendGetVerticesRequest(eq(vertex2.getId()), any(), eq(1), any());
 	}
 
 	@Test

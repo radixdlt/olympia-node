@@ -96,8 +96,9 @@ public final class VertexStore {
 		this.syncSender = Objects.requireNonNull(syncSender);
 		this.counters = Objects.requireNonNull(counters);
 
-		Objects.requireNonNull(rootQC);
 		Objects.requireNonNull(rootVertex);
+		Objects.requireNonNull(rootQC);
+		Objects.requireNonNull(vertices);
 
 		this.rebuild(rootVertex, rootQC, vertices);
 	}
@@ -129,8 +130,7 @@ public final class VertexStore {
 	private enum SyncStage {
 		PREPARING,
 		GET_COMMITTED_VERTICES,
-		SYNC_TO_COMMIT,
-		GET_PREPARED_VERTICES
+		SYNC_TO_COMMIT, GET_QC_VERTICES
 	}
 
 	private static class SyncState {
@@ -216,7 +216,7 @@ public final class VertexStore {
 		}
 	}
 
-	private void processVerticesResponseForVerticesSync(Hash syncTo, SyncState syncState, GetVerticesResponse response) {
+	private void processVerticesResponseForQCSync(Hash syncTo, SyncState syncState, GetVerticesResponse response) {
 		Vertex vertex = response.getVertices().get(0);
 		syncState.fetched.addFirst(vertex);
 		Hash nextVertexId = vertex.getQC().getProposed().getId();
@@ -262,24 +262,24 @@ public final class VertexStore {
 			case GET_COMMITTED_VERTICES:
 				processVerticesResponseForCommittedSync(syncTo, syncState, response);
 				break;
-			case GET_PREPARED_VERTICES:
-				processVerticesResponseForVerticesSync(syncTo, syncState, response);
+			case GET_QC_VERTICES:
+				processVerticesResponseForQCSync(syncTo, syncState, response);
 				break;
 			default:
 				throw new IllegalStateException("Unknown sync stage: " + syncState.syncStage);
 		}
 	}
 
-	private void doSync(SyncState syncState) {
+	private void doQCSync(SyncState syncState) {
 		final Hash vertexId = syncState.getQC().getProposed().getId();
 		if (syncing.containsKey(vertexId)) {
 			return;
 		}
 
-		syncState.setSyncStage(SyncStage.GET_PREPARED_VERTICES);
+		syncState.setSyncStage(SyncStage.GET_QC_VERTICES);
 		syncing.put(vertexId, syncState);
 
-		log.info("SYNC_VERTICES: Vertices: Sending initial GetVerticesRequest for qc={}", syncState.getQC());
+		log.info("SYNC_VERTICES: QC: Sending initial GetVerticesRequest for qc={}", syncState.getQC());
 		syncVerticesRPCSender.sendGetVerticesRequest(vertexId, syncState.author, 1, vertexId);
 	}
 
@@ -336,7 +336,7 @@ public final class VertexStore {
 			}
 		}
 
-		this.doSync(syncState);
+		this.doQCSync(syncState);
 
 		return false;
 	}
