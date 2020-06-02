@@ -105,7 +105,7 @@ public class MessageCentralSyncVerticesRPCNetworkTest {
 		listener.get().handleMessage(mock(Peer.class), responseMessage);
 
 		testObserver.awaitCount(1);
-		testObserver.assertValue(resp -> resp.getOpaque(Object.class).equals(opaque));
+		testObserver.assertValue(resp -> resp.getOpaque().equals(opaque));
 	}
 
 	@Test

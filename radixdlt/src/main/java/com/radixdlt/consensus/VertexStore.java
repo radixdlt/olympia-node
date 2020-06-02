@@ -107,6 +107,8 @@ public final class VertexStore {
 	}
 
 	public void processGetVerticesRequest(GetVerticesRequest request) {
+		// TODO: Handle nodes trying to DDOS this endpoint
+
 		log.info("SYNC_VERTICES: Received GetVerticesRequest {}", request);
 		List<Vertex> fetched = this.getVertices(request.getVertexId(), request.getCount());
 		log.info("SYNC_VERTICES: Sending Response {}", fetched);
@@ -116,7 +118,7 @@ public final class VertexStore {
 	public void processGetVerticesResponse(GetVerticesResponse response) {
 		log.info("SYNC_VERTICES: Received GetVerticesResponse {}", response);
 
-		final Hash syncTo = response.getOpaque(Hash.class);
+		final Hash syncTo = (Hash) response.getOpaque();
 		SyncState syncState = syncing.get(syncTo);
 		if (syncState == null) {
 			return;
@@ -179,47 +181,6 @@ public final class VertexStore {
 		if (author != null) {
 			this.doSync(qc, author);
 		}
-
-
-		/*
-		Optional<VertexMetadata> committed = committedQC.getCommitted();
-		if (!committed.isPresent()) {
-			return false;
-		}
-
-		VertexMetadata committedMetadata = committed.get();
-		if (root.getView().compareTo(committedMetadata.getView()) < 0) {
-
-			long stateVersion = committed.get().getStateVersion();
-			final Hash hash;
-			try {
-				// TODO: Make it easier to retrieve signatures of QC
-				hash = Hash.of(DefaultSerialization.getInstance().toDson(committedQC.getVoteData(), Output.HASH));
-			} catch (SerializationException e) {
-				throw new IllegalStateException("Failed to serialize");
-			}				List<ECPublicKey> signers = committedQC.getSignatures().signedMessage(hash);
-
-			Observable.combineLatest(
-				vertexSupplier.sendGetVerticesRequest(committedQC.getProposed().getId(), author, 3).toObservable(),
-				syncedStateComputer.syncTo(stateVersion, signers).toSingleDefault(0).toObservable(),
-				(v, l) -> v
-			).subscribe(vertices -> {
-				synchronized (lock) {
-					if (root.getView().compareTo(committedMetadata.getView()) < 0) {
-						uncommitted.clear();
-						for (Vertex v : vertices) {
-							if (!v.getId().equals(committedMetadata.getId())) {
-								uncommitted.put(v.getId(), v);
-							}
-						}
-						this.root = committedMetadata;
-						this.highestCommittedQC = committedQC;
-						this.highestQC = committedQC;
-					}
-				}
-			});
-		}
-		*/
 
 		return false;
 	}

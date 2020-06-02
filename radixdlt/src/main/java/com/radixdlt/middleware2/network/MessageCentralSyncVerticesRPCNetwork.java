@@ -19,7 +19,6 @@ package com.radixdlt.middleware2.network;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 import com.radixdlt.consensus.GetVerticesResponse;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
@@ -43,14 +42,14 @@ import javax.inject.Inject;
 /**
  * Network interface for syncing vertices using the MessageCentral
  */
-@Singleton
 public class MessageCentralSyncVerticesRPCNetwork implements SyncVerticesRPCSender, SyncVerticesRPCRx {
 
 	private final ECPublicKey selfPublicKey;
 	private final int magic;
 	private final AddressBook addressBook;
 	private final MessageCentral messageCentral;
-	private Cache<Hash, Object> opaqueCache = CacheBuilder.newBuilder()
+	// TODO: is using a cache in this manner the best way, or should it be managed by the client?
+	private final Cache<Hash, Object> opaqueCache = CacheBuilder.newBuilder()
 		.expireAfterWrite(30, TimeUnit.SECONDS)
 		.build();
 
