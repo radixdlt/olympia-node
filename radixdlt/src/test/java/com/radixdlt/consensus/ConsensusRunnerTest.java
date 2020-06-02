@@ -31,7 +31,6 @@ import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.crypto.Hash;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.observers.TestObserver;
-import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 
 public class ConsensusRunnerTest {
