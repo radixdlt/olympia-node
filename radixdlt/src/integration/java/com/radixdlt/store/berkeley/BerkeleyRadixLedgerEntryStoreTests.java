@@ -71,12 +71,13 @@ public class BerkeleyRadixLedgerEntryStoreTests extends RadixTestWithStores {
             // atom added to store should be in pending
             softly.assertThat(ledgerStore.getPending()).contains(ledgerEntries.get(0).getAID());
 
-            //added atom is present in store
+            // added atom is present in store
             softly.assertThat(ledgerStore.contains(ledgerEntries.get(0).getAID())).isTrue();
 
             // commit atom
             ledgerStore.commit(ledgerEntries.get(0).getAID());
 
+            // committed atom can be queried by version
             softly.assertThat(ledgerStore.getNextCommitted(ledgerEntries.get(0).getStateVersion() - 1, 1))
                 .contains(ledgerEntries.get(0).getAID());
 
