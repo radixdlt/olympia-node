@@ -94,7 +94,7 @@ public class ValidatorRegistrationTest {
 		final RadixIdentity radixIdentity = RadixIdentities.createNew();
 
 		// initialize api layer
-		RadixApplicationAPI api = RadixApplicationAPI.create(Bootstrap.LOCALHOST, radixIdentity);
+		RadixApplicationAPI api = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), radixIdentity);
 
 		// register for the first time
 		api.registerValidator(api.getAddress()).blockUntilComplete();
