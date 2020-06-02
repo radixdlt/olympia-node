@@ -300,7 +300,7 @@ public class VertexStoreTest {
 	}
 
 	@Test
-	public void when_sync_tq_qc_and_need_sync_but_have_committed__then_should_request_for_qc_sync() {
+	public void when_sync_to_qc_and_need_sync_but_have_committed__then_should_request_for_qc_sync() {
 		Vertex vertex1 = Vertex.createVertex(rootQC, View.of(1), null);
 		VertexMetadata vertexMetadata1 = VertexMetadata.ofVertex(vertex1);
 		QuorumCertificate qc1 = mock(QuorumCertificate.class);
@@ -327,6 +327,76 @@ public class VertexStoreTest {
 
 		verify(syncVerticesRPCSender, times(1)).sendGetVerticesRequest(eq(vertex2.getId()), any(), eq(1), any());
 	}
+
+	@Test
+	public void when_sync_to_qc_and_need_sync_and_committed_qc_is_greater_than_root__then_should_request_for_committed_sync() {
+		Vertex vertex1 = Vertex.createVertex(rootQC, View.of(1), null);
+		VertexMetadata vertexMetadata1 = VertexMetadata.ofVertex(vertex1);
+		QuorumCertificate qc1 = mock(QuorumCertificate.class);
+		when(qc1.getProposed()).thenReturn(vertexMetadata1);
+
+		Vertex vertex2 = Vertex.createVertex(rootQC, View.of(2), null);
+		QuorumCertificate qc2 = mock(QuorumCertificate.class);
+		when(qc2.getCommitted()).thenReturn(Optional.of(vertexMetadata1));
+		when(qc2.getProposed()).thenReturn(VertexMetadata.ofVertex(vertex2));
+		when(qc2.getView()).thenReturn(View.of(2));
+
+		vertexStore =
+			new VertexStore(
+				genesisVertex,
+				rootQC,
+				Collections.singletonList(vertex1),
+				syncedStateComputer,
+				syncVerticesRPCSender,
+				syncSender,
+				counters
+			);
+
+		Vertex vertex3 = Vertex.createVertex(rootQC, View.of(3), null);
+		QuorumCertificate qc3 = mock(QuorumCertificate.class);
+		when(qc3.getProposed()).thenReturn(VertexMetadata.ofVertex(vertex3));
+		when(qc3.getCommitted()).thenReturn(Optional.of(VertexMetadata.ofVertex(vertex2)));
+		when(qc3.getView()).thenReturn(View.of(3));
+
+		assertThat(vertexStore.syncToQC(qc3, qc3, mock(ECPublicKey.class))).isFalse();
+
+		verify(syncVerticesRPCSender, times(1)).sendGetVerticesRequest(eq(vertex3.getId()), any(), eq(3), any());
+	}
+
+	@Test
+	public void when_sync_to_qc_and_need_sync_but_committed_qc_is_less_than_root__then_should_request_for_qc_sync() {
+		Vertex vertex1 = Vertex.createVertex(rootQC, View.of(1), null);
+		VertexMetadata vertexMetadata1 = VertexMetadata.ofVertex(vertex1);
+		QuorumCertificate qc1 = mock(QuorumCertificate.class);
+		when(qc1.getProposed()).thenReturn(vertexMetadata1);
+
+		Vertex vertex2 = Vertex.createVertex(rootQC, View.of(2), null);
+		QuorumCertificate qc2 = mock(QuorumCertificate.class);
+		when(qc2.getCommitted()).thenReturn(Optional.of(vertexMetadata1));
+		when(qc2.getProposed()).thenReturn(VertexMetadata.ofVertex(vertex2));
+		when(qc2.getView()).thenReturn(View.of(2));
+
+		vertexStore =
+			new VertexStore(
+				genesisVertex,
+				rootQC,
+				Arrays.asList(vertex1, vertex2),
+				syncedStateComputer,
+				syncVerticesRPCSender,
+				syncSender,
+				counters
+			);
+
+		Vertex vertex3 = Vertex.createVertex(rootQC, View.of(3), null);
+		QuorumCertificate qc3 = mock(QuorumCertificate.class);
+		when(qc3.getProposed()).thenReturn(VertexMetadata.ofVertex(vertex3));
+		when(qc3.getView()).thenReturn(View.of(3));
+
+		assertThat(vertexStore.syncToQC(qc3, rootQC, mock(ECPublicKey.class))).isFalse();
+
+		verify(syncVerticesRPCSender, times(1)).sendGetVerticesRequest(eq(vertex3.getId()), any(), eq(1), any());
+	}
+
 
 	@Test
 	public void when_rpc_call_to_get_vertices_with_size_2__then_should_return_both() throws Exception {
