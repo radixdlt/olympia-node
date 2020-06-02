@@ -117,10 +117,8 @@ public final class VertexStore {
 			if (committedQC.getView().equals(View.genesis())) {
 				this.committedVertexMetadata = committedQC.getProposed();
 			} else {
-				if (!committedQC.getCommitted().isPresent()) {
-					throw new IllegalStateException("committedQC must have a commit");
-				}
-				this.committedVertexMetadata = committedQC.getCommitted().get();
+				this.committedVertexMetadata = committedQC.getCommitted()
+					.orElseThrow(() -> new IllegalStateException("committedQC must have a commit"));
 			}
 
 			this.qc = qc;
