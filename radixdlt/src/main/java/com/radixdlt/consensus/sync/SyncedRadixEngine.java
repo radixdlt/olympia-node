@@ -33,6 +33,7 @@ import com.radixdlt.network.addressbook.Peer;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -63,10 +64,10 @@ public class SyncedRadixEngine implements SyncedStateComputer<CommittedAtom> {
 		AddressBook addressBook,
 		StateSyncNetwork stateSyncNetwork
 	) {
-		this.radixEngine = radixEngine;
-		this.committedAtomsStore = committedAtomsStore;
-		this.addressBook = addressBook;
-		this.stateSyncNetwork = stateSyncNetwork;
+		this.radixEngine = Objects.requireNonNull(radixEngine);
+		this.committedAtomsStore = Objects.requireNonNull(committedAtomsStore);
+		this.addressBook = Objects.requireNonNull(addressBook);
+		this.stateSyncNetwork = Objects.requireNonNull(stateSyncNetwork);
 	}
 
 	/**
@@ -113,11 +114,17 @@ public class SyncedRadixEngine implements SyncedStateComputer<CommittedAtom> {
 	 */
 	@Override
 	public Completable syncTo(long targetStateVersion, List<ECPublicKey> target) {
+		if (target.isEmpty()) {
+			// TODO: relax this in future when we have non-validator nodes
+			throw new IllegalArgumentException("target must not be empty");
+		}
+
 		final long currentStateVersion = committedAtomsStore.getStateVersion();
 		if (targetStateVersion <= currentStateVersion) {
 			return Completable.complete();
 		}
 
+		// TODO: better randomization of peer selection
 		Peer peer = target.stream()
 			.map(pk -> addressBook.peer(pk.euid()))
 			.filter(Optional::isPresent)

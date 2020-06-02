@@ -33,8 +33,9 @@ public class NoSyncExceptionCheck implements BFTCheck {
 		return Observable.interval(1, TimeUnit.SECONDS)
 			.flatMapIterable(i -> network.getNodes())
 			.concatMap(cn -> {
-				if (network.getCounters(cn).get(CounterType.CONSENSUS_SYNC_EXCEPTION) > 0) {
-					return Observable.just(new BFTCheckError("Sync Exception Count > 0"));
+				long exceptionCount = network.getCounters(cn).get(CounterType.CONSENSUS_SYNC_EXCEPTION);
+				if (exceptionCount > 0) {
+					return Observable.just(new BFTCheckError("Sync Exception Count > 0: " + exceptionCount));
 				} else {
 					return Observable.empty();
 				}

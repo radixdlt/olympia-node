@@ -17,25 +17,22 @@
 
 package com.radixdlt.consensus.simulation;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.View;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork.MessageInTransit;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.ExecutionException;
 import java.util.function.Predicate;
 
 /**
  * Drops one proposal per view
  */
 public class OneProposalPerViewDropper implements Predicate<MessageInTransit> {
-	private final Cache<View, ECPublicKey> proposalToDrop = CacheBuilder.newBuilder()
-		.maximumSize(100)
-		.build();
-
+	private final Map<View, ECPublicKey> proposalToDrop = new HashMap<>();
+	private final Map<View, Integer> proposalCount = new HashMap<>();
 	private final ImmutableList<ECPublicKey> nodes;
 	private final Random random;
 
@@ -49,16 +46,13 @@ public class OneProposalPerViewDropper implements Predicate<MessageInTransit> {
 		if (msg.getContent() instanceof Proposal) {
 			final Proposal proposal = (Proposal) msg.getContent();
 			final View view = proposal.getVertex().getView();
-			final ECPublicKey nodeToDrop;
-			try {
-				nodeToDrop = proposalToDrop.get(view, () -> nodes.get(random.nextInt(nodes.size())));
-			} catch (ExecutionException e) {
-				throw new IllegalStateException(e);
+			final ECPublicKey nodeToDrop = proposalToDrop.computeIfAbsent(view, v -> nodes.get(random.nextInt(nodes.size())));
+			if (proposalCount.merge(view, 1, Integer::sum).equals(nodes.size())) {
+				proposalToDrop.remove(view);
+				proposalCount.remove(view);
 			}
 
-			if (msg.getReceiver().equals(nodeToDrop)) {
-				return true;
-			}
+			return msg.getReceiver().equals(nodeToDrop);
 		}
 
 		return false;

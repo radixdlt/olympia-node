@@ -41,7 +41,7 @@ public class SafetyCheck implements BFTCheck {
 			.map(committedVertices -> committedVertices.distinct().collect(Collectors.toList()))
 			.concatMap(committedVertices -> {
 				if (committedVertices.size() != 1) {
-					return Observable.just(new BFTCheckError("Committed vertices don't match"));
+					return Observable.just(new BFTCheckError("Committed vertices don't match: " + committedVertices));
 				} else {
 					return Observable.empty();
 				}

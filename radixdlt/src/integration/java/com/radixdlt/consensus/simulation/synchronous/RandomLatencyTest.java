@@ -59,7 +59,6 @@ public class RandomLatencyTest {
 			.numNodes(3)
 			.build();
 
-		test.run(1, TimeUnit.MINUTES);
 		Map<String, Boolean> results = test.run(1, TimeUnit.MINUTES);
 		assertThat(results).doesNotContainValue(false);
 	}
@@ -73,7 +72,6 @@ public class RandomLatencyTest {
 			.numNodes(4)
 			.build();
 
-		test.run(1, TimeUnit.MINUTES);
 		Map<String, Boolean> results = test.run(1, TimeUnit.MINUTES);
 		assertThat(results).doesNotContainValue(false);
 	}

@@ -19,7 +19,9 @@ package com.radixdlt.consensus.simulation.checks;
 
 import com.radixdlt.consensus.simulation.BFTCheck;
 import com.radixdlt.consensus.simulation.SimulatedBFTNetwork;
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.identifiers.EUID;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import java.util.concurrent.TimeUnit;
@@ -30,14 +32,20 @@ import java.util.concurrent.TimeUnit;
  */
 public class NoTimeoutCheck implements BFTCheck {
 
+	// TODO: get this in a better way
+	private static String getShortName(EUID euid) {
+		return euid.toString().substring(0, 6);
+	}
+
 	@Override
 	public Observable<BFTCheckError> check(SimulatedBFTNetwork network) {
 		return Observable.interval(1, TimeUnit.SECONDS, Schedulers.io())
 			.flatMapIterable(i -> network.getNodes())
-			.map(network::getCounters)
-			.concatMap(counters -> {
+			.concatMap(node -> {
+				SystemCounters counters = network.getCounters(node);
 				if (counters.get(CounterType.CONSENSUS_TIMEOUT) > 0) {
-					return Observable.just(new BFTCheckError("Timeout counter > 0"));
+					return Observable.just(new BFTCheckError("Timeout at node " + getShortName(node.getPublicKey().euid())
+						+ " view " + counters.get(CounterType.CONSENSUS_TIMEOUT_VIEW)));
 				} else {
 					return Observable.empty();
 				}

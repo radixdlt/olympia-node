@@ -34,7 +34,6 @@ import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.utils.Ints;
 import java.util.Optional;
-import java.util.function.Consumer;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -44,6 +43,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -108,6 +108,36 @@ public class BFTEventReducerTest {
 		reducer.start();
 		verify(pacemaker, times(1)).processQC(eq(view));
 		verify(sender, times(1)).sendNewView(any(), any());
+	}
+
+	@Test
+	public void when_processing_local_sync__then_should_process_it_via_vertex_store() {
+		Hash vertexId = mock(Hash.class);
+		reducer.processLocalSync(vertexId);
+		verify(vertexStore, times(1)).processLocalSync(eq(vertexId));
+	}
+
+	@Test
+	public void when_process_vote_and_new_qc_not_synced__then_local_sync_should_cause_it_to_process_it() {
+		Vote vote = mock(Vote.class);
+		QuorumCertificate qc = mock(QuorumCertificate.class);
+		View view = mock(View.class);
+		when(qc.getView()).thenReturn(view);
+		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
+		Hash id = mock(Hash.class);
+		when(vertexMetadata.getId()).thenReturn(id);
+		when(qc.getProposed()).thenReturn(vertexMetadata);
+		when(pendingVotes.insertVote(eq(vote), eq(validatorSet))).thenReturn(Optional.of(qc));
+		when(vertexStore.syncToQC(eq(qc), any(), any())).thenReturn(false);
+		reducer.processVote(vote);
+		verify(safetyRules, never()).process(any());
+		verify(pacemaker, never()).processQC(any());
+
+		when(safetyRules.process(any())).thenReturn(Optional.empty());
+		when(pacemaker.processQC(any())).thenReturn(Optional.empty());
+		reducer.processLocalSync(id);
+		verify(safetyRules, never()).process(eq(qc));
+		verify(pacemaker, never()).processQC(eq(view));
 	}
 
 	@Test
@@ -336,10 +366,5 @@ public class BFTEventReducerTest {
 
 		reducer.processProposal(proposal);
 		verify(mempool, times(1)).removeCommittedAtom(eq(aid));
-	}
-
-	@SuppressWarnings("unchecked")
-	private static <T> Consumer<T> mockConsumer() {
-		return mock(Consumer.class);
 	}
 }

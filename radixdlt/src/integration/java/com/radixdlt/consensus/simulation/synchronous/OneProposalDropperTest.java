@@ -53,7 +53,6 @@ public class OneProposalDropperTest {
 			.build();
 
 		Map<String, Boolean> results = test.run(1, TimeUnit.MINUTES);
-		System.out.println(results);
 		assertThat(results).containsEntry("noTimeouts", false);
 	}
 
@@ -68,7 +67,6 @@ public class OneProposalDropperTest {
 			.build();
 
 		Map<String, Boolean> results = test.run(1, TimeUnit.MINUTES);
-		System.out.println(results);
 		assertThat(results).doesNotContainValue(false);
 	}
 }

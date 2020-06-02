@@ -46,7 +46,7 @@ public class UniformLatencyTest {
 			.checkNoTimeouts("noTimeouts")
 			.checkAllProposalsHaveDirectParents("directParents")
 			.build();
-		bftTest.run(1, TimeUnit.MINUTES);
+
 		Map<String, Boolean> results = bftTest.run(1, TimeUnit.MINUTES);
 		assertThat(results).doesNotContainValue(false);
 	}

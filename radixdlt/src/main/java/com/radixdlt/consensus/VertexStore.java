@@ -327,12 +327,15 @@ public final class VertexStore {
 	}
 
 	/**
-	 * Retrieves the vertex with the given vertexId if it exists in the store.
-	 * Thread-safe.
+	 * Retrieves list of vertices starting with the given vertexId and
+	 * then proceeding to its ancestors.
+	 *
+	 * if the store does not contain some vertex then will return an empty
+	 * list.
 	 *
 	 * @param vertexId the id of the vertex
-	 * @param count the number of verticies to retrieve
-	 * @return the vertex or null, if it is not stored
+	 * @param count the number of vertices to retrieve
+	 * @return the list of vertices if all found, otherwise an empty list
 	 */
 	private List<Vertex> getVertices(Hash vertexId, int count) {
 		Hash nextId = vertexId;
