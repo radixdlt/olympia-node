@@ -40,13 +40,14 @@ import com.radixdlt.middleware2.CommittedAtom;
 import io.reactivex.rxjava3.observers.TestObserver;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 import org.junit.Before;
 import org.junit.Test;
 
 public class VertexStoreTest {
 	private Vertex genesisVertex;
+	private Supplier<Vertex> nextVertex;
 	private VertexMetadata genesisVertexMetadata;
 	private QuorumCertificate rootQC;
 	private VertexStore vertexStore;
@@ -66,11 +67,27 @@ public class VertexStoreTest {
 		this.syncSender = mock(SyncSender.class);
 		this.counters = mock(SystemCounters.class);
 		this.vertexStore = new VertexStore(genesisVertex, rootQC, syncedStateComputer, syncVerticesRPCSender, syncSender, counters);
+
+		AtomicReference<Vertex> lastVertex = new AtomicReference<>(genesisVertex);
+		this.nextVertex = () -> {
+			Vertex parentVertex = lastVertex.get();
+			final QuorumCertificate qc;
+			if (!parentVertex.getView().equals(View.genesis())) {
+				VertexMetadata parent = VertexMetadata.ofVertex(parentVertex);
+				VoteData data = new VoteData(parent, parentVertex.getQC().getProposed(), parentVertex.getQC().getParent());
+				qc = new QuorumCertificate(data, new ECDSASignatures());
+			} else {
+				qc = rootQC;
+			}
+			Vertex vertex = Vertex.createVertex(qc, parentVertex.getView().next(), null);
+			lastVertex.set(vertex);
+			return vertex;
+		};
 	}
 
 	@Test
 	public void when_vertex_store_created_with_incorrect_roots__then_exception_is_thrown() {
-		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), null);
+		Vertex nextVertex = this.nextVertex.get();
 		VertexMetadata nextVertexMetadata = VertexMetadata.ofVertex(nextVertex);
 
 		VoteData voteData = new VoteData(nextVertexMetadata, genesisVertexMetadata);
@@ -81,7 +98,7 @@ public class VertexStoreTest {
 
 	@Test
 	public void when_vertex_store_created_with_correct_vertices__then_exception_is_not_thrown() {
-		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), null);
+		Vertex nextVertex = this.nextVertex.get();
 		this.vertexStore = new VertexStore(
 			genesisVertex,
 			rootQC,
@@ -95,17 +112,13 @@ public class VertexStoreTest {
 
 	@Test
 	public void when_vertex_store_created_with_incorrect_vertices__then_exception_is_thrown() {
-		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), null);
-		VertexMetadata nextVertexMetadata = VertexMetadata.ofVertex(nextVertex);
-		VoteData voteData = new VoteData(nextVertexMetadata, genesisVertexMetadata);
-		QuorumCertificate nextQC = new QuorumCertificate(voteData, new ECDSASignatures());
-		Vertex nextVertex2 = Vertex.createVertex(nextQC, View.of(2), null);
+		this.nextVertex.get();
 
 		assertThatThrownBy(() ->
 			new VertexStore(
 				genesisVertex,
 				rootQC,
-				Collections.singletonList(nextVertex2),
+				Collections.singletonList(this.nextVertex.get()),
 				syncedStateComputer,
 				syncVerticesRPCSender,
 				syncSender,
@@ -116,7 +129,7 @@ public class VertexStoreTest {
 
 	@Test
 	public void when_vertex_retriever_succeeds__then_vertex_is_inserted() {
-		Vertex vertex = Vertex.createVertex(rootQC, View.of(1), null);
+		Vertex vertex = this.nextVertex.get();
 		VoteData voteData = new VoteData(VertexMetadata.ofVertex(vertex), genesisVertexMetadata);
 		QuorumCertificate qc = new QuorumCertificate(voteData, new ECDSASignatures());
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
@@ -195,11 +208,8 @@ public class VertexStoreTest {
 	@Test
 	public void when_insert_two_vertices__then_get_path_from_root_should_return_the_two_vertices()
 		throws Exception {
-		Vertex nextVertex0 = Vertex.createVertex(rootQC, View.of(1), null);
-		VertexMetadata vertexMetadata = new VertexMetadata(View.of(1), nextVertex0.getId(), 1);
-		VoteData voteData = new VoteData(vertexMetadata, rootQC.getProposed());
-		QuorumCertificate qc = new QuorumCertificate(voteData, new ECDSASignatures());
-		Vertex nextVertex1 = Vertex.createVertex(qc, View.of(2), null);
+		Vertex nextVertex0 = nextVertex.get();
+		Vertex nextVertex1 = nextVertex.get();
 		vertexStore.insertVertex(nextVertex0);
 		vertexStore.insertVertex(nextVertex1);
 		assertThat(vertexStore.getPathFromRoot(nextVertex1.getId()))
@@ -209,17 +219,17 @@ public class VertexStoreTest {
 	@Test
 	public void when_insert_and_commit_vertex__then_committed_vertex_should_emit_and_store_should_have_size_1()
 		throws Exception {
-		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), null);
-		vertexStore.insertVertex(nextVertex);
+		Vertex vertex = nextVertex.get();
+		vertexStore.insertVertex(vertex);
 
 		TestObserver<Vertex> testObserver = TestObserver.create();
 		vertexStore.lastCommittedVertex().subscribe(testObserver);
 		testObserver.awaitCount(1);
 
-		VertexMetadata vertexMetadata = VertexMetadata.ofVertex(nextVertex);
-		assertThat(vertexStore.commitVertex(vertexMetadata)).hasValue(nextVertex);
+		VertexMetadata vertexMetadata = VertexMetadata.ofVertex(vertex);
+		assertThat(vertexStore.commitVertex(vertexMetadata)).hasValue(vertex);
 		testObserver.awaitCount(1);
-		testObserver.assertValues(nextVertex);
+		testObserver.assertValues(vertex);
 		assertThat(vertexStore.getSize()).isEqualTo(1);
 	}
 
@@ -228,32 +238,31 @@ public class VertexStoreTest {
 		throws Exception {
 		TestObserver<Vertex> testObserver = TestObserver.create();
 		vertexStore.lastCommittedVertex().subscribe(testObserver);
-		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), null);
-		vertexStore.insertVertex(nextVertex);
-		VertexMetadata vertexMetadata = VertexMetadata.ofVertex(nextVertex);
+
+		Vertex nextVertex1 = nextVertex.get();
+		vertexStore.insertVertex(nextVertex1);
+		VertexMetadata vertexMetadata = VertexMetadata.ofVertex(nextVertex1);
 		vertexStore.commitVertex(vertexMetadata);
 
-		QuorumCertificate qc = mock(QuorumCertificate.class);
-		when(qc.getProposed()).thenReturn(VertexMetadata.ofVertex(nextVertex));
-		Vertex nextVertex2 = Vertex.createVertex(qc, View.of(2), null);
+		Vertex nextVertex2 = nextVertex.get();
 		vertexStore.insertVertex(nextVertex2);
 		VertexMetadata vertexMetadata2 = VertexMetadata.ofVertex(nextVertex2);
 		vertexStore.commitVertex(vertexMetadata2);
 
 		testObserver.awaitCount(2);
-		testObserver.assertValues(nextVertex, nextVertex2);
+		testObserver.assertValues(nextVertex1, nextVertex2);
 		assertThat(vertexStore.getSize()).isEqualTo(1);
 	}
 
 	@Test
 	public void when_insert_two_and_commit_vertex__then_two_committed_vertices_should_emit_in_order_and_store_should_have_size_1()
 		throws Exception {
-		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), null);
-		vertexStore.insertVertex(nextVertex);
+		Vertex nextVertex1 = nextVertex.get();
+		vertexStore.insertVertex(nextVertex1);
 
 		QuorumCertificate qc = mock(QuorumCertificate.class);
-		when(qc.getProposed()).thenReturn(VertexMetadata.ofVertex(nextVertex));
-		Vertex nextVertex2 = Vertex.createVertex(qc, View.of(2), null);
+		when(qc.getProposed()).thenReturn(VertexMetadata.ofVertex(nextVertex1));
+		Vertex nextVertex2 = nextVertex.get();
 		vertexStore.insertVertex(nextVertex2);
 
 		TestObserver<Vertex> testObserver = TestObserver.create();
@@ -263,37 +272,37 @@ public class VertexStoreTest {
 		VertexMetadata vertexMetadata2 = VertexMetadata.ofVertex(nextVertex2);
 		vertexStore.commitVertex(vertexMetadata2);
 		testObserver.awaitCount(2);
-		testObserver.assertValues(nextVertex, nextVertex2);
+		testObserver.assertValues(nextVertex1, nextVertex2);
 		assertThat(vertexStore.getSize()).isEqualTo(1);
 	}
 
 	@Test
 	public void when_sync_to_qc_which_doesnt_exist_and_vertex_is_inserted_later__then_sync_should_be_emitted() throws Exception {
-		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), null);
+		Vertex vertex = nextVertex.get();
 		QuorumCertificate qc = mock(QuorumCertificate.class);
-		when(qc.getProposed()).thenReturn(VertexMetadata.ofVertex(nextVertex));
+		when(qc.getProposed()).thenReturn(VertexMetadata.ofVertex(vertex));
 
 		assertThat(vertexStore.syncToQC(qc, vertexStore.getHighestCommittedQC(), mock(ECPublicKey.class))).isFalse();
-		vertexStore.insertVertex(nextVertex);
-		verify(syncSender, times(1)).synced(eq(nextVertex.getId()));
+		vertexStore.insertVertex(vertex);
+		verify(syncSender, times(1)).synced(eq(vertex.getId()));
 	}
 
 	@Test
 	public void when_sync_to_qc_with_no_author_and_synced__then_should_return_true() throws Exception {
-		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), null);
-		vertexStore.insertVertex(nextVertex);
+		Vertex vertex = nextVertex.get();
+		vertexStore.insertVertex(vertex);
 
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		when(qc.getView()).thenReturn(View.of(1));
-		when(qc.getProposed()).thenReturn(VertexMetadata.ofVertex(nextVertex));
+		when(qc.getProposed()).thenReturn(VertexMetadata.ofVertex(vertex));
 		assertThat(vertexStore.syncToQC(qc, vertexStore.getHighestCommittedQC(), null)).isTrue();
 	}
 
 	@Test
 	public void when_sync_to_qc_with_no_author_and_not_synced__then_should_throw_illegal_state_exception() {
-		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), null);
+		Vertex vertex = nextVertex.get();
 		QuorumCertificate qc = mock(QuorumCertificate.class);
-		when(qc.getProposed()).thenReturn(VertexMetadata.ofVertex(nextVertex));
+		when(qc.getProposed()).thenReturn(VertexMetadata.ofVertex(vertex));
 
 		assertThatThrownBy(() -> vertexStore.syncToQC(qc, vertexStore.getHighestCommittedQC(), null))
 			.isInstanceOf(IllegalStateException.class);
@@ -301,80 +310,8 @@ public class VertexStoreTest {
 
 	@Test
 	public void when_sync_to_qc_and_need_sync_but_have_committed__then_should_request_for_qc_sync() {
-		Vertex vertex1 = Vertex.createVertex(rootQC, View.of(1), null);
-		VertexMetadata vertexMetadata1 = VertexMetadata.ofVertex(vertex1);
-		QuorumCertificate qc1 = mock(QuorumCertificate.class);
-		when(qc1.getProposed()).thenReturn(vertexMetadata1);
-
-		vertexStore =
-			new VertexStore(
-				genesisVertex,
-				rootQC,
-				Collections.singletonList(vertex1),
-				syncedStateComputer,
-				syncVerticesRPCSender,
-				syncSender,
-				counters
-			);
-
-		Vertex vertex2 = Vertex.createVertex(rootQC, View.of(2), null);
-		QuorumCertificate qc2 = mock(QuorumCertificate.class);
-		when(qc2.getCommitted()).thenReturn(Optional.of(vertexMetadata1));
-		when(qc2.getProposed()).thenReturn(VertexMetadata.ofVertex(vertex2));
-		when(qc2.getView()).thenReturn(View.of(2));
-
-		assertThat(vertexStore.syncToQC(qc2, qc2, mock(ECPublicKey.class))).isFalse();
-
-		verify(syncVerticesRPCSender, times(1)).sendGetVerticesRequest(eq(vertex2.getId()), any(), eq(1), any());
-	}
-
-	@Test
-	public void when_sync_to_qc_and_need_sync_and_committed_qc_is_greater_than_root__then_should_request_for_committed_sync() {
-		Vertex vertex1 = Vertex.createVertex(rootQC, View.of(1), null);
-		VertexMetadata vertexMetadata1 = VertexMetadata.ofVertex(vertex1);
-		QuorumCertificate qc1 = mock(QuorumCertificate.class);
-		when(qc1.getProposed()).thenReturn(vertexMetadata1);
-
-		Vertex vertex2 = Vertex.createVertex(rootQC, View.of(2), null);
-		QuorumCertificate qc2 = mock(QuorumCertificate.class);
-		when(qc2.getCommitted()).thenReturn(Optional.of(vertexMetadata1));
-		when(qc2.getProposed()).thenReturn(VertexMetadata.ofVertex(vertex2));
-		when(qc2.getView()).thenReturn(View.of(2));
-
-		vertexStore =
-			new VertexStore(
-				genesisVertex,
-				rootQC,
-				Collections.singletonList(vertex1),
-				syncedStateComputer,
-				syncVerticesRPCSender,
-				syncSender,
-				counters
-			);
-
-		Vertex vertex3 = Vertex.createVertex(rootQC, View.of(3), null);
-		QuorumCertificate qc3 = mock(QuorumCertificate.class);
-		when(qc3.getProposed()).thenReturn(VertexMetadata.ofVertex(vertex3));
-		when(qc3.getCommitted()).thenReturn(Optional.of(VertexMetadata.ofVertex(vertex2)));
-		when(qc3.getView()).thenReturn(View.of(3));
-
-		assertThat(vertexStore.syncToQC(qc3, qc3, mock(ECPublicKey.class))).isFalse();
-
-		verify(syncVerticesRPCSender, times(1)).sendGetVerticesRequest(eq(vertex3.getId()), any(), eq(3), any());
-	}
-
-	@Test
-	public void when_sync_to_qc_and_need_sync_but_committed_qc_is_less_than_root__then_should_request_for_qc_sync() {
-		Vertex vertex1 = Vertex.createVertex(rootQC, View.of(1), null);
-		VertexMetadata vertexMetadata1 = VertexMetadata.ofVertex(vertex1);
-		QuorumCertificate qc1 = mock(QuorumCertificate.class);
-		when(qc1.getProposed()).thenReturn(vertexMetadata1);
-
-		Vertex vertex2 = Vertex.createVertex(rootQC, View.of(2), null);
-		QuorumCertificate qc2 = mock(QuorumCertificate.class);
-		when(qc2.getCommitted()).thenReturn(Optional.of(vertexMetadata1));
-		when(qc2.getProposed()).thenReturn(VertexMetadata.ofVertex(vertex2));
-		when(qc2.getView()).thenReturn(View.of(2));
+		Vertex vertex1 = nextVertex.get();
+		Vertex vertex2 = nextVertex.get();
 
 		vertexStore =
 			new VertexStore(
@@ -387,25 +324,78 @@ public class VertexStoreTest {
 				counters
 			);
 
-		Vertex vertex3 = Vertex.createVertex(rootQC, View.of(3), null);
-		QuorumCertificate qc3 = mock(QuorumCertificate.class);
-		when(qc3.getProposed()).thenReturn(VertexMetadata.ofVertex(vertex3));
-		when(qc3.getView()).thenReturn(View.of(3));
-
-		assertThat(vertexStore.syncToQC(qc3, rootQC, mock(ECPublicKey.class))).isFalse();
+		Vertex vertex3 = nextVertex.get();
+		Vertex vertex4 = nextVertex.get();
+		assertThat(vertexStore.syncToQC(vertex4.getQC(), vertex4.getQC(), mock(ECPublicKey.class))).isFalse();
 
 		verify(syncVerticesRPCSender, times(1)).sendGetVerticesRequest(eq(vertex3.getId()), any(), eq(1), any());
 	}
 
 
 	@Test
+	public void when_sync_to_qc_and_need_sync_but_committed_qc_is_less_than_root__then_should_request_for_qc_sync() {
+		Vertex vertex1 = nextVertex.get();
+		Vertex vertex2 = nextVertex.get();
+		Vertex vertex3 = nextVertex.get();
+		Vertex vertex4 = nextVertex.get();
+
+
+		vertexStore =
+			new VertexStore(
+				genesisVertex,
+				rootQC,
+				Arrays.asList(vertex1, vertex2, vertex3, vertex4),
+				syncedStateComputer,
+				syncVerticesRPCSender,
+				syncSender,
+				counters
+			);
+
+		Vertex vertex5 = nextVertex.get();
+		Vertex vertex6 = nextVertex.get();
+
+		assertThat(vertexStore.syncToQC(vertex6.getQC(), rootQC, mock(ECPublicKey.class))).isFalse();
+
+		verify(syncVerticesRPCSender, times(1)).sendGetVerticesRequest(eq(vertex5.getId()), any(), eq(1), any());
+	}
+
+	@Test
+	public void when_sync_to_qc_and_need_sync_and_committed_qc_is_greater_than_root__then_should_request_for_committed_sync() {
+		Vertex vertex1 = nextVertex.get();
+		Vertex vertex2 = nextVertex.get();
+		Vertex vertex3 = nextVertex.get();
+		Vertex vertex4 = nextVertex.get();
+
+		vertexStore =
+			new VertexStore(
+				genesisVertex,
+				rootQC,
+				Arrays.asList(vertex1, vertex2, vertex3, vertex4),
+				syncedStateComputer,
+				syncVerticesRPCSender,
+				syncSender,
+				counters
+			);
+
+		Vertex vertex5 = nextVertex.get();
+		Vertex vertex6 = nextVertex.get();
+		Vertex vertex7 = nextVertex.get();
+		Vertex vertex8 = nextVertex.get();
+
+		assertThat(vertexStore.syncToQC(vertex8.getQC(), vertex8.getQC(), mock(ECPublicKey.class))).isFalse();
+
+		verify(syncVerticesRPCSender, times(1)).sendGetVerticesRequest(eq(vertex7.getId()), any(), eq(3), any());
+	}
+
+
+	@Test
 	public void when_rpc_call_to_get_vertices_with_size_2__then_should_return_both() throws Exception {
-		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), null);
-		vertexStore.insertVertex(nextVertex);
+		Vertex vertex = nextVertex.get();
+		vertexStore.insertVertex(vertex);
 		GetVerticesRequest getVerticesRequest = mock(GetVerticesRequest.class);
 		when(getVerticesRequest.getCount()).thenReturn(2);
-		when(getVerticesRequest.getVertexId()).thenReturn(nextVertex.getId());
+		when(getVerticesRequest.getVertexId()).thenReturn(vertex.getId());
 		vertexStore.processGetVerticesRequest(getVerticesRequest);
-		verify(syncVerticesRPCSender, times(1)).sendGetVerticesResponse(eq(getVerticesRequest), eq(Arrays.asList(nextVertex, genesisVertex)));
+		verify(syncVerticesRPCSender, times(1)).sendGetVerticesResponse(eq(getVerticesRequest), eq(Arrays.asList(vertex, genesisVertex)));
 	}
 }
