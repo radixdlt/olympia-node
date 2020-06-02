@@ -28,6 +28,9 @@ import com.radixdlt.atommodel.tokens.TokensConstraintScrypt;
 import com.radixdlt.atommodel.unique.UniqueParticleConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.Result;
+import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.sync.StateSyncNetwork;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.Particle;
@@ -36,6 +39,7 @@ import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
+import com.radixdlt.middleware2.ClientAtom.LedgerAtomConversionException;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.middleware2.network.MessageCentralSyncCommittedNetwork;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
@@ -54,6 +58,7 @@ import org.radix.time.Time;
 import java.util.function.UnaryOperator;
 
 public class MiddlewareModule extends AbstractModule {
+	private static final long GENESIS_STATE_VERSION = 1;
 	private static final Hash DEFAULT_FEE_TARGET = new Hash("0000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
 
 	@Provides
@@ -101,8 +106,17 @@ public class MiddlewareModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private EngineStore<LedgerAtom> engineStore(
-		CommittedAtomsStore committedAtomsStore
-	) {
+		CommittedAtomsStore committedAtomsStore,
+		Universe universe
+	) throws LedgerAtomConversionException {
+		// TODO: This should be done at a virtualized layer
+		if (committedAtomsStore.getCommittedAtoms(0, 1).isEmpty()) {
+			final ClientAtom genesisAtom = ClientAtom.convertFromApiAtom(universe.getGenesis().get(0));
+			final Vertex genesisVertex = Vertex.createGenesis(genesisAtom);
+			final VertexMetadata genesisMetadata = new VertexMetadata(View.genesis(), genesisVertex.getId(), GENESIS_STATE_VERSION);
+			committedAtomsStore.storeAtom(genesisAtom.committed(genesisMetadata));
+		}
+
 		return new EngineStore<LedgerAtom>() {
 			@Override
 			public void getAtomContaining(Particle particle, boolean b, Consumer<LedgerAtom> consumer) {

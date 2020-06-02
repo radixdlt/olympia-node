@@ -87,12 +87,6 @@ public final class VertexStore {
 
 		this.highestQC.set(Objects.requireNonNull(rootQC));
 		this.highestCommittedQC.set(rootQC);
-
-		if (genesisVertex.getAtom() != null) {
-			CommittedAtom committedGenesis = genesisVertex.getAtom().committed(rootQC.getProposed());
-			syncedStateComputer.execute(committedGenesis);
-		}
-
 		this.rootId.set(genesisVertex.getId());
 		this.vertices.put(genesisVertex.getId(), genesisVertex);
 		this.lastCommittedVertex.onNext(genesisVertex);

@@ -143,8 +143,8 @@ public final class Radix
 		// Start mempool receiver
 		globalInjector.getInjector().getInstance(MempoolReceiver.class).start();
 
-		SyncedRadixEngine stateSynchronizer = globalInjector.getInjector().getInstance(SyncedRadixEngine.class);
-		stateSynchronizer.start();
+		SyncedRadixEngine syncedRadixEngine = globalInjector.getInjector().getInstance(SyncedRadixEngine.class);
+		syncedRadixEngine.start();
 
 		final ConsensusRunner bft = globalInjector.getInjector().getInstance(ConsensusRunner.class);
 		// start API services
