@@ -191,11 +191,8 @@ public class BFTSimulatedTest {
 
 		List<Single<Pair<String, Optional<BFTCheckError>>>> results = assertions.stream()
 			.map(assertion -> assertion.getSecond()
-				.takeUntil(
-					firstErrorSignal
-						.filter(done -> !assertion.getFirst().equals(done))
-						.toObservable()
-						.concatWith(Observable.never())) // required so that takeUntil doesn't get signalled on the error check stream
+				.takeUntil(firstErrorSignal.flatMapObservable(name ->
+					!assertion.getFirst().equals(name) ? Observable.just(name) : Observable.never()))
 				.takeUntil(Observable.timer(duration, timeUnit))
 				.map(e -> Optional.of(e.getSecond()))
 				.first(Optional.empty())
