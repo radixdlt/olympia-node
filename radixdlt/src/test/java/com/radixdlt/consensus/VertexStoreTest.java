@@ -21,6 +21,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -40,6 +41,7 @@ import com.radixdlt.middleware2.CommittedAtom;
 import io.reactivex.rxjava3.observers.TestObserver;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 import org.junit.Before;
@@ -331,7 +333,6 @@ public class VertexStoreTest {
 		verify(syncVerticesRPCSender, times(1)).sendGetVerticesRequest(eq(vertex3.getId()), any(), eq(1), any());
 	}
 
-
 	@Test
 	public void when_sync_to_qc_and_need_sync_but_committed_qc_is_less_than_root__then_should_request_for_qc_sync() {
 		Vertex vertex1 = nextVertex.get();
@@ -387,6 +388,96 @@ public class VertexStoreTest {
 		verify(syncVerticesRPCSender, times(1)).sendGetVerticesRequest(eq(vertex7.getId()), any(), eq(3), any());
 	}
 
+	@Test
+	public void when_request_for_qc_sync_and_receive_response__then_should_update() {
+		Vertex vertex1 = nextVertex.get();
+		Vertex vertex2 = nextVertex.get();
+
+		vertexStore =
+			new VertexStore(
+				genesisVertex,
+				rootQC,
+				Arrays.asList(vertex1, vertex2),
+				syncedStateComputer,
+				syncVerticesRPCSender,
+				syncSender,
+				counters
+			);
+
+		Vertex vertex3 = nextVertex.get();
+		Vertex vertex4 = nextVertex.get();
+		Vertex vertex5 = nextVertex.get();
+
+		AtomicReference<Object> opaque = new AtomicReference<>();
+		doAnswer(invocation -> {
+			opaque.set(invocation.getArgument(3));
+			return null;
+		}).when(syncVerticesRPCSender).sendGetVerticesRequest(any(), any(), eq(1), any());
+
+		assertThat(vertexStore.syncToQC(vertex5.getQC(), vertex5.getQC(), mock(ECPublicKey.class))).isFalse();
+
+		verify(syncVerticesRPCSender, times(1)).sendGetVerticesRequest(eq(vertex4.getId()), any(), eq(1), any());
+		GetVerticesResponse response1 = new GetVerticesResponse(vertex4.getId(), Collections.singletonList(vertex4), opaque.get());
+		vertexStore.processGetVerticesResponse(response1);
+
+		verify(syncVerticesRPCSender, times(1)).sendGetVerticesRequest(eq(vertex3.getId()), any(), eq(1), any());
+		GetVerticesResponse response2 = new GetVerticesResponse(vertex3.getId(), Collections.singletonList(vertex3), opaque.get());
+		vertexStore.processGetVerticesResponse(response2);
+
+
+		assertThat(vertexStore.getHighestQC()).isEqualTo(vertex5.getQC());
+		verify(syncSender, times(1)).synced(eq(vertex4.getId()));
+	}
+
+	@Test
+	public void when_request_for_committed_sync_and_receive_response__then_should_update() {
+		Vertex vertex1 = nextVertex.get();
+		Vertex vertex2 = nextVertex.get();
+		Vertex vertex3 = nextVertex.get();
+		Vertex vertex4 = nextVertex.get();
+
+		vertexStore =
+			new VertexStore(
+				genesisVertex,
+				rootQC,
+				Arrays.asList(vertex1, vertex2, vertex3, vertex4),
+				syncedStateComputer,
+				syncVerticesRPCSender,
+				syncSender,
+				counters
+			);
+
+		Vertex vertex5 = nextVertex.get();
+		Vertex vertex6 = nextVertex.get();
+		Vertex vertex7 = nextVertex.get();
+		Vertex vertex8 = nextVertex.get();
+
+		AtomicReference<Object> rpcOpaque = new AtomicReference<>();
+		doAnswer(invocation -> {
+			rpcOpaque.set(invocation.getArgument(3));
+			return null;
+		}).when(syncVerticesRPCSender).sendGetVerticesRequest(eq(vertex7.getId()), any(), eq(3), any());
+
+		AtomicReference<Object> stateOpaque = new AtomicReference<>();
+		AtomicLong stateVersion = new AtomicLong();
+		doAnswer(invocation -> {
+			stateVersion.set(invocation.getArgument(0));
+			stateOpaque.set(invocation.getArgument(2));
+			return false;
+		}).when(syncedStateComputer).syncTo(anyLong(), any(), any());
+
+		vertexStore.syncToQC(vertex8.getQC(), vertex8.getQC(), mock(ECPublicKey.class));
+		GetVerticesResponse response = new GetVerticesResponse(vertex7.getId(), Arrays.asList(vertex7, vertex6, vertex5), rpcOpaque.get());
+		vertexStore.processGetVerticesResponse(response);
+		assertThat(vertexStore.getHighestQC()).isEqualTo(vertex4.getQC());
+		assertThat(vertexStore.getHighestCommittedQC()).isEqualTo(vertex4.getQC());
+
+		CommittedStateSync committedStateSync = new CommittedStateSync(stateVersion.get(), stateOpaque.get());
+		vertexStore.processCommittedStateSync(committedStateSync);
+
+		assertThat(vertexStore.getHighestQC()).isEqualTo(vertex8.getQC());
+		assertThat(vertexStore.getHighestCommittedQC()).isEqualTo(vertex8.getQC());
+	}
 
 	@Test
 	public void when_rpc_call_to_get_vertices_with_size_2__then_should_return_both() throws Exception {
