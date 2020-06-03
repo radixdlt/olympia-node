@@ -19,6 +19,7 @@ package com.radixdlt.middleware2.network;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.google.common.collect.ImmutableList;
 import com.google.inject.name.Named;
 import com.radixdlt.consensus.GetVerticesResponse;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
@@ -33,7 +34,6 @@ import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.messaging.MessageListener;
 import com.radixdlt.universe.Universe;
 import io.reactivex.rxjava3.core.Observable;
-import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -85,7 +85,7 @@ public class MessageCentralSyncVerticesRPCNetwork implements SyncVerticesRPCSend
 	}
 
 	@Override
-	public void sendGetVerticesResponse(GetVerticesRequest originalRequest, List<Vertex> vertices) {
+	public void sendGetVerticesResponse(GetVerticesRequest originalRequest, ImmutableList<Vertex> vertices) {
 		MessageCentralGetVerticesRequest messageCentralGetVerticesRequest = (MessageCentralGetVerticesRequest) originalRequest;
 		GetVerticesResponseMessage response = new GetVerticesResponseMessage(this.magic, messageCentralGetVerticesRequest.getVertexId(), vertices);
 		Peer peer = messageCentralGetVerticesRequest.getRequestor();

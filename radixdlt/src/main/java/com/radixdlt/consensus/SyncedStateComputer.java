@@ -48,7 +48,7 @@ public interface SyncedStateComputer<T extends CommittedInstruction> {
 	 * @param target list of targets as hint of which peer has the state
 	 * @param opaque some opaque client object which will be passed in a sync
 	 * message if this returns false
-	 * @return a completable which completes when sync is complete
+	 * @return true if already synced, otherwise false
 	 */
 	boolean syncTo(long targetStateVersion, List<ECPublicKey> target, Object opaque);
 

@@ -17,10 +17,10 @@
 
 package com.radixdlt.consensus;
 
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.VertexStore.GetVerticesRequest;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
-import java.util.List;
 
 /**
  * Sender which goes nowhere
@@ -34,7 +34,7 @@ public enum EmptySyncVerticesRPCSender implements SyncVerticesRPCSender {
 	}
 
 	@Override
-	public void sendGetVerticesResponse(GetVerticesRequest originalRequest, List<Vertex> vertices) {
+	public void sendGetVerticesResponse(GetVerticesRequest originalRequest, ImmutableList<Vertex> vertices) {
 		// empty
 	}
 }

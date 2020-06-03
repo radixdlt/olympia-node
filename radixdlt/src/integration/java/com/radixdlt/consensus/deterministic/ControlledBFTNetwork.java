@@ -175,7 +175,7 @@ public final class ControlledBFTNetwork {
 		}
 
 		@Override
-		public void sendGetVerticesResponse(GetVerticesRequest originalRequest, List<Vertex> vertices) {
+		public void sendGetVerticesResponse(GetVerticesRequest originalRequest, ImmutableList<Vertex> vertices) {
 			ControlledGetVerticesRequest request = (ControlledGetVerticesRequest) originalRequest;
 			GetVerticesResponse response = new GetVerticesResponse(request.getVertexId(), vertices, request.opaque);
 			putMesssage(new ControlledMessage(sender, request.requestor, response));

@@ -35,10 +35,10 @@ import java.util.stream.Collectors;
  */
 public class SafetyCheck implements BFTCheck {
 
-	private static Observable<BFTCheckError> differentVerticesError(Vertex vertex, Vertex currentVertex) {
+	private static Observable<BFTCheckError> conflictingVerticesError(Vertex vertex, Vertex currentVertex) {
 		return Observable.just(
 			new BFTCheckError(
-				String.format("Different vertices [%s, %s] committed at same view: %s",
+				String.format("Conflicting vertices [%s, %s] committed at same view: %s",
 					vertex,
 					currentVertex,
 					vertex.getView()
@@ -72,6 +72,9 @@ public class SafetyCheck implements BFTCheck {
 		committedVertices.put(View.genesis(), network.getGenesisVertex());
 		final AtomicReference<View> highest = new AtomicReference<>(View.genesis());
 		final Map<ECKeyPair, Vertex> lastCommittedByNode = new ConcurrentHashMap<>();
+		for (ECKeyPair node : network.getNodes()) {
+			lastCommittedByNode.put(node, network.getGenesisVertex());
+		}
 
 		return Observable.merge(
 			network.getNodes().stream().map(
@@ -85,7 +88,7 @@ public class SafetyCheck implements BFTCheck {
 				final Vertex currentVertexAtView = committedVertices.get(vertex.getView());
 				if (currentVertexAtView != null) {
 					if (!currentVertexAtView.getId().equals(vertex.getId())) {
-						return differentVerticesError(vertex, currentVertexAtView);
+						return conflictingVerticesError(vertex, currentVertexAtView);
 					}
 				} else {
 					final Vertex lastCommitted = committedVertices.get(highest.get());

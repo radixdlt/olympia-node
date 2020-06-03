@@ -26,6 +26,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.GetVerticesResponse;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexStore.GetVerticesRequest;
@@ -40,8 +41,6 @@ import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.messaging.MessageListener;
 import com.radixdlt.universe.Universe;
 import io.reactivex.rxjava3.observers.TestObserver;
-import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Before;
@@ -101,7 +100,7 @@ public class MessageCentralSyncVerticesRPCNetworkTest {
 		GetVerticesResponseMessage responseMessage = mock(GetVerticesResponseMessage.class);
 		Vertex vertex = mock(Vertex.class);
 		when(vertex.getId()).thenReturn(id);
-		when(responseMessage.getVertices()).thenReturn(Collections.singletonList(vertex));
+		when(responseMessage.getVertices()).thenReturn(ImmutableList.of(vertex));
 		when(responseMessage.getVertexId()).thenReturn(id);
 		listener.get().handleMessage(mock(Peer.class), responseMessage);
 
@@ -117,7 +116,7 @@ public class MessageCentralSyncVerticesRPCNetworkTest {
 		Vertex vertex = mock(Vertex.class);
 		when(vertex.getId()).thenReturn(mock(Hash.class));
 		when(request.getVertexId()).thenReturn(mock(Hash.class));
-		List<Vertex> vertices = Collections.singletonList(vertex);
+		ImmutableList<Vertex> vertices = ImmutableList.of(vertex);
 		network.sendGetVerticesResponse(request, vertices);
 		verify(messageCentral, times(1)).send(eq(peer), any(GetVerticesResponseMessage.class));
 	}

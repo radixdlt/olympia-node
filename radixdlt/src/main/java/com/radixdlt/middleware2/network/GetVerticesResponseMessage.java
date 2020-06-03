@@ -18,13 +18,12 @@
 package com.radixdlt.middleware2.network;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
-import java.util.Collections;
-import java.util.List;
 import java.util.Objects;
 import org.radix.network.messaging.Message;
 
@@ -39,7 +38,7 @@ public final class GetVerticesResponseMessage extends Message {
 
 	@JsonProperty("vertices")
 	@DsonOutput(Output.ALL)
-	private final List<Vertex> vertices;
+	private final ImmutableList<Vertex> vertices;
 
 	GetVerticesResponseMessage() {
 		// Serializer only
@@ -48,7 +47,7 @@ public final class GetVerticesResponseMessage extends Message {
 		this.vertices = null;
 	}
 
-	GetVerticesResponseMessage(int magic, Hash vertexId, List<Vertex> vertices) {
+	GetVerticesResponseMessage(int magic, Hash vertexId, ImmutableList<Vertex> vertices) {
 		super(magic);
 		this.vertexId = Objects.requireNonNull(vertexId);
 		this.vertices = Objects.requireNonNull(vertices);
@@ -58,8 +57,8 @@ public final class GetVerticesResponseMessage extends Message {
 		return vertexId;
 	}
 
-	public List<Vertex> getVertices() {
-		return vertices == null ? Collections.emptyList() : vertices;
+	public ImmutableList<Vertex> getVertices() {
+		return vertices == null ? ImmutableList.of() : vertices;
 	}
 
 	@Override

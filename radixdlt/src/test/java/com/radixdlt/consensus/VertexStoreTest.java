@@ -29,6 +29,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.VertexStore.SyncSender;
 import com.radixdlt.counters.SystemCounters;
@@ -43,6 +44,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import org.junit.Before;
 import org.junit.Test;
@@ -50,6 +52,7 @@ import org.junit.Test;
 public class VertexStoreTest {
 	private Vertex genesisVertex;
 	private Supplier<Vertex> nextVertex;
+	private Function<Boolean, Vertex> nextSkippableVertex;
 	private VertexMetadata genesisVertexMetadata;
 	private QuorumCertificate rootQC;
 	private VertexStore vertexStore;
@@ -71,20 +74,31 @@ public class VertexStoreTest {
 		this.vertexStore = new VertexStore(genesisVertex, rootQC, syncedStateComputer, syncVerticesRPCSender, syncSender, counters);
 
 		AtomicReference<Vertex> lastVertex = new AtomicReference<>(genesisVertex);
-		this.nextVertex = () -> {
+
+		this.nextSkippableVertex = skipOne -> {
 			Vertex parentVertex = lastVertex.get();
 			final QuorumCertificate qc;
 			if (!parentVertex.getView().equals(View.genesis())) {
 				VertexMetadata parent = VertexMetadata.ofVertex(parentVertex);
-				VoteData data = new VoteData(parent, parentVertex.getQC().getProposed(), parentVertex.getQC().getParent());
+				VoteData data = new VoteData(parent, parentVertex.getQC().getProposed(), skipOne ? null : parentVertex.getQC().getParent());
 				qc = new QuorumCertificate(data, new ECDSASignatures());
 			} else {
 				qc = rootQC;
 			}
-			Vertex vertex = Vertex.createVertex(qc, parentVertex.getView().next(), null);
+
+			final View view;
+			if (skipOne) {
+				view = parentVertex.getView().next().next();
+			} else {
+				view = parentVertex.getView().next();
+			}
+
+			Vertex vertex = Vertex.createVertex(qc, view, null);
 			lastVertex.set(vertex);
 			return vertex;
 		};
+
+		this.nextVertex = () -> nextSkippableVertex.apply(false);
 	}
 
 	@Test
@@ -408,8 +422,9 @@ public class VertexStoreTest {
 		Vertex vertex6 = nextVertex.get();
 		Vertex vertex7 = nextVertex.get();
 		Vertex vertex8 = nextVertex.get();
+		Vertex vertex9 = nextSkippableVertex.apply(true);
 
-		assertThat(vertexStore.syncToQC(vertex8.getQC(), vertex8.getQC(), mock(ECPublicKey.class))).isFalse();
+		assertThat(vertexStore.syncToQC(vertex9.getQC(), vertex8.getQC(), mock(ECPublicKey.class))).isFalse();
 
 		verify(syncVerticesRPCSender, times(1)).sendGetVerticesRequest(eq(vertex7.getId()), any(), eq(3), any());
 	}
@@ -513,6 +528,6 @@ public class VertexStoreTest {
 		when(getVerticesRequest.getCount()).thenReturn(2);
 		when(getVerticesRequest.getVertexId()).thenReturn(vertex.getId());
 		vertexStore.processGetVerticesRequest(getVerticesRequest);
-		verify(syncVerticesRPCSender, times(1)).sendGetVerticesResponse(eq(getVerticesRequest), eq(Arrays.asList(vertex, genesisVertex)));
+		verify(syncVerticesRPCSender, times(1)).sendGetVerticesResponse(eq(getVerticesRequest), eq(ImmutableList.of(vertex, genesisVertex)));
 	}
 }
