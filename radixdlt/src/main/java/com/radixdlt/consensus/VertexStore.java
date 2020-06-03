@@ -173,6 +173,16 @@ public final class VertexStore {
 		}
 	}
 
+	private boolean requiresCommittedStateSync(SyncState syncState) {
+		final VertexMetadata committedMetadata = syncState.committedVertexMetadata;
+		if (!vertices.containsKey(committedMetadata.getId())) {
+			View rootView = vertices.get(rootId.get()).getView();
+			return rootView.compareTo(committedMetadata.getView()) < 0;
+		}
+
+		return false;
+	}
+
 	public void processGetVerticesRequest(GetVerticesRequest request) {
 		// TODO: Handle nodes trying to DDOS this endpoint
 
@@ -274,31 +284,17 @@ public final class VertexStore {
 
 	private void doQCSync(SyncState syncState) {
 		final Hash vertexId = syncState.getQC().getProposed().getId();
-		if (syncing.containsKey(vertexId)) {
-			return;
-		}
-
 		syncState.setSyncStage(SyncStage.GET_QC_VERTICES);
-		syncing.put(vertexId, syncState);
-
 		log.info("SYNC_VERTICES: QC: Sending initial GetVerticesRequest for qc={}", syncState.getQC());
 		syncVerticesRPCSender.sendGetVerticesRequest(vertexId, syncState.author, 1, vertexId);
 	}
 
 	private void doCommittedSync(SyncState syncState) {
-		final Hash vertexId = syncState.getCommittedQC().getProposed().getId();
-		if (syncing.containsKey(vertexId)) {
-			// TODO: what if current sync isn't for commit?
-			return;
-		}
-
+		final Hash vertexId = syncState.getQC().getProposed().getId();
 		syncState.setSyncStage(SyncStage.GET_COMMITTED_VERTICES);
-		syncing.put(vertexId, syncState);
-
 		log.info("SYNC_VERTICES: Committed: Sending initial GetVerticesRequest {}", syncState.getCommittedQC());
 		syncVerticesRPCSender.sendGetVerticesRequest(vertexId, syncState.author, 3, vertexId);
 	}
-
 
 	public void processLocalSync(Hash vertexId) {
 		log.info("LOCAL_SYNC: Processed {}", vertexId);
@@ -323,22 +319,24 @@ public final class VertexStore {
 
 		log.info("SYNC_TO_QC: Need sync: {} {}", qc, committedQC);
 
+		final Hash vertexId = qc.getProposed().getId();
+		if (syncing.containsKey(vertexId)) {
+			// TODO: what if this committedQC is greater than the one currently in the queue
+			// TODO: then should possibly replace the current one
+			return false;
+		}
+
 		if (author == null) {
 			throw new IllegalStateException("Syncing required but author doesn't exist");
 		}
 
 		final SyncState syncState = new SyncState(qc, committedQC, author);
-		final VertexMetadata committedMetadata = syncState.committedVertexMetadata;
-		if (!vertices.containsKey(committedMetadata.getId())) {
-			View rootView = vertices.get(rootId.get()).getView();
-			if (rootView.compareTo(committedMetadata.getView()) < 0) {
-				log.info("SYNC_TO_QC: Need committed sync: {} {} highestQC={} rootView={}", qc, committedMetadata, highestQC.get(), rootView);
-				doCommittedSync(syncState);
-				return false;
-			}
+		syncing.put(vertexId, syncState);
+		if (requiresCommittedStateSync(syncState)) {
+			this.doCommittedSync(syncState);
+		} else {
+			this.doQCSync(syncState);
 		}
-
-		this.doQCSync(syncState);
 
 		return false;
 	}
