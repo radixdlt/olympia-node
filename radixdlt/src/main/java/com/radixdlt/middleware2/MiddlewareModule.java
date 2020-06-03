@@ -29,6 +29,7 @@ import com.radixdlt.atommodel.unique.UniqueParticleConstraintScrypt;
 import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.Result;
+import com.radixdlt.consensus.sync.StateSyncNetwork;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
@@ -37,9 +38,11 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
+import com.radixdlt.middleware2.network.MessageCentralSyncCommittedNetwork;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.middleware2.store.CommittedAtomsStore.AtomIndexer;
 import com.radixdlt.middleware2.store.EngineAtomIndices;
+import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.CMStore;
@@ -80,10 +83,21 @@ public class MiddlewareModule extends AbstractModule {
 			.build();
 	}
 
-
 	@Provides
 	private UnaryOperator<CMStore> buildVirtualLayer(CMAtomOS atomOS) {
 		return atomOS.buildVirtualLayer();
+	}
+
+	@Provides
+	@Singleton
+	private StateSyncNetwork stateSyncNetwork(
+		Universe universe,
+		MessageCentral messageCentral
+	) {
+		return new MessageCentralSyncCommittedNetwork(
+			universe,
+			messageCentral
+		);
 	}
 
 	@Provides

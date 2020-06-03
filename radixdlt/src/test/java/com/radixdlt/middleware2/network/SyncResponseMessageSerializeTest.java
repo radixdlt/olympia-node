@@ -15,32 +15,17 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.middleware2.network;
 
-import com.radixdlt.crypto.Hash;
+import com.google.common.collect.ImmutableList;
+import org.radix.serialization.SerializeMessageObject;
 
-/**
- * An RPC response
- */
-public final class GetVertexResponse {
-	private final Hash vertexId;
-	private final Vertex vertex;
-
-	public GetVertexResponse(Hash vertexId, Vertex vertex) {
-		this.vertexId = vertexId;
-		this.vertex = vertex;
+public class SyncResponseMessageSerializeTest extends SerializeMessageObject<SyncResponseMessage> {
+	public SyncResponseMessageSerializeTest() {
+		super(SyncResponseMessage.class, SyncResponseMessageSerializeTest::get);
 	}
 
-	public Hash getVertexId() {
-		return vertexId;
-	}
-
-	public Vertex getVertex() {
-		return vertex;
-	}
-
-	@Override
-	public String toString() {
-		return String.format("%s{vertex=%s}", this.getClass().getSimpleName(), vertex);
+	private static SyncResponseMessage get() {
+		return new SyncResponseMessage(1234, ImmutableList.of());
 	}
 }

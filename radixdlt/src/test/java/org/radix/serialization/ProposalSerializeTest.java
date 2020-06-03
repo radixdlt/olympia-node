@@ -60,6 +60,6 @@ public class ProposalSerializeTest extends SerializeObject<Proposal> {
 		}
 		// add a particle to ensure atom is valid and has at least one shard
 		Vertex vertex = Vertex.createVertex(qc, view, clientAtom);
-		return new Proposal(vertex, ECKeyPair.generateNew().getPublicKey(), new ECDSASignature());
+		return new Proposal(vertex, qc, ECKeyPair.generateNew().getPublicKey(), new ECDSASignature());
 	}
 }

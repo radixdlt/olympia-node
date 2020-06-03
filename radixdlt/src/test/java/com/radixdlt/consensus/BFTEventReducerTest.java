@@ -34,7 +34,6 @@ import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.utils.Ints;
 import java.util.Optional;
-import java.util.function.Consumer;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -44,6 +43,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -111,6 +111,36 @@ public class BFTEventReducerTest {
 	}
 
 	@Test
+	public void when_processing_local_sync__then_should_process_it_via_vertex_store() {
+		Hash vertexId = mock(Hash.class);
+		reducer.processLocalSync(vertexId);
+		verify(vertexStore, times(1)).processLocalSync(eq(vertexId));
+	}
+
+	@Test
+	public void when_process_vote_and_new_qc_not_synced__then_local_sync_should_cause_it_to_process_it() {
+		Vote vote = mock(Vote.class);
+		QuorumCertificate qc = mock(QuorumCertificate.class);
+		View view = mock(View.class);
+		when(qc.getView()).thenReturn(view);
+		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
+		Hash id = mock(Hash.class);
+		when(vertexMetadata.getId()).thenReturn(id);
+		when(qc.getProposed()).thenReturn(vertexMetadata);
+		when(pendingVotes.insertVote(eq(vote), eq(validatorSet))).thenReturn(Optional.of(qc));
+		when(vertexStore.syncToQC(eq(qc), any(), any())).thenReturn(false);
+		reducer.processVote(vote);
+		verify(safetyRules, never()).process(any());
+		verify(pacemaker, never()).processQC(any());
+
+		when(safetyRules.process(any())).thenReturn(Optional.empty());
+		when(pacemaker.processQC(any())).thenReturn(Optional.empty());
+		reducer.processLocalSync(id);
+		verify(safetyRules, never()).process(eq(qc));
+		verify(pacemaker, never()).processQC(eq(view));
+	}
+
+	@Test
 	public void when_processing_vote_as_not_proposer__then_nothing_happens() {
 		Vote voteMessage = mock(Vote.class);
 		VertexMetadata proposal = new VertexMetadata(View.of(2), Hash.random(), 2);
@@ -140,7 +170,7 @@ public class BFTEventReducerTest {
 		when(mempool.getAtoms(anyInt(), any())).thenReturn(Lists.newArrayList());
 		when(pacemaker.getCurrentView()).thenReturn(mock(View.class));
 		when(pacemaker.processQC(eq(view))).thenReturn(Optional.of(mock(View.class)));
-		when(vertexStore.syncToQC(eq(qc))).thenReturn(true);
+		when(vertexStore.syncToQC(eq(qc), any(), any())).thenReturn(true);
 
 		reducer.processVote(vote);
 
@@ -336,25 +366,5 @@ public class BFTEventReducerTest {
 
 		reducer.processProposal(proposal);
 		verify(mempool, times(1)).removeCommittedAtom(eq(aid));
-	}
-
-	@Test
-	public void when_processing_get_vertex_request__then_ec_callback_with_response() {
-		Hash vertexId = mock(Hash.class);
-		Vertex vertex = mock(Vertex.class);
-		Consumer<Vertex> callback = mockConsumer();
-
-		GetVertexRequest getVertexRequest = mock(GetVertexRequest.class);
-		when(getVertexRequest.getVertexId()).thenReturn(vertexId);
-		when(getVertexRequest.getResponder()).thenReturn(callback);
-
-		when(vertexStore.getVertex(eq(vertexId))).thenReturn(vertex);
-		reducer.processGetVertexRequest(getVertexRequest);
-		verify(callback, times(1)).accept(eq(vertex));
-	}
-
-	@SuppressWarnings("unchecked")
-	private static <T> Consumer<T> mockConsumer() {
-		return mock(Consumer.class);
 	}
 }

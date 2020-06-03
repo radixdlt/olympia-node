@@ -18,39 +18,41 @@
 package com.radixdlt.middleware2.network;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.consensus.Vertex;
+import com.google.common.collect.ImmutableList;
+import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
-import java.util.Objects;
+import java.util.Collections;
+import java.util.List;
 import org.radix.network.messaging.Message;
 
 /**
- * RPC Response message for GetVertex call
+ * Message with sync atoms as a response to sync request
  */
-@SerializerId2("message.consensus.vertex_response")
-public final class GetVertexResponseMessage extends Message {
-	@JsonProperty("vertex")
+@SerializerId2("message.sync.response")
+public final class SyncResponseMessage extends Message {
+	@JsonProperty("atoms")
 	@DsonOutput(Output.ALL)
-	private final Vertex vertex;
+	private final List<CommittedAtom> atoms;
 
-	GetVertexResponseMessage() {
+	SyncResponseMessage() {
 		// Serializer only
 		super(0);
-		this.vertex = null;
+		this.atoms = null;
 	}
 
-	GetVertexResponseMessage(int magic, Vertex vertex) {
+	public SyncResponseMessage(int magic, ImmutableList<CommittedAtom> atoms) {
 		super(magic);
-		this.vertex = Objects.requireNonNull(vertex);
+		this.atoms = atoms;
 	}
 
-	public Vertex getVertex() {
-		return vertex;
+	public List<CommittedAtom> getAtoms() {
+		return atoms == null ? Collections.emptyList() : atoms;
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s]", getClass().getSimpleName(), vertex);
+		return String.format("%s{atoms=%s}", getClass().getSimpleName(), atoms);
 	}
 }

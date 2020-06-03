@@ -18,12 +18,10 @@
 package com.radixdlt.middleware2.network;
 
 import static org.mockito.Mockito.mock;
-import static org.powermock.api.mockito.PowerMockito.when;
 
 import com.radixdlt.consensus.ConsensusEvent;
-import com.radixdlt.consensus.GetVertexRequest;
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.VertexStore.GetVerticesRequest;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.consensus.NewView;
@@ -118,21 +116,14 @@ public class TestBFTEventProcessorNetworkTest {
 		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.builder().build();
 		Hash vertexId = mock(Hash.class);
 
-		TestObserver<GetVertexRequest> rpcRequestListener = TestObserver.create();
-		network.getNetworkRx(validatorId2).rpcRequests().subscribe(rpcRequestListener);
-		TestObserver<Vertex> testObserver = TestObserver.create();
-		network.getVertexSupplier(validatorId).getVertex(vertexId, validatorId2)
-			.subscribe(testObserver);
+		TestObserver<GetVerticesRequest> rpcRequestListener =
+			network.getNetworkRx(validatorId2).requests().test();
+
+		network
+			.getVerticesRequestSender(validatorId)
+			.sendGetVerticesRequest(vertexId, validatorId2, 1, new Object());
 
 		rpcRequestListener.awaitCount(1);
 		rpcRequestListener.assertValueAt(0, r -> r.getVertexId().equals(vertexId));
-
-		Vertex response = mock(Vertex.class);
-		when(response.getId()).thenReturn(vertexId);
-		rpcRequestListener.values().get(0).getResponder().accept(response);
-
-		testObserver.awaitCount(1);
-		testObserver.assertComplete();
-		testObserver.assertValue(response);
 	}
 }

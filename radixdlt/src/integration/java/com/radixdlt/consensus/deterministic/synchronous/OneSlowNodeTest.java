@@ -15,14 +15,14 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.functional.synchronous;
+package com.radixdlt.consensus.deterministic.synchronous;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.functional.BFTFunctionalTest;
+import com.radixdlt.consensus.deterministic.BFTDeterministicTest;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import org.junit.Test;
 
@@ -30,7 +30,7 @@ public class OneSlowNodeTest {
 
 	@Test
 	public void when_three_fast_nodes_and_one_slow_node_two_cycles__then_missing_parent_should_not_cause_sync_exception() {
-		final BFTFunctionalTest test = new BFTFunctionalTest(4);
+		final BFTDeterministicTest test = new BFTDeterministicTest(4, false);
 
 		test.start();
 
@@ -58,7 +58,7 @@ public class OneSlowNodeTest {
 	 */
 	@Test
 	public void when_three_fast_nodes_and_one_slow_node__then_missing_parent_should_not_cause_exception() {
-		final BFTFunctionalTest test = new BFTFunctionalTest(4);
+		final BFTDeterministicTest test = new BFTDeterministicTest(4, false);
 
 		test.start();
 

@@ -15,42 +15,40 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.middleware2.network;
+package com.radixdlt.consensus;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.SerializerId2;
+import java.util.List;
 import java.util.Objects;
-import org.radix.network.messaging.Message;
 
 /**
- * RPC Message to get request for a vertex
+ * An RPC response
  */
-@SerializerId2("message.consensus.vertex_request")
-public final class GetVertexRequestMessage extends Message {
-	@JsonProperty("vertexId")
-	@DsonOutput(Output.ALL)
+public final class GetVerticesResponse {
+	private final Object opaque;
 	private final Hash vertexId;
+	private final List<Vertex> vertices;
 
-	GetVertexRequestMessage() {
-		// Serializer only
-		super(0);
-		this.vertexId = null;
+	public GetVerticesResponse(Hash vertexId, List<Vertex> vertices, Object opaque) {
+		this.vertexId = Objects.requireNonNull(vertexId);
+		this.vertices = Objects.requireNonNull(vertices);
+		this.opaque = opaque;
 	}
 
-	GetVertexRequestMessage(int magic, Hash vertexId) {
-		super(magic);
-		this.vertexId = Objects.requireNonNull(vertexId);
+	public Object getOpaque() {
+		return opaque;
 	}
 
 	public Hash getVertexId() {
 		return vertexId;
 	}
 
+	public List<Vertex> getVertices() {
+		return vertices;
+	}
+
 	@Override
 	public String toString() {
-		return String.format("%s[%s]", getClass().getSimpleName(), vertexId);
+		return String.format("%s{vertices=%s opaque=%s}", this.getClass().getSimpleName(), vertices, opaque);
 	}
 }

@@ -15,13 +15,13 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.functional;
+package com.radixdlt.consensus.deterministic;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.functional.ControlledBFTNetwork.ChannelId;
-import com.radixdlt.consensus.functional.ControlledBFTNetwork.ControlledMessage;
+import com.radixdlt.consensus.deterministic.ControlledBFTNetwork.ChannelId;
+import com.radixdlt.consensus.deterministic.ControlledBFTNetwork.ControlledMessage;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
@@ -33,19 +33,20 @@ import com.radixdlt.utils.UInt256;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
+import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * A functional BFT test where each event that occurs in the BFT network
+ * A deterministic BFT test where each event that occurs in the BFT network
  * is emitted and processed synchronously by the caller.
  */
-public class BFTFunctionalTest {
+public class BFTDeterministicTest {
 	private final ImmutableList<ControlledBFTNode> nodes;
 	private final ImmutableList<ECPublicKey> pks;
 	private final ControlledBFTNetwork network;
 
-	public BFTFunctionalTest(int numNodes) {
+	public BFTDeterministicTest(int numNodes, boolean enableGetVerticesRPC) {
 		ImmutableList<ECKeyPair> keys = Stream.generate(ECKeyPair::generateNew)
 			.limit(numNodes)
 			.sorted(Comparator.<ECKeyPair, EUID>comparing(k -> k.getPublicKey().euid()).reversed())
@@ -63,7 +64,8 @@ public class BFTFunctionalTest {
 				key,
 				network.getSender(key.getPublicKey()),
 				new WeightedRotatingLeaders(validatorSet, Comparator.comparing(v -> v.nodeKey().euid()), 5),
-				validatorSet
+				validatorSet,
+				enableGetVerticesRPC
 			))
 			.collect(ImmutableList.toImmutableList());
 	}
@@ -80,11 +82,22 @@ public class BFTFunctionalTest {
 	}
 
 	public void processNextMsg(Random random) {
+		processNextMsg(random, (c, m) -> true);
+	}
+
+	public void processNextMsg(Random random, BiPredicate<Integer, Object> filter) {
 		List<ControlledMessage> possibleMsgs = network.peekNextMessages();
+		if (possibleMsgs.isEmpty()) {
+			throw new IllegalStateException("No messages available (Lost Responsiveness)");
+		}
+
 		int nextIndex =  random.nextInt(possibleMsgs.size());
 		ChannelId channelId = possibleMsgs.get(nextIndex).getChannelId();
 		Object msg = network.popNextMessage(channelId);
-		nodes.get(pks.indexOf(channelId.getReceiver())).processNext(msg);
+		int receiverIndex = pks.indexOf(channelId.getReceiver());
+		if (filter.test(receiverIndex, msg)) {
+			nodes.get(receiverIndex).processNext(msg);
+		}
 	}
 
 	public SystemCounters getSystemCounters(int nodeIndex) {

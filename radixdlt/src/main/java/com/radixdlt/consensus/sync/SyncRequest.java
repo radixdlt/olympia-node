@@ -15,21 +15,28 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.middleware2.network;
+package com.radixdlt.consensus.sync;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.*;
+import com.radixdlt.network.addressbook.Peer;
+import java.util.Objects;
 
-import com.radixdlt.consensus.Vertex;
-import org.junit.Test;
+/**
+ * A sync request from a peer
+ */
+public final class SyncRequest {
+	private final long stateVersion;
+	private final Peer peer;
 
-public class GetVertexResponseMessageTest {
-	@Test
-	public void sensibleToString() {
-		Vertex vertex = Vertex.createGenesis(null);
-		GetVertexResponseMessage msg1 = new GetVertexResponseMessage(0, vertex);
-		String s1 = msg1.toString();
-		assertThat(s1, containsString(GetVertexResponseMessage.class.getSimpleName()));
-		assertThat(s1, containsString(vertex.toString()));
+	public SyncRequest(Peer peer, long stateVersion) {
+		this.peer = Objects.requireNonNull(peer);
+		this.stateVersion = stateVersion;
+	}
+
+	public Peer getPeer() {
+		return peer;
+	}
+
+	public long getStateVersion() {
+		return stateVersion;
 	}
 }

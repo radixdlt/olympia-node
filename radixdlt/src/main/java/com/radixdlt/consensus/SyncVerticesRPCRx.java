@@ -17,32 +17,23 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.crypto.Hash;
-import java.util.function.Consumer;
+import com.radixdlt.consensus.VertexStore.GetVerticesRequest;
+import io.reactivex.rxjava3.core.Observable;
 
 /**
- * An RPC request to retrieve a given vertex
+ * Provider of GetVertices RPC request/response events
  */
-public final class GetVertexRequest {
-	private final Hash vertexId;
-	private final Consumer<Vertex> responder;
+public interface SyncVerticesRPCRx {
 
-	public GetVertexRequest(Hash vertexId, Consumer<Vertex> responder) {
-		this.vertexId = vertexId;
-		this.responder = responder;
-	}
+	/**
+	 * Retrieve a never-ending stream of requests
+	 * @return a never-ending stream of requests
+	 */
+	Observable<GetVerticesRequest> requests();
 
-	public Consumer<Vertex> getResponder() {
-		return responder;
-	}
-
-	public Hash getVertexId() {
-		return vertexId;
-	}
-
-	@Override
-	public String toString() {
-		return String.format("%s{vertexId=%s}",
-			getClass().getSimpleName(), vertexId.toString().substring(0, 6));
-	}
+	/**
+	 * Retrieve a never-ending stream of responses
+	 * @return a never-ending stream of responses
+	 */
+	Observable<GetVerticesResponse> responses();
 }

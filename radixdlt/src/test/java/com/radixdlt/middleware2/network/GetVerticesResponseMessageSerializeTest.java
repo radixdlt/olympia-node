@@ -19,15 +19,16 @@ package com.radixdlt.middleware2.network;
 
 
 import com.radixdlt.consensus.Vertex;
+import java.util.Collections;
 import org.radix.serialization.SerializeMessageObject;
 
-public class GetVertexResponseMessageSerializeTest  extends SerializeMessageObject<GetVertexResponseMessage> {
-	public GetVertexResponseMessageSerializeTest() {
-		super(GetVertexResponseMessage.class, GetVertexResponseMessageSerializeTest::get);
+public class GetVerticesResponseMessageSerializeTest extends SerializeMessageObject<GetVerticesResponseMessage> {
+	public GetVerticesResponseMessageSerializeTest() {
+		super(GetVerticesResponseMessage.class, GetVerticesResponseMessageSerializeTest::get);
 	}
 
-	private static GetVertexResponseMessage get() {
-		return new GetVertexResponseMessage(1234, Vertex.createGenesis(null));
+	private static GetVerticesResponseMessage get() {
+		return new GetVerticesResponseMessage(1234, Collections.singletonList(Vertex.createGenesis(null)));
 	}
 
 }

@@ -23,12 +23,9 @@ import com.radixdlt.consensus.EventCoordinatorNetworkRx;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.crypto.ECKeyPair;
-import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.assertj.core.api.AssertionsForClassTypes;
-import org.assertj.core.api.Condition;
 
 /**
  * Check that every proposal on the network has a direct parent.
@@ -37,7 +34,7 @@ import org.assertj.core.api.Condition;
 public class AllProposalsHaveDirectParentsCheck implements BFTCheck {
 
 	@Override
-	public Completable check(SimulatedBFTNetwork network) {
+	public Observable<BFTCheckError> check(SimulatedBFTNetwork network) {
 		List<Observable<Vertex>> correctProposals = network.getNodes().stream()
 			.map(ECKeyPair::getPublicKey)
 			.map(network.getUnderlyingNetwork()::getNetworkRx)
@@ -46,9 +43,12 @@ public class AllProposalsHaveDirectParentsCheck implements BFTCheck {
 			.collect(Collectors.toList());
 
 		return Observable.merge(correctProposals)
-			.doOnNext(v -> AssertionsForClassTypes.assertThat(v)
-				.satisfies(new Condition<>(vtx -> vtx.getView().equals(vtx.getParentView().next()),
-					"Vertex %s at %s has direct parent", v, v.getParentView())))
-			.flatMapCompletable(v -> Completable.complete());
+			.concatMap(v -> {
+				if (!v.getView().equals(v.getParentView().next())) {
+					return Observable.just(new BFTCheckError("Vertex has no direct parent"));
+				} else {
+					return Observable.empty();
+				}
+			});
 	}
 }

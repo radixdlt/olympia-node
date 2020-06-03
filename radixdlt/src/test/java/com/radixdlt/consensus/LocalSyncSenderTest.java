@@ -17,22 +17,21 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.crypto.ECPublicKey;
+import static org.mockito.Mockito.mock;
+
 import com.radixdlt.crypto.Hash;
-import io.reactivex.rxjava3.core.Single;
+import io.reactivex.rxjava3.observers.TestObserver;
+import org.junit.Test;
 
-/**
- * An asynchronous supplier which retrieves data for a vertex with a given id
- */
-public interface VertexSupplier {
-
-	/**
-	 * Execute an RPC to retrieve a vertex given an Id from a node
-	 * TODO: refactor to maintain a unidirectional data flow
-	 *
-	 * @param id the id of the vertex to retrieve
-	 * @param node the node to retrieve the vertex info from
-	 * @return single of a vertex which will complete once retrieved
-	 */
-	Single<Vertex> getVertex(Hash id, ECPublicKey node);
+public class LocalSyncSenderTest {
+	@Test
+	public void when_send_sync_event__then_should_receive_it() {
+		LocalSyncSender localSyncSender = new LocalSyncSender();
+		TestObserver<Hash> testObserver = localSyncSender.localSyncs().test();
+		Hash hash = mock(Hash.class);
+		localSyncSender.synced(hash);
+		testObserver.awaitCount(1);
+		testObserver.assertValue(hash);
+		testObserver.assertNotComplete();
+	}
 }

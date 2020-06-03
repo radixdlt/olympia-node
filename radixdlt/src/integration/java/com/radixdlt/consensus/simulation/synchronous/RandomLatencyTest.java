@@ -17,7 +17,11 @@
 
 package com.radixdlt.consensus.simulation.synchronous;
 
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+
 import com.radixdlt.consensus.simulation.BFTSimulatedTest;
+import com.radixdlt.consensus.simulation.BFTSimulatedTest.Builder;
+import java.util.Map;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
@@ -28,54 +32,47 @@ import java.util.concurrent.TimeUnit;
  * may be found.
  */
 public class RandomLatencyTest {
+	// use a maxLatency of 20x the min latency since we know a round can take up to
+	// atleast 6x transmission time. 20x so that we can hit these cases more often
+	private final int minLatency = 10;
+	private final int maxLatency = 200;
+	// the minimum latency per round is determined using the network latency
+	// a round can consist of 6 * max_transmission_time (MTT)
+	private final int trips = 6;
+	private final int synchronousTimeout = maxLatency * trips;
+
+	private Builder bftTestBuilder = BFTSimulatedTest.builder()
+		.randomLatency(minLatency, maxLatency)
+		.setGetVerticesRPCEnabled(false)
+		.pacemakerTimeout(synchronousTimeout) // Since no syncing needed 6*MTT required
+		.checkLiveness("liveness", synchronousTimeout, TimeUnit.MILLISECONDS)
+		.checkSafety("safety")
+		.checkAllProposalsHaveDirectParents("directParents")
+		.checkNoTimeouts("noTimeouts");
+
 	/**
-	 * Tests a static configuration of 3 correct nodes with random, high variance in latency
+	 * Tests a static configuration of 3 nodes with random, high variance in latency
 	 */
 	@Test
 	public void given_3_correct_nodes_in_random_network_and_no_sync__then_all_synchronous_checks_should_pass() {
-		// use a maxLatency of 20x the min latency since we know a round can take up to
-		// atleast 6x transmission time. 20x so that we can hit these cases more often
-		final int minLatency = 10;
-		final int maxLatency = 200;
-		// the minimum latency per round is determined using the network latency
-		// a round can consist of 6 * max_transmission_time (MTT)
-		final int trips = 6;
-		final int synchronousTimeout = maxLatency * trips;
-
-		BFTSimulatedTest bftTest = BFTSimulatedTest.builder()
+		BFTSimulatedTest test = bftTestBuilder
 			.numNodes(3)
-			.randomLatency(minLatency, maxLatency)
-			.setSync(false)
-			.pacemakerTimeout(synchronousTimeout) // Since no syncing needed 6*MTT required
-			.checkLiveness(synchronousTimeout, TimeUnit.MILLISECONDS)
-			.checkSafety()
-			.checkAllProposalsHaveDirectParents()
-			.checkNoTimeouts()
 			.build();
 
-		bftTest.run(1, TimeUnit.MINUTES);
+		Map<String, Boolean> results = test.run(1, TimeUnit.MINUTES);
+		assertThat(results).doesNotContainValue(false);
 	}
 
 	/**
-	 * Tests a static configuration of 4 randomly latent nodes.
-	 * With syncing disabled, probabilistically speaking this should eventually timeout
-	 * due to the case of a node randomly falling behind.
+	 * Tests a static configuration of 4 nodes with random, high variance in latency
 	 */
 	@Test
 	public void given_4_correct_bfts_in_random_network_and_no_sync__then_all_synchronous_checks_should_pass() {
-		final int minLatency = 10;
-		final int maxLatency = 200;
-		final int trips = 8;
-		final int synchronousTimeout = maxLatency * trips;
-
-		BFTSimulatedTest bftTest = BFTSimulatedTest.builder()
+		BFTSimulatedTest test = bftTestBuilder
 			.numNodes(4)
-			.pacemakerTimeout(synchronousTimeout)
-			.randomLatency(minLatency, maxLatency)
-			.setSync(false)
-			.checkNoTimeouts()
 			.build();
 
-		bftTest.run(1, TimeUnit.MINUTES);
+		Map<String, Boolean> results = test.run(1, TimeUnit.MINUTES);
+		assertThat(results).doesNotContainValue(false);
 	}
 }

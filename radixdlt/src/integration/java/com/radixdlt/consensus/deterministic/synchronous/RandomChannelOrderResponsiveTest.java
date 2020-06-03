@@ -15,18 +15,18 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.functional.synchronous;
+package com.radixdlt.consensus.deterministic.synchronous;
 
-import com.radixdlt.consensus.functional.BFTFunctionalTest;
+import com.radixdlt.consensus.deterministic.BFTDeterministicTest;
 import java.util.Random;
 import org.junit.Test;
 
-public class RandomDepthFirstSearchTest {
+public class RandomChannelOrderResponsiveTest {
 
 	@Test
 	public void when_run_4_correct_nodes_with_channel_order_random_and_timeouts_disabled__then_bft_should_be_responsive() {
 		final Random random = new Random(12345);
-		final BFTFunctionalTest test = new BFTFunctionalTest(4);
+		final BFTDeterministicTest test = new BFTDeterministicTest(4, false);
 
 		test.start();
 		for (int step = 0; step < 100000; step++) {
@@ -37,7 +37,7 @@ public class RandomDepthFirstSearchTest {
 	@Test
 	public void when_run_100_correct_nodes_with_channel_order_random_and_timeouts_disabled__then_bft_should_be_responsive() {
 		final Random random = new Random(12345);
-		final BFTFunctionalTest test = new BFTFunctionalTest(100);
+		final BFTDeterministicTest test = new BFTDeterministicTest(100, false);
 
 		test.start();
 		for (int step = 0; step < 100000; step++) {

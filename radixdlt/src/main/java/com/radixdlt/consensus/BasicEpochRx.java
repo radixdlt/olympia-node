@@ -75,6 +75,8 @@ public class BasicEpochRx implements EpochRx {
 				return ValidatorSet.from(validators);
 			})
 			.toObservable()
-			.concatWith(Observable.never());
+			.concatWith(Observable.never())
+			.replay()
+			.autoConnect();
 	}
 }

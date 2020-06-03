@@ -19,15 +19,19 @@ package com.radixdlt.consensus;
 
 import com.google.inject.Inject;
 
+import com.radixdlt.consensus.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.liveness.PacemakerRx;
 
 import com.radixdlt.consensus.validators.ValidatorSet;
+import com.radixdlt.crypto.Hash;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.observables.ConnectableObservable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
+import java.util.Arrays;
+import java.util.Objects;
 import java.util.concurrent.Executors;
 
 /**
@@ -38,10 +42,12 @@ public final class ConsensusRunner {
 	public enum EventType {
 		EPOCH,
 		LOCAL_TIMEOUT,
+		LOCAL_SYNC,
 		NEW_VIEW_MESSAGE,
 		PROPOSAL_MESSAGE,
 		VOTE_MESSAGE,
-		GET_VERTEX_REQUEST,
+		GET_VERTICES_REQUEST,
+		GET_VERTICES_RESPONSE,
 	}
 
 	public static class Event {
@@ -65,6 +71,7 @@ public final class ConsensusRunner {
 
 	private final ConnectableObservable<Event> events;
 	private final Object lock = new Object();
+	private final VertexStore vertexStore;
 	private Disposable disposable;
 
 	@Inject
@@ -72,8 +79,12 @@ public final class ConsensusRunner {
 		EpochRx epochRx,
 		EventCoordinatorNetworkRx network,
 		PacemakerRx pacemakerRx,
-		EpochManager epochManager
+		LocalSyncRx localSyncRx,
+		SyncVerticesRPCRx rpcRx,
+		EpochManager epochManager,
+		VertexStore vertexStore //TODO: remove this since it should only be provided by Epoch manager
 	) {
+		this.vertexStore = Objects.requireNonNull(vertexStore);
 		final Scheduler singleThreadScheduler = Schedulers.from(Executors.newSingleThreadExecutor());
 		final Observable<ValidatorSet> epochEvents = epochRx.epochs()
 			.publish()
@@ -82,7 +93,7 @@ public final class ConsensusRunner {
 		final Observable<Event> epochs = epochEvents
 			.map(o -> new Event(EventType.EPOCH, o));
 
-		final Observable<BFTEventProcessor> eventCoordinators = epochEvents
+		final Observable<BFTEventProcessor> bftEventProcessors = epochEvents
 			.observeOn(singleThreadScheduler)
 			.map(epochManager::nextEpoch)
 			.startWithItem(epochManager.start())
@@ -92,14 +103,16 @@ public final class ConsensusRunner {
 
 		// Need to ensure that first event coordinator is emitted otherwise we may not process
 		// initial events due to the .withLatestFrom() drops events
-		final Completable firstEventCoordinator = Completable.fromSingle(eventCoordinators.firstOrError());
-		final Observable<Object> eventCoordinatorEvents = Observable.merge(
+		final Completable firstEventCoordinator = Completable.fromSingle(bftEventProcessors.firstOrError());
+		final Observable<Object> eventCoordinatorEvents = Observable.merge(Arrays.asList(
 			pacemakerRx.localTimeouts().observeOn(singleThreadScheduler),
 			network.consensusEvents().observeOn(singleThreadScheduler),
-			network.rpcRequests().observeOn(singleThreadScheduler)
-		);
+			rpcRx.requests().observeOn(singleThreadScheduler),
+			rpcRx.responses().observeOn(singleThreadScheduler),
+			localSyncRx.localSyncs().observeOn(singleThreadScheduler)
+		));
 		final Observable<Event> ecMessages = firstEventCoordinator.andThen(
-			eventCoordinatorEvents.withLatestFrom(eventCoordinators, this::processEvent)
+			eventCoordinatorEvents.withLatestFrom(bftEventProcessors, this::processEvent)
 		);
 
 		this.events = Observable.merge(epochs, ecMessages).publish();
@@ -107,9 +120,12 @@ public final class ConsensusRunner {
 
 	private Event processEvent(Object msg, BFTEventProcessor processor) {
 		final EventType eventType;
-		if (msg instanceof GetVertexRequest) {
-			processor.processGetVertexRequest((GetVertexRequest) msg);
-			return new Event(EventType.GET_VERTEX_REQUEST, msg);
+		if (msg instanceof GetVerticesRequest) {
+			vertexStore.processGetVerticesRequest((GetVerticesRequest) msg);
+			return new Event(EventType.GET_VERTICES_REQUEST, msg);
+		} else if (msg instanceof GetVerticesResponse) {
+			vertexStore.processGetVerticesResponse((GetVerticesResponse) msg);
+			return new Event(EventType.GET_VERTICES_RESPONSE, msg);
 		} else if (msg instanceof View) {
 			processor.processLocalTimeout((View) msg);
 			return new Event(EventType.LOCAL_TIMEOUT, msg);
@@ -122,6 +138,9 @@ public final class ConsensusRunner {
 		} else if (msg instanceof Vote) {
 			processor.processVote((Vote) msg);
 			eventType = EventType.VOTE_MESSAGE;
+		} else if (msg instanceof Hash) {
+			processor.processLocalSync((Hash) msg);
+			eventType = EventType.LOCAL_SYNC;
 		} else {
 			throw new IllegalStateException("Unknown Consensus Message: " + msg);
 		}

@@ -15,15 +15,16 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.functional;
+package com.radixdlt.consensus.deterministic;
 
 import static org.mockito.Mockito.mock;
 
 import com.radixdlt.consensus.BFTEventPreprocessor;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.DefaultHasher;
-import com.radixdlt.consensus.BFTEventSender;
-import com.radixdlt.consensus.GetVertexRequest;
+import com.radixdlt.consensus.EmptySyncVerticesRPCSender;
+import com.radixdlt.consensus.GetVerticesResponse;
+import com.radixdlt.consensus.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.PendingVotes;
@@ -31,12 +32,15 @@ import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.BFTEventReducer;
 import com.radixdlt.consensus.SyncQueues;
+import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.VertexStore;
+import com.radixdlt.consensus.SyncVerticesRPCSender;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.VoteData;
+import com.radixdlt.consensus.deterministic.ControlledBFTNetwork.ControlledSender;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker.TimeoutSender;
 import com.radixdlt.consensus.liveness.MempoolProposalGenerator;
@@ -51,9 +55,13 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.Hash;
 import com.radixdlt.mempool.EmptyMempool;
 import com.radixdlt.mempool.Mempool;
+import com.radixdlt.middleware2.CommittedAtom;
+import io.reactivex.rxjava3.core.Completable;
+import java.util.List;
 import java.util.stream.Collectors;
 
 /**
@@ -67,9 +75,10 @@ class ControlledBFTNode {
 
 	ControlledBFTNode(
 		ECKeyPair key,
-		BFTEventSender sender,
+		ControlledSender sender,
 		ProposerElection proposerElection,
-		ValidatorSet validatorSet
+		ValidatorSet validatorSet,
+		boolean enableGetVerticesRPC
 	) {
 		this.systemCounters = new SystemCountersImpl();
 		Vertex genesisVertex = Vertex.createGenesis(null);
@@ -77,8 +86,19 @@ class ControlledBFTNode {
 			new VoteData(VertexMetadata.ofVertex(genesisVertex), null, null),
 			new ECDSASignatures()
 		);
-		RadixEngine re = mock(RadixEngine.class);
-		this.vertexStore = new VertexStore(genesisVertex, genesisQC, re, systemCounters);
+		SyncedStateComputer<CommittedAtom> stateComputer = new SyncedStateComputer<CommittedAtom>() {
+			@Override
+			public Completable syncTo(long targetStateVersion, List<ECPublicKey> target) {
+				return Completable.complete();
+			}
+
+			@Override
+			public void execute(CommittedAtom instruction) {
+			}
+		};
+
+		SyncVerticesRPCSender syncVerticesRPCSender = enableGetVerticesRPC ? sender : EmptySyncVerticesRPCSender.INSTANCE;
+		this.vertexStore = new VertexStore(genesisVertex, genesisQC, stateComputer, syncVerticesRPCSender, sender, systemCounters);
 		Mempool mempool = new EmptyMempool();
 		ProposalGenerator proposalGenerator = new MempoolProposalGenerator(vertexStore, mempool);
 		TimeoutSender timeoutSender = mock(TimeoutSender.class);
@@ -124,8 +144,10 @@ class ControlledBFTNode {
 	}
 
 	void processNext(Object msg) {
-		if (msg instanceof GetVertexRequest) {
-			ec.processGetVertexRequest((GetVertexRequest) msg);
+		if (msg instanceof GetVerticesRequest) {
+			vertexStore.processGetVerticesRequest((GetVerticesRequest) msg);
+		} else if (msg instanceof GetVerticesResponse) {
+			vertexStore.processGetVerticesResponse((GetVerticesResponse) msg);
 		} else if (msg instanceof View) {
 			ec.processLocalTimeout((View) msg);
 		} else if (msg instanceof NewView) {
@@ -134,6 +156,8 @@ class ControlledBFTNode {
 			ec.processProposal((Proposal) msg);
 		} else if (msg instanceof Vote) {
 			ec.processVote((Vote) msg);
+		} else if (msg instanceof Hash) {
+			ec.processLocalSync((Hash) msg);
 		} else {
 			throw new IllegalStateException("Unknown msg: " + msg);
 		}

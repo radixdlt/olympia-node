@@ -39,7 +39,7 @@ public class ConsensusEventMessageSerializeTest extends SerializeMessageObject<C
 		VertexMetadata parent = new VertexMetadata(View.of(0), Hash.ZERO_HASH, 0);
 		VoteData voteData = new VoteData(vertexMetadata, parent);
 		QuorumCertificate quorumCertificate = new QuorumCertificate(voteData, new ECDSASignatures());
-		NewView testView = new NewView(author.getPublicKey(), View.of(1234567890L), quorumCertificate, null);
+		NewView testView = new NewView(author.getPublicKey(), View.of(1234567890L), quorumCertificate, quorumCertificate, null);
 		return new ConsensusEventMessage(1234, testView);
 	}
 }

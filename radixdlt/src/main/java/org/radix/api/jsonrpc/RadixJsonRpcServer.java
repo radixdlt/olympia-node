@@ -172,6 +172,11 @@ public final class RadixJsonRpcServer {
 					result = new JSONObject()
 						.put("response", "success");
 					break;
+				case "BFT.stop":
+					consensusRunner.stop();
+					result = new JSONObject()
+						.put("response", "success");
+					break;
 				case "Ledger.getAtom":
 					if (!(paramsObject instanceof JSONObject)) {
 						return JsonRpcUtil.errorResponse(id, -32000, "params should be a JSONObject" , new JSONObject());

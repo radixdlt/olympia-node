@@ -17,15 +17,15 @@
 
 package com.radixdlt.middleware2.network;
 
-import com.radixdlt.crypto.Hash;
 import org.radix.serialization.SerializeMessageObject;
 
-public class GetVertexRequestMessageSerializeTest  extends SerializeMessageObject<GetVertexRequestMessage> {
-	public GetVertexRequestMessageSerializeTest() {
-		super(GetVertexRequestMessage.class, GetVertexRequestMessageSerializeTest::get);
+public class SyncRequestMessageSerializeTest extends SerializeMessageObject<SyncRequestMessage> {
+	public SyncRequestMessageSerializeTest() {
+		super(SyncRequestMessage.class, SyncRequestMessageSerializeTest::get);
 	}
 
-	private static GetVertexRequestMessage get() {
-		return new GetVertexRequestMessage(1234, Hash.random());
+	private static SyncRequestMessage get() {
+		return new SyncRequestMessage(1234, 12345L);
 	}
+
 }
