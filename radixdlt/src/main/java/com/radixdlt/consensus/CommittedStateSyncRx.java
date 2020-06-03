@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,17 +15,18 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.discovery;
+package com.radixdlt.consensus;
 
-import com.radixdlt.identifiers.AID;
-import com.radixdlt.network.addressbook.Peer;
-
-import java.util.Set;
-import java.util.function.BiConsumer;
+import io.reactivex.rxjava3.core.Observable;
 
 /**
- * Thread-safe sink for discoveries of a certain set of aids at a given peer.
+ * Provider of a stream of committed state sync events
  */
-public interface AtomDiscoveryListener extends BiConsumer<Set<AID>, Peer> {
-	// only extends consumer interface
+public interface CommittedStateSyncRx {
+
+	/**
+	 * retrieve the stream of committed state syncs
+	 * @return observable of committed state syncs
+	 */
+	Observable<CommittedStateSync> committedStateSyncs();
 }

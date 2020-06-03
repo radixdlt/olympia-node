@@ -30,6 +30,7 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.examples.tictactoe.Pair;
 
 import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork;
+import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Observable;
 import org.assertj.core.api.Condition;
 import org.junit.Test;
@@ -61,7 +62,7 @@ public class CrashFaultNetworkTest {
 	 * since no progress can be made.
 	 */
 	@Test
-	public void given_2_out_of_3_correct_bft_instances__then_all_instances_should_only_get_genesis_commit_over_1_minute() {
+	public void given_2_out_of_3_correct_bft_instances__then_all_instances_should_get_no_commit_over_1_minute() {
 		final int numNodes = 3;
 		final int numCrashed = 1;
 		final int numCorrect = numNodes - numCrashed;
@@ -84,17 +85,13 @@ public class CrashFaultNetworkTest {
 			.map(VertexStore::lastCommittedVertex)
 			.collect(Collectors.toList());
 
-		Observable<Vertex> committed = Observable.zip(committedObservables, Arrays::stream)
-			.map(committedVertices -> committedVertices.distinct().collect(Collectors.toList()))
+		Maybe<Vertex> firstCommitted = Observable.merge(committedObservables)
 			.take(time, timeUnit)
-			.singleOrError()
-			.doAfterSuccess(committedVertices -> assertThat(committedVertices).hasSize(1))
-			.map(vertices -> (Vertex) vertices.get(0))
-			.doAfterSuccess(v -> System.out.println("Committed " + v))
-			.toObservable();
+			.firstElement()
+			.flatMap(vertex -> Maybe.error(new IllegalStateException("Committed vertex " + vertex)));
 
 		bftNetwork.start();
-		committed.blockingSubscribe();
+		firstCommitted.blockingSubscribe();
 		bftNetwork.stop();
 	}
 

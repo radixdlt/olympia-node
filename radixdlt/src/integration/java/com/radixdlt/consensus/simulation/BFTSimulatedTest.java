@@ -35,6 +35,7 @@ import io.reactivex.rxjava3.core.Single;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -69,7 +70,7 @@ public class BFTSimulatedTest {
 		private final DroppingLatencyProvider latencyProvider = new DroppingLatencyProvider();
 		private final ImmutableMap.Builder<String, BFTCheck> checksBuilder = ImmutableMap.builder();
 		private List<ECKeyPair> nodes = Collections.singletonList(ECKeyPair.generateNew());
-		private int pacemakerTimeout = 8 * TestEventCoordinatorNetwork.DEFAULT_LATENCY;
+		private int pacemakerTimeout = 12 * TestEventCoordinatorNetwork.DEFAULT_LATENCY;
 		private boolean getVerticesRPCEnabled = true;
 
 		private Builder() {
@@ -167,7 +168,7 @@ public class BFTSimulatedTest {
 	 * @param timeUnit time unit of duration
 	 * @return map of check results
 	 */
-	public Map<String, Boolean> run(long duration, TimeUnit timeUnit) {
+	public Map<String, Optional<BFTCheckError>> run(long duration, TimeUnit timeUnit) {
 		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.builder()
 			.latencyProvider(this.latencyProvider)
 			.build();
@@ -187,13 +188,13 @@ public class BFTSimulatedTest {
 			.firstOrError()
 			.map(Pair::getFirst);
 
-		List<Single<Pair<String, Boolean>>> results = assertions.stream()
+		List<Single<Pair<String, Optional<BFTCheckError>>>> results = assertions.stream()
 			.map(assertion -> assertion.getSecond()
 				.takeUntil(firstErrorSignal.flatMapObservable(name ->
 					!assertion.getFirst().equals(name) ? Observable.just(name) : Observable.never()))
 				.takeUntil(Observable.timer(duration, timeUnit))
-				.map(e -> false)
-				.first(true)
+				.map(e -> Optional.of(e.getSecond()))
+				.first(Optional.empty())
 				.map(result -> Pair.of(assertion.getFirst(), result))
 			)
 			.collect(Collectors.toList());

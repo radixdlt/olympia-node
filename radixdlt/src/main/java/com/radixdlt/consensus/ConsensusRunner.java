@@ -33,16 +33,21 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.concurrent.Executors;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Subscription Manager (Start/Stop) to the processing of Consensus events under
  * a single BFT Consensus node instance
  */
 public final class ConsensusRunner {
+	private static final Logger log = LogManager.getLogger();
+
 	public enum EventType {
 		EPOCH,
 		LOCAL_TIMEOUT,
 		LOCAL_SYNC,
+		COMMITTED_STATE_SYNC,
 		NEW_VIEW_MESSAGE,
 		PROPOSAL_MESSAGE,
 		VOTE_MESSAGE,
@@ -80,6 +85,7 @@ public final class ConsensusRunner {
 		EventCoordinatorNetworkRx network,
 		PacemakerRx pacemakerRx,
 		LocalSyncRx localSyncRx,
+		CommittedStateSyncRx committedStateSyncRx,
 		SyncVerticesRPCRx rpcRx,
 		EpochManager epochManager,
 		VertexStore vertexStore //TODO: remove this since it should only be provided by Epoch manager
@@ -109,13 +115,21 @@ public final class ConsensusRunner {
 			network.consensusEvents().observeOn(singleThreadScheduler),
 			rpcRx.requests().observeOn(singleThreadScheduler),
 			rpcRx.responses().observeOn(singleThreadScheduler),
-			localSyncRx.localSyncs().observeOn(singleThreadScheduler)
+			localSyncRx.localSyncs().observeOn(singleThreadScheduler),
+			committedStateSyncRx.committedStateSyncs().observeOn(singleThreadScheduler)
 		));
 		final Observable<Event> ecMessages = firstEventCoordinator.andThen(
 			eventCoordinatorEvents.withLatestFrom(bftEventProcessors, this::processEvent)
 		);
 
-		this.events = Observable.merge(epochs, ecMessages).publish();
+		this.events = Observable.merge(epochs, ecMessages)
+			.doOnError(e -> {
+				// TODO: Implement better error handling especially against Byzantine nodes.
+				// TODO: Exit process for now.
+				log.error("Unexpected occurred", e);
+				System.exit(-1);
+			})
+			.publish();
 	}
 
 	private Event processEvent(Object msg, BFTEventProcessor processor) {
@@ -141,6 +155,9 @@ public final class ConsensusRunner {
 		} else if (msg instanceof Hash) {
 			processor.processLocalSync((Hash) msg);
 			eventType = EventType.LOCAL_SYNC;
+		} else if (msg instanceof CommittedStateSync) {
+			vertexStore.processCommittedStateSync((CommittedStateSync) msg);
+			eventType = EventType.COMMITTED_STATE_SYNC;
 		} else {
 			throw new IllegalStateException("Unknown Consensus Message: " + msg);
 		}

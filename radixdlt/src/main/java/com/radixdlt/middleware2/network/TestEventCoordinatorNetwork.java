@@ -17,6 +17,7 @@
 
 package com.radixdlt.middleware2.network;
 
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.EventCoordinatorNetworkRx;
 import com.radixdlt.consensus.BFTEventSender;
@@ -36,7 +37,6 @@ import io.reactivex.rxjava3.schedulers.Timed;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -120,7 +120,7 @@ public class TestEventCoordinatorNetwork {
 
 	private TestEventCoordinatorNetwork(LatencyProvider latencyProvider) {
 		this.latencyProvider = latencyProvider;
-		this.receivedMessages = ReplaySubject.<MessageInTransit>create(5) // To catch startup timing issues
+		this.receivedMessages = ReplaySubject.<MessageInTransit>create(20) // To catch startup timing issues
 			.toSerialized();
 	}
 
@@ -185,6 +185,11 @@ public class TestEventCoordinatorNetwork {
 		public int getCount() {
 			return count;
 		}
+
+		@Override
+		public String toString() {
+			return String.format("%s{vertexId=%s count=%d}", this.getClass().getSimpleName(), this.vertexId, this.count);
+		}
 	}
 
 
@@ -230,7 +235,7 @@ public class TestEventCoordinatorNetwork {
 		}
 
 		@Override
-		public void sendGetVerticesResponse(GetVerticesRequest originalRequest, List<Vertex> vertices) {
+		public void sendGetVerticesResponse(GetVerticesRequest originalRequest, ImmutableList<Vertex> vertices) {
 			Hash vertexId = vertices.get(0).getId();
 			SimulatedVerticesRequest request = (SimulatedVerticesRequest) originalRequest;
 			Object opaque = receivers.computeIfAbsent(request.requestor, SimulatedNetworkImpl::new).opaqueMap.get(vertexId);

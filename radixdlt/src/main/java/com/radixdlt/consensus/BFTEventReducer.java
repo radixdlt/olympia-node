@@ -121,12 +121,14 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		// commit any newly committable vertices
 		this.safetyRules.process(qc)
 			.ifPresent(commitMetaData -> {
-				final Vertex vertex = vertexStore.commitVertex(commitMetaData);
-				log.info("{}: Committed vertex: {}", this.getShortName(), vertex);
-				final ClientAtom committedAtom = vertex.getAtom();
-				if (committedAtom != null) {
-					mempool.removeCommittedAtom(committedAtom.getAID());
-				}
+				vertexStore.commitVertex(commitMetaData).ifPresent(vertex -> {
+					log.info("{}: Committed vertex: {}", this.getShortName(), vertex);
+					final ClientAtom committedAtom = vertex.getAtom();
+					if (committedAtom != null) {
+						mempool.removeCommittedAtom(committedAtom.getAID());
+					}
+				});
+
 			});
 
 		// proceed to next view if pacemaker feels like it
@@ -237,10 +239,11 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		// proceed to next view if pacemaker feels like it
 		Optional<View> nextView = this.pacemaker.processLocalTimeout(view);
 		if (nextView.isPresent()) {
-			counters.set(CounterType.CONSENSUS_TIMEOUT_VIEW, view.number());
-			counters.increment(CounterType.CONSENSUS_TIMEOUT);
 			this.proceedToView(nextView.get());
 			log.info("{}: LOCAL_TIMEOUT: Processed {}", this.getShortName(), view);
+
+			counters.set(CounterType.CONSENSUS_TIMEOUT_VIEW, view.number());
+			counters.increment(CounterType.CONSENSUS_TIMEOUT);
 		} else {
 			log.trace("{}: LOCAL_TIMEOUT: Ignoring {}", this.getShortName(), view);
 		}

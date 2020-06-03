@@ -17,10 +17,10 @@
 
 package com.radixdlt.consensus;
 
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.VertexStore.GetVerticesRequest;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
-import java.util.List;
 
 /**
  * An asynchronous supplier which retrieves data for a vertex with a given id
@@ -43,5 +43,5 @@ public interface SyncVerticesRPCSender {
 	 * @param originalRequest the original request which is being replied to
 	 * @param vertices the response data of vertices
 	 */
-	void sendGetVerticesResponse(GetVerticesRequest originalRequest, List<Vertex> vertices);
+	void sendGetVerticesResponse(GetVerticesRequest originalRequest, ImmutableList<Vertex> vertices);
 }

@@ -19,8 +19,10 @@ package com.radixdlt.consensus.simulation.synchronous;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
+import com.radixdlt.consensus.simulation.BFTCheck.BFTCheckError;
 import com.radixdlt.consensus.simulation.BFTSimulatedTest;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 
@@ -46,8 +48,7 @@ public class UniformLatencyTest {
 			.checkNoTimeouts("noTimeouts")
 			.checkAllProposalsHaveDirectParents("directParents")
 			.build();
-
-		Map<String, Boolean> results = bftTest.run(1, TimeUnit.MINUTES);
-		assertThat(results).doesNotContainValue(false);
+		Map<String, Optional<BFTCheckError>> results = bftTest.run(1, TimeUnit.MINUTES);
+		assertThat(results).allSatisfy((name, err) -> assertThat(err).isEmpty());
 	}
 }

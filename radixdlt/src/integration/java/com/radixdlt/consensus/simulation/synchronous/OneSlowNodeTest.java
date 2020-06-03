@@ -19,10 +19,13 @@ package com.radixdlt.consensus.simulation.synchronous;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
+import com.radixdlt.consensus.simulation.BFTCheck.BFTCheckError;
 import com.radixdlt.consensus.simulation.BFTSimulatedTest;
 import com.radixdlt.consensus.simulation.BFTSimulatedTest.Builder;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
 /**
@@ -51,7 +54,8 @@ public class OneSlowNodeTest {
 		BFTSimulatedTest test = bftTestBuilder
 			.setGetVerticesRPCEnabled(false)
 			.build();
-		Map<String, Boolean> results = test.run(1, TimeUnit.MINUTES);
-		assertThat(results).doesNotContainValue(false);
+
+		Map<String, Optional<BFTCheckError>> results = test.run(1, TimeUnit.MINUTES);
+		assertThat(results).allSatisfy((name, error) -> AssertionsForClassTypes.assertThat(error).isNotPresent());
 	}
 }

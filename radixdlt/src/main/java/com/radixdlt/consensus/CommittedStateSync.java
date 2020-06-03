@@ -15,21 +15,30 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.middleware2.network;
+package com.radixdlt.consensus;
 
+/**
+ * Event which represents that the committed state has been synced
+ */
+public final class CommittedStateSync {
+	private final long stateVersion;
+	private final Object opaque;
 
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.Vertex;
-import com.radixdlt.crypto.Hash;
-import org.radix.serialization.SerializeMessageObject;
-
-public class GetVerticesResponseMessageSerializeTest extends SerializeMessageObject<GetVerticesResponseMessage> {
-	public GetVerticesResponseMessageSerializeTest() {
-		super(GetVerticesResponseMessage.class, GetVerticesResponseMessageSerializeTest::get);
+	public CommittedStateSync(long stateVersion, Object opaque) {
+		this.stateVersion = stateVersion;
+		this.opaque = opaque;
 	}
 
-	private static GetVerticesResponseMessage get() {
-		return new GetVerticesResponseMessage(1234, Hash.random(), ImmutableList.of(Vertex.createGenesis(null)));
+	public long getStateVersion() {
+		return stateVersion;
 	}
 
+	public Object getOpaque() {
+		return opaque;
+	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{version=%s opaque=%s", this.getClass().getSimpleName(), stateVersion, opaque);
+	}
 }

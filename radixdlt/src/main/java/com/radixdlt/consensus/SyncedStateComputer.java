@@ -19,7 +19,6 @@ package com.radixdlt.consensus;
 
 import com.radixdlt.consensus.SyncedStateComputer.CommittedInstruction;
 import com.radixdlt.crypto.ECPublicKey;
-import io.reactivex.rxjava3.core.Completable;
 import java.util.List;
 
 /**
@@ -47,9 +46,11 @@ public interface SyncedStateComputer<T extends CommittedInstruction> {
 	 *
 	 * @param targetStateVersion the target state version
 	 * @param target list of targets as hint of which peer has the state
-	 * @return a completable which completes when sync is complete
+	 * @param opaque some opaque client object which will be passed in a sync
+	 * message if this returns false
+	 * @return true if already synced, otherwise false
 	 */
-	Completable syncTo(long targetStateVersion, List<ECPublicKey> target);
+	boolean syncTo(long targetStateVersion, List<ECPublicKey> target, Object opaque);
 
 	/**
 	 * Execute a committed instruction

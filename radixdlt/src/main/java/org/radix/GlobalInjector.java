@@ -31,8 +31,6 @@ import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.delivery.LazyRequestDelivererModule;
-import com.radixdlt.discovery.IterativeDiscovererModule;
 import com.radixdlt.mempool.MempoolModule;
 import com.radixdlt.middleware2.MiddlewareModule;
 import com.radixdlt.middleware2.network.NetworkModule;
@@ -84,8 +82,6 @@ public class GlobalInjector {
 		};
 
 		injector = Guice.createInjector(
-			new LazyRequestDelivererModule(properties),
-			new IterativeDiscovererModule(properties),
 			new BerkeleyStoreModule(),
 			new CerberusModule(properties),
 			new MiddlewareModule(),

@@ -17,16 +17,20 @@
 
 package com.radixdlt.consensus.sync;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.sync.SyncedRadixEngine.CommittedStateSyncSender;
 import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
@@ -41,12 +45,10 @@ import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
 import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.observers.TestObserver;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 import org.junit.Before;
 import org.junit.Test;
 import org.radix.atoms.events.AtomStoredEvent;
@@ -58,6 +60,7 @@ public class SyncedRadixEngineTest {
 	private CommittedAtomsStore committedAtomsStore;
 	private AddressBook addressBook;
 	private StateSyncNetwork stateSyncNetwork;
+	private CommittedStateSyncSender committedStateSyncSender;
 
 	@Before
 	public void setup() {
@@ -65,9 +68,11 @@ public class SyncedRadixEngineTest {
 		this.committedAtomsStore = mock(CommittedAtomsStore.class);
 		this.addressBook = mock(AddressBook.class);
 		this.stateSyncNetwork = mock(StateSyncNetwork.class);
+		this.committedStateSyncSender = mock(CommittedStateSyncSender.class);
 		this.syncedRadixEngine = new SyncedRadixEngine(
 			radixEngine,
 			committedAtomsStore,
+			committedStateSyncSender,
 			addressBook,
 			stateSyncNetwork
 		);
@@ -147,7 +152,7 @@ public class SyncedRadixEngineTest {
 	}
 
 	@Test
-	public void when_sync_to__will_complete_when_higher_or_equal_state_version() throws Exception {
+	public void when_sync_to__will_complete_when_higher_or_equal_state_version() {
 		Peer peer = mock(Peer.class);
 		when(peer.hasSystem()).thenReturn(true);
 		ECPublicKey pk = mock(ECPublicKey.class);
@@ -166,8 +171,8 @@ public class SyncedRadixEngineTest {
 
 		when(committedAtomsStore.lastStoredAtom()).thenReturn(event);
 
-		TestObserver<Void> testObserver = syncedRadixEngine.syncTo(1234, Collections.singletonList(pk)).test();
-		testObserver.assertNotComplete();
+		syncedRadixEngine.syncTo(1234, Collections.singletonList(pk), mock(Object.class));
+		verify(committedStateSyncSender, never()).sendCommittedStateSync(anyLong(), any());
 
 		CommittedAtom nextAtom = mock(CommittedAtom.class);
 		VertexMetadata nextVertexMetadata = mock(VertexMetadata.class);
@@ -175,9 +180,8 @@ public class SyncedRadixEngineTest {
 		when(nextAtom.getVertexMetadata()).thenReturn(nextVertexMetadata);
 		AtomStoredEvent nextAtomStoredEvent = mock(AtomStoredEvent.class);
 		when(nextAtomStoredEvent.getAtom()).thenReturn(nextAtom);
-
 		event.onNext(nextAtomStoredEvent);
-		testObserver.await(1, TimeUnit.SECONDS);
-		testObserver.assertComplete();
+
+		verify(committedStateSyncSender, timeout(100).atLeast(1)).sendCommittedStateSync(anyLong(), any());
 	}
 }

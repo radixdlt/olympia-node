@@ -361,7 +361,7 @@ public class BFTEventReducerTest {
 		when(committedVertex.getAtom()).thenReturn(atom);
 
 		when(safetyRules.process(eq(qc))).thenReturn(Optional.of(committedVertexMetadata));
-		when(vertexStore.commitVertex(eq(committedVertexMetadata))).thenReturn(committedVertex);
+		when(vertexStore.commitVertex(eq(committedVertexMetadata))).thenReturn(Optional.of(committedVertex));
 		when(proposerElection.getProposer(any())).thenReturn(ECKeyPair.generateNew().getPublicKey());
 
 		reducer.processProposal(proposal);

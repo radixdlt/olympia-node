@@ -21,6 +21,7 @@ import static org.mockito.Mockito.mock;
 
 import com.radixdlt.consensus.BFTEventPreprocessor;
 import com.radixdlt.consensus.BFTEventProcessor;
+import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.DefaultHasher;
 import com.radixdlt.consensus.EmptySyncVerticesRPCSender;
 import com.radixdlt.consensus.GetVerticesResponse;
@@ -60,8 +61,8 @@ import com.radixdlt.crypto.Hash;
 import com.radixdlt.mempool.EmptyMempool;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.CommittedAtom;
-import io.reactivex.rxjava3.core.Completable;
 import java.util.List;
+import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
 
 /**
@@ -78,18 +79,25 @@ class ControlledBFTNode {
 		ControlledSender sender,
 		ProposerElection proposerElection,
 		ValidatorSet validatorSet,
-		boolean enableGetVerticesRPC
+		boolean enableGetVerticesRPC,
+		BooleanSupplier syncedSupplier
 	) {
 		this.systemCounters = new SystemCountersImpl();
 		Vertex genesisVertex = Vertex.createGenesis(null);
 		QuorumCertificate genesisQC = new QuorumCertificate(
-			new VoteData(VertexMetadata.ofVertex(genesisVertex), null, null),
+			new VoteData(new VertexMetadata(genesisVertex.getView(), genesisVertex.getId(), 1), null),
 			new ECDSASignatures()
 		);
+
 		SyncedStateComputer<CommittedAtom> stateComputer = new SyncedStateComputer<CommittedAtom>() {
 			@Override
-			public Completable syncTo(long targetStateVersion, List<ECPublicKey> target) {
-				return Completable.complete();
+			public boolean syncTo(long targetStateVersion, List<ECPublicKey> target, Object opaque) {
+				if (syncedSupplier.getAsBoolean()) {
+					return true;
+				}
+
+				sender.committedStateSync(new CommittedStateSync(targetStateVersion, opaque));
+				return false;
 			}
 
 			@Override
@@ -148,6 +156,8 @@ class ControlledBFTNode {
 			vertexStore.processGetVerticesRequest((GetVerticesRequest) msg);
 		} else if (msg instanceof GetVerticesResponse) {
 			vertexStore.processGetVerticesResponse((GetVerticesResponse) msg);
+		} else if (msg instanceof CommittedStateSync) {
+			vertexStore.processCommittedStateSync((CommittedStateSync) msg);
 		} else if (msg instanceof View) {
 			ec.processLocalTimeout((View) msg);
 		} else if (msg instanceof NewView) {
