@@ -17,36 +17,34 @@
 
 package com.radixdlt.consensus.deterministic.synchronous;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.deterministic.BFTDeterministicTest;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.ExecutionException;
+import java.util.function.Function;
 import org.junit.Test;
 
 public class OneProposalDropperResponsiveTest {
 
-	@Test
-	public void when_run_4_correct_nodes_with_random_proposal_dropper_and_timeouts_disabled__then_bft_should_be_responsive() {
-		final Cache<View, Integer> proposalToDrop = CacheBuilder.newBuilder()
-			.maximumSize(100)
-			.build();
+	private final Random random = new Random(123456);
 
-		final Random random = new Random(12345);
-		final BFTDeterministicTest test = new BFTDeterministicTest(4, true);
+	private void runOneProposalDropperResponsiveTest(int numNodes, Function<View, Integer> nodeToDropFunction) {
+		final Map<View, Integer> proposalToDrop = new HashMap<>();
+		final Map<View, Integer> proposalCount = new HashMap<>();
+
+		final BFTDeterministicTest test = new BFTDeterministicTest(numNodes, true);
 		test.start();
 		for (int step = 0; step < 100000; step++) {
 			test.processNextMsg(random, (receiverId, msg) -> {
 				if (msg instanceof Proposal) {
 					final Proposal proposal = (Proposal) msg;
 					final View view = proposal.getVertex().getView();
-					final Integer nodeToDrop;
-					try {
-						nodeToDrop = proposalToDrop.get(view, () -> random.nextInt(4));
-					} catch (ExecutionException e) {
-						throw new IllegalStateException();
+					final Integer nodeToDrop = proposalToDrop.computeIfAbsent(view, nodeToDropFunction);
+					if (proposalCount.merge(view, 1, Integer::sum).equals(numNodes)) {
+						proposalToDrop.remove(view);
+						proposalCount.remove(view);
 					}
 
 					return !receiverId.equals(nodeToDrop);
@@ -58,13 +56,52 @@ public class OneProposalDropperResponsiveTest {
 	}
 
 	@Test
-	public void when_run_4_correct_nodes_with_single_node_proposal_dropper_and_timeouts_disabled__then_bft_should_be_responsive() {
-		final Random random = new Random(12345);
-		final BFTDeterministicTest test = new BFTDeterministicTest(4, true);
-		test.start();
-		for (int step = 0; step < 100000; step++) {
-			test.processNextMsg(random, (receiverId, msg) -> !(msg instanceof Proposal) || !receiverId.equals(0));
-		}
+	public void when_run_4_correct_nodes_with_random_proposal_dropper_and_timeouts_disabled__then_bft_should_be_responsive() {
+		this.runOneProposalDropperResponsiveTest(4, v -> random.nextInt(4));
 	}
 
+	@Test
+	public void when_run_5_correct_nodes_with_random_proposal_dropper_and_timeouts_disabled__then_bft_should_be_responsive() {
+		this.runOneProposalDropperResponsiveTest(5, v -> random.nextInt(5));
+	}
+
+	@Test
+	public void when_run_10_correct_nodes_with_random_proposal_dropper_and_timeouts_disabled__then_bft_should_be_responsive() {
+		this.runOneProposalDropperResponsiveTest(10, v -> random.nextInt(10));
+	}
+
+	@Test
+	public void when_run_50_correct_nodes_with_random_proposal_dropper_and_timeouts_disabled__then_bft_should_be_responsive() {
+		this.runOneProposalDropperResponsiveTest(50, v -> random.nextInt(50));
+	}
+
+	@Test
+	public void when_run_100_correct_nodes_with_random_proposal_dropper_and_timeouts_disabled__then_bft_should_be_responsive() {
+		this.runOneProposalDropperResponsiveTest(100, v -> random.nextInt(100));
+	}
+
+	@Test
+	public void when_run_4_correct_nodes_with_single_node_proposal_dropper_and_timeouts_disabled__then_bft_should_be_responsive() {
+		this.runOneProposalDropperResponsiveTest(4, v -> 0);
+	}
+
+	@Test
+	public void when_run_5_correct_nodes_with_single_node_proposal_dropper_and_timeouts_disabled__then_bft_should_be_responsive() {
+		this.runOneProposalDropperResponsiveTest(5, v -> 0);
+	}
+
+	@Test
+	public void when_run_10_correct_nodes_with_single_node_proposal_dropper_and_timeouts_disabled__then_bft_should_be_responsive() {
+		this.runOneProposalDropperResponsiveTest(10, v -> 0);
+	}
+
+	@Test
+	public void when_run_50_correct_nodes_with_single_node_proposal_dropper_and_timeouts_disabled__then_bft_should_be_responsive() {
+		this.runOneProposalDropperResponsiveTest(50, v -> 0);
+	}
+
+	@Test
+	public void when_run_100_correct_nodes_with_single_node_proposal_dropper_and_timeouts_disabled__then_bft_should_be_responsive() {
+		this.runOneProposalDropperResponsiveTest(100, v -> 0);
+	}
 }

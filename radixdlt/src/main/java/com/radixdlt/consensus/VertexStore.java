@@ -196,12 +196,17 @@ public final class VertexStore {
 		log.info("SYNC_STATE: Rebuilding and syncing QC: sync={} curRoot={}", syncState, vertices.get(rootId.get()));
 
 		// TODO: check if there are any vertices which haven't been local sync processed yet
-		// TODO: cleanup syncs which have views lower than this
-		syncState.fetched.sort(Comparator.comparing(Vertex::getView));
-		List<Vertex> nonRootVertices = syncState.fetched.stream().skip(1).collect(Collectors.toList());
-		rebuild(syncState.fetched.get(0), syncState.fetched.get(1).getQC(), nonRootVertices);
+		if (requiresCommittedStateSync(syncState)) {
+			syncState.fetched.sort(Comparator.comparing(Vertex::getView));
+			List<Vertex> nonRootVertices = syncState.fetched.stream().skip(1).collect(Collectors.toList());
+			rebuild(syncState.fetched.get(0), syncState.fetched.get(1).getQC(), nonRootVertices);
+		}
 
-		this.syncToQC(syncState.qc, syncState.committedQC, syncState.author);
+		// At this point we are guaranteed to be in sync with the committed state
+
+		if (!addQC(syncState.qc)) {
+			doQCSync(syncState);
+		}
 	}
 
 	public void processCommittedStateSync(CommittedStateSync committedStateSync) {
