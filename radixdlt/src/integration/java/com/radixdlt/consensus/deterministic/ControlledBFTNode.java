@@ -85,7 +85,7 @@ class ControlledBFTNode {
 		this.systemCounters = new SystemCountersImpl();
 		Vertex genesisVertex = Vertex.createGenesis(null);
 		QuorumCertificate genesisQC = new QuorumCertificate(
-			new VoteData(VertexMetadata.ofVertex(genesisVertex), null, null),
+			new VoteData(new VertexMetadata(genesisVertex.getView(), genesisVertex.getId(), 1), null),
 			new ECDSASignatures()
 		);
 

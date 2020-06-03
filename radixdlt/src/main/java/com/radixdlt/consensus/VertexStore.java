@@ -141,7 +141,8 @@ public final class VertexStore {
 	private enum SyncStage {
 		PREPARING,
 		GET_COMMITTED_VERTICES,
-		SYNC_TO_COMMIT, GET_QC_VERTICES
+		SYNC_TO_COMMIT,
+		GET_QC_VERTICES
 	}
 
 	private static class SyncState {
@@ -282,7 +283,7 @@ public final class VertexStore {
 		}
 
 		if (response.getVertices().isEmpty()) {
-			log.info("GET_VERTICES failed: {}", syncState.qc);
+			log.info("GET_VERTICES failed: response was empty sync={}", syncState);
 			// failed
 			// TODO: retry
 			return;
@@ -303,16 +304,17 @@ public final class VertexStore {
 	private void doQCSync(SyncState syncState) {
 		final Hash vertexId = syncState.getQC().getProposed().getId();
 		syncState.setSyncStage(SyncStage.GET_QC_VERTICES);
-		log.info("SYNC_VERTICES: QC: Sending initial GetVerticesRequest for qc={}", syncState.getQC());
+		log.info("SYNC_VERTICES: QC: Sending initial GetVerticesRequest for sync={}", syncState);
 		syncVerticesRPCSender.sendGetVerticesRequest(vertexId, syncState.author, 1, vertexId);
 	}
 
 	private void doCommittedSync(SyncState syncState) {
-		final Hash vertexId = syncState.getCommittedQC().getProposed().getId();
+		final Hash committedQCId = syncState.getCommittedQC().getProposed().getId();
+		final Hash qcId = syncState.qc.getProposed().getId();
 		syncState.setSyncStage(SyncStage.GET_COMMITTED_VERTICES);
-		log.info("SYNC_VERTICES: Committed: Sending initial GetVerticesRequest {}", syncState.getCommittedQC());
+		log.info("SYNC_VERTICES: Committed: Sending initial GetVerticesRequest for sync={}", syncState);
 		// Retrieve the 3 vertices preceding the committedQC so we can create a valid committed root
-		syncVerticesRPCSender.sendGetVerticesRequest(vertexId, syncState.author, 3, vertexId);
+		syncVerticesRPCSender.sendGetVerticesRequest(committedQCId, syncState.author, 3, qcId);
 	}
 
 	public void processLocalSync(Hash vertexId) {

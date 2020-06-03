@@ -111,7 +111,7 @@ public class SimulatedBFTNetwork {
 		this.pacemakerTimeout = pacemakerTimeout;
 		this.genesisVertex = Vertex.createGenesis(null);
 		this.genesisQC = new QuorumCertificate(
-			new VoteData(VertexMetadata.ofVertex(genesisVertex), null, null),
+			new VoteData(new VertexMetadata(genesisVertex.getView(), genesisVertex.getId(), 1), null, null),
 			new ECDSASignatures()
 		);
 		this.validatorSet = ValidatorSet.from(

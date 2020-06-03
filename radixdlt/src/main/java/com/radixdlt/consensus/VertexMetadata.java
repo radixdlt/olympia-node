@@ -66,7 +66,7 @@ public final class VertexMetadata {
 	public static VertexMetadata ofVertex(Vertex vertex) {
 		final long parentStateVersion;
 		if (vertex.isGenesis()) {
-			parentStateVersion = 0;
+			throw new IllegalArgumentException("Must use normal constructor for genesis.");
 		} else {
 			final VertexMetadata parent = vertex.getQC().getProposed();
 			parentStateVersion = parent.getStateVersion();

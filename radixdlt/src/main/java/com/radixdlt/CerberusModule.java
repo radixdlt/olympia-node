@@ -154,23 +154,14 @@ public class CerberusModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private VertexStore getVertexStore(
-		Universe universe,
+		Vertex genesisVertex,
+		QuorumCertificate genesisQC,
 		SyncedRadixEngine syncedRadixEngine,
 		SyncVerticesRPCSender syncVerticesRPCSender,
 		SyncSender syncSender,
 		SystemCounters counters
-	) throws LedgerAtomConversionException {
-		if (universe.getGenesis().size() != 1) {
-			throw new IllegalStateException("Can only support one genesis atom.");
-		}
-
-		final ClientAtom genesisAtom = ClientAtom.convertFromApiAtom(universe.getGenesis().get(0));
-		final Vertex genesisVertex = Vertex.createGenesis(genesisAtom);
-		final VertexMetadata genesisMetadata = new VertexMetadata(View.genesis(), genesisVertex.getId(), 0);
-		final VoteData voteData = new VoteData(genesisMetadata, null);
-		final QuorumCertificate rootQC = new QuorumCertificate(voteData, new ECDSASignatures());
-
+	) {
 		log.info("Genesis Vertex Id: {}", genesisVertex.getId());
-		return new VertexStore(genesisVertex, rootQC, syncedRadixEngine, syncVerticesRPCSender, syncSender, counters);
+		return new VertexStore(genesisVertex, genesisQC, syncedRadixEngine, syncVerticesRPCSender, syncSender, counters);
 	}
 }

@@ -28,13 +28,16 @@ import com.radixdlt.atommodel.tokens.TokensConstraintScrypt;
 import com.radixdlt.atommodel.unique.UniqueParticleConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.Result;
+import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.sync.StateSyncNetwork;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.identifiers.AID;
@@ -105,16 +108,30 @@ public class MiddlewareModule extends AbstractModule {
 
 	@Provides
 	@Singleton
+	private Vertex genesisVertex(Universe universe) throws LedgerAtomConversionException {
+		final ClientAtom genesisAtom = ClientAtom.convertFromApiAtom(universe.getGenesis().get(0));
+		return Vertex.createGenesis(genesisAtom);
+	}
+
+	@Provides
+	@Singleton
+	private QuorumCertificate genesisQC(Vertex genesisVertex) {
+		VertexMetadata genesisMetadata = new VertexMetadata(genesisVertex.getView(), genesisVertex.getId(), GENESIS_STATE_VERSION);
+		final VoteData voteData = new VoteData(genesisMetadata, null);
+		return new QuorumCertificate(voteData, new ECDSASignatures());
+	}
+
+	@Provides
+	@Singleton
 	private EngineStore<LedgerAtom> engineStore(
 		CommittedAtomsStore committedAtomsStore,
-		Universe universe
-	) throws LedgerAtomConversionException {
+		Vertex genesisVertex,
+		QuorumCertificate genesisQC
+	) {
 		// TODO: This should be done at a virtualized layer
-		if (committedAtomsStore.getCommittedAtoms(0, 1).isEmpty()) {
-			final ClientAtom genesisAtom = ClientAtom.convertFromApiAtom(universe.getGenesis().get(0));
-			final Vertex genesisVertex = Vertex.createGenesis(genesisAtom);
-			final VertexMetadata genesisMetadata = new VertexMetadata(View.genesis(), genesisVertex.getId(), GENESIS_STATE_VERSION);
-			committedAtomsStore.storeAtom(genesisAtom.committed(genesisMetadata));
+		if (committedAtomsStore.getCommittedAtoms(genesisQC.getProposed().getStateVersion() - 1, 1).isEmpty()) {
+			CommittedAtom genesisAtom = genesisVertex.getAtom().committed(genesisQC.getProposed());
+			committedAtomsStore.storeAtom(genesisAtom);
 		}
 
 		return new EngineStore<LedgerAtom>() {
