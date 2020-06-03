@@ -41,7 +41,7 @@ import static org.mockito.Mockito.when;
  */
 public class SafetyRulesTest {
 	private static final Vertex GENESIS_VERTEX = Vertex.createGenesis(null);
-	private static final VoteData GENESIS_DATA = new VoteData(VertexMetadata.ofVertex(GENESIS_VERTEX), null);
+	private static final VoteData GENESIS_DATA = new VoteData(new VertexMetadata(GENESIS_VERTEX.getView(), GENESIS_VERTEX.getId(), 1), null);
 	private static final QuorumCertificate GENESIS_QC = new QuorumCertificate(GENESIS_DATA, new ECDSASignatures());
 
 	private SafetyState safetyState;
