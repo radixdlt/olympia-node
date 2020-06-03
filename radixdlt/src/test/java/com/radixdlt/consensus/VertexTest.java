@@ -17,9 +17,9 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.atommodel.Atom;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.Hash;
+import com.radixdlt.middleware2.ClientAtom;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Before;
 import org.junit.Test;
@@ -28,12 +28,13 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
 
 public class VertexTest {
 
 	private Vertex testObject;
 	private QuorumCertificate qc;
-	private Atom atom;
+	private ClientAtom atom;
 
 	@Before
 	public void setUp() {
@@ -46,7 +47,7 @@ public class VertexTest {
 
 		this.qc = new QuorumCertificate(voteData, new ECDSASignatures());
 
-		this.atom = new Atom();
+		this.atom = mock(ClientAtom.class);
 
 		this.testObject = Vertex.createVertex(this.qc, baseView.next().next(), this.atom);
 	}
@@ -71,9 +72,8 @@ public class VertexTest {
 		VertexMetadata parent = new VertexMetadata(baseView, Hash.random(), 0);
 		VoteData voteData = new VoteData(vertexMetadata, parent);
 		QuorumCertificate qc2 = new QuorumCertificate(voteData, new ECDSASignatures());
-		Atom atom2 = new Atom();
 
-		Vertex v = Vertex.createVertex(qc2, baseView.next().next().next(), atom2);
+		Vertex v = Vertex.createVertex(qc2, baseView.next().next().next(), null);
 
 		assertFalse(v.hasDirectParent());
 	}

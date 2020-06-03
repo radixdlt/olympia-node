@@ -69,6 +69,14 @@ public final class QuorumCertificate {
 		return voteData.getCommitted();
 	}
 
+	public VoteData getVoteData() {
+		return voteData;
+	}
+
+	public ECDSASignatures getSignatures() {
+		return signatures;
+	}
+
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) {

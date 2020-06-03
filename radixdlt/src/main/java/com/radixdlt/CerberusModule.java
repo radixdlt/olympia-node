@@ -22,16 +22,22 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
+import com.radixdlt.consensus.BFTEventSender;
 import com.radixdlt.consensus.BasicEpochRx;
 import com.radixdlt.consensus.DefaultHasher;
 import com.radixdlt.consensus.EpochRx;
+import com.radixdlt.consensus.EventCoordinatorNetworkRx;
+import com.radixdlt.consensus.LocalSyncRx;
+import com.radixdlt.consensus.LocalSyncSender;
 import com.radixdlt.consensus.ProposerElectionFactory;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.SyncVerticesRPCRx;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.VertexStore;
-import com.radixdlt.consensus.VertexSupplier;
+import com.radixdlt.consensus.VertexStore.SyncSender;
+import com.radixdlt.consensus.SyncVerticesRPCSender;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker.TimeoutSender;
@@ -43,6 +49,7 @@ import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ScheduledTimeoutSender;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.safety.SafetyRules;
+import com.radixdlt.consensus.sync.SyncedRadixEngine;
 import com.radixdlt.consensus.tempo.Scheduler;
 import com.radixdlt.consensus.tempo.SingleThreadedScheduler;
 import com.radixdlt.consensus.validators.Validator;
@@ -50,8 +57,10 @@ import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.middleware2.ClientAtom.LedgerAtomConversionException;
 import com.radixdlt.middleware2.network.MessageCentralBFTNetwork;
+import com.radixdlt.middleware2.network.MessageCentralSyncVerticesRPCNetwork;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.universe.Universe;
@@ -80,8 +89,23 @@ public class CerberusModule extends AbstractModule {
 		bind(Scheduler.class).toProvider(SingleThreadedScheduler::new);
 		bind(TimeoutSender.class).to(ScheduledTimeoutSender.class);
 		bind(PacemakerRx.class).to(ScheduledTimeoutSender.class);
+
+		bind(LocalSyncRx.class).to(LocalSyncSender.class);
+		bind(SyncSender.class).to(LocalSyncSender.class);
+
 		bind(SafetyRules.class).in(Scopes.SINGLETON);
-		bind(VertexSupplier.class).to(MessageCentralBFTNetwork.class);
+
+		bind(SyncVerticesRPCSender.class).to(MessageCentralSyncVerticesRPCNetwork.class);
+		bind(SyncVerticesRPCRx.class).to(MessageCentralSyncVerticesRPCNetwork.class);
+
+		bind(MessageCentralBFTNetwork.class).in(Scopes.SINGLETON);
+		bind(BFTEventSender.class).to(MessageCentralBFTNetwork.class);
+		bind(EventCoordinatorNetworkRx.class).to(MessageCentralBFTNetwork.class);
+
+		bind(MessageCentralSyncVerticesRPCNetwork.class).in(Scopes.SINGLETON);
+		bind(SyncVerticesRPCSender.class).to(MessageCentralSyncVerticesRPCNetwork.class);
+		bind(SyncVerticesRPCRx.class).to(MessageCentralSyncVerticesRPCNetwork.class);
+
 		bind(Hasher.class).to(DefaultHasher.class);
 		bind(ProposalGenerator.class).to(MempoolProposalGenerator.class);
 	}
@@ -130,20 +154,22 @@ public class CerberusModule extends AbstractModule {
 	@Singleton
 	private VertexStore getVertexStore(
 		Universe universe,
-		RadixEngine radixEngine,
-		SystemCounters counters,
-		VertexSupplier vertexSupplier
-	) {
+		SyncedRadixEngine syncedRadixEngine,
+		SyncVerticesRPCSender syncVerticesRPCSender,
+		SyncSender syncSender,
+		SystemCounters counters
+	) throws LedgerAtomConversionException {
 		if (universe.getGenesis().size() != 1) {
 			throw new IllegalStateException("Can only support one genesis atom.");
 		}
 
-		final Vertex genesisVertex = Vertex.createGenesis(universe.getGenesis().get(0));
+		final ClientAtom genesisAtom = ClientAtom.convertFromApiAtom(universe.getGenesis().get(0));
+		final Vertex genesisVertex = Vertex.createGenesis(genesisAtom);
 		final VertexMetadata genesisMetadata = new VertexMetadata(View.genesis(), genesisVertex.getId(), 0);
 		final VoteData voteData = new VoteData(genesisMetadata, null);
 		final QuorumCertificate rootQC = new QuorumCertificate(voteData, new ECDSASignatures());
 
 		log.info("Genesis Vertex Id: {}", genesisVertex.getId());
-		return new VertexStore(genesisVertex, rootQC, radixEngine, counters);
+		return new VertexStore(genesisVertex, rootQC, syncedRadixEngine, syncVerticesRPCSender, syncSender, counters);
 	}
 }

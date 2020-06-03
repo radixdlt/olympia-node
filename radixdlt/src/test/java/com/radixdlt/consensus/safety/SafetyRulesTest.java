@@ -160,6 +160,6 @@ public class SafetyRulesTest {
 
 		QuorumCertificate qc = new QuorumCertificate(voteData, new ECDSASignatures());
 
-		assertThat(safetyRules.process(qc)).hasValue(toBeCommitted);
+		assertThat(safetyRules.process(qc)).hasValue(new VertexMetadata(View.of(1), toBeCommitted, 1));
 	}
 }

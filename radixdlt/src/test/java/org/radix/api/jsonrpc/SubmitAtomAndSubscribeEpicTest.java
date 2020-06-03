@@ -18,7 +18,7 @@
 package org.radix.api.jsonrpc;
 
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.atommodel.Atom;
+import com.radixdlt.middleware2.ClientAtom;
 import org.everit.json.schema.Schema;
 import org.json.JSONObject;
 import org.junit.Test;
@@ -27,13 +27,11 @@ import org.radix.api.services.AtomsService;
 import org.radix.api.services.SingleAtomListener;
 import com.radixdlt.constraintmachine.DataPointer;
 import org.radix.validation.ConstraintMachineValidationException;
-import com.radixdlt.serialization.Serialization;
 
 import java.util.function.Consumer;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -49,7 +47,6 @@ public class SubmitAtomAndSubscribeEpicTest {
 	public void testAtomValidationError() {
 		AtomsService atomsService = mock(AtomsService.class);
 		Schema schema = mock(Schema.class);
-		Serialization serializer = mock(Serialization.class);
 		Consumer<JSONObject> callback = mock(ConsumerJSONObject.class);
 		JSONObject action = mock(JSONObject.class);
 		JSONObject params = mock(JSONObject.class);
@@ -57,9 +54,7 @@ public class SubmitAtomAndSubscribeEpicTest {
 		when(action.getJSONObject("params")).thenReturn(params);
 		when(params.getJSONObject("atom")).thenReturn(jsonAtom);
 
-		Atom atom = mock(Atom.class);
-
-		when(serializer.fromJsonObject(eq(jsonAtom), eq(Atom.class))).thenReturn(atom);
+		ClientAtom atom = mock(ClientAtom.class);
 
 		doAnswer((invocation) -> {
 			((SingleAtomListener) invocation.getArguments()[1]).onError(AID.ZERO, new ConstraintMachineValidationException(atom, "", DataPointer.ofAtom()));

@@ -17,14 +17,13 @@
 
 package com.radixdlt.mempool;
 
+import com.radixdlt.middleware2.ClientAtom;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import com.radixdlt.atommodel.Atom;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
@@ -33,7 +32,7 @@ import io.reactivex.rxjava3.subjects.PublishSubject;
 
 public class MempoolReceiverTest {
 
-	private PublishSubject<Atom> atoms;
+	private PublishSubject<ClientAtom> atoms;
 
 	private SubmissionControl submissionControl;
 	private MempoolReceiver mempoolReceiver;
@@ -81,7 +80,7 @@ public class MempoolReceiverTest {
 		this.mempoolReceiver.start();
 		assertTrue(this.mempoolReceiver.running());
 
-		Atom atom = mock(Atom.class);
+		ClientAtom atom = mock(ClientAtom.class);
 		atoms.onNext(atom);
 
 		// Wait for everything to get pushed through the pipeline

@@ -18,7 +18,12 @@
 package org.radix.serialization;
 
 import com.radixdlt.atommodel.Atom;
+import com.radixdlt.atommodel.message.MessageParticle;
+import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.messages.MempoolAtomAddedMessage;
+import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.middleware2.ClientAtom.LedgerAtomConversionException;
 
 public class MempoolAtomAddedMessageSerializeTest extends SerializeMessageObject<MempoolAtomAddedMessage> {
 	public MempoolAtomAddedMessageSerializeTest() {
@@ -27,6 +32,14 @@ public class MempoolAtomAddedMessageSerializeTest extends SerializeMessageObject
 
 	private static MempoolAtomAddedMessage get() {
 		Atom atom = new Atom();
-		return new MempoolAtomAddedMessage(1, atom);
+		RadixAddress address = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
+		atom.addParticleGroupWith(new MessageParticle(address, address, "Hello".getBytes()), Spin.UP);
+		final ClientAtom clientAtom;
+		try {
+			clientAtom = ClientAtom.convertFromApiAtom(atom);
+		} catch (LedgerAtomConversionException e) {
+			throw new IllegalStateException();
+		}
+		return new MempoolAtomAddedMessage(1, clientAtom);
 	}
 }

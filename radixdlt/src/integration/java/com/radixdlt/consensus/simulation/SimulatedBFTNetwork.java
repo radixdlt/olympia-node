@@ -17,23 +17,23 @@
 
 package com.radixdlt.consensus.simulation;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.consensus.ConsensusRunner;
 import com.radixdlt.consensus.ConsensusRunner.Event;
 import com.radixdlt.consensus.ConsensusRunner.EventType;
 import com.radixdlt.consensus.DefaultHasher;
+import com.radixdlt.consensus.EmptySyncVerticesRPCSender;
 import com.radixdlt.consensus.EpochManager;
 import com.radixdlt.consensus.EpochRx;
 import com.radixdlt.consensus.Hasher;
+import com.radixdlt.consensus.LocalSyncSender;
 import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.VertexStore;
+import com.radixdlt.consensus.SyncVerticesRPCSender;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
 import com.radixdlt.consensus.liveness.MempoolProposalGenerator;
@@ -49,11 +49,13 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.mempool.EmptyMempool;
 import com.radixdlt.mempool.Mempool;
 
+import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork;
+import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork.SimulatedNetworkReceiver;
 import com.radixdlt.utils.UInt256;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
@@ -61,7 +63,6 @@ import io.reactivex.rxjava3.subjects.CompletableSubject;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
@@ -78,6 +79,7 @@ public class SimulatedBFTNetwork {
 	private final ImmutableMap<ECKeyPair, VertexStore> vertexStores;
 	private final ImmutableMap<ECKeyPair, SystemCounters> counters;
 	private final ImmutableMap<ECKeyPair, ScheduledTimeoutSender> timeoutSenders;
+	private final ImmutableMap<ECKeyPair, LocalSyncSender> syncSenders;
 	private final ImmutableMap<ECKeyPair, FixedTimeoutPacemaker> pacemakers;
 	private final ImmutableMap<ECKeyPair, ConsensusRunner> runners;
 	private final ValidatorSet validatorSet;
@@ -89,7 +91,7 @@ public class SimulatedBFTNetwork {
 	 * @param underlyingNetwork the network simulator
 	 */
 	public SimulatedBFTNetwork(List<ECKeyPair> nodes, TestEventCoordinatorNetwork underlyingNetwork) {
-		this(nodes, underlyingNetwork, TEST_PACEMAKER_TIMEOUT);
+		this(nodes, underlyingNetwork, TEST_PACEMAKER_TIMEOUT, true);
 	}
 
 	/**
@@ -98,7 +100,12 @@ public class SimulatedBFTNetwork {
 	 * @param underlyingNetwork the network simulator
 	 * @param pacemakerTimeout a fixed pacemaker timeout used for all nodes
 	 */
-	public SimulatedBFTNetwork(List<ECKeyPair> nodes, TestEventCoordinatorNetwork underlyingNetwork, int pacemakerTimeout) {
+	public SimulatedBFTNetwork(
+		List<ECKeyPair> nodes,
+		TestEventCoordinatorNetwork underlyingNetwork,
+		int pacemakerTimeout,
+		boolean getVerticesRPCEnabled
+	) {
 		this.nodes = nodes;
 		this.underlyingNetwork = Objects.requireNonNull(underlyingNetwork);
 		this.pacemakerTimeout = pacemakerTimeout;
@@ -114,13 +121,32 @@ public class SimulatedBFTNetwork {
 				.collect(Collectors.toList())
 		);
 		this.counters = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e, e -> new SystemCountersImpl()));
+		this.syncSenders = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e, e -> new LocalSyncSender()));
 		this.vertexStores = nodes.stream()
 			.collect(ImmutableMap.toImmutableMap(
 				e -> e,
 				e -> {
-					RadixEngine radixEngine = mock(RadixEngine.class);
-					when(radixEngine.staticCheck(any())).thenReturn(Optional.empty());
-					return new VertexStore(genesisVertex, genesisQC, radixEngine, this.counters.get(e));
+					SyncedStateComputer<CommittedAtom> stateComputer = new SyncedStateComputer<CommittedAtom>() {
+						@Override
+						public Completable syncTo(long targetStateVersion, List<ECPublicKey> target) {
+							return Completable.complete();
+						}
+
+						@Override
+						public void execute(CommittedAtom instruction) {
+						}
+					};
+					SyncVerticesRPCSender syncVerticesRPCSender = getVerticesRPCEnabled
+						? underlyingNetwork.getVerticesRequestSender(e.getPublicKey())
+						: EmptySyncVerticesRPCSender.INSTANCE;
+					return new VertexStore(
+						genesisVertex,
+						genesisQC,
+						stateComputer,
+						syncVerticesRPCSender,
+						this.syncSenders.get(e),
+						this.counters.get(e)
+					);
 				})
 			);
 		this.timeoutSenders = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e,
@@ -160,11 +186,16 @@ public class SimulatedBFTNetwork {
 			counters.get(key)
 		);
 
+		SimulatedNetworkReceiver rx = underlyingNetwork.getNetworkRx(key.getPublicKey());
+
 		return new ConsensusRunner(
 			epochRx,
-			underlyingNetwork.getNetworkRx(key.getPublicKey()),
+			rx,
 			timeoutSender,
-			epochManager
+			syncSenders.get(key),
+			rx,
+			epochManager,
+			vertexStores.get(key)
 		);
 	}
 
@@ -181,16 +212,14 @@ public class SimulatedBFTNetwork {
 	}
 
 	public Completable start() {
-		// Send start event once all nodes have reached real epoch event (first epoch event is empty)
+		// Send start event once all nodes have reached real epoch event
 		final CompletableSubject completableSubject = CompletableSubject.create();
 		List<Completable> startedList = this.runners.values().stream()
 			.map(ConsensusRunner::events)
-			.map(o ->
-				o.map(Event::getEventType)
-					.filter(e -> e.equals(EventType.EPOCH))
-					.skip(1)
-					.firstOrError()
-					.ignoreElement()
+			.map(o -> o.map(Event::getEventType)
+				.filter(e -> e.equals(EventType.EPOCH))
+				.firstOrError()
+				.ignoreElement()
 			).collect(Collectors.toList());
 
 		Completable.merge(startedList).subscribe(completableSubject::onComplete);

@@ -32,6 +32,12 @@ public interface RequiresSyncConsensusEvent extends ConsensusEvent {
 	QuorumCertificate getQC();
 
 	/**
+	 * Get the highest known committed QC of peer
+	 * @return highest known committed QC of peer
+	 */
+	QuorumCertificate getCommittedQC();
+
+	/**
 	 * Get the author of the event
 	 * @return the author of the event
 	 */

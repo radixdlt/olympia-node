@@ -17,18 +17,14 @@
 
 package com.radixdlt.consensus.simulation.checks;
 
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
-
 import com.radixdlt.consensus.simulation.BFTCheck;
 import com.radixdlt.consensus.simulation.SimulatedBFTNetwork;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.VertexStore;
 import com.radixdlt.consensus.View;
-import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import org.assertj.core.api.Condition;
 
 /**
  * Check that the network is making progress by ensuring that new QCs are
@@ -44,7 +40,7 @@ public class LivenessCheck implements BFTCheck {
 	}
 
 	@Override
-	public Completable check(SimulatedBFTNetwork network) {
+	public Observable<BFTCheckError> check(SimulatedBFTNetwork network) {
 		AtomicReference<View> highestQCView = new AtomicReference<>(View.genesis());
 		return Observable
 			.interval(duration * 2, duration, timeUnit) // 2 times initial duration to account for boot up
@@ -53,12 +49,15 @@ public class LivenessCheck implements BFTCheck {
 				.map(VertexStore::getHighestQC)
 				.map(QuorumCertificate::getView)
 				.max(View::compareTo)
-				.get()) // there must be some max highest QC unless allNodes is empty
-			.doOnNext(view -> assertThat(view)
-				.satisfies(new Condition<>(v -> v.compareTo(highestQCView.get()) > 0,
-					"The highest highestQC %s increased since last highestQC %s after %d %s", view, highestQCView.get(), duration, timeUnit)))
-			.doOnNext(highestQCView::set)
-			.doOnNext(newHighestQCView -> System.out.println("Progressed to new highest QC view " + highestQCView))
-			.flatMapCompletable(v -> Completable.complete());
+				.get() // there must be some max highest QC unless allNodes is empty
+			)
+			.concatMap(view -> {
+				if (view.compareTo(highestQCView.get()) <= 0) {
+					return Observable.just(new BFTCheckError(String.format("Highest QC hasn't increased from %s", highestQCView.get())));
+				} else {
+					highestQCView.set(view);
+					return Observable.empty();
+				}
+			});
 	}
 }

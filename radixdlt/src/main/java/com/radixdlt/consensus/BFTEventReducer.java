@@ -19,7 +19,6 @@ package com.radixdlt.consensus;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
-import com.radixdlt.atommodel.Atom;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.consensus.liveness.Pacemaker;
@@ -34,6 +33,7 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.mempool.Mempool;
+import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.utils.Longs;
 
 import java.util.HashMap;
@@ -104,7 +104,13 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	private void proceedToView(View nextView) {
 		// TODO make signing more robust by including author in signed hash
 		ECDSASignature signature = this.selfKey.sign(Hash.hash256(Longs.toByteArray(nextView.number())));
-		NewView newView = new NewView(selfKey.getPublicKey(), nextView, this.vertexStore.getHighestQC(), signature);
+		NewView newView = new NewView(
+			selfKey.getPublicKey(),
+			nextView,
+			this.vertexStore.getHighestQC(),
+			this.vertexStore.getHighestCommittedQC(),
+			signature
+		);
 		ECPublicKey nextLeader = this.proposerElection.getProposer(nextView);
 		log.debug("{}: Sending NEW_VIEW to {}: {}", this.getShortName(), this.getShortName(nextLeader.euid()), newView);
 		this.sender.sendNewView(newView, nextLeader);
@@ -114,10 +120,10 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	private void processQC(QuorumCertificate qc) {
 		// commit any newly committable vertices
 		this.safetyRules.process(qc)
-			.ifPresent(vertexId -> {
-				final Vertex vertex = vertexStore.commitVertex(vertexId);
+			.ifPresent(commitMetaData -> {
+				final Vertex vertex = vertexStore.commitVertex(commitMetaData);
 				log.info("{}: Committed vertex: {}", this.getShortName(), vertex);
-				final Atom committedAtom = vertex.getAtom();
+				final ClientAtom committedAtom = vertex.getAtom();
 				if (committedAtom != null) {
 					mempool.removeCommittedAtom(committedAtom.getAID());
 				}
@@ -130,11 +136,16 @@ public final class BFTEventReducer implements BFTEventProcessor {
 
 	@Override
 	public void processLocalSync(Hash vertexId) {
+		vertexStore.processLocalSync(vertexId);
+
 		QuorumCertificate qc = unsyncedQCs.remove(vertexId);
 		if (qc != null) {
-			vertexStore.addQC(qc);
-			processQC(qc);
-			log.info("{}: LOCAL_SYNC: processed QC: {}", this.getShortName(), qc);
+			if (vertexStore.syncToQC(qc, vertexStore.getHighestCommittedQC(), null)) {
+				processQC(qc);
+				log.info("{}: LOCAL_SYNC: processed QC: {}", this.getShortName(), qc);
+			} else {
+				unsyncedQCs.put(qc.getProposed().getId(), qc);
+			}
 		}
 	}
 
@@ -144,7 +155,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		// accumulate votes into QCs in store
 		this.pendingVotes.insertVote(vote, this.validatorSet).ifPresent(qc -> {
 			log.info("{}: VOTE: Formed QC: {}", this.getShortName(), qc);
-			if (vertexStore.syncToQC(qc)) {
+			if (vertexStore.syncToQC(qc, vertexStore.getHighestCommittedQC(), vote.getAuthor())) {
 				processQC(qc);
 			} else {
 				log.info("{}: VOTE: QC Not synced: {}", this.getShortName(), qc);
@@ -160,7 +171,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		this.pacemaker.processNewView(newView, validatorSet).ifPresent(view -> {
 			// Hotstuff's Event-Driven OnBeat
 			final Vertex proposedVertex = proposalGenerator.generateProposal(view);
-			final Proposal proposal = safetyRules.signProposal(proposedVertex);
+			final Proposal proposal = safetyRules.signProposal(proposedVertex, this.vertexStore.getHighestCommittedQC());
 			log.info("{}: Broadcasting PROPOSAL: {}", getShortName(), proposal);
 			this.sender.broadcastProposal(proposal);
 		});
@@ -192,7 +203,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 			log.info(String.format("%s: PROPOSAL: Rejected", this.getShortName()), e);
 
 			// TODO: Better logic for removal on exception
-			final Atom atom = proposedVertex.getAtom();
+			final ClientAtom atom = proposedVertex.getAtom();
 			if (atom != null) {
 				mempool.removeRejectedAtom(atom.getAID());
 			}
@@ -233,14 +244,6 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		} else {
 			log.trace("{}: LOCAL_TIMEOUT: Ignoring {}", this.getShortName(), view);
 		}
-	}
-
-	@Override
-	public void processGetVertexRequest(GetVertexRequest request) {
-		log.trace("{}: GET_VERTEX Request: Processing: {}", this.getShortName(), request);
-		Vertex vertex = this.vertexStore.getVertex(request.getVertexId());
-		log.debug("{}: GET_VERTEX Request: Sending Response: {}", this.getShortName(), vertex);
-		request.getResponder().accept(vertex);
 	}
 
 	@Override

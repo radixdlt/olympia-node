@@ -49,11 +49,6 @@ public class EmptyBFTEventProcessor implements BFTEventProcessor {
 	}
 
 	@Override
-	public void processGetVertexRequest(GetVertexRequest request) {
-		// No-op
-	}
-
-	@Override
 	public void start() {
 		// No-op
 	}

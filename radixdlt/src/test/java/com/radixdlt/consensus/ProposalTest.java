@@ -34,19 +34,22 @@ public class ProposalTest {
 	private Vertex vertex;
 	private ECPublicKey key;
 	private ECDSASignature signature;
+	private QuorumCertificate commitQc;
 
 	@Before
 	public void setUp() {
 		this.vertex = mock(Vertex.class);
 		this.key = mock(ECPublicKey.class);
 		this.signature = mock(ECDSASignature.class);
+		this.commitQc = mock(QuorumCertificate.class);
 
-		this.proposal = new Proposal(vertex, key, signature);
+		this.proposal = new Proposal(vertex, commitQc, key, signature);
 	}
 
 	@Test
 	public void testGetters() {
 		assertThat(this.proposal.getVertex()).isEqualTo(vertex);
+		assertThat(this.proposal.getCommittedQC()).isEqualTo(commitQc);
 	}
 
 	@Test

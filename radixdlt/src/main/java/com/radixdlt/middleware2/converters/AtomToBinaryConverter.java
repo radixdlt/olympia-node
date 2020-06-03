@@ -17,7 +17,7 @@
 
 package com.radixdlt.middleware2.converters;
 
-import com.radixdlt.atommodel.Atom;
+import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
@@ -29,7 +29,7 @@ public final class AtomToBinaryConverter {
 		this.serializer = serializer;
 	}
 
-	public byte[] toLedgerEntryContent(Atom atom) {
+	public byte[] toLedgerEntryContent(CommittedAtom atom) {
 		try {
 			return serializer.toDson(atom, DsonOutput.Output.PERSIST);
 		} catch (SerializationException e) {
@@ -37,11 +37,11 @@ public final class AtomToBinaryConverter {
 		}
 	}
 
-	public Atom toAtom(byte[] ledgerEntryContent) {
+	public CommittedAtom toAtom(byte[] ledgerEntryContent) {
 		try {
-			return serializer.fromDson(ledgerEntryContent, Atom.class);
+			return serializer.fromDson(ledgerEntryContent, CommittedAtom.class);
 		} catch (SerializationException e) {
-			throw new RuntimeException("Deserialization of Atom failed");
+			throw new IllegalStateException("Deserialization of Atom failed", e);
 		}
 	}
 }

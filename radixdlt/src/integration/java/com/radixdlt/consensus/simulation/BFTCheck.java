@@ -17,12 +17,22 @@
 
 package com.radixdlt.consensus.simulation;
 
-import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.core.Observable;
 
 /**
  * A running BFT check given access to network
  */
 public interface BFTCheck {
+	class BFTCheckError {
+		private final String description;
+		public BFTCheckError(String description) {
+			this.description = description;
+		}
+
+		public String getDescription() {
+			return description;
+		}
+	}
 
 	/**
 	 * Creates an observable which runs assertions against a bft network.
@@ -32,5 +42,5 @@ public interface BFTCheck {
 	 * @param network network to check
 	 * @return completable to subscribe to enable checking
 	 */
-	Completable check(SimulatedBFTNetwork network);
+	Observable<BFTCheckError> check(SimulatedBFTNetwork network);
 }

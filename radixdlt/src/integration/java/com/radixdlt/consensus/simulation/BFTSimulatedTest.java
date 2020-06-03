@@ -18,26 +18,28 @@
 package com.radixdlt.consensus.simulation;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.radixdlt.consensus.simulation.BFTCheck.BFTCheckError;
 import com.radixdlt.consensus.simulation.checks.AllProposalsHaveDirectParentsCheck;
 import com.radixdlt.consensus.simulation.checks.LivenessCheck;
 import com.radixdlt.consensus.simulation.checks.NoSyncExceptionCheck;
 import com.radixdlt.consensus.simulation.checks.NoTimeoutCheck;
 import com.radixdlt.consensus.simulation.checks.SafetyCheck;
-import com.radixdlt.consensus.simulation.checks.SyncOccurrenceCheck;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork;
 import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork.LatencyProvider;
-import io.reactivex.rxjava3.core.Completable;
-import java.util.ArrayList;
+import com.radixdlt.utils.Pair;
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.core.Single;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 /**
  * High level BFT Simulation Test Runner
@@ -45,28 +47,38 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 public class BFTSimulatedTest {
 	private final ImmutableList<ECKeyPair> nodes;
 	private final LatencyProvider latencyProvider;
-	private final ImmutableList<BFTCheck> checks;
+	private final ImmutableMap<String, BFTCheck> checks;
 	private final int pacemakerTimeout;
+	private final boolean getVerticesRPCEnabled;
 
 	private BFTSimulatedTest(
 		ImmutableList<ECKeyPair> nodes,
 		LatencyProvider latencyProvider,
 		int pacemakerTimeout,
-		ImmutableList<BFTCheck> checks
+		boolean getVerticesRPCEnabled,
+		ImmutableMap<String, BFTCheck> checks
 	) {
 		this.nodes = nodes;
 		this.latencyProvider = latencyProvider;
 		this.checks = checks;
 		this.pacemakerTimeout = pacemakerTimeout;
+		this.getVerticesRPCEnabled = getVerticesRPCEnabled;
 	}
 
 	public static class Builder {
 		private final DroppingLatencyProvider latencyProvider = new DroppingLatencyProvider();
-		private final List<BFTCheck> checks = new ArrayList<>();
+		private final ImmutableMap.Builder<String, BFTCheck> checksBuilder = ImmutableMap.builder();
 		private List<ECKeyPair> nodes = Collections.singletonList(ECKeyPair.generateNew());
 		private int pacemakerTimeout = 8 * TestEventCoordinatorNetwork.DEFAULT_LATENCY;
+		private boolean getVerticesRPCEnabled = true;
 
 		private Builder() {
+		}
+
+		public Builder addProposalDropper() {
+			ImmutableList<ECPublicKey> keys = nodes.stream().map(ECKeyPair::getPublicKey).collect(ImmutableList.toImmutableList());
+			this.latencyProvider.addDropper(new OneProposalPerViewDropper(keys, new Random()));
+			return this;
 		}
 
 		public Builder pacemakerTimeout(int pacemakerTimeout) {
@@ -91,8 +103,8 @@ public class BFTSimulatedTest {
 			return this;
 		}
 
-		public Builder setSync(boolean syncEnabled) {
-			this.latencyProvider.setSyncEnabled(syncEnabled);
+		public Builder setGetVerticesRPCEnabled(boolean getVerticesRPCEnabled) {
+			this.getVerticesRPCEnabled = getVerticesRPCEnabled;
 			return this;
 		}
 
@@ -101,49 +113,45 @@ public class BFTSimulatedTest {
 			return this;
 		}
 
-		public Builder checkSyncsHaveOccurred(long time, TimeUnit timeUnit) {
-			this.checks.add(new SyncOccurrenceCheck(c -> assertThat(c).isGreaterThan(0), time, timeUnit));
+		public Builder checkLiveness(String checkName) {
+			this.checksBuilder.put(checkName, new LivenessCheck(8 * TestEventCoordinatorNetwork.DEFAULT_LATENCY, TimeUnit.MILLISECONDS));
 			return this;
 		}
 
-		public Builder checkSyncsHaveNotOccurred(long time, TimeUnit timeUnit) {
-			this.checks.add(new SyncOccurrenceCheck(c -> assertThat(c).isEqualTo(0), time, timeUnit));
+		public Builder checkLiveness(String checkName, long duration, TimeUnit timeUnit) {
+			this.checksBuilder.put(checkName, new LivenessCheck(duration, timeUnit));
 			return this;
 		}
 
-		public Builder checkLiveness() {
-			this.checks.add(new LivenessCheck(8 * TestEventCoordinatorNetwork.DEFAULT_LATENCY, TimeUnit.MILLISECONDS));
+		public Builder checkSafety(String checkName) {
+			this.checksBuilder.put(checkName, new SafetyCheck());
 			return this;
 		}
 
-		public Builder checkLiveness(long duration, TimeUnit timeUnit) {
-			this.checks.add(new LivenessCheck(duration, timeUnit));
+		public Builder checkNoTimeouts(String checkName) {
+			this.checksBuilder.put(checkName, new NoTimeoutCheck());
 			return this;
 		}
 
-		public Builder checkSafety() {
-			this.checks.add(new SafetyCheck());
+		public Builder checkNoSyncExceptions(String checkName) {
+			this.checksBuilder.put(checkName, new NoSyncExceptionCheck());
 			return this;
 		}
 
-		public Builder checkNoTimeouts() {
-			this.checks.add(new NoTimeoutCheck());
-			return this;
-		}
-
-		public Builder checkNoSyncExceptions() {
-			this.checks.add(new NoSyncExceptionCheck());
-			return this;
-		}
-
-		public Builder checkAllProposalsHaveDirectParents() {
-			this.checks.add(new AllProposalsHaveDirectParentsCheck());
+		public Builder checkAllProposalsHaveDirectParents(String checkName) {
+			this.checksBuilder.put(checkName, new AllProposalsHaveDirectParentsCheck());
 			return this;
 
 		}
 
 		public BFTSimulatedTest build() {
-			return new BFTSimulatedTest(ImmutableList.copyOf(nodes), latencyProvider.copyOf(), pacemakerTimeout, ImmutableList.copyOf(checks));
+			return new BFTSimulatedTest(
+				ImmutableList.copyOf(nodes),
+				latencyProvider.copyOf(),
+				pacemakerTimeout,
+				getVerticesRPCEnabled,
+				this.checksBuilder.build()
+			);
 		}
 	}
 
@@ -151,16 +159,50 @@ public class BFTSimulatedTest {
 		return new Builder();
 	}
 
-	// TODO: return list of results
-	public void run(long duration, TimeUnit timeUnit) {
+	/**
+	 * Runs the test for a given time. Returns either once the duration has passed or if a check has failed.
+	 * Returns a map from the check name to the result.
+	 *
+	 * @param duration duration to run test for
+	 * @param timeUnit time unit of duration
+	 * @return map of check results
+	 */
+	public Map<String, Boolean> run(long duration, TimeUnit timeUnit) {
 		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.builder()
 			.latencyProvider(this.latencyProvider)
 			.build();
-		SimulatedBFTNetwork bftNetwork =  new SimulatedBFTNetwork(nodes, network, pacemakerTimeout);
-		List<Completable> assertions = this.checks.stream().map(c -> c.check(bftNetwork)).collect(Collectors.toList());
-		bftNetwork.start()
-			.andThen(Completable.merge(assertions))
-			.blockingAwait(duration, timeUnit);
-		bftNetwork.stop();
+		SimulatedBFTNetwork bftNetwork =  new SimulatedBFTNetwork(nodes, network, pacemakerTimeout, getVerticesRPCEnabled);
+		List<Pair<String, Observable<Pair<String, BFTCheckError>>>> assertions = this.checks.keySet().stream()
+			.map(name -> {
+				BFTCheck check = this.checks.get(name);
+				return
+					Pair.of(
+						name,
+						check.check(bftNetwork).map(e -> Pair.of(name, e)).publish().autoConnect(2)
+					);
+			})
+			.collect(Collectors.toList());
+
+		Single<String> firstErrorSignal = Observable.merge(assertions.stream().map(Pair::getSecond).collect(Collectors.toList()))
+			.firstOrError()
+			.map(Pair::getFirst);
+
+		List<Single<Pair<String, Boolean>>> results = assertions.stream()
+			.map(assertion -> assertion.getSecond()
+				.takeUntil(firstErrorSignal.flatMapObservable(name ->
+					!assertion.getFirst().equals(name) ? Observable.just(name) : Observable.never()))
+				.takeUntil(Observable.timer(duration, timeUnit))
+				.map(e -> false)
+				.first(true)
+				.map(result -> Pair.of(assertion.getFirst(), result))
+			)
+			.collect(Collectors.toList());
+
+		return bftNetwork.start()
+			.timeout(10, TimeUnit.SECONDS)
+			.andThen(Single.merge(results))
+			.doFinally(bftNetwork::stop)
+			.blockingStream()
+			.collect(Collectors.toMap(Pair::getFirst, Pair::getSecond));
 	}
 }

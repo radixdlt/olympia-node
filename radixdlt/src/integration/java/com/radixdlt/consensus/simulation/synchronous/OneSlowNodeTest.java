@@ -17,8 +17,11 @@
 
 package com.radixdlt.consensus.simulation.synchronous;
 
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+
 import com.radixdlt.consensus.simulation.BFTSimulatedTest;
 import com.radixdlt.consensus.simulation.BFTSimulatedTest.Builder;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 
@@ -35,16 +38,20 @@ public class OneSlowNodeTest {
 	private final Builder bftTestBuilder = BFTSimulatedTest.builder()
 		.numNodesAndLatencies(4, minLatency, minLatency, minLatency, maxLatency)
 		.pacemakerTimeout(synchronousTimeout)
-		.checkNoTimeouts();
+		.checkSafety("safety")
+		.checkAllProposalsHaveDirectParents("directParents")
+		.checkNoTimeouts("noTimeouts");
 
 	/**
 	 * Tests a static configuration of 3 fast, equal nodes and 1 slow node.
+	 * Test should pass even with GetVertices RPC disabled
 	 */
 	@Test
 	public void given_4_nodes_3_fast_and_1_slow_node_and_sync_disabled__then_a_timeout_wont_occur() {
-		BFTSimulatedTest syncDisabledTest = bftTestBuilder
-			.setSync(false)
+		BFTSimulatedTest test = bftTestBuilder
+			.setGetVerticesRPCEnabled(false)
 			.build();
-		syncDisabledTest.run(1, TimeUnit.MINUTES);
+		Map<String, Boolean> results = test.run(1, TimeUnit.MINUTES);
+		assertThat(results).doesNotContainValue(false);
 	}
 }

@@ -22,6 +22,7 @@ import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.Atom;
+import com.radixdlt.middleware2.ClientAtom;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.identifiers.RadixAddress;
@@ -59,8 +60,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
-public final class GenerateUniverses
-{
+public final class GenerateUniverses {
 	private static final Logger LOGGER = LogManager.getLogger("GenerateUniverses");
 
 	public static final String RADIX_ICON_URL = "https://assets.radixdlt.com/icons/icon-xrd-32x32.png";
@@ -164,6 +164,8 @@ public final class GenerateUniverses
 		);
 		genesisAtom.sign(universeKey);
 
+		ClientAtom clientAtom = ClientAtom.convertFromApiAtom(genesisAtom);
+
 		if (standalone) {
 			byte[] sigBytes = serialization.toDson(genesisAtom.getSignature(universeKey.euid()), Output.WIRE);
 			byte[] transactionBytes = serialization.toDson(genesisAtom, Output.HASH);
@@ -174,8 +176,7 @@ public final class GenerateUniverses
 		}
 
 		if (!genesisAtom.verify(universeKey.getPublicKey())) {
-			throw new ConstraintMachineValidationException(
-				genesisAtom,
+			throw new ConstraintMachineValidationException(clientAtom,
 				"Signature generation failed - GENESIS TRANSACTION HASH: " + genesisAtom.getHash().toString(),
 				DataPointer.ofAtom()
 			);

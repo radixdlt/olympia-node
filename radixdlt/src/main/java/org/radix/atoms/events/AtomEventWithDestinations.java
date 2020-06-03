@@ -17,16 +17,17 @@
 
 package org.radix.atoms.events;
 
-import com.radixdlt.atommodel.Atom;
 import com.radixdlt.identifiers.EUID;
 
+import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.middleware2.CommittedAtom;
 import java.util.Set;
 import java.util.function.Supplier;
 
 public class AtomEventWithDestinations extends AtomEvent {
 	private Set<EUID> destinations;
 
-	public AtomEventWithDestinations(Atom atom, Supplier<Set<EUID>> destinationsSupplier) {
+	public AtomEventWithDestinations(CommittedAtom atom, Supplier<Set<EUID>> destinationsSupplier) {
 		super(atom);
 		this.destinations = destinationsSupplier.get();
 	}

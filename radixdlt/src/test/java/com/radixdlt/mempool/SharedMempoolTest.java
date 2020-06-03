@@ -17,6 +17,9 @@
 
 package com.radixdlt.mempool;
 
+import com.google.inject.TypeLiteral;
+import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.middleware2.LedgerAtom;
 import java.util.Set;
 
 import org.junit.Before;
@@ -29,7 +32,6 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.name.Names;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.atommodel.Atom;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.engine.RadixEngine;
@@ -46,10 +48,9 @@ public class SharedMempoolTest {
 
 	private LocalMempool localMempool;
 	private MempoolNetworkTx mempoolNetworkTx;
-	private RadixEngine radixEngine;
+	private RadixEngine<LedgerAtom> radixEngine;
 	private Serialization serialization;
 	private SystemCounters counters;
-
 	private Mempool sharedMempool;
 
 	@Before
@@ -67,7 +68,7 @@ public class SharedMempoolTest {
 				bind(LocalMempool.class).toInstance(localMempool);
 				bind(MempoolNetworkTx.class).toInstance(mempoolNetworkTx);
 				bind(EUID.class).annotatedWith(Names.named("self")).toInstance(self);
-				bind(RadixEngine.class).toInstance(radixEngine);
+				bind(new TypeLiteral<RadixEngine<LedgerAtom>>() { }).toInstance(radixEngine);
 				bind(Serialization.class).toInstance(serialization);
 				bind(SystemCounters.class).toInstance(counters);
 			}
@@ -80,7 +81,7 @@ public class SharedMempoolTest {
 	@Test
 	public void when_adding_atom__then_atom_is_added_and_sent()
 		throws MempoolFullException, MempoolDuplicateException {
-		Atom mockAtom = mock(Atom.class);
+		ClientAtom mockAtom = mock(ClientAtom.class);
 		when(mockAtom.getAID()).thenReturn(TEST_AID);
 		this.sharedMempool.addAtom(mockAtom);
 		verify(this.localMempool, times(1)).addAtom(any());

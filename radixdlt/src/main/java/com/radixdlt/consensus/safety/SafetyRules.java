@@ -60,7 +60,7 @@ public final class SafetyRules {
 	 * @param qc The quorum certificate
 	 * @return the just-committed vertex id, if any
 	 */
-	public Optional<Hash> process(QuorumCertificate qc) {
+	public Optional<VertexMetadata> process(QuorumCertificate qc) {
 		final Builder safetyStateBuilder = this.state.toBuilder();
 
 		// prepare phase on qc's proposed vertex if there is a newer 1-chain
@@ -79,28 +79,29 @@ public final class SafetyRules {
 
 		// commit phase for a vertex if it's view is greater than last commit.
 		// otherwise, it must have already been committed
-		final Optional<Hash> commitHash = qc.getCommitted().flatMap(vmd -> {
+		final Optional<VertexMetadata> commitMetadata = qc.getCommitted().flatMap(vmd -> {
 			if (vmd.getView().compareTo(this.state.getCommittedView()) > 0) {
 				safetyStateBuilder.committedView(vmd.getView());
-				return Optional.of(vmd.getId());
+				return Optional.of(vmd);
 			}
 			return Optional.empty();
 		});
 
 		this.state = safetyStateBuilder.build();
 
-		return commitHash;
+		return commitMetadata;
 	}
 
 	/**
 	 * Create a signed proposal from a vertex
 	 * @param proposedVertex vertex to sign
+	 * @param highestCommittedQC highest known committed QC
 	 * @return signed proposal object for consensus
 	 */
-	public Proposal signProposal(Vertex proposedVertex) {
+	public Proposal signProposal(Vertex proposedVertex, QuorumCertificate highestCommittedQC) {
 		final Hash vertexHash = this.hasher.hash(proposedVertex);
 		ECDSASignature signature = this.selfKey.sign(vertexHash);
-		return new Proposal(proposedVertex, this.selfKey.getPublicKey(), signature);
+		return new Proposal(proposedVertex, highestCommittedQC, this.selfKey.getPublicKey(), signature);
 	}
 
 	private static VoteData constructVoteData(Vertex proposedVertex) {
