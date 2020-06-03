@@ -41,7 +41,7 @@ public class OneProposalDropperTest {
 		.randomLatency(minLatency, maxLatency)
 		.pacemakerTimeout(synchronousTimeout)
 		.addProposalDropper()
-		//.checkSafety("safety") // TODO: add once real safety check implemented
+		.checkSafety("safety")
 		.checkNoTimeouts("noTimeouts");
 
 	/**

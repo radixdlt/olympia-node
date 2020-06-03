@@ -160,6 +160,10 @@ public class SimulatedBFTNetwork {
 			));
 	}
 
+	public Vertex getGenesisVertex() {
+		return genesisVertex;
+	}
+
 	public List<ECKeyPair> getNodes() {
 		return nodes;
 	}
