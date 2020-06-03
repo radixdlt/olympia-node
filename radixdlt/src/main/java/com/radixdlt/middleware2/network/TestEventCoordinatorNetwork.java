@@ -236,10 +236,9 @@ public class TestEventCoordinatorNetwork {
 
 		@Override
 		public void sendGetVerticesResponse(GetVerticesRequest originalRequest, ImmutableList<Vertex> vertices) {
-			Hash vertexId = vertices.get(0).getId();
 			SimulatedVerticesRequest request = (SimulatedVerticesRequest) originalRequest;
-			Object opaque = receivers.computeIfAbsent(request.requestor, SimulatedNetworkImpl::new).opaqueMap.get(vertexId);
-			GetVerticesResponse vertexResponse = new GetVerticesResponse(vertexId, vertices, opaque);
+			Object opaque = receivers.computeIfAbsent(request.requestor, SimulatedNetworkImpl::new).opaqueMap.get(request.vertexId);
+			GetVerticesResponse vertexResponse = new GetVerticesResponse(request.vertexId, vertices, opaque);
 			receivedMessages.onNext(MessageInTransit.newMessage(vertexResponse, thisNode, request.requestor));
 		}
 
