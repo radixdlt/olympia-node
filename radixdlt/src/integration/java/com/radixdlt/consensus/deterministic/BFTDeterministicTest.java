@@ -34,6 +34,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
 import java.util.function.BiPredicate;
+import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -47,6 +48,12 @@ public class BFTDeterministicTest {
 	private final ControlledBFTNetwork network;
 
 	public BFTDeterministicTest(int numNodes, boolean enableGetVerticesRPC) {
+		this(numNodes, enableGetVerticesRPC, () -> {
+			throw new UnsupportedOperationException();
+		});
+	}
+
+	public BFTDeterministicTest(int numNodes, boolean enableGetVerticesRPC, BooleanSupplier syncedSupplier) {
 		ImmutableList<ECKeyPair> keys = Stream.generate(ECKeyPair::generateNew)
 			.limit(numNodes)
 			.sorted(Comparator.<ECKeyPair, EUID>comparing(k -> k.getPublicKey().euid()).reversed())
@@ -65,7 +72,8 @@ public class BFTDeterministicTest {
 				network.getSender(key.getPublicKey()),
 				new WeightedRotatingLeaders(validatorSet, Comparator.comparing(v -> v.nodeKey().euid()), 5),
 				validatorSet,
-				enableGetVerticesRPC
+				enableGetVerticesRPC,
+				syncedSupplier
 			))
 			.collect(ImmutableList.toImmutableList());
 	}

@@ -20,6 +20,7 @@ package com.radixdlt.consensus.deterministic;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.consensus.BFTEventSender;
+import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.GetVerticesResponse;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
@@ -158,43 +159,52 @@ public final class ControlledBFTNetwork {
 	}
 
 	public ControlledSender getSender(ECPublicKey sender) {
-		return new ControlledSender() {
-			@Override
-			public void sendGetVerticesRequest(Hash id, ECPublicKey node, int count, Object opaque) {
-				putMesssage(new ControlledMessage(sender, node, new ControlledGetVerticesRequest(id, count, sender, opaque)));
-			}
-
-			@Override
-			public void sendGetVerticesResponse(GetVerticesRequest originalRequest, List<Vertex> vertices) {
-				ControlledGetVerticesRequest request = (ControlledGetVerticesRequest) originalRequest;
-				GetVerticesResponse response = new GetVerticesResponse(request.getVertexId(), vertices, request.opaque);
-				putMesssage(new ControlledMessage(sender, request.requestor, response));
-			}
-
-			@Override
-			public void synced(Hash vertexId) {
-				putMesssage(new ControlledMessage(sender, sender, vertexId));
-			}
-
-			@Override
-			public void broadcastProposal(Proposal proposal) {
-				for (ECPublicKey receiver : nodes) {
-					putMesssage(new ControlledMessage(sender, receiver, proposal));
-				}
-			}
-
-			@Override
-			public void sendNewView(NewView newView, ECPublicKey newViewLeader) {
-				putMesssage(new ControlledMessage(sender, newViewLeader, newView));
-			}
-
-			@Override
-			public void sendVote(Vote vote, ECPublicKey leader) {
-				putMesssage(new ControlledMessage(sender, leader, vote));
-			}
-		};
+		return new ControlledSender(sender);
 	}
 
-	interface ControlledSender extends BFTEventSender, SyncSender, SyncVerticesRPCSender {
+	public final class ControlledSender implements BFTEventSender, SyncSender, SyncVerticesRPCSender {
+		private final ECPublicKey sender;
+
+		private ControlledSender(ECPublicKey sender) {
+			this.sender = sender;
+		}
+
+		@Override
+		public void sendGetVerticesRequest(Hash id, ECPublicKey node, int count, Object opaque) {
+			putMesssage(new ControlledMessage(sender, node, new ControlledGetVerticesRequest(id, count, sender, opaque)));
+		}
+
+		@Override
+		public void sendGetVerticesResponse(GetVerticesRequest originalRequest, List<Vertex> vertices) {
+			ControlledGetVerticesRequest request = (ControlledGetVerticesRequest) originalRequest;
+			GetVerticesResponse response = new GetVerticesResponse(request.getVertexId(), vertices, request.opaque);
+			putMesssage(new ControlledMessage(sender, request.requestor, response));
+		}
+
+		@Override
+		public void synced(Hash vertexId) {
+			putMesssage(new ControlledMessage(sender, sender, vertexId));
+		}
+
+		@Override
+		public void broadcastProposal(Proposal proposal) {
+			for (ECPublicKey receiver : nodes) {
+				putMesssage(new ControlledMessage(sender, receiver, proposal));
+			}
+		}
+
+		@Override
+		public void sendNewView(NewView newView, ECPublicKey newViewLeader) {
+			putMesssage(new ControlledMessage(sender, newViewLeader, newView));
+		}
+
+		@Override
+		public void sendVote(Vote vote, ECPublicKey leader) {
+			putMesssage(new ControlledMessage(sender, leader, vote));
+		}
+
+		public void committedStateSync(CommittedStateSync committedStateSync) {
+			putMesssage(new ControlledMessage(sender, sender, committedStateSync));
+		}
 	}
 }

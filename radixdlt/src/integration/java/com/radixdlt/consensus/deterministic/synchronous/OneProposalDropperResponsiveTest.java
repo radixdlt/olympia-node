@@ -34,7 +34,7 @@ public class OneProposalDropperResponsiveTest {
 		final Map<View, Integer> proposalToDrop = new HashMap<>();
 		final Map<View, Integer> proposalCount = new HashMap<>();
 
-		final BFTDeterministicTest test = new BFTDeterministicTest(numNodes, true);
+		final BFTDeterministicTest test = new BFTDeterministicTest(numNodes, true, random::nextBoolean);
 		test.start();
 		for (int step = 0; step < 100000; step++) {
 			test.processNextMsg(random, (receiverId, msg) -> {
