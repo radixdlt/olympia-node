@@ -41,8 +41,8 @@ public class ProposalSerializeTest extends SerializeObject<Proposal> {
 		View view = View.of(1234567891L);
 		Hash id = Hash.random();
 
-		VertexMetadata vertexMetadata = new VertexMetadata(view, id);
-		VertexMetadata parent = new VertexMetadata(View.of(1234567890L), Hash.random());
+		VertexMetadata vertexMetadata = new VertexMetadata(view, id, 1);
+		VertexMetadata parent = new VertexMetadata(View.of(1234567890L), Hash.random(), 0);
 		VoteData voteData = new VoteData(vertexMetadata, parent);
 
 		QuorumCertificate qc = new QuorumCertificate(voteData, new ECDSASignatures());

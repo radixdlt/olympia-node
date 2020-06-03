@@ -158,8 +158,8 @@ public class BFTSimulatedTest {
 			.build();
 		SimulatedBFTNetwork bftNetwork =  new SimulatedBFTNetwork(nodes, network, pacemakerTimeout);
 		List<Completable> assertions = this.checks.stream().map(c -> c.check(bftNetwork)).collect(Collectors.toList());
-		Completable.merge(assertions)
-			.doOnSubscribe(d -> bftNetwork.start())
+		bftNetwork.start()
+			.andThen(Completable.merge(assertions))
 			.blockingAwait(duration, timeUnit);
 		bftNetwork.stop();
 	}

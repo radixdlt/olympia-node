@@ -111,8 +111,7 @@ class ControlledBFTNode {
 			pacemaker,
 			vertexStore,
 			proposerElection,
-			syncQueues,
-			systemCounters
+			syncQueues
 		);
 	}
 

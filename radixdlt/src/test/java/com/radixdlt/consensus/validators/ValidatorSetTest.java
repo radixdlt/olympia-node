@@ -63,33 +63,41 @@ public class ValidatorSetTest {
 		Hash message = Hash.random();
 
 		// 2 signatures for 4 validators -> fail
-		ValidationState vst1 = vs.newValidationState(message);
-		assertFalse(vst1.addSignature(k1.getPublicKey(), k1.sign(message)));
-		assertFalse(vst1.addSignature(k2.getPublicKey(), k2.sign(message)));
+		ValidationState vst1 = vs.newValidationState();
+		assertTrue(vst1.addSignature(k1.getPublicKey(), k1.sign(message)));
+		assertFalse(vst1.complete());
+		assertTrue(vst1.addSignature(k2.getPublicKey(), k2.sign(message)));
 		assertFalse(vst1.complete());
 		assertEquals(2, vst1.signatures().count());
 
 		// 3 signatures for 4 validators -> pass
-		ValidationState vst2 = vs.newValidationState(message);
-		assertFalse(vst2.addSignature(k1.getPublicKey(), k1.sign(message)));
-		assertFalse(vst2.addSignature(k2.getPublicKey(), k2.sign(message)));
+		ValidationState vst2 = vs.newValidationState();
+		assertTrue(vst2.addSignature(k1.getPublicKey(), k1.sign(message)));
+		assertFalse(vst1.complete());
+		assertTrue(vst2.addSignature(k2.getPublicKey(), k2.sign(message)));
+		assertFalse(vst1.complete());
 		assertTrue(vst2.addSignature(k3.getPublicKey(), k3.sign(message)));
 		assertTrue(vst2.complete());
 		assertEquals(3, vst2.signatures().count());
 
 		// 2 signatures + 1 signature not from set for 4 validators -> fail
-		ValidationState vst3 = vs.newValidationState(message);
-		assertFalse(vst3.addSignature(k1.getPublicKey(), k1.sign(message)));
-		assertFalse(vst3.addSignature(k2.getPublicKey(), k2.sign(message)));
+		ValidationState vst3 = vs.newValidationState();
+		assertTrue(vst3.addSignature(k1.getPublicKey(), k1.sign(message)));
+		assertFalse(vst3.complete());
+		assertTrue(vst3.addSignature(k2.getPublicKey(), k2.sign(message)));
+		assertFalse(vst3.complete());
 		assertFalse(vst3.addSignature(k5.getPublicKey(), k5.sign(message)));
 		assertFalse(vst3.complete());
 		assertEquals(2, vst3.signatures().count());
 
 		// 3 signatures + 1 signature not from set for 4 validators -> pass
-		ValidationState vst4 = vs.newValidationState(message);
-		assertFalse(vst4.addSignature(k1.getPublicKey(), k1.sign(message)));
-		assertFalse(vst4.addSignature(k2.getPublicKey(), k2.sign(message)));
+		ValidationState vst4 = vs.newValidationState();
+		assertTrue(vst4.addSignature(k1.getPublicKey(), k1.sign(message)));
+		assertFalse(vst3.complete());
+		assertTrue(vst4.addSignature(k2.getPublicKey(), k2.sign(message)));
+		assertFalse(vst3.complete());
 		assertFalse(vst4.addSignature(k5.getPublicKey(), k5.sign(message)));
+		assertFalse(vst3.complete());
 		assertTrue(vst4.addSignature(k3.getPublicKey(), k3.sign(message)));
 		assertTrue(vst4.complete());
 		assertEquals(3, vst4.signatures().count());
@@ -105,7 +113,7 @@ public class ValidatorSetTest {
 
 		ValidatorSet vs = ValidatorSet.from(ImmutableSet.of(v1, v2));
 		Hash message = Hash.random();
-		ValidationState vst1 = vs.newValidationState(message);
+		ValidationState vst1 = vs.newValidationState();
 		assertTrue(vst1.addSignature(k1.getPublicKey(), k1.sign(message)));
 		assertTrue(vst1.complete());
 		assertEquals(1, vst1.signatures().count());

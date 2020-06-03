@@ -20,7 +20,6 @@ package com.radixdlt.consensus;
 import com.radixdlt.consensus.SyncQueues.SyncQueue;
 import com.radixdlt.consensus.liveness.PacemakerState;
 import com.radixdlt.consensus.liveness.ProposerElection;
-import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 import java.util.Objects;
@@ -47,7 +46,6 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 	private final VertexStore vertexStore;
 	private final PacemakerState pacemakerState;
 	private final ProposerElection proposerElection;
-	private final SystemCounters counters;
 	private final SyncQueues queues;
 
 	public BFTEventPreprocessor(
@@ -56,15 +54,13 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		PacemakerState pacemakerState,
 		VertexStore vertexStore,
 		ProposerElection proposerElection,
-		SyncQueues queues,
-		SystemCounters counters
+		SyncQueues queues
 	) {
 		this.myKey = Objects.requireNonNull(myKey);
 		this.pacemakerState = Objects.requireNonNull(pacemakerState);
 		this.vertexStore = Objects.requireNonNull(vertexStore);
 		this.proposerElection = Objects.requireNonNull(proposerElection);
 		this.queues = queues;
-		this.counters = Objects.requireNonNull(counters);
 		this.forwardTo = forwardTo;
 	}
 
@@ -99,6 +95,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 	 *
 	 * @param vertexId the id of the vertex which is now guaranteed be synced.
 	 */
+	@Override
 	public void processLocalSync(Hash vertexId) {
 		for (SyncQueue queue : queues.getQueues()) {
 			if (peekAndExecute(queue, vertexId)) {

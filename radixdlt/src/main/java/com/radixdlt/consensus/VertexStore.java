@@ -35,7 +35,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Manages the BFT Vertex chain.
  *
- * In general this class is NOT thread-safe except for getVertex().
+ * In general this class is NOT thread-safe except for getVertex() and getHighestQC().
  * TODO: make thread-safe
  */
 public final class VertexStore {
@@ -48,7 +48,7 @@ public final class VertexStore {
 	private Vertex root;
 
 	// Should never be null
-	private QuorumCertificate highestQC;
+	private volatile QuorumCertificate highestQC;
 
 	// TODO: Cleanup this interface
 	public VertexStore(
@@ -148,6 +148,12 @@ public final class VertexStore {
 		return path;
 	}
 
+	/**
+	 * Retrieves the highest qc in the store
+	 * Thread-safe.
+	 *
+	 * @return the highest quorum certificate
+	 */
 	public QuorumCertificate getHighestQC() {
 		return this.highestQC;
 	}

@@ -42,27 +42,43 @@ public final class VertexMetadata {
 	@DsonOutput(Output.ALL)
 	private final Hash id;
 
+	@JsonProperty("stateVersion")
+	@DsonOutput(Output.ALL)
+	private final long stateVersion;
+
 	VertexMetadata() {
 		// Serializer only
 		this.view = null;
 		this.id = null;
+		this.stateVersion = 0L;
 	}
 
-	public VertexMetadata(View view, Hash id) {
-        this.view = view;
+	public VertexMetadata(View view, Hash id, long stateVersion) {
+		if (stateVersion < 0) {
+			throw new IllegalArgumentException("stateVersion must be >= 0");
+		}
+
+		this.stateVersion = stateVersion;
+		this.view = view;
 		this.id = id;
 	}
 
 	public static VertexMetadata ofVertex(Vertex vertex) {
-		return new VertexMetadata(vertex.getView(), vertex.getId());
-	}
-
-	public static VertexMetadata ofParent(Vertex vertex) {
+		final long parentStateVersion;
 		if (vertex.isGenesis()) {
-			throw new IllegalStateException("Genesis has no parent.");
+			parentStateVersion = 0;
+		} else {
+			final VertexMetadata parent = vertex.getQC().getProposed();
+			parentStateVersion = parent.getStateVersion();
 		}
 
-		return new VertexMetadata(vertex.getParentView(), vertex.getParentId());
+		final int versionIncrement = vertex.getAtom() != null ? 1 : 0;
+		final long newStateVersion = parentStateVersion + versionIncrement;
+		return new VertexMetadata(vertex.getView(), vertex.getId(), newStateVersion);
+	}
+
+	public long getStateVersion() {
+		return stateVersion;
 	}
 
 	public View getView() {
@@ -86,7 +102,7 @@ public final class VertexMetadata {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.view, this.id);
+		return Objects.hash(this.view, this.id, this.stateVersion);
 	}
 
 	@Override
@@ -98,7 +114,8 @@ public final class VertexMetadata {
 			VertexMetadata other = (VertexMetadata) o;
 			return
 				Objects.equals(this.view, other.view)
-				&& Objects.equals(this.id, other.id);
+				&& Objects.equals(this.id, other.id)
+				&& this.stateVersion == other.stateVersion;
 		}
 		return false;
 	}

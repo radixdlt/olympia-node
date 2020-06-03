@@ -50,20 +50,26 @@ public class TestEventCoordinatorNetwork {
 		private final ECPublicKey sender;
 		private final ECPublicKey receiver;
 		private final long delay;
+		private final long delayAfterPrevious;
 
-		private MessageInTransit(Object content, ECPublicKey sender, ECPublicKey receiver, long delay) {
+		private MessageInTransit(Object content, ECPublicKey sender, ECPublicKey receiver, long delay, long delayAfterPrevious) {
 			this.content = Objects.requireNonNull(content);
 			this.sender = sender;
 			this.receiver = receiver;
 			this.delay = delay;
+			this.delayAfterPrevious = delayAfterPrevious;
 		}
 
 		private static MessageInTransit newMessage(Object content, ECPublicKey sender, ECPublicKey receiver) {
-			return new MessageInTransit(content, sender, receiver, 0);
+			return new MessageInTransit(content, sender, receiver, 0, 0);
 		}
 
 		private MessageInTransit delayed(long delay) {
-			return new MessageInTransit(content, sender, receiver, delay);
+			return new MessageInTransit(content, sender, receiver, delay, delay);
+		}
+
+		private MessageInTransit delayAfterPrevious(long delayAfterPrevious) {
+			return new MessageInTransit(content, sender, receiver, delay, delayAfterPrevious);
 		}
 
 		public Object getContent() {
@@ -80,11 +86,12 @@ public class TestEventCoordinatorNetwork {
 
 		@Override
 		public String toString() {
-			return String.format("%s %s -> %s %d",
+			return String.format("%s %s -> %s %d %d",
 				content,
 				sender.euid().toString().substring(0, 6),
 				receiver.euid().toString().substring(0, 6),
-				delay
+				delay,
+				delayAfterPrevious
 			);
 		}
 	}
@@ -196,12 +203,12 @@ public class TestEventCoordinatorNetwork {
 					int delayCarryover = (int) Math.max(msg1.time() + msg1.value().delay - msg2.time(), 0);
 					int additionalDelay = (int) (msg2.value().delay - delayCarryover);
 					if (additionalDelay > 0) {
-						return new Timed<>(msg2.value().delayed(additionalDelay), msg2.time(), msg2.unit());
+						return new Timed<>(msg2.value().delayAfterPrevious(additionalDelay), msg2.time(), msg2.unit());
 					} else {
 						return msg2;
 					}
 				})
-				.concatMap(p -> Observable.just(p.value()).delay(p.value().delay, TimeUnit.MILLISECONDS))
+				.concatMap(p -> Observable.just(p.value()).delay(p.value().delayAfterPrevious, TimeUnit.MILLISECONDS))
 				.map(MessageInTransit::getContent)
 				.publish()
 				.refCount();

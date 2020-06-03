@@ -37,8 +37,8 @@ public class VoteTest {
 		View view = View.of(1234567891L);
 		Hash id = Hash.random();
 
-		VertexMetadata parent = new VertexMetadata(View.of(1234567890L), Hash.random());
-		this.voteData = new VoteData(new VertexMetadata(view, id), parent);
+		VertexMetadata parent = new VertexMetadata(View.of(1234567890L), Hash.random(), 1);
+		this.voteData = new VoteData(new VertexMetadata(view, id, 0), parent);
 
 		this.testObject = new Vote(ADDRESS.getPublicKey(), voteData, null);
 	}

@@ -142,9 +142,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	public void processVote(Vote vote) {
 		log.trace("{}: VOTE: Processing {}", this.getShortName(), vote);
 		// accumulate votes into QCs in store
-		Optional<QuorumCertificate> potentialQc = this.pendingVotes.insertVote(vote, validatorSet);
-		if (potentialQc.isPresent()) {
-			QuorumCertificate qc = potentialQc.get();
+		this.pendingVotes.insertVote(vote, this.validatorSet).ifPresent(qc -> {
 			log.info("{}: VOTE: Formed QC: {}", this.getShortName(), qc);
 			if (vertexStore.syncToQC(qc)) {
 				processQC(qc);
@@ -152,21 +150,20 @@ public final class BFTEventReducer implements BFTEventProcessor {
 				log.info("{}: VOTE: QC Not synced: {}", this.getShortName(), qc);
 				unsyncedQCs.put(qc.getProposed().getId(), qc);
 			}
-		}
+		});
 	}
 
 	@Override
 	public void processNewView(NewView newView) {
 		log.trace("{}: NEW_VIEW: Processing {}", this.getShortName(), newView);
 		processQC(newView.getQC());
-		final Optional<View> nextView = this.pacemaker.processNewView(newView, validatorSet);
-		if (nextView.isPresent()) {
+		this.pacemaker.processNewView(newView, validatorSet).ifPresent(view -> {
 			// Hotstuff's Event-Driven OnBeat
-			final Vertex proposedVertex = proposalGenerator.generateProposal(nextView.get());
+			final Vertex proposedVertex = proposalGenerator.generateProposal(view);
 			final Proposal proposal = safetyRules.signProposal(proposedVertex);
 			log.info("{}: Broadcasting PROPOSAL: {}", getShortName(), proposal);
 			this.sender.broadcastProposal(proposal);
-		}
+		});
 	}
 
 	@Override
