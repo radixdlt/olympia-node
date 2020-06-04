@@ -17,12 +17,15 @@
 
 package com.radixdlt.network.addressbook;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 import com.radixdlt.universe.Universe;
+
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.powermock.reflect.Whitebox;
@@ -76,6 +79,11 @@ public class AddressBookImplTest {
 		Universe universe = mock(Universe.class);
 		when(universe.getPlanck()).thenReturn(86400L * 1000L);
 		this.addressbook = new AddressBookImpl(persistence, events, universe, mock(RuntimeProperties.class));
+	}
+
+	@After
+	public void tearDown() throws IOException {
+	    addressbook.close();
 	}
 
 	@Test

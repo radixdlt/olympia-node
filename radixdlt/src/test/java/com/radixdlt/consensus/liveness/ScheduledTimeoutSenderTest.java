@@ -30,6 +30,8 @@ import io.reactivex.rxjava3.observers.TestObserver;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -37,10 +39,11 @@ public class ScheduledTimeoutSenderTest {
 
 	private ScheduledTimeoutSender scheduledTimeoutSender;
 	private ScheduledExecutorService executorService;
+	private ScheduledExecutorService executor;
 
 	@Before
 	public void setUp() {
-		ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+		executor = Executors.newSingleThreadScheduledExecutor();
 		ScheduledExecutorService executorService = mock(ScheduledExecutorService.class);
 		doAnswer(invocation -> {
 			// schedule submissions with a small timeout to ensure that control is returned before the
@@ -51,6 +54,11 @@ public class ScheduledTimeoutSenderTest {
 
 		this.executorService = executorService;
 		this.scheduledTimeoutSender = new ScheduledTimeoutSender(this.executorService);
+	}
+
+	@After
+	public void tearDown() {
+	    executor.shutdown();
 	}
 
 	@Test
