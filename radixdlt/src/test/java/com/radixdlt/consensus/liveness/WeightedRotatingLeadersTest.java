@@ -123,7 +123,7 @@ public class WeightedRotatingLeadersTest {
 			.collect(ImmutableList.toImmutableList());
 
 		ValidatorSet validatorSet = ValidatorSet.from(validatorsInOrder);
-		Comparator<Validator> validatorComparator = mock(Comparator.class);
+		Comparator<Validator> validatorComparator = Comparator.comparing(Validator::getPower); //good enough to avoid compiler warning
 		this.weightedRotatingLeaders = new WeightedRotatingLeaders(validatorSet, validatorComparator, sizeOfCache);
 
 		Map<ECPublicKey, UInt256> proposerCounts = Stream.iterate(View.of(0), View::next)

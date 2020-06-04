@@ -29,6 +29,8 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.universe.Universe;
+
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.radix.events.Events;
@@ -138,6 +140,11 @@ public class MessageCentralImplTest {
 			localSystem,
 			counters
 		);
+	}
+
+	@After
+	public void tearDown() {
+	    mci.close();
 	}
 
 	@Test

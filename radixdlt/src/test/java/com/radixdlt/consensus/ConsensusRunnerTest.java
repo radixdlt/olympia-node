@@ -77,5 +77,6 @@ public class ConsensusRunnerTest {
 		verify(ec, times(1)).processNewView(eq(newView));
 		verify(ec, times(1)).processLocalTimeout(eq(timeout));
 		verify(ec, times(1)).processGetVertexRequest(eq(request));
+		consensusRunner.stop();
 	}
 }
