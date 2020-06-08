@@ -87,7 +87,7 @@ public class DockerNetwork implements Closeable, RemoteBFTNetwork {
 	                                                              boolean startConsensusOnBoot) {
 		Map<String, Map<String, Object>> dockerOptionsPerNode = CmdHelper.getDockerOptions(numNodes, startConsensusOnBoot);
 		CmdHelper.removeAllDockerContainers(); // TODO do we need  if yes, document it
-		if(!networkName.equals("host")){
+		if(!networkName.equals("radix_default")){
 			System.out.println(" Network is " + networkName);
 			CmdHelper.runCommand("docker network rm " + networkName);
 			CmdHelper.runCommand("docker network create " + networkName, null, true);
