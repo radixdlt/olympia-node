@@ -18,6 +18,7 @@
 
 package com.radixdlt.test;
 
+import java.util.Optional;
 import okhttp3.HttpUrl;
 import utils.CmdHelper;
 
@@ -144,7 +145,8 @@ public class DockerNetwork implements Closeable, RemoteBFTNetwork {
 	 */
 	public static class Builder {
 		private static AtomicInteger networkIdCounter = new AtomicInteger(0);
-		private String name = "test-network-" + networkIdCounter.getAndIncrement();
+		private String name = Optional.ofNullable(System.getenv("TEST_NETWORK"))
+			.orElse("test-network-" + networkIdCounter.getAndIncrement());
 		private int numNodes = -1;
 		private boolean startConsensusOnBoot;
 
