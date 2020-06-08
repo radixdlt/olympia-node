@@ -126,7 +126,8 @@ public class DockerNetwork implements Closeable, RemoteBFTNetwork {
 	private static String getNodeEndpoint(Map<String, Object> nodeOptions, final String endpoint) {
 		int nodePort = (Integer) nodeOptions.get(OPTIONS_KEY_PORT);
 
-		return String.format("http://localhost:%d/%s", nodePort, endpoint);
+//		return String.format("http://localhost:%d/%s", nodePort, endpoint);
+		return String.format("http://%s/%s", nodeOptions.get("nodeName"), endpoint);
 	}
 
 	@Override
