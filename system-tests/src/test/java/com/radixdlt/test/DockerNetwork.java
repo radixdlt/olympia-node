@@ -87,7 +87,7 @@ public class DockerNetwork implements Closeable, RemoteBFTNetwork {
 	                                                              boolean startConsensusOnBoot) {
 		Map<String, Map<String, Object>> dockerOptionsPerNode = CmdHelper.getDockerOptions(numNodes, startConsensusOnBoot);
 		CmdHelper.removeAllDockerContainers(); // TODO do we need  if yes, document it
-		if(!networkName.equals("radix_default")){
+		if(!networkName.contains("DID")){
 			System.out.println(" Network is " + networkName);
 			CmdHelper.runCommand("docker network rm " + networkName);
 			CmdHelper.runCommand("docker network create " + networkName, null, true);
@@ -125,8 +125,7 @@ public class DockerNetwork implements Closeable, RemoteBFTNetwork {
 	// utility for getting the API endpoint (as a string) out of generated node options
 	private static String getNodeEndpoint(Map<String, Object> nodeOptions, final String endpoint) {
 		int nodePort = (Integer) nodeOptions.get(OPTIONS_KEY_PORT);
-
-//		return String.format("http://localhost:%d/%s", nodePort, endpoint);
+		//TODO generalise it to use localhost as well
 		return String.format("http://%s:8080/%s", nodeOptions.get("nodeName"), endpoint);
 	}
 
