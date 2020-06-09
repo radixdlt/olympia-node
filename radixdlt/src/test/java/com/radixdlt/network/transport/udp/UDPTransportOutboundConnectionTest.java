@@ -81,6 +81,7 @@ public class UDPTransportOutboundConnectionTest {
 
 	@Before
 	public void setUp() throws UnknownHostException {
+	    Thread.interrupted();
 		channel = mock(DatagramChannel.class);
 		channelFuture = spy(new DefaultChannelPromise(channel, new DefaultEventExecutor()));
 
