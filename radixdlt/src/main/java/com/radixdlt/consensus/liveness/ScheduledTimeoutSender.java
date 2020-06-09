@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus.liveness;
 
+
 import com.radixdlt.consensus.View;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
@@ -33,11 +34,13 @@ import org.apache.logging.log4j.Logger;
  */
 public final class ScheduledTimeoutSender implements FixedTimeoutPacemaker.TimeoutSender, PacemakerRx {
 	private static final Logger log = LogManager.getLogger();
-
+    private static final long LOGGING_INTERVAL = TimeUnit.SECONDS.toMillis(1);	
 	private final ScheduledExecutorService executorService;
 	private final Subject<View> timeouts;
 	private final Observable<View> timeoutsObservable;
 
+	private long nextLogging = 0;
+	
 	public ScheduledTimeoutSender(ScheduledExecutorService executorService) {
 		this.executorService = Objects.requireNonNull(executorService);
 		// BehaviorSubject so that nextLocalTimeout will complete if timeout already occurred
@@ -49,7 +52,11 @@ public final class ScheduledTimeoutSender implements FixedTimeoutPacemaker.Timeo
 
 	@Override
 	public void scheduleTimeout(final View view, long timeoutMilliseconds) {
-		log.info("Starting View: {}", view);
+	    long crtTime = System.currentTimeMillis();
+	    if(crtTime >= nextLogging) {
+	        log.info("Starting View: {}", view);
+	        nextLogging = crtTime + LOGGING_INTERVAL;
+	    }	
 		executorService.schedule(() -> timeouts.onNext(view), timeoutMilliseconds, TimeUnit.MILLISECONDS);
 	}
 
