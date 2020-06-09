@@ -32,7 +32,6 @@ RUN wget -q https://services.gradle.org/distributions/gradle-4.5.1-bin.zip \
 # Set Gradle in the environment variables
 ENV GRADLE_HOME=/opt/gradle-4.5.1
 ENV PATH=/opt/gradle-4.5.1/bin:$PATH
-#RUN apk add --no-cache curl tar bash procps
 
 RUN apt-get update
 RUN apt install docker.io -y
