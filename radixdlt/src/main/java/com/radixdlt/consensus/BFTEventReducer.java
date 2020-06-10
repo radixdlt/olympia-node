@@ -17,15 +17,6 @@
 
 package com.radixdlt.consensus;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.message.FormattedMessage;
-
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import com.radixdlt.consensus.liveness.Pacemaker;
@@ -44,6 +35,13 @@ import com.radixdlt.identifiers.EUID;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.utils.Longs;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.message.FormattedMessage;
 
 /**
  * Processes and reduces BFT events to the BFT state based on core
@@ -69,18 +67,18 @@ public final class BFTEventReducer implements BFTEventProcessor {
 
 	@Inject
 	public BFTEventReducer(
-		ProposalGenerator proposalGenerator,
-		Mempool mempool,
-		BFTEventSender sender,
-		SafetyRules safetyRules,
-		Pacemaker pacemaker,
-		VertexStore vertexStore,
-		PendingVotes pendingVotes,
-		ProposerElection proposerElection,
-		@Named("self") ECKeyPair selfKey,
-		ValidatorSet validatorSet,
-		SystemCounters counters
-	) {
+			ProposalGenerator proposalGenerator,
+			Mempool mempool,
+			BFTEventSender sender,
+			SafetyRules safetyRules,
+			Pacemaker pacemaker,
+			VertexStore vertexStore,
+			PendingVotes pendingVotes,
+			ProposerElection proposerElection,
+			@Named("self") ECKeyPair selfKey,
+			ValidatorSet validatorSet,
+			SystemCounters counters
+			) {
 		this.proposalGenerator = Objects.requireNonNull(proposalGenerator);
 		this.mempool = Objects.requireNonNull(mempool);
 		this.sender = Objects.requireNonNull(sender);
@@ -107,12 +105,12 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		// TODO make signing more robust by including author in signed hash
 		ECDSASignature signature = this.selfKey.sign(Hash.hash256(Longs.toByteArray(nextView.number())));
 		NewView newView = new NewView(
-			selfKey.getPublicKey(),
-			nextView,
-			this.vertexStore.getHighestQC(),
-			this.vertexStore.getHighestCommittedQC(),
-			signature
-		);
+				selfKey.getPublicKey(),
+				nextView,
+				this.vertexStore.getHighestQC(),
+				this.vertexStore.getHighestCommittedQC(),
+				signature
+				);
 		ECPublicKey nextLeader = this.proposerElection.getProposer(nextView);
 		log.trace("{}: Sending NEW_VIEW to {}: {}", this::getShortName, () -> this.getShortName(nextLeader.euid()), () ->  newView);
 		this.sender.sendNewView(newView, nextLeader);
@@ -122,20 +120,20 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	private void processQC(QuorumCertificate qc) {
 		// commit any newly committable vertices
 		this.safetyRules.process(qc)
-			.ifPresent(commitMetaData -> {
-				vertexStore.commitVertex(commitMetaData).ifPresent(vertex -> {
-					log.trace("{}: Committed vertex: {}", this::getShortName, () -> vertex);
-					final ClientAtom committedAtom = vertex.getAtom();
-					if (committedAtom != null) {
-						mempool.removeCommittedAtom(committedAtom.getAID());
-					}
-				});
-
+		.ifPresent(commitMetaData -> {
+			vertexStore.commitVertex(commitMetaData).ifPresent(vertex -> {
+				log.trace("{}: Committed vertex: {}", this::getShortName, () -> vertex);
+				final ClientAtom committedAtom = vertex.getAtom();
+				if (committedAtom != null) {
+					mempool.removeCommittedAtom(committedAtom.getAID());
+				}
 			});
+
+		});
 
 		// proceed to next view if pacemaker feels like it
 		this.pacemaker.processQC(qc.getView())
-			.ifPresent(this::proceedToView);
+		.ifPresent(this::proceedToView);
 	}
 
 	@Override
@@ -255,6 +253,6 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	@Override
 	public void start() {
 		this.pacemaker.processQC(this.vertexStore.getHighestQC().getView())
-			.ifPresent(this::proceedToView);
+		.ifPresent(this::proceedToView);
 	}
 }
