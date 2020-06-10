@@ -25,7 +25,6 @@ sourceSets {
 }
 
 dependencies {
-//    api project(":radixdlt-java")
     implementation 'com.github.radixdlt:radixdlt-java:rc~1.0-beta.10-SNAPSHOT'
     testCompile group: 'io.cucumber', name: 'cucumber-groovy', version: '4.7.1'
     testCompile "org.codehaus.groovy:groovy-all:2.4.12"
