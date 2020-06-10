@@ -38,7 +38,7 @@ public final class ScheduledTimeoutSender implements FixedTimeoutPacemaker.Timeo
 	private final ScheduledExecutorService executorService;
 	private final Subject<View> timeouts;
 	private final Observable<View> timeoutsObservable;
-	private volatile long nextLogging = 0;
+	private long nextLogging = 0;
 
 	public ScheduledTimeoutSender(ScheduledExecutorService executorService) {
 		this.executorService = Objects.requireNonNull(executorService);
@@ -51,13 +51,13 @@ public final class ScheduledTimeoutSender implements FixedTimeoutPacemaker.Timeo
 
 	@Override
 	public void scheduleTimeout(final View view, long timeoutMilliseconds) {
-	    long crtTime = System.currentTimeMillis();
-	    if (crtTime >= nextLogging) {
-	        log.info("Starting View: {}", view);
-	        nextLogging = crtTime + LOGGING_INTERVAL;
-	    } else {
-	        log.trace("Starting View: {}", view);
-	    }
+		long crtTime = System.currentTimeMillis();
+		if (crtTime >= nextLogging) {
+			log.info("Starting View: {}", view);
+			nextLogging = crtTime + LOGGING_INTERVAL;
+		} else {
+			log.trace("Starting View: {}", view);
+		}
 		executorService.schedule(() -> timeouts.onNext(view), timeoutMilliseconds, TimeUnit.MILLISECONDS);
 	}
 

@@ -17,11 +17,19 @@
 
 package com.radixdlt.consensus;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.message.FormattedMessage;
+
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
-import com.radixdlt.consensus.liveness.ProposalGenerator;
-import com.radixdlt.identifiers.EUID;
 import com.radixdlt.consensus.liveness.Pacemaker;
+import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyViolationException;
@@ -32,18 +40,10 @@ import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.utils.Longs;
-
-import java.util.HashMap;
-import java.util.Map;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.message.FormattedMessage;
-
-import java.util.Objects;
-import java.util.Optional;
 
 /**
  * Processes and reduces BFT events to the BFT state based on core
@@ -65,6 +65,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	private final ValidatorSet validatorSet;
 	private final SystemCounters counters;
 	private final Map<Hash, QuorumCertificate> unsyncedQCs = new HashMap<>();
+	private boolean synchedLog = false;
 
 	@Inject
 	public BFTEventReducer(
@@ -140,7 +141,6 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	@Override
 	public void processLocalSync(Hash vertexId) {
 		vertexStore.processLocalSync(vertexId);
-
 		QuorumCertificate qc = unsyncedQCs.remove(vertexId);
 		if (qc != null) {
 			if (vertexStore.syncToQC(qc, vertexStore.getHighestCommittedQC(), null)) {
@@ -159,9 +159,16 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		this.pendingVotes.insertVote(vote, this.validatorSet).ifPresent(qc -> {
 			log.trace("{}: VOTE: Formed QC: {}", this::getShortName, () -> qc);
 			if (vertexStore.syncToQC(qc, vertexStore.getHighestCommittedQC(), vote.getAuthor())) {
+				if (!synchedLog) {
+					log.info("{}: VOTE: QC Synced: {}", this::getShortName, () -> qc);
+					synchedLog = true;
+				}
 				processQC(qc);
 			} else {
-				log.trace("{}: VOTE: QC Not synced: {}", this::getShortName, () -> qc);
+				if (synchedLog) {
+					log.info("{}: VOTE: QC Not synced: {}", this::getShortName, () -> qc);
+					synchedLog = false;
+				}
 				unsyncedQCs.put(qc.getProposed().getId(), qc);
 			}
 		});
@@ -202,7 +209,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 			vertexStore.insertVertex(proposedVertex);
 		} catch (VertexInsertionException e) {
 			counters.increment(CounterType.CONSENSUS_REJECTED);
-			log.trace("{} PROPOSAL: Rejected. Reason: {}", this::getShortName, e::getMessage);
+			log.warn("{} PROPOSAL: Rejected. Reason: {}", this::getShortName, e::getMessage);
 			// TODO: Better logic for removal on exception
 			final ClientAtom atom = proposedVertex.getAtom();
 			if (atom != null) {
@@ -241,7 +248,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 			counters.set(CounterType.CONSENSUS_TIMEOUT_VIEW, view.number());
 			counters.increment(CounterType.CONSENSUS_TIMEOUT);
 		} else {
-			log.trace("{}: LOCAL_TIMEOUT: Ignoring {}", this::getShortName, () -> view);
+			log.warn("{}: LOCAL_TIMEOUT: Ignoring {}", this::getShortName, () -> view);
 		}
 	}
 
