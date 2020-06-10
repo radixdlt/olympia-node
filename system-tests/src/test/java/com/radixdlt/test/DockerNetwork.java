@@ -41,6 +41,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class DockerNetwork implements Closeable, RemoteBFTNetwork {
 	private static final String OPTIONS_KEY_PORT = "hostPort";
+	private static final String NETWORK = "network";
+	private static final String DID_NETWORK = "DID"; //Docker in docker network on jenkins
 
 	private final String name;
 	private final int numNodes;
@@ -125,8 +127,10 @@ public class DockerNetwork implements Closeable, RemoteBFTNetwork {
 	// utility for getting the API endpoint (as a string) out of generated node options
 	private static String getNodeEndpoint(Map<String, Object> nodeOptions, final String endpoint) {
 		int nodePort = (Integer) nodeOptions.get(OPTIONS_KEY_PORT);
-		//TODO generalise it to use localhost as well
-		return String.format("http://%s:8080/%s", nodeOptions.get("nodeName"), endpoint);
+		String network = (String) nodeOptions.get(NETWORK);
+		return network.contains(DID_NETWORK)?
+			String.format("http://%s:8080/%s", nodeOptions.get("nodeName"), endpoint):
+			String.format("http://localhost:%d/%s", nodePort, endpoint);
 	}
 
 	@Override
