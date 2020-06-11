@@ -68,6 +68,8 @@ public class CommittedAtomsStoreTest {
 	public void when_get_atom_containing__then_should_return_atom() {
 		Particle particle = mock(Particle.class);
 		when(particle.euid()).thenReturn(EUID.ONE);
+		// No type check issues with mocking generic here
+		@SuppressWarnings("unchecked")
 		Consumer<CommittedAtom> callback = mock(Consumer.class);
 		SearchCursor searchCursor = mock(SearchCursor.class);
 		AID aid = mock(AID.class);

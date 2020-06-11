@@ -36,7 +36,6 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.CommittedAtom;
 import io.reactivex.rxjava3.observers.TestObserver;
@@ -67,7 +66,10 @@ public class VertexStoreTest {
 		this.genesisVertexMetadata = new VertexMetadata(View.genesis(), genesisVertex.getId(), 0);
 		VoteData voteData = new VoteData(genesisVertexMetadata, null);
 		this.rootQC = new QuorumCertificate(voteData, new ECDSASignatures());
-		this.syncedStateComputer = mock(SyncedStateComputer.class);
+		// No type check issues with mocking generic here
+		@SuppressWarnings("unchecked")
+		SyncedStateComputer<CommittedAtom> ssc = mock(SyncedStateComputer.class);
+		this.syncedStateComputer = ssc;
 		this.syncVerticesRPCSender = mock(SyncVerticesRPCSender.class);
 		this.syncSender = mock(SyncSender.class);
 		this.counters = mock(SystemCounters.class);
@@ -217,7 +219,7 @@ public class VertexStoreTest {
 
 	@Test
 	public void when_insert_vertex__then_it_should_not_be_committed_or_stored_in_engine()
-		throws VertexInsertionException, RadixEngineException {
+		throws VertexInsertionException {
 		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), null);
 		vertexStore.insertVertex(nextVertex);
 
@@ -229,7 +231,7 @@ public class VertexStoreTest {
 
 	@Test
 	public void when_insert_and_commit_vertex__then_it_should_be_committed_and_stored_in_engine()
-		throws VertexInsertionException, RadixEngineException {
+		throws VertexInsertionException {
 		ClientAtom clientAtom = mock(ClientAtom.class);
 		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), clientAtom);
 		vertexStore.insertVertex(nextVertex);
@@ -418,8 +420,10 @@ public class VertexStoreTest {
 				counters
 			);
 
-		Vertex vertex5 = nextVertex.get();
-		Vertex vertex6 = nextVertex.get();
+		// Skip two vertices
+		nextVertex.get();
+		nextVertex.get();
+
 		Vertex vertex7 = nextVertex.get();
 		Vertex vertex8 = nextVertex.get();
 		Vertex vertex9 = nextSkippableVertex.apply(true);

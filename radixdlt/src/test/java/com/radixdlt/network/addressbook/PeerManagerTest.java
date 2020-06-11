@@ -82,13 +82,7 @@ public class PeerManagerTest extends RadixTest {
 
 	@BeforeClass
 	public static void beforeClass() {
-		// This takes a relatively long time to read the encrypted key store now
-		// on first construction, so make sure we pre-initialise here before
-		// running timing critical tests.
 		TestSetupUtils.installBouncyCastleProvider();
-		long start = System.nanoTime();
-		long finish = System.nanoTime();
-		System.out.format("%.3f seconds to initialise%n", (finish - start) / 1E9);
 	}
 
 	@Before
@@ -199,32 +193,36 @@ public class PeerManagerTest extends RadixTest {
 		Semaphore semaphore = new Semaphore(0);
 		// allow peer manager to run 1 sec
 		peerManager.start();
-		new Timer().schedule(new TimerTask() {
+		Timer t = new Timer();
+		t.schedule(new TimerTask() {
 			@Override
 			public void run() {
 				peerManager.stop();
 				semaphore.release();
 			}
 		}, 1000);
-		semaphore.acquire();
+		try {
+			semaphore.acquire();
 
-		List<SystemMessage> peer1SystemMessages = peerMessageMultimap.get(peer1).stream()
-				.filter(message -> message instanceof SystemMessage).map(message -> (SystemMessage) message)
-				.collect(Collectors.toList());
-		List<SystemMessage> peer2SystemMessages = peerMessageMultimap.get(peer2).stream()
-				.filter(message -> message instanceof SystemMessage).map(message -> (SystemMessage) message)
-				.collect(Collectors.toList());
+			List<SystemMessage> peer1SystemMessages = peerMessageMultimap.get(peer1).stream()
+					.filter(message -> message instanceof SystemMessage).map(message -> (SystemMessage) message)
+					.collect(Collectors.toList());
+			List<SystemMessage> peer2SystemMessages = peerMessageMultimap.get(peer2).stream()
+					.filter(message -> message instanceof SystemMessage).map(message -> (SystemMessage) message)
+					.collect(Collectors.toList());
 
-		// in 1 sec of execution with network.peers.heartbeat.delay = 100 and network.peers.heartbeat.interval = 200
-		// heartbeat message should be sent 4 times for each peer (1000-100)/200 = 4.5
-		// message delivery could be late and last few messages of SystemMessage could be lost or
-		// could be executed more times as peerManager started before we scheduling stop operation and some messages
-		// could be sent before moment when we are starting to count
-		SoftAssertions.assertSoftly(softly -> {
-			softly.assertThat(peer1SystemMessages.size()).isCloseTo(4, offset(1));
-			softly.assertThat(peer2SystemMessages.size()).isCloseTo(4, offset(1));
-		});
-
+			// in 1 sec of execution with network.peers.heartbeat.delay = 100 and network.peers.heartbeat.interval = 200
+			// heartbeat message should be sent 4 times for each peer (1000-100)/200 = 4.5
+			// message delivery could be late and last few messages of SystemMessage could be lost or
+			// could be executed more times as peerManager started before we scheduling stop operation and some messages
+			// could be sent before moment when we are starting to count
+			SoftAssertions.assertSoftly(softly -> {
+				softly.assertThat(peer1SystemMessages.size()).isCloseTo(4, offset(1));
+				softly.assertThat(peer2SystemMessages.size()).isCloseTo(4, offset(1));
+			});
+		} finally {
+			t.cancel();
+		}
 	}
 
 	@Test
@@ -240,43 +238,48 @@ public class PeerManagerTest extends RadixTest {
 		Semaphore semaphore = new Semaphore(0);
 		peerManager.start();
 		// allow peer manager to run 1 sec
-		new Timer().schedule(new TimerTask() {
+		Timer t = new Timer();
+		t.schedule(new TimerTask() {
 			@Override
 			public void run() {
 				peerManager.stop();
 				semaphore.release();
 			}
 		}, 1000);
-		semaphore.acquire();
+		try {
+			semaphore.acquire();
 
-		List<PeerPingMessage> peer1PeerPingMessages = peerMessageMultimap.get(peer1).stream()
-				.filter(message -> message instanceof PeerPingMessage).map(message -> (PeerPingMessage) message)
-				.collect(Collectors.toList());
-		List<PeerPingMessage> peer2PeerPingMessages = peerMessageMultimap.get(peer2).stream()
-				.filter(message -> message instanceof PeerPingMessage).map(message -> (PeerPingMessage) message)
-				.collect(Collectors.toList());
-		List<PeerPongMessage> peer1PeerPongMessages = peerMessageMultimap.get(peer1).stream()
-				.filter(message -> message instanceof PeerPongMessage).map(message -> (PeerPongMessage) message)
-				.collect(Collectors.toList());
-		List<PeerPongMessage> peer2PeerPongMessages = peerMessageMultimap.get(peer2).stream()
-				.filter(message -> message instanceof PeerPongMessage).map(message -> (PeerPongMessage) message)
-				.collect(Collectors.toList());
+			List<PeerPingMessage> peer1PeerPingMessages = peerMessageMultimap.get(peer1).stream()
+					.filter(message -> message instanceof PeerPingMessage).map(message -> (PeerPingMessage) message)
+					.collect(Collectors.toList());
+			List<PeerPingMessage> peer2PeerPingMessages = peerMessageMultimap.get(peer2).stream()
+					.filter(message -> message instanceof PeerPingMessage).map(message -> (PeerPingMessage) message)
+					.collect(Collectors.toList());
+			List<PeerPongMessage> peer1PeerPongMessages = peerMessageMultimap.get(peer1).stream()
+					.filter(message -> message instanceof PeerPongMessage).map(message -> (PeerPongMessage) message)
+					.collect(Collectors.toList());
+			List<PeerPongMessage> peer2PeerPongMessages = peerMessageMultimap.get(peer2).stream()
+					.filter(message -> message instanceof PeerPongMessage).map(message -> (PeerPongMessage) message)
+					.collect(Collectors.toList());
 
-		SoftAssertions.assertSoftly(softly -> {
-			// in 1 sec of execution with network.peer.probe.delay = 100 and network.peer.probe.interval = 200
-			// Ping message will be initiated by executor at least 4 times (1000-100)/200 = 4.5
-			// but because of network.peer.probe.frequency = 300 parameter we expect 2 requests only
-			// message delivery could be late and last few messages of PeerPing/PeerPong could be lost or
-			// could be executed more times as peerManager started before we scheduling stop operation and some messages
-			// could be sent before moment when we are starting to count
-			softly.assertThat(peer1PeerPingMessages.size()).isCloseTo(2, offset(1));
-			softly.assertThat(peer2PeerPingMessages.size()).isCloseTo(2, offset(1));
+			SoftAssertions.assertSoftly(softly -> {
+				// in 1 sec of execution with network.peer.probe.delay = 100 and network.peer.probe.interval = 200
+				// Ping message will be initiated by executor at least 4 times (1000-100)/200 = 4.5
+				// but because of network.peer.probe.frequency = 300 parameter we expect 2 requests only
+				// message delivery could be late and last few messages of PeerPing/PeerPong could be lost or
+				// could be executed more times as peerManager started before we scheduling stop operation and some messages
+				// could be sent before moment when we are starting to count
+				softly.assertThat(peer1PeerPingMessages.size()).isCloseTo(2, offset(1));
+				softly.assertThat(peer2PeerPingMessages.size()).isCloseTo(2, offset(1));
 
-			// each ping will receive pong message
-			softly.assertThat(peer1PeerPongMessages.size()).isCloseTo(2, offset(1));
-			softly.assertThat(peer2PeerPongMessages.size()).isCloseTo(2, offset(1));
+				// each ping will receive pong message
+				softly.assertThat(peer1PeerPongMessages.size()).isCloseTo(2, offset(1));
+				softly.assertThat(peer2PeerPongMessages.size()).isCloseTo(2, offset(1));
 
-		});
+			});
+		} finally {
+			t.cancel();
+		}
 	}
 
 	@Test
@@ -290,80 +293,85 @@ public class PeerManagerTest extends RadixTest {
 		Semaphore semaphore = new Semaphore(0);
 		peerManager.start();
 		// allow peer manager to run 1 sec
-		new Timer().schedule(new TimerTask() {
+		Timer t = new Timer();
+		t.schedule(new TimerTask() {
 			@Override
 			public void run() {
 				peerManager.stop();
 				semaphore.release();
 			}
 		}, 1000);
-		semaphore.acquire();
+		try {
+			semaphore.acquire();
 
-		List<GetPeersMessage> peer1GetPeersMessages = peerMessageMultimap.get(peer1).stream()
-				.filter(message -> message instanceof GetPeersMessage).map(message -> (GetPeersMessage) message)
-				.collect(Collectors.toList());
-		List<GetPeersMessage> peer2GetPeersMessages = peerMessageMultimap.get(peer2).stream()
-				.filter(message -> message instanceof GetPeersMessage).map(message -> (GetPeersMessage) message)
-				.collect(Collectors.toList());
+			List<GetPeersMessage> peer1GetPeersMessages = peerMessageMultimap.get(peer1).stream()
+					.filter(message -> message instanceof GetPeersMessage).map(message -> (GetPeersMessage) message)
+					.collect(Collectors.toList());
+			List<GetPeersMessage> peer2GetPeersMessages = peerMessageMultimap.get(peer2).stream()
+					.filter(message -> message instanceof GetPeersMessage).map(message -> (GetPeersMessage) message)
+					.collect(Collectors.toList());
 
-		List<PeersMessage> peer1PeersMessage = peerMessageMultimap.get(peer1).stream()
-				.filter(message -> message instanceof PeersMessage).map(message -> (PeersMessage) message)
-				.collect(Collectors.toList());
-		List<PeersMessage> peer2PeersMessage = peerMessageMultimap.get(peer2).stream()
-				.filter(message -> message instanceof PeersMessage).map(message -> (PeersMessage) message)
-				.collect(Collectors.toList());
+			List<PeersMessage> peer1PeersMessage = peerMessageMultimap.get(peer1).stream()
+					.filter(message -> message instanceof PeersMessage).map(message -> (PeersMessage) message)
+					.collect(Collectors.toList());
+			List<PeersMessage> peer2PeersMessage = peerMessageMultimap.get(peer2).stream()
+					.filter(message -> message instanceof PeersMessage).map(message -> (PeersMessage) message)
+					.collect(Collectors.toList());
 
-		SoftAssertions.assertSoftly(softly -> {
+			SoftAssertions.assertSoftly(softly -> {
 
-			// in 1 sec of execution with network.peers.broadcast.delay = 100 and network.peers.broadcast.interval = 200
-			// if probeAll = false then only one peer will be selected from recentPeers to send message randomly.
-			// GetPeersMessage message should be sent 4 times (1000-100)/200 = 4
-			// if probeAll = true then all peers from list will be discovered GetPeersMessage message should be sent 8 times
-			// (1000-100)/200 = 4 then 4*2 = 8
-			// message delivery could be late and last few messages of GetPeerMessage/PeerMessage could be lost or
-			// could be executed more times as peerManager started before we scheduling stop operation and some messages
-			// could be sent before moment when we are starting to count
-			int expectedNumberOfGetPeersMessages = probeAll ? 8 : 4;
-			// number of responses is equal to 2 * number of requests
-			// because we are using network.peers.message.batch.size = 2
-			int expectedNumberOfPeersMessage = expectedNumberOfGetPeersMessages * 2;
-			softly.assertThat(peer1GetPeersMessages.size() + peer2GetPeersMessages.size()).isCloseTo(expectedNumberOfGetPeersMessages, offset(2));
-			softly.assertThat(peer1PeersMessage.size() + peer2PeersMessage.size()).isCloseTo(expectedNumberOfPeersMessage, offset(2 * 2));
+				// in 1 sec of execution with network.peers.broadcast.delay = 100 and network.peers.broadcast.interval = 200
+				// if probeAll = false then only one peer will be selected from recentPeers to send message randomly.
+				// GetPeersMessage message should be sent 4 times (1000-100)/200 = 4
+				// if probeAll = true then all peers from list will be discovered GetPeersMessage message should be sent 8 times
+				// (1000-100)/200 = 4 then 4*2 = 8
+				// message delivery could be late and last few messages of GetPeerMessage/PeerMessage could be lost or
+				// could be executed more times as peerManager started before we scheduling stop operation and some messages
+				// could be sent before moment when we are starting to count
+				int expectedNumberOfGetPeersMessages = probeAll ? 8 : 4;
+				// number of responses is equal to 2 * number of requests
+				// because we are using network.peers.message.batch.size = 2
+				int expectedNumberOfPeersMessage = expectedNumberOfGetPeersMessages * 2;
+				softly.assertThat(peer1GetPeersMessages.size() + peer2GetPeersMessages.size()).isCloseTo(expectedNumberOfGetPeersMessages, offset(2));
+				softly.assertThat(peer1PeersMessage.size() + peer2PeersMessage.size()).isCloseTo(expectedNumberOfPeersMessage, offset(2 * 2));
 
-			// number of responses is equal to 2 * number of requests
-			// because we are using network.peers.message.batch.size = 2
-			// each response should have 3 peer so we will have 2 message for each response with 2 and 1 peer accordingly
-			// message delivery could be late and last few messages of GetPeerMessage/PeerMessage could be lost or
-			// could be executed more times as peerManager started before we scheduling stop operation and some messages
-			// could be sent before moment when we are starting to count
-			softly.assertThat(peer1GetPeersMessages.size() * 2).isCloseTo(peer1PeersMessage.size(), offset(2));
-			softly.assertThat(peer2GetPeersMessages.size() * 2).isCloseTo(peer2PeersMessage.size(), offset(2));
+				// number of responses is equal to 2 * number of requests
+				// because we are using network.peers.message.batch.size = 2
+				// each response should have 3 peer so we will have 2 message for each response with 2 and 1 peer accordingly
+				// message delivery could be late and last few messages of GetPeerMessage/PeerMessage could be lost or
+				// could be executed more times as peerManager started before we scheduling stop operation and some messages
+				// could be sent before moment when we are starting to count
+				softly.assertThat(peer1GetPeersMessages.size() * 2).isCloseTo(peer1PeersMessage.size(), offset(2));
+				softly.assertThat(peer2GetPeersMessages.size() * 2).isCloseTo(peer2PeersMessage.size(), offset(2));
 
-			// each response exclude self
-			// because we are using network.peers.message.batch.size = 2 batch is <= 2
-			// each response should have 3 peer so we will have 2 message for each response with 2 and 1 peer accordingly
-			// total number of peers = number of getPeers requests * 3
-			AtomicInteger peerNumber = new AtomicInteger(0);
-			peer1PeersMessage.forEach(message -> {
-				softly.assertThat(message.getPeers()).doesNotContain(peer1);
-				softly.assertThat(message.getPeers().size()).isBetween(1, 2);
-				peerNumber.addAndGet(message.getPeers().size());
+				// each response exclude self
+				// because we are using network.peers.message.batch.size = 2 batch is <= 2
+				// each response should have 3 peer so we will have 2 message for each response with 2 and 1 peer accordingly
+				// total number of peers = number of getPeers requests * 3
+				AtomicInteger peerNumber = new AtomicInteger(0);
+				peer1PeersMessage.forEach(message -> {
+					softly.assertThat(message.getPeers()).doesNotContain(peer1);
+					softly.assertThat(message.getPeers().size()).isBetween(1, 2);
+					peerNumber.addAndGet(message.getPeers().size());
+				});
+				// message delivery could be late and last few messages of GetPeerMessage/PeerMessage could be lost or
+				// could be executed more times as peerManager started before we scheduling stop operation and some messages
+				// could be sent before moment when we are starting to count
+				softly.assertThat(peerNumber.get()).isCloseTo(peer1GetPeersMessages.size() * 3, offset(3));
+
+				peerNumber.set(0);
+				peer2PeersMessage.forEach(message -> {
+					softly.assertThat(message.getPeers()).doesNotContain(peer2);
+					softly.assertThat(message.getPeers().size()).isBetween(1, 2);
+					peerNumber.addAndGet(message.getPeers().size());
+				});
+				// message delivery could be late and last few messages of GetPeerMessage/PeerMessage could be lost or
+				// could be executed more times as peerManager started before we scheduling stop operation and
+				// some messages could be sent before moment when we are starting to count
+				softly.assertThat(peerNumber.get()).isCloseTo(peer2GetPeersMessages.size() * 3, offset(3));
 			});
-			// message delivery could be late and last few messages of GetPeerMessage/PeerMessage could be lost or
-			// could be executed more times as peerManager started before we scheduling stop operation and some messages
-			// could be sent before moment when we are starting to count
-			softly.assertThat(peerNumber.get()).isCloseTo(peer1GetPeersMessages.size() * 3, offset(3));
-
-			peerNumber.set(0);
-			peer2PeersMessage.forEach(message -> {
-				softly.assertThat(message.getPeers()).doesNotContain(peer2);
-				softly.assertThat(message.getPeers().size()).isBetween(1, 2);
-				peerNumber.addAndGet(message.getPeers().size());
-			});
-			// message delivery could be late and last few messages of GetPeerMessage/PeerMessage could be lost or
-			// could be executed more times as peerManager started before we scheduling stop operation and
-			// some messages could be sent before moment when we are starting to count
-			softly.assertThat(peerNumber.get()).isCloseTo(peer2GetPeersMessages.size() * 3, offset(3));
-		});
+		} finally {
+			t.cancel();
+		}
 	}
 }

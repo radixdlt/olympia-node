@@ -119,10 +119,12 @@ public final class ClientAtom implements LedgerAtom {
 		return aid;
 	}
 
+	@Override
 	public ImmutableMap<String, String> getMetaData() {
 		return metaData;
 	}
 
+	@Override
 	public Hash getPowFeeHash() {
 		return powFeeHash;
 	}

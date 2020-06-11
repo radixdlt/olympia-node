@@ -26,6 +26,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.radixdlt.consensus.View;
+import com.radixdlt.utils.ThreadFactories;
+
 import io.reactivex.rxjava3.observers.TestObserver;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -39,26 +41,28 @@ public class ScheduledTimeoutSenderTest {
 
 	private ScheduledTimeoutSender scheduledTimeoutSender;
 	private ScheduledExecutorService executorService;
-	private ScheduledExecutorService executor;
+	private ScheduledExecutorService executorServiceMock;
 
 	@Before
 	public void setUp() {
-		executor = Executors.newSingleThreadScheduledExecutor();
-		ScheduledExecutorService executorService = mock(ScheduledExecutorService.class);
+		this.executorService = Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads("TimeoutSender"));
+		this.executorServiceMock = mock(ScheduledExecutorService.class);
 		doAnswer(invocation -> {
 			// schedule submissions with a small timeout to ensure that control is returned before the
 			// "scheduled" runnable is executed, otherwise required events may not be triggered in time
-			executor.schedule((Runnable) invocation.getArguments()[0], 10, TimeUnit.MILLISECONDS);
+			this.executorService.schedule((Runnable) invocation.getArguments()[0], 10, TimeUnit.MILLISECONDS);
 			return null;
-		}).when(executorService).schedule(any(Runnable.class), anyLong(), any());
+		}).when(this.executorServiceMock).schedule(any(Runnable.class), anyLong(), any());
 
-		this.executorService = executorService;
-		this.scheduledTimeoutSender = new ScheduledTimeoutSender(this.executorService);
+		this.scheduledTimeoutSender = new ScheduledTimeoutSender(this.executorServiceMock);
 	}
 
 	@After
-	public void tearDown() {
-	    executor.shutdown();
+	public void tearDown() throws InterruptedException {
+		if (this.executorService != null) {
+			this.executorService.shutdown();
+			this.executorService.awaitTermination(10L, TimeUnit.SECONDS);
+		}
 	}
 
 	@Test
@@ -70,7 +74,7 @@ public class ScheduledTimeoutSenderTest {
 		testObserver.awaitCount(1);
 		testObserver.assertNotComplete();
 		testObserver.assertValues(view);
-		verify(executorService, times(1)).schedule(any(Runnable.class), eq(timeout), eq(TimeUnit.MILLISECONDS));
+		verify(executorServiceMock, times(1)).schedule(any(Runnable.class), eq(timeout), eq(TimeUnit.MILLISECONDS));
 	}
 
 	@Test
@@ -84,7 +88,7 @@ public class ScheduledTimeoutSenderTest {
 		testObserver.awaitCount(2);
 		testObserver.assertNotComplete();
 		testObserver.assertValues(view1, view2);
-		verify(executorService, times(2)).schedule(any(Runnable.class), eq(timeout), eq(TimeUnit.MILLISECONDS));
+		verify(executorServiceMock, times(2)).schedule(any(Runnable.class), eq(timeout), eq(TimeUnit.MILLISECONDS));
 	}
 
 	@Test

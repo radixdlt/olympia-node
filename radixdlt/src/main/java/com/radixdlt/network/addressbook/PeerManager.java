@@ -23,10 +23,10 @@ import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.transport.TransportException;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.universe.Universe;
+import com.radixdlt.utils.ThreadFactories;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.radix.common.executors.Executor;
-import org.radix.common.executors.ScheduledExecutable;
 import org.radix.network.discovery.BootstrapDiscovery;
 import org.radix.network.discovery.Whitelist;
 import org.radix.network.messages.GetPeersMessage;
@@ -45,7 +45,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
-import java.util.concurrent.Future;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -80,10 +81,10 @@ public class PeerManager {
 	private final LocalSystem localSystem;
 	private final Universe universe;
 
-	private Future<?> heartbeatPeersFuture;
-	private Future<?> peersBroadcastFuture;
-	private Future<?> peerProbeFuture;
-	private Future<?> discoverPeersFuture;
+	private ScheduledExecutorService executor; // Ideally would be injected at some point
+
+	private final Object startedLock = new Object();
+	private boolean started = false;
 
 	private class ProbeTask implements Runnable {
 		private LinkedList<Peer> peersToProbe = new LinkedList<>();
@@ -154,7 +155,7 @@ public class PeerManager {
 
 		this.peerMessageBatchSize = config.networkPeersMessageBatchSize(64);
 
-		log.info("{} started, "
+		log.info("{} initialised, "
 			+ "peersBroadcastInterval={}, peersBroadcastDelay={}, peersProbeInterval={}, "
 			+ "peersProbeDelay={}, heartbeatPeersInterval={}, heartbeatPeersDelay={}, "
 			+ "discoverPeersInterval={}, discoverPeersDelay={}, peerProbeFrequency={}",
@@ -165,69 +166,51 @@ public class PeerManager {
 		);
 	}
 
-	private Future<?> schedule(long initialDelayMillis, Runnable runnable) {
-		ScheduledExecutable executable = new ScheduledExecutable(initialDelayMillis, 0, TimeUnit.MILLISECONDS) {
-			@Override
-			public void execute() {
-				runnable.run();
-			}
-		};
-		Executor.getInstance().schedule(executable);
-		return executable.getFuture();
-	}
-
-	private Future<?> scheduleAtFixedRate(long initialDelayMillis, long recurrentDelayMillis, Runnable runnable) {
-		ScheduledExecutable executable = new ScheduledExecutable(initialDelayMillis, recurrentDelayMillis, TimeUnit.MILLISECONDS) {
-			@Override
-			public void execute() {
-				runnable.run();
-			}
-		};
-		Executor.getInstance().scheduleAtFixedRate(executable);
-		return executable.getFuture();
-	}
-
-	private Future<?> scheduleWithFixedDelay(long initialDelayMillis, long recurrentDelayMillis, Runnable runnable) {
-		ScheduledExecutable executable = new ScheduledExecutable(initialDelayMillis, recurrentDelayMillis, TimeUnit.MILLISECONDS) {
-			@Override
-			public void execute() {
-				runnable.run();
-			}
-		};
-		Executor.getInstance().scheduleWithFixedDelay(executable);
-		return executable.getFuture();
-	}
-
 	public void start() {
-		// Listen for messages
-		messageCentral.addListener(PeersMessage.class, this::handlePeersMessage);
-		messageCentral.addListener(GetPeersMessage.class, this::handleGetPeersMessage);
-		messageCentral.addListener(PeerPingMessage.class, this::handlePeerPingMessage);
-		messageCentral.addListener(PeerPongMessage.class, this::handlePeerPongMessage);
-		messageCentral.addListener(SystemMessage.class, this::handleHeartbeatPeersMessage);
+		synchronized (this.startedLock) {
+			if (!this.started) {
+				// Listen for messages
+				messageCentral.addListener(PeersMessage.class, this::handlePeersMessage);
+				messageCentral.addListener(GetPeersMessage.class, this::handleGetPeersMessage);
+				messageCentral.addListener(PeerPingMessage.class, this::handlePeerPingMessage);
+				messageCentral.addListener(PeerPongMessage.class, this::handlePeerPongMessage);
+				messageCentral.addListener(SystemMessage.class, this::handleHeartbeatPeersMessage);
 
-		// Tasks
-		heartbeatPeersFuture = scheduleAtFixedRate(heartbeatPeersDelayMs, heartbeatPeersIntervalMs, this::heartbeatPeers);
-		peersBroadcastFuture = scheduleWithFixedDelay(peersBroadcastDelayMs, peersBroadcastIntervalMs, this::peersHousekeeping);
-		peerProbeFuture = scheduleWithFixedDelay(peerProbeDelayMs, peerProbeIntervalMs, new ProbeTask());
-		discoverPeersFuture = scheduleWithFixedDelay(discoverPeersDelayMs, discoverPeersIntervalMs, this::discoverPeers);
+				// Tasks
+				this.executor = Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads("PeerManager"));
+				this.executor.scheduleAtFixedRate(this::heartbeatPeers, heartbeatPeersDelayMs, heartbeatPeersIntervalMs, TimeUnit.MILLISECONDS);
+				this.executor.scheduleWithFixedDelay(this::peersHousekeeping, peersBroadcastDelayMs, peersBroadcastIntervalMs, TimeUnit.MILLISECONDS);
+				this.executor.scheduleWithFixedDelay(new ProbeTask(), peerProbeDelayMs, peerProbeIntervalMs, TimeUnit.MILLISECONDS);
+				this.executor.scheduleWithFixedDelay(this::discoverPeers, discoverPeersDelayMs, discoverPeersIntervalMs, TimeUnit.MILLISECONDS);
 
-		log.info("PeerManager started");
+				log.info("PeerManager started");
+				this.started = true;
+			}
+		}
 	}
 
 	public void stop() {
-		messageCentral.removeListener(PeersMessage.class, this::handlePeersMessage);
-		messageCentral.removeListener(GetPeersMessage.class, this::handleGetPeersMessage);
-		messageCentral.removeListener(PeerPingMessage.class, this::handlePeerPingMessage);
-		messageCentral.removeListener(PeerPongMessage.class, this::handlePeerPongMessage);
-		messageCentral.removeListener(SystemMessage.class, this::handleHeartbeatPeersMessage);
+		synchronized (this.startedLock) {
+			if (this.started) {
+				messageCentral.removeListener(PeersMessage.class, this::handlePeersMessage);
+				messageCentral.removeListener(GetPeersMessage.class, this::handleGetPeersMessage);
+				messageCentral.removeListener(PeerPingMessage.class, this::handlePeerPingMessage);
+				messageCentral.removeListener(PeerPongMessage.class, this::handlePeerPongMessage);
+				messageCentral.removeListener(SystemMessage.class, this::handleHeartbeatPeersMessage);
 
-		heartbeatPeersFuture.cancel(true);
-		peersBroadcastFuture.cancel(true);
-		peerProbeFuture.cancel(true);
-		discoverPeersFuture.cancel(true);
+				this.executor.shutdownNow();
+				try {
+					this.executor.awaitTermination(10L, TimeUnit.SECONDS);
+				} catch (InterruptedException e) {
+					// Not going to deal with this here
+					Thread.currentThread().interrupt();
+				}
+				this.executor = null;
 
-		log.info("PeerManager stopped");
+				log.info("PeerManager stopped");
+				this.started = false;
+			}
+		}
 	}
 
 	private void heartbeatPeers() {
@@ -355,7 +338,7 @@ public class PeerManager {
 						long nonce = ping.getNonce();
 						if (peer.hasSystem()) {
 							this.probes.put(peer, nonce);
-							schedule(peerProbeTimeoutMs, () -> handleProbeTimeout(peer, nonce));
+							this.executor.schedule(() -> handleProbeTimeout(peer, nonce), peerProbeTimeoutMs, TimeUnit.MILLISECONDS);
 							log.debug("Probing {}:{}", () -> peer, () -> formatNonce(nonce));
 						} else {
 							log.debug("Nudging {}", peer);

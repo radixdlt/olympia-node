@@ -53,7 +53,10 @@ public class SubmissionControlImplTest {
 	@Before
 	public void setUp() {
 		this.mempool = throwingMock(Mempool.class);
-		this.radixEngine = throwingMock(RadixEngine.class);
+		// No type check issues with mocking generic here
+		@SuppressWarnings("unchecked")
+		RadixEngine<LedgerAtom> re = throwingMock(RadixEngine.class);
+		this.radixEngine = re;
 		this.serialization = throwingMock(Serialization.class);
 		this.events = throwingMock(Events.class);
 		this.converter = mock(AtomToClientAtomConverter.class);
@@ -96,6 +99,8 @@ public class SubmissionControlImplTest {
 		when(atom.getAID()).thenReturn(aid);
 		doReturn(atom).when(this.serialization).fromJsonObject(eq(atomJson), eq(Atom.class));
 		when(converter.convert(eq(atom))).thenThrow(mock(AtomConversionException.class));
+		// No type check issues with mocking generic here
+		@SuppressWarnings("unchecked")
 		Consumer<ClientAtom> callback = mock(Consumer.class);
 		this.submissionControl.submitAtom(atomJson, callback);
 		verify(this.events, times(1)).broadcast(argThat(AtomExceptionEvent.class::isInstance));
@@ -131,6 +136,8 @@ public class SubmissionControlImplTest {
 		ClientAtom clientAtom = mock(ClientAtom.class);
 		when(clientAtom.getAID()).thenReturn(AID.ZERO);
 		when(converter.convert(eq(atomMock))).thenReturn(clientAtom);
+		// No type check issues with mocking generic here
+		@SuppressWarnings("unchecked")
 		Consumer<ClientAtom> callback = mock(Consumer.class);
 		this.submissionControl.submitAtom(throwingMock(JSONObject.class), callback);
 
