@@ -19,8 +19,9 @@ package com.radixdlt.consensus;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
-import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
+import com.radixdlt.identifiers.EUID;
+import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyViolationException;
@@ -31,17 +32,18 @@ import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.identifiers.EUID;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.utils.Longs;
+
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.FormattedMessage;
+
+import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Processes and reduces BFT events to the BFT state based on core
@@ -67,18 +69,18 @@ public final class BFTEventReducer implements BFTEventProcessor {
 
 	@Inject
 	public BFTEventReducer(
-			ProposalGenerator proposalGenerator,
-			Mempool mempool,
-			BFTEventSender sender,
-			SafetyRules safetyRules,
-			Pacemaker pacemaker,
-			VertexStore vertexStore,
-			PendingVotes pendingVotes,
-			ProposerElection proposerElection,
-			@Named("self") ECKeyPair selfKey,
-			ValidatorSet validatorSet,
-			SystemCounters counters
-			) {
+		ProposalGenerator proposalGenerator,
+		Mempool mempool,
+		BFTEventSender sender,
+		SafetyRules safetyRules,
+		Pacemaker pacemaker,
+		VertexStore vertexStore,
+		PendingVotes pendingVotes,
+		ProposerElection proposerElection,
+		@Named("self") ECKeyPair selfKey,
+		ValidatorSet validatorSet,
+		SystemCounters counters
+	) {
 		this.proposalGenerator = Objects.requireNonNull(proposalGenerator);
 		this.mempool = Objects.requireNonNull(mempool);
 		this.sender = Objects.requireNonNull(sender);
@@ -105,12 +107,12 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		// TODO make signing more robust by including author in signed hash
 		ECDSASignature signature = this.selfKey.sign(Hash.hash256(Longs.toByteArray(nextView.number())));
 		NewView newView = new NewView(
-				selfKey.getPublicKey(),
-				nextView,
-				this.vertexStore.getHighestQC(),
-				this.vertexStore.getHighestCommittedQC(),
-				signature
-				);
+			selfKey.getPublicKey(),
+			nextView,
+			this.vertexStore.getHighestQC(),
+			this.vertexStore.getHighestCommittedQC(),
+			signature
+		);
 		ECPublicKey nextLeader = this.proposerElection.getProposer(nextView);
 		log.trace("{}: Sending NEW_VIEW to {}: {}", this::getShortName, () -> this.getShortName(nextLeader.euid()), () ->  newView);
 		this.sender.sendNewView(newView, nextLeader);
@@ -120,25 +122,26 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	private void processQC(QuorumCertificate qc) {
 		// commit any newly committable vertices
 		this.safetyRules.process(qc)
-		.ifPresent(commitMetaData -> {
-			vertexStore.commitVertex(commitMetaData).ifPresent(vertex -> {
-				log.trace("{}: Committed vertex: {}", this::getShortName, () -> vertex);
-				final ClientAtom committedAtom = vertex.getAtom();
-				if (committedAtom != null) {
-					mempool.removeCommittedAtom(committedAtom.getAID());
-				}
-			});
+			.ifPresent(commitMetaData -> {
+				vertexStore.commitVertex(commitMetaData).ifPresent(vertex -> {
+					log.trace("{}: Committed vertex: {}", this::getShortName, () -> vertex);
+					final ClientAtom committedAtom = vertex.getAtom();
+					if (committedAtom != null) {
+						mempool.removeCommittedAtom(committedAtom.getAID());
+					}
+				});
 
-		});
+			});
 
 		// proceed to next view if pacemaker feels like it
 		this.pacemaker.processQC(qc.getView())
-		.ifPresent(this::proceedToView);
+			.ifPresent(this::proceedToView);
 	}
 
 	@Override
 	public void processLocalSync(Hash vertexId) {
 		vertexStore.processLocalSync(vertexId);
+
 		QuorumCertificate qc = unsyncedQCs.remove(vertexId);
 		if (qc != null) {
 			if (vertexStore.syncToQC(qc, vertexStore.getHighestCommittedQC(), null)) {
@@ -207,7 +210,9 @@ public final class BFTEventReducer implements BFTEventProcessor {
 			vertexStore.insertVertex(proposedVertex);
 		} catch (VertexInsertionException e) {
 			counters.increment(CounterType.CONSENSUS_REJECTED);
+
 			log.warn("{} PROPOSAL: Rejected. Reason: {}", this::getShortName, e::getMessage);
+
 			// TODO: Better logic for removal on exception
 			final ClientAtom atom = proposedVertex.getAtom();
 			if (atom != null) {
@@ -229,6 +234,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		if (!Objects.equals(currentLeader, selfKey.getPublicKey())) {
 			final ECPublicKey nextLeader = this.proposerElection.getProposer(updatedView.next());
 			if (!Objects.equals(nextLeader, selfKey.getPublicKey())) {
+
 				// TODO: should not call processQC
 				this.pacemaker.processQC(updatedView).ifPresent(this::proceedToView);
 			}
@@ -238,11 +244,13 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	@Override
 	public void processLocalTimeout(View view) {
 		log.trace("{}: LOCAL_TIMEOUT: Processing {}", this::getShortName, () -> view);
+
 		// proceed to next view if pacemaker feels like it
 		Optional<View> nextView = this.pacemaker.processLocalTimeout(view);
 		if (nextView.isPresent()) {
 			this.proceedToView(nextView.get());
 			log.trace("{}: LOCAL_TIMEOUT: Processed {}", this::getShortName, () -> view);
+
 			counters.set(CounterType.CONSENSUS_TIMEOUT_VIEW, view.number());
 			counters.increment(CounterType.CONSENSUS_TIMEOUT);
 		} else {
@@ -253,6 +261,6 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	@Override
 	public void start() {
 		this.pacemaker.processQC(this.vertexStore.getHighestQC().getView())
-		.ifPresent(this::proceedToView);
+			.ifPresent(this::proceedToView);
 	}
 }

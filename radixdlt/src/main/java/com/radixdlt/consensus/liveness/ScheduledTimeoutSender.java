@@ -17,7 +17,6 @@
 
 package com.radixdlt.consensus.liveness;
 
-
 import com.radixdlt.consensus.View;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
