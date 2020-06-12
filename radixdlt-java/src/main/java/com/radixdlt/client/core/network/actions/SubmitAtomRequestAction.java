@@ -73,10 +73,6 @@ public final class SubmitAtomRequestAction implements SubmitAtomAction, FindANod
 		throw new UnsupportedOperationException();
 	}
 
-	@Override
-	public Set<Long> getShards() {
-		return atom.getRequiredFirstShard();
-	}
 
 	@Override
 	public String toString() {

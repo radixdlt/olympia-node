@@ -59,26 +59,26 @@ public final class Atom {
 
 	public static Atom create(ParticleGroup particleGroup, long timestamp) {
 		return new Atom(
-			ImmutableList.of(particleGroup),
-			ImmutableMap.of(METADATA_TIMESTAMP_KEY, String.valueOf(timestamp)),
-			ImmutableMap.of()
-		);
+				ImmutableList.of(particleGroup),
+				ImmutableMap.of(METADATA_TIMESTAMP_KEY, String.valueOf(timestamp)),
+				ImmutableMap.of()
+				);
 	}
 
 	public static Atom create(List<ParticleGroup> particleGroups, long timestamp) {
 		return new Atom(
-			ImmutableList.copyOf(particleGroups),
-			ImmutableMap.of(METADATA_TIMESTAMP_KEY, String.valueOf(timestamp)),
-			ImmutableMap.of()
-		);
+				ImmutableList.copyOf(particleGroups),
+				ImmutableMap.of(METADATA_TIMESTAMP_KEY, String.valueOf(timestamp)),
+				ImmutableMap.of()
+				);
 	}
 
 	public static Atom create(List<ParticleGroup> particleGroups, Map<String, String> metaData) {
 		return new Atom(
-			ImmutableList.copyOf(particleGroups),
-			ImmutableMap.copyOf(metaData),
-			ImmutableMap.of()
-		);
+				ImmutableList.copyOf(particleGroups),
+				ImmutableMap.copyOf(metaData),
+				ImmutableMap.of()
+				);
 	}
 
 	@JsonProperty("particleGroups")
@@ -110,10 +110,10 @@ public final class Atom {
 	}
 
 	private Atom(
-		ImmutableList<ParticleGroup> particleGroups,
-		ImmutableMap<String, String> metaData,
-		ImmutableMap<String, ECDSASignature> signatures
-	) {
+			ImmutableList<ParticleGroup> particleGroups,
+			ImmutableMap<String, String> metaData,
+			ImmutableMap<String, ECDSASignature> signatures
+			) {
 		Objects.requireNonNull(particleGroups, "particleGroups is required");
 		Objects.requireNonNull(metaData, "metaData is required");
 		Objects.requireNonNull(signatures, "signatures are required");
@@ -134,30 +134,26 @@ public final class Atom {
 		builder.put(signatureId.toString(), signature);
 
 		return new Atom(
-			this.particleGroups,
-			this.metaData,
-			builder.build()
-		);
+				this.particleGroups,
+				this.metaData,
+				builder.build()
+				);
 	}
 
 	private Set<Long> getShards() {
 		return this.spunParticles()
-			.map(SpunParticle<Particle>::getParticle)
-			.map(Particle::getDestinations)
-			.flatMap(Set::stream)
-			.map(EUID::getShard)
-			.collect(Collectors.toSet());
+				.map(SpunParticle<Particle>::getParticle)
+				.map(Particle::getDestinations)
+				.flatMap(Set::stream)
+				.map(EUID::getShard)
+				.collect(Collectors.toSet());
 	}
 
 	// HACK
 	public Set<Long> getRequiredFirstShard() {
 		if (this.spunParticles().anyMatch(s -> s.getSpin() == Spin.DOWN)) {
-			return this.spunParticles()
-				.filter(s -> s.getSpin() == Spin.DOWN)
-				.flatMap(s -> s.getParticle().getShardables().stream())
-				.map(RadixAddress::euid)
-				.map(EUID::getShard)
-				.collect(Collectors.toSet());
+			return this.spunParticles().filter(s -> s.getSpin() == Spin.DOWN).flatMap(s -> s.getParticle().getShardables().stream()).map(
+					RadixAddress::euid).map(EUID::getShard).collect(Collectors.toSet());
 		} else {
 			return this.getShards();
 		}
@@ -177,10 +173,10 @@ public final class Atom {
 
 	public Stream<RadixAddress> addresses() {
 		return this.spunParticles()
-			.map(SpunParticle<Particle>::getParticle)
-			.map(Particle::getShardables)
-			.flatMap(Set::stream)
-			.distinct();
+				.map(SpunParticle<Particle>::getParticle)
+				.map(Particle::getShardables)
+				.flatMap(Set::stream)
+				.distinct();
 	}
 
 	public boolean hasTimestamp() {

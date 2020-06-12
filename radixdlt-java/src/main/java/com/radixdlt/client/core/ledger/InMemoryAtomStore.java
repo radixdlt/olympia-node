@@ -66,23 +66,23 @@ public class InMemoryAtomStore implements AtomStore {
 
 	private void softDeleteDependentsOf(Atom atom) {
 		atom.particles(Spin.UP)
-			.forEach(p -> {
-				Map<Spin, Set<Atom>> particleSpinIndex = particleIndex.get(p);
-				particleSpinIndex.getOrDefault(Spin.DOWN, Collections.emptySet())
-					.forEach(a -> {
-						AtomObservation observation = atoms.get(a);
-						if (observation.getAtom().equals(atom)) {
-							return;
-						}
+		.forEach(p -> {
+			Map<Spin, Set<Atom>> particleSpinIndex = particleIndex.get(p);
+			particleSpinIndex.getOrDefault(Spin.DOWN, Collections.emptySet())
+			.forEach(a -> {
+				AtomObservation observation = atoms.get(a);
+				if (observation.getAtom().equals(atom)) {
+					return;
+				}
 
-						if (observation.getUpdateType().getType() == Type.STORE || !observation.getUpdateType().isSoft()) {
-							// This first so that leaves get deleted first
-							softDeleteDependentsOf(observation.getAtom());
+				if (observation.getUpdateType().getType() == Type.STORE || !observation.getUpdateType().isSoft()) {
+					// This first so that leaves get deleted first
+					softDeleteDependentsOf(observation.getAtom());
 
-							atoms.put(observation.getAtom(), AtomObservation.softDeleted(observation.getAtom()));
-						}
-					});
+					atoms.put(observation.getAtom(), AtomObservation.softDeleted(observation.getAtom()));
+				}
 			});
+		});
 	}
 
 	@Override
@@ -143,16 +143,16 @@ public class InMemoryAtomStore implements AtomStore {
 					atom.spunParticles().forEach(s -> {
 						Map<Spin, Set<Atom>> spinParticleIndex = particleIndex.getOrDefault(s.getParticle(), Collections.emptyMap());
 						spinParticleIndex.getOrDefault(s.getSpin(), Collections.emptySet())
-							.forEach(a -> {
-								if (a.equals(atom)) {
-									return;
-								}
-								AtomObservation oldObservation = atoms.get(a);
-								if (oldObservation.isStore()) {
-									softDeleteDependentsOf(a);
-									atoms.put(a, AtomObservation.softDeleted(a));
-								}
-							});
+						.forEach(a -> {
+							if (a.equals(atom)) {
+								return;
+							}
+							AtomObservation oldObservation = atoms.get(a);
+							if (oldObservation.isStore()) {
+								softDeleteDependentsOf(a);
+								atoms.put(a, AtomObservation.softDeleted(a));
+							}
+						});
 					});
 				}
 
@@ -166,16 +166,16 @@ public class InMemoryAtomStore implements AtomStore {
 							particleIndex.put(s.getParticle(), spinParticleIndex);
 						}
 						spinParticleIndex.merge(
-							s.getSpin(),
-							Collections.singleton(atom),
-							(a, b) -> new ImmutableSet.Builder<Atom>().addAll(a).addAll(b).build()
-						);
+								s.getSpin(),
+								Collections.singleton(atom),
+								(a, b) -> new ImmutableSet.Builder<Atom>().addAll(a).addAll(b).build()
+								);
 					});
 				} else {
 					// Soft observation should not be able to update a hard state
 					// Only update if type changes
 					include = (!nextUpdate.isSoft() || lastUpdate.isSoft())
-						&& nextUpdate.getType() != lastUpdate.getType();
+							&& nextUpdate.getType() != lastUpdate.getType();
 				}
 
 				if (nextUpdate.getType() == Type.DELETE && include) {
@@ -236,9 +236,9 @@ public class InMemoryAtomStore implements AtomStore {
 	public Stream<Atom> getStoredAtoms(RadixAddress address) {
 		synchronized (lock) {
 			return atoms.entrySet().stream()
-				.filter(e -> e.getValue().isStore() && e.getKey().addresses().anyMatch(address::equals))
-				.map(Map.Entry::getValue)
-				.map(AtomObservation::getAtom);
+					.filter(e -> e.getValue().isStore() && e.getKey().addresses().anyMatch(address::equals))
+					.map(Map.Entry::getValue)
+					.map(AtomObservation::getAtom);
 		}
 	}
 
@@ -247,32 +247,32 @@ public class InMemoryAtomStore implements AtomStore {
 	public Stream<Particle> getUpParticles(RadixAddress address, @Nullable String stagedUuid) {
 		synchronized (lock) {
 			Set<Particle> upParticles = particleIndex.entrySet().stream()
-				.filter(e -> {
-					if (!e.getKey().getShardables().contains(address)) {
-						return false;
-					}
-					final Map<Spin, Set<Atom>> spinParticleIndex = e.getValue();
-					final boolean hasDown = spinParticleIndex.getOrDefault(Spin.DOWN, Collections.emptySet())
-						.stream().anyMatch(a -> atoms.get(a).isStore());
-					if (hasDown) {
-						return false;
-					}
+					.filter(e -> {
+						//					if (!e.getKey().getShardables().contains(address)) {
+						//						return false;
+						//					}
+						final Map<Spin, Set<Atom>> spinParticleIndex = e.getValue();
+						final boolean hasDown = spinParticleIndex.getOrDefault(Spin.DOWN, Collections.emptySet())
+								.stream().anyMatch(a -> atoms.get(a).isStore());
+						if (hasDown) {
+							return false;
+						}
 
-					if (stagedUuid != null && stagedParticleIndex.getOrDefault(stagedUuid, Collections.emptyMap()).get(e.getKey()) == Spin.DOWN) {
-						return false;
-					}
+						if (stagedUuid != null && stagedParticleIndex.getOrDefault(stagedUuid, Collections.emptyMap()).get(e.getKey()) == Spin.DOWN) {
+							return false;
+						}
 
-					Set<Atom> uppingAtoms = spinParticleIndex.getOrDefault(Spin.UP, Collections.emptySet());
-					return uppingAtoms.stream().anyMatch(a -> atoms.get(a).isStore());
-				})
-				.map(Map.Entry::getKey)
-				.collect(Collectors.toSet());
+						Set<Atom> uppingAtoms = spinParticleIndex.getOrDefault(Spin.UP, Collections.emptySet());
+						return uppingAtoms.stream().anyMatch(a -> atoms.get(a).isStore());
+					})
+					.map(Map.Entry::getKey)
+					.collect(Collectors.toSet());
 
 			if (stagedUuid != null) {
 				stagedParticleIndex.getOrDefault(stagedUuid, Collections.emptyMap()).entrySet().stream()
-					.filter(e -> e.getValue() == Spin.UP)
-					.map(Entry::getKey)
-					.forEach(upParticles::add);
+				.filter(e -> e.getValue() == Spin.UP)
+				.map(Entry::getKey)
+				.forEach(upParticles::add);
 			}
 
 
@@ -293,9 +293,9 @@ public class InMemoryAtomStore implements AtomStore {
 				}
 				observers.add(emitter);
 				atoms.entrySet().stream()
-					.filter(e -> e.getValue().isStore() && e.getKey().addresses().anyMatch(address::equals))
-					.map(Map.Entry::getValue)
-					.forEach(emitter::onNext);
+				.filter(e -> e.getValue().isStore() && e.getKey().addresses().anyMatch(address::equals))
+				.map(Map.Entry::getValue)
+				.forEach(emitter::onNext);
 
 				emitter.setCancellable(() -> {
 					synchronized (lock) {
