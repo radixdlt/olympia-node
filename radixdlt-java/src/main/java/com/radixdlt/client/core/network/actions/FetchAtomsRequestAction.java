@@ -24,9 +24,7 @@ package com.radixdlt.client.core.network.actions;
 
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.client.core.network.RadixNode;
-import java.util.Collections;
 import java.util.Objects;
-import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -37,9 +35,9 @@ public final class FetchAtomsRequestAction implements FetchAtomsAction, FindANod
 	private final RadixAddress address;
 
 	private FetchAtomsRequestAction(
-		String uuid,
-		RadixAddress address
-	) {
+			String uuid,
+			RadixAddress address
+			) {
 		Objects.requireNonNull(uuid);
 		Objects.requireNonNull(address);
 
@@ -61,10 +59,10 @@ public final class FetchAtomsRequestAction implements FetchAtomsAction, FindANod
 		return address;
 	}
 
-	@Override
-	public Set<Long> getShards() {
-		return Collections.singleton(address.euid().getShard());
-	}
+	//	@Override
+	//	public Set<Long> getShards() {
+	//		return Collections.singleton(address.euid().getShard());
+	//	}
 
 	@Override
 	public RadixNode getNode() {
