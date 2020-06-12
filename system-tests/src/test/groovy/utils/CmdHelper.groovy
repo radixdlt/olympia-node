@@ -26,7 +26,7 @@ import static utils.Generic.listToDelimitedString
 class CmdHelper {
     private static final Logger logger = LogManager.getLogger()
 
-    static List<String[]> runCommand(cmd, String[] env = null, failOnError = false) {
+    static List<String[]> runCommand(cmd, String[] env = null, failOnError = false, logOutput=true) {
 
         Thread.sleep(1000)
         def sout = new StringBuffer()
@@ -46,8 +46,10 @@ class CmdHelper {
         List output
         if (sout) {
             output = sout.toString().split(System.lineSeparator()).collect({ it })
-            logger.info("-----------Output---------")
-            sout.each { logger.info(it) }
+            if(logOutput){
+                logger.info("-----------Output---------")
+                sout.each { logger.info(it) }
+            }
         }
 
         List error
@@ -119,7 +121,7 @@ class CmdHelper {
         if (!file.exists()) {
             List options = ["generate-key", "--password=test123"]
             def key, error
-            (key, error) = runCommand("java -jar ${Generic.pathToCLIJar()} ${listToDelimitedString(options, ' ')}", null, true)
+            (key, error) = runCommand("java -jar ${Generic.pathToCLIJar()} ${listToDelimitedString(options, ' ')}", null, true,false)
             file.withWriter('UTF-8') { writer ->
                 key.each {
                     writer.write(it)
