@@ -22,10 +22,6 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
-import com.google.common.collect.ImmutableSet;
-import com.radixdlt.crypto.Hash;
-import java.util.Set;
-
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
@@ -63,19 +59,6 @@ public class AIDTest {
 		assertNotEquals(aid1, aid2);
 	}
 
-	@Test
-	public void testFromAtom() {
-		byte[] hashBytes = new byte[Hash.BYTES];
-		for (int i = 0; i < Hash.BYTES; i++) {
-			hashBytes[i] = (byte) (i + 3);
-		}
-		Hash hash = new Hash(hashBytes);
-		Set<Long> shards = ImmutableSet.of(1L, 2L);
-
-		AID aid = AID.from(hash, shards);
-		// first byte of hash is 3 so 3 % 2 shards = 1 -> second shard should be selected
-		assertEquals(2L, aid.getShard());
-	}
 
 	@Test
 	public void equalsContract() {

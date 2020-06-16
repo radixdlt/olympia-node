@@ -122,14 +122,6 @@ public final class EUID implements Comparable<EUID> {
 		return this.value.isZero();
 	}
 
-	/**
-	 * Retrieve the shard number of this {@link EUID}.
-	 *
-	 * @return The shard number of this {@link EUID}.
-	 */
-	public long getShard() {
-		return value.getHigh();
-	}
 
 	/**
 	 * Retrieve the lower 64-bit word of this {@link EUID}.

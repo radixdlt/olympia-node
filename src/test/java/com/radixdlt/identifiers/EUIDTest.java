@@ -95,7 +95,6 @@ public class EUIDTest {
 	public void testGetShard() {
 		EUID euid = new EUID(UInt128.from(2L, 5L));
 		assertEquals(5L, euid.getLow());
-		assertEquals(2L, euid.getShard());
 	}
 
 	@Test
