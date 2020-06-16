@@ -57,13 +57,7 @@ import com.sleepycat.je.UniqueConstraintException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.radix.database.DatabaseEnvironment;
-import org.radix.database.exceptions.DatabaseException;
-import org.radix.shards.ShardRange;
-import org.radix.shards.ShardSpace;
-
-import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -73,7 +67,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.radixdlt.store.berkeley.LedgerEntryIndices.ENTRY_INDEX_PREFIX;
-import static com.radixdlt.store.berkeley.LedgerEntryIndices.SHARD_INDEX_PREFIX;
 
 @Singleton
 public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
@@ -573,69 +566,6 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 		return pendingAids.build();
 	}
 
-	// not used yet
-	private List<AID> getByShardChunkAndRange(int chunk, ShardRange range) throws DatabaseException {
-		try {
-			long from = ShardSpace.fromChunk(chunk, ShardSpace.SHARD_CHUNK_HALF_RANGE) + range.getLow();
-			long to = from + range.getSpan();
-
-			return this.getByShardRange(from, to);
-		} catch (Exception ex) {
-			throw new DatabaseException("While querying shard chunk and range", ex);
-		}
-	}
-
-	// not used yet
-	private List<AID> getByShardRange(long from, long to) throws DatabaseException {
-		try (SecondaryCursor cursor = this.duplicatedIndices.openCursor(null, null)) {
-			List<AID> aids = new ArrayList<>();
-			DatabaseEntry key = new DatabaseEntry(StoreIndex.from(SHARD_INDEX_PREFIX, Longs.toByteArray(from)));
-			DatabaseEntry pKey = new DatabaseEntry();
-			DatabaseEntry value = new DatabaseEntry();
-
-			OperationStatus status = cursor.getSearchKeyRange(key, value, pKey, LockMode.DEFAULT);
-			while (status == OperationStatus.SUCCESS) {
-				long shard = Longs.fromByteArray(key.getData(), 1);
-				if (shard < from || shard > to) {
-					break;
-				}
-
-				AID aid = getAidFromPKey(pKey);
-				aids.add(aid);
-
-				status = cursor.getNextDup(key, value, pKey, LockMode.DEFAULT);
-				if (status == OperationStatus.NOTFOUND) {
-					status = cursor.getNext(key, value, pKey, LockMode.DEFAULT);
-				}
-			}
-
-			return aids;
-		} catch (Exception ex) {
-			throw new DatabaseException("While querying shard range", ex);
-		}
-	}
-
-	// not used yet
-	private List<AID> getByShard(long shard) throws DatabaseException {
-		try (SecondaryCursor cursor = this.duplicatedIndices.openCursor(null, null)) {
-			List<AID> aids = new ArrayList<>();
-
-			DatabaseEntry key = new DatabaseEntry(StoreIndex.from(SHARD_INDEX_PREFIX, Longs.toByteArray(shard)));
-			DatabaseEntry pKey = new DatabaseEntry();
-			DatabaseEntry value = new DatabaseEntry();
-
-			OperationStatus status = cursor.getSearchKeyRange(key, value, pKey, LockMode.DEFAULT);
-			while (status == OperationStatus.SUCCESS) {
-				AID aid = getAidFromPKey(pKey);
-				aids.add(aid);
-				status = cursor.getNextDup(key, value, pKey, LockMode.DEFAULT);
-			}
-
-			return aids;
-		} catch (Exception ex) {
-			throw new DatabaseException("While querying shard", ex);
-		}
-	}
 	BerkeleySearchCursor getNext(BerkeleySearchCursor cursor) {
 		try (SecondaryCursor databaseCursor = toSecondaryCursor(cursor.getType())) {
 			DatabaseEntry pKey = new DatabaseEntry(cursor.getPrimary());

@@ -30,6 +30,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
 import com.google.inject.Inject;
 import com.radixdlt.SecurityCritical;
+import com.radixdlt.SecurityCritical.SecurityKind;
 import com.radixdlt.consensus.validators.ValidationState;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.crypto.ECDSASignature;
@@ -44,7 +45,7 @@ import com.radixdlt.crypto.Hash;
  * This class is security critical (signature checks, validator set membership checks).
  */
 @NotThreadSafe
-@SecurityCritical
+@SecurityCritical({ SecurityKind.SIG_VERIFY, SecurityKind.GENERAL })
 public final class PendingVotes {
 	private static final Logger log = LogManager.getLogger();
 

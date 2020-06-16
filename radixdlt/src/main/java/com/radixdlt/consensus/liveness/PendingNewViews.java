@@ -28,6 +28,7 @@ import org.apache.logging.log4j.Logger;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
 import com.radixdlt.SecurityCritical;
+import com.radixdlt.SecurityCritical.SecurityKind;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.validators.ValidationState;
@@ -45,7 +46,7 @@ import com.radixdlt.utils.Longs;
  * This class is security critical (signature checks, validator set membership checks).
  */
 @NotThreadSafe
-@SecurityCritical
+@SecurityCritical({ SecurityKind.SIG_VERIFY, SecurityKind.GENERAL })
 public final class PendingNewViews {
 	private static final Logger log = LogManager.getLogger();
 
