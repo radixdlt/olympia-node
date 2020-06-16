@@ -19,7 +19,6 @@ package org.radix.atoms.events;
 
 import com.radixdlt.identifiers.EUID;
 
-import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.CommittedAtom;
 import java.util.Set;
 import java.util.function.Supplier;

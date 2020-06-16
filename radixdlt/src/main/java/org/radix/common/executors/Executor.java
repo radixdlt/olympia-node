@@ -24,6 +24,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import com.radixdlt.utils.ThreadFactories;
+
 public class Executor
 {
 	private static Executor	instance = null;
@@ -43,8 +45,8 @@ public class Executor
 
 	public Executor(int numImmediateThreads, int numScheduledThreads)
 	{
-		immediateExecutor = Executors.newFixedThreadPool(numImmediateThreads);
-		scheduledExecutor = Executors.newScheduledThreadPool(numScheduledThreads);
+		immediateExecutor = Executors.newFixedThreadPool(numImmediateThreads, ThreadFactories.daemonThreads("ImmediatePool-%d"));
+		scheduledExecutor = Executors.newScheduledThreadPool(numScheduledThreads, ThreadFactories.daemonThreads("ScheduledPool-%d"));
 	}
 
 	public Future<?> schedule(final ScheduledExecutable executable)

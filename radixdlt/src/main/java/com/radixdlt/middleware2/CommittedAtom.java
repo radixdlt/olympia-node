@@ -53,7 +53,7 @@ public final class CommittedAtom implements LedgerAtom, CommittedInstruction {
 	@DsonOutput(Output.ALL)
 	private final VertexMetadata vertexMetadata;
 
-	private CommittedAtom() {
+	CommittedAtom() {
 		// Serializer only
 		this.clientAtom = null;
 		this.vertexMetadata = null;

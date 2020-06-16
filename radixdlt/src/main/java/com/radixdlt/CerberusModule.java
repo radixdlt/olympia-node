@@ -57,12 +57,13 @@ import com.radixdlt.middleware2.network.MessageCentralBFTNetwork;
 import com.radixdlt.middleware2.network.MessageCentralSyncVerticesRPCNetwork;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.properties.RuntimeProperties;
-
+import com.radixdlt.utils.ThreadFactories;
 import com.radixdlt.utils.UInt256;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -132,7 +133,8 @@ public class CerberusModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private ScheduledTimeoutSender timeoutSender() {
-		return new ScheduledTimeoutSender(Executors.newSingleThreadScheduledExecutor());
+		ScheduledExecutorService ses = Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads("TimeoutSender"));
+		return new ScheduledTimeoutSender(ses);
 	}
 
 	@Provides

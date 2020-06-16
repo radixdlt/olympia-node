@@ -66,6 +66,8 @@ import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
+import static com.radixdlt.utils.ThreadFactories.daemonThreads;
+
 /**
  * A multi-node bft test network where the network and latencies of each message is simulated.
  */
@@ -149,8 +151,10 @@ public class SimulatedBFTNetwork {
 					);
 				})
 			);
-		this.timeoutSenders = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e,
-			e -> new ScheduledTimeoutSender(Executors.newSingleThreadScheduledExecutor())));
+		this.timeoutSenders = nodes.stream().collect(ImmutableMap.toImmutableMap(
+			e -> e,
+			e -> new ScheduledTimeoutSender(Executors.newSingleThreadScheduledExecutor(daemonThreads("TimeoutSender")))
+		));
 		this.pacemakers = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e,
 			e -> new FixedTimeoutPacemaker(this.pacemakerTimeout, this.timeoutSenders.get(e))));
 		this.runners = this.vertexStores.keySet().stream()

@@ -64,7 +64,10 @@ public class SyncedRadixEngineTest {
 
 	@Before
 	public void setup() {
-		this.radixEngine = mock(RadixEngine.class);
+		// No type check issues with mocking generic here
+		@SuppressWarnings("unchecked")
+		RadixEngine<LedgerAtom> re = mock(RadixEngine.class);
+		this.radixEngine = re;
 		this.committedAtomsStore = mock(CommittedAtomsStore.class);
 		this.addressBook = mock(AddressBook.class);
 		this.stateSyncNetwork = mock(StateSyncNetwork.class);

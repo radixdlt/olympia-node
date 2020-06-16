@@ -96,6 +96,6 @@ public class ConsensusRunnerTest {
 		verify(vertexStore, times(1)).processCommittedStateSync(eq(stateSync));
 		verify(vertexStore, times(1)).processGetVerticesRequest(eq(request));
 
-		consensusRunner.stop();
+		consensusRunner.shutdown();
 	}
 }

@@ -24,6 +24,8 @@ import com.radixdlt.consensus.liveness.PacemakerRx;
 
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.crypto.Hash;
+import com.radixdlt.utils.ThreadFactories;
+
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Scheduler;
@@ -32,7 +34,10 @@ import io.reactivex.rxjava3.observables.ConnectableObservable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -77,6 +82,8 @@ public final class ConsensusRunner {
 	private final ConnectableObservable<Event> events;
 	private final Object lock = new Object();
 	private final VertexStore vertexStore;
+	private final ExecutorService singleThreadExecutor;
+	private final Scheduler singleThreadScheduler;
 	private Disposable disposable;
 
 	@Inject
@@ -91,7 +98,8 @@ public final class ConsensusRunner {
 		VertexStore vertexStore //TODO: remove this since it should only be provided by Epoch manager
 	) {
 		this.vertexStore = Objects.requireNonNull(vertexStore);
-		final Scheduler singleThreadScheduler = Schedulers.from(Executors.newSingleThreadExecutor());
+		this.singleThreadExecutor = Executors.newSingleThreadExecutor(ThreadFactories.daemonThreads("ConsensusRunner"));
+		this.singleThreadScheduler = Schedulers.from(this.singleThreadExecutor);
 		final Observable<ValidatorSet> epochEvents = epochRx.epochs()
 			.publish()
 			.autoConnect(2);
@@ -186,6 +194,24 @@ public final class ConsensusRunner {
 			if (disposable != null) {
 				disposable.dispose();
 				disposable = null;
+			}
+		}
+	}
+
+	/**
+	 * Terminate and stop all threads.
+	 * The runner cannot be restarted once this method is called.
+	 */
+	public void shutdown() {
+		synchronized (lock) {
+			stop();
+			this.singleThreadScheduler.shutdown(); // Doesn't appear to do much
+			this.singleThreadExecutor.shutdown();
+			try {
+				this.singleThreadExecutor.awaitTermination(10L, TimeUnit.SECONDS);
+			} catch (InterruptedException e) {
+				// Not handling this here
+				Thread.currentThread().interrupt();
 			}
 		}
 	}

@@ -57,7 +57,10 @@ public class SharedMempoolTest {
 	public void setUp() {
 		this.localMempool = mock(LocalMempool.class);
 		this.mempoolNetworkTx = mock(MempoolNetworkTx.class);
-		this.radixEngine = mock(RadixEngine.class);
+		// No type check issues with mocking generic here
+		@SuppressWarnings("unchecked")
+		RadixEngine<LedgerAtom> re = mock(RadixEngine.class);
+		this.radixEngine = re;
 		this.serialization = mock(Serialization.class);
 		this.counters = mock(SystemCounters.class);
 
