@@ -21,8 +21,8 @@ import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.utils.MathUtils;
 import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.UInt256s;
 import com.radixdlt.utils.UInt384;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -77,7 +77,7 @@ public final class WeightedRotatingLeaders implements ProposerElection {
 			// (lcm > 0 && lcm < 2^63 -1 ) || lcm == null
 			// This is due to use of 2^63 - 1 cap and also the invariant from ValidatorSet
 			// that powerArray will always be non-zero
-			UInt256 lcm256 = MathUtils.cappedLCM(UInt256.from(Long.MAX_VALUE), powerArray);
+			UInt256 lcm256 = UInt256s.cappedLCM(UInt256.from(Long.MAX_VALUE), powerArray);
 			this.lcm = lcm256 == null ? null : lcm256.getLow().getLow();
 
 			this.resetToView(View.of(0));
