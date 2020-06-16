@@ -28,8 +28,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.radix.network.discovery.Whitelist;
 import org.radix.serialization.TestSetupUtils;
-import org.radix.shards.ShardSpace;
-
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -94,7 +92,7 @@ public class StandardFilters2Test {
 	public void testNotOurNID() {
 		RuntimeProperties properties = mock(RuntimeProperties.class);
 		when(properties.get(eq("node.key.path"), any())).thenReturn("node.ks");
-		when(properties.get(eq("shards.range"), anyLong())).thenReturn(ShardSpace.SHARD_CHUNK_RANGE);
+
 
 		EUID self = EUID.ZERO;
 		Peer ourNid = new PeerWithNid(self);
