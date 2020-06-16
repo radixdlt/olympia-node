@@ -48,7 +48,7 @@ public final class TokenUnitConversions {
 	 */
 	private static final UInt256 SUB_UNITS = UInt256.TEN.pow(SUB_UNITS_POW_10);
 
-	private static final BigDecimal SUB_UNITS_BIG_DECIMAL = UInt256s.toBigDecimal(SUB_UNITS);
+	private static final BigDecimal SUB_UNITS_BIG_DECIMAL = new BigDecimal(UInt256s.toBigInteger(SUB_UNITS));
 
 	private static final BigDecimal MINIMUM_GRANULARITY_BIG_DECIMAL = BigDecimal.ONE.scaleByPowerOfTen(-1 * SUB_UNITS_POW_10);
 
