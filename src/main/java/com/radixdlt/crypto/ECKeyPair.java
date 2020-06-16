@@ -17,6 +17,8 @@
 
 package com.radixdlt.crypto;
 
+import com.radixdlt.SecurityCritical;
+import com.radixdlt.SecurityCritical.SecurityKind;
 import com.radixdlt.crypto.encryption.ECIES;
 import com.radixdlt.crypto.encryption.ECIESException;
 import com.radixdlt.crypto.encryption.EncryptedPrivateKey;
@@ -42,6 +44,7 @@ import java.util.Objects;
 /**
  * Asymmetric EC key pair provider fixed to curve 'secp256k1'.
  */
+@SecurityCritical({ SecurityKind.KEY_GENERATION, SecurityKind.SIG_SIGN, SecurityKind.PK_DECRYPT, SecurityKind.PK_ENCRYPT })
 public final class ECKeyPair implements Signing<ECDSASignature> {
 	public static final int	BYTES = 32;
 
@@ -235,13 +238,10 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
 	}
 
 	public EncryptedPrivateKey encryptPrivateKeyWithPublicKey(ECPublicKey publicKeyUsedToEncrypt) {
-		byte[] encryptedPrivateKeyBytes = new byte[0];
 		try {
-			encryptedPrivateKeyBytes = publicKeyUsedToEncrypt.encrypt(this.privateKey);
+			return new EncryptedPrivateKey(publicKeyUsedToEncrypt.encrypt(this.privateKey));
 		} catch (ECIESException e) {
 			throw new IllegalStateException("Failed to encrypt `this.privateKey` with provided `ECPublicKey`", e);
 		}
-		return new EncryptedPrivateKey(encryptedPrivateKeyBytes);
 	}
-
 }

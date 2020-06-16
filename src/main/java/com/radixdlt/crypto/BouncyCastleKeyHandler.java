@@ -30,9 +30,13 @@ import org.bouncycastle.jce.interfaces.ECPublicKey;
 import org.bouncycastle.jce.spec.ECParameterSpec;
 import org.bouncycastle.jce.spec.ECPublicKeySpec;
 
+import com.radixdlt.SecurityCritical;
+import com.radixdlt.SecurityCritical.SecurityKind;
+
 import java.math.BigInteger;
 import java.security.KeyFactory;
 
+@SecurityCritical({ SecurityKind.KEY_GENERATION, SecurityKind.SIG_SIGN, SecurityKind.SIG_VERIFY })
 final class BouncyCastleKeyHandler implements KeyHandler {
 	private final BigInteger curveOrder;
 	private final BigInteger halfCurveOrder;

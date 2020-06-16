@@ -19,10 +19,15 @@ package com.radixdlt.utils;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.Objects;
+
+import com.radixdlt.SecurityCritical;
+import com.radixdlt.SecurityCritical.SecurityKind;
 
 /**
  * Utility methods for converting to/from {@link UInt256}.
  */
+@SecurityCritical(SecurityKind.NUMERIC)
 public final class UInt256s {
 	private UInt256s() {
 		throw new IllegalStateException("Can't construct");
@@ -39,16 +44,6 @@ public final class UInt256s {
 	public static BigInteger toBigInteger(UInt256 value) {
 		// Set sign to positive to stop BigInteger interpreting high bit as sign
 		return new BigInteger(1, value.toByteArray());
-	}
-
-	/**
-	 * Returns the specified {@link UInt256} as a {@link BigDecimal}.
-	 *
-	 * @param value The value to convert
-	 * @return The value as a {@link BigDecimal}
-	 */
-	public static BigDecimal toBigDecimal(UInt256 value) {
-		return new BigDecimal(toBigInteger(value));
 	}
 
 	/**
@@ -115,5 +110,54 @@ public final class UInt256s {
 	public static UInt256 max(UInt256 a, UInt256 b) {
 		int cmp = a.compareTo(b);
 		return (cmp >= 0) ? a : b;
+	}
+
+	/**
+	 * Euclid's algorithm to find greatest common divisor.
+	 *
+	 * @param x first number
+	 * @param y second number
+	 * @return greatest common divisor between x and y
+	 */
+	private static UInt256 gcd(UInt256 x, UInt256 y) {
+		return (y.isZero()) ? x : gcd(y, x.remainder(y));
+	}
+
+	/**
+	 * Least common multiple computed via reduction by gcd.
+	 *
+	 * @param x first number
+	 * @param y second number
+	 * @return least common multiple between x and y, or {@code null} if overflow
+	 */
+	private static UInt256 lcm(UInt256 x, UInt256 y) {
+		UInt256 d = y.divide(gcd(x, y));
+		UInt256 r = x.multiply(d);
+		boolean overflow = !x.isZero() && !r.divide(x).equals(d);
+		return overflow ? null : r;
+	}
+
+	/**
+	 * Returns a capped least common multiple between an array of {@link UInt256} numbers.
+	 * The cap acts as a ceiling. If the result exceeds cap, then this will return null.
+	 * <p>
+	 * All numbers must be non-null and non-zero. Otherwise, result is undefined.
+	 *
+	 * @param cap the cap to be used for the computation
+	 * @param numbers array of numbers of size at least 1
+	 * @return null, if the least common multiple is greater than cap, otherwise the least common multiple
+	 * @throws ArrayIndexOutOfBoundsException if numbers is a zero length array
+	 * @throws NullPointerException if cap or numbers is null
+	 */
+	public static UInt256 cappedLCM(UInt256 cap, UInt256... numbers) {
+		Objects.requireNonNull(cap);
+		UInt256 r = numbers[0];
+		for (int i = 1; i < numbers.length; i++) {
+			r = lcm(r, numbers[i]);
+			if (r == null || r.compareTo(cap) > 0) {
+				return null;
+			}
+		}
+		return r;
 	}
 }

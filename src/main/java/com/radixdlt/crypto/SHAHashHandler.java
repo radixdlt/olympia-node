@@ -20,9 +20,13 @@ package com.radixdlt.crypto;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
+import com.radixdlt.SecurityCritical;
+import com.radixdlt.SecurityCritical.SecurityKind;
+
 /**
  * Collection of Hashing methods using SHA-2 family and invoking each hash function <b>twice</>.
  */
+@SecurityCritical(SecurityKind.HASHING)
 class SHAHashHandler implements HashHandler {
 	// Note that default provide around 20-25% faster than Bouncy Castle.
 	// See jmh/org.radix.benchmark.HashBenchmark
@@ -31,7 +35,7 @@ class SHAHashHandler implements HashHandler {
 	private final ThreadLocal<MessageDigest> hash512Digester = ThreadLocal.withInitial(() -> getDigester("SHA-512"));
 
 	SHAHashHandler() {
-
+		// Nothing to do here
 	}
 
 	/**

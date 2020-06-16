@@ -196,6 +196,18 @@ public class UInt384Test {
 	}
 
 	@Test
+	public void when_multiplying_uint256_values__the_correct_value_is_returned() {
+		// Some basics
+		assertEquals(UInt384.ZERO, UInt384.ZERO.multiply(UInt256.ZERO));
+		assertEquals(UInt384.ZERO, UInt384.ZERO.multiply(UInt256.ONE));
+		assertEquals(UInt384.ZERO, UInt384.ONE.multiply(UInt256.ZERO));
+		assertEquals(UInt384.ONE, UInt384.ONE.multiply(UInt256.ONE));
+
+		// Some values in the long range
+		assertEquals(UInt384.from(12345678L * 13L), UInt384.from(12345678L).multiply(UInt256.from(13L)));
+	}
+
+	@Test
 	public void when_dividing_one_value_by_another__the_correct_value_is_returned() {
 		// Some basics
 		assertEquals(UInt384.ZERO, UInt384.ZERO.divide(UInt384.ONE));
