@@ -83,9 +83,7 @@ public final class FindANodeEpic implements RadixNetworkEpic {
 						.collect(Collectors.toList());
 				if (correctShardNodes.isEmpty()) {
 					List<RadixNode> unknownShardNodes = disconnectedPeers.stream()
-							.filter(node -> !state.getNodeStates().get(node).getShards().isPresent())
 							.collect(Collectors.toList());
-
 					if (unknownShardNodes.isEmpty()) {
 						return Collections.singletonList(DiscoverMoreNodesAction.instance());
 					} else {

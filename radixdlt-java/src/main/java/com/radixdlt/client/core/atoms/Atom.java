@@ -40,6 +40,7 @@ import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 
 import com.radixdlt.identifiers.RadixAddress;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -140,24 +141,6 @@ public final class Atom {
 				);
 	}
 
-	private Set<Long> getShards() {
-		return this.spunParticles()
-				.map(SpunParticle<Particle>::getParticle)
-				.map(Particle::getDestinations)
-				.flatMap(Set::stream)
-				.map(EUID::getShard)
-				.collect(Collectors.toSet());
-	}
-
-	// HACK
-	public Set<Long> getRequiredFirstShard() {
-		if (this.spunParticles().anyMatch(s -> s.getSpin() == Spin.DOWN)) {
-			return this.spunParticles().filter(s -> s.getSpin() == Spin.DOWN).flatMap(s -> s.getParticle().getShardables().stream()).map(
-					RadixAddress::euid).map(EUID::getShard).collect(Collectors.toSet());
-		} else {
-			return this.getShards();
-		}
-	}
 
 	public Stream<ParticleGroup> particleGroups() {
 		return this.particleGroups.stream();
@@ -218,7 +201,7 @@ public final class Atom {
 	}
 
 	public AID getAid() {
-		return AID.from(getHash(), getShards());
+		return AID.from(getHash().toByteArray());
 	}
 
 	/**

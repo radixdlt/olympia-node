@@ -25,7 +25,6 @@ package com.radixdlt.client.core.network;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
 
 import com.radixdlt.client.core.network.jsonrpc.NodeRunnerData;
-import com.radixdlt.client.core.network.jsonrpc.ShardSpace;
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
 import java.util.Objects;
 import java.util.Optional;
@@ -41,7 +40,7 @@ public class RadixNodeState {
 	private final RadixUniverseConfig universeConfig;
 
 	public RadixNodeState(RadixNode node, WebSocketStatus status, NodeRunnerData data, Integer version,
-	                      RadixUniverseConfig universeConfig) {
+			RadixUniverseConfig universeConfig) {
 		Objects.requireNonNull(node, "node is required");
 		Objects.requireNonNull(status, "status is required");
 
@@ -83,10 +82,6 @@ public class RadixNodeState {
 	 */
 	public WebSocketStatus getStatus() {
 		return status;
-	}
-
-	public Optional<ShardSpace> getShards() {
-		return getData().map(NodeRunnerData::getShards);
 	}
 
 	/**

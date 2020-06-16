@@ -25,14 +25,9 @@ package com.radixdlt.client.core.network.actions;
 import com.radixdlt.client.core.network.RadixNodeAction;
 
 /**
- * A dispatch action request for a connected node with some given shards
+ * A dispatch action request for a connected node.
+ *
  */
 public interface FindANodeRequestAction extends RadixNodeAction {
-
-	/**
-	 * A shard space which must be intersected with a node's shard space to be
-	 * selected
-	 *
-	 * @return shards which can be picked amongst to find a matching supporting node
-	 */
+	//Empty on purpose - in a future version will add shard support using this interface
 }
