@@ -29,8 +29,6 @@ import com.radixdlt.client.core.network.actions.ConnectWebSocketAction;
 import com.radixdlt.client.core.network.actions.DiscoverMoreNodesAction;
 import com.radixdlt.client.core.network.actions.FindANodeRequestAction;
 import com.radixdlt.client.core.network.actions.FindANodeResultAction;
-import com.radixdlt.client.core.network.actions.GetNodeDataRequestAction;
-import com.radixdlt.client.core.network.actions.GetUniverseRequestAction;
 import com.radixdlt.client.core.network.selector.RadixPeerSelector;
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
 import com.radixdlt.client.core.network.RadixNetworkState;
@@ -44,7 +42,6 @@ import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Epic which finds a connected sharded node when a FindANode request is received. If there are none found,
@@ -78,23 +75,7 @@ public final class FindANodeEpic implements RadixNetworkEpic {
 			if (disconnectedPeers.isEmpty()) {
 				return Collections.singletonList(DiscoverMoreNodesAction.instance());
 			} else {
-				List<RadixNode> correctShardNodes = disconnectedPeers.stream()
-						//.filter(node -> state.getNodeStates().get(node).getShards().map(sh -> sh.intersects(shards)).orElse(false))
-						.collect(Collectors.toList());
-				if (correctShardNodes.isEmpty()) {
-					List<RadixNode> unknownShardNodes = disconnectedPeers.stream()
-							.collect(Collectors.toList());
-					if (unknownShardNodes.isEmpty()) {
-						return Collections.singletonList(DiscoverMoreNodesAction.instance());
-					} else {
-						return unknownShardNodes.stream()
-								.flatMap(node -> Stream.of(GetNodeDataRequestAction.of(node), GetUniverseRequestAction.of(node)))
-								.collect(Collectors.toList());
-					}
-
-				} else {
-					return Collections.singletonList(ConnectWebSocketAction.of(selector.apply(correctShardNodes)));
-				}
+				return Collections.singletonList(ConnectWebSocketAction.of(selector.apply(disconnectedPeers)));
 			}
 		}
 
