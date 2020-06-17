@@ -36,8 +36,6 @@ import com.radixdlt.examples.tictactoe.TicTacToeConstraintScrypt.OToMoveParticle
 import com.radixdlt.examples.tictactoe.TicTacToeConstraintScrypt.XToMoveParticle;
 import com.radixdlt.store.EngineStore;
 
-import java.util.Collections;
-
 import static com.radixdlt.examples.tictactoe.TicTacToeBaseParticle.TicTacToeSquareValue.EMPTY;
 import static com.radixdlt.examples.tictactoe.TicTacToeBaseParticle.TicTacToeSquareValue.O;
 import static com.radixdlt.examples.tictactoe.TicTacToeBaseParticle.TicTacToeSquareValue.X;
@@ -162,7 +160,7 @@ public class TicTacToeRunner {
 				hash,
 				ImmutableMap.of(player.euid(), player.sign(hash))
 			);
-			this.aid = AID.from(hash, Collections.singleton(0L));
+			this.aid = AID.from(hash.toByteArray());
 		}
 
 		@Override
