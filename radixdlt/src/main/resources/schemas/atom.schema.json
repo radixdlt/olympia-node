@@ -193,7 +193,7 @@
         }
       },
       "additionalProperties": false,
-      "required": [ "serializer", "rri", "name", "description", "permissions" ],
+      "required": [ "serializer", "rri", "name", "permissions" ],
       "description": "A particle which represents a token class state."
     },
     "fixedSupplyTokenDefinitionParticle": {
@@ -220,7 +220,7 @@
         }
       },
       "additionalProperties": false,
-      "required": [ "serializer", "rri", "name", "description", "supply" ],
+      "required": [ "serializer", "rri", "name", "supply" ],
       "description": "A particle which represents a token class state."
     },
     "messageParticle": {
