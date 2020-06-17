@@ -36,7 +36,7 @@ public final class AID implements Comparable<AID> {
 	private final byte[] value;
 
 	private AID(byte[] bytes) {
-		assert(bytes != null && bytes.length == HASH_BYTES);
+		assert (bytes != null && bytes.length == HASH_BYTES);
 		this.value = bytes;
 	}
 
@@ -79,7 +79,7 @@ public final class AID implements Comparable<AID> {
 		if (!(o instanceof AID)) {
 			return false;
 		}
-		if(hashCode() != o.hashCode()) {
+		if (hashCode() != o.hashCode()) {
 			return false;
 		}
 		return Arrays.equals(this.value, ((AID) o).value);
