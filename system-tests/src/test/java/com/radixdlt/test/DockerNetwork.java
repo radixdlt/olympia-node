@@ -18,6 +18,7 @@
 
 package com.radixdlt.test;
 
+import java.util.Optional;
 import okhttp3.HttpUrl;
 import utils.CmdHelper;
 
@@ -40,6 +41,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class DockerNetwork implements Closeable, RemoteBFTNetwork {
 	private static final String OPTIONS_KEY_PORT = "hostPort";
+	private static final String NETWORK = "network";
+	private static final String DID_NETWORK = "DID"; //Docker in docker network on jenkins
 
 	private final String name;
 	private final int numNodes;
@@ -86,8 +89,11 @@ public class DockerNetwork implements Closeable, RemoteBFTNetwork {
 	                                                              boolean startConsensusOnBoot) {
 		Map<String, Map<String, Object>> dockerOptionsPerNode = CmdHelper.getDockerOptions(numNodes, startConsensusOnBoot);
 		CmdHelper.removeAllDockerContainers(); // TODO do we need  if yes, document it
-		CmdHelper.runCommand("docker network rm " + networkName);
-		CmdHelper.runCommand("docker network create " + networkName, null, true);
+		if(!networkName.contains(DID_NETWORK)){
+			System.out.println(" Network is " + networkName);
+			CmdHelper.runCommand("docker network rm " + networkName);
+			CmdHelper.runCommand("docker network create " + networkName, null, true);
+		}
 		dockerOptionsPerNode.forEach((nodeId, options) -> {
 			options.put("network", networkName);
 			List<Object> dockerSetup = CmdHelper.node(options);
@@ -121,8 +127,10 @@ public class DockerNetwork implements Closeable, RemoteBFTNetwork {
 	// utility for getting the API endpoint (as a string) out of generated node options
 	private static String getNodeEndpoint(Map<String, Object> nodeOptions, final String endpoint) {
 		int nodePort = (Integer) nodeOptions.get(OPTIONS_KEY_PORT);
-
-		return String.format("http://localhost:%d/%s", nodePort, endpoint);
+		String network = (String) nodeOptions.get(NETWORK);
+		return network.contains(DID_NETWORK)?
+			String.format("http://%s:8080/%s", nodeOptions.get("nodeName"), endpoint):
+			String.format("http://localhost:%d/%s", nodePort, endpoint);
 	}
 
 	@Override
@@ -144,7 +152,8 @@ public class DockerNetwork implements Closeable, RemoteBFTNetwork {
 	 */
 	public static class Builder {
 		private static AtomicInteger networkIdCounter = new AtomicInteger(0);
-		private String name = "test-network-" + networkIdCounter.getAndIncrement();
+		private String name = Optional.ofNullable(System.getenv("TEST_NETWORK"))
+			.orElse("test-network-" + networkIdCounter.getAndIncrement());
 		private int numNodes = -1;
 		private boolean startConsensusOnBoot;
 
