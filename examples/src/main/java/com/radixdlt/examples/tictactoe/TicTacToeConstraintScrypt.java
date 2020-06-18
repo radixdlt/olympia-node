@@ -18,7 +18,6 @@
 package com.radixdlt.examples.tictactoe;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.atomos.ConstraintScrypt;
 import com.radixdlt.atomos.ParticleDefinition;
