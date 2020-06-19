@@ -100,7 +100,6 @@ public class RadixEngineTest {
 	@Test
 	public void when_validating_an_atom_with_particle_which_conflicts_with_virtual_state__an_internal_spin_conflict_is_returned() {
 		when(this.constraintMachine.validate(any())).thenReturn(Optional.empty());
-		when(engineStore.supports(any())).thenReturn(true);
 		doAnswer(invocation -> {
 			CMStore cmStore = invocation.getArgument(0);
 			return CMStores.virtualizeDefault(cmStore, p -> true, Spin.DOWN);

@@ -114,9 +114,6 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 			}
 
 			final Particle particle = microInstruction.getParticle();
-			if (!engineStore.supports(particle.getDestinations())) {
-				continue;
-			}
 
 			final DataPointer dp = DataPointer.ofParticle(particleGroupIndex, particleIndex);
 

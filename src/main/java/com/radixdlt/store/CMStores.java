@@ -19,8 +19,6 @@ package com.radixdlt.store;
 
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.identifiers.EUID;
-import java.util.Set;
 import java.util.function.Predicate;
 
 /**
@@ -32,10 +30,6 @@ public final class CMStores {
 	}
 
 	private static final CMStore EMPTY_STATE_STORE = new CMStore() {
-		@Override
-		public boolean supports(Set<EUID> destinations) {
-			return true;
-		}
 
 		@Override
 		public Spin getSpin(Particle particle) {
@@ -64,17 +58,10 @@ public final class CMStores {
 	public static CMStore virtualizeDefault(CMStore base, Predicate<Particle> particleCheck, Spin spin) {
 		return new CMStore() {
 			@Override
-			public boolean supports(Set<EUID> destinations) {
-				return base.supports(destinations);
-			}
-
-			@Override
 			public Spin getSpin(Particle particle) {
 				Spin curSpin = base.getSpin(particle);
 
-				if (base.supports(particle.getDestinations())
-					&& particleCheck.test(particle)
-					&& SpinStateMachine.isAfter(spin, curSpin)
+				if (particleCheck.test(particle) && SpinStateMachine.isAfter(spin, curSpin)
 				) {
 					return spin;
 				}

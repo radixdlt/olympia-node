@@ -123,22 +123,16 @@ public final class CMAtomOS {
 			.filter(def -> def.getValue().getVirtualizeSpin() != null)
 			.collect(Collectors.toMap(Map.Entry::getKey, def -> def.getValue().getVirtualizeSpin()));
 		return base -> new CMStore() {
-			@Override
-			public boolean supports(Set<EUID> destinations) {
-				return base.supports(destinations);
-			}
 
 			@Override
 			public Spin getSpin(Particle particle) {
 				Spin curSpin = base.getSpin(particle);
 
-				if (base.supports(particle.getDestinations())) {
-					Function<Particle, Spin> virtualizer = virtualizedParticles.get(particle.getClass());
-					if (virtualizer != null) {
-						Spin virtualizedSpin = virtualizer.apply(particle);
-						if (virtualizedSpin != null && SpinStateMachine.isAfter(virtualizedSpin, curSpin)) {
-							return virtualizedSpin;
-						}
+				Function<Particle, Spin> virtualizer = virtualizedParticles.get(particle.getClass());
+				if (virtualizer != null) {
+					Spin virtualizedSpin = virtualizer.apply(particle);
+					if (virtualizedSpin != null && SpinStateMachine.isAfter(virtualizedSpin, curSpin)) {
+						return virtualizedSpin;
 					}
 				}
 
