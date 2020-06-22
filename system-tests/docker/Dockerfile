@@ -18,7 +18,7 @@ RUN bash -c ' \
     else \
         pkg="$pkg-jre-headless"; \
     fi; \
-    apt-get install -y --no-install-recommends wget unzip "$pkg" && \
+    apt-get install -y --no-install-recommends wget curl unzip "$pkg" && \
     apt-get clean'
 
 

@@ -35,6 +35,12 @@ public class SlowNodeTests {
 			CmdHelper.runCommand("docker run --rm --pid=host --privileged  "
 				+ "-v /var/run/docker.sock:/var/run/docker.sock dockerinpractice/comcast "
 				+ "-cont "+ network.getNodeIds().stream().findFirst().get() +" -default-bw 50 -latency 100 -packet-loss 20%");
+			CmdHelper.runCommand("docker run --rm --pid=host --privileged  "
+				+ "-v /var/run/docker.sock:/var/run/docker.sock dockerinpractice/comcast "
+				+ "-cont "+ network.getNodeIds().stream().findFirst().get() +" -stop");
+			CmdHelper.runCommand("docker run --rm --pid=host --privileged  "
+				+ "-v /var/run/docker.sock:/var/run/docker.sock dockerinpractice/comcast "
+				+ "-cont "+ network.getNodeIds().stream().findFirst().get() +" -default-bw 50 -latency 100 -packet-loss 20%");
 			RemoteBFTTest test = slowNodeTestBuilder()
 				.network(RemoteBFTNetworkBridge.of(network))
 				.waitUntilResponsive()
