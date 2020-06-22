@@ -31,16 +31,21 @@ public class SlowNodeTests {
 		try (DockerNetwork network = DockerNetwork.builder().numNodes(3).build()) {
 
 			network.startBlocking();
-//			Thread.sleep(20000);
-//			CmdHelper.runCommand("docker run --rm --pid=host --privileged  "
-//				+ "-v /var/run/docker.sock:/var/run/docker.sock dockerinpractice/comcast "
-//				+ "-cont "+ network.getNodeIds().stream().findFirst().get() +" -default-bw 50 -latency 100 -packet-loss 20%");
+			Thread.sleep(20000);
+			CmdHelper.runCommand("docker run --rm --pid=host --privileged  "
+				+ "-v /var/run/docker.sock:/var/run/docker.sock dockerinpractice/comcast "
+				+ "-cont "+ network.getNodeIds().stream().findFirst().get() +" -default-bw 50 -latency 100 -packet-loss 20%");
+			CmdHelper.runCommand("docker run --rm --pid=host --privileged  "
+				+ "-v /var/run/docker.sock:/var/run/docker.sock dockerinpractice/comcast "
+				+ "-cont "+ network.getNodeIds().stream().findFirst().get() +" -default-bw 50 -latency 100 -packet-loss 20%");
 			RemoteBFTTest test = slowNodeTestBuilder()
 				.network(RemoteBFTNetworkBridge.of(network))
 				.waitUntilResponsive()
 				.startConsensusOnRun()
 				.build();
 			test.runBlocking(20, TimeUnit.MINUTES);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
 		}
 	}
 }
