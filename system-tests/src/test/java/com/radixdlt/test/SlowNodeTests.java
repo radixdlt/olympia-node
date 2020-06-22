@@ -2,6 +2,7 @@ package com.radixdlt.test;
 
 
 import java.util.concurrent.TimeUnit;
+import org.bouncycastle.asn1.cms.OtherRecipientInfo;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import utils.CmdHelper;
@@ -44,6 +45,7 @@ public class SlowNodeTests {
 				.startConsensusOnRun()
 				.build();
 			test.runBlocking(20, TimeUnit.MINUTES);
+			Thread.sleep(30000*60);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
