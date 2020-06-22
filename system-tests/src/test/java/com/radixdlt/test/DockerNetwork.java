@@ -109,8 +109,8 @@ public class DockerNetwork implements Closeable, RemoteBFTNetwork {
 	@Override
 	public void close() {
 		this.networkState.assertCanShutdown();
-		CmdHelper.removeAllDockerContainers();
-		CmdHelper.runCommand("docker network rm " + this.name);
+//		CmdHelper.removeAllDockerContainers();
+//		CmdHelper.runCommand("docker network rm " + this.name);
 		this.networkState = NetworkState.SHUTDOWN;
 	}
 
