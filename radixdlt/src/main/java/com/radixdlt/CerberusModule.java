@@ -88,8 +88,6 @@ public class CerberusModule extends AbstractModule {
 		bind(CommittedStateSyncSender.class).to(InternalMessagePasser.class);
 		bind(CommittedStateSyncRx.class).to(InternalMessagePasser.class);
 
-		bind(SafetyRules.class).in(Scopes.SINGLETON);
-
 		bind(SyncVerticesRPCSender.class).to(MessageCentralSyncVerticesRPCNetwork.class);
 		bind(SyncVerticesRPCRx.class).to(MessageCentralSyncVerticesRPCNetwork.class);
 
@@ -105,16 +103,10 @@ public class CerberusModule extends AbstractModule {
 		bind(ProposalGenerator.class).to(MempoolProposalGenerator.class);
 	}
 
-	@Provides
-	@Singleton
-	private ProposerElectionFactory proposerElectionFactory() {
-		final int cacheSize = runtimeProperties.get("consensus.weighted_rotating_leaders.cache_size", 10);
-		return validatorSet -> new WeightedRotatingLeaders(validatorSet, Comparator.comparing(v -> v.nodeKey().euid()), cacheSize);
-	}
 
 	@Provides
 	@Singleton
-	private EpochRx nextValidatorSetRx(
+	private EpochRx epochRx(
 		@Named("self") ECKeyPair selfKey,
 		AddressBook addressBook
 	) {
@@ -124,10 +116,9 @@ public class CerberusModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private ValidatorSet validatorSet(
-		@Named("self") ECKeyPair selfKey
-	) {
-		return ValidatorSet.from(Collections.singleton(Validator.from(selfKey.getPublicKey(), UInt256.ONE)));
+	private ProposerElectionFactory proposerElectionFactory() {
+		final int cacheSize = runtimeProperties.get("consensus.weighted_rotating_leaders.cache_size", 10);
+		return validatorSet -> new WeightedRotatingLeaders(validatorSet, Comparator.comparing(v -> v.nodeKey().euid()), cacheSize);
 	}
 
 	@Provides

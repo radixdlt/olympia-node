@@ -7,7 +7,6 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposerElection;
-import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
@@ -28,11 +27,11 @@ public class EpochManagerTest {
 			mock(ProposalGenerator.class),
 			mock(Mempool.class),
 			mock(BFTEventSender.class),
-			mock(SafetyRules.class),
 			mock(Pacemaker.class),
 			vertexStore,
 			mock(PendingVotes.class),
 			proposers -> mock(ProposerElection.class),
+			mock(Hasher.class),
 			keyPair,
 			mock(SystemCounters.class)
 		);

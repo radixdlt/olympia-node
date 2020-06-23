@@ -31,4 +31,9 @@ public final class Epoch {
 	public ValidatorSet getValidatorSet() {
 		return validatorSet;
 	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{epoch=%s,validatorSet=%s}", this.getClass().getSimpleName(), epoch, validatorSet);
+	}
 }

@@ -25,6 +25,7 @@ import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.safety.SafetyRules;
+import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
@@ -47,7 +48,6 @@ public class EpochManager {
 	private final ProposalGenerator proposalGenerator;
 	private final Mempool mempool;
 	private final BFTEventSender sender;
-	private final SafetyRules safetyRules;
 	private final Pacemaker pacemaker;
 	private final VertexStore vertexStore;
 	private final PendingVotes pendingVotes;
@@ -55,7 +55,7 @@ public class EpochManager {
 	private final ECKeyPair selfKey;
 	private final SystemCounters counters;
 
-	private ValidatorSet nextValidatorSet;
+	private final Hasher hasher;
 	private BFTEventProcessor eventProcessor = EMPTY_PROCESSOR;
 
 	@Inject
@@ -63,46 +63,49 @@ public class EpochManager {
 		ProposalGenerator proposalGenerator,
 		Mempool mempool,
 		BFTEventSender sender,
-		SafetyRules safetyRules,
 		Pacemaker pacemaker,
 		VertexStore vertexStore,
 		PendingVotes pendingVotes,
 		ProposerElectionFactory proposerElectionFactory,
+		Hasher hasher,
 		@Named("self") ECKeyPair selfKey,
 		SystemCounters counters
 	) {
 		this.proposalGenerator = Objects.requireNonNull(proposalGenerator);
 		this.mempool = Objects.requireNonNull(mempool);
 		this.sender = Objects.requireNonNull(sender);
-		this.safetyRules = Objects.requireNonNull(safetyRules);
 		this.pacemaker = Objects.requireNonNull(pacemaker);
 		this.vertexStore = Objects.requireNonNull(vertexStore);
 		this.pendingVotes = Objects.requireNonNull(pendingVotes);
 		this.proposerElectionFactory = Objects.requireNonNull(proposerElectionFactory);
 		this.selfKey = Objects.requireNonNull(selfKey);
 		this.counters = Objects.requireNonNull(counters);
+		this.hasher = Objects.requireNonNull(hasher);
 	}
 
-	private void startNextEpoch() {
-		ProposerElection proposerElection = proposerElectionFactory.create(this.nextValidatorSet);
-		log.info("NEXT_EPOCH: ProposerElection: {}", proposerElection);
+	public void processNextEpoch(Epoch epoch) {
+		log.info("NEXT_EPOCH: {}", epoch);
+
+		ValidatorSet validatorSet = epoch.getValidatorSet();
+		ProposerElection proposerElection = proposerElectionFactory.create(validatorSet);
+		SafetyRules safetyRules = new SafetyRules(this.selfKey, SafetyState.initialState(), hasher);
 
 		BFTEventReducer reducer = new BFTEventReducer(
 			this.proposalGenerator,
 			this.mempool,
 			this.sender,
-			this.safetyRules,
+			safetyRules,
 			this.pacemaker,
 			this.vertexStore,
 			this.pendingVotes,
 			proposerElection,
 			this.selfKey,
-			this.nextValidatorSet,
+			validatorSet,
 			counters
 		);
 
 		SyncQueues syncQueues = new SyncQueues(
-			this.nextValidatorSet.getValidators().stream()
+			validatorSet.getValidators().stream()
 				.map(Validator::nodeKey)
 				.collect(ImmutableSet.toImmutableSet()),
 			counters
@@ -118,13 +121,6 @@ public class EpochManager {
 		);
 
 		this.eventProcessor.start();
-
-		this.nextValidatorSet = null;
-	}
-
-	public void processNextEpoch(Epoch epoch) {
-		this.nextValidatorSet = epoch.getValidatorSet();
-		startNextEpoch();
 	}
 
 	public void processGetVerticesRequest(GetVerticesRequest request) {

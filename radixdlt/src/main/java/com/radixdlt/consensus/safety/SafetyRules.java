@@ -17,7 +17,6 @@
 
 package com.radixdlt.consensus.safety;
 
-import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.Proposal;
@@ -44,7 +43,6 @@ public final class SafetyRules {
 
 	private SafetyState state;
 
-	@Inject
 	public SafetyRules(
 		@Named("self") ECKeyPair selfKey,
 		SafetyState initialState,
