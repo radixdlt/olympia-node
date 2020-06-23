@@ -177,7 +177,7 @@ public class SimulatedBFTNetwork {
 		EpochManager epochManager = new EpochManager(
 			mempool,
 			underlyingNetwork.getNetworkSender(key.getPublicKey()),
-			pacemaker,
+			() -> pacemaker,
 			vertexStores.get(key),
 			proposers -> getProposerElection(), // create a new ProposerElection per node
 			hasher,

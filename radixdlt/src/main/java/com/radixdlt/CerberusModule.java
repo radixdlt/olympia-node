@@ -39,8 +39,8 @@ import com.radixdlt.consensus.VertexStore;
 import com.radixdlt.consensus.VertexStore.SyncSender;
 import com.radixdlt.consensus.SyncVerticesRPCSender;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker.TimeoutSender;
-import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
+import com.radixdlt.consensus.liveness.PacemakerFactory;
 import com.radixdlt.consensus.liveness.PacemakerRx;
 import com.radixdlt.consensus.liveness.ScheduledTimeoutSender;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
@@ -122,11 +122,11 @@ public class CerberusModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private Pacemaker pacemaker(
+	private PacemakerFactory pacemakerFactory(
 		TimeoutSender timeoutSender
 	) {
 		final int pacemakerTimeout = runtimeProperties.get("consensus.pacemaker_timeout_millis", 5000);
-		return new FixedTimeoutPacemaker(pacemakerTimeout, timeoutSender);
+		return () -> new FixedTimeoutPacemaker(pacemakerTimeout, timeoutSender);
 	}
 
 	@Provides

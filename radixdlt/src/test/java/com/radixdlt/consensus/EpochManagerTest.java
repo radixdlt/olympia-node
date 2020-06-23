@@ -25,7 +25,7 @@ public class EpochManagerTest {
 		EpochManager epochManager = new EpochManager(
 			mock(Mempool.class),
 			mock(BFTEventSender.class),
-			mock(Pacemaker.class),
+			() -> mock(Pacemaker.class),
 			vertexStore,
 			proposers -> mock(ProposerElection.class),
 			mock(Hasher.class),

@@ -23,6 +23,7 @@ import com.google.inject.name.Named;
 import com.radixdlt.consensus.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.liveness.MempoolProposalGenerator;
 import com.radixdlt.consensus.liveness.Pacemaker;
+import com.radixdlt.consensus.liveness.PacemakerFactory;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.safety.SafetyRules;
@@ -48,7 +49,7 @@ public class EpochManager {
 
 	private final Mempool mempool;
 	private final BFTEventSender sender;
-	private final Pacemaker pacemaker;
+	private final PacemakerFactory pacemakerFactory;
 	private final VertexStore vertexStore;
 	private final ProposerElectionFactory proposerElectionFactory;
 	private final ECKeyPair selfKey;
@@ -60,7 +61,7 @@ public class EpochManager {
 	public EpochManager(
 		Mempool mempool,
 		BFTEventSender sender,
-		Pacemaker pacemaker,
+		PacemakerFactory pacemakerFactory,
 		VertexStore vertexStore,
 		ProposerElectionFactory proposerElectionFactory,
 		Hasher hasher,
@@ -69,7 +70,7 @@ public class EpochManager {
 	) {
 		this.mempool = Objects.requireNonNull(mempool);
 		this.sender = Objects.requireNonNull(sender);
-		this.pacemaker = Objects.requireNonNull(pacemaker);
+		this.pacemakerFactory = Objects.requireNonNull(pacemakerFactory);
 		this.vertexStore = Objects.requireNonNull(vertexStore);
 		this.proposerElectionFactory = Objects.requireNonNull(proposerElectionFactory);
 		this.selfKey = Objects.requireNonNull(selfKey);
@@ -82,6 +83,7 @@ public class EpochManager {
 
 		ValidatorSet validatorSet = epoch.getValidatorSet();
 		ProposerElection proposerElection = proposerElectionFactory.create(validatorSet);
+		Pacemaker pacemaker = pacemakerFactory.create();
 		SafetyRules safetyRules = new SafetyRules(this.selfKey, SafetyState.initialState(), this.hasher);
 		PendingVotes pendingVotes = new PendingVotes(this.hasher);
 		ProposalGenerator proposalGenerator = new MempoolProposalGenerator(this.vertexStore, this.mempool);
@@ -91,7 +93,7 @@ public class EpochManager {
 			this.mempool,
 			this.sender,
 			safetyRules,
-			this.pacemaker,
+			pacemaker,
 			this.vertexStore,
 			pendingVotes,
 			proposerElection,
@@ -110,7 +112,7 @@ public class EpochManager {
 		this.eventProcessor = new BFTEventPreprocessor(
 			this.selfKey.getPublicKey(),
 			reducer,
-			this.pacemaker,
+			pacemaker,
 			this.vertexStore,
 			proposerElection,
 			syncQueues
