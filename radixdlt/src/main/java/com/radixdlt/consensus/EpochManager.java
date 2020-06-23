@@ -20,6 +20,7 @@ package com.radixdlt.consensus;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
+import com.radixdlt.consensus.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposerElection;
@@ -28,6 +29,7 @@ import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.Hash;
 import com.radixdlt.mempool.Mempool;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
@@ -49,6 +51,9 @@ public class EpochManager {
 	private final ProposerElectionFactory proposerElectionFactory;
 	private final ECKeyPair selfKey;
 	private final SystemCounters counters;
+
+	private ValidatorSet nextValidatorSet;
+	private BFTEventProcessor eventProcessor;
 
 	@Inject
 	public EpochManager(
@@ -75,13 +80,8 @@ public class EpochManager {
 		this.counters = Objects.requireNonNull(counters);
 	}
 
-	public BFTEventProcessor start() {
-		return new EmptyBFTEventProcessor();
-	}
-
-	public BFTEventProcessor nextEpoch(ValidatorSet validatorSet) {
-
-		ProposerElection proposerElection = proposerElectionFactory.create(validatorSet);
+	private void startNextEpoch() {
+		ProposerElection proposerElection = proposerElectionFactory.create(this.nextValidatorSet);
 		log.info("NEXT_EPOCH: ProposerElection: {}", proposerElection);
 
 		BFTEventReducer reducer = new BFTEventReducer(
@@ -94,18 +94,18 @@ public class EpochManager {
 			this.pendingVotes,
 			proposerElection,
 			this.selfKey,
-			validatorSet,
+			this.nextValidatorSet,
 			counters
 		);
 
 		SyncQueues syncQueues = new SyncQueues(
-			validatorSet.getValidators().stream()
+			this.nextValidatorSet.getValidators().stream()
 				.map(Validator::nodeKey)
 				.collect(ImmutableSet.toImmutableSet()),
 			counters
 		);
 
-		return new BFTEventPreprocessor(
+		this.eventProcessor = new BFTEventPreprocessor(
 			this.selfKey.getPublicKey(),
 			reducer,
 			this.pacemaker,
@@ -113,5 +113,61 @@ public class EpochManager {
 			proposerElection,
 			syncQueues
 		);
+
+		this.eventProcessor.start();
+
+		this.nextValidatorSet = null;
+	}
+
+	// TODO: add epoch id
+	private void processNextValidatorSet(ValidatorSet validatorSet) {
+		this.nextValidatorSet = validatorSet;
+		if (this.eventProcessor != null) {
+			return;
+		}
+		startNextEpoch();
+	}
+
+	// TODO: add epoch id
+	private void processNextEpoch() {
+		this.eventProcessor = null;
+		if (this.nextValidatorSet == null) {
+			return;
+		}
+		startNextEpoch();
+	}
+
+	public void processEvent(Object msg) {
+		if (msg instanceof ValidatorSet) {
+			this.processNextValidatorSet((ValidatorSet) msg);
+			return;
+		} else if (msg instanceof Long) {
+			this.processNextEpoch();
+			return;
+		}
+
+		if (this.eventProcessor == null) {
+			return;
+		}
+
+		if (msg instanceof GetVerticesRequest) {
+			vertexStore.processGetVerticesRequest((GetVerticesRequest) msg);
+		} else if (msg instanceof GetVerticesResponse) {
+			vertexStore.processGetVerticesResponse((GetVerticesResponse) msg);
+		} else if (msg instanceof View) {
+			eventProcessor.processLocalTimeout((View) msg);
+		} else if (msg instanceof NewView) {
+			eventProcessor.processNewView((NewView) msg);
+		} else if (msg instanceof Proposal) {
+			eventProcessor.processProposal((Proposal) msg);
+		} else if (msg instanceof Vote) {
+			eventProcessor.processVote((Vote) msg);
+		} else if (msg instanceof Hash) {
+			eventProcessor.processLocalSync((Hash) msg);
+		} else if (msg instanceof CommittedStateSync) {
+			vertexStore.processCommittedStateSync((CommittedStateSync) msg);
+		} else {
+			throw new IllegalStateException("Unknown Consensus Message: " + msg);
+		}
 	}
 }

@@ -9,14 +9,14 @@ import com.radixdlt.network.addressbook.AddressBook;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.junit.Test;
 
-public class BasicEpochRxTest {
+public class BasicNextValidatorSetRxTest {
 	@Test
 	public void when_quorum_size_is_one__then_should_emit_self() {
 		ECPublicKey self = mock(ECPublicKey.class);
 		AddressBook addressBook = mock(AddressBook.class);
-		BasicEpochRx basicEpochRx = new BasicEpochRx(self, addressBook, 1);
+		BasicNextValidatorSetRx basicEpochRx = new BasicNextValidatorSetRx(self, addressBook, 1);
 		TestObserver<ValidatorSet> testObserver = TestObserver.create();
-		basicEpochRx.epochs()
+		basicEpochRx.nextValidatorSet()
 			.subscribe(testObserver);
 		testObserver.awaitCount(1);
 		testObserver.assertValueCount(1);

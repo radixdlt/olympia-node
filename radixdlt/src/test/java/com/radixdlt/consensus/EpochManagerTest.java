@@ -1,6 +1,5 @@
 package com.radixdlt.consensus;
 
-import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -19,9 +18,11 @@ import org.junit.Test;
 
 public class EpochManagerTest {
 	@Test
-	public void when_next_epoch__then_should_create_new_event_coordinator() {
+	public void when_next_epoch__then_should_not_fail() {
 		ECKeyPair keyPair = mock(ECKeyPair.class);
 		when(keyPair.getPublicKey()).thenReturn(mock(ECPublicKey.class));
+		VertexStore vertexStore = mock(VertexStore.class);
+		when(vertexStore.getHighestQC()).thenReturn(mock(QuorumCertificate.class));
 
 		EpochManager epochManager = new EpochManager(
 			mock(ProposalGenerator.class),
@@ -29,7 +30,7 @@ public class EpochManagerTest {
 			mock(BFTEventSender.class),
 			mock(SafetyRules.class),
 			mock(Pacemaker.class),
-			mock(VertexStore.class),
+			vertexStore,
 			mock(PendingVotes.class),
 			proposers -> mock(ProposerElection.class),
 			keyPair,
@@ -40,7 +41,7 @@ public class EpochManagerTest {
 		when(validator.nodeKey()).thenReturn(mock(ECPublicKey.class));
 		ValidatorSet validatorSet = mock(ValidatorSet.class);
 		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of(validator));
-		BFTEventProcessor processor = epochManager.nextEpoch(validatorSet);
-		assertNotNull(processor);
+		epochManager.processEvent(validatorSet);
+		epochManager.processEvent(0L);
 	}
 }

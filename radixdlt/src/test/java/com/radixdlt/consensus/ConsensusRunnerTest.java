@@ -17,7 +17,6 @@
 
 package com.radixdlt.consensus;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -38,12 +37,9 @@ public class ConsensusRunnerTest {
 	public void when_events_get_emitted__then_event_coordinator_should_be_called() {
 		EventCoordinatorNetworkRx networkRx = mock(EventCoordinatorNetworkRx.class);
 
-		EpochRx epochRx = () -> Observable.just(mock(ValidatorSet.class)).concatWith(Observable.never());
+		NextValidatorSetRx nextValidatorSetRx = () -> Observable.just(mock(ValidatorSet.class)).concatWith(Observable.never());
 
-		BFTEventProcessor ec = mock(BFTEventProcessor.class);
 		EpochManager epochManager = mock(EpochManager.class);
-		when(epochManager.start()).thenReturn(ec);
-		when(epochManager.nextEpoch(any())).thenReturn(ec);
 
 		View timeout = mock(View.class);
 		PacemakerRx pacemakerRx = mock(PacemakerRx.class);
@@ -69,32 +65,29 @@ public class ConsensusRunnerTest {
 		CommittedStateSync stateSync = mock(CommittedStateSync.class);
 		when(committedStateSyncRx.committedStateSyncs()).thenReturn(Observable.just(stateSync).concatWith(Observable.never()));
 
-		VertexStore vertexStore = mock(VertexStore.class);
-
-		ConsensusRunner consensusRunner = new ConsensusRunner(
-			epochRx,
+		ConsensusRunner consensusRunner = new ConsensusRunner(nextValidatorSetRx,
 			networkRx,
 			pacemakerRx,
 			localSyncRx,
 			committedStateSyncRx,
 			syncVerticesRPCRx,
-			epochManager,
-			vertexStore
+			epochManager
 		);
 
 		TestObserver<Event> testObserver = consensusRunner.events().test();
 		consensusRunner.start();
-		testObserver.awaitCount(8);
-		testObserver.assertValueCount(8);
+		testObserver.awaitCount(9);
+		testObserver.assertValueCount(9);
 		testObserver.assertNotComplete();
 
-		verify(ec, times(1)).processVote(eq(vote));
-		verify(ec, times(1)).processProposal(eq(proposal));
-		verify(ec, times(1)).processNewView(eq(newView));
-		verify(ec, times(1)).processLocalTimeout(eq(timeout));
-		verify(ec, times(1)).processLocalSync(eq(id));
-		verify(vertexStore, times(1)).processCommittedStateSync(eq(stateSync));
-		verify(vertexStore, times(1)).processGetVerticesRequest(eq(request));
+		verify(epochManager, times(1)).processEvent(eq(0L));
+		verify(epochManager, times(1)).processEvent(eq(vote));
+		verify(epochManager, times(1)).processEvent(eq(proposal));
+		verify(epochManager, times(1)).processEvent(eq(newView));
+		verify(epochManager, times(1)).processEvent(eq(timeout));
+		verify(epochManager, times(1)).processEvent(eq(id));
+		verify(epochManager, times(1)).processEvent(eq(stateSync));
+		verify(epochManager, times(1)).processEvent(eq(request));
 
 		consensusRunner.shutdown();
 	}

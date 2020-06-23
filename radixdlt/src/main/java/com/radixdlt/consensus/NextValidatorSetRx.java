@@ -23,12 +23,12 @@ import io.reactivex.rxjava3.core.Observable;
 /**
  * Validator Set change events
  */
-public interface EpochRx {
+public interface NextValidatorSetRx {
 
 	/**
 	 * Epoch change events
 	 *
 	 * @return stream of epoch changes
 	 */
-	Observable<ValidatorSet> epochs();
+	Observable<ValidatorSet> nextValidatorSet();
 }
