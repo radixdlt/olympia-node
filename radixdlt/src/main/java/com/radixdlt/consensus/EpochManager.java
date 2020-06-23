@@ -32,14 +32,17 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.mempool.Mempool;
 import java.util.Objects;
+import javax.annotation.concurrent.NotThreadSafe;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Manages creation of EventCoordinators given a ValidatorSet
+ * Manages Epochs and the BFT instance associated with each epoch
  */
+@NotThreadSafe
 public class EpochManager {
 	private static final Logger log = LogManager.getLogger("EM");
+	private static final BFTEventProcessor EMPTY_PROCESSOR = new EmptyBFTEventProcessor();
 
 	private final ProposalGenerator proposalGenerator;
 	private final Mempool mempool;
@@ -53,7 +56,7 @@ public class EpochManager {
 	private final SystemCounters counters;
 
 	private ValidatorSet nextValidatorSet;
-	private BFTEventProcessor eventProcessor;
+	private BFTEventProcessor eventProcessor = EMPTY_PROCESSOR;
 
 	@Inject
 	public EpochManager(
@@ -119,55 +122,40 @@ public class EpochManager {
 		this.nextValidatorSet = null;
 	}
 
-	// TODO: add epoch id
-	private void processNextValidatorSet(ValidatorSet validatorSet) {
-		this.nextValidatorSet = validatorSet;
-		if (this.eventProcessor != null) {
-			return;
-		}
+	public void processNextEpoch(Epoch epoch) {
+		this.nextValidatorSet = epoch.getValidatorSet();
 		startNextEpoch();
 	}
 
-	// TODO: add epoch id
-	private void processNextEpoch() {
-		this.eventProcessor = null;
-		if (this.nextValidatorSet == null) {
-			return;
-		}
-		startNextEpoch();
+	public void processGetVerticesRequest(GetVerticesRequest request) {
+		vertexStore.processGetVerticesRequest(request);
 	}
 
-	public void processEvent(Object msg) {
-		if (msg instanceof ValidatorSet) {
-			this.processNextValidatorSet((ValidatorSet) msg);
-			return;
-		} else if (msg instanceof Long) {
-			this.processNextEpoch();
-			return;
-		}
+	public void processGetVerticesResponse(GetVerticesResponse response) {
+		vertexStore.processGetVerticesResponse(response);
+	}
 
-		if (this.eventProcessor == null) {
-			return;
-		}
-
-		if (msg instanceof GetVerticesRequest) {
-			vertexStore.processGetVerticesRequest((GetVerticesRequest) msg);
-		} else if (msg instanceof GetVerticesResponse) {
-			vertexStore.processGetVerticesResponse((GetVerticesResponse) msg);
-		} else if (msg instanceof View) {
-			eventProcessor.processLocalTimeout((View) msg);
-		} else if (msg instanceof NewView) {
-			eventProcessor.processNewView((NewView) msg);
-		} else if (msg instanceof Proposal) {
-			eventProcessor.processProposal((Proposal) msg);
-		} else if (msg instanceof Vote) {
-			eventProcessor.processVote((Vote) msg);
-		} else if (msg instanceof Hash) {
-			eventProcessor.processLocalSync((Hash) msg);
-		} else if (msg instanceof CommittedStateSync) {
-			vertexStore.processCommittedStateSync((CommittedStateSync) msg);
+	public void processConsensusEvent(ConsensusEvent consensusEvent) {
+		if (consensusEvent instanceof NewView) {
+			eventProcessor.processNewView((NewView) consensusEvent);
+		} else if (consensusEvent instanceof Proposal) {
+			eventProcessor.processProposal((Proposal) consensusEvent);
+		} else if (consensusEvent instanceof Vote) {
+			eventProcessor.processVote((Vote) consensusEvent);
 		} else {
-			throw new IllegalStateException("Unknown Consensus Message: " + msg);
+			throw new IllegalStateException("Unknown consensus event: " + consensusEvent);
 		}
+	}
+
+	public void processLocalTimeout(View view) {
+		eventProcessor.processLocalTimeout(view);
+	}
+
+	public void processLocalSync(Hash synced) {
+		eventProcessor.processLocalSync(synced);
+	}
+
+	public void processCommittedStateSync(CommittedStateSync committedStateSync) {
+		vertexStore.processCommittedStateSync(committedStateSync);
 	}
 }

@@ -41,7 +41,6 @@ public class EpochManagerTest {
 		when(validator.nodeKey()).thenReturn(mock(ECPublicKey.class));
 		ValidatorSet validatorSet = mock(ValidatorSet.class);
 		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of(validator));
-		epochManager.processEvent(validatorSet);
-		epochManager.processEvent(0L);
+		epochManager.processNextEpoch(new Epoch(0L, validatorSet));
 	}
 }

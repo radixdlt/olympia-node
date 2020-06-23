@@ -22,7 +22,6 @@ import com.google.inject.Inject;
 import com.radixdlt.consensus.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.liveness.PacemakerRx;
 
-import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.utils.ThreadFactories;
 
@@ -83,10 +82,11 @@ public final class ConsensusRunner {
 	private final ExecutorService singleThreadExecutor;
 	private final Scheduler singleThreadScheduler;
 	private Disposable disposable;
+	private final EpochManager epochManager;
 
 	@Inject
 	public ConsensusRunner(
-		NextValidatorSetRx nextValidatorSetRx,
+		EpochRx epochRx,
 		EventCoordinatorNetworkRx networkRx,
 		PacemakerRx pacemakerRx,
 		LocalSyncRx localSyncRx,
@@ -96,10 +96,10 @@ public final class ConsensusRunner {
 	) {
 		this.singleThreadExecutor = Executors.newSingleThreadExecutor(ThreadFactories.daemonThreads("ConsensusRunner"));
 		this.singleThreadScheduler = Schedulers.from(this.singleThreadExecutor);
+		this.epochManager = epochManager;
 
 		final Observable<Object> eventCoordinatorEvents = Observable.merge(Arrays.asList(
-			Observable.just(0L),
-			nextValidatorSetRx.nextValidatorSet().observeOn(singleThreadScheduler),
+			epochRx.nextEpoch().observeOn(singleThreadScheduler),
 			pacemakerRx.localTimeouts().observeOn(singleThreadScheduler),
 			networkRx.consensusEvents().observeOn(singleThreadScheduler),
 			rpcRx.requests().observeOn(singleThreadScheduler),
@@ -107,9 +107,7 @@ public final class ConsensusRunner {
 			localSyncRx.localSyncs().observeOn(singleThreadScheduler),
 			committedStateSyncRx.committedStateSyncs().observeOn(singleThreadScheduler)
 		));
-		final Observable<Event> ecMessages = eventCoordinatorEvents
-			.doOnNext(epochManager::processEvent)
-			.map(ConsensusRunner::mapToEvent);
+		final Observable<Event> ecMessages = eventCoordinatorEvents.map(this::processEvent);
 
 		this.events = ecMessages
 			.doOnError(e -> {
@@ -122,27 +120,34 @@ public final class ConsensusRunner {
 	}
 
 	// TODO: Cleanup
-	private static Event mapToEvent(Object msg) {
+	private Event processEvent(Object msg) {
 		final EventType eventType;
-		if (msg instanceof ValidatorSet) {
-			return new Event(EventType.VALIDATOR_SET, msg);
-		} else if (msg instanceof Long) {
+		if (msg instanceof Epoch) {
+			epochManager.processNextEpoch((Epoch) msg);
 			return new Event(EventType.EPOCH, msg);
 		} else if (msg instanceof GetVerticesRequest) {
+			epochManager.processGetVerticesRequest((GetVerticesRequest) msg);
 			return new Event(EventType.GET_VERTICES_REQUEST, msg);
 		} else if (msg instanceof GetVerticesResponse) {
+			epochManager.processGetVerticesResponse((GetVerticesResponse) msg);
 			return new Event(EventType.GET_VERTICES_RESPONSE, msg);
 		} else if (msg instanceof View) {
+			epochManager.processLocalTimeout((View) msg);
 			return new Event(EventType.LOCAL_TIMEOUT, msg);
 		} else if (msg instanceof NewView) {
+			epochManager.processConsensusEvent((NewView) msg);
 			eventType = EventType.NEW_VIEW_MESSAGE;
 		} else if (msg instanceof Proposal) {
+			epochManager.processConsensusEvent((Proposal) msg);
 			eventType = EventType.PROPOSAL_MESSAGE;
 		} else if (msg instanceof Vote) {
+			epochManager.processConsensusEvent((Vote) msg);
 			eventType = EventType.VOTE_MESSAGE;
 		} else if (msg instanceof Hash) {
+			epochManager.processLocalSync((Hash) msg);
 			eventType = EventType.LOCAL_SYNC;
 		} else if (msg instanceof CommittedStateSync) {
+			epochManager.processCommittedStateSync((CommittedStateSync) msg);
 			eventType = EventType.COMMITTED_STATE_SYNC;
 		} else {
 			throw new IllegalStateException("Unknown Consensus Message: " + msg);

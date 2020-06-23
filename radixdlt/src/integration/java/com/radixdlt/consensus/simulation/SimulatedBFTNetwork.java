@@ -23,8 +23,9 @@ import com.radixdlt.consensus.ConsensusRunner.Event;
 import com.radixdlt.consensus.ConsensusRunner.EventType;
 import com.radixdlt.consensus.DefaultHasher;
 import com.radixdlt.consensus.EmptySyncVerticesRPCSender;
+import com.radixdlt.consensus.Epoch;
 import com.radixdlt.consensus.EpochManager;
-import com.radixdlt.consensus.NextValidatorSetRx;
+import com.radixdlt.consensus.EpochRx;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.InternalMessagePasser;
 import com.radixdlt.consensus.PendingVotes;
@@ -180,7 +181,7 @@ public class SimulatedBFTNetwork {
 		ScheduledTimeoutSender timeoutSender = timeoutSenders.get(key);
 		FixedTimeoutPacemaker pacemaker = pacemakers.get(key);
 		PendingVotes pendingVotes = new PendingVotes(hasher);
-		NextValidatorSetRx nextValidatorSetRx = () -> Observable.just(validatorSet).concatWith(Observable.never());
+		EpochRx epochRx = () -> Observable.just(new Epoch(0L, validatorSet)).concatWith(Observable.never());
 		EpochManager epochManager = new EpochManager(
 			proposalGenerator,
 			mempool,
@@ -196,7 +197,7 @@ public class SimulatedBFTNetwork {
 
 		SimulatedNetworkReceiver rx = underlyingNetwork.getNetworkRx(key.getPublicKey());
 
-		return new ConsensusRunner(nextValidatorSetRx,
+		return new ConsensusRunner(epochRx,
 			rx,
 			timeoutSender,
 			syncSenders.get(key),

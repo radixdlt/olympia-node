@@ -17,18 +17,39 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.consensus.validators.ValidatorSet;
-import io.reactivex.rxjava3.core.Observable;
+import com.radixdlt.crypto.Hash;
 
 /**
- * Validator Set change events
+ * An empty BFT event processor
  */
-public interface NextValidatorSetRx {
+public class EmptyBFTEventProcessor implements BFTEventProcessor {
+	@Override
+	public void processVote(Vote vote) {
+		// No-op
+	}
 
-	/**
-	 * Epoch change events
-	 *
-	 * @return stream of epoch changes
-	 */
-	Observable<ValidatorSet> nextValidatorSet();
+	@Override
+	public void processNewView(NewView newView) {
+		// No-op
+	}
+
+	@Override
+	public void processProposal(Proposal proposal) {
+		// No-op
+	}
+
+	@Override
+	public void processLocalTimeout(View view) {
+		// No-op
+	}
+
+	@Override
+	public void processLocalSync(Hash vertexId) {
+		// No-op
+	}
+
+	@Override
+	public void start() {
+		// No-op
+	}
 }

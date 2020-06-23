@@ -39,12 +39,12 @@ import org.radix.universe.system.RadixSystem;
  * Temporary epoch management which given a fixed quorum size retrieves the first set of peers which
  * matches the size and used as the validator set.
  */
-public class BasicNextValidatorSetRx implements NextValidatorSetRx {
+public class BasicEpochRx implements EpochRx {
 	private final int fixedNodeCount;
 	private final AddressBook addressBook;
 	private final ECPublicKey selfKey;
 
-	public BasicNextValidatorSetRx(ECPublicKey selfKey, AddressBook addressBook, int fixedNodeCount) {
+	public BasicEpochRx(ECPublicKey selfKey, AddressBook addressBook, int fixedNodeCount) {
 		if (fixedNodeCount <= 0) {
 			throw new IllegalArgumentException("Quorum size must be > 0 but was " + fixedNodeCount);
 		}
@@ -54,7 +54,7 @@ public class BasicNextValidatorSetRx implements NextValidatorSetRx {
 	}
 
 	@Override
-	public Observable<ValidatorSet> nextValidatorSet() {
+	public Observable<Epoch> nextEpoch() {
 		return Observable.<List<Peer>>create(emitter -> {
 			emitter.onNext(addressBook.peers().collect(Collectors.toList()));
 			// Race condition here but ignore as this is a temporary class
@@ -74,6 +74,7 @@ public class BasicNextValidatorSetRx implements NextValidatorSetRx {
 					.collect(Collectors.toList());
 				return ValidatorSet.from(validators);
 			})
+			.map(v -> new Epoch(0L, v))
 			.toObservable()
 			.concatWith(Observable.never())
 			.replay()
