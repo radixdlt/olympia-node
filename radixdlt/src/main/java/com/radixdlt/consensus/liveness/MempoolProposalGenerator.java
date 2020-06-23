@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-import javax.inject.Inject;
 
 /**
  * Logic for generating new proposals
@@ -37,7 +36,6 @@ public final class MempoolProposalGenerator implements ProposalGenerator {
 	private final Mempool mempool;
 	private final VertexStore vertexStore;
 
-	@Inject
 	public MempoolProposalGenerator(
 		VertexStore vertexStore,
 		Mempool mempool

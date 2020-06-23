@@ -39,18 +39,13 @@ import com.radixdlt.consensus.VertexStore;
 import com.radixdlt.consensus.VertexStore.SyncSender;
 import com.radixdlt.consensus.SyncVerticesRPCSender;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker.TimeoutSender;
-import com.radixdlt.consensus.liveness.MempoolProposalGenerator;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
 import com.radixdlt.consensus.liveness.PacemakerRx;
-import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ScheduledTimeoutSender;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
-import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.sync.SyncedRadixEngine;
 import com.radixdlt.consensus.sync.SyncedRadixEngine.CommittedStateSyncSender;
-import com.radixdlt.consensus.validators.Validator;
-import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.middleware2.network.MessageCentralBFTNetwork;
@@ -58,8 +53,6 @@ import com.radixdlt.middleware2.network.MessageCentralSyncVerticesRPCNetwork;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.utils.ThreadFactories;
-import com.radixdlt.utils.UInt256;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.concurrent.Executors;
@@ -100,7 +93,6 @@ public class CerberusModule extends AbstractModule {
 		bind(SyncVerticesRPCRx.class).to(MessageCentralSyncVerticesRPCNetwork.class);
 
 		bind(Hasher.class).to(DefaultHasher.class);
-		bind(ProposalGenerator.class).to(MempoolProposalGenerator.class);
 	}
 
 

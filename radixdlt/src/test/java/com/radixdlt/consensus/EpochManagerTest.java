@@ -5,7 +5,6 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.liveness.Pacemaker;
-import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
@@ -24,12 +23,10 @@ public class EpochManagerTest {
 		when(vertexStore.getHighestQC()).thenReturn(mock(QuorumCertificate.class));
 
 		EpochManager epochManager = new EpochManager(
-			mock(ProposalGenerator.class),
 			mock(Mempool.class),
 			mock(BFTEventSender.class),
 			mock(Pacemaker.class),
 			vertexStore,
-			mock(PendingVotes.class),
 			proposers -> mock(ProposerElection.class),
 			mock(Hasher.class),
 			keyPair,

@@ -28,7 +28,6 @@ import com.radixdlt.consensus.EpochManager;
 import com.radixdlt.consensus.EpochRx;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.InternalMessagePasser;
-import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.Vertex;
@@ -37,13 +36,9 @@ import com.radixdlt.consensus.VertexStore;
 import com.radixdlt.consensus.SyncVerticesRPCSender;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
-import com.radixdlt.consensus.liveness.MempoolProposalGenerator;
-import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.ScheduledTimeoutSender;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
-import com.radixdlt.consensus.safety.SafetyRules;
-import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
@@ -175,22 +170,17 @@ public class SimulatedBFTNetwork {
 
 	private ConsensusRunner createBFTInstance(ECKeyPair key) {
 		Mempool mempool = new EmptyMempool();
-		ProposalGenerator proposalGenerator = new MempoolProposalGenerator(vertexStores.get(key), mempool);
 		Hasher hasher = new DefaultHasher();
-		SafetyRules safetyRules = new SafetyRules(key, SafetyState.initialState(), hasher);
 		ScheduledTimeoutSender timeoutSender = timeoutSenders.get(key);
 		FixedTimeoutPacemaker pacemaker = pacemakers.get(key);
-		PendingVotes pendingVotes = new PendingVotes(hasher);
 		EpochRx epochRx = () -> Observable.just(new Epoch(0L, validatorSet)).concatWith(Observable.never());
 		EpochManager epochManager = new EpochManager(
-			proposalGenerator,
 			mempool,
 			underlyingNetwork.getNetworkSender(key.getPublicKey()),
-			safetyRules,
 			pacemaker,
 			vertexStores.get(key),
-			pendingVotes,
 			proposers -> getProposerElection(), // create a new ProposerElection per node
+			hasher,
 			key,
 			counters.get(key)
 		);

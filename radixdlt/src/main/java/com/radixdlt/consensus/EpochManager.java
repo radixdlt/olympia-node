@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import com.radixdlt.consensus.VertexStore.GetVerticesRequest;
+import com.radixdlt.consensus.liveness.MempoolProposalGenerator;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposerElection;
@@ -45,38 +46,31 @@ public class EpochManager {
 	private static final Logger log = LogManager.getLogger("EM");
 	private static final BFTEventProcessor EMPTY_PROCESSOR = new EmptyBFTEventProcessor();
 
-	private final ProposalGenerator proposalGenerator;
 	private final Mempool mempool;
 	private final BFTEventSender sender;
 	private final Pacemaker pacemaker;
 	private final VertexStore vertexStore;
-	private final PendingVotes pendingVotes;
 	private final ProposerElectionFactory proposerElectionFactory;
 	private final ECKeyPair selfKey;
 	private final SystemCounters counters;
-
 	private final Hasher hasher;
 	private BFTEventProcessor eventProcessor = EMPTY_PROCESSOR;
 
 	@Inject
 	public EpochManager(
-		ProposalGenerator proposalGenerator,
 		Mempool mempool,
 		BFTEventSender sender,
 		Pacemaker pacemaker,
 		VertexStore vertexStore,
-		PendingVotes pendingVotes,
 		ProposerElectionFactory proposerElectionFactory,
 		Hasher hasher,
 		@Named("self") ECKeyPair selfKey,
 		SystemCounters counters
 	) {
-		this.proposalGenerator = Objects.requireNonNull(proposalGenerator);
 		this.mempool = Objects.requireNonNull(mempool);
 		this.sender = Objects.requireNonNull(sender);
 		this.pacemaker = Objects.requireNonNull(pacemaker);
 		this.vertexStore = Objects.requireNonNull(vertexStore);
-		this.pendingVotes = Objects.requireNonNull(pendingVotes);
 		this.proposerElectionFactory = Objects.requireNonNull(proposerElectionFactory);
 		this.selfKey = Objects.requireNonNull(selfKey);
 		this.counters = Objects.requireNonNull(counters);
@@ -88,16 +82,18 @@ public class EpochManager {
 
 		ValidatorSet validatorSet = epoch.getValidatorSet();
 		ProposerElection proposerElection = proposerElectionFactory.create(validatorSet);
-		SafetyRules safetyRules = new SafetyRules(this.selfKey, SafetyState.initialState(), hasher);
+		SafetyRules safetyRules = new SafetyRules(this.selfKey, SafetyState.initialState(), this.hasher);
+		PendingVotes pendingVotes = new PendingVotes(this.hasher);
+		ProposalGenerator proposalGenerator = new MempoolProposalGenerator(this.vertexStore, this.mempool);
 
 		BFTEventReducer reducer = new BFTEventReducer(
-			this.proposalGenerator,
+			proposalGenerator,
 			this.mempool,
 			this.sender,
 			safetyRules,
 			this.pacemaker,
 			this.vertexStore,
-			this.pendingVotes,
+			pendingVotes,
 			proposerElection,
 			this.selfKey,
 			validatorSet,
