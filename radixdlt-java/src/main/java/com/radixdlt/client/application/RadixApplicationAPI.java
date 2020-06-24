@@ -55,6 +55,7 @@ import com.radixdlt.client.application.translate.tokens.MintTokensAction;
 import com.radixdlt.client.application.translate.tokens.MintTokensActionMapper;
 import com.radixdlt.client.application.translate.tokens.RedelegateStakedTokensAction;
 import com.radixdlt.client.application.translate.tokens.StakeTokensAction;
+import com.radixdlt.client.application.translate.tokens.StakeTokensMapper;
 import com.radixdlt.client.application.translate.tokens.TokenBalanceReducer;
 import com.radixdlt.client.application.translate.tokens.TokenBalanceState;
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionsReducer;
@@ -158,6 +159,7 @@ public class RadixApplicationAPI {
 			.addStatefulParticlesMapper(MintTokensAction.class, new MintTokensActionMapper())
 			.addStatefulParticlesMapper(BurnTokensAction.class, new BurnTokensActionMapper())
 			.addStatefulParticlesMapper(TransferTokensAction.class, new TransferTokensToParticleGroupsMapper())
+			.addStatefulParticlesMapper(StakeTokensAction.class, new StakeTokensMapper())
 			.addStatefulParticlesMapper(RegisterValidatorAction.class, new RegisterValidatorActionMapper())
 			.addStatefulParticlesMapper(UnregisterValidatorAction.class, new UnregisterValidatorActionMapper())
 			.addReducer(new TokenDefinitionsReducer())
@@ -786,6 +788,22 @@ public class RadixApplicationAPI {
 	/**
 	 * Stakes a certain amount of a token from an address to a delegate.
 	 *
+	 * @param amount     the amount of the token type
+	 * @param token      the token type
+	 * @param delegate   the address to delegate the staked tokens to
+	 * @return result of the transaction
+	 */
+	public Result stakeTokens(
+		BigDecimal amount,
+		RRI token,
+		RadixAddress delegate
+	) {
+		return stakeTokens(amount, token, getAddress(), delegate);
+	}
+
+	/**
+	 * Stakes a certain amount of a token from an address to a delegate.
+	 *
 	 * @param from       the address to stake tokens from
 	 * @param delegate   the address to delegate the staked tokens to
 	 * @param amount     the amount of the token type
@@ -804,6 +822,24 @@ public class RadixApplicationAPI {
 		Objects.requireNonNull(delegate);
 
 		return this.execute(StakeTokensAction.create(amount, token, from, delegate));
+	}
+
+	/**
+	 * Redelegate a certain amount of a staked token from an address to a delegate.
+	 *
+	 * @param amount        the amount of the token type
+	 * @param token         the token type
+	 * @param oldDelegate   the address the staked tokens are currently delegated to
+	 * @param newDelegate   the address the staked tokens will be delegated to
+	 * @return result of the transaction
+	 */
+	public Result redelegateStakedTokens(
+		BigDecimal amount,
+		RRI token,
+		RadixAddress oldDelegate,
+		RadixAddress newDelegate
+	) {
+		return redelegateStakedTokens(amount, token, getAddress(), oldDelegate, newDelegate);
 	}
 
 	/**
@@ -830,6 +866,22 @@ public class RadixApplicationAPI {
 		Objects.requireNonNull(newDelegate);
 
 		return this.execute(RedelegateStakedTokensAction.create(amount, token, from, oldDelegate, newDelegate));
+	}
+
+	/**
+	 * Unstakes a certain amount of a token from an address to a delegate.
+	 *
+	 * @param amount     the amount of the token type
+	 * @param token      the token type
+	 * @param delegate   the address to delegate the staked tokens to
+	 * @return result of the transaction
+	 */
+	public Result unstakeTokens(
+		BigDecimal amount,
+		RRI token,
+		RadixAddress delegate
+	) {
+		return unstakeTokens(amount, token, getAddress(), delegate);
 	}
 
 	/**
