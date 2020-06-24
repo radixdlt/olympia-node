@@ -99,6 +99,26 @@ public final class TokenDefinitionUtils {
 		return Result.success();
 	}
 
+	public static Result staticCheck(StakedTokensParticle stakedParticle) {
+		if (stakedParticle.getDelegateAddress() == null) {
+			return Result.error("delegateAddress must not be null");
+		}
+		if (stakedParticle.getAmount() == null) {
+			return Result.error("amount must not be null");
+		}
+		if (stakedParticle.getAmount().isZero()) {
+			return Result.error("amount must not be zero");
+		}
+		if (stakedParticle.getGranularity() == null) {
+			return Result.error("granularity must not be null");
+		}
+		if (stakedParticle.getGranularity().isZero() || !stakedParticle.getAmount().remainder(stakedParticle.getGranularity()).isZero()) {
+			return Result.error("amount " + stakedParticle.getAmount() + " does not fit granularity " + stakedParticle.getGranularity());
+		}
+
+		return Result.success();
+	}
+
 	public static Result staticCheck(TransferrableTokensParticle tokensParticle) {
 		if (tokensParticle.getAmount() == null) {
 			return Result.error("amount must not be null");

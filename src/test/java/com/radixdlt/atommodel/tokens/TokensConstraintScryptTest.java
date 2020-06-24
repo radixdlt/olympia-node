@@ -170,6 +170,15 @@ public class TokensConstraintScryptTest {
 	}
 
 	@Test
+	public void when_validating_staked_token_with_null_amount__result_has_error() {
+		StakedTokensParticle staked = mock(StakedTokensParticle.class);
+		when(staked.getTokDefRef()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
+		when(staked.getAmount()).thenReturn(null);
+		assertThat(staticCheck.apply(staked).getErrorMessage())
+			.contains("null");
+	}
+
+	@Test
 	public void when_validating_token_instance_with_zero_amount__result_has_error() {
 		TransferrableTokensParticle transferrableTokensParticle = mock(TransferrableTokensParticle.class);
 		when(transferrableTokensParticle.getTokDefRef()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
@@ -184,6 +193,16 @@ public class TokensConstraintScryptTest {
 		when(burnedTokensParticle.getTokDefRef()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
 		when(burnedTokensParticle.getAmount()).thenReturn(UInt256.ZERO);
 		assertThat(staticCheck.apply(burnedTokensParticle).getErrorMessage())
+			.contains("zero");
+	}
+
+	@Test
+	public void when_validating_staked_token_with_zero_amount__result_has_error() {
+		StakedTokensParticle stakedTokensParticle = mock(StakedTokensParticle.class);
+		when(stakedTokensParticle.getDelegateAddress()).thenReturn(mock(RadixAddress.class));
+		when(stakedTokensParticle.getTokDefRef()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
+		when(stakedTokensParticle.getAmount()).thenReturn(UInt256.ZERO);
+		assertThat(staticCheck.apply(stakedTokensParticle).getErrorMessage())
 			.contains("zero");
 	}
 
@@ -208,6 +227,17 @@ public class TokensConstraintScryptTest {
 	}
 
 	@Test
+	public void when_validating_staked_token_with_null_granularity__result_has_error() {
+		StakedTokensParticle staked = mock(StakedTokensParticle.class);
+		when(staked.getDelegateAddress()).thenReturn(mock(RadixAddress.class));
+		when(staked.getTokDefRef()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
+		when(staked.getAmount()).thenReturn(UInt256.ONE);
+		when(staked.getGranularity()).thenReturn(null);
+		assertThat(staticCheck.apply(staked).getErrorMessage())
+			.contains("granularity");
+	}
+
+	@Test
 	public void when_validating_unallocated_token_with_zero_granularity__result_has_error() {
 		UnallocatedTokensParticle unallocated = mock(UnallocatedTokensParticle.class);
 		when(unallocated.getTokDefRef()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
@@ -225,5 +255,25 @@ public class TokensConstraintScryptTest {
 		when(transferrableTokensParticle.getGranularity()).thenReturn(UInt256.TWO);
 		assertThat(staticCheck.apply(transferrableTokensParticle).getErrorMessage())
 			.contains("granularity");
+	}
+
+	@Test
+	public void when_validating_staked_token_with_zero_granularity__result_has_error() {
+		StakedTokensParticle staked = mock(StakedTokensParticle.class);
+		when(staked.getDelegateAddress()).thenReturn(mock(RadixAddress.class));
+		when(staked.getTokDefRef()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
+		when(staked.getAmount()).thenReturn(UInt256.ONE);
+		when(staked.getGranularity()).thenReturn(UInt256.ZERO);
+		assertThat(staticCheck.apply(staked).getErrorMessage())
+			.contains("granularity");
+	}
+
+	@Test
+	public void when_validating_staked_token_with_null_delegate_address__result_has_error() {
+		StakedTokensParticle staked = mock(StakedTokensParticle.class);
+		when(staked.getDelegateAddress()).thenReturn(null);
+		when(staked.getTokDefRef()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
+		assertThat(staticCheck.apply(staked).getErrorMessage())
+			.contains("delegateAddress");
 	}
 }

@@ -73,6 +73,15 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 				.build()
 		);
 
+		os.registerParticle(
+			StakedTokensParticle.class,
+			ParticleDefinition.<StakedTokensParticle>builder()
+				.singleAddressMapper(StakedTokensParticle::getAddress)
+				.staticValidation(TokenDefinitionUtils::staticCheck)
+				.rriMapper(StakedTokensParticle::getTokDefRef)
+				.build()
+		);
+
 		// Require Token Definition to be created with unallocated tokens of max supply
 		os.createTransitionFromRRICombined(
 			MutableSupplyTokenDefinitionParticle.class,
@@ -161,7 +170,8 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 				"Permissions not equal."
 			),
 			(in, meta) -> meta.isSignedBy(in.getAddress().getPublicKey())
-				? WitnessValidatorResult.success() : WitnessValidatorResult.error("Permission not allowed.")
+				? WitnessValidatorResult.success()
+				: WitnessValidatorResult.error(String.format("Not signed by: %s", in.getAddress().getPublicKey()))
 		));
 
 		// Burns
@@ -180,6 +190,63 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			),
 			(in, meta) -> in.getTokenPermission(TokenTransition.BURN).check(in.getTokDefRef(), meta).isSuccess()
 				? WitnessValidatorResult.success() : WitnessValidatorResult.error("Permission not allowed.")
+		));
+
+		// Staking
+		os.executeRoutine(new CreateFungibleTransitionRoutine<>(
+			TransferrableTokensParticle.class,
+			StakedTokensParticle.class,
+			TransferrableTokensParticle::getAmount,
+			StakedTokensParticle::getAmount,
+			checkEquals(
+				TransferrableTokensParticle::getGranularity,
+				StakedTokensParticle::getGranularity,
+				"Granularities not equal.",
+				TransferrableTokensParticle::getTokenPermissions,
+				StakedTokensParticle::getTokenPermissions,
+				"Permissions not equal."
+			),
+			(in, meta) -> meta.isSignedBy(in.getAddress().getPublicKey())
+				? WitnessValidatorResult.success()
+				: WitnessValidatorResult.error(String.format("Not signed by: %s", in.getAddress().getPublicKey()))
+		));
+
+		// Re-staking to a different delegate
+		os.executeRoutine(new CreateFungibleTransitionRoutine<>(
+			StakedTokensParticle.class,
+			StakedTokensParticle.class,
+			StakedTokensParticle::getAmount,
+			StakedTokensParticle::getAmount,
+			checkEquals(
+				StakedTokensParticle::getGranularity,
+				StakedTokensParticle::getGranularity,
+				"Granularities not equal.",
+				StakedTokensParticle::getTokenPermissions,
+				StakedTokensParticle::getTokenPermissions,
+				"Permissions not equal."
+			),
+			(in, meta) -> meta.isSignedBy(in.getAddress().getPublicKey())
+				? WitnessValidatorResult.success()
+				: WitnessValidatorResult.error(String.format("Not signed by: %s", in.getAddress().getPublicKey()))
+		));
+
+		// Unstaking
+		os.executeRoutine(new CreateFungibleTransitionRoutine<>(
+			StakedTokensParticle.class,
+			TransferrableTokensParticle.class,
+			StakedTokensParticle::getAmount,
+			TransferrableTokensParticle::getAmount,
+			checkEquals(
+				StakedTokensParticle::getGranularity,
+				TransferrableTokensParticle::getGranularity,
+				"Granularities not equal.",
+				StakedTokensParticle::getTokenPermissions,
+				TransferrableTokensParticle::getTokenPermissions,
+				"Permissions not equal."
+			),
+			(in, meta) -> meta.isSignedBy(in.getAddress().getPublicKey())
+				? WitnessValidatorResult.success()
+				: WitnessValidatorResult.error(String.format("Not signed by: %s", in.getAddress().getPublicKey()))
 		));
 	}
 
