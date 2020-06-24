@@ -138,8 +138,20 @@ class CmdHelper {
         def iflink, netId, veth, error, out
         def command = "docker exec core2 bash -c".tokenize() << "cat /sys/class/net/eth*/iflink"
         (iflink, error) = runCommand(command)
-        def string = "bash -xc".tokenize() << ("grep -l ${Integer.parseInt(iflink[0])} /sys/class/net/veth*/ifindex" as String)
-        (veth, error) = runCommand(string)
+        Closure getVeth = {
+            def string = "bash -c".tokenize() << ("grep -l ${Integer.parseInt(iflink[0])} /sys/class/net/veth*/ifindex" as String)
+            (veth, error) = runCommand(string)
+            return veth
+        }
+        veth = getVeth()
+        def count = 0
+        while(veth.size() == 0){
+            getVeth()
+            count ++
+            if(count > 3){
+                break;
+            }
+        }
         println(veth[0].tokenize("/").find({ it.contains("veth") }))
         return veth[0].tokenize("/").find({ it.contains("veth") })
     }
@@ -154,11 +166,12 @@ class CmdHelper {
                 "ip6tables -A POSTROUTING -t mangle -j CLASSIFY --set-class 10:10 -p icmp"
         ].each { runCommand(it) }
     }
-    static String flushIPTableMangle(){
+
+    static String flushIPTableMangle() {
         runCommand("iptables -t mangle -F")
     }
 
-    static String setupQueueQuality(veth, optionsArgs = "delay 100ms loss 20%"){
+    static String setupQueueQuality(veth, optionsArgs = "delay 100ms loss 20%") {
         runCommand("tc qdisc add dev ${veth} handle 10: root netem ${optionsArgs}")
     }
 
