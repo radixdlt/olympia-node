@@ -32,13 +32,8 @@ public class SlowNodeTests {
 		try (DockerNetwork network = DockerNetwork.builder().numNodes(3).build()) {
 
 			network.startBlocking();
-			Thread.sleep(10000);
 			String veth = CmdHelper.getVethByContainerName(network.getNodeIds().stream().findFirst().get());
-//			CmdHelper.setupIPTables();
 			CmdHelper.setupQueueQuality(veth);
-//			CmdHelper.runCommand("docker run --rm --pid=host --privileged  "
-//				+ "-v /var/run/docker.sock:/var/run/docker.sock dockerinpractice/comcast "
-//				+ "-cont "+ network.getNodeIds().stream().findFirst().get() +" -latency 100 -packet-loss 20%");
 
 			RemoteBFTTest test = slowNodeTestBuilder()
 				.network(RemoteBFTNetworkBridge.of(network))
@@ -47,10 +42,6 @@ public class SlowNodeTests {
 				.build();
 			test.runBlocking(20, TimeUnit.MINUTES);
 
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-		}finally {
-//			CmdHelper.flushIPTableMangle();
 		}
 	}
 

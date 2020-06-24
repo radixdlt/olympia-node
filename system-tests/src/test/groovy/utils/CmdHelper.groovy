@@ -158,8 +158,8 @@ class CmdHelper {
         runCommand("iptables -t mangle -F")
     }
 
-    static String setupQueueQuality(veth){
-        runCommand("tc qdisc add dev ${veth} handle 10: root netem delay 100ms loss 20%")
+    static String setupQueueQuality(veth, optionsArgs = "delay 100ms loss 20%"){
+        runCommand("tc qdisc add dev ${veth} handle 10: root netem ${optionsArgs}")
     }
 
 
