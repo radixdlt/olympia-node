@@ -87,13 +87,13 @@ public class StakingExample {
 			.subscribe(System.out::println, Throwable::printStackTrace);
 
 		// Redelegate staked tokens
-//		api.redelegateStakedTokens(BigDecimal.valueOf(5000.0), tokenRRI, address1, address2).toObservable()
-//			.subscribe(System.out::println, Throwable::printStackTrace);
+		api.redelegateStakedTokens(BigDecimal.valueOf(5000.0), tokenRRI, address1, address2).toObservable()
+			.subscribe(System.out::println, Throwable::printStackTrace);
 
 		// Unstake tokens
-//		api.unstakeTokens(BigDecimal.valueOf(5000.0), tokenRRI, address1).toObservable()
-//			.subscribe(System.out::println, Throwable::printStackTrace);
-//		api.unstakeTokens(BigDecimal.valueOf(5000.0), tokenRRI, address2).toObservable()
-//			.subscribe(System.out::println, Throwable::printStackTrace);
+		api.unstakeTokens(BigDecimal.valueOf(5000.0), tokenRRI, address1).toObservable()
+			.subscribe(System.out::println, Throwable::printStackTrace);
+		api.unstakeTokens(BigDecimal.valueOf(5000.0), tokenRRI, address2).toObservable()
+			.subscribe(System.out::println, Throwable::printStackTrace);
 	}
 }

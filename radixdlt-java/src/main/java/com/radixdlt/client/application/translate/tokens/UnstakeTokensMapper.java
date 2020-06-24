@@ -42,28 +42,38 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Maps a stake tokens action to the particles necessary to be included in an atom.
+ * Maps an unstake tokens action to the particles necessary to be included in an atom.
  */
-public class StakeTokensMapper implements StatefulActionToParticleGroupsMapper<StakeTokensAction> {
-	public StakeTokensMapper() {
+public class UnstakeTokensMapper implements StatefulActionToParticleGroupsMapper<UnstakeTokensAction> {
+	public UnstakeTokensMapper() {
 	}
 
 	@Override
-	public Set<ShardedParticleStateId> requiredState(StakeTokensAction action) {
+	public Set<ShardedParticleStateId> requiredState(UnstakeTokensAction action) {
 		return Collections.singleton(ShardedParticleStateId.of(TransferrableTokensParticle.class, action.getFrom()));
 	}
 
 	@Override
-	public List<ParticleGroup> mapToParticleGroups(StakeTokensAction stake, Stream<Particle> store) throws StageActionException {
+	public List<ParticleGroup> mapToParticleGroups(UnstakeTokensAction stake, Stream<Particle> store) throws StageActionException {
 		final RRI tokenRef = stake.getRRI();
 
-		List<TransferrableTokensParticle> tokenConsumables = store
-			.map(TransferrableTokensParticle.class::cast)
+		List<StakedTokensParticle> stakeConsumables = store
+			.map(StakedTokensParticle.class::cast)
 			.filter(p -> p.getTokenDefinitionReference().equals(tokenRef))
 			.collect(Collectors.toList());
 
-		final FungibleParticleTransitioner<TransferrableTokensParticle, StakedTokensParticle> transitioner =
+		final FungibleParticleTransitioner<StakedTokensParticle, TransferrableTokensParticle> transitioner =
 			new FungibleParticleTransitioner<>(
+				(amt, consumable) -> new TransferrableTokensParticle(
+					amt,
+					consumable.getGranularity(),
+					consumable.getAddress(),
+					System.nanoTime(),
+					consumable.getTokenDefinitionReference(),
+					System.currentTimeMillis() / 60000L + 60000L,
+					consumable.getTokenPermissions()
+				),
+				tokens -> tokens,
 				(amt, consumable) -> new StakedTokensParticle(
 					stake.getDelegate(),
 					amt,
@@ -75,23 +85,13 @@ public class StakeTokensMapper implements StatefulActionToParticleGroupsMapper<S
 					consumable.getTokenPermissions()
 				),
 				stakedTokens -> stakedTokens,
-				(amt, consumable) -> new TransferrableTokensParticle(
-					amt,
-					consumable.getGranularity(),
-					consumable.getAddress(),
-					System.nanoTime(),
-					consumable.getTokenDefinitionReference(),
-					System.currentTimeMillis() / 60000L + 60000L,
-					consumable.getTokenPermissions()
-				),
-				tokens -> tokens,
-				TransferrableTokensParticle::getAmount
+				StakedTokensParticle::getAmount
 			);
 
 
 		try {
-			FungibleParticleTransition<TransferrableTokensParticle, StakedTokensParticle> transition = transitioner.createTransition(
-				tokenConsumables,
+			FungibleParticleTransition<StakedTokensParticle, TransferrableTokensParticle> transition = transitioner.createTransition(
+				stakeConsumables,
 				TokenUnitConversions.unitsToSubunits(stake.getAmount())
 			);
 

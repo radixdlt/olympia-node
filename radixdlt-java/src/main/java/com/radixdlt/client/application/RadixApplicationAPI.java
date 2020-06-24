@@ -54,6 +54,7 @@ import com.radixdlt.client.application.translate.tokens.CreateTokenToParticleGro
 import com.radixdlt.client.application.translate.tokens.MintTokensAction;
 import com.radixdlt.client.application.translate.tokens.MintTokensActionMapper;
 import com.radixdlt.client.application.translate.tokens.RedelegateStakedTokensAction;
+import com.radixdlt.client.application.translate.tokens.RedelegateStakedTokensMapper;
 import com.radixdlt.client.application.translate.tokens.StakeTokensAction;
 import com.radixdlt.client.application.translate.tokens.StakeTokensMapper;
 import com.radixdlt.client.application.translate.tokens.TokenBalanceReducer;
@@ -66,6 +67,7 @@ import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
 import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import com.radixdlt.client.application.translate.tokens.TransferTokensToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.tokens.UnstakeTokensAction;
+import com.radixdlt.client.application.translate.tokens.UnstakeTokensMapper;
 import com.radixdlt.client.application.translate.unique.AlreadyUsedUniqueIdReasonMapper;
 import com.radixdlt.client.application.translate.unique.PutUniqueIdAction;
 import com.radixdlt.client.application.translate.unique.PutUniqueIdToParticleGroupsMapper;
@@ -160,6 +162,8 @@ public class RadixApplicationAPI {
 			.addStatefulParticlesMapper(BurnTokensAction.class, new BurnTokensActionMapper())
 			.addStatefulParticlesMapper(TransferTokensAction.class, new TransferTokensToParticleGroupsMapper())
 			.addStatefulParticlesMapper(StakeTokensAction.class, new StakeTokensMapper())
+			.addStatefulParticlesMapper(RedelegateStakedTokensAction.class, new RedelegateStakedTokensMapper())
+			.addStatefulParticlesMapper(UnstakeTokensAction.class, new UnstakeTokensMapper())
 			.addStatefulParticlesMapper(RegisterValidatorAction.class, new RegisterValidatorActionMapper())
 			.addStatefulParticlesMapper(UnregisterValidatorAction.class, new UnregisterValidatorActionMapper())
 			.addReducer(new TokenDefinitionsReducer())

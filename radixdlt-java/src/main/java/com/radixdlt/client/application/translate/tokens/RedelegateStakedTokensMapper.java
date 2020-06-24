@@ -26,7 +26,7 @@ import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.client.application.translate.StageActionException;
 import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
 import com.radixdlt.client.atommodel.tokens.StakedTokensParticle;
-import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.client.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.Spin;
@@ -42,40 +42,41 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Maps a stake tokens action to the particles necessary to be included in an atom.
+ * Maps a redelegate staked tokens action to the particles necessary to be included in an atom.
  */
-public class StakeTokensMapper implements StatefulActionToParticleGroupsMapper<StakeTokensAction> {
-	public StakeTokensMapper() {
+public class RedelegateStakedTokensMapper implements StatefulActionToParticleGroupsMapper<RedelegateStakedTokensAction> {
+	public RedelegateStakedTokensMapper() {
 	}
 
 	@Override
-	public Set<ShardedParticleStateId> requiredState(StakeTokensAction action) {
-		return Collections.singleton(ShardedParticleStateId.of(TransferrableTokensParticle.class, action.getFrom()));
+	public Set<ShardedParticleStateId> requiredState(RedelegateStakedTokensAction action) {
+		return Collections.singleton(ShardedParticleStateId.of(StakedTokensParticle.class, action.getFrom()));
 	}
 
 	@Override
-	public List<ParticleGroup> mapToParticleGroups(StakeTokensAction stake, Stream<Particle> store) throws StageActionException {
-		final RRI tokenRef = stake.getRRI();
+	public List<ParticleGroup> mapToParticleGroups(RedelegateStakedTokensAction redelegate, Stream<Particle> store) throws StageActionException {
+		final RRI tokenRef = redelegate.getRRI();
 
-		List<TransferrableTokensParticle> tokenConsumables = store
-			.map(TransferrableTokensParticle.class::cast)
+		List<StakedTokensParticle> stakeConsumables = store
+			.map(StakedTokensParticle.class::cast)
 			.filter(p -> p.getTokenDefinitionReference().equals(tokenRef))
 			.collect(Collectors.toList());
 
-		final FungibleParticleTransitioner<TransferrableTokensParticle, StakedTokensParticle> transitioner =
+		final FungibleParticleTransitioner<StakedTokensParticle, StakedTokensParticle> transitioner =
 			new FungibleParticleTransitioner<>(
 				(amt, consumable) -> new StakedTokensParticle(
-					stake.getDelegate(),
+					redelegate.getOldDelegate(),
 					amt,
 					consumable.getGranularity(),
-					stake.getFrom(),
+					redelegate.getFrom(),
 					System.nanoTime(),
 					consumable.getTokenDefinitionReference(),
 					System.currentTimeMillis() / 60000L + 60000L,
 					consumable.getTokenPermissions()
 				),
 				stakedTokens -> stakedTokens,
-				(amt, consumable) -> new TransferrableTokensParticle(
+				(amt, consumable) -> new StakedTokensParticle(
+					redelegate.getNewDelegate(),
 					amt,
 					consumable.getGranularity(),
 					consumable.getAddress(),
@@ -84,15 +85,15 @@ public class StakeTokensMapper implements StatefulActionToParticleGroupsMapper<S
 					System.currentTimeMillis() / 60000L + 60000L,
 					consumable.getTokenPermissions()
 				),
-				tokens -> tokens,
-				TransferrableTokensParticle::getAmount
+				stakedTokens -> stakedTokens,
+				StakedTokensParticle::getAmount
 			);
 
 
 		try {
-			FungibleParticleTransition<TransferrableTokensParticle, StakedTokensParticle> transition = transitioner.createTransition(
-				tokenConsumables,
-				TokenUnitConversions.unitsToSubunits(stake.getAmount())
+			FungibleParticleTransition<StakedTokensParticle, StakedTokensParticle> transition = transitioner.createTransition(
+				stakeConsumables,
+				TokenUnitConversions.unitsToSubunits(redelegate.getAmount())
 			);
 
 			ParticleGroup.ParticleGroupBuilder particleGroupBuilder = ParticleGroup.builder();
@@ -103,7 +104,7 @@ public class StakeTokensMapper implements StatefulActionToParticleGroupsMapper<S
 			return Collections.singletonList(particleGroupBuilder.build());
 		} catch (NotEnoughFungiblesException e) {
 			throw new InsufficientFundsException(
-				tokenRef, TokenUnitConversions.subunitsToUnits(e.getCurrent()), stake.getAmount()
+				tokenRef, TokenUnitConversions.subunitsToUnits(e.getCurrent()), redelegate.getAmount()
 			);
 		}
 
