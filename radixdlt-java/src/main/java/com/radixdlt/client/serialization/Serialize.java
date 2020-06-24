@@ -23,6 +23,7 @@
 package com.radixdlt.client.serialization;
 
 import com.radixdlt.client.atommodel.rri.RRIParticle;
+import com.radixdlt.client.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.client.atommodel.validators.UnregisteredValidatorParticle;
@@ -77,6 +78,7 @@ public final class Serialize {
 				FixedSupplyTokenDefinitionParticle.class,
 				UnallocatedTokensParticle.class,
 				TransferrableTokensParticle.class,
+				StakedTokensParticle.class,
 				UniqueParticle.class,
 				RegisteredValidatorParticle.class,
 				UnregisteredValidatorParticle.class,
