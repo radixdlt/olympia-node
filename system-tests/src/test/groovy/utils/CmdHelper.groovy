@@ -41,6 +41,7 @@ class CmdHelper {
         }
 
         process.consumeProcessOutput(sout, serr)
+        Thread.sleep(1000)
         process.waitFor()
 
         List output
