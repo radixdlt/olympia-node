@@ -138,7 +138,7 @@ class CmdHelper {
         def iflink, netId, veth, error, out
         def command = "docker exec core2 bash -c".tokenize() << "cat /sys/class/net/eth*/iflink"
         (iflink, error) = runCommand(command)
-        def string = "bash -c".tokenize() << "grep -l ${Integer.parseInt(iflink[0])} /sys/class/net/veth*/ifindex"
+        def string = "bash -xc".tokenize() << ("grep -l ${Integer.parseInt(iflink[0])} /sys/class/net/veth*/ifindex" as String)
         (veth, error) = runCommand(string)
         println(veth[0].tokenize("/").find({ it.contains("veth") }))
         return veth[0].tokenize("/").find({ it.contains("veth") })
