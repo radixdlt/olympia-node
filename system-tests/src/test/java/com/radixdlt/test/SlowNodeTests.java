@@ -60,7 +60,7 @@ public class SlowNodeTests {
 				.waitUntilResponsive()
 				.startConsensusOnRun()
 				.build();
-			test.runBlocking(5, TimeUnit.MINUTES);
+			test.runBlocking(1, TimeUnit.MINUTES);
 
 		}
 	}
