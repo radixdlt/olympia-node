@@ -34,7 +34,7 @@ public class SlowNodeTests {
 			network.startBlocking();
 			Thread.sleep(10000);
 			String veth = CmdHelper.getVethByContainerName(network.getNodeIds().stream().findFirst().get());
-			CmdHelper.setupIPTables();
+//			CmdHelper.setupIPTables();
 			CmdHelper.setupQueueQuality(veth);
 //			CmdHelper.runCommand("docker run --rm --pid=host --privileged  "
 //				+ "-v /var/run/docker.sock:/var/run/docker.sock dockerinpractice/comcast "
@@ -50,7 +50,7 @@ public class SlowNodeTests {
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}finally {
-			CmdHelper.flushIPTableMangle();
+//			CmdHelper.flushIPTableMangle();
 		}
 	}
 
