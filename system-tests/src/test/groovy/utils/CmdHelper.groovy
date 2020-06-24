@@ -26,7 +26,7 @@ import static utils.Generic.listToDelimitedString
 class CmdHelper {
     private static final Logger logger = LogManager.getLogger()
 
-    static List<String[]> runCommand(cmd, String[] env = null, failOnError = false, logOutput=true) {
+    static List<String[]> runCommand(cmd, String[] env = null, failOnError = false, logOutput = true) {
 
         Thread.sleep(1000)
         def sout = new StringBuffer()
@@ -46,7 +46,7 @@ class CmdHelper {
         List output
         if (sout) {
             output = sout.toString().split(System.lineSeparator()).collect({ it })
-            if(logOutput){
+            if (logOutput) {
                 logger.info("-----------Output---------")
                 sout.each { logger.info(it) }
             }
@@ -121,7 +121,7 @@ class CmdHelper {
         if (!file.exists()) {
             List options = ["generate-key", "--password=test123"]
             def key, error
-            (key, error) = runCommand("java -jar ${Generic.pathToCLIJar()} ${listToDelimitedString(options, ' ')}", null, true,false)
+            (key, error) = runCommand("java -jar ${Generic.pathToCLIJar()} ${listToDelimitedString(options, ' ')}", null, true, false)
             file.withWriter('UTF-8') { writer ->
                 key.each {
                     writer.write(it)
@@ -133,4 +133,34 @@ class CmdHelper {
     static String radixCliCommand(List cmdOptions) {
         return "java -jar ${Generic.pathToCLIJar()} ${listToDelimitedString(cmdOptions, ' ')}"
     }
+
+    static String getVethByContainerName(name) {
+        def iflink, netId, veth, error, out
+        def command = "docker exec core2 bash -c".tokenize() << "cat /sys/class/net/eth*/iflink"
+        (iflink, error) = runCommand(command)
+        def string = "bash -c".tokenize() << "grep -l ${Integer.parseInt(iflink[0])} /sys/class/net/veth*/ifindex"
+        (veth, error) = runCommand(string)
+        println(veth[0].tokenize("/").find({ it.contains("veth") }))
+        return veth[0].tokenize("/").find({ it.contains("veth") })
+    }
+
+    static String setupIPTables() {
+        [
+                "iptables -A POSTROUTING -t mangle -j CLASSIFY --set-class 10:10 -p tcp",
+                "iptables -A POSTROUTING -t mangle -j CLASSIFY --set-class 10:10 -p udp",
+                "iptables -A POSTROUTING -t mangle -j CLASSIFY --set-class 10:10 -p icmp",
+                "ip6tables -A POSTROUTING -t mangle -j CLASSIFY --set-class 10:10 -p tcp",
+                "ip6tables -A POSTROUTING -t mangle -j CLASSIFY --set-class 10:10 -p udp",
+                "ip6tables -A POSTROUTING -t mangle -j CLASSIFY --set-class 10:10 -p icmp"
+        ].each { runCommand(it) }
+    }
+    static String flushIPTableMangle(){
+        runCommand("iptables -t mangle -F")
+    }
+
+    static String setupQueueQuality(veth){
+        runCommand("tc qdisc add dev ${veth} handle 10: root netem delay 100ms loss 20%")
+    }
+
+
 }
