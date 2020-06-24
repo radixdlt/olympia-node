@@ -50,7 +50,7 @@ public class UnstakeTokensMapper implements StatefulActionToParticleGroupsMapper
 
 	@Override
 	public Set<ShardedParticleStateId> requiredState(UnstakeTokensAction action) {
-		return Collections.singleton(ShardedParticleStateId.of(TransferrableTokensParticle.class, action.getFrom()));
+		return Collections.singleton(ShardedParticleStateId.of(StakedTokensParticle.class, action.getFrom()));
 	}
 
 	@Override

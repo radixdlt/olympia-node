@@ -27,10 +27,12 @@ import com.radixdlt.client.application.RadixApplicationAPI.Result;
 import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
+import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction;
 import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenSupplyType;
 import com.radixdlt.client.application.translate.tokens.MintTokensAction;
 import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
+import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
@@ -55,7 +57,7 @@ public class StakingExample {
 		System.out.println("My public key: " + api.getPublicKey());
 
 		// Create a unique identifier for the token
-		RRI tokenRRI = RRI.of(api.getAddress(), "JOSH");
+		RRI tokenRRI = RRI.of(api.getAddress(), "COOKIE");
 
 		// Observe all past and future transactions
 		api.observeTokenTransfers()
@@ -69,13 +71,12 @@ public class StakingExample {
 		Transaction transaction = api.createTransaction();
 		transaction.stage(CreateTokenAction.create(
 			tokenRRI,
-			"Joshy Token",
-			"The Best Coin Ever",
-			BigDecimal.ZERO,
+			"Cookie Token",
+			"Cookiemonster approved.",
+			BigDecimal.valueOf(100000.0),
 			TokenUnitConversions.getMinimumGranularity(),
 			TokenSupplyType.MUTABLE
 		));
-		transaction.stage(MintTokensAction.create(tokenRRI, api.getAddress(), BigDecimal.valueOf(1000000.0)));
 		Result createTokenAndMint = transaction.commitAndPush();
 		createTokenAndMint.toObservable().blockingSubscribe(System.out::println);
 
@@ -83,17 +84,17 @@ public class StakingExample {
 		System.out.println(api.getTokenDef(tokenRRI));
 
 		// Stake tokens
-		api.stakeTokens(BigDecimal.valueOf(10000.0), tokenRRI, address1).toObservable()
-			.subscribe(System.out::println, Throwable::printStackTrace);
+		System.out.println("staking 1");
+		api.stakeTokens(BigDecimal.valueOf(10000.0), tokenRRI, address1).blockUntilComplete();
 
 		// Redelegate staked tokens
-		api.redelegateStakedTokens(BigDecimal.valueOf(5000.0), tokenRRI, address1, address2).toObservable()
-			.subscribe(System.out::println, Throwable::printStackTrace);
+		System.out.println("redelegating staked 1");
+		api.redelegateStakedTokens(BigDecimal.valueOf(5000.0), tokenRRI, address1, address2).blockUntilComplete();
 
 		// Unstake tokens
-		api.unstakeTokens(BigDecimal.valueOf(5000.0), tokenRRI, address1).toObservable()
-			.subscribe(System.out::println, Throwable::printStackTrace);
-		api.unstakeTokens(BigDecimal.valueOf(5000.0), tokenRRI, address2).toObservable()
-			.subscribe(System.out::println, Throwable::printStackTrace);
+		System.out.println("unstaking 1");
+		api.unstakeTokens(BigDecimal.valueOf(5000.0), tokenRRI, address1).blockUntilComplete();
+		System.out.println("unstaking 2");
+		api.unstakeTokens(BigDecimal.valueOf(5000.0), tokenRRI, address2).blockUntilComplete();
 	}
 }
