@@ -18,12 +18,12 @@
 package com.radixdlt.consensus.simulation;
 
 import com.google.common.collect.ImmutableMap;
+import com.radixdlt.consensus.BasicEpochChangeRx;
 import com.radixdlt.consensus.ConsensusRunner;
 import com.radixdlt.consensus.ConsensusRunner.Event;
 import com.radixdlt.consensus.ConsensusRunner.EventType;
 import com.radixdlt.consensus.DefaultHasher;
 import com.radixdlt.consensus.EmptySyncVerticesRPCSender;
-import com.radixdlt.consensus.EpochChange;
 import com.radixdlt.consensus.EpochManager;
 import com.radixdlt.consensus.EpochChangeRx;
 import com.radixdlt.consensus.Hasher;
@@ -31,15 +31,12 @@ import com.radixdlt.consensus.InternalMessagePasser;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.VertexStore;
 import com.radixdlt.consensus.SyncVerticesRPCSender;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.ScheduledTimeoutSender;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
-import com.radixdlt.consensus.validators.Validator;
-import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
@@ -50,13 +47,14 @@ import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork;
 import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork.SimulatedNetworkReceiver;
-import com.radixdlt.utils.UInt256;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.CompletableSubject;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
@@ -78,7 +76,7 @@ public class SimulatedBFTNetwork {
 	private final ImmutableMap<ECKeyPair, InternalMessagePasser> syncSenders;
 	private final ImmutableMap<ECKeyPair, FixedTimeoutPacemaker> pacemakers;
 	private final ImmutableMap<ECKeyPair, ConsensusRunner> runners;
-	private final ValidatorSet validatorSet;
+	private final ConcurrentMap<ECKeyPair, ProposerElection> proposerElections;
 	private final List<ECKeyPair> nodes;
 
 	/**
@@ -107,12 +105,6 @@ public class SimulatedBFTNetwork {
 		this.pacemakerTimeout = pacemakerTimeout;
 		this.genesisVertex = Vertex.createGenesis();
 		this.genesisQC = QuorumCertificate.ofGenesis(genesisVertex);
-		this.validatorSet = ValidatorSet.from(
-			nodes.stream()
-				.map(ECKeyPair::getPublicKey)
-				.map(pk -> Validator.from(pk, UInt256.ONE))
-				.collect(Collectors.toList())
-		);
 		this.counters = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e, e -> new SystemCountersImpl()));
 		this.syncSenders = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e, e -> new InternalMessagePasser()));
 		this.vertexStores = nodes.stream()
@@ -153,6 +145,7 @@ public class SimulatedBFTNetwork {
 				e -> e,
 				this::createBFTInstance
 			));
+		this.proposerElections = new ConcurrentHashMap<>();
 	}
 
 	public Vertex getGenesisVertex() {
@@ -168,14 +161,15 @@ public class SimulatedBFTNetwork {
 		Hasher hasher = new DefaultHasher();
 		ScheduledTimeoutSender timeoutSender = timeoutSenders.get(key);
 		FixedTimeoutPacemaker pacemaker = pacemakers.get(key);
-		EpochChangeRx epochChangeRx = () -> Observable.just(new EpochChange(VertexMetadata.ofGenesisAncestor(), validatorSet))
-			.concatWith(Observable.never());
+		EpochChangeRx epochChangeRx = new BasicEpochChangeRx(nodes.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toList()));
 		EpochManager epochManager = new EpochManager(
 			mempool,
 			underlyingNetwork.getNetworkSender(key.getPublicKey()),
 			() -> pacemaker,
 			(v, qc) -> vertexStores.get(key),
-			proposers -> getProposerElection(), // create a new ProposerElection per node
+			proposers -> proposerElections.computeIfAbsent(key, keyPair ->
+				new WeightedRotatingLeaders(proposers, Comparator.comparing(v -> v.nodeKey().euid()), 5)
+			), // create a new ProposerElection per node
 			hasher,
 			key,
 			counters.get(key)
@@ -191,10 +185,6 @@ public class SimulatedBFTNetwork {
 			rx,
 			epochManager
 		);
-	}
-
-	public ProposerElection getProposerElection() {
-		return new WeightedRotatingLeaders(validatorSet, Comparator.comparing(v -> v.nodeKey().euid()), 5);
 	}
 
 	public VertexStore getVertexStore(ECKeyPair keyPair) {

@@ -8,12 +8,12 @@ import com.radixdlt.network.addressbook.AddressBook;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.junit.Test;
 
-public class BasicEpochChangeRxTest {
+public class AddressBookEpochChangeRxTest {
 	@Test
 	public void when_quorum_size_is_one__then_should_emit_self() {
 		ECPublicKey self = mock(ECPublicKey.class);
 		AddressBook addressBook = mock(AddressBook.class);
-		BasicEpochChangeRx basicEpochRx = new BasicEpochChangeRx(self, addressBook, 1, mock(VertexMetadata.class));
+		AddressBookEpochChangeRx basicEpochRx = new AddressBookEpochChangeRx(self, addressBook, 1, mock(VertexMetadata.class));
 		TestObserver<EpochChange> testObserver = basicEpochRx.nextEpochChange().test();
 		testObserver.awaitCount(1);
 		testObserver.assertValueCount(1);

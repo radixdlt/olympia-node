@@ -23,7 +23,7 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 import com.radixdlt.consensus.BFTEventSender;
-import com.radixdlt.consensus.BasicEpochChangeRx;
+import com.radixdlt.consensus.AddressBookEpochChangeRx;
 import com.radixdlt.consensus.CommittedStateSyncRx;
 import com.radixdlt.consensus.DefaultHasher;
 import com.radixdlt.consensus.EpochChangeRx;
@@ -104,7 +104,7 @@ public class CerberusModule extends AbstractModule {
 		AddressBook addressBook
 	) {
 		final int fixedNodeCount = runtimeProperties.get("consensus.fixed_node_count", 1);
-		return new BasicEpochChangeRx(selfKey.getPublicKey(), addressBook, fixedNodeCount, genesisAtom.getVertexMetadata());
+		return new AddressBookEpochChangeRx(selfKey.getPublicKey(), addressBook, fixedNodeCount, genesisAtom.getVertexMetadata());
 	}
 
 	@Provides
