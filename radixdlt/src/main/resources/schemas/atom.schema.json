@@ -360,7 +360,7 @@
       },
       "additionalProperties": false,
       "required": [ "serializer", "address", "delegateAddress", "amount", "nonce", "planck", "tokenDefinitionReference" ],
-      "description": "A particle which represents an amount of a token owned by an account."
+      "description": "A particle which represents an amount of tokens owned by an account staked to a delegate account."
     },
     "uniqueParticle": {
       "type": "object",
