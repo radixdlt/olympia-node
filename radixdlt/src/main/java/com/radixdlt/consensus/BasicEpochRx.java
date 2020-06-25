@@ -43,14 +43,16 @@ public class BasicEpochRx implements EpochRx {
 	private final int fixedNodeCount;
 	private final AddressBook addressBook;
 	private final ECPublicKey selfKey;
+	private final VertexMetadata ancestor;
 
-	public BasicEpochRx(ECPublicKey selfKey, AddressBook addressBook, int fixedNodeCount) {
+	public BasicEpochRx(ECPublicKey selfKey, AddressBook addressBook, int fixedNodeCount, VertexMetadata ancestor) {
 		if (fixedNodeCount <= 0) {
 			throw new IllegalArgumentException("Quorum size must be > 0 but was " + fixedNodeCount);
 		}
 		this.fixedNodeCount = fixedNodeCount;
 		this.selfKey = Objects.requireNonNull(selfKey);
 		this.addressBook = Objects.requireNonNull(addressBook);
+		this.ancestor = Objects.requireNonNull(ancestor);
 	}
 
 	@Override
@@ -74,7 +76,7 @@ public class BasicEpochRx implements EpochRx {
 					.collect(Collectors.toList());
 				return ValidatorSet.from(validators);
 			})
-			.map(v -> new Epoch(0L, v))
+			.map(v -> new Epoch(0L, v, ancestor))
 			.toObservable()
 			.concatWith(Observable.never())
 			.replay()

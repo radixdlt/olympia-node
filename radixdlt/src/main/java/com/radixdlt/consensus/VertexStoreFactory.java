@@ -17,29 +17,6 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.consensus.validators.ValidatorSet;
-
-public final class Epoch {
-	private final long epoch;
-	private final ValidatorSet validatorSet;
-	private final VertexMetadata ancestor;
-
-	public Epoch(long epoch, ValidatorSet validatorSet, VertexMetadata ancestor) {
-		this.epoch = epoch;
-		this.validatorSet = validatorSet;
-		this.ancestor = ancestor;
-	}
-
-	public VertexMetadata getAncestor() {
-		return ancestor;
-	}
-
-	public ValidatorSet getValidatorSet() {
-		return validatorSet;
-	}
-
-	@Override
-	public String toString() {
-		return String.format("%s{epoch=%s validatorSet=%s ancestor=%s}", this.getClass().getSimpleName(), epoch, validatorSet, ancestor);
-	}
+public interface VertexStoreFactory {
+	VertexStore create(Vertex genesisVertex, QuorumCertificate genesisQC);
 }

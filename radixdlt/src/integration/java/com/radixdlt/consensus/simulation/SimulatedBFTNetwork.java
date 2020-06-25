@@ -31,6 +31,7 @@ import com.radixdlt.consensus.InternalMessagePasser;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.VertexStore;
 import com.radixdlt.consensus.SyncVerticesRPCSender;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
@@ -167,12 +168,12 @@ public class SimulatedBFTNetwork {
 		Hasher hasher = new DefaultHasher();
 		ScheduledTimeoutSender timeoutSender = timeoutSenders.get(key);
 		FixedTimeoutPacemaker pacemaker = pacemakers.get(key);
-		EpochRx epochRx = () -> Observable.just(new Epoch(0L, validatorSet)).concatWith(Observable.never());
+		EpochRx epochRx = () -> Observable.just(new Epoch(0L, validatorSet, VertexMetadata.ofGenesisAncestor())).concatWith(Observable.never());
 		EpochManager epochManager = new EpochManager(
 			mempool,
 			underlyingNetwork.getNetworkSender(key.getPublicKey()),
 			() -> pacemaker,
-			vertexStores.get(key),
+			(v, qc) -> vertexStores.get(key),
 			proposers -> getProposerElection(), // create a new ProposerElection per node
 			hasher,
 			key,

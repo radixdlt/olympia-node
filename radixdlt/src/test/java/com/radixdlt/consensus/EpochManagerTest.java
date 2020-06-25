@@ -26,7 +26,7 @@ public class EpochManagerTest {
 			mock(Mempool.class),
 			mock(BFTEventSender.class),
 			() -> mock(Pacemaker.class),
-			vertexStore,
+			(v, qc) -> vertexStore,
 			proposers -> mock(ProposerElection.class),
 			mock(Hasher.class),
 			keyPair,
@@ -37,6 +37,6 @@ public class EpochManagerTest {
 		when(validator.nodeKey()).thenReturn(mock(ECPublicKey.class));
 		ValidatorSet validatorSet = mock(ValidatorSet.class);
 		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of(validator));
-		epochManager.processNextEpoch(new Epoch(0L, validatorSet));
+		epochManager.processNextEpoch(new Epoch(0L, validatorSet, VertexMetadata.ofGenesisAncestor()));
 	}
 }

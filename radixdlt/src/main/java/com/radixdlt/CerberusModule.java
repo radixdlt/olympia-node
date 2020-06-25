@@ -32,13 +32,11 @@ import com.radixdlt.consensus.LocalSyncRx;
 import com.radixdlt.consensus.InternalMessagePasser;
 import com.radixdlt.consensus.ProposerElectionFactory;
 import com.radixdlt.consensus.Hasher;
-import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
-import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.VertexStore;
 import com.radixdlt.consensus.VertexStore.SyncSender;
 import com.radixdlt.consensus.SyncVerticesRPCSender;
+import com.radixdlt.consensus.VertexStoreFactory;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker.TimeoutSender;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
 import com.radixdlt.consensus.liveness.PacemakerFactory;
@@ -101,11 +99,12 @@ public class CerberusModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private EpochRx epochRx(
+		CommittedAtom genesisAtom,
 		@Named("self") ECKeyPair selfKey,
 		AddressBook addressBook
 	) {
 		final int fixedNodeCount = runtimeProperties.get("consensus.fixed_node_count", 1);
-		return new BasicEpochRx(selfKey.getPublicKey(), addressBook, fixedNodeCount);
+		return new BasicEpochRx(selfKey.getPublicKey(), addressBook, fixedNodeCount, genesisAtom.getVertexMetadata());
 	}
 
 	@Provides
@@ -133,17 +132,14 @@ public class CerberusModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private VertexStore getVertexStore(
-		CommittedAtom genesisAtom,
+	private VertexStoreFactory vertexStoreFactory(
 		SyncedRadixEngine syncedRadixEngine,
 		SyncVerticesRPCSender syncVerticesRPCSender,
 		SyncSender syncSender,
 		SystemCounters counters
 	) {
-		VertexMetadata ancestorMetadata = genesisAtom.getVertexMetadata();
-		Vertex genesisVertex = Vertex.createGenesis(ancestorMetadata);
-		QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(genesisVertex);
-		log.info("Genesis Vertex Id: {}", genesisVertex.getId());
-		return new VertexStore(genesisVertex, genesisQC, syncedRadixEngine, syncVerticesRPCSender, syncSender, counters);
+		return (genesisVertex, genesisQC) -> new VertexStore(
+			genesisVertex, genesisQC, syncedRadixEngine, syncVerticesRPCSender, syncSender, counters
+		);
 	}
 }

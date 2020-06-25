@@ -50,11 +50,13 @@ public class EpochManager {
 	private final Mempool mempool;
 	private final BFTEventSender sender;
 	private final PacemakerFactory pacemakerFactory;
-	private final VertexStore vertexStore;
+	private final VertexStoreFactory vertexStoreFactory;
 	private final ProposerElectionFactory proposerElectionFactory;
 	private final ECKeyPair selfKey;
 	private final SystemCounters counters;
 	private final Hasher hasher;
+
+	private VertexStore vertexStore;
 	private BFTEventProcessor eventProcessor = EMPTY_PROCESSOR;
 
 	@Inject
@@ -62,7 +64,7 @@ public class EpochManager {
 		Mempool mempool,
 		BFTEventSender sender,
 		PacemakerFactory pacemakerFactory,
-		VertexStore vertexStore,
+		VertexStoreFactory vertexStoreFactory,
 		ProposerElectionFactory proposerElectionFactory,
 		Hasher hasher,
 		@Named("self") ECKeyPair selfKey,
@@ -71,7 +73,7 @@ public class EpochManager {
 		this.mempool = Objects.requireNonNull(mempool);
 		this.sender = Objects.requireNonNull(sender);
 		this.pacemakerFactory = Objects.requireNonNull(pacemakerFactory);
-		this.vertexStore = Objects.requireNonNull(vertexStore);
+		this.vertexStoreFactory = Objects.requireNonNull(vertexStoreFactory);
 		this.proposerElectionFactory = Objects.requireNonNull(proposerElectionFactory);
 		this.selfKey = Objects.requireNonNull(selfKey);
 		this.counters = Objects.requireNonNull(counters);
@@ -86,7 +88,13 @@ public class EpochManager {
 		Pacemaker pacemaker = pacemakerFactory.create();
 		SafetyRules safetyRules = new SafetyRules(this.selfKey, SafetyState.initialState(), this.hasher);
 		PendingVotes pendingVotes = new PendingVotes(this.hasher);
-		ProposalGenerator proposalGenerator = new MempoolProposalGenerator(this.vertexStore, this.mempool);
+
+		VertexMetadata ancestorMetadata = epoch.getAncestor();
+		Vertex genesisVertex = Vertex.createGenesis(ancestorMetadata);
+		QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(genesisVertex);
+
+		VertexStore vertexStore = vertexStoreFactory.create(genesisVertex, genesisQC);
+		ProposalGenerator proposalGenerator = new MempoolProposalGenerator(vertexStore, this.mempool);
 
 		BFTEventReducer reducer = new BFTEventReducer(
 			proposalGenerator,
@@ -94,7 +102,7 @@ public class EpochManager {
 			this.sender,
 			safetyRules,
 			pacemaker,
-			this.vertexStore,
+			vertexStore,
 			pendingVotes,
 			proposerElection,
 			this.selfKey,
@@ -109,6 +117,7 @@ public class EpochManager {
 			counters
 		);
 
+		this.vertexStore = vertexStore;
 		this.eventProcessor = new BFTEventPreprocessor(
 			this.selfKey.getPublicKey(),
 			reducer,
@@ -122,10 +131,18 @@ public class EpochManager {
 	}
 
 	public void processGetVerticesRequest(GetVerticesRequest request) {
+		if (this.vertexStore == null) {
+			return;
+		}
+
 		vertexStore.processGetVerticesRequest(request);
 	}
 
 	public void processGetVerticesResponse(GetVerticesResponse response) {
+		if (this.vertexStore == null) {
+			return;
+		}
+
 		vertexStore.processGetVerticesResponse(response);
 	}
 

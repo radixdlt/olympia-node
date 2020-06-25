@@ -13,7 +13,7 @@ public class BasicEpochRxTest {
 	public void when_quorum_size_is_one__then_should_emit_self() {
 		ECPublicKey self = mock(ECPublicKey.class);
 		AddressBook addressBook = mock(AddressBook.class);
-		BasicEpochRx basicEpochRx = new BasicEpochRx(self, addressBook, 1);
+		BasicEpochRx basicEpochRx = new BasicEpochRx(self, addressBook, 1, mock(VertexMetadata.class));
 		TestObserver<Epoch> testObserver = basicEpochRx.nextEpoch().test();
 		testObserver.awaitCount(1);
 		testObserver.assertValueCount(1);
