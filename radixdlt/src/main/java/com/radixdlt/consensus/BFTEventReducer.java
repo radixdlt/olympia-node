@@ -249,12 +249,12 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		Optional<View> nextView = this.pacemaker.processLocalTimeout(view);
 		if (nextView.isPresent()) {
 			this.proceedToView(nextView.get());
-			log.trace("{}: LOCAL_TIMEOUT: Processed {}", this::getShortName, () -> view);
+			log.warn("{}: LOCAL_TIMEOUT: Processed {}", this::getShortName, () -> view);
 
 			counters.set(CounterType.CONSENSUS_TIMEOUT_VIEW, view.number());
 			counters.increment(CounterType.CONSENSUS_TIMEOUT);
 		} else {
-			log.warn("{}: LOCAL_TIMEOUT: Ignoring {}", this::getShortName, () -> view);
+			log.trace("{}: LOCAL_TIMEOUT: Ignoring {}", this::getShortName, () -> view);
 		}
 	}
 
