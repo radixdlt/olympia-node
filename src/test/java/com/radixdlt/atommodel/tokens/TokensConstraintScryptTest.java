@@ -25,6 +25,7 @@ import static org.powermock.api.mockito.PowerMockito.when;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.atomos.CMAtomOS;
+import com.radixdlt.constraintmachine.WitnessData;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.atomos.Result;
@@ -275,5 +276,41 @@ public class TokensConstraintScryptTest {
 		when(staked.getTokDefRef()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
 		assertThat(staticCheck.apply(staked).getErrorMessage())
 			.contains("delegateAddress");
+	}
+
+	@Test
+	public void when_checking_signed_by_and_signed__result_has_no_error() {
+		WitnessData witnessData = mock(WitnessData.class);
+		RadixAddress address = mock(RadixAddress.class);
+		when(witnessData.isSignedBy(address.getPublicKey())).thenReturn(true);
+		assertThat(TokensConstraintScrypt.checkSignedBy(witnessData, address).isSuccess()).isTrue();
+	}
+
+	@Test
+	public void when_checking_signed_by_and_not_signed__result_has_error() {
+		WitnessData witnessData = mock(WitnessData.class);
+		RadixAddress address = mock(RadixAddress.class);
+		when(witnessData.isSignedBy(address.getPublicKey())).thenReturn(false);
+		assertThat(TokensConstraintScrypt.checkSignedBy(witnessData, address).isError()).isTrue();
+	}
+
+	@Test
+	public void when_checking_token_permission_allowed_and_allowed__result_has_no_error() {
+		WitnessData witnessData = mock(WitnessData.class);
+		TokenPermission tokenPermission = mock(TokenPermission.class);
+		RRI token = mock(RRI.class);
+		when(tokenPermission.check(token, witnessData)).thenReturn(Result.success());
+		assertThat(TokensConstraintScrypt.checkTokenActionAllowed(witnessData, tokenPermission, token)
+			.isSuccess()).isTrue();
+	}
+
+	@Test
+	public void when_checking_token_permission_allowed_and_not_allowed__result_has_error() {
+		WitnessData witnessData = mock(WitnessData.class);
+		TokenPermission tokenPermission = mock(TokenPermission.class);
+		RRI token = mock(RRI.class);
+		when(tokenPermission.check(token, witnessData)).thenReturn(Result.error(""));
+		assertThat(TokensConstraintScrypt.checkTokenActionAllowed(witnessData, tokenPermission, token)
+			.isError()).isTrue();
 	}
 }
