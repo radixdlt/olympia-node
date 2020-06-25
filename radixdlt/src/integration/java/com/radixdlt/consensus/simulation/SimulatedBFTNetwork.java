@@ -31,10 +31,8 @@ import com.radixdlt.consensus.InternalMessagePasser;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.VertexStore;
 import com.radixdlt.consensus.SyncVerticesRPCSender;
-import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.ScheduledTimeoutSender;
@@ -43,7 +41,6 @@ import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
-import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.mempool.EmptyMempool;
@@ -107,11 +104,8 @@ public class SimulatedBFTNetwork {
 		this.nodes = nodes;
 		this.underlyingNetwork = Objects.requireNonNull(underlyingNetwork);
 		this.pacemakerTimeout = pacemakerTimeout;
-		this.genesisVertex = Vertex.createGenesis(null);
-		this.genesisQC = new QuorumCertificate(
-			new VoteData(new VertexMetadata(genesisVertex.getView(), genesisVertex.getId(), 1), null, null),
-			new ECDSASignatures()
-		);
+		this.genesisVertex = Vertex.createGenesis();
+		this.genesisQC = QuorumCertificate.ofGenesis(genesisVertex);
 		this.validatorSet = ValidatorSet.from(
 			nodes.stream()
 				.map(ECKeyPair::getPublicKey)

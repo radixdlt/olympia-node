@@ -156,7 +156,7 @@ public class PendingVotesTest {
 		Vote vote = mock(Vote.class);
 		VertexMetadata proposed = new VertexMetadata(parentView.next(), vertexId, 1);
 		VertexMetadata parent = new VertexMetadata(parentView, Hash.random(), 0);
-		VoteData voteData = new VoteData(proposed, parent);
+		VoteData voteData = new VoteData(proposed, parent, null);
 		when(vote.getVoteData()).thenReturn(voteData);
 		when(vote.getAuthor()).thenReturn(author);
 		return vote;

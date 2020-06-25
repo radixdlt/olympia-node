@@ -53,6 +53,13 @@ public final class QuorumCertificate {
 		this.signatures = Objects.requireNonNull(signatures);
 	}
 
+	public static QuorumCertificate ofGenesis(Vertex genesisVertex) {
+		Objects.requireNonNull(genesisVertex);
+		VertexMetadata vertexMetadata = VertexMetadata.ofVertex(genesisVertex);
+		final VoteData voteData = new VoteData(vertexMetadata, vertexMetadata, vertexMetadata);
+		return new QuorumCertificate(voteData, new ECDSASignatures());
+	}
+
 	public View getView() {
 		return voteData.getProposed().getView();
 	}

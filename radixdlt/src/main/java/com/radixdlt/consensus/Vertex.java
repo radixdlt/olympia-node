@@ -20,6 +20,7 @@ package com.radixdlt.consensus;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Suppliers;
 import com.radixdlt.DefaultSerialization;
+import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.serialization.DsonOutput;
@@ -68,8 +69,18 @@ public final class Vertex {
 		this.atom = atom;
 	}
 
-	public static Vertex createGenesis(ClientAtom atom) {
-		return new Vertex(null, View.of(0), atom);
+	public static Vertex createGenesis() {
+		VertexMetadata ancestorMetadata = VertexMetadata.ofGenesisAncestor();
+		final VoteData voteData = new VoteData(ancestorMetadata, ancestorMetadata, ancestorMetadata);
+		final QuorumCertificate qc = new QuorumCertificate(voteData, new ECDSASignatures());
+		return new Vertex(qc, View.of(0), null);
+	}
+
+	public static Vertex createGenesis(VertexMetadata ancestorMetadata) {
+		Objects.requireNonNull(ancestorMetadata);
+		final VoteData voteData = new VoteData(ancestorMetadata, ancestorMetadata, ancestorMetadata);
+		final QuorumCertificate qc = new QuorumCertificate(voteData, new ECDSASignatures());
+		return new Vertex(qc, View.of(0), null);
 	}
 
 	public static Vertex createVertex(QuorumCertificate qc, View view, ClientAtom reAtom) {

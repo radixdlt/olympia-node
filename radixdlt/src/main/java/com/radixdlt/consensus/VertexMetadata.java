@@ -63,14 +63,17 @@ public final class VertexMetadata {
 		this.id = id;
 	}
 
+	public static VertexMetadata ofGenesisAncestor() {
+		return new VertexMetadata(View.genesis(), Hash.ZERO_HASH, 0);
+	}
+
+	public static VertexMetadata ofGenesisAncestor(long stateVersion) {
+		return new VertexMetadata(View.genesis(), Hash.ZERO_HASH, stateVersion);
+	}
+
 	public static VertexMetadata ofVertex(Vertex vertex) {
-		final long parentStateVersion;
-		if (vertex.isGenesis()) {
-			throw new IllegalArgumentException("Must use normal constructor for genesis.");
-		} else {
-			final VertexMetadata parent = vertex.getQC().getProposed();
-			parentStateVersion = parent.getStateVersion();
-		}
+		final VertexMetadata parent = vertex.getQC().getProposed();
+		final long parentStateVersion = parent.getStateVersion();
 
 		final int versionIncrement = vertex.getAtom() != null ? 1 : 0;
 		final long newStateVersion = parentStateVersion + versionIncrement;

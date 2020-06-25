@@ -43,7 +43,7 @@ public class VertexTest {
 
 		VertexMetadata vertexMetadata = new VertexMetadata(baseView.next(), id, 1);
 		VertexMetadata parent = new VertexMetadata(baseView, Hash.random(), 0);
-		VoteData voteData = new VoteData(vertexMetadata, parent);
+		VoteData voteData = new VoteData(vertexMetadata, parent, parent);
 
 		this.qc = new QuorumCertificate(voteData, new ECDSASignatures());
 
@@ -70,7 +70,7 @@ public class VertexTest {
 
 		VertexMetadata vertexMetadata = new VertexMetadata(baseView.next(), id, 1);
 		VertexMetadata parent = new VertexMetadata(baseView, Hash.random(), 0);
-		VoteData voteData = new VoteData(vertexMetadata, parent);
+		VoteData voteData = new VoteData(vertexMetadata, parent, null);
 		QuorumCertificate qc2 = new QuorumCertificate(voteData, new ECDSASignatures());
 
 		Vertex v = Vertex.createVertex(qc2, baseView.next().next().next(), null);

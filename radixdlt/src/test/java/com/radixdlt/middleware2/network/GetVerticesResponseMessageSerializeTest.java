@@ -29,7 +29,8 @@ public class GetVerticesResponseMessageSerializeTest extends SerializeMessageObj
 	}
 
 	private static GetVerticesResponseMessage get() {
-		return new GetVerticesResponseMessage(1234, Hash.random(), ImmutableList.of(Vertex.createGenesis(null)));
+		Vertex genesisVertex = Vertex.createGenesis();
+		return new GetVerticesResponseMessage(1234, Hash.random(), ImmutableList.of(genesisVertex));
 	}
 
 }

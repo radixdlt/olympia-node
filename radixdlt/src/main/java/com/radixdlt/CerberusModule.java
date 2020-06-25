@@ -35,6 +35,7 @@ import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
 import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.VertexStore;
 import com.radixdlt.consensus.VertexStore.SyncSender;
 import com.radixdlt.consensus.SyncVerticesRPCSender;
@@ -48,6 +49,7 @@ import com.radixdlt.consensus.sync.SyncedRadixEngine;
 import com.radixdlt.consensus.sync.SyncedRadixEngine.CommittedStateSyncSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.middleware2.network.MessageCentralBFTNetwork;
 import com.radixdlt.middleware2.network.MessageCentralSyncVerticesRPCNetwork;
 import com.radixdlt.network.addressbook.AddressBook;
@@ -132,13 +134,15 @@ public class CerberusModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private VertexStore getVertexStore(
-		Vertex genesisVertex,
-		QuorumCertificate genesisQC,
+		CommittedAtom genesisAtom,
 		SyncedRadixEngine syncedRadixEngine,
 		SyncVerticesRPCSender syncVerticesRPCSender,
 		SyncSender syncSender,
 		SystemCounters counters
 	) {
+		VertexMetadata ancestorMetadata = genesisAtom.getVertexMetadata();
+		Vertex genesisVertex = Vertex.createGenesis(ancestorMetadata);
+		QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(genesisVertex);
 		log.info("Genesis Vertex Id: {}", genesisVertex.getId());
 		return new VertexStore(genesisVertex, genesisQC, syncedRadixEngine, syncVerticesRPCSender, syncSender, counters);
 	}
