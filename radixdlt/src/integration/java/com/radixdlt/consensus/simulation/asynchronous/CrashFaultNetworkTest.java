@@ -28,7 +28,6 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.examples.tictactoe.Pair;
 
 import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork;
-import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Observable;
 import org.assertj.core.api.Condition;
 import org.junit.Test;
@@ -52,45 +51,6 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 public class CrashFaultNetworkTest {
 	static List<ECKeyPair> createNodes(int numNodes) {
 		return Stream.generate(ECKeyPair::generateNew).limit(numNodes).collect(Collectors.toList());
-	}
-
-	/**
-	 * Tests a static configuration of 3 nodes (1 crash-stopped), meaning a QC can never be formed.
-	 * The intended behaviour is that all instances retain the genesis commit as their latest committed vertex
-	 * since no progress can be made.
-	 */
-	@Test
-	public void given_2_out_of_3_correct_bft_instances__then_all_instances_should_get_no_commit_over_1_minute() {
-		final int numNodes = 3;
-		final int numCrashed = 1;
-		final int numCorrect = numNodes - numCrashed;
-		final long time = 1;
-		final TimeUnit timeUnit = TimeUnit.MINUTES;
-
-		final List<ECKeyPair> correctNodes = createNodes(numCorrect);
-		final List<ECKeyPair> faultyNodes = createNodes(numCrashed);
-		final List<ECKeyPair> allNodes = Stream.concat(correctNodes.stream(), faultyNodes.stream()).collect(Collectors.toList());
-		final DroppingLatencyProvider crashLatencyProvider = new DroppingLatencyProvider();
-		final TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.builder()
-			.latencyProvider(crashLatencyProvider)
-			.build();
-
-		final SimulatedBFTNetwork bftNetwork = new SimulatedBFTNetwork(allNodes, network);
-		crashLatencyProvider.crashNode(allNodes.get(2).getPublicKey());
-
-		List<Observable<Vertex>> committedObservables = allNodes.stream()
-			.map(bftNetwork::getVertexStore)
-			.map(VertexStore::lastCommittedVertex)
-			.collect(Collectors.toList());
-
-		Maybe<Vertex> firstCommitted = Observable.merge(committedObservables)
-			.take(time, timeUnit)
-			.firstElement()
-			.flatMap(vertex -> Maybe.error(new IllegalStateException("Committed vertex " + vertex)));
-
-		bftNetwork.start();
-		firstCommitted.blockingSubscribe();
-		bftNetwork.stop();
 	}
 
 	/**

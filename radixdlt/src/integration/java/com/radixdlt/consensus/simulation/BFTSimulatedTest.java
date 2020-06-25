@@ -142,7 +142,11 @@ public class BFTSimulatedTest {
 		public Builder checkAllProposalsHaveDirectParents(String checkName) {
 			this.checksBuilder.put(checkName, new AllProposalsHaveDirectParentsCheck());
 			return this;
+		}
 
+		public Builder checkNoneCommitted(String checkName) {
+			this.checksBuilder.put(checkName, new AllProposalsHaveDirectParentsCheck());
+			return this;
 		}
 
 		public BFTSimulatedTest build() {
