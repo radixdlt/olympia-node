@@ -175,7 +175,7 @@ public class VertexStoreTest {
 	@Test
 	@Ignore("Need to catch this at verification of object")
 	public void when_inserting_vertex_with_missing_parent__then_missing_parent_exception_is_thrown() {
-		VertexMetadata vertexMetadata = VertexMetadata.ofGenesisAncestor(0);
+		VertexMetadata vertexMetadata = VertexMetadata.ofGenesisAncestor();
 		VoteData voteData = new VoteData(vertexMetadata, null, null);
 		QuorumCertificate qc = new QuorumCertificate(voteData, new ECDSASignatures());
 		Vertex nextVertex = Vertex.createVertex(qc, View.of(1), mock(ClientAtom.class));

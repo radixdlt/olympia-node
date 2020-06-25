@@ -36,8 +36,8 @@ public class ConsensusRunnerTest {
 	public void when_events_get_emitted__then_event_coordinator_should_be_called() {
 		EventCoordinatorNetworkRx networkRx = mock(EventCoordinatorNetworkRx.class);
 
-		Epoch epoch = mock(Epoch.class);
-		EpochRx epochRx = () -> Observable.just(epoch).concatWith(Observable.never());
+		EpochChange epochChange = mock(EpochChange.class);
+		EpochChangeRx epochChangeRx = () -> Observable.just(epochChange).concatWith(Observable.never());
 
 		EpochManager epochManager = mock(EpochManager.class);
 
@@ -65,7 +65,7 @@ public class ConsensusRunnerTest {
 		CommittedStateSync stateSync = mock(CommittedStateSync.class);
 		when(committedStateSyncRx.committedStateSyncs()).thenReturn(Observable.just(stateSync).concatWith(Observable.never()));
 
-		ConsensusRunner consensusRunner = new ConsensusRunner(epochRx,
+		ConsensusRunner consensusRunner = new ConsensusRunner(epochChangeRx,
 			networkRx,
 			pacemakerRx,
 			localSyncRx,
@@ -80,7 +80,7 @@ public class ConsensusRunnerTest {
 		testObserver.assertValueCount(8);
 		testObserver.assertNotComplete();
 
-		verify(epochManager, times(1)).processNextEpoch(eq(epoch));
+		verify(epochManager, times(1)).processEpochChange(eq(epochChange));
 		verify(epochManager, times(1)).processConsensusEvent(eq(vote));
 		verify(epochManager, times(1)).processConsensusEvent(eq(proposal));
 		verify(epochManager, times(1)).processConsensusEvent(eq(newView));

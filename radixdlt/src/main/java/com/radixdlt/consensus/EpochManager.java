@@ -80,16 +80,16 @@ public class EpochManager {
 		this.hasher = Objects.requireNonNull(hasher);
 	}
 
-	public void processNextEpoch(Epoch epoch) {
-		log.info("NEXT_EPOCH: {}", epoch);
+	public void processEpochChange(EpochChange epochChange) {
+		log.info("NEXT_EPOCH: {}", epochChange);
 
-		ValidatorSet validatorSet = epoch.getValidatorSet();
+		ValidatorSet validatorSet = epochChange.getValidatorSet();
 		ProposerElection proposerElection = proposerElectionFactory.create(validatorSet);
 		Pacemaker pacemaker = pacemakerFactory.create();
 		SafetyRules safetyRules = new SafetyRules(this.selfKey, SafetyState.initialState(), this.hasher);
 		PendingVotes pendingVotes = new PendingVotes(this.hasher);
 
-		VertexMetadata ancestorMetadata = epoch.getAncestor();
+		VertexMetadata ancestorMetadata = epochChange.getAncestor();
 		Vertex genesisVertex = Vertex.createGenesis(ancestorMetadata);
 		QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(genesisVertex);
 

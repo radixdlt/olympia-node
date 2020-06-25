@@ -30,7 +30,6 @@ import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.Result;
 import com.radixdlt.consensus.VertexMetadata;
-import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.sync.StateSyncNetwork;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.Particle;
@@ -107,7 +106,7 @@ public class MiddlewareModule extends AbstractModule {
 	@Singleton
 	private CommittedAtom genesisAtom(Universe universe) throws LedgerAtomConversionException {
 		final ClientAtom genesisAtom = ClientAtom.convertFromApiAtom(universe.getGenesis().get(0));
-		final VertexMetadata vertexMetadata = new VertexMetadata(View.genesis(), Hash.ZERO_HASH, 0);
+		final VertexMetadata vertexMetadata = VertexMetadata.ofGenesisAncestor();
 		return new CommittedAtom(genesisAtom, vertexMetadata);
 	}
 

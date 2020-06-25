@@ -37,6 +37,6 @@ public class EpochManagerTest {
 		when(validator.nodeKey()).thenReturn(mock(ECPublicKey.class));
 		ValidatorSet validatorSet = mock(ValidatorSet.class);
 		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of(validator));
-		epochManager.processNextEpoch(new Epoch(0L, validatorSet, VertexMetadata.ofGenesisAncestor()));
+		epochManager.processEpochChange(new EpochChange(VertexMetadata.ofGenesisAncestor(), validatorSet));
 	}
 }

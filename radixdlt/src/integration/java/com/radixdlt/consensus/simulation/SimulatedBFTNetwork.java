@@ -23,9 +23,9 @@ import com.radixdlt.consensus.ConsensusRunner.Event;
 import com.radixdlt.consensus.ConsensusRunner.EventType;
 import com.radixdlt.consensus.DefaultHasher;
 import com.radixdlt.consensus.EmptySyncVerticesRPCSender;
-import com.radixdlt.consensus.Epoch;
+import com.radixdlt.consensus.EpochChange;
 import com.radixdlt.consensus.EpochManager;
-import com.radixdlt.consensus.EpochRx;
+import com.radixdlt.consensus.EpochChangeRx;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.InternalMessagePasser;
 import com.radixdlt.consensus.QuorumCertificate;
@@ -168,7 +168,8 @@ public class SimulatedBFTNetwork {
 		Hasher hasher = new DefaultHasher();
 		ScheduledTimeoutSender timeoutSender = timeoutSenders.get(key);
 		FixedTimeoutPacemaker pacemaker = pacemakers.get(key);
-		EpochRx epochRx = () -> Observable.just(new Epoch(0L, validatorSet, VertexMetadata.ofGenesisAncestor())).concatWith(Observable.never());
+		EpochChangeRx epochChangeRx = () -> Observable.just(new EpochChange(VertexMetadata.ofGenesisAncestor(), validatorSet))
+			.concatWith(Observable.never());
 		EpochManager epochManager = new EpochManager(
 			mempool,
 			underlyingNetwork.getNetworkSender(key.getPublicKey()),
@@ -182,7 +183,7 @@ public class SimulatedBFTNetwork {
 
 		SimulatedNetworkReceiver rx = underlyingNetwork.getNetworkRx(key.getPublicKey());
 
-		return new ConsensusRunner(epochRx,
+		return new ConsensusRunner(epochChangeRx,
 			rx,
 			timeoutSender,
 			syncSenders.get(key),

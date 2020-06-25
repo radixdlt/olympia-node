@@ -86,7 +86,7 @@ public final class ConsensusRunner {
 
 	@Inject
 	public ConsensusRunner(
-		EpochRx epochRx,
+		EpochChangeRx epochChangeRx,
 		EventCoordinatorNetworkRx networkRx,
 		PacemakerRx pacemakerRx,
 		LocalSyncRx localSyncRx,
@@ -99,7 +99,7 @@ public final class ConsensusRunner {
 		this.epochManager = epochManager;
 
 		final Observable<Object> eventCoordinatorEvents = Observable.merge(Arrays.asList(
-			epochRx.nextEpoch().observeOn(singleThreadScheduler),
+			epochChangeRx.nextEpochChange().observeOn(singleThreadScheduler),
 			pacemakerRx.localTimeouts().observeOn(singleThreadScheduler),
 			networkRx.consensusEvents().observeOn(singleThreadScheduler),
 			rpcRx.requests().observeOn(singleThreadScheduler),
@@ -122,8 +122,8 @@ public final class ConsensusRunner {
 	// TODO: Cleanup
 	private Event processEvent(Object msg) {
 		final EventType eventType;
-		if (msg instanceof Epoch) {
-			epochManager.processNextEpoch((Epoch) msg);
+		if (msg instanceof EpochChange) {
+			epochManager.processEpochChange((EpochChange) msg);
 			return new Event(EventType.EPOCH, msg);
 		} else if (msg instanceof GetVerticesRequest) {
 			epochManager.processGetVerticesRequest((GetVerticesRequest) msg);

@@ -40,7 +40,7 @@ import static org.mockito.Mockito.when;
  * This tests that the {@link SafetyRules} implementation obeys HotStuff's safety and commit rules.
  */
 public class SafetyRulesTest {
-	private static final VertexMetadata genesisAncestor = VertexMetadata.ofGenesisAncestor(0);
+	private static final VertexMetadata genesisAncestor = VertexMetadata.ofGenesisAncestor();
 	private static final VoteData GENESIS_DATA = new VoteData(genesisAncestor, genesisAncestor, null);
 	private static final QuorumCertificate GENESIS_QC = new QuorumCertificate(GENESIS_DATA, new ECDSASignatures());
 
@@ -153,13 +153,13 @@ public class SafetyRulesTest {
 		Hash toBeCommitted = mock(Hash.class);
 
 		VoteData voteData = new VoteData(
-			new VertexMetadata(View.of(3), mock(Hash.class), 3),
-			new VertexMetadata(View.of(2), mock(Hash.class), 2),
-			new VertexMetadata(View.of(1), toBeCommitted, 1)
+			new VertexMetadata(0, View.of(3), mock(Hash.class), 3),
+			new VertexMetadata(0, View.of(2), mock(Hash.class), 2),
+			new VertexMetadata(0, View.of(1), toBeCommitted, 1)
 		);
 
 		QuorumCertificate qc = new QuorumCertificate(voteData, new ECDSASignatures());
 
-		assertThat(safetyRules.process(qc)).hasValue(new VertexMetadata(View.of(1), toBeCommitted, 1));
+		assertThat(safetyRules.process(qc)).hasValue(new VertexMetadata(0, View.of(1), toBeCommitted, 1));
 	}
 }

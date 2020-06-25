@@ -44,6 +44,10 @@ public final class Vertex {
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
 
+	@JsonProperty("epoch")
+	@DsonOutput(Output.ALL)
+	private final long epoch;
+
 	@JsonProperty("qc")
 	@DsonOutput(Output.ALL)
 	private final QuorumCertificate qc;
@@ -59,11 +63,17 @@ public final class Vertex {
 	Vertex() {
 		// Serializer only
 		this.qc = null;
+		this.epoch = 0L;
 		this.view = null;
 		this.atom = null;
 	}
 
-	public Vertex(QuorumCertificate qc, View view, ClientAtom atom) {
+	public Vertex(long epoch, QuorumCertificate qc, View view, ClientAtom atom) {
+		if (epoch < 0) {
+			throw new IllegalArgumentException("epoch must be >= 0");
+		}
+
+		this.epoch = epoch;
 		this.qc = qc;
 		this.view = Objects.requireNonNull(view);
 		this.atom = atom;
@@ -73,14 +83,14 @@ public final class Vertex {
 		VertexMetadata ancestorMetadata = VertexMetadata.ofGenesisAncestor();
 		final VoteData voteData = new VoteData(ancestorMetadata, ancestorMetadata, ancestorMetadata);
 		final QuorumCertificate qc = new QuorumCertificate(voteData, new ECDSASignatures());
-		return new Vertex(qc, View.of(0), null);
+		return new Vertex(0, qc, View.of(0), null);
 	}
 
 	public static Vertex createGenesis(VertexMetadata ancestorMetadata) {
 		Objects.requireNonNull(ancestorMetadata);
 		final VoteData voteData = new VoteData(ancestorMetadata, ancestorMetadata, ancestorMetadata);
 		final QuorumCertificate qc = new QuorumCertificate(voteData, new ECDSASignatures());
-		return new Vertex(qc, View.of(0), null);
+		return new Vertex(ancestorMetadata.getEpoch() + 1, qc, View.of(0), null);
 	}
 
 	public static Vertex createVertex(QuorumCertificate qc, View view, ClientAtom reAtom) {
@@ -90,7 +100,7 @@ public final class Vertex {
 			throw new IllegalArgumentException("Only genesis can have view 0.");
 		}
 
-		return new Vertex(qc, view, reAtom);
+		return new Vertex(qc.getProposed().getEpoch(), qc, view, reAtom);
 	}
 
 	private Hash doGetHash() {
@@ -128,6 +138,10 @@ public final class Vertex {
 		return this.view.number() == this.getParentView().number() + 1;
 	}
 
+	public long getEpoch() {
+		return epoch;
+	}
+
 	public View getView() {
 		return view;
 	}
@@ -159,12 +173,12 @@ public final class Vertex {
 
 	@Override
 	public String toString() {
-		return String.format("Vertex{view=%s, qc=%s, atom=%s}", view, qc, atom == null ? null : atom.getAID());
+		return String.format("Vertex{epoch=%s view=%s, qc=%s, atom=%s}", epoch, view, qc, atom == null ? null : atom.getAID());
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(qc, view, atom);
+		return Objects.hash(qc, view, atom, epoch);
 	}
 
 	@Override
@@ -176,6 +190,7 @@ public final class Vertex {
 		Vertex v = (Vertex) o;
 		return Objects.equals(v.view, this.view)
 			&& Objects.equals(v.atom, this.atom)
-			&& Objects.equals(v.qc, this.qc);
+			&& Objects.equals(v.qc, this.qc)
+			&& v.epoch == this.epoch;
 	}
 }
