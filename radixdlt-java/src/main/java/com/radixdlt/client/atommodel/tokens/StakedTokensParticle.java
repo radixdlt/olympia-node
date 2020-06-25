@@ -167,15 +167,7 @@ public final class StakedTokensParticle extends Particle implements Accountable,
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s:%s:%s:%s:%s:%s:%s]",
-			getClass().getSimpleName(),
-			tokenDefinitionReference,
-			amount,
-			granularity,
-			address,
-			delegateAddress,
-			planck,
-			nonce
-		);
+		return String.format("%s[%s:%s:%s:%s:%s:%s:%s]", getClass().getSimpleName(), tokenDefinitionReference, amount,
+			granularity, address, delegateAddress, planck, nonce);
 	}
 }
