@@ -37,6 +37,13 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 
 	@Override
 	public void main(SysCalls os) {
+		registerParticles(os);
+		defineTokenCreation(os);
+		defineMintTransferBurn(os);
+		defineStaking(os);
+	}
+
+	private void registerParticles(SysCalls os) {
 		os.registerParticle(
 			MutableSupplyTokenDefinitionParticle.class,
 			ParticleDefinition.<MutableSupplyTokenDefinitionParticle>builder()
@@ -81,7 +88,9 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 				.rriMapper(StakedTokensParticle::getTokDefRef)
 				.build()
 		);
+	}
 
+	private void defineTokenCreation(SysCalls os) {
 		// Require Token Definition to be created with unallocated tokens of max supply
 		os.createTransitionFromRRICombined(
 			MutableSupplyTokenDefinitionParticle.class,
@@ -136,7 +145,9 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			(in, meta) -> meta.isSignedBy(in.getTokDefRef().getAddress().getPublicKey())
 				? WitnessValidatorResult.success() : WitnessValidatorResult.error("Permission not allowed.")
 		));
+	}
 
+	private void defineMintTransferBurn(SysCalls os) {
 		// Mint
 		os.executeRoutine(new CreateFungibleTransitionRoutine<>(
 			UnallocatedTokensParticle.class,
@@ -191,7 +202,9 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			(in, meta) -> in.getTokenPermission(TokenTransition.BURN).check(in.getTokDefRef(), meta).isSuccess()
 				? WitnessValidatorResult.success() : WitnessValidatorResult.error("Permission not allowed.")
 		));
+	}
 
+	private void defineStaking(SysCalls os) {
 		// Staking
 		os.executeRoutine(new CreateFungibleTransitionRoutine<>(
 			TransferrableTokensParticle.class,
