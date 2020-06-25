@@ -279,19 +279,91 @@ public class TokensConstraintScryptTest {
 	}
 
 	@Test
-	public void when_checking_signed_by_and_signed__result_has_no_error() {
-		WitnessData witnessData = mock(WitnessData.class);
-		RadixAddress address = mock(RadixAddress.class);
-		when(witnessData.isSignedBy(address.getPublicKey())).thenReturn(true);
-		assertThat(TokensConstraintScrypt.checkSignedBy(witnessData, address).isSuccess()).isTrue();
+	public void when_validating_create_transferrable_with_mismatching_granularities__result_has_error() {
+		FixedSupplyTokenDefinitionParticle tokDef = mock(FixedSupplyTokenDefinitionParticle.class);
+		TransferrableTokensParticle transferrable = mock(TransferrableTokensParticle.class);
+		when(tokDef.getGranularity()).thenReturn(UInt256.FIVE);
+		when(transferrable.getGranularity()).thenReturn(UInt256.FOUR);
+		assertThat(TokensConstraintScrypt.checkCreateTransferrable(tokDef, transferrable).isError()).isTrue();
 	}
 
 	@Test
-	public void when_checking_signed_by_and_not_signed__result_has_error() {
-		WitnessData witnessData = mock(WitnessData.class);
-		RadixAddress address = mock(RadixAddress.class);
-		when(witnessData.isSignedBy(address.getPublicKey())).thenReturn(false);
-		assertThat(TokensConstraintScrypt.checkSignedBy(witnessData, address).isError()).isTrue();
+	public void when_validating_create_transferrable_with_mismatching_supply__result_has_error() {
+		FixedSupplyTokenDefinitionParticle tokDef = mock(FixedSupplyTokenDefinitionParticle.class);
+		TransferrableTokensParticle transferrable = mock(TransferrableTokensParticle.class);
+		when(tokDef.getGranularity()).thenReturn(UInt256.FIVE);
+		when(transferrable.getGranularity()).thenReturn(UInt256.FIVE);
+		when(tokDef.getSupply()).thenReturn(UInt256.FIVE);
+		when(transferrable.getAmount()).thenReturn(UInt256.FOUR);
+		assertThat(TokensConstraintScrypt.checkCreateTransferrable(tokDef, transferrable).isError()).isTrue();
+	}
+
+	@Test
+	public void when_validating_create_transferrable_with_non_empty_permissions__result_has_error() {
+		FixedSupplyTokenDefinitionParticle tokDef = mock(FixedSupplyTokenDefinitionParticle.class);
+		TransferrableTokensParticle transferrable = mock(TransferrableTokensParticle.class);
+		when(tokDef.getGranularity()).thenReturn(UInt256.FIVE);
+		when(transferrable.getGranularity()).thenReturn(UInt256.FIVE);
+		when(tokDef.getSupply()).thenReturn(UInt256.FIVE);
+		when(transferrable.getAmount()).thenReturn(UInt256.FIVE);
+		when(transferrable.getTokenPermissions()).thenReturn(ImmutableMap.of(TokenTransition.MINT, TokenPermission.ALL));
+		assertThat(TokensConstraintScrypt.checkCreateTransferrable(tokDef, transferrable).isError()).isTrue();
+	}
+
+	@Test
+	public void when_validating_create_transferrable__result_has_no_error() {
+		FixedSupplyTokenDefinitionParticle tokDef = mock(FixedSupplyTokenDefinitionParticle.class);
+		TransferrableTokensParticle transferrable = mock(TransferrableTokensParticle.class);
+		when(tokDef.getGranularity()).thenReturn(UInt256.FIVE);
+		when(transferrable.getGranularity()).thenReturn(UInt256.FIVE);
+		when(tokDef.getSupply()).thenReturn(UInt256.FIVE);
+		when(transferrable.getAmount()).thenReturn(UInt256.FIVE);
+		when(transferrable.getTokenPermissions()).thenReturn(ImmutableMap.of());
+		assertThat(TokensConstraintScrypt.checkCreateTransferrable(tokDef, transferrable).isSuccess()).isTrue();
+	}
+
+	@Test
+	public void when_validating_create_unallocated_with_mismatching_granularities__result_has_error() {
+		MutableSupplyTokenDefinitionParticle tokDef = mock(MutableSupplyTokenDefinitionParticle.class);
+		UnallocatedTokensParticle unallocated = mock(UnallocatedTokensParticle.class);
+		when(tokDef.getGranularity()).thenReturn(UInt256.FIVE);
+		when(unallocated.getGranularity()).thenReturn(UInt256.FOUR);
+		assertThat(TokensConstraintScrypt.checkCreateUnallocated(tokDef, unallocated).isError()).isTrue();
+	}
+
+	@Test
+	public void when_validating_create_unallocated_with_mismatching_permissions__result_has_error() {
+		MutableSupplyTokenDefinitionParticle tokDef = mock(MutableSupplyTokenDefinitionParticle.class);
+		UnallocatedTokensParticle unallocated = mock(UnallocatedTokensParticle.class);
+		when(tokDef.getGranularity()).thenReturn(UInt256.FIVE);
+		when(unallocated.getGranularity()).thenReturn(UInt256.FIVE);
+		when(tokDef.getTokenPermissions()).thenReturn(ImmutableMap.of(TokenTransition.MINT, TokenPermission.ALL));
+		when(unallocated.getTokenPermissions()).thenReturn(ImmutableMap.of(TokenTransition.MINT, TokenPermission.NONE));
+		assertThat(TokensConstraintScrypt.checkCreateUnallocated(tokDef, unallocated).isError()).isTrue();
+	}
+
+	@Test
+	public void when_validating_create_unallocated_with_non_max_unallocated__result_has_error() {
+		MutableSupplyTokenDefinitionParticle tokDef = mock(MutableSupplyTokenDefinitionParticle.class);
+		UnallocatedTokensParticle unallocated = mock(UnallocatedTokensParticle.class);
+		when(tokDef.getGranularity()).thenReturn(UInt256.FIVE);
+		when(unallocated.getGranularity()).thenReturn(UInt256.FIVE);
+		when(tokDef.getTokenPermissions()).thenReturn(ImmutableMap.of(TokenTransition.MINT, TokenPermission.ALL));
+		when(unallocated.getTokenPermissions()).thenReturn(ImmutableMap.of(TokenTransition.MINT, TokenPermission.ALL));
+		when(unallocated.getAmount()).thenReturn(UInt256.MAX_VALUE.decrement());
+		assertThat(TokensConstraintScrypt.checkCreateUnallocated(tokDef, unallocated).isError()).isTrue();
+	}
+
+	@Test
+	public void when_validating_create_unallocated__result_has_no_error() {
+		MutableSupplyTokenDefinitionParticle tokDef = mock(MutableSupplyTokenDefinitionParticle.class);
+		UnallocatedTokensParticle unallocated = mock(UnallocatedTokensParticle.class);
+		when(tokDef.getGranularity()).thenReturn(UInt256.FIVE);
+		when(unallocated.getGranularity()).thenReturn(UInt256.FIVE);
+		when(tokDef.getTokenPermissions()).thenReturn(ImmutableMap.of(TokenTransition.MINT, TokenPermission.ALL));
+		when(unallocated.getTokenPermissions()).thenReturn(ImmutableMap.of(TokenTransition.MINT, TokenPermission.ALL));
+		when(unallocated.getAmount()).thenReturn(UInt256.MAX_VALUE);
+		assertThat(TokensConstraintScrypt.checkCreateUnallocated(tokDef, unallocated).isSuccess()).isTrue();
 	}
 
 	@Test
@@ -312,5 +384,21 @@ public class TokensConstraintScryptTest {
 		when(tokenPermission.check(token, witnessData)).thenReturn(Result.error(""));
 		assertThat(TokensConstraintScrypt.checkTokenActionAllowed(witnessData, tokenPermission, token)
 			.isError()).isTrue();
+	}
+
+	@Test
+	public void when_checking_signed_by_and_signed__result_has_no_error() {
+		WitnessData witnessData = mock(WitnessData.class);
+		RadixAddress address = mock(RadixAddress.class);
+		when(witnessData.isSignedBy(address.getPublicKey())).thenReturn(true);
+		assertThat(TokensConstraintScrypt.checkSignedBy(witnessData, address).isSuccess()).isTrue();
+	}
+
+	@Test
+	public void when_checking_signed_by_and_not_signed__result_has_error() {
+		WitnessData witnessData = mock(WitnessData.class);
+		RadixAddress address = mock(RadixAddress.class);
+		when(witnessData.isSignedBy(address.getPublicKey())).thenReturn(false);
+		assertThat(TokensConstraintScrypt.checkSignedBy(witnessData, address).isError()).isTrue();
 	}
 }
