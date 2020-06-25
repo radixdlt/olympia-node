@@ -29,7 +29,6 @@ import com.radixdlt.identifiers.RadixAddress;
 import org.junit.Test;
 
 import java.math.BigDecimal;
-import java.util.Collections;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
