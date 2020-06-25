@@ -27,9 +27,6 @@ import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 
 import java.math.BigDecimal;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 
 public class StakeTokensAction implements Action {
 	private final RadixAddress from;
