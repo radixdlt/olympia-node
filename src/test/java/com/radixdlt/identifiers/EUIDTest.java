@@ -92,12 +92,6 @@ public class EUIDTest {
 	}
 
 	@Test
-	public void testGetShard() {
-		EUID euid = new EUID(UInt128.from(2L, 5L));
-		assertEquals(5L, euid.getLow());
-	}
-
-	@Test
 	public void verify_that_tobytearray_returns_same_as_passed_in_constructor() {
 		byte[] bytes = Bytes.fromHexString("dead000000000000000000000000beef");
 		EUID euid = new EUID(bytes);
