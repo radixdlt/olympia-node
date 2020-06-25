@@ -99,7 +99,7 @@ public final class ConsensusRunner {
 		this.epochManager = epochManager;
 
 		final Observable<Object> eventCoordinatorEvents = Observable.merge(Arrays.asList(
-			epochChangeRx.nextEpochChange().observeOn(singleThreadScheduler),
+			epochChangeRx.epochChanges().observeOn(singleThreadScheduler),
 			pacemakerRx.localTimeouts().observeOn(singleThreadScheduler),
 			networkRx.consensusEvents().observeOn(singleThreadScheduler),
 			rpcRx.requests().observeOn(singleThreadScheduler),

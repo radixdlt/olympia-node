@@ -53,7 +53,7 @@ public class AddressBookEpochChangeRx implements EpochChangeRx {
 	}
 
 	@Override
-	public Observable<EpochChange> nextEpochChange() {
+	public Observable<EpochChange> epochChanges() {
 		return Observable.<List<Peer>>create(emitter -> {
 			emitter.onNext(addressBook.peers().collect(Collectors.toList()));
 			// Race condition here but ignore as this is a temporary class
@@ -67,7 +67,7 @@ public class AddressBookEpochChangeRx implements EpochChangeRx {
 			).distinct().collect(Collectors.toList()))
 			.filter(peers -> peers.size() == fixedNodeCount)
 			.firstOrError()
-			.flatMapObservable(peers -> new BasicEpochChangeRx(ancestor, peers).nextEpochChange())
+			.flatMapObservable(peers -> new BasicEpochChangeRx(ancestor, peers).epochChanges())
 			.replay()
 			.autoConnect();
 	}

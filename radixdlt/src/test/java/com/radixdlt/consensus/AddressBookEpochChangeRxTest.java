@@ -14,7 +14,7 @@ public class AddressBookEpochChangeRxTest {
 		ECPublicKey self = mock(ECPublicKey.class);
 		AddressBook addressBook = mock(AddressBook.class);
 		AddressBookEpochChangeRx basicEpochRx = new AddressBookEpochChangeRx(self, addressBook, 1, mock(VertexMetadata.class));
-		TestObserver<EpochChange> testObserver = basicEpochRx.nextEpochChange().test();
+		TestObserver<EpochChange> testObserver = basicEpochRx.epochChanges().test();
 		testObserver.awaitCount(1);
 		testObserver.assertValueCount(1);
 		testObserver.assertValue(e -> e.getValidatorSet().getValidators().size() == 1);

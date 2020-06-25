@@ -29,5 +29,5 @@ public interface EpochChangeRx {
 	 *
 	 * @return stream of epoch changes
 	 */
-	Observable<EpochChange> nextEpochChange();
+	Observable<EpochChange> epochChanges();
 }

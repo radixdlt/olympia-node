@@ -43,7 +43,7 @@ public final class BasicEpochChangeRx implements EpochChangeRx {
 	}
 
 	@Override
-	public Observable<EpochChange> nextEpochChange() {
+	public Observable<EpochChange> epochChanges() {
 		return Observable.just(new EpochChange(ancestor, validatorSet))
 			.concatWith(Observable.never());
 	}
