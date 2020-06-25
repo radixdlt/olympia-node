@@ -20,7 +20,7 @@ package com.radixdlt.consensus.simulation.checks;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.simulation.BFTCheck;
-import com.radixdlt.consensus.simulation.SimulatedBFTNetwork;
+import com.radixdlt.consensus.simulation.SimulatedBFTNetwork.RunningNetwork;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Observable;
@@ -67,7 +67,7 @@ public class SafetyCheck implements BFTCheck {
 	}
 
 	@Override
-	public Observable<BFTCheckError> check(SimulatedBFTNetwork network) {
+	public Observable<BFTCheckError> check(RunningNetwork network) {
 		final Map<View, Vertex> committedVertices = new ConcurrentHashMap<>();
 		committedVertices.put(View.genesis(), network.getGenesisVertex());
 		final AtomicReference<View> highest = new AtomicReference<>(View.genesis());

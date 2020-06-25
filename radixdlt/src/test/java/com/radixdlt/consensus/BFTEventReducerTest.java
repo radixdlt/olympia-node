@@ -171,6 +171,7 @@ public class BFTEventReducerTest {
 		when(pacemaker.getCurrentView()).thenReturn(mock(View.class));
 		when(pacemaker.processQC(eq(view))).thenReturn(Optional.of(mock(View.class)));
 		when(vertexStore.syncToQC(eq(qc), any(), any())).thenReturn(true);
+		when(vertexStore.getHighestQC()).thenReturn(mock(QuorumCertificate.class));
 
 		reducer.processVote(vote);
 
@@ -182,6 +183,7 @@ public class BFTEventReducerTest {
         when(proposerElection.getProposer(any())).thenReturn(ECKeyPair.generateNew().getPublicKey());
 		when(pacemaker.processLocalTimeout(any())).thenReturn(Optional.of(View.of(1)));
 		when(pacemaker.getCurrentView()).thenReturn(View.of(1));
+		when(vertexStore.getHighestQC()).thenReturn(mock(QuorumCertificate.class));
 		reducer.processLocalTimeout(View.of(0L));
 		verify(sender, times(1)).sendNewView(any(), any());
 		verify(counters, times(1)).increment(eq(CounterType.CONSENSUS_TIMEOUT));
@@ -260,6 +262,7 @@ public class BFTEventReducerTest {
 		doReturn(vote).when(safetyRules).voteFor(eq(proposedVertex));
 		when(pacemaker.processQC(eq(qcView))).thenReturn(Optional.empty());
 		when(pacemaker.processQC(eq(currentView))).thenReturn(Optional.of(View.of(124)));
+		when(vertexStore.getHighestQC()).thenReturn(mock(QuorumCertificate.class));
 
 		reducer.processProposal(proposal);
 

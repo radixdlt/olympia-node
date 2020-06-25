@@ -68,11 +68,15 @@ public final class NewView implements RequiresSyncConsensusEvent {
 	public NewView(ECPublicKey author, View view, QuorumCertificate qc, QuorumCertificate committedQC, ECDSASignature signature) {
 		this.author = Objects.requireNonNull(author);
 		this.view = Objects.requireNonNull(view);
-		this.qc = qc;
+		this.qc = Objects.requireNonNull(qc);
 		this.committedQC = committedQC;
 		this.signature = signature;
 	}
 
+	@Override
+	public long getEpoch() {
+		return qc.getProposed().getEpoch();
+	}
 
 	@Override
 	public QuorumCertificate getCommittedQC() {

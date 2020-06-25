@@ -173,35 +173,38 @@ public class BFTSimulatedTest {
 			.latencyProvider(this.latencyProvider)
 			.build();
 		SimulatedBFTNetwork bftNetwork =  new SimulatedBFTNetwork(nodes, network, pacemakerTimeout, getVerticesRPCEnabled);
-		List<Pair<String, Observable<Pair<String, BFTCheckError>>>> assertions = this.checks.keySet().stream()
-			.map(name -> {
-				BFTCheck check = this.checks.get(name);
-				return
-					Pair.of(
-						name,
-						check.check(bftNetwork).map(e -> Pair.of(name, e)).publish().autoConnect(2)
-					);
-			})
-			.collect(Collectors.toList());
-
-		Single<String> firstErrorSignal = Observable.merge(assertions.stream().map(Pair::getSecond).collect(Collectors.toList()))
-			.firstOrError()
-			.map(Pair::getFirst);
-
-		List<Single<Pair<String, Optional<BFTCheckError>>>> results = assertions.stream()
-			.map(assertion -> assertion.getSecond()
-				.takeUntil(firstErrorSignal.flatMapObservable(name ->
-					!assertion.getFirst().equals(name) ? Observable.just(name) : Observable.never()))
-				.takeUntil(Observable.timer(duration, timeUnit))
-				.map(e -> Optional.of(e.getSecond()))
-				.first(Optional.empty())
-				.map(result -> Pair.of(assertion.getFirst(), result))
-			)
-			.collect(Collectors.toList());
 
 		return bftNetwork.start()
 			.timeout(10, TimeUnit.SECONDS)
-			.andThen(Single.merge(results))
+			.flatMapObservable(startedNetwork -> {
+				List<Pair<String, Observable<Pair<String, BFTCheckError>>>> assertions = this.checks.keySet().stream()
+					.map(name -> {
+						BFTCheck check = this.checks.get(name);
+						return
+							Pair.of(
+								name,
+								check.check(startedNetwork).map(e -> Pair.of(name, e)).publish().autoConnect(2)
+							);
+					})
+					.collect(Collectors.toList());
+
+				Single<String> firstErrorSignal = Observable.merge(assertions.stream().map(Pair::getSecond).collect(Collectors.toList()))
+					.firstOrError()
+					.map(Pair::getFirst);
+
+				List<Single<Pair<String, Optional<BFTCheckError>>>> results = assertions.stream()
+					.map(assertion -> assertion.getSecond()
+						.takeUntil(firstErrorSignal.flatMapObservable(name ->
+							!assertion.getFirst().equals(name) ? Observable.just(name) : Observable.never()))
+						.takeUntil(Observable.timer(duration, timeUnit))
+						.map(e -> Optional.of(e.getSecond()))
+						.first(Optional.empty())
+						.map(result -> Pair.of(assertion.getFirst(), result))
+					)
+					.collect(Collectors.toList());
+
+				return Single.merge(results).toObservable();
+			})
 			.doFinally(bftNetwork::stop)
 			.blockingStream()
 			.collect(Collectors.toMap(Pair::getFirst, Pair::getSecond));

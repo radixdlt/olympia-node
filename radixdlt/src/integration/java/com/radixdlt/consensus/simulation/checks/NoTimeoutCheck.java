@@ -18,7 +18,7 @@
 package com.radixdlt.consensus.simulation.checks;
 
 import com.radixdlt.consensus.simulation.BFTCheck;
-import com.radixdlt.consensus.simulation.SimulatedBFTNetwork;
+import com.radixdlt.consensus.simulation.SimulatedBFTNetwork.RunningNetwork;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.identifiers.EUID;
@@ -38,7 +38,7 @@ public class NoTimeoutCheck implements BFTCheck {
 	}
 
 	@Override
-	public Observable<BFTCheckError> check(SimulatedBFTNetwork network) {
+	public Observable<BFTCheckError> check(RunningNetwork network) {
 		return Observable.interval(1, TimeUnit.SECONDS, Schedulers.io())
 			.flatMapIterable(i -> network.getNodes())
 			.concatMap(node -> {

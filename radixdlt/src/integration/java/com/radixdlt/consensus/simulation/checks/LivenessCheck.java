@@ -18,10 +18,10 @@
 package com.radixdlt.consensus.simulation.checks;
 
 import com.radixdlt.consensus.simulation.BFTCheck;
-import com.radixdlt.consensus.simulation.SimulatedBFTNetwork;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.VertexStore;
 import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.simulation.SimulatedBFTNetwork.RunningNetwork;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -40,7 +40,7 @@ public class LivenessCheck implements BFTCheck {
 	}
 
 	@Override
-	public Observable<BFTCheckError> check(SimulatedBFTNetwork network) {
+	public Observable<BFTCheckError> check(RunningNetwork network) {
 		AtomicReference<View> highestQCView = new AtomicReference<>(View.genesis());
 		return Observable
 			.interval(duration * 2, duration, timeUnit) // 2 times initial duration to account for boot up

@@ -23,5 +23,5 @@ package com.radixdlt.consensus;
  * TODO: possibly add signature and validation method signatures here
  */
 public interface ConsensusEvent {
-
+	long getEpoch();
 }

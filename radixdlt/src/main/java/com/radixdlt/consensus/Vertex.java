@@ -80,10 +80,7 @@ public final class Vertex {
 	}
 
 	public static Vertex createGenesis() {
-		VertexMetadata ancestorMetadata = VertexMetadata.ofGenesisAncestor();
-		final VoteData voteData = new VoteData(ancestorMetadata, ancestorMetadata, ancestorMetadata);
-		final QuorumCertificate qc = new QuorumCertificate(voteData, new ECDSASignatures());
-		return new Vertex(0, qc, View.of(0), null);
+		return createGenesis(VertexMetadata.ofGenesisAncestor());
 	}
 
 	public static Vertex createGenesis(VertexMetadata ancestorMetadata) {

@@ -56,6 +56,7 @@ public class EpochManager {
 	private final SystemCounters counters;
 	private final Hasher hasher;
 
+	private long currentEpoch;
 	private VertexStore vertexStore;
 	private BFTEventProcessor eventProcessor = EMPTY_PROCESSOR;
 
@@ -117,6 +118,7 @@ public class EpochManager {
 			counters
 		);
 
+		this.currentEpoch = genesisVertex.getEpoch();
 		this.vertexStore = vertexStore;
 		this.eventProcessor = new BFTEventPreprocessor(
 			this.selfKey.getPublicKey(),
@@ -126,7 +128,6 @@ public class EpochManager {
 			proposerElection,
 			syncQueues
 		);
-
 		this.eventProcessor.start();
 	}
 
@@ -147,6 +148,13 @@ public class EpochManager {
 	}
 
 	public void processConsensusEvent(ConsensusEvent consensusEvent) {
+		// TODO: Add the rest of consensus event verification here
+
+		if (consensusEvent.getEpoch() != this.currentEpoch) {
+			log.warn("Received event not in the current epoch ({}): {}", this.currentEpoch, consensusEvent);
+			return;
+		}
+
 		if (consensusEvent instanceof NewView) {
 			eventProcessor.processNewView((NewView) consensusEvent);
 		} else if (consensusEvent instanceof Proposal) {
