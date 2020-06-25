@@ -28,6 +28,9 @@ import com.radixdlt.identifiers.RadixAddress;
 
 import java.math.BigDecimal;
 
+/**
+ * An action for staking tokens from an address to a certain delegate
+ */
 public class StakeTokensAction implements Action {
 	private final RadixAddress from;
 	private final RadixAddress delegate;

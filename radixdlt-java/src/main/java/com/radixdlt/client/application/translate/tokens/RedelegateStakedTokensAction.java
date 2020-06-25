@@ -28,6 +28,9 @@ import com.radixdlt.identifiers.RadixAddress;
 
 import java.math.BigDecimal;
 
+/**
+ * An action for redelegating staked tokens from one delegate to another
+ */
 public class RedelegateStakedTokensAction implements Action {
 	private final RadixAddress from;
 	private final RadixAddress oldDelegate;

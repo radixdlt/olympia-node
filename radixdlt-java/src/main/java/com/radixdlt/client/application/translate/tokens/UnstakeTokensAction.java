@@ -28,6 +28,9 @@ import com.radixdlt.identifiers.RadixAddress;
 
 import java.math.BigDecimal;
 
+/**
+ * An action for unstaking staked tokens from an address staked to a certain delegate
+ */
 public class UnstakeTokensAction implements Action {
 	private final RadixAddress from;
 	private final RadixAddress delegate;

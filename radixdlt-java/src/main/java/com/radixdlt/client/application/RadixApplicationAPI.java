@@ -790,7 +790,7 @@ public class RadixApplicationAPI {
 	}
 
 	/**
-	 * Stakes a certain amount of a token from an address to a delegate.
+	 * Stakes a certain amount of a token from this address to a delegate.
 	 *
 	 * @param amount     the amount of the token type
 	 * @param token      the token type
@@ -829,7 +829,7 @@ public class RadixApplicationAPI {
 	}
 
 	/**
-	 * Redelegate a certain amount of a staked token from an address to a delegate.
+	 * Redelegate a certain amount of a staked tokens of this address to another delegate.
 	 *
 	 * @param amount        the amount of the token type
 	 * @param token         the token type
@@ -847,7 +847,7 @@ public class RadixApplicationAPI {
 	}
 
 	/**
-	 * Redelegate a certain amount of a staked token from an address to a delegate.
+	 * Redelegate a certain amount of a staked tokens of an address to another delegate.
 	 *
 	 * @param from          the address to stake tokens from
 	 * @param oldDelegate   the address the staked tokens are currently delegated to
@@ -873,7 +873,7 @@ public class RadixApplicationAPI {
 	}
 
 	/**
-	 * Unstakes a certain amount of a token from an address to a delegate.
+	 * Unstakes a certain amount of a token from this address to a delegate.
 	 *
 	 * @param amount     the amount of the token type
 	 * @param token      the token type
