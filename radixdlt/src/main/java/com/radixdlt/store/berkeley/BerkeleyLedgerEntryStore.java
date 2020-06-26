@@ -38,25 +38,13 @@ import com.radixdlt.store.LedgerEntryStoreResult;
 import com.radixdlt.store.LedgerEntryStatus;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.utils.Longs;
-import com.sleepycat.je.Cursor;
-import com.sleepycat.je.Database;
-import com.sleepycat.je.DatabaseConfig;
-import com.sleepycat.je.DatabaseEntry;
-import com.sleepycat.je.DatabaseNotFoundException;
-import com.sleepycat.je.Environment;
-import com.sleepycat.je.LockMode;
-import com.sleepycat.je.OperationStatus;
-import com.sleepycat.je.SecondaryConfig;
-import com.sleepycat.je.SecondaryCursor;
-import com.sleepycat.je.SecondaryDatabase;
-import com.sleepycat.je.SecondaryMultiKeyCreator;
-import com.sleepycat.je.Transaction;
-import com.sleepycat.je.TransactionConfig;
-import com.sleepycat.je.UniqueConstraintException;
+import com.sleepycat.je.*;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.radix.database.DatabaseEnvironment;
+
+import java.text.MessageFormat;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.Objects;
@@ -480,6 +468,55 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 			return aids.build();
 		}
 	}
+
+	@Override
+	public ImmutableList<LedgerEntry> getNextCommittedLedgerEntries(long stateVersion, int limit) {
+		// when querying committed atoms, no need to worry about transaction as they aren't going away
+		try (Cursor atomCursor = this.atoms.openCursor(null, null);
+			 Cursor uqCursor = this.uniqueIndices.openCursor(null,null)) {
+			ImmutableList.Builder<LedgerEntry> ledgerEntries = ImmutableList.builder();
+			// increment state version by one to find atoms afterwards, as underlying search uses greater-than-or-equal comparison
+			DatabaseEntry atomSearchKey = toPKey(PREFIX_COMMITTED, stateVersion + 1);
+			OperationStatus atomCursorStatus = atomCursor.getSearchKeyRange(atomSearchKey, null, LockMode.DEFAULT);
+
+			int size = 0;
+			while (atomCursorStatus == OperationStatus.SUCCESS && size < limit) {
+				if (atomSearchKey.getData()[0] != PREFIX_COMMITTED) {
+					// if we've gone beyond committed keys, abort, as this is only for committed atoms
+					break;
+				}
+
+				AID atomId = getAidFromPKey(atomSearchKey);
+				// TODO replace with uqCursor usage
+//				 Optional<LedgerEntry> ledgerEntry = this.get(atomId);
+//				 if (ledgerEntry.isPresent()) {
+//				 	ledgerEntries.add(ledgerEntry.get());
+//				 	++size;
+//				 }
+
+				LedgerEntry ledgerEntry = null;
+				try {
+					DatabaseEntry key = new DatabaseEntry(StoreIndex.from(ENTRY_INDEX_PREFIX, atomId.getBytes()));
+					DatabaseEntry value = new DatabaseEntry();
+					OperationStatus uqCursorStatus = uqCursor.getSearchKey(key, value, LockMode.DEFAULT);
+
+					if (uqCursorStatus == OperationStatus.SUCCESS) {
+						ledgerEntry = serialization.fromDson(value.getData(), LedgerEntry.class);
+						ledgerEntries.add(ledgerEntry);
+						++size;
+					}
+				} catch (Exception e) {
+					String message = MessageFormat.format("Unable to fetch ledger entry for Atom ID %s", atomId);
+					log.error(message, e);
+				}
+
+				 atomCursorStatus = atomCursor.getNext(atomSearchKey, null, LockMode.DEFAULT);
+			}
+
+			return ledgerEntries.build();
+		}
+	}
+
 	@Override
 	public SearchCursor search(LedgerIndexType type, StoreIndex index, LedgerSearchMode mode) {
 		Objects.requireNonNull(type, "type is required");

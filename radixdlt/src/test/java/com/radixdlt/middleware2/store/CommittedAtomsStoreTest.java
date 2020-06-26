@@ -20,9 +20,7 @@ package com.radixdlt.middleware2.store;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 import static org.powermock.api.mockito.PowerMockito.when;
 
 import com.google.common.collect.ImmutableList;
@@ -38,6 +36,7 @@ import com.radixdlt.middleware2.store.CommittedAtomsStore.AtomIndexer;
 import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.store.SearchCursor;
+import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import io.reactivex.rxjava3.observers.TestObserver;
 import java.util.Collections;
 import java.util.Optional;
@@ -56,7 +55,7 @@ public class CommittedAtomsStoreTest {
 
 	@Before
 	public void setUp() {
-		this.store = mock(LedgerEntryStore.class);
+		this.store = mock(LedgerEntryStore.class, withSettings().verboseLogging());
 		this.atomToBinaryConverter = mock(AtomToBinaryConverter.class);
 		this.atomIndexer = mock(AtomIndexer.class);
 		this.counters = mock(SystemCounters.class);

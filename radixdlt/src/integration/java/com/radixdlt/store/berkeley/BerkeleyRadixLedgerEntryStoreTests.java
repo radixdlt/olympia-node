@@ -17,6 +17,7 @@
 
 package com.radixdlt.store.berkeley;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.crypto.ECKeyPair;
@@ -81,6 +82,9 @@ public class BerkeleyRadixLedgerEntryStoreTests extends RadixTestWithStores {
             softly.assertThat(ledgerStore.getNextCommitted(ledgerEntries.get(0).getStateVersion() - 1, 1))
                 .contains(ledgerEntries.get(0).getAID());
 
+            softly.assertThat(ledgerStore.getNextCommittedLedgerEntries(ledgerEntries.get(0).getStateVersion() - 1, 1))
+                    .contains(ledgerEntries.get(0));
+
             // committed atom is committed
             softly.assertThat(ledgerStore.getStatus(ledgerEntries.get(0).getAID())).isEqualTo(LedgerEntryStatus.COMMITTED);
 
@@ -89,6 +93,40 @@ public class BerkeleyRadixLedgerEntryStoreTests extends RadixTestWithStores {
 
             //not added atom is absent in store
             softly.assertThat(ledgerStore.contains(ledgerEntries.get(1).getAID())).isFalse();
+        });
+    }
+
+    @Test
+    public void searchCommittedTest() {
+        SoftAssertions.assertSoftly(softly -> {
+            // setup by storing/committing atoms
+            for (int i=0; i < ledgerEntries.size(); ++i) {
+                ledgerStore.store(ledgerEntries.get(i), ImmutableSet.of(), ImmutableSet.of());
+                ledgerStore.commit(ledgerEntries.get(i).getAID());
+            }
+
+            // search for atoms singly
+            for (int i=0; i < ledgerEntries.size(); ++i) {
+                // committed atom can be queried by version
+                softly.assertThat(ledgerStore.getNextCommitted(ledgerEntries.get(i).getStateVersion() - 1, 1))
+                        .contains(ledgerEntries.get(i).getAID());
+
+                softly.assertThat(ledgerStore.getNextCommittedLedgerEntries(ledgerEntries.get(i).getStateVersion() - 1, 1))
+                        .contains(ledgerEntries.get(i));
+            }
+
+            softly.assertThat(ledgerStore.getNextCommittedLedgerEntries(ledgerEntries.get(0).getStateVersion()-1, 10)).size().isEqualTo(5);
+
+//            // use limit 2 and see if both returned
+//            for (int i=0; i < ledgerEntries.size()-2; ++i) {
+//                // committed atom can be queried by version
+//                softly.assertThat(ledgerStore.getNextCommitted(ledgerEntries.get(i).getStateVersion() - 1, 2))
+//                        .contains(ledgerEntries.get(i).getAID()).contains(ledgerEntries.get(i+i).getAID());
+//
+//                softly.assertThat(ledgerStore.getNextCommittedLedgerEntries(ledgerEntries.get(i).getStateVersion() - 1, 2))
+//                        .contains(ledgerEntries.get(i)).contains(ledgerEntries.get(i+1));
+//            }
+
         });
     }
 

@@ -90,4 +90,13 @@ public interface LedgerEntryStoreView {
 	 * @return The relevant aids
 	 */
 	ImmutableList<AID> getNextCommitted(long stateVersion, int limit);
+
+	/**
+	 * Retrieve a chunk of {@link LedgerEntry} with state version greater than the given one
+	 * in sequential order.
+	 * @param stateVersion the state version to use as a search parameter
+	 * @param limit the maximum count of ledger entries to return
+	 * @return ledger entries satisfying the constraints
+	 */
+	ImmutableList<LedgerEntry> getNextCommittedLedgerEntries(long stateVersion, int limit);
 }
