@@ -24,6 +24,7 @@ import com.radixdlt.consensus.simulation.checks.AllProposalsHaveDirectParentsChe
 import com.radixdlt.consensus.simulation.checks.LivenessCheck;
 import com.radixdlt.consensus.simulation.checks.NoSyncExceptionCheck;
 import com.radixdlt.consensus.simulation.checks.NoTimeoutCheck;
+import com.radixdlt.consensus.simulation.checks.NoneCommittedCheck;
 import com.radixdlt.consensus.simulation.checks.SafetyCheck;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
@@ -145,7 +146,7 @@ public class BFTSimulatedTest {
 		}
 
 		public Builder checkNoneCommitted(String checkName) {
-			this.checksBuilder.put(checkName, new AllProposalsHaveDirectParentsCheck());
+			this.checksBuilder.put(checkName, new NoneCommittedCheck());
 			return this;
 		}
 

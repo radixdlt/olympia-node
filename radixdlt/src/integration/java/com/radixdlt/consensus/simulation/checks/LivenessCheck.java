@@ -48,12 +48,13 @@ public class LivenessCheck implements BFTCheck {
 				.map(network::getVertexStore)
 				.map(VertexStore::getHighestQC)
 				.map(QuorumCertificate::getView)
-				.max(View::compareTo)
-				.get() // there must be some max highest QC unless allNodes is empty
+				.max(View::compareTo).orElse(View.genesis())
 			)
 			.concatMap(view -> {
 				if (view.compareTo(highestQCView.get()) <= 0) {
-					return Observable.just(new BFTCheckError(String.format("Highest QC hasn't increased from %s", highestQCView.get())));
+					return Observable.just(
+						new BFTCheckError(String.format("Highest QC hasn't increased from %s after %s %s", highestQCView.get(), duration, timeUnit))
+					);
 				} else {
 					highestQCView.set(view);
 					return Observable.empty();

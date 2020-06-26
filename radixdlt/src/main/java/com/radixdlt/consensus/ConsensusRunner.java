@@ -107,7 +107,9 @@ public final class ConsensusRunner {
 			localSyncRx.localSyncs().observeOn(singleThreadScheduler),
 			committedStateSyncRx.committedStateSyncs().observeOn(singleThreadScheduler)
 		));
-		final Observable<Event> ecMessages = eventCoordinatorEvents.map(this::processEvent);
+		final Observable<Event> ecMessages = eventCoordinatorEvents
+			.observeOn(singleThreadScheduler)
+			.map(this::processEvent);
 
 		this.events = ecMessages
 			.doOnError(e -> {
