@@ -62,9 +62,9 @@ public final class AID implements Comparable<AID> {
 		Objects.requireNonNull(array, "array is required");
 		if (array.length - offset < BYTES) {
 			throw new IllegalArgumentException(String.format(
-					"Array must be bigger than offset + %d but was %d",
-					BYTES, array.length)
-					);
+				"Array must be bigger than offset + %d but was %d",
+				BYTES, array.length)
+			);
 		}
 		System.arraycopy(this.value, 0, array, offset, BYTES);
 	}
@@ -120,9 +120,9 @@ public final class AID implements Comparable<AID> {
 		}
 		if (offset + BYTES > bytes.length) {
 			throw new IllegalArgumentException(String.format(
-					"Bytes length must be %d but is %d",
-					offset + BYTES, bytes.length)
-					);
+				"Bytes length must be %d but is %d",
+				offset + BYTES, bytes.length)
+			);
 		}
 		return new AID(Arrays.copyOfRange(bytes, offset, offset + BYTES));
 	}
@@ -136,12 +136,12 @@ public final class AID implements Comparable<AID> {
 		Objects.requireNonNull(hexBytes, "hexBytes is required");
 		if (hexBytes.length() != BYTES * 2) {
 			throw new IllegalArgumentException(String.format(
-					"Hex bytes string length must be %d but is %d",
-					BYTES * 2, hexBytes.length())
-					);
+				"Hex bytes string length must be %d but is %d",
+				BYTES * 2, hexBytes.length())
+			);
 		}
-		byte[] bytes = Bytes.fromHexString(hexBytes);
-		return new AID(bytes);
+
+		return new AID(Bytes.fromHexString(hexBytes));
 	}
 
 	@Override
