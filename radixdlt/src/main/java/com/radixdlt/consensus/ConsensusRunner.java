@@ -46,7 +46,7 @@ public final class ConsensusRunner {
 	private static final Logger log = LogManager.getLogger();
 
 	public enum EventType {
-		EPOCH,
+		EPOCH_CHANGE,
 		VALIDATOR_SET,
 		LOCAL_TIMEOUT,
 		LOCAL_SYNC,
@@ -126,7 +126,7 @@ public final class ConsensusRunner {
 		final EventType eventType;
 		if (msg instanceof EpochChange) {
 			epochManager.processEpochChange((EpochChange) msg);
-			return new Event(EventType.EPOCH, msg);
+			return new Event(EventType.EPOCH_CHANGE, msg);
 		} else if (msg instanceof GetVerticesRequest) {
 			epochManager.processGetVerticesRequest((GetVerticesRequest) msg);
 			return new Event(EventType.GET_VERTICES_REQUEST, msg);

@@ -20,6 +20,7 @@ package com.radixdlt.consensus.simulation;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.consensus.simulation.BFTCheck.BFTCheckError;
+import com.radixdlt.consensus.simulation.SimulatedBFTNetwork.RunningNetwork;
 import com.radixdlt.consensus.simulation.checks.AllProposalsHaveDirectParentsCheck;
 import com.radixdlt.consensus.simulation.checks.LivenessCheck;
 import com.radixdlt.consensus.simulation.checks.NoSyncExceptionCheck;
@@ -165,6 +166,36 @@ public class BFTSimulatedTest {
 		return new Builder();
 	}
 
+	private Observable<Pair<String, Optional<BFTCheckError>>> runChecks(RunningNetwork runningNetwork, long duration, TimeUnit timeUnit) {
+		List<Pair<String, Observable<Pair<String, BFTCheckError>>>> assertions = this.checks.keySet().stream()
+			.map(name -> {
+				BFTCheck check = this.checks.get(name);
+				return
+					Pair.of(
+						name,
+						check.check(runningNetwork).map(e -> Pair.of(name, e)).publish().autoConnect(2)
+					);
+			})
+			.collect(Collectors.toList());
+
+		Single<String> firstErrorSignal = Observable.merge(assertions.stream().map(Pair::getSecond).collect(Collectors.toList()))
+			.firstOrError()
+			.map(Pair::getFirst);
+
+		List<Single<Pair<String, Optional<BFTCheckError>>>> results = assertions.stream()
+			.map(assertion -> assertion.getSecond()
+				.takeUntil(firstErrorSignal.flatMapObservable(name ->
+					!assertion.getFirst().equals(name) ? Observable.just(name) : Observable.never()))
+				.takeUntil(Observable.timer(duration, timeUnit))
+				.map(e -> Optional.of(e.getSecond()))
+				.first(Optional.empty())
+				.map(result -> Pair.of(assertion.getFirst(), result))
+			)
+			.collect(Collectors.toList());
+
+		return Single.merge(results).toObservable();
+	}
+
 	/**
 	 * Runs the test for a given time. Returns either once the duration has passed or if a check has failed.
 	 * Returns a map from the check name to the result.
@@ -181,35 +212,7 @@ public class BFTSimulatedTest {
 
 		return bftNetwork.start()
 			.timeout(10, TimeUnit.SECONDS)
-			.flatMapObservable(startedNetwork -> {
-				List<Pair<String, Observable<Pair<String, BFTCheckError>>>> assertions = this.checks.keySet().stream()
-					.map(name -> {
-						BFTCheck check = this.checks.get(name);
-						return
-							Pair.of(
-								name,
-								check.check(startedNetwork).map(e -> Pair.of(name, e)).publish().autoConnect(2)
-							);
-					})
-					.collect(Collectors.toList());
-
-				Single<String> firstErrorSignal = Observable.merge(assertions.stream().map(Pair::getSecond).collect(Collectors.toList()))
-					.firstOrError()
-					.map(Pair::getFirst);
-
-				List<Single<Pair<String, Optional<BFTCheckError>>>> results = assertions.stream()
-					.map(assertion -> assertion.getSecond()
-						.takeUntil(firstErrorSignal.flatMapObservable(name ->
-							!assertion.getFirst().equals(name) ? Observable.just(name) : Observable.never()))
-						.takeUntil(Observable.timer(duration, timeUnit))
-						.map(e -> Optional.of(e.getSecond()))
-						.first(Optional.empty())
-						.map(result -> Pair.of(assertion.getFirst(), result))
-					)
-					.collect(Collectors.toList());
-
-				return Single.merge(results).toObservable();
-			})
+			.flatMapObservable(runningNetwork -> runChecks(runningNetwork, duration, timeUnit))
 			.doFinally(bftNetwork::stop)
 			.blockingStream()
 			.collect(Collectors.toMap(Pair::getFirst, Pair::getSecond));

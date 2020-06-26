@@ -37,7 +37,7 @@ public class FPlusOneOutOfBoundsTest {
 		.checkNoneCommitted("noneCommitted");
 
 	/**
-	 * Tests a configuration of 0 out of 3 nodes out of bounds
+	 * Tests a configuration of 0 out of 3 nodes out of synchrony bounds
 	 */
 	@Test
 	public void given_0_out_of_3_nodes_out_of_bounds() {
@@ -50,7 +50,7 @@ public class FPlusOneOutOfBoundsTest {
 	}
 
 	/**
-	 * Tests a configuration of 1 out of 3 nodes out of bounds
+	 * Tests a configuration of 1 out of 3 nodes out of synchrony bounds
 	 */
 	@Test
 	public void given_1_out_of_3_nodes_out_of_bounds() {

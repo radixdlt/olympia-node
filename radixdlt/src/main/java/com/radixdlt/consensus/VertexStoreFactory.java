@@ -17,6 +17,16 @@
 
 package com.radixdlt.consensus;
 
+/**
+ * A Vertex Store factory
+ */
 public interface VertexStoreFactory {
+
+	/**
+	 * Creates a new VertexStore given initial vertex and QC
+	 * @param genesisVertex the root vertex
+	 * @param genesisQC the root QC
+	 * @return a new VertexStore
+	 */
 	VertexStore create(Vertex genesisVertex, QuorumCertificate genesisQC);
 }

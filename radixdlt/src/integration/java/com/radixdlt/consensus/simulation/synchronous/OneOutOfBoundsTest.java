@@ -39,7 +39,7 @@ public class OneOutOfBoundsTest {
 		.checkSafety("safety");
 
 	/**
-	 * Tests a configuration of 1 out of 4 nodes out of bounds
+	 * Tests a configuration of 1 out of 4 nodes out of synchrony bounds
 	 */
 	@Test
 	public void given_1_out_of_4_nodes_out_of_bounds() {

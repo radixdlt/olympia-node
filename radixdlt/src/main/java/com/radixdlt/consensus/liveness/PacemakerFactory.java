@@ -17,6 +17,14 @@
 
 package com.radixdlt.consensus.liveness;
 
+/**
+ * Pacemaker factory
+ */
 public interface PacemakerFactory {
+
+	/**
+	 * Creates a new clean pacemaker
+	 * @return a new pacemaker
+	 */
 	Pacemaker create();
 }

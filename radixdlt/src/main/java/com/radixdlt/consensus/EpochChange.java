@@ -19,6 +19,9 @@ package com.radixdlt.consensus;
 
 import com.radixdlt.consensus.validators.ValidatorSet;
 
+/**
+ * An epoch change message to consensus
+ */
 public final class EpochChange {
 	private final VertexMetadata ancestor;
 	private final ValidatorSet validatorSet;

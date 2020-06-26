@@ -25,6 +25,9 @@ import io.reactivex.rxjava3.core.Observable;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Basic Epoch Change which emits an epoch with a known ancestor vertex and a list of nodes
+ */
 public final class BasicEpochChangeRx implements EpochChangeRx {
 	private final ValidatorSet validatorSet;
 	private final VertexMetadata ancestor;

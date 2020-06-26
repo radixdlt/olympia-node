@@ -179,6 +179,7 @@ public class SimulatedBFTNetwork {
 		return pacemakerTimeout;
 	}
 
+	// TODO: Add support for epoch changes
 	public interface RunningNetwork {
 		Vertex getGenesisVertex();
 
@@ -197,7 +198,7 @@ public class SimulatedBFTNetwork {
 		List<Completable> startedList = this.runners.values().stream()
 			.map(ConsensusRunner::events)
 			.map(o -> o.map(Event::getEventType)
-				.filter(e -> e.equals(EventType.EPOCH))
+				.filter(e -> e.equals(EventType.EPOCH_CHANGE))
 				.firstOrError()
 				.ignoreElement()
 			).collect(Collectors.toList());

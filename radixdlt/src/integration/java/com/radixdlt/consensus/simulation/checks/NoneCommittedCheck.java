@@ -23,6 +23,9 @@ import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.stream.Collectors;
 
+/**
+ * Checks that the network never commits a new vertex
+ */
 public class NoneCommittedCheck implements BFTCheck {
 	@Override
 	public Observable<BFTCheckError> check(RunningNetwork network) {
