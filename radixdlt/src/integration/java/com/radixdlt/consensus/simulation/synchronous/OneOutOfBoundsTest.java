@@ -42,7 +42,7 @@ public class OneOutOfBoundsTest {
 	 * Tests a configuration of 1 out of 4 nodes out of synchrony bounds
 	 */
 	@Test
-	public void given_1_out_of_4_nodes_out_of_bounds() {
+	public void given_1_out_of_4_nodes_out_of_synchrony_bounds() {
 		BFTSimulatedTest test = bftTestBuilder
 			.numNodesAndLatencies(4, latency, latency, latency, outOfBoundsLatency)
 			.build();

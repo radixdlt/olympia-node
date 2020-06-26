@@ -19,10 +19,8 @@ package com.radixdlt.consensus;
 
 import com.google.inject.Inject;
 
-import com.radixdlt.consensus.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.liveness.PacemakerRx;
 
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.utils.ThreadFactories;
 
 import io.reactivex.rxjava3.core.Observable;
@@ -47,13 +45,10 @@ public final class ConsensusRunner {
 
 	public enum EventType {
 		EPOCH_CHANGE,
-		VALIDATOR_SET,
 		LOCAL_TIMEOUT,
 		LOCAL_SYNC,
 		COMMITTED_STATE_SYNC,
-		NEW_VIEW_MESSAGE,
-		PROPOSAL_MESSAGE,
-		VOTE_MESSAGE,
+		CONSENSUS_EVENT,
 		GET_VERTICES_REQUEST,
 		GET_VERTICES_RESPONSE,
 	}
@@ -82,7 +77,6 @@ public final class ConsensusRunner {
 	private final ExecutorService singleThreadExecutor;
 	private final Scheduler singleThreadScheduler;
 	private Disposable disposable;
-	private final EpochManager epochManager;
 
 	@Inject
 	public ConsensusRunner(
@@ -96,22 +90,53 @@ public final class ConsensusRunner {
 	) {
 		this.singleThreadExecutor = Executors.newSingleThreadExecutor(ThreadFactories.daemonThreads("ConsensusRunner"));
 		this.singleThreadScheduler = Schedulers.from(this.singleThreadExecutor);
-		this.epochManager = epochManager;
 
-		final Observable<Object> eventCoordinatorEvents = Observable.merge(Arrays.asList(
-			epochChangeRx.epochChanges().observeOn(singleThreadScheduler),
-			pacemakerRx.localTimeouts().observeOn(singleThreadScheduler),
-			networkRx.consensusEvents().observeOn(singleThreadScheduler),
-			rpcRx.requests().observeOn(singleThreadScheduler),
-			rpcRx.responses().observeOn(singleThreadScheduler),
-			localSyncRx.localSyncs().observeOn(singleThreadScheduler),
-			committedStateSyncRx.committedStateSyncs().observeOn(singleThreadScheduler)
+		final Observable<Event> eventCoordinatorEvents = Observable.merge(Arrays.asList(
+			epochChangeRx.epochChanges()
+				.observeOn(singleThreadScheduler)
+				.map(e -> {
+					epochManager.processEpochChange(e);
+					return new Event(EventType.EPOCH_CHANGE, e);
+				}),
+			pacemakerRx.localTimeouts()
+				.observeOn(singleThreadScheduler)
+				.map(e -> {
+					epochManager.processLocalTimeout(e);
+					return new Event(EventType.LOCAL_TIMEOUT, e);
+				}),
+			networkRx.consensusEvents()
+				.observeOn(singleThreadScheduler)
+				.map(e -> {
+					epochManager.processConsensusEvent(e);
+					return new Event(EventType.CONSENSUS_EVENT, e);
+				}),
+			rpcRx.requests()
+				.observeOn(singleThreadScheduler)
+				.map(e -> {
+					epochManager.processGetVerticesRequest(e);
+					return new Event(EventType.GET_VERTICES_REQUEST, e);
+				}),
+			rpcRx.responses()
+				.observeOn(singleThreadScheduler)
+				.map(e -> {
+					epochManager.processGetVerticesResponse(e);
+					return new Event(EventType.GET_VERTICES_RESPONSE, e);
+				}),
+			localSyncRx.localSyncs()
+				.observeOn(singleThreadScheduler)
+				.map(e -> {
+					epochManager.processLocalSync(e);
+					return new Event(EventType.LOCAL_SYNC, e);
+				}),
+			committedStateSyncRx.committedStateSyncs()
+				.observeOn(singleThreadScheduler)
+				.map(e -> {
+					epochManager.processCommittedStateSync(e);
+					return new Event(EventType.COMMITTED_STATE_SYNC, e);
+				})
 		));
-		final Observable<Event> ecMessages = eventCoordinatorEvents
-			.observeOn(singleThreadScheduler)
-			.map(this::processEvent);
 
-		this.events = ecMessages
+		this.events = eventCoordinatorEvents
 			.doOnError(e -> {
 				// TODO: Implement better error handling especially against Byzantine nodes.
 				// TODO: Exit process for now.
@@ -119,43 +144,6 @@ public final class ConsensusRunner {
 				System.exit(-1);
 			})
 			.publish();
-	}
-
-	// TODO: Cleanup
-	private Event processEvent(Object msg) {
-		final EventType eventType;
-		if (msg instanceof EpochChange) {
-			epochManager.processEpochChange((EpochChange) msg);
-			return new Event(EventType.EPOCH_CHANGE, msg);
-		} else if (msg instanceof GetVerticesRequest) {
-			epochManager.processGetVerticesRequest((GetVerticesRequest) msg);
-			return new Event(EventType.GET_VERTICES_REQUEST, msg);
-		} else if (msg instanceof GetVerticesResponse) {
-			epochManager.processGetVerticesResponse((GetVerticesResponse) msg);
-			return new Event(EventType.GET_VERTICES_RESPONSE, msg);
-		} else if (msg instanceof View) {
-			epochManager.processLocalTimeout((View) msg);
-			return new Event(EventType.LOCAL_TIMEOUT, msg);
-		} else if (msg instanceof NewView) {
-			epochManager.processConsensusEvent((NewView) msg);
-			eventType = EventType.NEW_VIEW_MESSAGE;
-		} else if (msg instanceof Proposal) {
-			epochManager.processConsensusEvent((Proposal) msg);
-			eventType = EventType.PROPOSAL_MESSAGE;
-		} else if (msg instanceof Vote) {
-			epochManager.processConsensusEvent((Vote) msg);
-			eventType = EventType.VOTE_MESSAGE;
-		} else if (msg instanceof Hash) {
-			epochManager.processLocalSync((Hash) msg);
-			eventType = EventType.LOCAL_SYNC;
-		} else if (msg instanceof CommittedStateSync) {
-			epochManager.processCommittedStateSync((CommittedStateSync) msg);
-			eventType = EventType.COMMITTED_STATE_SYNC;
-		} else {
-			throw new IllegalStateException("Unknown Consensus Message: " + msg);
-		}
-
-		return new Event(eventType, msg);
 	}
 
 	/**
