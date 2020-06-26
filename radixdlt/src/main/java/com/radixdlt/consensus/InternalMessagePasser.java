@@ -17,9 +17,7 @@
 
 package com.radixdlt.consensus;
 
-import com.google.inject.Inject;
-import com.google.inject.Singleton;
-import com.radixdlt.consensus.VertexStore.SyncSender;
+import com.radixdlt.consensus.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.sync.SyncedRadixEngine.CommittedStateSyncSender;
 import com.radixdlt.crypto.Hash;
 import io.reactivex.rxjava3.core.Observable;
@@ -29,27 +27,37 @@ import io.reactivex.rxjava3.subjects.Subject;
 /**
  * Acts as the "ether" to messages passed from sender to receiver
  */
-@Singleton
-public final class InternalMessagePasser implements LocalSyncRx, SyncSender, CommittedStateSyncSender, CommittedStateSyncRx {
+public final class InternalMessagePasser implements VertexStoreEventsRx, VertexStoreEventSender, CommittedStateSyncSender, CommittedStateSyncRx {
 	private final Subject<Hash> localSyncsSubject = BehaviorSubject.<Hash>create().toSerialized();
 	private final Subject<CommittedStateSync> committedStateSyncsSubject = BehaviorSubject.<CommittedStateSync>create().toSerialized();
 	private final Observable<Hash> localSyncs;
 	private final Observable<CommittedStateSync> committedStateSyncs;
+	private final Subject<Vertex> committedVertices = BehaviorSubject.<Vertex>create().toSerialized();
+	private final Subject<QuorumCertificate> highQCs = BehaviorSubject.<QuorumCertificate>create().toSerialized();
 
-	@Inject
 	public InternalMessagePasser() {
 		this.localSyncs = localSyncsSubject.publish().refCount();
 		this.committedStateSyncs = committedStateSyncsSubject.publish().refCount();
 	}
 
 	@Override
-	public Observable<Hash> localSyncs() {
+	public Observable<Hash> syncedVertices() {
 		return localSyncs;
 	}
 
 	@Override
-	public void synced(Hash vertexId) {
-		localSyncsSubject.onNext(vertexId);
+	public Observable<Vertex> committedVertices() {
+		return committedVertices;
+	}
+
+	@Override
+	public Observable<QuorumCertificate> highQCs() {
+		return highQCs;
+	}
+
+	@Override
+	public void syncedVertex(Vertex vertex) {
+		localSyncsSubject.onNext(vertex.getId());
 	}
 
 	@Override
@@ -60,5 +68,15 @@ public final class InternalMessagePasser implements LocalSyncRx, SyncSender, Com
 	@Override
 	public void sendCommittedStateSync(long stateVersion, Object opaque) {
 		committedStateSyncsSubject.onNext(new CommittedStateSync(stateVersion, opaque));
+	}
+
+	@Override
+	public void committedVertex(Vertex vertex) {
+		committedVertices.onNext(vertex);
+	}
+
+	@Override
+	public void highQC(QuorumCertificate qc) {
+		highQCs.onNext(qc);
 	}
 }

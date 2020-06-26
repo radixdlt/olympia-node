@@ -18,6 +18,7 @@
 package com.radixdlt.consensus;
 
 import static org.mockito.Mockito.mock;
+import static org.powermock.api.mockito.PowerMockito.when;
 
 import com.radixdlt.crypto.Hash;
 import io.reactivex.rxjava3.observers.TestObserver;
@@ -27,9 +28,11 @@ public class InternalMessagePasserTest {
 	@Test
 	public void when_send_sync_event__then_should_receive_it() {
 		InternalMessagePasser internalMessagePasser = new InternalMessagePasser();
-		TestObserver<Hash> testObserver = internalMessagePasser.localSyncs().test();
+		TestObserver<Hash> testObserver = internalMessagePasser.syncedVertices().test();
 		Hash hash = mock(Hash.class);
-		internalMessagePasser.synced(hash);
+		Vertex vertex = mock(Vertex.class);
+		when(vertex.getId()).thenReturn(hash);
+		internalMessagePasser.syncedVertex(vertex);
 		testObserver.awaitCount(1);
 		testObserver.assertValue(hash);
 		testObserver.assertNotComplete();

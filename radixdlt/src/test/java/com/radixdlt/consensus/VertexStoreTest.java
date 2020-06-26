@@ -25,20 +25,20 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.VertexStore.GetVerticesRequest;
-import com.radixdlt.consensus.VertexStore.SyncSender;
+import com.radixdlt.consensus.VertexStore.VertexStoreEventSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.CommittedAtom;
-import io.reactivex.rxjava3.observers.TestObserver;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicLong;
@@ -57,7 +57,7 @@ public class VertexStoreTest {
 	private QuorumCertificate rootQC;
 	private VertexStore vertexStore;
 	private SyncedStateComputer<CommittedAtom> syncedStateComputer;
-	private SyncSender syncSender;
+	private VertexStoreEventSender vertexStoreEventSender;
 	private SyncVerticesRPCSender syncVerticesRPCSender;
 	private SystemCounters counters;
 
@@ -72,9 +72,9 @@ public class VertexStoreTest {
 		SyncedStateComputer<CommittedAtom> ssc = mock(SyncedStateComputer.class);
 		this.syncedStateComputer = ssc;
 		this.syncVerticesRPCSender = mock(SyncVerticesRPCSender.class);
-		this.syncSender = mock(SyncSender.class);
+		this.vertexStoreEventSender = mock(VertexStoreEventSender.class);
 		this.counters = mock(SystemCounters.class);
-		this.vertexStore = new VertexStore(genesisVertex, rootQC, syncedStateComputer, syncVerticesRPCSender, syncSender, counters);
+		this.vertexStore = new VertexStore(genesisVertex, rootQC, syncedStateComputer, syncVerticesRPCSender, vertexStoreEventSender, counters);
 
 		AtomicReference<Vertex> lastVertex = new AtomicReference<>(genesisVertex);
 
@@ -111,8 +111,9 @@ public class VertexStoreTest {
 
 		VoteData voteData = new VoteData(nextVertexMetadata, genesisVertexMetadata, null);
 		QuorumCertificate badRootQC = new QuorumCertificate(voteData, new ECDSASignatures());
-		assertThatThrownBy(() -> new VertexStore(genesisVertex, badRootQC, syncedStateComputer, syncVerticesRPCSender, syncSender, counters))
-			.isInstanceOf(IllegalStateException.class);
+		assertThatThrownBy(() -> {
+			new VertexStore(genesisVertex, badRootQC, syncedStateComputer, syncVerticesRPCSender, vertexStoreEventSender, counters);
+		}).isInstanceOf(IllegalStateException.class);
 	}
 
 	@Test
@@ -123,8 +124,7 @@ public class VertexStoreTest {
 			rootQC,
 			Collections.singletonList(nextVertex),
 			syncedStateComputer,
-			syncVerticesRPCSender,
-			syncSender,
+			syncVerticesRPCSender, vertexStoreEventSender,
 			counters
 		);
 	}
@@ -139,8 +139,7 @@ public class VertexStoreTest {
 				rootQC,
 				Collections.singletonList(this.nextVertex.get()),
 				syncedStateComputer,
-				syncVerticesRPCSender,
-				syncSender,
+				syncVerticesRPCSender, vertexStoreEventSender,
 				counters
 			)
 		).isInstanceOf(IllegalStateException.class);
@@ -168,7 +167,7 @@ public class VertexStoreTest {
 		GetVerticesResponse getVerticesResponse = new GetVerticesResponse(vertex.getId(), Collections.singletonList(vertex), opaque.get());
 		vertexStore.processGetVerticesResponse(getVerticesResponse);
 
-		verify(syncSender, times(1)).synced(eq(vertex.getId()));
+		verify(vertexStoreEventSender, times(1)).syncedVertex(eq(vertex));
 		assertThat(vertexStore.getHighestQC()).isEqualTo(qc);
 	}
 
@@ -206,8 +205,7 @@ public class VertexStoreTest {
 				rootQC,
 				Arrays.asList(vertex1, vertex2, vertex3, vertex4, vertex5),
 				syncedStateComputer,
-				syncVerticesRPCSender,
-				syncSender,
+				syncVerticesRPCSender, vertexStoreEventSender,
 				counters
 			);
 
@@ -225,9 +223,7 @@ public class VertexStoreTest {
 		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), null);
 		vertexStore.insertVertex(nextVertex);
 
-		TestObserver<Vertex> testObserver = TestObserver.create();
-		vertexStore.lastCommittedVertex().subscribe(testObserver);
-		testObserver.assertEmpty();
+		verify(vertexStoreEventSender, never()).committedVertex(any());
 		verify(syncedStateComputer, times(0)).execute(any()); // not stored
 	}
 
@@ -237,17 +233,14 @@ public class VertexStoreTest {
 		ClientAtom clientAtom = mock(ClientAtom.class);
 		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), clientAtom);
 		vertexStore.insertVertex(nextVertex);
-		TestObserver<Vertex> testObserver = TestObserver.create();
-		vertexStore.lastCommittedVertex().subscribe(testObserver);
-		testObserver.awaitCount(1); // genesis first
 
 		VertexMetadata vertexMetadata = VertexMetadata.ofVertex(nextVertex);
 		CommittedAtom committedAtom = mock(CommittedAtom.class);
 		when(clientAtom.committed(eq(vertexMetadata))).thenReturn(committedAtom);
 		assertThat(vertexStore.commitVertex(vertexMetadata)).hasValue(nextVertex);
-		testObserver.awaitCount(1); // both committed
-		testObserver.assertValues(nextVertex);
 
+		verify(vertexStoreEventSender, times(1))
+			.committedVertex(eq(nextVertex));
 		verify(syncedStateComputer, times(1))
 			.execute(eq(committedAtom)); // next atom stored
 	}
@@ -268,22 +261,15 @@ public class VertexStoreTest {
 		Vertex vertex = nextVertex.get();
 		vertexStore.insertVertex(vertex);
 
-		TestObserver<Vertex> testObserver = TestObserver.create();
-		vertexStore.lastCommittedVertex().subscribe(testObserver);
-		testObserver.awaitCount(1);
-
 		VertexMetadata vertexMetadata = VertexMetadata.ofVertex(vertex);
 		assertThat(vertexStore.commitVertex(vertexMetadata)).hasValue(vertex);
-		testObserver.awaitCount(1);
-		testObserver.assertValues(vertex);
+		verify(vertexStoreEventSender, times(1)).committedVertex(eq(vertex));
 		assertThat(vertexStore.getSize()).isEqualTo(1);
 	}
 
 	@Test
 	public void when_insert_and_commit_vertex_2x__then_committed_vertex_should_emit_in_order_and_store_should_have_size_1()
 		throws Exception {
-		TestObserver<Vertex> testObserver = TestObserver.create();
-		vertexStore.lastCommittedVertex().subscribe(testObserver);
 
 		Vertex nextVertex1 = nextVertex.get();
 		vertexStore.insertVertex(nextVertex1);
@@ -295,8 +281,9 @@ public class VertexStoreTest {
 		VertexMetadata vertexMetadata2 = VertexMetadata.ofVertex(nextVertex2);
 		vertexStore.commitVertex(vertexMetadata2);
 
-		testObserver.awaitCount(2);
-		testObserver.assertValues(nextVertex1, nextVertex2);
+		verify(vertexStoreEventSender, times(1)).committedVertex(eq(nextVertex1));
+		verify(vertexStoreEventSender, times(1)).committedVertex(eq(nextVertex2));
+		assertThat(vertexStore.getSize()).isEqualTo(1);
 		assertThat(vertexStore.getSize()).isEqualTo(1);
 	}
 
@@ -311,14 +298,10 @@ public class VertexStoreTest {
 		Vertex nextVertex2 = nextVertex.get();
 		vertexStore.insertVertex(nextVertex2);
 
-		TestObserver<Vertex> testObserver = TestObserver.create();
-		vertexStore.lastCommittedVertex().subscribe(testObserver);
-		testObserver.awaitCount(1);
-
 		VertexMetadata vertexMetadata2 = VertexMetadata.ofVertex(nextVertex2);
 		vertexStore.commitVertex(vertexMetadata2);
-		testObserver.awaitCount(2);
-		testObserver.assertValues(nextVertex1, nextVertex2);
+		verify(vertexStoreEventSender, times(1)).committedVertex(eq(nextVertex1));
+		verify(vertexStoreEventSender, times(1)).committedVertex(eq(nextVertex2));
 		assertThat(vertexStore.getSize()).isEqualTo(1);
 	}
 
@@ -330,7 +313,7 @@ public class VertexStoreTest {
 
 		assertThat(vertexStore.syncToQC(qc, vertexStore.getHighestCommittedQC(), mock(ECPublicKey.class))).isFalse();
 		vertexStore.insertVertex(vertex);
-		verify(syncSender, times(1)).synced(eq(vertex.getId()));
+		verify(vertexStoreEventSender, times(1)).syncedVertex(eq(vertex));
 	}
 
 	@Test
@@ -365,8 +348,7 @@ public class VertexStoreTest {
 				rootQC,
 				Arrays.asList(vertex1, vertex2),
 				syncedStateComputer,
-				syncVerticesRPCSender,
-				syncSender,
+				syncVerticesRPCSender, vertexStoreEventSender,
 				counters
 			);
 
@@ -391,8 +373,7 @@ public class VertexStoreTest {
 				rootQC,
 				Arrays.asList(vertex1, vertex2, vertex3, vertex4),
 				syncedStateComputer,
-				syncVerticesRPCSender,
-				syncSender,
+				syncVerticesRPCSender, vertexStoreEventSender,
 				counters
 			);
 
@@ -417,8 +398,7 @@ public class VertexStoreTest {
 				rootQC,
 				Arrays.asList(vertex1, vertex2, vertex3, vertex4),
 				syncedStateComputer,
-				syncVerticesRPCSender,
-				syncSender,
+				syncVerticesRPCSender, vertexStoreEventSender,
 				counters
 			);
 
@@ -446,8 +426,7 @@ public class VertexStoreTest {
 				rootQC,
 				Arrays.asList(vertex1, vertex2),
 				syncedStateComputer,
-				syncVerticesRPCSender,
-				syncSender,
+				syncVerticesRPCSender, vertexStoreEventSender,
 				counters
 			);
 
@@ -473,7 +452,7 @@ public class VertexStoreTest {
 
 
 		assertThat(vertexStore.getHighestQC()).isEqualTo(vertex5.getQC());
-		verify(syncSender, times(1)).synced(eq(vertex4.getId()));
+		verify(vertexStoreEventSender, times(1)).syncedVertex(eq(vertex4));
 	}
 
 	@Test
@@ -489,8 +468,7 @@ public class VertexStoreTest {
 				rootQC,
 				Arrays.asList(vertex1, vertex2, vertex3, vertex4),
 				syncedStateComputer,
-				syncVerticesRPCSender,
-				syncSender,
+				syncVerticesRPCSender, vertexStoreEventSender,
 				counters
 			);
 

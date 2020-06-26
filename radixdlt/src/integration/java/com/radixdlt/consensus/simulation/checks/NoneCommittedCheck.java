@@ -31,8 +31,7 @@ public class NoneCommittedCheck implements BFTCheck {
 	public Observable<BFTCheckError> check(RunningNetwork network) {
 		return Observable.merge(
 			network.getNodes().stream().map(
-				node -> network.getVertexStore(node)
-					.lastCommittedVertex().map(v -> Pair.of(node, v)))
+				node -> network.getVertexStoreEvents(node).committedVertices().map(v -> Pair.of(node, v)))
 				.collect(Collectors.toList())
 		).map(pair -> new BFTCheckError(pair.getFirst() + " node committed a vertex " + pair.getSecond()));
 	}

@@ -78,10 +78,9 @@ public class SafetyCheck implements BFTCheck {
 
 		return Observable.merge(
 			network.getNodes().stream().map(
-				node -> network.getVertexStore(node)
-					.lastCommittedVertex().map(v -> Pair.of(node, v)))
+				node -> network.getVertexStoreEvents(node).committedVertices().map(v -> Pair.of(node, v)))
 				.collect(Collectors.toList())
-		)
+			)
 			.flatMap(nodeAndVertex -> {
 				final ECKeyPair node = nodeAndVertex.getFirst();
 				final Vertex vertex = nodeAndVertex.getSecond();

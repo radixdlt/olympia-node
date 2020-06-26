@@ -28,13 +28,13 @@ import com.radixdlt.consensus.CommittedStateSyncRx;
 import com.radixdlt.consensus.DefaultHasher;
 import com.radixdlt.consensus.EpochChangeRx;
 import com.radixdlt.consensus.EventCoordinatorNetworkRx;
-import com.radixdlt.consensus.LocalSyncRx;
+import com.radixdlt.consensus.VertexStoreEventsRx;
 import com.radixdlt.consensus.InternalMessagePasser;
 import com.radixdlt.consensus.ProposerElectionFactory;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
 import com.radixdlt.consensus.VertexStore;
-import com.radixdlt.consensus.VertexStore.SyncSender;
+import com.radixdlt.consensus.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.SyncVerticesRPCSender;
 import com.radixdlt.consensus.VertexStoreFactory;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker.TimeoutSender;
@@ -76,8 +76,8 @@ public class CerberusModule extends AbstractModule {
 		bind(TimeoutSender.class).to(ScheduledTimeoutSender.class);
 		bind(PacemakerRx.class).to(ScheduledTimeoutSender.class);
 
-		bind(LocalSyncRx.class).to(InternalMessagePasser.class);
-		bind(SyncSender.class).to(InternalMessagePasser.class);
+		bind(VertexStoreEventsRx.class).to(InternalMessagePasser.class);
+		bind(VertexStoreEventSender.class).to(InternalMessagePasser.class);
 		bind(CommittedStateSyncSender.class).to(InternalMessagePasser.class);
 		bind(CommittedStateSyncRx.class).to(InternalMessagePasser.class);
 
@@ -95,6 +95,11 @@ public class CerberusModule extends AbstractModule {
 		bind(Hasher.class).to(DefaultHasher.class);
 	}
 
+	@Provides
+	@Singleton
+	private InternalMessagePasser internalMessagePasser() {
+		return new InternalMessagePasser();
+	}
 
 	@Provides
 	@Singleton
@@ -135,11 +140,16 @@ public class CerberusModule extends AbstractModule {
 	private VertexStoreFactory vertexStoreFactory(
 		SyncedRadixEngine syncedRadixEngine,
 		SyncVerticesRPCSender syncVerticesRPCSender,
-		SyncSender syncSender,
+		VertexStoreEventSender vertexStoreEventSender,
 		SystemCounters counters
 	) {
 		return (genesisVertex, genesisQC) -> new VertexStore(
-			genesisVertex, genesisQC, syncedRadixEngine, syncVerticesRPCSender, syncSender, counters
+			genesisVertex,
+			genesisQC,
+			syncedRadixEngine,
+			syncVerticesRPCSender,
+			vertexStoreEventSender,
+			counters
 		);
 	}
 }

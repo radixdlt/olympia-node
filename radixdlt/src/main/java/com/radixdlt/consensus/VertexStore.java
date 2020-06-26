@@ -24,9 +24,6 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 
 import com.radixdlt.middleware2.CommittedAtom;
-import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.subjects.BehaviorSubject;
-import io.reactivex.rxjava3.subjects.Subject;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -55,12 +52,14 @@ public final class VertexStore {
 		int getCount();
 	}
 
-	public interface SyncSender {
-		void synced(Hash vertexId);
+	public interface VertexStoreEventSender {
+		void syncedVertex(Vertex vertex);
+		void committedVertex(Vertex vertex);
+		void highQC(QuorumCertificate qc);
 	}
 
-	private final Subject<Vertex> lastCommittedVertex = BehaviorSubject.<Vertex>create().toSerialized();
-	private final SyncSender syncSender;
+
+	private final VertexStoreEventSender vertexStoreEventSender;
 	private final SyncVerticesRPCSender syncVerticesRPCSender;
 	private final SyncedStateComputer<CommittedAtom> syncedStateComputer;
 	private final SystemCounters counters;
@@ -78,10 +77,18 @@ public final class VertexStore {
 		QuorumCertificate rootQC,
 		SyncedStateComputer<CommittedAtom> syncedStateComputer,
 		SyncVerticesRPCSender syncVerticesRPCSender,
-		SyncSender syncSender,
+		VertexStoreEventSender vertexStoreEventSender,
 		SystemCounters counters
 	) {
-		this(rootVertex, rootQC, Collections.emptyList(), syncedStateComputer, syncVerticesRPCSender, syncSender, counters);
+		this(
+			rootVertex,
+			rootQC,
+			Collections.emptyList(),
+			syncedStateComputer,
+			syncVerticesRPCSender,
+			vertexStoreEventSender,
+			counters
+		);
 	}
 
 	public VertexStore(
@@ -90,12 +97,12 @@ public final class VertexStore {
 		List<Vertex> vertices,
 		SyncedStateComputer<CommittedAtom> syncedStateComputer,
 		SyncVerticesRPCSender syncVerticesRPCSender,
-		SyncSender syncSender,
+		VertexStoreEventSender vertexStoreEventSender,
 		SystemCounters counters
 	) {
 		this.syncedStateComputer = Objects.requireNonNull(syncedStateComputer);
 		this.syncVerticesRPCSender = Objects.requireNonNull(syncVerticesRPCSender);
-		this.syncSender = Objects.requireNonNull(syncSender);
+		this.vertexStoreEventSender = Objects.requireNonNull(vertexStoreEventSender);
 		this.counters = Objects.requireNonNull(counters);
 
 		Objects.requireNonNull(rootVertex);
@@ -122,6 +129,7 @@ public final class VertexStore {
 		this.vertices.clear();
 		this.rootId.set(rootVertex.getId());
 		this.highestQC.set(rootQC);
+		this.vertexStoreEventSender.highQC(rootQC);
 		this.highestCommittedQC.set(rootCommitQC);
 		this.vertices.put(rootVertex.getId(), rootVertex);
 
@@ -369,6 +377,7 @@ public final class VertexStore {
 
 		if (highestQC.get().getView().compareTo(qc.getView()) < 0) {
 			highestQC.set(qc);
+			vertexStoreEventSender.highQC(qc);
 		}
 
 		qc.getCommitted().ifPresent(vertexMetadata -> {
@@ -400,7 +409,7 @@ public final class VertexStore {
 		updateVertexStoreSize();
 
 		if (syncing.containsKey(vertex.getId())) {
-			syncSender.synced(vertex.getId());
+			vertexStoreEventSender.syncedVertex(vertex);
 		}
 	}
 
@@ -440,17 +449,13 @@ public final class VertexStore {
 				syncedStateComputer.execute(committedAtom);
 			}
 
-			lastCommittedVertex.onNext(committed);
+			this.vertexStoreEventSender.committedVertex(committed);
 		}
 
 		rootId.set(commitMetadata.getId());
 
 		updateVertexStoreSize();
 		return Optional.of(tipVertex);
-	}
-
-	public Observable<Vertex> lastCommittedVertex() {
-		return lastCommittedVertex;
 	}
 
 	public List<Vertex> getPathFromRoot(Hash vertexId) {

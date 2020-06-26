@@ -83,7 +83,7 @@ public final class ConsensusRunner {
 		EpochChangeRx epochChangeRx,
 		EventCoordinatorNetworkRx networkRx,
 		PacemakerRx pacemakerRx,
-		LocalSyncRx localSyncRx,
+		VertexStoreEventsRx vertexStoreEventsRx,
 		CommittedStateSyncRx committedStateSyncRx,
 		SyncVerticesRPCRx rpcRx,
 		EpochManager epochManager
@@ -122,7 +122,7 @@ public final class ConsensusRunner {
 					epochManager.processGetVerticesResponse(e);
 					return new Event(EventType.GET_VERTICES_RESPONSE, e);
 				}),
-			localSyncRx.localSyncs()
+			vertexStoreEventsRx.syncedVertices()
 				.observeOn(singleThreadScheduler)
 				.map(e -> {
 					epochManager.processLocalSync(e);

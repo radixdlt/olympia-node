@@ -21,14 +21,25 @@ import com.radixdlt.crypto.Hash;
 import io.reactivex.rxjava3.core.Observable;
 
 /**
- * Provider of Rx stream of local syncs which are emitted when
- * the underlying VertexStore has synced to the vertex with the given hash.
+ * Provider of Rx stream of events coming from Vertex Store
  */
-public interface LocalSyncRx {
+public interface VertexStoreEventsRx {
 
 	/**
 	 * Retrieve rx flow of vertex hashes
 	 * @return flow of vertex hashes
 	 */
-	Observable<Hash> localSyncs();
+	Observable<Hash> syncedVertices();
+
+	/**
+	 * Retrieve rx flow of vertices which have been committed
+	 * @return flow of vertices
+	 */
+	Observable<Vertex> committedVertices();
+
+	/**
+	 * Retrieve rx flow of highest QCS
+	 * @return flow of qcs
+	 */
+	Observable<QuorumCertificate> highQCs();
 }

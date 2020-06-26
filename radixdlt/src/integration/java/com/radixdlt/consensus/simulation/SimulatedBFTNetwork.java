@@ -32,6 +32,7 @@ import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexStore;
 import com.radixdlt.consensus.SyncVerticesRPCSender;
+import com.radixdlt.consensus.VertexStoreEventsRx;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.ScheduledTimeoutSender;
@@ -70,7 +71,7 @@ public class SimulatedBFTNetwork {
 	private final TestEventCoordinatorNetwork underlyingNetwork;
 	private final ImmutableMap<ECKeyPair, SystemCounters> counters;
 	private final ImmutableMap<ECKeyPair, ScheduledTimeoutSender> timeoutSenders;
-	private final ImmutableMap<ECKeyPair, InternalMessagePasser> syncSenders;
+	private final ImmutableMap<ECKeyPair, InternalMessagePasser> internalMessages;
 	private final ImmutableMap<ECKeyPair, FixedTimeoutPacemaker> pacemakers;
 	private final ImmutableMap<ECKeyPair, ConsensusRunner> runners;
 	private final ConcurrentMap<ECKeyPair, VertexStore> vertexStores;
@@ -104,7 +105,7 @@ public class SimulatedBFTNetwork {
 		this.underlyingNetwork = Objects.requireNonNull(underlyingNetwork);
 		this.pacemakerTimeout = pacemakerTimeout;
 		this.counters = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e, e -> new SystemCountersImpl()));
-		this.syncSenders = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e, e -> new InternalMessagePasser()));
+		this.internalMessages = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e, e -> new InternalMessagePasser()));
 		this.vertexStores = new ConcurrentHashMap<>();
 		this.timeoutSenders = nodes.stream().collect(ImmutableMap.toImmutableMap(
 			e -> e,
@@ -146,7 +147,7 @@ public class SimulatedBFTNetwork {
 					qc,
 					stateComputer,
 					syncVerticesRPCSender,
-					this.syncSenders.get(keyPair),
+					this.internalMessages.get(keyPair),
 					this.counters.get(keyPair)
 				);
 			}),
@@ -163,20 +164,11 @@ public class SimulatedBFTNetwork {
 		return new ConsensusRunner(epochChangeRx,
 			rx,
 			timeoutSender,
-			syncSenders.get(key),
+			internalMessages.get(key),
 			Observable::never,
 			rx,
 			epochManager
 		);
-	}
-
-
-	public VertexStore getVertexStore(ECKeyPair keyPair) {
-		return vertexStores.get(keyPair);
-	}
-
-	public int getPacemakerTimeout() {
-		return pacemakerTimeout;
 	}
 
 	// TODO: Add support for epoch changes
@@ -185,7 +177,7 @@ public class SimulatedBFTNetwork {
 
 		List<ECKeyPair> getNodes();
 
-		VertexStore getVertexStore(ECKeyPair keyPair);
+		VertexStoreEventsRx getVertexStoreEvents(ECKeyPair keyPair);
 
 		SystemCounters getCounters(ECKeyPair keyPair);
 
@@ -219,8 +211,8 @@ public class SimulatedBFTNetwork {
 			}
 
 			@Override
-			public VertexStore getVertexStore(ECKeyPair keyPair) {
-				return vertexStores.get(keyPair);
+			public VertexStoreEventsRx getVertexStoreEvents(ECKeyPair keyPair) {
+				return internalMessages.get(keyPair);
 			}
 
 			@Override

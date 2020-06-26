@@ -24,10 +24,11 @@ import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.GetVerticesResponse;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.SyncVerticesRPCSender;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexStore.GetVerticesRequest;
-import com.radixdlt.consensus.VertexStore.SyncSender;
+import com.radixdlt.consensus.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
@@ -163,7 +164,7 @@ public final class ControlledBFTNetwork {
 		return new ControlledSender(sender);
 	}
 
-	public final class ControlledSender implements BFTEventSender, SyncSender, SyncVerticesRPCSender {
+	public final class ControlledSender implements BFTEventSender, VertexStoreEventSender, SyncVerticesRPCSender {
 		private final ECPublicKey sender;
 
 		private ControlledSender(ECPublicKey sender) {
@@ -183,8 +184,8 @@ public final class ControlledBFTNetwork {
 		}
 
 		@Override
-		public void synced(Hash vertexId) {
-			putMesssage(new ControlledMessage(sender, sender, vertexId));
+		public void syncedVertex(Vertex vertex) {
+			putMesssage(new ControlledMessage(sender, sender, vertex.getId()));
 		}
 
 		@Override
@@ -206,6 +207,14 @@ public final class ControlledBFTNetwork {
 
 		public void committedStateSync(CommittedStateSync committedStateSync) {
 			putMesssage(new ControlledMessage(sender, sender, committedStateSync));
+		}
+
+		@Override
+		public void committedVertex(Vertex vertex) {
+		}
+
+		@Override
+		public void highQC(QuorumCertificate qc) {
 		}
 	}
 }
