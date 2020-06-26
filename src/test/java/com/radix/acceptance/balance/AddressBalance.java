@@ -21,7 +21,6 @@ import io.reactivex.disposables.Disposable;
 
 public class AddressBalance {
 
-	private LocalRadixIdentity ownerIdentity;
 	private RadixApplicationAPI api;
 	private LocalRadixIdentity identity1;
 	private LocalRadixIdentity identity2;
@@ -29,7 +28,7 @@ public class AddressBalance {
 
 	@Before
 	public void setUp() {
-		this.ownerIdentity = RadixIdentities.createNew();
+		LocalRadixIdentity ownerIdentity = RadixIdentities.createNew();
 		this.identity1 = RadixIdentities.createNew();
 		this.identity2 = RadixIdentities.createNew();
 		this.api = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), ownerIdentity);
@@ -41,35 +40,30 @@ public class AddressBalance {
 	public void testAddressBalance() throws InterruptedException {
 		RadixApplicationAPI api1 = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), identity1);
 		CountDownLatch countDown = new CountDownLatch(2);
-		AtomicLong b1= new AtomicLong(0);
+		AtomicLong b1 = new AtomicLong(0);
 		RadixAddress address1 = api1.getAddress(identity1.getPublicKey());
 		api1.observeBalance(address1, tokenRRI).subscribe(b -> {
 			b1.set(b.longValue());
 			countDown.countDown();
 		});
-		AtomicLong b2= new AtomicLong(0);
+		AtomicLong b2 = new AtomicLong(0);
 		RadixAddress address2 = api1.getAddress(identity2.getPublicKey());
 		api1.observeBalance(address2, tokenRRI).subscribe(b -> {
 			b2.set(b.longValue());
 			countDown.countDown();
 		});
-		api.sendTokens(tokenRRI,address1 , new BigDecimal(10)).blockUntilComplete();
-		api.sendTokens(tokenRRI,address2 , new BigDecimal(10)).blockUntilComplete();
+		api.sendTokens(tokenRRI, address1, new BigDecimal(10)).blockUntilComplete();
+		api.sendTokens(tokenRRI, address2, new BigDecimal(10)).blockUntilComplete();
 		Disposable disp1 = api1.pull(address1);
 		Disposable disp2 = api1.pull(address2);
-		boolean ok = countDown.await(20, TimeUnit.SECONDS);
-		if(!ok) {
+		boolean ok = countDown.await(30, TimeUnit.SECONDS);
+		if (!ok) {
 			fail("Test time out " + countDown.getCount());
-		}else {
-			assertEquals(10,b1.longValue());
-			assertEquals(10,b2.longValue());
+		} else {
+			assertEquals(10, b1.longValue());
+			assertEquals(10, b2.longValue());
 			disp1.dispose();
 			disp2.dispose();
 		}
-
-
-
-
 	}
-
 }
