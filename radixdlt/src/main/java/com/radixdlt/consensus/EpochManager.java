@@ -175,6 +175,10 @@ public class EpochManager {
 	}
 
 	public void processCommittedStateSync(CommittedStateSync committedStateSync) {
+		if (vertexStore == null) {
+			return;
+		}
+
 		vertexStore.processCommittedStateSync(committedStateSync);
 	}
 }
