@@ -29,13 +29,7 @@ public final class CMStores {
 		throw new IllegalStateException("Cannot instantiate.");
 	}
 
-	private static final CMStore EMPTY_STATE_STORE = new CMStore() {
-
-		@Override
-		public Spin getSpin(Particle particle) {
-			return Spin.NEUTRAL;
-		}
-	};
+	private static final CMStore EMPTY_STATE_STORE = particle -> Spin.NEUTRAL;
 
 	/**
 	 * An empty state store which returns neutral spin for every particle
@@ -56,18 +50,15 @@ public final class CMStores {
 	 * @return the virtualized state store
 	 */
 	public static CMStore virtualizeDefault(CMStore base, Predicate<Particle> particleCheck, Spin spin) {
-		return new CMStore() {
-			@Override
-			public Spin getSpin(Particle particle) {
-				Spin curSpin = base.getSpin(particle);
+		return particle -> {
+			Spin curSpin = base.getSpin(particle);
 
-				if (particleCheck.test(particle) && SpinStateMachine.isAfter(spin, curSpin)
-				) {
-					return spin;
-				}
-
-				return curSpin;
+			if (particleCheck.test(particle) && SpinStateMachine.isAfter(spin, curSpin)
+			) {
+				return spin;
 			}
+
+			return curSpin;
 		};
 	}
 }
