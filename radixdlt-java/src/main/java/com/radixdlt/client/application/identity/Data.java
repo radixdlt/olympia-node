@@ -33,7 +33,7 @@ import com.radixdlt.crypto.encryption.Encryptor;
 import org.bouncycastle.util.encoders.Base64;
 
 /**
- * Application layer bytes bytes object. Can be stored and retrieved from a RadixAddress.
+ * Application layer bytes object. Can be stored and retrieved from a RadixAddress.
  */
 public class Data {
 	public static class DataBuilder {
@@ -90,7 +90,7 @@ public class Data {
 					throw new IllegalStateException("Expected to always be able to encrypt", e);
 				}
 			}
-			metaData.put("encrypted", unencrypted);
+			metaData.put("encrypted", !unencrypted);
 
 			return new Data(bytes, metaData, encryptor);
 		}
