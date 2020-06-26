@@ -40,7 +40,6 @@ import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 
 import com.radixdlt.identifiers.RadixAddress;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -60,26 +59,26 @@ public final class Atom {
 
 	public static Atom create(ParticleGroup particleGroup, long timestamp) {
 		return new Atom(
-				ImmutableList.of(particleGroup),
-				ImmutableMap.of(METADATA_TIMESTAMP_KEY, String.valueOf(timestamp)),
-				ImmutableMap.of()
-				);
+			ImmutableList.of(particleGroup),
+			ImmutableMap.of(METADATA_TIMESTAMP_KEY, String.valueOf(timestamp)),
+			ImmutableMap.of()
+		);
 	}
 
 	public static Atom create(List<ParticleGroup> particleGroups, long timestamp) {
 		return new Atom(
-				ImmutableList.copyOf(particleGroups),
-				ImmutableMap.of(METADATA_TIMESTAMP_KEY, String.valueOf(timestamp)),
-				ImmutableMap.of()
-				);
+			ImmutableList.copyOf(particleGroups),
+			ImmutableMap.of(METADATA_TIMESTAMP_KEY, String.valueOf(timestamp)),
+			ImmutableMap.of()
+		);
 	}
 
 	public static Atom create(List<ParticleGroup> particleGroups, Map<String, String> metaData) {
 		return new Atom(
-				ImmutableList.copyOf(particleGroups),
-				ImmutableMap.copyOf(metaData),
-				ImmutableMap.of()
-				);
+			ImmutableList.copyOf(particleGroups),
+			ImmutableMap.copyOf(metaData),
+			ImmutableMap.of()
+		);
 	}
 
 	@JsonProperty("particleGroups")
@@ -111,10 +110,10 @@ public final class Atom {
 	}
 
 	private Atom(
-			ImmutableList<ParticleGroup> particleGroups,
-			ImmutableMap<String, String> metaData,
-			ImmutableMap<String, ECDSASignature> signatures
-			) {
+		ImmutableList<ParticleGroup> particleGroups,
+		ImmutableMap<String, String> metaData,
+		ImmutableMap<String, ECDSASignature> signatures
+	) {
 		Objects.requireNonNull(particleGroups, "particleGroups is required");
 		Objects.requireNonNull(metaData, "metaData is required");
 		Objects.requireNonNull(signatures, "signatures are required");
@@ -135,10 +134,10 @@ public final class Atom {
 		builder.put(signatureId.toString(), signature);
 
 		return new Atom(
-				this.particleGroups,
-				this.metaData,
-				builder.build()
-				);
+			this.particleGroups,
+			this.metaData,
+			builder.build()
+		);
 	}
 
 
@@ -156,10 +155,10 @@ public final class Atom {
 
 	public Stream<RadixAddress> addresses() {
 		return this.spunParticles()
-				.map(SpunParticle<Particle>::getParticle)
-				.map(Particle::getShardables)
-				.flatMap(Set::stream)
-				.distinct();
+			.map(SpunParticle<Particle>::getParticle)
+			.map(Particle::getShardables)
+			.flatMap(Set::stream)
+			.distinct();
 	}
 
 	public boolean hasTimestamp() {
