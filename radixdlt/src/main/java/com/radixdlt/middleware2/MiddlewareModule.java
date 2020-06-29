@@ -113,15 +113,7 @@ public class MiddlewareModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private EngineStore<LedgerAtom> engineStore(
-		CommittedAtomsStore committedAtomsStore,
-		CommittedAtom genesisAtom
-	) {
-		// TODO: This should be done at a virtualized layer
-		if (committedAtomsStore.getCommittedAtoms(genesisAtom.getVertexMetadata().getStateVersion() - 1, 1).isEmpty()) {
-			committedAtomsStore.storeAtom(genesisAtom);
-		}
-
+	private EngineStore<LedgerAtom> engineStore(CommittedAtomsStore committedAtomsStore) {
 		return new EngineStore<LedgerAtom>() {
 			@Override
 			public void getAtomContaining(Particle particle, boolean b, Consumer<LedgerAtom> consumer) {

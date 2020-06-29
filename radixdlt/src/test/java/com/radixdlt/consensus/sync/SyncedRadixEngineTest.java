@@ -29,8 +29,11 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.radixdlt.EpochChangeSender;
 import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.sync.SyncedRadixEngine.CommittedStateSyncSender;
+import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
@@ -49,6 +52,7 @@ import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 import org.junit.Before;
 import org.junit.Test;
 import org.radix.atoms.events.AtomStoredEvent;
@@ -61,6 +65,8 @@ public class SyncedRadixEngineTest {
 	private AddressBook addressBook;
 	private StateSyncNetwork stateSyncNetwork;
 	private CommittedStateSyncSender committedStateSyncSender;
+	private EpochChangeSender epochChangeSender;
+	private Function<Long, ValidatorSet> validatorSetMapping;
 
 	@Before
 	public void setup() {
@@ -72,10 +78,14 @@ public class SyncedRadixEngineTest {
 		this.addressBook = mock(AddressBook.class);
 		this.stateSyncNetwork = mock(StateSyncNetwork.class);
 		this.committedStateSyncSender = mock(CommittedStateSyncSender.class);
+		this.epochChangeSender = mock(EpochChangeSender.class);
+		this.validatorSetMapping = mock(Function.class);
 		this.syncedRadixEngine = new SyncedRadixEngine(
 			radixEngine,
 			committedAtomsStore,
 			committedStateSyncSender,
+			epochChangeSender,
+			validatorSetMapping,
 			addressBook,
 			stateSyncNetwork
 		);
@@ -86,6 +96,9 @@ public class SyncedRadixEngineTest {
 		CommittedAtom committedAtom = mock(CommittedAtom.class);
 		when(committedAtom.getClientAtom()).thenReturn(mock(ClientAtom.class));
 		when(committedAtom.getAID()).thenReturn(mock(AID.class));
+		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
+		when(vertexMetadata.getView()).thenReturn(View.of(50));
+		when(committedAtom.getVertexMetadata()).thenReturn(vertexMetadata);
 
 		RadixEngineException e = mock(RadixEngineException.class);
 		when(e.getErrorCode()).thenReturn(RadixEngineErrorCode.VIRTUAL_STATE_CONFLICT);
@@ -108,6 +121,9 @@ public class SyncedRadixEngineTest {
 		when(e.getRelated()).thenReturn(related);
 
 		CommittedAtom committedAtom = mock(CommittedAtom.class);
+		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
+		when(vertexMetadata.getView()).thenReturn(View.of(50));
+		when(committedAtom.getVertexMetadata()).thenReturn(vertexMetadata);
 		when(committedAtom.getAID()).thenReturn(mock(AID.class));
 		doThrow(e).when(radixEngine).checkAndStore(eq(committedAtom));
 
@@ -121,6 +137,9 @@ public class SyncedRadixEngineTest {
 		when(e.getErrorCode()).thenReturn(RadixEngineErrorCode.MISSING_DEPENDENCY);
 		when(e.getDataPointer()).thenReturn(DataPointer.ofAtom());
 		CommittedAtom committedAtom = mock(CommittedAtom.class);
+		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
+		when(vertexMetadata.getView()).thenReturn(View.of(50));
+		when(committedAtom.getVertexMetadata()).thenReturn(vertexMetadata);
 		doThrow(e).when(radixEngine).checkAndStore(eq(committedAtom));
 
 		syncedRadixEngine.execute(committedAtom);
@@ -146,6 +165,7 @@ public class SyncedRadixEngineTest {
 		CommittedAtom committedAtom = mock(CommittedAtom.class);
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
 		when(vertexMetadata.getStateVersion()).thenReturn(12345L);
+		when(vertexMetadata.getView()).thenReturn(View.of(50));
 		when(committedAtom.getVertexMetadata()).thenReturn(vertexMetadata);
 		List<CommittedAtom> committedAtomList = Collections.singletonList(committedAtom);
 		when(stateSyncNetwork.syncResponses()).thenReturn(Observable.just(committedAtomList).concatWith(Observable.never()));

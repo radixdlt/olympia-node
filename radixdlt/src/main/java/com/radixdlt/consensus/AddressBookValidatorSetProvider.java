@@ -18,14 +18,17 @@
 package com.radixdlt.consensus;
 
 import com.google.common.collect.Streams;
+import com.radixdlt.consensus.validators.Validator;
+import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.network.addressbook.PeersAddedEvent;
 
+import com.radixdlt.utils.UInt256;
 import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.core.Single;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.radix.events.EventListener;
@@ -36,25 +39,14 @@ import org.radix.universe.system.RadixSystem;
  * Temporary epoch management which given a fixed quorum size retrieves the first set of peers which
  * matches the size and used as the validator set.
  */
-public class AddressBookEpochChangeRx implements EpochChangeRx {
-	private final int fixedNodeCount;
-	private final AddressBook addressBook;
-	private final ECPublicKey selfKey;
-	private final VertexMetadata ancestor;
+public class AddressBookValidatorSetProvider {
+	private final Single<ValidatorSet> validatorSet;
 
-	public AddressBookEpochChangeRx(ECPublicKey selfKey, AddressBook addressBook, int fixedNodeCount, VertexMetadata ancestor) {
+	public AddressBookValidatorSetProvider(ECPublicKey selfKey, AddressBook addressBook, int fixedNodeCount) {
 		if (fixedNodeCount <= 0) {
 			throw new IllegalArgumentException("Quorum size must be > 0 but was " + fixedNodeCount);
 		}
-		this.fixedNodeCount = fixedNodeCount;
-		this.selfKey = Objects.requireNonNull(selfKey);
-		this.addressBook = Objects.requireNonNull(addressBook);
-		this.ancestor = Objects.requireNonNull(ancestor);
-	}
-
-	@Override
-	public Observable<EpochChange> epochChanges() {
-		return Observable.<List<Peer>>create(emitter -> {
+		this.validatorSet = Observable.<List<Peer>>create(emitter -> {
 			emitter.onNext(addressBook.peers().collect(Collectors.toList()));
 			// Race condition here but ignore as this is a temporary class
 			EventListener<PeersAddedEvent> eventListener = e -> emitter.onNext(e.peers());
@@ -67,8 +59,15 @@ public class AddressBookEpochChangeRx implements EpochChangeRx {
 			).distinct().collect(Collectors.toList()))
 			.filter(peers -> peers.size() == fixedNodeCount)
 			.firstOrError()
-			.flatMapObservable(peers -> new BasicEpochChangeRx(ancestor, peers).epochChanges())
-			.replay()
-			.autoConnect();
+			.map(peers -> ValidatorSet.from(
+				peers.stream()
+					.map(p -> Validator.from(p, UInt256.ONE))
+					.collect(Collectors.toList())
+			))
+			.cache();
+	}
+
+	public ValidatorSet getValidatorSet(long epoch) {
+		return validatorSet.blockingGet();
 	}
 }

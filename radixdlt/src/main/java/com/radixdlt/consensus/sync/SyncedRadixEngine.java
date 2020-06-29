@@ -18,9 +18,11 @@
 package com.radixdlt.consensus.sync;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.inject.Inject;
-import com.google.inject.Singleton;
+import com.radixdlt.EpochChangeSender;
+import com.radixdlt.consensus.EpochChange;
 import com.radixdlt.consensus.SyncedStateComputer;
+import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineErrorCode;
@@ -34,6 +36,7 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.radix.atoms.AtomDependencyNotFoundException;
@@ -48,7 +51,6 @@ import org.radix.validation.ConstraintMachineValidationException;
  *
  * TODO: Most of the logic here should go into RadixEngine itself
  */
-@Singleton
 public class SyncedRadixEngine implements SyncedStateComputer<CommittedAtom> {
 
 	public interface CommittedStateSyncSender {
@@ -59,20 +61,26 @@ public class SyncedRadixEngine implements SyncedStateComputer<CommittedAtom> {
 	private final RadixEngine<LedgerAtom> radixEngine;
 	private final CommittedAtomsStore committedAtomsStore;
 	private final CommittedStateSyncSender committedStateSyncSender;
+	private final EpochChangeSender epochChangeSender;
+	private final Function<Long, ValidatorSet> validatorSetMapping;
 	private final AddressBook addressBook;
 	private final StateSyncNetwork stateSyncNetwork;
+	private final Object lock = new Object();
 
-	@Inject
 	public SyncedRadixEngine(
 		RadixEngine<LedgerAtom> radixEngine,
 		CommittedAtomsStore committedAtomsStore,
 		CommittedStateSyncSender committedStateSyncSender,
+		EpochChangeSender epochChangeSender,
+		Function<Long, ValidatorSet> validatorSetMapping,
 		AddressBook addressBook,
 		StateSyncNetwork stateSyncNetwork
 	) {
 		this.radixEngine = Objects.requireNonNull(radixEngine);
 		this.committedAtomsStore = Objects.requireNonNull(committedAtomsStore);
 		this.committedStateSyncSender = Objects.requireNonNull(committedStateSyncSender);
+		this.epochChangeSender = Objects.requireNonNull(epochChangeSender);
+		this.validatorSetMapping = validatorSetMapping;
 		this.addressBook = Objects.requireNonNull(addressBook);
 		this.stateSyncNetwork = Objects.requireNonNull(stateSyncNetwork);
 	}
@@ -148,33 +156,41 @@ public class SyncedRadixEngine implements SyncedStateComputer<CommittedAtom> {
 	 */
 	@Override
 	public void execute(CommittedAtom atom) {
-		try {
-			this.radixEngine.checkAndStore(atom);
-		} catch (RadixEngineException e) {
-			// TODO: Don't check for state computer errors for now so that we don't
-			// TODO: have to deal with failing leader proposals
-			// TODO: Reinstate this when ProposalGenerator + Mempool can guarantee correct proposals
+		synchronized (lock) {
+			try {
+				if (atom.getVertexMetadata().getView().number() > 100 || atom.getVertexMetadata().getEpoch() == 0) {
+					VertexMetadata ancestor = atom.getVertexMetadata();
+					EpochChange epochChange = new EpochChange(ancestor, validatorSetMapping.apply(ancestor.getEpoch() + 1));
+					this.epochChangeSender.epochChange(epochChange);
+				}
 
-			// TODO: move VIRTUAL_STATE_CONFLICT to static check
-			if (e.getErrorCode() == RadixEngineErrorCode.VIRTUAL_STATE_CONFLICT) {
-				ConstraintMachineValidationException exception
-					= new ConstraintMachineValidationException(atom.getClientAtom(), "Virtual state conflict", e.getDataPointer());
-				Events.getInstance().broadcast(new AtomExceptionEvent(exception, atom.getAID()));
-			} else if (e.getErrorCode() == RadixEngineErrorCode.STATE_CONFLICT) {
-				final ParticleConflictException conflict = new ParticleConflictException(
-					new ParticleConflict(e.getDataPointer(), ImmutableSet.of(atom.getAID(), e.getRelated().getAID())
-					));
-				AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(conflict, atom.getAID());
-				Events.getInstance().broadcast(atomExceptionEvent);
-			} else if (e.getErrorCode() == RadixEngineErrorCode.MISSING_DEPENDENCY) {
-				final AtomDependencyNotFoundException notFoundException =
-					new AtomDependencyNotFoundException(
-						String.format("Atom has missing dependencies in transitions: %s", e.getDataPointer().toString()),
-						e.getDataPointer()
-					);
+				this.radixEngine.checkAndStore(atom);
+			} catch (RadixEngineException e) {
+				// TODO: Don't check for state computer errors for now so that we don't
+				// TODO: have to deal with failing leader proposals
+				// TODO: Reinstate this when ProposalGenerator + Mempool can guarantee correct proposals
 
-				AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(notFoundException, atom.getAID());
-				Events.getInstance().broadcast(atomExceptionEvent);
+				// TODO: move VIRTUAL_STATE_CONFLICT to static check
+				if (e.getErrorCode() == RadixEngineErrorCode.VIRTUAL_STATE_CONFLICT) {
+					ConstraintMachineValidationException exception
+						= new ConstraintMachineValidationException(atom.getClientAtom(), "Virtual state conflict", e.getDataPointer());
+					Events.getInstance().broadcast(new AtomExceptionEvent(exception, atom.getAID()));
+				} else if (e.getErrorCode() == RadixEngineErrorCode.STATE_CONFLICT) {
+					final ParticleConflictException conflict = new ParticleConflictException(
+						new ParticleConflict(e.getDataPointer(), ImmutableSet.of(atom.getAID(), e.getRelated().getAID())
+						));
+					AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(conflict, atom.getAID());
+					Events.getInstance().broadcast(atomExceptionEvent);
+				} else if (e.getErrorCode() == RadixEngineErrorCode.MISSING_DEPENDENCY) {
+					final AtomDependencyNotFoundException notFoundException =
+						new AtomDependencyNotFoundException(
+							String.format("Atom has missing dependencies in transitions: %s", e.getDataPointer().toString()),
+							e.getDataPointer()
+						);
+
+					AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(notFoundException, atom.getAID());
+					Events.getInstance().broadcast(atomExceptionEvent);
+				}
 			}
 		}
 	}

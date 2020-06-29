@@ -23,11 +23,12 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 import com.radixdlt.consensus.BFTEventSender;
-import com.radixdlt.consensus.AddressBookEpochChangeRx;
+import com.radixdlt.consensus.AddressBookValidatorSetProvider;
 import com.radixdlt.consensus.CommittedStateSyncRx;
 import com.radixdlt.consensus.DefaultHasher;
 import com.radixdlt.consensus.EpochChangeRx;
 import com.radixdlt.consensus.EventCoordinatorNetworkRx;
+import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.VertexStoreEventsRx;
 import com.radixdlt.consensus.InternalMessagePasser;
 import com.radixdlt.consensus.ProposerElectionFactory;
@@ -43,13 +44,16 @@ import com.radixdlt.consensus.liveness.PacemakerFactory;
 import com.radixdlt.consensus.liveness.PacemakerRx;
 import com.radixdlt.consensus.liveness.ScheduledTimeoutSender;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
+import com.radixdlt.consensus.sync.StateSyncNetwork;
 import com.radixdlt.consensus.sync.SyncedRadixEngine;
 import com.radixdlt.consensus.sync.SyncedRadixEngine.CommittedStateSyncSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.middleware2.CommittedAtom;
+import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.network.MessageCentralBFTNetwork;
 import com.radixdlt.middleware2.network.MessageCentralSyncVerticesRPCNetwork;
+import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.utils.ThreadFactories;
@@ -80,14 +84,15 @@ public class CerberusModule extends AbstractModule {
 		bind(VertexStoreEventSender.class).to(InternalMessagePasser.class);
 		bind(CommittedStateSyncSender.class).to(InternalMessagePasser.class);
 		bind(CommittedStateSyncRx.class).to(InternalMessagePasser.class);
+		bind(EpochChangeRx.class).to(InternalMessagePasser.class);
+		bind(EpochChangeSender.class).to(InternalMessagePasser.class);
+		bind(SyncedStateComputer.class).to(SyncedRadixEngine.class);
 
 		bind(SyncVerticesRPCSender.class).to(MessageCentralSyncVerticesRPCNetwork.class);
 		bind(SyncVerticesRPCRx.class).to(MessageCentralSyncVerticesRPCNetwork.class);
-
 		bind(MessageCentralBFTNetwork.class).in(Scopes.SINGLETON);
 		bind(BFTEventSender.class).to(MessageCentralBFTNetwork.class);
 		bind(EventCoordinatorNetworkRx.class).to(MessageCentralBFTNetwork.class);
-
 		bind(MessageCentralSyncVerticesRPCNetwork.class).in(Scopes.SINGLETON);
 		bind(SyncVerticesRPCSender.class).to(MessageCentralSyncVerticesRPCNetwork.class);
 		bind(SyncVerticesRPCRx.class).to(MessageCentralSyncVerticesRPCNetwork.class);
@@ -103,13 +108,31 @@ public class CerberusModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private EpochChangeRx epochRx(
-		CommittedAtom genesisAtom,
-		@Named("self") ECKeyPair selfKey,
-		AddressBook addressBook
+	private SyncedRadixEngine syncedRadixEngine(
+		RadixEngine<LedgerAtom> radixEngine,
+		CommittedAtomsStore committedAtomsStore,
+		CommittedStateSyncSender committedStateSyncSender,
+		EpochChangeSender epochChangeSender,
+		AddressBook addressBook,
+		StateSyncNetwork stateSyncNetwork,
+		@Named("self") ECKeyPair selfKey
 	) {
 		final int fixedNodeCount = runtimeProperties.get("consensus.fixed_node_count", 1);
-		return new AddressBookEpochChangeRx(selfKey.getPublicKey(), addressBook, fixedNodeCount, genesisAtom.getVertexMetadata());
+		AddressBookValidatorSetProvider validatorSetProvider = new AddressBookValidatorSetProvider(
+			selfKey.getPublicKey(),
+			addressBook,
+			fixedNodeCount
+		);
+
+		return new SyncedRadixEngine(
+			radixEngine,
+			committedAtomsStore,
+			committedStateSyncSender,
+			epochChangeSender,
+			validatorSetProvider::getValidatorSet,
+			addressBook,
+			stateSyncNetwork
+		);
 	}
 
 	@Provides
