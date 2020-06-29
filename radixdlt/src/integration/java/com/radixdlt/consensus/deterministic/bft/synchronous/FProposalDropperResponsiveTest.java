@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.deterministic.synchronous;
+package com.radixdlt.consensus.deterministic.bft.synchronous;
 
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.Proposal;

@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.simulation.synchronous;
+package com.radixdlt.consensus.simulation.bft.synchronous;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
@@ -25,40 +25,29 @@ import com.radixdlt.consensus.simulation.BFTSimulatedTest.Builder;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
-public class FPlusOneOutOfBoundsTest {
+public class OneOutOfBoundsTest {
 	private final int latency = 50;
 	private final int synchronousTimeout = 8 * latency;
 	private final int outOfBoundsLatency = synchronousTimeout;
+	// TODO: Add 1 timeout check
 	private final Builder bftTestBuilder = BFTSimulatedTest.builder()
-		.pacemakerTimeout(2 * synchronousTimeout)
-		.checkSafety("safety")
-		.checkNoneCommitted("noneCommitted");
+		.pacemakerTimeout(synchronousTimeout)
+		.checkLiveness("liveness", 2 * synchronousTimeout, TimeUnit.MILLISECONDS)
+		.checkSafety("safety");
 
 	/**
-	 * Tests a configuration of 0 out of 3 nodes out of synchrony bounds
+	 * Tests a configuration of 1 out of 4 nodes out of synchrony bounds
 	 */
 	@Test
-	public void given_0_out_of_3_nodes_out_of_synchrony_bounds() {
+	public void given_1_out_of_4_nodes_out_of_synchrony_bounds() {
 		BFTSimulatedTest test = bftTestBuilder
-			.numNodesAndLatencies(3, latency, latency, latency)
+			.numNodesAndLatencies(4, latency, latency, latency, outOfBoundsLatency)
 			.build();
 
 		Map<String, Optional<BFTCheckError>> results = test.run(1, TimeUnit.MINUTES);
-		assertThat(results).hasEntrySatisfying("noneCommitted", error -> assertThat(error).isPresent());
-	}
-
-	/**
-	 * Tests a configuration of 1 out of 3 nodes out of synchrony bounds
-	 */
-	@Test
-	public void given_1_out_of_3_nodes_out_of_synchrony_bounds() {
-		BFTSimulatedTest test = bftTestBuilder
-			.numNodesAndLatencies(3, latency, latency, outOfBoundsLatency)
-			.build();
-
-		Map<String, Optional<BFTCheckError>> results = test.run(1, TimeUnit.MINUTES);
-		assertThat(results).allSatisfy((name, error) -> assertThat(error).isNotPresent());
+		assertThat(results).allSatisfy((name, error) -> AssertionsForClassTypes.assertThat(error).isNotPresent());
 	}
 }
