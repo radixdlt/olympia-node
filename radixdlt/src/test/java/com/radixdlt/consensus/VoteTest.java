@@ -25,7 +25,6 @@ import org.junit.Test;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
 public class VoteTest {
 	public static final RadixAddress ADDRESS = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
@@ -61,9 +60,4 @@ public class VoteTest {
 		assertThat(this.testObject).isNotNull();
 	}
 
-	@Test
-	public void testSerializerConstructor() {
-		// Don't want to see any exceptions here
-		assertNotNull(new Vote());
-	}
 }

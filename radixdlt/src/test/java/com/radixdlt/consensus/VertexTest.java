@@ -26,7 +26,6 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 
@@ -85,9 +84,4 @@ public class VertexTest {
 		assertEquals(View.of(1234567892L), this.testObject.getView());
 	}
 
-	@Test
-	public void testSerializerConstructor() {
-		// Don't want to see any exceptions here
-		assertNotNull(new Vertex());
-	}
 }

@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -52,18 +53,13 @@ public final class VoteData {
 	@DsonOutput(Output.ALL)
 	private final VertexMetadata committed;
 
-	VoteData() {
-		// Serializer only
-		this.proposed = null;
-		this.parent = null;
-		this.committed = null;
-	}
-
 	public VoteData(VertexMetadata proposed, VertexMetadata parent) {
 		this(proposed, parent, null);
 	}
 
-	public VoteData(VertexMetadata proposed, VertexMetadata parent, VertexMetadata committed) {
+	@JsonCreator
+	public VoteData(@JsonProperty("proposed") VertexMetadata proposed, @JsonProperty("parent") VertexMetadata parent,
+			@JsonProperty("committed") VertexMetadata committed) {
 		if (parent == null) {
 			if (!proposed.getView().isGenesis()) {
 				throw new IllegalArgumentException("Only genesis is allowed to have no parent.");
