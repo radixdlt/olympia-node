@@ -40,7 +40,7 @@ public class RadixNodeState {
 	private final RadixUniverseConfig universeConfig;
 
 	public RadixNodeState(RadixNode node, WebSocketStatus status, NodeRunnerData data, Integer version,
-			RadixUniverseConfig universeConfig) {
+	                      RadixUniverseConfig universeConfig) {
 		Objects.requireNonNull(node, "node is required");
 		Objects.requireNonNull(status, "status is required");
 

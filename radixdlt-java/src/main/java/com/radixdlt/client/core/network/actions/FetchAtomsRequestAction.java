@@ -35,9 +35,9 @@ public final class FetchAtomsRequestAction implements FetchAtomsAction, FindANod
 	private final RadixAddress address;
 
 	private FetchAtomsRequestAction(
-			String uuid,
-			RadixAddress address
-			) {
+		String uuid,
+		RadixAddress address
+	) {
 		Objects.requireNonNull(uuid);
 		Objects.requireNonNull(address);
 
@@ -58,11 +58,6 @@ public final class FetchAtomsRequestAction implements FetchAtomsAction, FindANod
 	public RadixAddress getAddress() {
 		return address;
 	}
-
-	//	@Override
-	//	public Set<Long> getShards() {
-	//		return Collections.singleton(address.euid().getShard());
-	//	}
 
 	@Override
 	public RadixNode getNode() {

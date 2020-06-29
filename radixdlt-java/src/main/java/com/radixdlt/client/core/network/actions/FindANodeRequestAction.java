@@ -26,8 +26,7 @@ import com.radixdlt.client.core.network.RadixNodeAction;
 
 /**
  * A dispatch action request for a connected node.
- *
  */
 public interface FindANodeRequestAction extends RadixNodeAction {
-	//Empty on purpose - in a future version will add shard support using this interface
+	//Empty on purpose - in a future version will add sharding support using this interface
 }

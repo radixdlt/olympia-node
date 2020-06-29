@@ -59,13 +59,13 @@ public final class FindANodeEpic implements RadixNetworkEpic {
 
 	private List<RadixNodeAction> nextConnectionRequest(RadixNetworkState state) {
 		final Map<WebSocketStatus, List<RadixNode>> statusMap = Arrays.stream(WebSocketStatus.values())
-				.collect(Collectors.toMap(
-						Function.identity(),
-						s -> state.getNodeStates().entrySet().stream()
-						.filter(e -> e.getValue().getStatus().equals(s))
-						.map(Entry::getKey)
-						.collect(Collectors.toList())
-						));
+			.collect(Collectors.toMap(
+				Function.identity(),
+				s -> state.getNodeStates().entrySet().stream()
+					.filter(e -> e.getValue().getStatus().equals(s))
+					.map(Entry::getKey)
+					.collect(Collectors.toList())
+			));
 
 		final long connectingNodeCount = statusMap.get(WebSocketStatus.CONNECTING).size();
 
@@ -84,56 +84,56 @@ public final class FindANodeEpic implements RadixNetworkEpic {
 
 	private static List<RadixNode> getConnectedNodes(RadixNetworkState state) {
 		return state.getNodeStates().entrySet().stream()
-				.filter(entry -> entry.getValue().getStatus().equals(WebSocketStatus.CONNECTED))
-				.map(Map.Entry::getKey)
-				.collect(Collectors.toList());
+			.filter(entry -> entry.getValue().getStatus().equals(WebSocketStatus.CONNECTED))
+			.map(Map.Entry::getKey)
+			.collect(Collectors.toList());
 	}
 
 	@Override
 	public Observable<RadixNodeAction> epic(Observable<RadixNodeAction> actions, Observable<RadixNetworkState> stateObservable) {
 		return actions.ofType(FindANodeRequestAction.class)
-				.flatMap(a -> {
-					Observable<List<RadixNode>> connectedNodes = stateObservable
-							.map(FindANodeEpic::getConnectedNodes)
-							.replay(1)
-							.autoConnect(2);
+			.flatMap(a -> {
+				Observable<List<RadixNode>> connectedNodes = stateObservable
+					.map(FindANodeEpic::getConnectedNodes)
+					.replay(1)
+					.autoConnect(2);
 
-					// Stream to find node
-					Observable<RadixNodeAction> selectedNode = connectedNodes
-							.filter(viablePeerList -> !viablePeerList.isEmpty())
-							.firstOrError()
-							.map(selector::apply)
-							.<RadixNodeAction>map(n -> new FindANodeResultAction(n, a))
-							.cache()
-							.toObservable();
+				// Stream to find node
+				Observable<RadixNodeAction> selectedNode = connectedNodes
+					.filter(viablePeerList -> !viablePeerList.isEmpty())
+					.firstOrError()
+					.map(selector::apply)
+					.<RadixNodeAction>map(n -> new FindANodeResultAction(n, a))
+					.cache()
+					.toObservable();
 
-					// Stream of new actions to find a new node
-					Observable<RadixNodeAction> findConnectionActionsStream = connectedNodes
-							.filter(List::isEmpty)
-							.firstOrError()
-							.ignoreElement()
-							.andThen(
-									Observable
-									.interval(0, NEXT_CONNECTION_THROTTLE_TIMEOUT_SECS, TimeUnit.SECONDS)
-									.withLatestFrom(stateObservable, (i, s) -> s)
-									.flatMapIterable(this::nextConnectionRequest)
-									)
-							.takeUntil(selectedNode)
-							.replay(1)
-							.autoConnect(2);
+				// Stream of new actions to find a new node
+				Observable<RadixNodeAction> findConnectionActionsStream = connectedNodes
+					.filter(List::isEmpty)
+					.firstOrError()
+					.ignoreElement()
+					.andThen(
+						Observable
+							.interval(0, NEXT_CONNECTION_THROTTLE_TIMEOUT_SECS, TimeUnit.SECONDS)
+							.withLatestFrom(stateObservable, (i, s) -> s)
+							.flatMapIterable(this::nextConnectionRequest)
+					)
+					.takeUntil(selectedNode)
+					.replay(1)
+					.autoConnect(2);
 
-					// Cleanup and close connections which never worked out
-					Observable<RadixNodeAction> cleanupConnections = findConnectionActionsStream
-							.ofType(ConnectWebSocketAction.class)
-							.flatMap(c -> {
-								final RadixNode node = c.getNode();
-								return selectedNode
-										.map(RadixNodeAction::getNode)
-										.filter(selected -> !node.equals(selected))
-										.map(i -> CloseWebSocketAction.of(node));
-							});
+				// Cleanup and close connections which never worked out
+				Observable<RadixNodeAction> cleanupConnections = findConnectionActionsStream
+					.ofType(ConnectWebSocketAction.class)
+					.flatMap(c -> {
+						final RadixNode node = c.getNode();
+						return selectedNode
+							.map(RadixNodeAction::getNode)
+							.filter(selected -> !node.equals(selected))
+							.map(i -> CloseWebSocketAction.of(node));
+					});
 
-					return findConnectionActionsStream.concatWith(selectedNode).mergeWith(cleanupConnections);
-				});
+				return findConnectionActionsStream.concatWith(selectedNode).mergeWith(cleanupConnections);
+			});
 	}
 }
