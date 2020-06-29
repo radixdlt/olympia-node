@@ -48,7 +48,7 @@ public class SlowNodeTests {
 	}
 
 	@Test
-	public void Tests() {
+	public void tests() {
 		try (DockerNetwork network = DockerNetwork.builder().numNodes(networkSize).build()) {
 
 			network.startBlocking();
