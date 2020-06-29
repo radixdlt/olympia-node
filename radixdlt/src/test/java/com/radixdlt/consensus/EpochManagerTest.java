@@ -30,6 +30,7 @@ public class EpochManagerTest {
 			mock(VertexStoreFactory.class),
 			proposers -> mock(ProposerElection.class),
 			mock(Hasher.class),
+			View.of(Long.MAX_VALUE),
 			keyPair,
 			mock(SystemCounters.class)
 		);
@@ -57,6 +58,7 @@ public class EpochManagerTest {
 			(v, qc) -> vertexStore,
 			proposers -> mock(ProposerElection.class),
 			mock(Hasher.class),
+			View.of(Long.MAX_VALUE),
 			keyPair,
 			mock(SystemCounters.class)
 		);

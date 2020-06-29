@@ -55,7 +55,7 @@ public final class QuorumCertificate {
 
 	public static QuorumCertificate ofGenesis(Vertex genesisVertex) {
 		Objects.requireNonNull(genesisVertex);
-		VertexMetadata vertexMetadata = VertexMetadata.ofVertex(genesisVertex);
+		VertexMetadata vertexMetadata = VertexMetadata.ofVertex(genesisVertex, false);
 		final VoteData voteData = new VoteData(vertexMetadata, vertexMetadata, vertexMetadata);
 		return new QuorumCertificate(voteData, new ECDSASignatures());
 	}

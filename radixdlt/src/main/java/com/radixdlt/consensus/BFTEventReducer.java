@@ -65,6 +65,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	private final ValidatorSet validatorSet;
 	private final SystemCounters counters;
 	private final Map<Hash, QuorumCertificate> unsyncedQCs = new HashMap<>();
+	private final View epochChangeView;
 	private boolean synchedLog = false;
 
 	@Inject
@@ -79,6 +80,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		ProposerElection proposerElection,
 		@Named("self") ECKeyPair selfKey,
 		ValidatorSet validatorSet,
+		View epochChangeView,
 		SystemCounters counters
 	) {
 		this.proposalGenerator = Objects.requireNonNull(proposalGenerator);
@@ -92,6 +94,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		this.selfKey = Objects.requireNonNull(selfKey);
 		this.validatorSet = Objects.requireNonNull(validatorSet);
 		this.counters = Objects.requireNonNull(counters);
+		this.epochChangeView = epochChangeView;
 	}
 
 	private String getShortName(EUID euid) {
@@ -206,15 +209,29 @@ public final class BFTEventReducer implements BFTEventProcessor {
 			counters.increment(CounterType.CONSENSUS_INDIRECT_PARENT);
 		}
 
+		// TODO: Move the following logic into vertexStore/radixEngine
+		final boolean isEndOfEpoch;
+		final Vertex vertexToVoteFor;
+		if (proposedVertex.getParentMetadata().isEndOfEpoch()) {
+			vertexToVoteFor = new Vertex(proposedVertex.getEpoch(), proposedVertex.getQC(), proposedVertex.getView(), null);
+			isEndOfEpoch = true;
+		} else if (proposedVertexView.compareTo(epochChangeView) >= 0) {
+			vertexToVoteFor = proposedVertex;
+			isEndOfEpoch = true;
+		} else {
+			vertexToVoteFor = proposedVertex;
+			isEndOfEpoch = false;
+		}
+
 		try {
-			vertexStore.insertVertex(proposedVertex);
+			vertexStore.insertVertex(vertexToVoteFor);
 		} catch (VertexInsertionException e) {
 			counters.increment(CounterType.CONSENSUS_REJECTED);
 
 			log.warn("{} PROPOSAL: Rejected. Reason: {}", this::getShortName, e::getMessage);
 
 			// TODO: Better logic for removal on exception
-			final ClientAtom atom = proposedVertex.getAtom();
+			final ClientAtom atom = vertexToVoteFor.getAtom();
 			if (atom != null) {
 				mempool.removeRejectedAtom(atom.getAID());
 			}
@@ -223,11 +240,11 @@ public final class BFTEventReducer implements BFTEventProcessor {
 
 		final ECPublicKey currentLeader = this.proposerElection.getProposer(updatedView);
 		try {
-			final Vote vote = safetyRules.voteFor(proposedVertex);
+			final Vote vote = safetyRules.voteFor(vertexToVoteFor, isEndOfEpoch);
 			log.trace("{}: PROPOSAL: Sending VOTE to {}: {}", this::getShortName, () -> this.getShortName(currentLeader.euid()), () -> vote);
 			sender.sendVote(vote, currentLeader);
 		} catch (SafetyViolationException e) {
-			log.error(() -> new FormattedMessage("{}: PROPOSAL: Rejected {}", this.getShortName(), proposedVertex), e);
+			log.error(() -> new FormattedMessage("{}: PROPOSAL: Rejected {}", this.getShortName(), vertexToVoteFor), e);
 		}
 
 		// If not currently leader or next leader, Proceed to next view

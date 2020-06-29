@@ -50,15 +50,20 @@ public final class VertexMetadata {
 	@DsonOutput(Output.ALL)
 	private final long stateVersion;
 
+	@JsonProperty("isEndOfEpoch")
+	@DsonOutput(Output.ALL)
+	private final boolean isEndOfEpoch;
+
 	VertexMetadata() {
 		// Serializer only
 		this.view = null;
 		this.id = null;
 		this.stateVersion = 0L;
 		this.epoch = 0L;
+		this.isEndOfEpoch = false;
 	}
 
-	public VertexMetadata(long epoch, View view, Hash id, long stateVersion) {
+	public VertexMetadata(long epoch, View view, Hash id, long stateVersion, boolean isEndOfEpoch) {
 		if (epoch < 0) {
 			throw new IllegalArgumentException("epoch must be >= 0");
 		}
@@ -71,19 +76,28 @@ public final class VertexMetadata {
 		this.stateVersion = stateVersion;
 		this.view = view;
 		this.id = id;
+		this.isEndOfEpoch = isEndOfEpoch;
 	}
 
 	public static VertexMetadata ofGenesisAncestor() {
-		return new VertexMetadata(0, View.genesis(), Hash.ZERO_HASH, 0);
+		return new VertexMetadata(0, View.genesis(), Hash.ZERO_HASH, 0, true);
 	}
 
-	public static VertexMetadata ofVertex(Vertex vertex) {
+	// TODO: move isEndOfEpoch to somewhere more appropriate
+	// TODO: move
+	public static VertexMetadata ofVertex(Vertex vertex, boolean isEndOfEpoch) {
 		final VertexMetadata parent = vertex.getQC().getProposed();
 		final long parentStateVersion = parent.getStateVersion();
 
-		final int versionIncrement = vertex.getAtom() != null ? 1 : 0;
+		final boolean isLastToBeCommitted = !parent.isEndOfEpoch && isEndOfEpoch;
+
+		final int versionIncrement = vertex.getAtom() != null || isLastToBeCommitted ? 1 : 0;
 		final long newStateVersion = parentStateVersion + versionIncrement;
-		return new VertexMetadata(vertex.getEpoch(), vertex.getView(), vertex.getId(), newStateVersion);
+		return new VertexMetadata(vertex.getEpoch(), vertex.getView(), vertex.getId(), newStateVersion, isEndOfEpoch);
+	}
+
+	public boolean isEndOfEpoch() {
+		return isEndOfEpoch;
 	}
 
 	public long getEpoch() {
@@ -115,7 +129,7 @@ public final class VertexMetadata {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.view, this.id, this.stateVersion, this.epoch);
+		return Objects.hash(this.view, this.id, this.stateVersion, this.isEndOfEpoch, this.epoch);
 	}
 
 	@Override
@@ -129,6 +143,7 @@ public final class VertexMetadata {
 				Objects.equals(this.view, other.view)
 				&& Objects.equals(this.id, other.id)
 				&& this.stateVersion == other.stateVersion
+				&& this.isEndOfEpoch == other.isEndOfEpoch
 				&& this.epoch == other.epoch;
 		}
 		return false;

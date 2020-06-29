@@ -18,7 +18,6 @@
 package com.radixdlt.consensus;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import com.radixdlt.consensus.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.liveness.MempoolProposalGenerator;
@@ -53,6 +52,7 @@ public class EpochManager {
 	private final VertexStoreFactory vertexStoreFactory;
 	private final ProposerElectionFactory proposerElectionFactory;
 	private final ECKeyPair selfKey;
+	private final View epochChangeView;
 	private final SystemCounters counters;
 	private final Hasher hasher;
 
@@ -60,7 +60,6 @@ public class EpochManager {
 	private VertexStore vertexStore;
 	private BFTEventProcessor eventProcessor = EMPTY_PROCESSOR;
 
-	@Inject
 	public EpochManager(
 		Mempool mempool,
 		BFTEventSender sender,
@@ -68,6 +67,7 @@ public class EpochManager {
 		VertexStoreFactory vertexStoreFactory,
 		ProposerElectionFactory proposerElectionFactory,
 		Hasher hasher,
+		View epochChangeView,
 		@Named("self") ECKeyPair selfKey,
 		SystemCounters counters
 	) {
@@ -77,6 +77,7 @@ public class EpochManager {
 		this.vertexStoreFactory = Objects.requireNonNull(vertexStoreFactory);
 		this.proposerElectionFactory = Objects.requireNonNull(proposerElectionFactory);
 		this.selfKey = Objects.requireNonNull(selfKey);
+		this.epochChangeView = Objects.requireNonNull(epochChangeView);
 		this.counters = Objects.requireNonNull(counters);
 		this.hasher = Objects.requireNonNull(hasher);
 	}
@@ -108,6 +109,7 @@ public class EpochManager {
 			proposerElection,
 			this.selfKey,
 			validatorSet,
+			epochChangeView,
 			counters
 		);
 

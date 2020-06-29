@@ -44,7 +44,7 @@ public class AllProposalsHaveDirectParentsCheck implements BFTCheck {
 
 		return Observable.merge(correctProposals)
 			.concatMap(v -> {
-				if (!v.getView().equals(v.getParentView().next())) {
+				if (!v.hasDirectParent()) {
 					return Observable.just(new BFTCheckError("Vertex has no direct parent"));
 				} else {
 					return Observable.empty();

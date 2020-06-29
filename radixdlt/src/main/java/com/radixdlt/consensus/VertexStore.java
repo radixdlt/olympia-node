@@ -443,11 +443,9 @@ public final class VertexStore {
 		}
 
 		for (Vertex committed : path) {
-			if (committed.getAtom() != null) {
-				CommittedAtom committedAtom = new CommittedAtom(committed.getAtom(), commitMetadata);
-				this.counters.increment(CounterType.CONSENSUS_PROCESSED);
-				syncedStateComputer.execute(committedAtom);
-			}
+			CommittedAtom committedAtom = new CommittedAtom(committed.getAtom(), commitMetadata);
+			this.counters.increment(CounterType.CONSENSUS_PROCESSED);
+			syncedStateComputer.execute(committedAtom);
 
 			this.vertexStoreEventSender.committedVertex(committed);
 		}

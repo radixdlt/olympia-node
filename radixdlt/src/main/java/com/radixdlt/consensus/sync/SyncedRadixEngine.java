@@ -22,7 +22,6 @@ import com.radixdlt.EpochChangeSender;
 import com.radixdlt.consensus.EpochChange;
 import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.VertexMetadata;
-import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
@@ -67,14 +66,12 @@ public class SyncedRadixEngine implements SyncedStateComputer<CommittedAtom> {
 	private final AddressBook addressBook;
 	private final StateSyncNetwork stateSyncNetwork;
 	private final Object lock = new Object();
-	private final View epochChangeView;
 
 	public SyncedRadixEngine(
 		RadixEngine<LedgerAtom> radixEngine,
 		CommittedAtomsStore committedAtomsStore,
 		CommittedStateSyncSender committedStateSyncSender,
 		EpochChangeSender epochChangeSender,
-		View epochChangeView,
 		Function<Long, ValidatorSet> validatorSetMapping,
 		AddressBook addressBook,
 		StateSyncNetwork stateSyncNetwork
@@ -83,7 +80,6 @@ public class SyncedRadixEngine implements SyncedStateComputer<CommittedAtom> {
 		this.committedAtomsStore = Objects.requireNonNull(committedAtomsStore);
 		this.committedStateSyncSender = Objects.requireNonNull(committedStateSyncSender);
 		this.epochChangeSender = Objects.requireNonNull(epochChangeSender);
-		this.epochChangeView = epochChangeView;
 		this.validatorSetMapping = validatorSetMapping;
 		this.addressBook = Objects.requireNonNull(addressBook);
 		this.stateSyncNetwork = Objects.requireNonNull(stateSyncNetwork);
@@ -161,14 +157,17 @@ public class SyncedRadixEngine implements SyncedStateComputer<CommittedAtom> {
 	@Override
 	public void execute(CommittedAtom atom) {
 		synchronized (lock) {
-			try {
-				if (atom.getVertexMetadata().getView().compareTo(epochChangeView) >= 0 || atom.getVertexMetadata().getEpoch() == 0) {
-					VertexMetadata ancestor = atom.getVertexMetadata();
-					EpochChange epochChange = new EpochChange(ancestor, validatorSetMapping.apply(ancestor.getEpoch() + 1));
-					this.epochChangeSender.epochChange(epochChange);
-				}
+			if (atom.getVertexMetadata().isEndOfEpoch()) {
+				VertexMetadata ancestor = atom.getVertexMetadata();
+				EpochChange epochChange = new EpochChange(ancestor, validatorSetMapping.apply(ancestor.getEpoch() + 1));
+				this.epochChangeSender.epochChange(epochChange);
+			}
 
-				this.radixEngine.checkAndStore(atom);
+			try {
+				// TODO: execute list of commands instead
+				if (atom.getClientAtom() != null) {
+					this.radixEngine.checkAndStore(atom);
+				}
 			} catch (RadixEngineException e) {
 				// TODO: Don't check for state computer errors for now so that we don't
 				// TODO: have to deal with failing leader proposals

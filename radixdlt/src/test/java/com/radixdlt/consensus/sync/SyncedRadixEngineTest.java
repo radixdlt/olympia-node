@@ -85,7 +85,6 @@ public class SyncedRadixEngineTest {
 			committedAtomsStore,
 			committedStateSyncSender,
 			epochChangeSender,
-			View.of(100),
 			validatorSetMapping,
 			addressBook,
 			stateSyncNetwork
@@ -126,6 +125,7 @@ public class SyncedRadixEngineTest {
 		when(vertexMetadata.getView()).thenReturn(View.of(50));
 		when(committedAtom.getVertexMetadata()).thenReturn(vertexMetadata);
 		when(committedAtom.getAID()).thenReturn(mock(AID.class));
+		when(committedAtom.getClientAtom()).thenReturn(mock(ClientAtom.class));
 		doThrow(e).when(radixEngine).checkAndStore(eq(committedAtom));
 
 		syncedRadixEngine.execute(committedAtom);
@@ -141,6 +141,7 @@ public class SyncedRadixEngineTest {
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
 		when(vertexMetadata.getView()).thenReturn(View.of(50));
 		when(committedAtom.getVertexMetadata()).thenReturn(vertexMetadata);
+		when(committedAtom.getClientAtom()).thenReturn(mock(ClientAtom.class));
 		doThrow(e).when(radixEngine).checkAndStore(eq(committedAtom));
 
 		syncedRadixEngine.execute(committedAtom);
@@ -168,6 +169,7 @@ public class SyncedRadixEngineTest {
 		when(vertexMetadata.getStateVersion()).thenReturn(12345L);
 		when(vertexMetadata.getView()).thenReturn(View.of(50));
 		when(committedAtom.getVertexMetadata()).thenReturn(vertexMetadata);
+		when(committedAtom.getClientAtom()).thenReturn(mock(ClientAtom.class));
 		List<CommittedAtom> committedAtomList = Collections.singletonList(committedAtom);
 		when(stateSyncNetwork.syncResponses()).thenReturn(Observable.just(committedAtomList).concatWith(Observable.never()));
 		when(committedAtomsStore.getStateVersion()).thenReturn(12344L);

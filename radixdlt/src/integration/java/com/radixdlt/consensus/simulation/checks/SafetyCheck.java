@@ -96,7 +96,7 @@ public class SafetyCheck implements BFTCheck {
 					}
 
 					if (!vertex.getParentId().equals(lastCommitted.getId())
-						|| !vertex.getParentView().equals(lastCommitted.getView())) {
+						|| !vertex.getParentMetadata().getView().equals(lastCommitted.getView())) {
 						return badParentError(vertex, lastCommitted);
 					}
 

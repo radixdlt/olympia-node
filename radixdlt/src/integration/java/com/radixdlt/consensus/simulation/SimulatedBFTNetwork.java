@@ -33,6 +33,7 @@ import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexStore;
 import com.radixdlt.consensus.SyncVerticesRPCSender;
 import com.radixdlt.consensus.VertexStoreEventsRx;
+import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.ScheduledTimeoutSender;
@@ -155,6 +156,7 @@ public class SimulatedBFTNetwork {
 				new WeightedRotatingLeaders(proposers, Comparator.comparing(v -> v.nodeKey().euid()), 5)
 			), // create a new ProposerElection per node
 			hasher,
+			View.of(Long.MAX_VALUE),
 			key,
 			counters.get(key)
 		);

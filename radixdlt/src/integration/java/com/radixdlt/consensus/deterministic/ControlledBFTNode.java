@@ -120,6 +120,7 @@ class ControlledBFTNode {
 			proposerElection,
 			key,
 			validatorSet,
+			View.of(Long.MAX_VALUE),
 			systemCounters
 		);
 		SyncQueues syncQueues = new SyncQueues(

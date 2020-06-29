@@ -38,6 +38,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
@@ -87,6 +88,7 @@ public class BFTEventReducerTest {
 			proposerElection,
 			SELF_KEY,
 			validatorSet,
+			View.of(Long.MAX_VALUE),
 			counters
 		);
 	}
@@ -143,8 +145,8 @@ public class BFTEventReducerTest {
 	@Test
 	public void when_processing_vote_as_not_proposer__then_nothing_happens() {
 		Vote voteMessage = mock(Vote.class);
-		VertexMetadata proposal = new VertexMetadata(0, View.of(2), Hash.random(), 2);
-		VertexMetadata parent = new VertexMetadata(0, View.of(1), Hash.random(), 1);
+		VertexMetadata proposal = new VertexMetadata(0, View.of(2), Hash.random(), 2, false);
+		VertexMetadata parent = new VertexMetadata(0, View.of(1), Hash.random(), 1, false);
 		VoteData voteData = new VoteData(proposal, parent, null);
 		when(voteMessage.getVoteData()).thenReturn(voteData);
 
@@ -158,8 +160,8 @@ public class BFTEventReducerTest {
 		when(proposerElection.getProposer(any())).thenReturn(SELF_KEY.getPublicKey());
 
 		Vote vote = mock(Vote.class);
-		VertexMetadata proposal = new VertexMetadata(0, View.of(2), Hash.random(), 2);
-		VertexMetadata parent = new VertexMetadata(0, View.of(1), Hash.random(), 1);
+		VertexMetadata proposal = new VertexMetadata(0, View.of(2), Hash.random(), 2, false);
+		VertexMetadata parent = new VertexMetadata(0, View.of(1), Hash.random(), 1, false);
 		VoteData voteData = new VoteData(proposal, parent, null);
 		when(vote.getVoteData()).thenReturn(voteData);
 
@@ -223,6 +225,8 @@ public class BFTEventReducerTest {
 		when(proposedAtom.getAID()).thenReturn(aid);
 		when(proposedVertex.getAtom()).thenReturn(proposedAtom);
 		when(proposedVertex.getQC()).thenReturn(mock(QuorumCertificate.class));
+		VertexMetadata parent = mock(VertexMetadata.class);
+		when(proposedVertex.getParentMetadata()).thenReturn(parent);
 		when(proposedVertex.getView()).thenReturn(currentView);
 
 		Proposal proposal = mock(Proposal.class);
@@ -253,13 +257,15 @@ public class BFTEventReducerTest {
 		when(qc.getView()).thenReturn(qcView);
 		when(proposedVertex.getQC()).thenReturn(qc);
 		when(proposedVertex.getView()).thenReturn(currentView);
+		VertexMetadata parent = mock(VertexMetadata.class);
+		when(proposedVertex.getParentMetadata()).thenReturn(parent);
 
 		Proposal proposal = mock(Proposal.class);
 		when(proposal.getVertex()).thenReturn(proposedVertex);
 
 		when(pacemaker.getCurrentView()).thenReturn(currentView);
 		Vote vote = mock(Vote.class);
-		doReturn(vote).when(safetyRules).voteFor(eq(proposedVertex));
+		doReturn(vote).when(safetyRules).voteFor(eq(proposedVertex), anyBoolean());
 		when(pacemaker.processQC(eq(qcView))).thenReturn(Optional.empty());
 		when(pacemaker.processQC(eq(currentView))).thenReturn(Optional.of(View.of(124)));
 		when(vertexStore.getHighestQC()).thenReturn(mock(QuorumCertificate.class));
@@ -287,13 +293,15 @@ public class BFTEventReducerTest {
 		when(qc.getView()).thenReturn(qcView);
 		when(proposedVertex.getQC()).thenReturn(qc);
 		when(proposedVertex.getView()).thenReturn(currentView);
+		VertexMetadata parent = mock(VertexMetadata.class);
+		when(proposedVertex.getParentMetadata()).thenReturn(parent);
 
 		Proposal proposal = mock(Proposal.class);
 		when(proposal.getVertex()).thenReturn(proposedVertex);
 
 		when(pacemaker.getCurrentView()).thenReturn(currentView);
 		Vote vote = mock(Vote.class);
-		doReturn(vote).when(safetyRules).voteFor(eq(proposedVertex));
+		doReturn(vote).when(safetyRules).voteFor(eq(proposedVertex), anyBoolean());
 		when(pacemaker.processQC(eq(qcView))).thenReturn(Optional.empty());
 		when(pacemaker.processQC(eq(currentView))).thenReturn(Optional.of(View.of(124)));
 
@@ -319,13 +327,15 @@ public class BFTEventReducerTest {
 		when(qc.getView()).thenReturn(qcView);
 		when(proposedVertex.getQC()).thenReturn(qc);
 		when(proposedVertex.getView()).thenReturn(currentView);
+		VertexMetadata parent = mock(VertexMetadata.class);
+		when(proposedVertex.getParentMetadata()).thenReturn(parent);
 
 		Proposal proposal = mock(Proposal.class);
 		when(proposal.getVertex()).thenReturn(proposedVertex);
 
 		when(pacemaker.getCurrentView()).thenReturn(currentView);
 		Vote vote = mock(Vote.class);
-		doReturn(vote).when(safetyRules).voteFor(eq(proposedVertex));
+		doReturn(vote).when(safetyRules).voteFor(eq(proposedVertex), anyBoolean());
 		when(pacemaker.processQC(eq(qcView))).thenReturn(Optional.empty());
 		when(pacemaker.processQC(eq(currentView))).thenReturn(Optional.of(View.of(124)));
 
@@ -350,6 +360,8 @@ public class BFTEventReducerTest {
 		when(qc.getView()).thenReturn(mock(View.class));
 		when(proposalVertex.getQC()).thenReturn(qc);
 		when(proposalVertex.getView()).thenReturn(currentView);
+		VertexMetadata parent = mock(VertexMetadata.class);
+		when(proposalVertex.getParentMetadata()).thenReturn(parent);
 
 		Proposal proposal = mock(Proposal.class);
 		when(proposal.getVertex()).thenReturn(proposalVertex);

@@ -27,6 +27,7 @@ import com.radixdlt.consensus.AddressBookValidatorSetProvider;
 import com.radixdlt.consensus.CommittedStateSyncRx;
 import com.radixdlt.consensus.DefaultHasher;
 import com.radixdlt.consensus.EpochChangeRx;
+import com.radixdlt.consensus.EpochManager;
 import com.radixdlt.consensus.EventCoordinatorNetworkRx;
 import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.VertexStoreEventsRx;
@@ -51,6 +52,7 @@ import com.radixdlt.consensus.sync.SyncedRadixEngine.CommittedStateSyncSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.network.MessageCentralBFTNetwork;
 import com.radixdlt.middleware2.network.MessageCentralSyncVerticesRPCNetwork;
@@ -103,6 +105,31 @@ public class CerberusModule extends AbstractModule {
 
 	@Provides
 	@Singleton
+	private EpochManager epochManager(
+		Mempool mempool,
+		BFTEventSender sender,
+		PacemakerFactory pacemakerFactory,
+		VertexStoreFactory vertexStoreFactory,
+		ProposerElectionFactory proposerElectionFactory,
+		Hasher hasher,
+		@Named("self") ECKeyPair selfKey,
+		SystemCounters counters
+	) {
+		return new EpochManager(
+			mempool,
+			sender,
+			pacemakerFactory,
+			vertexStoreFactory,
+			proposerElectionFactory,
+			hasher,
+			View.of(Long.MAX_VALUE),
+			selfKey,
+			counters
+		);
+	}
+
+	@Provides
+	@Singleton
 	private InternalMessagePasser internalMessagePasser() {
 		return new InternalMessagePasser();
 	}
@@ -130,7 +157,6 @@ public class CerberusModule extends AbstractModule {
 			committedAtomsStore,
 			committedStateSyncSender,
 			epochChangeSender,
-			View.of(100),
 			validatorSetProvider::getValidatorSet,
 			addressBook,
 			stateSyncNetwork
