@@ -59,7 +59,7 @@ public class AtomToBinaryConverterTest {
 		);
 
 		VertexMetadata vertexMetadata = new VertexMetadata(0, View.of(1), Hash.random(), 0);
-		CommittedAtom committedAtom = ClientAtom.convertFromApiAtom(atom).committed(vertexMetadata);
+		CommittedAtom committedAtom = new CommittedAtom(ClientAtom.convertFromApiAtom(atom), vertexMetadata);
 
 		byte[] serializedAtom = atomToBinaryConverter.toLedgerEntryContent(committedAtom);
 		CommittedAtom deserializedAtom = atomToBinaryConverter.toAtom(serializedAtom);

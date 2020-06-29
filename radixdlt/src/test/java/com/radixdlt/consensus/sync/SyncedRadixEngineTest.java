@@ -85,6 +85,7 @@ public class SyncedRadixEngineTest {
 			committedAtomsStore,
 			committedStateSyncSender,
 			epochChangeSender,
+			View.of(100),
 			validatorSetMapping,
 			addressBook,
 			stateSyncNetwork

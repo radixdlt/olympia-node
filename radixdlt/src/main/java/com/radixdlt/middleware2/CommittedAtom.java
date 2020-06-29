@@ -59,7 +59,7 @@ public final class CommittedAtom implements LedgerAtom, CommittedInstruction {
 		this.vertexMetadata = null;
 	}
 
-	CommittedAtom(ClientAtom clientAtom, VertexMetadata vertexMetadata) {
+	public CommittedAtom(ClientAtom clientAtom, VertexMetadata vertexMetadata) {
 		this.clientAtom = Objects.requireNonNull(clientAtom);
 		this.vertexMetadata = Objects.requireNonNull(vertexMetadata);
 	}

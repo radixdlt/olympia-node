@@ -38,6 +38,7 @@ import com.radixdlt.consensus.VertexStore;
 import com.radixdlt.consensus.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.SyncVerticesRPCSender;
 import com.radixdlt.consensus.VertexStoreFactory;
+import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker.TimeoutSender;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
 import com.radixdlt.consensus.liveness.PacemakerFactory;
@@ -129,6 +130,7 @@ public class CerberusModule extends AbstractModule {
 			committedAtomsStore,
 			committedStateSyncSender,
 			epochChangeSender,
+			View.of(100),
 			validatorSetProvider::getValidatorSet,
 			addressBook,
 			stateSyncNetwork
