@@ -137,7 +137,7 @@ class CmdHelper {
 
     static String getVethByContainerName(name) {
         def iflink, netId, veth, error, out
-        def command = "docker exec core2 bash -c".tokenize() << "cat /sys/class/net/eth*/iflink"
+        def command = "docker exec ${name} bash -c".tokenize() << "cat /sys/class/net/eth*/iflink"
         (iflink, error) = runCommand(command)
         Closure getVeth = {
             def string = "bash -c".tokenize() << ("grep -l ${Integer.parseInt(iflink[0])} /sys/class/net/veth*/ifindex" as String)
@@ -172,7 +172,7 @@ class CmdHelper {
         runCommand("iptables -t mangle -F")
     }
 
-    static String setupQueueQuality(veth, optionsArgs = "delay 100ms loss 20%") {
+        static String setupQueueQuality(veth, optionsArgs = "delay 100ms loss 20%") {
         runCommand("tc qdisc add dev ${veth} handle 10: root netem ${optionsArgs}")
     }
 
