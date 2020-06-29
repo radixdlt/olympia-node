@@ -151,6 +151,6 @@ public final class VertexMetadata {
 
 	@Override
 	public String toString() {
-		return String.format("%s{view=%s stateVersion=%s}", getClass().getSimpleName(), view, stateVersion);
+		return String.format("%s{epoch=%s view=%s stateVersion=%s}", getClass().getSimpleName(), this.epoch, view, stateVersion);
 	}
 }

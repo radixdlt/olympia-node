@@ -66,6 +66,7 @@ public class SyncedRadixEngine implements SyncedStateComputer<CommittedAtom> {
 	private final AddressBook addressBook;
 	private final StateSyncNetwork stateSyncNetwork;
 	private final Object lock = new Object();
+	private VertexMetadata lastEpochChange = null;
 
 	public SyncedRadixEngine(
 		RadixEngine<LedgerAtom> radixEngine,
@@ -157,8 +158,10 @@ public class SyncedRadixEngine implements SyncedStateComputer<CommittedAtom> {
 	@Override
 	public void execute(CommittedAtom atom) {
 		synchronized (lock) {
-			if (atom.getVertexMetadata().isEndOfEpoch()) {
+			if (atom.getVertexMetadata().isEndOfEpoch()
+				&& (lastEpochChange == null || lastEpochChange.getEpoch() != atom.getVertexMetadata().getEpoch())) {
 				VertexMetadata ancestor = atom.getVertexMetadata();
+				this.lastEpochChange = ancestor;
 				EpochChange epochChange = new EpochChange(ancestor, validatorSetMapping.apply(ancestor.getEpoch() + 1));
 				this.epochChangeSender.epochChange(epochChange);
 			}

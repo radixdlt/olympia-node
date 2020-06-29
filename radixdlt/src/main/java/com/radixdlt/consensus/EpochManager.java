@@ -32,6 +32,7 @@ import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.mempool.Mempool;
@@ -100,6 +101,8 @@ public class EpochManager {
 		if (nextEpoch <= this.currentEpoch) {
 			throw new IllegalStateException("Epoch change has already occurred: " + epochChange);
 		}
+
+		counters.set(CounterType.EPOCHS_EPOCH, nextEpoch);
 
 		TimeoutSender sender = (view, ms) -> scheduledTimeoutSender.scheduleTimeout(new LocalTimeout(nextEpoch, view), ms);
 		Pacemaker pacemaker = pacemakerFactory.create(sender);

@@ -36,6 +36,8 @@ public interface SystemCounters {
 		CONSENSUS_VERTEXSTORE_SIZE("consensus.vertexstore_size"),
 		CONSENSUS_VIEW("consensus.view"),
 		CONSENSUS_PROCESSED("consensus.processed"),
+		// TODO: Move some CONSENSUS epoch related counters into epoch
+		EPOCHS_EPOCH("epochs.epoch"),
 		LEDGER_STATE_VERSION("ledger.state_version"),
 		MEMPOOL_COUNT("mempool.count"),
 		MEMPOOL_MAXCOUNT("mempool.maxcount"),

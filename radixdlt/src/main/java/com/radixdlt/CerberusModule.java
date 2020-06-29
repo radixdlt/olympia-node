@@ -114,6 +114,7 @@ public class CerberusModule extends AbstractModule {
 		@Named("self") ECKeyPair selfKey,
 		SystemCounters counters
 	) {
+		final long viewsPerEpoch = runtimeProperties.get("epochs.views_per_epoch", 100L);
 		return new EpochManager(
 			mempool,
 			sender,
@@ -122,7 +123,7 @@ public class CerberusModule extends AbstractModule {
 			vertexStoreFactory,
 			proposerElectionFactory,
 			hasher,
-			View.of(Long.MAX_VALUE),
+			View.of(viewsPerEpoch),
 			selfKey,
 			counters
 		);
