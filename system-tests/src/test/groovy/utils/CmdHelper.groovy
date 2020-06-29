@@ -146,10 +146,10 @@ class CmdHelper {
         }
         veth = getVeth()
         def count = 0
-        while(veth.size() == 0){
+        while (veth.size() == 0) {
             getVeth()
-            count ++
-            if(count > 3){
+            count++
+            if (count > 3) {
                 break;
             }
         }
@@ -172,7 +172,7 @@ class CmdHelper {
         runCommand("iptables -t mangle -F")
     }
 
-        static String setupQueueQuality(veth, optionsArgs = "delay 100ms loss 20%") {
+    static String setupQueueQuality(veth, optionsArgs = "delay 100ms loss 20%") {
         runCommand("tc qdisc add dev ${veth} handle 10: root netem ${optionsArgs}")
     }
 
