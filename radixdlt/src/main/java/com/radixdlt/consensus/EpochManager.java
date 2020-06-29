@@ -20,11 +20,13 @@ package com.radixdlt.consensus;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.name.Named;
 import com.radixdlt.consensus.VertexStore.GetVerticesRequest;
+import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker.TimeoutSender;
 import com.radixdlt.consensus.liveness.MempoolProposalGenerator;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.PacemakerFactory;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposerElection;
+import com.radixdlt.consensus.liveness.ScheduledTimeoutSender;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.consensus.validators.Validator;
@@ -55,6 +57,7 @@ public class EpochManager {
 	private final View epochChangeView;
 	private final SystemCounters counters;
 	private final Hasher hasher;
+	private final ScheduledTimeoutSender scheduledTimeoutSender;
 
 	private long currentEpoch;
 	private VertexStore vertexStore;
@@ -63,6 +66,7 @@ public class EpochManager {
 	public EpochManager(
 		Mempool mempool,
 		BFTEventSender sender,
+		ScheduledTimeoutSender scheduledTimeoutSender,
 		PacemakerFactory pacemakerFactory,
 		VertexStoreFactory vertexStoreFactory,
 		ProposerElectionFactory proposerElectionFactory,
@@ -73,6 +77,7 @@ public class EpochManager {
 	) {
 		this.mempool = Objects.requireNonNull(mempool);
 		this.sender = Objects.requireNonNull(sender);
+		this.scheduledTimeoutSender = Objects.requireNonNull(scheduledTimeoutSender);
 		this.pacemakerFactory = Objects.requireNonNull(pacemakerFactory);
 		this.vertexStoreFactory = Objects.requireNonNull(vertexStoreFactory);
 		this.proposerElectionFactory = Objects.requireNonNull(proposerElectionFactory);
@@ -83,16 +88,24 @@ public class EpochManager {
 	}
 
 	public void processEpochChange(EpochChange epochChange) {
-		log.info("NEXT_EPOCH: {}", epochChange);
-
 		ValidatorSet validatorSet = epochChange.getValidatorSet();
 		ProposerElection proposerElection = proposerElectionFactory.create(validatorSet);
-		Pacemaker pacemaker = pacemakerFactory.create();
+
+		log.info("NEXT_EPOCH: {} {}", epochChange, proposerElection);
+		VertexMetadata ancestorMetadata = epochChange.getAncestor();
+		Vertex genesisVertex = Vertex.createGenesis(ancestorMetadata);
+		final long nextEpoch = genesisVertex.getEpoch();
+
+		// Sanity check
+		if (nextEpoch <= this.currentEpoch) {
+			throw new IllegalStateException("Epoch change has already occurred: " + epochChange);
+		}
+
+		TimeoutSender sender = (view, ms) -> scheduledTimeoutSender.scheduleTimeout(new LocalTimeout(nextEpoch, view), ms);
+		Pacemaker pacemaker = pacemakerFactory.create(sender);
 		SafetyRules safetyRules = new SafetyRules(this.selfKey, SafetyState.initialState(), this.hasher);
 		PendingVotes pendingVotes = new PendingVotes(this.hasher);
 
-		VertexMetadata ancestorMetadata = epochChange.getAncestor();
-		Vertex genesisVertex = Vertex.createGenesis(ancestorMetadata);
 		QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(genesisVertex);
 
 		VertexStore vertexStore = vertexStoreFactory.create(genesisVertex, genesisQC);
@@ -120,7 +133,7 @@ public class EpochManager {
 			counters
 		);
 
-		this.currentEpoch = genesisVertex.getEpoch();
+		this.currentEpoch = nextEpoch;
 		this.vertexStore = vertexStore;
 		this.eventProcessor = new BFTEventPreprocessor(
 			this.selfKey.getPublicKey(),
@@ -168,8 +181,12 @@ public class EpochManager {
 		}
 	}
 
-	public void processLocalTimeout(View view) {
-		eventProcessor.processLocalTimeout(view);
+	public void processLocalTimeout(LocalTimeout localTimeout) {
+		if (localTimeout.getEpoch() != this.currentEpoch) {
+			return;
+		}
+
+		eventProcessor.processLocalTimeout(localTimeout.getView());
 	}
 
 	public void processLocalSync(Hash synced) {

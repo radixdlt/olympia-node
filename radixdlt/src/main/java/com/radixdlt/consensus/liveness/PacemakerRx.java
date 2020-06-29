@@ -17,23 +17,15 @@
 
 package com.radixdlt.consensus.liveness;
 
-import com.radixdlt.consensus.View;
-import io.reactivex.rxjava3.core.Completable;
+import com.radixdlt.consensus.LocalTimeout;
 import io.reactivex.rxjava3.core.Observable;
 
 /**
  * Pacemaker timeouts
  */
 public interface PacemakerRx {
-
-	/**
-	 * Returns a completable which will complete on the current next deadline
-	 * @return completable which will complete on the current next deadline
-	 */
-	Completable timeout(View view);
-
 	/**
 	 * @return observable of timeout events which begins emitting on the first subscription
 	 */
-	Observable<View> localTimeouts();
+	Observable<LocalTimeout> localTimeouts();
 }

@@ -40,7 +40,6 @@ import com.radixdlt.consensus.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.SyncVerticesRPCSender;
 import com.radixdlt.consensus.VertexStoreFactory;
 import com.radixdlt.consensus.View;
-import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker.TimeoutSender;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
 import com.radixdlt.consensus.liveness.PacemakerFactory;
 import com.radixdlt.consensus.liveness.PacemakerRx;
@@ -80,7 +79,6 @@ public class CerberusModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		// dependencies
-		bind(TimeoutSender.class).to(ScheduledTimeoutSender.class);
 		bind(PacemakerRx.class).to(ScheduledTimeoutSender.class);
 
 		bind(VertexStoreEventsRx.class).to(InternalMessagePasser.class);
@@ -108,6 +106,7 @@ public class CerberusModule extends AbstractModule {
 	private EpochManager epochManager(
 		Mempool mempool,
 		BFTEventSender sender,
+		ScheduledTimeoutSender scheduledTimeoutSender,
 		PacemakerFactory pacemakerFactory,
 		VertexStoreFactory vertexStoreFactory,
 		ProposerElectionFactory proposerElectionFactory,
@@ -118,6 +117,7 @@ public class CerberusModule extends AbstractModule {
 		return new EpochManager(
 			mempool,
 			sender,
+			scheduledTimeoutSender,
 			pacemakerFactory,
 			vertexStoreFactory,
 			proposerElectionFactory,
@@ -179,11 +179,9 @@ public class CerberusModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private PacemakerFactory pacemakerFactory(
-		TimeoutSender timeoutSender
-	) {
+	private PacemakerFactory pacemakerFactory() {
 		final int pacemakerTimeout = runtimeProperties.get("consensus.pacemaker_timeout_millis", 5000);
-		return () -> new FixedTimeoutPacemaker(pacemakerTimeout, timeoutSender);
+		return timeoutSender -> new FixedTimeoutPacemaker(pacemakerTimeout, timeoutSender);
 	}
 
 	@Provides

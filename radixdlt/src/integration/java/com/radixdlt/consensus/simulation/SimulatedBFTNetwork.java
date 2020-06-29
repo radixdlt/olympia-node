@@ -73,7 +73,6 @@ public class SimulatedBFTNetwork {
 	private final ImmutableMap<ECKeyPair, SystemCounters> counters;
 	private final ImmutableMap<ECKeyPair, ScheduledTimeoutSender> timeoutSenders;
 	private final ImmutableMap<ECKeyPair, InternalMessagePasser> internalMessages;
-	private final ImmutableMap<ECKeyPair, FixedTimeoutPacemaker> pacemakers;
 	private final ImmutableMap<ECKeyPair, ConsensusRunner> runners;
 	private final ConcurrentMap<ECKeyPair, VertexStore> vertexStores;
 	private final ConcurrentMap<ECKeyPair, ProposerElection> proposerElections;
@@ -112,8 +111,6 @@ public class SimulatedBFTNetwork {
 			e -> e,
 			e -> new ScheduledTimeoutSender(Executors.newSingleThreadScheduledExecutor(daemonThreads("TimeoutSender")))
 		));
-		this.pacemakers = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e,
-			e -> new FixedTimeoutPacemaker(this.pacemakerTimeout, this.timeoutSenders.get(e))));
 		this.runners = nodes.stream().collect(ImmutableMap.toImmutableMap(
 			e -> e, this::createBFTInstance));
 		this.proposerElections = new ConcurrentHashMap<>();
@@ -123,12 +120,12 @@ public class SimulatedBFTNetwork {
 		Mempool mempool = new EmptyMempool();
 		Hasher hasher = new DefaultHasher();
 		ScheduledTimeoutSender timeoutSender = timeoutSenders.get(key);
-		FixedTimeoutPacemaker pacemaker = pacemakers.get(key);
 		EpochChangeRx epochChangeRx = new BasicEpochChangeRx(nodes.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toList()));
 		EpochManager epochManager = new EpochManager(
 			mempool,
 			underlyingNetwork.getNetworkSender(key.getPublicKey()),
-			() -> pacemaker,
+			this.timeoutSenders.get(key),
+			timeoutSender1 -> new FixedTimeoutPacemaker(this.pacemakerTimeout, timeoutSender1),
 			(v, qc) -> vertexStores.computeIfAbsent(key, keyPair -> {
 				SyncedStateComputer<CommittedAtom> stateComputer = new SyncedStateComputer<CommittedAtom>() {
 					@Override

@@ -145,6 +145,8 @@ public final class NewView implements RequiresSyncConsensusEvent {
 
 	@Override
 	public String toString() {
-		return String.format("%s{view=%s qc=%s author=%s}", getClass().getSimpleName(), view, qc, author.euid().toString().substring(0, 6));
+		return String.format("%s{epoch=%s view=%s qc=%s author=%s}",
+			getClass().getSimpleName(), this.getEpoch(), view, qc, author.euid().toString().substring(0, 6)
+		);
 	}
 }

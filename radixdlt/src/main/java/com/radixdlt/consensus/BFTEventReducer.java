@@ -213,6 +213,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		final boolean isEndOfEpoch;
 		final Vertex vertexToVoteFor;
 		if (proposedVertex.getParentMetadata().isEndOfEpoch()) {
+			// TODO: Check if current proposal is actually an empty client atom
 			vertexToVoteFor = new Vertex(proposedVertex.getEpoch(), proposedVertex.getQC(), proposedVertex.getView(), null);
 			isEndOfEpoch = true;
 		} else if (proposedVertexView.compareTo(epochChangeView) >= 0) {

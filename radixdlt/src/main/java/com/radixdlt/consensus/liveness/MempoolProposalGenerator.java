@@ -48,6 +48,10 @@ public final class MempoolProposalGenerator implements ProposalGenerator {
 	@Override
 	public Vertex generateProposal(View view) {
 		final QuorumCertificate highestQC = vertexStore.getHighestQC();
+		if (highestQC.getProposed().isEndOfEpoch()) {
+			return Vertex.createVertex(highestQC, view, null);
+		}
+
 		final List<Vertex> preparedVertices = vertexStore.getPathFromRoot(highestQC.getProposed().getId());
 		final Set<AID> preparedAtoms = preparedVertices.stream()
 			.map(Vertex::getAtom)

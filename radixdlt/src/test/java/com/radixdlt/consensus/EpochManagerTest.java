@@ -10,6 +10,7 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
+import com.radixdlt.consensus.liveness.ScheduledTimeoutSender;
 import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
@@ -26,7 +27,8 @@ public class EpochManagerTest {
 		EpochManager epochManager = new EpochManager(
 			mock(Mempool.class),
 			mock(BFTEventSender.class),
-			() -> mock(Pacemaker.class),
+			mock(ScheduledTimeoutSender.class),
+			timeoutSender -> mock(Pacemaker.class),
 			mock(VertexStoreFactory.class),
 			proposers -> mock(ProposerElection.class),
 			mock(Hasher.class),
@@ -34,7 +36,7 @@ public class EpochManagerTest {
 			keyPair,
 			mock(SystemCounters.class)
 		);
-		epochManager.processLocalTimeout(mock(View.class));
+		epochManager.processLocalTimeout(mock(LocalTimeout.class));
 		epochManager.processLocalSync(mock(Hash.class));
 		epochManager.processGetVerticesRequest(mock(GetVerticesRequest.class));
 		epochManager.processGetVerticesResponse(mock(GetVerticesResponse.class));
@@ -54,7 +56,8 @@ public class EpochManagerTest {
 		EpochManager epochManager = new EpochManager(
 			mock(Mempool.class),
 			mock(BFTEventSender.class),
-			() -> mock(Pacemaker.class),
+			mock(ScheduledTimeoutSender.class),
+			timeoutSender -> mock(Pacemaker.class),
 			(v, qc) -> vertexStore,
 			proposers -> mock(ProposerElection.class),
 			mock(Hasher.class),
