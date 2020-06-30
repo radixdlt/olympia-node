@@ -69,12 +69,8 @@ public class SafetyCheck implements BFTCheck {
 	@Override
 	public Observable<BFTCheckError> check(RunningNetwork network) {
 		final Map<View, Vertex> committedVertices = new ConcurrentHashMap<>();
-		committedVertices.put(View.genesis(), network.getGenesisVertex());
-		final AtomicReference<View> highest = new AtomicReference<>(View.genesis());
-		final Map<ECKeyPair, Vertex> lastCommittedByNode = new ConcurrentHashMap<>();
-		for (ECKeyPair node : network.getNodes()) {
-			lastCommittedByNode.put(node, network.getGenesisVertex());
-		}
+		final AtomicReference<View> highest = new AtomicReference<>();
+		final Map<ECKeyPair, View> lastCommittedByNode = new ConcurrentHashMap<>();
 
 		return Observable.merge(
 			network.getNodes().stream().map(
@@ -90,14 +86,16 @@ public class SafetyCheck implements BFTCheck {
 						return conflictingVerticesError(vertex, currentVertexAtView);
 					}
 				} else {
-					final Vertex lastCommitted = committedVertices.get(highest.get());
-					if (vertex.getParentId() == null) {
-						return noParentError(vertex);
-					}
+					if (!vertex.getParentMetadata().getView().isGenesis()) {
+						final Vertex lastCommitted = committedVertices.get(highest.get());
+						if (vertex.getParentId() == null) {
+							return noParentError(vertex);
+						}
 
-					if (!vertex.getParentId().equals(lastCommitted.getId())
-						|| !vertex.getParentMetadata().getView().equals(lastCommitted.getView())) {
-						return badParentError(vertex, lastCommitted);
+						if (!vertex.getParentId().equals(lastCommitted.getId())
+							|| !vertex.getParentMetadata().getView().equals(lastCommitted.getView())) {
+							return badParentError(vertex, lastCommitted);
+						}
 					}
 
 					committedVertices.put(vertex.getView(), vertex);
@@ -105,9 +103,9 @@ public class SafetyCheck implements BFTCheck {
 				}
 
 				// Clean up old vertices so that we avoid consuming too much memory
-				lastCommittedByNode.put(node, vertex);
-				final View lowest = lastCommittedByNode.values().stream()
-					.map(Vertex::getView)
+				lastCommittedByNode.put(node, vertex.getView());
+				final View lowest = network.getNodes().stream()
+					.map(n -> lastCommittedByNode.getOrDefault(n, View.genesis()))
 					.reduce((v0, v1) -> v0.compareTo(v1) < 0 ? v0 : v1)
 					.orElse(View.genesis());
 				final Set<View> viewsToRemove = committedVertices.keySet().stream()

@@ -29,7 +29,6 @@ import com.radixdlt.consensus.EpochChangeRx;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.InternalMessagePasser;
 import com.radixdlt.consensus.SyncedStateComputer;
-import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexStore;
 import com.radixdlt.consensus.SyncVerticesRPCSender;
 import com.radixdlt.consensus.VertexStoreEventsRx;
@@ -163,8 +162,6 @@ public class SimulatedNetwork {
 
 	// TODO: Add support for epoch changes
 	public interface RunningNetwork {
-		Vertex getGenesisVertex();
-
 		List<ECKeyPair> getNodes();
 
 		VertexStoreEventsRx getVertexStoreEvents(ECKeyPair keyPair);
@@ -190,11 +187,6 @@ public class SimulatedNetwork {
 		this.runners.values().forEach(ConsensusRunner::start);
 
 		return completableSubject.toSingle(() -> new RunningNetwork() {
-			@Override
-			public Vertex getGenesisVertex() {
-				return Vertex.createGenesis();
-			}
-
 			@Override
 			public List<ECKeyPair> getNodes() {
 				return nodes;

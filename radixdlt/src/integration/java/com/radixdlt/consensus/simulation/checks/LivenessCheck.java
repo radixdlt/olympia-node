@@ -17,12 +17,14 @@
 
 package com.radixdlt.consensus.simulation.checks;
 
+import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.simulation.BFTCheck;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.simulation.SimulatedNetwork.RunningNetwork;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -41,26 +43,43 @@ public class LivenessCheck implements BFTCheck {
 		this.timeUnit = timeUnit;
 	}
 
+	private Comparator<VertexMetadata> vertexMetadataComparator =
+		(o1, o2) -> {
+			if (o1.getEpoch() > o2.getEpoch()) {
+				return 1;
+			} else if (o1.getEpoch() < o2.getEpoch()) {
+				return -1;
+			} else {
+				return o1.getView().compareTo(o2.getView());
+			}
+		};
+
 	@Override
 	public Observable<BFTCheckError> check(RunningNetwork network) {
-		AtomicReference<View> highestQCView = new AtomicReference<>(View.genesis());
+		AtomicReference<VertexMetadata> highestVertexMetadata = new AtomicReference<>(VertexMetadata.ofGenesisAncestor());
 		return Observable
 			.interval(duration * 2, duration, timeUnit) // 2 times initial duration to account for boot up
 			.flatMapSingle(i -> {
-				List<Single<View>> qcs = network.getNodes().stream()
+				List<Single<VertexMetadata>> qcs = network.getNodes().stream()
 						.map(network::getVertexStoreEvents)
-						.map(eventsRx -> eventsRx.highQCs().firstOrError().map(QuorumCertificate::getView))
+						.map(eventsRx -> eventsRx.highQCs().firstOrError().map(QuorumCertificate::getProposed))
 						.collect(Collectors.toList());
 				return Single.merge(qcs)
-					.reduce(View.genesis(), (v0, v1) -> v0.compareTo(v1) > 0 ? v0 : v1);
+					.reduce(VertexMetadata.ofGenesisAncestor(), (o1, o2) -> {
+						if (vertexMetadataComparator.compare(o1, o2) > 0) {
+							return o1;
+						} else {
+							return o2;
+						}
+					});
 			})
-			.concatMap(view -> {
-				if (view.compareTo(highestQCView.get()) <= 0) {
+			.concatMap(vertexMetadata -> {
+				if (vertexMetadataComparator.compare(vertexMetadata, highestVertexMetadata.get()) <= 0) {
 					return Observable.just(
-						new BFTCheckError(String.format("Highest QC hasn't increased from %s after %s %s", highestQCView.get(), duration, timeUnit))
+						new BFTCheckError(String.format("Highest QC hasn't increased from %s after %s %s", highestVertexMetadata.get(), duration, timeUnit))
 					);
 				} else {
-					highestQCView.set(view);
+					highestVertexMetadata.set(vertexMetadata);
 					return Observable.empty();
 				}
 			});

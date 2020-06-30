@@ -87,7 +87,7 @@ public final class Vertex {
 		Objects.requireNonNull(ancestorMetadata);
 		final VoteData voteData = new VoteData(ancestorMetadata, ancestorMetadata, ancestorMetadata);
 		final QuorumCertificate qc = new QuorumCertificate(voteData, new ECDSASignatures());
-		return new Vertex(ancestorMetadata.getEpoch() + 1, qc, View.of(0), null);
+		return new Vertex(ancestorMetadata.getEpoch() + 1, qc, View.genesis(), null);
 	}
 
 	public static Vertex createVertex(QuorumCertificate qc, View view, ClientAtom reAtom) {
