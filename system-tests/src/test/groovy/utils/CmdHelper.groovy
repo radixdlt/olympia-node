@@ -26,7 +26,7 @@ import static utils.Generic.listToDelimitedString
 class CmdHelper {
     private static final Logger logger = LogManager.getLogger()
 
-    static List<String[]> runCommand(cmd, String[] env = null, failOnError = false, logOutput=true) {
+    static List<String[]> runCommand(cmd, String[] env = null, failOnError = false, logOutput = true) {
 
         Thread.sleep(1000)
         def sout = new StringBuffer()
@@ -41,12 +41,17 @@ class CmdHelper {
         }
 
         process.consumeProcessOutput(sout, serr)
+
+        //  This sleep added to allow some shell commands to run reliably.
+        //  Ex : Below command was not consistently giving output from docker container that is running with host network. Adding 1000 ms gave better result
+        //      "grep -l 351 /sys/class/net/veth*/ifindex"
+        Thread.sleep(1000)
         process.waitFor()
 
         List output
         if (sout) {
             output = sout.toString().split(System.lineSeparator()).collect({ it })
-            if(logOutput){
+            if (logOutput) {
                 logger.info("-----------Output---------")
                 sout.each { logger.info(it) }
             }
@@ -121,7 +126,7 @@ class CmdHelper {
         if (!file.exists()) {
             List options = ["generate-key", "--password=test123"]
             def key, error
-            (key, error) = runCommand("java -jar ${Generic.pathToCLIJar()} ${listToDelimitedString(options, ' ')}", null, true,false)
+            (key, error) = runCommand("java -jar ${Generic.pathToCLIJar()} ${listToDelimitedString(options, ' ')}", null, true, false)
             file.withWriter('UTF-8') { writer ->
                 key.each {
                     writer.write(it)
@@ -133,4 +138,61 @@ class CmdHelper {
     static String radixCliCommand(List cmdOptions) {
         return "java -jar ${Generic.pathToCLIJar()} ${listToDelimitedString(cmdOptions, ' ')}"
     }
+
+    /**
+     * For a given container name, method returns the virtual ethernet of the docker container. This method executes a
+     * command on a docker container with @param name to find system wide unique index of the interface  it is linked to. Typically a container has interface
+     * eth0 and iflink has an index in decimal number that is mapped to virtual ethernet interface on host
+     * @param  name  name of the container who's virtual ethernet interface needs to be retrieved
+     * @return string value of Virtual ethernet name that docker container is linked to on host
+     */
+    static String getVethByContainerName(name) {
+        def iflink, netId, veth, error, out
+
+        // Below command executes on requested docker container to find the unique index of the interface it is linked to host
+        def command = "docker exec ${name} bash -c".tokenize() << "cat /sys/class/net/eth*/iflink"
+        (iflink, error) = runCommand(command)
+        Closure getVeth = {
+            // Below command executed to find a veth* files that match index number.
+            // More details on /sys/class/net can be found on this link https://www.kernel.org/doc/Documentation/ABI/testing/sysfs-class-net
+            def string = "bash -c".tokenize() << ("grep -l ${Integer.parseInt(iflink[0])} /sys/class/net/veth*/ifindex" as String)
+            (veth, error) = runCommand(string)
+            return veth
+        }
+
+        // Commands from a docker container using host network sometime do not run in a reliable way for locations /sys/class/net esp when running on docker container
+        //  To overcome this Closure getVeth is called maximum three times to see if return value is empty list not empty. Retrying three times should give the value otherwise there may other issues
+        veth = getVeth()
+        def count = 0
+        while (veth.size() == 0) {
+            getVeth()
+            count++
+            if (count > 3) {
+                break;
+            }
+        }
+        println(veth[0].tokenize("/").find({ it.contains("veth") }))
+        return veth[0].tokenize("/").find({ it.contains("veth") })
+    }
+
+    static String setupIPTables() {
+        [
+                "iptables -A POSTROUTING -t mangle -j CLASSIFY --set-class 10:10 -p tcp",
+                "iptables -A POSTROUTING -t mangle -j CLASSIFY --set-class 10:10 -p udp",
+                "iptables -A POSTROUTING -t mangle -j CLASSIFY --set-class 10:10 -p icmp",
+                "ip6tables -A POSTROUTING -t mangle -j CLASSIFY --set-class 10:10 -p tcp",
+                "ip6tables -A POSTROUTING -t mangle -j CLASSIFY --set-class 10:10 -p udp",
+                "ip6tables -A POSTROUTING -t mangle -j CLASSIFY --set-class 10:10 -p icmp"
+        ].each { runCommand(it) }
+    }
+
+    static String flushIPTableMangle() {
+        runCommand("iptables -t mangle -F")
+    }
+
+    static String setupQueueQuality(veth, optionsArgs = "delay 100ms loss 20%") {
+        runCommand("tc qdisc add dev ${veth} handle 10: root netem ${optionsArgs}")
+    }
+
+
 }
