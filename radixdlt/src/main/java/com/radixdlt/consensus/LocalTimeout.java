@@ -28,7 +28,7 @@ public final class LocalTimeout {
 
 	public LocalTimeout(long epoch, View view) {
 		this.epoch = epoch;
-		this.view = view;
+		this.view = Objects.requireNonNull(view);
 	}
 
 	public long getEpoch() {
@@ -51,7 +51,7 @@ public final class LocalTimeout {
 		}
 		LocalTimeout other = (LocalTimeout) o;
 		return other.epoch == this.epoch
-			&& other.view.equals(this.view);
+			&& Objects.equals(other.view, this.view);
 	}
 
 	@Override
