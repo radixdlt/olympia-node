@@ -53,8 +53,11 @@ public final class Vote implements ConsensusEvent {
 	private final ECDSASignature signature; // may be null if not signed (e.g. for genesis)
 
 	@JsonCreator
-	public Vote(@JsonProperty("author") byte[] author, @JsonProperty("vertex_metadata") VoteData voteData,
-			@JsonProperty("signature") ECDSASignature signature) throws CryptoException {
+	Vote(
+		@JsonProperty("author") byte[] author,
+		@JsonProperty("vertex_metadata") VoteData voteData,
+		@JsonProperty("signature") ECDSASignature signature
+	) throws CryptoException {
 		this(new ECPublicKey(author), voteData, signature);
 	}
 

@@ -58,8 +58,11 @@ public final class VoteData {
 	}
 
 	@JsonCreator
-	public VoteData(@JsonProperty("proposed") VertexMetadata proposed, @JsonProperty("parent") VertexMetadata parent,
-			@JsonProperty("committed") VertexMetadata committed) {
+	public VoteData(
+		@JsonProperty("proposed") VertexMetadata proposed,
+		@JsonProperty("parent") VertexMetadata parent,
+		@JsonProperty("committed") VertexMetadata committed
+	) {
 		if (parent == null) {
 			if (!proposed.getView().isGenesis()) {
 				throw new IllegalArgumentException("Only genesis is allowed to have no parent.");

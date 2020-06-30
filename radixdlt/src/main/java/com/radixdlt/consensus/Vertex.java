@@ -57,7 +57,7 @@ public final class Vertex {
 	private final transient Supplier<Hash> cachedHash = Suppliers.memoize(this::doGetHash);
 
 	@JsonCreator
-	public Vertex(@JsonProperty("qc") QuorumCertificate qc, @JsonProperty("view") Long viewId, @JsonProperty("atom") ClientAtom atom) {
+	Vertex(@JsonProperty("qc") QuorumCertificate qc, @JsonProperty("view") Long viewId, @JsonProperty("atom") ClientAtom atom) {
 		this(qc, viewId != null ? View.of(viewId) : null, atom);
 	}
 

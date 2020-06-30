@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.errorprone.annotations.Immutable;
 import com.radixdlt.crypto.CryptoException;
@@ -57,9 +58,14 @@ public final class NewView implements RequiresSyncConsensusEvent {
 	@DsonOutput(Output.ALL)
 	private final ECDSASignature signature; // may be null if not signed (e.g. for genesis)
 
-	public NewView(@JsonProperty("author") byte[] author, @JsonProperty("view") Long view,
-			@JsonProperty("qc") QuorumCertificate qc, @JsonProperty("committedQC") QuorumCertificate committedQC,
-			@JsonProperty("signature") ECDSASignature signature) throws CryptoException {
+	@JsonCreator
+	NewView(
+		@JsonProperty("author") byte[] author,
+		@JsonProperty("view") Long view,
+		@JsonProperty("qc") QuorumCertificate qc,
+		@JsonProperty("committedQC") QuorumCertificate committedQC,
+		@JsonProperty("signature") ECDSASignature signature
+	) throws CryptoException {
 		this(new ECPublicKey(author), view != null ? View.of(view.longValue()) : null, qc, committedQC, signature);
 	}
 

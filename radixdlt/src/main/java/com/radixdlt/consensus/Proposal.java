@@ -55,8 +55,12 @@ public final class Proposal implements RequiresSyncConsensusEvent {
 	private final QuorumCertificate committedQC;
 
 	@JsonCreator
-	public Proposal(@JsonProperty("vertex") Vertex vertex, @JsonProperty("committedQC") QuorumCertificate committedQC,
-			@JsonProperty("author") byte[] author, @JsonProperty("signature") ECDSASignature signature) throws CryptoException {
+	Proposal(
+		@JsonProperty("vertex") Vertex vertex,
+		@JsonProperty("committedQC") QuorumCertificate committedQC,
+		@JsonProperty("author") byte[] author,
+		@JsonProperty("signature") ECDSASignature signature
+	) throws CryptoException {
 		this(vertex, committedQC, new ECPublicKey(author), signature);
 	}
 

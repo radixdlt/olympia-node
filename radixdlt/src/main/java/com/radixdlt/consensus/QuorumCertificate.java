@@ -43,7 +43,6 @@ public final class QuorumCertificate {
 	@DsonOutput(Output.ALL)
 	private final VoteData voteData;
 
-
 	@JsonCreator
 	public QuorumCertificate(@JsonProperty("vote_data") VoteData voteData, @JsonProperty("signatures") ECDSASignatures signatures) {
 		this.voteData = Objects.requireNonNull(voteData);
