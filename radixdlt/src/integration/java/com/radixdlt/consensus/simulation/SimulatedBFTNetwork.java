@@ -33,15 +33,13 @@ import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexStore;
 import com.radixdlt.consensus.SyncVerticesRPCSender;
 import com.radixdlt.consensus.VertexStoreEventsRx;
-import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.VertexStoreFactory;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
-import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.ScheduledTimeoutSender;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.mempool.EmptyMempool;
 import com.radixdlt.mempool.Mempool;
 
@@ -55,9 +53,8 @@ import io.reactivex.rxjava3.subjects.CompletableSubject;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.stream.Collectors;
 
 import static com.radixdlt.utils.ThreadFactories.daemonThreads;
@@ -66,27 +63,13 @@ import static com.radixdlt.utils.ThreadFactories.daemonThreads;
  * A multi-node bft test network where the network and latencies of each message is simulated.
  */
 public class SimulatedBFTNetwork {
-	private static final int TEST_PACEMAKER_TIMEOUT = 1000;
-
 	private final int pacemakerTimeout;
 	private final TestEventCoordinatorNetwork underlyingNetwork;
 	private final ImmutableMap<ECKeyPair, SystemCounters> counters;
-	private final ImmutableMap<ECKeyPair, ScheduledTimeoutSender> timeoutSenders;
 	private final ImmutableMap<ECKeyPair, InternalMessagePasser> internalMessages;
 	private final ImmutableMap<ECKeyPair, ConsensusRunner> runners;
-	private final ConcurrentMap<ECKeyPair, VertexStore> vertexStores;
-	private final ConcurrentMap<ECKeyPair, ProposerElection> proposerElections;
 	private final List<ECKeyPair> nodes;
 	private final boolean getVerticesRPCEnabled;
-
-	/**
-	 * Create a BFT test network with an underlying simulated network
-	 * @param nodes The nodes to populate the network with
-	 * @param underlyingNetwork the network simulator
-	 */
-	public SimulatedBFTNetwork(List<ECKeyPair> nodes, TestEventCoordinatorNetwork underlyingNetwork) {
-		this(nodes, underlyingNetwork, TEST_PACEMAKER_TIMEOUT, true);
-	}
 
 	/**
 	 * Create a BFT test network with an underlying simulated network.
@@ -106,54 +89,38 @@ public class SimulatedBFTNetwork {
 		this.pacemakerTimeout = pacemakerTimeout;
 		this.counters = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e, e -> new SystemCountersImpl()));
 		this.internalMessages = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e, e -> new InternalMessagePasser()));
-		this.vertexStores = new ConcurrentHashMap<>();
-		this.timeoutSenders = nodes.stream().collect(ImmutableMap.toImmutableMap(
-			e -> e,
-			e -> new ScheduledTimeoutSender(Executors.newSingleThreadScheduledExecutor(daemonThreads("TimeoutSender")))
-		));
-		this.runners = nodes.stream().collect(ImmutableMap.toImmutableMap(
-			e -> e, this::createBFTInstance));
-		this.proposerElections = new ConcurrentHashMap<>();
+		this.runners = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e, this::createBFTInstance));
 	}
 
 	private ConsensusRunner createBFTInstance(ECKeyPair key) {
 		Mempool mempool = new EmptyMempool();
 		Hasher hasher = new DefaultHasher();
-		ScheduledTimeoutSender timeoutSender = timeoutSenders.get(key);
+		ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(daemonThreads("TimeoutSender"));
+		ScheduledTimeoutSender timeoutSender = new ScheduledTimeoutSender(scheduledExecutorService);
 		EpochChangeRx epochChangeRx = new BasicEpochChangeRx(nodes.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toList()));
+		VertexStoreFactory vertexStoreFactory = (v, qc) -> {
+			SyncedStateComputer<CommittedAtom> stateComputer = new SingleEpochAlwaysSyncedStateComputer();
+			SyncVerticesRPCSender syncVerticesRPCSender = getVerticesRPCEnabled
+				? underlyingNetwork.getVerticesRequestSender(key.getPublicKey())
+				: EmptySyncVerticesRPCSender.INSTANCE;
+			return new VertexStore(
+				v,
+				qc,
+				stateComputer,
+				syncVerticesRPCSender,
+				this.internalMessages.get(key),
+				this.counters.get(key)
+			);
+		};
+
 		EpochManager epochManager = new EpochManager(
 			mempool,
 			underlyingNetwork.getNetworkSender(key.getPublicKey()),
-			this.timeoutSenders.get(key),
+			timeoutSender,
 			timeoutSender1 -> new FixedTimeoutPacemaker(this.pacemakerTimeout, timeoutSender1),
-			(v, qc) -> vertexStores.computeIfAbsent(key, keyPair -> {
-				SyncedStateComputer<CommittedAtom> stateComputer = new SyncedStateComputer<CommittedAtom>() {
-					@Override
-					public boolean syncTo(long targetStateVersion, List<ECPublicKey> target, Object opaque) {
-						return true;
-					}
-
-					@Override
-					public void execute(CommittedAtom instruction) {
-					}
-				};
-				SyncVerticesRPCSender syncVerticesRPCSender = getVerticesRPCEnabled
-					? underlyingNetwork.getVerticesRequestSender(keyPair.getPublicKey())
-					: EmptySyncVerticesRPCSender.INSTANCE;
-				return new VertexStore(
-					v,
-					qc,
-					stateComputer,
-					syncVerticesRPCSender,
-					this.internalMessages.get(keyPair),
-					this.counters.get(keyPair)
-				);
-			}),
-			proposers -> proposerElections.computeIfAbsent(key, keyPair ->
-				new WeightedRotatingLeaders(proposers, Comparator.comparing(v -> v.nodeKey().euid()), 5)
-			), // create a new ProposerElection per node
+			vertexStoreFactory,
+			proposers -> new WeightedRotatingLeaders(proposers, Comparator.comparing(v -> v.nodeKey().euid()), 5),
 			hasher,
-			View.of(Long.MAX_VALUE),
 			key,
 			counters.get(key)
 		);

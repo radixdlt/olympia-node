@@ -52,6 +52,8 @@ public interface SyncedStateComputer<T extends CommittedInstruction> {
 	 */
 	boolean syncTo(long targetStateVersion, List<ECPublicKey> target, Object opaque);
 
+	boolean compute(Vertex vertex);
+
 	/**
 	 * Execute a committed instruction
 	 * @param instruction the instruction to execute

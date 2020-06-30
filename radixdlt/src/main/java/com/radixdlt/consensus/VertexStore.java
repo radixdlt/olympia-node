@@ -395,26 +395,37 @@ public final class VertexStore {
 		return true;
 	}
 
-	private void insertVertexInternal(Vertex vertex) throws VertexInsertionException {
+	private VertexMetadata insertVertexInternal(Vertex vertex) throws VertexInsertionException {
 		if (!vertices.containsKey(vertex.getParentId())) {
 			throw new MissingParentException(vertex.getParentId());
 		}
+
+		final Vertex vertexToUse;
+		if (vertex.getParentMetadata().isEndOfEpoch()) {
+			// TODO: Check if current proposal is actually an empty client atom
+			vertexToUse = new Vertex(vertex.getEpoch(), vertex.getQC(), vertex.getView(), null);
+		} else {
+			vertexToUse = vertex;
+		}
+		boolean isEndOfEpoch = syncedStateComputer.compute(vertexToUse);
 
 		// TODO: Don't check for state computer errors for now so that we don't
 		// TODO: have to deal with failing leader proposals
 		// TODO: Reinstate this when ProposalGenerator + Mempool can guarantee correct proposals
 		// TODO: (also see commitVertex->storeAtom)
 
-		vertices.put(vertex.getId(), vertex);
+		vertices.put(vertexToUse.getId(), vertexToUse);
 		updateVertexStoreSize();
 
-		if (syncing.containsKey(vertex.getId())) {
-			vertexStoreEventSender.syncedVertex(vertex);
+		if (syncing.containsKey(vertexToUse.getId())) {
+			vertexStoreEventSender.syncedVertex(vertexToUse);
 		}
+
+		return VertexMetadata.ofVertex(vertexToUse, isEndOfEpoch);
 	}
 
-	public void insertVertex(Vertex vertex) throws VertexInsertionException {
-		insertVertexInternal(vertex);
+	public VertexMetadata insertVertex(Vertex vertex) throws VertexInsertionException {
+		return insertVertexInternal(vertex);
 	}
 
 	/**

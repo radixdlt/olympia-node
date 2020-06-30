@@ -55,7 +55,6 @@ public class EpochManager {
 	private final VertexStoreFactory vertexStoreFactory;
 	private final ProposerElectionFactory proposerElectionFactory;
 	private final ECKeyPair selfKey;
-	private final View epochChangeView;
 	private final SystemCounters counters;
 	private final Hasher hasher;
 	private final ScheduledTimeoutSender scheduledTimeoutSender;
@@ -72,7 +71,6 @@ public class EpochManager {
 		VertexStoreFactory vertexStoreFactory,
 		ProposerElectionFactory proposerElectionFactory,
 		Hasher hasher,
-		View epochChangeView,
 		@Named("self") ECKeyPair selfKey,
 		SystemCounters counters
 	) {
@@ -83,7 +81,6 @@ public class EpochManager {
 		this.vertexStoreFactory = Objects.requireNonNull(vertexStoreFactory);
 		this.proposerElectionFactory = Objects.requireNonNull(proposerElectionFactory);
 		this.selfKey = Objects.requireNonNull(selfKey);
-		this.epochChangeView = Objects.requireNonNull(epochChangeView);
 		this.counters = Objects.requireNonNull(counters);
 		this.hasher = Objects.requireNonNull(hasher);
 	}
@@ -125,7 +122,6 @@ public class EpochManager {
 			proposerElection,
 			this.selfKey,
 			validatorSet,
-			epochChangeView,
 			counters
 		);
 

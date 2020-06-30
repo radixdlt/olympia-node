@@ -21,7 +21,9 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.EpochChangeSender;
 import com.radixdlt.consensus.EpochChange;
 import com.radixdlt.consensus.SyncedStateComputer;
+import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
@@ -66,6 +68,7 @@ public class SyncedRadixEngine implements SyncedStateComputer<CommittedAtom> {
 	private final AddressBook addressBook;
 	private final StateSyncNetwork stateSyncNetwork;
 	private final Object lock = new Object();
+	private final View epochChangeView;
 	private VertexMetadata lastEpochChange = null;
 
 	public SyncedRadixEngine(
@@ -74,6 +77,7 @@ public class SyncedRadixEngine implements SyncedStateComputer<CommittedAtom> {
 		CommittedStateSyncSender committedStateSyncSender,
 		EpochChangeSender epochChangeSender,
 		Function<Long, ValidatorSet> validatorSetMapping,
+		View epochChangeView,
 		AddressBook addressBook,
 		StateSyncNetwork stateSyncNetwork
 	) {
@@ -82,6 +86,7 @@ public class SyncedRadixEngine implements SyncedStateComputer<CommittedAtom> {
 		this.committedStateSyncSender = Objects.requireNonNull(committedStateSyncSender);
 		this.epochChangeSender = Objects.requireNonNull(epochChangeSender);
 		this.validatorSetMapping = validatorSetMapping;
+		this.epochChangeView = Objects.requireNonNull(epochChangeView);
 		this.addressBook = Objects.requireNonNull(addressBook);
 		this.stateSyncNetwork = Objects.requireNonNull(stateSyncNetwork);
 	}
@@ -149,6 +154,11 @@ public class SyncedRadixEngine implements SyncedStateComputer<CommittedAtom> {
 			.subscribe(() -> committedStateSyncSender.sendCommittedStateSync(targetStateVersion, opaque));
 
 		return false;
+	}
+
+	@Override
+	public boolean compute(Vertex vertex) {
+		return vertex.getView().compareTo(epochChangeView) >= 0;
 	}
 
 	/**

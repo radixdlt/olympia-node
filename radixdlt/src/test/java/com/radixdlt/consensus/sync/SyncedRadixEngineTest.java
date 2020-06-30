@@ -86,6 +86,7 @@ public class SyncedRadixEngineTest {
 			committedStateSyncSender,
 			epochChangeSender,
 			validatorSetMapping,
+			View.of(Long.MAX_VALUE),
 			addressBook,
 			stateSyncNetwork
 		);

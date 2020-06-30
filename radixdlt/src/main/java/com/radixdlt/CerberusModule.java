@@ -25,6 +25,7 @@ import com.google.inject.name.Named;
 import com.radixdlt.consensus.BFTEventSender;
 import com.radixdlt.consensus.AddressBookValidatorSetProvider;
 import com.radixdlt.consensus.CommittedStateSyncRx;
+import com.radixdlt.consensus.ConsensusRunner;
 import com.radixdlt.consensus.DefaultHasher;
 import com.radixdlt.consensus.EpochChangeRx;
 import com.radixdlt.consensus.EpochManager;
@@ -114,7 +115,7 @@ public class CerberusModule extends AbstractModule {
 		@Named("self") ECKeyPair selfKey,
 		SystemCounters counters
 	) {
-		final long viewsPerEpoch = runtimeProperties.get("epochs.views_per_epoch", 100L);
+
 		return new EpochManager(
 			mempool,
 			sender,
@@ -123,9 +124,30 @@ public class CerberusModule extends AbstractModule {
 			vertexStoreFactory,
 			proposerElectionFactory,
 			hasher,
-			View.of(viewsPerEpoch),
 			selfKey,
 			counters
+		);
+	}
+
+	@Provides
+	@Singleton
+	private ConsensusRunner consensusRunner(
+		EpochChangeRx epochChangeRx,
+		EventCoordinatorNetworkRx networkRx,
+		PacemakerRx pacemakerRx,
+		VertexStoreEventsRx vertexStoreEventsRx,
+		CommittedStateSyncRx committedStateSyncRx,
+		SyncVerticesRPCRx rpcRx,
+		EpochManager epochManager
+	) {
+		return new ConsensusRunner(
+			epochChangeRx,
+			networkRx,
+			pacemakerRx,
+			vertexStoreEventsRx,
+			committedStateSyncRx,
+			rpcRx,
+			epochManager
 		);
 	}
 
@@ -152,6 +174,7 @@ public class CerberusModule extends AbstractModule {
 			addressBook,
 			fixedNodeCount
 		);
+		final long viewsPerEpoch = runtimeProperties.get("epochs.views_per_epoch", 100L);
 
 		return new SyncedRadixEngine(
 			radixEngine,
@@ -159,6 +182,7 @@ public class CerberusModule extends AbstractModule {
 			committedStateSyncSender,
 			epochChangeSender,
 			validatorSetProvider::getValidatorSet,
+			View.of(viewsPerEpoch),
 			addressBook,
 			stateSyncNetwork
 		);

@@ -102,8 +102,7 @@ public final class SafetyRules {
 		return new Proposal(proposedVertex, highestCommittedQC, this.selfKey.getPublicKey(), signature);
 	}
 
-	private static VoteData constructVoteData(Vertex proposedVertex, boolean epochChange) {
-		final VertexMetadata proposed = VertexMetadata.ofVertex(proposedVertex, epochChange);
+	private static VoteData constructVoteData(Vertex proposedVertex, VertexMetadata proposedVertexMetadata) {
 		final VertexMetadata parent = proposedVertex.getQC().getProposed();
 
 		final VertexMetadata toCommit;
@@ -119,7 +118,7 @@ public final class SafetyRules {
 			toCommit = null;
 		}
 
-		return new VoteData(proposed, parent, toCommit);
+		return new VoteData(proposedVertexMetadata, parent, toCommit);
 	}
 
 	/**
@@ -127,11 +126,11 @@ public final class SafetyRules {
 	 * TODO: Move epochChange to somewhere more appropriate
 	 *
 	 * @param proposedVertex The proposed vertex
-	 * @param isEndOfEpoch if proposed vertex is an epoch change
+	 * @param proposedVertexMetadata results of vertex execution
 	 * @return A vote result containing the vote and any committed vertices
 	 * @throws SafetyViolationException In case the vertex would violate a safety invariant
 	 */
-	public Vote voteFor(Vertex proposedVertex, boolean isEndOfEpoch) throws SafetyViolationException {
+	public Vote voteFor(Vertex proposedVertex, VertexMetadata proposedVertexMetadata) throws SafetyViolationException {
 		// ensure vertex does not violate earlier votes
 		if (proposedVertex.getView().compareTo(this.state.getLastVotedView()) <= 0) {
 			throw new SafetyViolationException(proposedVertex, this.state, String.format(
@@ -147,7 +146,7 @@ public final class SafetyRules {
 		Builder safetyStateBuilder = this.state.toBuilder();
 		safetyStateBuilder.lastVotedView(proposedVertex.getView());
 
-		final VoteData voteData = constructVoteData(proposedVertex, isEndOfEpoch);
+		final VoteData voteData = constructVoteData(proposedVertex, proposedVertexMetadata);
 
 		final Hash voteHash = hasher.hash(voteData);
 

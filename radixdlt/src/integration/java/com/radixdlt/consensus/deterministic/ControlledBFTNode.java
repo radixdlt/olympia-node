@@ -95,6 +95,11 @@ class ControlledBFTNode {
 			}
 
 			@Override
+			public boolean compute(Vertex vertex) {
+				return false;
+			}
+
+			@Override
 			public void execute(CommittedAtom instruction) {
 			}
 		};
@@ -120,7 +125,6 @@ class ControlledBFTNode {
 			proposerElection,
 			key,
 			validatorSet,
-			View.of(Long.MAX_VALUE),
 			systemCounters
 		);
 		SyncQueues syncQueues = new SyncQueues(

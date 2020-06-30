@@ -17,8 +17,6 @@
 
 package com.radixdlt.consensus;
 
-import com.google.inject.Inject;
-
 import com.radixdlt.consensus.liveness.PacemakerRx;
 
 import com.radixdlt.utils.ThreadFactories;
@@ -78,7 +76,6 @@ public final class ConsensusRunner {
 	private final Scheduler singleThreadScheduler;
 	private Disposable disposable;
 
-	@Inject
 	public ConsensusRunner(
 		EpochChangeRx epochChangeRx,
 		EventCoordinatorNetworkRx networkRx,
