@@ -19,13 +19,14 @@ package com.radixdlt.consensus.simulation;
 
 import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.middleware2.CommittedAtom;
 import java.util.List;
 
 public final class SingleEpochAlwaysSyncedStateComputer implements SyncedStateComputer<CommittedAtom> {
 	@Override
-	public boolean syncTo(long targetStateVersion, List<ECPublicKey> target, Object opaque) {
+	public boolean syncTo(VertexMetadata vertexMetadata, List<ECPublicKey> target, Object opaque) {
 		return true;
 	}
 

@@ -244,11 +244,10 @@ public final class VertexStore {
 	private void processVerticesResponseForCommittedSync(Hash syncTo, SyncState syncState, GetVerticesResponse response) {
 		log.info("SYNC_STATE: Processing vertices {}", syncState);
 
-		long stateVersion = syncState.committedVertexMetadata.getStateVersion();
 		List<ECPublicKey> signers = Collections.singletonList(syncState.author);
 		syncState.fetched.addAll(response.getVertices());
 
-		if (syncedStateComputer.syncTo(stateVersion, signers, syncTo)) {
+		if (syncedStateComputer.syncTo(syncState.committedVertexMetadata, signers, syncTo)) {
 			rebuildAndSyncQC(syncState);
 		} else {
 			syncState.setSyncStage(SyncStage.SYNC_TO_COMMIT);

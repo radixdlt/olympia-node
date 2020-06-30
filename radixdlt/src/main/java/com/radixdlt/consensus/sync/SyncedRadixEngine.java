@@ -124,12 +124,13 @@ public class SyncedRadixEngine implements SyncedStateComputer<CommittedAtom> {
 	}
 
 	@Override
-	public boolean syncTo(long targetStateVersion, List<ECPublicKey> target, Object opaque) {
+	public boolean syncTo(VertexMetadata vertexMetadata, List<ECPublicKey> target, Object opaque) {
 		if (target.isEmpty()) {
 			// TODO: relax this in future when we have non-validator nodes
 			throw new IllegalArgumentException("target must not be empty");
 		}
 
+		final long targetStateVersion = vertexMetadata.getStateVersion();
 		final long currentStateVersion = committedAtomsStore.getStateVersion();
 		if (targetStateVersion <= currentStateVersion) {
 			return true;

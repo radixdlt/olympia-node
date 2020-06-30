@@ -21,7 +21,6 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
@@ -42,7 +41,6 @@ import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.CommittedAtom;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -483,12 +481,12 @@ public class VertexStoreTest {
 		}).when(syncVerticesRPCSender).sendGetVerticesRequest(eq(vertex7.getId()), any(), eq(3), any());
 
 		AtomicReference<Object> stateOpaque = new AtomicReference<>();
-		AtomicLong stateVersion = new AtomicLong();
+		AtomicReference<VertexMetadata> vertexMetadataAtomicReference = new AtomicReference<>();
 		doAnswer(invocation -> {
-			stateVersion.set(invocation.getArgument(0));
+			vertexMetadataAtomicReference.set(invocation.getArgument(0));
 			stateOpaque.set(invocation.getArgument(2));
 			return false;
-		}).when(syncedStateComputer).syncTo(anyLong(), any(), any());
+		}).when(syncedStateComputer).syncTo(any(), any(), any());
 
 		vertexStore.syncToQC(vertex8.getQC(), vertex8.getQC(), mock(ECPublicKey.class));
 		GetVerticesResponse response = new GetVerticesResponse(vertex7.getId(), Arrays.asList(vertex7, vertex6, vertex5), rpcOpaque.get());
@@ -496,7 +494,7 @@ public class VertexStoreTest {
 		assertThat(vertexStore.getHighestQC()).isEqualTo(vertex4.getQC());
 		assertThat(vertexStore.getHighestCommittedQC()).isEqualTo(vertex4.getQC());
 
-		CommittedStateSync committedStateSync = new CommittedStateSync(stateVersion.get(), stateOpaque.get());
+		CommittedStateSync committedStateSync = new CommittedStateSync(vertexMetadataAtomicReference.get().getStateVersion(), stateOpaque.get());
 		vertexStore.processCommittedStateSync(committedStateSync);
 
 		assertThat(vertexStore.getHighestQC()).isEqualTo(vertex8.getQC());

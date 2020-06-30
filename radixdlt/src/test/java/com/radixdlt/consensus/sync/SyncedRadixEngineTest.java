@@ -198,12 +198,13 @@ public class SyncedRadixEngineTest {
 
 		when(committedAtomsStore.lastStoredAtom()).thenReturn(event);
 
-		syncedRadixEngine.syncTo(1234, Collections.singletonList(pk), mock(Object.class));
-		verify(committedStateSyncSender, never()).sendCommittedStateSync(anyLong(), any());
-
 		CommittedAtom nextAtom = mock(CommittedAtom.class);
 		VertexMetadata nextVertexMetadata = mock(VertexMetadata.class);
 		when(nextVertexMetadata.getStateVersion()).thenReturn(1234L);
+
+		syncedRadixEngine.syncTo(nextVertexMetadata, Collections.singletonList(pk), mock(Object.class));
+		verify(committedStateSyncSender, never()).sendCommittedStateSync(anyLong(), any());
+
 		when(nextAtom.getVertexMetadata()).thenReturn(nextVertexMetadata);
 		AtomStoredEvent nextAtomStoredEvent = mock(AtomStoredEvent.class);
 		when(nextAtomStoredEvent.getAtom()).thenReturn(nextAtom);

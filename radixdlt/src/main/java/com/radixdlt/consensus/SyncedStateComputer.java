@@ -44,13 +44,13 @@ public interface SyncedStateComputer<T extends CommittedInstruction> {
 	 * Syncs the computer to a target version given the target version
 	 * and a list of peer targets
 	 *
-	 * @param targetStateVersion the target state version
+	 * @param vertexMetadata the target vertexMetadata
 	 * @param target list of targets as hint of which peer has the state
 	 * @param opaque some opaque client object which will be passed in a sync
 	 * message if this returns false
 	 * @return true if already synced, otherwise false
 	 */
-	boolean syncTo(long targetStateVersion, List<ECPublicKey> target, Object opaque);
+	boolean syncTo(VertexMetadata vertexMetadata, List<ECPublicKey> target, Object opaque);
 
 	boolean compute(Vertex vertex);
 
