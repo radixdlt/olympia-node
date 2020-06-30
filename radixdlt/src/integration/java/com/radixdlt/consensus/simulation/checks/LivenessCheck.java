@@ -20,7 +20,7 @@ package com.radixdlt.consensus.simulation.checks;
 import com.radixdlt.consensus.simulation.BFTCheck;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.View;
-import com.radixdlt.consensus.simulation.SimulatedBFTNetwork.RunningNetwork;
+import com.radixdlt.consensus.simulation.SimulatedNetwork.RunningNetwork;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
 import java.util.List;

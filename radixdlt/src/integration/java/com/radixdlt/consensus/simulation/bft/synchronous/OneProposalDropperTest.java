@@ -20,8 +20,8 @@ package com.radixdlt.consensus.simulation.bft.synchronous;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.radixdlt.consensus.simulation.BFTCheck.BFTCheckError;
-import com.radixdlt.consensus.simulation.BFTSimulatedTest;
-import com.radixdlt.consensus.simulation.BFTSimulatedTest.Builder;
+import com.radixdlt.consensus.simulation.SimulatedTest;
+import com.radixdlt.consensus.simulation.SimulatedTest.Builder;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -36,7 +36,7 @@ public class OneProposalDropperTest {
 	private final int maxLatency = 200;
 	private final int trips = 20;
 	private final int synchronousTimeout = maxLatency * trips;
-	private final Builder bftTestBuilder = BFTSimulatedTest.builder()
+	private final Builder bftTestBuilder = SimulatedTest.builder()
 		.numNodes(4)
 		.randomLatency(minLatency, maxLatency)
 		.pacemakerTimeout(synchronousTimeout)
@@ -50,7 +50,7 @@ public class OneProposalDropperTest {
 	 */
 	@Test
 	public void given_get_vertices_disabled__then_test_should_fail_against_drop_proposal_adversary() {
-		BFTSimulatedTest test = bftTestBuilder
+		SimulatedTest test = bftTestBuilder
 			.setGetVerticesRPCEnabled(false)
 			.build();
 
@@ -64,7 +64,7 @@ public class OneProposalDropperTest {
 	 */
 	@Test
 	public void given_get_vertices_enabled__then_test_should_succeed_against_drop_proposal_adversary() {
-		BFTSimulatedTest test = bftTestBuilder
+		SimulatedTest test = bftTestBuilder
 			.setGetVerticesRPCEnabled(true)
 			.build();
 

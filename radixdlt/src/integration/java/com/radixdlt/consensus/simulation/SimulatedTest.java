@@ -20,7 +20,7 @@ package com.radixdlt.consensus.simulation;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.consensus.simulation.BFTCheck.BFTCheckError;
-import com.radixdlt.consensus.simulation.SimulatedBFTNetwork.RunningNetwork;
+import com.radixdlt.consensus.simulation.SimulatedNetwork.RunningNetwork;
 import com.radixdlt.consensus.simulation.checks.AllProposalsHaveDirectParentsCheck;
 import com.radixdlt.consensus.simulation.checks.LivenessCheck;
 import com.radixdlt.consensus.simulation.checks.NoSyncExceptionCheck;
@@ -47,7 +47,7 @@ import java.util.stream.Stream;
 /**
  * High level BFT Simulation Test Runner
  */
-public class BFTSimulatedTest {
+public class SimulatedTest {
 	private final ImmutableList<ECKeyPair> nodes;
 	private final LatencyProvider latencyProvider;
 	private final ImmutableMap<String, BFTCheck> checks;
@@ -55,7 +55,7 @@ public class BFTSimulatedTest {
 	private final boolean getVerticesRPCEnabled;
 	private final boolean isSingleEpoch;
 
-	private BFTSimulatedTest(
+	private SimulatedTest(
 		ImmutableList<ECKeyPair> nodes,
 		LatencyProvider latencyProvider,
 		int pacemakerTimeout,
@@ -160,8 +160,8 @@ public class BFTSimulatedTest {
 			return this;
 		}
 
-		public BFTSimulatedTest build() {
-			return new BFTSimulatedTest(
+		public SimulatedTest build() {
+			return new SimulatedTest(
 				ImmutableList.copyOf(nodes),
 				latencyProvider.copyOf(),
 				pacemakerTimeout,
@@ -218,7 +218,7 @@ public class BFTSimulatedTest {
 		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.builder()
 			.latencyProvider(this.latencyProvider)
 			.build();
-		SimulatedBFTNetwork bftNetwork =  new SimulatedBFTNetwork(nodes, network, pacemakerTimeout, isSingleEpoch, getVerticesRPCEnabled);
+		SimulatedNetwork bftNetwork =  new SimulatedNetwork(nodes, network, pacemakerTimeout, isSingleEpoch, getVerticesRPCEnabled);
 
 		return bftNetwork.start()
 			.timeout(10, TimeUnit.SECONDS)

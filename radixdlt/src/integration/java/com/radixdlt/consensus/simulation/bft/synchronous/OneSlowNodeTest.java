@@ -20,8 +20,8 @@ package com.radixdlt.consensus.simulation.bft.synchronous;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.radixdlt.consensus.simulation.BFTCheck.BFTCheckError;
-import com.radixdlt.consensus.simulation.BFTSimulatedTest;
-import com.radixdlt.consensus.simulation.BFTSimulatedTest.Builder;
+import com.radixdlt.consensus.simulation.SimulatedTest;
+import com.radixdlt.consensus.simulation.SimulatedTest.Builder;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -38,7 +38,7 @@ public class OneSlowNodeTest {
 	private final int maxLatency = 200;
 	private final int trips = 8;
 	private final int synchronousTimeout = maxLatency * trips;
-	private final Builder bftTestBuilder = BFTSimulatedTest.builder()
+	private final Builder bftTestBuilder = SimulatedTest.builder()
 		.numNodesAndLatencies(4, minLatency, minLatency, minLatency, maxLatency)
 		.pacemakerTimeout(synchronousTimeout)
 		.checkSafety("safety")
@@ -51,7 +51,7 @@ public class OneSlowNodeTest {
 	 */
 	@Test
 	public void given_4_nodes_3_fast_and_1_slow_node_and_sync_disabled__then_a_timeout_wont_occur() {
-		BFTSimulatedTest test = bftTestBuilder
+		SimulatedTest test = bftTestBuilder
 			.setGetVerticesRPCEnabled(false)
 			.build();
 

@@ -20,7 +20,7 @@ package com.radixdlt.consensus.simulation.bft.synchronous;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.radixdlt.consensus.simulation.BFTCheck.BFTCheckError;
-import com.radixdlt.consensus.simulation.BFTSimulatedTest;
+import com.radixdlt.consensus.simulation.SimulatedTest;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -41,7 +41,7 @@ public class UniformLatencyTest {
 	 */
 	@Test
 	public void given_4_correct_bfts__then_should_pass_sanity_tests_over_1_minute() {
-		BFTSimulatedTest bftTest = BFTSimulatedTest.builder()
+		SimulatedTest bftTest = SimulatedTest.builder()
 			.numNodes(4)
 			.checkSafety("safety")
 			.checkLiveness("liveness")

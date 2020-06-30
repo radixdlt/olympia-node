@@ -18,7 +18,7 @@
 package com.radixdlt.consensus.simulation.checks;
 
 import com.radixdlt.consensus.simulation.BFTCheck;
-import com.radixdlt.consensus.simulation.SimulatedBFTNetwork.RunningNetwork;
+import com.radixdlt.consensus.simulation.SimulatedNetwork.RunningNetwork;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.stream.Collectors;

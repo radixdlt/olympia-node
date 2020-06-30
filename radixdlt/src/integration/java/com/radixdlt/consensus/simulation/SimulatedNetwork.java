@@ -66,7 +66,7 @@ import static com.radixdlt.utils.ThreadFactories.daemonThreads;
 /**
  * A multi-node bft test network where the network and latencies of each message is simulated.
  */
-public class SimulatedBFTNetwork {
+public class SimulatedNetwork {
 	private final int pacemakerTimeout;
 	private final TestEventCoordinatorNetwork underlyingNetwork;
 	private final ImmutableMap<ECKeyPair, SystemCounters> counters;
@@ -82,7 +82,7 @@ public class SimulatedBFTNetwork {
 	 * @param underlyingNetwork the network simulator
 	 * @param pacemakerTimeout a fixed pacemaker timeout used for all nodes
 	 */
-	public SimulatedBFTNetwork(
+	public SimulatedNetwork(
 		List<ECKeyPair> nodes,
 		TestEventCoordinatorNetwork underlyingNetwork,
 		int pacemakerTimeout,
