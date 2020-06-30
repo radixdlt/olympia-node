@@ -37,15 +37,19 @@ import com.radixdlt.consensus.VertexStoreFactory;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
 import com.radixdlt.consensus.liveness.ScheduledTimeoutSender;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
+import com.radixdlt.consensus.validators.Validator;
+import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.mempool.EmptyMempool;
 import com.radixdlt.mempool.Mempool;
 
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork;
 import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork.SimulatedNetworkReceiver;
+import com.radixdlt.utils.UInt256;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
@@ -70,6 +74,7 @@ public class SimulatedBFTNetwork {
 	private final ImmutableMap<ECKeyPair, ConsensusRunner> runners;
 	private final List<ECKeyPair> nodes;
 	private final boolean getVerticesRPCEnabled;
+	private final boolean isSingleEpoch;
 
 	/**
 	 * Create a BFT test network with an underlying simulated network.
@@ -81,9 +86,11 @@ public class SimulatedBFTNetwork {
 		List<ECKeyPair> nodes,
 		TestEventCoordinatorNetwork underlyingNetwork,
 		int pacemakerTimeout,
+		boolean isSingleEpoch,
 		boolean getVerticesRPCEnabled
 	) {
 		this.nodes = nodes;
+		this.isSingleEpoch = isSingleEpoch;
 		this.getVerticesRPCEnabled = getVerticesRPCEnabled;
 		this.underlyingNetwork = Objects.requireNonNull(underlyingNetwork);
 		this.pacemakerTimeout = pacemakerTimeout;
@@ -97,9 +104,26 @@ public class SimulatedBFTNetwork {
 		Hasher hasher = new DefaultHasher();
 		ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(daemonThreads("TimeoutSender"));
 		ScheduledTimeoutSender timeoutSender = new ScheduledTimeoutSender(scheduledExecutorService);
-		EpochChangeRx epochChangeRx = new BasicEpochChangeRx(nodes.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toList()));
+
+		List<ECPublicKey> publicKeys = nodes.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toList());
+
+		final EpochChangeRx epochChangeRx;
+		final SyncedStateComputer<CommittedAtom> stateComputer;
+		if (isSingleEpoch) {
+			epochChangeRx = new BasicEpochChangeRx(publicKeys);
+			stateComputer = new SingleEpochAlwaysSyncedStateComputer();
+		} else {
+			ChangingEpochSyncedStateComputer changingEpochSyncedStateComputer
+				= new ChangingEpochSyncedStateComputer(v -> ValidatorSet.from(
+					publicKeys.stream()
+						.map(pk -> Validator.from(pk, UInt256.ONE))
+						.collect(Collectors.toList())
+				));
+			epochChangeRx = changingEpochSyncedStateComputer;
+			stateComputer = changingEpochSyncedStateComputer;
+		}
+
 		VertexStoreFactory vertexStoreFactory = (v, qc) -> {
-			SyncedStateComputer<CommittedAtom> stateComputer = new SingleEpochAlwaysSyncedStateComputer();
 			SyncVerticesRPCSender syncVerticesRPCSender = getVerticesRPCEnabled
 				? underlyingNetwork.getVerticesRequestSender(key.getPublicKey())
 				: EmptySyncVerticesRPCSender.INSTANCE;

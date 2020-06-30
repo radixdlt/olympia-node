@@ -53,11 +53,13 @@ public class BFTSimulatedTest {
 	private final ImmutableMap<String, BFTCheck> checks;
 	private final int pacemakerTimeout;
 	private final boolean getVerticesRPCEnabled;
+	private final boolean isSingleEpoch;
 
 	private BFTSimulatedTest(
 		ImmutableList<ECKeyPair> nodes,
 		LatencyProvider latencyProvider,
 		int pacemakerTimeout,
+		boolean isSingleEpoch,
 		boolean getVerticesRPCEnabled,
 		ImmutableMap<String, BFTCheck> checks
 	) {
@@ -65,6 +67,7 @@ public class BFTSimulatedTest {
 		this.latencyProvider = latencyProvider;
 		this.checks = checks;
 		this.pacemakerTimeout = pacemakerTimeout;
+		this.isSingleEpoch = isSingleEpoch;
 		this.getVerticesRPCEnabled = getVerticesRPCEnabled;
 	}
 
@@ -74,6 +77,7 @@ public class BFTSimulatedTest {
 		private List<ECKeyPair> nodes = Collections.singletonList(ECKeyPair.generateNew());
 		private int pacemakerTimeout = 12 * TestEventCoordinatorNetwork.DEFAULT_LATENCY;
 		private boolean getVerticesRPCEnabled = true;
+		private boolean isSingleEpoch = true;
 
 		private Builder() {
 		}
@@ -156,6 +160,7 @@ public class BFTSimulatedTest {
 				ImmutableList.copyOf(nodes),
 				latencyProvider.copyOf(),
 				pacemakerTimeout,
+				isSingleEpoch,
 				getVerticesRPCEnabled,
 				this.checksBuilder.build()
 			);
@@ -208,7 +213,7 @@ public class BFTSimulatedTest {
 		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.builder()
 			.latencyProvider(this.latencyProvider)
 			.build();
-		SimulatedBFTNetwork bftNetwork =  new SimulatedBFTNetwork(nodes, network, pacemakerTimeout, getVerticesRPCEnabled);
+		SimulatedBFTNetwork bftNetwork =  new SimulatedBFTNetwork(nodes, network, pacemakerTimeout, isSingleEpoch, getVerticesRPCEnabled);
 
 		return bftNetwork.start()
 			.timeout(10, TimeUnit.SECONDS)

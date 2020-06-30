@@ -168,15 +168,8 @@ public class SyncedRadixEngine implements SyncedStateComputer<CommittedAtom> {
 	 */
 	@Override
 	public void execute(CommittedAtom atom) {
+		// TODO: remove lock
 		synchronized (lock) {
-			if (atom.getVertexMetadata().isEndOfEpoch()
-				&& (lastEpochChange == null || lastEpochChange.getEpoch() != atom.getVertexMetadata().getEpoch())) {
-				VertexMetadata ancestor = atom.getVertexMetadata();
-				this.lastEpochChange = ancestor;
-				EpochChange epochChange = new EpochChange(ancestor, validatorSetMapping.apply(ancestor.getEpoch() + 1));
-				this.epochChangeSender.epochChange(epochChange);
-			}
-
 			try {
 				// TODO: execute list of commands instead
 				if (atom.getClientAtom() != null) {
@@ -208,6 +201,15 @@ public class SyncedRadixEngine implements SyncedStateComputer<CommittedAtom> {
 					AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(notFoundException, atom.getAID());
 					Events.getInstance().broadcast(atomExceptionEvent);
 				}
+			}
+
+			// TODO: Move outside of syncedRadixEngine to a more generic syncing layer
+			if (atom.getVertexMetadata().isEndOfEpoch()
+				&& (lastEpochChange == null || lastEpochChange.getEpoch() != atom.getVertexMetadata().getEpoch())) {
+				VertexMetadata ancestor = atom.getVertexMetadata();
+				this.lastEpochChange = ancestor;
+				EpochChange epochChange = new EpochChange(ancestor, validatorSetMapping.apply(ancestor.getEpoch() + 1));
+				this.epochChangeSender.epochChange(epochChange);
 			}
 		}
 	}
