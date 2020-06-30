@@ -15,19 +15,41 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.simulation.executors;
+package com.radixdlt.consensus.simulation.network;
 
-import com.radixdlt.consensus.SyncedStateComputer;
+import com.radixdlt.consensus.EpochChange;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.simulation.network.SimulatedNetwork.SimulatedStateComputer;
+import com.radixdlt.consensus.validators.Validator;
+import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.middleware2.CommittedAtom;
+import com.radixdlt.utils.UInt256;
+import io.reactivex.rxjava3.core.Observable;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * A state computer which never changes epochs
  */
-public final class SingleEpochAlwaysSyncedStateComputer implements SyncedStateComputer<CommittedAtom> {
+public final class SingleEpochAlwaysSyncedStateComputer implements SimulatedStateComputer {
+	private final ValidatorSet validatorSet;
+	private final VertexMetadata ancestor;
+
+	public SingleEpochAlwaysSyncedStateComputer(VertexMetadata ancestor, List<ECPublicKey> nodes) {
+		this.ancestor = ancestor;
+		this.validatorSet = ValidatorSet.from(
+			nodes.stream()
+				.map(p -> Validator.from(p, UInt256.ONE))
+				.collect(Collectors.toList())
+		);
+	}
+
+	public SingleEpochAlwaysSyncedStateComputer(List<ECPublicKey> nodes) {
+		this(VertexMetadata.ofGenesisAncestor(), nodes);
+	}
+
 	@Override
 	public boolean syncTo(VertexMetadata vertexMetadata, List<ECPublicKey> target, Object opaque) {
 		return true;
@@ -40,5 +62,11 @@ public final class SingleEpochAlwaysSyncedStateComputer implements SyncedStateCo
 
 	@Override
 	public void execute(CommittedAtom instruction) {
+	}
+
+	@Override
+	public Observable<EpochChange> epochChanges() {
+		return Observable.just(new EpochChange(ancestor, validatorSet))
+			.concatWith(Observable.never());
 	}
 }

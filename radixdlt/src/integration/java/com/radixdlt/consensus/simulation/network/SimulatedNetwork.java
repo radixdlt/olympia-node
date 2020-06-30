@@ -18,7 +18,6 @@
 package com.radixdlt.consensus.simulation.network;
 
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.consensus.BasicEpochChangeRx;
 import com.radixdlt.consensus.ConsensusRunner;
 import com.radixdlt.consensus.ConsensusRunner.Event;
 import com.radixdlt.consensus.ConsensusRunner.EventType;
@@ -37,8 +36,6 @@ import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
 import com.radixdlt.consensus.liveness.ScheduledTimeoutSender;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
-import com.radixdlt.consensus.simulation.executors.ChangingEpochSyncedStateComputer;
-import com.radixdlt.consensus.simulation.executors.SingleEpochAlwaysSyncedStateComputer;
 import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
@@ -78,6 +75,9 @@ public class SimulatedNetwork {
 	private final boolean getVerticesRPCEnabled;
 	private final View epochHighView;
 
+	interface SimulatedStateComputer extends SyncedStateComputer<CommittedAtom>, EpochChangeRx {
+	}
+
 	/**
 	 * Create a BFT test network with an underlying simulated network.
 	 * @param nodes The nodes to populate the network with
@@ -109,18 +109,14 @@ public class SimulatedNetwork {
 
 		List<ECPublicKey> publicKeys = nodes.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toList());
 
-		final EpochChangeRx epochChangeRx;
-		final SyncedStateComputer<CommittedAtom> stateComputer;
+		final SimulatedStateComputer stateComputer;
 		if (epochHighView == null) {
-			epochChangeRx = new BasicEpochChangeRx(publicKeys);
-			stateComputer = new SingleEpochAlwaysSyncedStateComputer();
+			stateComputer = new SingleEpochAlwaysSyncedStateComputer(publicKeys);
 		} else {
-			ChangingEpochSyncedStateComputer changingEpochSyncedStateComputer = new ChangingEpochSyncedStateComputer(
+			stateComputer = new ChangingEpochSyncedStateComputer(
 				epochHighView,
 				v -> ValidatorSet.from(publicKeys.stream().map(pk -> Validator.from(pk, UInt256.ONE)).collect(Collectors.toList()))
 			);
-			epochChangeRx = changingEpochSyncedStateComputer;
-			stateComputer = changingEpochSyncedStateComputer;
 		}
 
 		VertexStoreFactory vertexStoreFactory = (v, qc) -> {
@@ -151,7 +147,8 @@ public class SimulatedNetwork {
 
 		SimulatedNetworkReceiver rx = underlyingNetwork.getNetworkRx(key.getPublicKey());
 
-		return new ConsensusRunner(epochChangeRx,
+		return new ConsensusRunner(
+			stateComputer,
 			rx,
 			timeoutSender,
 			internalMessages.get(key),

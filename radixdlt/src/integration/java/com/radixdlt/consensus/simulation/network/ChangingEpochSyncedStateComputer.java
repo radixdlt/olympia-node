@@ -15,14 +15,13 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.simulation.executors;
+package com.radixdlt.consensus.simulation.network;
 
 import com.radixdlt.consensus.EpochChange;
-import com.radixdlt.consensus.EpochChangeRx;
-import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.simulation.network.SimulatedNetwork.SimulatedStateComputer;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.middleware2.CommittedAtom;
@@ -37,7 +36,7 @@ import java.util.function.Function;
 /**
  * State computer which changes epochs after some number of views
  */
-public class ChangingEpochSyncedStateComputer implements SyncedStateComputer<CommittedAtom>, EpochChangeRx {
+public class ChangingEpochSyncedStateComputer implements SimulatedStateComputer {
 	private VertexMetadata lastEpochChange = null;
 	private final Subject<EpochChange> epochChanges = BehaviorSubject.<EpochChange>create().toSerialized();
 	private View epochHighView;
