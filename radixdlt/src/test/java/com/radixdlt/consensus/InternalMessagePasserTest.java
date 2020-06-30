@@ -37,4 +37,38 @@ public class InternalMessagePasserTest {
 		testObserver.assertValue(hash);
 		testObserver.assertNotComplete();
 	}
+
+	@Test
+	public void when_send_committed_vertex_event__then_should_receive_it() {
+		InternalMessagePasser internalMessagePasser = new InternalMessagePasser();
+		TestObserver<Vertex> testObserver = internalMessagePasser.committedVertices().test();
+		Vertex vertex = mock(Vertex.class);
+		internalMessagePasser.committedVertex(vertex);
+		testObserver.awaitCount(1);
+		testObserver.assertValue(vertex);
+		testObserver.assertNotComplete();
+	}
+
+	@Test
+	public void when_send_high_qc_event__then_should_receive_it() {
+		InternalMessagePasser internalMessagePasser = new InternalMessagePasser();
+		TestObserver<QuorumCertificate> testObserver = internalMessagePasser.highQCs().test();
+		QuorumCertificate qc = mock(QuorumCertificate.class);
+		internalMessagePasser.highQC(qc);
+		testObserver.awaitCount(1);
+		testObserver.assertValue(qc);
+		testObserver.assertNotComplete();
+	}
+
+	@Test
+	public void when_send_committed_state_sync_event__then_should_receive_it() {
+		InternalMessagePasser internalMessagePasser = new InternalMessagePasser();
+		TestObserver<CommittedStateSync> testObserver = internalMessagePasser.committedStateSyncs().test();
+		long stateVersion = 12345;
+		Object opaque = mock(Object.class);
+		internalMessagePasser.sendCommittedStateSync(stateVersion, opaque);
+		testObserver.awaitCount(1);
+		testObserver.assertValue(s -> s.getOpaque().equals(opaque) && s.getStateVersion() == stateVersion);
+		testObserver.assertNotComplete();
+	}
 }
