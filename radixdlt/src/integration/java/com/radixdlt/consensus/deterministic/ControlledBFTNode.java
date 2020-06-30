@@ -64,7 +64,7 @@ import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
 
 /**
- * Controlled BFT Node where its state machine is managed by a synchronous
+ * Controlled BFT Node where its state machine is managed by a bft
  * processNext() call.
  */
 class ControlledBFTNode {

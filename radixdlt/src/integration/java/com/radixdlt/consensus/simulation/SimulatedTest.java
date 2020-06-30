@@ -20,14 +20,17 @@ package com.radixdlt.consensus.simulation;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.consensus.View;
-import com.radixdlt.consensus.simulation.BFTCheck.BFTCheckError;
-import com.radixdlt.consensus.simulation.SimulatedNetwork.RunningNetwork;
-import com.radixdlt.consensus.simulation.checks.AllProposalsHaveDirectParentsCheck;
-import com.radixdlt.consensus.simulation.checks.LivenessCheck;
-import com.radixdlt.consensus.simulation.checks.NoSyncExceptionCheck;
-import com.radixdlt.consensus.simulation.checks.NoTimeoutCheck;
-import com.radixdlt.consensus.simulation.checks.NoneCommittedCheck;
-import com.radixdlt.consensus.simulation.checks.SafetyCheck;
+import com.radixdlt.consensus.simulation.TestInvariant.TestInvariantError;
+import com.radixdlt.consensus.simulation.network.DroppingLatencyProvider;
+import com.radixdlt.consensus.simulation.network.OneProposalPerViewDropper;
+import com.radixdlt.consensus.simulation.network.RandomLatencyProvider;
+import com.radixdlt.consensus.simulation.network.SimulatedNetwork;
+import com.radixdlt.consensus.simulation.network.SimulatedNetwork.RunningNetwork;
+import com.radixdlt.consensus.simulation.invariants.bft.AllProposalsHaveDirectParentsInvariant;
+import com.radixdlt.consensus.simulation.invariants.bft.LivenessInvariant;
+import com.radixdlt.consensus.simulation.invariants.bft.NoTimeoutsInvariant;
+import com.radixdlt.consensus.simulation.invariants.bft.NoneCommittedInvariant;
+import com.radixdlt.consensus.simulation.invariants.bft.SafetyInvariant;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork;
@@ -51,7 +54,7 @@ import java.util.stream.Stream;
 public class SimulatedTest {
 	private final ImmutableList<ECKeyPair> nodes;
 	private final LatencyProvider latencyProvider;
-	private final ImmutableMap<String, BFTCheck> checks;
+	private final ImmutableMap<String, TestInvariant> checks;
 	private final int pacemakerTimeout;
 	private final boolean getVerticesRPCEnabled;
 	private final View epochHighView;
@@ -62,7 +65,7 @@ public class SimulatedTest {
 		int pacemakerTimeout,
 		View epochHighView,
 		boolean getVerticesRPCEnabled,
-		ImmutableMap<String, BFTCheck> checks
+		ImmutableMap<String, TestInvariant> checks
 	) {
 		this.nodes = nodes;
 		this.latencyProvider = latencyProvider;
@@ -74,7 +77,7 @@ public class SimulatedTest {
 
 	public static class Builder {
 		private final DroppingLatencyProvider latencyProvider = new DroppingLatencyProvider();
-		private final ImmutableMap.Builder<String, BFTCheck> checksBuilder = ImmutableMap.builder();
+		private final ImmutableMap.Builder<String, TestInvariant> checksBuilder = ImmutableMap.builder();
 		private List<ECKeyPair> nodes = Collections.singletonList(ECKeyPair.generateNew());
 		private int pacemakerTimeout = 12 * TestEventCoordinatorNetwork.DEFAULT_LATENCY;
 		private boolean getVerticesRPCEnabled = true;
@@ -127,37 +130,32 @@ public class SimulatedTest {
 		}
 
 		public Builder checkLiveness(String checkName) {
-			this.checksBuilder.put(checkName, new LivenessCheck(8 * TestEventCoordinatorNetwork.DEFAULT_LATENCY, TimeUnit.MILLISECONDS));
+			this.checksBuilder.put(checkName, new LivenessInvariant(8 * TestEventCoordinatorNetwork.DEFAULT_LATENCY, TimeUnit.MILLISECONDS));
 			return this;
 		}
 
 		public Builder checkLiveness(String checkName, long duration, TimeUnit timeUnit) {
-			this.checksBuilder.put(checkName, new LivenessCheck(duration, timeUnit));
+			this.checksBuilder.put(checkName, new LivenessInvariant(duration, timeUnit));
 			return this;
 		}
 
 		public Builder checkSafety(String checkName) {
-			this.checksBuilder.put(checkName, new SafetyCheck());
+			this.checksBuilder.put(checkName, new SafetyInvariant());
 			return this;
 		}
 
 		public Builder checkNoTimeouts(String checkName) {
-			this.checksBuilder.put(checkName, new NoTimeoutCheck());
-			return this;
-		}
-
-		public Builder checkNoSyncExceptions(String checkName) {
-			this.checksBuilder.put(checkName, new NoSyncExceptionCheck());
+			this.checksBuilder.put(checkName, new NoTimeoutsInvariant());
 			return this;
 		}
 
 		public Builder checkAllProposalsHaveDirectParents(String checkName) {
-			this.checksBuilder.put(checkName, new AllProposalsHaveDirectParentsCheck());
+			this.checksBuilder.put(checkName, new AllProposalsHaveDirectParentsInvariant());
 			return this;
 		}
 
 		public Builder checkNoneCommitted(String checkName) {
-			this.checksBuilder.put(checkName, new NoneCommittedCheck());
+			this.checksBuilder.put(checkName, new NoneCommittedInvariant());
 			return this;
 		}
 
@@ -177,10 +175,10 @@ public class SimulatedTest {
 		return new Builder();
 	}
 
-	private Observable<Pair<String, Optional<BFTCheckError>>> runChecks(RunningNetwork runningNetwork, long duration, TimeUnit timeUnit) {
-		List<Pair<String, Observable<Pair<String, BFTCheckError>>>> assertions = this.checks.keySet().stream()
+	private Observable<Pair<String, Optional<TestInvariantError>>> runChecks(RunningNetwork runningNetwork, long duration, TimeUnit timeUnit) {
+		List<Pair<String, Observable<Pair<String, TestInvariantError>>>> assertions = this.checks.keySet().stream()
 			.map(name -> {
-				BFTCheck check = this.checks.get(name);
+				TestInvariant check = this.checks.get(name);
 				return
 					Pair.of(
 						name,
@@ -193,7 +191,7 @@ public class SimulatedTest {
 			.firstOrError()
 			.map(Pair::getFirst);
 
-		List<Single<Pair<String, Optional<BFTCheckError>>>> results = assertions.stream()
+		List<Single<Pair<String, Optional<TestInvariantError>>>> results = assertions.stream()
 			.map(assertion -> assertion.getSecond()
 				.takeUntil(firstErrorSignal.flatMapObservable(name ->
 					!assertion.getFirst().equals(name) ? Observable.just(name) : Observable.never()))
@@ -215,7 +213,7 @@ public class SimulatedTest {
 	 * @param timeUnit time unit of duration
 	 * @return map of check results
 	 */
-	public Map<String, Optional<BFTCheckError>> run(long duration, TimeUnit timeUnit) {
+	public Map<String, Optional<TestInvariantError>> run(long duration, TimeUnit timeUnit) {
 		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.builder()
 			.latencyProvider(this.latencyProvider)
 			.build();
