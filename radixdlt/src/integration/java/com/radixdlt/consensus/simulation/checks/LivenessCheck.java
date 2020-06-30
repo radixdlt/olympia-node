@@ -20,7 +20,6 @@ package com.radixdlt.consensus.simulation.checks;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.simulation.BFTCheck;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.simulation.SimulatedNetwork.RunningNetwork;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
@@ -76,7 +75,9 @@ public class LivenessCheck implements BFTCheck {
 			.concatMap(vertexMetadata -> {
 				if (vertexMetadataComparator.compare(vertexMetadata, highestVertexMetadata.get()) <= 0) {
 					return Observable.just(
-						new BFTCheckError(String.format("Highest QC hasn't increased from %s after %s %s", highestVertexMetadata.get(), duration, timeUnit))
+						new BFTCheckError(
+							String.format("Highest QC hasn't increased from %s after %s %s", highestVertexMetadata.get(), duration, timeUnit)
+						)
 					);
 				} else {
 					highestVertexMetadata.set(vertexMetadata);

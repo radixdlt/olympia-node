@@ -68,9 +68,9 @@ public class SafetyCheck implements BFTCheck {
 
 	@Override
 	public Observable<BFTCheckError> check(RunningNetwork network) {
-		final Map<View, Vertex> committedVertices = new ConcurrentHashMap<>();
-		final AtomicReference<View> highest = new AtomicReference<>();
-		final Map<ECKeyPair, View> lastCommittedByNode = new ConcurrentHashMap<>();
+		final Map<Long, Map<View, Vertex>> epochCommittedVertices = new ConcurrentHashMap<>();
+		final Map<Long, AtomicReference<View>> epochHighest = new ConcurrentHashMap<>();
+		final Map<Long, Map<ECKeyPair, View>> epochLastCommittedByNode = new ConcurrentHashMap<>();
 
 		return Observable.merge(
 			network.getNodes().stream().map(
@@ -80,6 +80,11 @@ public class SafetyCheck implements BFTCheck {
 			.flatMap(nodeAndVertex -> {
 				final ECKeyPair node = nodeAndVertex.getFirst();
 				final Vertex vertex = nodeAndVertex.getSecond();
+				final long epoch = vertex.getEpoch();
+				final Map<View, Vertex> committedVertices = epochCommittedVertices.computeIfAbsent(epoch, e -> new ConcurrentHashMap<>());
+				final AtomicReference<View> highest = epochHighest.computeIfAbsent(epoch, e -> new AtomicReference<>());
+				final Map<ECKeyPair, View> lastCommittedByNode = epochLastCommittedByNode.computeIfAbsent(epoch, e -> new ConcurrentHashMap<>());
+
 				final Vertex currentVertexAtView = committedVertices.get(vertex.getView());
 				if (currentVertexAtView != null) {
 					if (!currentVertexAtView.getId().equals(vertex.getId())) {

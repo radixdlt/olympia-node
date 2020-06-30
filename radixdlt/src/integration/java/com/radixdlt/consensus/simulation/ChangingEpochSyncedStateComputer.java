@@ -31,14 +31,17 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Function;
 
 public class ChangingEpochSyncedStateComputer implements SyncedStateComputer<CommittedAtom>, EpochChangeRx {
 	private VertexMetadata lastEpochChange = null;
 	private final Subject<EpochChange> epochChanges = BehaviorSubject.<EpochChange>create().toSerialized();
+	private View epochHighView;
 	private final Function<Long, ValidatorSet> validatorSetMapping;
 
-	public ChangingEpochSyncedStateComputer(Function<Long, ValidatorSet> validatorSetMapping) {
+	public ChangingEpochSyncedStateComputer(View epochHighView, Function<Long, ValidatorSet> validatorSetMapping) {
+		this.epochHighView = Objects.requireNonNull(epochHighView);
 		this.validatorSetMapping = validatorSetMapping;
 		VertexMetadata ancestor = VertexMetadata.ofGenesisAncestor();
 		this.epochChanges.onNext(new EpochChange(ancestor, validatorSetMapping.apply(ancestor.getEpoch() + 1)));
@@ -51,7 +54,7 @@ public class ChangingEpochSyncedStateComputer implements SyncedStateComputer<Com
 
 	@Override
 	public boolean compute(Vertex vertex) {
-		return vertex.getView().compareTo(View.of(100)) >= 0;
+		return vertex.getView().compareTo(epochHighView) >= 0;
 	}
 
 	@Override

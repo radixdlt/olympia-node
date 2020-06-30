@@ -19,21 +19,35 @@ package com.radixdlt.consensus.simulation.epochs;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
+import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.simulation.BFTCheck.BFTCheckError;
 import com.radixdlt.consensus.simulation.SimulatedTest;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import org.junit.Ignore;
 import org.junit.Test;
 
-public class StaticValidatorEpochChangePer100ViewsTest {
+public class EpochsStaticValidatorTest {
 	@Test
-	@Ignore("Need to fix tests to support epochs")
-	public void given_4_correct_bfts__then_should_pass_sanity_tests_over_1_minute() {
+	public void given_correct_bft_with_changing_epochs_every_view__then_should_pass_bft_invariants() {
+		SimulatedTest bftTest = SimulatedTest.builder()
+			.pacemakerTimeout(1000)
+			.numNodes(4)
+			.epochHighView(View.of(1))
+			.checkSafety("safety")
+			.checkLiveness("liveness")
+			.checkNoTimeouts("noTimeouts")
+			.checkAllProposalsHaveDirectParents("directParents")
+			.build();
+		Map<String, Optional<BFTCheckError>> results = bftTest.run(1, TimeUnit.MINUTES);
+		assertThat(results).allSatisfy((name, err) -> assertThat(err).isEmpty());
+	}
+
+	@Test
+	public void given_correct_bft_with_changing_epochs_per_100_views__then_should_pass_bft_invariants() {
 		SimulatedTest bftTest = SimulatedTest.builder()
 			.numNodes(4)
-			.setIsSingleEpoch(false)
+			.epochHighView(View.of(100))
 			.checkSafety("safety")
 			.checkLiveness("liveness")
 			.checkNoTimeouts("noTimeouts")

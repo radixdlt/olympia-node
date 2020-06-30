@@ -81,12 +81,16 @@ public class SyncedRadixEngine implements SyncedStateComputer<CommittedAtom> {
 		AddressBook addressBook,
 		StateSyncNetwork stateSyncNetwork
 	) {
+		if (epochChangeView.isGenesis()) {
+			throw new IllegalArgumentException("Epoch change view must not be genesis.");
+		}
+
 		this.radixEngine = Objects.requireNonNull(radixEngine);
 		this.committedAtomsStore = Objects.requireNonNull(committedAtomsStore);
 		this.committedStateSyncSender = Objects.requireNonNull(committedStateSyncSender);
 		this.epochChangeSender = Objects.requireNonNull(epochChangeSender);
 		this.validatorSetMapping = validatorSetMapping;
-		this.epochChangeView = Objects.requireNonNull(epochChangeView);
+		this.epochChangeView = epochChangeView;
 		this.addressBook = Objects.requireNonNull(addressBook);
 		this.stateSyncNetwork = Objects.requireNonNull(stateSyncNetwork);
 	}

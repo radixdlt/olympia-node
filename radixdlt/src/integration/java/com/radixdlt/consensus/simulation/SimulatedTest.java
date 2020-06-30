@@ -19,6 +19,7 @@ package com.radixdlt.consensus.simulation;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.simulation.BFTCheck.BFTCheckError;
 import com.radixdlt.consensus.simulation.SimulatedNetwork.RunningNetwork;
 import com.radixdlt.consensus.simulation.checks.AllProposalsHaveDirectParentsCheck;
@@ -53,13 +54,13 @@ public class SimulatedTest {
 	private final ImmutableMap<String, BFTCheck> checks;
 	private final int pacemakerTimeout;
 	private final boolean getVerticesRPCEnabled;
-	private final boolean isSingleEpoch;
+	private final View epochHighView;
 
 	private SimulatedTest(
 		ImmutableList<ECKeyPair> nodes,
 		LatencyProvider latencyProvider,
 		int pacemakerTimeout,
-		boolean isSingleEpoch,
+		View epochHighView,
 		boolean getVerticesRPCEnabled,
 		ImmutableMap<String, BFTCheck> checks
 	) {
@@ -67,7 +68,7 @@ public class SimulatedTest {
 		this.latencyProvider = latencyProvider;
 		this.checks = checks;
 		this.pacemakerTimeout = pacemakerTimeout;
-		this.isSingleEpoch = isSingleEpoch;
+		this.epochHighView = epochHighView;
 		this.getVerticesRPCEnabled = getVerticesRPCEnabled;
 	}
 
@@ -77,7 +78,7 @@ public class SimulatedTest {
 		private List<ECKeyPair> nodes = Collections.singletonList(ECKeyPair.generateNew());
 		private int pacemakerTimeout = 12 * TestEventCoordinatorNetwork.DEFAULT_LATENCY;
 		private boolean getVerticesRPCEnabled = true;
-		private boolean isSingleEpoch = true;
+		private View epochHighView = null;
 
 		private Builder() {
 		}
@@ -110,8 +111,8 @@ public class SimulatedTest {
 			return this;
 		}
 
-		public Builder setIsSingleEpoch(boolean isSingleEpoch) {
-			this.isSingleEpoch = isSingleEpoch;
+		public Builder epochHighView(View epochHighView) {
+			this.epochHighView = epochHighView;
 			return this;
 		}
 
@@ -165,7 +166,7 @@ public class SimulatedTest {
 				ImmutableList.copyOf(nodes),
 				latencyProvider.copyOf(),
 				pacemakerTimeout,
-				isSingleEpoch,
+				epochHighView,
 				getVerticesRPCEnabled,
 				this.checksBuilder.build()
 			);
@@ -218,7 +219,7 @@ public class SimulatedTest {
 		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.builder()
 			.latencyProvider(this.latencyProvider)
 			.build();
-		SimulatedNetwork bftNetwork =  new SimulatedNetwork(nodes, network, pacemakerTimeout, isSingleEpoch, getVerticesRPCEnabled);
+		SimulatedNetwork bftNetwork =  new SimulatedNetwork(nodes, network, pacemakerTimeout, epochHighView, getVerticesRPCEnabled);
 
 		return bftNetwork.start()
 			.timeout(10, TimeUnit.SECONDS)

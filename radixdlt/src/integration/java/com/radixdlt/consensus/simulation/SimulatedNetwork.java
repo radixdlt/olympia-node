@@ -33,6 +33,7 @@ import com.radixdlt.consensus.VertexStore;
 import com.radixdlt.consensus.SyncVerticesRPCSender;
 import com.radixdlt.consensus.VertexStoreEventsRx;
 import com.radixdlt.consensus.VertexStoreFactory;
+import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
 import com.radixdlt.consensus.liveness.ScheduledTimeoutSender;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
@@ -73,7 +74,7 @@ public class SimulatedNetwork {
 	private final ImmutableMap<ECKeyPair, ConsensusRunner> runners;
 	private final List<ECKeyPair> nodes;
 	private final boolean getVerticesRPCEnabled;
-	private final boolean isSingleEpoch;
+	private final View epochHighView;
 
 	/**
 	 * Create a BFT test network with an underlying simulated network.
@@ -85,11 +86,11 @@ public class SimulatedNetwork {
 		List<ECKeyPair> nodes,
 		TestEventCoordinatorNetwork underlyingNetwork,
 		int pacemakerTimeout,
-		boolean isSingleEpoch,
+		View epochHighView,
 		boolean getVerticesRPCEnabled
 	) {
 		this.nodes = nodes;
-		this.isSingleEpoch = isSingleEpoch;
+		this.epochHighView = epochHighView;
 		this.getVerticesRPCEnabled = getVerticesRPCEnabled;
 		this.underlyingNetwork = Objects.requireNonNull(underlyingNetwork);
 		this.pacemakerTimeout = pacemakerTimeout;
@@ -108,16 +109,14 @@ public class SimulatedNetwork {
 
 		final EpochChangeRx epochChangeRx;
 		final SyncedStateComputer<CommittedAtom> stateComputer;
-		if (isSingleEpoch) {
+		if (epochHighView == null) {
 			epochChangeRx = new BasicEpochChangeRx(publicKeys);
 			stateComputer = new SingleEpochAlwaysSyncedStateComputer();
 		} else {
-			ChangingEpochSyncedStateComputer changingEpochSyncedStateComputer
-				= new ChangingEpochSyncedStateComputer(v -> ValidatorSet.from(
-					publicKeys.stream()
-						.map(pk -> Validator.from(pk, UInt256.ONE))
-						.collect(Collectors.toList())
-				));
+			ChangingEpochSyncedStateComputer changingEpochSyncedStateComputer = new ChangingEpochSyncedStateComputer(
+				epochHighView,
+				v -> ValidatorSet.from(publicKeys.stream().map(pk -> Validator.from(pk, UInt256.ONE)).collect(Collectors.toList()))
+			);
 			epochChangeRx = changingEpochSyncedStateComputer;
 			stateComputer = changingEpochSyncedStateComputer;
 		}
