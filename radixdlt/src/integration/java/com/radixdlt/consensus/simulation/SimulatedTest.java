@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.simulation.TestInvariant.TestInvariantError;
+import com.radixdlt.consensus.simulation.invariants.epochs.EpochViewInvariant;
 import com.radixdlt.consensus.simulation.network.DroppingLatencyProvider;
 import com.radixdlt.consensus.simulation.network.OneProposalPerViewDropper;
 import com.radixdlt.consensus.simulation.network.RandomLatencyProvider;
@@ -129,33 +130,38 @@ public class SimulatedTest {
 			return this;
 		}
 
-		public Builder checkLiveness(String checkName) {
-			this.checksBuilder.put(checkName, new LivenessInvariant(8 * TestEventCoordinatorNetwork.DEFAULT_LATENCY, TimeUnit.MILLISECONDS));
+		public Builder checkLiveness(String invariantName) {
+			this.checksBuilder.put(invariantName, new LivenessInvariant(8 * TestEventCoordinatorNetwork.DEFAULT_LATENCY, TimeUnit.MILLISECONDS));
 			return this;
 		}
 
-		public Builder checkLiveness(String checkName, long duration, TimeUnit timeUnit) {
-			this.checksBuilder.put(checkName, new LivenessInvariant(duration, timeUnit));
+		public Builder checkLiveness(String invariantName, long duration, TimeUnit timeUnit) {
+			this.checksBuilder.put(invariantName, new LivenessInvariant(duration, timeUnit));
 			return this;
 		}
 
-		public Builder checkSafety(String checkName) {
-			this.checksBuilder.put(checkName, new SafetyInvariant());
+		public Builder checkSafety(String invariantName) {
+			this.checksBuilder.put(invariantName, new SafetyInvariant());
 			return this;
 		}
 
-		public Builder checkNoTimeouts(String checkName) {
-			this.checksBuilder.put(checkName, new NoTimeoutsInvariant());
+		public Builder checkNoTimeouts(String invariantName) {
+			this.checksBuilder.put(invariantName, new NoTimeoutsInvariant());
 			return this;
 		}
 
-		public Builder checkAllProposalsHaveDirectParents(String checkName) {
-			this.checksBuilder.put(checkName, new AllProposalsHaveDirectParentsInvariant());
+		public Builder checkAllProposalsHaveDirectParents(String invariantName) {
+			this.checksBuilder.put(invariantName, new AllProposalsHaveDirectParentsInvariant());
 			return this;
 		}
 
-		public Builder checkNoneCommitted(String checkName) {
-			this.checksBuilder.put(checkName, new NoneCommittedInvariant());
+		public Builder checkNoneCommitted(String invariantName) {
+			this.checksBuilder.put(invariantName, new NoneCommittedInvariant());
+			return this;
+		}
+
+		public Builder checkEpochHighView(String invariantName, View epochHighView) {
+			this.checksBuilder.put(invariantName, new EpochViewInvariant(epochHighView));
 			return this;
 		}
 
