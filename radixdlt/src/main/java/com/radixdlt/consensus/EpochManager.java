@@ -108,8 +108,8 @@ public class EpochManager {
 
 		QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(genesisVertex);
 
-		VertexStore vertexStore = vertexStoreFactory.create(genesisVertex, genesisQC);
-		ProposalGenerator proposalGenerator = new MempoolProposalGenerator(vertexStore, this.mempool);
+		this.vertexStore = vertexStoreFactory.create(genesisVertex, genesisQC);
+		ProposalGenerator proposalGenerator = new MempoolProposalGenerator(this.vertexStore, this.mempool);
 
 		BFTEventReducer reducer = new BFTEventReducer(
 			proposalGenerator,
@@ -133,7 +133,6 @@ public class EpochManager {
 		);
 
 		this.currentEpoch = nextEpoch;
-		this.vertexStore = vertexStore;
 		this.eventProcessor = new BFTEventPreprocessor(
 			this.selfKey.getPublicKey(),
 			reducer,

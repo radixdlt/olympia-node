@@ -211,10 +211,12 @@ public final class ControlledBFTNetwork {
 
 		@Override
 		public void committedVertex(Vertex vertex) {
+			// Ignore committed vertex signal
 		}
 
 		@Override
 		public void highQC(QuorumCertificate qc) {
+			// Ignore high QC signal
 		}
 	}
 }

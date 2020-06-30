@@ -47,6 +47,7 @@ import io.undertow.util.Methods;
 import io.undertow.util.StatusCodes;
 import io.undertow.websockets.core.WebSocketChannel;
 
+import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONArray;
@@ -234,14 +235,24 @@ public final class RadixHttpServer {
 			respond(array, exchange);
 		}, handler);
 
+		// TODO: Maybe better to use counters for this?
 		addGetRoute("/api/vertices/highestqc", exchange -> {
-			this.vertexStoreEventsRx.highQCs().firstOrError()
-				.subscribe(highestQC -> {
-					JSONObject highestQCJson = new JSONObject();
-					highestQCJson.put("view", highestQC.getView());
-					highestQCJson.put("vertexId", highestQC.getProposed().getId());
-					respond(highestQCJson, exchange);
-				});
+			this.vertexStoreEventsRx.highQCs()
+				.firstOrError()
+				.timeout(5, TimeUnit.SECONDS)
+				.subscribe(
+					highestQC -> {
+						JSONObject highestQCJson = new JSONObject();
+						highestQCJson.put("view", highestQC.getView());
+						highestQCJson.put("vertexId", highestQC.getProposed().getId());
+						respond(highestQCJson, exchange);
+					},
+					error -> {
+						JSONObject errorJson = new JSONObject();
+						errorJson.put("error", error.getMessage());
+						respond(errorJson, exchange);
+					}
+				);
 		}, handler);
 	}
 
