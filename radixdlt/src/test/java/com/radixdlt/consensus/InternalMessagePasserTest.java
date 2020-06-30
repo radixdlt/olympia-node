@@ -71,4 +71,15 @@ public class InternalMessagePasserTest {
 		testObserver.assertValue(s -> s.getOpaque().equals(opaque) && s.getStateVersion() == stateVersion);
 		testObserver.assertNotComplete();
 	}
+
+	@Test
+	public void when_send_epoch_change_event__then_should_receive_it() {
+		InternalMessagePasser internalMessagePasser = new InternalMessagePasser();
+		TestObserver<EpochChange> testObserver = internalMessagePasser.epochChanges().test();
+		EpochChange epochChange = mock(EpochChange.class);
+		internalMessagePasser.epochChange(epochChange);
+		testObserver.awaitCount(1);
+		testObserver.assertValue(epochChange);
+		testObserver.assertNotComplete();
+	}
 }

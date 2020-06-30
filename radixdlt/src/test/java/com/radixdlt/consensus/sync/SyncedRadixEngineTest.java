@@ -17,9 +17,11 @@
 
 package com.radixdlt.consensus.sync;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -30,6 +32,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.radixdlt.EpochChangeSender;
+import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.sync.SyncedRadixEngine.CommittedStateSyncSender;
@@ -67,6 +70,7 @@ public class SyncedRadixEngineTest {
 	private CommittedStateSyncSender committedStateSyncSender;
 	private EpochChangeSender epochChangeSender;
 	private Function<Long, ValidatorSet> validatorSetMapping;
+	private View epochHighView;
 
 	@Before
 	public void setup() {
@@ -80,16 +84,43 @@ public class SyncedRadixEngineTest {
 		this.committedStateSyncSender = mock(CommittedStateSyncSender.class);
 		this.epochChangeSender = mock(EpochChangeSender.class);
 		this.validatorSetMapping = mock(Function.class);
+		this.epochHighView = View.of(100);
 		this.syncedRadixEngine = new SyncedRadixEngine(
 			radixEngine,
 			committedAtomsStore,
 			committedStateSyncSender,
 			epochChangeSender,
 			validatorSetMapping,
-			View.of(Long.MAX_VALUE),
+			epochHighView,
 			addressBook,
 			stateSyncNetwork
 		);
+	}
+
+	@Test
+	public void when_compute_vertex_metadata_equal_to_high_view__then_should_return_true() {
+		Vertex vertex = mock(Vertex.class);
+		when(vertex.getView()).thenReturn(epochHighView);
+		assertThat(syncedRadixEngine.compute(vertex)).isTrue();
+	}
+
+	@Test
+	public void when_execute_end_of_epoch_atom__then_should_send_epoch_change() {
+		CommittedAtom committedAtom = mock(CommittedAtom.class);
+		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
+		long genesisEpoch = 123;
+		when(vertexMetadata.getEpoch()).thenReturn(genesisEpoch);
+		when(vertexMetadata.isEndOfEpoch()).thenReturn(true);
+		when(committedAtom.getVertexMetadata()).thenReturn(vertexMetadata);
+
+		ValidatorSet validatorSet = mock(ValidatorSet.class);
+		when(this.validatorSetMapping.apply(eq(genesisEpoch + 1))).thenReturn(validatorSet);
+
+		syncedRadixEngine.execute(committedAtom);
+		verify(epochChangeSender, times(1))
+			.epochChange(
+				argThat(e -> e.getAncestor().equals(vertexMetadata) && e.getValidatorSet().equals(validatorSet))
+			);
 	}
 
 	@Test
