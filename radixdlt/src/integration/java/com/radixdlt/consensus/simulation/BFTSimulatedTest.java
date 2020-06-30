@@ -110,6 +110,11 @@ public class BFTSimulatedTest {
 			return this;
 		}
 
+		public Builder setIsSingleEpoch(boolean isSingleEpoch) {
+			this.isSingleEpoch = isSingleEpoch;
+			return this;
+		}
+
 		public Builder setGetVerticesRPCEnabled(boolean getVerticesRPCEnabled) {
 			this.getVerticesRPCEnabled = getVerticesRPCEnabled;
 			return this;

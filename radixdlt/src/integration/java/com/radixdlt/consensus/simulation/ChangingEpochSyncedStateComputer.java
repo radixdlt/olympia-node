@@ -27,6 +27,7 @@ import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.middleware2.CommittedAtom;
 import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import java.util.List;
@@ -39,6 +40,8 @@ public class ChangingEpochSyncedStateComputer implements SyncedStateComputer<Com
 
 	public ChangingEpochSyncedStateComputer(Function<Long, ValidatorSet> validatorSetMapping) {
 		this.validatorSetMapping = validatorSetMapping;
+		VertexMetadata ancestor = VertexMetadata.ofGenesisAncestor();
+		this.epochChanges.onNext(new EpochChange(ancestor, validatorSetMapping.apply(ancestor.getEpoch() + 1)));
 	}
 
 	@Override
@@ -64,6 +67,6 @@ public class ChangingEpochSyncedStateComputer implements SyncedStateComputer<Com
 
 	@Override
 	public Observable<EpochChange> epochChanges() {
-		return epochChanges;
+		return epochChanges.observeOn(Schedulers.io());
 	}
 }
