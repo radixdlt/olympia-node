@@ -63,6 +63,13 @@ task dockerSystemTests(type: Test) {
 }
 
 
+/*
+    Cluster setup is done outside the tests and this dictates the test conditions.
+    So all tests in Cluster category can't be run together. One has to pick tests by class or method
+    Specify the class to be included. For example to run SlowNodeTest use below command on gradle
+    gradle test --tests SlowNodeTest
+    Ref - https://docs.gradle.org/current/userguide/java_testing.html
+*/
 task clusterSystemTests(type: Test) {
     useJUnit {
         includeCategories 'com.radixdlt.test.Cluster'
