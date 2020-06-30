@@ -34,6 +34,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 
+/**
+ * State computer which changes epochs after some number of views
+ */
 public class ChangingEpochSyncedStateComputer implements SyncedStateComputer<CommittedAtom>, EpochChangeRx {
 	private VertexMetadata lastEpochChange = null;
 	private final Subject<EpochChange> epochChanges = BehaviorSubject.<EpochChange>create().toSerialized();

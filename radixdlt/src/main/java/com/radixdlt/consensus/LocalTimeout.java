@@ -19,6 +19,9 @@ package com.radixdlt.consensus;
 
 import java.util.Objects;
 
+/**
+ * A timeout for a given epoch and view
+ */
 public final class LocalTimeout {
 	private final long epoch;
 	private final View view;
@@ -53,6 +56,6 @@ public final class LocalTimeout {
 
 	@Override
 	public String toString() {
-		return String.format("%s {epoch=%s view=%s}", this.getClass().getSimpleName(), epoch, view);
+		return String.format("%s{epoch=%s view=%s}", this.getClass().getSimpleName(), epoch, view);
 	}
 }

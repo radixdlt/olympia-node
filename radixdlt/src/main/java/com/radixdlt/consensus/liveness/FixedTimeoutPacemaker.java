@@ -27,7 +27,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * A pacemaker which utilizes a fixed timeout (aka requires a bft network).
+ * A pacemaker which utilizes a fixed timeout (aka requires a synchronous network).
  */
 public final class FixedTimeoutPacemaker implements Pacemaker {
 

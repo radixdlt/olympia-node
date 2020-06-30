@@ -52,6 +52,15 @@ public interface SyncedStateComputer<T extends CommittedInstruction> {
 	 */
 	boolean syncTo(VertexMetadata vertexMetadata, List<ECPublicKey> target, Object opaque);
 
+	/**
+	 * Computes whether commit of this vertex will cause an epoch change.
+	 *
+	 * TODO: Return the entire computation result
+	 * TODO: Transform into the prepare/execute stage
+	 *
+	 * @param vertex the vertex to compute
+	 * @return true, if commit of this vertex will cause an epoch change, false otherwise
+	 */
 	boolean compute(Vertex vertex);
 
 	/**

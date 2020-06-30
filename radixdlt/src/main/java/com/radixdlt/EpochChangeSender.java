@@ -19,6 +19,14 @@ package com.radixdlt;
 
 import com.radixdlt.consensus.EpochChange;
 
+/**
+ * Sends an epoch change message
+ */
 public interface EpochChangeSender {
+
+	/**
+	 * Signals that an epoch change has occurred
+	 * @param epochChange the epoch change
+	 */
 	void epochChange(EpochChange epochChange);
 }

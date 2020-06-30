@@ -76,7 +76,7 @@ public class SafetyInvariant implements TestInvariant {
 			network.getNodes().stream().map(
 				node -> network.getVertexStoreEvents(node).committedVertices().map(v -> Pair.of(node, v)))
 				.collect(Collectors.toList())
-			)
+		)
 			.flatMap(nodeAndVertex -> {
 				final ECKeyPair node = nodeAndVertex.getFirst();
 				final Vertex vertex = nodeAndVertex.getSecond();

@@ -83,8 +83,6 @@ public final class VertexMetadata {
 		return new VertexMetadata(0, View.genesis(), Hash.ZERO_HASH, 0, true);
 	}
 
-	// TODO: move isEndOfEpoch to somewhere more appropriate
-	// TODO: move
 	public static VertexMetadata ofVertex(Vertex vertex, boolean isEndOfEpoch) {
 		final VertexMetadata parent = vertex.getQC().getProposed();
 		final long parentStateVersion = parent.getStateVersion();

@@ -28,6 +28,10 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+/**
+ * Invariant which checks that there is only ever one view which exceeds the epochHighView for
+ * every epoch.
+ */
 public class EpochViewInvariant implements TestInvariant {
 	private final View epochHighView;
 

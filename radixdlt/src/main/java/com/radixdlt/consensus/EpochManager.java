@@ -42,7 +42,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Manages Epochs and the BFT instance associated with each epoch
+ * Manages Epochs and the BFT instance (which mostly epoch agnostic) associated with each epoch
  */
 @NotThreadSafe
 public class EpochManager {

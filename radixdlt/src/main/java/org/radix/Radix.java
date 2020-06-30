@@ -148,6 +148,8 @@ public final class Radix
 		syncedRadixEngine.start();
 
 		CommittedAtomsStore engineStore = globalInjector.getInjector().getInstance(CommittedAtomsStore.class);
+
+		// TODO: Move this to a better place
 		CommittedAtom genesisAtom = globalInjector.getInjector().getInstance(CommittedAtom.class);
 		if (engineStore.getCommittedAtoms(genesisAtom.getVertexMetadata().getStateVersion() - 1, 1).isEmpty()) {
 			syncedRadixEngine.execute(genesisAtom);

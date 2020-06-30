@@ -30,8 +30,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 /**
- * Check that the network is making progress by ensuring that new QCs are
- * progressively increasing in view number.
+ * Check that the network is making progress by ensuring that new QCs and epochs
+ * are progressively increasing.
  */
 public class LivenessInvariant implements TestInvariant {
 	private final long duration;

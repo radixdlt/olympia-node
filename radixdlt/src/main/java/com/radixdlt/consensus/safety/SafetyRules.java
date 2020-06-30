@@ -104,10 +104,9 @@ public final class SafetyRules {
 	private static VoteData constructVoteData(Vertex proposedVertex, VertexMetadata proposedVertexMetadata) {
 		final VertexMetadata parent = proposedVertex.getQC().getProposed();
 
-		final VertexMetadata toCommit;
-
 		// Add a vertex to commit if creating a quorum for the proposed vertex would
 		// create three consecutive qcs.
+		final VertexMetadata toCommit;
 		if (proposedVertex.getView().equals(proposedVertex.getParentMetadata().getView().next())
 			&& !proposedVertex.getParentMetadata().getView().isGenesis() && !proposedVertex.getGrandParentMetadata().getView().isGenesis()
 			&& proposedVertex.getParentMetadata().getView().equals(proposedVertex.getGrandParentMetadata().getView().next())
@@ -122,7 +121,6 @@ public final class SafetyRules {
 
 	/**
 	 * Vote for a proposed vertex while ensuring that safety invariants are upheld.
-	 * TODO: Move epochChange to somewhere more appropriate
 	 *
 	 * @param proposedVertex The proposed vertex
 	 * @param proposedVertexMetadata results of vertex execution

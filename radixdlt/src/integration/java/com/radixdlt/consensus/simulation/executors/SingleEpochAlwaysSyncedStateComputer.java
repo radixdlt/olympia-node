@@ -24,6 +24,9 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.middleware2.CommittedAtom;
 import java.util.List;
 
+/**
+ * A state computer which never changes epochs
+ */
 public final class SingleEpochAlwaysSyncedStateComputer implements SyncedStateComputer<CommittedAtom> {
 	@Override
 	public boolean syncTo(VertexMetadata vertexMetadata, List<ECPublicKey> target, Object opaque) {
