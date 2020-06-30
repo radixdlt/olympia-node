@@ -48,6 +48,8 @@ public final class MempoolProposalGenerator implements ProposalGenerator {
 	@Override
 	public Vertex generateProposal(View view) {
 		final QuorumCertificate highestQC = vertexStore.getHighestQC();
+
+		// Propose null atom in the case that we are at the end of the epoch
 		if (highestQC.getProposed().isEndOfEpoch()) {
 			return Vertex.createVertex(highestQC, view, null);
 		}

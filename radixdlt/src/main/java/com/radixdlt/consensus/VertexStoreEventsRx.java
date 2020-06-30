@@ -26,7 +26,7 @@ import io.reactivex.rxjava3.core.Observable;
 public interface VertexStoreEventsRx {
 
 	/**
-	 * Retrieve rx flow of vertex hashes
+	 * Retrieve rx flow of vertices which have been synced
 	 * @return flow of vertex hashes
 	 */
 	Observable<Hash> syncedVertices();

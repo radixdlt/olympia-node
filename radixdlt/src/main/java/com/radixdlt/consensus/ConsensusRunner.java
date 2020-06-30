@@ -88,6 +88,8 @@ public final class ConsensusRunner {
 		this.singleThreadExecutor = Executors.newSingleThreadExecutor(ThreadFactories.daemonThreads("ConsensusRunner"));
 		this.singleThreadScheduler = Schedulers.from(this.singleThreadExecutor);
 
+		// It is important that all of these events are executed on the same thread
+		// as all logic is dependent on this assumption
 		final Observable<Event> eventCoordinatorEvents = Observable.merge(Arrays.asList(
 			epochChangeRx.epochChanges()
 				.observeOn(singleThreadScheduler)

@@ -42,7 +42,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Manages Epochs and the BFT instance (which mostly epoch agnostic) associated with each epoch
+ * Manages Epochs and the BFT instance (which is mostly epoch agnostic) associated with each epoch
  */
 @NotThreadSafe
 public class EpochManager {
@@ -161,7 +161,7 @@ public class EpochManager {
 	}
 
 	public void processConsensusEvent(ConsensusEvent consensusEvent) {
-		// TODO: Add the rest of consensus event verification here
+		// TODO: Add the rest of consensus event verification here including signature verification
 
 		if (consensusEvent.getEpoch() != this.currentEpoch) {
 			log.warn("Received event not in the current epoch ({}): {}", this.currentEpoch, consensusEvent);
