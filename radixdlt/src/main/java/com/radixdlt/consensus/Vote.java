@@ -93,7 +93,7 @@ public final class Vote implements ConsensusEvent {
 
 	@Override
 	public String toString() {
-		return String.format("%s{epoch=%s view=%s author=%s }", getClass().getSimpleName(),
+		return String.format("%s{epoch=%s view=%s author=%s}", getClass().getSimpleName(),
 			this.getEpoch(), voteData.getProposed().getView(), author.euid().toString().substring(0, 6));
 	}
 

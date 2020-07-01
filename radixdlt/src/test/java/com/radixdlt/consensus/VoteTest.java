@@ -48,6 +48,7 @@ public class VoteTest {
 
 	@Test
 	public void testGetters() {
+		assertEquals(this.testObject.getEpoch(), voteData.getProposed().getEpoch());
 		assertEquals(this.voteData, this.testObject.getVoteData());
 		assertEquals(ADDRESS.getPublicKey(), this.testObject.getAuthor());
 	}
@@ -55,7 +56,7 @@ public class VoteTest {
 
 	@Test
 	public void testToString() {
-		assertThat(this.testObject).isNotNull();
+		assertThat(this.testObject.toString()).isNotNull();
 	}
 
 	@Test
