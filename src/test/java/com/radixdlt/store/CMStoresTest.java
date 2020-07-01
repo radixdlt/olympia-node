@@ -22,18 +22,12 @@ import static org.mockito.Mockito.mock;
 
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.identifiers.EUID;
-import java.util.Set;
 import java.util.function.Function;
 import org.junit.Test;
 
 public class CMStoresTest {
 	private CMStore createStore(boolean supports, Function<Particle, Spin> getSpinFunc) {
 		return new CMStore() {
-			@Override
-			public boolean supports(Set<EUID> destinations) {
-				return supports;
-			}
 
 			@Override
 			public Spin getSpin(Particle particle) {

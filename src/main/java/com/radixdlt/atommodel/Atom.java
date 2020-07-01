@@ -21,7 +21,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
@@ -46,7 +45,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -267,14 +265,6 @@ public class Atom {
 		}
 	}
 
-	public final Set<Long> getShards() {
-		return this.particleGroups.stream()
-			.flatMap(ParticleGroup::spunParticles)
-			.map(SpunParticle::getParticle)
-			.flatMap(p -> p.getDestinations().stream())
-			.map(EUID::getShard)
-			.collect(Collectors.toSet());
-	}
 
 	/**
 	 * Gets the memoized AID of this Atom.
@@ -287,7 +277,7 @@ public class Atom {
 	}
 
 	private AID doGetAID() {
-		return AID.from(getHash(), this.getShards());
+		return AID.from(getHash().toByteArray());
 	}
 
 	/**
@@ -417,12 +407,6 @@ public class Atom {
 			this.signatures.putAll((sigs.entrySet().stream()
 				.collect(Collectors.toMap(e -> EUID.valueOf(e.getKey()), Map.Entry::getValue))));
 		}
-	}
-
-	@JsonProperty("shards")
-	@DsonOutput(DsonOutput.Output.API)
-	private List<Long> getJsonShards() {
-		return Lists.newArrayList(getShards());
 	}
 
 	public boolean hasTimestamp() {

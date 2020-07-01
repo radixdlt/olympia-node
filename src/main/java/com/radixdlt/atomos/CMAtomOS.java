@@ -122,28 +122,18 @@ public final class CMAtomOS {
 		Map<? extends Class<? extends Particle>, Function<Particle, Spin>> virtualizedParticles = particleDefinitions.entrySet().stream()
 			.filter(def -> def.getValue().getVirtualizeSpin() != null)
 			.collect(Collectors.toMap(Map.Entry::getKey, def -> def.getValue().getVirtualizeSpin()));
-		return base -> new CMStore() {
-			@Override
-			public boolean supports(Set<EUID> destinations) {
-				return base.supports(destinations);
-			}
+		return base -> particle -> {
+			Spin curSpin = base.getSpin(particle);
 
-			@Override
-			public Spin getSpin(Particle particle) {
-				Spin curSpin = base.getSpin(particle);
-
-				if (base.supports(particle.getDestinations())) {
-					Function<Particle, Spin> virtualizer = virtualizedParticles.get(particle.getClass());
-					if (virtualizer != null) {
-						Spin virtualizedSpin = virtualizer.apply(particle);
-						if (virtualizedSpin != null && SpinStateMachine.isAfter(virtualizedSpin, curSpin)) {
-							return virtualizedSpin;
-						}
-					}
+			Function<Particle, Spin> virtualizer = virtualizedParticles.get(particle.getClass());
+			if (virtualizer != null) {
+				Spin virtualizedSpin = virtualizer.apply(particle);
+				if (virtualizedSpin != null && SpinStateMachine.isAfter(virtualizedSpin, curSpin)) {
+					return virtualizedSpin;
 				}
-
-				return curSpin;
 			}
+
+			return curSpin;
 		};
 	}
 }

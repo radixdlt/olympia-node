@@ -19,7 +19,6 @@ package com.radixdlt.examples.tictactoe;
 
 import com.radixdlt.examples.tictactoe.TicTacToeRunner.TicTacToeAtom;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.identifiers.EUID;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.CMMicroInstruction.CMMicroOp;
 import com.radixdlt.constraintmachine.Particle;
@@ -28,7 +27,6 @@ import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.SpinStateMachine;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Consumer;
 
 /**
@@ -38,11 +36,6 @@ import java.util.function.Consumer;
  */
 public class InMemoryEngineStore implements EngineStore<TicTacToeAtom> {
 	private Map<Particle, Pair<Spin, TicTacToeAtom>> storedParticles = new HashMap<>();
-
-	@Override
-	public boolean supports(Set<EUID> destinations) {
-		return true;
-	}
 
 	@Override
 	public Spin getSpin(Particle particle) {
