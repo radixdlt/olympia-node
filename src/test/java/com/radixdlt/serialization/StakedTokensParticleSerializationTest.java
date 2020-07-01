@@ -40,35 +40,35 @@ public class StakedTokensParticleSerializationTest extends SerializeObjectEngine
 	public static final ImmutableMap<MutableSupplyTokenDefinitionParticle.TokenTransition, TokenPermission> TOKEN_PERMISSIONS = ImmutableMap.of();
 
 	public StakedTokensParticleSerializationTest() {
-        super(StakedTokensParticle.class, StakedTokensParticleSerializationTest::get);
-    }
+		super(StakedTokensParticle.class, StakedTokensParticleSerializationTest::get);
+	}
 
-    @BeforeClass
-    public static void startStakedTokensParticleSerializationTest() {
-        TestSetupUtils.installBouncyCastleProvider();
-    }
+	@BeforeClass
+	public static void startStakedTokensParticleSerializationTest() {
+		TestSetupUtils.installBouncyCastleProvider();
+	}
 
-    @Test
-    public void testGetters() {
-    	StakedTokensParticle p = get();
-    	assertEquals(DELEGATE_ADDRESS, p.getDelegateAddress());
-    	assertEquals(ADDRESS, p.getAddress());
-	    assertEquals(AMOUNT, p.getAmount());
-	    assertEquals(GRANULARITY, p.getGranularity());
+	@Test
+	public void testGetters() {
+		StakedTokensParticle p = get();
+		assertEquals(DELEGATE_ADDRESS, p.getDelegateAddress());
+		assertEquals(ADDRESS, p.getAddress());
+		assertEquals(AMOUNT, p.getAmount());
+		assertEquals(GRANULARITY, p.getGranularity());
 		assertEquals(TOKEN, p.getTokDefRef());
 		assertEquals(PLANCK, p.getPlanck());
 		assertEquals(TOKEN_PERMISSIONS, p.getTokenPermissions());
-    }
+	}
 
-    private static StakedTokensParticle get() {
-    	return new StakedTokensParticle(
-		    DELEGATE_ADDRESS,
-		    ADDRESS,
-		    AMOUNT,
-		    GRANULARITY,
-		    TOKEN,
-		    PLANCK,
-		    TOKEN_PERMISSIONS
-	    );
-    }
+	private static StakedTokensParticle get() {
+		return new StakedTokensParticle(
+			DELEGATE_ADDRESS,
+			ADDRESS,
+			AMOUNT,
+			GRANULARITY,
+			TOKEN,
+			PLANCK,
+			TOKEN_PERMISSIONS
+		);
+	}
 }
