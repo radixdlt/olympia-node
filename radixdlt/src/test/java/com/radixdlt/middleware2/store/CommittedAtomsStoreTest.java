@@ -36,7 +36,6 @@ import com.radixdlt.middleware2.store.CommittedAtomsStore.AtomIndexer;
 import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.store.SearchCursor;
-import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import io.reactivex.rxjava3.observers.TestObserver;
 import java.util.Collections;
 import java.util.Optional;
