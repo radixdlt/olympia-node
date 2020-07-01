@@ -18,49 +18,26 @@
 package com.radixdlt.identifiers;
 
 import com.google.common.primitives.UnsignedBytes;
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.utils.Bytes;
-import com.radixdlt.utils.Longs;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Objects;
-import java.util.Set;
 
 /**
- * An Atom ID, made up of 192 bits of truncated hash and 64 bits of a selected shard.
+ * An Atom ID, made up of 256 bits of a hash.
  * The Atom ID is used so that Atoms can be located using just their hid.
  */
 public final class AID implements Comparable<AID> {
-	public static final int BYTES = 32;
-	static final int HASH_BYTES = 24;
-	static final int SHARD_BYTES = 8;
+	static final int HASH_BYTES = 32;
+	public static final int BYTES = HASH_BYTES;
 
 	public static final AID ZERO = new AID(new byte[BYTES]);
 
 	private final byte[] value;
 
 	private AID(byte[] bytes) {
-		this.value = Objects.requireNonNull(bytes, "bytes is required");
-		if (bytes.length != BYTES) {
-			throw new IllegalArgumentException(String.format(
-				"Bytes length must be %d but is %d",
-				BYTES, bytes.length)
-			);
-		}
-	}
-
-	/**
-	 * Gets the lowest 4 bytes of this AID as a long.
-	 */
-	public long getLow() {
-		return Longs.fromByteArray(this.value);
-	}
-
-	/**
-	 * Gets the shard encoded in this AID.
-	 */
-	public long getShard() {
-		return Longs.fromByteArray(this.value, HASH_BYTES);
+		assert (bytes != null && bytes.length == HASH_BYTES);
+		this.value = bytes;
 	}
 
 	/**
@@ -72,7 +49,6 @@ public final class AID implements Comparable<AID> {
 				return false;
 			}
 		}
-
 		return true;
 	}
 
@@ -90,7 +66,6 @@ public final class AID implements Comparable<AID> {
 				BYTES, array.length)
 			);
 		}
-
 		System.arraycopy(this.value, 0, array, offset, BYTES);
 	}
 
@@ -104,7 +79,9 @@ public final class AID implements Comparable<AID> {
 		if (!(o instanceof AID)) {
 			return false;
 		}
-
+		if (hashCode() != o.hashCode()) {
+			return false;
+		}
 		return Arrays.equals(this.value, ((AID) o).value);
 	}
 
@@ -122,45 +99,12 @@ public final class AID implements Comparable<AID> {
 	}
 
 	/**
-	 * Create an AID from a hash and a set of shards
-	 * The AID will contain 192 first bits of shard + 64 bits of selected shard
-	 * @param hash The hash
-	 * @param shards The shards
-	 * @return The AID
-	 */
-	public static AID from(Hash hash, Set<Long> shards) {
-		Objects.requireNonNull(hash, "hash is required");
-		Objects.requireNonNull(shards, "shards is required");
-		if (shards.isEmpty()) {
-			throw new IllegalArgumentException("Shards cannot be empty");
-		}
-
-		// select the shard indexed by the first hash byte
-		int selectedShardIndex = (hash.getFirstByte() & 0xff) % shards.size();
-		long selectedShard = shards.stream().sorted(Long::compareUnsigned).skip(selectedShardIndex).findFirst()
-			.orElseThrow(() -> new IllegalStateException("Missing"));
-		byte[] bytes = new byte[BYTES];
-		hash.copyTo(bytes, 0, HASH_BYTES);
-		Longs.copyTo(selectedShard, bytes, HASH_BYTES);
-
-		return new AID(bytes);
-	}
-
-	/**
 	 * Create an AID from its bytes
 	 * @param bytes The bytes (must be of length AID.BYTES)
 	 * @return An AID with those bytes
 	 */
 	public static AID from(byte[] bytes) {
-		Objects.requireNonNull(bytes, "bytes is required");
-		if (bytes.length != BYTES) {
-			throw new IllegalArgumentException(String.format(
-				"Bytes length must be %d but is %d",
-				BYTES, bytes.length)
-			);
-		}
-
-		return new AID(bytes.clone());
+		return from(bytes, 0);
 	}
 
 	/**
@@ -180,7 +124,6 @@ public final class AID implements Comparable<AID> {
 				offset + BYTES, bytes.length)
 			);
 		}
-
 		return new AID(Arrays.copyOfRange(bytes, offset, offset + BYTES));
 	}
 
