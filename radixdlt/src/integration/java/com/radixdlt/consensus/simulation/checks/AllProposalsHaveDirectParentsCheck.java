@@ -18,10 +18,10 @@
 package com.radixdlt.consensus.simulation.checks;
 
 import com.radixdlt.consensus.simulation.BFTCheck;
-import com.radixdlt.consensus.simulation.SimulatedBFTNetwork;
 import com.radixdlt.consensus.EventCoordinatorNetworkRx;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.simulation.SimulatedBFTNetwork.RunningNetwork;
 import com.radixdlt.crypto.ECKeyPair;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.List;
@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
 public class AllProposalsHaveDirectParentsCheck implements BFTCheck {
 
 	@Override
-	public Observable<BFTCheckError> check(SimulatedBFTNetwork network) {
+	public Observable<BFTCheckError> check(RunningNetwork network) {
 		List<Observable<Vertex>> correctProposals = network.getNodes().stream()
 			.map(ECKeyPair::getPublicKey)
 			.map(network.getUnderlyingNetwork()::getNetworkRx)

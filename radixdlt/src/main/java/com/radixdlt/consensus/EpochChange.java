@@ -17,16 +17,30 @@
 
 package com.radixdlt.consensus;
 
-/**
- * A message meant for consensus. Currently a marker interface so that all consensus
- * related messages can be handled within a single rxjava stream.
- * TODO: possibly add signature and validation method signatures here
- */
-public interface ConsensusEvent {
+import com.radixdlt.consensus.validators.ValidatorSet;
 
-	/**
-	 * Retrieve the epoch number the consensus message is a part of
-	 * @return the epoch number
-	 */
-	long getEpoch();
+/**
+ * An epoch change message to consensus
+ */
+public final class EpochChange {
+	private final VertexMetadata ancestor;
+	private final ValidatorSet validatorSet;
+
+	public EpochChange(VertexMetadata ancestor, ValidatorSet validatorSet) {
+		this.ancestor = ancestor;
+		this.validatorSet = validatorSet;
+	}
+
+	public VertexMetadata getAncestor() {
+		return ancestor;
+	}
+
+	public ValidatorSet getValidatorSet() {
+		return validatorSet;
+	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{ancestor=%s validatorSet=%s}", this.getClass().getSimpleName(), ancestor, validatorSet);
+	}
 }

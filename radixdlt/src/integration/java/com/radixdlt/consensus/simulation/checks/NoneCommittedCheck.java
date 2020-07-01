@@ -19,26 +19,20 @@ package com.radixdlt.consensus.simulation.checks;
 
 import com.radixdlt.consensus.simulation.BFTCheck;
 import com.radixdlt.consensus.simulation.SimulatedBFTNetwork.RunningNetwork;
-import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Observable;
-import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
- * Checks that there are no synchronisation errors.
+ * Checks that the network never commits a new vertex
  */
-public class NoSyncExceptionCheck implements BFTCheck {
-
+public class NoneCommittedCheck implements BFTCheck {
 	@Override
 	public Observable<BFTCheckError> check(RunningNetwork network) {
-		return Observable.interval(1, TimeUnit.SECONDS)
-			.flatMapIterable(i -> network.getNodes())
-			.concatMap(cn -> {
-				long exceptionCount = network.getCounters(cn).get(CounterType.CONSENSUS_SYNC_EXCEPTION);
-				if (exceptionCount > 0) {
-					return Observable.just(new BFTCheckError("Sync Exception Count > 0: " + exceptionCount));
-				} else {
-					return Observable.empty();
-				}
-			});
+		return Observable.merge(
+			network.getNodes().stream().map(
+				node -> network.getVertexStoreEvents(node).committedVertices().map(v -> Pair.of(node, v)))
+				.collect(Collectors.toList())
+		).map(pair -> new BFTCheckError(pair.getFirst() + " node committed a vertex " + pair.getSecond()));
 	}
 }

@@ -15,22 +15,31 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.middleware2.network;
+package com.radixdlt.consensus;
 
-
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.Vertex;
 import com.radixdlt.crypto.Hash;
-import org.radix.serialization.SerializeMessageObject;
+import io.reactivex.rxjava3.core.Observable;
 
-public class GetVerticesResponseMessageSerializeTest extends SerializeMessageObject<GetVerticesResponseMessage> {
-	public GetVerticesResponseMessageSerializeTest() {
-		super(GetVerticesResponseMessage.class, GetVerticesResponseMessageSerializeTest::get);
-	}
+/**
+ * Provider of Rx stream of events coming from Vertex Store
+ */
+public interface VertexStoreEventsRx {
 
-	private static GetVerticesResponseMessage get() {
-		Vertex genesisVertex = Vertex.createGenesis();
-		return new GetVerticesResponseMessage(1234, Hash.random(), ImmutableList.of(genesisVertex));
-	}
+	/**
+	 * Retrieve rx flow of vertex hashes
+	 * @return flow of vertex hashes
+	 */
+	Observable<Hash> syncedVertices();
 
+	/**
+	 * Retrieve rx flow of vertices which have been committed
+	 * @return flow of vertices
+	 */
+	Observable<Vertex> committedVertices();
+
+	/**
+	 * Retrieve rx flow of highest QCS
+	 * @return flow of qcs
+	 */
+	Observable<QuorumCertificate> highQCs();
 }

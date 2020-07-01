@@ -15,20 +15,16 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
-
-import com.radixdlt.crypto.Hash;
-import io.reactivex.rxjava3.core.Observable;
+package com.radixdlt.consensus.liveness;
 
 /**
- * Provider of Rx stream of local syncs which are emitted when
- * the underlying VertexStore has synced to the vertex with the given hash.
+ * Pacemaker factory
  */
-public interface LocalSyncRx {
+public interface PacemakerFactory {
 
 	/**
-	 * Retrieve rx flow of vertex hashes
-	 * @return flow of vertex hashes
+	 * Creates a new clean pacemaker
+	 * @return a new pacemaker
 	 */
-	Observable<Hash> localSyncs();
+	Pacemaker create();
 }

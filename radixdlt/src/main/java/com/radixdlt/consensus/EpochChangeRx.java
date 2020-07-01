@@ -17,18 +17,17 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.consensus.validators.ValidatorSet;
 import io.reactivex.rxjava3.core.Observable;
 
 /**
  * Validator Set change events
  */
-public interface EpochRx {
+public interface EpochChangeRx {
 
 	/**
 	 * Epoch change events
 	 *
 	 * @return stream of epoch changes
 	 */
-	Observable<ValidatorSet> epochs();
+	Observable<EpochChange> epochChanges();
 }

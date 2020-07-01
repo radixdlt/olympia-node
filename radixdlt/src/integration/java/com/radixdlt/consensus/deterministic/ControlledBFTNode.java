@@ -35,12 +35,10 @@ import com.radixdlt.consensus.BFTEventReducer;
 import com.radixdlt.consensus.SyncQueues;
 import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.VertexStore;
 import com.radixdlt.consensus.SyncVerticesRPCSender;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.deterministic.ControlledBFTNetwork.ControlledSender;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker.TimeoutSender;
@@ -54,7 +52,6 @@ import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
-import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
@@ -83,11 +80,8 @@ class ControlledBFTNode {
 		BooleanSupplier syncedSupplier
 	) {
 		this.systemCounters = new SystemCountersImpl();
-		Vertex genesisVertex = Vertex.createGenesis(null);
-		QuorumCertificate genesisQC = new QuorumCertificate(
-			new VoteData(new VertexMetadata(genesisVertex.getView(), genesisVertex.getId(), 1), null),
-			new ECDSASignatures()
-		);
+		Vertex genesisVertex = Vertex.createGenesis();
+		QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(genesisVertex);
 
 		SyncedStateComputer<CommittedAtom> stateComputer = new SyncedStateComputer<CommittedAtom>() {
 			@Override

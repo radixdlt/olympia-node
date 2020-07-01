@@ -18,13 +18,15 @@
 package com.radixdlt.consensus.simulation.checks;
 
 import com.radixdlt.consensus.simulation.BFTCheck;
-import com.radixdlt.consensus.simulation.SimulatedBFTNetwork;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.VertexStore;
 import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.simulation.SimulatedBFTNetwork.RunningNetwork;
 import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.core.Single;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 /**
  * Check that the network is making progress by ensuring that new QCs are
@@ -40,20 +42,23 @@ public class LivenessCheck implements BFTCheck {
 	}
 
 	@Override
-	public Observable<BFTCheckError> check(SimulatedBFTNetwork network) {
+	public Observable<BFTCheckError> check(RunningNetwork network) {
 		AtomicReference<View> highestQCView = new AtomicReference<>(View.genesis());
 		return Observable
 			.interval(duration * 2, duration, timeUnit) // 2 times initial duration to account for boot up
-			.map(i -> network.getNodes().stream()
-				.map(network::getVertexStore)
-				.map(VertexStore::getHighestQC)
-				.map(QuorumCertificate::getView)
-				.max(View::compareTo)
-				.get() // there must be some max highest QC unless allNodes is empty
-			)
+			.flatMapSingle(i -> {
+				List<Single<View>> qcs = network.getNodes().stream()
+						.map(network::getVertexStoreEvents)
+						.map(eventsRx -> eventsRx.highQCs().firstOrError().map(QuorumCertificate::getView))
+						.collect(Collectors.toList());
+				return Single.merge(qcs)
+					.reduce(View.genesis(), (v0, v1) -> v0.compareTo(v1) > 0 ? v0 : v1);
+			})
 			.concatMap(view -> {
 				if (view.compareTo(highestQCView.get()) <= 0) {
-					return Observable.just(new BFTCheckError(String.format("Highest QC hasn't increased from %s", highestQCView.get())));
+					return Observable.just(
+						new BFTCheckError(String.format("Highest QC hasn't increased from %s after %s %s", highestQCView.get(), duration, timeUnit))
+					);
 				} else {
 					highestQCView.set(view);
 					return Observable.empty();

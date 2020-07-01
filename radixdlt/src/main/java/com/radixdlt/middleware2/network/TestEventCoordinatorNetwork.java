@@ -203,26 +203,29 @@ public class TestEventCoordinatorNetwork {
 			// filter only relevant messages (appropriate target and if receiving is allowed)
 			this.myMessages = receivedMessages
 				.filter(msg -> msg.receiver.equals(node))
-				.map(msg -> {
-					if (msg.sender.equals(node)) {
-						return msg;
-					} else {
-						return msg.delayed(latencyProvider.nextLatency(msg));
-					}
-				})
-				.filter(msg -> msg.delay >= 0)
-				.timestamp(TimeUnit.MILLISECONDS)
-				.scan((msg1, msg2) -> {
-					int delayCarryover = (int) Math.max(msg1.time() + msg1.value().delay - msg2.time(), 0);
-					int additionalDelay = (int) (msg2.value().delay - delayCarryover);
-					if (additionalDelay > 0) {
-						return new Timed<>(msg2.value().delayAfterPrevious(additionalDelay), msg2.time(), msg2.unit());
-					} else {
-						return msg2;
-					}
-				})
-				.concatMap(p -> Observable.just(p.value()).delay(p.value().delayAfterPrevious, TimeUnit.MILLISECONDS))
-				.map(MessageInTransit::getContent)
+				.groupBy(MessageInTransit::getSender)
+				.flatMap(groupedObservable ->
+					groupedObservable.map(msg -> {
+						if (msg.sender.equals(node)) {
+							return msg;
+						} else {
+							return msg.delayed(latencyProvider.nextLatency(msg));
+						}
+					})
+					.filter(msg -> msg.delay >= 0)
+					.timestamp(TimeUnit.MILLISECONDS)
+					.scan((msg1, msg2) -> {
+						int delayCarryover = (int) Math.max(msg1.time() + msg1.value().delay - msg2.time(), 0);
+						int additionalDelay = (int) (msg2.value().delay - delayCarryover);
+						if (additionalDelay > 0) {
+							return new Timed<>(msg2.value().delayAfterPrevious(additionalDelay), msg2.time(), msg2.unit());
+						} else {
+							return msg2;
+						}
+					})
+					.concatMap(p -> Observable.just(p.value()).delay(p.value().delayAfterPrevious, TimeUnit.MILLISECONDS))
+					.map(MessageInTransit::getContent)
+				)
 				.publish()
 				.refCount();
 		}

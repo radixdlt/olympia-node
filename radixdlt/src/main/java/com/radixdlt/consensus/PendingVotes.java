@@ -28,7 +28,6 @@ import org.apache.logging.log4j.Logger;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
-import com.google.inject.Inject;
 import com.radixdlt.SecurityCritical;
 import com.radixdlt.SecurityCritical.SecurityKind;
 import com.radixdlt.consensus.validators.ValidationState;
@@ -79,7 +78,6 @@ public final class PendingVotes {
 	private final Map<ECPublicKey, PreviousVote> previousVotes = Maps.newHashMap();
 	private final Hasher hasher;
 
-	@Inject
 	public PendingVotes(Hasher hasher) {
 		this.hasher = Objects.requireNonNull(hasher);
 	}
