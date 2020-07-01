@@ -22,10 +22,12 @@
 
 package com.radixdlt.client.application.translate.tokens;
 
+import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.client.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.utils.UInt256;
 import org.junit.Test;
 
 import java.math.BigDecimal;
@@ -39,11 +41,11 @@ import static org.mockito.Mockito.when;
 public class RedelegateStakedTokensMapperTest {
 
 	@Test
-	public void createTransactionWithNoFunds() {
+	public void when_redelegating_tokens_without_funds__then_error_is_thrown() {
 		RadixAddress address = mock(RadixAddress.class);
 
 		RRI token = mock(RRI.class);
-		when(token.getName()).thenReturn("TEST");
+		when(token.getName()).thenReturn("COOKIE");
 
 		RedelegateStakedTokensAction action = mock(RedelegateStakedTokensAction.class);
 		when(action.getAmount()).thenReturn(new BigDecimal("1.0"));
@@ -57,6 +59,34 @@ public class RedelegateStakedTokensMapperTest {
 
 		assertThatThrownBy(() -> transferTranslator.mapToParticleGroups(action, Stream.empty()))
 			.isEqualTo(new InsufficientFundsException(token, BigDecimal.ZERO, new BigDecimal("1.0")));
+	}
+
+	@Test
+	public void when_redelegating_tokens_with_funds__then_error_is_not_thrown() {
+		RadixAddress address1 = RadixAddress.from("JEbhKQzBn4qJzWJFBbaPioA2GTeaQhuUjYWkanTE6N8VvvPpvM8");
+		RadixAddress address2 = RadixAddress.from("23B6fH3FekJeP6e5guhZAk6n9z4fmTo5Tngo3a11Wg5R8gsWTV2x");
+
+		RRI token = RRI.of(address1, "COOKIE");
+
+		RedelegateStakedTokensAction action = mock(RedelegateStakedTokensAction.class);
+		when(action.getAmount()).thenReturn(new BigDecimal(1));
+		when(action.getFrom()).thenReturn(address1);
+		when(action.getRRI()).thenReturn(token);
+
+		RedelegateStakedTokensMapper transferTranslator = new RedelegateStakedTokensMapper();
+
+		transferTranslator.mapToParticleGroups(action, Stream.of(
+			new StakedTokensParticle(
+				address2,
+				UInt256.MAX_VALUE,
+				UInt256.ONE,
+				address1,
+				0,
+				token,
+				0,
+				ImmutableMap.of()
+			)
+		));
 	}
 
 }

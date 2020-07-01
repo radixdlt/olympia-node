@@ -22,10 +22,12 @@
 
 package com.radixdlt.client.application.translate.tokens;
 
+import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.utils.UInt256;
 import org.junit.Test;
 
 import java.math.BigDecimal;
@@ -39,7 +41,7 @@ import static org.mockito.Mockito.when;
 public class StakeTokensMapperTest {
 
 	@Test
-	public void createTransactionWithNoFunds() {
+	public void when_staking_tokens_without_funds__then_error_is_not_thrown() {
 		RadixAddress address = mock(RadixAddress.class);
 
 		RRI token = mock(RRI.class);
@@ -57,6 +59,32 @@ public class StakeTokensMapperTest {
 
 		assertThatThrownBy(() -> transferTranslator.mapToParticleGroups(action, Stream.empty()))
 			.isEqualTo(new InsufficientFundsException(token, BigDecimal.ZERO, new BigDecimal("1.0")));
+	}
+
+	@Test
+	public void when_staking_tokens_with_funds__then_error_is_not_thrown() {
+		RadixAddress address1 = RadixAddress.from("JEbhKQzBn4qJzWJFBbaPioA2GTeaQhuUjYWkanTE6N8VvvPpvM8");
+
+		RRI token = RRI.of(address1, "COOKIE");
+
+		StakeTokensAction action = mock(StakeTokensAction.class);
+		when(action.getAmount()).thenReturn(new BigDecimal(1));
+		when(action.getFrom()).thenReturn(address1);
+		when(action.getRRI()).thenReturn(token);
+
+		StakeTokensMapper transferTranslator = new StakeTokensMapper();
+
+		transferTranslator.mapToParticleGroups(action, Stream.of(
+			new TransferrableTokensParticle(
+				UInt256.MAX_VALUE,
+				UInt256.ONE,
+				address1,
+				0,
+				token,
+				0,
+				ImmutableMap.of()
+			)
+		));
 	}
 
 }
