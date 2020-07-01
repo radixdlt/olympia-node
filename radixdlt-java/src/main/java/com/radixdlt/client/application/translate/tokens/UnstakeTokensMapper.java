@@ -96,9 +96,9 @@ public class UnstakeTokensMapper implements StatefulActionToParticleGroupsMapper
 			);
 
 			ParticleGroup.ParticleGroupBuilder particleGroupBuilder = ParticleGroup.builder();
-			transition.getRemoved().stream().map(t -> (Particle) t).forEach(p -> particleGroupBuilder.addParticle(p, Spin.DOWN));
-			transition.getMigrated().stream().map(t -> (Particle) t).forEach(p -> particleGroupBuilder.addParticle(p, Spin.UP));
-			transition.getTransitioned().stream().map(t -> (Particle) t).forEach(p -> particleGroupBuilder.addParticle(p, Spin.UP));
+			transition.getRemoved().forEach(p -> particleGroupBuilder.addParticle(p, Spin.DOWN));
+			transition.getMigrated().forEach(p -> particleGroupBuilder.addParticle(p, Spin.UP));
+			transition.getTransitioned().forEach(p -> particleGroupBuilder.addParticle(p, Spin.UP));
 
 			return Collections.singletonList(particleGroupBuilder.build());
 		} catch (NotEnoughFungiblesException e) {
