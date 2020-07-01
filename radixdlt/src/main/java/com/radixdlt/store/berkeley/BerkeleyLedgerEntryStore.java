@@ -487,19 +487,13 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 				}
 
 				AID atomId = getAidFromPKey(atomSearchKey);
-				// TODO replace with uqCursor usage
-//				 Optional<LedgerEntry> ledgerEntry = this.get(atomId);
-//				 if (ledgerEntry.isPresent()) {
-//				 	ledgerEntries.add(ledgerEntry.get());
-//				 	++size;
-//				 }
-
 				LedgerEntry ledgerEntry = null;
 				try {
 					DatabaseEntry key = new DatabaseEntry(StoreIndex.from(ENTRY_INDEX_PREFIX, atomId.getBytes()));
 					DatabaseEntry value = new DatabaseEntry();
 					OperationStatus uqCursorStatus = uqCursor.getSearchKey(key, value, LockMode.DEFAULT);
 
+					// TODO when uqCursor fails to fetch value, which means some form of DB corruption has occurred, how should we handle it?
 					if (uqCursorStatus == OperationStatus.SUCCESS) {
 						ledgerEntry = serialization.fromDson(value.getData(), LedgerEntry.class);
 						ledgerEntries.add(ledgerEntry);

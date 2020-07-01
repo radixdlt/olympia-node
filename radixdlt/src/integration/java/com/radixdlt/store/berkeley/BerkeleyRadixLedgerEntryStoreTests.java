@@ -82,6 +82,7 @@ public class BerkeleyRadixLedgerEntryStoreTests extends RadixTestWithStores {
             softly.assertThat(ledgerStore.getNextCommitted(ledgerEntries.get(0).getStateVersion() - 1, 1))
                 .contains(ledgerEntries.get(0).getAID());
 
+            // committed ledger entry can be queried by version
             softly.assertThat(ledgerStore.getNextCommittedLedgerEntries(ledgerEntries.get(0).getStateVersion() - 1, 1))
                     .contains(ledgerEntries.get(0));
 
@@ -115,18 +116,10 @@ public class BerkeleyRadixLedgerEntryStoreTests extends RadixTestWithStores {
                         .contains(ledgerEntries.get(i));
             }
 
+            // verify that five atoms in total have been committed and can be returned
             softly.assertThat(ledgerStore.getNextCommittedLedgerEntries(ledgerEntries.get(0).getStateVersion()-1, 10)).size().isEqualTo(5);
 
-//            // use limit 2 and see if both returned
-//            for (int i=0; i < ledgerEntries.size()-2; ++i) {
-//                // committed atom can be queried by version
-//                softly.assertThat(ledgerStore.getNextCommitted(ledgerEntries.get(i).getStateVersion() - 1, 2))
-//                        .contains(ledgerEntries.get(i).getAID()).contains(ledgerEntries.get(i+i).getAID());
-//
-//                softly.assertThat(ledgerStore.getNextCommittedLedgerEntries(ledgerEntries.get(i).getStateVersion() - 1, 2))
-//                        .contains(ledgerEntries.get(i)).contains(ledgerEntries.get(i+1));
-//            }
-
+            // TODO more advanced testing using different limits
         });
     }
 

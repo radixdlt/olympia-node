@@ -130,20 +130,7 @@ public class CommittedAtomsStore implements EngineStore<CommittedAtom> {
 	 * @param limit limit to number of atoms to return
 	 * @return list of committed atoms
 	 */
-//	public List<CommittedAtom> getCommittedAtoms(long stateVersion, int limit) {
-//		// TODO: currently this is very inefficient, optimize so that we can make one pass through the store
-//		return store.getNextCommitted(stateVersion, limit)
-//				.stream()
-//				.map(store::get)
-//				.filter(Optional::isPresent)
-//				.map(Optional::get)
-//				.map(LedgerEntry::getContent)
-//				.map(atomToBinaryConverter::toAtom)
-//				.collect(ImmutableList.toImmutableList());
-//	}
-
 	public List<CommittedAtom> getCommittedAtoms(long stateVersion, int limit) {
-		// TODO: currently this is very inefficient, optimize so that we can make one pass through the store
 		ImmutableList<LedgerEntry> entries = store.getNextCommittedLedgerEntries(stateVersion, limit);
 		return entries
 				.stream()
