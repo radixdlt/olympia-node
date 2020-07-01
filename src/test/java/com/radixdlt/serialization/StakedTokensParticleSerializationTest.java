@@ -25,10 +25,14 @@ import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
+import org.hamcrest.Matchers;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import static com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition.MINT;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
 public class StakedTokensParticleSerializationTest extends SerializeObjectEngine<StakedTokensParticle> {
 	public static final RadixAddress DELEGATE_ADDRESS = RadixAddress.from("JEbhKQzBn4qJzWJFBbaPioA2GTeaQhuUjYWkanTE6N8VvvPpvM8");
@@ -58,6 +62,16 @@ public class StakedTokensParticleSerializationTest extends SerializeObjectEngine
 		assertEquals(TOKEN, p.getTokDefRef());
 		assertEquals(PLANCK, p.getPlanck());
 		assertEquals(TOKEN_PERMISSIONS, p.getTokenPermissions());
+		assertEquals(TOKEN_PERMISSIONS.get(MINT), p.getTokenPermission(MINT));
+	}
+
+	@Test
+	public void testToString() {
+		StakedTokensParticle p = get();
+		String str = p.toString();
+		assertThat(str, containsString(p.getAddress().toString()));
+		assertThat(str, containsString(p.getAmount().toString()));
+		assertThat(str, containsString(p.getDelegateAddress().toString()));
 	}
 
 	private static StakedTokensParticle get() {
