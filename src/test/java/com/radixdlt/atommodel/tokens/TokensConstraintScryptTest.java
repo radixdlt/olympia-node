@@ -25,6 +25,7 @@ import static org.powermock.api.mockito.PowerMockito.when;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.atomos.CMAtomOS;
+import com.radixdlt.constraintmachine.WitnessData;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.atomos.Result;
@@ -74,6 +75,22 @@ public class TokensConstraintScryptTest {
 	@Test
 	public void when_validating_token_class_particle_with_too_short_symbol__result_has_error() {
 		MutableSupplyTokenDefinitionParticle token = PowerMockito.mock(MutableSupplyTokenDefinitionParticle.class);
+		when(token.getRRI()).thenReturn(RRI.of(mock(RadixAddress.class), ""));
+		assertThat(staticCheck.apply(token).getErrorMessage())
+			.contains("Symbol: invalid length");
+	}
+
+	@Test
+	public void when_validating_fixed_token_class_particle_with_too_long_symbol__result_has_error() {
+		FixedSupplyTokenDefinitionParticle token = PowerMockito.mock(FixedSupplyTokenDefinitionParticle.class);
+		when(token.getRRI()).thenReturn(RRI.of(mock(RadixAddress.class), "TEEEEEEEEEEEEEEEEEEEEEEEEEEST"));
+		assertThat(staticCheck.apply(token).getErrorMessage())
+			.contains("Symbol: invalid length");
+	}
+
+	@Test
+	public void when_validating_fixed_token_class_particle_with_too_short_symbol__result_has_error() {
+		FixedSupplyTokenDefinitionParticle token = PowerMockito.mock(FixedSupplyTokenDefinitionParticle.class);
 		when(token.getRRI()).thenReturn(RRI.of(mock(RadixAddress.class), ""));
 		assertThat(staticCheck.apply(token).getErrorMessage())
 			.contains("Symbol: invalid length");
@@ -152,6 +169,26 @@ public class TokensConstraintScryptTest {
 	}
 
 	@Test
+	public void when_validating_fixed_token_class_particle_with_too_long_description__result_has_error() {
+		FixedSupplyTokenDefinitionParticle token = PowerMockito.mock(FixedSupplyTokenDefinitionParticle.class);
+		when(token.getRRI()).thenReturn(RRI.of(mock(RadixAddress.class), "TEST"));
+		when(token.getDescription()).thenReturn(
+			IntStream.range(0, TokenDefinitionUtils.MAX_DESCRIPTION_LENGTH + 1).mapToObj(i -> "c").collect(Collectors.joining()));
+		assertThat(staticCheck.apply(token).getErrorMessage())
+			.contains("Description: invalid length");
+	}
+
+	@Test
+	public void when_validating_fixed_token_class_particle_with_invalid_icon_url__result_has_error() {
+		FixedSupplyTokenDefinitionParticle token = PowerMockito.mock(FixedSupplyTokenDefinitionParticle.class);
+		when(token.getRRI()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
+		when(token.getDescription()).thenReturn("Hello");
+		when(token.getIconUrl()).thenReturn("this is not a url");
+		assertThat(staticCheck.apply(token).getErrorMessage())
+			.contains("Icon: not a valid URL");
+	}
+
+	@Test
 	public void when_validating_token_instance_with_null_amount__result_has_error() {
 		TransferrableTokensParticle transferrableTokensParticle = mock(TransferrableTokensParticle.class);
 		when(transferrableTokensParticle.getTokDefRef()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
@@ -170,6 +207,15 @@ public class TokensConstraintScryptTest {
 	}
 
 	@Test
+	public void when_validating_staked_token_with_null_amount__result_has_error() {
+		StakedTokensParticle staked = mock(StakedTokensParticle.class);
+		when(staked.getTokDefRef()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
+		when(staked.getAmount()).thenReturn(null);
+		assertThat(staticCheck.apply(staked).getErrorMessage())
+			.contains("null");
+	}
+
+	@Test
 	public void when_validating_token_instance_with_zero_amount__result_has_error() {
 		TransferrableTokensParticle transferrableTokensParticle = mock(TransferrableTokensParticle.class);
 		when(transferrableTokensParticle.getTokDefRef()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
@@ -184,6 +230,16 @@ public class TokensConstraintScryptTest {
 		when(burnedTokensParticle.getTokDefRef()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
 		when(burnedTokensParticle.getAmount()).thenReturn(UInt256.ZERO);
 		assertThat(staticCheck.apply(burnedTokensParticle).getErrorMessage())
+			.contains("zero");
+	}
+
+	@Test
+	public void when_validating_staked_token_with_zero_amount__result_has_error() {
+		StakedTokensParticle stakedTokensParticle = mock(StakedTokensParticle.class);
+		when(stakedTokensParticle.getDelegateAddress()).thenReturn(mock(RadixAddress.class));
+		when(stakedTokensParticle.getTokDefRef()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
+		when(stakedTokensParticle.getAmount()).thenReturn(UInt256.ZERO);
+		assertThat(staticCheck.apply(stakedTokensParticle).getErrorMessage())
 			.contains("zero");
 	}
 
@@ -208,6 +264,17 @@ public class TokensConstraintScryptTest {
 	}
 
 	@Test
+	public void when_validating_staked_token_with_null_granularity__result_has_error() {
+		StakedTokensParticle staked = mock(StakedTokensParticle.class);
+		when(staked.getDelegateAddress()).thenReturn(mock(RadixAddress.class));
+		when(staked.getTokDefRef()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
+		when(staked.getAmount()).thenReturn(UInt256.ONE);
+		when(staked.getGranularity()).thenReturn(null);
+		assertThat(staticCheck.apply(staked).getErrorMessage())
+			.contains("granularity");
+	}
+
+	@Test
 	public void when_validating_unallocated_token_with_zero_granularity__result_has_error() {
 		UnallocatedTokensParticle unallocated = mock(UnallocatedTokensParticle.class);
 		when(unallocated.getTokDefRef()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
@@ -225,5 +292,149 @@ public class TokensConstraintScryptTest {
 		when(transferrableTokensParticle.getGranularity()).thenReturn(UInt256.TWO);
 		assertThat(staticCheck.apply(transferrableTokensParticle).getErrorMessage())
 			.contains("granularity");
+	}
+
+	@Test
+	public void when_validating_staked_token_with_zero_granularity__result_has_error() {
+		StakedTokensParticle staked = mock(StakedTokensParticle.class);
+		when(staked.getDelegateAddress()).thenReturn(mock(RadixAddress.class));
+		when(staked.getTokDefRef()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
+		when(staked.getAmount()).thenReturn(UInt256.ONE);
+		when(staked.getGranularity()).thenReturn(UInt256.ZERO);
+		assertThat(staticCheck.apply(staked).getErrorMessage())
+			.contains("granularity");
+	}
+
+	@Test
+	public void when_validating_staked_token_with_null_delegate_address__result_has_error() {
+		StakedTokensParticle staked = mock(StakedTokensParticle.class);
+		when(staked.getDelegateAddress()).thenReturn(null);
+		when(staked.getTokDefRef()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
+		assertThat(staticCheck.apply(staked).getErrorMessage())
+			.contains("delegateAddress");
+	}
+
+	@Test
+	public void when_validating_create_transferrable_with_mismatching_granularities__result_has_error() {
+		FixedSupplyTokenDefinitionParticle tokDef = mock(FixedSupplyTokenDefinitionParticle.class);
+		TransferrableTokensParticle transferrable = mock(TransferrableTokensParticle.class);
+		when(tokDef.getGranularity()).thenReturn(UInt256.FIVE);
+		when(transferrable.getGranularity()).thenReturn(UInt256.FOUR);
+		assertThat(TokensConstraintScrypt.checkCreateTransferrable(tokDef, transferrable).isError()).isTrue();
+	}
+
+	@Test
+	public void when_validating_create_transferrable_with_mismatching_supply__result_has_error() {
+		FixedSupplyTokenDefinitionParticle tokDef = mock(FixedSupplyTokenDefinitionParticle.class);
+		TransferrableTokensParticle transferrable = mock(TransferrableTokensParticle.class);
+		when(tokDef.getGranularity()).thenReturn(UInt256.FIVE);
+		when(transferrable.getGranularity()).thenReturn(UInt256.FIVE);
+		when(tokDef.getSupply()).thenReturn(UInt256.FIVE);
+		when(transferrable.getAmount()).thenReturn(UInt256.FOUR);
+		assertThat(TokensConstraintScrypt.checkCreateTransferrable(tokDef, transferrable).isError()).isTrue();
+	}
+
+	@Test
+	public void when_validating_create_transferrable_with_non_empty_permissions__result_has_error() {
+		FixedSupplyTokenDefinitionParticle tokDef = mock(FixedSupplyTokenDefinitionParticle.class);
+		TransferrableTokensParticle transferrable = mock(TransferrableTokensParticle.class);
+		when(tokDef.getGranularity()).thenReturn(UInt256.FIVE);
+		when(transferrable.getGranularity()).thenReturn(UInt256.FIVE);
+		when(tokDef.getSupply()).thenReturn(UInt256.FIVE);
+		when(transferrable.getAmount()).thenReturn(UInt256.FIVE);
+		when(transferrable.getTokenPermissions()).thenReturn(ImmutableMap.of(TokenTransition.MINT, TokenPermission.ALL));
+		assertThat(TokensConstraintScrypt.checkCreateTransferrable(tokDef, transferrable).isError()).isTrue();
+	}
+
+	@Test
+	public void when_validating_create_transferrable__result_has_no_error() {
+		FixedSupplyTokenDefinitionParticle tokDef = mock(FixedSupplyTokenDefinitionParticle.class);
+		TransferrableTokensParticle transferrable = mock(TransferrableTokensParticle.class);
+		when(tokDef.getGranularity()).thenReturn(UInt256.FIVE);
+		when(transferrable.getGranularity()).thenReturn(UInt256.FIVE);
+		when(tokDef.getSupply()).thenReturn(UInt256.FIVE);
+		when(transferrable.getAmount()).thenReturn(UInt256.FIVE);
+		when(transferrable.getTokenPermissions()).thenReturn(ImmutableMap.of());
+		assertThat(TokensConstraintScrypt.checkCreateTransferrable(tokDef, transferrable).isSuccess()).isTrue();
+	}
+
+	@Test
+	public void when_validating_create_unallocated_with_mismatching_granularities__result_has_error() {
+		MutableSupplyTokenDefinitionParticle tokDef = mock(MutableSupplyTokenDefinitionParticle.class);
+		UnallocatedTokensParticle unallocated = mock(UnallocatedTokensParticle.class);
+		when(tokDef.getGranularity()).thenReturn(UInt256.FIVE);
+		when(unallocated.getGranularity()).thenReturn(UInt256.FOUR);
+		assertThat(TokensConstraintScrypt.checkCreateUnallocated(tokDef, unallocated).isError()).isTrue();
+	}
+
+	@Test
+	public void when_validating_create_unallocated_with_mismatching_permissions__result_has_error() {
+		MutableSupplyTokenDefinitionParticle tokDef = mock(MutableSupplyTokenDefinitionParticle.class);
+		UnallocatedTokensParticle unallocated = mock(UnallocatedTokensParticle.class);
+		when(tokDef.getGranularity()).thenReturn(UInt256.FIVE);
+		when(unallocated.getGranularity()).thenReturn(UInt256.FIVE);
+		when(tokDef.getTokenPermissions()).thenReturn(ImmutableMap.of(TokenTransition.MINT, TokenPermission.ALL));
+		when(unallocated.getTokenPermissions()).thenReturn(ImmutableMap.of(TokenTransition.MINT, TokenPermission.NONE));
+		assertThat(TokensConstraintScrypt.checkCreateUnallocated(tokDef, unallocated).isError()).isTrue();
+	}
+
+	@Test
+	public void when_validating_create_unallocated_with_non_max_unallocated__result_has_error() {
+		MutableSupplyTokenDefinitionParticle tokDef = mock(MutableSupplyTokenDefinitionParticle.class);
+		UnallocatedTokensParticle unallocated = mock(UnallocatedTokensParticle.class);
+		when(tokDef.getGranularity()).thenReturn(UInt256.FIVE);
+		when(unallocated.getGranularity()).thenReturn(UInt256.FIVE);
+		when(tokDef.getTokenPermissions()).thenReturn(ImmutableMap.of(TokenTransition.MINT, TokenPermission.ALL));
+		when(unallocated.getTokenPermissions()).thenReturn(ImmutableMap.of(TokenTransition.MINT, TokenPermission.ALL));
+		when(unallocated.getAmount()).thenReturn(UInt256.MAX_VALUE.decrement());
+		assertThat(TokensConstraintScrypt.checkCreateUnallocated(tokDef, unallocated).isError()).isTrue();
+	}
+
+	@Test
+	public void when_validating_create_unallocated__result_has_no_error() {
+		MutableSupplyTokenDefinitionParticle tokDef = mock(MutableSupplyTokenDefinitionParticle.class);
+		UnallocatedTokensParticle unallocated = mock(UnallocatedTokensParticle.class);
+		when(tokDef.getGranularity()).thenReturn(UInt256.FIVE);
+		when(unallocated.getGranularity()).thenReturn(UInt256.FIVE);
+		when(tokDef.getTokenPermissions()).thenReturn(ImmutableMap.of(TokenTransition.MINT, TokenPermission.ALL));
+		when(unallocated.getTokenPermissions()).thenReturn(ImmutableMap.of(TokenTransition.MINT, TokenPermission.ALL));
+		when(unallocated.getAmount()).thenReturn(UInt256.MAX_VALUE);
+		assertThat(TokensConstraintScrypt.checkCreateUnallocated(tokDef, unallocated).isSuccess()).isTrue();
+	}
+
+	@Test
+	public void when_checking_token_permission_allowed_and_allowed__result_has_no_error() {
+		WitnessData witnessData = mock(WitnessData.class);
+		TokenPermission tokenPermission = mock(TokenPermission.class);
+		RRI token = mock(RRI.class);
+		when(tokenPermission.check(token, witnessData)).thenReturn(Result.success());
+		assertThat(TokensConstraintScrypt.checkTokenActionAllowed(witnessData, tokenPermission, token)
+			.isSuccess()).isTrue();
+	}
+
+	@Test
+	public void when_checking_token_permission_allowed_and_not_allowed__result_has_error() {
+		WitnessData witnessData = mock(WitnessData.class);
+		TokenPermission tokenPermission = mock(TokenPermission.class);
+		RRI token = mock(RRI.class);
+		when(tokenPermission.check(token, witnessData)).thenReturn(Result.error(""));
+		assertThat(TokensConstraintScrypt.checkTokenActionAllowed(witnessData, tokenPermission, token)
+			.isError()).isTrue();
+	}
+
+	@Test
+	public void when_checking_signed_by_and_signed__result_has_no_error() {
+		WitnessData witnessData = mock(WitnessData.class);
+		RadixAddress address = mock(RadixAddress.class);
+		when(witnessData.isSignedBy(address.getPublicKey())).thenReturn(true);
+		assertThat(TokensConstraintScrypt.checkSignedBy(witnessData, address).isSuccess()).isTrue();
+	}
+
+	@Test
+	public void when_checking_signed_by_and_not_signed__result_has_error() {
+		WitnessData witnessData = mock(WitnessData.class);
+		RadixAddress address = mock(RadixAddress.class);
+		when(witnessData.isSignedBy(address.getPublicKey())).thenReturn(false);
+		assertThat(TokensConstraintScrypt.checkSignedBy(witnessData, address).isError()).isTrue();
 	}
 }
