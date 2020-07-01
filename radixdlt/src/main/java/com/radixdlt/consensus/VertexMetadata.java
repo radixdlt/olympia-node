@@ -50,7 +50,7 @@ public final class VertexMetadata {
 	@DsonOutput(Output.ALL)
 	private final long stateVersion;
 
-	@JsonProperty("isEndOfEpoch")
+	@JsonProperty("is_end_of_epoch")
 	@DsonOutput(Output.ALL)
 	private final boolean isEndOfEpoch;
 

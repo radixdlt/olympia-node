@@ -43,15 +43,7 @@ public class LivenessInvariant implements TestInvariant {
 	}
 
 	private Comparator<VertexMetadata> vertexMetadataComparator =
-		(o1, o2) -> {
-			if (o1.getEpoch() > o2.getEpoch()) {
-				return 1;
-			} else if (o1.getEpoch() < o2.getEpoch()) {
-				return -1;
-			} else {
-				return o1.getView().compareTo(o2.getView());
-			}
-		};
+		Comparator.comparingLong(VertexMetadata::getEpoch).thenComparing(VertexMetadata::getView);
 
 	@Override
 	public Observable<TestInvariantError> check(RunningNetwork network) {
