@@ -25,7 +25,6 @@ import com.radixdlt.atommodel.tokens.TokenPermission;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
-import org.hamcrest.Matchers;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
