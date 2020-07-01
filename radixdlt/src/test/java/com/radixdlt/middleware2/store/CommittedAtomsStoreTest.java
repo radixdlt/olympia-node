@@ -125,6 +125,8 @@ public class CommittedAtomsStoreTest {
 			.collect(ImmutableList.toImmutableList());
 		when(this.store.getNextCommitted(eq(3L), eq(4)))
 			.thenReturn(aids);
+		when(this.store.getNextCommittedLedgerEntries(eq(3L), eq(4)))
+				.thenReturn(entries);
 		for (int i = 0; i < aids.size(); i++) {
 			when(this.store.get(eq(aids.get(i)))).thenReturn(Optional.of(entries.get(i)));
 			when(entries.get(i).getContent()).thenReturn(new byte[i]);
