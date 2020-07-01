@@ -40,7 +40,6 @@ test {
 jacocoTestReport {
     reports {
         xml.enabled true
-        xml.destination file("${projectDir}/build/jacoco/report.xml")
     }
 }
 
