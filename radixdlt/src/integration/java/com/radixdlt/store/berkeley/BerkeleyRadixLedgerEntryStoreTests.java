@@ -17,7 +17,6 @@
 
 package com.radixdlt.store.berkeley;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.crypto.ECKeyPair;
@@ -101,13 +100,13 @@ public class BerkeleyRadixLedgerEntryStoreTests extends RadixTestWithStores {
     public void searchCommittedTest() {
         SoftAssertions.assertSoftly(softly -> {
             // setup by storing/committing atoms
-            for (int i=0; i < ledgerEntries.size(); ++i) {
+            for (int i = 0; i < ledgerEntries.size(); ++i) {
                 ledgerStore.store(ledgerEntries.get(i), ImmutableSet.of(), ImmutableSet.of());
                 ledgerStore.commit(ledgerEntries.get(i).getAID());
             }
 
             // search for atoms singly
-            for (int i=0; i < ledgerEntries.size(); ++i) {
+            for (int i = 0; i < ledgerEntries.size(); ++i) {
                 // committed atom can be queried by version
                 softly.assertThat(ledgerStore.getNextCommitted(ledgerEntries.get(i).getStateVersion() - 1, 1))
                         .contains(ledgerEntries.get(i).getAID());
@@ -117,7 +116,7 @@ public class BerkeleyRadixLedgerEntryStoreTests extends RadixTestWithStores {
             }
 
             // verify that five atoms in total have been committed and can be returned
-            softly.assertThat(ledgerStore.getNextCommittedLedgerEntries(ledgerEntries.get(0).getStateVersion()-1, 10)).size().isEqualTo(5);
+            softly.assertThat(ledgerStore.getNextCommittedLedgerEntries(ledgerEntries.get(0).getStateVersion() - 1, 10)).size().isEqualTo(5);
 
             // TODO more advanced testing using different limits
         });

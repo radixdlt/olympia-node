@@ -38,7 +38,21 @@ import com.radixdlt.store.LedgerEntryStoreResult;
 import com.radixdlt.store.LedgerEntryStatus;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.utils.Longs;
-import com.sleepycat.je.*;
+import com.sleepycat.je.Cursor;
+import com.sleepycat.je.Database;
+import com.sleepycat.je.DatabaseConfig;
+import com.sleepycat.je.DatabaseEntry;
+import com.sleepycat.je.DatabaseNotFoundException;
+import com.sleepycat.je.Environment;
+import com.sleepycat.je.LockMode;
+import com.sleepycat.je.OperationStatus;
+import com.sleepycat.je.SecondaryConfig;
+import com.sleepycat.je.SecondaryCursor;
+import com.sleepycat.je.SecondaryDatabase;
+import com.sleepycat.je.SecondaryMultiKeyCreator;
+import com.sleepycat.je.Transaction;
+import com.sleepycat.je.TransactionConfig;
+import com.sleepycat.je.UniqueConstraintException;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -473,7 +487,7 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 	public ImmutableList<LedgerEntry> getNextCommittedLedgerEntries(long stateVersion, int limit) {
 		// when querying committed atoms, no need to worry about transaction as they aren't going away
 		try (Cursor atomCursor = this.atoms.openCursor(null, null);
-			 Cursor uqCursor = this.uniqueIndices.openCursor(null,null)) {
+			 Cursor uqCursor = this.uniqueIndices.openCursor(null, null)) {
 			ImmutableList.Builder<LedgerEntry> ledgerEntries = ImmutableList.builder();
 			// increment state version by one to find atoms afterwards, as underlying search uses greater-than-or-equal comparison
 			DatabaseEntry atomSearchKey = toPKey(PREFIX_COMMITTED, stateVersion + 1);
