@@ -1,7 +1,10 @@
 package com.radixdlt.consensus;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -21,6 +24,38 @@ import com.radixdlt.mempool.Mempool;
 import org.junit.Test;
 
 public class EpochManagerTest {
+	@Test
+	public void when_next_epoch_does_not_contain_self__then_should_not_emit_any_consensus_events() {
+		ECKeyPair keyPair = mock(ECKeyPair.class);
+		ECPublicKey publicKey = mock(ECPublicKey.class);
+		when(keyPair.getPublicKey()).thenReturn(publicKey);
+
+		BFTEventSender bftEventSender = mock(BFTEventSender.class);
+		ScheduledTimeoutSender scheduledTimeoutSender = mock(ScheduledTimeoutSender.class);
+
+		EpochManager epochManager = new EpochManager(
+			mock(Mempool.class),
+			bftEventSender,
+			scheduledTimeoutSender,
+			timeoutSender -> mock(Pacemaker.class),
+			mock(VertexStoreFactory.class),
+			proposers -> mock(ProposerElection.class),
+			mock(Hasher.class),
+			keyPair,
+			mock(SystemCounters.class)
+		);
+		EpochChange epochChange = mock(EpochChange.class);
+		ValidatorSet validatorSet = mock(ValidatorSet.class);
+		when(validatorSet.containsKey(eq(publicKey))).thenReturn(false);
+		when(epochChange.getValidatorSet()).thenReturn(validatorSet);
+		epochManager.processEpochChange(epochChange);
+
+		verify(bftEventSender, never()).sendNewView(any(), any());
+		verify(bftEventSender, never()).sendVote(any(), any());
+		verify(bftEventSender, never()).broadcastProposal(any());
+		verify(scheduledTimeoutSender, never()).scheduleTimeout(any(), anyLong());
+	}
+
 	@Test
 	public void when_no_epoch_change__then_processing_events_should_not_fail() {
 		ECKeyPair keyPair = mock(ECKeyPair.class);
@@ -67,6 +102,7 @@ public class EpochManagerTest {
 		Validator validator = mock(Validator.class);
 		when(validator.nodeKey()).thenReturn(mock(ECPublicKey.class));
 		ValidatorSet validatorSet = mock(ValidatorSet.class);
+		when(validatorSet.containsKey(any())).thenReturn(true);
 		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of(validator));
 		epochManager.processEpochChange(new EpochChange(VertexMetadata.ofGenesisAncestor(), validatorSet));
 

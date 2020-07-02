@@ -87,9 +87,15 @@ public class EpochManager {
 
 	public void processEpochChange(EpochChange epochChange) {
 		ValidatorSet validatorSet = epochChange.getValidatorSet();
-		ProposerElection proposerElection = proposerElectionFactory.create(validatorSet);
+		log.info("NEXT_EPOCH: {} {}", epochChange);
 
-		log.info("NEXT_EPOCH: {} {}", epochChange, proposerElection);
+		if (!validatorSet.containsKey(selfKey.getPublicKey())) {
+			log.info("NEXT_EPOCH: Not a validator");
+			this.eventProcessor = EMPTY_PROCESSOR;
+			return;
+		}
+
+		ProposerElection proposerElection = proposerElectionFactory.create(validatorSet);
 		VertexMetadata ancestorMetadata = epochChange.getAncestor();
 		Vertex genesisVertex = Vertex.createGenesis(ancestorMetadata);
 		final long nextEpoch = genesisVertex.getEpoch();
