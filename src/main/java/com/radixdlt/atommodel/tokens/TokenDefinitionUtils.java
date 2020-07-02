@@ -214,6 +214,11 @@ public final class TokenDefinitionUtils {
 			return iconResult;
 		}
 
+		final Result urlResult = validateUrl(tokenDefParticle.getUrl());
+		if (urlResult.isError()) {
+			return urlResult;
+		}
+
 		return Result.success();
 	}
 }

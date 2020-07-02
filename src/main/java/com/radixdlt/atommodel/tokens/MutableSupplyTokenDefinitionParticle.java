@@ -60,6 +60,10 @@ public final class MutableSupplyTokenDefinitionParticle extends Particle {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private String iconUrl;
 
+	@JsonProperty("url")
+	@DsonOutput(Output.ALL)
+	private String url;
+
 	private Map<TokenTransition, TokenPermission> tokenPermissions;
 
 	MutableSupplyTokenDefinitionParticle() {
@@ -74,6 +78,7 @@ public final class MutableSupplyTokenDefinitionParticle extends Particle {
 		String description,
 		UInt256 granularity,
 		String iconUrl,
+		String url,
 		Map<TokenTransition, TokenPermission> tokenPermissions
 	) {
 		super(address.euid());
@@ -83,6 +88,7 @@ public final class MutableSupplyTokenDefinitionParticle extends Particle {
 		this.description = description;
 		this.granularity = Objects.requireNonNull(granularity);
 		this.iconUrl = iconUrl;
+		this.url = url;
 		this.tokenPermissions = ImmutableMap.copyOf(tokenPermissions);
 
 		if (this.tokenPermissions.keySet().size() != TokenTransition.values().length) {
@@ -121,6 +127,10 @@ public final class MutableSupplyTokenDefinitionParticle extends Particle {
 
 	public String getIconUrl() {
 		return this.iconUrl;
+	}
+
+	public String getUrl() {
+		return url;
 	}
 
 	@JsonProperty("permissions")

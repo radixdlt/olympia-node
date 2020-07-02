@@ -110,6 +110,7 @@ public class TokensConstraintScryptTest {
 			null,
 			UInt256.ONE,
 			null,
+			null,
 			perms
 		);
 		assertTrue(staticCheck.apply(token).isSuccess());
@@ -128,6 +129,7 @@ public class TokensConstraintScryptTest {
 			"",
 			"",
 			UInt256.ONE,
+			null,
 			null,
 			perms
 		);
@@ -166,6 +168,20 @@ public class TokensConstraintScryptTest {
 		when(token.getIconUrl()).thenReturn("this is not a url");
 		assertThat(staticCheck.apply(token).getErrorMessage())
 			.contains("Icon: not a valid URL");
+	}
+
+	@Test
+	public void when_validating_token_class_particle_with_invalid_url__result_has_error() {
+		MutableSupplyTokenDefinitionParticle token = PowerMockito.mock(MutableSupplyTokenDefinitionParticle.class);
+		when(token.getRRI()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
+		when(token.getDescription()).thenReturn("Hello");
+		when(token.getTokenPermissions()).thenReturn(ImmutableMap.of(
+			TokenTransition.MINT, TokenPermission.ALL,
+			TokenTransition.BURN, TokenPermission.ALL
+		));
+		when(token.getUrl()).thenReturn("this is not a url");
+		assertThat(staticCheck.apply(token).getErrorMessage())
+			.contains("not a valid URL");
 	}
 
 	@Test
