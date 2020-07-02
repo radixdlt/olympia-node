@@ -19,51 +19,36 @@ package com.radixdlt.consensus.simulation.tests.epochs;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
+import com.google.common.collect.Sets;
 import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.simulation.SimulatedTest;
 import com.radixdlt.consensus.simulation.SimulatedTest.Builder;
 import com.radixdlt.consensus.simulation.TestInvariant.TestInvariantError;
-import com.radixdlt.consensus.simulation.SimulatedTest;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
-public class EpochsStaticValidatorTest {
+public class OneValidatorChangePerEpochTest {
 	private final Builder bftTestBuilder = SimulatedTest.builder()
 		.numNodes(4)
 		.checkSafety("safety")
-		.checkLiveness("liveness", 1000, TimeUnit.MILLISECONDS)
+		.checkLiveness("liveness")
 		.checkNoTimeouts("noTimeouts")
 		.checkAllProposalsHaveDirectParents("directParents");
-
-	@Test
-	public void given_correct_bft_with_changing_epochs_every_view__then_should_pass_bft_and_epoch_invariants() {
-		SimulatedTest bftTest = bftTestBuilder
-			.pacemakerTimeout(1000)
-			.epochHighView(View.of(1))
-			.checkEpochHighView("epochHighView", View.of(1))
-			.build();
-		Map<String, Optional<TestInvariantError>> results = bftTest.run(1, TimeUnit.MINUTES);
-		assertThat(results).allSatisfy((name, err) -> assertThat(err).isEmpty());
-	}
-
-	@Test
-	public void given_correct_bft_with_changing_epochs_per_100_views__then_should_fail_incorrect_epoch_invariant() {
-		SimulatedTest bftTest = bftTestBuilder
-			.epochHighView(View.of(100))
-			.checkEpochHighView("epochHighView", View.of(99))
-			.build();
-		Map<String, Optional<TestInvariantError>> results = bftTest.run(1, TimeUnit.MINUTES);
-		assertThat(results).hasEntrySatisfying("epochHighView", error -> assertThat(error).isPresent());
-	}
 
 	@Test
 	public void given_correct_bft_with_changing_epochs_per_100_views__then_should_pass_bft_and_epoch_invariants() {
 		SimulatedTest bftTest = bftTestBuilder
 			.epochHighView(View.of(100))
+			.epochToNodesMapper(epoch ->
+				Sets.newHashSet((int) (epoch % 4), (int) (epoch + 1) % 4, (int) (epoch + 2) % 4)
+			)
 			.checkEpochHighView("epochHighView", View.of(100))
 			.build();
 		Map<String, Optional<TestInvariantError>> results = bftTest.run(1, TimeUnit.MINUTES);
-		assertThat(results).allSatisfy((name, err) -> assertThat(err).isEmpty());
+		assertThat(results).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
 	}
+
 }

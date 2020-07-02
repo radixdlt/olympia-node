@@ -32,23 +32,18 @@ import com.radixdlt.consensus.VertexStore;
 import com.radixdlt.consensus.SyncVerticesRPCSender;
 import com.radixdlt.consensus.VertexStoreEventsRx;
 import com.radixdlt.consensus.VertexStoreFactory;
-import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
 import com.radixdlt.consensus.liveness.ScheduledTimeoutSender;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
-import com.radixdlt.consensus.validators.Validator;
-import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.mempool.EmptyMempool;
 import com.radixdlt.mempool.Mempool;
 
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork;
 import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork.SimulatedNetworkReceiver;
-import com.radixdlt.utils.UInt256;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
@@ -58,6 +53,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static com.radixdlt.utils.ThreadFactories.daemonThreads;
@@ -73,9 +69,9 @@ public class SimulatedNetwork {
 	private final ImmutableMap<ECKeyPair, ConsensusRunner> runners;
 	private final List<ECKeyPair> nodes;
 	private final boolean getVerticesRPCEnabled;
-	private final View epochHighView;
+	private final Supplier<SimulatedStateComputer> stateComputerSupplier;
 
-	interface SimulatedStateComputer extends SyncedStateComputer<CommittedAtom>, EpochChangeRx {
+	public interface SimulatedStateComputer extends SyncedStateComputer<CommittedAtom>, EpochChangeRx {
 	}
 
 	/**
@@ -88,11 +84,11 @@ public class SimulatedNetwork {
 		List<ECKeyPair> nodes,
 		TestEventCoordinatorNetwork underlyingNetwork,
 		int pacemakerTimeout,
-		View epochHighView,
+		Supplier<SimulatedStateComputer> stateComputerSupplier,
 		boolean getVerticesRPCEnabled
 	) {
 		this.nodes = nodes;
-		this.epochHighView = epochHighView;
+		this.stateComputerSupplier = stateComputerSupplier;
 		this.getVerticesRPCEnabled = getVerticesRPCEnabled;
 		this.underlyingNetwork = Objects.requireNonNull(underlyingNetwork);
 		this.pacemakerTimeout = pacemakerTimeout;
@@ -102,24 +98,14 @@ public class SimulatedNetwork {
 	}
 
 	private ConsensusRunner createBFTInstance(ECKeyPair key) {
-		Mempool mempool = new EmptyMempool();
-		Hasher hasher = new DefaultHasher();
-		ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(daemonThreads("TimeoutSender"));
-		ScheduledTimeoutSender timeoutSender = new ScheduledTimeoutSender(scheduledExecutorService);
+		final Mempool mempool = new EmptyMempool();
+		final Hasher hasher = new DefaultHasher();
+		final ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(daemonThreads("TimeoutSender"));
+		final ScheduledTimeoutSender timeoutSender = new ScheduledTimeoutSender(scheduledExecutorService);
 
-		List<ECPublicKey> publicKeys = nodes.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toList());
+		final SimulatedStateComputer stateComputer = stateComputerSupplier.get();
 
-		final SimulatedStateComputer stateComputer;
-		if (epochHighView == null) {
-			stateComputer = new SingleEpochAlwaysSyncedStateComputer(publicKeys);
-		} else {
-			stateComputer = new ChangingEpochSyncedStateComputer(
-				epochHighView,
-				v -> ValidatorSet.from(publicKeys.stream().map(pk -> Validator.from(pk, UInt256.ONE)).collect(Collectors.toList()))
-			);
-		}
-
-		VertexStoreFactory vertexStoreFactory = (v, qc) -> {
+		final VertexStoreFactory vertexStoreFactory = (v, qc) -> {
 			SyncVerticesRPCSender syncVerticesRPCSender = getVerticesRPCEnabled
 				? underlyingNetwork.getVerticesRequestSender(key.getPublicKey())
 				: EmptySyncVerticesRPCSender.INSTANCE;
@@ -133,7 +119,7 @@ public class SimulatedNetwork {
 			);
 		};
 
-		EpochManager epochManager = new EpochManager(
+		final EpochManager epochManager = new EpochManager(
 			mempool,
 			underlyingNetwork.getNetworkSender(key.getPublicKey()),
 			timeoutSender,
@@ -145,7 +131,7 @@ public class SimulatedNetwork {
 			counters.get(key)
 		);
 
-		SimulatedNetworkReceiver rx = underlyingNetwork.getNetworkRx(key.getPublicKey());
+		final SimulatedNetworkReceiver rx = underlyingNetwork.getNetworkRx(key.getPublicKey());
 
 		return new ConsensusRunner(
 			stateComputer,

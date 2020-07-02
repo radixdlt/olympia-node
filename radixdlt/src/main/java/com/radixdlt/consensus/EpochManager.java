@@ -89,13 +89,6 @@ public class EpochManager {
 		ValidatorSet validatorSet = epochChange.getValidatorSet();
 		log.info("NEXT_EPOCH: {} {}", epochChange);
 
-		if (!validatorSet.containsKey(selfKey.getPublicKey())) {
-			log.info("NEXT_EPOCH: Not a validator");
-			this.eventProcessor = EMPTY_PROCESSOR;
-			return;
-		}
-
-		ProposerElection proposerElection = proposerElectionFactory.create(validatorSet);
 		VertexMetadata ancestorMetadata = epochChange.getAncestor();
 		Vertex genesisVertex = Vertex.createGenesis(ancestorMetadata);
 		final long nextEpoch = genesisVertex.getEpoch();
@@ -105,8 +98,17 @@ public class EpochManager {
 			throw new IllegalStateException("Epoch change has already occurred: " + epochChange);
 		}
 
-		counters.set(CounterType.EPOCHS_EPOCH, nextEpoch);
+		this.currentEpoch = nextEpoch;
+		this.counters.set(CounterType.EPOCHS_EPOCH, nextEpoch);
 
+		if (!validatorSet.containsKey(selfKey.getPublicKey())) {
+			log.info("NEXT_EPOCH: Not a validator");
+			this.eventProcessor = EMPTY_PROCESSOR;
+			this.vertexStore = null;
+			return;
+		}
+
+		ProposerElection proposerElection = proposerElectionFactory.create(validatorSet);
 		TimeoutSender sender = (view, ms) -> scheduledTimeoutSender.scheduleTimeout(new LocalTimeout(nextEpoch, view), ms);
 		Pacemaker pacemaker = pacemakerFactory.create(sender);
 		SafetyRules safetyRules = new SafetyRules(this.selfKey, SafetyState.initialState(), this.hasher);
@@ -115,6 +117,7 @@ public class EpochManager {
 		QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(genesisVertex);
 
 		this.vertexStore = vertexStoreFactory.create(genesisVertex, genesisQC);
+
 		ProposalGenerator proposalGenerator = new MempoolProposalGenerator(this.vertexStore, this.mempool);
 
 		BFTEventReducer reducer = new BFTEventReducer(
@@ -138,7 +141,6 @@ public class EpochManager {
 			counters
 		);
 
-		this.currentEpoch = nextEpoch;
 		this.eventProcessor = new BFTEventPreprocessor(
 			this.selfKey.getPublicKey(),
 			reducer,

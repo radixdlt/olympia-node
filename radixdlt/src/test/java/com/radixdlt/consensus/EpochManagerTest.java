@@ -48,6 +48,8 @@ public class EpochManagerTest {
 		ValidatorSet validatorSet = mock(ValidatorSet.class);
 		when(validatorSet.containsKey(eq(publicKey))).thenReturn(false);
 		when(epochChange.getValidatorSet()).thenReturn(validatorSet);
+		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
+		when(epochChange.getAncestor()).thenReturn(vertexMetadata);
 		epochManager.processEpochChange(epochChange);
 
 		verify(bftEventSender, never()).sendNewView(any(), any());
