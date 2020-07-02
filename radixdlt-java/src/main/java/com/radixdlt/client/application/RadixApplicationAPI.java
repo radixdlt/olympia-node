@@ -564,7 +564,8 @@ public class RadixApplicationAPI {
 		String name,
 		String description,
 		String iconUrl,
-		String url) {
+		String url
+	) {
 		final CreateTokenAction tokenCreation = CreateTokenAction.create(
 			tokenRRI,
 			name,
