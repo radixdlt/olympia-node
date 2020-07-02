@@ -25,7 +25,6 @@ import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
 
-import org.everit.json.schema.Schema;
 import org.json.JSONObject;
 import org.radix.api.services.AtomsService;
 import org.radix.api.services.SingleAtomListener;

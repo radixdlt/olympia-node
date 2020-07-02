@@ -34,8 +34,6 @@ import io.undertow.server.HttpServerExchange;
 
 import java.util.ArrayList;
 import java.util.Objects;
-import org.everit.json.schema.Schema;
-import org.everit.json.schema.ValidationException;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.radix.api.services.AtomsService;
