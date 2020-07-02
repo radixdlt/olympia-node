@@ -83,7 +83,8 @@ public class MutableSupplyTokenDefinitionParticle extends Particle implements Id
 		UInt256 granularity,
 		Map<TokenTransition, TokenPermission> tokenPermissions,
 		String iconUrl,
-		String url) {
+		String url
+	) {
 		this(RRI.of(address, symbol), name, description, granularity, tokenPermissions, iconUrl, url);
 	}
 
@@ -94,7 +95,8 @@ public class MutableSupplyTokenDefinitionParticle extends Particle implements Id
 		UInt256 granularity,
 		Map<TokenTransition, TokenPermission> tokenPermissions,
 		String iconUrl,
-		String url) {
+		String url
+	) {
 		super(rri.getAddress().euid());
 		this.rri = rri;
 		this.name = name;

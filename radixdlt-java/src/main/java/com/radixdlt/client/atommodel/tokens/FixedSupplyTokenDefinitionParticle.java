@@ -80,7 +80,8 @@ public final class FixedSupplyTokenDefinitionParticle extends Particle implement
 		UInt256 supply,
 		UInt256 granularity,
 		String iconUrl,
-		String url) {
+		String url
+	) {
 		this(RRI.of(address,  symbol), name, description, supply, granularity, iconUrl, url);
 	}
 
@@ -91,7 +92,8 @@ public final class FixedSupplyTokenDefinitionParticle extends Particle implement
 		UInt256 supply,
 		UInt256 granularity,
 		String iconUrl,
-		String url) {
+		String url
+	) {
 		super(rri.getAddress().euid());
 
 		this.rri = rri;
