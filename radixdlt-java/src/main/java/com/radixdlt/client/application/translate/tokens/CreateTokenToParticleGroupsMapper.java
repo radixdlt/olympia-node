@@ -69,7 +69,8 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 				TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY,
 				TokenTransition.BURN, TokenPermission.TOKEN_OWNER_ONLY
 			),
-			tokenCreation.getIconUrl()
+			tokenCreation.getIconUrl(),
+			tokenCreation.getUrl()
 		);
 
 		UnallocatedTokensParticle unallocated = new UnallocatedTokensParticle(
@@ -138,7 +139,8 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 			tokenCreation.getDescription(),
 			amount,
 			granularity,
-			tokenCreation.getIconUrl()
+			tokenCreation.getIconUrl(),
+			tokenCreation.getUrl()
 		);
 
 		TransferrableTokensParticle tokens = new TransferrableTokensParticle(
