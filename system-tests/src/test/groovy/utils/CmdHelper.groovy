@@ -194,5 +194,23 @@ class CmdHelper {
         runCommand("tc qdisc add dev ${veth} handle 10: root netem ${optionsArgs}")
     }
 
+    static void createNamedVolume(String sshKeylocation) {
+        runCommand("docker container create --name dummy -v key-volume:/ansible/ssh curlimages/curl:7.70.0", null);
+        runCommand(String.format("docker cp %s dummy:/ansible/ssh/testnet",sshKeylocation));
+        runCommand("docker rm -f dummy");
+    }
+    static void pullAnsibleImage(image="eu.gcr.io/lunar-arc-236318/node-ansible:latest"){
+        runCommand("docker pull ${image}");
+    }
+    static void setupSlowNodeOnCluster(){
+        runCommand("docker run --rm  -v key-volume:/ansible/ssh --name node-ansible eu.gcr.io/lunar-arc-236318/node-ansible:latest  "
+                + "slow-down-node.yml -vv  --limit testnet_2[0] -t setup");
+    }
 
+    static def void tearDownSlowNodeSettings() {
+        runCommand("docker run --rm  -v key-volume:/ansible/ssh --name node-ansible eu.gcr.io/lunar-arc-236318/node-ansible:latest  "
+                + "slow-down-node.yml -vv  --limit testnet_2[0] -t teardown");
+        runCommand("docker volume rm -f key-volume");
+
+    }
 }

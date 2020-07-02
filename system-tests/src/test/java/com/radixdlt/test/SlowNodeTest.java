@@ -3,7 +3,10 @@ package com.radixdlt.test;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.experimental.runners.Enclosed;
@@ -54,7 +57,17 @@ public class SlowNodeTest {
 
 
 	@Category(Cluster.class)
-	public static class ClusterTests{
+	public static class ClusterTests {
+
+		@Before
+		public void setupSlowNode() {
+			String sshKeylocation = Optional.ofNullable(System.getenv("SSH_IDENTITY")).orElse(System.getenv("HOME") + "/.ssh/id_rsa");
+			//Creating named volume and copying over the file to volume works with or without docker in docker setup
+			CmdHelper.createNamedVolume(sshKeylocation);
+			CmdHelper.pullAnsibleImage();
+			CmdHelper.setupSlowNodeOnCluster();
+		}
+
 		@Test
 		public void given_4_correct_bfts_in_latent_docker_network_and_one_slow_node__then_all_instances_should_get_same_commits_and_progress_should_be_made() {
 
@@ -65,6 +78,11 @@ public class SlowNodeTest {
 				.startConsensusOnRun() // in case we're the first to access the cluster
 				.build();
 			test.runBlocking(1, TimeUnit.MINUTES);
+		}
+
+		@After
+		public void removeSlowNodesettings(){
+			CmdHelper.tearDownSlowNodeSettings();
 		}
 	}
 
