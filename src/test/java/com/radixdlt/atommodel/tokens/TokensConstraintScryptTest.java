@@ -189,6 +189,16 @@ public class TokensConstraintScryptTest {
 	}
 
 	@Test
+	public void when_validating_fixed_token_class_particle_with_invalid_url__result_has_error() {
+		FixedSupplyTokenDefinitionParticle token = PowerMockito.mock(FixedSupplyTokenDefinitionParticle.class);
+		when(token.getRRI()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));
+		when(token.getDescription()).thenReturn("Hello");
+		when(token.getUrl()).thenReturn("this is not a url");
+		assertThat(staticCheck.apply(token).getErrorMessage())
+			.contains("not a valid URL");
+	}
+
+	@Test
 	public void when_validating_token_instance_with_null_amount__result_has_error() {
 		TransferrableTokensParticle transferrableTokensParticle = mock(TransferrableTokensParticle.class);
 		when(transferrableTokensParticle.getTokDefRef()).thenReturn(RRI.of(mock(RadixAddress.class), "TOK"));

@@ -66,6 +66,13 @@ public final class TokenDefinitionUtils {
 		return "XRD";
 	}
 
+	private static Result validateUrl(String url) {
+		if (url != null && !OWASP_URL_REGEX.matcher(url).matches()) {
+			return Result.error("URL: not a valid URL: " + url);
+		}
+		return Result.success();
+	}
+
 	private static Result validateIconUrl(String iconUrl) {
 		if (iconUrl != null && !OWASP_URL_REGEX.matcher(iconUrl).matches()) {
 			return Result.error("Icon: not a valid URL: " + iconUrl);
@@ -168,6 +175,11 @@ public final class TokenDefinitionUtils {
 		final Result iconResult = validateIconUrl(tokenDefParticle.getIconUrl());
 		if (iconResult.isError()) {
 			return iconResult;
+		}
+
+		final Result urlResult = validateUrl(tokenDefParticle.getUrl());
+		if (urlResult.isError()) {
+			return urlResult;
 		}
 
 		return Result.success();
