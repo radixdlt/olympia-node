@@ -156,6 +156,9 @@ public final class ClientAtom implements LedgerAtom {
 		final ImmutableList.Builder<CMMicroInstruction> microInstructionsBuilder = new Builder<>();
 		for (int i = 0; i < particleGroups.size(); i++) {
 			ParticleGroup pg = particleGroups.get(i);
+			if (pg.isEmpty()) {
+				throw new LedgerAtomConversionException(DataPointer.ofParticleGroup(i), "Particle group must not be empty");
+			}
 			final HashSet<Particle> seen = new HashSet<>();
 			for (int j = 0; j < pg.getParticleCount(); j++) {
 				SpunParticle sp = pg.getSpunParticle(j);
