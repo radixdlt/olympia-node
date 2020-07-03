@@ -86,9 +86,9 @@ public class ParticleGroups {
 		}
 	}
 
-	private class MergeAction<T extends Action> implements Action {
-		private final T[] actions;
-		private MergeAction(T... actions) {
+	private class MergeAction implements Action {
+		private final Action[] actions;
+		private MergeAction(Action... actions) {
 			this.actions = actions;
 		}
 	}
@@ -356,7 +356,7 @@ public class ParticleGroups {
 			);
 		assertThat(events).last()
 			.isInstanceOf(SubmitAtomStatusAction.class)
-			.<AtomStatus>extracting(o -> SubmitAtomStatusAction.class.cast(o).getStatusNotification().getAtomStatus())
+			.extracting(o -> SubmitAtomStatusAction.class.cast(o).getStatusNotification().getAtomStatus())
 			.isIn(finalStatesSet);
 	}
 
@@ -367,7 +367,7 @@ public class ParticleGroups {
 			.assertNoTimeout()
 			.assertValueAt(0, SubmitAtomRequestAction.class::isInstance)
 			.assertValueAt(1, SubmitAtomSendAction.class::isInstance)
-			.assertValueAt(2, SubmitAtomStatusAction.class::isInstance)
-			.assertValueAt(2, i -> SubmitAtomStatusAction.class.cast(i).getStatusNotification().getAtomStatus().equals(AtomStatus.EVICTED_INVALID_ATOM));
+			.assertValueAt(3, SubmitAtomStatusAction.class::isInstance)
+			.assertValueAt(3, i -> SubmitAtomStatusAction.class.cast(i).getStatusNotification().getAtomStatus().equals(AtomStatus.EVICTED_FAILED_CM_VERIFICATION));
 	}
 }
