@@ -13,7 +13,7 @@ public class AssertionChecks {
 			.assertNoSyncExceptions()
 			.assertNoTimeouts()
 			.assertSafety()
-			.assertLiveness();
+			.assertLiveness(20);
 	}
 
 	/**

@@ -259,8 +259,12 @@ public final class RemoteBFTTest {
 		 * Asserts liveness using the {@link LivenessCheck}
 		 * @return This builder
 		 */
+		public Builder assertLiveness(int livenessExpectedInSeconds) {
+			return addCheck(LivenessCheck.with(livenessExpectedInSeconds, TimeUnit.SECONDS, 1, TimeUnit.SECONDS));
+		}
+
 		public Builder assertLiveness() {
-			return addCheck(LivenessCheck.with(10, TimeUnit.SECONDS, 1, TimeUnit.SECONDS));
+			return assertLiveness(10);
 		}
 
 		/**
