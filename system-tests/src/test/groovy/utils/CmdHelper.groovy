@@ -143,7 +143,7 @@ class CmdHelper {
      * For a given container name, method returns the virtual ethernet of the docker container. This method executes a
      * command on a docker container with @param name to find system wide unique index of the interface  it is linked to. Typically a container has interface
      * eth0 and iflink has an index in decimal number that is mapped to virtual ethernet interface on host
-     * @param  name  name of the container who's virtual ethernet interface needs to be retrieved
+     * @param name name of the container who's virtual ethernet interface needs to be retrieved
      * @return string value of Virtual ethernet name that docker container is linked to on host
      */
     static String getVethByContainerName(name) {
@@ -192,25 +192,5 @@ class CmdHelper {
 
     static String setupQueueQuality(veth, optionsArgs = "delay 100ms loss 20%") {
         runCommand("tc qdisc add dev ${veth} handle 10: root netem ${optionsArgs}")
-    }
-
-    static void createNamedVolume(String sshKeylocation) {
-        runCommand("docker container create --name dummy -v key-volume:/ansible/ssh curlimages/curl:7.70.0", null);
-        runCommand(String.format("docker cp %s dummy:/ansible/ssh/testnet",sshKeylocation));
-        runCommand("docker rm -f dummy");
-    }
-    static void pullAnsibleImage(image="eu.gcr.io/lunar-arc-236318/node-ansible:latest"){
-        runCommand("docker pull ${image}");
-    }
-    static void setupSlowNodeOnCluster(){
-        runCommand("docker run --rm  -v key-volume:/ansible/ssh --name node-ansible eu.gcr.io/lunar-arc-236318/node-ansible:latest  "
-                + "slow-down-node.yml -vv  --limit testnet_2[0] -t setup");
-    }
-
-    static def void tearDownSlowNodeSettings() {
-        runCommand("docker run --rm  -v key-volume:/ansible/ssh --name node-ansible eu.gcr.io/lunar-arc-236318/node-ansible:latest  "
-                + "slow-down-node.yml -vv  --limit testnet_2[0] -t teardown");
-        runCommand("docker volume rm -f key-volume");
-
     }
 }

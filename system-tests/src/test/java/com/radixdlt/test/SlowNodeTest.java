@@ -14,6 +14,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 import utils.CmdHelper;
+import utils.SlowNodeSetup;
 
 /**
  * BFT tests against network where all nodes are under synchrony bounds and one or more nodes slow.
@@ -58,14 +59,23 @@ public class SlowNodeTest {
 
 	@Category(Cluster.class)
 	public static class ClusterTests {
+		private SlowNodeSetup slowNodeSetup;
 
 		@Before
 		public void setupSlowNode() {
 			String sshKeylocation = Optional.ofNullable(System.getenv("SSH_IDENTITY")).orElse(System.getenv("HOME") + "/.ssh/id_rsa");
 			//Creating named volume and copying over the file to volume works with or without docker in docker setup
-			CmdHelper.createNamedVolume(sshKeylocation);
-			CmdHelper.pullAnsibleImage();
-			CmdHelper.setupSlowNodeOnCluster();
+			slowNodeSetup = SlowNodeSetup.builder()
+				.withAnsibleImage("eu.gcr.io/lunar-arc-236318/node-ansible:latest")
+				.withKeyVolume("key-volume")
+				.usingCluster("testnet_2")
+				.usingAnsiblePlaybook("slow-down-node.yml")
+				.nodesToSlowDown(1)
+				.build();
+			slowNodeSetup.copyfileToNamedVolume(sshKeylocation);
+			slowNodeSetup.pullImage();
+			slowNodeSetup.setup();
+
 		}
 
 		@Test
@@ -82,7 +92,7 @@ public class SlowNodeTest {
 
 		@After
 		public void removeSlowNodesettings(){
-			CmdHelper.tearDownSlowNodeSettings();
+			slowNodeSetup.tearDown();
 		}
 	}
 
