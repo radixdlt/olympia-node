@@ -18,7 +18,6 @@
 package com.radixdlt.consensus;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.inject.name.Named;
 import com.radixdlt.consensus.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.epoch.GetEpochRequest;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
@@ -79,7 +78,7 @@ public class EpochManager {
 		VertexStoreFactory vertexStoreFactory,
 		ProposerElectionFactory proposerElectionFactory,
 		Hasher hasher,
-		@Named("self") ECKeyPair selfKey,
+		ECKeyPair selfKey,
 		SystemCounters counters
 	) {
 		this.syncedStateComputer = Objects.requireNonNull(syncedStateComputer);
