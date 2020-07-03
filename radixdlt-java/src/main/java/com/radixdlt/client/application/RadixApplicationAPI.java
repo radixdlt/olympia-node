@@ -53,6 +53,10 @@ import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenS
 import com.radixdlt.client.application.translate.tokens.CreateTokenToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.tokens.MintTokensAction;
 import com.radixdlt.client.application.translate.tokens.MintTokensActionMapper;
+import com.radixdlt.client.application.translate.tokens.RedelegateStakedTokensAction;
+import com.radixdlt.client.application.translate.tokens.RedelegateStakedTokensMapper;
+import com.radixdlt.client.application.translate.tokens.StakeTokensAction;
+import com.radixdlt.client.application.translate.tokens.StakeTokensMapper;
 import com.radixdlt.client.application.translate.tokens.TokenBalanceReducer;
 import com.radixdlt.client.application.translate.tokens.TokenBalanceState;
 import com.radixdlt.client.application.translate.tokens.TokenDefinitionsReducer;
@@ -62,6 +66,8 @@ import com.radixdlt.client.application.translate.tokens.TokenTransfer;
 import com.radixdlt.client.application.translate.tokens.TokenUnitConversions;
 import com.radixdlt.client.application.translate.tokens.TransferTokensAction;
 import com.radixdlt.client.application.translate.tokens.TransferTokensToParticleGroupsMapper;
+import com.radixdlt.client.application.translate.tokens.UnstakeTokensAction;
+import com.radixdlt.client.application.translate.tokens.UnstakeTokensMapper;
 import com.radixdlt.client.application.translate.unique.AlreadyUsedUniqueIdReasonMapper;
 import com.radixdlt.client.application.translate.unique.PutUniqueIdAction;
 import com.radixdlt.client.application.translate.unique.PutUniqueIdToParticleGroupsMapper;
@@ -155,6 +161,9 @@ public class RadixApplicationAPI {
 			.addStatefulParticlesMapper(MintTokensAction.class, new MintTokensActionMapper())
 			.addStatefulParticlesMapper(BurnTokensAction.class, new BurnTokensActionMapper())
 			.addStatefulParticlesMapper(TransferTokensAction.class, new TransferTokensToParticleGroupsMapper())
+			.addStatefulParticlesMapper(StakeTokensAction.class, new StakeTokensMapper())
+			.addStatefulParticlesMapper(RedelegateStakedTokensAction.class, new RedelegateStakedTokensMapper())
+			.addStatefulParticlesMapper(UnstakeTokensAction.class, new UnstakeTokensMapper())
 			.addStatefulParticlesMapper(RegisterValidatorAction.class, new RegisterValidatorActionMapper())
 			.addStatefulParticlesMapper(UnregisterValidatorAction.class, new UnregisterValidatorActionMapper())
 			.addReducer(new TokenDefinitionsReducer())
@@ -778,6 +787,128 @@ public class RadixApplicationAPI {
 			TransferTokensAction.create(token, from, to, amount, attachment);
 
 		return this.execute(transferTokensAction);
+	}
+
+	/**
+	 * Stakes a certain amount of a token from this address to a delegate.
+	 *
+	 * @param amount     the amount of the token type
+	 * @param token      the token type
+	 * @param delegate   the address to delegate the staked tokens to
+	 * @return result of the transaction
+	 */
+	public Result stakeTokens(
+		BigDecimal amount,
+		RRI token,
+		RadixAddress delegate
+	) {
+		return stakeTokens(amount, token, getAddress(), delegate);
+	}
+
+	/**
+	 * Stakes a certain amount of a token from an address to a delegate.
+	 *
+	 * @param from       the address to stake tokens from
+	 * @param delegate   the address to delegate the staked tokens to
+	 * @param amount     the amount of the token type
+	 * @param token      the token type
+	 * @return result of the transaction
+	 */
+	public Result stakeTokens(
+		BigDecimal amount,
+		RRI token,
+		RadixAddress from,
+		RadixAddress delegate
+	) {
+		Objects.requireNonNull(amount);
+		Objects.requireNonNull(token);
+		Objects.requireNonNull(from);
+		Objects.requireNonNull(delegate);
+
+		return this.execute(StakeTokensAction.create(amount, token, from, delegate));
+	}
+
+	/**
+	 * Redelegate a certain amount of a staked tokens of this address to another delegate.
+	 *
+	 * @param amount        the amount of the token type
+	 * @param token         the token type
+	 * @param oldDelegate   the address the staked tokens are currently delegated to
+	 * @param newDelegate   the address the staked tokens will be delegated to
+	 * @return result of the transaction
+	 */
+	public Result redelegateStakedTokens(
+		BigDecimal amount,
+		RRI token,
+		RadixAddress oldDelegate,
+		RadixAddress newDelegate
+	) {
+		return redelegateStakedTokens(amount, token, getAddress(), oldDelegate, newDelegate);
+	}
+
+	/**
+	 * Redelegate a certain amount of a staked tokens of an address to another delegate.
+	 *
+	 * @param from          the address to stake tokens from
+	 * @param oldDelegate   the address the staked tokens are currently delegated to
+	 * @param newDelegate   the address the staked tokens will be delegated to
+	 * @param amount        the amount of the token type
+	 * @param token         the token type
+	 * @return result of the transaction
+	 */
+	public Result redelegateStakedTokens(
+		BigDecimal amount,
+		RRI token,
+		RadixAddress from,
+		RadixAddress oldDelegate,
+		RadixAddress newDelegate
+	) {
+		Objects.requireNonNull(amount);
+		Objects.requireNonNull(token);
+		Objects.requireNonNull(from);
+		Objects.requireNonNull(oldDelegate);
+		Objects.requireNonNull(newDelegate);
+
+		return this.execute(RedelegateStakedTokensAction.create(amount, token, from, oldDelegate, newDelegate));
+	}
+
+	/**
+	 * Unstakes a certain amount of a token from this address to a delegate.
+	 *
+	 * @param amount     the amount of the token type
+	 * @param token      the token type
+	 * @param delegate   the address to delegate the staked tokens to
+	 * @return result of the transaction
+	 */
+	public Result unstakeTokens(
+		BigDecimal amount,
+		RRI token,
+		RadixAddress delegate
+	) {
+		return unstakeTokens(amount, token, getAddress(), delegate);
+	}
+
+	/**
+	 * Unstakes a certain amount of a token from an address to a delegate.
+	 *
+	 * @param from       the address to stake tokens from
+	 * @param delegate   the address to delegate the staked tokens to
+	 * @param amount     the amount of the token type
+	 * @param token      the token type
+	 * @return result of the transaction
+	 */
+	public Result unstakeTokens(
+		BigDecimal amount,
+		RRI token,
+		RadixAddress from,
+		RadixAddress delegate
+	) {
+		Objects.requireNonNull(amount);
+		Objects.requireNonNull(token);
+		Objects.requireNonNull(from);
+		Objects.requireNonNull(delegate);
+
+		return this.execute(UnstakeTokensAction.create(amount, token, from, delegate));
 	}
 
 	/**
