@@ -15,6 +15,7 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 import utils.CmdHelper;
 import utils.SlowNodeSetup;
+import utils.TestnetNodes;
 
 /**
  * BFT tests against network where all nodes are under synchrony bounds and one or more nodes slow.
@@ -63,6 +64,8 @@ public class SlowNodeTest {
 
 		@Before
 		public void setupSlowNode() {
+
+			System.setProperty("clusterNodeUrls",TestnetNodes.getInstance().getNodesURls());
 			String sshKeylocation = Optional.ofNullable(System.getenv("SSH_IDENTITY")).orElse(System.getenv("HOME") + "/.ssh/id_rsa");
 			//Creating named volume and copying over the file to volume works with or without docker in docker setup
 			slowNodeSetup = SlowNodeSetup.builder()

@@ -4,6 +4,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.util.concurrent.TimeUnit;
+import utils.TestnetNodes;
 
 /**
  * BFT tests against static, non-byzantine networks with random latency.
@@ -41,6 +42,7 @@ public class LatentNetworkTest {
 	@Test
 	@Category(Cluster.class)
 	public void given_4_correct_bfts_in_latent_cluster_network__then_all_instances_should_get_same_commits_and_progress_should_be_made() {
+		System.setProperty("clusterNodeUrls", TestnetNodes.getInstance().getNodesURls());
 		final StaticClusterNetwork network = StaticClusterNetwork.extractFromProperty(4);
 		RemoteBFTTest test = AssertionChecks.latentTestBuilder()
 			.network(RemoteBFTNetworkBridge.of(network))
