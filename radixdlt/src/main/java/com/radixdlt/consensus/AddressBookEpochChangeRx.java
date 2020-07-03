@@ -18,14 +18,11 @@
 package com.radixdlt.consensus;
 
 import com.google.common.collect.Streams;
-import com.radixdlt.consensus.validators.Validator;
-import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.network.addressbook.PeersAddedEvent;
 
-import com.radixdlt.utils.UInt256;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.List;
 import java.util.Objects;
@@ -39,22 +36,24 @@ import org.radix.universe.system.RadixSystem;
  * Temporary epoch management which given a fixed quorum size retrieves the first set of peers which
  * matches the size and used as the validator set.
  */
-public class BasicEpochRx implements EpochRx {
+public class AddressBookEpochChangeRx implements EpochChangeRx {
 	private final int fixedNodeCount;
 	private final AddressBook addressBook;
 	private final ECPublicKey selfKey;
+	private final VertexMetadata ancestor;
 
-	public BasicEpochRx(ECPublicKey selfKey, AddressBook addressBook, int fixedNodeCount) {
+	public AddressBookEpochChangeRx(ECPublicKey selfKey, AddressBook addressBook, int fixedNodeCount, VertexMetadata ancestor) {
 		if (fixedNodeCount <= 0) {
 			throw new IllegalArgumentException("Quorum size must be > 0 but was " + fixedNodeCount);
 		}
 		this.fixedNodeCount = fixedNodeCount;
 		this.selfKey = Objects.requireNonNull(selfKey);
 		this.addressBook = Objects.requireNonNull(addressBook);
+		this.ancestor = Objects.requireNonNull(ancestor);
 	}
 
 	@Override
-	public Observable<ValidatorSet> epochs() {
+	public Observable<EpochChange> epochChanges() {
 		return Observable.<List<Peer>>create(emitter -> {
 			emitter.onNext(addressBook.peers().collect(Collectors.toList()));
 			// Race condition here but ignore as this is a temporary class
@@ -68,14 +67,7 @@ public class BasicEpochRx implements EpochRx {
 			).distinct().collect(Collectors.toList()))
 			.filter(peers -> peers.size() == fixedNodeCount)
 			.firstOrError()
-			.map(peers -> {
-				List<Validator> validators = peers.stream()
-					.map(p -> Validator.from(p, UInt256.ONE))
-					.collect(Collectors.toList());
-				return ValidatorSet.from(validators);
-			})
-			.toObservable()
-			.concatWith(Observable.never())
+			.flatMapObservable(peers -> new BasicEpochChangeRx(ancestor, peers).epochChanges())
 			.replay()
 			.autoConnect();
 	}

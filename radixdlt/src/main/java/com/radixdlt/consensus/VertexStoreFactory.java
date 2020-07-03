@@ -18,15 +18,15 @@
 package com.radixdlt.consensus;
 
 /**
- * A message meant for consensus. Currently a marker interface so that all consensus
- * related messages can be handled within a single rxjava stream.
- * TODO: possibly add signature and validation method signatures here
+ * A Vertex Store factory
  */
-public interface ConsensusEvent {
+public interface VertexStoreFactory {
 
 	/**
-	 * Retrieve the epoch number the consensus message is a part of
-	 * @return the epoch number
+	 * Creates a new VertexStore given initial vertex and QC
+	 * @param genesisVertex the root vertex
+	 * @param genesisQC the root QC
+	 * @return a new VertexStore
 	 */
-	long getEpoch();
+	VertexStore create(Vertex genesisVertex, QuorumCertificate genesisQC);
 }

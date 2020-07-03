@@ -20,10 +20,12 @@ package com.radixdlt.consensus.simulation;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.consensus.simulation.BFTCheck.BFTCheckError;
+import com.radixdlt.consensus.simulation.SimulatedBFTNetwork.RunningNetwork;
 import com.radixdlt.consensus.simulation.checks.AllProposalsHaveDirectParentsCheck;
 import com.radixdlt.consensus.simulation.checks.LivenessCheck;
 import com.radixdlt.consensus.simulation.checks.NoSyncExceptionCheck;
 import com.radixdlt.consensus.simulation.checks.NoTimeoutCheck;
+import com.radixdlt.consensus.simulation.checks.NoneCommittedCheck;
 import com.radixdlt.consensus.simulation.checks.SafetyCheck;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
@@ -142,7 +144,11 @@ public class BFTSimulatedTest {
 		public Builder checkAllProposalsHaveDirectParents(String checkName) {
 			this.checksBuilder.put(checkName, new AllProposalsHaveDirectParentsCheck());
 			return this;
+		}
 
+		public Builder checkNoneCommitted(String checkName) {
+			this.checksBuilder.put(checkName, new NoneCommittedCheck());
+			return this;
 		}
 
 		public BFTSimulatedTest build() {
@@ -160,26 +166,14 @@ public class BFTSimulatedTest {
 		return new Builder();
 	}
 
-	/**
-	 * Runs the test for a given time. Returns either once the duration has passed or if a check has failed.
-	 * Returns a map from the check name to the result.
-	 *
-	 * @param duration duration to run test for
-	 * @param timeUnit time unit of duration
-	 * @return map of check results
-	 */
-	public Map<String, Optional<BFTCheckError>> run(long duration, TimeUnit timeUnit) {
-		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.builder()
-			.latencyProvider(this.latencyProvider)
-			.build();
-		SimulatedBFTNetwork bftNetwork =  new SimulatedBFTNetwork(nodes, network, pacemakerTimeout, getVerticesRPCEnabled);
+	private Observable<Pair<String, Optional<BFTCheckError>>> runChecks(RunningNetwork runningNetwork, long duration, TimeUnit timeUnit) {
 		List<Pair<String, Observable<Pair<String, BFTCheckError>>>> assertions = this.checks.keySet().stream()
 			.map(name -> {
 				BFTCheck check = this.checks.get(name);
 				return
 					Pair.of(
 						name,
-						check.check(bftNetwork).map(e -> Pair.of(name, e)).publish().autoConnect(2)
+						check.check(runningNetwork).map(e -> Pair.of(name, e)).publish().autoConnect(2)
 					);
 			})
 			.collect(Collectors.toList());
@@ -199,9 +193,26 @@ public class BFTSimulatedTest {
 			)
 			.collect(Collectors.toList());
 
+		return Single.merge(results).toObservable();
+	}
+
+	/**
+	 * Runs the test for a given time. Returns either once the duration has passed or if a check has failed.
+	 * Returns a map from the check name to the result.
+	 *
+	 * @param duration duration to run test for
+	 * @param timeUnit time unit of duration
+	 * @return map of check results
+	 */
+	public Map<String, Optional<BFTCheckError>> run(long duration, TimeUnit timeUnit) {
+		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.builder()
+			.latencyProvider(this.latencyProvider)
+			.build();
+		SimulatedBFTNetwork bftNetwork =  new SimulatedBFTNetwork(nodes, network, pacemakerTimeout, getVerticesRPCEnabled);
+
 		return bftNetwork.start()
 			.timeout(10, TimeUnit.SECONDS)
-			.andThen(Single.merge(results))
+			.flatMapObservable(runningNetwork -> runChecks(runningNetwork, duration, timeUnit))
 			.doFinally(bftNetwork::stop)
 			.blockingStream()
 			.collect(Collectors.toMap(Pair::getFirst, Pair::getSecond));

@@ -28,10 +28,10 @@ import org.junit.Test;
 public class GetVerticesResponseMessageTest {
 	@Test
 	public void sensibleToString() {
-		Vertex vertex = Vertex.createGenesis(null);
-		GetVerticesResponseMessage msg1 = new GetVerticesResponseMessage(0, Hash.random(), ImmutableList.of(vertex));
+		Vertex genesisVertex = Vertex.createGenesis();
+		GetVerticesResponseMessage msg1 = new GetVerticesResponseMessage(0, Hash.random(), ImmutableList.of(genesisVertex));
 		String s1 = msg1.toString();
 		assertThat(s1, containsString(GetVerticesResponseMessage.class.getSimpleName()));
-		assertThat(s1, containsString(vertex.toString()));
+		assertThat(s1, containsString(genesisVertex.toString()));
 	}
 }

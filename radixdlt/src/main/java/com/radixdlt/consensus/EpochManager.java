@@ -20,78 +20,91 @@ package com.radixdlt.consensus;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
+import com.radixdlt.consensus.VertexStore.GetVerticesRequest;
+import com.radixdlt.consensus.liveness.MempoolProposalGenerator;
 import com.radixdlt.consensus.liveness.Pacemaker;
+import com.radixdlt.consensus.liveness.PacemakerFactory;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.safety.SafetyRules;
+import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.Hash;
 import com.radixdlt.mempool.Mempool;
 import java.util.Objects;
+import javax.annotation.concurrent.NotThreadSafe;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Manages creation of EventCoordinators given a ValidatorSet
+ * Manages Epochs and the BFT instance associated with each epoch
  */
+@NotThreadSafe
 public class EpochManager {
 	private static final Logger log = LogManager.getLogger("EM");
+	private static final BFTEventProcessor EMPTY_PROCESSOR = new EmptyBFTEventProcessor();
 
-	private final ProposalGenerator proposalGenerator;
 	private final Mempool mempool;
 	private final BFTEventSender sender;
-	private final SafetyRules safetyRules;
-	private final Pacemaker pacemaker;
-	private final VertexStore vertexStore;
-	private final PendingVotes pendingVotes;
+	private final PacemakerFactory pacemakerFactory;
+	private final VertexStoreFactory vertexStoreFactory;
 	private final ProposerElectionFactory proposerElectionFactory;
 	private final ECKeyPair selfKey;
 	private final SystemCounters counters;
+	private final Hasher hasher;
+
+	private long currentEpoch;
+	private VertexStore vertexStore;
+	private BFTEventProcessor eventProcessor = EMPTY_PROCESSOR;
 
 	@Inject
 	public EpochManager(
-		ProposalGenerator proposalGenerator,
 		Mempool mempool,
 		BFTEventSender sender,
-		SafetyRules safetyRules,
-		Pacemaker pacemaker,
-		VertexStore vertexStore,
-		PendingVotes pendingVotes,
+		PacemakerFactory pacemakerFactory,
+		VertexStoreFactory vertexStoreFactory,
 		ProposerElectionFactory proposerElectionFactory,
+		Hasher hasher,
 		@Named("self") ECKeyPair selfKey,
 		SystemCounters counters
 	) {
-		this.proposalGenerator = Objects.requireNonNull(proposalGenerator);
 		this.mempool = Objects.requireNonNull(mempool);
 		this.sender = Objects.requireNonNull(sender);
-		this.safetyRules = Objects.requireNonNull(safetyRules);
-		this.pacemaker = Objects.requireNonNull(pacemaker);
-		this.vertexStore = Objects.requireNonNull(vertexStore);
-		this.pendingVotes = Objects.requireNonNull(pendingVotes);
+		this.pacemakerFactory = Objects.requireNonNull(pacemakerFactory);
+		this.vertexStoreFactory = Objects.requireNonNull(vertexStoreFactory);
 		this.proposerElectionFactory = Objects.requireNonNull(proposerElectionFactory);
 		this.selfKey = Objects.requireNonNull(selfKey);
 		this.counters = Objects.requireNonNull(counters);
+		this.hasher = Objects.requireNonNull(hasher);
 	}
 
-	public BFTEventProcessor start() {
-		return new EmptyBFTEventProcessor();
-	}
+	public void processEpochChange(EpochChange epochChange) {
+		log.info("NEXT_EPOCH: {}", epochChange);
 
-	public BFTEventProcessor nextEpoch(ValidatorSet validatorSet) {
-
+		ValidatorSet validatorSet = epochChange.getValidatorSet();
 		ProposerElection proposerElection = proposerElectionFactory.create(validatorSet);
-		log.info("NEXT_EPOCH: ProposerElection: {}", proposerElection);
+		Pacemaker pacemaker = pacemakerFactory.create();
+		SafetyRules safetyRules = new SafetyRules(this.selfKey, SafetyState.initialState(), this.hasher);
+		PendingVotes pendingVotes = new PendingVotes(this.hasher);
+
+		VertexMetadata ancestorMetadata = epochChange.getAncestor();
+		Vertex genesisVertex = Vertex.createGenesis(ancestorMetadata);
+		QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(genesisVertex);
+
+		this.vertexStore = vertexStoreFactory.create(genesisVertex, genesisQC);
+		ProposalGenerator proposalGenerator = new MempoolProposalGenerator(this.vertexStore, this.mempool);
 
 		BFTEventReducer reducer = new BFTEventReducer(
-			this.proposalGenerator,
+			proposalGenerator,
 			this.mempool,
 			this.sender,
-			this.safetyRules,
-			this.pacemaker,
-			this.vertexStore,
-			this.pendingVotes,
+			safetyRules,
+			pacemaker,
+			vertexStore,
+			pendingVotes,
 			proposerElection,
 			this.selfKey,
 			validatorSet,
@@ -105,13 +118,66 @@ public class EpochManager {
 			counters
 		);
 
-		return new BFTEventPreprocessor(
+		this.currentEpoch = genesisVertex.getEpoch();
+		this.eventProcessor = new BFTEventPreprocessor(
 			this.selfKey.getPublicKey(),
 			reducer,
-			this.pacemaker,
+			pacemaker,
 			this.vertexStore,
 			proposerElection,
 			syncQueues
 		);
+		this.eventProcessor.start();
+	}
+
+	public void processGetVerticesRequest(GetVerticesRequest request) {
+		if (this.vertexStore == null) {
+			return;
+		}
+
+		vertexStore.processGetVerticesRequest(request);
+	}
+
+	public void processGetVerticesResponse(GetVerticesResponse response) {
+		if (this.vertexStore == null) {
+			return;
+		}
+
+		vertexStore.processGetVerticesResponse(response);
+	}
+
+	public void processConsensusEvent(ConsensusEvent consensusEvent) {
+		// TODO: Add the rest of consensus event verification here
+
+		if (consensusEvent.getEpoch() != this.currentEpoch) {
+			log.warn("Received event not in the current epoch ({}): {}", this.currentEpoch, consensusEvent);
+			return;
+		}
+
+		if (consensusEvent instanceof NewView) {
+			eventProcessor.processNewView((NewView) consensusEvent);
+		} else if (consensusEvent instanceof Proposal) {
+			eventProcessor.processProposal((Proposal) consensusEvent);
+		} else if (consensusEvent instanceof Vote) {
+			eventProcessor.processVote((Vote) consensusEvent);
+		} else {
+			throw new IllegalStateException("Unknown consensus event: " + consensusEvent);
+		}
+	}
+
+	public void processLocalTimeout(View view) {
+		eventProcessor.processLocalTimeout(view);
+	}
+
+	public void processLocalSync(Hash synced) {
+		eventProcessor.processLocalSync(synced);
+	}
+
+	public void processCommittedStateSync(CommittedStateSync committedStateSync) {
+		if (vertexStore == null) {
+			return;
+		}
+
+		vertexStore.processCommittedStateSync(committedStateSync);
 	}
 }

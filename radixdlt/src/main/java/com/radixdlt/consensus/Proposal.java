@@ -69,6 +69,11 @@ public final class Proposal implements RequiresSyncConsensusEvent {
 	}
 
 	@Override
+	public long getEpoch() {
+		return vertex.getEpoch();
+	}
+
+	@Override
 	public QuorumCertificate getQC() {
 		return vertex.getQC();
 	}

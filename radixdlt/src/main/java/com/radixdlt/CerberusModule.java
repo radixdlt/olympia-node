@@ -23,43 +23,36 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 import com.radixdlt.consensus.BFTEventSender;
-import com.radixdlt.consensus.BasicEpochRx;
+import com.radixdlt.consensus.AddressBookEpochChangeRx;
 import com.radixdlt.consensus.CommittedStateSyncRx;
 import com.radixdlt.consensus.DefaultHasher;
-import com.radixdlt.consensus.EpochRx;
+import com.radixdlt.consensus.EpochChangeRx;
 import com.radixdlt.consensus.EventCoordinatorNetworkRx;
-import com.radixdlt.consensus.LocalSyncRx;
+import com.radixdlt.consensus.VertexStoreEventsRx;
 import com.radixdlt.consensus.InternalMessagePasser;
 import com.radixdlt.consensus.ProposerElectionFactory;
 import com.radixdlt.consensus.Hasher;
-import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
-import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexStore;
-import com.radixdlt.consensus.VertexStore.SyncSender;
+import com.radixdlt.consensus.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.SyncVerticesRPCSender;
+import com.radixdlt.consensus.VertexStoreFactory;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker.TimeoutSender;
-import com.radixdlt.consensus.liveness.MempoolProposalGenerator;
-import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
+import com.radixdlt.consensus.liveness.PacemakerFactory;
 import com.radixdlt.consensus.liveness.PacemakerRx;
-import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ScheduledTimeoutSender;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
-import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.sync.SyncedRadixEngine;
 import com.radixdlt.consensus.sync.SyncedRadixEngine.CommittedStateSyncSender;
-import com.radixdlt.consensus.validators.Validator;
-import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.middleware2.network.MessageCentralBFTNetwork;
 import com.radixdlt.middleware2.network.MessageCentralSyncVerticesRPCNetwork;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.utils.ThreadFactories;
-import com.radixdlt.utils.UInt256;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.concurrent.Executors;
@@ -83,12 +76,10 @@ public class CerberusModule extends AbstractModule {
 		bind(TimeoutSender.class).to(ScheduledTimeoutSender.class);
 		bind(PacemakerRx.class).to(ScheduledTimeoutSender.class);
 
-		bind(LocalSyncRx.class).to(InternalMessagePasser.class);
-		bind(SyncSender.class).to(InternalMessagePasser.class);
+		bind(VertexStoreEventsRx.class).to(InternalMessagePasser.class);
+		bind(VertexStoreEventSender.class).to(InternalMessagePasser.class);
 		bind(CommittedStateSyncSender.class).to(InternalMessagePasser.class);
 		bind(CommittedStateSyncRx.class).to(InternalMessagePasser.class);
-
-		bind(SafetyRules.class).in(Scopes.SINGLETON);
 
 		bind(SyncVerticesRPCSender.class).to(MessageCentralSyncVerticesRPCNetwork.class);
 		bind(SyncVerticesRPCRx.class).to(MessageCentralSyncVerticesRPCNetwork.class);
@@ -102,7 +93,23 @@ public class CerberusModule extends AbstractModule {
 		bind(SyncVerticesRPCRx.class).to(MessageCentralSyncVerticesRPCNetwork.class);
 
 		bind(Hasher.class).to(DefaultHasher.class);
-		bind(ProposalGenerator.class).to(MempoolProposalGenerator.class);
+	}
+
+	@Provides
+	@Singleton
+	private InternalMessagePasser internalMessagePasser() {
+		return new InternalMessagePasser();
+	}
+
+	@Provides
+	@Singleton
+	private EpochChangeRx epochRx(
+		CommittedAtom genesisAtom,
+		@Named("self") ECKeyPair selfKey,
+		AddressBook addressBook
+	) {
+		final int fixedNodeCount = runtimeProperties.get("consensus.fixed_node_count", 1);
+		return new AddressBookEpochChangeRx(selfKey.getPublicKey(), addressBook, fixedNodeCount, genesisAtom.getVertexMetadata());
 	}
 
 	@Provides
@@ -114,24 +121,6 @@ public class CerberusModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private EpochRx epochRx(
-		@Named("self") ECKeyPair selfKey,
-		AddressBook addressBook
-	) {
-		final int fixedNodeCount = runtimeProperties.get("consensus.fixed_node_count", 1);
-		return new BasicEpochRx(selfKey.getPublicKey(), addressBook, fixedNodeCount);
-	}
-
-	@Provides
-	@Singleton
-	private ValidatorSet validatorSet(
-		@Named("self") ECKeyPair selfKey
-	) {
-		return ValidatorSet.from(Collections.singleton(Validator.from(selfKey.getPublicKey(), UInt256.ONE)));
-	}
-
-	@Provides
-	@Singleton
 	private ScheduledTimeoutSender timeoutSender() {
 		ScheduledExecutorService ses = Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads("TimeoutSender"));
 		return new ScheduledTimeoutSender(ses);
@@ -139,24 +128,28 @@ public class CerberusModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private Pacemaker pacemaker(
+	private PacemakerFactory pacemakerFactory(
 		TimeoutSender timeoutSender
 	) {
 		final int pacemakerTimeout = runtimeProperties.get("consensus.pacemaker_timeout_millis", 5000);
-		return new FixedTimeoutPacemaker(pacemakerTimeout, timeoutSender);
+		return () -> new FixedTimeoutPacemaker(pacemakerTimeout, timeoutSender);
 	}
 
 	@Provides
 	@Singleton
-	private VertexStore getVertexStore(
-		Vertex genesisVertex,
-		QuorumCertificate genesisQC,
+	private VertexStoreFactory vertexStoreFactory(
 		SyncedRadixEngine syncedRadixEngine,
 		SyncVerticesRPCSender syncVerticesRPCSender,
-		SyncSender syncSender,
+		VertexStoreEventSender vertexStoreEventSender,
 		SystemCounters counters
 	) {
-		log.info("Genesis Vertex Id: {}", genesisVertex.getId());
-		return new VertexStore(genesisVertex, genesisQC, syncedRadixEngine, syncVerticesRPCSender, syncSender, counters);
+		return (genesisVertex, genesisQC) -> new VertexStore(
+			genesisVertex,
+			genesisQC,
+			syncedRadixEngine,
+			syncVerticesRPCSender,
+			vertexStoreEventSender,
+			counters
+		);
 	}
 }

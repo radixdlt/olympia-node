@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus.simulation;
 
+import com.radixdlt.consensus.simulation.SimulatedBFTNetwork.RunningNetwork;
 import io.reactivex.rxjava3.core.Observable;
 
 /**
@@ -47,5 +48,5 @@ public interface BFTCheck {
 	 * @param network network to check
 	 * @return completable to subscribe to enable checking
 	 */
-	Observable<BFTCheckError> check(SimulatedBFTNetwork network);
+	Observable<BFTCheckError> check(RunningNetwork network);
 }

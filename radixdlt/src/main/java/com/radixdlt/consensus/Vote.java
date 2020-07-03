@@ -64,6 +64,11 @@ public final class Vote implements ConsensusEvent {
 		this.signature = signature;
 	}
 
+	@Override
+	public long getEpoch() {
+		return voteData.getProposed().getEpoch();
+	}
+
 	public ECPublicKey getAuthor() {
 		return author;
 	}
