@@ -133,6 +133,7 @@
         { "$ref": "#/definitions/messageParticle" },
         { "$ref": "#/definitions/unallocatedTokensParticle" },
         { "$ref": "#/definitions/transferrableTokensParticle" },
+        { "$ref": "#/definitions/stakedTokensParticle" },
         { "$ref": "#/definitions/uniqueParticle" },
         { "$ref": "#/definitions/registeredValidatorParticle" },
         { "$ref": "#/definitions/unregisteredValidatorParticle" }
@@ -318,6 +319,48 @@
       "additionalProperties": false,
       "required": [ "serializer", "amount", "nonce", "planck", "tokenDefinitionReference" ],
       "description": "A particle which represents an amount of a token owned by an account."
+    },
+    "stakedTokensParticle": {
+      "type": "object",
+      "properties": {
+        "destinations": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/uid" },
+          "minItems": 1
+        },
+        "serializer": {
+          "type": "string",
+          "enum": [ "radix.particles.staked_tokens" ]
+        },
+        "version": {
+          "type": "number"
+        },
+        "address": {
+          "$ref": "#/definitions/address"
+        },
+        "delegateAddress": {
+          "$ref": "#/definitions/address"
+        },
+        "tokenDefinitionReference": {
+          "$ref": "#/definitions/radixResourceIdentifier"
+        },
+        "permissions": {
+          "type": "object",
+          "properties": {
+            "burn": { "$ref": "#/definitions/tokenActionPermission" },
+            "mint": { "$ref": "#/definitions/tokenActionPermission" }
+          },
+          "required": [ "burn", "mint" ],
+          "additionalProperties": false
+        },
+        "granularity": { "$ref": "#/definitions/u20" },
+        "nonce": { "type": "number" },
+        "planck": { "type": "number" },
+        "amount": { "$ref": "#/definitions/u20" }
+      },
+      "additionalProperties": false,
+      "required": [ "serializer", "address", "delegateAddress", "amount", "nonce", "planck", "tokenDefinitionReference" ],
+      "description": "A particle which represents an amount of tokens owned by an account staked to a delegate account."
     },
     "uniqueParticle": {
       "type": "object",
