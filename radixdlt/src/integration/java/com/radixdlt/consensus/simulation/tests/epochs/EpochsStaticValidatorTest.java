@@ -32,7 +32,7 @@ public class EpochsStaticValidatorTest {
 	private final Builder bftTestBuilder = SimulatedTest.builder()
 		.numNodes(4)
 		.checkSafety("safety")
-		.checkLiveness("liveness")
+		.checkLiveness("liveness", 1000, TimeUnit.MILLISECONDS)
 		.checkNoTimeouts("noTimeouts")
 		.checkAllProposalsHaveDirectParents("directParents");
 
