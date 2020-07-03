@@ -1,8 +1,13 @@
 package utils
 
+import com.radixdlt.test.SystemCounters
+import org.apache.logging.log4j.LogManager
+import org.apache.logging.log4j.Logger
+
 class TestnetNodes {
 
     private static final TestnetNodes instance = new TestnetNodes();
+    private static final Logger logger = LogManager.getLogger(TestnetNodes.class);
 
     private TestnetNodes() {
     }
@@ -21,6 +26,8 @@ class TestnetNodes {
     String getNodesURls() {
         if (nodes == null) {
             fetchNodes()
+        } else {
+            logger.info("Nodes information already present ${nodes}")
         }
         return nodes.inject("", {
             str, node ->
@@ -31,10 +38,10 @@ class TestnetNodes {
     }
 
     private fetchNodes() {
-        String clusterName = Optional.ofNullable(System.getenv("TESTNET_NAME")).orElse("testnet_2")
 
-        println "node information not avaliable"
-        String sshKeylocation = Optional.ofNullable(System.getenv("SSH_IDENTITY")).orElse(System.getenv("HOME") + "/.ssh/id_rsa");
+        String clusterName = Optional.ofNullable(System.getenv("TESTNET_NAME")).orElse("testnet_2")
+        logger.info("Node information not avaliable. Fetching using ansible")
+        String sshKeylocation = Optional.ofNullable(System.getenv("SSH_IDENTITY")).orElse(System.getenv("HOME") + "/.ssh/id_rsa")
         CmdHelper.runCommand("docker container create --name dummy -v ${keyVolume}:${sshDestinationLocDir} curlimages/curl:7.70.0")
         CmdHelper.runCommand("docker cp ${sshKeylocation} dummy:${sshDestinationLocDir}/${sshDestinationFileName}")
         CmdHelper.runCommand("docker rm -f dummy")
