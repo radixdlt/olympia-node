@@ -18,7 +18,6 @@
 package com.radixdlt.consensus;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.inject.name.Named;
 import com.radixdlt.consensus.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker.TimeoutSender;
 import com.radixdlt.consensus.liveness.MempoolProposalGenerator;
@@ -71,7 +70,7 @@ public class EpochManager {
 		VertexStoreFactory vertexStoreFactory,
 		ProposerElectionFactory proposerElectionFactory,
 		Hasher hasher,
-		@Named("self") ECKeyPair selfKey,
+		ECKeyPair selfKey,
 		SystemCounters counters
 	) {
 		this.mempool = Objects.requireNonNull(mempool);
