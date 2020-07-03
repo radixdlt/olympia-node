@@ -62,7 +62,7 @@ public class BFTDeterministicTest {
 			.map(ECKeyPair::getPublicKey)
 			.collect(ImmutableList.toImmutableList());
 		this.network = new ControlledBFTNetwork(pks);
-		ValidatorSet validatorSet = ValidatorSet.from(
+		ValidatorSet initialValidatorSet = ValidatorSet.from(
 			pks.stream().map(pk -> Validator.from(pk, UInt256.ONE)).collect(Collectors.toList())
 		);
 
@@ -70,8 +70,8 @@ public class BFTDeterministicTest {
 			.map(key -> new ControlledBFTNode(
 				key,
 				network.getSender(key.getPublicKey()),
-				new WeightedRotatingLeaders(validatorSet, Comparator.comparing(v -> v.nodeKey().euid()), 5),
-				validatorSet,
+				vset -> new WeightedRotatingLeaders(vset, Comparator.comparing(v -> v.nodeKey().euid()), 5),
+				initialValidatorSet,
 				enableGetVerticesRPC,
 				syncedSupplier
 			))
