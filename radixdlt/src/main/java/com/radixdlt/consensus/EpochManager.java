@@ -20,6 +20,8 @@ package com.radixdlt.consensus;
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.name.Named;
 import com.radixdlt.consensus.VertexStore.GetVerticesRequest;
+import com.radixdlt.consensus.epoch.GetEpochRequest;
+import com.radixdlt.consensus.epoch.GetEpochResponse;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker.TimeoutSender;
 import com.radixdlt.consensus.liveness.MempoolProposalGenerator;
 import com.radixdlt.consensus.liveness.Pacemaker;
@@ -36,6 +38,8 @@ import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.mempool.Mempool;
+import com.radixdlt.middleware2.CommittedAtom;
+import java.util.Collections;
 import java.util.Objects;
 import javax.annotation.concurrent.NotThreadSafe;
 import org.apache.logging.log4j.LogManager;
@@ -50,6 +54,7 @@ public class EpochManager {
 	private static final BFTEventProcessor EMPTY_PROCESSOR = new EmptyBFTEventProcessor();
 
 	private final Mempool mempool;
+	private final SyncEpochsRPCSender epochsRPCSender;
 	private final BFTEventSender sender;
 	private final PacemakerFactory pacemakerFactory;
 	private final VertexStoreFactory vertexStoreFactory;
@@ -58,14 +63,17 @@ public class EpochManager {
 	private final SystemCounters counters;
 	private final Hasher hasher;
 	private final ScheduledTimeoutSender scheduledTimeoutSender;
+	private final SyncedStateComputer<CommittedAtom> syncedStateComputer;
 
-	private long currentEpoch;
+	private VertexMetadata currentAncestor;
 	private VertexStore vertexStore;
 	private BFTEventProcessor eventProcessor = EMPTY_PROCESSOR;
 
 	public EpochManager(
+		SyncedStateComputer<CommittedAtom> syncedStateComputer,
 		Mempool mempool,
 		BFTEventSender sender,
+		SyncEpochsRPCSender epochsRPCSender,
 		ScheduledTimeoutSender scheduledTimeoutSender,
 		PacemakerFactory pacemakerFactory,
 		VertexStoreFactory vertexStoreFactory,
@@ -74,8 +82,10 @@ public class EpochManager {
 		@Named("self") ECKeyPair selfKey,
 		SystemCounters counters
 	) {
+		this.syncedStateComputer = Objects.requireNonNull(syncedStateComputer);
 		this.mempool = Objects.requireNonNull(mempool);
 		this.sender = Objects.requireNonNull(sender);
+		this.epochsRPCSender = Objects.requireNonNull(epochsRPCSender);
 		this.scheduledTimeoutSender = Objects.requireNonNull(scheduledTimeoutSender);
 		this.pacemakerFactory = Objects.requireNonNull(pacemakerFactory);
 		this.vertexStoreFactory = Objects.requireNonNull(vertexStoreFactory);
@@ -83,6 +93,10 @@ public class EpochManager {
 		this.selfKey = Objects.requireNonNull(selfKey);
 		this.counters = Objects.requireNonNull(counters);
 		this.hasher = Objects.requireNonNull(hasher);
+	}
+
+	private long currentEpoch() {
+		return (this.currentAncestor == null) ? 0 : this.currentAncestor.getEpoch() + 1;
 	}
 
 	public void processEpochChange(EpochChange epochChange) {
@@ -94,11 +108,11 @@ public class EpochManager {
 		final long nextEpoch = genesisVertex.getEpoch();
 
 		// Sanity check
-		if (nextEpoch <= this.currentEpoch) {
+		if (nextEpoch <= this.currentEpoch()) {
 			throw new IllegalStateException("Epoch change has already occurred: " + epochChange);
 		}
 
-		this.currentEpoch = nextEpoch;
+		this.currentAncestor = ancestorMetadata;
 		this.counters.set(CounterType.EPOCHS_EPOCH, nextEpoch);
 
 		if (!validatorSet.containsKey(selfKey.getPublicKey())) {
@@ -116,7 +130,7 @@ public class EpochManager {
 
 		QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(genesisVertex);
 
-		this.vertexStore = vertexStoreFactory.create(genesisVertex, genesisQC);
+		this.vertexStore = vertexStoreFactory.create(genesisVertex, genesisQC, syncedStateComputer);
 
 		ProposalGenerator proposalGenerator = new MempoolProposalGenerator(this.vertexStore, this.mempool);
 
@@ -168,11 +182,38 @@ public class EpochManager {
 		vertexStore.processGetVerticesResponse(response);
 	}
 
+	public void processGetEpochRequest(GetEpochRequest request) {
+		if (this.currentEpoch() == request.getEpoch()) {
+			epochsRPCSender.sendGetEpochResponse(request.getSender(), this.currentAncestor);
+		} else {
+			// TODO: Send better error message back
+			epochsRPCSender.sendGetEpochResponse(request.getSender(), null);
+		}
+	}
+
+	public void processGetEpochResponse(GetEpochResponse response) {
+		if (response.getEpochAncestor() == null) {
+			log.warn("Received empty GetEpochResponse {}", response);
+			return;
+		}
+
+		final VertexMetadata ancestor = response.getEpochAncestor();
+		if (ancestor.getEpoch() + 1 > this.currentEpoch()) {
+			syncedStateComputer.syncTo(ancestor, Collections.singletonList(response.getSender()), null);
+		}
+	}
+
 	public void processConsensusEvent(ConsensusEvent consensusEvent) {
+		if (consensusEvent.getEpoch() > this.currentEpoch()) {
+			log.warn("Received higher epoch event {} from current epoch: {}", consensusEvent, this.currentEpoch());
+			epochsRPCSender.sendGetEpochRequest(consensusEvent.getAuthor(), this.currentEpoch() + 1);
+			return;
+		}
+
 		// TODO: Add the rest of consensus event verification here including signature verification
 
-		if (consensusEvent.getEpoch() != this.currentEpoch) {
-			log.warn("Received event not in the current epoch ({}): {}", this.currentEpoch, consensusEvent);
+		if (consensusEvent.getEpoch() < this.currentEpoch()) {
+			log.warn("Received lower epoch event {} from current epoch: {}", consensusEvent, this.currentEpoch());
 			return;
 		}
 
@@ -188,7 +229,7 @@ public class EpochManager {
 	}
 
 	public void processLocalTimeout(LocalTimeout localTimeout) {
-		if (localTimeout.getEpoch() != this.currentEpoch) {
+		if (localTimeout.getEpoch() != this.currentEpoch()) {
 			return;
 		}
 

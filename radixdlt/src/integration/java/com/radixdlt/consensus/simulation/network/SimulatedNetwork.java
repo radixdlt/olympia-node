@@ -22,6 +22,7 @@ import com.radixdlt.consensus.ConsensusRunner;
 import com.radixdlt.consensus.ConsensusRunner.Event;
 import com.radixdlt.consensus.ConsensusRunner.EventType;
 import com.radixdlt.consensus.DefaultHasher;
+import com.radixdlt.consensus.EmptySyncEpochsRPCSender;
 import com.radixdlt.consensus.EmptySyncVerticesRPCSender;
 import com.radixdlt.consensus.EpochManager;
 import com.radixdlt.consensus.EpochChangeRx;
@@ -102,10 +103,7 @@ public class SimulatedNetwork {
 		final Hasher hasher = new DefaultHasher();
 		final ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(daemonThreads("TimeoutSender"));
 		final ScheduledTimeoutSender timeoutSender = new ScheduledTimeoutSender(scheduledExecutorService);
-
-		final SimulatedStateComputer stateComputer = stateComputerSupplier.get();
-
-		final VertexStoreFactory vertexStoreFactory = (v, qc) -> {
+		final VertexStoreFactory vertexStoreFactory = (v, qc, stateComputer) -> {
 			SyncVerticesRPCSender syncVerticesRPCSender = getVerticesRPCEnabled
 				? underlyingNetwork.getVerticesRequestSender(key.getPublicKey())
 				: EmptySyncVerticesRPCSender.INSTANCE;
@@ -119,9 +117,12 @@ public class SimulatedNetwork {
 			);
 		};
 
+		final SimulatedStateComputer stateComputer = stateComputerSupplier.get();
 		final EpochManager epochManager = new EpochManager(
+			stateComputer,
 			mempool,
 			underlyingNetwork.getNetworkSender(key.getPublicKey()),
+			EmptySyncEpochsRPCSender.INSTANCE,
 			timeoutSender,
 			timeoutSender1 -> new FixedTimeoutPacemaker(this.pacemakerTimeout, timeoutSender1),
 			vertexStoreFactory,

@@ -20,21 +20,25 @@ package com.radixdlt.consensus;
 import com.radixdlt.crypto.ECPublicKey;
 
 /**
- * A message meant for consensus. Currently a marker interface so that all consensus
- * related messages can be handled within a single rxjava stream.
- * TODO: possibly add signature and validation method signatures here
+ * A sender of GetEpoch RPC requests/responses
  */
-public interface ConsensusEvent {
+public interface SyncEpochsRPCSender {
 
 	/**
-	 * Retrieve the epoch number the consensus message is a part of
-	 * @return the epoch number
+	 * Send a request to a peer for proof of an epoch
+	 * @param peer the peer to send to
+	 * @param epoch the epoch to retrieve proof for
 	 */
-	long getEpoch();
+	void sendGetEpochRequest(ECPublicKey peer, long epoch);
 
 	/**
-	 * Get the node author of this consensus message
-	 * @return the node author
+	 * Send an epoch proof resposne to a peer
+	 *
+	 * TODO: currently just actually sending an ancestor but should contain
+	 * TODO: proof as well
+	 *
+	 * @param peer the peer to send to
+	 * @param ancestor the ancestor of the epoch
 	 */
-	ECPublicKey getAuthor();
+	void sendGetEpochResponse(ECPublicKey peer, VertexMetadata ancestor);
 }

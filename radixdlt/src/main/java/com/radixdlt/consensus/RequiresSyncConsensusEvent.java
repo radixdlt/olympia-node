@@ -17,8 +17,6 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.crypto.ECPublicKey;
-
 /**
  * A consensus event which requires syncing to be effectively
  * processed
@@ -36,10 +34,4 @@ public interface RequiresSyncConsensusEvent extends ConsensusEvent {
 	 * @return highest known committed QC of peer
 	 */
 	QuorumCertificate getCommittedQC();
-
-	/**
-	 * Get the author of the event
-	 * @return the author of the event
-	 */
-	ECPublicKey getAuthor();
 }

@@ -27,9 +27,11 @@ import com.radixdlt.consensus.AddressBookValidatorSetProvider;
 import com.radixdlt.consensus.CommittedStateSyncRx;
 import com.radixdlt.consensus.ConsensusRunner;
 import com.radixdlt.consensus.DefaultHasher;
+import com.radixdlt.consensus.EmptySyncEpochsRPCSender;
 import com.radixdlt.consensus.EpochChangeRx;
 import com.radixdlt.consensus.EpochManager;
 import com.radixdlt.consensus.EventCoordinatorNetworkRx;
+import com.radixdlt.consensus.SyncEpochsRPCSender;
 import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.VertexStoreEventsRx;
 import com.radixdlt.consensus.InternalMessagePasser;
@@ -104,9 +106,17 @@ public class CerberusModule extends AbstractModule {
 
 	@Provides
 	@Singleton
+	private SyncEpochsRPCSender syncEpochsRPCSender() {
+		return EmptySyncEpochsRPCSender.INSTANCE;
+	}
+
+	@Provides
+	@Singleton
 	private EpochManager epochManager(
+		SyncedRadixEngine syncedRadixEngine,
 		Mempool mempool,
 		BFTEventSender sender,
+		SyncEpochsRPCSender syncEpochsRPCSender,
 		ScheduledTimeoutSender scheduledTimeoutSender,
 		PacemakerFactory pacemakerFactory,
 		VertexStoreFactory vertexStoreFactory,
@@ -115,10 +125,11 @@ public class CerberusModule extends AbstractModule {
 		@Named("self") ECKeyPair selfKey,
 		SystemCounters counters
 	) {
-
 		return new EpochManager(
+			syncedRadixEngine,
 			mempool,
 			sender,
+			syncEpochsRPCSender,
 			scheduledTimeoutSender,
 			pacemakerFactory,
 			vertexStoreFactory,
@@ -212,12 +223,11 @@ public class CerberusModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private VertexStoreFactory vertexStoreFactory(
-		SyncedRadixEngine syncedRadixEngine,
 		SyncVerticesRPCSender syncVerticesRPCSender,
 		VertexStoreEventSender vertexStoreEventSender,
 		SystemCounters counters
 	) {
-		return (genesisVertex, genesisQC) -> new VertexStore(
+		return (genesisVertex, genesisQC, syncedRadixEngine) -> new VertexStore(
 			genesisVertex,
 			genesisQC,
 			syncedRadixEngine,

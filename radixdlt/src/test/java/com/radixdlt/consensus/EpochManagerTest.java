@@ -14,6 +14,7 @@ import com.radixdlt.consensus.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.ScheduledTimeoutSender;
+import com.radixdlt.consensus.sync.SyncedRadixEngine;
 import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
@@ -21,29 +22,48 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.mempool.Mempool;
+import org.junit.Before;
 import org.junit.Test;
 
 public class EpochManagerTest {
-	@Test
-	public void when_next_epoch_does_not_contain_self__then_should_not_emit_any_consensus_events() {
+	private ECPublicKey publicKey;
+	private EpochManager epochManager;
+	private BFTEventSender bftEventSender;
+	private SyncEpochsRPCSender syncEpochsRPCSender;
+	private ScheduledTimeoutSender scheduledTimeoutSender;
+	private VertexStore vertexStore;
+
+	@Before
+	public void setup() {
 		ECKeyPair keyPair = mock(ECKeyPair.class);
-		ECPublicKey publicKey = mock(ECPublicKey.class);
+		this.publicKey = mock(ECPublicKey.class);
 		when(keyPair.getPublicKey()).thenReturn(publicKey);
 
-		BFTEventSender bftEventSender = mock(BFTEventSender.class);
-		ScheduledTimeoutSender scheduledTimeoutSender = mock(ScheduledTimeoutSender.class);
+		this.bftEventSender = mock(BFTEventSender.class);
+		this.syncEpochsRPCSender = mock(SyncEpochsRPCSender.class);
+		this.scheduledTimeoutSender = mock(ScheduledTimeoutSender.class);
 
-		EpochManager epochManager = new EpochManager(
+		this.vertexStore = mock(VertexStore.class);
+		VertexStoreFactory vertexStoreFactory = mock(VertexStoreFactory.class);
+		when(vertexStoreFactory.create(any(), any(), any())).thenReturn(this.vertexStore);
+
+		this.epochManager = new EpochManager(
+			mock(SyncedRadixEngine.class),
 			mock(Mempool.class),
 			bftEventSender,
+			syncEpochsRPCSender,
 			scheduledTimeoutSender,
 			timeoutSender -> mock(Pacemaker.class),
-			mock(VertexStoreFactory.class),
+			vertexStoreFactory,
 			proposers -> mock(ProposerElection.class),
 			mock(Hasher.class),
 			keyPair,
 			mock(SystemCounters.class)
 		);
+	}
+
+	@Test
+	public void when_next_epoch_does_not_contain_self__then_should_not_emit_any_consensus_events() {
 		EpochChange epochChange = mock(EpochChange.class);
 		ValidatorSet validatorSet = mock(ValidatorSet.class);
 		when(validatorSet.containsKey(eq(publicKey))).thenReturn(false);
@@ -55,23 +75,12 @@ public class EpochManagerTest {
 		verify(bftEventSender, never()).sendNewView(any(), any());
 		verify(bftEventSender, never()).sendVote(any(), any());
 		verify(bftEventSender, never()).broadcastProposal(any());
+		verify(syncEpochsRPCSender, never()).sendGetEpochRequest(any(), anyLong());
 		verify(scheduledTimeoutSender, never()).scheduleTimeout(any(), anyLong());
 	}
 
 	@Test
 	public void when_no_epoch_change__then_processing_events_should_not_fail() {
-		ECKeyPair keyPair = mock(ECKeyPair.class);
-		EpochManager epochManager = new EpochManager(
-			mock(Mempool.class),
-			mock(BFTEventSender.class),
-			mock(ScheduledTimeoutSender.class),
-			timeoutSender -> mock(Pacemaker.class),
-			mock(VertexStoreFactory.class),
-			proposers -> mock(ProposerElection.class),
-			mock(Hasher.class),
-			keyPair,
-			mock(SystemCounters.class)
-		);
 		epochManager.processLocalTimeout(mock(LocalTimeout.class));
 		epochManager.processLocalSync(mock(Hash.class));
 		epochManager.processGetVerticesRequest(mock(GetVerticesRequest.class));
@@ -84,22 +93,7 @@ public class EpochManagerTest {
 
 	@Test
 	public void when_next_epoch__then_get_vertices_rpc_should_be_forwarded_to_vertex_store() {
-		ECKeyPair keyPair = mock(ECKeyPair.class);
-		when(keyPair.getPublicKey()).thenReturn(mock(ECPublicKey.class));
-		VertexStore vertexStore = mock(VertexStore.class);
 		when(vertexStore.getHighestQC()).thenReturn(mock(QuorumCertificate.class));
-
-		EpochManager epochManager = new EpochManager(
-			mock(Mempool.class),
-			mock(BFTEventSender.class),
-			mock(ScheduledTimeoutSender.class),
-			timeoutSender -> mock(Pacemaker.class),
-			(v, qc) -> vertexStore,
-			proposers -> mock(ProposerElection.class),
-			mock(Hasher.class),
-			keyPair,
-			mock(SystemCounters.class)
-		);
 
 		Validator validator = mock(Validator.class);
 		when(validator.nodeKey()).thenReturn(mock(ECPublicKey.class));

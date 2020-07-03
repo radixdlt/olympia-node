@@ -15,26 +15,27 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.consensus.epoch;
 
 import com.radixdlt.crypto.ECPublicKey;
 
 /**
- * A message meant for consensus. Currently a marker interface so that all consensus
- * related messages can be handled within a single rxjava stream.
- * TODO: possibly add signature and validation method signatures here
+ * An RPC request to retrieve proof of an epoch
  */
-public interface ConsensusEvent {
+public final class GetEpochRequest {
+	private final long epoch;
+	private final ECPublicKey sender;
 
-	/**
-	 * Retrieve the epoch number the consensus message is a part of
-	 * @return the epoch number
-	 */
-	long getEpoch();
+	public GetEpochRequest(ECPublicKey sender, final long epoch) {
+		this.sender = sender;
+		this.epoch = epoch;
+	}
 
-	/**
-	 * Get the node author of this consensus message
-	 * @return the node author
-	 */
-	ECPublicKey getAuthor();
+	public long getEpoch() {
+		return epoch;
+	}
+
+	public ECPublicKey getSender() {
+		return sender;
+	}
 }
