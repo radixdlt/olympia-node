@@ -23,7 +23,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.mock;
 
 public class NewViewTest {
@@ -49,9 +48,4 @@ public class NewViewTest {
 		assertEquals(ADDRESS.getPublicKey(), this.testObject.getAuthor());
 	}
 
-	@Test
-	public void testSerializerConstructor() {
-		// Don't want to see any exceptions here
-		assertNotNull(new NewView());
-	}
 }

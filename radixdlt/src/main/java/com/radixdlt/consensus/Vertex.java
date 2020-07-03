@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Suppliers;
 import com.radixdlt.DefaultSerialization;
@@ -52,7 +53,7 @@ public final class Vertex {
 	@DsonOutput(Output.ALL)
 	private final QuorumCertificate qc;
 
-	private View view;
+	private final View view;
 
 	@JsonProperty("atom")
 	@DsonOutput(Output.ALL)
@@ -60,12 +61,14 @@ public final class Vertex {
 
 	private final transient Supplier<Hash> cachedHash = Suppliers.memoize(this::doGetHash);
 
-	Vertex() {
-		// Serializer only
-		this.qc = null;
-		this.epoch = 0L;
-		this.view = null;
-		this.atom = null;
+	@JsonCreator
+	Vertex(
+		@JsonProperty("qc") QuorumCertificate qc,
+		@JsonProperty("epoch") long epoch,
+		@JsonProperty("view") Long viewId,
+		@JsonProperty("atom") ClientAtom atom
+	) {
+		this(epoch, qc, viewId != null ? View.of(viewId) : null, atom);
 	}
 
 	public Vertex(long epoch, QuorumCertificate qc, View view, ClientAtom atom) {
@@ -161,11 +164,6 @@ public final class Vertex {
 	@DsonOutput(Output.ALL)
 	private Long getSerializerView() {
 		return this.view == null ? null : this.view.number();
-	}
-
-	@JsonProperty("view")
-	private void setSerializerView(Long number) {
-		this.view = number == null ? null : View.of(number);
 	}
 
 	@Override

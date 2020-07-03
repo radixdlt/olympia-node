@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.errorprone.annotations.Immutable;
 import com.radixdlt.crypto.CryptoException;
@@ -43,7 +44,7 @@ public final class Proposal implements RequiresSyncConsensusEvent {
 	@DsonOutput(Output.ALL)
 	private final Vertex vertex;
 
-	private ECPublicKey author;
+	private final ECPublicKey author;
 
 	@JsonProperty("signature")
 	@DsonOutput(Output.ALL)
@@ -53,12 +54,14 @@ public final class Proposal implements RequiresSyncConsensusEvent {
 	@DsonOutput(Output.ALL)
 	private final QuorumCertificate committedQC;
 
-	Proposal() {
-		// Serializer only
-		this.vertex = null;
-		this.author = null;
-		this.signature = null;
-		this.committedQC = null;
+	@JsonCreator
+	Proposal(
+		@JsonProperty("vertex") Vertex vertex,
+		@JsonProperty("committedQC") QuorumCertificate committedQC,
+		@JsonProperty("author") byte[] author,
+		@JsonProperty("signature") ECDSASignature signature
+	) throws CryptoException {
+		this(vertex, committedQC, new ECPublicKey(author), signature);
 	}
 
 	public Proposal(Vertex vertex, QuorumCertificate committedQC, ECPublicKey author, ECDSASignature signature) {
@@ -96,11 +99,6 @@ public final class Proposal implements RequiresSyncConsensusEvent {
 	@DsonOutput(Output.ALL)
 	private byte[] getSerializerAuthor() {
 		return this.author == null ? null : this.author.getBytes();
-	}
-
-	@JsonProperty("author")
-	private void setSerializerAuthor(byte[] author) throws CryptoException {
-		this.author = (author == null) ? null : new ECPublicKey(author);
 	}
 
 	@Override

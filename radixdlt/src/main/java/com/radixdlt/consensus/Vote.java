@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.errorprone.annotations.Immutable;
 import com.radixdlt.crypto.CryptoException;
@@ -41,7 +42,7 @@ public final class Vote implements ConsensusEvent {
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	private ECPublicKey author;
+	private final ECPublicKey author;
 
 	@JsonProperty("vertex_metadata")
 	@DsonOutput(Output.ALL)
@@ -51,11 +52,13 @@ public final class Vote implements ConsensusEvent {
 	@DsonOutput(Output.ALL)
 	private final ECDSASignature signature; // may be null if not signed (e.g. for genesis)
 
-	Vote() {
-		// Serializer only
-		this.author = null;
-		this.voteData = null;
-		this.signature = null;
+	@JsonCreator
+	Vote(
+		@JsonProperty("author") byte[] author,
+		@JsonProperty("vertex_metadata") VoteData voteData,
+		@JsonProperty("signature") ECDSASignature signature
+	) throws CryptoException {
+		this(new ECPublicKey(author), voteData, signature);
 	}
 
 	public Vote(ECPublicKey author, VoteData voteData, ECDSASignature signature) {
@@ -85,10 +88,6 @@ public final class Vote implements ConsensusEvent {
 	@DsonOutput(Output.ALL)
 	private byte[] getSerializerAuthor() {
 		return this.author == null ? null : this.author.getBytes();
-	}
-	@JsonProperty("author")
-	private void setSerializerAuthor(byte[] author) throws CryptoException {
-		this.author = (author == null) ? null : new ECPublicKey(author);
 	}
 
 	@Override
