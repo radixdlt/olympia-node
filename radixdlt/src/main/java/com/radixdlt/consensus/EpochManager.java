@@ -38,7 +38,11 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.CommittedAtom;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import javax.annotation.concurrent.NotThreadSafe;
 import org.apache.logging.log4j.LogManager;
@@ -63,6 +67,7 @@ public class EpochManager {
 	private final Hasher hasher;
 	private final ScheduledTimeoutSender scheduledTimeoutSender;
 	private final SyncedStateComputer<CommittedAtom> syncedStateComputer;
+	private final Map<Long, List<ConsensusEvent>> queuedEvents;
 
 	private VertexMetadata currentAncestor;
 	private VertexStore vertexStore;
@@ -92,6 +97,7 @@ public class EpochManager {
 		this.selfKey = Objects.requireNonNull(selfKey);
 		this.counters = Objects.requireNonNull(counters);
 		this.hasher = Objects.requireNonNull(hasher);
+		this.queuedEvents = new HashMap<>();
 	}
 
 	private long currentEpoch() {
@@ -163,6 +169,12 @@ public class EpochManager {
 			syncQueues
 		);
 		this.eventProcessor.start();
+
+		// Execute any queued up consensus events
+		for (ConsensusEvent consensusEvent : queuedEvents.getOrDefault(nextEpoch, Collections.emptyList())) {
+			this.processConsensusEventInternal(consensusEvent);
+		}
+		queuedEvents.remove(nextEpoch);
 	}
 
 	public void processGetVerticesRequest(GetVerticesRequest request) {
@@ -202,20 +214,7 @@ public class EpochManager {
 		}
 	}
 
-	public void processConsensusEvent(ConsensusEvent consensusEvent) {
-		if (consensusEvent.getEpoch() > this.currentEpoch()) {
-			log.warn("Received higher epoch event {} from current epoch: {}", consensusEvent, this.currentEpoch());
-			epochsRPCSender.sendGetEpochRequest(consensusEvent.getAuthor(), this.currentEpoch() + 1);
-			return;
-		}
-
-		// TODO: Add the rest of consensus event verification here including signature verification
-
-		if (consensusEvent.getEpoch() < this.currentEpoch()) {
-			log.warn("Received lower epoch event {} from current epoch: {}", consensusEvent, this.currentEpoch());
-			return;
-		}
-
+	private void processConsensusEventInternal(ConsensusEvent consensusEvent) {
 		if (consensusEvent instanceof NewView) {
 			eventProcessor.processNewView((NewView) consensusEvent);
 		} else if (consensusEvent instanceof Proposal) {
@@ -225,6 +224,29 @@ public class EpochManager {
 		} else {
 			throw new IllegalStateException("Unknown consensus event: " + consensusEvent);
 		}
+	}
+
+	public void processConsensusEvent(ConsensusEvent consensusEvent) {
+		// TODO: Add the rest of consensus event verification here including signature verification
+
+		if (consensusEvent.getEpoch() > this.currentEpoch()) {
+			log.warn("Received higher epoch event {} from current epoch: {}", consensusEvent, this.currentEpoch());
+
+			// queue higher epoch events for later processing
+			// TODO: need to clear this by some rule (e.g. timeout or max size)
+			queuedEvents.computeIfAbsent(consensusEvent.getEpoch(), e -> new ArrayList<>()).add(consensusEvent);
+
+			// Send request for higher epoch proof
+			epochsRPCSender.sendGetEpochRequest(consensusEvent.getAuthor(), this.currentEpoch() + 1);
+			return;
+		}
+
+		if (consensusEvent.getEpoch() < this.currentEpoch()) {
+			log.warn("Received lower epoch event {} from current epoch: {}", consensusEvent, this.currentEpoch());
+			return;
+		}
+
+		this.processConsensusEventInternal(consensusEvent);
 	}
 
 	public void processLocalTimeout(LocalTimeout localTimeout) {

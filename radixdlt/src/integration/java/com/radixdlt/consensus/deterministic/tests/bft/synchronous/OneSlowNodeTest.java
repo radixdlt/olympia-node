@@ -19,6 +19,7 @@ package com.radixdlt.consensus.deterministic.tests.bft.synchronous;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.radixdlt.consensus.EpochChange;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
@@ -33,6 +34,10 @@ public class OneSlowNodeTest {
 		final BFTDeterministicTest test = new BFTDeterministicTest(4, false);
 
 		test.start();
+
+		test.processNextMsg(1, 1, EpochChange.class);
+		test.processNextMsg(2, 2, EpochChange.class);
+		test.processNextMsg(3, 3, EpochChange.class);
 
 		for (int curLeader = 1; curLeader <= 2; curLeader++) {
 			test.processNextMsg(curLeader, 1, NewView.class);
@@ -61,6 +66,10 @@ public class OneSlowNodeTest {
 		final BFTDeterministicTest test = new BFTDeterministicTest(4, false);
 
 		test.start();
+
+		test.processNextMsg(1, 1, EpochChange.class);
+		test.processNextMsg(2, 2, EpochChange.class);
+		test.processNextMsg(3, 3, EpochChange.class);
 
 		for (int curLeader = 1; curLeader <= 3; curLeader++) {
 			test.processNextMsg(curLeader, 1, NewView.class);

@@ -19,8 +19,10 @@ package com.radixdlt.consensus.deterministic;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.radixdlt.EpochChangeSender;
 import com.radixdlt.consensus.BFTEventSender;
 import com.radixdlt.consensus.CommittedStateSync;
+import com.radixdlt.consensus.EpochChange;
 import com.radixdlt.consensus.GetVerticesResponse;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
@@ -164,7 +166,7 @@ public final class ControlledBFTNetwork {
 		return new ControlledSender(sender);
 	}
 
-	public final class ControlledSender implements BFTEventSender, VertexStoreEventSender, SyncVerticesRPCSender {
+	public final class ControlledSender implements BFTEventSender, VertexStoreEventSender, SyncVerticesRPCSender, EpochChangeSender {
 		private final ECPublicKey sender;
 
 		private ControlledSender(ECPublicKey sender) {
@@ -207,6 +209,11 @@ public final class ControlledBFTNetwork {
 
 		public void committedStateSync(CommittedStateSync committedStateSync) {
 			putMesssage(new ControlledMessage(sender, sender, committedStateSync));
+		}
+
+		@Override
+		public void epochChange(EpochChange epochChange) {
+			putMesssage(new ControlledMessage(sender, sender, epochChange));
 		}
 
 		@Override

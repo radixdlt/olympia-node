@@ -50,6 +50,7 @@ import com.radixdlt.mempool.EmptyMempool;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.CommittedAtom;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.BooleanSupplier;
 
 /**
@@ -60,6 +61,7 @@ class ControlledBFTNode {
 	private final EpochManager epochManager;
 	private final SystemCounters systemCounters;
 	private final ValidatorSet initialValidatorSet;
+	private final ControlledSender controlledSender;
 
 	ControlledBFTNode(
 		ECKeyPair key,
@@ -70,7 +72,8 @@ class ControlledBFTNode {
 		BooleanSupplier syncedSupplier
 	) {
 		this.systemCounters = new SystemCountersImpl();
-		this.initialValidatorSet = initialValidatorSet;
+		this.controlledSender = Objects.requireNonNull(sender);
+		this.initialValidatorSet = Objects.requireNonNull(initialValidatorSet);
 
 		SyncedStateComputer<CommittedAtom> stateComputer = new SyncedStateComputer<CommittedAtom>() {
 			@Override
@@ -120,11 +123,13 @@ class ControlledBFTNode {
 
 	void start() {
 		EpochChange epochChange = new EpochChange(VertexMetadata.ofGenesisAncestor(), this.initialValidatorSet);
-		this.epochManager.processEpochChange(epochChange);
+		controlledSender.epochChange(epochChange);
 	}
 
 	void processNext(Object msg) {
-		if (msg instanceof GetVerticesRequest) {
+		if (msg instanceof EpochChange) {
+			this.epochManager.processEpochChange((EpochChange) msg);
+		} else if (msg instanceof GetVerticesRequest) {
 			this.epochManager.processGetVerticesRequest((GetVerticesRequest) msg);
 		} else if (msg instanceof GetVerticesResponse) {
 			this.epochManager.processGetVerticesResponse((GetVerticesResponse) msg);
