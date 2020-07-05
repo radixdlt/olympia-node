@@ -20,7 +20,7 @@ package com.radixdlt.consensus.liveness;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.VertexStore;
+import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.View;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.ClientAtom;

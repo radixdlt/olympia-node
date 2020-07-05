@@ -18,7 +18,7 @@
 package com.radixdlt.consensus;
 
 import com.radixdlt.EpochChangeSender;
-import com.radixdlt.consensus.VertexStore.VertexStoreEventSender;
+import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.sync.SyncedRadixEngine.CommittedStateSyncSender;
 import com.radixdlt.crypto.Hash;
 import io.reactivex.rxjava3.core.Observable;

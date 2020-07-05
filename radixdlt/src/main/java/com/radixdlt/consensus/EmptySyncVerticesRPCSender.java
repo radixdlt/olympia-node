@@ -18,7 +18,7 @@
 package com.radixdlt.consensus;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.VertexStore.GetVerticesRequest;
+import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 

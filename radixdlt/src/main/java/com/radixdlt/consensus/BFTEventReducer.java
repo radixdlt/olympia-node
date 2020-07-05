@@ -19,6 +19,7 @@ package com.radixdlt.consensus;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
+import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.consensus.liveness.Pacemaker;

@@ -17,31 +17,30 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
 import com.radixdlt.consensus.bft.GetVerticesResponse;
-import io.reactivex.rxjava3.core.Observable;
+import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 
-/**
- * Provider of GetVertices RPC request/response events
- */
-public interface SyncVerticesRPCRx {
+public enum EmptyVertexStoreEventProcessor implements VertexStoreEventProcessor {
+	INSTANCE;
 
-	/**
-	 * Retrieve a never-ending stream of requests
-	 * @return a never-ending stream of requests
-	 */
-	Observable<GetVerticesRequest> requests();
+	@Override
+	public void processGetVerticesRequest(GetVerticesRequest request) {
+		// No-op
+	}
 
-	/**
-	 * Retrieve a never-ending stream of responses
-	 * @return a never-ending stream of responses
-	 */
-	Observable<GetVerticesResponse> responses();
+	@Override
+	public void processGetVerticesErrorResponse(GetVerticesErrorResponse response) {
+		// No-op
+	}
 
-	/**
-	 * Retrieve a never-ending stream of error responses
-	 * @return a never-ending stream of error responses
-	 */
-	Observable<GetVerticesErrorResponse> errorResponses();
+	@Override
+	public void processGetVerticesResponse(GetVerticesResponse response) {
+		// No-op
+	}
+
+	@Override
+	public void processCommittedStateSync(CommittedStateSync committedStateSync) {
+		// No-op
+	}
 }

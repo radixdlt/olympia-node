@@ -18,6 +18,7 @@
 package com.radixdlt.consensus;
 
 import com.google.common.collect.Lists;
+import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.consensus.liveness.Pacemaker;

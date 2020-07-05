@@ -32,7 +32,7 @@ import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.InternalMessagePasser;
 import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.SyncedStateComputer;
-import com.radixdlt.consensus.VertexStore;
+import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.SyncVerticesRPCSender;
 import com.radixdlt.consensus.VertexStoreEventsRx;
 import com.radixdlt.consensus.VertexStoreFactory;

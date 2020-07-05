@@ -18,7 +18,8 @@
 package com.radixdlt.consensus;
 
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.consensus.VertexStore.GetVerticesRequest;
+import com.radixdlt.consensus.bft.VertexStore;
+import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
 import com.radixdlt.consensus.bft.GetVerticesResponse;
 import com.radixdlt.consensus.epoch.GetEpochRequest;
@@ -49,9 +50,8 @@ import org.apache.logging.log4j.Logger;
  * Manages Epochs and the BFT instance (which is mostly epoch agnostic) associated with each epoch
  */
 @NotThreadSafe
-public class EpochManager {
+public final class EpochManager {
 	private static final Logger log = LogManager.getLogger("EM");
-	private static final BFTEventProcessor EMPTY_PROCESSOR = new EmptyBFTEventProcessor();
 
 	private final SyncEpochsRPCSender epochsRPCSender;
 	private final PacemakerFactory pacemakerFactory;
@@ -65,8 +65,8 @@ public class EpochManager {
 	private final BFTFactory bftFactory;
 
 	private VertexMetadata currentAncestor;
-	private VertexStore vertexStore;
-	private BFTEventProcessor eventProcessor = EMPTY_PROCESSOR;
+	private VertexStoreEventProcessor vertexStoreEventProcessor = EmptyVertexStoreEventProcessor.INSTANCE;
+	private BFTEventProcessor bftEventProcessor = EmptyBFTEventProcessor.INSTANCE;
 	private int numQueuedConsensusEvents = 0;
 
 	public EpochManager(
@@ -98,7 +98,7 @@ public class EpochManager {
 
 	public void processEpochChange(EpochChange epochChange) {
 		ValidatorSet validatorSet = epochChange.getValidatorSet();
-		log.info("NEXT_EPOCH: {} {}", epochChange);
+		log.info("NEXT_EPOCH: {}", epochChange);
 
 		VertexMetadata ancestorMetadata = epochChange.getAncestor();
 		Vertex genesisVertex = Vertex.createGenesis(ancestorMetadata);
@@ -112,26 +112,25 @@ public class EpochManager {
 		this.currentAncestor = ancestorMetadata;
 		this.counters.set(CounterType.EPOCH_MANAGER_EPOCH, nextEpoch);
 
+		final BFTEventProcessor bftEventProcessor;
+		final VertexStoreEventProcessor vertexStoreEventProcessor;
+
 		if (!validatorSet.containsKey(selfPublicKey)) {
 			log.info("NEXT_EPOCH: Not a validator");
-			this.eventProcessor = EMPTY_PROCESSOR;
-			this.vertexStore = null;
+			bftEventProcessor =  EmptyBFTEventProcessor.INSTANCE;
+			vertexStoreEventProcessor = EmptyVertexStoreEventProcessor.INSTANCE;
 		} else {
 			ProposerElection proposerElection = proposerElectionFactory.create(validatorSet);
 			TimeoutSender sender = (view, ms) -> scheduledTimeoutSender.scheduleTimeout(new LocalTimeout(nextEpoch, view), ms);
 			Pacemaker pacemaker = pacemakerFactory.create(sender);
-
 			QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(genesisVertex);
-
-			this.vertexStore = vertexStoreFactory.create(genesisVertex, genesisQC, syncedStateComputer);
-
+			VertexStore vertexStore = vertexStoreFactory.create(genesisVertex, genesisQC, syncedStateComputer);
 			BFTEventProcessor reducer = bftFactory.create(
 				pacemaker,
-				this.vertexStore,
+				vertexStore,
 				proposerElection,
 				validatorSet
 			);
-
 			SyncQueues syncQueues = new SyncQueues(
 				validatorSet.getValidators().stream()
 					.map(Validator::nodeKey)
@@ -139,17 +138,22 @@ public class EpochManager {
 				this.counters
 			);
 
-			this.eventProcessor = new BFTEventPreprocessor(
+			vertexStoreEventProcessor = vertexStore;
+			bftEventProcessor = new BFTEventPreprocessor(
 				this.selfPublicKey,
 				reducer,
 				pacemaker,
-				this.vertexStore,
+				vertexStore,
 				proposerElection,
 				syncQueues
 			);
 		}
 
-		this.eventProcessor.start();
+		// Update processors
+		this.bftEventProcessor = bftEventProcessor;
+		this.vertexStoreEventProcessor = vertexStoreEventProcessor;
+
+		this.bftEventProcessor.start();
 
 		// Execute any queued up consensus events
 		final List<ConsensusEvent> queuedEventsForEpoch = queuedEvents.getOrDefault(nextEpoch, Collections.emptyList());
@@ -160,30 +164,6 @@ public class EpochManager {
 		numQueuedConsensusEvents -= queuedEventsForEpoch.size();
 		counters.set(CounterType.EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS, numQueuedConsensusEvents);
 		queuedEvents.remove(nextEpoch);
-	}
-
-	public void processGetVerticesRequest(GetVerticesRequest request) {
-		if (this.vertexStore == null) {
-			return;
-		}
-
-		vertexStore.processGetVerticesRequest(request);
-	}
-
-	public void processGetVerticesErrorResponse(GetVerticesErrorResponse response) {
-		if (this.vertexStore == null) {
-			return;
-		}
-
-		vertexStore.processGetVerticesErrorResponse(response);
-	}
-
-	public void processGetVerticesResponse(GetVerticesResponse response) {
-		if (this.vertexStore == null) {
-			return;
-		}
-
-		vertexStore.processGetVerticesResponse(response);
 	}
 
 	public void processGetEpochRequest(GetEpochRequest request) {
@@ -209,11 +189,11 @@ public class EpochManager {
 
 	private void processConsensusEventInternal(ConsensusEvent consensusEvent) {
 		if (consensusEvent instanceof NewView) {
-			eventProcessor.processNewView((NewView) consensusEvent);
+			bftEventProcessor.processNewView((NewView) consensusEvent);
 		} else if (consensusEvent instanceof Proposal) {
-			eventProcessor.processProposal((Proposal) consensusEvent);
+			bftEventProcessor.processProposal((Proposal) consensusEvent);
 		} else if (consensusEvent instanceof Vote) {
-			eventProcessor.processVote((Vote) consensusEvent);
+			bftEventProcessor.processVote((Vote) consensusEvent);
 		} else {
 			throw new IllegalStateException("Unknown consensus event: " + consensusEvent);
 		}
@@ -249,18 +229,26 @@ public class EpochManager {
 			return;
 		}
 
-		eventProcessor.processLocalTimeout(localTimeout.getView());
+		bftEventProcessor.processLocalTimeout(localTimeout.getView());
 	}
 
 	public void processLocalSync(Hash synced) {
-		eventProcessor.processLocalSync(synced);
+		bftEventProcessor.processLocalSync(synced);
+	}
+
+	public void processGetVerticesRequest(GetVerticesRequest request) {
+		vertexStoreEventProcessor.processGetVerticesRequest(request);
+	}
+
+	public void processGetVerticesErrorResponse(GetVerticesErrorResponse response) {
+		vertexStoreEventProcessor.processGetVerticesErrorResponse(response);
+	}
+
+	public void processGetVerticesResponse(GetVerticesResponse response) {
+		vertexStoreEventProcessor.processGetVerticesResponse(response);
 	}
 
 	public void processCommittedStateSync(CommittedStateSync committedStateSync) {
-		if (vertexStore == null) {
-			return;
-		}
-
-		vertexStore.processCommittedStateSync(committedStateSync);
+		vertexStoreEventProcessor.processCommittedStateSync(committedStateSync);
 	}
 }

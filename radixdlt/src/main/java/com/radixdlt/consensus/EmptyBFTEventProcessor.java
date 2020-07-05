@@ -22,7 +22,9 @@ import com.radixdlt.crypto.Hash;
 /**
  * An empty BFT event processor
  */
-public class EmptyBFTEventProcessor implements BFTEventProcessor {
+public enum EmptyBFTEventProcessor implements BFTEventProcessor {
+	INSTANCE;
+
 	@Override
 	public void processVote(Vote vote) {
 		// No-op
