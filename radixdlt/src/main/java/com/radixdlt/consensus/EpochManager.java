@@ -179,6 +179,7 @@ public final class EpochManager {
 	}
 
 	private void processEndOfEpoch(VertexMetadata vertexMetadata) {
+		// TODO: perhaps its better to broadcast to next validator set here rather than in processEpochChange()
 		this.lastConstructed = vertexMetadata;
 	}
 

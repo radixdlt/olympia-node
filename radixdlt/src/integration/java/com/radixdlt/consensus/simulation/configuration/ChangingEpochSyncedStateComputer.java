@@ -50,6 +50,10 @@ public class ChangingEpochSyncedStateComputer implements SimulatedStateComputer 
 	}
 
 	private void nextEpoch(VertexMetadata ancestor) {
+		if (this.currentAncestor != null && ancestor.getEpoch() <= this.currentAncestor.getEpoch()) {
+			return;
+		}
+
 		this.currentAncestor = ancestor;
 		EpochChange epochChange = new EpochChange(ancestor, validatorSetMapping.apply(ancestor.getEpoch() + 1));
 		this.epochChanges.onNext(epochChange);
@@ -71,8 +75,7 @@ public class ChangingEpochSyncedStateComputer implements SimulatedStateComputer 
 
 	@Override
 	public void execute(CommittedAtom atom) {
-		if (atom.getVertexMetadata().isEndOfEpoch()
-			&& (currentAncestor == null || currentAncestor.getEpoch() != atom.getVertexMetadata().getEpoch())) {
+		if (atom.getVertexMetadata().isEndOfEpoch()) {
 			this.nextEpoch(atom.getVertexMetadata());
 		}
 	}

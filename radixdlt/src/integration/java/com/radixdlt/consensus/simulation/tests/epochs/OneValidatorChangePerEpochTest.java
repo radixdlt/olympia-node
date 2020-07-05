@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class OneValidatorChangePerEpochTest {
@@ -40,10 +39,9 @@ public class OneValidatorChangePerEpochTest {
 		.checkAllProposalsHaveDirectParents("directParents");
 
 	@Test
-	@Ignore
 	public void given_correct_bft_with_changing_epochs_per_100_views__then_should_pass_bft_and_epoch_invariants() {
 		SimulationTest bftTest = bftTestBuilder
-			.pacemakerTimeout(5000)
+			.pacemakerTimeout(1000)
 			.epochHighView(View.of(100))
 			.epochToNodesMapper(epoch ->
 				Sets.newHashSet((int) (epoch % 4), (int) (epoch + 1) % 4, (int) (epoch + 2) % 4)
