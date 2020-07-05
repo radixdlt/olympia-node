@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.deterministic.tests.bft.synchronous;
+package com.radixdlt.consensus.deterministic.tests.syncedstatecomputer;
 
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.Proposal;
@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.Test;
 
-public class FProposalDropperResponsiveTest {
+public class FProposalDropperRandomSyncResponsiveTest {
 
 	private final Random random = new Random(123456789);
 
@@ -39,7 +39,7 @@ public class FProposalDropperResponsiveTest {
 		final Map<View, Set<Integer>> proposalsToDrop = new HashMap<>();
 		final Map<View, Integer> proposalCount = new HashMap<>();
 
-		final BFTDeterministicTest test = new BFTDeterministicTest(numNodes, true, () -> true);
+		final BFTDeterministicTest test = new BFTDeterministicTest(numNodes, true, random::nextBoolean);
 		test.start();
 		for (int step = 0; step < 100000; step++) {
 			test.processNextMsg(random, (receiverId, msg) -> {
