@@ -127,6 +127,7 @@ public class CerberusModule extends AbstractModule {
 		SystemCounters counters
 	) {
 		return (
+			endOfEpochSender,
 			pacemaker,
 			vertexStore,
 			proposerElection,
@@ -140,6 +141,7 @@ public class CerberusModule extends AbstractModule {
 				proposalGenerator,
 				mempool,
 				bftEventSender,
+				endOfEpochSender,
 				safetyRules,
 				pacemaker,
 				vertexStore,
@@ -211,23 +213,30 @@ public class CerberusModule extends AbstractModule {
 
 	@Provides
 	@Singleton
+	private AddressBookValidatorSetProvider addressBookValidatorSetProvider(
+		AddressBook addressBook,
+		@Named("self") ECKeyPair selfKey
+	) {
+		final int fixedNodeCount = runtimeProperties.get("consensus.fixed_node_count", 1);
+		return new AddressBookValidatorSetProvider(
+			selfKey.getPublicKey(),
+			addressBook,
+			fixedNodeCount
+		);
+	}
+
+	@Provides
+	@Singleton
 	private SyncedRadixEngine syncedRadixEngine(
 		RadixEngine<LedgerAtom> radixEngine,
 		CommittedAtomsStore committedAtomsStore,
 		CommittedStateSyncSender committedStateSyncSender,
 		EpochChangeSender epochChangeSender,
+		AddressBookValidatorSetProvider validatorSetProvider,
 		AddressBook addressBook,
-		StateSyncNetwork stateSyncNetwork,
-		@Named("self") ECKeyPair selfKey
+		StateSyncNetwork stateSyncNetwork
 	) {
-		final int fixedNodeCount = runtimeProperties.get("consensus.fixed_node_count", 1);
-		AddressBookValidatorSetProvider validatorSetProvider = new AddressBookValidatorSetProvider(
-			selfKey.getPublicKey(),
-			addressBook,
-			fixedNodeCount
-		);
 		final long viewsPerEpoch = runtimeProperties.get("epochs.views_per_epoch", 100L);
-
 		return new SyncedRadixEngine(
 			radixEngine,
 			committedAtomsStore,

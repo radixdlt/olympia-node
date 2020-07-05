@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.consensus.BFTEventReducer.EndOfEpochSender;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
@@ -32,6 +33,7 @@ public interface BFTFactory {
 	 * @return a new bft processor
 	 */
 	BFTEventProcessor create(
+		EndOfEpochSender endOfEpochSender,
 		Pacemaker pacemaker,
 		VertexStore vertexStore,
 		ProposerElection proposerElection,

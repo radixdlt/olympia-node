@@ -65,6 +65,7 @@ public final class EpochManager {
 	private final BFTFactory bftFactory;
 	private final String loggerPrefix;
 
+	private VertexMetadata lastConstructed = null;
 	private VertexMetadata currentAncestor;
 	private VertexStoreEventProcessor vertexStoreEventProcessor = EmptyVertexStoreEventProcessor.INSTANCE;
 	private BFTEventProcessor bftEventProcessor = EmptyBFTEventProcessor.INSTANCE;
@@ -110,6 +111,14 @@ public final class EpochManager {
 			throw new IllegalStateException("Epoch change has already occurred: " + epochChange);
 		}
 
+		// If constructed the end of the previous epoch then broadcast new epoch to new validator set
+		if (Objects.equals(lastConstructed, ancestorMetadata)) {
+			log.info("{}: EPOCH_CHANGE: broadcasting next epoch", this.loggerPrefix);
+			for (Validator validator : validatorSet.getValidators()) {
+				epochsRPCSender.sendGetEpochResponse(validator.nodeKey(), ancestorMetadata);
+			}
+		}
+
 		this.currentAncestor = ancestorMetadata;
 		this.counters.set(CounterType.EPOCH_MANAGER_EPOCH, nextEpoch);
 
@@ -128,6 +137,7 @@ public final class EpochManager {
 			QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(genesisVertex);
 			VertexStore vertexStore = vertexStoreFactory.create(genesisVertex, genesisQC, syncedStateComputer);
 			BFTEventProcessor reducer = bftFactory.create(
+				this::processEndOfEpoch,
 				pacemaker,
 				vertexStore,
 				proposerElection,
@@ -168,6 +178,10 @@ public final class EpochManager {
 		queuedEvents.remove(nextEpoch);
 	}
 
+	private void processEndOfEpoch(VertexMetadata vertexMetadata) {
+		this.lastConstructed = vertexMetadata;
+	}
+
 	public void processGetEpochRequest(GetEpochRequest request) {
 		log.info("{}: GET_EPOCH_REQUEST: {}", this.loggerPrefix, request);
 
@@ -189,8 +203,10 @@ public final class EpochManager {
 		}
 
 		final VertexMetadata ancestor = response.getEpochAncestor();
-		if (ancestor.getEpoch() + 1 > this.currentEpoch()) {
+		if (ancestor.getEpoch() >= this.currentEpoch()) {
 			syncedStateComputer.syncTo(ancestor, Collections.singletonList(response.getSender()), null);
+		} else {
+			log.warn("{}: Received old epoch {}", this.loggerPrefix, response);
 		}
 	}
 

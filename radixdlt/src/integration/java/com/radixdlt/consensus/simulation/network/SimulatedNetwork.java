@@ -124,7 +124,7 @@ public class SimulatedNetwork {
 
 		final SimulatedStateComputer stateComputer = stateComputerSupplier.get();
 		BFTFactory bftFactory =
-			(pacemaker, vertexStore, proposerElection, validatorSet) -> {
+			(endOfEpochSender, pacemaker, vertexStore, proposerElection, validatorSet) -> {
 				final ProposalGenerator proposalGenerator = new MempoolProposalGenerator(vertexStore, mempool);
 				final SafetyRules safetyRules = new SafetyRules(key, SafetyState.initialState(), hasher);
 				final PendingVotes pendingVotes = new PendingVotes(hasher);
@@ -133,6 +133,7 @@ public class SimulatedNetwork {
 					proposalGenerator,
 					mempool,
 					underlyingNetwork.getNetworkSender(key.getPublicKey()),
+					endOfEpochSender,
 					safetyRules,
 					pacemaker,
 					vertexStore,

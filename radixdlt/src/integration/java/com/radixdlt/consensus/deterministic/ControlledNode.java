@@ -111,7 +111,7 @@ class ControlledNode {
 		VertexStoreFactory vertexStoreFactory = (vertex, qc, syncedStateComputer) ->
 			new VertexStore(vertex, qc, syncedStateComputer, syncVerticesRPCSender, sender, systemCounters);
 		BFTFactory bftFactory =
-			(pacemaker, vertexStore, proposerElection, validatorSet) -> {
+			(endOfEpochSender, pacemaker, vertexStore, proposerElection, validatorSet) -> {
 				final ProposalGenerator proposalGenerator = new MempoolProposalGenerator(vertexStore, mempool);
 				final SafetyRules safetyRules = new SafetyRules(key, SafetyState.initialState(), hasher);
 				final PendingVotes pendingVotes = new PendingVotes(hasher);
@@ -120,6 +120,7 @@ class ControlledNode {
 					proposalGenerator,
 					mempool,
 					controlledSender,
+					endOfEpochSender,
 					safetyRules,
 					pacemaker,
 					vertexStore,
