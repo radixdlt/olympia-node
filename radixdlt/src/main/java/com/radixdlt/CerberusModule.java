@@ -29,7 +29,6 @@ import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.CommittedStateSyncRx;
 import com.radixdlt.consensus.ConsensusRunner;
 import com.radixdlt.consensus.DefaultHasher;
-import com.radixdlt.consensus.EmptySyncEpochsRPCSender;
 import com.radixdlt.consensus.EpochChangeRx;
 import com.radixdlt.consensus.EpochManager;
 import com.radixdlt.consensus.EventCoordinatorNetworkRx;
@@ -64,7 +63,7 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.network.MessageCentralBFTNetwork;
-import com.radixdlt.middleware2.network.MessageCentralSyncVerticesRPCNetwork;
+import com.radixdlt.middleware2.network.MessageCentralSyncNetwork;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.properties.RuntimeProperties;
@@ -88,33 +87,32 @@ public class CerberusModule extends AbstractModule {
 
 	@Override
 	protected void configure() {
-		// dependencies
+		// Timed local messages
 		bind(PacemakerRx.class).to(ScheduledTimeoutSender.class);
 
+		// Local messages
 		bind(VertexStoreEventsRx.class).to(InternalMessagePasser.class);
 		bind(VertexStoreEventSender.class).to(InternalMessagePasser.class);
 		bind(CommittedStateSyncSender.class).to(InternalMessagePasser.class);
 		bind(CommittedStateSyncRx.class).to(InternalMessagePasser.class);
 		bind(EpochChangeRx.class).to(InternalMessagePasser.class);
 		bind(EpochChangeSender.class).to(InternalMessagePasser.class);
+
 		bind(SyncedStateComputer.class).to(SyncedRadixEngine.class);
 
-		bind(SyncVerticesRPCSender.class).to(MessageCentralSyncVerticesRPCNetwork.class);
-		bind(SyncVerticesRPCRx.class).to(MessageCentralSyncVerticesRPCNetwork.class);
-		bind(MessageCentralBFTNetwork.class).in(Scopes.SINGLETON);
+		// Sync messages
+		bind(SyncEpochsRPCSender.class).to(MessageCentralSyncNetwork.class);
+		bind(SyncVerticesRPCSender.class).to(MessageCentralSyncNetwork.class);
+		bind(SyncVerticesRPCRx.class).to(MessageCentralSyncNetwork.class);
+		bind(MessageCentralSyncNetwork.class).in(Scopes.SINGLETON);
+
+		// BFT messages
 		bind(BFTEventSender.class).to(MessageCentralBFTNetwork.class);
 		bind(EventCoordinatorNetworkRx.class).to(MessageCentralBFTNetwork.class);
-		bind(MessageCentralSyncVerticesRPCNetwork.class).in(Scopes.SINGLETON);
-		bind(SyncVerticesRPCSender.class).to(MessageCentralSyncVerticesRPCNetwork.class);
-		bind(SyncVerticesRPCRx.class).to(MessageCentralSyncVerticesRPCNetwork.class);
+		bind(MessageCentralBFTNetwork.class).in(Scopes.SINGLETON);
 
+		// Configuration
 		bind(Hasher.class).to(DefaultHasher.class);
-	}
-
-	@Provides
-	@Singleton
-	private SyncEpochsRPCSender syncEpochsRPCSender() {
-		return EmptySyncEpochsRPCSender.INSTANCE;
 	}
 
 	@Provides

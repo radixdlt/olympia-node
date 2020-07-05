@@ -178,6 +178,7 @@ public final class EpochManager {
 	public void processGetEpochResponse(GetEpochResponse response) {
 		if (response.getEpochAncestor() == null) {
 			log.warn("Received empty GetEpochResponse {}", response);
+			// TODO: retry
 			return;
 		}
 

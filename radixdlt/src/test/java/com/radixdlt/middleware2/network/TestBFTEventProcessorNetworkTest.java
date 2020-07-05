@@ -120,7 +120,7 @@ public class TestBFTEventProcessorNetworkTest {
 			network.getNetworkRx(validatorId2).requests().test();
 
 		network
-			.getVerticesRequestSender(validatorId)
+			.getSyncSender(validatorId)
 			.sendGetVerticesRequest(vertexId, validatorId2, 1, new Object());
 
 		rpcRequestListener.awaitCount(1);

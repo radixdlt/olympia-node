@@ -22,6 +22,8 @@ import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.EventCoordinatorNetworkRx;
 import com.radixdlt.consensus.BFTEventSender;
 import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.SyncEpochsRPCSender;
+import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
 import com.radixdlt.consensus.bft.GetVerticesResponse;
 import com.radixdlt.consensus.NewView;
@@ -31,6 +33,8 @@ import com.radixdlt.consensus.SyncVerticesRPCSender;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.epoch.GetEpochRequest;
+import com.radixdlt.consensus.epoch.GetEpochResponse;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 import io.reactivex.rxjava3.core.Observable;
@@ -195,7 +199,7 @@ public class TestEventCoordinatorNetwork {
 	}
 
 
-	private class SimulatedNetworkImpl implements SimulatedNetworkReceiver, SyncVerticesRPCSender {
+	private class SimulatedNetworkImpl implements SimulatedNetworkReceiver, SimulationSyncSender {
 		private final Observable<Object> myMessages;
 		private final ECPublicKey thisNode;
 		private HashMap<Hash, Object> opaqueMap = new HashMap<>();
@@ -258,6 +262,18 @@ public class TestEventCoordinatorNetwork {
 		}
 
 		@Override
+		public void sendGetEpochRequest(ECPublicKey node, long epoch) {
+			GetEpochRequest getEpochRequest = new GetEpochRequest(thisNode, epoch);
+			receivedMessages.onNext(MessageInTransit.newMessage(getEpochRequest, thisNode, node));
+		}
+
+		@Override
+		public void sendGetEpochResponse(ECPublicKey node, VertexMetadata ancestor) {
+			GetEpochResponse getEpochResponse = new GetEpochResponse(thisNode, ancestor);
+			receivedMessages.onNext(MessageInTransit.newMessage(getEpochResponse, thisNode, node));
+		}
+
+		@Override
 		public Observable<ConsensusEvent> consensusEvents() {
 			return myMessages.ofType(ConsensusEvent.class);
 		}
@@ -282,8 +298,11 @@ public class TestEventCoordinatorNetwork {
 		return receivers.computeIfAbsent(forNode, SimulatedNetworkImpl::new);
 	}
 
-	public SyncVerticesRPCSender getVerticesRequestSender(ECPublicKey forNode) {
+	public SimulationSyncSender getSyncSender(ECPublicKey forNode) {
 		return receivers.computeIfAbsent(forNode, SimulatedNetworkImpl::new);
+	}
+
+	public interface SimulationSyncSender extends SyncVerticesRPCSender, SyncEpochsRPCSender {
 	}
 
 	public interface SimulatedNetworkReceiver extends EventCoordinatorNetworkRx, SyncVerticesRPCRx {

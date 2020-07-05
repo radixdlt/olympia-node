@@ -26,10 +26,10 @@ public interface SyncEpochsRPCSender {
 
 	/**
 	 * Send a request to a peer for proof of an epoch
-	 * @param peer the peer to send to
+	 * @param node the peer to send to
 	 * @param epoch the epoch to retrieve proof for
 	 */
-	void sendGetEpochRequest(ECPublicKey peer, long epoch);
+	void sendGetEpochRequest(ECPublicKey node, long epoch);
 
 	/**
 	 * Send an epoch proof resposne to a peer
@@ -37,8 +37,8 @@ public interface SyncEpochsRPCSender {
 	 * TODO: currently just actually sending an ancestor but should contain
 	 * TODO: proof as well
 	 *
-	 * @param peer the peer to send to
+	 * @param node the peer to send to
 	 * @param ancestor the ancestor of the epoch
 	 */
-	void sendGetEpochResponse(ECPublicKey peer, VertexMetadata ancestor);
+	void sendGetEpochResponse(ECPublicKey node, VertexMetadata ancestor);
 }

@@ -24,7 +24,6 @@ import com.radixdlt.consensus.ConsensusRunner;
 import com.radixdlt.consensus.ConsensusRunner.Event;
 import com.radixdlt.consensus.ConsensusRunner.EventType;
 import com.radixdlt.consensus.DefaultHasher;
-import com.radixdlt.consensus.EmptySyncEpochsRPCSender;
 import com.radixdlt.consensus.EmptySyncVerticesRPCSender;
 import com.radixdlt.consensus.EpochManager;
 import com.radixdlt.consensus.EpochChangeRx;
@@ -33,7 +32,6 @@ import com.radixdlt.consensus.InternalMessagePasser;
 import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.bft.VertexStore;
-import com.radixdlt.consensus.SyncVerticesRPCSender;
 import com.radixdlt.consensus.VertexStoreEventsRx;
 import com.radixdlt.consensus.VertexStoreFactory;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
@@ -52,6 +50,7 @@ import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork;
 import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork.SimulatedNetworkReceiver;
+import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork.SimulationSyncSender;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
@@ -110,15 +109,14 @@ public class SimulatedNetwork {
 		final Hasher hasher = new DefaultHasher();
 		final ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(daemonThreads("TimeoutSender"));
 		final ScheduledTimeoutSender timeoutSender = new ScheduledTimeoutSender(scheduledExecutorService);
+		final SimulationSyncSender syncSender = underlyingNetwork.getSyncSender(key.getPublicKey());
+
 		final VertexStoreFactory vertexStoreFactory = (v, qc, stateComputer) -> {
-			SyncVerticesRPCSender syncVerticesRPCSender = getVerticesRPCEnabled
-				? underlyingNetwork.getVerticesRequestSender(key.getPublicKey())
-				: EmptySyncVerticesRPCSender.INSTANCE;
 			return new VertexStore(
 				v,
 				qc,
 				stateComputer,
-				syncVerticesRPCSender,
+				getVerticesRPCEnabled ? syncSender : EmptySyncVerticesRPCSender.INSTANCE,
 				this.internalMessages.get(key),
 				this.counters.get(key)
 			);
@@ -148,7 +146,7 @@ public class SimulatedNetwork {
 
 		final EpochManager epochManager = new EpochManager(
 			stateComputer,
-			EmptySyncEpochsRPCSender.INSTANCE,
+			syncSender,
 			timeoutSender,
 			timeoutSender1 -> new FixedTimeoutPacemaker(this.pacemakerTimeout, timeoutSender1),
 			vertexStoreFactory,

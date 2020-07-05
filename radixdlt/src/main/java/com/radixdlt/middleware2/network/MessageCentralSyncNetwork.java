@@ -22,6 +22,8 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.name.Named;
 import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.SyncEpochsRPCSender;
+import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
 import com.radixdlt.consensus.bft.GetVerticesResponse;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
@@ -44,7 +46,7 @@ import javax.inject.Inject;
 /**
  * Network interface for syncing vertices using the MessageCentral
  */
-public class MessageCentralSyncVerticesRPCNetwork implements SyncVerticesRPCSender, SyncVerticesRPCRx {
+public class MessageCentralSyncNetwork implements SyncVerticesRPCSender, SyncVerticesRPCRx, SyncEpochsRPCSender {
 
 	private final ECPublicKey selfPublicKey;
 	private final int magic;
@@ -56,7 +58,7 @@ public class MessageCentralSyncVerticesRPCNetwork implements SyncVerticesRPCSend
 		.build();
 
 	@Inject
-	public MessageCentralSyncVerticesRPCNetwork(
+	public MessageCentralSyncNetwork(
 		@Named("self") ECPublicKey selfPublicKey,
 		Universe universe,
 		AddressBook addressBook,
@@ -190,5 +192,29 @@ public class MessageCentralSyncVerticesRPCNetwork implements SyncVerticesRPCSend
 		public String toString() {
 			return String.format("%s{vertexId=%s count=%d}", getClass().getSimpleName(), vertexId.toString().substring(0, 6), count);
 		}
+	}
+
+	@Override
+	public void sendGetEpochRequest(ECPublicKey node, long epoch) {
+		final Optional<Peer> peer = this.addressBook.peer(node.euid());
+		if (!peer.isPresent()) {
+			// TODO: Change to more appropriate exception type
+			throw new IllegalStateException(String.format("Peer with pubkey %s not present", node));
+		}
+
+		final GetEpochRequestMessage epochRequest = new GetEpochRequestMessage(this.magic, epoch);
+		this.messageCentral.send(peer.get(), epochRequest);
+	}
+
+	@Override
+	public void sendGetEpochResponse(ECPublicKey node, VertexMetadata ancestor) {
+		final Optional<Peer> peer = this.addressBook.peer(node.euid());
+		if (!peer.isPresent()) {
+			// TODO: Change to more appropriate exception type
+			throw new IllegalStateException(String.format("Peer with pubkey %s not present", node));
+		}
+
+		final GetEpochResponseMessage epochResponseMessage = new GetEpochResponseMessage(this.magic, ancestor);
+		this.messageCentral.send(peer.get(), epochResponseMessage);
 	}
 }
