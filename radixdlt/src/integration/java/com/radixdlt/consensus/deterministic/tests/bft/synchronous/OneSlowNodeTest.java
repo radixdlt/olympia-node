@@ -23,7 +23,7 @@ import com.radixdlt.consensus.EpochChange;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.deterministic.BFTDeterministicTest;
+import com.radixdlt.consensus.deterministic.DeterministicTest;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import org.junit.Test;
 
@@ -31,7 +31,7 @@ public class OneSlowNodeTest {
 
 	@Test
 	public void when_three_fast_nodes_and_one_slow_node_two_cycles__then_missing_parent_should_not_cause_sync_exception() {
-		final BFTDeterministicTest test = new BFTDeterministicTest(4, false);
+		final DeterministicTest test = new DeterministicTest(4, false);
 
 		test.start();
 
@@ -63,7 +63,7 @@ public class OneSlowNodeTest {
 	 */
 	@Test
 	public void when_three_fast_nodes_and_one_slow_node__then_missing_parent_should_not_cause_exception() {
-		final BFTDeterministicTest test = new BFTDeterministicTest(4, false);
+		final DeterministicTest test = new DeterministicTest(4, false);
 
 		test.start();
 

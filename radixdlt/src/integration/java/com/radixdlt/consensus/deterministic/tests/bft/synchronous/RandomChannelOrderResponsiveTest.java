@@ -17,7 +17,7 @@
 
 package com.radixdlt.consensus.deterministic.tests.bft.synchronous;
 
-import com.radixdlt.consensus.deterministic.BFTDeterministicTest;
+import com.radixdlt.consensus.deterministic.DeterministicTest;
 import java.util.Random;
 import org.junit.Test;
 
@@ -26,7 +26,7 @@ public class RandomChannelOrderResponsiveTest {
 	@Test
 	public void when_run_4_correct_nodes_with_channel_order_random_and_timeouts_disabled__then_bft_should_be_responsive() {
 		final Random random = new Random(12345);
-		final BFTDeterministicTest test = new BFTDeterministicTest(4, false);
+		final DeterministicTest test = new DeterministicTest(4, false);
 
 		test.start();
 		for (int step = 0; step < 100000; step++) {
@@ -37,7 +37,7 @@ public class RandomChannelOrderResponsiveTest {
 	@Test
 	public void when_run_100_correct_nodes_with_channel_order_random_and_timeouts_disabled__then_bft_should_be_responsive() {
 		final Random random = new Random(12345);
-		final BFTDeterministicTest test = new BFTDeterministicTest(100, false);
+		final DeterministicTest test = new DeterministicTest(100, false);
 
 		test.start();
 		for (int step = 0; step < 100000; step++) {

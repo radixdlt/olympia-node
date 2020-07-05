@@ -21,8 +21,8 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.google.common.collect.Sets;
 import com.radixdlt.consensus.View;
-import com.radixdlt.consensus.simulation.SimulatedTest;
-import com.radixdlt.consensus.simulation.SimulatedTest.Builder;
+import com.radixdlt.consensus.simulation.SimulationTest;
+import com.radixdlt.consensus.simulation.SimulationTest.Builder;
 import com.radixdlt.consensus.simulation.TestInvariant.TestInvariantError;
 import java.util.Map;
 import java.util.Optional;
@@ -32,7 +32,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 public class OneValidatorChangePerEpochTest {
-	private final Builder bftTestBuilder = SimulatedTest.builder()
+	private final Builder bftTestBuilder = SimulationTest.builder()
 		.numNodes(4)
 		.checkSafety("safety")
 		.checkLiveness("liveness")
@@ -42,7 +42,7 @@ public class OneValidatorChangePerEpochTest {
 	@Test
 	@Ignore
 	public void given_correct_bft_with_changing_epochs_per_100_views__then_should_pass_bft_and_epoch_invariants() {
-		SimulatedTest bftTest = bftTestBuilder
+		SimulationTest bftTest = bftTestBuilder
 			.epochHighView(View.of(100))
 			.epochToNodesMapper(epoch ->
 				Sets.newHashSet((int) (epoch % 4), (int) (epoch + 1) % 4, (int) (epoch + 2) % 4)

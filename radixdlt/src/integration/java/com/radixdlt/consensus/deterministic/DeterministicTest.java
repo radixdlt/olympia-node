@@ -20,8 +20,8 @@ package com.radixdlt.consensus.deterministic;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.deterministic.ControlledBFTNetwork.ChannelId;
-import com.radixdlt.consensus.deterministic.ControlledBFTNetwork.ControlledMessage;
+import com.radixdlt.consensus.deterministic.ControlledNetwork.ChannelId;
+import com.radixdlt.consensus.deterministic.ControlledNetwork.ControlledMessage;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
@@ -39,21 +39,21 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * A deterministic BFT test where each event that occurs in the BFT network
+ * A deterministic test where each event that occurs in the network
  * is emitted and processed synchronously by the caller.
  */
-public class BFTDeterministicTest {
-	private final ImmutableList<ControlledBFTNode> nodes;
+public class DeterministicTest {
+	private final ImmutableList<ControlledNode> nodes;
 	private final ImmutableList<ECPublicKey> pks;
-	private final ControlledBFTNetwork network;
+	private final ControlledNetwork network;
 
-	public BFTDeterministicTest(int numNodes, boolean enableGetVerticesRPC) {
+	public DeterministicTest(int numNodes, boolean enableGetVerticesRPC) {
 		this(numNodes, enableGetVerticesRPC, () -> {
 			throw new UnsupportedOperationException();
 		});
 	}
 
-	public BFTDeterministicTest(int numNodes, boolean enableGetVerticesRPC, BooleanSupplier syncedSupplier) {
+	public DeterministicTest(int numNodes, boolean enableGetVerticesRPC, BooleanSupplier syncedSupplier) {
 		ImmutableList<ECKeyPair> keys = Stream.generate(ECKeyPair::generateNew)
 			.limit(numNodes)
 			.sorted(Comparator.<ECKeyPair, EUID>comparing(k -> k.getPublicKey().euid()).reversed())
@@ -61,13 +61,13 @@ public class BFTDeterministicTest {
 		this.pks = keys.stream()
 			.map(ECKeyPair::getPublicKey)
 			.collect(ImmutableList.toImmutableList());
-		this.network = new ControlledBFTNetwork(pks);
+		this.network = new ControlledNetwork(pks);
 		ValidatorSet initialValidatorSet = ValidatorSet.from(
 			pks.stream().map(pk -> Validator.from(pk, UInt256.ONE)).collect(Collectors.toList())
 		);
 
 		this.nodes = keys.stream()
-			.map(key -> new ControlledBFTNode(
+			.map(key -> new ControlledNode(
 				key,
 				network.getSender(key.getPublicKey()),
 				vset -> new WeightedRotatingLeaders(vset, Comparator.comparing(v -> v.nodeKey().euid()), 5),
@@ -79,7 +79,7 @@ public class BFTDeterministicTest {
 	}
 
 	public void start() {
-		nodes.forEach(ControlledBFTNode::start);
+		nodes.forEach(ControlledNode::start);
 	}
 
 	public void processNextMsg(int toIndex, int fromIndex, Class<?> expectedClass) {

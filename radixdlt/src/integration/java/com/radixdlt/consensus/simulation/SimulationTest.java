@@ -22,10 +22,10 @@ import com.google.common.collect.ImmutableMap;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.simulation.TestInvariant.TestInvariantError;
 import com.radixdlt.consensus.simulation.invariants.epochs.EpochViewInvariant;
-import com.radixdlt.consensus.simulation.network.ChangingEpochSyncedStateComputer;
-import com.radixdlt.consensus.simulation.network.DroppingLatencyProvider;
-import com.radixdlt.consensus.simulation.network.OneProposalPerViewDropper;
-import com.radixdlt.consensus.simulation.network.RandomLatencyProvider;
+import com.radixdlt.consensus.simulation.configuration.ChangingEpochSyncedStateComputer;
+import com.radixdlt.consensus.simulation.configuration.DroppingLatencyProvider;
+import com.radixdlt.consensus.simulation.configuration.OneProposalPerViewDropper;
+import com.radixdlt.consensus.simulation.configuration.RandomLatencyProvider;
 import com.radixdlt.consensus.simulation.network.SimulatedNetwork;
 import com.radixdlt.consensus.simulation.network.SimulatedNetwork.RunningNetwork;
 import com.radixdlt.consensus.simulation.invariants.bft.AllProposalsHaveDirectParentsInvariant;
@@ -34,7 +34,7 @@ import com.radixdlt.consensus.simulation.invariants.bft.NoTimeoutsInvariant;
 import com.radixdlt.consensus.simulation.invariants.bft.NoneCommittedInvariant;
 import com.radixdlt.consensus.simulation.invariants.bft.SafetyInvariant;
 import com.radixdlt.consensus.simulation.network.SimulatedNetwork.SimulatedStateComputer;
-import com.radixdlt.consensus.simulation.network.SingleEpochAlwaysSyncedStateComputer;
+import com.radixdlt.consensus.simulation.configuration.SingleEpochAlwaysSyncedStateComputer;
 import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.crypto.ECKeyPair;
@@ -61,7 +61,7 @@ import java.util.stream.Stream;
 /**
  * High level BFT Simulation Test Runner
  */
-public class SimulatedTest {
+public class SimulationTest {
 	private final ImmutableList<ECKeyPair> nodes;
 	private final LatencyProvider latencyProvider;
 	private final ImmutableMap<String, TestInvariant> checks;
@@ -70,7 +70,7 @@ public class SimulatedTest {
 	private final boolean getVerticesRPCEnabled;
 	private final View epochHighView;
 
-	private SimulatedTest(
+	private SimulationTest(
 		ImmutableList<ECKeyPair> nodes,
 		LatencyProvider latencyProvider,
 		int pacemakerTimeout,
@@ -183,7 +183,7 @@ public class SimulatedTest {
 			return this;
 		}
 
-		public SimulatedTest build() {
+		public SimulationTest build() {
 			final List<ECPublicKey> publicKeys = nodes.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toList());
 			Function<Long, ValidatorSet> epochToValidatorSetMapping =
 				epochToNodeIndexMapper == null
@@ -196,7 +196,7 @@ public class SimulatedTest {
 							.map(nodes::get)
 							.map(kp -> Validator.from(kp.getPublicKey(), UInt256.ONE))
 							.collect(Collectors.toList())));
-			return new SimulatedTest(
+			return new SimulationTest(
 				ImmutableList.copyOf(nodes),
 				latencyProvider.copyOf(),
 				pacemakerTimeout,

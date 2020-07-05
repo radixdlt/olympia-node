@@ -20,8 +20,8 @@ package com.radixdlt.consensus.simulation.tests.bft.synchronous;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.radixdlt.consensus.simulation.TestInvariant.TestInvariantError;
-import com.radixdlt.consensus.simulation.SimulatedTest;
-import com.radixdlt.consensus.simulation.SimulatedTest.Builder;
+import com.radixdlt.consensus.simulation.SimulationTest;
+import com.radixdlt.consensus.simulation.SimulationTest.Builder;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -33,7 +33,7 @@ public class OneOutOfBoundsTest {
 	private final int synchronousTimeout = 8 * latency;
 	private final int outOfBoundsLatency = synchronousTimeout;
 	// TODO: Add 1 timeout check
-	private final Builder bftTestBuilder = SimulatedTest.builder()
+	private final Builder bftTestBuilder = SimulationTest.builder()
 		.pacemakerTimeout(synchronousTimeout)
 		.checkLiveness("liveness", 2 * synchronousTimeout, TimeUnit.MILLISECONDS)
 		.checkSafety("safety");
@@ -43,7 +43,7 @@ public class OneOutOfBoundsTest {
 	 */
 	@Test
 	public void given_1_out_of_4_nodes_out_of_synchrony_bounds() {
-		SimulatedTest test = bftTestBuilder
+		SimulationTest test = bftTestBuilder
 			.numNodesAndLatencies(4, latency, latency, latency, outOfBoundsLatency)
 			.build();
 

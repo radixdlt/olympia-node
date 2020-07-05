@@ -20,8 +20,8 @@ package com.radixdlt.consensus.simulation.tests.bft.synchronous;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.radixdlt.consensus.simulation.TestInvariant.TestInvariantError;
-import com.radixdlt.consensus.simulation.SimulatedTest;
-import com.radixdlt.consensus.simulation.SimulatedTest.Builder;
+import com.radixdlt.consensus.simulation.SimulationTest;
+import com.radixdlt.consensus.simulation.SimulationTest.Builder;
 import java.util.Map;
 import java.util.Optional;
 import org.assertj.core.api.AssertionsForClassTypes;
@@ -44,7 +44,7 @@ public class RandomLatencyTest {
 	private final int trips = 6;
 	private final int synchronousTimeout = maxLatency * trips;
 
-	private Builder bftTestBuilder = SimulatedTest.builder()
+	private Builder bftTestBuilder = SimulationTest.builder()
 		.randomLatency(minLatency, maxLatency)
 		.setGetVerticesRPCEnabled(false)
 		.pacemakerTimeout(synchronousTimeout) // Since no syncing needed 6*MTT required
@@ -58,7 +58,7 @@ public class RandomLatencyTest {
 	 */
 	@Test
 	public void given_3_correct_nodes_in_random_network_and_no_sync__then_all_synchronous_checks_should_pass() {
-		SimulatedTest test = bftTestBuilder
+		SimulationTest test = bftTestBuilder
 			.numNodes(3)
 			.build();
 
@@ -71,7 +71,7 @@ public class RandomLatencyTest {
 	 */
 	@Test
 	public void given_4_correct_bfts_in_random_network_and_no_sync__then_all_synchronous_checks_should_pass() {
-		SimulatedTest test = bftTestBuilder
+		SimulationTest test = bftTestBuilder
 			.numNodes(4)
 			.build();
 

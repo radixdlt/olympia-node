@@ -41,7 +41,7 @@ import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.SyncVerticesRPCSender;
 import com.radixdlt.consensus.VertexStoreFactory;
-import com.radixdlt.consensus.deterministic.ControlledBFTNetwork.ControlledSender;
+import com.radixdlt.consensus.deterministic.ControlledNetwork.ControlledSender;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
 import com.radixdlt.consensus.liveness.MempoolProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
@@ -62,16 +62,16 @@ import java.util.Objects;
 import java.util.function.BooleanSupplier;
 
 /**
- * Controlled BFT Node where its state machine is managed by a synchronous
+ * Controlled Node where its state machine is managed by a synchronous
  * processNext() call.
  */
-class ControlledBFTNode {
+class ControlledNode {
 	private final EpochManager epochManager;
 	private final SystemCounters systemCounters;
 	private final ValidatorSet initialValidatorSet;
 	private final ControlledSender controlledSender;
 
-	ControlledBFTNode(
+	ControlledNode(
 		ECKeyPair key,
 		ControlledSender sender,
 		ProposerElectionFactory proposerElectionFactory,
