@@ -26,7 +26,7 @@ public class RandomChannelOrderResponsiveTest {
 	@Test
 	public void when_run_4_correct_nodes_with_channel_order_random_and_timeouts_disabled__then_bft_should_be_responsive() {
 		final Random random = new Random(12345);
-		final DeterministicTest test = new DeterministicTest(4, false);
+		final DeterministicTest test = DeterministicTest.createAlwaysSyncedBFTTest(4);
 
 		test.start();
 		for (int step = 0; step < 100000; step++) {
@@ -37,7 +37,7 @@ public class RandomChannelOrderResponsiveTest {
 	@Test
 	public void when_run_100_correct_nodes_with_channel_order_random_and_timeouts_disabled__then_bft_should_be_responsive() {
 		final Random random = new Random(12345);
-		final DeterministicTest test = new DeterministicTest(100, false);
+		final DeterministicTest test = DeterministicTest.createAlwaysSyncedBFTTest(100);
 
 		test.start();
 		for (int step = 0; step < 100000; step++) {

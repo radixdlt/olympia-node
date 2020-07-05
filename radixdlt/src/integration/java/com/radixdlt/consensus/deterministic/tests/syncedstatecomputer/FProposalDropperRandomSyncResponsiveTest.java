@@ -39,7 +39,7 @@ public class FProposalDropperRandomSyncResponsiveTest {
 		final Map<View, Set<Integer>> proposalsToDrop = new HashMap<>();
 		final Map<View, Integer> proposalCount = new HashMap<>();
 
-		final DeterministicTest test = new DeterministicTest(numNodes, true, random::nextBoolean);
+		final DeterministicTest test = DeterministicTest.createRandomlySyncedBFTAndSyncedStateComputerTest(numNodes, random);
 		test.start();
 		for (int step = 0; step < 100000; step++) {
 			test.processNextMsg(random, (receiverId, msg) -> {

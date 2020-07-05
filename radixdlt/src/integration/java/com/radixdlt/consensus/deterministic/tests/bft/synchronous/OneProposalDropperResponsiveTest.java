@@ -34,7 +34,7 @@ public class OneProposalDropperResponsiveTest {
 		final Map<View, Integer> proposalToDrop = new HashMap<>();
 		final Map<View, Integer> proposalCount = new HashMap<>();
 
-		final DeterministicTest test = new DeterministicTest(numNodes, true, () -> true);
+		final DeterministicTest test = DeterministicTest.createAlwaysSyncedBFTTest(numNodes);
 		test.start();
 		for (int step = 0; step < 100000; step++) {
 			test.processNextMsg(random, (receiverId, msg) -> {

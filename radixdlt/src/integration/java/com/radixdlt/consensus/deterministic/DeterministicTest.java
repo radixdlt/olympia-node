@@ -42,18 +42,12 @@ import java.util.stream.Stream;
  * A deterministic test where each event that occurs in the network
  * is emitted and processed synchronously by the caller.
  */
-public class DeterministicTest {
+public final class DeterministicTest {
 	private final ImmutableList<ControlledNode> nodes;
 	private final ImmutableList<ECPublicKey> pks;
 	private final ControlledNetwork network;
 
-	public DeterministicTest(int numNodes, boolean enableGetVerticesRPC) {
-		this(numNodes, enableGetVerticesRPC, () -> {
-			throw new UnsupportedOperationException();
-		});
-	}
-
-	public DeterministicTest(int numNodes, boolean enableGetVerticesRPC, BooleanSupplier syncedSupplier) {
+	private DeterministicTest(int numNodes, boolean enableGetVerticesRPC, BooleanSupplier syncedSupplier) {
 		ImmutableList<ECKeyPair> keys = Stream.generate(ECKeyPair::generateNew)
 			.limit(numNodes)
 			.sorted(Comparator.<ECKeyPair, EUID>comparing(k -> k.getPublicKey().euid()).reversed())
@@ -76,6 +70,40 @@ public class DeterministicTest {
 				syncedSupplier
 			))
 			.collect(ImmutableList.toImmutableList());
+	}
+
+	/**
+	 * Creates a new randomly synced BFT/SyncedStateComputer test
+	 * @param numNodes number of nodes in the network
+	 * @param random the randomizer
+	 * @return a deterministic test
+	 */
+	public static DeterministicTest createRandomlySyncedBFTAndSyncedStateComputerTest(int numNodes, Random random) {
+		return new DeterministicTest(numNodes, true, random::nextBoolean);
+	}
+
+	/**
+	 * Creates a new "always synced BFT" Deterministic test solely on the bft layer,
+	 *
+	 * @param numNodes number of nodes in the network
+	 * @return a deterministic test
+	 */
+	public static DeterministicTest createAlwaysSyncedBFTTest(int numNodes) {
+		return new DeterministicTest(numNodes, true, () -> true);
+	}
+
+	/**
+	 * Creates a new "non syncing BFT" Deterministic test solely on the bft layer,
+	 * "non syncing BFT" implying that the configuration of the network should never
+	 * require a vertex sync nor a state computer sync
+	 *
+	 * @param numNodes number of nodes in the network
+	 * @return a deterministic test
+	 */
+	public static DeterministicTest createNonSyncingBFTTest(int numNodes) {
+		return new DeterministicTest(numNodes, false, () -> {
+			throw new IllegalStateException("This is a nonsyncing bft test and should not have required a state sync");
+		});
 	}
 
 	public void start() {
