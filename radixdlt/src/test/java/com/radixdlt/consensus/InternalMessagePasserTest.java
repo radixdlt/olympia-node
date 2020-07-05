@@ -32,7 +32,7 @@ public class InternalMessagePasserTest {
 		Hash hash = mock(Hash.class);
 		Vertex vertex = mock(Vertex.class);
 		when(vertex.getId()).thenReturn(hash);
-		internalMessagePasser.syncedVertex(vertex);
+		internalMessagePasser.sendSyncedVertex(vertex);
 		testObserver.awaitCount(1);
 		testObserver.assertValue(hash);
 		testObserver.assertNotComplete();
@@ -43,7 +43,7 @@ public class InternalMessagePasserTest {
 		InternalMessagePasser internalMessagePasser = new InternalMessagePasser();
 		TestObserver<Vertex> testObserver = internalMessagePasser.committedVertices().test();
 		Vertex vertex = mock(Vertex.class);
-		internalMessagePasser.committedVertex(vertex);
+		internalMessagePasser.sendCommittedVertex(vertex);
 		testObserver.awaitCount(1);
 		testObserver.assertValue(vertex);
 		testObserver.assertNotComplete();

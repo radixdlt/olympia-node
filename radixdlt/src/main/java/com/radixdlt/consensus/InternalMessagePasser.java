@@ -59,7 +59,7 @@ public final class InternalMessagePasser implements VertexStoreEventsRx, VertexS
 	}
 
 	@Override
-	public void syncedVertex(Vertex vertex) {
+	public void sendSyncedVertex(Vertex vertex) {
 		localSyncsSubject.onNext(vertex.getId());
 	}
 
@@ -74,7 +74,7 @@ public final class InternalMessagePasser implements VertexStoreEventsRx, VertexS
 	}
 
 	@Override
-	public void committedVertex(Vertex vertex) {
+	public void sendCommittedVertex(Vertex vertex) {
 		committedVertices.onNext(vertex);
 	}
 

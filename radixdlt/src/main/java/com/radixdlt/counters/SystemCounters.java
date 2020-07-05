@@ -37,7 +37,8 @@ public interface SystemCounters {
 		CONSENSUS_VIEW("consensus.view"),
 		CONSENSUS_PROCESSED("consensus.processed"),
 		// TODO: Move some CONSENSUS epoch related counters into epoch
-		EPOCHS_EPOCH("epochs.epoch"),
+		EPOCH_MANAGER_EPOCH("epoch_manager.epoch"),
+		EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS("epoch_manager.queued_consensus_events"),
 		LEDGER_STATE_VERSION("ledger.state_version"),
 		MEMPOOL_COUNT("mempool.count"),
 		MEMPOOL_MAXCOUNT("mempool.maxcount"),

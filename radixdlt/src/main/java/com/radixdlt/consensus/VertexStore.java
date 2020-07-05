@@ -54,8 +54,9 @@ public final class VertexStore {
 	}
 
 	public interface VertexStoreEventSender {
-		void syncedVertex(Vertex vertex);
-		void committedVertex(Vertex vertex);
+		// TODO: combine Synced and Committed
+		void sendSyncedVertex(Vertex vertex);
+		void sendCommittedVertex(Vertex vertex);
 		void highQC(QuorumCertificate qc);
 	}
 
@@ -158,6 +159,7 @@ public final class VertexStore {
 	}
 
 	private static class SyncState {
+		private final Hash localSyncId;
 		private final QuorumCertificate qc;
 		private final QuorumCertificate committedQC;
 		private final VertexMetadata committedVertexMetadata;
@@ -165,7 +167,9 @@ public final class VertexStore {
 		private SyncStage syncStage;
 		private final LinkedList<Vertex> fetched = new LinkedList<>();
 
-		SyncState(QuorumCertificate qc, QuorumCertificate committedQC, ECPublicKey author) {
+		SyncState(Hash localSyncId, QuorumCertificate qc, QuorumCertificate committedQC, ECPublicKey author) {
+			this.localSyncId = localSyncId;
+
 			if (committedQC.getView().equals(View.genesis())) {
 				this.committedVertexMetadata = committedQC.getProposed();
 			} else {
@@ -290,6 +294,8 @@ public final class VertexStore {
 	}
 
 	public void processGetVerticesErrorResponse(GetVerticesErrorResponse response) {
+		// TODO: check response
+
 		log.info("SYNC_VERTICES: Received GetVerticesErrorResponse {} ", response);
 
 		final Hash syncTo = (Hash) response.getOpaque();
@@ -298,16 +304,8 @@ public final class VertexStore {
 			return; // sync requirements already satisfied by another sync
 		}
 
-		switch (syncState.syncStage) {
-			case GET_COMMITTED_VERTICES:
-				// TODO: retry
-				break;
-			case GET_QC_VERTICES:
-				// TODO: retry
-				break;
-			default:
-				throw new IllegalStateException("Unknown sync stage: " + syncState.syncStage);
-		}
+		// error response indicates that the node has moved on from last sync so try and sync to a new sync
+		this.startSync(syncTo, response.getHighestQC(), response.getHighestCommittedQC(), syncState.author);
 	}
 
 	public void processGetVerticesResponse(GetVerticesResponse response) {
@@ -334,19 +332,17 @@ public final class VertexStore {
 	}
 
 	private void doQCSync(SyncState syncState) {
-		final Hash vertexId = syncState.getQC().getProposed().getId();
 		syncState.setSyncStage(SyncStage.GET_QC_VERTICES);
 		log.info("SYNC_VERTICES: QC: Sending initial GetVerticesRequest for sync={}", syncState);
-		syncVerticesRPCSender.sendGetVerticesRequest(vertexId, syncState.author, 1, vertexId);
+		syncVerticesRPCSender.sendGetVerticesRequest(syncState.qc.getProposed().getId(), syncState.author, 1, syncState.localSyncId);
 	}
 
 	private void doCommittedSync(SyncState syncState) {
 		final Hash committedQCId = syncState.getCommittedQC().getProposed().getId();
-		final Hash qcId = syncState.qc.getProposed().getId();
 		syncState.setSyncStage(SyncStage.GET_COMMITTED_VERTICES);
 		log.info("SYNC_VERTICES: Committed: Sending initial GetVerticesRequest for sync={}", syncState);
 		// Retrieve the 3 vertices preceding the committedQC so we can create a valid committed root
-		syncVerticesRPCSender.sendGetVerticesRequest(committedQCId, syncState.author, 3, qcId);
+		syncVerticesRPCSender.sendGetVerticesRequest(committedQCId, syncState.author, 3, syncState.localSyncId);
 	}
 
 	public void processLocalSync(Hash vertexId) {
@@ -387,15 +383,19 @@ public final class VertexStore {
 			throw new IllegalStateException("Syncing required but author wasn't provided.");
 		}
 
-		final SyncState syncState = new SyncState(qc, committedQC, author);
+		this.startSync(vertexId, qc, committedQC, author);
+
+		return false;
+	}
+
+	private void startSync(Hash vertexId, QuorumCertificate qc,QuorumCertificate committedQC, ECPublicKey author) {
+		final SyncState syncState = new SyncState(vertexId, qc, committedQC, author);
 		syncing.put(vertexId, syncState);
 		if (requiresCommittedStateSync(syncState)) {
 			this.doCommittedSync(syncState);
 		} else {
 			this.doQCSync(syncState);
 		}
-
-		return false;
 	}
 
 	private boolean addQC(QuorumCertificate qc) {
@@ -445,7 +445,7 @@ public final class VertexStore {
 		updateVertexStoreSize();
 
 		if (syncing.containsKey(vertexToUse.getId())) {
-			vertexStoreEventSender.syncedVertex(vertexToUse);
+			vertexStoreEventSender.sendSyncedVertex(vertexToUse);
 		}
 
 		return VertexMetadata.ofVertex(vertexToUse, isEndOfEpoch);
@@ -485,7 +485,7 @@ public final class VertexStore {
 			this.counters.increment(CounterType.CONSENSUS_PROCESSED);
 			syncedStateComputer.execute(committedAtom);
 
-			this.vertexStoreEventSender.committedVertex(committed);
+			this.vertexStoreEventSender.sendCommittedVertex(committed);
 		}
 
 		rootId = commitMetadata.getId();

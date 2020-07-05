@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -36,6 +37,8 @@ import com.radixdlt.consensus.sync.SyncedRadixEngine;
 import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
@@ -46,37 +49,41 @@ import org.junit.Test;
 public class EpochManagerTest {
 	private ECPublicKey publicKey;
 	private EpochManager epochManager;
-	private BFTEventSender bftEventSender;
 	private SyncEpochsRPCSender syncEpochsRPCSender;
-	private ScheduledTimeoutSender scheduledTimeoutSender;
 	private VertexStore vertexStore;
+	private BFTFactory bftFactory;
+	private Pacemaker pacemaker;
+	private SystemCounters systemCounters;
 
 	@Before
 	public void setup() {
-		ECKeyPair keyPair = mock(ECKeyPair.class);
-		this.publicKey = mock(ECPublicKey.class);
-		when(keyPair.getPublicKey()).thenReturn(publicKey);
+		ECKeyPair keyPair = ECKeyPair.generateNew();
+		this.publicKey = keyPair.getPublicKey();
 
-		this.bftEventSender = mock(BFTEventSender.class);
 		this.syncEpochsRPCSender = mock(SyncEpochsRPCSender.class);
-		this.scheduledTimeoutSender = mock(ScheduledTimeoutSender.class);
 
 		this.vertexStore = mock(VertexStore.class);
 		VertexStoreFactory vertexStoreFactory = mock(VertexStoreFactory.class);
 		when(vertexStoreFactory.create(any(), any(), any())).thenReturn(this.vertexStore);
+		this.pacemaker = mock(Pacemaker.class);
+
+		this.bftFactory = mock(BFTFactory.class);
+
+		this.systemCounters = new SystemCountersImpl();
 
 		this.epochManager = new EpochManager(
 			mock(SyncedRadixEngine.class),
 			mock(Mempool.class),
-			bftEventSender,
+			mock(BFTEventSender.class),
 			syncEpochsRPCSender,
-			scheduledTimeoutSender,
-			timeoutSender -> mock(Pacemaker.class),
+			mock(ScheduledTimeoutSender.class),
+			timeoutSender -> this.pacemaker,
 			vertexStoreFactory,
 			proposers -> mock(ProposerElection.class),
 			mock(Hasher.class),
+			bftFactory,
 			keyPair,
-			mock(SystemCounters.class)
+			systemCounters
 		);
 	}
 
@@ -90,11 +97,8 @@ public class EpochManagerTest {
 		when(epochChange.getAncestor()).thenReturn(vertexMetadata);
 		epochManager.processEpochChange(epochChange);
 
-		verify(bftEventSender, never()).sendNewView(any(), any());
-		verify(bftEventSender, never()).sendVote(any(), any());
-		verify(bftEventSender, never()).broadcastProposal(any());
+		verify(bftFactory, never()).create(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
 		verify(syncEpochsRPCSender, never()).sendGetEpochRequest(any(), anyLong());
-		verify(scheduledTimeoutSender, never()).scheduleTimeout(any(), anyLong());
 	}
 
 	@Test
@@ -110,8 +114,69 @@ public class EpochManagerTest {
 	}
 
 	@Test
+	public void when_receive_next_epoch_events_and_then_epoch_change_and_part_of_validator_set__then_should_execute_queued_epoch_events() {
+		Validator authorValidator = mock(Validator.class);
+		ECPublicKey author = mock(ECPublicKey.class);
+		when(authorValidator.nodeKey()).thenReturn(author);
+
+		when(pacemaker.getCurrentView()).thenReturn(View.genesis());
+		when(vertexStore.getHighestQC()).thenReturn(mock(QuorumCertificate.class));
+		when(vertexStore.syncToQC(any(), any(), any())).thenReturn(true);
+
+		VertexMetadata ancestor = VertexMetadata.ofGenesisAncestor();
+
+		Proposal proposal = mock(Proposal.class);
+		Vertex vertex = mock(Vertex.class);
+		when(vertex.getView()).thenReturn(View.of(1));
+		when(proposal.getEpoch()).thenReturn(ancestor.getEpoch() + 1);
+		when(proposal.getVertex()).thenReturn(vertex);
+		when(proposal.getAuthor()).thenReturn(author);
+		epochManager.processConsensusEvent(proposal);
+
+		assertThat(systemCounters.get(CounterType.EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS)).isEqualTo(1);
+
+		BFTEventProcessor eventProcessor = mock(BFTEventProcessor.class);
+		when(bftFactory.create(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())).thenReturn(eventProcessor);
+
+		Validator validator = mock(Validator.class);
+		when(validator.nodeKey()).thenReturn(mock(ECPublicKey.class));
+		ValidatorSet validatorSet = mock(ValidatorSet.class);
+		when(validatorSet.containsKey(any())).thenReturn(true);
+		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of(validator, authorValidator));
+		epochManager.processEpochChange(new EpochChange(ancestor, validatorSet));
+
+		assertThat(systemCounters.get(CounterType.EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS)).isEqualTo(0);
+		verify(eventProcessor, times(1)).processProposal(eq(proposal));
+	}
+
+	@Test
+	public void when_receive_next_epoch_events_and_then_epoch_change_and_not_part_of_validator_set__then_queued_events_should_be_cleared() {
+		Validator authorValidator = mock(Validator.class);
+		ECPublicKey author = mock(ECPublicKey.class);
+		when(authorValidator.nodeKey()).thenReturn(author);
+
+		VertexMetadata ancestor = VertexMetadata.ofGenesisAncestor();
+
+		Proposal proposal = mock(Proposal.class);
+		when(proposal.getEpoch()).thenReturn(ancestor.getEpoch() + 1);
+		epochManager.processConsensusEvent(proposal);
+		assertThat(systemCounters.get(CounterType.EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS)).isEqualTo(1);
+
+		Validator validator = mock(Validator.class);
+		when(validator.nodeKey()).thenReturn(mock(ECPublicKey.class));
+		ValidatorSet validatorSet = mock(ValidatorSet.class);
+		when(validatorSet.containsKey(any())).thenReturn(false);
+		epochManager.processEpochChange(new EpochChange(ancestor, validatorSet));
+
+		assertThat(systemCounters.get(CounterType.EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS)).isEqualTo(0);
+	}
+
+	@Test
 	public void when_next_epoch__then_get_vertices_rpc_should_be_forwarded_to_vertex_store() {
 		when(vertexStore.getHighestQC()).thenReturn(mock(QuorumCertificate.class));
+
+		BFTEventProcessor eventProcessor = mock(BFTEventProcessor.class);
+		when(bftFactory.create(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())).thenReturn(eventProcessor);
 
 		Validator validator = mock(Validator.class);
 		when(validator.nodeKey()).thenReturn(mock(ECPublicKey.class));

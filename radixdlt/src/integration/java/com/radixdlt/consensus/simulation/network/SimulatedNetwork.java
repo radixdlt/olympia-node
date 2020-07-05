@@ -18,6 +18,7 @@
 package com.radixdlt.consensus.simulation.network;
 
 import com.google.common.collect.ImmutableMap;
+import com.radixdlt.consensus.BFTEventReducer;
 import com.radixdlt.consensus.ConsensusRunner;
 import com.radixdlt.consensus.ConsensusRunner.Event;
 import com.radixdlt.consensus.ConsensusRunner.EventType;
@@ -128,6 +129,7 @@ public class SimulatedNetwork {
 			vertexStoreFactory,
 			proposers -> new WeightedRotatingLeaders(proposers, Comparator.comparing(v -> v.nodeKey().euid()), 5),
 			hasher,
+			BFTEventReducer::new,
 			key,
 			counters.get(key)
 		);

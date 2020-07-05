@@ -70,10 +70,12 @@ public class EpochManager {
 	private final ScheduledTimeoutSender scheduledTimeoutSender;
 	private final SyncedStateComputer<CommittedAtom> syncedStateComputer;
 	private final Map<Long, List<ConsensusEvent>> queuedEvents;
+	private final BFTFactory bftFactory;
 
 	private VertexMetadata currentAncestor;
 	private VertexStore vertexStore;
 	private BFTEventProcessor eventProcessor = EMPTY_PROCESSOR;
+	private int numQueuedConsensusEvents = 0;
 
 	public EpochManager(
 		SyncedStateComputer<CommittedAtom> syncedStateComputer,
@@ -85,6 +87,7 @@ public class EpochManager {
 		VertexStoreFactory vertexStoreFactory,
 		ProposerElectionFactory proposerElectionFactory,
 		Hasher hasher,
+		BFTFactory bftFactory,
 		ECKeyPair selfKey,
 		SystemCounters counters
 	) {
@@ -96,6 +99,7 @@ public class EpochManager {
 		this.pacemakerFactory = Objects.requireNonNull(pacemakerFactory);
 		this.vertexStoreFactory = Objects.requireNonNull(vertexStoreFactory);
 		this.proposerElectionFactory = Objects.requireNonNull(proposerElectionFactory);
+		this.bftFactory = bftFactory;
 		this.selfKey = Objects.requireNonNull(selfKey);
 		this.counters = Objects.requireNonNull(counters);
 		this.hasher = Objects.requireNonNull(hasher);
@@ -120,62 +124,66 @@ public class EpochManager {
 		}
 
 		this.currentAncestor = ancestorMetadata;
-		this.counters.set(CounterType.EPOCHS_EPOCH, nextEpoch);
+		this.counters.set(CounterType.EPOCH_MANAGER_EPOCH, nextEpoch);
 
 		if (!validatorSet.containsKey(selfKey.getPublicKey())) {
 			log.info("NEXT_EPOCH: Not a validator");
 			this.eventProcessor = EMPTY_PROCESSOR;
 			this.vertexStore = null;
-			return;
+		} else {
+			ProposerElection proposerElection = proposerElectionFactory.create(validatorSet);
+			TimeoutSender sender = (view, ms) -> scheduledTimeoutSender.scheduleTimeout(new LocalTimeout(nextEpoch, view), ms);
+			Pacemaker pacemaker = pacemakerFactory.create(sender);
+			SafetyRules safetyRules = new SafetyRules(this.selfKey, SafetyState.initialState(), this.hasher);
+			PendingVotes pendingVotes = new PendingVotes(this.hasher);
+
+			QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(genesisVertex);
+
+			this.vertexStore = vertexStoreFactory.create(genesisVertex, genesisQC, syncedStateComputer);
+
+			ProposalGenerator proposalGenerator = new MempoolProposalGenerator(this.vertexStore, this.mempool);
+
+			BFTEventProcessor reducer = bftFactory.create(
+				proposalGenerator,
+				this.mempool,
+				this.sender,
+				safetyRules,
+				pacemaker,
+				this.vertexStore,
+				pendingVotes,
+				proposerElection,
+				this.selfKey,
+				validatorSet,
+				counters
+			);
+
+			SyncQueues syncQueues = new SyncQueues(
+				validatorSet.getValidators().stream()
+					.map(Validator::nodeKey)
+					.collect(ImmutableSet.toImmutableSet()),
+				counters
+			);
+
+			this.eventProcessor = new BFTEventPreprocessor(
+				this.selfKey.getPublicKey(),
+				reducer,
+				pacemaker,
+				this.vertexStore,
+				proposerElection,
+				syncQueues
+			);
 		}
 
-		ProposerElection proposerElection = proposerElectionFactory.create(validatorSet);
-		TimeoutSender sender = (view, ms) -> scheduledTimeoutSender.scheduleTimeout(new LocalTimeout(nextEpoch, view), ms);
-		Pacemaker pacemaker = pacemakerFactory.create(sender);
-		SafetyRules safetyRules = new SafetyRules(this.selfKey, SafetyState.initialState(), this.hasher);
-		PendingVotes pendingVotes = new PendingVotes(this.hasher);
-
-		QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(genesisVertex);
-
-		this.vertexStore = vertexStoreFactory.create(genesisVertex, genesisQC, syncedStateComputer);
-
-		ProposalGenerator proposalGenerator = new MempoolProposalGenerator(this.vertexStore, this.mempool);
-
-		BFTEventReducer reducer = new BFTEventReducer(
-			proposalGenerator,
-			this.mempool,
-			this.sender,
-			safetyRules,
-			pacemaker,
-			vertexStore,
-			pendingVotes,
-			proposerElection,
-			this.selfKey,
-			validatorSet,
-			counters
-		);
-
-		SyncQueues syncQueues = new SyncQueues(
-			validatorSet.getValidators().stream()
-				.map(Validator::nodeKey)
-				.collect(ImmutableSet.toImmutableSet()),
-			counters
-		);
-
-		this.eventProcessor = new BFTEventPreprocessor(
-			this.selfKey.getPublicKey(),
-			reducer,
-			pacemaker,
-			this.vertexStore,
-			proposerElection,
-			syncQueues
-		);
 		this.eventProcessor.start();
 
 		// Execute any queued up consensus events
-		for (ConsensusEvent consensusEvent : queuedEvents.getOrDefault(nextEpoch, Collections.emptyList())) {
+		final List<ConsensusEvent> queuedEventsForEpoch = queuedEvents.getOrDefault(nextEpoch, Collections.emptyList());
+		for (ConsensusEvent consensusEvent : queuedEventsForEpoch) {
 			this.processConsensusEventInternal(consensusEvent);
 		}
+
+		numQueuedConsensusEvents -= queuedEventsForEpoch.size();
+		counters.set(CounterType.EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS, numQueuedConsensusEvents);
 		queuedEvents.remove(nextEpoch);
 	}
 
@@ -243,8 +251,10 @@ public class EpochManager {
 			log.warn("Received higher epoch event {} from current epoch: {}", consensusEvent, this.currentEpoch());
 
 			// queue higher epoch events for later processing
-			// TODO: need to clear this by some rule (e.g. timeout or max size)
+			// TODO: need to clear this by some rule (e.g. timeout or max size) or else memory leak attack possible
 			queuedEvents.computeIfAbsent(consensusEvent.getEpoch(), e -> new ArrayList<>()).add(consensusEvent);
+			numQueuedConsensusEvents++;
+			counters.set(CounterType.EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS, numQueuedConsensusEvents);
 
 			// Send request for higher epoch proof
 			epochsRPCSender.sendGetEpochRequest(consensusEvent.getAuthor(), this.currentEpoch() + 1);

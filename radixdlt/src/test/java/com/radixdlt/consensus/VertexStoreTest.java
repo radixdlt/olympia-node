@@ -167,7 +167,7 @@ public class VertexStoreTest {
 		GetVerticesResponse getVerticesResponse = new GetVerticesResponse(vertex.getId(), Collections.singletonList(vertex), opaque.get());
 		vertexStore.processGetVerticesResponse(getVerticesResponse);
 
-		verify(vertexStoreEventSender, times(1)).syncedVertex(eq(vertex));
+		verify(vertexStoreEventSender, times(1)).sendSyncedVertex(eq(vertex));
 		assertThat(vertexStore.getHighestQC()).isEqualTo(qc);
 	}
 
@@ -223,7 +223,7 @@ public class VertexStoreTest {
 		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), null);
 		vertexStore.insertVertex(nextVertex);
 
-		verify(vertexStoreEventSender, never()).committedVertex(any());
+		verify(vertexStoreEventSender, never()).sendCommittedVertex(any());
 		verify(syncedStateComputer, times(0)).execute(any()); // not stored
 	}
 
@@ -238,7 +238,7 @@ public class VertexStoreTest {
 		assertThat(vertexStore.commitVertex(vertexMetadata)).hasValue(nextVertex);
 
 		verify(vertexStoreEventSender, times(1))
-			.committedVertex(eq(nextVertex));
+			.sendCommittedVertex(eq(nextVertex));
 		verify(syncedStateComputer, times(1))
 			.execute(argThat(a -> a.getClientAtom().equals(clientAtom))); // next atom stored
 	}
@@ -261,7 +261,7 @@ public class VertexStoreTest {
 
 		VertexMetadata vertexMetadata = VertexMetadata.ofVertex(vertex, false);
 		assertThat(vertexStore.commitVertex(vertexMetadata)).hasValue(vertex);
-		verify(vertexStoreEventSender, times(1)).committedVertex(eq(vertex));
+		verify(vertexStoreEventSender, times(1)).sendCommittedVertex(eq(vertex));
 		assertThat(vertexStore.getSize()).isEqualTo(1);
 	}
 
@@ -279,8 +279,8 @@ public class VertexStoreTest {
 		VertexMetadata vertexMetadata2 = VertexMetadata.ofVertex(nextVertex2, false);
 		vertexStore.commitVertex(vertexMetadata2);
 
-		verify(vertexStoreEventSender, times(1)).committedVertex(eq(nextVertex1));
-		verify(vertexStoreEventSender, times(1)).committedVertex(eq(nextVertex2));
+		verify(vertexStoreEventSender, times(1)).sendCommittedVertex(eq(nextVertex1));
+		verify(vertexStoreEventSender, times(1)).sendCommittedVertex(eq(nextVertex2));
 		assertThat(vertexStore.getSize()).isEqualTo(1);
 		assertThat(vertexStore.getSize()).isEqualTo(1);
 	}
@@ -298,8 +298,8 @@ public class VertexStoreTest {
 
 		VertexMetadata vertexMetadata2 = VertexMetadata.ofVertex(nextVertex2, false);
 		vertexStore.commitVertex(vertexMetadata2);
-		verify(vertexStoreEventSender, times(1)).committedVertex(eq(nextVertex1));
-		verify(vertexStoreEventSender, times(1)).committedVertex(eq(nextVertex2));
+		verify(vertexStoreEventSender, times(1)).sendCommittedVertex(eq(nextVertex1));
+		verify(vertexStoreEventSender, times(1)).sendCommittedVertex(eq(nextVertex2));
 		assertThat(vertexStore.getSize()).isEqualTo(1);
 	}
 
@@ -311,7 +311,7 @@ public class VertexStoreTest {
 
 		assertThat(vertexStore.syncToQC(qc, vertexStore.getHighestCommittedQC(), mock(ECPublicKey.class))).isFalse();
 		vertexStore.insertVertex(vertex);
-		verify(vertexStoreEventSender, times(1)).syncedVertex(eq(vertex));
+		verify(vertexStoreEventSender, times(1)).sendSyncedVertex(eq(vertex));
 	}
 
 	@Test
@@ -450,7 +450,7 @@ public class VertexStoreTest {
 
 
 		assertThat(vertexStore.getHighestQC()).isEqualTo(vertex5.getQC());
-		verify(vertexStoreEventSender, times(1)).syncedVertex(eq(vertex4));
+		verify(vertexStoreEventSender, times(1)).sendSyncedVertex(eq(vertex4));
 	}
 
 	@Test

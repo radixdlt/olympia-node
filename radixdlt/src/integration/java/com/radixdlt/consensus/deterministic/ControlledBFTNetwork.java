@@ -161,6 +161,11 @@ public final class ControlledBFTNetwork {
 		public int getCount() {
 			return count;
 		}
+
+		@Override
+		public String toString() {
+			return String.format("%s{count=%s}", this.getClass().getSimpleName(), count);
+		}
 	}
 
 	public ControlledSender getSender(ECPublicKey sender) {
@@ -195,7 +200,7 @@ public final class ControlledBFTNetwork {
 		}
 
 		@Override
-		public void syncedVertex(Vertex vertex) {
+		public void sendSyncedVertex(Vertex vertex) {
 			putMesssage(new ControlledMessage(sender, sender, vertex.getId()));
 		}
 
@@ -226,7 +231,7 @@ public final class ControlledBFTNetwork {
 		}
 
 		@Override
-		public void committedVertex(Vertex vertex) {
+		public void sendCommittedVertex(Vertex vertex) {
 			// Ignore committed vertex signal
 		}
 

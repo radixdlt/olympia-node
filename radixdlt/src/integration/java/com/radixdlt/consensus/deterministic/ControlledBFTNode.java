@@ -19,6 +19,7 @@ package com.radixdlt.consensus.deterministic;
 
 import static org.mockito.Mockito.mock;
 
+import com.radixdlt.consensus.BFTEventReducer;
 import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.DefaultHasher;
@@ -113,6 +114,7 @@ class ControlledBFTNode {
 			vertexStoreFactory,
 			proposerElectionFactory,
 			hasher,
+			BFTEventReducer::new,
 			key,
 			systemCounters
 		);
