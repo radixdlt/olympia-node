@@ -15,28 +15,23 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.deterministic.tests.syncedstatecomputer;
+package com.radixdlt.consensus.deterministic.tests.ledger;
 
-import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.deterministic.DeterministicTest;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.junit.Test;
 
-public class FProposalDropperRandomSyncResponsiveTest {
+public class OneProposalDropperRandomSyncResponsiveTest {
 
-	private final Random random = new Random(123456789);
+	private final Random random = new Random(123456);
 
-	private void runFProposalDropperResponsiveTest(int numNodes, Function<View, Set<Integer>> nodesToDropFunction) {
-		final Map<View, Set<Integer>> proposalsToDrop = new HashMap<>();
+	private void runOneProposalDropperResponsiveTest(int numNodes, Function<View, Integer> nodeToDropFunction) {
+		final Map<View, Integer> proposalToDrop = new HashMap<>();
 		final Map<View, Integer> proposalCount = new HashMap<>();
 
 		final DeterministicTest test = DeterministicTest.createRandomlySyncedBFTAndSyncedStateComputerTest(numNodes, random);
@@ -46,14 +41,13 @@ public class FProposalDropperRandomSyncResponsiveTest {
 				if (msg instanceof Proposal) {
 					final Proposal proposal = (Proposal) msg;
 					final View view = proposal.getVertex().getView();
-					final Set<Integer> nodesToDrop = proposalsToDrop.computeIfAbsent(view, nodesToDropFunction);
-
+					final Integer nodeToDrop = proposalToDrop.computeIfAbsent(view, nodeToDropFunction);
 					if (proposalCount.merge(view, 1, Integer::sum).equals(numNodes)) {
-						proposalsToDrop.remove(view);
+						proposalToDrop.remove(view);
 						proposalCount.remove(view);
 					}
 
-					return !nodesToDrop.contains(receiverId);
+					return !receiverId.equals(nodeToDrop);
 				}
 
 				return true;
@@ -61,78 +55,53 @@ public class FProposalDropperRandomSyncResponsiveTest {
 		}
 	}
 
-	private void runRandomMaliciousNodesTest(int numNodes) {
-		this.runFProposalDropperResponsiveTest(
-			numNodes,
-			v -> {
-				List<Integer> nodes = Stream.iterate(0, a -> a + 1).limit(numNodes).collect(Collectors.toList());
-				return Stream.iterate(0, a -> a + 1)
-					.limit((numNodes - 1) / 3)
-					.map(i -> {
-						int index = random.nextInt(nodes.size());
-						return nodes.remove(index);
-					})
-					.collect(Collectors.toSet());
-			}
-		);
-	}
-
-
 	@Test
 	public void when_run_4_correct_nodes_with_random_proposal_dropper_and_timeouts_disabled__then_bft_should_be_responsive() {
-		this.runRandomMaliciousNodesTest(4);
+		this.runOneProposalDropperResponsiveTest(4, v -> random.nextInt(4));
 	}
 
 	@Test
 	public void when_run_5_correct_nodes_with_random_proposal_dropper_and_timeouts_disabled__then_bft_should_be_responsive() {
-		this.runRandomMaliciousNodesTest(5);
+		this.runOneProposalDropperResponsiveTest(5, v -> random.nextInt(5));
 	}
 
 	@Test
 	public void when_run_10_correct_nodes_with_random_proposal_dropper_and_timeouts_disabled__then_bft_should_be_responsive() {
-		this.runRandomMaliciousNodesTest(10);
+		this.runOneProposalDropperResponsiveTest(10, v -> random.nextInt(10));
 	}
 
 	@Test
 	public void when_run_50_correct_nodes_with_random_proposal_dropper_and_timeouts_disabled__then_bft_should_be_responsive() {
-		this.runRandomMaliciousNodesTest(50);
+		this.runOneProposalDropperResponsiveTest(50, v -> random.nextInt(50));
 	}
 
 	@Test
 	public void when_run_100_correct_nodes_with_random_proposal_dropper_and_timeouts_disabled__then_bft_should_be_responsive() {
-		this.runRandomMaliciousNodesTest(100);
-	}
-
-	private void runStaticMaliciousNodesTest(int numNodes) {
-		Set<Integer> nodes = Stream.iterate(0, a -> a + 1).limit((numNodes - 1) / 3).collect(ImmutableSet.toImmutableSet());
-		this.runFProposalDropperResponsiveTest(
-			numNodes,
-			v -> nodes
-		);
+		this.runOneProposalDropperResponsiveTest(100, v -> random.nextInt(100));
 	}
 
 	@Test
 	public void when_run_4_correct_nodes_with_single_node_proposal_dropper_and_timeouts_disabled__then_bft_should_be_responsive() {
-		this.runStaticMaliciousNodesTest(4);
+		this.runOneProposalDropperResponsiveTest(4, v -> 0);
 	}
 
 	@Test
 	public void when_run_5_correct_nodes_with_single_node_proposal_dropper_and_timeouts_disabled__then_bft_should_be_responsive() {
-		this.runStaticMaliciousNodesTest(5);
+		this.runOneProposalDropperResponsiveTest(5, v -> 0);
 	}
 
 	@Test
 	public void when_run_10_correct_nodes_with_single_node_proposal_dropper_and_timeouts_disabled__then_bft_should_be_responsive() {
-		this.runStaticMaliciousNodesTest(10);
+		this.runOneProposalDropperResponsiveTest(10, v -> 0);
 	}
 
 	@Test
 	public void when_run_50_correct_nodes_with_single_node_proposal_dropper_and_timeouts_disabled__then_bft_should_be_responsive() {
-		this.runStaticMaliciousNodesTest(50);
+		this.runOneProposalDropperResponsiveTest(50, v -> 0);
 	}
 
 	@Test
 	public void when_run_100_correct_nodes_with_single_node_proposal_dropper_and_timeouts_disabled__then_bft_should_be_responsive() {
-		this.runStaticMaliciousNodesTest(100);
+		this.runOneProposalDropperResponsiveTest(100, v -> 0);
 	}
 }

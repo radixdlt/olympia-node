@@ -24,7 +24,7 @@ import com.radixdlt.consensus.ConsensusRunner;
 import com.radixdlt.consensus.ConsensusRunner.Event;
 import com.radixdlt.consensus.ConsensusRunner.EventType;
 import com.radixdlt.consensus.DefaultHasher;
-import com.radixdlt.consensus.EmptySyncVerticesRPCSender;
+import com.radixdlt.consensus.SyncVerticesRPCSenders;
 import com.radixdlt.consensus.EpochManager;
 import com.radixdlt.consensus.EpochChangeRx;
 import com.radixdlt.consensus.Hasher;
@@ -111,16 +111,15 @@ public class SimulatedNetwork {
 		final ScheduledTimeoutSender timeoutSender = new ScheduledTimeoutSender(scheduledExecutorService);
 		final SimulationSyncSender syncSender = underlyingNetwork.getSyncSender(key.getPublicKey());
 
-		final VertexStoreFactory vertexStoreFactory = (v, qc, stateComputer) -> {
-			return new VertexStore(
+		final VertexStoreFactory vertexStoreFactory = (v, qc, stateComputer) ->
+			new VertexStore(
 				v,
 				qc,
 				stateComputer,
-				getVerticesRPCEnabled ? syncSender : EmptySyncVerticesRPCSender.INSTANCE,
+				getVerticesRPCEnabled ? syncSender : SyncVerticesRPCSenders.EMPTY,
 				this.internalMessages.get(key),
 				this.counters.get(key)
 			);
-		};
 
 		final SimulatedStateComputer stateComputer = stateComputerSupplier.get();
 		BFTFactory bftFactory =
