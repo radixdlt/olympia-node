@@ -49,6 +49,7 @@ public final class ConsensusRunner {
 		CONSENSUS_EVENT,
 		GET_VERTICES_REQUEST,
 		GET_VERTICES_RESPONSE,
+		GET_VERTICES_ERROR_RESPONSE,
 	}
 
 	public static class Event {
@@ -120,6 +121,12 @@ public final class ConsensusRunner {
 				.map(e -> {
 					epochManager.processGetVerticesResponse(e);
 					return new Event(EventType.GET_VERTICES_RESPONSE, e);
+				}),
+			rpcRx.errorResponses()
+				.observeOn(singleThreadScheduler)
+				.map(e -> {
+					epochManager.processGetVerticesErrorResponse(e);
+					return new Event(EventType.GET_VERTICES_ERROR_RESPONSE, e);
 				}),
 			vertexStoreEventsRx.syncedVertices()
 				.observeOn(singleThreadScheduler)
