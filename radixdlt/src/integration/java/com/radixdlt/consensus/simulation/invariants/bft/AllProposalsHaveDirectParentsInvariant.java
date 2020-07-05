@@ -18,7 +18,7 @@
 package com.radixdlt.consensus.simulation.invariants.bft;
 
 import com.radixdlt.consensus.simulation.TestInvariant;
-import com.radixdlt.consensus.EventCoordinatorNetworkRx;
+import com.radixdlt.consensus.ConsensusEventsRx;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.simulation.network.SimulatedNetwork.RunningNetwork;
@@ -38,7 +38,7 @@ public class AllProposalsHaveDirectParentsInvariant implements TestInvariant {
 		List<Observable<Vertex>> correctProposals = network.getNodes().stream()
 			.map(ECKeyPair::getPublicKey)
 			.map(network.getUnderlyingNetwork()::getNetworkRx)
-			.map(EventCoordinatorNetworkRx::consensusEvents)
+			.map(ConsensusEventsRx::consensusEvents)
 			.map(p -> p.ofType(Proposal.class).map(Proposal::getVertex))
 			.collect(Collectors.toList());
 

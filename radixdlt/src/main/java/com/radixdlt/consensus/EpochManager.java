@@ -63,6 +63,7 @@ public final class EpochManager {
 	private final SyncedStateComputer<CommittedAtom> syncedStateComputer;
 	private final Map<Long, List<ConsensusEvent>> queuedEvents;
 	private final BFTFactory bftFactory;
+	private final String loggerPrefix;
 
 	private VertexMetadata currentAncestor;
 	private VertexStoreEventProcessor vertexStoreEventProcessor = EmptyVertexStoreEventProcessor.INSTANCE;
@@ -70,6 +71,7 @@ public final class EpochManager {
 	private int numQueuedConsensusEvents = 0;
 
 	public EpochManager(
+		String loggerPrefix,
 		SyncedStateComputer<CommittedAtom> syncedStateComputer,
 		SyncEpochsRPCSender epochsRPCSender,
 		ScheduledTimeoutSender scheduledTimeoutSender,
@@ -80,6 +82,7 @@ public final class EpochManager {
 		ECPublicKey selfPublicKey,
 		SystemCounters counters
 	) {
+		this.loggerPrefix = Objects.requireNonNull(loggerPrefix);
 		this.syncedStateComputer = Objects.requireNonNull(syncedStateComputer);
 		this.epochsRPCSender = Objects.requireNonNull(epochsRPCSender);
 		this.scheduledTimeoutSender = Objects.requireNonNull(scheduledTimeoutSender);
@@ -98,8 +101,6 @@ public final class EpochManager {
 
 	public void processEpochChange(EpochChange epochChange) {
 		ValidatorSet validatorSet = epochChange.getValidatorSet();
-		log.info("NEXT_EPOCH: {}", epochChange);
-
 		VertexMetadata ancestorMetadata = epochChange.getAncestor();
 		Vertex genesisVertex = Vertex.createGenesis(ancestorMetadata);
 		final long nextEpoch = genesisVertex.getEpoch();
@@ -116,10 +117,11 @@ public final class EpochManager {
 		final VertexStoreEventProcessor vertexStoreEventProcessor;
 
 		if (!validatorSet.containsKey(selfPublicKey)) {
-			log.info("NEXT_EPOCH: Not a validator");
+			log.info("{}: EPOCH_CHANGE: {} Not part of validator set", this.loggerPrefix, epochChange);
 			bftEventProcessor =  EmptyBFTEventProcessor.INSTANCE;
 			vertexStoreEventProcessor = EmptyVertexStoreEventProcessor.INSTANCE;
 		} else {
+			log.info("{}: EPOCH_CHANGE: {} Part of validator set", this.loggerPrefix, epochChange);
 			ProposerElection proposerElection = proposerElectionFactory.create(validatorSet);
 			TimeoutSender sender = (view, ms) -> scheduledTimeoutSender.scheduleTimeout(new LocalTimeout(nextEpoch, view), ms);
 			Pacemaker pacemaker = pacemakerFactory.create(sender);
@@ -167,6 +169,8 @@ public final class EpochManager {
 	}
 
 	public void processGetEpochRequest(GetEpochRequest request) {
+		log.info("{}: GET_EPOCH_REQUEST: {}", this.loggerPrefix, request);
+
 		if (this.currentEpoch() == request.getEpoch()) {
 			epochsRPCSender.sendGetEpochResponse(request.getSender(), this.currentAncestor);
 		} else {
@@ -176,8 +180,10 @@ public final class EpochManager {
 	}
 
 	public void processGetEpochResponse(GetEpochResponse response) {
+		log.info("{}: GET_EPOCH_RESPONSE: {}", this.loggerPrefix, response);
+
 		if (response.getEpochAncestor() == null) {
-			log.warn("Received empty GetEpochResponse {}", response);
+			log.warn("{}: Received empty GetEpochResponse {}", this.loggerPrefix, response);
 			// TODO: retry
 			return;
 		}
@@ -204,7 +210,9 @@ public final class EpochManager {
 		// TODO: Add the rest of consensus event verification here including signature verification
 
 		if (consensusEvent.getEpoch() > this.currentEpoch()) {
-			log.warn("Received higher epoch event {} from current epoch: {}", consensusEvent, this.currentEpoch());
+			log.warn("{}: CONSENSUS_EVENT: Received higher epoch event: {} current epoch: {}",
+				this.loggerPrefix, consensusEvent, this.currentEpoch()
+			);
 
 			// queue higher epoch events for later processing
 			// TODO: need to clear this by some rule (e.g. timeout or max size) or else memory leak attack possible
@@ -218,7 +226,9 @@ public final class EpochManager {
 		}
 
 		if (consensusEvent.getEpoch() < this.currentEpoch()) {
-			log.warn("Received lower epoch event {} from current epoch: {}", consensusEvent, this.currentEpoch());
+			log.warn("{}: CONSENSUS_EVENT: Received lower epoch event: {} current epoch: {}",
+				this.loggerPrefix, consensusEvent, this.currentEpoch()
+			);
 			return;
 		}
 

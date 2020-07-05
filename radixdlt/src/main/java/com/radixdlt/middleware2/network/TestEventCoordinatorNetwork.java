@@ -19,9 +19,10 @@ package com.radixdlt.middleware2.network;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.ConsensusEvent;
-import com.radixdlt.consensus.EventCoordinatorNetworkRx;
+import com.radixdlt.consensus.ConsensusEventsRx;
 import com.radixdlt.consensus.BFTEventSender;
 import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.SyncEpochsRPCSender;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
@@ -292,6 +293,16 @@ public class TestEventCoordinatorNetwork {
 		public Observable<GetVerticesErrorResponse> errorResponses() {
 			return myMessages.ofType(GetVerticesErrorResponse.class);
 		}
+
+		@Override
+		public Observable<GetEpochRequest> epochRequests() {
+			return myMessages.ofType(GetEpochRequest.class);
+		}
+
+		@Override
+		public Observable<GetEpochResponse> epochResponses() {
+			return myMessages.ofType(GetEpochResponse.class);
+		}
 	}
 
 	public SimulatedNetworkReceiver getNetworkRx(ECPublicKey forNode) {
@@ -305,6 +316,6 @@ public class TestEventCoordinatorNetwork {
 	public interface SimulationSyncSender extends SyncVerticesRPCSender, SyncEpochsRPCSender {
 	}
 
-	public interface SimulatedNetworkReceiver extends EventCoordinatorNetworkRx, SyncVerticesRPCRx {
+	public interface SimulatedNetworkReceiver extends ConsensusEventsRx, SyncVerticesRPCRx, SyncEpochsRPCRx {
 	}
 }

@@ -29,7 +29,7 @@ import org.radix.network.messaging.Message;
 
 import com.google.inject.name.Named;
 import com.radixdlt.consensus.ConsensusEvent;
-import com.radixdlt.consensus.EventCoordinatorNetworkRx;
+import com.radixdlt.consensus.ConsensusEventsRx;
 import com.radixdlt.consensus.BFTEventSender;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
@@ -49,7 +49,7 @@ import io.reactivex.rxjava3.subjects.PublishSubject;
  * layer.
  */
 @Singleton
-public final class MessageCentralBFTNetwork implements BFTEventSender, EventCoordinatorNetworkRx {
+public final class MessageCentralBFTNetwork implements BFTEventSender, ConsensusEventsRx {
 	private static final Logger log = LogManager.getLogger();
 
 	private final ECPublicKey selfPublicKey;

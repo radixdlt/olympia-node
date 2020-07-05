@@ -62,6 +62,7 @@ public final class DeterministicTest {
 
 		this.nodes = keys.stream()
 			.map(key -> new ControlledNode(
+				key.euid().toString().substring(0, 6),
 				key,
 				network.getSender(key.getPublicKey()),
 				vset -> new WeightedRotatingLeaders(vset, Comparator.comparing(v -> v.nodeKey().euid()), 5),

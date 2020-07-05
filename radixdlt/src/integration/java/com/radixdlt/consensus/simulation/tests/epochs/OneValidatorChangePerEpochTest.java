@@ -35,7 +35,7 @@ public class OneValidatorChangePerEpochTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
 		.numNodes(4)
 		.checkSafety("safety")
-		.checkLiveness("liveness")
+		.checkLiveness("liveness", 1000, TimeUnit.MILLISECONDS)
 		.checkNoTimeouts("noTimeouts")
 		.checkAllProposalsHaveDirectParents("directParents");
 
@@ -43,6 +43,7 @@ public class OneValidatorChangePerEpochTest {
 	@Ignore
 	public void given_correct_bft_with_changing_epochs_per_100_views__then_should_pass_bft_and_epoch_invariants() {
 		SimulationTest bftTest = bftTestBuilder
+			.pacemakerTimeout(5000)
 			.epochHighView(View.of(100))
 			.epochToNodesMapper(epoch ->
 				Sets.newHashSet((int) (epoch % 4), (int) (epoch + 1) % 4, (int) (epoch + 2) % 4)

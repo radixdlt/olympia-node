@@ -22,6 +22,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.name.Named;
 import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.SyncEpochsRPCSender;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
@@ -30,6 +31,8 @@ import com.radixdlt.consensus.SyncVerticesRPCRx;
 import com.radixdlt.consensus.SyncVerticesRPCSender;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
+import com.radixdlt.consensus.epoch.GetEpochRequest;
+import com.radixdlt.consensus.epoch.GetEpochResponse;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.network.addressbook.AddressBook;
@@ -46,7 +49,7 @@ import javax.inject.Inject;
 /**
  * Network interface for syncing vertices using the MessageCentral
  */
-public class MessageCentralSyncNetwork implements SyncVerticesRPCSender, SyncVerticesRPCRx, SyncEpochsRPCSender {
+public class MessageCentralValidatorSync implements SyncVerticesRPCSender, SyncVerticesRPCRx, SyncEpochsRPCSender, SyncEpochsRPCRx {
 
 	private final ECPublicKey selfPublicKey;
 	private final int magic;
@@ -58,7 +61,7 @@ public class MessageCentralSyncNetwork implements SyncVerticesRPCSender, SyncVer
 		.build();
 
 	@Inject
-	public MessageCentralSyncNetwork(
+	public MessageCentralValidatorSync(
 		@Named("self") ECPublicKey selfPublicKey,
 		Universe universe,
 		AddressBook addressBook,
@@ -160,6 +163,7 @@ public class MessageCentralSyncNetwork implements SyncVerticesRPCSender, SyncVer
 		});
 	}
 
+
 	/**
 	 * An RPC request to retrieve a given vertex
 	 */
@@ -216,5 +220,33 @@ public class MessageCentralSyncNetwork implements SyncVerticesRPCSender, SyncVer
 
 		final GetEpochResponseMessage epochResponseMessage = new GetEpochResponseMessage(this.magic, ancestor);
 		this.messageCentral.send(peer.get(), epochResponseMessage);
+	}
+
+	@Override
+	public Observable<GetEpochRequest> epochRequests() {
+		return Observable.create(emitter -> {
+			MessageListener<GetEpochRequestMessage> listener = (src, msg) -> {
+				ECPublicKey sender = src.getSystem().getKey();
+				Objects.requireNonNull(sender);
+				GetEpochRequest response = new GetEpochRequest(sender, msg.getEpoch());
+				emitter.onNext(response);
+			};
+			this.messageCentral.addListener(GetEpochRequestMessage.class, listener);
+			emitter.setCancellable(() -> this.messageCentral.removeListener(listener));
+		});
+	}
+
+	@Override
+	public Observable<GetEpochResponse> epochResponses() {
+		return Observable.create(emitter -> {
+			MessageListener<GetEpochResponseMessage> listener = (src, msg) -> {
+				ECPublicKey sender = src.getSystem().getKey();
+				Objects.requireNonNull(sender);
+				GetEpochResponse response = new GetEpochResponse(sender, msg.getAncestor());
+				emitter.onNext(response);
+			};
+			this.messageCentral.addListener(GetEpochResponseMessage.class, listener);
+			emitter.setCancellable(() -> this.messageCentral.removeListener(listener));
+		});
 	}
 }

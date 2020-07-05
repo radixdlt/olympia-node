@@ -40,7 +40,7 @@ public class ChangingEpochSyncedStateComputer implements SimulatedStateComputer 
 	private final Subject<EpochChange> epochChanges = BehaviorSubject.<EpochChange>create().toSerialized();
 	private final View epochHighView;
 	private final Function<Long, ValidatorSet> validatorSetMapping;
-	private VertexMetadata lastEpochChange = null;
+	private VertexMetadata currentAncestor = null;
 
 	public ChangingEpochSyncedStateComputer(View epochHighView, Function<Long, ValidatorSet> validatorSetMapping) {
 		this.epochHighView = Objects.requireNonNull(epochHighView);
@@ -49,8 +49,18 @@ public class ChangingEpochSyncedStateComputer implements SimulatedStateComputer 
 		this.epochChanges.onNext(new EpochChange(ancestor, validatorSetMapping.apply(ancestor.getEpoch() + 1)));
 	}
 
+	private void nextEpoch(VertexMetadata ancestor) {
+		this.currentAncestor = ancestor;
+		EpochChange epochChange = new EpochChange(ancestor, validatorSetMapping.apply(ancestor.getEpoch() + 1));
+		this.epochChanges.onNext(epochChange);
+	}
+
 	@Override
 	public boolean syncTo(VertexMetadata vertexMetadata, List<ECPublicKey> target, Object opaque) {
+		if (vertexMetadata.isEndOfEpoch()) {
+			this.nextEpoch(vertexMetadata);
+		}
+
 		return false;
 	}
 
@@ -62,11 +72,8 @@ public class ChangingEpochSyncedStateComputer implements SimulatedStateComputer 
 	@Override
 	public void execute(CommittedAtom atom) {
 		if (atom.getVertexMetadata().isEndOfEpoch()
-			&& (lastEpochChange == null || lastEpochChange.getEpoch() != atom.getVertexMetadata().getEpoch())) {
-			VertexMetadata ancestor = atom.getVertexMetadata();
-			this.lastEpochChange = ancestor;
-			EpochChange epochChange = new EpochChange(ancestor, validatorSetMapping.apply(ancestor.getEpoch() + 1));
-			this.epochChanges.onNext(epochChange);
+			&& (currentAncestor == null || currentAncestor.getEpoch() != atom.getVertexMetadata().getEpoch())) {
+			this.nextEpoch(atom.getVertexMetadata());
 		}
 	}
 

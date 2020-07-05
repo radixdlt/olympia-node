@@ -72,6 +72,7 @@ public class EpochManagerTest {
 		this.systemCounters = new SystemCountersImpl();
 
 		this.epochManager = new EpochManager(
+			"name",
 			mock(SyncedRadixEngine.class),
 			syncEpochsRPCSender,
 			mock(ScheduledTimeoutSender.class),

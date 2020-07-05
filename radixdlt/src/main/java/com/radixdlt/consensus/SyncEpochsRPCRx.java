@@ -15,31 +15,24 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.epoch;
+package com.radixdlt.consensus;
 
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.consensus.epoch.GetEpochRequest;
+import com.radixdlt.consensus.epoch.GetEpochResponse;
+import io.reactivex.rxjava3.core.Observable;
 
-/**
- * An RPC request to retrieve proof of an epoch
- */
-public final class GetEpochRequest {
-	private final long epoch;
-	private final ECPublicKey sender;
+public interface SyncEpochsRPCRx {
 
-	public GetEpochRequest(ECPublicKey sender, final long epoch) {
-		this.sender = sender;
-		this.epoch = epoch;
-	}
+	/**
+	 * Retrieve a never-ending stream of requests
+	 * @return a never-ending stream of requests
+	 */
+	Observable<GetEpochRequest> epochRequests();
 
-	public long getEpoch() {
-		return epoch;
-	}
+	/**
+	 * Retrieve a never-ending stream of responses
+	 * @return a never-ending stream of responses
+	 */
+	Observable<GetEpochResponse> epochResponses();
 
-	public ECPublicKey getSender() {
-		return sender;
-	}
-
-	public String toString() {
-		return String.format("%s{sender=%s epoch=%s}", this.getClass().getSimpleName(), this.sender, this.epoch);
-	}
 }

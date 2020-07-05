@@ -72,6 +72,7 @@ class ControlledNode {
 	private final ControlledSender controlledSender;
 
 	ControlledNode(
+		String name,
 		ECKeyPair key,
 		ControlledSender sender,
 		ProposerElectionFactory proposerElectionFactory,
@@ -131,6 +132,7 @@ class ControlledNode {
 			};
 
 		this.epochManager = new EpochManager(
+			name,
 			stateComputer,
 			EmptySyncEpochsRPCSender.INSTANCE,
 			mock(ScheduledTimeoutSender.class),

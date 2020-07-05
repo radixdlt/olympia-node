@@ -31,8 +31,9 @@ import com.radixdlt.consensus.ConsensusRunner;
 import com.radixdlt.consensus.DefaultHasher;
 import com.radixdlt.consensus.EpochChangeRx;
 import com.radixdlt.consensus.EpochManager;
-import com.radixdlt.consensus.EventCoordinatorNetworkRx;
+import com.radixdlt.consensus.ConsensusEventsRx;
 import com.radixdlt.consensus.PendingVotes;
+import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.SyncEpochsRPCSender;
 import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.VertexStoreEventsRx;
@@ -63,7 +64,7 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.network.MessageCentralBFTNetwork;
-import com.radixdlt.middleware2.network.MessageCentralSyncNetwork;
+import com.radixdlt.middleware2.network.MessageCentralValidatorSync;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.properties.RuntimeProperties;
@@ -101,14 +102,15 @@ public class CerberusModule extends AbstractModule {
 		bind(SyncedStateComputer.class).to(SyncedRadixEngine.class);
 
 		// Sync messages
-		bind(SyncEpochsRPCSender.class).to(MessageCentralSyncNetwork.class);
-		bind(SyncVerticesRPCSender.class).to(MessageCentralSyncNetwork.class);
-		bind(SyncVerticesRPCRx.class).to(MessageCentralSyncNetwork.class);
-		bind(MessageCentralSyncNetwork.class).in(Scopes.SINGLETON);
+		bind(SyncEpochsRPCSender.class).to(MessageCentralValidatorSync.class);
+		bind(SyncEpochsRPCRx.class).to(MessageCentralValidatorSync.class);
+		bind(SyncVerticesRPCSender.class).to(MessageCentralValidatorSync.class);
+		bind(SyncVerticesRPCRx.class).to(MessageCentralValidatorSync.class);
+		bind(MessageCentralValidatorSync.class).in(Scopes.SINGLETON);
 
 		// BFT messages
 		bind(BFTEventSender.class).to(MessageCentralBFTNetwork.class);
-		bind(EventCoordinatorNetworkRx.class).to(MessageCentralBFTNetwork.class);
+		bind(ConsensusEventsRx.class).to(MessageCentralBFTNetwork.class);
 		bind(MessageCentralBFTNetwork.class).in(Scopes.SINGLETON);
 
 		// Configuration
@@ -164,6 +166,7 @@ public class CerberusModule extends AbstractModule {
 		SystemCounters counters
 	) {
 		return new EpochManager(
+			selfKey.euid().toString().substring(0, 6),
 			syncedRadixEngine,
 			syncEpochsRPCSender,
 			scheduledTimeoutSender,
@@ -180,11 +183,12 @@ public class CerberusModule extends AbstractModule {
 	@Singleton
 	private ConsensusRunner consensusRunner(
 		EpochChangeRx epochChangeRx,
-		EventCoordinatorNetworkRx networkRx,
+		ConsensusEventsRx networkRx,
 		PacemakerRx pacemakerRx,
 		VertexStoreEventsRx vertexStoreEventsRx,
 		CommittedStateSyncRx committedStateSyncRx,
 		SyncVerticesRPCRx rpcRx,
+		SyncEpochsRPCRx epochsRPCRx,
 		EpochManager epochManager
 	) {
 		return new ConsensusRunner(
@@ -194,6 +198,7 @@ public class CerberusModule extends AbstractModule {
 			vertexStoreEventsRx,
 			committedStateSyncRx,
 			rpcRx,
+			epochsRPCRx,
 			epochManager
 		);
 	}

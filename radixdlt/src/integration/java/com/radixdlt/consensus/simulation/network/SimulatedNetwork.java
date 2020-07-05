@@ -144,7 +144,10 @@ public class SimulatedNetwork {
 				);
 			};
 
+		final String loggerPrefix = key.euid().toString().substring(0, 6);
+
 		final EpochManager epochManager = new EpochManager(
+			loggerPrefix,
 			stateComputer,
 			syncSender,
 			timeoutSender,
@@ -164,6 +167,7 @@ public class SimulatedNetwork {
 			timeoutSender,
 			internalMessages.get(key),
 			Observable::never,
+			rx,
 			rx,
 			epochManager
 		);

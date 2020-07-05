@@ -34,7 +34,7 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.identifiers.EUID;
-import com.radixdlt.middleware2.network.MessageCentralSyncNetwork.MessageCentralGetVerticesRequest;
+import com.radixdlt.middleware2.network.MessageCentralValidatorSync.MessageCentralGetVerticesRequest;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.network.messaging.MessageCentral;
@@ -46,11 +46,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Before;
 import org.junit.Test;
 
-public class MessageCentralSyncNetworkTest {
+public class MessageCentralValidatorSyncTest {
 	private ECPublicKey selfKey;
 	private AddressBook addressBook;
 	private MessageCentral messageCentral;
-	private MessageCentralSyncNetwork network;
+	private MessageCentralValidatorSync network;
 
 	@Before
 	public void setUp() {
@@ -58,7 +58,7 @@ public class MessageCentralSyncNetworkTest {
 		Universe universe = mock(Universe.class);
 		this.addressBook = mock(AddressBook.class);
 		this.messageCentral = mock(MessageCentral.class);
-		this.network = new MessageCentralSyncNetwork(selfKey, universe, addressBook, messageCentral);
+		this.network = new MessageCentralValidatorSync(selfKey, universe, addressBook, messageCentral);
 	}
 
 
