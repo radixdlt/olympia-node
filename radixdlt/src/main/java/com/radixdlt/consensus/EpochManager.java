@@ -24,21 +24,16 @@ import com.radixdlt.consensus.bft.GetVerticesResponse;
 import com.radixdlt.consensus.epoch.GetEpochRequest;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker.TimeoutSender;
-import com.radixdlt.consensus.liveness.MempoolProposalGenerator;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.PacemakerFactory;
-import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.ScheduledTimeoutSender;
-import com.radixdlt.consensus.safety.SafetyRules;
-import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.CommittedAtom;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -58,15 +53,12 @@ public class EpochManager {
 	private static final Logger log = LogManager.getLogger("EM");
 	private static final BFTEventProcessor EMPTY_PROCESSOR = new EmptyBFTEventProcessor();
 
-	private final Mempool mempool;
 	private final SyncEpochsRPCSender epochsRPCSender;
-	private final BFTEventSender sender;
 	private final PacemakerFactory pacemakerFactory;
 	private final VertexStoreFactory vertexStoreFactory;
 	private final ProposerElectionFactory proposerElectionFactory;
-	private final ECKeyPair selfKey;
+	private final ECPublicKey selfPublicKey;
 	private final SystemCounters counters;
-	private final Hasher hasher;
 	private final ScheduledTimeoutSender scheduledTimeoutSender;
 	private final SyncedStateComputer<CommittedAtom> syncedStateComputer;
 	private final Map<Long, List<ConsensusEvent>> queuedEvents;
@@ -79,30 +71,24 @@ public class EpochManager {
 
 	public EpochManager(
 		SyncedStateComputer<CommittedAtom> syncedStateComputer,
-		Mempool mempool,
-		BFTEventSender sender,
 		SyncEpochsRPCSender epochsRPCSender,
 		ScheduledTimeoutSender scheduledTimeoutSender,
 		PacemakerFactory pacemakerFactory,
 		VertexStoreFactory vertexStoreFactory,
 		ProposerElectionFactory proposerElectionFactory,
-		Hasher hasher,
 		BFTFactory bftFactory,
-		ECKeyPair selfKey,
+		ECPublicKey selfPublicKey,
 		SystemCounters counters
 	) {
 		this.syncedStateComputer = Objects.requireNonNull(syncedStateComputer);
-		this.mempool = Objects.requireNonNull(mempool);
-		this.sender = Objects.requireNonNull(sender);
 		this.epochsRPCSender = Objects.requireNonNull(epochsRPCSender);
 		this.scheduledTimeoutSender = Objects.requireNonNull(scheduledTimeoutSender);
 		this.pacemakerFactory = Objects.requireNonNull(pacemakerFactory);
 		this.vertexStoreFactory = Objects.requireNonNull(vertexStoreFactory);
 		this.proposerElectionFactory = Objects.requireNonNull(proposerElectionFactory);
 		this.bftFactory = bftFactory;
-		this.selfKey = Objects.requireNonNull(selfKey);
+		this.selfPublicKey = Objects.requireNonNull(selfPublicKey);
 		this.counters = Objects.requireNonNull(counters);
-		this.hasher = Objects.requireNonNull(hasher);
 		this.queuedEvents = new HashMap<>();
 	}
 
@@ -126,7 +112,7 @@ public class EpochManager {
 		this.currentAncestor = ancestorMetadata;
 		this.counters.set(CounterType.EPOCH_MANAGER_EPOCH, nextEpoch);
 
-		if (!validatorSet.containsKey(selfKey.getPublicKey())) {
+		if (!validatorSet.containsKey(selfPublicKey)) {
 			log.info("NEXT_EPOCH: Not a validator");
 			this.eventProcessor = EMPTY_PROCESSOR;
 			this.vertexStore = null;
@@ -134,38 +120,27 @@ public class EpochManager {
 			ProposerElection proposerElection = proposerElectionFactory.create(validatorSet);
 			TimeoutSender sender = (view, ms) -> scheduledTimeoutSender.scheduleTimeout(new LocalTimeout(nextEpoch, view), ms);
 			Pacemaker pacemaker = pacemakerFactory.create(sender);
-			SafetyRules safetyRules = new SafetyRules(this.selfKey, SafetyState.initialState(), this.hasher);
-			PendingVotes pendingVotes = new PendingVotes(this.hasher);
 
 			QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(genesisVertex);
 
 			this.vertexStore = vertexStoreFactory.create(genesisVertex, genesisQC, syncedStateComputer);
 
-			ProposalGenerator proposalGenerator = new MempoolProposalGenerator(this.vertexStore, this.mempool);
-
 			BFTEventProcessor reducer = bftFactory.create(
-				proposalGenerator,
-				this.mempool,
-				this.sender,
-				safetyRules,
 				pacemaker,
 				this.vertexStore,
-				pendingVotes,
 				proposerElection,
-				this.selfKey,
-				validatorSet,
-				counters
+				validatorSet
 			);
 
 			SyncQueues syncQueues = new SyncQueues(
 				validatorSet.getValidators().stream()
 					.map(Validator::nodeKey)
 					.collect(ImmutableSet.toImmutableSet()),
-				counters
+				this.counters
 			);
 
 			this.eventProcessor = new BFTEventPreprocessor(
-				this.selfKey.getPublicKey(),
+				this.selfPublicKey,
 				reducer,
 				pacemaker,
 				this.vertexStore,

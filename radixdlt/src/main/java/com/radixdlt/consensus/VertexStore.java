@@ -388,7 +388,7 @@ public final class VertexStore {
 		return false;
 	}
 
-	private void startSync(Hash vertexId, QuorumCertificate qc,QuorumCertificate committedQC, ECPublicKey author) {
+	private void startSync(Hash vertexId, QuorumCertificate qc, QuorumCertificate committedQC, ECPublicKey author) {
 		final SyncState syncState = new SyncState(vertexId, qc, committedQC, author);
 		syncing.put(vertexId, syncState);
 		if (requiresCommittedStateSync(syncState)) {

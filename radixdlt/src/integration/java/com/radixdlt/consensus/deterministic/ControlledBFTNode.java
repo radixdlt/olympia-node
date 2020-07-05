@@ -20,6 +20,7 @@ package com.radixdlt.consensus.deterministic;
 import static org.mockito.Mockito.mock;
 
 import com.radixdlt.consensus.BFTEventReducer;
+import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.DefaultHasher;
@@ -27,6 +28,7 @@ import com.radixdlt.consensus.EmptySyncEpochsRPCSender;
 import com.radixdlt.consensus.EmptySyncVerticesRPCSender;
 import com.radixdlt.consensus.EpochChange;
 import com.radixdlt.consensus.EpochManager;
+import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
 import com.radixdlt.consensus.bft.GetVerticesResponse;
 import com.radixdlt.consensus.LocalTimeout;
@@ -41,7 +43,11 @@ import com.radixdlt.consensus.SyncVerticesRPCSender;
 import com.radixdlt.consensus.VertexStoreFactory;
 import com.radixdlt.consensus.deterministic.ControlledBFTNetwork.ControlledSender;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
+import com.radixdlt.consensus.liveness.MempoolProposalGenerator;
+import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ScheduledTimeoutSender;
+import com.radixdlt.consensus.safety.SafetyRules;
+import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
@@ -103,19 +109,36 @@ class ControlledBFTNode {
 		Hasher hasher = new DefaultHasher();
 		VertexStoreFactory vertexStoreFactory = (vertex, qc, syncedStateComputer) ->
 			new VertexStore(vertex, qc, syncedStateComputer, syncVerticesRPCSender, sender, systemCounters);
+		BFTFactory bftFactory =
+			(pacemaker, vertexStore, proposerElection, validatorSet) -> {
+				final ProposalGenerator proposalGenerator = new MempoolProposalGenerator(vertexStore, mempool);
+				final SafetyRules safetyRules = new SafetyRules(key, SafetyState.initialState(), hasher);
+				final PendingVotes pendingVotes = new PendingVotes(hasher);
+
+				return new BFTEventReducer(
+					proposalGenerator,
+					mempool,
+					controlledSender,
+					safetyRules,
+					pacemaker,
+					vertexStore,
+					pendingVotes,
+					proposerElection,
+					key,
+					validatorSet,
+					systemCounters
+				);
+			};
 
 		this.epochManager = new EpochManager(
 			stateComputer,
-			mempool,
-			sender,
 			EmptySyncEpochsRPCSender.INSTANCE,
 			mock(ScheduledTimeoutSender.class),
 			timeoutSender -> new FixedTimeoutPacemaker(1, timeoutSender),
 			vertexStoreFactory,
 			proposerElectionFactory,
-			hasher,
-			BFTEventReducer::new,
-			key,
+			bftFactory,
+			key.getPublicKey(),
 			systemCounters
 		);
 	}

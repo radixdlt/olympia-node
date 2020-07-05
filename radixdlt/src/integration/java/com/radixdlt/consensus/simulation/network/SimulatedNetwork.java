@@ -19,6 +19,7 @@ package com.radixdlt.consensus.simulation.network;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.consensus.BFTEventReducer;
+import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.ConsensusRunner;
 import com.radixdlt.consensus.ConsensusRunner.Event;
 import com.radixdlt.consensus.ConsensusRunner.EventType;
@@ -29,14 +30,19 @@ import com.radixdlt.consensus.EpochManager;
 import com.radixdlt.consensus.EpochChangeRx;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.InternalMessagePasser;
+import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.VertexStore;
 import com.radixdlt.consensus.SyncVerticesRPCSender;
 import com.radixdlt.consensus.VertexStoreEventsRx;
 import com.radixdlt.consensus.VertexStoreFactory;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
+import com.radixdlt.consensus.liveness.MempoolProposalGenerator;
+import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ScheduledTimeoutSender;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
+import com.radixdlt.consensus.safety.SafetyRules;
+import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
@@ -119,18 +125,36 @@ public class SimulatedNetwork {
 		};
 
 		final SimulatedStateComputer stateComputer = stateComputerSupplier.get();
+		BFTFactory bftFactory =
+			(pacemaker, vertexStore, proposerElection, validatorSet) -> {
+				final ProposalGenerator proposalGenerator = new MempoolProposalGenerator(vertexStore, mempool);
+				final SafetyRules safetyRules = new SafetyRules(key, SafetyState.initialState(), hasher);
+				final PendingVotes pendingVotes = new PendingVotes(hasher);
+
+				return new BFTEventReducer(
+					proposalGenerator,
+					mempool,
+					underlyingNetwork.getNetworkSender(key.getPublicKey()),
+					safetyRules,
+					pacemaker,
+					vertexStore,
+					pendingVotes,
+					proposerElection,
+					key,
+					validatorSet,
+					counters.get(key)
+				);
+			};
+
 		final EpochManager epochManager = new EpochManager(
 			stateComputer,
-			mempool,
-			underlyingNetwork.getNetworkSender(key.getPublicKey()),
 			EmptySyncEpochsRPCSender.INSTANCE,
 			timeoutSender,
 			timeoutSender1 -> new FixedTimeoutPacemaker(this.pacemakerTimeout, timeoutSender1),
 			vertexStoreFactory,
 			proposers -> new WeightedRotatingLeaders(proposers, Comparator.comparing(v -> v.nodeKey().euid()), 5),
-			hasher,
-			BFTEventReducer::new,
-			key,
+			bftFactory,
+			key.getPublicKey(),
 			counters.get(key)
 		);
 

@@ -18,33 +18,22 @@
 package com.radixdlt.consensus;
 
 import com.radixdlt.consensus.liveness.Pacemaker;
-import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposerElection;
-import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.validators.ValidatorSet;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.mempool.Mempool;
 
+/**
+ * Creates a new bft processor
+ */
 public interface BFTFactory {
-
 	/**
-	 * Create a new BFT processor
-	 * TODO: Cleanup
+	 * Create a new clean BFT processor
 	 *
 	 * @return a new bft processor
 	 */
 	BFTEventProcessor create(
-		ProposalGenerator proposalGenerator,
-		Mempool mempool,
-		BFTEventSender sender,
-		SafetyRules safetyRules,
 		Pacemaker pacemaker,
 		VertexStore vertexStore,
-		PendingVotes pendingVotes,
 		ProposerElection proposerElection,
-		ECKeyPair selfKey,
-		ValidatorSet validatorSet,
-		SystemCounters counters
+		ValidatorSet validatorSet
 	);
 }
