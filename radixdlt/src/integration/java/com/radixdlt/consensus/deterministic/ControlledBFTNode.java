@@ -26,7 +26,8 @@ import com.radixdlt.consensus.EmptySyncEpochsRPCSender;
 import com.radixdlt.consensus.EmptySyncVerticesRPCSender;
 import com.radixdlt.consensus.EpochChange;
 import com.radixdlt.consensus.EpochManager;
-import com.radixdlt.consensus.GetVerticesResponse;
+import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
+import com.radixdlt.consensus.bft.GetVerticesResponse;
 import com.radixdlt.consensus.LocalTimeout;
 import com.radixdlt.consensus.ProposerElectionFactory;
 import com.radixdlt.consensus.VertexMetadata;
@@ -133,6 +134,8 @@ class ControlledBFTNode {
 			this.epochManager.processGetVerticesRequest((GetVerticesRequest) msg);
 		} else if (msg instanceof GetVerticesResponse) {
 			this.epochManager.processGetVerticesResponse((GetVerticesResponse) msg);
+		} else if (msg instanceof GetVerticesErrorResponse) {
+			this.epochManager.processGetVerticesErrorResponse((GetVerticesErrorResponse) msg);
 		} else if (msg instanceof CommittedStateSync) {
 			this.epochManager.processCommittedStateSync((CommittedStateSync) msg);
 		} else if (msg instanceof LocalTimeout) {

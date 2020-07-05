@@ -33,6 +33,7 @@ import static org.mockito.Mockito.when;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.VertexStore.VertexStoreEventSender;
+import com.radixdlt.consensus.bft.GetVerticesResponse;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECPublicKey;

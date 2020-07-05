@@ -37,4 +37,10 @@ public enum EmptySyncVerticesRPCSender implements SyncVerticesRPCSender {
 	public void sendGetVerticesResponse(GetVerticesRequest originalRequest, ImmutableList<Vertex> vertices) {
 		// empty
 	}
+
+	@Override
+	public void sendGetVerticesErrorResponse(GetVerticesRequest originalRequest, QuorumCertificate highestQC,
+		QuorumCertificate highestCommittedQC) {
+		// empty
+	}
 }

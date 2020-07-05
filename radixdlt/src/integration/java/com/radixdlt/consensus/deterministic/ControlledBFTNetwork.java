@@ -23,7 +23,8 @@ import com.radixdlt.EpochChangeSender;
 import com.radixdlt.consensus.BFTEventSender;
 import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.EpochChange;
-import com.radixdlt.consensus.GetVerticesResponse;
+import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
+import com.radixdlt.consensus.bft.GetVerticesResponse;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
@@ -182,6 +183,14 @@ public final class ControlledBFTNetwork {
 		public void sendGetVerticesResponse(GetVerticesRequest originalRequest, ImmutableList<Vertex> vertices) {
 			ControlledGetVerticesRequest request = (ControlledGetVerticesRequest) originalRequest;
 			GetVerticesResponse response = new GetVerticesResponse(request.getVertexId(), vertices, request.opaque);
+			putMesssage(new ControlledMessage(sender, request.requestor, response));
+		}
+
+		@Override
+		public void sendGetVerticesErrorResponse(GetVerticesRequest originalRequest, QuorumCertificate highestQC,
+			QuorumCertificate highestCommittedQC) {
+			ControlledGetVerticesRequest request = (ControlledGetVerticesRequest) originalRequest;
+			GetVerticesErrorResponse response = new GetVerticesErrorResponse(request.getVertexId(), highestQC, highestCommittedQC, request.opaque);
 			putMesssage(new ControlledMessage(sender, request.requestor, response));
 		}
 

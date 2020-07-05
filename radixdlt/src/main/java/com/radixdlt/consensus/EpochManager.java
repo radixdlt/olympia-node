@@ -19,6 +19,8 @@ package com.radixdlt.consensus;
 
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.VertexStore.GetVerticesRequest;
+import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
+import com.radixdlt.consensus.bft.GetVerticesResponse;
 import com.radixdlt.consensus.epoch.GetEpochRequest;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker.TimeoutSender;
@@ -183,6 +185,14 @@ public class EpochManager {
 		}
 
 		vertexStore.processGetVerticesRequest(request);
+	}
+
+	public void processGetVerticesErrorResponse(GetVerticesErrorResponse response) {
+		if (this.vertexStore == null) {
+			return;
+		}
+
+		vertexStore.processGetVerticesErrorResponse(response);
 	}
 
 	public void processGetVerticesResponse(GetVerticesResponse response) {

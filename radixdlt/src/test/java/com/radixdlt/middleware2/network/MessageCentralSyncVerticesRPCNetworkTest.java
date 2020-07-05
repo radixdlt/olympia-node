@@ -27,7 +27,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.GetVerticesResponse;
+import com.radixdlt.consensus.bft.GetVerticesResponse;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexStore.GetVerticesRequest;
 import com.radixdlt.crypto.ECKeyPair;
