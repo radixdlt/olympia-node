@@ -18,7 +18,9 @@
 
 package com.radixdlt.test;
 
+import com.radixdlt.utils.Pair;
 import io.reactivex.Single;
+import java.util.Comparator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
@@ -55,13 +57,17 @@ public class LivenessCheck implements RemoteBFTCheck {
 		return new LivenessCheck(patience, patienceUnit, timeout, timeoutUnit);
 	}
 
+	private static final Comparator<Pair<Long, Long>> EPOCH_AND_VIEW_COMPARATOR =
+		Comparator.<Pair<Long, Long>>comparingLong(Pair::getFirst).thenComparingLong(Pair::getSecond);
+
 	@Override
 	public Single<RemoteBFTCheckResult> check(RemoteBFTNetworkBridge network) {
 		return Single.zip(
 			getHighestHighestQCView(network),
 			Single.timer(patience, patienceUnit).flatMap(l -> getHighestHighestQCView(network)),
 			(previousHighestView, currentHighestView) -> {
-				if (currentHighestView <= previousHighestView) { // didn't advance during patience interval
+				if (EPOCH_AND_VIEW_COMPARATOR.compare(currentHighestView, previousHighestView) <= 0) {
+					// didn't advance during patience interval
 					return RemoteBFTCheckResult.error(new LivenessError(
 						previousHighestView, currentHighestView, patience, patienceUnit
 					));
@@ -77,31 +83,35 @@ public class LivenessCheck implements RemoteBFTCheck {
 	 * @param network The network to query
 	 * @return The highest highest QC view
 	 */
-	private Single<Long> getHighestHighestQCView(RemoteBFTNetworkBridge network) {
+	private Single<Pair<Long, Long>> getHighestHighestQCView(RemoteBFTNetworkBridge network) {
 		return Single.zip(
 			network.getNodeIds().stream()
 				.map(node -> network.queryEndpointJson(node, "api/vertices/highestqc")
-					.map(LivenessCheck::extractView)
+					.map(LivenessCheck::extractEpochAndView)
 					.timeout(this.timeout, this.timeoutUnit)
 					.doOnError(err -> logger.warn(
 						"error while querying {} for highest QC, excluding from evaluation due to: {}",
-						node, err))
-					.onErrorReturnItem(0L)) // unresponsive nodes are not our concern here
+						node, err)
+					)
+					.onErrorReturnItem(Pair.of(0L, 0L))
+				)// unresponsive nodes are not our concern here
 				.collect(Collectors.toList()),
 			highestQCsAtNodes -> Arrays.stream(highestQCsAtNodes)
-				.mapToLong(Long.class::cast)
-				.max() // get overall highest QC
-				.orElse(0L));
+				.map(i -> (Pair<Long, Long>) i)
+				.max(EPOCH_AND_VIEW_COMPARATOR)
+				.orElse(Pair.of(0L, 0L))
+		);
 	}
 
 	/**
-	 * Extracts the view out of a QC
+	 * Extracts the epoch and view out of a QC
 	 *
 	 * @param qcJson The QC, represented as a {@link JSONObject}
-	 * @return The QC's view
+	 * @return The QC's epoch and view
 	 */
-	private static long extractView(JSONObject qcJson) {
-		return qcJson.getLong("view");
+	private static Pair<Long, Long> extractEpochAndView(JSONObject qcJson) {
+		final long epoch = qcJson.has("epoch") ? qcJson.getLong("epoch") : 0L;
+		return Pair.of(epoch, qcJson.getLong("view"));
 	}
 
 	@Override
@@ -113,9 +123,15 @@ public class LivenessCheck implements RemoteBFTCheck {
 	 * An error that is thrown when liveness was not satisfied
 	 */
 	public static final class LivenessError extends AssertionError {
-		private LivenessError(long previousHighestView, long currentHighestView, long patience, TimeUnit patienceUnit) {
-			super(String.format("QC has not advanced from %d (current=%d) after %d %s",
-				previousHighestView, currentHighestView, patience, patienceUnit));
+		private LivenessError(Pair<Long, Long> previousHighestView, Pair<Long, Long> currentHighestView, long patience, TimeUnit patienceUnit) {
+			super(String.format("QC has not advanced from {epoch=%d view=%d} (current={epoch=%d view=%d}) after %d %s",
+				previousHighestView.getFirst(),
+				previousHighestView.getSecond(),
+				currentHighestView.getFirst(),
+				currentHighestView.getSecond(),
+				patience,
+				patienceUnit
+			));
 		}
 	}
 }
