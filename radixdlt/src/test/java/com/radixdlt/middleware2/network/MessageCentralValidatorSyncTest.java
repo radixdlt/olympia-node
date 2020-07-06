@@ -27,6 +27,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
 import com.radixdlt.consensus.bft.GetVerticesResponse;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
@@ -109,6 +111,39 @@ public class MessageCentralValidatorSyncTest {
 	}
 
 	@Test
+	public void when_send_request_and_receive_error_response__then_should_receive_same_opaque() {
+		Hash id = mock(Hash.class);
+		ECPublicKey node = mock(ECPublicKey.class);
+		when(node.euid()).thenReturn(EUID.ONE);
+		Peer peer = mock(Peer.class);
+		when(addressBook.peer(eq(EUID.ONE))).thenReturn(Optional.of(peer));
+		int count = 1;
+		Object opaque = mock(Object.class);
+		network.sendGetVerticesRequest(id, node, count, opaque);
+		verify(messageCentral, times(1)).send(eq(peer), any(GetVerticesRequestMessage.class));
+
+		AtomicReference<MessageListener<GetVerticesErrorResponseMessage>> listener = new AtomicReference<>();
+
+		doAnswer(invocation -> {
+			listener.set(invocation.getArgument(1));
+			return null;
+		}).when(messageCentral).addListener(eq(GetVerticesErrorResponseMessage.class), any());
+
+		TestObserver<GetVerticesErrorResponse> testObserver = network.errorResponses().test();
+
+		GetVerticesErrorResponseMessage responseMessage = mock(GetVerticesErrorResponseMessage.class);
+		Vertex vertex = mock(Vertex.class);
+		when(vertex.getId()).thenReturn(id);
+		when(responseMessage.getVertexId()).thenReturn(id);
+		when(responseMessage.getHighestCommittedQC()).thenReturn(mock(QuorumCertificate.class));
+		when(responseMessage.getHighestQC()).thenReturn(mock(QuorumCertificate.class));
+		listener.get().handleMessage(mock(Peer.class), responseMessage);
+
+		testObserver.awaitCount(1);
+		testObserver.assertValue(resp -> resp.getOpaque().equals(opaque));
+	}
+
+	@Test
 	public void when_send_response__then_message_central_will_send_response() {
 		MessageCentralGetVerticesRequest request = mock(MessageCentralGetVerticesRequest.class);
 		Peer peer = mock(Peer.class);
@@ -119,6 +154,17 @@ public class MessageCentralValidatorSyncTest {
 		ImmutableList<Vertex> vertices = ImmutableList.of(vertex);
 		network.sendGetVerticesResponse(request, vertices);
 		verify(messageCentral, times(1)).send(eq(peer), any(GetVerticesResponseMessage.class));
+	}
+
+	@Test
+	public void when_send_error_response__then_message_central_will_send_error_response() {
+		MessageCentralGetVerticesRequest request = mock(MessageCentralGetVerticesRequest.class);
+		Peer peer = mock(Peer.class);
+		when(request.getVertexId()).thenReturn(mock(Hash.class));
+		when(request.getRequestor()).thenReturn(peer);
+		QuorumCertificate qc = mock(QuorumCertificate.class);
+		network.sendGetVerticesErrorResponse(request, qc, qc);
+		verify(messageCentral, times(1)).send(eq(peer), any(GetVerticesErrorResponseMessage.class));
 	}
 
 	@Test

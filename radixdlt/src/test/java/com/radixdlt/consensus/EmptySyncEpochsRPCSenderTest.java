@@ -15,32 +15,18 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.epoch;
+package com.radixdlt.consensus;
+
+import static org.mockito.Mockito.mock;
 
 import com.radixdlt.crypto.ECPublicKey;
-import java.util.Objects;
+import org.junit.Test;
 
-/**
- * An RPC request to retrieve proof of an epoch
- */
-public final class GetEpochRequest {
-	private final long epoch;
-	private final ECPublicKey sender;
-
-	public GetEpochRequest(ECPublicKey sender, final long epoch) {
-		this.sender = Objects.requireNonNull(sender);
-		this.epoch = epoch;
+public class EmptySyncEpochsRPCSenderTest {
+	@Test
+	public void when_send_request_and_response__then_no_exception_occurs() {
+		EmptySyncEpochsRPCSender.INSTANCE.sendGetEpochRequest(mock(ECPublicKey.class), 12345L);
+		EmptySyncEpochsRPCSender.INSTANCE.sendGetEpochResponse(mock(ECPublicKey.class), mock(VertexMetadata.class));
 	}
 
-	public long getEpoch() {
-		return epoch;
-	}
-
-	public ECPublicKey getSender() {
-		return sender;
-	}
-
-	public String toString() {
-		return String.format("%s{sender=%s epoch=%s}", this.getClass().getSimpleName(), this.sender, this.epoch);
-	}
 }

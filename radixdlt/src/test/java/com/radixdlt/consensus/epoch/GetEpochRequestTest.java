@@ -17,30 +17,33 @@
 
 package com.radixdlt.consensus.epoch;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.mockito.Mockito.mock;
+
 import com.radixdlt.crypto.ECPublicKey;
-import java.util.Objects;
+import org.junit.Before;
+import org.junit.Test;
 
-/**
- * An RPC request to retrieve proof of an epoch
- */
-public final class GetEpochRequest {
-	private final long epoch;
-	private final ECPublicKey sender;
+public class GetEpochRequestTest {
+	private ECPublicKey sender;
+	private long epoch;
+	private GetEpochRequest request;
 
-	public GetEpochRequest(ECPublicKey sender, final long epoch) {
-		this.sender = Objects.requireNonNull(sender);
-		this.epoch = epoch;
+	@Before
+	public void setUp() {
+		this.sender = mock(ECPublicKey.class);
+		this.epoch = 12345;
+		this.request = new GetEpochRequest(this.sender, this.epoch);
 	}
 
-	public long getEpoch() {
-		return epoch;
+	@Test
+	public void testGetters() {
+		assertThat(this.request.getEpoch()).isEqualTo(epoch);
+		assertThat(this.request.getSender()).isEqualTo(this.sender);
 	}
 
-	public ECPublicKey getSender() {
-		return sender;
-	}
-
-	public String toString() {
-		return String.format("%s{sender=%s epoch=%s}", this.getClass().getSimpleName(), this.sender, this.epoch);
+	@Test
+	public void testToString() {
+		assertThat(this.request.toString()).isNotNull();
 	}
 }
