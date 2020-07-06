@@ -461,29 +461,6 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 
 	// TODO missing shardspace check, should be added?
 	@Override
-	public ImmutableList<AID> getNextCommitted(long stateVersion, int limit) {
-		try (Cursor cursor = this.atoms.openCursor(null, null)) {
-			ImmutableList.Builder<AID> aids = ImmutableList.builder();
-			DatabaseEntry search = toPKey(PREFIX_COMMITTED, stateVersion + 1);
-			OperationStatus status = cursor.getSearchKeyRange(search, null, LockMode.DEFAULT);
-
-			int size = 0;
-			while (status == OperationStatus.SUCCESS && size < limit) {
-				if (search.getData()[0] != PREFIX_COMMITTED) {
-					// if we've gone behind committed keys, abort, as this is only for committed atoms
-					break;
-				}
-
-				aids.add(getAidFromPKey(search));
-				status = cursor.getNext(search, null, LockMode.DEFAULT);
-				size++;
-			}
-
-			return aids.build();
-		}
-	}
-
-	@Override
 	public ImmutableList<LedgerEntry> getNextCommittedLedgerEntries(long stateVersion, int limit) {
 		// when querying committed atoms, no need to worry about transaction as they aren't going away
 		try (Cursor atomCursor = this.atoms.openCursor(null, null);
@@ -492,14 +469,12 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 			// increment state version by one to find atoms afterwards, as underlying search uses greater-than-or-equal comparison
 			DatabaseEntry atomSearchKey = toPKey(PREFIX_COMMITTED, stateVersion + 1);
 			OperationStatus atomCursorStatus = atomCursor.getSearchKeyRange(atomSearchKey, null, LockMode.DEFAULT);
-
 			int size = 0;
 			while (atomCursorStatus == OperationStatus.SUCCESS && size < limit) {
 				if (atomSearchKey.getData()[0] != PREFIX_COMMITTED) {
 					// if we've gone beyond committed keys, abort, as this is only for committed atoms
 					break;
 				}
-
 				AID atomId = getAidFromPKey(atomSearchKey);
 				LedgerEntry ledgerEntry = null;
 				try {
@@ -517,10 +492,8 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 					String message = MessageFormat.format("Unable to fetch ledger entry for Atom ID %s", atomId);
 					log.error(message, e);
 				}
-
-				 atomCursorStatus = atomCursor.getNext(atomSearchKey, null, LockMode.DEFAULT);
+				atomCursorStatus = atomCursor.getNext(atomSearchKey, null, LockMode.DEFAULT);
 			}
-
 			return ledgerEntries.build();
 		}
 	}

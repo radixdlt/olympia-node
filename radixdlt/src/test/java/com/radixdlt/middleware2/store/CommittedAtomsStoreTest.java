@@ -122,8 +122,6 @@ public class CommittedAtomsStoreTest {
 		ImmutableList<LedgerEntry> entries = Stream.generate(() -> mock(LedgerEntry.class))
 			.limit(4)
 			.collect(ImmutableList.toImmutableList());
-		when(this.store.getNextCommitted(eq(3L), eq(4)))
-			.thenReturn(aids);
 		when(this.store.getNextCommittedLedgerEntries(eq(3L), eq(4)))
 				.thenReturn(entries);
 		for (int i = 0; i < aids.size(); i++) {

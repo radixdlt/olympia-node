@@ -82,16 +82,6 @@ public interface LedgerEntryStoreView {
 	boolean contains(StoreIndex.LedgerIndexType type, StoreIndex index, LedgerSearchMode mode);
 
 	/**
-	 * Retrieve a chunk of AIDs with stateVersion greater than the given
-	 * stateVersion
-	 *
-	 * @param stateVersion The stateVersion of the client
-	 * @param limit The maximum number of aids
-	 * @return The relevant aids
-	 */
-	ImmutableList<AID> getNextCommitted(long stateVersion, int limit);
-
-	/**
 	 * Retrieve a chunk of {@link LedgerEntry} with state version greater than the given one
 	 * in sequential order.
 	 * @param stateVersion the state version to use as a search parameter

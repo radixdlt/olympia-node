@@ -77,10 +77,6 @@ public class BerkeleyRadixLedgerEntryStoreTests extends RadixTestWithStores {
             // commit atom
             ledgerStore.commit(ledgerEntries.get(0).getAID());
 
-            // committed atom can be queried by version
-            softly.assertThat(ledgerStore.getNextCommitted(ledgerEntries.get(0).getStateVersion() - 1, 1))
-                .contains(ledgerEntries.get(0).getAID());
-
             // committed ledger entry can be queried by version
             softly.assertThat(ledgerStore.getNextCommittedLedgerEntries(ledgerEntries.get(0).getStateVersion() - 1, 1))
                     .contains(ledgerEntries.get(0));
@@ -108,9 +104,6 @@ public class BerkeleyRadixLedgerEntryStoreTests extends RadixTestWithStores {
             // search for atoms singly
             for (int i = 0; i < ledgerEntries.size(); ++i) {
                 // committed atom can be queried by version
-                softly.assertThat(ledgerStore.getNextCommitted(ledgerEntries.get(i).getStateVersion() - 1, 1))
-                        .contains(ledgerEntries.get(i).getAID());
-
                 softly.assertThat(ledgerStore.getNextCommittedLedgerEntries(ledgerEntries.get(i).getStateVersion() - 1, 1))
                         .contains(ledgerEntries.get(i));
             }
