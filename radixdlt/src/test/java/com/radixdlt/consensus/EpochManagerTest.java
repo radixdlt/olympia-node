@@ -28,13 +28,15 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.bft.GetVerticesResponse;
+import com.radixdlt.consensus.epoch.GetEpochRequest;
+import com.radixdlt.consensus.epoch.GetEpochResponse;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.liveness.ScheduledTimeoutSender;
-import com.radixdlt.consensus.sync.SyncedRadixEngine;
 import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
@@ -43,6 +45,7 @@ import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
+import com.radixdlt.middleware2.CommittedAtom;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -54,6 +57,7 @@ public class EpochManagerTest {
 	private BFTFactory bftFactory;
 	private Pacemaker pacemaker;
 	private SystemCounters systemCounters;
+	private SyncedStateComputer<CommittedAtom> syncedStateComputer;
 
 	@Before
 	public void setup() {
@@ -70,17 +74,18 @@ public class EpochManagerTest {
 		this.bftFactory = mock(BFTFactory.class);
 
 		this.systemCounters = new SystemCountersImpl();
+		this.syncedStateComputer = mock(SyncedStateComputer.class);
 
 		this.epochManager = new EpochManager(
-			mock(SyncedRadixEngine.class),
-			syncEpochsRPCSender,
+			this.syncedStateComputer,
+			this.syncEpochsRPCSender,
 			mock(ScheduledTimeoutSender.class),
 			timeoutSender -> this.pacemaker,
 			vertexStoreFactory,
 			proposers -> mock(ProposerElection.class),
-			bftFactory,
+			this.bftFactory,
 			this.publicKey,
-			systemCounters
+			this.systemCounters
 		);
 	}
 
@@ -108,6 +113,24 @@ public class EpochManagerTest {
 		epochManager.processConsensusEvent(mock(NewView.class));
 		epochManager.processConsensusEvent(mock(Proposal.class));
 		epochManager.processConsensusEvent(mock(Vote.class));
+	}
+
+	@Test
+	public void when_receive_next_epoch_then_epoch_request__then_should_return_current_ancestor() {
+		VertexMetadata ancestor = VertexMetadata.ofGenesisAncestor();
+		ValidatorSet validatorSet = mock(ValidatorSet.class);
+		epochManager.processEpochChange(new EpochChange(ancestor, validatorSet));
+		ECPublicKey sender = mock(ECPublicKey.class);
+		epochManager.processGetEpochRequest(new GetEpochRequest(sender, ancestor.getEpoch() + 1));
+		verify(syncEpochsRPCSender, times(1)).sendGetEpochResponse(eq(sender), eq(ancestor));
+	}
+
+	@Test
+	public void when_receive_epoch_response__then_should_sync_state_computer() {
+		GetEpochResponse response = mock(GetEpochResponse.class);
+		when(response.getEpochAncestor()).thenReturn(VertexMetadata.ofGenesisAncestor());
+		epochManager.processGetEpochResponse(response);
+		verify(syncedStateComputer, times(1)).syncTo(eq(VertexMetadata.ofGenesisAncestor()), any(), any());
 	}
 
 	@Test
@@ -189,6 +212,10 @@ public class EpochManagerTest {
 		GetVerticesResponse getVerticesResponse = mock(GetVerticesResponse.class);
 		epochManager.processGetVerticesResponse(getVerticesResponse);
 		verify(vertexStore, times(1)).processGetVerticesResponse(eq(getVerticesResponse));
+
+		GetVerticesErrorResponse getVerticesErrorResponse = mock(GetVerticesErrorResponse.class);
+		epochManager.processGetVerticesErrorResponse(getVerticesErrorResponse);
+		verify(vertexStore, times(1)).processGetVerticesErrorResponse(eq(getVerticesErrorResponse));
 
 		CommittedStateSync committedStateSync = mock(CommittedStateSync.class);
 		epochManager.processCommittedStateSync(committedStateSync);
