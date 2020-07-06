@@ -115,7 +115,9 @@ public final class EpochManager {
 		if (Objects.equals(lastConstructed, ancestorMetadata)) {
 			log.info("{}: EPOCH_CHANGE: broadcasting next epoch", this.loggerPrefix);
 			for (Validator validator : validatorSet.getValidators()) {
-				epochsRPCSender.sendGetEpochResponse(validator.nodeKey(), ancestorMetadata);
+				if (!validator.nodeKey().equals(selfPublicKey)) {
+					epochsRPCSender.sendGetEpochResponse(validator.nodeKey(), ancestorMetadata);
+				}
 			}
 		}
 

@@ -206,7 +206,7 @@ public class MessageCentralValidatorSync implements SyncVerticesRPCSender, SyncV
 			throw new IllegalStateException(String.format("Peer with pubkey %s not present", node));
 		}
 
-		final GetEpochRequestMessage epochRequest = new GetEpochRequestMessage(this.magic, epoch);
+		final GetEpochRequestMessage epochRequest = new GetEpochRequestMessage(this.selfPublicKey, this.magic, epoch);
 		this.messageCentral.send(peer.get(), epochRequest);
 	}
 
@@ -218,7 +218,7 @@ public class MessageCentralValidatorSync implements SyncVerticesRPCSender, SyncV
 			throw new IllegalStateException(String.format("Peer with pubkey %s not present", node));
 		}
 
-		final GetEpochResponseMessage epochResponseMessage = new GetEpochResponseMessage(this.magic, ancestor);
+		final GetEpochResponseMessage epochResponseMessage = new GetEpochResponseMessage(this.selfPublicKey, this.magic, ancestor);
 		this.messageCentral.send(peer.get(), epochResponseMessage);
 	}
 
@@ -226,9 +226,7 @@ public class MessageCentralValidatorSync implements SyncVerticesRPCSender, SyncV
 	public Observable<GetEpochRequest> epochRequests() {
 		return Observable.create(emitter -> {
 			MessageListener<GetEpochRequestMessage> listener = (src, msg) -> {
-				ECPublicKey sender = src.getSystem().getKey();
-				Objects.requireNonNull(sender);
-				GetEpochRequest response = new GetEpochRequest(sender, msg.getEpoch());
+				GetEpochRequest response = new GetEpochRequest(msg.getAuthor(), msg.getEpoch());
 				emitter.onNext(response);
 			};
 			this.messageCentral.addListener(GetEpochRequestMessage.class, listener);
@@ -240,9 +238,7 @@ public class MessageCentralValidatorSync implements SyncVerticesRPCSender, SyncV
 	public Observable<GetEpochResponse> epochResponses() {
 		return Observable.create(emitter -> {
 			MessageListener<GetEpochResponseMessage> listener = (src, msg) -> {
-				ECPublicKey sender = src.getSystem().getKey();
-				Objects.requireNonNull(sender);
-				GetEpochResponse response = new GetEpochResponse(sender, msg.getAncestor());
+				GetEpochResponse response = new GetEpochResponse(msg.getAuthor(), msg.getAncestor());
 				emitter.onNext(response);
 			};
 			this.messageCentral.addListener(GetEpochResponseMessage.class, listener);
