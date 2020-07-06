@@ -17,7 +17,9 @@
 
 package com.radixdlt.consensus.sync;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Streams;
 import com.radixdlt.EpochChangeSender;
 import com.radixdlt.consensus.EpochChange;
 import com.radixdlt.consensus.SyncedStateComputer;
@@ -35,6 +37,8 @@ import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
 import io.reactivex.rxjava3.schedulers.Schedulers;
+import java.util.Comparator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -69,6 +73,7 @@ public class SyncedRadixEngine implements SyncedStateComputer<CommittedAtom> {
 	private final StateSyncNetwork stateSyncNetwork;
 	private final Object lock = new Object();
 	private final View epochChangeView;
+	private final LinkedList<CommittedAtom> emptyCommittedAtoms = new LinkedList<>();
 	private VertexMetadata lastEpochChange = null;
 
 	public SyncedRadixEngine(
@@ -102,15 +107,24 @@ public class SyncedRadixEngine implements SyncedStateComputer<CommittedAtom> {
 		stateSyncNetwork.syncRequests()
 			.observeOn(Schedulers.io())
 			.subscribe(syncRequest -> {
-				log.info("SYNC_REQUEST: {} {}", syncRequest, this.committedAtomsStore.getStateVersion());
+				log.info("SYNC_REQUEST: {} currentStateVersion={}", syncRequest, this.committedAtomsStore.getStateVersion());
 				Peer peer = syncRequest.getPeer();
 				long stateVersion = syncRequest.getStateVersion();
 				// TODO: This may still return an empty list as we still count state versions for atoms which
 				// TODO: never make it into the radix engine due to state errors. This is because we only check
 				// TODO: validity on commit rather than on proposal/prepare.
 				// TODO: remove 100 hardcode limit
-				List<CommittedAtom> committedAtoms = committedAtomsStore.getCommittedAtoms(stateVersion, 100);
-				log.info("SYNC_REQUEST: SENDING_RESPONSE {}", committedAtoms);
+				List<CommittedAtom> storedCommittedAtoms = committedAtomsStore.getCommittedAtoms(stateVersion, 100);
+
+				List<CommittedAtom> committedAtoms = Streams.concat(
+					storedCommittedAtoms.stream(),
+					emptyCommittedAtoms.stream()
+						.filter(a -> a.getVertexMetadata().getStateVersion() > stateVersion)
+				)
+					.sorted(Comparator.comparingLong(a -> a.getVertexMetadata().getStateVersion()))
+					.collect(ImmutableList.toImmutableList());
+
+				log.info("SYNC_REQUEST: SENDING_RESPONSE size: {}", committedAtoms.size());
 				stateSyncNetwork.sendSyncResponse(peer, committedAtoms);
 			});
 
@@ -118,7 +132,7 @@ public class SyncedRadixEngine implements SyncedStateComputer<CommittedAtom> {
 			.observeOn(Schedulers.io())
 			.subscribe(syncResponse -> {
 				// TODO: Check validity of response
-				log.info("SYNC_RESPONSE: {}", syncResponse);
+				log.info("SYNC_RESPONSE: size: {}", syncResponse.size());
 				for (CommittedAtom committedAtom : syncResponse) {
 					if (committedAtom.getVertexMetadata().getStateVersion() > this.committedAtomsStore.getStateVersion()) {
 						this.execute(committedAtom);
@@ -207,9 +221,20 @@ public class SyncedRadixEngine implements SyncedStateComputer<CommittedAtom> {
 				}
 			}
 
+			// HACK
+			// TODO: Remove and put in better spot
+			committedAtomsStore.storeVertexMetadata(atom.getVertexMetadata());
+			if (atom.getClientAtom() == null && atom.getVertexMetadata().isEndOfEpoch()) {
+				if (emptyCommittedAtoms.isEmpty()
+					|| emptyCommittedAtoms.getLast().getVertexMetadata().getStateVersion() != atom.getVertexMetadata().getStateVersion()) {
+					emptyCommittedAtoms.add(atom);
+				}
+			}
+
 			// TODO: Move outside of syncedRadixEngine to a more generic syncing layer
 			if (atom.getVertexMetadata().isEndOfEpoch()
 				&& (lastEpochChange == null || lastEpochChange.getEpoch() != atom.getVertexMetadata().getEpoch())) {
+
 				VertexMetadata ancestor = atom.getVertexMetadata();
 				this.lastEpochChange = ancestor;
 				EpochChange epochChange = new EpochChange(ancestor, validatorSetMapping.apply(ancestor.getEpoch() + 1));

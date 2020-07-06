@@ -124,6 +124,10 @@ public class CommittedAtomsStore implements EngineStore<CommittedAtom> {
         lastStoredAtom.onNext(storedEvent);
     }
 
+    public void storeVertexMetadata(VertexMetadata vertexMetadata) {
+		stateVersion.set(vertexMetadata.getStateVersion());
+	}
+
 	/**
 	 * Retrieve the committed atoms in the store starting at a given state version (exclusively)
 	 * @param stateVersion the state version to start on (exclusively)

@@ -111,6 +111,6 @@ public final class CommittedAtom implements LedgerAtom, CommittedInstruction {
 
 	@Override
 	public String toString() {
-		return String.format("%s{atom=%s meta=%s}", getClass().getSimpleName(), clientAtom.getAID(), vertexMetadata);
+		return String.format("%s{atom=%s meta=%s}", getClass().getSimpleName(), clientAtom != null ? clientAtom.getAID() : null, vertexMetadata);
 	}
 }
