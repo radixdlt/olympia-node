@@ -18,9 +18,11 @@
 package com.radixdlt.middleware2.network;
 
 import com.google.inject.Singleton;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import java.util.Objects;
 
 import java.util.Optional;
+import java.util.Set;
 import javax.inject.Inject;
 
 import org.apache.logging.log4j.LogManager;
@@ -78,14 +80,19 @@ public final class MessageCentralBFTNetwork implements BFTEventSender, Consensus
 			MessageListener<ConsensusEventMessage> listener = (src, msg) -> emitter.onNext(msg.getConsensusMessage());
 			this.messageCentral.addListener(ConsensusEventMessage.class, listener);
 			emitter.setCancellable(() -> this.messageCentral.removeListener(listener));
-		}).mergeWith(localMessages);
+		}).mergeWith(localMessages.observeOn(Schedulers.io()));
 	}
 
 	@Override
-	public void broadcastProposal(Proposal proposal) {
-		this.localMessages.onNext(proposal);
-		ConsensusEventMessage message = new ConsensusEventMessage(this.magic, proposal);
-		broadcast(message);
+	public void broadcastProposal(Proposal proposal, Set<ECPublicKey> nodes) {
+		for (ECPublicKey node : nodes) {
+			if (this.selfPublicKey.equals(node)) {
+				this.localMessages.onNext(proposal);
+			} else {
+				ConsensusEventMessage message = new ConsensusEventMessage(this.magic, proposal);
+				send(message, node);
+			}
+		}
 	}
 
 	@Override
@@ -118,13 +125,5 @@ public final class MessageCentralBFTNetwork implements BFTEventSender, Consensus
 			this.messageCentral.send(peer.get(), message);
 			return true;
 		}
-	}
-
-	// TODO: use a validator set to ensure every validator gets message
-	private void broadcast(Message message) {
-		this.addressBook.peers()
-			.filter(Peer::hasSystem) // Only peers with systems (and therefore transports)
-			.filter(p -> !selfPublicKey.euid().equals(p.getNID())) // Exclude self, already sent
-			.forEach(peer -> this.messageCentral.send(peer, message));
 	}
 }

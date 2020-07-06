@@ -21,6 +21,7 @@ import com.google.inject.Inject;
 import com.google.inject.name.Named;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
+import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
@@ -39,6 +40,7 @@ import com.radixdlt.utils.Longs;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.FormattedMessage;
@@ -199,7 +201,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 			final Vertex proposedVertex = proposalGenerator.generateProposal(view);
 			final Proposal proposal = safetyRules.signProposal(proposedVertex, this.vertexStore.getHighestCommittedQC());
 			log.trace("{}: Broadcasting PROPOSAL: {}", this::getShortName, () -> proposal);
-			this.sender.broadcastProposal(proposal);
+			this.sender.broadcastProposal(proposal, validatorSet.getValidators().stream().map(Validator::nodeKey).collect(Collectors.toSet()));
 		});
 	}
 

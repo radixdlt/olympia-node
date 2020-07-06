@@ -19,6 +19,7 @@ package com.radixdlt.middleware2.network;
 
 import static org.mockito.Mockito.mock;
 
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
@@ -91,7 +92,7 @@ public class TestBFTEventProcessorNetworkTest {
 		network.getNetworkRx(validatorId).consensusEvents()
 			.subscribe(testObserver);
 		Proposal proposal = mock(Proposal.class);
-		network.getNetworkSender(validatorId).broadcastProposal(proposal);
+		network.getNetworkSender(validatorId).broadcastProposal(proposal, ImmutableSet.of(validatorId, validatorId2));
 		testObserver.awaitCount(1);
 		testObserver.assertValue(proposal);
 	}

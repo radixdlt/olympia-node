@@ -94,7 +94,6 @@ public class AddressBookValidatorSetProvider {
 		}
 
 		ImmutableList<Validator> validatorList = validatorSetBuilder.build();
-		System.out.println(epoch + " " + validatorList);
 
 		return ValidatorSet.from(validatorList);
 	}

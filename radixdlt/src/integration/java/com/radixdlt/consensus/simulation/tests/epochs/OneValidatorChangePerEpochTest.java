@@ -39,6 +39,20 @@ public class OneValidatorChangePerEpochTest {
 		.checkAllProposalsHaveDirectParents("directParents");
 
 	@Test
+	public void given_correct_single_node_bft_with_changing_epochs_per_100_views__then_should_pass_bft_and_epoch_invariants() {
+		SimulationTest bftTest = bftTestBuilder
+			.pacemakerTimeout(1000)
+			.epochHighView(View.of(100))
+			.epochToNodesMapper(epoch ->
+				Sets.newHashSet((int) (epoch % 4))
+			)
+			.checkEpochHighView("epochHighView", View.of(100))
+			.build();
+		Map<String, Optional<TestInvariantError>> results = bftTest.run(1, TimeUnit.MINUTES);
+		assertThat(results).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+	}
+
+	@Test
 	public void given_correct_bft_with_changing_epochs_per_100_views__then_should_pass_bft_and_epoch_invariants() {
 		SimulationTest bftTest = bftTestBuilder
 			.pacemakerTimeout(1000)

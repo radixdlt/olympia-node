@@ -18,6 +18,7 @@
 package com.radixdlt.consensus;
 
 import com.radixdlt.crypto.ECPublicKey;
+import java.util.Set;
 
 /**
  * Interface for sending BFT events through a network
@@ -28,7 +29,7 @@ public interface BFTEventSender {
 	 * Broadcast a proposal message to all validators in the network
 	 * @param proposal the proposal to broadcast
 	 */
-	void broadcastProposal(Proposal proposal);
+	void broadcastProposal(Proposal proposal, Set<ECPublicKey> nodes);
 
 	/**
 	 * Send a new-view message to a given validator

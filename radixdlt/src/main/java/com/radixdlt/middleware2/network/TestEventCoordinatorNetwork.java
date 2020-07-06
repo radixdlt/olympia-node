@@ -46,6 +46,7 @@ import io.reactivex.rxjava3.subjects.Subject;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
@@ -154,8 +155,8 @@ public class TestEventCoordinatorNetwork {
 	public BFTEventSender getNetworkSender(ECPublicKey forNode) {
 		return new BFTEventSender() {
 			@Override
-			public void broadcastProposal(Proposal proposal) {
-				for (ECPublicKey reader : receivers.keySet()) {
+			public void broadcastProposal(Proposal proposal, Set<ECPublicKey> nodes) {
+				for (ECPublicKey reader : nodes) {
 					receivedMessages.onNext(MessageInTransit.newMessage(proposal, forNode, reader));
 				}
 			}

@@ -149,6 +149,8 @@ public final class VertexMetadata {
 
 	@Override
 	public String toString() {
-		return String.format("%s{epoch=%s view=%s stateVersion=%s}", getClass().getSimpleName(), this.epoch, view, stateVersion);
+		return String.format("%s{epoch=%s view=%s isEndOfEpoch=%s stateVersion=%s}",
+			getClass().getSimpleName(), this.epoch, this.view, this.isEndOfEpoch, this.stateVersion
+		);
 	}
 }

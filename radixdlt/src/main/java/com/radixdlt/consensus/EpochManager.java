@@ -181,8 +181,11 @@ public final class EpochManager {
 	}
 
 	private void processEndOfEpoch(VertexMetadata vertexMetadata) {
+		log.info("{}: END_OF_EPOCH: {}", this.loggerPrefix, vertexMetadata);
 		// TODO: perhaps its better to broadcast to next validator set here rather than in processEpochChange()
-		this.lastConstructed = vertexMetadata;
+		if (this.lastConstructed == null || this.lastConstructed.getEpoch() < vertexMetadata.getEpoch()) {
+			this.lastConstructed = vertexMetadata;
+		}
 	}
 
 	public void processGetEpochRequest(GetEpochRequest request) {

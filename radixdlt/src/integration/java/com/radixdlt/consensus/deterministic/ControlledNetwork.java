@@ -38,6 +38,7 @@ import com.radixdlt.crypto.Hash;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -205,7 +206,7 @@ public final class ControlledNetwork {
 		}
 
 		@Override
-		public void broadcastProposal(Proposal proposal) {
+		public void broadcastProposal(Proposal proposal, Set<ECPublicKey> nodes) {
 			for (ECPublicKey receiver : nodes) {
 				putMesssage(new ControlledMessage(sender, receiver, proposal));
 			}
