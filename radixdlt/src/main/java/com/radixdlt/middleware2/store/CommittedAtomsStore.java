@@ -24,7 +24,6 @@ import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.identifiers.EUID;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.middleware2.CommittedAtom;
@@ -47,7 +46,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Consumer;
 import org.radix.atoms.events.AtomStoredEvent;
 
@@ -161,12 +159,6 @@ public class CommittedAtomsStore implements EngineStore<CommittedAtom> {
 	@Override
 	public void deleteAtom(AID atomId) {
 		throw new UnsupportedOperationException("Delete operation is not supported by Ledger interface");
-	}
-
-	@Override
-	public boolean supports(Set<EUID> destinations) {
-		// TODO Sharding support is removed for now, meaning that every node supports all destinations.
-		return true;
 	}
 
 	@Override

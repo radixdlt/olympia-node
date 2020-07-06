@@ -41,7 +41,6 @@ import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.identifiers.EUID;
 import com.radixdlt.middleware2.ClientAtom.LedgerAtomConversionException;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.middleware2.network.MessageCentralSyncCommittedNetwork;
@@ -54,7 +53,6 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.universe.Universe;
-import java.util.Set;
 import java.util.function.Consumer;
 import org.radix.time.Time;
 
@@ -154,11 +152,6 @@ public class MiddlewareModule extends AbstractModule {
 			@Override
 			public void deleteAtom(AID aid) {
 				committedAtomsStore.deleteAtom(aid);
-			}
-
-			@Override
-			public boolean supports(Set<EUID> set) {
-				return committedAtomsStore.supports(set);
 			}
 
 			@Override
