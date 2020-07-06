@@ -61,17 +61,18 @@ public class SlowNodeTest {
 	@Category(Cluster.class)
 	public static class ClusterTests {
 		private SlowNodeSetup slowNodeSetup;
+		private StaticClusterNetwork network;
 
 		@Before
 		public void setupSlowNode() {
-
-			System.setProperty("clusterNodeUrls",TestnetNodes.getInstance().getNodesURls());
+			network = StaticClusterNetwork.clusterInfo(4);
 			String sshKeylocation = Optional.ofNullable(System.getenv("SSH_IDENTITY")).orElse(System.getenv("HOME") + "/.ssh/id_rsa");
+
 			//Creating named volume and copying over the file to volume works with or without docker in docker setup
 			slowNodeSetup = SlowNodeSetup.builder()
 				.withAnsibleImage("eu.gcr.io/lunar-arc-236318/node-ansible:latest")
 				.withKeyVolume("key-volume")
-				.usingCluster("testnet_2")
+				.usingCluster(network.getClusterName())
 				.usingAnsiblePlaybook("slow-down-node.yml")
 				.nodesToSlowDown(1)
 				.build();
@@ -84,7 +85,6 @@ public class SlowNodeTest {
 		@Test
 		public void given_4_correct_bfts_in_latent_docker_network_and_one_slow_node__then_all_instances_should_get_same_commits_and_progress_should_be_made() {
 
-			final StaticClusterNetwork network = StaticClusterNetwork.extractFromProperty(4);
 			RemoteBFTTest test = AssertionChecks.slowNodeTestBuilder()
 				.network(RemoteBFTNetworkBridge.of(network))
 				.waitUntilResponsive()
