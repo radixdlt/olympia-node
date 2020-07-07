@@ -69,13 +69,13 @@ public class MovingWindowValidatorsTest {
 	}
 
 	@Test
-	public void given_correct_100_node_bft_with_200_total_nodes_with_changing_epochs_per_100_views__then_should_pass_bft_and_epoch_invariants() {
+	public void given_correct_50_node_bft_with_100_total_nodes_with_changing_epochs_per_100_views__then_should_pass_bft_and_epoch_invariants() {
 		SimulationTest bftTest = bftTestBuilder
-			.numNodes(200)
+			.numNodes(100)
 			.pacemakerTimeout(2000)
 			.checkLiveness("liveness", 2000, TimeUnit.MILLISECONDS) // High timeout to make Travis happy
 			.epochHighView(View.of(100))
-			.epochToNodesMapper(windowedEpochToNodesMapper(100, 200))
+			.epochToNodesMapper(windowedEpochToNodesMapper(50, 100))
 			.checkEpochHighView("epochHighView", View.of(100))
 			.build();
 		Map<String, Optional<TestInvariantError>> results = bftTest.run(1, TimeUnit.MINUTES);
@@ -83,13 +83,13 @@ public class MovingWindowValidatorsTest {
 	}
 
 	@Test
-	public void given_correct_100_node_bft_with_200_total_nodes_with_changing_epochs_per_1_view__then_should_pass_bft_and_epoch_invariants() {
+	public void given_correct_50_node_bft_with_100_total_nodes_with_changing_epochs_per_1_view__then_should_pass_bft_and_epoch_invariants() {
 		SimulationTest bftTest = bftTestBuilder
-			.numNodes(200)
+			.numNodes(100)
 			.pacemakerTimeout(2000)
 			.checkLiveness("liveness", 2000, TimeUnit.MILLISECONDS) // High timeout to make Travis happy
 			.epochHighView(View.of(1))
-			.epochToNodesMapper(windowedEpochToNodesMapper(100, 200))
+			.epochToNodesMapper(windowedEpochToNodesMapper(50, 100))
 			.checkEpochHighView("epochHighView", View.of(1))
 			.build();
 		Map<String, Optional<TestInvariantError>> results = bftTest.run(1, TimeUnit.MINUTES);
