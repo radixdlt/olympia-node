@@ -37,6 +37,7 @@ import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
 import io.reactivex.rxjava3.schedulers.Schedulers;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
@@ -57,7 +58,7 @@ import org.radix.validation.ConstraintMachineValidationException;
  *
  * TODO: Most of the logic here should go into RadixEngine itself
  */
-public class SyncedRadixEngine implements SyncedStateComputer<CommittedAtom> {
+public final class SyncedRadixEngine implements SyncedStateComputer<CommittedAtom> {
 
 	public interface CommittedStateSyncSender {
 		void sendCommittedStateSync(long stateVersion, Object opaque);
@@ -71,8 +72,10 @@ public class SyncedRadixEngine implements SyncedStateComputer<CommittedAtom> {
 	private final Function<Long, ValidatorSet> validatorSetMapping;
 	private final AddressBook addressBook;
 	private final StateSyncNetwork stateSyncNetwork;
-	private final Object lock = new Object();
 	private final View epochChangeView;
+
+	// TODO: Remove the following
+	private final Object lock = new Object();
 	private final LinkedList<CommittedAtom> emptyCommittedAtoms = new LinkedList<>();
 	private VertexMetadata lastEpochChange = null;
 
@@ -116,10 +119,15 @@ public class SyncedRadixEngine implements SyncedStateComputer<CommittedAtom> {
 				// TODO: remove 100 hardcode limit
 				List<CommittedAtom> storedCommittedAtoms = committedAtomsStore.getCommittedAtoms(stateVersion, 100);
 
+				// TODO: Remove
+				final List<CommittedAtom> copy;
+				synchronized (lock) {
+					copy = new ArrayList<>(emptyCommittedAtoms);
+				}
+
 				List<CommittedAtom> committedAtoms = Streams.concat(
 					storedCommittedAtoms.stream(),
-					emptyCommittedAtoms.stream()
-						.filter(a -> a.getVertexMetadata().getStateVersion() > stateVersion)
+					copy.stream().filter(a -> a.getVertexMetadata().getStateVersion() > stateVersion)
 				)
 					.sorted(Comparator.comparingLong(a -> a.getVertexMetadata().getStateVersion()))
 					.collect(ImmutableList.toImmutableList());
@@ -188,43 +196,44 @@ public class SyncedRadixEngine implements SyncedStateComputer<CommittedAtom> {
 	public void execute(CommittedAtom atom) {
 		// TODO: remove lock
 		synchronized (lock) {
-			try {
-				// TODO: execute list of commands instead
-				if (atom.getClientAtom() != null) {
-					this.radixEngine.checkAndStore(atom);
-				}
-			} catch (RadixEngineException e) {
-				// TODO: Don't check for state computer errors for now so that we don't
-				// TODO: have to deal with failing leader proposals
-				// TODO: Reinstate this when ProposalGenerator + Mempool can guarantee correct proposals
-
-				// TODO: move VIRTUAL_STATE_CONFLICT to static check
-				if (e.getErrorCode() == RadixEngineErrorCode.VIRTUAL_STATE_CONFLICT) {
-					ConstraintMachineValidationException exception
-						= new ConstraintMachineValidationException(atom.getClientAtom(), "Virtual state conflict", e.getDataPointer());
-					Events.getInstance().broadcast(new AtomExceptionEvent(exception, atom.getAID()));
-				} else if (e.getErrorCode() == RadixEngineErrorCode.STATE_CONFLICT) {
-					final ParticleConflictException conflict = new ParticleConflictException(
-						new ParticleConflict(e.getDataPointer(), ImmutableSet.of(atom.getAID(), e.getRelated().getAID())
-						));
-					AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(conflict, atom.getAID());
-					Events.getInstance().broadcast(atomExceptionEvent);
-				} else if (e.getErrorCode() == RadixEngineErrorCode.MISSING_DEPENDENCY) {
-					final AtomDependencyNotFoundException notFoundException =
-						new AtomDependencyNotFoundException(
-							String.format("Atom has missing dependencies in transitions: %s", e.getDataPointer().toString()),
-							e.getDataPointer()
-						);
-
-					AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(notFoundException, atom.getAID());
-					Events.getInstance().broadcast(atomExceptionEvent);
-				}
-			}
-
-			// HACK
-			// TODO: Remove and put in better spot
+			// TODO: HACK
+			// TODO: Remove and move epoch change logic into RadixEngine
 			committedAtomsStore.storeVertexMetadata(atom.getVertexMetadata());
-			if (atom.getClientAtom() == null && atom.getVertexMetadata().isEndOfEpoch()) {
+
+			if (atom.getClientAtom() != null) {
+				try {
+					// TODO: execute list of commands instead
+					this.radixEngine.checkAndStore(atom);
+				} catch (RadixEngineException e) {
+					// TODO: Don't check for state computer errors for now so that we don't
+					// TODO: have to deal with failing leader proposals
+					// TODO: Reinstate this when ProposalGenerator + Mempool can guarantee correct proposals
+
+					// TODO: move VIRTUAL_STATE_CONFLICT to static check
+					if (e.getErrorCode() == RadixEngineErrorCode.VIRTUAL_STATE_CONFLICT) {
+						ConstraintMachineValidationException exception
+							= new ConstraintMachineValidationException(atom.getClientAtom(), "Virtual state conflict", e.getDataPointer());
+						Events.getInstance().broadcast(new AtomExceptionEvent(exception, atom.getAID()));
+					} else if (e.getErrorCode() == RadixEngineErrorCode.STATE_CONFLICT) {
+						final ParticleConflictException conflict = new ParticleConflictException(
+							new ParticleConflict(e.getDataPointer(), ImmutableSet.of(atom.getAID(), e.getRelated().getAID())
+							));
+						AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(conflict, atom.getAID());
+						Events.getInstance().broadcast(atomExceptionEvent);
+					} else if (e.getErrorCode() == RadixEngineErrorCode.MISSING_DEPENDENCY) {
+						final AtomDependencyNotFoundException notFoundException =
+							new AtomDependencyNotFoundException(
+								String.format("Atom has missing dependencies in transitions: %s", e.getDataPointer().toString()),
+								e.getDataPointer()
+							);
+
+						AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(notFoundException, atom.getAID());
+						Events.getInstance().broadcast(atomExceptionEvent);
+					}
+				}
+			} else if (atom.getVertexMetadata().isEndOfEpoch()) {
+				// TODO: HACK
+				// TODO: Remove and move epoch change logic into RadixEngine
 				if (emptyCommittedAtoms.isEmpty()
 					|| emptyCommittedAtoms.getLast().getVertexMetadata().getStateVersion() != atom.getVertexMetadata().getStateVersion()) {
 					emptyCommittedAtoms.add(atom);
