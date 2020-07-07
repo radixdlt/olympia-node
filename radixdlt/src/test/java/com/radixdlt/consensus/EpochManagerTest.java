@@ -239,7 +239,18 @@ public class EpochManagerTest {
 		when(localTimeout.getView()).thenReturn(View.of(1));
 
 		epochManager.processLocalTimeout(localTimeout);
-		verify(eventProcessor, times(1)).processLocalTimeout(eq(View.of(1)));
+		verify(eventProcessor, never()).processLocalTimeout(eq(View.of(1)));
+
+		Proposal oldProposal = mock(Proposal.class);
+		when(oldProposal.getEpoch()).thenReturn(ancestor.getEpoch());
+		epochManager.processConsensusEvent(proposal);
+		verify(eventProcessor, never()).processProposal(eq(oldProposal));
+
+		LocalTimeout oldTimeout = mock(LocalTimeout.class);
+		when(oldTimeout.getEpoch()).thenReturn(ancestor.getEpoch());
+		View view = mock(View.class);
+		when(oldTimeout.getView()).thenReturn(view);
+		verify(eventProcessor, never()).processLocalTimeout(eq(view));
 	}
 
 	@Test
