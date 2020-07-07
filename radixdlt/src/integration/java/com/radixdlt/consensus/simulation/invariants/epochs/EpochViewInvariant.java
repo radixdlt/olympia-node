@@ -21,16 +21,11 @@ import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.simulation.TestInvariant;
 import com.radixdlt.consensus.simulation.network.SimulationNodes.RunningNetwork;
 import io.reactivex.rxjava3.core.Observable;
-import java.util.HashSet;
-import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
- * Invariant which checks that there is only ever one view which exceeds the epochHighView for
- * every epoch.
+ * Invariant which checks that a committed vertex never goes above some view
  */
 public class EpochViewInvariant implements TestInvariant {
 	private final View epochHighView;
@@ -41,27 +36,17 @@ public class EpochViewInvariant implements TestInvariant {
 
 	@Override
 	public Observable<TestInvariantError> check(RunningNetwork network) {
-		final Map<Long, Set<View>> viewsOverEpochHighView = new ConcurrentHashMap<>();
-
 		return Observable.merge(
 			network.getNodes().stream().map(node -> network.getVertexStoreEvents(node).committedVertices()).collect(Collectors.toList())
 		)
 			.flatMap(vertex -> {
-				final long epoch = vertex.getEpoch();
 				final View view = vertex.getView();
-				if (view.compareTo(epochHighView) >= 0) {
-					final Set<View> views = viewsOverEpochHighView.computeIfAbsent(epoch, e -> new HashSet<>());
-					views.add(view);
-					if (views.size() > 1) {
-						return Observable.just(
-							new TestInvariantError(
-								String.format("Multiple vertices (%s) committed over epochHighView %s",
-									views,
-									epochHighView
-								)
-							)
-						);
-					}
+				if (view.compareTo(epochHighView) > 0) {
+					return Observable.just(
+						new TestInvariantError(
+							String.format("Vertex committed with view %s but epochHighView is %s", view, epochHighView)
+						)
+					);
 				}
 
 				return Observable.empty();

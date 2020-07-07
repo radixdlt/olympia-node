@@ -50,7 +50,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -95,7 +94,7 @@ public class SimulationTest {
 		private int pacemakerTimeout = 12 * SimulationNetwork.DEFAULT_LATENCY;
 		private boolean getVerticesRPCEnabled = true;
 		private View epochHighView = null;
-		private Function<Long, Set<Integer>> epochToNodeIndexMapper;
+		private Function<Long, IntStream> epochToNodeIndexMapper;
 
 		private Builder() {
 		}
@@ -133,7 +132,7 @@ public class SimulationTest {
 			return this;
 		}
 
-		public Builder epochToNodesMapper(Function<Long, Set<Integer>> epochToNodeIndexMapper) {
+		public Builder epochToNodesMapper(Function<Long, IntStream> epochToNodeIndexMapper) {
 			this.epochToNodeIndexMapper = epochToNodeIndexMapper;
 			return this;
 		}
@@ -192,8 +191,7 @@ public class SimulationTest {
 							.map(pk -> Validator.from(pk, UInt256.ONE))
 							.collect(Collectors.toList()))
 					: epochToNodeIndexMapper.andThen(indices -> ValidatorSet.from(
-						indices.stream()
-							.map(nodes::get)
+						indices.mapToObj(nodes::get)
 							.map(kp -> Validator.from(kp.getPublicKey(), UInt256.ONE))
 							.collect(Collectors.toList())));
 			return new SimulationTest(

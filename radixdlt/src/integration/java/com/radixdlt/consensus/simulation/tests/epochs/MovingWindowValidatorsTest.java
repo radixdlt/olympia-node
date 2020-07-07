@@ -19,7 +19,6 @@ package com.radixdlt.consensus.simulation.tests.epochs;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-import com.google.common.collect.Sets;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.simulation.SimulationTest;
 import com.radixdlt.consensus.simulation.SimulationTest.Builder;
@@ -27,10 +26,12 @@ import com.radixdlt.consensus.simulation.TestInvariant.TestInvariantError;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.stream.IntStream;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
-public class OneValidatorChangePerEpochTest {
+public class MovingWindowValidatorsTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
 		.numNodes(4)
 		.checkSafety("safety")
@@ -38,14 +39,16 @@ public class OneValidatorChangePerEpochTest {
 		.checkNoTimeouts("noTimeouts")
 		.checkAllProposalsHaveDirectParents("directParents");
 
+	private static Function<Long, IntStream> windowedEpochToNodesMapper(int windowSize, int totalValidatorCount) {
+		return epoch -> IntStream.range(0, windowSize).map(index -> (int) (epoch + index) % totalValidatorCount);
+	}
+
 	@Test
-	public void given_correct_single_node_bft_with_changing_epochs_per_100_views__then_should_pass_bft_and_epoch_invariants() {
+	public void given_correct_1_node_bft_with_4_total_nodes_with_changing_epochs_per_100_views__then_should_pass_bft_and_epoch_invariants() {
 		SimulationTest bftTest = bftTestBuilder
 			.pacemakerTimeout(1000)
 			.epochHighView(View.of(100))
-			.epochToNodesMapper(epoch ->
-				Sets.newHashSet((int) (epoch % 4))
-			)
+			.epochToNodesMapper(windowedEpochToNodesMapper(1, 4))
 			.checkEpochHighView("epochHighView", View.of(100))
 			.build();
 		Map<String, Optional<TestInvariantError>> results = bftTest.run(1, TimeUnit.MINUTES);
@@ -53,14 +56,38 @@ public class OneValidatorChangePerEpochTest {
 	}
 
 	@Test
-	public void given_correct_bft_with_changing_epochs_per_100_views__then_should_pass_bft_and_epoch_invariants() {
+	public void given_correct_3_node_bft_with_4_total_nodes_with_changing_epochs_per_100_views__then_should_pass_bft_and_epoch_invariants() {
 		SimulationTest bftTest = bftTestBuilder
 			.pacemakerTimeout(1000)
 			.epochHighView(View.of(100))
-			.epochToNodesMapper(epoch ->
-				Sets.newHashSet((int) (epoch % 4), (int) (epoch + 1) % 4, (int) (epoch + 2) % 4)
-			)
+			.epochToNodesMapper(windowedEpochToNodesMapper(3, 4))
 			.checkEpochHighView("epochHighView", View.of(100))
+			.build();
+		Map<String, Optional<TestInvariantError>> results = bftTest.run(1, TimeUnit.MINUTES);
+		assertThat(results).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+	}
+
+	@Test
+	public void given_correct_100_node_bft_with_200_total_nodes_with_changing_epochs_per_100_views__then_should_pass_bft_and_epoch_invariants() {
+		SimulationTest bftTest = bftTestBuilder
+			.numNodes(200)
+			.pacemakerTimeout(1000)
+			.epochHighView(View.of(100))
+			.epochToNodesMapper(windowedEpochToNodesMapper(100, 200))
+			.checkEpochHighView("epochHighView", View.of(100))
+			.build();
+		Map<String, Optional<TestInvariantError>> results = bftTest.run(1, TimeUnit.MINUTES);
+		assertThat(results).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+	}
+
+	@Test
+	public void given_correct_100_node_bft_with_200_total_nodes_with_changing_epochs_per_1_view__then_should_pass_bft_and_epoch_invariants() {
+		SimulationTest bftTest = bftTestBuilder
+			.numNodes(200)
+			.pacemakerTimeout(1000)
+			.epochHighView(View.of(1))
+			.epochToNodesMapper(windowedEpochToNodesMapper(100, 200))
+			.checkEpochHighView("epochHighView", View.of(1))
 			.build();
 		Map<String, Optional<TestInvariantError>> results = bftTest.run(1, TimeUnit.MINUTES);
 		assertThat(results).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
