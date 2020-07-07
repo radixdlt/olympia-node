@@ -24,7 +24,7 @@ import com.radixdlt.consensus.ConsensusRunner;
 import com.radixdlt.consensus.ConsensusRunner.Event;
 import com.radixdlt.consensus.ConsensusRunner.EventType;
 import com.radixdlt.consensus.DefaultHasher;
-import com.radixdlt.consensus.SyncVerticesRPCSenders;
+import com.radixdlt.consensus.EmptySyncVerticesRPCSender;
 import com.radixdlt.consensus.EpochManager;
 import com.radixdlt.consensus.EpochChangeRx;
 import com.radixdlt.consensus.Hasher;
@@ -116,7 +116,7 @@ public class SimulatedNetwork {
 				v,
 				qc,
 				stateComputer,
-				getVerticesRPCEnabled ? syncSender : SyncVerticesRPCSenders.EMPTY,
+				getVerticesRPCEnabled ? syncSender : EmptySyncVerticesRPCSender.INSTANCE,
 				this.internalMessages.get(key),
 				this.counters.get(key)
 			);

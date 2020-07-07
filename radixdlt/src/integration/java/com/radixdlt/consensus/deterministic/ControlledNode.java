@@ -25,7 +25,6 @@ import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.DefaultHasher;
 import com.radixdlt.consensus.EmptySyncEpochsRPCSender;
-import com.radixdlt.consensus.SyncVerticesRPCSenders;
 import com.radixdlt.consensus.EpochChange;
 import com.radixdlt.consensus.EpochManager;
 import com.radixdlt.consensus.PendingVotes;
@@ -42,6 +41,7 @@ import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.SyncVerticesRPCSender;
 import com.radixdlt.consensus.VertexStoreFactory;
 import com.radixdlt.consensus.deterministic.ControlledNetwork.ControlledSender;
+import com.radixdlt.consensus.deterministic.configuration.UnsupportedSyncVerticesRPCSender;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
 import com.radixdlt.consensus.liveness.MempoolProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
@@ -105,7 +105,7 @@ class ControlledNode {
 			}
 		};
 
-		SyncVerticesRPCSender syncVerticesRPCSender = enableGetVerticesRPC ? sender : SyncVerticesRPCSenders.UNSUPPORTED;
+		SyncVerticesRPCSender syncVerticesRPCSender = enableGetVerticesRPC ? sender : UnsupportedSyncVerticesRPCSender.INSTANCE;
 		Mempool mempool = new EmptyMempool();
 		Hasher hasher = new DefaultHasher();
 		VertexStoreFactory vertexStoreFactory = (vertex, qc, syncedStateComputer) ->
