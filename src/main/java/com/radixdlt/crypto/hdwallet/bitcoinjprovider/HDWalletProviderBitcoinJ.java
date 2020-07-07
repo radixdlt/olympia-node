@@ -41,14 +41,16 @@ import static org.bitcoinj.core.Utils.WHITESPACE_SPLITTER;
 @SecurityCritical({ SecurityCritical.SecurityKind.KEY_GENERATION, SecurityCritical.SecurityKind.KEY_STORE })
 public final class HDWalletProviderBitcoinJ implements HDWallet {
 
+	private final ECKeyPair rootKeyPair;
 	private final DeterministicHierarchy deterministicHierarchy;
 
-	public HDWalletProviderBitcoinJ(DeterministicHierarchy deterministicHierarchy) {
-		this.deterministicHierarchy = deterministicHierarchy;
-	}
-
 	public HDWalletProviderBitcoinJ(DeterministicKey masterPrivateKey) {
-		this(new DeterministicHierarchy(masterPrivateKey));
+		try {
+			this.rootKeyPair = new ECKeyPair(Bytes.fromHexString(masterPrivateKey.getPrivateKeyAsHex()));
+		} catch (CryptoException e) {
+			throw new IllegalStateException("Unable to create ECKeyPair from private key bytes, e: " + e);
+		}
+		this.deterministicHierarchy = new DeterministicHierarchy(masterPrivateKey);
 	}
 
 	public HDWalletProviderBitcoinJ(byte[] seed) {
@@ -94,8 +96,9 @@ public final class HDWalletProviderBitcoinJ implements HDWallet {
 	}
 
 	private ECKeyPair deriveKeyPairAtPath(List<ChildNumber> path) {
+
 		DeterministicKey childKey = deterministicHierarchy.deriveChild(
-				path.subList(0, 4),
+				path.subList(0, path.size() - 1),
 				false,
 				true,
 				path.get(path.size() - 1)
@@ -118,6 +121,10 @@ public final class HDWalletProviderBitcoinJ implements HDWallet {
 					return rawString;
 				}
 		));
+	}
+
+	public ECKeyPair rootKeyPair() {
+		return rootKeyPair;
 	}
 
 	public HDKeyPair deriveKeyAtPath(String path) {

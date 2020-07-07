@@ -19,6 +19,9 @@
 
 package com.radixdlt.crypto.hdwallet;
 
+import com.radixdlt.crypto.ECKeyPair;
+
 public interface HDWallet {
 	HDKeyPair deriveKeyAtPath(String path);
+	ECKeyPair rootKeyPair();
 }

@@ -27,10 +27,14 @@ import com.radixdlt.crypto.ECKeyPair;
 public final class HDKeyPair {
 	private final ECKeyPair ecKeyPair;
 	private final String path;
+	private final boolean isHardened;
+	private final int depth;
 
 	public HDKeyPair(ECKeyPair ecKeyPair, String path) {
 		this.ecKeyPair = ecKeyPair;
 		this.path = path;
+		this.isHardened = path.endsWith("'");
+		this.depth = path.split("/").length - 1;
 	}
 
 	public ECKeyPair keyPair() {
@@ -47,5 +51,13 @@ public final class HDKeyPair {
 
 	public String publicKeyHex() {
 		return ecKeyPair.publicKeyHex();
+	}
+
+	public boolean isHardened() {
+		return isHardened;
+	}
+
+	public int depth() {
+		return depth;
 	}
 }
