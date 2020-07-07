@@ -22,7 +22,7 @@ jobs:
     - stage: sonar
       script: ./gradlew jacocoTestReport sonarqube --info
     - stage: integration
-      script: travis_wait ./gradlew integrationTest
+      script: ./gradlew integrationTest
 
 cache:
   directories:
