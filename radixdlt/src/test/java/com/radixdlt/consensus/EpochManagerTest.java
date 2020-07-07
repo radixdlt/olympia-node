@@ -18,6 +18,7 @@
 package com.radixdlt.consensus;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -57,6 +58,7 @@ public class EpochManagerTest {
 	private BFTFactory bftFactory;
 	private Pacemaker pacemaker;
 	private SystemCounters systemCounters;
+	private ProposerElection proposerElection;
 	private SyncedStateComputer<CommittedAtom> syncedStateComputer;
 
 	@Before
@@ -76,6 +78,8 @@ public class EpochManagerTest {
 		this.systemCounters = new SystemCountersImpl();
 		this.syncedStateComputer = mock(SyncedStateComputer.class);
 
+		this.proposerElection = mock(ProposerElection.class);
+
 		this.epochManager = new EpochManager(
 			"name",
 			this.syncedStateComputer,
@@ -83,7 +87,7 @@ public class EpochManagerTest {
 			mock(ScheduledTimeoutSender.class),
 			timeoutSender -> this.pacemaker,
 			vertexStoreFactory,
-			proposers -> mock(ProposerElection.class),
+			proposers -> proposerElection,
 			this.bftFactory,
 			this.publicKey,
 			this.systemCounters
@@ -132,6 +136,80 @@ public class EpochManagerTest {
 		when(response.getEpochAncestor()).thenReturn(VertexMetadata.ofGenesisAncestor());
 		epochManager.processGetEpochResponse(response);
 		verify(syncedStateComputer, times(1)).syncTo(eq(VertexMetadata.ofGenesisAncestor()), any(), any());
+	}
+
+	// TODO: Refactor EpochManager to simplify the following testing logic (TDD)
+	@Test
+	public void when_epoch_change_and_then_epoch_events__then_should_execute_events() {
+		BFTEventProcessor eventProcessor = mock(BFTEventProcessor.class);
+		when(bftFactory.create(any(), any(), any(), any(), any())).thenReturn(eventProcessor);
+
+		VertexMetadata ancestor = VertexMetadata.ofGenesisAncestor();
+		ValidatorSet validatorSet = mock(ValidatorSet.class);
+		when(validatorSet.containsKey(any())).thenReturn(true);
+
+		Validator validator = mock(Validator.class);
+		ECPublicKey key = ECKeyPair.generateNew().getPublicKey();
+		when(validator.nodeKey()).thenReturn(key);
+
+		Validator selfValidator = mock(Validator.class);
+		when(selfValidator.nodeKey()).thenReturn(this.publicKey);
+
+		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of(selfValidator, validator));
+		epochManager.processEpochChange(new EpochChange(ancestor, validatorSet));
+
+		verify(eventProcessor, times(1)).start();
+
+		when(vertexStore.syncToQC(any(), any(), any())).thenReturn(true);
+		when(pacemaker.getCurrentView()).thenReturn(View.of(0));
+
+		Proposal proposal = mock(Proposal.class);
+		when(proposal.getAuthor()).thenReturn(key);
+		when(proposal.getEpoch()).thenReturn(ancestor.getEpoch() + 1);
+		Vertex vertex = mock(Vertex.class);
+		when(vertex.getView()).thenReturn(View.of(1));
+		when(proposal.getVertex()).thenReturn(vertex);
+		epochManager.processConsensusEvent(proposal);
+		verify(eventProcessor, times(1)).processProposal(eq(proposal));
+
+		when(proposerElection.getProposer(any())).thenReturn(this.publicKey);
+
+		NewView newView = mock(NewView.class);
+		when(newView.getView()).thenReturn(View.of(1));
+		when(newView.getAuthor()).thenReturn(this.publicKey);
+		when(newView.getEpoch()).thenReturn(ancestor.getEpoch() + 1);
+		epochManager.processConsensusEvent(newView);
+		verify(eventProcessor, times(1)).processNewView(eq(newView));
+
+
+		when(pacemaker.getCurrentView()).thenReturn(View.of(0));
+
+		Vote vote = mock(Vote.class);
+		VoteData voteData = mock(VoteData.class);
+		VertexMetadata proposed = mock(VertexMetadata.class);
+		when(proposed.getView()).thenReturn(View.of(1));
+		when(voteData.getProposed()).thenReturn(proposed);
+		when(vote.getVoteData()).thenReturn(voteData);
+		when(vote.getAuthor()).thenReturn(key);
+		when(vote.getEpoch()).thenReturn(ancestor.getEpoch() + 1);
+		epochManager.processConsensusEvent(vote);
+		verify(eventProcessor, times(1)).processVote(eq(vote));
+
+		ConsensusEvent unknownEvent = mock(ConsensusEvent.class);
+		when(unknownEvent.getEpoch()).thenReturn(ancestor.getEpoch() + 1);
+		assertThatThrownBy(() -> epochManager.processConsensusEvent(unknownEvent))
+			.isInstanceOf(IllegalStateException.class);
+
+		Hash localSync = mock(Hash.class);
+		epochManager.processLocalSync(localSync);
+		verify(eventProcessor, times(1)).processLocalSync(eq(localSync));
+
+		LocalTimeout localTimeout = mock(LocalTimeout.class);
+		when(localTimeout.getEpoch()).thenReturn(ancestor.getEpoch() + 1);
+		when(localTimeout.getView()).thenReturn(View.of(1));
+
+		epochManager.processLocalTimeout(localTimeout);
+		verify(eventProcessor, times(1)).processLocalTimeout(eq(View.of(1)));
 	}
 
 	@Test
