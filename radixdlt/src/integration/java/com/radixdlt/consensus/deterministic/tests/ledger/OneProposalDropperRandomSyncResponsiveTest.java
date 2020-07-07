@@ -27,6 +27,7 @@ import java.util.function.Function;
 import org.junit.Test;
 
 public class OneProposalDropperRandomSyncResponsiveTest {
+	private static final int NUM_STEPS = 30000;
 
 	private final Random random = new Random(123456);
 
@@ -36,7 +37,7 @@ public class OneProposalDropperRandomSyncResponsiveTest {
 
 		final DeterministicTest test = DeterministicTest.createRandomlySyncedBFTAndSyncedStateComputerTest(numNodes, random);
 		test.start();
-		for (int step = 0; step < 100000; step++) {
+		for (int step = 0; step < NUM_STEPS; step++) {
 			test.processNextMsg(random, (receiverId, msg) -> {
 				if (msg instanceof Proposal) {
 					final Proposal proposal = (Proposal) msg;
