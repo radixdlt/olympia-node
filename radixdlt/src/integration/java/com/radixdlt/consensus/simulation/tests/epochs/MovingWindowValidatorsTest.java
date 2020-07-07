@@ -45,8 +45,8 @@ public class MovingWindowValidatorsTest {
 	@Test
 	public void given_correct_1_node_bft_with_4_total_nodes_with_changing_epochs_per_100_views__then_should_pass_bft_and_epoch_invariants() {
 		SimulationTest bftTest = bftTestBuilder
-			.pacemakerTimeout(1000)
-			.checkLiveness("liveness", 1000, TimeUnit.MILLISECONDS)
+			.pacemakerTimeout(5000)
+			.checkLiveness("liveness", 5000, TimeUnit.MILLISECONDS)
 			.epochHighView(View.of(100))
 			.epochToNodesMapper(windowedEpochToNodesMapper(1, 4))
 			.checkEpochHighView("epochHighView", View.of(100))
