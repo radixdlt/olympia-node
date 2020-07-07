@@ -21,6 +21,9 @@ import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
 import com.radixdlt.consensus.bft.GetVerticesResponse;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 
+/**
+ * An empty/mocked vertex store event processor
+ */
 public enum EmptyVertexStoreEventProcessor implements VertexStoreEventProcessor {
 	INSTANCE;
 
