@@ -44,7 +44,7 @@ import java.util.Objects;
 /**
  * Asymmetric EC key pair provider fixed to curve 'secp256k1'.
  */
-@SecurityCritical({ SecurityKind.KEY_GENERATION, SecurityKind.SIG_SIGN, SecurityKind.PK_DECRYPT, SecurityKind.PK_ENCRYPT })
+@SecurityCritical({ SecurityKind.KEY_GENERATION, SecurityKind.KEY_STORE, SecurityKind.SIG_SIGN, SecurityKind.PK_DECRYPT, SecurityKind.PK_ENCRYPT })
 public final class ECKeyPair implements Signing<ECDSASignature> {
 	public static final int	BYTES = 32;
 
@@ -243,5 +243,13 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
 		} catch (ECIESException e) {
 			throw new IllegalStateException("Failed to encrypt `this.privateKey` with provided `ECPublicKey`", e);
 		}
+	}
+
+	public String publicKeyHex() {
+		return Bytes.toHexString(getPublicKey().getBytes());
+	}
+
+	public String privateKeyHex() {
+		return Bytes.toHexString(privateKey);
 	}
 }
