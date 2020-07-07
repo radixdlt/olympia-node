@@ -66,6 +66,7 @@ public final class EpochManager {
 	private final String loggerPrefix;
 
 	private VertexMetadata lastConstructed = null;
+	private ValidatorSet currentValidatorSet;
 	private VertexMetadata currentAncestor;
 	private VertexStoreEventProcessor vertexStoreEventProcessor = EmptyVertexStoreEventProcessor.INSTANCE;
 	private BFTEventProcessor bftEventProcessor = EmptyBFTEventProcessor.INSTANCE;
@@ -122,6 +123,7 @@ public final class EpochManager {
 		}
 
 		this.currentAncestor = ancestorMetadata;
+		this.currentValidatorSet = validatorSet;
 		this.counters.set(CounterType.EPOCH_MANAGER_EPOCH, nextEpoch);
 
 		final BFTEventProcessor bftEventProcessor;
@@ -220,6 +222,14 @@ public final class EpochManager {
 	}
 
 	private void processConsensusEventInternal(ConsensusEvent consensusEvent) {
+		if (this.currentValidatorSet != null && !this.currentValidatorSet.containsKey(consensusEvent.getAuthor())) {
+			log.warn("{}: CONSENSUS_EVENT: Received event from author={} not in validator set={}",
+				this.loggerPrefix, consensusEvent.getAuthor(), this.currentValidatorSet
+			);
+			return;
+		}
+		// TODO: Add the rest of consensus event verification here including signature verification
+
 		if (consensusEvent instanceof NewView) {
 			bftEventProcessor.processNewView((NewView) consensusEvent);
 		} else if (consensusEvent instanceof Proposal) {
@@ -232,8 +242,6 @@ public final class EpochManager {
 	}
 
 	public void processConsensusEvent(ConsensusEvent consensusEvent) {
-		// TODO: Add the rest of consensus event verification here including signature verification
-
 		if (consensusEvent.getEpoch() > this.currentEpoch()) {
 			log.warn("{}: CONSENSUS_EVENT: Received higher epoch event: {} current epoch: {}",
 				this.loggerPrefix, consensusEvent, this.currentEpoch()

@@ -32,50 +32,59 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.assertj.core.api.AssertionsForClassTypes;
+import org.assertj.core.api.Condition;
 import org.junit.Test;
 
 public class RandomValidatorsTest {
+	private static final int numNodes = 200;
+
 	private final Builder bftTestBuilder = SimulationTest.builder()
-		.numNodes(200)
+		.pacemakerTimeout(1000)
+		.numNodes(numNodes)
+		.epochHighView(View.of(100))
+		.checkEpochHighView("epochHighView", View.of(100))
 		.checkSafety("safety")
 		.checkLiveness("liveness", 1000, TimeUnit.MILLISECONDS)
 		.checkNoTimeouts("noTimeouts")
 		.checkAllProposalsHaveDirectParents("directParents");
 
-	private static Function<Long, IntStream> randomEpochToNodesMapper(int totalValidatorCount) {
+	private static Function<Long, IntStream> randomEpochToNodesMapper(Function<Long, Random> randomSupplier) {
 		return epoch -> {
-			List<Integer> indices = IntStream.range(0, totalValidatorCount).boxed().collect(Collectors.toList());
-			Random random = new Random(epoch);
+			List<Integer> indices = IntStream.range(0, numNodes).boxed().collect(Collectors.toList());
+			Random random = randomSupplier.apply(epoch);
 			for (long i = 0; i < epoch; i++) {
-				random.nextInt(totalValidatorCount);
+				random.nextInt(numNodes);
 			}
-			return IntStream.range(0, random.nextInt(totalValidatorCount) + 1)
+			return IntStream.range(0, random.nextInt(numNodes) + 1)
 				.map(i -> indices.remove(random.nextInt(indices.size())));
 		};
 	}
 
+	private static Function<Long, IntStream> goodRandomEpochToNodesMapper() {
+		return randomEpochToNodesMapper(Random::new);
+	}
+
+	private static Function<Long, IntStream> badRandomEpochToNodesMapper() {
+		Random random = new Random();
+		return randomEpochToNodesMapper(l -> random);
+	}
+
 	@Test
-	public void given_correct_100_node_bft_with_200_total_nodes_with_changing_epochs_per_100_views__then_should_pass_bft_and_epoch_invariants() {
+	public void given_deterministic_randomized_validator_sets__then_should_pass_bft_and_epoch_invariants() {
 		SimulationTest bftTest = bftTestBuilder
-			.pacemakerTimeout(1000)
-			.epochHighView(View.of(100))
-			.epochToNodesMapper(randomEpochToNodesMapper(200))
-			.checkEpochHighView("epochHighView", View.of(100))
+			.epochToNodesMapper(goodRandomEpochToNodesMapper())
 			.build();
 		Map<String, Optional<TestInvariantError>> results = bftTest.run(1, TimeUnit.MINUTES);
 		assertThat(results).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
 	}
 
 	@Test
-	public void given_correct_100_node_bft_with_200_total_nodes_with_changing_epochs_per_1_view__then_should_pass_bft_and_epoch_invariants() {
+	public void given_nondeterministic_randomized_validator_sets__then_should_fail() {
 		SimulationTest bftTest = bftTestBuilder
-			.pacemakerTimeout(1000)
-			.epochHighView(View.of(1))
-			.epochToNodesMapper(randomEpochToNodesMapper(200))
-			.checkEpochHighView("epochHighView", View.of(1))
+			.epochToNodesMapper(badRandomEpochToNodesMapper())
 			.build();
 		Map<String, Optional<TestInvariantError>> results = bftTest.run(1, TimeUnit.MINUTES);
-		assertThat(results).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
+		assertThat(results).hasValueSatisfying(new Condition<Optional>(Optional::isPresent, "Has error"));
 	}
 
 }
