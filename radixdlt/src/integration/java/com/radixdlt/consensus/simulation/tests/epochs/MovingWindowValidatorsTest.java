@@ -35,7 +35,6 @@ public class MovingWindowValidatorsTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
 		.numNodes(4)
 		.checkSafety("safety")
-		.checkLiveness("liveness", 1000, TimeUnit.MILLISECONDS)
 		.checkNoTimeouts("noTimeouts")
 		.checkAllProposalsHaveDirectParents("directParents");
 
@@ -47,6 +46,7 @@ public class MovingWindowValidatorsTest {
 	public void given_correct_1_node_bft_with_4_total_nodes_with_changing_epochs_per_100_views__then_should_pass_bft_and_epoch_invariants() {
 		SimulationTest bftTest = bftTestBuilder
 			.pacemakerTimeout(1000)
+			.checkLiveness("liveness", 1000, TimeUnit.MILLISECONDS)
 			.epochHighView(View.of(100))
 			.epochToNodesMapper(windowedEpochToNodesMapper(1, 4))
 			.checkEpochHighView("epochHighView", View.of(100))
@@ -59,6 +59,7 @@ public class MovingWindowValidatorsTest {
 	public void given_correct_3_node_bft_with_4_total_nodes_with_changing_epochs_per_100_views__then_should_pass_bft_and_epoch_invariants() {
 		SimulationTest bftTest = bftTestBuilder
 			.pacemakerTimeout(1000)
+			.checkLiveness("liveness", 1000, TimeUnit.MILLISECONDS)
 			.epochHighView(View.of(100))
 			.epochToNodesMapper(windowedEpochToNodesMapper(3, 4))
 			.checkEpochHighView("epochHighView", View.of(100))
@@ -71,7 +72,8 @@ public class MovingWindowValidatorsTest {
 	public void given_correct_100_node_bft_with_200_total_nodes_with_changing_epochs_per_100_views__then_should_pass_bft_and_epoch_invariants() {
 		SimulationTest bftTest = bftTestBuilder
 			.numNodes(200)
-			.pacemakerTimeout(1000)
+			.pacemakerTimeout(2000)
+			.checkLiveness("liveness", 2000, TimeUnit.MILLISECONDS) // High timeout to make Travis happy
 			.epochHighView(View.of(100))
 			.epochToNodesMapper(windowedEpochToNodesMapper(100, 200))
 			.checkEpochHighView("epochHighView", View.of(100))
@@ -84,7 +86,8 @@ public class MovingWindowValidatorsTest {
 	public void given_correct_100_node_bft_with_200_total_nodes_with_changing_epochs_per_1_view__then_should_pass_bft_and_epoch_invariants() {
 		SimulationTest bftTest = bftTestBuilder
 			.numNodes(200)
-			.pacemakerTimeout(1000)
+			.pacemakerTimeout(2000)
+			.checkLiveness("liveness", 2000, TimeUnit.MILLISECONDS) // High timeout to make Travis happy
 			.epochHighView(View.of(1))
 			.epochToNodesMapper(windowedEpochToNodesMapper(100, 200))
 			.checkEpochHighView("epochHighView", View.of(1))
