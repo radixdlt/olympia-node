@@ -36,7 +36,7 @@ import org.assertj.core.api.Condition;
 import org.junit.Test;
 
 public class RandomValidatorsTest {
-	private static final int numNodes = 200;
+	private static final int numNodes = 50;
 
 	private final Builder bftTestBuilder = SimulationTest.builder()
 		.pacemakerTimeout(1000)
