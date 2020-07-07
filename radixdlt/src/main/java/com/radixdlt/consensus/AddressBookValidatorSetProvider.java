@@ -32,7 +32,9 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Random;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.radix.events.EventListener;
 import org.radix.events.Events;
@@ -44,23 +46,15 @@ import org.radix.universe.system.RadixSystem;
  */
 public class AddressBookValidatorSetProvider {
 	private final Single<ImmutableList<Validator>> validatorList;
-	private final int rotatingValidatorSetSize;
 
 	public AddressBookValidatorSetProvider(
 		ECPublicKey selfKey,
 		AddressBook addressBook,
-		int fixedNodeCount,
-		int rotatingValidatorSetSize
+		int fixedNodeCount
 	) {
 		if (fixedNodeCount <= 0) {
 			throw new IllegalArgumentException("Quorum size must be > 0 but was " + fixedNodeCount);
 		}
-
-		if (rotatingValidatorSetSize <= 0 || rotatingValidatorSetSize > fixedNodeCount) {
-			throw new IllegalArgumentException("Validator set size must be > 0 and <= fixedNodeCount but was " + rotatingValidatorSetSize);
-		}
-
-		this.rotatingValidatorSetSize = rotatingValidatorSetSize;
 
 		this.validatorList = Observable.<List<Peer>>create(emitter -> {
 			emitter.onNext(addressBook.peers().collect(Collectors.toList()));
@@ -88,8 +82,17 @@ public class AddressBookValidatorSetProvider {
 		ImmutableList<Validator> validators = validatorList.blockingGet();
 
 		Builder<Validator> validatorSetBuilder = ImmutableList.builder();
-		for (int i = 0; i < rotatingValidatorSetSize; i++) {
-			Validator validator = validators.get((int) (i + epoch) % validators.size());
+		Random random = new Random(epoch);
+		List<Integer> indices = IntStream.range(0, validators.size()).boxed().collect(Collectors.toList());
+		for (long i = 0; i < epoch; i++) {
+			random.nextInt(validators.size());
+		}
+		int randInt = random.nextInt(validators.size());
+		int validatorSetSize = randInt + 1;
+
+		for (int i = 0; i < validatorSetSize; i++) {
+			int index = indices.remove(random.nextInt(indices.size()));
+			Validator validator = validators.get(index);
 			validatorSetBuilder.add(validator);
 		}
 

@@ -35,7 +35,7 @@ public class AddressBookValidatorSetProviderTest {
 	public void when_quorum_size_is_one__then_should_emit_self() {
 		ECPublicKey self = mock(ECPublicKey.class);
 		AddressBook addressBook = mock(AddressBook.class);
-		AddressBookValidatorSetProvider validatorSetProvider = new AddressBookValidatorSetProvider(self, addressBook, 1, 1);
+		AddressBookValidatorSetProvider validatorSetProvider = new AddressBookValidatorSetProvider(self, addressBook, 1);
 		Peer peer = mock(Peer.class);
 		RadixSystem system = mock(RadixSystem.class);
 		ECPublicKey peerKey = mock(ECPublicKey.class);

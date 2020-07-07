@@ -218,13 +218,11 @@ public class CerberusModule extends AbstractModule {
 		@Named("self") ECKeyPair selfKey
 	) {
 		final int fixedNodeCount = runtimeProperties.get("consensus.fixed_node_count", 1);
-		final int rotatingValidatorSetSize = runtimeProperties.get("consensus.rotating_validator_set_size", Math.max(fixedNodeCount - 1, 1));
 
 		return new AddressBookValidatorSetProvider(
 			selfKey.getPublicKey(),
 			addressBook,
-			fixedNodeCount,
-			rotatingValidatorSetSize
+			fixedNodeCount
 		);
 	}
 
