@@ -143,7 +143,7 @@ class CmdHelper {
      * For a given container name, method returns the virtual ethernet of the docker container. This method executes a
      * command on a docker container with @param name to find system wide unique index of the interface  it is linked to. Typically a container has interface
      * eth0 and iflink has an index in decimal number that is mapped to virtual ethernet interface on host
-     * @param  name  name of the container who's virtual ethernet interface needs to be retrieved
+     * @param name name of the container who's virtual ethernet interface needs to be retrieved
      * @return string value of Virtual ethernet name that docker container is linked to on host
      */
     static String getVethByContainerName(name) {

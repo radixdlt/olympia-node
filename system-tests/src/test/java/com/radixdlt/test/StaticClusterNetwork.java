@@ -25,6 +25,7 @@ import okhttp3.HttpUrl;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Set;
+import utils.TestnetNodes;
 
 /**
  * An unmanaged, static implementation of a {@link RemoteBFTNetwork} backed by a static cluster of remote node URLs.
@@ -34,11 +35,18 @@ import java.util.Set;
 // TODO ideally should be able to manage a clusters lifecycle the same way a docker net is managed
 public class StaticClusterNetwork implements RemoteBFTNetwork {
 	private static final String STATIC_CLUSTER_NODE_URLS_PROPERTY = "clusterNodeUrls";
+	private static final String STATIC_CLUSTER_TESTNET_NAME = "TESTNET_NAME";
 
 	private final Set<String> nodeUrls;
+	private String clusterName;
 
 	private StaticClusterNetwork(Set<String> nodeUrls) {
 		this.nodeUrls = nodeUrls;
+	}
+
+	private StaticClusterNetwork(Set<String> nodeUrls, String clusterName) {
+		this.nodeUrls = nodeUrls;
+		this.clusterName = clusterName;
 	}
 
 	@Override
@@ -56,6 +64,12 @@ public class StaticClusterNetwork implements RemoteBFTNetwork {
 		return nodeUrls; // TODO is using node URLs as their ids fine?
 	}
 
+	public String getClusterName() {
+		if(clusterName == null){
+			throw new IllegalStateException("Cluster Name is empty. Its the name of remote cluster");
+		}
+		return clusterName;
+	}
 	/**
 	 * Creates a static BFT network from a set of nodeUrls.
 	 * <p>
@@ -85,6 +99,26 @@ public class StaticClusterNetwork implements RemoteBFTNetwork {
 		return StaticClusterNetwork.from(nodeUrls);
 	}
 
+
+	public static StaticClusterNetwork extractFromTestnet(int expectedNumNodes){
+		ImmutableSet<String> nodesList = TestnetNodes.getInstance().nodeURLList();
+		return new StaticClusterNetwork(nodesList,System.getenv(STATIC_CLUSTER_TESTNET_NAME));
+	}
+
+	/**
+	 * Creates a static cluster BFT network of the cluster .
+	 * Based on whether static cluster name is avaliable as environment variable it uses ansible to fetch nodes information.
+	 * If static cluster name is not avaliable, it will fetch nodes using system property variable
+	 * @param expectedNumNodes The expected number of nodes
+	 * @return A static cluster network
+	 */
+	public static StaticClusterNetwork clusterInfo(int expectedNumNodes){
+		if(System.getenv(STATIC_CLUSTER_TESTNET_NAME) == null ){
+			return StaticClusterNetwork.extractFromProperty(expectedNumNodes);
+		}else{
+			return StaticClusterNetwork.extractFromTestnet(expectedNumNodes);
+		}
+	}
 	/**
 	 * Extracts cluster node URLs out of the STATIC_CLUSTER_NODE_URLS_PROPERTY.
 	 * This method will fail if the number of non-empty URLs does not match the expected count.

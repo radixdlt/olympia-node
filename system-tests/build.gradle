@@ -62,7 +62,6 @@ task dockerSystemTests(type: Test) {
     exclude "Runner.class"
 }
 
-
 task clusterSystemTests(type: Test) {
     useJUnit {
         includeCategories 'com.radixdlt.test.Cluster'

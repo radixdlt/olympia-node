@@ -84,6 +84,7 @@ public final class SystemCounters {
 		CONSENSUS_TIMEOUT("consensus.timeout"),
 		CONSENSUS_VERTEXSTORE_SIZE("consensus.vertexstore_size"),
 		CONSENSUS_VIEW("consensus.view"),
+		LEDGER_STORED("ledger.state_version"),
 		CONSENSUS_PROCESSED("consensus.processed"),
 		MEMPOOL_COUNT("mempool.count"),
 		MEMPOOL_MAXCOUNT("mempool.maxcount"),
