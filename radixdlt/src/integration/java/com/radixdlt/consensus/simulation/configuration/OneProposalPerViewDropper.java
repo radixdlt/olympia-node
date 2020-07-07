@@ -21,7 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.View;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork.MessageInTransit;
+import com.radixdlt.consensus.simulation.network.SimulationNetwork.MessageInTransit;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;

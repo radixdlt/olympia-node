@@ -21,7 +21,7 @@ import com.radixdlt.consensus.EpochChange;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.View;
-import com.radixdlt.consensus.simulation.network.SimulatedNetwork.SimulatedStateComputer;
+import com.radixdlt.consensus.simulation.network.SimulationNodes.SimulatedStateComputer;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.middleware2.CommittedAtom;

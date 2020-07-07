@@ -17,7 +17,7 @@
 
 package com.radixdlt.consensus.simulation;
 
-import com.radixdlt.consensus.simulation.network.SimulatedNetwork.RunningNetwork;
+import com.radixdlt.consensus.simulation.network.SimulationNodes.RunningNetwork;
 import io.reactivex.rxjava3.core.Observable;
 
 /**

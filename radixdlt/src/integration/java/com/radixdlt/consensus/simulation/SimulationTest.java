@@ -26,21 +26,21 @@ import com.radixdlt.consensus.simulation.configuration.ChangingEpochSyncedStateC
 import com.radixdlt.consensus.simulation.configuration.DroppingLatencyProvider;
 import com.radixdlt.consensus.simulation.configuration.OneProposalPerViewDropper;
 import com.radixdlt.consensus.simulation.configuration.RandomLatencyProvider;
-import com.radixdlt.consensus.simulation.network.SimulatedNetwork;
-import com.radixdlt.consensus.simulation.network.SimulatedNetwork.RunningNetwork;
+import com.radixdlt.consensus.simulation.network.SimulationNodes;
+import com.radixdlt.consensus.simulation.network.SimulationNodes.RunningNetwork;
 import com.radixdlt.consensus.simulation.invariants.bft.AllProposalsHaveDirectParentsInvariant;
 import com.radixdlt.consensus.simulation.invariants.bft.LivenessInvariant;
 import com.radixdlt.consensus.simulation.invariants.bft.NoTimeoutsInvariant;
 import com.radixdlt.consensus.simulation.invariants.bft.NoneCommittedInvariant;
 import com.radixdlt.consensus.simulation.invariants.bft.SafetyInvariant;
-import com.radixdlt.consensus.simulation.network.SimulatedNetwork.SimulatedStateComputer;
+import com.radixdlt.consensus.simulation.network.SimulationNodes.SimulatedStateComputer;
 import com.radixdlt.consensus.simulation.configuration.SingleEpochAlwaysSyncedStateComputer;
 import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork;
-import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork.LatencyProvider;
+import com.radixdlt.consensus.simulation.network.SimulationNetwork;
+import com.radixdlt.consensus.simulation.network.SimulationNetwork.LatencyProvider;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 import io.reactivex.rxjava3.core.Observable;
@@ -92,7 +92,7 @@ public class SimulationTest {
 		private final DroppingLatencyProvider latencyProvider = new DroppingLatencyProvider();
 		private final ImmutableMap.Builder<String, TestInvariant> checksBuilder = ImmutableMap.builder();
 		private List<ECKeyPair> nodes = Collections.singletonList(ECKeyPair.generateNew());
-		private int pacemakerTimeout = 12 * TestEventCoordinatorNetwork.DEFAULT_LATENCY;
+		private int pacemakerTimeout = 12 * SimulationNetwork.DEFAULT_LATENCY;
 		private boolean getVerticesRPCEnabled = true;
 		private View epochHighView = null;
 		private Function<Long, Set<Integer>> epochToNodeIndexMapper;
@@ -149,7 +149,7 @@ public class SimulationTest {
 		}
 
 		public Builder checkLiveness(String invariantName) {
-			this.checksBuilder.put(invariantName, new LivenessInvariant(8 * TestEventCoordinatorNetwork.DEFAULT_LATENCY, TimeUnit.MILLISECONDS));
+			this.checksBuilder.put(invariantName, new LivenessInvariant(8 * SimulationNetwork.DEFAULT_LATENCY, TimeUnit.MILLISECONDS));
 			return this;
 		}
 
@@ -251,7 +251,7 @@ public class SimulationTest {
 	 * @return map of check results
 	 */
 	public Map<String, Optional<TestInvariantError>> run(long duration, TimeUnit timeUnit) {
-		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.builder()
+		SimulationNetwork network = SimulationNetwork.builder()
 			.latencyProvider(this.latencyProvider)
 			.build();
 
@@ -263,7 +263,7 @@ public class SimulationTest {
 			stateComputerSupplier = () -> new ChangingEpochSyncedStateComputer(epochHighView, validatorSetMapping);
 		}
 
-		SimulatedNetwork bftNetwork =  new SimulatedNetwork(nodes, network, pacemakerTimeout, stateComputerSupplier, getVerticesRPCEnabled);
+		SimulationNodes bftNetwork =  new SimulationNodes(nodes, network, pacemakerTimeout, stateComputerSupplier, getVerticesRPCEnabled);
 
 		return bftNetwork.start()
 			.timeout(10, TimeUnit.SECONDS)

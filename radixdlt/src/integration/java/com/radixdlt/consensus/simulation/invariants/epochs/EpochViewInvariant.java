@@ -19,7 +19,7 @@ package com.radixdlt.consensus.simulation.invariants.epochs;
 
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.simulation.TestInvariant;
-import com.radixdlt.consensus.simulation.network.SimulatedNetwork.RunningNetwork;
+import com.radixdlt.consensus.simulation.network.SimulationNodes.RunningNetwork;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.HashSet;
 import java.util.Map;

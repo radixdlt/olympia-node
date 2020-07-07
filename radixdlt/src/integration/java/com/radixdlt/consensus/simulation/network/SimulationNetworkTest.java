@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,29 +15,29 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.middleware2.network;
+package com.radixdlt.consensus.simulation.network;
 
 import static org.mockito.Mockito.mock;
 
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.ConsensusEvent;
+import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.consensus.NewView;
-import com.radixdlt.consensus.Vote;
 import com.radixdlt.crypto.Hash;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.junit.Test;
 
-public class TestBFTEventProcessorNetworkTest {
+public class SimulationNetworkTest {
 	private ECPublicKey validatorId = ECKeyPair.generateNew().getPublicKey();
 	private ECPublicKey validatorId2 = ECKeyPair.generateNew().getPublicKey();
 
 	@Test
 	public void when_send_new_view_to_self__then_should_receive_it() {
-		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.builder().build();
+		SimulationNetwork network = SimulationNetwork.builder().build();
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
 		network.getNetworkRx(validatorId).consensusEvents()
 			.subscribe(testObserver);
@@ -49,7 +49,7 @@ public class TestBFTEventProcessorNetworkTest {
 
 	@Test
 	public void when_send_new_view_to_self_twice__then_should_receive_both() {
-		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.builder().build();
+		SimulationNetwork network = SimulationNetwork.builder().build();
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
 		network.getNetworkRx(validatorId).consensusEvents()
 			.subscribe(testObserver);
@@ -62,7 +62,7 @@ public class TestBFTEventProcessorNetworkTest {
 
 	@Test
 	public void when_self_and_other_send_new_view_to_self__then_should_receive_both() {
-		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.builder().build();
+		SimulationNetwork network = SimulationNetwork.builder().build();
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
 		network.getNetworkRx(validatorId).consensusEvents()
 			.subscribe(testObserver);
@@ -75,7 +75,7 @@ public class TestBFTEventProcessorNetworkTest {
 
 	@Test
 	public void when_send_vote_to_self__then_should_receive_it() {
-		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.builder().build();
+		SimulationNetwork network = SimulationNetwork.builder().build();
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
 		network.getNetworkRx(validatorId).consensusEvents()
 			.subscribe(testObserver);
@@ -87,7 +87,7 @@ public class TestBFTEventProcessorNetworkTest {
 
 	@Test
 	public void when_broadcast_proposal__then_should_receive_it() {
-		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.builder().build();
+		SimulationNetwork network = SimulationNetwork.builder().build();
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
 		network.getNetworkRx(validatorId).consensusEvents()
 			.subscribe(testObserver);
@@ -99,7 +99,7 @@ public class TestBFTEventProcessorNetworkTest {
 
 	@Test
 	public void when_disabling_messages_and_send_new_view_message_to_other_node__then_should_not_receive_it() {
-		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.builder()
+		SimulationNetwork network = SimulationNetwork.builder()
 			.latencyProvider(msg -> -1)
 			.build();
 
@@ -114,7 +114,7 @@ public class TestBFTEventProcessorNetworkTest {
 
 	@Test
 	public void when_send_get_vertex_request_to_another_node__then_should_receive_it() {
-		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.builder().build();
+		SimulationNetwork network = SimulationNetwork.builder().build();
 		Hash vertexId = mock(Hash.class);
 
 		TestObserver<GetVerticesRequest> rpcRequestListener =
@@ -127,4 +127,5 @@ public class TestBFTEventProcessorNetworkTest {
 		rpcRequestListener.awaitCount(1);
 		rpcRequestListener.assertValueAt(0, r -> r.getVertexId().equals(vertexId));
 	}
+
 }

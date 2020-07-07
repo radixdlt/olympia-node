@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.middleware2.network;
+package com.radixdlt.consensus.simulation.network;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.ConsensusEvent;
@@ -53,7 +53,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Simple simulated network implementation that just sends messages to itself with a configurable latency.
  */
-public class TestEventCoordinatorNetwork {
+public class SimulationNetwork {
 	public static final int DEFAULT_LATENCY = 50;
 
 	public static final class MessageInTransit {
@@ -126,7 +126,7 @@ public class TestEventCoordinatorNetwork {
 	private final Map<ECPublicKey, SimulatedNetworkImpl> receivers = new ConcurrentHashMap<>();
 	private final LatencyProvider latencyProvider;
 
-	private TestEventCoordinatorNetwork(LatencyProvider latencyProvider) {
+	private SimulationNetwork(LatencyProvider latencyProvider) {
 		this.latencyProvider = latencyProvider;
 		this.receivedMessages = ReplaySubject.<MessageInTransit>create(20) // To catch startup timing issues
 			.toSerialized();
@@ -143,8 +143,8 @@ public class TestEventCoordinatorNetwork {
 			return this;
 		}
 
-		public TestEventCoordinatorNetwork build() {
-			return new TestEventCoordinatorNetwork(latencyProvider);
+		public SimulationNetwork build() {
+			return new SimulationNetwork(latencyProvider);
 		}
 	}
 

@@ -21,7 +21,7 @@ import com.radixdlt.consensus.simulation.TestInvariant;
 import com.radixdlt.consensus.ConsensusEventsRx;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.simulation.network.SimulatedNetwork.RunningNetwork;
+import com.radixdlt.consensus.simulation.network.SimulationNodes.RunningNetwork;
 import com.radixdlt.crypto.ECKeyPair;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.List;

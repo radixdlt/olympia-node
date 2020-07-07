@@ -48,9 +48,8 @@ import com.radixdlt.mempool.EmptyMempool;
 import com.radixdlt.mempool.Mempool;
 
 import com.radixdlt.middleware2.CommittedAtom;
-import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork;
-import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork.SimulatedNetworkReceiver;
-import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork.SimulationSyncSender;
+import com.radixdlt.consensus.simulation.network.SimulationNetwork.SimulatedNetworkReceiver;
+import com.radixdlt.consensus.simulation.network.SimulationNetwork.SimulationSyncSender;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
@@ -68,9 +67,9 @@ import static com.radixdlt.utils.ThreadFactories.daemonThreads;
 /**
  * A multi-node bft test network where the network and latencies of each message is simulated.
  */
-public class SimulatedNetwork {
+public class SimulationNodes {
 	private final int pacemakerTimeout;
-	private final TestEventCoordinatorNetwork underlyingNetwork;
+	private final SimulationNetwork underlyingNetwork;
 	private final ImmutableMap<ECKeyPair, SystemCounters> counters;
 	private final ImmutableMap<ECKeyPair, InternalMessagePasser> internalMessages;
 	private final ImmutableMap<ECKeyPair, ConsensusRunner> runners;
@@ -87,9 +86,9 @@ public class SimulatedNetwork {
 	 * @param underlyingNetwork the network simulator
 	 * @param pacemakerTimeout a fixed pacemaker timeout used for all nodes
 	 */
-	public SimulatedNetwork(
+	public SimulationNodes(
 		List<ECKeyPair> nodes,
-		TestEventCoordinatorNetwork underlyingNetwork,
+		SimulationNetwork underlyingNetwork,
 		int pacemakerTimeout,
 		Supplier<SimulatedStateComputer> stateComputerSupplier,
 		boolean getVerticesRPCEnabled
@@ -181,7 +180,7 @@ public class SimulatedNetwork {
 
 		SystemCounters getCounters(ECKeyPair keyPair);
 
-		TestEventCoordinatorNetwork getUnderlyingNetwork();
+		SimulationNetwork getUnderlyingNetwork();
 	}
 
 	public Single<RunningNetwork> start() {
@@ -216,7 +215,7 @@ public class SimulatedNetwork {
 			}
 
 			@Override
-			public TestEventCoordinatorNetwork getUnderlyingNetwork() {
+			public SimulationNetwork getUnderlyingNetwork() {
 				return underlyingNetwork;
 			}
 		});

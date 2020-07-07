@@ -19,9 +19,9 @@ package com.radixdlt.consensus.simulation.configuration;
 
 import com.google.common.collect.Sets;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork;
-import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork.LatencyProvider;
-import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork.MessageInTransit;
+import com.radixdlt.consensus.simulation.network.SimulationNetwork;
+import com.radixdlt.consensus.simulation.network.SimulationNetwork.LatencyProvider;
+import com.radixdlt.consensus.simulation.network.SimulationNetwork.MessageInTransit;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
@@ -34,7 +34,7 @@ public final class DroppingLatencyProvider implements LatencyProvider {
 	private final AtomicReference<LatencyProvider> base = new AtomicReference<>();
 
 	public DroppingLatencyProvider() {
-		this.base.set(msg -> TestEventCoordinatorNetwork.DEFAULT_LATENCY);
+		this.base.set(msg -> SimulationNetwork.DEFAULT_LATENCY);
 	}
 
 	public DroppingLatencyProvider copyOf() {
