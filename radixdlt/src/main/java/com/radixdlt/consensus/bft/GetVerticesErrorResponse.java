@@ -21,7 +21,10 @@ import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.crypto.Hash;
 import java.util.Objects;
 
-public class GetVerticesErrorResponse {
+/**
+ * An error response to the GetVertices call
+ */
+public final class GetVerticesErrorResponse {
 	private final Hash vertexId;
 	private final Object opaque;
 	private final QuorumCertificate highestQC;

@@ -19,6 +19,9 @@ package com.radixdlt.consensus;
 
 import com.radixdlt.crypto.ECPublicKey;
 
+/**
+ * A mocked sync epochs rpc sender
+ */
 public enum EmptySyncEpochsRPCSender implements SyncEpochsRPCSender {
 	INSTANCE;
 
