@@ -22,6 +22,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -131,11 +132,40 @@ public class EpochManagerTest {
 	}
 
 	@Test
+	public void when_receive_not_current_epoch_request__then_should_return_null() {
+		ECPublicKey sender = mock(ECPublicKey.class);
+		epochManager.processGetEpochRequest(new GetEpochRequest(sender, 2));
+		verify(syncEpochsRPCSender, times(1)).sendGetEpochResponse(eq(sender), isNull());
+	}
+
+	@Test
 	public void when_receive_epoch_response__then_should_sync_state_computer() {
 		GetEpochResponse response = mock(GetEpochResponse.class);
 		when(response.getEpochAncestor()).thenReturn(VertexMetadata.ofGenesisAncestor());
 		epochManager.processGetEpochResponse(response);
 		verify(syncedStateComputer, times(1)).syncTo(eq(VertexMetadata.ofGenesisAncestor()), any(), any());
+	}
+
+	@Test
+	public void when_receive_null_epoch_response__then_should_do_nothing() {
+		GetEpochResponse response = mock(GetEpochResponse.class);
+		when(response.getEpochAncestor()).thenReturn(null);
+		epochManager.processGetEpochResponse(response);
+		verify(syncedStateComputer, never()).syncTo(any(), any(), any());
+	}
+
+	@Test
+	public void when_receive_old_epoch_response__then_should_do_nothing() {
+		VertexMetadata ancestor = VertexMetadata.ofGenesisAncestor();
+		ValidatorSet validatorSet = mock(ValidatorSet.class);
+		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of());
+		EpochChange epochChange = new EpochChange(ancestor, validatorSet);
+		epochManager.processEpochChange(epochChange);
+
+		GetEpochResponse response = mock(GetEpochResponse.class);
+		when(response.getEpochAncestor()).thenReturn(ancestor);
+		epochManager.processGetEpochResponse(response);
+		verify(syncedStateComputer, never()).syncTo(any(), any(), any());
 	}
 
 	// TODO: Refactor EpochManager to simplify the following testing logic (TDD)
