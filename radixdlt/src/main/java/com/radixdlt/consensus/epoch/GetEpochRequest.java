@@ -36,11 +36,11 @@ public final class GetEpochRequest {
 		return epoch;
 	}
 
-	public ECPublicKey getSender() {
+	public ECPublicKey getAuthor() {
 		return sender;
 	}
 
 	public String toString() {
-		return String.format("%s{sender=%s epoch=%s}", this.getClass().getSimpleName(), this.sender, this.epoch);
+		return String.format("%s{author=%s epoch=%s}", this.getClass().getSimpleName(), this.sender, this.epoch);
 	}
 }

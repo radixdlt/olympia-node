@@ -40,7 +40,7 @@ import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.middleware2.ClientAtom.LedgerAtomConversionException;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
-import com.radixdlt.middleware2.network.MessageCentralSyncCommittedNetwork;
+import com.radixdlt.middleware2.network.MessageCentralLedgerSync;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.middleware2.store.CommittedAtomsStore.AtomIndexer;
 import com.radixdlt.middleware2.store.EngineAtomIndices;
@@ -96,7 +96,7 @@ public class MiddlewareModule extends AbstractModule {
 		Universe universe,
 		MessageCentral messageCentral
 	) {
-		return new MessageCentralSyncCommittedNetwork(
+		return new MessageCentralLedgerSync(
 			universe,
 			messageCentral
 		);

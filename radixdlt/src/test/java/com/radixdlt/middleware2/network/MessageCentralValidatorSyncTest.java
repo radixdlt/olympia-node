@@ -28,10 +28,13 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
 import com.radixdlt.consensus.bft.GetVerticesResponse;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
+import com.radixdlt.consensus.epoch.GetEpochRequest;
+import com.radixdlt.consensus.epoch.GetEpochResponse;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
@@ -52,7 +55,7 @@ public class MessageCentralValidatorSyncTest {
 	private ECPublicKey selfKey;
 	private AddressBook addressBook;
 	private MessageCentral messageCentral;
-	private MessageCentralValidatorSync network;
+	private MessageCentralValidatorSync sync;
 
 	@Before
 	public void setUp() {
@@ -60,13 +63,13 @@ public class MessageCentralValidatorSyncTest {
 		Universe universe = mock(Universe.class);
 		this.addressBook = mock(AddressBook.class);
 		this.messageCentral = mock(MessageCentral.class);
-		this.network = new MessageCentralValidatorSync(selfKey, universe, addressBook, messageCentral);
+		this.sync = new MessageCentralValidatorSync(selfKey, universe, addressBook, messageCentral);
 	}
 
 
 	@Test
 	public void when_send_rpc_to_self__then_illegal_state_exception_should_be_thrown() {
-		assertThatThrownBy(() -> network.sendGetVerticesRequest(mock(Hash.class), selfKey, 1, new Object()))
+		assertThatThrownBy(() -> sync.sendGetVerticesRequest(mock(Hash.class), selfKey, 1, new Object()))
 			.isInstanceOf(IllegalStateException.class);
 	}
 
@@ -74,7 +77,7 @@ public class MessageCentralValidatorSyncTest {
 	public void when_get_vertex_and_peer_doesnt_exist__should_receive_error() {
 		ECPublicKey node = ECKeyPair.generateNew().getPublicKey();
 		when(addressBook.peer(node.euid())).thenReturn(Optional.empty());
-		assertThatThrownBy(() -> network.sendGetVerticesRequest(mock(Hash.class), node, 1, new Object()))
+		assertThatThrownBy(() -> sync.sendGetVerticesRequest(mock(Hash.class), node, 1, new Object()))
 			.isInstanceOf(IllegalStateException.class);
 	}
 
@@ -87,7 +90,7 @@ public class MessageCentralValidatorSyncTest {
 		when(addressBook.peer(eq(EUID.ONE))).thenReturn(Optional.of(peer));
 		int count = 1;
 		Object opaque = mock(Object.class);
-		network.sendGetVerticesRequest(id, node, count, opaque);
+		sync.sendGetVerticesRequest(id, node, count, opaque);
 		verify(messageCentral, times(1)).send(eq(peer), any(GetVerticesRequestMessage.class));
 
 		AtomicReference<MessageListener<GetVerticesResponseMessage>> listener = new AtomicReference<>();
@@ -97,7 +100,7 @@ public class MessageCentralValidatorSyncTest {
 			return null;
 		}).when(messageCentral).addListener(eq(GetVerticesResponseMessage.class), any());
 
-		TestObserver<GetVerticesResponse> testObserver = network.responses().test();
+		TestObserver<GetVerticesResponse> testObserver = sync.responses().test();
 
 		GetVerticesResponseMessage responseMessage = mock(GetVerticesResponseMessage.class);
 		Vertex vertex = mock(Vertex.class);
@@ -119,7 +122,7 @@ public class MessageCentralValidatorSyncTest {
 		when(addressBook.peer(eq(EUID.ONE))).thenReturn(Optional.of(peer));
 		int count = 1;
 		Object opaque = mock(Object.class);
-		network.sendGetVerticesRequest(id, node, count, opaque);
+		sync.sendGetVerticesRequest(id, node, count, opaque);
 		verify(messageCentral, times(1)).send(eq(peer), any(GetVerticesRequestMessage.class));
 
 		AtomicReference<MessageListener<GetVerticesErrorResponseMessage>> listener = new AtomicReference<>();
@@ -129,7 +132,7 @@ public class MessageCentralValidatorSyncTest {
 			return null;
 		}).when(messageCentral).addListener(eq(GetVerticesErrorResponseMessage.class), any());
 
-		TestObserver<GetVerticesErrorResponse> testObserver = network.errorResponses().test();
+		TestObserver<GetVerticesErrorResponse> testObserver = sync.errorResponses().test();
 
 		GetVerticesErrorResponseMessage responseMessage = mock(GetVerticesErrorResponseMessage.class);
 		Vertex vertex = mock(Vertex.class);
@@ -152,7 +155,7 @@ public class MessageCentralValidatorSyncTest {
 		when(vertex.getId()).thenReturn(mock(Hash.class));
 		when(request.getVertexId()).thenReturn(mock(Hash.class));
 		ImmutableList<Vertex> vertices = ImmutableList.of(vertex);
-		network.sendGetVerticesResponse(request, vertices);
+		sync.sendGetVerticesResponse(request, vertices);
 		verify(messageCentral, times(1)).send(eq(peer), any(GetVerticesResponseMessage.class));
 	}
 
@@ -163,7 +166,7 @@ public class MessageCentralValidatorSyncTest {
 		when(request.getVertexId()).thenReturn(mock(Hash.class));
 		when(request.getRequestor()).thenReturn(peer);
 		QuorumCertificate qc = mock(QuorumCertificate.class);
-		network.sendGetVerticesErrorResponse(request, qc, qc);
+		sync.sendGetVerticesErrorResponse(request, qc, qc);
 		verify(messageCentral, times(1)).send(eq(peer), any(GetVerticesErrorResponseMessage.class));
 	}
 
@@ -178,9 +181,56 @@ public class MessageCentralValidatorSyncTest {
 			return null;
 		}).when(messageCentral).addListener(eq(GetVerticesRequestMessage.class), any());
 
-		TestObserver<GetVerticesRequest> testObserver = network.requests().test();
+		TestObserver<GetVerticesRequest> testObserver = sync.requests().test();
 		testObserver.awaitCount(2);
 		testObserver.assertValueAt(0, v -> v.getVertexId().equals(vertexId0));
 		testObserver.assertValueAt(1, v -> v.getVertexId().equals(vertexId1));
+	}
+
+	@Test
+	public void when_send_get_epoch_request__then_message_central_will_send_get_epoch_request() {
+		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(mock(Peer.class)));
+		ECPublicKey author = mock(ECPublicKey.class);
+		when(author.euid()).thenReturn(mock(EUID.class));
+		sync.sendGetEpochRequest(author, 12345);
+		verify(messageCentral, times(1)).send(any(), any(GetEpochRequestMessage.class));
+	}
+
+	@Test
+	public void when_send_get_epoch_response__then_message_central_will_send_get_epoch_response() {
+		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(mock(Peer.class)));
+		ECPublicKey author = mock(ECPublicKey.class);
+		when(author.euid()).thenReturn(mock(EUID.class));
+		sync.sendGetEpochResponse(author, mock(VertexMetadata.class));
+		verify(messageCentral, times(1)).send(any(), any(GetEpochResponseMessage.class));
+	}
+
+	@Test
+	public void when_subscribed_to_epoch_requests__then_should_receive_requests() {
+		ECPublicKey author = mock(ECPublicKey.class);
+		doAnswer(inv -> {
+			MessageListener<GetEpochRequestMessage> messageListener = inv.getArgument(1);
+			messageListener.handleMessage(mock(Peer.class), new GetEpochRequestMessage(author, 12345, 1));
+			return null;
+		}).when(messageCentral).addListener(eq(GetEpochRequestMessage.class), any());
+
+		TestObserver<GetEpochRequest> testObserver = sync.epochRequests().test();
+		testObserver.awaitCount(1);
+		testObserver.assertValueAt(0, r -> r.getEpoch() == 1 && r.getAuthor().equals(author));
+	}
+
+	@Test
+	public void when_subscribed_to_epoch_responses__then_should_receive_responses() {
+		ECPublicKey author = mock(ECPublicKey.class);
+		VertexMetadata ancestor = mock(VertexMetadata.class);
+		doAnswer(inv -> {
+			MessageListener<GetEpochResponseMessage> messageListener = inv.getArgument(1);
+			messageListener.handleMessage(mock(Peer.class), new GetEpochResponseMessage(author, 12345, ancestor));
+			return null;
+		}).when(messageCentral).addListener(eq(GetEpochResponseMessage.class), any());
+
+		TestObserver<GetEpochResponse> testObserver = sync.epochResponses().test();
+		testObserver.awaitCount(1);
+		testObserver.assertValueAt(0, r -> r.getEpochAncestor().equals(ancestor) && r.getAuthor().equals(author));
 	}
 }

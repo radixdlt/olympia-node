@@ -39,7 +39,7 @@ public class GetEpochRequestTest {
 	@Test
 	public void testGetters() {
 		assertThat(this.request.getEpoch()).isEqualTo(epoch);
-		assertThat(this.request.getSender()).isEqualTo(this.sender);
+		assertThat(this.request.getAuthor()).isEqualTo(this.sender);
 	}
 
 	@Test

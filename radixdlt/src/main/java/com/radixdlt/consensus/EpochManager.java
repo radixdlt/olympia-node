@@ -195,10 +195,10 @@ public final class EpochManager {
 		log.info("{}: GET_EPOCH_REQUEST: {}", this.loggerPrefix, request);
 
 		if (this.currentEpoch() == request.getEpoch()) {
-			epochsRPCSender.sendGetEpochResponse(request.getSender(), this.currentAncestor);
+			epochsRPCSender.sendGetEpochResponse(request.getAuthor(), this.currentAncestor);
 		} else {
 			// TODO: Send better error message back
-			epochsRPCSender.sendGetEpochResponse(request.getSender(), null);
+			epochsRPCSender.sendGetEpochResponse(request.getAuthor(), null);
 		}
 	}
 
@@ -213,7 +213,7 @@ public final class EpochManager {
 
 		final VertexMetadata ancestor = response.getEpochAncestor();
 		if (ancestor.getEpoch() >= this.currentEpoch()) {
-			syncedStateComputer.syncTo(ancestor, Collections.singletonList(response.getSender()), null);
+			syncedStateComputer.syncTo(ancestor, Collections.singletonList(response.getAuthor()), null);
 		} else {
 			log.warn("{}: Received old epoch {}", this.loggerPrefix, response);
 		}

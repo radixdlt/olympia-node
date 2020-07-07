@@ -39,8 +39,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Before;
 import org.junit.Test;
 
-public class MessageCentralSyncCommittedNetworkTest {
-	private MessageCentralSyncCommittedNetwork messageCentralSyncCommittedNetwork;
+public class MessageCentralLedgerSyncTest {
+	private MessageCentralLedgerSync messageCentralLedgerSync;
 	private MessageCentral messageCentral;
 
 	@Before
@@ -48,20 +48,20 @@ public class MessageCentralSyncCommittedNetworkTest {
 		Universe universe = mock(Universe.class);
 		when(universe.getMagic()).thenReturn(123);
 		this.messageCentral = mock(MessageCentral.class);
-		this.messageCentralSyncCommittedNetwork = new MessageCentralSyncCommittedNetwork(universe, messageCentral);
+		this.messageCentralLedgerSync = new MessageCentralLedgerSync(universe, messageCentral);
 	}
 
 	@Test
 	public void when_send_sync_request__then_magic_should_be_same_as_universe() {
 		Peer peer = mock(Peer.class);
-		messageCentralSyncCommittedNetwork.sendSyncRequest(peer, 1);
+		messageCentralLedgerSync.sendSyncRequest(peer, 1);
 		verify(messageCentral, times(1)).send(eq(peer), argThat(msg -> msg.getMagic() == 123));
 	}
 
 	@Test
 	public void when_send_sync_response__then_magic_should_be_same_as_universe() {
 		Peer peer = mock(Peer.class);
-		messageCentralSyncCommittedNetwork.sendSyncResponse(peer, Collections.emptyList());
+		messageCentralLedgerSync.sendSyncResponse(peer, Collections.emptyList());
 		verify(messageCentral, times(1)).send(eq(peer), argThat(msg -> msg.getMagic() == 123));
 	}
 
@@ -73,7 +73,7 @@ public class MessageCentralSyncCommittedNetworkTest {
 			return null;
 		}).when(messageCentral).addListener(eq(SyncRequestMessage.class), any());
 
-		TestObserver<SyncRequest> testObserver = this.messageCentralSyncCommittedNetwork.syncRequests().test();
+		TestObserver<SyncRequest> testObserver = this.messageCentralLedgerSync.syncRequests().test();
 		Peer peer = mock(Peer.class);
 		SyncRequestMessage syncRequestMessage = mock(SyncRequestMessage.class);
 		when(syncRequestMessage.getStateVersion()).thenReturn(12345L);
@@ -92,7 +92,7 @@ public class MessageCentralSyncCommittedNetworkTest {
 			return null;
 		}).when(messageCentral).addListener(eq(SyncResponseMessage.class), any());
 
-		TestObserver<List<CommittedAtom>> testObserver = this.messageCentralSyncCommittedNetwork.syncResponses().test();
+		TestObserver<List<CommittedAtom>> testObserver = this.messageCentralLedgerSync.syncResponses().test();
 		Peer peer = mock(Peer.class);
 		SyncResponseMessage syncResponseMessage = mock(SyncResponseMessage.class);
 		List<CommittedAtom> atoms = Collections.singletonList(mock(CommittedAtom.class));

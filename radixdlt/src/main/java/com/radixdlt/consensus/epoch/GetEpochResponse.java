@@ -25,22 +25,23 @@ import com.radixdlt.crypto.ECPublicKey;
  */
 public final class GetEpochResponse {
 	private final VertexMetadata epochAncestor;
-	private final ECPublicKey sender;
+	private final ECPublicKey author;
 
-	public GetEpochResponse(ECPublicKey sender, VertexMetadata epochAncestor) {
+	public GetEpochResponse(ECPublicKey author, VertexMetadata epochAncestor) {
 		this.epochAncestor = epochAncestor;
-		this.sender = sender;
+		this.author = author;
 	}
 
-	public ECPublicKey getSender() {
-		return sender;
+	public ECPublicKey getAuthor() {
+		return author;
 	}
 
 	public VertexMetadata getEpochAncestor() {
 		return epochAncestor;
 	}
 
+	@Override
 	public String toString() {
-		return String.format("%s{sender=%s ancestor=%s}", this.getClass().getSimpleName(), this.sender, this.epochAncestor);
+		return String.format("%s{author=%s ancestor=%s}", this.getClass().getSimpleName(), this.author, this.epochAncestor);
 	}
 }

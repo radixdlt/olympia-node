@@ -44,7 +44,9 @@ import io.reactivex.rxjava3.core.Observable;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiFunction;
 import javax.inject.Inject;
+import org.radix.network.messaging.Message;
 
 /**
  * Network interface for syncing vertices using the MessageCentral
@@ -114,55 +116,46 @@ public class MessageCentralValidatorSync implements SyncVerticesRPCSender, SyncV
 
 	@Override
 	public Observable<GetVerticesRequest> requests() {
-		return Observable.create(emitter -> {
-			MessageListener<GetVerticesRequestMessage> listener = (src, msg) -> {
-				MessageCentralGetVerticesRequest request = new MessageCentralGetVerticesRequest(src, msg.getVertexId(), msg.getCount());
-				emitter.onNext(request);
-			};
-			this.messageCentral.addListener(GetVerticesRequestMessage.class, listener);
-			emitter.setCancellable(() -> this.messageCentral.removeListener(listener));
-		});
+		return this.createObservable(
+			GetVerticesRequestMessage.class,
+			(peer, msg) -> new MessageCentralGetVerticesRequest(peer, msg.getVertexId(), msg.getCount())
+		);
 	}
 
 	@Override
 	public Observable<GetVerticesResponse> responses() {
-		return Observable.create(emitter -> {
-			MessageListener<GetVerticesResponseMessage> listener = (src, msg) -> {
+		return this.createObservable(
+			GetVerticesResponseMessage.class,
+			(peer, msg) -> {
 				Object opaque = opaqueCache.getIfPresent(msg.getVertexId());
 				if (opaque == null) {
-					return; // TODO: send error?
+					return null; // TODO: send error?
 				}
 
-				GetVerticesResponse response = new GetVerticesResponse(msg.getVertexId(), msg.getVertices(), opaque);
-				emitter.onNext(response);
-			};
-			this.messageCentral.addListener(GetVerticesResponseMessage.class, listener);
-			emitter.setCancellable(() -> this.messageCentral.removeListener(listener));
-		});
+				return new GetVerticesResponse(msg.getVertexId(), msg.getVertices(), opaque);
+			}
+		);
 	}
 
 	@Override
 	public Observable<GetVerticesErrorResponse> errorResponses() {
-		return Observable.create(emitter -> {
-			MessageListener<GetVerticesErrorResponseMessage> listener = (src, msg) -> {
+		return this.createObservable(
+			GetVerticesErrorResponseMessage.class,
+			(peer, msg) -> {
 				Object opaque = opaqueCache.getIfPresent(msg.getVertexId());
 				if (opaque == null) {
-					return; // TODO: send error?
+					return null; // TODO: send error?
 				}
 
-				GetVerticesErrorResponse response = new GetVerticesErrorResponse(
+				return new GetVerticesErrorResponse(
 					msg.getVertexId(),
 					msg.getHighestQC(),
 					msg.getHighestCommittedQC(),
 					opaque
 				);
-				emitter.onNext(response);
-			};
-			this.messageCentral.addListener(GetVerticesErrorResponseMessage.class, listener);
-			emitter.setCancellable(() -> this.messageCentral.removeListener(listener));
-		});
+			}
+		);
 	}
-
 
 	/**
 	 * An RPC request to retrieve a given vertex
@@ -224,24 +217,29 @@ public class MessageCentralValidatorSync implements SyncVerticesRPCSender, SyncV
 
 	@Override
 	public Observable<GetEpochRequest> epochRequests() {
-		return Observable.create(emitter -> {
-			MessageListener<GetEpochRequestMessage> listener = (src, msg) -> {
-				GetEpochRequest response = new GetEpochRequest(msg.getAuthor(), msg.getEpoch());
-				emitter.onNext(response);
-			};
-			this.messageCentral.addListener(GetEpochRequestMessage.class, listener);
-			emitter.setCancellable(() -> this.messageCentral.removeListener(listener));
-		});
+		return this.createObservable(
+			GetEpochRequestMessage.class,
+			(peer, msg) -> new GetEpochRequest(msg.getAuthor(), msg.getEpoch())
+		);
 	}
 
 	@Override
 	public Observable<GetEpochResponse> epochResponses() {
+		return this.createObservable(
+			GetEpochResponseMessage.class,
+			(peer, msg) -> new GetEpochResponse(msg.getAuthor(), msg.getAncestor())
+		);
+	}
+
+	private <T extends Message, U> Observable<U> createObservable(Class<T> c, BiFunction<Peer, T, U> mapper) {
 		return Observable.create(emitter -> {
-			MessageListener<GetEpochResponseMessage> listener = (src, msg) -> {
-				GetEpochResponse response = new GetEpochResponse(msg.getAuthor(), msg.getAncestor());
-				emitter.onNext(response);
+			MessageListener<T> listener = (src, msg) -> {
+				U u = mapper.apply(src, msg);
+				if (u != null) {
+					emitter.onNext(u);
+				}
 			};
-			this.messageCentral.addListener(GetEpochResponseMessage.class, listener);
+			this.messageCentral.addListener(c, listener);
 			emitter.setCancellable(() -> this.messageCentral.removeListener(listener));
 		});
 	}
