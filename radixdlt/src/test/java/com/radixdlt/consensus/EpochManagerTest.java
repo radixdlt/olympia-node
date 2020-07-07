@@ -23,6 +23,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -30,6 +31,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.consensus.BFTEventReducer.EndOfEpochSender;
 import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
@@ -48,6 +50,7 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.middleware2.CommittedAtom;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -166,6 +169,42 @@ public class EpochManagerTest {
 		when(response.getEpochAncestor()).thenReturn(ancestor);
 		epochManager.processGetEpochResponse(response);
 		verify(syncedStateComputer, never()).syncTo(any(), any(), any());
+	}
+
+	@Test
+	public void when_epoch_change_and_then_end_of_epoch_then_epoch_change__then_should_send_epoch_response() {
+		BFTEventProcessor eventProcessor = mock(BFTEventProcessor.class);
+		AtomicReference<EndOfEpochSender> endOfEpochSender = new AtomicReference<>();
+		doAnswer(invocation -> {
+			endOfEpochSender.set(invocation.getArgument(0));
+			return eventProcessor;
+		}).when(bftFactory).create(any(), any(), any(), any(), any());
+
+		VertexMetadata ancestor = VertexMetadata.ofGenesisAncestor();
+		ValidatorSet validatorSet = mock(ValidatorSet.class);
+		when(validatorSet.containsKey(any())).thenReturn(true);
+
+		Validator validator = mock(Validator.class);
+		ECPublicKey key = ECKeyPair.generateNew().getPublicKey();
+		when(validator.nodeKey()).thenReturn(key);
+
+		Validator selfValidator = mock(Validator.class);
+		when(selfValidator.nodeKey()).thenReturn(this.publicKey);
+
+		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of(selfValidator, validator));
+		epochManager.processEpochChange(new EpochChange(ancestor, validatorSet));
+
+		VertexMetadata nextAncestor = mock(VertexMetadata.class);
+		when(nextAncestor.getEpoch()).thenReturn(1L);
+
+		endOfEpochSender.get().sendEndOfEpoch(nextAncestor);
+
+		EpochChange epochChange = mock(EpochChange.class);
+		when(epochChange.getAncestor()).thenReturn(nextAncestor);
+		ValidatorSet vs = mock(ValidatorSet.class);
+		when(vs.getValidators()).thenReturn(ImmutableSet.of());
+		when(epochChange.getValidatorSet()).thenReturn(vs);
+		epochManager.processEpochChange(epochChange);
 	}
 
 	// TODO: Refactor EpochManager to simplify the following testing logic (TDD)
