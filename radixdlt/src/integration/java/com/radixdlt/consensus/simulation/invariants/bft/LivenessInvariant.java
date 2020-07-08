@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus.simulation.invariants.bft;
 
+import com.google.common.collect.Ordering;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.simulation.TestInvariant;
 import com.radixdlt.consensus.QuorumCertificate;
@@ -53,13 +54,7 @@ public class LivenessInvariant implements TestInvariant {
 				.map(network::getVertexStoreEvents)
 				.map(eventsRx -> eventsRx.highQCs().map(QuorumCertificate::getProposed))
 				.collect(Collectors.toList())
-		).scan(VertexMetadata.ofGenesisAncestor(), (o1, o2) -> {
-			if (vertexMetadataComparator.compare(o1, o2) > 0) {
-				return o1;
-			} else {
-				return o2;
-			}
-		});
+		).scan(VertexMetadata.ofGenesisAncestor(), Ordering.from(vertexMetadataComparator)::max);
 
 		return Observable.combineLatest(
 			highest,

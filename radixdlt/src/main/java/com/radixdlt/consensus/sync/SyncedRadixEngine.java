@@ -110,7 +110,7 @@ public final class SyncedRadixEngine implements SyncedStateComputer<CommittedAto
 		stateSyncNetwork.syncRequests()
 			.observeOn(Schedulers.io())
 			.subscribe(syncRequest -> {
-				log.info("SYNC_REQUEST: {} currentStateVersion={}", syncRequest, this.committedAtomsStore.getStateVersion());
+				log.debug("SYNC_REQUEST: {} currentStateVersion={}", syncRequest, this.committedAtomsStore.getStateVersion());
 				Peer peer = syncRequest.getPeer();
 				long stateVersion = syncRequest.getStateVersion();
 				// TODO: This may still return an empty list as we still count state versions for atoms which
@@ -132,7 +132,7 @@ public final class SyncedRadixEngine implements SyncedStateComputer<CommittedAto
 					.sorted(Comparator.comparingLong(a -> a.getVertexMetadata().getStateVersion()))
 					.collect(ImmutableList.toImmutableList());
 
-				log.info("SYNC_REQUEST: SENDING_RESPONSE size: {}", committedAtoms.size());
+				log.debug("SYNC_REQUEST: SENDING_RESPONSE size: {}", committedAtoms.size());
 				stateSyncNetwork.sendSyncResponse(peer, committedAtoms);
 			});
 
@@ -140,7 +140,7 @@ public final class SyncedRadixEngine implements SyncedStateComputer<CommittedAto
 			.observeOn(Schedulers.io())
 			.subscribe(syncResponse -> {
 				// TODO: Check validity of response
-				log.info("SYNC_RESPONSE: size: {}", syncResponse.size());
+				log.debug("SYNC_RESPONSE: size: {}", syncResponse.size());
 				for (CommittedAtom committedAtom : syncResponse) {
 					if (committedAtom.getVertexMetadata().getStateVersion() > this.committedAtomsStore.getStateVersion()) {
 						this.execute(committedAtom);

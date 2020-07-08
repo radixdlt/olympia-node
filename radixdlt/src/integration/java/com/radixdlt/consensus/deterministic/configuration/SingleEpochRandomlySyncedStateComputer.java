@@ -53,6 +53,6 @@ public class SingleEpochRandomlySyncedStateComputer implements SyncedStateComput
 
 	@Override
 	public void execute(CommittedAtom instruction) {
-
+		// No-op Mocked execution
 	}
 }

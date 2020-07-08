@@ -39,5 +39,6 @@ public enum SingleEpochFailOnSyncStateComputer implements SyncedStateComputer<Co
 
 	@Override
 	public void execute(CommittedAtom instruction) {
+		// No-op Mocked execution
 	}
 }

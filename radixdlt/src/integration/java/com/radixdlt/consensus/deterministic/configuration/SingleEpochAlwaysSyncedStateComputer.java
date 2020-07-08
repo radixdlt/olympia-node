@@ -42,5 +42,6 @@ public enum SingleEpochAlwaysSyncedStateComputer implements SyncedStateComputer<
 
 	@Override
 	public void execute(CommittedAtom instruction) {
+		// No-op Mocked execution
 	}
 }
