@@ -44,7 +44,6 @@ public class RadixJsonRpcServerTest {
 			mock(Serialization.class),
 			mock(LedgerEntryStore.class),
 			mock(AtomsService.class),
-			mock(Schema.class),
 			mock(LocalSystem.class),
 			mock(AddressBook.class),
 			mock(Universe.class)
@@ -75,7 +74,6 @@ public class RadixJsonRpcServerTest {
 			serializer,
 			mock(LedgerEntryStore.class),
 			mock(AtomsService.class),
-			mock(Schema.class),
 			mock(LocalSystem.class),
 			mock(AddressBook.class),
 			mock(Universe.class));
@@ -96,7 +94,6 @@ public class RadixJsonRpcServerTest {
 			mock(Serialization.class),
 			mock(LedgerEntryStore.class),
 			mock(AtomsService.class),
-			mock(Schema.class),
 			mock(LocalSystem.class),
 			mock(AddressBook.class),
 			mock(Universe.class),

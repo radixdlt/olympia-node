@@ -45,7 +45,6 @@ public class SubmitAtomAndSubscribeEpicTest {
 	@Test
 	public void testAtomValidationError() {
 		AtomsService atomsService = mock(AtomsService.class);
-		Schema schema = mock(Schema.class);
 		Consumer<JSONObject> callback = mock(ConsumerJSONObject.class);
 		JSONObject action = mock(JSONObject.class);
 		JSONObject params = mock(JSONObject.class);
@@ -60,7 +59,7 @@ public class SubmitAtomAndSubscribeEpicTest {
 			return null;
 		}).when(atomsService).submitAtom(any(), any());
 
-		SubmitAtomAndSubscribeEpic epic = new SubmitAtomAndSubscribeEpic(atomsService, schema, callback);
+		SubmitAtomAndSubscribeEpic epic = new SubmitAtomAndSubscribeEpic(atomsService, callback);
 		epic.action(action);
 
 		InOrder inOrder = inOrder(callback);
