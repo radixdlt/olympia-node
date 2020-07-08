@@ -28,6 +28,7 @@ public interface BFTEventSender {
 	/**
 	 * Broadcast a proposal message to all validators in the network
 	 * @param proposal the proposal to broadcast
+	 * @param nodes the nodes to broadcast to
 	 */
 	void broadcastProposal(Proposal proposal, Set<ECPublicKey> nodes);
 

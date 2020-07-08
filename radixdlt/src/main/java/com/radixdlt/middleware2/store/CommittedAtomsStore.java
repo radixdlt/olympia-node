@@ -122,8 +122,8 @@ public class CommittedAtomsStore implements EngineStore<CommittedAtom> {
         lastStoredAtom.onNext(storedEvent);
     }
 
-    // TODO: Move into storeAtom when epoch change logic moved into RadixEngine
-    public void storeVertexMetadata(VertexMetadata vertexMetadata) {
+	// TODO: Move into storeAtom when epoch change logic moved into RadixEngine
+	public void storeVertexMetadata(VertexMetadata vertexMetadata) {
 		stateVersion.set(vertexMetadata.getStateVersion());
 		counters.set(CounterType.LEDGER_STATE_VERSION, vertexMetadata.getStateVersion());
 	}

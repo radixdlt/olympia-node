@@ -84,6 +84,7 @@ public class AddressBookValidatorSetProvider {
 		Builder<Validator> validatorSetBuilder = ImmutableList.builder();
 		Random random = new Random(epoch);
 		List<Integer> indices = IntStream.range(0, validators.size()).boxed().collect(Collectors.toList());
+		// Temporary mechanism to get some deterministic random set of validators
 		for (long i = 0; i < epoch; i++) {
 			random.nextInt(validators.size());
 		}

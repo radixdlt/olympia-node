@@ -65,6 +65,7 @@ public class RandomValidatorsTest {
 	}
 
 	private static Function<Long, IntStream> badRandomEpochToNodesMapper() {
+		// random number generator which gives a different number per node
 		Random random = new Random();
 		return randomEpochToNodesMapper(l -> random);
 	}
