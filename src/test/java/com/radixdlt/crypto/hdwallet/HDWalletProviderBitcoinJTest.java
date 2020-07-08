@@ -54,13 +54,13 @@ public class HDWalletProviderBitcoinJTest {
 	@Test
 	public void bip32_test_vectors() {
 		List<TestVector> vectors = testVectorsBIP32();
-		vectors.forEach(this::test_test_vector);
+		vectors.forEach(this::run_test_vector);
 	}
 
-	private void test_test_vector(TestVector vector) {
+	private void run_test_vector(TestVector vector) {
 		HDWallet hdWallet = vector.createHDWallet();
-		assertEquals(vector.master.privateKeyHex(), hdWallet.rootKeyPair().privateKeyHex());
-		assertEquals(vector.master.publicKeyHex(), hdWallet.rootKeyPair().publicKeyHex());
+		assertEquals(vector.master.privateKeyHex(), ((HDWalletProviderBitcoinJ) hdWallet).rootPrivateKeyHex());
+		assertEquals(vector.master.publicKeyHex(), ((HDWalletProviderBitcoinJ) hdWallet).rootPublicKeyHex());
 
 		for (TestVector.Child childVector : vector.children) {
 			HDKeyPair childKey = hdWallet.deriveKeyAtPath(childVector.path);

@@ -17,6 +17,7 @@
 
 package com.radixdlt.crypto;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.radixdlt.SecurityCritical;
 import com.radixdlt.SecurityCritical.SecurityKind;
 import com.radixdlt.crypto.encryption.ECIES;
@@ -245,11 +246,13 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
 		}
 	}
 
-	public String publicKeyHex() {
+	@VisibleForTesting
+	String publicKeyHex() {
 		return Bytes.toHexString(getPublicKey().getBytes());
 	}
 
-	public String privateKeyHex() {
+	@VisibleForTesting
+	String privateKeyHex() {
 		return Bytes.toHexString(privateKey);
 	}
 }

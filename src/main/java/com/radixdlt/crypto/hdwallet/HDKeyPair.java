@@ -19,7 +19,9 @@
 
 package com.radixdlt.crypto.hdwallet;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.utils.Bytes;
 
 public final class HDKeyPair {
 	private final ECKeyPair ecKeyPair;
@@ -42,19 +44,21 @@ public final class HDKeyPair {
 		return path;
 	}
 
-	public String privateKeyHex() {
-		return ecKeyPair.privateKeyHex();
-	}
-
-	public String publicKeyHex() {
-		return ecKeyPair.publicKeyHex();
-	}
-
 	public boolean isHardened() {
 		return isHardened;
 	}
 
 	public int depth() {
 		return depth;
+	}
+
+	@VisibleForTesting
+	String privateKeyHex() {
+		return Bytes.toHexString(ecKeyPair.getPrivateKey());
+	}
+
+	@VisibleForTesting
+	String publicKeyHex() {
+		return Bytes.toHexString(ecKeyPair.getPublicKey().getBytes());
 	}
 }

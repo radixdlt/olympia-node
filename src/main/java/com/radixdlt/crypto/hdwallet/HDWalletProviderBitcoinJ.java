@@ -123,12 +123,25 @@ public final class HDWalletProviderBitcoinJ implements HDWallet {
 		));
 	}
 
-	public ECKeyPair rootKeyPair() {
+	@VisibleForTesting
+	ECKeyPair rootKeyPair() {
 		return rootKeyPair;
+	}
+
+	@VisibleForTesting
+	String rootPrivateKeyHex() {
+		return Bytes.toHexString(rootKeyPair.getPrivateKey());
+	}
+
+	@VisibleForTesting
+	String rootPublicKeyHex() {
+		return Bytes.toHexString(rootKeyPair.getPublicKey().getBytes());
 	}
 
 	public HDKeyPair deriveKeyAtPath(String path) {
 		ECKeyPair ecKeyPair = deriveKeyPairAtPath(HDWalletProviderBitcoinJ.hdPathFromString(path));
 		return new HDKeyPair(ecKeyPair, path);
 	}
+
+
 }
