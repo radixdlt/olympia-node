@@ -123,7 +123,6 @@ public final class RadixHttpServer {
 			serialization,
 			store,
 			atomsService,
-			AtomSchemas.get(),
 			localSystem,
 			addressBook,
 			universe
