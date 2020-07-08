@@ -39,12 +39,12 @@ public class RandomValidatorsTest {
 	private static final int numNodes = 50;
 
 	private final Builder bftTestBuilder = SimulationTest.builder()
-		.pacemakerTimeout(1000)
+		.pacemakerTimeout(5000)
 		.numNodes(numNodes)
 		.epochHighView(View.of(100))
 		.checkEpochHighView("epochHighView", View.of(100))
 		.checkSafety("safety")
-		.checkLiveness("liveness", 1000, TimeUnit.MILLISECONDS)
+		.checkLiveness("liveness", 5000, TimeUnit.MILLISECONDS)
 		.checkNoTimeouts("noTimeouts")
 		.checkAllProposalsHaveDirectParents("directParents");
 
