@@ -22,9 +22,10 @@ import com.google.common.collect.ImmutableMap;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.simulation.TestInvariant.TestInvariantError;
 import com.radixdlt.consensus.simulation.invariants.epochs.EpochViewInvariant;
-import com.radixdlt.consensus.simulation.network.DroppingLatencyProvider;
-import com.radixdlt.consensus.simulation.network.OneProposalPerViewDropper;
-import com.radixdlt.consensus.simulation.network.RandomLatencyProvider;
+import com.radixdlt.consensus.simulation.configuration.ChangingEpochSyncedStateComputer;
+import com.radixdlt.consensus.simulation.configuration.DroppingLatencyProvider;
+import com.radixdlt.consensus.simulation.configuration.OneProposalPerViewDropper;
+import com.radixdlt.consensus.simulation.configuration.RandomLatencyProvider;
 import com.radixdlt.consensus.simulation.network.SimulatedNetwork;
 import com.radixdlt.consensus.simulation.network.SimulatedNetwork.RunningNetwork;
 import com.radixdlt.consensus.simulation.invariants.bft.AllProposalsHaveDirectParentsInvariant;
@@ -32,11 +33,16 @@ import com.radixdlt.consensus.simulation.invariants.bft.LivenessInvariant;
 import com.radixdlt.consensus.simulation.invariants.bft.NoTimeoutsInvariant;
 import com.radixdlt.consensus.simulation.invariants.bft.NoneCommittedInvariant;
 import com.radixdlt.consensus.simulation.invariants.bft.SafetyInvariant;
+import com.radixdlt.consensus.simulation.network.SimulatedNetwork.SimulatedStateComputer;
+import com.radixdlt.consensus.simulation.configuration.SingleEpochAlwaysSyncedStateComputer;
+import com.radixdlt.consensus.validators.Validator;
+import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork;
 import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork.LatencyProvider;
 import com.radixdlt.utils.Pair;
+import com.radixdlt.utils.UInt256;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
 import java.util.Collections;
@@ -44,7 +50,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -52,19 +61,21 @@ import java.util.stream.Stream;
 /**
  * High level BFT Simulation Test Runner
  */
-public class SimulatedTest {
+public class SimulationTest {
 	private final ImmutableList<ECKeyPair> nodes;
 	private final LatencyProvider latencyProvider;
 	private final ImmutableMap<String, TestInvariant> checks;
 	private final int pacemakerTimeout;
+	private final Function<Long, ValidatorSet> validatorSetMapping;
 	private final boolean getVerticesRPCEnabled;
 	private final View epochHighView;
 
-	private SimulatedTest(
+	private SimulationTest(
 		ImmutableList<ECKeyPair> nodes,
 		LatencyProvider latencyProvider,
 		int pacemakerTimeout,
 		View epochHighView,
+		Function<Long, ValidatorSet> validatorSetMapping,
 		boolean getVerticesRPCEnabled,
 		ImmutableMap<String, TestInvariant> checks
 	) {
@@ -73,6 +84,7 @@ public class SimulatedTest {
 		this.checks = checks;
 		this.pacemakerTimeout = pacemakerTimeout;
 		this.epochHighView = epochHighView;
+		this.validatorSetMapping = validatorSetMapping;
 		this.getVerticesRPCEnabled = getVerticesRPCEnabled;
 	}
 
@@ -83,6 +95,7 @@ public class SimulatedTest {
 		private int pacemakerTimeout = 12 * TestEventCoordinatorNetwork.DEFAULT_LATENCY;
 		private boolean getVerticesRPCEnabled = true;
 		private View epochHighView = null;
+		private Function<Long, Set<Integer>> epochToNodeIndexMapper;
 
 		private Builder() {
 		}
@@ -117,6 +130,11 @@ public class SimulatedTest {
 
 		public Builder epochHighView(View epochHighView) {
 			this.epochHighView = epochHighView;
+			return this;
+		}
+
+		public Builder epochToNodesMapper(Function<Long, Set<Integer>> epochToNodeIndexMapper) {
+			this.epochToNodeIndexMapper = epochToNodeIndexMapper;
 			return this;
 		}
 
@@ -165,12 +183,25 @@ public class SimulatedTest {
 			return this;
 		}
 
-		public SimulatedTest build() {
-			return new SimulatedTest(
+		public SimulationTest build() {
+			final List<ECPublicKey> publicKeys = nodes.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toList());
+			Function<Long, ValidatorSet> epochToValidatorSetMapping =
+				epochToNodeIndexMapper == null
+					? epoch -> ValidatorSet.from(
+						publicKeys.stream()
+							.map(pk -> Validator.from(pk, UInt256.ONE))
+							.collect(Collectors.toList()))
+					: epochToNodeIndexMapper.andThen(indices -> ValidatorSet.from(
+						indices.stream()
+							.map(nodes::get)
+							.map(kp -> Validator.from(kp.getPublicKey(), UInt256.ONE))
+							.collect(Collectors.toList())));
+			return new SimulationTest(
 				ImmutableList.copyOf(nodes),
 				latencyProvider.copyOf(),
 				pacemakerTimeout,
 				epochHighView,
+				epochToValidatorSetMapping,
 				getVerticesRPCEnabled,
 				this.checksBuilder.build()
 			);
@@ -223,7 +254,16 @@ public class SimulatedTest {
 		TestEventCoordinatorNetwork network = TestEventCoordinatorNetwork.builder()
 			.latencyProvider(this.latencyProvider)
 			.build();
-		SimulatedNetwork bftNetwork =  new SimulatedNetwork(nodes, network, pacemakerTimeout, epochHighView, getVerticesRPCEnabled);
+
+		final Supplier<SimulatedStateComputer> stateComputerSupplier;
+		final List<ECPublicKey> publicKeys = nodes.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toList());
+		if (epochHighView == null) {
+			stateComputerSupplier = () -> new SingleEpochAlwaysSyncedStateComputer(publicKeys);
+		} else {
+			stateComputerSupplier = () -> new ChangingEpochSyncedStateComputer(epochHighView, validatorSetMapping);
+		}
+
+		SimulatedNetwork bftNetwork =  new SimulatedNetwork(nodes, network, pacemakerTimeout, stateComputerSupplier, getVerticesRPCEnabled);
 
 		return bftNetwork.start()
 			.timeout(10, TimeUnit.SECONDS)

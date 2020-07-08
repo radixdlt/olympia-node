@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.simulation.network;
+package com.radixdlt.consensus.simulation.configuration;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Proposal;

@@ -18,7 +18,7 @@
 package com.radixdlt.consensus;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.VertexStore.GetVerticesRequest;
+import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 
@@ -44,4 +44,12 @@ public interface SyncVerticesRPCSender {
 	 * @param vertices the response data of vertices
 	 */
 	void sendGetVerticesResponse(GetVerticesRequest originalRequest, ImmutableList<Vertex> vertices);
+
+	/**
+	 * Send an RPC error response to a given request
+	 * @param originalRequest the original request
+	 * @param highestQC highestQC sync info
+	 * @param highestCommittedQC highestCommittedQC sync info
+	 */
+	void sendGetVerticesErrorResponse(GetVerticesRequest originalRequest, QuorumCertificate highestQC, QuorumCertificate highestCommittedQC);
 }

@@ -17,20 +17,21 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.consensus.bft.VertexStore;
-import com.radixdlt.middleware2.CommittedAtom;
+import com.radixdlt.crypto.ECPublicKey;
 
 /**
- * A Vertex Store factory
+ * A mocked sync epochs rpc sender
  */
-public interface VertexStoreFactory {
+public enum EmptySyncEpochsRPCSender implements SyncEpochsRPCSender {
+	INSTANCE;
 
-	/**
-	 * Creates a new VertexStore given initial vertex and QC
-	 * @param genesisVertex the root vertex
-	 * @param genesisQC the root QC
-	 * @param syncedStateComputer the underlying state computer
-	 * @return a new VertexStore
-	 */
-	VertexStore create(Vertex genesisVertex, QuorumCertificate genesisQC, SyncedStateComputer<CommittedAtom> syncedStateComputer);
+	@Override
+	public void sendGetEpochRequest(ECPublicKey peer, long epoch) {
+		// No-op
+	}
+
+	@Override
+	public void sendGetEpochResponse(ECPublicKey peer, VertexMetadata ancestor) {
+		// No-op
+	}
 }

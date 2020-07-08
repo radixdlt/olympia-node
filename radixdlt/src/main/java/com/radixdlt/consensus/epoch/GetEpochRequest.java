@@ -15,22 +15,28 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.consensus.epoch;
 
-import com.radixdlt.consensus.bft.VertexStore;
-import com.radixdlt.middleware2.CommittedAtom;
+import com.radixdlt.crypto.ECPublicKey;
+import java.util.Objects;
 
 /**
- * A Vertex Store factory
+ * An RPC request to retrieve proof of an epoch
  */
-public interface VertexStoreFactory {
+public final class GetEpochRequest {
+	private final long epoch;
+	private final ECPublicKey sender;
 
-	/**
-	 * Creates a new VertexStore given initial vertex and QC
-	 * @param genesisVertex the root vertex
-	 * @param genesisQC the root QC
-	 * @param syncedStateComputer the underlying state computer
-	 * @return a new VertexStore
-	 */
-	VertexStore create(Vertex genesisVertex, QuorumCertificate genesisQC, SyncedStateComputer<CommittedAtom> syncedStateComputer);
+	public GetEpochRequest(ECPublicKey sender, final long epoch) {
+		this.sender = Objects.requireNonNull(sender);
+		this.epoch = epoch;
+	}
+
+	public long getEpoch() {
+		return epoch;
+	}
+
+	public ECPublicKey getSender() {
+		return sender;
+	}
 }

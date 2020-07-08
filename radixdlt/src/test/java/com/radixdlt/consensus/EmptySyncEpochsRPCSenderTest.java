@@ -17,20 +17,16 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.consensus.bft.VertexStore;
-import com.radixdlt.middleware2.CommittedAtom;
+import static org.mockito.Mockito.mock;
 
-/**
- * A Vertex Store factory
- */
-public interface VertexStoreFactory {
+import com.radixdlt.crypto.ECPublicKey;
+import org.junit.Test;
 
-	/**
-	 * Creates a new VertexStore given initial vertex and QC
-	 * @param genesisVertex the root vertex
-	 * @param genesisQC the root QC
-	 * @param syncedStateComputer the underlying state computer
-	 * @return a new VertexStore
-	 */
-	VertexStore create(Vertex genesisVertex, QuorumCertificate genesisQC, SyncedStateComputer<CommittedAtom> syncedStateComputer);
+public class EmptySyncEpochsRPCSenderTest {
+	@Test
+	public void when_send_request_and_response__then_no_exception_occurs() {
+		EmptySyncEpochsRPCSender.INSTANCE.sendGetEpochRequest(mock(ECPublicKey.class), 12345L);
+		EmptySyncEpochsRPCSender.INSTANCE.sendGetEpochResponse(mock(ECPublicKey.class), mock(VertexMetadata.class));
+	}
+
 }

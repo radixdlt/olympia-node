@@ -19,16 +19,19 @@ package com.radixdlt.consensus.deterministic;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.radixdlt.EpochChangeSender;
 import com.radixdlt.consensus.BFTEventSender;
 import com.radixdlt.consensus.CommittedStateSync;
-import com.radixdlt.consensus.GetVerticesResponse;
+import com.radixdlt.consensus.EpochChange;
+import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
+import com.radixdlt.consensus.bft.GetVerticesResponse;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.SyncVerticesRPCSender;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.VertexStore.GetVerticesRequest;
-import com.radixdlt.consensus.VertexStore.VertexStoreEventSender;
+import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
+import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
@@ -43,11 +46,11 @@ import java.util.stream.Collectors;
  *
  * This class is not thread safe.
  */
-public final class ControlledBFTNetwork {
+public final class ControlledNetwork {
 	private final ImmutableList<ECPublicKey> nodes;
 	private final ImmutableMap<ChannelId, LinkedList<ControlledMessage>> messageQueue;
 
-	ControlledBFTNetwork(ImmutableList<ECPublicKey> nodes) {
+	ControlledNetwork(ImmutableList<ECPublicKey> nodes) {
 		this.nodes = nodes;
 		this.messageQueue = nodes.stream()
 			.flatMap(n0 -> nodes.stream().map(n1 -> new ChannelId(n0, n1)))
@@ -158,13 +161,18 @@ public final class ControlledBFTNetwork {
 		public int getCount() {
 			return count;
 		}
+
+		@Override
+		public String toString() {
+			return String.format("%s{count=%s}", this.getClass().getSimpleName(), count);
+		}
 	}
 
 	public ControlledSender getSender(ECPublicKey sender) {
 		return new ControlledSender(sender);
 	}
 
-	public final class ControlledSender implements BFTEventSender, VertexStoreEventSender, SyncVerticesRPCSender {
+	public final class ControlledSender implements BFTEventSender, VertexStoreEventSender, SyncVerticesRPCSender, EpochChangeSender {
 		private final ECPublicKey sender;
 
 		private ControlledSender(ECPublicKey sender) {
@@ -184,7 +192,15 @@ public final class ControlledBFTNetwork {
 		}
 
 		@Override
-		public void syncedVertex(Vertex vertex) {
+		public void sendGetVerticesErrorResponse(GetVerticesRequest originalRequest, QuorumCertificate highestQC,
+			QuorumCertificate highestCommittedQC) {
+			ControlledGetVerticesRequest request = (ControlledGetVerticesRequest) originalRequest;
+			GetVerticesErrorResponse response = new GetVerticesErrorResponse(request.getVertexId(), highestQC, highestCommittedQC, request.opaque);
+			putMesssage(new ControlledMessage(sender, request.requestor, response));
+		}
+
+		@Override
+		public void sendSyncedVertex(Vertex vertex) {
 			putMesssage(new ControlledMessage(sender, sender, vertex.getId()));
 		}
 
@@ -210,7 +226,12 @@ public final class ControlledBFTNetwork {
 		}
 
 		@Override
-		public void committedVertex(Vertex vertex) {
+		public void epochChange(EpochChange epochChange) {
+			putMesssage(new ControlledMessage(sender, sender, epochChange));
+		}
+
+		@Override
+		public void sendCommittedVertex(Vertex vertex) {
 			// Ignore committed vertex signal
 		}
 

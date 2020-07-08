@@ -27,7 +27,7 @@ import static org.mockito.Mockito.when;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
-import com.radixdlt.consensus.VertexStore;
+import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.View;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.ClientAtom;

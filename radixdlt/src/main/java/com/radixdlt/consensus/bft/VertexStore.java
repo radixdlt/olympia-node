@@ -1,23 +1,32 @@
 /*
- *  (C) Copyright 2020 Radix DLT Ltd
+ * (C) Copyright 2020 Radix DLT Ltd
  *
- *  Radix DLT Ltd licenses this file to you under the Apache License,
- *  Version 2.0 (the "License"); you may not use this file except in
- *  compliance with the License.  You may obtain a copy of the
- *  License at
+ * Radix DLT Ltd licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License.  You may obtain a copy of the
+ * License at
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing,
- *  software distributed under the License is distributed on an
- *  "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
- *  either express or implied.  See the License for the specific
- *  language governing permissions and limitations under the License.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied.  See the License for the specific
+ * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.consensus.bft;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.CommittedStateSync;
+import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.SyncVerticesRPCSender;
+import com.radixdlt.consensus.SyncedStateComputer;
+import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.VertexInsertionException;
+import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.VertexStoreEventProcessor;
+import com.radixdlt.consensus.View;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.ECPublicKey;
@@ -27,24 +36,23 @@ import com.radixdlt.middleware2.CommittedAtom;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
+import javax.annotation.concurrent.NotThreadSafe;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
  * Manages the BFT Vertex chain.
- *
- * In general this class is NOT thread-safe except for getVertices() and getHighestQC().
  */
-public final class VertexStore {
+@NotThreadSafe
+public final class VertexStore implements VertexStoreEventProcessor {
 	private static final Logger log = LogManager.getLogger();
 
 	public interface GetVerticesRequest {
@@ -53,24 +61,24 @@ public final class VertexStore {
 	}
 
 	public interface VertexStoreEventSender {
-		void syncedVertex(Vertex vertex);
-		void committedVertex(Vertex vertex);
+		// TODO: combine Synced and Committed
+		void sendSyncedVertex(Vertex vertex);
+		void sendCommittedVertex(Vertex vertex);
 		void highQC(QuorumCertificate qc);
 	}
-
 
 	private final VertexStoreEventSender vertexStoreEventSender;
 	private final SyncVerticesRPCSender syncVerticesRPCSender;
 	private final SyncedStateComputer<CommittedAtom> syncedStateComputer;
 	private final SystemCounters counters;
 
-	// These should never be empty
-	private final AtomicReference<Hash> rootId = new AtomicReference<>();
-	private final AtomicReference<QuorumCertificate> highestQC = new AtomicReference<>();
-	private final AtomicReference<QuorumCertificate> highestCommittedQC = new AtomicReference<>();
+	// These should never be null
+	private Hash rootId;
+	private QuorumCertificate highestQC;
+	private QuorumCertificate highestCommittedQC;
 
-	private final Map<Hash, Vertex> vertices = new ConcurrentHashMap<>();
-	private final Map<Hash, SyncState> syncing = new ConcurrentHashMap<>();
+	private final Map<Hash, Vertex> vertices = new HashMap<>();
+	private final Map<Hash, SyncState> syncing = new HashMap<>();
 
 	public VertexStore(
 		Vertex rootVertex,
@@ -112,6 +120,10 @@ public final class VertexStore {
 		this.rebuild(rootVertex, rootQC, rootQC, vertices);
 	}
 
+	private Vertex getRoot() {
+		return this.vertices.get(this.rootId);
+	}
+
 	private void rebuild(Vertex rootVertex, QuorumCertificate rootQC, QuorumCertificate rootCommitQC, List<Vertex> vertices) {
 		if (!rootQC.getProposed().getId().equals(rootVertex.getId())) {
 			throw new IllegalStateException(String.format("rootQC=%s does not match rootVertex=%s", rootQC, rootVertex));
@@ -127,10 +139,10 @@ public final class VertexStore {
 		}
 
 		this.vertices.clear();
-		this.rootId.set(rootVertex.getId());
-		this.highestQC.set(rootQC);
+		this.rootId = rootVertex.getId();
+		this.highestQC = rootQC;
 		this.vertexStoreEventSender.highQC(rootQC);
-		this.highestCommittedQC.set(rootCommitQC);
+		this.highestCommittedQC = rootCommitQC;
 		this.vertices.put(rootVertex.getId(), rootVertex);
 
 		for (Vertex vertex : vertices) {
@@ -154,6 +166,7 @@ public final class VertexStore {
 	}
 
 	private static class SyncState {
+		private final Hash localSyncId;
 		private final QuorumCertificate qc;
 		private final QuorumCertificate committedQC;
 		private final VertexMetadata committedVertexMetadata;
@@ -161,7 +174,9 @@ public final class VertexStore {
 		private SyncStage syncStage;
 		private final LinkedList<Vertex> fetched = new LinkedList<>();
 
-		SyncState(QuorumCertificate qc, QuorumCertificate committedQC, ECPublicKey author) {
+		SyncState(Hash localSyncId, QuorumCertificate qc, QuorumCertificate committedQC, ECPublicKey author) {
+			this.localSyncId = localSyncId;
+
 			if (committedQC.getView().equals(View.genesis())) {
 				this.committedVertexMetadata = committedQC.getProposed();
 			} else {
@@ -196,24 +211,30 @@ public final class VertexStore {
 	private boolean requiresCommittedStateSync(SyncState syncState) {
 		final VertexMetadata committedMetadata = syncState.committedVertexMetadata;
 		if (!vertices.containsKey(committedMetadata.getId())) {
-			View rootView = vertices.get(rootId.get()).getView();
+			View rootView = this.getRoot().getView();
 			return rootView.compareTo(committedMetadata.getView()) < 0;
 		}
 
 		return false;
 	}
 
+	@Override
 	public void processGetVerticesRequest(GetVerticesRequest request) {
 		// TODO: Handle nodes trying to DDOS this endpoint
 
 		log.info("SYNC_VERTICES: Received GetVerticesRequest {}", request);
 		ImmutableList<Vertex> fetched = this.getVertices(request.getVertexId(), request.getCount());
+		if (fetched.isEmpty()) {
+			this.syncVerticesRPCSender.sendGetVerticesErrorResponse(request, this.getHighestQC(), this.getHighestCommittedQC());
+			return;
+		}
+
 		log.info("SYNC_VERTICES: Sending Response {}", fetched);
 		this.syncVerticesRPCSender.sendGetVerticesResponse(request, fetched);
 	}
 
 	private void rebuildAndSyncQC(SyncState syncState) {
-		log.info("SYNC_STATE: Rebuilding and syncing QC: sync={} curRoot={}", syncState, vertices.get(rootId.get()));
+		log.info("SYNC_STATE: Rebuilding and syncing QC: sync={} curRoot={}", syncState, this.getRoot());
 
 		// TODO: check if there are any vertices which haven't been local sync processed yet
 		if (requiresCommittedStateSync(syncState)) {
@@ -231,6 +252,7 @@ public final class VertexStore {
 		}
 	}
 
+	@Override
 	public void processCommittedStateSync(CommittedStateSync committedStateSync) {
 		log.info("SYNC_STATE: synced {}", committedStateSync);
 
@@ -275,13 +297,16 @@ public final class VertexStore {
 			addQC(syncState.qc);
 		} else {
 			log.info("SYNC_VERTICES: Sending further GetVerticesRequest for qc={} fetched={} root={}",
-				syncState.qc, syncState.fetched.size(), vertices.get(rootId.get()));
+				syncState.qc, syncState.fetched.size(), this.getRoot());
 			syncVerticesRPCSender.sendGetVerticesRequest(nextVertexId, syncState.author, 1, syncTo);
 		}
 	}
 
-	public void processGetVerticesResponse(GetVerticesResponse response) {
-		log.info("SYNC_VERTICES: Received GetVerticesResponse {}", response);
+	@Override
+	public void processGetVerticesErrorResponse(GetVerticesErrorResponse response) {
+		// TODO: check response
+
+		log.info("SYNC_VERTICES: Received GetVerticesErrorResponse {} ", response);
 
 		final Hash syncTo = (Hash) response.getOpaque();
 		SyncState syncState = syncing.get(syncTo);
@@ -289,11 +314,20 @@ public final class VertexStore {
 			return; // sync requirements already satisfied by another sync
 		}
 
-		if (response.getVertices().isEmpty()) {
-			log.info("GET_VERTICES failed: response was empty sync={}", syncState);
-			// failed
-			// TODO: retry
-			return;
+		// error response indicates that the node has moved on from last sync so try and sync to a new sync
+		this.startSync(syncTo, response.getHighestQC(), response.getHighestCommittedQC(), syncState.author);
+	}
+
+	@Override
+	public void processGetVerticesResponse(GetVerticesResponse response) {
+		// TODO: check response
+
+		log.info("SYNC_VERTICES: Received GetVerticesResponse {}", response);
+
+		final Hash syncTo = (Hash) response.getOpaque();
+		SyncState syncState = syncing.get(syncTo);
+		if (syncState == null) {
+			return; // sync requirements already satisfied by another sync
 		}
 
 		switch (syncState.syncStage) {
@@ -309,19 +343,17 @@ public final class VertexStore {
 	}
 
 	private void doQCSync(SyncState syncState) {
-		final Hash vertexId = syncState.getQC().getProposed().getId();
 		syncState.setSyncStage(SyncStage.GET_QC_VERTICES);
 		log.info("SYNC_VERTICES: QC: Sending initial GetVerticesRequest for sync={}", syncState);
-		syncVerticesRPCSender.sendGetVerticesRequest(vertexId, syncState.author, 1, vertexId);
+		syncVerticesRPCSender.sendGetVerticesRequest(syncState.qc.getProposed().getId(), syncState.author, 1, syncState.localSyncId);
 	}
 
 	private void doCommittedSync(SyncState syncState) {
 		final Hash committedQCId = syncState.getCommittedQC().getProposed().getId();
-		final Hash qcId = syncState.qc.getProposed().getId();
 		syncState.setSyncStage(SyncStage.GET_COMMITTED_VERTICES);
 		log.info("SYNC_VERTICES: Committed: Sending initial GetVerticesRequest for sync={}", syncState);
 		// Retrieve the 3 vertices preceding the committedQC so we can create a valid committed root
-		syncVerticesRPCSender.sendGetVerticesRequest(committedQCId, syncState.author, 3, qcId);
+		syncVerticesRPCSender.sendGetVerticesRequest(committedQCId, syncState.author, 3, syncState.localSyncId);
 	}
 
 	public void processLocalSync(Hash vertexId) {
@@ -341,6 +373,10 @@ public final class VertexStore {
 	 * @return true if already synced, false otherwise
 	 */
 	public boolean syncToQC(QuorumCertificate qc, QuorumCertificate committedQC, @Nullable ECPublicKey author) {
+		if (qc.getProposed().getView().compareTo(this.getRoot().getView()) < 0) {
+			return true;
+		}
+
 		if (addQC(qc)) {
 			return true;
 		}
@@ -358,15 +394,19 @@ public final class VertexStore {
 			throw new IllegalStateException("Syncing required but author wasn't provided.");
 		}
 
-		final SyncState syncState = new SyncState(qc, committedQC, author);
+		this.startSync(vertexId, qc, committedQC, author);
+
+		return false;
+	}
+
+	private void startSync(Hash vertexId, QuorumCertificate qc, QuorumCertificate committedQC, ECPublicKey author) {
+		final SyncState syncState = new SyncState(vertexId, qc, committedQC, author);
 		syncing.put(vertexId, syncState);
 		if (requiresCommittedStateSync(syncState)) {
 			this.doCommittedSync(syncState);
 		} else {
 			this.doQCSync(syncState);
 		}
-
-		return false;
 	}
 
 	private boolean addQC(QuorumCertificate qc) {
@@ -374,20 +414,19 @@ public final class VertexStore {
 			return false;
 		}
 
-		if (highestQC.get().getView().compareTo(qc.getView()) < 0) {
-			highestQC.set(qc);
+		if (highestQC.getView().compareTo(qc.getView()) < 0) {
+			highestQC = qc;
 			vertexStoreEventSender.highQC(qc);
 		}
 
 		qc.getCommitted().ifPresent(vertexMetadata -> {
-			QuorumCertificate highestCommitted = highestCommittedQC.get();
-			Optional<VertexMetadata> highest = highestCommitted.getCommitted();
-			if (!highest.isPresent() && !highestCommitted.getView().isGenesis()) {
-				throw new IllegalStateException(String.format("Highest Committed does not have a commit: %s", highestCommitted));
+			Optional<VertexMetadata> highest = this.highestCommittedQC.getCommitted();
+			if (!highest.isPresent() && !this.highestCommittedQC.getView().isGenesis()) {
+				throw new IllegalStateException(String.format("Highest Committed does not have a commit: %s", this.highestCommittedQC));
 			}
 
 			if (!highest.isPresent() || highest.get().getView().compareTo(vertexMetadata.getView()) < 0) {
-				this.highestCommittedQC.set(qc);
+				this.highestCommittedQC = qc;
 			}
 		});
 
@@ -417,7 +456,7 @@ public final class VertexStore {
 		updateVertexStoreSize();
 
 		if (syncing.containsKey(vertexToUse.getId())) {
-			vertexStoreEventSender.syncedVertex(vertexToUse);
+			vertexStoreEventSender.sendSyncedVertex(vertexToUse);
 		}
 
 		return VertexMetadata.ofVertex(vertexToUse, isEndOfEpoch);
@@ -436,7 +475,7 @@ public final class VertexStore {
 	 * @return the vertex if sucessful, otherwise an empty optional if vertex was already committed
 	 */
 	public Optional<Vertex> commitVertex(VertexMetadata commitMetadata) {
-		if (commitMetadata.getView().compareTo(vertices.get(rootId.get()).getView()) < 0) {
+		if (commitMetadata.getView().compareTo(this.getRoot().getView()) < 0) {
 			return Optional.empty();
 		}
 
@@ -447,7 +486,7 @@ public final class VertexStore {
 		}
 		final LinkedList<Vertex> path = new LinkedList<>();
 		Vertex vertex = tipVertex;
-		while (vertex != null && !rootId.get().equals(vertex.getId())) {
+		while (vertex != null && !rootId.equals(vertex.getId())) {
 			path.addFirst(vertex);
 			vertex = vertices.remove(vertex.getParentId());
 		}
@@ -457,10 +496,10 @@ public final class VertexStore {
 			this.counters.increment(CounterType.CONSENSUS_PROCESSED);
 			syncedStateComputer.execute(committedAtom);
 
-			this.vertexStoreEventSender.committedVertex(committed);
+			this.vertexStoreEventSender.sendCommittedVertex(committed);
 		}
 
-		rootId.set(commitMetadata.getId());
+		rootId = commitMetadata.getId();
 
 		updateVertexStoreSize();
 		return Optional.of(tipVertex);
@@ -470,7 +509,7 @@ public final class VertexStore {
 		final List<Vertex> path = new ArrayList<>();
 
 		Vertex vertex = vertices.get(vertexId);
-		while (vertex != null && !vertex.getId().equals(rootId.get())) {
+		while (vertex != null && !vertex.getId().equals(rootId)) {
 			path.add(vertex);
 			vertex = vertices.get(vertex.getParentId());
 		}
@@ -483,7 +522,7 @@ public final class VertexStore {
 	 * @return the highest committed qc
 	 */
 	public QuorumCertificate getHighestCommittedQC() {
-		return this.highestCommittedQC.get();
+		return this.highestCommittedQC;
 	}
 
 	/**
@@ -493,7 +532,7 @@ public final class VertexStore {
 	 * @return the highest quorum certificate
 	 */
 	public QuorumCertificate getHighestQC() {
-		return this.highestQC.get();
+		return this.highestQC;
 	}
 
 	/**

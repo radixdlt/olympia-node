@@ -18,19 +18,23 @@
 package com.radixdlt.consensus;
 
 import com.radixdlt.consensus.bft.VertexStore;
-import com.radixdlt.middleware2.CommittedAtom;
+import com.radixdlt.consensus.liveness.Pacemaker;
+import com.radixdlt.consensus.liveness.ProposerElection;
+import com.radixdlt.consensus.validators.ValidatorSet;
 
 /**
- * A Vertex Store factory
+ * Creates a new bft processor
  */
-public interface VertexStoreFactory {
-
+public interface BFTFactory {
 	/**
-	 * Creates a new VertexStore given initial vertex and QC
-	 * @param genesisVertex the root vertex
-	 * @param genesisQC the root QC
-	 * @param syncedStateComputer the underlying state computer
-	 * @return a new VertexStore
+	 * Create a new clean BFT processor
+	 *
+	 * @return a new bft processor
 	 */
-	VertexStore create(Vertex genesisVertex, QuorumCertificate genesisQC, SyncedStateComputer<CommittedAtom> syncedStateComputer);
+	BFTEventProcessor create(
+		Pacemaker pacemaker,
+		VertexStore vertexStore,
+		ProposerElection proposerElection,
+		ValidatorSet validatorSet
+	);
 }

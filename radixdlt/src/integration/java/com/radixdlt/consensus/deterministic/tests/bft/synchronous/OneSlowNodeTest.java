@@ -19,10 +19,11 @@ package com.radixdlt.consensus.deterministic.tests.bft.synchronous;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.radixdlt.consensus.EpochChange;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.deterministic.BFTDeterministicTest;
+import com.radixdlt.consensus.deterministic.DeterministicTest;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import org.junit.Test;
 
@@ -30,9 +31,13 @@ public class OneSlowNodeTest {
 
 	@Test
 	public void when_three_fast_nodes_and_one_slow_node_two_cycles__then_missing_parent_should_not_cause_sync_exception() {
-		final BFTDeterministicTest test = new BFTDeterministicTest(4, false);
+		final DeterministicTest test = DeterministicTest.createNonSyncingBFTTest(4);
 
 		test.start();
+
+		test.processNextMsg(1, 1, EpochChange.class);
+		test.processNextMsg(2, 2, EpochChange.class);
+		test.processNextMsg(3, 3, EpochChange.class);
 
 		for (int curLeader = 1; curLeader <= 2; curLeader++) {
 			test.processNextMsg(curLeader, 1, NewView.class);
@@ -58,9 +63,13 @@ public class OneSlowNodeTest {
 	 */
 	@Test
 	public void when_three_fast_nodes_and_one_slow_node__then_missing_parent_should_not_cause_exception() {
-		final BFTDeterministicTest test = new BFTDeterministicTest(4, false);
+		final DeterministicTest test = DeterministicTest.createNonSyncingBFTTest(4);
 
 		test.start();
+
+		test.processNextMsg(1, 1, EpochChange.class);
+		test.processNextMsg(2, 2, EpochChange.class);
+		test.processNextMsg(3, 3, EpochChange.class);
 
 		for (int curLeader = 1; curLeader <= 3; curLeader++) {
 			test.processNextMsg(curLeader, 1, NewView.class);

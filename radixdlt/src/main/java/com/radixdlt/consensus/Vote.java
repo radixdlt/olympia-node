@@ -72,6 +72,7 @@ public final class Vote implements ConsensusEvent {
 		return voteData.getProposed().getEpoch();
 	}
 
+	@Override
 	public ECPublicKey getAuthor() {
 		return author;
 	}

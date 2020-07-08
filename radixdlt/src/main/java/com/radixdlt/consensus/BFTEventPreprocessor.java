@@ -18,6 +18,7 @@
 package com.radixdlt.consensus;
 
 import com.radixdlt.consensus.SyncQueues.SyncQueue;
+import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.liveness.PacemakerState;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.crypto.ECPublicKey;

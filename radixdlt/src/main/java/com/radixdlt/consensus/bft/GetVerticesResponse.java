@@ -15,8 +15,9 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.consensus.bft;
 
+import com.radixdlt.consensus.Vertex;
 import com.radixdlt.crypto.Hash;
 import java.util.List;
 import java.util.Objects;

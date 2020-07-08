@@ -21,13 +21,15 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.EventCoordinatorNetworkRx;
 import com.radixdlt.consensus.BFTEventSender;
-import com.radixdlt.consensus.GetVerticesResponse;
+import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
+import com.radixdlt.consensus.bft.GetVerticesResponse;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
 import com.radixdlt.consensus.SyncVerticesRPCSender;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.VertexStore.GetVerticesRequest;
+import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
@@ -246,6 +248,16 @@ public class TestEventCoordinatorNetwork {
 		}
 
 		@Override
+		public void sendGetVerticesErrorResponse(GetVerticesRequest originalRequest, QuorumCertificate highestQC,
+			QuorumCertificate highestCommittedQC) {
+
+			SimulatedVerticesRequest request = (SimulatedVerticesRequest) originalRequest;
+			Object opaque = receivers.computeIfAbsent(request.requestor, SimulatedNetworkImpl::new).opaqueMap.get(request.vertexId);
+			GetVerticesErrorResponse vertexResponse = new GetVerticesErrorResponse(request.vertexId, highestQC, highestCommittedQC, opaque);
+			receivedMessages.onNext(MessageInTransit.newMessage(vertexResponse, thisNode, request.requestor));
+		}
+
+		@Override
 		public Observable<ConsensusEvent> consensusEvents() {
 			return myMessages.ofType(ConsensusEvent.class);
 		}
@@ -258,6 +270,11 @@ public class TestEventCoordinatorNetwork {
 		@Override
 		public Observable<GetVerticesResponse> responses() {
 			return myMessages.ofType(GetVerticesResponse.class);
+		}
+
+		@Override
+		public Observable<GetVerticesErrorResponse> errorResponses() {
+			return myMessages.ofType(GetVerticesErrorResponse.class);
 		}
 	}
 

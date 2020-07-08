@@ -20,16 +20,16 @@ package com.radixdlt.consensus.simulation.tests.epochs;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.radixdlt.consensus.View;
-import com.radixdlt.consensus.simulation.SimulatedTest.Builder;
+import com.radixdlt.consensus.simulation.SimulationTest.Builder;
 import com.radixdlt.consensus.simulation.TestInvariant.TestInvariantError;
-import com.radixdlt.consensus.simulation.SimulatedTest;
+import com.radixdlt.consensus.simulation.SimulationTest;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 
-public class EpochsStaticValidatorTest {
-	private final Builder bftTestBuilder = SimulatedTest.builder()
+public class StaticValidatorsTest {
+	private final Builder bftTestBuilder = SimulationTest.builder()
 		.numNodes(4)
 		.checkSafety("safety")
 		.checkLiveness("liveness", 1000, TimeUnit.MILLISECONDS)
@@ -38,7 +38,7 @@ public class EpochsStaticValidatorTest {
 
 	@Test
 	public void given_correct_bft_with_changing_epochs_every_view__then_should_pass_bft_and_epoch_invariants() {
-		SimulatedTest bftTest = bftTestBuilder
+		SimulationTest bftTest = bftTestBuilder
 			.pacemakerTimeout(1000)
 			.epochHighView(View.of(1))
 			.checkEpochHighView("epochHighView", View.of(1))
@@ -49,7 +49,7 @@ public class EpochsStaticValidatorTest {
 
 	@Test
 	public void given_correct_bft_with_changing_epochs_per_100_views__then_should_fail_incorrect_epoch_invariant() {
-		SimulatedTest bftTest = bftTestBuilder
+		SimulationTest bftTest = bftTestBuilder
 			.epochHighView(View.of(100))
 			.checkEpochHighView("epochHighView", View.of(99))
 			.build();
@@ -59,7 +59,7 @@ public class EpochsStaticValidatorTest {
 
 	@Test
 	public void given_correct_bft_with_changing_epochs_per_100_views__then_should_pass_bft_and_epoch_invariants() {
-		SimulatedTest bftTest = bftTestBuilder
+		SimulationTest bftTest = bftTestBuilder
 			.epochHighView(View.of(100))
 			.checkEpochHighView("epochHighView", View.of(100))
 			.build();

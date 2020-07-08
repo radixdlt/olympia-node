@@ -18,7 +18,7 @@
 package com.radixdlt.consensus;
 
 import com.radixdlt.EpochChangeSender;
-import com.radixdlt.consensus.VertexStore.VertexStoreEventSender;
+import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.sync.SyncedRadixEngine.CommittedStateSyncSender;
 import com.radixdlt.crypto.Hash;
 import io.reactivex.rxjava3.core.Observable;
@@ -59,7 +59,7 @@ public final class InternalMessagePasser implements VertexStoreEventsRx, VertexS
 	}
 
 	@Override
-	public void syncedVertex(Vertex vertex) {
+	public void sendSyncedVertex(Vertex vertex) {
 		localSyncsSubject.onNext(vertex.getId());
 	}
 
@@ -74,7 +74,7 @@ public final class InternalMessagePasser implements VertexStoreEventsRx, VertexS
 	}
 
 	@Override
-	public void committedVertex(Vertex vertex) {
+	public void sendCommittedVertex(Vertex vertex) {
 		committedVertices.onNext(vertex);
 	}
 

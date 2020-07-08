@@ -15,26 +15,32 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.consensus.epoch;
 
+import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.crypto.ECPublicKey;
 
 /**
- * A message meant for consensus. Currently a marker interface so that all consensus
- * related messages can be handled within a single rxjava stream.
- * TODO: possibly add signature and validation method signatures here
+ * An RPC Response to a GetEpoch request
  */
-public interface ConsensusEvent {
+public final class GetEpochResponse {
+	private final VertexMetadata epochAncestor;
+	private final ECPublicKey sender;
 
-	/**
-	 * Retrieve the epoch number the consensus message is a part of
-	 * @return the epoch number
-	 */
-	long getEpoch();
+	public GetEpochResponse(ECPublicKey sender, VertexMetadata epochAncestor) {
+		this.epochAncestor = epochAncestor;
+		this.sender = sender;
+	}
 
-	/**
-	 * Get the node author of this consensus message
-	 * @return the node author
-	 */
-	ECPublicKey getAuthor();
+	public ECPublicKey getSender() {
+		return sender;
+	}
+
+	public VertexMetadata getEpochAncestor() {
+		return epochAncestor;
+	}
+
+	public String toString() {
+		return String.format("%s{sender=%s ancestor=%s}", this.getClass().getSimpleName(), this.sender, this.epochAncestor);
+	}
 }

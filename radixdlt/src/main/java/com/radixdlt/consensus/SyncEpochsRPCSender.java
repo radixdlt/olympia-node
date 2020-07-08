@@ -17,20 +17,28 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.consensus.bft.VertexStore;
-import com.radixdlt.middleware2.CommittedAtom;
+import com.radixdlt.crypto.ECPublicKey;
 
 /**
- * A Vertex Store factory
+ * A sender of GetEpoch RPC requests/responses
  */
-public interface VertexStoreFactory {
+public interface SyncEpochsRPCSender {
 
 	/**
-	 * Creates a new VertexStore given initial vertex and QC
-	 * @param genesisVertex the root vertex
-	 * @param genesisQC the root QC
-	 * @param syncedStateComputer the underlying state computer
-	 * @return a new VertexStore
+	 * Send a request to a peer for proof of an epoch
+	 * @param peer the peer to send to
+	 * @param epoch the epoch to retrieve proof for
 	 */
-	VertexStore create(Vertex genesisVertex, QuorumCertificate genesisQC, SyncedStateComputer<CommittedAtom> syncedStateComputer);
+	void sendGetEpochRequest(ECPublicKey peer, long epoch);
+
+	/**
+	 * Send an epoch proof resposne to a peer
+	 *
+	 * TODO: currently just actually sending an ancestor but should contain
+	 * TODO: proof as well
+	 *
+	 * @param peer the peer to send to
+	 * @param ancestor the ancestor of the epoch
+	 */
+	void sendGetEpochResponse(ECPublicKey peer, VertexMetadata ancestor);
 }

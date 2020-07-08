@@ -22,30 +22,39 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
+import com.radixdlt.consensus.BFTEventReducer;
 import com.radixdlt.consensus.BFTEventSender;
 import com.radixdlt.consensus.AddressBookValidatorSetProvider;
+import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.CommittedStateSyncRx;
 import com.radixdlt.consensus.ConsensusRunner;
 import com.radixdlt.consensus.DefaultHasher;
+import com.radixdlt.consensus.EmptySyncEpochsRPCSender;
 import com.radixdlt.consensus.EpochChangeRx;
 import com.radixdlt.consensus.EpochManager;
 import com.radixdlt.consensus.EventCoordinatorNetworkRx;
+import com.radixdlt.consensus.PendingVotes;
+import com.radixdlt.consensus.SyncEpochsRPCSender;
 import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.VertexStoreEventsRx;
 import com.radixdlt.consensus.InternalMessagePasser;
 import com.radixdlt.consensus.ProposerElectionFactory;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
-import com.radixdlt.consensus.VertexStore;
-import com.radixdlt.consensus.VertexStore.VertexStoreEventSender;
+import com.radixdlt.consensus.bft.VertexStore;
+import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.SyncVerticesRPCSender;
 import com.radixdlt.consensus.VertexStoreFactory;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
+import com.radixdlt.consensus.liveness.MempoolProposalGenerator;
 import com.radixdlt.consensus.liveness.PacemakerFactory;
 import com.radixdlt.consensus.liveness.PacemakerRx;
+import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ScheduledTimeoutSender;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
+import com.radixdlt.consensus.safety.SafetyRules;
+import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.consensus.sync.StateSyncNetwork;
 import com.radixdlt.consensus.sync.SyncedRadixEngine;
 import com.radixdlt.consensus.sync.SyncedRadixEngine.CommittedStateSyncSender;
@@ -104,27 +113,67 @@ public class CerberusModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private EpochManager epochManager(
+	private SyncEpochsRPCSender syncEpochsRPCSender() {
+		return EmptySyncEpochsRPCSender.INSTANCE;
+	}
+
+	@Provides
+	@Singleton
+	private BFTFactory bftFactory(
+		BFTEventSender bftEventSender,
 		Mempool mempool,
-		BFTEventSender sender,
+		@Named("self") ECKeyPair selfKey,
+		Hasher hasher,
+		SystemCounters counters
+	) {
+		return (
+			pacemaker,
+			vertexStore,
+			proposerElection,
+			validatorSet
+		) -> {
+			final ProposalGenerator proposalGenerator = new MempoolProposalGenerator(vertexStore, mempool);
+			final SafetyRules safetyRules = new SafetyRules(selfKey, SafetyState.initialState(), hasher);
+			final PendingVotes pendingVotes = new PendingVotes(hasher);
+
+			return new BFTEventReducer(
+				proposalGenerator,
+				mempool,
+				bftEventSender,
+				safetyRules,
+				pacemaker,
+				vertexStore,
+				pendingVotes,
+				proposerElection,
+				selfKey,
+				validatorSet,
+				counters
+			);
+		};
+	}
+
+	@Provides
+	@Singleton
+	private EpochManager epochManager(
+		SyncedRadixEngine syncedRadixEngine,
+		BFTFactory bftFactory,
+		SyncEpochsRPCSender syncEpochsRPCSender,
 		ScheduledTimeoutSender scheduledTimeoutSender,
 		PacemakerFactory pacemakerFactory,
 		VertexStoreFactory vertexStoreFactory,
 		ProposerElectionFactory proposerElectionFactory,
-		Hasher hasher,
 		@Named("self") ECKeyPair selfKey,
 		SystemCounters counters
 	) {
-
 		return new EpochManager(
-			mempool,
-			sender,
+			syncedRadixEngine,
+			syncEpochsRPCSender,
 			scheduledTimeoutSender,
 			pacemakerFactory,
 			vertexStoreFactory,
 			proposerElectionFactory,
-			hasher,
-			selfKey,
+			bftFactory,
+			selfKey.getPublicKey(),
 			counters
 		);
 	}
@@ -212,12 +261,11 @@ public class CerberusModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private VertexStoreFactory vertexStoreFactory(
-		SyncedRadixEngine syncedRadixEngine,
 		SyncVerticesRPCSender syncVerticesRPCSender,
 		VertexStoreEventSender vertexStoreEventSender,
 		SystemCounters counters
 	) {
-		return (genesisVertex, genesisQC) -> new VertexStore(
+		return (genesisVertex, genesisQC, syncedRadixEngine) -> new VertexStore(
 			genesisVertex,
 			genesisQC,
 			syncedRadixEngine,

@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.simulation.network;
+package com.radixdlt.consensus.simulation.configuration;
 
 import com.radixdlt.consensus.EpochChange;
 import com.radixdlt.consensus.Vertex;
@@ -37,10 +37,10 @@ import java.util.function.Function;
  * State computer which changes epochs after some number of views
  */
 public class ChangingEpochSyncedStateComputer implements SimulatedStateComputer {
-	private VertexMetadata lastEpochChange = null;
 	private final Subject<EpochChange> epochChanges = BehaviorSubject.<EpochChange>create().toSerialized();
-	private View epochHighView;
+	private final View epochHighView;
 	private final Function<Long, ValidatorSet> validatorSetMapping;
+	private VertexMetadata lastEpochChange = null;
 
 	public ChangingEpochSyncedStateComputer(View epochHighView, Function<Long, ValidatorSet> validatorSetMapping) {
 		this.epochHighView = Objects.requireNonNull(epochHighView);

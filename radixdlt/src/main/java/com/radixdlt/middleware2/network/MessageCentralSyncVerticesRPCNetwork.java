@@ -21,11 +21,13 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.name.Named;
-import com.radixdlt.consensus.GetVerticesResponse;
+import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
+import com.radixdlt.consensus.bft.GetVerticesResponse;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
 import com.radixdlt.consensus.SyncVerticesRPCSender;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.VertexStore.GetVerticesRequest;
+import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.network.addressbook.AddressBook;
@@ -93,6 +95,19 @@ public class MessageCentralSyncVerticesRPCNetwork implements SyncVerticesRPCSend
 	}
 
 	@Override
+	public void sendGetVerticesErrorResponse(GetVerticesRequest originalRequest, QuorumCertificate highestQC, QuorumCertificate highestCommittedQC) {
+		MessageCentralGetVerticesRequest messageCentralGetVerticesRequest = (MessageCentralGetVerticesRequest) originalRequest;
+		GetVerticesErrorResponseMessage response = new GetVerticesErrorResponseMessage(
+			this.magic,
+			messageCentralGetVerticesRequest.getVertexId(),
+			highestQC,
+			highestCommittedQC
+		);
+		Peer peer = messageCentralGetVerticesRequest.getRequestor();
+		this.messageCentral.send(peer, response);
+	}
+
+	@Override
 	public Observable<GetVerticesRequest> requests() {
 		return Observable.create(emitter -> {
 			MessageListener<GetVerticesRequestMessage> listener = (src, msg) -> {
@@ -117,6 +132,28 @@ public class MessageCentralSyncVerticesRPCNetwork implements SyncVerticesRPCSend
 				emitter.onNext(response);
 			};
 			this.messageCentral.addListener(GetVerticesResponseMessage.class, listener);
+			emitter.setCancellable(() -> this.messageCentral.removeListener(listener));
+		});
+	}
+
+	@Override
+	public Observable<GetVerticesErrorResponse> errorResponses() {
+		return Observable.create(emitter -> {
+			MessageListener<GetVerticesErrorResponseMessage> listener = (src, msg) -> {
+				Object opaque = opaqueCache.getIfPresent(msg.getVertexId());
+				if (opaque == null) {
+					return; // TODO: send error?
+				}
+
+				GetVerticesErrorResponse response = new GetVerticesErrorResponse(
+					msg.getVertexId(),
+					msg.getHighestQC(),
+					msg.getHighestCommittedQC(),
+					opaque
+				);
+				emitter.onNext(response);
+			};
+			this.messageCentral.addListener(GetVerticesErrorResponseMessage.class, listener);
 			emitter.setCancellable(() -> this.messageCentral.removeListener(listener));
 		});
 	}
