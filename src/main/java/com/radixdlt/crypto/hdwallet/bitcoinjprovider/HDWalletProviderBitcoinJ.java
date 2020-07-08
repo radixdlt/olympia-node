@@ -38,7 +38,7 @@ import java.util.stream.Collectors;
 
 import static org.bitcoinj.core.Utils.WHITESPACE_SPLITTER;
 
-@SecurityCritical({ SecurityCritical.SecurityKind.KEY_GENERATION, SecurityCritical.SecurityKind.KEY_STORE })
+@SecurityCritical({ SecurityCritical.SecurityKind.KEY_GENERATION })
 public final class HDWalletProviderBitcoinJ implements HDWallet {
 
 	private final ECKeyPair rootKeyPair;

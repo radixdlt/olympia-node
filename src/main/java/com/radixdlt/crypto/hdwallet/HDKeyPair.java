@@ -19,11 +19,8 @@
 
 package com.radixdlt.crypto.hdwallet;
 
-import com.radixdlt.SecurityCritical;
 import com.radixdlt.crypto.ECKeyPair;
 
-
-@SecurityCritical({ SecurityCritical.SecurityKind.KEY_STORE })
 public final class HDKeyPair {
 	private final ECKeyPair ecKeyPair;
 	private final String path;
