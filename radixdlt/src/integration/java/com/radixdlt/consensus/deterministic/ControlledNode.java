@@ -36,7 +36,6 @@ import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.SyncedStateComputer;
-import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.SyncVerticesRPCSender;
 import com.radixdlt.consensus.VertexStoreFactory;
@@ -52,14 +51,11 @@ import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.mempool.EmptyMempool;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.CommittedAtom;
-import java.util.List;
 import java.util.Objects;
-import java.util.function.BooleanSupplier;
 
 /**
  * Controlled Node where its state machine is managed by a synchronous
@@ -78,32 +74,12 @@ class ControlledNode {
 		ProposerElectionFactory proposerElectionFactory,
 		ValidatorSet initialValidatorSet,
 		boolean enableGetVerticesRPC,
-		BooleanSupplier syncedSupplier
+		SyncedStateComputer<CommittedAtom> stateComputer
 	) {
 		this.systemCounters = new SystemCountersImpl();
 		this.controlledSender = Objects.requireNonNull(sender);
 		this.initialValidatorSet = Objects.requireNonNull(initialValidatorSet);
 
-		SyncedStateComputer<CommittedAtom> stateComputer = new SyncedStateComputer<CommittedAtom>() {
-			@Override
-			public boolean syncTo(VertexMetadata vertexMetadata, List<ECPublicKey> target, Object opaque) {
-				if (syncedSupplier.getAsBoolean()) {
-					return true;
-				}
-
-				sender.committedStateSync(new CommittedStateSync(vertexMetadata.getStateVersion(), opaque));
-				return false;
-			}
-
-			@Override
-			public boolean compute(Vertex vertex) {
-				return false;
-			}
-
-			@Override
-			public void execute(CommittedAtom instruction) {
-			}
-		};
 
 		SyncVerticesRPCSender syncVerticesRPCSender = enableGetVerticesRPC ? sender : UnsupportedSyncVerticesRPCSender.INSTANCE;
 		Mempool mempool = new EmptyMempool();

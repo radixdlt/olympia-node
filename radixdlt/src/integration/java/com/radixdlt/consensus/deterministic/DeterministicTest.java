@@ -20,21 +20,30 @@ package com.radixdlt.consensus.deterministic;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Streams;
+import com.radixdlt.EpochChangeSender;
+import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.deterministic.ControlledNetwork.ChannelId;
 import com.radixdlt.consensus.deterministic.ControlledNetwork.ControlledMessage;
+import com.radixdlt.consensus.deterministic.ControlledNetwork.ControlledSender;
+import com.radixdlt.consensus.deterministic.configuration.SingleEpochAlwaysSyncedStateComputer;
+import com.radixdlt.consensus.deterministic.configuration.SingleEpochFailOnSyncStateComputer;
+import com.radixdlt.consensus.deterministic.configuration.SingleEpochRandomlySyncedStateComputer;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
+import com.radixdlt.consensus.sync.SyncedRadixEngine.CommittedStateSyncSender;
 import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.EUID;
+import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.utils.UInt256;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
+import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
-import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -47,7 +56,11 @@ public final class DeterministicTest {
 	private final ImmutableList<ECPublicKey> pks;
 	private final ControlledNetwork network;
 
-	private DeterministicTest(int numNodes, boolean enableGetVerticesRPC, BooleanSupplier syncedSupplier) {
+	private DeterministicTest(
+		int numNodes,
+		boolean enableGetVerticesRPC,
+		BiFunction<CommittedStateSyncSender, EpochChangeSender, SyncedStateComputer<CommittedAtom>> stateComputerSupplier
+	) {
 		ImmutableList<ECKeyPair> keys = Stream.generate(ECKeyPair::generateNew)
 			.limit(numNodes)
 			.sorted(Comparator.<ECKeyPair, EUID>comparing(k -> k.getPublicKey().euid()).reversed())
@@ -60,16 +73,19 @@ public final class DeterministicTest {
 			pks.stream().map(pk -> Validator.from(pk, UInt256.ONE)).collect(Collectors.toList())
 		);
 
-		this.nodes = keys.stream()
-			.map(key -> new ControlledNode(
-				key.euid().toString().substring(0, 6),
-				key,
-				network.getSender(key.getPublicKey()),
-				vset -> new WeightedRotatingLeaders(vset, Comparator.comparing(v -> v.nodeKey().euid()), 5),
-				initialValidatorSet,
-				enableGetVerticesRPC,
-				syncedSupplier
-			))
+		this.nodes = Streams.mapWithIndex(keys.stream(),
+			(key, index) -> {
+				ControlledSender sender = network.getSender(key.getPublicKey());
+				return new ControlledNode(
+					"node-" + index,
+					key,
+					sender,
+					vset -> new WeightedRotatingLeaders(vset, Comparator.comparing(v -> v.nodeKey().euid()), 5),
+					initialValidatorSet,
+					enableGetVerticesRPC,
+					stateComputerSupplier.apply(sender, sender)
+				);
+			})
 			.collect(ImmutableList.toImmutableList());
 	}
 
@@ -79,8 +95,12 @@ public final class DeterministicTest {
 	 * @param random the randomizer
 	 * @return a deterministic test
 	 */
-	public static DeterministicTest createRandomlySyncedBFTAndSyncedStateComputerTest(int numNodes, Random random) {
-		return new DeterministicTest(numNodes, true, random::nextBoolean);
+	public static DeterministicTest createSingleEpochRandomlySyncedTest(int numNodes, Random random) {
+		return new DeterministicTest(
+			numNodes,
+			true,
+			(committedSender, epochSender) -> new SingleEpochRandomlySyncedStateComputer(random, committedSender)
+		);
 	}
 
 	/**
@@ -89,8 +109,12 @@ public final class DeterministicTest {
 	 * @param numNodes number of nodes in the network
 	 * @return a deterministic test
 	 */
-	public static DeterministicTest createAlwaysSyncedBFTTest(int numNodes) {
-		return new DeterministicTest(numNodes, true, () -> true);
+	public static DeterministicTest createSingleEpochAlwaysSyncedTest(int numNodes) {
+		return new DeterministicTest(
+			numNodes,
+			true,
+			(committedSender, epochChangeSender) -> SingleEpochAlwaysSyncedStateComputer.INSTANCE
+		);
 	}
 
 	/**
@@ -101,10 +125,12 @@ public final class DeterministicTest {
 	 * @param numNodes number of nodes in the network
 	 * @return a deterministic test
 	 */
-	public static DeterministicTest createNonSyncingBFTTest(int numNodes) {
-		return new DeterministicTest(numNodes, false, () -> {
-			throw new IllegalStateException("This is a nonsyncing bft test and should not have required a state sync");
-		});
+	public static DeterministicTest createSingleEpochFailOnSyncTest(int numNodes) {
+		return new DeterministicTest(
+			numNodes,
+			false,
+			(committedSender, epochChangeSender) -> SingleEpochFailOnSyncStateComputer.INSTANCE
+		);
 	}
 
 	public void start() {

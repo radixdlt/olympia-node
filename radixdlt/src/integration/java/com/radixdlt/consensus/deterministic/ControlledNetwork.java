@@ -33,6 +33,7 @@ import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.sync.SyncedRadixEngine.CommittedStateSyncSender;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 import java.util.LinkedList;
@@ -173,7 +174,8 @@ public final class ControlledNetwork {
 		return new ControlledSender(sender);
 	}
 
-	public final class ControlledSender implements BFTEventSender, VertexStoreEventSender, SyncVerticesRPCSender, EpochChangeSender {
+	public final class ControlledSender implements BFTEventSender, VertexStoreEventSender, SyncVerticesRPCSender, EpochChangeSender,
+		CommittedStateSyncSender {
 		private final ECPublicKey sender;
 
 		private ControlledSender(ECPublicKey sender) {
@@ -222,10 +224,6 @@ public final class ControlledNetwork {
 			putMesssage(new ControlledMessage(sender, leader, vote));
 		}
 
-		public void committedStateSync(CommittedStateSync committedStateSync) {
-			putMesssage(new ControlledMessage(sender, sender, committedStateSync));
-		}
-
 		@Override
 		public void epochChange(EpochChange epochChange) {
 			putMesssage(new ControlledMessage(sender, sender, epochChange));
@@ -239,6 +237,12 @@ public final class ControlledNetwork {
 		@Override
 		public void highQC(QuorumCertificate qc) {
 			// Ignore high QC signal
+		}
+
+		@Override
+		public void sendCommittedStateSync(long stateVersion, Object opaque) {
+			CommittedStateSync committedStateSync = new CommittedStateSync(stateVersion, opaque);
+			putMesssage(new ControlledMessage(sender, sender, committedStateSync));
 		}
 	}
 }
