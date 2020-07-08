@@ -77,9 +77,9 @@ public class BerkeleyRadixLedgerEntryStoreTests extends RadixTestWithStores {
             // commit atom
             ledgerStore.commit(ledgerEntries.get(0).getAID());
 
-            // committed atom can be queried by version
-            softly.assertThat(ledgerStore.getNextCommitted(ledgerEntries.get(0).getStateVersion() - 1, 1))
-                .contains(ledgerEntries.get(0).getAID());
+            // committed ledger entry can be queried by version
+            softly.assertThat(ledgerStore.getNextCommittedLedgerEntries(ledgerEntries.get(0).getStateVersion() - 1, 1))
+                    .contains(ledgerEntries.get(0));
 
             // committed atom is committed
             softly.assertThat(ledgerStore.getStatus(ledgerEntries.get(0).getAID())).isEqualTo(LedgerEntryStatus.COMMITTED);
@@ -89,6 +89,29 @@ public class BerkeleyRadixLedgerEntryStoreTests extends RadixTestWithStores {
 
             //not added atom is absent in store
             softly.assertThat(ledgerStore.contains(ledgerEntries.get(1).getAID())).isFalse();
+        });
+    }
+
+    @Test
+    public void searchCommittedTest() {
+        SoftAssertions.assertSoftly(softly -> {
+            // setup by storing/committing atoms
+            for (int i = 0; i < ledgerEntries.size(); ++i) {
+                ledgerStore.store(ledgerEntries.get(i), ImmutableSet.of(), ImmutableSet.of());
+                ledgerStore.commit(ledgerEntries.get(i).getAID());
+            }
+
+            // search for atoms singly
+            for (int i = 0; i < ledgerEntries.size(); ++i) {
+                // committed atom can be queried by version
+                softly.assertThat(ledgerStore.getNextCommittedLedgerEntries(ledgerEntries.get(i).getStateVersion() - 1, 1))
+                        .contains(ledgerEntries.get(i));
+            }
+
+            // verify that five atoms in total have been committed and can be returned
+            softly.assertThat(ledgerStore.getNextCommittedLedgerEntries(ledgerEntries.get(0).getStateVersion() - 1, 10)).size().isEqualTo(5);
+
+            // TODO more advanced testing using different limits
         });
     }
 

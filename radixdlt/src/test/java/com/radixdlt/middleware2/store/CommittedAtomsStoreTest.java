@@ -20,9 +20,7 @@ package com.radixdlt.middleware2.store;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 import static org.powermock.api.mockito.PowerMockito.when;
 
 import com.google.common.collect.ImmutableList;
@@ -56,7 +54,7 @@ public class CommittedAtomsStoreTest {
 
 	@Before
 	public void setUp() {
-		this.store = mock(LedgerEntryStore.class);
+		this.store = mock(LedgerEntryStore.class, withSettings().verboseLogging());
 		this.atomToBinaryConverter = mock(AtomToBinaryConverter.class);
 		this.atomIndexer = mock(AtomIndexer.class);
 		this.counters = mock(SystemCounters.class);
@@ -124,8 +122,8 @@ public class CommittedAtomsStoreTest {
 		ImmutableList<LedgerEntry> entries = Stream.generate(() -> mock(LedgerEntry.class))
 			.limit(4)
 			.collect(ImmutableList.toImmutableList());
-		when(this.store.getNextCommitted(eq(3L), eq(4)))
-			.thenReturn(aids);
+		when(this.store.getNextCommittedLedgerEntries(eq(3L), eq(4)))
+				.thenReturn(entries);
 		for (int i = 0; i < aids.size(); i++) {
 			when(this.store.get(eq(aids.get(i)))).thenReturn(Optional.of(entries.get(i)));
 			when(entries.get(i).getContent()).thenReturn(new byte[i]);

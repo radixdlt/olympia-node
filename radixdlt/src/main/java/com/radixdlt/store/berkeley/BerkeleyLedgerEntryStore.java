@@ -57,6 +57,8 @@ import com.sleepycat.je.UniqueConstraintException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.radix.database.DatabaseEnvironment;
+
+import java.text.MessageFormat;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.Objects;
@@ -459,27 +461,43 @@ public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
 
 	// TODO missing shardspace check, should be added?
 	@Override
-	public ImmutableList<AID> getNextCommitted(long stateVersion, int limit) {
-		try (Cursor cursor = this.atoms.openCursor(null, null)) {
-			ImmutableList.Builder<AID> aids = ImmutableList.builder();
-			DatabaseEntry search = toPKey(PREFIX_COMMITTED, stateVersion + 1);
-			OperationStatus status = cursor.getSearchKeyRange(search, null, LockMode.DEFAULT);
-
+	public ImmutableList<LedgerEntry> getNextCommittedLedgerEntries(long stateVersion, int limit) {
+		// when querying committed atoms, no need to worry about transaction as they aren't going away
+		try (Cursor atomCursor = this.atoms.openCursor(null, null);
+			 Cursor uqCursor = this.uniqueIndices.openCursor(null, null)) {
+			ImmutableList.Builder<LedgerEntry> ledgerEntries = ImmutableList.builder();
+			// increment state version by one to find atoms afterwards, as underlying search uses greater-than-or-equal comparison
+			DatabaseEntry atomSearchKey = toPKey(PREFIX_COMMITTED, stateVersion + 1);
+			OperationStatus atomCursorStatus = atomCursor.getSearchKeyRange(atomSearchKey, null, LockMode.DEFAULT);
 			int size = 0;
-			while (status == OperationStatus.SUCCESS && size < limit) {
-				if (search.getData()[0] != PREFIX_COMMITTED) {
-					// if we've gone behind committed keys, abort, as this is only for committed atoms
+			while (atomCursorStatus == OperationStatus.SUCCESS && size < limit) {
+				if (atomSearchKey.getData()[0] != PREFIX_COMMITTED) {
+					// if we've gone beyond committed keys, abort, as this is only for committed atoms
 					break;
 				}
+				AID atomId = getAidFromPKey(atomSearchKey);
+				LedgerEntry ledgerEntry = null;
+				try {
+					DatabaseEntry key = new DatabaseEntry(StoreIndex.from(ENTRY_INDEX_PREFIX, atomId.getBytes()));
+					DatabaseEntry value = new DatabaseEntry();
+					OperationStatus uqCursorStatus = uqCursor.getSearchKey(key, value, LockMode.DEFAULT);
 
-				aids.add(getAidFromPKey(search));
-				status = cursor.getNext(search, null, LockMode.DEFAULT);
-				size++;
+					// TODO when uqCursor fails to fetch value, which means some form of DB corruption has occurred, how should we handle it?
+					if (uqCursorStatus == OperationStatus.SUCCESS) {
+						ledgerEntry = serialization.fromDson(value.getData(), LedgerEntry.class);
+						ledgerEntries.add(ledgerEntry);
+						++size;
+					}
+				} catch (Exception e) {
+					String message = MessageFormat.format("Unable to fetch ledger entry for Atom ID %s", atomId);
+					log.error(message, e);
+				}
+				atomCursorStatus = atomCursor.getNext(atomSearchKey, null, LockMode.DEFAULT);
 			}
-
-			return aids.build();
+			return ledgerEntries.build();
 		}
 	}
+
 	@Override
 	public SearchCursor search(LedgerIndexType type, StoreIndex index, LedgerSearchMode mode) {
 		Objects.requireNonNull(type, "type is required");
