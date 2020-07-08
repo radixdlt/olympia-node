@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.errorprone.annotations.Immutable;
 import com.radixdlt.crypto.CryptoException;
@@ -43,11 +44,11 @@ public final class NewView implements RequiresSyncConsensusEvent {
 
 	@JsonProperty("qc")
 	@DsonOutput(Output.ALL)
-	private QuorumCertificate qc;
+	private final QuorumCertificate qc;
 
-	private ECPublicKey author;
+	private final ECPublicKey author;
 
-	private View view;
+	private final View view;
 
 	@JsonProperty("committedQC")
 	@DsonOutput(Output.ALL)
@@ -57,12 +58,15 @@ public final class NewView implements RequiresSyncConsensusEvent {
 	@DsonOutput(Output.ALL)
 	private final ECDSASignature signature; // may be null if not signed (e.g. for genesis)
 
-	NewView() {
-		// Serializer only
-		this.author = null;
-		this.view = View.of(Long.MAX_VALUE);
-		this.signature = null;
-		this.committedQC = null;
+	@JsonCreator
+	NewView(
+		@JsonProperty("author") byte[] author,
+		@JsonProperty("view") Long view,
+		@JsonProperty("qc") QuorumCertificate qc,
+		@JsonProperty("committedQC") QuorumCertificate committedQC,
+		@JsonProperty("signature") ECDSASignature signature
+	) throws CryptoException {
+		this(new ECPublicKey(author), view != null ? View.of(view.longValue()) : null, qc, committedQC, signature);
 	}
 
 	public NewView(ECPublicKey author, View view, QuorumCertificate qc, QuorumCertificate committedQC, ECDSASignature signature) {
@@ -107,19 +111,10 @@ public final class NewView implements RequiresSyncConsensusEvent {
 		return this.view == null ? null : this.view.number();
 	}
 
-	@JsonProperty("view")
-	private void setSerializerView(Long number) {
-		this.view = number == null ? null : View.of(number.longValue());
-	}
-
 	@JsonProperty("author")
 	@DsonOutput(Output.ALL)
 	private byte[] getSerializerAuthor() {
 		return this.author == null ? null : this.author.getBytes();
-	}
-	@JsonProperty("author")
-	private void setSerializerAuthor(byte[] author) throws CryptoException {
-		this.author = (author == null) ? null : new ECPublicKey(author);
 	}
 
 	@Override

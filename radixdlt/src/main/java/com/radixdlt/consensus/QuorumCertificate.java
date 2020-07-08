@@ -19,6 +19,7 @@ package com.radixdlt.consensus;
 
 import java.util.Objects;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.serialization.DsonOutput;
@@ -42,13 +43,8 @@ public final class QuorumCertificate {
 	@DsonOutput(Output.ALL)
 	private final VoteData voteData;
 
-	QuorumCertificate() {
-		// Serializer only
-		this.voteData = null;
-		this.signatures = null;
-	}
-
-	public QuorumCertificate(VoteData voteData, ECDSASignatures signatures) {
+	@JsonCreator
+	public QuorumCertificate(@JsonProperty("vote_data") VoteData voteData, @JsonProperty("signatures") ECDSASignatures signatures) {
 		this.voteData = Objects.requireNonNull(voteData);
 		this.signatures = Objects.requireNonNull(signatures);
 	}
