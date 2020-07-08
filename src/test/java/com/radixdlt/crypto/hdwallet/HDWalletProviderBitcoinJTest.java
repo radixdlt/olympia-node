@@ -17,12 +17,13 @@
  *
  */
 
-package com.radixdlt.crypto.hdwallet.bitcoinjprovider;
+package com.radixdlt.crypto.hdwallet;
 
 import com.google.gson.Gson;
 import com.google.gson.stream.JsonReader;
 import com.radixdlt.crypto.hdwallet.HDKeyPair;
 import com.radixdlt.crypto.hdwallet.HDWallet;
+import com.radixdlt.crypto.hdwallet.HDWalletProviderBitcoinJ;
 import com.radixdlt.utils.Bytes;
 import org.bitcoinj.crypto.DeterministicKey;
 import org.bitcoinj.crypto.HDKeyDerivation;

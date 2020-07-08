@@ -17,15 +17,13 @@
  *
  */
 
-package com.radixdlt.crypto.hdwallet.bitcoinjprovider;
+package com.radixdlt.crypto.hdwallet;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Iterables;
 import com.radixdlt.SecurityCritical;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.hdwallet.HDKeyPair;
-import com.radixdlt.crypto.hdwallet.HDWallet;
 import com.radixdlt.utils.Bytes;
 import org.bitcoinj.crypto.ChildNumber;
 import org.bitcoinj.crypto.DeterministicHierarchy;
