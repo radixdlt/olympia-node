@@ -21,7 +21,6 @@ import java.util.function.BiConsumer;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.everit.json.schema.Schema;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.radix.api.AtomQuery;
@@ -57,7 +56,6 @@ public class RadixJsonRpcPeer {
 	public RadixJsonRpcPeer(
 		RadixJsonRpcServer server,
 		AtomsService atomsService,
-		Schema atomSchema,
 		Serialization serialization,
 		BiConsumer<RadixJsonRpcPeer, String> callback
 	) {
@@ -65,7 +63,7 @@ public class RadixJsonRpcPeer {
 		this.callback = callback;
 
 		this.atomStatusEpic = new AtomStatusEpic(atomsService, json -> callback.accept(this, json.toString()));
-		this.submitAtomAndSubscribeEpic = new SubmitAtomAndSubscribeEpic(atomsService, atomSchema,
+		this.submitAtomAndSubscribeEpic = new SubmitAtomAndSubscribeEpic(atomsService,
 			atomJson -> callback.accept(this, atomJson.toString()));
 		this.atomsSubscribeEpic = new AtomsSubscribeEpic(atomsService, serialization,
 			queryJson -> new AtomQuery(RadixAddress.from(queryJson.getString("address")).euid()), atomJson -> callback.accept(this, atomJson.toString()));

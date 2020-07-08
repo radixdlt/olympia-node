@@ -25,7 +25,6 @@ import static org.mockito.Mockito.when;
 import com.radixdlt.consensus.ConsensusRunner;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.universe.Universe;
-import org.everit.json.schema.Schema;
 import org.json.JSONObject;
 import org.junit.Test;
 import org.radix.api.services.AtomsService;
@@ -45,7 +44,6 @@ public class RadixJsonRpcServerTest {
 			mock(Serialization.class),
 			mock(LedgerEntryStore.class),
 			mock(AtomsService.class),
-			mock(Schema.class),
 			mock(LocalSystem.class),
 			mock(AddressBook.class),
 			mock(Universe.class)
@@ -76,7 +74,6 @@ public class RadixJsonRpcServerTest {
 			serializer,
 			mock(LedgerEntryStore.class),
 			mock(AtomsService.class),
-			mock(Schema.class),
 			mock(LocalSystem.class),
 			mock(AddressBook.class),
 			mock(Universe.class));
@@ -97,7 +94,6 @@ public class RadixJsonRpcServerTest {
 			mock(Serialization.class),
 			mock(LedgerEntryStore.class),
 			mock(AtomsService.class),
-			mock(Schema.class),
 			mock(LocalSystem.class),
 			mock(AddressBook.class),
 			mock(Universe.class),

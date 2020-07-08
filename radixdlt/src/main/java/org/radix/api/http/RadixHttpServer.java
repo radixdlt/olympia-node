@@ -52,7 +52,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.radix.api.AtomSchemas;
 import org.radix.api.jsonrpc.RadixJsonRpcPeer;
 import org.radix.api.jsonrpc.RadixJsonRpcServer;
 import org.radix.api.services.AtomsService;
@@ -124,7 +123,6 @@ public final class RadixHttpServer {
 			serialization,
 			store,
 			atomsService,
-			AtomSchemas.get(),
 			localSystem,
 			addressBook,
 			universe
@@ -287,10 +285,6 @@ public final class RadixHttpServer {
 
 		// Network routes
 		addRestNetworkRoutesTo(handler);
-
-		// Atom Model JSON schema
-		addGetRoute("/schemas/atom.schema.json", exchange
-			-> respond(AtomSchemas.getJsonSchemaString(4), exchange), handler);
 
 		addGetRoute("/api/events", exchange -> {
 			JSONObject eventCount = new JSONObject();

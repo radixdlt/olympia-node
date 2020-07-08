@@ -19,7 +19,6 @@ package org.radix.api.jsonrpc;
 
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.middleware2.ClientAtom;
-import org.everit.json.schema.Schema;
 import org.json.JSONObject;
 import org.junit.Test;
 import org.mockito.InOrder;
@@ -46,7 +45,6 @@ public class SubmitAtomAndSubscribeEpicTest {
 	@Test
 	public void testAtomValidationError() {
 		AtomsService atomsService = mock(AtomsService.class);
-		Schema schema = mock(Schema.class);
 		Consumer<JSONObject> callback = mock(ConsumerJSONObject.class);
 		JSONObject action = mock(JSONObject.class);
 		JSONObject params = mock(JSONObject.class);
@@ -61,7 +59,7 @@ public class SubmitAtomAndSubscribeEpicTest {
 			return null;
 		}).when(atomsService).submitAtom(any(), any());
 
-		SubmitAtomAndSubscribeEpic epic = new SubmitAtomAndSubscribeEpic(atomsService, schema, callback);
+		SubmitAtomAndSubscribeEpic epic = new SubmitAtomAndSubscribeEpic(atomsService, callback);
 		epic.action(action);
 
 		InOrder inOrder = inOrder(callback);

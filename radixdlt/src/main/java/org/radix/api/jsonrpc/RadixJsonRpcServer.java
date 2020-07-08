@@ -34,8 +34,6 @@ import io.undertow.server.HttpServerExchange;
 
 import java.util.ArrayList;
 import java.util.Objects;
-import org.everit.json.schema.Schema;
-import org.everit.json.schema.ValidationException;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.radix.api.services.AtomsService;
@@ -61,11 +59,6 @@ public final class RadixJsonRpcServer {
 	private final long maxRequestSizeBytes;
 
 	/**
-	 * Atom schema to first validate against
-	 */
-	private final Schema atomSchema;
-
-	/**
 	 * Service to submit atoms through
 	 */
 	private final AtomsService atomsService;
@@ -87,12 +80,11 @@ public final class RadixJsonRpcServer {
 		Serialization serialization,
 		LedgerEntryStore ledger,
 		AtomsService atomsService,
-		Schema atomSchema,
 		LocalSystem localSystem,
 		AddressBook addressBook,
 		Universe universe
 	) {
-		this(consensusRunner, serialization, ledger, atomsService, atomSchema, localSystem, addressBook, universe, DEFAULT_MAX_REQUEST_SIZE);
+		this(consensusRunner, serialization, ledger, atomsService, localSystem, addressBook, universe, DEFAULT_MAX_REQUEST_SIZE);
 	}
 
 	public RadixJsonRpcServer(
@@ -100,7 +92,6 @@ public final class RadixJsonRpcServer {
 		Serialization serialization,
 		LedgerEntryStore ledger,
 		AtomsService atomsService,
-		Schema atomSchema,
 		LocalSystem localSystem,
 		AddressBook addressBook,
 		Universe universe,
@@ -110,7 +101,6 @@ public final class RadixJsonRpcServer {
 		this.serialization = Objects.requireNonNull(serialization);
 		this.ledger = Objects.requireNonNull(ledger);
 		this.atomsService = Objects.requireNonNull(atomsService);
-		this.atomSchema = Objects.requireNonNull(atomSchema);
 		this.localSystem = Objects.requireNonNull(localSystem);
 		this.addressBook = Objects.requireNonNull(addressBook);
 		this.universe = Objects.requireNonNull(universe);
@@ -240,13 +230,6 @@ public final class RadixJsonRpcServer {
 						return JsonRpcUtil.errorResponse(id, -32000, "No atom present", new JSONObject());
 					} else {
 						JSONObject jsonAtom = (JSONObject) paramsObject;
-
-						try {
-							atomSchema.validate(jsonAtom);
-						} catch (ValidationException e) {
-							return JsonRpcUtil.errorResponse(id, -32000, "Schema Error", e.toJSON());
-						}
-
 						final AID atomId = atomsService.submitAtom(jsonAtom, null);
 						result = new JSONObject()
 							.put("status", AtomStatus.PENDING_CM_VERIFICATION)

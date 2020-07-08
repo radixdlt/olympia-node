@@ -101,13 +101,6 @@ dependencies {
         exclude group: 'com.google.guava', module: 'guava'
     }
 
-    compile('com.github.everit-org.json-schema:org.everit.json.schema:1.9.1') {
-        exclude group: 'org.json', module: 'json'
-        exclude group: 'com.google.guava', module: 'guava'
-        exclude group: 'commons-logging', module: 'commons-logging'
-        exclude group: 'commons-collections', module: 'commons-collections'
-    }
-
     compile group: 'io.undertow', name: 'undertow-core', version: '2.0.6.Final'
     compile group: 'io.undertow', name: 'undertow-servlet', version: '2.0.6.Final'
     compile group: 'com.stijndewitt.undertow.cors', name: 'undertow-cors-filter', version: '0.4.0'
