@@ -15,35 +15,24 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.epoch;
+package com.radixdlt.consensus;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.mock;
 
+import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.crypto.ECPublicKey;
-import org.junit.Before;
+import com.radixdlt.crypto.Hash;
 import org.junit.Test;
 
-public class GetEpochRequestTest {
-	private ECPublicKey sender;
-	private long epoch;
-	private GetEpochRequest request;
-
-	@Before
-	public void setUp() {
-		this.sender = mock(ECPublicKey.class);
-		this.epoch = 12345;
-		this.request = new GetEpochRequest(this.sender, this.epoch);
-	}
-
+public class EmptySyncVerticesRPCSenderTest {
 	@Test
-	public void testGetters() {
-		assertThat(this.request.getEpoch()).isEqualTo(epoch);
-		assertThat(this.request.getAuthor()).isEqualTo(this.sender);
-	}
-
-	@Test
-	public void testToString() {
-		assertThat(this.request.toString()).isNotNull();
+	public void when_execute_methods_in_empty__then_should_do_nothing() {
+		EmptySyncVerticesRPCSender.INSTANCE
+			.sendGetVerticesResponse(mock(GetVerticesRequest.class), ImmutableList.of());
+		EmptySyncVerticesRPCSender.INSTANCE
+			.sendGetVerticesErrorResponse(mock(GetVerticesRequest.class), mock(QuorumCertificate.class), mock(QuorumCertificate.class));
+		EmptySyncVerticesRPCSender.INSTANCE
+			.sendGetVerticesRequest(mock(Hash.class), mock(ECPublicKey.class), 1, mock(Object.class));
 	}
 }

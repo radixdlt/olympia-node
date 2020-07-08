@@ -25,7 +25,6 @@ import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.DefaultHasher;
 import com.radixdlt.consensus.EmptySyncEpochsRPCSender;
-import com.radixdlt.consensus.EmptySyncVerticesRPCSender;
 import com.radixdlt.consensus.EpochChange;
 import com.radixdlt.consensus.EpochManager;
 import com.radixdlt.consensus.PendingVotes;
@@ -37,11 +36,11 @@ import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.SyncedStateComputer;
-import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.SyncVerticesRPCSender;
 import com.radixdlt.consensus.VertexStoreFactory;
 import com.radixdlt.consensus.deterministic.ControlledNetwork.ControlledSender;
+import com.radixdlt.consensus.deterministic.configuration.UnsupportedSyncVerticesRPCSender;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
 import com.radixdlt.consensus.liveness.MempoolProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
@@ -52,14 +51,11 @@ import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.mempool.EmptyMempool;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.CommittedAtom;
-import java.util.List;
 import java.util.Objects;
-import java.util.function.BooleanSupplier;
 
 /**
  * Controlled Node where its state machine is managed by a synchronous
@@ -72,45 +68,26 @@ class ControlledNode {
 	private final ControlledSender controlledSender;
 
 	ControlledNode(
+		String name,
 		ECKeyPair key,
 		ControlledSender sender,
 		ProposerElectionFactory proposerElectionFactory,
 		ValidatorSet initialValidatorSet,
 		boolean enableGetVerticesRPC,
-		BooleanSupplier syncedSupplier
+		SyncedStateComputer<CommittedAtom> stateComputer
 	) {
 		this.systemCounters = new SystemCountersImpl();
 		this.controlledSender = Objects.requireNonNull(sender);
 		this.initialValidatorSet = Objects.requireNonNull(initialValidatorSet);
 
-		SyncedStateComputer<CommittedAtom> stateComputer = new SyncedStateComputer<CommittedAtom>() {
-			@Override
-			public boolean syncTo(VertexMetadata vertexMetadata, List<ECPublicKey> target, Object opaque) {
-				if (syncedSupplier.getAsBoolean()) {
-					return true;
-				}
 
-				sender.committedStateSync(new CommittedStateSync(vertexMetadata.getStateVersion(), opaque));
-				return false;
-			}
-
-			@Override
-			public boolean compute(Vertex vertex) {
-				return false;
-			}
-
-			@Override
-			public void execute(CommittedAtom instruction) {
-			}
-		};
-
-		SyncVerticesRPCSender syncVerticesRPCSender = enableGetVerticesRPC ? sender : EmptySyncVerticesRPCSender.INSTANCE;
+		SyncVerticesRPCSender syncVerticesRPCSender = enableGetVerticesRPC ? sender : UnsupportedSyncVerticesRPCSender.INSTANCE;
 		Mempool mempool = new EmptyMempool();
 		Hasher hasher = new DefaultHasher();
 		VertexStoreFactory vertexStoreFactory = (vertex, qc, syncedStateComputer) ->
 			new VertexStore(vertex, qc, syncedStateComputer, syncVerticesRPCSender, sender, systemCounters);
 		BFTFactory bftFactory =
-			(pacemaker, vertexStore, proposerElection, validatorSet) -> {
+			(endOfEpochSender, pacemaker, vertexStore, proposerElection, validatorSet) -> {
 				final ProposalGenerator proposalGenerator = new MempoolProposalGenerator(vertexStore, mempool);
 				final SafetyRules safetyRules = new SafetyRules(key, SafetyState.initialState(), hasher);
 				final PendingVotes pendingVotes = new PendingVotes(hasher);
@@ -119,6 +96,7 @@ class ControlledNode {
 					proposalGenerator,
 					mempool,
 					controlledSender,
+					endOfEpochSender,
 					safetyRules,
 					pacemaker,
 					vertexStore,
@@ -131,6 +109,7 @@ class ControlledNode {
 			};
 
 		this.epochManager = new EpochManager(
+			name,
 			stateComputer,
 			EmptySyncEpochsRPCSender.INSTANCE,
 			mock(ScheduledTimeoutSender.class),

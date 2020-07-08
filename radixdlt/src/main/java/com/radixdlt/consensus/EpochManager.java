@@ -63,13 +63,17 @@ public final class EpochManager {
 	private final SyncedStateComputer<CommittedAtom> syncedStateComputer;
 	private final Map<Long, List<ConsensusEvent>> queuedEvents;
 	private final BFTFactory bftFactory;
+	private final String loggerPrefix;
 
+	private VertexMetadata lastConstructed = null;
+	private ValidatorSet currentValidatorSet;
 	private VertexMetadata currentAncestor;
 	private VertexStoreEventProcessor vertexStoreEventProcessor = EmptyVertexStoreEventProcessor.INSTANCE;
 	private BFTEventProcessor bftEventProcessor = EmptyBFTEventProcessor.INSTANCE;
 	private int numQueuedConsensusEvents = 0;
 
 	public EpochManager(
+		String loggerPrefix,
 		SyncedStateComputer<CommittedAtom> syncedStateComputer,
 		SyncEpochsRPCSender epochsRPCSender,
 		ScheduledTimeoutSender scheduledTimeoutSender,
@@ -80,6 +84,7 @@ public final class EpochManager {
 		ECPublicKey selfPublicKey,
 		SystemCounters counters
 	) {
+		this.loggerPrefix = Objects.requireNonNull(loggerPrefix);
 		this.syncedStateComputer = Objects.requireNonNull(syncedStateComputer);
 		this.epochsRPCSender = Objects.requireNonNull(epochsRPCSender);
 		this.scheduledTimeoutSender = Objects.requireNonNull(scheduledTimeoutSender);
@@ -98,8 +103,6 @@ public final class EpochManager {
 
 	public void processEpochChange(EpochChange epochChange) {
 		ValidatorSet validatorSet = epochChange.getValidatorSet();
-		log.info("NEXT_EPOCH: {}", epochChange);
-
 		VertexMetadata ancestorMetadata = epochChange.getAncestor();
 		Vertex genesisVertex = Vertex.createGenesis(ancestorMetadata);
 		final long nextEpoch = genesisVertex.getEpoch();
@@ -109,23 +112,37 @@ public final class EpochManager {
 			throw new IllegalStateException("Epoch change has already occurred: " + epochChange);
 		}
 
+		// If constructed the end of the previous epoch then broadcast new epoch to new validator set
+		// TODO: Move this into when lastConstructed is set
+		if (lastConstructed != null && lastConstructed.getEpoch() == ancestorMetadata.getEpoch()) {
+			log.info("{}: EPOCH_CHANGE: broadcasting next epoch", this.loggerPrefix);
+			for (Validator validator : validatorSet.getValidators()) {
+				if (!validator.nodeKey().equals(selfPublicKey)) {
+					epochsRPCSender.sendGetEpochResponse(validator.nodeKey(), ancestorMetadata);
+				}
+			}
+		}
+
 		this.currentAncestor = ancestorMetadata;
+		this.currentValidatorSet = validatorSet;
 		this.counters.set(CounterType.EPOCH_MANAGER_EPOCH, nextEpoch);
 
 		final BFTEventProcessor bftEventProcessor;
 		final VertexStoreEventProcessor vertexStoreEventProcessor;
 
 		if (!validatorSet.containsKey(selfPublicKey)) {
-			log.info("NEXT_EPOCH: Not a validator");
+			log.info("{}: EPOCH_CHANGE: {} Not part of validator set", this.loggerPrefix, epochChange);
 			bftEventProcessor =  EmptyBFTEventProcessor.INSTANCE;
 			vertexStoreEventProcessor = EmptyVertexStoreEventProcessor.INSTANCE;
 		} else {
+			log.info("{}: EPOCH_CHANGE: {} Part of validator set", this.loggerPrefix, epochChange);
 			ProposerElection proposerElection = proposerElectionFactory.create(validatorSet);
 			TimeoutSender sender = (view, ms) -> scheduledTimeoutSender.scheduleTimeout(new LocalTimeout(nextEpoch, view), ms);
 			Pacemaker pacemaker = pacemakerFactory.create(sender);
 			QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(genesisVertex);
 			VertexStore vertexStore = vertexStoreFactory.create(genesisVertex, genesisQC, syncedStateComputer);
 			BFTEventProcessor reducer = bftFactory.create(
+				this::processEndOfEpoch,
 				pacemaker,
 				vertexStore,
 				proposerElection,
@@ -166,28 +183,54 @@ public final class EpochManager {
 		queuedEvents.remove(nextEpoch);
 	}
 
+	private void processEndOfEpoch(VertexMetadata vertexMetadata) {
+		log.info("{}: END_OF_EPOCH: {}", this.loggerPrefix, vertexMetadata);
+		if (this.lastConstructed == null || this.lastConstructed.getEpoch() < vertexMetadata.getEpoch()) {
+			this.lastConstructed = vertexMetadata;
+
+			// Stop processing new events if end of epoch
+			// but keep VertexStore alive to help others in vertex syncing
+			this.bftEventProcessor = EmptyBFTEventProcessor.INSTANCE;
+		}
+	}
+
 	public void processGetEpochRequest(GetEpochRequest request) {
+		log.info("{}: GET_EPOCH_REQUEST: {}", this.loggerPrefix, request);
+
 		if (this.currentEpoch() == request.getEpoch()) {
-			epochsRPCSender.sendGetEpochResponse(request.getSender(), this.currentAncestor);
+			epochsRPCSender.sendGetEpochResponse(request.getAuthor(), this.currentAncestor);
 		} else {
 			// TODO: Send better error message back
-			epochsRPCSender.sendGetEpochResponse(request.getSender(), null);
+			epochsRPCSender.sendGetEpochResponse(request.getAuthor(), null);
 		}
 	}
 
 	public void processGetEpochResponse(GetEpochResponse response) {
+		log.info("{}: GET_EPOCH_RESPONSE: {}", this.loggerPrefix, response);
+
 		if (response.getEpochAncestor() == null) {
-			log.warn("Received empty GetEpochResponse {}", response);
+			log.warn("{}: Received empty GetEpochResponse {}", this.loggerPrefix, response);
+			// TODO: retry
 			return;
 		}
 
 		final VertexMetadata ancestor = response.getEpochAncestor();
-		if (ancestor.getEpoch() + 1 > this.currentEpoch()) {
-			syncedStateComputer.syncTo(ancestor, Collections.singletonList(response.getSender()), null);
+		if (ancestor.getEpoch() >= this.currentEpoch()) {
+			syncedStateComputer.syncTo(ancestor, Collections.singletonList(response.getAuthor()), null);
+		} else {
+			log.warn("{}: Received old epoch {}", this.loggerPrefix, response);
 		}
 	}
 
 	private void processConsensusEventInternal(ConsensusEvent consensusEvent) {
+		if (this.currentValidatorSet != null && !this.currentValidatorSet.containsKey(consensusEvent.getAuthor())) {
+			log.warn("{}: CONSENSUS_EVENT: Received event from author={} not in validator set={}",
+				this.loggerPrefix, consensusEvent.getAuthor(), this.currentValidatorSet
+			);
+			return;
+		}
+		// TODO: Add the rest of consensus event verification here including signature verification
+
 		if (consensusEvent instanceof NewView) {
 			bftEventProcessor.processNewView((NewView) consensusEvent);
 		} else if (consensusEvent instanceof Proposal) {
@@ -200,10 +243,10 @@ public final class EpochManager {
 	}
 
 	public void processConsensusEvent(ConsensusEvent consensusEvent) {
-		// TODO: Add the rest of consensus event verification here including signature verification
-
 		if (consensusEvent.getEpoch() > this.currentEpoch()) {
-			log.warn("Received higher epoch event {} from current epoch: {}", consensusEvent, this.currentEpoch());
+			log.warn("{}: CONSENSUS_EVENT: Received higher epoch event: {} current epoch: {}",
+				this.loggerPrefix, consensusEvent, this.currentEpoch()
+			);
 
 			// queue higher epoch events for later processing
 			// TODO: need to clear this by some rule (e.g. timeout or max size) or else memory leak attack possible
@@ -217,7 +260,9 @@ public final class EpochManager {
 		}
 
 		if (consensusEvent.getEpoch() < this.currentEpoch()) {
-			log.warn("Received lower epoch event {} from current epoch: {}", consensusEvent, this.currentEpoch());
+			log.warn("{}: CONSENSUS_EVENT: Received lower epoch event: {} current epoch: {}",
+				this.loggerPrefix, consensusEvent, this.currentEpoch()
+			);
 			return;
 		}
 

@@ -15,13 +15,16 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.middleware2.network;
+package com.radixdlt.consensus.simulation.network;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.ConsensusEvent;
-import com.radixdlt.consensus.EventCoordinatorNetworkRx;
+import com.radixdlt.consensus.ConsensusEventsRx;
 import com.radixdlt.consensus.BFTEventSender;
 import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.SyncEpochsRPCRx;
+import com.radixdlt.consensus.SyncEpochsRPCSender;
+import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
 import com.radixdlt.consensus.bft.GetVerticesResponse;
 import com.radixdlt.consensus.NewView;
@@ -31,6 +34,8 @@ import com.radixdlt.consensus.SyncVerticesRPCSender;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.epoch.GetEpochRequest;
+import com.radixdlt.consensus.epoch.GetEpochResponse;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 import io.reactivex.rxjava3.core.Observable;
@@ -41,13 +46,14 @@ import io.reactivex.rxjava3.subjects.Subject;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 /**
  * Simple simulated network implementation that just sends messages to itself with a configurable latency.
  */
-public class TestEventCoordinatorNetwork {
+public class SimulationNetwork {
 	public static final int DEFAULT_LATENCY = 50;
 
 	public static final class MessageInTransit {
@@ -120,7 +126,7 @@ public class TestEventCoordinatorNetwork {
 	private final Map<ECPublicKey, SimulatedNetworkImpl> receivers = new ConcurrentHashMap<>();
 	private final LatencyProvider latencyProvider;
 
-	private TestEventCoordinatorNetwork(LatencyProvider latencyProvider) {
+	private SimulationNetwork(LatencyProvider latencyProvider) {
 		this.latencyProvider = latencyProvider;
 		this.receivedMessages = ReplaySubject.<MessageInTransit>create(20) // To catch startup timing issues
 			.toSerialized();
@@ -137,8 +143,8 @@ public class TestEventCoordinatorNetwork {
 			return this;
 		}
 
-		public TestEventCoordinatorNetwork build() {
-			return new TestEventCoordinatorNetwork(latencyProvider);
+		public SimulationNetwork build() {
+			return new SimulationNetwork(latencyProvider);
 		}
 	}
 
@@ -149,8 +155,8 @@ public class TestEventCoordinatorNetwork {
 	public BFTEventSender getNetworkSender(ECPublicKey forNode) {
 		return new BFTEventSender() {
 			@Override
-			public void broadcastProposal(Proposal proposal) {
-				for (ECPublicKey reader : receivers.keySet()) {
+			public void broadcastProposal(Proposal proposal, Set<ECPublicKey> nodes) {
+				for (ECPublicKey reader : nodes) {
 					receivedMessages.onNext(MessageInTransit.newMessage(proposal, forNode, reader));
 				}
 			}
@@ -195,7 +201,7 @@ public class TestEventCoordinatorNetwork {
 	}
 
 
-	private class SimulatedNetworkImpl implements SimulatedNetworkReceiver, SyncVerticesRPCSender {
+	private class SimulatedNetworkImpl implements SimulatedNetworkReceiver, SimulationSyncSender {
 		private final Observable<Object> myMessages;
 		private final ECPublicKey thisNode;
 		private HashMap<Hash, Object> opaqueMap = new HashMap<>();
@@ -258,6 +264,18 @@ public class TestEventCoordinatorNetwork {
 		}
 
 		@Override
+		public void sendGetEpochRequest(ECPublicKey node, long epoch) {
+			GetEpochRequest getEpochRequest = new GetEpochRequest(thisNode, epoch);
+			receivedMessages.onNext(MessageInTransit.newMessage(getEpochRequest, thisNode, node));
+		}
+
+		@Override
+		public void sendGetEpochResponse(ECPublicKey node, VertexMetadata ancestor) {
+			GetEpochResponse getEpochResponse = new GetEpochResponse(thisNode, ancestor);
+			receivedMessages.onNext(MessageInTransit.newMessage(getEpochResponse, thisNode, node));
+		}
+
+		@Override
 		public Observable<ConsensusEvent> consensusEvents() {
 			return myMessages.ofType(ConsensusEvent.class);
 		}
@@ -276,16 +294,29 @@ public class TestEventCoordinatorNetwork {
 		public Observable<GetVerticesErrorResponse> errorResponses() {
 			return myMessages.ofType(GetVerticesErrorResponse.class);
 		}
+
+		@Override
+		public Observable<GetEpochRequest> epochRequests() {
+			return myMessages.ofType(GetEpochRequest.class);
+		}
+
+		@Override
+		public Observable<GetEpochResponse> epochResponses() {
+			return myMessages.ofType(GetEpochResponse.class);
+		}
 	}
 
 	public SimulatedNetworkReceiver getNetworkRx(ECPublicKey forNode) {
 		return receivers.computeIfAbsent(forNode, SimulatedNetworkImpl::new);
 	}
 
-	public SyncVerticesRPCSender getVerticesRequestSender(ECPublicKey forNode) {
+	public SimulationSyncSender getSyncSender(ECPublicKey forNode) {
 		return receivers.computeIfAbsent(forNode, SimulatedNetworkImpl::new);
 	}
 
-	public interface SimulatedNetworkReceiver extends EventCoordinatorNetworkRx, SyncVerticesRPCRx {
+	public interface SimulationSyncSender extends SyncVerticesRPCSender, SyncEpochsRPCSender {
+	}
+
+	public interface SimulatedNetworkReceiver extends ConsensusEventsRx, SyncVerticesRPCRx, SyncEpochsRPCRx {
 	}
 }

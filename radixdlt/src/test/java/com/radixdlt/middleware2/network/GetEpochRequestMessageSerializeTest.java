@@ -15,30 +15,19 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.middleware2.network;
 
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
+import org.radix.serialization.SerializeMessageObject;
 
-/**
- * A sender of GetEpoch RPC requests/responses
- */
-public interface SyncEpochsRPCSender {
+public class GetEpochRequestMessageSerializeTest extends SerializeMessageObject<GetEpochRequestMessage> {
+	public GetEpochRequestMessageSerializeTest() {
+		super(GetEpochRequestMessage.class, GetEpochRequestMessageSerializeTest::get);
+	}
 
-	/**
-	 * Send a request to a peer for proof of an epoch
-	 * @param node the peer to send to
-	 * @param epoch the epoch to retrieve proof for
-	 */
-	void sendGetEpochRequest(ECPublicKey node, long epoch);
-
-	/**
-	 * Send an epoch proof resposne to a peer
-	 *
-	 * TODO: currently just actually sending an ancestor but should contain
-	 * TODO: proof as well
-	 *
-	 * @param node the peer to send to
-	 * @param ancestor the ancestor of the epoch
-	 */
-	void sendGetEpochResponse(ECPublicKey node, VertexMetadata ancestor);
+	private static GetEpochRequestMessage get() {
+		ECPublicKey author = ECKeyPair.generateNew().getPublicKey();
+		return new GetEpochRequestMessage(author, 12345, 1);
+	}
 }

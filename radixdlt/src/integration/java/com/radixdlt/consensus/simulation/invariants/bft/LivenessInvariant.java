@@ -17,14 +17,14 @@
 
 package com.radixdlt.consensus.simulation.invariants.bft;
 
+import com.google.common.collect.Ordering;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.simulation.TestInvariant;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.simulation.network.SimulatedNetwork.RunningNetwork;
+import com.radixdlt.consensus.simulation.network.SimulationNodes.RunningNetwork;
+import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.core.Single;
 import java.util.Comparator;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -47,32 +47,30 @@ public class LivenessInvariant implements TestInvariant {
 
 	@Override
 	public Observable<TestInvariantError> check(RunningNetwork network) {
-		AtomicReference<VertexMetadata> highestVertexMetadata = new AtomicReference<>(VertexMetadata.ofGenesisAncestor());
-		return Observable
-			.interval(duration * 2, duration, timeUnit) // 2 times initial duration to account for boot up
-			.flatMapSingle(i -> {
-				List<Single<VertexMetadata>> qcs = network.getNodes().stream()
-						.map(network::getVertexStoreEvents)
-						.map(eventsRx -> eventsRx.highQCs().firstOrError().map(QuorumCertificate::getProposed))
-						.collect(Collectors.toList());
-				return Single.merge(qcs)
-					.reduce(VertexMetadata.ofGenesisAncestor(), (o1, o2) -> {
-						if (vertexMetadataComparator.compare(o1, o2) > 0) {
-							return o1;
-						} else {
-							return o2;
-						}
-					});
-			})
-			.concatMap(vertexMetadata -> {
-				if (vertexMetadataComparator.compare(vertexMetadata, highestVertexMetadata.get()) <= 0) {
+		AtomicReference<Pair<VertexMetadata, Long>> highestVertexMetadata = new AtomicReference<>(Pair.of(VertexMetadata.ofGenesisAncestor(), 0L));
+
+		Observable<VertexMetadata> highest = Observable.merge(
+			network.getNodes().stream()
+				.map(network::getVertexStoreEvents)
+				.map(eventsRx -> eventsRx.highQCs().map(QuorumCertificate::getProposed))
+				.collect(Collectors.toList())
+		).scan(VertexMetadata.ofGenesisAncestor(), Ordering.from(vertexMetadataComparator)::max);
+
+		return Observable.combineLatest(
+			highest,
+			Observable.interval(duration * 2, duration, timeUnit),
+			Pair::of
+		)
+			.filter(pair -> pair.getSecond() > highestVertexMetadata.get().getSecond())
+			.concatMap(pair -> {
+				if (vertexMetadataComparator.compare(pair.getFirst(), highestVertexMetadata.get().getFirst()) <= 0) {
 					return Observable.just(
 						new TestInvariantError(
 							String.format("Highest QC hasn't increased from %s after %s %s", highestVertexMetadata.get(), duration, timeUnit)
 						)
 					);
 				} else {
-					highestVertexMetadata.set(vertexMetadata);
+					highestVertexMetadata.set(pair);
 					return Observable.empty();
 				}
 			});

@@ -21,7 +21,7 @@ import com.radixdlt.consensus.EpochChange;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.View;
-import com.radixdlt.consensus.simulation.network.SimulatedNetwork.SimulatedStateComputer;
+import com.radixdlt.consensus.simulation.network.SimulationNodes.SimulatedStateComputer;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.middleware2.CommittedAtom;
@@ -40,7 +40,7 @@ public class ChangingEpochSyncedStateComputer implements SimulatedStateComputer 
 	private final Subject<EpochChange> epochChanges = BehaviorSubject.<EpochChange>create().toSerialized();
 	private final View epochHighView;
 	private final Function<Long, ValidatorSet> validatorSetMapping;
-	private VertexMetadata lastEpochChange = null;
+	private VertexMetadata currentAncestor = null;
 
 	public ChangingEpochSyncedStateComputer(View epochHighView, Function<Long, ValidatorSet> validatorSetMapping) {
 		this.epochHighView = Objects.requireNonNull(epochHighView);
@@ -49,8 +49,22 @@ public class ChangingEpochSyncedStateComputer implements SimulatedStateComputer 
 		this.epochChanges.onNext(new EpochChange(ancestor, validatorSetMapping.apply(ancestor.getEpoch() + 1)));
 	}
 
+	private void nextEpoch(VertexMetadata ancestor) {
+		if (this.currentAncestor != null && ancestor.getEpoch() <= this.currentAncestor.getEpoch()) {
+			return;
+		}
+
+		this.currentAncestor = ancestor;
+		EpochChange epochChange = new EpochChange(ancestor, validatorSetMapping.apply(ancestor.getEpoch() + 1));
+		this.epochChanges.onNext(epochChange);
+	}
+
 	@Override
 	public boolean syncTo(VertexMetadata vertexMetadata, List<ECPublicKey> target, Object opaque) {
+		if (vertexMetadata.isEndOfEpoch()) {
+			this.nextEpoch(vertexMetadata);
+		}
+
 		return false;
 	}
 
@@ -61,12 +75,8 @@ public class ChangingEpochSyncedStateComputer implements SimulatedStateComputer 
 
 	@Override
 	public void execute(CommittedAtom atom) {
-		if (atom.getVertexMetadata().isEndOfEpoch()
-			&& (lastEpochChange == null || lastEpochChange.getEpoch() != atom.getVertexMetadata().getEpoch())) {
-			VertexMetadata ancestor = atom.getVertexMetadata();
-			this.lastEpochChange = ancestor;
-			EpochChange epochChange = new EpochChange(ancestor, validatorSetMapping.apply(ancestor.getEpoch() + 1));
-			this.epochChanges.onNext(epochChange);
+		if (atom.getVertexMetadata().isEndOfEpoch()) {
+			this.nextEpoch(atom.getVertexMetadata());
 		}
 	}
 

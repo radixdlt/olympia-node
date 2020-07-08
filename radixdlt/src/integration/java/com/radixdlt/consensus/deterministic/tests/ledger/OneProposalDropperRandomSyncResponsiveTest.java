@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.deterministic.tests.syncedstatecomputer;
+package com.radixdlt.consensus.deterministic.tests.ledger;
 
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.View;
@@ -35,7 +35,7 @@ public class OneProposalDropperRandomSyncResponsiveTest {
 		final Map<View, Integer> proposalToDrop = new HashMap<>();
 		final Map<View, Integer> proposalCount = new HashMap<>();
 
-		final DeterministicTest test = DeterministicTest.createRandomlySyncedBFTAndSyncedStateComputerTest(numNodes, random);
+		final DeterministicTest test = DeterministicTest.createSingleEpochRandomlySyncedTest(numNodes, random);
 		test.start();
 		for (int step = 0; step < NUM_STEPS; step++) {
 			test.processNextMsg(random, (receiverId, msg) -> {

@@ -50,6 +50,8 @@ public final class ConsensusRunner {
 		GET_VERTICES_REQUEST,
 		GET_VERTICES_RESPONSE,
 		GET_VERTICES_ERROR_RESPONSE,
+		GET_EPOCH_REQUEST,
+		GET_EPOCH_RESPONSE,
 	}
 
 	public static class Event {
@@ -79,11 +81,12 @@ public final class ConsensusRunner {
 
 	public ConsensusRunner(
 		EpochChangeRx epochChangeRx,
-		EventCoordinatorNetworkRx networkRx,
+		ConsensusEventsRx networkRx,
 		PacemakerRx pacemakerRx,
 		VertexStoreEventsRx vertexStoreEventsRx,
 		CommittedStateSyncRx committedStateSyncRx,
 		SyncVerticesRPCRx rpcRx,
+		SyncEpochsRPCRx epochsRPCRx,
 		EpochManager epochManager
 	) {
 		this.singleThreadExecutor = Executors.newSingleThreadExecutor(ThreadFactories.daemonThreads("ConsensusRunner"));
@@ -127,6 +130,18 @@ public final class ConsensusRunner {
 				.map(e -> {
 					epochManager.processGetVerticesErrorResponse(e);
 					return new Event(EventType.GET_VERTICES_ERROR_RESPONSE, e);
+				}),
+			epochsRPCRx.epochRequests()
+				.observeOn(singleThreadScheduler)
+				.map(e -> {
+					epochManager.processGetEpochRequest(e);
+					return new Event(EventType.GET_EPOCH_REQUEST, e);
+				}),
+			epochsRPCRx.epochResponses()
+				.observeOn(singleThreadScheduler)
+				.map(e -> {
+					epochManager.processGetEpochResponse(e);
+					return new Event(EventType.GET_EPOCH_RESPONSE, e);
 				}),
 			vertexStoreEventsRx.syncedVertices()
 				.observeOn(singleThreadScheduler)

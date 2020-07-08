@@ -31,7 +31,7 @@ public class OneSlowNodeTest {
 
 	@Test
 	public void when_three_fast_nodes_and_one_slow_node_two_cycles__then_missing_parent_should_not_cause_sync_exception() {
-		final DeterministicTest test = DeterministicTest.createNonSyncingBFTTest(4);
+		final DeterministicTest test = DeterministicTest.createSingleEpochFailOnSyncTest(4);
 
 		test.start();
 
@@ -63,7 +63,7 @@ public class OneSlowNodeTest {
 	 */
 	@Test
 	public void when_three_fast_nodes_and_one_slow_node__then_missing_parent_should_not_cause_exception() {
-		final DeterministicTest test = DeterministicTest.createNonSyncingBFTTest(4);
+		final DeterministicTest test = DeterministicTest.createSingleEpochFailOnSyncTest(4);
 
 		test.start();
 

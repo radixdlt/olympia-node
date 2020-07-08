@@ -17,6 +17,8 @@
 
 package com.radixdlt.consensus;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.Streams;
 import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
@@ -28,8 +30,11 @@ import com.radixdlt.network.addressbook.PeersAddedEvent;
 import com.radixdlt.utils.UInt256;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Random;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.radix.events.EventListener;
 import org.radix.events.Events;
@@ -40,13 +45,18 @@ import org.radix.universe.system.RadixSystem;
  * matches the size and used as the validator set.
  */
 public class AddressBookValidatorSetProvider {
-	private final Single<ValidatorSet> validatorSet;
+	private final Single<ImmutableList<Validator>> validatorList;
 
-	public AddressBookValidatorSetProvider(ECPublicKey selfKey, AddressBook addressBook, int fixedNodeCount) {
+	public AddressBookValidatorSetProvider(
+		ECPublicKey selfKey,
+		AddressBook addressBook,
+		int fixedNodeCount
+	) {
 		if (fixedNodeCount <= 0) {
 			throw new IllegalArgumentException("Quorum size must be > 0 but was " + fixedNodeCount);
 		}
-		this.validatorSet = Observable.<List<Peer>>create(emitter -> {
+
+		this.validatorList = Observable.<List<Peer>>create(emitter -> {
 			emitter.onNext(addressBook.peers().collect(Collectors.toList()));
 			// Race condition here but ignore as this is a temporary class
 			EventListener<PeersAddedEvent> eventListener = e -> emitter.onNext(e.peers());
@@ -59,15 +69,36 @@ public class AddressBookValidatorSetProvider {
 			).distinct().collect(Collectors.toList()))
 			.filter(peers -> peers.size() == fixedNodeCount)
 			.firstOrError()
-			.map(peers -> ValidatorSet.from(
+			.map(peers ->
 				peers.stream()
+					.sorted(Comparator.comparing(ECPublicKey::euid))
 					.map(p -> Validator.from(p, UInt256.ONE))
-					.collect(Collectors.toList())
-			))
+					.collect(ImmutableList.toImmutableList())
+			)
 			.cache();
 	}
 
 	public ValidatorSet getValidatorSet(long epoch) {
-		return validatorSet.blockingGet();
+		ImmutableList<Validator> validators = validatorList.blockingGet();
+
+		Builder<Validator> validatorSetBuilder = ImmutableList.builder();
+		Random random = new Random(epoch);
+		List<Integer> indices = IntStream.range(0, validators.size()).boxed().collect(Collectors.toList());
+		// Temporary mechanism to get some deterministic random set of validators
+		for (long i = 0; i < epoch; i++) {
+			random.nextInt(validators.size());
+		}
+		int randInt = random.nextInt(validators.size());
+		int validatorSetSize = randInt + 1;
+
+		for (int i = 0; i < validatorSetSize; i++) {
+			int index = indices.remove(random.nextInt(indices.size()));
+			Validator validator = validators.get(index);
+			validatorSetBuilder.add(validator);
+		}
+
+		ImmutableList<Validator> validatorList = validatorSetBuilder.build();
+
+		return ValidatorSet.from(validatorList);
 	}
 }

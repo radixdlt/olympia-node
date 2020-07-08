@@ -34,7 +34,7 @@ import org.junit.Test;
 public class ConsensusRunnerTest {
 	@Test
 	public void when_events_get_emitted__then_event_coordinator_should_be_called() {
-		EventCoordinatorNetworkRx networkRx = mock(EventCoordinatorNetworkRx.class);
+		ConsensusEventsRx networkRx = mock(ConsensusEventsRx.class);
 
 		EpochChange epochChange = mock(EpochChange.class);
 		EpochChangeRx epochChangeRx = () -> Observable.just(epochChange).concatWith(Observable.never());
@@ -58,6 +58,10 @@ public class ConsensusRunnerTest {
 		when(syncVerticesRPCRx.responses()).thenReturn(Observable.never());
 		when(syncVerticesRPCRx.errorResponses()).thenReturn(Observable.never());
 
+		SyncEpochsRPCRx syncEpochsRPCRx = mock(SyncEpochsRPCRx.class);
+		when(syncEpochsRPCRx.epochRequests()).thenReturn(Observable.never());
+		when(syncEpochsRPCRx.epochResponses()).thenReturn(Observable.never());
+
 		VertexStoreEventsRx vertexStoreEventsRx = mock(VertexStoreEventsRx.class);
 		Hash id = mock(Hash.class);
 		when(vertexStoreEventsRx.syncedVertices()).thenReturn(Observable.just(id).concatWith(Observable.never()));
@@ -73,6 +77,7 @@ public class ConsensusRunnerTest {
 			vertexStoreEventsRx,
 			committedStateSyncRx,
 			syncVerticesRPCRx,
+			syncEpochsRPCRx,
 			epochManager
 		);
 

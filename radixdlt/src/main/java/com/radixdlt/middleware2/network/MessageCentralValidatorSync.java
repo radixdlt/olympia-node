@@ -22,12 +22,17 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.name.Named;
 import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.SyncEpochsRPCRx;
+import com.radixdlt.consensus.SyncEpochsRPCSender;
+import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
 import com.radixdlt.consensus.bft.GetVerticesResponse;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
 import com.radixdlt.consensus.SyncVerticesRPCSender;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
+import com.radixdlt.consensus.epoch.GetEpochRequest;
+import com.radixdlt.consensus.epoch.GetEpochResponse;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.network.addressbook.AddressBook;
@@ -39,12 +44,14 @@ import io.reactivex.rxjava3.core.Observable;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiFunction;
 import javax.inject.Inject;
+import org.radix.network.messaging.Message;
 
 /**
  * Network interface for syncing vertices using the MessageCentral
  */
-public class MessageCentralSyncVerticesRPCNetwork implements SyncVerticesRPCSender, SyncVerticesRPCRx {
+public class MessageCentralValidatorSync implements SyncVerticesRPCSender, SyncVerticesRPCRx, SyncEpochsRPCSender, SyncEpochsRPCRx {
 
 	private final ECPublicKey selfPublicKey;
 	private final int magic;
@@ -56,7 +63,7 @@ public class MessageCentralSyncVerticesRPCNetwork implements SyncVerticesRPCSend
 		.build();
 
 	@Inject
-	public MessageCentralSyncVerticesRPCNetwork(
+	public MessageCentralValidatorSync(
 		@Named("self") ECPublicKey selfPublicKey,
 		Universe universe,
 		AddressBook addressBook,
@@ -109,53 +116,45 @@ public class MessageCentralSyncVerticesRPCNetwork implements SyncVerticesRPCSend
 
 	@Override
 	public Observable<GetVerticesRequest> requests() {
-		return Observable.create(emitter -> {
-			MessageListener<GetVerticesRequestMessage> listener = (src, msg) -> {
-				MessageCentralGetVerticesRequest request = new MessageCentralGetVerticesRequest(src, msg.getVertexId(), msg.getCount());
-				emitter.onNext(request);
-			};
-			this.messageCentral.addListener(GetVerticesRequestMessage.class, listener);
-			emitter.setCancellable(() -> this.messageCentral.removeListener(listener));
-		});
+		return this.createObservable(
+			GetVerticesRequestMessage.class,
+			(peer, msg) -> new MessageCentralGetVerticesRequest(peer, msg.getVertexId(), msg.getCount())
+		);
 	}
 
 	@Override
 	public Observable<GetVerticesResponse> responses() {
-		return Observable.create(emitter -> {
-			MessageListener<GetVerticesResponseMessage> listener = (src, msg) -> {
+		return this.createObservable(
+			GetVerticesResponseMessage.class,
+			(peer, msg) -> {
 				Object opaque = opaqueCache.getIfPresent(msg.getVertexId());
 				if (opaque == null) {
-					return; // TODO: send error?
+					return null; // TODO: send error?
 				}
 
-				GetVerticesResponse response = new GetVerticesResponse(msg.getVertexId(), msg.getVertices(), opaque);
-				emitter.onNext(response);
-			};
-			this.messageCentral.addListener(GetVerticesResponseMessage.class, listener);
-			emitter.setCancellable(() -> this.messageCentral.removeListener(listener));
-		});
+				return new GetVerticesResponse(msg.getVertexId(), msg.getVertices(), opaque);
+			}
+		);
 	}
 
 	@Override
 	public Observable<GetVerticesErrorResponse> errorResponses() {
-		return Observable.create(emitter -> {
-			MessageListener<GetVerticesErrorResponseMessage> listener = (src, msg) -> {
+		return this.createObservable(
+			GetVerticesErrorResponseMessage.class,
+			(peer, msg) -> {
 				Object opaque = opaqueCache.getIfPresent(msg.getVertexId());
 				if (opaque == null) {
-					return; // TODO: send error?
+					return null; // TODO: send error?
 				}
 
-				GetVerticesErrorResponse response = new GetVerticesErrorResponse(
+				return new GetVerticesErrorResponse(
 					msg.getVertexId(),
 					msg.getHighestQC(),
 					msg.getHighestCommittedQC(),
 					opaque
 				);
-				emitter.onNext(response);
-			};
-			this.messageCentral.addListener(GetVerticesErrorResponseMessage.class, listener);
-			emitter.setCancellable(() -> this.messageCentral.removeListener(listener));
-		});
+			}
+		);
 	}
 
 	/**
@@ -190,5 +189,58 @@ public class MessageCentralSyncVerticesRPCNetwork implements SyncVerticesRPCSend
 		public String toString() {
 			return String.format("%s{vertexId=%s count=%d}", getClass().getSimpleName(), vertexId.toString().substring(0, 6), count);
 		}
+	}
+
+	@Override
+	public void sendGetEpochRequest(ECPublicKey node, long epoch) {
+		final Optional<Peer> peer = this.addressBook.peer(node.euid());
+		if (!peer.isPresent()) {
+			// TODO: Change to more appropriate exception type
+			throw new IllegalStateException(String.format("Peer with pubkey %s not present", node));
+		}
+
+		final GetEpochRequestMessage epochRequest = new GetEpochRequestMessage(this.selfPublicKey, this.magic, epoch);
+		this.messageCentral.send(peer.get(), epochRequest);
+	}
+
+	@Override
+	public void sendGetEpochResponse(ECPublicKey node, VertexMetadata ancestor) {
+		final Optional<Peer> peer = this.addressBook.peer(node.euid());
+		if (!peer.isPresent()) {
+			// TODO: Change to more appropriate exception type
+			throw new IllegalStateException(String.format("Peer with pubkey %s not present", node));
+		}
+
+		final GetEpochResponseMessage epochResponseMessage = new GetEpochResponseMessage(this.selfPublicKey, this.magic, ancestor);
+		this.messageCentral.send(peer.get(), epochResponseMessage);
+	}
+
+	@Override
+	public Observable<GetEpochRequest> epochRequests() {
+		return this.createObservable(
+			GetEpochRequestMessage.class,
+			(peer, msg) -> new GetEpochRequest(msg.getAuthor(), msg.getEpoch())
+		);
+	}
+
+	@Override
+	public Observable<GetEpochResponse> epochResponses() {
+		return this.createObservable(
+			GetEpochResponseMessage.class,
+			(peer, msg) -> new GetEpochResponse(msg.getAuthor(), msg.getAncestor())
+		);
+	}
+
+	private <T extends Message, U> Observable<U> createObservable(Class<T> c, BiFunction<Peer, T, U> mapper) {
+		return Observable.create(emitter -> {
+			MessageListener<T> listener = (src, msg) -> {
+				U u = mapper.apply(src, msg);
+				if (u != null) {
+					emitter.onNext(u);
+				}
+			};
+			this.messageCentral.addListener(c, listener);
+			emitter.setCancellable(() -> this.messageCentral.removeListener(listener));
+		});
 	}
 }

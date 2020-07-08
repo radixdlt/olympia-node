@@ -33,6 +33,7 @@ import com.radixdlt.consensus.Vote;
 import com.radixdlt.universe.Universe;
 import io.reactivex.rxjava3.observers.TestObserver;
 
+import java.util.Collections;
 import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
@@ -77,7 +78,7 @@ public class MessageCentralBFTNetworkTest {
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
 		network.consensusEvents().subscribe(testObserver);
 		Proposal proposal = mock(Proposal.class);
-		network.broadcastProposal(proposal);
+		network.broadcastProposal(proposal, Collections.singleton(this.selfKey));
 		testObserver.awaitCount(1);
 		testObserver.assertValue(proposal);
 	}

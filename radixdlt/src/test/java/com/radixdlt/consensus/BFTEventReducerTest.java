@@ -17,7 +17,9 @@
 
 package com.radixdlt.consensus;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import com.radixdlt.consensus.BFTEventReducer.EndOfEpochSender;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.identifiers.AID;
@@ -60,6 +62,7 @@ public class BFTEventReducerTest {
 	private PendingVotes pendingVotes;
 	private Mempool mempool;
 	private BFTEventSender sender;
+	private EndOfEpochSender endOfEpochSender;
 	private VertexStore vertexStore;
 	private ValidatorSet validatorSet;
 	private SystemCounters counters;
@@ -69,6 +72,7 @@ public class BFTEventReducerTest {
 		this.proposalGenerator = mock(ProposalGenerator.class);
 		this.mempool = mock(Mempool.class);
 		this.sender = mock(BFTEventSender.class);
+		this.endOfEpochSender = mock(EndOfEpochSender.class);
 		this.safetyRules = mock(SafetyRules.class);
 		this.pacemaker = mock(Pacemaker.class);
 		this.vertexStore = mock(VertexStore.class);
@@ -81,6 +85,7 @@ public class BFTEventReducerTest {
 			proposalGenerator,
 			mempool,
 			sender,
+			endOfEpochSender,
 			safetyRules,
 			pacemaker,
 			vertexStore,
@@ -208,11 +213,11 @@ public class BFTEventReducerTest {
 		when(pacemaker.processNewView(any(), any())).thenReturn(Optional.of(View.of(1L)));
 		when(proposerElection.getProposer(any())).thenReturn(SELF_KEY.getPublicKey());
 		when(proposalGenerator.generateProposal(eq(View.of(1L)))).thenReturn(mock(Vertex.class));
+		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of());
 		reducer.processNewView(newView);
 		verify(pacemaker, times(1)).processNewView(any(), any());
-		verify(sender, times(1)).broadcastProposal(any());
+		verify(sender, times(1)).broadcastProposal(any(), any());
 	}
-
 
 	@Test
 	public void when_processing_invalid_proposal__then_atom_is_rejected() throws Exception {

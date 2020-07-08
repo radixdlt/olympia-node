@@ -40,7 +40,7 @@ public class FProposalDropperResponsiveTest {
 		final Map<View, Set<Integer>> proposalsToDrop = new HashMap<>();
 		final Map<View, Integer> proposalCount = new HashMap<>();
 
-		final DeterministicTest test = DeterministicTest.createAlwaysSyncedBFTTest(numNodes);
+		final DeterministicTest test = DeterministicTest.createSingleEpochAlwaysSyncedTest(numNodes);
 		test.start();
 		for (int step = 0; step < NUM_STEPS; step++) {
 			test.processNextMsg(random, (receiverId, msg) -> {

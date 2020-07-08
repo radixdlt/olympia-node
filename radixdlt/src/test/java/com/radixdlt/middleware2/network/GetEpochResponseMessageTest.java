@@ -15,33 +15,22 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.epoch;
+package com.radixdlt.middleware2.network;
+
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.mock;
 
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.crypto.ECPublicKey;
+import org.junit.Test;
 
-/**
- * An RPC Response to a GetEpoch request
- */
-public final class GetEpochResponse {
-	private final VertexMetadata epochAncestor;
-	private final ECPublicKey author;
-
-	public GetEpochResponse(ECPublicKey author, VertexMetadata epochAncestor) {
-		this.epochAncestor = epochAncestor;
-		this.author = author;
-	}
-
-	public ECPublicKey getAuthor() {
-		return author;
-	}
-
-	public VertexMetadata getEpochAncestor() {
-		return epochAncestor;
-	}
-
-	@Override
-	public String toString() {
-		return String.format("%s{author=%s ancestor=%s}", this.getClass().getSimpleName(), this.author, this.epochAncestor);
+public class GetEpochResponseMessageTest {
+	@Test
+	public void sensibleToString() {
+		VertexMetadata ancestor = mock(VertexMetadata.class);
+		GetEpochResponseMessage msg = new GetEpochResponseMessage(mock(ECPublicKey.class), 12345, ancestor);
+		String s1 = msg.toString();
+		assertThat(s1, containsString(GetEpochResponseMessage.class.getSimpleName()));
 	}
 }

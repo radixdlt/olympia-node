@@ -17,28 +17,22 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.consensus.epoch.GetEpochRequest;
+import com.radixdlt.consensus.epoch.GetEpochResponse;
+import io.reactivex.rxjava3.core.Observable;
 
-/**
- * A sender of GetEpoch RPC requests/responses
- */
-public interface SyncEpochsRPCSender {
-
-	/**
-	 * Send a request to a peer for proof of an epoch
-	 * @param node the peer to send to
-	 * @param epoch the epoch to retrieve proof for
-	 */
-	void sendGetEpochRequest(ECPublicKey node, long epoch);
+public interface SyncEpochsRPCRx {
 
 	/**
-	 * Send an epoch proof resposne to a peer
-	 *
-	 * TODO: currently just actually sending an ancestor but should contain
-	 * TODO: proof as well
-	 *
-	 * @param node the peer to send to
-	 * @param ancestor the ancestor of the epoch
+	 * Retrieve a never-ending stream of requests
+	 * @return a never-ending stream of requests
 	 */
-	void sendGetEpochResponse(ECPublicKey node, VertexMetadata ancestor);
+	Observable<GetEpochRequest> epochRequests();
+
+	/**
+	 * Retrieve a never-ending stream of responses
+	 * @return a never-ending stream of responses
+	 */
+	Observable<GetEpochResponse> epochResponses();
+
 }

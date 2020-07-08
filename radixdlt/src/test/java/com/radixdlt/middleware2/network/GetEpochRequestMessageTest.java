@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,18 +15,20 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.middleware2.network;
 
-import io.reactivex.rxjava3.core.Observable;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.mock;
 
-/**
- * Network accessor for the EventCoordinator
- */
-public interface EventCoordinatorNetworkRx {
-	/**
-	 * Accessor to the stream of consensus message events as they are received
-	 * from the network.
-	 * @return observable of consensus message events
-	 */
-	Observable<ConsensusEvent> consensusEvents();
+import com.radixdlt.crypto.ECPublicKey;
+import org.junit.Test;
+
+public class GetEpochRequestMessageTest {
+	@Test
+	public void sensibleToString() {
+		GetEpochRequestMessage msg = new GetEpochRequestMessage(mock(ECPublicKey.class), 12345, 1);
+		String s1 = msg.toString();
+		assertThat(s1, containsString(GetEpochRequestMessage.class.getSimpleName()));
+	}
 }

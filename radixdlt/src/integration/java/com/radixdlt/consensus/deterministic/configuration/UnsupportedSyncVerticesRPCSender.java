@@ -15,31 +15,32 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.consensus.deterministic.configuration;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.SyncVerticesRPCSender;
+import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 
-/**
- * Sender which goes nowhere
- */
-public enum EmptySyncVerticesRPCSender implements SyncVerticesRPCSender {
+public enum UnsupportedSyncVerticesRPCSender implements SyncVerticesRPCSender {
 	INSTANCE;
+
 	@Override
 	public void sendGetVerticesRequest(Hash id, ECPublicKey node, int count, Object opaque) {
-		// empty
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public void sendGetVerticesResponse(GetVerticesRequest originalRequest, ImmutableList<Vertex> vertices) {
-		// empty
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public void sendGetVerticesErrorResponse(GetVerticesRequest originalRequest, QuorumCertificate highestQC,
 		QuorumCertificate highestCommittedQC) {
-		// empty
+		throw new UnsupportedOperationException();
 	}
 }

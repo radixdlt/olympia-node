@@ -18,9 +18,12 @@
 package com.radixdlt.consensus;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -28,6 +31,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.consensus.BFTEventReducer.EndOfEpochSender;
 import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
@@ -46,6 +50,7 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.middleware2.CommittedAtom;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -57,6 +62,7 @@ public class EpochManagerTest {
 	private BFTFactory bftFactory;
 	private Pacemaker pacemaker;
 	private SystemCounters systemCounters;
+	private ProposerElection proposerElection;
 	private SyncedStateComputer<CommittedAtom> syncedStateComputer;
 
 	@Before
@@ -76,13 +82,16 @@ public class EpochManagerTest {
 		this.systemCounters = new SystemCountersImpl();
 		this.syncedStateComputer = mock(SyncedStateComputer.class);
 
+		this.proposerElection = mock(ProposerElection.class);
+
 		this.epochManager = new EpochManager(
+			"name",
 			this.syncedStateComputer,
 			this.syncEpochsRPCSender,
 			mock(ScheduledTimeoutSender.class),
 			timeoutSender -> this.pacemaker,
 			vertexStoreFactory,
-			proposers -> mock(ProposerElection.class),
+			proposers -> proposerElection,
 			this.bftFactory,
 			this.publicKey,
 			this.systemCounters
@@ -99,7 +108,7 @@ public class EpochManagerTest {
 		when(epochChange.getAncestor()).thenReturn(vertexMetadata);
 		epochManager.processEpochChange(epochChange);
 
-		verify(bftFactory, never()).create(any(), any(), any(), any());
+		verify(bftFactory, never()).create(any(), any(), any(), any(), any());
 		verify(syncEpochsRPCSender, never()).sendGetEpochRequest(any(), anyLong());
 	}
 
@@ -126,11 +135,162 @@ public class EpochManagerTest {
 	}
 
 	@Test
+	public void when_receive_not_current_epoch_request__then_should_return_null() {
+		ECPublicKey sender = mock(ECPublicKey.class);
+		epochManager.processGetEpochRequest(new GetEpochRequest(sender, 2));
+		verify(syncEpochsRPCSender, times(1)).sendGetEpochResponse(eq(sender), isNull());
+	}
+
+	@Test
 	public void when_receive_epoch_response__then_should_sync_state_computer() {
 		GetEpochResponse response = mock(GetEpochResponse.class);
 		when(response.getEpochAncestor()).thenReturn(VertexMetadata.ofGenesisAncestor());
 		epochManager.processGetEpochResponse(response);
 		verify(syncedStateComputer, times(1)).syncTo(eq(VertexMetadata.ofGenesisAncestor()), any(), any());
+	}
+
+	@Test
+	public void when_receive_null_epoch_response__then_should_do_nothing() {
+		GetEpochResponse response = mock(GetEpochResponse.class);
+		when(response.getEpochAncestor()).thenReturn(null);
+		epochManager.processGetEpochResponse(response);
+		verify(syncedStateComputer, never()).syncTo(any(), any(), any());
+	}
+
+	@Test
+	public void when_receive_old_epoch_response__then_should_do_nothing() {
+		VertexMetadata ancestor = VertexMetadata.ofGenesisAncestor();
+		ValidatorSet validatorSet = mock(ValidatorSet.class);
+		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of());
+		EpochChange epochChange = new EpochChange(ancestor, validatorSet);
+		epochManager.processEpochChange(epochChange);
+
+		GetEpochResponse response = mock(GetEpochResponse.class);
+		when(response.getEpochAncestor()).thenReturn(ancestor);
+		epochManager.processGetEpochResponse(response);
+		verify(syncedStateComputer, never()).syncTo(any(), any(), any());
+	}
+
+	@Test
+	public void when_epoch_change_and_then_end_of_epoch_then_epoch_change__then_should_send_epoch_response() {
+		BFTEventProcessor eventProcessor = mock(BFTEventProcessor.class);
+		AtomicReference<EndOfEpochSender> endOfEpochSender = new AtomicReference<>();
+		doAnswer(invocation -> {
+			endOfEpochSender.set(invocation.getArgument(0));
+			return eventProcessor;
+		}).when(bftFactory).create(any(), any(), any(), any(), any());
+
+		VertexMetadata ancestor = VertexMetadata.ofGenesisAncestor();
+		ValidatorSet validatorSet = mock(ValidatorSet.class);
+		when(validatorSet.containsKey(any())).thenReturn(true);
+
+		Validator validator = mock(Validator.class);
+		ECPublicKey key = ECKeyPair.generateNew().getPublicKey();
+		when(validator.nodeKey()).thenReturn(key);
+
+		Validator selfValidator = mock(Validator.class);
+		when(selfValidator.nodeKey()).thenReturn(this.publicKey);
+
+		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of(selfValidator, validator));
+		epochManager.processEpochChange(new EpochChange(ancestor, validatorSet));
+
+		VertexMetadata nextAncestor = mock(VertexMetadata.class);
+		when(nextAncestor.getEpoch()).thenReturn(1L);
+
+		endOfEpochSender.get().sendEndOfEpoch(nextAncestor);
+
+		EpochChange epochChange = mock(EpochChange.class);
+		when(epochChange.getAncestor()).thenReturn(nextAncestor);
+		ValidatorSet vs = mock(ValidatorSet.class);
+		when(vs.getValidators()).thenReturn(ImmutableSet.of());
+		when(epochChange.getValidatorSet()).thenReturn(vs);
+		epochManager.processEpochChange(epochChange);
+	}
+
+	// TODO: Refactor EpochManager to simplify the following testing logic (TDD)
+	@Test
+	public void when_epoch_change_and_then_epoch_events__then_should_execute_events() {
+		BFTEventProcessor eventProcessor = mock(BFTEventProcessor.class);
+		when(bftFactory.create(any(), any(), any(), any(), any())).thenReturn(eventProcessor);
+
+		VertexMetadata ancestor = VertexMetadata.ofGenesisAncestor();
+		ValidatorSet validatorSet = mock(ValidatorSet.class);
+		when(validatorSet.containsKey(any())).thenReturn(true);
+
+		Validator validator = mock(Validator.class);
+		ECPublicKey key = ECKeyPair.generateNew().getPublicKey();
+		when(validator.nodeKey()).thenReturn(key);
+
+		Validator selfValidator = mock(Validator.class);
+		when(selfValidator.nodeKey()).thenReturn(this.publicKey);
+
+		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of(selfValidator, validator));
+		epochManager.processEpochChange(new EpochChange(ancestor, validatorSet));
+
+		verify(eventProcessor, times(1)).start();
+
+		when(vertexStore.syncToQC(any(), any(), any())).thenReturn(true);
+		when(pacemaker.getCurrentView()).thenReturn(View.of(0));
+
+		Proposal proposal = mock(Proposal.class);
+		when(proposal.getAuthor()).thenReturn(key);
+		when(proposal.getEpoch()).thenReturn(ancestor.getEpoch() + 1);
+		Vertex vertex = mock(Vertex.class);
+		when(vertex.getView()).thenReturn(View.of(1));
+		when(proposal.getVertex()).thenReturn(vertex);
+		epochManager.processConsensusEvent(proposal);
+		verify(eventProcessor, times(1)).processProposal(eq(proposal));
+
+		when(proposerElection.getProposer(any())).thenReturn(this.publicKey);
+
+		NewView newView = mock(NewView.class);
+		when(newView.getView()).thenReturn(View.of(1));
+		when(newView.getAuthor()).thenReturn(this.publicKey);
+		when(newView.getEpoch()).thenReturn(ancestor.getEpoch() + 1);
+		epochManager.processConsensusEvent(newView);
+		verify(eventProcessor, times(1)).processNewView(eq(newView));
+
+
+		when(pacemaker.getCurrentView()).thenReturn(View.of(0));
+
+		Vote vote = mock(Vote.class);
+		VoteData voteData = mock(VoteData.class);
+		VertexMetadata proposed = mock(VertexMetadata.class);
+		when(proposed.getView()).thenReturn(View.of(1));
+		when(voteData.getProposed()).thenReturn(proposed);
+		when(vote.getVoteData()).thenReturn(voteData);
+		when(vote.getAuthor()).thenReturn(key);
+		when(vote.getEpoch()).thenReturn(ancestor.getEpoch() + 1);
+		epochManager.processConsensusEvent(vote);
+		verify(eventProcessor, times(1)).processVote(eq(vote));
+
+		ConsensusEvent unknownEvent = mock(ConsensusEvent.class);
+		when(unknownEvent.getEpoch()).thenReturn(ancestor.getEpoch() + 1);
+		assertThatThrownBy(() -> epochManager.processConsensusEvent(unknownEvent))
+			.isInstanceOf(IllegalStateException.class);
+
+		Hash localSync = mock(Hash.class);
+		epochManager.processLocalSync(localSync);
+		verify(eventProcessor, times(1)).processLocalSync(eq(localSync));
+
+		LocalTimeout localTimeout = mock(LocalTimeout.class);
+		when(localTimeout.getEpoch()).thenReturn(ancestor.getEpoch() + 1);
+		when(localTimeout.getView()).thenReturn(View.of(1));
+
+		epochManager.processLocalTimeout(localTimeout);
+		verify(eventProcessor, times(1)).processLocalTimeout(eq(View.of(1)));
+
+		Proposal oldProposal = mock(Proposal.class);
+		when(oldProposal.getEpoch()).thenReturn(ancestor.getEpoch());
+		epochManager.processConsensusEvent(oldProposal);
+		verify(eventProcessor, never()).processProposal(eq(oldProposal));
+
+		LocalTimeout oldTimeout = mock(LocalTimeout.class);
+		when(oldTimeout.getEpoch()).thenReturn(ancestor.getEpoch());
+		View view = mock(View.class);
+		when(oldTimeout.getView()).thenReturn(view);
+		epochManager.processLocalTimeout(oldTimeout);
+		verify(eventProcessor, never()).processLocalTimeout(eq(view));
 	}
 
 	@Test
@@ -156,7 +316,7 @@ public class EpochManagerTest {
 		assertThat(systemCounters.get(CounterType.EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS)).isEqualTo(1);
 
 		BFTEventProcessor eventProcessor = mock(BFTEventProcessor.class);
-		when(bftFactory.create(any(), any(), any(), any())).thenReturn(eventProcessor);
+		when(bftFactory.create(any(), any(), any(), any(), any())).thenReturn(eventProcessor);
 
 		Validator validator = mock(Validator.class);
 		when(validator.nodeKey()).thenReturn(mock(ECPublicKey.class));
@@ -196,7 +356,7 @@ public class EpochManagerTest {
 		when(vertexStore.getHighestQC()).thenReturn(mock(QuorumCertificate.class));
 
 		BFTEventProcessor eventProcessor = mock(BFTEventProcessor.class);
-		when(bftFactory.create(any(), any(), any(), any())).thenReturn(eventProcessor);
+		when(bftFactory.create(any(), any(), any(), any(), any())).thenReturn(eventProcessor);
 
 		Validator validator = mock(Validator.class);
 		when(validator.nodeKey()).thenReturn(mock(ECPublicKey.class));

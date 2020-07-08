@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *  http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -17,26 +17,16 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.consensus.BFTEventReducer.EndOfEpochSender;
-import com.radixdlt.consensus.bft.VertexStore;
-import com.radixdlt.consensus.liveness.Pacemaker;
-import com.radixdlt.consensus.liveness.ProposerElection;
-import com.radixdlt.consensus.validators.ValidatorSet;
+import io.reactivex.rxjava3.core.Observable;
 
 /**
- * Creates a new bft processor
+ * Network accessor for the EventCoordinator
  */
-public interface BFTFactory {
+public interface ConsensusEventsRx {
 	/**
-	 * Create a new clean BFT processor
-	 *
-	 * @return a new bft processor
+	 * Accessor to the stream of consensus message events as they are received
+	 * from the network.
+	 * @return observable of consensus message events
 	 */
-	BFTEventProcessor create(
-		EndOfEpochSender endOfEpochSender,
-		Pacemaker pacemaker,
-		VertexStore vertexStore,
-		ProposerElection proposerElection,
-		ValidatorSet validatorSet
-	);
+	Observable<ConsensusEvent> consensusEvents();
 }

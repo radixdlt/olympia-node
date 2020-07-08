@@ -39,4 +39,9 @@ public final class SyncRequest {
 	public long getStateVersion() {
 		return stateVersion;
 	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{stateVersion=%s}", this.getClass().getSimpleName(), stateVersion);
+	}
 }

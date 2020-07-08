@@ -29,11 +29,11 @@ import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.CommittedStateSyncRx;
 import com.radixdlt.consensus.ConsensusRunner;
 import com.radixdlt.consensus.DefaultHasher;
-import com.radixdlt.consensus.EmptySyncEpochsRPCSender;
 import com.radixdlt.consensus.EpochChangeRx;
 import com.radixdlt.consensus.EpochManager;
-import com.radixdlt.consensus.EventCoordinatorNetworkRx;
+import com.radixdlt.consensus.ConsensusEventsRx;
 import com.radixdlt.consensus.PendingVotes;
+import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.SyncEpochsRPCSender;
 import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.VertexStoreEventsRx;
@@ -64,7 +64,7 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.network.MessageCentralBFTNetwork;
-import com.radixdlt.middleware2.network.MessageCentralSyncVerticesRPCNetwork;
+import com.radixdlt.middleware2.network.MessageCentralValidatorSync;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.properties.RuntimeProperties;
@@ -88,33 +88,33 @@ public class CerberusModule extends AbstractModule {
 
 	@Override
 	protected void configure() {
-		// dependencies
+		// Timed local messages
 		bind(PacemakerRx.class).to(ScheduledTimeoutSender.class);
 
+		// Local messages
 		bind(VertexStoreEventsRx.class).to(InternalMessagePasser.class);
 		bind(VertexStoreEventSender.class).to(InternalMessagePasser.class);
 		bind(CommittedStateSyncSender.class).to(InternalMessagePasser.class);
 		bind(CommittedStateSyncRx.class).to(InternalMessagePasser.class);
 		bind(EpochChangeRx.class).to(InternalMessagePasser.class);
 		bind(EpochChangeSender.class).to(InternalMessagePasser.class);
+
 		bind(SyncedStateComputer.class).to(SyncedRadixEngine.class);
 
-		bind(SyncVerticesRPCSender.class).to(MessageCentralSyncVerticesRPCNetwork.class);
-		bind(SyncVerticesRPCRx.class).to(MessageCentralSyncVerticesRPCNetwork.class);
-		bind(MessageCentralBFTNetwork.class).in(Scopes.SINGLETON);
+		// Sync messages
+		bind(SyncEpochsRPCSender.class).to(MessageCentralValidatorSync.class);
+		bind(SyncEpochsRPCRx.class).to(MessageCentralValidatorSync.class);
+		bind(SyncVerticesRPCSender.class).to(MessageCentralValidatorSync.class);
+		bind(SyncVerticesRPCRx.class).to(MessageCentralValidatorSync.class);
+		bind(MessageCentralValidatorSync.class).in(Scopes.SINGLETON);
+
+		// BFT messages
 		bind(BFTEventSender.class).to(MessageCentralBFTNetwork.class);
-		bind(EventCoordinatorNetworkRx.class).to(MessageCentralBFTNetwork.class);
-		bind(MessageCentralSyncVerticesRPCNetwork.class).in(Scopes.SINGLETON);
-		bind(SyncVerticesRPCSender.class).to(MessageCentralSyncVerticesRPCNetwork.class);
-		bind(SyncVerticesRPCRx.class).to(MessageCentralSyncVerticesRPCNetwork.class);
+		bind(ConsensusEventsRx.class).to(MessageCentralBFTNetwork.class);
+		bind(MessageCentralBFTNetwork.class).in(Scopes.SINGLETON);
 
+		// Configuration
 		bind(Hasher.class).to(DefaultHasher.class);
-	}
-
-	@Provides
-	@Singleton
-	private SyncEpochsRPCSender syncEpochsRPCSender() {
-		return EmptySyncEpochsRPCSender.INSTANCE;
 	}
 
 	@Provides
@@ -127,6 +127,7 @@ public class CerberusModule extends AbstractModule {
 		SystemCounters counters
 	) {
 		return (
+			endOfEpochSender,
 			pacemaker,
 			vertexStore,
 			proposerElection,
@@ -140,6 +141,7 @@ public class CerberusModule extends AbstractModule {
 				proposalGenerator,
 				mempool,
 				bftEventSender,
+				endOfEpochSender,
 				safetyRules,
 				pacemaker,
 				vertexStore,
@@ -166,6 +168,7 @@ public class CerberusModule extends AbstractModule {
 		SystemCounters counters
 	) {
 		return new EpochManager(
+			selfKey.euid().toString().substring(0, 6),
 			syncedRadixEngine,
 			syncEpochsRPCSender,
 			scheduledTimeoutSender,
@@ -182,11 +185,12 @@ public class CerberusModule extends AbstractModule {
 	@Singleton
 	private ConsensusRunner consensusRunner(
 		EpochChangeRx epochChangeRx,
-		EventCoordinatorNetworkRx networkRx,
+		ConsensusEventsRx networkRx,
 		PacemakerRx pacemakerRx,
 		VertexStoreEventsRx vertexStoreEventsRx,
 		CommittedStateSyncRx committedStateSyncRx,
 		SyncVerticesRPCRx rpcRx,
+		SyncEpochsRPCRx epochsRPCRx,
 		EpochManager epochManager
 	) {
 		return new ConsensusRunner(
@@ -196,6 +200,7 @@ public class CerberusModule extends AbstractModule {
 			vertexStoreEventsRx,
 			committedStateSyncRx,
 			rpcRx,
+			epochsRPCRx,
 			epochManager
 		);
 	}
@@ -208,23 +213,31 @@ public class CerberusModule extends AbstractModule {
 
 	@Provides
 	@Singleton
+	private AddressBookValidatorSetProvider addressBookValidatorSetProvider(
+		AddressBook addressBook,
+		@Named("self") ECKeyPair selfKey
+	) {
+		final int fixedNodeCount = runtimeProperties.get("consensus.fixed_node_count", 1);
+
+		return new AddressBookValidatorSetProvider(
+			selfKey.getPublicKey(),
+			addressBook,
+			fixedNodeCount
+		);
+	}
+
+	@Provides
+	@Singleton
 	private SyncedRadixEngine syncedRadixEngine(
 		RadixEngine<LedgerAtom> radixEngine,
 		CommittedAtomsStore committedAtomsStore,
 		CommittedStateSyncSender committedStateSyncSender,
 		EpochChangeSender epochChangeSender,
+		AddressBookValidatorSetProvider validatorSetProvider,
 		AddressBook addressBook,
-		StateSyncNetwork stateSyncNetwork,
-		@Named("self") ECKeyPair selfKey
+		StateSyncNetwork stateSyncNetwork
 	) {
-		final int fixedNodeCount = runtimeProperties.get("consensus.fixed_node_count", 1);
-		AddressBookValidatorSetProvider validatorSetProvider = new AddressBookValidatorSetProvider(
-			selfKey.getPublicKey(),
-			addressBook,
-			fixedNodeCount
-		);
 		final long viewsPerEpoch = runtimeProperties.get("epochs.views_per_epoch", 100L);
-
 		return new SyncedRadixEngine(
 			radixEngine,
 			committedAtomsStore,

@@ -18,7 +18,7 @@
 package com.radixdlt.consensus.simulation.invariants.bft;
 
 import com.radixdlt.consensus.simulation.TestInvariant;
-import com.radixdlt.consensus.simulation.network.SimulatedNetwork.RunningNetwork;
+import com.radixdlt.consensus.simulation.network.SimulationNodes.RunningNetwork;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.stream.Collectors;

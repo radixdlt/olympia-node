@@ -17,8 +17,8 @@
 
 package com.radixdlt.consensus.simulation.configuration;
 
-import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork.LatencyProvider;
-import com.radixdlt.middleware2.network.TestEventCoordinatorNetwork.MessageInTransit;
+import com.radixdlt.consensus.simulation.network.SimulationNetwork.LatencyProvider;
+import com.radixdlt.consensus.simulation.network.SimulationNetwork.MessageInTransit;
 import java.util.Random;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

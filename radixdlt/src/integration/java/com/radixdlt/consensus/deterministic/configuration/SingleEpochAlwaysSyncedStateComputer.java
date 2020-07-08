@@ -15,33 +15,33 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.epoch;
+package com.radixdlt.consensus.deterministic.configuration;
 
+import com.radixdlt.consensus.SyncedStateComputer;
+import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.middleware2.CommittedAtom;
+import java.util.List;
 
 /**
- * An RPC Response to a GetEpoch request
+ * A state computer which never changes epochs
  */
-public final class GetEpochResponse {
-	private final VertexMetadata epochAncestor;
-	private final ECPublicKey author;
+public enum SingleEpochAlwaysSyncedStateComputer implements SyncedStateComputer<CommittedAtom> {
+	INSTANCE;
 
-	public GetEpochResponse(ECPublicKey author, VertexMetadata epochAncestor) {
-		this.epochAncestor = epochAncestor;
-		this.author = author;
-	}
-
-	public ECPublicKey getAuthor() {
-		return author;
-	}
-
-	public VertexMetadata getEpochAncestor() {
-		return epochAncestor;
+	@Override
+	public boolean syncTo(VertexMetadata vertexMetadata, List<ECPublicKey> target, Object opaque) {
+		return true;
 	}
 
 	@Override
-	public String toString() {
-		return String.format("%s{author=%s ancestor=%s}", this.getClass().getSimpleName(), this.author, this.epochAncestor);
+	public boolean compute(Vertex vertex) {
+		return false;
+	}
+
+	@Override
+	public void execute(CommittedAtom instruction) {
+		// No-op Mocked execution
 	}
 }
