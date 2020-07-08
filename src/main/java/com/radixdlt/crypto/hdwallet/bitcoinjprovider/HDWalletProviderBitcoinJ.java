@@ -18,6 +18,7 @@
  */
 
 package com.radixdlt.crypto.hdwallet.bitcoinjprovider;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Iterables;
 import com.radixdlt.SecurityCritical;
@@ -44,7 +45,8 @@ public final class HDWalletProviderBitcoinJ implements HDWallet {
 	private final ECKeyPair rootKeyPair;
 	private final DeterministicHierarchy deterministicHierarchy;
 
-	public HDWalletProviderBitcoinJ(DeterministicKey masterPrivateKey) {
+	@VisibleForTesting
+	HDWalletProviderBitcoinJ(DeterministicKey masterPrivateKey) {
 		try {
 			this.rootKeyPair = new ECKeyPair(Bytes.fromHexString(masterPrivateKey.getPrivateKeyAsHex()));
 		} catch (CryptoException e) {
