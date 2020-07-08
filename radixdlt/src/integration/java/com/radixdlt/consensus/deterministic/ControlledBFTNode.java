@@ -25,6 +25,7 @@ import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.DefaultHasher;
 import com.radixdlt.consensus.EmptySyncVerticesRPCSender;
 import com.radixdlt.consensus.GetVerticesResponse;
+import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.NewView;
@@ -85,12 +86,17 @@ class ControlledBFTNode {
 
 		SyncedStateComputer<CommittedAtom> stateComputer = new SyncedStateComputer<CommittedAtom>() {
 			@Override
-			public boolean syncTo(long targetStateVersion, List<ECPublicKey> target, Object opaque) {
+			public boolean syncTo(VertexMetadata vertexMetadata, List<ECPublicKey> target, Object opaque) {
 				if (syncedSupplier.getAsBoolean()) {
 					return true;
 				}
 
-				sender.committedStateSync(new CommittedStateSync(targetStateVersion, opaque));
+				sender.committedStateSync(new CommittedStateSync(vertexMetadata.getStateVersion(), opaque));
+				return false;
+			}
+
+			@Override
+			public boolean compute(Vertex vertex) {
 				return false;
 			}
 

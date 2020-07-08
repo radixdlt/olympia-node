@@ -23,6 +23,7 @@ import com.radixdlt.consensus.VertexStoreEventsRx;
 import com.radixdlt.consensus.sync.SyncedRadixEngine;
 import com.radixdlt.mempool.MempoolReceiver;
 import com.radixdlt.mempool.SubmissionControl;
+import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.network.addressbook.AddressBook;
@@ -146,12 +147,19 @@ public final class Radix
 		SyncedRadixEngine syncedRadixEngine = globalInjector.getInjector().getInstance(SyncedRadixEngine.class);
 		syncedRadixEngine.start();
 
+		CommittedAtomsStore engineStore = globalInjector.getInjector().getInstance(CommittedAtomsStore.class);
+
+		// TODO: Move this to a better place
+		CommittedAtom genesisAtom = globalInjector.getInjector().getInstance(CommittedAtom.class);
+		if (engineStore.getCommittedAtoms(genesisAtom.getVertexMetadata().getStateVersion() - 1, 1).isEmpty()) {
+			syncedRadixEngine.execute(genesisAtom);
+		}
+
 		final ConsensusRunner bft = globalInjector.getInjector().getInstance(ConsensusRunner.class);
 		// start API services
 		SubmissionControl submissionControl = globalInjector.getInjector().getInstance(SubmissionControl.class);
 		AtomToBinaryConverter atomToBinaryConverter = globalInjector.getInjector().getInstance(AtomToBinaryConverter.class);
 		LedgerEntryStore store = globalInjector.getInjector().getInstance(LedgerEntryStore.class);
-		CommittedAtomsStore engineStore = globalInjector.getInjector().getInstance(CommittedAtomsStore.class);
 		VertexStoreEventsRx vertexStoreEventsRx = globalInjector.getInjector().getInstance(VertexStoreEventsRx.class);
 		RadixHttpServer httpServer = new RadixHttpServer(
 			bft,

@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.EpochChangeSender;
 import com.radixdlt.consensus.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.sync.SyncedRadixEngine.CommittedStateSyncSender;
 import com.radixdlt.crypto.Hash;
@@ -27,12 +28,14 @@ import io.reactivex.rxjava3.subjects.Subject;
 /**
  * Acts as the "ether" to messages passed from sender to receiver
  */
-public final class InternalMessagePasser implements VertexStoreEventsRx, VertexStoreEventSender, CommittedStateSyncSender, CommittedStateSyncRx {
+public final class InternalMessagePasser implements VertexStoreEventsRx, VertexStoreEventSender, CommittedStateSyncSender, CommittedStateSyncRx,
+	EpochChangeSender, EpochChangeRx {
 	private final Subject<Hash> localSyncsSubject = BehaviorSubject.<Hash>create().toSerialized();
 	private final Subject<CommittedStateSync> committedStateSyncsSubject = BehaviorSubject.<CommittedStateSync>create().toSerialized();
 	private final Observable<Hash> localSyncs;
 	private final Observable<CommittedStateSync> committedStateSyncs;
 	private final Subject<Vertex> committedVertices = BehaviorSubject.<Vertex>create().toSerialized();
+	private final Subject<EpochChange> epochChanges = BehaviorSubject.<EpochChange>create().toSerialized();
 	private final Subject<QuorumCertificate> highQCs = BehaviorSubject.<QuorumCertificate>create().toSerialized();
 
 	public InternalMessagePasser() {
@@ -78,5 +81,15 @@ public final class InternalMessagePasser implements VertexStoreEventsRx, VertexS
 	@Override
 	public void highQC(QuorumCertificate qc) {
 		highQCs.onNext(qc);
+	}
+
+	@Override
+	public void epochChange(EpochChange epochChange) {
+		epochChanges.onNext(epochChange);
+	}
+
+	@Override
+	public Observable<EpochChange> epochChanges() {
+		return epochChanges;
 	}
 }

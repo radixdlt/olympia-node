@@ -23,7 +23,6 @@ import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atommodel.Atom;
-import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.constraintmachine.CMMicroInstruction;
 import com.radixdlt.constraintmachine.DataPointer;
@@ -82,10 +81,6 @@ public final class ClientAtom implements LedgerAtom {
 		this.cmInstruction = Objects.requireNonNull(cmInstruction);
 		this.powFeeHash = Objects.requireNonNull(powFeeHash);
 		this.rawAtom = Objects.requireNonNull(rawAtom);
-	}
-
-	public CommittedAtom committed(VertexMetadata vertexMetadata) {
-		return new CommittedAtom(this, vertexMetadata);
 	}
 
 	@JsonProperty("raw")

@@ -18,6 +18,7 @@
 package com.radixdlt.consensus;
 
 import com.radixdlt.consensus.validators.ValidatorSet;
+import java.util.Objects;
 
 /**
  * An epoch change message to consensus
@@ -27,8 +28,8 @@ public final class EpochChange {
 	private final ValidatorSet validatorSet;
 
 	public EpochChange(VertexMetadata ancestor, ValidatorSet validatorSet) {
-		this.ancestor = ancestor;
-		this.validatorSet = validatorSet;
+		this.ancestor = Objects.requireNonNull(ancestor);
+		this.validatorSet = Objects.requireNonNull(validatorSet);
 	}
 
 	public VertexMetadata getAncestor() {

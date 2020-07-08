@@ -17,8 +17,6 @@
 
 package com.radixdlt.consensus;
 
-import com.google.inject.Inject;
-
 import com.radixdlt.consensus.liveness.PacemakerRx;
 
 import com.radixdlt.utils.ThreadFactories;
@@ -78,7 +76,6 @@ public final class ConsensusRunner {
 	private final Scheduler singleThreadScheduler;
 	private Disposable disposable;
 
-	@Inject
 	public ConsensusRunner(
 		EpochChangeRx epochChangeRx,
 		EventCoordinatorNetworkRx networkRx,
@@ -91,6 +88,8 @@ public final class ConsensusRunner {
 		this.singleThreadExecutor = Executors.newSingleThreadExecutor(ThreadFactories.daemonThreads("ConsensusRunner"));
 		this.singleThreadScheduler = Schedulers.from(this.singleThreadExecutor);
 
+		// It is important that all of these events are executed on the same thread
+		// as all logic is dependent on this assumption
 		final Observable<Event> eventCoordinatorEvents = Observable.merge(Arrays.asList(
 			epochChangeRx.epochChanges()
 				.observeOn(singleThreadScheduler)

@@ -33,7 +33,7 @@ public class VoteTest {
 
 	@Before
 	public void setUp() {
-		VertexMetadata parent = new VertexMetadata(0, View.of(1234567890L), Hash.random(), 1);
+		VertexMetadata parent = new VertexMetadata(0, View.of(1234567890L), Hash.random(), 1, false);
 		this.voteData = new VoteData(VertexMetadata.ofGenesisAncestor(), parent, null);
 
 		this.testObject = new Vote(ADDRESS.getPublicKey(), voteData, null);
@@ -47,6 +47,7 @@ public class VoteTest {
 
 	@Test
 	public void testGetters() {
+		assertEquals(this.testObject.getEpoch(), voteData.getProposed().getEpoch());
 		assertEquals(this.voteData, this.testObject.getVoteData());
 		assertEquals(ADDRESS.getPublicKey(), this.testObject.getAuthor());
 	}
@@ -54,7 +55,7 @@ public class VoteTest {
 
 	@Test
 	public void testToString() {
-		assertThat(this.testObject).isNotNull();
+		assertThat(this.testObject.toString()).isNotNull();
 	}
 
 }

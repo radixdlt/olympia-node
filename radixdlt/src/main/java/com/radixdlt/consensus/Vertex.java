@@ -77,7 +77,7 @@ public final class Vertex {
 		}
 
 		this.epoch = epoch;
-		this.qc = qc;
+		this.qc = Objects.requireNonNull(qc);
 		this.view = Objects.requireNonNull(view);
 		this.atom = atom;
 	}
@@ -90,7 +90,7 @@ public final class Vertex {
 		Objects.requireNonNull(ancestorMetadata);
 		final VoteData voteData = new VoteData(ancestorMetadata, ancestorMetadata, ancestorMetadata);
 		final QuorumCertificate qc = new QuorumCertificate(voteData, new ECDSASignatures());
-		return new Vertex(ancestorMetadata.getEpoch() + 1, qc, View.of(0), null);
+		return new Vertex(ancestorMetadata.getEpoch() + 1, qc, View.genesis(), null);
 	}
 
 	public static Vertex createVertex(QuorumCertificate qc, View view, ClientAtom reAtom) {
@@ -116,18 +116,15 @@ public final class Vertex {
 	}
 
 	public Hash getParentId() {
-		return qc == null ? null : qc.getProposed().getId();
+		return qc.getProposed().getId();
 	}
 
-	public View getParentView() {
-		return qc == null ? View.genesis() : qc.getView();
+	public VertexMetadata getGrandParentMetadata() {
+		return qc.getParent();
 	}
 
-	public View getGrandParentView() {
-		if (qc == null || qc.getParent() == null) {
-			return View.genesis();
-		}
-		return qc.getParent().getView();
+	public VertexMetadata getParentMetadata() {
+		return qc.getProposed();
 	}
 
 	public QuorumCertificate getQC() {
@@ -135,7 +132,7 @@ public final class Vertex {
 	}
 
 	public boolean hasDirectParent() {
-		return this.view.number() == this.getParentView().number() + 1;
+		return this.view.number() == this.getParentMetadata().getView().number() + 1;
 	}
 
 	public long getEpoch() {

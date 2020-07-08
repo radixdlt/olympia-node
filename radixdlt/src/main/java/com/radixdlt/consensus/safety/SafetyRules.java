@@ -101,33 +101,33 @@ public final class SafetyRules {
 		return new Proposal(proposedVertex, highestCommittedQC, this.selfKey.getPublicKey(), signature);
 	}
 
-	private static VoteData constructVoteData(Vertex proposedVertex) {
-		final VertexMetadata proposed = VertexMetadata.ofVertex(proposedVertex);
+	private static VoteData constructVoteData(Vertex proposedVertex, VertexMetadata proposedVertexMetadata) {
 		final VertexMetadata parent = proposedVertex.getQC().getProposed();
-
-		final VertexMetadata toCommit;
 
 		// Add a vertex to commit if creating a quorum for the proposed vertex would
 		// create three consecutive qcs.
-		if (proposedVertex.getView().equals(proposedVertex.getParentView().next())
-			&& !proposedVertex.getParentView().isGenesis() && !proposedVertex.getGrandParentView().isGenesis()
-			&& proposedVertex.getParentView().equals(proposedVertex.getGrandParentView().next())
+		final VertexMetadata toCommit;
+		if (proposedVertex.getView().equals(proposedVertex.getParentMetadata().getView().next())
+			&& !proposedVertex.getParentMetadata().getView().isGenesis() && !proposedVertex.getGrandParentMetadata().getView().isGenesis()
+			&& proposedVertex.getParentMetadata().getView().equals(proposedVertex.getGrandParentMetadata().getView().next())
 		) {
 			toCommit = proposedVertex.getQC().getParent();
 		} else {
 			toCommit = null;
 		}
 
-		return new VoteData(proposed, parent, toCommit);
+		return new VoteData(proposedVertexMetadata, parent, toCommit);
 	}
 
 	/**
 	 * Vote for a proposed vertex while ensuring that safety invariants are upheld.
+	 *
 	 * @param proposedVertex The proposed vertex
+	 * @param proposedVertexMetadata results of vertex execution
 	 * @return A vote result containing the vote and any committed vertices
 	 * @throws SafetyViolationException In case the vertex would violate a safety invariant
 	 */
-	public Vote voteFor(Vertex proposedVertex) throws SafetyViolationException {
+	public Vote voteFor(Vertex proposedVertex, VertexMetadata proposedVertexMetadata) throws SafetyViolationException {
 		// ensure vertex does not violate earlier votes
 		if (proposedVertex.getView().compareTo(this.state.getLastVotedView()) <= 0) {
 			throw new SafetyViolationException(proposedVertex, this.state, String.format(
@@ -143,7 +143,7 @@ public final class SafetyRules {
 		Builder safetyStateBuilder = this.state.toBuilder();
 		safetyStateBuilder.lastVotedView(proposedVertex.getView());
 
-		final VoteData voteData = constructVoteData(proposedVertex);
+		final VoteData voteData = constructVoteData(proposedVertex, proposedVertexMetadata);
 
 		final Hash voteHash = hasher.hash(voteData);
 

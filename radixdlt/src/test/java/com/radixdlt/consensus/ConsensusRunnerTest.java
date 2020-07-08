@@ -41,7 +41,7 @@ public class ConsensusRunnerTest {
 
 		EpochManager epochManager = mock(EpochManager.class);
 
-		View timeout = mock(View.class);
+		LocalTimeout timeout = mock(LocalTimeout.class);
 		PacemakerRx pacemakerRx = mock(PacemakerRx.class);
 		when(pacemakerRx.localTimeouts()).thenReturn(Observable.just(timeout).concatWith(Observable.never()));
 

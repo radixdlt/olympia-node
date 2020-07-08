@@ -206,8 +206,9 @@ public final class BFTEventReducer implements BFTEventProcessor {
 			counters.increment(CounterType.CONSENSUS_INDIRECT_PARENT);
 		}
 
+		final VertexMetadata vertexMetadata;
 		try {
-			vertexStore.insertVertex(proposedVertex);
+			vertexMetadata = vertexStore.insertVertex(proposedVertex);
 		} catch (VertexInsertionException e) {
 			counters.increment(CounterType.CONSENSUS_REJECTED);
 
@@ -223,7 +224,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 
 		final ECPublicKey currentLeader = this.proposerElection.getProposer(updatedView);
 		try {
-			final Vote vote = safetyRules.voteFor(proposedVertex);
+			final Vote vote = safetyRules.voteFor(proposedVertex, vertexMetadata);
 			log.trace("{}: PROPOSAL: Sending VOTE to {}: {}", this::getShortName, () -> this.getShortName(currentLeader.euid()), () -> vote);
 			sender.sendVote(vote, currentLeader);
 		} catch (SafetyViolationException e) {
