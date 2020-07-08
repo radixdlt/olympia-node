@@ -113,7 +113,8 @@ public final class EpochManager {
 		}
 
 		// If constructed the end of the previous epoch then broadcast new epoch to new validator set
-		if (Objects.equals(lastConstructed, ancestorMetadata)) {
+		// TODO: Move this into when lastConstructed is set
+		if (lastConstructed != null && lastConstructed.getEpoch() == ancestorMetadata.getEpoch()) {
 			log.info("{}: EPOCH_CHANGE: broadcasting next epoch", this.loggerPrefix);
 			for (Validator validator : validatorSet.getValidators()) {
 				if (!validator.nodeKey().equals(selfPublicKey)) {
