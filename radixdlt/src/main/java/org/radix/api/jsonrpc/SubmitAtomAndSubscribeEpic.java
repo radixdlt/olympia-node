@@ -25,7 +25,6 @@ import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
 
-import org.everit.json.schema.Schema;
 import org.json.JSONObject;
 import org.radix.api.services.AtomsService;
 import org.radix.api.services.SingleAtomListener;
@@ -56,18 +55,12 @@ public class SubmitAtomAndSubscribeEpic {
 	private final AtomsService atomsService;
 
 	/**
-	 * Json Schema which an atom will be validated against
-	 */
-	private final Schema atomSchema;
-
-	/**
 	 * Stream of JSON RPC objects to be sent back in the same channel
 	 */
 	private final Consumer<JSONObject> callback;
 
-	public SubmitAtomAndSubscribeEpic(AtomsService atomsService, Schema atomSchema, Consumer<JSONObject> callback) {
+	public SubmitAtomAndSubscribeEpic(AtomsService atomsService, Consumer<JSONObject> callback) {
 		this.atomsService = atomsService;
-		this.atomSchema = atomSchema;
 		this.callback = callback;
 	}
 
@@ -91,13 +84,6 @@ public class SubmitAtomAndSubscribeEpic {
 			notification.put("params", responseParams);
 			callback.accept(notification);
 		};
-
-		try {
-			atomSchema.validate(jsonAtom);
-		} catch (org.everit.json.schema.ValidationException e) {
-			callback.accept(JsonRpcUtil.errorResponse(id, -32000, "Invalid atom", e.toJSON()));
-			return;
-		}
 
 		SingleAtomListener subscriber = new SingleAtomListener() {
 			@Override

@@ -30,6 +30,6 @@ public class VertexMetadataSerializeTest extends SerializeObject<VertexMetadata>
 		View view = View.of(1234567890L);
 		Hash id = Hash.random();
 
-		return new VertexMetadata(view, id, 0);
+		return new VertexMetadata(0, view, id, 0, false);
 	}
 }

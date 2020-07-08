@@ -19,7 +19,9 @@ package com.radixdlt.consensus;
 
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
+import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
+import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
@@ -38,6 +40,7 @@ import com.radixdlt.utils.Longs;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.message.FormattedMessage;
@@ -58,6 +61,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	private final ProposalGenerator proposalGenerator;
 	private final Mempool mempool;
 	private final BFTEventSender sender;
+	private final EndOfEpochSender endOfEpochSender;
 	private final Pacemaker pacemaker;
 	private final ProposerElection proposerElection;
 	private final ECKeyPair selfKey; // TODO remove signing/address to separate identity management
@@ -67,11 +71,16 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	private final Map<Hash, QuorumCertificate> unsyncedQCs = new HashMap<>();
 	private boolean synchedLog = false;
 
+	public interface EndOfEpochSender {
+		void sendEndOfEpoch(VertexMetadata vertexMetadata);
+	}
+
 	@Inject
 	public BFTEventReducer(
 		ProposalGenerator proposalGenerator,
 		Mempool mempool,
 		BFTEventSender sender,
+		EndOfEpochSender endOfEpochSender,
 		SafetyRules safetyRules,
 		Pacemaker pacemaker,
 		VertexStore vertexStore,
@@ -84,6 +93,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		this.proposalGenerator = Objects.requireNonNull(proposalGenerator);
 		this.mempool = Objects.requireNonNull(mempool);
 		this.sender = Objects.requireNonNull(sender);
+		this.endOfEpochSender = Objects.requireNonNull(endOfEpochSender);
 		this.safetyRules = Objects.requireNonNull(safetyRules);
 		this.pacemaker = Objects.requireNonNull(pacemaker);
 		this.vertexStore = Objects.requireNonNull(vertexStore);
@@ -119,23 +129,25 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		this.counters.set(CounterType.CONSENSUS_VIEW, nextView.number());
 	}
 
-	private void processQC(QuorumCertificate qc) {
+	private Optional<VertexMetadata> processQC(QuorumCertificate qc) {
 		// commit any newly committable vertices
-		this.safetyRules.process(qc)
-			.ifPresent(commitMetaData -> {
-				vertexStore.commitVertex(commitMetaData).ifPresent(vertex -> {
-					log.trace("{}: Committed vertex: {}", this::getShortName, () -> vertex);
-					final ClientAtom committedAtom = vertex.getAtom();
-					if (committedAtom != null) {
-						mempool.removeCommittedAtom(committedAtom.getAID());
-					}
-				});
-
+		Optional<VertexMetadata> commitMetaDataMaybe = this.safetyRules.process(qc);
+		commitMetaDataMaybe.ifPresent(commitMetaData -> {
+			vertexStore.commitVertex(commitMetaData).ifPresent(vertex -> {
+				log.trace("{}: Committed vertex: {}", this::getShortName, () -> vertex);
+				final ClientAtom committedAtom = vertex.getAtom();
+				if (committedAtom != null) {
+					mempool.removeCommittedAtom(committedAtom.getAID());
+				}
 			});
+		});
 
 		// proceed to next view if pacemaker feels like it
+		// TODO: should we proceed even if end of epoch?
 		this.pacemaker.processQC(qc.getView())
 			.ifPresent(this::proceedToView);
+
+		return commitMetaDataMaybe;
 	}
 
 	@Override
@@ -164,7 +176,12 @@ public final class BFTEventReducer implements BFTEventProcessor {
 					log.info("{}: VOTE: QC Synced: {}", this::getShortName, () -> qc);
 					synchedLog = true;
 				}
-				processQC(qc);
+				processQC(qc).ifPresent(commitMetaData -> {
+					// TODO: should this be sent by everyone and not just the constructor of the proof?
+					if (commitMetaData.isEndOfEpoch()) {
+						this.endOfEpochSender.sendEndOfEpoch(commitMetaData);
+					}
+				});
 			} else {
 				if (synchedLog) {
 					log.info("{}: VOTE: QC Not synced: {}", this::getShortName, () -> qc);
@@ -184,7 +201,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 			final Vertex proposedVertex = proposalGenerator.generateProposal(view);
 			final Proposal proposal = safetyRules.signProposal(proposedVertex, this.vertexStore.getHighestCommittedQC());
 			log.trace("{}: Broadcasting PROPOSAL: {}", this::getShortName, () -> proposal);
-			this.sender.broadcastProposal(proposal);
+			this.sender.broadcastProposal(proposal, validatorSet.getValidators().stream().map(Validator::nodeKey).collect(Collectors.toSet()));
 		});
 	}
 
@@ -206,8 +223,9 @@ public final class BFTEventReducer implements BFTEventProcessor {
 			counters.increment(CounterType.CONSENSUS_INDIRECT_PARENT);
 		}
 
+		final VertexMetadata vertexMetadata;
 		try {
-			vertexStore.insertVertex(proposedVertex);
+			vertexMetadata = vertexStore.insertVertex(proposedVertex);
 		} catch (VertexInsertionException e) {
 			counters.increment(CounterType.CONSENSUS_REJECTED);
 
@@ -223,7 +241,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 
 		final ECPublicKey currentLeader = this.proposerElection.getProposer(updatedView);
 		try {
-			final Vote vote = safetyRules.voteFor(proposedVertex);
+			final Vote vote = safetyRules.voteFor(proposedVertex, vertexMetadata);
 			log.trace("{}: PROPOSAL: Sending VOTE to {}: {}", this::getShortName, () -> this.getShortName(currentLeader.euid()), () -> vote);
 			sender.sendVote(vote, currentLeader);
 		} catch (SafetyViolationException e) {

@@ -53,6 +53,21 @@ public final class QuorumCertificate {
 		this.signatures = Objects.requireNonNull(signatures);
 	}
 
+	/**
+	 * Create a mocked QC for genesis vertex
+	 * @param genesisVertex the vertex to create a qc for
+	 * @return a mocked QC
+	 */
+	public static QuorumCertificate ofGenesis(Vertex genesisVertex) {
+		if (!genesisVertex.getView().isGenesis()) {
+			throw new IllegalArgumentException(String.format("Vertex is not genesis: %s", genesisVertex));
+		}
+
+		VertexMetadata vertexMetadata = VertexMetadata.ofVertex(genesisVertex, false);
+		final VoteData voteData = new VoteData(vertexMetadata, vertexMetadata, vertexMetadata);
+		return new QuorumCertificate(voteData, new ECDSASignatures());
+	}
+
 	public View getView() {
 		return voteData.getProposed().getView();
 	}

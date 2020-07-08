@@ -36,6 +36,10 @@ public final class VertexMetadata {
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
 
+	@JsonProperty("epoch")
+	@DsonOutput(Output.ALL)
+	private final long epoch;
+
 	private View view;
 
 	@JsonProperty("id")
@@ -46,35 +50,56 @@ public final class VertexMetadata {
 	@DsonOutput(Output.ALL)
 	private final long stateVersion;
 
+	@JsonProperty("is_end_of_epoch")
+	@DsonOutput(Output.ALL)
+	private final boolean isEndOfEpoch;
+
 	VertexMetadata() {
 		// Serializer only
 		this.view = null;
 		this.id = null;
 		this.stateVersion = 0L;
+		this.epoch = 0L;
+		this.isEndOfEpoch = false;
 	}
 
-	public VertexMetadata(View view, Hash id, long stateVersion) {
+	public VertexMetadata(long epoch, View view, Hash id, long stateVersion, boolean isEndOfEpoch) {
+		if (epoch < 0) {
+			throw new IllegalArgumentException("epoch must be >= 0");
+		}
+
 		if (stateVersion < 0) {
 			throw new IllegalArgumentException("stateVersion must be >= 0");
 		}
 
+		this.epoch = epoch;
 		this.stateVersion = stateVersion;
 		this.view = view;
 		this.id = id;
+		this.isEndOfEpoch = isEndOfEpoch;
 	}
 
-	public static VertexMetadata ofVertex(Vertex vertex) {
-		final long parentStateVersion;
-		if (vertex.isGenesis()) {
-			throw new IllegalArgumentException("Must use normal constructor for genesis.");
-		} else {
-			final VertexMetadata parent = vertex.getQC().getProposed();
-			parentStateVersion = parent.getStateVersion();
-		}
+	public static VertexMetadata ofGenesisAncestor() {
+		return new VertexMetadata(0, View.genesis(), Hash.ZERO_HASH, 0, true);
+	}
 
-		final int versionIncrement = vertex.getAtom() != null ? 1 : 0;
+	public static VertexMetadata ofVertex(Vertex vertex, boolean isEndOfEpoch) {
+		final VertexMetadata parent = vertex.getQC().getProposed();
+		final long parentStateVersion = parent.getStateVersion();
+
+		final boolean isLastToBeCommitted = !parent.isEndOfEpoch && isEndOfEpoch;
+
+		final int versionIncrement = vertex.getAtom() != null || isLastToBeCommitted ? 1 : 0;
 		final long newStateVersion = parentStateVersion + versionIncrement;
-		return new VertexMetadata(vertex.getView(), vertex.getId(), newStateVersion);
+		return new VertexMetadata(vertex.getEpoch(), vertex.getView(), vertex.getId(), newStateVersion, isEndOfEpoch);
+	}
+
+	public boolean isEndOfEpoch() {
+		return isEndOfEpoch;
+	}
+
+	public long getEpoch() {
+		return epoch;
 	}
 
 	public long getStateVersion() {
@@ -102,7 +127,7 @@ public final class VertexMetadata {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.view, this.id, this.stateVersion);
+		return Objects.hash(this.view, this.id, this.stateVersion, this.isEndOfEpoch, this.epoch);
 	}
 
 	@Override
@@ -115,13 +140,17 @@ public final class VertexMetadata {
 			return
 				Objects.equals(this.view, other.view)
 				&& Objects.equals(this.id, other.id)
-				&& this.stateVersion == other.stateVersion;
+				&& this.stateVersion == other.stateVersion
+				&& this.isEndOfEpoch == other.isEndOfEpoch
+				&& this.epoch == other.epoch;
 		}
 		return false;
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{view=%s stateVersion=%s}", getClass().getSimpleName(), view, stateVersion);
+		return String.format("%s{epoch=%s view=%s isEndOfEpoch=%s stateVersion=%s}",
+			getClass().getSimpleName(), this.epoch, this.view, this.isEndOfEpoch, this.stateVersion
+		);
 	}
 }

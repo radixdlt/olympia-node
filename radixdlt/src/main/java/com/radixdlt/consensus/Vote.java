@@ -64,6 +64,12 @@ public final class Vote implements ConsensusEvent {
 		this.signature = signature;
 	}
 
+	@Override
+	public long getEpoch() {
+		return voteData.getProposed().getEpoch();
+	}
+
+	@Override
 	public ECPublicKey getAuthor() {
 		return author;
 	}
@@ -88,8 +94,8 @@ public final class Vote implements ConsensusEvent {
 
 	@Override
 	public String toString() {
-		return String.format("%s{view=%s author=%s }", getClass().getSimpleName(),
-			voteData.getProposed().getView(), author.euid().toString().substring(0, 6));
+		return String.format("%s{epoch=%s view=%s author=%s}", getClass().getSimpleName(),
+			this.getEpoch(), voteData.getProposed().getView(), author.euid().toString().substring(0, 6));
 	}
 
 	@Override

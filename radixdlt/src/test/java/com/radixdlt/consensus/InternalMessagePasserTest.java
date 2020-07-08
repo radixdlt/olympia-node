@@ -18,6 +18,7 @@
 package com.radixdlt.consensus;
 
 import static org.mockito.Mockito.mock;
+import static org.powermock.api.mockito.PowerMockito.when;
 
 import com.radixdlt.crypto.Hash;
 import io.reactivex.rxjava3.observers.TestObserver;
@@ -27,11 +28,58 @@ public class InternalMessagePasserTest {
 	@Test
 	public void when_send_sync_event__then_should_receive_it() {
 		InternalMessagePasser internalMessagePasser = new InternalMessagePasser();
-		TestObserver<Hash> testObserver = internalMessagePasser.localSyncs().test();
+		TestObserver<Hash> testObserver = internalMessagePasser.syncedVertices().test();
 		Hash hash = mock(Hash.class);
-		internalMessagePasser.synced(hash);
+		Vertex vertex = mock(Vertex.class);
+		when(vertex.getId()).thenReturn(hash);
+		internalMessagePasser.sendSyncedVertex(vertex);
 		testObserver.awaitCount(1);
 		testObserver.assertValue(hash);
+		testObserver.assertNotComplete();
+	}
+
+	@Test
+	public void when_send_committed_vertex_event__then_should_receive_it() {
+		InternalMessagePasser internalMessagePasser = new InternalMessagePasser();
+		TestObserver<Vertex> testObserver = internalMessagePasser.committedVertices().test();
+		Vertex vertex = mock(Vertex.class);
+		internalMessagePasser.sendCommittedVertex(vertex);
+		testObserver.awaitCount(1);
+		testObserver.assertValue(vertex);
+		testObserver.assertNotComplete();
+	}
+
+	@Test
+	public void when_send_high_qc_event__then_should_receive_it() {
+		InternalMessagePasser internalMessagePasser = new InternalMessagePasser();
+		TestObserver<QuorumCertificate> testObserver = internalMessagePasser.highQCs().test();
+		QuorumCertificate qc = mock(QuorumCertificate.class);
+		internalMessagePasser.highQC(qc);
+		testObserver.awaitCount(1);
+		testObserver.assertValue(qc);
+		testObserver.assertNotComplete();
+	}
+
+	@Test
+	public void when_send_committed_state_sync_event__then_should_receive_it() {
+		InternalMessagePasser internalMessagePasser = new InternalMessagePasser();
+		TestObserver<CommittedStateSync> testObserver = internalMessagePasser.committedStateSyncs().test();
+		long stateVersion = 12345;
+		Object opaque = mock(Object.class);
+		internalMessagePasser.sendCommittedStateSync(stateVersion, opaque);
+		testObserver.awaitCount(1);
+		testObserver.assertValue(s -> s.getOpaque().equals(opaque) && s.getStateVersion() == stateVersion);
+		testObserver.assertNotComplete();
+	}
+
+	@Test
+	public void when_send_epoch_change_event__then_should_receive_it() {
+		InternalMessagePasser internalMessagePasser = new InternalMessagePasser();
+		TestObserver<EpochChange> testObserver = internalMessagePasser.epochChanges().test();
+		EpochChange epochChange = mock(EpochChange.class);
+		internalMessagePasser.epochChange(epochChange);
+		testObserver.awaitCount(1);
+		testObserver.assertValue(epochChange);
 		testObserver.assertNotComplete();
 	}
 }

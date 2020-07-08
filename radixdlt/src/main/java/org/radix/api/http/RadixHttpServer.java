@@ -23,7 +23,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.VertexStore;
+import com.radixdlt.consensus.VertexStoreEventsRx;
 import com.radixdlt.mempool.SubmissionControl;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
@@ -47,11 +47,11 @@ import io.undertow.util.Methods;
 import io.undertow.util.StatusCodes;
 import io.undertow.websockets.core.WebSocketChannel;
 
+import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.radix.api.AtomSchemas;
 import org.radix.api.jsonrpc.RadixJsonRpcPeer;
 import org.radix.api.jsonrpc.RadixJsonRpcServer;
 import org.radix.api.services.AtomsService;
@@ -91,8 +91,8 @@ public final class RadixHttpServer {
 	private final Universe universe;
 	private final JSONObject apiSerializedUniverse;
 	private final LocalSystem localSystem;
-	private final VertexStore vertexStore;
 	private final Serialization serialization;
+	private final VertexStoreEventsRx vertexStoreEventsRx;
 
 	private final Disposable vertexDisposable;
 	private final Queue<Vertex> vertexRingBuffer;
@@ -110,13 +110,12 @@ public final class RadixHttpServer {
 		RuntimeProperties properties,
 		LocalSystem localSystem,
 		AddressBook addressBook,
-		VertexStore vertexStore
+		VertexStoreEventsRx vertexStoreEventsRx
 	) {
 		this.universe = Objects.requireNonNull(universe);
 		this.serialization = Objects.requireNonNull(serialization);
 		this.apiSerializedUniverse = serialization.toJsonObject(this.universe, DsonOutput.Output.API);
 		this.localSystem = Objects.requireNonNull(localSystem);
-		this.vertexStore = Objects.requireNonNull(vertexStore);
 		this.peers = new ConcurrentHashMap<>();
 		this.atomsService = new AtomsService(store, engineStore, submissionControl, atomToBinaryConverter);
 		this.jsonRpcServer = new RadixJsonRpcServer(
@@ -124,7 +123,6 @@ public final class RadixHttpServer {
 			serialization,
 			store,
 			atomsService,
-			AtomSchemas.get(),
 			localSystem,
 			addressBook,
 			universe
@@ -136,8 +134,9 @@ public final class RadixHttpServer {
 		final long vertexUpdateFreq = properties.get("api.debug.vertex_update_freq", DEFAULT_VERTEX_UPDATE_FREQ);
 		logger.debug("Vertex buffer size {}, frequency {} views", vertexBufferSize, vertexUpdateFreq);
 
+		this.vertexStoreEventsRx = vertexStoreEventsRx;
 		this.vertexRingBuffer = Queues.synchronizedQueue(EvictingQueue.create(vertexBufferSize));
-		this.vertexDisposable = vertexStore.lastCommittedVertex()
+		this.vertexDisposable = vertexStoreEventsRx.committedVertices()
 			.filter(v -> (v.getView().number() % vertexUpdateFreq) == 0)
 			.subscribe(this.vertexRingBuffer::add);
 	}
@@ -234,12 +233,25 @@ public final class RadixHttpServer {
 			respond(array, exchange);
 		}, handler);
 
+		// TODO: Maybe better to use counters for this?
 		addGetRoute("/api/vertices/highestqc", exchange -> {
-			QuorumCertificate highestQC = this.vertexStore.getHighestQC();
-			JSONObject highestQCJson = new JSONObject();
-			highestQCJson.put("view", highestQC.getView());
-			highestQCJson.put("vertexId", highestQC.getProposed().getId());
-			respond(highestQCJson, exchange);
+			this.vertexStoreEventsRx.highQCs()
+				.firstOrError()
+				.timeout(5, TimeUnit.SECONDS)
+				.subscribe(
+					highestQC -> {
+						JSONObject highestQCJson = new JSONObject();
+						highestQCJson.put("epoch", highestQC.getProposed().getEpoch());
+						highestQCJson.put("view", highestQC.getView());
+						highestQCJson.put("vertexId", highestQC.getProposed().getId());
+						respond(highestQCJson, exchange);
+					},
+					error -> {
+						JSONObject errorJson = new JSONObject();
+						errorJson.put("error", error.getMessage());
+						respond(errorJson, exchange);
+					}
+				);
 		}, handler);
 	}
 
@@ -273,10 +285,6 @@ public final class RadixHttpServer {
 
 		// Network routes
 		addRestNetworkRoutesTo(handler);
-
-		// Atom Model JSON schema
-		addGetRoute("/schemas/atom.schema.json", exchange
-			-> respond(AtomSchemas.getJsonSchemaString(4), exchange), handler);
 
 		addGetRoute("/api/events", exchange -> {
 			JSONObject eventCount = new JSONObject();

@@ -25,7 +25,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.LocalTimeout;
 import com.radixdlt.utils.ThreadFactories;
 
 import io.reactivex.rxjava3.observers.TestObserver;
@@ -67,46 +67,27 @@ public class ScheduledTimeoutSenderTest {
 
 	@Test
 	public void when_subscribed_to_local_timeouts_and_schedule_timeout__then_a_timeout_event_with_view_is_emitted() {
-		TestObserver<View> testObserver = scheduledTimeoutSender.localTimeouts().test();
-		View view = mock(View.class);
+		TestObserver<LocalTimeout> testObserver = scheduledTimeoutSender.localTimeouts().test();
+		LocalTimeout localTimeout = mock(LocalTimeout.class);
 		long timeout = 10;
-		scheduledTimeoutSender.scheduleTimeout(view, timeout);
+		scheduledTimeoutSender.scheduleTimeout(localTimeout, timeout);
 		testObserver.awaitCount(1);
 		testObserver.assertNotComplete();
-		testObserver.assertValues(view);
+		testObserver.assertValues(localTimeout);
 		verify(executorServiceMock, times(1)).schedule(any(Runnable.class), eq(timeout), eq(TimeUnit.MILLISECONDS));
 	}
 
 	@Test
 	public void when_subscribed_to_local_timeouts_and_schedule_timeout_twice__then_two_timeout_events_are_emitted() {
-		TestObserver<View> testObserver = scheduledTimeoutSender.localTimeouts().test();
-		View view1 = mock(View.class);
-		View view2 = mock(View.class);
+		TestObserver<LocalTimeout> testObserver = scheduledTimeoutSender.localTimeouts().test();
+		LocalTimeout timeout1 = mock(LocalTimeout.class);
+		LocalTimeout timeout2 = mock(LocalTimeout.class);
 		long timeout = 10;
-		scheduledTimeoutSender.scheduleTimeout(view1, timeout);
-		scheduledTimeoutSender.scheduleTimeout(view2, timeout);
+		scheduledTimeoutSender.scheduleTimeout(timeout1, timeout);
+		scheduledTimeoutSender.scheduleTimeout(timeout2, timeout);
 		testObserver.awaitCount(2);
 		testObserver.assertNotComplete();
-		testObserver.assertValues(view1, view2);
+		testObserver.assertValues(timeout1, timeout2);
 		verify(executorServiceMock, times(2)).schedule(any(Runnable.class), eq(timeout), eq(TimeUnit.MILLISECONDS));
-	}
-
-	@Test
-	public void when_subscribed_to_timeout_and_timeout_occurs_for_view__then_should_complete() throws Exception {
-		View view = View.of(0);
-		TestObserver<Void> testObserver = scheduledTimeoutSender.timeout(view).test();
-		scheduledTimeoutSender.scheduleTimeout(view, 10);
-		testObserver.await();
-		testObserver.assertComplete();
-	}
-
-	@Test
-	public void when_subscribe_to_timeout_and_timeout_already_occurred__then_should_complete() throws Exception {
-		View view = View.of(0);
-		scheduledTimeoutSender.scheduleTimeout(view, 10);
-		scheduledTimeoutSender.scheduleTimeout(view.next(), 10);
-		TestObserver<Void> testObserver = scheduledTimeoutSender.timeout(view).test();
-		testObserver.await();
-		testObserver.assertComplete();
 	}
 }

@@ -17,7 +17,9 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.consensus.VertexStore.GetVerticesRequest;
+import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
+import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
+import com.radixdlt.consensus.bft.GetVerticesResponse;
 import io.reactivex.rxjava3.core.Observable;
 
 /**
@@ -36,4 +38,10 @@ public interface SyncVerticesRPCRx {
 	 * @return a never-ending stream of responses
 	 */
 	Observable<GetVerticesResponse> responses();
+
+	/**
+	 * Retrieve a never-ending stream of error responses
+	 * @return a never-ending stream of error responses
+	 */
+	Observable<GetVerticesErrorResponse> errorResponses();
 }

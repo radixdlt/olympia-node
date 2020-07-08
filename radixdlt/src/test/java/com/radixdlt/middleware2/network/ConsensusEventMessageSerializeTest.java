@@ -35,9 +35,9 @@ public class ConsensusEventMessageSerializeTest extends SerializeMessageObject<C
 
 	private static ConsensusEventMessage get() {
 		RadixAddress author = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
-		VertexMetadata vertexMetadata = new VertexMetadata(View.of(1), Hash.ZERO_HASH, 1);
-		VertexMetadata parent = new VertexMetadata(View.of(0), Hash.ZERO_HASH, 0);
-		VoteData voteData = new VoteData(vertexMetadata, parent);
+		VertexMetadata vertexMetadata = new VertexMetadata(0, View.of(1), Hash.ZERO_HASH, 1, false);
+		VertexMetadata parent = new VertexMetadata(0, View.of(0), Hash.ZERO_HASH, 0, true);
+		VoteData voteData = new VoteData(vertexMetadata, parent, null);
 		QuorumCertificate quorumCertificate = new QuorumCertificate(voteData, new ECDSASignatures());
 		NewView testView = new NewView(author.getPublicKey(), View.of(1234567890L), quorumCertificate, quorumCertificate, null);
 		return new ConsensusEventMessage(1234, testView);

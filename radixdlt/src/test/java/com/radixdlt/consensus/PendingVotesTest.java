@@ -154,9 +154,9 @@ public class PendingVotesTest {
 
 	private Vote makeVoteWithoutSignatureFor(ECPublicKey author, View parentView, Hash vertexId) {
 		Vote vote = mock(Vote.class);
-		VertexMetadata proposed = new VertexMetadata(parentView.next(), vertexId, 1);
-		VertexMetadata parent = new VertexMetadata(parentView, Hash.random(), 0);
-		VoteData voteData = new VoteData(proposed, parent);
+		VertexMetadata proposed = new VertexMetadata(0, parentView.next(), vertexId, 1, false);
+		VertexMetadata parent = new VertexMetadata(0, parentView, Hash.random(), 0, false);
+		VoteData voteData = new VoteData(proposed, parent, null);
 		when(vote.getVoteData()).thenReturn(voteData);
 		when(vote.getAuthor()).thenReturn(author);
 		return vote;

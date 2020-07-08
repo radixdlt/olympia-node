@@ -18,6 +18,7 @@
 package com.radixdlt.consensus;
 
 import com.radixdlt.consensus.SyncQueues.SyncQueue;
+import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.liveness.PacemakerState;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.crypto.ECPublicKey;
@@ -135,7 +136,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		// only do something if we're actually the leader for the view
 		final View view = newView.getView();
 		if (!Objects.equals(proposerElection.getProposer(view), myKey)) {
-			log.warn("{}: NEW_VIEW: Got confused new-view {} for view {}", getShortName(), newView.hashCode(), newView.getView());
+			log.warn("{}: NEW_VIEW: Got confused new-view {} for view {}", getShortName(), newView, newView.getView());
 			return true;
 		}
 

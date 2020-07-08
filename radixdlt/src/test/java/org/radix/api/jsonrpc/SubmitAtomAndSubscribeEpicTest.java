@@ -19,7 +19,6 @@ package org.radix.api.jsonrpc;
 
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.middleware2.ClientAtom;
-import org.everit.json.schema.Schema;
 import org.json.JSONObject;
 import org.junit.Test;
 import org.mockito.InOrder;

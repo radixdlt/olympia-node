@@ -59,8 +59,8 @@ public final class CommittedAtom implements LedgerAtom, CommittedInstruction {
 		this.vertexMetadata = null;
 	}
 
-	CommittedAtom(ClientAtom clientAtom, VertexMetadata vertexMetadata) {
-		this.clientAtom = Objects.requireNonNull(clientAtom);
+	public CommittedAtom(ClientAtom clientAtom, VertexMetadata vertexMetadata) {
+		this.clientAtom = clientAtom;
 		this.vertexMetadata = Objects.requireNonNull(vertexMetadata);
 	}
 
@@ -111,6 +111,6 @@ public final class CommittedAtom implements LedgerAtom, CommittedInstruction {
 
 	@Override
 	public String toString() {
-		return String.format("%s{atom=%s meta=%s}", getClass().getSimpleName(), clientAtom.getAID(), vertexMetadata);
+		return String.format("%s{atom=%s meta=%s}", getClass().getSimpleName(), clientAtom != null ? clientAtom.getAID() : null, vertexMetadata);
 	}
 }

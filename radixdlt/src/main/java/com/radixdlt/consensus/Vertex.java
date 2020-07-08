@@ -20,6 +20,7 @@ package com.radixdlt.consensus;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Suppliers;
 import com.radixdlt.DefaultSerialization;
+import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.serialization.DsonOutput;
@@ -43,6 +44,10 @@ public final class Vertex {
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
 
+	@JsonProperty("epoch")
+	@DsonOutput(Output.ALL)
+	private final long epoch;
+
 	@JsonProperty("qc")
 	@DsonOutput(Output.ALL)
 	private final QuorumCertificate qc;
@@ -58,18 +63,31 @@ public final class Vertex {
 	Vertex() {
 		// Serializer only
 		this.qc = null;
+		this.epoch = 0L;
 		this.view = null;
 		this.atom = null;
 	}
 
-	public Vertex(QuorumCertificate qc, View view, ClientAtom atom) {
-		this.qc = qc;
+	public Vertex(long epoch, QuorumCertificate qc, View view, ClientAtom atom) {
+		if (epoch < 0) {
+			throw new IllegalArgumentException("epoch must be >= 0");
+		}
+
+		this.epoch = epoch;
+		this.qc = Objects.requireNonNull(qc);
 		this.view = Objects.requireNonNull(view);
 		this.atom = atom;
 	}
 
-	public static Vertex createGenesis(ClientAtom atom) {
-		return new Vertex(null, View.of(0), atom);
+	public static Vertex createGenesis() {
+		return createGenesis(VertexMetadata.ofGenesisAncestor());
+	}
+
+	public static Vertex createGenesis(VertexMetadata ancestorMetadata) {
+		Objects.requireNonNull(ancestorMetadata);
+		final VoteData voteData = new VoteData(ancestorMetadata, ancestorMetadata, ancestorMetadata);
+		final QuorumCertificate qc = new QuorumCertificate(voteData, new ECDSASignatures());
+		return new Vertex(ancestorMetadata.getEpoch() + 1, qc, View.genesis(), null);
 	}
 
 	public static Vertex createVertex(QuorumCertificate qc, View view, ClientAtom reAtom) {
@@ -79,7 +97,7 @@ public final class Vertex {
 			throw new IllegalArgumentException("Only genesis can have view 0.");
 		}
 
-		return new Vertex(qc, view, reAtom);
+		return new Vertex(qc.getProposed().getEpoch(), qc, view, reAtom);
 	}
 
 	private Hash doGetHash() {
@@ -95,18 +113,15 @@ public final class Vertex {
 	}
 
 	public Hash getParentId() {
-		return qc == null ? null : qc.getProposed().getId();
+		return qc.getProposed().getId();
 	}
 
-	public View getParentView() {
-		return qc == null ? View.genesis() : qc.getView();
+	public VertexMetadata getGrandParentMetadata() {
+		return qc.getParent();
 	}
 
-	public View getGrandParentView() {
-		if (qc == null || qc.getParent() == null) {
-			return View.genesis();
-		}
-		return qc.getParent().getView();
+	public VertexMetadata getParentMetadata() {
+		return qc.getProposed();
 	}
 
 	public QuorumCertificate getQC() {
@@ -114,7 +129,11 @@ public final class Vertex {
 	}
 
 	public boolean hasDirectParent() {
-		return this.view.number() == this.getParentView().number() + 1;
+		return this.view.number() == this.getParentMetadata().getView().number() + 1;
+	}
+
+	public long getEpoch() {
+		return epoch;
 	}
 
 	public View getView() {
@@ -148,12 +167,12 @@ public final class Vertex {
 
 	@Override
 	public String toString() {
-		return String.format("Vertex{view=%s, qc=%s, atom=%s}", view, qc, atom == null ? null : atom.getAID());
+		return String.format("Vertex{epoch=%s view=%s, qc=%s, atom=%s}", epoch, view, qc, atom == null ? null : atom.getAID());
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(qc, view, atom);
+		return Objects.hash(qc, view, atom, epoch);
 	}
 
 	@Override
@@ -165,6 +184,7 @@ public final class Vertex {
 		Vertex v = (Vertex) o;
 		return Objects.equals(v.view, this.view)
 			&& Objects.equals(v.atom, this.atom)
-			&& Objects.equals(v.qc, this.qc);
+			&& Objects.equals(v.qc, this.qc)
+			&& v.epoch == this.epoch;
 	}
 }

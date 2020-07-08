@@ -18,7 +18,7 @@
 package com.radixdlt.consensus;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.VertexStore.GetVerticesRequest;
+import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 
@@ -27,7 +27,6 @@ import com.radixdlt.crypto.Hash;
  */
 public enum EmptySyncVerticesRPCSender implements SyncVerticesRPCSender {
 	INSTANCE;
-
 	@Override
 	public void sendGetVerticesRequest(Hash id, ECPublicKey node, int count, Object opaque) {
 		// empty
@@ -35,6 +34,12 @@ public enum EmptySyncVerticesRPCSender implements SyncVerticesRPCSender {
 
 	@Override
 	public void sendGetVerticesResponse(GetVerticesRequest originalRequest, ImmutableList<Vertex> vertices) {
+		// empty
+	}
+
+	@Override
+	public void sendGetVerticesErrorResponse(GetVerticesRequest originalRequest, QuorumCertificate highestQC,
+		QuorumCertificate highestCommittedQC) {
 		// empty
 	}
 }

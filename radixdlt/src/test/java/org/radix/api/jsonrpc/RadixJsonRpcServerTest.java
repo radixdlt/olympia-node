@@ -25,7 +25,6 @@ import static org.mockito.Mockito.when;
 import com.radixdlt.consensus.ConsensusRunner;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.universe.Universe;
-import org.everit.json.schema.Schema;
 import org.json.JSONObject;
 import org.junit.Test;
 import org.radix.api.services.AtomsService;

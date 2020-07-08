@@ -20,7 +20,7 @@ package com.radixdlt.consensus.liveness;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.VertexStore;
+import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.View;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.ClientAtom;
@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-import javax.inject.Inject;
 
 /**
  * Logic for generating new proposals
@@ -37,7 +36,6 @@ public final class MempoolProposalGenerator implements ProposalGenerator {
 	private final Mempool mempool;
 	private final VertexStore vertexStore;
 
-	@Inject
 	public MempoolProposalGenerator(
 		VertexStore vertexStore,
 		Mempool mempool
@@ -50,6 +48,12 @@ public final class MempoolProposalGenerator implements ProposalGenerator {
 	@Override
 	public Vertex generateProposal(View view) {
 		final QuorumCertificate highestQC = vertexStore.getHighestQC();
+
+		// Propose null atom in the case that we are at the end of the epoch
+		if (highestQC.getProposed().isEndOfEpoch()) {
+			return Vertex.createVertex(highestQC, view, null);
+		}
+
 		final List<Vertex> preparedVertices = vertexStore.getPathFromRoot(highestQC.getProposed().getId());
 		final Set<AID> preparedAtoms = preparedVertices.stream()
 			.map(Vertex::getAtom)

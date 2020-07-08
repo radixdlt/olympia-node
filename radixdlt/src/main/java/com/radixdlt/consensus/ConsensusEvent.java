@@ -17,6 +17,8 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.crypto.ECPublicKey;
+
 /**
  * A message meant for consensus. Currently a marker interface so that all consensus
  * related messages can be handled within a single rxjava stream.
@@ -24,4 +26,15 @@ package com.radixdlt.consensus;
  */
 public interface ConsensusEvent {
 
+	/**
+	 * Retrieve the epoch number the consensus message is a part of
+	 * @return the epoch number
+	 */
+	long getEpoch();
+
+	/**
+	 * Get the node author of this consensus message
+	 * @return the node author
+	 */
+	ECPublicKey getAuthor();
 }
