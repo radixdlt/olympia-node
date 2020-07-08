@@ -44,7 +44,9 @@ public class HDWalletProviderBitcoinJTest {
 	public void test_hdwallet_44ʼ︴536ʼ︴2ʼ︴1︴3() {
 	// used in the Radix DLT ledger app
 		String mnemonic = "equip will roof matter pink blind book anxiety banner elbow sun young";
-		HDWallet hdWallet = HDWalletProviderBitcoinJ.mnemonicNoPassphrase(mnemonic);
+
+		HDWallet hdWallet = DefaultHDWallet.fromMnemonicString(mnemonic);
+
 		HDKeyPair childKey = hdWallet.deriveKeyAtPath("m/44'/536'/2'/1/3");
 		assertEquals("m/44'/536'/2'/1/3", childKey.path());
 		assertEquals("f423ae3097703022b86b87c15424367ce827d11676fae5c7fe768de52d9cce2e", childKey.privateKeyHex());
@@ -118,15 +120,13 @@ public class HDWalletProviderBitcoinJTest {
 			}
 
 			public HDWallet createHDWallet() {
-				HDWallet hdWallet;
 				if (seed == null) {
 					assertNotNull(chainCode);
 					DeterministicKey masterPrivateKey = HDKeyDerivation.createMasterPrivKeyFromBytes(privateKeyBytes(), Bytes.fromHexString(chainCode));
-					hdWallet = new HDWalletProviderBitcoinJ(masterPrivateKey);
+					return new HDWalletProviderBitcoinJ(masterPrivateKey);
 				} else {
-					hdWallet = new HDWalletProviderBitcoinJ(seed);
+					return DefaultHDWallet.fromSeed(seed);
 				}
-				return hdWallet;
 			}
 		}
 
