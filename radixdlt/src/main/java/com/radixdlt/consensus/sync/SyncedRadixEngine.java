@@ -188,6 +188,34 @@ public final class SyncedRadixEngine implements SyncedStateComputer<CommittedAto
 		return vertex.getView().compareTo(epochChangeView) >= 0;
 	}
 
+	private void handleRadixEngineException(CommittedAtom atom, RadixEngineException e) {
+		// TODO: Don't check for state computer errors for now so that we don't
+		// TODO: have to deal with failing leader proposals
+		// TODO: Reinstate this when ProposalGenerator + Mempool can guarantee correct proposals
+
+		// TODO: move VIRTUAL_STATE_CONFLICT to static check
+		if (e.getErrorCode() == RadixEngineErrorCode.VIRTUAL_STATE_CONFLICT) {
+			ConstraintMachineValidationException exception
+				= new ConstraintMachineValidationException(atom.getClientAtom(), "Virtual state conflict", e.getDataPointer());
+			Events.getInstance().broadcast(new AtomExceptionEvent(exception, atom.getAID()));
+		} else if (e.getErrorCode() == RadixEngineErrorCode.STATE_CONFLICT) {
+			final ParticleConflictException conflict = new ParticleConflictException(
+				new ParticleConflict(e.getDataPointer(), ImmutableSet.of(atom.getAID(), e.getRelated().getAID())
+				));
+			AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(conflict, atom.getAID());
+			Events.getInstance().broadcast(atomExceptionEvent);
+		} else if (e.getErrorCode() == RadixEngineErrorCode.MISSING_DEPENDENCY) {
+			final AtomDependencyNotFoundException notFoundException =
+				new AtomDependencyNotFoundException(
+					String.format("Atom has missing dependencies in transitions: %s", e.getDataPointer().toString()),
+					e.getDataPointer()
+				);
+
+			AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(notFoundException, atom.getAID());
+			Events.getInstance().broadcast(atomExceptionEvent);
+		}
+	}
+
 	/**
 	 * Add an atom to the committed store
 	 * @param atom the atom to commit
@@ -199,8 +227,8 @@ public final class SyncedRadixEngine implements SyncedStateComputer<CommittedAto
 			// TODO: we should really be returning even when state versions are equivalent but this
 			// TODO: does not seem to play well with the current web api for some reason. Need to
 			// TODO: investigate
-			if (atom.getVertexMetadata().getStateVersion() != 0
-				&& atom.getVertexMetadata().getStateVersion() < committedAtomsStore.getStateVersion()) {
+			final long atomStateVersion = atom.getVertexMetadata().getStateVersion();
+			if (atomStateVersion != 0 && atomStateVersion < committedAtomsStore.getStateVersion()) {
 				return;
 			}
 
@@ -213,31 +241,7 @@ public final class SyncedRadixEngine implements SyncedStateComputer<CommittedAto
 					// TODO: execute list of commands instead
 					this.radixEngine.checkAndStore(atom);
 				} catch (RadixEngineException e) {
-					// TODO: Don't check for state computer errors for now so that we don't
-					// TODO: have to deal with failing leader proposals
-					// TODO: Reinstate this when ProposalGenerator + Mempool can guarantee correct proposals
-
-					// TODO: move VIRTUAL_STATE_CONFLICT to static check
-					if (e.getErrorCode() == RadixEngineErrorCode.VIRTUAL_STATE_CONFLICT) {
-						ConstraintMachineValidationException exception
-							= new ConstraintMachineValidationException(atom.getClientAtom(), "Virtual state conflict", e.getDataPointer());
-						Events.getInstance().broadcast(new AtomExceptionEvent(exception, atom.getAID()));
-					} else if (e.getErrorCode() == RadixEngineErrorCode.STATE_CONFLICT) {
-						final ParticleConflictException conflict = new ParticleConflictException(
-							new ParticleConflict(e.getDataPointer(), ImmutableSet.of(atom.getAID(), e.getRelated().getAID())
-							));
-						AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(conflict, atom.getAID());
-						Events.getInstance().broadcast(atomExceptionEvent);
-					} else if (e.getErrorCode() == RadixEngineErrorCode.MISSING_DEPENDENCY) {
-						final AtomDependencyNotFoundException notFoundException =
-							new AtomDependencyNotFoundException(
-								String.format("Atom has missing dependencies in transitions: %s", e.getDataPointer().toString()),
-								e.getDataPointer()
-							);
-
-						AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(notFoundException, atom.getAID());
-						Events.getInstance().broadcast(atomExceptionEvent);
-					}
+					handleRadixEngineException(atom, e);
 				}
 			} else if (atom.getVertexMetadata().isEndOfEpoch()) {
 				// TODO: HACK
