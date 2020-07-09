@@ -74,12 +74,7 @@ import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 public class CerberusModule extends AbstractModule {
-	private static final Logger log = LogManager.getLogger("Startup");
-
 	private final RuntimeProperties runtimeProperties;
 
 	public CerberusModule(RuntimeProperties runtimeProperties) {

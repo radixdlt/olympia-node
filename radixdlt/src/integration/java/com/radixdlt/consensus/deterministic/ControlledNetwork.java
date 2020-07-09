@@ -49,11 +49,9 @@ import java.util.stream.Collectors;
  * This class is not thread safe.
  */
 public final class ControlledNetwork {
-	private final ImmutableList<ECPublicKey> nodes;
 	private final ImmutableMap<ChannelId, LinkedList<ControlledMessage>> messageQueue;
 
 	ControlledNetwork(ImmutableList<ECPublicKey> nodes) {
-		this.nodes = nodes;
 		this.messageQueue = nodes.stream()
 			.flatMap(n0 -> nodes.stream().map(n1 -> new ChannelId(n0, n1)))
 			.collect(

@@ -41,7 +41,7 @@ public class AddressBookValidatorSetProviderTest {
 		ECPublicKey peerKey = mock(ECPublicKey.class);
 		when(system.getKey()).thenReturn(peerKey);
 		when(peer.getSystem()).thenReturn(system);
-		when(addressBook.peers()).thenReturn(Stream.of(peer), Stream.of(peer));
+		when(addressBook.peers()).thenAnswer(inv -> Stream.of(peer));
 		ValidatorSet validatorSet = validatorSetProvider.getValidatorSet(0);
 		assertThat(validatorSet.getValidators()).hasSize(1);
 		assertThat(validatorSet.getValidators()).allMatch(v -> v.nodeKey().equals(self));

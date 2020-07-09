@@ -83,7 +83,7 @@ public class SyncedRadixEngineTest {
 		this.stateSyncNetwork = mock(StateSyncNetwork.class);
 		this.committedStateSyncSender = mock(CommittedStateSyncSender.class);
 		this.epochChangeSender = mock(EpochChangeSender.class);
-		this.validatorSetMapping = mock(Function.class);
+		this.validatorSetMapping = epoch -> null;
 		this.epochHighView = View.of(100);
 		this.syncedRadixEngine = new SyncedRadixEngine(
 			radixEngine,

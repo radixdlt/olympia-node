@@ -80,7 +80,9 @@ public class EpochManagerTest {
 		this.bftFactory = mock(BFTFactory.class);
 
 		this.systemCounters = new SystemCountersImpl();
-		this.syncedStateComputer = mock(SyncedStateComputer.class);
+		@SuppressWarnings("unchecked")
+		SyncedStateComputer<CommittedAtom> ssc = mock(SyncedStateComputer.class);
+		this.syncedStateComputer = ssc;
 
 		this.proposerElection = mock(ProposerElection.class);
 

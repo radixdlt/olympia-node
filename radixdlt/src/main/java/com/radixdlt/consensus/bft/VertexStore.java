@@ -194,10 +194,6 @@ public final class VertexStore implements VertexStoreEventProcessor {
 			this.syncStage = syncStage;
 		}
 
-		QuorumCertificate getQC() {
-			return qc;
-		}
-
 		QuorumCertificate getCommittedQC() {
 			return committedQC;
 		}
