@@ -69,13 +69,14 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 	public void staticCheck(T atom) throws RadixEngineException {
 		final Optional<CMError> error = constraintMachine.validate(atom.getCMInstruction());
 		if (error.isPresent()) {
-			throw new RadixEngineException(RadixEngineErrorCode.CM_ERROR, error.get().getDataPointer());
+			CMError e = error.get();
+			throw new RadixEngineException(RadixEngineErrorCode.CM_ERROR, e.getErrorDescription(), e.getDataPointer());
 		}
 
 		if (checker != null) {
 			Result hookResult = checker.check(atom);
 			if (hookResult.isError()) {
-				throw new RadixEngineException(RadixEngineErrorCode.HOOK_ERROR, DataPointer.ofAtom());
+				throw new RadixEngineException(RadixEngineErrorCode.HOOK_ERROR, "Checker failed", DataPointer.ofAtom());
 			}
 		}
 	}
@@ -122,7 +123,7 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 			final Spin virtualSpin = virtualizedCMStore.getSpin(particle);
 			// TODO: Move virtual state checks into static check
 			if (SpinStateMachine.isBefore(checkSpin, virtualSpin)) {
-				throw new RadixEngineException(RadixEngineErrorCode.VIRTUAL_STATE_CONFLICT, dp);
+				throw new RadixEngineException(RadixEngineErrorCode.VIRTUAL_STATE_CONFLICT, "Virtual state conflict", dp);
 			}
 
 			final Spin nextSpin = SpinStateMachine.next(checkSpin);
@@ -134,9 +135,9 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 					// TODO: replace blocking callback with rx
 					final AtomicReference<T> conflictAtom = new AtomicReference<>();
 					engineStore.getAtomContaining(particle, nextSpin == Spin.DOWN, conflictAtom::set);
-					throw new RadixEngineException(RadixEngineErrorCode.STATE_CONFLICT, dp, conflictAtom.get());
+					throw new RadixEngineException(RadixEngineErrorCode.STATE_CONFLICT, "State conflict", dp, conflictAtom.get());
 				} else {
-					throw new RadixEngineException(RadixEngineErrorCode.MISSING_DEPENDENCY, dp);
+					throw new RadixEngineException(RadixEngineErrorCode.MISSING_DEPENDENCY, "Missing dependency", dp);
 				}
 			}
 		}

@@ -29,11 +29,12 @@ public final class RadixEngineException extends Exception {
 	private final DataPointer dp;
 	private final RadixEngineAtom related;
 
-	RadixEngineException(RadixEngineErrorCode errorCode, DataPointer dp) {
-		this(errorCode, dp, null);
+	RadixEngineException(RadixEngineErrorCode errorCode, String message, DataPointer dp) {
+		this(errorCode, message, dp, null);
 	}
 
-	RadixEngineException(RadixEngineErrorCode errorCode, DataPointer dp, RadixEngineAtom related) {
+	RadixEngineException(RadixEngineErrorCode errorCode, String message, DataPointer dp, RadixEngineAtom related) {
+		super(message);
 		this.errorCode = Objects.requireNonNull(errorCode);
 		this.dp = dp;
 		this.related = related;
@@ -45,7 +46,7 @@ public final class RadixEngineException extends Exception {
 	 * @return the data pointer
 	 */
 	public DataPointer getDataPointer() {
-		return dp;
+		return this.dp;
 	}
 
 	/**
@@ -53,7 +54,7 @@ public final class RadixEngineException extends Exception {
 	 * @return the error code
 	 */
 	public RadixEngineErrorCode getErrorCode() {
-		return errorCode;
+		return this.errorCode;
 	}
 
 	/**
@@ -64,6 +65,6 @@ public final class RadixEngineException extends Exception {
 	 */
 	@Nullable
 	public RadixEngineAtom getRelated() {
-		return related;
+		return this.related;
 	}
 }

@@ -68,8 +68,8 @@ jacocoTestReport {
 }
 
 dependencies {
-    api 'com.radixdlt:radixdlt-java-common:1.0-beta.4'
-    
+    api 'com.radixdlt:radixdlt-java-common:rc~1.0-beta.5-SNAPSHOT'
+
     testCompile group: 'junit', name: 'junit', version: '4.12'
     testCompile('org.objenesis:objenesis:2.4') { force = true } // make powermock 1.7.1 happy
     testCompile('org.javassist:javassist:3.21.0-GA') { force = true } // make powermock 1.7.1 happy
