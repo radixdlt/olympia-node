@@ -40,17 +40,17 @@ import static org.bitcoinj.core.Utils.WHITESPACE_SPLITTER;
 @SecurityCritical({ SecurityCritical.SecurityKind.KEY_GENERATION })
 public final class HDWalletProviderBitcoinJ implements HDWallet {
 
-	private final ECKeyPair rootKeyPair;
+	/**
+	 * A BIP32 extended root key.
+	 */
+	private final DeterministicKey bip32ExtendedRootKey;
+
 	private final DeterministicHierarchy deterministicHierarchy;
 
 	@VisibleForTesting
-	HDWalletProviderBitcoinJ(DeterministicKey masterPrivateKey) {
-		try {
-			this.rootKeyPair = new ECKeyPair(Bytes.fromHexString(masterPrivateKey.getPrivateKeyAsHex()));
-		} catch (CryptoException e) {
-			throw new IllegalStateException("Unable to create ECKeyPair from private key bytes, e: " + e);
-		}
-		this.deterministicHierarchy = new DeterministicHierarchy(masterPrivateKey);
+	HDWalletProviderBitcoinJ(DeterministicKey bip32ExtendedRootKey) {
+		this.bip32ExtendedRootKey = bip32ExtendedRootKey;
+		this.deterministicHierarchy = new DeterministicHierarchy(bip32ExtendedRootKey);
 	}
 
 	public HDWalletProviderBitcoinJ(byte[] seed) {
@@ -95,53 +95,34 @@ public final class HDWalletProviderBitcoinJ implements HDWallet {
 		return Arrays.stream(pathComponentsAsStrings).map(HDWalletProviderBitcoinJ::childNumberFromString).collect(Collectors.toList());
 	}
 
-	private ECKeyPair deriveKeyPairAtPath(List<ChildNumber> path) {
-
-		DeterministicKey childKey = deterministicHierarchy.deriveChild(
+	private DeterministicKey deriveKeyForPath(List<ChildNumber> path) {
+		return deterministicHierarchy.deriveChild(
 				path.subList(0, path.size() - 1),
 				false,
 				true,
 				path.get(path.size() - 1)
 		);
-
-		try {
-			return new ECKeyPair(childKey.getPrivKeyBytes());
-		} catch (CryptoException e) {
-			throw new IllegalStateException("Failed to generate ECKeyPair", e);
-		}
-	}
-
-	private static String getPathDescription(ChildNumber[] bip32Path) {
-		return "m/" + Joiner.on("/").join(Iterables.transform(Arrays.asList(bip32Path), p -> {
-					String rawString = p.toString();
-					if (rawString.endsWith("H")) {
-						rawString = rawString.substring(0, rawString.length() - 1);
-						rawString = rawString + "'";
-					}
-					return rawString;
-				}
-		));
-	}
-
-	@VisibleForTesting
-	ECKeyPair rootKeyPair() {
-		return rootKeyPair;
 	}
 
 	@VisibleForTesting
 	String rootPrivateKeyHex() {
-		return Bytes.toHexString(rootKeyPair.getPrivateKey());
+		return Bytes.toHexString(bip32ExtendedRootKey.getPrivKeyBytes());
 	}
 
 	@VisibleForTesting
 	String rootPublicKeyHex() {
-		return Bytes.toHexString(rootKeyPair.getPublicKey().getBytes());
+		return Bytes.toHexString(bip32ExtendedRootKey.getPubKey());
 	}
 
 	public HDKeyPair deriveKeyAtPath(String path) {
-		ECKeyPair ecKeyPair = deriveKeyPairAtPath(HDWalletProviderBitcoinJ.hdPathFromString(path));
-		return new HDKeyPair(ecKeyPair, path);
+		List<ChildNumber> hdPath = hdPathFromString(path);
+		DeterministicKey childKey = deriveKeyForPath(hdPath);
+		try {
+			ECKeyPair ecKeyPair = new ECKeyPair(childKey.getPrivKeyBytes());
+			return new HDKeyPair(ecKeyPair, path);
+		} catch (CryptoException e) {
+			throw new IllegalStateException("Failed to generate ECKeyPair", e);
+		}
 	}
-
 
 }
