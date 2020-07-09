@@ -35,16 +35,16 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-public class HDWalletProviderBitcoinJTest {
+public class BitcoinJHDKeyPairDerivationTest {
 
 	@Test
 	public void test_hdwallet_bip32_five_components() {
 		String mnemonic = "equip will roof matter pink blind book anxiety banner elbow sun young";
 
-		HDWallet hdWallet = DefaultHDWallet.fromMnemonicString(mnemonic);
-		assertEquals("f85f7d078c1224603ad18f19b5bcf8b127af6a3558ebcc32325cf34dc5c8bfb9", ((HDWalletProviderBitcoinJ) hdWallet).rootPrivateKeyHex());
+		HDKeyPairDerivation hdKeyPairDerivation = DefaultHDKeyPairDerivation.fromMnemonicString(mnemonic);
+		assertEquals("f85f7d078c1224603ad18f19b5bcf8b127af6a3558ebcc32325cf34dc5c8bfb9", ((BitcoinJHDKeyPairDerivation) hdKeyPairDerivation).rootPrivateKeyHex());
 		String bip32Path = "m/44'/536'/2'/1/3";
-		HDKeyPair childKey = hdWallet.deriveKeyAtPath(bip32Path);
+		HDKeyPair childKey = hdKeyPairDerivation.deriveKeyAtPath(bip32Path);
 		assertEquals(bip32Path, childKey.path());
 		assertEquals("f423ae3097703022b86b87c15424367ce827d11676fae5c7fe768de52d9cce2e", childKey.privateKeyHex());
 		assertEquals("026d5e07cfde5df84b5ef884b629d28d15b0f6c66be229680699767cd57c618288", childKey.publicKeyHex());
@@ -57,12 +57,12 @@ public class HDWalletProviderBitcoinJTest {
 	}
 
 	private void run_test_vector(TestVector vector) {
-		HDWallet hdWallet = vector.createHDWallet();
-		assertEquals(vector.master.privateKeyHex(), ((HDWalletProviderBitcoinJ) hdWallet).rootPrivateKeyHex());
-		assertEquals(vector.master.publicKeyHex(), ((HDWalletProviderBitcoinJ) hdWallet).rootPublicKeyHex());
+		HDKeyPairDerivation hdKeyPairDerivation = vector.createHDWallet();
+		assertEquals(vector.master.privateKeyHex(), ((BitcoinJHDKeyPairDerivation) hdKeyPairDerivation).rootPrivateKeyHex());
+		assertEquals(vector.master.publicKeyHex(), ((BitcoinJHDKeyPairDerivation) hdKeyPairDerivation).rootPublicKeyHex());
 
 		for (TestVector.Child childVector : vector.children) {
-			HDKeyPair childKey = hdWallet.deriveKeyAtPath(childVector.path);
+			HDKeyPair childKey = hdKeyPairDerivation.deriveKeyAtPath(childVector.path);
 			assertEquals(childVector.privateKeyHex(), childKey.privateKeyHex());
 			assertEquals(childVector.publicKeyHex(), childKey.publicKeyHex());
 			assertEquals(childVector.isHardened(), childKey.isHardened());
@@ -116,7 +116,7 @@ public class HDWalletProviderBitcoinJTest {
 				return Bytes.fromHexString(privKey);
 			}
 
-			public HDWallet createHDWallet() {
+			public HDKeyPairDerivation createHDWallet() {
 				if (seed == null) {
 					assertNotNull(chainCode);
 
@@ -125,9 +125,9 @@ public class HDWalletProviderBitcoinJTest {
 							Bytes.fromHexString(chainCode)
 					);
 
-					return new HDWalletProviderBitcoinJ(masterPrivateKey);
+					return new BitcoinJHDKeyPairDerivation(masterPrivateKey);
 				} else {
-					return DefaultHDWallet.fromSeed(seed);
+					return DefaultHDKeyPairDerivation.fromSeed(seed);
 				}
 			}
 		}
@@ -155,7 +155,7 @@ public class HDWalletProviderBitcoinJTest {
 		Master master;
 		List<Child> children;
 
-		public HDWallet createHDWallet() {
+		public HDKeyPairDerivation createHDWallet() {
 			return master.createHDWallet();
 		}
 	}

@@ -19,6 +19,6 @@
 
 package com.radixdlt.crypto.hdwallet;
 
-public interface HDWallet {
+public interface HDKeyPairDerivation {
 	HDKeyPair deriveKeyAtPath(String path);
 }

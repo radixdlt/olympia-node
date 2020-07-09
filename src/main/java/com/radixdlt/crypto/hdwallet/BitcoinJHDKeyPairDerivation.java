@@ -36,7 +36,18 @@ import java.util.stream.Collectors;
 import static org.bitcoinj.core.Utils.WHITESPACE_SPLITTER;
 
 @SecurityCritical({ SecurityCritical.SecurityKind.KEY_GENERATION })
-public final class HDWalletProviderBitcoinJ implements HDWallet {
+public final class BitcoinJHDKeyPairDerivation implements HDKeyPairDerivation {
+
+	/**
+	 * "m/" marks inclusion of private key, whereas "M/" (capital M) marks public key only.
+	 */
+	private static String BIP32_PRIVATE_KEY_BIP44_PREFIX = "m/";
+
+	private static String BIP32_PATH_DELIMITER = "/";
+	private static String BIP32_HARDENED_PATH_STANDARD_MARKER = "'";
+	private static String BIP32_HARDENED_PATH_BITCOINJ_MARKER = "H";
+
+	private static String BIP39_MNEMONIC_NO_PASSPHRASE = "";
 
 	/**
 	 * A BIP32 extended root key.
@@ -46,39 +57,39 @@ public final class HDWalletProviderBitcoinJ implements HDWallet {
 	private final DeterministicHierarchy deterministicHierarchy;
 
 	@VisibleForTesting
-	HDWalletProviderBitcoinJ(DeterministicKey bip32ExtendedRootKey) {
+	BitcoinJHDKeyPairDerivation(DeterministicKey bip32ExtendedRootKey) {
 		this.bip32ExtendedRootKey = bip32ExtendedRootKey;
 		this.deterministicHierarchy = new DeterministicHierarchy(bip32ExtendedRootKey);
 	}
 
-	public HDWalletProviderBitcoinJ(byte[] seed) {
+	public BitcoinJHDKeyPairDerivation(byte[] seed) {
 		this(HDKeyDerivation.createMasterPrivateKey(seed));
 	}
 
-	public HDWalletProviderBitcoinJ(String seedHex) {
+	public BitcoinJHDKeyPairDerivation(String seedHex) {
 		this(Bytes.fromHexString(seedHex));
 	}
 
-	public HDWalletProviderBitcoinJ(List<String> mnemonicWords, String passphrase) {
+	public BitcoinJHDKeyPairDerivation(List<String> mnemonicWords, String passphrase) {
 		this(MnemonicCode.toSeed(mnemonicWords, passphrase));
 	}
 
-	public HDWalletProviderBitcoinJ(List<String> mnemonicWords) {
-		this(mnemonicWords, "");
+	public BitcoinJHDKeyPairDerivation(List<String> mnemonicWords) {
+		this(mnemonicWords, BIP39_MNEMONIC_NO_PASSPHRASE);
 	}
 
-	public HDWalletProviderBitcoinJ(String mnemonicString, String passphrase) {
+	public BitcoinJHDKeyPairDerivation(String mnemonicString, String passphrase) {
 		this(WHITESPACE_SPLITTER.splitToList(mnemonicString), passphrase);
 	}
 
-	public static HDWalletProviderBitcoinJ mnemonicNoPassphrase(String mnemonicString) {
-		return new HDWalletProviderBitcoinJ(mnemonicString, "");
+	public static BitcoinJHDKeyPairDerivation mnemonicNoPassphrase(String mnemonicString) {
+		return new BitcoinJHDKeyPairDerivation(mnemonicString, BIP39_MNEMONIC_NO_PASSPHRASE);
 	}
 
 	private static ChildNumber childNumberFromString(String component) {
 		boolean isHardened = false;
-		if (component.endsWith("'") || component.endsWith("H")) {
-			component = component.substring(0, component.length() - 1);
+		if (component.endsWith(BIP32_HARDENED_PATH_STANDARD_MARKER) || component.endsWith(BIP32_HARDENED_PATH_BITCOINJ_MARKER)) {
+			component = component.substring(0, component.length() - BIP32_HARDENED_PATH_STANDARD_MARKER.length());
 			isHardened = true;
 		}
 		int componentInt = Integer.parseInt(component);
@@ -86,11 +97,11 @@ public final class HDWalletProviderBitcoinJ implements HDWallet {
 	}
 
 	private static List<ChildNumber> hdPathFromString(String path) {
-		if (path.startsWith("m/")) {
-			path = path.substring(2);
+		if (path.startsWith(BIP32_PRIVATE_KEY_BIP44_PREFIX)) {
+			path = path.substring(BIP32_PRIVATE_KEY_BIP44_PREFIX.length());
 		}
-		String[] pathComponentsAsStrings = path.split("/");
-		return Arrays.stream(pathComponentsAsStrings).map(HDWalletProviderBitcoinJ::childNumberFromString).collect(Collectors.toList());
+		String[] pathComponentsAsStrings = path.split(BIP32_PATH_DELIMITER);
+		return Arrays.stream(pathComponentsAsStrings).map(BitcoinJHDKeyPairDerivation::childNumberFromString).collect(Collectors.toList());
 	}
 
 	private DeterministicKey deriveKeyForPath(List<ChildNumber> path) {
