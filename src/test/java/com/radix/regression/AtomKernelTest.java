@@ -140,9 +140,9 @@ public class AtomKernelTest {
 
 	@Test
 	public void testAtomEmpty() {
-		TestObserver<?> observer = submitAtom(ImmutableMap.of(), false, System.currentTimeMillis() + "");
-		observer.awaitTerminalEvent();
-		observer.assertError(RuntimeException.class);
+		TestObserver<AtomStatusEvent> observer = submitAtomAndObserve(ImmutableMap.of(), false, System.currentTimeMillis() + "");
+		observer.awaitCount(1, TestWaitStrategy.SLEEP_10MS, 5000);
+		observer.assertValue(n -> n.getAtomStatus() == AtomStatus.EVICTED_FAILED_CM_VERIFICATION);
 		observer.dispose();
 	}
 
