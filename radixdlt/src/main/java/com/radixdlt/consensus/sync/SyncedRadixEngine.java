@@ -196,6 +196,14 @@ public final class SyncedRadixEngine implements SyncedStateComputer<CommittedAto
 	public void execute(CommittedAtom atom) {
 		// TODO: remove lock
 		synchronized (lock) {
+			// TODO: we should really be returning even when state versions are equivalent but this
+			// TODO: does not seem to play well with the current web api for some reason. Need to
+			// TODO: investigate
+			if (atom.getVertexMetadata().getStateVersion() != 0
+				&& atom.getVertexMetadata().getStateVersion() < committedAtomsStore.getStateVersion()) {
+				return;
+			}
+
 			// TODO: HACK
 			// TODO: Remove and move epoch change logic into RadixEngine
 			committedAtomsStore.storeVertexMetadata(atom.getVertexMetadata());
