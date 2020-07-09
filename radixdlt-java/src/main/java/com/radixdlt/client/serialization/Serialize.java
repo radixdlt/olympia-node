@@ -27,8 +27,6 @@ import com.radixdlt.client.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
 import com.radixdlt.client.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.client.atommodel.validators.UnregisteredValidatorParticle;
-import com.radixdlt.client.core.network.jsonrpc.ShardRange;
-import com.radixdlt.client.core.network.jsonrpc.ShardSpace;
 import java.util.Arrays;
 import java.util.Collection;
 
@@ -85,8 +83,6 @@ public final class Serialize {
 
 				ECDSASignature.class,
 				NodeRunnerData.class,
-				ShardSpace.class,
-				ShardRange.class,
 				RadixLocalSystem.class,
 				RadixSystem.class,
 				RadixUniverseConfig.class

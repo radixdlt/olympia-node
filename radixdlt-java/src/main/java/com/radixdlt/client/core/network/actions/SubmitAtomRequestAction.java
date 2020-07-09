@@ -25,7 +25,6 @@ package com.radixdlt.client.core.network.actions;
 import com.radixdlt.client.core.atoms.Atom;
 import com.radixdlt.client.core.network.RadixNode;
 import java.util.Objects;
-import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -46,10 +45,6 @@ public final class SubmitAtomRequestAction implements SubmitAtomAction, FindANod
 	}
 
 	public static SubmitAtomRequestAction newRequest(Atom atom, boolean completeOnStoreOnly) {
-		if (atom.getRequiredFirstShard().isEmpty()) {
-			throw new IllegalStateException("Atom has no destinations: " + atom);
-		}
-
 		return new SubmitAtomRequestAction(UUID.randomUUID().toString(), atom, completeOnStoreOnly);
 	}
 
@@ -73,10 +68,6 @@ public final class SubmitAtomRequestAction implements SubmitAtomAction, FindANod
 		throw new UnsupportedOperationException();
 	}
 
-	@Override
-	public Set<Long> getShards() {
-		return atom.getRequiredFirstShard();
-	}
 
 	@Override
 	public String toString() {

@@ -31,7 +31,6 @@ import com.radixdlt.client.core.network.actions.CloseWebSocketAction;
 import com.radixdlt.client.core.network.actions.ConnectWebSocketAction;
 import com.radixdlt.client.core.network.actions.FindANodeRequestAction;
 import com.radixdlt.client.core.network.actions.FindANodeResultAction;
-import com.radixdlt.client.core.network.jsonrpc.ShardSpace;
 import com.radixdlt.client.core.network.selector.GetFirstSelector;
 import com.radixdlt.client.core.network.selector.RandomSelector;
 import com.radixdlt.client.core.network.websocket.WebSocketClient;
@@ -39,12 +38,9 @@ import com.radixdlt.client.core.network.websocket.WebSocketStatus;
 import io.reactivex.Observable;
 import io.reactivex.observers.TestObserver;
 import io.reactivex.subjects.ReplaySubject;
-import java.util.Collection;
 import java.util.Map;
-import java.util.Optional;
 import org.junit.Test;
 
-import java.util.Collections;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -56,10 +52,6 @@ public class FindANodeEpicTest {
 	private RadixNodeState mockedNodeState(WebSocketStatus status) {
 		RadixNodeState nodeState = mock(RadixNodeState.class);
 		when(nodeState.getStatus()).thenReturn(status);
-		ShardSpace shardSpace = mock(ShardSpace.class);
-		when(shardSpace.intersects(any(Collection.class))).thenReturn(true);
-		when(nodeState.getShards()).thenReturn(Optional.of(shardSpace));
-
 		return nodeState;
 	}
 
@@ -70,7 +62,6 @@ public class FindANodeEpicTest {
 		when(ws.sendMessage(any())).thenReturn(true);
 
 		FindANodeRequestAction request = mock(FindANodeRequestAction.class);
-		when(request.getShards()).thenReturn(Collections.singleton(1L));
 
 		FindANodeEpic findANodeFunction = new FindANodeEpic(new GetFirstSelector());
 		TestObserver<RadixNodeAction> testObserver = TestObserver.create();
@@ -91,10 +82,8 @@ public class FindANodeEpicTest {
 
 		RadixNodeState nodeState = mock(RadixNodeState.class);
 		when(nodeState.getStatus()).thenReturn(WebSocketStatus.DISCONNECTED);
-		when(nodeState.getShards()).thenReturn(Optional.of(new ShardSpace(10000, 20000)));
 
 		FindANodeRequestAction request = mock(FindANodeRequestAction.class);
-		when(request.getShards()).thenReturn(Collections.singleton(1L));
 
 		TestObserver<RadixNodeAction> testObserver = TestObserver.create();
 		findANodeEpic.epic(
@@ -126,7 +115,6 @@ public class FindANodeEpicTest {
 		));
 
 		FindANodeRequestAction request = mock(FindANodeRequestAction.class);
-		when(request.getShards()).thenReturn(Collections.singleton(1L));
 
 		FindANodeEpic findANodeFunction = new FindANodeEpic(new GetFirstSelector());
 		TestObserver<RadixNodeAction> testObserver = TestObserver.create();
@@ -157,7 +145,6 @@ public class FindANodeEpicTest {
 		TestObserver<RadixNodeAction> testObserver = TestObserver.create();
 
 		FindANodeRequestAction request = mock(FindANodeRequestAction.class);
-		when(request.getShards()).thenReturn(Collections.singleton(1L));
 
 		findANodeEpic.epic(
 			Observable.<RadixNodeAction>just(request).concatWith(Observable.never()),
@@ -202,7 +189,6 @@ public class FindANodeEpicTest {
 		TestObserver<RadixNodeAction> testObserver = TestObserver.create();
 
 		FindANodeRequestAction request = mock(FindANodeRequestAction.class);
-		when(request.getShards()).thenReturn(Collections.singleton(1L));
 
 		findANodeEpic.epic(
 			Observable.<RadixNodeAction>just(request).concatWith(Observable.never()),

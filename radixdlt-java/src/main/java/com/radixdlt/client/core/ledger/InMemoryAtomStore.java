@@ -251,6 +251,7 @@ public class InMemoryAtomStore implements AtomStore {
 					if (!e.getKey().getShardables().contains(address)) {
 						return false;
 					}
+
 					final Map<Spin, Set<Atom>> spinParticleIndex = e.getValue();
 					final boolean hasDown = spinParticleIndex.getOrDefault(Spin.DOWN, Collections.emptySet())
 						.stream().anyMatch(a -> atoms.get(a).isStore());

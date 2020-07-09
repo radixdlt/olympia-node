@@ -29,8 +29,6 @@ import com.radixdlt.client.core.network.actions.ConnectWebSocketAction;
 import com.radixdlt.client.core.network.actions.DiscoverMoreNodesAction;
 import com.radixdlt.client.core.network.actions.FindANodeRequestAction;
 import com.radixdlt.client.core.network.actions.FindANodeResultAction;
-import com.radixdlt.client.core.network.actions.GetNodeDataRequestAction;
-import com.radixdlt.client.core.network.actions.GetUniverseRequestAction;
 import com.radixdlt.client.core.network.selector.RadixPeerSelector;
 import com.radixdlt.client.core.network.websocket.WebSocketStatus;
 import com.radixdlt.client.core.network.RadixNetworkState;
@@ -41,11 +39,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Epic which finds a connected sharded node when a FindANode request is received. If there are none found,
@@ -61,7 +57,7 @@ public final class FindANodeEpic implements RadixNetworkEpic {
 		this.selector = selector;
 	}
 
-	private List<RadixNodeAction> nextConnectionRequest(Set<Long> shards, RadixNetworkState state) {
+	private List<RadixNodeAction> nextConnectionRequest(RadixNetworkState state) {
 		final Map<WebSocketStatus, List<RadixNode>> statusMap = Arrays.stream(WebSocketStatus.values())
 			.collect(Collectors.toMap(
 				Function.identity(),
@@ -79,35 +75,16 @@ public final class FindANodeEpic implements RadixNetworkEpic {
 			if (disconnectedPeers.isEmpty()) {
 				return Collections.singletonList(DiscoverMoreNodesAction.instance());
 			} else {
-				List<RadixNode> correctShardNodes = disconnectedPeers.stream()
-					.filter(node -> state.getNodeStates().get(node).getShards().map(sh -> sh.intersects(shards)).orElse(false))
-					.collect(Collectors.toList());
-				if (correctShardNodes.isEmpty()) {
-					List<RadixNode> unknownShardNodes = disconnectedPeers.stream()
-						.filter(node -> !state.getNodeStates().get(node).getShards().isPresent())
-						.collect(Collectors.toList());
-
-					if (unknownShardNodes.isEmpty()) {
-						return Collections.singletonList(DiscoverMoreNodesAction.instance());
-					} else {
-						return unknownShardNodes.stream()
-							.flatMap(node -> Stream.of(GetNodeDataRequestAction.of(node), GetUniverseRequestAction.of(node)))
-							.collect(Collectors.toList());
-					}
-
-				} else {
-					return Collections.singletonList(ConnectWebSocketAction.of(selector.apply(correctShardNodes)));
-				}
+				return Collections.singletonList(ConnectWebSocketAction.of(selector.apply(disconnectedPeers)));
 			}
 		}
 
 		return Collections.emptyList();
 	}
 
-	private static List<RadixNode> getConnectedNodes(Set<Long> shards, RadixNetworkState state) {
+	private static List<RadixNode> getConnectedNodes(RadixNetworkState state) {
 		return state.getNodeStates().entrySet().stream()
 			.filter(entry -> entry.getValue().getStatus().equals(WebSocketStatus.CONNECTED))
-			.filter(entry -> entry.getValue().getShards().map(s -> s.intersects(shards)).orElse(false))
 			.map(Map.Entry::getKey)
 			.collect(Collectors.toList());
 	}
@@ -117,7 +94,7 @@ public final class FindANodeEpic implements RadixNetworkEpic {
 		return actions.ofType(FindANodeRequestAction.class)
 			.flatMap(a -> {
 				Observable<List<RadixNode>> connectedNodes = stateObservable
-					.map(state -> getConnectedNodes(a.getShards(), state))
+					.map(FindANodeEpic::getConnectedNodes)
 					.replay(1)
 					.autoConnect(2);
 
@@ -139,7 +116,7 @@ public final class FindANodeEpic implements RadixNetworkEpic {
 						Observable
 							.interval(0, NEXT_CONNECTION_THROTTLE_TIMEOUT_SECS, TimeUnit.SECONDS)
 							.withLatestFrom(stateObservable, (i, s) -> s)
-							.flatMapIterable(state -> nextConnectionRequest(a.getShards(), state))
+							.flatMapIterable(this::nextConnectionRequest)
 					)
 					.takeUntil(selectedNode)
 					.replay(1)

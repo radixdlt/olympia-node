@@ -100,7 +100,6 @@ public class RadixApplicationAPITest {
 		RadixIdentity identity = mock(RadixIdentity.class);
 
 		Atom atom = mock(Atom.class);
-		when(atom.getRequiredFirstShard()).thenReturn(Collections.singleton(0L));
 		when(identity.addSignature(any())).thenReturn(Single.just(atom));
 
 		FeeMapper feeMapper = (a, b, c) -> Pair.of(ImmutableMap.of(), ImmutableList.of());

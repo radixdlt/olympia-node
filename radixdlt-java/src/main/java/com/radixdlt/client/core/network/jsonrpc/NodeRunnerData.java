@@ -59,33 +59,29 @@ public class NodeRunnerData {
 		this.system = system;
 	}
 
-	public ShardSpace getShards() {
-		return system.getShards();
-	}
-
 	public String getIp() {
 		return ip;
 	}
 
 	@Override
 	public String toString() {
-		return (ip != null ? (ip + ": ") : "") + "shards=" + system.getShards().toString();
+		return (ip != null ? (ip + ": ") : "");
 	}
 
 	@Override
 	public int hashCode() {
 		// TODO: fix hack
-		return (ip + system.getShards().toString()).hashCode();
+		return ip.hashCode();
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		if (o == null || !(o instanceof NodeRunnerData)) {
+		if (!(o instanceof NodeRunnerData)) {
 			return false;
 		}
 
 		NodeRunnerData other = (NodeRunnerData) o;
-		return other.ip.equals(ip) && other.system.getShards().equals(this.system.getShards());
+		return other.ip.equals(ip);
 	}
 
 	// Property "host" - 1 getter, 1 setter
