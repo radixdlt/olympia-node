@@ -19,8 +19,6 @@
 
 package com.radixdlt.crypto.hdwallet;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Joiner;
-import com.google.common.collect.Iterables;
 import com.radixdlt.SecurityCritical;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;

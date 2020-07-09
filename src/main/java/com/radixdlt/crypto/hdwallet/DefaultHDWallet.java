@@ -23,6 +23,10 @@ import java.util.List;
 
 public final class DefaultHDWallet {
 
+	private DefaultHDWallet() {
+		throw new IllegalStateException("Can't construct.");
+	}
+
 	public static HDWallet fromSeed(byte[] seed) {
 		return new HDWalletProviderBitcoinJ(seed);
 	}

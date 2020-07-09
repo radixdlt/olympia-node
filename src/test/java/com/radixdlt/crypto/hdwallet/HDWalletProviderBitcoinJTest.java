@@ -38,14 +38,14 @@ import static org.junit.Assert.assertNotNull;
 public class HDWalletProviderBitcoinJTest {
 
 	@Test
-	public void test_hdwallet_44ʼ︴536ʼ︴2ʼ︴1︴3() {
-	// used in the Radix DLT ledger app
+	public void test_hdwallet_bip32_five_components() {
 		String mnemonic = "equip will roof matter pink blind book anxiety banner elbow sun young";
 
 		HDWallet hdWallet = DefaultHDWallet.fromMnemonicString(mnemonic);
-
-		HDKeyPair childKey = hdWallet.deriveKeyAtPath("m/44'/536'/2'/1/3");
-		assertEquals("m/44'/536'/2'/1/3", childKey.path());
+		assertEquals("f85f7d078c1224603ad18f19b5bcf8b127af6a3558ebcc32325cf34dc5c8bfb9", ((HDWalletProviderBitcoinJ) hdWallet).rootPrivateKeyHex());
+		String bip32Path = "m/44'/536'/2'/1/3";
+		HDKeyPair childKey = hdWallet.deriveKeyAtPath(bip32Path);
+		assertEquals(bip32Path, childKey.path());
 		assertEquals("f423ae3097703022b86b87c15424367ce827d11676fae5c7fe768de52d9cce2e", childKey.privateKeyHex());
 		assertEquals("026d5e07cfde5df84b5ef884b629d28d15b0f6c66be229680699767cd57c618288", childKey.publicKeyHex());
 	}
@@ -119,7 +119,12 @@ public class HDWalletProviderBitcoinJTest {
 			public HDWallet createHDWallet() {
 				if (seed == null) {
 					assertNotNull(chainCode);
-					DeterministicKey masterPrivateKey = HDKeyDerivation.createMasterPrivKeyFromBytes(privateKeyBytes(), Bytes.fromHexString(chainCode));
+
+					DeterministicKey masterPrivateKey = HDKeyDerivation.createMasterPrivKeyFromBytes(
+							privateKeyBytes(),
+							Bytes.fromHexString(chainCode)
+					);
+
 					return new HDWalletProviderBitcoinJ(masterPrivateKey);
 				} else {
 					return DefaultHDWallet.fromSeed(seed);
