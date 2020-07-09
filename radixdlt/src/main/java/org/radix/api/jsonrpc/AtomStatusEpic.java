@@ -24,6 +24,7 @@ import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.middleware2.converters.AtomConversionException;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import org.json.JSONObject;
@@ -89,14 +90,24 @@ public class AtomStatusEpic {
 		};
 
 		Disposable disposable = atomsService.subscribeAtomStatusNotifications(aid, new AtomStatusListener() {
+			final AtomicBoolean receivedStatus = new AtomicBoolean(false);
+
 			@Override
 			public void onStored() {
+				if (receivedStatus.getAndSet(true)) {
+					return;
+				}
+
 				JSONObject data = new JSONObject();
 				sendAtomSubmissionState.accept(AtomStatus.STORED, data);
 			}
 
 			@Override
 			public void onError(Throwable e) {
+				if (receivedStatus.getAndSet(true)) {
+					return;
+				}
+
 				if (e instanceof AtomConversionException) {
 					AtomConversionException conversionException = (AtomConversionException) e;
 					String pointerToIssue = conversionException.getPointerToIssue();
