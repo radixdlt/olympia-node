@@ -18,6 +18,7 @@
 package com.radixdlt.consensus.liveness;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 import javax.annotation.concurrent.NotThreadSafe;
@@ -29,6 +30,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
 import com.radixdlt.SecurityCritical;
 import com.radixdlt.SecurityCritical.SecurityKind;
+import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.validators.ValidationState;
@@ -52,6 +54,11 @@ public final class PendingNewViews {
 
 	private final Map<View, ValidationState> newViewState = Maps.newHashMap();
 	private final Map<ECPublicKey, View> previousNewView = Maps.newHashMap();
+	private final HashVerifier verifier;
+
+	public PendingNewViews(HashVerifier verifier) {
+		this.verifier = Objects.requireNonNull(verifier);
+	}
 
 	/**
 	 * Inserts a {@link NewView}, attempting to form a quorum certificate.
@@ -64,10 +71,10 @@ public final class PendingNewViews {
 	 */
 	public Optional<View> insertNewView(NewView newView, ValidatorSet validatorSet) {
 		final ECPublicKey newViewAuthor = newView.getAuthor();
-		final Hash newViewId = Hash.of(Longs.toByteArray(newView.getView().number()));
-		final ECDSASignature signature = newView.getSignature().orElseThrow(() -> new IllegalArgumentException("new-view is missing signature"));
 		if (validatorSet.containsKey(newViewAuthor)) {
-			if (newViewAuthor.verify(newViewId, signature)) {
+			final Hash newViewId = Hash.of(Longs.toByteArray(newView.getView().number()));
+			final ECDSASignature signature = newView.getSignature().orElseThrow(() -> new IllegalArgumentException("new-view is missing signature"));
+			if (this.verifier.verify(newViewAuthor, newViewId, signature)) {
 				View thisView = newView.getView();
 				if (replacePreviousNewView(newViewAuthor, thisView)) {
 					// Process if signature valid

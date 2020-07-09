@@ -92,6 +92,7 @@ public class BFTEventReducerTest {
 			pendingVotes,
 			proposerElection,
 			SELF_KEY,
+			ECKeyPair::sign,
 			validatorSet,
 			counters
 		);

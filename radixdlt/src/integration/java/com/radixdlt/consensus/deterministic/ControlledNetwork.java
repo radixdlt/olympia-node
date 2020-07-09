@@ -18,11 +18,11 @@
 package com.radixdlt.consensus.deterministic;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.radixdlt.EpochChangeSender;
 import com.radixdlt.consensus.BFTEventSender;
 import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.EpochChange;
+import com.radixdlt.consensus.LocalTimeout;
 import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
 import com.radixdlt.consensus.bft.GetVerticesResponse;
 import com.radixdlt.consensus.NewView;
@@ -30,17 +30,19 @@ import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.SyncVerticesRPCSender;
 import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
+import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.sync.SyncedRadixEngine.CommittedStateSyncSender;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
-import java.util.LinkedList;
+
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * A BFT network supporting the EventCoordinatorNetworkSender interface which
@@ -49,17 +51,46 @@ import java.util.stream.Collectors;
  * This class is not thread safe.
  */
 public final class ControlledNetwork {
-	private final ImmutableMap<ChannelId, LinkedList<ControlledMessage>> messageQueue;
+	private final MessageQueue messageQueue = new MessageQueue();
 
-	ControlledNetwork(ImmutableList<ECPublicKey> nodes) {
-		this.messageQueue = nodes.stream()
-			.flatMap(n0 -> nodes.stream().map(n1 -> new ChannelId(n0, n1)))
-			.collect(
-				ImmutableMap.toImmutableMap(
-					key -> key,
-					key -> new LinkedList<>()
-				)
-			);
+	ControlledNetwork() {
+		// Nothing here right now
+	}
+
+	static final class EpochAndView implements Comparable<EpochAndView> {
+		private static final Comparator<EpochAndView> COMPARATOR =
+			Comparator.comparingLong((EpochAndView eav) -> eav.epoch).thenComparing(eav -> eav.view);
+		final long epoch;
+		final View view;
+
+		EpochAndView(long epoch, View view) {
+			this.epoch = epoch;
+			this.view = view;
+		}
+
+		@Override
+		public int hashCode() {
+			return Long.hashCode(this.epoch) * 31 + view.hashCode();
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if (!(o instanceof EpochAndView)) {
+				return false;
+			}
+			EpochAndView that = (EpochAndView) o;
+			return this.epoch == that.epoch && Objects.equals(this.view, that.view);
+		}
+
+		@Override
+		public int compareTo(EpochAndView that) {
+			return COMPARATOR.compare(this, that);
+		}
+
+		@Override
+		public String toString() {
+			return String.format("[%s:%s]", this.epoch, this.view);
+		}
 	}
 
 	static final class ChannelId {
@@ -96,7 +127,7 @@ public final class ControlledNetwork {
 
 		@Override
 		public String toString() {
-			return sender.euid().toString().substring(0, 6) + " -> " + receiver.euid().toString().substring(0, 6);
+			return sender.euid().toString().substring(0, 6) + "->" + receiver.euid().toString().substring(0, 6);
 		}
 	}
 
@@ -123,20 +154,17 @@ public final class ControlledNetwork {
 		}
 	}
 
-	private void putMesssage(ControlledMessage controlledMessage) {
-		messageQueue.get(controlledMessage.getChannelId()).add(controlledMessage);
+	private void putMessage(EpochAndView eav, ControlledMessage controlledMessage) {
+		this.messageQueue.add(eav, controlledMessage);
 	}
 
 	public List<ControlledMessage> peekNextMessages() {
-		return messageQueue.values()
-			.stream()
-			.filter(l -> !l.isEmpty())
-			.map(LinkedList::getFirst)
-			.collect(Collectors.toList());
+		return this.messageQueue.lowestViewMessages();
 	}
 
 	public Object popNextMessage(ChannelId channelId) {
-		return messageQueue.get(channelId).pop().getMsg();
+		ControlledMessage controlledMessage = this.messageQueue.pop(channelId);
+		return controlledMessage.msg;
 	}
 
 	private static class ControlledGetVerticesRequest implements GetVerticesRequest {
@@ -168,13 +196,14 @@ public final class ControlledNetwork {
 		}
 	}
 
-	public ControlledSender getSender(ECPublicKey sender) {
+	public ControlledSender createSender(ECPublicKey sender) {
 		return new ControlledSender(sender);
 	}
 
 	public final class ControlledSender implements BFTEventSender, VertexStoreEventSender, SyncVerticesRPCSender, EpochChangeSender,
-		CommittedStateSyncSender {
+		CommittedStateSyncSender, LocalTimeoutSender {
 		private final ECPublicKey sender;
+		private EpochAndView currentEpochAndView = new EpochAndView(1L, View.genesis());
 
 		private ControlledSender(ECPublicKey sender) {
 			this.sender = sender;
@@ -182,14 +211,14 @@ public final class ControlledNetwork {
 
 		@Override
 		public void sendGetVerticesRequest(Hash id, ECPublicKey node, int count, Object opaque) {
-			putMesssage(new ControlledMessage(sender, node, new ControlledGetVerticesRequest(id, count, sender, opaque)));
+			putMessage(this.currentEpochAndView, new ControlledMessage(sender, node, new ControlledGetVerticesRequest(id, count, sender, opaque)));
 		}
 
 		@Override
 		public void sendGetVerticesResponse(GetVerticesRequest originalRequest, ImmutableList<Vertex> vertices) {
 			ControlledGetVerticesRequest request = (ControlledGetVerticesRequest) originalRequest;
 			GetVerticesResponse response = new GetVerticesResponse(request.getVertexId(), vertices, request.opaque);
-			putMesssage(new ControlledMessage(sender, request.requestor, response));
+			putMessage(this.currentEpochAndView, new ControlledMessage(sender, request.requestor, response));
 		}
 
 		@Override
@@ -197,34 +226,36 @@ public final class ControlledNetwork {
 			QuorumCertificate highestCommittedQC) {
 			ControlledGetVerticesRequest request = (ControlledGetVerticesRequest) originalRequest;
 			GetVerticesErrorResponse response = new GetVerticesErrorResponse(request.getVertexId(), highestQC, highestCommittedQC, request.opaque);
-			putMesssage(new ControlledMessage(sender, request.requestor, response));
+			putMessage(this.currentEpochAndView, new ControlledMessage(sender, request.requestor, response));
 		}
 
 		@Override
 		public void sendSyncedVertex(Vertex vertex) {
-			putMesssage(new ControlledMessage(sender, sender, vertex.getId()));
+			putMessage(this.currentEpochAndView, new ControlledMessage(sender, sender, vertex.getId()));
 		}
 
 		@Override
 		public void broadcastProposal(Proposal proposal, Set<ECPublicKey> nodes) {
 			for (ECPublicKey receiver : nodes) {
-				putMesssage(new ControlledMessage(sender, receiver, proposal));
+				putMessage(this.currentEpochAndView, new ControlledMessage(sender, receiver, proposal));
 			}
 		}
 
 		@Override
 		public void sendNewView(NewView newView, ECPublicKey newViewLeader) {
-			putMesssage(new ControlledMessage(sender, newViewLeader, newView));
+			putMessage(this.currentEpochAndView, new ControlledMessage(sender, newViewLeader, newView));
+            this.currentEpochAndView = new EpochAndView(currentEpochAndView.epoch, newView.getView());
 		}
 
 		@Override
 		public void sendVote(Vote vote, ECPublicKey leader) {
-			putMesssage(new ControlledMessage(sender, leader, vote));
+			putMessage(this.currentEpochAndView, new ControlledMessage(sender, leader, vote));
 		}
 
 		@Override
 		public void epochChange(EpochChange epochChange) {
-			putMesssage(new ControlledMessage(sender, sender, epochChange));
+			putMessage(this.currentEpochAndView, new ControlledMessage(sender, sender, epochChange));
+			this.currentEpochAndView = new EpochAndView(epochChange.getAncestor().getEpoch() + 1, View.genesis());
 		}
 
 		@Override
@@ -240,7 +271,12 @@ public final class ControlledNetwork {
 		@Override
 		public void sendCommittedStateSync(long stateVersion, Object opaque) {
 			CommittedStateSync committedStateSync = new CommittedStateSync(stateVersion, opaque);
-			putMesssage(new ControlledMessage(sender, sender, committedStateSync));
+			putMessage(this.currentEpochAndView, new ControlledMessage(sender, sender, committedStateSync));
 		}
+
+        @Override
+        public void scheduleTimeout(LocalTimeout localTimeout, long milliseconds) {
+        	putMessage(new EpochAndView(localTimeout.getEpoch(), localTimeout.getView().next()), new ControlledMessage(sender, sender, localTimeout));
+        }
 	}
 }

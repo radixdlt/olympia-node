@@ -38,9 +38,9 @@ import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.bft.GetVerticesResponse;
 import com.radixdlt.consensus.epoch.GetEpochRequest;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
+import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
-import com.radixdlt.consensus.liveness.ScheduledTimeoutSender;
 import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
@@ -90,7 +90,7 @@ public class EpochManagerTest {
 			"name",
 			this.syncedStateComputer,
 			this.syncEpochsRPCSender,
-			mock(ScheduledTimeoutSender.class),
+			mock(LocalTimeoutSender.class),
 			timeoutSender -> this.pacemaker,
 			vertexStoreFactory,
 			proposers -> proposerElection,

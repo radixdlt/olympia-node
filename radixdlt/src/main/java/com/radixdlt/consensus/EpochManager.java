@@ -25,10 +25,10 @@ import com.radixdlt.consensus.bft.GetVerticesResponse;
 import com.radixdlt.consensus.epoch.GetEpochRequest;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker.TimeoutSender;
+import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.PacemakerFactory;
 import com.radixdlt.consensus.liveness.ProposerElection;
-import com.radixdlt.consensus.liveness.ScheduledTimeoutSender;
 import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
@@ -59,7 +59,7 @@ public final class EpochManager {
 	private final ProposerElectionFactory proposerElectionFactory;
 	private final ECPublicKey selfPublicKey;
 	private final SystemCounters counters;
-	private final ScheduledTimeoutSender scheduledTimeoutSender;
+	private final LocalTimeoutSender localTimeoutSender;
 	private final SyncedStateComputer<CommittedAtom> syncedStateComputer;
 	private final Map<Long, List<ConsensusEvent>> queuedEvents;
 	private final BFTFactory bftFactory;
@@ -76,7 +76,7 @@ public final class EpochManager {
 		String loggerPrefix,
 		SyncedStateComputer<CommittedAtom> syncedStateComputer,
 		SyncEpochsRPCSender epochsRPCSender,
-		ScheduledTimeoutSender scheduledTimeoutSender,
+		LocalTimeoutSender localTimeoutSender,
 		PacemakerFactory pacemakerFactory,
 		VertexStoreFactory vertexStoreFactory,
 		ProposerElectionFactory proposerElectionFactory,
@@ -87,7 +87,7 @@ public final class EpochManager {
 		this.loggerPrefix = Objects.requireNonNull(loggerPrefix);
 		this.syncedStateComputer = Objects.requireNonNull(syncedStateComputer);
 		this.epochsRPCSender = Objects.requireNonNull(epochsRPCSender);
-		this.scheduledTimeoutSender = Objects.requireNonNull(scheduledTimeoutSender);
+		this.localTimeoutSender = Objects.requireNonNull(localTimeoutSender);
 		this.pacemakerFactory = Objects.requireNonNull(pacemakerFactory);
 		this.vertexStoreFactory = Objects.requireNonNull(vertexStoreFactory);
 		this.proposerElectionFactory = Objects.requireNonNull(proposerElectionFactory);
@@ -137,7 +137,7 @@ public final class EpochManager {
 		} else {
 			log.info("{}: EPOCH_CHANGE: {} Part of validator set", this.loggerPrefix, epochChange);
 			ProposerElection proposerElection = proposerElectionFactory.create(validatorSet);
-			TimeoutSender sender = (view, ms) -> scheduledTimeoutSender.scheduleTimeout(new LocalTimeout(nextEpoch, view), ms);
+			TimeoutSender sender = (view, ms) -> localTimeoutSender.scheduleTimeout(new LocalTimeout(nextEpoch, view), ms);
 			Pacemaker pacemaker = pacemakerFactory.create(sender);
 			QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(genesisVertex);
 			VertexStore vertexStore = vertexStoreFactory.create(genesisVertex, genesisQC, syncedStateComputer);
@@ -244,7 +244,7 @@ public final class EpochManager {
 
 	public void processConsensusEvent(ConsensusEvent consensusEvent) {
 		if (consensusEvent.getEpoch() > this.currentEpoch()) {
-			log.warn("{}: CONSENSUS_EVENT: Received higher epoch event: {} current epoch: {}",
+			log.debug("{}: CONSENSUS_EVENT: Received higher epoch event: {} current epoch: {}",
 				this.loggerPrefix, consensusEvent, this.currentEpoch()
 			);
 

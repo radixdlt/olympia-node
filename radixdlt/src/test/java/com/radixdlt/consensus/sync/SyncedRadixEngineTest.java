@@ -83,7 +83,10 @@ public class SyncedRadixEngineTest {
 		this.stateSyncNetwork = mock(StateSyncNetwork.class);
 		this.committedStateSyncSender = mock(CommittedStateSyncSender.class);
 		this.epochChangeSender = mock(EpochChangeSender.class);
-		this.validatorSetMapping = epoch -> null;
+		// No issues with type checking for mock
+		@SuppressWarnings("unchecked")
+		Function<Long, ValidatorSet> vsm = mock(Function.class);
+		this.validatorSetMapping = vsm;
 		this.epochHighView = View.of(100);
 		this.syncedRadixEngine = new SyncedRadixEngine(
 			radixEngine,

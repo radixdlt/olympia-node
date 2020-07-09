@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus.liveness;
 
+import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.validators.ValidatorSet;
@@ -49,16 +50,17 @@ public final class FixedTimeoutPacemaker implements Pacemaker {
 	private final long timeoutMilliseconds;
 	private final TimeoutSender timeoutSender;
 
-	private final PendingNewViews pendingNewViews = new PendingNewViews();
+	private final PendingNewViews pendingNewViews;
 	private View currentView = View.of(0L);
 	private View lastSyncView = View.of(0L);
 
-	public FixedTimeoutPacemaker(long timeoutMilliseconds, TimeoutSender timeoutSender) {
+	public FixedTimeoutPacemaker(long timeoutMilliseconds, TimeoutSender timeoutSender, HashVerifier verifier) {
 		if (timeoutMilliseconds <= 0) {
 			throw new IllegalArgumentException("timeoutMilliseconds must be > 0 but was " + timeoutMilliseconds);
 		}
 		this.timeoutMilliseconds = timeoutMilliseconds;
 		this.timeoutSender = Objects.requireNonNull(timeoutSender);
+		this.pendingNewViews = new PendingNewViews(verifier);
 	}
 
 	@Override
@@ -91,7 +93,7 @@ public final class FixedTimeoutPacemaker implements Pacemaker {
 		final View qcView = newView.getQC().getView();
 		final boolean highestQC = !qcView.isGenesis() && qcView.next().equals(this.currentView);
 
-		if (!highestQC && !this.pendingNewViews.insertNewView(newView, validatorSet).isPresent()) {
+		if (!this.pendingNewViews.insertNewView(newView, validatorSet).isPresent() && !highestQC) {
 			return Optional.empty();
 		}
 
