@@ -68,10 +68,11 @@ class SubmissionControlImpl implements SubmissionControl {
 			this.mempool.addAtom(atom);
 		} catch (RadixEngineException e) {
 			log.info(
-				"Rejecting atom {} with error '{}' at '{}'.",
+				"Rejecting atom {} with error '{}' at '{}' with message '{}'.",
 				atom.getAID(),
 				e.getErrorCode(),
-				e.getDataPointer()
+				e.getDataPointer(),
+				e.getMessage()
 			);
 			this.events.broadcast(new AtomExceptionEvent(e, atom.getAID()));
 		}
