@@ -25,5 +25,5 @@ import com.radixdlt.consensus.LocalTimeout;
  * @see FixedTimeoutPacemaker.TimeoutSender
  */
 public interface LocalTimeoutSender {
-	public void scheduleTimeout(LocalTimeout localTimeout, long timeoutMilliseconds);
+	void scheduleTimeout(LocalTimeout localTimeout, long timeoutMilliseconds);
 }

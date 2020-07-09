@@ -86,6 +86,9 @@ public class CerberusModule extends AbstractModule {
 
 	@Override
 	protected void configure() {
+		// Signing
+		bind(HashSigner.class).toInstance(ECKeyPair::sign);
+
 		// Timed local messages
 		bind(PacemakerRx.class).to(ScheduledLocalTimeoutSender.class);
 		bind(LocalTimeoutSender.class).to(ScheduledLocalTimeoutSender.class);

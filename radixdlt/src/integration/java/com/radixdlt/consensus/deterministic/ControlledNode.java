@@ -90,7 +90,7 @@ class ControlledNode {
 		SyncVerticesRPCSender syncVerticesRPCSender = (syncAndTimeout != SyncAndTimeout.NONE)
 			? sender
 			: UnsupportedSyncVerticesRPCSender.INSTANCE;
-		LocalTimeoutSender localTimeoutSender = (syncAndTimeout == SyncAndTimeout.SYNC_AND_TIMEOUT) ? sender : (v, t) -> {};
+		LocalTimeoutSender localTimeoutSender = (syncAndTimeout == SyncAndTimeout.SYNC_AND_TIMEOUT) ? sender : (v, t) -> { };
 		Mempool mempool = new EmptyMempool();
 		Hasher nullHasher = data -> Hash.ZERO_HASH;
 		Hasher defaultHasher = new DefaultHasher();

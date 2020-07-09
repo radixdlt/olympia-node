@@ -118,8 +118,10 @@ public class FixedTimeoutPacemakerTest {
 		when(newViewWithoutSignature.getQC()).thenReturn(qc);
 		when(newViewWithoutSignature.getView()).thenReturn(View.of(2L));
 		when(newViewWithoutSignature.getSignature()).thenReturn(Optional.empty());
+		ValidatorSet validatorSet = mock(ValidatorSet.class);
+		when(validatorSet.containsKey(any())).thenReturn(true);
 
-		assertThatThrownBy(() -> pacemaker.processNewView(newViewWithoutSignature, mock(ValidatorSet.class)))
+		assertThatThrownBy(() -> pacemaker.processNewView(newViewWithoutSignature, validatorSet))
 			.isInstanceOf(IllegalArgumentException.class);
 	}
 
