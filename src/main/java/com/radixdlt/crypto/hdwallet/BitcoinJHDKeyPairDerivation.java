@@ -74,10 +74,7 @@ public final class BitcoinJHDKeyPairDerivation implements HDKeyPairDerivation {
 	}
 
 	private static List<ChildNumber> pathListFromHDPath(HDPath path) {
-		if (!(path instanceof BIP32Path)) {
-			throw new IllegalStateException("Expected path to be instance of BIP32Path");
-		}
-		return ((BIP32Path) path).components();
+		return BitcoinJBIP32Path.fromPath(path).components();
 	}
 
 	private DeterministicKey deriveKeyForHDPath(HDPath path) {

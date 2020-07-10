@@ -19,54 +19,32 @@
 
 package com.radixdlt.crypto.hdwallet;
 
-import org.bitcoinj.crypto.ChildNumber;
 
-import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
+/**
+ * A wrapper around some underlying BIP32Path implementation, that is easily swappable.
+ * This class doesn't and shouldn't inherit from said wrapped implemetation, but rather use
+ * it as a trampoline. Since all interfaces are forwarded to the underlying wrapped implementation
+ * this class should really be trivial.
+ *
+ * However, users are discouraged to construct instances of this class directly, they should
+ * rather be using `DefaultHDPath`.
+ *
+ */
+public class BIP32Path implements HDPath {
 
-class BIP32Path implements HDPath {
+	private final HDPath path;
 
-	private static final String BIP32_HARDENED_MARKER_BITCOINJ = "H";
-
-	private static final long hardenedOffset = 2147483648L;
-
-
-	private final org.bitcoinj.crypto.HDPath path;
-
-	private BIP32Path(org.bitcoinj.crypto.HDPath path) {
-		this.path = path;
+	private BIP32Path(String path) throws HDPathException {
+		this.path = BitcoinJBIP32Path.fromString(path);
 	}
 
 	static BIP32Path fromString(String path) throws HDPathException {
-		if (!HDPath.validateBIP32Path(path)) {
-			throw HDPathException.invalidString;
-		}
-		String stringPath = path.replace(BIP32_HARDENED_MARKER_STANDARD, BIP32_HARDENED_MARKER_BITCOINJ);
-		return new BIP32Path(org.bitcoinj.crypto.HDPath.parsePath(stringPath));
-	}
-
-	private int indexOfLastComponent() {
-		return depth() - 1;
-	}
-
-	private ChildNumber lastComponent() {
-		return path.get(indexOfLastComponent());
-	}
-
-	List<ChildNumber> componentsUpTo(int index) {
-		return IntStream.range(0, index).mapToObj(path::get).collect(Collectors.toList());
-	}
-
-	List<ChildNumber> components() {
-		return componentsUpTo(depth());
+		return new BIP32Path(path);
 	}
 
 	@Override
 	public boolean isHardened() {
-		return lastComponent().isHardened();
+		return path.isHardened();
 	}
 
 	@Override
@@ -76,33 +54,22 @@ class BIP32Path implements HDPath {
 
 	@Override
 	public String toString() {
-		return path.toString().replace(BIP32_HARDENED_MARKER_BITCOINJ, BIP32_HARDENED_MARKER_STANDARD);
+		return path.toString();
 	}
 
 	@Override
 	public int depth() {
-		return path.size();
+		return path.depth();
 	}
 
 	@Override
 	public long index() {
-		long index = (long) lastComponent().num();
-		if (!isHardened()) {
-			return index;
-		}
-		index += hardenedOffset;
-		return index;
+		return path.index();
 	}
 
 	@Override
 	public HDPath next() {
-		ArrayList<ChildNumber> nextPathComponents = new ArrayList<>(pathListFromBIP32Path(this, indexOfLastComponent()));
-		nextPathComponents.add(new ChildNumber(lastComponent().num() + 1, lastComponent().isHardened()));
-		org.bitcoinj.crypto.HDPath nextPath = new org.bitcoinj.crypto.HDPath(this.hasPrivateKey(), nextPathComponents);
-		return new BIP32Path(nextPath);
+		return path.next();
 	}
 
-	static List<ChildNumber> pathListFromBIP32Path(BIP32Path path, @Nullable Integer toIndex) {
-		return path.componentsUpTo(toIndex == null ? path.indexOfLastComponent() : toIndex);
-	}
 }
