@@ -81,6 +81,8 @@ public class BIP32PathTests {
 		assert_invalid_path("m/0/1//");
 
 		assert_invalid_path("m/44'/536' / 2' / 1/3");
+
+		assert_invalid_path("m/44H/0H");
 	}
 
 	@Test
