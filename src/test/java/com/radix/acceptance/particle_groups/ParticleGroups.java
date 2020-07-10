@@ -298,7 +298,7 @@ public class ParticleGroups {
 
 	@Then("^I can observe atom (\\d+) being rejected with a failure$")
 	public void i_can_observe_atom_being_rejected_with_a_failure(int atomNumber) {
-		awaitAtomInvalid(atomNumber);
+		awaitAtomStatus(atomNumber, AtomStatus.EVICTED_FAILED_CM_VERIFICATION);
 	}
 
 	@Then("^I can observe the atom being rejected with an error$")
@@ -358,16 +358,5 @@ public class ParticleGroups {
 			.isInstanceOf(SubmitAtomStatusAction.class)
 			.extracting(o -> SubmitAtomStatusAction.class.cast(o).getStatusNotification().getAtomStatus())
 			.isIn(finalStatesSet);
-	}
-
-	private void awaitAtomInvalid(int atomNumber) {
-		this.observers.get(atomNumber - 1)
-			.awaitCount(4, TestWaitStrategy.SLEEP_100MS, TIMEOUT_MS)
-			.assertNoErrors()
-			.assertNoTimeout()
-			.assertValueAt(0, SubmitAtomRequestAction.class::isInstance)
-			.assertValueAt(1, SubmitAtomSendAction.class::isInstance)
-			.assertValueAt(3, SubmitAtomStatusAction.class::isInstance)
-			.assertValueAt(3, i -> SubmitAtomStatusAction.class.cast(i).getStatusNotification().getAtomStatus().equals(AtomStatus.EVICTED_FAILED_CM_VERIFICATION));
 	}
 }
