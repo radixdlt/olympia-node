@@ -38,16 +38,8 @@ import static org.bitcoinj.core.Utils.WHITESPACE_SPLITTER;
 @SecurityCritical({ SecurityCritical.SecurityKind.KEY_GENERATION })
 public final class BitcoinJHDKeyPairDerivation implements HDKeyPairDerivation {
 
-	/**
-	 * "m/" marks inclusion of private key, whereas "M/" (capital M) marks public key only.
-	 */
-	private static String BIP32_PRIVATE_KEY_BIP44_PREFIX = "m/";
 
-	private static String BIP32_PATH_DELIMITER = "/";
-	private static String BIP32_HARDENED_PATH_STANDARD_MARKER = "'";
-	private static String BIP32_HARDENED_PATH_BITCOINJ_MARKER = "H";
-
-	private static String BIP39_MNEMONIC_NO_PASSPHRASE = "";
+	private static final String BIP32_HARDENED_PATH_BITCOINJ_MARKER = "H";
 
 	/**
 	 * A BIP32 extended root key.
@@ -75,7 +67,7 @@ public final class BitcoinJHDKeyPairDerivation implements HDKeyPairDerivation {
 	}
 
 	public BitcoinJHDKeyPairDerivation(List<String> mnemonicWords) {
-		this(mnemonicWords, BIP39_MNEMONIC_NO_PASSPHRASE);
+		this(mnemonicWords, BIP32Path.BIP39_MNEMONIC_NO_PASSPHRASE);
 	}
 
 	public BitcoinJHDKeyPairDerivation(String mnemonicString, String passphrase) {
@@ -83,25 +75,26 @@ public final class BitcoinJHDKeyPairDerivation implements HDKeyPairDerivation {
 	}
 
 	public static BitcoinJHDKeyPairDerivation mnemonicNoPassphrase(String mnemonicString) {
-		return new BitcoinJHDKeyPairDerivation(mnemonicString, BIP39_MNEMONIC_NO_PASSPHRASE);
+		return new BitcoinJHDKeyPairDerivation(mnemonicString, BIP32Path.BIP39_MNEMONIC_NO_PASSPHRASE);
 	}
 
 	private static ChildNumber childNumberFromString(String component) {
 		boolean isHardened = false;
-		if (component.endsWith(BIP32_HARDENED_PATH_STANDARD_MARKER) || component.endsWith(BIP32_HARDENED_PATH_BITCOINJ_MARKER)) {
-			component = component.substring(0, component.length() - BIP32_HARDENED_PATH_STANDARD_MARKER.length());
+		if (component.endsWith(String.valueOf(BIP32Path.BIP32_HARDENED_PATH_STANDARD_MARKER)) || component.endsWith(BIP32_HARDENED_PATH_BITCOINJ_MARKER)) {
+			component = component.substring(0, component.length() - 1);
 			isHardened = true;
 		}
 		int componentInt = Integer.parseInt(component);
 		return new ChildNumber(componentInt, isHardened);
 	}
 
-	private static List<ChildNumber> hdPathFromString(String path) {
-		if (path.startsWith(BIP32_PRIVATE_KEY_BIP44_PREFIX)) {
-			path = path.substring(BIP32_PRIVATE_KEY_BIP44_PREFIX.length());
+	private static List<ChildNumber> hdPathFromString(HDPath path) {
+		String pathString = path.toString();
+		if (pathString.startsWith(BIP32Path.BIP32_PRIVATE_KEY_BIP44_PREFIX)) {
+			pathString = pathString.substring(BIP32Path.BIP32_PRIVATE_KEY_BIP44_PREFIX.length());
 		}
-		String[] pathComponentsAsStrings = path.split(BIP32_PATH_DELIMITER);
-		return Arrays.stream(pathComponentsAsStrings).map(BitcoinJHDKeyPairDerivation::childNumberFromString).collect(Collectors.toList());
+		String[] pathComponentsAsStrings = pathString.split(String.valueOf(BIP32Path.BIP32_PATH_DELIMITER));
+		return Arrays.stream(pathComponentsAsStrings).filter(s -> !s.isEmpty()).map(BitcoinJHDKeyPairDerivation::childNumberFromString).collect(Collectors.toList());
 	}
 
 	private DeterministicKey deriveKeyForPath(List<ChildNumber> path) {
@@ -123,7 +116,7 @@ public final class BitcoinJHDKeyPairDerivation implements HDKeyPairDerivation {
 		return Bytes.toHexString(bip32ExtendedRootKey.getPubKey());
 	}
 
-	public HDKeyPair deriveKeyAtPath(String path) {
+	public HDKeyPair deriveKeyAtPath(HDPath path) {
 		List<ChildNumber> hdPath = hdPathFromString(path);
 		DeterministicKey childKey = deriveKeyForPath(hdPath);
 		try {
