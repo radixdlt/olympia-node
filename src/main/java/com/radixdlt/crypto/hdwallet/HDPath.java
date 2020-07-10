@@ -19,6 +19,9 @@
 
 package com.radixdlt.crypto.hdwallet;
 
+import com.google.common.collect.ImmutableList;
+import org.apache.logging.log4j.core.util.Integers;
+
 public interface HDPath {
 
 	/**
@@ -28,6 +31,13 @@ public interface HDPath {
 	 * 	 * "m/44'/536'/2'/1/4
 	 */
 	String toString();
+
+	/**
+	 * Is this a path to a private key?
+	 *
+	 * @return true if yes, false if no or a partial path
+	 */
+	boolean hasPrivateKey();
 
 	/**
 	 * Whether the last component in the path is "hardened" or not, if the last component is not hardened, it does not mean
@@ -56,4 +66,54 @@ public interface HDPath {
 	long index();
 
 	HDPath next();
+
+	String BIP39_MNEMONIC_NO_PASSPHRASE = "";
+	String BIP32_HARDENED_MARKER_STANDARD = "'";
+
+	String BIP32_PATH_SEPARATOR = "/";
+	String BIP32_PREFIX_PRIVATEKEY = "m";
+
+
+	static boolean validateBIP32Path(String path) {
+		return validateBIP32Path(path, BIP32_HARDENED_MARKER_STANDARD);
+	}
+
+	static boolean validateBIP32Path(String path, String hardenedMarker) {
+		// Check trivial paths
+		if (ImmutableList.of("", BIP32_PREFIX_PRIVATEKEY, BIP32_PATH_SEPARATOR).contains(path)) {
+			return true;
+		}
+		if (path.startsWith("M/") || path.startsWith("m/")) {
+			path = path.substring(2);
+		}
+
+		if (path.isEmpty()) {
+			return false;
+		}
+
+		if (path.contains("//")) {
+			return false;
+		}
+
+		for (String component : path.split(BIP32_PATH_SEPARATOR)) {
+			if (component.isEmpty()) {
+				return false;
+			}
+			if (component.endsWith(hardenedMarker)) {
+				component = component.replace(hardenedMarker, "");
+			}
+			boolean isNumber;
+			try {
+				Integers.parseInt(component);
+				isNumber = true;
+			} catch (Exception e) {
+				isNumber = false;
+			}
+			if (!isNumber) {
+				return false;
+			}
+		}
+
+		return true;
+	}
 }

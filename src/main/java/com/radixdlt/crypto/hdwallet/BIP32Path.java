@@ -19,117 +19,90 @@
 
 package com.radixdlt.crypto.hdwallet;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.CharMatcher;
+import org.bitcoinj.crypto.ChildNumber;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
-final class BIP32Path implements HDPath {
+class BIP32Path implements HDPath {
 
-
-	/**
-	 * "m/" marks inclusion of private key, whereas "M/" (capital M) marks public key only.
-	 */
-	public static final char BIP32_PRIVATE_KEY_BIP44_PREFIX_CHAR = 'm';
-	public static final char BIP32_PUBLIC_KEY_ONLY_BIP44_PREFIX_CHAR = 'M';
-
-
-	public static final char BIP32_PATH_DELIMITER = '/';
-	public static final String BIP32_PRIVATE_KEY_BIP44_PREFIX = BIP32_PRIVATE_KEY_BIP44_PREFIX_CHAR + String.valueOf(BIP32_PATH_DELIMITER);
-	public static final char BIP32_HARDENED_PATH_STANDARD_MARKER = '\'';
-
-	public static final String BIP39_MNEMONIC_NO_PASSPHRASE = "";
+	private static final String BIP32_HARDENED_MARKER_BITCOINJ = "H";
 
 	private static final long hardenedOffset = 2147483648L;
 
-	private final String path;
-	private final boolean isHardened;
-	private final int depth;
-	private final long index;
 
-	BIP32Path(String path) throws HDPathException {
+	private final org.bitcoinj.crypto.HDPath path;
 
-		path = path.replace(" ", "");
+	private BIP32Path(org.bitcoinj.crypto.HDPath path) {
+		this.path = path;
+	}
 
-		CharMatcher matcher = CharMatcher.inRange('0', '9')
-				.or(CharMatcher.is(BIP32_PRIVATE_KEY_BIP44_PREFIX_CHAR))
-				.or(CharMatcher.is(BIP32_PUBLIC_KEY_ONLY_BIP44_PREFIX_CHAR))
-				.or(CharMatcher.is(BIP32_PATH_DELIMITER))
-				;
-
-		if (!matcher.matchesAnyOf(path)) {
+	static BIP32Path fromString(String path) throws HDPathException {
+		if (!HDPath.validateBIP32Path(path)) {
 			throw HDPathException.invalidString;
 		}
-
-		this.path = path;
-		String[] pathComponents = path.split(String.valueOf(BIP32_PATH_DELIMITER));
-		this.depth = pathComponents.length - 1;
-
-		this.isHardened = path.endsWith(String.valueOf(BIP32_HARDENED_PATH_STANDARD_MARKER));
-		String lastComponent = pathComponents[depth];
-		if (isHardened) {
-			lastComponent = lastComponent.replace(String.valueOf(BIP32_HARDENED_PATH_STANDARD_MARKER), "");
-		}
-		long indexNonHardened = Long.parseUnsignedLong(lastComponent);
-		this.index = isHardened ? (indexNonHardened + hardenedOffset) : indexNonHardened;
+		String stringPath = path.replace(BIP32_HARDENED_MARKER_STANDARD, BIP32_HARDENED_MARKER_BITCOINJ);
+		return new BIP32Path(org.bitcoinj.crypto.HDPath.parsePath(stringPath));
 	}
 
-	public String toString() {
-		return path;
+	private int indexOfLastComponent() {
+		return depth() - 1;
 	}
 
+	private ChildNumber lastComponent() {
+		return path.get(indexOfLastComponent());
+	}
+
+	List<ChildNumber> componentsUpTo(int index) {
+		return IntStream.range(0, index).mapToObj(path::get).collect(Collectors.toList());
+	}
+
+	List<ChildNumber> components() {
+		return componentsUpTo(depth());
+	}
+
+	@Override
 	public boolean isHardened() {
-		return isHardened;
+		return lastComponent().isHardened();
 	}
 
+	@Override
+	public boolean hasPrivateKey() {
+		return path.hasPrivateKey();
+	}
+
+	@Override
+	public String toString() {
+		return path.toString().replace(BIP32_HARDENED_MARKER_BITCOINJ, BIP32_HARDENED_MARKER_STANDARD);
+	}
+
+	@Override
 	public int depth() {
-		return depth;
+		return path.size();
 	}
 
+	@Override
 	public long index() {
+		long index = (long) lastComponent().num();
+		if (!isHardened()) {
+			return index;
+		}
+		index += hardenedOffset;
 		return index;
 	}
 
+	@Override
 	public HDPath next() {
-		try {
-			return new BIP32Path(pathOfNextKey());
-		} catch (HDPathException e) {
-			throw new IllegalArgumentException("Failed to construct next HDPath " + e);
-		}
+		ArrayList<ChildNumber> nextPathComponents = new ArrayList<>(pathListFromBIP32Path(this, indexOfLastComponent()));
+		nextPathComponents.add(new ChildNumber(lastComponent().num() + 1, lastComponent().isHardened()));
+		org.bitcoinj.crypto.HDPath nextPath = new org.bitcoinj.crypto.HDPath(this.hasPrivateKey(), nextPathComponents);
+		return new BIP32Path(nextPath);
 	}
 
-	private String pathOfNextKey() {
-		return pathOfKeySubsequentToPath(this);
-	}
-
-	/** Returns the `index` without the hardening bit set  */
-	private int num() {
-		if (!isHardened) {
-			return (int) index;
-		}
-		return (int) (index - hardenedOffset);
-	}
-
-	@VisibleForTesting
-	static String pathOfKeySubsequentToPath(BIP32Path path) {
-		int currentIndex = path.num();
-		if (currentIndex == Integer.MAX_VALUE) {
-			throw new IllegalStateException("Already at max index");
-		}
-
-		ArrayList<String> pathComponents = new ArrayList<>(Arrays.asList(path.path.split(String.valueOf(BIP32_PATH_DELIMITER))).subList(0, path.depth));
-		pathComponents.add(String.format("%d%s", currentIndex + 1, path.isHardened ? BIP32_HARDENED_PATH_STANDARD_MARKER : ""));
-		return String.join(String.valueOf(BIP32_PATH_DELIMITER), pathComponents);
-	}
-
-	@VisibleForTesting
-	static String pathOfKeySubsequentToPath(String path) {
-		try {
-			BIP32Path bip32Path = new BIP32Path(path);
-			return pathOfKeySubsequentToPath(bip32Path);
-		} catch (HDPathException e) {
-			throw new IllegalArgumentException("Failed to construct HDPath " + e);
-		}
+	static List<ChildNumber> pathListFromBIP32Path(BIP32Path path, @Nullable Integer toIndex) {
+		return path.componentsUpTo(toIndex == null ? path.indexOfLastComponent() : toIndex);
 	}
 }

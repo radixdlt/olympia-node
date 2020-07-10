@@ -42,7 +42,12 @@ public class BitcoinJHDKeyPairDerivationTest {
 		String mnemonic = "equip will roof matter pink blind book anxiety banner elbow sun young";
 
 		HDKeyPairDerivation hdKeyPairDerivation = DefaultHDKeyPairDerivation.fromMnemonicString(mnemonic);
-		assertEquals("f85f7d078c1224603ad18f19b5bcf8b127af6a3558ebcc32325cf34dc5c8bfb9", ((BitcoinJHDKeyPairDerivation) hdKeyPairDerivation).rootPrivateKeyHex());
+
+		assertEquals(
+				"f85f7d078c1224603ad18f19b5bcf8b127af6a3558ebcc32325cf34dc5c8bfb9",
+				((BitcoinJHDKeyPairDerivation) hdKeyPairDerivation).rootPrivateKeyHex()
+		);
+
 		String bip32Path = "m/44'/536'/2'/1/3";
 		HDKeyPair childKey = hdKeyPairDerivation.deriveKeyAtPath(bip32Path);
 		assertEquals(bip32Path, childKey.path().toString());
@@ -57,9 +62,15 @@ public class BitcoinJHDKeyPairDerivationTest {
 
 	@Test
 	public void test_bip32_large_index() {
+		HDKeyPairDerivation hdKeyPairDerivation = DefaultHDKeyPairDerivation.fromSeed(
+				"fffcf9f6f3f0edeae7e4e1dedbd8d5d2cfccc9c6c3c0bdbab7b4b1aeaba8a5a29f9c999693908d8a8784817e7b7875726f6c696663605d5a5754514e4b484542"
+		);
 
-		HDKeyPairDerivation hdKeyPairDerivation = DefaultHDKeyPairDerivation.fromSeed("fffcf9f6f3f0edeae7e4e1dedbd8d5d2cfccc9c6c3c0bdbab7b4b1aeaba8a5a29f9c999693908d8a8784817e7b7875726f6c696663605d5a5754514e4b484542");
-		assertEquals("4b03d6fc340455b363f51020ad3ecca4f0850280cf436c70c727923f6db46c3e", ((BitcoinJHDKeyPairDerivation) hdKeyPairDerivation).rootPrivateKeyHex());
+		assertEquals(
+				"4b03d6fc340455b363f51020ad3ecca4f0850280cf436c70c727923f6db46c3e",
+				((BitcoinJHDKeyPairDerivation) hdKeyPairDerivation).rootPrivateKeyHex()
+		);
+
 		String bip32Path = "m/0/2147483647'/1/2147483646'";
 		HDKeyPair childKey = hdKeyPairDerivation.deriveKeyAtPath(bip32Path);
 		assertEquals(bip32Path, childKey.path().toString());

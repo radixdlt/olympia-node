@@ -25,6 +25,6 @@ public final class DefaultHDPath {
 	}
 
 	public static HDPath of(String path) throws HDPathException {
-		return new BIP32Path(path);
+		return BIP32Path.fromString(path);
 	}
 }
