@@ -45,6 +45,7 @@ import com.radixdlt.engine.RadixEngineErrorCode;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
+import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.middleware2.LedgerAtom;
@@ -61,6 +62,7 @@ import org.junit.Test;
 
 public class SyncedRadixEngineTest {
 
+	private Mempool mempool;
 	private RadixEngine<LedgerAtom> radixEngine;
 	private SyncedRadixEngine syncedRadixEngine;
 	private CommittedAtomsStore committedAtomsStore;
@@ -74,6 +76,7 @@ public class SyncedRadixEngineTest {
 
 	@Before
 	public void setup() {
+		this.mempool = mock(Mempool.class);
 		// No type check issues with mocking generic here
 		@SuppressWarnings("unchecked")
 		RadixEngine<LedgerAtom> re = mock(RadixEngine.class);
@@ -90,6 +93,7 @@ public class SyncedRadixEngineTest {
 		this.validatorSetMapping = vsm;
 		this.epochHighView = View.of(100);
 		this.syncedRadixEngine = new SyncedRadixEngine(
+			mempool,
 			radixEngine,
 			committedAtomsStore,
 			committedStateSyncSender,

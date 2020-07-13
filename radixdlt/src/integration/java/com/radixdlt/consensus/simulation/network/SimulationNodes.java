@@ -136,7 +136,6 @@ public class SimulationNodes {
 
 				return new BFTEventReducer(
 					proposalGenerator,
-					mempool,
 					underlyingNetwork.getNetworkSender(key.getPublicKey()),
 					endOfEpochSender,
 					safetyRules,

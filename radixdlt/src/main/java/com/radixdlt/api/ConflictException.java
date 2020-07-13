@@ -47,4 +47,11 @@ public final class ConflictException {
 	public AID getConflictingAtom() {
 		return conflictingAtom;
 	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{aid=%s meta=%s}",
+			this.getClass().getSimpleName(), this.committedAtom.getAID(), this.committedAtom.getVertexMetadata()
+		);
+	}
 }

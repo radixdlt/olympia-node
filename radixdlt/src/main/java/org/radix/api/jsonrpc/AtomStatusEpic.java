@@ -27,7 +27,6 @@ import com.radixdlt.identifiers.AID;
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.middleware2.converters.AtomConversionException;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import org.json.JSONObject;
@@ -91,14 +90,8 @@ public class AtomStatusEpic {
 		};
 
 		Disposable disposable = atomsService.subscribeAtomStatusNotifications(aid, new AtomStatusListener() {
-			final AtomicBoolean receivedStatus = new AtomicBoolean(false);
-
 			@Override
 			public void onStored(CommittedAtom committedAtom) {
-				if (receivedStatus.getAndSet(true)) {
-					return;
-				}
-
 				JSONObject data = new JSONObject();
 				data.put("aid", committedAtom.getAID());
 				// TODO: serialize vertexMetadata
@@ -112,10 +105,6 @@ public class AtomStatusEpic {
 
 			@Override
 			public void onConflict(ConflictException e) {
-				if (receivedStatus.getAndSet(true)) {
-					return;
-				}
-
 				JSONObject data = new JSONObject();
 				data.put("aid", e.getCommittedAtom().getAID());
 				data.put("conflictingWith", e.getConflictingAtom());
@@ -131,10 +120,6 @@ public class AtomStatusEpic {
 
 			@Override
 			public void onError(Throwable e) {
-				if (receivedStatus.getAndSet(true)) {
-					return;
-				}
-
 				if (e instanceof AtomConversionException) {
 					AtomConversionException conversionException = (AtomConversionException) e;
 					String pointerToIssue = conversionException.getPointerToIssue();

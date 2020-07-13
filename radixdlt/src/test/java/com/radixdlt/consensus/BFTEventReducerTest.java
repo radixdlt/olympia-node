@@ -18,7 +18,6 @@
 package com.radixdlt.consensus;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
 import com.radixdlt.consensus.BFTEventReducer.EndOfEpochSender;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
@@ -33,7 +32,6 @@ import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.utils.Ints;
 import java.util.Optional;
@@ -41,7 +39,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
@@ -60,7 +57,6 @@ public class BFTEventReducerTest {
 	private SafetyRules safetyRules;
 	private Pacemaker pacemaker;
 	private PendingVotes pendingVotes;
-	private Mempool mempool;
 	private BFTEventSender sender;
 	private EndOfEpochSender endOfEpochSender;
 	private VertexStore vertexStore;
@@ -70,7 +66,6 @@ public class BFTEventReducerTest {
 	@Before
 	public void setUp() {
 		this.proposalGenerator = mock(ProposalGenerator.class);
-		this.mempool = mock(Mempool.class);
 		this.sender = mock(BFTEventSender.class);
 		this.endOfEpochSender = mock(EndOfEpochSender.class);
 		this.safetyRules = mock(SafetyRules.class);
@@ -83,7 +78,6 @@ public class BFTEventReducerTest {
 
 		this.reducer = new BFTEventReducer(
 			proposalGenerator,
-			mempool,
 			sender,
 			endOfEpochSender,
 			safetyRules,
@@ -174,7 +168,6 @@ public class BFTEventReducerTest {
 		View view = mock(View.class);
 		when(qc.getView()).thenReturn(view);
 		when(pendingVotes.insertVote(eq(vote), any())).thenReturn(Optional.of(qc));
-		when(mempool.getAtoms(anyInt(), any())).thenReturn(Lists.newArrayList());
 		when(pacemaker.getCurrentView()).thenReturn(mock(View.class));
 		when(pacemaker.processQC(eq(view))).thenReturn(Optional.of(mock(View.class)));
 		when(vertexStore.syncToQC(eq(qc), any(), any())).thenReturn(true);
@@ -243,7 +236,6 @@ public class BFTEventReducerTest {
 		when(pacemaker.processQC(any())).thenReturn(Optional.empty());
 		when(pacemaker.getCurrentView()).thenReturn(currentView);
 		reducer.processProposal(proposal);
-		verify(mempool, times(1)).removeRejectedAtom(eq(aid));
 	}
 
 	@Test
@@ -385,6 +377,5 @@ public class BFTEventReducerTest {
 		when(proposerElection.getProposer(any())).thenReturn(ECKeyPair.generateNew().getPublicKey());
 
 		reducer.processProposal(proposal);
-		verify(mempool, times(1)).removeCommittedAtom(eq(aid));
 	}
 }

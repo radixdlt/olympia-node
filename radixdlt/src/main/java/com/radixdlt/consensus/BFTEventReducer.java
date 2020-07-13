@@ -34,8 +34,6 @@ import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.mempool.Mempool;
-import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.utils.Longs;
 
 import java.util.HashMap;
@@ -59,7 +57,6 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	private final VertexStore vertexStore;
 	private final PendingVotes pendingVotes;
 	private final ProposalGenerator proposalGenerator;
-	private final Mempool mempool;
 	private final BFTEventSender sender;
 	private final EndOfEpochSender endOfEpochSender;
 	private final Pacemaker pacemaker;
@@ -79,7 +76,6 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	@Inject
 	public BFTEventReducer(
 		ProposalGenerator proposalGenerator,
-		Mempool mempool,
 		BFTEventSender sender,
 		EndOfEpochSender endOfEpochSender,
 		SafetyRules safetyRules,
@@ -93,7 +89,6 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		SystemCounters counters
 	) {
 		this.proposalGenerator = Objects.requireNonNull(proposalGenerator);
-		this.mempool = Objects.requireNonNull(mempool);
 		this.sender = Objects.requireNonNull(sender);
 		this.endOfEpochSender = Objects.requireNonNull(endOfEpochSender);
 		this.safetyRules = Objects.requireNonNull(safetyRules);
@@ -138,10 +133,6 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		commitMetaDataMaybe.ifPresent(commitMetaData -> {
 			vertexStore.commitVertex(commitMetaData).ifPresent(vertex -> {
 				log.trace("{}: Committed vertex: {}", this::getShortName, () -> vertex);
-				final ClientAtom committedAtom = vertex.getAtom();
-				if (committedAtom != null) {
-					mempool.removeCommittedAtom(committedAtom.getAID());
-				}
 			});
 		});
 
@@ -233,12 +224,6 @@ public final class BFTEventReducer implements BFTEventProcessor {
 			counters.increment(CounterType.CONSENSUS_REJECTED);
 
 			log.warn("{} PROPOSAL: Rejected. Reason: {}", this::getShortName, e::getMessage);
-
-			// TODO: Better logic for removal on exception
-			final ClientAtom atom = proposedVertex.getAtom();
-			if (atom != null) {
-				mempool.removeRejectedAtom(atom.getAID());
-			}
 			return;
 		}
 

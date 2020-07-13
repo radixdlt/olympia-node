@@ -143,7 +143,6 @@ public class CerberusModule extends AbstractModule {
 
 			return new BFTEventReducer(
 				proposalGenerator,
-				mempool,
 				bftEventSender,
 				endOfEpochSender,
 				safetyRules,
@@ -234,6 +233,7 @@ public class CerberusModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private SyncedRadixEngine syncedRadixEngine(
+		Mempool mempool,
 		RadixEngine<LedgerAtom> radixEngine,
 		CommittedAtomsStore committedAtomsStore,
 		CommittedStateSyncSender committedStateSyncSender,
@@ -245,6 +245,7 @@ public class CerberusModule extends AbstractModule {
 	) {
 		final long viewsPerEpoch = runtimeProperties.get("epochs.views_per_epoch", 100L);
 		return new SyncedRadixEngine(
+			mempool,
 			radixEngine,
 			committedAtomsStore,
 			committedStateSyncSender,

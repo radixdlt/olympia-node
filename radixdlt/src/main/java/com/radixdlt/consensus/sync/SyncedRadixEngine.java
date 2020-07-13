@@ -34,6 +34,7 @@ import com.radixdlt.engine.RadixEngineErrorCode;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
+import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
@@ -72,6 +73,7 @@ public final class SyncedRadixEngine implements SyncedStateComputer<CommittedAto
 	}
 
 	private static final Logger log = LogManager.getLogger();
+	private final Mempool mempool;
 	private final RadixEngine<LedgerAtom> radixEngine;
 	private final CommittedAtomsStore committedAtomsStore;
 	private final CommittedStateSyncSender committedStateSyncSender;
@@ -84,11 +86,12 @@ public final class SyncedRadixEngine implements SyncedStateComputer<CommittedAto
 
 	// TODO: Remove the following
 	private final Object lock = new Object();
-	private final LinkedList<CommittedAtom> emptyCommittedAtoms = new LinkedList<>();
+	private final LinkedList<CommittedAtom> unstoredCommittedAtoms = new LinkedList<>();
 	private final Subject<CommittedAtom> lastStoredAtom = BehaviorSubject.create();
 	private VertexMetadata lastEpochChange = null;
 
 	public SyncedRadixEngine(
+		Mempool mempool,
 		RadixEngine<LedgerAtom> radixEngine,
 		CommittedAtomsStore committedAtomsStore,
 		CommittedStateSyncSender committedStateSyncSender,
@@ -103,6 +106,7 @@ public final class SyncedRadixEngine implements SyncedStateComputer<CommittedAto
 			throw new IllegalArgumentException("Epoch change view must not be genesis.");
 		}
 
+		this.mempool = Objects.requireNonNull(mempool);
 		this.radixEngine = Objects.requireNonNull(radixEngine);
 		this.committedAtomsStore = Objects.requireNonNull(committedAtomsStore);
 		this.committedStateSyncSender = Objects.requireNonNull(committedStateSyncSender);
@@ -133,7 +137,7 @@ public final class SyncedRadixEngine implements SyncedStateComputer<CommittedAto
 				// TODO: Remove
 				final List<CommittedAtom> copy;
 				synchronized (lock) {
-					copy = new ArrayList<>(emptyCommittedAtoms);
+					copy = new ArrayList<>(unstoredCommittedAtoms);
 				}
 
 				List<CommittedAtom> committedAtoms = Streams.concat(
@@ -235,7 +239,6 @@ public final class SyncedRadixEngine implements SyncedStateComputer<CommittedAto
 				&& atom.getVertexMetadata().getStateVersion() <= committedAtomsStore.getStateVersion()) {
 				return;
 			}
-			// TODO: need to implement idempotency
 
 			// TODO: HACK
 			// TODO: Remove and move epoch change logic into RadixEngine
@@ -250,14 +253,18 @@ public final class SyncedRadixEngine implements SyncedStateComputer<CommittedAto
 					final ImmutableSet<EUID> indicies = committedAtomsStore.getIndicies(atom);
 					this.engineEventSender.sendStored(atom, indicies);
 
-					this.lastStoredAtom.onNext(atom);
 				} catch (RadixEngineException e) {
 					handleRadixEngineException(atom, e);
+					this.unstoredCommittedAtoms.add(atom);
 				}
+
+				this.lastStoredAtom.onNext(atom);
+				this.mempool.removeCommittedAtom(atom.getAID());
 			} else if (atom.getVertexMetadata().isEndOfEpoch()) {
 				// TODO: HACK
 				// TODO: Remove and move epoch change logic into RadixEngine
-				emptyCommittedAtoms.add(atom);
+				this.unstoredCommittedAtoms.add(atom);
+				this.lastStoredAtom.onNext(atom);
 			}
 
 			// TODO: Move outside of syncedRadixEngine to a more generic syncing layer

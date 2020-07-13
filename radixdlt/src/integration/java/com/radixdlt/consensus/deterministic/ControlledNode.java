@@ -107,7 +107,6 @@ class ControlledNode {
 
 				return new BFTEventReducer(
 					proposalGenerator,
-					mempool,
 					controlledSender,
 					endOfEpochSender,
 					safetyRules,
