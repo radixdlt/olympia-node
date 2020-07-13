@@ -434,6 +434,10 @@ public final class VertexStore implements VertexStoreEventProcessor {
 			throw new MissingParentException(vertex.getParentId());
 		}
 
+		if (!vertex.hasDirectParent()) {
+			counters.increment(CounterType.CONSENSUS_INDIRECT_PARENT);
+		}
+
 		final Vertex vertexToUse;
 		if (vertex.getParentMetadata().isEndOfEpoch()) {
 			// TODO: Check if current proposal is actually an empty client atom

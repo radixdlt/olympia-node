@@ -222,10 +222,6 @@ public final class BFTEventReducer implements BFTEventProcessor {
 			return;
 		}
 
-		if (!proposedVertex.hasDirectParent()) {
-			counters.increment(CounterType.CONSENSUS_INDIRECT_PARENT);
-		}
-
 		final VertexMetadata vertexMetadata;
 		try {
 			vertexMetadata = vertexStore.insertVertex(proposedVertex);

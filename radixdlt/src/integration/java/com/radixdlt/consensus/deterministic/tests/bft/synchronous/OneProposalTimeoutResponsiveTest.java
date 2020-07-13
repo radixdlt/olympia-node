@@ -55,10 +55,11 @@ public class OneProposalTimeoutResponsiveTest {
 			SystemCounters counters = test.getSystemCounters(nodeIndex);
 			long numberOfIndirectParents = counters.get(SystemCounters.CounterType.CONSENSUS_INDIRECT_PARENT);
 			long numberOfTimeouts = counters.get(SystemCounters.CounterType.CONSENSUS_TIMEOUT);
-			// FIXME: Checks should be exact, but issues with synchronisation prevent this
-			// FIXME: Indirect parents received through sync don't seem to be included in the indirect parents count
-			assertThat(numberOfIndirectParents).isBetween(minRange(requiredIndirectParents, 10), maxRange(requiredIndirectParents, 10));
-			assertThat(numberOfTimeouts).isGreaterThanOrEqualTo(requiredTimeouts);
+			assertThat(numberOfIndirectParents).isEqualTo(requiredIndirectParents);
+			// Not every node will timeout on a dropped proposal, as 2f+1 nodes will timeout and then continue.
+			// The remaining f nodes will sync rather than timing out.
+			// The lower bound of the following test is likely to pass, but not guaranteed by anything here.
+			assertThat(numberOfTimeouts).isBetween(1L, requiredTimeouts);
 		}
 	}
 
@@ -94,18 +95,5 @@ public class OneProposalTimeoutResponsiveTest {
 	public void when_run_100_correct_nodes_with_1_timeout__then_bft_should_be_responsive() {
 		// FIXME: Could increase frequency once sync issues resolved.
 		this.run(100, 30_000, 1000);
-	}
-
-
-	private static long minRange(long n, int percent) {
-		return n - percentage(n, percent);
-	}
-
-	private static long maxRange(long n, int percent) {
-		return n + percentage(n, percent);
-	}
-
-	private static long percentage(long n, int percent) {
-		return n * 100L / percent;
 	}
 }
