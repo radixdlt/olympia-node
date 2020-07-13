@@ -24,6 +24,7 @@ import org.junit.Test;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -31,107 +32,102 @@ public class BIP32PathTests {
 
 	@Test
 	public void test_valid_paths() {
-		assert_valid_path("");
-		assert_valid_path("/");
-		assert_valid_path("m/0");
-		assert_valid_path("m/1");
-		assert_valid_path("m/2");
-		assert_valid_path("m/0'");
-		assert_valid_path("m/1'");
-		assert_valid_path("m/2'");
-		assert_valid_path("m/2147483646");
-		assert_valid_path("m/2147483646'");
+		assertValid("");
+		assertValid("/");
+		assertValid("m/0");
+		assertValid("m/1");
+		assertValid("m/2");
+		assertValid("m/0'");
+		assertValid("m/1'");
+		assertValid("m/2'");
+		assertValid("m/2147483646");
+		assertValid("m/2147483646'");
 
-		assert_valid_path("m/44'/0");
-		assert_valid_path("m/44'/0'");
-		assert_valid_path("m/44'/1");
-		assert_valid_path("m/44'/1'");
-		assert_valid_path("m/44'/2");
-		assert_valid_path("m/44'/2'");
-		assert_valid_path("m/44'/2147483646");
-		assert_valid_path("m/44'/2147483646'");
+		assertValid("m/44'/0");
+		assertValid("m/44'/0'");
+		assertValid("m/44'/1");
+		assertValid("m/44'/1'");
+		assertValid("m/44'/2");
+		assertValid("m/44'/2'");
+		assertValid("m/44'/2147483646");
+		assertValid("m/44'/2147483646'");
 
-		assert_valid_path("m/44'/536'/2'/1/3");
+		assertValid("m/44'/536'/2'/1/3");
 
-		assert_valid_path("m/1/2/3/4/5/6/7/8/");
+		assertValid("m/1/2/3/4/5/6/7/8/");
 
-		assert_valid_path("M/1/2");
-		assert_valid_path("M/1'/2'");
+		assertValid("M/1/2");
+		assertValid("M/1'/2'");
 	}
 
 	@Test
-	public void test_creation_of_hd_path() {
-		assert_no_throw_create_hdpath_from_string("m/44'/536'/2'/1/3");
+	public void test_creation_of_hd_path() throws HDPathException {
+		assertNoThrowCreatingHDPathFrom("m/44'/536'/2'/1/3");
 	}
-
 
 	@Test
 	public void test_invalid_paths() {
-		assert_invalid_path("invalid");
-		assert_invalid_path("z");
-		assert_invalid_path("m/");
-		assert_invalid_path("/m");
-		assert_invalid_path(" ");
-		assert_invalid_path("/ ");
-		assert_invalid_path(" /");
-		assert_invalid_path(" m/0");
-		assert_invalid_path("m/m");
-		assert_invalid_path("m/x");
-		assert_invalid_path("m//0");
-		assert_invalid_path("m/0/1//");
+		assertInvalid("invalid");
+		assertInvalid("z");
+		assertInvalid("m/");
+		assertInvalid("/m");
+		assertInvalid(" ");
+		assertInvalid("/ ");
+		assertInvalid(" /");
+		assertInvalid(" m/0");
+		assertInvalid("m/m");
+		assertInvalid("m/x");
+		assertInvalid("m//0");
+		assertInvalid("m/0/1//");
 
-		assert_invalid_path("m/44'/536' / 2' / 1/3");
+		assertInvalid("m/44'/536' / 2' / 1/3");
 
-		assert_invalid_path("m/44H/0H");
+		assertInvalid("m/44H/0H");
 
-		assert_invalid_path("m/44'/9999999999999999999999");
-		assert_invalid_path("m/44'/-1");
+		assertInvalid("m/44'/9999999999999999999999");
+		assertInvalid("m/44'/-1");
 	}
 
 	@Test
 	public void test_next_path() {
-		assertEquals("m/1", nextPath("m/0"));
-		assertEquals("m/1'", nextPath("m/0'"));
-		assertEquals("m/2'", nextPath("m/1'"));
-		assertEquals("m/2147483647", nextPath("m/2147483646"));
-		assertEquals("m/2147483647'", nextPath("m/2147483646'"));
+		assertNextPath("m/1", "m/0");
+		assertNextPath("m/1'", "m/0'");
+		assertNextPath("m/2'", "m/1'");
+		assertNextPath("m/2147483647", "m/2147483646");
+		assertNextPath("m/2147483647'", "m/2147483646'");
 
-		assertEquals("m/44'/1", nextPath("m/44'/0"));
-		assertEquals("m/44'/1'", nextPath("m/44'/0'"));
-		assertEquals("m/44'/2'", nextPath("m/44'/1'"));
-		assertEquals("m/44'/2147483647", nextPath("m/44'/2147483646"));
-		assertEquals("m/44'/2147483647'", nextPath("m/44'/2147483646'"));
+		assertNextPath("m/44'/1", "m/44'/0");
+		assertNextPath("m/44'/1'", "m/44'/0'");
+		assertNextPath("m/44'/2'", "m/44'/1'");
+		assertNextPath("m/44'/2147483647", "m/44'/2147483646");
+		assertNextPath("m/44'/2147483647'", "m/44'/2147483646'");
 	}
 
-	private void assert_valid_path(String path) {
+	private void assertValid(String path) {
 		assertTrue(HDPaths.validateBIP32Path(path));
 	}
 
-	private void assert_invalid_path(String path) {
+	private void assertInvalid(String path) {
 		assertFalse(HDPaths.validateBIP32Path(path));
-		assert_throw_create_hdpath_from_string(path);
+		assertErrorIsThrownCreatingHDPathFrom(path);
 	}
 
-	private void assert_throw_create_hdpath_from_string(String path) {
+	private void assertErrorIsThrownCreatingHDPathFrom(String path) {
 		assertThatThrownBy(() -> DefaultHDPath.of(path))
 				.isInstanceOf(HDPathException.class);
 	}
 
 
-	private void assert_no_throw_create_hdpath_from_string(String path) {
-		try {
-			DefaultHDPath.of(path);
-		} catch (HDPathException e) {
-			fail("Expected no errors thrown");
-		}
+	private void assertNoThrowCreatingHDPathFrom(String path) throws HDPathException {
+		assertNotNull(DefaultHDPath.of(path));
 	}
 
-	private String nextPath(String path) {
+	private void assertNextPath(String expected, String path) {
 		try {
-			return BIP32Path.fromString(path)
-					.next().toString();
+			String nextPath = BIP32Path.fromString(path).next().toString();
+			assertEquals(expected, nextPath);;
 		} catch (Exception e) {
-			return "";
+			fail("Expected to be able to get next path, but got exception" + e);
 		}
 	}
 }
