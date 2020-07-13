@@ -25,11 +25,8 @@ import org.bitcoinj.crypto.ChildNumber;
 import org.bitcoinj.crypto.DeterministicHierarchy;
 import org.bitcoinj.crypto.DeterministicKey;
 import org.bitcoinj.crypto.HDKeyDerivation;
-import org.bitcoinj.crypto.MnemonicCode;
 
 import java.util.List;
-
-import static org.bitcoinj.core.Utils.WHITESPACE_SPLITTER;
 
 @SecurityCritical({ SecurityCritical.SecurityKind.KEY_GENERATION })
 public final class BitcoinJHDKeyPairDerivation implements HDKeyPairDerivation {
@@ -41,34 +38,14 @@ public final class BitcoinJHDKeyPairDerivation implements HDKeyPairDerivation {
 
 	private final DeterministicHierarchy deterministicHierarchy;
 
+	BitcoinJHDKeyPairDerivation(byte[] seed) {
+		this(HDKeyDerivation.createMasterPrivateKey(seed));
+	}
+
 	@VisibleForTesting
 	BitcoinJHDKeyPairDerivation(DeterministicKey bip32ExtendedRootKey) {
 		this.bip32ExtendedRootKey = bip32ExtendedRootKey;
 		this.deterministicHierarchy = new DeterministicHierarchy(bip32ExtendedRootKey);
-	}
-
-	public BitcoinJHDKeyPairDerivation(byte[] seed) {
-		this(HDKeyDerivation.createMasterPrivateKey(seed));
-	}
-
-	public BitcoinJHDKeyPairDerivation(String seedHex) {
-		this(Bytes.fromHexString(seedHex));
-	}
-
-	public BitcoinJHDKeyPairDerivation(List<String> mnemonicWords, String passphrase) {
-		this(MnemonicCode.toSeed(mnemonicWords, passphrase));
-	}
-
-	public BitcoinJHDKeyPairDerivation(List<String> mnemonicWords) {
-		this(mnemonicWords, HDPaths.BIP39_MNEMONIC_NO_PASSPHRASE);
-	}
-
-	public BitcoinJHDKeyPairDerivation(String mnemonicString, String passphrase) {
-		this(WHITESPACE_SPLITTER.splitToList(mnemonicString), passphrase);
-	}
-
-	public static BitcoinJHDKeyPairDerivation mnemonicNoPassphrase(String mnemonicString) {
-		return new BitcoinJHDKeyPairDerivation(mnemonicString, HDPaths.BIP39_MNEMONIC_NO_PASSPHRASE);
 	}
 
 	private static List<ChildNumber> pathListFromHDPath(HDPath path) {

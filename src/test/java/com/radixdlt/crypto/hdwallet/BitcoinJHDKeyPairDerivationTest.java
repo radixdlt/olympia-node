@@ -36,7 +36,7 @@ import static org.junit.Assert.assertNotNull;
 public class BitcoinJHDKeyPairDerivationTest {
 
 	@Test
-	public void when_deriving_a_radix_bip44_path_then_the_returned_key_pair_is_correct() {
+	public void when_deriving_a_radix_bip44_path_then_the_returned_key_pair_is_correct() throws MnemonicException {
 		// Same mnemonic as Ledger App
 		String mnemonic = "equip will roof matter pink blind book anxiety banner elbow sun young";
 

@@ -37,7 +37,7 @@ public class DefaultHDWalletConstructorTests {
 	static byte[] seedBytes = Bytes.fromHexString(seedHex);
 
 	@Test
-	public void verify_same_derivation_using_mnemonicstring_no_passphrase_and_mnemonicwords() {
+	public void verify_same_derivation_using_mnemonicstring_no_passphrase_and_mnemonicwords() throws MnemonicException {
 		assertSame(
 				DefaultHDKeyPairDerivation.fromMnemonicString(mnemonicString),
 				DefaultHDKeyPairDerivation.fromMnemonicWords(mnemonicWords)
@@ -45,7 +45,7 @@ public class DefaultHDWalletConstructorTests {
 	}
 
 	@Test
-	public void verify_same_derivation_using_mnemonicstring_no_passphrase_and_seedHex() {
+	public void verify_same_derivation_using_mnemonicstring_no_passphrase_and_seedHex() throws MnemonicException {
 		assertSame(
 				DefaultHDKeyPairDerivation.fromMnemonicString(mnemonicString),
 				DefaultHDKeyPairDerivation.fromSeed(seedHex)
@@ -53,7 +53,7 @@ public class DefaultHDWalletConstructorTests {
 	}
 
 	@Test
-	public void verify_same_derivation_using_mnemonicstring_no_passphrase_and_seed_bytes() {
+	public void verify_same_derivation_using_mnemonicstring_no_passphrase_and_seed_bytes() throws MnemonicException {
 		assertSame(
 				DefaultHDKeyPairDerivation.fromMnemonicString(mnemonicString),
 				DefaultHDKeyPairDerivation.fromSeed(seedBytes)

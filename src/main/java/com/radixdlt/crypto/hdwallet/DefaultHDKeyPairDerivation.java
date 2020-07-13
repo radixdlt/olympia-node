@@ -17,6 +17,8 @@
 
 package com.radixdlt.crypto.hdwallet;
 
+import com.radixdlt.utils.Bytes;
+
 import java.util.List;
 
 public final class DefaultHDKeyPairDerivation {
@@ -30,22 +32,26 @@ public final class DefaultHDKeyPairDerivation {
 	}
 
 	public static HDKeyPairDerivation fromSeed(String seedHex) {
-		return new BitcoinJHDKeyPairDerivation(seedHex);
+		return fromSeed(Bytes.fromHexString(seedHex));
 	}
 
-	public static HDKeyPairDerivation fromMnemonicStringWithPassphrase(String mnemonic, String passphrase) {
-		return new BitcoinJHDKeyPairDerivation(mnemonic, passphrase);
+	public static HDKeyPairDerivation fromMnemonicStringAndPassphrase(String mnemonic, String passphrase) throws MnemonicException {
+		byte[] seed = DefaultMnemonicToSeedConverter.seedFromMnemonicStringAndPassphrase(mnemonic, passphrase);
+		return fromSeed(seed);
 	}
 
-	public static HDKeyPairDerivation fromMnemonicString(String mnemonic) {
-		return BitcoinJHDKeyPairDerivation.mnemonicNoPassphrase(mnemonic);
+	public static HDKeyPairDerivation fromMnemonicString(String mnemonic) throws MnemonicException {
+		byte[] seed = DefaultMnemonicToSeedConverter.seedFromMnemonicString(mnemonic);
+		return fromSeed(seed);
 	}
 
-	public static HDKeyPairDerivation fromMnemonicWordsWithPassphrase(List<String> mnemonicWords, String passphrase) {
-		return new BitcoinJHDKeyPairDerivation(mnemonicWords, passphrase);
+	public static HDKeyPairDerivation fromMnemonicWordsWithPassphrase(List<String> mnemonicWords, String passphrase) throws MnemonicException {
+		byte[] seed = DefaultMnemonicToSeedConverter.seedFromMnemonicAndPassphrase(mnemonicWords, passphrase);
+		return fromSeed(seed);
 	}
 
-	public static HDKeyPairDerivation fromMnemonicWords(List<String> mnemonicWords) {
-		return new BitcoinJHDKeyPairDerivation(mnemonicWords);
+	public static HDKeyPairDerivation fromMnemonicWords(List<String> mnemonicWords) throws MnemonicException {
+		byte[] seed = DefaultMnemonicToSeedConverter.seedFromMnemonic(mnemonicWords);
+		return fromSeed(seed);
 	}
 }
