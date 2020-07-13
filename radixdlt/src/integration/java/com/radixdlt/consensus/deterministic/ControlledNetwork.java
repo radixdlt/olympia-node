@@ -295,7 +295,7 @@ public final class ControlledNetwork {
 		}
 
 		private MessageRank messageRank(Proposal proposal) {
-			return new MessageRank(proposal.getEpoch(), proposal.getQC().getProposed().getView().number());
+			return new MessageRank(proposal.getEpoch(), proposal.getVertex().getView().number());
 		}
 
 		private MessageRank messageRank(VertexMetadata metadata, long viewIncrement) {

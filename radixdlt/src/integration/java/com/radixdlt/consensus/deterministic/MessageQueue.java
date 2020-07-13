@@ -17,9 +17,11 @@
 
 package com.radixdlt.consensus.deterministic;
 
+import java.io.PrintStream;
 import java.util.AbstractList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -32,6 +34,7 @@ import com.google.common.collect.Maps;
 import com.radixdlt.consensus.deterministic.ControlledNetwork.ChannelId;
 import com.radixdlt.consensus.deterministic.ControlledNetwork.ControlledMessage;
 import com.radixdlt.consensus.deterministic.ControlledNetwork.MessageRank;
+import com.radixdlt.identifiers.EUID;
 
 /**
  * Queue for messages by view.
@@ -156,5 +159,22 @@ final class MessageQueue {
 		List<MessageRank> views = Lists.newArrayList(eavs);
 		Collections.sort(views);
 		return views.get(0);
+	}
+
+	void dump(PrintStream out) {
+		Comparator<ChannelId> channelIdComparator = Comparator
+			.<ChannelId, EUID>comparing(chid -> chid.getSender().euid())
+			.thenComparing(chid -> chid.getReceiver().euid());
+		out.format("%s {%n", this.messageQueue);
+		this.messageQueue.entrySet().stream()
+			.sorted(Map.Entry.comparingByKey())
+			.forEachOrdered(e1 -> {
+				out.format("    %s {%n", e1.getKey());
+				e1.getValue().entrySet().stream()
+					.sorted(Map.Entry.comparingByKey(channelIdComparator))
+					.forEach(e2 -> out.format("        %s: %s%n", e2.getKey(), e2.getValue()));
+				out.println("    }");
+			});
+		out.println("}");
 	}
 }
