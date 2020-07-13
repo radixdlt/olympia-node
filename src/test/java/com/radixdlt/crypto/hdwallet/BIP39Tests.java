@@ -40,32 +40,23 @@ public class BIP39Tests {
 
 	@Test
 	public void when_validating_non_checksummed_mnemonic_with_checksum_pass_required_error_is_thrown() {
-		assertThatThrownBy(() -> DefaultMnemonicToSeedConverter.validateMnemonicString("abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon above", false))
-				.isInstanceOf(MnemonicException.class);
-	}
-
-	@Test
-	public void when_validating_a_non_checksummed_mnemonic_without_checksum_test_then_it_is_valid() {
-		String nonChecksummedMnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon above";
-		assertTrue(DefaultMnemonicToSeedConverter.isValidMnemonicString(nonChecksummedMnemonic, true));
+		assertThatThrownBy(() -> DefaultMnemonicToSeedConverter.validateMnemonicString(
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon above"
+		)).isInstanceOf(MnemonicException.class);
 	}
 
 	@Test
 	public void when_validating_a_non_checksummed_mnemonic_requiring_it_to_be_checksum_test_then_it_is_invalid() {
+		@SuppressWarnings("checkstyle:linelength")
 		String nonChecksummedMnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon above";
-		assertFalse(DefaultMnemonicToSeedConverter.isValidMnemonicString(nonChecksummedMnemonic, false));
+		assertFalse(DefaultMnemonicToSeedConverter.isValidMnemonicString(nonChecksummedMnemonic));
 	}
 
 	@Test
 	public void when_validating_a_checksummed_mnemonic_without_checksum_test_then_it_is_valid() {
+		@SuppressWarnings("checkstyle:linelength")
 		String checksummedMnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
-		assertTrue(DefaultMnemonicToSeedConverter.isValidMnemonicString(checksummedMnemonic, true));
-	}
-
-	@Test
-	public void when_validating_a_checksummed_mnemonic_requiring_it_to_be_checksum_test_then_it_is_valid() {
-		String checksummedMnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
-		assertTrue(DefaultMnemonicToSeedConverter.isValidMnemonicString(checksummedMnemonic, false));
+		assertTrue(DefaultMnemonicToSeedConverter.isValidMnemonicString(checksummedMnemonic));
 	}
 
 	@Test
@@ -75,7 +66,8 @@ public class BIP39Tests {
 	}
 
 	private List<String> invalidMnemonicStrings() {
-		return Arrays.asList(new String[]{"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon",
+		//CHECKSTYLE:OFF
+		return Arrays.asList("abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon",
 				"legal winner thank year wave sausage worth useful legal winner thank yellow yellow",
 				"letter advice cage absurd amount doctor acoustic avoid letter advice caged above",
 				"zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo, wrong",
@@ -89,11 +81,12 @@ public class BIP39Tests {
 				"zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo voted",
 				"jello better achieve collect unaware mountain thought cargo oxygen act hood bridge",
 				"renew, stay, biology, evidence, goat, welcome, casual, join, adapt, armor, shuffle, fault, little, machine, walk, stumble, urge, swap",
-				"dignity pass list indicate nasty"});
+				"dignity pass list indicate nasty");
+		//CHECKSTYLE:ON
 	}
 
 	private void assertInvalidMnemonic(String mnemonic) {
-		assertFalse(DefaultMnemonicToSeedConverter.isValidMnemonicString(mnemonic, false));
+		assertFalse(DefaultMnemonicToSeedConverter.isValidMnemonicString(mnemonic));
 	}
 
 	@Test
@@ -135,7 +128,7 @@ public class BIP39Tests {
 		private String[][] vectors;
 
 		public List<TestVector> getVectors() {
-			return Arrays.asList(vectors).stream().map((l) -> new TestVector(l)).collect(Collectors.toList());
+			return Arrays.stream(vectors).map(TestVector::new).collect(Collectors.toList());
 		}
 	}
 

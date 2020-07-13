@@ -33,7 +33,7 @@ final class BitcoinJMnemonicToSeedConverter {
 	}
 
 	static byte[] seedFromMnemonicAndPassphrase(List<String> words, String passphrase) throws MnemonicException {
-		validateMnemonic(words, true);
+		validateMnemonic(words);
 		Objects.requireNonNull(passphrase);
 		return MnemonicCode.toSeed(words, passphrase);
 	}
@@ -50,33 +50,29 @@ final class BitcoinJMnemonicToSeedConverter {
 		return seedFromMnemonicStringAndPassphrase(mnemonic, HDPaths.BIP39_MNEMONIC_NO_PASSPHRASE);
 	}
 
-	static void validateMnemonic(List<String> words, boolean allowNonChecksummedMnemonic) throws MnemonicException {
+	static void validateMnemonic(List<String> words) throws MnemonicException {
 		try {
 			MnemonicCode.INSTANCE.check(words);
-		} catch (org.bitcoinj.crypto.MnemonicException.MnemonicChecksumException checksumException) {
-			if (!allowNonChecksummedMnemonic) {
-				throw new MnemonicException("Mnemonic is not checksum, but we just required it to be", checksumException);
-			}
 		} catch (org.bitcoinj.crypto.MnemonicException e) {
 			throw new MnemonicException("Mnemonic does not pass validation check", e);
 		}
 	}
 
-	static void validateMnemonicString(String mnemonic, boolean allowNonChecksummedMnemonic) throws MnemonicException {
-		validateMnemonic(wordsFromMnemonicString(mnemonic), allowNonChecksummedMnemonic);
+	static void validateMnemonicString(String mnemonic) throws MnemonicException {
+		validateMnemonic(wordsFromMnemonicString(mnemonic));
 	}
 
-	static boolean isValidMnemonic(List<String> words, boolean allowNonChecksummedMnemonic) {
+	static boolean isValidMnemonic(List<String> words) {
 		try {
-			validateMnemonic(words, allowNonChecksummedMnemonic);
+			validateMnemonic(words);
 			return true;
 		} catch (Exception e) {
 			return false;
 		}
 	}
 
-	static boolean isValidMnemonicString(String mnemonic, boolean allowNonChecksummedMnemonic) {
-		return isValidMnemonic(wordsFromMnemonicString(mnemonic), allowNonChecksummedMnemonic);
+	static boolean isValidMnemonicString(String mnemonic) {
+		return isValidMnemonic(wordsFromMnemonicString(mnemonic));
 	}
 
 	private static List<String> wordsFromMnemonicString(String string) {

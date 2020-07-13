@@ -29,41 +29,80 @@ public final class DefaultMnemonicToSeedConverter {
 	}
 
 	/**
-	 * Returns a binary seed from a BIP39 mnemonic code
-	 * @param words
-	 * @param passphrase
-	 * @return
+	 * Returns a binary seed from a list of BIP39 mnemonic words + provided passphrase
+	 * @param words list of BIP39 mnemonic words.
+	 * @param passphrase BIP39 seed passphrase, can be empty, but must not be null.
+	 * @return a binary seed from a list of BIP39 mnemonic words + provided passphrase
 	 * @throws MnemonicException
 	 */
 	public static byte[] seedFromMnemonicAndPassphrase(List<String> words, String passphrase) throws MnemonicException {
 		return BitcoinJMnemonicToSeedConverter.seedFromMnemonicAndPassphrase(words, passphrase);
 	}
 
+	/**
+	 * Returns a binary seed from a list of BIP39 mnemonic words, using an empty passphrase ({@code ""})
+	 * @param words list of BIP39 mnemonic words.
+	 * @return a binary seed from a list of BIP39 mnemonic words, using an empty passphrase ({@code ""})
+	 * @throws MnemonicException
+	 */
 	public static byte[] seedFromMnemonic(List<String> words) throws MnemonicException {
 		return BitcoinJMnemonicToSeedConverter.seedFromMnemonic(words);
 	}
 
+	/**
+	 * Returns a binary seed from a BIP39 mnemonic string (assuming a space is used to separate the words) + provided passphrase
+	 * @param mnemonic a BIP39 mnemonic string (assuming a space is used to separate the words)
+	 * @param passphrase BIP39 seed passphrase, can be empty, but must not be null.
+	 * @return a binary seed from a list of BIP39 mnemonic words + provided passphrase
+	 * @throws MnemonicException
+	 */
 	public static byte[] seedFromMnemonicStringAndPassphrase(String mnemonic, String passphrase) throws MnemonicException {
 		return BitcoinJMnemonicToSeedConverter.seedFromMnemonicStringAndPassphrase(mnemonic, passphrase);
 	}
 
+	/**
+	 * Returns a binary seed from a BIP39 mnemonic string (assuming a space is used to separate the words), using an empty passphrase ({@code ""})
+	 * @param mnemonic a BIP39 mnemonic string (assuming a space is used to separate the words)
+	 * @return a binary seed from a list of BIP39 mnemonic words, using an empty passphrase ({@code ""})
+	 * @throws MnemonicException
+	 */
 	public static byte[] seedFromMnemonicString(String mnemonic) throws MnemonicException {
 		return BitcoinJMnemonicToSeedConverter.seedFromMnemonicString(mnemonic);
 	}
 
-	public static void validateMnemonic(List<String> words, boolean allowNonChecksummedMnemonic) throws MnemonicException {
-		BitcoinJMnemonicToSeedConverter.validateMnemonic(words, allowNonChecksummedMnemonic);
+	/**
+	 * Validates the list of words to see if they form a valid BIP39 mnemonic, if the words are invalid an exception is thrown.
+	 * @param words a list of words to check if they form a valid BIP39 mnemonic.
+	 * @throws MnemonicException
+	 */
+	public static void validateMnemonic(List<String> words) throws MnemonicException {
+		BitcoinJMnemonicToSeedConverter.validateMnemonic(words);
 	}
 
-	public static boolean isValidMnemonic(List<String> words, boolean allowNonChecksummedMnemonic) {
-		return BitcoinJMnemonicToSeedConverter.isValidMnemonic(words, allowNonChecksummedMnemonic);
+	/**
+	 * Return {@code true} iff the mnemonic {@code words} form a valid BIP39 mnemonic, else {@code false } is returned.
+	 * @param words a list of words to check if they form a valid BIP39 mnemonic.
+	 */
+	public static boolean isValidMnemonic(List<String> words) {
+		return BitcoinJMnemonicToSeedConverter.isValidMnemonic(words);
 	}
 
-	public static void validateMnemonicString(String mnemonic, boolean allowNonChecksummedMnemonic) throws MnemonicException {
-		BitcoinJMnemonicToSeedConverter.validateMnemonicString(mnemonic, allowNonChecksummedMnemonic);
+	/**
+	 * Validates the {@code mnemonic} string (assuming a space is used to separate the words),
+	 * form a valid BIP39 mnemonic, if the words are invalid an exception is thrown.
+	 * @param mnemonic a BIP39 mnemonic string (assuming a space is used to separate the words)
+	 * @throws MnemonicException
+	 */
+	public static void validateMnemonicString(String mnemonic) throws MnemonicException {
+		BitcoinJMnemonicToSeedConverter.validateMnemonicString(mnemonic);
 	}
 
-	public static boolean isValidMnemonicString(String mnemonic, boolean allowNonChecksummedMnemonic) {
-		return BitcoinJMnemonicToSeedConverter.isValidMnemonicString(mnemonic, allowNonChecksummedMnemonic);
+	/**
+	 * Return {@code true} iff the {@code mnemonic} string (assuming a space is used to separate the words)
+	 * form a valid BIP39 mnemonic, else {@code false } is returned.
+	 * @param mnemonic a BIP39 mnemonic string (assuming a space is used to separate the words)
+	 */
+	public static boolean isValidMnemonicString(String mnemonic) {
+		return BitcoinJMnemonicToSeedConverter.isValidMnemonicString(mnemonic);
 	}
 }
