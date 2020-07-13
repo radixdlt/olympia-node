@@ -35,6 +35,7 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.middleware2.CommittedAtom;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -326,6 +327,10 @@ public final class EpochManager {
 	}
 
 	private String nodeName(ECPublicKey key) {
-		return key.euid().toString().substring(0, 6);
+		if (key == null) {
+			return "null";
+		}
+		EUID euid = key.euid();
+		return euid == null ? "null" : euid.toString().substring(0, 6);
 	}
 }
