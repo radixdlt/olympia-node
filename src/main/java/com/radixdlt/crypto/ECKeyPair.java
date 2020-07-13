@@ -17,7 +17,6 @@
 
 package com.radixdlt.crypto;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.radixdlt.SecurityCritical;
 import com.radixdlt.SecurityCritical.SecurityKind;
 import com.radixdlt.crypto.encryption.ECIES;
@@ -244,15 +243,5 @@ public final class ECKeyPair implements Signing<ECDSASignature> {
 		} catch (ECIESException e) {
 			throw new IllegalStateException("Failed to encrypt `this.privateKey` with provided `ECPublicKey`", e);
 		}
-	}
-
-	@VisibleForTesting
-	String publicKeyHex() {
-		return Bytes.toHexString(getPublicKey().getBytes());
-	}
-
-	@VisibleForTesting
-	String privateKeyHex() {
-		return Bytes.toHexString(privateKey);
 	}
 }
