@@ -18,21 +18,8 @@
 package com.radixdlt.crypto.hdwallet;
 
 public class HDPathException extends Exception {
-	public HDPathException() {
-		super();
-	}
 
-	public HDPathException(Throwable arg0) {
-		super(arg0);
+	public HDPathException(String errorMessage) {
+		super(errorMessage);
 	}
-
-	public HDPathException(String arg0) {
-		super(arg0);
-	}
-
-	public HDPathException(String arg0, Throwable arg1) {
-		super(arg0, arg1);
-	}
-
-	public static final HDPathException invalidString = new HDPathException("Failed to parse provided string as HD path");
 }

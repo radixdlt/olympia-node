@@ -21,6 +21,7 @@ import com.radixdlt.SecurityCritical;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.utils.Bytes;
+import org.bitcoinj.core.NetworkParameters;
 import org.bitcoinj.crypto.ChildNumber;
 import org.bitcoinj.crypto.DeterministicHierarchy;
 import org.bitcoinj.crypto.DeterministicKey;
@@ -69,6 +70,11 @@ public final class BitcoinJHDKeyPairDerivation implements HDKeyPairDerivation {
 	@VisibleForTesting
 	String rootPrivateKeyHex() {
 		return Bytes.toHexString(bip32ExtendedRootKey.getPrivKeyBytes());
+	}
+
+	@VisibleForTesting
+	String extendedRootKeyHex() {
+		return bip32ExtendedRootKey.serializePrivB58(NetworkParameters.fromID(NetworkParameters.ID_MAINNET));
 	}
 
 	@VisibleForTesting

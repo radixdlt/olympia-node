@@ -17,14 +17,24 @@
 
 package com.radixdlt.crypto.hdwallet;
 
-
 import java.util.List;
 
+/**
+ * Converter of a <a href="https://github.com/bitcoin/bips/blob/master/bip-0039.mediawiki">BIP39 (BIP-39)</a> mnemonic code,
+ * to a seed (byte array) used to create some (HD root) key pair.
+ */
 public final class DefaultMnemonicToSeedConverter {
 	private  DefaultMnemonicToSeedConverter() {
 		throw new IllegalStateException("Can't construct.");
 	}
 
+	/**
+	 * Returns a binary seed from a BIP39 mnemonic code
+	 * @param words
+	 * @param passphrase
+	 * @return
+	 * @throws MnemonicException
+	 */
 	public static byte[] seedFromMnemonicAndPassphrase(List<String> words, String passphrase) throws MnemonicException {
 		return BitcoinJMnemonicToSeedConverter.seedFromMnemonicAndPassphrase(words, passphrase);
 	}
@@ -41,19 +51,19 @@ public final class DefaultMnemonicToSeedConverter {
 		return BitcoinJMnemonicToSeedConverter.seedFromMnemonicString(mnemonic);
 	}
 
-	public static void validateMnemonic(List<String> words) throws MnemonicException {
-		BitcoinJMnemonicToSeedConverter.validateMnemonic(words);
+	public static void validateMnemonic(List<String> words, boolean allowNonChecksummedMnemonic) throws MnemonicException {
+		BitcoinJMnemonicToSeedConverter.validateMnemonic(words, allowNonChecksummedMnemonic);
 	}
 
-	public static boolean isValidMnemonic(List<String> words) {
-		return BitcoinJMnemonicToSeedConverter.isValidMnemonic(words);
+	public static boolean isValidMnemonic(List<String> words, boolean allowNonChecksummedMnemonic) {
+		return BitcoinJMnemonicToSeedConverter.isValidMnemonic(words, allowNonChecksummedMnemonic);
 	}
 
-	public static void validateMnemonicString(String mnemonic) throws MnemonicException {
-		BitcoinJMnemonicToSeedConverter.validateMnemonicString(mnemonic);
+	public static void validateMnemonicString(String mnemonic, boolean allowNonChecksummedMnemonic) throws MnemonicException {
+		BitcoinJMnemonicToSeedConverter.validateMnemonicString(mnemonic, allowNonChecksummedMnemonic);
 	}
 
-	public static boolean isValidMnemonicString(String mnemonic) {
-		return BitcoinJMnemonicToSeedConverter.isValidMnemonicString(mnemonic);
+	public static boolean isValidMnemonicString(String mnemonic, boolean allowNonChecksummedMnemonic) {
+		return BitcoinJMnemonicToSeedConverter.isValidMnemonicString(mnemonic, allowNonChecksummedMnemonic);
 	}
 }

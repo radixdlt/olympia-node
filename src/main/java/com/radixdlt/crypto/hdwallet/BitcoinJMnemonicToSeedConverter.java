@@ -18,6 +18,7 @@
 package com.radixdlt.crypto.hdwallet;
 
 
+import com.google.common.annotations.VisibleForTesting;
 import org.bitcoinj.crypto.MnemonicCode;
 
 import java.util.List;
@@ -32,7 +33,7 @@ final class BitcoinJMnemonicToSeedConverter {
 	}
 
 	static byte[] seedFromMnemonicAndPassphrase(List<String> words, String passphrase) throws MnemonicException {
-		validateMnemonic(words);
+		validateMnemonic(words, true);
 		Objects.requireNonNull(passphrase);
 		return MnemonicCode.toSeed(words, passphrase);
 	}
@@ -49,32 +50,53 @@ final class BitcoinJMnemonicToSeedConverter {
 		return seedFromMnemonicStringAndPassphrase(mnemonic, HDPaths.BIP39_MNEMONIC_NO_PASSPHRASE);
 	}
 
-	static void validateMnemonic(List<String> words) throws MnemonicException {
+	static void validateMnemonic(List<String> words, boolean allowNonChecksummedMnemonic) throws MnemonicException {
 		try {
 			MnemonicCode.INSTANCE.check(words);
+		} catch (org.bitcoinj.crypto.MnemonicException.MnemonicChecksumException checksumException) {
+			if (!allowNonChecksummedMnemonic) {
+				throw new MnemonicException("Mnemonic is not checksum, but we just required it to be", checksumException);
+			}
 		} catch (org.bitcoinj.crypto.MnemonicException e) {
-			throw new MnemonicException("Mnemonic does not pass validation check", e.getCause());
+			throw new MnemonicException("Mnemonic does not pass validation check", e);
 		}
 	}
 
-	static boolean isValidMnemonic(List<String> words) {
+	static void validateMnemonicString(String mnemonic, boolean allowNonChecksummedMnemonic) throws MnemonicException {
+		validateMnemonic(wordsFromMnemonicString(mnemonic), allowNonChecksummedMnemonic);
+	}
+
+	static boolean isValidMnemonic(List<String> words, boolean allowNonChecksummedMnemonic) {
 		try {
-			validateMnemonic(words);
+			validateMnemonic(words, allowNonChecksummedMnemonic);
 			return true;
 		} catch (Exception e) {
 			return false;
 		}
 	}
 
-	static void validateMnemonicString(String mnemonic) throws MnemonicException {
-		validateMnemonic(wordsFromMnemonicString(mnemonic));
-	}
-
-	static boolean isValidMnemonicString(String mnemonic) {
-		return isValidMnemonic(wordsFromMnemonicString(mnemonic));
+	static boolean isValidMnemonicString(String mnemonic, boolean allowNonChecksummedMnemonic) {
+		return isValidMnemonic(wordsFromMnemonicString(mnemonic), allowNonChecksummedMnemonic);
 	}
 
 	private static List<String> wordsFromMnemonicString(String string) {
 		return WHITESPACE_SPLITTER.splitToList(string);
 	}
+
+	@VisibleForTesting
+	static byte[] seedFromEntropyAndPassphrase(byte[] entropy, String passphrase) throws MnemonicException {
+		List<String> mnemonicFromEntropy = null;
+		try {
+			mnemonicFromEntropy = MnemonicCode.INSTANCE.toMnemonic(entropy);
+		} catch (org.bitcoinj.crypto.MnemonicException.MnemonicLengthException e) {
+			throw new MnemonicException("Failed to created seed from entropy, incorrect length", e);
+		}
+		return seedFromMnemonicAndPassphrase(mnemonicFromEntropy, passphrase);
+	}
+
+	@VisibleForTesting
+	static byte[] seedFromEntropy(byte[] entropy) throws MnemonicException {
+		return seedFromEntropyAndPassphrase(entropy, HDPaths.BIP39_MNEMONIC_NO_PASSPHRASE);
+	}
+
 }

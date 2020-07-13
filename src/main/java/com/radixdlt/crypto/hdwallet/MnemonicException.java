@@ -18,19 +18,8 @@
 package com.radixdlt.crypto.hdwallet;
 
 public class MnemonicException extends Exception {
-	public MnemonicException() {
-		super();
-	}
 
-	public MnemonicException(Throwable arg0) {
-		super(arg0);
-	}
-
-	public MnemonicException(String arg0) {
-		super(arg0);
-	}
-
-	public MnemonicException(String arg0, Throwable arg1) {
-		super(arg0, arg1);
+	public MnemonicException(String errorMessage, Throwable throwable) {
+		super(errorMessage, throwable);
 	}
 }

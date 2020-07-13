@@ -47,9 +47,7 @@ final class BitcoinJBIP32Path implements HDPath {
 	}
 
 	static BitcoinJBIP32Path fromString(String path) throws HDPathException {
-		if (!HDPaths.validateBIP32Path(path)) {
-			throw HDPathException.invalidString;
-		}
+		HDPaths.validateHDPathString(path);
 		return new BitcoinJBIP32Path(org.bitcoinj.crypto.HDPath.parsePath(toBitcoinJPath(path)));
 	}
 

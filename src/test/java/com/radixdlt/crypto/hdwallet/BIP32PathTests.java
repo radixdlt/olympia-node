@@ -109,11 +109,11 @@ public class BIP32PathTests {
 	}
 
 	private void assertValid(String path) {
-		assertTrue(HDPaths.validateBIP32Path(path));
+		assertTrue(HDPaths.isValidHDPath(path));
 	}
 
 	private void assertInvalid(String path) {
-		assertFalse(HDPaths.validateBIP32Path(path));
+		assertFalse(HDPaths.isValidHDPath(path));
 		assertErrorIsThrownCreatingHDPathFrom(path);
 	}
 
