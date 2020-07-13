@@ -31,7 +31,7 @@ import static org.junit.Assert.fail;
 public class BIP32PathTests {
 
 	@Test
-	public void test_valid_paths() {
+	public void when_validating_valid_bip32_paths_then_they_all_pass_validation() {
 		assertValid("");
 		assertValid("/");
 		assertValid("m/0");
@@ -61,12 +61,7 @@ public class BIP32PathTests {
 	}
 
 	@Test
-	public void test_creation_of_hd_path() throws HDPathException {
-		assertNoThrowCreatingHDPathFrom("m/44'/536'/2'/1/3");
-	}
-
-	@Test
-	public void test_invalid_paths() {
+	public void when_validating_invalid_bip32_paths_none_passes_validation() {
 		assertInvalid("invalid");
 		assertInvalid("z");
 		assertInvalid("m/");
@@ -85,11 +80,18 @@ public class BIP32PathTests {
 		assertInvalid("m/44H/0H");
 
 		assertInvalid("m/44'/9999999999999999999999");
+		assertInvalid("m/9999999999999999999999");
 		assertInvalid("m/44'/-1");
+		assertInvalid("m/-1");
+
+		assertInvalid("m/44'/536'/2'/1/-3");
+		assertInvalid("m/44'/536'/2'/1/-3'");
+		assertInvalid("m/44'/536'/2'/1/-999999999999999999");
+		assertInvalid("m/44'/536'/2'/1/-999999999999999999'");
 	}
 
 	@Test
-	public void test_next_path() {
+	public void when_deriving_the_next_bip32_path_of_a_valid_path_then_the_correct_one_is_returned() {
 		assertNextPath("m/1", "m/0");
 		assertNextPath("m/1'", "m/0'");
 		assertNextPath("m/2'", "m/1'");
@@ -101,6 +103,11 @@ public class BIP32PathTests {
 		assertNextPath("m/44'/2'", "m/44'/1'");
 		assertNextPath("m/44'/2147483647", "m/44'/2147483646");
 		assertNextPath("m/44'/2147483647'", "m/44'/2147483646'");
+	}
+
+	@Test
+	public void when_deriving_a_radix_bip44_key_path_then_no_error_is_thrown() throws HDPathException {
+		assertNoThrowCreatingHDPathFrom("m/44'/536'/2'/1/3");
 	}
 
 	private void assertValid(String path) {

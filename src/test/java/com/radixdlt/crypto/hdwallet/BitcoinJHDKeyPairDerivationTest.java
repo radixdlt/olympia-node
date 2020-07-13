@@ -38,7 +38,8 @@ import static org.junit.Assert.assertNotNull;
 public class BitcoinJHDKeyPairDerivationTest {
 
 	@Test
-	public void test_bip32_five_components() {
+	public void when_deriving_a_radix_bip44_path_then_the_returned_key_pair_is_correct() {
+		// Same mnemonic as Ledger App
 		String mnemonic = "equip will roof matter pink blind book anxiety banner elbow sun young";
 
 		HDKeyPairDerivation hdKeyPairDerivation = DefaultHDKeyPairDerivation.fromMnemonicString(mnemonic);
@@ -54,6 +55,8 @@ public class BitcoinJHDKeyPairDerivationTest {
 		assertEquals(3L, childKey.index());
 		assertEquals(5, childKey.depth());
 		assertEquals(false, childKey.isHardened());
+
+		// Expected keys are known from Leger app development.
 		assertEquals("f423ae3097703022b86b87c15424367ce827d11676fae5c7fe768de52d9cce2e", childKey.privateKeyHex());
 		assertEquals("026d5e07cfde5df84b5ef884b629d28d15b0f6c66be229680699767cd57c618288", childKey.publicKeyHex());
 
@@ -61,22 +64,26 @@ public class BitcoinJHDKeyPairDerivationTest {
 	}
 
 	@Test
-	public void test_bip32_large_index() {
+	public void when_deriving_a_hd_key_pair_with_a_large_index_then_then_the_returned_key_pair_is_correct() {
+		// Seed from BIP32 test vector: `test_vectors_bip32.json`
 		HDKeyPairDerivation hdKeyPairDerivation = DefaultHDKeyPairDerivation.fromSeed(
 				"fffcf9f6f3f0edeae7e4e1dedbd8d5d2cfccc9c6c3c0bdbab7b4b1aeaba8a5a29f9c999693908d8a8784817e7b7875726f6c696663605d5a5754514e4b484542"
 		);
 
+		// Key from BIP32 test vector: `test_vectors_bip32.json`
 		assertEquals(
 				"4b03d6fc340455b363f51020ad3ecca4f0850280cf436c70c727923f6db46c3e",
 				((BitcoinJHDKeyPairDerivation) hdKeyPairDerivation).rootPrivateKeyHex()
 		);
 
+		// Path from BIP32 test vector: `test_vectors_bip32.json`
 		String bip32Path = "m/0/2147483647'/1/2147483646'";
 		HDKeyPair childKey = hdKeyPairDerivation.deriveKeyAtPath(bip32Path);
 		assertEquals(bip32Path, childKey.path().toString());
 		assertEquals(4294967294L, childKey.index());
 		assertEquals(4, childKey.depth());
 		assertEquals(true, childKey.isHardened());
+		// Keys from BIP32 test vector: `test_vectors_bip32.json`
 		assertEquals("f1c7c871a54a804afe328b4c83a1c33b8e5ff48f5087273f04efa83b247d6a2d", childKey.privateKeyHex());
 		assertEquals("02d2b36900396c9282fa14628566582f206a5dd0bcc8d5e892611806cafb0301f0", childKey.publicKeyHex());
 
@@ -85,7 +92,7 @@ public class BitcoinJHDKeyPairDerivationTest {
 
 
 	@Test
-	public void bip32_test_vectors() {
+	public void verify_all_official_bip32_test_vectors() {
 		List<TestVector> vectors = testVectorsBIP32();
 		vectors.forEach(this::run_test_vector);
 	}

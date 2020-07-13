@@ -77,12 +77,9 @@
     <!--   <property name="fileExtensions" value="java"/> -->
     <!-- </module> -->
 
-    <module name="SuppressWarningsFilter"/>
-
     <module name="TreeWalker">
         
         <module name="SuppressionCommentFilter"/>
-        <module name="SuppressWarningsHolder"/>
 
         <!-- Radix standard tab width -->
         <property name="tabWidth" value="4"/>
