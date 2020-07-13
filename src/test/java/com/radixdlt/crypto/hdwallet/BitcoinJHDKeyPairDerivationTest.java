@@ -38,17 +38,51 @@ import static org.junit.Assert.assertNotNull;
 public class BitcoinJHDKeyPairDerivationTest {
 
 	@Test
-	public void test_hdwallet_bip32_five_components() {
+	public void test_bip32_five_components() {
 		String mnemonic = "equip will roof matter pink blind book anxiety banner elbow sun young";
 
 		HDKeyPairDerivation hdKeyPairDerivation = DefaultHDKeyPairDerivation.fromMnemonicString(mnemonic);
-		assertEquals("f85f7d078c1224603ad18f19b5bcf8b127af6a3558ebcc32325cf34dc5c8bfb9", ((BitcoinJHDKeyPairDerivation) hdKeyPairDerivation).rootPrivateKeyHex());
+
+		assertEquals(
+				"f85f7d078c1224603ad18f19b5bcf8b127af6a3558ebcc32325cf34dc5c8bfb9",
+				((BitcoinJHDKeyPairDerivation) hdKeyPairDerivation).rootPrivateKeyHex()
+		);
+
 		String bip32Path = "m/44'/536'/2'/1/3";
 		HDKeyPair childKey = hdKeyPairDerivation.deriveKeyAtPath(bip32Path);
-		assertEquals(bip32Path, childKey.path());
+		assertEquals(bip32Path, childKey.path().toString());
+		assertEquals(3L, childKey.index());
+		assertEquals(5, childKey.depth());
+		assertEquals(false, childKey.isHardened());
 		assertEquals("f423ae3097703022b86b87c15424367ce827d11676fae5c7fe768de52d9cce2e", childKey.privateKeyHex());
 		assertEquals("026d5e07cfde5df84b5ef884b629d28d15b0f6c66be229680699767cd57c618288", childKey.publicKeyHex());
+
+		assertEquals("m/44'/536'/2'/1/4", childKey.path().next().toString());
 	}
+
+	@Test
+	public void test_bip32_large_index() {
+		HDKeyPairDerivation hdKeyPairDerivation = DefaultHDKeyPairDerivation.fromSeed(
+				"fffcf9f6f3f0edeae7e4e1dedbd8d5d2cfccc9c6c3c0bdbab7b4b1aeaba8a5a29f9c999693908d8a8784817e7b7875726f6c696663605d5a5754514e4b484542"
+		);
+
+		assertEquals(
+				"4b03d6fc340455b363f51020ad3ecca4f0850280cf436c70c727923f6db46c3e",
+				((BitcoinJHDKeyPairDerivation) hdKeyPairDerivation).rootPrivateKeyHex()
+		);
+
+		String bip32Path = "m/0/2147483647'/1/2147483646'";
+		HDKeyPair childKey = hdKeyPairDerivation.deriveKeyAtPath(bip32Path);
+		assertEquals(bip32Path, childKey.path().toString());
+		assertEquals(4294967294L, childKey.index());
+		assertEquals(4, childKey.depth());
+		assertEquals(true, childKey.isHardened());
+		assertEquals("f1c7c871a54a804afe328b4c83a1c33b8e5ff48f5087273f04efa83b247d6a2d", childKey.privateKeyHex());
+		assertEquals("02d2b36900396c9282fa14628566582f206a5dd0bcc8d5e892611806cafb0301f0", childKey.publicKeyHex());
+
+		assertEquals("m/0/2147483647'/1/2147483647'", childKey.path().next().toString());
+	}
+
 
 	@Test
 	public void bip32_test_vectors() {
@@ -67,6 +101,7 @@ public class BitcoinJHDKeyPairDerivationTest {
 			assertEquals(childVector.publicKeyHex(), childKey.publicKeyHex());
 			assertEquals(childVector.isHardened(), childKey.isHardened());
 			assertEquals(childVector.depth, childKey.depth());
+			assertEquals(childVector.index(), childKey.index());
 		}
 	}
 
@@ -137,6 +172,7 @@ public class BitcoinJHDKeyPairDerivationTest {
 			private boolean hardened;
 			private String pubKey;
 			private String privKey;
+			private long index;
 			int depth;
 
 			public String publicKeyHex() {
@@ -149,6 +185,10 @@ public class BitcoinJHDKeyPairDerivationTest {
 
 			public boolean isHardened() {
 				return hardened;
+			}
+
+			public long index() {
+				return index;
 			}
 		}
 

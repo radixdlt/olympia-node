@@ -20,36 +20,54 @@
 package com.radixdlt.crypto.hdwallet;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Objects;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.utils.Bytes;
 
-public final class HDKeyPair {
-	private final ECKeyPair ecKeyPair;
-	private final String path;
-	private final boolean isHardened;
-	private final int depth;
 
-	public HDKeyPair(ECKeyPair ecKeyPair, String path) {
+/**
+ * A key pair which has been derived using some BIP32 path.
+ */
+public final class HDKeyPair {
+
+	private final ECKeyPair ecKeyPair;
+	private final HDPath path;
+
+	public HDKeyPair(ECKeyPair ecKeyPair, HDPath path) {
 		this.ecKeyPair = ecKeyPair;
 		this.path = path;
-		this.isHardened = path.endsWith("'");
-		this.depth = path.split("/").length - 1;
+	}
+
+	public HDPath path() {
+		return path;
 	}
 
 	public ECKeyPair keyPair() {
 		return ecKeyPair;
 	}
 
-	public String path() {
-		return path;
+	public String toString() {
+		return path.toString();
 	}
 
-	public boolean isHardened() {
-		return isHardened;
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		HDKeyPair hdKeyPair = (HDKeyPair) o;
+		boolean pathEquals = Objects.equal(path, hdKeyPair.path);
+		boolean keyPairEquals = Objects.equal(ecKeyPair, hdKeyPair.ecKeyPair);
+
+		return pathEquals && keyPairEquals;
 	}
 
-	public int depth() {
-		return depth;
+	@Override
+	public int hashCode() {
+		return Objects.hashCode(ecKeyPair, path);
 	}
 
 	@VisibleForTesting
@@ -60,5 +78,20 @@ public final class HDKeyPair {
 	@VisibleForTesting
 	String publicKeyHex() {
 		return Bytes.toHexString(ecKeyPair.getPublicKey().getBytes());
+	}
+
+	@VisibleForTesting
+	boolean isHardened() {
+		return path.isHardened();
+	}
+
+	@VisibleForTesting
+	int depth() {
+		return path.depth();
+	}
+
+	@VisibleForTesting
+	long index() {
+		return path.index();
 	}
 }

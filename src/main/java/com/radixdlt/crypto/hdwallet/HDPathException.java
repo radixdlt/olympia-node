@@ -19,15 +19,22 @@
 
 package com.radixdlt.crypto.hdwallet;
 
-public interface HDKeyPairDerivation {
-	HDKeyPair deriveKeyAtPath(HDPath path);
-
-	default HDKeyPair deriveKeyAtPath(String path) {
-		try {
-			HDPath hdPath = DefaultHDPath.of(path);
-			return deriveKeyAtPath(hdPath);
-		} catch (HDPathException e) {
-			throw new IllegalArgumentException("Failed to construct HD path " + e);
-		}
+public class HDPathException extends Exception {
+	public HDPathException() {
+		super();
 	}
+
+	public HDPathException(Throwable arg0) {
+		super(arg0);
+	}
+
+	public HDPathException(String arg0) {
+		super(arg0);
+	}
+
+	public HDPathException(String arg0, Throwable arg1) {
+		super(arg0, arg1);
+	}
+
+	public static final HDPathException invalidString = new HDPathException("Failed to parse provided string as HD path");
 }
