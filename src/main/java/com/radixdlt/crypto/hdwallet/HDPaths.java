@@ -76,19 +76,14 @@ public final class HDPaths {
 			if (component.endsWith(hardenedMarker)) {
 				component = component.replace(hardenedMarker, "");
 			}
-			boolean isValidNumber = false;
 			try {
-				int number = Integers.parseInt(component);
-				if (number >= 0) {
-					isValidNumber = true;
+				if (Integers.parseInt(component) < 0) {
+					return false;
 				}
 			} catch (Exception e) {
-				//  Ignored
-			}
-
-			if (!isValidNumber) {
 				return false;
 			}
+
 		}
 
 		return true;
