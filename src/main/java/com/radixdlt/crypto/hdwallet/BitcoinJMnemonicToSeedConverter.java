@@ -33,26 +33,50 @@ final class BitcoinJMnemonicToSeedConverter {
 		throw new IllegalStateException("Can't construct.");
 	}
 
-	public static byte[] seedFromMnemonicAndPassphrase(List<String> words, String passphrase) throws MnemonicException {
+	static byte[] seedFromMnemonicAndPassphrase(List<String> words, String passphrase) throws MnemonicException {
+		validateMnemonic(words);
+		Objects.requireNonNull(passphrase);
+		return MnemonicCode.toSeed(words, passphrase);
+	}
+
+	static byte[] seedFromMnemonic(List<String> words) throws MnemonicException {
+		return seedFromMnemonicAndPassphrase(words, HDPaths.BIP39_MNEMONIC_NO_PASSPHRASE);
+	}
+
+	static byte[] seedFromMnemonicStringAndPassphrase(String mnemonic, String passphrase) throws MnemonicException {
+		return seedFromMnemonicAndPassphrase(wordsFromMnemonicString(mnemonic), passphrase);
+	}
+
+	static byte[] seedFromMnemonicString(String mnemonic) throws MnemonicException {
+		return seedFromMnemonicStringAndPassphrase(mnemonic, HDPaths.BIP39_MNEMONIC_NO_PASSPHRASE);
+	}
+
+	static void validateMnemonic(List<String> words) throws MnemonicException {
 		try {
 			MnemonicCode.INSTANCE.check(words);
 		} catch (org.bitcoinj.crypto.MnemonicException e) {
 			throw new MnemonicException("Mnemonic does not pass validation check", e.getCause());
 		}
-		Objects.requireNonNull(passphrase);
-		return MnemonicCode.toSeed(words, passphrase);
 	}
 
-	public static byte[] seedFromMnemonic(List<String> words) throws MnemonicException {
-		return seedFromMnemonicAndPassphrase(words, HDPaths.BIP39_MNEMONIC_NO_PASSPHRASE);
+	static boolean isValidMnemonic(List<String> words) {
+		try {
+			validateMnemonic(words);
+			return true;
+		} catch (Exception e) {
+			return false;
+		}
 	}
 
-	public static byte[] seedFromMnemonicStringAndPassphrase(String mnemonic, String passphrase) throws MnemonicException {
-		return seedFromMnemonicAndPassphrase(WHITESPACE_SPLITTER.splitToList(mnemonic), passphrase);
+	static void validateMnemonicString(String mnemonic) throws MnemonicException {
+		validateMnemonic(wordsFromMnemonicString(mnemonic));
 	}
 
-	public static byte[] seedFromMnemonicString(String mnemonic) throws MnemonicException {
-		return seedFromMnemonicStringAndPassphrase(mnemonic, HDPaths.BIP39_MNEMONIC_NO_PASSPHRASE);
+	static boolean isValidMnemonicString(String mnemonic) {
+		return isValidMnemonic(wordsFromMnemonicString(mnemonic));
 	}
 
+	private static List<String> wordsFromMnemonicString(String string) {
+		return WHITESPACE_SPLITTER.splitToList(string);
+	}
 }

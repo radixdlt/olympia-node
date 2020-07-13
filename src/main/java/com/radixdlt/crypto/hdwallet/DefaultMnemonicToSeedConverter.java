@@ -19,6 +19,7 @@
 
 package com.radixdlt.crypto.hdwallet;
 
+
 import java.util.List;
 
 public final class DefaultMnemonicToSeedConverter {
@@ -40,5 +41,21 @@ public final class DefaultMnemonicToSeedConverter {
 
 	public static byte[] seedFromMnemonicString(String mnemonic) throws MnemonicException {
 		return BitcoinJMnemonicToSeedConverter.seedFromMnemonicString(mnemonic);
+	}
+
+	public static void validateMnemonic(List<String> words) throws MnemonicException {
+		BitcoinJMnemonicToSeedConverter.validateMnemonic(words);
+	}
+
+	public static boolean isValidMnemonic(List<String> words) {
+		return BitcoinJMnemonicToSeedConverter.isValidMnemonic(words);
+	}
+
+	public static void validateMnemonicString(String mnemonic) throws MnemonicException {
+		BitcoinJMnemonicToSeedConverter.validateMnemonicString(mnemonic);
+	}
+
+	public static boolean isValidMnemonicString(String mnemonic) {
+		return BitcoinJMnemonicToSeedConverter.isValidMnemonicString(mnemonic);
 	}
 }
