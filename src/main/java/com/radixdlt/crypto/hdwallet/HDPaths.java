@@ -34,13 +34,24 @@ public final class HDPaths {
 	public static final String BIP32_PATH_SEPARATOR = "/";
 	public static final String BIP32_PREFIX_PRIVATEKEY = "m";
 
-	// The BIP32 bitmask for hardened path components 0x80000000
-	public static final long BIP32_HARDENED_VALUE_INCREMENT = 2147483648L;
+	public static final long BIP32_HARDENED_VALUE_INCREMENT = 0x80000000L;
 
+	/**
+	 * Checks if the {@code path} string is a valid BIP32 path or not, using the standard BIP32
+	 * hardened marker {@link #BIP32_HARDENED_MARKER_STANDARD}.
+	 * @param path to validate
+	 * @return true iff {@code path} is a valid BIP32 path, else false.
+	 */
 	static boolean validateBIP32Path(String path) {
 		return validateBIP32Path(path, BIP32_HARDENED_MARKER_STANDARD);
 	}
 
+	/**
+	 * Checks if the {@code path} string is a valid BIP32 path or not.
+	 * @param path to validate
+	 * @param hardenedMarker the string used to mark hardened paths
+	 * @return true iff {@code path} is a valid BIP32 path, else false.
+	 */
 	static boolean validateBIP32Path(String path, String hardenedMarker) {
 		// Check trivial paths
 		if (ImmutableList.of("", BIP32_PREFIX_PRIVATEKEY, BIP32_PATH_SEPARATOR).contains(path)) {

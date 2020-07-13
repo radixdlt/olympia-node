@@ -19,9 +19,10 @@
 
 package com.radixdlt.crypto.hdwallet;
 
-import com.google.common.collect.ImmutableList;
-import org.apache.logging.log4j.core.util.Integers;
-
+/**
+ * A path use to deterministically derive a key pair in some hierarchy given by some root key. The path is
+ * typically <a href="https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki">BIP32 (BIP-32)</a> compliant.
+ */
 public interface HDPath {
 
 	/**
@@ -57,18 +58,23 @@ public interface HDPath {
 
 	/**
 	 * Returns the value of the last component, taking into account if it is hardened or not, i.e. the index of the path "m/0/0" is 0, but
-	 * the index of the path "m/0/0'" - which is hardened - is 2147483648 (0 | HARDENED_BITMASK) - and the index of "m/0/1'" is 2147483649
-	 * (1 | HARDENED_BITMASK).
+	 * the index of the path "m/0/0'" - which is hardened - is 2147483648
+	 * (0 | {@link HDPaths#BIP32_HARDENED_VALUE_INCREMENT HARDENED_BITMASK}) -
+	 * and the index of "m/0/1'" is 2147483649
+	 * (1 | {@link HDPaths#BIP32_HARDENED_VALUE_INCREMENT HARDENED_BITMASK}).
+	 *
 	 * @return the value of the last component, taking into account if it is hardened or not, i.e. the index of the path "m/0/0" is 0, but
-	 * the index of the path "m/0/0'" - which is hardened - is 2147483648 (0 | HARDENED_BITMASK) - and the index of "m/0/1'" is 2147483649
-	 * (1 | HARDENED_BITMASK).
+	 * the index of the path "m/0/0'" - which is hardened - is 2147483648
+	 * (0 | {@link HDPaths#BIP32_HARDENED_VALUE_INCREMENT HARDENED_BITMASK}) -
+	 * and the index of "m/0/1'" is 2147483649
+	 * (1 | {@link HDPaths#BIP32_HARDENED_VALUE_INCREMENT HARDENED_BITMASK}).
 	 */
 	long index();
 
 
 	/**
-	 * Returns the path to the subsequent child key key pair, e.g. identical to this path but with the value of {@code index() + 1}.
-	 * @return the path to the subsequent child key key pair, e.g. identical to this path but with the value of {@code index()} + 1.
+	 * Returns the path to the subsequent child key key pair, e.g. identical to this path but with the value of {@link #index() + 1}.
+	 * @return the path to the subsequent child key key pair, e.g. identical to this path but with the value of {@link #index()} + 1.
 	 */
 	HDPath next();
 }

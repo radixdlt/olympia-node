@@ -26,14 +26,16 @@ import com.radixdlt.utils.Bytes;
 
 
 /**
- * A key pair which has been derived using some BIP32 path.
+ * A key pair which has been derived using some {@link HDPath}.
  */
 public final class HDKeyPair {
 
 	private final ECKeyPair ecKeyPair;
 	private final HDPath path;
 
-	public HDKeyPair(ECKeyPair ecKeyPair, HDPath path) {
+	// Not public since one should be using `HDKeyPairDerivation.deriveKeyAtPath` instead of using this directly.
+	// since we cannot assert that the `HDPath` and the `ECKeyPair` indeed matches.
+	HDKeyPair(ECKeyPair ecKeyPair, HDPath path) {
 		this.ecKeyPair = ecKeyPair;
 		this.path = path;
 	}

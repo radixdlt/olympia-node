@@ -132,7 +132,7 @@ public class BIP32PathTests {
 	private void assertNextPath(String expected, String path) {
 		try {
 			String nextPath = BIP32Path.fromString(path).next().toString();
-			assertEquals(expected, nextPath);;
+			assertEquals(expected, nextPath);
 		} catch (Exception e) {
 			fail("Expected to be able to get next path, but got exception" + e);
 		}
