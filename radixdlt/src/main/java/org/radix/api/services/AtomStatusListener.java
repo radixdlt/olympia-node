@@ -17,11 +17,15 @@
 
 package org.radix.api.services;
 
+import com.radixdlt.api.ConflictException;
+import com.radixdlt.middleware2.CommittedAtom;
+
 /**
  * Interface for listening to the status of an Atom.
  * TODO: cleanup method signatures
  */
 public interface AtomStatusListener {
-	void onStored();
+	void onStored(CommittedAtom committedAtom);
+	void onConflict(ConflictException e);
 	void onError(Throwable e);
 }

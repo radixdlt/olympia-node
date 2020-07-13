@@ -17,6 +17,7 @@
 
 package org.radix.api.http;
 
+import com.radixdlt.api.LedgerRx;
 import com.radixdlt.consensus.ConsensusRunner;
 import com.google.common.collect.EvictingQueue;
 import com.google.common.collect.Lists;
@@ -25,7 +26,6 @@ import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexStoreEventsRx;
 import com.radixdlt.mempool.SubmissionControl;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
-import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.DsonOutput;
@@ -99,9 +99,9 @@ public final class RadixHttpServer {
 	private Undertow server;
 
 	public RadixHttpServer(
+		LedgerRx ledgerRx,
 		ConsensusRunner consensusRunner,
 		LedgerEntryStore store,
-		CommittedAtomsStore engineStore,
 		SubmissionControl submissionControl,
 		AtomToBinaryConverter atomToBinaryConverter,
 		Universe universe,
@@ -116,7 +116,12 @@ public final class RadixHttpServer {
 		this.apiSerializedUniverse = serialization.toJsonObject(this.universe, DsonOutput.Output.API);
 		this.localSystem = Objects.requireNonNull(localSystem);
 		this.peers = new ConcurrentHashMap<>();
-		this.atomsService = new AtomsService(store, engineStore, submissionControl, atomToBinaryConverter);
+		this.atomsService = new AtomsService(
+			ledgerRx,
+			store,
+			submissionControl,
+			atomToBinaryConverter
+		);
 		this.jsonRpcServer = new RadixJsonRpcServer(
 			consensusRunner,
 			serialization,

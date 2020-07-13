@@ -18,6 +18,7 @@
 package com.radixdlt.middleware2.store;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.VertexMetadata;
@@ -26,6 +27,7 @@ import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.store.SearchCursor;
@@ -36,18 +38,13 @@ import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStore;
 
-import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.subjects.BehaviorSubject;
-import io.reactivex.rxjava3.subjects.Subject;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.Optional;
 import java.util.function.Consumer;
-import org.radix.atoms.events.AtomStoredEvent;
 
 @Singleton
 public class CommittedAtomsStore implements EngineStore<CommittedAtom> {
@@ -56,7 +53,6 @@ public class CommittedAtomsStore implements EngineStore<CommittedAtom> {
 	private final AtomIndexer atomIndexer;
 	private final LedgerEntryStore store;
 	private final AtomToBinaryConverter atomToBinaryConverter;
-	private final Subject<AtomStoredEvent> lastStoredAtom = BehaviorSubject.create();
 	private final SystemCounters counters;
 	private final AtomicLong stateVersion = new AtomicLong(0);
 
@@ -108,22 +104,21 @@ public class CommittedAtomsStore implements EngineStore<CommittedAtom> {
 		// TODO: How it's done depends on how mempool and prepare phases are implemented
         store.store(ledgerEntry, engineAtomIndices.getUniqueIndices(), engineAtomIndices.getDuplicateIndices());
         store.commit(committedAtom.getAID());
-
-        AtomStoredEvent storedEvent = new AtomStoredEvent(
-        	committedAtom,
-            () -> engineAtomIndices.getDuplicateIndices().stream()
-                .filter(e -> e.getPrefix() == EngineAtomIndices.IndexType.DESTINATION.getValue())
-                .map(e -> EngineAtomIndices.toEUID(e.asKey()))
-                .collect(Collectors.toSet())
-        );
-
-        lastStoredAtom.onNext(storedEvent);
     }
 
 	// TODO: Move into storeAtom when epoch change logic moved into RadixEngine
 	public void storeVertexMetadata(VertexMetadata vertexMetadata) {
 		stateVersion.set(vertexMetadata.getStateVersion());
 		counters.set(CounterType.LEDGER_STATE_VERSION, vertexMetadata.getStateVersion());
+	}
+
+	// TODO: Move into more approrpriate place
+	public ImmutableSet<EUID> getIndicies(CommittedAtom committedAtom) {
+		EngineAtomIndices engineAtomIndices = atomIndexer.getIndices(committedAtom);
+		return engineAtomIndices.getDuplicateIndices().stream()
+			.filter(e -> e.getPrefix() == EngineAtomIndices.IndexType.DESTINATION.getValue())
+			.map(e -> EngineAtomIndices.toEUID(e.asKey()))
+			.collect(ImmutableSet.toImmutableSet());
 	}
 
 	/**
@@ -147,14 +142,6 @@ public class CommittedAtomsStore implements EngineStore<CommittedAtom> {
 	 */
 	public long getStateVersion() {
 		return stateVersion.get();
-	}
-
-	/**
-	* Retrieve a stream of the latest stored atoms
-	* @return hot observable of last stored atoms
-	*/
-	public Observable<AtomStoredEvent> lastStoredAtom() {
-		return lastStoredAtom;
 	}
 
 	@Override

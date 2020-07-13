@@ -17,11 +17,14 @@
 
 package org.radix.api.jsonrpc;
 
+import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.engine.AtomStatus;
 import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.api.ConflictException;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.identifiers.AID;
+import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.middleware2.converters.AtomConversionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -32,8 +35,6 @@ import org.radix.api.observable.Disposable;
 import org.radix.api.services.AtomStatusListener;
 import org.radix.api.services.AtomsService;
 import org.radix.atoms.AtomDependencyNotFoundException;
-import org.radix.atoms.particles.conflict.ParticleConflict;
-import org.radix.atoms.particles.conflict.ParticleConflictException;
 import org.radix.validation.ConstraintMachineValidationException;
 
 /**
@@ -93,13 +94,39 @@ public class AtomStatusEpic {
 			final AtomicBoolean receivedStatus = new AtomicBoolean(false);
 
 			@Override
-			public void onStored() {
+			public void onStored(CommittedAtom committedAtom) {
 				if (receivedStatus.getAndSet(true)) {
 					return;
 				}
 
 				JSONObject data = new JSONObject();
+				data.put("aid", committedAtom.getAID());
+				// TODO: serialize vertexMetadata
+				VertexMetadata vertexMetadata = committedAtom.getVertexMetadata();
+				data.put("stateVersion", vertexMetadata.getStateVersion());
+				data.put("epoch",vertexMetadata.getEpoch());
+				data.put("view", vertexMetadata.getView().number());
+
 				sendAtomSubmissionState.accept(AtomStatus.STORED, data);
+			}
+
+			@Override
+			public void onConflict(ConflictException e) {
+				if (receivedStatus.getAndSet(true)) {
+					return;
+				}
+
+				JSONObject data = new JSONObject();
+				data.put("aid", e.getCommittedAtom().getAID());
+				data.put("conflictingWith", e.getConflictingAtom());
+				data.put("pointerToIssue", e.getDataPointer());
+				// TODO: serialize vertexMetadata
+				VertexMetadata vertexMetadata = e.getCommittedAtom().getVertexMetadata();
+				data.put("stateVersion", vertexMetadata.getStateVersion());
+				data.put("epoch", vertexMetadata.getEpoch());
+				data.put("view", vertexMetadata.getView().number());
+
+				sendAtomSubmissionState.accept(AtomStatus.CONFLICT_LOSER, data);
 			}
 
 			@Override
@@ -132,11 +159,6 @@ public class AtomStatusEpic {
 					data.put("message", e.getMessage());
 					data.put("pointerToIssue", pointerToIssue);
 					sendAtomSubmissionState.accept(AtomStatus.EVICTED_FAILED_CM_VERIFICATION, data);
-				} else if (e instanceof ParticleConflictException) {
-					ParticleConflict conflict = ((ParticleConflictException) e).getConflict();
-					JSONObject data = new JSONObject();
-					data.put("pointerToIssue", conflict.getDataPointer().toString());
-					sendAtomSubmissionState.accept(AtomStatus.CONFLICT_LOSER, data);
 				} else if (e instanceof AtomDependencyNotFoundException) {
 					AtomDependencyNotFoundException dependencyNotFoundException = (AtomDependencyNotFoundException) e;
 					JSONObject data = new JSONObject();

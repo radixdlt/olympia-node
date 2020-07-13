@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,17 +15,27 @@
  * language governing permissions and limitations under the License.
  */
 
-package org.radix.atoms.events;
+package com.radixdlt.api;
 
-import com.radixdlt.identifiers.EUID;
+import io.reactivex.rxjava3.core.Observable;
 
-import com.radixdlt.middleware2.CommittedAtom;
-import java.util.Set;
-import java.util.function.Supplier;
+/**
+ * Events related to the ledger
+ */
+public interface LedgerRx {
 
-public final class AtomStoredEvent extends AtomEventWithDestinations {
+	/**
+	 * Retrieve a never ending stream of conflict
+	 * exceptions
+	 *
+	 * @return hot observable of conflict exceptions
+	 */
+	Observable<ConflictException> conflictExceptions();
 
-	public AtomStoredEvent(CommittedAtom atom, Supplier<Set<EUID>> destinationsSupplier) {
-		super(atom, destinationsSupplier);
-	}
+	/**
+	 * Retrieve a never ending stream of stored atoms
+	 *
+	 * @return hot observable of stored atoms
+	 */
+	Observable<StoredAtom> storedAtoms();
 }

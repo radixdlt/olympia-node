@@ -36,6 +36,7 @@ import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.sync.SyncedRadixEngine.CommittedStateSyncSender;
+import com.radixdlt.consensus.sync.SyncedRadixEngine.SyncedRadixEngineEventSender;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.crypto.ECPublicKey;
@@ -51,14 +52,12 @@ import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
 import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import org.junit.Before;
 import org.junit.Test;
-import org.radix.atoms.events.AtomStoredEvent;
 
 public class SyncedRadixEngineTest {
 
@@ -69,6 +68,7 @@ public class SyncedRadixEngineTest {
 	private StateSyncNetwork stateSyncNetwork;
 	private CommittedStateSyncSender committedStateSyncSender;
 	private EpochChangeSender epochChangeSender;
+	private SyncedRadixEngineEventSender eventSender;
 	private Function<Long, ValidatorSet> validatorSetMapping;
 	private View epochHighView;
 
@@ -83,6 +83,7 @@ public class SyncedRadixEngineTest {
 		this.stateSyncNetwork = mock(StateSyncNetwork.class);
 		this.committedStateSyncSender = mock(CommittedStateSyncSender.class);
 		this.epochChangeSender = mock(EpochChangeSender.class);
+		this.eventSender = mock(SyncedRadixEngineEventSender.class);
 		// No issues with type checking for mock
 		@SuppressWarnings("unchecked")
 		Function<Long, ValidatorSet> vsm = mock(Function.class);
@@ -93,6 +94,7 @@ public class SyncedRadixEngineTest {
 			committedAtomsStore,
 			committedStateSyncSender,
 			epochChangeSender,
+			eventSender,
 			validatorSetMapping,
 			epochHighView,
 			addressBook,
@@ -226,11 +228,6 @@ public class SyncedRadixEngineTest {
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
 		when(vertexMetadata.getStateVersion()).thenReturn(1233L);
 		when(atom.getVertexMetadata()).thenReturn(vertexMetadata);
-		AtomStoredEvent atomStoredEvent = mock(AtomStoredEvent.class);
-		when(atomStoredEvent.getAtom()).thenReturn(atom);
-		BehaviorSubject<AtomStoredEvent> event = BehaviorSubject.createDefault(atomStoredEvent);
-
-		when(committedAtomsStore.lastStoredAtom()).thenReturn(event);
 
 		CommittedAtom nextAtom = mock(CommittedAtom.class);
 		VertexMetadata nextVertexMetadata = mock(VertexMetadata.class);
@@ -239,10 +236,9 @@ public class SyncedRadixEngineTest {
 		syncedRadixEngine.syncTo(nextVertexMetadata, Collections.singletonList(pk), mock(Object.class));
 		verify(committedStateSyncSender, never()).sendCommittedStateSync(anyLong(), any());
 
+		when(nextAtom.getClientAtom()).thenReturn(mock(ClientAtom.class));
 		when(nextAtom.getVertexMetadata()).thenReturn(nextVertexMetadata);
-		AtomStoredEvent nextAtomStoredEvent = mock(AtomStoredEvent.class);
-		when(nextAtomStoredEvent.getAtom()).thenReturn(nextAtom);
-		event.onNext(nextAtomStoredEvent);
+		syncedRadixEngine.execute(nextAtom);
 
 		verify(committedStateSyncSender, timeout(100).atLeast(1)).sendCommittedStateSync(anyLong(), any());
 	}

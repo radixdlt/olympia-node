@@ -21,6 +21,7 @@ import static org.mockito.Mockito.mock;
 import static org.powermock.api.mockito.PowerMockito.when;
 
 import com.radixdlt.crypto.Hash;
+import com.radixdlt.middleware2.InternalMessagePasser;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.junit.Test;
 

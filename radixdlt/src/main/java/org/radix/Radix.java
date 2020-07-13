@@ -18,6 +18,7 @@
 package org.radix;
 
 import com.radixdlt.DefaultSerialization;
+import com.radixdlt.api.LedgerRx;
 import com.radixdlt.consensus.ConsensusRunner;
 import com.radixdlt.consensus.VertexStoreEventsRx;
 import com.radixdlt.consensus.sync.SyncedRadixEngine;
@@ -161,10 +162,11 @@ public final class Radix
 		AtomToBinaryConverter atomToBinaryConverter = globalInjector.getInjector().getInstance(AtomToBinaryConverter.class);
 		LedgerEntryStore store = globalInjector.getInjector().getInstance(LedgerEntryStore.class);
 		VertexStoreEventsRx vertexStoreEventsRx = globalInjector.getInjector().getInstance(VertexStoreEventsRx.class);
+		LedgerRx ledgerRx = globalInjector.getInjector().getInstance(LedgerRx.class);
 		RadixHttpServer httpServer = new RadixHttpServer(
+			ledgerRx,
 			bft,
 			store,
-			engineStore,
 			submissionControl,
 			atomToBinaryConverter,
 			universe,

@@ -17,6 +17,7 @@
 
 package org.radix.api.jsonrpc;
 
+import com.radixdlt.api.ConflictException;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -28,8 +29,6 @@ import com.radixdlt.mempool.MempoolFullException;
 import org.json.JSONObject;
 import org.radix.api.services.AtomsService;
 import org.radix.api.services.SingleAtomListener;
-import org.radix.atoms.particles.conflict.ParticleConflict;
-import org.radix.atoms.particles.conflict.ParticleConflictException;
 import org.radix.exceptions.AtomAlreadyStoredException;
 import org.radix.exceptions.ValidationException;
 import org.radix.validation.ConstraintMachineValidationException;
@@ -95,17 +94,17 @@ public class SubmitAtomAndSubscribeEpic {
 			}
 
 			@Override
-			public void onError(AID atomId, Throwable e) {
-				if (e instanceof ParticleConflictException) {
-					ParticleConflictException particleConflictException = (ParticleConflictException) e;
-					ParticleConflict conflict = particleConflictException.getConflict();
-					JSONObject data = new JSONObject();
-					data.put("pointerToIssue", conflict.getDataPointer().toString());
-					data.put("message",
-							conflict.getAtomIds().stream().filter(a -> !a.equals(atomId)).findAny().map(Object::toString).orElse(null));
+			public void onConflict(ConflictException e) {
+				JSONObject data = new JSONObject();
+				data.put("pointerToIssue", e.getDataPointer().toString());
+				data.put("message", e.getConflictingAtom().toString());
 
-					sendAtomSubmissionState.accept(AtomSubmissionState.COLLISION, data);
-				} else if (e instanceof ValidationException) {
+				sendAtomSubmissionState.accept(AtomSubmissionState.COLLISION, data);
+			}
+
+			@Override
+			public void onError(AID atomId, Throwable e) {
+				if (e instanceof ValidationException) {
 					ValidationException validationException = (ValidationException) e;
 
 					String pointerToIssue = null;
