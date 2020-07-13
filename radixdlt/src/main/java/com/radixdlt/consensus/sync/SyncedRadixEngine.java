@@ -231,6 +231,10 @@ public final class SyncedRadixEngine implements SyncedStateComputer<CommittedAto
 	public void execute(CommittedAtom atom) {
 		// TODO: remove lock
 		synchronized (lock) {
+			if (atom.getVertexMetadata().getStateVersion() != 0
+				&& atom.getVertexMetadata().getStateVersion() <= committedAtomsStore.getStateVersion()) {
+				return;
+			}
 			// TODO: need to implement idempotency
 
 			// TODO: HACK
@@ -253,10 +257,7 @@ public final class SyncedRadixEngine implements SyncedStateComputer<CommittedAto
 			} else if (atom.getVertexMetadata().isEndOfEpoch()) {
 				// TODO: HACK
 				// TODO: Remove and move epoch change logic into RadixEngine
-				if (emptyCommittedAtoms.isEmpty()
-					|| emptyCommittedAtoms.getLast().getVertexMetadata().getStateVersion() != atom.getVertexMetadata().getStateVersion()) {
-					emptyCommittedAtoms.add(atom);
-				}
+				emptyCommittedAtoms.add(atom);
 			}
 
 			// TODO: Move outside of syncedRadixEngine to a more generic syncing layer
