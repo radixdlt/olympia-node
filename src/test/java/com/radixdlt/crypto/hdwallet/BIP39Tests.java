@@ -35,6 +35,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class BIP39Tests {
 
@@ -65,12 +66,70 @@ public class BIP39Tests {
 		invalids.forEach(this::assertInvalidMnemonic);
 	}
 
+	@Test
+	public void when_validating_a_valid_bip39_word_list_then_it_validates() {
+		assertTrue(DefaultMnemonicToSeedConverter.isValidMnemonic(Arrays.asList(
+				"zoo", "zoo", "zoo", "zoo", "zoo", "zoo", "zoo", "zoo", "zoo",
+				"zoo", "zoo", "zoo", "zoo", "zoo", "zoo", "zoo", "zoo", "when"
+		)));
+	}
+
+	@Test
+	public void when_validating_a_valid_bip39_word_list_then_it_does_not_throw_an_error() {
+		try {
+			DefaultMnemonicToSeedConverter.validateMnemonic(Arrays.asList(
+					"zoo", "zoo", "zoo", "zoo", "zoo", "zoo", "zoo", "zoo", "zoo",
+					"zoo", "zoo", "zoo", "zoo", "zoo", "zoo", "zoo", "zoo", "when"
+			));
+		} catch (MnemonicException e) {
+			fail("Expected to NOT throw any exceptions but got " + e);
+		}
+	}
+
+	@Test
+	public void when_using_mnemonic_list_or_string_without_passphrase_they_create_the_same_seed() throws MnemonicException {
+		assertEquals(
+		Bytes.toHexString(DefaultMnemonicToSeedConverter.seedFromMnemonic(
+				Arrays.asList(
+						"zoo", "zoo", "zoo", "zoo", "zoo", "zoo", "zoo", "zoo", "zoo",
+						"zoo", "zoo", "zoo", "zoo", "zoo", "zoo", "zoo", "zoo", "when"
+				)
+				)),
+				Bytes.toHexString(DefaultMnemonicToSeedConverter.seedFromMnemonicString(
+						"zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo when"
+				))
+		);
+	}
+
+	@Test
+	public void when_using_mnemonic_list_or_string_with_passphrase_they_create_the_same_seed() throws MnemonicException {
+		String passphrase = "Mamma mia, here I go again";
+		assertEquals(
+				Bytes.toHexString(DefaultMnemonicToSeedConverter.seedFromMnemonicAndPassphrase(
+						Arrays.asList(
+								"zoo", "zoo", "zoo", "zoo", "zoo", "zoo", "zoo", "zoo", "zoo",
+								"zoo", "zoo", "zoo", "zoo", "zoo", "zoo", "zoo", "zoo", "when"
+						),
+						passphrase
+				)),
+				Bytes.toHexString(DefaultMnemonicToSeedConverter.seedFromMnemonicStringAndPassphrase(
+						"zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo when",
+						passphrase
+				)
+			)
+		);
+	}
+
 	private List<String> invalidMnemonicStrings() {
 		//CHECKSTYLE:OFF
-		return Arrays.asList("abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon",
+		return Arrays.asList(
+				"",
+				"123",
+				"fjdaio;fjadisofhjdai;osfjdias;ofjdasoi;fjidsa",
+				"@#!$%^%&^*&()(*&^%fdasfdaslfhuas",
+				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon",
 				"legal winner thank year wave sausage worth useful legal winner thank yellow yellow",
 				"letter advice cage absurd amount doctor acoustic avoid letter advice caged above",
-				"zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo zoo, wrong",
 				"abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon",
 				"legal winner thank year wave sausage worth useful legal winner thank year wave sausage worth useful legal will will will",
 				"letter advice cage absurd amount doctor acoustic avoid letter advice cage absurd amount doctor acoustic avoid letter always.",
@@ -86,7 +145,10 @@ public class BIP39Tests {
 	}
 
 	private void assertInvalidMnemonic(String mnemonic) {
-		assertFalse(DefaultMnemonicToSeedConverter.isValidMnemonicString(mnemonic));
+		assertFalse(
+				String.format("Expecting mnemonic: <%s> to be invalid", mnemonic),
+				DefaultMnemonicToSeedConverter.isValidMnemonicString(mnemonic)
+		);
 	}
 
 	@Test

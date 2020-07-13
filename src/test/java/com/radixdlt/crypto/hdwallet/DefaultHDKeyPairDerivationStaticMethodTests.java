@@ -25,7 +25,7 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
-public class DefaultHDWalletConstructorTests {
+public class DefaultHDKeyPairDerivationStaticMethodTests {
 
 	static String mnemonicString = "equip will roof matter pink blind book anxiety banner elbow sun young";
 
