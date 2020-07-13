@@ -62,7 +62,7 @@ public final class BitcoinJHDKeyPairDerivation implements HDKeyPairDerivation {
 	}
 
 	public BitcoinJHDKeyPairDerivation(List<String> mnemonicWords) {
-		this(mnemonicWords, HDPath.BIP39_MNEMONIC_NO_PASSPHRASE);
+		this(mnemonicWords, HDPaths.BIP39_MNEMONIC_NO_PASSPHRASE);
 	}
 
 	public BitcoinJHDKeyPairDerivation(String mnemonicString, String passphrase) {
@@ -70,7 +70,7 @@ public final class BitcoinJHDKeyPairDerivation implements HDKeyPairDerivation {
 	}
 
 	public static BitcoinJHDKeyPairDerivation mnemonicNoPassphrase(String mnemonicString) {
-		return new BitcoinJHDKeyPairDerivation(mnemonicString, BIP32Path.BIP39_MNEMONIC_NO_PASSPHRASE);
+		return new BitcoinJHDKeyPairDerivation(mnemonicString, HDPaths.BIP39_MNEMONIC_NO_PASSPHRASE);
 	}
 
 	private static List<ChildNumber> pathListFromHDPath(HDPath path) {

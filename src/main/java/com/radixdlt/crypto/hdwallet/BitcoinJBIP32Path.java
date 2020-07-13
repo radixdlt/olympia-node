@@ -30,12 +30,9 @@ import java.util.stream.IntStream;
 /**
  * A BIP32 path wrapping underlying implementation using BitcoinJ.
  */
-class BitcoinJBIP32Path implements HDPath {
+final class BitcoinJBIP32Path implements HDPath {
 
 	private static final String BIP32_HARDENED_MARKER_BITCOINJ = "H";
-
-	private static final long hardenedOffset = 2147483648L;
-
 
 	private final org.bitcoinj.crypto.HDPath path;
 
@@ -52,11 +49,20 @@ class BitcoinJBIP32Path implements HDPath {
 	}
 
 	static BitcoinJBIP32Path fromString(String path) throws HDPathException {
-		if (!HDPath.validateBIP32Path(path)) {
+		if (!HDPaths.validateBIP32Path(path)) {
 			throw HDPathException.invalidString;
 		}
-		String stringPath = path.replace(BIP32_HARDENED_MARKER_STANDARD, BIP32_HARDENED_MARKER_BITCOINJ);
-		return new BitcoinJBIP32Path(org.bitcoinj.crypto.HDPath.parsePath(stringPath));
+		return new BitcoinJBIP32Path(org.bitcoinj.crypto.HDPath.parsePath(toBitcoinJPath(path)));
+	}
+
+	private static String toBitcoinJPath(String standardPath) {
+		// For some reason BitcoinJ chose to not use standard notation of hardened path components....
+		return standardPath.replace(HDPaths.BIP32_HARDENED_MARKER_STANDARD, BIP32_HARDENED_MARKER_BITCOINJ);
+	}
+
+	private static String standardizePath(String nonStandardPath) {
+		// For some reason BitcoinJ chose to not use standard notation of hardened path components....
+		return nonStandardPath.replace(BIP32_HARDENED_MARKER_BITCOINJ, HDPaths.BIP32_HARDENED_MARKER_STANDARD);
 	}
 
 	private int indexOfLastComponent() {
@@ -87,7 +93,7 @@ class BitcoinJBIP32Path implements HDPath {
 
 	@Override
 	public String toString() {
-		return path.toString().replace(BIP32_HARDENED_MARKER_BITCOINJ, BIP32_HARDENED_MARKER_STANDARD);
+		return standardizePath(path.toString());
 	}
 
 	@Override
@@ -101,7 +107,7 @@ class BitcoinJBIP32Path implements HDPath {
 		if (!isHardened()) {
 			return index;
 		}
-		index += hardenedOffset;
+		index += HDPaths.BIP32_HARDENED_VALUE_INCREMENT;
 		return index;
 	}
 

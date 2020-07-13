@@ -83,6 +83,9 @@ public class BIP32PathTests {
 		assert_invalid_path("m/44'/536' / 2' / 1/3");
 
 		assert_invalid_path("m/44H/0H");
+
+		assert_invalid_path("m/44'/9999999999999999999999");
+		assert_invalid_path("m/44'/-1");
 	}
 
 	@Test
@@ -101,11 +104,11 @@ public class BIP32PathTests {
 	}
 
 	private void assert_valid_path(String path) {
-		assertTrue(HDPath.validateBIP32Path(path));
+		assertTrue(HDPaths.validateBIP32Path(path));
 	}
 
 	private void assert_invalid_path(String path) {
-		assertFalse(HDPath.validateBIP32Path(path));
+		assertFalse(HDPaths.validateBIP32Path(path));
 		assert_throw_create_hdpath_from_string(path);
 	}
 

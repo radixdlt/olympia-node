@@ -28,7 +28,7 @@ public interface HDPath {
 	 * The string representation of the BIP32 path, using standard notation "'" for hardened components, e.g.
 	 * "m/44'/536'/2'/1/4
 	 * @return a string representation of the BIP32 path, using standard notation "'" for hardened components, e.g.
-	 * 	 * "m/44'/536'/2'/1/4
+	 * "m/44'/536'/2'/1/4
 	 */
 	String toString();
 
@@ -43,7 +43,7 @@ public interface HDPath {
 	 * Whether the last component in the path is "hardened" or not, if the last component is not hardened, it does not mean
 	 * that potentially earlier components are not hardened as well, i.e. this only looks at the <b>last</b> component.
 	 * @return whether the last component in the path is "hardened" or not, if the last component is not hardened, it does not mean
-	 * 	 * that potentially earlier components are not hardened as well, i.e. this only looks at the <b>last</b> component.
+	 * that potentially earlier components are not hardened as well, i.e. this only looks at the <b>last</b> component.
 	 */
 	boolean isHardened();
 
@@ -51,7 +51,7 @@ public interface HDPath {
 	 * The number of components in the path, `1` is the lowest possible value, and most commonly 5 is the max depth, even though BIP32
 	 * supports a longer depth. The depth of "m/0" is 1, the depth of "m/0'/1" is 2 etc.
 	 * @return number of components in the path, `1` is the lowest possible value, and most commonly 5 is the max depth, even though BIP32
-	 * 	 * supports a longer depth. The depth of "m/0" is 1, the depth of "m/0'/1" is 2 etc.
+	 * supports a longer depth. The depth of "m/0" is 1, the depth of "m/0'/1" is 2 etc.
 	 */
 	int depth();
 
@@ -60,60 +60,15 @@ public interface HDPath {
 	 * the index of the path "m/0/0'" - which is hardened - is 2147483648 (0 | HARDENED_BITMASK) - and the index of "m/0/1'" is 2147483649
 	 * (1 | HARDENED_BITMASK).
 	 * @return the value of the last component, taking into account if it is hardened or not, i.e. the index of the path "m/0/0" is 0, but
-	 * 	 * the index of the path "m/0/0'" - which is hardened - is 2147483648 (0 | HARDENED_BITMASK) - and the index of "m/0/1'" is 2147483649
-	 * 	 * (1 | HARDENED_BITMASK).
+	 * the index of the path "m/0/0'" - which is hardened - is 2147483648 (0 | HARDENED_BITMASK) - and the index of "m/0/1'" is 2147483649
+	 * (1 | HARDENED_BITMASK).
 	 */
 	long index();
 
+
+	/**
+	 * Returns the path to the subsequent child key key pair, e.g. identical to this path but with the value of {@code index() + 1}.
+	 * @return the path to the subsequent child key key pair, e.g. identical to this path but with the value of {@code index()} + 1.
+	 */
 	HDPath next();
-
-	String BIP39_MNEMONIC_NO_PASSPHRASE = "";
-	String BIP32_HARDENED_MARKER_STANDARD = "'";
-
-	String BIP32_PATH_SEPARATOR = "/";
-	String BIP32_PREFIX_PRIVATEKEY = "m";
-
-
-	static boolean validateBIP32Path(String path) {
-		return validateBIP32Path(path, BIP32_HARDENED_MARKER_STANDARD);
-	}
-
-	static boolean validateBIP32Path(String path, String hardenedMarker) {
-		// Check trivial paths
-		if (ImmutableList.of("", BIP32_PREFIX_PRIVATEKEY, BIP32_PATH_SEPARATOR).contains(path)) {
-			return true;
-		}
-		if (path.startsWith("M/") || path.startsWith("m/")) {
-			path = path.substring(2);
-		}
-
-		if (path.isEmpty()) {
-			return false;
-		}
-
-		if (path.contains("//")) {
-			return false;
-		}
-
-		for (String component : path.split(BIP32_PATH_SEPARATOR)) {
-			if (component.isEmpty()) {
-				return false;
-			}
-			if (component.endsWith(hardenedMarker)) {
-				component = component.replace(hardenedMarker, "");
-			}
-			boolean isNumber;
-			try {
-				Integers.parseInt(component);
-				isNumber = true;
-			} catch (Exception e) {
-				isNumber = false;
-			}
-			if (!isNumber) {
-				return false;
-			}
-		}
-
-		return true;
-	}
 }
