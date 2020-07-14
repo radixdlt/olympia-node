@@ -17,11 +17,13 @@
 
 package org.radix.api.services;
 
+import com.radixdlt.api.VirtualConflictException;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.api.ConflictException;
 
 public interface SingleAtomListener {
 	void onStored(boolean first);
 	void onConflict(ConflictException e);
+	void onVirtualConflict(VirtualConflictException e);
 	void onError(AID atomId, Throwable e);
 }

@@ -17,6 +17,7 @@
 
 package org.radix.api.jsonrpc;
 
+import com.radixdlt.api.VirtualConflictException;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.engine.AtomStatus;
 import com.radixdlt.engine.RadixEngineException;
@@ -34,7 +35,6 @@ import org.radix.api.observable.Disposable;
 import org.radix.api.services.AtomStatusListener;
 import org.radix.api.services.AtomsService;
 import org.radix.atoms.AtomDependencyNotFoundException;
-import org.radix.validation.ConstraintMachineValidationException;
 
 /**
  * Epic used to manage streaming status notifications regarding an atom.
@@ -119,6 +119,14 @@ public class AtomStatusEpic {
 			}
 
 			@Override
+			public void onVirtualConflict(VirtualConflictException e) {
+				JSONObject data = new JSONObject();
+				data.put("message", "Virtual State Conflict");
+				data.put("pointerToIssue", e.getDataPointer().toString());
+				sendAtomSubmissionState.accept(AtomStatus.EVICTED_FAILED_CM_VERIFICATION, data);
+			}
+
+			@Override
 			public void onError(Throwable e) {
 				if (e instanceof AtomConversionException) {
 					AtomConversionException conversionException = (AtomConversionException) e;
@@ -134,14 +142,6 @@ public class AtomStatusEpic {
 
 					JSONObject data = new JSONObject();
 					data.put("message", reException.getErrorCode().toString());
-					data.put("pointerToIssue", pointerToIssue);
-					sendAtomSubmissionState.accept(AtomStatus.EVICTED_FAILED_CM_VERIFICATION, data);
-				} else if (e instanceof ConstraintMachineValidationException) {
-					ConstraintMachineValidationException cmException = (ConstraintMachineValidationException) e;
-					String pointerToIssue = cmException.getPointerToIssue();
-
-					JSONObject data = new JSONObject();
-					data.put("message", e.getMessage());
 					data.put("pointerToIssue", pointerToIssue);
 					sendAtomSubmissionState.accept(AtomStatus.EVICTED_FAILED_CM_VERIFICATION, data);
 				} else if (e instanceof AtomDependencyNotFoundException) {

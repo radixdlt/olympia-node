@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.EpochChangeSender;
 import com.radixdlt.api.LedgerRx;
 import com.radixdlt.api.StoredAtom;
+import com.radixdlt.api.VirtualConflictException;
 import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.CommittedStateSyncRx;
 import com.radixdlt.consensus.EpochChange;
@@ -55,6 +56,7 @@ public final class InternalMessagePasser implements VertexStoreEventsRx, VertexS
 
 	private final Subject<StoredAtom> storedAtoms = BehaviorSubject.<StoredAtom>create().toSerialized();
 	private final Subject<ConflictException> conflictExceptions = BehaviorSubject.<ConflictException>create().toSerialized();
+	private final Subject<VirtualConflictException> virtualConflictExceptions = BehaviorSubject.<VirtualConflictException>create().toSerialized();
 
 	public InternalMessagePasser() {
 		this.localSyncs = localSyncsSubject.publish().refCount();
@@ -119,6 +121,16 @@ public final class InternalMessagePasser implements VertexStoreEventsRx, VertexS
 	@Override
 	public void sendConflictException(CommittedAtom committedAtom, DataPointer dp, AID conflictingAtom) {
 		conflictExceptions.onNext(new ConflictException(committedAtom, dp, conflictingAtom));
+	}
+
+	@Override
+	public void sendVirtualConflictException(CommittedAtom committedAtom, DataPointer dp) {
+		virtualConflictExceptions.onNext(new VirtualConflictException(committedAtom, dp));
+	}
+
+	@Override
+	public Observable<VirtualConflictException> virtualConflictExceptions() {
+		return virtualConflictExceptions;
 	}
 
 	@Override

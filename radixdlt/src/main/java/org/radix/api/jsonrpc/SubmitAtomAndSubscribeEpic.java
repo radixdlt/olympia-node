@@ -18,6 +18,7 @@
 package org.radix.api.jsonrpc;
 
 import com.radixdlt.api.ConflictException;
+import com.radixdlt.api.VirtualConflictException;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -31,7 +32,6 @@ import org.radix.api.services.AtomsService;
 import org.radix.api.services.SingleAtomListener;
 import org.radix.exceptions.AtomAlreadyStoredException;
 import org.radix.exceptions.ValidationException;
-import org.radix.validation.ConstraintMachineValidationException;
 
 /**
  * Epic responsible for translating an atom submission JSON RPC request to the response and resulting
@@ -103,22 +103,19 @@ public class SubmitAtomAndSubscribeEpic {
 			}
 
 			@Override
+			public void onVirtualConflict(VirtualConflictException e) {
+				JSONObject data = new JSONObject();
+				data.put("pointerToIssue", e.getDataPointer().toString());
+				data.put("message", "Virtual State Conflict");
+
+				sendAtomSubmissionState.accept(AtomSubmissionState.VALIDATION_ERROR, data);
+			}
+
+			@Override
 			public void onError(AID atomId, Throwable e) {
 				if (e instanceof ValidationException) {
-					ValidationException validationException = (ValidationException) e;
-
-					String pointerToIssue = null;
-					if (validationException instanceof ConstraintMachineValidationException) {
-						ConstraintMachineValidationException cmException = (ConstraintMachineValidationException) validationException;
-						pointerToIssue = cmException.getPointerToIssue();
-					}
-
 					JSONObject data = new JSONObject();
 					data.put("message", e.getMessage());
-
-					if (pointerToIssue != null) {
-						data.put("pointerToIssue", pointerToIssue);
-					}
 
 					sendAtomSubmissionState.accept(AtomSubmissionState.VALIDATION_ERROR, data);
 				} else if (e instanceof AtomAlreadyStoredException) {

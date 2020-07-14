@@ -24,7 +24,6 @@ import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.middleware2.ClientAtom;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.atommodel.message.MessageParticle;
 import com.radixdlt.atomos.RRIParticle;
@@ -32,7 +31,6 @@ import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.identifiers.RRI;
 import org.json.JSONObject;
 import org.radix.utils.IOUtils;
-import org.radix.validation.ConstraintMachineValidationException;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.utils.Offset;
 import com.radixdlt.crypto.ECKeyPair;
@@ -176,9 +174,8 @@ public final class GenerateUniverses {
 		}
 
 		if (!genesisAtom.verify(universeKey.getPublicKey())) {
-			throw new ConstraintMachineValidationException(clientAtom,
-				"Signature generation failed - GENESIS TRANSACTION HASH: " + genesisAtom.getHash().toString(),
-				DataPointer.ofAtom()
+			throw new IllegalStateException(
+				"Signature generation failed - GENESIS TRANSACTION HASH: " + genesisAtom.getHash().toString()
 			);
 		}
 

@@ -21,6 +21,7 @@ import com.google.common.collect.EvictingQueue;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.api.LedgerRx;
 import com.radixdlt.api.StoredAtom;
+import com.radixdlt.api.VirtualConflictException;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.api.ConflictException;
 import com.radixdlt.mempool.MempoolRejectedException;
@@ -167,6 +168,22 @@ public class AtomsService {
 		}
 	}
 
+	private void processVirtualConflict(VirtualConflictException e) {
+		synchronized (lock) {
+			eventRingBuffer.add(
+				System.currentTimeMillis() + " EXCEPTION " + e.getCommittedAtom().getAID() + " VIRTUAL_CONFLICT");
+		}
+
+		List<SingleAtomListener> subscribers = this.deleteOnEventSingleAtomObservers.remove(e.getCommittedAtom().getAID());
+		if (subscribers != null) {
+			subscribers.forEach(subscriber -> subscriber.onVirtualConflict(e));
+		}
+
+		for (AtomStatusListener singleAtomListener : this.singleAtomObservers.getOrDefault(e.getCommittedAtom().getAID(), Collections.emptyList())) {
+			singleAtomListener.onVirtualConflict(e);
+		}
+	}
+
 	public void start() {
 		io.reactivex.rxjava3.disposables.Disposable lastStoredAtomDisposable = ledgerRx.storedAtoms()
 			.observeOn(Schedulers.io())
@@ -174,11 +191,16 @@ public class AtomsService {
 
 		this.disposable.add(lastStoredAtomDisposable);
 
-		io.reactivex.rxjava3.disposables.Disposable exceptionsDisposable = ledgerRx.conflictExceptions()
+		io.reactivex.rxjava3.disposables.Disposable conflictsDisposable = ledgerRx.conflictExceptions()
 			.observeOn(Schedulers.io())
 			.subscribe(this::processConflict);
+		this.disposable.add(conflictsDisposable);
 
-		this.disposable.addAll(exceptionsDisposable);
+		io.reactivex.rxjava3.disposables.Disposable virtualConflictsDisposable = ledgerRx.virtualConflictExceptions()
+			.observeOn(Schedulers.io())
+			.subscribe(this::processVirtualConflict);
+		this.disposable.add(virtualConflictsDisposable);
+
 	}
 
 	public void stop() {

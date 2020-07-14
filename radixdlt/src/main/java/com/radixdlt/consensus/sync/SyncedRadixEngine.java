@@ -55,7 +55,6 @@ import org.apache.logging.log4j.Logger;
 import org.radix.atoms.AtomDependencyNotFoundException;
 import org.radix.atoms.events.AtomExceptionEvent;
 import org.radix.events.Events;
-import org.radix.validation.ConstraintMachineValidationException;
 
 /**
  * A service which synchronizes the radix engine committed state between peers.
@@ -66,6 +65,7 @@ public final class SyncedRadixEngine implements SyncedStateComputer<CommittedAto
 	public interface SyncedRadixEngineEventSender {
 		void sendStored(CommittedAtom committedAtom, ImmutableSet<EUID> indicies);
 		void sendConflictException(CommittedAtom committedAtom, DataPointer dp, AID conflictingAtom);
+		void sendVirtualConflictException(CommittedAtom committedAtom, DataPointer dp);
 	}
 
 	public interface CommittedStateSyncSender {
@@ -210,9 +210,7 @@ public final class SyncedRadixEngine implements SyncedStateComputer<CommittedAto
 
 		// TODO: move VIRTUAL_STATE_CONFLICT to static check
 		if (e.getErrorCode() == RadixEngineErrorCode.VIRTUAL_STATE_CONFLICT) {
-			ConstraintMachineValidationException exception
-				= new ConstraintMachineValidationException(atom.getClientAtom(), "Virtual state conflict", e.getDataPointer());
-			Events.getInstance().broadcast(new AtomExceptionEvent(exception, atom.getAID()));
+			engineEventSender.sendVirtualConflictException(atom, e.getDataPointer());
 		} else if (e.getErrorCode() == RadixEngineErrorCode.STATE_CONFLICT) {
 			engineEventSender.sendConflictException(atom, e.getDataPointer(), e.getRelated().getAID());
 		} else if (e.getErrorCode() == RadixEngineErrorCode.MISSING_DEPENDENCY) {

@@ -23,6 +23,13 @@ import io.reactivex.rxjava3.core.Observable;
  * Events related to the ledger
  */
 public interface LedgerRx {
+	/**
+	 * Retrieve a never ending stream of virtual
+	 * conflict exceptions
+	 *
+	 * @return hot observable of virtual conflict exceptions
+	 */
+	Observable<VirtualConflictException> virtualConflictExceptions();
 
 	/**
 	 * Retrieve a never ending stream of conflict

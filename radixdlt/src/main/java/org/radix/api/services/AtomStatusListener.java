@@ -18,6 +18,7 @@
 package org.radix.api.services;
 
 import com.radixdlt.api.ConflictException;
+import com.radixdlt.api.VirtualConflictException;
 import com.radixdlt.middleware2.CommittedAtom;
 
 /**
@@ -27,5 +28,6 @@ import com.radixdlt.middleware2.CommittedAtom;
 public interface AtomStatusListener {
 	void onStored(CommittedAtom committedAtom);
 	void onConflict(ConflictException e);
+	void onVirtualConflict(VirtualConflictException e);
 	void onError(Throwable e);
 }
