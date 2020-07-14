@@ -42,6 +42,12 @@ repositories {
     mavenCentral()
 }
 
+allprojects {
+    repositories {
+        maven { url 'https://jitpack.io' }
+    }
+}
+
 checkstyle {
     toolVersion '8.10.1'
     showViolations = true
@@ -77,8 +83,11 @@ dependencies {
 
     api 'com.google.code.gson:gson:2.8.2'
 
+
+
     api 'org.bouncycastle:bcprov-jdk15to18:1.64'
     api 'org.bouncycastle:bcpkix-jdk15to18:1.64'
+
     api 'org.json:json:20180813'
     api 'com.fasterxml.jackson.core:jackson-core:2.9.9'
     api 'com.fasterxml.jackson.core:jackson-databind:2.9.9'
@@ -93,6 +102,15 @@ dependencies {
     }
     api 'com.google.guava:guava:27.1-jre'
 
+    // need at least this commit (or later): https://github.com/bitcoinj/bitcoinj/commit/7629677103dbdd80f14c63b066ed27e1fad47014
+    // in order to work with BouncyCastle 1.64 or later
+    // see issue: https://github.com/bitcoinj/bitcoinj/issues/1951
+    implementation('com.github.bitcoinj:bitcoinj:7c31dcb') {
+        // Use our Guava lib
+        exclude group: 'com.google.guava', module: 'guava'
+    }
+
+
     testCompile group: 'junit', name: 'junit', version: '4.12'
     testCompile('org.objenesis:objenesis:2.4') { force = true } // make powermock 1.7.1 happy
     testCompile('org.javassist:javassist:3.21.0-GA') { force = true } // make powermock 1.7.1 happy
@@ -105,4 +123,6 @@ dependencies {
         exclude group: 'com.fasterxml.jackson.core', module: 'jackson-core'
         exclude group: 'com.fasterxml.jackson.core', module: 'jackson-databind'
     }
+
+    testCompile group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl', version: '2.13.3'
 }

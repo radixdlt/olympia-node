@@ -23,15 +23,15 @@ public class CryptoException extends Exception {
 		super();
 	}
 
-	public CryptoException(Throwable arg0) {
-		super(arg0);
+	public CryptoException(Throwable throwable) {
+		super(throwable);
 	}
 
-	public CryptoException(String arg0) {
-		super(arg0);
+	public CryptoException(String errorMessage) {
+		super(errorMessage);
 	}
 
-	public CryptoException(String arg0, Throwable arg1) {
-		super(arg0, arg1);
+	public CryptoException(String errorMessage, Throwable throwable) {
+		super(errorMessage, throwable);
 	}
 }
