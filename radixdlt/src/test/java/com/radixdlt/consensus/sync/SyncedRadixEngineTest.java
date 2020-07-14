@@ -148,7 +148,7 @@ public class SyncedRadixEngineTest {
 		verify(radixEngine, times(1)).checkAndStore(eq(committedAtom));
 		verify(committedAtomsStore, times(1)).storeVertexMetadata(eq(vertexMetadata));
 		verify(mempool, times(1)).removeCommittedAtom(aid);
-		verify(eventSender, times(1)).sendStoredException(eq(committedAtom), eq(e));
+		verify(eventSender, times(1)).sendStoredFailure(eq(committedAtom), eq(e));
 	}
 
 	@Test

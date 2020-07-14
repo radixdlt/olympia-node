@@ -33,7 +33,7 @@ import com.radixdlt.consensus.sync.SyncedRadixEngine.CommittedStateSyncSender;
 import com.radixdlt.consensus.sync.SyncedRadixEngine.SyncedRadixEngineEventSender;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.api.StoredException;
+import com.radixdlt.api.StoredFailure;
 import com.radixdlt.identifiers.EUID;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
@@ -53,7 +53,7 @@ public final class InternalMessagePasser implements VertexStoreEventsRx, VertexS
 	private final Subject<QuorumCertificate> highQCs = BehaviorSubject.<QuorumCertificate>create().toSerialized();
 
 	private final Subject<StoredAtom> storedAtoms = BehaviorSubject.<StoredAtom>create().toSerialized();
-	private final Subject<StoredException> storedExceptions = BehaviorSubject.<StoredException>create().toSerialized();
+	private final Subject<StoredFailure> storedExceptions = BehaviorSubject.<StoredFailure>create().toSerialized();
 
 	public InternalMessagePasser() {
 		this.localSyncs = localSyncsSubject.publish().refCount();
@@ -121,12 +121,12 @@ public final class InternalMessagePasser implements VertexStoreEventsRx, VertexS
 	}
 
 	@Override
-	public void sendStoredException(CommittedAtom committedAtom, RadixEngineException e) {
-		storedExceptions.onNext(new StoredException(committedAtom, e));
+	public void sendStoredFailure(CommittedAtom committedAtom, RadixEngineException e) {
+		storedExceptions.onNext(new StoredFailure(committedAtom, e));
 	}
 
 	@Override
-	public Observable<StoredException> storedExceptions() {
+	public Observable<StoredFailure> storedExceptions() {
 		return storedExceptions;
 	}
 }

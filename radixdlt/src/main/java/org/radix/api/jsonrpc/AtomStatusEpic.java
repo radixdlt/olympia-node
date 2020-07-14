@@ -20,7 +20,7 @@ package org.radix.api.jsonrpc;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.engine.AtomStatus;
 import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.api.StoredException;
+import com.radixdlt.api.StoredFailure;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.identifiers.AID;
@@ -102,7 +102,7 @@ public class AtomStatusEpic {
 			}
 
 			@Override
-			public void onStoredException(StoredException e) {
+			public void onStoredFailure(StoredFailure e) {
 				final RadixEngineException exception = e.getException();
 
 				JSONObject data = new JSONObject();

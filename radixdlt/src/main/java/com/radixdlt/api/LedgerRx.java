@@ -36,5 +36,5 @@ public interface LedgerRx {
 	 *
 	 * @return hot observable of conflict exceptions
 	 */
-	Observable<StoredException> storedExceptions();
+	Observable<StoredFailure> storedExceptions();
 }

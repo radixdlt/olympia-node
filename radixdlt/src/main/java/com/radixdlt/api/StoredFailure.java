@@ -24,11 +24,11 @@ import java.util.Objects;
 /**
  * A ledger conflict event
  */
-public final class StoredException {
+public final class StoredFailure {
 	private final CommittedAtom committedAtom;
 	private final RadixEngineException exception;
 
-	public StoredException(CommittedAtom committedAtom, RadixEngineException exception) {
+	public StoredFailure(CommittedAtom committedAtom, RadixEngineException exception) {
 		this.committedAtom = Objects.requireNonNull(committedAtom);
 		this.exception = Objects.requireNonNull(exception);
 	}

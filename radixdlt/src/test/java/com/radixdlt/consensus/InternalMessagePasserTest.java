@@ -22,7 +22,7 @@ import static org.powermock.api.mockito.PowerMockito.when;
 
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.api.StoredAtom;
-import com.radixdlt.api.StoredException;
+import com.radixdlt.api.StoredFailure;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.middleware2.CommittedAtom;
@@ -103,10 +103,10 @@ public class InternalMessagePasserTest {
 	@Test
 	public void when_send_stored_exception_event__then_should_receive_it() {
 		InternalMessagePasser internalMessagePasser = new InternalMessagePasser();
-		TestObserver<StoredException> testObserver = internalMessagePasser.storedExceptions().test();
+		TestObserver<StoredFailure> testObserver = internalMessagePasser.storedExceptions().test();
 		CommittedAtom committedAtom = mock(CommittedAtom.class);
 		RadixEngineException e = mock(RadixEngineException.class);
-		internalMessagePasser.sendStoredException(committedAtom, e);
+		internalMessagePasser.sendStoredFailure(committedAtom, e);
 		testObserver.awaitCount(1);
 		testObserver.assertValueAt(0, s -> s.getAtom().equals(committedAtom) && s.getException().equals(e));
 		testObserver.assertNotComplete();

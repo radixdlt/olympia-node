@@ -22,7 +22,7 @@ import com.radixdlt.DefaultSerialization;
 import com.radixdlt.api.LedgerRx;
 import com.radixdlt.api.StoredAtom;
 import com.radixdlt.atommodel.Atom;
-import com.radixdlt.api.StoredException;
+import com.radixdlt.api.StoredFailure;
 import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.mempool.SubmissionControl;
 
@@ -151,7 +151,7 @@ public class AtomsService {
 		}
 	}
 
-	private void processException(StoredException e) {
+	private void processException(StoredFailure e) {
 		synchronized (lock) {
 			eventRingBuffer.add(
 				System.currentTimeMillis() + " EXCEPTION " + e.getAtom().getAID() + " " + e.getException().getErrorCode());
@@ -159,11 +159,11 @@ public class AtomsService {
 
 		List<SingleAtomListener> subscribers = this.deleteOnEventSingleAtomObservers.remove(e.getAtom().getAID());
 		if (subscribers != null) {
-			subscribers.forEach(subscriber -> subscriber.onStoredException(e));
+			subscribers.forEach(subscriber -> subscriber.onStoredFailure(e));
 		}
 
 		for (AtomStatusListener singleAtomListener : this.singleAtomObservers.getOrDefault(e.getAtom().getAID(), Collections.emptyList())) {
-			singleAtomListener.onStoredException(e);
+			singleAtomListener.onStoredFailure(e);
 		}
 	}
 

@@ -58,7 +58,7 @@ import org.apache.logging.log4j.Logger;
 public final class SyncedRadixEngine implements SyncedStateComputer<CommittedAtom> {
 	public interface SyncedRadixEngineEventSender {
 		void sendStored(CommittedAtom committedAtom, ImmutableSet<EUID> indicies);
-		void sendStoredException(CommittedAtom committedAtom, RadixEngineException e);
+		void sendStoredFailure(CommittedAtom committedAtom, RadixEngineException e);
 	}
 
 	public interface CommittedStateSyncSender {
@@ -202,7 +202,7 @@ public final class SyncedRadixEngine implements SyncedStateComputer<CommittedAto
 		// TODO: Reinstate this when ProposalGenerator + Mempool can guarantee correct proposals
 
 		// TODO: move VIRTUAL_STATE_CONFLICT to static check
-		engineEventSender.sendStoredException(atom, e);
+		engineEventSender.sendStoredFailure(atom, e);
 	}
 
 	/**

@@ -18,10 +18,10 @@
 package org.radix.api.services;
 
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.api.StoredException;
+import com.radixdlt.api.StoredFailure;
 
 public interface SingleAtomListener {
 	void onStored(boolean first);
-	void onStoredException(StoredException e);
+	void onStoredFailure(StoredFailure e);
 	void onError(AID atomId, Throwable e);
 }

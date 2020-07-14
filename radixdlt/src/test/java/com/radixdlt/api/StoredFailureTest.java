@@ -26,22 +26,22 @@ import com.radixdlt.middleware2.CommittedAtom;
 import org.junit.Before;
 import org.junit.Test;
 
-public class StoredExceptionTest {
+public class StoredFailureTest {
 	private CommittedAtom committedAtom;
 	private RadixEngineException exception;
-	private StoredException storedException;
+	private StoredFailure storedFailure;
 
 	@Before
 	public void setUp() {
 		this.committedAtom = mock(CommittedAtom.class);
 		this.exception = mock(RadixEngineException.class);
-		this.storedException = new StoredException(committedAtom, exception);
+		this.storedFailure = new StoredFailure(committedAtom, exception);
 	}
 
 	@Test
 	public void testGetters() {
-		assertEquals(this.committedAtom, this.storedException.getAtom());
-		assertEquals(this.exception, this.storedException.getException());
+		assertEquals(this.committedAtom, this.storedFailure.getAtom());
+		assertEquals(this.exception, this.storedFailure.getException());
 	}
 
 
