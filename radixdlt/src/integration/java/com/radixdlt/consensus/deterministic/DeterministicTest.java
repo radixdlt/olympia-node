@@ -54,6 +54,7 @@ import java.util.stream.Stream;
  * is emitted and processed synchronously by the caller.
  */
 public final class DeterministicTest {
+	private static final String LOST_RESPONSIVENESS = "No messages available (Lost Responsiveness)";
 	private final ImmutableList<ControlledNode> nodes;
 	private final ImmutableList<ECPublicKey> pks;
 	private final ControlledNetwork network;
@@ -155,6 +156,10 @@ public final class DeterministicTest {
 		nodes.forEach(ControlledNode::start);
 	}
 
+	public SystemCounters getSystemCounters(int nodeIndex) {
+		return nodes.get(nodeIndex).getSystemCounters();
+	}
+
 	public void processNextMsg(int toIndex, int fromIndex, Class<?> expectedClass) {
 		ChannelId channelId = new ChannelId(pks.get(fromIndex), pks.get(toIndex));
 		Object msg = network.popNextMessage(channelId);
@@ -162,29 +167,21 @@ public final class DeterministicTest {
 		nodes.get(toIndex).processNext(msg);
 	}
 
+	// TODO: This collection of interfaces will need a rethink once we have
+	// more complicated adversaries that need access to the whole message queue.
+
 	public void processNextMsg(Random random) {
 		processNextMsgWithReceiver(random, (c, m) -> true);
 	}
 
 	public void processNextMsg(Random random, Predicate<Object> filter) {
-		List<ControlledMessage> possibleMsgs = network.peekNextMessages();
-		if (possibleMsgs.isEmpty()) {
-			throw new IllegalStateException("No messages available (Lost Responsiveness)");
-		}
-
-		int nextIndex =  random.nextInt(possibleMsgs.size());
-		ChannelId channelId = possibleMsgs.get(nextIndex).getChannelId();
-		Object msg = network.popNextMessage(channelId);
-		int receiverIndex = pks.indexOf(channelId.getReceiver());
-		if (filter.test(msg)) {
-			nodes.get(receiverIndex).processNext(msg);
-		}
+		processNextMsgWithReceiver(random, (receiverIndex, msg) -> filter.test(msg));
 	}
 
 	public void processNextMsgWithReceiver(Random random, BiPredicate<Integer, Object> filter) {
 		List<ControlledMessage> possibleMsgs = network.peekNextMessages();
 		if (possibleMsgs.isEmpty()) {
-			throw new IllegalStateException("No messages available (Lost Responsiveness)");
+			throw new IllegalStateException(LOST_RESPONSIVENESS);
 		}
 
 		int nextIndex =  random.nextInt(possibleMsgs.size());
@@ -199,7 +196,7 @@ public final class DeterministicTest {
 	public void processNextMsgWithSenderAndReceiver(Random random, TriPredicate<Integer, Integer, Object> filter) {
 		List<ControlledMessage> possibleMsgs = network.peekNextMessages();
 		if (possibleMsgs.isEmpty()) {
-			throw new IllegalStateException("No messages available (Lost Responsiveness)");
+			throw new IllegalStateException(LOST_RESPONSIVENESS);
 		}
 
 		int nextIndex =  random.nextInt(possibleMsgs.size());
@@ -210,9 +207,5 @@ public final class DeterministicTest {
 		if (filter.test(senderIndex, receiverIndex, msg)) {
 			nodes.get(receiverIndex).processNext(msg);
 		}
-	}
-
-	public SystemCounters getSystemCounters(int nodeIndex) {
-		return nodes.get(nodeIndex).getSystemCounters();
 	}
 }
