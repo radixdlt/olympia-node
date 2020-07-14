@@ -29,6 +29,8 @@ import com.radixdlt.consensus.EpochManager;
 import com.radixdlt.consensus.EpochChangeRx;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.InternalMessagePasser;
+import com.radixdlt.consensus.HashSigner;
+import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.bft.VertexStore;
@@ -37,13 +39,15 @@ import com.radixdlt.consensus.VertexStoreFactory;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
 import com.radixdlt.consensus.liveness.MempoolProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
-import com.radixdlt.consensus.liveness.ScheduledTimeoutSender;
+import com.radixdlt.consensus.liveness.ScheduledLocalTimeoutSender;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
+import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.Hash;
 import com.radixdlt.mempool.EmptyMempool;
 import com.radixdlt.mempool.Mempool;
 
@@ -105,9 +109,12 @@ public class SimulationNodes {
 
 	private ConsensusRunner createBFTInstance(ECKeyPair key) {
 		final Mempool mempool = new EmptyMempool();
-		final Hasher hasher = new DefaultHasher();
+		final Hasher nullHasher = o -> Hash.ZERO_HASH;
+		final Hasher defaultHasher = new DefaultHasher();
+		final HashSigner nullSigner = (k, h) -> new ECDSASignature();
+		final HashVerifier nullVerifier = (p, h, s) -> true;
 		final ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(daemonThreads("TimeoutSender"));
-		final ScheduledTimeoutSender timeoutSender = new ScheduledTimeoutSender(scheduledExecutorService);
+		final ScheduledLocalTimeoutSender timeoutSender = new ScheduledLocalTimeoutSender(scheduledExecutorService);
 		final SimulationSyncSender syncSender = underlyingNetwork.getSyncSender(key.getPublicKey());
 
 		final VertexStoreFactory vertexStoreFactory = (v, qc, stateComputer) ->
@@ -124,8 +131,8 @@ public class SimulationNodes {
 		BFTFactory bftFactory =
 			(endOfEpochSender, pacemaker, vertexStore, proposerElection, validatorSet) -> {
 				final ProposalGenerator proposalGenerator = new MempoolProposalGenerator(vertexStore, mempool);
-				final SafetyRules safetyRules = new SafetyRules(key, SafetyState.initialState(), hasher);
-				final PendingVotes pendingVotes = new PendingVotes(hasher);
+				final SafetyRules safetyRules = new SafetyRules(key, SafetyState.initialState(), nullHasher, nullSigner);
+				final PendingVotes pendingVotes = new PendingVotes(defaultHasher, nullVerifier);
 
 				return new BFTEventReducer(
 					proposalGenerator,
@@ -138,6 +145,7 @@ public class SimulationNodes {
 					pendingVotes,
 					proposerElection,
 					key,
+					nullSigner,
 					validatorSet,
 					counters.get(key)
 				);
@@ -150,7 +158,7 @@ public class SimulationNodes {
 			stateComputer,
 			syncSender,
 			timeoutSender,
-			timeoutSender1 -> new FixedTimeoutPacemaker(this.pacemakerTimeout, timeoutSender1),
+			timeoutSender1 -> new FixedTimeoutPacemaker(this.pacemakerTimeout, timeoutSender1, nullVerifier),
 			vertexStoreFactory,
 			proposers -> new WeightedRotatingLeaders(proposers, Comparator.comparing(v -> v.nodeKey().euid()), 5),
 			bftFactory,

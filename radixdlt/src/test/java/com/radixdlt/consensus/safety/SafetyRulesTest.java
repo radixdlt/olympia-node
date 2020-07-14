@@ -50,7 +50,7 @@ public class SafetyRulesTest {
 	@Before
 	public void setup() {
 		this.safetyState = mock(SafetyState.class);
-		this.safetyRules = new SafetyRules(ECKeyPair.generateNew(), safetyState, new DefaultHasher());
+		this.safetyRules = new SafetyRules(ECKeyPair.generateNew(), safetyState, new DefaultHasher(), ECKeyPair::sign);
 	}
 
 	@Test

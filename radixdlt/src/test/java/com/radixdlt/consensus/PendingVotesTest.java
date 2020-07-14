@@ -50,7 +50,7 @@ public class PendingVotesTest {
 	public void setup() {
 		this.hasher = mock(Hasher.class);
 		when(hasher.hash(any())).thenReturn(Hash.random());
-		this.pendingVotes = new PendingVotes(hasher);
+		this.pendingVotes = new PendingVotes(hasher, ECPublicKey::verify);
 	}
 
 	@Test

@@ -60,8 +60,10 @@ public class PersistedProperties {
 			// No need to immediately save, we just loaded them
 			log.info("Loaded properties from {}", file);
 			loaded = true;
+		} catch (FileNotFoundException ex) {
+			log.info("Can not open properties file {}, using default", file);
 		} catch (IOException ex) {
-			log.error("Can not open properties file {}" + file + ", using default", ex);
+			log.error(String.format("Can not open properties file %s, using default", file), ex);
 		}
 
 		// Try in resource if not loaded
@@ -75,9 +77,12 @@ public class PersistedProperties {
 				// Save to file, so they can be edited later
 				save(filename);
 				log.info("Saved default properties in {}", file);
+			} catch (FileNotFoundException ex) {
+				log.error("Can not find properties file {}", file);
+				throw new ParseException("Can not find properties file " + file);
 			} catch (IOException ex) {
-				log.fatal("Can not load default properties for " + file, ex);
-				throw new ParseException("Can not load properties file, fatal!");
+				log.error(String.format("Can not load default properties for %s", file), ex);
+				throw new ParseException(String.format("Can not load properties file '%s' (%s)", file, ex.getMessage()));
 			}
 		}
 	}

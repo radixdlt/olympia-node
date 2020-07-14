@@ -54,14 +54,17 @@ public class FixedTimeoutPacemakerTest {
 	public void setUp() {
 		this.timeout = 100;
 		this.timeoutSender = mock(FixedTimeoutPacemaker.TimeoutSender.class);
-		this.pacemaker = new FixedTimeoutPacemaker(timeout, this.timeoutSender);
+		this.pacemaker = new FixedTimeoutPacemaker(timeout, this.timeoutSender, ECPublicKey::verify);
 	}
 
 	@Test
 	public void when_creating_pacemaker_with_invalid_timeout__then_exception_is_thrown() {
-		assertThatThrownBy(() -> new FixedTimeoutPacemaker(0, mock(FixedTimeoutPacemaker.TimeoutSender.class)));
-		assertThatThrownBy(() -> new FixedTimeoutPacemaker(-1, mock(FixedTimeoutPacemaker.TimeoutSender.class)));
-		assertThatThrownBy(() -> new FixedTimeoutPacemaker(-100, mock(FixedTimeoutPacemaker.TimeoutSender.class)));
+		assertThatThrownBy(() -> new FixedTimeoutPacemaker(0, mock(FixedTimeoutPacemaker.TimeoutSender.class), ECPublicKey::verify))
+			.isInstanceOf(IllegalArgumentException.class);
+		assertThatThrownBy(() -> new FixedTimeoutPacemaker(-1, mock(FixedTimeoutPacemaker.TimeoutSender.class), ECPublicKey::verify))
+			.isInstanceOf(IllegalArgumentException.class);
+		assertThatThrownBy(() -> new FixedTimeoutPacemaker(-100, mock(FixedTimeoutPacemaker.TimeoutSender.class), ECPublicKey::verify))
+			.isInstanceOf(IllegalArgumentException.class);
 	}
 
 	@Test
@@ -115,8 +118,10 @@ public class FixedTimeoutPacemakerTest {
 		when(newViewWithoutSignature.getQC()).thenReturn(qc);
 		when(newViewWithoutSignature.getView()).thenReturn(View.of(2L));
 		when(newViewWithoutSignature.getSignature()).thenReturn(Optional.empty());
+		ValidatorSet validatorSet = mock(ValidatorSet.class);
+		when(validatorSet.containsKey(any())).thenReturn(true);
 
-		assertThatThrownBy(() -> pacemaker.processNewView(newViewWithoutSignature, mock(ValidatorSet.class)))
+		assertThatThrownBy(() -> pacemaker.processNewView(newViewWithoutSignature, validatorSet))
 			.isInstanceOf(IllegalArgumentException.class);
 	}
 

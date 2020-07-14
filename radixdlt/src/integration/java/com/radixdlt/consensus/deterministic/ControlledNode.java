@@ -17,8 +17,6 @@
 
 package com.radixdlt.consensus.deterministic;
 
-import static org.mockito.Mockito.mock;
-
 import com.radixdlt.consensus.BFTEventReducer;
 import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.CommittedStateSync;
@@ -35,6 +33,8 @@ import com.radixdlt.consensus.ProposerElectionFactory;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.Hasher;
+import com.radixdlt.consensus.HashSigner;
+import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.SyncVerticesRPCSender;
@@ -42,14 +42,15 @@ import com.radixdlt.consensus.VertexStoreFactory;
 import com.radixdlt.consensus.deterministic.ControlledNetwork.ControlledSender;
 import com.radixdlt.consensus.deterministic.configuration.UnsupportedSyncVerticesRPCSender;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
+import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.consensus.liveness.MempoolProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
-import com.radixdlt.consensus.liveness.ScheduledTimeoutSender;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
+import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.mempool.EmptyMempool;
@@ -67,30 +68,42 @@ class ControlledNode {
 	private final ValidatorSet initialValidatorSet;
 	private final ControlledSender controlledSender;
 
+	public enum SyncAndTimeout {
+		NONE,
+		SYNC,
+		SYNC_AND_TIMEOUT
+	}
+
 	ControlledNode(
 		String name,
 		ECKeyPair key,
 		ControlledSender sender,
 		ProposerElectionFactory proposerElectionFactory,
 		ValidatorSet initialValidatorSet,
-		boolean enableGetVerticesRPC,
+		SyncAndTimeout syncAndTimeout,
 		SyncedStateComputer<CommittedAtom> stateComputer
 	) {
 		this.systemCounters = new SystemCountersImpl();
 		this.controlledSender = Objects.requireNonNull(sender);
 		this.initialValidatorSet = Objects.requireNonNull(initialValidatorSet);
 
-
-		SyncVerticesRPCSender syncVerticesRPCSender = enableGetVerticesRPC ? sender : UnsupportedSyncVerticesRPCSender.INSTANCE;
+		SyncVerticesRPCSender syncVerticesRPCSender = (syncAndTimeout != SyncAndTimeout.NONE)
+			? sender
+			: UnsupportedSyncVerticesRPCSender.INSTANCE;
+		LocalTimeoutSender localTimeoutSender = (syncAndTimeout == SyncAndTimeout.SYNC_AND_TIMEOUT) ? sender : (v, t) -> { };
 		Mempool mempool = new EmptyMempool();
-		Hasher hasher = new DefaultHasher();
+		Hasher nullHasher = data -> Hash.ZERO_HASH;
+		Hasher defaultHasher = new DefaultHasher();
+		HashSigner nullSigner = (k, h) -> new ECDSASignature();
+		HashVerifier nullVerifier = (p, h, s) -> true;
 		VertexStoreFactory vertexStoreFactory = (vertex, qc, syncedStateComputer) ->
 			new VertexStore(vertex, qc, syncedStateComputer, syncVerticesRPCSender, sender, systemCounters);
 		BFTFactory bftFactory =
 			(endOfEpochSender, pacemaker, vertexStore, proposerElection, validatorSet) -> {
 				final ProposalGenerator proposalGenerator = new MempoolProposalGenerator(vertexStore, mempool);
-				final SafetyRules safetyRules = new SafetyRules(key, SafetyState.initialState(), hasher);
-				final PendingVotes pendingVotes = new PendingVotes(hasher);
+				final SafetyRules safetyRules = new SafetyRules(key, SafetyState.initialState(), nullHasher, nullSigner);
+				// PendingVotes needs a hasher that produces unique values, as it indexes by hash
+				final PendingVotes pendingVotes = new PendingVotes(defaultHasher, nullVerifier);
 
 				return new BFTEventReducer(
 					proposalGenerator,
@@ -103,6 +116,7 @@ class ControlledNode {
 					pendingVotes,
 					proposerElection,
 					key,
+					nullSigner,
 					validatorSet,
 					systemCounters
 				);
@@ -112,8 +126,8 @@ class ControlledNode {
 			name,
 			stateComputer,
 			EmptySyncEpochsRPCSender.INSTANCE,
-			mock(ScheduledTimeoutSender.class),
-			timeoutSender -> new FixedTimeoutPacemaker(1, timeoutSender),
+			localTimeoutSender,
+			timeoutSender -> new FixedTimeoutPacemaker(1, timeoutSender, nullVerifier),
 			vertexStoreFactory,
 			proposerElectionFactory,
 			bftFactory,

@@ -85,7 +85,7 @@ public class RandomValidatorsTest {
 			.epochToNodesMapper(badRandomEpochToNodesMapper())
 			.build();
 		Map<String, Optional<TestInvariantError>> results = bftTest.run(1, TimeUnit.MINUTES);
-		assertThat(results).hasValueSatisfying(new Condition<Optional>(Optional::isPresent, "Has error"));
+		assertThat(results).hasValueSatisfying(new Condition<>(Optional::isPresent, "Has error"));
 	}
 
 }

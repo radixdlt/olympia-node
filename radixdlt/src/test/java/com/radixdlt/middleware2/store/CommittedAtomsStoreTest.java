@@ -54,7 +54,7 @@ public class CommittedAtomsStoreTest {
 
 	@Before
 	public void setUp() {
-		this.store = mock(LedgerEntryStore.class, withSettings().verboseLogging());
+		this.store = mock(LedgerEntryStore.class);
 		this.atomToBinaryConverter = mock(AtomToBinaryConverter.class);
 		this.atomIndexer = mock(AtomIndexer.class);
 		this.counters = mock(SystemCounters.class);

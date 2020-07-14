@@ -29,7 +29,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 import org.assertj.core.api.AssertionsForClassTypes;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class MovingWindowValidatorsTest {
@@ -44,7 +43,6 @@ public class MovingWindowValidatorsTest {
 	}
 
 	@Test
-	@Ignore("Ignore until Travis issue resolved")
 	public void given_correct_1_node_bft_with_4_total_nodes_with_changing_epochs_per_100_views__then_should_pass_bft_and_epoch_invariants() {
 		SimulationTest bftTest = bftTestBuilder
 			.pacemakerTimeout(5000)
@@ -71,7 +69,6 @@ public class MovingWindowValidatorsTest {
 	}
 
 	@Test
-	@Ignore("Ignore until Travis issue resolved")
 	public void given_correct_25_node_bft_with_50_total_nodes_with_changing_epochs_per_100_views__then_should_pass_bft_and_epoch_invariants() {
 		SimulationTest bftTest = bftTestBuilder
 			.numNodes(100)
@@ -86,7 +83,6 @@ public class MovingWindowValidatorsTest {
 	}
 
 	@Test
-	@Ignore("Ignore until Travis issue resolved")
 	public void given_correct_25_node_bft_with_50_total_nodes_with_changing_epochs_per_1_view__then_should_pass_bft_and_epoch_invariants() {
 		SimulationTest bftTest = bftTestBuilder
 			.numNodes(100)

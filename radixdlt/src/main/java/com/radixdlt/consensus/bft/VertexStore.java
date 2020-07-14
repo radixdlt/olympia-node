@@ -194,10 +194,6 @@ public final class VertexStore implements VertexStoreEventProcessor {
 			this.syncStage = syncStage;
 		}
 
-		QuorumCertificate getQC() {
-			return qc;
-		}
-
 		QuorumCertificate getCommittedQC() {
 			return committedQC;
 		}
@@ -222,14 +218,14 @@ public final class VertexStore implements VertexStoreEventProcessor {
 	public void processGetVerticesRequest(GetVerticesRequest request) {
 		// TODO: Handle nodes trying to DDOS this endpoint
 
-		log.info("SYNC_VERTICES: Received GetVerticesRequest {}", request);
+		log.trace("SYNC_VERTICES: Received GetVerticesRequest {}", request);
 		ImmutableList<Vertex> fetched = this.getVertices(request.getVertexId(), request.getCount());
 		if (fetched.isEmpty()) {
 			this.syncVerticesRPCSender.sendGetVerticesErrorResponse(request, this.getHighestQC(), this.getHighestCommittedQC());
 			return;
 		}
 
-		log.info("SYNC_VERTICES: Sending Response {}", fetched);
+		log.trace("SYNC_VERTICES: Sending Response {}", fetched);
 		this.syncVerticesRPCSender.sendGetVerticesResponse(request, fetched);
 	}
 
@@ -322,7 +318,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 	public void processGetVerticesResponse(GetVerticesResponse response) {
 		// TODO: check response
 
-		log.info("SYNC_VERTICES: Received GetVerticesResponse {}", response);
+		log.trace("SYNC_VERTICES: Received GetVerticesResponse {}", response);
 
 		final Hash syncTo = (Hash) response.getOpaque();
 		SyncState syncState = syncing.get(syncTo);
@@ -344,20 +340,20 @@ public final class VertexStore implements VertexStoreEventProcessor {
 
 	private void doQCSync(SyncState syncState) {
 		syncState.setSyncStage(SyncStage.GET_QC_VERTICES);
-		log.info("SYNC_VERTICES: QC: Sending initial GetVerticesRequest for sync={}", syncState);
+		log.debug("SYNC_VERTICES: QC: Sending initial GetVerticesRequest for sync={}", syncState);
 		syncVerticesRPCSender.sendGetVerticesRequest(syncState.qc.getProposed().getId(), syncState.author, 1, syncState.localSyncId);
 	}
 
 	private void doCommittedSync(SyncState syncState) {
 		final Hash committedQCId = syncState.getCommittedQC().getProposed().getId();
 		syncState.setSyncStage(SyncStage.GET_COMMITTED_VERTICES);
-		log.info("SYNC_VERTICES: Committed: Sending initial GetVerticesRequest for sync={}", syncState);
+		log.debug("SYNC_VERTICES: Committed: Sending initial GetVerticesRequest for sync={}", syncState);
 		// Retrieve the 3 vertices preceding the committedQC so we can create a valid committed root
 		syncVerticesRPCSender.sendGetVerticesRequest(committedQCId, syncState.author, 3, syncState.localSyncId);
 	}
 
 	public void processLocalSync(Hash vertexId) {
-		log.info("LOCAL_SYNC: Processed {}", vertexId);
+		log.debug("LOCAL_SYNC: Processed {}", vertexId);
 		syncing.remove(vertexId);
 	}
 
@@ -381,7 +377,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 			return true;
 		}
 
-		log.info("SYNC_TO_QC: Need sync: {} {}", qc, committedQC);
+		log.debug("SYNC_TO_QC: Need sync: {} {}", qc, committedQC);
 
 		final Hash vertexId = qc.getProposed().getId();
 		if (syncing.containsKey(vertexId)) {
@@ -436,6 +432,10 @@ public final class VertexStore implements VertexStoreEventProcessor {
 	private VertexMetadata insertVertexInternal(Vertex vertex) throws VertexInsertionException {
 		if (!vertices.containsKey(vertex.getParentId())) {
 			throw new MissingParentException(vertex.getParentId());
+		}
+
+		if (!vertex.hasDirectParent()) {
+			counters.increment(CounterType.CONSENSUS_INDIRECT_PARENT);
 		}
 
 		final Vertex vertexToUse;

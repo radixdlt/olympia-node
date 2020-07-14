@@ -98,7 +98,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 	 */
 	@Override
 	public void processLocalSync(Hash vertexId) {
-		log.info("{}: LOCAL_SYNC: {}", this.getShortName(), vertexId);
+		log.trace("{}: LOCAL_SYNC: {}", this.getShortName(), vertexId);
 		for (SyncQueue queue : queues.getQueues()) {
 			if (peekAndExecute(queue, vertexId)) {
 				queue.pop();
@@ -159,7 +159,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		log.trace("{}: NEW_VIEW: Queueing {}", this.getShortName(), newView);
 		if (queues.isEmptyElseAdd(newView)) {
 			if (!processNewViewInternal(newView)) {
-				log.info("{}: NEW_VIEW: Queuing {} Waiting for Sync", getShortName(), newView);
+				log.debug("{}: NEW_VIEW: Queuing {} Waiting for Sync", getShortName(), newView);
 				queues.add(newView);
 			}
 		}
@@ -189,7 +189,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		log.trace("{}: PROPOSAL: Queueing {}", this.getShortName(), proposal);
 		if (queues.isEmptyElseAdd(proposal)) {
 			if (!processProposalInternal(proposal)) {
-				log.info("{}: PROPOSAL: Queuing {} Waiting for Sync", getShortName(), proposal);
+				log.debug("{}: PROPOSAL: Queuing {} Waiting for Sync", getShortName(), proposal);
 				queues.add(proposal);
 			}
 		}

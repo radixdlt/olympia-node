@@ -40,6 +40,7 @@ public final class GetEpochRequest {
 		return sender;
 	}
 
+	@Override
 	public String toString() {
 		return String.format("%s{author=%s epoch=%s}", this.getClass().getSimpleName(), this.sender, this.epoch);
 	}

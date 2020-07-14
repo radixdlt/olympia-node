@@ -77,9 +77,11 @@ public final class PendingVotes {
 	private final Map<Hash, ValidationState> voteState = Maps.newHashMap();
 	private final Map<ECPublicKey, PreviousVote> previousVotes = Maps.newHashMap();
 	private final Hasher hasher;
+	private final HashVerifier verifier;
 
-	public PendingVotes(Hasher hasher) {
+	public PendingVotes(Hasher hasher, HashVerifier verifier) {
 		this.hasher = Objects.requireNonNull(hasher);
+		this.verifier = Objects.requireNonNull(verifier);
 	}
 
 	/**
@@ -97,7 +99,7 @@ public final class PendingVotes {
 		final ECDSASignature signature = vote.getSignature().orElseThrow(() -> new IllegalArgumentException("vote is missing signature"));
 		// Only process for valid validators and signatures
 		if (validatorSet.containsKey(voteAuthor)) {
-			if (voteAuthor.verify(voteHash, signature)) {
+			if (this.verifier.verify(voteAuthor, voteHash, signature)) {
 				final View voteView = voteData.getProposed().getView();
 				if (replacePreviousVote(voteAuthor, voteView, voteHash)) {
 					// If there is no equivocation or duplication, we process the vote.

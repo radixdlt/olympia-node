@@ -65,6 +65,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	private final Pacemaker pacemaker;
 	private final ProposerElection proposerElection;
 	private final ECKeyPair selfKey; // TODO remove signing/address to separate identity management
+	private final HashSigner signer; // TODO remove signing/address to separate identity management
 	private final SafetyRules safetyRules;
 	private final ValidatorSet validatorSet;
 	private final SystemCounters counters;
@@ -87,6 +88,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		PendingVotes pendingVotes,
 		ProposerElection proposerElection,
 		@Named("self") ECKeyPair selfKey,
+		HashSigner signer,
 		ValidatorSet validatorSet,
 		SystemCounters counters
 	) {
@@ -100,6 +102,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		this.pendingVotes = Objects.requireNonNull(pendingVotes);
 		this.proposerElection = Objects.requireNonNull(proposerElection);
 		this.selfKey = Objects.requireNonNull(selfKey);
+		this.signer = Objects.requireNonNull(signer);
 		this.validatorSet = Objects.requireNonNull(validatorSet);
 		this.counters = Objects.requireNonNull(counters);
 	}
@@ -115,7 +118,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	// Hotstuff's Event-Driven OnNextSyncView
 	private void proceedToView(View nextView) {
 		// TODO make signing more robust by including author in signed hash
-		ECDSASignature signature = this.selfKey.sign(Hash.hash256(Longs.toByteArray(nextView.number())));
+		ECDSASignature signature = this.signer.sign(this.selfKey, Hash.hash256(Longs.toByteArray(nextView.number())));
 		NewView newView = new NewView(
 			selfKey.getPublicKey(),
 			nextView,
@@ -173,7 +176,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 			log.trace("{}: VOTE: Formed QC: {}", this::getShortName, () -> qc);
 			if (vertexStore.syncToQC(qc, vertexStore.getHighestCommittedQC(), vote.getAuthor())) {
 				if (!synchedLog) {
-					log.info("{}: VOTE: QC Synced: {}", this::getShortName, () -> qc);
+					log.debug("{}: VOTE: QC Synced: {}", this::getShortName, () -> qc);
 					synchedLog = true;
 				}
 				processQC(qc).ifPresent(commitMetaData -> {
@@ -184,7 +187,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 				});
 			} else {
 				if (synchedLog) {
-					log.info("{}: VOTE: QC Not synced: {}", this::getShortName, () -> qc);
+					log.debug("{}: VOTE: QC Not synced: {}", this::getShortName, () -> qc);
 					synchedLog = false;
 				}
 				unsyncedQCs.put(qc.getProposed().getId(), qc);
@@ -217,10 +220,6 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		if (proposedVertexView.compareTo(updatedView) != 0) {
 			log.trace("{}: PROPOSAL: Ignoring view {} Current is: {}", this::getShortName, () -> proposedVertexView, () -> updatedView);
 			return;
-		}
-
-		if (!proposedVertex.hasDirectParent()) {
-			counters.increment(CounterType.CONSENSUS_INDIRECT_PARENT);
 		}
 
 		final VertexMetadata vertexMetadata;

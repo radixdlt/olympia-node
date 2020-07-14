@@ -18,11 +18,11 @@
 package com.radixdlt.consensus.deterministic;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.radixdlt.EpochChangeSender;
 import com.radixdlt.consensus.BFTEventSender;
 import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.EpochChange;
+import com.radixdlt.consensus.LocalTimeout;
 import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
 import com.radixdlt.consensus.bft.GetVerticesResponse;
 import com.radixdlt.consensus.NewView;
@@ -30,17 +30,19 @@ import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.SyncVerticesRPCSender;
 import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
+import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.sync.SyncedRadixEngine.CommittedStateSyncSender;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
-import java.util.LinkedList;
+
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * A BFT network supporting the EventCoordinatorNetworkSender interface which
@@ -49,19 +51,54 @@ import java.util.stream.Collectors;
  * This class is not thread safe.
  */
 public final class ControlledNetwork {
-	private final ImmutableList<ECPublicKey> nodes;
-	private final ImmutableMap<ChannelId, LinkedList<ControlledMessage>> messageQueue;
+	// Process sync related messages before consensus messages
+	private static final MessageRank EARLIEST_POSSIBLE = new MessageRank(0L, 0L);
 
-	ControlledNetwork(ImmutableList<ECPublicKey> nodes) {
-		this.nodes = nodes;
-		this.messageQueue = nodes.stream()
-			.flatMap(n0 -> nodes.stream().map(n1 -> new ChannelId(n0, n1)))
-			.collect(
-				ImmutableMap.toImmutableMap(
-					key -> key,
-					key -> new LinkedList<>()
-				)
-			);
+	private final MessageQueue messageQueue = new MessageQueue();
+
+	ControlledNetwork() {
+		// Nothing here right now
+	}
+
+	// Message ranking.  Used to implement timeouts.
+	// Messages in a particular ranking are processed in arrival order, but
+	// timeouts in particular will be put into the next ranking to ensure
+	// that they are processed after the current ranking. The rank is changed
+	// for each node whenever a new view or epoch change is seen.
+	static final class MessageRank implements Comparable<MessageRank> {
+		private static final Comparator<MessageRank> COMPARATOR =
+			Comparator.comparingLong((MessageRank eav) -> eav.epoch).thenComparingLong(eav -> eav.view);
+		final long epoch;
+		final long view;
+
+		MessageRank(long epoch, long view) {
+			this.epoch = epoch;
+			this.view = view;
+		}
+
+		@Override
+		public int hashCode() {
+			return Long.hashCode(this.epoch) * 31 + Long.hashCode(this.view);
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if (!(o instanceof MessageRank)) {
+				return false;
+			}
+			MessageRank that = (MessageRank) o;
+			return this.epoch == that.epoch && this.view == that.view;
+		}
+
+		@Override
+		public int compareTo(MessageRank that) {
+			return COMPARATOR.compare(this, that);
+		}
+
+		@Override
+		public String toString() {
+			return String.format("[%s:%s]", this.epoch, this.view);
+		}
 	}
 
 	static final class ChannelId {
@@ -98,7 +135,7 @@ public final class ControlledNetwork {
 
 		@Override
 		public String toString() {
-			return sender.euid().toString().substring(0, 6) + " -> " + receiver.euid().toString().substring(0, 6);
+			return sender.euid().toString().substring(0, 6) + "->" + receiver.euid().toString().substring(0, 6);
 		}
 	}
 
@@ -125,20 +162,13 @@ public final class ControlledNetwork {
 		}
 	}
 
-	private void putMesssage(ControlledMessage controlledMessage) {
-		messageQueue.get(controlledMessage.getChannelId()).add(controlledMessage);
-	}
-
 	public List<ControlledMessage> peekNextMessages() {
-		return messageQueue.values()
-			.stream()
-			.filter(l -> !l.isEmpty())
-			.map(LinkedList::getFirst)
-			.collect(Collectors.toList());
+		return this.messageQueue.lowestViewMessages();
 	}
 
 	public Object popNextMessage(ChannelId channelId) {
-		return messageQueue.get(channelId).pop().getMsg();
+		ControlledMessage controlledMessage = this.messageQueue.pop(channelId);
+		return controlledMessage.msg;
 	}
 
 	private static class ControlledGetVerticesRequest implements GetVerticesRequest {
@@ -170,12 +200,12 @@ public final class ControlledNetwork {
 		}
 	}
 
-	public ControlledSender getSender(ECPublicKey sender) {
+	public ControlledSender createSender(ECPublicKey sender) {
 		return new ControlledSender(sender);
 	}
 
 	public final class ControlledSender implements BFTEventSender, VertexStoreEventSender, SyncVerticesRPCSender, EpochChangeSender,
-		CommittedStateSyncSender {
+		CommittedStateSyncSender, LocalTimeoutSender {
 		private final ECPublicKey sender;
 
 		private ControlledSender(ECPublicKey sender) {
@@ -184,14 +214,14 @@ public final class ControlledNetwork {
 
 		@Override
 		public void sendGetVerticesRequest(Hash id, ECPublicKey node, int count, Object opaque) {
-			putMesssage(new ControlledMessage(sender, node, new ControlledGetVerticesRequest(id, count, sender, opaque)));
+			putMessage(EARLIEST_POSSIBLE, new ControlledMessage(sender, node, new ControlledGetVerticesRequest(id, count, sender, opaque)));
 		}
 
 		@Override
 		public void sendGetVerticesResponse(GetVerticesRequest originalRequest, ImmutableList<Vertex> vertices) {
 			ControlledGetVerticesRequest request = (ControlledGetVerticesRequest) originalRequest;
 			GetVerticesResponse response = new GetVerticesResponse(request.getVertexId(), vertices, request.opaque);
-			putMesssage(new ControlledMessage(sender, request.requestor, response));
+			putMessage(EARLIEST_POSSIBLE, new ControlledMessage(sender, request.requestor, response));
 		}
 
 		@Override
@@ -199,34 +229,35 @@ public final class ControlledNetwork {
 			QuorumCertificate highestCommittedQC) {
 			ControlledGetVerticesRequest request = (ControlledGetVerticesRequest) originalRequest;
 			GetVerticesErrorResponse response = new GetVerticesErrorResponse(request.getVertexId(), highestQC, highestCommittedQC, request.opaque);
-			putMesssage(new ControlledMessage(sender, request.requestor, response));
+			putMessage(EARLIEST_POSSIBLE, new ControlledMessage(sender, request.requestor, response));
 		}
 
 		@Override
 		public void sendSyncedVertex(Vertex vertex) {
-			putMesssage(new ControlledMessage(sender, sender, vertex.getId()));
+			putMessage(EARLIEST_POSSIBLE, new ControlledMessage(sender, sender, vertex.getId()));
 		}
 
 		@Override
 		public void broadcastProposal(Proposal proposal, Set<ECPublicKey> nodes) {
+			MessageRank rank = messageRank(proposal);
 			for (ECPublicKey receiver : nodes) {
-				putMesssage(new ControlledMessage(sender, receiver, proposal));
+				putMessage(rank, new ControlledMessage(sender, receiver, proposal));
 			}
 		}
 
 		@Override
 		public void sendNewView(NewView newView, ECPublicKey newViewLeader) {
-			putMesssage(new ControlledMessage(sender, newViewLeader, newView));
+			putMessage(messageRank(newView), new ControlledMessage(sender, newViewLeader, newView));
 		}
 
 		@Override
 		public void sendVote(Vote vote, ECPublicKey leader) {
-			putMesssage(new ControlledMessage(sender, leader, vote));
+			putMessage(messageRank(vote.getVoteData().getProposed(), 0), new ControlledMessage(sender, leader, vote));
 		}
 
 		@Override
 		public void epochChange(EpochChange epochChange) {
-			putMesssage(new ControlledMessage(sender, sender, epochChange));
+			putMessage(messageRank(epochChange), new ControlledMessage(sender, sender, epochChange));
 		}
 
 		@Override
@@ -242,7 +273,37 @@ public final class ControlledNetwork {
 		@Override
 		public void sendCommittedStateSync(long stateVersion, Object opaque) {
 			CommittedStateSync committedStateSync = new CommittedStateSync(stateVersion, opaque);
-			putMesssage(new ControlledMessage(sender, sender, committedStateSync));
+			putMessage(EARLIEST_POSSIBLE, new ControlledMessage(sender, sender, committedStateSync));
+		}
+
+		@Override
+		public void scheduleTimeout(LocalTimeout localTimeout, long milliseconds) {
+			putMessage(messageRank(localTimeout), new ControlledMessage(sender, sender, localTimeout));
+		}
+
+		private void putMessage(MessageRank eav, ControlledMessage controlledMessage) {
+			ControlledNetwork.this.messageQueue.add(eav, controlledMessage);
+		}
+
+		private MessageRank messageRank(EpochChange epochChange) {
+			// Last message in this epoch
+			return new MessageRank(epochChange.getAncestor().getEpoch(), Long.MAX_VALUE);
+		}
+
+		private MessageRank messageRank(NewView newView) {
+			return new MessageRank(newView.getEpoch(), newView.getView().number());
+		}
+
+		private MessageRank messageRank(Proposal proposal) {
+			return new MessageRank(proposal.getEpoch(), proposal.getVertex().getView().number());
+		}
+
+		private MessageRank messageRank(VertexMetadata metadata, long viewIncrement) {
+			return new MessageRank(metadata.getEpoch(), metadata.getView().number() + viewIncrement);
+		}
+
+		private MessageRank messageRank(LocalTimeout localTimeout) {
+			return new MessageRank(localTimeout.getEpoch(), localTimeout.getView().number() + 2);
 		}
 	}
 }
