@@ -154,15 +154,15 @@ public class AtomsService {
 	private void processException(StoredException e) {
 		synchronized (lock) {
 			eventRingBuffer.add(
-				System.currentTimeMillis() + " EXCEPTION " + e.getCommittedAtom().getAID() + " " + e.getException().getErrorCode());
+				System.currentTimeMillis() + " EXCEPTION " + e.getAtom().getAID() + " " + e.getException().getErrorCode());
 		}
 
-		List<SingleAtomListener> subscribers = this.deleteOnEventSingleAtomObservers.remove(e.getCommittedAtom().getAID());
+		List<SingleAtomListener> subscribers = this.deleteOnEventSingleAtomObservers.remove(e.getAtom().getAID());
 		if (subscribers != null) {
 			subscribers.forEach(subscriber -> subscriber.onStoredException(e));
 		}
 
-		for (AtomStatusListener singleAtomListener : this.singleAtomObservers.getOrDefault(e.getCommittedAtom().getAID(), Collections.emptyList())) {
+		for (AtomStatusListener singleAtomListener : this.singleAtomObservers.getOrDefault(e.getAtom().getAID(), Collections.emptyList())) {
 			singleAtomListener.onStoredException(e);
 		}
 	}

@@ -106,14 +106,14 @@ public class AtomStatusEpic {
 				final RadixEngineException exception = e.getException();
 
 				JSONObject data = new JSONObject();
-				data.put("aid", e.getCommittedAtom().getAID());
+				data.put("aid", e.getAtom().getAID());
 				data.put("pointerToIssue", exception.getDataPointer());
 				if (exception.getRelated() != null) {
 					data.put("conflictingWith", exception.getRelated().getAID().toString());
 				}
 
 				// TODO: serialize vertexMetadata
-				VertexMetadata vertexMetadata = e.getCommittedAtom().getVertexMetadata();
+				VertexMetadata vertexMetadata = e.getAtom().getVertexMetadata();
 				data.put("stateVersion", vertexMetadata.getStateVersion());
 				data.put("epoch", vertexMetadata.getEpoch());
 				data.put("view", vertexMetadata.getView().number());

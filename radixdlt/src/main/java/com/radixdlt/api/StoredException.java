@@ -33,7 +33,7 @@ public final class StoredException {
 		this.exception = Objects.requireNonNull(exception);
 	}
 
-	public CommittedAtom getCommittedAtom() {
+	public CommittedAtom getAtom() {
 		return committedAtom;
 	}
 

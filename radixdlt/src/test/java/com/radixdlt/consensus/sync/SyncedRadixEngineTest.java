@@ -38,10 +38,8 @@ import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.sync.SyncedRadixEngine.CommittedStateSyncSender;
 import com.radixdlt.consensus.sync.SyncedRadixEngine.SyncedRadixEngineEventSender;
 import com.radixdlt.consensus.validators.ValidatorSet;
-import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.engine.RadixEngineErrorCode;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
@@ -133,61 +131,50 @@ public class SyncedRadixEngineTest {
 	}
 
 	@Test
-	public void when_insert_and_commit_vertex_with_engine_virtual_state_conflict__then_no_exception_should_be_thrown() throws RadixEngineException {
+	public void when_insert_and_commit_vertex_with_engine_exception__then_correct_messages_are_sent() throws RadixEngineException {
 		CommittedAtom committedAtom = mock(CommittedAtom.class);
 		when(committedAtom.getClientAtom()).thenReturn(mock(ClientAtom.class));
-		when(committedAtom.getAID()).thenReturn(mock(AID.class));
+		AID aid = mock(AID.class);
+		when(committedAtom.getAID()).thenReturn(aid);
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
-		when(vertexMetadata.getView()).thenReturn(View.of(50));
+		when(vertexMetadata.getView()).then(i -> View.of(50));
+		when(vertexMetadata.getStateVersion()).then(i -> 1L);
 		when(committedAtom.getVertexMetadata()).thenReturn(vertexMetadata);
 
 		RadixEngineException e = mock(RadixEngineException.class);
-		when(e.getErrorCode()).thenReturn(RadixEngineErrorCode.VIRTUAL_STATE_CONFLICT);
-		when(e.getDataPointer()).thenReturn(DataPointer.ofAtom());
 		doThrow(e).when(radixEngine).checkAndStore(eq(committedAtom));
 
 		syncedRadixEngine.execute(committedAtom);
 		verify(radixEngine, times(1)).checkAndStore(eq(committedAtom));
-	}
-
-
-	@Test
-	public void when_insert_and_commit_vertex_with_engine_state_conflict__then_no_exception_should_be_thrown() throws RadixEngineException {
-		RadixEngineException e = mock(RadixEngineException.class);
-		when(e.getErrorCode()).thenReturn(RadixEngineErrorCode.STATE_CONFLICT);
-		when(e.getDataPointer()).thenReturn(DataPointer.ofAtom());
-
-		LedgerAtom related = mock(LedgerAtom.class);
-		when(related.getAID()).thenReturn(mock(AID.class));
-		when(e.getRelated()).thenReturn(related);
-
-		CommittedAtom committedAtom = mock(CommittedAtom.class);
-		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
-		when(vertexMetadata.getView()).thenReturn(View.of(50));
-		when(committedAtom.getVertexMetadata()).thenReturn(vertexMetadata);
-		when(committedAtom.getAID()).thenReturn(mock(AID.class));
-		when(committedAtom.getClientAtom()).thenReturn(mock(ClientAtom.class));
-		doThrow(e).when(radixEngine).checkAndStore(eq(committedAtom));
-
-		syncedRadixEngine.execute(committedAtom);
-		verify(radixEngine, times(1)).checkAndStore(eq(committedAtom));
+		verify(committedAtomsStore, times(1)).storeVertexMetadata(eq(vertexMetadata));
+		verify(mempool, times(1)).removeCommittedAtom(aid);
+		verify(eventSender, times(1)).sendStoredException(eq(committedAtom), eq(e));
 	}
 
 	@Test
-	public void when_insert_and_commit_vertex_with_engine_missing_dependency__then_no_exception_should_be_thrown() throws RadixEngineException {
-		RadixEngineException e = mock(RadixEngineException.class);
-		when(e.getErrorCode()).thenReturn(RadixEngineErrorCode.MISSING_DEPENDENCY);
-		when(e.getDataPointer()).thenReturn(DataPointer.ofAtom());
+	public void when_insert_and_commit_vertex_with_engine_exception__then_is_available_with_sync() throws RadixEngineException {
 		CommittedAtom committedAtom = mock(CommittedAtom.class);
-		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
-		when(vertexMetadata.getView()).thenReturn(View.of(50));
-		when(committedAtom.getVertexMetadata()).thenReturn(vertexMetadata);
 		when(committedAtom.getClientAtom()).thenReturn(mock(ClientAtom.class));
+		AID aid = mock(AID.class);
+		when(committedAtom.getAID()).thenReturn(aid);
+		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
+		when(vertexMetadata.getView()).then(i -> View.of(50));
+		when(vertexMetadata.getStateVersion()).then(i -> 1L);
+		when(committedAtom.getVertexMetadata()).thenReturn(vertexMetadata);
+
+		RadixEngineException e = mock(RadixEngineException.class);
 		doThrow(e).when(radixEngine).checkAndStore(eq(committedAtom));
 
 		syncedRadixEngine.execute(committedAtom);
-		verify(radixEngine, times(1)).checkAndStore(eq(committedAtom));
+
+		Peer peer = mock(Peer.class);
+		when(committedAtomsStore.getCommittedAtoms(eq(1L), anyInt())).thenReturn(Collections.emptyList());
+		when(stateSyncNetwork.syncResponses()).thenReturn(Observable.never());
+		when(stateSyncNetwork.syncRequests()).thenReturn(Observable.just(new SyncRequest(peer, 0L)));
+		syncedRadixEngine.start();
+		verify(stateSyncNetwork, timeout(1000).times(1)).sendSyncResponse(eq(peer), argThat(l -> l.get(0).equals(committedAtom)));
 	}
+
 
 	@Test
 	public void when_sync_request__then_it_is_processed() {
