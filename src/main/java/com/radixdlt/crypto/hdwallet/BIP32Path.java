@@ -32,7 +32,7 @@ import com.google.common.base.Objects;
  * However, users are discouraged to construct instances of this class directly, they should
  * rather be using {@link DefaultHDPath}.
  */
-public class BIP32Path implements HDPath {
+final class BIP32Path implements HDPath {
 
 	private final HDPath path;
 
