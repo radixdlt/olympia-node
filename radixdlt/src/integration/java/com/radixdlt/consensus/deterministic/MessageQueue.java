@@ -17,9 +17,11 @@
 
 package com.radixdlt.consensus.deterministic;
 
+import java.io.PrintStream;
 import java.util.AbstractList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -31,7 +33,8 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.radixdlt.consensus.deterministic.ControlledNetwork.ChannelId;
 import com.radixdlt.consensus.deterministic.ControlledNetwork.ControlledMessage;
-import com.radixdlt.consensus.deterministic.ControlledNetwork.EpochAndView;
+import com.radixdlt.consensus.deterministic.ControlledNetwork.MessageRank;
+import com.radixdlt.identifiers.EUID;
 
 /**
  * Queue for messages by view.
@@ -79,22 +82,22 @@ final class MessageQueue {
 		}
 	}
 
-	private final HashMap<EpochAndView, HashMap<ChannelId, LinkedList<ControlledMessage>>> messageQueue = Maps.newHashMap();
-	private EpochAndView minimumEpochAndView = null; // Cached minimum view
+	private final HashMap<MessageRank, HashMap<ChannelId, LinkedList<ControlledMessage>>> messageQueue = Maps.newHashMap();
+	private MessageRank minimumMessageRank = null; // Cached minimum view
 
 	MessageQueue() {
 		// Nothing here for now
 	}
 
-	void add(EpochAndView eav, ControlledMessage item) {
-		this.messageQueue.computeIfAbsent(eav, k -> Maps.newHashMap()).computeIfAbsent(item.getChannelId(), k -> Lists.newLinkedList()).add(item);
-		if (this.minimumEpochAndView == null || eav.compareTo(this.minimumEpochAndView) < 0) {
-			this.minimumEpochAndView = eav;
+	void add(MessageRank msgRank, ControlledMessage item) {
+		this.messageQueue.computeIfAbsent(msgRank, k -> Maps.newHashMap()).computeIfAbsent(item.getChannelId(), k -> Lists.newLinkedList()).add(item);
+		if (this.minimumMessageRank == null || msgRank.compareTo(this.minimumMessageRank) < 0) {
+			this.minimumMessageRank = msgRank;
 		}
 	}
 
 	ControlledMessage pop(ChannelId channelId) {
-		HashMap<ChannelId, LinkedList<ControlledMessage>> msgMap = this.messageQueue.get(this.minimumEpochAndView);
+		HashMap<ChannelId, LinkedList<ControlledMessage>> msgMap = this.messageQueue.get(this.minimumMessageRank);
 		if (msgMap == null) {
 			return painfulPop(channelId);
 		}
@@ -106,8 +109,8 @@ final class MessageQueue {
 		if (msgs.isEmpty()) {
 			msgMap.remove(channelId);
 			if (msgMap.isEmpty()) {
-				this.messageQueue.remove(this.minimumEpochAndView);
-				this.minimumEpochAndView = minimumKey(this.messageQueue.keySet());
+				this.messageQueue.remove(this.minimumMessageRank);
+				this.minimumMessageRank = minimumKey(this.messageQueue.keySet());
 			}
 		}
 		return item;
@@ -115,9 +118,9 @@ final class MessageQueue {
 
 	// Really only here to work with processNextMsg(int, int, Class<?>) in BFTDeterministicTest
 	private ControlledMessage painfulPop(ChannelId channelId) {
-		List<Map.Entry<EpochAndView, HashMap<ChannelId, LinkedList<ControlledMessage>>>> entries = Lists.newArrayList(this.messageQueue.entrySet());
+		List<Map.Entry<MessageRank, HashMap<ChannelId, LinkedList<ControlledMessage>>>> entries = Lists.newArrayList(this.messageQueue.entrySet());
 		Collections.sort(entries, Map.Entry.comparingByKey());
-		for (Map.Entry<EpochAndView, HashMap<ChannelId, LinkedList<ControlledMessage>>> entry : entries) {
+		for (Map.Entry<MessageRank, HashMap<ChannelId, LinkedList<ControlledMessage>>> entry : entries) {
 			HashMap<ChannelId, LinkedList<ControlledMessage>> msgMap = entry.getValue();
 			LinkedList<ControlledMessage> msgs = msgMap.get(channelId);
 			if (msgs != null) {
@@ -139,7 +142,7 @@ final class MessageQueue {
 		if (this.messageQueue.isEmpty()) {
 			return Collections.emptyList();
 		}
-		return new ArrayOfLinkedLists<>(this.messageQueue.get(this.minimumEpochAndView).values());
+		return new ArrayOfLinkedLists<>(this.messageQueue.get(this.minimumMessageRank).values());
 	}
 
 	@Override
@@ -149,12 +152,29 @@ final class MessageQueue {
 
 	// Believe it or not, this is faster, when coupled with minimumView
 	// caching, than using a TreeMap for nodes == 100.
-	private static EpochAndView minimumKey(Set<EpochAndView> eavs) {
+	private static MessageRank minimumKey(Set<MessageRank> eavs) {
 		if (eavs.isEmpty()) {
 			return null;
 		}
-		List<EpochAndView> views = Lists.newArrayList(eavs);
+		List<MessageRank> views = Lists.newArrayList(eavs);
 		Collections.sort(views);
 		return views.get(0);
+	}
+
+	void dump(PrintStream out) {
+		Comparator<ChannelId> channelIdComparator = Comparator
+			.<ChannelId, EUID>comparing(chid -> chid.getSender().euid())
+			.thenComparing(chid -> chid.getReceiver().euid());
+		out.format("%s {%n", this.messageQueue);
+		this.messageQueue.entrySet().stream()
+			.sorted(Map.Entry.comparingByKey())
+			.forEachOrdered(e1 -> {
+				out.format("    %s {%n", e1.getKey());
+				e1.getValue().entrySet().stream()
+					.sorted(Map.Entry.comparingByKey(channelIdComparator))
+					.forEach(e2 -> out.format("        %s: %s%n", e2.getKey(), e2.getValue()));
+				out.println("    }");
+			});
+		out.println("}");
 	}
 }

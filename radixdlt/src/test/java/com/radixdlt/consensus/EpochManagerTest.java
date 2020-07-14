@@ -105,6 +105,7 @@ public class EpochManagerTest {
 		EpochChange epochChange = mock(EpochChange.class);
 		ValidatorSet validatorSet = mock(ValidatorSet.class);
 		when(validatorSet.containsKey(eq(publicKey))).thenReturn(false);
+		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of());
 		when(epochChange.getValidatorSet()).thenReturn(validatorSet);
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
 		when(epochChange.getAncestor()).thenReturn(vertexMetadata);
@@ -130,6 +131,7 @@ public class EpochManagerTest {
 	public void when_receive_next_epoch_then_epoch_request__then_should_return_current_ancestor() {
 		VertexMetadata ancestor = VertexMetadata.ofGenesisAncestor();
 		ValidatorSet validatorSet = mock(ValidatorSet.class);
+		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of());
 		epochManager.processEpochChange(new EpochChange(ancestor, validatorSet));
 		ECPublicKey sender = mock(ECPublicKey.class);
 		epochManager.processGetEpochRequest(new GetEpochRequest(sender, ancestor.getEpoch() + 1));
@@ -348,6 +350,7 @@ public class EpochManagerTest {
 		when(validator.nodeKey()).thenReturn(mock(ECPublicKey.class));
 		ValidatorSet validatorSet = mock(ValidatorSet.class);
 		when(validatorSet.containsKey(any())).thenReturn(false);
+		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of());
 		epochManager.processEpochChange(new EpochChange(ancestor, validatorSet));
 
 		assertThat(systemCounters.get(CounterType.EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS)).isEqualTo(0);

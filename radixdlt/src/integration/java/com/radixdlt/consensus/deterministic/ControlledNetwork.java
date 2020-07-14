@@ -30,7 +30,7 @@ import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.SyncVerticesRPCSender;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.liveness.LocalTimeoutSender;
@@ -51,39 +51,47 @@ import java.util.Set;
  * This class is not thread safe.
  */
 public final class ControlledNetwork {
+	// Process sync related messages before consensus messages
+	private static final MessageRank EARLIEST_POSSIBLE = new MessageRank(0L, 0L);
+
 	private final MessageQueue messageQueue = new MessageQueue();
 
 	ControlledNetwork() {
 		// Nothing here right now
 	}
 
-	static final class EpochAndView implements Comparable<EpochAndView> {
-		private static final Comparator<EpochAndView> COMPARATOR =
-			Comparator.comparingLong((EpochAndView eav) -> eav.epoch).thenComparing(eav -> eav.view);
+	// Message ranking.  Used to implement timeouts.
+	// Messages in a particular ranking are processed in arrival order, but
+	// timeouts in particular will be put into the next ranking to ensure
+	// that they are processed after the current ranking. The rank is changed
+	// for each node whenever a new view or epoch change is seen.
+	static final class MessageRank implements Comparable<MessageRank> {
+		private static final Comparator<MessageRank> COMPARATOR =
+			Comparator.comparingLong((MessageRank eav) -> eav.epoch).thenComparingLong(eav -> eav.view);
 		final long epoch;
-		final View view;
+		final long view;
 
-		EpochAndView(long epoch, View view) {
+		MessageRank(long epoch, long view) {
 			this.epoch = epoch;
 			this.view = view;
 		}
 
 		@Override
 		public int hashCode() {
-			return Long.hashCode(this.epoch) * 31 + view.hashCode();
+			return Long.hashCode(this.epoch) * 31 + Long.hashCode(this.view);
 		}
 
 		@Override
 		public boolean equals(Object o) {
-			if (!(o instanceof EpochAndView)) {
+			if (!(o instanceof MessageRank)) {
 				return false;
 			}
-			EpochAndView that = (EpochAndView) o;
-			return this.epoch == that.epoch && Objects.equals(this.view, that.view);
+			MessageRank that = (MessageRank) o;
+			return this.epoch == that.epoch && this.view == that.view;
 		}
 
 		@Override
-		public int compareTo(EpochAndView that) {
+		public int compareTo(MessageRank that) {
 			return COMPARATOR.compare(this, that);
 		}
 
@@ -154,10 +162,6 @@ public final class ControlledNetwork {
 		}
 	}
 
-	private void putMessage(EpochAndView eav, ControlledMessage controlledMessage) {
-		this.messageQueue.add(eav, controlledMessage);
-	}
-
 	public List<ControlledMessage> peekNextMessages() {
 		return this.messageQueue.lowestViewMessages();
 	}
@@ -203,7 +207,6 @@ public final class ControlledNetwork {
 	public final class ControlledSender implements BFTEventSender, VertexStoreEventSender, SyncVerticesRPCSender, EpochChangeSender,
 		CommittedStateSyncSender, LocalTimeoutSender {
 		private final ECPublicKey sender;
-		private EpochAndView currentEpochAndView = new EpochAndView(1L, View.genesis());
 
 		private ControlledSender(ECPublicKey sender) {
 			this.sender = sender;
@@ -211,14 +214,14 @@ public final class ControlledNetwork {
 
 		@Override
 		public void sendGetVerticesRequest(Hash id, ECPublicKey node, int count, Object opaque) {
-			putMessage(this.currentEpochAndView, new ControlledMessage(sender, node, new ControlledGetVerticesRequest(id, count, sender, opaque)));
+			putMessage(EARLIEST_POSSIBLE, new ControlledMessage(sender, node, new ControlledGetVerticesRequest(id, count, sender, opaque)));
 		}
 
 		@Override
 		public void sendGetVerticesResponse(GetVerticesRequest originalRequest, ImmutableList<Vertex> vertices) {
 			ControlledGetVerticesRequest request = (ControlledGetVerticesRequest) originalRequest;
 			GetVerticesResponse response = new GetVerticesResponse(request.getVertexId(), vertices, request.opaque);
-			putMessage(this.currentEpochAndView, new ControlledMessage(sender, request.requestor, response));
+			putMessage(EARLIEST_POSSIBLE, new ControlledMessage(sender, request.requestor, response));
 		}
 
 		@Override
@@ -226,36 +229,35 @@ public final class ControlledNetwork {
 			QuorumCertificate highestCommittedQC) {
 			ControlledGetVerticesRequest request = (ControlledGetVerticesRequest) originalRequest;
 			GetVerticesErrorResponse response = new GetVerticesErrorResponse(request.getVertexId(), highestQC, highestCommittedQC, request.opaque);
-			putMessage(this.currentEpochAndView, new ControlledMessage(sender, request.requestor, response));
+			putMessage(EARLIEST_POSSIBLE, new ControlledMessage(sender, request.requestor, response));
 		}
 
 		@Override
 		public void sendSyncedVertex(Vertex vertex) {
-			putMessage(this.currentEpochAndView, new ControlledMessage(sender, sender, vertex.getId()));
+			putMessage(EARLIEST_POSSIBLE, new ControlledMessage(sender, sender, vertex.getId()));
 		}
 
 		@Override
 		public void broadcastProposal(Proposal proposal, Set<ECPublicKey> nodes) {
+			MessageRank rank = messageRank(proposal);
 			for (ECPublicKey receiver : nodes) {
-				putMessage(this.currentEpochAndView, new ControlledMessage(sender, receiver, proposal));
+				putMessage(rank, new ControlledMessage(sender, receiver, proposal));
 			}
 		}
 
 		@Override
 		public void sendNewView(NewView newView, ECPublicKey newViewLeader) {
-			putMessage(this.currentEpochAndView, new ControlledMessage(sender, newViewLeader, newView));
-            this.currentEpochAndView = new EpochAndView(currentEpochAndView.epoch, newView.getView());
+			putMessage(messageRank(newView), new ControlledMessage(sender, newViewLeader, newView));
 		}
 
 		@Override
 		public void sendVote(Vote vote, ECPublicKey leader) {
-			putMessage(this.currentEpochAndView, new ControlledMessage(sender, leader, vote));
+			putMessage(messageRank(vote.getVoteData().getProposed(), 0), new ControlledMessage(sender, leader, vote));
 		}
 
 		@Override
 		public void epochChange(EpochChange epochChange) {
-			putMessage(this.currentEpochAndView, new ControlledMessage(sender, sender, epochChange));
-			this.currentEpochAndView = new EpochAndView(epochChange.getAncestor().getEpoch() + 1, View.genesis());
+			putMessage(messageRank(epochChange), new ControlledMessage(sender, sender, epochChange));
 		}
 
 		@Override
@@ -271,12 +273,37 @@ public final class ControlledNetwork {
 		@Override
 		public void sendCommittedStateSync(long stateVersion, Object opaque) {
 			CommittedStateSync committedStateSync = new CommittedStateSync(stateVersion, opaque);
-			putMessage(this.currentEpochAndView, new ControlledMessage(sender, sender, committedStateSync));
+			putMessage(EARLIEST_POSSIBLE, new ControlledMessage(sender, sender, committedStateSync));
 		}
 
-        @Override
-        public void scheduleTimeout(LocalTimeout localTimeout, long milliseconds) {
-        	putMessage(new EpochAndView(localTimeout.getEpoch(), localTimeout.getView().next()), new ControlledMessage(sender, sender, localTimeout));
-        }
+		@Override
+		public void scheduleTimeout(LocalTimeout localTimeout, long milliseconds) {
+			putMessage(messageRank(localTimeout), new ControlledMessage(sender, sender, localTimeout));
+		}
+
+		private void putMessage(MessageRank eav, ControlledMessage controlledMessage) {
+			ControlledNetwork.this.messageQueue.add(eav, controlledMessage);
+		}
+
+		private MessageRank messageRank(EpochChange epochChange) {
+			// Last message in this epoch
+			return new MessageRank(epochChange.getAncestor().getEpoch(), Long.MAX_VALUE);
+		}
+
+		private MessageRank messageRank(NewView newView) {
+			return new MessageRank(newView.getEpoch(), newView.getView().number());
+		}
+
+		private MessageRank messageRank(Proposal proposal) {
+			return new MessageRank(proposal.getEpoch(), proposal.getVertex().getView().number());
+		}
+
+		private MessageRank messageRank(VertexMetadata metadata, long viewIncrement) {
+			return new MessageRank(metadata.getEpoch(), metadata.getView().number() + viewIncrement);
+		}
+
+		private MessageRank messageRank(LocalTimeout localTimeout) {
+			return new MessageRank(localTimeout.getEpoch(), localTimeout.getView().number() + 2);
+		}
 	}
 }
