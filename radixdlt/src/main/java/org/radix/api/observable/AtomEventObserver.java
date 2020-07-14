@@ -110,12 +110,14 @@ public class AtomEventObserver {
 	}
 
 	public void tryNext(StoredAtom storedAtom) {
-		if (atomQuery.filter(storedAtom.getDestinations())) {
-			final Atom rawAtom = ClientAtom.convertToApiAtom(storedAtom.getAtom().getClientAtom());
-			final AtomEventDto atomEventDto = new AtomEventDto(AtomEventType.STORE, rawAtom);
-			synchronized (this) {
-				this.currentRunnable = currentRunnable.thenRunAsync(() -> update(atomEventDto), executorService);
-			}
+		if (!atomQuery.filter(storedAtom.getDestinations())) {
+			return;
+		}
+
+		final Atom rawAtom = ClientAtom.convertToApiAtom(storedAtom.getAtom().getClientAtom());
+		final AtomEventDto atomEventDto = new AtomEventDto(AtomEventType.STORE, rawAtom);
+		synchronized (this) {
+			this.currentRunnable = currentRunnable.thenRunAsync(() -> update(atomEventDto), executorService);
 		}
 	}
 

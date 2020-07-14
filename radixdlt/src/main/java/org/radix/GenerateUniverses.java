@@ -22,7 +22,6 @@ import com.radixdlt.DefaultSerialization;
 import com.radixdlt.atommodel.tokens.FixedSupplyTokenDefinitionParticle;
 import com.radixdlt.atommodel.tokens.TokenDefinitionUtils;
 import com.radixdlt.atommodel.Atom;
-import com.radixdlt.middleware2.ClientAtom;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.atommodel.message.MessageParticle;
@@ -161,8 +160,6 @@ public final class GenerateUniverses {
 			mintXrdTokens, Spin.UP
 		);
 		genesisAtom.sign(universeKey);
-
-		ClientAtom clientAtom = ClientAtom.convertFromApiAtom(genesisAtom);
 
 		if (standalone) {
 			byte[] sigBytes = serialization.toDson(genesisAtom.getSignature(universeKey.euid()), Output.WIRE);
