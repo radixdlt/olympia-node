@@ -144,7 +144,6 @@ public class SimulationNodes {
 					pendingVotes,
 					proposerElection,
 					key,
-					nullSigner,
 					validatorSet,
 					counters.get(key)
 				);

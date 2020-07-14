@@ -115,7 +115,6 @@ class ControlledNode {
 					pendingVotes,
 					proposerElection,
 					key,
-					nullSigner,
 					validatorSet,
 					systemCounters
 				);

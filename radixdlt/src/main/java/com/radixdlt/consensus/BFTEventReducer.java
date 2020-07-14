@@ -30,11 +30,9 @@ import com.radixdlt.consensus.safety.SafetyViolationException;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.utils.Longs;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -62,7 +60,6 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	private final Pacemaker pacemaker;
 	private final ProposerElection proposerElection;
 	private final ECKeyPair selfKey; // TODO remove signing/address to separate identity management
-	private final HashSigner signer; // TODO remove signing/address to separate identity management
 	private final SafetyRules safetyRules;
 	private final ValidatorSet validatorSet;
 	private final SystemCounters counters;
@@ -84,7 +81,6 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		PendingVotes pendingVotes,
 		ProposerElection proposerElection,
 		@Named("self") ECKeyPair selfKey,
-		HashSigner signer,
 		ValidatorSet validatorSet,
 		SystemCounters counters
 	) {
@@ -97,7 +93,6 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		this.pendingVotes = Objects.requireNonNull(pendingVotes);
 		this.proposerElection = Objects.requireNonNull(proposerElection);
 		this.selfKey = Objects.requireNonNull(selfKey);
-		this.signer = Objects.requireNonNull(signer);
 		this.validatorSet = Objects.requireNonNull(validatorSet);
 		this.counters = Objects.requireNonNull(counters);
 	}
@@ -112,15 +107,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 
 	// Hotstuff's Event-Driven OnNextSyncView
 	private void proceedToView(View nextView) {
-		// TODO make signing more robust by including author in signed hash
-		ECDSASignature signature = this.signer.sign(this.selfKey, Hash.hash256(Longs.toByteArray(nextView.number())));
-		NewView newView = new NewView(
-			selfKey.getPublicKey(),
-			nextView,
-			this.vertexStore.getHighestQC(),
-			this.vertexStore.getHighestCommittedQC(),
-			signature
-		);
+		NewView newView = safetyRules.signNewView(nextView, this.vertexStore.getHighestQC(), this.vertexStore.getHighestCommittedQC());
 		ECPublicKey nextLeader = this.proposerElection.getProposer(nextView);
 		log.trace("{}: Sending NEW_VIEW to {}: {}", this::getShortName, () -> this.getShortName(nextLeader.euid()), () ->  newView);
 		this.sender.sendNewView(newView, nextLeader);

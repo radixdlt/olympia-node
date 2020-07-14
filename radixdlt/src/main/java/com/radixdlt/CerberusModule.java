@@ -151,7 +151,6 @@ public class CerberusModule extends AbstractModule {
 				pendingVotes,
 				proposerElection,
 				selfKey,
-				signer,
 				validatorSet,
 				counters
 			);
