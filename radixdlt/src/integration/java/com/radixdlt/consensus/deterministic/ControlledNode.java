@@ -114,7 +114,7 @@ class ControlledNode {
 					vertexStore,
 					pendingVotes,
 					proposerElection,
-					key,
+					key.getPublicKey(),
 					validatorSet,
 					systemCounters
 				);

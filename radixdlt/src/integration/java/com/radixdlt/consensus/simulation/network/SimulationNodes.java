@@ -143,7 +143,7 @@ public class SimulationNodes {
 					vertexStore,
 					pendingVotes,
 					proposerElection,
-					key,
+					key.getPublicKey(),
 					validatorSet,
 					counters.get(key)
 				);

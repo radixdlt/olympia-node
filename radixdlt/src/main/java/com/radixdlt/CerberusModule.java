@@ -150,7 +150,7 @@ public class CerberusModule extends AbstractModule {
 				vertexStore,
 				pendingVotes,
 				proposerElection,
-				selfKey,
+				selfKey.getPublicKey(),
 				validatorSet,
 				counters
 			);

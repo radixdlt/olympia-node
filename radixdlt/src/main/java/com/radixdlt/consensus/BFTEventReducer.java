@@ -17,8 +17,6 @@
 
 package com.radixdlt.consensus;
 
-import com.google.inject.Inject;
-import com.google.inject.name.Named;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.validators.Validator;
@@ -30,7 +28,6 @@ import com.radixdlt.consensus.safety.SafetyViolationException;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 
@@ -59,7 +56,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	private final EndOfEpochSender endOfEpochSender;
 	private final Pacemaker pacemaker;
 	private final ProposerElection proposerElection;
-	private final ECKeyPair selfKey; // TODO remove signing/address to separate identity management
+	private final ECPublicKey self;
 	private final SafetyRules safetyRules;
 	private final ValidatorSet validatorSet;
 	private final SystemCounters counters;
@@ -70,7 +67,6 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		void sendEndOfEpoch(VertexMetadata vertexMetadata);
 	}
 
-	@Inject
 	public BFTEventReducer(
 		ProposalGenerator proposalGenerator,
 		BFTEventSender sender,
@@ -80,7 +76,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		VertexStore vertexStore,
 		PendingVotes pendingVotes,
 		ProposerElection proposerElection,
-		@Named("self") ECKeyPair selfKey,
+		ECPublicKey self,
 		ValidatorSet validatorSet,
 		SystemCounters counters
 	) {
@@ -92,7 +88,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		this.vertexStore = Objects.requireNonNull(vertexStore);
 		this.pendingVotes = Objects.requireNonNull(pendingVotes);
 		this.proposerElection = Objects.requireNonNull(proposerElection);
-		this.selfKey = Objects.requireNonNull(selfKey);
+		this.self = Objects.requireNonNull(self);
 		this.validatorSet = Objects.requireNonNull(validatorSet);
 		this.counters = Objects.requireNonNull(counters);
 	}
@@ -102,7 +98,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	}
 
 	private String getShortName() {
-		return getShortName(selfKey.euid());
+		return getShortName(self.euid());
 	}
 
 	// Hotstuff's Event-Driven OnNextSyncView
@@ -220,9 +216,9 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		}
 
 		// If not currently leader or next leader, Proceed to next view
-		if (!Objects.equals(currentLeader, selfKey.getPublicKey())) {
+		if (!Objects.equals(currentLeader, self)) {
 			final ECPublicKey nextLeader = this.proposerElection.getProposer(updatedView.next());
-			if (!Objects.equals(nextLeader, selfKey.getPublicKey())) {
+			if (!Objects.equals(nextLeader, self)) {
 
 				// TODO: should not call processQC
 				this.pacemaker.processQC(updatedView).ifPresent(this::proceedToView);

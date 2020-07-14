@@ -85,7 +85,7 @@ public class BFTEventReducerTest {
 			vertexStore,
 			pendingVotes,
 			proposerElection,
-			SELF_KEY,
+			SELF_KEY.getPublicKey(),
 			validatorSet,
 			counters
 		);
