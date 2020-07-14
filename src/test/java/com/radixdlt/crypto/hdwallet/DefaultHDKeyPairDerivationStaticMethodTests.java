@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 public class DefaultHDKeyPairDerivationStaticMethodTests {
 
@@ -73,6 +74,28 @@ public class DefaultHDKeyPairDerivationStaticMethodTests {
 		assertEquals(
 				left.deriveKeyAtPath(bip32Path).privateKeyHex(),
 				right.deriveKeyAtPath(bip32Path).privateKeyHex()
+		);
+
+		HDPath hdPath = null;
+		try {
+			hdPath = DefaultHDPath.of(bip32Path);
+		} catch (HDPathException e) {
+			fail("unexpected exception " + e);
+			return;
+		}
+		assertEquals(
+				left.deriveKeyAtPath(hdPath).privateKeyHex(),
+				right.deriveKeyAtPath(hdPath).privateKeyHex()
+		);
+
+		assertEquals(
+				left.deriveKeyAtPath(bip32Path).privateKeyHex(),
+				left.deriveKeyAtPath(hdPath).privateKeyHex()
+		);
+
+		assertEquals(
+				right.deriveKeyAtPath(bip32Path).privateKeyHex(),
+				right.deriveKeyAtPath(hdPath).privateKeyHex()
 		);
 	}
 }

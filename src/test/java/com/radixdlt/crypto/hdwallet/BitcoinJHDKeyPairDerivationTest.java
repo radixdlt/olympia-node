@@ -32,6 +32,7 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 public class BitcoinJHDKeyPairDerivationTest {
 
@@ -107,6 +108,7 @@ public class BitcoinJHDKeyPairDerivationTest {
 			assertEquals(childVector.isHardened(), childKey.isHardened());
 			assertEquals(childVector.depth, childKey.depth());
 			assertEquals(childVector.index(), childKey.index());
+			assertTrue(childKey.path().hasPrivateKey());
 		}
 	}
 
