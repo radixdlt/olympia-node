@@ -34,14 +34,20 @@ public final class HDPaths {
 
 	public static final long BIP32_HARDENED_VALUE_INCREMENT = 0x80000000L;
 
+	static void validateHDPathString(String path) throws HDPathException {
+		if (!isValidHDPath(path)) {
+			throw new HDPathException("Invalid BIP32 path");
+		}
+	}
+
 	/**
 	 * Checks if the {@code path} string is a valid BIP32 path or not, using the standard BIP32
 	 * hardened marker {@link #BIP32_HARDENED_MARKER_STANDARD}.
 	 * @param path to validate
 	 * @return true iff {@code path} is a valid BIP32 path, else false.
 	 */
-	static boolean validateBIP32Path(String path) {
-		return validateBIP32Path(path, BIP32_HARDENED_MARKER_STANDARD);
+	static boolean isValidHDPath(String path) {
+		return isValidHDPath(path, BIP32_HARDENED_MARKER_STANDARD);
 	}
 
 	/**
@@ -50,7 +56,7 @@ public final class HDPaths {
 	 * @param hardenedMarker the string used to mark hardened paths
 	 * @return true iff {@code path} is a valid BIP32 path, else false.
 	 */
-	static boolean validateBIP32Path(String path, String hardenedMarker) {
+	static boolean isValidHDPath(String path, String hardenedMarker) {
 		// Check trivial paths
 		if (ImmutableList.of("", BIP32_PREFIX_PRIVATEKEY, BIP32_PATH_SEPARATOR).contains(path)) {
 			return true;

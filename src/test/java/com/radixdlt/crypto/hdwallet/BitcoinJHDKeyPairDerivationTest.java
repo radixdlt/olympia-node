@@ -32,11 +32,12 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 public class BitcoinJHDKeyPairDerivationTest {
 
 	@Test
-	public void when_deriving_a_radix_bip44_path_then_the_returned_key_pair_is_correct() {
+	public void when_deriving_a_radix_bip44_path_then_the_returned_key_pair_is_correct() throws MnemonicException {
 		// Same mnemonic as Ledger App
 		String mnemonic = "equip will roof matter pink blind book anxiety banner elbow sun young";
 
@@ -107,6 +108,7 @@ public class BitcoinJHDKeyPairDerivationTest {
 			assertEquals(childVector.isHardened(), childKey.isHardened());
 			assertEquals(childVector.depth, childKey.depth());
 			assertEquals(childVector.index(), childKey.index());
+			assertTrue(childKey.path().hasPrivateKey());
 		}
 	}
 

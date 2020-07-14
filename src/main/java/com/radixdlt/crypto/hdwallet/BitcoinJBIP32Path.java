@@ -17,6 +17,7 @@
 
 package com.radixdlt.crypto.hdwallet;
 
+import com.google.common.base.Objects;
 import org.bitcoinj.crypto.ChildNumber;
 
 import javax.annotation.Nullable;
@@ -47,9 +48,7 @@ final class BitcoinJBIP32Path implements HDPath {
 	}
 
 	static BitcoinJBIP32Path fromString(String path) throws HDPathException {
-		if (!HDPaths.validateBIP32Path(path)) {
-			throw HDPathException.invalidString;
-		}
+		HDPaths.validateHDPathString(path);
 		return new BitcoinJBIP32Path(org.bitcoinj.crypto.HDPath.parsePath(toBitcoinJPath(path)));
 	}
 
@@ -101,6 +100,10 @@ final class BitcoinJBIP32Path implements HDPath {
 
 	@Override
 	public long index() {
+		if (depth() == 0) {
+			throw new IllegalStateException("Trying to access index of 0 depth BIP32 path, this is undefined.");
+		}
+
 		long index = (long) lastComponent().num();
 		if (!isHardened()) {
 			return index;
@@ -119,5 +122,22 @@ final class BitcoinJBIP32Path implements HDPath {
 
 	private static List<ChildNumber> pathListFromBIP32Path(BitcoinJBIP32Path path, @Nullable Integer toIndex) {
 		return path.componentsUpTo(toIndex == null ? path.indexOfLastComponent() : toIndex);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		BitcoinJBIP32Path that = (BitcoinJBIP32Path) o;
+		return Objects.equal(path, that.path);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hashCode(path);
 	}
 }

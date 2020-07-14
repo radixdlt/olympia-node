@@ -24,8 +24,9 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
-public class DefaultHDWalletConstructorTests {
+public class DefaultHDKeyPairDerivationStaticMethodTests {
 
 	static String mnemonicString = "equip will roof matter pink blind book anxiety banner elbow sun young";
 
@@ -37,7 +38,7 @@ public class DefaultHDWalletConstructorTests {
 	static byte[] seedBytes = Bytes.fromHexString(seedHex);
 
 	@Test
-	public void verify_same_derivation_using_mnemonicstring_no_passphrase_and_mnemonicwords() {
+	public void verify_same_derivation_using_mnemonicstring_no_passphrase_and_mnemonicwords() throws MnemonicException {
 		assertSame(
 				DefaultHDKeyPairDerivation.fromMnemonicString(mnemonicString),
 				DefaultHDKeyPairDerivation.fromMnemonicWords(mnemonicWords)
@@ -45,7 +46,7 @@ public class DefaultHDWalletConstructorTests {
 	}
 
 	@Test
-	public void verify_same_derivation_using_mnemonicstring_no_passphrase_and_seedHex() {
+	public void verify_same_derivation_using_mnemonicstring_no_passphrase_and_seedHex() throws MnemonicException {
 		assertSame(
 				DefaultHDKeyPairDerivation.fromMnemonicString(mnemonicString),
 				DefaultHDKeyPairDerivation.fromSeed(seedHex)
@@ -53,7 +54,7 @@ public class DefaultHDWalletConstructorTests {
 	}
 
 	@Test
-	public void verify_same_derivation_using_mnemonicstring_no_passphrase_and_seed_bytes() {
+	public void verify_same_derivation_using_mnemonicstring_no_passphrase_and_seed_bytes() throws MnemonicException {
 		assertSame(
 				DefaultHDKeyPairDerivation.fromMnemonicString(mnemonicString),
 				DefaultHDKeyPairDerivation.fromSeed(seedBytes)
@@ -73,6 +74,28 @@ public class DefaultHDWalletConstructorTests {
 		assertEquals(
 				left.deriveKeyAtPath(bip32Path).privateKeyHex(),
 				right.deriveKeyAtPath(bip32Path).privateKeyHex()
+		);
+
+		HDPath hdPath = null;
+		try {
+			hdPath = DefaultHDPath.of(bip32Path);
+		} catch (HDPathException e) {
+			fail("unexpected exception " + e);
+			return;
+		}
+		assertEquals(
+				left.deriveKeyAtPath(hdPath).privateKeyHex(),
+				right.deriveKeyAtPath(hdPath).privateKeyHex()
+		);
+
+		assertEquals(
+				left.deriveKeyAtPath(bip32Path).privateKeyHex(),
+				left.deriveKeyAtPath(hdPath).privateKeyHex()
+		);
+
+		assertEquals(
+				right.deriveKeyAtPath(bip32Path).privateKeyHex(),
+				right.deriveKeyAtPath(hdPath).privateKeyHex()
 		);
 	}
 }

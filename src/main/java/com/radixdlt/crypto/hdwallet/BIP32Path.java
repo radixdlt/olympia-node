@@ -18,6 +18,8 @@
 package com.radixdlt.crypto.hdwallet;
 
 
+import com.google.common.base.Objects;
+
 /**
  * A wrapper around some underlying BIP32Path implementation, that is easily swappable.
  * This class doesn't and shouldn't inherit from said wrapped implemetation, but rather use
@@ -70,4 +72,20 @@ public class BIP32Path implements HDPath {
 		return path.next();
 	}
 
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		BIP32Path bip32Path = (BIP32Path) o;
+		return Objects.equal(path, bip32Path.path);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hashCode(path);
+	}
 }

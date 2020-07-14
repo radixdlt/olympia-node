@@ -17,9 +17,9 @@
 
 package com.radixdlt.crypto.hdwallet;
 
-public class HDPathException extends Exception {
+public class MnemonicException extends Exception {
 
-	public HDPathException(String errorMessage) {
-		super(errorMessage);
+	public MnemonicException(String errorMessage, Throwable throwable) {
+		super(errorMessage, throwable);
 	}
 }
