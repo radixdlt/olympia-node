@@ -63,6 +63,9 @@ final class BitcoinJBIP32Path implements HDPath {
 	}
 
 	private int indexOfLastComponent() {
+		if (depth() == 0) {
+			throw new IllegalStateException("Trying to access component of a BIP32 path with 0 depth, this is undefined.");
+		}
 		return depth() - 1;
 	}
 
@@ -100,10 +103,6 @@ final class BitcoinJBIP32Path implements HDPath {
 
 	@Override
 	public long index() {
-		if (depth() == 0) {
-			throw new IllegalStateException("Trying to access index of 0 depth BIP32 path, this is undefined.");
-		}
-
 		long index = (long) lastComponent().num();
 		if (!isHardened()) {
 			return index;
