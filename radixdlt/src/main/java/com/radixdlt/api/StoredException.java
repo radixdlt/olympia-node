@@ -17,41 +17,34 @@
 
 package com.radixdlt.api;
 
-import com.radixdlt.constraintmachine.DataPointer;
-import com.radixdlt.identifiers.AID;
+import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.middleware2.CommittedAtom;
 import java.util.Objects;
 
 /**
  * A ledger conflict event
  */
-public final class ConflictException {
+public final class StoredException {
 	private final CommittedAtom committedAtom;
-	private final DataPointer dp;
-	private final AID conflictingAtom;
+	private final RadixEngineException exception;
 
-	public ConflictException(CommittedAtom committedAtom, DataPointer dp, AID conflictingAtom) {
+	public StoredException(CommittedAtom committedAtom, RadixEngineException exception) {
 		this.committedAtom = Objects.requireNonNull(committedAtom);
-		this.dp = Objects.requireNonNull(dp);
-		this.conflictingAtom = Objects.requireNonNull(conflictingAtom);
+		this.exception = Objects.requireNonNull(exception);
 	}
 
 	public CommittedAtom getCommittedAtom() {
 		return committedAtom;
 	}
 
-	public DataPointer getDataPointer() {
-		return dp;
-	}
-
-	public AID getConflictingAtom() {
-		return conflictingAtom;
+	public RadixEngineException getException() {
+		return exception;
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{aid=%s meta=%s}",
-			this.getClass().getSimpleName(), this.committedAtom.getAID(), this.committedAtom.getVertexMetadata()
+		return String.format("%s{exception=%s aid=%s meta=%s}",
+			this.getClass().getSimpleName(), this.exception, this.committedAtom.getAID(), this.committedAtom.getVertexMetadata()
 		);
 	}
 }

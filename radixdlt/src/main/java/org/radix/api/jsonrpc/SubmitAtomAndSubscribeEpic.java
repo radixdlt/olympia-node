@@ -17,8 +17,8 @@
 
 package org.radix.api.jsonrpc;
 
-import com.radixdlt.api.ConflictException;
-import com.radixdlt.api.VirtualConflictException;
+import com.radixdlt.api.StoredException;
+import com.radixdlt.engine.RadixEngineException;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -94,21 +94,28 @@ public class SubmitAtomAndSubscribeEpic {
 			}
 
 			@Override
-			public void onConflict(ConflictException e) {
+			public void onStoredException(StoredException e) {
+				RadixEngineException exception = e.getException();
 				JSONObject data = new JSONObject();
-				data.put("pointerToIssue", e.getDataPointer().toString());
-				data.put("message", e.getConflictingAtom().toString());
+				data.put("pointerToIssue", exception.getDataPointer().toString());
+				if (exception.getRelated() != null) {
+					data.put("message", exception.getRelated().getAID().toString());
+				}
 
-				sendAtomSubmissionState.accept(AtomSubmissionState.COLLISION, data);
-			}
+				final AtomSubmissionState atomSubmissionState;
+				switch (exception.getErrorCode()) {
+					case VIRTUAL_STATE_CONFLICT:
+					case MISSING_DEPENDENCY:
+						atomSubmissionState = AtomSubmissionState.VALIDATION_ERROR;
+						break;
+					case STATE_CONFLICT:
+						atomSubmissionState = AtomSubmissionState.COLLISION;
+						break;
+					default: // Don't send back unhandled exception
+						return;
+				}
 
-			@Override
-			public void onVirtualConflict(VirtualConflictException e) {
-				JSONObject data = new JSONObject();
-				data.put("pointerToIssue", e.getDataPointer().toString());
-				data.put("message", "Virtual State Conflict");
-
-				sendAtomSubmissionState.accept(AtomSubmissionState.VALIDATION_ERROR, data);
+				sendAtomSubmissionState.accept(atomSubmissionState, data);
 			}
 
 			@Override

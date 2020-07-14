@@ -27,12 +27,9 @@ import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.validators.ValidatorSet;
-import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.engine.RadixEngineErrorCode;
 import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.CommittedAtom;
@@ -52,9 +49,6 @@ import java.util.Optional;
 import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.radix.atoms.AtomDependencyNotFoundException;
-import org.radix.atoms.events.AtomExceptionEvent;
-import org.radix.events.Events;
 
 /**
  * A service which synchronizes the radix engine committed state between peers.
@@ -64,8 +58,7 @@ import org.radix.events.Events;
 public final class SyncedRadixEngine implements SyncedStateComputer<CommittedAtom> {
 	public interface SyncedRadixEngineEventSender {
 		void sendStored(CommittedAtom committedAtom, ImmutableSet<EUID> indicies);
-		void sendConflictException(CommittedAtom committedAtom, DataPointer dp, AID conflictingAtom);
-		void sendVirtualConflictException(CommittedAtom committedAtom, DataPointer dp);
+		void sendStoredException(CommittedAtom committedAtom, RadixEngineException e);
 	}
 
 	public interface CommittedStateSyncSender {
@@ -209,20 +202,7 @@ public final class SyncedRadixEngine implements SyncedStateComputer<CommittedAto
 		// TODO: Reinstate this when ProposalGenerator + Mempool can guarantee correct proposals
 
 		// TODO: move VIRTUAL_STATE_CONFLICT to static check
-		if (e.getErrorCode() == RadixEngineErrorCode.VIRTUAL_STATE_CONFLICT) {
-			engineEventSender.sendVirtualConflictException(atom, e.getDataPointer());
-		} else if (e.getErrorCode() == RadixEngineErrorCode.STATE_CONFLICT) {
-			engineEventSender.sendConflictException(atom, e.getDataPointer(), e.getRelated().getAID());
-		} else if (e.getErrorCode() == RadixEngineErrorCode.MISSING_DEPENDENCY) {
-			final AtomDependencyNotFoundException notFoundException =
-				new AtomDependencyNotFoundException(
-					String.format("Atom has missing dependencies in transitions: %s", e.getDataPointer().toString()),
-					e.getDataPointer()
-				);
-
-			AtomExceptionEvent atomExceptionEvent = new AtomExceptionEvent(notFoundException, atom.getAID());
-			Events.getInstance().broadcast(atomExceptionEvent);
-		}
+		engineEventSender.sendStoredException(atom, e);
 	}
 
 	/**

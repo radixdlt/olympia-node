@@ -24,12 +24,11 @@ import io.reactivex.rxjava3.core.Observable;
  */
 public interface LedgerRx {
 	/**
-	 * Retrieve a never ending stream of virtual
-	 * conflict exceptions
+	 * Retrieve a never ending stream of stored atoms
 	 *
-	 * @return hot observable of virtual conflict exceptions
+	 * @return hot observable of stored atoms
 	 */
-	Observable<VirtualConflictException> virtualConflictExceptions();
+	Observable<StoredAtom> storedAtoms();
 
 	/**
 	 * Retrieve a never ending stream of conflict
@@ -37,12 +36,5 @@ public interface LedgerRx {
 	 *
 	 * @return hot observable of conflict exceptions
 	 */
-	Observable<ConflictException> conflictExceptions();
-
-	/**
-	 * Retrieve a never ending stream of stored atoms
-	 *
-	 * @return hot observable of stored atoms
-	 */
-	Observable<StoredAtom> storedAtoms();
+	Observable<StoredException> storedExceptions();
 }

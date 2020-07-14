@@ -21,9 +21,8 @@ import com.google.common.collect.EvictingQueue;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.api.LedgerRx;
 import com.radixdlt.api.StoredAtom;
-import com.radixdlt.api.VirtualConflictException;
 import com.radixdlt.atommodel.Atom;
-import com.radixdlt.api.ConflictException;
+import com.radixdlt.api.StoredException;
 import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.mempool.SubmissionControl;
 
@@ -152,35 +151,19 @@ public class AtomsService {
 		}
 	}
 
-	private void processConflict(ConflictException e) {
+	private void processException(StoredException e) {
 		synchronized (lock) {
 			eventRingBuffer.add(
-				System.currentTimeMillis() + " EXCEPTION " + e.getCommittedAtom().getAID() + " CONFLICT");
+				System.currentTimeMillis() + " EXCEPTION " + e.getCommittedAtom().getAID() + " " + e.getException().getErrorCode());
 		}
 
 		List<SingleAtomListener> subscribers = this.deleteOnEventSingleAtomObservers.remove(e.getCommittedAtom().getAID());
 		if (subscribers != null) {
-			subscribers.forEach(subscriber -> subscriber.onConflict(e));
+			subscribers.forEach(subscriber -> subscriber.onStoredException(e));
 		}
 
 		for (AtomStatusListener singleAtomListener : this.singleAtomObservers.getOrDefault(e.getCommittedAtom().getAID(), Collections.emptyList())) {
-			singleAtomListener.onConflict(e);
-		}
-	}
-
-	private void processVirtualConflict(VirtualConflictException e) {
-		synchronized (lock) {
-			eventRingBuffer.add(
-				System.currentTimeMillis() + " EXCEPTION " + e.getCommittedAtom().getAID() + " VIRTUAL_CONFLICT");
-		}
-
-		List<SingleAtomListener> subscribers = this.deleteOnEventSingleAtomObservers.remove(e.getCommittedAtom().getAID());
-		if (subscribers != null) {
-			subscribers.forEach(subscriber -> subscriber.onVirtualConflict(e));
-		}
-
-		for (AtomStatusListener singleAtomListener : this.singleAtomObservers.getOrDefault(e.getCommittedAtom().getAID(), Collections.emptyList())) {
-			singleAtomListener.onVirtualConflict(e);
+			singleAtomListener.onStoredException(e);
 		}
 	}
 
@@ -188,19 +171,12 @@ public class AtomsService {
 		io.reactivex.rxjava3.disposables.Disposable lastStoredAtomDisposable = ledgerRx.storedAtoms()
 			.observeOn(Schedulers.io())
 			.subscribe(this::processedStoredEvent);
-
 		this.disposable.add(lastStoredAtomDisposable);
 
-		io.reactivex.rxjava3.disposables.Disposable conflictsDisposable = ledgerRx.conflictExceptions()
+		io.reactivex.rxjava3.disposables.Disposable exceptionsDisposable = ledgerRx.storedExceptions()
 			.observeOn(Schedulers.io())
-			.subscribe(this::processConflict);
-		this.disposable.add(conflictsDisposable);
-
-		io.reactivex.rxjava3.disposables.Disposable virtualConflictsDisposable = ledgerRx.virtualConflictExceptions()
-			.observeOn(Schedulers.io())
-			.subscribe(this::processVirtualConflict);
-		this.disposable.add(virtualConflictsDisposable);
-
+			.subscribe(this::processException);
+		this.disposable.add(exceptionsDisposable);
 	}
 
 	public void stop() {

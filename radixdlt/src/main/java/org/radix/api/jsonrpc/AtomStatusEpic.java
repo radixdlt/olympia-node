@@ -17,11 +17,10 @@
 
 package org.radix.api.jsonrpc;
 
-import com.radixdlt.api.VirtualConflictException;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.engine.AtomStatus;
 import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.api.ConflictException;
+import com.radixdlt.api.StoredException;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.identifiers.AID;
@@ -34,7 +33,6 @@ import org.json.JSONObject;
 import org.radix.api.observable.Disposable;
 import org.radix.api.services.AtomStatusListener;
 import org.radix.api.services.AtomsService;
-import org.radix.atoms.AtomDependencyNotFoundException;
 
 /**
  * Epic used to manage streaming status notifications regarding an atom.
@@ -104,26 +102,39 @@ public class AtomStatusEpic {
 			}
 
 			@Override
-			public void onConflict(ConflictException e) {
+			public void onStoredException(StoredException e) {
+				final RadixEngineException exception = e.getException();
+
 				JSONObject data = new JSONObject();
 				data.put("aid", e.getCommittedAtom().getAID());
-				data.put("conflictingWith", e.getConflictingAtom());
-				data.put("pointerToIssue", e.getDataPointer());
+				data.put("pointerToIssue", exception.getDataPointer());
+				if (exception.getRelated() != null) {
+					data.put("conflictingWith", exception.getRelated().getAID().toString());
+				}
+
 				// TODO: serialize vertexMetadata
 				VertexMetadata vertexMetadata = e.getCommittedAtom().getVertexMetadata();
 				data.put("stateVersion", vertexMetadata.getStateVersion());
 				data.put("epoch", vertexMetadata.getEpoch());
 				data.put("view", vertexMetadata.getView().number());
 
-				sendAtomSubmissionState.accept(AtomStatus.CONFLICT_LOSER, data);
-			}
+				final AtomStatus atomStatus;
+				switch (exception.getErrorCode()) {
+					case VIRTUAL_STATE_CONFLICT:
+						atomStatus = AtomStatus.EVICTED_FAILED_CM_VERIFICATION;
+						break;
+					case MISSING_DEPENDENCY:
+						atomStatus = AtomStatus.MISSING_DEPENDENCY;
+						break;
+					case STATE_CONFLICT:
+						atomStatus = AtomStatus.CONFLICT_LOSER;
+						break;
+					default: // Don't send back unhandled exception
+						return;
+				}
 
-			@Override
-			public void onVirtualConflict(VirtualConflictException e) {
-				JSONObject data = new JSONObject();
-				data.put("message", "Virtual State Conflict");
-				data.put("pointerToIssue", e.getDataPointer().toString());
-				sendAtomSubmissionState.accept(AtomStatus.EVICTED_FAILED_CM_VERIFICATION, data);
+
+				sendAtomSubmissionState.accept(atomStatus, data);
 			}
 
 			@Override
@@ -144,12 +155,6 @@ public class AtomStatusEpic {
 					data.put("message", reException.getErrorCode().toString());
 					data.put("pointerToIssue", pointerToIssue);
 					sendAtomSubmissionState.accept(AtomStatus.EVICTED_FAILED_CM_VERIFICATION, data);
-				} else if (e instanceof AtomDependencyNotFoundException) {
-					AtomDependencyNotFoundException dependencyNotFoundException = (AtomDependencyNotFoundException) e;
-					JSONObject data = new JSONObject();
-					data.put("missingDependency", dependencyNotFoundException.getDependencyMissing());
-
-					sendAtomSubmissionState.accept(AtomStatus.MISSING_DEPENDENCY, data);
 				} else if (e instanceof MempoolFullException) {
 					JSONObject data = new JSONObject();
 					data.put("message", e.getMessage());
