@@ -17,6 +17,12 @@
 
 package com.radixdlt.crypto.hdwallet;
 
+/**
+ * A type being able to derive hierarchy deterministic key pairs ({@link HDKeyPair}),
+ * from a {@link HDPath}, typically using
+ * <a href="https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki">BIP32 (BIP-32)</a>
+ * child key derivation.
+ */
 public interface HDKeyPairDerivation {
 
 	/**

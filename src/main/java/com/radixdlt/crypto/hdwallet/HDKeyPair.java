@@ -70,10 +70,9 @@ public final class HDKeyPair {
 			return false;
 		}
 		HDKeyPair hdKeyPair = (HDKeyPair) o;
-		boolean pathEquals = Objects.equal(path, hdKeyPair.path);
-		boolean keyPairEquals = Objects.equal(ecKeyPair, hdKeyPair.ecKeyPair);
-
-		return pathEquals && keyPairEquals;
+		return Objects.equal(ecKeyPair, hdKeyPair.ecKeyPair)
+				&&
+				Objects.equal(path, hdKeyPair.path);
 	}
 
 	@Override

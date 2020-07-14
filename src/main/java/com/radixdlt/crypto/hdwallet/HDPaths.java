@@ -20,6 +20,9 @@ package com.radixdlt.crypto.hdwallet;
 import com.google.common.collect.ImmutableList;
 import org.apache.logging.log4j.core.util.Integers;
 
+/**
+ * A set of utility methods used for e.g. validating strings representing {@link HDPath}.
+ */
 public final class HDPaths {
 
 	private HDPaths() {

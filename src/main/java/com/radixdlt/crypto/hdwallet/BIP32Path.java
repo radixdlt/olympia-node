@@ -21,14 +21,16 @@ package com.radixdlt.crypto.hdwallet;
 import com.google.common.base.Objects;
 
 /**
- * A wrapper around some underlying BIP32Path implementation, that is easily swappable.
+ * A wrapper around some underlying
+ * <a href="https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki">BIP32 (BIP-32)</a> implementation,
+ * that is easily swappable.
+ *
  * This class doesn't and shouldn't inherit from said wrapped implementation, but rather use
  * it as a trampoline. Since all interfaces are forwarded to the underlying wrapped implementation
  * this class should really be trivial.
  *
  * However, users are discouraged to construct instances of this class directly, they should
- * rather be using `DefaultHDPath`.
- *
+ * rather be using {@link DefaultHDPath}.
  */
 public class BIP32Path implements HDPath {
 
