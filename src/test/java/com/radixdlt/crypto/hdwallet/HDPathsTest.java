@@ -26,7 +26,21 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-public class BIP32PathTests {
+public class HDPathsTest {
+
+	@Test
+	public void when_creating_an_hdpath_from_only_a_slash_then_a_path_with_depth_0_is_created() throws HDPathException {
+		HDPath hdPath = DefaultHDPath.of("/");
+		assertEquals("M", hdPath.toString());
+		assertEquals(0, hdPath.depth());
+	}
+
+	@Test
+	public void when_creating_an_hdpath_from_only_an_empty_string_then_a_path_with_depth_0_is_created() throws HDPathException {
+		HDPath hdPath = DefaultHDPath.of("");
+		assertEquals("M", hdPath.toString());
+		assertEquals(0, hdPath.depth());
+	}
 
 	@Test
 	public void when_validating_valid_bip32_paths_then_they_all_pass_validation() {

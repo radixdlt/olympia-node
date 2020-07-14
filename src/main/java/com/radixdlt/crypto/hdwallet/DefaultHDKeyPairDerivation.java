@@ -45,7 +45,7 @@ public final class DefaultHDKeyPairDerivation {
 		return fromSeed(seed);
 	}
 
-	public static HDKeyPairDerivation fromMnemonicWordsWithPassphrase(List<String> mnemonicWords, String passphrase) throws MnemonicException {
+	public static HDKeyPairDerivation fromMnemonicWordsAndPassphrase(List<String> mnemonicWords, String passphrase) throws MnemonicException {
 		byte[] seed = DefaultMnemonicToSeedConverter.seedFromMnemonicAndPassphrase(mnemonicWords, passphrase);
 		return fromSeed(seed);
 	}
