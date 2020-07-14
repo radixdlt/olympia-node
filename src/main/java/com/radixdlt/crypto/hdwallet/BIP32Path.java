@@ -22,7 +22,7 @@ import com.google.common.base.Objects;
 
 /**
  * A wrapper around some underlying BIP32Path implementation, that is easily swappable.
- * This class doesn't and shouldn't inherit from said wrapped implemetation, but rather use
+ * This class doesn't and shouldn't inherit from said wrapped implementation, but rather use
  * it as a trampoline. Since all interfaces are forwarded to the underlying wrapped implementation
  * this class should really be trivial.
  *

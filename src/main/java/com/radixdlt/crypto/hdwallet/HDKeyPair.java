@@ -38,14 +38,25 @@ public final class HDKeyPair {
 		this.path = path;
 	}
 
+	/**
+	 * Returns the {@link HDPath} that was used to derive the Key Pair returned by {@link #keyPair()}.
+	 * @return the {@link HDPath} that was used to derive the Key Pair returned by {@link #keyPair()}.
+	 */
 	public HDPath path() {
 		return path;
 	}
 
+	/**
+	 * The resulting (child) {@link ECKeyPair} after having derived it using the {@link HDPath} and {@link HDKeyPairDerivation}, together with
+	 * some root key (from a seed).
+	 * @return resulting (child) {@link ECKeyPair} after having derived it using the {@link HDPath} and {@link HDKeyPairDerivation}, together with
+	 * 	 * some root key (from a seed).
+	 */
 	public ECKeyPair keyPair() {
 		return ecKeyPair;
 	}
 
+	@Override
 	public String toString() {
 		return path.toString();
 	}
