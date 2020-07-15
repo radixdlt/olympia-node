@@ -26,8 +26,8 @@ import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.ValidatorSet;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.EUID;
@@ -158,7 +158,7 @@ public final class SyncedRadixEngine implements SyncedStateComputer<CommittedAto
 	}
 
 	@Override
-	public boolean syncTo(VertexMetadata vertexMetadata, List<ECPublicKey> target, Object opaque) {
+	public boolean syncTo(VertexMetadata vertexMetadata, List<BFTNode> target, Object opaque) {
 		if (target.isEmpty()) {
 			// TODO: relax this in future when we have non-validator nodes
 			throw new IllegalArgumentException("target must not be empty");
@@ -172,7 +172,7 @@ public final class SyncedRadixEngine implements SyncedStateComputer<CommittedAto
 
 		// TODO: better randomization of peer selection
 		Peer peer = target.stream()
-			.map(pk -> addressBook.peer(pk.euid()))
+			.map(node -> addressBook.peer(node.getKey().euid()))
 			.filter(Optional::isPresent)
 			.map(Optional::get)
 			.filter(Peer::hasSystem)

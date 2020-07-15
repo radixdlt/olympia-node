@@ -172,7 +172,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		// accumulate votes into QCs in store
 		this.pendingVotes.insertVote(vote, this.validatorSet).ifPresent(qc -> {
 			log.trace("{}: VOTE: Formed QC: {}", this.self::getShortName, () -> qc);
-			if (vertexStore.syncToQC(qc, vertexStore.getHighestCommittedQC(), vote.getAuthor())) {
+			if (vertexStore.syncToQC(qc, vertexStore.getHighestCommittedQC(), new BFTNode(vote.getAuthor()))) {
 				if (!synchedLog) {
 					log.debug("{}: VOTE: QC Synced: {}", this.self::getShortName, () -> qc);
 					synchedLog = true;

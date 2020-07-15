@@ -38,7 +38,7 @@ import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.bft.VertexStore;
-import com.radixdlt.consensus.SyncVerticesRPCSender;
+import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRPCSender;
 import com.radixdlt.consensus.VertexStoreFactory;
 import com.radixdlt.consensus.deterministic.ControlledNetwork.ControlledSender;
 import com.radixdlt.consensus.deterministic.configuration.UnsupportedSyncVerticesRPCSender;

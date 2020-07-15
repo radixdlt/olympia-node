@@ -35,6 +35,7 @@ import com.radixdlt.EpochChangeSender;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.sync.SyncedRadixEngine.CommittedStateSyncSender;
 import com.radixdlt.consensus.sync.SyncedRadixEngine.SyncedRadixEngineEventSender;
 import com.radixdlt.consensus.bft.ValidatorSet;
@@ -212,6 +213,8 @@ public class SyncedRadixEngineTest {
 		ECPublicKey pk = mock(ECPublicKey.class);
 		EUID euid = mock(EUID.class);
 		when(pk.euid()).thenReturn(euid);
+		BFTNode node = mock(BFTNode.class);
+		when(node.getKey()).thenReturn(pk);
 		when(addressBook.peer(eq(euid))).thenReturn(Optional.of(peer));
 		when(committedAtomsStore.getStateVersion()).thenReturn(1233L);
 
@@ -224,7 +227,7 @@ public class SyncedRadixEngineTest {
 		VertexMetadata nextVertexMetadata = mock(VertexMetadata.class);
 		when(nextVertexMetadata.getStateVersion()).thenReturn(1234L);
 
-		syncedRadixEngine.syncTo(nextVertexMetadata, Collections.singletonList(pk), mock(Object.class));
+		syncedRadixEngine.syncTo(nextVertexMetadata, Collections.singletonList(node), mock(Object.class));
 		verify(committedStateSyncSender, never()).sendCommittedStateSync(anyLong(), any());
 
 		when(nextAtom.getClientAtom()).thenReturn(mock(ClientAtom.class));

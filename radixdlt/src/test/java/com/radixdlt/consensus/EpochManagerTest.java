@@ -151,6 +151,7 @@ public class EpochManagerTest {
 	public void when_receive_epoch_response__then_should_sync_state_computer() {
 		GetEpochResponse response = mock(GetEpochResponse.class);
 		when(response.getEpochAncestor()).thenReturn(VertexMetadata.ofGenesisAncestor());
+		when(response.getAuthor()).thenReturn(mock(ECPublicKey.class));
 		epochManager.processGetEpochResponse(response);
 		verify(syncedStateComputer, times(1)).syncTo(eq(VertexMetadata.ofGenesisAncestor()), any(), any());
 	}

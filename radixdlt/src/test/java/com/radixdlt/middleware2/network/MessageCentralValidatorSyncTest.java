@@ -29,6 +29,7 @@ import static org.mockito.Mockito.when;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
 import com.radixdlt.consensus.bft.GetVerticesResponse;
 import com.radixdlt.consensus.Vertex;
@@ -53,6 +54,7 @@ import org.junit.Test;
 
 public class MessageCentralValidatorSyncTest {
 	private ECPublicKey selfKey;
+	private BFTNode self;
 	private AddressBook addressBook;
 	private MessageCentral messageCentral;
 	private MessageCentralValidatorSync sync;
@@ -60,23 +62,25 @@ public class MessageCentralValidatorSyncTest {
 	@Before
 	public void setUp() {
 		this.selfKey = ECKeyPair.generateNew().getPublicKey();
+		this.self = new BFTNode(selfKey);
 		Universe universe = mock(Universe.class);
 		this.addressBook = mock(AddressBook.class);
 		this.messageCentral = mock(MessageCentral.class);
-		this.sync = new MessageCentralValidatorSync(selfKey, universe, addressBook, messageCentral);
+		this.sync = new MessageCentralValidatorSync(self, universe, addressBook, messageCentral);
 	}
 
 
 	@Test
 	public void when_send_rpc_to_self__then_illegal_state_exception_should_be_thrown() {
-		assertThatThrownBy(() -> sync.sendGetVerticesRequest(mock(Hash.class), selfKey, 1, new Object()))
+		assertThatThrownBy(() -> sync.sendGetVerticesRequest(mock(Hash.class), self, 1, new Object()))
 			.isInstanceOf(IllegalStateException.class);
 	}
 
 	@Test
 	public void when_get_vertex_and_peer_doesnt_exist__should_receive_error() {
-		ECPublicKey node = ECKeyPair.generateNew().getPublicKey();
-		when(addressBook.peer(node.euid())).thenReturn(Optional.empty());
+		ECPublicKey key = ECKeyPair.generateNew().getPublicKey();
+		BFTNode node = new BFTNode(key);
+		when(addressBook.peer(key.euid())).thenReturn(Optional.empty());
 		assertThatThrownBy(() -> sync.sendGetVerticesRequest(mock(Hash.class), node, 1, new Object()))
 			.isInstanceOf(IllegalStateException.class);
 	}
@@ -84,8 +88,11 @@ public class MessageCentralValidatorSyncTest {
 	@Test
 	public void when_send_request_and_receive_response__then_should_receive_same_opaque() {
 		Hash id = mock(Hash.class);
-		ECPublicKey node = mock(ECPublicKey.class);
-		when(node.euid()).thenReturn(EUID.ONE);
+		ECPublicKey key = mock(ECPublicKey.class);
+		when(key.euid()).thenReturn(EUID.ONE);
+		BFTNode node = mock(BFTNode.class);
+		when(node.getKey()).thenReturn(key);
+
 		Peer peer = mock(Peer.class);
 		when(addressBook.peer(eq(EUID.ONE))).thenReturn(Optional.of(peer));
 		int count = 1;
@@ -116,8 +123,10 @@ public class MessageCentralValidatorSyncTest {
 	@Test
 	public void when_send_request_and_receive_error_response__then_should_receive_same_opaque() {
 		Hash id = mock(Hash.class);
-		ECPublicKey node = mock(ECPublicKey.class);
-		when(node.euid()).thenReturn(EUID.ONE);
+		ECPublicKey key = mock(ECPublicKey.class);
+		when(key.euid()).thenReturn(EUID.ONE);
+		BFTNode node = mock(BFTNode.class);
+		when(node.getKey()).thenReturn(key);
 		Peer peer = mock(Peer.class);
 		when(addressBook.peer(eq(EUID.ONE))).thenReturn(Optional.of(peer));
 		int count = 1;

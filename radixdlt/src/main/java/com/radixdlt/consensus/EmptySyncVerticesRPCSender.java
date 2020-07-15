@@ -18,17 +18,18 @@
 package com.radixdlt.consensus;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 
 /**
  * Sender which goes nowhere
  */
-public enum EmptySyncVerticesRPCSender implements SyncVerticesRPCSender {
+public enum EmptySyncVerticesRPCSender implements VertexStore.SyncVerticesRPCSender {
 	INSTANCE;
 	@Override
-	public void sendGetVerticesRequest(Hash id, ECPublicKey node, int count, Object opaque) {
+	public void sendGetVerticesRequest(Hash id, BFTNode node, int count, Object opaque) {
 		// empty
 	}
 

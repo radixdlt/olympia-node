@@ -20,7 +20,6 @@ package com.radixdlt.consensus.bft;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.SyncVerticesRPCSender;
 import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
@@ -28,7 +27,6 @@ import com.radixdlt.consensus.VertexStoreEventProcessor;
 import com.radixdlt.consensus.View;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 
 import com.radixdlt.middleware2.CommittedAtom;
@@ -64,6 +62,38 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		void sendSyncedVertex(Vertex vertex);
 		void sendCommittedVertex(Vertex vertex);
 		void highQC(QuorumCertificate qc);
+	}
+
+	/**
+	 * An asynchronous supplier which retrieves data for a vertex with a given id
+	 */
+	public interface SyncVerticesRPCSender {
+		/**
+		 * Send an RPC request to retrieve vertices given an Id and number of
+		 * vertices. i.e. The vertex with the given id and (count - 1) ancestors
+		 * will be returned.
+		 *
+		 * @param id the id of the vertex to retrieve
+		 * @param node the node to retrieve the vertex info from
+		 * @param count number of vertices to retrieve
+		 * @param opaque an object which is expected to be provided in the corresponding response
+		 */
+		void sendGetVerticesRequest(Hash id, BFTNode node, int count, Object opaque);
+
+		/**
+		 * Send an RPC response to a given request
+		 * @param originalRequest the original request which is being replied to
+		 * @param vertices the response data of vertices
+		 */
+		void sendGetVerticesResponse(GetVerticesRequest originalRequest, ImmutableList<Vertex> vertices);
+
+		/**
+		 * Send an RPC error response to a given request
+		 * @param originalRequest the original request
+		 * @param highestQC highestQC sync info
+		 * @param highestCommittedQC highestCommittedQC sync info
+		 */
+		void sendGetVerticesErrorResponse(GetVerticesRequest originalRequest, QuorumCertificate highestQC, QuorumCertificate highestCommittedQC);
 	}
 
 	private final VertexStoreEventSender vertexStoreEventSender;
@@ -169,11 +199,11 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		private final QuorumCertificate qc;
 		private final QuorumCertificate committedQC;
 		private final VertexMetadata committedVertexMetadata;
-		private final ECPublicKey author;
+		private final BFTNode author;
 		private SyncStage syncStage;
 		private final LinkedList<Vertex> fetched = new LinkedList<>();
 
-		SyncState(Hash localSyncId, QuorumCertificate qc, QuorumCertificate committedQC, ECPublicKey author) {
+		SyncState(Hash localSyncId, QuorumCertificate qc, QuorumCertificate committedQC, BFTNode author) {
 			this.localSyncId = localSyncId;
 
 			if (committedQC.getView().equals(View.genesis())) {
@@ -261,7 +291,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 	private void processVerticesResponseForCommittedSync(Hash syncTo, SyncState syncState, GetVerticesResponse response) {
 		log.info("SYNC_STATE: Processing vertices {}", syncState);
 
-		List<ECPublicKey> signers = Collections.singletonList(syncState.author);
+		List<BFTNode> signers = Collections.singletonList(syncState.author);
 		syncState.fetched.addAll(response.getVertices());
 
 		if (syncedStateComputer.syncTo(syncState.committedVertexMetadata, signers, syncTo)) {
@@ -367,7 +397,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 	 * @param author the original author of the qc
 	 * @return true if already synced, false otherwise
 	 */
-	public boolean syncToQC(QuorumCertificate qc, QuorumCertificate committedQC, @Nullable ECPublicKey author) {
+	public boolean syncToQC(QuorumCertificate qc, QuorumCertificate committedQC, @Nullable BFTNode author) {
 		if (qc.getProposed().getView().compareTo(this.getRoot().getView()) < 0) {
 			return true;
 		}
@@ -394,7 +424,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		return false;
 	}
 
-	private void startSync(Hash vertexId, QuorumCertificate qc, QuorumCertificate committedQC, ECPublicKey author) {
+	private void startSync(Hash vertexId, QuorumCertificate qc, QuorumCertificate committedQC, BFTNode author) {
 		final SyncState syncState = new SyncState(vertexId, qc, committedQC, author);
 		syncing.put(vertexId, syncState);
 		if (requiresCommittedStateSync(syncState)) {

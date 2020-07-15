@@ -19,7 +19,6 @@ package com.radixdlt;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 import com.radixdlt.api.LedgerRx;
@@ -46,7 +45,7 @@ import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
-import com.radixdlt.consensus.SyncVerticesRPCSender;
+import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRPCSender;
 import com.radixdlt.consensus.VertexStoreFactory;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
@@ -115,11 +114,21 @@ public class CerberusModule extends AbstractModule {
 		bind(SyncEpochsRPCRx.class).to(MessageCentralValidatorSync.class);
 		bind(SyncVerticesRPCSender.class).to(MessageCentralValidatorSync.class);
 		bind(SyncVerticesRPCRx.class).to(MessageCentralValidatorSync.class);
-		bind(MessageCentralValidatorSync.class).in(Scopes.SINGLETON);
 
 		// Network BFT messages
 		bind(BFTEventSender.class).to(MessageCentralBFTNetwork.class);
 		bind(ConsensusEventsRx.class).to(MessageCentralBFTNetwork.class);
+	}
+
+	@Provides
+	@Singleton
+	MessageCentralValidatorSync validatorSync(
+		BFTNode self,
+		Universe universe,
+		AddressBook addressBook,
+		MessageCentral messageCentral
+	) {
+		return new MessageCentralValidatorSync(self, universe, addressBook, messageCentral);
 	}
 
 	@Provides
@@ -130,9 +139,7 @@ public class CerberusModule extends AbstractModule {
 		AddressBook addressBook,
 		MessageCentral messageCentral
 	) {
-		return new MessageCentralBFTNetwork(
-			self, universe, addressBook, messageCentral
-		);
+		return new MessageCentralBFTNetwork(self, universe, addressBook, messageCentral);
 	}
 
 	@Provides

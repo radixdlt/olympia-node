@@ -20,8 +20,8 @@ package com.radixdlt.consensus;
 import static org.mockito.Mockito.mock;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 import org.junit.Test;
 
@@ -33,6 +33,6 @@ public class EmptySyncVerticesRPCSenderTest {
 		EmptySyncVerticesRPCSender.INSTANCE
 			.sendGetVerticesErrorResponse(mock(GetVerticesRequest.class), mock(QuorumCertificate.class), mock(QuorumCertificate.class));
 		EmptySyncVerticesRPCSender.INSTANCE
-			.sendGetVerticesRequest(mock(Hash.class), mock(ECPublicKey.class), 1, mock(Object.class));
+			.sendGetVerticesRequest(mock(Hash.class), mock(BFTNode.class), 1, mock(Object.class));
 	}
 }

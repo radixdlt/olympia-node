@@ -29,7 +29,7 @@ import com.radixdlt.consensus.bft.GetVerticesResponse;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.SyncVerticesRPCSender;
+import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRPCSender;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
@@ -214,8 +214,8 @@ public final class ControlledNetwork {
 		}
 
 		@Override
-		public void sendGetVerticesRequest(Hash id, ECPublicKey node, int count, Object opaque) {
-			putMessage(EARLIEST_POSSIBLE, new ControlledMessage(sender, node, new ControlledGetVerticesRequest(id, count, sender, opaque)));
+		public void sendGetVerticesRequest(Hash id, BFTNode node, int count, Object opaque) {
+			putMessage(EARLIEST_POSSIBLE, new ControlledMessage(sender, node.getKey(), new ControlledGetVerticesRequest(id, count, sender, opaque)));
 		}
 
 		@Override

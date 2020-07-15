@@ -31,7 +31,7 @@ import com.radixdlt.consensus.bft.GetVerticesResponse;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
-import com.radixdlt.consensus.SyncVerticesRPCSender;
+import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRPCSender;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.Vote;
@@ -240,10 +240,10 @@ public class SimulationNetwork {
 		}
 
 		@Override
-		public void sendGetVerticesRequest(Hash id, ECPublicKey node, int count, Object opaque) {
+		public void sendGetVerticesRequest(Hash id, BFTNode node, int count, Object opaque) {
 			final SimulatedVerticesRequest request = new SimulatedVerticesRequest(thisNode, id, count);
 			opaqueMap.put(id, opaque);
-			receivedMessages.onNext(MessageInTransit.newMessage(request, thisNode, node));
+			receivedMessages.onNext(MessageInTransit.newMessage(request, thisNode, node.getKey()));
 		}
 
 		@Override

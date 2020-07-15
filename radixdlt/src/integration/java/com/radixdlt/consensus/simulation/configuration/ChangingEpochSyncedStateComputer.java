@@ -21,9 +21,9 @@ import com.radixdlt.consensus.EpochChange;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.simulation.network.SimulationNodes.SimulatedStateComputer;
 import com.radixdlt.consensus.bft.ValidatorSet;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.middleware2.CommittedAtom;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
@@ -60,7 +60,7 @@ public class ChangingEpochSyncedStateComputer implements SimulatedStateComputer 
 	}
 
 	@Override
-	public boolean syncTo(VertexMetadata vertexMetadata, List<ECPublicKey> target, Object opaque) {
+	public boolean syncTo(VertexMetadata vertexMetadata, List<BFTNode> target, Object opaque) {
 		if (vertexMetadata.isEndOfEpoch()) {
 			this.nextEpoch(vertexMetadata);
 		}

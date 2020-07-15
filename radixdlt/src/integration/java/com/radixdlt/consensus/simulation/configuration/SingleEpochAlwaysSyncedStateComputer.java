@@ -52,7 +52,7 @@ public final class SingleEpochAlwaysSyncedStateComputer implements SimulatedStat
 	}
 
 	@Override
-	public boolean syncTo(VertexMetadata vertexMetadata, List<ECPublicKey> target, Object opaque) {
+	public boolean syncTo(VertexMetadata vertexMetadata, List<BFTNode> target, Object opaque) {
 		return true;
 	}
 

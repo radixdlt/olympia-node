@@ -246,7 +246,7 @@ public final class EpochManager {
 
 		final VertexMetadata ancestor = response.getEpochAncestor();
 		if (ancestor.getEpoch() >= this.currentEpoch()) {
-			syncedStateComputer.syncTo(ancestor, Collections.singletonList(response.getAuthor()), null);
+			syncedStateComputer.syncTo(ancestor, Collections.singletonList(new BFTNode(response.getAuthor())), null);
 		} else {
 			log.warn("{}: Received old epoch {}", this.self::getShortName, () -> response);
 		}
