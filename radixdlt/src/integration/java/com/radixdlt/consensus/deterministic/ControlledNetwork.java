@@ -19,10 +19,11 @@ package com.radixdlt.consensus.deterministic;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.EpochChangeSender;
-import com.radixdlt.consensus.BFTEventSender;
+import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.EpochChange;
 import com.radixdlt.consensus.LocalTimeout;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
 import com.radixdlt.consensus.bft.GetVerticesResponse;
 import com.radixdlt.consensus.NewView;
@@ -238,21 +239,21 @@ public final class ControlledNetwork {
 		}
 
 		@Override
-		public void broadcastProposal(Proposal proposal, Set<ECPublicKey> nodes) {
+		public void broadcastProposal(Proposal proposal, Set<BFTNode> nodes) {
 			MessageRank rank = messageRank(proposal);
-			for (ECPublicKey receiver : nodes) {
-				putMessage(rank, new ControlledMessage(sender, receiver, proposal));
+			for (BFTNode receiver : nodes) {
+				putMessage(rank, new ControlledMessage(sender, receiver.getKey(), proposal));
 			}
 		}
 
 		@Override
-		public void sendNewView(NewView newView, ECPublicKey newViewLeader) {
-			putMessage(messageRank(newView), new ControlledMessage(sender, newViewLeader, newView));
+		public void sendNewView(NewView newView, BFTNode newViewLeader) {
+			putMessage(messageRank(newView), new ControlledMessage(sender, newViewLeader.getKey(), newView));
 		}
 
 		@Override
-		public void sendVote(Vote vote, ECPublicKey leader) {
-			putMessage(messageRank(vote.getVoteData().getProposed(), 0), new ControlledMessage(sender, leader, vote));
+		public void sendVote(Vote vote, BFTNode leader) {
+			putMessage(messageRank(vote.getVoteData().getProposed(), 0), new ControlledMessage(sender, leader.getKey(), vote));
 		}
 
 		@Override

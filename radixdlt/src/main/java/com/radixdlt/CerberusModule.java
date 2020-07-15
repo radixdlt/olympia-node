@@ -23,8 +23,8 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 import com.radixdlt.api.LedgerRx;
-import com.radixdlt.consensus.BFTEventReducer;
-import com.radixdlt.consensus.BFTEventSender;
+import com.radixdlt.consensus.bft.BFTEventReducer;
+import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.AddressBookValidatorSetProvider;
 import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -73,7 +73,9 @@ import com.radixdlt.middleware2.network.MessageCentralBFTNetwork;
 import com.radixdlt.middleware2.network.MessageCentralValidatorSync;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.network.addressbook.AddressBook;
+import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.properties.RuntimeProperties;
+import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.ThreadFactories;
 import java.util.Comparator;
 import java.util.Objects;
@@ -118,7 +120,19 @@ public class CerberusModule extends AbstractModule {
 		// Network BFT messages
 		bind(BFTEventSender.class).to(MessageCentralBFTNetwork.class);
 		bind(ConsensusEventsRx.class).to(MessageCentralBFTNetwork.class);
-		bind(MessageCentralBFTNetwork.class).in(Scopes.SINGLETON);
+	}
+
+	@Provides
+	@Singleton
+	MessageCentralBFTNetwork bftNetwork(
+		BFTNode self,
+		Universe universe,
+		AddressBook addressBook,
+		MessageCentral messageCentral
+	) {
+		return new MessageCentralBFTNetwork(
+			self, universe, addressBook, messageCentral
+		);
 	}
 
 	@Provides

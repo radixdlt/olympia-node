@@ -17,7 +17,7 @@
 
 package com.radixdlt.consensus.deterministic;
 
-import com.radixdlt.consensus.BFTEventReducer;
+import com.radixdlt.consensus.bft.BFTEventReducer;
 import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.CommittedStateSync;

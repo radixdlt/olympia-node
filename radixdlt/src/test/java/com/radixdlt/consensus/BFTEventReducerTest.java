@@ -18,7 +18,8 @@
 package com.radixdlt.consensus;
 
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.consensus.BFTEventReducer.EndOfEpochSender;
+import com.radixdlt.consensus.bft.BFTEventReducer;
+import com.radixdlt.consensus.bft.BFTEventReducer.EndOfEpochSender;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
@@ -58,7 +59,7 @@ public class BFTEventReducerTest {
 	private SafetyRules safetyRules;
 	private Pacemaker pacemaker;
 	private PendingVotes pendingVotes;
-	private BFTEventSender sender;
+	private BFTEventReducer.BFTEventSender sender;
 	private EndOfEpochSender endOfEpochSender;
 	private VertexStore vertexStore;
 	private ValidatorSet validatorSet;
@@ -68,7 +69,7 @@ public class BFTEventReducerTest {
 	@Before
 	public void setUp() {
 		this.proposalGenerator = mock(ProposalGenerator.class);
-		this.sender = mock(BFTEventSender.class);
+		this.sender = mock(BFTEventReducer.BFTEventSender.class);
 		this.endOfEpochSender = mock(EndOfEpochSender.class);
 		this.safetyRules = mock(SafetyRules.class);
 		this.pacemaker = mock(Pacemaker.class);

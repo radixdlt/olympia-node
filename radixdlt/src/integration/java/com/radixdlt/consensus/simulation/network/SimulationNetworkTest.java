@@ -24,6 +24,7 @@ import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
@@ -32,17 +33,19 @@ import io.reactivex.rxjava3.observers.TestObserver;
 import org.junit.Test;
 
 public class SimulationNetworkTest {
-	private ECPublicKey validatorId = ECKeyPair.generateNew().getPublicKey();
+	private ECPublicKey validatorId1 = ECKeyPair.generateNew().getPublicKey();
 	private ECPublicKey validatorId2 = ECKeyPair.generateNew().getPublicKey();
+	private BFTNode node1 = new BFTNode(validatorId1);
+	private BFTNode node2 = new BFTNode(validatorId2);
 
 	@Test
 	public void when_send_new_view_to_self__then_should_receive_it() {
 		SimulationNetwork network = SimulationNetwork.builder().build();
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
-		network.getNetworkRx(validatorId).consensusEvents()
+		network.getNetworkRx(validatorId1).consensusEvents()
 			.subscribe(testObserver);
 		NewView newView = mock(NewView.class);
-		network.getNetworkSender(validatorId).sendNewView(newView, validatorId);
+		network.getNetworkSender(validatorId1).sendNewView(newView, node1);
 		testObserver.awaitCount(1);
 		testObserver.assertValue(newView);
 	}
@@ -51,11 +54,11 @@ public class SimulationNetworkTest {
 	public void when_send_new_view_to_self_twice__then_should_receive_both() {
 		SimulationNetwork network = SimulationNetwork.builder().build();
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
-		network.getNetworkRx(validatorId).consensusEvents()
+		network.getNetworkRx(validatorId1).consensusEvents()
 			.subscribe(testObserver);
 		NewView newView = mock(NewView.class);
-		network.getNetworkSender(validatorId).sendNewView(newView, validatorId);
-		network.getNetworkSender(validatorId).sendNewView(newView, validatorId);
+		network.getNetworkSender(validatorId1).sendNewView(newView, node1);
+		network.getNetworkSender(validatorId1).sendNewView(newView, node1);
 		testObserver.awaitCount(2);
 		testObserver.assertValues(newView, newView);
 	}
@@ -64,11 +67,11 @@ public class SimulationNetworkTest {
 	public void when_self_and_other_send_new_view_to_self__then_should_receive_both() {
 		SimulationNetwork network = SimulationNetwork.builder().build();
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
-		network.getNetworkRx(validatorId).consensusEvents()
+		network.getNetworkRx(validatorId1).consensusEvents()
 			.subscribe(testObserver);
 		NewView newView = mock(NewView.class);
-		network.getNetworkSender(validatorId).sendNewView(newView, validatorId);
-		network.getNetworkSender(validatorId2).sendNewView(newView, validatorId);
+		network.getNetworkSender(validatorId1).sendNewView(newView, node1);
+		network.getNetworkSender(validatorId2).sendNewView(newView, node1);
 		testObserver.awaitCount(2);
 		testObserver.assertValues(newView, newView);
 	}
@@ -77,10 +80,10 @@ public class SimulationNetworkTest {
 	public void when_send_vote_to_self__then_should_receive_it() {
 		SimulationNetwork network = SimulationNetwork.builder().build();
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
-		network.getNetworkRx(validatorId).consensusEvents()
+		network.getNetworkRx(validatorId1).consensusEvents()
 			.subscribe(testObserver);
 		Vote vote = mock(Vote.class);
-		network.getNetworkSender(validatorId).sendVote(vote, validatorId);
+		network.getNetworkSender(validatorId1).sendVote(vote, node1);
 		testObserver.awaitCount(1);
 		testObserver.assertValue(vote);
 	}
@@ -89,10 +92,10 @@ public class SimulationNetworkTest {
 	public void when_broadcast_proposal__then_should_receive_it() {
 		SimulationNetwork network = SimulationNetwork.builder().build();
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
-		network.getNetworkRx(validatorId).consensusEvents()
+		network.getNetworkRx(validatorId1).consensusEvents()
 			.subscribe(testObserver);
 		Proposal proposal = mock(Proposal.class);
-		network.getNetworkSender(validatorId).broadcastProposal(proposal, ImmutableSet.of(validatorId, validatorId2));
+		network.getNetworkSender(validatorId1).broadcastProposal(proposal, ImmutableSet.of(node1, node2));
 		testObserver.awaitCount(1);
 		testObserver.assertValue(proposal);
 	}
@@ -107,7 +110,7 @@ public class SimulationNetworkTest {
 		network.getNetworkRx(validatorId2).consensusEvents()
 			.subscribe(testObserver);
 		NewView newView = mock(NewView.class);
-		network.getNetworkSender(validatorId).sendNewView(newView, validatorId);
+		network.getNetworkSender(validatorId1).sendNewView(newView, node1);
 		testObserver.awaitCount(1);
 		testObserver.assertEmpty();
 	}
@@ -121,7 +124,7 @@ public class SimulationNetworkTest {
 			network.getNetworkRx(validatorId2).requests().test();
 
 		network
-			.getSyncSender(validatorId)
+			.getSyncSender(validatorId1)
 			.sendGetVerticesRequest(vertexId, validatorId2, 1, new Object());
 
 		rpcRequestListener.awaitCount(1);

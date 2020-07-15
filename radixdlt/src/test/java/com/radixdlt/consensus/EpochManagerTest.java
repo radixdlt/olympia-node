@@ -31,7 +31,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.consensus.BFTEventReducer.EndOfEpochSender;
+import com.radixdlt.consensus.bft.BFTEventReducer.EndOfEpochSender;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
 import com.radixdlt.consensus.bft.VertexStore;

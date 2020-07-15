@@ -20,11 +20,12 @@ package com.radixdlt.consensus.simulation.network;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.ConsensusEventsRx;
-import com.radixdlt.consensus.BFTEventSender;
+import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.SyncEpochsRPCSender;
 import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
 import com.radixdlt.consensus.bft.GetVerticesResponse;
 import com.radixdlt.consensus.NewView;
@@ -155,20 +156,20 @@ public class SimulationNetwork {
 	public BFTEventSender getNetworkSender(ECPublicKey forNode) {
 		return new BFTEventSender() {
 			@Override
-			public void broadcastProposal(Proposal proposal, Set<ECPublicKey> nodes) {
-				for (ECPublicKey reader : nodes) {
-					receivedMessages.onNext(MessageInTransit.newMessage(proposal, forNode, reader));
+			public void broadcastProposal(Proposal proposal, Set<BFTNode> nodes) {
+				for (BFTNode reader : nodes) {
+					receivedMessages.onNext(MessageInTransit.newMessage(proposal, forNode, reader.getKey()));
 				}
 			}
 
 			@Override
-			public void sendNewView(NewView newView, ECPublicKey newViewLeader) {
-				receivedMessages.onNext(MessageInTransit.newMessage(newView, forNode, newViewLeader));
+			public void sendNewView(NewView newView, BFTNode newViewLeader) {
+				receivedMessages.onNext(MessageInTransit.newMessage(newView, forNode, newViewLeader.getKey()));
 			}
 
 			@Override
-			public void sendVote(Vote vote, ECPublicKey leader) {
-				receivedMessages.onNext(MessageInTransit.newMessage(vote, forNode, leader));
+			public void sendVote(Vote vote, BFTNode leader) {
+				receivedMessages.onNext(MessageInTransit.newMessage(vote, forNode, leader.getKey()));
 			}
 		};
 	}

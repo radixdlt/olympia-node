@@ -1,24 +1,32 @@
 /*
- *  (C) Copyright 2020 Radix DLT Ltd
+ * (C) Copyright 2020 Radix DLT Ltd
  *
- *  Radix DLT Ltd licenses this file to you under the Apache License,
- *  Version 2.0 (the "License"); you may not use this file except in
- *  compliance with the License.  You may obtain a copy of the
- *  License at
+ * Radix DLT Ltd licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License.  You may obtain a copy of the
+ * License at
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing,
- *  software distributed under the License is distributed on an
- *  "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
- *  either express or implied.  See the License for the specific
- *  language governing permissions and limitations under the License.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied.  See the License for the specific
+ * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.consensus.bft;
 
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.VertexStore;
+import com.radixdlt.consensus.BFTEventProcessor;
+import com.radixdlt.consensus.NewView;
+import com.radixdlt.consensus.PendingVotes;
+import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.VertexInsertionException;
+import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.liveness.Pacemaker;
@@ -32,6 +40,7 @@ import com.radixdlt.crypto.Hash;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -47,6 +56,33 @@ import java.util.Optional;
  */
 public final class BFTEventReducer implements BFTEventProcessor {
 	private static final Logger log = LogManager.getLogger();
+
+	/**
+	 * Interface for sending BFT events through a network
+	 */
+	public interface BFTEventSender {
+
+		/**
+		 * Broadcast a proposal message to all validators in the network
+		 * @param proposal the proposal to broadcast
+		 * @param nodes the nodes to broadcast to
+		 */
+		void broadcastProposal(Proposal proposal, Set<BFTNode> nodes);
+
+		/**
+		 * Send a new-view message to a given validator
+		 * @param newView the new-view message
+		 * @param newViewLeader the validator the message gets sent to
+		 */
+		void sendNewView(NewView newView, BFTNode newViewLeader);
+
+		/**
+		 * Send a vote message to a given validator
+		 * @param vote the vote message
+		 * @param leader the validator the message gets sent to
+		 */
+		void sendVote(Vote vote, BFTNode leader);
+	}
 
 	private final BFTNode self;
 	private final VertexStore vertexStore;
@@ -97,7 +133,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		NewView newView = safetyRules.signNewView(nextView, this.vertexStore.getHighestQC(), this.vertexStore.getHighestCommittedQC());
 		BFTNode nextLeader = this.proposerElection.getProposer(nextView);
 		log.trace("{}: Sending NEW_VIEW to {}: {}", this.self::getShortName, nextLeader::getShortName, () ->  newView);
-		this.sender.sendNewView(newView, nextLeader.getKey());
+		this.sender.sendNewView(newView, nextLeader);
 		this.counters.set(CounterType.CONSENSUS_VIEW, nextView.number());
 	}
 
@@ -169,7 +205,10 @@ public final class BFTEventReducer implements BFTEventProcessor {
 			final Vertex proposedVertex = proposalGenerator.generateProposal(view);
 			final Proposal proposal = safetyRules.signProposal(proposedVertex, this.vertexStore.getHighestCommittedQC());
 			log.trace("{}: Broadcasting PROPOSAL: {}", this.self::getShortName, () -> proposal);
-			this.sender.broadcastProposal(proposal, validatorSet.getValidators().stream().map(Validator::nodeKey).collect(Collectors.toSet()));
+			Set<BFTNode> nodes = validatorSet.getValidators().stream().map(Validator::nodeKey)
+				.map(BFTNode::new)
+				.collect(Collectors.toSet());
+			this.sender.broadcastProposal(proposal, nodes);
 		});
 	}
 
@@ -201,7 +240,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		try {
 			final Vote vote = safetyRules.voteFor(proposedVertex, vertexMetadata);
 			log.trace("{}: PROPOSAL: Sending VOTE to {}: {}", this.self::getShortName, currentLeader::getShortName, () -> vote);
-			sender.sendVote(vote, currentLeader.getKey());
+			sender.sendVote(vote, currentLeader);
 		} catch (SafetyViolationException e) {
 			log.error(() -> new FormattedMessage("{}: PROPOSAL: Rejected {}", this.self.getShortName(), proposedVertex), e);
 		}
