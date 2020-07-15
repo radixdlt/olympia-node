@@ -159,7 +159,7 @@ public class SimulationNodes {
 			timeoutSender,
 			timeoutSender1 -> new FixedTimeoutPacemaker(this.pacemakerTimeout, timeoutSender1, nullVerifier),
 			vertexStoreFactory,
-			proposers -> new WeightedRotatingLeaders(proposers, Comparator.comparing(v -> v.nodeKey().euid()), 5),
+			proposers -> new WeightedRotatingLeaders(proposers, Comparator.comparing(v -> v.getNode().getKey().euid()), 5),
 			bftFactory,
 			counters.get(key)
 		);

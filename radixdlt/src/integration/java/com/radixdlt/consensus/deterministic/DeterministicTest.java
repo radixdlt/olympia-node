@@ -85,7 +85,7 @@ public final class DeterministicTest {
 				return new ControlledNode(
 					key,
 					sender,
-					vset -> new WeightedRotatingLeaders(vset, Comparator.comparing(v -> v.nodeKey().euid()), 5),
+					vset -> new WeightedRotatingLeaders(vset, Comparator.comparing(v -> v.getNode().getKey().euid()), 5),
 					initialValidatorSet,
 					syncAndTimeout,
 					stateComputerSupplier.apply(sender, sender)

@@ -306,7 +306,6 @@ public class EpochManagerTest {
 	public void when_receive_next_epoch_events_and_then_epoch_change_and_part_of_validator_set__then_should_execute_queued_epoch_events() {
 		BFTValidator authorValidator = mock(BFTValidator.class);
 		ECPublicKey author = ECKeyPair.generateNew().getPublicKey();
-		when(authorValidator.nodeKey()).thenReturn(author);
 		when(authorValidator.getNode()).thenReturn(new BFTNode(author));
 
 		when(pacemaker.getCurrentView()).thenReturn(View.genesis());
@@ -342,8 +341,7 @@ public class EpochManagerTest {
 	@Test
 	public void when_receive_next_epoch_events_and_then_epoch_change_and_not_part_of_validator_set__then_queued_events_should_be_cleared() {
 		BFTValidator authorValidator = mock(BFTValidator.class);
-		ECPublicKey author = mock(ECPublicKey.class);
-		when(authorValidator.nodeKey()).thenReturn(author);
+		when(authorValidator.getNode()).thenReturn(mock(BFTNode.class));
 
 		VertexMetadata ancestor = VertexMetadata.ofGenesisAncestor();
 
@@ -353,7 +351,7 @@ public class EpochManagerTest {
 		assertThat(systemCounters.get(CounterType.EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS)).isEqualTo(1);
 
 		BFTValidator validator = mock(BFTValidator.class);
-		when(validator.nodeKey()).thenReturn(mock(ECPublicKey.class));
+		when(validator.getNode()).thenReturn(mock(BFTNode.class));
 		ValidatorSet validatorSet = mock(ValidatorSet.class);
 		when(validatorSet.containsKey(any())).thenReturn(false);
 		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of());

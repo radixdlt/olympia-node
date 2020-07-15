@@ -289,7 +289,7 @@ public class CerberusModule extends AbstractModule {
 	@Singleton
 	private ProposerElectionFactory proposerElectionFactory() {
 		final int cacheSize = runtimeProperties.get("consensus.weighted_rotating_leaders.cache_size", 10);
-		return validatorSet -> new WeightedRotatingLeaders(validatorSet, Comparator.comparing(v -> v.nodeKey().euid()), cacheSize);
+		return validatorSet -> new WeightedRotatingLeaders(validatorSet, Comparator.comparing(v -> v.getNode().getKey().euid()), cacheSize);
 	}
 
 	@Provides

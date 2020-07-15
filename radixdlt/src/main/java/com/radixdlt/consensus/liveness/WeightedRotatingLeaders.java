@@ -160,11 +160,11 @@ public final class WeightedRotatingLeaders implements ProposerElection {
 		BFTValidator validator = nextLeaderComputer.checkCacheForProposer(view);
 		if (validator != null) {
 			// dynamic program cache successful
-			return new BFTNode(validator.nodeKey());
+			return validator.getNode();
 		} else {
 			// cache doesn't have value, do the expensive operation
 			CachingNextLeaderComputer computer = new CachingNextLeaderComputer(validatorSet, weightsComparator, 1);
-			return new BFTNode(computer.resetToView(view).nodeKey());
+			return computer.resetToView(view).getNode();
 		}
 	}
 

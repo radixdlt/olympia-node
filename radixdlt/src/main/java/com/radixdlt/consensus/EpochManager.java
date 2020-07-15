@@ -120,8 +120,8 @@ public final class EpochManager {
 		if (lastConstructed != null && lastConstructed.getEpoch() == ancestorMetadata.getEpoch()) {
 			log.info("{}: EPOCH_CHANGE: broadcasting next epoch", this.self::getShortName);
 			for (BFTValidator validator : validatorSet.getValidators()) {
-				if (!validator.nodeKey().equals(self.getKey())) {
-					epochsRPCSender.sendGetEpochResponse(validator.nodeKey(), ancestorMetadata);
+				if (!validator.getNode().equals(self)) {
+					epochsRPCSender.sendGetEpochResponse(validator.getNode().getKey(), ancestorMetadata);
 				}
 			}
 		}
@@ -210,7 +210,7 @@ public final class EpochManager {
 	}
 
 	private void appendValidator(StringBuilder msg, BFTValidator v) {
-		msg.append(nodeName(v.nodeKey())).append(':').append(v.getPower());
+		msg.append(v.getNode().getShortName()).append(':').append(v.getPower());
 	}
 
 	private void processEndOfEpoch(VertexMetadata vertexMetadata) {

@@ -44,6 +44,6 @@ public class AddressBookValidatorSetProviderTest {
 		when(addressBook.peers()).thenAnswer(inv -> Stream.of(peer));
 		ValidatorSet validatorSet = validatorSetProvider.getValidatorSet(0);
 		assertThat(validatorSet.getValidators()).hasSize(1);
-		assertThat(validatorSet.getValidators()).allMatch(v -> v.nodeKey().equals(self));
+		assertThat(validatorSet.getValidators()).allMatch(v -> v.getNode().getKey().equals(self));
 	}
 }

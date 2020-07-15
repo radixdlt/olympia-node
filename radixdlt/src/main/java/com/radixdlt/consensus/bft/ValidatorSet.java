@@ -43,7 +43,7 @@ public final class ValidatorSet {
 	private ValidatorSet(Collection<BFTValidator> validators) {
 		this.validators = validators.stream()
 			.filter(v -> !v.getPower().isZero())
-			.collect(ImmutableBiMap.toImmutableBiMap(BFTValidator::nodeKey, Function.identity()));
+			.collect(ImmutableBiMap.toImmutableBiMap(v -> v.getNode().getKey(), Function.identity()));
 		this.totalPower = validators.stream()
 			.map(BFTValidator::getPower)
 			.reduce(UInt256::add)

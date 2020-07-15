@@ -202,9 +202,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 			final Vertex proposedVertex = proposalGenerator.generateProposal(view);
 			final Proposal proposal = safetyRules.signProposal(proposedVertex, this.vertexStore.getHighestCommittedQC());
 			log.trace("{}: Broadcasting PROPOSAL: {}", this.self::getShortName, () -> proposal);
-			Set<BFTNode> nodes = validatorSet.getValidators().stream().map(BFTValidator::nodeKey)
-				.map(BFTNode::new)
-				.collect(Collectors.toSet());
+			Set<BFTNode> nodes = validatorSet.getValidators().stream().map(BFTValidator::getNode).collect(Collectors.toSet());
 			this.sender.broadcastProposal(proposal, nodes);
 		});
 	}

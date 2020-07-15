@@ -17,7 +17,6 @@
 
 package com.radixdlt.consensus.bft;
 
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.utils.UInt256;
 import java.util.Objects;
 import javax.annotation.concurrent.Immutable;
@@ -48,10 +47,6 @@ public final class BFTValidator {
 
 	public BFTNode getNode() {
 		return node;
-	}
-
-	public ECPublicKey nodeKey() {
-		return this.node.getKey();
 	}
 
 	public UInt256 getPower() {

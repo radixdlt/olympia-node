@@ -66,8 +66,8 @@ public class WeightedRotatingLeadersTest {
 				final int viewsToTest = 2 * validatorSetSize;
 
 				for (int view = 0; view < viewsToTest; view++) {
-					ECPublicKey expectedKeyForView = validatorsInOrder.get(validatorSetSize - (view % validatorSetSize) - 1).nodeKey();
-					assertThat(weightedRotatingLeaders.getProposer(View.of(view)).getKey()).isEqualTo(expectedKeyForView);
+					BFTNode expectedNodeForView = validatorsInOrder.get(validatorSetSize - (view % validatorSetSize) - 1).getNode();
+					assertThat(weightedRotatingLeaders.getProposer(View.of(view))).isEqualTo(expectedNodeForView);
 				}
 			}
 		}
@@ -133,14 +133,13 @@ public class WeightedRotatingLeadersTest {
 		Comparator<BFTValidator> validatorComparator = Comparator.comparing(BFTValidator::getPower); //good enough to avoid compiler warning
 		this.weightedRotatingLeaders = new WeightedRotatingLeaders(validatorSet, validatorComparator, sizeOfCache);
 
-		Map<ECPublicKey, UInt256> proposerCounts = Stream.iterate(View.of(0), View::next)
+		Map<BFTNode, UInt256> proposerCounts = Stream.iterate(View.of(0), View::next)
 			.limit(sumOfPower)
 			.map(this.weightedRotatingLeaders::getProposer)
-			.map(BFTNode::getKey)
 			.collect(groupingBy(p -> p, collectingAndThen(counting(), UInt256::from)));
 
-		Map<ECPublicKey, UInt256> expected = validatorsInOrder.stream()
-			.collect(toMap(BFTValidator::nodeKey, BFTValidator::getPower));
+		Map<BFTNode, UInt256> expected = validatorsInOrder.stream()
+			.collect(toMap(BFTValidator::getNode, BFTValidator::getPower));
 
 		assertThat(proposerCounts).isEqualTo(expected);
 	}
