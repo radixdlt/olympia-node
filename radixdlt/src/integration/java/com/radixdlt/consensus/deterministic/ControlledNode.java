@@ -17,12 +17,16 @@
 
 package com.radixdlt.consensus.deterministic;
 
+import com.google.common.collect.ImmutableSet;
+import com.radixdlt.consensus.bft.BFTEventPreprocessor;
 import com.radixdlt.consensus.bft.BFTEventReducer;
 import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.DefaultHasher;
+import com.radixdlt.consensus.bft.BFTValidator;
+import com.radixdlt.consensus.bft.SyncQueues;
 import com.radixdlt.consensus.epoch.EmptySyncEpochsRPCSender;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.epoch.EpochManager;
@@ -106,7 +110,7 @@ class ControlledNode {
 				// PendingVotes needs a hasher that produces unique values, as it indexes by hash
 				final PendingVotes pendingVotes = new PendingVotes(defaultHasher, nullVerifier);
 
-				return new BFTEventReducer(
+				final BFTEventReducer reducer = new BFTEventReducer(
 					self,
 					proposalGenerator,
 					controlledSender,
@@ -118,6 +122,22 @@ class ControlledNode {
 					proposerElection,
 					validatorSet,
 					systemCounters
+				);
+
+				final SyncQueues syncQueues = new SyncQueues(
+					validatorSet.getValidators().stream()
+						.map(BFTValidator::getNode)
+						.collect(ImmutableSet.toImmutableSet()),
+					systemCounters
+				);
+
+				return new BFTEventPreprocessor(
+					self,
+					reducer,
+					pacemaker,
+					vertexStore,
+					proposerElection,
+					syncQueues
 				);
 			};
 

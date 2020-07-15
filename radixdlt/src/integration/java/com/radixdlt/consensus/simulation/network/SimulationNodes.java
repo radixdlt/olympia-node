@@ -18,6 +18,8 @@
 package com.radixdlt.consensus.simulation.network;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.radixdlt.consensus.bft.BFTEventPreprocessor;
 import com.radixdlt.consensus.bft.BFTEventReducer;
 import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -25,6 +27,8 @@ import com.radixdlt.consensus.ConsensusRunner;
 import com.radixdlt.consensus.ConsensusRunner.Event;
 import com.radixdlt.consensus.ConsensusRunner.EventType;
 import com.radixdlt.consensus.DefaultHasher;
+import com.radixdlt.consensus.bft.BFTValidator;
+import com.radixdlt.consensus.bft.SyncQueues;
 import com.radixdlt.consensus.epoch.EmptySyncVerticesRPCSender;
 import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.EpochChangeRx;
@@ -136,8 +140,7 @@ public class SimulationNodes {
 				final ProposalGenerator proposalGenerator = new MempoolProposalGenerator(vertexStore, mempool);
 				final SafetyRules safetyRules = new SafetyRules(key, SafetyState.initialState(), nullHasher, nullSigner);
 				final PendingVotes pendingVotes = new PendingVotes(defaultHasher, nullVerifier);
-
-				return new BFTEventReducer(
+				final BFTEventReducer reducer = new BFTEventReducer(
 					self,
 					proposalGenerator,
 					underlyingNetwork.getNetworkSender(key.getPublicKey()),
@@ -149,6 +152,21 @@ public class SimulationNodes {
 					proposerElection,
 					validatorSet,
 					counters.get(key)
+				);
+				final SyncQueues syncQueues = new SyncQueues(
+					validatorSet.getValidators().stream()
+						.map(BFTValidator::getNode)
+						.collect(ImmutableSet.toImmutableSet()),
+					counters.get(key)
+				);
+
+				return new BFTEventPreprocessor(
+					self,
+					reducer,
+					pacemaker,
+					vertexStore,
+					proposerElection,
+					syncQueues
 				);
 			};
 

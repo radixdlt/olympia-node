@@ -17,7 +17,6 @@
 
 package com.radixdlt.consensus.epoch;
 
-import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.CommittedStateSync;
@@ -33,10 +32,8 @@ import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.VertexStoreEventProcessor;
 import com.radixdlt.consensus.VertexStoreFactory;
 import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.bft.BFTEventPreprocessor;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.EmptyBFTEventProcessor;
-import com.radixdlt.consensus.bft.SyncQueues;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
@@ -179,28 +176,13 @@ public final class EpochManager {
 			Pacemaker pacemaker = pacemakerFactory.create(sender);
 			QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(genesisVertex);
 			VertexStore vertexStore = vertexStoreFactory.create(genesisVertex, genesisQC, syncedStateComputer);
-			BFTEventProcessor reducer = bftFactory.create(
+			vertexStoreEventProcessor = vertexStore;
+			bftEventProcessor = bftFactory.create(
 				this::processEndOfEpoch,
 				pacemaker,
 				vertexStore,
 				proposerElection,
 				validatorSet
-			);
-			SyncQueues syncQueues = new SyncQueues(
-				validatorSet.getValidators().stream()
-					.map(BFTValidator::getNode)
-					.collect(ImmutableSet.toImmutableSet()),
-				this.counters
-			);
-
-			vertexStoreEventProcessor = vertexStore;
-			bftEventProcessor = new BFTEventPreprocessor(
-				this.self,
-				reducer,
-				pacemaker,
-				vertexStore,
-				proposerElection,
-				syncQueues
 			);
 		}
 

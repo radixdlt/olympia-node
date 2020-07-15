@@ -17,11 +17,13 @@
 
 package com.radixdlt;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 import com.radixdlt.api.LedgerRx;
+import com.radixdlt.consensus.bft.BFTEventPreprocessor;
 import com.radixdlt.consensus.bft.BFTEventReducer;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.AddressBookValidatorSetProvider;
@@ -31,6 +33,8 @@ import com.radixdlt.consensus.CommittedStateSyncRx;
 import com.radixdlt.consensus.ConsensusRunner;
 import com.radixdlt.consensus.DefaultHasher;
 import com.radixdlt.consensus.EpochChangeRx;
+import com.radixdlt.consensus.bft.BFTValidator;
+import com.radixdlt.consensus.bft.SyncQueues;
 import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.ConsensusEventsRx;
 import com.radixdlt.consensus.PendingVotes;
@@ -151,7 +155,7 @@ public class CerberusModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private BFTFactory bftFactory(
-		BFTNode selfId,
+		BFTNode self,
 		BFTEventSender bftEventSender,
 		Mempool mempool,
 		@Named("self") ECKeyPair selfKey,
@@ -170,8 +174,8 @@ public class CerberusModule extends AbstractModule {
 			final SafetyRules safetyRules = new SafetyRules(selfKey, SafetyState.initialState(), hasher, signer);
 			final PendingVotes pendingVotes = new PendingVotes(hasher, ECPublicKey::verify);
 
-			return new BFTEventReducer(
-				selfId,
+			BFTEventReducer reducer = new BFTEventReducer(
+				self,
 				proposalGenerator,
 				bftEventSender,
 				endOfEpochSender,
@@ -182,6 +186,22 @@ public class CerberusModule extends AbstractModule {
 				proposerElection,
 				validatorSet,
 				counters
+			);
+
+			SyncQueues syncQueues = new SyncQueues(
+				validatorSet.getValidators().stream()
+					.map(BFTValidator::getNode)
+					.collect(ImmutableSet.toImmutableSet()),
+				counters
+			);
+
+			return new BFTEventPreprocessor(
+				self,
+				reducer,
+				pacemaker,
+				vertexStore,
+				proposerElection,
+				syncQueues
 			);
 		};
 	}
