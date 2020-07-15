@@ -18,9 +18,9 @@
 package com.radixdlt.consensus.liveness;
 
 import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt256s;
 import com.radixdlt.utils.UInt384;
@@ -152,7 +152,7 @@ public final class WeightedRotatingLeaders implements ProposerElection {
 	}
 
 	@Override
-	public ECPublicKey getProposer(View view) {
+	public BFTNode getProposer(View view) {
 		nextLeaderComputer.computeToView(view);
 
 		// validator will only be null if the view supplied is before the cache
@@ -160,11 +160,11 @@ public final class WeightedRotatingLeaders implements ProposerElection {
 		Validator validator = nextLeaderComputer.checkCacheForProposer(view);
 		if (validator != null) {
 			// dynamic program cache successful
-			return validator.nodeKey();
+			return new BFTNode(validator.nodeKey());
 		} else {
 			// cache doesn't have value, do the expensive operation
 			CachingNextLeaderComputer computer = new CachingNextLeaderComputer(validatorSet, weightsComparator, 1);
-			return computer.resetToView(view).nodeKey();
+			return new BFTNode(computer.resetToView(view).nodeKey());
 		}
 	}
 

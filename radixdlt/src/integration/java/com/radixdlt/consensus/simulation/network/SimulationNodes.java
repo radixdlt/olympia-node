@@ -20,7 +20,7 @@ package com.radixdlt.consensus.simulation.network;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.consensus.BFTEventReducer;
 import com.radixdlt.consensus.BFTFactory;
-import com.radixdlt.consensus.BFTValidatorId;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.ConsensusRunner;
 import com.radixdlt.consensus.ConsensusRunner.Event;
 import com.radixdlt.consensus.ConsensusRunner.EventType;
@@ -128,7 +128,7 @@ public class SimulationNodes {
 				this.counters.get(key)
 			);
 
-		final BFTValidatorId self = new BFTValidatorId(key.getPublicKey());
+		final BFTNode self = new BFTNode(key.getPublicKey());
 
 		final SimulatedStateComputer stateComputer = stateComputerSupplier.get();
 		BFTFactory bftFactory =

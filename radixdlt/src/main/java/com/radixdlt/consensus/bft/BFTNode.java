@@ -15,15 +15,15 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.consensus.bft;
 
 import com.radixdlt.crypto.ECPublicKey;
 import java.util.Objects;
 
-public final class BFTValidatorId {
+public final class BFTNode {
 	private final ECPublicKey key;
 
-	public BFTValidatorId(ECPublicKey key) {
+	public BFTNode(ECPublicKey key) {
 		this.key = Objects.requireNonNull(key);
 	}
 
@@ -38,11 +38,11 @@ public final class BFTValidatorId {
 
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof BFTValidatorId)) {
+		if (!(o instanceof BFTNode)) {
 			return  false;
 		}
 
-		BFTValidatorId bftNodeId = (BFTValidatorId) o;
+		BFTNode bftNodeId = (BFTNode) o;
 		return Objects.equals(bftNodeId.key, this.key);
 	}
 

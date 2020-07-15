@@ -18,6 +18,7 @@
 package com.radixdlt.consensus;
 
 import com.radixdlt.consensus.SyncQueues.SyncQueue;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.liveness.PacemakerState;
 import com.radixdlt.consensus.liveness.ProposerElection;
@@ -41,7 +42,7 @@ import org.apache.logging.log4j.Logger;
 public final class BFTEventPreprocessor implements BFTEventProcessor {
 	private static final Logger log = LogManager.getLogger();
 
-	private final BFTValidatorId self;
+	private final BFTNode self;
 	private final BFTEventProcessor forwardTo;
 	private final VertexStore vertexStore;
 	private final PacemakerState pacemakerState;
@@ -49,7 +50,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 	private final SyncQueues queues;
 
 	public BFTEventPreprocessor(
-		BFTValidatorId self,
+		BFTNode self,
 		BFTEventProcessor forwardTo,
 		PacemakerState pacemakerState,
 		VertexStore vertexStore,
@@ -116,7 +117,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		// TODO: up to dos attacks on calculation of next proposer if ProposerElection is
 		// TODO: an expensive operation. Need to figure out a way of mitigating this problem
 		// TODO: perhaps through filter views too out of bounds
-		if (!Objects.equals(proposerElection.getProposer(view), this.self.getKey())) {
+		if (!Objects.equals(proposerElection.getProposer(view), this.self)) {
 			log.warn("{}: VOTE: Ignoring confused vote {} for {}",
 				this.self::getShortName, vote::hashCode, vote.getVoteData().getProposed()::getView);
 			return;
@@ -130,7 +131,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 
 		// only do something if we're actually the leader for the view
 		final View view = newView.getView();
-		if (!Objects.equals(proposerElection.getProposer(view), this.self.getKey())) {
+		if (!Objects.equals(proposerElection.getProposer(view), this.self)) {
 			log.warn("{}: NEW_VIEW: Got confused new-view {} for view {}", this.self::getShortName, () -> newView, newView::getView);
 			return true;
 		}

@@ -30,7 +30,7 @@ public class RotatingLeadersTest {
 	public void when_getting_leader_for_view_greater_than_size__leaders_are_round_robined() {
 		ImmutableList<ECPublicKey> leaders = ImmutableList.of(mock(ECPublicKey.class), mock(ECPublicKey.class));
 		RotatingLeaders rotatingLeaders = new RotatingLeaders(leaders);
-		assertThat(rotatingLeaders.getProposer(View.of(leaders.size())))
+		assertThat(rotatingLeaders.getProposer(View.of(leaders.size())).getKey())
 			.isEqualTo(leaders.get(0));
 	}
 

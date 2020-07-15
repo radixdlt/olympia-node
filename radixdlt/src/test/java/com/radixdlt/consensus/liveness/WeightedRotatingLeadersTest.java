@@ -26,6 +26,7 @@ import static org.mockito.Mockito.mock;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.crypto.ECPublicKey;
@@ -64,7 +65,7 @@ public class WeightedRotatingLeadersTest {
 
 				for (int view = 0; view < viewsToTest; view++) {
 					ECPublicKey expectedKeyForView = validatorsInOrder.get(validatorSetSize - (view % validatorSetSize) - 1).nodeKey();
-					assertThat(weightedRotatingLeaders.getProposer(View.of(view))).isEqualTo(expectedKeyForView);
+					assertThat(weightedRotatingLeaders.getProposer(View.of(view)).getKey()).isEqualTo(expectedKeyForView);
 				}
 			}
 		}
@@ -80,11 +81,11 @@ public class WeightedRotatingLeadersTest {
 				// 2 * sizeOfCache so cache eviction occurs
 				final int viewsToTest = 2 * sizeOfCache;
 
-				ECPublicKey expectedKeyForView0 = weightedRotatingLeaders.getProposer(View.of(0));
+				BFTNode expectedNodeForView0 = weightedRotatingLeaders.getProposer(View.of(0));
 				for (View view = View.of(1); view.compareTo(View.of(viewsToTest)) <= 0; view = view.next()) {
 					weightedRotatingLeaders.getProposer(view);
 				}
-				assertThat(weightedRotatingLeaders.getProposer(View.of(0))).isEqualTo(expectedKeyForView0);
+				assertThat(weightedRotatingLeaders.getProposer(View.of(0))).isEqualTo(expectedNodeForView0);
 			}
 		}
 	}
@@ -101,9 +102,9 @@ public class WeightedRotatingLeadersTest {
 				for (int view = 0; view < viewsToTest; view++) {
 					weightedRotatingLeaders2.getProposer(View.of(view));
 				}
-				ECPublicKey pk1 = weightedRotatingLeaders.getProposer(View.of(viewsToTest - 1));
-				ECPublicKey pk2 = weightedRotatingLeaders2.getProposer(View.of(viewsToTest - 1));
-				assertThat(pk1).isEqualTo(pk2);
+				BFTNode node1 = weightedRotatingLeaders.getProposer(View.of(viewsToTest - 1));
+				BFTNode node2 = weightedRotatingLeaders2.getProposer(View.of(viewsToTest - 1));
+				assertThat(node1).isEqualTo(node2);
 			}
 		}
 	}
@@ -129,6 +130,7 @@ public class WeightedRotatingLeadersTest {
 		Map<ECPublicKey, UInt256> proposerCounts = Stream.iterate(View.of(0), View::next)
 			.limit(sumOfPower)
 			.map(this.weightedRotatingLeaders::getProposer)
+			.map(BFTNode::getKey)
 			.collect(groupingBy(p -> p, collectingAndThen(counting(), UInt256::from)));
 
 		Map<ECPublicKey, UInt256> expected = validatorsInOrder.stream()

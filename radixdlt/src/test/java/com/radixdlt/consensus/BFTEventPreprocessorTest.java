@@ -25,11 +25,11 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 import org.junit.Before;
 import org.junit.Test;
@@ -42,7 +42,7 @@ public class BFTEventPreprocessorTest {
 	private VertexStore vertexStore;
 	private BFTEventProcessor forwardTo;
 	private SyncQueues syncQueues;
-	private BFTValidatorId self;
+	private BFTNode self;
 
 	@Before
 	public void setUp() {
@@ -51,9 +51,10 @@ public class BFTEventPreprocessorTest {
 		this.proposerElection = mock(ProposerElection.class);
 		this.forwardTo = mock(BFTEventProcessor.class);
 		this.syncQueues = mock(SyncQueues.class);
-		this.self = mock(BFTValidatorId.class);
+		this.self = mock(BFTNode.class);
+		when(this.self.getKey()).thenReturn(SELF_KEY.getPublicKey());
 
-		when(proposerElection.getProposer(any())).thenReturn(SELF_KEY.getPublicKey());
+		when(proposerElection.getProposer(any())).thenReturn(self);
 		when(pacemaker.getCurrentView()).thenReturn(View.of(1));
 
 		this.preprocessor = new BFTEventPreprocessor(
@@ -113,7 +114,7 @@ public class BFTEventPreprocessorTest {
 		when(vertexMetadata.getView()).thenReturn(View.of(1));
 		when(voteData.getProposed()).thenReturn(vertexMetadata);
 		when(vote.getVoteData()).thenReturn(voteData);
-		when(proposerElection.getProposer(eq(View.of(1)))).thenReturn(mock(ECPublicKey.class));
+		when(proposerElection.getProposer(eq(View.of(1)))).thenReturn(mock(BFTNode.class));
 		preprocessor.processVote(vote);
 		verify(forwardTo, never()).processVote(vote);
 	}
@@ -152,7 +153,7 @@ public class BFTEventPreprocessorTest {
 	public void when_processing_new_view_as_not_proposer__then_new_view_get_thrown_away() {
 		NewView newView = createNewView(true, true);
 		when(syncQueues.isEmptyElseAdd(eq(newView))).thenReturn(true);
-		when(proposerElection.getProposer(View.of(2))).thenReturn(mock(ECPublicKey.class));
+		when(proposerElection.getProposer(View.of(2))).thenReturn(mock(BFTNode.class));
 		when(newView.getAuthor()).thenReturn(SELF_KEY.getPublicKey());
 		preprocessor.processNewView(newView);
 		verify(forwardTo, never()).processNewView(any());

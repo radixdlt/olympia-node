@@ -18,6 +18,7 @@
 package com.radixdlt.consensus;
 
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
@@ -55,7 +56,7 @@ import org.apache.logging.log4j.Logger;
 public final class EpochManager {
 	private static final Logger log = LogManager.getLogger("EM");
 
-	private final BFTValidatorId self;
+	private final BFTNode self;
 	private final SyncEpochsRPCSender epochsRPCSender;
 	private final PacemakerFactory pacemakerFactory;
 	private final VertexStoreFactory vertexStoreFactory;
@@ -74,7 +75,7 @@ public final class EpochManager {
 	private int numQueuedConsensusEvents = 0;
 
 	public EpochManager(
-		BFTValidatorId self,
+		BFTNode self,
 		SyncedStateComputer<CommittedAtom> syncedStateComputer,
 		SyncEpochsRPCSender epochsRPCSender,
 		LocalTimeoutSender localTimeoutSender,

@@ -19,7 +19,7 @@ package com.radixdlt.consensus.deterministic;
 
 import com.radixdlt.consensus.BFTEventReducer;
 import com.radixdlt.consensus.BFTFactory;
-import com.radixdlt.consensus.BFTValidatorId;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.DefaultHasher;
@@ -98,7 +98,7 @@ class ControlledNode {
 		HashVerifier nullVerifier = (p, h, s) -> true;
 		VertexStoreFactory vertexStoreFactory = (vertex, qc, syncedStateComputer) ->
 			new VertexStore(vertex, qc, syncedStateComputer, syncVerticesRPCSender, sender, systemCounters);
-		BFTValidatorId self = new BFTValidatorId(key.getPublicKey());
+		BFTNode self = new BFTNode(key.getPublicKey());
 		BFTFactory bftFactory =
 			(endOfEpochSender, pacemaker, vertexStore, proposerElection, validatorSet) -> {
 				final ProposalGenerator proposalGenerator = new MempoolProposalGenerator(vertexStore, mempool);

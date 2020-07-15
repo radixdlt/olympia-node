@@ -17,10 +17,10 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.validators.Validator;
-import com.radixdlt.identifiers.EUID;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.safety.SafetyRules;
@@ -28,7 +28,6 @@ import com.radixdlt.consensus.safety.SafetyViolationException;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 
 import java.util.HashMap;
@@ -49,7 +48,7 @@ import java.util.Optional;
 public final class BFTEventReducer implements BFTEventProcessor {
 	private static final Logger log = LogManager.getLogger();
 
-	private final BFTValidatorId self;
+	private final BFTNode self;
 	private final VertexStore vertexStore;
 	private final PendingVotes pendingVotes;
 	private final ProposalGenerator proposalGenerator;
@@ -68,7 +67,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	}
 
 	public BFTEventReducer(
-		BFTValidatorId self,
+		BFTNode self,
 		ProposalGenerator proposalGenerator,
 		BFTEventSender sender,
 		EndOfEpochSender endOfEpochSender,
@@ -93,16 +92,12 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		this.counters = Objects.requireNonNull(counters);
 	}
 
-	private String getShortName(EUID euid) {
-		return euid.toString().substring(0, 6);
-	}
-
 	// Hotstuff's Event-Driven OnNextSyncView
 	private void proceedToView(View nextView) {
 		NewView newView = safetyRules.signNewView(nextView, this.vertexStore.getHighestQC(), this.vertexStore.getHighestCommittedQC());
-		ECPublicKey nextLeader = this.proposerElection.getProposer(nextView);
-		log.trace("{}: Sending NEW_VIEW to {}: {}", this.self::getShortName, () -> this.getShortName(nextLeader.euid()), () ->  newView);
-		this.sender.sendNewView(newView, nextLeader);
+		BFTNode nextLeader = this.proposerElection.getProposer(nextView);
+		log.trace("{}: Sending NEW_VIEW to {}: {}", this.self::getShortName, nextLeader::getShortName, () ->  newView);
+		this.sender.sendNewView(newView, nextLeader.getKey());
 		this.counters.set(CounterType.CONSENSUS_VIEW, nextView.number());
 	}
 
@@ -202,19 +197,19 @@ public final class BFTEventReducer implements BFTEventProcessor {
 			return;
 		}
 
-		final ECPublicKey currentLeader = this.proposerElection.getProposer(updatedView);
+		final BFTNode currentLeader = this.proposerElection.getProposer(updatedView);
 		try {
 			final Vote vote = safetyRules.voteFor(proposedVertex, vertexMetadata);
-			log.trace("{}: PROPOSAL: Sending VOTE to {}: {}", this.self::getShortName, () -> this.getShortName(currentLeader.euid()), () -> vote);
-			sender.sendVote(vote, currentLeader);
+			log.trace("{}: PROPOSAL: Sending VOTE to {}: {}", this.self::getShortName, currentLeader::getShortName, () -> vote);
+			sender.sendVote(vote, currentLeader.getKey());
 		} catch (SafetyViolationException e) {
 			log.error(() -> new FormattedMessage("{}: PROPOSAL: Rejected {}", this.self.getShortName(), proposedVertex), e);
 		}
 
 		// If not currently leader or next leader, Proceed to next view
-		if (!Objects.equals(currentLeader, this.self.getKey())) {
-			final ECPublicKey nextLeader = this.proposerElection.getProposer(updatedView.next());
-			if (!Objects.equals(nextLeader, this.self.getKey())) {
+		if (!Objects.equals(currentLeader, this.self)) {
+			final BFTNode nextLeader = this.proposerElection.getProposer(updatedView.next());
+			if (!Objects.equals(nextLeader, this.self)) {
 
 				// TODO: should not call processQC
 				this.pacemaker.processQC(updatedView).ifPresent(this::proceedToView);

@@ -27,7 +27,7 @@ import com.radixdlt.consensus.BFTEventReducer;
 import com.radixdlt.consensus.BFTEventSender;
 import com.radixdlt.consensus.AddressBookValidatorSetProvider;
 import com.radixdlt.consensus.BFTFactory;
-import com.radixdlt.consensus.BFTValidatorId;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.CommittedStateSyncRx;
 import com.radixdlt.consensus.ConsensusRunner;
 import com.radixdlt.consensus.DefaultHasher;
@@ -123,14 +123,14 @@ public class CerberusModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private BFTValidatorId self(@Named("self") ECKeyPair selfKey) {
-		return new BFTValidatorId(selfKey.getPublicKey());
+	private BFTNode self(@Named("self") ECKeyPair selfKey) {
+		return new BFTNode(selfKey.getPublicKey());
 	}
 
 	@Provides
 	@Singleton
 	private BFTFactory bftFactory(
-		BFTValidatorId selfId,
+		BFTNode selfId,
 		BFTEventSender bftEventSender,
 		Mempool mempool,
 		@Named("self") ECKeyPair selfKey,
@@ -168,7 +168,7 @@ public class CerberusModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private EpochManager epochManager(
-		BFTValidatorId selfId,
+		BFTNode selfId,
 		SyncedRadixEngine syncedRadixEngine,
 		BFTFactory bftFactory,
 		SyncEpochsRPCSender syncEpochsRPCSender,

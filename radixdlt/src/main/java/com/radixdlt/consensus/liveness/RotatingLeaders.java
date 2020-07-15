@@ -19,6 +19,7 @@ package com.radixdlt.consensus.liveness;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECPublicKey;
 import java.util.Objects;
 
@@ -33,9 +34,9 @@ public final class RotatingLeaders implements ProposerElection {
 	}
 
 	@Override
-	public ECPublicKey getProposer(View view) {
+	public BFTNode getProposer(View view) {
 		int index = (int) (view.number() % leaders.size());
-		return leaders.get(index);
+		return new BFTNode(leaders.get(index));
 	}
 
 	@Override

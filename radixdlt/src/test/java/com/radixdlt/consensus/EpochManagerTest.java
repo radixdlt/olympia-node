@@ -32,6 +32,7 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.BFTEventReducer.EndOfEpochSender;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
@@ -64,7 +65,7 @@ public class EpochManagerTest {
 	private SystemCounters systemCounters;
 	private ProposerElection proposerElection;
 	private SyncedStateComputer<CommittedAtom> syncedStateComputer;
-	private BFTValidatorId self;
+	private BFTNode self;
 
 	@Before
 	public void setup() {
@@ -86,7 +87,9 @@ public class EpochManagerTest {
 		this.syncedStateComputer = ssc;
 
 		this.proposerElection = mock(ProposerElection.class);
-		this.self = mock(BFTValidatorId.class);
+		this.self = mock(BFTNode.class);
+		when(self.getShortName()).thenReturn("Test");
+		when(self.getKey()).thenReturn(publicKey);
 
 		this.epochManager = new EpochManager(
 			this.self,
@@ -246,7 +249,7 @@ public class EpochManagerTest {
 		epochManager.processConsensusEvent(proposal);
 		verify(eventProcessor, times(1)).processProposal(eq(proposal));
 
-		when(proposerElection.getProposer(any())).thenReturn(this.publicKey);
+		when(proposerElection.getProposer(any())).thenReturn(this.self);
 
 		NewView newView = mock(NewView.class);
 		when(newView.getView()).thenReturn(View.of(1));
