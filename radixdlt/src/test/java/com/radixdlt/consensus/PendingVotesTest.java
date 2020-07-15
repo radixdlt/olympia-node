@@ -17,9 +17,10 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.consensus.validators.ValidationState;
-import com.radixdlt.consensus.validators.Validator;
-import com.radixdlt.consensus.validators.ValidatorSet;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.ValidationState;
+import com.radixdlt.consensus.bft.BFTValidator;
+import com.radixdlt.consensus.bft.ValidatorSet;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECKeyPair;
@@ -79,7 +80,9 @@ public class PendingVotesTest {
 		Vote vote1 = makeSignedVoteFor(ECKeyPair.generateNew().getPublicKey(), View.genesis(), vertexId);
 		Vote vote2 = makeSignedVoteFor(ECKeyPair.generateNew().getPublicKey(), View.genesis(), vertexId);
 
-		ValidatorSet validatorSet = ValidatorSet.from(Collections.singleton(Validator.from(vote1.getAuthor(), UInt256.ONE)));
+		ValidatorSet validatorSet = ValidatorSet.from(
+			Collections.singleton(BFTValidator.from(new BFTNode(vote1.getAuthor()), UInt256.ONE))
+		);
 		VoteData voteData = mock(VoteData.class);
 		VertexMetadata proposed = vote1.getVoteData().getProposed();
 		when(voteData.getProposed()).thenReturn(proposed);

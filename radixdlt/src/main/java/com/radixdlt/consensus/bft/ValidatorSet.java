@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.validators;
+package com.radixdlt.consensus.bft;
 
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableSet;
@@ -34,18 +34,18 @@ import com.radixdlt.crypto.ECPublicKey;
  * as long as all validators sign.
  */
 public final class ValidatorSet {
-	private final ImmutableBiMap<ECPublicKey, Validator> validators;
+	private final ImmutableBiMap<ECPublicKey, BFTValidator> validators;
 
 	// Because we will base power on tokens and because tokens have a max limit
 	// of 2^256 this should never overflow
 	private final transient UInt256 totalPower;
 
-	private ValidatorSet(Collection<Validator> validators) {
+	private ValidatorSet(Collection<BFTValidator> validators) {
 		this.validators = validators.stream()
 			.filter(v -> !v.getPower().isZero())
-			.collect(ImmutableBiMap.toImmutableBiMap(Validator::nodeKey, Function.identity()));
+			.collect(ImmutableBiMap.toImmutableBiMap(BFTValidator::nodeKey, Function.identity()));
 		this.totalPower = validators.stream()
-			.map(Validator::getPower)
+			.map(BFTValidator::getPower)
 			.reduce(UInt256::add)
 			.orElse(UInt256.ZERO);
 	}
@@ -60,7 +60,7 @@ public final class ValidatorSet {
 	 * @param validators the collection of validators
 	 * @return The new {@code ValidatorSet}.
 	 */
-	public static ValidatorSet from(Collection<Validator> validators) {
+	public static ValidatorSet from(Collection<BFTValidator> validators) {
 		return new ValidatorSet(validators);
 	}
 
@@ -85,7 +85,7 @@ public final class ValidatorSet {
 		return totalPower;
 	}
 
-	public ImmutableSet<Validator> getValidators() {
+	public ImmutableSet<BFTValidator> getValidators() {
 		return validators.values();
 	}
 

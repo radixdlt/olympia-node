@@ -20,9 +20,10 @@ package com.radixdlt.consensus.simulation.configuration;
 import com.radixdlt.consensus.EpochChange;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.simulation.network.SimulationNodes.SimulatedStateComputer;
-import com.radixdlt.consensus.validators.Validator;
-import com.radixdlt.consensus.validators.ValidatorSet;
+import com.radixdlt.consensus.bft.BFTValidator;
+import com.radixdlt.consensus.bft.ValidatorSet;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.utils.UInt256;
@@ -37,17 +38,17 @@ public final class SingleEpochAlwaysSyncedStateComputer implements SimulatedStat
 	private final ValidatorSet validatorSet;
 	private final VertexMetadata ancestor;
 
-	public SingleEpochAlwaysSyncedStateComputer(VertexMetadata ancestor, List<ECPublicKey> nodes) {
+	public SingleEpochAlwaysSyncedStateComputer(VertexMetadata ancestor, List<BFTNode> nodes) {
 		this.ancestor = ancestor;
 		this.validatorSet = ValidatorSet.from(
 			nodes.stream()
-				.map(p -> Validator.from(p, UInt256.ONE))
+				.map(node -> BFTValidator.from(node, UInt256.ONE))
 				.collect(Collectors.toList())
 		);
 	}
 
 	public SingleEpochAlwaysSyncedStateComputer(List<ECPublicKey> nodes) {
-		this(VertexMetadata.ofGenesisAncestor(), nodes);
+		this(VertexMetadata.ofGenesisAncestor(), nodes.stream().map(BFTNode::new).collect(Collectors.toList()));
 	}
 
 	@Override

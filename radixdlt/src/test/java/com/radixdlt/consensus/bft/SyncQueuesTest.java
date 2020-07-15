@@ -15,15 +15,19 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.consensus.bft;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.consensus.SyncQueues.SyncQueue;
+import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.RequiresSyncConsensusEvent;
+import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.bft.SyncQueues.SyncQueue;
 import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 import org.junit.Test;
@@ -31,9 +35,10 @@ import org.junit.Test;
 public class SyncQueuesTest {
 	@Test
 	public void when_check_or_add_on_empty_queue__then_should_return_true() {
-		ECPublicKey key = mock(ECPublicKey.class);
+		ECPublicKey key = ECKeyPair.generateNew().getPublicKey();
+		BFTNode node = new BFTNode(key);
 		SyncQueues syncQueues = new SyncQueues(
-			ImmutableSet.of(key),
+			ImmutableSet.of(node),
 			mock(SystemCounters.class)
 		);
 
@@ -45,9 +50,10 @@ public class SyncQueuesTest {
 
 	@Test
 	public void when_add_then_check_or_add_on_same_author__then_should_return_false() {
-		ECPublicKey key = mock(ECPublicKey.class);
+		ECPublicKey key = ECKeyPair.generateNew().getPublicKey();
+		BFTNode node = new BFTNode(key);
 		SyncQueues syncQueues = new SyncQueues(
-			ImmutableSet.of(key),
+			ImmutableSet.of(node),
 			mock(SystemCounters.class)
 		);
 
@@ -61,9 +67,10 @@ public class SyncQueuesTest {
 
 	@Test
 	public void when_add__then_peek_on_hash_should_return_event() {
-		ECPublicKey key = mock(ECPublicKey.class);
+		ECPublicKey key = ECKeyPair.generateNew().getPublicKey();
+		BFTNode node = new BFTNode(key);
 		SyncQueues syncQueues = new SyncQueues(
-			ImmutableSet.of(key),
+			ImmutableSet.of(node),
 			mock(SystemCounters.class)
 		);
 

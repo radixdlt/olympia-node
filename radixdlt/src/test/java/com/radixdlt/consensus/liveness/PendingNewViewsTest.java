@@ -19,9 +19,10 @@ package com.radixdlt.consensus.liveness;
 
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.View;
-import com.radixdlt.consensus.validators.ValidationState;
-import com.radixdlt.consensus.validators.Validator;
-import com.radixdlt.consensus.validators.ValidatorSet;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.ValidationState;
+import com.radixdlt.consensus.bft.BFTValidator;
+import com.radixdlt.consensus.bft.ValidatorSet;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECKeyPair;
@@ -54,7 +55,9 @@ public class PendingNewViewsTest {
 		NewView newView = makeSignedNewViewFor(ECKeyPair.generateNew().getPublicKey(), View.genesis());
 		NewView newView2 = makeSignedNewViewFor(ECKeyPair.generateNew().getPublicKey(), View.genesis());
 
-		ValidatorSet validatorSet = ValidatorSet.from(Collections.singleton(Validator.from(newView.getAuthor(), UInt256.ONE)));
+		ValidatorSet validatorSet = ValidatorSet.from(
+			Collections.singleton(BFTValidator.from(new BFTNode(newView.getAuthor()), UInt256.ONE))
+		);
 
 		assertThat(this.pendingNewViews.insertNewView(newView2, validatorSet)).isEmpty();
 	}
@@ -65,7 +68,9 @@ public class PendingNewViewsTest {
 		when(author.verify(any(Hash.class), any())).thenReturn(false);
 		NewView newView = makeSignedNewViewFor(author, View.genesis());
 
-		ValidatorSet validatorSet = ValidatorSet.from(Collections.singleton(Validator.from(newView.getAuthor(), UInt256.ONE)));
+		ValidatorSet validatorSet = ValidatorSet.from(
+			Collections.singleton(BFTValidator.from(new BFTNode(newView.getAuthor()), UInt256.ONE))
+		);
 
 		assertThat(this.pendingNewViews.insertNewView(newView, validatorSet)).isEmpty();
 	}
@@ -74,7 +79,9 @@ public class PendingNewViewsTest {
 	public void when_inserting_newview_not_signed__exception_is_thrown() {
 		NewView newView = makeUnsignedNewViewFor(ECKeyPair.generateNew().getPublicKey(), View.genesis());
 
-		ValidatorSet validatorSet = ValidatorSet.from(Collections.singleton(Validator.from(newView.getAuthor(), UInt256.ONE)));
+		ValidatorSet validatorSet = ValidatorSet.from(
+			Collections.singleton(BFTValidator.from(new BFTNode(newView.getAuthor()), UInt256.ONE))
+		);
 
 		assertThatThrownBy(() -> pendingNewViews.insertNewView(newView, validatorSet))
 			.isInstanceOf(IllegalArgumentException.class);

@@ -15,28 +15,17 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
-
-import com.radixdlt.consensus.bft.BFTEventReducer.EndOfEpochSender;
-import com.radixdlt.consensus.bft.VertexStore;
-import com.radixdlt.consensus.liveness.Pacemaker;
-import com.radixdlt.consensus.liveness.ProposerElection;
-import com.radixdlt.consensus.bft.ValidatorSet;
+package com.radixdlt.consensus.bft;
 
 /**
- * Creates a new bft processor
+ * An exception indicating a failure in inserting a vertex into a VertexStore
  */
-public interface BFTFactory {
-	/**
-	 * Create a new clean BFT processor
-	 *
-	 * @return a new bft processor
-	 */
-	BFTEventProcessor create(
-		EndOfEpochSender endOfEpochSender,
-		Pacemaker pacemaker,
-		VertexStore vertexStore,
-		ProposerElection proposerElection,
-		ValidatorSet validatorSet
-	);
+public class VertexInsertionException extends Exception {
+	VertexInsertionException(String message) {
+		super(message);
+	}
+
+	VertexInsertionException(String message, Exception cause) {
+		super(message, cause);
+	}
 }

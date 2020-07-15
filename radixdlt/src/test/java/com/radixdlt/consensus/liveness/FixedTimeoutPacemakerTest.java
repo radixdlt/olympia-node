@@ -20,9 +20,10 @@ package com.radixdlt.consensus.liveness;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.View;
-import com.radixdlt.consensus.validators.ValidationState;
-import com.radixdlt.consensus.validators.Validator;
-import com.radixdlt.consensus.validators.ValidatorSet;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.ValidationState;
+import com.radixdlt.consensus.bft.BFTValidator;
+import com.radixdlt.consensus.bft.ValidatorSet;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
@@ -130,7 +131,9 @@ public class FixedTimeoutPacemakerTest {
 		View view = View.of(2);
 		NewView newView1 = makeNewViewFor(view);
 		NewView newView2 = makeNewViewFor(view);
-		ValidatorSet validatorSet = ValidatorSet.from(Collections.singleton(Validator.from(newView1.getAuthor(), UInt256.ONE)));
+		ValidatorSet validatorSet = ValidatorSet.from(
+			Collections.singleton(BFTValidator.from(new BFTNode(newView1.getAuthor()), UInt256.ONE))
+		);
 		assertThat(pacemaker.processNewView(newView2, validatorSet)).isEmpty();
 	}
 

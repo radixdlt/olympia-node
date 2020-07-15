@@ -20,6 +20,7 @@ package com.radixdlt.consensus.simulation;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.simulation.TestInvariant.TestInvariantError;
 import com.radixdlt.consensus.simulation.invariants.epochs.EpochViewInvariant;
 import com.radixdlt.consensus.simulation.configuration.ChangingEpochSyncedStateComputer;
@@ -35,8 +36,8 @@ import com.radixdlt.consensus.simulation.invariants.bft.NoneCommittedInvariant;
 import com.radixdlt.consensus.simulation.invariants.bft.SafetyInvariant;
 import com.radixdlt.consensus.simulation.network.SimulationNodes.SimulatedStateComputer;
 import com.radixdlt.consensus.simulation.configuration.SingleEpochAlwaysSyncedStateComputer;
-import com.radixdlt.consensus.validators.Validator;
-import com.radixdlt.consensus.validators.ValidatorSet;
+import com.radixdlt.consensus.bft.BFTValidator;
+import com.radixdlt.consensus.bft.ValidatorSet;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.consensus.simulation.network.SimulationNetwork;
@@ -188,11 +189,11 @@ public class SimulationTest {
 				epochToNodeIndexMapper == null
 					? epoch -> ValidatorSet.from(
 						publicKeys.stream()
-							.map(pk -> Validator.from(pk, UInt256.ONE))
+							.map(pk -> BFTValidator.from(new BFTNode(pk), UInt256.ONE))
 							.collect(Collectors.toList()))
 					: epochToNodeIndexMapper.andThen(indices -> ValidatorSet.from(
 						indices.mapToObj(nodes::get)
-							.map(kp -> Validator.from(kp.getPublicKey(), UInt256.ONE))
+							.map(kp -> BFTValidator.from(new BFTNode(kp.getPublicKey()), UInt256.ONE))
 							.collect(Collectors.toList())));
 			return new SimulationTest(
 				ImmutableList.copyOf(nodes),

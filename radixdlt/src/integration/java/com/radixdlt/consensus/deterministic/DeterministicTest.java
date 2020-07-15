@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Streams;
 import com.radixdlt.EpochChangeSender;
 import com.radixdlt.consensus.SyncedStateComputer;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.deterministic.ControlledNetwork.ChannelId;
 import com.radixdlt.consensus.deterministic.ControlledNetwork.ControlledMessage;
 import com.radixdlt.consensus.deterministic.ControlledNetwork.ControlledSender;
@@ -32,8 +33,8 @@ import com.radixdlt.consensus.deterministic.configuration.SingleEpochFailOnSyncS
 import com.radixdlt.consensus.deterministic.configuration.SingleEpochRandomlySyncedStateComputer;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.sync.SyncedRadixEngine.CommittedStateSyncSender;
-import com.radixdlt.consensus.validators.Validator;
-import com.radixdlt.consensus.validators.ValidatorSet;
+import com.radixdlt.consensus.bft.BFTValidator;
+import com.radixdlt.consensus.bft.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
@@ -75,7 +76,7 @@ public final class DeterministicTest {
 			.collect(ImmutableList.toImmutableList());
 		this.network = new ControlledNetwork();
 		ValidatorSet initialValidatorSet = ValidatorSet.from(
-			pks.stream().map(pk -> Validator.from(pk, UInt256.ONE)).collect(Collectors.toList())
+			pks.stream().map(BFTNode::new).map(node -> BFTValidator.from(node, UInt256.ONE)).collect(Collectors.toList())
 		);
 
 		this.nodes = Streams.mapWithIndex(keys.stream(),

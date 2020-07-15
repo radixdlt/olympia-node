@@ -20,7 +20,7 @@ package com.radixdlt.consensus.liveness;
 import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.View;
-import com.radixdlt.consensus.validators.ValidatorSet;
+import com.radixdlt.consensus.bft.ValidatorSet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

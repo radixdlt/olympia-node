@@ -17,7 +17,7 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.consensus.validators.ValidatorSet;
+import com.radixdlt.consensus.bft.ValidatorSet;
 import java.util.Objects;
 
 /**

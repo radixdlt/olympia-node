@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,20 +15,25 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.consensus.bft;
 
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.consensus.bft.BFTEventReducer;
+import com.radixdlt.consensus.NewView;
+import com.radixdlt.consensus.PendingVotes;
+import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.BFTEventReducer.EndOfEpochSender;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyViolationException;
-import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.ECKeyPair;
@@ -39,11 +44,11 @@ import com.radixdlt.utils.Ints;
 import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -234,7 +239,7 @@ public class BFTEventReducerTest {
 		when(proposal.getVertex()).thenReturn(proposedVertex);
 
 		RadixEngineException e = mock(RadixEngineException.class);
-		doThrow(new VertexInsertionException("Test", e))
+		Mockito.doThrow(new VertexInsertionException("Test", e))
 			.when(vertexStore).insertVertex(any());
 		when(pacemaker.processQC(any())).thenReturn(Optional.empty());
 		when(pacemaker.getCurrentView()).thenReturn(currentView);

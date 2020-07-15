@@ -18,7 +18,7 @@
 package com.radixdlt.consensus;
 
 import com.radixdlt.consensus.liveness.ProposerElection;
-import com.radixdlt.consensus.validators.ValidatorSet;
+import com.radixdlt.consensus.bft.ValidatorSet;
 
 /**
  * Factory for creating {@link ProposerElection}s for specific lists of proposeres

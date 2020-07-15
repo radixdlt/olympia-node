@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.validators;
+package com.radixdlt.consensus.bft;
 
 import com.radixdlt.utils.UInt256;
 import org.junit.Test;
@@ -86,7 +86,7 @@ public class ValidationStateTest {
 		ECKeyPair k5 = ECKeyPair.generateNew();
 		ECPublicKey kp5 = spy(k5.getPublicKey());
 
-		ValidatorSet vset = ValidatorSet.from(transform(ImmutableList.of(kp1, kp2, kp3, kp4), v -> Validator.from(v, UInt256.ONE)));
+		ValidatorSet vset = ValidatorSet.from(transform(ImmutableList.of(kp1, kp2, kp3, kp4), v -> BFTValidator.from(new BFTNode(v), UInt256.ONE)));
 
 		Hash hash = Hash.random();
 

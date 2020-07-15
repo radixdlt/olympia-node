@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.validators;
+package com.radixdlt.consensus.bft;
 
 import com.radixdlt.utils.UInt256;
 import org.junit.Test;
@@ -27,17 +27,17 @@ import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 
-public class ValidatorTest {
+public class BFTValidatorTest {
 	@Test
 	public void equalsContract() {
-		EqualsVerifier.forClass(Validator.class)
+		EqualsVerifier.forClass(BFTValidator.class)
 			.verify();
 	}
 
 	@Test
 	public void sensibleToString() {
 		String s = create().toString();
-		assertThat(s, containsString(Validator.class.getSimpleName()));
+		assertThat(s, containsString(BFTValidator.class.getSimpleName()));
 	}
 
 	@Test
@@ -45,8 +45,8 @@ public class ValidatorTest {
 		assertNotNull(create().nodeKey());
 	}
 
-	private static Validator create() {
+	private static BFTValidator create() {
 		ECKeyPair nodeKey = ECKeyPair.generateNew();
-		return Validator.from(nodeKey.getPublicKey(), UInt256.ONE);
+		return BFTValidator.from(new BFTNode(nodeKey.getPublicKey()), UInt256.ONE);
 	}
 }

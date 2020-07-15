@@ -23,12 +23,13 @@ import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.validators.Validator;
-import com.radixdlt.consensus.validators.ValidatorSet;
+import com.radixdlt.consensus.bft.BFTValidator;
+import com.radixdlt.consensus.bft.ValidatorSet;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.utils.UInt256;
 import java.util.Comparator;
@@ -41,12 +42,13 @@ import org.junit.Test;
 public class WeightedRotatingLeadersTest {
 	private WeightedRotatingLeaders weightedRotatingLeaders;
 	private WeightedRotatingLeaders weightedRotatingLeaders2;
-	private ImmutableList<Validator> validatorsInOrder;
+	private ImmutableList<BFTValidator> validatorsInOrder;
 
 	private void setUp(int validatorSetSize, int sizeOfCache) {
 		this.validatorsInOrder = Stream.generate(() -> mock(ECPublicKey.class))
 			.limit(validatorSetSize)
-			.map(pk -> Validator.from(pk, UInt256.ONE))
+			.map(BFTNode::new)
+			.map(node -> BFTValidator.from(node, UInt256.ONE))
 			.collect(ImmutableList.toImmutableList());
 
 		ValidatorSet validatorSet = ValidatorSet.from(validatorsInOrder);
@@ -120,11 +122,15 @@ public class WeightedRotatingLeadersTest {
 
 		final int sumOfPower = fibonacci.get().sum();
 		this.validatorsInOrder = fibonacci.get()
-			.mapToObj(p -> Validator.from(mock(ECPublicKey.class), UInt256.from(p)))
+			.mapToObj(p -> {
+				BFTNode node = mock(BFTNode.class);
+				when(node.getKey()).thenReturn(mock(ECPublicKey.class));
+				return BFTValidator.from(node, UInt256.from(p));
+			})
 			.collect(ImmutableList.toImmutableList());
 
 		ValidatorSet validatorSet = ValidatorSet.from(validatorsInOrder);
-		Comparator<Validator> validatorComparator = Comparator.comparing(Validator::getPower); //good enough to avoid compiler warning
+		Comparator<BFTValidator> validatorComparator = Comparator.comparing(BFTValidator::getPower); //good enough to avoid compiler warning
 		this.weightedRotatingLeaders = new WeightedRotatingLeaders(validatorSet, validatorComparator, sizeOfCache);
 
 		Map<ECPublicKey, UInt256> proposerCounts = Stream.iterate(View.of(0), View::next)
@@ -134,7 +140,7 @@ public class WeightedRotatingLeadersTest {
 			.collect(groupingBy(p -> p, collectingAndThen(counting(), UInt256::from)));
 
 		Map<ECPublicKey, UInt256> expected = validatorsInOrder.stream()
-			.collect(toMap(Validator::nodeKey, Validator::getPower));
+			.collect(toMap(BFTValidator::nodeKey, BFTValidator::getPower));
 
 		assertThat(proposerCounts).isEqualTo(expected);
 	}

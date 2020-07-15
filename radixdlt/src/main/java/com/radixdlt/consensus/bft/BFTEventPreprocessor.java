@@ -15,11 +15,16 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.consensus.bft;
 
-import com.radixdlt.consensus.SyncQueues.SyncQueue;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.VertexStore;
+import com.radixdlt.consensus.BFTEventProcessor;
+import com.radixdlt.consensus.NewView;
+import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.RequiresSyncConsensusEvent;
+import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.bft.SyncQueues.SyncQueue;
 import com.radixdlt.consensus.liveness.PacemakerState;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.crypto.Hash;

@@ -42,8 +42,8 @@ import com.radixdlt.consensus.epoch.GetEpochResponse;
 import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
-import com.radixdlt.consensus.validators.Validator;
-import com.radixdlt.consensus.validators.ValidatorSet;
+import com.radixdlt.consensus.bft.BFTValidator;
+import com.radixdlt.consensus.bft.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.counters.SystemCountersImpl;
@@ -87,9 +87,7 @@ public class EpochManagerTest {
 		this.syncedStateComputer = ssc;
 
 		this.proposerElection = mock(ProposerElection.class);
-		this.self = mock(BFTNode.class);
-		when(self.getShortName()).thenReturn("Test");
-		when(self.getKey()).thenReturn(publicKey);
+		this.self = new BFTNode(this.publicKey);
 
 		this.epochManager = new EpochManager(
 			this.self,
@@ -192,12 +190,14 @@ public class EpochManagerTest {
 		ValidatorSet validatorSet = mock(ValidatorSet.class);
 		when(validatorSet.containsKey(any())).thenReturn(true);
 
-		Validator validator = mock(Validator.class);
+		BFTValidator validator = mock(BFTValidator.class);
 		ECPublicKey key = ECKeyPair.generateNew().getPublicKey();
-		when(validator.nodeKey()).thenReturn(key);
+		BFTNode node = mock(BFTNode.class);
+		when(node.getKey()).thenReturn(key);
+		when(validator.getNode()).thenReturn(node);
 
-		Validator selfValidator = mock(Validator.class);
-		when(selfValidator.nodeKey()).thenReturn(this.publicKey);
+		BFTValidator selfValidator = mock(BFTValidator.class);
+		when(selfValidator.getNode()).thenReturn(this.self);
 
 		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of(selfValidator, validator));
 		epochManager.processEpochChange(new EpochChange(ancestor, validatorSet));
@@ -225,12 +225,12 @@ public class EpochManagerTest {
 		ValidatorSet validatorSet = mock(ValidatorSet.class);
 		when(validatorSet.containsKey(any())).thenReturn(true);
 
-		Validator validator = mock(Validator.class);
+		BFTValidator validator = mock(BFTValidator.class);
 		ECPublicKey key = ECKeyPair.generateNew().getPublicKey();
-		when(validator.nodeKey()).thenReturn(key);
+		when(validator.getNode()).then(i -> new BFTNode(key));
 
-		Validator selfValidator = mock(Validator.class);
-		when(selfValidator.nodeKey()).thenReturn(this.publicKey);
+		BFTValidator selfValidator = mock(BFTValidator.class);
+		when(selfValidator.getNode()).thenReturn(this.self);
 
 		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of(selfValidator, validator));
 		epochManager.processEpochChange(new EpochChange(ancestor, validatorSet));
@@ -303,9 +303,10 @@ public class EpochManagerTest {
 
 	@Test
 	public void when_receive_next_epoch_events_and_then_epoch_change_and_part_of_validator_set__then_should_execute_queued_epoch_events() {
-		Validator authorValidator = mock(Validator.class);
-		ECPublicKey author = mock(ECPublicKey.class);
+		BFTValidator authorValidator = mock(BFTValidator.class);
+		ECPublicKey author = ECKeyPair.generateNew().getPublicKey();
 		when(authorValidator.nodeKey()).thenReturn(author);
+		when(authorValidator.getNode()).thenReturn(new BFTNode(author));
 
 		when(pacemaker.getCurrentView()).thenReturn(View.genesis());
 		when(vertexStore.getHighestQC()).thenReturn(mock(QuorumCertificate.class));
@@ -326,8 +327,8 @@ public class EpochManagerTest {
 		BFTEventProcessor eventProcessor = mock(BFTEventProcessor.class);
 		when(bftFactory.create(any(), any(), any(), any(), any())).thenReturn(eventProcessor);
 
-		Validator validator = mock(Validator.class);
-		when(validator.nodeKey()).thenReturn(mock(ECPublicKey.class));
+		BFTValidator validator = mock(BFTValidator.class);
+		when(validator.getNode()).thenReturn(mock(BFTNode.class));
 		ValidatorSet validatorSet = mock(ValidatorSet.class);
 		when(validatorSet.containsKey(any())).thenReturn(true);
 		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of(validator, authorValidator));
@@ -339,7 +340,7 @@ public class EpochManagerTest {
 
 	@Test
 	public void when_receive_next_epoch_events_and_then_epoch_change_and_not_part_of_validator_set__then_queued_events_should_be_cleared() {
-		Validator authorValidator = mock(Validator.class);
+		BFTValidator authorValidator = mock(BFTValidator.class);
 		ECPublicKey author = mock(ECPublicKey.class);
 		when(authorValidator.nodeKey()).thenReturn(author);
 
@@ -350,7 +351,7 @@ public class EpochManagerTest {
 		epochManager.processConsensusEvent(proposal);
 		assertThat(systemCounters.get(CounterType.EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS)).isEqualTo(1);
 
-		Validator validator = mock(Validator.class);
+		BFTValidator validator = mock(BFTValidator.class);
 		when(validator.nodeKey()).thenReturn(mock(ECPublicKey.class));
 		ValidatorSet validatorSet = mock(ValidatorSet.class);
 		when(validatorSet.containsKey(any())).thenReturn(false);
@@ -367,8 +368,8 @@ public class EpochManagerTest {
 		BFTEventProcessor eventProcessor = mock(BFTEventProcessor.class);
 		when(bftFactory.create(any(), any(), any(), any(), any())).thenReturn(eventProcessor);
 
-		Validator validator = mock(Validator.class);
-		when(validator.nodeKey()).thenReturn(mock(ECPublicKey.class));
+		BFTValidator validator = mock(BFTValidator.class);
+		when(validator.getNode()).thenReturn(mock(BFTNode.class));
 		ValidatorSet validatorSet = mock(ValidatorSet.class);
 		when(validatorSet.containsKey(any())).thenReturn(true);
 		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of(validator));

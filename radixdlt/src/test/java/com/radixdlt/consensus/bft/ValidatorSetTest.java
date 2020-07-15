@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.validators;
+package com.radixdlt.consensus.bft;
 
 import com.radixdlt.utils.UInt256;
 import org.junit.Test;
@@ -54,10 +54,10 @@ public class ValidatorSetTest {
 		ECKeyPair k4 = ECKeyPair.generateNew();
 		ECKeyPair k5 = ECKeyPair.generateNew(); // Rogue signature
 
-		Validator v1 = Validator.from(k1.getPublicKey(), UInt256.ONE);
-		Validator v2 = Validator.from(k2.getPublicKey(), UInt256.ONE);
-		Validator v3 = Validator.from(k3.getPublicKey(), UInt256.ONE);
-		Validator v4 = Validator.from(k4.getPublicKey(), UInt256.ONE);
+		BFTValidator v1 = BFTValidator.from(new BFTNode(k1.getPublicKey()), UInt256.ONE);
+		BFTValidator v2 = BFTValidator.from(new BFTNode(k2.getPublicKey()), UInt256.ONE);
+		BFTValidator v3 = BFTValidator.from(new BFTNode(k3.getPublicKey()), UInt256.ONE);
+		BFTValidator v4 = BFTValidator.from(new BFTNode(k4.getPublicKey()), UInt256.ONE);
 
 		ValidatorSet vs = ValidatorSet.from(ImmutableSet.of(v1, v2, v3, v4));
 		Hash message = Hash.random();
@@ -108,8 +108,8 @@ public class ValidatorSetTest {
 		ECKeyPair k1 = ECKeyPair.generateNew();
 		ECKeyPair k2 = ECKeyPair.generateNew();
 
-		Validator v1 = Validator.from(k1.getPublicKey(), UInt256.THREE);
-		Validator v2 = Validator.from(k2.getPublicKey(), UInt256.ONE);
+		BFTValidator v1 = BFTValidator.from(new BFTNode(k1.getPublicKey()), UInt256.THREE);
+		BFTValidator v2 = BFTValidator.from(new BFTNode(k2.getPublicKey()), UInt256.ONE);
 
 		ValidatorSet vs = ValidatorSet.from(ImmutableSet.of(v1, v2));
 		Hash message = Hash.random();

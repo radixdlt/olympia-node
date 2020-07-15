@@ -15,13 +15,13 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.consensus.bft;
 
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableMap;
+import com.radixdlt.consensus.RequiresSyncConsensusEvent;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 import java.util.LinkedList;
 import java.util.Objects;
@@ -37,12 +37,12 @@ import javax.annotation.Nullable;
  * This class is NOT thread-safe.
  */
 public final class SyncQueues {
-	private final ImmutableMap<ECPublicKey, SyncQueue> queues;
+	private final ImmutableMap<BFTNode, SyncQueue> queues;
 
 	private final SystemCounters counters;
 
 	public SyncQueues(
-		Set<ECPublicKey> nodes,
+		Set<BFTNode> nodes,
 		SystemCounters counters
 	) {
 		this.queues = nodes.stream().collect(ImmutableMap.toImmutableMap(n -> n, n -> new SyncQueue()));
@@ -105,11 +105,11 @@ public final class SyncQueues {
 	}
 
 	boolean isEmptyElseAdd(RequiresSyncConsensusEvent event) {
-		return queues.get(event.getAuthor()).isEmptyElseAdd(event);
+		return queues.get(new BFTNode(event.getAuthor())).isEmptyElseAdd(event);
 	}
 
 	void add(RequiresSyncConsensusEvent event) {
-		queues.get(event.getAuthor()).add(event);
+		queues.get(new BFTNode(event.getAuthor())).add(event);
 	}
 
 	void clear() {

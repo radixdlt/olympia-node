@@ -18,7 +18,10 @@
 package com.radixdlt.consensus;
 
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.consensus.bft.BFTEventPreprocessor;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.EmptyBFTEventProcessor;
+import com.radixdlt.consensus.bft.SyncQueues;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
@@ -30,8 +33,8 @@ import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.PacemakerFactory;
 import com.radixdlt.consensus.liveness.ProposerElection;
-import com.radixdlt.consensus.validators.Validator;
-import com.radixdlt.consensus.validators.ValidatorSet;
+import com.radixdlt.consensus.bft.BFTValidator;
+import com.radixdlt.consensus.bft.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.ECPublicKey;
@@ -116,7 +119,7 @@ public final class EpochManager {
 		// TODO: Move this into when lastConstructed is set
 		if (lastConstructed != null && lastConstructed.getEpoch() == ancestorMetadata.getEpoch()) {
 			log.info("{}: EPOCH_CHANGE: broadcasting next epoch", this.self::getShortName);
-			for (Validator validator : validatorSet.getValidators()) {
+			for (BFTValidator validator : validatorSet.getValidators()) {
 				if (!validator.nodeKey().equals(self.getKey())) {
 					epochsRPCSender.sendGetEpochResponse(validator.nodeKey(), ancestorMetadata);
 				}
@@ -150,7 +153,7 @@ public final class EpochManager {
 			);
 			SyncQueues syncQueues = new SyncQueues(
 				validatorSet.getValidators().stream()
-					.map(Validator::nodeKey)
+					.map(BFTValidator::getNode)
 					.collect(ImmutableSet.toImmutableSet()),
 				this.counters
 			);
@@ -192,7 +195,7 @@ public final class EpochManager {
 			epochMessage.append(' ').append(message);
 			epochMessage.append(" new epoch ").append(epochChange.getAncestor().getEpoch() + 1);
 			epochMessage.append(" with validators: ");
-			Iterator<Validator> i = epochChange.getValidatorSet().getValidators().iterator();
+			Iterator<BFTValidator> i = epochChange.getValidatorSet().getValidators().iterator();
 			if (i.hasNext()) {
 				appendValidator(epochMessage, i.next());
 				while (i.hasNext()) {
@@ -206,7 +209,7 @@ public final class EpochManager {
 		}
 	}
 
-	private void appendValidator(StringBuilder msg, Validator v) {
+	private void appendValidator(StringBuilder msg, BFTValidator v) {
 		msg.append(nodeName(v.nodeKey())).append(':').append(v.getPower());
 	}
 
