@@ -15,32 +15,25 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.consensus.epoch;
+
+import static org.mockito.Mockito.mock;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.crypto.Hash;
+import org.junit.Test;
 
-/**
- * Sender which goes nowhere
- */
-public enum EmptySyncVerticesRPCSender implements VertexStore.SyncVerticesRPCSender {
-	INSTANCE;
-	@Override
-	public void sendGetVerticesRequest(Hash id, BFTNode node, int count, Object opaque) {
-		// empty
-	}
-
-	@Override
-	public void sendGetVerticesResponse(GetVerticesRequest originalRequest, ImmutableList<Vertex> vertices) {
-		// empty
-	}
-
-	@Override
-	public void sendGetVerticesErrorResponse(GetVerticesRequest originalRequest, QuorumCertificate highestQC,
-		QuorumCertificate highestCommittedQC) {
-		// empty
+public class EmptySyncVerticesRPCSenderTest {
+	@Test
+	public void when_execute_methods_in_empty__then_should_do_nothing() {
+		EmptySyncVerticesRPCSender.INSTANCE
+			.sendGetVerticesResponse(mock(GetVerticesRequest.class), ImmutableList.of());
+		EmptySyncVerticesRPCSender.INSTANCE
+			.sendGetVerticesErrorResponse(mock(GetVerticesRequest.class), mock(QuorumCertificate.class), mock(QuorumCertificate.class));
+		EmptySyncVerticesRPCSender.INSTANCE
+			.sendGetVerticesRequest(mock(Hash.class), mock(BFTNode.class), 1, mock(Object.class));
 	}
 }

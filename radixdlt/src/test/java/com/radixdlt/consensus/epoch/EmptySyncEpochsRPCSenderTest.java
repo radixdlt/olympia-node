@@ -15,36 +15,19 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.consensus.epoch;
 
-import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 
-import nl.jqno.equalsverifier.EqualsVerifier;
-import org.junit.Before;
+import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.bft.BFTNode;
 import org.junit.Test;
 
-public class LocalTimeoutTest {
-	private LocalTimeout localTimeout;
-	private long epoch;
-	private View view;
-
-	@Before
-	public void setup() {
-		epoch = 12345;
-		view = mock(View.class);
-		localTimeout = new LocalTimeout(epoch, view);
-	}
-
+public class EmptySyncEpochsRPCSenderTest {
 	@Test
-	public void equalsContract() {
-		EqualsVerifier.forClass(LocalTimeout.class)
-			.verify();
+	public void when_send_request_and_response__then_no_exception_occurs() {
+		EmptySyncEpochsRPCSender.INSTANCE.sendGetEpochRequest(mock(BFTNode.class), 12345L);
+		EmptySyncEpochsRPCSender.INSTANCE.sendGetEpochResponse(mock(BFTNode.class), mock(VertexMetadata.class));
 	}
 
-	@Test
-	public void testGetters() {
-		assertEquals(this.view, this.localTimeout.getView());
-		assertEquals(this.epoch, this.localTimeout.getEpoch());
-	}
 }
