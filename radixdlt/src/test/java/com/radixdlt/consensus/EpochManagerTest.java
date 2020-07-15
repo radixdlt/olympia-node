@@ -58,7 +58,7 @@ import org.junit.Test;
 public class EpochManagerTest {
 	private ECPublicKey publicKey;
 	private EpochManager epochManager;
-	private SyncEpochsRPCSender syncEpochsRPCSender;
+	private EpochManager.SyncEpochsRPCSender syncEpochsRPCSender;
 	private VertexStore vertexStore;
 	private BFTFactory bftFactory;
 	private Pacemaker pacemaker;
@@ -72,7 +72,7 @@ public class EpochManagerTest {
 		ECKeyPair keyPair = ECKeyPair.generateNew();
 		this.publicKey = keyPair.getPublicKey();
 
-		this.syncEpochsRPCSender = mock(SyncEpochsRPCSender.class);
+		this.syncEpochsRPCSender = mock(EpochManager.SyncEpochsRPCSender.class);
 
 		this.vertexStore = mock(VertexStore.class);
 		VertexStoreFactory vertexStoreFactory = mock(VertexStoreFactory.class);
@@ -135,14 +135,14 @@ public class EpochManagerTest {
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of());
 		epochManager.processEpochChange(new EpochChange(ancestor, validatorSet));
-		ECPublicKey sender = mock(ECPublicKey.class);
+		BFTNode sender = mock(BFTNode.class);
 		epochManager.processGetEpochRequest(new GetEpochRequest(sender, ancestor.getEpoch() + 1));
 		verify(syncEpochsRPCSender, times(1)).sendGetEpochResponse(eq(sender), eq(ancestor));
 	}
 
 	@Test
 	public void when_receive_not_current_epoch_request__then_should_return_null() {
-		ECPublicKey sender = mock(ECPublicKey.class);
+		BFTNode sender = mock(BFTNode.class);
 		epochManager.processGetEpochRequest(new GetEpochRequest(sender, 2));
 		verify(syncEpochsRPCSender, times(1)).sendGetEpochResponse(eq(sender), isNull());
 	}
@@ -151,7 +151,7 @@ public class EpochManagerTest {
 	public void when_receive_epoch_response__then_should_sync_state_computer() {
 		GetEpochResponse response = mock(GetEpochResponse.class);
 		when(response.getEpochAncestor()).thenReturn(VertexMetadata.ofGenesisAncestor());
-		when(response.getAuthor()).thenReturn(mock(ECPublicKey.class));
+		when(response.getAuthor()).thenReturn(mock(BFTNode.class));
 		epochManager.processGetEpochResponse(response);
 		verify(syncedStateComputer, times(1)).syncTo(eq(VertexMetadata.ofGenesisAncestor()), any(), any());
 	}

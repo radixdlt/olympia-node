@@ -22,7 +22,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
-import com.radixdlt.consensus.SyncEpochsRPCSender;
+import com.radixdlt.consensus.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
@@ -33,7 +33,6 @@ import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.epoch.GetEpochRequest;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
@@ -190,8 +189,8 @@ public class MessageCentralValidatorSync implements SyncVerticesRPCSender, SyncV
 	}
 
 	@Override
-	public void sendGetEpochRequest(ECPublicKey node, long epoch) {
-		final Optional<Peer> peer = this.addressBook.peer(node.euid());
+	public void sendGetEpochRequest(BFTNode node, long epoch) {
+		final Optional<Peer> peer = this.addressBook.peer(node.getKey().euid());
 		if (!peer.isPresent()) {
 			// TODO: Change to more appropriate exception type
 			throw new IllegalStateException(String.format("Peer with pubkey %s not present", node));
@@ -202,8 +201,8 @@ public class MessageCentralValidatorSync implements SyncVerticesRPCSender, SyncV
 	}
 
 	@Override
-	public void sendGetEpochResponse(ECPublicKey node, VertexMetadata ancestor) {
-		final Optional<Peer> peer = this.addressBook.peer(node.euid());
+	public void sendGetEpochResponse(BFTNode node, VertexMetadata ancestor) {
+		final Optional<Peer> peer = this.addressBook.peer(node.getKey().euid());
 		if (!peer.isPresent()) {
 			// TODO: Change to more appropriate exception type
 			throw new IllegalStateException(String.format("Peer with pubkey %s not present", node));
@@ -217,7 +216,7 @@ public class MessageCentralValidatorSync implements SyncVerticesRPCSender, SyncV
 	public Observable<GetEpochRequest> epochRequests() {
 		return this.createObservable(
 			GetEpochRequestMessage.class,
-			(peer, msg) -> new GetEpochRequest(msg.getAuthor(), msg.getEpoch())
+			(peer, msg) -> new GetEpochRequest(new BFTNode(msg.getAuthor()), msg.getEpoch())
 		);
 	}
 
@@ -225,7 +224,7 @@ public class MessageCentralValidatorSync implements SyncVerticesRPCSender, SyncV
 	public Observable<GetEpochResponse> epochResponses() {
 		return this.createObservable(
 			GetEpochResponseMessage.class,
-			(peer, msg) -> new GetEpochResponse(msg.getAuthor(), msg.getAncestor())
+			(peer, msg) -> new GetEpochResponse(new BFTNode(msg.getAuthor()), msg.getAncestor())
 		);
 	}
 

@@ -18,21 +18,21 @@
 package com.radixdlt.consensus.epoch;
 
 import com.radixdlt.consensus.VertexMetadata;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.consensus.bft.BFTNode;
 
 /**
  * An RPC Response to a GetEpoch request
  */
 public final class GetEpochResponse {
 	private final VertexMetadata epochAncestor;
-	private final ECPublicKey author;
+	private final BFTNode author;
 
-	public GetEpochResponse(ECPublicKey author, VertexMetadata epochAncestor) {
+	public GetEpochResponse(BFTNode author, VertexMetadata epochAncestor) {
 		this.epochAncestor = epochAncestor;
 		this.author = author;
 	}
 
-	public ECPublicKey getAuthor() {
+	public BFTNode getAuthor() {
 		return author;
 	}
 
@@ -42,6 +42,6 @@ public final class GetEpochResponse {
 
 	@Override
 	public String toString() {
-		return String.format("%s{author=%s ancestor=%s}", this.getClass().getSimpleName(), this.author, this.epochAncestor);
+		return String.format("%s{author=%s ancestor=%s}", this.getClass().getSimpleName(), this.author.getShortName(), this.epochAncestor);
 	}
 }

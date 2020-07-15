@@ -199,18 +199,14 @@ public class MessageCentralValidatorSyncTest {
 	@Test
 	public void when_send_get_epoch_request__then_message_central_will_send_get_epoch_request() {
 		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(mock(Peer.class)));
-		ECPublicKey author = mock(ECPublicKey.class);
-		when(author.euid()).thenReturn(mock(EUID.class));
-		sync.sendGetEpochRequest(author, 12345);
+		sync.sendGetEpochRequest(self, 12345);
 		verify(messageCentral, times(1)).send(any(), any(GetEpochRequestMessage.class));
 	}
 
 	@Test
 	public void when_send_get_epoch_response__then_message_central_will_send_get_epoch_response() {
 		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(mock(Peer.class)));
-		ECPublicKey author = mock(ECPublicKey.class);
-		when(author.euid()).thenReturn(mock(EUID.class));
-		sync.sendGetEpochResponse(author, mock(VertexMetadata.class));
+		sync.sendGetEpochResponse(self, mock(VertexMetadata.class));
 		verify(messageCentral, times(1)).send(any(), any(GetEpochResponseMessage.class));
 	}
 
@@ -225,7 +221,7 @@ public class MessageCentralValidatorSyncTest {
 
 		TestObserver<GetEpochRequest> testObserver = sync.epochRequests().test();
 		testObserver.awaitCount(1);
-		testObserver.assertValueAt(0, r -> r.getEpoch() == 1 && r.getAuthor().equals(author));
+		testObserver.assertValueAt(0, r -> r.getEpoch() == 1 && r.getAuthor().getKey().equals(author));
 	}
 
 	@Test
@@ -240,6 +236,6 @@ public class MessageCentralValidatorSyncTest {
 
 		TestObserver<GetEpochResponse> testObserver = sync.epochResponses().test();
 		testObserver.awaitCount(1);
-		testObserver.assertValueAt(0, r -> r.getEpochAncestor().equals(ancestor) && r.getAuthor().equals(author));
+		testObserver.assertValueAt(0, r -> r.getEpochAncestor().equals(ancestor) && r.getAuthor().getKey().equals(author));
 	}
 }

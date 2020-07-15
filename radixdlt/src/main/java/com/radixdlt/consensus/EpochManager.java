@@ -59,6 +59,30 @@ import org.apache.logging.log4j.Logger;
 public final class EpochManager {
 	private static final Logger log = LogManager.getLogger("EM");
 
+	/**
+	 * A sender of GetEpoch RPC requests/responses
+	 */
+	public interface SyncEpochsRPCSender {
+
+		/**
+		 * Send a request to a peer for proof of an epoch
+		 * @param node the peer to send to
+		 * @param epoch the epoch to retrieve proof for
+		 */
+		void sendGetEpochRequest(BFTNode node, long epoch);
+
+		/**
+		 * Send an epoch proof resposne to a peer
+		 *
+		 * TODO: currently just actually sending an ancestor but should contain
+		 * TODO: proof as well
+		 *
+		 * @param node the peer to send to
+		 * @param ancestor the ancestor of the epoch
+		 */
+		void sendGetEpochResponse(BFTNode node, VertexMetadata ancestor);
+	}
+
 	private final BFTNode self;
 	private final SyncEpochsRPCSender epochsRPCSender;
 	private final PacemakerFactory pacemakerFactory;
@@ -121,7 +145,7 @@ public final class EpochManager {
 			log.info("{}: EPOCH_CHANGE: broadcasting next epoch", this.self::getShortName);
 			for (BFTValidator validator : validatorSet.getValidators()) {
 				if (!validator.getNode().equals(self)) {
-					epochsRPCSender.sendGetEpochResponse(validator.getNode().getKey(), ancestorMetadata);
+					epochsRPCSender.sendGetEpochResponse(validator.getNode(), ancestorMetadata);
 				}
 			}
 		}
@@ -246,7 +270,7 @@ public final class EpochManager {
 
 		final VertexMetadata ancestor = response.getEpochAncestor();
 		if (ancestor.getEpoch() >= this.currentEpoch()) {
-			syncedStateComputer.syncTo(ancestor, Collections.singletonList(new BFTNode(response.getAuthor())), null);
+			syncedStateComputer.syncTo(ancestor, Collections.singletonList(response.getAuthor()), null);
 		} else {
 			log.warn("{}: Received old epoch {}", this.self::getShortName, () -> response);
 		}
@@ -285,7 +309,7 @@ public final class EpochManager {
 			counters.set(CounterType.EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS, numQueuedConsensusEvents);
 
 			// Send request for higher epoch proof
-			epochsRPCSender.sendGetEpochRequest(consensusEvent.getAuthor(), this.currentEpoch() + 1);
+			epochsRPCSender.sendGetEpochRequest(new BFTNode(consensusEvent.getAuthor()), this.currentEpoch() + 1);
 			return;
 		}
 

@@ -17,21 +17,21 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.consensus.bft.BFTNode;
 
 /**
  * A mocked sync epochs rpc sender
  */
-public enum EmptySyncEpochsRPCSender implements SyncEpochsRPCSender {
+public enum EmptySyncEpochsRPCSender implements EpochManager.SyncEpochsRPCSender {
 	INSTANCE;
 
 	@Override
-	public void sendGetEpochRequest(ECPublicKey peer, long epoch) {
+	public void sendGetEpochRequest(BFTNode node, long epoch) {
 		// No-op
 	}
 
 	@Override
-	public void sendGetEpochResponse(ECPublicKey peer, VertexMetadata ancestor) {
+	public void sendGetEpochResponse(BFTNode node, VertexMetadata ancestor) {
 		// No-op
 	}
 }

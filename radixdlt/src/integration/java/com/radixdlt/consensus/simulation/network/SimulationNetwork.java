@@ -23,7 +23,7 @@ import com.radixdlt.consensus.ConsensusEventsRx;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
-import com.radixdlt.consensus.SyncEpochsRPCSender;
+import com.radixdlt.consensus.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
@@ -124,7 +124,7 @@ public class SimulationNetwork {
 	}
 
 	private final Subject<MessageInTransit> receivedMessages;
-	private final Map<ECPublicKey, SimulatedNetworkImpl> receivers = new ConcurrentHashMap<>();
+	private final Map<BFTNode, SimulatedNetworkImpl> receivers = new ConcurrentHashMap<>();
 	private final LatencyProvider latencyProvider;
 
 	private SimulationNetwork(LatencyProvider latencyProvider) {
@@ -204,10 +204,10 @@ public class SimulationNetwork {
 
 	private class SimulatedNetworkImpl implements SimulatedNetworkReceiver, SimulationSyncSender {
 		private final Observable<Object> myMessages;
-		private final ECPublicKey thisNode;
+		private final BFTNode thisNode;
 		private HashMap<Hash, Object> opaqueMap = new HashMap<>();
 
-		private SimulatedNetworkImpl(ECPublicKey node) {
+		private SimulatedNetworkImpl(BFTNode node) {
 			this.thisNode = node;
 			// filter only relevant messages (appropriate target and if receiving is allowed)
 			this.myMessages = receivedMessages
@@ -241,17 +241,17 @@ public class SimulationNetwork {
 
 		@Override
 		public void sendGetVerticesRequest(Hash id, BFTNode node, int count, Object opaque) {
-			final SimulatedVerticesRequest request = new SimulatedVerticesRequest(thisNode, id, count);
+			final SimulatedVerticesRequest request = new SimulatedVerticesRequest(thisNode.getKey(), id, count);
 			opaqueMap.put(id, opaque);
-			receivedMessages.onNext(MessageInTransit.newMessage(request, thisNode, node.getKey()));
+			receivedMessages.onNext(MessageInTransit.newMessage(request, thisNode.getKey(), node.getKey()));
 		}
 
 		@Override
 		public void sendGetVerticesResponse(GetVerticesRequest originalRequest, ImmutableList<Vertex> vertices) {
 			SimulatedVerticesRequest request = (SimulatedVerticesRequest) originalRequest;
-			Object opaque = receivers.computeIfAbsent(request.requestor, SimulatedNetworkImpl::new).opaqueMap.get(request.vertexId);
+			Object opaque = receivers.computeIfAbsent(new BFTNode(request.requestor), SimulatedNetworkImpl::new).opaqueMap.get(request.vertexId);
 			GetVerticesResponse vertexResponse = new GetVerticesResponse(request.vertexId, vertices, opaque);
-			receivedMessages.onNext(MessageInTransit.newMessage(vertexResponse, thisNode, request.requestor));
+			receivedMessages.onNext(MessageInTransit.newMessage(vertexResponse, thisNode.getKey(), request.requestor));
 		}
 
 		@Override
@@ -259,21 +259,21 @@ public class SimulationNetwork {
 			QuorumCertificate highestCommittedQC) {
 
 			SimulatedVerticesRequest request = (SimulatedVerticesRequest) originalRequest;
-			Object opaque = receivers.computeIfAbsent(request.requestor, SimulatedNetworkImpl::new).opaqueMap.get(request.vertexId);
+			Object opaque = receivers.computeIfAbsent(new BFTNode(request.requestor), SimulatedNetworkImpl::new).opaqueMap.get(request.vertexId);
 			GetVerticesErrorResponse vertexResponse = new GetVerticesErrorResponse(request.vertexId, highestQC, highestCommittedQC, opaque);
-			receivedMessages.onNext(MessageInTransit.newMessage(vertexResponse, thisNode, request.requestor));
+			receivedMessages.onNext(MessageInTransit.newMessage(vertexResponse, thisNode.getKey(), request.requestor));
 		}
 
 		@Override
-		public void sendGetEpochRequest(ECPublicKey node, long epoch) {
+		public void sendGetEpochRequest(BFTNode node, long epoch) {
 			GetEpochRequest getEpochRequest = new GetEpochRequest(thisNode, epoch);
-			receivedMessages.onNext(MessageInTransit.newMessage(getEpochRequest, thisNode, node));
+			receivedMessages.onNext(MessageInTransit.newMessage(getEpochRequest, thisNode.getKey(), node.getKey()));
 		}
 
 		@Override
-		public void sendGetEpochResponse(ECPublicKey node, VertexMetadata ancestor) {
+		public void sendGetEpochResponse(BFTNode node, VertexMetadata ancestor) {
 			GetEpochResponse getEpochResponse = new GetEpochResponse(thisNode, ancestor);
-			receivedMessages.onNext(MessageInTransit.newMessage(getEpochResponse, thisNode, node));
+			receivedMessages.onNext(MessageInTransit.newMessage(getEpochResponse, thisNode.getKey(), node.getKey()));
 		}
 
 		@Override
@@ -308,11 +308,11 @@ public class SimulationNetwork {
 	}
 
 	public SimulatedNetworkReceiver getNetworkRx(ECPublicKey forNode) {
-		return receivers.computeIfAbsent(forNode, SimulatedNetworkImpl::new);
+		return receivers.computeIfAbsent(new BFTNode(forNode), SimulatedNetworkImpl::new);
 	}
 
 	public SimulationSyncSender getSyncSender(ECPublicKey forNode) {
-		return receivers.computeIfAbsent(forNode, SimulatedNetworkImpl::new);
+		return receivers.computeIfAbsent(new BFTNode(forNode), SimulatedNetworkImpl::new);
 	}
 
 	public interface SimulationSyncSender extends SyncVerticesRPCSender, SyncEpochsRPCSender {

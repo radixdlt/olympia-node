@@ -35,7 +35,7 @@ import com.radixdlt.consensus.EpochManager;
 import com.radixdlt.consensus.ConsensusEventsRx;
 import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
-import com.radixdlt.consensus.SyncEpochsRPCSender;
+import com.radixdlt.consensus.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.VertexStoreEventsRx;
 import com.radixdlt.middleware2.InternalMessagePasser;
