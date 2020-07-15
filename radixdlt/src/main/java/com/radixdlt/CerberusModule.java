@@ -172,7 +172,7 @@ public class CerberusModule extends AbstractModule {
 		) -> {
 			final ProposalGenerator proposalGenerator = new MempoolProposalGenerator(vertexStore, mempool);
 			final SafetyRules safetyRules = new SafetyRules(selfKey, SafetyState.initialState(), hasher, signer);
-			final PendingVotes pendingVotes = new PendingVotes(hasher, ECPublicKey::verify);
+			final PendingVotes pendingVotes = new PendingVotes(hasher);
 
 			BFTEventReducer reducer = new BFTEventReducer(
 				self,
@@ -201,6 +201,8 @@ public class CerberusModule extends AbstractModule {
 				pacemaker,
 				vertexStore,
 				proposerElection,
+				hasher,
+				ECPublicKey::verify,
 				syncQueues
 			);
 		};
@@ -323,7 +325,7 @@ public class CerberusModule extends AbstractModule {
 	@Singleton
 	private PacemakerFactory pacemakerFactory() {
 		final int pacemakerTimeout = runtimeProperties.get("consensus.pacemaker_timeout_millis", 5000);
-		return timeoutSender -> new FixedTimeoutPacemaker(pacemakerTimeout, timeoutSender, ECPublicKey::verify);
+		return timeoutSender -> new FixedTimeoutPacemaker(pacemakerTimeout, timeoutSender);
 	}
 
 	@Provides

@@ -26,6 +26,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.radixdlt.consensus.BFTEventProcessor;
+import com.radixdlt.consensus.HashVerifier;
+import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
@@ -36,8 +38,10 @@ import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
+import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
+import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -50,6 +54,8 @@ public class BFTEventPreprocessorTest {
 	private BFTEventProcessor forwardTo;
 	private SyncQueues syncQueues;
 	private BFTNode self;
+	private Hasher hasher;
+	private HashVerifier verifier;
 
 	@Before
 	public void setUp() {
@@ -59,6 +65,10 @@ public class BFTEventPreprocessorTest {
 		this.forwardTo = mock(BFTEventProcessor.class);
 		this.syncQueues = mock(SyncQueues.class);
 		this.self = mock(BFTNode.class);
+		this.hasher = mock(Hasher.class);
+		this.verifier = mock(HashVerifier.class);
+		when(verifier.verify(any(), any(), any())).thenReturn(true);
+
 		when(this.self.getKey()).thenReturn(SELF_KEY.getPublicKey());
 
 		when(proposerElection.getProposer(any())).thenReturn(self);
@@ -70,12 +80,15 @@ public class BFTEventPreprocessorTest {
 			pacemaker,
 			vertexStore,
 			proposerElection,
+			hasher,
+			verifier,
 			syncQueues
 		);
 	}
 
 	private NewView createNewView(boolean goodView, boolean synced) {
 		NewView newView = mock(NewView.class);
+		when(newView.getSignature()).thenReturn(Optional.of(mock(ECDSASignature.class)));
 		when(newView.getAuthor()).thenReturn(self);
 		when(newView.getView()).thenReturn(goodView ? View.of(2) : View.of(0));
 		QuorumCertificate qc = mock(QuorumCertificate.class);
@@ -134,6 +147,8 @@ public class BFTEventPreprocessorTest {
 		when(vertexMetadata.getView()).thenReturn(View.of(1));
 		when(voteData.getProposed()).thenReturn(vertexMetadata);
 		when(vote.getVoteData()).thenReturn(voteData);
+		when(vote.getSignature()).thenReturn(Optional.of(mock(ECDSASignature.class)));
+		when(vote.getAuthor()).thenReturn(mock(BFTNode.class));
 		preprocessor.processVote(vote);
 		verify(forwardTo, times(1)).processVote(vote);
 	}

@@ -139,7 +139,7 @@ public class SimulationNodes {
 			(endOfEpochSender, pacemaker, vertexStore, proposerElection, validatorSet) -> {
 				final ProposalGenerator proposalGenerator = new MempoolProposalGenerator(vertexStore, mempool);
 				final SafetyRules safetyRules = new SafetyRules(key, SafetyState.initialState(), nullHasher, nullSigner);
-				final PendingVotes pendingVotes = new PendingVotes(defaultHasher, nullVerifier);
+				final PendingVotes pendingVotes = new PendingVotes(defaultHasher);
 				final BFTEventReducer reducer = new BFTEventReducer(
 					self,
 					proposalGenerator,
@@ -166,6 +166,8 @@ public class SimulationNodes {
 					pacemaker,
 					vertexStore,
 					proposerElection,
+					nullHasher,
+					nullVerifier,
 					syncQueues
 				);
 			};
@@ -175,7 +177,7 @@ public class SimulationNodes {
 			stateComputer,
 			syncSender,
 			timeoutSender,
-			timeoutSender1 -> new FixedTimeoutPacemaker(this.pacemakerTimeout, timeoutSender1, nullVerifier),
+			timeoutSender1 -> new FixedTimeoutPacemaker(this.pacemakerTimeout, timeoutSender1),
 			vertexStoreFactory,
 			proposers -> new WeightedRotatingLeaders(proposers, Comparator.comparing(v -> v.getNode().getKey().euid()), 5),
 			bftFactory,

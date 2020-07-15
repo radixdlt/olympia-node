@@ -108,7 +108,7 @@ class ControlledNode {
 				final ProposalGenerator proposalGenerator = new MempoolProposalGenerator(vertexStore, mempool);
 				final SafetyRules safetyRules = new SafetyRules(key, SafetyState.initialState(), nullHasher, nullSigner);
 				// PendingVotes needs a hasher that produces unique values, as it indexes by hash
-				final PendingVotes pendingVotes = new PendingVotes(defaultHasher, nullVerifier);
+				final PendingVotes pendingVotes = new PendingVotes(defaultHasher);
 
 				final BFTEventReducer reducer = new BFTEventReducer(
 					self,
@@ -137,6 +137,8 @@ class ControlledNode {
 					pacemaker,
 					vertexStore,
 					proposerElection,
+					nullHasher,
+					nullVerifier,
 					syncQueues
 				);
 			};
@@ -146,7 +148,7 @@ class ControlledNode {
 			stateComputer,
 			EmptySyncEpochsRPCSender.INSTANCE,
 			localTimeoutSender,
-			timeoutSender -> new FixedTimeoutPacemaker(1, timeoutSender, nullVerifier),
+			timeoutSender -> new FixedTimeoutPacemaker(1, timeoutSender),
 			vertexStoreFactory,
 			proposerElectionFactory,
 			bftFactory,

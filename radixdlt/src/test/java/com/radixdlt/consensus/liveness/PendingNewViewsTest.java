@@ -28,7 +28,6 @@ import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.identifiers.EUID;
 import com.radixdlt.utils.UInt256;
 import java.util.Collections;
 import org.junit.Before;
@@ -48,7 +47,7 @@ public class PendingNewViewsTest {
 
 	@Before
 	public void setup() {
-		this.pendingNewViews = new PendingNewViews(ECPublicKey::verify);
+		this.pendingNewViews = new PendingNewViews();
 	}
 
 	@Test
@@ -63,19 +62,6 @@ public class PendingNewViewsTest {
 		assertThat(this.pendingNewViews.insertNewView(newView2, validatorSet)).isEmpty();
 	}
 
-	@Test
-	public void when_inserting_newview_with_invalid_signature__no_qc_is_returned() {
-		ECPublicKey author = mock(ECPublicKey.class);
-		when(author.euid()).thenReturn(EUID.ONE);
-		when(author.verify(any(Hash.class), any())).thenReturn(false);
-		NewView newView = makeSignedNewViewFor(author, View.genesis());
-
-		BFTValidatorSet validatorSet = BFTValidatorSet.from(
-			Collections.singleton(BFTValidator.from(newView.getAuthor(), UInt256.ONE))
-		);
-
-		assertThat(this.pendingNewViews.insertNewView(newView, validatorSet)).isEmpty();
-	}
 
 	@Test
 	public void when_inserting_newview_not_signed__exception_is_thrown() {
