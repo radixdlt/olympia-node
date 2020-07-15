@@ -17,12 +17,11 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.consensus.bft.BFTNode;
 
 /**
  * A message meant for consensus. Currently a marker interface so that all consensus
  * related messages can be handled within a single rxjava stream.
- * TODO: possibly add signature and validation method signatures here
  */
 public interface ConsensusEvent {
 
@@ -36,5 +35,5 @@ public interface ConsensusEvent {
 	 * Get the node author of this consensus message
 	 * @return the node author
 	 */
-	ECPublicKey getAuthor();
+	BFTNode getAuthor();
 }

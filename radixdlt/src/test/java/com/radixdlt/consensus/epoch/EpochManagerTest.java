@@ -240,7 +240,8 @@ public class EpochManagerTest {
 
 		BFTValidator validator = mock(BFTValidator.class);
 		ECPublicKey key = ECKeyPair.generateNew().getPublicKey();
-		when(validator.getNode()).then(i -> new BFTNode(key));
+		BFTNode node = new BFTNode(key);
+		when(validator.getNode()).then(i -> node);
 
 		BFTValidator selfValidator = mock(BFTValidator.class);
 		when(selfValidator.getNode()).thenReturn(this.self);
@@ -254,7 +255,7 @@ public class EpochManagerTest {
 		when(pacemaker.getCurrentView()).thenReturn(View.of(0));
 
 		Proposal proposal = mock(Proposal.class);
-		when(proposal.getAuthor()).thenReturn(key);
+		when(proposal.getAuthor()).thenReturn(node);
 		when(proposal.getEpoch()).thenReturn(ancestor.getEpoch() + 1);
 		Vertex vertex = mock(Vertex.class);
 		when(vertex.getView()).thenReturn(View.of(1));
@@ -266,7 +267,7 @@ public class EpochManagerTest {
 
 		NewView newView = mock(NewView.class);
 		when(newView.getView()).thenReturn(View.of(1));
-		when(newView.getAuthor()).thenReturn(this.publicKey);
+		when(newView.getAuthor()).thenReturn(this.self);
 		when(newView.getEpoch()).thenReturn(ancestor.getEpoch() + 1);
 		epochManager.processConsensusEvent(newView);
 		verify(eventProcessor, times(1)).processNewView(eq(newView));
@@ -280,13 +281,13 @@ public class EpochManagerTest {
 		when(proposed.getView()).thenReturn(View.of(1));
 		when(voteData.getProposed()).thenReturn(proposed);
 		when(vote.getVoteData()).thenReturn(voteData);
-		when(vote.getAuthor()).thenReturn(key);
+		when(vote.getAuthor()).thenReturn(node);
 		when(vote.getEpoch()).thenReturn(ancestor.getEpoch() + 1);
 		epochManager.processConsensusEvent(vote);
 		verify(eventProcessor, times(1)).processVote(eq(vote));
 
 		ConsensusEvent unknownEvent = mock(ConsensusEvent.class);
-		when(unknownEvent.getAuthor()).thenReturn(mock(ECPublicKey.class));
+		when(unknownEvent.getAuthor()).thenReturn(mock(BFTNode.class));
 		when(unknownEvent.getEpoch()).thenReturn(ancestor.getEpoch() + 1);
 		assertThatThrownBy(() -> epochManager.processConsensusEvent(unknownEvent))
 			.isInstanceOf(IllegalStateException.class);
@@ -318,8 +319,9 @@ public class EpochManagerTest {
 	@Test
 	public void when_receive_next_epoch_events_and_then_epoch_change_and_part_of_validator_set__then_should_execute_queued_epoch_events() {
 		BFTValidator authorValidator = mock(BFTValidator.class);
-		ECPublicKey author = ECKeyPair.generateNew().getPublicKey();
-		when(authorValidator.getNode()).thenReturn(new BFTNode(author));
+		ECPublicKey key = ECKeyPair.generateNew().getPublicKey();
+		BFTNode node = new BFTNode(key);
+		when(authorValidator.getNode()).thenReturn(node);
 
 		when(pacemaker.getCurrentView()).thenReturn(View.genesis());
 		when(vertexStore.getHighestQC()).thenReturn(mock(QuorumCertificate.class));
@@ -332,7 +334,7 @@ public class EpochManagerTest {
 		when(vertex.getView()).thenReturn(View.of(1));
 		when(proposal.getEpoch()).thenReturn(ancestor.getEpoch() + 1);
 		when(proposal.getVertex()).thenReturn(vertex);
-		when(proposal.getAuthor()).thenReturn(author);
+		when(proposal.getAuthor()).thenReturn(node);
 		epochManager.processConsensusEvent(proposal);
 
 		assertThat(systemCounters.get(CounterType.EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS)).isEqualTo(1);
@@ -360,7 +362,7 @@ public class EpochManagerTest {
 
 		Proposal proposal = mock(Proposal.class);
 		when(proposal.getEpoch()).thenReturn(ancestor.getEpoch() + 1);
-		when(proposal.getAuthor()).thenReturn(mock(ECPublicKey.class));
+		when(proposal.getAuthor()).thenReturn(mock(BFTNode.class));
 		epochManager.processConsensusEvent(proposal);
 		assertThat(systemCounters.get(CounterType.EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS)).isEqualTo(1);
 

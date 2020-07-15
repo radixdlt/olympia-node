@@ -43,7 +43,7 @@ public class SyncQueuesTest {
 		);
 
 		RequiresSyncConsensusEvent event = mock(RequiresSyncConsensusEvent.class);
-		when(event.getAuthor()).thenReturn(key);
+		when(event.getAuthor()).thenReturn(node);
 
 		assertThat(syncQueues.isEmptyElseAdd(event)).isTrue();
 	}
@@ -58,9 +58,9 @@ public class SyncQueuesTest {
 		);
 
 		RequiresSyncConsensusEvent event0 = mock(RequiresSyncConsensusEvent.class);
-		when(event0.getAuthor()).thenReturn(key);
+		when(event0.getAuthor()).thenReturn(node);
 		RequiresSyncConsensusEvent event1 = mock(RequiresSyncConsensusEvent.class);
-		when(event1.getAuthor()).thenReturn(key);
+		when(event1.getAuthor()).thenReturn(node);
 		syncQueues.add(event0);
 		assertThat(syncQueues.isEmptyElseAdd(event1)).isFalse();
 	}
@@ -80,7 +80,7 @@ public class SyncQueuesTest {
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
 		when(vertexMetadata.getId()).thenReturn(vertexId);
 		when(qc.getProposed()).thenReturn(vertexMetadata);
-		when(event0.getAuthor()).thenReturn(key);
+		when(event0.getAuthor()).thenReturn(node);
 		when(event0.getQC()).thenReturn(qc);
 		syncQueues.add(event0);
 

@@ -211,11 +211,11 @@ public class SimulationNetwork {
 			this.thisNode = node;
 			// filter only relevant messages (appropriate target and if receiving is allowed)
 			this.myMessages = receivedMessages
-				.filter(msg -> msg.receiver.equals(node))
+				.filter(msg -> msg.receiver.equals(node.getKey()))
 				.groupBy(MessageInTransit::getSender)
 				.flatMap(groupedObservable ->
 					groupedObservable.map(msg -> {
-						if (msg.sender.equals(node)) {
+						if (msg.sender.equals(node.getKey())) {
 							return msg;
 						} else {
 							return msg.delayed(latencyProvider.nextLatency(msg));

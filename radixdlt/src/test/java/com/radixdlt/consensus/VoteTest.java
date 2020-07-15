@@ -49,7 +49,7 @@ public class VoteTest {
 	public void testGetters() {
 		assertEquals(this.testObject.getEpoch(), voteData.getProposed().getEpoch());
 		assertEquals(this.voteData, this.testObject.getVoteData());
-		assertEquals(ADDRESS.getPublicKey(), this.testObject.getAuthor());
+		assertEquals(ADDRESS.getPublicKey(), this.testObject.getAuthor().getKey());
 	}
 
 

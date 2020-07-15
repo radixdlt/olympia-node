@@ -50,9 +50,7 @@ import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.identifiers.EUID;
 import com.radixdlt.middleware2.CommittedAtom;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -290,9 +288,9 @@ public final class EpochManager {
 	}
 
 	private void processConsensusEventInternal(ConsensusEvent consensusEvent) {
-		if (this.currentValidatorSet != null && !this.currentValidatorSet.containsNode(new BFTNode(consensusEvent.getAuthor()))) {
+		if (this.currentValidatorSet != null && !this.currentValidatorSet.containsNode(consensusEvent.getAuthor())) {
 			log.warn("{}: CONSENSUS_EVENT: Received event from author={} not in validator set={}",
-				this.self::getShortName, () -> nodeName(consensusEvent.getAuthor()), () -> this.currentValidatorSet
+				this.self::getShortName, consensusEvent.getAuthor()::getShortName, () -> this.currentValidatorSet
 			);
 			return;
 		}
@@ -322,7 +320,7 @@ public final class EpochManager {
 			counters.set(CounterType.EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS, numQueuedConsensusEvents);
 
 			// Send request for higher epoch proof
-			epochsRPCSender.sendGetEpochRequest(new BFTNode(consensusEvent.getAuthor()), this.currentEpoch() + 1);
+			epochsRPCSender.sendGetEpochRequest(consensusEvent.getAuthor(), this.currentEpoch() + 1);
 			return;
 		}
 
@@ -362,13 +360,5 @@ public final class EpochManager {
 
 	public void processCommittedStateSync(CommittedStateSync committedStateSync) {
 		vertexStoreEventProcessor.processCommittedStateSync(committedStateSync);
-	}
-
-	private String nodeName(ECPublicKey key) {
-		if (key == null) {
-			return "null";
-		}
-		EUID euid = key.euid();
-		return euid == null ? "null" : euid.toString().substring(0, 6);
 	}
 }

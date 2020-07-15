@@ -20,6 +20,7 @@ package com.radixdlt.consensus;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.errorprone.annotations.Immutable;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
@@ -73,8 +74,8 @@ public final class Vote implements ConsensusEvent {
 	}
 
 	@Override
-	public ECPublicKey getAuthor() {
-		return author;
+	public BFTNode getAuthor() {
+		return new BFTNode(author);
 	}
 
 	public VoteData getVoteData() {

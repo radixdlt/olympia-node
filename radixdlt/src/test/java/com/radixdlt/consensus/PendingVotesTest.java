@@ -81,7 +81,7 @@ public class PendingVotesTest {
 		Vote vote2 = makeSignedVoteFor(ECKeyPair.generateNew().getPublicKey(), View.genesis(), vertexId);
 
 		BFTValidatorSet validatorSet = BFTValidatorSet.from(
-			Collections.singleton(BFTValidator.from(new BFTNode(vote1.getAuthor()), UInt256.ONE))
+			Collections.singleton(BFTValidator.from(vote1.getAuthor(), UInt256.ONE))
 		);
 		VoteData voteData = mock(VoteData.class);
 		VertexMetadata proposed = vote1.getVoteData().getProposed();
@@ -161,7 +161,7 @@ public class PendingVotesTest {
 		VertexMetadata parent = new VertexMetadata(0, parentView, Hash.random(), 0, false);
 		VoteData voteData = new VoteData(proposed, parent, null);
 		when(vote.getVoteData()).thenReturn(voteData);
-		when(vote.getAuthor()).thenReturn(author);
+		when(vote.getAuthor()).thenReturn(new BFTNode(author));
 		return vote;
 	}
 }

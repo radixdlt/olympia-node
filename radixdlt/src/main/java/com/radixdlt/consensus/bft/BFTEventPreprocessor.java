@@ -147,7 +147,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 			return true;
 		}
 
-		if (this.vertexStore.syncToQC(newView.getQC(), newView.getCommittedQC(), new BFTNode(newView.getAuthor()))) {
+		if (this.vertexStore.syncToQC(newView.getQC(), newView.getCommittedQC(), newView.getAuthor())) {
 			forwardTo.processNewView(newView);
 			return true;
 		} else {
@@ -177,7 +177,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 			return true;
 		}
 
-		if (this.vertexStore.syncToQC(proposal.getQC(), proposal.getCommittedQC(), new BFTNode(proposal.getAuthor()))) {
+		if (this.vertexStore.syncToQC(proposal.getQC(), proposal.getCommittedQC(), proposal.getAuthor())) {
 			forwardTo.processProposal(proposal);
 			return true;
 		} else {

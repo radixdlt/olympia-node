@@ -29,6 +29,7 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 
+import com.radixdlt.identifiers.EUID;
 import org.junit.Before;
 import com.radixdlt.utils.UInt256;
 import org.junit.Test;
@@ -119,7 +120,7 @@ public class FixedTimeoutPacemakerTest {
 		when(newViewWithoutSignature.getQC()).thenReturn(qc);
 		when(newViewWithoutSignature.getView()).thenReturn(View.of(2L));
 		when(newViewWithoutSignature.getSignature()).thenReturn(Optional.empty());
-		when(newViewWithoutSignature.getAuthor()).thenReturn(mock(ECPublicKey.class));
+		when(newViewWithoutSignature.getAuthor()).thenReturn(mock(BFTNode.class));
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		when(validatorSet.containsNode(any())).thenReturn(true);
 
@@ -133,7 +134,7 @@ public class FixedTimeoutPacemakerTest {
 		NewView newView1 = makeNewViewFor(view);
 		NewView newView2 = makeNewViewFor(view);
 		BFTValidatorSet validatorSet = BFTValidatorSet.from(
-			Collections.singleton(BFTValidator.from(new BFTNode(newView1.getAuthor()), UInt256.ONE))
+			Collections.singleton(BFTValidator.from(newView1.getAuthor(), UInt256.ONE))
 		);
 		assertThat(pacemaker.processNewView(newView2, validatorSet)).isEmpty();
 	}
@@ -167,11 +168,12 @@ public class FixedTimeoutPacemakerTest {
 	public void when_inserting_new_view_with_qc_from_previous_view__then_new_synced_view_is_returned() {
 		View view = View.of(2);
 		ECPublicKey author = ECKeyPair.generateNew().getPublicKey();
+		BFTNode node = new BFTNode(author);
 
 		NewView newView = mock(NewView.class);
 		when(newView.getView()).thenReturn(view);
 		when(newView.getSignature()).thenReturn(Optional.of(new ECDSASignature()));
-		when(newView.getAuthor()).thenReturn(author);
+		when(newView.getAuthor()).thenReturn(node);
 
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		when(qc.getView()).thenReturn(View.of(1));
@@ -215,9 +217,11 @@ public class FixedTimeoutPacemakerTest {
 		when(newView.getQC()).thenReturn(qc);
 		when(newView.getView()).thenReturn(view);
 		when(newView.getSignature()).thenReturn(Optional.of(new ECDSASignature()));
-		ECPublicKey author = mock(ECPublicKey.class);
-		when(author.verify(any(Hash.class), any())).thenReturn(true);
-		when(newView.getAuthor()).thenReturn(author);
+		ECPublicKey key = mock(ECPublicKey.class);
+		when(key.euid()).thenReturn(EUID.ONE);
+		BFTNode node = new BFTNode(key);
+		when(key.verify(any(Hash.class), any())).thenReturn(true);
+		when(newView.getAuthor()).thenReturn(node);
 		return newView;
 	}
 }

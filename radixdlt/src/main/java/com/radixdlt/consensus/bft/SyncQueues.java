@@ -105,11 +105,11 @@ public final class SyncQueues {
 	}
 
 	boolean isEmptyElseAdd(RequiresSyncConsensusEvent event) {
-		return queues.get(new BFTNode(event.getAuthor())).isEmptyElseAdd(event);
+		return queues.get(event.getAuthor()).isEmptyElseAdd(event);
 	}
 
 	void add(RequiresSyncConsensusEvent event) {
-		queues.get(new BFTNode(event.getAuthor())).add(event);
+		queues.get(event.getAuthor()).add(event);
 	}
 
 	void clear() {

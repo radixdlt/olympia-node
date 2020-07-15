@@ -71,12 +71,12 @@ public final class PendingNewViews {
 	 * @return The generated QC, if any
 	 */
 	public Optional<View> insertNewView(NewView newView, BFTValidatorSet validatorSet) {
-		final ECPublicKey newViewAuthor = newView.getAuthor();
-		final BFTNode node = new BFTNode(newViewAuthor);
+		final BFTNode node = newView.getAuthor();
+		final ECPublicKey key = node.getKey();
 		if (validatorSet.containsNode(node)) {
 			final Hash newViewId = Hash.of(Longs.toByteArray(newView.getView().number()));
 			final ECDSASignature signature = newView.getSignature().orElseThrow(() -> new IllegalArgumentException("new-view is missing signature"));
-			if (this.verifier.verify(newViewAuthor, newViewId, signature)) {
+			if (this.verifier.verify(key, newViewId, signature)) {
 				View thisView = newView.getView();
 				if (replacePreviousNewView(node, thisView)) {
 					// Process if signature valid
@@ -90,11 +90,11 @@ public final class PendingNewViews {
 				}
 			} else {
 				// Signature not valid, just ignore
-				log.info("Ignoring invalid signature from author {}", () -> hostId(newViewAuthor));
+				log.info("Ignoring invalid signature from author {}", node::getShortName);
 			}
 		} else {
 			// Not a valid validator
-			log.info("Ignoring new view from invalid author {}", () -> hostId(newViewAuthor));
+			log.info("Ignoring new view from invalid author {}", node::getShortName);
 		}
 		return Optional.empty();
 	}
@@ -122,11 +122,6 @@ public final class PendingNewViews {
 			}
 		}
 		return true;
-	}
-
-	private static String hostId(ECPublicKey author) {
-		// Try and make this as NPE resistant as practical, especially for mocks
-		return author == null || author.euid() == null ? "null" : author.euid().toString().substring(0, 6);
 	}
 
 	@VisibleForTesting

@@ -45,7 +45,7 @@ public class NewViewTest {
 	@Test
 	public void testGetters() {
 		assertEquals(this.view, this.testObject.getView());
-		assertEquals(ADDRESS.getPublicKey(), this.testObject.getAuthor());
+		assertEquals(ADDRESS.getPublicKey(), this.testObject.getAuthor().getKey());
 	}
 
 }

@@ -28,6 +28,7 @@ import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.utils.UInt256;
 import java.util.Collections;
 import org.junit.Before;
@@ -56,7 +57,7 @@ public class PendingNewViewsTest {
 		NewView newView2 = makeSignedNewViewFor(ECKeyPair.generateNew().getPublicKey(), View.genesis());
 
 		BFTValidatorSet validatorSet = BFTValidatorSet.from(
-			Collections.singleton(BFTValidator.from(new BFTNode(newView.getAuthor()), UInt256.ONE))
+			Collections.singleton(BFTValidator.from(newView.getAuthor(), UInt256.ONE))
 		);
 
 		assertThat(this.pendingNewViews.insertNewView(newView2, validatorSet)).isEmpty();
@@ -65,11 +66,12 @@ public class PendingNewViewsTest {
 	@Test
 	public void when_inserting_newview_with_invalid_signature__no_qc_is_returned() {
 		ECPublicKey author = mock(ECPublicKey.class);
+		when(author.euid()).thenReturn(EUID.ONE);
 		when(author.verify(any(Hash.class), any())).thenReturn(false);
 		NewView newView = makeSignedNewViewFor(author, View.genesis());
 
 		BFTValidatorSet validatorSet = BFTValidatorSet.from(
-			Collections.singleton(BFTValidator.from(new BFTNode(newView.getAuthor()), UInt256.ONE))
+			Collections.singleton(BFTValidator.from(newView.getAuthor(), UInt256.ONE))
 		);
 
 		assertThat(this.pendingNewViews.insertNewView(newView, validatorSet)).isEmpty();
@@ -80,7 +82,7 @@ public class PendingNewViewsTest {
 		NewView newView = makeUnsignedNewViewFor(ECKeyPair.generateNew().getPublicKey(), View.genesis());
 
 		BFTValidatorSet validatorSet = BFTValidatorSet.from(
-			Collections.singleton(BFTValidator.from(new BFTNode(newView.getAuthor()), UInt256.ONE))
+			Collections.singleton(BFTValidator.from(newView.getAuthor(), UInt256.ONE))
 		);
 
 		assertThatThrownBy(() -> pendingNewViews.insertNewView(newView, validatorSet))
@@ -151,7 +153,7 @@ public class PendingNewViewsTest {
 
 	private NewView makeNewViewWithoutSignatureFor(ECPublicKey author, View view) {
 		NewView newView = mock(NewView.class);
-		when(newView.getAuthor()).thenReturn(author);
+		when(newView.getAuthor()).thenReturn(new BFTNode(author));
 		when(newView.getView()).thenReturn(view);
 		return newView;
 	}

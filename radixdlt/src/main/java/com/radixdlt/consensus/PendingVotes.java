@@ -94,14 +94,14 @@ public final class PendingVotes {
 	 * @return The generated QC, if any
 	 */
 	public Optional<QuorumCertificate> insertVote(Vote vote, BFTValidatorSet validatorSet) {
-		final ECPublicKey voteAuthor = vote.getAuthor();
 		final VoteData voteData = vote.getVoteData();
 		final Hash voteHash = this.hasher.hash(voteData);
 		final ECDSASignature signature = vote.getSignature().orElseThrow(() -> new IllegalArgumentException("vote is missing signature"));
-		final BFTNode node = new BFTNode(voteAuthor);
+		final BFTNode node = vote.getAuthor();
+		final ECPublicKey key = node.getKey();
 		// Only process for valid validators and signatures
 		if (validatorSet.containsNode(node)) {
-			if (this.verifier.verify(voteAuthor, voteHash, signature)) {
+			if (this.verifier.verify(key, voteHash, signature)) {
 				final View voteView = voteData.getProposed().getView();
 				if (replacePreviousVote(node, voteView, voteHash)) {
 					// If there is no equivocation or duplication, we process the vote.
@@ -115,10 +115,10 @@ public final class PendingVotes {
 					}
 				}
 			} else {
-				log.info("Ignoring invalid signature from author {}", () -> hostId(voteAuthor));
+				log.info("Ignoring invalid signature from author {}", node::getShortName);
 			}
 		} else {
-			log.info("Ignoring vote from invalid author {}", () -> hostId(voteAuthor));
+			log.info("Ignoring vote from invalid author {}", node::getShortName);
 		}
 		// No QC could be formed, so return nothing
 		return Optional.empty();
@@ -152,10 +152,6 @@ public final class PendingVotes {
 		// then it should be slashed, once we have that infrastructure in place.
 		// In any case, equivocating votes should not be counted.
 		return !voteView.equals(previousVote.view);
-	}
-
-	private static String hostId(ECPublicKey author) {
-		return author.euid().toString().substring(0, 6);
 	}
 
 	@VisibleForTesting

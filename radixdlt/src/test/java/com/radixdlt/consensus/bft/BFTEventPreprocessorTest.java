@@ -76,7 +76,7 @@ public class BFTEventPreprocessorTest {
 
 	private NewView createNewView(boolean goodView, boolean synced) {
 		NewView newView = mock(NewView.class);
-		when(newView.getAuthor()).thenReturn(SELF_KEY.getPublicKey());
+		when(newView.getAuthor()).thenReturn(self);
 		when(newView.getView()).thenReturn(goodView ? View.of(2) : View.of(0));
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		Hash vertexId = mock(Hash.class);
@@ -92,7 +92,7 @@ public class BFTEventPreprocessorTest {
 
 	private Proposal createProposal(boolean goodView, boolean synced) {
 		Proposal proposal = mock(Proposal.class);
-		when(proposal.getAuthor()).thenReturn(SELF_KEY.getPublicKey());
+		when(proposal.getAuthor()).thenReturn(self);
 		Vertex vertex = mock(Vertex.class);
 		when(proposal.getVertex()).thenReturn(vertex);
 		when(vertex.getView()).thenReturn(goodView ? View.of(1) : View.of(0));
@@ -161,7 +161,7 @@ public class BFTEventPreprocessorTest {
 		NewView newView = createNewView(true, true);
 		when(syncQueues.isEmptyElseAdd(eq(newView))).thenReturn(true);
 		when(proposerElection.getProposer(View.of(2))).thenReturn(mock(BFTNode.class));
-		when(newView.getAuthor()).thenReturn(SELF_KEY.getPublicKey());
+		when(newView.getAuthor()).thenReturn(self);
 		preprocessor.processNewView(newView);
 		verify(forwardTo, never()).processNewView(any());
 	}

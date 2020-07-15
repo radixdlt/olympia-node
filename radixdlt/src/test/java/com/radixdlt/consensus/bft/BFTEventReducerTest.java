@@ -29,7 +29,6 @@ import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.BFTEventReducer.EndOfEpochSender;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
@@ -130,7 +129,7 @@ public class BFTEventReducerTest {
 	@Test
 	public void when_process_vote_and_new_qc_not_synced__then_local_sync_should_cause_it_to_process_it() {
 		Vote vote = mock(Vote.class);
-		when(vote.getAuthor()).thenReturn(mock(ECPublicKey.class));
+		when(vote.getAuthor()).thenReturn(mock(BFTNode.class));
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		View view = mock(View.class);
 		when(qc.getView()).thenReturn(view);
@@ -173,7 +172,7 @@ public class BFTEventReducerTest {
 		VertexMetadata parent = new VertexMetadata(0, View.of(1), Hash.random(), 1, false);
 		VoteData voteData = new VoteData(proposal, parent, null);
 		when(vote.getVoteData()).thenReturn(voteData);
-		when(vote.getAuthor()).thenReturn(mock(ECPublicKey.class));
+		when(vote.getAuthor()).thenReturn(mock(BFTNode.class));
 
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		View view = mock(View.class);
