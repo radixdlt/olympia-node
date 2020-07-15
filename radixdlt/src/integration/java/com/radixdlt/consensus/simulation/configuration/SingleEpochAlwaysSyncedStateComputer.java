@@ -23,7 +23,7 @@ import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.simulation.network.SimulationNodes.SimulatedStateComputer;
 import com.radixdlt.consensus.bft.BFTValidator;
-import com.radixdlt.consensus.bft.ValidatorSet;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.utils.UInt256;
@@ -35,12 +35,12 @@ import java.util.stream.Collectors;
  * A state computer which never changes epochs
  */
 public final class SingleEpochAlwaysSyncedStateComputer implements SimulatedStateComputer {
-	private final ValidatorSet validatorSet;
+	private final BFTValidatorSet validatorSet;
 	private final VertexMetadata ancestor;
 
 	public SingleEpochAlwaysSyncedStateComputer(VertexMetadata ancestor, List<BFTNode> nodes) {
 		this.ancestor = ancestor;
-		this.validatorSet = ValidatorSet.from(
+		this.validatorSet = BFTValidatorSet.from(
 			nodes.stream()
 				.map(node -> BFTValidator.from(node, UInt256.ONE))
 				.collect(Collectors.toList())

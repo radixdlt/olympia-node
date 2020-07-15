@@ -22,7 +22,7 @@ import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.Streams;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
-import com.radixdlt.consensus.bft.ValidatorSet;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
@@ -80,7 +80,7 @@ public class AddressBookValidatorSetProvider {
 			.cache();
 	}
 
-	public ValidatorSet getValidatorSet(long epoch) {
+	public BFTValidatorSet getValidatorSet(long epoch) {
 		ImmutableList<BFTValidator> validators = validatorList.blockingGet();
 
 		Builder<BFTValidator> validatorSetBuilder = ImmutableList.builder();
@@ -101,6 +101,6 @@ public class AddressBookValidatorSetProvider {
 
 		ImmutableList<BFTValidator> validatorList = validatorSetBuilder.build();
 
-		return ValidatorSet.from(validatorList);
+		return BFTValidatorSet.from(validatorList);
 	}
 }

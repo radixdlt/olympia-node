@@ -37,7 +37,7 @@ import com.radixdlt.consensus.simulation.invariants.bft.SafetyInvariant;
 import com.radixdlt.consensus.simulation.network.SimulationNodes.SimulatedStateComputer;
 import com.radixdlt.consensus.simulation.configuration.SingleEpochAlwaysSyncedStateComputer;
 import com.radixdlt.consensus.bft.BFTValidator;
-import com.radixdlt.consensus.bft.ValidatorSet;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.consensus.simulation.network.SimulationNetwork;
@@ -66,7 +66,7 @@ public class SimulationTest {
 	private final LatencyProvider latencyProvider;
 	private final ImmutableMap<String, TestInvariant> checks;
 	private final int pacemakerTimeout;
-	private final Function<Long, ValidatorSet> validatorSetMapping;
+	private final Function<Long, BFTValidatorSet> validatorSetMapping;
 	private final boolean getVerticesRPCEnabled;
 	private final View epochHighView;
 
@@ -75,7 +75,7 @@ public class SimulationTest {
 		LatencyProvider latencyProvider,
 		int pacemakerTimeout,
 		View epochHighView,
-		Function<Long, ValidatorSet> validatorSetMapping,
+		Function<Long, BFTValidatorSet> validatorSetMapping,
 		boolean getVerticesRPCEnabled,
 		ImmutableMap<String, TestInvariant> checks
 	) {
@@ -185,13 +185,13 @@ public class SimulationTest {
 
 		public SimulationTest build() {
 			final List<ECPublicKey> publicKeys = nodes.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toList());
-			Function<Long, ValidatorSet> epochToValidatorSetMapping =
+			Function<Long, BFTValidatorSet> epochToValidatorSetMapping =
 				epochToNodeIndexMapper == null
-					? epoch -> ValidatorSet.from(
+					? epoch -> BFTValidatorSet.from(
 						publicKeys.stream()
 							.map(pk -> BFTValidator.from(new BFTNode(pk), UInt256.ONE))
 							.collect(Collectors.toList()))
-					: epochToNodeIndexMapper.andThen(indices -> ValidatorSet.from(
+					: epochToNodeIndexMapper.andThen(indices -> BFTValidatorSet.from(
 						indices.mapToObj(nodes::get)
 							.map(kp -> BFTValidator.from(new BFTNode(kp.getPublicKey()), UInt256.ONE))
 							.collect(Collectors.toList())));

@@ -48,7 +48,7 @@ import com.radixdlt.consensus.liveness.MempoolProposalGenerator;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyState;
-import com.radixdlt.consensus.bft.ValidatorSet;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECDSASignature;
@@ -66,7 +66,7 @@ import java.util.Objects;
 class ControlledNode {
 	private final EpochManager epochManager;
 	private final SystemCounters systemCounters;
-	private final ValidatorSet initialValidatorSet;
+	private final BFTValidatorSet initialValidatorSet;
 	private final ControlledSender controlledSender;
 
 	public enum SyncAndTimeout {
@@ -79,7 +79,7 @@ class ControlledNode {
 		ECKeyPair key,
 		ControlledSender sender,
 		ProposerElectionFactory proposerElectionFactory,
-		ValidatorSet initialValidatorSet,
+		BFTValidatorSet initialValidatorSet,
 		SyncAndTimeout syncAndTimeout,
 		SyncedStateComputer<CommittedAtom> stateComputer
 	) {

@@ -20,7 +20,7 @@ package com.radixdlt.consensus.liveness;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
-import com.radixdlt.consensus.bft.ValidatorSet;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt256s;
 import com.radixdlt.utils.UInt384;
@@ -46,11 +46,11 @@ import java.util.Map.Entry;
 public final class WeightedRotatingLeaders implements ProposerElection {
 	private static final UInt384 POW_2_256 = UInt384.from(UInt256.MAX_VALUE).increment();
 
-	private final ValidatorSet validatorSet;
+	private final BFTValidatorSet validatorSet;
 	private final Comparator<Entry<BFTValidator, UInt384>> weightsComparator;
 	private final CachingNextLeaderComputer nextLeaderComputer;
 
-	public WeightedRotatingLeaders(ValidatorSet validatorSet, Comparator<BFTValidator> comparator, int cacheSize) {
+	public WeightedRotatingLeaders(BFTValidatorSet validatorSet, Comparator<BFTValidator> comparator, int cacheSize) {
 		this.validatorSet = validatorSet;
 		this.weightsComparator = Comparator
 			.comparing(Entry<BFTValidator, UInt384>::getValue)
@@ -59,14 +59,14 @@ public final class WeightedRotatingLeaders implements ProposerElection {
 	}
 
 	private static class CachingNextLeaderComputer {
-		private final ValidatorSet validatorSet;
+		private final BFTValidatorSet validatorSet;
 		private final Comparator<Entry<BFTValidator, UInt384>> weightsComparator;
 		private final Map<BFTValidator, UInt384> weights;
 		private final BFTValidator[] cache;
 		private final Long lcm;
 		private View curView;
 
-		private CachingNextLeaderComputer(ValidatorSet validatorSet, Comparator<Entry<BFTValidator, UInt384>> weightsComparator, int cacheSize) {
+		private CachingNextLeaderComputer(BFTValidatorSet validatorSet, Comparator<Entry<BFTValidator, UInt384>> weightsComparator, int cacheSize) {
 			this.validatorSet = validatorSet;
 			this.weightsComparator = weightsComparator;
 			this.weights = new HashMap<>();

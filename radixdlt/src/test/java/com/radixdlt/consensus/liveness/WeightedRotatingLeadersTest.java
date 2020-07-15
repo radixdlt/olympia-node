@@ -29,7 +29,7 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
-import com.radixdlt.consensus.bft.ValidatorSet;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.utils.UInt256;
 import java.util.Comparator;
@@ -51,7 +51,7 @@ public class WeightedRotatingLeadersTest {
 			.map(node -> BFTValidator.from(node, UInt256.ONE))
 			.collect(ImmutableList.toImmutableList());
 
-		ValidatorSet validatorSet = ValidatorSet.from(validatorsInOrder);
+		BFTValidatorSet validatorSet = BFTValidatorSet.from(validatorsInOrder);
 		this.weightedRotatingLeaders = new WeightedRotatingLeaders(validatorSet, Comparator.comparingInt(validatorsInOrder::indexOf), sizeOfCache);
 		this.weightedRotatingLeaders2 = new WeightedRotatingLeaders(validatorSet, Comparator.comparingInt(validatorsInOrder::indexOf), sizeOfCache);
 	}
@@ -129,7 +129,7 @@ public class WeightedRotatingLeadersTest {
 			})
 			.collect(ImmutableList.toImmutableList());
 
-		ValidatorSet validatorSet = ValidatorSet.from(validatorsInOrder);
+		BFTValidatorSet validatorSet = BFTValidatorSet.from(validatorsInOrder);
 		Comparator<BFTValidator> validatorComparator = Comparator.comparing(BFTValidator::getPower); //good enough to avoid compiler warning
 		this.weightedRotatingLeaders = new WeightedRotatingLeaders(validatorSet, validatorComparator, sizeOfCache);
 

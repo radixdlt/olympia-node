@@ -34,7 +34,7 @@ import com.radixdlt.consensus.deterministic.configuration.SingleEpochRandomlySyn
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.sync.SyncedRadixEngine.CommittedStateSyncSender;
 import com.radixdlt.consensus.bft.BFTValidator;
-import com.radixdlt.consensus.bft.ValidatorSet;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
@@ -75,7 +75,7 @@ public final class DeterministicTest {
 			.map(ECKeyPair::getPublicKey)
 			.collect(ImmutableList.toImmutableList());
 		this.network = new ControlledNetwork();
-		ValidatorSet initialValidatorSet = ValidatorSet.from(
+		BFTValidatorSet initialValidatorSet = BFTValidatorSet.from(
 			pks.stream().map(BFTNode::new).map(node -> BFTValidator.from(node, UInt256.ONE)).collect(Collectors.toList())
 		);
 

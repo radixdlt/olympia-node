@@ -23,7 +23,7 @@ import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.ValidationState;
 import com.radixdlt.consensus.bft.BFTValidator;
-import com.radixdlt.consensus.bft.ValidatorSet;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
@@ -119,8 +119,9 @@ public class FixedTimeoutPacemakerTest {
 		when(newViewWithoutSignature.getQC()).thenReturn(qc);
 		when(newViewWithoutSignature.getView()).thenReturn(View.of(2L));
 		when(newViewWithoutSignature.getSignature()).thenReturn(Optional.empty());
-		ValidatorSet validatorSet = mock(ValidatorSet.class);
-		when(validatorSet.containsKey(any())).thenReturn(true);
+		when(newViewWithoutSignature.getAuthor()).thenReturn(mock(ECPublicKey.class));
+		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
+		when(validatorSet.containsNode(any())).thenReturn(true);
 
 		assertThatThrownBy(() -> pacemaker.processNewView(newViewWithoutSignature, validatorSet))
 			.isInstanceOf(IllegalArgumentException.class);
@@ -131,7 +132,7 @@ public class FixedTimeoutPacemakerTest {
 		View view = View.of(2);
 		NewView newView1 = makeNewViewFor(view);
 		NewView newView2 = makeNewViewFor(view);
-		ValidatorSet validatorSet = ValidatorSet.from(
+		BFTValidatorSet validatorSet = BFTValidatorSet.from(
 			Collections.singleton(BFTValidator.from(new BFTNode(newView1.getAuthor()), UInt256.ONE))
 		);
 		assertThat(pacemaker.processNewView(newView2, validatorSet)).isEmpty();
@@ -141,7 +142,7 @@ public class FixedTimeoutPacemakerTest {
 	public void when_inserting_valid_but_old_new_views__then_no_new_view_is_returned() {
 		View view = View.of(0);
 		NewView newView = makeNewViewFor(view);
-		ValidatorSet validatorSet = mock(ValidatorSet.class);
+		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		pacemaker.processQC(View.of(0));
 		assertThat(pacemaker.processNewView(newView, validatorSet)).isEmpty();
 	}
@@ -150,12 +151,12 @@ public class FixedTimeoutPacemakerTest {
 	public void when_inserting_current_and_accepted_new_views__then_qc_is_formed_and_current_view_has_changed() {
 		View view = View.of(1);
 		NewView newView = makeNewViewFor(view);
-		ValidatorSet validatorSet = mock(ValidatorSet.class);
+		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		ValidationState validationState = mock(ValidationState.class);
 		when(validationState.addSignature(any(), any())).thenReturn(true);
 		when(validationState.complete()).thenReturn(true);
 		when(validatorSet.newValidationState()).thenReturn(validationState);
-		when(validatorSet.containsKey(any())).thenReturn(true);
+		when(validatorSet.containsNode(any())).thenReturn(true);
 		pacemaker.processQC(View.of(0));
 
 		assertThat(pacemaker.processNewView(newView, validatorSet)).isPresent().get().isEqualTo(View.of(1));
@@ -176,7 +177,7 @@ public class FixedTimeoutPacemakerTest {
 		when(qc.getView()).thenReturn(View.of(1));
 		when(newView.getQC()).thenReturn(qc);
 
-		ValidatorSet validatorSet = mock(ValidatorSet.class);
+		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		pacemaker.processQC(View.of(1));
 
 		assertThat(pacemaker.processNewView(newView, validatorSet))
@@ -192,11 +193,11 @@ public class FixedTimeoutPacemakerTest {
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		when(qc.getView()).thenReturn(View.genesis());
 		when(newView.getQC()).thenReturn(qc);
-		ValidatorSet validatorSet = mock(ValidatorSet.class);
+		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		ValidationState validationState = mock(ValidationState.class);
 		when(validationState.complete()).thenReturn(true);
 		when(validatorSet.newValidationState()).thenReturn(validationState);
-		when(validatorSet.containsKey(any())).thenReturn(true);
+		when(validatorSet.containsNode(any())).thenReturn(true);
 
 		pacemaker.processQC(View.genesis());
 		verify(timeoutSender, times(1)).scheduleTimeout(any(), anyLong());

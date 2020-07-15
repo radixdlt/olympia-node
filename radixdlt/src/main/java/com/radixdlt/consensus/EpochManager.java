@@ -34,7 +34,7 @@ import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.PacemakerFactory;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.bft.BFTValidator;
-import com.radixdlt.consensus.bft.ValidatorSet;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.ECPublicKey;
@@ -71,7 +71,7 @@ public final class EpochManager {
 	private final BFTFactory bftFactory;
 
 	private VertexMetadata lastConstructed = null;
-	private ValidatorSet currentValidatorSet;
+	private BFTValidatorSet currentValidatorSet;
 	private VertexMetadata currentAncestor;
 	private VertexStoreEventProcessor vertexStoreEventProcessor = EmptyVertexStoreEventProcessor.INSTANCE;
 	private BFTEventProcessor bftEventProcessor = EmptyBFTEventProcessor.INSTANCE;
@@ -105,7 +105,7 @@ public final class EpochManager {
 	}
 
 	public void processEpochChange(EpochChange epochChange) {
-		ValidatorSet validatorSet = epochChange.getValidatorSet();
+		BFTValidatorSet validatorSet = epochChange.getValidatorSet();
 		VertexMetadata ancestorMetadata = epochChange.getAncestor();
 		Vertex genesisVertex = Vertex.createGenesis(ancestorMetadata);
 		final long nextEpoch = genesisVertex.getEpoch();
@@ -133,7 +133,7 @@ public final class EpochManager {
 		final BFTEventProcessor bftEventProcessor;
 		final VertexStoreEventProcessor vertexStoreEventProcessor;
 
-		if (!validatorSet.containsKey(self.getKey())) {
+		if (!validatorSet.containsNode(self)) {
 			logEpochChange(epochChange, "excluded from");
 			bftEventProcessor =  EmptyBFTEventProcessor.INSTANCE;
 			vertexStoreEventProcessor = EmptyVertexStoreEventProcessor.INSTANCE;
@@ -253,7 +253,7 @@ public final class EpochManager {
 	}
 
 	private void processConsensusEventInternal(ConsensusEvent consensusEvent) {
-		if (this.currentValidatorSet != null && !this.currentValidatorSet.containsKey(consensusEvent.getAuthor())) {
+		if (this.currentValidatorSet != null && !this.currentValidatorSet.containsNode(new BFTNode(consensusEvent.getAuthor()))) {
 			log.warn("{}: CONSENSUS_EVENT: Received event from author={} not in validator set={}",
 				this.self::getShortName, () -> nodeName(consensusEvent.getAuthor()), () -> this.currentValidatorSet
 			);

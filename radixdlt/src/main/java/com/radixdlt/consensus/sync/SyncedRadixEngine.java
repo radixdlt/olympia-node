@@ -27,7 +27,7 @@ import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.ValidatorSet;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.EUID;
@@ -72,7 +72,7 @@ public final class SyncedRadixEngine implements SyncedStateComputer<CommittedAto
 	private final CommittedStateSyncSender committedStateSyncSender;
 	private final EpochChangeSender epochChangeSender;
 	private final SyncedRadixEngineEventSender engineEventSender;
-	private final Function<Long, ValidatorSet> validatorSetMapping;
+	private final Function<Long, BFTValidatorSet> validatorSetMapping;
 	private final AddressBook addressBook;
 	private final StateSyncNetwork stateSyncNetwork;
 	private final View epochChangeView;
@@ -90,7 +90,7 @@ public final class SyncedRadixEngine implements SyncedStateComputer<CommittedAto
 		CommittedStateSyncSender committedStateSyncSender,
 		EpochChangeSender epochChangeSender,
 		SyncedRadixEngineEventSender engineEventSender,
-		Function<Long, ValidatorSet> validatorSetMapping,
+		Function<Long, BFTValidatorSet> validatorSetMapping,
 		View epochChangeView,
 		AddressBook addressBook,
 		StateSyncNetwork stateSyncNetwork

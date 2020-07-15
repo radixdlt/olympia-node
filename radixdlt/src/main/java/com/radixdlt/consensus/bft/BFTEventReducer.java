@@ -90,7 +90,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	private final Pacemaker pacemaker;
 	private final ProposerElection proposerElection;
 	private final SafetyRules safetyRules;
-	private final ValidatorSet validatorSet;
+	private final BFTValidatorSet validatorSet;
 	private final SystemCounters counters;
 	private final Map<Hash, QuorumCertificate> unsyncedQCs = new HashMap<>();
 	private boolean synchedLog = false;
@@ -109,7 +109,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		VertexStore vertexStore,
 		PendingVotes pendingVotes,
 		ProposerElection proposerElection,
-		ValidatorSet validatorSet,
+		BFTValidatorSet validatorSet,
 		SystemCounters counters
 	) {
 		this.self = Objects.requireNonNull(self);

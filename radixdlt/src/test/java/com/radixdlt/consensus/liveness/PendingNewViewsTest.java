@@ -22,7 +22,7 @@ import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.ValidationState;
 import com.radixdlt.consensus.bft.BFTValidator;
-import com.radixdlt.consensus.bft.ValidatorSet;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECKeyPair;
@@ -55,7 +55,7 @@ public class PendingNewViewsTest {
 		NewView newView = makeSignedNewViewFor(ECKeyPair.generateNew().getPublicKey(), View.genesis());
 		NewView newView2 = makeSignedNewViewFor(ECKeyPair.generateNew().getPublicKey(), View.genesis());
 
-		ValidatorSet validatorSet = ValidatorSet.from(
+		BFTValidatorSet validatorSet = BFTValidatorSet.from(
 			Collections.singleton(BFTValidator.from(new BFTNode(newView.getAuthor()), UInt256.ONE))
 		);
 
@@ -68,7 +68,7 @@ public class PendingNewViewsTest {
 		when(author.verify(any(Hash.class), any())).thenReturn(false);
 		NewView newView = makeSignedNewViewFor(author, View.genesis());
 
-		ValidatorSet validatorSet = ValidatorSet.from(
+		BFTValidatorSet validatorSet = BFTValidatorSet.from(
 			Collections.singleton(BFTValidator.from(new BFTNode(newView.getAuthor()), UInt256.ONE))
 		);
 
@@ -79,7 +79,7 @@ public class PendingNewViewsTest {
 	public void when_inserting_newview_not_signed__exception_is_thrown() {
 		NewView newView = makeUnsignedNewViewFor(ECKeyPair.generateNew().getPublicKey(), View.genesis());
 
-		ValidatorSet validatorSet = ValidatorSet.from(
+		BFTValidatorSet validatorSet = BFTValidatorSet.from(
 			Collections.singleton(BFTValidator.from(new BFTNode(newView.getAuthor()), UInt256.ONE))
 		);
 
@@ -93,14 +93,14 @@ public class PendingNewViewsTest {
 		when(author.verify(any(Hash.class), any())).thenReturn(true);
 		NewView newView = makeSignedNewViewFor(author, View.genesis());
 
-		ValidatorSet validatorSet = mock(ValidatorSet.class);
+		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		ValidationState validationState = mock(ValidationState.class);
 		ECDSASignatures signatures = mock(ECDSASignatures.class);
 		when(validationState.addSignature(any(), any())).thenReturn(true);
 		when(validationState.complete()).thenReturn(true);
 		when(validationState.signatures()).thenReturn(signatures);
 		when(validatorSet.newValidationState()).thenReturn(validationState);
-		when(validatorSet.containsKey(any())).thenReturn(true);
+		when(validatorSet.containsNode(any())).thenReturn(true);
 
 		assertThat(this.pendingNewViews.insertNewView(newView, validatorSet)).contains(newView.getView());
 	}
@@ -111,13 +111,13 @@ public class PendingNewViewsTest {
 		when(author.verify(any(Hash.class), any())).thenReturn(true);
 		NewView newView = makeSignedNewViewFor(author, View.genesis());
 
-		ValidatorSet validatorSet = mock(ValidatorSet.class);
+		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		ValidationState validationState = mock(ValidationState.class);
 		ECDSASignatures signatures = mock(ECDSASignatures.class);
 		when(validationState.signatures()).thenReturn(signatures);
 		when(validationState.isEmpty()).thenReturn(true);
 		when(validatorSet.newValidationState()).thenReturn(validationState);
-		when(validatorSet.containsKey(any())).thenReturn(true);
+		when(validatorSet.containsNode(any())).thenReturn(true);
 
 		// Preconditions
 		assertThat(this.pendingNewViews.insertNewView(newView, validatorSet)).isNotPresent();

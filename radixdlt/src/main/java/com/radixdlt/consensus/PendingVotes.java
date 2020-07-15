@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.consensus.bft.BFTNode;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -31,7 +32,7 @@ import com.google.common.collect.Maps;
 import com.radixdlt.SecurityCritical;
 import com.radixdlt.SecurityCritical.SecurityKind;
 import com.radixdlt.consensus.bft.ValidationState;
-import com.radixdlt.consensus.bft.ValidatorSet;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
@@ -87,26 +88,27 @@ public final class PendingVotes {
 	/**
 	 * Inserts a vote for a given vertex, attempting to form a quorum certificate for that vertex.
 	 * <p>
-	 * A QC will only be formed if permitted by the {@link ValidatorSet}.
+	 * A QC will only be formed if permitted by the {@link BFTValidatorSet}.
 	 *
 	 * @param vote The vote to be inserted
 	 * @return The generated QC, if any
 	 */
-	public Optional<QuorumCertificate> insertVote(Vote vote, ValidatorSet validatorSet) {
+	public Optional<QuorumCertificate> insertVote(Vote vote, BFTValidatorSet validatorSet) {
 		final ECPublicKey voteAuthor = vote.getAuthor();
 		final VoteData voteData = vote.getVoteData();
 		final Hash voteHash = this.hasher.hash(voteData);
 		final ECDSASignature signature = vote.getSignature().orElseThrow(() -> new IllegalArgumentException("vote is missing signature"));
+		final BFTNode node = new BFTNode(voteAuthor);
 		// Only process for valid validators and signatures
-		if (validatorSet.containsKey(voteAuthor)) {
+		if (validatorSet.containsNode(node)) {
 			if (this.verifier.verify(voteAuthor, voteHash, signature)) {
 				final View voteView = voteData.getProposed().getView();
-				if (replacePreviousVote(voteAuthor, voteView, voteHash)) {
+				if (replacePreviousVote(node, voteView, voteHash)) {
 					// If there is no equivocation or duplication, we process the vote.
 					ValidationState validationState = this.voteState.computeIfAbsent(voteHash, k -> validatorSet.newValidationState());
 
 					// try to form a QC with the added signature according to the requirements
-					if (validationState.addSignature(voteAuthor, signature) && validationState.complete()) {
+					if (validationState.addSignature(node, signature) && validationState.complete()) {
 						// QC can be formed, so return it
 						QuorumCertificate qc = new QuorumCertificate(vote.getVoteData(), validationState.signatures());
 						return Optional.of(qc);
@@ -122,9 +124,9 @@ public final class PendingVotes {
 		return Optional.empty();
 	}
 
-	private boolean replacePreviousVote(ECPublicKey author, View voteView, Hash voteHash) {
+	private boolean replacePreviousVote(BFTNode author, View voteView, Hash voteHash) {
 		PreviousVote thisVote = new PreviousVote(voteView, voteHash);
-		PreviousVote previousVote = this.previousVotes.put(author, thisVote);
+		PreviousVote previousVote = this.previousVotes.put(author.getKey(), thisVote);
 		if (previousVote == null) {
 			// No previous vote for this author, all good here
 			return true;

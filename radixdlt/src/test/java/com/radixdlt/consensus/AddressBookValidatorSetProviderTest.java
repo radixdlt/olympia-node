@@ -21,7 +21,7 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.radixdlt.consensus.bft.ValidatorSet;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.network.addressbook.AddressBook;
 
@@ -42,7 +42,7 @@ public class AddressBookValidatorSetProviderTest {
 		when(system.getKey()).thenReturn(peerKey);
 		when(peer.getSystem()).thenReturn(system);
 		when(addressBook.peers()).thenAnswer(inv -> Stream.of(peer));
-		ValidatorSet validatorSet = validatorSetProvider.getValidatorSet(0);
+		BFTValidatorSet validatorSet = validatorSetProvider.getValidatorSet(0);
 		assertThat(validatorSet.getValidators()).hasSize(1);
 		assertThat(validatorSet.getValidators()).allMatch(v -> v.getNode().getKey().equals(self));
 	}

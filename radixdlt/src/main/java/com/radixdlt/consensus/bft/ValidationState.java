@@ -18,6 +18,7 @@
 package com.radixdlt.consensus.bft;
 
 import com.radixdlt.utils.UInt256;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentMap;
 import com.google.common.annotations.VisibleForTesting;
@@ -33,8 +34,8 @@ import com.radixdlt.crypto.ECPublicKey;
  */
 public final class ValidationState {
 
-	private final ValidatorSet validatorSet;
-	private final ConcurrentMap<ECPublicKey, ECDSASignature> signedKeys;
+	private final BFTValidatorSet validatorSet;
+	private final ConcurrentMap<BFTNode, ECDSASignature> signedNodes;
 	private transient UInt256 signedPower;
 	private final transient UInt256 threshold;
 
@@ -43,13 +44,13 @@ public final class ValidationState {
 	 *
 	 * @param validatorSet The validator set
 	 */
-	public static ValidationState forValidatorSet(ValidatorSet validatorSet) {
+	public static ValidationState forValidatorSet(BFTValidatorSet validatorSet) {
 		return new ValidationState(validatorSet);
 	}
 
-	private ValidationState(ValidatorSet validatorSet) {
+	private ValidationState(BFTValidatorSet validatorSet) {
 		this.validatorSet = Objects.requireNonNull(validatorSet);
-		this.signedKeys = Maps.newConcurrentMap();
+		this.signedNodes = Maps.newConcurrentMap();
 		this.signedPower = UInt256.ZERO;
 		this.threshold = threshold(validatorSet.getTotalPower());
 	}
@@ -57,12 +58,12 @@ public final class ValidationState {
 	/**
 	 * Removes the signature for the specified key, if present.
 	 *
-	 * @param key the public key for the signature to be removed
+	 * @param node the node who's signature is to be removed
 	 */
-	public void removeSignature(ECPublicKey key) {
-		if (this.validatorSet.containsKey(key)) {
-			this.signedKeys.computeIfPresent(key, (k, v) -> {
-				this.signedPower = this.signedPower.subtract(this.validatorSet.getPower(key));
+	public void removeSignature(BFTNode node) {
+		if (this.validatorSet.containsNode(node)) {
+			this.signedNodes.computeIfPresent(node, (k, v) -> {
+				this.signedPower = this.signedPower.subtract(this.validatorSet.getPower(node));
 				return null;
 			});
 		}
@@ -73,15 +74,15 @@ public final class ValidationState {
 	 * Note that it is assumed that signature validation is performed
 	 * elsewhere.
 	 *
-	 * @param key The public key to use for signature verification
+	 * @param node The node
 	 * @param signature The signature to verify
 	 * @return whether the key was added or not
 	 */
-	public boolean addSignature(ECPublicKey key, ECDSASignature signature) {
-		if (validatorSet.containsKey(key)
-			&& !this.signedKeys.containsKey(key)) {
-			this.signedKeys.computeIfAbsent(key, k -> {
-				this.signedPower = this.signedPower.add(this.validatorSet.getPower(key));
+	public boolean addSignature(BFTNode node, ECDSASignature signature) {
+		if (validatorSet.containsNode(node)
+			&& !this.signedNodes.containsKey(node)) {
+			this.signedNodes.computeIfAbsent(node, k -> {
+				this.signedPower = this.signedPower.add(this.validatorSet.getPower(node));
 				return signature;
 			});
 			return true;
@@ -94,7 +95,7 @@ public final class ValidationState {
 	 * @return {@code true} if we have not accumulated any signatures, {@code false} otherwise.
 	 */
 	public boolean isEmpty() {
-		return this.signedKeys.isEmpty();
+		return this.signedNodes.isEmpty();
 	}
 
 	/**
@@ -112,7 +113,10 @@ public final class ValidationState {
 	 * @return an {@link ECDSASignatures} object for our current set of valid signatures
 	 */
 	public ECDSASignatures signatures() {
-		return new ECDSASignatures(ImmutableMap.copyOf(this.signedKeys));
+		ImmutableMap<ECPublicKey, ECDSASignature> signedKeys = this.signedNodes.entrySet()
+			.stream()
+			.collect(ImmutableMap.toImmutableMap(e -> e.getKey().getKey(), Entry::getValue));
+		return new ECDSASignatures(signedKeys);
 	}
 
 	@VisibleForTesting
@@ -129,7 +133,7 @@ public final class ValidationState {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(validatorSet, signedKeys);
+		return Objects.hash(validatorSet, signedNodes);
 	}
 
 	@Override
@@ -140,14 +144,14 @@ public final class ValidationState {
 		if (obj instanceof ValidationState) {
 			ValidationState that = (ValidationState) obj;
 			return Objects.equals(this.validatorSet, that.validatorSet)
-				&& Objects.equals(this.signedKeys, that.signedKeys);
+				&& Objects.equals(this.signedNodes, that.signedNodes);
 		}
 		return false;
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s[validatorSet=%s, signedKeys=%s]",
-			getClass().getSimpleName(), validatorSet, signedKeys);
+		return String.format("%s[validatorSet=%s, signedNodes=%s]",
+			getClass().getSimpleName(), validatorSet, signedNodes);
 	}
 }

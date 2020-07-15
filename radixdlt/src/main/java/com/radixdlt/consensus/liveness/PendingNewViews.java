@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus.liveness;
 
+import com.radixdlt.consensus.bft.BFTNode;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -34,7 +35,7 @@ import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.bft.ValidationState;
-import com.radixdlt.consensus.bft.ValidatorSet;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
@@ -63,25 +64,26 @@ public final class PendingNewViews {
 	/**
 	 * Inserts a {@link NewView}, attempting to form a quorum certificate.
 	 * <p>
-	 * A QC will only be formed if permitted by the {@link ValidatorSet}.
+	 * A QC will only be formed if permitted by the {@link BFTValidatorSet}.
 	 *
 	 * @param newView The {@link NewView} to be inserted
 	 * @param validatorSet The validator set to form a quorum with
 	 * @return The generated QC, if any
 	 */
-	public Optional<View> insertNewView(NewView newView, ValidatorSet validatorSet) {
+	public Optional<View> insertNewView(NewView newView, BFTValidatorSet validatorSet) {
 		final ECPublicKey newViewAuthor = newView.getAuthor();
-		if (validatorSet.containsKey(newViewAuthor)) {
+		final BFTNode node = new BFTNode(newViewAuthor);
+		if (validatorSet.containsNode(node)) {
 			final Hash newViewId = Hash.of(Longs.toByteArray(newView.getView().number()));
 			final ECDSASignature signature = newView.getSignature().orElseThrow(() -> new IllegalArgumentException("new-view is missing signature"));
 			if (this.verifier.verify(newViewAuthor, newViewId, signature)) {
 				View thisView = newView.getView();
-				if (replacePreviousNewView(newViewAuthor, thisView)) {
+				if (replacePreviousNewView(node, thisView)) {
 					// Process if signature valid
 					ValidationState validationState = this.newViewState.computeIfAbsent(thisView, k -> validatorSet.newValidationState());
 
 					// check if we have gotten enough new-views to proceed
-					if (validationState.addSignature(newViewAuthor, signature) && validationState.complete()) {
+					if (validationState.addSignature(node, signature) && validationState.complete()) {
 						// if we have enough new-views, return view
 						return Optional.of(thisView);
 					}
@@ -97,8 +99,8 @@ public final class PendingNewViews {
 		return Optional.empty();
 	}
 
-	private boolean replacePreviousNewView(ECPublicKey author, View thisView) {
-		View previousView = this.previousNewView.put(author, thisView);
+	private boolean replacePreviousNewView(BFTNode author, View thisView) {
+		View previousView = this.previousNewView.put(author.getKey(), thisView);
 		if (previousView == null) {
 			// No previous NewView for this author, all good here
 			return true;

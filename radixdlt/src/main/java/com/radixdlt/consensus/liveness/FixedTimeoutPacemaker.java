@@ -20,7 +20,7 @@ package com.radixdlt.consensus.liveness;
 import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.View;
-import com.radixdlt.consensus.bft.ValidatorSet;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -83,7 +83,7 @@ public final class FixedTimeoutPacemaker implements Pacemaker {
 
 	// TODO: Move this into Event Coordinator
 	@Override
-	public Optional<View> processNewView(NewView newView, ValidatorSet validatorSet) {
+	public Optional<View> processNewView(NewView newView, BFTValidatorSet validatorSet) {
 		if (newView.getView().compareTo(this.lastSyncView) <= 0) {
 			return Optional.empty();
 		}

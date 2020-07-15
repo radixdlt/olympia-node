@@ -18,7 +18,7 @@
 package com.radixdlt.consensus;
 
 import com.radixdlt.consensus.liveness.ProposerElection;
-import com.radixdlt.consensus.bft.ValidatorSet;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 
 /**
  * Factory for creating {@link ProposerElection}s for specific lists of proposeres
@@ -29,5 +29,5 @@ public interface ProposerElectionFactory {
 	 * @param validatorSet The validatorSet
 	 * @return The created {@link ProposerElection} instance
 	 */
-	ProposerElection create(ValidatorSet validatorSet);
+	ProposerElection create(BFTValidatorSet validatorSet);
 }

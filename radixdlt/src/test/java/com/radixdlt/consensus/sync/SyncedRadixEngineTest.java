@@ -38,7 +38,7 @@ import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.sync.SyncedRadixEngine.CommittedStateSyncSender;
 import com.radixdlt.consensus.sync.SyncedRadixEngine.SyncedRadixEngineEventSender;
-import com.radixdlt.consensus.bft.ValidatorSet;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
@@ -70,7 +70,7 @@ public class SyncedRadixEngineTest {
 	private CommittedStateSyncSender committedStateSyncSender;
 	private EpochChangeSender epochChangeSender;
 	private SyncedRadixEngineEventSender eventSender;
-	private Function<Long, ValidatorSet> validatorSetMapping;
+	private Function<Long, BFTValidatorSet> validatorSetMapping;
 	private View epochHighView;
 
 	@Before
@@ -88,7 +88,7 @@ public class SyncedRadixEngineTest {
 		this.eventSender = mock(SyncedRadixEngineEventSender.class);
 		// No issues with type checking for mock
 		@SuppressWarnings("unchecked")
-		Function<Long, ValidatorSet> vsm = mock(Function.class);
+		Function<Long, BFTValidatorSet> vsm = mock(Function.class);
 		this.validatorSetMapping = vsm;
 		this.epochHighView = View.of(100);
 		this.syncedRadixEngine = new SyncedRadixEngine(
@@ -121,7 +121,7 @@ public class SyncedRadixEngineTest {
 		when(vertexMetadata.isEndOfEpoch()).thenReturn(true);
 		when(committedAtom.getVertexMetadata()).thenReturn(vertexMetadata);
 
-		ValidatorSet validatorSet = mock(ValidatorSet.class);
+		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		when(this.validatorSetMapping.apply(eq(genesisEpoch + 1))).thenReturn(validatorSet);
 
 		syncedRadixEngine.execute(committedAtom);

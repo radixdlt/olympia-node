@@ -23,7 +23,7 @@ import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.simulation.network.SimulationNodes.SimulatedStateComputer;
-import com.radixdlt.consensus.bft.ValidatorSet;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.middleware2.CommittedAtom;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
@@ -39,10 +39,10 @@ import java.util.function.Function;
 public class ChangingEpochSyncedStateComputer implements SimulatedStateComputer {
 	private final Subject<EpochChange> epochChanges = BehaviorSubject.<EpochChange>create().toSerialized();
 	private final View epochHighView;
-	private final Function<Long, ValidatorSet> validatorSetMapping;
+	private final Function<Long, BFTValidatorSet> validatorSetMapping;
 	private VertexMetadata currentAncestor = null;
 
-	public ChangingEpochSyncedStateComputer(View epochHighView, Function<Long, ValidatorSet> validatorSetMapping) {
+	public ChangingEpochSyncedStateComputer(View epochHighView, Function<Long, BFTValidatorSet> validatorSetMapping) {
 		this.epochHighView = Objects.requireNonNull(epochHighView);
 		this.validatorSetMapping = validatorSetMapping;
 		VertexMetadata ancestor = VertexMetadata.ofGenesisAncestor();

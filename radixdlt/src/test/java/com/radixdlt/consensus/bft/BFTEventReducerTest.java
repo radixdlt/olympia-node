@@ -68,7 +68,7 @@ public class BFTEventReducerTest {
 	private BFTEventReducer.BFTEventSender sender;
 	private EndOfEpochSender endOfEpochSender;
 	private VertexStore vertexStore;
-	private ValidatorSet validatorSet;
+	private BFTValidatorSet validatorSet;
 	private SystemCounters counters;
 	private BFTNode self;
 
@@ -82,7 +82,7 @@ public class BFTEventReducerTest {
 		this.vertexStore = mock(VertexStore.class);
 		this.pendingVotes = mock(PendingVotes.class);
 		this.proposerElection = mock(ProposerElection.class);
-		this.validatorSet = mock(ValidatorSet.class);
+		this.validatorSet = mock(BFTValidatorSet.class);
 		this.counters = mock(SystemCounters.class);
 		this.self = new BFTNode(SELF_KEY.getPublicKey());
 

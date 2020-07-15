@@ -43,7 +43,7 @@ import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.bft.BFTValidator;
-import com.radixdlt.consensus.bft.ValidatorSet;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.counters.SystemCountersImpl;
@@ -105,8 +105,8 @@ public class EpochManagerTest {
 	@Test
 	public void when_next_epoch_does_not_contain_self__then_should_not_emit_any_consensus_events() {
 		EpochChange epochChange = mock(EpochChange.class);
-		ValidatorSet validatorSet = mock(ValidatorSet.class);
-		when(validatorSet.containsKey(eq(publicKey))).thenReturn(false);
+		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
+		when(validatorSet.containsNode(eq(self))).thenReturn(false);
 		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of());
 		when(epochChange.getValidatorSet()).thenReturn(validatorSet);
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
@@ -132,7 +132,7 @@ public class EpochManagerTest {
 	@Test
 	public void when_receive_next_epoch_then_epoch_request__then_should_return_current_ancestor() {
 		VertexMetadata ancestor = VertexMetadata.ofGenesisAncestor();
-		ValidatorSet validatorSet = mock(ValidatorSet.class);
+		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of());
 		epochManager.processEpochChange(new EpochChange(ancestor, validatorSet));
 		ECPublicKey sender = mock(ECPublicKey.class);
@@ -167,7 +167,7 @@ public class EpochManagerTest {
 	@Test
 	public void when_receive_old_epoch_response__then_should_do_nothing() {
 		VertexMetadata ancestor = VertexMetadata.ofGenesisAncestor();
-		ValidatorSet validatorSet = mock(ValidatorSet.class);
+		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of());
 		EpochChange epochChange = new EpochChange(ancestor, validatorSet);
 		epochManager.processEpochChange(epochChange);
@@ -188,8 +188,8 @@ public class EpochManagerTest {
 		}).when(bftFactory).create(any(), any(), any(), any(), any());
 
 		VertexMetadata ancestor = VertexMetadata.ofGenesisAncestor();
-		ValidatorSet validatorSet = mock(ValidatorSet.class);
-		when(validatorSet.containsKey(any())).thenReturn(true);
+		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
+		when(validatorSet.containsNode(any())).thenReturn(true);
 
 		BFTValidator validator = mock(BFTValidator.class);
 		ECPublicKey key = ECKeyPair.generateNew().getPublicKey();
@@ -210,7 +210,7 @@ public class EpochManagerTest {
 
 		EpochChange epochChange = mock(EpochChange.class);
 		when(epochChange.getAncestor()).thenReturn(nextAncestor);
-		ValidatorSet vs = mock(ValidatorSet.class);
+		BFTValidatorSet vs = mock(BFTValidatorSet.class);
 		when(vs.getValidators()).thenReturn(ImmutableSet.of());
 		when(epochChange.getValidatorSet()).thenReturn(vs);
 		epochManager.processEpochChange(epochChange);
@@ -223,8 +223,8 @@ public class EpochManagerTest {
 		when(bftFactory.create(any(), any(), any(), any(), any())).thenReturn(eventProcessor);
 
 		VertexMetadata ancestor = VertexMetadata.ofGenesisAncestor();
-		ValidatorSet validatorSet = mock(ValidatorSet.class);
-		when(validatorSet.containsKey(any())).thenReturn(true);
+		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
+		when(validatorSet.containsNode(any())).thenReturn(true);
 
 		BFTValidator validator = mock(BFTValidator.class);
 		ECPublicKey key = ECKeyPair.generateNew().getPublicKey();
@@ -274,6 +274,7 @@ public class EpochManagerTest {
 		verify(eventProcessor, times(1)).processVote(eq(vote));
 
 		ConsensusEvent unknownEvent = mock(ConsensusEvent.class);
+		when(unknownEvent.getAuthor()).thenReturn(mock(ECPublicKey.class));
 		when(unknownEvent.getEpoch()).thenReturn(ancestor.getEpoch() + 1);
 		assertThatThrownBy(() -> epochManager.processConsensusEvent(unknownEvent))
 			.isInstanceOf(IllegalStateException.class);
@@ -329,8 +330,8 @@ public class EpochManagerTest {
 
 		BFTValidator validator = mock(BFTValidator.class);
 		when(validator.getNode()).thenReturn(mock(BFTNode.class));
-		ValidatorSet validatorSet = mock(ValidatorSet.class);
-		when(validatorSet.containsKey(any())).thenReturn(true);
+		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
+		when(validatorSet.containsNode(any())).thenReturn(true);
 		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of(validator, authorValidator));
 		epochManager.processEpochChange(new EpochChange(ancestor, validatorSet));
 
@@ -347,13 +348,14 @@ public class EpochManagerTest {
 
 		Proposal proposal = mock(Proposal.class);
 		when(proposal.getEpoch()).thenReturn(ancestor.getEpoch() + 1);
+		when(proposal.getAuthor()).thenReturn(mock(ECPublicKey.class));
 		epochManager.processConsensusEvent(proposal);
 		assertThat(systemCounters.get(CounterType.EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS)).isEqualTo(1);
 
 		BFTValidator validator = mock(BFTValidator.class);
 		when(validator.getNode()).thenReturn(mock(BFTNode.class));
-		ValidatorSet validatorSet = mock(ValidatorSet.class);
-		when(validatorSet.containsKey(any())).thenReturn(false);
+		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
+		when(validatorSet.containsNode(any())).thenReturn(false);
 		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of());
 		epochManager.processEpochChange(new EpochChange(ancestor, validatorSet));
 
@@ -369,8 +371,8 @@ public class EpochManagerTest {
 
 		BFTValidator validator = mock(BFTValidator.class);
 		when(validator.getNode()).thenReturn(mock(BFTNode.class));
-		ValidatorSet validatorSet = mock(ValidatorSet.class);
-		when(validatorSet.containsKey(any())).thenReturn(true);
+		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
+		when(validatorSet.containsNode(any())).thenReturn(true);
 		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of(validator));
 		epochManager.processEpochChange(new EpochChange(VertexMetadata.ofGenesisAncestor(), validatorSet));
 

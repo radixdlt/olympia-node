@@ -41,7 +41,7 @@ public class ValidationStateTest {
 
 	@Test
 	public void sensibleToString() {
-		String s = ValidatorSet.from(ImmutableList.of()).newValidationState().toString();
+		String s = BFTValidatorSet.from(ImmutableList.of()).newValidationState().toString();
 		assertThat(s, containsString(ValidationState.class.getSimpleName()));
 	}
 
@@ -73,33 +73,40 @@ public class ValidationStateTest {
 	public void testLinearSignatureValidation() {
 		ECKeyPair k1 = ECKeyPair.generateNew();
 		ECPublicKey kp1 = spy(k1.getPublicKey());
+		BFTNode node1 = new BFTNode(kp1);
 
 		ECKeyPair k2 = ECKeyPair.generateNew();
 		ECPublicKey kp2 = spy(k2.getPublicKey());
+		BFTNode node2 = new BFTNode(kp2);
 
 		ECKeyPair k3 = ECKeyPair.generateNew();
 		ECPublicKey kp3 = spy(k3.getPublicKey());
+		BFTNode node3 = new BFTNode(kp3);
 
 		ECKeyPair k4 = ECKeyPair.generateNew();
 		ECPublicKey kp4 = spy(k4.getPublicKey());
+		BFTNode node4 = new BFTNode(kp4);
 
 		ECKeyPair k5 = ECKeyPair.generateNew();
 		ECPublicKey kp5 = spy(k5.getPublicKey());
+		BFTNode node5 = new BFTNode(kp5);
 
-		ValidatorSet vset = ValidatorSet.from(transform(ImmutableList.of(kp1, kp2, kp3, kp4), v -> BFTValidator.from(new BFTNode(v), UInt256.ONE)));
+		BFTValidatorSet vset = BFTValidatorSet.from(
+			transform(ImmutableList.of(kp1, kp2, kp3, kp4), v -> BFTValidator.from(new BFTNode(v), UInt256.ONE))
+		);
 
 		Hash hash = Hash.random();
 
 		ValidationState vstate = vset.newValidationState();
-		assertTrue(vstate.addSignature(kp1, k1.sign(hash)));
+		assertTrue(vstate.addSignature(node1, k1.sign(hash)));
 		assertFalse(vstate.complete());
-		assertTrue(vstate.addSignature(kp2, k2.sign(hash)));
+		assertTrue(vstate.addSignature(node2, k2.sign(hash)));
 		assertFalse(vstate.complete());
-		assertTrue(vstate.addSignature(kp3, k3.sign(hash)));
+		assertTrue(vstate.addSignature(node3, k3.sign(hash)));
 		assertTrue(vstate.complete());
-		assertTrue(vstate.addSignature(kp4, k4.sign(hash)));
+		assertTrue(vstate.addSignature(node4, k4.sign(hash)));
 		assertTrue(vstate.complete());
-		assertFalse(vstate.addSignature(kp5, k5.sign(hash)));
+		assertFalse(vstate.addSignature(node5, k5.sign(hash)));
 		assertTrue(vstate.complete());
 
 		assertEquals(4, vstate.signatures().count());

@@ -21,7 +21,7 @@ import com.radixdlt.consensus.bft.BFTEventReducer.EndOfEpochSender;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
-import com.radixdlt.consensus.bft.ValidatorSet;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 
 /**
  * Creates a new bft processor
@@ -37,6 +37,6 @@ public interface BFTFactory {
 		Pacemaker pacemaker,
 		VertexStore vertexStore,
 		ProposerElection proposerElection,
-		ValidatorSet validatorSet
+		BFTValidatorSet validatorSet
 	);
 }
