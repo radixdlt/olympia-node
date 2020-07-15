@@ -27,6 +27,7 @@ import com.radixdlt.consensus.BFTEventReducer;
 import com.radixdlt.consensus.BFTEventSender;
 import com.radixdlt.consensus.AddressBookValidatorSetProvider;
 import com.radixdlt.consensus.BFTFactory;
+import com.radixdlt.consensus.BFTValidatorId;
 import com.radixdlt.consensus.CommittedStateSyncRx;
 import com.radixdlt.consensus.ConsensusRunner;
 import com.radixdlt.consensus.DefaultHasher;
@@ -122,7 +123,14 @@ public class CerberusModule extends AbstractModule {
 
 	@Provides
 	@Singleton
+	private BFTValidatorId self(@Named("self") ECKeyPair selfKey) {
+		return new BFTValidatorId(selfKey.getPublicKey());
+	}
+
+	@Provides
+	@Singleton
 	private BFTFactory bftFactory(
+		BFTValidatorId selfId,
 		BFTEventSender bftEventSender,
 		Mempool mempool,
 		@Named("self") ECKeyPair selfKey,
@@ -142,6 +150,7 @@ public class CerberusModule extends AbstractModule {
 			final PendingVotes pendingVotes = new PendingVotes(hasher, ECPublicKey::verify);
 
 			return new BFTEventReducer(
+				selfId,
 				proposalGenerator,
 				bftEventSender,
 				endOfEpochSender,
@@ -150,7 +159,6 @@ public class CerberusModule extends AbstractModule {
 				vertexStore,
 				pendingVotes,
 				proposerElection,
-				selfKey.getPublicKey(),
 				validatorSet,
 				counters
 			);
@@ -160,6 +168,7 @@ public class CerberusModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private EpochManager epochManager(
+		BFTValidatorId selfId,
 		SyncedRadixEngine syncedRadixEngine,
 		BFTFactory bftFactory,
 		SyncEpochsRPCSender syncEpochsRPCSender,
@@ -167,11 +176,10 @@ public class CerberusModule extends AbstractModule {
 		PacemakerFactory pacemakerFactory,
 		VertexStoreFactory vertexStoreFactory,
 		ProposerElectionFactory proposerElectionFactory,
-		@Named("self") ECKeyPair selfKey,
 		SystemCounters counters
 	) {
 		return new EpochManager(
-			selfKey.euid().toString().substring(0, 6),
+			selfId,
 			syncedRadixEngine,
 			syncEpochsRPCSender,
 			scheduledTimeoutSender,
@@ -179,7 +187,6 @@ public class CerberusModule extends AbstractModule {
 			vertexStoreFactory,
 			proposerElectionFactory,
 			bftFactory,
-			selfKey.getPublicKey(),
 			counters
 		);
 	}

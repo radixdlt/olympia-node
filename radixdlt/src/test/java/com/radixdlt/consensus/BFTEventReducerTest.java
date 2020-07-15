@@ -76,7 +76,10 @@ public class BFTEventReducerTest {
 		this.validatorSet = mock(ValidatorSet.class);
 		this.counters = mock(SystemCounters.class);
 
+		BFTValidatorId self = new BFTValidatorId(SELF_KEY.getPublicKey());
+
 		this.reducer = new BFTEventReducer(
+			self,
 			proposalGenerator,
 			sender,
 			endOfEpochSender,
@@ -85,7 +88,6 @@ public class BFTEventReducerTest {
 			vertexStore,
 			pendingVotes,
 			proposerElection,
-			SELF_KEY.getPublicKey(),
 			validatorSet,
 			counters
 		);

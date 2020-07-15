@@ -64,6 +64,7 @@ public class EpochManagerTest {
 	private SystemCounters systemCounters;
 	private ProposerElection proposerElection;
 	private SyncedStateComputer<CommittedAtom> syncedStateComputer;
+	private BFTValidatorId self;
 
 	@Before
 	public void setup() {
@@ -85,9 +86,10 @@ public class EpochManagerTest {
 		this.syncedStateComputer = ssc;
 
 		this.proposerElection = mock(ProposerElection.class);
+		this.self = mock(BFTValidatorId.class);
 
 		this.epochManager = new EpochManager(
-			"name",
+			this.self,
 			this.syncedStateComputer,
 			this.syncEpochsRPCSender,
 			mock(LocalTimeoutSender.class),
@@ -95,7 +97,6 @@ public class EpochManagerTest {
 			vertexStoreFactory,
 			proposers -> proposerElection,
 			this.bftFactory,
-			this.publicKey,
 			this.systemCounters
 		);
 	}

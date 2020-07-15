@@ -42,6 +42,7 @@ public class BFTEventPreprocessorTest {
 	private VertexStore vertexStore;
 	private BFTEventProcessor forwardTo;
 	private SyncQueues syncQueues;
+	private BFTValidatorId self;
 
 	@Before
 	public void setUp() {
@@ -50,12 +51,13 @@ public class BFTEventPreprocessorTest {
 		this.proposerElection = mock(ProposerElection.class);
 		this.forwardTo = mock(BFTEventProcessor.class);
 		this.syncQueues = mock(SyncQueues.class);
+		this.self = mock(BFTValidatorId.class);
 
 		when(proposerElection.getProposer(any())).thenReturn(SELF_KEY.getPublicKey());
 		when(pacemaker.getCurrentView()).thenReturn(View.of(1));
 
 		this.preprocessor = new BFTEventPreprocessor(
-			SELF_KEY.getPublicKey(),
+			self,
 			forwardTo,
 			pacemaker,
 			vertexStore,

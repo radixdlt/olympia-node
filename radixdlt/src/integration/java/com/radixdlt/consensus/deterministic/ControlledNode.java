@@ -19,6 +19,7 @@ package com.radixdlt.consensus.deterministic;
 
 import com.radixdlt.consensus.BFTEventReducer;
 import com.radixdlt.consensus.BFTFactory;
+import com.radixdlt.consensus.BFTValidatorId;
 import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.DefaultHasher;
@@ -75,7 +76,6 @@ class ControlledNode {
 	}
 
 	ControlledNode(
-		String name,
 		ECKeyPair key,
 		ControlledSender sender,
 		ProposerElectionFactory proposerElectionFactory,
@@ -98,6 +98,7 @@ class ControlledNode {
 		HashVerifier nullVerifier = (p, h, s) -> true;
 		VertexStoreFactory vertexStoreFactory = (vertex, qc, syncedStateComputer) ->
 			new VertexStore(vertex, qc, syncedStateComputer, syncVerticesRPCSender, sender, systemCounters);
+		BFTValidatorId self = new BFTValidatorId(key.getPublicKey());
 		BFTFactory bftFactory =
 			(endOfEpochSender, pacemaker, vertexStore, proposerElection, validatorSet) -> {
 				final ProposalGenerator proposalGenerator = new MempoolProposalGenerator(vertexStore, mempool);
@@ -106,6 +107,7 @@ class ControlledNode {
 				final PendingVotes pendingVotes = new PendingVotes(defaultHasher, nullVerifier);
 
 				return new BFTEventReducer(
+					self,
 					proposalGenerator,
 					controlledSender,
 					endOfEpochSender,
@@ -114,14 +116,13 @@ class ControlledNode {
 					vertexStore,
 					pendingVotes,
 					proposerElection,
-					key.getPublicKey(),
 					validatorSet,
 					systemCounters
 				);
 			};
 
 		this.epochManager = new EpochManager(
-			name,
+			self,
 			stateComputer,
 			EmptySyncEpochsRPCSender.INSTANCE,
 			localTimeoutSender,
@@ -129,7 +130,6 @@ class ControlledNode {
 			vertexStoreFactory,
 			proposerElectionFactory,
 			bftFactory,
-			key.getPublicKey(),
 			systemCounters
 		);
 	}

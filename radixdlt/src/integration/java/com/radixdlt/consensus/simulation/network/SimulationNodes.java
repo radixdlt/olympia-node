@@ -20,6 +20,7 @@ package com.radixdlt.consensus.simulation.network;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.consensus.BFTEventReducer;
 import com.radixdlt.consensus.BFTFactory;
+import com.radixdlt.consensus.BFTValidatorId;
 import com.radixdlt.consensus.ConsensusRunner;
 import com.radixdlt.consensus.ConsensusRunner.Event;
 import com.radixdlt.consensus.ConsensusRunner.EventType;
@@ -127,6 +128,8 @@ public class SimulationNodes {
 				this.counters.get(key)
 			);
 
+		final BFTValidatorId self = new BFTValidatorId(key.getPublicKey());
+
 		final SimulatedStateComputer stateComputer = stateComputerSupplier.get();
 		BFTFactory bftFactory =
 			(endOfEpochSender, pacemaker, vertexStore, proposerElection, validatorSet) -> {
@@ -135,6 +138,7 @@ public class SimulationNodes {
 				final PendingVotes pendingVotes = new PendingVotes(defaultHasher, nullVerifier);
 
 				return new BFTEventReducer(
+					self,
 					proposalGenerator,
 					underlyingNetwork.getNetworkSender(key.getPublicKey()),
 					endOfEpochSender,
@@ -143,16 +147,13 @@ public class SimulationNodes {
 					vertexStore,
 					pendingVotes,
 					proposerElection,
-					key.getPublicKey(),
 					validatorSet,
 					counters.get(key)
 				);
 			};
 
-		final String loggerPrefix = key.euid().toString().substring(0, 6);
-
 		final EpochManager epochManager = new EpochManager(
-			loggerPrefix,
+			self,
 			stateComputer,
 			syncSender,
 			timeoutSender,
@@ -160,7 +161,6 @@ public class SimulationNodes {
 			vertexStoreFactory,
 			proposers -> new WeightedRotatingLeaders(proposers, Comparator.comparing(v -> v.nodeKey().euid()), 5),
 			bftFactory,
-			key.getPublicKey(),
 			counters.get(key)
 		);
 

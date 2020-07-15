@@ -82,7 +82,6 @@ public final class DeterministicTest {
 			(key, index) -> {
 				ControlledSender sender = network.createSender(key.getPublicKey());
 				return new ControlledNode(
-					"node-" + index,
 					key,
 					sender,
 					vset -> new WeightedRotatingLeaders(vset, Comparator.comparing(v -> v.nodeKey().euid()), 5),

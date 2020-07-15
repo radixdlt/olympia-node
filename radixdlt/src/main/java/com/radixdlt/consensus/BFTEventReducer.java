@@ -49,6 +49,7 @@ import java.util.Optional;
 public final class BFTEventReducer implements BFTEventProcessor {
 	private static final Logger log = LogManager.getLogger();
 
+	private final BFTValidatorId self;
 	private final VertexStore vertexStore;
 	private final PendingVotes pendingVotes;
 	private final ProposalGenerator proposalGenerator;
@@ -56,7 +57,6 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	private final EndOfEpochSender endOfEpochSender;
 	private final Pacemaker pacemaker;
 	private final ProposerElection proposerElection;
-	private final ECPublicKey self;
 	private final SafetyRules safetyRules;
 	private final ValidatorSet validatorSet;
 	private final SystemCounters counters;
@@ -68,6 +68,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	}
 
 	public BFTEventReducer(
+		BFTValidatorId self,
 		ProposalGenerator proposalGenerator,
 		BFTEventSender sender,
 		EndOfEpochSender endOfEpochSender,
@@ -76,10 +77,10 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		VertexStore vertexStore,
 		PendingVotes pendingVotes,
 		ProposerElection proposerElection,
-		ECPublicKey self,
 		ValidatorSet validatorSet,
 		SystemCounters counters
 	) {
+		this.self = Objects.requireNonNull(self);
 		this.proposalGenerator = Objects.requireNonNull(proposalGenerator);
 		this.sender = Objects.requireNonNull(sender);
 		this.endOfEpochSender = Objects.requireNonNull(endOfEpochSender);
@@ -88,7 +89,6 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		this.vertexStore = Objects.requireNonNull(vertexStore);
 		this.pendingVotes = Objects.requireNonNull(pendingVotes);
 		this.proposerElection = Objects.requireNonNull(proposerElection);
-		this.self = Objects.requireNonNull(self);
 		this.validatorSet = Objects.requireNonNull(validatorSet);
 		this.counters = Objects.requireNonNull(counters);
 	}
@@ -97,15 +97,11 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		return euid.toString().substring(0, 6);
 	}
 
-	private String getShortName() {
-		return getShortName(self.euid());
-	}
-
 	// Hotstuff's Event-Driven OnNextSyncView
 	private void proceedToView(View nextView) {
 		NewView newView = safetyRules.signNewView(nextView, this.vertexStore.getHighestQC(), this.vertexStore.getHighestCommittedQC());
 		ECPublicKey nextLeader = this.proposerElection.getProposer(nextView);
-		log.trace("{}: Sending NEW_VIEW to {}: {}", this::getShortName, () -> this.getShortName(nextLeader.euid()), () ->  newView);
+		log.trace("{}: Sending NEW_VIEW to {}: {}", this.self::getShortName, () -> this.getShortName(nextLeader.euid()), () ->  newView);
 		this.sender.sendNewView(newView, nextLeader);
 		this.counters.set(CounterType.CONSENSUS_VIEW, nextView.number());
 	}
@@ -115,7 +111,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		Optional<VertexMetadata> commitMetaDataMaybe = this.safetyRules.process(qc);
 		commitMetaDataMaybe.ifPresent(commitMetaData -> {
 			vertexStore.commitVertex(commitMetaData).ifPresent(vertex -> {
-				log.trace("{}: Committed vertex: {}", this::getShortName, () -> vertex);
+				log.trace("{}: Committed vertex: {}", this.self::getShortName, () -> vertex);
 			});
 		});
 
@@ -135,7 +131,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		if (qc != null) {
 			if (vertexStore.syncToQC(qc, vertexStore.getHighestCommittedQC(), null)) {
 				processQC(qc);
-				log.trace("{}: LOCAL_SYNC: processed QC: {}", this::getShortName, () ->  qc);
+				log.trace("{}: LOCAL_SYNC: processed QC: {}", this.self::getShortName, () ->  qc);
 			} else {
 				unsyncedQCs.put(qc.getProposed().getId(), qc);
 			}
@@ -144,13 +140,13 @@ public final class BFTEventReducer implements BFTEventProcessor {
 
 	@Override
 	public void processVote(Vote vote) {
-		log.trace("{}: VOTE: Processing {}", this::getShortName, () -> vote);
+		log.trace("{}: VOTE: Processing {}", this.self::getShortName, () -> vote);
 		// accumulate votes into QCs in store
 		this.pendingVotes.insertVote(vote, this.validatorSet).ifPresent(qc -> {
-			log.trace("{}: VOTE: Formed QC: {}", this::getShortName, () -> qc);
+			log.trace("{}: VOTE: Formed QC: {}", this.self::getShortName, () -> qc);
 			if (vertexStore.syncToQC(qc, vertexStore.getHighestCommittedQC(), vote.getAuthor())) {
 				if (!synchedLog) {
-					log.debug("{}: VOTE: QC Synced: {}", this::getShortName, () -> qc);
+					log.debug("{}: VOTE: QC Synced: {}", this.self::getShortName, () -> qc);
 					synchedLog = true;
 				}
 				processQC(qc).ifPresent(commitMetaData -> {
@@ -161,7 +157,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 				});
 			} else {
 				if (synchedLog) {
-					log.debug("{}: VOTE: QC Not synced: {}", this::getShortName, () -> qc);
+					log.debug("{}: VOTE: QC Not synced: {}", this.self::getShortName, () -> qc);
 					synchedLog = false;
 				}
 				unsyncedQCs.put(qc.getProposed().getId(), qc);
@@ -171,20 +167,20 @@ public final class BFTEventReducer implements BFTEventProcessor {
 
 	@Override
 	public void processNewView(NewView newView) {
-		log.trace("{}: NEW_VIEW: Processing {}", this::getShortName, () -> newView);
+		log.trace("{}: NEW_VIEW: Processing {}", this.self::getShortName, () -> newView);
 		processQC(newView.getQC());
 		this.pacemaker.processNewView(newView, validatorSet).ifPresent(view -> {
 			// Hotstuff's Event-Driven OnBeat
 			final Vertex proposedVertex = proposalGenerator.generateProposal(view);
 			final Proposal proposal = safetyRules.signProposal(proposedVertex, this.vertexStore.getHighestCommittedQC());
-			log.trace("{}: Broadcasting PROPOSAL: {}", this::getShortName, () -> proposal);
+			log.trace("{}: Broadcasting PROPOSAL: {}", this.self::getShortName, () -> proposal);
 			this.sender.broadcastProposal(proposal, validatorSet.getValidators().stream().map(Validator::nodeKey).collect(Collectors.toSet()));
 		});
 	}
 
 	@Override
 	public void processProposal(Proposal proposal) {
-		log.trace("{}: PROPOSAL: Processing {}", this::getShortName, () -> proposal);
+		log.trace("{}: PROPOSAL: Processing {}", this.self::getShortName, () -> proposal);
 		final Vertex proposedVertex = proposal.getVertex();
 		final View proposedVertexView = proposedVertex.getView();
 
@@ -192,7 +188,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 
 		final View updatedView = this.pacemaker.getCurrentView();
 		if (proposedVertexView.compareTo(updatedView) != 0) {
-			log.trace("{}: PROPOSAL: Ignoring view {} Current is: {}", this::getShortName, () -> proposedVertexView, () -> updatedView);
+			log.trace("{}: PROPOSAL: Ignoring view {} Current is: {}", this.self::getShortName, () -> proposedVertexView, () -> updatedView);
 			return;
 		}
 
@@ -202,23 +198,23 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		} catch (VertexInsertionException e) {
 			counters.increment(CounterType.CONSENSUS_REJECTED);
 
-			log.warn("{} PROPOSAL: Rejected. Reason: {}", this::getShortName, e::getMessage);
+			log.warn("{} PROPOSAL: Rejected. Reason: {}", this.self::getShortName, e::getMessage);
 			return;
 		}
 
 		final ECPublicKey currentLeader = this.proposerElection.getProposer(updatedView);
 		try {
 			final Vote vote = safetyRules.voteFor(proposedVertex, vertexMetadata);
-			log.trace("{}: PROPOSAL: Sending VOTE to {}: {}", this::getShortName, () -> this.getShortName(currentLeader.euid()), () -> vote);
+			log.trace("{}: PROPOSAL: Sending VOTE to {}: {}", this.self::getShortName, () -> this.getShortName(currentLeader.euid()), () -> vote);
 			sender.sendVote(vote, currentLeader);
 		} catch (SafetyViolationException e) {
-			log.error(() -> new FormattedMessage("{}: PROPOSAL: Rejected {}", this.getShortName(), proposedVertex), e);
+			log.error(() -> new FormattedMessage("{}: PROPOSAL: Rejected {}", this.self.getShortName(), proposedVertex), e);
 		}
 
 		// If not currently leader or next leader, Proceed to next view
-		if (!Objects.equals(currentLeader, self)) {
+		if (!Objects.equals(currentLeader, this.self.getKey())) {
 			final ECPublicKey nextLeader = this.proposerElection.getProposer(updatedView.next());
-			if (!Objects.equals(nextLeader, self)) {
+			if (!Objects.equals(nextLeader, this.self.getKey())) {
 
 				// TODO: should not call processQC
 				this.pacemaker.processQC(updatedView).ifPresent(this::proceedToView);
@@ -228,18 +224,18 @@ public final class BFTEventReducer implements BFTEventProcessor {
 
 	@Override
 	public void processLocalTimeout(View view) {
-		log.trace("{}: LOCAL_TIMEOUT: Processing {}", this::getShortName, () -> view);
+		log.trace("{}: LOCAL_TIMEOUT: Processing {}", this.self::getShortName, () -> view);
 
 		// proceed to next view if pacemaker feels like it
 		Optional<View> nextView = this.pacemaker.processLocalTimeout(view);
 		if (nextView.isPresent()) {
 			this.proceedToView(nextView.get());
-			log.warn("{}: LOCAL_TIMEOUT: Processed {}", this::getShortName, () -> view);
+			log.warn("{}: LOCAL_TIMEOUT: Processed {}", this.self::getShortName, () -> view);
 
 			counters.set(CounterType.CONSENSUS_TIMEOUT_VIEW, view.number());
 			counters.increment(CounterType.CONSENSUS_TIMEOUT);
 		} else {
-			log.trace("{}: LOCAL_TIMEOUT: Ignoring {}", this::getShortName, () -> view);
+			log.trace("{}: LOCAL_TIMEOUT: Ignoring {}", this.self::getShortName, () -> view);
 		}
 	}
 
