@@ -34,7 +34,6 @@ import com.google.common.collect.Maps;
 import com.radixdlt.consensus.deterministic.ControlledNetwork.ChannelId;
 import com.radixdlt.consensus.deterministic.ControlledNetwork.ControlledMessage;
 import com.radixdlt.consensus.deterministic.ControlledNetwork.MessageRank;
-import com.radixdlt.identifiers.EUID;
 
 /**
  * Queue for messages by view.
@@ -163,8 +162,8 @@ final class MessageQueue {
 
 	void dump(PrintStream out) {
 		Comparator<ChannelId> channelIdComparator = Comparator
-			.<ChannelId, EUID>comparing(chid -> chid.getSender().euid())
-			.thenComparing(chid -> chid.getReceiver().euid());
+			.<ChannelId, String>comparing(chid -> chid.getSender().getSimpleName())
+			.thenComparing(chid -> chid.getReceiver().getSimpleName());
 		out.format("%s {%n", this.messageQueue);
 		this.messageQueue.entrySet().stream()
 			.sorted(Map.Entry.comparingByKey())
