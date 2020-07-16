@@ -18,24 +18,26 @@
 package com.radixdlt.consensus.bft;
 
 import com.radixdlt.utils.UInt256;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentMap;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECPublicKey;
+import javax.annotation.concurrent.NotThreadSafe;
 
 /**
  * Keeps track of current validation state for a thing that
  * needs multiple correct signatures for a quorum.
  */
+@NotThreadSafe
 public final class ValidationState {
 
 	private final BFTValidatorSet validatorSet;
-	private final ConcurrentMap<BFTNode, ECDSASignature> signedNodes;
+	private final Map<BFTNode, ECDSASignature> signedNodes;
 	private transient UInt256 signedPower;
 	private final transient UInt256 threshold;
 
@@ -50,7 +52,7 @@ public final class ValidationState {
 
 	private ValidationState(BFTValidatorSet validatorSet) {
 		this.validatorSet = Objects.requireNonNull(validatorSet);
-		this.signedNodes = Maps.newConcurrentMap();
+		this.signedNodes = new HashMap<>();
 		this.signedPower = UInt256.ZERO;
 		this.threshold = threshold(validatorSet.getTotalPower());
 	}
