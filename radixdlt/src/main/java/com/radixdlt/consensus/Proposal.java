@@ -30,6 +30,7 @@ import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Represents a proposal made by a leader in a round of consensus
@@ -70,6 +71,10 @@ public final class Proposal implements RequiresSyncConsensusEvent {
 		this.committedQC = committedQC;
 		this.author = Objects.requireNonNull(author);
 		this.signature = Objects.requireNonNull(signature);
+	}
+
+	public Optional<ECDSASignature> getSignature() {
+		return Optional.of(signature);
 	}
 
 	@Override

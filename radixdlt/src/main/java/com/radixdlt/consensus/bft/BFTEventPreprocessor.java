@@ -18,22 +18,16 @@
 package com.radixdlt.consensus.bft;
 
 import com.radixdlt.consensus.BFTEventProcessor;
-import com.radixdlt.consensus.HashVerifier;
-import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.RequiresSyncConsensusEvent;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.SyncQueues.SyncQueue;
 import com.radixdlt.consensus.liveness.PacemakerState;
 import com.radixdlt.consensus.liveness.ProposerElection;
-import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.utils.Longs;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -59,8 +53,6 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 	private final PacemakerState pacemakerState;
 	private final ProposerElection proposerElection;
 	private final SyncQueues queues;
-	private final Hasher hasher;
-	private final HashVerifier verifier;
 
 	public BFTEventPreprocessor(
 		BFTNode self,
@@ -68,16 +60,12 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		PacemakerState pacemakerState,
 		VertexStore vertexStore,
 		ProposerElection proposerElection,
-		Hasher hasher,
-		HashVerifier verifier,
 		SyncQueues queues
 	) {
 		this.self = Objects.requireNonNull(self);
 		this.pacemakerState = Objects.requireNonNull(pacemakerState);
 		this.vertexStore = Objects.requireNonNull(vertexStore);
 		this.proposerElection = Objects.requireNonNull(proposerElection);
-		this.hasher = Objects.requireNonNull(hasher);
-		this.verifier = Objects.requireNonNull(verifier);
 		this.queues = queues;
 		this.forwardTo = forwardTo;
 	}
@@ -140,16 +128,6 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 			return;
 		}
 
-		final VoteData voteData = vote.getVoteData();
-		final Hash voteHash = this.hasher.hash(voteData);
-		final ECDSASignature signature = vote.getSignature().orElseThrow(() -> new IllegalArgumentException("vote is missing signature"));
-		final BFTNode node = vote.getAuthor();
-		final ECPublicKey key = node.getKey();
-		if (!this.verifier.verify(key, voteHash, signature)) {
-			log.info("Ignoring invalid signature from author {}", node::getSimpleName);
-			return;
-		}
-
 		forwardTo.processVote(vote);
 	}
 
@@ -166,16 +144,6 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		final View currentView = pacemakerState.getCurrentView();
 		if (newView.getView().compareTo(currentView) < 0) {
 			log.trace("{}: NEW_VIEW: Ignoring {} Current is: {}", this.self::getSimpleName, newView::getView, () -> currentView);
-			return true;
-		}
-
-		final BFTNode node = newView.getAuthor();
-		final ECPublicKey key = node.getKey();
-		final Hash newViewId = Hash.of(Longs.toByteArray(newView.getView().number()));
-		// TODO: Remove IllegalArgumentException
-		final ECDSASignature signature = newView.getSignature().orElseThrow(() -> new IllegalArgumentException("new-view is missing signature"));
-		if (!this.verifier.verify(key, newViewId, signature)) {
-			log.info("Ignoring invalid signature from author {}", node::getSimpleName);
 			return true;
 		}
 

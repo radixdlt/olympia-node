@@ -26,8 +26,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.radixdlt.consensus.BFTEventProcessor;
-import com.radixdlt.consensus.HashVerifier;
-import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
@@ -54,8 +52,6 @@ public class BFTEventPreprocessorTest {
 	private BFTEventProcessor forwardTo;
 	private SyncQueues syncQueues;
 	private BFTNode self;
-	private Hasher hasher;
-	private HashVerifier verifier;
 
 	@Before
 	public void setUp() {
@@ -65,9 +61,6 @@ public class BFTEventPreprocessorTest {
 		this.forwardTo = mock(BFTEventProcessor.class);
 		this.syncQueues = mock(SyncQueues.class);
 		this.self = mock(BFTNode.class);
-		this.hasher = mock(Hasher.class);
-		this.verifier = mock(HashVerifier.class);
-		when(verifier.verify(any(), any(), any())).thenReturn(true);
 
 		when(this.self.getKey()).thenReturn(SELF_KEY.getPublicKey());
 
@@ -80,8 +73,6 @@ public class BFTEventPreprocessorTest {
 			pacemaker,
 			vertexStore,
 			proposerElection,
-			hasher,
-			verifier,
 			syncQueues
 		);
 	}

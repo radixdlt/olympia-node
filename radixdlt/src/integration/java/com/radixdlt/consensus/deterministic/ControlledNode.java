@@ -39,7 +39,6 @@ import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.HashSigner;
-import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRPCSender;
@@ -99,7 +98,6 @@ class ControlledNode {
 		Hasher nullHasher = data -> Hash.ZERO_HASH;
 		Hasher defaultHasher = new DefaultHasher();
 		HashSigner nullSigner = (k, h) -> new ECDSASignature();
-		HashVerifier nullVerifier = (p, h, s) -> true;
 		VertexStoreFactory vertexStoreFactory = (vertex, qc, syncedStateComputer) ->
 			new VertexStore(vertex, qc, syncedStateComputer, syncVerticesRPCSender, sender, systemCounters);
 		BFTNode self = BFTNode.create(key.getPublicKey());
@@ -137,8 +135,6 @@ class ControlledNode {
 					pacemaker,
 					vertexStore,
 					proposerElection,
-					nullHasher,
-					nullVerifier,
 					syncQueues
 				);
 			};

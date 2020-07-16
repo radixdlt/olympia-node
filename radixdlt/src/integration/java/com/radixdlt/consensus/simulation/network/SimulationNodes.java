@@ -35,7 +35,6 @@ import com.radixdlt.consensus.EpochChangeRx;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.middleware2.InternalMessagePasser;
 import com.radixdlt.consensus.HashSigner;
-import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.bft.VertexStore;
@@ -117,7 +116,6 @@ public class SimulationNodes {
 		final Hasher nullHasher = o -> Hash.ZERO_HASH;
 		final Hasher defaultHasher = new DefaultHasher();
 		final HashSigner nullSigner = (k, h) -> new ECDSASignature();
-		final HashVerifier nullVerifier = (p, h, s) -> true;
 		final ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(daemonThreads("TimeoutSender"));
 		final ScheduledLocalTimeoutSender timeoutSender = new ScheduledLocalTimeoutSender(scheduledExecutorService);
 		final SimulationSyncSender syncSender = underlyingNetwork.getSyncSender(key.getPublicKey());
@@ -166,8 +164,6 @@ public class SimulationNodes {
 					pacemaker,
 					vertexStore,
 					proposerElection,
-					nullHasher,
-					nullVerifier,
 					syncQueues
 				);
 			};

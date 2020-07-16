@@ -28,6 +28,7 @@ import com.radixdlt.consensus.bft.BFTEventReducer;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.AddressBookValidatorSetProvider;
 import com.radixdlt.consensus.BFTFactory;
+import com.radixdlt.consensus.bft.BFTEventVerifier;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.CommittedStateSyncRx;
 import com.radixdlt.consensus.ConsensusRunner;
@@ -195,15 +196,20 @@ public class CerberusModule extends AbstractModule {
 				counters
 			);
 
-			return new BFTEventPreprocessor(
+			BFTEventPreprocessor preprocessor = new BFTEventPreprocessor(
 				self,
 				reducer,
 				pacemaker,
 				vertexStore,
 				proposerElection,
-				hasher,
-				ECPublicKey::verify,
 				syncQueues
+			);
+
+			return new BFTEventVerifier(
+				self,
+				preprocessor,
+				hasher,
+				ECPublicKey::verify
 			);
 		};
 	}
