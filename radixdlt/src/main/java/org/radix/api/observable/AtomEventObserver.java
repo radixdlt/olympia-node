@@ -19,6 +19,7 @@ package org.radix.api.observable;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import com.radixdlt.api.StoredAtom;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.middleware2.ClientAtom;
@@ -37,8 +38,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.radix.api.AtomQuery;
 import org.radix.api.observable.AtomEventDto.AtomEventType;
-import org.radix.atoms.events.AtomEventWithDestinations;
-import org.radix.atoms.events.AtomStoredEvent;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -110,15 +109,15 @@ public class AtomEventObserver {
 		}
 	}
 
-	public void tryNext(AtomEventWithDestinations atomEvent) {
-		if (atomEvent instanceof AtomStoredEvent) {
-			if (atomQuery.filter(atomEvent.getDestinations())) {
-				final Atom rawAtom = ClientAtom.convertToApiAtom(atomEvent.getAtom().getClientAtom());
-				final AtomEventDto atomEventDto = new AtomEventDto(AtomEventType.STORE, rawAtom);
-				synchronized (this) {
-					this.currentRunnable = currentRunnable.thenRunAsync(() -> update(atomEventDto), executorService);
-				}
-			}
+	public void tryNext(StoredAtom storedAtom) {
+		if (!atomQuery.filter(storedAtom.getDestinations())) {
+			return;
+		}
+
+		final Atom rawAtom = ClientAtom.convertToApiAtom(storedAtom.getAtom().getClientAtom());
+		final AtomEventDto atomEventDto = new AtomEventDto(AtomEventType.STORE, rawAtom);
+		synchronized (this) {
+			this.currentRunnable = currentRunnable.thenRunAsync(() -> update(atomEventDto), executorService);
 		}
 	}
 

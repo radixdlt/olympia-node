@@ -28,7 +28,7 @@ import com.radixdlt.consensus.EmptySyncVerticesRPCSender;
 import com.radixdlt.consensus.EpochManager;
 import com.radixdlt.consensus.EpochChangeRx;
 import com.radixdlt.consensus.Hasher;
-import com.radixdlt.consensus.InternalMessagePasser;
+import com.radixdlt.middleware2.InternalMessagePasser;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.PendingVotes;
@@ -136,7 +136,6 @@ public class SimulationNodes {
 
 				return new BFTEventReducer(
 					proposalGenerator,
-					mempool,
 					underlyingNetwork.getNetworkSender(key.getPublicKey()),
 					endOfEpochSender,
 					safetyRules,

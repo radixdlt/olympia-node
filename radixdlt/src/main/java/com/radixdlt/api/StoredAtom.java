@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,17 +15,30 @@
  * language governing permissions and limitations under the License.
  */
 
-package org.radix.atoms.events;
+package com.radixdlt.api;
 
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.identifiers.EUID;
-
 import com.radixdlt.middleware2.CommittedAtom;
-import java.util.Set;
-import java.util.function.Supplier;
+import java.util.Objects;
 
-public final class AtomStoredEvent extends AtomEventWithDestinations {
+/**
+ * A stored atom event
+ */
+public final class StoredAtom {
+	private final CommittedAtom atom;
+	private final ImmutableSet<EUID> destinations;
 
-	public AtomStoredEvent(CommittedAtom atom, Supplier<Set<EUID>> destinationsSupplier) {
-		super(atom, destinationsSupplier);
+	public StoredAtom(CommittedAtom atom, ImmutableSet<EUID> destinations) {
+		this.atom = Objects.requireNonNull(atom);
+		this.destinations = Objects.requireNonNull(destinations);
+	}
+
+	public CommittedAtom getAtom() {
+		return atom;
+	}
+
+	public ImmutableSet<EUID> getDestinations() {
+		return destinations;
 	}
 }

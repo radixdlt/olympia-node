@@ -22,6 +22,7 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
+import com.radixdlt.api.LedgerRx;
 import com.radixdlt.consensus.BFTEventReducer;
 import com.radixdlt.consensus.BFTEventSender;
 import com.radixdlt.consensus.AddressBookValidatorSetProvider;
@@ -37,7 +38,7 @@ import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.SyncEpochsRPCSender;
 import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.VertexStoreEventsRx;
-import com.radixdlt.consensus.InternalMessagePasser;
+import com.radixdlt.middleware2.InternalMessagePasser;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.ProposerElectionFactory;
 import com.radixdlt.consensus.Hasher;
@@ -60,6 +61,7 @@ import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.consensus.sync.StateSyncNetwork;
 import com.radixdlt.consensus.sync.SyncedRadixEngine;
 import com.radixdlt.consensus.sync.SyncedRadixEngine.CommittedStateSyncSender;
+import com.radixdlt.consensus.sync.SyncedRadixEngine.SyncedRadixEngineEventSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
@@ -86,8 +88,9 @@ public class CerberusModule extends AbstractModule {
 
 	@Override
 	protected void configure() {
-		// Signing
+		// Configuration
 		bind(HashSigner.class).toInstance(ECKeyPair::sign);
+		bind(Hasher.class).to(DefaultHasher.class);
 
 		// Timed local messages
 		bind(PacemakerRx.class).to(ScheduledLocalTimeoutSender.class);
@@ -100,23 +103,21 @@ public class CerberusModule extends AbstractModule {
 		bind(CommittedStateSyncRx.class).to(InternalMessagePasser.class);
 		bind(EpochChangeRx.class).to(InternalMessagePasser.class);
 		bind(EpochChangeSender.class).to(InternalMessagePasser.class);
-
+		bind(SyncedRadixEngineEventSender.class).to(InternalMessagePasser.class);
+		bind(LedgerRx.class).to(InternalMessagePasser.class);
 		bind(SyncedStateComputer.class).to(SyncedRadixEngine.class);
 
-		// Sync messages
+		// Network Sync messages
 		bind(SyncEpochsRPCSender.class).to(MessageCentralValidatorSync.class);
 		bind(SyncEpochsRPCRx.class).to(MessageCentralValidatorSync.class);
 		bind(SyncVerticesRPCSender.class).to(MessageCentralValidatorSync.class);
 		bind(SyncVerticesRPCRx.class).to(MessageCentralValidatorSync.class);
 		bind(MessageCentralValidatorSync.class).in(Scopes.SINGLETON);
 
-		// BFT messages
+		// Network BFT messages
 		bind(BFTEventSender.class).to(MessageCentralBFTNetwork.class);
 		bind(ConsensusEventsRx.class).to(MessageCentralBFTNetwork.class);
 		bind(MessageCentralBFTNetwork.class).in(Scopes.SINGLETON);
-
-		// Configuration
-		bind(Hasher.class).to(DefaultHasher.class);
 	}
 
 	@Provides
@@ -142,7 +143,6 @@ public class CerberusModule extends AbstractModule {
 
 			return new BFTEventReducer(
 				proposalGenerator,
-				mempool,
 				bftEventSender,
 				endOfEpochSender,
 				safetyRules,
@@ -233,20 +233,24 @@ public class CerberusModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private SyncedRadixEngine syncedRadixEngine(
+		Mempool mempool,
 		RadixEngine<LedgerAtom> radixEngine,
 		CommittedAtomsStore committedAtomsStore,
 		CommittedStateSyncSender committedStateSyncSender,
 		EpochChangeSender epochChangeSender,
+		SyncedRadixEngineEventSender syncedRadixEngineEventSender,
 		AddressBookValidatorSetProvider validatorSetProvider,
 		AddressBook addressBook,
 		StateSyncNetwork stateSyncNetwork
 	) {
 		final long viewsPerEpoch = runtimeProperties.get("epochs.views_per_epoch", 100L);
 		return new SyncedRadixEngine(
+			mempool,
 			radixEngine,
 			committedAtomsStore,
 			committedStateSyncSender,
 			epochChangeSender,
+			syncedRadixEngineEventSender,
 			validatorSetProvider::getValidatorSet,
 			View.of(viewsPerEpoch),
 			addressBook,
