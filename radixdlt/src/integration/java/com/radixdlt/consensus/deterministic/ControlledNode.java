@@ -17,20 +17,14 @@
 
 package com.radixdlt.consensus.deterministic;
 
-import com.google.common.collect.ImmutableSet;
-import com.radixdlt.consensus.bft.BFTEventPreprocessor;
-import com.radixdlt.consensus.bft.BFTEventReducer;
+import com.radixdlt.consensus.bft.BFTBuilder;
 import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.ConsensusEvent;
-import com.radixdlt.consensus.DefaultHasher;
-import com.radixdlt.consensus.bft.BFTValidator;
-import com.radixdlt.consensus.bft.SyncQueues;
 import com.radixdlt.consensus.epoch.EmptySyncEpochsRPCSender;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.epoch.EpochManager;
-import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
 import com.radixdlt.consensus.bft.GetVerticesResponse;
 import com.radixdlt.consensus.epoch.LocalTimeout;
@@ -47,10 +41,6 @@ import com.radixdlt.consensus.deterministic.ControlledNetwork.ControlledSender;
 import com.radixdlt.consensus.deterministic.configuration.UnsupportedSyncVerticesRPCSender;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
 import com.radixdlt.consensus.liveness.LocalTimeoutSender;
-import com.radixdlt.consensus.liveness.MempoolProposalGenerator;
-import com.radixdlt.consensus.liveness.ProposalGenerator;
-import com.radixdlt.consensus.safety.SafetyRules;
-import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
@@ -90,55 +80,33 @@ class ControlledNode {
 		this.controlledSender = Objects.requireNonNull(sender);
 		this.initialValidatorSet = Objects.requireNonNull(initialValidatorSet);
 
+		Mempool mempool = new EmptyMempool();
+		Hasher nullHasher = data -> Hash.ZERO_HASH;
+		HashSigner nullSigner = (k, h) -> new ECDSASignature();
+		BFTFactory bftFactory =
+			(endOfEpochSender, pacemaker, vertexStore, proposerElection, validatorSet) ->
+				BFTBuilder.create()
+					.self(key)
+					.endOfEpochSender(endOfEpochSender)
+					.pacemaker(pacemaker)
+					.mempool(mempool)
+					.vertexStore(vertexStore)
+					.proposerElection(proposerElection)
+					.validatorSet(validatorSet)
+					.eventSender(controlledSender)
+					.counters(systemCounters)
+					.hasher(nullHasher)
+					.signer(nullSigner)
+					.verifySignatures(false)
+					.build();
+
 		SyncVerticesRPCSender syncVerticesRPCSender = (syncAndTimeout != SyncAndTimeout.NONE)
 			? sender
 			: UnsupportedSyncVerticesRPCSender.INSTANCE;
 		LocalTimeoutSender localTimeoutSender = (syncAndTimeout == SyncAndTimeout.SYNC_AND_TIMEOUT) ? sender : (v, t) -> { };
-		Mempool mempool = new EmptyMempool();
-		Hasher nullHasher = data -> Hash.ZERO_HASH;
-		Hasher defaultHasher = new DefaultHasher();
-		HashSigner nullSigner = (k, h) -> new ECDSASignature();
 		VertexStoreFactory vertexStoreFactory = (vertex, qc, syncedStateComputer) ->
 			new VertexStore(vertex, qc, syncedStateComputer, syncVerticesRPCSender, sender, systemCounters);
 		BFTNode self = BFTNode.create(key.getPublicKey());
-		BFTFactory bftFactory =
-			(endOfEpochSender, pacemaker, vertexStore, proposerElection, validatorSet) -> {
-				final ProposalGenerator proposalGenerator = new MempoolProposalGenerator(vertexStore, mempool);
-				final SafetyRules safetyRules = new SafetyRules(key, SafetyState.initialState(), nullHasher, nullSigner);
-				// PendingVotes needs a hasher that produces unique values, as it indexes by hash
-				final PendingVotes pendingVotes = new PendingVotes(defaultHasher);
-
-				final BFTEventReducer reducer = new BFTEventReducer(
-					self,
-					proposalGenerator,
-					controlledSender,
-					endOfEpochSender,
-					safetyRules,
-					pacemaker,
-					vertexStore,
-					pendingVotes,
-					proposerElection,
-					validatorSet,
-					systemCounters
-				);
-
-				final SyncQueues syncQueues = new SyncQueues(
-					validatorSet.getValidators().stream()
-						.map(BFTValidator::getNode)
-						.collect(ImmutableSet.toImmutableSet()),
-					systemCounters
-				);
-
-				return new BFTEventPreprocessor(
-					self,
-					reducer,
-					pacemaker,
-					vertexStore,
-					proposerElection,
-					syncQueues
-				);
-			};
-
 		this.epochManager = new EpochManager(
 			self,
 			stateComputer,

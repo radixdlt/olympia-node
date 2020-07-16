@@ -33,6 +33,9 @@ import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * Verifies signatures of BFT messages then forwards to the next processor
+ */
 public final class BFTEventVerifier implements BFTEventProcessor {
 	private static final Logger log = LogManager.getLogger();
 

@@ -17,28 +17,23 @@
 
 package com.radixdlt;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 import com.radixdlt.api.LedgerRx;
-import com.radixdlt.consensus.bft.BFTEventPreprocessor;
-import com.radixdlt.consensus.bft.BFTEventReducer;
+import com.radixdlt.consensus.HashVerifier;
+import com.radixdlt.consensus.bft.BFTBuilder;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.AddressBookValidatorSetProvider;
 import com.radixdlt.consensus.BFTFactory;
-import com.radixdlt.consensus.bft.BFTEventVerifier;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.CommittedStateSyncRx;
 import com.radixdlt.consensus.ConsensusRunner;
 import com.radixdlt.consensus.DefaultHasher;
 import com.radixdlt.consensus.EpochChangeRx;
-import com.radixdlt.consensus.bft.BFTValidator;
-import com.radixdlt.consensus.bft.SyncQueues;
 import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.ConsensusEventsRx;
-import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.SyncedStateComputer;
@@ -55,14 +50,10 @@ import com.radixdlt.consensus.VertexStoreFactory;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
 import com.radixdlt.consensus.liveness.LocalTimeoutSender;
-import com.radixdlt.consensus.liveness.MempoolProposalGenerator;
 import com.radixdlt.consensus.liveness.PacemakerFactory;
 import com.radixdlt.consensus.liveness.PacemakerRx;
-import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeoutSender;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
-import com.radixdlt.consensus.safety.SafetyRules;
-import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.consensus.sync.StateSyncNetwork;
 import com.radixdlt.consensus.sync.SyncedRadixEngine;
 import com.radixdlt.consensus.sync.SyncedRadixEngine.CommittedStateSyncSender;
@@ -98,6 +89,7 @@ public class CerberusModule extends AbstractModule {
 		// Configuration
 		bind(HashSigner.class).toInstance(ECKeyPair::sign);
 		bind(Hasher.class).to(DefaultHasher.class);
+		bind(HashVerifier.class).toInstance(ECPublicKey::verify);
 
 		// Timed local messages
 		bind(PacemakerRx.class).to(ScheduledLocalTimeoutSender.class);
@@ -156,12 +148,12 @@ public class CerberusModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private BFTFactory bftFactory(
-		BFTNode self,
+		@Named("self") ECKeyPair selfKey,
 		BFTEventSender bftEventSender,
 		Mempool mempool,
-		@Named("self") ECKeyPair selfKey,
 		Hasher hasher,
 		HashSigner signer,
+		HashVerifier verifier,
 		SystemCounters counters
 	) {
 		return (
@@ -170,48 +162,21 @@ public class CerberusModule extends AbstractModule {
 			vertexStore,
 			proposerElection,
 			validatorSet
-		) -> {
-			final ProposalGenerator proposalGenerator = new MempoolProposalGenerator(vertexStore, mempool);
-			final SafetyRules safetyRules = new SafetyRules(selfKey, SafetyState.initialState(), hasher, signer);
-			final PendingVotes pendingVotes = new PendingVotes(hasher);
-
-			BFTEventReducer reducer = new BFTEventReducer(
-				self,
-				proposalGenerator,
-				bftEventSender,
-				endOfEpochSender,
-				safetyRules,
-				pacemaker,
-				vertexStore,
-				pendingVotes,
-				proposerElection,
-				validatorSet,
-				counters
-			);
-
-			SyncQueues syncQueues = new SyncQueues(
-				validatorSet.getValidators().stream()
-					.map(BFTValidator::getNode)
-					.collect(ImmutableSet.toImmutableSet()),
-				counters
-			);
-
-			BFTEventPreprocessor preprocessor = new BFTEventPreprocessor(
-				self,
-				reducer,
-				pacemaker,
-				vertexStore,
-				proposerElection,
-				syncQueues
-			);
-
-			return new BFTEventVerifier(
-				self,
-				preprocessor,
-				hasher,
-				ECPublicKey::verify
-			);
-		};
+		) ->
+			BFTBuilder.create()
+				.self(selfKey)
+				.eventSender(bftEventSender)
+				.mempool(mempool)
+				.hasher(hasher)
+				.signer(signer)
+				.verifier(verifier)
+				.counters(counters)
+				.endOfEpochSender(endOfEpochSender)
+				.pacemaker(pacemaker)
+				.vertexStore(vertexStore)
+				.proposerElection(proposerElection)
+				.validatorSet(validatorSet)
+				.build();
 	}
 
 	@Provides

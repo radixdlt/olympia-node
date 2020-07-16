@@ -19,6 +19,7 @@ package com.radixdlt.consensus.simulation.network;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.consensus.bft.BFTBuilder;
 import com.radixdlt.consensus.bft.BFTEventPreprocessor;
 import com.radixdlt.consensus.bft.BFTEventReducer;
 import com.radixdlt.consensus.BFTFactory;
@@ -114,12 +115,28 @@ public class SimulationNodes {
 	private ConsensusRunner createBFTInstance(ECKeyPair key) {
 		final Mempool mempool = new EmptyMempool();
 		final Hasher nullHasher = o -> Hash.ZERO_HASH;
-		final Hasher defaultHasher = new DefaultHasher();
 		final HashSigner nullSigner = (k, h) -> new ECDSASignature();
+		final BFTNode self = BFTNode.create(key.getPublicKey());
+		final BFTFactory bftFactory =
+			(endOfEpochSender, pacemaker, vertexStore, proposerElection, validatorSet) ->
+				BFTBuilder.create()
+					.self(key)
+					.endOfEpochSender(endOfEpochSender)
+					.pacemaker(pacemaker)
+					.mempool(mempool)
+					.vertexStore(vertexStore)
+					.proposerElection(proposerElection)
+					.validatorSet(validatorSet)
+					.eventSender(underlyingNetwork.getNetworkSender(key.getPublicKey()))
+					.counters(counters.get(key))
+					.hasher(nullHasher)
+					.signer(nullSigner)
+					.verifySignatures(false)
+					.build();
+
 		final ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(daemonThreads("TimeoutSender"));
 		final ScheduledLocalTimeoutSender timeoutSender = new ScheduledLocalTimeoutSender(scheduledExecutorService);
 		final SimulationSyncSender syncSender = underlyingNetwork.getSyncSender(key.getPublicKey());
-
 		final VertexStoreFactory vertexStoreFactory = (v, qc, stateComputer) ->
 			new VertexStore(
 				v,
@@ -129,45 +146,7 @@ public class SimulationNodes {
 				this.internalMessages.get(key),
 				this.counters.get(key)
 			);
-
-		final BFTNode self = BFTNode.create(key.getPublicKey());
-
 		final SimulatedStateComputer stateComputer = stateComputerSupplier.get();
-		BFTFactory bftFactory =
-			(endOfEpochSender, pacemaker, vertexStore, proposerElection, validatorSet) -> {
-				final ProposalGenerator proposalGenerator = new MempoolProposalGenerator(vertexStore, mempool);
-				final SafetyRules safetyRules = new SafetyRules(key, SafetyState.initialState(), nullHasher, nullSigner);
-				final PendingVotes pendingVotes = new PendingVotes(defaultHasher);
-				final BFTEventReducer reducer = new BFTEventReducer(
-					self,
-					proposalGenerator,
-					underlyingNetwork.getNetworkSender(key.getPublicKey()),
-					endOfEpochSender,
-					safetyRules,
-					pacemaker,
-					vertexStore,
-					pendingVotes,
-					proposerElection,
-					validatorSet,
-					counters.get(key)
-				);
-				final SyncQueues syncQueues = new SyncQueues(
-					validatorSet.getValidators().stream()
-						.map(BFTValidator::getNode)
-						.collect(ImmutableSet.toImmutableSet()),
-					counters.get(key)
-				);
-
-				return new BFTEventPreprocessor(
-					self,
-					reducer,
-					pacemaker,
-					vertexStore,
-					proposerElection,
-					syncQueues
-				);
-			};
-
 		final EpochManager epochManager = new EpochManager(
 			self,
 			stateComputer,
