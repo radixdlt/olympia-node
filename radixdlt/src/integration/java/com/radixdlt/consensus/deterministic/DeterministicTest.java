@@ -46,6 +46,7 @@ import java.util.Random;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
+import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -64,7 +65,8 @@ public final class DeterministicTest {
 	private DeterministicTest(
 		int numNodes,
 		SyncAndTimeout syncAndTimeout,
-		BiFunction<CommittedStateSyncSender, EpochChangeSender, SyncedStateComputer<CommittedAtom>> stateComputerSupplier
+		BiFunction<CommittedStateSyncSender, EpochChangeSender, SyncedStateComputer<CommittedAtom>> stateComputerSupplier,
+		IntFunction<UInt256> weight
 	) {
 		ImmutableList<ECKeyPair> keys = Stream.generate(ECKeyPair::generateNew)
 			.limit(numNodes)
@@ -75,7 +77,10 @@ public final class DeterministicTest {
 			.collect(ImmutableList.toImmutableList());
 		this.network = new ControlledNetwork();
 		ValidatorSet initialValidatorSet = ValidatorSet.from(
-			pks.stream().map(pk -> Validator.from(pk, UInt256.ONE)).collect(Collectors.toList())
+			Streams.mapWithIndex(
+				pks.stream(),
+				(pk, index) -> Validator.from(pk, weight.apply((int) index))
+			).collect(Collectors.toList())
 		);
 
 		this.nodes = Streams.mapWithIndex(keys.stream(),
@@ -104,7 +109,8 @@ public final class DeterministicTest {
 		return new DeterministicTest(
 			numNodes,
 			SyncAndTimeout.SYNC,
-			(committedSender, epochSender) -> new SingleEpochRandomlySyncedStateComputer(random, committedSender)
+			(committedSender, epochSender) -> new SingleEpochRandomlySyncedStateComputer(random, committedSender),
+			index -> UInt256.ONE
 		);
 	}
 
@@ -118,7 +124,24 @@ public final class DeterministicTest {
 		return new DeterministicTest(
 			numNodes,
 			SyncAndTimeout.SYNC,
-			(committedSender, epochChangeSender) -> SingleEpochAlwaysSyncedStateComputer.INSTANCE
+			(committedSender, epochChangeSender) -> SingleEpochAlwaysSyncedStateComputer.INSTANCE,
+			index -> UInt256.ONE
+		);
+	}
+
+	/**
+	 * Creates a new "always synced BFT" Deterministic test solely on the BFT layer,
+	 *
+	 * @param numNodes number of nodes in the network
+	 * @param weight a mapping from node index to node weight
+	 * @return a deterministic test
+	 */
+	public static DeterministicTest createSingleEpochAlwaysSyncedTest(int numNodes, IntFunction<UInt256> weight) {
+		return new DeterministicTest(
+			numNodes,
+			SyncAndTimeout.SYNC,
+			(committedSender, epochChangeSender) -> SingleEpochAlwaysSyncedStateComputer.INSTANCE,
+			weight
 		);
 	}
 
@@ -132,7 +155,8 @@ public final class DeterministicTest {
 		return new DeterministicTest(
 			numNodes,
 			SyncAndTimeout.SYNC_AND_TIMEOUT,
-			(committedSender, epochChangeSender) -> SingleEpochAlwaysSyncedStateComputer.INSTANCE
+			(committedSender, epochChangeSender) -> SingleEpochAlwaysSyncedStateComputer.INSTANCE,
+			index -> UInt256.ONE
 		);
 	}
 
@@ -148,7 +172,8 @@ public final class DeterministicTest {
 		return new DeterministicTest(
 			numNodes,
 			SyncAndTimeout.NONE,
-			(committedSender, epochChangeSender) -> SingleEpochFailOnSyncStateComputer.INSTANCE
+			(committedSender, epochChangeSender) -> SingleEpochFailOnSyncStateComputer.INSTANCE,
+			index -> UInt256.ONE
 		);
 	}
 

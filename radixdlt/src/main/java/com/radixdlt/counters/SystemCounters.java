@@ -25,12 +25,13 @@ import java.util.Map;
 public interface SystemCounters {
 
 	enum CounterType {
-		CONSENSUS_INDIRECT_PARENT("consensus.indirect_parent"),
-		CONSENSUS_REJECTED("consensus.rejected"),
-		CONSENSUS_SYNC_SUCCESS("consensus.sync_success"),
-		CONSENSUS_SYNC_EXCEPTION("consensus.sync_exception"),
 		CONSENSUS_EVENTS_QUEUED_INITIAL("consensus.events_queued_initial"),
 		CONSENSUS_EVENTS_QUEUED_SYNC("consensus.events_queued_sync"),
+		CONSENSUS_INDIRECT_PARENT("consensus.indirect_parent"),
+		CONSENSUS_PROPOSALS_MADE("consensus.proposals_made"),
+		CONSENSUS_REJECTED("consensus.rejected"),
+		CONSENSUS_SYNC_EXCEPTION("consensus.sync_exception"),
+		CONSENSUS_SYNC_SUCCESS("consensus.sync_success"),
 		CONSENSUS_TIMEOUT("consensus.timeout"),
 		CONSENSUS_TIMEOUT_VIEW("consensus.timeout_view"),
 		CONSENSUS_VERTEXSTORE_SIZE("consensus.vertexstore_size"),
