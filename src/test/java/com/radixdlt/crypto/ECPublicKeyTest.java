@@ -5,9 +5,11 @@ import org.junit.Test;
 
 public class ECPublicKeyTest {
 	@Test
-	public void equalsContract() {
+	public void equalsContract() throws CryptoException {
+		ECPublicKey pk = ECPublicKey.fromBase64("AtuRjZPGw0b0BIYx46e0iKCaFU5EPnPx7/wLk6Vcursg");
 		EqualsVerifier.forClass(ECPublicKey.class)
-				.withIgnoredFields("uid") // hash of public key bytes.
-				.verify();
+			.withIgnoredFields("uid") // cached value
+			.withCachedHashCode("hashCode", "computeHashCode", pk)
+			.verify();
 	}
 }
