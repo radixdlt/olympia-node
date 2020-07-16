@@ -189,11 +189,11 @@ public class SimulationTest {
 				epochToNodeIndexMapper == null
 					? epoch -> BFTValidatorSet.from(
 						publicKeys.stream()
-							.map(pk -> BFTValidator.from(new BFTNode(pk), UInt256.ONE))
+							.map(pk -> BFTValidator.from(BFTNode.create(pk), UInt256.ONE))
 							.collect(Collectors.toList()))
 					: epochToNodeIndexMapper.andThen(indices -> BFTValidatorSet.from(
 						indices.mapToObj(nodes::get)
-							.map(kp -> BFTValidator.from(new BFTNode(kp.getPublicKey()), UInt256.ONE))
+							.map(kp -> BFTValidator.from(BFTNode.create(kp.getPublicKey()), UInt256.ONE))
 							.collect(Collectors.toList())));
 			return new SimulationTest(
 				ImmutableList.copyOf(nodes),

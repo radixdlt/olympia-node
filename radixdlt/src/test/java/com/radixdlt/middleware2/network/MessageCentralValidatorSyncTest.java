@@ -36,7 +36,6 @@ import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.epoch.GetEpochRequest;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.identifiers.EUID;
@@ -54,7 +53,6 @@ import org.junit.Test;
 
 public class MessageCentralValidatorSyncTest {
 	private BFTNode self;
-	private EUID selfEUID;
 	private AddressBook addressBook;
 	private MessageCentral messageCentral;
 	private MessageCentralValidatorSync sync;
@@ -62,9 +60,9 @@ public class MessageCentralValidatorSyncTest {
 	@Before
 	public void setUp() {
 		this.self = mock(BFTNode.class);
-		this.selfEUID = mock(EUID.class);
+		EUID selfEUID = mock(EUID.class);
 		ECPublicKey pubKey = mock(ECPublicKey.class);
-		when(pubKey.euid()).thenReturn(this.selfEUID);
+		when(pubKey.euid()).thenReturn(selfEUID);
 		when(self.getKey()).thenReturn(pubKey);
 		Universe universe = mock(Universe.class);
 		this.addressBook = mock(AddressBook.class);
@@ -81,9 +79,12 @@ public class MessageCentralValidatorSyncTest {
 
 	@Test
 	public void when_get_vertex_and_peer_doesnt_exist__should_receive_error() {
-		ECPublicKey key = ECKeyPair.generateNew().getPublicKey();
-		BFTNode node = new BFTNode(key);
-		when(addressBook.peer(key.euid())).thenReturn(Optional.empty());
+		BFTNode node = mock(BFTNode.class);
+		ECPublicKey key = mock(ECPublicKey.class);
+		EUID euid = mock(EUID.class);
+		when(key.euid()).thenReturn(euid);
+		when(node.getKey()).thenReturn(key);
+		when(addressBook.peer(euid)).thenReturn(Optional.empty());
 		assertThatThrownBy(() -> sync.sendGetVerticesRequest(mock(Hash.class), node, 1, new Object()))
 			.isInstanceOf(IllegalStateException.class);
 	}

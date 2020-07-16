@@ -73,7 +73,7 @@ public class AddressBookValidatorSetProvider {
 			.map(peers ->
 				peers.stream()
 					.sorted(Comparator.comparing(ECPublicKey::euid))
-					.map(BFTNode::new)
+					.map(BFTNode::create)
 					.map(p -> BFTValidator.from(p, UInt256.ONE))
 					.collect(ImmutableList.toImmutableList())
 			)

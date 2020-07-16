@@ -20,11 +20,20 @@ package com.radixdlt.consensus.bft;
 import com.radixdlt.crypto.ECPublicKey;
 import java.util.Objects;
 
+/**
+ * A node in a BFT network which can run BFT validation
+ */
 public final class BFTNode {
 	private final ECPublicKey key;
+	private final String simpleName;
 
-	public BFTNode(ECPublicKey key) {
+	private BFTNode(ECPublicKey key, String simpleName) {
 		this.key = Objects.requireNonNull(key);
+		this.simpleName = Objects.requireNonNull(simpleName);
+	}
+
+	public static BFTNode create(ECPublicKey key) {
+		return new BFTNode(key, key.euid().toString().substring(0, 6));
 	}
 
 	public ECPublicKey getKey() {
@@ -46,7 +55,7 @@ public final class BFTNode {
 		return Objects.equals(bftNodeId.key, this.key);
 	}
 
-	public String getShortName() {
-		return key.euid().toString().substring(0, 6);
+	public String getSimpleName() {
+		return simpleName;
 	}
 }

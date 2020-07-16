@@ -150,7 +150,7 @@ public final class EpochManager {
 		// If constructed the end of the previous epoch then broadcast new epoch to new validator set
 		// TODO: Move this into when lastConstructed is set
 		if (lastConstructed != null && lastConstructed.getEpoch() == ancestorMetadata.getEpoch()) {
-			log.info("{}: EPOCH_CHANGE: broadcasting next epoch", this.self::getShortName);
+			log.info("{}: EPOCH_CHANGE: broadcasting next epoch", this.self::getSimpleName);
 			for (BFTValidator validator : validatorSet.getValidators()) {
 				if (!validator.getNode().equals(self)) {
 					epochsRPCSender.sendGetEpochResponse(validator.getNode(), ancestorMetadata);
@@ -207,7 +207,7 @@ public final class EpochManager {
 		if (log.isInfoEnabled()) {
 			// Reduce complexity of epoch change log message, and make it easier to correlate with
 			// other logs.  Size reduced from circa 6Kib to approx 1Kib over ValidatorSet.toString().
-			StringBuilder epochMessage = new StringBuilder(this.self.getShortName());
+			StringBuilder epochMessage = new StringBuilder(this.self.getSimpleName());
 			epochMessage.append(": EPOCH_CHANGE: ");
 			epochMessage.append(' ').append(message);
 			epochMessage.append(" new epoch ").append(epochChange.getAncestor().getEpoch() + 1);
@@ -227,11 +227,11 @@ public final class EpochManager {
 	}
 
 	private void appendValidator(StringBuilder msg, BFTValidator v) {
-		msg.append(v.getNode().getShortName()).append(':').append(v.getPower());
+		msg.append(v.getNode().getSimpleName()).append(':').append(v.getPower());
 	}
 
 	private void processEndOfEpoch(VertexMetadata vertexMetadata) {
-		log.info("{}: END_OF_EPOCH: {}", this.self::getShortName, () -> vertexMetadata);
+		log.info("{}: END_OF_EPOCH: {}", this.self::getSimpleName, () -> vertexMetadata);
 		if (this.lastConstructed == null || this.lastConstructed.getEpoch() < vertexMetadata.getEpoch()) {
 			this.lastConstructed = vertexMetadata;
 
@@ -242,7 +242,7 @@ public final class EpochManager {
 	}
 
 	public void processGetEpochRequest(GetEpochRequest request) {
-		log.info("{}: GET_EPOCH_REQUEST: {}", this.self::getShortName, () -> request);
+		log.info("{}: GET_EPOCH_REQUEST: {}", this.self::getSimpleName, () -> request);
 
 		if (this.currentEpoch() == request.getEpoch()) {
 			epochsRPCSender.sendGetEpochResponse(request.getAuthor(), this.currentAncestor);
@@ -253,10 +253,10 @@ public final class EpochManager {
 	}
 
 	public void processGetEpochResponse(GetEpochResponse response) {
-		log.info("{}: GET_EPOCH_RESPONSE: {}", this.self::getShortName, () -> response);
+		log.info("{}: GET_EPOCH_RESPONSE: {}", this.self::getSimpleName, () -> response);
 
 		if (response.getEpochAncestor() == null) {
-			log.warn("{}: Received empty GetEpochResponse {}", this.self::getShortName, () -> response);
+			log.warn("{}: Received empty GetEpochResponse {}", this.self::getSimpleName, () -> response);
 			// TODO: retry
 			return;
 		}
@@ -265,14 +265,14 @@ public final class EpochManager {
 		if (ancestor.getEpoch() >= this.currentEpoch()) {
 			syncedStateComputer.syncTo(ancestor, Collections.singletonList(response.getAuthor()), null);
 		} else {
-			log.warn("{}: Received old epoch {}", this.self::getShortName, () -> response);
+			log.warn("{}: Received old epoch {}", this.self::getSimpleName, () -> response);
 		}
 	}
 
 	private void processConsensusEventInternal(ConsensusEvent consensusEvent) {
 		if (this.currentValidatorSet != null && !this.currentValidatorSet.containsNode(consensusEvent.getAuthor())) {
 			log.warn("{}: CONSENSUS_EVENT: Received event from author={} not in validator set={}",
-				this.self::getShortName, consensusEvent.getAuthor()::getShortName, () -> this.currentValidatorSet
+				this.self::getSimpleName, consensusEvent.getAuthor()::getSimpleName, () -> this.currentValidatorSet
 			);
 			return;
 		}
@@ -292,7 +292,7 @@ public final class EpochManager {
 	public void processConsensusEvent(ConsensusEvent consensusEvent) {
 		if (consensusEvent.getEpoch() > this.currentEpoch()) {
 			log.debug("{}: CONSENSUS_EVENT: Received higher epoch event: {} current epoch: {}",
-				this.self::getShortName, () -> consensusEvent, this::currentEpoch
+				this.self::getSimpleName, () -> consensusEvent, this::currentEpoch
 			);
 
 			// queue higher epoch events for later processing
@@ -308,7 +308,7 @@ public final class EpochManager {
 
 		if (consensusEvent.getEpoch() < this.currentEpoch()) {
 			log.warn("{}: CONSENSUS_EVENT: Received lower epoch event: {} current epoch: {}",
-				this.self::getShortName, () -> consensusEvent, this::currentEpoch
+				this.self::getSimpleName, () -> consensusEvent, this::currentEpoch
 			);
 			return;
 		}

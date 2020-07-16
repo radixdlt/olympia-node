@@ -42,6 +42,6 @@ public final class GetEpochRequest {
 
 	@Override
 	public String toString() {
-		return String.format("%s{author=%s epoch=%s}", this.getClass().getSimpleName(), this.sender.getShortName(), this.epoch);
+		return String.format("%s{author=%s epoch=%s}", this.getClass().getSimpleName(), this.sender.getSimpleName(), this.epoch);
 	}
 }

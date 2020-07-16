@@ -64,7 +64,7 @@ public final class PendingNewViews {
 		final BFTNode node = newView.getAuthor();
 		if (!validatorSet.containsNode(node)) {
 			// Not a valid validator
-			log.info("Ignoring new view from invalid author {}", node::getShortName);
+			log.info("Ignoring new view from invalid author {}", node::getSimpleName);
 			return Optional.empty();
 		}
 

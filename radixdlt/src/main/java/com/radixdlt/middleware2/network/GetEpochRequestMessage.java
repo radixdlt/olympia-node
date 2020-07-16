@@ -55,7 +55,7 @@ public class GetEpochRequestMessage extends Message {
 
 	@JsonProperty("author")
 	private void setSerializerAuthor(byte[] author) throws CryptoException {
-		this.author = (author == null) ? null : new BFTNode(new ECPublicKey(author));
+		this.author = (author == null) ? null : BFTNode.create(new ECPublicKey(author));
 	}
 
 	public BFTNode getAuthor() {

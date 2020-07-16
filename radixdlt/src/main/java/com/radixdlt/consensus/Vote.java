@@ -43,7 +43,7 @@ public final class Vote implements ConsensusEvent {
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	private final ECPublicKey author;
+	private final BFTNode author;
 
 	@JsonProperty("vertex_metadata")
 	@DsonOutput(Output.ALL)
@@ -59,10 +59,10 @@ public final class Vote implements ConsensusEvent {
 		@JsonProperty("vertex_metadata") VoteData voteData,
 		@JsonProperty("signature") ECDSASignature signature
 	) throws CryptoException {
-		this(new ECPublicKey(author), voteData, signature);
+		this(BFTNode.create(new ECPublicKey(author)), voteData, signature);
 	}
 
-	public Vote(ECPublicKey author, VoteData voteData, ECDSASignature signature) {
+	public Vote(BFTNode author, VoteData voteData, ECDSASignature signature) {
 		this.author = Objects.requireNonNull(author);
 		this.voteData = Objects.requireNonNull(voteData);
 		this.signature = signature;
@@ -75,7 +75,7 @@ public final class Vote implements ConsensusEvent {
 
 	@Override
 	public BFTNode getAuthor() {
-		return new BFTNode(author);
+		return author;
 	}
 
 	public VoteData getVoteData() {
@@ -89,13 +89,13 @@ public final class Vote implements ConsensusEvent {
 	@JsonProperty("author")
 	@DsonOutput(Output.ALL)
 	private byte[] getSerializerAuthor() {
-		return this.author == null ? null : this.author.getBytes();
+		return this.author == null ? null : this.author.getKey().getBytes();
 	}
 
 	@Override
 	public String toString() {
 		return String.format("%s{epoch=%s view=%s author=%s}", getClass().getSimpleName(),
-			this.getEpoch(), voteData.getProposed().getView(), author.euid().toString().substring(0, 6));
+			this.getEpoch(), voteData.getProposed().getView(), author.getSimpleName());
 	}
 
 	@Override

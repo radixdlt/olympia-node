@@ -149,7 +149,7 @@ public class CerberusModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private BFTNode self(@Named("self") ECKeyPair selfKey) {
-		return new BFTNode(selfKey.getPublicKey());
+		return BFTNode.create(selfKey.getPublicKey());
 	}
 
 	@Provides

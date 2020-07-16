@@ -97,7 +97,7 @@ public final class PendingVotes {
 		final BFTNode node = vote.getAuthor();
 		// Only process for valid validators and signatures
 		if (!validatorSet.containsNode(node)) {
-			log.info("Ignoring vote from invalid author {}", node::getShortName);
+			log.info("Ignoring vote from invalid author {}", node::getSimpleName);
 			return Optional.empty();
 		}
 

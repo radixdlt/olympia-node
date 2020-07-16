@@ -249,7 +249,7 @@ public class SimulationNetwork {
 		@Override
 		public void sendGetVerticesResponse(GetVerticesRequest originalRequest, ImmutableList<Vertex> vertices) {
 			SimulatedVerticesRequest request = (SimulatedVerticesRequest) originalRequest;
-			Object opaque = receivers.computeIfAbsent(new BFTNode(request.requestor), SimulatedNetworkImpl::new).opaqueMap.get(request.vertexId);
+			Object opaque = receivers.computeIfAbsent(BFTNode.create(request.requestor), SimulatedNetworkImpl::new).opaqueMap.get(request.vertexId);
 			GetVerticesResponse vertexResponse = new GetVerticesResponse(request.vertexId, vertices, opaque);
 			receivedMessages.onNext(MessageInTransit.newMessage(vertexResponse, thisNode.getKey(), request.requestor));
 		}
@@ -259,7 +259,7 @@ public class SimulationNetwork {
 			QuorumCertificate highestCommittedQC) {
 
 			SimulatedVerticesRequest request = (SimulatedVerticesRequest) originalRequest;
-			Object opaque = receivers.computeIfAbsent(new BFTNode(request.requestor), SimulatedNetworkImpl::new).opaqueMap.get(request.vertexId);
+			Object opaque = receivers.computeIfAbsent(BFTNode.create(request.requestor), SimulatedNetworkImpl::new).opaqueMap.get(request.vertexId);
 			GetVerticesErrorResponse vertexResponse = new GetVerticesErrorResponse(request.vertexId, highestQC, highestCommittedQC, opaque);
 			receivedMessages.onNext(MessageInTransit.newMessage(vertexResponse, thisNode.getKey(), request.requestor));
 		}
@@ -308,11 +308,11 @@ public class SimulationNetwork {
 	}
 
 	public SimulatedNetworkReceiver getNetworkRx(ECPublicKey forNode) {
-		return receivers.computeIfAbsent(new BFTNode(forNode), SimulatedNetworkImpl::new);
+		return receivers.computeIfAbsent(BFTNode.create(forNode), SimulatedNetworkImpl::new);
 	}
 
 	public SimulationSyncSender getSyncSender(ECPublicKey forNode) {
-		return receivers.computeIfAbsent(new BFTNode(forNode), SimulatedNetworkImpl::new);
+		return receivers.computeIfAbsent(BFTNode.create(forNode), SimulatedNetworkImpl::new);
 	}
 
 	public interface SimulationSyncSender extends SyncVerticesRPCSender, SyncEpochsRPCSender {

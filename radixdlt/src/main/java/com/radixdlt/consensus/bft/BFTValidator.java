@@ -73,6 +73,6 @@ public final class BFTValidator {
 
 	@Override
 	public String toString() {
-		return String.format("%s{node=%s power=%s}", getClass().getSimpleName(), this.node.getShortName(), this.power);
+		return String.format("%s{node=%s power=%s}", getClass().getSimpleName(), this.node.getSimpleName(), this.power);
 	}
 }

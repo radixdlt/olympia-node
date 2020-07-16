@@ -36,7 +36,6 @@ import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyViolationException;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.middleware2.ClientAtom;
@@ -56,8 +55,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class BFTEventReducerTest {
-    private static final ECKeyPair SELF_KEY = ECKeyPair.generateNew();
-
 	private BFTEventReducer reducer;
 	private ProposalGenerator proposalGenerator;
 	private ProposerElection proposerElection;
@@ -83,7 +80,7 @@ public class BFTEventReducerTest {
 		this.proposerElection = mock(ProposerElection.class);
 		this.validatorSet = mock(BFTValidatorSet.class);
 		this.counters = mock(SystemCounters.class);
-		this.self = new BFTNode(SELF_KEY.getPublicKey());
+		this.self = mock(BFTNode.class);
 
 		this.reducer = new BFTEventReducer(
 			self,

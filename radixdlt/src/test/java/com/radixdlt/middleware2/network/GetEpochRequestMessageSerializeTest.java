@@ -27,7 +27,7 @@ public class GetEpochRequestMessageSerializeTest extends SerializeMessageObject<
 	}
 
 	private static GetEpochRequestMessage get() {
-		BFTNode author = new BFTNode(ECKeyPair.generateNew().getPublicKey());
+		BFTNode author = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
 		return new GetEpochRequestMessage(author, 12345, 1);
 	}
 }

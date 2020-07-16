@@ -27,6 +27,7 @@ import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.VoteData;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.safety.SafetyState.Builder;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
@@ -40,6 +41,7 @@ import java.util.Optional;
  * Manages safety of the protocol.
  */
 public final class SafetyRules {
+	private final BFTNode self;
 	private final ECKeyPair selfKey; // TODO remove signing/address to separate identity management
 	private final Hasher hasher;
 	private final HashSigner signer;
@@ -53,6 +55,7 @@ public final class SafetyRules {
 		HashSigner signer
 	) {
 		this.selfKey = Objects.requireNonNull(selfKey);
+		this.self = BFTNode.create(selfKey.getPublicKey());
 		this.state = Objects.requireNonNull(initialState);
 		this.hasher = Objects.requireNonNull(hasher);
 		this.signer = Objects.requireNonNull(signer);
@@ -104,7 +107,7 @@ public final class SafetyRules {
 	public Proposal signProposal(Vertex proposedVertex, QuorumCertificate highestCommittedQC) {
 		final Hash vertexHash = this.hasher.hash(proposedVertex);
 		ECDSASignature signature = this.signer.sign(this.selfKey, vertexHash);
-		return new Proposal(proposedVertex, highestCommittedQC, this.selfKey.getPublicKey(), signature);
+		return new Proposal(proposedVertex, highestCommittedQC, this.self, signature);
 	}
 
 	private static VoteData constructVoteData(Vertex proposedVertex, VertexMetadata proposedVertexMetadata) {
@@ -136,7 +139,7 @@ public final class SafetyRules {
 		// TODO make signing more robust by including author in signed hash
 		ECDSASignature signature = this.signer.sign(this.selfKey, Hash.hash256(Longs.toByteArray(nextView.number())));
 		return new NewView(
-			selfKey.getPublicKey(),
+			this.self,
 			nextView,
 			highestQC,
 			highestCommittedQC,
@@ -176,6 +179,6 @@ public final class SafetyRules {
 
 		// TODO make signing more robust by including author in signed hash
 		ECDSASignature signature = this.signer.sign(this.selfKey, voteHash);
-		return new Vote(selfKey.getPublicKey(), voteData, signature);
+		return new Vote(this.self, voteData, signature);
 	}
 }

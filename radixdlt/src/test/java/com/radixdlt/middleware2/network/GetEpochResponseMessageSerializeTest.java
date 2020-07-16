@@ -28,7 +28,7 @@ public class GetEpochResponseMessageSerializeTest extends SerializeMessageObject
 	}
 
 	private static GetEpochResponseMessage get() {
-		BFTNode author = new BFTNode(ECKeyPair.generateNew().getPublicKey());
+		BFTNode author = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
 		return new GetEpochResponseMessage(author, 12345, VertexMetadata.ofGenesisAncestor());
 	}
 }

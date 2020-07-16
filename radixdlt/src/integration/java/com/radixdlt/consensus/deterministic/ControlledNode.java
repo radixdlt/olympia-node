@@ -102,7 +102,7 @@ class ControlledNode {
 		HashVerifier nullVerifier = (p, h, s) -> true;
 		VertexStoreFactory vertexStoreFactory = (vertex, qc, syncedStateComputer) ->
 			new VertexStore(vertex, qc, syncedStateComputer, syncVerticesRPCSender, sender, systemCounters);
-		BFTNode self = new BFTNode(key.getPublicKey());
+		BFTNode self = BFTNode.create(key.getPublicKey());
 		BFTFactory bftFactory =
 			(endOfEpochSender, pacemaker, vertexStore, proposerElection, validatorSet) -> {
 				final ProposalGenerator proposalGenerator = new MempoolProposalGenerator(vertexStore, mempool);

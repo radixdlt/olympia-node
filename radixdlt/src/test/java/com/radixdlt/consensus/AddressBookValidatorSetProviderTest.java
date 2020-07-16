@@ -23,6 +23,7 @@ import static org.mockito.Mockito.when;
 
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.network.addressbook.AddressBook;
 
 import com.radixdlt.network.addressbook.Peer;
@@ -34,6 +35,7 @@ public class AddressBookValidatorSetProviderTest {
 	@Test
 	public void when_quorum_size_is_one__then_should_emit_self() {
 		ECPublicKey self = mock(ECPublicKey.class);
+		when(self.euid()).thenReturn(EUID.ONE);
 		AddressBook addressBook = mock(AddressBook.class);
 		AddressBookValidatorSetProvider validatorSetProvider = new AddressBookValidatorSetProvider(self, addressBook, 1);
 		Peer peer = mock(Peer.class);

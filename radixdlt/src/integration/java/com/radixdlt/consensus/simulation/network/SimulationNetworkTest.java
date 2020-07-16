@@ -35,8 +35,8 @@ import org.junit.Test;
 public class SimulationNetworkTest {
 	private ECPublicKey validatorId1 = ECKeyPair.generateNew().getPublicKey();
 	private ECPublicKey validatorId2 = ECKeyPair.generateNew().getPublicKey();
-	private BFTNode node1 = new BFTNode(validatorId1);
-	private BFTNode node2 = new BFTNode(validatorId2);
+	private BFTNode node1 = BFTNode.create(validatorId1);
+	private BFTNode node2 = BFTNode.create(validatorId2);
 
 	@Test
 	public void when_send_new_view_to_self__then_should_receive_it() {

@@ -17,35 +17,16 @@
 
 package com.radixdlt.consensus.bft;
 
-import com.radixdlt.utils.UInt256;
+import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
-import nl.jqno.equalsverifier.EqualsVerifier;
+public class BFTNodeTest {
 
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.mock;
-
-public class BFTValidatorTest {
 	@Test
 	public void equalsContract() {
-		EqualsVerifier.forClass(BFTValidator.class)
+		EqualsVerifier.forClass(BFTNode.class)
+			.withIgnoredFields("simpleName")
 			.verify();
 	}
 
-	@Test
-	public void sensibleToString() {
-		String s = create().toString();
-		assertThat(s, containsString(BFTValidator.class.getSimpleName()));
-	}
-
-	@Test
-	public void testGetter() {
-		assertNotNull(create().getNode());
-	}
-
-	private static BFTValidator create() {
-		return BFTValidator.from(mock(BFTNode.class), UInt256.ONE);
-	}
 }

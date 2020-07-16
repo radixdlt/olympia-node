@@ -54,11 +54,11 @@ public class BFTValidatorSetTest {
 		ECKeyPair k4 = ECKeyPair.generateNew();
 		ECKeyPair k5 = ECKeyPair.generateNew(); // Rogue signature
 
-		BFTNode node1 = new BFTNode(k1.getPublicKey());
-		BFTNode node2 = new BFTNode(k2.getPublicKey());
-		BFTNode node3 = new BFTNode(k3.getPublicKey());
-		BFTNode node4 = new BFTNode(k4.getPublicKey());
-		BFTNode node5 = new BFTNode(k5.getPublicKey());
+		BFTNode node1 = BFTNode.create(k1.getPublicKey());
+		BFTNode node2 = BFTNode.create(k2.getPublicKey());
+		BFTNode node3 = BFTNode.create(k3.getPublicKey());
+		BFTNode node4 = BFTNode.create(k4.getPublicKey());
+		BFTNode node5 = BFTNode.create(k5.getPublicKey());
 
 		BFTValidator v1 = BFTValidator.from(node1, UInt256.ONE);
 		BFTValidator v2 = BFTValidator.from(node2, UInt256.ONE);
@@ -114,8 +114,8 @@ public class BFTValidatorSetTest {
 		ECKeyPair k1 = ECKeyPair.generateNew();
 		ECKeyPair k2 = ECKeyPair.generateNew();
 
-		BFTNode node1 = new BFTNode(k1.getPublicKey());
-		BFTNode node2 = new BFTNode(k2.getPublicKey());
+		BFTNode node1 = BFTNode.create(k1.getPublicKey());
+		BFTNode node2 = BFTNode.create(k2.getPublicKey());
 
 		BFTValidator v1 = BFTValidator.from(node1, UInt256.THREE);
 		BFTValidator v2 = BFTValidator.from(node2, UInt256.ONE);

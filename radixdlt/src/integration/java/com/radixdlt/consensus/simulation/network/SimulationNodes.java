@@ -132,7 +132,7 @@ public class SimulationNodes {
 				this.counters.get(key)
 			);
 
-		final BFTNode self = new BFTNode(key.getPublicKey());
+		final BFTNode self = BFTNode.create(key.getPublicKey());
 
 		final SimulatedStateComputer stateComputer = stateComputerSupplier.get();
 		BFTFactory bftFactory =

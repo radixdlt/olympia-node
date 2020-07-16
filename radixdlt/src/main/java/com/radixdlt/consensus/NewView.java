@@ -47,7 +47,7 @@ public final class NewView implements RequiresSyncConsensusEvent {
 	@DsonOutput(Output.ALL)
 	private final QuorumCertificate qc;
 
-	private final ECPublicKey author;
+	private final BFTNode author;
 
 	private final View view;
 
@@ -67,10 +67,10 @@ public final class NewView implements RequiresSyncConsensusEvent {
 		@JsonProperty("committedQC") QuorumCertificate committedQC,
 		@JsonProperty("signature") ECDSASignature signature
 	) throws CryptoException {
-		this(new ECPublicKey(author), view != null ? View.of(view.longValue()) : null, qc, committedQC, signature);
+		this(BFTNode.create(new ECPublicKey(author)), view != null ? View.of(view) : null, qc, committedQC, signature);
 	}
 
-	public NewView(ECPublicKey author, View view, QuorumCertificate qc, QuorumCertificate committedQC, ECDSASignature signature) {
+	public NewView(BFTNode author, View view, QuorumCertificate qc, QuorumCertificate committedQC, ECDSASignature signature) {
 		this.author = Objects.requireNonNull(author);
 		this.view = Objects.requireNonNull(view);
 		this.qc = Objects.requireNonNull(qc);
@@ -95,7 +95,7 @@ public final class NewView implements RequiresSyncConsensusEvent {
 
 	@Override
 	public BFTNode getAuthor() {
-		return new BFTNode(author);
+		return author;
 	}
 
 	public View getView() {
@@ -115,7 +115,7 @@ public final class NewView implements RequiresSyncConsensusEvent {
 	@JsonProperty("author")
 	@DsonOutput(Output.ALL)
 	private byte[] getSerializerAuthor() {
-		return this.author == null ? null : this.author.getBytes();
+		return this.author == null ? null : this.author.getKey().getBytes();
 	}
 
 	@Override
@@ -142,7 +142,7 @@ public final class NewView implements RequiresSyncConsensusEvent {
 	@Override
 	public String toString() {
 		return String.format("%s{epoch=%s view=%s qc=%s author=%s}",
-			getClass().getSimpleName(), this.getEpoch(), view, qc, author.euid().toString().substring(0, 6)
+			getClass().getSimpleName(), this.getEpoch(), view, qc, author.getSimpleName()
 		);
 	}
 }

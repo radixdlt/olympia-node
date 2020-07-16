@@ -48,7 +48,7 @@ public final class SingleEpochAlwaysSyncedStateComputer implements SimulatedStat
 	}
 
 	public SingleEpochAlwaysSyncedStateComputer(List<ECPublicKey> nodes) {
-		this(VertexMetadata.ofGenesisAncestor(), nodes.stream().map(BFTNode::new).collect(Collectors.toList()));
+		this(VertexMetadata.ofGenesisAncestor(), nodes.stream().map(BFTNode::create).collect(Collectors.toList()));
 	}
 
 	@Override

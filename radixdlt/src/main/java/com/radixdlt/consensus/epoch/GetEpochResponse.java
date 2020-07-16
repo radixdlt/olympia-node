@@ -42,6 +42,6 @@ public final class GetEpochResponse {
 
 	@Override
 	public String toString() {
-		return String.format("%s{author=%s ancestor=%s}", this.getClass().getSimpleName(), this.author.getShortName(), this.epochAncestor);
+		return String.format("%s{author=%s ancestor=%s}", this.getClass().getSimpleName(), this.author.getSimpleName(), this.epochAncestor);
 	}
 }

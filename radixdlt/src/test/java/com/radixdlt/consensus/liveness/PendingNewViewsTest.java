@@ -25,9 +25,6 @@ import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECDSASignatures;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.utils.UInt256;
 import java.util.Collections;
 import org.junit.Before;
@@ -52,8 +49,8 @@ public class PendingNewViewsTest {
 
 	@Test
 	public void when_inserting_newview_not_from_validator_set__no_qc_is_returned() {
-		NewView newView = makeSignedNewViewFor(ECKeyPair.generateNew().getPublicKey(), View.genesis());
-		NewView newView2 = makeSignedNewViewFor(ECKeyPair.generateNew().getPublicKey(), View.genesis());
+		NewView newView = makeSignedNewViewFor(mock(BFTNode.class), View.genesis());
+		NewView newView2 = makeSignedNewViewFor(mock(BFTNode.class), View.genesis());
 
 		BFTValidatorSet validatorSet = BFTValidatorSet.from(
 			Collections.singleton(BFTValidator.from(newView.getAuthor(), UInt256.ONE))
@@ -65,7 +62,7 @@ public class PendingNewViewsTest {
 
 	@Test
 	public void when_inserting_newview_not_signed__exception_is_thrown() {
-		NewView newView = makeUnsignedNewViewFor(ECKeyPair.generateNew().getPublicKey(), View.genesis());
+		NewView newView = makeUnsignedNewViewFor(mock(BFTNode.class), View.genesis());
 
 		BFTValidatorSet validatorSet = BFTValidatorSet.from(
 			Collections.singleton(BFTValidator.from(newView.getAuthor(), UInt256.ONE))
@@ -77,8 +74,7 @@ public class PendingNewViewsTest {
 
 	@Test
 	public void when_inserting_valid_and_accepted_newview__qc_is_formed() {
-		ECPublicKey author = mock(ECPublicKey.class);
-		when(author.verify(any(Hash.class), any())).thenReturn(true);
+		BFTNode author = mock(BFTNode.class);
 		NewView newView = makeSignedNewViewFor(author, View.genesis());
 
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
@@ -95,8 +91,7 @@ public class PendingNewViewsTest {
 
 	@Test
 	public void when_inserting_again__previous_newview_is_removed() {
-		ECPublicKey author = mock(ECPublicKey.class);
-		when(author.verify(any(Hash.class), any())).thenReturn(true);
+		BFTNode author = mock(BFTNode.class);
 		NewView newView = makeSignedNewViewFor(author, View.genesis());
 
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
@@ -125,21 +120,21 @@ public class PendingNewViewsTest {
 		assertEquals(1, this.pendingNewViews.previousNewViewsSize());
 	}
 
-	private NewView makeUnsignedNewViewFor(ECPublicKey author, View view) {
+	private NewView makeUnsignedNewViewFor(BFTNode author, View view) {
 		NewView newView = makeNewViewWithoutSignatureFor(author, view);
 		when(newView.getSignature()).thenReturn(Optional.empty());
 		return newView;
 	}
 
-	private NewView makeSignedNewViewFor(ECPublicKey author, View view) {
+	private NewView makeSignedNewViewFor(BFTNode author, View view) {
 		NewView newView = makeNewViewWithoutSignatureFor(author, view);
 		when(newView.getSignature()).thenReturn(Optional.of(new ECDSASignature()));
 		return newView;
 	}
 
-	private NewView makeNewViewWithoutSignatureFor(ECPublicKey author, View view) {
+	private NewView makeNewViewWithoutSignatureFor(BFTNode author, View view) {
 		NewView newView = mock(NewView.class);
-		when(newView.getAuthor()).thenReturn(new BFTNode(author));
+		when(newView.getAuthor()).thenReturn(author);
 		when(newView.getView()).thenReturn(view);
 		return newView;
 	}

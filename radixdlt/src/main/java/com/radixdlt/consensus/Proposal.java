@@ -45,7 +45,7 @@ public final class Proposal implements RequiresSyncConsensusEvent {
 	@DsonOutput(Output.ALL)
 	private final Vertex vertex;
 
-	private final ECPublicKey author;
+	private final BFTNode author;
 
 	@JsonProperty("signature")
 	@DsonOutput(Output.ALL)
@@ -62,10 +62,10 @@ public final class Proposal implements RequiresSyncConsensusEvent {
 		@JsonProperty("author") byte[] author,
 		@JsonProperty("signature") ECDSASignature signature
 	) throws CryptoException {
-		this(vertex, committedQC, new ECPublicKey(author), signature);
+		this(vertex, committedQC, BFTNode.create(new ECPublicKey(author)), signature);
 	}
 
-	public Proposal(Vertex vertex, QuorumCertificate committedQC, ECPublicKey author, ECDSASignature signature) {
+	public Proposal(Vertex vertex, QuorumCertificate committedQC, BFTNode author, ECDSASignature signature) {
 		this.vertex = Objects.requireNonNull(vertex);
 		this.committedQC = committedQC;
 		this.author = Objects.requireNonNull(author);
@@ -89,7 +89,7 @@ public final class Proposal implements RequiresSyncConsensusEvent {
 
 	@Override
 	public BFTNode getAuthor() {
-		return new BFTNode(author);
+		return author;
 	}
 
 	public Vertex getVertex() {
@@ -99,12 +99,12 @@ public final class Proposal implements RequiresSyncConsensusEvent {
 	@JsonProperty("author")
 	@DsonOutput(Output.ALL)
 	private byte[] getSerializerAuthor() {
-		return this.author == null ? null : this.author.getBytes();
+		return this.author == null ? null : this.author.getKey().getBytes();
 	}
 
 	@Override
 	public String toString() {
-		String who = author == null ? null : author.euid().toString().substring(0, 6);
+		String who = author == null ? null : author.getSimpleName();
 		return String.format("%s{vertex=%s author=%s}", getClass().getSimpleName(), vertex, who);
 	}
 

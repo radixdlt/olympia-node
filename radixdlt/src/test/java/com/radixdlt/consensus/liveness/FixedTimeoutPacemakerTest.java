@@ -25,11 +25,6 @@ import com.radixdlt.consensus.bft.ValidationState;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.Hash;
-
-import com.radixdlt.identifiers.EUID;
 import org.junit.Before;
 import com.radixdlt.utils.UInt256;
 import org.junit.Test;
@@ -167,8 +162,7 @@ public class FixedTimeoutPacemakerTest {
 	@Test
 	public void when_inserting_new_view_with_qc_from_previous_view__then_new_synced_view_is_returned() {
 		View view = View.of(2);
-		ECPublicKey author = ECKeyPair.generateNew().getPublicKey();
-		BFTNode node = new BFTNode(author);
+		BFTNode node = mock(BFTNode.class);
 
 		NewView newView = mock(NewView.class);
 		when(newView.getView()).thenReturn(view);
@@ -217,10 +211,7 @@ public class FixedTimeoutPacemakerTest {
 		when(newView.getQC()).thenReturn(qc);
 		when(newView.getView()).thenReturn(view);
 		when(newView.getSignature()).thenReturn(Optional.of(new ECDSASignature()));
-		ECPublicKey key = mock(ECPublicKey.class);
-		when(key.euid()).thenReturn(EUID.ONE);
-		BFTNode node = new BFTNode(key);
-		when(key.verify(any(Hash.class), any())).thenReturn(true);
+		BFTNode node = mock(BFTNode.class);
 		when(newView.getAuthor()).thenReturn(node);
 		return newView;
 	}

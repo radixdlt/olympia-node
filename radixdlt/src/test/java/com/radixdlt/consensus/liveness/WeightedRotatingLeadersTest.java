@@ -45,9 +45,8 @@ public class WeightedRotatingLeadersTest {
 	private ImmutableList<BFTValidator> validatorsInOrder;
 
 	private void setUp(int validatorSetSize, int sizeOfCache) {
-		this.validatorsInOrder = Stream.generate(() -> mock(ECPublicKey.class))
+		this.validatorsInOrder = Stream.generate(() -> mock(BFTNode.class))
 			.limit(validatorSetSize)
-			.map(BFTNode::new)
 			.map(node -> BFTValidator.from(node, UInt256.ONE))
 			.collect(ImmutableList.toImmutableList());
 

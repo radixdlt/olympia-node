@@ -76,7 +76,7 @@ public final class DeterministicTest {
 			.collect(ImmutableList.toImmutableList());
 		this.network = new ControlledNetwork();
 		BFTValidatorSet initialValidatorSet = BFTValidatorSet.from(
-			pks.stream().map(BFTNode::new).map(node -> BFTValidator.from(node, UInt256.ONE)).collect(Collectors.toList())
+			pks.stream().map(BFTNode::create).map(node -> BFTValidator.from(node, UInt256.ONE)).collect(Collectors.toList())
 		);
 
 		this.nodes = Streams.mapWithIndex(keys.stream(),

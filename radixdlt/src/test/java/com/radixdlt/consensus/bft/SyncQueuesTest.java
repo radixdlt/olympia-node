@@ -27,16 +27,13 @@ import com.radixdlt.consensus.RequiresSyncConsensusEvent;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.SyncQueues.SyncQueue;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 import org.junit.Test;
 
 public class SyncQueuesTest {
 	@Test
 	public void when_check_or_add_on_empty_queue__then_should_return_true() {
-		ECPublicKey key = ECKeyPair.generateNew().getPublicKey();
-		BFTNode node = new BFTNode(key);
+		BFTNode node = mock(BFTNode.class);
 		SyncQueues syncQueues = new SyncQueues(
 			ImmutableSet.of(node),
 			mock(SystemCounters.class)
@@ -50,8 +47,7 @@ public class SyncQueuesTest {
 
 	@Test
 	public void when_add_then_check_or_add_on_same_author__then_should_return_false() {
-		ECPublicKey key = ECKeyPair.generateNew().getPublicKey();
-		BFTNode node = new BFTNode(key);
+		BFTNode node = mock(BFTNode.class);
 		SyncQueues syncQueues = new SyncQueues(
 			ImmutableSet.of(node),
 			mock(SystemCounters.class)
@@ -67,8 +63,7 @@ public class SyncQueuesTest {
 
 	@Test
 	public void when_add__then_peek_on_hash_should_return_event() {
-		ECPublicKey key = ECKeyPair.generateNew().getPublicKey();
-		BFTNode node = new BFTNode(key);
+		BFTNode node = mock(BFTNode.class);
 		SyncQueues syncQueues = new SyncQueues(
 			ImmutableSet.of(node),
 			mock(SystemCounters.class)
