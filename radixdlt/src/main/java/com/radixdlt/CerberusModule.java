@@ -87,7 +87,6 @@ public class CerberusModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		// Configuration
-		bind(HashSigner.class).toInstance(ECKeyPair::sign);
 		bind(Hasher.class).to(DefaultHasher.class);
 		bind(HashVerifier.class).toInstance(ECPublicKey::verify);
 
@@ -119,6 +118,14 @@ public class CerberusModule extends AbstractModule {
 
 	@Provides
 	@Singleton
+	HashSigner hashSigner(
+		@Named("self") ECKeyPair selfKey
+	) {
+		return selfKey::sign;
+	}
+
+	@Provides
+	@Singleton
 	MessageCentralValidatorSync validatorSync(
 		BFTNode self,
 		Universe universe,
@@ -141,14 +148,14 @@ public class CerberusModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private BFTNode self(@Named("self") ECKeyPair selfKey) {
-		return BFTNode.create(selfKey.getPublicKey());
+	private BFTNode self(@Named("self") ECPublicKey publicKey) {
+		return BFTNode.create(publicKey);
 	}
 
 	@Provides
 	@Singleton
 	private BFTFactory bftFactory(
-		@Named("self") ECKeyPair selfKey,
+		BFTNode self,
 		BFTEventSender bftEventSender,
 		Mempool mempool,
 		Hasher hasher,
@@ -164,7 +171,7 @@ public class CerberusModule extends AbstractModule {
 			validatorSet
 		) ->
 			BFTBuilder.create()
-				.self(selfKey)
+				.self(self)
 				.eventSender(bftEventSender)
 				.mempool(mempool)
 				.hasher(hasher)

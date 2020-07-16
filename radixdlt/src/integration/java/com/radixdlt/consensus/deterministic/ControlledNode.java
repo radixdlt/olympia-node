@@ -82,11 +82,12 @@ class ControlledNode {
 
 		Mempool mempool = new EmptyMempool();
 		Hasher nullHasher = data -> Hash.ZERO_HASH;
-		HashSigner nullSigner = (k, h) -> new ECDSASignature();
+		HashSigner nullSigner = h -> new ECDSASignature();
+		BFTNode self = BFTNode.create(key.getPublicKey());
 		BFTFactory bftFactory =
 			(endOfEpochSender, pacemaker, vertexStore, proposerElection, validatorSet) ->
 				BFTBuilder.create()
-					.self(key)
+					.self(self)
 					.endOfEpochSender(endOfEpochSender)
 					.pacemaker(pacemaker)
 					.mempool(mempool)
@@ -106,7 +107,6 @@ class ControlledNode {
 		LocalTimeoutSender localTimeoutSender = (syncAndTimeout == SyncAndTimeout.SYNC_AND_TIMEOUT) ? sender : (v, t) -> { };
 		VertexStoreFactory vertexStoreFactory = (vertex, qc, syncedStateComputer) ->
 			new VertexStore(vertex, qc, syncedStateComputer, syncVerticesRPCSender, sender, systemCounters);
-		BFTNode self = BFTNode.create(key.getPublicKey());
 		this.epochManager = new EpochManager(
 			self,
 			stateComputer,

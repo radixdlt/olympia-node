@@ -18,7 +18,6 @@
 package com.radixdlt.consensus;
 
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
 
 /**
@@ -30,19 +29,17 @@ public interface HashSigner {
 	 * Sign the specified hash with the specified key.
 	 *
 	 * @param hash The hash to sign
-	 * @param key The key to sign with
 	 * @return The {@link ECDSASignature}
 	 */
-	ECDSASignature sign(ECKeyPair key, byte[] hash);
+	ECDSASignature sign(byte[] hash);
 
 	/**
 	 * Sign the specified hash with the specified key.
 	 *
 	 * @param hash The hash to sign
-	 * @param key The key to sign with
 	 * @return The {@link ECDSASignature}
 	 */
-	default ECDSASignature sign(ECKeyPair key, Hash hash) {
-		return sign(key, hash.toByteArray());
+	default ECDSASignature sign(Hash hash) {
+		return sign(hash.toByteArray());
 	}
 }

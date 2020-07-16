@@ -33,7 +33,6 @@ import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.mempool.Mempool;
 
@@ -52,7 +51,7 @@ public final class BFTBuilder {
 	private ProposerElection proposerElection;
 	private boolean verifySignatures = true;
 	private Hasher hasher = new DefaultHasher();
-	private HashSigner signer = ECKeyPair::sign;
+	private HashSigner signer;
 	private HashVerifier verifier = ECPublicKey::verify;
 
 	// BFT Stateful objects
@@ -61,7 +60,6 @@ public final class BFTBuilder {
 
 	// Instance specific objects
 	private BFTNode self;
-	private ECKeyPair selfKey;
 
 	private BFTBuilder() {
 	}
@@ -70,9 +68,8 @@ public final class BFTBuilder {
 		return new BFTBuilder();
 	}
 
-	public BFTBuilder self(ECKeyPair selfKey) {
-		this.selfKey = selfKey;
-		this.self = BFTNode.create(selfKey.getPublicKey());
+	public BFTBuilder self(BFTNode self) {
+		this.self = self;
 		return this;
 	}
 
@@ -138,7 +135,7 @@ public final class BFTBuilder {
 
 	public BFTEventProcessor build() {
 		final ProposalGenerator proposalGenerator = new MempoolProposalGenerator(vertexStore, mempool);
-		final SafetyRules safetyRules = new SafetyRules(selfKey, SafetyState.initialState(), hasher, signer);
+		final SafetyRules safetyRules = new SafetyRules(self, SafetyState.initialState(), hasher, signer);
 		// PendingVotes needs a hasher that produces unique values, as it indexes by hash
 		final PendingVotes pendingVotes = new PendingVotes(new DefaultHasher());
 

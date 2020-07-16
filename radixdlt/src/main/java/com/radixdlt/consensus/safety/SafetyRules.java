@@ -30,7 +30,6 @@ import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.safety.SafetyState.Builder;
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
 
 import com.radixdlt.utils.Longs;
@@ -42,20 +41,18 @@ import java.util.Optional;
  */
 public final class SafetyRules {
 	private final BFTNode self;
-	private final ECKeyPair selfKey; // TODO remove signing/address to separate identity management
 	private final Hasher hasher;
 	private final HashSigner signer;
 
 	private SafetyState state;
 
 	public SafetyRules(
-		ECKeyPair selfKey,
+		BFTNode self,
 		SafetyState initialState,
 		Hasher hasher,
 		HashSigner signer
 	) {
-		this.selfKey = Objects.requireNonNull(selfKey);
-		this.self = BFTNode.create(selfKey.getPublicKey());
+		this.self = self;
 		this.state = Objects.requireNonNull(initialState);
 		this.hasher = Objects.requireNonNull(hasher);
 		this.signer = Objects.requireNonNull(signer);
@@ -106,7 +103,7 @@ public final class SafetyRules {
 	 */
 	public Proposal signProposal(Vertex proposedVertex, QuorumCertificate highestCommittedQC) {
 		final Hash vertexHash = this.hasher.hash(proposedVertex);
-		ECDSASignature signature = this.signer.sign(this.selfKey, vertexHash);
+		ECDSASignature signature = this.signer.sign(vertexHash);
 		return new Proposal(proposedVertex, highestCommittedQC, this.self, signature);
 	}
 
@@ -137,7 +134,7 @@ public final class SafetyRules {
 	 */
 	public NewView signNewView(View nextView, QuorumCertificate highestQC, QuorumCertificate highestCommittedQC) {
 		// TODO make signing more robust by including author in signed hash
-		ECDSASignature signature = this.signer.sign(this.selfKey, Hash.hash256(Longs.toByteArray(nextView.number())));
+		ECDSASignature signature = this.signer.sign(Hash.hash256(Longs.toByteArray(nextView.number())));
 		return new NewView(
 			this.self,
 			nextView,
@@ -178,7 +175,7 @@ public final class SafetyRules {
 		this.state = safetyStateBuilder.build();
 
 		// TODO make signing more robust by including author in signed hash
-		ECDSASignature signature = this.signer.sign(this.selfKey, voteHash);
+		ECDSASignature signature = this.signer.sign(voteHash);
 		return new Vote(this.self, voteData, signature);
 	}
 }

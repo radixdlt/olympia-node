@@ -104,12 +104,12 @@ public class SimulationNodes {
 	private ConsensusRunner createBFTInstance(ECKeyPair key) {
 		final Mempool mempool = new EmptyMempool();
 		final Hasher nullHasher = o -> Hash.ZERO_HASH;
-		final HashSigner nullSigner = (k, h) -> new ECDSASignature();
+		final HashSigner nullSigner = h -> new ECDSASignature();
 		final BFTNode self = BFTNode.create(key.getPublicKey());
 		final BFTFactory bftFactory =
 			(endOfEpochSender, pacemaker, vertexStore, proposerElection, validatorSet) ->
 				BFTBuilder.create()
-					.self(key)
+					.self(self)
 					.endOfEpochSender(endOfEpochSender)
 					.pacemaker(pacemaker)
 					.mempool(mempool)
