@@ -53,16 +53,19 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class MessageCentralValidatorSyncTest {
-	private ECPublicKey selfKey;
 	private BFTNode self;
+	private EUID selfEUID;
 	private AddressBook addressBook;
 	private MessageCentral messageCentral;
 	private MessageCentralValidatorSync sync;
 
 	@Before
 	public void setUp() {
-		this.selfKey = ECKeyPair.generateNew().getPublicKey();
-		this.self = new BFTNode(selfKey);
+		this.self = mock(BFTNode.class);
+		this.selfEUID = mock(EUID.class);
+		ECPublicKey pubKey = mock(ECPublicKey.class);
+		when(pubKey.euid()).thenReturn(this.selfEUID);
+		when(self.getKey()).thenReturn(pubKey);
 		Universe universe = mock(Universe.class);
 		this.addressBook = mock(AddressBook.class);
 		this.messageCentral = mock(MessageCentral.class);
@@ -212,7 +215,7 @@ public class MessageCentralValidatorSyncTest {
 
 	@Test
 	public void when_subscribed_to_epoch_requests__then_should_receive_requests() {
-		ECPublicKey author = mock(ECPublicKey.class);
+		BFTNode author = mock(BFTNode.class);
 		doAnswer(inv -> {
 			MessageListener<GetEpochRequestMessage> messageListener = inv.getArgument(1);
 			messageListener.handleMessage(mock(Peer.class), new GetEpochRequestMessage(author, 12345, 1));
@@ -221,12 +224,12 @@ public class MessageCentralValidatorSyncTest {
 
 		TestObserver<GetEpochRequest> testObserver = sync.epochRequests().test();
 		testObserver.awaitCount(1);
-		testObserver.assertValueAt(0, r -> r.getEpoch() == 1 && r.getAuthor().getKey().equals(author));
+		testObserver.assertValueAt(0, r -> r.getEpoch() == 1 && r.getAuthor().equals(author));
 	}
 
 	@Test
 	public void when_subscribed_to_epoch_responses__then_should_receive_responses() {
-		ECPublicKey author = mock(ECPublicKey.class);
+		BFTNode author = mock(BFTNode.class);
 		VertexMetadata ancestor = mock(VertexMetadata.class);
 		doAnswer(inv -> {
 			MessageListener<GetEpochResponseMessage> messageListener = inv.getArgument(1);
@@ -236,6 +239,6 @@ public class MessageCentralValidatorSyncTest {
 
 		TestObserver<GetEpochResponse> testObserver = sync.epochResponses().test();
 		testObserver.awaitCount(1);
-		testObserver.assertValueAt(0, r -> r.getEpochAncestor().equals(ancestor) && r.getAuthor().getKey().equals(author));
+		testObserver.assertValueAt(0, r -> r.getEpochAncestor().equals(ancestor) && r.getAuthor().equals(author));
 	}
 }

@@ -19,6 +19,7 @@ package com.radixdlt.middleware2.network;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.serialization.DsonOutput;
@@ -33,7 +34,7 @@ public class GetEpochResponseMessage extends Message {
 	@DsonOutput(Output.ALL)
 	private final VertexMetadata ancestor;
 
-	private ECPublicKey author;
+	private BFTNode author;
 
 	GetEpochResponseMessage() {
 		// Serializer only
@@ -42,7 +43,7 @@ public class GetEpochResponseMessage extends Message {
 		this.ancestor = null;
 	}
 
-	GetEpochResponseMessage(ECPublicKey author, int magic, VertexMetadata ancestor) {
+	GetEpochResponseMessage(BFTNode author, int magic, VertexMetadata ancestor) {
 		super(magic);
 		this.author = Objects.requireNonNull(author);
 		this.ancestor = ancestor;
@@ -51,14 +52,15 @@ public class GetEpochResponseMessage extends Message {
 	@JsonProperty("author")
 	@DsonOutput(Output.ALL)
 	private byte[] getSerializerAuthor() {
-		return this.author == null ? null : this.author.getBytes();
-	}
-	@JsonProperty("author")
-	private void setSerializerAuthor(byte[] author) throws CryptoException {
-		this.author = (author == null) ? null : new ECPublicKey(author);
+		return this.author == null ? null : this.author.getKey().getBytes();
 	}
 
-	public ECPublicKey getAuthor() {
+	@JsonProperty("author")
+	private void setSerializerAuthor(byte[] author) throws CryptoException {
+		this.author = (author == null) ? null : new BFTNode(new ECPublicKey(author));
+	}
+
+	public BFTNode getAuthor() {
 		return author;
 	}
 

@@ -196,7 +196,7 @@ public class MessageCentralValidatorSync implements SyncVerticesRPCSender, SyncV
 			throw new IllegalStateException(String.format("Peer with pubkey %s not present", node));
 		}
 
-		final GetEpochRequestMessage epochRequest = new GetEpochRequestMessage(this.self.getKey(), this.magic, epoch);
+		final GetEpochRequestMessage epochRequest = new GetEpochRequestMessage(this.self, this.magic, epoch);
 		this.messageCentral.send(peer.get(), epochRequest);
 	}
 
@@ -208,7 +208,7 @@ public class MessageCentralValidatorSync implements SyncVerticesRPCSender, SyncV
 			throw new IllegalStateException(String.format("Peer with pubkey %s not present", node));
 		}
 
-		final GetEpochResponseMessage epochResponseMessage = new GetEpochResponseMessage(this.self.getKey(), this.magic, ancestor);
+		final GetEpochResponseMessage epochResponseMessage = new GetEpochResponseMessage(this.self, this.magic, ancestor);
 		this.messageCentral.send(peer.get(), epochResponseMessage);
 	}
 
@@ -216,7 +216,7 @@ public class MessageCentralValidatorSync implements SyncVerticesRPCSender, SyncV
 	public Observable<GetEpochRequest> epochRequests() {
 		return this.createObservable(
 			GetEpochRequestMessage.class,
-			(peer, msg) -> new GetEpochRequest(new BFTNode(msg.getAuthor()), msg.getEpoch())
+			(peer, msg) -> new GetEpochRequest(msg.getAuthor(), msg.getEpoch())
 		);
 	}
 
@@ -224,7 +224,7 @@ public class MessageCentralValidatorSync implements SyncVerticesRPCSender, SyncV
 	public Observable<GetEpochResponse> epochResponses() {
 		return this.createObservable(
 			GetEpochResponseMessage.class,
-			(peer, msg) -> new GetEpochResponse(new BFTNode(msg.getAuthor()), msg.getAncestor())
+			(peer, msg) -> new GetEpochResponse(msg.getAuthor(), msg.getAncestor())
 		);
 	}
 
