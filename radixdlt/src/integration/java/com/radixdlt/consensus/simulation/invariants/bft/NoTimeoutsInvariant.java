@@ -21,7 +21,6 @@ import com.radixdlt.consensus.simulation.TestInvariant;
 import com.radixdlt.consensus.simulation.network.SimulationNodes.RunningNetwork;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.identifiers.EUID;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import java.util.concurrent.TimeUnit;
@@ -32,11 +31,6 @@ import java.util.concurrent.TimeUnit;
  */
 public class NoTimeoutsInvariant implements TestInvariant {
 
-	// TODO: get this in a better way
-	private static String getShortName(EUID euid) {
-		return euid.toString().substring(0, 6);
-	}
-
 	@Override
 	public Observable<TestInvariantError> check(RunningNetwork network) {
 		return Observable.interval(1, TimeUnit.SECONDS, Schedulers.io())
@@ -44,7 +38,7 @@ public class NoTimeoutsInvariant implements TestInvariant {
 			.concatMap(node -> {
 				SystemCounters counters = network.getCounters(node);
 				if (counters.get(CounterType.CONSENSUS_TIMEOUT) > 0) {
-					return Observable.just(new TestInvariantError("Timeout at node " + getShortName(node.getPublicKey().euid())
+					return Observable.just(new TestInvariantError("Timeout at node " + node.getSimpleName()
 						+ " view " + counters.get(CounterType.CONSENSUS_TIMEOUT_VIEW)));
 				} else {
 					return Observable.empty();

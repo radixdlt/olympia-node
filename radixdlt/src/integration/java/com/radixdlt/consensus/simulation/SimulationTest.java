@@ -39,7 +39,6 @@ import com.radixdlt.consensus.simulation.configuration.SingleEpochAlwaysSyncedSt
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.consensus.simulation.network.SimulationNetwork;
 import com.radixdlt.consensus.simulation.network.SimulationNetwork.LatencyProvider;
 import com.radixdlt.utils.Pair;
@@ -62,7 +61,7 @@ import java.util.stream.Stream;
  * High level BFT Simulation Test Runner
  */
 public class SimulationTest {
-	private final ImmutableList<ECKeyPair> nodes;
+	private final ImmutableList<BFTNode> nodes;
 	private final LatencyProvider latencyProvider;
 	private final ImmutableMap<String, TestInvariant> checks;
 	private final int pacemakerTimeout;
@@ -71,7 +70,7 @@ public class SimulationTest {
 	private final View epochHighView;
 
 	private SimulationTest(
-		ImmutableList<ECKeyPair> nodes,
+		ImmutableList<BFTNode> nodes,
 		LatencyProvider latencyProvider,
 		int pacemakerTimeout,
 		View epochHighView,
@@ -91,7 +90,7 @@ public class SimulationTest {
 	public static class Builder {
 		private final DroppingLatencyProvider latencyProvider = new DroppingLatencyProvider();
 		private final ImmutableMap.Builder<String, TestInvariant> checksBuilder = ImmutableMap.builder();
-		private List<ECKeyPair> nodes = Collections.singletonList(ECKeyPair.generateNew());
+		private List<BFTNode> nodes = Collections.singletonList(BFTNode.create(ECKeyPair.generateNew().getPublicKey()));
 		private int pacemakerTimeout = 12 * SimulationNetwork.DEFAULT_LATENCY;
 		private boolean getVerticesRPCEnabled = true;
 		private View epochHighView = null;
@@ -101,8 +100,7 @@ public class SimulationTest {
 		}
 
 		public Builder addProposalDropper() {
-			ImmutableList<ECPublicKey> keys = nodes.stream().map(ECKeyPair::getPublicKey).collect(ImmutableList.toImmutableList());
-			this.latencyProvider.addDropper(new OneProposalPerViewDropper(keys, new Random()));
+			this.latencyProvider.addDropper(new OneProposalPerViewDropper(ImmutableList.copyOf(nodes), new Random()));
 			return this;
 		}
 
@@ -112,7 +110,10 @@ public class SimulationTest {
 		}
 
 		public Builder numNodes(int numNodes) {
-			this.nodes = Stream.generate(ECKeyPair::generateNew).limit(numNodes).collect(Collectors.toList());
+			this.nodes = Stream.generate(ECKeyPair::generateNew)
+				.limit(numNodes)
+				.map(kp -> BFTNode.create(kp.getPublicKey()))
+				.collect(Collectors.toList());
 			return this;
 		}
 
@@ -120,10 +121,13 @@ public class SimulationTest {
 			if (latencies.length != numNodes) {
 				throw new IllegalArgumentException(String.format("Number of latencies (%d) not equal to numNodes (%d)", numNodes, latencies.length));
 			}
-			this.nodes = Stream.generate(ECKeyPair::generateNew).limit(numNodes).collect(Collectors.toList());
-			Map<ECPublicKey, Integer> nodeLatencies = IntStream.range(0, numNodes)
+			this.nodes = Stream.generate(ECKeyPair::generateNew)
+				.limit(numNodes)
+				.map(kp -> BFTNode.create(kp.getPublicKey()))
+				.collect(Collectors.toList());
+			Map<BFTNode, Integer> nodeLatencies = IntStream.range(0, numNodes)
 				.boxed()
-				.collect(Collectors.toMap(i -> this.nodes.get(i).getPublicKey(), i -> latencies[i]));
+				.collect(Collectors.toMap(i -> this.nodes.get(i), i -> latencies[i]));
 			this.latencyProvider.setBase(msg -> Math.max(nodeLatencies.get(msg.getSender()), nodeLatencies.get(msg.getReceiver())));
 			return this;
 		}
@@ -184,16 +188,15 @@ public class SimulationTest {
 		}
 
 		public SimulationTest build() {
-			final List<ECPublicKey> publicKeys = nodes.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toList());
 			Function<Long, BFTValidatorSet> epochToValidatorSetMapping =
 				epochToNodeIndexMapper == null
 					? epoch -> BFTValidatorSet.from(
-						publicKeys.stream()
-							.map(pk -> BFTValidator.from(BFTNode.create(pk), UInt256.ONE))
+						nodes.stream()
+							.map(node -> BFTValidator.from(node, UInt256.ONE))
 							.collect(Collectors.toList()))
 					: epochToNodeIndexMapper.andThen(indices -> BFTValidatorSet.from(
 						indices.mapToObj(nodes::get)
-							.map(kp -> BFTValidator.from(BFTNode.create(kp.getPublicKey()), UInt256.ONE))
+							.map(node -> BFTValidator.from(node, UInt256.ONE))
 							.collect(Collectors.toList())));
 			return new SimulationTest(
 				ImmutableList.copyOf(nodes),
@@ -255,9 +258,8 @@ public class SimulationTest {
 			.build();
 
 		final Supplier<SimulatedStateComputer> stateComputerSupplier;
-		final List<ECPublicKey> publicKeys = nodes.stream().map(ECKeyPair::getPublicKey).collect(Collectors.toList());
 		if (epochHighView == null) {
-			stateComputerSupplier = () -> new SingleEpochAlwaysSyncedStateComputer(publicKeys);
+			stateComputerSupplier = () -> new SingleEpochAlwaysSyncedStateComputer(nodes);
 		} else {
 			stateComputerSupplier = () -> new ChangingEpochSyncedStateComputer(epochHighView, validatorSetMapping);
 		}

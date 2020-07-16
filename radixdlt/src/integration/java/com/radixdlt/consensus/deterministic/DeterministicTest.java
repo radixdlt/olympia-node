@@ -59,8 +59,6 @@ public final class DeterministicTest {
 	private final ImmutableList<BFTNode> bftNodes;
 	private final ControlledNetwork network;
 
-
-
 	private DeterministicTest(
 		int numNodes,
 		SyncAndTimeout syncAndTimeout,

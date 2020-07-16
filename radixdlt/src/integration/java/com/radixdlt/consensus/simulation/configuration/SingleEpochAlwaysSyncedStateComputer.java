@@ -24,7 +24,6 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.simulation.network.SimulationNodes.SimulatedStateComputer;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.utils.UInt256;
 import io.reactivex.rxjava3.core.Observable;
@@ -47,8 +46,8 @@ public final class SingleEpochAlwaysSyncedStateComputer implements SimulatedStat
 		);
 	}
 
-	public SingleEpochAlwaysSyncedStateComputer(List<ECPublicKey> nodes) {
-		this(VertexMetadata.ofGenesisAncestor(), nodes.stream().map(BFTNode::create).collect(Collectors.toList()));
+	public SingleEpochAlwaysSyncedStateComputer(List<BFTNode> nodes) {
+		this(VertexMetadata.ofGenesisAncestor(), nodes);
 	}
 
 	@Override

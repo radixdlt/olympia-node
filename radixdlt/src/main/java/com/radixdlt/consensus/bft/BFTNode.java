@@ -22,6 +22,9 @@ import java.util.Objects;
 
 /**
  * A node in a BFT network which can run BFT validation
+ *
+ * TODO: turn this into an interface so that an ECPublicKey is not required
+ * TODO: Serialization of BFT messages are currently what prevent this from happening
  */
 public final class BFTNode {
 	private final ECPublicKey key;
