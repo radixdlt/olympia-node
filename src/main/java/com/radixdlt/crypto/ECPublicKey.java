@@ -39,6 +39,7 @@ public final class ECPublicKey {
 	private final byte[] publicKey;
 
 	private final Supplier<EUID> uid = Suppliers.memoize(this::computeUID);
+	private final int hashCode;
 
 	@JsonCreator
 	private static ECPublicKey fromPublicKey(byte[] key) throws CryptoException {
@@ -49,6 +50,10 @@ public final class ECPublicKey {
 		try {
 			validatePublic(key);
 			this.publicKey = Arrays.copyOf(key, key.length);
+			// As ECPublicKey instances are commonly used to look up associated
+			// data in HashMaps and/or used as keys in HashMaps, there is minimal
+			// performance benefits, and some costs, in computing this lazily.
+			this.hashCode = computeHashCode();
 		} catch (CryptoException ex) {
 			throw ex;
 		} catch (Exception ex) {
@@ -92,6 +97,10 @@ public final class ECPublicKey {
 		return this.publicKey;
 	}
 
+	public int length() {
+		return publicKey.length;
+	}
+
 	public ECPoint getPublicPoint() {
 		return ECKeyUtils.spec().getCurve().decodePoint(this.publicKey);
 	}
@@ -112,9 +121,17 @@ public final class ECPublicKey {
 		}
 	}
 
+	public byte[] encrypt(byte[] data) throws ECIESException {
+		return ECIES.encrypt(data, this);
+	}
+
+	public String toBase64() {
+		return Bytes.toBase64String(this.publicKey);
+	}
+
 	@Override
 	public int hashCode() {
-		return Arrays.hashCode(this.getBytes());
+		return this.hashCode;
 	}
 
 	@Override
@@ -124,7 +141,7 @@ public final class ECPublicKey {
 		}
 		if (object instanceof ECPublicKey) {
 			ECPublicKey other = (ECPublicKey) object;
-			return Arrays.equals(other.publicKey, this.publicKey);
+			return this.hashCode() == other.hashCode() && Arrays.equals(this.publicKey, other.publicKey);
 		}
 		return false;
 	}
@@ -134,19 +151,11 @@ public final class ECPublicKey {
 		return String.format("%s[%s]", getClass().getSimpleName(), toBase64());
 	}
 
-	public String toBase64() {
-		return Bytes.toBase64String(this.publicKey);
+	private int computeHashCode() {
+		return Arrays.hashCode(this.getBytes());
 	}
 
 	private EUID computeUID() {
 		return EUID.hash256(getBytes());
-	}
-
-	public int length() {
-		return publicKey.length;
-	}
-
-	public byte[] encrypt(byte[] data) throws ECIESException {
-		return ECIES.encrypt(data, this);
 	}
 }

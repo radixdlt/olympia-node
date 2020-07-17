@@ -517,7 +517,9 @@ public class UInt256Test {
 
 	@Test
 	public void equalsContract() {
-		EqualsVerifier.forClass(UInt256.class).verify();
+		EqualsVerifier.forClass(UInt256.class)
+			.withNonnullFields("high", "low")
+			.verify();
 	}
 
 	/**

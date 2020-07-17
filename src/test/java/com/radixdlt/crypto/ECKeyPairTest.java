@@ -48,8 +48,8 @@ public class ECKeyPairTest {
 	@Test
 	public void equalsContract() {
 		EqualsVerifier.forClass(ECKeyPair.class)
-				.withIgnoredFields("publicKey") // public key is derived from used private key.
-				.verify();
+			.withIgnoredFields("publicKey") // public key is derived from used private key.
+			.verify();
 	}
 
 	@Test
@@ -108,13 +108,6 @@ public class ECKeyPairTest {
 	public void checkKeyPairEquals() {
 		EqualsVerifier.forClass(ECKeyPair.class)
 			.withIgnoredFields("publicKey") // Computed
-			.verify();
-	}
-
-	@Test
-	public void checkPublicKeyEquals() {
-		EqualsVerifier.forClass(ECPublicKey.class)
-			.withIgnoredFields("uid") // Computed and cached
 			.verify();
 	}
 

@@ -759,7 +759,7 @@ public final class UInt256 implements Comparable<UInt256> {
 
 	@Override
 	public int hashCode() {
-		return Objects.hashCode(this.high) * 31 + Objects.hashCode(this.low);
+		return this.high.hashCode() * 31 + this.low.hashCode();
 	}
 
 	@Override
