@@ -103,7 +103,6 @@ public final class EpochManager {
 	private final BFTFactory bftFactory;
 
 	private VertexMetadata lastConstructed = null;
-	private BFTValidatorSet currentValidatorSet;
 	private VertexMetadata currentAncestor;
 	private VertexStoreEventProcessor vertexStoreEventProcessor = EmptyVertexStoreEventProcessor.INSTANCE;
 	private BFTEventProcessor bftEventProcessor = EmptyBFTEventProcessor.INSTANCE;
@@ -159,7 +158,6 @@ public final class EpochManager {
 		}
 
 		this.currentAncestor = ancestorMetadata;
-		this.currentValidatorSet = validatorSet;
 		this.counters.set(CounterType.EPOCH_MANAGER_EPOCH, nextEpoch);
 
 		final BFTEventProcessor bftEventProcessor;
@@ -270,14 +268,6 @@ public final class EpochManager {
 	}
 
 	private void processConsensusEventInternal(ConsensusEvent consensusEvent) {
-		if (this.currentValidatorSet != null && !this.currentValidatorSet.containsNode(consensusEvent.getAuthor())) {
-			log.warn("{}: CONSENSUS_EVENT: Received event from author={} not in validator set={}",
-				this.self::getSimpleName, consensusEvent.getAuthor()::getSimpleName, () -> this.currentValidatorSet
-			);
-			return;
-		}
-		// TODO: Add the rest of consensus event verification here including signature verification
-
 		if (consensusEvent instanceof NewView) {
 			bftEventProcessor.processNewView((NewView) consensusEvent);
 		} else if (consensusEvent instanceof Proposal) {

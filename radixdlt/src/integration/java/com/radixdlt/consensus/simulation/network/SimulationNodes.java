@@ -119,7 +119,7 @@ public class SimulationNodes {
 					.counters(counters.get(self))
 					.hasher(nullHasher)
 					.signer(nullSigner)
-					.verifySignatures(false)
+					.verifyAuthors(false)
 					.build();
 
 		final ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(daemonThreads("TimeoutSender"));

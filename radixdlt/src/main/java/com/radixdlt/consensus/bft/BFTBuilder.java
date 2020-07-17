@@ -49,7 +49,7 @@ public final class BFTBuilder {
 	// BFT Configuration objects
 	private BFTValidatorSet validatorSet;
 	private ProposerElection proposerElection;
-	private boolean verifySignatures = true;
+	private boolean verifyAuthors = true;
 	private Hasher hasher = new DefaultHasher();
 	private HashSigner signer;
 	private HashVerifier verifier = ECPublicKey::verify;
@@ -83,8 +83,8 @@ public final class BFTBuilder {
 		return this;
 	}
 
-	public BFTBuilder verifySignatures(boolean verifySignatures) {
-		this.verifySignatures = verifySignatures;
+	public BFTBuilder verifyAuthors(boolean verifyAuthors) {
+		this.verifyAuthors = verifyAuthors;
 		return this;
 	}
 
@@ -169,12 +169,13 @@ public final class BFTBuilder {
 			syncQueues
 		);
 
-		if (!verifySignatures) {
+		if (!verifyAuthors) {
 			return preprocessor;
 		}
 
 		return new BFTEventVerifier(
 			self,
+			validatorSet,
 			preprocessor,
 			hasher,
 			verifier

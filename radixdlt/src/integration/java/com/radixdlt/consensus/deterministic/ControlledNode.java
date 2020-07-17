@@ -98,7 +98,7 @@ class ControlledNode {
 					.counters(systemCounters)
 					.hasher(nullHasher)
 					.signer(nullSigner)
-					.verifySignatures(false)
+					.verifyAuthors(false)
 					.build();
 
 		SyncVerticesRPCSender syncVerticesRPCSender = (syncAndTimeout != SyncAndTimeout.NONE)
