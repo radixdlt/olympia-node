@@ -21,7 +21,6 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.RequiresSyncConsensusEvent;
 import com.radixdlt.consensus.VertexMetadata;
@@ -34,10 +33,7 @@ public class SyncQueuesTest {
 	@Test
 	public void when_check_or_add_on_empty_queue__then_should_return_true() {
 		BFTNode node = mock(BFTNode.class);
-		SyncQueues syncQueues = new SyncQueues(
-			ImmutableSet.of(node),
-			mock(SystemCounters.class)
-		);
+		SyncQueues syncQueues = new SyncQueues(mock(SystemCounters.class));
 
 		RequiresSyncConsensusEvent event = mock(RequiresSyncConsensusEvent.class);
 		when(event.getAuthor()).thenReturn(node);
@@ -48,10 +44,7 @@ public class SyncQueuesTest {
 	@Test
 	public void when_add_then_check_or_add_on_same_author__then_should_return_false() {
 		BFTNode node = mock(BFTNode.class);
-		SyncQueues syncQueues = new SyncQueues(
-			ImmutableSet.of(node),
-			mock(SystemCounters.class)
-		);
+		SyncQueues syncQueues = new SyncQueues(mock(SystemCounters.class));
 
 		RequiresSyncConsensusEvent event0 = mock(RequiresSyncConsensusEvent.class);
 		when(event0.getAuthor()).thenReturn(node);
@@ -64,10 +57,7 @@ public class SyncQueuesTest {
 	@Test
 	public void when_add__then_peek_on_hash_should_return_event() {
 		BFTNode node = mock(BFTNode.class);
-		SyncQueues syncQueues = new SyncQueues(
-			ImmutableSet.of(node),
-			mock(SystemCounters.class)
-		);
+		SyncQueues syncQueues = new SyncQueues(mock(SystemCounters.class));
 
 		RequiresSyncConsensusEvent event0 = mock(RequiresSyncConsensusEvent.class);
 		Hash vertexId = mock(Hash.class);

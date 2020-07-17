@@ -17,7 +17,6 @@
 
 package com.radixdlt.consensus.bft;
 
-import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.DefaultHasher;
 import com.radixdlt.consensus.HashSigner;
@@ -153,12 +152,7 @@ public final class BFTBuilder {
 			counters
 		);
 
-		SyncQueues syncQueues = new SyncQueues(
-			validatorSet.getValidators().stream()
-				.map(BFTValidator::getNode)
-				.collect(ImmutableSet.toImmutableSet()),
-			counters
-		);
+		SyncQueues syncQueues = new SyncQueues(counters);
 
 		BFTEventPreprocessor preprocessor = new BFTEventPreprocessor(
 			self,
