@@ -127,7 +127,7 @@ public class CerberusModule extends AbstractModule {
 	@Provides
 	@Singleton
 	MessageCentralValidatorSync validatorSync(
-		BFTNode self,
+		@Named("self") BFTNode self,
 		Universe universe,
 		AddressBook addressBook,
 		MessageCentral messageCentral
@@ -138,7 +138,7 @@ public class CerberusModule extends AbstractModule {
 	@Provides
 	@Singleton
 	MessageCentralBFTNetwork bftNetwork(
-		BFTNode self,
+		@Named("self") BFTNode self,
 		Universe universe,
 		AddressBook addressBook,
 		MessageCentral messageCentral
@@ -148,14 +148,8 @@ public class CerberusModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private BFTNode self(@Named("self") ECPublicKey publicKey) {
-		return BFTNode.create(publicKey);
-	}
-
-	@Provides
-	@Singleton
 	private BFTFactory bftFactory(
-		BFTNode self,
+		@Named("self") BFTNode self,
 		BFTEventSender bftEventSender,
 		Mempool mempool,
 		Hasher hasher,
@@ -189,7 +183,7 @@ public class CerberusModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private EpochManager epochManager(
-		BFTNode selfId,
+		@Named("self") BFTNode self,
 		SyncedRadixEngine syncedRadixEngine,
 		BFTFactory bftFactory,
 		SyncEpochsRPCSender syncEpochsRPCSender,
@@ -200,7 +194,7 @@ public class CerberusModule extends AbstractModule {
 		SystemCounters counters
 	) {
 		return new EpochManager(
-			selfId,
+			self,
 			syncedRadixEngine,
 			syncEpochsRPCSender,
 			scheduledTimeoutSender,

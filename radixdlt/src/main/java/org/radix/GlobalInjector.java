@@ -25,6 +25,7 @@ import com.google.inject.Scopes;
 import com.google.inject.name.Names;
 import com.radixdlt.CerberusModule;
 import com.radixdlt.DefaultSerialization;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.identifiers.RadixAddress;
@@ -73,6 +74,7 @@ public class GlobalInjector {
 				bind(ECKeyPair.class).annotatedWith(Names.named("self")).toProvider(SelfKeyPairProvider.class);
 				bind(ECPublicKey.class).annotatedWith(Names.named("self")).toProvider(SelfPublicKeyProvider.class);
 				bind(RadixAddress.class).annotatedWith(Names.named("self")).toProvider(SelfAddressProvider.class);
+				bind(BFTNode.class).annotatedWith(Names.named("self")).toProvider(SelfBFTNodeProvider.class);
 
 				bind(Serialization.class).toProvider(DefaultSerialization::getInstance);
 				bind(Events.class).toProvider(Events::getInstance);
@@ -155,6 +157,20 @@ public class GlobalInjector {
 		@Override
 		public RadixAddress get() {
 			return new RadixAddress((byte) this.universe.getMagic(), this.localSystem.getKey());
+		}
+	}
+
+	static class SelfBFTNodeProvider implements Provider<BFTNode> {
+		private final LocalSystem localSystem;
+
+		@Inject
+		SelfBFTNodeProvider(LocalSystem localSystem) {
+			this.localSystem = localSystem;
+		}
+
+		@Override
+		public BFTNode get() {
+			return BFTNode.create(this.localSystem.getKey());
 		}
 	}
 
