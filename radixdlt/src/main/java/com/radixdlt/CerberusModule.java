@@ -22,6 +22,7 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 import com.radixdlt.api.LedgerRx;
+import com.radixdlt.api.SubmissionErrorsRx;
 import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.bft.BFTBuilder;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
@@ -38,6 +39,9 @@ import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.VertexStoreEventsRx;
+import com.radixdlt.mempool.SubmissionControl;
+import com.radixdlt.mempool.SubmissionControlImpl;
+import com.radixdlt.mempool.SubmissionControlImpl.SubmissionControlSender;
 import com.radixdlt.middleware2.InternalMessagePasser;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.ProposerElectionFactory;
@@ -64,12 +68,14 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.LedgerAtom;
+import com.radixdlt.middleware2.converters.AtomToClientAtomConverter;
 import com.radixdlt.middleware2.network.MessageCentralBFTNetwork;
 import com.radixdlt.middleware2.network.MessageCentralValidatorSync;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.properties.RuntimeProperties;
+import com.radixdlt.serialization.Serialization;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.ThreadFactories;
 import java.util.Comparator;
@@ -95,6 +101,8 @@ public class CerberusModule extends AbstractModule {
 		bind(LocalTimeoutSender.class).to(ScheduledLocalTimeoutSender.class);
 
 		// Local messages
+		bind(SubmissionControlSender.class).to(InternalMessagePasser.class);
+		bind(SubmissionErrorsRx.class).to(InternalMessagePasser.class);
 		bind(VertexStoreEventsRx.class).to(InternalMessagePasser.class);
 		bind(VertexStoreEventSender.class).to(InternalMessagePasser.class);
 		bind(CommittedStateSyncSender.class).to(InternalMessagePasser.class);
@@ -114,6 +122,24 @@ public class CerberusModule extends AbstractModule {
 		// Network BFT messages
 		bind(BFTEventSender.class).to(MessageCentralBFTNetwork.class);
 		bind(ConsensusEventsRx.class).to(MessageCentralBFTNetwork.class);
+	}
+
+	@Provides
+	@Singleton
+	SubmissionControl submissionControl(
+		Mempool mempool,
+		RadixEngine<LedgerAtom> radixEngine,
+		Serialization serialization,
+		AtomToClientAtomConverter converter,
+		SubmissionControlSender submissionControlSender
+	) {
+		return new SubmissionControlImpl(
+			mempool,
+			radixEngine,
+			serialization,
+			converter,
+			submissionControlSender
+		);
 	}
 
 	@Provides

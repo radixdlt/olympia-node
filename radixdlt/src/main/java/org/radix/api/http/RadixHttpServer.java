@@ -18,6 +18,7 @@
 package org.radix.api.http;
 
 import com.radixdlt.api.LedgerRx;
+import com.radixdlt.api.SubmissionErrorsRx;
 import com.radixdlt.consensus.ConsensusRunner;
 import com.google.common.collect.EvictingQueue;
 import com.google.common.collect.Lists;
@@ -99,6 +100,7 @@ public final class RadixHttpServer {
 	private Undertow server;
 
 	public RadixHttpServer(
+		SubmissionErrorsRx submissionErrorsRx,
 		LedgerRx ledgerRx,
 		ConsensusRunner consensusRunner,
 		LedgerEntryStore store,
@@ -117,6 +119,7 @@ public final class RadixHttpServer {
 		this.localSystem = Objects.requireNonNull(localSystem);
 		this.peers = new ConcurrentHashMap<>();
 		this.atomsService = new AtomsService(
+			submissionErrorsRx,
 			ledgerRx,
 			store,
 			submissionControl,

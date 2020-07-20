@@ -31,7 +31,6 @@ public class MempoolModule extends AbstractModule {
 	protected void configure() {
 		// provides
 		bind(Mempool.class).to(SharedMempool.class).in(Scopes.SINGLETON);
-		bind(SubmissionControl.class).to(SubmissionControlImpl.class).in(Scopes.SINGLETON);
 	}
 
 	@Provides

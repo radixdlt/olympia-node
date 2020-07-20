@@ -152,7 +152,8 @@ public class AtomStatusEpic {
 					String pointerToIssue = reException.getDataPointer().toString();
 
 					JSONObject data = new JSONObject();
-					data.put("message", reException.getErrorCode().toString());
+					data.put("message", reException.getMessage());
+					data.put("errorCode", reException.getErrorCode().toString());
 					data.put("pointerToIssue", pointerToIssue);
 					sendAtomSubmissionState.accept(AtomStatus.EVICTED_FAILED_CM_VERIFICATION, data);
 				} else if (e instanceof MempoolFullException) {
