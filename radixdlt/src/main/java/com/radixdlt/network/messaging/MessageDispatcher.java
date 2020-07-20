@@ -136,12 +136,12 @@ class MessageDispatcher {
 				return;
 			}
 		} catch (Exception ex) {
-			log.error(inboundMessage.message().getClass().getName() + ": Pre-processing from " + inboundMessage.peer() + " failed", ex);
+			log.error(message.getClass().getName() + ": Pre-processing from " + inboundMessage.peer() + " failed", ex);
 			return;
 		}
 
 		if (log.isTraceEnabled()) {
-			log.trace("Received from {}: {}", hostId(peer), inboundMessage.message());
+			log.trace("Received from {}: {}", hostId(peer), message);
 		}
 		listeners.messageReceived(peer, message);
 		this.counters.increment(CounterType.MESSAGES_INBOUND_PROCESSED);
@@ -152,7 +152,7 @@ class MessageDispatcher {
 		RadixSystem system = systemMessage.getSystem();
 		if (checkSignature(systemMessage, system)) {
 			Peer peer = this.addressBook.updatePeerSystem(oldPeer, system);
-			log.debug("Good signature on {} from {}", messageType, peer);
+			log.trace("Good signature on {} from {}", messageType, peer);
 			if (system.getNID() == null || EUID.ZERO.equals(system.getNID())) {
 				peer.ban(String.format("%s:%s gave null NID", peer, messageType));
 				return null;
