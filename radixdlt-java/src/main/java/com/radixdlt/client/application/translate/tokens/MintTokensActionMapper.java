@@ -26,13 +26,13 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.client.application.translate.StageActionException;
 import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle;
+import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
+import com.radixdlt.client.atommodel.tokens.TokenPermission;
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.client.atommodel.tokens.UnallocatedTokensParticle;
-import com.radixdlt.client.core.atoms.ParticleGroup.ParticleGroupBuilder;
+import com.radixdlt.client.core.atoms.particles.SpunParticle;
+import com.radixdlt.client.core.fungible.FungibleTransitionMapper;
 import com.radixdlt.identifiers.RRI;
-import com.radixdlt.client.core.atoms.particles.Spin;
-import com.radixdlt.client.core.fungible.FungibleParticleTransitioner;
-import com.radixdlt.client.core.fungible.FungibleParticleTransitioner.FungibleParticleTransition;
 import com.radixdlt.client.core.fungible.NotEnoughFungiblesException;
 import java.math.BigDecimal;
 import java.util.Collections;
@@ -53,6 +53,43 @@ public class MintTokensActionMapper implements StatefulActionToParticleGroupsMap
 	public MintTokensActionMapper() {
 	}
 
+	private static List<SpunParticle> mapToParticles(MintTokensAction mint, List<UnallocatedTokensParticle> currentParticles)
+		throws NotEnoughFungiblesException {
+
+		final UInt256 totalAmountToBurn = TokenUnitConversions.unitsToSubunits(mint.getAmount());
+		if (currentParticles.isEmpty()) {
+			throw new NotEnoughFungiblesException(totalAmountToBurn, UInt256.ZERO);
+		}
+
+		final RRI token = currentParticles.get(0).getTokDefRef();
+		final UInt256 granularity = currentParticles.get(0).getGranularity();
+		final Map<TokenTransition, TokenPermission> permissions = currentParticles.get(0).getTokenPermissions();
+
+		FungibleTransitionMapper<UnallocatedTokensParticle, TransferrableTokensParticle> mapper = new FungibleTransitionMapper<>(
+			UnallocatedTokensParticle::getAmount,
+			amt ->
+				new UnallocatedTokensParticle(
+					amt,
+					granularity,
+					System.nanoTime(),
+					token,
+					permissions
+				),
+			amt ->
+				new TransferrableTokensParticle(
+					amt,
+					granularity,
+					mint.getAddress(),
+					System.nanoTime(),
+					token,
+					System.currentTimeMillis() / 60000L + 60000L,
+					permissions
+				)
+		);
+
+		return mapper.mapToParticles(currentParticles, totalAmountToBurn);
+	}
+
 	@Override
 	public Set<ShardedParticleStateId> requiredState(MintTokensAction mintTokensAction) {
 		RadixAddress tokenDefinitionAddress = mintTokensAction.getRRI().getAddress();
@@ -65,53 +102,30 @@ public class MintTokensActionMapper implements StatefulActionToParticleGroupsMap
 
 	@Override
 	public List<ParticleGroup> mapToParticleGroups(MintTokensAction mintTokensAction, Stream<Particle> store) throws StageActionException {
-		RRI rri = mintTokensAction.getRRI();
-
 		if (mintTokensAction.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
 			throw new IllegalArgumentException("Mint amount must be greater than 0.");
 		}
 
+		final RRI tokenRef = mintTokensAction.getRRI();
+
 		Map<Class<? extends Particle>, List<Particle>> particles = store.collect(Collectors.groupingBy(Particle::getClass));
 		final List<Particle> tokDefParticles = particles.get(MutableSupplyTokenDefinitionParticle.class);
 		if (tokDefParticles == null
-			|| tokDefParticles.stream().noneMatch(p -> ((MutableSupplyTokenDefinitionParticle) p).getRRI().equals(rri))
-		) {
+			|| tokDefParticles.stream().noneMatch(p -> ((MutableSupplyTokenDefinitionParticle) p).getRRI().equals(tokenRef))
+			) {
 			throw new UnknownTokenException(mintTokensAction.getRRI());
 		}
 
-		final FungibleParticleTransitioner<UnallocatedTokensParticle, TransferrableTokensParticle> transitioner =
-			new FungibleParticleTransitioner<>(
-				(amt, consumable) -> new TransferrableTokensParticle(
-					amt,
-					consumable.getGranularity(),
-					mintTokensAction.getAddress(),
-					System.nanoTime(),
-					consumable.getTokDefRef(),
-					System.currentTimeMillis() / 60000L + 60000L,
-					consumable.getTokenPermissions()
-				),
-				mintedTokens -> mintedTokens,
-				(amt, consumable) -> new UnallocatedTokensParticle(
-					amt,
-					consumable.getGranularity(),
-					System.nanoTime(),
-					consumable.getTokDefRef(),
-					consumable.getTokenPermissions()
-				),
-				unallocated -> unallocated,
-				UnallocatedTokensParticle::getAmount
-			);
+		final List<UnallocatedTokensParticle> currentParticles =
+			particles.getOrDefault(UnallocatedTokensParticle.class, Collections.emptyList())
+				.stream()
+				.map(UnallocatedTokensParticle.class::cast)
+				.filter(p -> p.getTokDefRef().equals(tokenRef))
+				.collect(Collectors.toList());
 
-		final FungibleParticleTransition<UnallocatedTokensParticle, TransferrableTokensParticle> transition;
+		final List<SpunParticle> mintParticles;
 		try {
-			transition = transitioner.createTransition(
-				particles.getOrDefault(UnallocatedTokensParticle.class, Collections.emptyList())
-					.stream()
-					.map(UnallocatedTokensParticle.class::cast)
-					.filter(p -> p.getTokDefRef().equals(rri))
-					.collect(Collectors.toList()),
-				TokenUnitConversions.unitsToSubunits(mintTokensAction.getAmount())
-			);
+			mintParticles = mapToParticles(mintTokensAction, currentParticles);
 		} catch (NotEnoughFungiblesException e) {
 			throw new TokenOverMintException(
 				mintTokensAction.getRRI(),
@@ -121,12 +135,8 @@ public class MintTokensActionMapper implements StatefulActionToParticleGroupsMap
 			);
 		}
 
-
-		ParticleGroupBuilder particleGroupBuilder = ParticleGroup.builder();
-		transition.getRemoved().stream().map(t -> (Particle) t).forEach(p -> particleGroupBuilder.addParticle(p, Spin.DOWN));
-		transition.getMigrated().stream().map(t -> (Particle) t).forEach(p -> particleGroupBuilder.addParticle(p, Spin.UP));
-		transition.getTransitioned().stream().map(t -> (Particle) t).forEach(p -> particleGroupBuilder.addParticle(p, Spin.UP));
-
-		return Collections.singletonList(particleGroupBuilder.build());
+		return Collections.singletonList(
+			ParticleGroup.of(mintParticles)
+		);
 	}
 }
