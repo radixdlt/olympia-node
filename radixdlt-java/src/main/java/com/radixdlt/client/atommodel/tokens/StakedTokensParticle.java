@@ -82,7 +82,8 @@ public final class StakedTokensParticle extends Particle implements Accountable,
 	}
 
 	public StakedTokensParticle(
-		RadixAddress delegateAddress, UInt256 amount,
+		RadixAddress delegateAddress,
+		UInt256 amount,
 		UInt256 granularity,
 		RadixAddress address,
 		long nonce,
