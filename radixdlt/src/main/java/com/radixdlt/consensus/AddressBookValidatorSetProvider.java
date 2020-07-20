@@ -20,8 +20,9 @@ package com.radixdlt.consensus;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.Streams;
-import com.radixdlt.consensus.validators.Validator;
-import com.radixdlt.consensus.validators.ValidatorSet;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidator;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
@@ -45,7 +46,7 @@ import org.radix.universe.system.RadixSystem;
  * matches the size and used as the validator set.
  */
 public class AddressBookValidatorSetProvider {
-	private final Single<ImmutableList<Validator>> validatorList;
+	private final Single<ImmutableList<BFTValidator>> validatorList;
 
 	public AddressBookValidatorSetProvider(
 		ECPublicKey selfKey,
@@ -72,16 +73,17 @@ public class AddressBookValidatorSetProvider {
 			.map(peers ->
 				peers.stream()
 					.sorted(Comparator.comparing(ECPublicKey::euid))
-					.map(p -> Validator.from(p, UInt256.ONE))
+					.map(BFTNode::create)
+					.map(p -> BFTValidator.from(p, UInt256.ONE))
 					.collect(ImmutableList.toImmutableList())
 			)
 			.cache();
 	}
 
-	public ValidatorSet getValidatorSet(long epoch) {
-		ImmutableList<Validator> validators = validatorList.blockingGet();
+	public BFTValidatorSet getValidatorSet(long epoch) {
+		ImmutableList<BFTValidator> validators = validatorList.blockingGet();
 
-		Builder<Validator> validatorSetBuilder = ImmutableList.builder();
+		Builder<BFTValidator> validatorSetBuilder = ImmutableList.builder();
 		Random random = new Random(epoch);
 		List<Integer> indices = IntStream.range(0, validators.size()).boxed().collect(Collectors.toList());
 		// Temporary mechanism to get some deterministic random set of validators
@@ -93,12 +95,12 @@ public class AddressBookValidatorSetProvider {
 
 		for (int i = 0; i < validatorSetSize; i++) {
 			int index = indices.remove(random.nextInt(indices.size()));
-			Validator validator = validators.get(index);
+			BFTValidator validator = validators.get(index);
 			validatorSetBuilder.add(validator);
 		}
 
-		ImmutableList<Validator> validatorList = validatorSetBuilder.build();
+		ImmutableList<BFTValidator> validatorList = validatorSetBuilder.build();
 
-		return ValidatorSet.from(validatorList);
+		return BFTValidatorSet.from(validatorList);
 	}
 }

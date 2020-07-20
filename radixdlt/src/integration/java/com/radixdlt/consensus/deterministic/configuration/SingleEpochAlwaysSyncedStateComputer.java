@@ -20,7 +20,7 @@ package com.radixdlt.consensus.deterministic.configuration;
 import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.middleware2.CommittedAtom;
 import java.util.List;
 
@@ -31,7 +31,7 @@ public enum SingleEpochAlwaysSyncedStateComputer implements SyncedStateComputer<
 	INSTANCE;
 
 	@Override
-	public boolean syncTo(VertexMetadata vertexMetadata, List<ECPublicKey> target, Object opaque) {
+	public boolean syncTo(VertexMetadata vertexMetadata, List<BFTNode> target, Object opaque) {
 		return true;
 	}
 

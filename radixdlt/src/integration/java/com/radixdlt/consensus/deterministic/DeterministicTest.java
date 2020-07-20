@@ -23,6 +23,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Streams;
 import com.radixdlt.EpochChangeSender;
 import com.radixdlt.consensus.SyncedStateComputer;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidator;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.deterministic.ControlledNetwork.ChannelId;
 import com.radixdlt.consensus.deterministic.ControlledNetwork.ControlledMessage;
 import com.radixdlt.consensus.deterministic.ControlledNetwork.ControlledSender;
@@ -32,11 +35,8 @@ import com.radixdlt.consensus.deterministic.configuration.SingleEpochFailOnSyncS
 import com.radixdlt.consensus.deterministic.configuration.SingleEpochRandomlySyncedStateComputer;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.sync.SyncedRadixEngine.CommittedStateSyncSender;
-import com.radixdlt.consensus.validators.Validator;
-import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.utils.UInt256;
@@ -56,10 +56,8 @@ import java.util.stream.Stream;
 public final class DeterministicTest {
 	private static final String LOST_RESPONSIVENESS = "No messages available (Lost Responsiveness)";
 	private final ImmutableList<ControlledNode> nodes;
-	private final ImmutableList<ECPublicKey> pks;
+	private final ImmutableList<BFTNode> bftNodes;
 	private final ControlledNetwork network;
-
-
 
 	private DeterministicTest(
 		int numNodes,
@@ -71,25 +69,25 @@ public final class DeterministicTest {
 			.limit(numNodes)
 			.sorted(Comparator.<ECKeyPair, EUID>comparing(k -> k.getPublicKey().euid()).reversed())
 			.collect(ImmutableList.toImmutableList());
-		this.pks = keys.stream()
+		this.bftNodes = keys.stream()
 			.map(ECKeyPair::getPublicKey)
+			.map(BFTNode::create)
 			.collect(ImmutableList.toImmutableList());
 		this.network = new ControlledNetwork();
-		ValidatorSet initialValidatorSet = ValidatorSet.from(
+		BFTValidatorSet initialValidatorSet = BFTValidatorSet.from(
 			Streams.mapWithIndex(
-				pks.stream(),
-				(pk, index) -> Validator.from(pk, weight.forNode((int) index))
+				bftNodes.stream(),
+				(pk, index) -> BFTValidator.from(pk, weight.forNode((int) index))
 			).collect(Collectors.toList())
 		);
 
 		this.nodes = Streams.mapWithIndex(keys.stream(),
 			(key, index) -> {
-				ControlledSender sender = network.createSender(key.getPublicKey());
+				ControlledSender sender = network.createSender(bftNodes.get((int) index));
 				return new ControlledNode(
-					"node-" + index,
 					key,
 					sender,
-					vset -> new WeightedRotatingLeaders(vset, Comparator.comparing(v -> v.nodeKey().euid()), 5),
+					vset -> new WeightedRotatingLeaders(vset, Comparator.comparing(v -> v.getNode().getKey().euid()), 5),
 					initialValidatorSet,
 					syncAndTimeout,
 					stateComputerSupplier.apply(sender, sender)
@@ -185,7 +183,7 @@ public final class DeterministicTest {
 	}
 
 	public void processNextMsg(int toIndex, int fromIndex, Class<?> expectedClass) {
-		ChannelId channelId = new ChannelId(pks.get(fromIndex), pks.get(toIndex));
+		ChannelId channelId = new ChannelId(bftNodes.get(fromIndex), bftNodes.get(toIndex));
 		Object msg = network.popNextMessage(channelId);
 		assertThat(msg).isInstanceOf(expectedClass);
 		nodes.get(toIndex).processNext(msg);
@@ -211,7 +209,7 @@ public final class DeterministicTest {
 		int nextIndex =  random.nextInt(possibleMsgs.size());
 		ChannelId channelId = possibleMsgs.get(nextIndex).getChannelId();
 		Object msg = network.popNextMessage(channelId);
-		int receiverIndex = pks.indexOf(channelId.getReceiver());
+		int receiverIndex = bftNodes.indexOf(channelId.getReceiver());
 		if (filter.test(receiverIndex, msg)) {
 			nodes.get(receiverIndex).processNext(msg);
 		}
@@ -226,8 +224,8 @@ public final class DeterministicTest {
 		int nextIndex =  random.nextInt(possibleMsgs.size());
 		ChannelId channelId = possibleMsgs.get(nextIndex).getChannelId();
 		Object msg = network.popNextMessage(channelId);
-		int receiverIndex = pks.indexOf(channelId.getReceiver());
-		int senderIndex = pks.indexOf(channelId.getSender());
+		int receiverIndex = bftNodes.indexOf(channelId.getReceiver());
+		int senderIndex = bftNodes.indexOf(channelId.getSender());
 		if (filter.test(senderIndex, receiverIndex, msg)) {
 			nodes.get(receiverIndex).processNext(msg);
 		}

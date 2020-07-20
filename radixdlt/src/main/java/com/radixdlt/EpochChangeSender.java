@@ -17,7 +17,7 @@
 
 package com.radixdlt;
 
-import com.radixdlt.consensus.EpochChange;
+import com.radixdlt.consensus.epoch.EpochChange;
 
 /**
  * Sends an epoch change message

@@ -25,7 +25,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import com.radixdlt.consensus.LocalTimeout;
+import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.utils.ThreadFactories;
 
 import io.reactivex.rxjava3.observers.TestObserver;

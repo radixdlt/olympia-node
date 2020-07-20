@@ -20,6 +20,7 @@ package com.radixdlt.consensus.safety;
 import com.radixdlt.consensus.DefaultHasher;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.VoteData;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.safety.SafetyState.Builder;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.consensus.QuorumCertificate;
@@ -50,7 +51,7 @@ public class SafetyRulesTest {
 	@Before
 	public void setup() {
 		this.safetyState = mock(SafetyState.class);
-		this.safetyRules = new SafetyRules(ECKeyPair.generateNew(), safetyState, new DefaultHasher(), ECKeyPair::sign);
+		this.safetyRules = new SafetyRules(mock(BFTNode.class), safetyState, new DefaultHasher(), ECKeyPair.generateNew()::sign);
 	}
 
 	@Test

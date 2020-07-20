@@ -17,7 +17,7 @@
 
 package com.radixdlt.consensus.epoch;
 
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.consensus.bft.BFTNode;
 import java.util.Objects;
 
 /**
@@ -25,9 +25,9 @@ import java.util.Objects;
  */
 public final class GetEpochRequest {
 	private final long epoch;
-	private final ECPublicKey sender;
+	private final BFTNode sender;
 
-	public GetEpochRequest(ECPublicKey sender, final long epoch) {
+	public GetEpochRequest(BFTNode sender, final long epoch) {
 		this.sender = Objects.requireNonNull(sender);
 		this.epoch = epoch;
 	}
@@ -36,12 +36,12 @@ public final class GetEpochRequest {
 		return epoch;
 	}
 
-	public ECPublicKey getAuthor() {
+	public BFTNode getAuthor() {
 		return sender;
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{author=%s epoch=%s}", this.getClass().getSimpleName(), this.sender, this.epoch);
+		return String.format("%s{author=%s epoch=%s}", this.getClass().getSimpleName(), this.sender.getSimpleName(), this.epoch);
 	}
 }

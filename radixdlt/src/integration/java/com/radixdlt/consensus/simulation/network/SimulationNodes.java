@@ -17,36 +17,30 @@
 
 package com.radixdlt.consensus.simulation.network;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.consensus.BFTEventReducer;
+import com.radixdlt.consensus.bft.BFTBuilder;
 import com.radixdlt.consensus.BFTFactory;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.ConsensusRunner;
 import com.radixdlt.consensus.ConsensusRunner.Event;
 import com.radixdlt.consensus.ConsensusRunner.EventType;
-import com.radixdlt.consensus.DefaultHasher;
-import com.radixdlt.consensus.EmptySyncVerticesRPCSender;
-import com.radixdlt.consensus.EpochManager;
+import com.radixdlt.consensus.epoch.EmptySyncVerticesRPCSender;
+import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.EpochChangeRx;
 import com.radixdlt.consensus.Hasher;
-import com.radixdlt.consensus.InternalMessagePasser;
+import com.radixdlt.middleware2.InternalMessagePasser;
 import com.radixdlt.consensus.HashSigner;
-import com.radixdlt.consensus.HashVerifier;
-import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.VertexStoreEventsRx;
 import com.radixdlt.consensus.VertexStoreFactory;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
-import com.radixdlt.consensus.liveness.MempoolProposalGenerator;
-import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeoutSender;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
-import com.radixdlt.consensus.safety.SafetyRules;
-import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.mempool.EmptyMempool;
 import com.radixdlt.mempool.Mempool;
@@ -74,10 +68,10 @@ import static com.radixdlt.utils.ThreadFactories.daemonThreads;
 public class SimulationNodes {
 	private final int pacemakerTimeout;
 	private final SimulationNetwork underlyingNetwork;
-	private final ImmutableMap<ECKeyPair, SystemCounters> counters;
-	private final ImmutableMap<ECKeyPair, InternalMessagePasser> internalMessages;
-	private final ImmutableMap<ECKeyPair, ConsensusRunner> runners;
-	private final List<ECKeyPair> nodes;
+	private final ImmutableMap<BFTNode, SystemCounters> counters;
+	private final ImmutableMap<BFTNode, InternalMessagePasser> internalMessages;
+	private final ImmutableList<ConsensusRunner> runners;
+	private final List<BFTNode> nodes;
 	private final boolean getVerticesRPCEnabled;
 	private final Supplier<SimulatedStateComputer> stateComputerSupplier;
 
@@ -86,12 +80,12 @@ public class SimulationNodes {
 
 	/**
 	 * Create a BFT test network with an underlying simulated network.
-	 * @param nodes The nodes to populate the network with
+	 * @param nodes The nodes on the network
 	 * @param underlyingNetwork the network simulator
 	 * @param pacemakerTimeout a fixed pacemaker timeout used for all nodes
 	 */
 	public SimulationNodes(
-		List<ECKeyPair> nodes,
+		List<BFTNode> nodes,
 		SimulationNetwork underlyingNetwork,
 		int pacemakerTimeout,
 		Supplier<SimulatedStateComputer> stateComputerSupplier,
@@ -104,75 +98,62 @@ public class SimulationNodes {
 		this.pacemakerTimeout = pacemakerTimeout;
 		this.counters = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e, e -> new SystemCountersImpl()));
 		this.internalMessages = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e, e -> new InternalMessagePasser()));
-		this.runners = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e, this::createBFTInstance));
+		this.runners = nodes.stream().map(this::createBFTInstance).collect(ImmutableList.toImmutableList());
 	}
 
-	private ConsensusRunner createBFTInstance(ECKeyPair key) {
+	private ConsensusRunner createBFTInstance(BFTNode self) {
 		final Mempool mempool = new EmptyMempool();
 		final Hasher nullHasher = o -> Hash.ZERO_HASH;
-		final Hasher defaultHasher = new DefaultHasher();
-		final HashSigner nullSigner = (k, h) -> new ECDSASignature();
-		final HashVerifier nullVerifier = (p, h, s) -> true;
+		final HashSigner nullSigner = h -> new ECDSASignature();
+		final BFTFactory bftFactory =
+			(endOfEpochSender, pacemaker, vertexStore, proposerElection, validatorSet) ->
+				BFTBuilder.create()
+					.self(self)
+					.endOfEpochSender(endOfEpochSender)
+					.pacemaker(pacemaker)
+					.mempool(mempool)
+					.vertexStore(vertexStore)
+					.proposerElection(proposerElection)
+					.validatorSet(validatorSet)
+					.eventSender(underlyingNetwork.getNetworkSender(self))
+					.counters(counters.get(self))
+					.hasher(nullHasher)
+					.signer(nullSigner)
+					.verifyAuthors(false)
+					.build();
+
 		final ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(daemonThreads("TimeoutSender"));
 		final ScheduledLocalTimeoutSender timeoutSender = new ScheduledLocalTimeoutSender(scheduledExecutorService);
-		final SimulationSyncSender syncSender = underlyingNetwork.getSyncSender(key.getPublicKey());
-
+		final SimulationSyncSender syncSender = underlyingNetwork.getSyncSender(self);
 		final VertexStoreFactory vertexStoreFactory = (v, qc, stateComputer) ->
 			new VertexStore(
 				v,
 				qc,
 				stateComputer,
 				getVerticesRPCEnabled ? syncSender : EmptySyncVerticesRPCSender.INSTANCE,
-				this.internalMessages.get(key),
-				this.counters.get(key)
+				this.internalMessages.get(self),
+				this.counters.get(self)
 			);
-
 		final SimulatedStateComputer stateComputer = stateComputerSupplier.get();
-		BFTFactory bftFactory =
-			(endOfEpochSender, pacemaker, vertexStore, proposerElection, validatorSet) -> {
-				final ProposalGenerator proposalGenerator = new MempoolProposalGenerator(vertexStore, mempool);
-				final SafetyRules safetyRules = new SafetyRules(key, SafetyState.initialState(), nullHasher, nullSigner);
-				final PendingVotes pendingVotes = new PendingVotes(defaultHasher, nullVerifier);
-
-				return new BFTEventReducer(
-					proposalGenerator,
-					mempool,
-					underlyingNetwork.getNetworkSender(key.getPublicKey()),
-					endOfEpochSender,
-					safetyRules,
-					pacemaker,
-					vertexStore,
-					pendingVotes,
-					proposerElection,
-					key,
-					nullSigner,
-					validatorSet,
-					counters.get(key)
-				);
-			};
-
-		final String loggerPrefix = key.euid().toString().substring(0, 6);
-
 		final EpochManager epochManager = new EpochManager(
-			loggerPrefix,
+			self,
 			stateComputer,
 			syncSender,
 			timeoutSender,
-			timeoutSender1 -> new FixedTimeoutPacemaker(this.pacemakerTimeout, timeoutSender1, nullVerifier),
+			timeoutSender1 -> new FixedTimeoutPacemaker(this.pacemakerTimeout, timeoutSender1),
 			vertexStoreFactory,
-			proposers -> new WeightedRotatingLeaders(proposers, Comparator.comparing(v -> v.nodeKey().euid()), 5),
+			proposers -> new WeightedRotatingLeaders(proposers, Comparator.comparing(v -> v.getNode().getKey().euid()), 5),
 			bftFactory,
-			key.getPublicKey(),
-			counters.get(key)
+			counters.get(self)
 		);
 
-		final SimulatedNetworkReceiver rx = underlyingNetwork.getNetworkRx(key.getPublicKey());
+		final SimulatedNetworkReceiver rx = underlyingNetwork.getNetworkRx(self);
 
 		return new ConsensusRunner(
 			stateComputer,
 			rx,
 			timeoutSender,
-			internalMessages.get(key),
+			internalMessages.get(self),
 			Observable::never,
 			rx,
 			rx,
@@ -182,11 +163,11 @@ public class SimulationNodes {
 
 	// TODO: Add support for epoch changes
 	public interface RunningNetwork {
-		List<ECKeyPair> getNodes();
+		List<BFTNode> getNodes();
 
-		VertexStoreEventsRx getVertexStoreEvents(ECKeyPair keyPair);
+		VertexStoreEventsRx getVertexStoreEvents(BFTNode node);
 
-		SystemCounters getCounters(ECKeyPair keyPair);
+		SystemCounters getCounters(BFTNode node);
 
 		SimulationNetwork getUnderlyingNetwork();
 	}
@@ -194,7 +175,7 @@ public class SimulationNodes {
 	public Single<RunningNetwork> start() {
 		// Send start event once all nodes have reached real epoch event
 		final CompletableSubject completableSubject = CompletableSubject.create();
-		List<Completable> startedList = this.runners.values().stream()
+		List<Completable> startedList = this.runners.stream()
 			.map(ConsensusRunner::events)
 			.map(o -> o.map(Event::getEventType)
 				.filter(e -> e.equals(EventType.EPOCH_CHANGE))
@@ -204,22 +185,22 @@ public class SimulationNodes {
 
 		Completable.merge(startedList).subscribe(completableSubject::onComplete);
 
-		this.runners.values().forEach(ConsensusRunner::start);
+		this.runners.forEach(ConsensusRunner::start);
 
 		return completableSubject.toSingle(() -> new RunningNetwork() {
 			@Override
-			public List<ECKeyPair> getNodes() {
+			public List<BFTNode> getNodes() {
 				return nodes;
 			}
 
 			@Override
-			public VertexStoreEventsRx getVertexStoreEvents(ECKeyPair keyPair) {
-				return internalMessages.get(keyPair);
+			public VertexStoreEventsRx getVertexStoreEvents(BFTNode node) {
+				return internalMessages.get(node);
 			}
 
 			@Override
-			public SystemCounters getCounters(ECKeyPair keyPair) {
-				return counters.get(keyPair);
+			public SystemCounters getCounters(BFTNode node) {
+				return counters.get(node);
 			}
 
 			@Override
@@ -230,6 +211,6 @@ public class SimulationNodes {
 	}
 
 	public void stop() {
-		this.runners.values().forEach(ConsensusRunner::stop);
+		this.runners.forEach(ConsensusRunner::stop);
 	}
 }

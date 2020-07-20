@@ -18,7 +18,7 @@
 package com.radixdlt.consensus;
 
 import com.radixdlt.consensus.SyncedStateComputer.CommittedInstruction;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.consensus.bft.BFTNode;
 import java.util.List;
 
 /**
@@ -50,7 +50,7 @@ public interface SyncedStateComputer<T extends CommittedInstruction> {
 	 * message if this returns false
 	 * @return true if already synced, otherwise false
 	 */
-	boolean syncTo(VertexMetadata vertexMetadata, List<ECPublicKey> target, Object opaque);
+	boolean syncTo(VertexMetadata vertexMetadata, List<BFTNode> target, Object opaque);
 
 	/**
 	 * Computes whether commit of this vertex will cause an epoch change.

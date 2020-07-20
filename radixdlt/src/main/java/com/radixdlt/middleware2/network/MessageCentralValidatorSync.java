@@ -20,20 +20,19 @@ package com.radixdlt.middleware2.network;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
-import com.google.inject.name.Named;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
-import com.radixdlt.consensus.SyncEpochsRPCSender;
+import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
 import com.radixdlt.consensus.bft.GetVerticesResponse;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
-import com.radixdlt.consensus.SyncVerticesRPCSender;
+import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRPCSender;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.epoch.GetEpochRequest;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
@@ -45,7 +44,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
-import javax.inject.Inject;
 import org.radix.network.messaging.Message;
 
 /**
@@ -53,7 +51,7 @@ import org.radix.network.messaging.Message;
  */
 public class MessageCentralValidatorSync implements SyncVerticesRPCSender, SyncVerticesRPCRx, SyncEpochsRPCSender, SyncEpochsRPCRx {
 
-	private final ECPublicKey selfPublicKey;
+	private final BFTNode self;
 	private final int magic;
 	private final AddressBook addressBook;
 	private final MessageCentral messageCentral;
@@ -62,26 +60,25 @@ public class MessageCentralValidatorSync implements SyncVerticesRPCSender, SyncV
 		.expireAfterWrite(30, TimeUnit.SECONDS)
 		.build();
 
-	@Inject
 	public MessageCentralValidatorSync(
-		@Named("self") ECPublicKey selfPublicKey,
+		BFTNode self,
 		Universe universe,
 		AddressBook addressBook,
 		MessageCentral messageCentral
 	) {
 		this.magic = universe.getMagic();
-		this.selfPublicKey = Objects.requireNonNull(selfPublicKey);
+		this.self = Objects.requireNonNull(self);
 		this.addressBook = Objects.requireNonNull(addressBook);
 		this.messageCentral = Objects.requireNonNull(messageCentral);
 	}
 
 	@Override
-	public void sendGetVerticesRequest(Hash id, ECPublicKey node, int count, Object opaque) {
-		if (this.selfPublicKey.equals(node)) {
+	public void sendGetVerticesRequest(Hash id, BFTNode node, int count, Object opaque) {
+		if (this.self.equals(node)) {
 			throw new IllegalStateException("Should never need to retrieve a vertex from self.");
 		}
 
-		final Optional<Peer> peer = this.addressBook.peer(node.euid());
+		final Optional<Peer> peer = this.addressBook.peer(node.getKey().euid());
 		if (!peer.isPresent()) {
 			// TODO: Change to more appropriate exception type
 			throw new IllegalStateException(String.format("Peer with pubkey %s not present", node));
@@ -192,26 +189,26 @@ public class MessageCentralValidatorSync implements SyncVerticesRPCSender, SyncV
 	}
 
 	@Override
-	public void sendGetEpochRequest(ECPublicKey node, long epoch) {
-		final Optional<Peer> peer = this.addressBook.peer(node.euid());
+	public void sendGetEpochRequest(BFTNode node, long epoch) {
+		final Optional<Peer> peer = this.addressBook.peer(node.getKey().euid());
 		if (!peer.isPresent()) {
 			// TODO: Change to more appropriate exception type
 			throw new IllegalStateException(String.format("Peer with pubkey %s not present", node));
 		}
 
-		final GetEpochRequestMessage epochRequest = new GetEpochRequestMessage(this.selfPublicKey, this.magic, epoch);
+		final GetEpochRequestMessage epochRequest = new GetEpochRequestMessage(this.self, this.magic, epoch);
 		this.messageCentral.send(peer.get(), epochRequest);
 	}
 
 	@Override
-	public void sendGetEpochResponse(ECPublicKey node, VertexMetadata ancestor) {
-		final Optional<Peer> peer = this.addressBook.peer(node.euid());
+	public void sendGetEpochResponse(BFTNode node, VertexMetadata ancestor) {
+		final Optional<Peer> peer = this.addressBook.peer(node.getKey().euid());
 		if (!peer.isPresent()) {
 			// TODO: Change to more appropriate exception type
 			throw new IllegalStateException(String.format("Peer with pubkey %s not present", node));
 		}
 
-		final GetEpochResponseMessage epochResponseMessage = new GetEpochResponseMessage(this.selfPublicKey, this.magic, ancestor);
+		final GetEpochResponseMessage epochResponseMessage = new GetEpochResponseMessage(this.self, this.magic, ancestor);
 		this.messageCentral.send(peer.get(), epochResponseMessage);
 	}
 

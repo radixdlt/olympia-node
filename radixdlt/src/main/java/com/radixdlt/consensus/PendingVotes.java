@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.consensus.bft.BFTNode;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -30,10 +31,9 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
 import com.radixdlt.SecurityCritical;
 import com.radixdlt.SecurityCritical.SecurityKind;
-import com.radixdlt.consensus.validators.ValidationState;
-import com.radixdlt.consensus.validators.ValidatorSet;
+import com.radixdlt.consensus.bft.ValidationState;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 
 /**
@@ -75,54 +75,51 @@ public final class PendingVotes {
 	}
 
 	private final Map<Hash, ValidationState> voteState = Maps.newHashMap();
-	private final Map<ECPublicKey, PreviousVote> previousVotes = Maps.newHashMap();
+	private final Map<BFTNode, PreviousVote> previousVotes = Maps.newHashMap();
 	private final Hasher hasher;
-	private final HashVerifier verifier;
 
-	public PendingVotes(Hasher hasher, HashVerifier verifier) {
+	public PendingVotes(Hasher hasher) {
 		this.hasher = Objects.requireNonNull(hasher);
-		this.verifier = Objects.requireNonNull(verifier);
 	}
 
 	/**
 	 * Inserts a vote for a given vertex, attempting to form a quorum certificate for that vertex.
 	 * <p>
-	 * A QC will only be formed if permitted by the {@link ValidatorSet}.
+	 * A QC will only be formed if permitted by the {@link BFTValidatorSet}.
 	 *
 	 * @param vote The vote to be inserted
 	 * @return The generated QC, if any
 	 */
-	public Optional<QuorumCertificate> insertVote(Vote vote, ValidatorSet validatorSet) {
-		final ECPublicKey voteAuthor = vote.getAuthor();
+	public Optional<QuorumCertificate> insertVote(Vote vote, BFTValidatorSet validatorSet) {
 		final VoteData voteData = vote.getVoteData();
 		final Hash voteHash = this.hasher.hash(voteData);
 		final ECDSASignature signature = vote.getSignature().orElseThrow(() -> new IllegalArgumentException("vote is missing signature"));
+		final BFTNode node = vote.getAuthor();
 		// Only process for valid validators and signatures
-		if (validatorSet.containsKey(voteAuthor)) {
-			if (this.verifier.verify(voteAuthor, voteHash, signature)) {
-				final View voteView = voteData.getProposed().getView();
-				if (replacePreviousVote(voteAuthor, voteView, voteHash)) {
-					// If there is no equivocation or duplication, we process the vote.
-					ValidationState validationState = this.voteState.computeIfAbsent(voteHash, k -> validatorSet.newValidationState());
-
-					// try to form a QC with the added signature according to the requirements
-					if (validationState.addSignature(voteAuthor, signature) && validationState.complete()) {
-						// QC can be formed, so return it
-						QuorumCertificate qc = new QuorumCertificate(vote.getVoteData(), validationState.signatures());
-						return Optional.of(qc);
-					}
-				}
-			} else {
-				log.info("Ignoring invalid signature from author {}", () -> hostId(voteAuthor));
-			}
-		} else {
-			log.info("Ignoring vote from invalid author {}", () -> hostId(voteAuthor));
+		if (!validatorSet.containsNode(node)) {
+			log.info("Ignoring vote from invalid author {}", node::getSimpleName);
+			return Optional.empty();
 		}
-		// No QC could be formed, so return nothing
-		return Optional.empty();
+
+		final View voteView = voteData.getProposed().getView();
+		if (!replacePreviousVote(node, voteView, voteHash)) {
+			return Optional.empty();
+		}
+
+		// If there is no equivocation or duplication, we process the vote.
+		ValidationState validationState = this.voteState.computeIfAbsent(voteHash, k -> validatorSet.newValidationState());
+
+		// try to form a QC with the added signature according to the requirements
+		if (!(validationState.addSignature(node, signature) && validationState.complete())) {
+			return Optional.empty();
+		}
+
+		// QC can be formed, so return it
+		QuorumCertificate qc = new QuorumCertificate(vote.getVoteData(), validationState.signatures());
+		return Optional.of(qc);
 	}
 
-	private boolean replacePreviousVote(ECPublicKey author, View voteView, Hash voteHash) {
+	private boolean replacePreviousVote(BFTNode author, View voteView, Hash voteHash) {
 		PreviousVote thisVote = new PreviousVote(voteView, voteHash);
 		PreviousVote previousVote = this.previousVotes.put(author, thisVote);
 		if (previousVote == null) {
@@ -150,10 +147,6 @@ public final class PendingVotes {
 		// then it should be slashed, once we have that infrastructure in place.
 		// In any case, equivocating votes should not be counted.
 		return !voteView.equals(previousVote.view);
-	}
-
-	private static String hostId(ECPublicKey author) {
-		return author.euid().toString().substring(0, 6);
 	}
 
 	@VisibleForTesting

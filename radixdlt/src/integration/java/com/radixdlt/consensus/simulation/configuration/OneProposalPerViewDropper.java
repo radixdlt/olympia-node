@@ -20,7 +20,7 @@ package com.radixdlt.consensus.simulation.configuration;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.View;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.simulation.network.SimulationNetwork.MessageInTransit;
 import java.util.HashMap;
 import java.util.Map;
@@ -31,12 +31,12 @@ import java.util.function.Predicate;
  * Drops one proposal per view
  */
 public class OneProposalPerViewDropper implements Predicate<MessageInTransit> {
-	private final Map<View, ECPublicKey> proposalToDrop = new HashMap<>();
+	private final Map<View, BFTNode> proposalToDrop = new HashMap<>();
 	private final Map<View, Integer> proposalCount = new HashMap<>();
-	private final ImmutableList<ECPublicKey> nodes;
+	private final ImmutableList<BFTNode> nodes;
 	private final Random random;
 
-	public OneProposalPerViewDropper(ImmutableList<ECPublicKey> nodes, Random random) {
+	public OneProposalPerViewDropper(ImmutableList<BFTNode> nodes, Random random) {
 		this.nodes = nodes;
 		this.random = random;
 	}
@@ -46,7 +46,7 @@ public class OneProposalPerViewDropper implements Predicate<MessageInTransit> {
 		if (msg.getContent() instanceof Proposal) {
 			final Proposal proposal = (Proposal) msg.getContent();
 			final View view = proposal.getVertex().getView();
-			final ECPublicKey nodeToDrop = proposalToDrop.computeIfAbsent(view, v -> nodes.get(random.nextInt(nodes.size())));
+			final BFTNode nodeToDrop = proposalToDrop.computeIfAbsent(view, v -> nodes.get(random.nextInt(nodes.size())));
 			if (proposalCount.merge(view, 1, Integer::sum).equals(nodes.size())) {
 				proposalToDrop.remove(view);
 				proposalCount.remove(view);

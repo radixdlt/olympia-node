@@ -19,16 +19,17 @@ package com.radixdlt.consensus.deterministic;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.EpochChangeSender;
-import com.radixdlt.consensus.BFTEventSender;
+import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.CommittedStateSync;
-import com.radixdlt.consensus.EpochChange;
-import com.radixdlt.consensus.LocalTimeout;
+import com.radixdlt.consensus.epoch.EpochChange;
+import com.radixdlt.consensus.epoch.LocalTimeout;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
 import com.radixdlt.consensus.bft.GetVerticesResponse;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.SyncVerticesRPCSender;
+import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRPCSender;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
@@ -36,7 +37,6 @@ import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.sync.SyncedRadixEngine.CommittedStateSyncSender;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 
 import java.util.Comparator;
@@ -102,19 +102,19 @@ public final class ControlledNetwork {
 	}
 
 	static final class ChannelId {
-		private final ECPublicKey sender;
-		private final ECPublicKey receiver;
+		private final BFTNode sender;
+		private final BFTNode receiver;
 
-		ChannelId(ECPublicKey sender, ECPublicKey receiver) {
+		ChannelId(BFTNode sender, BFTNode receiver) {
 			this.sender = sender;
 			this.receiver = receiver;
 		}
 
-		public ECPublicKey getReceiver() {
+		public BFTNode getReceiver() {
 			return receiver;
 		}
 
-		public ECPublicKey getSender() {
+		public BFTNode getSender() {
 			return sender;
 		}
 
@@ -135,7 +135,7 @@ public final class ControlledNetwork {
 
 		@Override
 		public String toString() {
-			return sender.euid().toString().substring(0, 6) + "->" + receiver.euid().toString().substring(0, 6);
+			return sender.getSimpleName() + "->" + receiver.getSimpleName();
 		}
 	}
 
@@ -143,7 +143,7 @@ public final class ControlledNetwork {
 		private final ChannelId channelId;
 		private final Object msg;
 
-		ControlledMessage(ECPublicKey sender, ECPublicKey receiver, Object msg) {
+		ControlledMessage(BFTNode sender, BFTNode receiver, Object msg) {
 			this.channelId = new ChannelId(sender, receiver);
 			this.msg = msg;
 		}
@@ -175,9 +175,9 @@ public final class ControlledNetwork {
 		private final Hash id;
 		private final int count;
 		private final Object opaque;
-		private final ECPublicKey requestor;
+		private final BFTNode requestor;
 
-		private ControlledGetVerticesRequest(Hash id, int count, ECPublicKey requestor, Object opaque) {
+		private ControlledGetVerticesRequest(Hash id, int count, BFTNode requestor, Object opaque) {
 			this.id = id;
 			this.count = count;
 			this.requestor = requestor;
@@ -200,20 +200,20 @@ public final class ControlledNetwork {
 		}
 	}
 
-	public ControlledSender createSender(ECPublicKey sender) {
+	public ControlledSender createSender(BFTNode sender) {
 		return new ControlledSender(sender);
 	}
 
 	public final class ControlledSender implements BFTEventSender, VertexStoreEventSender, SyncVerticesRPCSender, EpochChangeSender,
 		CommittedStateSyncSender, LocalTimeoutSender {
-		private final ECPublicKey sender;
+		private final BFTNode sender;
 
-		private ControlledSender(ECPublicKey sender) {
+		private ControlledSender(BFTNode sender) {
 			this.sender = sender;
 		}
 
 		@Override
-		public void sendGetVerticesRequest(Hash id, ECPublicKey node, int count, Object opaque) {
+		public void sendGetVerticesRequest(Hash id, BFTNode node, int count, Object opaque) {
 			putMessage(EARLIEST_POSSIBLE, new ControlledMessage(sender, node, new ControlledGetVerticesRequest(id, count, sender, opaque)));
 		}
 
@@ -238,20 +238,20 @@ public final class ControlledNetwork {
 		}
 
 		@Override
-		public void broadcastProposal(Proposal proposal, Set<ECPublicKey> nodes) {
+		public void broadcastProposal(Proposal proposal, Set<BFTNode> nodes) {
 			MessageRank rank = messageRank(proposal);
-			for (ECPublicKey receiver : nodes) {
+			for (BFTNode receiver : nodes) {
 				putMessage(rank, new ControlledMessage(sender, receiver, proposal));
 			}
 		}
 
 		@Override
-		public void sendNewView(NewView newView, ECPublicKey newViewLeader) {
+		public void sendNewView(NewView newView, BFTNode newViewLeader) {
 			putMessage(messageRank(newView), new ControlledMessage(sender, newViewLeader, newView));
 		}
 
 		@Override
-		public void sendVote(Vote vote, ECPublicKey leader) {
+		public void sendVote(Vote vote, BFTNode leader) {
 			putMessage(messageRank(vote.getVoteData().getProposed(), 0), new ControlledMessage(sender, leader, vote));
 		}
 

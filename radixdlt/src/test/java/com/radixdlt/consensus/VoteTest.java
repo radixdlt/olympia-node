@@ -17,7 +17,7 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.Hash;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Before;
@@ -25,9 +25,10 @@ import org.junit.Test;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
 
 public class VoteTest {
-	public static final RadixAddress ADDRESS = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
+	private BFTNode author;
 	private Vote testObject;
 	private VoteData voteData;
 
@@ -35,8 +36,8 @@ public class VoteTest {
 	public void setUp() {
 		VertexMetadata parent = new VertexMetadata(0, View.of(1234567890L), Hash.random(), 1, false);
 		this.voteData = new VoteData(VertexMetadata.ofGenesisAncestor(), parent, null);
-
-		this.testObject = new Vote(ADDRESS.getPublicKey(), voteData, null);
+		this.author = mock(BFTNode.class);
+		this.testObject = new Vote(author, voteData, null);
 	}
 
 	@Test
@@ -49,7 +50,7 @@ public class VoteTest {
 	public void testGetters() {
 		assertEquals(this.testObject.getEpoch(), voteData.getProposed().getEpoch());
 		assertEquals(this.voteData, this.testObject.getVoteData());
-		assertEquals(ADDRESS.getPublicKey(), this.testObject.getAuthor());
+		assertEquals(this.author, this.testObject.getAuthor());
 	}
 
 

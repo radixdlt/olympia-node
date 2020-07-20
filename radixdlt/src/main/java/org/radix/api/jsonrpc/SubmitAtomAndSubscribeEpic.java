@@ -17,6 +17,8 @@
 
 package org.radix.api.jsonrpc;
 
+import com.radixdlt.api.StoredFailure;
+import com.radixdlt.engine.RadixEngineException;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -28,11 +30,8 @@ import com.radixdlt.mempool.MempoolFullException;
 import org.json.JSONObject;
 import org.radix.api.services.AtomsService;
 import org.radix.api.services.SingleAtomListener;
-import org.radix.atoms.particles.conflict.ParticleConflict;
-import org.radix.atoms.particles.conflict.ParticleConflictException;
 import org.radix.exceptions.AtomAlreadyStoredException;
 import org.radix.exceptions.ValidationException;
-import org.radix.validation.ConstraintMachineValidationException;
 
 /**
  * Epic responsible for translating an atom submission JSON RPC request to the response and resulting
@@ -95,31 +94,35 @@ public class SubmitAtomAndSubscribeEpic {
 			}
 
 			@Override
+			public void onStoredFailure(StoredFailure e) {
+				RadixEngineException exception = e.getException();
+				JSONObject data = new JSONObject();
+				data.put("pointerToIssue", exception.getDataPointer().toString());
+				if (exception.getRelated() != null) {
+					data.put("message", exception.getRelated().getAID().toString());
+				}
+
+				final AtomSubmissionState atomSubmissionState;
+				switch (exception.getErrorCode()) {
+					case VIRTUAL_STATE_CONFLICT:
+					case MISSING_DEPENDENCY:
+						atomSubmissionState = AtomSubmissionState.VALIDATION_ERROR;
+						break;
+					case STATE_CONFLICT:
+						atomSubmissionState = AtomSubmissionState.COLLISION;
+						break;
+					default: // Don't send back unhandled exception
+						return;
+				}
+
+				sendAtomSubmissionState.accept(atomSubmissionState, data);
+			}
+
+			@Override
 			public void onError(AID atomId, Throwable e) {
-				if (e instanceof ParticleConflictException) {
-					ParticleConflictException particleConflictException = (ParticleConflictException) e;
-					ParticleConflict conflict = particleConflictException.getConflict();
-					JSONObject data = new JSONObject();
-					data.put("pointerToIssue", conflict.getDataPointer().toString());
-					data.put("message",
-							conflict.getAtomIds().stream().filter(a -> !a.equals(atomId)).findAny().map(Object::toString).orElse(null));
-
-					sendAtomSubmissionState.accept(AtomSubmissionState.COLLISION, data);
-				} else if (e instanceof ValidationException) {
-					ValidationException validationException = (ValidationException) e;
-
-					String pointerToIssue = null;
-					if (validationException instanceof ConstraintMachineValidationException) {
-						ConstraintMachineValidationException cmException = (ConstraintMachineValidationException) validationException;
-						pointerToIssue = cmException.getPointerToIssue();
-					}
-
+				if (e instanceof ValidationException) {
 					JSONObject data = new JSONObject();
 					data.put("message", e.getMessage());
-
-					if (pointerToIssue != null) {
-						data.put("pointerToIssue", pointerToIssue);
-					}
 
 					sendAtomSubmissionState.accept(AtomSubmissionState.VALIDATION_ERROR, data);
 				} else if (e instanceof AtomAlreadyStoredException) {

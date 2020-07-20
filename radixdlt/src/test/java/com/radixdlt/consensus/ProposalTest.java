@@ -17,12 +17,11 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.consensus.bft.BFTNode;
 import org.junit.Before;
 import org.junit.Test;
 
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.EUID;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.*;
@@ -32,18 +31,18 @@ import nl.jqno.equalsverifier.EqualsVerifier;
 public class ProposalTest {
 	private Proposal proposal;
 	private Vertex vertex;
-	private ECPublicKey key;
+	private BFTNode node;
 	private ECDSASignature signature;
 	private QuorumCertificate commitQc;
 
 	@Before
 	public void setUp() {
 		this.vertex = mock(Vertex.class);
-		this.key = mock(ECPublicKey.class);
+		this.node = mock(BFTNode.class);
 		this.signature = mock(ECDSASignature.class);
 		this.commitQc = mock(QuorumCertificate.class);
 
-		this.proposal = new Proposal(vertex, commitQc, key, signature);
+		this.proposal = new Proposal(vertex, commitQc, node, signature);
 	}
 
 	@Test
@@ -65,10 +64,7 @@ public class ProposalTest {
 
 	@Test
 	public void sensibleToString() {
-		when(key.euid()).thenReturn(EUID.TWO);
 		String s = this.proposal.toString();
-
-		assertThat(s).contains(EUID.TWO.toString().substring(0, 6));
 		assertThat(s).contains(vertex.toString());
 	}
 }

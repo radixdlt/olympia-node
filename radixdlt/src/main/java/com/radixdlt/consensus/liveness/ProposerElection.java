@@ -17,8 +17,8 @@
 
 package com.radixdlt.consensus.liveness;
 
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.View;
-import com.radixdlt.crypto.ECPublicKey;
 
 /**
  * Represents the election for valid proposers
@@ -29,5 +29,5 @@ public interface ProposerElection {
 	 * @param view the view to get the proposer for
 	 * @return the EUID of the proposer
 	 */
-	ECPublicKey getProposer(View view);
+	BFTNode getProposer(View view);
 }

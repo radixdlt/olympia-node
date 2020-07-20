@@ -17,24 +17,22 @@
 
 package org.radix.api.jsonrpc;
 
+import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.engine.AtomStatus;
 import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.api.StoredFailure;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.identifiers.AID;
+import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.middleware2.converters.AtomConversionException;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import org.json.JSONObject;
 import org.radix.api.observable.Disposable;
 import org.radix.api.services.AtomStatusListener;
 import org.radix.api.services.AtomsService;
-import org.radix.atoms.AtomDependencyNotFoundException;
-import org.radix.atoms.particles.conflict.ParticleConflict;
-import org.radix.atoms.particles.conflict.ParticleConflictException;
-import org.radix.validation.ConstraintMachineValidationException;
 
 /**
  * Epic used to manage streaming status notifications regarding an atom.
@@ -90,24 +88,57 @@ public class AtomStatusEpic {
 		};
 
 		Disposable disposable = atomsService.subscribeAtomStatusNotifications(aid, new AtomStatusListener() {
-			final AtomicBoolean receivedStatus = new AtomicBoolean(false);
-
 			@Override
-			public void onStored() {
-				if (receivedStatus.getAndSet(true)) {
-					return;
-				}
-
+			public void onStored(CommittedAtom committedAtom) {
 				JSONObject data = new JSONObject();
+				data.put("aid", committedAtom.getAID());
+				// TODO: serialize vertexMetadata
+				VertexMetadata vertexMetadata = committedAtom.getVertexMetadata();
+				data.put("stateVersion", vertexMetadata.getStateVersion());
+				data.put("epoch",vertexMetadata.getEpoch());
+				data.put("view", vertexMetadata.getView().number());
+
 				sendAtomSubmissionState.accept(AtomStatus.STORED, data);
 			}
 
 			@Override
-			public void onError(Throwable e) {
-				if (receivedStatus.getAndSet(true)) {
-					return;
+			public void onStoredFailure(StoredFailure e) {
+				final RadixEngineException exception = e.getException();
+
+				JSONObject data = new JSONObject();
+				data.put("aid", e.getAtom().getAID());
+				data.put("pointerToIssue", exception.getDataPointer());
+				if (exception.getRelated() != null) {
+					data.put("conflictingWith", exception.getRelated().getAID().toString());
 				}
 
+				// TODO: serialize vertexMetadata
+				VertexMetadata vertexMetadata = e.getAtom().getVertexMetadata();
+				data.put("stateVersion", vertexMetadata.getStateVersion());
+				data.put("epoch", vertexMetadata.getEpoch());
+				data.put("view", vertexMetadata.getView().number());
+
+				final AtomStatus atomStatus;
+				switch (exception.getErrorCode()) {
+					case VIRTUAL_STATE_CONFLICT:
+						atomStatus = AtomStatus.EVICTED_FAILED_CM_VERIFICATION;
+						break;
+					case MISSING_DEPENDENCY:
+						atomStatus = AtomStatus.MISSING_DEPENDENCY;
+						break;
+					case STATE_CONFLICT:
+						atomStatus = AtomStatus.CONFLICT_LOSER;
+						break;
+					default: // Don't send back unhandled exception
+						return;
+				}
+
+
+				sendAtomSubmissionState.accept(atomStatus, data);
+			}
+
+			@Override
+			public void onError(Throwable e) {
 				if (e instanceof AtomConversionException) {
 					AtomConversionException conversionException = (AtomConversionException) e;
 					String pointerToIssue = conversionException.getPointerToIssue();
@@ -124,25 +155,6 @@ public class AtomStatusEpic {
 					data.put("message", reException.getErrorCode().toString());
 					data.put("pointerToIssue", pointerToIssue);
 					sendAtomSubmissionState.accept(AtomStatus.EVICTED_FAILED_CM_VERIFICATION, data);
-				} else if (e instanceof ConstraintMachineValidationException) {
-					ConstraintMachineValidationException cmException = (ConstraintMachineValidationException) e;
-					String pointerToIssue = cmException.getPointerToIssue();
-
-					JSONObject data = new JSONObject();
-					data.put("message", e.getMessage());
-					data.put("pointerToIssue", pointerToIssue);
-					sendAtomSubmissionState.accept(AtomStatus.EVICTED_FAILED_CM_VERIFICATION, data);
-				} else if (e instanceof ParticleConflictException) {
-					ParticleConflict conflict = ((ParticleConflictException) e).getConflict();
-					JSONObject data = new JSONObject();
-					data.put("pointerToIssue", conflict.getDataPointer().toString());
-					sendAtomSubmissionState.accept(AtomStatus.CONFLICT_LOSER, data);
-				} else if (e instanceof AtomDependencyNotFoundException) {
-					AtomDependencyNotFoundException dependencyNotFoundException = (AtomDependencyNotFoundException) e;
-					JSONObject data = new JSONObject();
-					data.put("missingDependency", dependencyNotFoundException.getDependencyMissing());
-
-					sendAtomSubmissionState.accept(AtomStatus.MISSING_DEPENDENCY, data);
 				} else if (e instanceof MempoolFullException) {
 					JSONObject data = new JSONObject();
 					data.put("message", e.getMessage());

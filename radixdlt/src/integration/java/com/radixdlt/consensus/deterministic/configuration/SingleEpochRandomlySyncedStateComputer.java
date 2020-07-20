@@ -20,8 +20,8 @@ package com.radixdlt.consensus.deterministic.configuration;
 import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.sync.SyncedRadixEngine.CommittedStateSyncSender;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.middleware2.CommittedAtom;
 import java.util.List;
 import java.util.Objects;
@@ -38,7 +38,7 @@ public class SingleEpochRandomlySyncedStateComputer implements SyncedStateComput
 	}
 
 	@Override
-	public boolean syncTo(VertexMetadata vertexMetadata, List<ECPublicKey> target, Object opaque) {
+	public boolean syncTo(VertexMetadata vertexMetadata, List<BFTNode> target, Object opaque) {
 		if (random.nextBoolean()) {
 			return true;
 		}

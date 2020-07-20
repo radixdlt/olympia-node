@@ -21,13 +21,13 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.consensus.bft.BFTNode;
 import org.junit.Test;
 
 public class GetEpochRequestMessageTest {
 	@Test
 	public void sensibleToString() {
-		GetEpochRequestMessage msg = new GetEpochRequestMessage(mock(ECPublicKey.class), 12345, 1);
+		GetEpochRequestMessage msg = new GetEpochRequestMessage(mock(BFTNode.class), 12345, 1);
 		String s1 = msg.toString();
 		assertThat(s1, containsString(GetEpochRequestMessage.class.getSimpleName()));
 	}

@@ -18,9 +18,9 @@
 package com.radixdlt.consensus.liveness;
 
 import com.radixdlt.consensus.View;
-import com.radixdlt.consensus.validators.Validator;
-import com.radixdlt.consensus.validators.ValidatorSet;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidator;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.utils.UInt256;
 import com.radixdlt.utils.UInt256s;
 import com.radixdlt.utils.UInt384;
@@ -46,33 +46,33 @@ import java.util.Map.Entry;
 public final class WeightedRotatingLeaders implements ProposerElection {
 	private static final UInt384 POW_2_256 = UInt384.from(UInt256.MAX_VALUE).increment();
 
-	private final ValidatorSet validatorSet;
-	private final Comparator<Entry<Validator, UInt384>> weightsComparator;
+	private final BFTValidatorSet validatorSet;
+	private final Comparator<Entry<BFTValidator, UInt384>> weightsComparator;
 	private final CachingNextLeaderComputer nextLeaderComputer;
 
-	public WeightedRotatingLeaders(ValidatorSet validatorSet, Comparator<Validator> comparator, int cacheSize) {
+	public WeightedRotatingLeaders(BFTValidatorSet validatorSet, Comparator<BFTValidator> comparator, int cacheSize) {
 		this.validatorSet = validatorSet;
 		this.weightsComparator = Comparator
-			.comparing(Entry<Validator, UInt384>::getValue)
+			.comparing(Entry<BFTValidator, UInt384>::getValue)
 			.thenComparing(Entry::getKey, comparator);
 		this.nextLeaderComputer = new CachingNextLeaderComputer(validatorSet, weightsComparator, cacheSize);
 	}
 
 	private static class CachingNextLeaderComputer {
-		private final ValidatorSet validatorSet;
-		private final Comparator<Entry<Validator, UInt384>> weightsComparator;
-		private final Map<Validator, UInt384> weights;
-		private final Validator[] cache;
+		private final BFTValidatorSet validatorSet;
+		private final Comparator<Entry<BFTValidator, UInt384>> weightsComparator;
+		private final Map<BFTValidator, UInt384> weights;
+		private final BFTValidator[] cache;
 		private final Long lcm;
 		private View curView;
 
-		private CachingNextLeaderComputer(ValidatorSet validatorSet, Comparator<Entry<Validator, UInt384>> weightsComparator, int cacheSize) {
+		private CachingNextLeaderComputer(BFTValidatorSet validatorSet, Comparator<Entry<BFTValidator, UInt384>> weightsComparator, int cacheSize) {
 			this.validatorSet = validatorSet;
 			this.weightsComparator = weightsComparator;
 			this.weights = new HashMap<>();
-			this.cache = new Validator[cacheSize];
+			this.cache = new BFTValidator[cacheSize];
 
-			UInt256[] powerArray = validatorSet.getValidators().stream().map(Validator::getPower).toArray(UInt256[]::new);
+			UInt256[] powerArray = validatorSet.getValidators().stream().map(BFTValidator::getPower).toArray(UInt256[]::new);
 			// after cappedLCM is executed, the following invariant will be true:
 			// (lcm > 0 && lcm < 2^63 -1 ) || lcm == null
 			// This is due to use of 2^63 - 1 cap and also the invariant from ValidatorSet
@@ -83,8 +83,8 @@ public final class WeightedRotatingLeaders implements ProposerElection {
 			this.resetToView(View.of(0));
 		}
 
-		private Validator computeHeaviest() {
-			final Entry<Validator, UInt384> max = weights.entrySet().stream()
+		private BFTValidator computeHeaviest() {
+			final Entry<BFTValidator, UInt384> max = weights.entrySet().stream()
 				.max(weightsComparator)
 				.orElseThrow(() -> new IllegalStateException("Weights cannot be empty"));
 			return max.getKey();
@@ -93,11 +93,11 @@ public final class WeightedRotatingLeaders implements ProposerElection {
 		private void computeNext() {
 			// Reset current leader by subtracting total power
 			final int curIndex = (int) (this.curView.number() % cache.length);
-			final Validator curLeader = cache[curIndex];
+			final BFTValidator curLeader = cache[curIndex];
 			weights.merge(curLeader, UInt384.from(validatorSet.getTotalPower()), UInt384::subtract);
 
 			// Add weights relative to each validator's power
-			for (Validator validator : validatorSet.getValidators()) {
+			for (BFTValidator validator : validatorSet.getValidators()) {
 				weights.merge(validator, UInt384.from(validator.getPower()), UInt384::add);
 			}
 
@@ -107,7 +107,7 @@ public final class WeightedRotatingLeaders implements ProposerElection {
 			cache[index] = computeHeaviest();
 		}
 
-		private Validator checkCacheForProposer(View view) {
+		private BFTValidator checkCacheForProposer(View view) {
 			if (view.compareTo(curView) <= 0 && view.number() > curView.number() - cache.length) {
 				final int index = (int) (view.number() % cache.length);
 				return cache[index];
@@ -122,7 +122,7 @@ public final class WeightedRotatingLeaders implements ProposerElection {
 			}
 		}
 
-		private Validator resetToView(View view) {
+		private BFTValidator resetToView(View view) {
 			// reset if view isn't in cache
 			if (curView == null || view.number() < curView.number() - cache.length) {
 				if (lcm == null || lcm > view.number()) {
@@ -132,7 +132,7 @@ public final class WeightedRotatingLeaders implements ProposerElection {
 					curView = View.of(multipleOfLCM * lcm);
 				}
 
-				for (Validator validator : validatorSet.getValidators()) {
+				for (BFTValidator validator : validatorSet.getValidators()) {
 					weights.put(validator, POW_2_256.subtract(validator.getPower()));
 				}
 				cache[0] = computeHeaviest();
@@ -152,19 +152,19 @@ public final class WeightedRotatingLeaders implements ProposerElection {
 	}
 
 	@Override
-	public ECPublicKey getProposer(View view) {
+	public BFTNode getProposer(View view) {
 		nextLeaderComputer.computeToView(view);
 
 		// validator will only be null if the view supplied is before the cache
 		// window
-		Validator validator = nextLeaderComputer.checkCacheForProposer(view);
+		BFTValidator validator = nextLeaderComputer.checkCacheForProposer(view);
 		if (validator != null) {
 			// dynamic program cache successful
-			return validator.nodeKey();
+			return validator.getNode();
 		} else {
 			// cache doesn't have value, do the expensive operation
 			CachingNextLeaderComputer computer = new CachingNextLeaderComputer(validatorSet, weightsComparator, 1);
-			return computer.resetToView(view).nodeKey();
+			return computer.resetToView(view).getNode();
 		}
 	}
 

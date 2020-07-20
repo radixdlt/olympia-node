@@ -17,22 +17,20 @@
 
 package com.radixdlt.middleware2.network;
 
-import com.google.inject.Singleton;
+import com.radixdlt.consensus.bft.BFTNode;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import java.util.Objects;
 
 import java.util.Optional;
 import java.util.Set;
-import javax.inject.Inject;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.radix.network.messaging.Message;
 
-import com.google.inject.name.Named;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.ConsensusEventsRx;
-import com.radixdlt.consensus.BFTEventSender;
+import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
@@ -50,25 +48,23 @@ import io.reactivex.rxjava3.subjects.PublishSubject;
  * BFT Network sending and receiving layer used on top of the MessageCentral
  * layer.
  */
-@Singleton
 public final class MessageCentralBFTNetwork implements BFTEventSender, ConsensusEventsRx {
 	private static final Logger log = LogManager.getLogger();
 
-	private final ECPublicKey selfPublicKey;
+	private final BFTNode self;
 	private final int magic;
 	private final AddressBook addressBook;
 	private final MessageCentral messageCentral;
 	private final PublishSubject<ConsensusEvent> localMessages;
 
-	@Inject
 	public MessageCentralBFTNetwork(
-		@Named("self") ECPublicKey selfPublicKey,
+		BFTNode self,
 		Universe universe,
 		AddressBook addressBook,
 		MessageCentral messageCentral
 	) {
 		this.magic = universe.getMagic();
-		this.selfPublicKey = Objects.requireNonNull(selfPublicKey);
+		this.self = Objects.requireNonNull(self);
 		this.addressBook = Objects.requireNonNull(addressBook);
 		this.messageCentral = Objects.requireNonNull(messageCentral);
 		this.localMessages = PublishSubject.create();
@@ -84,34 +80,34 @@ public final class MessageCentralBFTNetwork implements BFTEventSender, Consensus
 	}
 
 	@Override
-	public void broadcastProposal(Proposal proposal, Set<ECPublicKey> nodes) {
-		for (ECPublicKey node : nodes) {
-			if (this.selfPublicKey.equals(node)) {
+	public void broadcastProposal(Proposal proposal, Set<BFTNode> nodes) {
+		for (BFTNode node : nodes) {
+			if (this.self.equals(node)) {
 				this.localMessages.onNext(proposal);
 			} else {
 				ConsensusEventMessage message = new ConsensusEventMessage(this.magic, proposal);
-				send(message, node);
+				send(message, node.getKey());
 			}
 		}
 	}
 
 	@Override
-	public void sendNewView(NewView newView, ECPublicKey newViewLeader) {
-		if (this.selfPublicKey.equals(newViewLeader)) {
+	public void sendNewView(NewView newView, BFTNode newViewLeader) {
+		if (this.self.equals(newViewLeader)) {
 			this.localMessages.onNext(newView);
 		} else {
 			ConsensusEventMessage message = new ConsensusEventMessage(this.magic, newView);
-			send(message, newViewLeader);
+			send(message, newViewLeader.getKey());
 		}
 	}
 
 	@Override
-	public void sendVote(Vote vote, ECPublicKey leader) {
-		if (this.selfPublicKey.equals(leader)) {
+	public void sendVote(Vote vote, BFTNode leader) {
+		if (this.self.equals(leader)) {
 			this.localMessages.onNext(vote);
 		} else {
 			ConsensusEventMessage message = new ConsensusEventMessage(this.magic, vote);
-			send(message, leader);
+			send(message, leader.getKey());
 		}
 	}
 
