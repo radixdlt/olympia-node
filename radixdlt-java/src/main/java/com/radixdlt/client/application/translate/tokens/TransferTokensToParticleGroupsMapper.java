@@ -25,14 +25,14 @@ package com.radixdlt.client.application.translate.tokens;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.client.application.translate.StageActionException;
 import com.radixdlt.client.application.translate.ShardedParticleStateId;
+import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
+import com.radixdlt.client.atommodel.tokens.TokenPermission;
+import com.radixdlt.client.core.fungible.FungibleTransitionMapper;
 import com.radixdlt.identifiers.RRI;
-import com.radixdlt.client.core.fungible.FungibleParticleTransitioner;
-import com.radixdlt.client.core.fungible.FungibleParticleTransitioner.FungibleParticleTransition;
 import com.radixdlt.client.core.fungible.NotEnoughFungiblesException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.UnaryOperator;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -53,60 +53,43 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 	public TransferTokensToParticleGroupsMapper() {
 	}
 
-	private List<SpunParticle> mapToParticles(TransferTokensAction transfer, List<TransferrableTokensParticle> currentParticles)
+	private static List<SpunParticle> mapToParticles(TransferTokensAction transfer, List<TransferrableTokensParticle> currentParticles)
 		throws NotEnoughFungiblesException {
-		final UnaryOperator<List<TransferrableTokensParticle>> combiner =
-			transferredList -> transferredList.stream()
-				.map(TransferrableTokensParticle::getAmount)
-				.reduce(UInt256::add)
-				.map(amt -> Collections.singletonList(
-					new TransferrableTokensParticle(
-						amt,
-						transferredList.get(0).getGranularity(),
-						transferredList.get(0).getAddress(),
-						System.nanoTime(),
-						transferredList.get(0).getTokenDefinitionReference(),
-						System.currentTimeMillis() / 60000L + 60000L,
-						transferredList.get(0).getTokenPermissions()
-					)
-				)).orElse(Collections.emptyList());
 
-		final FungibleParticleTransitioner<TransferrableTokensParticle, TransferrableTokensParticle> transitioner =
-			new FungibleParticleTransitioner<>(
-				(amt, consumable) -> new TransferrableTokensParticle(
+		final UInt256 totalAmountToTransfer = TokenUnitConversions.unitsToSubunits(transfer.getAmount());
+		if (currentParticles.isEmpty()) {
+			throw new NotEnoughFungiblesException(totalAmountToTransfer, UInt256.ZERO);
+		}
+
+		final RRI token = currentParticles.get(0).getTokenDefinitionReference();
+		final UInt256 granularity = currentParticles.get(0).getGranularity();
+		final Map<TokenTransition, TokenPermission> permissions = currentParticles.get(0).getTokenPermissions();
+
+		FungibleTransitionMapper<TransferrableTokensParticle, TransferrableTokensParticle> mapper = new FungibleTransitionMapper<>(
+			TransferrableTokensParticle::getAmount,
+			amt ->
+				new TransferrableTokensParticle(
 					amt,
-					consumable.getGranularity(),
+					granularity,
+					transfer.getFrom(),
+					System.nanoTime(),
+					token,
+					System.currentTimeMillis() / 60000L + 60000L,
+					permissions
+				),
+			amt ->
+				new TransferrableTokensParticle(
+					totalAmountToTransfer,
+					granularity,
 					transfer.getTo(),
 					System.nanoTime(),
-					consumable.getTokenDefinitionReference(),
+					token,
 					System.currentTimeMillis() / 60000L + 60000L,
-					consumable.getTokenPermissions()
-				),
-				combiner,
-				(amt, consumable) -> new TransferrableTokensParticle(
-					amt,
-					consumable.getGranularity(),
-					consumable.getAddress(),
-					System.nanoTime(),
-					consumable.getTokenDefinitionReference(),
-					System.currentTimeMillis() / 60000L + 60000L,
-					consumable.getTokenPermissions()
-				),
-				combiner,
-				TransferrableTokensParticle::getAmount
-			);
-
-		FungibleParticleTransition<TransferrableTokensParticle, TransferrableTokensParticle> transition = transitioner.createTransition(
-			currentParticles,
-			TokenUnitConversions.unitsToSubunits(transfer.getAmount())
+					permissions
+				)
 		);
 
-		List<SpunParticle> spunParticles = new ArrayList<>();
-		transition.getRemoved().stream().map(t -> (Particle) t).forEach(p -> spunParticles.add(SpunParticle.down(p)));
-		transition.getMigrated().stream().map(t -> (Particle) t).forEach(p -> spunParticles.add(SpunParticle.up(p)));
-		transition.getTransitioned().stream().map(t -> (Particle) t).forEach(p -> spunParticles.add(SpunParticle.up(p)));
-
-		return spunParticles;
+		return mapper.mapToParticles(currentParticles, totalAmountToTransfer);
 	}
 
 	@Override
@@ -125,7 +108,7 @@ public class TransferTokensToParticleGroupsMapper implements StatefulActionToPar
 
 		final List<SpunParticle> transferParticles;
 		try {
-			transferParticles = this.mapToParticles(transfer, tokenConsumables);
+			transferParticles = mapToParticles(transfer, tokenConsumables);
 		} catch (NotEnoughFungiblesException e) {
 			throw new InsufficientFundsException(
 				tokenRef, TokenUnitConversions.subunitsToUnits(e.getCurrent()), transfer.getAmount()
