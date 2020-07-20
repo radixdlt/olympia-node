@@ -1,7 +1,6 @@
 package com.radix.acceptance.atomic_transactions_with_dependence;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.tokens.InsufficientFundsException;
@@ -16,8 +15,7 @@ import com.radixdlt.client.core.atoms.ParticleGroup.ParticleGroupBuilder;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.client.core.atoms.particles.Spin;
-import com.radixdlt.client.core.fungible.FungibleParticleTransitioner;
-import com.radixdlt.client.core.fungible.FungibleParticleTransitioner.FungibleParticleTransition;
+import com.radix.acceptance.atomic_transactions_with_dependence.FungibleParticleTransitioner.FungibleParticleTransition;
 import com.radixdlt.client.core.fungible.NotEnoughFungiblesException;
 import com.radixdlt.utils.UInt256;
 
