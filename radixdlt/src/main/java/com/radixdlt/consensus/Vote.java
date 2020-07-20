@@ -20,6 +20,7 @@ package com.radixdlt.consensus;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.errorprone.annotations.Immutable;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
@@ -42,7 +43,7 @@ public final class Vote implements ConsensusEvent {
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	private final ECPublicKey author;
+	private final BFTNode author;
 
 	@JsonProperty("vertex_metadata")
 	@DsonOutput(Output.ALL)
@@ -58,10 +59,10 @@ public final class Vote implements ConsensusEvent {
 		@JsonProperty("vertex_metadata") VoteData voteData,
 		@JsonProperty("signature") ECDSASignature signature
 	) throws CryptoException {
-		this(new ECPublicKey(author), voteData, signature);
+		this(BFTNode.create(new ECPublicKey(author)), voteData, signature);
 	}
 
-	public Vote(ECPublicKey author, VoteData voteData, ECDSASignature signature) {
+	public Vote(BFTNode author, VoteData voteData, ECDSASignature signature) {
 		this.author = Objects.requireNonNull(author);
 		this.voteData = Objects.requireNonNull(voteData);
 		this.signature = signature;
@@ -73,7 +74,7 @@ public final class Vote implements ConsensusEvent {
 	}
 
 	@Override
-	public ECPublicKey getAuthor() {
+	public BFTNode getAuthor() {
 		return author;
 	}
 
@@ -88,13 +89,13 @@ public final class Vote implements ConsensusEvent {
 	@JsonProperty("author")
 	@DsonOutput(Output.ALL)
 	private byte[] getSerializerAuthor() {
-		return this.author == null ? null : this.author.getBytes();
+		return this.author == null ? null : this.author.getKey().getBytes();
 	}
 
 	@Override
 	public String toString() {
 		return String.format("%s{epoch=%s view=%s author=%s}", getClass().getSimpleName(),
-			this.getEpoch(), voteData.getProposed().getView(), author.euid().toString().substring(0, 6));
+			this.getEpoch(), voteData.getProposed().getView(), author.getSimpleName());
 	}
 
 	@Override

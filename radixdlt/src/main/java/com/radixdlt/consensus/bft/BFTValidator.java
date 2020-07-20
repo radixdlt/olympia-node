@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,9 +15,8 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.validators;
+package com.radixdlt.consensus.bft;
 
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.utils.UInt256;
 import java.util.Objects;
 import javax.annotation.concurrent.Immutable;
@@ -27,27 +26,27 @@ import javax.annotation.concurrent.Immutable;
  * Represents a validator and their Proof-of-Stake status.
  */
 @Immutable
-public final class Validator {
+public final class BFTValidator {
 	// Power associated with each validator, could e.g. be based on staked tokens
 	private final UInt256 power;
 
     // Public key for consensus
-	private final ECPublicKey nodeKey;
+	private final BFTNode node;
 
-	private Validator(
-		ECPublicKey nodeKey,
+	private BFTValidator(
+		BFTNode node,
 		UInt256 power
 	) {
-		this.nodeKey = Objects.requireNonNull(nodeKey);
+		this.node = Objects.requireNonNull(node);
 		this.power = Objects.requireNonNull(power);
 	}
 
-	public static Validator from(ECPublicKey nodeKey, UInt256 power) {
-		return new Validator(nodeKey, power);
+	public static BFTValidator from(BFTNode node, UInt256 power) {
+		return new BFTValidator(node, power);
 	}
 
-	public ECPublicKey nodeKey() {
-		return this.nodeKey;
+	public BFTNode getNode() {
+		return node;
 	}
 
 	public UInt256 getPower() {
@@ -56,7 +55,7 @@ public final class Validator {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.nodeKey, this.power);
+		return Objects.hash(this.node, this.power);
 	}
 
 	@Override
@@ -64,9 +63,9 @@ public final class Validator {
 		if (this == obj) {
 			return true;
 		}
-		if (obj instanceof Validator) {
-			Validator other = (Validator) obj;
-			return Objects.equals(this.nodeKey, other.nodeKey)
+		if (obj instanceof BFTValidator) {
+			BFTValidator other = (BFTValidator) obj;
+			return Objects.equals(this.node, other.node)
 				&& Objects.equals(this.power, other.power);
 		}
 		return false;
@@ -74,6 +73,6 @@ public final class Validator {
 
 	@Override
 	public String toString() {
-		return String.format("%s{nodeKey=%s power=%s}", getClass().getSimpleName(), this.nodeKey, this.power);
+		return String.format("%s{node=%s power=%s}", getClass().getSimpleName(), this.node.getSimpleName(), this.power);
 	}
 }

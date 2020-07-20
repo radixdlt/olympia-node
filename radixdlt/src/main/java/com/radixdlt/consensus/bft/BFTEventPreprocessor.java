@@ -15,13 +15,18 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.consensus.bft;
 
-import com.radixdlt.consensus.SyncQueues.SyncQueue;
-import com.radixdlt.consensus.bft.VertexStore;
+import com.radixdlt.consensus.BFTEventProcessor;
+import com.radixdlt.consensus.NewView;
+import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.RequiresSyncConsensusEvent;
+import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.bft.SyncQueues.SyncQueue;
 import com.radixdlt.consensus.liveness.PacemakerState;
 import com.radixdlt.consensus.liveness.ProposerElection;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
@@ -42,7 +47,7 @@ import org.apache.logging.log4j.Logger;
 public final class BFTEventPreprocessor implements BFTEventProcessor {
 	private static final Logger log = LogManager.getLogger();
 
-	private final ECPublicKey myKey;
+	private final BFTNode self;
 	private final BFTEventProcessor forwardTo;
 	private final VertexStore vertexStore;
 	private final PacemakerState pacemakerState;
@@ -50,23 +55,19 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 	private final SyncQueues queues;
 
 	public BFTEventPreprocessor(
-		ECPublicKey myKey,
+		BFTNode self,
 		BFTEventProcessor forwardTo,
 		PacemakerState pacemakerState,
 		VertexStore vertexStore,
 		ProposerElection proposerElection,
 		SyncQueues queues
 	) {
-		this.myKey = Objects.requireNonNull(myKey);
+		this.self = Objects.requireNonNull(self);
 		this.pacemakerState = Objects.requireNonNull(pacemakerState);
 		this.vertexStore = Objects.requireNonNull(vertexStore);
 		this.proposerElection = Objects.requireNonNull(proposerElection);
 		this.queues = queues;
 		this.forwardTo = forwardTo;
-	}
-
-	private String getShortName() {
-		return myKey.euid().toString().substring(0, 6);
 	}
 
 	private boolean peekAndExecute(SyncQueue queue, Hash vertexId) {
@@ -98,7 +99,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 	 */
 	@Override
 	public void processLocalSync(Hash vertexId) {
-		log.trace("{}: LOCAL_SYNC: {}", this.getShortName(), vertexId);
+		log.trace("{}: LOCAL_SYNC: {}", this.self::getSimpleName, () -> vertexId);
 		for (SyncQueue queue : queues.getQueues()) {
 			if (peekAndExecute(queue, vertexId)) {
 				queue.pop();
@@ -113,7 +114,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 
 	@Override
 	public void processVote(Vote vote) {
-		log.trace("{}: VOTE: PreProcessing {}", this.getShortName(), vote);
+		log.trace("{}: VOTE: PreProcessing {}", this.self::getSimpleName, () -> vote);
 
 		// only do something if we're actually the leader for the vote
 		final View view = vote.getVoteData().getProposed().getView();
@@ -121,9 +122,9 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		// TODO: up to dos attacks on calculation of next proposer if ProposerElection is
 		// TODO: an expensive operation. Need to figure out a way of mitigating this problem
 		// TODO: perhaps through filter views too out of bounds
-		if (!Objects.equals(proposerElection.getProposer(view), myKey)) {
+		if (!Objects.equals(proposerElection.getProposer(view), this.self)) {
 			log.warn("{}: VOTE: Ignoring confused vote {} for {}",
-				getShortName(), vote.hashCode(), vote.getVoteData().getProposed().getView());
+				this.self::getSimpleName, vote::hashCode, vote.getVoteData().getProposed()::getView);
 			return;
 		}
 
@@ -131,18 +132,18 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 	}
 
 	private boolean processNewViewInternal(NewView newView) {
-		log.trace("{}: NEW_VIEW: PreProcessing {}", getShortName(), newView);
+		log.trace("{}: NEW_VIEW: PreProcessing {}", this.self::getSimpleName, () -> newView);
 
 		// only do something if we're actually the leader for the view
 		final View view = newView.getView();
-		if (!Objects.equals(proposerElection.getProposer(view), myKey)) {
-			log.warn("{}: NEW_VIEW: Got confused new-view {} for view {}", getShortName(), newView, newView.getView());
+		if (!Objects.equals(proposerElection.getProposer(view), this.self)) {
+			log.warn("{}: NEW_VIEW: Got confused new-view {} for view {}", this.self::getSimpleName, () -> newView, newView::getView);
 			return true;
 		}
 
 		final View currentView = pacemakerState.getCurrentView();
 		if (newView.getView().compareTo(currentView) < 0) {
-			log.trace("{}: NEW_VIEW: Ignoring {} Current is: {}", getShortName(), newView.getView(), currentView);
+			log.trace("{}: NEW_VIEW: Ignoring {} Current is: {}", this.self::getSimpleName, newView::getView, () -> currentView);
 			return true;
 		}
 
@@ -156,23 +157,23 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 
 	@Override
 	public void processNewView(NewView newView) {
-		log.trace("{}: NEW_VIEW: Queueing {}", this.getShortName(), newView);
+		log.trace("{}: NEW_VIEW: Queueing {}", this.self::getSimpleName, () -> newView);
 		if (queues.isEmptyElseAdd(newView)) {
 			if (!processNewViewInternal(newView)) {
-				log.debug("{}: NEW_VIEW: Queuing {} Waiting for Sync", getShortName(), newView);
+				log.debug("{}: NEW_VIEW: Queuing {} Waiting for Sync", this.self::getSimpleName, () -> newView);
 				queues.add(newView);
 			}
 		}
 	}
 
 	private boolean processProposalInternal(Proposal proposal) {
-		log.trace("{}: PROPOSAL: PreProcessing {}", this.getShortName(), proposal);
+		log.trace("{}: PROPOSAL: PreProcessing {}", this.self::getSimpleName, () -> proposal);
 
 		final Vertex proposedVertex = proposal.getVertex();
 		final View proposedVertexView = proposedVertex.getView();
 		final View currentView = this.pacemakerState.getCurrentView();
 		if (proposedVertexView.compareTo(currentView) < 0) {
-			log.trace("{}: PROPOSAL: Ignoring view {} Current is: {}", this.getShortName(), proposedVertexView, currentView);
+			log.trace("{}: PROPOSAL: Ignoring view {} Current is: {}", this.self::getSimpleName, () -> proposedVertexView, () -> currentView);
 			return true;
 		}
 
@@ -186,10 +187,10 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 
 	@Override
 	public void processProposal(Proposal proposal) {
-		log.trace("{}: PROPOSAL: Queueing {}", this.getShortName(), proposal);
+		log.trace("{}: PROPOSAL: Queueing {}", this.self::getSimpleName, () -> proposal);
 		if (queues.isEmptyElseAdd(proposal)) {
 			if (!processProposalInternal(proposal)) {
-				log.debug("{}: PROPOSAL: Queuing {} Waiting for Sync", getShortName(), proposal);
+				log.debug("{}: PROPOSAL: Queuing {} Waiting for Sync", this.self::getSimpleName, () -> proposal);
 				queues.add(proposal);
 			}
 		}

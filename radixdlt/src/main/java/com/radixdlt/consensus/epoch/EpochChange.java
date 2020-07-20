@@ -15,9 +15,10 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.consensus.epoch;
 
-import com.radixdlt.consensus.validators.ValidatorSet;
+import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import java.util.Objects;
 
 /**
@@ -25,9 +26,9 @@ import java.util.Objects;
  */
 public final class EpochChange {
 	private final VertexMetadata ancestor;
-	private final ValidatorSet validatorSet;
+	private final BFTValidatorSet validatorSet;
 
-	public EpochChange(VertexMetadata ancestor, ValidatorSet validatorSet) {
+	public EpochChange(VertexMetadata ancestor, BFTValidatorSet validatorSet) {
 		this.ancestor = Objects.requireNonNull(ancestor);
 		this.validatorSet = Objects.requireNonNull(validatorSet);
 	}
@@ -36,7 +37,7 @@ public final class EpochChange {
 		return ancestor;
 	}
 
-	public ValidatorSet getValidatorSet() {
+	public BFTValidatorSet getValidatorSet() {
 		return validatorSet;
 	}
 

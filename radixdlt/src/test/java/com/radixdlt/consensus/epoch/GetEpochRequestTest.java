@@ -20,18 +20,18 @@ package com.radixdlt.consensus.epoch;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.mock;
 
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.consensus.bft.BFTNode;
 import org.junit.Before;
 import org.junit.Test;
 
 public class GetEpochRequestTest {
-	private ECPublicKey sender;
+	private BFTNode sender;
 	private long epoch;
 	private GetEpochRequest request;
 
 	@Before
 	public void setUp() {
-		this.sender = mock(ECPublicKey.class);
+		this.sender = mock(BFTNode.class);
 		this.epoch = 12345;
 		this.request = new GetEpochRequest(this.sender, this.epoch);
 	}

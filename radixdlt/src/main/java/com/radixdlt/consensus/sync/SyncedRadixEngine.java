@@ -21,13 +21,13 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Streams;
 import com.radixdlt.EpochChangeSender;
-import com.radixdlt.consensus.EpochChange;
+import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.View;
-import com.radixdlt.consensus.validators.ValidatorSet;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.EUID;
@@ -72,7 +72,7 @@ public final class SyncedRadixEngine implements SyncedStateComputer<CommittedAto
 	private final CommittedStateSyncSender committedStateSyncSender;
 	private final EpochChangeSender epochChangeSender;
 	private final SyncedRadixEngineEventSender engineEventSender;
-	private final Function<Long, ValidatorSet> validatorSetMapping;
+	private final Function<Long, BFTValidatorSet> validatorSetMapping;
 	private final AddressBook addressBook;
 	private final StateSyncNetwork stateSyncNetwork;
 	private final View epochChangeView;
@@ -90,7 +90,7 @@ public final class SyncedRadixEngine implements SyncedStateComputer<CommittedAto
 		CommittedStateSyncSender committedStateSyncSender,
 		EpochChangeSender epochChangeSender,
 		SyncedRadixEngineEventSender engineEventSender,
-		Function<Long, ValidatorSet> validatorSetMapping,
+		Function<Long, BFTValidatorSet> validatorSetMapping,
 		View epochChangeView,
 		AddressBook addressBook,
 		StateSyncNetwork stateSyncNetwork
@@ -158,7 +158,7 @@ public final class SyncedRadixEngine implements SyncedStateComputer<CommittedAto
 	}
 
 	@Override
-	public boolean syncTo(VertexMetadata vertexMetadata, List<ECPublicKey> target, Object opaque) {
+	public boolean syncTo(VertexMetadata vertexMetadata, List<BFTNode> target, Object opaque) {
 		if (target.isEmpty()) {
 			// TODO: relax this in future when we have non-validator nodes
 			throw new IllegalArgumentException("target must not be empty");
@@ -172,7 +172,7 @@ public final class SyncedRadixEngine implements SyncedStateComputer<CommittedAto
 
 		// TODO: better randomization of peer selection
 		Peer peer = target.stream()
-			.map(pk -> addressBook.peer(pk.euid()))
+			.map(node -> addressBook.peer(node.getKey().euid()))
 			.filter(Optional::isPresent)
 			.map(Optional::get)
 			.filter(Peer::hasSystem)

@@ -17,13 +17,13 @@
 
 package com.radixdlt.consensus.simulation.configuration;
 
-import com.radixdlt.consensus.EpochChange;
+import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.simulation.network.SimulationNodes.SimulatedStateComputer;
-import com.radixdlt.consensus.validators.ValidatorSet;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.middleware2.CommittedAtom;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
@@ -39,10 +39,10 @@ import java.util.function.Function;
 public class ChangingEpochSyncedStateComputer implements SimulatedStateComputer {
 	private final Subject<EpochChange> epochChanges = BehaviorSubject.<EpochChange>create().toSerialized();
 	private final View epochHighView;
-	private final Function<Long, ValidatorSet> validatorSetMapping;
+	private final Function<Long, BFTValidatorSet> validatorSetMapping;
 	private VertexMetadata currentAncestor = null;
 
-	public ChangingEpochSyncedStateComputer(View epochHighView, Function<Long, ValidatorSet> validatorSetMapping) {
+	public ChangingEpochSyncedStateComputer(View epochHighView, Function<Long, BFTValidatorSet> validatorSetMapping) {
 		this.epochHighView = Objects.requireNonNull(epochHighView);
 		this.validatorSetMapping = validatorSetMapping;
 		VertexMetadata ancestor = VertexMetadata.ofGenesisAncestor();
@@ -60,7 +60,7 @@ public class ChangingEpochSyncedStateComputer implements SimulatedStateComputer 
 	}
 
 	@Override
-	public boolean syncTo(VertexMetadata vertexMetadata, List<ECPublicKey> target, Object opaque) {
+	public boolean syncTo(VertexMetadata vertexMetadata, List<BFTNode> target, Object opaque) {
 		if (vertexMetadata.isEndOfEpoch()) {
 			this.nextEpoch(vertexMetadata);
 		}

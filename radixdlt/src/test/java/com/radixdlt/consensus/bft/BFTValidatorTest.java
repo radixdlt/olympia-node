@@ -15,36 +15,37 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.consensus.bft;
 
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.mock;
-
-import nl.jqno.equalsverifier.EqualsVerifier;
-import org.junit.Before;
+import com.radixdlt.utils.UInt256;
 import org.junit.Test;
 
-public class LocalTimeoutTest {
-	private LocalTimeout localTimeout;
-	private long epoch;
-	private View view;
+import nl.jqno.equalsverifier.EqualsVerifier;
 
-	@Before
-	public void setup() {
-		epoch = 12345;
-		view = mock(View.class);
-		localTimeout = new LocalTimeout(epoch, view);
-	}
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
 
+public class BFTValidatorTest {
 	@Test
 	public void equalsContract() {
-		EqualsVerifier.forClass(LocalTimeout.class)
+		EqualsVerifier.forClass(BFTValidator.class)
 			.verify();
 	}
 
 	@Test
-	public void testGetters() {
-		assertEquals(this.view, this.localTimeout.getView());
-		assertEquals(this.epoch, this.localTimeout.getEpoch());
+	public void sensibleToString() {
+		String s = create().toString();
+		assertThat(s, containsString(BFTValidator.class.getSimpleName()));
+	}
+
+	@Test
+	public void testGetter() {
+		assertNotNull(create().getNode());
+	}
+
+	private static BFTValidator create() {
+		return BFTValidator.from(mock(BFTNode.class), UInt256.ONE);
 	}
 }

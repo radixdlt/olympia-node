@@ -15,31 +15,48 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.consensus.bft;
 
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.consensus.BFTEventProcessor;
+import com.radixdlt.consensus.NewView;
+import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.Vote;
 import com.radixdlt.crypto.Hash;
 
 /**
- * Sender which goes nowhere
+ * An empty BFT event processor
  */
-public enum EmptySyncVerticesRPCSender implements SyncVerticesRPCSender {
+public enum EmptyBFTEventProcessor implements BFTEventProcessor {
 	INSTANCE;
+
 	@Override
-	public void sendGetVerticesRequest(Hash id, ECPublicKey node, int count, Object opaque) {
-		// empty
+	public void processVote(Vote vote) {
+		// No-op
 	}
 
 	@Override
-	public void sendGetVerticesResponse(GetVerticesRequest originalRequest, ImmutableList<Vertex> vertices) {
-		// empty
+	public void processNewView(NewView newView) {
+		// No-op
 	}
 
 	@Override
-	public void sendGetVerticesErrorResponse(GetVerticesRequest originalRequest, QuorumCertificate highestQC,
-		QuorumCertificate highestCommittedQC) {
-		// empty
+	public void processProposal(Proposal proposal) {
+		// No-op
+	}
+
+	@Override
+	public void processLocalTimeout(View view) {
+		// No-op
+	}
+
+	@Override
+	public void processLocalSync(Hash vertexId) {
+		// No-op
+	}
+
+	@Override
+	public void start() {
+		// No-op
 	}
 }

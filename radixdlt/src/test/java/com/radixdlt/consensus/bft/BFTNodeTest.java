@@ -15,18 +15,18 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt;
+package com.radixdlt.consensus.bft;
 
-import com.radixdlt.consensus.epoch.EpochChange;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Test;
 
-/**
- * Sends an epoch change message
- */
-public interface EpochChangeSender {
+public class BFTNodeTest {
 
-	/**
-	 * Signals that an epoch change has occurred
-	 * @param epochChange the epoch change
-	 */
-	void epochChange(EpochChange epochChange);
+	@Test
+	public void equalsContract() {
+		EqualsVerifier.forClass(BFTNode.class)
+			.withIgnoredFields("simpleName")
+			.verify();
+	}
+
 }

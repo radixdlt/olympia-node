@@ -19,8 +19,6 @@ package com.radixdlt.middleware2.network;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
-import com.radixdlt.consensus.ConsensusEventsRx;
-import com.radixdlt.consensus.BFTEventSender;
 import com.radixdlt.mempool.MempoolNetworkRx;
 import com.radixdlt.mempool.MempoolNetworkTx;
 
@@ -32,10 +30,5 @@ public class NetworkModule extends AbstractModule {
 		bind(SimpleMempoolNetwork.class).in(Scopes.SINGLETON);
 		bind(MempoolNetworkRx.class).to(SimpleMempoolNetwork.class);
 		bind(MempoolNetworkTx.class).to(SimpleMempoolNetwork.class);
-
-		// Provides (for Event Coordinator)
-		bind(MessageCentralBFTNetwork.class).in(Scopes.SINGLETON);
-		bind(ConsensusEventsRx.class).to(MessageCentralBFTNetwork.class);
-		bind(BFTEventSender.class).to(MessageCentralBFTNetwork.class);
 	}
 }

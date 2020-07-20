@@ -17,7 +17,7 @@
 
 package com.radixdlt.consensus.liveness;
 
-import com.radixdlt.consensus.LocalTimeout;
+import com.radixdlt.consensus.epoch.LocalTimeout;
 
 /**
  * Sender for local timeouts.

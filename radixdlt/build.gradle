@@ -72,6 +72,10 @@ checkstyleIntegrationTest {
 }
 
 test {
+    testLogging {
+        events "passed", "skipped", "failed"
+        exceptionFormat "full"
+    }
     systemProperty "java.security.egd", "file:/dev/urandom"
 }
 

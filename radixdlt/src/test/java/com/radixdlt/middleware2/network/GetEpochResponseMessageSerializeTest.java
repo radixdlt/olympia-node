@@ -18,8 +18,8 @@
 package com.radixdlt.middleware2.network;
 
 import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
 import org.radix.serialization.SerializeMessageObject;
 
 public class GetEpochResponseMessageSerializeTest extends SerializeMessageObject<GetEpochResponseMessage> {
@@ -28,7 +28,7 @@ public class GetEpochResponseMessageSerializeTest extends SerializeMessageObject
 	}
 
 	private static GetEpochResponseMessage get() {
-		ECPublicKey author = ECKeyPair.generateNew().getPublicKey();
+		BFTNode author = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
 		return new GetEpochResponseMessage(author, 12345, VertexMetadata.ofGenesisAncestor());
 	}
 }

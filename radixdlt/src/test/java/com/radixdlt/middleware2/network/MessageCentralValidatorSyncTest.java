@@ -29,13 +29,13 @@ import static org.mockito.Mockito.when;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
 import com.radixdlt.consensus.bft.GetVerticesResponse;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.epoch.GetEpochRequest;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.identifiers.EUID;
@@ -52,31 +52,39 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class MessageCentralValidatorSyncTest {
-	private ECPublicKey selfKey;
+	private BFTNode self;
 	private AddressBook addressBook;
 	private MessageCentral messageCentral;
 	private MessageCentralValidatorSync sync;
 
 	@Before
 	public void setUp() {
-		this.selfKey = ECKeyPair.generateNew().getPublicKey();
+		this.self = mock(BFTNode.class);
+		EUID selfEUID = mock(EUID.class);
+		ECPublicKey pubKey = mock(ECPublicKey.class);
+		when(pubKey.euid()).thenReturn(selfEUID);
+		when(self.getKey()).thenReturn(pubKey);
 		Universe universe = mock(Universe.class);
 		this.addressBook = mock(AddressBook.class);
 		this.messageCentral = mock(MessageCentral.class);
-		this.sync = new MessageCentralValidatorSync(selfKey, universe, addressBook, messageCentral);
+		this.sync = new MessageCentralValidatorSync(self, universe, addressBook, messageCentral);
 	}
 
 
 	@Test
 	public void when_send_rpc_to_self__then_illegal_state_exception_should_be_thrown() {
-		assertThatThrownBy(() -> sync.sendGetVerticesRequest(mock(Hash.class), selfKey, 1, new Object()))
+		assertThatThrownBy(() -> sync.sendGetVerticesRequest(mock(Hash.class), self, 1, new Object()))
 			.isInstanceOf(IllegalStateException.class);
 	}
 
 	@Test
 	public void when_get_vertex_and_peer_doesnt_exist__should_receive_error() {
-		ECPublicKey node = ECKeyPair.generateNew().getPublicKey();
-		when(addressBook.peer(node.euid())).thenReturn(Optional.empty());
+		BFTNode node = mock(BFTNode.class);
+		ECPublicKey key = mock(ECPublicKey.class);
+		EUID euid = mock(EUID.class);
+		when(key.euid()).thenReturn(euid);
+		when(node.getKey()).thenReturn(key);
+		when(addressBook.peer(euid)).thenReturn(Optional.empty());
 		assertThatThrownBy(() -> sync.sendGetVerticesRequest(mock(Hash.class), node, 1, new Object()))
 			.isInstanceOf(IllegalStateException.class);
 	}
@@ -84,8 +92,11 @@ public class MessageCentralValidatorSyncTest {
 	@Test
 	public void when_send_request_and_receive_response__then_should_receive_same_opaque() {
 		Hash id = mock(Hash.class);
-		ECPublicKey node = mock(ECPublicKey.class);
-		when(node.euid()).thenReturn(EUID.ONE);
+		ECPublicKey key = mock(ECPublicKey.class);
+		when(key.euid()).thenReturn(EUID.ONE);
+		BFTNode node = mock(BFTNode.class);
+		when(node.getKey()).thenReturn(key);
+
 		Peer peer = mock(Peer.class);
 		when(addressBook.peer(eq(EUID.ONE))).thenReturn(Optional.of(peer));
 		int count = 1;
@@ -116,8 +127,10 @@ public class MessageCentralValidatorSyncTest {
 	@Test
 	public void when_send_request_and_receive_error_response__then_should_receive_same_opaque() {
 		Hash id = mock(Hash.class);
-		ECPublicKey node = mock(ECPublicKey.class);
-		when(node.euid()).thenReturn(EUID.ONE);
+		ECPublicKey key = mock(ECPublicKey.class);
+		when(key.euid()).thenReturn(EUID.ONE);
+		BFTNode node = mock(BFTNode.class);
+		when(node.getKey()).thenReturn(key);
 		Peer peer = mock(Peer.class);
 		when(addressBook.peer(eq(EUID.ONE))).thenReturn(Optional.of(peer));
 		int count = 1;
@@ -190,24 +203,20 @@ public class MessageCentralValidatorSyncTest {
 	@Test
 	public void when_send_get_epoch_request__then_message_central_will_send_get_epoch_request() {
 		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(mock(Peer.class)));
-		ECPublicKey author = mock(ECPublicKey.class);
-		when(author.euid()).thenReturn(mock(EUID.class));
-		sync.sendGetEpochRequest(author, 12345);
+		sync.sendGetEpochRequest(self, 12345);
 		verify(messageCentral, times(1)).send(any(), any(GetEpochRequestMessage.class));
 	}
 
 	@Test
 	public void when_send_get_epoch_response__then_message_central_will_send_get_epoch_response() {
 		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(mock(Peer.class)));
-		ECPublicKey author = mock(ECPublicKey.class);
-		when(author.euid()).thenReturn(mock(EUID.class));
-		sync.sendGetEpochResponse(author, mock(VertexMetadata.class));
+		sync.sendGetEpochResponse(self, mock(VertexMetadata.class));
 		verify(messageCentral, times(1)).send(any(), any(GetEpochResponseMessage.class));
 	}
 
 	@Test
 	public void when_subscribed_to_epoch_requests__then_should_receive_requests() {
-		ECPublicKey author = mock(ECPublicKey.class);
+		BFTNode author = mock(BFTNode.class);
 		doAnswer(inv -> {
 			MessageListener<GetEpochRequestMessage> messageListener = inv.getArgument(1);
 			messageListener.handleMessage(mock(Peer.class), new GetEpochRequestMessage(author, 12345, 1));
@@ -221,7 +230,7 @@ public class MessageCentralValidatorSyncTest {
 
 	@Test
 	public void when_subscribed_to_epoch_responses__then_should_receive_responses() {
-		ECPublicKey author = mock(ECPublicKey.class);
+		BFTNode author = mock(BFTNode.class);
 		VertexMetadata ancestor = mock(VertexMetadata.class);
 		doAnswer(inv -> {
 			MessageListener<GetEpochResponseMessage> messageListener = inv.getArgument(1);

@@ -17,6 +17,7 @@
 
 package org.radix;
 
+import com.radixdlt.consensus.bft.BFTNode;
 import java.io.File;
 
 import org.assertj.core.util.Files;
@@ -83,6 +84,11 @@ public class GlobalInjectorTest {
 	@Test
 	public void testAddress() {
 		testSelfInstance(RadixAddress.class);
+	}
+
+	@Test
+	public void testBFTNode() {
+		testSelfInstance(BFTNode.class);
 	}
 
 	private <T> void testSelfInstance(Class<T> cls) {

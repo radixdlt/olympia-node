@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.middleware2;
 
 import static org.mockito.Mockito.mock;
 import static org.powermock.api.mockito.PowerMockito.when;
@@ -23,10 +23,12 @@ import static org.powermock.api.mockito.PowerMockito.when;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.api.StoredAtom;
 import com.radixdlt.api.StoredFailure;
+import com.radixdlt.consensus.CommittedStateSync;
+import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.middleware2.CommittedAtom;
-import com.radixdlt.middleware2.InternalMessagePasser;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.junit.Test;
 

@@ -23,7 +23,7 @@ import com.radixdlt.api.LedgerRx;
 import com.radixdlt.api.StoredAtom;
 import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.CommittedStateSyncRx;
-import com.radixdlt.consensus.EpochChange;
+import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.EpochChangeRx;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;

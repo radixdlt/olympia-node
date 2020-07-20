@@ -15,22 +15,37 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.middleware2.network;
+package com.radixdlt.consensus.epoch;
 
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 
-import com.radixdlt.consensus.VertexMetadata;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.View;
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Before;
 import org.junit.Test;
 
-public class GetEpochResponseMessageTest {
+public class LocalTimeoutTest {
+	private LocalTimeout localTimeout;
+	private long epoch;
+	private View view;
+
+	@Before
+	public void setup() {
+		epoch = 12345;
+		view = mock(View.class);
+		localTimeout = new LocalTimeout(epoch, view);
+	}
+
 	@Test
-	public void sensibleToString() {
-		VertexMetadata ancestor = mock(VertexMetadata.class);
-		GetEpochResponseMessage msg = new GetEpochResponseMessage(mock(BFTNode.class), 12345, ancestor);
-		String s1 = msg.toString();
-		assertThat(s1, containsString(GetEpochResponseMessage.class.getSimpleName()));
+	public void equalsContract() {
+		EqualsVerifier.forClass(LocalTimeout.class)
+			.verify();
+	}
+
+	@Test
+	public void testGetters() {
+		assertEquals(this.view, this.localTimeout.getView());
+		assertEquals(this.epoch, this.localTimeout.getEpoch());
 	}
 }

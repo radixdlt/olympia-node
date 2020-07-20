@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.validators;
+package com.radixdlt.consensus.bft;
 
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableSet;
@@ -24,8 +24,6 @@ import java.util.Collection;
 import java.util.Objects;
 import java.util.function.Function;
 
-import com.radixdlt.crypto.ECPublicKey;
-
 /**
  * Set of validators for consensus. Only validators with power >= 1 will
  * be part of the set.
@@ -33,19 +31,19 @@ import com.radixdlt.crypto.ECPublicKey;
  * Note that this set will validate for set sizes less than 4,
  * as long as all validators sign.
  */
-public final class ValidatorSet {
-	private final ImmutableBiMap<ECPublicKey, Validator> validators;
+public final class BFTValidatorSet {
+	private final ImmutableBiMap<BFTNode, BFTValidator> validators;
 
 	// Because we will base power on tokens and because tokens have a max limit
 	// of 2^256 this should never overflow
 	private final transient UInt256 totalPower;
 
-	private ValidatorSet(Collection<Validator> validators) {
+	private BFTValidatorSet(Collection<BFTValidator> validators) {
 		this.validators = validators.stream()
 			.filter(v -> !v.getPower().isZero())
-			.collect(ImmutableBiMap.toImmutableBiMap(Validator::nodeKey, Function.identity()));
+			.collect(ImmutableBiMap.toImmutableBiMap(BFTValidator::getNode, Function.identity()));
 		this.totalPower = validators.stream()
-			.map(Validator::getPower)
+			.map(BFTValidator::getPower)
 			.reduce(UInt256::add)
 			.orElse(UInt256.ZERO);
 	}
@@ -60,8 +58,8 @@ public final class ValidatorSet {
 	 * @param validators the collection of validators
 	 * @return The new {@code ValidatorSet}.
 	 */
-	public static ValidatorSet from(Collection<Validator> validators) {
-		return new ValidatorSet(validators);
+	public static BFTValidatorSet from(Collection<BFTValidator> validators) {
+		return new BFTValidatorSet(validators);
 	}
 
 	/**
@@ -73,19 +71,19 @@ public final class ValidatorSet {
 		return ValidationState.forValidatorSet(this);
 	}
 
-	public boolean containsKey(ECPublicKey key) {
-		return validators.containsKey(key);
+	public boolean containsNode(BFTNode node) {
+		return validators.containsKey(node);
 	}
 
-	public UInt256 getPower(ECPublicKey key) {
-		return validators.get(key).getPower();
+	public UInt256 getPower(BFTNode node) {
+		return validators.get(node).getPower();
 	}
 
 	public UInt256 getTotalPower() {
 		return totalPower;
 	}
 
-	public ImmutableSet<Validator> getValidators() {
+	public ImmutableSet<BFTValidator> getValidators() {
 		return validators.values();
 	}
 
@@ -99,8 +97,8 @@ public final class ValidatorSet {
 		if (this == obj) {
 			return true;
 		}
-		if (obj instanceof ValidatorSet) {
-			ValidatorSet other = (ValidatorSet) obj;
+		if (obj instanceof BFTValidatorSet) {
+			BFTValidatorSet other = (BFTValidatorSet) obj;
 			return Objects.equals(this.validators, other.validators);
 		}
 		return false;

@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,21 +15,27 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.consensus.bft;
 
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.consensus.BFTEventReducer.EndOfEpochSender;
-import com.radixdlt.consensus.bft.VertexStore;
+import com.radixdlt.consensus.NewView;
+import com.radixdlt.consensus.PendingVotes;
+import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.VoteData;
+import com.radixdlt.consensus.bft.BFTEventReducer.EndOfEpochSender;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyViolationException;
-import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.middleware2.ClientAtom;
@@ -37,11 +43,11 @@ import com.radixdlt.utils.Ints;
 import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -49,34 +55,35 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class BFTEventReducerTest {
-    private static final ECKeyPair SELF_KEY = ECKeyPair.generateNew();
-
 	private BFTEventReducer reducer;
 	private ProposalGenerator proposalGenerator;
 	private ProposerElection proposerElection;
 	private SafetyRules safetyRules;
 	private Pacemaker pacemaker;
 	private PendingVotes pendingVotes;
-	private BFTEventSender sender;
+	private BFTEventReducer.BFTEventSender sender;
 	private EndOfEpochSender endOfEpochSender;
 	private VertexStore vertexStore;
-	private ValidatorSet validatorSet;
+	private BFTValidatorSet validatorSet;
 	private SystemCounters counters;
+	private BFTNode self;
 
 	@Before
 	public void setUp() {
 		this.proposalGenerator = mock(ProposalGenerator.class);
-		this.sender = mock(BFTEventSender.class);
+		this.sender = mock(BFTEventReducer.BFTEventSender.class);
 		this.endOfEpochSender = mock(EndOfEpochSender.class);
 		this.safetyRules = mock(SafetyRules.class);
 		this.pacemaker = mock(Pacemaker.class);
 		this.vertexStore = mock(VertexStore.class);
 		this.pendingVotes = mock(PendingVotes.class);
 		this.proposerElection = mock(ProposerElection.class);
-		this.validatorSet = mock(ValidatorSet.class);
+		this.validatorSet = mock(BFTValidatorSet.class);
 		this.counters = mock(SystemCounters.class);
+		this.self = mock(BFTNode.class);
 
 		this.reducer = new BFTEventReducer(
+			self,
 			proposalGenerator,
 			sender,
 			endOfEpochSender,
@@ -85,8 +92,6 @@ public class BFTEventReducerTest {
 			vertexStore,
 			pendingVotes,
 			proposerElection,
-			SELF_KEY,
-			ECKeyPair::sign,
 			validatorSet,
 			counters
 		);
@@ -103,7 +108,7 @@ public class BFTEventReducerTest {
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		View view = mock(View.class);
 		when(qc.getView()).thenReturn(view);
-		when(proposerElection.getProposer(any())).thenReturn(SELF_KEY.getPublicKey());
+		when(proposerElection.getProposer(any())).thenReturn(self);
 		when(vertexStore.getHighestQC()).thenReturn(qc);
 		when(pacemaker.processQC(eq(view))).thenReturn(Optional.of(mock(View.class)));
 		reducer.start();
@@ -121,6 +126,7 @@ public class BFTEventReducerTest {
 	@Test
 	public void when_process_vote_and_new_qc_not_synced__then_local_sync_should_cause_it_to_process_it() {
 		Vote vote = mock(Vote.class);
+		when(vote.getAuthor()).thenReturn(mock(BFTNode.class));
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		View view = mock(View.class);
 		when(qc.getView()).thenReturn(view);
@@ -156,13 +162,14 @@ public class BFTEventReducerTest {
 
 	@Test
 	public void when_processing_vote_as_a_proposer_and_quorum_is_reached__then_a_new_view_is_sent() {
-		when(proposerElection.getProposer(any())).thenReturn(SELF_KEY.getPublicKey());
+		when(proposerElection.getProposer(any())).thenReturn(this.self);
 
 		Vote vote = mock(Vote.class);
 		VertexMetadata proposal = new VertexMetadata(0, View.of(2), Hash.random(), 2, false);
 		VertexMetadata parent = new VertexMetadata(0, View.of(1), Hash.random(), 1, false);
 		VoteData voteData = new VoteData(proposal, parent, null);
 		when(vote.getVoteData()).thenReturn(voteData);
+		when(vote.getAuthor()).thenReturn(mock(BFTNode.class));
 
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		View view = mock(View.class);
@@ -180,7 +187,7 @@ public class BFTEventReducerTest {
 
 	@Test
 	public void when_processing_relevant_local_timeout__then_new_view_is_emitted_and_counter_increment() {
-        when(proposerElection.getProposer(any())).thenReturn(ECKeyPair.generateNew().getPublicKey());
+        when(proposerElection.getProposer(any())).thenReturn(mock(BFTNode.class));
 		when(pacemaker.processLocalTimeout(any())).thenReturn(Optional.of(View.of(1)));
 		when(pacemaker.getCurrentView()).thenReturn(View.of(1));
 		when(vertexStore.getHighestQC()).thenReturn(mock(QuorumCertificate.class));
@@ -205,7 +212,7 @@ public class BFTEventReducerTest {
 		when(newView.getView()).thenReturn(View.of(0L));
 		when(pacemaker.getCurrentView()).thenReturn(View.of(0L));
 		when(pacemaker.processNewView(any(), any())).thenReturn(Optional.of(View.of(1L)));
-		when(proposerElection.getProposer(any())).thenReturn(SELF_KEY.getPublicKey());
+		when(proposerElection.getProposer(any())).thenReturn(self);
 		when(proposalGenerator.generateProposal(eq(View.of(1L)))).thenReturn(mock(Vertex.class));
 		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of());
 		reducer.processNewView(newView);
@@ -231,7 +238,7 @@ public class BFTEventReducerTest {
 		when(proposal.getVertex()).thenReturn(proposedVertex);
 
 		RadixEngineException e = mock(RadixEngineException.class);
-		doThrow(new VertexInsertionException("Test", e))
+		Mockito.doThrow(new VertexInsertionException("Test", e))
 			.when(vertexStore).insertVertex(any());
 		when(pacemaker.processQC(any())).thenReturn(Optional.empty());
 		when(pacemaker.getCurrentView()).thenReturn(currentView);
@@ -242,7 +249,7 @@ public class BFTEventReducerTest {
 	public void when_processing_valid_stored_proposal__then_atom_is_voted_on_and_new_view() throws SafetyViolationException {
 		View currentView = View.of(123);
 
-		when(proposerElection.getProposer(any())).thenReturn(ECKeyPair.generateNew().getPublicKey());
+		when(proposerElection.getProposer(any())).thenReturn(mock(BFTNode.class));
 
 		Vertex proposedVertex = mock(Vertex.class);
 		ClientAtom proposedAtom = mock(ClientAtom.class);
@@ -277,8 +284,8 @@ public class BFTEventReducerTest {
 	public void when_processing_valid_stored_proposal_and_next_leader__then_atom_is_voted_on_and_new_view() throws SafetyViolationException {
 		View currentView = View.of(123);
 
-		when(proposerElection.getProposer(eq(currentView))).thenReturn(ECKeyPair.generateNew().getPublicKey());
-		when(proposerElection.getProposer(eq(currentView.next()))).thenReturn(SELF_KEY.getPublicKey());
+		when(proposerElection.getProposer(eq(currentView))).thenReturn(mock(BFTNode.class));
+		when(proposerElection.getProposer(eq(currentView.next()))).thenReturn(self);
 
 		Vertex proposedVertex = mock(Vertex.class);
 		ClientAtom proposedAtom = mock(ClientAtom.class);
@@ -312,7 +319,7 @@ public class BFTEventReducerTest {
 	public void when_processing_valid_stored_proposal_and_leader__then_atom_is_voted_on_and_no_new_view() throws SafetyViolationException {
 		View currentView = View.of(123);
 
-		when(proposerElection.getProposer(eq(currentView))).thenReturn(SELF_KEY.getPublicKey());
+		when(proposerElection.getProposer(eq(currentView))).thenReturn(self);
 
 		Vertex proposedVertex = mock(Vertex.class);
 		ClientAtom proposedAtom = mock(ClientAtom.class);
@@ -374,7 +381,7 @@ public class BFTEventReducerTest {
 
 		when(safetyRules.process(eq(qc))).thenReturn(Optional.of(committedVertexMetadata));
 		when(vertexStore.commitVertex(eq(committedVertexMetadata))).thenReturn(Optional.of(committedVertex));
-		when(proposerElection.getProposer(any())).thenReturn(ECKeyPair.generateNew().getPublicKey());
+		when(proposerElection.getProposer(any())).thenReturn(mock(BFTNode.class));
 
 		reducer.processProposal(proposal);
 	}

@@ -15,18 +15,17 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt;
-
-import com.radixdlt.consensus.epoch.EpochChange;
+package com.radixdlt.consensus.bft;
 
 /**
- * Sends an epoch change message
+ * An exception indicating a failure in inserting a vertex into a VertexStore
  */
-public interface EpochChangeSender {
+public class VertexInsertionException extends Exception {
+	VertexInsertionException(String message) {
+		super(message);
+	}
 
-	/**
-	 * Signals that an epoch change has occurred
-	 * @param epochChange the epoch change
-	 */
-	void epochChange(EpochChange epochChange);
+	VertexInsertionException(String message, Exception cause) {
+		super(message, cause);
+	}
 }

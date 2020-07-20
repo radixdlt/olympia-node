@@ -15,33 +15,34 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.deterministic.configuration;
+package com.radixdlt.consensus.epoch;
 
-import com.radixdlt.consensus.SyncedStateComputer;
+import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.middleware2.CommittedAtom;
-import java.util.List;
+import com.radixdlt.consensus.bft.VertexStore;
+import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
+import com.radixdlt.crypto.Hash;
 
 /**
- * A state computer which never changes epochs
+ * Sender which goes nowhere
  */
-public enum SingleEpochAlwaysSyncedStateComputer implements SyncedStateComputer<CommittedAtom> {
+public enum EmptySyncVerticesRPCSender implements VertexStore.SyncVerticesRPCSender {
 	INSTANCE;
-
 	@Override
-	public boolean syncTo(VertexMetadata vertexMetadata, List<BFTNode> target, Object opaque) {
-		return true;
+	public void sendGetVerticesRequest(Hash id, BFTNode node, int count, Object opaque) {
+		// empty
 	}
 
 	@Override
-	public boolean compute(Vertex vertex) {
-		return false;
+	public void sendGetVerticesResponse(GetVerticesRequest originalRequest, ImmutableList<Vertex> vertices) {
+		// empty
 	}
 
 	@Override
-	public void execute(CommittedAtom instruction) {
-		// No-op Mocked execution
+	public void sendGetVerticesErrorResponse(GetVerticesRequest originalRequest, QuorumCertificate highestQC,
+		QuorumCertificate highestCommittedQC) {
+		// empty
 	}
 }

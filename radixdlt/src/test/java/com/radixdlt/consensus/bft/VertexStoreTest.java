@@ -34,10 +34,9 @@ import static org.mockito.Mockito.when;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.SyncVerticesRPCSender;
+import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRPCSender;
 import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.VertexInsertionException;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.VoteData;
@@ -45,7 +44,6 @@ import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECDSASignatures;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.CommittedAtom;
@@ -163,7 +161,7 @@ public class VertexStoreTest {
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
 		when(vertexMetadata.getId()).thenReturn(vertex.getId());
 
-		ECPublicKey author = mock(ECPublicKey.class);
+		BFTNode author = mock(BFTNode.class);
 
 		AtomicReference<Object> opaque = new AtomicReference<>();
 		doAnswer(invocation -> {
@@ -319,7 +317,7 @@ public class VertexStoreTest {
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		when(qc.getProposed()).thenReturn(VertexMetadata.ofVertex(vertex, false));
 
-		assertThat(vertexStore.syncToQC(qc, vertexStore.getHighestCommittedQC(), mock(ECPublicKey.class))).isFalse();
+		assertThat(vertexStore.syncToQC(qc, vertexStore.getHighestCommittedQC(), mock(BFTNode.class))).isFalse();
 		vertexStore.insertVertex(vertex);
 		verify(vertexStoreEventSender, times(1)).sendSyncedVertex(eq(vertex));
 	}
@@ -362,7 +360,7 @@ public class VertexStoreTest {
 
 		Vertex vertex3 = nextVertex.get();
 		Vertex vertex4 = nextVertex.get();
-		assertThat(vertexStore.syncToQC(vertex4.getQC(), vertex4.getQC(), mock(ECPublicKey.class))).isFalse();
+		assertThat(vertexStore.syncToQC(vertex4.getQC(), vertex4.getQC(), mock(BFTNode.class))).isFalse();
 
 		verify(syncVerticesRPCSender, times(1)).sendGetVerticesRequest(eq(vertex3.getId()), any(), eq(1), any());
 	}
@@ -388,7 +386,7 @@ public class VertexStoreTest {
 		Vertex vertex5 = nextVertex.get();
 		Vertex vertex6 = nextVertex.get();
 
-		assertThat(vertexStore.syncToQC(vertex6.getQC(), rootQC, mock(ECPublicKey.class))).isFalse();
+		assertThat(vertexStore.syncToQC(vertex6.getQC(), rootQC, mock(BFTNode.class))).isFalse();
 
 		verify(syncVerticesRPCSender, times(1)).sendGetVerticesRequest(eq(vertex5.getId()), any(), eq(1), any());
 	}
@@ -418,7 +416,7 @@ public class VertexStoreTest {
 		Vertex vertex8 = nextVertex.get();
 		Vertex vertex9 = nextSkippableVertex.apply(true);
 
-		assertThat(vertexStore.syncToQC(vertex9.getQC(), vertex8.getQC(), mock(ECPublicKey.class))).isFalse();
+		assertThat(vertexStore.syncToQC(vertex9.getQC(), vertex8.getQC(), mock(BFTNode.class))).isFalse();
 
 		verify(syncVerticesRPCSender, times(1)).sendGetVerticesRequest(eq(vertex7.getId()), any(), eq(3), any());
 	}
@@ -448,7 +446,7 @@ public class VertexStoreTest {
 			return null;
 		}).when(syncVerticesRPCSender).sendGetVerticesRequest(any(), any(), eq(1), any());
 
-		assertThat(vertexStore.syncToQC(vertex5.getQC(), vertex5.getQC(), mock(ECPublicKey.class))).isFalse();
+		assertThat(vertexStore.syncToQC(vertex5.getQC(), vertex5.getQC(), mock(BFTNode.class))).isFalse();
 
 		verify(syncVerticesRPCSender, times(1)).sendGetVerticesRequest(eq(vertex4.getId()), any(), eq(1), any());
 		GetVerticesResponse response1 = new GetVerticesResponse(vertex4.getId(), Collections.singletonList(vertex4), opaque.get());
@@ -499,7 +497,7 @@ public class VertexStoreTest {
 			return false;
 		}).when(syncedStateComputer).syncTo(any(), any(), any());
 
-		vertexStore.syncToQC(vertex8.getQC(), vertex8.getQC(), mock(ECPublicKey.class));
+		vertexStore.syncToQC(vertex8.getQC(), vertex8.getQC(), mock(BFTNode.class));
 		GetVerticesResponse response = new GetVerticesResponse(vertex7.getId(), Arrays.asList(vertex7, vertex6, vertex5), rpcOpaque.get());
 		vertexStore.processGetVerticesResponse(response);
 		assertThat(vertexStore.getHighestQC()).isEqualTo(vertex4.getQC());

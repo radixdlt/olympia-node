@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,27 +15,39 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.consensus.epoch;
 
-import com.google.common.collect.ImmutableSet;
+import com.radixdlt.consensus.BFTEventProcessor;
+import com.radixdlt.consensus.BFTFactory;
+import com.radixdlt.consensus.CommittedStateSync;
+import com.radixdlt.consensus.ConsensusEvent;
+import com.radixdlt.consensus.EmptyVertexStoreEventProcessor;
+import com.radixdlt.consensus.NewView;
+import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.ProposerElectionFactory;
+import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.SyncedStateComputer;
+import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.VertexStoreEventProcessor;
+import com.radixdlt.consensus.VertexStoreFactory;
+import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.EmptyBFTEventProcessor;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
 import com.radixdlt.consensus.bft.GetVerticesResponse;
-import com.radixdlt.consensus.epoch.GetEpochRequest;
-import com.radixdlt.consensus.epoch.GetEpochResponse;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker.TimeoutSender;
 import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.PacemakerFactory;
 import com.radixdlt.consensus.liveness.ProposerElection;
-import com.radixdlt.consensus.validators.Validator;
-import com.radixdlt.consensus.validators.ValidatorSet;
+import com.radixdlt.consensus.bft.BFTValidator;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.identifiers.EUID;
 import com.radixdlt.middleware2.CommittedAtom;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -55,27 +67,49 @@ import org.apache.logging.log4j.Logger;
 public final class EpochManager {
 	private static final Logger log = LogManager.getLogger("EM");
 
+	/**
+	 * A sender of GetEpoch RPC requests/responses
+	 */
+	public interface SyncEpochsRPCSender {
+
+		/**
+		 * Send a request to a peer for proof of an epoch
+		 * @param node the peer to send to
+		 * @param epoch the epoch to retrieve proof for
+		 */
+		void sendGetEpochRequest(BFTNode node, long epoch);
+
+		/**
+		 * Send an epoch proof resposne to a peer
+		 *
+		 * TODO: currently just actually sending an ancestor but should contain
+		 * TODO: proof as well
+		 *
+		 * @param node the peer to send to
+		 * @param ancestor the ancestor of the epoch
+		 */
+		void sendGetEpochResponse(BFTNode node, VertexMetadata ancestor);
+	}
+
+	private final BFTNode self;
 	private final SyncEpochsRPCSender epochsRPCSender;
 	private final PacemakerFactory pacemakerFactory;
 	private final VertexStoreFactory vertexStoreFactory;
 	private final ProposerElectionFactory proposerElectionFactory;
-	private final ECPublicKey selfPublicKey;
 	private final SystemCounters counters;
 	private final LocalTimeoutSender localTimeoutSender;
 	private final SyncedStateComputer<CommittedAtom> syncedStateComputer;
 	private final Map<Long, List<ConsensusEvent>> queuedEvents;
 	private final BFTFactory bftFactory;
-	private final String loggerPrefix;
 
 	private VertexMetadata lastConstructed = null;
-	private ValidatorSet currentValidatorSet;
 	private VertexMetadata currentAncestor;
 	private VertexStoreEventProcessor vertexStoreEventProcessor = EmptyVertexStoreEventProcessor.INSTANCE;
 	private BFTEventProcessor bftEventProcessor = EmptyBFTEventProcessor.INSTANCE;
 	private int numQueuedConsensusEvents = 0;
 
 	public EpochManager(
-		String loggerPrefix,
+		BFTNode self,
 		SyncedStateComputer<CommittedAtom> syncedStateComputer,
 		SyncEpochsRPCSender epochsRPCSender,
 		LocalTimeoutSender localTimeoutSender,
@@ -83,10 +117,9 @@ public final class EpochManager {
 		VertexStoreFactory vertexStoreFactory,
 		ProposerElectionFactory proposerElectionFactory,
 		BFTFactory bftFactory,
-		ECPublicKey selfPublicKey,
 		SystemCounters counters
 	) {
-		this.loggerPrefix = Objects.requireNonNull(loggerPrefix);
+		this.self = Objects.requireNonNull(self);
 		this.syncedStateComputer = Objects.requireNonNull(syncedStateComputer);
 		this.epochsRPCSender = Objects.requireNonNull(epochsRPCSender);
 		this.localTimeoutSender = Objects.requireNonNull(localTimeoutSender);
@@ -94,7 +127,6 @@ public final class EpochManager {
 		this.vertexStoreFactory = Objects.requireNonNull(vertexStoreFactory);
 		this.proposerElectionFactory = Objects.requireNonNull(proposerElectionFactory);
 		this.bftFactory = bftFactory;
-		this.selfPublicKey = Objects.requireNonNull(selfPublicKey);
 		this.counters = Objects.requireNonNull(counters);
 		this.queuedEvents = new HashMap<>();
 	}
@@ -104,7 +136,7 @@ public final class EpochManager {
 	}
 
 	public void processEpochChange(EpochChange epochChange) {
-		ValidatorSet validatorSet = epochChange.getValidatorSet();
+		BFTValidatorSet validatorSet = epochChange.getValidatorSet();
 		VertexMetadata ancestorMetadata = epochChange.getAncestor();
 		Vertex genesisVertex = Vertex.createGenesis(ancestorMetadata);
 		final long nextEpoch = genesisVertex.getEpoch();
@@ -117,22 +149,21 @@ public final class EpochManager {
 		// If constructed the end of the previous epoch then broadcast new epoch to new validator set
 		// TODO: Move this into when lastConstructed is set
 		if (lastConstructed != null && lastConstructed.getEpoch() == ancestorMetadata.getEpoch()) {
-			log.info("{}: EPOCH_CHANGE: broadcasting next epoch", this.loggerPrefix);
-			for (Validator validator : validatorSet.getValidators()) {
-				if (!validator.nodeKey().equals(selfPublicKey)) {
-					epochsRPCSender.sendGetEpochResponse(validator.nodeKey(), ancestorMetadata);
+			log.info("{}: EPOCH_CHANGE: broadcasting next epoch", this.self::getSimpleName);
+			for (BFTValidator validator : validatorSet.getValidators()) {
+				if (!validator.getNode().equals(self)) {
+					epochsRPCSender.sendGetEpochResponse(validator.getNode(), ancestorMetadata);
 				}
 			}
 		}
 
 		this.currentAncestor = ancestorMetadata;
-		this.currentValidatorSet = validatorSet;
 		this.counters.set(CounterType.EPOCH_MANAGER_EPOCH, nextEpoch);
 
 		final BFTEventProcessor bftEventProcessor;
 		final VertexStoreEventProcessor vertexStoreEventProcessor;
 
-		if (!validatorSet.containsKey(selfPublicKey)) {
+		if (!validatorSet.containsNode(self)) {
 			logEpochChange(epochChange, "excluded from");
 			bftEventProcessor =  EmptyBFTEventProcessor.INSTANCE;
 			vertexStoreEventProcessor = EmptyVertexStoreEventProcessor.INSTANCE;
@@ -143,28 +174,13 @@ public final class EpochManager {
 			Pacemaker pacemaker = pacemakerFactory.create(sender);
 			QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(genesisVertex);
 			VertexStore vertexStore = vertexStoreFactory.create(genesisVertex, genesisQC, syncedStateComputer);
-			BFTEventProcessor reducer = bftFactory.create(
+			vertexStoreEventProcessor = vertexStore;
+			bftEventProcessor = bftFactory.create(
 				this::processEndOfEpoch,
 				pacemaker,
 				vertexStore,
 				proposerElection,
 				validatorSet
-			);
-			SyncQueues syncQueues = new SyncQueues(
-				validatorSet.getValidators().stream()
-					.map(Validator::nodeKey)
-					.collect(ImmutableSet.toImmutableSet()),
-				this.counters
-			);
-
-			vertexStoreEventProcessor = vertexStore;
-			bftEventProcessor = new BFTEventPreprocessor(
-				this.selfPublicKey,
-				reducer,
-				pacemaker,
-				vertexStore,
-				proposerElection,
-				syncQueues
 			);
 		}
 
@@ -189,12 +205,12 @@ public final class EpochManager {
 		if (log.isInfoEnabled()) {
 			// Reduce complexity of epoch change log message, and make it easier to correlate with
 			// other logs.  Size reduced from circa 6Kib to approx 1Kib over ValidatorSet.toString().
-			StringBuilder epochMessage = new StringBuilder(this.loggerPrefix);
-			epochMessage.append(": EPOCH_CHANGE: ").append(nodeName(this.selfPublicKey));
+			StringBuilder epochMessage = new StringBuilder(this.self.getSimpleName());
+			epochMessage.append(": EPOCH_CHANGE: ");
 			epochMessage.append(' ').append(message);
 			epochMessage.append(" new epoch ").append(epochChange.getAncestor().getEpoch() + 1);
 			epochMessage.append(" with validators: ");
-			Iterator<Validator> i = epochChange.getValidatorSet().getValidators().iterator();
+			Iterator<BFTValidator> i = epochChange.getValidatorSet().getValidators().iterator();
 			if (i.hasNext()) {
 				appendValidator(epochMessage, i.next());
 				while (i.hasNext()) {
@@ -208,12 +224,12 @@ public final class EpochManager {
 		}
 	}
 
-	private void appendValidator(StringBuilder msg, Validator v) {
-		msg.append(nodeName(v.nodeKey())).append(':').append(v.getPower());
+	private void appendValidator(StringBuilder msg, BFTValidator v) {
+		msg.append(v.getNode().getSimpleName()).append(':').append(v.getPower());
 	}
 
 	private void processEndOfEpoch(VertexMetadata vertexMetadata) {
-		log.info("{}: END_OF_EPOCH: {}", this.loggerPrefix, vertexMetadata);
+		log.info("{}: END_OF_EPOCH: {}", this.self::getSimpleName, () -> vertexMetadata);
 		if (this.lastConstructed == null || this.lastConstructed.getEpoch() < vertexMetadata.getEpoch()) {
 			this.lastConstructed = vertexMetadata;
 
@@ -224,7 +240,7 @@ public final class EpochManager {
 	}
 
 	public void processGetEpochRequest(GetEpochRequest request) {
-		log.info("{}: GET_EPOCH_REQUEST: {}", this.loggerPrefix, request);
+		log.info("{}: GET_EPOCH_REQUEST: {}", this.self::getSimpleName, () -> request);
 
 		if (this.currentEpoch() == request.getEpoch()) {
 			epochsRPCSender.sendGetEpochResponse(request.getAuthor(), this.currentAncestor);
@@ -235,10 +251,10 @@ public final class EpochManager {
 	}
 
 	public void processGetEpochResponse(GetEpochResponse response) {
-		log.info("{}: GET_EPOCH_RESPONSE: {}", this.loggerPrefix, response);
+		log.info("{}: GET_EPOCH_RESPONSE: {}", this.self::getSimpleName, () -> response);
 
 		if (response.getEpochAncestor() == null) {
-			log.warn("{}: Received empty GetEpochResponse {}", this.loggerPrefix, response);
+			log.warn("{}: Received empty GetEpochResponse {}", this.self::getSimpleName, () -> response);
 			// TODO: retry
 			return;
 		}
@@ -247,19 +263,11 @@ public final class EpochManager {
 		if (ancestor.getEpoch() >= this.currentEpoch()) {
 			syncedStateComputer.syncTo(ancestor, Collections.singletonList(response.getAuthor()), null);
 		} else {
-			log.warn("{}: Received old epoch {}", this.loggerPrefix, response);
+			log.warn("{}: Received old epoch {}", this.self::getSimpleName, () -> response);
 		}
 	}
 
 	private void processConsensusEventInternal(ConsensusEvent consensusEvent) {
-		if (this.currentValidatorSet != null && !this.currentValidatorSet.containsKey(consensusEvent.getAuthor())) {
-			log.warn("{}: CONSENSUS_EVENT: Received event from author={} not in validator set={}",
-				this.loggerPrefix, nodeName(consensusEvent.getAuthor()), this.currentValidatorSet
-			);
-			return;
-		}
-		// TODO: Add the rest of consensus event verification here including signature verification
-
 		if (consensusEvent instanceof NewView) {
 			bftEventProcessor.processNewView((NewView) consensusEvent);
 		} else if (consensusEvent instanceof Proposal) {
@@ -274,7 +282,7 @@ public final class EpochManager {
 	public void processConsensusEvent(ConsensusEvent consensusEvent) {
 		if (consensusEvent.getEpoch() > this.currentEpoch()) {
 			log.debug("{}: CONSENSUS_EVENT: Received higher epoch event: {} current epoch: {}",
-				this.loggerPrefix, consensusEvent, this.currentEpoch()
+				this.self::getSimpleName, () -> consensusEvent, this::currentEpoch
 			);
 
 			// queue higher epoch events for later processing
@@ -290,7 +298,7 @@ public final class EpochManager {
 
 		if (consensusEvent.getEpoch() < this.currentEpoch()) {
 			log.warn("{}: CONSENSUS_EVENT: Received lower epoch event: {} current epoch: {}",
-				this.loggerPrefix, consensusEvent, this.currentEpoch()
+				this.self::getSimpleName, () -> consensusEvent, this::currentEpoch
 			);
 			return;
 		}
@@ -324,13 +332,5 @@ public final class EpochManager {
 
 	public void processCommittedStateSync(CommittedStateSync committedStateSync) {
 		vertexStoreEventProcessor.processCommittedStateSync(committedStateSync);
-	}
-
-	private String nodeName(ECPublicKey key) {
-		if (key == null) {
-			return "null";
-		}
-		EUID euid = key.euid();
-		return euid == null ? "null" : euid.toString().substring(0, 6);
 	}
 }

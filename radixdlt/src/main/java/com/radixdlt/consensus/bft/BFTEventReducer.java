@@ -1,43 +1,43 @@
 /*
- *  (C) Copyright 2020 Radix DLT Ltd
+ * (C) Copyright 2020 Radix DLT Ltd
  *
- *  Radix DLT Ltd licenses this file to you under the Apache License,
- *  Version 2.0 (the "License"); you may not use this file except in
- *  compliance with the License.  You may obtain a copy of the
- *  License at
+ * Radix DLT Ltd licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except in
+ * compliance with the License.  You may obtain a copy of the
+ * License at
  *
- *   http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing,
- *  software distributed under the License is distributed on an
- *  "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
- *  either express or implied.  See the License for the specific
- *  language governing permissions and limitations under the License.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * either express or implied.  See the License for the specific
+ * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.consensus.bft;
 
-import com.google.inject.Inject;
-import com.google.inject.name.Named;
-import com.radixdlt.consensus.bft.VertexStore;
+import com.radixdlt.consensus.BFTEventProcessor;
+import com.radixdlt.consensus.NewView;
+import com.radixdlt.consensus.PendingVotes;
+import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
-import com.radixdlt.consensus.validators.Validator;
-import com.radixdlt.identifiers.EUID;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyViolationException;
-import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.utils.Longs;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -54,6 +54,34 @@ import java.util.Optional;
 public final class BFTEventReducer implements BFTEventProcessor {
 	private static final Logger log = LogManager.getLogger();
 
+	/**
+	 * Sender of messages to other nodes in the BFT
+	 */
+	public interface BFTEventSender {
+
+		/**
+		 * Broadcast a proposal message to all validators in the network
+		 * @param proposal the proposal to broadcast
+		 * @param nodes the nodes to broadcast to
+		 */
+		void broadcastProposal(Proposal proposal, Set<BFTNode> nodes);
+
+		/**
+		 * Send a new-view message to a given validator
+		 * @param newView the new-view message
+		 * @param newViewLeader the validator the message gets sent to
+		 */
+		void sendNewView(NewView newView, BFTNode newViewLeader);
+
+		/**
+		 * Send a vote message to a given validator
+		 * @param vote the vote message
+		 * @param leader the validator the message gets sent to
+		 */
+		void sendVote(Vote vote, BFTNode leader);
+	}
+
+	private final BFTNode self;
 	private final VertexStore vertexStore;
 	private final PendingVotes pendingVotes;
 	private final ProposalGenerator proposalGenerator;
@@ -61,10 +89,8 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	private final EndOfEpochSender endOfEpochSender;
 	private final Pacemaker pacemaker;
 	private final ProposerElection proposerElection;
-	private final ECKeyPair selfKey; // TODO remove signing/address to separate identity management
-	private final HashSigner signer; // TODO remove signing/address to separate identity management
 	private final SafetyRules safetyRules;
-	private final ValidatorSet validatorSet;
+	private final BFTValidatorSet validatorSet;
 	private final SystemCounters counters;
 	private final Map<Hash, QuorumCertificate> unsyncedQCs = new HashMap<>();
 	private boolean synchedLog = false;
@@ -73,8 +99,8 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		void sendEndOfEpoch(VertexMetadata vertexMetadata);
 	}
 
-	@Inject
 	public BFTEventReducer(
+		BFTNode self,
 		ProposalGenerator proposalGenerator,
 		BFTEventSender sender,
 		EndOfEpochSender endOfEpochSender,
@@ -83,11 +109,10 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		VertexStore vertexStore,
 		PendingVotes pendingVotes,
 		ProposerElection proposerElection,
-		@Named("self") ECKeyPair selfKey,
-		HashSigner signer,
-		ValidatorSet validatorSet,
+		BFTValidatorSet validatorSet,
 		SystemCounters counters
 	) {
+		this.self = Objects.requireNonNull(self);
 		this.proposalGenerator = Objects.requireNonNull(proposalGenerator);
 		this.sender = Objects.requireNonNull(sender);
 		this.endOfEpochSender = Objects.requireNonNull(endOfEpochSender);
@@ -96,33 +121,15 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		this.vertexStore = Objects.requireNonNull(vertexStore);
 		this.pendingVotes = Objects.requireNonNull(pendingVotes);
 		this.proposerElection = Objects.requireNonNull(proposerElection);
-		this.selfKey = Objects.requireNonNull(selfKey);
-		this.signer = Objects.requireNonNull(signer);
 		this.validatorSet = Objects.requireNonNull(validatorSet);
 		this.counters = Objects.requireNonNull(counters);
 	}
 
-	private String getShortName(EUID euid) {
-		return euid.toString().substring(0, 6);
-	}
-
-	private String getShortName() {
-		return getShortName(selfKey.euid());
-	}
-
 	// Hotstuff's Event-Driven OnNextSyncView
 	private void proceedToView(View nextView) {
-		// TODO make signing more robust by including author in signed hash
-		ECDSASignature signature = this.signer.sign(this.selfKey, Hash.hash256(Longs.toByteArray(nextView.number())));
-		NewView newView = new NewView(
-			selfKey.getPublicKey(),
-			nextView,
-			this.vertexStore.getHighestQC(),
-			this.vertexStore.getHighestCommittedQC(),
-			signature
-		);
-		ECPublicKey nextLeader = this.proposerElection.getProposer(nextView);
-		log.trace("{}: Sending NEW_VIEW to {}: {}", this::getShortName, () -> this.getShortName(nextLeader.euid()), () ->  newView);
+		NewView newView = safetyRules.signNewView(nextView, this.vertexStore.getHighestQC(), this.vertexStore.getHighestCommittedQC());
+		BFTNode nextLeader = this.proposerElection.getProposer(nextView);
+		log.trace("{}: Sending NEW_VIEW to {}: {}", this.self::getSimpleName, nextLeader::getSimpleName, () ->  newView);
 		this.sender.sendNewView(newView, nextLeader);
 		this.counters.set(CounterType.CONSENSUS_VIEW, nextView.number());
 	}
@@ -132,7 +139,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		Optional<VertexMetadata> commitMetaDataMaybe = this.safetyRules.process(qc);
 		commitMetaDataMaybe.ifPresent(commitMetaData -> {
 			vertexStore.commitVertex(commitMetaData).ifPresent(vertex -> {
-				log.trace("{}: Committed vertex: {}", this::getShortName, () -> vertex);
+				log.trace("{}: Committed vertex: {}", this.self::getSimpleName, () -> vertex);
 			});
 		});
 
@@ -152,7 +159,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		if (qc != null) {
 			if (vertexStore.syncToQC(qc, vertexStore.getHighestCommittedQC(), null)) {
 				processQC(qc);
-				log.trace("{}: LOCAL_SYNC: processed QC: {}", this::getShortName, () ->  qc);
+				log.trace("{}: LOCAL_SYNC: processed QC: {}", this.self::getSimpleName, () ->  qc);
 			} else {
 				unsyncedQCs.put(qc.getProposed().getId(), qc);
 			}
@@ -161,13 +168,13 @@ public final class BFTEventReducer implements BFTEventProcessor {
 
 	@Override
 	public void processVote(Vote vote) {
-		log.trace("{}: VOTE: Processing {}", this::getShortName, () -> vote);
+		log.trace("{}: VOTE: Processing {}", this.self::getSimpleName, () -> vote);
 		// accumulate votes into QCs in store
 		this.pendingVotes.insertVote(vote, this.validatorSet).ifPresent(qc -> {
-			log.trace("{}: VOTE: Formed QC: {}", this::getShortName, () -> qc);
+			log.trace("{}: VOTE: Formed QC: {}", this.self::getSimpleName, () -> qc);
 			if (vertexStore.syncToQC(qc, vertexStore.getHighestCommittedQC(), vote.getAuthor())) {
 				if (!synchedLog) {
-					log.debug("{}: VOTE: QC Synced: {}", this::getShortName, () -> qc);
+					log.debug("{}: VOTE: QC Synced: {}", this.self::getSimpleName, () -> qc);
 					synchedLog = true;
 				}
 				processQC(qc).ifPresent(commitMetaData -> {
@@ -178,7 +185,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 				});
 			} else {
 				if (synchedLog) {
-					log.debug("{}: VOTE: QC Not synced: {}", this::getShortName, () -> qc);
+					log.debug("{}: VOTE: QC Not synced: {}", this.self::getSimpleName, () -> qc);
 					synchedLog = false;
 				}
 				unsyncedQCs.put(qc.getProposed().getId(), qc);
@@ -188,21 +195,22 @@ public final class BFTEventReducer implements BFTEventProcessor {
 
 	@Override
 	public void processNewView(NewView newView) {
-		log.trace("{}: NEW_VIEW: Processing {}", this::getShortName, () -> newView);
+		log.trace("{}: NEW_VIEW: Processing {}", this.self::getSimpleName, () -> newView);
 		processQC(newView.getQC());
 		this.pacemaker.processNewView(newView, validatorSet).ifPresent(view -> {
 			// Hotstuff's Event-Driven OnBeat
 			final Vertex proposedVertex = proposalGenerator.generateProposal(view);
 			final Proposal proposal = safetyRules.signProposal(proposedVertex, this.vertexStore.getHighestCommittedQC());
-			log.trace("{}: Broadcasting PROPOSAL: {}", this::getShortName, () -> proposal);
+			log.trace("{}: Broadcasting PROPOSAL: {}", this.self::getSimpleName, () -> proposal);
+			Set<BFTNode> nodes = validatorSet.getValidators().stream().map(BFTValidator::getNode).collect(Collectors.toSet());
 			this.counters.increment(CounterType.CONSENSUS_PROPOSALS_MADE);
-			this.sender.broadcastProposal(proposal, validatorSet.getValidators().stream().map(Validator::nodeKey).collect(Collectors.toSet()));
+			this.sender.broadcastProposal(proposal, nodes);
 		});
 	}
 
 	@Override
 	public void processProposal(Proposal proposal) {
-		log.trace("{}: PROPOSAL: Processing {}", this::getShortName, () -> proposal);
+		log.trace("{}: PROPOSAL: Processing {}", this.self::getSimpleName, () -> proposal);
 		final Vertex proposedVertex = proposal.getVertex();
 		final View proposedVertexView = proposedVertex.getView();
 
@@ -210,7 +218,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 
 		final View updatedView = this.pacemaker.getCurrentView();
 		if (proposedVertexView.compareTo(updatedView) != 0) {
-			log.trace("{}: PROPOSAL: Ignoring view {} Current is: {}", this::getShortName, () -> proposedVertexView, () -> updatedView);
+			log.trace("{}: PROPOSAL: Ignoring view {} Current is: {}", this.self::getSimpleName, () -> proposedVertexView, () -> updatedView);
 			return;
 		}
 
@@ -220,23 +228,23 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		} catch (VertexInsertionException e) {
 			counters.increment(CounterType.CONSENSUS_REJECTED);
 
-			log.warn("{} PROPOSAL: Rejected. Reason: {}", this::getShortName, e::getMessage);
+			log.warn("{} PROPOSAL: Rejected. Reason: {}", this.self::getSimpleName, e::getMessage);
 			return;
 		}
 
-		final ECPublicKey currentLeader = this.proposerElection.getProposer(updatedView);
+		final BFTNode currentLeader = this.proposerElection.getProposer(updatedView);
 		try {
 			final Vote vote = safetyRules.voteFor(proposedVertex, vertexMetadata);
-			log.trace("{}: PROPOSAL: Sending VOTE to {}: {}", this::getShortName, () -> this.getShortName(currentLeader.euid()), () -> vote);
+			log.trace("{}: PROPOSAL: Sending VOTE to {}: {}", this.self::getSimpleName, currentLeader::getSimpleName, () -> vote);
 			sender.sendVote(vote, currentLeader);
 		} catch (SafetyViolationException e) {
-			log.error(() -> new FormattedMessage("{}: PROPOSAL: Rejected {}", this.getShortName(), proposedVertex), e);
+			log.error(() -> new FormattedMessage("{}: PROPOSAL: Rejected {}", this.self.getSimpleName(), proposedVertex), e);
 		}
 
 		// If not currently leader or next leader, Proceed to next view
-		if (!Objects.equals(currentLeader, selfKey.getPublicKey())) {
-			final ECPublicKey nextLeader = this.proposerElection.getProposer(updatedView.next());
-			if (!Objects.equals(nextLeader, selfKey.getPublicKey())) {
+		if (!Objects.equals(currentLeader, this.self)) {
+			final BFTNode nextLeader = this.proposerElection.getProposer(updatedView.next());
+			if (!Objects.equals(nextLeader, this.self)) {
 
 				// TODO: should not call processQC
 				this.pacemaker.processQC(updatedView).ifPresent(this::proceedToView);
@@ -246,18 +254,18 @@ public final class BFTEventReducer implements BFTEventProcessor {
 
 	@Override
 	public void processLocalTimeout(View view) {
-		log.trace("{}: LOCAL_TIMEOUT: Processing {}", this::getShortName, () -> view);
+		log.trace("{}: LOCAL_TIMEOUT: Processing {}", this.self::getSimpleName, () -> view);
 
 		// proceed to next view if pacemaker feels like it
 		Optional<View> nextView = this.pacemaker.processLocalTimeout(view);
 		if (nextView.isPresent()) {
 			this.proceedToView(nextView.get());
-			log.warn("{}: LOCAL_TIMEOUT: Processed {}", this::getShortName, () -> view);
+			log.warn("{}: LOCAL_TIMEOUT: Processed {}", this.self::getSimpleName, () -> view);
 
 			counters.set(CounterType.CONSENSUS_TIMEOUT_VIEW, view.number());
 			counters.increment(CounterType.CONSENSUS_TIMEOUT);
 		} else {
-			log.trace("{}: LOCAL_TIMEOUT: Ignoring {}", this::getShortName, () -> view);
+			log.trace("{}: LOCAL_TIMEOUT: Ignoring {}", this.self::getSimpleName, () -> view);
 		}
 	}
 

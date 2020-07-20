@@ -20,23 +20,23 @@ package com.radixdlt.consensus.simulation.network;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.ConsensusEventsRx;
-import com.radixdlt.consensus.BFTEventSender;
+import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
-import com.radixdlt.consensus.SyncEpochsRPCSender;
+import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
 import com.radixdlt.consensus.bft.GetVerticesResponse;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
-import com.radixdlt.consensus.SyncVerticesRPCSender;
+import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRPCSender;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.epoch.GetEpochRequest;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 import io.reactivex.rxjava3.core.Observable;
 
@@ -58,12 +58,12 @@ public class SimulationNetwork {
 
 	public static final class MessageInTransit {
 		private final Object content;
-		private final ECPublicKey sender;
-		private final ECPublicKey receiver;
+		private final BFTNode sender;
+		private final BFTNode receiver;
 		private final long delay;
 		private final long delayAfterPrevious;
 
-		private MessageInTransit(Object content, ECPublicKey sender, ECPublicKey receiver, long delay, long delayAfterPrevious) {
+		private MessageInTransit(Object content, BFTNode sender, BFTNode receiver, long delay, long delayAfterPrevious) {
 			this.content = Objects.requireNonNull(content);
 			this.sender = sender;
 			this.receiver = receiver;
@@ -71,7 +71,7 @@ public class SimulationNetwork {
 			this.delayAfterPrevious = delayAfterPrevious;
 		}
 
-		private static MessageInTransit newMessage(Object content, ECPublicKey sender, ECPublicKey receiver) {
+		private static MessageInTransit newMessage(Object content, BFTNode sender, BFTNode receiver) {
 			return new MessageInTransit(content, sender, receiver, 0, 0);
 		}
 
@@ -87,11 +87,11 @@ public class SimulationNetwork {
 			return this.content;
 		}
 
-		public ECPublicKey getSender() {
+		public BFTNode getSender() {
 			return sender;
 		}
 
-		public ECPublicKey getReceiver() {
+		public BFTNode getReceiver() {
 			return receiver;
 		}
 
@@ -99,8 +99,8 @@ public class SimulationNetwork {
 		public String toString() {
 			return String.format("%s %s -> %s %d %d",
 				content,
-				sender.euid().toString().substring(0, 6),
-				receiver.euid().toString().substring(0, 6),
+				sender.getSimpleName(),
+				receiver.getSimpleName(),
 				delay,
 				delayAfterPrevious
 			);
@@ -123,7 +123,7 @@ public class SimulationNetwork {
 	}
 
 	private final Subject<MessageInTransit> receivedMessages;
-	private final Map<ECPublicKey, SimulatedNetworkImpl> receivers = new ConcurrentHashMap<>();
+	private final Map<BFTNode, SimulatedNetworkImpl> receivers = new ConcurrentHashMap<>();
 	private final LatencyProvider latencyProvider;
 
 	private SimulationNetwork(LatencyProvider latencyProvider) {
@@ -152,22 +152,22 @@ public class SimulationNetwork {
 		return new Builder();
 	}
 
-	public BFTEventSender getNetworkSender(ECPublicKey forNode) {
+	public BFTEventSender getNetworkSender(BFTNode forNode) {
 		return new BFTEventSender() {
 			@Override
-			public void broadcastProposal(Proposal proposal, Set<ECPublicKey> nodes) {
-				for (ECPublicKey reader : nodes) {
+			public void broadcastProposal(Proposal proposal, Set<BFTNode> nodes) {
+				for (BFTNode reader : nodes) {
 					receivedMessages.onNext(MessageInTransit.newMessage(proposal, forNode, reader));
 				}
 			}
 
 			@Override
-			public void sendNewView(NewView newView, ECPublicKey newViewLeader) {
+			public void sendNewView(NewView newView, BFTNode newViewLeader) {
 				receivedMessages.onNext(MessageInTransit.newMessage(newView, forNode, newViewLeader));
 			}
 
 			@Override
-			public void sendVote(Vote vote, ECPublicKey leader) {
+			public void sendVote(Vote vote, BFTNode leader) {
 				receivedMessages.onNext(MessageInTransit.newMessage(vote, forNode, leader));
 			}
 		};
@@ -176,9 +176,9 @@ public class SimulationNetwork {
 	private static final class SimulatedVerticesRequest implements GetVerticesRequest {
 		private final Hash vertexId;
 		private final int count;
-		private final ECPublicKey requestor;
+		private final BFTNode requestor;
 
-		private SimulatedVerticesRequest(ECPublicKey requestor, Hash vertexId, int count) {
+		private SimulatedVerticesRequest(BFTNode requestor, Hash vertexId, int count) {
 			this.requestor = requestor;
 			this.vertexId = vertexId;
 			this.count = count;
@@ -203,10 +203,10 @@ public class SimulationNetwork {
 
 	private class SimulatedNetworkImpl implements SimulatedNetworkReceiver, SimulationSyncSender {
 		private final Observable<Object> myMessages;
-		private final ECPublicKey thisNode;
+		private final BFTNode thisNode;
 		private HashMap<Hash, Object> opaqueMap = new HashMap<>();
 
-		private SimulatedNetworkImpl(ECPublicKey node) {
+		private SimulatedNetworkImpl(BFTNode node) {
 			this.thisNode = node;
 			// filter only relevant messages (appropriate target and if receiving is allowed)
 			this.myMessages = receivedMessages
@@ -239,7 +239,7 @@ public class SimulationNetwork {
 		}
 
 		@Override
-		public void sendGetVerticesRequest(Hash id, ECPublicKey node, int count, Object opaque) {
+		public void sendGetVerticesRequest(Hash id, BFTNode node, int count, Object opaque) {
 			final SimulatedVerticesRequest request = new SimulatedVerticesRequest(thisNode, id, count);
 			opaqueMap.put(id, opaque);
 			receivedMessages.onNext(MessageInTransit.newMessage(request, thisNode, node));
@@ -264,13 +264,13 @@ public class SimulationNetwork {
 		}
 
 		@Override
-		public void sendGetEpochRequest(ECPublicKey node, long epoch) {
+		public void sendGetEpochRequest(BFTNode node, long epoch) {
 			GetEpochRequest getEpochRequest = new GetEpochRequest(thisNode, epoch);
 			receivedMessages.onNext(MessageInTransit.newMessage(getEpochRequest, thisNode, node));
 		}
 
 		@Override
-		public void sendGetEpochResponse(ECPublicKey node, VertexMetadata ancestor) {
+		public void sendGetEpochResponse(BFTNode node, VertexMetadata ancestor) {
 			GetEpochResponse getEpochResponse = new GetEpochResponse(thisNode, ancestor);
 			receivedMessages.onNext(MessageInTransit.newMessage(getEpochResponse, thisNode, node));
 		}
@@ -306,11 +306,11 @@ public class SimulationNetwork {
 		}
 	}
 
-	public SimulatedNetworkReceiver getNetworkRx(ECPublicKey forNode) {
+	public SimulatedNetworkReceiver getNetworkRx(BFTNode forNode) {
 		return receivers.computeIfAbsent(forNode, SimulatedNetworkImpl::new);
 	}
 
-	public SimulationSyncSender getSyncSender(ECPublicKey forNode) {
+	public SimulationSyncSender getSyncSender(BFTNode forNode) {
 		return receivers.computeIfAbsent(forNode, SimulatedNetworkImpl::new);
 	}
 

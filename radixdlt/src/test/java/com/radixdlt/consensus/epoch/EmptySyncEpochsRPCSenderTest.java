@@ -15,18 +15,19 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.consensus.epoch;
 
 import static org.mockito.Mockito.mock;
 
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.bft.BFTNode;
 import org.junit.Test;
 
 public class EmptySyncEpochsRPCSenderTest {
 	@Test
 	public void when_send_request_and_response__then_no_exception_occurs() {
-		EmptySyncEpochsRPCSender.INSTANCE.sendGetEpochRequest(mock(ECPublicKey.class), 12345L);
-		EmptySyncEpochsRPCSender.INSTANCE.sendGetEpochResponse(mock(ECPublicKey.class), mock(VertexMetadata.class));
+		EmptySyncEpochsRPCSender.INSTANCE.sendGetEpochRequest(mock(BFTNode.class), 12345L);
+		EmptySyncEpochsRPCSender.INSTANCE.sendGetEpochResponse(mock(BFTNode.class), mock(VertexMetadata.class));
 	}
 
 }

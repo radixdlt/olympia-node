@@ -15,17 +15,17 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.consensus.bft;
 
-import com.google.common.collect.ImmutableCollection;
-import com.google.common.collect.ImmutableMap;
+import com.radixdlt.consensus.RequiresSyncConsensusEvent;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import javax.annotation.Nullable;
 
 /**
@@ -37,15 +37,12 @@ import javax.annotation.Nullable;
  * This class is NOT thread-safe.
  */
 public final class SyncQueues {
-	private final ImmutableMap<ECPublicKey, SyncQueue> queues;
+	private final Map<BFTNode, SyncQueue> queues;
 
 	private final SystemCounters counters;
 
-	public SyncQueues(
-		Set<ECPublicKey> nodes,
-		SystemCounters counters
-	) {
-		this.queues = nodes.stream().collect(ImmutableMap.toImmutableMap(n -> n, n -> new SyncQueue()));
+	SyncQueues(SystemCounters counters) {
+		this.queues = new HashMap<>();
 		this.counters = Objects.requireNonNull(counters);
 	}
 
@@ -100,19 +97,19 @@ public final class SyncQueues {
 		}
 	}
 
-	ImmutableCollection<SyncQueue> getQueues() {
+	Collection<SyncQueue> getQueues() {
 		return queues.values();
 	}
 
 	boolean isEmptyElseAdd(RequiresSyncConsensusEvent event) {
-		return queues.get(event.getAuthor()).isEmptyElseAdd(event);
+		return queues.computeIfAbsent(event.getAuthor(), a -> new SyncQueue()).isEmptyElseAdd(event);
 	}
 
 	void add(RequiresSyncConsensusEvent event) {
-		queues.get(event.getAuthor()).add(event);
+		queues.computeIfAbsent(event.getAuthor(), a -> new SyncQueue()).add(event);
 	}
 
 	void clear() {
-		queues.values().forEach(q -> q.queue.clear());
+		queues.clear();
 	}
 }
