@@ -274,35 +274,35 @@ public final class ConstraintMachine {
 				if (usedData.isPresent()) {
 					if (prevUsedData != null && prevUsedData.isPresent()) {
 						return Optional.of(
-								new CMError(
-										dp,
-										CMErrorCode.NO_FULL_POP_ERROR,
-										validationState
-										)
-								);
+							new CMError(
+								dp,
+								CMErrorCode.NO_FULL_POP_ERROR,
+								validationState
+							)
+						);
 					}
 
-					if (isInput) {
-						validationState.popAndReplace(nextParticle, true, usedData.get());
+					if (isInput == testInput) {
+						validationState.popAndReplace(nextParticle, isInput, usedData.get());
 					} else {
 						validationState.updateUsed(usedData.get());
 					}
 				} else {
 					final WitnessValidator<Particle> witnessValidator = testInput ? transitionProcedure.inputWitnessValidator()
-							: transitionProcedure.outputWitnessValidator();
+						: transitionProcedure.outputWitnessValidator();
 					final WitnessValidatorResult inputWitness = witnessValidator.validate(
-							testInput ? inputParticle : outputParticle, validationState::isSignedBy
-							);
+						testInput ? inputParticle : outputParticle, validationState::isSignedBy
+					);
 
 					if (inputWitness.isError()) {
 						return Optional.of(
-								new CMError(
-										dp,
-										CMErrorCode.WITNESS_ERROR,
-										validationState,
-										inputWitness.getErrorMessage()
-										)
-								);
+							new CMError(
+								dp,
+								CMErrorCode.WITNESS_ERROR,
+								validationState,
+								inputWitness.getErrorMessage()
+							)
+						);
 					}
 
 					if (prevUsedData != null && !prevUsedData.isPresent()) {
