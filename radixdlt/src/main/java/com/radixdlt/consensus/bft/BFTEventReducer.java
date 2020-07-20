@@ -55,7 +55,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	private static final Logger log = LogManager.getLogger();
 
 	/**
-	 * Interface for sending BFT events through a network
+	 * Sender of messages to other nodes in the BFT
 	 */
 	public interface BFTEventSender {
 
