@@ -17,6 +17,8 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.SecurityCritical;
+import com.radixdlt.SecurityCritical.SecurityKind;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.Hash;
 
@@ -24,6 +26,7 @@ import com.radixdlt.crypto.Hash;
  * Signs a hash.
  */
 @FunctionalInterface
+@SecurityCritical(SecurityKind.SIG_SIGN)
 public interface HashSigner {
 	/**
 	 * Sign the specified hash with the specified key.
