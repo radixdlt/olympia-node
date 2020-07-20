@@ -46,7 +46,6 @@ import java.util.Random;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
-import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -66,7 +65,7 @@ public final class DeterministicTest {
 		int numNodes,
 		SyncAndTimeout syncAndTimeout,
 		BiFunction<CommittedStateSyncSender, EpochChangeSender, SyncedStateComputer<CommittedAtom>> stateComputerSupplier,
-		IntFunction<UInt256> weight
+		NodeWeighting weight
 	) {
 		ImmutableList<ECKeyPair> keys = Stream.generate(ECKeyPair::generateNew)
 			.limit(numNodes)
@@ -79,7 +78,7 @@ public final class DeterministicTest {
 		ValidatorSet initialValidatorSet = ValidatorSet.from(
 			Streams.mapWithIndex(
 				pks.stream(),
-				(pk, index) -> Validator.from(pk, weight.apply((int) index))
+				(pk, index) -> Validator.from(pk, weight.forNode((int) index))
 			).collect(Collectors.toList())
 		);
 
@@ -110,7 +109,7 @@ public final class DeterministicTest {
 			numNodes,
 			SyncAndTimeout.SYNC,
 			(committedSender, epochSender) -> new SingleEpochRandomlySyncedStateComputer(random, committedSender),
-			index -> UInt256.ONE
+			NodeWeighting.constant(UInt256.ONE)
 		);
 	}
 
@@ -125,7 +124,7 @@ public final class DeterministicTest {
 			numNodes,
 			SyncAndTimeout.SYNC,
 			(committedSender, epochChangeSender) -> SingleEpochAlwaysSyncedStateComputer.INSTANCE,
-			index -> UInt256.ONE
+			NodeWeighting.constant(UInt256.ONE)
 		);
 	}
 
@@ -136,7 +135,7 @@ public final class DeterministicTest {
 	 * @param weight a mapping from node index to node weight
 	 * @return a deterministic test
 	 */
-	public static DeterministicTest createSingleEpochAlwaysSyncedTest(int numNodes, IntFunction<UInt256> weight) {
+	public static DeterministicTest createSingleEpochAlwaysSyncedTest(int numNodes, NodeWeighting weight) {
 		return new DeterministicTest(
 			numNodes,
 			SyncAndTimeout.SYNC,
@@ -156,7 +155,7 @@ public final class DeterministicTest {
 			numNodes,
 			SyncAndTimeout.SYNC_AND_TIMEOUT,
 			(committedSender, epochChangeSender) -> SingleEpochAlwaysSyncedStateComputer.INSTANCE,
-			index -> UInt256.ONE
+			NodeWeighting.constant(UInt256.ONE)
 		);
 	}
 
@@ -173,7 +172,7 @@ public final class DeterministicTest {
 			numNodes,
 			SyncAndTimeout.NONE,
 			(committedSender, epochChangeSender) -> SingleEpochFailOnSyncStateComputer.INSTANCE,
-			index -> UInt256.ONE
+			NodeWeighting.constant(UInt256.ONE)
 		);
 	}
 

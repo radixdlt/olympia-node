@@ -22,7 +22,6 @@ package com.radixdlt.consensus.deterministic.tests.ledger;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.IntFunction;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 
@@ -31,22 +30,30 @@ import org.junit.Test;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.deterministic.DeterministicTest;
+import com.radixdlt.consensus.deterministic.NodeWeighting;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.utils.UInt256;
 
 import static org.assertj.core.api.Assertions.*;
 
 public class ProposerLoadBalancedTest {
-	private final Random random = new Random(123456);
-	private final AtomicBoolean nodesCompleted = new AtomicBoolean(false);
 
-	private ImmutableList<Long> run(int numNodes, long numViews, IntFunction<UInt256> weighting) {
+	private ImmutableList<Long> run(int numNodes, long numViews, NodeWeighting weighting) {
 		final DeterministicTest test = DeterministicTest.createSingleEpochAlwaysSyncedTest(numNodes, weighting);
 		test.start();
 
-		this.nodesCompleted.set(false);
-		while (!this.nodesCompleted.get()) {
-			test.processNextMsg(random, msg -> processMessage(msg, numViews));
+		final AtomicBoolean running = new AtomicBoolean(true);
+		final Random random = new Random(123456);
+		while (running.get()) {
+			test.processNextMsg(random, msg -> {
+				if (msg instanceof NewView) {
+					NewView nv = (NewView) msg;
+					if (nv.getView().number() > numViews) {
+						running.set(false);
+					}
+				}
+				return running.get();
+			});
 		}
 
 		return IntStream.range(0, numNodes)
@@ -55,42 +62,31 @@ public class ProposerLoadBalancedTest {
 			.collect(ImmutableList.toImmutableList());
 	}
 
-	private boolean processMessage(Object msg, long numViews) {
-		if (msg instanceof NewView) {
-			NewView nv = (NewView) msg;
-			if (nv.getView().number() > numViews) {
-				this.nodesCompleted.set(true);
-				return false;
-			}
-		}
-		return true;
-	}
-
 	@Test
 	public void when_run_2_nodes_with_very_different_weights__then_proposals_should_match() {
 		final long proposalChunk = 100_000L; // Actually proposalChunk + 1 proposals run
-		ImmutableList<Long> proposals = this.run(2, proposalChunk + 1, index -> UInt256.from((proposalChunk - 1) * index + 1)); // 1, proposalChunk
+		ImmutableList<Long> proposals = this.run(2, proposalChunk + 1, NodeWeighting.repeatingSequence(1, proposalChunk));
 		assertThat(proposals).containsExactly(1L, proposalChunk);
 	}
 
 	@Test
 	public void when_run_3_nodes_with_equal_weight__then_proposals_should_be_equal() {
 		final long proposalsPerNode = 50_000L;
-		ImmutableList<Long> proposals = this.run(3, 3 * proposalsPerNode, index -> UInt256.ONE);
+		ImmutableList<Long> proposals = this.run(3, 3 * proposalsPerNode, NodeWeighting.constant(UInt256.ONE));
 		assertThat(proposals).allMatch(l -> l == proposalsPerNode);
 	}
 
 	@Test
 	public void when_run_100_nodes_with_equal_weight__then_proposals_should_be_equal() {
 		final long proposalsPerNode = 100L;
-		ImmutableList<Long> proposals = this.run(100, 100 * proposalsPerNode, index -> UInt256.ONE);
+		ImmutableList<Long> proposals = this.run(100, 100 * proposalsPerNode, NodeWeighting.constant(UInt256.ONE));
 		assertThat(proposals).allMatch(l -> l == proposalsPerNode);
 	}
 
 	@Test
 	public void when_run_3_nodes_with_linear_weights__then_proposals_should_match() {
 		final long proposalChunk = 10_000L; // Actually 3! * proposalChunk proposals run
-		List<Long> proposals = this.run(3, 1 * 2 * 3 * proposalChunk, index -> UInt256.from(index + 1)); // Weights 1, 2, 3
+		List<Long> proposals = this.run(3, 1 * 2 * 3 * proposalChunk, NodeWeighting.repeatingSequence(1, 2, 3));
 		assertThat(proposals).containsExactly(proposalChunk, 2 * proposalChunk, 3 * proposalChunk);
 	}
 
