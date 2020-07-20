@@ -46,7 +46,7 @@ public class PendingNewViewsTest {
 
 	@Before
 	public void setup() {
-		this.pendingNewViews = new PendingNewViews();
+		this.pendingNewViews = new PendingNewViews(ECPublicKey::verify);
 	}
 
 	@Test

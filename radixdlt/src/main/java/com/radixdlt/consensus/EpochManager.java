@@ -25,20 +25,22 @@ import com.radixdlt.consensus.bft.GetVerticesResponse;
 import com.radixdlt.consensus.epoch.GetEpochRequest;
 import com.radixdlt.consensus.epoch.GetEpochResponse;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker.TimeoutSender;
+import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.PacemakerFactory;
 import com.radixdlt.consensus.liveness.ProposerElection;
-import com.radixdlt.consensus.liveness.ScheduledTimeoutSender;
 import com.radixdlt.consensus.validators.Validator;
 import com.radixdlt.consensus.validators.ValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.middleware2.CommittedAtom;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -59,7 +61,7 @@ public final class EpochManager {
 	private final ProposerElectionFactory proposerElectionFactory;
 	private final ECPublicKey selfPublicKey;
 	private final SystemCounters counters;
-	private final ScheduledTimeoutSender scheduledTimeoutSender;
+	private final LocalTimeoutSender localTimeoutSender;
 	private final SyncedStateComputer<CommittedAtom> syncedStateComputer;
 	private final Map<Long, List<ConsensusEvent>> queuedEvents;
 	private final BFTFactory bftFactory;
@@ -76,7 +78,7 @@ public final class EpochManager {
 		String loggerPrefix,
 		SyncedStateComputer<CommittedAtom> syncedStateComputer,
 		SyncEpochsRPCSender epochsRPCSender,
-		ScheduledTimeoutSender scheduledTimeoutSender,
+		LocalTimeoutSender localTimeoutSender,
 		PacemakerFactory pacemakerFactory,
 		VertexStoreFactory vertexStoreFactory,
 		ProposerElectionFactory proposerElectionFactory,
@@ -87,7 +89,7 @@ public final class EpochManager {
 		this.loggerPrefix = Objects.requireNonNull(loggerPrefix);
 		this.syncedStateComputer = Objects.requireNonNull(syncedStateComputer);
 		this.epochsRPCSender = Objects.requireNonNull(epochsRPCSender);
-		this.scheduledTimeoutSender = Objects.requireNonNull(scheduledTimeoutSender);
+		this.localTimeoutSender = Objects.requireNonNull(localTimeoutSender);
 		this.pacemakerFactory = Objects.requireNonNull(pacemakerFactory);
 		this.vertexStoreFactory = Objects.requireNonNull(vertexStoreFactory);
 		this.proposerElectionFactory = Objects.requireNonNull(proposerElectionFactory);
@@ -131,13 +133,13 @@ public final class EpochManager {
 		final VertexStoreEventProcessor vertexStoreEventProcessor;
 
 		if (!validatorSet.containsKey(selfPublicKey)) {
-			log.info("{}: EPOCH_CHANGE: {} Not part of validator set", this.loggerPrefix, epochChange);
+			logEpochChange(epochChange, "excluded from");
 			bftEventProcessor =  EmptyBFTEventProcessor.INSTANCE;
 			vertexStoreEventProcessor = EmptyVertexStoreEventProcessor.INSTANCE;
 		} else {
-			log.info("{}: EPOCH_CHANGE: {} Part of validator set", this.loggerPrefix, epochChange);
+			logEpochChange(epochChange, "included in");
 			ProposerElection proposerElection = proposerElectionFactory.create(validatorSet);
-			TimeoutSender sender = (view, ms) -> scheduledTimeoutSender.scheduleTimeout(new LocalTimeout(nextEpoch, view), ms);
+			TimeoutSender sender = (view, ms) -> localTimeoutSender.scheduleTimeout(new LocalTimeout(nextEpoch, view), ms);
 			Pacemaker pacemaker = pacemakerFactory.create(sender);
 			QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(genesisVertex);
 			VertexStore vertexStore = vertexStoreFactory.create(genesisVertex, genesisQC, syncedStateComputer);
@@ -183,6 +185,33 @@ public final class EpochManager {
 		queuedEvents.remove(nextEpoch);
 	}
 
+	private void logEpochChange(EpochChange epochChange, String message) {
+		if (log.isInfoEnabled()) {
+			// Reduce complexity of epoch change log message, and make it easier to correlate with
+			// other logs.  Size reduced from circa 6Kib to approx 1Kib over ValidatorSet.toString().
+			StringBuilder epochMessage = new StringBuilder(this.loggerPrefix);
+			epochMessage.append(": EPOCH_CHANGE: ").append(nodeName(this.selfPublicKey));
+			epochMessage.append(' ').append(message);
+			epochMessage.append(" new epoch ").append(epochChange.getAncestor().getEpoch() + 1);
+			epochMessage.append(" with validators: ");
+			Iterator<Validator> i = epochChange.getValidatorSet().getValidators().iterator();
+			if (i.hasNext()) {
+				appendValidator(epochMessage, i.next());
+				while (i.hasNext()) {
+					epochMessage.append(',');
+					appendValidator(epochMessage, i.next());
+				}
+			} else {
+				epochMessage.append("[NONE]");
+			}
+			log.info("{}", epochMessage);
+		}
+	}
+
+	private void appendValidator(StringBuilder msg, Validator v) {
+		msg.append(nodeName(v.nodeKey())).append(':').append(v.getPower());
+	}
+
 	private void processEndOfEpoch(VertexMetadata vertexMetadata) {
 		log.info("{}: END_OF_EPOCH: {}", this.loggerPrefix, vertexMetadata);
 		if (this.lastConstructed == null || this.lastConstructed.getEpoch() < vertexMetadata.getEpoch()) {
@@ -225,7 +254,7 @@ public final class EpochManager {
 	private void processConsensusEventInternal(ConsensusEvent consensusEvent) {
 		if (this.currentValidatorSet != null && !this.currentValidatorSet.containsKey(consensusEvent.getAuthor())) {
 			log.warn("{}: CONSENSUS_EVENT: Received event from author={} not in validator set={}",
-				this.loggerPrefix, consensusEvent.getAuthor(), this.currentValidatorSet
+				this.loggerPrefix, nodeName(consensusEvent.getAuthor()), this.currentValidatorSet
 			);
 			return;
 		}
@@ -244,7 +273,7 @@ public final class EpochManager {
 
 	public void processConsensusEvent(ConsensusEvent consensusEvent) {
 		if (consensusEvent.getEpoch() > this.currentEpoch()) {
-			log.warn("{}: CONSENSUS_EVENT: Received higher epoch event: {} current epoch: {}",
+			log.debug("{}: CONSENSUS_EVENT: Received higher epoch event: {} current epoch: {}",
 				this.loggerPrefix, consensusEvent, this.currentEpoch()
 			);
 
@@ -295,5 +324,13 @@ public final class EpochManager {
 
 	public void processCommittedStateSync(CommittedStateSync committedStateSync) {
 		vertexStoreEventProcessor.processCommittedStateSync(committedStateSync);
+	}
+
+	private String nodeName(ECPublicKey key) {
+		if (key == null) {
+			return "null";
+		}
+		EUID euid = key.euid();
+		return euid == null ? "null" : euid.toString().substring(0, 6);
 	}
 }

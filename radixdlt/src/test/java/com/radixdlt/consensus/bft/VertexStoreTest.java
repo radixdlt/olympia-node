@@ -20,6 +20,7 @@ package com.radixdlt.consensus.bft;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.junit.Assert.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -120,7 +121,8 @@ public class VertexStoreTest {
 		VoteData voteData = new VoteData(nextVertexMetadata, genesisVertexMetadata, null);
 		QuorumCertificate badRootQC = new QuorumCertificate(voteData, new ECDSASignatures());
 		assertThatThrownBy(() -> {
-			new VertexStore(genesisVertex, badRootQC, syncedStateComputer, syncVerticesRPCSender, vertexStoreEventSender, counters);
+			VertexStore vs = new VertexStore(genesisVertex, badRootQC, syncedStateComputer, syncVerticesRPCSender, vertexStoreEventSender, counters);
+			assertNull(vs); // Fail here
 		}).isInstanceOf(IllegalStateException.class);
 	}
 

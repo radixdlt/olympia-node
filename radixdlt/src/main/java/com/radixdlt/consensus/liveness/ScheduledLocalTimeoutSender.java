@@ -30,7 +30,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * Schedules timeouts and exposes the events as an rx stream
  */
-public final class ScheduledTimeoutSender implements PacemakerRx {
+public final class ScheduledLocalTimeoutSender implements PacemakerRx, LocalTimeoutSender {
 	private static final Logger log = LogManager.getLogger();
 	private static final long LOGGING_INTERVAL = TimeUnit.SECONDS.toMillis(1);
 	private final ScheduledExecutorService executorService;
@@ -38,7 +38,7 @@ public final class ScheduledTimeoutSender implements PacemakerRx {
 	private final Observable<LocalTimeout> timeoutsObservable;
 	private long nextLogging = 0;
 
-	public ScheduledTimeoutSender(ScheduledExecutorService executorService) {
+	public ScheduledLocalTimeoutSender(ScheduledExecutorService executorService) {
 		this.executorService = Objects.requireNonNull(executorService);
 		// BehaviorSubject so that nextLocalTimeout will complete if timeout already occurred
 		this.timeouts = BehaviorSubject.<LocalTimeout>create().toSerialized();
@@ -47,6 +47,7 @@ public final class ScheduledTimeoutSender implements PacemakerRx {
 			.refCount();
 	}
 
+	@Override
 	public void scheduleTimeout(LocalTimeout localTimeout, long timeoutMilliseconds) {
 		long crtTime = System.currentTimeMillis();
 		if (crtTime >= nextLogging) {
@@ -62,5 +63,4 @@ public final class ScheduledTimeoutSender implements PacemakerRx {
 	public Observable<LocalTimeout> localTimeouts() {
 		return this.timeoutsObservable;
 	}
-
 }

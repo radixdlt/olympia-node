@@ -38,6 +38,7 @@ import com.radixdlt.consensus.SyncEpochsRPCSender;
 import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.VertexStoreEventsRx;
 import com.radixdlt.consensus.InternalMessagePasser;
+import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.ProposerElectionFactory;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
@@ -47,11 +48,12 @@ import com.radixdlt.consensus.SyncVerticesRPCSender;
 import com.radixdlt.consensus.VertexStoreFactory;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
+import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.consensus.liveness.MempoolProposalGenerator;
 import com.radixdlt.consensus.liveness.PacemakerFactory;
 import com.radixdlt.consensus.liveness.PacemakerRx;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
-import com.radixdlt.consensus.liveness.ScheduledTimeoutSender;
+import com.radixdlt.consensus.liveness.ScheduledLocalTimeoutSender;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyState;
@@ -60,6 +62,7 @@ import com.radixdlt.consensus.sync.SyncedRadixEngine;
 import com.radixdlt.consensus.sync.SyncedRadixEngine.CommittedStateSyncSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.LedgerAtom;
@@ -74,12 +77,7 @@ import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 public class CerberusModule extends AbstractModule {
-	private static final Logger log = LogManager.getLogger("Startup");
-
 	private final RuntimeProperties runtimeProperties;
 
 	public CerberusModule(RuntimeProperties runtimeProperties) {
@@ -88,8 +86,12 @@ public class CerberusModule extends AbstractModule {
 
 	@Override
 	protected void configure() {
+		// Signing
+		bind(HashSigner.class).toInstance(ECKeyPair::sign);
+
 		// Timed local messages
-		bind(PacemakerRx.class).to(ScheduledTimeoutSender.class);
+		bind(PacemakerRx.class).to(ScheduledLocalTimeoutSender.class);
+		bind(LocalTimeoutSender.class).to(ScheduledLocalTimeoutSender.class);
 
 		// Local messages
 		bind(VertexStoreEventsRx.class).to(InternalMessagePasser.class);
@@ -124,6 +126,7 @@ public class CerberusModule extends AbstractModule {
 		Mempool mempool,
 		@Named("self") ECKeyPair selfKey,
 		Hasher hasher,
+		HashSigner signer,
 		SystemCounters counters
 	) {
 		return (
@@ -134,8 +137,8 @@ public class CerberusModule extends AbstractModule {
 			validatorSet
 		) -> {
 			final ProposalGenerator proposalGenerator = new MempoolProposalGenerator(vertexStore, mempool);
-			final SafetyRules safetyRules = new SafetyRules(selfKey, SafetyState.initialState(), hasher);
-			final PendingVotes pendingVotes = new PendingVotes(hasher);
+			final SafetyRules safetyRules = new SafetyRules(selfKey, SafetyState.initialState(), hasher, signer);
+			final PendingVotes pendingVotes = new PendingVotes(hasher, ECPublicKey::verify);
 
 			return new BFTEventReducer(
 				proposalGenerator,
@@ -148,6 +151,7 @@ public class CerberusModule extends AbstractModule {
 				pendingVotes,
 				proposerElection,
 				selfKey,
+				signer,
 				validatorSet,
 				counters
 			);
@@ -160,7 +164,7 @@ public class CerberusModule extends AbstractModule {
 		SyncedRadixEngine syncedRadixEngine,
 		BFTFactory bftFactory,
 		SyncEpochsRPCSender syncEpochsRPCSender,
-		ScheduledTimeoutSender scheduledTimeoutSender,
+		LocalTimeoutSender scheduledTimeoutSender,
 		PacemakerFactory pacemakerFactory,
 		VertexStoreFactory vertexStoreFactory,
 		ProposerElectionFactory proposerElectionFactory,
@@ -259,16 +263,16 @@ public class CerberusModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private ScheduledTimeoutSender timeoutSender() {
+	private ScheduledLocalTimeoutSender timeoutSender() {
 		ScheduledExecutorService ses = Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads("TimeoutSender"));
-		return new ScheduledTimeoutSender(ses);
+		return new ScheduledLocalTimeoutSender(ses);
 	}
 
 	@Provides
 	@Singleton
 	private PacemakerFactory pacemakerFactory() {
 		final int pacemakerTimeout = runtimeProperties.get("consensus.pacemaker_timeout_millis", 5000);
-		return timeoutSender -> new FixedTimeoutPacemaker(pacemakerTimeout, timeoutSender);
+		return timeoutSender -> new FixedTimeoutPacemaker(pacemakerTimeout, timeoutSender, ECPublicKey::verify);
 	}
 
 	@Provides

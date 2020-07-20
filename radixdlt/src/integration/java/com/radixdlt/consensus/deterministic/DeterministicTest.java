@@ -26,6 +26,7 @@ import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.deterministic.ControlledNetwork.ChannelId;
 import com.radixdlt.consensus.deterministic.ControlledNetwork.ControlledMessage;
 import com.radixdlt.consensus.deterministic.ControlledNetwork.ControlledSender;
+import com.radixdlt.consensus.deterministic.ControlledNode.SyncAndTimeout;
 import com.radixdlt.consensus.deterministic.configuration.SingleEpochAlwaysSyncedStateComputer;
 import com.radixdlt.consensus.deterministic.configuration.SingleEpochFailOnSyncStateComputer;
 import com.radixdlt.consensus.deterministic.configuration.SingleEpochRandomlySyncedStateComputer;
@@ -44,6 +45,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -52,14 +54,18 @@ import java.util.stream.Stream;
  * is emitted and processed synchronously by the caller.
  */
 public final class DeterministicTest {
+	private static final String LOST_RESPONSIVENESS = "No messages available (Lost Responsiveness)";
 	private final ImmutableList<ControlledNode> nodes;
 	private final ImmutableList<ECPublicKey> pks;
 	private final ControlledNetwork network;
 
+
+
 	private DeterministicTest(
 		int numNodes,
-		boolean enableGetVerticesRPC,
-		BiFunction<CommittedStateSyncSender, EpochChangeSender, SyncedStateComputer<CommittedAtom>> stateComputerSupplier
+		SyncAndTimeout syncAndTimeout,
+		BiFunction<CommittedStateSyncSender, EpochChangeSender, SyncedStateComputer<CommittedAtom>> stateComputerSupplier,
+		NodeWeighting weight
 	) {
 		ImmutableList<ECKeyPair> keys = Stream.generate(ECKeyPair::generateNew)
 			.limit(numNodes)
@@ -68,21 +74,24 @@ public final class DeterministicTest {
 		this.pks = keys.stream()
 			.map(ECKeyPair::getPublicKey)
 			.collect(ImmutableList.toImmutableList());
-		this.network = new ControlledNetwork(pks);
+		this.network = new ControlledNetwork();
 		ValidatorSet initialValidatorSet = ValidatorSet.from(
-			pks.stream().map(pk -> Validator.from(pk, UInt256.ONE)).collect(Collectors.toList())
+			Streams.mapWithIndex(
+				pks.stream(),
+				(pk, index) -> Validator.from(pk, weight.forNode((int) index))
+			).collect(Collectors.toList())
 		);
 
 		this.nodes = Streams.mapWithIndex(keys.stream(),
 			(key, index) -> {
-				ControlledSender sender = network.getSender(key.getPublicKey());
+				ControlledSender sender = network.createSender(key.getPublicKey());
 				return new ControlledNode(
 					"node-" + index,
 					key,
 					sender,
 					vset -> new WeightedRotatingLeaders(vset, Comparator.comparing(v -> v.nodeKey().euid()), 5),
 					initialValidatorSet,
-					enableGetVerticesRPC,
+					syncAndTimeout,
 					stateComputerSupplier.apply(sender, sender)
 				);
 			})
@@ -98,8 +107,9 @@ public final class DeterministicTest {
 	public static DeterministicTest createSingleEpochRandomlySyncedTest(int numNodes, Random random) {
 		return new DeterministicTest(
 			numNodes,
-			true,
-			(committedSender, epochSender) -> new SingleEpochRandomlySyncedStateComputer(random, committedSender)
+			SyncAndTimeout.SYNC,
+			(committedSender, epochSender) -> new SingleEpochRandomlySyncedStateComputer(random, committedSender),
+			NodeWeighting.constant(UInt256.ONE)
 		);
 	}
 
@@ -112,8 +122,40 @@ public final class DeterministicTest {
 	public static DeterministicTest createSingleEpochAlwaysSyncedTest(int numNodes) {
 		return new DeterministicTest(
 			numNodes,
-			true,
-			(committedSender, epochChangeSender) -> SingleEpochAlwaysSyncedStateComputer.INSTANCE
+			SyncAndTimeout.SYNC,
+			(committedSender, epochChangeSender) -> SingleEpochAlwaysSyncedStateComputer.INSTANCE,
+			NodeWeighting.constant(UInt256.ONE)
+		);
+	}
+
+	/**
+	 * Creates a new "always synced BFT" Deterministic test solely on the BFT layer,
+	 *
+	 * @param numNodes number of nodes in the network
+	 * @param weight a mapping from node index to node weight
+	 * @return a deterministic test
+	 */
+	public static DeterministicTest createSingleEpochAlwaysSyncedTest(int numNodes, NodeWeighting weight) {
+		return new DeterministicTest(
+			numNodes,
+			SyncAndTimeout.SYNC,
+			(committedSender, epochChangeSender) -> SingleEpochAlwaysSyncedStateComputer.INSTANCE,
+			weight
+		);
+	}
+
+	/**
+	 * Creates a new "always synced BFT with timeouts" Deterministic test solely on the bft layer,
+	 *
+	 * @param numNodes number of nodes in the network
+	 * @return a deterministic test
+	 */
+	public static DeterministicTest createSingleEpochAlwaysSyncedWithTimeoutsTest(int numNodes) {
+		return new DeterministicTest(
+			numNodes,
+			SyncAndTimeout.SYNC_AND_TIMEOUT,
+			(committedSender, epochChangeSender) -> SingleEpochAlwaysSyncedStateComputer.INSTANCE,
+			NodeWeighting.constant(UInt256.ONE)
 		);
 	}
 
@@ -128,13 +170,18 @@ public final class DeterministicTest {
 	public static DeterministicTest createSingleEpochFailOnSyncTest(int numNodes) {
 		return new DeterministicTest(
 			numNodes,
-			false,
-			(committedSender, epochChangeSender) -> SingleEpochFailOnSyncStateComputer.INSTANCE
+			SyncAndTimeout.NONE,
+			(committedSender, epochChangeSender) -> SingleEpochFailOnSyncStateComputer.INSTANCE,
+			NodeWeighting.constant(UInt256.ONE)
 		);
 	}
 
 	public void start() {
 		nodes.forEach(ControlledNode::start);
+	}
+
+	public SystemCounters getSystemCounters(int nodeIndex) {
+		return nodes.get(nodeIndex).getSystemCounters();
 	}
 
 	public void processNextMsg(int toIndex, int fromIndex, Class<?> expectedClass) {
@@ -144,14 +191,21 @@ public final class DeterministicTest {
 		nodes.get(toIndex).processNext(msg);
 	}
 
+	// TODO: This collection of interfaces will need a rethink once we have
+	// more complicated adversaries that need access to the whole message queue.
+
 	public void processNextMsg(Random random) {
-		processNextMsg(random, (c, m) -> true);
+		processNextMsgWithReceiver(random, (c, m) -> true);
 	}
 
-	public void processNextMsg(Random random, BiPredicate<Integer, Object> filter) {
+	public void processNextMsg(Random random, Predicate<Object> filter) {
+		processNextMsgWithReceiver(random, (receiverIndex, msg) -> filter.test(msg));
+	}
+
+	public void processNextMsgWithReceiver(Random random, BiPredicate<Integer, Object> filter) {
 		List<ControlledMessage> possibleMsgs = network.peekNextMessages();
 		if (possibleMsgs.isEmpty()) {
-			throw new IllegalStateException("No messages available (Lost Responsiveness)");
+			throw new IllegalStateException(LOST_RESPONSIVENESS);
 		}
 
 		int nextIndex =  random.nextInt(possibleMsgs.size());
@@ -163,7 +217,19 @@ public final class DeterministicTest {
 		}
 	}
 
-	public SystemCounters getSystemCounters(int nodeIndex) {
-		return nodes.get(nodeIndex).getSystemCounters();
+	public void processNextMsgWithSenderAndReceiver(Random random, TriPredicate<Integer, Integer, Object> filter) {
+		List<ControlledMessage> possibleMsgs = network.peekNextMessages();
+		if (possibleMsgs.isEmpty()) {
+			throw new IllegalStateException(LOST_RESPONSIVENESS);
+		}
+
+		int nextIndex =  random.nextInt(possibleMsgs.size());
+		ChannelId channelId = possibleMsgs.get(nextIndex).getChannelId();
+		Object msg = network.popNextMessage(channelId);
+		int receiverIndex = pks.indexOf(channelId.getReceiver());
+		int senderIndex = pks.indexOf(channelId.getSender());
+		if (filter.test(senderIndex, receiverIndex, msg)) {
+			nodes.get(receiverIndex).processNext(msg);
+		}
 	}
 }
