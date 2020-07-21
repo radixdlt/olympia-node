@@ -25,39 +25,39 @@ import com.radixdlt.middleware2.converters.AtomToClientAtomConverter;
 import java.util.Objects;
 import java.util.function.Consumer;
 
-import javax.inject.Inject;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONObject;
-import org.radix.atoms.events.AtomExceptionEvent;
-import org.radix.events.Events;
 
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.serialization.Serialization;
 
-class SubmissionControlImpl implements SubmissionControl {
+public class SubmissionControlImpl implements SubmissionControl {
 	private static final Logger log = LogManager.getLogger("submission");
+
+	public interface SubmissionControlSender {
+		void sendDeserializeFailure(Atom rawAtom, AtomConversionException e);
+		void sendRadixEngineFailure(ClientAtom clientAtom, RadixEngineException e);
+	}
 
 	private final Mempool mempool;
 	private final RadixEngine<LedgerAtom> radixEngine;
 	private final Serialization serialization;
-	private final Events events;
 	private final AtomToClientAtomConverter converter;
+	private final SubmissionControlSender submissionControlSender;
 
-	@Inject
-	SubmissionControlImpl(
+	public SubmissionControlImpl(
 		Mempool mempool,
 		RadixEngine<LedgerAtom> radixEngine,
 		Serialization serialization,
-		Events events,
-		AtomToClientAtomConverter converter
+		AtomToClientAtomConverter converter,
+		SubmissionControlSender submissionControlSender
 	) {
 		this.mempool = Objects.requireNonNull(mempool);
 		this.radixEngine = Objects.requireNonNull(radixEngine);
 		this.serialization = Objects.requireNonNull(serialization);
-		this.events = Objects.requireNonNull(events);
+		this.submissionControlSender = Objects.requireNonNull(submissionControlSender);
 		this.converter = Objects.requireNonNull(converter);
 	}
 
@@ -74,7 +74,7 @@ class SubmissionControlImpl implements SubmissionControl {
 				e.getDataPointer(),
 				e.getMessage()
 			);
-			this.events.broadcast(new AtomExceptionEvent(e, atom.getAID()));
+			this.submissionControlSender.sendRadixEngineFailure(atom, e);
 		}
 	}
 
@@ -90,7 +90,7 @@ class SubmissionControlImpl implements SubmissionControl {
 				"Rejecting atom {} due to conversion issues.",
 				rawAtom.getAID()
 			);
-			this.events.broadcast(new AtomExceptionEvent(e, rawAtom.getAID()));
+			this.submissionControlSender.sendDeserializeFailure(rawAtom, e);
 		}
 	}
 

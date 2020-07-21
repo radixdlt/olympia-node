@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,20 +15,25 @@
  * language governing permissions and limitations under the License.
  */
 
-package org.radix.atoms.events;
+package com.radixdlt.api;
 
-import com.radixdlt.identifiers.AID;
-import org.radix.exceptions.ExceptionEvent;
+import com.radixdlt.atommodel.Atom;
+import java.util.Objects;
 
-public class AtomExceptionEvent extends ExceptionEvent {
-	private final AID atomId;
+public final class DeserializationFailure {
+	private final Atom atom;
+	private final Exception exception;
 
-	public AtomExceptionEvent(Throwable throwable, AID atomId) {
-		super(throwable);
-		this.atomId = atomId;
+	public DeserializationFailure(Atom atom, Exception exception) {
+		this.atom = Objects.requireNonNull(atom);
+		this.exception = Objects.requireNonNull(exception);
 	}
 
-	public AID getAtomId() {
-		return atomId;
+	public Atom getAtom() {
+		return atom;
+	}
+
+	public Exception getException() {
+		return exception;
 	}
 }

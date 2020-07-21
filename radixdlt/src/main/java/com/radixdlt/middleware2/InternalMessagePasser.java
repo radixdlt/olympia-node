@@ -19,8 +19,12 @@ package com.radixdlt.middleware2;
 
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.EpochChangeSender;
+import com.radixdlt.api.DeserializationFailure;
 import com.radixdlt.api.LedgerRx;
 import com.radixdlt.api.StoredAtom;
+import com.radixdlt.api.SubmissionErrorsRx;
+import com.radixdlt.api.SubmissionFailure;
+import com.radixdlt.atommodel.Atom;
 import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.CommittedStateSyncRx;
 import com.radixdlt.consensus.epoch.EpochChange;
@@ -35,6 +39,8 @@ import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.api.StoredFailure;
 import com.radixdlt.identifiers.EUID;
+import com.radixdlt.mempool.SubmissionControlImpl.SubmissionControlSender;
+import com.radixdlt.middleware2.converters.AtomConversionException;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import io.reactivex.rxjava3.subjects.Subject;
@@ -43,7 +49,7 @@ import io.reactivex.rxjava3.subjects.Subject;
  * Acts as the "ether" to messages passed from sender to receiver
  */
 public final class InternalMessagePasser implements VertexStoreEventsRx, VertexStoreEventSender, CommittedStateSyncSender, CommittedStateSyncRx,
-	EpochChangeSender, EpochChangeRx, SyncedRadixEngineEventSender, LedgerRx {
+	EpochChangeSender, EpochChangeRx, SyncedRadixEngineEventSender, LedgerRx, SubmissionControlSender, SubmissionErrorsRx {
 	private final Subject<Hash> localSyncsSubject = BehaviorSubject.<Hash>create().toSerialized();
 	private final Subject<CommittedStateSync> committedStateSyncsSubject = BehaviorSubject.<CommittedStateSync>create().toSerialized();
 	private final Observable<Hash> localSyncs;
@@ -54,6 +60,8 @@ public final class InternalMessagePasser implements VertexStoreEventsRx, VertexS
 
 	private final Subject<StoredAtom> storedAtoms = BehaviorSubject.<StoredAtom>create().toSerialized();
 	private final Subject<StoredFailure> storedExceptions = BehaviorSubject.<StoredFailure>create().toSerialized();
+	private final Subject<SubmissionFailure> submissionFailures = BehaviorSubject.<SubmissionFailure>create().toSerialized();
+	private final Subject<DeserializationFailure> deserializationFailures = BehaviorSubject.<DeserializationFailure>create().toSerialized();
 
 	public InternalMessagePasser() {
 		this.localSyncs = localSyncsSubject.publish().refCount();
@@ -128,5 +136,26 @@ public final class InternalMessagePasser implements VertexStoreEventsRx, VertexS
 	@Override
 	public Observable<StoredFailure> storedExceptions() {
 		return storedExceptions;
+	}
+
+	@Override
+	public void sendDeserializeFailure(Atom rawAtom, AtomConversionException e) {
+		deserializationFailures.onNext(new DeserializationFailure(rawAtom, e));
+	}
+
+	@Override
+	public void sendRadixEngineFailure(ClientAtom clientAtom, RadixEngineException e) {
+		submissionFailures.onNext(new SubmissionFailure(clientAtom, e));
+
+	}
+
+	@Override
+	public Observable<SubmissionFailure> submissionFailures() {
+		return submissionFailures;
+	}
+
+	@Override
+	public Observable<DeserializationFailure> deserializationFailures() {
+		return deserializationFailures;
 	}
 }
