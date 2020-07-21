@@ -25,17 +25,20 @@ package com.radixdlt.client.application.translate.tokens;
 import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.client.application.translate.StageActionException;
 import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
+import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.client.atommodel.tokens.StakedTokensParticle;
+import com.radixdlt.client.atommodel.tokens.TokenPermission;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.particles.Particle;
-import com.radixdlt.client.core.atoms.particles.Spin;
-import com.radixdlt.client.core.fungible.FungibleParticleTransitioner;
-import com.radixdlt.client.core.fungible.FungibleParticleTransitioner.FungibleParticleTransition;
+import com.radixdlt.client.core.atoms.particles.SpunParticle;
+import com.radixdlt.client.core.fungible.FungibleTransitionMapper;
 import com.radixdlt.client.core.fungible.NotEnoughFungiblesException;
 import com.radixdlt.identifiers.RRI;
 
+import com.radixdlt.utils.UInt256;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -45,6 +48,48 @@ import java.util.stream.Stream;
  */
 public class RedelegateStakedTokensMapper implements StatefulActionToParticleGroupsMapper<RedelegateStakedTokensAction> {
 	public RedelegateStakedTokensMapper() {
+		// Empty on purpose
+	}
+
+	private static List<SpunParticle> mapToParticles(RedelegateStakedTokensAction redelegation, List<StakedTokensParticle> currentParticles)
+		throws NotEnoughFungiblesException {
+
+		final UInt256 totalAmountToRedelegate = TokenUnitConversions.unitsToSubunits(redelegation.getAmount());
+		if (currentParticles.isEmpty()) {
+			throw new NotEnoughFungiblesException(totalAmountToRedelegate, UInt256.ZERO);
+		}
+
+		final RRI token = currentParticles.get(0).getTokenDefinitionReference();
+		final UInt256 granularity = currentParticles.get(0).getGranularity();
+		final Map<TokenTransition, TokenPermission> permissions = currentParticles.get(0).getTokenPermissions();
+
+		FungibleTransitionMapper<StakedTokensParticle, StakedTokensParticle> mapper = new FungibleTransitionMapper<>(
+			StakedTokensParticle::getAmount,
+			amt ->
+				new StakedTokensParticle(
+					redelegation.getOldDelegate(),
+					amt,
+					granularity,
+					redelegation.getFrom(),
+					System.nanoTime(),
+					token,
+					System.currentTimeMillis() / 60000L + 60000L,
+					permissions
+				),
+			amt ->
+				new StakedTokensParticle(
+					redelegation.getNewDelegate(),
+					totalAmountToRedelegate,
+					granularity,
+					redelegation.getFrom(),
+					System.nanoTime(),
+					token,
+					System.currentTimeMillis() / 60000L + 60000L,
+					permissions
+				)
+		);
+
+		return mapper.mapToParticles(currentParticles, totalAmountToRedelegate);
 	}
 
 	@Override
@@ -61,51 +106,17 @@ public class RedelegateStakedTokensMapper implements StatefulActionToParticleGro
 			.filter(p -> p.getTokenDefinitionReference().equals(tokenRef))
 			.collect(Collectors.toList());
 
-		final FungibleParticleTransitioner<StakedTokensParticle, StakedTokensParticle> transitioner =
-			new FungibleParticleTransitioner<>(
-				(amt, consumable) -> new StakedTokensParticle(
-					redelegate.getOldDelegate(),
-					amt,
-					consumable.getGranularity(),
-					redelegate.getFrom(),
-					System.nanoTime(),
-					consumable.getTokenDefinitionReference(),
-					System.currentTimeMillis() / 60000L + 60000L,
-					consumable.getTokenPermissions()
-				),
-				stakedTokens -> stakedTokens,
-				(amt, consumable) -> new StakedTokensParticle(
-					redelegate.getNewDelegate(),
-					amt,
-					consumable.getGranularity(),
-					consumable.getAddress(),
-					System.nanoTime(),
-					consumable.getTokenDefinitionReference(),
-					System.currentTimeMillis() / 60000L + 60000L,
-					consumable.getTokenPermissions()
-				),
-				stakedTokens -> stakedTokens,
-				StakedTokensParticle::getAmount
-			);
-
-
+		final List<SpunParticle> redelegateParticles;
 		try {
-			FungibleParticleTransition<StakedTokensParticle, StakedTokensParticle> transition = transitioner.createTransition(
-				stakeConsumables,
-				TokenUnitConversions.unitsToSubunits(redelegate.getAmount())
-			);
-
-			ParticleGroup.ParticleGroupBuilder particleGroupBuilder = ParticleGroup.builder();
-			transition.getRemoved().stream().map(t -> (Particle) t).forEach(p -> particleGroupBuilder.addParticle(p, Spin.DOWN));
-			transition.getMigrated().stream().map(t -> (Particle) t).forEach(p -> particleGroupBuilder.addParticle(p, Spin.UP));
-			transition.getTransitioned().stream().map(t -> (Particle) t).forEach(p -> particleGroupBuilder.addParticle(p, Spin.UP));
-
-			return Collections.singletonList(particleGroupBuilder.build());
+			redelegateParticles = mapToParticles(redelegate, stakeConsumables);
 		} catch (NotEnoughFungiblesException e) {
 			throw new InsufficientFundsException(
 				tokenRef, TokenUnitConversions.subunitsToUnits(e.getCurrent()), redelegate.getAmount()
 			);
 		}
 
+		return Collections.singletonList(
+			ParticleGroup.of(redelegateParticles)
+		);
 	}
 }

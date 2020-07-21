@@ -25,18 +25,21 @@ package com.radixdlt.client.application.translate.tokens;
 import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.client.application.translate.StageActionException;
 import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
+import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.client.atommodel.tokens.StakedTokensParticle;
+import com.radixdlt.client.atommodel.tokens.TokenPermission;
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.particles.Particle;
-import com.radixdlt.client.core.atoms.particles.Spin;
-import com.radixdlt.client.core.fungible.FungibleParticleTransitioner;
-import com.radixdlt.client.core.fungible.FungibleParticleTransitioner.FungibleParticleTransition;
+import com.radixdlt.client.core.atoms.particles.SpunParticle;
+import com.radixdlt.client.core.fungible.FungibleTransitionMapper;
 import com.radixdlt.client.core.fungible.NotEnoughFungiblesException;
 import com.radixdlt.identifiers.RRI;
 
+import com.radixdlt.utils.UInt256;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -46,6 +49,47 @@ import java.util.stream.Stream;
  */
 public class UnstakeTokensMapper implements StatefulActionToParticleGroupsMapper<UnstakeTokensAction> {
 	public UnstakeTokensMapper() {
+		// Empty on purpose
+	}
+
+	private static List<SpunParticle> mapToParticles(UnstakeTokensAction unstake, List<StakedTokensParticle> currentParticles)
+		throws NotEnoughFungiblesException {
+
+		final UInt256 totalAmountToRedelegate = TokenUnitConversions.unitsToSubunits(unstake.getAmount());
+		if (currentParticles.isEmpty()) {
+			throw new NotEnoughFungiblesException(totalAmountToRedelegate, UInt256.ZERO);
+		}
+
+		final RRI token = currentParticles.get(0).getTokenDefinitionReference();
+		final UInt256 granularity = currentParticles.get(0).getGranularity();
+		final Map<TokenTransition, TokenPermission> permissions = currentParticles.get(0).getTokenPermissions();
+
+		FungibleTransitionMapper<StakedTokensParticle, TransferrableTokensParticle> mapper = new FungibleTransitionMapper<>(
+			StakedTokensParticle::getAmount,
+			amt ->
+				new StakedTokensParticle(
+					unstake.getDelegate(),
+					totalAmountToRedelegate,
+					granularity,
+					unstake.getFrom(),
+					System.nanoTime(),
+					token,
+					System.currentTimeMillis() / 60000L + 60000L,
+					permissions
+				),
+			amt ->
+				new TransferrableTokensParticle(
+					amt,
+					granularity,
+					unstake.getFrom(),
+					System.nanoTime(),
+					token,
+					System.currentTimeMillis() / 60000L + 60000L,
+					permissions
+				)
+		);
+
+		return mapper.mapToParticles(currentParticles, totalAmountToRedelegate);
 	}
 
 	@Override
@@ -54,58 +98,25 @@ public class UnstakeTokensMapper implements StatefulActionToParticleGroupsMapper
 	}
 
 	@Override
-	public List<ParticleGroup> mapToParticleGroups(UnstakeTokensAction stake, Stream<Particle> store) throws StageActionException {
-		final RRI tokenRef = stake.getRRI();
+	public List<ParticleGroup> mapToParticleGroups(UnstakeTokensAction unstake, Stream<Particle> store) throws StageActionException {
+		final RRI tokenRef = unstake.getRRI();
 
 		List<StakedTokensParticle> stakeConsumables = store
 			.map(StakedTokensParticle.class::cast)
 			.filter(p -> p.getTokenDefinitionReference().equals(tokenRef))
 			.collect(Collectors.toList());
 
-		final FungibleParticleTransitioner<StakedTokensParticle, TransferrableTokensParticle> transitioner =
-			new FungibleParticleTransitioner<>(
-				(amt, consumable) -> new TransferrableTokensParticle(
-					amt,
-					consumable.getGranularity(),
-					consumable.getAddress(),
-					System.nanoTime(),
-					consumable.getTokenDefinitionReference(),
-					System.currentTimeMillis() / 60000L + 60000L,
-					consumable.getTokenPermissions()
-				),
-				tokens -> tokens,
-				(amt, consumable) -> new StakedTokensParticle(
-					stake.getDelegate(),
-					amt,
-					consumable.getGranularity(),
-					stake.getFrom(),
-					System.nanoTime(),
-					consumable.getTokenDefinitionReference(),
-					System.currentTimeMillis() / 60000L + 60000L,
-					consumable.getTokenPermissions()
-				),
-				stakedTokens -> stakedTokens,
-				StakedTokensParticle::getAmount
-			);
-
-
+		final List<SpunParticle> unstakeParticles;
 		try {
-			FungibleParticleTransition<StakedTokensParticle, TransferrableTokensParticle> transition = transitioner.createTransition(
-				stakeConsumables,
-				TokenUnitConversions.unitsToSubunits(stake.getAmount())
-			);
-
-			ParticleGroup.ParticleGroupBuilder particleGroupBuilder = ParticleGroup.builder();
-			transition.getRemoved().forEach(p -> particleGroupBuilder.addParticle(p, Spin.DOWN));
-			transition.getMigrated().forEach(p -> particleGroupBuilder.addParticle(p, Spin.UP));
-			transition.getTransitioned().forEach(p -> particleGroupBuilder.addParticle(p, Spin.UP));
-
-			return Collections.singletonList(particleGroupBuilder.build());
+			unstakeParticles = mapToParticles(unstake, stakeConsumables);
 		} catch (NotEnoughFungiblesException e) {
 			throw new InsufficientFundsException(
-				tokenRef, TokenUnitConversions.subunitsToUnits(e.getCurrent()), stake.getAmount()
+				tokenRef, TokenUnitConversions.subunitsToUnits(e.getCurrent()), unstake.getAmount()
 			);
 		}
 
+		return Collections.singletonList(
+			ParticleGroup.of(unstakeParticles)
+		);
 	}
 }
