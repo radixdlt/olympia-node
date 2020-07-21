@@ -49,8 +49,8 @@ import java.util.stream.Stream;
  */
 public class UnstakeTokensMapper implements StatefulActionToParticleGroupsMapper<UnstakeTokensAction> {
 	public UnstakeTokensMapper() {
+		// Empty on purpose
 	}
-
 
 	private static List<SpunParticle> mapToParticles(UnstakeTokensAction unstake, List<StakedTokensParticle> currentParticles)
 		throws NotEnoughFungiblesException {

@@ -51,6 +51,7 @@ import com.radixdlt.client.core.atoms.particles.Particle;
 
 public class MintTokensActionMapper implements StatefulActionToParticleGroupsMapper<MintTokensAction> {
 	public MintTokensActionMapper() {
+		// Empty on purpose
 	}
 
 	private static List<SpunParticle> mapToParticles(MintTokensAction mint, List<UnallocatedTokensParticle> currentParticles)

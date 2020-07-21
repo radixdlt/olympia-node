@@ -50,6 +50,7 @@ import com.radixdlt.utils.UInt256;
 
 public class BurnTokensActionMapper implements StatefulActionToParticleGroupsMapper<BurnTokensAction> {
 	public BurnTokensActionMapper() {
+		// Empty on purpose
 	}
 
 	private static List<SpunParticle> mapToParticles(BurnTokensAction burn, List<TransferrableTokensParticle> currentParticles)
@@ -98,7 +99,7 @@ public class BurnTokensActionMapper implements StatefulActionToParticleGroupsMap
 
 	@Override
 	public List<ParticleGroup> mapToParticleGroups(BurnTokensAction burnTokensAction, Stream<Particle> store) throws StageActionException {
-		if (burnTokensAction.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
+		if (burnTokensAction.getAmount().signum() <= 0) {
 			throw new IllegalArgumentException("Burn amount must be greater than 0.");
 		}
 

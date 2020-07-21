@@ -48,6 +48,7 @@ import java.util.stream.Stream;
  */
 public class RedelegateStakedTokensMapper implements StatefulActionToParticleGroupsMapper<RedelegateStakedTokensAction> {
 	public RedelegateStakedTokensMapper() {
+		// Empty on purpose
 	}
 
 	private static List<SpunParticle> mapToParticles(RedelegateStakedTokensAction redelegation, List<StakedTokensParticle> currentParticles)

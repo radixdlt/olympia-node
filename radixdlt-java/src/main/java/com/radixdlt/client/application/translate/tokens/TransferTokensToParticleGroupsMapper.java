@@ -51,6 +51,7 @@ import com.radixdlt.client.core.atoms.particles.SpunParticle;
  */
 public class TransferTokensToParticleGroupsMapper implements StatefulActionToParticleGroupsMapper<TransferTokensAction> {
 	public TransferTokensToParticleGroupsMapper() {
+		// Empty on purpose
 	}
 
 	private static List<SpunParticle> mapToParticles(TransferTokensAction transfer, List<TransferrableTokensParticle> currentParticles)

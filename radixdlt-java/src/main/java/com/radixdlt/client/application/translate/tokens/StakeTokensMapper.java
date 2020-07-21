@@ -49,6 +49,7 @@ import java.util.stream.Stream;
  */
 public class StakeTokensMapper implements StatefulActionToParticleGroupsMapper<StakeTokensAction> {
 	public StakeTokensMapper() {
+		// Empty on purpose
 	}
 
 	private static List<SpunParticle> mapToParticles(StakeTokensAction stake, List<TransferrableTokensParticle> currentParticles)
