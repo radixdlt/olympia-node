@@ -174,10 +174,15 @@ public final class ConsensusRunner {
 	 * occur.
 	 */
 	public void start() {
+		boolean started = false;
 		synchronized (lock) {
 			if (disposable == null) {
 				disposable = this.events.connect();
+				started = true;
 			}
+		}
+		if (started) {
+			log.info("Consensus stopped");
 		}
 	}
 
@@ -185,11 +190,16 @@ public final class ConsensusRunner {
 	 * Stop processing events.
 	 */
 	public void stop() {
+		boolean stopped = false;
 		synchronized (lock) {
 			if (disposable != null) {
 				disposable.dispose();
 				disposable = null;
+				stopped = true;
 			}
+		}
+		if (stopped) {
+			log.info("Consensus stopped");
 		}
 	}
 
