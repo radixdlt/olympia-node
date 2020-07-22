@@ -70,7 +70,7 @@ public final class RadixEngine<T extends RadixEngineAtom> {
 		final Optional<CMError> error = constraintMachine.validate(atom.getCMInstruction());
 		if (error.isPresent()) {
 			CMError e = error.get();
-			throw new RadixEngineException(RadixEngineErrorCode.CM_ERROR, e.getErrorDescription(), e.getDataPointer());
+			throw new RadixEngineException(RadixEngineErrorCode.CM_ERROR, e.getErrorDescription(), e.getDataPointer(), e);
 		}
 
 		if (checker != null) {
