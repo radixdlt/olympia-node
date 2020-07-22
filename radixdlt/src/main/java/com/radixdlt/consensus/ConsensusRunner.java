@@ -182,7 +182,7 @@ public final class ConsensusRunner {
 			}
 		}
 		if (started) {
-			log.info("Consensus stopped");
+			log.info("Consensus started");
 		}
 	}
 
