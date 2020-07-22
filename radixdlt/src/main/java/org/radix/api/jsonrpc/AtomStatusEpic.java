@@ -111,6 +111,9 @@ public class AtomStatusEpic {
 				if (exception.getRelated() != null) {
 					data.put("conflictingWith", exception.getRelated().getAID().toString());
 				}
+				if (exception.getCmError() != null) {
+					data.put("cmError", exception.getCmError().getErrMsg());
+				}
 
 				// TODO: serialize vertexMetadata
 				VertexMetadata vertexMetadata = e.getAtom().getVertexMetadata();
@@ -155,6 +158,9 @@ public class AtomStatusEpic {
 					data.put("message", reException.getMessage());
 					data.put("errorCode", reException.getErrorCode().toString());
 					data.put("pointerToIssue", pointerToIssue);
+					if (reException.getCmError() != null) {
+						data.put("cmError", reException.getCmError().getErrMsg());
+					}
 					sendAtomSubmissionState.accept(AtomStatus.EVICTED_FAILED_CM_VERIFICATION, data);
 				} else if (e instanceof MempoolFullException) {
 					JSONObject data = new JSONObject();
