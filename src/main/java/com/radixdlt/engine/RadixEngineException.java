@@ -17,6 +17,7 @@
 
 package com.radixdlt.engine;
 
+import com.radixdlt.constraintmachine.CMError;
 import com.radixdlt.constraintmachine.DataPointer;
 import java.util.Objects;
 import javax.annotation.Nullable;
@@ -28,16 +29,26 @@ public final class RadixEngineException extends Exception {
 	private final RadixEngineErrorCode errorCode;
 	private final DataPointer dp;
 	private final RadixEngineAtom related;
+	private final CMError cmError;
 
 	RadixEngineException(RadixEngineErrorCode errorCode, String message, DataPointer dp) {
-		this(errorCode, message, dp, null);
+		this(errorCode, message, dp, null, null);
+	}
+
+	RadixEngineException(RadixEngineErrorCode errorCode, String message, DataPointer dp, CMError cmError) {
+		this(errorCode, message, dp, null, cmError);
 	}
 
 	RadixEngineException(RadixEngineErrorCode errorCode, String message, DataPointer dp, RadixEngineAtom related) {
+		this(errorCode, message, dp, related, null);
+	}
+
+	RadixEngineException(RadixEngineErrorCode errorCode, String message, DataPointer dp, RadixEngineAtom related, CMError cmError) {
 		super(message);
 		this.errorCode = Objects.requireNonNull(errorCode);
 		this.dp = dp;
 		this.related = related;
+		this.cmError = cmError;
 	}
 
 	/**
@@ -66,5 +77,15 @@ public final class RadixEngineException extends Exception {
 	@Nullable
 	public RadixEngineAtom getRelated() {
 		return this.related;
+	}
+
+	/**
+	 * Get the {@link CMError} related to this exception
+	 *
+	 * @return the constraint machine error
+	 */
+	@Nullable
+	public CMError getCmError() {
+		return cmError;
 	}
 }
