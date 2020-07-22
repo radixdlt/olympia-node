@@ -88,24 +88,6 @@ public class LedgerAtomChecker implements AtomChecker<LedgerAtom> {
 			}
 		}
 
-		String timestampString = atom.getMetaData().get(Atom.METADATA_TIMESTAMP_KEY);
-		if (timestampString == null) {
-			return Result.error("atom metadata does not contain '" + Atom.METADATA_TIMESTAMP_KEY + "'");
-		}
-		try {
-			long timestamp = Long.parseLong(timestampString);
-
-			if (timestamp > timestampSupplier.getAsLong()
-				+ TimeUnit.MILLISECONDS.convert(maximumDrift, TimeUnit.SECONDS)) {
-				return Result.error("atom metadata timestamp is after allowed drift time");
-			}
-			if (timestamp < universeSupplier.get().getTimestamp()) {
-				return Result.error("atom metadata timestamp is before universe creation");
-			}
-		} catch (NumberFormatException e) {
-			return Result.error("atom metadata contains invalid timestamp: " + timestampString);
-		}
-
 		return Result.success();
 	}
 }
