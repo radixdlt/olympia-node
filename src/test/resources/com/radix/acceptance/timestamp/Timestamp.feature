@@ -10,17 +10,12 @@ Feature: Timestamp
     When I submit a valid atom with arbitrary metadata containing a valid timestamp
     Then I should observe the atom being accepted
 
-  Scenario: 2: Metadata with invalid timestamp
-    Given that I have access to a suitable Radix network
-    When I submit a valid atom with arbitrary metadata containing an invalid timestamp
-    Then I should observe the atom being rejected
-
-  Scenario: 3: Arbitrary metadata
+  Scenario: 2: Arbitrary metadata
     Given that I have access to a suitable Radix network
     When I submit a valid atom with arbitrary metadata without a valid timestamp
-    Then I should observe the atom being rejected
+    Then I should observe the atom being accepted
 
-  Scenario: 4: Empty metadata
+  Scenario: 3: Empty metadata
     Given that I have access to a suitable Radix network
     When I submit a valid atom with no metadata
     Then I should observe the atom being rejected
