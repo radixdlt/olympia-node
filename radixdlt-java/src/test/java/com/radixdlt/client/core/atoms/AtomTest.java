@@ -47,17 +47,17 @@ public class AtomTest {
 		when(particle0.getShardables()).thenReturn(Collections.singleton(address));
 		Particle particle1 = mock(Particle.class);
 		when(particle1.getShardables()).thenReturn(Collections.singleton(address));
-		Atom atom = Atom.create(ParticleGroup.of(SpunParticle.up(particle0), SpunParticle.up(particle1)), 0L);
+		Atom atom = Atom.create(ParticleGroup.of(SpunParticle.up(particle0), SpunParticle.up(particle1)));
 		assertThat(atom.addresses()).containsExactly(address);
 	}
 
 	@Test
 	public void hash_test_atom() {
-		Atom atom = Atom.create(ImmutableList.of(), 123456789L);
+		Atom atom = Atom.create(ImmutableList.of());
 		Hash hash = atom.getHash();
 		assertIsNotRawDSON(hash);
 		String hashHex = hash.toString();
-		assertEquals("e7c0184f951334f75d494996fcbbff7437185752d6e1d105d8eda703bc8fce13", hashHex);
+		assertEquals("311964d6688530d47baba551393b9a51a5e6a22504133597e3f7c2af5f83a2ce", hashHex);
 	}
 
 	@Test

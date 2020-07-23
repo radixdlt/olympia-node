@@ -119,7 +119,7 @@ public class RadixJsonRpcClientTest {
 			String id = jsonObject.get("id").getAsString();
 
 			JsonArray atoms = new JsonArray();
-			Atom atom = Atom.create(Collections.emptyList(), 0L);
+			Atom atom = Atom.create(Collections.emptyList());
 			String atomJson = Serialize.getInstance().toJson(atom, Output.API);
 			atoms.add(parser.parse(atomJson));
 

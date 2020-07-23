@@ -68,7 +68,7 @@ public class PowFeeMapperTest {
 		when(address.getPublicKey()).thenReturn(key);
 		when(universe.getAddressFrom(key)).thenReturn(address);
 
-		Pair<Map<String, String>, List<ParticleGroup>> output = powFeeMapper.map(Atom.create(Collections.emptyList(), 0L), universe, key);
+		Pair<Map<String, String>, List<ParticleGroup>> output = powFeeMapper.map(Atom.create(Collections.emptyList()), universe, key);
 		assertThat(output.getFirst()).containsOnlyKeys(Atom.METADATA_POW_NONCE_KEY);
 
 		verify(builder, times(1)).build(anyInt(), any(), anyInt());
