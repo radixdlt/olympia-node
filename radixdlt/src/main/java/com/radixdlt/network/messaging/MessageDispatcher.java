@@ -75,7 +75,7 @@ class MessageDispatcher {
 		this.addressBook = addressBook;
 	}
 
-	SendResult send(TransportManager transportManager, final MessageEvent outboundMessage) {
+	CompletableFuture<SendResult> send(TransportManager transportManager, final MessageEvent outboundMessage) {
 		final Message message = outboundMessage.message();
 		final Peer peer = outboundMessage.peer();
 
@@ -83,27 +83,21 @@ class MessageDispatcher {
 			String msg = String.format("TTL for %s message to %s has expired", message.getClass().getSimpleName(), peer);
 			log.warn(msg);
 			this.counters.increment(CounterType.MESSAGES_OUTBOUND_ABORTED);
-			return SendResult.failure(new IOException(msg));
+			return CompletableFuture.completedFuture(SendResult.failure(new IOException(msg)));
 		}
 
-		try {
-			if (message instanceof SignedMessage) {
-				SignedMessage signedMessage = (SignedMessage) message;
-				if (signedMessage.getSignature() == null) {
-					signedMessage.sign(this.localSystem.getKeyPair());
-				}
+		if (message instanceof SignedMessage) {
+			SignedMessage signedMessage = (SignedMessage) message;
+			if (signedMessage.getSignature() == null) {
+				signedMessage.sign(this.localSystem.getKeyPair());
 			}
-
-			byte[] bytes = serialize(message);
-			return findTransportAndOpenConnection(transportManager, peer, bytes)
-				.thenCompose(conn -> send(peer, conn, message, bytes))
-				.thenApply(this::updateStatistics)
-				.get();
-		} catch (Exception ex) {
-			String msg = String.format("Exception sending %s message to  %s", message.getClass().getSimpleName(), peer);
-			log.error(msg, ex);
-			return SendResult.failure(new IOException(msg, ex));
 		}
+
+		byte[] bytes = serialize(message);
+		return findTransportAndOpenConnection(transportManager, peer, bytes)
+			.thenCompose(conn -> send(peer, conn, message, bytes))
+			.thenApply(this::updateStatistics)
+			.exceptionally(t -> completionException(t, peer, message));
 	}
 
 	private CompletableFuture<SendResult> send(Peer peer, TransportOutboundConnection conn, Message message, byte[] bytes) {
@@ -111,6 +105,12 @@ class MessageDispatcher {
 			log.trace("Sending to {}: {}", hostId(peer), message);
 		}
 		return conn.send(bytes);
+	}
+
+	private SendResult completionException(Throwable cause, Peer receiver, Message message) {
+		String msg = String.format("Send %s to %s failed", message.getClass().getSimpleName(), receiver);
+		log.warn(msg, cause);
+		return SendResult.failure(new IOException(msg, cause));
 	}
 
 	void receive(MessageListenerList listeners, final MessageEvent inboundMessage) {
@@ -152,7 +152,7 @@ class MessageDispatcher {
 		RadixSystem system = systemMessage.getSystem();
 		if (checkSignature(systemMessage, system)) {
 			Peer peer = this.addressBook.updatePeerSystem(oldPeer, system);
-			log.debug("Good signature on {} from {}", messageType, peer);
+			log.trace("Good signature on {} from {}", messageType, peer);
 			if (system.getNID() == null || EUID.ZERO.equals(system.getNID())) {
 				peer.ban(String.format("%s:%s gave null NID", peer, messageType));
 				return null;

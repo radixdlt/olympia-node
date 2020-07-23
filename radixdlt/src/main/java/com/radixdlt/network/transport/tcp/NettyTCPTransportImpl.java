@@ -205,8 +205,16 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 	@Override
 	public ChannelFuture createChannel(String host, int port) {
 		log.info("Establishing connection to {}:{}", host, port);
-		return this.outboundBootstrap.connect(host, port)
-			.addListener(v -> log.info("Established connection to {}:{}", host, port));
+		final ChannelFuture cf = this.outboundBootstrap.connect(host, port);
+		return cf.addListener(v -> {
+			Throwable cause = cf.cause();
+			if (cause == null) {
+				log.info("Established connection to {}:{}", host, port);
+			} else {
+				String msg = String.format("Connection to %s:%s failed", host, port);
+				log.warn(msg, cause);
+			}
+		});
 	}
 
 	@Override
