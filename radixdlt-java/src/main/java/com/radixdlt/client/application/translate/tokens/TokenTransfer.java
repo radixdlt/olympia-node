@@ -34,22 +34,19 @@ public class TokenTransfer {
 	private final RRI tokenDefinition;
 	private final BigDecimal amount;
 	private final byte[] attachment;
-	private final long timestamp;
 
 	public TokenTransfer(
 		RadixAddress from,
 		RadixAddress to,
 		RRI tokenDefinition,
 		BigDecimal amount,
-		byte[] attachment,
-		long timestamp
+		byte[] attachment
 	) {
 		this.from = from;
 		this.to = to;
 		this.tokenDefinition = tokenDefinition;
 		this.amount = amount;
 		this.attachment = attachment;
-		this.timestamp = timestamp;
 	}
 
 	public BigDecimal getAmount() {
@@ -76,13 +73,9 @@ public class TokenTransfer {
 		return getAttachment().map(a -> new String(a, RadixConstants.STANDARD_CHARSET));
 	}
 
-	public long getTimestamp() {
-		return timestamp;
-	}
-
 	@Override
 	public String toString() {
-		return timestamp + " " + from + " -> " + to + " " + amount
+		return from + " -> " + to + " " + amount
 			+ (attachment == null ? "" : " " + attachment);
 	}
 }

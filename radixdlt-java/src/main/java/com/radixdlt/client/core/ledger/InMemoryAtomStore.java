@@ -93,10 +93,10 @@ public class InMemoryAtomStore implements AtomStore {
 		synchronized (lock) {
 			Atom stagedAtom = stagedAtoms.get(uuid);
 			if (stagedAtom == null) {
-				stagedAtom = Atom.create(particleGroup, System.currentTimeMillis());
+				stagedAtom = Atom.create(particleGroup);
 			} else {
 				List<ParticleGroup> groups = Stream.concat(stagedAtom.particleGroups(), Stream.of(particleGroup)).collect(Collectors.toList());
-				stagedAtom = Atom.create(groups, System.currentTimeMillis());
+				stagedAtom = Atom.create(groups);
 			}
 			stagedAtoms.put(uuid, stagedAtom);
 

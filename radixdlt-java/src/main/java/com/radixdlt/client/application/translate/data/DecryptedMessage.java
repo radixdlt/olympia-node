@@ -53,15 +53,13 @@ public class DecryptedMessage {
 	private final RadixAddress to;
 	private final byte[] data;
 	private final EncryptionState encryptionState;
-	private final long timestamp;
 	private final EUID actionId;
 
-	public DecryptedMessage(byte[] data, RadixAddress from, RadixAddress to, EncryptionState encryptionState, long timestamp, EUID actionId) {
+	public DecryptedMessage(byte[] data, RadixAddress from, RadixAddress to, EncryptionState encryptionState, EUID actionId) {
 		this.from = from;
 		this.data = data;
 		this.to = to;
 		this.encryptionState = encryptionState;
-		this.timestamp = timestamp;
 		this.actionId = actionId;
 	}
 
@@ -89,12 +87,8 @@ public class DecryptedMessage {
 		return from;
 	}
 
-	public long getTimestamp() {
-		return timestamp;
-	}
-
 	@Override
 	public String toString() {
-		return timestamp + " " + from + " -> " + to + ": " + encryptionState + " " + Base64.toBase64String(data);
+		return from + " -> " + to + ": " + encryptionState + " " + Base64.toBase64String(data);
 	}
 }
