@@ -31,11 +31,11 @@ import static org.junit.Assert.assertFalse;
 public class HashTest {
 	@Test
 	public void hash_test_atom() {
-		Atom atom = new Atom(123456789L);
+		Atom atom = new Atom();
 		Hash hash = atom.getHash();
 		assertIsNotRawDSON(hash);
 		String hashHex = hash.toString();
-		assertEquals("e7c0184f951334f75d494996fcbbff7437185752d6e1d105d8eda703bc8fce13", hashHex);
+		assertEquals("311964d6688530d47baba551393b9a51a5e6a22504133597e3f7c2af5f83a2ce", hashHex);
 	}
 
 	@Test
