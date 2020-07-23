@@ -301,6 +301,6 @@ public class InMemoryAtomStoreTest {
 		);
 		inMemoryAtomStore.store(someAddress, AtomObservation.stored(atom1));
 		Stream<Particle> upParticles = inMemoryAtomStore.getUpParticles(someAddress, null);
-		assertThat(upParticles).containsExactly(particle2);
+		assertThat(upParticles).containsExactly(particle1);
 	}
 }
