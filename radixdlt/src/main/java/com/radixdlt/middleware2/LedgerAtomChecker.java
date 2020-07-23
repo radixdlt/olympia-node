@@ -23,7 +23,6 @@ import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.AtomChecker;
 import com.radixdlt.universe.Universe;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
@@ -86,24 +85,6 @@ public class LedgerAtomChecker implements AtomChecker<LedgerAtom> {
 					return Result.error("atom fee invalid: '" + powSpent + "' does not meet target '" + target + "'");
 				}
 			}
-		}
-
-		String timestampString = atom.getMetaData().get(Atom.METADATA_TIMESTAMP_KEY);
-		if (timestampString == null) {
-			return Result.error("atom metadata does not contain '" + Atom.METADATA_TIMESTAMP_KEY + "'");
-		}
-		try {
-			long timestamp = Long.parseLong(timestampString);
-
-			if (timestamp > timestampSupplier.getAsLong()
-				+ TimeUnit.MILLISECONDS.convert(maximumDrift, TimeUnit.SECONDS)) {
-				return Result.error("atom metadata timestamp is after allowed drift time");
-			}
-			if (timestamp < universeSupplier.get().getTimestamp()) {
-				return Result.error("atom metadata timestamp is before universe creation");
-			}
-		} catch (NumberFormatException e) {
-			return Result.error("atom metadata contains invalid timestamp: " + timestampString);
 		}
 
 		return Result.success();

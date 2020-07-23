@@ -152,7 +152,7 @@ public final class GenerateUniverses {
 		RRIParticle rriParticle = new RRIParticle(xrdDefinition.getRRI());
 		TransferrableTokensParticle mintXrdTokens = createGenesisXRDMint(universeAddress, "XRD", genesisAmount, timestamp, planck);
 
-		Atom genesisAtom = new Atom(timestamp);
+		Atom genesisAtom = new Atom();
 		genesisAtom.addParticleGroupWith(helloUniverseMessage, Spin.UP);
 		genesisAtom.addParticleGroupWith(
 			rriParticle, Spin.DOWN,
