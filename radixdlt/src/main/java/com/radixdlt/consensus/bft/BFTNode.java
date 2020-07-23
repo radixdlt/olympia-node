@@ -61,4 +61,9 @@ public final class BFTNode {
 	public String getSimpleName() {
 		return simpleName;
 	}
+
+	@Override
+	public String toString() {
+		return simpleName;
+	}
 }
