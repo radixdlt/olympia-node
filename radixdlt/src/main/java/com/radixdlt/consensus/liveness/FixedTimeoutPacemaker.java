@@ -46,14 +46,13 @@ public final class FixedTimeoutPacemaker implements Pacemaker {
 	}
 
 	private static final Logger log = LogManager.getLogger("PM");
+	private static final long LOGGING_INTERVAL = TimeUnit.SECONDS.toMillis(1);
 
 	private final long timeoutMilliseconds;
 	private final TimeoutSender timeoutSender;
-
 	private final PendingNewViews pendingNewViews;
 	private View currentView = View.of(0L);
 	private View lastSyncView = View.of(0L);
-	private static final long LOGGING_INTERVAL = TimeUnit.SECONDS.toMillis(1);
 	private long nextLogging = 0;
 
 	public FixedTimeoutPacemaker(long timeoutMilliseconds, TimeoutSender timeoutSender) {
