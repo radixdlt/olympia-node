@@ -96,6 +96,7 @@ class ControlledNode {
 					.validatorSet(validatorSet)
 					.eventSender(controlledSender)
 					.counters(systemCounters)
+					.timeSupplier(System::currentTimeMillis)
 					.hasher(nullHasher)
 					.signer(nullSigner)
 					.verifyAuthors(false)

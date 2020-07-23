@@ -34,6 +34,7 @@ import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.mempool.Mempool;
+import com.radixdlt.network.TimeSupplier;
 
 /**
  * A helper class to help in constructing a BFT validator state machine
@@ -44,6 +45,7 @@ public final class BFTBuilder {
 	private BFTEventSender eventSender;
 	private EndOfEpochSender endOfEpochSender;
 	private SystemCounters counters;
+	private TimeSupplier timeSupplier;
 
 	// BFT Configuration objects
 	private BFTValidatorSet validatorSet;
@@ -61,6 +63,7 @@ public final class BFTBuilder {
 	private BFTNode self;
 
 	private BFTBuilder() {
+		// Just making this inaccessible
 	}
 
 	public static BFTBuilder create() {
@@ -117,6 +120,11 @@ public final class BFTBuilder {
 		return this;
 	}
 
+	public BFTBuilder timeSupplier(TimeSupplier timeSupplier) {
+		this.timeSupplier = timeSupplier;
+		return this;
+	}
+
 	public BFTBuilder pacemaker(Pacemaker pacemaker) {
 		this.pacemaker = pacemaker;
 		return this;
@@ -149,7 +157,8 @@ public final class BFTBuilder {
 			pendingVotes,
 			proposerElection,
 			validatorSet,
-			counters
+			counters,
+			timeSupplier
 		);
 
 		SyncQueues syncQueues = new SyncQueues();

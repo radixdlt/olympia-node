@@ -117,6 +117,7 @@ public class SimulationNodes {
 					.validatorSet(validatorSet)
 					.eventSender(underlyingNetwork.getNetworkSender(self))
 					.counters(counters.get(self))
+					.timeSupplier(System::currentTimeMillis)
 					.hasher(nullHasher)
 					.signer(nullSigner)
 					.verifyAuthors(false)

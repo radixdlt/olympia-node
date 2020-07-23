@@ -34,6 +34,7 @@ import com.radixdlt.consensus.safety.SafetyViolationException;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hash;
+import com.radixdlt.network.TimeSupplier;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -92,6 +93,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	private final SafetyRules safetyRules;
 	private final BFTValidatorSet validatorSet;
 	private final SystemCounters counters;
+	private final TimeSupplier timeSupplier;
 	private final Map<Hash, QuorumCertificate> unsyncedQCs = new HashMap<>();
 	private boolean synchedLog = false;
 
@@ -110,7 +112,8 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		PendingVotes pendingVotes,
 		ProposerElection proposerElection,
 		BFTValidatorSet validatorSet,
-		SystemCounters counters
+		SystemCounters counters,
+		TimeSupplier timeSupplier
 	) {
 		this.self = Objects.requireNonNull(self);
 		this.proposalGenerator = Objects.requireNonNull(proposalGenerator);
@@ -123,6 +126,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		this.proposerElection = Objects.requireNonNull(proposerElection);
 		this.validatorSet = Objects.requireNonNull(validatorSet);
 		this.counters = Objects.requireNonNull(counters);
+		this.timeSupplier = Objects.requireNonNull(timeSupplier);
 	}
 
 	// Hotstuff's Event-Driven OnNextSyncView
@@ -234,7 +238,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 
 		final BFTNode currentLeader = this.proposerElection.getProposer(updatedView);
 		try {
-			final Vote vote = safetyRules.voteFor(proposedVertex, vertexMetadata);
+			final Vote vote = safetyRules.voteFor(proposedVertex, vertexMetadata, this.timeSupplier.currentTime());
 			log.trace("{}: PROPOSAL: Sending VOTE to {}: {}", this.self::getSimpleName, currentLeader::getSimpleName, () -> vote);
 			sender.sendVote(vote, currentLeader);
 		} catch (SafetyViolationException e) {
