@@ -24,19 +24,15 @@ import io.reactivex.rxjava3.subjects.Subject;
 import java.util.Objects;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * Schedules timeouts and exposes the events as an rx stream
  */
 public final class ScheduledLocalTimeoutSender implements PacemakerRx, LocalTimeoutSender {
-	private static final Logger log = LogManager.getLogger();
-	private static final long LOGGING_INTERVAL = TimeUnit.SECONDS.toMillis(1);
 	private final ScheduledExecutorService executorService;
 	private final Subject<LocalTimeout> timeouts;
 	private final Observable<LocalTimeout> timeoutsObservable;
-	private long nextLogging = 0;
+
 
 	public ScheduledLocalTimeoutSender(ScheduledExecutorService executorService) {
 		this.executorService = Objects.requireNonNull(executorService);
@@ -49,13 +45,6 @@ public final class ScheduledLocalTimeoutSender implements PacemakerRx, LocalTime
 
 	@Override
 	public void scheduleTimeout(LocalTimeout localTimeout, long timeoutMilliseconds) {
-		long crtTime = System.currentTimeMillis();
-		if (crtTime >= nextLogging) {
-			log.info("Starting View: {}", localTimeout);
-			nextLogging = crtTime + LOGGING_INTERVAL;
-		} else {
-			log.trace("Starting View: {}", localTimeout);
-		}
 		executorService.schedule(() -> timeouts.onNext(localTimeout), timeoutMilliseconds, TimeUnit.MILLISECONDS);
 	}
 
