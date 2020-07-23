@@ -41,6 +41,7 @@ public class UnallocatedTokensParticleTest {
 				TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY,
 				TokenTransition.BURN, TokenPermission.NONE
 			),
+			null,
 			null
 		);
 
@@ -135,6 +136,7 @@ public class UnallocatedTokensParticleTest {
 				TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY,
 				TokenTransition.BURN, TokenPermission.NONE
 			),
+			null,
 			null
 		);
 

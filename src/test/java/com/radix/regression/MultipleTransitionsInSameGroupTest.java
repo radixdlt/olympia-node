@@ -232,6 +232,7 @@ public class MultipleTransitionsInSameGroupTest {
 				TokenTransition.MINT, TokenPermission.TOKEN_OWNER_ONLY,
 				TokenTransition.BURN, TokenPermission.TOKEN_OWNER_ONLY
 			),
+			null,
 			null
 		);
 	}
