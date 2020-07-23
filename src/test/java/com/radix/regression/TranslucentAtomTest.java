@@ -45,7 +45,7 @@ public class TranslucentAtomTest {
 			new byte[1],
 			new MetadataMap(),
 			0, ImmutableSet.of(EUID.ONE));
-		Atom unsignedAtom = Atom.create(ParticleGroup.of(SpunParticle.up(messageParticle)), System.currentTimeMillis());
+		Atom unsignedAtom = Atom.create(ParticleGroup.of(SpunParticle.up(messageParticle)));
 		Atom signedAtom = this.identity.addSignature(unsignedAtom).blockingGet();
 		Result result = api.submitAtom(signedAtom);
 		TestObserver<SubmitAtomAction> testObserver = TestObserver.create(Util.loggingObserver("SubmitAtom"));
@@ -75,7 +75,7 @@ public class TranslucentAtomTest {
 			new byte[1],
 			new MetadataMap(),
 			0, ImmutableSet.of(api.getAddress().euid(), EUID.ONE));
-		Atom unsignedAtom = Atom.create(ParticleGroup.of(SpunParticle.up(messageParticle)), System.currentTimeMillis());
+		Atom unsignedAtom = Atom.create(ParticleGroup.of(SpunParticle.up(messageParticle)));
 		Atom signedAtom = this.identity.addSignature(unsignedAtom).blockingGet();
 		Result result = api.submitAtom(signedAtom);
 		TestObserver<SubmitAtomAction> testObserver = TestObserver.create(Util.loggingObserver("SubmitAtom"));
