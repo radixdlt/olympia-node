@@ -57,18 +57,18 @@ public final class Atom {
 	public static final String METADATA_TIMESTAMP_KEY = "timestamp";
 	public static final String METADATA_POW_NONCE_KEY = "powNonce";
 
-	public static Atom create(ParticleGroup particleGroup, long timestamp) {
+	public static Atom create(ParticleGroup particleGroup) {
 		return new Atom(
 			ImmutableList.of(particleGroup),
-			ImmutableMap.of(METADATA_TIMESTAMP_KEY, String.valueOf(timestamp)),
+			ImmutableMap.of(),
 			ImmutableMap.of()
 		);
 	}
 
-	public static Atom create(List<ParticleGroup> particleGroups, long timestamp) {
+	public static Atom create(List<ParticleGroup> particleGroups) {
 		return new Atom(
 			ImmutableList.copyOf(particleGroups),
-			ImmutableMap.of(METADATA_TIMESTAMP_KEY, String.valueOf(timestamp)),
+			ImmutableMap.of(),
 			ImmutableMap.of()
 		);
 	}
@@ -159,24 +159,6 @@ public final class Atom {
 			.map(Particle::getShardables)
 			.flatMap(Set::stream)
 			.distinct();
-	}
-
-	public boolean hasTimestamp() {
-		return this.metaData.containsKey(METADATA_TIMESTAMP_KEY);
-	}
-
-	/**
-	 * Convenience method to retrieve timestamp
-	 *
-	 * @return The timestamp in milliseconds since epoch
-	 */
-	public long getTimestamp() {
-		// TODO Not happy with this error handling as it moves some validation work into the atom data. See RLAU-951
-		try {
-			return Long.parseLong(this.metaData.get(METADATA_TIMESTAMP_KEY));
-		} catch (NumberFormatException e) {
-			return Long.MIN_VALUE;
-		}
 	}
 
 	public Map<String, ECDSASignature> getSignatures() {

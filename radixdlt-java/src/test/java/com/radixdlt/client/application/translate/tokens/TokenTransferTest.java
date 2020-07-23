@@ -38,7 +38,7 @@ public class TokenTransferTest {
 		RadixAddress from = mock(RadixAddress.class);
 		RadixAddress to = mock(RadixAddress.class);
 		RRI token = mock(RRI.class);
-		TokenTransfer tokenTransfer = new TokenTransfer(from, to, token, BigDecimal.ONE, null, 1L);
+		TokenTransfer tokenTransfer = new TokenTransfer(from, to, token, BigDecimal.ONE, null);
 		assertThat(tokenTransfer.toString()).isNotNull();
 		assertThat(tokenTransfer.getAttachment()).isNotPresent();
 		assertThat(tokenTransfer.getAttachmentAsString()).isNotPresent();
@@ -50,7 +50,7 @@ public class TokenTransferTest {
 		RadixAddress to = mock(RadixAddress.class);
 		RRI token = mock(RRI.class);
 		byte[] attachment = "Hello".getBytes(RadixConstants.STANDARD_CHARSET);
-		TokenTransfer tokenTransfer = new TokenTransfer(from, to, token, BigDecimal.ONE, attachment, 1L);
+		TokenTransfer tokenTransfer = new TokenTransfer(from, to, token, BigDecimal.ONE, attachment);
 		assertThat(tokenTransfer.toString()).isNotNull();
 		assertThat(tokenTransfer.getAttachment()).isPresent();
 		assertThat(tokenTransfer.getAttachmentAsString()).get().isEqualTo("Hello");

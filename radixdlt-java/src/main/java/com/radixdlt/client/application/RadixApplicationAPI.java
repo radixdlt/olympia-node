@@ -980,7 +980,6 @@ public class RadixApplicationAPI {
 	public Atom buildAtomWithFee(List<ParticleGroup> particleGroups) {
 		List<ParticleGroup> allParticleGroups = new ArrayList<>(particleGroups);
 		Map<String, String> metaData = new HashMap<>();
-		metaData.put(Atom.METADATA_TIMESTAMP_KEY, String.valueOf(generateTimestamp()));
 		Atom atom = Atom.create(particleGroups, metaData);
 		Pair<Map<String, String>, List<ParticleGroup>> fee = this.feeMapper.map(atom, this.universe, this.getPublicKey());
 		allParticleGroups.addAll(fee.getSecond());

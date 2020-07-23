@@ -110,8 +110,7 @@ public class AtomToTokenTransfersMapper implements AtomToExecutedActionsMapper<T
 							to,
 							e.getKey(),
 							summary.get(0).getValue().abs(),
-							attachment == null ? null : Bytes.fromBase64String(attachment),
-							atom.getTimestamp()
+							attachment == null ? null : Bytes.fromBase64String(attachment)
 						);
 					});
 			})

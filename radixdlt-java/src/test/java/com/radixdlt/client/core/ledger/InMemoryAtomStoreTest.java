@@ -287,8 +287,7 @@ public class InMemoryAtomStoreTest {
 			ParticleGroup.of(
 				SpunParticle.down(particle0),
 				SpunParticle.up(particle1)
-			),
-			0
+			)
 		);
 		inMemoryAtomStore.store(someAddress, AtomObservation.softStored(atom0));
 
@@ -298,11 +297,10 @@ public class InMemoryAtomStoreTest {
 			ParticleGroup.of(
 				SpunParticle.down(particle0),
 				SpunParticle.up(particle2)
-			),
-			1
+			)
 		);
 		inMemoryAtomStore.store(someAddress, AtomObservation.stored(atom1));
 		Stream<Particle> upParticles = inMemoryAtomStore.getUpParticles(someAddress, null);
-		assertThat(upParticles).containsExactly(particle2);
+		assertThat(upParticles).containsExactly(particle1);
 	}
 }

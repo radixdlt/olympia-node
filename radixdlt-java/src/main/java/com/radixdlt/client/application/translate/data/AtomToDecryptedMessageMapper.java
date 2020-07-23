@@ -72,7 +72,6 @@ public class AtomToDecryptedMessageMapper implements AtomToExecutedActionsMapper
 
 		// TODO: don't pass in maps, utilize a metadata builder?
 		Map<String, Object> metaData = new HashMap<>();
-		metaData.put("timestamp", atom.getTimestamp());
 		metaData.put("signatures", atom.getSignatures());
 
 		bytesParticle.ifPresent(p -> metaData.compute("application", (k, v) -> p.getMetaData("application")));
@@ -107,12 +106,12 @@ public class AtomToDecryptedMessageMapper implements AtomToExecutedActionsMapper
 			.map(u -> {
 				final EncryptionState encryptionState = encryptorParticle.isPresent()
 					? EncryptionState.DECRYPTED : EncryptionState.NOT_ENCRYPTED;
-				return new DecryptedMessage(u.getData(), from, to, encryptionState, atom.getTimestamp(), bytesParticle.get().euid());
+				return new DecryptedMessage(u.getData(), from, to, encryptionState, bytesParticle.get().euid());
 			})
 			.onErrorResumeNext(e -> {
 				if (e instanceof CryptoException) {
 					return Single.just(
-						new DecryptedMessage(bytes, from, to, EncryptionState.CANNOT_DECRYPT, atom.getTimestamp(), bytesParticle.get().euid())
+						new DecryptedMessage(bytes, from, to, EncryptionState.CANNOT_DECRYPT, bytesParticle.get().euid())
 					);
 				} else {
 					return Single.error(e);
