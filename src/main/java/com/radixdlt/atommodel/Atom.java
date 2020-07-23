@@ -56,7 +56,6 @@ public class Atom {
 	@DsonOutput(value = {DsonOutput.Output.API, DsonOutput.Output.WIRE, DsonOutput.Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	public static final String METADATA_TIMESTAMP_KEY = "timestamp";
 	public static final String METADATA_POW_NONCE_KEY = "powNonce";
 
 	@JsonProperty("version")
@@ -89,13 +88,8 @@ public class Atom {
 		this.metaData = ImmutableMap.of();
 	}
 
-	public Atom(long timestamp) {
-		this.metaData = ImmutableMap.of(METADATA_TIMESTAMP_KEY, String.valueOf(timestamp));
-	}
-
-	public Atom(long timestamp, Map<String, String> metadata) {
+	public Atom(Map<String, String> metadata) {
 		this.metaData = ImmutableMap.<String, String>builder()
-			.put(METADATA_TIMESTAMP_KEY, String.valueOf(timestamp))
 			.putAll(metadata)
 			.build();
 	}
@@ -407,10 +401,6 @@ public class Atom {
 			this.signatures.putAll((sigs.entrySet().stream()
 				.collect(Collectors.toMap(e -> EUID.valueOf(e.getKey()), Map.Entry::getValue))));
 		}
-	}
-
-	public boolean hasTimestamp() {
-		return this.metaData.containsKey(METADATA_TIMESTAMP_KEY);
 	}
 
 	@Override
