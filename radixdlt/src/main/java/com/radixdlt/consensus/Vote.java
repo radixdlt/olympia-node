@@ -82,8 +82,8 @@ public final class Vote implements ConsensusEvent {
 		return voteData.getVoteData();
 	}
 
-	public VoteData getTimestampedVoteData() {
-		return voteData.getVoteData();
+	public TimestampedVoteData getTimestampedVoteData() {
+		return voteData;
 	}
 
 	public Optional<ECDSASignature> getSignature() {

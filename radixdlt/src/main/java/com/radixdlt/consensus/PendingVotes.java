@@ -91,7 +91,7 @@ public final class PendingVotes {
 	 * @return The generated QC, if any
 	 */
 	public Optional<QuorumCertificate> insertVote(Vote vote, BFTValidatorSet validatorSet) {
-		final VoteData voteData = vote.getVoteData();
+		final TimestampedVoteData voteData = vote.getTimestampedVoteData();
 		final Hash voteHash = this.hasher.hash(voteData);
 		final ECDSASignature signature = vote.getSignature().orElseThrow(() -> new IllegalArgumentException("vote is missing signature"));
 		final BFTNode node = vote.getAuthor();

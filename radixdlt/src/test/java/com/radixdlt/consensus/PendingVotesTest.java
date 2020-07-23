@@ -156,7 +156,9 @@ public class PendingVotesTest {
 		VertexMetadata proposed = new VertexMetadata(0, parentView.next(), vertexId, 1, false);
 		VertexMetadata parent = new VertexMetadata(0, parentView, Hash.random(), 0, false);
 		VoteData voteData = new VoteData(proposed, parent, null);
+		TimestampedVoteData timestampedVoteData = new TimestampedVoteData(voteData, 123456L);
 		when(vote.getVoteData()).thenReturn(voteData);
+		when(vote.getTimestampedVoteData()).thenReturn(timestampedVoteData);
 		when(vote.getAuthor()).thenReturn(author);
 		return vote;
 	}

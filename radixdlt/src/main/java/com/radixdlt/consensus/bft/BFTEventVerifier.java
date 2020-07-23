@@ -22,9 +22,9 @@ import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.TimestampedVoteData;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.VoteData;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
@@ -75,7 +75,7 @@ public final class BFTEventVerifier implements BFTEventProcessor {
 		}
 
 		// TODO: Remove IllegalArgumentException
-		final VoteData voteData = vote.getVoteData();
+		final TimestampedVoteData voteData = vote.getTimestampedVoteData();
 		final Hash voteHash = this.hasher.hash(voteData);
 		final ECDSASignature signature = vote.getSignature().orElseThrow(() -> new IllegalArgumentException("vote is missing signature"));
 		final ECPublicKey key = node.getKey();
