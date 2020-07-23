@@ -50,7 +50,13 @@ public interface SystemCounters {
 		MESSAGES_OUTBOUND_ABORTED("messages.outbound.aborted"),
 		MESSAGES_OUTBOUND_PENDING("messages.outbound.pending"),
 		MESSAGES_OUTBOUND_PROCESSED("messages.outbound.processed"),
-		MESSAGES_OUTBOUND_SENT("messages.outbound.sent");
+		MESSAGES_OUTBOUND_SENT("messages.outbound.sent"),
+		NETWORKING_TCP_OPENED("networking.tcp.opened"),
+		NETWORKING_TCP_CLOSED("networking.tcp.closed"),
+		NETWORKING_SENT_BYTES("networking.sent_bytes"),
+		NETWORKING_RECEIVED_BYTES("networking.received_bytes"),
+		SIGNATURES_SIGNED("signatures.signed"),
+		SIGNATURES_VERIFIED("signatures.verified");
 
 		private final String jsonPath;
 

@@ -18,7 +18,7 @@
 package com.radixdlt.consensus.simulation.configuration;
 
 import com.google.common.collect.Sets;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.simulation.network.SimulationNetwork;
 import com.radixdlt.consensus.simulation.network.SimulationNetwork.LatencyProvider;
 import com.radixdlt.consensus.simulation.network.SimulationNetwork.MessageInTransit;
@@ -52,7 +52,7 @@ public final class DroppingLatencyProvider implements LatencyProvider {
 		this.droppers.add(dropper);
 	}
 
-	public void crashNode(ECPublicKey node) {
+	public void crashNode(BFTNode node) {
 		droppers.add(msg -> msg.getReceiver().equals(node) || msg.getSender().equals(node));
 	}
 

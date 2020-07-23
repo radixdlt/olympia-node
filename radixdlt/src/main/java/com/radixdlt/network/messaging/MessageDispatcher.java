@@ -104,6 +104,7 @@ class MessageDispatcher {
 		if (log.isTraceEnabled()) {
 			log.trace("Sending to {}: {}", hostId(peer), message);
 		}
+		this.counters.add(CounterType.NETWORKING_SENT_BYTES, bytes.length);
 		return conn.send(bytes);
 	}
 

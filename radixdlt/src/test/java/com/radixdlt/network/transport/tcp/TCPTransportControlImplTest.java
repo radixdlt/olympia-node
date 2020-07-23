@@ -20,6 +20,7 @@ package com.radixdlt.network.transport.tcp;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.network.transport.StaticTransportMetadata;
 import com.radixdlt.network.transport.TransportMetadata;
 import com.radixdlt.network.transport.TransportOutboundConnection;
@@ -47,6 +48,7 @@ public class TCPTransportControlImplTest {
 	private NettyTCPTransport transport;
 	private TCPTransportOutboundConnectionFactory outboundFactory;
 	private TransportOutboundConnection transportOutboundConnection;
+	private SystemCounters counters;
 
 	@Before
 	public void setUp() {
@@ -93,11 +95,13 @@ public class TCPTransportControlImplTest {
 
 		transport = mock(NettyTCPTransport.class);
 		when(transport.createChannel(any(), anyInt())).thenReturn(cf);
+
+		this.counters = mock(SystemCounters.class);
 	}
 
 	@Test
 	public void open() throws ExecutionException, InterruptedException, IOException {
-		try (TCPTransportControlImpl tcpTransportControl = new TCPTransportControlImpl(config, outboundFactory, transport)) {
+		try (TCPTransportControlImpl tcpTransportControl = new TCPTransportControlImpl(config, outboundFactory, transport, counters)) {
 			TransportMetadata metadata = StaticTransportMetadata.of(
 				TCPConstants.METADATA_HOST, "localhost",
 				TCPConstants.METADATA_PORT, "443"
@@ -109,7 +113,7 @@ public class TCPTransportControlImplTest {
 
 	@Test
 	public void channelActive() throws Exception {
-		try (TCPTransportControlImpl tcpTransportControl = new TCPTransportControlImpl(config, outboundFactory, transport)) {
+		try (TCPTransportControlImpl tcpTransportControl = new TCPTransportControlImpl(config, outboundFactory, transport, counters)) {
 			ChannelHandlerContext ctx = createContext("127.0.0.1", 1234);
 			TCPConnectionHandlerChannelInbound handler = (TCPConnectionHandlerChannelInbound) tcpTransportControl.handler();
 			handler.channelActive(ctx);
@@ -119,7 +123,7 @@ public class TCPTransportControlImplTest {
 
 	@Test
 	public void tooManyChannels() throws Exception {
-		try (TCPTransportControlImpl tcpTransportControl = new TCPTransportControlImpl(config, outboundFactory, transport)) {
+		try (TCPTransportControlImpl tcpTransportControl = new TCPTransportControlImpl(config, outboundFactory, transport, counters)) {
 			ChannelHandlerContext ctx1 = createContext("127.0.0.1", 1234);
 			ChannelHandlerContext ctx2 = createContext("127.0.0.2", 4321);
 			TCPConnectionHandlerChannelInbound handler = (TCPConnectionHandlerChannelInbound) tcpTransportControl.handler();
@@ -132,7 +136,7 @@ public class TCPTransportControlImplTest {
 
 	@Test
 	public void channelInactive() throws Exception {
-		try (TCPTransportControlImpl tcpTransportControl = new TCPTransportControlImpl(config, outboundFactory, transport)) {
+		try (TCPTransportControlImpl tcpTransportControl = new TCPTransportControlImpl(config, outboundFactory, transport, counters)) {
 			ChannelHandlerContext ctx1 = createContext("127.0.0.1", 1234);
 			TCPConnectionHandlerChannelInbound handler = (TCPConnectionHandlerChannelInbound) tcpTransportControl.handler();
 			handler.channelActive(ctx1);
@@ -144,7 +148,7 @@ public class TCPTransportControlImplTest {
 
 	@Test
 	public void findOrCreateActiveChannelNew() throws Exception {
-		try (TCPTransportControlImpl tcpTransportControl = new TCPTransportControlImpl(config, outboundFactory, transport)) {
+		try (TCPTransportControlImpl tcpTransportControl = new TCPTransportControlImpl(config, outboundFactory, transport, counters)) {
 			TransportMetadata metadata = StaticTransportMetadata.of(
 				TCPConstants.METADATA_HOST, "127.0.0.1",
 				TCPConstants.METADATA_PORT, "1234"
