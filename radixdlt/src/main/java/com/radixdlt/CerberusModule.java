@@ -32,6 +32,7 @@ import com.radixdlt.consensus.CommittedStateSyncRx;
 import com.radixdlt.consensus.ConsensusRunner;
 import com.radixdlt.consensus.DefaultHasher;
 import com.radixdlt.consensus.EpochChangeRx;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.ConsensusEventsRx;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
@@ -247,7 +248,31 @@ public class CerberusModule extends AbstractModule {
 		return new AddressBookValidatorSetProvider(
 			selfKey.getPublicKey(),
 			addressBook,
-			fixedNodeCount
+			fixedNodeCount,
+			(epoch, validators) -> {
+				/*
+				Builder<BFTValidator> validatorSetBuilder = ImmutableList.builder();
+				Random random = new Random(epoch);
+				List<Integer> indices = IntStream.range(0, validators.size()).boxed().collect(Collectors.toList());
+				// Temporary mechanism to get some deterministic random set of validators
+				for (long i = 0; i < epoch; i++) {
+					random.nextInt(validators.size());
+				}
+				int randInt = random.nextInt(validators.size());
+				int validatorSetSize = randInt + 1;
+
+				for (int i = 0; i < validatorSetSize; i++) {
+					int index = indices.remove(random.nextInt(indices.size()));
+					BFTValidator validator = validators.get(index);
+					validatorSetBuilder.add(validator);
+				}
+
+				ImmutableList<BFTValidator> validatorList = validatorSetBuilder.build();
+
+				return BFTValidatorSet.from(validatorList);
+				*/
+				return BFTValidatorSet.from(validators);
+			}
 		);
 	}
 
