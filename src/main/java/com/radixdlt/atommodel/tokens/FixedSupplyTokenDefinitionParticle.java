@@ -56,6 +56,10 @@ public final class FixedSupplyTokenDefinitionParticle extends Particle {
 	@DsonOutput(Output.ALL)
 	private String iconUrl;
 
+	@JsonProperty("url")
+	@DsonOutput(Output.ALL)
+	private String url;
+
 	FixedSupplyTokenDefinitionParticle() {
 		// For serializer only
 		super();
@@ -67,7 +71,8 @@ public final class FixedSupplyTokenDefinitionParticle extends Particle {
 		String description,
 		UInt256 supply,
 		UInt256 granularity,
-		String iconUrl
+		String iconUrl,
+		String url
 	) {
 		super(rri.getAddress().euid());
 
@@ -77,6 +82,7 @@ public final class FixedSupplyTokenDefinitionParticle extends Particle {
 		this.supply = Objects.requireNonNull(supply);
 		this.granularity = Objects.requireNonNull(granularity);
 		this.iconUrl = iconUrl;
+		this.url = url;
 	}
 
 	public RRI getRRI() {
@@ -101,6 +107,10 @@ public final class FixedSupplyTokenDefinitionParticle extends Particle {
 
 	public String getIconUrl() {
 		return this.iconUrl;
+	}
+
+	public String getUrl() {
+		return url;
 	}
 
 	@Override
