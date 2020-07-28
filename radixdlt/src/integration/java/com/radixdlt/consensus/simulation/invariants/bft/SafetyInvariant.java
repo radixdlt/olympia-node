@@ -19,9 +19,9 @@ package com.radixdlt.consensus.simulation.invariants.bft;
 
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.simulation.TestInvariant;
 import com.radixdlt.consensus.simulation.network.SimulationNodes.RunningNetwork;
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.Map;
@@ -70,7 +70,7 @@ public class SafetyInvariant implements TestInvariant {
 	public Observable<TestInvariantError> check(RunningNetwork network) {
 		final Map<Long, Map<View, Vertex>> epochCommittedVertices = new ConcurrentHashMap<>();
 		final Map<Long, AtomicReference<View>> epochHighest = new ConcurrentHashMap<>();
-		final Map<Long, Map<ECKeyPair, View>> epochLastCommittedByNode = new ConcurrentHashMap<>();
+		final Map<Long, Map<BFTNode, View>> epochLastCommittedByNode = new ConcurrentHashMap<>();
 
 		return Observable.merge(
 			network.getNodes().stream().map(
@@ -78,12 +78,12 @@ public class SafetyInvariant implements TestInvariant {
 				.collect(Collectors.toList())
 		)
 			.flatMap(nodeAndVertex -> {
-				final ECKeyPair node = nodeAndVertex.getFirst();
+				final BFTNode node = nodeAndVertex.getFirst();
 				final Vertex vertex = nodeAndVertex.getSecond();
 				final long epoch = vertex.getEpoch();
 				final Map<View, Vertex> committedVertices = epochCommittedVertices.computeIfAbsent(epoch, e -> new ConcurrentHashMap<>());
 				final AtomicReference<View> highest = epochHighest.computeIfAbsent(epoch, e -> new AtomicReference<>());
-				final Map<ECKeyPair, View> lastCommittedByNode = epochLastCommittedByNode.computeIfAbsent(epoch, e -> new ConcurrentHashMap<>());
+				final Map<BFTNode, View> lastCommittedByNode = epochLastCommittedByNode.computeIfAbsent(epoch, e -> new ConcurrentHashMap<>());
 
 				final Vertex currentVertexAtView = committedVertices.get(vertex.getView());
 				if (currentVertexAtView != null) {

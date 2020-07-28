@@ -111,7 +111,7 @@ public final class InternalService {
 						long sliceStart = System.currentTimeMillis();
 
 						for (int i = 0; i < this.rate; i++) {
-							Atom atom = new Atom(Time.currentTimestamp(), ImmutableMap.of("magic", "0xdeadbeef"));
+							Atom atom = new Atom(ImmutableMap.of("magic", "0xdeadbeef"));
 
 							for (int b = 0; b < this.batching; b++) {
 								byte[] nonce = generateNonce(nonceBits);

@@ -19,7 +19,7 @@ package com.radixdlt.consensus.deterministic.tests.bft.synchronous;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.radixdlt.consensus.EpochChange;
+import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;

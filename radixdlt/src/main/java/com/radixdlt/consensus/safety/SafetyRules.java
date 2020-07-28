@@ -18,6 +18,8 @@
 package com.radixdlt.consensus.safety;
 
 import com.radixdlt.consensus.Hasher;
+import com.radixdlt.consensus.HashSigner;
+import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
@@ -25,11 +27,12 @@ import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.VoteData;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.safety.SafetyState.Builder;
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
 
+import com.radixdlt.utils.Longs;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -37,19 +40,22 @@ import java.util.Optional;
  * Manages safety of the protocol.
  */
 public final class SafetyRules {
-	private final ECKeyPair selfKey; // TODO remove signing/address to separate identity management
+	private final BFTNode self;
 	private final Hasher hasher;
+	private final HashSigner signer;
 
 	private SafetyState state;
 
 	public SafetyRules(
-		ECKeyPair selfKey,
+		BFTNode self,
 		SafetyState initialState,
-		Hasher hasher
+		Hasher hasher,
+		HashSigner signer
 	) {
-		this.selfKey = Objects.requireNonNull(selfKey);
+		this.self = self;
 		this.state = Objects.requireNonNull(initialState);
 		this.hasher = Objects.requireNonNull(hasher);
+		this.signer = Objects.requireNonNull(signer);
 	}
 
 	/**
@@ -97,8 +103,8 @@ public final class SafetyRules {
 	 */
 	public Proposal signProposal(Vertex proposedVertex, QuorumCertificate highestCommittedQC) {
 		final Hash vertexHash = this.hasher.hash(proposedVertex);
-		ECDSASignature signature = this.selfKey.sign(vertexHash);
-		return new Proposal(proposedVertex, highestCommittedQC, this.selfKey.getPublicKey(), signature);
+		ECDSASignature signature = this.signer.sign(vertexHash);
+		return new Proposal(proposedVertex, highestCommittedQC, this.self, signature);
 	}
 
 	private static VoteData constructVoteData(Vertex proposedVertex, VertexMetadata proposedVertexMetadata) {
@@ -117,6 +123,25 @@ public final class SafetyRules {
 		}
 
 		return new VoteData(proposedVertexMetadata, parent, toCommit);
+	}
+
+	/**
+	 * Create a signed new-view
+	 * @param nextView the view of the new-view
+	 * @param highestQC highest known qc
+	 * @param highestCommittedQC highest known committed qc
+	 * @return a signed new-view
+	 */
+	public NewView signNewView(View nextView, QuorumCertificate highestQC, QuorumCertificate highestCommittedQC) {
+		// TODO make signing more robust by including author in signed hash
+		ECDSASignature signature = this.signer.sign(Hash.hash256(Longs.toByteArray(nextView.number())));
+		return new NewView(
+			this.self,
+			nextView,
+			highestQC,
+			highestCommittedQC,
+			signature
+		);
 	}
 
 	/**
@@ -150,7 +175,7 @@ public final class SafetyRules {
 		this.state = safetyStateBuilder.build();
 
 		// TODO make signing more robust by including author in signed hash
-		ECDSASignature signature = this.selfKey.sign(voteHash);
-		return new Vote(selfKey.getPublicKey(), voteData, signature);
+		ECDSASignature signature = this.signer.sign(voteHash);
+		return new Vote(this.self, voteData, signature);
 	}
 }

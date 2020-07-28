@@ -24,7 +24,6 @@ import static org.mockito.Mockito.*;
 import static org.powermock.api.mockito.PowerMockito.when;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.counters.SystemCounters;
@@ -36,14 +35,11 @@ import com.radixdlt.middleware2.store.CommittedAtomsStore.AtomIndexer;
 import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.store.SearchCursor;
-import io.reactivex.rxjava3.observers.TestObserver;
-import java.util.Collections;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.junit.Before;
 import org.junit.Test;
-import org.radix.atoms.events.AtomStoredEvent;
 
 public class CommittedAtomsStoreTest {
 	private CommittedAtomsStore committedAtomsStore;
@@ -54,7 +50,7 @@ public class CommittedAtomsStoreTest {
 
 	@Before
 	public void setUp() {
-		this.store = mock(LedgerEntryStore.class, withSettings().verboseLogging());
+		this.store = mock(LedgerEntryStore.class);
 		this.atomToBinaryConverter = mock(AtomToBinaryConverter.class);
 		this.atomIndexer = mock(AtomIndexer.class);
 		this.counters = mock(SystemCounters.class);
@@ -99,21 +95,6 @@ public class CommittedAtomsStoreTest {
 		when(store.get(eq(aid))).thenReturn(Optional.of(ledgerEntry));
 
 		assertThat(committedAtomsStore.getSpin(particle)).isEqualTo(Spin.DOWN);
-	}
-
-	@Test
-	public void when_store__then_should_get_atom_stored_event() {
-		CommittedAtom atom = mock(CommittedAtom.class);
-		when(atom.getAID()).thenReturn(mock(AID.class));
-		when(atom.getVertexMetadata()).thenReturn(mock(VertexMetadata.class));
-		when(atomToBinaryConverter.toLedgerEntryContent(eq(atom))).thenReturn(new byte[0]);
-		EngineAtomIndices engineAtomIndices = mock(EngineAtomIndices.class);
-		when(atomIndexer.getIndices(eq(atom))).thenReturn(engineAtomIndices);
-		when(engineAtomIndices.getDuplicateIndices()).thenReturn(Collections.emptySet());
-		TestObserver<AtomStoredEvent> testObserver = this.committedAtomsStore.lastStoredAtom().test();
-		this.committedAtomsStore.storeAtom(atom);
-		testObserver.awaitCount(1);
-		testObserver.assertValue(e -> e.getAtom().equals(atom));
 	}
 
 	@Test

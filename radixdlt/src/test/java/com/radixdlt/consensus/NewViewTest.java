@@ -17,7 +17,7 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.consensus.bft.BFTNode;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Before;
 import org.junit.Test;
@@ -26,14 +26,15 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 
 public class NewViewTest {
-	public static final RadixAddress ADDRESS = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
+	private BFTNode author;
 	private NewView testObject;
 	private View view;
 
 	@Before
 	public void setUp() {
 		this.view = View.of(1L);
-		this.testObject = new NewView(ADDRESS.getPublicKey(), view, mock(QuorumCertificate.class), mock(QuorumCertificate.class), null);
+		this.author = mock(BFTNode.class);
+		this.testObject = new NewView(author, view, mock(QuorumCertificate.class), mock(QuorumCertificate.class), null);
 	}
 
 	@Test
@@ -45,7 +46,7 @@ public class NewViewTest {
 	@Test
 	public void testGetters() {
 		assertEquals(this.view, this.testObject.getView());
-		assertEquals(ADDRESS.getPublicKey(), this.testObject.getAuthor());
+		assertEquals(this.author, this.testObject.getAuthor());
 	}
 
 }

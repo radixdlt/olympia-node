@@ -17,39 +17,34 @@
 
 package com.radixdlt.consensus.deterministic;
 
-import static org.mockito.Mockito.mock;
-
-import com.radixdlt.consensus.BFTEventReducer;
+import com.radixdlt.consensus.bft.BFTBuilder;
 import com.radixdlt.consensus.BFTFactory;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.ConsensusEvent;
-import com.radixdlt.consensus.DefaultHasher;
-import com.radixdlt.consensus.EmptySyncEpochsRPCSender;
-import com.radixdlt.consensus.EpochChange;
-import com.radixdlt.consensus.EpochManager;
-import com.radixdlt.consensus.PendingVotes;
+import com.radixdlt.consensus.epoch.EmptySyncEpochsRPCSender;
+import com.radixdlt.consensus.epoch.EpochChange;
+import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
 import com.radixdlt.consensus.bft.GetVerticesResponse;
-import com.radixdlt.consensus.LocalTimeout;
+import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.consensus.ProposerElectionFactory;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.Hasher;
+import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.bft.VertexStore;
-import com.radixdlt.consensus.SyncVerticesRPCSender;
+import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRPCSender;
 import com.radixdlt.consensus.VertexStoreFactory;
 import com.radixdlt.consensus.deterministic.ControlledNetwork.ControlledSender;
 import com.radixdlt.consensus.deterministic.configuration.UnsupportedSyncVerticesRPCSender;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
-import com.radixdlt.consensus.liveness.MempoolProposalGenerator;
-import com.radixdlt.consensus.liveness.ProposalGenerator;
-import com.radixdlt.consensus.liveness.ScheduledTimeoutSender;
-import com.radixdlt.consensus.safety.SafetyRules;
-import com.radixdlt.consensus.safety.SafetyState;
-import com.radixdlt.consensus.validators.ValidatorSet;
+import com.radixdlt.consensus.liveness.LocalTimeoutSender;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
+import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.mempool.EmptyMempool;
@@ -64,60 +59,63 @@ import java.util.Objects;
 class ControlledNode {
 	private final EpochManager epochManager;
 	private final SystemCounters systemCounters;
-	private final ValidatorSet initialValidatorSet;
+	private final BFTValidatorSet initialValidatorSet;
 	private final ControlledSender controlledSender;
 
+	public enum SyncAndTimeout {
+		NONE,
+		SYNC,
+		SYNC_AND_TIMEOUT
+	}
+
 	ControlledNode(
-		String name,
 		ECKeyPair key,
 		ControlledSender sender,
 		ProposerElectionFactory proposerElectionFactory,
-		ValidatorSet initialValidatorSet,
-		boolean enableGetVerticesRPC,
+		BFTValidatorSet initialValidatorSet,
+		SyncAndTimeout syncAndTimeout,
 		SyncedStateComputer<CommittedAtom> stateComputer
 	) {
 		this.systemCounters = new SystemCountersImpl();
 		this.controlledSender = Objects.requireNonNull(sender);
 		this.initialValidatorSet = Objects.requireNonNull(initialValidatorSet);
 
-
-		SyncVerticesRPCSender syncVerticesRPCSender = enableGetVerticesRPC ? sender : UnsupportedSyncVerticesRPCSender.INSTANCE;
 		Mempool mempool = new EmptyMempool();
-		Hasher hasher = new DefaultHasher();
+		Hasher nullHasher = data -> Hash.ZERO_HASH;
+		HashSigner nullSigner = h -> new ECDSASignature();
+		BFTNode self = BFTNode.create(key.getPublicKey());
+		BFTFactory bftFactory =
+			(endOfEpochSender, pacemaker, vertexStore, proposerElection, validatorSet) ->
+				BFTBuilder.create()
+					.self(self)
+					.endOfEpochSender(endOfEpochSender)
+					.pacemaker(pacemaker)
+					.mempool(mempool)
+					.vertexStore(vertexStore)
+					.proposerElection(proposerElection)
+					.validatorSet(validatorSet)
+					.eventSender(controlledSender)
+					.counters(systemCounters)
+					.hasher(nullHasher)
+					.signer(nullSigner)
+					.verifyAuthors(false)
+					.build();
+
+		SyncVerticesRPCSender syncVerticesRPCSender = (syncAndTimeout != SyncAndTimeout.NONE)
+			? sender
+			: UnsupportedSyncVerticesRPCSender.INSTANCE;
+		LocalTimeoutSender localTimeoutSender = (syncAndTimeout == SyncAndTimeout.SYNC_AND_TIMEOUT) ? sender : (v, t) -> { };
 		VertexStoreFactory vertexStoreFactory = (vertex, qc, syncedStateComputer) ->
 			new VertexStore(vertex, qc, syncedStateComputer, syncVerticesRPCSender, sender, systemCounters);
-		BFTFactory bftFactory =
-			(endOfEpochSender, pacemaker, vertexStore, proposerElection, validatorSet) -> {
-				final ProposalGenerator proposalGenerator = new MempoolProposalGenerator(vertexStore, mempool);
-				final SafetyRules safetyRules = new SafetyRules(key, SafetyState.initialState(), hasher);
-				final PendingVotes pendingVotes = new PendingVotes(hasher);
-
-				return new BFTEventReducer(
-					proposalGenerator,
-					mempool,
-					controlledSender,
-					endOfEpochSender,
-					safetyRules,
-					pacemaker,
-					vertexStore,
-					pendingVotes,
-					proposerElection,
-					key,
-					validatorSet,
-					systemCounters
-				);
-			};
-
 		this.epochManager = new EpochManager(
-			name,
+			self,
 			stateComputer,
 			EmptySyncEpochsRPCSender.INSTANCE,
-			mock(ScheduledTimeoutSender.class),
+			localTimeoutSender,
 			timeoutSender -> new FixedTimeoutPacemaker(1, timeoutSender),
 			vertexStoreFactory,
 			proposerElectionFactory,
 			bftFactory,
-			key.getPublicKey(),
 			systemCounters
 		);
 	}

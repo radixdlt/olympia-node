@@ -22,14 +22,14 @@ import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 
 import com.radixdlt.consensus.VertexMetadata;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.consensus.bft.BFTNode;
 import org.junit.Test;
 
 public class GetEpochResponseMessageTest {
 	@Test
 	public void sensibleToString() {
 		VertexMetadata ancestor = mock(VertexMetadata.class);
-		GetEpochResponseMessage msg = new GetEpochResponseMessage(mock(ECPublicKey.class), 12345, ancestor);
+		GetEpochResponseMessage msg = new GetEpochResponseMessage(mock(BFTNode.class), 12345, ancestor);
 		String s1 = msg.toString();
 		assertThat(s1, containsString(GetEpochResponseMessage.class.getSimpleName()));
 	}

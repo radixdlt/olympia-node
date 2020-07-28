@@ -17,13 +17,13 @@
 
 package com.radixdlt.consensus.simulation.configuration;
 
-import com.radixdlt.consensus.EpochChange;
+import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.simulation.network.SimulationNodes.SimulatedStateComputer;
-import com.radixdlt.consensus.validators.Validator;
-import com.radixdlt.consensus.validators.ValidatorSet;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.consensus.bft.BFTValidator;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.utils.UInt256;
 import io.reactivex.rxjava3.core.Observable;
@@ -34,24 +34,24 @@ import java.util.stream.Collectors;
  * A state computer which never changes epochs
  */
 public final class SingleEpochAlwaysSyncedStateComputer implements SimulatedStateComputer {
-	private final ValidatorSet validatorSet;
+	private final BFTValidatorSet validatorSet;
 	private final VertexMetadata ancestor;
 
-	public SingleEpochAlwaysSyncedStateComputer(VertexMetadata ancestor, List<ECPublicKey> nodes) {
+	public SingleEpochAlwaysSyncedStateComputer(VertexMetadata ancestor, List<BFTNode> nodes) {
 		this.ancestor = ancestor;
-		this.validatorSet = ValidatorSet.from(
+		this.validatorSet = BFTValidatorSet.from(
 			nodes.stream()
-				.map(p -> Validator.from(p, UInt256.ONE))
+				.map(node -> BFTValidator.from(node, UInt256.ONE))
 				.collect(Collectors.toList())
 		);
 	}
 
-	public SingleEpochAlwaysSyncedStateComputer(List<ECPublicKey> nodes) {
+	public SingleEpochAlwaysSyncedStateComputer(List<BFTNode> nodes) {
 		this(VertexMetadata.ofGenesisAncestor(), nodes);
 	}
 
 	@Override
-	public boolean syncTo(VertexMetadata vertexMetadata, List<ECPublicKey> target, Object opaque) {
+	public boolean syncTo(VertexMetadata vertexMetadata, List<BFTNode> target, Object opaque) {
 		return true;
 	}
 

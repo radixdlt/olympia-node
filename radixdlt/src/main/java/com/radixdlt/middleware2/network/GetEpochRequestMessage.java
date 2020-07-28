@@ -18,6 +18,7 @@
 package com.radixdlt.middleware2.network;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.serialization.DsonOutput;
@@ -27,7 +28,7 @@ import org.radix.network.messaging.Message;
 
 @SerializerId2("message.consensus.get_epoch_request")
 public class GetEpochRequestMessage extends Message {
-	private ECPublicKey author;
+	private BFTNode author;
 
 	@JsonProperty("epoch")
 	@DsonOutput(Output.ALL)
@@ -40,7 +41,7 @@ public class GetEpochRequestMessage extends Message {
 		this.epoch = 0;
 	}
 
-	GetEpochRequestMessage(ECPublicKey author, int magic, long epoch) {
+	GetEpochRequestMessage(BFTNode author, int magic, long epoch) {
 		super(magic);
 		this.author = author;
 		this.epoch = epoch;
@@ -49,14 +50,15 @@ public class GetEpochRequestMessage extends Message {
 	@JsonProperty("author")
 	@DsonOutput(Output.ALL)
 	private byte[] getSerializerAuthor() {
-		return this.author == null ? null : this.author.getBytes();
-	}
-	@JsonProperty("author")
-	private void setSerializerAuthor(byte[] author) throws CryptoException {
-		this.author = (author == null) ? null : new ECPublicKey(author);
+		return this.author == null ? null : this.author.getKey().getBytes();
 	}
 
-	public ECPublicKey getAuthor() {
+	@JsonProperty("author")
+	private void setSerializerAuthor(byte[] author) throws CryptoException {
+		this.author = (author == null) ? null : BFTNode.create(new ECPublicKey(author));
+	}
+
+	public BFTNode getAuthor() {
 		return author;
 	}
 

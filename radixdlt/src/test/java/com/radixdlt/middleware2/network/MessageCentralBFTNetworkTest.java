@@ -23,6 +23,7 @@ import static org.mockito.Mockito.*;
 
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.Proposal;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.network.addressbook.AddressBook;
@@ -39,18 +40,18 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class MessageCentralBFTNetworkTest {
-	private ECPublicKey selfKey;
+	private BFTNode self;
 	private AddressBook addressBook;
 	private MessageCentral messageCentral;
 	private MessageCentralBFTNetwork network;
 
 	@Before
 	public void setUp() {
-		this.selfKey = ECKeyPair.generateNew().getPublicKey();
+		this.self = mock(BFTNode.class);
 		Universe universe = mock(Universe.class);
 		this.addressBook = mock(AddressBook.class);
 		this.messageCentral = mock(MessageCentral.class);
-		this.network = new MessageCentralBFTNetwork(selfKey, universe, addressBook, messageCentral);
+		this.network = new MessageCentralBFTNetwork(self, universe, addressBook, messageCentral);
 	}
 
 	@Test
@@ -58,7 +59,7 @@ public class MessageCentralBFTNetworkTest {
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
 		network.consensusEvents().subscribe(testObserver);
 		NewView newView = mock(NewView.class);
-		network.sendNewView(newView, selfKey);
+		network.sendNewView(newView, self);
 		testObserver.awaitCount(1);
 		testObserver.assertValue(newView);
 	}
@@ -68,7 +69,7 @@ public class MessageCentralBFTNetworkTest {
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
 		network.consensusEvents().subscribe(testObserver);
 		Vote vote = mock(Vote.class);
-		network.sendVote(vote, selfKey);
+		network.sendVote(vote, self);
 		testObserver.awaitCount(1);
 		testObserver.assertValue(vote);
 	}
@@ -78,7 +79,7 @@ public class MessageCentralBFTNetworkTest {
 		TestObserver<ConsensusEvent> testObserver = TestObserver.create();
 		network.consensusEvents().subscribe(testObserver);
 		Proposal proposal = mock(Proposal.class);
-		network.broadcastProposal(proposal, Collections.singleton(this.selfKey));
+		network.broadcastProposal(proposal, Collections.singleton(this.self));
 		testObserver.awaitCount(1);
 		testObserver.assertValue(proposal);
 	}
@@ -86,10 +87,12 @@ public class MessageCentralBFTNetworkTest {
 	@Test
 	public void when_send_new_view__then_message_central_should_be_sent_new_view_message() {
 		NewView newView = mock(NewView.class);
-		ECPublicKey leader = ECKeyPair.generateNew().getPublicKey();
+		ECPublicKey leaderPk = ECKeyPair.generateNew().getPublicKey();
+		BFTNode leader = mock(BFTNode.class);
+		when(leader.getKey()).thenReturn(leaderPk);
 		Peer peer = mock(Peer.class);
-		when(peer.getNID()).thenReturn(leader.euid());
-		when(addressBook.peer(leader.euid())).thenReturn(Optional.of(peer));
+		when(peer.getNID()).thenReturn(leaderPk.euid());
+		when(addressBook.peer(leaderPk.euid())).thenReturn(Optional.of(peer));
 
 		network.sendNewView(newView, leader);
 		verify(messageCentral, times(1)).send(eq(peer), any(ConsensusEventMessage.class));
@@ -97,19 +100,22 @@ public class MessageCentralBFTNetworkTest {
 
 	@Test
 	public void when_send_new_view_to_nonexistent__then_no_message_sent() {
-		ECPublicKey otherKey = ECKeyPair.generateNew().getPublicKey();
 		NewView newView = mock(NewView.class);
-		network.sendNewView(newView, otherKey);
+		BFTNode node = mock(BFTNode.class);
+		when(node.getKey()).thenReturn(mock(ECPublicKey.class));
+		network.sendNewView(newView, node);
 		verify(messageCentral, never()).send(any(), any());
 	}
 
 	@Test
 	public void when_send_vote__then_message_central_should_be_sent_vote_message() {
 		Vote vote = mock(Vote.class);
-		ECPublicKey leader = ECKeyPair.generateNew().getPublicKey();
+		ECPublicKey leaderPk = ECKeyPair.generateNew().getPublicKey();
+		BFTNode leader = mock(BFTNode.class);
+		when(leader.getKey()).thenReturn(leaderPk);
 		Peer peer = mock(Peer.class);
-		when(peer.getNID()).thenReturn(leader.euid());
-		when(addressBook.peer(leader.euid())).thenReturn(Optional.of(peer));
+		when(peer.getNID()).thenReturn(leaderPk.euid());
+		when(addressBook.peer(leaderPk.euid())).thenReturn(Optional.of(peer));
 
 		network.sendVote(vote, leader);
 		verify(messageCentral, times(1)).send(eq(peer), any(ConsensusEventMessage.class));

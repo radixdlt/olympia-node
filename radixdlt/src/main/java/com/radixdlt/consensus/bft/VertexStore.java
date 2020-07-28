@@ -20,16 +20,13 @@ package com.radixdlt.consensus.bft;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.SyncVerticesRPCSender;
 import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.VertexInsertionException;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.VertexStoreEventProcessor;
 import com.radixdlt.consensus.View;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 
 import com.radixdlt.middleware2.CommittedAtom;
@@ -65,6 +62,38 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		void sendSyncedVertex(Vertex vertex);
 		void sendCommittedVertex(Vertex vertex);
 		void highQC(QuorumCertificate qc);
+	}
+
+	/**
+	 * An asynchronous supplier which retrieves data for a vertex with a given id
+	 */
+	public interface SyncVerticesRPCSender {
+		/**
+		 * Send an RPC request to retrieve vertices given an Id and number of
+		 * vertices. i.e. The vertex with the given id and (count - 1) ancestors
+		 * will be returned.
+		 *
+		 * @param id the id of the vertex to retrieve
+		 * @param node the node to retrieve the vertex info from
+		 * @param count number of vertices to retrieve
+		 * @param opaque an object which is expected to be provided in the corresponding response
+		 */
+		void sendGetVerticesRequest(Hash id, BFTNode node, int count, Object opaque);
+
+		/**
+		 * Send an RPC response to a given request
+		 * @param originalRequest the original request which is being replied to
+		 * @param vertices the response data of vertices
+		 */
+		void sendGetVerticesResponse(GetVerticesRequest originalRequest, ImmutableList<Vertex> vertices);
+
+		/**
+		 * Send an RPC error response to a given request
+		 * @param originalRequest the original request
+		 * @param highestQC highestQC sync info
+		 * @param highestCommittedQC highestCommittedQC sync info
+		 */
+		void sendGetVerticesErrorResponse(GetVerticesRequest originalRequest, QuorumCertificate highestQC, QuorumCertificate highestCommittedQC);
 	}
 
 	private final VertexStoreEventSender vertexStoreEventSender;
@@ -170,11 +199,11 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		private final QuorumCertificate qc;
 		private final QuorumCertificate committedQC;
 		private final VertexMetadata committedVertexMetadata;
-		private final ECPublicKey author;
+		private final BFTNode author;
 		private SyncStage syncStage;
 		private final LinkedList<Vertex> fetched = new LinkedList<>();
 
-		SyncState(Hash localSyncId, QuorumCertificate qc, QuorumCertificate committedQC, ECPublicKey author) {
+		SyncState(Hash localSyncId, QuorumCertificate qc, QuorumCertificate committedQC, BFTNode author) {
 			this.localSyncId = localSyncId;
 
 			if (committedQC.getView().equals(View.genesis())) {
@@ -192,10 +221,6 @@ public final class VertexStore implements VertexStoreEventProcessor {
 
 		void setSyncStage(SyncStage syncStage) {
 			this.syncStage = syncStage;
-		}
-
-		QuorumCertificate getQC() {
-			return qc;
 		}
 
 		QuorumCertificate getCommittedQC() {
@@ -222,14 +247,14 @@ public final class VertexStore implements VertexStoreEventProcessor {
 	public void processGetVerticesRequest(GetVerticesRequest request) {
 		// TODO: Handle nodes trying to DDOS this endpoint
 
-		log.info("SYNC_VERTICES: Received GetVerticesRequest {}", request);
+		log.trace("SYNC_VERTICES: Received GetVerticesRequest {}", request);
 		ImmutableList<Vertex> fetched = this.getVertices(request.getVertexId(), request.getCount());
 		if (fetched.isEmpty()) {
 			this.syncVerticesRPCSender.sendGetVerticesErrorResponse(request, this.getHighestQC(), this.getHighestCommittedQC());
 			return;
 		}
 
-		log.info("SYNC_VERTICES: Sending Response {}", fetched);
+		log.trace("SYNC_VERTICES: Sending Response {}", fetched);
 		this.syncVerticesRPCSender.sendGetVerticesResponse(request, fetched);
 	}
 
@@ -266,7 +291,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 	private void processVerticesResponseForCommittedSync(Hash syncTo, SyncState syncState, GetVerticesResponse response) {
 		log.info("SYNC_STATE: Processing vertices {}", syncState);
 
-		List<ECPublicKey> signers = Collections.singletonList(syncState.author);
+		List<BFTNode> signers = Collections.singletonList(syncState.author);
 		syncState.fetched.addAll(response.getVertices());
 
 		if (syncedStateComputer.syncTo(syncState.committedVertexMetadata, signers, syncTo)) {
@@ -322,7 +347,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 	public void processGetVerticesResponse(GetVerticesResponse response) {
 		// TODO: check response
 
-		log.info("SYNC_VERTICES: Received GetVerticesResponse {}", response);
+		log.trace("SYNC_VERTICES: Received GetVerticesResponse {}", response);
 
 		final Hash syncTo = (Hash) response.getOpaque();
 		SyncState syncState = syncing.get(syncTo);
@@ -344,20 +369,20 @@ public final class VertexStore implements VertexStoreEventProcessor {
 
 	private void doQCSync(SyncState syncState) {
 		syncState.setSyncStage(SyncStage.GET_QC_VERTICES);
-		log.info("SYNC_VERTICES: QC: Sending initial GetVerticesRequest for sync={}", syncState);
+		log.debug("SYNC_VERTICES: QC: Sending initial GetVerticesRequest for sync={}", syncState);
 		syncVerticesRPCSender.sendGetVerticesRequest(syncState.qc.getProposed().getId(), syncState.author, 1, syncState.localSyncId);
 	}
 
 	private void doCommittedSync(SyncState syncState) {
 		final Hash committedQCId = syncState.getCommittedQC().getProposed().getId();
 		syncState.setSyncStage(SyncStage.GET_COMMITTED_VERTICES);
-		log.info("SYNC_VERTICES: Committed: Sending initial GetVerticesRequest for sync={}", syncState);
+		log.debug("SYNC_VERTICES: Committed: Sending initial GetVerticesRequest for sync={}", syncState);
 		// Retrieve the 3 vertices preceding the committedQC so we can create a valid committed root
 		syncVerticesRPCSender.sendGetVerticesRequest(committedQCId, syncState.author, 3, syncState.localSyncId);
 	}
 
 	public void processLocalSync(Hash vertexId) {
-		log.info("LOCAL_SYNC: Processed {}", vertexId);
+		log.debug("LOCAL_SYNC: Processed {}", vertexId);
 		syncing.remove(vertexId);
 	}
 
@@ -372,7 +397,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 	 * @param author the original author of the qc
 	 * @return true if already synced, false otherwise
 	 */
-	public boolean syncToQC(QuorumCertificate qc, QuorumCertificate committedQC, @Nullable ECPublicKey author) {
+	public boolean syncToQC(QuorumCertificate qc, QuorumCertificate committedQC, @Nullable BFTNode author) {
 		if (qc.getProposed().getView().compareTo(this.getRoot().getView()) < 0) {
 			return true;
 		}
@@ -381,7 +406,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 			return true;
 		}
 
-		log.info("SYNC_TO_QC: Need sync: {} {}", qc, committedQC);
+		log.debug("SYNC_TO_QC: Need sync: {} {}", qc, committedQC);
 
 		final Hash vertexId = qc.getProposed().getId();
 		if (syncing.containsKey(vertexId)) {
@@ -399,7 +424,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		return false;
 	}
 
-	private void startSync(Hash vertexId, QuorumCertificate qc, QuorumCertificate committedQC, ECPublicKey author) {
+	private void startSync(Hash vertexId, QuorumCertificate qc, QuorumCertificate committedQC, BFTNode author) {
 		final SyncState syncState = new SyncState(vertexId, qc, committedQC, author);
 		syncing.put(vertexId, syncState);
 		if (requiresCommittedStateSync(syncState)) {
@@ -436,6 +461,10 @@ public final class VertexStore implements VertexStoreEventProcessor {
 	private VertexMetadata insertVertexInternal(Vertex vertex) throws VertexInsertionException {
 		if (!vertices.containsKey(vertex.getParentId())) {
 			throw new MissingParentException(vertex.getParentId());
+		}
+
+		if (!vertex.hasDirectParent()) {
+			counters.increment(CounterType.CONSENSUS_INDIRECT_PARENT);
 		}
 
 		final Vertex vertexToUse;

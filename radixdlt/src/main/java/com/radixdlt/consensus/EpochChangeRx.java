@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.consensus.epoch.EpochChange;
 import io.reactivex.rxjava3.core.Observable;
 
 /**

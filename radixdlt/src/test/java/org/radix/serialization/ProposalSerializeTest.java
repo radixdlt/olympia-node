@@ -25,6 +25,7 @@ import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.VoteData;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECDSASignatures;
@@ -60,6 +61,7 @@ public class ProposalSerializeTest extends SerializeObject<Proposal> {
 		}
 		// add a particle to ensure atom is valid and has at least one shard
 		Vertex vertex = Vertex.createVertex(qc, view, clientAtom);
-		return new Proposal(vertex, qc, ECKeyPair.generateNew().getPublicKey(), new ECDSASignature());
+		BFTNode author = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
+		return new Proposal(vertex, qc, author, new ECDSASignature());
 	}
 }

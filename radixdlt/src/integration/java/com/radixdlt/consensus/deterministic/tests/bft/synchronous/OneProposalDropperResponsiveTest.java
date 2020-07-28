@@ -38,7 +38,7 @@ public class OneProposalDropperResponsiveTest {
 		final DeterministicTest test = DeterministicTest.createSingleEpochAlwaysSyncedTest(numNodes);
 		test.start();
 		for (int step = 0; step < NUM_STEPS; step++) {
-			test.processNextMsg(random, (receiverId, msg) -> {
+			test.processNextMsgWithReceiver(random, (receiverId, msg) -> {
 				if (msg instanceof Proposal) {
 					final Proposal proposal = (Proposal) msg;
 					final View view = proposal.getVertex().getView();

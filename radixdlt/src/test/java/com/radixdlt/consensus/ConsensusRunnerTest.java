@@ -25,6 +25,9 @@ import static org.mockito.Mockito.when;
 
 import com.radixdlt.consensus.ConsensusRunner.Event;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
+import com.radixdlt.consensus.epoch.EpochChange;
+import com.radixdlt.consensus.epoch.EpochManager;
+import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.consensus.liveness.PacemakerRx;
 import com.radixdlt.crypto.Hash;
 import io.reactivex.rxjava3.core.Observable;

@@ -18,8 +18,9 @@
 package com.radixdlt.counters;
 
 import java.time.Instant;
+import java.util.EnumMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.collect.Maps;
 
@@ -27,7 +28,7 @@ import com.google.common.collect.Maps;
  * Event counting utility class.
  */
 public final class SystemCountersImpl implements SystemCounters {
-	private final ConcurrentHashMap<CounterType, Long> counters = new ConcurrentHashMap<>();
+	private final EnumMap<CounterType, AtomicLong> counters;
 	private final String since;
 
 	public SystemCountersImpl() {
@@ -35,28 +36,32 @@ public final class SystemCountersImpl implements SystemCounters {
 	}
 
 	public SystemCountersImpl(long startTime) {
+		this.counters = new EnumMap<>(CounterType.class);
+		// Pre-populate the map here so that there is no need to mutate the structure
+		for (CounterType ct : CounterType.values()) {
+			this.counters.put(ct, new AtomicLong(0));
+		}
 		this.since = Instant.ofEpochMilli(startTime).toString();
 	}
 
 	@Override
 	public long increment(CounterType counterType) {
-		return add(counterType, 1L);
+		return this.counters.get(counterType).incrementAndGet();
 	}
 
 	@Override
 	public long add(CounterType counterType, long amount) {
-		return counters.merge(counterType, amount, Long::sum);
+		return this.counters.get(counterType).addAndGet(amount);
 	}
 
 	@Override
 	public long set(CounterType counterType, long value) {
-		Long oldValue = counters.put(counterType, value);
-		return oldValue == null ? 0L : oldValue.longValue();
+		return this.counters.get(counterType).getAndSet(value);
 	}
 
 	@Override
 	public long get(CounterType counterType) {
-		return counters.getOrDefault(counterType, 0L);
+		return this.counters.get(counterType).get();
 	}
 
 	@Override

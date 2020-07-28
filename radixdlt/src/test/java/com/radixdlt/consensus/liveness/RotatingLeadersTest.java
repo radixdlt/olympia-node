@@ -22,13 +22,13 @@ import static org.mockito.Mockito.mock;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.View;
-import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.consensus.bft.BFTNode;
 import org.junit.Test;
 
 public class RotatingLeadersTest {
 	@Test
 	public void when_getting_leader_for_view_greater_than_size__leaders_are_round_robined() {
-		ImmutableList<ECPublicKey> leaders = ImmutableList.of(mock(ECPublicKey.class), mock(ECPublicKey.class));
+		ImmutableList<BFTNode> leaders = ImmutableList.of(mock(BFTNode.class), mock(BFTNode.class));
 		RotatingLeaders rotatingLeaders = new RotatingLeaders(leaders);
 		assertThat(rotatingLeaders.getProposer(View.of(leaders.size())))
 			.isEqualTo(leaders.get(0));
@@ -36,11 +36,11 @@ public class RotatingLeadersTest {
 
 	@Test
 	public void sensibleToString() {
-		ECPublicKey pk1 = mock(ECPublicKey.class);
-		ImmutableList<ECPublicKey> leaders = ImmutableList.of(pk1);
+		BFTNode node = mock(BFTNode.class);
+		ImmutableList<BFTNode> leaders = ImmutableList.of(node);
 		String s = new RotatingLeaders(leaders).toString();
 
 		assertThat(s).contains(RotatingLeaders.class.getSimpleName());
-		assertThat(s).contains(pk1.toString());
+		assertThat(s).contains(node.toString());
 	}
 }

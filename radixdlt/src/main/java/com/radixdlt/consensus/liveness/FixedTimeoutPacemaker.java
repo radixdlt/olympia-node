@@ -19,7 +19,7 @@ package com.radixdlt.consensus.liveness;
 
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.View;
-import com.radixdlt.consensus.validators.ValidatorSet;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -49,7 +49,7 @@ public final class FixedTimeoutPacemaker implements Pacemaker {
 	private final long timeoutMilliseconds;
 	private final TimeoutSender timeoutSender;
 
-	private final PendingNewViews pendingNewViews = new PendingNewViews();
+	private final PendingNewViews pendingNewViews;
 	private View currentView = View.of(0L);
 	private View lastSyncView = View.of(0L);
 
@@ -59,6 +59,7 @@ public final class FixedTimeoutPacemaker implements Pacemaker {
 		}
 		this.timeoutMilliseconds = timeoutMilliseconds;
 		this.timeoutSender = Objects.requireNonNull(timeoutSender);
+		this.pendingNewViews = new PendingNewViews();
 	}
 
 	@Override
@@ -81,7 +82,7 @@ public final class FixedTimeoutPacemaker implements Pacemaker {
 
 	// TODO: Move this into Event Coordinator
 	@Override
-	public Optional<View> processNewView(NewView newView, ValidatorSet validatorSet) {
+	public Optional<View> processNewView(NewView newView, BFTValidatorSet validatorSet) {
 		if (newView.getView().compareTo(this.lastSyncView) <= 0) {
 			return Optional.empty();
 		}
@@ -91,7 +92,7 @@ public final class FixedTimeoutPacemaker implements Pacemaker {
 		final View qcView = newView.getQC().getView();
 		final boolean highestQC = !qcView.isGenesis() && qcView.next().equals(this.currentView);
 
-		if (!highestQC && !this.pendingNewViews.insertNewView(newView, validatorSet).isPresent()) {
+		if (!this.pendingNewViews.insertNewView(newView, validatorSet).isPresent() && !highestQC) {
 			return Optional.empty();
 		}
 

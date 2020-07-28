@@ -19,17 +19,17 @@ package com.radixdlt.consensus.deterministic.configuration;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.SyncVerticesRPCSender;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRPCSender;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 
 public enum UnsupportedSyncVerticesRPCSender implements SyncVerticesRPCSender {
 	INSTANCE;
 
 	@Override
-	public void sendGetVerticesRequest(Hash id, ECPublicKey node, int count, Object opaque) {
+	public void sendGetVerticesRequest(Hash id, BFTNode node, int count, Object opaque) {
 		throw new UnsupportedOperationException();
 	}
 

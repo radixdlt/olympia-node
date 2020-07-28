@@ -21,8 +21,9 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.radixdlt.consensus.validators.ValidatorSet;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.network.addressbook.AddressBook;
 
 import com.radixdlt.network.addressbook.Peer;
@@ -34,6 +35,7 @@ public class AddressBookValidatorSetProviderTest {
 	@Test
 	public void when_quorum_size_is_one__then_should_emit_self() {
 		ECPublicKey self = mock(ECPublicKey.class);
+		when(self.euid()).thenReturn(EUID.ONE);
 		AddressBook addressBook = mock(AddressBook.class);
 		AddressBookValidatorSetProvider validatorSetProvider = new AddressBookValidatorSetProvider(self, addressBook, 1);
 		Peer peer = mock(Peer.class);
@@ -41,9 +43,9 @@ public class AddressBookValidatorSetProviderTest {
 		ECPublicKey peerKey = mock(ECPublicKey.class);
 		when(system.getKey()).thenReturn(peerKey);
 		when(peer.getSystem()).thenReturn(system);
-		when(addressBook.peers()).thenReturn(Stream.of(peer), Stream.of(peer));
-		ValidatorSet validatorSet = validatorSetProvider.getValidatorSet(0);
+		when(addressBook.peers()).thenAnswer(inv -> Stream.of(peer));
+		BFTValidatorSet validatorSet = validatorSetProvider.getValidatorSet(0);
 		assertThat(validatorSet.getValidators()).hasSize(1);
-		assertThat(validatorSet.getValidators()).allMatch(v -> v.nodeKey().equals(self));
+		assertThat(validatorSet.getValidators()).allMatch(v -> v.getNode().getKey().equals(self));
 	}
 }

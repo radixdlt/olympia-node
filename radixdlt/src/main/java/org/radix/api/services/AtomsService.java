@@ -19,12 +19,17 @@ package org.radix.api.services;
 
 import com.google.common.collect.EvictingQueue;
 import com.radixdlt.DefaultSerialization;
+import com.radixdlt.api.DeserializationFailure;
+import com.radixdlt.api.LedgerRx;
+import com.radixdlt.api.StoredAtom;
+import com.radixdlt.api.SubmissionErrorsRx;
+import com.radixdlt.api.SubmissionFailure;
 import com.radixdlt.atommodel.Atom;
+import com.radixdlt.api.StoredFailure;
 import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.mempool.SubmissionControl;
 
-import com.radixdlt.middleware2.LedgerAtom;
-import com.radixdlt.middleware2.store.CommittedAtomsStore;
+import com.radixdlt.middleware2.CommittedAtom;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import com.radixdlt.middleware2.ClientAtom;
@@ -57,10 +62,7 @@ import org.radix.api.observable.AtomEventObserver;
 import org.radix.api.observable.Disposable;
 import org.radix.api.observable.ObservedAtomEvents;
 import org.radix.api.observable.Observable;
-import org.radix.atoms.events.AtomExceptionEvent;
 import com.radixdlt.identifiers.AID;
-import org.radix.atoms.events.AtomStoredEvent;
-import org.radix.events.Events;
 
 public class AtomsService {
 	private static int  NUMBER_OF_THREADS = 8;
@@ -85,49 +87,32 @@ public class AtomsService {
 	private final SubmissionControl submissionControl;
 	private final AtomToBinaryConverter atomToBinaryConverter;
 	private final LedgerEntryStore store;
-	private final CommittedAtomsStore engineStore;
 	private final CompositeDisposable disposable;
 
+	private final SubmissionErrorsRx submissionErrorsRx;
+	private final LedgerRx ledgerRx;
+
 	public AtomsService(
+		SubmissionErrorsRx submissionErrorsRx,
+		LedgerRx ledgerRx,
 		LedgerEntryStore store,
-		CommittedAtomsStore engineStore,
 		SubmissionControl submissionControl,
 		AtomToBinaryConverter atomToBinaryConverter
 	) {
+		this.submissionErrorsRx = Objects.requireNonNull(submissionErrorsRx);
 		this.submissionControl = Objects.requireNonNull(submissionControl);
 		this.store = Objects.requireNonNull(store);
 		this.atomToBinaryConverter = Objects.requireNonNull(atomToBinaryConverter);
-		this.engineStore = Objects.requireNonNull(engineStore);
 		this.disposable = new CompositeDisposable();
-
-		Events.getInstance().register(AtomExceptionEvent.class, event -> {
-			executorService.submit(() -> {
-				final AtomExceptionEvent exceptionEvent = (AtomExceptionEvent) event;
-				synchronized (lock) {
-					eventRingBuffer.add(
-						System.currentTimeMillis() + " EXCEPTION " + exceptionEvent.getAtomId()
-							+ " " + exceptionEvent.getException().getClass().getName());
-				}
-
-				List<SingleAtomListener> subscribers = this.deleteOnEventSingleAtomObservers.remove(exceptionEvent.getAtomId());
-				if (subscribers != null) {
-					Throwable exception = exceptionEvent.getException();
-					subscribers.forEach(subscriber -> subscriber.onError(exceptionEvent.getAtomId(), exception));
-				}
-
-				for (AtomStatusListener singleAtomListener : this.singleAtomObservers.getOrDefault(exceptionEvent.getAtomId(), Collections.emptyList())) {
-					Throwable exception = exceptionEvent.getException();
-					singleAtomListener.onError(exception);
-				}
-			});
-		});
+		this.ledgerRx = ledgerRx;
 	}
 
-	private void processedStoredEvent(AtomStoredEvent storedEvent) {
-		LedgerAtom atom = storedEvent.getAtom();
-		this.atomEventObservers.forEach(observer -> observer.tryNext(storedEvent));
+	private void processedStoredEvent(StoredAtom storedAtom) {
+		final CommittedAtom committedAtom = storedAtom.getAtom();
 
-		List<SingleAtomListener> subscribers = this.deleteOnEventSingleAtomObservers.remove(atom.getAID());
+		this.atomEventObservers.forEach(observer -> observer.tryNext(storedAtom));
+
+		List<SingleAtomListener> subscribers = this.deleteOnEventSingleAtomObservers.remove(committedAtom.getAID());
 		if (subscribers != null) {
 			Iterator<SingleAtomListener> i = subscribers.iterator();
 			if (i.hasNext()) {
@@ -138,23 +123,86 @@ public class AtomsService {
 			}
 		}
 
-		for (AtomStatusListener atomStatusListener : this.singleAtomObservers.getOrDefault(atom.getAID(), Collections.emptyList())) {
-			atomStatusListener.onStored();
+		for (AtomStatusListener atomStatusListener : this.singleAtomObservers.getOrDefault(committedAtom.getAID(), Collections.emptyList())) {
+			atomStatusListener.onStored(committedAtom);
 		}
 
 		this.atomEventCount.merge(AtomEventType.STORE, 1L, Long::sum);
 
 		synchronized (lock) {
-			eventRingBuffer.add(System.currentTimeMillis() + " STORED " + atom.getAID());
+			eventRingBuffer.add(System.currentTimeMillis() + " STORED " + committedAtom.getAID());
 		}
 	}
 
+	private void processException(StoredFailure e) {
+		synchronized (lock) {
+			eventRingBuffer.add(
+				System.currentTimeMillis() + " EXCEPTION " + e.getAtom().getAID() + " " + e.getException().getErrorCode());
+		}
+
+		List<SingleAtomListener> subscribers = this.deleteOnEventSingleAtomObservers.remove(e.getAtom().getAID());
+		if (subscribers != null) {
+			subscribers.forEach(subscriber -> subscriber.onStoredFailure(e));
+		}
+
+		for (AtomStatusListener singleAtomListener : this.singleAtomObservers.getOrDefault(e.getAtom().getAID(), Collections.emptyList())) {
+			singleAtomListener.onStoredFailure(e);
+		}
+	}
+
+	private void processSubmissionFailure(SubmissionFailure e) {
+		synchronized (lock) {
+			eventRingBuffer.add(
+				System.currentTimeMillis() + " EXCEPTION " + e.getClientAtom().getAID() + " " + e.getException().getErrorCode());
+		}
+
+		List<SingleAtomListener> subscribers = this.deleteOnEventSingleAtomObservers.remove(e.getClientAtom().getAID());
+		if (subscribers != null) {
+			subscribers.forEach(subscriber -> subscriber.onError(e.getClientAtom().getAID(), e.getException()));
+		}
+
+		for (AtomStatusListener singleAtomListener : this.singleAtomObservers.getOrDefault(e.getClientAtom().getAID(), Collections.emptyList())) {
+			singleAtomListener.onError(e.getException());
+		}
+	}
+
+	private void processDeserializationFailure(DeserializationFailure e) {
+		synchronized (lock) {
+			eventRingBuffer.add(
+				System.currentTimeMillis() + " EXCEPTION " + e.getAtom().getAID() + " " + e.getException().getMessage());
+		}
+
+		List<SingleAtomListener> subscribers = this.deleteOnEventSingleAtomObservers.remove(e.getAtom().getAID());
+		if (subscribers != null) {
+			subscribers.forEach(subscriber -> subscriber.onError(e.getAtom().getAID(), e.getException()));
+		}
+
+		for (AtomStatusListener singleAtomListener : this.singleAtomObservers.getOrDefault(e.getAtom().getAID(), Collections.emptyList())) {
+			singleAtomListener.onError(e.getException());
+		}
+	}
+
+
 	public void start() {
-		io.reactivex.rxjava3.disposables.Disposable lastStoredAtomDisposable = engineStore.lastStoredAtom()
+		io.reactivex.rxjava3.disposables.Disposable lastStoredAtomDisposable = ledgerRx.storedAtoms()
 			.observeOn(Schedulers.io())
 			.subscribe(this::processedStoredEvent);
-
 		this.disposable.add(lastStoredAtomDisposable);
+
+		io.reactivex.rxjava3.disposables.Disposable exceptionsDisposable = ledgerRx.storedExceptions()
+			.observeOn(Schedulers.io())
+			.subscribe(this::processException);
+		this.disposable.add(exceptionsDisposable);
+
+		io.reactivex.rxjava3.disposables.Disposable submissionFailuresDisposable = submissionErrorsRx.submissionFailures()
+			.observeOn(Schedulers.io())
+			.subscribe(this::processSubmissionFailure);
+		this.disposable.add(submissionFailuresDisposable);
+
+		io.reactivex.rxjava3.disposables.Disposable deserializationFailures = submissionErrorsRx.deserializationFailures()
+			.observeOn(Schedulers.io())
+			.subscribe(this::processDeserializationFailure);
+		this.disposable.add(deserializationFailures);
 	}
 
 	public void stop() {

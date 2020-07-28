@@ -104,27 +104,4 @@ public class LedgerAtomCheckerTest {
 		assertThat(checker.check(ledgerAtom).getErrorMessage())
 			.contains("metadata does not contain");
 	}
-
-	@Test
-	public void when_validating_atom_with_bad_timestamp__result_has_error() {
-		LedgerAtom ledgerAtom = mock(ClientAtom.class);
-		CMInstruction cmInstruction = new CMInstruction(
-			ImmutableList.of(mock(CMMicroInstruction.class)), Hash.random(), ImmutableMap.of()
-		);
-		when(ledgerAtom.getAID()).thenReturn(mock(AID.class));
-		when(ledgerAtom.getCMInstruction()).thenReturn(cmInstruction);
-		when(ledgerAtom.getMetaData()).thenReturn(
-			ImmutableMap.of(
-				"timestamp", "badinput",
-				"powNonce", "0"
-			)
-		);
-		Hash powFeeHash = mock(Hash.class);
-		when(ledgerAtom.getPowFeeHash()).thenReturn(powFeeHash);
-		when(powFeeComputer.computePowSpent(eq(ledgerAtom), eq(0L))).thenReturn(powFeeHash);
-		when(powFeeHash.compareTo(eq(target))).thenReturn(-1);
-
-		assertThat(checker.check(ledgerAtom).getErrorMessage())
-			.contains("invalid timestamp");
-	}
 }

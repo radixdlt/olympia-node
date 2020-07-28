@@ -18,6 +18,7 @@
 package com.radixdlt.mempool;
 
 import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.mempool.SubmissionControlImpl.SubmissionControlSender;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.converters.AtomToClientAtomConverter;
@@ -27,10 +28,7 @@ import java.util.function.Consumer;
 import org.json.JSONObject;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.ArgumentMatchers;
 import org.mockito.stubbing.Answer;
-import org.radix.atoms.events.AtomExceptionEvent;
-import org.radix.events.Events;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.constraintmachine.DataPointer;
@@ -46,7 +44,7 @@ public class SubmissionControlImplTest {
 	private Mempool mempool;
 	private RadixEngine<LedgerAtom> radixEngine;
 	private Serialization serialization;
-	private Events events;
+	private SubmissionControlSender sender;
 	private SubmissionControlImpl submissionControl;
 	private AtomToClientAtomConverter converter;
 
@@ -58,9 +56,9 @@ public class SubmissionControlImplTest {
 		RadixEngine<LedgerAtom> re = throwingMock(RadixEngine.class);
 		this.radixEngine = re;
 		this.serialization = throwingMock(Serialization.class);
-		this.events = throwingMock(Events.class);
 		this.converter = mock(AtomToClientAtomConverter.class);
-		this.submissionControl = new SubmissionControlImpl(this.mempool, this.radixEngine, this.serialization, this.events, this.converter);
+		this.sender = mock(SubmissionControlSender.class);
+		this.submissionControl = new SubmissionControlImpl(this.mempool, this.radixEngine, this.serialization, this.converter, this.sender);
 	}
 
 	@Test
@@ -68,12 +66,11 @@ public class SubmissionControlImplTest {
 		RadixEngineException e = mock(RadixEngineException.class);
 		when(e.getDataPointer()).thenReturn(DataPointer.ofAtom());
 		doThrow(e).when(this.radixEngine).staticCheck(any());
-		doNothing().when(this.events).broadcast(any());
 
 		ClientAtom atom = mock(ClientAtom.class);
 		this.submissionControl.submitAtom(atom);
 
-		verify(this.events, times(1)).broadcast(ArgumentMatchers.any(AtomExceptionEvent.class));
+		verify(this.sender, times(1)).sendRadixEngineFailure(any(), any());
 		verify(this.mempool, never()).addAtom(any());
 	}
 
@@ -85,14 +82,13 @@ public class SubmissionControlImplTest {
 		ClientAtom atom = mock(ClientAtom.class);
 		this.submissionControl.submitAtom(atom);
 
-		verify(this.events, never()).broadcast(any());
+		verify(this.sender, never()).sendRadixEngineFailure(any(), any());
+		verify(this.sender, never()).sendDeserializeFailure(any(), any());
 		verify(this.mempool, times(1)).addAtom(eq(atom));
 	}
 
 	@Test
 	public void when_conversion_fails_then_exception_is_broadcasted_and_atom_is_not_added_to_mempool() throws Exception {
-		doNothing().when(this.events).broadcast(any());
-
 		JSONObject atomJson = mock(JSONObject.class);
 		Atom atom = mock(Atom.class);
 		AID aid = mock(AID.class);
@@ -103,7 +99,7 @@ public class SubmissionControlImplTest {
 		@SuppressWarnings("unchecked")
 		Consumer<ClientAtom> callback = mock(Consumer.class);
 		this.submissionControl.submitAtom(atomJson, callback);
-		verify(this.events, times(1)).broadcast(argThat(AtomExceptionEvent.class::isInstance));
+		verify(this.sender, times(1)).sendDeserializeFailure(eq(atom), any());
 		verify(this.mempool, never()).addAtom(any());
 	}
 
@@ -118,7 +114,8 @@ public class SubmissionControlImplTest {
 			fail();
 		} catch (IllegalArgumentException e) {
 			assertThat(called.get(), is(false));
-			verify(this.events, never()).broadcast(any());
+			verify(this.sender, never()).sendDeserializeFailure(any(), any());
+			verify(this.sender, never()).sendRadixEngineFailure(any(), any());
 			verify(this.mempool, never()).addAtom(any());
 		}
 	}
@@ -142,7 +139,8 @@ public class SubmissionControlImplTest {
 		this.submissionControl.submitAtom(throwingMock(JSONObject.class), callback);
 
 		verify(callback, times(1)).accept(argThat(a -> a.getAID().equals(AID.ZERO)));
-		verify(this.events, never()).broadcast(any());
+		verify(this.sender, never()).sendRadixEngineFailure(any(), any());
+		verify(this.sender, never()).sendDeserializeFailure(any(), any());
 		verify(this.mempool, times(1)).addAtom(any());
 	}
 

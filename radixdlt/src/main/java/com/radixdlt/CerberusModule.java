@@ -19,67 +19,71 @@ package com.radixdlt;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
-import com.radixdlt.consensus.BFTEventReducer;
-import com.radixdlt.consensus.BFTEventSender;
+import com.radixdlt.api.LedgerRx;
+import com.radixdlt.api.SubmissionErrorsRx;
+import com.radixdlt.consensus.HashVerifier;
+import com.radixdlt.consensus.bft.BFTBuilder;
+import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.AddressBookValidatorSetProvider;
 import com.radixdlt.consensus.BFTFactory;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.CommittedStateSyncRx;
 import com.radixdlt.consensus.ConsensusRunner;
 import com.radixdlt.consensus.DefaultHasher;
 import com.radixdlt.consensus.EpochChangeRx;
-import com.radixdlt.consensus.EpochManager;
+import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.ConsensusEventsRx;
-import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
-import com.radixdlt.consensus.SyncEpochsRPCSender;
+import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.VertexStoreEventsRx;
-import com.radixdlt.consensus.InternalMessagePasser;
+import com.radixdlt.mempool.SubmissionControl;
+import com.radixdlt.mempool.SubmissionControlImpl;
+import com.radixdlt.mempool.SubmissionControlImpl.SubmissionControlSender;
+import com.radixdlt.middleware2.InternalMessagePasser;
+import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.ProposerElectionFactory;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
-import com.radixdlt.consensus.SyncVerticesRPCSender;
+import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRPCSender;
 import com.radixdlt.consensus.VertexStoreFactory;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
-import com.radixdlt.consensus.liveness.MempoolProposalGenerator;
+import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.consensus.liveness.PacemakerFactory;
 import com.radixdlt.consensus.liveness.PacemakerRx;
-import com.radixdlt.consensus.liveness.ProposalGenerator;
-import com.radixdlt.consensus.liveness.ScheduledTimeoutSender;
+import com.radixdlt.consensus.liveness.ScheduledLocalTimeoutSender;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
-import com.radixdlt.consensus.safety.SafetyRules;
-import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.consensus.sync.StateSyncNetwork;
 import com.radixdlt.consensus.sync.SyncedRadixEngine;
 import com.radixdlt.consensus.sync.SyncedRadixEngine.CommittedStateSyncSender;
+import com.radixdlt.consensus.sync.SyncedRadixEngine.SyncedRadixEngineEventSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.LedgerAtom;
+import com.radixdlt.middleware2.converters.AtomToClientAtomConverter;
 import com.radixdlt.middleware2.network.MessageCentralBFTNetwork;
 import com.radixdlt.middleware2.network.MessageCentralValidatorSync;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.network.addressbook.AddressBook;
+import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.properties.RuntimeProperties;
+import com.radixdlt.serialization.Serialization;
+import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.ThreadFactories;
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 public class CerberusModule extends AbstractModule {
-	private static final Logger log = LogManager.getLogger("Startup");
-
 	private final RuntimeProperties runtimeProperties;
 
 	public CerberusModule(RuntimeProperties runtimeProperties) {
@@ -88,42 +92,95 @@ public class CerberusModule extends AbstractModule {
 
 	@Override
 	protected void configure() {
+		// Configuration
+		bind(Hasher.class).to(DefaultHasher.class);
+		bind(HashVerifier.class).toInstance(ECPublicKey::verify);
+
 		// Timed local messages
-		bind(PacemakerRx.class).to(ScheduledTimeoutSender.class);
+		bind(PacemakerRx.class).to(ScheduledLocalTimeoutSender.class);
+		bind(LocalTimeoutSender.class).to(ScheduledLocalTimeoutSender.class);
 
 		// Local messages
+		bind(SubmissionControlSender.class).to(InternalMessagePasser.class);
+		bind(SubmissionErrorsRx.class).to(InternalMessagePasser.class);
 		bind(VertexStoreEventsRx.class).to(InternalMessagePasser.class);
 		bind(VertexStoreEventSender.class).to(InternalMessagePasser.class);
 		bind(CommittedStateSyncSender.class).to(InternalMessagePasser.class);
 		bind(CommittedStateSyncRx.class).to(InternalMessagePasser.class);
 		bind(EpochChangeRx.class).to(InternalMessagePasser.class);
 		bind(EpochChangeSender.class).to(InternalMessagePasser.class);
-
+		bind(SyncedRadixEngineEventSender.class).to(InternalMessagePasser.class);
+		bind(LedgerRx.class).to(InternalMessagePasser.class);
 		bind(SyncedStateComputer.class).to(SyncedRadixEngine.class);
 
-		// Sync messages
+		// Network Sync messages
 		bind(SyncEpochsRPCSender.class).to(MessageCentralValidatorSync.class);
 		bind(SyncEpochsRPCRx.class).to(MessageCentralValidatorSync.class);
 		bind(SyncVerticesRPCSender.class).to(MessageCentralValidatorSync.class);
 		bind(SyncVerticesRPCRx.class).to(MessageCentralValidatorSync.class);
-		bind(MessageCentralValidatorSync.class).in(Scopes.SINGLETON);
 
-		// BFT messages
+		// Network BFT messages
 		bind(BFTEventSender.class).to(MessageCentralBFTNetwork.class);
 		bind(ConsensusEventsRx.class).to(MessageCentralBFTNetwork.class);
-		bind(MessageCentralBFTNetwork.class).in(Scopes.SINGLETON);
+	}
 
-		// Configuration
-		bind(Hasher.class).to(DefaultHasher.class);
+	@Provides
+	@Singleton
+	SubmissionControl submissionControl(
+		Mempool mempool,
+		RadixEngine<LedgerAtom> radixEngine,
+		Serialization serialization,
+		AtomToClientAtomConverter converter,
+		SubmissionControlSender submissionControlSender
+	) {
+		return new SubmissionControlImpl(
+			mempool,
+			radixEngine,
+			serialization,
+			converter,
+			submissionControlSender
+		);
+	}
+
+	@Provides
+	@Singleton
+	HashSigner hashSigner(
+		@Named("self") ECKeyPair selfKey
+	) {
+		return selfKey::sign;
+	}
+
+	@Provides
+	@Singleton
+	MessageCentralValidatorSync validatorSync(
+		@Named("self") BFTNode self,
+		Universe universe,
+		AddressBook addressBook,
+		MessageCentral messageCentral
+	) {
+		return new MessageCentralValidatorSync(self, universe, addressBook, messageCentral);
+	}
+
+	@Provides
+	@Singleton
+	MessageCentralBFTNetwork bftNetwork(
+		@Named("self") BFTNode self,
+		Universe universe,
+		AddressBook addressBook,
+		MessageCentral messageCentral
+	) {
+		return new MessageCentralBFTNetwork(self, universe, addressBook, messageCentral);
 	}
 
 	@Provides
 	@Singleton
 	private BFTFactory bftFactory(
+		@Named("self") BFTNode self,
 		BFTEventSender bftEventSender,
 		Mempool mempool,
-		@Named("self") ECKeyPair selfKey,
 		Hasher hasher,
+		HashSigner signer,
+		HashVerifier verifier,
 		SystemCounters counters
 	) {
 		return (
@@ -132,43 +189,38 @@ public class CerberusModule extends AbstractModule {
 			vertexStore,
 			proposerElection,
 			validatorSet
-		) -> {
-			final ProposalGenerator proposalGenerator = new MempoolProposalGenerator(vertexStore, mempool);
-			final SafetyRules safetyRules = new SafetyRules(selfKey, SafetyState.initialState(), hasher);
-			final PendingVotes pendingVotes = new PendingVotes(hasher);
-
-			return new BFTEventReducer(
-				proposalGenerator,
-				mempool,
-				bftEventSender,
-				endOfEpochSender,
-				safetyRules,
-				pacemaker,
-				vertexStore,
-				pendingVotes,
-				proposerElection,
-				selfKey,
-				validatorSet,
-				counters
-			);
-		};
+		) ->
+			BFTBuilder.create()
+				.self(self)
+				.eventSender(bftEventSender)
+				.mempool(mempool)
+				.hasher(hasher)
+				.signer(signer)
+				.verifier(verifier)
+				.counters(counters)
+				.endOfEpochSender(endOfEpochSender)
+				.pacemaker(pacemaker)
+				.vertexStore(vertexStore)
+				.proposerElection(proposerElection)
+				.validatorSet(validatorSet)
+				.build();
 	}
 
 	@Provides
 	@Singleton
 	private EpochManager epochManager(
+		@Named("self") BFTNode self,
 		SyncedRadixEngine syncedRadixEngine,
 		BFTFactory bftFactory,
 		SyncEpochsRPCSender syncEpochsRPCSender,
-		ScheduledTimeoutSender scheduledTimeoutSender,
+		LocalTimeoutSender scheduledTimeoutSender,
 		PacemakerFactory pacemakerFactory,
 		VertexStoreFactory vertexStoreFactory,
 		ProposerElectionFactory proposerElectionFactory,
-		@Named("self") ECKeyPair selfKey,
 		SystemCounters counters
 	) {
 		return new EpochManager(
-			selfKey.euid().toString().substring(0, 6),
+			self,
 			syncedRadixEngine,
 			syncEpochsRPCSender,
 			scheduledTimeoutSender,
@@ -176,7 +228,6 @@ public class CerberusModule extends AbstractModule {
 			vertexStoreFactory,
 			proposerElectionFactory,
 			bftFactory,
-			selfKey.getPublicKey(),
 			counters
 		);
 	}
@@ -229,20 +280,24 @@ public class CerberusModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private SyncedRadixEngine syncedRadixEngine(
+		Mempool mempool,
 		RadixEngine<LedgerAtom> radixEngine,
 		CommittedAtomsStore committedAtomsStore,
 		CommittedStateSyncSender committedStateSyncSender,
 		EpochChangeSender epochChangeSender,
+		SyncedRadixEngineEventSender syncedRadixEngineEventSender,
 		AddressBookValidatorSetProvider validatorSetProvider,
 		AddressBook addressBook,
 		StateSyncNetwork stateSyncNetwork
 	) {
 		final long viewsPerEpoch = runtimeProperties.get("epochs.views_per_epoch", 100L);
 		return new SyncedRadixEngine(
+			mempool,
 			radixEngine,
 			committedAtomsStore,
 			committedStateSyncSender,
 			epochChangeSender,
+			syncedRadixEngineEventSender,
 			validatorSetProvider::getValidatorSet,
 			View.of(viewsPerEpoch),
 			addressBook,
@@ -254,14 +309,14 @@ public class CerberusModule extends AbstractModule {
 	@Singleton
 	private ProposerElectionFactory proposerElectionFactory() {
 		final int cacheSize = runtimeProperties.get("consensus.weighted_rotating_leaders.cache_size", 10);
-		return validatorSet -> new WeightedRotatingLeaders(validatorSet, Comparator.comparing(v -> v.nodeKey().euid()), cacheSize);
+		return validatorSet -> new WeightedRotatingLeaders(validatorSet, Comparator.comparing(v -> v.getNode().getKey().euid()), cacheSize);
 	}
 
 	@Provides
 	@Singleton
-	private ScheduledTimeoutSender timeoutSender() {
+	private ScheduledLocalTimeoutSender timeoutSender() {
 		ScheduledExecutorService ses = Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads("TimeoutSender"));
-		return new ScheduledTimeoutSender(ses);
+		return new ScheduledLocalTimeoutSender(ses);
 	}
 
 	@Provides
