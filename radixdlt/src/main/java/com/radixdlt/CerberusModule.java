@@ -287,7 +287,8 @@ public class CerberusModule extends AbstractModule {
 		SyncedRadixEngineEventSender syncedRadixEngineEventSender,
 		AddressBookValidatorSetProvider validatorSetProvider,
 		AddressBook addressBook,
-		StateSyncNetwork stateSyncNetwork
+		StateSyncNetwork stateSyncNetwork,
+		SystemCounters counters
 	) {
 		final long viewsPerEpoch = runtimeProperties.get("epochs.views_per_epoch", 100L);
 		return new SyncedRadixEngine(
@@ -300,7 +301,8 @@ public class CerberusModule extends AbstractModule {
 			validatorSetProvider::getValidatorSet,
 			View.of(viewsPerEpoch),
 			addressBook,
-			stateSyncNetwork
+			stateSyncNetwork,
+			counters
 		);
 	}
 
