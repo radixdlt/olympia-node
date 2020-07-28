@@ -69,7 +69,7 @@ public class SystemCountersImplTest {
 		}
 		// Ensure writeable
 		Map<String, Object> m = new TreeMap<>(counters.toMap());
-		assertNotNull(m.remove("since"));
+		assertNotNull(m.remove("time"));
 		testMap("", m);
 	}
 
