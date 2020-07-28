@@ -218,6 +218,8 @@ public final class SyncedRadixEngine implements SyncedStateComputer<CommittedAto
 	public void execute(CommittedAtom atom) {
 		// TODO: remove lock
 		synchronized (lock) {
+			counters.increment(CounterType.LEDGER_PROCESSED);
+
 			if (atom.getVertexMetadata().getStateVersion() != 0
 				&& atom.getVertexMetadata().getStateVersion() <= committedAtomsStore.getStateVersion()) {
 				return;
@@ -249,8 +251,6 @@ public final class SyncedRadixEngine implements SyncedStateComputer<CommittedAto
 				this.unstoredCommittedAtoms.add(atom);
 				this.lastStoredAtom.onNext(atom);
 			}
-
-			counters.increment(CounterType.LEDGER_PROCESSED);
 
 			// TODO: Move outside of syncedRadixEngine to a more generic syncing layer
 			if (atom.getVertexMetadata().isEndOfEpoch()
