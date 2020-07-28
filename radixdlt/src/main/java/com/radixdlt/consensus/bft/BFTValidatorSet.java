@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.utils.UInt256;
 import java.util.Collection;
 import java.util.Objects;
+import java.util.StringJoiner;
 import java.util.function.Function;
 
 /**
@@ -106,6 +107,10 @@ public final class BFTValidatorSet {
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s]", getClass().getSimpleName(), this.validators.keySet());
+		final StringJoiner joiner = new StringJoiner(",");
+		for (BFTValidator validator : this.validators.values()) {
+			joiner.add(String.format("%s=%s", validator.getNode().getSimpleName(), validator.getPower()));
+		}
+		return String.format("%s[%s]", this.getClass().getSimpleName(), joiner.toString());
 	}
 }

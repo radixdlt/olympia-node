@@ -42,8 +42,11 @@ public class BFTValidatorSetTest {
 
 	@Test
 	public void sensibleToString() {
-		String s = BFTValidatorSet.from(ImmutableList.of()).toString();
+		BFTNode node = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
+		String s = BFTValidatorSet.from(ImmutableList.of(BFTValidator.from(node, UInt256.ONE))).toString();
 		assertThat(s, containsString(BFTValidatorSet.class.getSimpleName()));
+		assertThat(s, containsString(node.getSimpleName()));
+		System.out.println(s);
 	}
 
 	@Test
