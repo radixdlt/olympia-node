@@ -17,14 +17,11 @@
 
 package com.radixdlt.consensus.deterministic.tests.bft.synchronous;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.deterministic.DeterministicTest;
-import com.radixdlt.counters.SystemCounters.CounterType;
 import org.junit.Test;
 
 public class OneSlowNodeTest {
@@ -54,7 +51,6 @@ public class OneSlowNodeTest {
 		}
 
 		test.processNextMsg(0, 2, Proposal.class);
-		assertThat(test.getSystemCounters(0).get(CounterType.CONSENSUS_SYNC_EXCEPTION)).isEqualTo(0);
 	}
 
 	/**
@@ -86,6 +82,5 @@ public class OneSlowNodeTest {
 		}
 
 		test.processNextMsg(0, 3, Proposal.class);
-		assertThat(test.getSystemCounters(0).get(CounterType.CONSENSUS_SYNC_EXCEPTION)).isEqualTo(0);
 	}
 }

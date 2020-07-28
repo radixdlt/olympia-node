@@ -42,6 +42,7 @@ import org.radix.universe.system.SystemMessage;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
@@ -103,23 +104,23 @@ public class MessageDispatcherTest extends RadixTest {
 	}
 
 	@Test
-	public void sendSuccessfullyMessage() {
+	public void sendSuccessfullyMessage() throws InterruptedException, ExecutionException {
 		SystemMessage message = spy(new SystemMessage(getLocalSystem(), 0));
 		MessageEvent messageEvent = new MessageEvent(peer1, message, 10_000);
 
-		SendResult sendResult = messageDispatcher.send(transportManager, messageEvent);
+		SendResult sendResult = messageDispatcher.send(transportManager, messageEvent).get();
 
 		assertTrue(sendResult.isComplete());
 		verify(message, times(1)).sign(getLocalSystem().getKeyPair());
 	}
 
 	@Test
-	public void sendExpiredMessage() {
+	public void sendExpiredMessage() throws InterruptedException, ExecutionException {
 		Message message = spy(new TestMessage(0));
 		when(message.getTimestamp()).thenReturn(10_000L);
 		MessageEvent messageEvent = new MessageEvent(peer1, message, 10_000);
 
-		SendResult sendResult = messageDispatcher.send(transportManager, messageEvent);
+		SendResult sendResult = messageDispatcher.send(transportManager, messageEvent).get();
 
 		assertThat(sendResult.getThrowable().getMessage(), Matchers.equalTo("TTL for TestMessage message to " + peer1 + " has expired"));
 		verify(counters, times(1)).increment(CounterType.MESSAGES_OUTBOUND_ABORTED);

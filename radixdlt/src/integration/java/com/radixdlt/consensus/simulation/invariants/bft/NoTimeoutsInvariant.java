@@ -37,9 +37,9 @@ public class NoTimeoutsInvariant implements TestInvariant {
 			.flatMapIterable(i -> network.getNodes())
 			.concatMap(node -> {
 				SystemCounters counters = network.getCounters(node);
-				if (counters.get(CounterType.CONSENSUS_TIMEOUT) > 0) {
+				if (counters.get(CounterType.BFT_TIMEOUT) > 0) {
 					return Observable.just(new TestInvariantError("Timeout at node " + node.getSimpleName()
-						+ " view " + counters.get(CounterType.CONSENSUS_TIMEOUT_VIEW)));
+						+ " view " + counters.get(CounterType.BFT_TIMEOUT_VIEW)));
 				} else {
 					return Observable.empty();
 				}

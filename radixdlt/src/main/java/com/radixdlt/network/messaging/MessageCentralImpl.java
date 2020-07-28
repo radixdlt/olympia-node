@@ -186,9 +186,11 @@ final class MessageCentralImpl implements MessageCentral {
 	}
 
 	private void inboundMessage(InboundMessage inboundMessage) {
+		byte[] messageBytes = inboundMessage.message();
+		this.counters.add(CounterType.NETWORKING_RECEIVED_BYTES, messageBytes.length);
 		Peer peer = addressBook.peer(inboundMessage.source());
 		if (peer != null) {
-			Message message = deserialize(inboundMessage.message());
+			Message message = deserialize(messageBytes);
 			inject(peer, message);
 		}
 	}

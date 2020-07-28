@@ -31,34 +31,34 @@ public class SystemCountersImplTest {
 	@Test
 	public void when_get_count__then_count_should_be_0() {
 		SystemCounters counters = new SystemCountersImpl();
-		assertThat(counters.get(CounterType.CONSENSUS_TIMEOUT)).isEqualTo(0L);
+		assertThat(counters.get(CounterType.BFT_TIMEOUT)).isEqualTo(0L);
 	}
 
 	@Test
 	public void when_increment__then_count_should_be_1() {
 		SystemCounters counters = new SystemCountersImpl();
-		counters.increment(CounterType.CONSENSUS_TIMEOUT);
-		assertThat(counters.get(CounterType.CONSENSUS_TIMEOUT)).isEqualTo(1L);
-		counters.increment(CounterType.CONSENSUS_TIMEOUT);
-		assertThat(counters.get(CounterType.CONSENSUS_TIMEOUT)).isEqualTo(2L);
+		counters.increment(CounterType.BFT_TIMEOUT);
+		assertThat(counters.get(CounterType.BFT_TIMEOUT)).isEqualTo(1L);
+		counters.increment(CounterType.BFT_TIMEOUT);
+		assertThat(counters.get(CounterType.BFT_TIMEOUT)).isEqualTo(2L);
 	}
 
 	@Test
 	public void when_add__then_count_should_be_added_value() {
 		SystemCounters counters = new SystemCountersImpl();
-		counters.add(CounterType.CONSENSUS_TIMEOUT, 1234);
-		assertThat(counters.get(CounterType.CONSENSUS_TIMEOUT)).isEqualTo(1234L);
-		counters.add(CounterType.CONSENSUS_TIMEOUT, 4321);
-		assertThat(counters.get(CounterType.CONSENSUS_TIMEOUT)).isEqualTo(1234L + 4321L);
+		counters.add(CounterType.BFT_TIMEOUT, 1234);
+		assertThat(counters.get(CounterType.BFT_TIMEOUT)).isEqualTo(1234L);
+		counters.add(CounterType.BFT_TIMEOUT, 4321);
+		assertThat(counters.get(CounterType.BFT_TIMEOUT)).isEqualTo(1234L + 4321L);
 	}
 
 	@Test
 	public void when_set__then_count_should_be_1() {
 		SystemCounters counters = new SystemCountersImpl();
-		counters.set(CounterType.CONSENSUS_TIMEOUT, 1234);
-		assertThat(counters.get(CounterType.CONSENSUS_TIMEOUT)).isEqualTo(1234L);
-		counters.set(CounterType.CONSENSUS_TIMEOUT, 4321);
-		assertThat(counters.get(CounterType.CONSENSUS_TIMEOUT)).isEqualTo(4321L);
+		counters.set(CounterType.BFT_TIMEOUT, 1234);
+		assertThat(counters.get(CounterType.BFT_TIMEOUT)).isEqualTo(1234L);
+		counters.set(CounterType.BFT_TIMEOUT, 4321);
+		assertThat(counters.get(CounterType.BFT_TIMEOUT)).isEqualTo(4321L);
 	}
 
 	@Test
@@ -69,14 +69,14 @@ public class SystemCountersImplTest {
 		}
 		// Ensure writeable
 		Map<String, Object> m = new TreeMap<>(counters.toMap());
-		assertNotNull(m.remove("since"));
+		assertNotNull(m.remove("time"));
 		testMap("", m);
 	}
 
 	@Test
 	public void sensible_tostring() {
 		SystemCounters counters = new SystemCountersImpl();
-		counters.set(CounterType.CONSENSUS_TIMEOUT, 1234);
+		counters.set(CounterType.BFT_TIMEOUT, 1234);
 		String s = counters.toString();
 		assertThat(s).contains(SystemCountersImpl.class.getSimpleName());
 		assertThat(s).contains("1234");

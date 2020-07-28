@@ -131,7 +131,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		BFTNode nextLeader = this.proposerElection.getProposer(nextView);
 		log.trace("{}: Sending NEW_VIEW to {}: {}", this.self::getSimpleName, nextLeader::getSimpleName, () ->  newView);
 		this.sender.sendNewView(newView, nextLeader);
-		this.counters.set(CounterType.CONSENSUS_VIEW, nextView.number());
+		this.counters.set(CounterType.BFT_VIEW, nextView.number());
 	}
 
 	private Optional<VertexMetadata> processQC(QuorumCertificate qc) {
@@ -203,7 +203,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 			final Proposal proposal = safetyRules.signProposal(proposedVertex, this.vertexStore.getHighestCommittedQC());
 			log.trace("{}: Broadcasting PROPOSAL: {}", this.self::getSimpleName, () -> proposal);
 			Set<BFTNode> nodes = validatorSet.getValidators().stream().map(BFTValidator::getNode).collect(Collectors.toSet());
-			this.counters.increment(CounterType.CONSENSUS_PROPOSALS_MADE);
+			this.counters.increment(CounterType.BFT_PROPOSALS_MADE);
 			this.sender.broadcastProposal(proposal, nodes);
 		});
 	}
@@ -226,7 +226,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		try {
 			vertexMetadata = vertexStore.insertVertex(proposedVertex);
 		} catch (VertexInsertionException e) {
-			counters.increment(CounterType.CONSENSUS_REJECTED);
+			counters.increment(CounterType.BFT_REJECTED);
 
 			log.warn("{} PROPOSAL: Rejected. Reason: {}", this.self::getSimpleName, e::getMessage);
 			return;
@@ -266,8 +266,8 @@ public final class BFTEventReducer implements BFTEventProcessor {
 			);
 
 			this.proceedToView(nextView.get());
-			counters.set(CounterType.CONSENSUS_TIMEOUT_VIEW, view.number());
-			counters.increment(CounterType.CONSENSUS_TIMEOUT);
+			counters.set(CounterType.BFT_TIMEOUT_VIEW, view.number());
+			counters.increment(CounterType.BFT_TIMEOUT);
 		} else {
 			log.trace("{}: LOCAL_TIMEOUT: Ignoring {}", this.self::getSimpleName, () -> view);
 		}

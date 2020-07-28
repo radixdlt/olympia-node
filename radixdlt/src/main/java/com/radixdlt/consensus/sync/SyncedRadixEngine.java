@@ -28,6 +28,8 @@ import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.EUID;
@@ -76,6 +78,7 @@ public final class SyncedRadixEngine implements SyncedStateComputer<CommittedAto
 	private final AddressBook addressBook;
 	private final StateSyncNetwork stateSyncNetwork;
 	private final View epochChangeView;
+	private final SystemCounters counters;
 
 	// TODO: Remove the following
 	private final Object lock = new Object();
@@ -93,7 +96,8 @@ public final class SyncedRadixEngine implements SyncedStateComputer<CommittedAto
 		Function<Long, BFTValidatorSet> validatorSetMapping,
 		View epochChangeView,
 		AddressBook addressBook,
-		StateSyncNetwork stateSyncNetwork
+		StateSyncNetwork stateSyncNetwork,
+		SystemCounters counters
 	) {
 		if (epochChangeView.isGenesis()) {
 			throw new IllegalArgumentException("Epoch change view must not be genesis.");
@@ -109,6 +113,7 @@ public final class SyncedRadixEngine implements SyncedStateComputer<CommittedAto
 		this.epochChangeView = epochChangeView;
 		this.addressBook = Objects.requireNonNull(addressBook);
 		this.stateSyncNetwork = Objects.requireNonNull(stateSyncNetwork);
+		this.counters = Objects.requireNonNull(counters);
 	}
 
 	/**
@@ -151,6 +156,7 @@ public final class SyncedRadixEngine implements SyncedStateComputer<CommittedAto
 				log.debug("SYNC_RESPONSE: size: {}", syncResponse.size());
 				for (CommittedAtom committedAtom : syncResponse) {
 					if (committedAtom.getVertexMetadata().getStateVersion() > this.committedAtomsStore.getStateVersion()) {
+						counters.increment(CounterType.LEDGER_SYNC_PROCESSED);
 						this.execute(committedAtom);
 					}
 				}
@@ -213,10 +219,15 @@ public final class SyncedRadixEngine implements SyncedStateComputer<CommittedAto
 	public void execute(CommittedAtom atom) {
 		// TODO: remove lock
 		synchronized (lock) {
-			if (atom.getVertexMetadata().getStateVersion() != 0
-				&& atom.getVertexMetadata().getStateVersion() <= committedAtomsStore.getStateVersion()) {
+			counters.increment(CounterType.LEDGER_PROCESSED);
+
+			final long stateVersion = atom.getVertexMetadata().getStateVersion();
+
+			if (stateVersion != 0 && stateVersion <= committedAtomsStore.getStateVersion()) {
 				return;
 			}
+
+			counters.set(CounterType.LEDGER_STATE_VERSION, stateVersion);
 
 			// TODO: HACK
 			// TODO: Remove and move epoch change logic into RadixEngine
