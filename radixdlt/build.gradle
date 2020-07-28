@@ -87,7 +87,7 @@ jacocoTestReport {
 }
 
 dependencies {
-    compile 'com.radixdlt:radix-engine-library:feature~rpnv1-319-320-token-url-SNAPSHOT'
+    compile 'com.github.radixdlt:radix-engine-library:feature~rpnv1-319-320-token-url-SNAPSHOT'
 
     compile 'io.reactivex.rxjava3:rxjava:3.0.0'
     compile 'com.sleepycat:je:18.3.12'
