@@ -20,6 +20,7 @@ package com.radixdlt.consensus.liveness;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -45,13 +46,14 @@ public final class FixedTimeoutPacemaker implements Pacemaker {
 	}
 
 	private static final Logger log = LogManager.getLogger("PM");
+	private static final long LOGGING_INTERVAL = TimeUnit.SECONDS.toMillis(1);
 
 	private final long timeoutMilliseconds;
 	private final TimeoutSender timeoutSender;
-
 	private final PendingNewViews pendingNewViews;
 	private View currentView = View.of(0L);
 	private View lastSyncView = View.of(0L);
+	private long nextLogging = 0;
 
 	public FixedTimeoutPacemaker(long timeoutMilliseconds, TimeoutSender timeoutSender) {
 		if (timeoutMilliseconds <= 0) {
@@ -67,16 +69,25 @@ public final class FixedTimeoutPacemaker implements Pacemaker {
 		return currentView;
 	}
 
+	private void updateView(View nextView) {
+		long crtTime = System.currentTimeMillis();
+		if (crtTime >= nextLogging) {
+			log.info("Starting View: {}", nextView);
+			nextLogging = crtTime + LOGGING_INTERVAL;
+		} else {
+			log.trace("Starting View: {}", nextView);
+		}
+		this.currentView = nextView;
+		timeoutSender.scheduleTimeout(this.currentView, timeoutMilliseconds);
+	}
+
 	@Override
 	public Optional<View> processLocalTimeout(View view) {
 		if (!view.equals(this.currentView)) {
 			return Optional.empty();
 		}
 
-		this.currentView = currentView.next();
-
-		timeoutSender.scheduleTimeout(this.currentView, timeoutMilliseconds);
-
+		this.updateView(currentView.next());
 		return Optional.of(this.currentView);
 	}
 
@@ -111,10 +122,7 @@ public final class FixedTimeoutPacemaker implements Pacemaker {
 		View newView = view.next();
 		if (newView.compareTo(currentView) > 0) {
 			// start new view
-			this.currentView = newView;
-
-			timeoutSender.scheduleTimeout(this.currentView, timeoutMilliseconds);
-
+			this.updateView(newView);
 			return Optional.of(this.currentView);
 		} else {
 			return Optional.empty();
