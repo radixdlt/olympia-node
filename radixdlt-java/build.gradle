@@ -37,6 +37,12 @@ test {
     systemProperty "java.security.egd", "file:/dev/urandom"
 }
 
+jacocoTestReport {
+    reports {
+        xml.enabled true
+    }
+}
+
 dependencies {
     api 'com.github.radixdlt:radixdlt-java-common:1.0-beta.5'
 
