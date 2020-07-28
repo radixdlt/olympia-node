@@ -65,6 +65,10 @@ public class MutableSupplyTokenDefinitionParticle extends Particle implements Id
 	@DsonOutput(Output.ALL)
 	private String iconUrl;
 
+	@JsonProperty("url")
+	@DsonOutput(Output.ALL)
+	private String url;
+
 	private Map<TokenTransition, TokenPermission> tokenPermissions;
 
 	MutableSupplyTokenDefinitionParticle() {
@@ -78,9 +82,10 @@ public class MutableSupplyTokenDefinitionParticle extends Particle implements Id
 		String description,
 		UInt256 granularity,
 		Map<TokenTransition, TokenPermission> tokenPermissions,
-		String iconUrl
+		String iconUrl,
+		String url
 	) {
-		this(RRI.of(address, symbol), name, description, granularity, tokenPermissions, iconUrl);
+		this(RRI.of(address, symbol), name, description, granularity, tokenPermissions, iconUrl, url);
 	}
 
 	public MutableSupplyTokenDefinitionParticle(
@@ -89,7 +94,8 @@ public class MutableSupplyTokenDefinitionParticle extends Particle implements Id
 		String description,
 		UInt256 granularity,
 		Map<TokenTransition, TokenPermission> tokenPermissions,
-		String iconUrl
+		String iconUrl,
+		String url
 	) {
 		super(rri.getAddress().euid());
 		this.rri = rri;
@@ -98,6 +104,7 @@ public class MutableSupplyTokenDefinitionParticle extends Particle implements Id
 		this.granularity = granularity;
 		this.tokenPermissions = ImmutableMap.copyOf(tokenPermissions);
 		this.iconUrl = iconUrl;
+		this.url = url;
 	}
 
 	@Override
@@ -132,6 +139,10 @@ public class MutableSupplyTokenDefinitionParticle extends Particle implements Id
 
 	public String getIconUrl() {
 		return this.iconUrl;
+	}
+
+	public String getUrl() {
+		return url;
 	}
 
 	@JsonProperty("permissions")
