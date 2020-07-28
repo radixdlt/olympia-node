@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Objects;
+import java.util.StringJoiner;
 import javax.annotation.Nullable;
 
 /**
@@ -95,6 +96,11 @@ public final class SyncQueues {
 			counters.increment(CounterType.CONSENSUS_EVENTS_QUEUED_SYNC);
 			queue.addLast(event);
 		}
+
+		@Override
+		public String toString() {
+			return queue.toString();
+		}
 	}
 
 	Collection<SyncQueue> getQueues() {
@@ -102,7 +108,11 @@ public final class SyncQueues {
 	}
 
 	boolean isEmptyElseAdd(RequiresSyncConsensusEvent event) {
-		return queues.computeIfAbsent(event.getAuthor(), a -> new SyncQueue()).isEmptyElseAdd(event);
+		return this.getQueue(event.getAuthor()).isEmptyElseAdd(event);
+	}
+
+	private SyncQueue getQueue(BFTNode author) {
+		return queues.computeIfAbsent(author, a -> new SyncQueue());
 	}
 
 	void add(RequiresSyncConsensusEvent event) {
@@ -111,5 +121,16 @@ public final class SyncQueues {
 
 	void clear() {
 		queues.clear();
+	}
+
+	@Override
+	public String toString() {
+		final StringJoiner joiner = new StringJoiner(",");
+		queues.forEach((node, queue) -> {
+			if (!queue.queue.isEmpty()) {
+				joiner.add(String.format("%s=%s", node, queue));
+			}
+		});
+		return String.format("{%s}", joiner);
 	}
 }
