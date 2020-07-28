@@ -193,7 +193,7 @@ public class BFTEventReducerTest {
 		when(vertexStore.getHighestQC()).thenReturn(mock(QuorumCertificate.class));
 		reducer.processLocalTimeout(View.of(0L));
 		verify(sender, times(1)).sendNewView(any(), any());
-		verify(counters, times(1)).increment(eq(CounterType.CONSENSUS_TIMEOUT));
+		verify(counters, times(1)).increment(eq(CounterType.BFT_TIMEOUT));
 	}
 
 	@Test
@@ -201,7 +201,7 @@ public class BFTEventReducerTest {
 		when(pacemaker.processLocalTimeout(any())).thenReturn(Optional.empty());
 		reducer.processLocalTimeout(View.of(0L));
 		verify(sender, times(0)).sendNewView(any(), any());
-		verify(counters, times(0)).increment(eq(CounterType.CONSENSUS_TIMEOUT));
+		verify(counters, times(0)).increment(eq(CounterType.BFT_TIMEOUT));
 	}
 
 

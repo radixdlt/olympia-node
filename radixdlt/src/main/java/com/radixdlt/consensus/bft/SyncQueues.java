@@ -19,7 +19,6 @@ package com.radixdlt.consensus.bft;
 
 import com.radixdlt.consensus.RequiresSyncConsensusEvent;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hash;
 import java.util.Collection;
 import java.util.HashMap;
@@ -85,14 +84,11 @@ public final class SyncQueues {
 			if (queue.isEmpty()) {
 				return true;
 			}
-
-			counters.increment(CounterType.CONSENSUS_EVENTS_QUEUED_INITIAL);
 			queue.addLast(event);
 			return false;
 		}
 
 		public void add(RequiresSyncConsensusEvent event) {
-			counters.increment(CounterType.CONSENSUS_EVENTS_QUEUED_SYNC);
 			queue.addLast(event);
 		}
 	}

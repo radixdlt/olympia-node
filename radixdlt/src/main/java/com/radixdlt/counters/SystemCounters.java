@@ -25,24 +25,24 @@ import java.util.Map;
 public interface SystemCounters {
 
 	enum CounterType {
-		CONSENSUS_INDIRECT_PARENT("consensus.indirect_parent"),
-		CONSENSUS_REJECTED("consensus.rejected"),
-		CONSENSUS_SYNC_SUCCESS("consensus.sync_success"),
-		CONSENSUS_SYNC_EXCEPTION("consensus.sync_exception"),
-		CONSENSUS_EVENTS_QUEUED_INITIAL("consensus.events_queued_initial"),
-		CONSENSUS_EVENTS_QUEUED_SYNC("consensus.events_queued_sync"),
-		CONSENSUS_TIMEOUT("consensus.timeout"),
-		CONSENSUS_TIMEOUT_VIEW("consensus.timeout_view"),
-		CONSENSUS_VERTEXSTORE_SIZE("consensus.vertexstore_size"),
-		CONSENSUS_VIEW("consensus.view"),
-		CONSENSUS_PROCESSED("consensus.processed"),
-		// TODO: Move some CONSENSUS epoch related counters into epoch
+		BFT_INDIRECT_PARENT("bft.indirect_parent"),
+		BFT_REJECTED("bft.rejected"),
+		BFT_TIMEOUT("bft.timeout"),
+		BFT_TIMEOUT_VIEW("bft.timeout_view"),
+		BFT_VERTEX_STORE_SIZE("bft.vertex_store_size"),
+		BFT_VIEW("bft.view"),
+		BFT_PROCESSED("bft.processed"),
+
 		EPOCH_MANAGER_EPOCH("epoch_manager.epoch"),
 		EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS("epoch_manager.queued_consensus_events"),
-		LEDGER_PROCESSED("ledger.processed"),
+
+		LEDGER_SYNC_PROCESSED("ledger.sync_processed"),
+		LEDGER_PROCESSED("ledger.processed"), // LEDGER_PROCESSED = BFT_PROCESSED + LEDGER_SYNC_PROCESSED
 		LEDGER_STATE_VERSION("ledger.state_version"),
+
 		MEMPOOL_COUNT("mempool.count"),
 		MEMPOOL_MAXCOUNT("mempool.maxcount"),
+
 		MESSAGES_INBOUND_BADSIGNATURE("messages.inbound.badsignature"),
 		MESSAGES_INBOUND_DISCARDED("messages.inbound.discarded"),
 		MESSAGES_INBOUND_PENDING("messages.inbound.pending"),

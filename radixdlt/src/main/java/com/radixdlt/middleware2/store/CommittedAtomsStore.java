@@ -22,8 +22,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.radixdlt.consensus.VertexMetadata;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
@@ -53,7 +51,6 @@ public class CommittedAtomsStore implements EngineStore<CommittedAtom> {
 	private final AtomIndexer atomIndexer;
 	private final LedgerEntryStore store;
 	private final AtomToBinaryConverter atomToBinaryConverter;
-	private final SystemCounters counters;
 	private final AtomicLong stateVersion = new AtomicLong(0);
 
 	public interface AtomIndexer {
@@ -64,13 +61,11 @@ public class CommittedAtomsStore implements EngineStore<CommittedAtom> {
 	public CommittedAtomsStore(
 		LedgerEntryStore store,
 		AtomToBinaryConverter atomToBinaryConverter,
-		AtomIndexer atomIndexer,
-		SystemCounters counters
+		AtomIndexer atomIndexer
 	) {
 		this.store = store;
 		this.atomToBinaryConverter = atomToBinaryConverter;
 		this.atomIndexer = atomIndexer;
-		this.counters = counters;
 	}
 
 	@Override
@@ -109,7 +104,6 @@ public class CommittedAtomsStore implements EngineStore<CommittedAtom> {
 	// TODO: Move into storeAtom when epoch change logic moved into RadixEngine
 	public void storeVertexMetadata(VertexMetadata vertexMetadata) {
 		stateVersion.set(vertexMetadata.getStateVersion());
-		counters.set(CounterType.LEDGER_STATE_VERSION, vertexMetadata.getStateVersion());
 	}
 
 	// TODO: Move into more approrpriate place

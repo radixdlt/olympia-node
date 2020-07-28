@@ -156,6 +156,7 @@ public final class SyncedRadixEngine implements SyncedStateComputer<CommittedAto
 				log.debug("SYNC_RESPONSE: size: {}", syncResponse.size());
 				for (CommittedAtom committedAtom : syncResponse) {
 					if (committedAtom.getVertexMetadata().getStateVersion() > this.committedAtomsStore.getStateVersion()) {
+						counters.increment(CounterType.LEDGER_SYNC_PROCESSED);
 						this.execute(committedAtom);
 					}
 				}
@@ -220,10 +221,13 @@ public final class SyncedRadixEngine implements SyncedStateComputer<CommittedAto
 		synchronized (lock) {
 			counters.increment(CounterType.LEDGER_PROCESSED);
 
-			if (atom.getVertexMetadata().getStateVersion() != 0
-				&& atom.getVertexMetadata().getStateVersion() <= committedAtomsStore.getStateVersion()) {
+			final long stateVersion = atom.getVertexMetadata().getStateVersion();
+
+			if (stateVersion != 0 && stateVersion <= committedAtomsStore.getStateVersion()) {
 				return;
 			}
+
+			counters.set(CounterType.LEDGER_STATE_VERSION, stateVersion);
 
 			// TODO: HACK
 			// TODO: Remove and move epoch change logic into RadixEngine

@@ -464,7 +464,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		}
 
 		if (!vertex.hasDirectParent()) {
-			counters.increment(CounterType.CONSENSUS_INDIRECT_PARENT);
+			counters.increment(CounterType.BFT_INDIRECT_PARENT);
 		}
 
 		final Vertex vertexToUse;
@@ -522,7 +522,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 
 		for (Vertex committed : path) {
 			CommittedAtom committedAtom = new CommittedAtom(committed.getAtom(), commitMetadata);
-			this.counters.increment(CounterType.CONSENSUS_PROCESSED);
+			this.counters.increment(CounterType.BFT_PROCESSED);
 			syncedStateComputer.execute(committedAtom);
 
 			this.vertexStoreEventSender.sendCommittedVertex(committed);
@@ -600,6 +600,6 @@ public final class VertexStore implements VertexStoreEventProcessor {
 	}
 
 	private void updateVertexStoreSize() {
-		this.counters.set(CounterType.CONSENSUS_VERTEXSTORE_SIZE, this.vertices.size());
+		this.counters.set(CounterType.BFT_VERTEX_STORE_SIZE, this.vertices.size());
 	}
 }
