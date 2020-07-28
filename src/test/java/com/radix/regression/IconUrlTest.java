@@ -32,7 +32,8 @@ public class IconUrlTest {
 			token,
 			"RLAU Token Name",
 			"RLAU Token Description",
-			"https://robohash.org/Radix-DLT-Ltd-RLAU-Token.png"
+			"https://robohash.org/Radix-DLT-Ltd-RLAU-Token.png",
+			null
 		);
 		result0.toObservable().subscribe(System.out::println);
 		result0.blockUntilComplete();
@@ -61,6 +62,7 @@ public class IconUrlTest {
 			"RLAU Token Name",
 			"RLAU Token Description",
 			"https://robohash.org/Radix-DLT-Ltd-RLAU-Token.png",
+			null,
 			BigDecimal.valueOf(1)
 		);
 		result0.toObservable().subscribe(System.out::println);
@@ -90,6 +92,7 @@ public class IconUrlTest {
 			"RLAU Token Name",
 			"RLAU Token Description",
 			"https://robohash.org/Radix-DLT-Ltd-RLAU-Token.png",
+			null,
 			BigDecimal.valueOf(1),
 			TokenUnitConversions.getMinimumGranularity(),
 			TokenSupplyType.FIXED
