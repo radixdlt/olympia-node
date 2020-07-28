@@ -77,15 +77,12 @@ public final class SystemCounters {
 	 * A mirror of RadixCore's CounterType, representing internal system counters
 	 */
 	public enum CounterType {
-		CONSENSUS_INDIRECT_PARENT("consensus.indirect_parent"),
-		CONSENSUS_REJECTED("consensus.rejected"),
-		CONSENSUS_SYNC_SUCCESS("consensus.sync_success"),
-		CONSENSUS_SYNC_EXCEPTION("consensus.sync_exception"),
-		CONSENSUS_TIMEOUT("consensus.timeout"),
-		CONSENSUS_VERTEXSTORE_SIZE("consensus.vertexstore_size"),
-		CONSENSUS_VIEW("consensus.view"),
-		LEDGER_STORED("ledger.state_version"),
-		CONSENSUS_PROCESSED("consensus.processed"),
+		BFT_INDIRECT_PARENT("bft.indirect_parent"),
+		BFT_REJECTED("bft.rejected"),
+		BFT_TIMEOUT("bft.timeout"),
+		BFT_VERTEX_STORE_SIZE("bft.vertex_store_size"),
+		BFT_VIEW("bft.view"),
+		LEDGER_STATE_VERSION("ledger.state_version"),
 		MEMPOOL_COUNT("mempool.count"),
 		MEMPOOL_MAXCOUNT("mempool.maxcount"),
 		MESSAGES_INBOUND_BADSIGNATURE("messages.inbound.badsignature"),
