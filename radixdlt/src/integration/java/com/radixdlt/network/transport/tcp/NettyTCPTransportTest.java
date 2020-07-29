@@ -27,8 +27,11 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.inject.Module;
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.network.messaging.InboundMessage;
 import com.radixdlt.network.transport.SendResult;
 import com.radixdlt.network.transport.TransportControl;
@@ -60,8 +63,12 @@ public class NettyTCPTransportTest {
 
 	@After
 	public void teardown() throws IOException, InterruptedException {
-		transport2.close();
-		transport1.close();
+		if (transport2 != null) {
+			transport2.close();
+		}
+		if (transport1 != null) {
+			transport1.close();
+		}
 		universe = null;
 		Thread.sleep(500);
 	}
@@ -168,7 +175,13 @@ public class NettyTCPTransportTest {
 				return false;
 			}
 		};
-		Injector injector = Guice.createInjector(new TCPTransportModule(config));
+		Module systemCounterModule = new AbstractModule() {
+			@Override
+			protected void configure() {
+				bind(SystemCounters.class).toInstance(mock(SystemCounters.class));
+			}
+		};
+		Injector injector = Guice.createInjector(new TCPTransportModule(config), systemCounterModule);
 		return injector.getInstance(NettyTCPTransport.class);
 	}
 }

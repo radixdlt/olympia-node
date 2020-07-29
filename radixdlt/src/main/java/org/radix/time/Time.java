@@ -20,9 +20,12 @@ package org.radix.time;
 import com.radixdlt.properties.RuntimeProperties;
 
 public final class Time {
-	public static final int MAXIMUM_DRIFT = 30;
 
 	private static NtpService ntpServiceInstance;
+
+	private Time() {
+		throw new IllegalStateException("Can't construct");
+	}
 
 	public static void start(RuntimeProperties properties) {
 		if (properties.get("ntp", false)) {
