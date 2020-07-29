@@ -1,6 +1,7 @@
 # radixdlt-core
 
-radixdlt-core is Radix' core consensus and networking module for the [Radix](https://www.radixdlt.com) Distributed Ledger.
+radixdlt-core is Radix's core consensus and networking module for the [Radix](https://www.radixdlt.com)
+Distributed Ledger. It includes a [HotStuff](https://arxiv.org/abs/1803.05069) BFT implementation.
 
 ## Table of contents
 
@@ -18,7 +19,7 @@ git clone https://github.com/radixdlt/radixdlt-core.git
 
 Checkout the required branch:
 ```
-cd radixdlt-core && git checkout release/1.0-beta.12
+cd radixdlt-core && git checkout release/1.0-beta.13
 ```
 
 Run tests (note that integration tests take several minutes to run):
