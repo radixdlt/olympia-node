@@ -268,35 +268,19 @@ public final class RemoteBFTTest {
 		}
 
 		/**
-		 * Asserts that CONSENSUS_TIMEOUT is zero.
+		 * Asserts that BFT_TIMEOUT is zero.
 		 * @return This builder
 		 */
 		public Builder assertNoTimeouts() {
-			return addCheck(CounterCheck.checkEquals(SystemCounters.CounterType.CONSENSUS_TIMEOUT, 0L));
+			return addCheck(CounterCheck.checkEquals(SystemCounters.CounterType.BFT_TIMEOUT, 0L));
 		}
 
 		/**
-		 * Asserts that CONSENSUS_SYNC_EXCEPTION is zero.
-		 * @return This builder
-		 */
-		public Builder assertNoRejectedProposals() {
-			return addCheck(CounterCheck.checkEquals(SystemCounters.CounterType.CONSENSUS_SYNC_EXCEPTION, 0L));
-		}
-
-		/**
-		 * Asserts that CONSENSUS_SYNC_EXCEPTION is zero.
-		 * @return This builder
-		 */
-		public Builder assertNoSyncExceptions() {
-			return addCheck(CounterCheck.checkEquals(SystemCounters.CounterType.CONSENSUS_SYNC_EXCEPTION, 0L));
-		}
-
-		/**
-		 * Asserts that CONSENSUS_INDIRECT_PARENT is zero.
+		 * Asserts that BFT_INDIRECT_PARENT is zero.
 		 * @return This builder
 		 */
 		public Builder assertAllProposalsHaveDirectParents() {
-			return addCheck(CounterCheck.checkEquals(SystemCounters.CounterType.CONSENSUS_INDIRECT_PARENT, 0L));
+			return addCheck(CounterCheck.checkEquals(SystemCounters.CounterType.BFT_INDIRECT_PARENT, 0L));
 		}
 
 		/**

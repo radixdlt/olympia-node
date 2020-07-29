@@ -23,7 +23,6 @@ import io.reactivex.Single;
 import org.junit.Assert;
 
 import java.util.Objects;
-import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -67,7 +66,7 @@ public class CounterCheck implements RemoteBFTCheck {
 		final String assertionDescription = String.format("%s is %d", counterType.toString(), expectedValue);
 		return new CounterCheck(counters -> Assert.assertEquals(
 			assertionDescription,
-			expectedValue, counters.get(SystemCounters.CounterType.CONSENSUS_REJECTED)),
+			expectedValue, counters.get(SystemCounters.CounterType.BFT_REJECTED)),
 			assertionDescription);
 	}
 }

@@ -9,8 +9,6 @@ public class AssertionChecks {
 	static RemoteBFTTest.Builder slowNodeTestBuilder() {
 		return RemoteBFTTest.builder()
 			.assertAllProposalsHaveDirectParents()
-			.assertNoRejectedProposals()
-			.assertNoSyncExceptions()
 			.assertNoTimeouts()
 			.assertSafety()
 			.assertLiveness(20);
@@ -25,8 +23,6 @@ public class AssertionChecks {
 		return RemoteBFTTest.builder()
 			.assertResponsiveness()
 			.assertAllProposalsHaveDirectParents()
-			.assertNoRejectedProposals()
-			.assertNoSyncExceptions()
 			.assertNoTimeouts()
 			.assertSafety()
 			.assertLiveness();
