@@ -53,8 +53,8 @@ public class OneProposalTimeoutResponsiveTest {
 
 		for (int nodeIndex = 0; nodeIndex < numNodes; ++nodeIndex) {
 			SystemCounters counters = test.getSystemCounters(nodeIndex);
-			long numberOfIndirectParents = counters.get(SystemCounters.CounterType.CONSENSUS_INDIRECT_PARENT);
-			long numberOfTimeouts = counters.get(SystemCounters.CounterType.CONSENSUS_TIMEOUT);
+			long numberOfIndirectParents = counters.get(SystemCounters.CounterType.BFT_INDIRECT_PARENT);
+			long numberOfTimeouts = counters.get(SystemCounters.CounterType.BFT_TIMEOUT);
 			assertThat(numberOfIndirectParents).isEqualTo(requiredIndirectParents);
 			// Not every node will timeout on a dropped proposal, as 2f+1 nodes will timeout and then continue.
 			// The remaining f nodes will sync rather than timing out.

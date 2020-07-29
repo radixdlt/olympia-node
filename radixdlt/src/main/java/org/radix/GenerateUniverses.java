@@ -28,20 +28,23 @@ import com.radixdlt.atommodel.message.MessageParticle;
 import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.atommodel.tokens.TransferrableTokensParticle;
 import com.radixdlt.identifiers.RRI;
+
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.radix.utils.IOUtils;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.utils.Offset;
+import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.keys.Keys;
 import com.radixdlt.properties.RuntimeProperties;
 
+import org.apache.commons.cli.ParseException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.radix.exceptions.ValidationException;
-
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.universe.Universe.UniverseType;
 import com.radixdlt.utils.RadixConstants;
@@ -52,7 +55,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.security.Security;
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -60,16 +62,15 @@ import java.util.concurrent.TimeUnit;
 public final class GenerateUniverses {
 	private static final Logger LOGGER = LogManager.getLogger("GenerateUniverses");
 
-	public static final String RADIX_ICON_URL = "https://assets.radixdlt.com/icons/icon-xrd-32x32.png";
-	public static final String RADIX_URL = "https://www.radixdlt.com";
+	public static final String RADIX_ICON_URL  = "https://assets.radixdlt.com/icons/icon-xrd-32x32.png";
+	public static final String RADIX_TOKEN_URL = "https://www.radixdlt.com/";
 
 	private final Serialization serialization;
 	private final boolean standalone;
 	private final RuntimeProperties properties;
 	private final ECKeyPair universeKey;
-	private final ECKeyPair nodeKey;
 
-	public GenerateUniverses(String[] arguments, boolean standalone, RuntimeProperties properties) throws Exception {
+	public GenerateUniverses(boolean standalone, RuntimeProperties properties) throws IOException, CryptoException {
 		this.standalone = standalone;
 		this.properties = Objects.requireNonNull(properties);
 		this.serialization = DefaultSerialization.getInstance();
@@ -80,26 +81,20 @@ public final class GenerateUniverses {
 
 		String universeKeyPath = this.properties.get("universe.key.path", "universe.ks");
 		universeKey = Keys.readKey(universeKeyPath, "universe", "RADIX_UNIVERSE_KEYSTORE_PASSWORD", "RADIX_UNIVERSE_KEY_PASSWORD");
-
-		// TODO want to be able to specify multiple nodes to get the genesis mass as bootstrapping
-		String nodeKeyPath = this.properties.get("node.key.path", "node.ks");
-		nodeKey = Keys.readKey(nodeKeyPath, "node", "RADIX_NODE_KEYSTORE_PASSWORD", "RADIX_NODE_KEY_PASSWORD");
 	}
 
-	public GenerateUniverses(RuntimeProperties properties) throws Exception {
-		this(new String[] { "universe.key" }, false, properties);
+	public GenerateUniverses(RuntimeProperties properties) throws IOException, CryptoException {
+		this(false, properties);
 	}
 
-	public List<Universe> generateUniverses() throws Exception {
+	public List<Universe> generateUniverses() throws SerializationException, CryptoException {
 		if (standalone) {
-			LOGGER.info("UNIVERSE KEY PRIVATE:  "+Bytes.toHexString(universeKey.getPrivateKey()));
-			LOGGER.info("UNIVERSE KEY PUBLIC:   "+Bytes.toHexString(universeKey.getPublicKey().getBytes()));
-			LOGGER.info("NODE KEY PRIVATE:  "+Bytes.toHexString(nodeKey.getPrivateKey()));
-			LOGGER.info("NODE KEY PUBLIC:   "+Bytes.toHexString(nodeKey.getPublicKey().getBytes()));
+			LOGGER.info("UNIVERSE KEY PUBLIC: {}", () -> Bytes.toHexString(universeKey.getPublicKey().getBytes()));
 		}
 
 		List<Universe> universes = new ArrayList<>();
 
+		// FIXME: Planck concept to be removed
 		int devPlanckPeriodSeconds = this.properties.get("dev.planck", 60);
 		long devPlanckPeriodMillis = TimeUnit.SECONDS.toMillis(devPlanckPeriodSeconds);
 
@@ -111,13 +106,20 @@ public final class GenerateUniverses {
 
 		universes.add(buildUniverse(10000, "Radix Mainnet", "The Radix public Universe", UniverseType.PRODUCTION, universeTimestampMillis, prodPlanckPeriodMillis));
 		universes.add(buildUniverse(20000, "Radix Testnet", "The Radix test Universe", UniverseType.TEST, universeTimestampMillis, devPlanckPeriodMillis));
-		universes.add(buildUniverse(30000, "Radix Devnet", "The Radix development Universe", UniverseType.DEVELOPMENT, universeTimestampMillis, devPlanckPeriodMillis));
+		universes.add(buildUniverse(30000, "Radix Devnet",  "The Radix development Universe", UniverseType.DEVELOPMENT, universeTimestampMillis, devPlanckPeriodMillis));
 
 		return universes;
 	}
 
-	private Universe buildUniverse(int port, String name, String description, UniverseType type, long timestamp, long planckPeriod) throws Exception {
-		LOGGER.info("------------------ Starting of Universe: " + type.toString() + " ------------------");
+	private Universe buildUniverse(
+		int port,
+		String name,
+		String description,
+		UniverseType type,
+		long timestamp,
+		long planckPeriod
+	) throws SerializationException, CryptoException {
+		LOGGER.info("------------------ Start of Universe: {} ------------------", type);
 		byte universeMagic = (byte) (Universe.computeMagic(universeKey.getPublicKey(), timestamp, port, type, planckPeriod) & 0xFF);
 		Atom universeAtom = createGenesisAtom(universeMagic, timestamp, planckPeriod);
 
@@ -134,18 +136,18 @@ public final class GenerateUniverses {
 		universe.sign(universeKey);
 
 		if (!universe.verify(universeKey.getPublicKey())) {
-			throw new ValidationException("Signature failed for " + name + " universe");
+			throw new IllegalStateException("Signature verification failed for " + name + " universe");
 		}
 		if (standalone) {
-			LOGGER.info(serialization.toJsonObject(universe, Output.API).toString(4));
+			LOGGER.info("{}", () -> serialization.toJsonObject(universe, Output.API).toString(4));
 			byte[] universeBytes = serialization.toDson(universe, Output.WIRE);
-			LOGGER.info("UNIVERSE - " + type + ": " + Bytes.toBase64String(universeBytes));
+			LOGGER.info("UNIVERSE - {}: {}", () -> type, () -> Bytes.toBase64String(universeBytes));
 		}
-		LOGGER.info("------------------ End of Universe: " + type.toString() + " ------------------");
+		LOGGER.info("------------------ End of Universe: {} ------------------", type);
 		return universe;
 	}
 
-	private Atom createGenesisAtom(byte magic, long timestamp, long planck) throws Exception {
+	private Atom createGenesisAtom(byte magic, long timestamp, long planck) throws CryptoException, SerializationException {
 		RadixAddress universeAddress = new RadixAddress(magic, universeKey.getPublicKey());
 		UInt256 genesisAmount = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 + 9); // 10^9 = 1,000,000,000 pieces of eight, please
 		FixedSupplyTokenDefinitionParticle xrdDefinition = createTokenDefinition(magic, "XRD", "Rads", "Radix Native Tokens", genesisAmount);
@@ -165,16 +167,13 @@ public final class GenerateUniverses {
 		if (standalone) {
 			byte[] sigBytes = serialization.toDson(genesisAtom.getSignature(universeKey.euid()), Output.WIRE);
 			byte[] transactionBytes = serialization.toDson(genesisAtom, Output.HASH);
-			LOGGER.info("GENESIS TRANSACTION SIGNATURE " + universeKey.euid() + ": " + Bytes.toHexString(sigBytes));
-			LOGGER.info("GENESIS TRANSACTION HID: " + genesisAtom.getHash().euid());
-			LOGGER.info("GENESIS TRANSACTION HASH: " + genesisAtom.getHash().toString());
-			LOGGER.info("GENESIS TRANSACTION HASH DSON: " + Base64.getEncoder().encodeToString(transactionBytes));
+			LOGGER.info("GENESIS ATOM SIGNATURE {}: {}", universeKey::euid, () -> Bytes.toHexString(sigBytes));
+			LOGGER.info("GENESIS ATOM HASH: {}", genesisAtom.getHash());
+			LOGGER.info("GENESIS ATOM DSON: {}", () -> Bytes.toBase64String(transactionBytes));
 		}
 
 		if (!genesisAtom.verify(universeKey.getPublicKey())) {
-			throw new IllegalStateException(
-				"Signature generation failed - GENESIS TRANSACTION HASH: " + genesisAtom.getHash().toString()
-			);
+			throw new IllegalStateException("Signature verification failed - GENESIS TRANSACTION HASH: " + genesisAtom.getHash());
 		}
 
 		return genesisAtom;
@@ -198,7 +197,7 @@ public final class GenerateUniverses {
 			address,
 			amount,
 			UInt256.ONE,
-			RRI.of(address, TokenDefinitionUtils.getNativeTokenShortCode()),
+			RRI.of(address, symbol),
 			Universe.computePlanck(timestamp, planck, Offset.NONE),
 			ImmutableMap.of()
 		);
@@ -221,14 +220,14 @@ public final class GenerateUniverses {
 			supply,
 			UInt256.ONE,
 			RADIX_ICON_URL,
-			RADIX_URL
+			RADIX_TOKEN_URL
 		);
 	}
 
-	public static void main(String[] arguments) throws Exception {
+	public static void main(String[] arguments) throws IOException, CryptoException {
 		RuntimeProperties properties = loadProperties(arguments);
 
-		GenerateUniverses generateUniverses = new GenerateUniverses(arguments, true, properties);
+		GenerateUniverses generateUniverses = new GenerateUniverses(true, properties);
 		generateUniverses.generateUniverses();
 	}
 
@@ -239,10 +238,8 @@ public final class GenerateUniverses {
 				runtimeConfigurationJSON = new JSONObject(IOUtils.toString(is));
 			}
 			return new RuntimeProperties(runtimeConfigurationJSON, arguments);
-		} catch (Exception ex) {
+		} catch (JSONException | ParseException ex) {
 			throw new IOException("while loading runtime properties", ex);
 		}
 	}
-
-
 }

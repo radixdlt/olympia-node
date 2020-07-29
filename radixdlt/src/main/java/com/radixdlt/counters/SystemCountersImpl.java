@@ -29,6 +29,7 @@ import com.google.common.collect.Maps;
  */
 public final class SystemCountersImpl implements SystemCounters {
 	private final EnumMap<CounterType, AtomicLong> counters;
+	private final long start;
 	private final String since;
 
 	public SystemCountersImpl() {
@@ -41,6 +42,7 @@ public final class SystemCountersImpl implements SystemCounters {
 		for (CounterType ct : CounterType.values()) {
 			this.counters.put(ct, new AtomicLong(0));
 		}
+		this.start = startTime;
 		this.since = Instant.ofEpochMilli(startTime).toString();
 	}
 
@@ -71,7 +73,10 @@ public final class SystemCountersImpl implements SystemCounters {
 			long value = get(counter);
 			addValue(output, makePath(counter), value);
 		}
-		output.put("since", since);
+		@SuppressWarnings("unchecked")
+		Map<String, Object> time = (Map<String, Object>) output.computeIfAbsent("time", k -> Maps.newTreeMap());
+		time.put("since", since);
+		time.put("duration", System.currentTimeMillis() - this.start);
 		return output;
 	}
 

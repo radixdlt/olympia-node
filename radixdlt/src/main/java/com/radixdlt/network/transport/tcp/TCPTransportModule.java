@@ -20,8 +20,10 @@ package com.radixdlt.network.transport.tcp;
 import java.util.Objects;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
 import com.google.inject.multibindings.Multibinder;
 import com.google.inject.name.Names;
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.network.transport.StaticTransportMetadata;
 import com.radixdlt.network.transport.Transport;
 import com.radixdlt.network.transport.TransportMetadata;
@@ -54,11 +56,11 @@ public class TCPTransportModule extends AbstractModule {
 		bind(TCPConfiguration.class).toInstance(this.config);
 		bind(TransportMetadata.class).annotatedWith(Names.named("local")).toInstance(StaticTransportMetadata.empty()); // Use defaults
 		bind(TCPTransportOutboundConnectionFactory.class).toProvider(this::tcpTransportOutboundConnectionFactoryProvider);
-		bind(TCPTransportControlFactory.class).toProvider(this::tcpTransportControlFactoryProvider);
 	}
 
-	private TCPTransportControlFactory tcpTransportControlFactoryProvider() {
-		return TCPTransportControlImpl::new;
+	@Provides
+	private TCPTransportControlFactory tcpTransportControlFactoryProvider(SystemCounters counters) {
+		return (conf, outboundFactory, transport) -> new TCPTransportControlImpl(conf, outboundFactory, transport, counters);
 	}
 
 	private TCPTransportOutboundConnectionFactory tcpTransportOutboundConnectionFactoryProvider() {

@@ -39,6 +39,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.sync.SyncedRadixEngine.CommittedStateSyncSender;
 import com.radixdlt.consensus.sync.SyncedRadixEngine.SyncedRadixEngineEventSender;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
@@ -72,6 +73,7 @@ public class SyncedRadixEngineTest {
 	private SyncedRadixEngineEventSender eventSender;
 	private Function<Long, BFTValidatorSet> validatorSetMapping;
 	private View epochHighView;
+	private SystemCounters counters;
 
 	@Before
 	public void setup() {
@@ -86,6 +88,7 @@ public class SyncedRadixEngineTest {
 		this.committedStateSyncSender = mock(CommittedStateSyncSender.class);
 		this.epochChangeSender = mock(EpochChangeSender.class);
 		this.eventSender = mock(SyncedRadixEngineEventSender.class);
+		this.counters = mock(SystemCounters.class);
 		// No issues with type checking for mock
 		@SuppressWarnings("unchecked")
 		Function<Long, BFTValidatorSet> vsm = mock(Function.class);
@@ -101,7 +104,8 @@ public class SyncedRadixEngineTest {
 			validatorSetMapping,
 			epochHighView,
 			addressBook,
-			stateSyncNetwork
+			stateSyncNetwork,
+			counters
 		);
 	}
 

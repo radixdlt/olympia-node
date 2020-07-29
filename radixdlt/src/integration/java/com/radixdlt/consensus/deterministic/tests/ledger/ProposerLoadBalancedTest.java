@@ -58,7 +58,7 @@ public class ProposerLoadBalancedTest {
 
 		return IntStream.range(0, numNodes)
 			.mapToObj(test::getSystemCounters)
-			.map(counters -> counters.get(CounterType.CONSENSUS_PROPOSALS_MADE))
+			.map(counters -> counters.get(CounterType.BFT_PROPOSALS_MADE))
 			.collect(ImmutableList.toImmutableList());
 	}
 

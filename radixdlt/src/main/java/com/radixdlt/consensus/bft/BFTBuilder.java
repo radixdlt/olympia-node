@@ -134,7 +134,7 @@ public final class BFTBuilder {
 
 	public BFTEventProcessor build() {
 		final ProposalGenerator proposalGenerator = new MempoolProposalGenerator(vertexStore, mempool);
-		final SafetyRules safetyRules = new SafetyRules(self, SafetyState.initialState(), hasher, signer);
+		final SafetyRules safetyRules = new SafetyRules(self, SafetyState.initialState(), hasher, countingSigner(counters, signer));
 		// PendingVotes needs a hasher that produces unique values, as it indexes by hash
 		final PendingVotes pendingVotes = new PendingVotes(new DefaultHasher());
 
@@ -152,7 +152,7 @@ public final class BFTBuilder {
 			counters
 		);
 
-		SyncQueues syncQueues = new SyncQueues(counters);
+		SyncQueues syncQueues = new SyncQueues();
 
 		BFTEventPreprocessor preprocessor = new BFTEventPreprocessor(
 			self,
@@ -172,7 +172,21 @@ public final class BFTBuilder {
 			validatorSet,
 			preprocessor,
 			hasher,
-			verifier
+			countingVerifier(counters, verifier)
 		);
+	}
+
+	private static HashVerifier countingVerifier(SystemCounters counters, HashVerifier verifier) {
+		return (pubKey, hash, sig) -> {
+			counters.increment(SystemCounters.CounterType.SIGNATURES_VERIFIED);
+			return verifier.verify(pubKey, hash, sig);
+		};
+	}
+
+	private static HashSigner countingSigner(SystemCounters counters, HashSigner signer) {
+		return hash -> {
+			counters.increment(SystemCounters.CounterType.SIGNATURES_SIGNED);
+			return signer.sign(hash);
+		};
 	}
 }

@@ -18,7 +18,6 @@
 package com.radixdlt.consensus;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableList.Builder;
 import com.google.common.collect.Streams;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
@@ -33,9 +32,9 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Random;
+import java.util.Objects;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.radix.events.EventListener;
 import org.radix.events.Events;
@@ -47,16 +46,19 @@ import org.radix.universe.system.RadixSystem;
  */
 public class AddressBookValidatorSetProvider {
 	private final Single<ImmutableList<BFTValidator>> validatorList;
+	private final BiFunction<Long, ImmutableList<BFTValidator>, BFTValidatorSet> nextValidatorSetFunction;
 
 	public AddressBookValidatorSetProvider(
 		ECPublicKey selfKey,
 		AddressBook addressBook,
-		int fixedNodeCount
+		int fixedNodeCount,
+		BiFunction<Long, ImmutableList<BFTValidator>, BFTValidatorSet> nextValidatorSetFunction
 	) {
 		if (fixedNodeCount <= 0) {
 			throw new IllegalArgumentException("Quorum size must be > 0 but was " + fixedNodeCount);
 		}
 
+		this.nextValidatorSetFunction = Objects.requireNonNull(nextValidatorSetFunction);
 		this.validatorList = Observable.<List<Peer>>create(emitter -> {
 			emitter.onNext(addressBook.peers().collect(Collectors.toList()));
 			// Race condition here but ignore as this is a temporary class
@@ -83,24 +85,7 @@ public class AddressBookValidatorSetProvider {
 	public BFTValidatorSet getValidatorSet(long epoch) {
 		ImmutableList<BFTValidator> validators = validatorList.blockingGet();
 
-		Builder<BFTValidator> validatorSetBuilder = ImmutableList.builder();
-		Random random = new Random(epoch);
-		List<Integer> indices = IntStream.range(0, validators.size()).boxed().collect(Collectors.toList());
-		// Temporary mechanism to get some deterministic random set of validators
-		for (long i = 0; i < epoch; i++) {
-			random.nextInt(validators.size());
-		}
-		int randInt = random.nextInt(validators.size());
-		int validatorSetSize = randInt + 1;
+		return this.nextValidatorSetFunction.apply(epoch, validators);
 
-		for (int i = 0; i < validatorSetSize; i++) {
-			int index = indices.remove(random.nextInt(indices.size()));
-			BFTValidator validator = validators.get(index);
-			validatorSetBuilder.add(validator);
-		}
-
-		ImmutableList<BFTValidator> validatorList = validatorSetBuilder.build();
-
-		return BFTValidatorSet.from(validatorList);
 	}
 }

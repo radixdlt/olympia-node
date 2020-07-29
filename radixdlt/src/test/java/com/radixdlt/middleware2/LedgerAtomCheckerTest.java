@@ -48,11 +48,9 @@ public class LedgerAtomCheckerTest {
 		this.target = mock(Hash.class);
 		this.checker = new LedgerAtomChecker(
 			() -> universe,
-			() -> 0,
 			powFeeComputer,
 			target,
-			false,
-			30
+			false
 		);
 	}
 

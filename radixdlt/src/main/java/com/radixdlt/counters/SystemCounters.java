@@ -25,24 +25,25 @@ import java.util.Map;
 public interface SystemCounters {
 
 	enum CounterType {
-		CONSENSUS_EVENTS_QUEUED_INITIAL("consensus.events_queued_initial"),
-		CONSENSUS_EVENTS_QUEUED_SYNC("consensus.events_queued_sync"),
-		CONSENSUS_INDIRECT_PARENT("consensus.indirect_parent"),
-		CONSENSUS_PROPOSALS_MADE("consensus.proposals_made"),
-		CONSENSUS_REJECTED("consensus.rejected"),
-		CONSENSUS_SYNC_EXCEPTION("consensus.sync_exception"),
-		CONSENSUS_SYNC_SUCCESS("consensus.sync_success"),
-		CONSENSUS_TIMEOUT("consensus.timeout"),
-		CONSENSUS_TIMEOUT_VIEW("consensus.timeout_view"),
-		CONSENSUS_VERTEXSTORE_SIZE("consensus.vertexstore_size"),
-		CONSENSUS_VIEW("consensus.view"),
-		CONSENSUS_PROCESSED("consensus.processed"),
-		// TODO: Move some CONSENSUS epoch related counters into epoch
+		BFT_PROPOSALS_MADE("bft.proposals_made"),
+		BFT_INDIRECT_PARENT("bft.indirect_parent"),
+		BFT_REJECTED("bft.rejected"),
+		BFT_TIMEOUT("bft.timeout"),
+		BFT_TIMEOUT_VIEW("bft.timeout_view"),
+		BFT_VERTEX_STORE_SIZE("bft.vertex_store_size"),
+		BFT_VIEW("bft.view"),
+		BFT_PROCESSED("bft.processed"),
+
 		EPOCH_MANAGER_EPOCH("epoch_manager.epoch"),
 		EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS("epoch_manager.queued_consensus_events"),
+
+		LEDGER_SYNC_PROCESSED("ledger.sync_processed"),
+		LEDGER_PROCESSED("ledger.processed"), // LEDGER_PROCESSED = BFT_PROCESSED + LEDGER_SYNC_PROCESSED
 		LEDGER_STATE_VERSION("ledger.state_version"),
+
 		MEMPOOL_COUNT("mempool.count"),
 		MEMPOOL_MAXCOUNT("mempool.maxcount"),
+
 		MESSAGES_INBOUND_BADSIGNATURE("messages.inbound.badsignature"),
 		MESSAGES_INBOUND_DISCARDED("messages.inbound.discarded"),
 		MESSAGES_INBOUND_PENDING("messages.inbound.pending"),
@@ -51,7 +52,13 @@ public interface SystemCounters {
 		MESSAGES_OUTBOUND_ABORTED("messages.outbound.aborted"),
 		MESSAGES_OUTBOUND_PENDING("messages.outbound.pending"),
 		MESSAGES_OUTBOUND_PROCESSED("messages.outbound.processed"),
-		MESSAGES_OUTBOUND_SENT("messages.outbound.sent");
+		MESSAGES_OUTBOUND_SENT("messages.outbound.sent"),
+		NETWORKING_TCP_OPENED("networking.tcp.opened"),
+		NETWORKING_TCP_CLOSED("networking.tcp.closed"),
+		NETWORKING_SENT_BYTES("networking.sent_bytes"),
+		NETWORKING_RECEIVED_BYTES("networking.received_bytes"),
+		SIGNATURES_SIGNED("signatures.signed"),
+		SIGNATURES_VERIFIED("signatures.verified");
 
 		private final String jsonPath;
 

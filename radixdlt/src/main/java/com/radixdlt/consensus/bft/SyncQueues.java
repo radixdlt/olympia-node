@@ -18,14 +18,11 @@
 package com.radixdlt.consensus.bft;
 
 import com.radixdlt.consensus.RequiresSyncConsensusEvent;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hash;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
-import java.util.Objects;
 import java.util.StringJoiner;
 import javax.annotation.Nullable;
 
@@ -40,11 +37,8 @@ import javax.annotation.Nullable;
 public final class SyncQueues {
 	private final Map<BFTNode, SyncQueue> queues;
 
-	private final SystemCounters counters;
-
-	SyncQueues(SystemCounters counters) {
+	SyncQueues() {
 		this.queues = new HashMap<>();
-		this.counters = Objects.requireNonNull(counters);
 	}
 
 	class SyncQueue {
@@ -86,14 +80,11 @@ public final class SyncQueues {
 			if (queue.isEmpty()) {
 				return true;
 			}
-
-			counters.increment(CounterType.CONSENSUS_EVENTS_QUEUED_INITIAL);
 			queue.addLast(event);
 			return false;
 		}
 
 		public void add(RequiresSyncConsensusEvent event) {
-			counters.increment(CounterType.CONSENSUS_EVENTS_QUEUED_SYNC);
 			queue.addLast(event);
 		}
 

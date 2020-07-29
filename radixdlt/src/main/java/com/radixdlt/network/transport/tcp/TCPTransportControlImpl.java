@@ -35,6 +35,8 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.RateLimiter;
+import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.network.transport.TransportMetadata;
 import com.radixdlt.network.transport.TransportOutboundConnection;
 
@@ -68,9 +70,11 @@ final class TCPTransportControlImpl implements TCPTransportControl {
 		private final Map<String, LinkedList<SocketChannel>> channelMap = Maps.newHashMap();
 		private final Map<String, CompletableFuture<TransportOutboundConnection>> pendingMap = Maps.newHashMap();
 		private final int maxChannelCount;
+		private final SystemCounters counters;
 
-		TCPConnectionHandlerChannelInbound(int maxChannelCount) {
+		TCPConnectionHandlerChannelInbound(int maxChannelCount, SystemCounters counters) {
 			this.maxChannelCount = maxChannelCount;
+			this.counters = counters;
 		}
 
 		@VisibleForTesting
@@ -92,6 +96,7 @@ final class TCPTransportControlImpl implements TCPTransportControl {
 		public void channelActive(ChannelHandlerContext ctx) throws Exception {
 			Channel ch = ctx.channel();
 			if (ch instanceof SocketChannel) {
+				this.counters.increment(CounterType.NETWORKING_TCP_OPENED);
 				if (this.channelCount.getAndIncrement() < this.maxChannelCount) {
 					SocketChannel sch = (SocketChannel) ch;
 					InetSocketAddress remote = sch.remoteAddress();
@@ -120,6 +125,7 @@ final class TCPTransportControlImpl implements TCPTransportControl {
 		public void channelInactive(ChannelHandlerContext ctx) throws Exception {
 			Channel ch = ctx.channel();
 			if (ch instanceof SocketChannel) {
+				this.counters.increment(CounterType.NETWORKING_TCP_CLOSED);
 				this.channelCount.decrementAndGet();
 				synchronized (lock) {
 					cleanChannels("Remove");
@@ -252,10 +258,15 @@ final class TCPTransportControlImpl implements TCPTransportControl {
 	private final TCPTransportOutboundConnectionFactory outboundFactory;
 	private final NettyTCPTransport transport;
 
-	TCPTransportControlImpl(TCPConfiguration config, TCPTransportOutboundConnectionFactory outboundFactory, NettyTCPTransport transport) {
+	TCPTransportControlImpl(
+		TCPConfiguration config,
+		TCPTransportOutboundConnectionFactory outboundFactory,
+		NettyTCPTransport transport,
+		SystemCounters counters
+	) {
 		this.outboundFactory = outboundFactory;
 		this.transport = transport;
-		this.handler = new TCPConnectionHandlerChannelInbound(config.maxChannelCount(1024));
+		this.handler = new TCPConnectionHandlerChannelInbound(config.maxChannelCount(1024), counters);
 	}
 
 	@Override

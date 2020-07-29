@@ -26,7 +26,6 @@ import static org.powermock.api.mockito.PowerMockito.when;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.middleware2.CommittedAtom;
@@ -46,16 +45,14 @@ public class CommittedAtomsStoreTest {
 	private LedgerEntryStore store;
 	private AtomToBinaryConverter atomToBinaryConverter;
 	private AtomIndexer atomIndexer;
-	private SystemCounters counters;
 
 	@Before
 	public void setUp() {
 		this.store = mock(LedgerEntryStore.class);
 		this.atomToBinaryConverter = mock(AtomToBinaryConverter.class);
 		this.atomIndexer = mock(AtomIndexer.class);
-		this.counters = mock(SystemCounters.class);
 
-		this.committedAtomsStore = new CommittedAtomsStore(store, atomToBinaryConverter, atomIndexer, counters);
+		this.committedAtomsStore = new CommittedAtomsStore(store, atomToBinaryConverter, atomIndexer);
 	}
 
 	@Test
