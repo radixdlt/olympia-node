@@ -23,7 +23,6 @@ import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.AtomChecker;
 import com.radixdlt.universe.Universe;
 import java.util.Objects;
-import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
 /**
@@ -33,26 +32,20 @@ import java.util.function.Supplier;
 public class LedgerAtomChecker implements AtomChecker<LedgerAtom> {
 	private final boolean skipAtomFeeCheck;
 	private final Supplier<Universe> universeSupplier;
-	private final LongSupplier timestampSupplier;
 	private final PowFeeComputer powFeeComputer;
 
-	private final int maximumDrift;
 	private final Hash target;
 
 	public LedgerAtomChecker(
 		Supplier<Universe> universeSupplier,
-		LongSupplier timestampSupplier,
 		PowFeeComputer powFeeComputer,
 		Hash target,
-		boolean skipAtomFeeCheck,
-		int maximumDrift
+		boolean skipAtomFeeCheck
 	) {
 		this.universeSupplier = universeSupplier;
-		this.timestampSupplier = timestampSupplier;
 		this.powFeeComputer = powFeeComputer;
 		this.target = target;
 		this.skipAtomFeeCheck = skipAtomFeeCheck;
-		this.maximumDrift = maximumDrift;
 	}
 
 	@Override

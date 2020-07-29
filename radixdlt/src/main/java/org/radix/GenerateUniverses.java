@@ -62,7 +62,8 @@ import java.util.concurrent.TimeUnit;
 public final class GenerateUniverses {
 	private static final Logger LOGGER = LogManager.getLogger("GenerateUniverses");
 
-	public static final String RADIX_ICON_URL = "https://assets.radixdlt.com/icons/icon-xrd-32x32.png";
+	public static final String RADIX_ICON_URL  = "https://assets.radixdlt.com/icons/icon-xrd-32x32.png";
+	public static final String RADIX_TOKEN_URL = "https://www.radixdlt.com/";
 
 	private final Serialization serialization;
 	private final boolean standalone;
@@ -218,7 +219,8 @@ public final class GenerateUniverses {
 			description,
 			supply,
 			UInt256.ONE,
-			RADIX_ICON_URL
+			RADIX_ICON_URL,
+			RADIX_TOKEN_URL
 		);
 	}
 

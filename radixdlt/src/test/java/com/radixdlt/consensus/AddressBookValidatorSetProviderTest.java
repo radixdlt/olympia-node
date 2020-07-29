@@ -43,6 +43,8 @@ public class AddressBookValidatorSetProviderTest {
 		ECPublicKey self = mock(ECPublicKey.class);
 		when(self.euid()).thenReturn(EUID.ONE);
 		AddressBook addressBook = mock(AddressBook.class);
+		// Type safety OK with mock
+		@SuppressWarnings("unchecked")
 		BiFunction<Long, ImmutableList<BFTValidator>, BFTValidatorSet> selector = mock(BiFunction.class);
 		AddressBookValidatorSetProvider validatorSetProvider = new AddressBookValidatorSetProvider(
 			self,

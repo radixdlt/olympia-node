@@ -50,8 +50,6 @@ import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.universe.Universe;
 import java.util.function.Consumer;
-import org.radix.time.Time;
-
 import java.util.function.UnaryOperator;
 
 public class MiddlewareModule extends AbstractModule {
@@ -160,11 +158,9 @@ public class MiddlewareModule extends AbstractModule {
 		final LedgerAtomChecker ledgerAtomChecker =
 			new LedgerAtomChecker(
 				() -> universe,
-				Time::currentTimestamp,
 				powFeeComputer,
 				DEFAULT_FEE_TARGET,
-				skipAtomFeeCheck,
-				Time.MAXIMUM_DRIFT
+				skipAtomFeeCheck
 			);
 
 		return new RadixEngine<>(

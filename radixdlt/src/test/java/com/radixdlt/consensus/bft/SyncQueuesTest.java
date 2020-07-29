@@ -25,7 +25,6 @@ import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.RequiresSyncConsensusEvent;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.SyncQueues.SyncQueue;
-import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.Hash;
 import org.junit.Test;
 
@@ -33,7 +32,7 @@ public class SyncQueuesTest {
 	@Test
 	public void when_check_or_add_on_empty_queue__then_should_return_true() {
 		BFTNode node = mock(BFTNode.class);
-		SyncQueues syncQueues = new SyncQueues(mock(SystemCounters.class));
+		SyncQueues syncQueues = new SyncQueues();
 
 		RequiresSyncConsensusEvent event = mock(RequiresSyncConsensusEvent.class);
 		when(event.getAuthor()).thenReturn(node);
@@ -44,7 +43,7 @@ public class SyncQueuesTest {
 	@Test
 	public void when_add_then_check_or_add_on_same_author__then_should_return_false() {
 		BFTNode node = mock(BFTNode.class);
-		SyncQueues syncQueues = new SyncQueues(mock(SystemCounters.class));
+		SyncQueues syncQueues = new SyncQueues();
 
 		RequiresSyncConsensusEvent event0 = mock(RequiresSyncConsensusEvent.class);
 		when(event0.getAuthor()).thenReturn(node);
@@ -57,7 +56,7 @@ public class SyncQueuesTest {
 	@Test
 	public void when_add__then_peek_on_hash_should_return_event() {
 		BFTNode node = mock(BFTNode.class);
-		SyncQueues syncQueues = new SyncQueues(mock(SystemCounters.class));
+		SyncQueues syncQueues = new SyncQueues();
 
 		RequiresSyncConsensusEvent event0 = mock(RequiresSyncConsensusEvent.class);
 		Hash vertexId = mock(Hash.class);
