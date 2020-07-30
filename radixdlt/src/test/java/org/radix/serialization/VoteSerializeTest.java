@@ -38,6 +38,6 @@ public class VoteSerializeTest extends SerializeObject<Vote> {
 		VertexMetadata parent = new VertexMetadata(0, View.of(1234567890L), Hash.random(), 0, false);
 		VoteData voteData = new VoteData(vertexMetadata, parent, null);
 		BFTNode author = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
-		return new Vote(author, voteData, null);
+		return new Vote(author, voteData, null, 0);
 	}
 }

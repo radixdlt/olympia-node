@@ -46,6 +46,7 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -269,7 +270,7 @@ public class BFTEventReducerTest {
 
 		when(pacemaker.getCurrentView()).thenReturn(currentView);
 		Vote vote = mock(Vote.class);
-		doReturn(vote).when(safetyRules).voteFor(eq(proposedVertex), any());
+		doReturn(vote).when(safetyRules).voteFor(eq(proposedVertex), any(), anyLong());
 		when(pacemaker.processQC(eq(qcView))).thenReturn(Optional.empty());
 		when(pacemaker.processQC(eq(currentView))).thenReturn(Optional.of(View.of(124)));
 		when(vertexStore.getHighestQC()).thenReturn(mock(QuorumCertificate.class));
@@ -305,7 +306,7 @@ public class BFTEventReducerTest {
 
 		when(pacemaker.getCurrentView()).thenReturn(currentView);
 		Vote vote = mock(Vote.class);
-		doReturn(vote).when(safetyRules).voteFor(eq(proposedVertex), any());
+		doReturn(vote).when(safetyRules).voteFor(eq(proposedVertex), any(), anyLong());
 		when(pacemaker.processQC(eq(qcView))).thenReturn(Optional.empty());
 		when(pacemaker.processQC(eq(currentView))).thenReturn(Optional.of(View.of(124)));
 
@@ -339,7 +340,7 @@ public class BFTEventReducerTest {
 
 		when(pacemaker.getCurrentView()).thenReturn(currentView);
 		Vote vote = mock(Vote.class);
-		doReturn(vote).when(safetyRules).voteFor(eq(proposedVertex), any());
+		doReturn(vote).when(safetyRules).voteFor(eq(proposedVertex), any(), anyLong());
 		when(pacemaker.processQC(eq(qcView))).thenReturn(Optional.empty());
 		when(pacemaker.processQC(eq(currentView))).thenReturn(Optional.of(View.of(124)));
 

@@ -31,6 +31,7 @@ public final class SystemCountersImpl implements SystemCounters {
 	private final EnumMap<CounterType, AtomicLong> counters;
 	private final long start;
 	private final String since;
+	private final Object lock = new Object();
 
 	public SystemCountersImpl() {
 		this(System.currentTimeMillis());
@@ -67,11 +68,24 @@ public final class SystemCountersImpl implements SystemCounters {
 	}
 
 	@Override
+	public void setAll(Map<CounterType, Long> newValues) {
+		// Note that this only prevents read tearing
+		// Lost updates are still possible
+		synchronized (this.lock) {
+			for (Map.Entry<CounterType, Long> e : newValues.entrySet()) {
+				this.counters.get(e.getKey()).set(e.getValue());
+			}
+		}
+	}
+
+	@Override
 	public Map<String, Object> toMap() {
 		Map<String, Object> output = Maps.newTreeMap();
-		for (CounterType counter : CounterType.values()) {
-			long value = get(counter);
-			addValue(output, makePath(counter), value);
+		synchronized (this.lock) {
+			for (CounterType counter : CounterType.values()) {
+				long value = get(counter);
+				addValue(output, makePath(counter), value);
+			}
 		}
 		@SuppressWarnings("unchecked")
 		Map<String, Object> time = (Map<String, Object>) output.computeIfAbsent("time", k -> Maps.newTreeMap());

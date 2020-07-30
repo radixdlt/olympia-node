@@ -35,6 +35,7 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hash;
 
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -81,6 +82,47 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		void sendVote(Vote vote, BFTNode leader);
 	}
 
+	static class RTTStatistics {
+		private double minRTT = Double.MAX_VALUE;
+		private double maxRTT = 0.0;
+		private double sumRTT = 0.0;
+		private double sumSquareRTT = 0.0;
+		private long countRTT = 0L;
+
+		double min() {
+			return this.minRTT;
+		}
+
+		double max() {
+			return this.maxRTT;
+		}
+
+		double mean() {
+			return this.sumRTT / this.countRTT;
+		}
+
+		double sigma() {
+			return Math.sqrt(this.sumSquareRTT / this.countRTT - Math.pow(mean(), 2.0));
+		}
+
+		void update(double duration) {
+			this.minRTT = Math.min(this.minRTT, duration);
+			this.maxRTT = Math.max(this.maxRTT, duration);
+			this.sumRTT += duration;
+			this.sumSquareRTT += Math.pow(duration, 2.0);
+			this.countRTT += 1;
+		}
+
+		EnumMap<CounterType, Long> toMap() {
+			EnumMap<CounterType, Long> values = new EnumMap<>(CounterType.class);
+			values.put(CounterType.BFT_VOTE_RTT_MAX,  Math.round(this.max()));
+			values.put(CounterType.BFT_VOTE_RTT_MEAN, Math.round(this.mean()));
+			values.put(CounterType.BFT_VOTE_RTT_MIN,  Math.round(this.min()));
+			values.put(CounterType.BFT_VOTE_RTT_SIGMA, Math.round(this.sigma()));
+			return values;
+		}
+	}
+
 	private final BFTNode self;
 	private final VertexStore vertexStore;
 	private final PendingVotes pendingVotes;
@@ -93,6 +135,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	private final BFTValidatorSet validatorSet;
 	private final SystemCounters counters;
 	private final Map<Hash, QuorumCertificate> unsyncedQCs = new HashMap<>();
+	private final RTTStatistics rttStatistics = new RTTStatistics();
 	private boolean synchedLog = false;
 
 	public interface EndOfEpochSender {
@@ -168,6 +211,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 
 	@Override
 	public void processVote(Vote vote) {
+		updateRttStatistics(vote);
 		log.trace("{}: VOTE: Processing {}", this.self::getSimpleName, () -> vote);
 		// accumulate votes into QCs in store
 		this.pendingVotes.insertVote(vote, this.validatorSet).ifPresent(qc -> {
@@ -200,7 +244,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		this.pacemaker.processNewView(newView, validatorSet).ifPresent(view -> {
 			// Hotstuff's Event-Driven OnBeat
 			final Vertex proposedVertex = proposalGenerator.generateProposal(view);
-			final Proposal proposal = safetyRules.signProposal(proposedVertex, this.vertexStore.getHighestCommittedQC());
+			final Proposal proposal = safetyRules.signProposal(proposedVertex, this.vertexStore.getHighestCommittedQC(), System.nanoTime());
 			log.trace("{}: Broadcasting PROPOSAL: {}", this.self::getSimpleName, () -> proposal);
 			Set<BFTNode> nodes = validatorSet.getValidators().stream().map(BFTValidator::getNode).collect(Collectors.toSet());
 			this.counters.increment(CounterType.BFT_PROPOSALS_MADE);
@@ -234,7 +278,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 
 		final BFTNode currentLeader = this.proposerElection.getProposer(updatedView);
 		try {
-			final Vote vote = safetyRules.voteFor(proposedVertex, vertexMetadata);
+			final Vote vote = safetyRules.voteFor(proposedVertex, vertexMetadata, proposal.getPayload());
 			log.trace("{}: PROPOSAL: Sending VOTE to {}: {}", this.self::getSimpleName, currentLeader::getSimpleName, () -> vote);
 			sender.sendVote(vote, currentLeader);
 		} catch (SafetyViolationException e) {
@@ -277,5 +321,14 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	public void start() {
 		this.pacemaker.processQC(this.vertexStore.getHighestQC().getView())
 			.ifPresent(this::proceedToView);
+	}
+
+	private void updateRttStatistics(Vote vote) {
+		long durationNanos = System.nanoTime() - vote.getPayload();
+		if (durationNanos >= 0L) {
+			double durationMicros = durationNanos / 1e3;
+			this.rttStatistics.update(durationMicros);
+			this.counters.setAll(this.rttStatistics.toMap());
+		}
 	}
 }
