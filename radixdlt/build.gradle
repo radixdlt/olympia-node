@@ -26,6 +26,7 @@ apply plugin: 'com.moowork.node'
 apply plugin: 'me.champeau.gradle.jmh'
 apply plugin: 'org.sonarqube'
 apply plugin: 'com.adarshr.test-logger'
+apply plugin: 'net.nemerosa.versioning'
 
 node {
     download = true
@@ -53,6 +54,11 @@ configurations {
 checkstyle {
     toolVersion '8.10.1'
     showViolations = true
+}
+
+versionFile {
+    // Path to the file to be written
+    file = new File("$buildDir/resources/main", 'version.properties')
 }
 
 checkstyleMain {
@@ -141,6 +147,7 @@ test {
 
 // More warnings
 tasks.withType(JavaCompile) {
+    dependsOn 'versionFile'
     options.compilerArgs << '-Xlint:deprecation'
     //options.compilerArgs << '-Xlint:unchecked' // Way too many of these at the moment
     options.deprecation = true

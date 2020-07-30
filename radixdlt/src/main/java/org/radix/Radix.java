@@ -56,6 +56,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.net.URISyntaxException;
 import java.security.Security;
+import java.util.Properties;
 
 public final class Radix
 {
@@ -108,6 +109,7 @@ public final class Radix
 
 	public static void main(String[] args) {
 		try {
+			logVersion();
 			dumpExecutionLocation();
 			// Bouncy Castle is required for loading the node key, so set it up now.
 			setupBouncyCastle();
@@ -118,6 +120,24 @@ public final class Radix
 			log.fatal("Unable to start", ex);
 			java.lang.System.exit(-1);
 		}
+	}
+
+	private static void logVersion() {
+		String display = "unknown-version";
+		String branch  = "unknown-branch";
+		String commit  = "unknown-commit";
+		try (InputStream is = Radix.class.getResourceAsStream("/version.properties")) {
+			if (is != null) {
+				Properties p = new Properties();
+				p.load(is);
+				display = p.getProperty("VERSION_DISPLAY", display);
+				branch  = p.getProperty("VERSION_BRANCH",  branch);
+				commit  = p.getProperty("VERSION_COMMIT",  commit);
+			}
+		} catch (IOException e) {
+			// Ignore exception
+		}
+		log.always().log("Radix distributed ledger '{}' from branch '{}' commit '{}'", display, branch, commit);
 	}
 
 	public static void start(RuntimeProperties properties) {
@@ -191,7 +211,7 @@ public final class Radix
 
 	private static void dumpExecutionLocation() {
 		try {
-			String jarFile = ClassLoader.getSystemClassLoader().loadClass(Radix.class.getName()).getProtectionDomain().getCodeSource().getLocation().toURI().getPath();
+			String jarFile = Radix.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath();
 			System.setProperty("radix.jar", jarFile);
 
 			String jarPath = jarFile;
@@ -203,7 +223,7 @@ public final class Radix
 
 			log.debug("Execution file: {}", System.getProperty("radix.jar"));
 			log.debug("Execution path: {}", System.getProperty("radix.jar.path"));
-		} catch (URISyntaxException | ClassNotFoundException e) {
+		} catch (URISyntaxException e) {
 			throw new IllegalStateException("Error while fetching execution location", e);
 		}
 	}
