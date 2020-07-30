@@ -45,7 +45,7 @@ import java.util.function.Consumer;
  * Persistence for peers.
  */
 public class AddressBookPersistence implements PeerPersistence {
-	private static final Logger log = LogManager.getLogger("addressbook");
+	private static final Logger log = LogManager.getLogger();
 
 	private final Serialization serialization;
 	private final DatabaseEnvironment dbEnv;

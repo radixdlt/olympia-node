@@ -45,7 +45,7 @@ import com.radixdlt.network.transport.Transport;
 import com.radixdlt.serialization.Serialization;
 
 final class MessageCentralImpl implements MessageCentral {
-	private static final Logger log = LogManager.getLogger("message");
+	private static final Logger log = LogManager.getLogger();
 
 	private static final MessageListenerList EMPTY_MESSAGE_LISTENER_LIST = new MessageListenerList();
 

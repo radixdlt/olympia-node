@@ -39,7 +39,7 @@ import io.netty.channel.SimpleChannelInboundHandler;
 // downstream blocking that will happen, and this has the potential to slow down
 // the whole inbound network pipeline.
 final class TCPNettyMessageHandler extends SimpleChannelInboundHandler<ByteBuf> {
-	private static final Logger log = LogManager.getLogger("transport.tcp");
+	private static final Logger log = LogManager.getLogger();
 
 	private final InboundMessageConsumer messageSink;
 

@@ -65,7 +65,7 @@ import org.apache.logging.log4j.Logger;
  */
 @NotThreadSafe
 public final class EpochManager {
-	private static final Logger log = LogManager.getLogger("EM");
+	private static final Logger log = LogManager.getLogger();
 
 	/**
 	 * A sender of GetEpoch RPC requests/responses

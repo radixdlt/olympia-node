@@ -35,7 +35,7 @@ import io.undertow.websockets.core.BufferedTextMessage;
  * A Stateful JSON RPC 2.0 Server and Client for duplex communication
  */
 public class RadixJsonRpcPeer {
-	private static final Logger LOGGER = LogManager.getLogger("api");
+	private static final Logger LOGGER = LogManager.getLogger();
 
 	private final BiConsumer<RadixJsonRpcPeer, String> callback;
 

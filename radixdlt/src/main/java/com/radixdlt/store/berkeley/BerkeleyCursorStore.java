@@ -43,7 +43,7 @@ import java.util.OptionalLong;
 @Singleton
 public final class BerkeleyCursorStore implements CursorStore {
 	private static final String LC_CURSOR_STORE_NAME = "tempo2.sync.iterative.cursors";
-	private static final Logger logger = LogManager.getLogger("store.cursors");
+	private static final Logger logger = LogManager.getLogger();
 
 	private final DatabaseEnvironment dbEnv;
 	private Database cursors;

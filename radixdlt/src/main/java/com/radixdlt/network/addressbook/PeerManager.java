@@ -51,7 +51,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 public class PeerManager {
-	private static final Logger log = LogManager.getLogger("peermanager");
+	private static final Logger log = LogManager.getLogger();
 
 	private final Random rand = new Random(); // No need for cryptographically secure here
 	private final Map<Peer, Long> probes = new HashMap<>();
@@ -278,8 +278,9 @@ public class PeerManager {
 		log.trace("Received PeerPingMessage from {}:{}", () -> peer, () -> formatNonce(message.getNonce()));
 		try {
 			long nonce = message.getNonce();
+			long payload = message.getPayload();
 			log.debug("peer.ping from {}:{}", () -> peer, () -> formatNonce(nonce));
-			messageCentral.send(peer, new PeerPongMessage(nonce, localSystem, this.universe.getMagic()));
+			messageCentral.send(peer, new PeerPongMessage(this.universe.getMagic(), nonce, payload, localSystem));
 		} catch (Exception ex) {
 			log.error(String.format("peer.ping %s", peer), ex);
 		}
@@ -292,12 +293,13 @@ public class PeerManager {
 				Long ourNonce = this.probes.get(peer);
 				if (ourNonce != null) {
 					long nonce = message.getNonce();
+					long rtt = System.nanoTime() - message.getPayload();
 					if (ourNonce.longValue() == nonce) {
 						this.probes.remove(peer);
-						log.debug("Got good peer.pong from {}:{}", () -> peer, () -> formatNonce(nonce));
+						log.info("Got good peer.pong from {}:{}:{}ns", () -> peer, () -> formatNonce(nonce), () -> rtt);
 					} else {
-						log.debug("Got mismatched peer.pong from {} with nonce '{}', ours '{}'",
-							() -> peer, () -> formatNonce(nonce), () -> formatNonce(ourNonce));
+						log.debug("Got mismatched peer.pong from {} with nonce '{}', ours '{}' ({}ns)",
+							() -> peer, () -> formatNonce(nonce), () -> formatNonce(ourNonce), () -> rtt);
 					}
 				}
 			}
@@ -332,10 +334,10 @@ public class PeerManager {
 				}
 				synchronized (this.probes) {
 					if (!this.probes.containsKey(peer)) {
-						PeerPingMessage ping = new PeerPingMessage(rng.nextLong(), localSystem, this.universe.getMagic());
+						long nonce = rng.nextLong();
+						PeerPingMessage ping = new PeerPingMessage(this.universe.getMagic(), nonce, System.nanoTime(), localSystem);
 
 						// Only wait for response if peer has a system, otherwise peer will be upgraded by pong message
-						long nonce = ping.getNonce();
 						if (peer.hasSystem()) {
 							this.probes.put(peer, nonce);
 							this.executor.schedule(() -> handleProbeTimeout(peer, nonce), peerProbeTimeoutMs, TimeUnit.MILLISECONDS);
