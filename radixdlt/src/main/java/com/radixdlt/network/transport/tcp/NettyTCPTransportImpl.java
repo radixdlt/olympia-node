@@ -52,7 +52,7 @@ import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
 
 final class NettyTCPTransportImpl implements NettyTCPTransport {
-	private static final Logger log = LogManager.getLogger("transport.tcp");
+	private static final Logger log = LogManager.getLogger();
 
 	// Set this to true to see a detailed hexdump of sent/received data at runtime
 	private final boolean debugData;
@@ -63,8 +63,14 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 	@VisibleForTesting
 	static final int    DEFAULT_PORT = 30000;
 
-	private static final int RCV_BUF_SIZE = TCPConstants.MAX_PACKET_LENGTH * 2;
-	private static final int SND_BUF_SIZE = TCPConstants.MAX_PACKET_LENGTH * 2;
+	// Minimal send, receive whole max packet plus overhead
+	private static final int SRV_RCV_BUF_SIZE = TCPConstants.MAX_PACKET_LENGTH + 32;
+	private static final int SRV_SND_BUF_SIZE = 100 * 1024;
+
+	// Minimal receive, send whole max packet plus overhead
+	private static final int CLI_RCV_BUF_SIZE = 100 * 1024;
+	private static final int CLI_SND_BUF_SIZE = TCPConstants.MAX_PACKET_LENGTH + 32;
+
 	private static final int BACKLOG_SIZE = 100;
 
 	private final TransportMetadata localMetadata;
@@ -145,11 +151,12 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 		this.outboundBootstrap = new Bootstrap();
 		this.outboundBootstrap.group(workerGroup)
 			.channel(NioSocketChannel.class)
+			.option(ChannelOption.TCP_NODELAY, true)
 			.option(ChannelOption.SO_KEEPALIVE, true)
 			.handler(new ChannelInitializer<SocketChannel>() {
 				@Override
 				public void initChannel(SocketChannel ch) throws Exception {
-					setupChannel(ch, messageSink, true);
+					setupChannel(ch, messageSink, true, CLI_RCV_BUF_SIZE, CLI_SND_BUF_SIZE);
 				}
 			});
 
@@ -157,12 +164,13 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 		b.group(serverGroup, workerGroup)
 			.channel(NioServerSocketChannel.class)
 			.option(ChannelOption.SO_BACKLOG, BACKLOG_SIZE)
+			.childOption(ChannelOption.TCP_NODELAY, true)
 			.childOption(ChannelOption.SO_KEEPALIVE, true)
 			.childHandler(new ChannelInitializer<SocketChannel>() {
 				@Override
 				public void initChannel(SocketChannel ch) throws Exception {
 					log.info("Connection from {}:{}", ch.remoteAddress().getHostString(), ch.remoteAddress().getPort());
-					setupChannel(ch, messageSink, false);
+					setupChannel(ch, messageSink, false, SRV_RCV_BUF_SIZE, SRV_SND_BUF_SIZE);
 				}
 			});
 		if (log.isDebugEnabled() || log.isTraceEnabled()) {
@@ -181,13 +189,14 @@ final class NettyTCPTransportImpl implements NettyTCPTransport {
 		}
 	}
 
-	private void setupChannel(SocketChannel ch, InboundMessageConsumer messageSink, boolean isOutbound) {
+	private void setupChannel(SocketChannel ch, InboundMessageConsumer messageSink, boolean isOutbound, int rcvBufSize, int sndBufSize) {
 		final int packetLength = TCPConstants.MAX_PACKET_LENGTH + TCPConstants.LENGTH_HEADER;
 		final int headerLength = TCPConstants.LENGTH_HEADER;
 		ch.config()
-			.setReceiveBufferSize(RCV_BUF_SIZE)
-			.setSendBufferSize(SND_BUF_SIZE)
+			.setReceiveBufferSize(rcvBufSize)
+			.setSendBufferSize(sndBufSize)
 			.setOption(ChannelOption.RCVBUF_ALLOCATOR, new FixedRecvByteBufAllocator(packetLength));
+
 		if (log.isDebugEnabled()) {
 			ch.pipeline().addLast(new LoggingHandler(LogSink.using(log), debugData));
 		}

@@ -33,21 +33,31 @@ public final class PeerPingMessage extends SystemMessage {
 	@DsonOutput(Output.ALL)
 	private long nonce;
 
+	@JsonProperty("payload")
+	@DsonOutput(Output.ALL)
+	private long payload;
+
 	PeerPingMessage() {
 		// for serializer
 	}
 
-	public PeerPingMessage(long nonce, RadixSystem system, int magic) {
+	public PeerPingMessage(int magic, long nonce, long payload, RadixSystem system) {
 		super(system, magic);
 		this.nonce = nonce;
+		this.payload = payload;
 	}
 
 	public long getNonce() {
 		return nonce;
 	}
 
+	public long getPayload() {
+		return payload;
+	}
+
 	@Override
 	public String toString() {
-		return String.format("%s[%s:%s]", getClass().getSimpleName(), getSystem().getNID(), UnsignedLong.fromLongBits(nonce));
+		return String.format("%s[%s:%s:%s]",
+			getClass().getSimpleName(), getSystem().getNID(), UnsignedLong.fromLongBits(nonce), UnsignedLong.fromLongBits(payload));
 	}
 }

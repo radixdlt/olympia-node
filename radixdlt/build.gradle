@@ -97,7 +97,7 @@ dependencies {
 
     compile 'commons-cli:commons-cli:1.4'
     compile 'org.xerial.snappy:snappy-java:1.1.7.3'
-    compile 'io.netty:netty-all:4.1.39.Final'
+    compile 'io.netty:netty-all:4.1.51.Final'
     compile('com.google.inject:guice:4.2.2') {
         exclude group: 'com.google.guava', module: 'guava'
     }
