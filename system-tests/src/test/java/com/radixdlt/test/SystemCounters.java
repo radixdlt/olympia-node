@@ -81,7 +81,6 @@ public final class SystemCounters {
 		BFT_REJECTED("bft.rejected"),
 		BFT_TIMEOUT("bft.timeout"),
 		BFT_VERTEX_STORE_SIZE("bft.vertex_store_size"),
-		BFT_VIEW("bft.view"),
 		LEDGER_STATE_VERSION("ledger.state_version"),
 		MEMPOOL_COUNT("mempool.count"),
 		MEMPOOL_MAXCOUNT("mempool.maxcount"),
