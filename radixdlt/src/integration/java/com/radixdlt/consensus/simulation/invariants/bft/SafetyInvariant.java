@@ -66,6 +66,17 @@ public class SafetyInvariant implements TestInvariant {
 		);
 	}
 
+	private static Observable<TestInvariantError> badParentExpectedGenesisError(Vertex vertex) {
+		return Observable.just(
+			new TestInvariantError(
+				String.format("Parent of vertex %s doesn't match genesis",
+					vertex
+				)
+			)
+		);
+	}
+
+
 	@Override
 	public Observable<TestInvariantError> check(RunningNetwork network) {
 		final Map<Long, Map<View, Vertex>> epochCommittedVertices = new ConcurrentHashMap<>();
@@ -92,7 +103,12 @@ public class SafetyInvariant implements TestInvariant {
 					}
 				} else {
 					if (!vertex.getParentMetadata().getView().isGenesis()) {
-						final Vertex lastCommitted = committedVertices.get(highest.get());
+						View highestCommittedView = highest.get();
+						if (highestCommittedView == null) {
+							return badParentExpectedGenesisError(vertex);
+						}
+
+						final Vertex lastCommitted = committedVertices.get(highestCommittedView);
 						if (vertex.getParentId() == null) {
 							return noParentError(vertex);
 						}
