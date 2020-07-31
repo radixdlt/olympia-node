@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.function.LongSupplier;
 
@@ -80,16 +81,16 @@ public class SyncManagerTest {
 		});
 		syncManager.syncToVersion(targetVersion, reqId -> {
 		});
-		List<CommittedAtom> newAtoms1 = new ArrayList<>();
+		ImmutableList.Builder<CommittedAtom> newAtoms1 = ImmutableList.builder();
 		for (int i = 7; i <= 12; i++) {
 			newAtoms1.add(buildWithVersion(i));
 		}
-		syncManager.syncAtoms(ImmutableList.copyOf(newAtoms1));
-		List<CommittedAtom> newAtoms2 = new ArrayList<>();
+		syncManager.syncAtoms(newAtoms1.build());
+		ImmutableList.Builder<CommittedAtom> newAtoms2 = ImmutableList.builder();
 		for (int i = 10; i <= 18; i++) {
 			newAtoms2.add(buildWithVersion(i));
 		}
-		syncManager.syncAtoms(ImmutableList.copyOf(newAtoms2));
+		syncManager.syncAtoms(newAtoms2.build());
 		assertTrue(events.await(5, TimeUnit.SECONDS));
 		assertEquals(18, versionProvider.getAsLong());
 	}
@@ -98,9 +99,7 @@ public class SyncManagerTest {
 	public void syncWithLostMessages() throws InterruptedException {
 		CountDownLatch events = new CountDownLatch(1);
 		long targetVersion = 15;
-		syncManager.setTargetListener(target -> {
-			fail("Target shouldn't be reached");
-		});
+		syncManager.setTargetListener(target -> fail("Target shouldn't be reached"));
 		syncManager.setVersionListener(version -> {
 			if (version == 11) {
 				assertEquals(2, syncManager.getQueueSize());
@@ -111,13 +110,13 @@ public class SyncManagerTest {
 		});
 		syncManager.syncToVersion(targetVersion, reqId -> {
 		});
-		List<CommittedAtom> newAtoms1 = new ArrayList<>();
+		ImmutableList.Builder<CommittedAtom> newAtoms1 = ImmutableList.builder();
 		for (int i = 7; i <= 11; i++) {
 			newAtoms1.add(buildWithVersion(i));
 		}
 		newAtoms1.add(buildWithVersion(13));
 		newAtoms1.add(buildWithVersion(15));
-		syncManager.syncAtoms(ImmutableList.copyOf(newAtoms1));
+		syncManager.syncAtoms(newAtoms1.build());
 		assertTrue(events.await(5, TimeUnit.SECONDS));
 		assertEquals(11, versionProvider.getAsLong());
 	}
@@ -146,11 +145,11 @@ public class SyncManagerTest {
 				events.countDown();
 			}
 		});
-		List<CommittedAtom> newAtoms = new ArrayList<>();
+		ImmutableList.Builder<CommittedAtom> newAtoms = ImmutableList.builder();
 		for (int i = 1000; i >= 1; i--) {
 			newAtoms.add(buildWithVersion(i));
 		}
-		syncManager.syncAtoms(ImmutableList.copyOf(newAtoms));
+		syncManager.syncAtoms(newAtoms.build());
 		assertTrue(events.await(5, TimeUnit.SECONDS));
 		assertEquals(10L + syncManager.getMaxAtomsQueueSize(), versionProvider.getAsLong());
 	}
@@ -162,11 +161,11 @@ public class SyncManagerTest {
 			assertEquals(20, version);
 			versions.countDown();
 		});
-		List<CommittedAtom> newAtoms = new ArrayList<>();
+		ImmutableList.Builder<CommittedAtom> newAtoms = ImmutableList.builder();
 		for (int i = 5; i <= 20; i++) {
 			newAtoms.add(buildWithVersion(i));
 		}
-		syncManager.syncAtoms(ImmutableList.copyOf(newAtoms));
+		syncManager.syncAtoms(newAtoms.build());
 		assertTrue(versions.await(5, TimeUnit.SECONDS));
 		assertEquals(20, versionProvider.getAsLong());
 	}
@@ -179,28 +178,28 @@ public class SyncManagerTest {
 				versions.countDown();
 			}
 		});
-		List<CommittedAtom> newAtoms = new ArrayList<>();
+		ImmutableList.Builder<CommittedAtom> newAtoms = ImmutableList.builder();
 		for (int i = 10; i <= 20; i++) {
 			newAtoms.add(buildWithVersion(i));
 		}
-		syncManager.syncAtoms(ImmutableList.copyOf(newAtoms));
+		syncManager.syncAtoms(newAtoms.build());
 		assertTrue(versions.await(5, TimeUnit.SECONDS));
+
+		final Semaphore sem = new Semaphore(0);
 
 		assertEquals(-1, syncManager.getTargetVersion());
 		long targetVersion = 15;
-		syncManager.syncToVersion(targetVersion, reqId -> {
-		});
-		Thread.sleep(10); // ugly but good enough
+		syncManager.syncToVersion(targetVersion, reqId -> sem.release());
+		// Already synced up to 20, so no request should happen
+		assertFalse(sem.tryAcquire(100, TimeUnit.MILLISECONDS));
 		assertEquals(-1, syncManager.getTargetVersion());
 
-		syncManager.syncToVersion(targetVersion * 2, reqId -> {
-		});
-		Thread.sleep(10); // ugly but good enough
+		syncManager.syncToVersion(targetVersion * 2, reqId -> sem.release());
+		assertTrue(sem.tryAcquire(100, TimeUnit.MILLISECONDS));
 		assertEquals(30, syncManager.getTargetVersion());
 
-		syncManager.syncToVersion(targetVersion - 5, reqId -> {
-		});
-		Thread.sleep(10); // ugly but good enough
+		syncManager.syncToVersion(targetVersion - 5, reqId -> sem.release());
+		assertTrue(sem.tryAcquire(1, TimeUnit.SECONDS));
 		assertEquals(30, syncManager.getTargetVersion());
 	}
 }
