@@ -172,7 +172,7 @@ class CmdHelper {
             }
         }
         if (veth==null || veth.size() == 0 ){
-            throw new IllegalStateException("Could not retrieve veth. If you running on Mac, this is not supported")
+            throw new IllegalStateException("Could not retrieve veth. If you running on Mac, this is not supported. \n  Run the tests inside docker container as shown as example in the script run-slow-node-test.sh ")
         }
         println(veth[0].tokenize("/").find({ it.contains("veth") }))
         return veth[0].tokenize("/").find({ it.contains("veth") })
