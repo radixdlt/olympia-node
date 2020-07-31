@@ -31,6 +31,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.EpochChangeSender;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
@@ -203,7 +204,7 @@ public class SyncedRadixEngineTest {
 		when(vertexMetadata.getView()).thenReturn(View.of(50));
 		when(committedAtom.getVertexMetadata()).thenReturn(vertexMetadata);
 		when(committedAtom.getClientAtom()).thenReturn(mock(ClientAtom.class));
-		List<CommittedAtom> committedAtomList = Collections.singletonList(committedAtom);
+		ImmutableList<CommittedAtom> committedAtomList = ImmutableList.of(committedAtom);
 		when(stateSyncNetwork.syncResponses()).thenReturn(Observable.just(committedAtomList).concatWith(Observable.never()));
 		when(committedAtomsStore.getStateVersion()).thenReturn(12344L);
 		syncedRadixEngine.start();
