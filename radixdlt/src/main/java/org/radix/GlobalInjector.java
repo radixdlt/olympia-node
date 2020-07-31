@@ -26,6 +26,7 @@ import com.google.inject.name.Names;
 import com.radixdlt.CerberusModule;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.epoch.EpochManager.EpochInfoSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.identifiers.RadixAddress;
@@ -33,6 +34,7 @@ import com.radixdlt.identifiers.EUID;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.mempool.MempoolModule;
+import com.radixdlt.middleware2.InMemoryEpochInfo;
 import com.radixdlt.middleware2.MiddlewareModule;
 import com.radixdlt.middleware2.network.NetworkModule;
 import com.radixdlt.network.addressbook.AddressBookModule;
@@ -175,13 +177,15 @@ public class GlobalInjector {
 	}
 
 	static class LocalSystemProvider implements Provider<LocalSystem> {
+		private final InMemoryEpochInfo epochInfo;
 		private final SystemCounters counters;
 		private final RuntimeProperties properties;
 		private final Universe universe;
 		private final HostIp hostIp;
 
 		@Inject
-		public LocalSystemProvider(SystemCounters counters, RuntimeProperties properties, Universe universe, HostIp hostIp) {
+		public LocalSystemProvider(InMemoryEpochInfo epochInfo, SystemCounters counters, RuntimeProperties properties, Universe universe, HostIp hostIp) {
+			this.epochInfo = epochInfo;
 			this.counters = counters;
 			this.properties = properties;
 			this.universe = universe;
@@ -192,7 +196,7 @@ public class GlobalInjector {
 		public LocalSystem get() {
 			String host = this.hostIp.hostIp()
 				.orElseThrow(() -> new IllegalStateException("Unable to determine host IP"));
-			return LocalSystem.create(this.counters, this.properties, this.universe, host);
+			return LocalSystem.create(this.epochInfo, this.counters, this.properties, this.universe, host);
 		}
 	}
 }

@@ -29,6 +29,7 @@ import com.radixdlt.consensus.epoch.EmptySyncVerticesRPCSender;
 import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.EpochChangeRx;
 import com.radixdlt.consensus.Hasher;
+import com.radixdlt.middleware2.InMemoryEpochInfo;
 import com.radixdlt.middleware2.InternalMessagePasser;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.SyncedStateComputer;
@@ -69,6 +70,7 @@ public class SimulationNodes {
 	private final int pacemakerTimeout;
 	private final SimulationNetwork underlyingNetwork;
 	private final ImmutableMap<BFTNode, SystemCounters> counters;
+	private final ImmutableMap<BFTNode, InMemoryEpochInfo> epochInfo;
 	private final ImmutableMap<BFTNode, InternalMessagePasser> internalMessages;
 	private final ImmutableList<ConsensusRunner> runners;
 	private final List<BFTNode> nodes;
@@ -97,6 +99,7 @@ public class SimulationNodes {
 		this.underlyingNetwork = Objects.requireNonNull(underlyingNetwork);
 		this.pacemakerTimeout = pacemakerTimeout;
 		this.counters = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e, e -> new SystemCountersImpl()));
+		this.epochInfo = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e, e -> new InMemoryEpochInfo()));
 		this.internalMessages = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e, e -> new InternalMessagePasser()));
 		this.runners = nodes.stream().map(this::createBFTInstance).collect(ImmutableList.toImmutableList());
 	}
@@ -106,7 +109,7 @@ public class SimulationNodes {
 		final Hasher nullHasher = o -> Hash.ZERO_HASH;
 		final HashSigner nullSigner = h -> new ECDSASignature();
 		final BFTFactory bftFactory =
-			(endOfEpochSender, pacemaker, vertexStore, proposerElection, validatorSet) ->
+			(endOfEpochSender, pacemaker, vertexStore, proposerElection, validatorSet, bftInfoSender) ->
 				BFTBuilder.create()
 					.self(self)
 					.endOfEpochSender(endOfEpochSender)
@@ -117,6 +120,7 @@ public class SimulationNodes {
 					.validatorSet(validatorSet)
 					.eventSender(underlyingNetwork.getNetworkSender(self))
 					.counters(counters.get(self))
+					.infoSender(bftInfoSender)
 					.hasher(nullHasher)
 					.signer(nullSigner)
 					.verifyAuthors(false)
@@ -144,7 +148,8 @@ public class SimulationNodes {
 			vertexStoreFactory,
 			proposers -> new WeightedRotatingLeaders(proposers, Comparator.comparing(v -> v.getNode().getKey().euid()), 5),
 			bftFactory,
-			counters.get(self)
+			counters.get(self),
+			epochInfo.get(self)
 		);
 
 		final SimulatedNetworkReceiver rx = underlyingNetwork.getNetworkRx(self);
@@ -168,6 +173,8 @@ public class SimulationNodes {
 		VertexStoreEventsRx getVertexStoreEvents(BFTNode node);
 
 		SystemCounters getCounters(BFTNode node);
+
+		InMemoryEpochInfo getEpochInfo(BFTNode node);
 
 		SimulationNetwork getUnderlyingNetwork();
 	}
@@ -201,6 +208,10 @@ public class SimulationNodes {
 			@Override
 			public SystemCounters getCounters(BFTNode node) {
 				return counters.get(node);
+			}
+
+			public InMemoryEpochInfo getEpochInfo(BFTNode node) {
+				return epochInfo.get(node);
 			}
 
 			@Override

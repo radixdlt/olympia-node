@@ -18,7 +18,9 @@
 package org.radix.serialization;
 
 import com.radixdlt.DefaultSerialization;
+import com.radixdlt.consensus.epoch.EpochManager.EpochInfoSender;
 import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.middleware2.InMemoryEpochInfo;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.universe.Universe;
@@ -40,6 +42,7 @@ public abstract class RadixTest
 	private static LocalSystem localSystem;
 	private static Universe universe;
 	private static SystemCounters counters;
+	private static InMemoryEpochInfo epochInfo;
 
 	@BeforeClass
 	public static void startRadixTest() {
@@ -59,7 +62,8 @@ public abstract class RadixTest
 		serialization = DefaultSerialization.getInstance();
 
 		counters = mock(SystemCounters.class);
-		localSystem = LocalSystem.create(counters, getProperties(), universe, "127.0.0.1");
+		epochInfo = new InMemoryEpochInfo();
+		localSystem = LocalSystem.create(epochInfo, counters, getProperties(), universe, "127.0.0.1");
 	}
 
 	public static Serialization getSerialization() {

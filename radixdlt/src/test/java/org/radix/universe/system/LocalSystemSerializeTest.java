@@ -17,6 +17,7 @@
 
 package org.radix.universe.system;
 
+import com.radixdlt.middleware2.InMemoryEpochInfo;
 import org.radix.serialization.SerializeMessageObject;
 
 import com.google.common.collect.ImmutableMap;
@@ -30,7 +31,7 @@ public class LocalSystemSerializeTest extends SerializeMessageObject<LocalSystem
 	}
 
 	private static LocalSystem getSystem() {
-		LocalSystem newSystem = new LocalSystem(ImmutableMap::of);
+		LocalSystem newSystem = new LocalSystem(new InMemoryEpochInfo(), ImmutableMap::of);
 		newSystem.setPlanck(101);
 		return newSystem;
 	}

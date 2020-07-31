@@ -17,6 +17,10 @@
 
 package org.radix.universe.system;
 
+import com.google.common.collect.ImmutableMap.Builder;
+import com.radixdlt.consensus.View;
+import com.radixdlt.middleware2.InMemoryEpochInfo;
+import com.radixdlt.utils.Pair;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
@@ -46,26 +50,56 @@ import com.radixdlt.universe.Universe;
 public final class LocalSystem extends RadixSystem {
 	private final ECKeyPair keyPair;
 	private final Supplier<Map<String, Object>> counters;
+	private final InMemoryEpochInfo epochInfo;
 
 	LocalSystem() {
 		// Serializer only
-		this(ImmutableMap::of);
+		this(null, ImmutableMap::of);
 	}
 
 	@VisibleForTesting
-	LocalSystem(Supplier<Map<String, Object>> counters) {
+	LocalSystem(InMemoryEpochInfo epochInfo, Supplier<Map<String, Object>> counters) {
+		this.epochInfo = epochInfo;
 		this.keyPair = ECKeyPair.generateNew();
 		this.counters = counters;
 	}
 
-	public LocalSystem(Supplier<Map<String, Object>> counters, ECKeyPair key, String agent, int agentVersion, int protocolVersion, ImmutableList<TransportInfo> supportedTransports) {
+	public LocalSystem(
+		InMemoryEpochInfo epochInfo,
+		Supplier<Map<String, Object>> counters,
+		ECKeyPair key, String agent,
+		int agentVersion,
+		int protocolVersion,
+		ImmutableList<TransportInfo> supportedTransports
+	) {
 		super(key.getPublicKey(), agent, agentVersion, protocolVersion, supportedTransports);
 		this.keyPair = key;
 		this.counters = Objects.requireNonNull(counters);
+		this.epochInfo = epochInfo;
 	}
 
 	public ECKeyPair getKeyPair() {
 		return this.keyPair;
+	}
+
+	@JsonProperty("epoch_info")
+	@DsonOutput(Output.API)
+	Map<String, Object> getEpochInfo() {
+		if (epochInfo == null) {
+			return ImmutableMap.of();
+		}
+
+		Pair<Long, View> lastTimeout = epochInfo.getLastTimeout();
+		Builder<String, Object> builder = ImmutableMap.builder();
+		if (lastTimeout != null) {
+			builder.put("lastTimeoutEpoch", lastTimeout.getFirst());
+			builder.put("lastTimeoutView", lastTimeout.getSecond().number());
+		}
+		Pair<Long, View> currentEpochView = epochInfo.getCurrentView();
+		builder.put("currentEpoch", currentEpochView.getFirst());
+		builder.put("currentView", currentEpochView.getSecond().number());
+
+		return builder.build();
 	}
 
 	// Property "counters" - 1 getter
@@ -83,10 +117,10 @@ public final class LocalSystem extends RadixSystem {
 		return Runtime.getRuntime().availableProcessors();
 	}
 
-	public static LocalSystem create(SystemCounters counters, RuntimeProperties properties, Universe universe, String host) {
+	public static LocalSystem create(InMemoryEpochInfo epochInfo, SystemCounters counters, RuntimeProperties properties, Universe universe, String host) {
 		String nodeKeyPath = properties.get("node.key.path", "node.ks");
 		ECKeyPair nodeKey = loadNodeKey(nodeKeyPath);
-		return new LocalSystem(counters::toMap, nodeKey, Radix.AGENT, Radix.AGENT_VERSION, Radix.PROTOCOL_VERSION, defaultTransports(universe, host));
+		return new LocalSystem(epochInfo, counters::toMap, nodeKey, Radix.AGENT, Radix.AGENT_VERSION, Radix.PROTOCOL_VERSION, defaultTransports(universe, host));
 	}
 
 	// FIXME: *Really* need a better way of configuring this other than hardcoding here

@@ -17,10 +17,13 @@
 
 package com.radixdlt.consensus.simulation.invariants.bft;
 
+import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.simulation.TestInvariant;
 import com.radixdlt.consensus.simulation.network.SimulationNodes.RunningNetwork;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.middleware2.InMemoryEpochInfo;
+import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import java.util.concurrent.TimeUnit;
@@ -37,9 +40,13 @@ public class NoTimeoutsInvariant implements TestInvariant {
 			.flatMapIterable(i -> network.getNodes())
 			.concatMap(node -> {
 				SystemCounters counters = network.getCounters(node);
+				InMemoryEpochInfo epochInfo = network.getEpochInfo(node);
 				if (counters.get(CounterType.BFT_TIMEOUT) > 0) {
+					Pair<Long, View> epochView = epochInfo.getLastTimeout();
+
 					return Observable.just(new TestInvariantError("Timeout at node " + node.getSimpleName()
-						+ " view " + counters.get(CounterType.BFT_TIMEOUT_VIEW)));
+						+ " epoch " + epochView.getFirst() + " view " + epochView.getSecond()));
+
 				} else {
 					return Observable.empty();
 				}

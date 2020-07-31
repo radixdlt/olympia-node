@@ -37,12 +37,14 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.ConsensusEventsRx;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
+import com.radixdlt.consensus.epoch.EpochManager.EpochInfoSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.VertexStoreEventsRx;
 import com.radixdlt.mempool.SubmissionControl;
 import com.radixdlt.mempool.SubmissionControlImpl;
 import com.radixdlt.mempool.SubmissionControlImpl.SubmissionControlSender;
+import com.radixdlt.middleware2.InMemoryEpochInfo;
 import com.radixdlt.middleware2.InternalMessagePasser;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.ProposerElectionFactory;
@@ -113,6 +115,7 @@ public class CerberusModule extends AbstractModule {
 		bind(SyncedRadixEngineEventSender.class).to(InternalMessagePasser.class);
 		bind(LedgerRx.class).to(InternalMessagePasser.class);
 		bind(SyncedStateComputer.class).to(SyncedRadixEngine.class);
+		bind(EpochInfoSender.class).to(InMemoryEpochInfo.class);
 
 		// Network Sync messages
 		bind(SyncEpochsRPCSender.class).to(MessageCentralValidatorSync.class);
@@ -189,7 +192,8 @@ public class CerberusModule extends AbstractModule {
 			pacemaker,
 			vertexStore,
 			proposerElection,
-			validatorSet
+			validatorSet,
+			bftInfoSender
 		) ->
 			BFTBuilder.create()
 				.self(self)
@@ -199,12 +203,19 @@ public class CerberusModule extends AbstractModule {
 				.signer(signer)
 				.verifier(verifier)
 				.counters(counters)
+				.infoSender(bftInfoSender)
 				.endOfEpochSender(endOfEpochSender)
 				.pacemaker(pacemaker)
 				.vertexStore(vertexStore)
 				.proposerElection(proposerElection)
 				.validatorSet(validatorSet)
 				.build();
+	}
+
+	@Provides
+	@Singleton
+	private InMemoryEpochInfo epochInfo() {
+		return new InMemoryEpochInfo();
 	}
 
 	@Provides
@@ -218,7 +229,8 @@ public class CerberusModule extends AbstractModule {
 		PacemakerFactory pacemakerFactory,
 		VertexStoreFactory vertexStoreFactory,
 		ProposerElectionFactory proposerElectionFactory,
-		SystemCounters counters
+		SystemCounters counters,
+		EpochInfoSender epochInfoSender
 	) {
 		return new EpochManager(
 			self,
@@ -229,7 +241,8 @@ public class CerberusModule extends AbstractModule {
 			vertexStoreFactory,
 			proposerElectionFactory,
 			bftFactory,
-			counters
+			counters,
+			epochInfoSender
 		);
 	}
 

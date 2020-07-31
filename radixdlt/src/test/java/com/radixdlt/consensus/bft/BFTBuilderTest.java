@@ -34,6 +34,7 @@ import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
+import com.radixdlt.consensus.bft.BFTEventReducer.BFTInfoSender;
 import com.radixdlt.consensus.bft.BFTEventReducer.EndOfEpochSender;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
@@ -51,6 +52,7 @@ public class BFTBuilderTest {
 	private BFTEventSender eventSender;
 	private EndOfEpochSender endOfEpochSender;
 	private SystemCounters counters;
+	private BFTInfoSender infoSender;
 	private BFTValidatorSet validatorSet;
 	private ProposerElection proposerElection;
 	private Hasher hasher = new DefaultHasher();
@@ -74,6 +76,7 @@ public class BFTBuilderTest {
 		pacemaker = mock(Pacemaker.class);
 		vertexStore = mock(VertexStore.class);
 		self = mock(BFTNode.class);
+		infoSender = mock(BFTInfoSender.class);
 	}
 
 	@Test
@@ -87,6 +90,7 @@ public class BFTBuilderTest {
 			.eventSender(eventSender)
 			.endOfEpochSender(endOfEpochSender)
 			.counters(counters)
+			.infoSender(infoSender)
 			.validatorSet(validatorSet)
 			.proposerElection(proposerElection)
 			.hasher(hasher)
@@ -116,6 +120,7 @@ public class BFTBuilderTest {
 			.eventSender(eventSender)
 			.endOfEpochSender(endOfEpochSender)
 			.counters(counters)
+			.infoSender(infoSender)
 			.validatorSet(validatorSet)
 			.proposerElection(proposerElection)
 			.hasher(hasher)

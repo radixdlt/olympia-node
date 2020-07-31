@@ -31,7 +31,9 @@ import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.VertexStoreEventProcessor;
 import com.radixdlt.consensus.VertexStoreFactory;
+import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.bft.BFTEventReducer.BFTInfoSender;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.EmptyBFTEventProcessor;
 import com.radixdlt.consensus.bft.VertexStore;
@@ -91,6 +93,23 @@ public final class EpochManager {
 		void sendGetEpochResponse(BFTNode node, VertexMetadata ancestor);
 	}
 
+	public interface EpochInfoSender {
+		/**
+		 * Signify that the bft node is on a new view
+		 * @param epoch the epoch of the view
+		 * @param view the view the bft node has changed to
+		 */
+		void sendCurrentView(long epoch, View view);
+
+		/**
+		 * Signify that a timeout was processed by this bft node
+		 * @param epoch the epoch of the view
+		 * @param view the view of the timeout
+		 * @param leader the leader of the view which timed out
+		 */
+		void sendTimeoutProcessed(long epoch, View view, BFTNode leader);
+	}
+
 	private final BFTNode self;
 	private final SyncEpochsRPCSender epochsRPCSender;
 	private final PacemakerFactory pacemakerFactory;
@@ -101,6 +120,7 @@ public final class EpochManager {
 	private final SyncedStateComputer<CommittedAtom> syncedStateComputer;
 	private final Map<Long, List<ConsensusEvent>> queuedEvents;
 	private final BFTFactory bftFactory;
+	private final EpochInfoSender epochInfoSender;
 
 	private VertexMetadata lastConstructed = null;
 	private VertexMetadata currentAncestor;
@@ -117,7 +137,8 @@ public final class EpochManager {
 		VertexStoreFactory vertexStoreFactory,
 		ProposerElectionFactory proposerElectionFactory,
 		BFTFactory bftFactory,
-		SystemCounters counters
+		SystemCounters counters,
+		EpochInfoSender epochInfoSender
 	) {
 		this.self = Objects.requireNonNull(self);
 		this.syncedStateComputer = Objects.requireNonNull(syncedStateComputer);
@@ -128,6 +149,7 @@ public final class EpochManager {
 		this.proposerElectionFactory = Objects.requireNonNull(proposerElectionFactory);
 		this.bftFactory = bftFactory;
 		this.counters = Objects.requireNonNull(counters);
+		this.epochInfoSender = Objects.requireNonNull(epochInfoSender);
 		this.queuedEvents = new HashMap<>();
 	}
 
@@ -158,7 +180,6 @@ public final class EpochManager {
 		}
 
 		this.currentAncestor = ancestorMetadata;
-		this.counters.set(CounterType.EPOCH_MANAGER_EPOCH, nextEpoch);
 
 		final BFTEventProcessor bftEventProcessor;
 		final VertexStoreEventProcessor vertexStoreEventProcessor;
@@ -175,12 +196,25 @@ public final class EpochManager {
 			QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(genesisVertex);
 			VertexStore vertexStore = vertexStoreFactory.create(genesisVertex, genesisQC, syncedStateComputer);
 			vertexStoreEventProcessor = vertexStore;
+			BFTInfoSender infoSender = new BFTInfoSender() {
+				@Override
+				public void sendCurrentView(View view) {
+					epochInfoSender.sendCurrentView(nextEpoch, view);
+				}
+
+				@Override
+				public void sendTimeoutProcessed(View view, BFTNode leader) {
+					epochInfoSender.sendTimeoutProcessed(nextEpoch, view, leader);
+				}
+			};
+
 			bftEventProcessor = bftFactory.create(
 				this::processEndOfEpoch,
 				pacemaker,
 				vertexStore,
 				proposerElection,
-				validatorSet
+				validatorSet,
+				infoSender
 			);
 		}
 
