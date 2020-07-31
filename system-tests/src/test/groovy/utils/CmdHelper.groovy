@@ -161,7 +161,7 @@ class CmdHelper {
         }
 
         // Commands from a docker container using host network sometime do not run in a reliable way for locations /sys/class/net esp when running on docker container
-        //  To overcome this Closure getVeth is called maximum three times to see if return value is empty list not empty. Retrying three times should give the value otherwise there may other issues
+        //  To overcome this Closure getVeth is called maximum three times to see if return value is empty. Retrying three times should give the value otherwise there may be some other issues
         veth = getVeth()
         def count = 0
         while (veth == null || veth.size() == 0) {
