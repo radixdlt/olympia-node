@@ -164,12 +164,15 @@ class CmdHelper {
         //  To overcome this Closure getVeth is called maximum three times to see if return value is empty list not empty. Retrying three times should give the value otherwise there may other issues
         veth = getVeth()
         def count = 0
-        while (veth.size() == 0) {
-            getVeth()
+        while (veth == null || veth.size() == 0) {
+            veth = getVeth()
             count++
             if (count > 3) {
                 break;
             }
+        }
+        if (veth==null || veth.size() == 0 ){
+            throw new IllegalStateException("Could not retrieve veth. If you running on Mac, this is not supported")
         }
         println(veth[0].tokenize("/").find({ it.contains("veth") }))
         return veth[0].tokenize("/").find({ it.contains("veth") })
