@@ -26,6 +26,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.sync.SyncRequest;
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.network.addressbook.Peer;
@@ -34,7 +35,6 @@ import com.radixdlt.network.messaging.MessageListener;
 import com.radixdlt.universe.Universe;
 import io.reactivex.rxjava3.observers.TestObserver;
 import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Before;
 import org.junit.Test;
@@ -92,10 +92,10 @@ public class MessageCentralLedgerSyncTest {
 			return null;
 		}).when(messageCentral).addListener(eq(SyncResponseMessage.class), any());
 
-		TestObserver<List<CommittedAtom>> testObserver = this.messageCentralLedgerSync.syncResponses().test();
+		TestObserver<ImmutableList<CommittedAtom>> testObserver = this.messageCentralLedgerSync.syncResponses().test();
 		Peer peer = mock(Peer.class);
 		SyncResponseMessage syncResponseMessage = mock(SyncResponseMessage.class);
-		List<CommittedAtom> atoms = Collections.singletonList(mock(CommittedAtom.class));
+		ImmutableList<CommittedAtom> atoms = ImmutableList.of(mock(CommittedAtom.class));
 		when(syncResponseMessage.getAtoms()).thenReturn(atoms);
 		messageListenerAtomicReference.get().handleMessage(peer, syncResponseMessage);
 		testObserver.awaitCount(1);

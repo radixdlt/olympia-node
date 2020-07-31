@@ -47,7 +47,7 @@ public final class MessageCentralLedgerSync implements StateSyncNetwork {
 	}
 
 	@Override
-	public Observable<List<CommittedAtom>> syncResponses() {
+	public Observable<ImmutableList<CommittedAtom>> syncResponses() {
 		return Observable.create(emitter -> {
 			MessageListener<SyncResponseMessage> listener = (src, msg) -> emitter.onNext(msg.getAtoms());
 			this.messageCentral.addListener(SyncResponseMessage.class, listener);
