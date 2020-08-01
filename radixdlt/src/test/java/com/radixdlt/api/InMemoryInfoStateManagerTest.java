@@ -17,12 +17,13 @@
 
 package com.radixdlt.api;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.Mockito.mock;
 import static org.powermock.api.mockito.PowerMockito.when;
 
 import com.radixdlt.consensus.epoch.EpochView;
 import io.reactivex.rxjava3.core.Observable;
+import java.util.concurrent.TimeUnit;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -45,7 +46,7 @@ public class InMemoryInfoStateManagerTest {
 		EpochView currentView = mock(EpochView.class);
 		when(infoRx.currentViews()).thenReturn(Observable.just(currentView));
 		runner.start();
-		assertThat(runner.getCurrentView()).isEqualTo(currentView);
+		await().atMost(1, TimeUnit.SECONDS).until(() -> runner.getCurrentView().equals(currentView));
 	}
 
 	@Test
@@ -53,6 +54,6 @@ public class InMemoryInfoStateManagerTest {
 		Timeout timeout = mock(Timeout.class);
 		when(infoRx.timeouts()).thenReturn(Observable.just(timeout));
 		runner.start();
-		assertThat(runner.getLastTimeout()).isEqualTo(timeout);
+		await().atMost(1, TimeUnit.SECONDS).until(() -> runner.getLastTimeout().equals(timeout));
 	}
 }
