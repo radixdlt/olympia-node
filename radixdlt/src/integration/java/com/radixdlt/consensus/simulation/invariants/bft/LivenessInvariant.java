@@ -51,7 +51,7 @@ public class LivenessInvariant implements TestInvariant {
 
 		Observable<VertexMetadata> highest = Observable.merge(
 			network.getNodes().stream()
-				.map(network::getVertexStoreEvents)
+				.map(network::getInfo)
 				.map(eventsRx -> eventsRx.highQCs().map(QuorumCertificate::getProposed))
 				.collect(Collectors.toList())
 		).scan(VertexMetadata.ofGenesisAncestor(), Ordering.from(vertexMetadataComparator)::max);

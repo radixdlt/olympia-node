@@ -27,6 +27,7 @@ import com.google.inject.name.Names;
 import com.radixdlt.CerberusModule;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.api.Timeout;
+import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.counters.SystemCounters;
@@ -36,7 +37,7 @@ import com.radixdlt.identifiers.EUID;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.mempool.MempoolModule;
-import com.radixdlt.api.InMemoryInfoStateRunner;
+import com.radixdlt.api.InMemoryInfoStateManager;
 import com.radixdlt.middleware2.MiddlewareModule;
 import com.radixdlt.middleware2.network.NetworkModule;
 import com.radixdlt.network.addressbook.AddressBookModule;
@@ -181,15 +182,15 @@ public class GlobalInjector {
 	}
 
 	static class LocalSystemProvider implements Provider<LocalSystem> {
-		private final InMemoryInfoStateRunner epochInfo;
+		private final InMemoryInfoStateManager infoState;
 		private final SystemCounters counters;
 		private final RuntimeProperties properties;
 		private final Universe universe;
 		private final HostIp hostIp;
 
 		@Inject
-		public LocalSystemProvider(InMemoryInfoStateRunner epochInfo, SystemCounters counters, RuntimeProperties properties, Universe universe, HostIp hostIp) {
-			this.epochInfo = epochInfo;
+		public LocalSystemProvider(InMemoryInfoStateManager infoState, SystemCounters counters, RuntimeProperties properties, Universe universe, HostIp hostIp) {
+			this.infoState = infoState;
 			this.counters = counters;
 			this.properties = properties;
 			this.universe = universe;
@@ -201,11 +202,19 @@ public class GlobalInjector {
 			String host = this.hostIp.hostIp()
 				.orElseThrow(() -> new IllegalStateException("Unable to determine host IP"));
 			Supplier<Map<String, Object>> infoSupplier = () -> {
-				EpochView currentEpochView = epochInfo.getCurrentView();
-				Timeout timeout = epochInfo.getLastTimeout();
+				EpochView currentEpochView = infoState.getCurrentView();
+				Timeout timeout = infoState.getLastTimeout();
+				QuorumCertificate highQC = infoState.getHighestQC();
 
 				return ImmutableMap.of(
 					"epochManager", ImmutableMap.of(
+						"highQC", highQC != null
+						? ImmutableMap.of(
+							"epoch", highQC.getProposed().getEpoch(),
+							"view", highQC.getView().number(),
+							"vertexId", highQC.getProposed().getId()
+						)
+						: ImmutableMap.of(),
 						"currentView", ImmutableMap.of(
 							"epoch", currentEpochView.getEpoch(),
 							"view", currentEpochView.getView().number()

@@ -45,7 +45,7 @@ import com.radixdlt.consensus.VertexStoreEventsRx;
 import com.radixdlt.mempool.SubmissionControl;
 import com.radixdlt.mempool.SubmissionControlImpl;
 import com.radixdlt.mempool.SubmissionControlImpl.SubmissionControlSender;
-import com.radixdlt.api.InMemoryInfoStateRunner;
+import com.radixdlt.api.InMemoryInfoStateManager;
 import com.radixdlt.middleware2.InternalMessagePasser;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.ProposerElectionFactory;
@@ -88,6 +88,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 public class CerberusModule extends AbstractModule {
+	private static final int DEFAULT_VERTEX_BUFFER_SIZE = 16;
+	private static final long DEFAULT_VERTEX_UPDATE_FREQ = 1_000L;
 	private final RuntimeProperties runtimeProperties;
 
 	public CerberusModule(RuntimeProperties runtimeProperties) {
@@ -216,8 +218,10 @@ public class CerberusModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private InMemoryInfoStateRunner epochInfo(InfoRx infoRx) {
-		return new InMemoryInfoStateRunner(infoRx);
+	private InMemoryInfoStateManager infoStateRunner(InfoRx infoRx) {
+		final int vertexBufferSize = runtimeProperties.get("api.debug.vertex_buffer_size", DEFAULT_VERTEX_BUFFER_SIZE);
+		final long vertexUpdateFrequency = runtimeProperties.get("api.debug.vertex_update_freq", DEFAULT_VERTEX_UPDATE_FREQ);
+		return new InMemoryInfoStateManager(infoRx, vertexBufferSize, vertexUpdateFrequency);
 	}
 
 	@Provides

@@ -17,10 +17,19 @@
 
 package com.radixdlt.api;
 
+import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.epoch.EpochView;
 import io.reactivex.rxjava3.core.Observable;
 
 public interface InfoRx {
 	Observable<EpochView> currentViews();
 	Observable<Timeout> timeouts();
+	Observable<QuorumCertificate> highQCs();
+
+	/**
+	 * Retrieve rx flow of vertices which have been committed
+	 * @return flow of vertices
+	 */
+	Observable<Vertex> committedVertices();
 }

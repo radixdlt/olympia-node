@@ -31,15 +31,4 @@ public interface VertexStoreEventsRx {
 	 */
 	Observable<Hash> syncedVertices();
 
-	/**
-	 * Retrieve rx flow of vertices which have been committed
-	 * @return flow of vertices
-	 */
-	Observable<Vertex> committedVertices();
-
-	/**
-	 * Retrieve rx flow of highest QCS
-	 * @return flow of qcs
-	 */
-	Observable<QuorumCertificate> highQCs();
 }

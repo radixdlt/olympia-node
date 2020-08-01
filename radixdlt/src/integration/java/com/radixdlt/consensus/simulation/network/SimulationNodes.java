@@ -34,7 +34,6 @@ import com.radixdlt.middleware2.InternalMessagePasser;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.bft.VertexStore;
-import com.radixdlt.consensus.VertexStoreEventsRx;
 import com.radixdlt.consensus.VertexStoreFactory;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeoutSender;
@@ -168,10 +167,6 @@ public class SimulationNodes {
 	public interface RunningNetwork {
 		List<BFTNode> getNodes();
 
-		VertexStoreEventsRx getVertexStoreEvents(BFTNode node);
-
-		SystemCounters getCounters(BFTNode node);
-
 		InfoRx getInfo(BFTNode node);
 
 		SimulationNetwork getUnderlyingNetwork();
@@ -196,16 +191,6 @@ public class SimulationNodes {
 			@Override
 			public List<BFTNode> getNodes() {
 				return nodes;
-			}
-
-			@Override
-			public VertexStoreEventsRx getVertexStoreEvents(BFTNode node) {
-				return internalMessages.get(node);
-			}
-
-			@Override
-			public SystemCounters getCounters(BFTNode node) {
-				return counters.get(node);
 			}
 
 			@Override

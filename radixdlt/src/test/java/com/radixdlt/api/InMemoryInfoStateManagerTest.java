@@ -26,20 +26,23 @@ import io.reactivex.rxjava3.core.Observable;
 import org.junit.Before;
 import org.junit.Test;
 
-public class InMemoryInfoStateRunnerTest {
+public class InMemoryInfoStateManagerTest {
 	private InfoRx infoRx;
-	private InMemoryInfoStateRunner runner;
+	private InMemoryInfoStateManager runner;
 
 	@Before
 	public void setup() {
 		this.infoRx = mock(InfoRx.class);
-		this.runner = new InMemoryInfoStateRunner(infoRx);
+		when(infoRx.timeouts()).thenReturn(Observable.never());
+		when(infoRx.currentViews()).thenReturn(Observable.never());
+		when(infoRx.highQCs()).thenReturn(Observable.never());
+		when(infoRx.committedVertices()).thenReturn(Observable.never());
+		this.runner = new InMemoryInfoStateManager(infoRx, 1, 1);
 	}
 
 	@Test
 	public void when_send_current_view_and_get_view__then_returns_sent_view() {
 		EpochView currentView = mock(EpochView.class);
-		when(infoRx.timeouts()).thenReturn(Observable.never());
 		when(infoRx.currentViews()).thenReturn(Observable.just(currentView));
 		runner.start();
 		assertThat(runner.getCurrentView()).isEqualTo(currentView);
@@ -48,10 +51,7 @@ public class InMemoryInfoStateRunnerTest {
 	@Test
 	public void when_send_timeout_view_and_get_timeout_view__then_returns_sent_timeout_view() {
 		Timeout timeout = mock(Timeout.class);
-
 		when(infoRx.timeouts()).thenReturn(Observable.just(timeout));
-		when(infoRx.currentViews()).thenReturn(Observable.never());
-
 		runner.start();
 		assertThat(runner.getLastTimeout()).isEqualTo(timeout);
 	}

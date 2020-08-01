@@ -18,11 +18,10 @@
 package org.radix;
 
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.api.InMemoryInfoStateRunner;
+import com.radixdlt.api.InMemoryInfoStateManager;
 import com.radixdlt.api.LedgerRx;
 import com.radixdlt.api.SubmissionErrorsRx;
 import com.radixdlt.consensus.ConsensusRunner;
-import com.radixdlt.consensus.VertexStoreEventsRx;
 import com.radixdlt.consensus.sync.SyncedRadixEngine;
 import com.radixdlt.mempool.MempoolReceiver;
 import com.radixdlt.mempool.SubmissionControl;
@@ -150,7 +149,8 @@ public final class Radix
 		SyncedRadixEngine syncedRadixEngine = globalInjector.getInjector().getInstance(SyncedRadixEngine.class);
 		syncedRadixEngine.start();
 
-		globalInjector.getInjector().getInstance(InMemoryInfoStateRunner.class).start();
+		InMemoryInfoStateManager infoStateRunner = globalInjector.getInjector().getInstance(InMemoryInfoStateManager.class);
+		infoStateRunner.start();
 
 
 		// TODO: Move this to a better place
@@ -165,10 +165,10 @@ public final class Radix
 		SubmissionControl submissionControl = globalInjector.getInjector().getInstance(SubmissionControl.class);
 		AtomToBinaryConverter atomToBinaryConverter = globalInjector.getInjector().getInstance(AtomToBinaryConverter.class);
 		LedgerEntryStore store = globalInjector.getInjector().getInstance(LedgerEntryStore.class);
-		VertexStoreEventsRx vertexStoreEventsRx = globalInjector.getInjector().getInstance(VertexStoreEventsRx.class);
 		SubmissionErrorsRx submissionErrorsRx = globalInjector.getInjector().getInstance(SubmissionErrorsRx.class);
 		LedgerRx ledgerRx = globalInjector.getInjector().getInstance(LedgerRx.class);
 		RadixHttpServer httpServer = new RadixHttpServer(
+			infoStateRunner,
 			submissionErrorsRx,
 			ledgerRx,
 			bft,
@@ -179,8 +179,7 @@ public final class Radix
 			serialization,
 			properties,
 			localSystem,
-			addressBook,
-			vertexStoreEventsRx
+			addressBook
 		);
 		httpServer.start(properties);
 
