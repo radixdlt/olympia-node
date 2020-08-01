@@ -21,6 +21,9 @@ import static org.awaitility.Awaitility.await;
 import static org.mockito.Mockito.mock;
 import static org.powermock.api.mockito.PowerMockito.when;
 
+import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochView;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.concurrent.TimeUnit;
@@ -55,5 +58,27 @@ public class InMemoryInfoStateManagerTest {
 		when(infoRx.timeouts()).thenReturn(Observable.just(timeout));
 		runner.start();
 		await().atMost(1, TimeUnit.SECONDS).until(() -> runner.getLastTimeout().equals(timeout));
+	}
+
+	@Test
+	public void when_send_high_qc_and_get_high_qc__then_returns_sent_high_qc() {
+		QuorumCertificate qc = mock(QuorumCertificate.class);
+		when(infoRx.highQCs()).thenReturn(Observable.just(qc));
+		runner.start();
+		await().atMost(1, TimeUnit.SECONDS).until(() -> runner.getHighestQC().equals(qc));
+	}
+
+	@Test
+	public void when_send_three_committed_vertices_and_get_committed__then_returns_last_committed() {
+		Vertex vertex0 = mock(Vertex.class);
+		when(vertex0.getView()).thenReturn(View.of(0));
+		Vertex vertex1 = mock(Vertex.class);
+		when(vertex1.getView()).thenReturn(View.of(1));
+		Vertex vertex2 = mock(Vertex.class);
+		when(vertex2.getView()).thenReturn(View.of(2));
+		when(infoRx.committedVertices()).thenReturn(Observable.just(vertex0, vertex1, vertex2));
+		runner.start();
+		await().atMost(1, TimeUnit.SECONDS).until(() -> runner.getCommittedVertices().size() == 1
+			&& runner.getCommittedVertices().get(0).equals(vertex2));
 	}
 }

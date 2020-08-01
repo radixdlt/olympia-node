@@ -18,6 +18,7 @@
 package com.radixdlt.consensus.epoch;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
 import com.radixdlt.consensus.bft.View;
@@ -25,6 +26,12 @@ import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
 public class EpochViewTest {
+
+	@Test
+	public void testBadArgument() {
+		assertThatThrownBy(() -> EpochView.of(-1, View.of(1)))
+			.isInstanceOf(IllegalArgumentException.class);
+	}
 
 	@Test
 	public void testGetters() {
