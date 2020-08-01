@@ -68,8 +68,8 @@ public final class View implements Comparable<View> {
 			return false;
 		}
 
-		View view = (View) o;
-		return view.view == this.view;
+		View other = (View) o;
+		return other.view == this.view;
 	}
 
 

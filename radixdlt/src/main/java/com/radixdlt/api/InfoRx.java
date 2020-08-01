@@ -22,9 +22,26 @@ import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.epoch.EpochView;
 import io.reactivex.rxjava3.core.Observable;
 
+/**
+ * Flows of various information from consensus/state-syncer
+ */
 public interface InfoRx {
+	/**
+	 * Retrieve rx flow of current epoch+views
+	 * @return flow of epochviews
+	 */
 	Observable<EpochView> currentViews();
+
+	/**
+	 * Retrieve rx flow of timeouts occurring
+	 * @return flow of timeouts
+	 */
 	Observable<Timeout> timeouts();
+
+	/**
+	 * Retrieve rx flow of high quorum certificates
+	 * @return flow of qcs
+	 */
 	Observable<QuorumCertificate> highQCs();
 
 	/**

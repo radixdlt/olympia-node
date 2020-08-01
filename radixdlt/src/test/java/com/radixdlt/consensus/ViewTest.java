@@ -9,6 +9,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class ViewTest {
 	@Test
+	public void testBadArgument() {
+		assertThatThrownBy(() -> View.of(-1L))
+			.isInstanceOf(IllegalArgumentException.class);
+	}
+	@Test
 	public void testPrevious() {
 		assertThat(View.of(2L).previous()).isEqualTo(View.of(1L));
 		assertThatThrownBy(() -> View.of(0L).previous());
