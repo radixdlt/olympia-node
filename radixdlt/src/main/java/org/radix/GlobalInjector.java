@@ -18,7 +18,6 @@
 package org.radix;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableMap.Builder;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -27,9 +26,9 @@ import com.google.inject.Scopes;
 import com.google.inject.name.Names;
 import com.radixdlt.CerberusModule;
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.epoch.EpochManager.EpochInfoSender;
+import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.identifiers.RadixAddress;
@@ -203,19 +202,19 @@ public class GlobalInjector {
 			String host = this.hostIp.hostIp()
 				.orElseThrow(() -> new IllegalStateException("Unable to determine host IP"));
 			Supplier<Map<String, Object>> infoSupplier = () -> {
-				Pair<Long, View> currentEpochView = epochInfo.getCurrentView();
-				Pair<Long, View> lastTimeoutEpochView = epochInfo.getLastTimeout();
+				EpochView currentEpochView = epochInfo.getCurrentView();
+				EpochView lastTimeoutEpochView = epochInfo.getLastTimeout();
 
 				return ImmutableMap.of(
 					"epochManager", ImmutableMap.of(
 						"currentView", ImmutableMap.of(
-							"epoch", currentEpochView.getFirst(),
-							"view", currentEpochView.getSecond().number()
+							"epoch", currentEpochView.getEpoch(),
+							"view", currentEpochView.getView().number()
 						),
 						"lastTimeout", lastTimeoutEpochView != null
 							? ImmutableMap.of(
-							"epoch", lastTimeoutEpochView.getFirst(),
-							"view", lastTimeoutEpochView.getSecond().number())
+							"epoch", lastTimeoutEpochView.getEpoch(),
+							"view", lastTimeoutEpochView.getView().number())
 							: ImmutableMap.of()
 					),
 					"counters", counters.toMap()

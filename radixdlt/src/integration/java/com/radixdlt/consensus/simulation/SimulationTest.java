@@ -19,7 +19,7 @@ package com.radixdlt.consensus.simulation;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.simulation.TestInvariant.TestInvariantError;
 import com.radixdlt.consensus.simulation.invariants.epochs.EpochViewInvariant;

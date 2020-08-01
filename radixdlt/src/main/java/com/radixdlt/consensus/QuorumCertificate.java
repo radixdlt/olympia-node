@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.consensus.bft.View;
 import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonCreator;

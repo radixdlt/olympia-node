@@ -19,14 +19,13 @@ package com.radixdlt.consensus.epoch;
 
 import static org.mockito.Mockito.mock;
 
-import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.bft.BFTNode;
 import org.junit.Test;
 
 public class EmptyEpochInfoSenderTest {
 	@Test
 	public void when_send__then_no_exception_occurs() {
-		EmptyEpochInfoSender.INSTANCE.sendCurrentView(12345L, mock(View.class));
-		EmptyEpochInfoSender.INSTANCE.sendTimeoutProcessed(12345L, mock(View.class), mock(BFTNode.class));
+		EmptyEpochInfoSender.INSTANCE.sendCurrentView(mock(EpochView.class));
+		EmptyEpochInfoSender.INSTANCE.sendTimeoutProcessed(mock(EpochView.class), mock(BFTNode.class));
 	}
 }

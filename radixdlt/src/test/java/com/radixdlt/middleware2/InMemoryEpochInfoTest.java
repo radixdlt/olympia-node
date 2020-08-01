@@ -20,29 +20,27 @@ package com.radixdlt.middleware2;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.mock;
 
-import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.epoch.EpochView;
 import org.junit.Test;
 
 public class InMemoryEpochInfoTest {
 	@Test
 	public void when_send_current_view_and_get_view__then_returns_sent_view() {
 		InMemoryEpochInfo inMemoryEpochInfo = new InMemoryEpochInfo();
-		View currentView = mock(View.class);
+		EpochView currentView = mock(EpochView.class);
 
-		inMemoryEpochInfo.sendCurrentView(12345L, currentView);
-		assertThat(inMemoryEpochInfo.getCurrentView().getFirst()).isEqualTo(12345L);
-		assertThat(inMemoryEpochInfo.getCurrentView().getSecond()).isEqualTo(currentView);
+		inMemoryEpochInfo.sendCurrentView(currentView);
+		assertThat(inMemoryEpochInfo.getCurrentView()).isEqualTo(currentView);
 	}
 
 	@Test
 	public void when_send_timeout_view_and_get_timeout_view__then_returns_sent_timeout_view() {
 		InMemoryEpochInfo inMemoryEpochInfo = new InMemoryEpochInfo();
-		View currentView = mock(View.class);
+		EpochView timeoutView = mock(EpochView.class);
 		BFTNode leader = mock(BFTNode.class);
 
-		inMemoryEpochInfo.sendTimeoutProcessed(12345L, currentView, leader);
-		assertThat(inMemoryEpochInfo.getLastTimeout().getFirst()).isEqualTo(12345L);
-		assertThat(inMemoryEpochInfo.getLastTimeout().getSecond()).isEqualTo(currentView);
+		inMemoryEpochInfo.sendTimeoutProcessed(timeoutView, leader);
+		assertThat(inMemoryEpochInfo.getLastTimeout()).isEqualTo(timeoutView);
 	}
 }

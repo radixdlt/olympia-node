@@ -18,7 +18,7 @@
 package com.radixdlt.consensus.liveness;
 
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.bft.View;
 
 /**
  * Generates a new proposal for a given view

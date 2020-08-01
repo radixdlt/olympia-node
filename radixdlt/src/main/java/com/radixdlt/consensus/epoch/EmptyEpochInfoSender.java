@@ -17,7 +17,6 @@
 
 package com.radixdlt.consensus.epoch;
 
-import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.epoch.EpochManager.EpochInfoSender;
 
@@ -28,12 +27,12 @@ public enum EmptyEpochInfoSender implements EpochInfoSender {
 	INSTANCE;
 
 	@Override
-	public void sendCurrentView(long epoch, View view) {
+	public void sendCurrentView(EpochView epochView) {
 		// No-op
 	}
 
 	@Override
-	public void sendTimeoutProcessed(long epoch, View view, BFTNode leader) {
+	public void sendTimeoutProcessed(EpochView epochView, BFTNode leader) {
 		// No-op
 	}
 }

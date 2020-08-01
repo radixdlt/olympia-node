@@ -1,5 +1,6 @@
 package com.radixdlt.consensus;
 
+import com.radixdlt.consensus.bft.View;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 

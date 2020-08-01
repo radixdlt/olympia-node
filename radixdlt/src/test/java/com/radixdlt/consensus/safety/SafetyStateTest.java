@@ -20,7 +20,7 @@ package com.radixdlt.consensus.safety;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.mock;
 
-import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.safety.SafetyState.Builder;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;

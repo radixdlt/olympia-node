@@ -31,7 +31,7 @@ import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.VertexStoreEventProcessor;
 import com.radixdlt.consensus.VertexStoreFactory;
-import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTInfoSender;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -96,18 +96,16 @@ public final class EpochManager {
 	public interface EpochInfoSender {
 		/**
 		 * Signify that the bft node is on a new view
-		 * @param epoch the epoch of the view
-		 * @param view the view the bft node has changed to
+		 * @param epochView the epoch and view the bft node has changed to
 		 */
-		void sendCurrentView(long epoch, View view);
+		void sendCurrentView(EpochView epochView);
 
 		/**
 		 * Signify that a timeout was processed by this bft node
-		 * @param epoch the epoch of the view
-		 * @param view the view of the timeout
+		 * @param epochView the epoch and view of the timeout
 		 * @param leader the leader of the view which timed out
 		 */
-		void sendTimeoutProcessed(long epoch, View view, BFTNode leader);
+		void sendTimeoutProcessed(EpochView epochView, BFTNode leader);
 	}
 
 	private final BFTNode self;
@@ -199,12 +197,12 @@ public final class EpochManager {
 			BFTInfoSender infoSender = new BFTInfoSender() {
 				@Override
 				public void sendCurrentView(View view) {
-					epochInfoSender.sendCurrentView(nextEpoch, view);
+					epochInfoSender.sendCurrentView(EpochView.of(nextEpoch, view));
 				}
 
 				@Override
 				public void sendTimeoutProcessed(View view, BFTNode leader) {
-					epochInfoSender.sendTimeoutProcessed(nextEpoch, view, leader);
+					epochInfoSender.sendTimeoutProcessed(EpochView.of(nextEpoch, view), leader);
 				}
 			};
 

@@ -18,7 +18,7 @@
 package com.radixdlt.consensus.simulation.invariants.bft;
 
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.simulation.TestInvariant;
 import com.radixdlt.consensus.simulation.network.SimulationNodes.RunningNetwork;

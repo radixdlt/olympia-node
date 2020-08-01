@@ -20,7 +20,7 @@ package com.radixdlt.consensus.epoch;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 
-import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.bft.View;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Before;
 import org.junit.Test;

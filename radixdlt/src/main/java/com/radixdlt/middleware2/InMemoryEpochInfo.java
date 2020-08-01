@@ -17,34 +17,34 @@
 
 package com.radixdlt.middleware2;
 
-import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.epoch.EpochManager.EpochInfoSender;
-import com.radixdlt.utils.Pair;
+import com.radixdlt.consensus.epoch.EpochView;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Stores epoch info atomically in memory.
  */
 public final class InMemoryEpochInfo implements EpochInfoSender {
-	private final AtomicReference<Pair<Long, View>> lastTimeout = new AtomicReference<>();
-	private final AtomicReference<Pair<Long, View>> currentView = new AtomicReference<>(Pair.of(0L, View.genesis()));
+	private final AtomicReference<EpochView> lastTimeout = new AtomicReference<>();
+	private final AtomicReference<EpochView> currentView = new AtomicReference<>(EpochView.of(0L, View.genesis()));
 
 	@Override
-	public void sendCurrentView(long epoch, View view) {
-		this.currentView.set(Pair.of(epoch, view));
+	public void sendCurrentView(EpochView epochView) {
+		this.currentView.set(epochView);
 	}
 
-	public Pair<Long, View> getCurrentView() {
+	public EpochView getCurrentView() {
 		return this.currentView.get();
 	}
 
 	@Override
-	public void sendTimeoutProcessed(long epoch, View view, BFTNode leader) {
-		this.lastTimeout.set(Pair.of(epoch, view));
+	public void sendTimeoutProcessed(EpochView epochView, BFTNode leader) {
+		this.lastTimeout.set(epochView);
 	}
 
-	public Pair<Long, View> getLastTimeout() {
+	public EpochView getLastTimeout() {
 		return this.lastTimeout.get();
 	}
 }
