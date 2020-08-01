@@ -18,7 +18,6 @@
 package com.radixdlt.middleware2;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 
 import com.radixdlt.consensus.View;
@@ -33,7 +32,7 @@ public class InMemoryEpochInfoTest {
 
 		inMemoryEpochInfo.sendCurrentView(12345L, currentView);
 		assertThat(inMemoryEpochInfo.getCurrentView().getFirst()).isEqualTo(12345L);
-		assertThat(inMemoryEpochInfo.getCurrentView().getSecond()).isEqualTo(eq(currentView));
+		assertThat(inMemoryEpochInfo.getCurrentView().getSecond()).isEqualTo(currentView);
 	}
 
 	@Test
@@ -44,6 +43,6 @@ public class InMemoryEpochInfoTest {
 
 		inMemoryEpochInfo.sendTimeoutProcessed(12345L, currentView, leader);
 		assertThat(inMemoryEpochInfo.getLastTimeout().getFirst()).isEqualTo(12345L);
-		assertThat(inMemoryEpochInfo.getLastTimeout().getSecond()).isEqualTo(eq(currentView));
+		assertThat(inMemoryEpochInfo.getLastTimeout().getSecond()).isEqualTo(currentView);
 	}
 }

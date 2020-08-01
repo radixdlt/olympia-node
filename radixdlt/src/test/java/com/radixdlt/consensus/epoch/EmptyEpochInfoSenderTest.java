@@ -26,7 +26,7 @@ import org.junit.Test;
 public class EmptyEpochInfoSenderTest {
 	@Test
 	public void when_send__then_no_exception_occurs() {
-		EmptyEpochInfoSender.INSTANCE.sendCurrentView(mock(Long.class), mock(View.class));
-		EmptyEpochInfoSender.INSTANCE.sendTimeoutProcessed(mock(Long.class), mock(View.class), mock(BFTNode.class));
+		EmptyEpochInfoSender.INSTANCE.sendCurrentView(12345L, mock(View.class));
+		EmptyEpochInfoSender.INSTANCE.sendTimeoutProcessed(12345L, mock(View.class), mock(BFTNode.class));
 	}
 }
