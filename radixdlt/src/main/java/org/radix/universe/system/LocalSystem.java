@@ -17,10 +17,6 @@
 
 package org.radix.universe.system;
 
-import com.google.common.collect.ImmutableMap.Builder;
-import com.radixdlt.consensus.View;
-import com.radixdlt.middleware2.InMemoryEpochInfo;
-import com.radixdlt.utils.Pair;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
@@ -32,7 +28,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.keys.Keys;
@@ -48,65 +43,42 @@ import com.radixdlt.universe.Universe;
 @SerializerId2("api.local_system")
 // FIXME reimplement localsystem as an interface, extract persistence to elsewhere
 public final class LocalSystem extends RadixSystem {
-	private final ECKeyPair keyPair;
-	private final Supplier<Map<String, Object>> counters;
-	private final InMemoryEpochInfo epochInfo;
+	private final ECKeyPair keyPair; // TODO: Remove this
+	private final Supplier<Map<String, Object>> infoSupplier;
 
 	LocalSystem() {
 		// Serializer only
-		this(null, ImmutableMap::of);
+		this(ImmutableMap::of);
 	}
 
 	@VisibleForTesting
-	LocalSystem(InMemoryEpochInfo epochInfo, Supplier<Map<String, Object>> counters) {
-		this.epochInfo = epochInfo;
+	LocalSystem(Supplier<Map<String, Object>> infoSupplier) {
+		this.infoSupplier = infoSupplier;
 		this.keyPair = ECKeyPair.generateNew();
-		this.counters = counters;
 	}
 
 	public LocalSystem(
-		InMemoryEpochInfo epochInfo,
-		Supplier<Map<String, Object>> counters,
-		ECKeyPair key, String agent,
+		Supplier<Map<String, Object>> infoSupplier,
+		ECKeyPair key,
+		String agent,
 		int agentVersion,
 		int protocolVersion,
 		ImmutableList<TransportInfo> supportedTransports
 	) {
 		super(key.getPublicKey(), agent, agentVersion, protocolVersion, supportedTransports);
 		this.keyPair = key;
-		this.counters = Objects.requireNonNull(counters);
-		this.epochInfo = epochInfo;
+		this.infoSupplier = Objects.requireNonNull(infoSupplier);
 	}
 
 	public ECKeyPair getKeyPair() {
 		return this.keyPair;
 	}
 
-	@JsonProperty("epoch_info")
+	// Property "info" - 1 getter
+	@JsonProperty("info")
 	@DsonOutput(Output.API)
-	Map<String, Object> getEpochInfo() {
-		if (epochInfo == null) {
-			return ImmutableMap.of();
-		}
-
-		Pair<Long, View> lastTimeout = epochInfo.getLastTimeout();
-		Builder<String, Object> builder = ImmutableMap.builder();
-		if (lastTimeout != null) {
-			builder.put("lastTimeoutEpoch", lastTimeout.getFirst());
-			builder.put("lastTimeoutView", lastTimeout.getSecond().number());
-		}
-		Pair<Long, View> currentEpochView = epochInfo.getCurrentView();
-		builder.put("currentEpoch", currentEpochView.getFirst());
-		builder.put("currentView", currentEpochView.getSecond().number());
-
-		return builder.build();
-	}
-
-	// Property "counters" - 1 getter
-	@JsonProperty("counters")
-	@DsonOutput(Output.API)
-	Map<String, Object> getJsonCounters() {
-		return this.counters.get();
+	Map<String, Object> getInfo() {
+		return this.infoSupplier.get();
 	}
 
 	// Property "processors" - 1 getter
@@ -117,10 +89,10 @@ public final class LocalSystem extends RadixSystem {
 		return Runtime.getRuntime().availableProcessors();
 	}
 
-	public static LocalSystem create(InMemoryEpochInfo epochInfo, SystemCounters counters, RuntimeProperties properties, Universe universe, String host) {
+	public static LocalSystem create(Supplier<Map<String, Object>> infoSupplier, RuntimeProperties properties, Universe universe, String host) {
 		String nodeKeyPath = properties.get("node.key.path", "node.ks");
 		ECKeyPair nodeKey = loadNodeKey(nodeKeyPath);
-		return new LocalSystem(epochInfo, counters::toMap, nodeKey, Radix.AGENT, Radix.AGENT_VERSION, Radix.PROTOCOL_VERSION, defaultTransports(universe, host));
+		return new LocalSystem(infoSupplier, nodeKey, Radix.AGENT, Radix.AGENT_VERSION, Radix.PROTOCOL_VERSION, defaultTransports(universe, host));
 	}
 
 	// FIXME: *Really* need a better way of configuring this other than hardcoding here

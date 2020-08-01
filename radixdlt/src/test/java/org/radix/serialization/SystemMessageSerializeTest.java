@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.middleware2.InMemoryEpochInfo;
 import com.radixdlt.network.transport.StaticTransportMetadata;
 import com.radixdlt.network.transport.TransportInfo;
 import com.radixdlt.network.transport.udp.UDPConstants;
@@ -40,7 +39,7 @@ public class SystemMessageSerializeTest extends SerializeMessageObject<SystemMes
 		private static SystemMessage get() {
 			try {
 				ECKeyPair keyPair = new ECKeyPair(Bytes.fromHexString(Strings.repeat("deadbeef", 8)));
-				RadixSystem system = new LocalSystem(new InMemoryEpochInfo(), ImmutableMap::of, keyPair, Radix.AGENT, Radix.AGENT_VERSION, Radix.PROTOCOL_VERSION, ImmutableList.of(
+				RadixSystem system = new LocalSystem(ImmutableMap::of, keyPair, Radix.AGENT, Radix.AGENT_VERSION, Radix.PROTOCOL_VERSION, ImmutableList.of(
 						TransportInfo.of(
 								UDPConstants.NAME,
 								StaticTransportMetadata.of(

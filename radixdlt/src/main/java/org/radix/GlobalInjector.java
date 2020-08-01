@@ -17,6 +17,8 @@
 
 package org.radix;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMap.Builder;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -25,6 +27,7 @@ import com.google.inject.Scopes;
 import com.google.inject.name.Names;
 import com.radixdlt.CerberusModule;
 import com.radixdlt.DefaultSerialization;
+import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.epoch.EpochManager.EpochInfoSender;
 import com.radixdlt.counters.SystemCounters;
@@ -49,6 +52,9 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.berkeley.BerkeleyStoreModule;
 import com.radixdlt.universe.Universe;
 
+import com.radixdlt.utils.Pair;
+import java.util.Map;
+import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import org.radix.database.DatabaseEnvironment;
@@ -196,7 +202,26 @@ public class GlobalInjector {
 		public LocalSystem get() {
 			String host = this.hostIp.hostIp()
 				.orElseThrow(() -> new IllegalStateException("Unable to determine host IP"));
-			return LocalSystem.create(this.epochInfo, this.counters, this.properties, this.universe, host);
+			Supplier<Map<String, Object>> infoSupplier = () -> {
+				Pair<Long, View> currentEpochView = epochInfo.getCurrentView();
+				Pair<Long, View> lastTimeoutEpochView = epochInfo.getLastTimeout();
+
+				return ImmutableMap.of(
+					"epochManager", ImmutableMap.of(
+						"currentView", ImmutableMap.of(
+							"epoch", currentEpochView.getFirst(),
+							"view", currentEpochView.getSecond().number()
+						),
+						"lastTimeout", lastTimeoutEpochView != null
+							? ImmutableMap.of(
+							"epoch", lastTimeoutEpochView.getFirst(),
+							"view", lastTimeoutEpochView.getSecond().number())
+							: ImmutableMap.of()
+					),
+					"counters", counters.toMap()
+				);
+			};
+			return LocalSystem.create(infoSupplier, this.properties, this.universe, host);
 		}
 	}
 }
