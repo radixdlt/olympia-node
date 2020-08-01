@@ -21,6 +21,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
+import com.radixdlt.api.InfoRx;
 import com.radixdlt.api.LedgerRx;
 import com.radixdlt.api.SubmissionErrorsRx;
 import com.radixdlt.consensus.HashVerifier;
@@ -44,7 +45,7 @@ import com.radixdlt.consensus.VertexStoreEventsRx;
 import com.radixdlt.mempool.SubmissionControl;
 import com.radixdlt.mempool.SubmissionControlImpl;
 import com.radixdlt.mempool.SubmissionControlImpl.SubmissionControlSender;
-import com.radixdlt.middleware2.InMemoryEpochInfo;
+import com.radixdlt.api.InMemoryInfoStateRunner;
 import com.radixdlt.middleware2.InternalMessagePasser;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.ProposerElectionFactory;
@@ -112,10 +113,11 @@ public class CerberusModule extends AbstractModule {
 		bind(CommittedStateSyncRx.class).to(InternalMessagePasser.class);
 		bind(EpochChangeRx.class).to(InternalMessagePasser.class);
 		bind(EpochChangeSender.class).to(InternalMessagePasser.class);
+		bind(EpochInfoSender.class).to(InternalMessagePasser.class);
+		bind(InfoRx.class).to(InternalMessagePasser.class);
 		bind(SyncedRadixEngineEventSender.class).to(InternalMessagePasser.class);
 		bind(LedgerRx.class).to(InternalMessagePasser.class);
 		bind(SyncedStateComputer.class).to(SyncedRadixEngine.class);
-		bind(EpochInfoSender.class).to(InMemoryEpochInfo.class);
 
 		// Network Sync messages
 		bind(SyncEpochsRPCSender.class).to(MessageCentralValidatorSync.class);
@@ -214,8 +216,8 @@ public class CerberusModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private InMemoryEpochInfo epochInfo() {
-		return new InMemoryEpochInfo();
+	private InMemoryInfoStateRunner epochInfo(InfoRx infoRx) {
+		return new InMemoryInfoStateRunner(infoRx);
 	}
 
 	@Provides

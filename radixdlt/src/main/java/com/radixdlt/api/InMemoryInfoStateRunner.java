@@ -15,36 +15,36 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.middleware2;
+package com.radixdlt.api;
 
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.epoch.EpochManager.EpochInfoSender;
 import com.radixdlt.consensus.epoch.EpochView;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Stores epoch info atomically in memory.
+ * Stores info atomically in memory.
  */
-public final class InMemoryEpochInfo implements EpochInfoSender {
-	private final AtomicReference<EpochView> lastTimeout = new AtomicReference<>();
+public final class InMemoryInfoStateRunner {
+	private final InfoRx infoRx;
+	private final AtomicReference<Timeout> lastTimeout = new AtomicReference<>();
 	private final AtomicReference<EpochView> currentView = new AtomicReference<>(EpochView.of(0L, View.genesis()));
 
-	@Override
-	public void sendCurrentView(EpochView epochView) {
-		this.currentView.set(epochView);
+	public InMemoryInfoStateRunner(
+		InfoRx infoRx
+	) {
+		this.infoRx = infoRx;
+	}
+
+	public void start() {
+		this.infoRx.currentViews().subscribe(currentView::set);
+		this.infoRx.timeouts().subscribe(lastTimeout::set);
 	}
 
 	public EpochView getCurrentView() {
 		return this.currentView.get();
 	}
 
-	@Override
-	public void sendTimeoutProcessed(EpochView epochView, BFTNode leader) {
-		this.lastTimeout.set(epochView);
-	}
-
-	public EpochView getLastTimeout() {
+	public Timeout getLastTimeout() {
 		return this.lastTimeout.get();
 	}
 }

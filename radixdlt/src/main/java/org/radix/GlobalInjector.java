@@ -26,7 +26,7 @@ import com.google.inject.Scopes;
 import com.google.inject.name.Names;
 import com.radixdlt.CerberusModule;
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.api.Timeout;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.counters.SystemCounters;
@@ -36,7 +36,7 @@ import com.radixdlt.identifiers.EUID;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.mempool.MempoolModule;
-import com.radixdlt.middleware2.InMemoryEpochInfo;
+import com.radixdlt.api.InMemoryInfoStateRunner;
 import com.radixdlt.middleware2.MiddlewareModule;
 import com.radixdlt.middleware2.network.NetworkModule;
 import com.radixdlt.network.addressbook.AddressBookModule;
@@ -51,7 +51,6 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.berkeley.BerkeleyStoreModule;
 import com.radixdlt.universe.Universe;
 
-import com.radixdlt.utils.Pair;
 import java.util.Map;
 import java.util.function.Supplier;
 import javax.inject.Inject;
@@ -182,14 +181,14 @@ public class GlobalInjector {
 	}
 
 	static class LocalSystemProvider implements Provider<LocalSystem> {
-		private final InMemoryEpochInfo epochInfo;
+		private final InMemoryInfoStateRunner epochInfo;
 		private final SystemCounters counters;
 		private final RuntimeProperties properties;
 		private final Universe universe;
 		private final HostIp hostIp;
 
 		@Inject
-		public LocalSystemProvider(InMemoryEpochInfo epochInfo, SystemCounters counters, RuntimeProperties properties, Universe universe, HostIp hostIp) {
+		public LocalSystemProvider(InMemoryInfoStateRunner epochInfo, SystemCounters counters, RuntimeProperties properties, Universe universe, HostIp hostIp) {
 			this.epochInfo = epochInfo;
 			this.counters = counters;
 			this.properties = properties;
@@ -203,7 +202,7 @@ public class GlobalInjector {
 				.orElseThrow(() -> new IllegalStateException("Unable to determine host IP"));
 			Supplier<Map<String, Object>> infoSupplier = () -> {
 				EpochView currentEpochView = epochInfo.getCurrentView();
-				EpochView lastTimeoutEpochView = epochInfo.getLastTimeout();
+				Timeout timeout = epochInfo.getLastTimeout();
 
 				return ImmutableMap.of(
 					"epochManager", ImmutableMap.of(
@@ -211,10 +210,11 @@ public class GlobalInjector {
 							"epoch", currentEpochView.getEpoch(),
 							"view", currentEpochView.getView().number()
 						),
-						"lastTimeout", lastTimeoutEpochView != null
+						"lastTimeout", timeout != null
 							? ImmutableMap.of(
-							"epoch", lastTimeoutEpochView.getEpoch(),
-							"view", lastTimeoutEpochView.getView().number())
+							"epoch", timeout.getEpochView().getEpoch(),
+							"view", timeout.getEpochView().getView().number(),
+							"leader", timeout.getLeader().toString())
 							: ImmutableMap.of()
 					),
 					"counters", counters.toMap()

@@ -15,32 +15,44 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.middleware2;
+package com.radixdlt.api;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.powermock.api.mockito.PowerMockito.when;
 
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.epoch.EpochView;
+import io.reactivex.rxjava3.core.Observable;
+import org.junit.Before;
 import org.junit.Test;
 
-public class InMemoryEpochInfoTest {
+public class InMemoryInfoStateRunnerTest {
+	private InfoRx infoRx;
+	private InMemoryInfoStateRunner runner;
+
+	@Before
+	public void setup() {
+		this.infoRx = mock(InfoRx.class);
+		this.runner = new InMemoryInfoStateRunner(infoRx);
+	}
+
 	@Test
 	public void when_send_current_view_and_get_view__then_returns_sent_view() {
-		InMemoryEpochInfo inMemoryEpochInfo = new InMemoryEpochInfo();
 		EpochView currentView = mock(EpochView.class);
-
-		inMemoryEpochInfo.sendCurrentView(currentView);
-		assertThat(inMemoryEpochInfo.getCurrentView()).isEqualTo(currentView);
+		when(infoRx.timeouts()).thenReturn(Observable.never());
+		when(infoRx.currentViews()).thenReturn(Observable.just(currentView));
+		runner.start();
+		assertThat(runner.getCurrentView()).isEqualTo(currentView);
 	}
 
 	@Test
 	public void when_send_timeout_view_and_get_timeout_view__then_returns_sent_timeout_view() {
-		InMemoryEpochInfo inMemoryEpochInfo = new InMemoryEpochInfo();
-		EpochView timeoutView = mock(EpochView.class);
-		BFTNode leader = mock(BFTNode.class);
+		Timeout timeout = mock(Timeout.class);
 
-		inMemoryEpochInfo.sendTimeoutProcessed(timeoutView, leader);
-		assertThat(inMemoryEpochInfo.getLastTimeout()).isEqualTo(timeoutView);
+		when(infoRx.timeouts()).thenReturn(Observable.just(timeout));
+		when(infoRx.currentViews()).thenReturn(Observable.never());
+
+		runner.start();
+		assertThat(runner.getLastTimeout()).isEqualTo(timeout);
 	}
 }

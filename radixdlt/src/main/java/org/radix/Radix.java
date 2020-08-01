@@ -18,6 +18,7 @@
 package org.radix;
 
 import com.radixdlt.DefaultSerialization;
+import com.radixdlt.api.InMemoryInfoStateRunner;
 import com.radixdlt.api.LedgerRx;
 import com.radixdlt.api.SubmissionErrorsRx;
 import com.radixdlt.consensus.ConsensusRunner;
@@ -149,9 +150,11 @@ public final class Radix
 		SyncedRadixEngine syncedRadixEngine = globalInjector.getInjector().getInstance(SyncedRadixEngine.class);
 		syncedRadixEngine.start();
 
-		CommittedAtomsStore engineStore = globalInjector.getInjector().getInstance(CommittedAtomsStore.class);
+		globalInjector.getInjector().getInstance(InMemoryInfoStateRunner.class).start();
+
 
 		// TODO: Move this to a better place
+		CommittedAtomsStore engineStore = globalInjector.getInjector().getInstance(CommittedAtomsStore.class);
 		CommittedAtom genesisAtom = globalInjector.getInjector().getInstance(CommittedAtom.class);
 		if (engineStore.getCommittedAtoms(genesisAtom.getVertexMetadata().getStateVersion() - 1, 1).isEmpty()) {
 			syncedRadixEngine.execute(genesisAtom);
