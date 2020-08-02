@@ -96,7 +96,8 @@ public class GlobalInjectorTest {
 	@Test
 	public void testLocalSystem() {
 		LocalSystemProvider provider = this.globalInjector.getInjector().getInstance(LocalSystemProvider.class);
-		assertNotNull(provider.get());
+		LocalSystem localSystem = provider.get();
+		assertNotNull(localSystem.getInfo());
 	}
 
 	private <T> void testSelfInstance(Class<T> cls) {

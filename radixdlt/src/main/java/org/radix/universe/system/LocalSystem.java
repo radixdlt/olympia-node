@@ -77,7 +77,7 @@ public final class LocalSystem extends RadixSystem {
 	// Property "info" - 1 getter
 	@JsonProperty("info")
 	@DsonOutput(Output.API)
-	Map<String, Object> getInfo() {
+	public Map<String, Object> getInfo() {
 		return this.infoSupplier.get();
 	}
 
