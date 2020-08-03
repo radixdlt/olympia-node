@@ -20,19 +20,24 @@ package com.radixdlt.middleware2;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.EpochChangeSender;
 import com.radixdlt.api.DeserializationFailure;
+import com.radixdlt.api.InfoRx;
 import com.radixdlt.api.LedgerRx;
 import com.radixdlt.api.StoredAtom;
 import com.radixdlt.api.SubmissionErrorsRx;
 import com.radixdlt.api.SubmissionFailure;
+import com.radixdlt.api.Timeout;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.CommittedStateSyncRx;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.EpochChangeRx;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexStoreEventsRx;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
+import com.radixdlt.consensus.epoch.EpochManager.EpochInfoSender;
+import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.sync.SyncedRadixEngine.CommittedStateSyncSender;
 import com.radixdlt.consensus.sync.SyncedRadixEngine.SyncedRadixEngineEventSender;
 import com.radixdlt.crypto.Hash;
@@ -48,16 +53,28 @@ import io.reactivex.rxjava3.subjects.Subject;
 /**
  * Acts as the "ether" to messages passed from sender to receiver
  */
-public final class InternalMessagePasser implements VertexStoreEventsRx, VertexStoreEventSender, CommittedStateSyncSender, CommittedStateSyncRx,
-	EpochChangeSender, EpochChangeRx, SyncedRadixEngineEventSender, LedgerRx, SubmissionControlSender, SubmissionErrorsRx {
+public final class InternalMessagePasser implements
+	VertexStoreEventsRx,
+	VertexStoreEventSender,
+	CommittedStateSyncSender,
+	CommittedStateSyncRx,
+	EpochChangeSender,
+	EpochChangeRx,
+	EpochInfoSender,
+	InfoRx,
+	SyncedRadixEngineEventSender,
+	LedgerRx,
+	SubmissionControlSender,
+	SubmissionErrorsRx {
 	private final Subject<Hash> localSyncsSubject = BehaviorSubject.<Hash>create().toSerialized();
 	private final Subject<CommittedStateSync> committedStateSyncsSubject = BehaviorSubject.<CommittedStateSync>create().toSerialized();
 	private final Observable<Hash> localSyncs;
 	private final Observable<CommittedStateSync> committedStateSyncs;
 	private final Subject<Vertex> committedVertices = BehaviorSubject.<Vertex>create().toSerialized();
 	private final Subject<EpochChange> epochChanges = BehaviorSubject.<EpochChange>create().toSerialized();
+	private final Subject<Timeout> timeouts = BehaviorSubject.<Timeout>create().toSerialized();
+	private final Subject<EpochView> currentEpochViews = BehaviorSubject.<EpochView>create().toSerialized();
 	private final Subject<QuorumCertificate> highQCs = BehaviorSubject.<QuorumCertificate>create().toSerialized();
-
 	private final Subject<StoredAtom> storedAtoms = BehaviorSubject.<StoredAtom>create().toSerialized();
 	private final Subject<StoredFailure> storedExceptions = BehaviorSubject.<StoredFailure>create().toSerialized();
 	private final Subject<SubmissionFailure> submissionFailures = BehaviorSubject.<SubmissionFailure>create().toSerialized();
@@ -157,5 +174,25 @@ public final class InternalMessagePasser implements VertexStoreEventsRx, VertexS
 	@Override
 	public Observable<DeserializationFailure> deserializationFailures() {
 		return deserializationFailures;
+	}
+
+	@Override
+	public void sendCurrentView(EpochView epochView) {
+		currentEpochViews.onNext(epochView);
+	}
+
+	@Override
+	public Observable<EpochView> currentViews() {
+		return currentEpochViews;
+	}
+
+	@Override
+	public void sendTimeoutProcessed(EpochView epochView, BFTNode leader) {
+		timeouts.onNext(new Timeout(epochView, leader));
+	}
+
+	@Override
+	public Observable<Timeout> timeouts() {
+		return timeouts;
 	}
 }

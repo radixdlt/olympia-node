@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.consensus.bft;
 
 /**
  * Represents a BFT view used by the Pacemaker of a BFT instance
@@ -68,8 +68,8 @@ public final class View implements Comparable<View> {
 			return false;
 		}
 
-		View view = (View) o;
-		return view.view == this.view;
+		View other = (View) o;
+		return other.view == this.view;
 	}
 
 

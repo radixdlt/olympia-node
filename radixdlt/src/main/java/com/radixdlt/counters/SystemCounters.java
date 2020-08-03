@@ -29,16 +29,13 @@ public interface SystemCounters {
 		BFT_INDIRECT_PARENT("bft.indirect_parent"),
 		BFT_REJECTED("bft.rejected"),
 		BFT_TIMEOUT("bft.timeout"),
-		BFT_TIMEOUT_VIEW("bft.timeout_view"),
 		BFT_VERTEX_STORE_SIZE("bft.vertex_store_size"),
-		BFT_VIEW("bft.view"),
 		BFT_PROCESSED("bft.processed"),
 
-		EPOCH_MANAGER_EPOCH("epoch_manager.epoch"),
 		EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS("epoch_manager.queued_consensus_events"),
 
 		LEDGER_SYNC_PROCESSED("ledger.sync_processed"),
-		LEDGER_PROCESSED("ledger.processed"), // LEDGER_PROCESSED = BFT_PROCESSED + LEDGER_SYNC_PROCESSED
+		LEDGER_PROCESSED("ledger.processed"), // LEDGER_PROCESSED = BFT_PROCESSED + LEDGER_SYNC_PROCESSED + 1 (genesis)
 		LEDGER_STATE_VERSION("ledger.state_version"),
 
 		MEMPOOL_COUNT("mempool.count"),

@@ -17,7 +17,7 @@
 
 package org.radix.serialization;
 
-import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.crypto.Hash;
 

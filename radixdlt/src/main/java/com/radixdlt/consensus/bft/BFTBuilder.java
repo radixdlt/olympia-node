@@ -24,6 +24,7 @@ import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
+import com.radixdlt.consensus.bft.BFTEventReducer.BFTInfoSender;
 import com.radixdlt.consensus.bft.BFTEventReducer.EndOfEpochSender;
 import com.radixdlt.consensus.liveness.MempoolProposalGenerator;
 import com.radixdlt.consensus.liveness.Pacemaker;
@@ -52,6 +53,7 @@ public final class BFTBuilder {
 	private Hasher hasher = new DefaultHasher();
 	private HashSigner signer;
 	private HashVerifier verifier = ECPublicKey::verify;
+	private BFTInfoSender infoSender;
 
 	// BFT Stateful objects
 	private Pacemaker pacemaker;
@@ -117,6 +119,11 @@ public final class BFTBuilder {
 		return this;
 	}
 
+	public BFTBuilder infoSender(BFTInfoSender infoSender) {
+		this.infoSender = infoSender;
+		return this;
+	}
+
 	public BFTBuilder pacemaker(Pacemaker pacemaker) {
 		this.pacemaker = pacemaker;
 		return this;
@@ -149,7 +156,8 @@ public final class BFTBuilder {
 			pendingVotes,
 			proposerElection,
 			validatorSet,
-			counters
+			counters,
+			infoSender
 		);
 
 		SyncQueues syncQueues = new SyncQueues();

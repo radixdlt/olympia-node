@@ -17,14 +17,12 @@
 
 package org.radix.api.http;
 
+import com.radixdlt.api.InMemoryInfoStateManager;
 import com.radixdlt.api.LedgerRx;
 import com.radixdlt.api.SubmissionErrorsRx;
 import com.radixdlt.consensus.ConsensusRunner;
-import com.google.common.collect.EvictingQueue;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Queues;
+import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.VertexStoreEventsRx;
 import com.radixdlt.mempool.SubmissionControl;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.network.addressbook.AddressBook;
@@ -36,7 +34,6 @@ import com.radixdlt.universe.Universe;
 import com.stijndewitt.undertow.cors.AllowAll;
 import com.stijndewitt.undertow.cors.Filter;
 
-import io.reactivex.rxjava3.disposables.Disposable;
 import io.undertow.Handlers;
 import io.undertow.Undertow;
 import io.undertow.server.HttpHandler;
@@ -47,7 +44,6 @@ import io.undertow.util.Methods;
 import io.undertow.util.StatusCodes;
 import io.undertow.websockets.core.WebSocketChannel;
 
-import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONArray;
@@ -67,7 +63,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -80,9 +75,6 @@ public final class RadixHttpServer {
 
 	private static final Logger logger = LogManager.getLogger("api");
 
-	private static final int DEFAULT_VERTEX_BUFFER_SIZE = 16;
-	private static final long DEFAULT_VERTEX_UPDATE_FREQ = 1_000L;
-
 	private final ConcurrentHashMap<RadixJsonRpcPeer, WebSocketChannel> peers;
 	private final AtomsService atomsService;
 	private final RadixJsonRpcServer jsonRpcServer;
@@ -92,14 +84,11 @@ public final class RadixHttpServer {
 	private final JSONObject apiSerializedUniverse;
 	private final LocalSystem localSystem;
 	private final Serialization serialization;
-	private final VertexStoreEventsRx vertexStoreEventsRx;
-
-	private final Disposable vertexDisposable;
-	private final Queue<Vertex> vertexRingBuffer;
-
+	private final InMemoryInfoStateManager infoStateRunner;
 	private Undertow server;
 
 	public RadixHttpServer(
+		InMemoryInfoStateManager infoStateRunner,
 		SubmissionErrorsRx submissionErrorsRx,
 		LedgerRx ledgerRx,
 		ConsensusRunner consensusRunner,
@@ -110,9 +99,9 @@ public final class RadixHttpServer {
 		Serialization serialization,
 		RuntimeProperties properties,
 		LocalSystem localSystem,
-		AddressBook addressBook,
-		VertexStoreEventsRx vertexStoreEventsRx
+		AddressBook addressBook
 	) {
+		this.infoStateRunner = Objects.requireNonNull(infoStateRunner);
 		this.universe = Objects.requireNonNull(universe);
 		this.serialization = Objects.requireNonNull(serialization);
 		this.apiSerializedUniverse = serialization.toJsonObject(this.universe, DsonOutput.Output.API);
@@ -136,16 +125,6 @@ public final class RadixHttpServer {
 		);
 		this.internalService = new InternalService(submissionControl, properties, universe);
 		this.networkService = new NetworkService(serialization, localSystem, addressBook);
-
-		final int vertexBufferSize = properties.get("api.debug.vertex_buffer_size", DEFAULT_VERTEX_BUFFER_SIZE);
-		final long vertexUpdateFreq = properties.get("api.debug.vertex_update_freq", DEFAULT_VERTEX_UPDATE_FREQ);
-		logger.debug("Vertex buffer size {}, frequency {} views", vertexBufferSize, vertexUpdateFreq);
-
-		this.vertexStoreEventsRx = vertexStoreEventsRx;
-		this.vertexRingBuffer = Queues.synchronizedQueue(EvictingQueue.create(vertexBufferSize));
-		this.vertexDisposable = vertexStoreEventsRx.committedVertices()
-			.filter(v -> (v.getView().number() % vertexUpdateFreq) == 0)
-			.subscribe(this.vertexRingBuffer::add);
 	}
 
     /**
@@ -209,12 +188,7 @@ public final class RadixHttpServer {
 
 	public final void stop() {
 		this.atomsService.stop();
-
-		try {
-			server.stop();
-		} finally {
-			this.vertexDisposable.dispose();
-		}
+		this.server.stop();
 	}
 
 	private void addDevelopmentOnlyRoutesTo(RoutingHandler handler) {
@@ -229,10 +203,7 @@ public final class RadixHttpServer {
 
 	private void addTestRoutesTo(RoutingHandler handler) {
 		addGetRoute("/api/vertices/committed", exchange -> {
-			List<Vertex> vertices = Lists.newArrayList();
-			// Use internal iteration for thread safety
-			this.vertexRingBuffer.forEach(vertices::add);
-
+			List<Vertex> vertices = infoStateRunner.getCommittedVertices();
 			JSONArray array = new JSONArray();
 			vertices.stream()
 				.map(v -> new JSONObject().put("view", v.getView().number()).put("hash", v.getId().toString()))
@@ -240,25 +211,19 @@ public final class RadixHttpServer {
 			respond(array, exchange);
 		}, handler);
 
-		// TODO: Maybe better to use counters for this?
 		addGetRoute("/api/vertices/highestqc", exchange -> {
-			this.vertexStoreEventsRx.highQCs()
-				.firstOrError()
-				.timeout(5, TimeUnit.SECONDS)
-				.subscribe(
-					highestQC -> {
-						JSONObject highestQCJson = new JSONObject();
-						highestQCJson.put("epoch", highestQC.getProposed().getEpoch());
-						highestQCJson.put("view", highestQC.getView());
-						highestQCJson.put("vertexId", highestQC.getProposed().getId());
-						respond(highestQCJson, exchange);
-					},
-					error -> {
-						JSONObject errorJson = new JSONObject();
-						errorJson.put("error", error.getMessage());
-						respond(errorJson, exchange);
-					}
-				);
+			QuorumCertificate highestQC = infoStateRunner.getHighestQC();
+			if (highestQC == null) {
+				JSONObject errorJson = new JSONObject();
+				errorJson.put("error", "no qc");
+				respond(errorJson, exchange);
+			} else {
+				JSONObject highestQCJson = new JSONObject();
+				highestQCJson.put("epoch", highestQC.getProposed().getEpoch());
+				highestQCJson.put("view", highestQC.getView());
+				highestQCJson.put("vertexId", highestQC.getProposed().getId());
+				respond(highestQCJson, exchange);
+			}
 		}, handler);
 	}
 

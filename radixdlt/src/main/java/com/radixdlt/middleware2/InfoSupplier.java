@@ -15,20 +15,18 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.middleware2;
 
-import com.radixdlt.crypto.Hash;
-import io.reactivex.rxjava3.core.Observable;
+import java.util.Map;
 
 /**
- * Provider of Rx stream of events coming from Vertex Store
+ * Information supplier for debug information
+ * TODO: Cleanup interface to clearly describe a DTO mechanism
  */
-public interface VertexStoreEventsRx {
-
-	/**
-	 * Retrieve rx flow of vertices which have been synced
-	 * @return flow of vertex hashes
-	 */
-	Observable<Hash> syncedVertices();
-
+public interface InfoSupplier {
+	 /**
+	  * Returns current values for debug information arranged in JSON
+	  * like tree format
+	  */
+	Map<String, Object> getInfo();
 }

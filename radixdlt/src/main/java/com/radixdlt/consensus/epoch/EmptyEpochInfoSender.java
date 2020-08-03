@@ -15,20 +15,24 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.consensus.epoch;
 
-import com.radixdlt.crypto.Hash;
-import io.reactivex.rxjava3.core.Observable;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.epoch.EpochManager.EpochInfoSender;
 
 /**
- * Provider of Rx stream of events coming from Vertex Store
+ * A mocked epoch info sender
  */
-public interface VertexStoreEventsRx {
+public enum EmptyEpochInfoSender implements EpochInfoSender {
+	INSTANCE;
 
-	/**
-	 * Retrieve rx flow of vertices which have been synced
-	 * @return flow of vertex hashes
-	 */
-	Observable<Hash> syncedVertices();
+	@Override
+	public void sendCurrentView(EpochView epochView) {
+		// No-op
+	}
 
+	@Override
+	public void sendTimeoutProcessed(EpochView epochView, BFTNode leader) {
+		// No-op
+	}
 }

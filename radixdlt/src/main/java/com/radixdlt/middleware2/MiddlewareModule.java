@@ -17,23 +17,29 @@
 
 package com.radixdlt.middleware2;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.DefaultSerialization;
+import com.radixdlt.api.InMemoryInfoStateManager;
+import com.radixdlt.api.Timeout;
 import com.radixdlt.atommodel.message.MessageParticleConstraintScrypt;
 import com.radixdlt.atommodel.tokens.TokensConstraintScrypt;
 import com.radixdlt.atommodel.unique.UniqueParticleConstraintScrypt;
 import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.Result;
+import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.sync.StateSyncNetwork;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.identifiers.AID;
@@ -54,6 +60,42 @@ import java.util.function.UnaryOperator;
 
 public class MiddlewareModule extends AbstractModule {
 	private static final Hash DEFAULT_FEE_TARGET = new Hash("0000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
+
+	@Provides
+	@Singleton
+	private InfoSupplier infoSupplier(
+		SystemCounters counters,
+		InMemoryInfoStateManager infoStateManager
+	) {
+		return () -> {
+			EpochView currentEpochView = infoStateManager.getCurrentView();
+			Timeout timeout = infoStateManager.getLastTimeout();
+			QuorumCertificate highQC = infoStateManager.getHighestQC();
+
+			return ImmutableMap.of(
+				"epochManager", ImmutableMap.of(
+					"highQC", highQC != null
+						? ImmutableMap.of(
+						"epoch", highQC.getProposed().getEpoch(),
+						"view", highQC.getView().number(),
+						"vertexId", highQC.getProposed().getId()
+					)
+						: ImmutableMap.of(),
+					"currentView", ImmutableMap.of(
+						"epoch", currentEpochView.getEpoch(),
+						"view", currentEpochView.getView().number()
+					),
+					"lastTimeout", timeout != null
+						? ImmutableMap.of(
+						"epoch", timeout.getEpochView().getEpoch(),
+						"view", timeout.getEpochView().getView().number(),
+						"leader", timeout.getLeader().toString())
+						: ImmutableMap.of()
+				),
+				"counters", counters.toMap()
+			);
+		};
+	}
 
 	@Provides
 	@Singleton
