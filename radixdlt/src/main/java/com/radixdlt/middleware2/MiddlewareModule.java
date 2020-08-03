@@ -56,7 +56,7 @@ import java.util.function.UnaryOperator;
 
 public class MiddlewareModule extends AbstractModule {
 	private static final Hash DEFAULT_FEE_TARGET = new Hash("0000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
-	private static final long GENESIS_TIMESTAMP = Instant.parse("2020-01-01T00:00:00.000Z" ).toEpochMilli();
+	private static final long GENESIS_TIMESTAMP = Instant.parse("2020-01-01T00:00:00.000Z").toEpochMilli();
 
 	@Provides
 	@Singleton
