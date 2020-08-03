@@ -177,7 +177,7 @@ public class SyncedRadixEngineTest {
 		when(stateSyncNetwork.syncResponses()).thenReturn(Observable.never());
 		when(stateSyncNetwork.syncRequests()).thenReturn(Observable.just(new SyncRequest(peer, 0L)));
 		syncedRadixEngine.start();
-		verify(stateSyncNetwork, timeout(1000).times(1)).sendSyncResponse(eq(peer), argThat(l -> l.get(0).equals(committedAtom)));
+		verify(stateSyncNetwork, timeout(5000).times(1)).sendSyncResponse(eq(peer), argThat(l -> l.get(0).equals(committedAtom)));
 	}
 
 
