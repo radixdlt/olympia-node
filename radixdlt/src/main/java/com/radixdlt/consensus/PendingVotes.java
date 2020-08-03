@@ -115,7 +115,7 @@ public final class PendingVotes {
 		}
 
 		// QC can be formed, so return it
-		QuorumCertificate qc = new QuorumCertificate(vote.getVoteData(), validationState.signatures());
+		QuorumCertificate qc = new QuorumCertificate(voteData.getVoteData(), validationState.signatures());
 		return Optional.of(qc);
 	}
 

@@ -17,14 +17,25 @@
 
 package com.radixdlt.consensus;
 
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidator;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
+import com.radixdlt.utils.Pair;
+import com.radixdlt.utils.UInt256;
 import com.radixdlt.serialization.DsonOutput.Output;
 import java.util.Optional;
 
@@ -86,8 +97,41 @@ public final class QuorumCertificate {
 		return voteData;
 	}
 
-	public TimestampedECDSASignatures getSignatures() {
+	public TimestampedECDSASignatures getTimestampedSignatures() {
 		return signatures;
+	}
+
+	public long quorumTimestamp(BFTValidatorSet validatorSet) {
+		// Note that signatures are not rechecked here.
+		// They are expected to be checked before the QC is formed.
+		// No effort is made to ensure the QC is valid for this validator set.
+		UInt256 totalPower = UInt256.ZERO;
+		ImmutableMap<BFTNode, BFTValidator> validators = validatorSet.validatorsByKey();
+		List<Pair<Long, UInt256>> weightedTimes = Lists.newArrayList();
+		for (Map.Entry<BFTNode, Pair<Long, ECDSASignature>> e : this.signatures.getSignatures().entrySet()) {
+			BFTNode node = e.getKey();
+			BFTValidator v = validators.get(node);
+			if (v != null) {
+				UInt256 power = v.getPower();
+				totalPower = totalPower.add(power);
+				weightedTimes.add(Pair.of(e.getValue().getFirst(), power));
+			}
+		}
+		if (totalPower.isZero()) {
+			// You probably used the wrong validator set
+			throw new IllegalStateException("Zero validator power for this QC");
+		}
+		UInt256 median = totalPower.shiftRight(); // Divide by 2
+		// Sort ascending by timestamp
+		weightedTimes.sort(Comparator.comparing(Pair::getFirst));
+		for (Pair<Long, UInt256> w : weightedTimes) {
+			UInt256 weight = w.getSecond();
+			if (median.compareTo(weight) < 0) {
+				return w.getFirst();
+			}
+			median = median.subtract(weight);
+		}
+		throw new IllegalStateException("Logic error in quorumTime");
 	}
 
 	@Override
