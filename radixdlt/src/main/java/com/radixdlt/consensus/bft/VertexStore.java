@@ -519,12 +519,12 @@ public final class VertexStore implements VertexStoreEventProcessor {
 			vertex = vertices.remove(vertex.getParentId());
 		}
 
-		for (Vertex committed : path) {
-			CommittedAtom committedAtom = new CommittedAtom(committed.getAtom(), commitMetadata);
+		for (Vertex committedVertex : path) {
+			CommittedAtom committedAtom = new CommittedAtom(committedVertex.getAtom(), commitMetadata);
 			this.counters.increment(CounterType.BFT_PROCESSED);
 			syncedStateComputer.execute(committedAtom);
 
-			this.vertexStoreEventSender.sendCommittedVertex(committed);
+			this.vertexStoreEventSender.sendCommittedVertex(committedVertex);
 		}
 
 		rootId = commitMetadata.getId();
