@@ -238,6 +238,6 @@ public class SyncedRadixEngineTest {
 		when(nextAtom.getVertexMetadata()).thenReturn(nextVertexMetadata);
 		syncedRadixEngine.execute(nextAtom);
 
-		verify(committedStateSyncSender, timeout(100).atLeast(1)).sendCommittedStateSync(anyLong(), any());
+		verify(committedStateSyncSender, timeout(5000).atLeast(1)).sendCommittedStateSync(anyLong(), any());
 	}
 }
