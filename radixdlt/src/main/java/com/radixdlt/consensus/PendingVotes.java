@@ -110,7 +110,7 @@ public final class PendingVotes {
 		ValidationState validationState = this.voteState.computeIfAbsent(voteHash, k -> validatorSet.newValidationState());
 
 		// try to form a QC with the added signature according to the requirements
-		if (!(validationState.addSignature(node, signature) && validationState.complete())) {
+		if (!(validationState.addSignature(node, voteData.getNodeTimestamp(), signature) && validationState.complete())) {
 			return Optional.empty();
 		}
 

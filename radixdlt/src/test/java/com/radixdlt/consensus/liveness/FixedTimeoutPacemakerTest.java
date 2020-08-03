@@ -149,7 +149,7 @@ public class FixedTimeoutPacemakerTest {
 		NewView newView = makeNewViewFor(view);
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		ValidationState validationState = mock(ValidationState.class);
-		when(validationState.addSignature(any(), any())).thenReturn(true);
+		when(validationState.addSignature(any(), anyLong(), any())).thenReturn(true);
 		when(validationState.complete()).thenReturn(true);
 		when(validatorSet.newValidationState()).thenReturn(validationState);
 		when(validatorSet.containsNode(any())).thenReturn(true);
