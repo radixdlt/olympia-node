@@ -21,6 +21,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
+import com.radixdlt.api.InfoRx;
 import com.radixdlt.api.LedgerRx;
 import com.radixdlt.api.SubmissionErrorsRx;
 import com.radixdlt.consensus.HashVerifier;
@@ -37,12 +38,14 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.ConsensusEventsRx;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
+import com.radixdlt.consensus.epoch.EpochManager.EpochInfoSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.VertexStoreEventsRx;
 import com.radixdlt.mempool.SubmissionControl;
 import com.radixdlt.mempool.SubmissionControlImpl;
 import com.radixdlt.mempool.SubmissionControlImpl.SubmissionControlSender;
+import com.radixdlt.api.InMemoryInfoStateManager;
 import com.radixdlt.middleware2.InternalMessagePasser;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.ProposerElectionFactory;
@@ -52,7 +55,7 @@ import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRPCSender;
 import com.radixdlt.consensus.VertexStoreFactory;
-import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
 import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.consensus.liveness.PacemakerFactory;
@@ -85,6 +88,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 public class CerberusModule extends AbstractModule {
+	private static final int DEFAULT_VERTEX_BUFFER_SIZE = 16;
+	private static final long DEFAULT_VERTEX_UPDATE_FREQ = 1_000L;
 	private final RuntimeProperties runtimeProperties;
 
 	public CerberusModule(RuntimeProperties runtimeProperties) {
@@ -110,6 +115,8 @@ public class CerberusModule extends AbstractModule {
 		bind(CommittedStateSyncRx.class).to(InternalMessagePasser.class);
 		bind(EpochChangeRx.class).to(InternalMessagePasser.class);
 		bind(EpochChangeSender.class).to(InternalMessagePasser.class);
+		bind(EpochInfoSender.class).to(InternalMessagePasser.class);
+		bind(InfoRx.class).to(InternalMessagePasser.class);
 		bind(SyncedRadixEngineEventSender.class).to(InternalMessagePasser.class);
 		bind(LedgerRx.class).to(InternalMessagePasser.class);
 		bind(SyncedStateComputer.class).to(SyncedRadixEngine.class);
@@ -189,7 +196,8 @@ public class CerberusModule extends AbstractModule {
 			pacemaker,
 			vertexStore,
 			proposerElection,
-			validatorSet
+			validatorSet,
+			bftInfoSender
 		) ->
 			BFTBuilder.create()
 				.self(self)
@@ -199,12 +207,21 @@ public class CerberusModule extends AbstractModule {
 				.signer(signer)
 				.verifier(verifier)
 				.counters(counters)
+				.infoSender(bftInfoSender)
 				.endOfEpochSender(endOfEpochSender)
 				.pacemaker(pacemaker)
 				.vertexStore(vertexStore)
 				.proposerElection(proposerElection)
 				.validatorSet(validatorSet)
 				.build();
+	}
+
+	@Provides
+	@Singleton
+	private InMemoryInfoStateManager infoStateRunner(InfoRx infoRx) {
+		final int vertexBufferSize = runtimeProperties.get("api.debug.vertex_buffer_size", DEFAULT_VERTEX_BUFFER_SIZE);
+		final long vertexUpdateFrequency = runtimeProperties.get("api.debug.vertex_update_freq", DEFAULT_VERTEX_UPDATE_FREQ);
+		return new InMemoryInfoStateManager(infoRx, vertexBufferSize, vertexUpdateFrequency);
 	}
 
 	@Provides
@@ -218,7 +235,8 @@ public class CerberusModule extends AbstractModule {
 		PacemakerFactory pacemakerFactory,
 		VertexStoreFactory vertexStoreFactory,
 		ProposerElectionFactory proposerElectionFactory,
-		SystemCounters counters
+		SystemCounters counters,
+		EpochInfoSender epochInfoSender
 	) {
 		return new EpochManager(
 			self,
@@ -229,7 +247,8 @@ public class CerberusModule extends AbstractModule {
 			vertexStoreFactory,
 			proposerElectionFactory,
 			bftFactory,
-			counters
+			counters,
+			epochInfoSender
 		);
 	}
 

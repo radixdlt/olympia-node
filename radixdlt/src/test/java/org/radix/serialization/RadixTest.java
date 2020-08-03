@@ -17,8 +17,8 @@
 
 package org.radix.serialization;
 
+import com.google.common.collect.ImmutableMap;
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.universe.Universe;
@@ -32,14 +32,12 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public abstract class RadixTest
-{
+public abstract class RadixTest {
 	private static Serialization serialization;
 	private static NtpService ntpService;
 	private static RuntimeProperties properties;
 	private static LocalSystem localSystem;
 	private static Universe universe;
-	private static SystemCounters counters;
 
 	@BeforeClass
 	public static void startRadixTest() {
@@ -58,8 +56,7 @@ public abstract class RadixTest
 
 		serialization = DefaultSerialization.getInstance();
 
-		counters = mock(SystemCounters.class);
-		localSystem = LocalSystem.create(counters, getProperties(), universe, "127.0.0.1");
+		localSystem = LocalSystem.create(ImmutableMap::of, getProperties(), universe, "127.0.0.1");
 	}
 
 	public static Serialization getSerialization() {
@@ -80,9 +77,5 @@ public abstract class RadixTest
 
 	public static Universe getUniverse() {
 		return universe;
-	}
-
-	public static SystemCounters getCounters() {
-		return counters;
 	}
 }

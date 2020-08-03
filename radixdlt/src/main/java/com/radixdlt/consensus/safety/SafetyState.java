@@ -19,7 +19,7 @@ package com.radixdlt.consensus.safety;
 
 import com.google.inject.Inject;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.bft.View;
 
 import java.util.Objects;
 import java.util.Optional;

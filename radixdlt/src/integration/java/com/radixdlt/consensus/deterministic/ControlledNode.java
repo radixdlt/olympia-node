@@ -22,11 +22,13 @@ import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.ConsensusEvent;
+import com.radixdlt.consensus.epoch.EmptyEpochInfoSender;
 import com.radixdlt.consensus.epoch.EmptySyncEpochsRPCSender;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
 import com.radixdlt.consensus.bft.GetVerticesResponse;
+import com.radixdlt.consensus.epoch.EpochManager.EpochInfoSender;
 import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.consensus.ProposerElectionFactory;
 import com.radixdlt.consensus.VertexMetadata;
@@ -85,7 +87,7 @@ class ControlledNode {
 		HashSigner nullSigner = h -> new ECDSASignature();
 		BFTNode self = BFTNode.create(key.getPublicKey());
 		BFTFactory bftFactory =
-			(endOfEpochSender, pacemaker, vertexStore, proposerElection, validatorSet) ->
+			(endOfEpochSender, pacemaker, vertexStore, proposerElection, validatorSet, bftInfoSender) ->
 				BFTBuilder.create()
 					.self(self)
 					.endOfEpochSender(endOfEpochSender)
@@ -96,6 +98,7 @@ class ControlledNode {
 					.validatorSet(validatorSet)
 					.eventSender(controlledSender)
 					.counters(systemCounters)
+					.infoSender(bftInfoSender)
 					.hasher(nullHasher)
 					.signer(nullSigner)
 					.verifyAuthors(false)
@@ -107,6 +110,7 @@ class ControlledNode {
 		LocalTimeoutSender localTimeoutSender = (syncAndTimeout == SyncAndTimeout.SYNC_AND_TIMEOUT) ? sender : (v, t) -> { };
 		VertexStoreFactory vertexStoreFactory = (vertex, qc, syncedStateComputer) ->
 			new VertexStore(vertex, qc, syncedStateComputer, syncVerticesRPCSender, sender, systemCounters);
+		EpochInfoSender epochInfoSender = EmptyEpochInfoSender.INSTANCE;
 		this.epochManager = new EpochManager(
 			self,
 			stateComputer,
@@ -116,7 +120,8 @@ class ControlledNode {
 			vertexStoreFactory,
 			proposerElectionFactory,
 			bftFactory,
-			systemCounters
+			systemCounters,
+			epochInfoSender
 		);
 	}
 

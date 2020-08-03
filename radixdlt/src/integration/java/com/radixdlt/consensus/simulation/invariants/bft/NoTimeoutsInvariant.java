@@ -17,13 +17,14 @@
 
 package com.radixdlt.consensus.simulation.invariants.bft;
 
+import com.radixdlt.api.Timeout;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.simulation.TestInvariant;
 import com.radixdlt.consensus.simulation.network.SimulationNodes.RunningNetwork;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.schedulers.Schedulers;
-import java.util.concurrent.TimeUnit;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Checks that no local timeouts are occurring.
@@ -33,16 +34,11 @@ public class NoTimeoutsInvariant implements TestInvariant {
 
 	@Override
 	public Observable<TestInvariantError> check(RunningNetwork network) {
-		return Observable.interval(1, TimeUnit.SECONDS, Schedulers.io())
-			.flatMapIterable(i -> network.getNodes())
-			.concatMap(node -> {
-				SystemCounters counters = network.getCounters(node);
-				if (counters.get(CounterType.BFT_TIMEOUT) > 0) {
-					return Observable.just(new TestInvariantError("Timeout at node " + node.getSimpleName()
-						+ " view " + counters.get(CounterType.BFT_TIMEOUT_VIEW)));
-				} else {
-					return Observable.empty();
-				}
-			});
+		List<Observable<Pair<BFTNode, Timeout>>> timeouts = network.getNodes().stream()
+			.map(n -> network.getInfo(n).timeouts().map(t -> Pair.of(n, t)))
+			.collect(Collectors.toList());
+
+		return Observable.merge(timeouts)
+			.map(pair -> new TestInvariantError("Timeout at node " + pair.getFirst().getSimpleName() + " " + pair.getSecond()));
 	}
 }

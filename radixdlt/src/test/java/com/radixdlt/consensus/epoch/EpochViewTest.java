@@ -15,28 +15,42 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.consensus.epoch;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import com.radixdlt.consensus.bft.View;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
-public class QuorumCertificateTest {
+public class EpochViewTest {
+
 	@Test
-	public void when_create_genesis_qc_with_non_genesis_vertex__then_should_throw_exception() {
-		Vertex vertex = mock(Vertex.class);
-		when(vertex.getView()).thenReturn(View.of(1));
-		assertThatThrownBy(() -> QuorumCertificate.ofGenesis(vertex))
+	public void testBadArgument() {
+		assertThatThrownBy(() -> EpochView.of(-1, View.of(1)))
 			.isInstanceOf(IllegalArgumentException.class);
 	}
 
 	@Test
+	public void testGetters() {
+		View view = mock(View.class);
+		EpochView epochView = EpochView.of(12345L, view);
+		assertThat(epochView.getEpoch()).isEqualTo(12345L);
+		assertThat(epochView.getView()).isEqualTo(view);
+	}
+
+	@Test
+	public void testToString() {
+		View view = mock(View.class);
+		EpochView epochView = EpochView.of(12345L, view);
+		assertThat(epochView.toString()).isNotNull();
+	}
+
+	@Test
 	public void equalsContract() {
-		EqualsVerifier.forClass(QuorumCertificate.class)
+		EqualsVerifier.forClass(EpochView.class)
 			.verify();
 	}
 }

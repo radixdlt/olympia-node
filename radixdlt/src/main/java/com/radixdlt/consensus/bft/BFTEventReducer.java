@@ -24,7 +24,6 @@ import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
-import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.consensus.liveness.Pacemaker;
@@ -81,6 +80,25 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		void sendVote(Vote vote, BFTNode leader);
 	}
 
+	/**
+	 * Sender of information regarding the BFT
+	 */
+	public interface BFTInfoSender {
+
+		/**
+		 * Signify that the bft node is on a new view
+		 * @param view the view the bft node has changed to
+		 */
+		void sendCurrentView(View view);
+
+		/**
+		 * Signify that a timeout was processed by this bft node
+		 * @param view the view of the timeout
+		 * @param leader the leader of the view which timed out
+		 */
+		void sendTimeoutProcessed(View view, BFTNode leader);
+	}
+
 	private final BFTNode self;
 	private final VertexStore vertexStore;
 	private final PendingVotes pendingVotes;
@@ -93,6 +111,9 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	private final BFTValidatorSet validatorSet;
 	private final SystemCounters counters;
 	private final Map<Hash, QuorumCertificate> unsyncedQCs = new HashMap<>();
+
+	private final BFTInfoSender infoSender;
+
 	private boolean synchedLog = false;
 
 	public interface EndOfEpochSender {
@@ -110,7 +131,8 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		PendingVotes pendingVotes,
 		ProposerElection proposerElection,
 		BFTValidatorSet validatorSet,
-		SystemCounters counters
+		SystemCounters counters,
+		BFTInfoSender infoSender
 	) {
 		this.self = Objects.requireNonNull(self);
 		this.proposalGenerator = Objects.requireNonNull(proposalGenerator);
@@ -123,6 +145,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		this.proposerElection = Objects.requireNonNull(proposerElection);
 		this.validatorSet = Objects.requireNonNull(validatorSet);
 		this.counters = Objects.requireNonNull(counters);
+		this.infoSender = Objects.requireNonNull(infoSender);
 	}
 
 	// Hotstuff's Event-Driven OnNextSyncView
@@ -131,7 +154,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		BFTNode nextLeader = this.proposerElection.getProposer(nextView);
 		log.trace("{}: Sending NEW_VIEW to {}: {}", this.self::getSimpleName, nextLeader::getSimpleName, () ->  newView);
 		this.sender.sendNewView(newView, nextLeader);
-		this.counters.set(CounterType.BFT_VIEW, nextView.number());
+		this.infoSender.sendCurrentView(nextView);
 	}
 
 	private Optional<VertexMetadata> processQC(QuorumCertificate qc) {
@@ -266,7 +289,8 @@ public final class BFTEventReducer implements BFTEventProcessor {
 			);
 
 			this.proceedToView(nextView.get());
-			counters.set(CounterType.BFT_TIMEOUT_VIEW, view.number());
+
+			infoSender.sendTimeoutProcessed(view, this.proposerElection.getProposer(view));
 			counters.increment(CounterType.BFT_TIMEOUT);
 		} else {
 			log.trace("{}: LOCAL_TIMEOUT: Ignoring {}", this.self::getSimpleName, () -> view);

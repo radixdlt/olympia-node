@@ -17,10 +17,10 @@
 
 package org.radix.universe.system;
 
+import com.radixdlt.middleware2.InfoSupplier;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Supplier;
 
 import org.radix.Radix;
 
@@ -28,7 +28,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.keys.Keys;
@@ -44,8 +43,8 @@ import com.radixdlt.universe.Universe;
 @SerializerId2("api.local_system")
 // FIXME reimplement localsystem as an interface, extract persistence to elsewhere
 public final class LocalSystem extends RadixSystem {
-	private final ECKeyPair keyPair;
-	private final Supplier<Map<String, Object>> counters;
+	private final ECKeyPair keyPair; // TODO: Remove this
+	private final InfoSupplier infoSupplier;
 
 	LocalSystem() {
 		// Serializer only
@@ -53,26 +52,33 @@ public final class LocalSystem extends RadixSystem {
 	}
 
 	@VisibleForTesting
-	LocalSystem(Supplier<Map<String, Object>> counters) {
+	LocalSystem(InfoSupplier infoSupplier) {
+		this.infoSupplier = infoSupplier;
 		this.keyPair = ECKeyPair.generateNew();
-		this.counters = counters;
 	}
 
-	public LocalSystem(Supplier<Map<String, Object>> counters, ECKeyPair key, String agent, int agentVersion, int protocolVersion, ImmutableList<TransportInfo> supportedTransports) {
+	public LocalSystem(
+		InfoSupplier infoSupplier,
+		ECKeyPair key,
+		String agent,
+		int agentVersion,
+		int protocolVersion,
+		ImmutableList<TransportInfo> supportedTransports
+	) {
 		super(key.getPublicKey(), agent, agentVersion, protocolVersion, supportedTransports);
 		this.keyPair = key;
-		this.counters = Objects.requireNonNull(counters);
+		this.infoSupplier = Objects.requireNonNull(infoSupplier);
 	}
 
 	public ECKeyPair getKeyPair() {
 		return this.keyPair;
 	}
 
-	// Property "counters" - 1 getter
-	@JsonProperty("counters")
+	// Property "info" - 1 getter
+	@JsonProperty("info")
 	@DsonOutput(Output.API)
-	Map<String, Object> getJsonCounters() {
-		return this.counters.get();
+	public Map<String, Object> getInfo() {
+		return this.infoSupplier.getInfo();
 	}
 
 	// Property "processors" - 1 getter
@@ -83,10 +89,10 @@ public final class LocalSystem extends RadixSystem {
 		return Runtime.getRuntime().availableProcessors();
 	}
 
-	public static LocalSystem create(SystemCounters counters, RuntimeProperties properties, Universe universe, String host) {
+	public static LocalSystem create(InfoSupplier infoSupplier, RuntimeProperties properties, Universe universe, String host) {
 		String nodeKeyPath = properties.get("node.key.path", "node.ks");
 		ECKeyPair nodeKey = loadNodeKey(nodeKeyPath);
-		return new LocalSystem(counters::toMap, nodeKey, Radix.AGENT, Radix.AGENT_VERSION, Radix.PROTOCOL_VERSION, defaultTransports(universe, host));
+		return new LocalSystem(infoSupplier, nodeKey, Radix.AGENT, Radix.AGENT_VERSION, Radix.PROTOCOL_VERSION, defaultTransports(universe, host));
 	}
 
 	// FIXME: *Really* need a better way of configuring this other than hardcoding here

@@ -35,7 +35,7 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.EpochChangeSender;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
-import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.sync.SyncedRadixEngine.CommittedStateSyncSender;
 import com.radixdlt.consensus.sync.SyncedRadixEngine.SyncedRadixEngineEventSender;
@@ -178,7 +178,7 @@ public class SyncedRadixEngineTest {
 		when(stateSyncNetwork.syncResponses()).thenReturn(Observable.never());
 		when(stateSyncNetwork.syncRequests()).thenReturn(Observable.just(new SyncRequest(peer, 0L)));
 		syncedRadixEngine.start();
-		verify(stateSyncNetwork, timeout(1000).times(1)).sendSyncResponse(eq(peer), argThat(l -> l.get(0).equals(committedAtom)));
+		verify(stateSyncNetwork, timeout(5000).times(1)).sendSyncResponse(eq(peer), argThat(l -> l.get(0).equals(committedAtom)));
 	}
 
 

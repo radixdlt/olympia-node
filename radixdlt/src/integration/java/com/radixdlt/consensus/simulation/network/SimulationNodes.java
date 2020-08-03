@@ -19,6 +19,7 @@ package com.radixdlt.consensus.simulation.network;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.radixdlt.api.InfoRx;
 import com.radixdlt.consensus.bft.BFTBuilder;
 import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -33,7 +34,6 @@ import com.radixdlt.middleware2.InternalMessagePasser;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.bft.VertexStore;
-import com.radixdlt.consensus.VertexStoreEventsRx;
 import com.radixdlt.consensus.VertexStoreFactory;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeoutSender;
@@ -106,7 +106,7 @@ public class SimulationNodes {
 		final Hasher nullHasher = o -> Hash.ZERO_HASH;
 		final HashSigner nullSigner = h -> new ECDSASignature();
 		final BFTFactory bftFactory =
-			(endOfEpochSender, pacemaker, vertexStore, proposerElection, validatorSet) ->
+			(endOfEpochSender, pacemaker, vertexStore, proposerElection, validatorSet, bftInfoSender) ->
 				BFTBuilder.create()
 					.self(self)
 					.endOfEpochSender(endOfEpochSender)
@@ -117,6 +117,7 @@ public class SimulationNodes {
 					.validatorSet(validatorSet)
 					.eventSender(underlyingNetwork.getNetworkSender(self))
 					.counters(counters.get(self))
+					.infoSender(bftInfoSender)
 					.hasher(nullHasher)
 					.signer(nullSigner)
 					.verifyAuthors(false)
@@ -144,7 +145,8 @@ public class SimulationNodes {
 			vertexStoreFactory,
 			proposers -> new WeightedRotatingLeaders(proposers, Comparator.comparing(v -> v.getNode().getKey().euid()), 5),
 			bftFactory,
-			counters.get(self)
+			counters.get(self),
+			internalMessages.get(self)
 		);
 
 		final SimulatedNetworkReceiver rx = underlyingNetwork.getNetworkRx(self);
@@ -165,9 +167,7 @@ public class SimulationNodes {
 	public interface RunningNetwork {
 		List<BFTNode> getNodes();
 
-		VertexStoreEventsRx getVertexStoreEvents(BFTNode node);
-
-		SystemCounters getCounters(BFTNode node);
+		InfoRx getInfo(BFTNode node);
 
 		SimulationNetwork getUnderlyingNetwork();
 	}
@@ -194,13 +194,8 @@ public class SimulationNodes {
 			}
 
 			@Override
-			public VertexStoreEventsRx getVertexStoreEvents(BFTNode node) {
+			public InfoRx getInfo(BFTNode node) {
 				return internalMessages.get(node);
-			}
-
-			@Override
-			public SystemCounters getCounters(BFTNode node) {
-				return counters.get(node);
 			}
 
 			@Override

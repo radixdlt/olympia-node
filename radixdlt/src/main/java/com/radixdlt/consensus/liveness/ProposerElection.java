@@ -18,7 +18,7 @@
 package com.radixdlt.consensus.liveness;
 
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.bft.View;
 
 /**
  * Represents the election for valid proposers

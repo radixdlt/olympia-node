@@ -24,6 +24,7 @@ import org.assertj.core.util.Files;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.radix.GlobalInjector.LocalSystemProvider;
 import org.radix.database.DatabaseEnvironment;
 import org.radix.serialization.TestSetupUtils;
 
@@ -35,6 +36,7 @@ import com.radixdlt.identifiers.EUID;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.universe.Universe;
+import org.radix.universe.system.LocalSystem;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
@@ -89,6 +91,13 @@ public class GlobalInjectorTest {
 	@Test
 	public void testBFTNode() {
 		testSelfInstance(BFTNode.class);
+	}
+
+	@Test
+	public void testLocalSystem() {
+		LocalSystemProvider provider = this.globalInjector.getInjector().getInstance(LocalSystemProvider.class);
+		LocalSystem localSystem = provider.get();
+		assertNotNull(localSystem.getInfo());
 	}
 
 	private <T> void testSelfInstance(Class<T> cls) {

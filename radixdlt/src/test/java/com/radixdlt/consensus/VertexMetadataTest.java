@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hash;
 import org.junit.Before;
 import org.junit.Test;
