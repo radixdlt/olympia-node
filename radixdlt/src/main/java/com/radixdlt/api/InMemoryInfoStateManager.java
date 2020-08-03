@@ -100,7 +100,7 @@ public final class InMemoryInfoStateManager {
 	public List<Vertex> getCommittedVertices() {
 		List<Vertex> vertices = Lists.newArrayList();
 		// Use internal iteration for thread safety
-		vertices.addAll(vertexRingBuffer);
+		vertexRingBuffer.forEach(vertices::add);
 		return vertices;
 	}
 }

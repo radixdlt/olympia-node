@@ -17,7 +17,6 @@
 
 package org.radix;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -26,10 +25,7 @@ import com.google.inject.Scopes;
 import com.google.inject.name.Names;
 import com.radixdlt.CerberusModule;
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.api.Timeout;
-import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.identifiers.RadixAddress;
@@ -37,7 +33,7 @@ import com.radixdlt.identifiers.EUID;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.mempool.MempoolModule;
-import com.radixdlt.api.InMemoryInfoStateManager;
+import com.radixdlt.middleware2.InfoSupplier;
 import com.radixdlt.middleware2.MiddlewareModule;
 import com.radixdlt.middleware2.network.NetworkModule;
 import com.radixdlt.network.addressbook.AddressBookModule;
@@ -52,8 +48,6 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.berkeley.BerkeleyStoreModule;
 import com.radixdlt.universe.Universe;
 
-import java.util.Map;
-import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import org.radix.database.DatabaseEnvironment;
@@ -182,16 +176,14 @@ public class GlobalInjector {
 	}
 
 	static class LocalSystemProvider implements Provider<LocalSystem> {
-		private final InMemoryInfoStateManager infoState;
-		private final SystemCounters counters;
 		private final RuntimeProperties properties;
 		private final Universe universe;
 		private final HostIp hostIp;
+		private final InfoSupplier infoSupplier;
 
 		@Inject
-		public LocalSystemProvider(InMemoryInfoStateManager infoState, SystemCounters counters, RuntimeProperties properties, Universe universe, HostIp hostIp) {
-			this.infoState = infoState;
-			this.counters = counters;
+		public LocalSystemProvider(InfoSupplier infoSupplier, RuntimeProperties properties, Universe universe, HostIp hostIp) {
+			this.infoSupplier = infoSupplier;
 			this.properties = properties;
 			this.universe = universe;
 			this.hostIp = hostIp;
@@ -201,34 +193,7 @@ public class GlobalInjector {
 		public LocalSystem get() {
 			String host = this.hostIp.hostIp()
 				.orElseThrow(() -> new IllegalStateException("Unable to determine host IP"));
-			Supplier<Map<String, Object>> infoSupplier = () -> {
-				EpochView currentEpochView = infoState.getCurrentView();
-				Timeout timeout = infoState.getLastTimeout();
-				QuorumCertificate highQC = infoState.getHighestQC();
 
-				return ImmutableMap.of(
-					"epochManager", ImmutableMap.of(
-						"highQC", highQC != null
-						? ImmutableMap.of(
-							"epoch", highQC.getProposed().getEpoch(),
-							"view", highQC.getView().number(),
-							"vertexId", highQC.getProposed().getId()
-						)
-						: ImmutableMap.of(),
-						"currentView", ImmutableMap.of(
-							"epoch", currentEpochView.getEpoch(),
-							"view", currentEpochView.getView().number()
-						),
-						"lastTimeout", timeout != null
-							? ImmutableMap.of(
-							"epoch", timeout.getEpochView().getEpoch(),
-							"view", timeout.getEpochView().getView().number(),
-							"leader", timeout.getLeader().toString())
-							: ImmutableMap.of()
-					),
-					"counters", counters.toMap()
-				);
-			};
 			return LocalSystem.create(infoSupplier, this.properties, this.universe, host);
 		}
 	}
