@@ -39,7 +39,7 @@ import org.apache.logging.log4j.Logger;
  * A handler for websockets on the Radix HTTP API that establishes and maintains connections and forwards the messages for processing
  */
 /*package*/ final class RadixHttpWebsocketHandler implements WebSocketConnectionCallback {
-    private static final Logger logger = LogManager.getLogger("api");
+    private static final Logger logger = LogManager.getLogger();
     private final ConcurrentHashMap<RadixJsonRpcPeer, WebSocketChannel> peers;
     private final RadixJsonRpcServer jsonRpcServer;
 	private final RadixHttpServer radixHttpServer;

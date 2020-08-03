@@ -56,21 +56,27 @@ public final class Proposal implements RequiresSyncConsensusEvent {
 	@DsonOutput(Output.ALL)
 	private final QuorumCertificate committedQC;
 
+	@JsonProperty("payload")
+	@DsonOutput(Output.ALL)
+	private final long payload;
+
 	@JsonCreator
 	Proposal(
 		@JsonProperty("vertex") Vertex vertex,
 		@JsonProperty("committedQC") QuorumCertificate committedQC,
 		@JsonProperty("author") byte[] author,
-		@JsonProperty("signature") ECDSASignature signature
+		@JsonProperty("signature") ECDSASignature signature,
+		@JsonProperty("payload") long payload
 	) throws CryptoException {
-		this(vertex, committedQC, BFTNode.create(new ECPublicKey(author)), signature);
+		this(vertex, committedQC, BFTNode.create(new ECPublicKey(author)), signature, payload);
 	}
 
-	public Proposal(Vertex vertex, QuorumCertificate committedQC, BFTNode author, ECDSASignature signature) {
+	public Proposal(Vertex vertex, QuorumCertificate committedQC, BFTNode author, ECDSASignature signature, long payload) {
 		this.vertex = Objects.requireNonNull(vertex);
 		this.committedQC = committedQC;
 		this.author = Objects.requireNonNull(author);
 		this.signature = Objects.requireNonNull(signature);
+		this.payload = payload;
 	}
 
 	public Optional<ECDSASignature> getSignature() {
@@ -101,6 +107,10 @@ public final class Proposal implements RequiresSyncConsensusEvent {
 		return vertex;
 	}
 
+	public long getPayload() {
+		return this.payload;
+	}
+
 	@JsonProperty("author")
 	@DsonOutput(Output.ALL)
 	private byte[] getSerializerAuthor() {
@@ -115,7 +125,7 @@ public final class Proposal implements RequiresSyncConsensusEvent {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.author, this.vertex, this.signature, this.committedQC);
+		return Objects.hash(this.author, this.vertex, this.signature, this.committedQC, this.payload);
 	}
 
 	@Override
@@ -126,7 +136,8 @@ public final class Proposal implements RequiresSyncConsensusEvent {
 		if (o instanceof Proposal) {
 			Proposal other = (Proposal) o;
 			return
-				Objects.equals(this.author, other.author)
+				this.payload == other.payload
+					&& Objects.equals(this.author, other.author)
 					&& Objects.equals(this.vertex, other.vertex)
 					&& Objects.equals(this.signature, other.signature)
 					&& Objects.equals(this.committedQC, other.committedQC);

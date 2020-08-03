@@ -46,7 +46,7 @@ import java.util.function.Consumer;
 
 @Singleton
 public class CommittedAtomsStore implements EngineStore<CommittedAtom> {
-	private static final Logger log = LogManager.getLogger("middleware2.store");
+	private static final Logger log = LogManager.getLogger();
 
 	private final AtomIndexer atomIndexer;
 	private final LedgerEntryStore store;

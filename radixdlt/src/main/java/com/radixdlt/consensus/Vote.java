@@ -53,19 +53,25 @@ public final class Vote implements ConsensusEvent {
 	@DsonOutput(Output.ALL)
 	private final ECDSASignature signature; // may be null if not signed (e.g. for genesis)
 
+	@JsonProperty("payload")
+	@DsonOutput(Output.ALL)
+	private final long payload;
+
 	@JsonCreator
 	Vote(
 		@JsonProperty("author") byte[] author,
 		@JsonProperty("vertex_metadata") VoteData voteData,
-		@JsonProperty("signature") ECDSASignature signature
+		@JsonProperty("signature") ECDSASignature signature,
+		@JsonProperty("payload") long payload
 	) throws CryptoException {
-		this(BFTNode.create(new ECPublicKey(author)), voteData, signature);
+		this(BFTNode.create(new ECPublicKey(author)), voteData, signature, payload);
 	}
 
-	public Vote(BFTNode author, VoteData voteData, ECDSASignature signature) {
+	public Vote(BFTNode author, VoteData voteData, ECDSASignature signature, long payload) {
 		this.author = Objects.requireNonNull(author);
 		this.voteData = Objects.requireNonNull(voteData);
 		this.signature = signature;
+		this.payload = payload;
 	}
 
 	@Override
@@ -86,6 +92,10 @@ public final class Vote implements ConsensusEvent {
 		return Optional.ofNullable(this.signature);
 	}
 
+	public long getPayload() {
+		return this.payload;
+	}
+
 	@JsonProperty("author")
 	@DsonOutput(Output.ALL)
 	private byte[] getSerializerAuthor() {
@@ -100,7 +110,7 @@ public final class Vote implements ConsensusEvent {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.author, this.voteData, this.signature);
+		return Objects.hash(this.author, this.voteData, this.signature, this.payload);
 	}
 
 	@Override
@@ -111,7 +121,8 @@ public final class Vote implements ConsensusEvent {
 		if (o instanceof Vote) {
 			Vote other = (Vote) o;
 			return
-				Objects.equals(this.author, other.author)
+				this.payload == other.payload
+					&& Objects.equals(this.author, other.author)
 					&& Objects.equals(this.voteData, other.voteData)
 					&& Objects.equals(this.signature, other.signature);
 		}

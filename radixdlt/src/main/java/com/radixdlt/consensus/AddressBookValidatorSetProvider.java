@@ -36,6 +36,8 @@ import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.radix.events.EventListener;
 import org.radix.events.Events;
 import org.radix.universe.system.RadixSystem;
@@ -45,6 +47,7 @@ import org.radix.universe.system.RadixSystem;
  * matches the size and used as the validator set.
  */
 public class AddressBookValidatorSetProvider {
+	private static final Logger log = LogManager.getLogger();
 	private final Single<ImmutableList<BFTValidator>> validatorList;
 	private final BiFunction<Long, ImmutableList<BFTValidator>, BFTValidatorSet> nextValidatorSetFunction;
 
@@ -70,6 +73,7 @@ public class AddressBookValidatorSetProvider {
 				addressBook.peers().filter(Peer::hasSystem).map(Peer::getSystem).map(RadixSystem::getKey),
 				Stream.of(selfKey)
 			).distinct().collect(Collectors.toList()))
+			.doOnNext(peers -> log.info("Found {} peers, waiting for {} more", peers.size(), fixedNodeCount - peers.size()))
 			.filter(peers -> peers.size() == fixedNodeCount)
 			.firstOrError()
 			.map(peers ->

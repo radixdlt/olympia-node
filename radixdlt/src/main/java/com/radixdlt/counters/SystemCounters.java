@@ -25,18 +25,25 @@ import java.util.Map;
 public interface SystemCounters {
 
 	enum CounterType {
-		BFT_PROPOSALS_MADE("bft.proposals_made"),
+		// Please keep these sorted
+
 		BFT_INDIRECT_PARENT("bft.indirect_parent"),
+		BFT_PROCESSED("bft.processed"),
+		BFT_PROPOSALS_MADE("bft.proposals_made"),
 		BFT_REJECTED("bft.rejected"),
 		BFT_TIMEOUT("bft.timeout"),
 		BFT_VERTEX_STORE_SIZE("bft.vertex_store_size"),
-		BFT_PROCESSED("bft.processed"),
+		BFT_VIEW("bft.view"),
+		BFT_VOTE_RTT_MAX("bft.vote_rtt.max"),
+		BFT_VOTE_RTT_MEAN("bft.vote_rtt.mean"),
+		BFT_VOTE_RTT_MIN("bft.vote_rtt.min"),
+		BFT_VOTE_RTT_SIGMA("bft.vote_rtt.sigma"),
 
 		EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS("epoch_manager.queued_consensus_events"),
 
-		LEDGER_SYNC_PROCESSED("ledger.sync_processed"),
 		LEDGER_PROCESSED("ledger.processed"), // LEDGER_PROCESSED = BFT_PROCESSED + LEDGER_SYNC_PROCESSED + 1 (genesis)
 		LEDGER_STATE_VERSION("ledger.state_version"),
+		LEDGER_SYNC_PROCESSED("ledger.sync_processed"),
 
 		MEMPOOL_COUNT("mempool.count"),
 		MEMPOOL_MAXCOUNT("mempool.maxcount"),
@@ -50,10 +57,12 @@ public interface SystemCounters {
 		MESSAGES_OUTBOUND_PENDING("messages.outbound.pending"),
 		MESSAGES_OUTBOUND_PROCESSED("messages.outbound.processed"),
 		MESSAGES_OUTBOUND_SENT("messages.outbound.sent"),
+
 		NETWORKING_TCP_OPENED("networking.tcp.opened"),
 		NETWORKING_TCP_CLOSED("networking.tcp.closed"),
 		NETWORKING_SENT_BYTES("networking.sent_bytes"),
 		NETWORKING_RECEIVED_BYTES("networking.received_bytes"),
+
 		SIGNATURES_SIGNED("signatures.signed"),
 		SIGNATURES_VERIFIED("signatures.verified");
 
@@ -101,6 +110,15 @@ public interface SystemCounters {
 	 * @return The current value of the counter
 	 */
 	long get(CounterType counterType);
+
+	/**
+	 * Set a group of values.  Values are updates in such
+	 * a way as to prevent read-tearing when {@link #toMap()}
+	 * is called.
+	 *
+	 * @param newValues The values to update.
+	 */
+	void setAll(Map<CounterType, Long> newValues);
 
 	/**
 	 * Returns the current values as a map.

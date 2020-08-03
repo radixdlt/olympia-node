@@ -34,7 +34,7 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.serialization.Serialization;
 
 public class SubmissionControlImpl implements SubmissionControl {
-	private static final Logger log = LogManager.getLogger("submission");
+	private static final Logger log = LogManager.getLogger();
 
 	public interface SubmissionControlSender {
 		void sendDeserializeFailure(Atom rawAtom, AtomConversionException e);
