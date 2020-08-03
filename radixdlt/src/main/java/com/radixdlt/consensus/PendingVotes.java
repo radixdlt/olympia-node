@@ -35,6 +35,7 @@ import com.radixdlt.consensus.bft.ValidationState;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.Hash;
+import com.radixdlt.utils.UInt256;
 
 /**
  * Manages pending votes for various vertices.
@@ -111,7 +112,8 @@ public final class PendingVotes {
 
 		// try to form a QC with the added signature according to the requirements
 		final ECDSASignature signature = vote.getSignature().orElseThrow(() -> new IllegalArgumentException("vote is missing signature"));
-		if (!(validationState.addSignature(node, timestampedVoteData.getNodeTimestamp(), signature) && validationState.complete())) {
+		final UInt256 weight = validatorSet.getPower(node);
+		if (!(validationState.addSignature(node, timestampedVoteData.getNodeTimestamp(), weight, signature) && validationState.complete())) {
 			return Optional.empty();
 		}
 

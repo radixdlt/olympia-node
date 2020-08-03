@@ -17,13 +17,13 @@
 
 package com.radixdlt.consensus.bft;
 
-import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
+import com.radixdlt.consensus.TimestampedECDSASignature;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.crypto.ECDSASignature;
 import javax.annotation.concurrent.NotThreadSafe;
@@ -36,7 +36,7 @@ import javax.annotation.concurrent.NotThreadSafe;
 public final class ValidationState {
 
 	private final BFTValidatorSet validatorSet;
-	private final Map<BFTNode, Pair<Long, ECDSASignature>> signedNodes;
+	private final Map<BFTNode, TimestampedECDSASignature> signedNodes;
 	private transient UInt256 signedPower;
 	private final transient UInt256 threshold;
 
@@ -77,15 +77,16 @@ public final class ValidationState {
 	 *
 	 * @param node The node
 	 * @param timestamp The timestamp of the signature
+	 * @param weight The weighting of the timestamp
 	 * @param signature The signature to verify
 	 * @return whether the key was added or not
 	 */
-	public boolean addSignature(BFTNode node, long timestamp, ECDSASignature signature) {
+	public boolean addSignature(BFTNode node, long timestamp, UInt256 weight, ECDSASignature signature) {
 		if (validatorSet.containsNode(node)
 			&& !this.signedNodes.containsKey(node)) {
 			this.signedNodes.computeIfAbsent(node, k -> {
 				this.signedPower = this.signedPower.add(this.validatorSet.getPower(node));
-				return Pair.of(timestamp, signature);
+				return TimestampedECDSASignature.from(timestamp, weight,  signature);
 			});
 			return true;
 		}

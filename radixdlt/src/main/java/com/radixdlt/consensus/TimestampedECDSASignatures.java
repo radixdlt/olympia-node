@@ -20,9 +20,9 @@ package com.radixdlt.consensus;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.CryptoException;
-import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
@@ -30,7 +30,10 @@ import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.Pair;
+import com.radixdlt.utils.UInt256;
 
+import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -54,14 +57,14 @@ public final class TimestampedECDSASignatures {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private SerializerDummy serializer = SerializerDummy.DUMMY;
 
-	private ImmutableMap<BFTNode, Pair<Long, ECDSASignature>> keyToTimestampAndSignature;
+	private ImmutableMap<BFTNode, TimestampedECDSASignature> nodeToTimestampedSignature;
 
 	@JsonCreator
-	public static TimestampedECDSASignatures from(@JsonProperty("signatures") Map<String, Map<Long, ECDSASignature>> signatures) {
-		ImmutableMap<BFTNode, Pair<Long, ECDSASignature>> sigs = signatures == null
+	public static TimestampedECDSASignatures from(@JsonProperty("signatures") Map<String, TimestampedECDSASignature> signatures) {
+		ImmutableMap<BFTNode, TimestampedECDSASignature> sigs = signatures == null
 			? ImmutableMap.of()
 			: signatures.entrySet().stream()
-				.collect(ImmutableMap.toImmutableMap(e -> toBFTNode(e.getKey()), e -> pairFromMap(e.getValue())));
+				.collect(ImmutableMap.toImmutableMap(e -> toBFTNode(e.getKey()), Map.Entry::getValue));
 		return new TimestampedECDSASignatures(sigs);
 	}
 
@@ -69,24 +72,24 @@ public final class TimestampedECDSASignatures {
 	 * Returns a new empty instance.
 	 */
 	public TimestampedECDSASignatures() {
-		this.keyToTimestampAndSignature = ImmutableMap.of();
+		this.nodeToTimestampedSignature = ImmutableMap.of();
 	}
 
 	/**
-	 * Returns a new instance containing {@code keyToTimestampAndSignature}.
-	 * @param keyToTimestampAndSignature The map of {@link ECDSASignature}s and their corresponding
+	 * Returns a new instance containing {@code nodeToTimestampAndSignature}.
+	 * @param nodeToTimestampAndSignature The map of {@link ECDSASignature}s and their corresponding
 	 * 		timestamps and {@link ECPublicKey}
 	 */
-	public TimestampedECDSASignatures(ImmutableMap<BFTNode, Pair<Long, ECDSASignature>> keyToTimestampAndSignature) {
-		this.keyToTimestampAndSignature = keyToTimestampAndSignature;
+	public TimestampedECDSASignatures(ImmutableMap<BFTNode, TimestampedECDSASignature> nodeToTimestampAndSignature) {
+		this.nodeToTimestampedSignature = nodeToTimestampAndSignature;
 	}
 
 	/**
 	 * Returns signatures and timestamps for each public key
 	 * @return Signatures and timestamps for each public key
 	 */
-	public Map<BFTNode, Pair<Long, ECDSASignature>> getSignatures() {
-		return this.keyToTimestampAndSignature;
+	public Map<BFTNode, TimestampedECDSASignature> getSignatures() {
+		return this.nodeToTimestampedSignature;
 	}
 
 	/**
@@ -94,12 +97,40 @@ public final class TimestampedECDSASignatures {
 	 * @return The count of signatures
 	 */
 	public int count() {
-		return this.keyToTimestampAndSignature.size();
+		return this.nodeToTimestampedSignature.size();
+	}
+
+	/**
+	 * Returns the weighted timestamp for this set of timestamped signatures.
+	 * @return The weighted timestamp, or {@code Long.MIN_VALUE} if a timestamp cannot be computed
+	 */
+	public long weightedTimestamp() {
+		UInt256 totalPower = UInt256.ZERO;
+		List<Pair<Long, UInt256>> weightedTimes = Lists.newArrayList();
+		for (TimestampedECDSASignature ts : this.nodeToTimestampedSignature.values()) {
+			UInt256 weight = ts.weight();
+			totalPower = totalPower.add(weight);
+			weightedTimes.add(Pair.of(ts.timestamp(), weight));
+		}
+		if (totalPower.isZero()) {
+			return Long.MIN_VALUE; // Invalid timestamp
+		}
+		UInt256 median = totalPower.shiftRight(); // Divide by 2
+		// Sort ascending by timestamp
+		weightedTimes.sort(Comparator.comparing(Pair::getFirst));
+		for (Pair<Long, UInt256> w : weightedTimes) {
+			UInt256 weight = w.getSecond();
+			if (median.compareTo(weight) < 0) {
+				return w.getFirst();
+			}
+			median = median.subtract(weight);
+		}
+		throw new IllegalStateException("Logic error in weightedTimestamp");
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s]", getClass().getSimpleName(), this.keyToTimestampAndSignature);
+		return String.format("%s[%s]", getClass().getSimpleName(), this.nodeToTimestampedSignature);
 	}
 
 	@Override
@@ -108,20 +139,20 @@ public final class TimestampedECDSASignatures {
 			return false;
 		}
 		TimestampedECDSASignatures that = (TimestampedECDSASignatures) o;
-		return Objects.equals(this.keyToTimestampAndSignature, that.keyToTimestampAndSignature);
+		return Objects.equals(this.nodeToTimestampedSignature, that.nodeToTimestampedSignature);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.keyToTimestampAndSignature);
+		return Objects.hash(this.nodeToTimestampedSignature);
 	}
 
 	@JsonProperty("signatures")
 	@DsonOutput(DsonOutput.Output.ALL)
-	private Map<String, Map<Long, ECDSASignature>> getSerializerSignatures() {
-		if (this.keyToTimestampAndSignature != null) {
-			return this.keyToTimestampAndSignature.entrySet().stream()
-				.collect(Collectors.toMap(e -> encodePublicKey(e.getKey()), e -> mapFromPair(e.getValue())));
+	private Map<String, TimestampedECDSASignature> getSerializerSignatures() {
+		if (this.nodeToTimestampedSignature != null) {
+			return this.nodeToTimestampedSignature.entrySet().stream()
+				.collect(Collectors.toMap(e -> encodePublicKey(e.getKey()), Map.Entry::getValue));
 		}
 		return null;
 	}
@@ -136,17 +167,5 @@ public final class TimestampedECDSASignatures {
 		} catch (CryptoException e) {
 			throw new IllegalStateException("Error decoding public key", e);
 		}
-	}
-
-	private static Pair<Long, ECDSASignature> pairFromMap(Map<Long, ECDSASignature> m) {
-		if (m.size() != 1) {
-			throw new IllegalArgumentException("Map has incorrect number of entries: " + m);
-		}
-		Map.Entry<Long, ECDSASignature> entry = m.entrySet().iterator().next();
-		return Pair.of(entry.getKey(), entry.getValue());
-	}
-
-	private static Map<Long, ECDSASignature> mapFromPair(Pair<Long, ECDSASignature> p) {
-		return ImmutableMap.of(p.getFirst(), p.getSecond());
 	}
 }

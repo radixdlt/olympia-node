@@ -35,6 +35,7 @@ import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.bft.ValidationState;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.utils.UInt256;
 
 /**
  * Manages pending {@link NewView} items.
@@ -77,7 +78,7 @@ public final class PendingNewViews {
 		ValidationState validationState = this.newViewState.computeIfAbsent(thisView, k -> validatorSet.newValidationState());
 
 		// check if we have gotten enough new-views to proceed
-		if (!(validationState.addSignature(node, 0L, signature) && validationState.complete())) {
+		if (!(validationState.addSignature(node, 0L, UInt256.ZERO, signature) && validationState.complete())) {
 			return Optional.empty();
 		}
 

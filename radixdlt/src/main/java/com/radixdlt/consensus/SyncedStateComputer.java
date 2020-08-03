@@ -38,6 +38,12 @@ public interface SyncedStateComputer<T extends CommittedInstruction> {
 		 * @return the BFT data for the instruction
 		 */
 		VertexMetadata getVertexMetadata();
+
+		/**
+		 * Retrieve the BFT timestamp for the instruction
+		 * @return the BFT timestamp
+		 */
+		long getTimestamp();
 	}
 
 	/**
