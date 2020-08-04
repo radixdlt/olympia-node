@@ -29,7 +29,6 @@ import io.reactivex.rxjava3.core.Observable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
@@ -104,12 +103,7 @@ public class SafetyInvariant implements TestInvariant {
 					.map(n -> lastCommittedByNode.getOrDefault(n, EpochView.of(0, View.genesis())))
 					.reduce((v0, v1) -> v0.compareTo(v1) < 0 ? v0 : v1)
 					.orElse(EpochView.of(0, View.genesis()));
-				final Set<EpochView> viewsToRemove = committedVertices.keySet().stream()
-					.filter(v -> v.compareTo(lowest) < 0)
-					.collect(Collectors.toSet());
-				for (EpochView viewToRemove : viewsToRemove) {
-					committedVertices.remove(viewToRemove);
-				}
+				committedVertices.headMap(lowest).clear();
 
 				return Observable.empty();
 			});
