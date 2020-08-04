@@ -52,7 +52,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class AtomEventObserver {
-	private static final Logger log = LogManager.getLogger("api");
+	private static final Logger log = LogManager.getLogger();
 
 	private static final int BATCH_SIZE = 50;
 

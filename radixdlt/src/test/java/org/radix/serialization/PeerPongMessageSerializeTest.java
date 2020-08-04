@@ -36,17 +36,18 @@ public class PeerPongMessageSerializeTest extends SerializeMessageObject<PeerPon
 	}
 
 	private static PeerPongMessage get() {
-		return new PeerPongMessage(0L, getLocalSystem(), 1);
+		return new PeerPongMessage(1, 0L, 0L, getLocalSystem());
 	}
 
 	@Test
 	public void sensibleToString() {
 		RadixSystem system = mock(RadixSystem.class);
 		when(system.getNID()).thenReturn(EUID.TWO);
-		String s = new PeerPongMessage(1234L, system, 0).toString();
+		String s = new PeerPongMessage(0, 1234L, 5678L, system).toString();
 
 		assertThat(s, containsString(PeerPongMessage.class.getSimpleName()));
 		assertThat(s, containsString(EUID.TWO.toString()));
 		assertThat(s, containsString("1234"));
+		assertThat(s, containsString("5678"));
 	}
 }

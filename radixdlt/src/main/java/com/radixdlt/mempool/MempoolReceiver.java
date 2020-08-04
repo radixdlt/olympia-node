@@ -31,7 +31,7 @@ import io.reactivex.rxjava3.disposables.Disposable;
  * Network glue for SubmissionControl.
  */
 public final class MempoolReceiver {
-	private static final Logger log = LogManager.getLogger("submission");
+	private static final Logger log = LogManager.getLogger();
 
 	private final MempoolNetworkRx mempoolRx;
 	private final SubmissionControl submissionControl;
