@@ -18,20 +18,22 @@
 package com.radixdlt.consensus.simulation.invariants.bft;
 
 import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.consensus.simulation.TestInvariant;
 import com.radixdlt.consensus.simulation.network.SimulationNodes.RunningNetwork;
 import com.radixdlt.utils.Pair;
 import io.reactivex.rxjava3.core.Observable;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.Map.Entry;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 /**
- * Checks that nodes do not commit on conflicting vertices
+ * Checks that validator nodes do not commit on conflicting vertices
  */
 public class SafetyInvariant implements TestInvariant {
 
@@ -47,41 +49,21 @@ public class SafetyInvariant implements TestInvariant {
 		);
 	}
 
-	private static Observable<TestInvariantError> noParentError(Vertex vertex) {
+	private static Observable<TestInvariantError> brokenChainError(Vertex vertex, Vertex closeVertex) {
 		return Observable.just(
 			new TestInvariantError(
-				String.format("Committed vertex %s has no parent", vertex)
-			)
-		);
-	}
-
-	private static Observable<TestInvariantError> badParentError(Vertex vertex, Vertex lastCommitted) {
-		return Observable.just(
-			new TestInvariantError(
-				String.format("Parent of vertex %s doesn't match last committed %s",
+				String.format("Broken Chain [%s, %s]",
 					vertex,
-					lastCommitted
+					closeVertex
 				)
 			)
 		);
 	}
-
-	private static Observable<TestInvariantError> badParentExpectedGenesisError(Vertex vertex) {
-		return Observable.just(
-			new TestInvariantError(
-				String.format("Parent of vertex %s doesn't match genesis",
-					vertex
-				)
-			)
-		);
-	}
-
 
 	@Override
 	public Observable<TestInvariantError> check(RunningNetwork network) {
-		final Map<Long, Map<View, Vertex>> epochCommittedVertices = new ConcurrentHashMap<>();
-		final Map<Long, AtomicReference<View>> epochHighest = new ConcurrentHashMap<>();
-		final Map<Long, Map<BFTNode, View>> epochLastCommittedByNode = new ConcurrentHashMap<>();
+		final TreeMap<EpochView, Vertex> committedVertices = new TreeMap<>();
+		final Map<BFTNode, EpochView> lastCommittedByNode = new HashMap<>();
 
 		return Observable.merge(
 			network.getNodes().stream().map(
@@ -91,50 +73,37 @@ public class SafetyInvariant implements TestInvariant {
 			.flatMap(nodeAndVertex -> {
 				final BFTNode node = nodeAndVertex.getFirst();
 				final Vertex vertex = nodeAndVertex.getSecond();
-				final long epoch = vertex.getEpoch();
-				final Map<View, Vertex> committedVertices = epochCommittedVertices.computeIfAbsent(epoch, e -> new ConcurrentHashMap<>());
-				final AtomicReference<View> highest = epochHighest.computeIfAbsent(epoch, e -> new AtomicReference<>());
-				final Map<BFTNode, View> lastCommittedByNode = epochLastCommittedByNode.computeIfAbsent(epoch, e -> new ConcurrentHashMap<>());
+				final EpochView epochView = EpochView.of(vertex.getEpoch(), vertex.getView());
 
-				final Vertex currentVertexAtView = committedVertices.get(vertex.getView());
+				final Vertex currentVertexAtView = committedVertices.get(epochView);
 				if (currentVertexAtView != null) {
 					if (!currentVertexAtView.getId().equals(vertex.getId())) {
 						return conflictingVerticesError(vertex, currentVertexAtView);
 					}
 				} else {
-					if (!vertex.getParentMetadata().getView().isGenesis()) {
-						View highestCommittedView = highest.get();
-						if (highestCommittedView == null) {
-							return badParentExpectedGenesisError(vertex);
-						}
-
-						final Vertex lastCommitted = committedVertices.get(highestCommittedView);
-						if (vertex.getParentId() == null) {
-							return noParentError(vertex);
-						}
-
-						if (!vertex.getParentId().equals(lastCommitted.getId())
-							|| !vertex.getParentMetadata().getView().equals(lastCommitted.getView())) {
-							return badParentError(vertex, lastCommitted);
+					EpochView parentEpochView = EpochView.of(vertex.getEpoch(), vertex.getParentMetadata().getView());
+					Vertex parent = committedVertices.get(parentEpochView);
+					if (parent == null) {
+						Entry<EpochView, Vertex> higherCommitted = committedVertices.higherEntry(parentEpochView);
+						if (higherCommitted != null) {
+							VertexMetadata higherParentMetadata = higherCommitted.getValue().getParentMetadata();
+							EpochView higherCommittedParentEpochView = EpochView.of(higherParentMetadata.getEpoch(), higherParentMetadata.getView());
+							if (epochView.compareTo(higherCommittedParentEpochView) > 0) {
+								return brokenChainError(vertex, higherCommitted.getValue());
+							}
 						}
 					}
 
-					committedVertices.put(vertex.getView(), vertex);
-					highest.set(vertex.getView());
+					committedVertices.put(epochView, vertex);
 				}
 
 				// Clean up old vertices so that we avoid consuming too much memory
-				lastCommittedByNode.put(node, vertex.getView());
-				final View lowest = network.getNodes().stream()
-					.map(n -> lastCommittedByNode.getOrDefault(n, View.genesis()))
+				lastCommittedByNode.put(node, epochView);
+				final EpochView lowest = network.getNodes().stream()
+					.map(n -> lastCommittedByNode.getOrDefault(n, EpochView.of(0, View.genesis())))
 					.reduce((v0, v1) -> v0.compareTo(v1) < 0 ? v0 : v1)
-					.orElse(View.genesis());
-				final Set<View> viewsToRemove = committedVertices.keySet().stream()
-					.filter(v -> v.compareTo(lowest) < 0)
-					.collect(Collectors.toSet());
-				for (View viewToRemove : viewsToRemove) {
-					committedVertices.remove(viewToRemove);
-				}
+					.orElse(EpochView.of(0, View.genesis()));
+				committedVertices.headMap(lowest).clear();
 
 				return Observable.empty();
 			});

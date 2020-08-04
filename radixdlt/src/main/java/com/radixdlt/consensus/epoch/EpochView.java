@@ -23,7 +23,7 @@ import java.util.Objects;
 /**
  * A bft view with it's corresponding epoch
  */
-public final class EpochView {
+public final class EpochView implements Comparable<EpochView> {
 	private final long epoch;
 	private final View view;
 
@@ -65,5 +65,14 @@ public final class EpochView {
 
 		EpochView other = (EpochView) o;
 		return other.epoch == this.epoch && Objects.equals(other.view, this.view);
+	}
+
+	@Override
+	public int compareTo(EpochView o) {
+		if (this.epoch != o.epoch) {
+			return Long.compare(this.epoch, o.epoch);
+		}
+
+		return this.view.compareTo(o.view);
 	}
 }
