@@ -33,6 +33,7 @@ import com.radixdlt.consensus.safety.SafetyViolationException;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hash;
+import com.radixdlt.utils.RTTStatistics;
 
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -98,47 +99,6 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		 * @param leader the leader of the view which timed out
 		 */
 		void sendTimeoutProcessed(View view, BFTNode leader);
-	}
-
-	static class RTTStatistics {
-		private double minRTT = Double.MAX_VALUE;
-		private double maxRTT = 0.0;
-		private double sumRTT = 0.0;
-		private double sumSquareRTT = 0.0;
-		private long countRTT = 0L;
-
-		double min() {
-			return this.minRTT;
-		}
-
-		double max() {
-			return this.maxRTT;
-		}
-
-		double mean() {
-			return this.sumRTT / this.countRTT;
-		}
-
-		double sigma() {
-			return Math.sqrt(this.sumSquareRTT / this.countRTT - Math.pow(mean(), 2.0));
-		}
-
-		void update(double duration) {
-			this.minRTT = Math.min(this.minRTT, duration);
-			this.maxRTT = Math.max(this.maxRTT, duration);
-			this.sumRTT += duration;
-			this.sumSquareRTT += Math.pow(duration, 2.0);
-			this.countRTT += 1;
-		}
-
-		EnumMap<CounterType, Long> toMap() {
-			EnumMap<CounterType, Long> values = new EnumMap<>(CounterType.class);
-			values.put(CounterType.BFT_VOTE_RTT_MAX,  Math.round(this.max()));
-			values.put(CounterType.BFT_VOTE_RTT_MEAN, Math.round(this.mean()));
-			values.put(CounterType.BFT_VOTE_RTT_MIN,  Math.round(this.min()));
-			values.put(CounterType.BFT_VOTE_RTT_SIGMA, Math.round(this.sigma()));
-			return values;
-		}
 	}
 
 	private final BFTNode self;
@@ -350,7 +310,13 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		if (durationNanos >= 0L) {
 			double durationMicros = durationNanos / 1e3;
 			this.rttStatistics.update(durationMicros);
-			this.counters.setAll(this.rttStatistics.toMap());
+			EnumMap<CounterType, Long> values = new EnumMap<>(CounterType.class);
+			values.put(CounterType.BFT_VOTE_RTT_MIN,   Math.round(this.rttStatistics.min()));
+			values.put(CounterType.BFT_VOTE_RTT_MAX,   Math.round(this.rttStatistics.max()));
+			values.put(CounterType.BFT_VOTE_RTT_MEAN,  Math.round(this.rttStatistics.mean()));
+			values.put(CounterType.BFT_VOTE_RTT_SIGMA, Math.round(this.rttStatistics.sigma()));
+			values.put(CounterType.BFT_VOTE_RTT_COUNT, this.rttStatistics.count());
+			this.counters.setAll(values);
 		}
 	}
 }

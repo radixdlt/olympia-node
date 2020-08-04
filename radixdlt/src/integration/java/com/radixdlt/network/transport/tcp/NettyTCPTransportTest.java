@@ -70,6 +70,7 @@ public class NettyTCPTransportTest {
 			transport1.close();
 		}
 		universe = null;
+		// Delay to allow O/S to transition sockets through FIN_WAIT
 		Thread.sleep(500);
 	}
 
