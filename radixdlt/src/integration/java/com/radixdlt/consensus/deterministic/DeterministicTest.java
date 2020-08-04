@@ -46,6 +46,7 @@ import java.util.Random;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -187,6 +188,16 @@ public final class DeterministicTest {
 		Object msg = network.popNextMessage(channelId);
 		assertThat(msg).isInstanceOf(expectedClass);
 		nodes.get(toIndex).processNext(msg);
+	}
+
+	public <T> void processNextMsg(int toIndex, int fromIndex, Class<T> expectedClass, UnaryOperator<T> mutator) {
+		ChannelId channelId = new ChannelId(bftNodes.get(fromIndex), bftNodes.get(toIndex));
+		Object msg = network.popNextMessage(channelId);
+		assertThat(msg).isInstanceOf(expectedClass);
+		T msgToUse = mutator.apply(expectedClass.cast(msg));
+		if (msgToUse != null) {
+			nodes.get(toIndex).processNext(msgToUse);
+		}
 	}
 
 	// TODO: This collection of interfaces will need a rethink once we have

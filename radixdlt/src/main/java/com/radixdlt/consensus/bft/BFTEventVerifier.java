@@ -121,7 +121,7 @@ public final class BFTEventVerifier implements BFTEventProcessor {
 
 		final ECPublicKey key = node.getKey();
 		final Hash vertexHash = this.hasher.hash(proposal.getVertex());
-		final ECDSASignature signature = proposal.getSignature().orElseThrow(() -> new IllegalArgumentException("proposal is missing signature"));
+		final ECDSASignature signature = proposal.getSignature();
 		if (!this.verifier.verify(key, vertexHash, signature)) {
 			log.info("{}: Ignoring invalid signature from author {}", self::getSimpleName, node::getSimpleName);
 			return;
