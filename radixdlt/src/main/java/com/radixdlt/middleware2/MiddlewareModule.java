@@ -58,6 +58,8 @@ import com.radixdlt.universe.Universe;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 
+import org.radix.Radix;
+
 public class MiddlewareModule extends AbstractModule {
 	private static final Hash DEFAULT_FEE_TARGET = new Hash("0000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
 
@@ -74,25 +76,25 @@ public class MiddlewareModule extends AbstractModule {
 
 			return ImmutableMap.of(
 				"epochManager", ImmutableMap.of(
-					"highQC", highQC != null
-						? ImmutableMap.of(
+					"highQC", highQC != null ? ImmutableMap.of(
 						"epoch", highQC.getProposed().getEpoch(),
 						"view", highQC.getView().number(),
 						"vertexId", highQC.getProposed().getId()
 					)
-						: ImmutableMap.of(),
+					: ImmutableMap.of(),
 					"currentView", ImmutableMap.of(
 						"epoch", currentEpochView.getEpoch(),
 						"view", currentEpochView.getView().number()
 					),
-					"lastTimeout", timeout != null
-						? ImmutableMap.of(
+					"lastTimeout", timeout != null ? ImmutableMap.of(
 						"epoch", timeout.getEpochView().getEpoch(),
 						"view", timeout.getEpochView().getView().number(),
-						"leader", timeout.getLeader().toString())
-						: ImmutableMap.of()
+						"leader", timeout.getLeader().toString()
+					)
+					: ImmutableMap.of()
 				),
-				"counters", counters.toMap()
+				"counters", counters.toMap(),
+				"system_version", Radix.systemVersionInfo()
 			);
 		};
 	}

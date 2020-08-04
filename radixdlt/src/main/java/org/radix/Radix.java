@@ -17,6 +17,7 @@
 
 package org.radix;
 
+import com.google.common.collect.ImmutableMap;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.api.InMemoryInfoStateManager;
 import com.radixdlt.api.LedgerRx;
@@ -60,12 +61,10 @@ import java.util.Properties;
 
 public final class Radix
 {
-	static
-	{
-		System.setProperty("java.net.preferIPv4Stack", "true");
-	}
-
-	private static final Logger log = LogManager.getLogger();
+	private static final String SYSTEM_VERSION_DISPLAY;
+	private static final String SYSTEM_VERSION_BRANCH;
+	private static final String SYSTEM_VERSION_COMMIT;
+	private static final ImmutableMap<String, Object> SYSTEM_VERSION_INFO;
 
 	public static final int 	PROTOCOL_VERSION 		= 100;
 
@@ -73,6 +72,39 @@ public final class Radix
 	public static final int 	MAJOR_AGENT_VERSION 	= 2709999;
 	public static final int 	REFUSE_AGENT_VERSION 	= 2709999;
 	public static final String 	AGENT 					= "/Radix:/"+AGENT_VERSION;
+
+	static {
+		System.setProperty("java.net.preferIPv4Stack", "true");
+
+		String branch  = "unknown-branch";
+		String commit  = "unknown-commit";
+		String display = "unknown-version";
+		try (InputStream is = Radix.class.getResourceAsStream("/version.properties")) {
+			if (is != null) {
+				Properties p = new Properties();
+				p.load(is);
+				branch  = p.getProperty("VERSION_BRANCH",  branch);
+				commit  = p.getProperty("VERSION_COMMIT",  commit);
+				display = p.getProperty("VERSION_DISPLAY", display);
+			}
+		} catch (IOException e) {
+			// Ignore exception
+		}
+		SYSTEM_VERSION_DISPLAY = display;
+		SYSTEM_VERSION_BRANCH  = branch;
+		SYSTEM_VERSION_COMMIT  = commit;
+		SYSTEM_VERSION_INFO = ImmutableMap.of("system_version",
+			ImmutableMap.of(
+				"branch",           SYSTEM_VERSION_BRANCH,
+				"commit",           SYSTEM_VERSION_COMMIT,
+				"display",          SYSTEM_VERSION_DISPLAY,
+				"agent_version",    AGENT_VERSION,
+				"protocol_version", PROTOCOL_VERSION
+			)
+		);
+	}
+
+	private static final Logger log = LogManager.getLogger();
 
 	private static final Object BC_LOCK = new Object();
 	private static boolean bcInitialised;
@@ -123,21 +155,12 @@ public final class Radix
 	}
 
 	private static void logVersion() {
-		String display = "unknown-version";
-		String branch  = "unknown-branch";
-		String commit  = "unknown-commit";
-		try (InputStream is = Radix.class.getResourceAsStream("/version.properties")) {
-			if (is != null) {
-				Properties p = new Properties();
-				p.load(is);
-				display = p.getProperty("VERSION_DISPLAY", display);
-				branch  = p.getProperty("VERSION_BRANCH",  branch);
-				commit  = p.getProperty("VERSION_COMMIT",  commit);
-			}
-		} catch (IOException e) {
-			// Ignore exception
-		}
-		log.always().log("Radix distributed ledger '{}' from branch '{}' commit '{}'", display, branch, commit);
+		log.always().log("Radix distributed ledger '{}' from branch '{}' commit '{}'",
+			SYSTEM_VERSION_DISPLAY, SYSTEM_VERSION_BRANCH, SYSTEM_VERSION_COMMIT);
+	}
+
+	public static ImmutableMap<String, Object> systemVersionInfo() {
+		return SYSTEM_VERSION_INFO;
 	}
 
 	public static void start(RuntimeProperties properties) {
