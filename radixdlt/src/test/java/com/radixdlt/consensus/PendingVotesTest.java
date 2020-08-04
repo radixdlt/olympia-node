@@ -96,7 +96,7 @@ public class PendingVotesTest {
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		ValidationState validationState = mock(ValidationState.class);
 		TimestampedECDSASignatures signatures = mock(TimestampedECDSASignatures.class);
-		when(validationState.addSignature(any(), anyLong(), any(), any())).thenReturn(true);
+		when(validationState.addSignature(any(), anyLong(), any())).thenReturn(true);
 		when(validationState.complete()).thenReturn(true);
 		when(validationState.signatures()).thenReturn(signatures);
 		when(validatorSet.newValidationState()).thenReturn(validationState);

@@ -77,16 +77,16 @@ public final class ValidationState {
 	 *
 	 * @param node The node
 	 * @param timestamp The timestamp of the signature
-	 * @param weight The weighting of the timestamp
 	 * @param signature The signature to verify
 	 * @return whether the key was added or not
 	 */
-	public boolean addSignature(BFTNode node, long timestamp, UInt256 weight, ECDSASignature signature) {
+	public boolean addSignature(BFTNode node, long timestamp, ECDSASignature signature) {
 		if (validatorSet.containsNode(node)
 			&& !this.signedNodes.containsKey(node)) {
 			this.signedNodes.computeIfAbsent(node, k -> {
-				this.signedPower = this.signedPower.add(this.validatorSet.getPower(node));
-				return TimestampedECDSASignature.from(timestamp, weight,  signature);
+				UInt256 weight = this.validatorSet.getPower(node);
+				this.signedPower = this.signedPower.add(weight);
+				return TimestampedECDSASignature.from(timestamp, weight, signature);
 			});
 			return true;
 		}

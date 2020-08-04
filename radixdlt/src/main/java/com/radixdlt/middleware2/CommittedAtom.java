@@ -89,7 +89,6 @@ public final class CommittedAtom implements LedgerAtom, CommittedInstruction {
 		return clientAtom.getAID();
 	}
 
-	@Override
 	public long getTimestamp() {
 		return this.timestamp;
 	}
