@@ -18,8 +18,15 @@
 package com.radixdlt.mempool;
 
 import com.google.inject.TypeLiteral;
+import com.radixdlt.SyncerModule;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.LedgerAtom;
+import com.radixdlt.middleware2.store.CommittedAtomsStore;
+import com.radixdlt.middleware2.store.CommittedAtomsStore.AtomIndexer;
+import com.radixdlt.network.addressbook.AddressBook;
+import com.radixdlt.properties.RuntimeProperties;
+import com.radixdlt.syncer.StateSyncNetwork;
 import java.util.Set;
 
 import org.junit.Before;
@@ -71,13 +78,18 @@ public class SharedMempoolTest {
 				bind(LocalMempool.class).toInstance(localMempool);
 				bind(MempoolNetworkTx.class).toInstance(mempoolNetworkTx);
 				bind(EUID.class).annotatedWith(Names.named("self")).toInstance(self);
+				bind(ECKeyPair.class).annotatedWith(Names.named("self")).toInstance(mock(ECKeyPair.class));
 				bind(new TypeLiteral<RadixEngine<LedgerAtom>>() { }).toInstance(radixEngine);
 				bind(Serialization.class).toInstance(serialization);
 				bind(SystemCounters.class).toInstance(counters);
+				bind(AtomIndexer.class).toInstance(mock(AtomIndexer.class));
+				bind(AddressBook.class).toInstance(mock(AddressBook.class));
+				bind(CommittedAtomsStore.class).toInstance(mock(CommittedAtomsStore.class));
+				bind(StateSyncNetwork.class).toInstance(mock(StateSyncNetwork.class));
 			}
 		};
 
-		Injector injector = Guice.createInjector(testModule, new MempoolModule());
+		Injector injector = Guice.createInjector(testModule, new SyncerModule(mock(RuntimeProperties.class)));
 		this.sharedMempool = injector.getInstance(Mempool.class);
 	}
 

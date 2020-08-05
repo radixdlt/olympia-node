@@ -66,6 +66,12 @@ public class MiddlewareModule extends AbstractModule {
 	private static final Hash DEFAULT_FEE_TARGET = new Hash("0000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
 	private static final long GENESIS_TIMESTAMP = Instant.parse("2020-01-01T00:00:00.000Z").toEpochMilli();
 
+	@Override
+	protected void configure() {
+		bind(new TypeLiteral<EngineStore<CommittedAtom>>() { }).to(CommittedAtomsStore.class).in(Scopes.SINGLETON);
+		bind(AtomToBinaryConverter.class).toInstance(new AtomToBinaryConverter(DefaultSerialization.getInstance()));
+	}
+
 	@Provides
 	@Singleton
 	private InfoSupplier infoSupplier(
@@ -153,7 +159,6 @@ public class MiddlewareModule extends AbstractModule {
 		return new CommittedAtom(genesisAtom, vertexMetadata, GENESIS_TIMESTAMP);
 	}
 
-
 	@Provides
 	@Singleton
 	private EngineStore<LedgerAtom> engineStore(CommittedAtomsStore committedAtomsStore) {
@@ -216,11 +221,5 @@ public class MiddlewareModule extends AbstractModule {
 			engineStore,
 			ledgerAtomChecker
 		);
-	}
-
-	@Override
-	protected void configure() {
-		bind(new TypeLiteral<EngineStore<CommittedAtom>>() { }).to(CommittedAtomsStore.class).in(Scopes.SINGLETON);
-		bind(AtomToBinaryConverter.class).toInstance(new AtomToBinaryConverter(DefaultSerialization.getInstance()));
 	}
 }

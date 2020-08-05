@@ -23,8 +23,9 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
 import com.google.inject.name.Names;
-import com.radixdlt.CerberusModule;
+import com.radixdlt.ConsensusModule;
 import com.radixdlt.DefaultSerialization;
+import com.radixdlt.SyncerModule;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
@@ -32,7 +33,6 @@ import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.mempool.MempoolModule;
 import com.radixdlt.middleware2.InfoSupplier;
 import com.radixdlt.middleware2.MiddlewareModule;
 import com.radixdlt.middleware2.network.NetworkModule;
@@ -86,14 +86,14 @@ public class GlobalInjector {
 
 		injector = Guice.createInjector(
 			new BerkeleyStoreModule(),
-			new CerberusModule(properties),
+			new ConsensusModule(properties),
+			new SyncerModule(properties),
 			new MiddlewareModule(),
 			new MessageCentralModule(properties),
 			new UDPTransportModule(properties),
 			new TCPTransportModule(properties),
 			new AddressBookModule(dbEnv),
 			new HostIpModule(properties),
-			new MempoolModule(),
 			new NetworkModule(),
 			globalModule
 		);

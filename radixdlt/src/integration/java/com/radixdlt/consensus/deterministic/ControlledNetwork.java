@@ -18,7 +18,7 @@
 package com.radixdlt.consensus.deterministic;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.EpochChangeSender;
+import com.radixdlt.syncer.EpochChangeSender;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.epoch.EpochChange;

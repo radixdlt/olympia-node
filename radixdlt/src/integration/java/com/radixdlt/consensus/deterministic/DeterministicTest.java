@@ -21,7 +21,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Streams;
-import com.radixdlt.EpochChangeSender;
+import com.radixdlt.syncer.EpochChangeSender;
 import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;

@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt;
+package com.radixdlt.syncer;
 
 import com.radixdlt.consensus.epoch.EpochChange;
 

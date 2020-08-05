@@ -18,7 +18,7 @@
 package com.radixdlt.middleware2;
 
 import com.google.common.collect.ImmutableSet;
-import com.radixdlt.EpochChangeSender;
+import com.radixdlt.syncer.EpochChangeSender;
 import com.radixdlt.api.DeserializationFailure;
 import com.radixdlt.api.InfoRx;
 import com.radixdlt.api.LedgerRx;

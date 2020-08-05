@@ -23,32 +23,24 @@ import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 import com.radixdlt.api.InfoRx;
 import com.radixdlt.api.LedgerRx;
-import com.radixdlt.api.SubmissionErrorsRx;
+import com.radixdlt.api.InMemoryInfoStateManager;
 import com.radixdlt.consensus.HashVerifier;
+import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.bft.BFTBuilder;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
-import com.radixdlt.consensus.AddressBookValidatorSetProvider;
 import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.CommittedStateSyncRx;
 import com.radixdlt.consensus.ConsensusRunner;
 import com.radixdlt.consensus.DefaultHasher;
 import com.radixdlt.consensus.EpochChangeRx;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.ConsensusEventsRx;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.epoch.EpochManager.EpochInfoSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
-import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.VertexStoreEventsRx;
-import com.radixdlt.consensus.liveness.MempoolNextCommandGenerator;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
-import com.radixdlt.mempool.SubmissionControl;
-import com.radixdlt.mempool.SubmissionControlImpl;
-import com.radixdlt.mempool.SubmissionControlImpl.SubmissionControlSender;
-import com.radixdlt.api.InMemoryInfoStateManager;
-import com.radixdlt.middleware2.InternalMessagePasser;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.ProposerElectionFactory;
 import com.radixdlt.consensus.Hasher;
@@ -57,32 +49,23 @@ import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRPCSender;
 import com.radixdlt.consensus.VertexStoreFactory;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
 import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.consensus.liveness.PacemakerFactory;
 import com.radixdlt.consensus.liveness.PacemakerRx;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeoutSender;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
-import com.radixdlt.syncer.StateSyncNetwork;
-import com.radixdlt.syncer.SyncedRadixEngine;
-import com.radixdlt.syncer.SyncedRadixEngine.CommittedStateSyncSender;
-import com.radixdlt.syncer.SyncedRadixEngine.SyncedRadixEngineEventSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.mempool.Mempool;
-import com.radixdlt.middleware2.LedgerAtom;
-import com.radixdlt.middleware2.converters.AtomToClientAtomConverter;
+import com.radixdlt.middleware2.CommittedAtom;
+import com.radixdlt.middleware2.InternalMessagePasser;
 import com.radixdlt.middleware2.network.MessageCentralBFTNetwork;
 import com.radixdlt.middleware2.network.MessageCentralValidatorSync;
-import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.properties.RuntimeProperties;
-import com.radixdlt.serialization.Serialization;
 import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.ThreadFactories;
 import java.util.Comparator;
@@ -90,12 +73,12 @@ import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
-public class CerberusModule extends AbstractModule {
+public class ConsensusModule extends AbstractModule {
 	private static final int DEFAULT_VERTEX_BUFFER_SIZE = 16;
 	private static final long DEFAULT_VERTEX_UPDATE_FREQ = 1_000L;
 	private final RuntimeProperties runtimeProperties;
 
-	public CerberusModule(RuntimeProperties runtimeProperties) {
+	public ConsensusModule(RuntimeProperties runtimeProperties) {
 		this.runtimeProperties = Objects.requireNonNull(runtimeProperties);
 	}
 
@@ -110,21 +93,15 @@ public class CerberusModule extends AbstractModule {
 		bind(LocalTimeoutSender.class).to(ScheduledLocalTimeoutSender.class);
 
 		// Local messages
-		bind(SubmissionControlSender.class).to(InternalMessagePasser.class);
-		bind(SubmissionErrorsRx.class).to(InternalMessagePasser.class);
 		bind(VertexStoreEventsRx.class).to(InternalMessagePasser.class);
 		bind(VertexStoreEventSender.class).to(InternalMessagePasser.class);
-		bind(CommittedStateSyncSender.class).to(InternalMessagePasser.class);
 		bind(CommittedStateSyncRx.class).to(InternalMessagePasser.class);
 		bind(EpochChangeRx.class).to(InternalMessagePasser.class);
-		bind(EpochChangeSender.class).to(InternalMessagePasser.class);
 		bind(EpochInfoSender.class).to(InternalMessagePasser.class);
 		bind(InfoRx.class).to(InternalMessagePasser.class);
-		bind(SyncedRadixEngineEventSender.class).to(InternalMessagePasser.class);
 		bind(LedgerRx.class).to(InternalMessagePasser.class);
-		bind(SyncedStateComputer.class).to(SyncedRadixEngine.class);
 
-		// Network Sync messages
+		// Network BFT/Epoch Sync messages
 		bind(SyncEpochsRPCSender.class).to(MessageCentralValidatorSync.class);
 		bind(SyncEpochsRPCRx.class).to(MessageCentralValidatorSync.class);
 		bind(SyncVerticesRPCSender.class).to(MessageCentralValidatorSync.class);
@@ -135,23 +112,6 @@ public class CerberusModule extends AbstractModule {
 		bind(ConsensusEventsRx.class).to(MessageCentralBFTNetwork.class);
 	}
 
-	@Provides
-	@Singleton
-	SubmissionControl submissionControl(
-		Mempool mempool,
-		RadixEngine<LedgerAtom> radixEngine,
-		Serialization serialization,
-		AtomToClientAtomConverter converter,
-		SubmissionControlSender submissionControlSender
-	) {
-		return new SubmissionControlImpl(
-			mempool,
-			radixEngine,
-			serialization,
-			converter,
-			submissionControlSender
-		);
-	}
 
 	@Provides
 	@Singleton
@@ -183,13 +143,6 @@ public class CerberusModule extends AbstractModule {
 		return new MessageCentralBFTNetwork(self, universe, addressBook, messageCentral);
 	}
 
-	@Provides
-	@Singleton
-	NextCommandGenerator nextCommandGenerator(
-		Mempool mempool
-	) {
-		return new MempoolNextCommandGenerator(mempool);
-	}
 
 	@Provides
 	@Singleton
@@ -241,7 +194,7 @@ public class CerberusModule extends AbstractModule {
 	@Singleton
 	private EpochManager epochManager(
 		@Named("self") BFTNode self,
-		SyncedRadixEngine syncedRadixEngine,
+		SyncedStateComputer<CommittedAtom> syncer,
 		BFTFactory bftFactory,
 		SyncEpochsRPCSender syncEpochsRPCSender,
 		LocalTimeoutSender scheduledTimeoutSender,
@@ -253,7 +206,7 @@ public class CerberusModule extends AbstractModule {
 	) {
 		return new EpochManager(
 			self,
-			syncedRadixEngine,
+			syncer,
 			syncEpochsRPCSender,
 			scheduledTimeoutSender,
 			pacemakerFactory,
@@ -293,75 +246,6 @@ public class CerberusModule extends AbstractModule {
 	@Singleton
 	private InternalMessagePasser internalMessagePasser() {
 		return new InternalMessagePasser();
-	}
-
-	@Provides
-	@Singleton
-	private AddressBookValidatorSetProvider addressBookValidatorSetProvider(
-		AddressBook addressBook,
-		@Named("self") ECKeyPair selfKey
-	) {
-		final int fixedNodeCount = runtimeProperties.get("consensus.fixed_node_count", 1);
-
-		return new AddressBookValidatorSetProvider(
-			selfKey.getPublicKey(),
-			addressBook,
-			fixedNodeCount,
-			(epoch, validators) -> {
-				/*
-				Builder<BFTValidator> validatorSetBuilder = ImmutableList.builder();
-				Random random = new Random(epoch);
-				List<Integer> indices = IntStream.range(0, validators.size()).boxed().collect(Collectors.toList());
-				// Temporary mechanism to get some deterministic random set of validators
-				for (long i = 0; i < epoch; i++) {
-					random.nextInt(validators.size());
-				}
-				int randInt = random.nextInt(validators.size());
-				int validatorSetSize = randInt + 1;
-
-				for (int i = 0; i < validatorSetSize; i++) {
-					int index = indices.remove(random.nextInt(indices.size()));
-					BFTValidator validator = validators.get(index);
-					validatorSetBuilder.add(validator);
-				}
-
-				ImmutableList<BFTValidator> validatorList = validatorSetBuilder.build();
-
-				return BFTValidatorSet.from(validatorList);
-				*/
-				return BFTValidatorSet.from(validators);
-			}
-		);
-	}
-
-	@Provides
-	@Singleton
-	private SyncedRadixEngine syncedRadixEngine(
-		Mempool mempool,
-		RadixEngine<LedgerAtom> radixEngine,
-		CommittedAtomsStore committedAtomsStore,
-		CommittedStateSyncSender committedStateSyncSender,
-		EpochChangeSender epochChangeSender,
-		SyncedRadixEngineEventSender syncedRadixEngineEventSender,
-		AddressBookValidatorSetProvider validatorSetProvider,
-		AddressBook addressBook,
-		StateSyncNetwork stateSyncNetwork,
-		SystemCounters counters
-	) {
-		final long viewsPerEpoch = runtimeProperties.get("epochs.views_per_epoch", 100L);
-		return new SyncedRadixEngine(
-			mempool,
-			radixEngine,
-			committedAtomsStore,
-			committedStateSyncSender,
-			epochChangeSender,
-			syncedRadixEngineEventSender,
-			validatorSetProvider::getValidatorSet,
-			View.of(viewsPerEpoch),
-			addressBook,
-			stateSyncNetwork,
-			counters
-		);
 	}
 
 	@Provides
