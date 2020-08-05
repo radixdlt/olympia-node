@@ -67,8 +67,9 @@ public class ValidatorRegistrationStateTest {
 			ADDRESS_1,
 			1
 		);
-		RegisteredValidatorParticle output = ValidatorRegistrationState.from(input).register();
+		RegisteredValidatorParticle output = ValidatorRegistrationState.from(input).register("url");
 		assertThat(output.getAddress()).isEqualTo(input.getAddress());
+		assertThat(output.getUrl()).isEqualTo("url");
 		assertThat(output.getNonce()).isEqualTo(2);
 	}
 
