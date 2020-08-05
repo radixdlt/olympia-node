@@ -30,7 +30,6 @@ import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.CommittedStateSyncRx;
 import com.radixdlt.consensus.ConsensusRunner;
-import com.radixdlt.consensus.DefaultHasher;
 import com.radixdlt.consensus.EpochChangeRx;
 import com.radixdlt.consensus.bft.VertexStore.SyncedVertexSender;
 import com.radixdlt.consensus.epoch.EpochManager;
@@ -55,8 +54,6 @@ import com.radixdlt.consensus.liveness.PacemakerRx;
 import com.radixdlt.consensus.liveness.ScheduledLocalTimeoutSender;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.network.TimeSupplier;
@@ -76,10 +73,6 @@ public class ConsensusModule extends AbstractModule {
 
 	@Override
 	protected void configure() {
-		// Configuration
-		bind(Hasher.class).to(DefaultHasher.class);
-		bind(HashVerifier.class).toInstance(ECPublicKey::verify);
-
 		// Timed local messages
 		bind(PacemakerRx.class).to(ScheduledLocalTimeoutSender.class);
 		bind(LocalTimeoutSender.class).to(ScheduledLocalTimeoutSender.class);
@@ -88,14 +81,6 @@ public class ConsensusModule extends AbstractModule {
 		SenderToRx<Vertex, Hash> syncedVertices = new SenderToRx<>(Vertex::getId);
 		bind(VertexSyncRx.class).toInstance(syncedVertices::rx);
 		bind(SyncedVertexSender.class).toInstance(syncedVertices::send);
-	}
-
-	@Provides
-	@Singleton
-	HashSigner hashSigner(
-		@Named("self") ECKeyPair selfKey
-	) {
-		return selfKey::sign;
 	}
 
 	@Provides

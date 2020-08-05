@@ -30,6 +30,9 @@ import com.radixdlt.consensus.CommittedStateSyncRx;
 import com.radixdlt.consensus.ConsensusEventsRx;
 import com.radixdlt.consensus.ConsensusRunner;
 import com.radixdlt.consensus.EpochChangeRx;
+import com.radixdlt.consensus.HashSigner;
+import com.radixdlt.consensus.HashVerifier;
+import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
 import com.radixdlt.consensus.SyncedStateComputer;
@@ -41,7 +44,6 @@ import com.radixdlt.consensus.epoch.EpochManager.EpochInfoSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.network.TimeSupplier;
 import io.reactivex.rxjava3.core.Observable;
@@ -83,8 +85,10 @@ public class ConsensusModuleTest {
 			bind(NextCommandGenerator.class).toInstance(mock(NextCommandGenerator.class));
 			bind(SystemCounters.class).toInstance(mock(SystemCounters.class));
 			bind(TimeSupplier.class).toInstance(mock(TimeSupplier.class));
+			bind(Hasher.class).toInstance(mock(Hasher.class));
+			bind(HashVerifier.class).toInstance(mock(HashVerifier.class));
+			bind(HashSigner.class).toInstance(mock(HashSigner.class));
 			bind(BFTNode.class).annotatedWith(Names.named("self")).toInstance(mock(BFTNode.class));
-			bind(ECKeyPair.class).annotatedWith(Names.named("self")).toInstance(mock(ECKeyPair.class));
 		}
 	}
 

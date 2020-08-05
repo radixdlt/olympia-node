@@ -24,6 +24,7 @@ import com.google.inject.Module;
 import com.google.inject.Scopes;
 import com.google.inject.name.Names;
 import com.radixdlt.ConsensusModule;
+import com.radixdlt.CryptoModule;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.MessagePasserModule;
 import com.radixdlt.SyncerModule;
@@ -84,11 +85,12 @@ public class GlobalInjector {
 		final int pacemakerTimeout = properties.get("consensus.pacemaker_timeout_millis", 5000);
 
 		injector = Guice.createInjector(
-			new MessagePasserModule(),
+			new CryptoModule(),
 			new ConsensusModule(pacemakerTimeout),
 			new SyncerModule(properties),
 			new SystemInfoModule(properties),
 			new NetworkModule(),
+			new MessagePasserModule(),
 
 			// Low level network modules
 			new MessageCentralModule(properties),
