@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus.sync;
 
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.network.addressbook.Peer;
 import io.reactivex.rxjava3.core.Observable;
@@ -31,7 +32,7 @@ public interface StateSyncNetwork {
 	 * Retrieve stream of sync responses
 	 * @return an unending Observable of sync responses
 	 */
-	Observable<List<CommittedAtom>> syncResponses();
+	Observable<ImmutableList<CommittedAtom>> syncResponses();
 
 	/**
 	 * Retrieve stream of sync requests

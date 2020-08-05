@@ -23,8 +23,6 @@ import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
-import java.util.Collections;
-import java.util.List;
 import org.radix.network.messaging.Message;
 
 /**
@@ -34,7 +32,7 @@ import org.radix.network.messaging.Message;
 public final class SyncResponseMessage extends Message {
 	@JsonProperty("atoms")
 	@DsonOutput(Output.ALL)
-	private final List<CommittedAtom> atoms;
+	private final ImmutableList<CommittedAtom> atoms;
 
 	SyncResponseMessage() {
 		// Serializer only
@@ -47,8 +45,8 @@ public final class SyncResponseMessage extends Message {
 		this.atoms = atoms;
 	}
 
-	public List<CommittedAtom> getAtoms() {
-		return atoms == null ? Collections.emptyList() : atoms;
+	public ImmutableList<CommittedAtom> getAtoms() {
+		return atoms == null ? ImmutableList.of() : atoms;
 	}
 
 	@Override
