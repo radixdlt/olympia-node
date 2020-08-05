@@ -21,9 +21,8 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
-import com.radixdlt.api.InfoRx;
+import com.radixdlt.systeminfo.InfoRx;
 import com.radixdlt.api.LedgerRx;
-import com.radixdlt.api.InMemoryInfoStateManager;
 import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.bft.BFTBuilder;
@@ -74,8 +73,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 public class ConsensusModule extends AbstractModule {
-	private static final int DEFAULT_VERTEX_BUFFER_SIZE = 16;
-	private static final long DEFAULT_VERTEX_UPDATE_FREQ = 1_000L;
 	private final RuntimeProperties runtimeProperties;
 
 	public ConsensusModule(RuntimeProperties runtimeProperties) {
@@ -182,13 +179,6 @@ public class ConsensusModule extends AbstractModule {
 				.build();
 	}
 
-	@Provides
-	@Singleton
-	private InMemoryInfoStateManager infoStateRunner(InfoRx infoRx) {
-		final int vertexBufferSize = runtimeProperties.get("api.debug.vertex_buffer_size", DEFAULT_VERTEX_BUFFER_SIZE);
-		final long vertexUpdateFrequency = runtimeProperties.get("api.debug.vertex_update_freq", DEFAULT_VERTEX_UPDATE_FREQ);
-		return new InMemoryInfoStateManager(infoRx, vertexBufferSize, vertexUpdateFrequency);
-	}
 
 	@Provides
 	@Singleton

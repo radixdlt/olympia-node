@@ -34,7 +34,7 @@ import com.radixdlt.identifiers.EUID;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.middleware2.InfoSupplier;
-import com.radixdlt.middleware2.MiddlewareModule;
+import com.radixdlt.SystemInfoModule;
 import com.radixdlt.middleware2.network.NetworkModule;
 import com.radixdlt.network.addressbook.AddressBookModule;
 import com.radixdlt.network.addressbook.PeerManagerConfiguration;
@@ -45,7 +45,6 @@ import com.radixdlt.network.transport.tcp.TCPTransportModule;
 import com.radixdlt.network.transport.udp.UDPTransportModule;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.store.berkeley.BerkeleyStoreModule;
 import com.radixdlt.universe.Universe;
 
 import javax.inject.Inject;
@@ -85,10 +84,11 @@ public class GlobalInjector {
 		};
 
 		injector = Guice.createInjector(
-			new BerkeleyStoreModule(),
 			new ConsensusModule(properties),
 			new SyncerModule(properties),
-			new MiddlewareModule(),
+			new SystemInfoModule(properties),
+
+			// Network modules
 			new MessageCentralModule(properties),
 			new UDPTransportModule(properties),
 			new TCPTransportModule(properties),

@@ -24,15 +24,27 @@ import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.name.Named;
 import com.radixdlt.api.SubmissionErrorsRx;
+import com.radixdlt.atommodel.message.MessageParticleConstraintScrypt;
+import com.radixdlt.atommodel.tokens.TokensConstraintScrypt;
+import com.radixdlt.atommodel.unique.UniqueParticleConstraintScrypt;
+import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
+import com.radixdlt.atomos.CMAtomOS;
+import com.radixdlt.atomos.Result;
 import com.radixdlt.consensus.AddressBookValidatorSetProvider;
 import com.radixdlt.consensus.SyncedStateComputer;
+import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.liveness.MempoolNextCommandGenerator;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
+import com.radixdlt.constraintmachine.ConstraintMachine;
+import com.radixdlt.constraintmachine.Particle;
+import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.identifiers.AID;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.SharedMempool;
 import com.radixdlt.mempool.SubmissionControl;
@@ -43,20 +55,40 @@ import com.radixdlt.middleware2.ClientAtom.LedgerAtomConversionException;
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.middleware2.InternalMessagePasser;
 import com.radixdlt.middleware2.LedgerAtom;
+import com.radixdlt.middleware2.LedgerAtomChecker;
+import com.radixdlt.middleware2.PowFeeComputer;
 import com.radixdlt.middleware2.converters.AtomConversionException;
+import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.middleware2.converters.AtomToClientAtomConverter;
+import com.radixdlt.middleware2.network.MessageCentralLedgerSync;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
+import com.radixdlt.middleware2.store.CommittedAtomsStore.AtomIndexer;
+import com.radixdlt.middleware2.store.EngineAtomIndices;
 import com.radixdlt.network.addressbook.AddressBook;
+import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.store.CMStore;
+import com.radixdlt.store.CursorStore;
+import com.radixdlt.store.EngineStore;
+import com.radixdlt.store.LedgerEntryStore;
+import com.radixdlt.store.LedgerEntryStoreView;
+import com.radixdlt.store.berkeley.BerkeleyCursorStore;
+import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.syncer.EpochChangeSender;
 import com.radixdlt.syncer.StateSyncNetwork;
 import com.radixdlt.syncer.SyncedRadixEngine;
 import com.radixdlt.syncer.SyncedRadixEngine.CommittedStateSyncSender;
 import com.radixdlt.syncer.SyncedRadixEngine.SyncedRadixEngineEventSender;
+import com.radixdlt.universe.Universe;
+import java.time.Instant;
 import java.util.Objects;
+import java.util.function.Consumer;
+import java.util.function.UnaryOperator;
 
 public class SyncerModule extends AbstractModule {
+	private static final Hash DEFAULT_FEE_TARGET = new Hash("0000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
+	private static final long GENESIS_TIMESTAMP = Instant.parse("2020-01-01T00:00:00.000Z").toEpochMilli();
 	private final RuntimeProperties runtimeProperties;
 
 	public SyncerModule(RuntimeProperties runtimeProperties) {
@@ -74,6 +106,13 @@ public class SyncerModule extends AbstractModule {
 
 		bind(new TypeLiteral<SyncedStateComputer<CommittedAtom>>() { }).to(SyncedRadixEngine.class).in(Scopes.SINGLETON);
 		bind(Mempool.class).to(SharedMempool.class).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<EngineStore<CommittedAtom>>() { }).to(CommittedAtomsStore.class).in(Scopes.SINGLETON);
+		bind(AtomToBinaryConverter.class).toInstance(new AtomToBinaryConverter(DefaultSerialization.getInstance()));
+
+		// Database
+		bind(LedgerEntryStore.class).to(BerkeleyLedgerEntryStore.class);
+		bind(LedgerEntryStoreView.class).to(BerkeleyLedgerEntryStore.class);
+		bind(CursorStore.class).to(BerkeleyCursorStore.class);
 	}
 
 	@Provides
@@ -180,6 +219,122 @@ public class SyncerModule extends AbstractModule {
 			serialization,
 			converter,
 			submissionControlSender
+		);
+	}
+
+
+	@Provides
+	@Singleton
+	private CMAtomOS buildCMAtomOS(Universe universe) {
+		final CMAtomOS os = new CMAtomOS(addr -> {
+			final int universeMagic = universe.getMagic() & 0xff;
+			if (addr.getMagic() != universeMagic) {
+				return Result.error("Address magic " + addr.getMagic() + " does not match universe " + universeMagic);
+			}
+			return Result.success();
+		});
+		os.load(new TokensConstraintScrypt());
+		os.load(new UniqueParticleConstraintScrypt());
+		os.load(new MessageParticleConstraintScrypt());
+		os.load(new ValidatorConstraintScrypt());
+		return os;
+	}
+
+	@Provides
+	@Singleton
+	private ConstraintMachine buildConstraintMachine(CMAtomOS os) {
+		return new ConstraintMachine.Builder()
+			.setParticleTransitionProcedures(os.buildTransitionProcedures())
+			.setParticleStaticCheck(os.buildParticleStaticCheck())
+			.build();
+	}
+
+	@Provides
+	private UnaryOperator<CMStore> buildVirtualLayer(CMAtomOS atomOS) {
+		return atomOS.buildVirtualLayer();
+	}
+
+	@Provides
+	@Singleton
+	private StateSyncNetwork stateSyncNetwork(
+		Universe universe,
+		MessageCentral messageCentral
+	) {
+		return new MessageCentralLedgerSync(
+			universe,
+			messageCentral
+		);
+	}
+
+	@Provides
+	@Singleton
+	private CommittedAtom genesisAtom(Universe universe) throws LedgerAtomConversionException {
+		final ClientAtom genesisAtom = ClientAtom.convertFromApiAtom(universe.getGenesis().get(0));
+		final VertexMetadata vertexMetadata = VertexMetadata.ofGenesisAncestor();
+		return new CommittedAtom(genesisAtom, vertexMetadata, GENESIS_TIMESTAMP);
+	}
+
+	@Provides
+	@Singleton
+	private EngineStore<LedgerAtom> engineStore(CommittedAtomsStore committedAtomsStore) {
+		return new EngineStore<LedgerAtom>() {
+			@Override
+			public void getAtomContaining(Particle particle, boolean b, Consumer<LedgerAtom> consumer) {
+				committedAtomsStore.getAtomContaining(particle, b, consumer::accept);
+			}
+
+			@Override
+			public void storeAtom(LedgerAtom ledgerAtom) {
+				if (!(ledgerAtom instanceof CommittedAtom)) {
+					throw new IllegalStateException("Should not be storing atoms which aren't committed");
+				}
+
+				CommittedAtom committedAtom = (CommittedAtom) ledgerAtom;
+				committedAtomsStore.storeAtom(committedAtom);
+			}
+
+			@Override
+			public void deleteAtom(AID aid) {
+				committedAtomsStore.deleteAtom(aid);
+			}
+
+			@Override
+			public Spin getSpin(Particle particle) {
+				return committedAtomsStore.getSpin(particle);
+			}
+		};
+	}
+
+	@Provides
+	@Singleton
+	private AtomIndexer buildAtomIndexer(Serialization serialization) {
+		return atom -> EngineAtomIndices.from(atom, serialization);
+	}
+
+	@Provides
+	@Singleton
+	private RadixEngine<LedgerAtom> getRadixEngine(
+		ConstraintMachine constraintMachine,
+		UnaryOperator<CMStore> virtualStoreLayer,
+		EngineStore<LedgerAtom> engineStore,
+		RuntimeProperties properties,
+		Universe universe
+	) {
+		final boolean skipAtomFeeCheck = properties.get("debug.nopow", false);
+		final PowFeeComputer powFeeComputer = new PowFeeComputer(() -> universe);
+		final LedgerAtomChecker ledgerAtomChecker =
+			new LedgerAtomChecker(
+				() -> universe,
+				powFeeComputer,
+				DEFAULT_FEE_TARGET,
+				skipAtomFeeCheck
+			);
+
+		return new RadixEngine<>(
+			constraintMachine,
+			virtualStoreLayer,
+			engineStore,
+			ledgerAtomChecker
 		);
 	}
 }

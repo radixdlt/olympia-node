@@ -23,7 +23,7 @@ import static org.powermock.api.mockito.PowerMockito.when;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.api.StoredAtom;
 import com.radixdlt.api.StoredFailure;
-import com.radixdlt.api.Timeout;
+import com.radixdlt.systeminfo.Timeout;
 import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;

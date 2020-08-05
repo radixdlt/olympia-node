@@ -22,6 +22,7 @@ import static org.mockito.Mockito.mock;
 
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.epoch.EpochView;
+import com.radixdlt.systeminfo.Timeout;
 import org.junit.Before;
 import org.junit.Test;
 

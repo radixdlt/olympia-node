@@ -17,7 +17,7 @@
 
 package org.radix.api.http;
 
-import com.radixdlt.api.InMemoryInfoStateManager;
+import com.radixdlt.systeminfo.InMemorySystemInfoManager;
 import com.radixdlt.api.LedgerRx;
 import com.radixdlt.api.SubmissionErrorsRx;
 import com.radixdlt.consensus.ConsensusRunner;
@@ -84,11 +84,11 @@ public final class RadixHttpServer {
 	private final JSONObject apiSerializedUniverse;
 	private final LocalSystem localSystem;
 	private final Serialization serialization;
-	private final InMemoryInfoStateManager infoStateRunner;
+	private final InMemorySystemInfoManager infoStateRunner;
 	private Undertow server;
 
 	public RadixHttpServer(
-		InMemoryInfoStateManager infoStateRunner,
+		InMemorySystemInfoManager infoStateRunner,
 		SubmissionErrorsRx submissionErrorsRx,
 		LedgerRx ledgerRx,
 		ConsensusRunner consensusRunner,

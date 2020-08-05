@@ -25,14 +25,17 @@ import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochView;
+import com.radixdlt.systeminfo.InMemorySystemInfoManager;
+import com.radixdlt.systeminfo.InfoRx;
+import com.radixdlt.systeminfo.Timeout;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.concurrent.TimeUnit;
 import org.junit.Before;
 import org.junit.Test;
 
-public class InMemoryInfoStateManagerTest {
+public class InMemorySystemInfoManagerTest {
 	private InfoRx infoRx;
-	private InMemoryInfoStateManager runner;
+	private InMemorySystemInfoManager runner;
 
 	@Before
 	public void setup() {
@@ -41,7 +44,7 @@ public class InMemoryInfoStateManagerTest {
 		when(infoRx.currentViews()).thenReturn(Observable.never());
 		when(infoRx.highQCs()).thenReturn(Observable.never());
 		when(infoRx.committedVertices()).thenReturn(Observable.never());
-		this.runner = new InMemoryInfoStateManager(infoRx, 1, 1);
+		this.runner = new InMemorySystemInfoManager(infoRx, 1, 1);
 	}
 
 	@Test

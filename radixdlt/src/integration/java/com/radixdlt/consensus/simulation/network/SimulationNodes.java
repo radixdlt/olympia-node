@@ -19,7 +19,7 @@ package com.radixdlt.consensus.simulation.network;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.api.InfoRx;
+import com.radixdlt.systeminfo.InfoRx;
 import com.radixdlt.consensus.bft.BFTBuilder;
 import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.bft.BFTNode;
