@@ -37,6 +37,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.ToLongFunction;
+import java.util.regex.Pattern;
 
 /**
  * Constraint Scrypt defining the Validator FSM, specifically the registration/unregistration flow.
@@ -52,14 +53,15 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 	public void main(SysCalls os) {
 		os.registerParticle(UnregisteredValidatorParticle.class, ParticleDefinition.<UnregisteredValidatorParticle>builder()
 			.singleAddressMapper(UnregisteredValidatorParticle::getAddress)
-			.staticValidation(createStaticCheck(UnregisteredValidatorParticle::getAddress))
+			.staticValidation(checkAddress(UnregisteredValidatorParticle::getAddress))
 			.virtualizeSpin(p -> p.getNonce() == 0 ? Spin.UP : null) // virtualize first instance as UP
 			.build()
 		);
 
 		os.registerParticle(RegisteredValidatorParticle.class, ParticleDefinition.<RegisteredValidatorParticle>builder()
 			.singleAddressMapper(RegisteredValidatorParticle::getAddress)
-			.staticValidation(createStaticCheck(RegisteredValidatorParticle::getAddress))
+			.staticValidation(checkAddressAndUrl(RegisteredValidatorParticle::getAddress,
+				RegisteredValidatorParticle::getUrl))
 			.build()
 		);
 
@@ -97,8 +99,30 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 		);
 	}
 
+	// From the OWASP validation repository: https://www.owasp.org/index.php/OWASP_Validation_Regex_Repository
+	private static final Pattern OWASP_URL_REGEX = Pattern.compile(
+		"^((((https?|ftps?|gopher|telnet|nntp)://)|(mailto:|news:))(%[0-9A-Fa-f]{2}|[-()_.!~*';/?:@&=+$,A-Za-z0-9])+)([).!';/?:,][[:blank:]])?$"
+	);
+
+	private static <I> Function<I, Result> checkAddressAndUrl(
+		Function<I, RadixAddress> addressMapper,
+		Function<I, String> urlMapper
+	) {
+		return particle -> {
+			if (addressMapper.apply(particle) == null) {
+				return Result.error("address is null");
+			}
+			String url = urlMapper.apply(particle);
+			if (url != null && !OWASP_URL_REGEX.matcher(url).matches()) {
+				return Result.error("url is not a valid URL: " + url);
+			}
+
+			return Result.success();
+		};
+	}
+
 	// create a check verifying that the given address doesn't map to null
-	private static <I> Function<I, Result> createStaticCheck(Function<I, RadixAddress> addressMapper) {
+	private static <I> Function<I, Result> checkAddress(Function<I, RadixAddress> addressMapper) {
 		return particle -> {
 			if (addressMapper.apply(particle) == null) {
 				return Result.error("address is null");

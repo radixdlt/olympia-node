@@ -90,6 +90,22 @@ public class ValidatorConstraintScryptTest {
 	}
 
 	@Test
+	public void when_validating_registered_validator_particle_with_invalid_url__result_has_error() {
+		RegisteredValidatorParticle validator = mock(RegisteredValidatorParticle.class);
+		when(validator.getAddress()).thenReturn(mock(RadixAddress.class));
+		when(validator.getUrl()).thenReturn("this_is_not_a_valid_url");
+		assertThat(staticCheck.apply(validator).getErrorMessage()).contains("url");
+	}
+
+	@Test
+	public void when_validating_registered_validator_particle_with_valid_url__result_has_no_error() {
+		RegisteredValidatorParticle validator = mock(RegisteredValidatorParticle.class);
+		when(validator.getAddress()).thenReturn(mock(RadixAddress.class));
+		when(validator.getUrl()).thenReturn("http://www.radixdlt.com/");
+		staticCheck.apply(validator);
+	}
+
+	@Test
 	public void when_validating_validator_registration_with_mismatching_addresses__result_has_error() {
 		ValidatorTransitionProcedure<UnregisteredValidatorParticle, RegisteredValidatorParticle> procedure = createUnregisteredToRegistered();
 		UnregisteredValidatorParticle input = createUnregistered(mock(RadixAddress.class), 0);
