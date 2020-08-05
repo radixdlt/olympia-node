@@ -22,6 +22,7 @@ import java.util.TreeMap;
 
 import org.junit.Test;
 
+import com.google.common.collect.ImmutableMap;
 import com.radixdlt.counters.SystemCounters.CounterType;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -59,6 +60,23 @@ public class SystemCountersImplTest {
 		assertThat(counters.get(CounterType.BFT_TIMEOUT)).isEqualTo(1234L);
 		counters.set(CounterType.BFT_TIMEOUT, 4321);
 		assertThat(counters.get(CounterType.BFT_TIMEOUT)).isEqualTo(4321L);
+	}
+
+	@Test
+	public void when_set_all__then_count_should_be_correct() {
+		SystemCounters counters = new SystemCountersImpl();
+		counters.setAll(ImmutableMap.of(
+			CounterType.BFT_TIMEOUT, 1234L,
+			CounterType.BFT_PROPOSALS_MADE, 4567L
+		));
+		assertThat(counters.get(CounterType.BFT_TIMEOUT)).isEqualTo(1234L);
+		assertThat(counters.get(CounterType.BFT_PROPOSALS_MADE)).isEqualTo(4567L);
+		counters.setAll(ImmutableMap.of(
+			CounterType.BFT_TIMEOUT, 2345L,
+			CounterType.BFT_PROPOSALS_MADE, 5678L
+		));
+		assertThat(counters.get(CounterType.BFT_TIMEOUT)).isEqualTo(2345L);
+		assertThat(counters.get(CounterType.BFT_PROPOSALS_MADE)).isEqualTo(5678L);
 	}
 
 	@Test

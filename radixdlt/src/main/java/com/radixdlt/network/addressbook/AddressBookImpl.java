@@ -47,7 +47,7 @@ import org.radix.utils.Locking;
  * to wait for a lengthy discovery process to complete on restarting.
  */
 public class AddressBookImpl implements AddressBook {
-	private static final Logger log = LogManager.getLogger("addressbook");
+	private static final Logger log = LogManager.getLogger();
 
 	private final PeerPersistence persistence;
 	private final Events events;

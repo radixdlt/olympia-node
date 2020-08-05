@@ -102,10 +102,10 @@ public final class SafetyRules {
 	 * @param highestCommittedQC highest known committed QC
 	 * @return signed proposal object for consensus
 	 */
-	public Proposal signProposal(Vertex proposedVertex, QuorumCertificate highestCommittedQC) {
+	public Proposal signProposal(Vertex proposedVertex, QuorumCertificate highestCommittedQC, long payload) {
 		final Hash vertexHash = this.hasher.hash(proposedVertex);
 		ECDSASignature signature = this.signer.sign(vertexHash);
-		return new Proposal(proposedVertex, highestCommittedQC, this.self, signature);
+		return new Proposal(proposedVertex, highestCommittedQC, this.self, signature, payload);
 	}
 
 	private static VoteData constructVoteData(Vertex proposedVertex, VertexMetadata proposedVertexMetadata) {
@@ -154,7 +154,7 @@ public final class SafetyRules {
 	 * @return A vote result containing the vote and any committed vertices
 	 * @throws SafetyViolationException In case the vertex would violate a safety invariant
 	 */
-	public Vote voteFor(Vertex proposedVertex, VertexMetadata proposedVertexMetadata, long timestamp) throws SafetyViolationException {
+	public Vote voteFor(Vertex proposedVertex, VertexMetadata proposedVertexMetadata, long timestamp, long payload) throws SafetyViolationException {
 		// ensure vertex does not violate earlier votes
 		if (proposedVertex.getView().compareTo(this.state.getLastVotedView()) <= 0) {
 			throw new SafetyViolationException(proposedVertex, this.state, String.format(
@@ -179,6 +179,6 @@ public final class SafetyRules {
 
 		// TODO make signing more robust by including author in signed hash
 		ECDSASignature signature = this.signer.sign(voteHash);
-		return new Vote(this.self, timestampedVoteData, signature);
+		return new Vote(this.self, timestampedVoteData, signature, payload);
 	}
 }

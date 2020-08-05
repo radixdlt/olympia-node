@@ -201,7 +201,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		forwardTo.processLocalTimeout(view);
 		final View nextView = this.pacemakerState.getCurrentView();
 		if (!curView.equals(nextView)) {
-			log.warn("{}: LOCAL_TIMEOUT: Clearing Queues: {}", this.self::getSimpleName, () -> queues);
+			log.debug("{}: LOCAL_TIMEOUT: Clearing Queues: {}", this.self::getSimpleName, () -> queues);
 			queues.clear();
 			vertexStore.clearSyncs();
 		}

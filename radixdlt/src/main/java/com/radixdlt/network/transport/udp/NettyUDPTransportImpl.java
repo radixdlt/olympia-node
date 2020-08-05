@@ -48,7 +48,7 @@ import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 
 final class NettyUDPTransportImpl implements Transport {
-	private static final Logger log = LogManager.getLogger("transport.udp");
+	private static final Logger log = LogManager.getLogger();
 
 	// Set this to true to see a dump of packet data
 	protected static final boolean DEBUG_DATA = false;

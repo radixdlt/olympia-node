@@ -73,7 +73,7 @@ public final class RadixHttpServer {
 	public static final int DEFAULT_PORT = 8080;
 	public static final String CONTENT_TYPE_JSON = "application/json";
 
-	private static final Logger logger = LogManager.getLogger("api");
+	private static final Logger logger = LogManager.getLogger();
 
 	private final ConcurrentHashMap<RadixJsonRpcPeer, WebSocketChannel> peers;
 	private final AtomsService atomsService;

@@ -124,7 +124,7 @@ public class DifferentTimestampsCauseTimeoutTest {
 		Vertex vertex = p.getVertex();
 		ECDSASignature signature = p.getSignature();
 
-		return new Proposal(mutateVertex(vertex, destination), committedQC, author, signature);
+		return new Proposal(mutateVertex(vertex, destination), committedQC, author, signature, 0L);
 	}
 
 	private Vertex mutateVertex(Vertex v, int destination) {

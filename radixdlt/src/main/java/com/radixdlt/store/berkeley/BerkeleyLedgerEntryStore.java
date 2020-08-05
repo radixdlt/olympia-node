@@ -72,7 +72,7 @@ import static com.radixdlt.store.berkeley.LedgerEntryIndices.ENTRY_INDEX_PREFIX;
 
 @Singleton
 public class BerkeleyLedgerEntryStore implements LedgerEntryStore {
-	private static final Logger log = LogManager.getLogger("store.atoms");
+	private static final Logger log = LogManager.getLogger();
 
 	private static final String ATOM_INDICES_DB_NAME = "tempo2.atom_indices";
 	private static final String DUPLICATE_INDICES_DB_NAME = "tempo2.duplicated_indices";

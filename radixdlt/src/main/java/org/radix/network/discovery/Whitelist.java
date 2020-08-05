@@ -30,7 +30,7 @@ import org.apache.logging.log4j.Logger;
 
 public class Whitelist
 {
-	private static final Logger networkLog = LogManager.getLogger ("network");
+	private static final Logger networkLog = LogManager.getLogger();
 
 	private Set<String> parameters = new HashSet<>();
 

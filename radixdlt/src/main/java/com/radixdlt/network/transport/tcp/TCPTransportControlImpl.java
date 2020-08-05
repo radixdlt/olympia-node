@@ -58,7 +58,7 @@ import io.netty.channel.ChannelHandler.Sharable;
  * outbound connection regardless.
  */
 final class TCPTransportControlImpl implements TCPTransportControl {
-	private static final Logger log = LogManager.getLogger("transport.tcp");
+	private static final Logger log = LogManager.getLogger();
 
 	@Sharable
 	static class TCPConnectionHandlerChannelInbound extends ChannelInboundHandlerAdapter {
