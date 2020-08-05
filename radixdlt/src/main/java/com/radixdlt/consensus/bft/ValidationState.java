@@ -20,13 +20,12 @@ package com.radixdlt.consensus.bft;
 import com.radixdlt.utils.UInt256;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
+import com.radixdlt.consensus.TimestampedECDSASignature;
+import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.ECDSASignatures;
-import com.radixdlt.crypto.ECPublicKey;
 import javax.annotation.concurrent.NotThreadSafe;
 
 /**
@@ -37,7 +36,7 @@ import javax.annotation.concurrent.NotThreadSafe;
 public final class ValidationState {
 
 	private final BFTValidatorSet validatorSet;
-	private final Map<BFTNode, ECDSASignature> signedNodes;
+	private final Map<BFTNode, TimestampedECDSASignature> signedNodes;
 	private transient UInt256 signedPower;
 	private final transient UInt256 threshold;
 
@@ -77,15 +76,17 @@ public final class ValidationState {
 	 * elsewhere.
 	 *
 	 * @param node The node
+	 * @param timestamp The timestamp of the signature
 	 * @param signature The signature to verify
 	 * @return whether the key was added or not
 	 */
-	public boolean addSignature(BFTNode node, ECDSASignature signature) {
+	public boolean addSignature(BFTNode node, long timestamp, ECDSASignature signature) {
 		if (validatorSet.containsNode(node)
 			&& !this.signedNodes.containsKey(node)) {
 			this.signedNodes.computeIfAbsent(node, k -> {
-				this.signedPower = this.signedPower.add(this.validatorSet.getPower(node));
-				return signature;
+				UInt256 weight = this.validatorSet.getPower(node);
+				this.signedPower = this.signedPower.add(weight);
+				return TimestampedECDSASignature.from(timestamp, weight, signature);
 			});
 			return true;
 		}
@@ -114,11 +115,8 @@ public final class ValidationState {
 	 *
 	 * @return an {@link ECDSASignatures} object for our current set of valid signatures
 	 */
-	public ECDSASignatures signatures() {
-		ImmutableMap<ECPublicKey, ECDSASignature> signedKeys = this.signedNodes.entrySet()
-			.stream()
-			.collect(ImmutableMap.toImmutableMap(e -> e.getKey().getKey(), Entry::getValue));
-		return new ECDSASignatures(signedKeys);
+	public TimestampedECDSASignatures signatures() {
+		return new TimestampedECDSASignatures(ImmutableMap.copyOf(this.signedNodes));
 	}
 
 	@VisibleForTesting

@@ -118,6 +118,7 @@ public class SimulationNodes {
 					.eventSender(underlyingNetwork.getNetworkSender(self))
 					.counters(counters.get(self))
 					.infoSender(bftInfoSender)
+					.timeSupplier(System::currentTimeMillis)
 					.hasher(nullHasher)
 					.signer(nullSigner)
 					.verifyAuthors(false)

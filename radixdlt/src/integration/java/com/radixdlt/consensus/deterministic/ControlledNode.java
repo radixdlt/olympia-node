@@ -99,6 +99,7 @@ class ControlledNode {
 					.eventSender(controlledSender)
 					.counters(systemCounters)
 					.infoSender(bftInfoSender)
+					.timeSupplier(System::currentTimeMillis)
 					.hasher(nullHasher)
 					.signer(nullSigner)
 					.verifyAuthors(false)

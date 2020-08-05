@@ -18,28 +18,23 @@
 package org.radix.serialization;
 
 import com.radixdlt.consensus.VoteData;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.TimestampedVoteData;
 import com.radixdlt.consensus.VertexMetadata;
-import com.radixdlt.consensus.Vote;
 import com.radixdlt.crypto.Hash;
 
-public class VoteSerializeTest extends SerializeObject<Vote> {
-	public VoteSerializeTest() {
-		super(Vote.class, VoteSerializeTest::get);
+public class TimestampedVoteDataSerializeTest extends SerializeObject<TimestampedVoteData> {
+	public TimestampedVoteDataSerializeTest() {
+		super(TimestampedVoteData.class, TimestampedVoteDataSerializeTest::get);
 	}
 
-	private static Vote get() {
-		View view = View.of(1234567891L);
-		Hash id = Hash.random();
+	private static TimestampedVoteData get() {
+		View view = View.of(1234567890L);
 
-		VertexMetadata vertexMetadata = new VertexMetadata(0, view, id, 1, false);
-		VertexMetadata parent = new VertexMetadata(0, View.of(1234567890L), Hash.random(), 0, false);
-		VoteData voteData = new VoteData(vertexMetadata, parent, null);
-		TimestampedVoteData timestampedVoteData = new TimestampedVoteData(voteData, 123456L);
-		BFTNode author = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
-		return new Vote(author, timestampedVoteData, null);
+		VertexMetadata committed = new VertexMetadata(0, view, Hash.random(), 0, false);
+		VertexMetadata parent = new VertexMetadata(0, view.next(), Hash.random(), 1, false);
+		VertexMetadata proposed = new VertexMetadata(0, view.next().next(), Hash.random(), 2, false);
+		VoteData voteData = new VoteData(proposed, parent, committed);
+		return new TimestampedVoteData(voteData, System.currentTimeMillis());
 	}
 }

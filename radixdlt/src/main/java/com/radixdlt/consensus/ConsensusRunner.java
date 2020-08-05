@@ -162,7 +162,7 @@ public final class ConsensusRunner {
 			.doOnError(e -> {
 				// TODO: Implement better error handling especially against Byzantine nodes.
 				// TODO: Exit process for now.
-				log.error("Unexpected occurred", e);
+				log.error("Unexpected exception occurred", e);
 				System.exit(-1);
 			})
 			.publish();

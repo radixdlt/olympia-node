@@ -22,6 +22,7 @@ import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.TimestampedVoteData;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.View;
@@ -149,10 +150,11 @@ public final class SafetyRules {
 	 *
 	 * @param proposedVertex The proposed vertex
 	 * @param proposedVertexMetadata results of vertex execution
+	 * @param timestamp timestamp to use for the vote in milliseconds since epoch
 	 * @return A vote result containing the vote and any committed vertices
 	 * @throws SafetyViolationException In case the vertex would violate a safety invariant
 	 */
-	public Vote voteFor(Vertex proposedVertex, VertexMetadata proposedVertexMetadata) throws SafetyViolationException {
+	public Vote voteFor(Vertex proposedVertex, VertexMetadata proposedVertexMetadata, long timestamp) throws SafetyViolationException {
 		// ensure vertex does not violate earlier votes
 		if (proposedVertex.getView().compareTo(this.state.getLastVotedView()) <= 0) {
 			throw new SafetyViolationException(proposedVertex, this.state, String.format(
@@ -169,13 +171,14 @@ public final class SafetyRules {
 		safetyStateBuilder.lastVotedView(proposedVertex.getView());
 
 		final VoteData voteData = constructVoteData(proposedVertex, proposedVertexMetadata);
+		final TimestampedVoteData timestampedVoteData = new TimestampedVoteData(voteData, timestamp);
 
-		final Hash voteHash = hasher.hash(voteData);
+		final Hash voteHash = hasher.hash(timestampedVoteData);
 
 		this.state = safetyStateBuilder.build();
 
 		// TODO make signing more robust by including author in signed hash
 		ECDSASignature signature = this.signer.sign(voteHash);
-		return new Vote(this.self, voteData, signature);
+		return new Vote(this.self, timestampedVoteData, signature);
 	}
 }

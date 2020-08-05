@@ -76,6 +76,7 @@ import com.radixdlt.middleware2.converters.AtomToClientAtomConverter;
 import com.radixdlt.middleware2.network.MessageCentralBFTNetwork;
 import com.radixdlt.middleware2.network.MessageCentralValidatorSync;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
+import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.properties.RuntimeProperties;
@@ -189,6 +190,7 @@ public class CerberusModule extends AbstractModule {
 		Hasher hasher,
 		HashSigner signer,
 		HashVerifier verifier,
+		TimeSupplier timeSupplier,
 		SystemCounters counters
 	) {
 		return (
@@ -213,6 +215,7 @@ public class CerberusModule extends AbstractModule {
 				.vertexStore(vertexStore)
 				.proposerElection(proposerElection)
 				.validatorSet(validatorSet)
+				.timeSupplier(timeSupplier)
 				.build();
 	}
 
