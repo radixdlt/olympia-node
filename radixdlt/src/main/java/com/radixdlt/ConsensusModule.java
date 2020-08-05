@@ -60,19 +60,18 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.network.TimeSupplier;
-import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.utils.SenderToRx;
 import com.radixdlt.utils.ThreadFactories;
 import java.util.Comparator;
-import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 public class ConsensusModule extends AbstractModule {
-	private final RuntimeProperties runtimeProperties;
+	private static final int ROTATING_WEIGHTED_LEADERS_CACHE_SIZE = 10;
+	private final int pacemakerTimeout;
 
-	public ConsensusModule(RuntimeProperties runtimeProperties) {
-		this.runtimeProperties = Objects.requireNonNull(runtimeProperties);
+	public ConsensusModule(int pacemakerTimeout) {
+		this.pacemakerTimeout = pacemakerTimeout;
 	}
 
 	@Override
@@ -192,8 +191,11 @@ public class ConsensusModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private ProposerElectionFactory proposerElectionFactory() {
-		final int cacheSize = runtimeProperties.get("consensus.weighted_rotating_leaders.cache_size", 10);
-		return validatorSet -> new WeightedRotatingLeaders(validatorSet, Comparator.comparing(v -> v.getNode().getKey().euid()), cacheSize);
+		return validatorSet -> new WeightedRotatingLeaders(
+			validatorSet,
+			Comparator.comparing(v -> v.getNode().getKey().euid()),
+			ROTATING_WEIGHTED_LEADERS_CACHE_SIZE
+		);
 	}
 
 	@Provides
@@ -206,7 +208,6 @@ public class ConsensusModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private PacemakerFactory pacemakerFactory() {
-		final int pacemakerTimeout = runtimeProperties.get("consensus.pacemaker_timeout_millis", 5000);
 		return timeoutSender -> new FixedTimeoutPacemaker(pacemakerTimeout, timeoutSender);
 	}
 

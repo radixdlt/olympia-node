@@ -81,9 +81,11 @@ public class GlobalInjector {
 			}
 		};
 
+		final int pacemakerTimeout = properties.get("consensus.pacemaker_timeout_millis", 5000);
+
 		injector = Guice.createInjector(
 			new MessagePasserModule(),
-			new ConsensusModule(properties),
+			new ConsensusModule(pacemakerTimeout),
 			new SyncerModule(properties),
 			new SystemInfoModule(properties),
 			new NetworkModule(),
