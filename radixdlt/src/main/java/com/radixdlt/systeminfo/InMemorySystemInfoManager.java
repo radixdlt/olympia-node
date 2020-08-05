@@ -21,6 +21,7 @@ import com.google.common.collect.EvictingQueue;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
 import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.Timeout;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochView;

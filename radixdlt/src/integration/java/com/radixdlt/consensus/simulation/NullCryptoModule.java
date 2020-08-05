@@ -15,17 +15,23 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.epoch;
+package com.radixdlt.consensus.simulation;
 
-import static org.mockito.Mockito.mock;
+import com.google.inject.AbstractModule;
+import com.radixdlt.consensus.HashSigner;
+import com.radixdlt.consensus.HashVerifier;
+import com.radixdlt.consensus.Hasher;
+import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.Hash;
 
-import com.radixdlt.consensus.Timeout;
-import org.junit.Test;
-
-public class EmptyEpochInfoSenderTest {
-	@Test
-	public void when_send__then_no_exception_occurs() {
-		EmptyEpochInfoSender.INSTANCE.sendCurrentView(mock(EpochView.class));
-		EmptyEpochInfoSender.INSTANCE.sendTimeoutProcessed(mock(Timeout.class));
+/**
+ * For testing where verification and signing is skipped
+ */
+public class NullCryptoModule extends AbstractModule {
+	@Override
+	public void configure() {
+		bind(Hasher.class).toInstance(o -> Hash.ZERO_HASH);
+		bind(HashVerifier.class).toInstance((pubKey, hash, sig) -> true);
+		bind(HashSigner.class).toInstance(h -> new ECDSASignature());
 	}
 }

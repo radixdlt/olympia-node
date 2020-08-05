@@ -22,40 +22,13 @@ import static org.mockito.Mockito.mock;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.api.StoredAtom;
 import com.radixdlt.api.StoredFailure;
-import com.radixdlt.systeminfo.Timeout;
 import com.radixdlt.consensus.CommittedStateSync;
-import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.epoch.EpochChange;
-import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.engine.RadixEngineException;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.junit.Test;
 
 public class InternalMessagePasserTest {
-	@Test
-	public void when_send_committed_vertex_event__then_should_receive_it() {
-		InternalMessagePasser internalMessagePasser = new InternalMessagePasser();
-		TestObserver<Vertex> testObserver = internalMessagePasser.committedVertices().test();
-		Vertex vertex = mock(Vertex.class);
-		internalMessagePasser.sendCommittedVertex(vertex);
-		testObserver.awaitCount(1);
-		testObserver.assertValue(vertex);
-		testObserver.assertNotComplete();
-	}
-
-	@Test
-	public void when_send_high_qc_event__then_should_receive_it() {
-		InternalMessagePasser internalMessagePasser = new InternalMessagePasser();
-		TestObserver<QuorumCertificate> testObserver = internalMessagePasser.highQCs().test();
-		QuorumCertificate qc = mock(QuorumCertificate.class);
-		internalMessagePasser.highQC(qc);
-		testObserver.awaitCount(1);
-		testObserver.assertValue(qc);
-		testObserver.assertNotComplete();
-	}
-
 	@Test
 	public void when_send_committed_state_sync_event__then_should_receive_it() {
 		InternalMessagePasser internalMessagePasser = new InternalMessagePasser();
@@ -99,30 +72,6 @@ public class InternalMessagePasserTest {
 		internalMessagePasser.sendStoredFailure(committedAtom, e);
 		testObserver.awaitCount(1);
 		testObserver.assertValueAt(0, s -> s.getAtom().equals(committedAtom) && s.getException().equals(e));
-		testObserver.assertNotComplete();
-	}
-
-	@Test
-	public void when_send_current_view_event__then_should_receive_it() {
-		InternalMessagePasser internalMessagePasser = new InternalMessagePasser();
-		TestObserver<EpochView> testObserver = internalMessagePasser.currentViews().test();
-		EpochView epochView = mock(EpochView.class);
-		internalMessagePasser.sendCurrentView(epochView);
-		testObserver.awaitCount(1);
-		testObserver.assertValueAt(0, epochView);
-		testObserver.assertNotComplete();
-	}
-
-	@Test
-	public void when_send_timeout_event__then_should_receive_it() {
-		InternalMessagePasser internalMessagePasser = new InternalMessagePasser();
-		TestObserver<Timeout> testObserver = internalMessagePasser.timeouts().test();
-
-		EpochView epochView = mock(EpochView.class);
-		BFTNode leader = mock(BFTNode.class);
-		internalMessagePasser.sendTimeoutProcessed(epochView, leader);
-		testObserver.awaitCount(1);
-		testObserver.assertValueAt(0, timeout -> timeout.getEpochView().equals(epochView) && timeout.getLeader().equals(leader));
 		testObserver.assertNotComplete();
 	}
 }

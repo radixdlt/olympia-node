@@ -15,17 +15,22 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.epoch;
+package com.radixdlt.utils;
 
 import static org.mockito.Mockito.mock;
 
-import com.radixdlt.consensus.Timeout;
+import io.reactivex.rxjava3.observers.TestObserver;
 import org.junit.Test;
 
-public class EmptyEpochInfoSenderTest {
+public class SenderToRxTest {
 	@Test
-	public void when_send__then_no_exception_occurs() {
-		EmptyEpochInfoSender.INSTANCE.sendCurrentView(mock(EpochView.class));
-		EmptyEpochInfoSender.INSTANCE.sendTimeoutProcessed(mock(Timeout.class));
+	public void when_send__sync_event__then_should_receive_it() {
+		SenderToRx<Object, Object> senderToRx = new SenderToRx<>(o -> o);
+		TestObserver<Object> testObserver = senderToRx.rx().test();
+		Object o = mock(Object.class);
+		senderToRx.send(o);
+		testObserver.awaitCount(1);
+		testObserver.assertValue(o);
+		testObserver.assertNotComplete();
 	}
 }

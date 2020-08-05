@@ -27,7 +27,7 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.systeminfo.InMemorySystemInfoManager;
 import com.radixdlt.systeminfo.InfoRx;
-import com.radixdlt.systeminfo.Timeout;
+import com.radixdlt.consensus.Timeout;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.concurrent.TimeUnit;
 import org.junit.Before;

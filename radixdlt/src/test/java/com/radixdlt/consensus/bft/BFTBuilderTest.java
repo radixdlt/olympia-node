@@ -19,7 +19,6 @@ package com.radixdlt.consensus.bft;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -31,7 +30,6 @@ import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTInfoSender;
 import com.radixdlt.consensus.bft.BFTEventReducer.EndOfEpochSender;
@@ -106,41 +104,5 @@ public class BFTBuilderTest {
 		processor.processProposal(proposal);
 
 		verify(verifier, times(1)).verify(any(), any(), any());
-	}
-
-	@Test
-	public void when_build_with_no_verification__then_should_not_call_verifier() {
-		when(validatorSet.containsNode(any())).thenReturn(true);
-		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of(BFTValidator.from(self, UInt256.ONE)));
-		when(verifier.verify(any(), any(), any())).thenReturn(false);
-
-		BFTEventProcessor processor = BFTBuilder.create()
-			.nextCommandGenerator(nextCommandGenerator)
-			.eventSender(eventSender)
-			.endOfEpochSender(endOfEpochSender)
-			.counters(counters)
-			.infoSender(infoSender)
-			.timeSupplier(System::currentTimeMillis)
-			.validatorSet(validatorSet)
-			.proposerElection(proposerElection)
-			.hasher(hasher)
-			.signer(signer)
-			.verifier(verifier)
-			.pacemaker(pacemaker)
-			.vertexStore(vertexStore)
-			.self(self)
-			.verifyAuthors(false)
-			.build();
-
-		Proposal proposal = mock(Proposal.class);
-		when(proposal.getAuthor()).thenReturn(self);
-		when(proposal.getSignature()).thenReturn(mock(ECDSASignature.class));
-		Vertex vertex = mock(Vertex.class);
-		when(vertex.getView()).thenReturn(View.of(1));
-		when(proposal.getVertex()).thenReturn(vertex);
-		when(pacemaker.getCurrentView()).thenReturn(View.of(2));
-		processor.processProposal(proposal);
-
-		verify(verifier, never()).verify(any(), any(), any());
 	}
 }

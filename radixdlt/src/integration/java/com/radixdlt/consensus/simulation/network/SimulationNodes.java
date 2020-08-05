@@ -18,51 +18,28 @@
 package com.radixdlt.consensus.simulation.network;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.bft.VertexStore.SyncedVertexSender;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
+import com.radixdlt.ConsensusModule;
+import com.radixdlt.SystemInfoMessagesModule;
+import com.radixdlt.consensus.simulation.NullCryptoModule;
+import com.radixdlt.consensus.simulation.SimulationSyncerAndNetworkModule;
 import com.radixdlt.systeminfo.InfoRx;
-import com.radixdlt.consensus.bft.BFTBuilder;
-import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.ConsensusRunner;
 import com.radixdlt.consensus.ConsensusRunner.Event;
 import com.radixdlt.consensus.ConsensusRunner.EventType;
-import com.radixdlt.consensus.epoch.EmptySyncVerticesRPCSender;
-import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.EpochChangeRx;
-import com.radixdlt.consensus.Hasher;
-import com.radixdlt.consensus.liveness.NextCommandGenerator;
-import com.radixdlt.middleware2.InternalMessagePasser;
-import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.SyncedStateComputer;
-import com.radixdlt.consensus.bft.VertexStore;
-import com.radixdlt.consensus.VertexStoreFactory;
-import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
-import com.radixdlt.consensus.liveness.ScheduledLocalTimeoutSender;
-import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.counters.SystemCountersImpl;
-import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.Hash;
 
 import com.radixdlt.middleware2.CommittedAtom;
-import com.radixdlt.consensus.simulation.network.SimulationNetwork.SimulatedNetworkReceiver;
-import com.radixdlt.consensus.simulation.network.SimulationNetwork.SimulationSyncSender;
-import com.radixdlt.utils.SenderToRx;
 import io.reactivex.rxjava3.core.Completable;
-import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.subjects.CompletableSubject;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-
-import static com.radixdlt.utils.ThreadFactories.daemonThreads;
 
 /**
  * A multi-node bft test network where the network and latencies of each message is simulated.
@@ -70,9 +47,7 @@ import static com.radixdlt.utils.ThreadFactories.daemonThreads;
 public class SimulationNodes {
 	private final int pacemakerTimeout;
 	private final SimulationNetwork underlyingNetwork;
-	private final ImmutableMap<BFTNode, SystemCounters> counters;
-	private final ImmutableMap<BFTNode, InternalMessagePasser> internalMessages;
-	private final ImmutableList<ConsensusRunner> runners;
+	private final ImmutableList<Injector> nodeInstances;
 	private final List<BFTNode> nodes;
 	private final boolean getVerticesRPCEnabled;
 	private final Supplier<SimulatedStateComputer> stateComputerSupplier;
@@ -98,74 +73,15 @@ public class SimulationNodes {
 		this.getVerticesRPCEnabled = getVerticesRPCEnabled;
 		this.underlyingNetwork = Objects.requireNonNull(underlyingNetwork);
 		this.pacemakerTimeout = pacemakerTimeout;
-		this.counters = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e, e -> new SystemCountersImpl()));
-		this.internalMessages = nodes.stream().collect(ImmutableMap.toImmutableMap(e -> e, e -> new InternalMessagePasser()));
-		this.runners = nodes.stream().map(this::createBFTInstance).collect(ImmutableList.toImmutableList());
+		this.nodeInstances = nodes.stream().map(this::createBFTInstance).collect(ImmutableList.toImmutableList());
 	}
 
-	private ConsensusRunner createBFTInstance(BFTNode self) {
-		final NextCommandGenerator nextCommandGenerator = (view, aids) -> null;
-		final Hasher nullHasher = o -> Hash.ZERO_HASH;
-		final HashSigner nullSigner = h -> new ECDSASignature();
-		final BFTFactory bftFactory =
-			(endOfEpochSender, pacemaker, vertexStore, proposerElection, validatorSet, bftInfoSender) ->
-				BFTBuilder.create()
-					.self(self)
-					.endOfEpochSender(endOfEpochSender)
-					.pacemaker(pacemaker)
-					.nextCommandGenerator(nextCommandGenerator)
-					.vertexStore(vertexStore)
-					.proposerElection(proposerElection)
-					.validatorSet(validatorSet)
-					.eventSender(underlyingNetwork.getNetworkSender(self))
-					.counters(counters.get(self))
-					.infoSender(bftInfoSender)
-					.timeSupplier(System::currentTimeMillis)
-					.hasher(nullHasher)
-					.signer(nullSigner)
-					.verifyAuthors(false)
-					.build();
-
-		final ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(daemonThreads("TimeoutSender"));
-		final ScheduledLocalTimeoutSender timeoutSender = new ScheduledLocalTimeoutSender(scheduledExecutorService);
-		final SimulationSyncSender syncSender = underlyingNetwork.getSyncSender(self);
-		final SenderToRx<Vertex, Hash> sync = new SenderToRx<>(Vertex::getId);
-		final SyncedVertexSender syncedVertexSender = sync::send;
-		final VertexStoreFactory vertexStoreFactory = (v, qc, stateComputer) ->
-			new VertexStore(
-				v,
-				qc,
-				stateComputer,
-				getVerticesRPCEnabled ? syncSender : EmptySyncVerticesRPCSender.INSTANCE,
-				syncedVertexSender,
-				this.internalMessages.get(self),
-				this.counters.get(self)
-			);
-		final SimulatedStateComputer stateComputer = stateComputerSupplier.get();
-		final EpochManager epochManager = new EpochManager(
-			self,
-			stateComputer,
-			syncSender,
-			timeoutSender,
-			timeoutSender1 -> new FixedTimeoutPacemaker(this.pacemakerTimeout, timeoutSender1),
-			vertexStoreFactory,
-			proposers -> new WeightedRotatingLeaders(proposers, Comparator.comparing(v -> v.getNode().getKey().euid()), 5),
-			bftFactory,
-			counters.get(self),
-			internalMessages.get(self)
-		);
-
-		final SimulatedNetworkReceiver rx = underlyingNetwork.getNetworkRx(self);
-
-		return new ConsensusRunner(
-			stateComputer,
-			rx,
-			timeoutSender,
-			sync::rx,
-			Observable::never,
-			rx,
-			rx,
-			epochManager
+	private Injector createBFTInstance(BFTNode self) {
+		return Guice.createInjector(
+			new ConsensusModule(pacemakerTimeout),
+			new SystemInfoMessagesModule(),
+			new NullCryptoModule(),
+			new SimulationSyncerAndNetworkModule(getVerticesRPCEnabled, self, underlyingNetwork, stateComputerSupplier.get())
 		);
 	}
 
@@ -181,7 +97,8 @@ public class SimulationNodes {
 	public Single<RunningNetwork> start() {
 		// Send start event once all nodes have reached real epoch event
 		final CompletableSubject completableSubject = CompletableSubject.create();
-		List<Completable> startedList = this.runners.stream()
+		List<Completable> startedList = this.nodeInstances.stream()
+			.map(i -> i.getInstance(ConsensusRunner.class))
 			.map(ConsensusRunner::events)
 			.map(o -> o.map(Event::getEventType)
 				.filter(e -> e.equals(EventType.EPOCH_CHANGE))
@@ -191,7 +108,7 @@ public class SimulationNodes {
 
 		Completable.merge(startedList).subscribe(completableSubject::onComplete);
 
-		this.runners.forEach(ConsensusRunner::start);
+		this.nodeInstances.forEach(i -> i.getInstance(ConsensusRunner.class).start());
 
 		return completableSubject.toSingle(() -> new RunningNetwork() {
 			@Override
@@ -201,7 +118,8 @@ public class SimulationNodes {
 
 			@Override
 			public InfoRx getInfo(BFTNode node) {
-				return internalMessages.get(node);
+				int index = nodes.indexOf(node);
+				return nodeInstances.get(index).getInstance(InfoRx.class);
 			}
 
 			@Override
@@ -212,6 +130,6 @@ public class SimulationNodes {
 	}
 
 	public void stop() {
-		this.runners.forEach(ConsensusRunner::stop);
+		this.nodeInstances.forEach(i -> i.getInstance(ConsensusRunner.class).stop());
 	}
 }

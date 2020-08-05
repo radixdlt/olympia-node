@@ -28,6 +28,7 @@ import com.radixdlt.CryptoModule;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.MessagePasserModule;
 import com.radixdlt.SyncerModule;
+import com.radixdlt.SystemInfoMessagesModule;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
@@ -88,8 +89,9 @@ public class GlobalInjector {
 			new CryptoModule(),
 			new ConsensusModule(pacemakerTimeout),
 			new SyncerModule(properties),
-			new SystemInfoModule(properties),
 			new NetworkModule(),
+			new SystemInfoMessagesModule(),
+			new SystemInfoModule(properties),
 			new MessagePasserModule(),
 
 			// Low level network modules

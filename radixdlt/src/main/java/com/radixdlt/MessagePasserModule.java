@@ -24,14 +24,11 @@ import com.radixdlt.api.LedgerRx;
 import com.radixdlt.api.SubmissionErrorsRx;
 import com.radixdlt.consensus.CommittedStateSyncRx;
 import com.radixdlt.consensus.EpochChangeRx;
-import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
-import com.radixdlt.consensus.epoch.EpochManager.EpochInfoSender;
 import com.radixdlt.mempool.SubmissionControlImpl.SubmissionControlSender;
 import com.radixdlt.middleware2.InternalMessagePasser;
 import com.radixdlt.syncer.EpochChangeSender;
 import com.radixdlt.syncer.SyncedRadixEngine.CommittedStateSyncSender;
 import com.radixdlt.syncer.SyncedRadixEngine.SyncedRadixEngineEventSender;
-import com.radixdlt.systeminfo.InfoRx;
 
 public class MessagePasserModule extends AbstractModule {
 
@@ -40,15 +37,12 @@ public class MessagePasserModule extends AbstractModule {
 		// Local messages
 		bind(LedgerRx.class).to(InternalMessagePasser.class);
 		bind(EpochChangeRx.class).to(InternalMessagePasser.class);
-		bind(EpochInfoSender.class).to(InternalMessagePasser.class);
-		bind(InfoRx.class).to(InternalMessagePasser.class);
 		bind(SubmissionControlSender.class).to(InternalMessagePasser.class);
 		bind(SubmissionErrorsRx.class).to(InternalMessagePasser.class);
 		bind(EpochChangeSender.class).to(InternalMessagePasser.class);
 		bind(SyncedRadixEngineEventSender.class).to(InternalMessagePasser.class);
 		bind(CommittedStateSyncSender.class).to(InternalMessagePasser.class);
 		bind(CommittedStateSyncRx.class).to(InternalMessagePasser.class);
-		bind(VertexStoreEventSender.class).to(InternalMessagePasser.class);
 	}
 
 	@Provides

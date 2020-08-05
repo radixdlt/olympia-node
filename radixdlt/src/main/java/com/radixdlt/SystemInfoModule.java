@@ -25,7 +25,7 @@ import com.google.inject.Singleton;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.systeminfo.InMemorySystemInfoManager;
 import com.radixdlt.systeminfo.InfoRx;
-import com.radixdlt.systeminfo.Timeout;
+import com.radixdlt.consensus.Timeout;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.middleware2.InfoSupplier;

@@ -27,6 +27,7 @@ import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.ProposerElectionFactory;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.SyncedStateComputer;
+import com.radixdlt.consensus.Timeout;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.VertexStoreEventProcessor;
@@ -102,10 +103,9 @@ public final class EpochManager {
 
 		/**
 		 * Signify that a timeout was processed by this bft node
-		 * @param epochView the epoch and view of the timeout
-		 * @param leader the leader of the view which timed out
+		 * @param timeout the timeout
 		 */
-		void sendTimeoutProcessed(EpochView epochView, BFTNode leader);
+		void sendTimeoutProcessed(Timeout timeout);
 	}
 
 	private final BFTNode self;
@@ -202,7 +202,8 @@ public final class EpochManager {
 
 				@Override
 				public void sendTimeoutProcessed(View view, BFTNode leader) {
-					epochInfoSender.sendTimeoutProcessed(EpochView.of(nextEpoch, view), leader);
+					Timeout timeout = new Timeout(EpochView.of(nextEpoch, view), leader);
+					epochInfoSender.sendTimeoutProcessed(timeout);
 				}
 			};
 

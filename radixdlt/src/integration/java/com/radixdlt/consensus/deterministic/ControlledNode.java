@@ -101,7 +101,7 @@ class ControlledNode {
 					.timeSupplier(System::currentTimeMillis)
 					.hasher(nullHasher)
 					.signer(nullSigner)
-					.verifyAuthors(false)
+					.verifier((k, hash, sig) -> true)
 					.build();
 
 		SyncVerticesRPCSender syncVerticesRPCSender = (syncAndTimeout != SyncAndTimeout.NONE)

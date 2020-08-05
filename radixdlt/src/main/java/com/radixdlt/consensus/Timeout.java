@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.systeminfo;
+package com.radixdlt.consensus;
 
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.epoch.EpochView;
