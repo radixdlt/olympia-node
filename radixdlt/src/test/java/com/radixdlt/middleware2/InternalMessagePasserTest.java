@@ -18,7 +18,6 @@
 package com.radixdlt.middleware2;
 
 import static org.mockito.Mockito.mock;
-import static org.powermock.api.mockito.PowerMockito.when;
 
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.api.StoredAtom;
@@ -30,25 +29,11 @@ import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.epoch.EpochView;
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.RadixEngineException;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.junit.Test;
 
 public class InternalMessagePasserTest {
-	@Test
-	public void when_send_sync_event__then_should_receive_it() {
-		InternalMessagePasser internalMessagePasser = new InternalMessagePasser();
-		TestObserver<Hash> testObserver = internalMessagePasser.syncedVertices().test();
-		Hash hash = mock(Hash.class);
-		Vertex vertex = mock(Vertex.class);
-		when(vertex.getId()).thenReturn(hash);
-		internalMessagePasser.sendSyncedVertex(vertex);
-		testObserver.awaitCount(1);
-		testObserver.assertValue(hash);
-		testObserver.assertNotComplete();
-	}
-
 	@Test
 	public void when_send_committed_vertex_event__then_should_receive_it() {
 		InternalMessagePasser internalMessagePasser = new InternalMessagePasser();

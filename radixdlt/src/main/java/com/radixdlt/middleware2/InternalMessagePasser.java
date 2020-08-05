@@ -34,13 +34,11 @@ import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.EpochChangeRx;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.VertexStoreEventsRx;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.epoch.EpochManager.EpochInfoSender;
 import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.syncer.SyncedRadixEngine.CommittedStateSyncSender;
 import com.radixdlt.syncer.SyncedRadixEngine.SyncedRadixEngineEventSender;
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.api.StoredFailure;
 import com.radixdlt.identifiers.EUID;
@@ -54,7 +52,6 @@ import io.reactivex.rxjava3.subjects.Subject;
  * Acts as the "ether" to messages passed from sender to receiver
  */
 public final class InternalMessagePasser implements
-	VertexStoreEventsRx,
 	VertexStoreEventSender,
 	CommittedStateSyncSender,
 	CommittedStateSyncRx,
@@ -66,9 +63,7 @@ public final class InternalMessagePasser implements
 	LedgerRx,
 	SubmissionControlSender,
 	SubmissionErrorsRx {
-	private final Subject<Hash> localSyncsSubject = BehaviorSubject.<Hash>create().toSerialized();
 	private final Subject<CommittedStateSync> committedStateSyncsSubject = BehaviorSubject.<CommittedStateSync>create().toSerialized();
-	private final Observable<Hash> localSyncs;
 	private final Observable<CommittedStateSync> committedStateSyncs;
 	private final Subject<Vertex> committedVertices = BehaviorSubject.<Vertex>create().toSerialized();
 	private final Subject<EpochChange> epochChanges = BehaviorSubject.<EpochChange>create().toSerialized();
@@ -81,13 +76,7 @@ public final class InternalMessagePasser implements
 	private final Subject<DeserializationFailure> deserializationFailures = BehaviorSubject.<DeserializationFailure>create().toSerialized();
 
 	public InternalMessagePasser() {
-		this.localSyncs = localSyncsSubject.publish().refCount();
 		this.committedStateSyncs = committedStateSyncsSubject.publish().refCount();
-	}
-
-	@Override
-	public Observable<Hash> syncedVertices() {
-		return localSyncs;
 	}
 
 	@Override
@@ -98,11 +87,6 @@ public final class InternalMessagePasser implements
 	@Override
 	public Observable<QuorumCertificate> highQCs() {
 		return highQCs;
-	}
-
-	@Override
-	public void sendSyncedVertex(Vertex vertex) {
-		localSyncsSubject.onNext(vertex.getId());
 	}
 
 	@Override
@@ -163,7 +147,6 @@ public final class InternalMessagePasser implements
 	@Override
 	public void sendRadixEngineFailure(ClientAtom clientAtom, RadixEngineException e) {
 		submissionFailures.onNext(new SubmissionFailure(clientAtom, e));
-
 	}
 
 	@Override

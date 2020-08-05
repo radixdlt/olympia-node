@@ -109,7 +109,7 @@ class ControlledNode {
 			: UnsupportedSyncVerticesRPCSender.INSTANCE;
 		LocalTimeoutSender localTimeoutSender = (syncAndTimeout == SyncAndTimeout.SYNC_AND_TIMEOUT) ? sender : (v, t) -> { };
 		VertexStoreFactory vertexStoreFactory = (vertex, qc, syncedStateComputer) ->
-			new VertexStore(vertex, qc, syncedStateComputer, syncVerticesRPCSender, sender, systemCounters);
+			new VertexStore(vertex, qc, syncedStateComputer, syncVerticesRPCSender, sender, sender, systemCounters);
 		EpochInfoSender epochInfoSender = EmptyEpochInfoSender.INSTANCE;
 		this.epochManager = new EpochManager(
 			self,

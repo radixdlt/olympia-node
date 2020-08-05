@@ -15,20 +15,27 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.utils;
 
-import com.radixdlt.crypto.Hash;
 import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.subjects.BehaviorSubject;
+import io.reactivex.rxjava3.subjects.Subject;
+import java.util.Objects;
+import java.util.function.Function;
 
-/**
- * Provider of Rx stream of events coming from Vertex Store
- */
-public interface VertexStoreEventsRx {
+public final class SenderToRx<T, U> {
+	private final Subject<U> subject = BehaviorSubject.<U>create().toSerialized();
+	private final Function<T, U> mapper;
 
-	/**
-	 * Retrieve rx flow of vertices which have been synced
-	 * @return flow of vertex hashes
-	 */
-	Observable<Hash> syncedVertices();
+	public SenderToRx(Function<T, U> mapper) {
+		this.mapper = Objects.requireNonNull(mapper);
+	}
 
+	public void send(T sendObject) {
+		subject.onNext(mapper.apply(sendObject));
+	}
+
+	public Observable<U> rx() {
+		return subject;
+	}
 }

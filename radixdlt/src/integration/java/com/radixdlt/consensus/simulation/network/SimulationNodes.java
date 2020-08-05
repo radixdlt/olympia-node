@@ -19,6 +19,8 @@ package com.radixdlt.consensus.simulation.network;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.bft.VertexStore.SyncedVertexSender;
 import com.radixdlt.systeminfo.InfoRx;
 import com.radixdlt.consensus.bft.BFTBuilder;
 import com.radixdlt.consensus.BFTFactory;
@@ -47,6 +49,7 @@ import com.radixdlt.crypto.Hash;
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.consensus.simulation.network.SimulationNetwork.SimulatedNetworkReceiver;
 import com.radixdlt.consensus.simulation.network.SimulationNetwork.SimulationSyncSender;
+import com.radixdlt.utils.SenderToRx;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
@@ -126,12 +129,15 @@ public class SimulationNodes {
 		final ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(daemonThreads("TimeoutSender"));
 		final ScheduledLocalTimeoutSender timeoutSender = new ScheduledLocalTimeoutSender(scheduledExecutorService);
 		final SimulationSyncSender syncSender = underlyingNetwork.getSyncSender(self);
+		final SenderToRx<Vertex, Hash> sync = new SenderToRx<>(Vertex::getId);
+		final SyncedVertexSender syncedVertexSender = sync::send;
 		final VertexStoreFactory vertexStoreFactory = (v, qc, stateComputer) ->
 			new VertexStore(
 				v,
 				qc,
 				stateComputer,
 				getVerticesRPCEnabled ? syncSender : EmptySyncVerticesRPCSender.INSTANCE,
+				syncedVertexSender,
 				this.internalMessages.get(self),
 				this.counters.get(self)
 			);
@@ -155,7 +161,7 @@ public class SimulationNodes {
 			stateComputer,
 			rx,
 			timeoutSender,
-			internalMessages.get(self),
+			sync::rx,
 			Observable::never,
 			rx,
 			rx,

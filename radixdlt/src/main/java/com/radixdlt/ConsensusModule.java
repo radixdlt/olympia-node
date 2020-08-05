@@ -23,6 +23,7 @@ import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.SyncedStateComputer;
+import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.bft.BFTBuilder;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.BFTFactory;
@@ -31,12 +32,13 @@ import com.radixdlt.consensus.CommittedStateSyncRx;
 import com.radixdlt.consensus.ConsensusRunner;
 import com.radixdlt.consensus.DefaultHasher;
 import com.radixdlt.consensus.EpochChangeRx;
+import com.radixdlt.consensus.bft.VertexStore.SyncedVertexSender;
 import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.ConsensusEventsRx;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.epoch.EpochManager.EpochInfoSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
-import com.radixdlt.consensus.VertexStoreEventsRx;
+import com.radixdlt.consensus.VertexSyncRx;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.ProposerElectionFactory;
@@ -55,10 +57,11 @@ import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.Hash;
 import com.radixdlt.middleware2.CommittedAtom;
-import com.radixdlt.middleware2.InternalMessagePasser;
 import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.properties.RuntimeProperties;
+import com.radixdlt.utils.SenderToRx;
 import com.radixdlt.utils.ThreadFactories;
 import java.util.Comparator;
 import java.util.Objects;
@@ -83,8 +86,9 @@ public class ConsensusModule extends AbstractModule {
 		bind(LocalTimeoutSender.class).to(ScheduledLocalTimeoutSender.class);
 
 		// Local messages
-		bind(VertexStoreEventsRx.class).to(InternalMessagePasser.class);
-		bind(VertexStoreEventSender.class).to(InternalMessagePasser.class);
+		SenderToRx<Vertex, Hash> syncedVertices = new SenderToRx<>(Vertex::getId);
+		bind(VertexSyncRx.class).toInstance(syncedVertices::rx);
+		bind(SyncedVertexSender.class).toInstance(syncedVertices::send);
 	}
 
 	@Provides
@@ -168,7 +172,7 @@ public class ConsensusModule extends AbstractModule {
 		EpochChangeRx epochChangeRx,
 		ConsensusEventsRx networkRx,
 		PacemakerRx pacemakerRx,
-		VertexStoreEventsRx vertexStoreEventsRx,
+		VertexSyncRx vertexSyncRx,
 		CommittedStateSyncRx committedStateSyncRx,
 		SyncVerticesRPCRx rpcRx,
 		SyncEpochsRPCRx epochsRPCRx,
@@ -177,8 +181,7 @@ public class ConsensusModule extends AbstractModule {
 		return new ConsensusRunner(
 			epochChangeRx,
 			networkRx,
-			pacemakerRx,
-			vertexStoreEventsRx,
+			pacemakerRx, vertexSyncRx,
 			committedStateSyncRx,
 			rpcRx,
 			epochsRPCRx,
@@ -212,13 +215,14 @@ public class ConsensusModule extends AbstractModule {
 	private VertexStoreFactory vertexStoreFactory(
 		SyncVerticesRPCSender syncVerticesRPCSender,
 		VertexStoreEventSender vertexStoreEventSender,
+		SyncedVertexSender syncedVertexSender,
 		SystemCounters counters
 	) {
 		return (genesisVertex, genesisQC, syncedRadixEngine) -> new VertexStore(
 			genesisVertex,
 			genesisQC,
 			syncedRadixEngine,
-			syncVerticesRPCSender,
+			syncVerticesRPCSender, syncedVertexSender,
 			vertexStoreEventSender,
 			counters
 		);

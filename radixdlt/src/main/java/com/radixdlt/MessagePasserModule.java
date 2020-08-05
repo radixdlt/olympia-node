@@ -24,6 +24,7 @@ import com.radixdlt.api.LedgerRx;
 import com.radixdlt.api.SubmissionErrorsRx;
 import com.radixdlt.consensus.CommittedStateSyncRx;
 import com.radixdlt.consensus.EpochChangeRx;
+import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.epoch.EpochManager.EpochInfoSender;
 import com.radixdlt.mempool.SubmissionControlImpl.SubmissionControlSender;
 import com.radixdlt.middleware2.InternalMessagePasser;
@@ -47,6 +48,7 @@ public class MessagePasserModule extends AbstractModule {
 		bind(SyncedRadixEngineEventSender.class).to(InternalMessagePasser.class);
 		bind(CommittedStateSyncSender.class).to(InternalMessagePasser.class);
 		bind(CommittedStateSyncRx.class).to(InternalMessagePasser.class);
+		bind(VertexStoreEventSender.class).to(InternalMessagePasser.class);
 	}
 
 	@Provides
