@@ -95,8 +95,7 @@ class CmdHelper {
 
 
     static Map getDockerOptions(int nodeCount, boolean startConsensusOnBoot) {
-
-        List<String> nodeNames = (1..nodeCount).collect({ return "core${it}".toString() })
+        List<String> nodeNames = (1..nodeCount).collect({ return "${getContainerNamePrefix()}${it}".toString() })
         return nodeNames.withIndex().collectEntries { node, index ->
             Map options = [:]
             options.nodeName = node
@@ -111,7 +110,13 @@ class CmdHelper {
 
     }
 
-    static void removeAllDockerContainers(String name = "core") {
+    static String getContainerNamePrefix(){
+        //CONTAINER_NAME is system env that can used in jenkins and could reference job name + number
+        return System.getenv("CONTAINER_NAME") ?: "core"
+    }
+
+    static void removeAllDockerContainers() {
+        def name = getContainerNamePrefix()
         def psOutput, psError
         (psOutput, psError) = runCommand("docker ps -a")
         psOutput
@@ -161,15 +166,18 @@ class CmdHelper {
         }
 
         // Commands from a docker container using host network sometime do not run in a reliable way for locations /sys/class/net esp when running on docker container
-        //  To overcome this Closure getVeth is called maximum three times to see if return value is empty list not empty. Retrying three times should give the value otherwise there may other issues
+        //  To overcome this Closure getVeth is called maximum three times to see if return value is empty. Retrying three times should give the value otherwise there may be some other issues
         veth = getVeth()
         def count = 0
-        while (veth.size() == 0) {
-            getVeth()
+        while (veth == null || veth.size() == 0) {
+            veth = getVeth()
             count++
             if (count > 3) {
                 break;
             }
+        }
+        if (veth==null || veth.size() == 0 ){
+            throw new IllegalStateException("Could not retrieve veth. If you running on Mac, this is not supported. \n  Run the tests inside docker container as shown as example in the script run-slow-node-test.sh ")
         }
         println(veth[0].tokenize("/").find({ it.contains("veth") }))
         return veth[0].tokenize("/").find({ it.contains("veth") })
