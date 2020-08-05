@@ -1,6 +1,5 @@
 #!/bin/bash
 # This script represents commands that can be used to run tests locally on development laptop and also on jenkins
-#container_name="${JOB_BASE_NAME:-test-executor}-${BUILD_NUMBER:-0}"
 container_name="${TEST_EXECUTOR:-test-executor}"
 echo "Test executor Container Name = $container_name"
 docker build -f system-tests/docker/Dockerfile -t radix-system-test .
