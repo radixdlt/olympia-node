@@ -18,8 +18,8 @@
 package com.radixdlt.middleware2.network;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.sync.StateSyncNetwork;
-import com.radixdlt.consensus.sync.SyncRequest;
+import com.radixdlt.syncer.StateSyncNetwork;
+import com.radixdlt.syncer.SyncRequest;
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.network.messaging.MessageCentral;

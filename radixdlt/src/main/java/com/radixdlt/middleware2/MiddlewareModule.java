@@ -35,7 +35,7 @@ import com.radixdlt.atomos.Result;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.epoch.EpochView;
-import com.radixdlt.consensus.sync.StateSyncNetwork;
+import com.radixdlt.syncer.StateSyncNetwork;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;

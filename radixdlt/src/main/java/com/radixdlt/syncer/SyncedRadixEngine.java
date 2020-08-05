@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.sync;
+package com.radixdlt.syncer;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;

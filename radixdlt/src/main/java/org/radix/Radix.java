@@ -23,7 +23,7 @@ import com.radixdlt.api.InMemoryInfoStateManager;
 import com.radixdlt.api.LedgerRx;
 import com.radixdlt.api.SubmissionErrorsRx;
 import com.radixdlt.consensus.ConsensusRunner;
-import com.radixdlt.consensus.sync.SyncedRadixEngine;
+import com.radixdlt.syncer.SyncedRadixEngine;
 import com.radixdlt.mempool.MempoolReceiver;
 import com.radixdlt.mempool.SubmissionControl;
 import com.radixdlt.middleware2.CommittedAtom;
