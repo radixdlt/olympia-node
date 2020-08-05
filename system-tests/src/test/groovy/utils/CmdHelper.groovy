@@ -95,8 +95,7 @@ class CmdHelper {
 
 
     static Map getDockerOptions(int nodeCount, boolean startConsensusOnBoot) {
-
-        List<String> nodeNames = (1..nodeCount).collect({ return "core${it}".toString() })
+        List<String> nodeNames = (1..nodeCount).collect({ return "${getContainerNamePrefix()}${it}".toString() })
         return nodeNames.withIndex().collectEntries { node, index ->
             Map options = [:]
             options.nodeName = node
@@ -111,7 +110,13 @@ class CmdHelper {
 
     }
 
-    static void removeAllDockerContainers(String name = "core") {
+    static String getContainerNamePrefix(){
+        //CONTAINER_NAME is system env that can used in jenkins and could reference job name + number
+        return System.getenv("CONTAINER_NAME") ?: "core"
+    }
+
+    static void removeAllDockerContainers() {
+        def name = getContainerNamePrefix()
         def psOutput, psError
         (psOutput, psError) = runCommand("docker ps -a")
         psOutput
