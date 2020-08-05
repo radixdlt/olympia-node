@@ -42,6 +42,8 @@ import com.radixdlt.consensus.epoch.EpochManager.EpochInfoSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.VertexStoreEventsRx;
+import com.radixdlt.consensus.liveness.MempoolNextCommandGenerator;
+import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.mempool.SubmissionControl;
 import com.radixdlt.mempool.SubmissionControlImpl;
 import com.radixdlt.mempool.SubmissionControlImpl.SubmissionControlSender;
@@ -183,10 +185,18 @@ public class CerberusModule extends AbstractModule {
 
 	@Provides
 	@Singleton
+	NextCommandGenerator nextCommandGenerator(
+		Mempool mempool
+	) {
+		return new MempoolNextCommandGenerator(mempool);
+	}
+
+	@Provides
+	@Singleton
 	private BFTFactory bftFactory(
 		@Named("self") BFTNode self,
 		BFTEventSender bftEventSender,
-		Mempool mempool,
+		NextCommandGenerator nextCommandGenerator,
 		Hasher hasher,
 		HashSigner signer,
 		HashVerifier verifier,
@@ -204,7 +214,7 @@ public class CerberusModule extends AbstractModule {
 			BFTBuilder.create()
 				.self(self)
 				.eventSender(bftEventSender)
-				.mempool(mempool)
+				.nextCommandGenerator(nextCommandGenerator)
 				.hasher(hasher)
 				.signer(signer)
 				.verifier(verifier)

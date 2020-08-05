@@ -30,6 +30,7 @@ import com.radixdlt.consensus.epoch.EmptySyncVerticesRPCSender;
 import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.EpochChangeRx;
 import com.radixdlt.consensus.Hasher;
+import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.middleware2.InternalMessagePasser;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.SyncedStateComputer;
@@ -42,8 +43,6 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.mempool.EmptyMempool;
-import com.radixdlt.mempool.Mempool;
 
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.consensus.simulation.network.SimulationNetwork.SimulatedNetworkReceiver;
@@ -102,7 +101,7 @@ public class SimulationNodes {
 	}
 
 	private ConsensusRunner createBFTInstance(BFTNode self) {
-		final Mempool mempool = new EmptyMempool();
+		final NextCommandGenerator nextCommandGenerator = (view, aids) -> null;
 		final Hasher nullHasher = o -> Hash.ZERO_HASH;
 		final HashSigner nullSigner = h -> new ECDSASignature();
 		final BFTFactory bftFactory =
@@ -111,7 +110,7 @@ public class SimulationNodes {
 					.self(self)
 					.endOfEpochSender(endOfEpochSender)
 					.pacemaker(pacemaker)
-					.mempool(mempool)
+					.nextCommandGenerator(nextCommandGenerator)
 					.vertexStore(vertexStore)
 					.proposerElection(proposerElection)
 					.validatorSet(validatorSet)

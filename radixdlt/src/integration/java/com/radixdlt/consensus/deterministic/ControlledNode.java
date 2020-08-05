@@ -44,13 +44,12 @@ import com.radixdlt.consensus.deterministic.configuration.UnsupportedSyncVertice
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
 import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.mempool.EmptyMempool;
-import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.CommittedAtom;
 import java.util.Objects;
 
@@ -82,7 +81,7 @@ class ControlledNode {
 		this.controlledSender = Objects.requireNonNull(sender);
 		this.initialValidatorSet = Objects.requireNonNull(initialValidatorSet);
 
-		Mempool mempool = new EmptyMempool();
+		NextCommandGenerator nextCommandGenerator = (view, aids) -> null;
 		Hasher nullHasher = data -> Hash.ZERO_HASH;
 		HashSigner nullSigner = h -> new ECDSASignature();
 		BFTNode self = BFTNode.create(key.getPublicKey());
@@ -92,7 +91,7 @@ class ControlledNode {
 					.self(self)
 					.endOfEpochSender(endOfEpochSender)
 					.pacemaker(pacemaker)
-					.mempool(mempool)
+					.nextCommandGenerator(nextCommandGenerator)
 					.vertexStore(vertexStore)
 					.proposerElection(proposerElection)
 					.validatorSet(validatorSet)

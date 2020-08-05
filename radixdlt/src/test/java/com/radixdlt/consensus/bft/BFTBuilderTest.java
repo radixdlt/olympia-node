@@ -35,18 +35,18 @@ import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTInfoSender;
 import com.radixdlt.consensus.bft.BFTEventReducer.EndOfEpochSender;
+import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.mempool.Mempool;
 import com.radixdlt.utils.UInt256;
 import org.junit.Before;
 import org.junit.Test;
 
 public class BFTBuilderTest {
-	private Mempool mempool;
+	private NextCommandGenerator nextCommandGenerator;
 	private BFTEventSender eventSender;
 	private EndOfEpochSender endOfEpochSender;
 	private SystemCounters counters;
@@ -62,7 +62,7 @@ public class BFTBuilderTest {
 
 	@Before
 	public void setup() {
-		mempool = mock(Mempool.class);
+		nextCommandGenerator = mock(NextCommandGenerator.class);
 		eventSender = mock(BFTEventSender.class);
 		endOfEpochSender = mock(EndOfEpochSender.class);
 		counters = mock(SystemCounters.class);
@@ -84,7 +84,7 @@ public class BFTBuilderTest {
 		when(verifier.verify(any(), any(), any())).thenReturn(false);
 
 		BFTEventProcessor processor = BFTBuilder.create()
-			.mempool(mempool)
+			.nextCommandGenerator(nextCommandGenerator)
 			.eventSender(eventSender)
 			.endOfEpochSender(endOfEpochSender)
 			.counters(counters)
@@ -115,7 +115,7 @@ public class BFTBuilderTest {
 		when(verifier.verify(any(), any(), any())).thenReturn(false);
 
 		BFTEventProcessor processor = BFTBuilder.create()
-			.mempool(mempool)
+			.nextCommandGenerator(nextCommandGenerator)
 			.eventSender(eventSender)
 			.endOfEpochSender(endOfEpochSender)
 			.counters(counters)
