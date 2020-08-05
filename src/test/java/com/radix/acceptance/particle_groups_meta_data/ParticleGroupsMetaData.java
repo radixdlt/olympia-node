@@ -30,6 +30,9 @@ import com.radixdlt.client.core.pow.ProofOfWorkBuilder;
 import com.radixdlt.client.serialization.GsonJson;
 import com.radixdlt.client.serialization.Serialize;
 import com.radixdlt.serialization.DsonOutput;
+
+import static org.junit.Assert.assertTrue;
+
 import cucumber.api.java.After;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
@@ -39,13 +42,14 @@ import io.reactivex.functions.Cancellable;
 import io.reactivex.observers.TestObserver;
 import org.json.JSONObject;
 
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 public class ParticleGroupsMetaData {
@@ -57,7 +61,7 @@ public class ParticleGroupsMetaData {
     private RadixJsonRpcClient jsonRpcClient;
 
     private TestObserver<AtomStatusEvent> observer;
-	private TestObserver atomPushObserver;
+	private TestObserver<Void> atomPushObserver;
     private TestObserver<RadixJsonRpcClient.JsonRpcResponse> observer2;
 
     private FeeMapper feeMapper = new PowFeeMapper(Atom::getHash,
@@ -94,7 +98,7 @@ public class ParticleGroupsMetaData {
 
 
     @Given("^that I have access to a suitable Radix network$")
-    public void thatIHaveAccessToASuitableRadixNetwork() throws Throwable {
+    public void thatIHaveAccessToASuitableRadixNetwork() throws Exception {
         setupWebSocket();
 
         this.identity = RadixIdentities.createNew();
@@ -103,7 +107,7 @@ public class ParticleGroupsMetaData {
     }
 
     @When("^I submit an atom with particle groups which have some arbitrary metadata$")
-    public void iSubmitAValidAtomWithSomeArbitraryMetadata() throws Throwable {
+    public void iSubmitAValidAtomWithSomeArbitraryMetadata() {
         // Construct atom
         Map<String, String> metaData = new HashMap<>();
         metaData.put("test", "123");
@@ -129,7 +133,7 @@ public class ParticleGroupsMetaData {
     }
 
     @When("^I submit an atom with particle groups which have no metadata$")
-    public void iSubmitAValidAtomWithNoMetadata() throws Throwable {
+    public void iSubmitAValidAtomWithNoMetadata() {
         // Construct atom
         Atom atom = constructTestAtom(new HashMap<>());
 
@@ -152,7 +156,7 @@ public class ParticleGroupsMetaData {
 
 
     @When("^I submit an atom with particle groups which have metadata exceeding the max allowed atom size 65536 bytes$")
-    public void iSubmitAValidAtomWithMetadataExceedingMaxAtomSizeBytes() throws Throwable {
+    public void iSubmitAValidAtomWithMetadataExceedingMaxAtomSizeBytes() {
         // Construct atom
         Map<String, String> metaData = new HashMap<>();
         metaData.put("super big test", generateStringOfLength(655360));
@@ -167,7 +171,7 @@ public class ParticleGroupsMetaData {
     }
 
     @When("^I submit an atom with particle groups which have invalid json in the metadata field$")
-    public void iSubmitAnAtomWithInvalidJsonInTheMetadataField() throws Throwable {
+    public void iSubmitAnAtomWithInvalidJsonInTheMetadataField() {
         String validMetaData = "ThisIsCompletelyNormalAndValid";
         String invalidMetaData = "This will break \" the json },:";
 
@@ -204,7 +208,7 @@ public class ParticleGroupsMetaData {
 
         // Break the json
         String brokenJson = GsonJson.getInstance().stringFromGson(requestObject)
-                .replaceAll(validMetaData, invalidMetaData);
+                .replace(validMetaData, invalidMetaData);
 
 
         // Submit and listen for results
@@ -221,7 +225,7 @@ public class ParticleGroupsMetaData {
     }
 
     @When("^I submit an atom with particle groups which have the metadata field as something other than a map$")
-    public void iSubmitAnAtomWithTheMetadataFieldAsSomethingOtherThanAMap() throws Throwable {
+    public void iSubmitAnAtomWithTheMetadataFieldAsSomethingOtherThanAMap() {
         // Construct atom
         Map<String, String> metaData = new HashMap<>();
         metaData.put("test", "123456");
@@ -230,7 +234,6 @@ public class ParticleGroupsMetaData {
 
         // Sign and submit
         Atom signedAtom = this.identity.addSignature(atom).blockingGet();
-
 
         this.observer2 = TestObserver.create();
 
@@ -245,28 +248,25 @@ public class ParticleGroupsMetaData {
         params.addProperty("subscriberId", subscriberId);
         params.add("atom", jsonAtom);
 
-
         this.jsonRpcClient.jsonRpcCall("Universe.submitAtomAndSubscribe", params).subscribe(this.observer2);
     }
 
-
-
     @Then("^I should observe the atom being accepted$")
-    public void iShouldObserveTheAtomBeingAccepted() throws Throwable {
+    public void iShouldObserveTheAtomBeingAccepted() {
     	this.observer.awaitCount(1);
         this.observer.assertValue(notification -> notification.getAtomStatus() == AtomStatus.STORED);
         this.observer.dispose();
     }
 
     @Then("^I should observe the atom being rejected$")
-    public void iShouldObserveTheAtomBeingRejected() throws Throwable {
+    public void iShouldObserveTheAtomBeingRejected() {
     	this.atomPushObserver.awaitTerminalEvent();
         this.atomPushObserver.assertError(RuntimeException.class);
         this.atomPushObserver.dispose();
     }
 
     @Then("^I should get a deserialization error$")
-    public void iShouldGetADeserializationError() throws Throwable {
+    public void iShouldGetADeserializationError() {
         this.observer2.awaitTerminalEvent(15, TimeUnit.SECONDS);
         this.observer2.assertNoErrors();
         this.observer2.assertComplete();
@@ -274,7 +274,7 @@ public class ParticleGroupsMetaData {
         this.observer2.assertValueAt(0, val -> val.getError().getAsJsonObject().get("code").getAsInt() == -32000);
     }
 
-    private void setupWebSocket() {
+    private void setupWebSocket() throws Exception {
         this.identity = RadixIdentities.createNew();
         RadixApplicationAPI api = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), identity);
         api.discoverNodes();
@@ -286,16 +286,24 @@ public class ParticleGroupsMetaData {
         this.webSocketClient = new WebSocketClient(listener ->
             HttpClients.getSslAllTrustingClient().newWebSocket(node.getWebSocketEndpoint(), listener)
         );
+        Semaphore helloComplete = new Semaphore(0);
+        Cancellable helloCancellable = this.webSocketClient.addListener(msg -> {
+        	if (msg.contains("Radix.welcome")) {
+        		helloComplete.release();
+        	}
+        });
         this.webSocketClient.connect();
         this.webSocketClient.getState()
                 .filter(WebSocketStatus.CONNECTED::equals)
                 .blockingFirst();
+        assertTrue(helloComplete.tryAcquire(10, TimeUnit.SECONDS));
+        helloCancellable.cancel();
     }
 
     private String generateStringOfLength(int length) {
         byte[] array = new byte[length];
         new Random().nextBytes(array);
-        return new String(array, Charset.forName("UTF-8"));
+        return new String(array, StandardCharsets.UTF_8);
     }
 
     private Atom constructTestAtom(Map<String, String> metaData) {
