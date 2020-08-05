@@ -17,32 +17,15 @@
 
 package com.radixdlt.mempool;
 
-import com.google.inject.TypeLiteral;
-import com.radixdlt.SyncerModule;
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.middleware2.ClientAtom;
-import com.radixdlt.middleware2.LedgerAtom;
-import com.radixdlt.middleware2.store.CommittedAtomsStore;
-import com.radixdlt.middleware2.store.CommittedAtomsStore.AtomIndexer;
-import com.radixdlt.network.addressbook.AddressBook;
-import com.radixdlt.properties.RuntimeProperties;
-import com.radixdlt.syncer.StateSyncNetwork;
 import java.util.Set;
 
 import org.junit.Before;
 import org.junit.Test;
 
 import com.google.common.collect.Sets;
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.google.inject.Module;
-import com.google.inject.name.Names;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.identifiers.EUID;
-import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.serialization.Serialization;
 import com.radixdlt.utils.Ints;
 
 import static org.junit.Assert.*;
@@ -51,12 +34,9 @@ import static org.hamcrest.Matchers.*;
 
 public class SharedMempoolTest {
 	private static final AID TEST_AID = makeAID(1234);
-	private static final EUID self = EUID.ONE;
 
 	private LocalMempool localMempool;
 	private MempoolNetworkTx mempoolNetworkTx;
-	private RadixEngine<LedgerAtom> radixEngine;
-	private Serialization serialization;
 	private SystemCounters counters;
 	private Mempool sharedMempool;
 
@@ -64,33 +44,8 @@ public class SharedMempoolTest {
 	public void setUp() {
 		this.localMempool = mock(LocalMempool.class);
 		this.mempoolNetworkTx = mock(MempoolNetworkTx.class);
-		// No type check issues with mocking generic here
-		@SuppressWarnings("unchecked")
-		RadixEngine<LedgerAtom> re = mock(RadixEngine.class);
-		this.radixEngine = re;
-		this.serialization = mock(Serialization.class);
 		this.counters = mock(SystemCounters.class);
-
-		// test module to hook up dependencies
-		Module testModule = new AbstractModule() {
-			@Override
-			protected void configure() {
-				bind(LocalMempool.class).toInstance(localMempool);
-				bind(MempoolNetworkTx.class).toInstance(mempoolNetworkTx);
-				bind(EUID.class).annotatedWith(Names.named("self")).toInstance(self);
-				bind(ECKeyPair.class).annotatedWith(Names.named("self")).toInstance(mock(ECKeyPair.class));
-				bind(new TypeLiteral<RadixEngine<LedgerAtom>>() { }).toInstance(radixEngine);
-				bind(Serialization.class).toInstance(serialization);
-				bind(SystemCounters.class).toInstance(counters);
-				bind(AtomIndexer.class).toInstance(mock(AtomIndexer.class));
-				bind(AddressBook.class).toInstance(mock(AddressBook.class));
-				bind(CommittedAtomsStore.class).toInstance(mock(CommittedAtomsStore.class));
-				bind(StateSyncNetwork.class).toInstance(mock(StateSyncNetwork.class));
-			}
-		};
-
-		Injector injector = Guice.createInjector(testModule, new SyncerModule(mock(RuntimeProperties.class)));
-		this.sharedMempool = injector.getInstance(Mempool.class);
+		this.sharedMempool = new SharedMempool(counters, localMempool, mempoolNetworkTx);
 	}
 
 	@Test
