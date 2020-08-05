@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *  http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -17,27 +17,13 @@
 
 package com.radixdlt.consensus;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import com.radixdlt.consensus.bft.View;
 import nl.jqno.equalsverifier.EqualsVerifier;
-
 import org.junit.Test;
 
-public class QuorumCertificateTest {
-	@Test
-	public void when_create_genesis_qc_with_non_genesis_vertex__then_should_throw_exception() {
-		Vertex vertex = mock(Vertex.class);
-		when(vertex.getView()).thenReturn(View.of(1));
-		assertThatThrownBy(() -> QuorumCertificate.ofGenesis(vertex))
-			.isInstanceOf(IllegalArgumentException.class);
-	}
-
+public class TimestampedVoteDataTest {
 	@Test
 	public void equalsContract() {
-		EqualsVerifier.forClass(QuorumCertificate.class)
+		EqualsVerifier.forClass(TimestampedVoteData.class)
 			.verify();
 	}
 }

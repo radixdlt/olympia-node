@@ -53,15 +53,21 @@ public final class CommittedAtom implements LedgerAtom, CommittedInstruction {
 	@DsonOutput(Output.ALL)
 	private final VertexMetadata vertexMetadata;
 
+	@JsonProperty("timestamp")
+	@DsonOutput(Output.ALL)
+	private final long timestamp;
+
 	CommittedAtom() {
 		// Serializer only
 		this.clientAtom = null;
 		this.vertexMetadata = null;
+		this.timestamp = 0L;
 	}
 
-	public CommittedAtom(ClientAtom clientAtom, VertexMetadata vertexMetadata) {
+	public CommittedAtom(ClientAtom clientAtom, VertexMetadata vertexMetadata, long timestamp) {
 		this.clientAtom = clientAtom;
 		this.vertexMetadata = Objects.requireNonNull(vertexMetadata);
+		this.timestamp = timestamp;
 	}
 
 	public ClientAtom getClientAtom() {
@@ -83,9 +89,13 @@ public final class CommittedAtom implements LedgerAtom, CommittedInstruction {
 		return clientAtom.getAID();
 	}
 
+	public long getTimestamp() {
+		return this.timestamp;
+	}
+
 	@Override
 	public int hashCode() {
-		return Objects.hash(clientAtom, vertexMetadata);
+		return Objects.hash(this.timestamp, this.clientAtom, this.vertexMetadata);
 	}
 
 	@Override
@@ -95,7 +105,8 @@ public final class CommittedAtom implements LedgerAtom, CommittedInstruction {
 		}
 
 		CommittedAtom other = (CommittedAtom) o;
-		return Objects.equals(other.clientAtom, this.clientAtom)
+		return this.timestamp == other.timestamp
+			&& Objects.equals(other.clientAtom, this.clientAtom)
 			&& Objects.equals(other.vertexMetadata, this.vertexMetadata);
 	}
 
@@ -111,6 +122,7 @@ public final class CommittedAtom implements LedgerAtom, CommittedInstruction {
 
 	@Override
 	public String toString() {
-		return String.format("%s{atom=%s meta=%s}", getClass().getSimpleName(), clientAtom != null ? clientAtom.getAID() : null, vertexMetadata);
+		return String.format("%s{atom=%s, timestamp=%s, meta=%s}",
+			getClass().getSimpleName(), clientAtom != null ? clientAtom.getAID() : null, this.timestamp, this.vertexMetadata);
 	}
 }

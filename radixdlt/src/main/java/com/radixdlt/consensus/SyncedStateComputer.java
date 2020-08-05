@@ -32,7 +32,6 @@ public interface SyncedStateComputer<T extends CommittedInstruction> {
 	 * A state computer instruction which has been committed by the BFT
 	 */
 	interface CommittedInstruction {
-
 		/**
 		 * Retrieve the BFT data for the instruction
 		 * @return the BFT data for the instruction

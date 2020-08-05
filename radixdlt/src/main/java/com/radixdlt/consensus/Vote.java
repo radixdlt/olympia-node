@@ -45,9 +45,9 @@ public final class Vote implements ConsensusEvent {
 
 	private final BFTNode author;
 
-	@JsonProperty("vertex_metadata")
+	@JsonProperty("vote_data")
 	@DsonOutput(Output.ALL)
-	private final VoteData voteData;
+	private final TimestampedVoteData voteData;
 
 	@JsonProperty("signature")
 	@DsonOutput(Output.ALL)
@@ -60,14 +60,14 @@ public final class Vote implements ConsensusEvent {
 	@JsonCreator
 	Vote(
 		@JsonProperty("author") byte[] author,
-		@JsonProperty("vertex_metadata") VoteData voteData,
+		@JsonProperty("vote_data") TimestampedVoteData voteData,
 		@JsonProperty("signature") ECDSASignature signature,
 		@JsonProperty("payload") long payload
 	) throws CryptoException {
 		this(BFTNode.create(new ECPublicKey(author)), voteData, signature, payload);
 	}
 
-	public Vote(BFTNode author, VoteData voteData, ECDSASignature signature, long payload) {
+	public Vote(BFTNode author, TimestampedVoteData voteData, ECDSASignature signature, long payload) {
 		this.author = Objects.requireNonNull(author);
 		this.voteData = Objects.requireNonNull(voteData);
 		this.signature = signature;
@@ -76,7 +76,7 @@ public final class Vote implements ConsensusEvent {
 
 	@Override
 	public long getEpoch() {
-		return voteData.getProposed().getEpoch();
+		return voteData.getVoteData().getProposed().getEpoch();
 	}
 
 	@Override
@@ -85,6 +85,10 @@ public final class Vote implements ConsensusEvent {
 	}
 
 	public VoteData getVoteData() {
+		return voteData.getVoteData();
+	}
+
+	public TimestampedVoteData getTimestampedVoteData() {
 		return voteData;
 	}
 

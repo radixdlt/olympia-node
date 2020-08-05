@@ -42,7 +42,6 @@ import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.utils.UInt256;
-import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -90,6 +89,7 @@ public class BFTBuilderTest {
 			.endOfEpochSender(endOfEpochSender)
 			.counters(counters)
 			.infoSender(infoSender)
+			.timeSupplier(System::currentTimeMillis)
 			.validatorSet(validatorSet)
 			.proposerElection(proposerElection)
 			.hasher(hasher)
@@ -102,7 +102,7 @@ public class BFTBuilderTest {
 
 		Proposal proposal = mock(Proposal.class);
 		when(proposal.getAuthor()).thenReturn(self);
-		when(proposal.getSignature()).thenReturn(Optional.of(mock(ECDSASignature.class)));
+		when(proposal.getSignature()).thenReturn(mock(ECDSASignature.class));
 		processor.processProposal(proposal);
 
 		verify(verifier, times(1)).verify(any(), any(), any());
@@ -120,6 +120,7 @@ public class BFTBuilderTest {
 			.endOfEpochSender(endOfEpochSender)
 			.counters(counters)
 			.infoSender(infoSender)
+			.timeSupplier(System::currentTimeMillis)
 			.validatorSet(validatorSet)
 			.proposerElection(proposerElection)
 			.hasher(hasher)
@@ -133,7 +134,7 @@ public class BFTBuilderTest {
 
 		Proposal proposal = mock(Proposal.class);
 		when(proposal.getAuthor()).thenReturn(self);
-		when(proposal.getSignature()).thenReturn(Optional.of(mock(ECDSASignature.class)));
+		when(proposal.getSignature()).thenReturn(mock(ECDSASignature.class));
 		Vertex vertex = mock(Vertex.class);
 		when(vertex.getView()).thenReturn(View.of(1));
 		when(proposal.getVertex()).thenReturn(vertex);

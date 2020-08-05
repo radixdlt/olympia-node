@@ -28,9 +28,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.function.Function;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.deterministic.ControlledNetwork.ChannelId;
 import com.radixdlt.consensus.deterministic.ControlledNetwork.ControlledMessage;
 import com.radixdlt.consensus.deterministic.ControlledNetwork.MessageRank;
@@ -160,20 +162,24 @@ final class MessageQueue {
 		return views.get(0);
 	}
 
-	void dump(PrintStream out) {
+	void dump(PrintStream out, Function<BFTNode, Object> namer) {
 		Comparator<ChannelId> channelIdComparator = Comparator
 			.<ChannelId, String>comparing(chid -> chid.getSender().getSimpleName())
 			.thenComparing(chid -> chid.getReceiver().getSimpleName());
-		out.format("%s {%n", this.messageQueue);
+		out.println("{");
 		this.messageQueue.entrySet().stream()
 			.sorted(Map.Entry.comparingByKey())
 			.forEachOrdered(e1 -> {
 				out.format("    %s {%n", e1.getKey());
 				e1.getValue().entrySet().stream()
 					.sorted(Map.Entry.comparingByKey(channelIdComparator))
-					.forEach(e2 -> out.format("        %s: %s%n", e2.getKey(), e2.getValue()));
+					.forEach(e2 -> out.format("        %s: %s%n", nameChannel(e2.getKey(), namer), e2.getValue()));
 				out.println("    }");
 			});
 		out.println("}");
+	}
+
+	private String nameChannel(ChannelId ch, Function<BFTNode, Object> namer) {
+		return String.format("%s->%s", namer.apply(ch.getSender()), namer.apply(ch.getReceiver()));
 	}
 }

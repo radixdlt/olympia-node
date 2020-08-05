@@ -32,15 +32,17 @@ public class VoteTest {
 	private BFTNode author;
 	private Vote testObject;
 	private VoteData voteData;
+	private TimestampedVoteData timestampedVoteData;
 	private long payload;
 
 	@Before
 	public void setUp() {
 		VertexMetadata parent = new VertexMetadata(0, View.of(1234567890L), Hash.random(), 1, false);
 		this.voteData = new VoteData(VertexMetadata.ofGenesisAncestor(), parent, null);
+		this.timestampedVoteData = new TimestampedVoteData(this.voteData, 123456L);
 		this.author = mock(BFTNode.class);
 		this.payload = 123456L;
-		this.testObject = new Vote(author, voteData, null, this.payload);
+		this.testObject = new Vote(author, timestampedVoteData, null, this.payload);
 	}
 
 	@Test

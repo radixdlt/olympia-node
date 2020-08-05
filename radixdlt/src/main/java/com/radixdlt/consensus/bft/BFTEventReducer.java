@@ -33,6 +33,7 @@ import com.radixdlt.consensus.safety.SafetyViolationException;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hash;
+import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.utils.RTTStatistics;
 
 import java.util.EnumMap;
@@ -112,6 +113,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	private final SafetyRules safetyRules;
 	private final BFTValidatorSet validatorSet;
 	private final SystemCounters counters;
+	private final TimeSupplier timeSupplier;
 	private final Map<Hash, QuorumCertificate> unsyncedQCs = new HashMap<>();
 	private final BFTInfoSender infoSender;
 	private final RTTStatistics rttStatistics = new RTTStatistics();
@@ -133,7 +135,8 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		ProposerElection proposerElection,
 		BFTValidatorSet validatorSet,
 		SystemCounters counters,
-		BFTInfoSender infoSender
+		BFTInfoSender infoSender,
+		TimeSupplier timeSupplier
 	) {
 		this.self = Objects.requireNonNull(self);
 		this.proposalGenerator = Objects.requireNonNull(proposalGenerator);
@@ -147,6 +150,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		this.validatorSet = Objects.requireNonNull(validatorSet);
 		this.counters = Objects.requireNonNull(counters);
 		this.infoSender = Objects.requireNonNull(infoSender);
+		this.timeSupplier = Objects.requireNonNull(timeSupplier);
 	}
 
 	// Hotstuff's Event-Driven OnNextSyncView
@@ -259,7 +263,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 
 		final BFTNode currentLeader = this.proposerElection.getProposer(updatedView);
 		try {
-			final Vote vote = safetyRules.voteFor(proposedVertex, vertexMetadata, proposal.getPayload());
+			final Vote vote = safetyRules.voteFor(proposedVertex, vertexMetadata, this.timeSupplier.currentTime(), proposal.getPayload());
 			log.trace("{}: PROPOSAL: Sending VOTE to {}: {}", this.self::getSimpleName, currentLeader::getSimpleName, () -> vote);
 			sender.sendVote(vote, currentLeader);
 		} catch (SafetyViolationException e) {

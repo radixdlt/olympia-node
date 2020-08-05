@@ -22,7 +22,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Suppliers;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.serialization.DsonOutput;
@@ -90,7 +89,7 @@ public final class Vertex {
 	public static Vertex createGenesis(VertexMetadata ancestorMetadata) {
 		Objects.requireNonNull(ancestorMetadata);
 		final VoteData voteData = new VoteData(ancestorMetadata, ancestorMetadata, ancestorMetadata);
-		final QuorumCertificate qc = new QuorumCertificate(voteData, new ECDSASignatures());
+		final QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 		return new Vertex(ancestorMetadata.getEpoch() + 1, qc, View.genesis(), null);
 	}
 

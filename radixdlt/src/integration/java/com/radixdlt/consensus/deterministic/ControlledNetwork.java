@@ -60,10 +60,10 @@ public final class ControlledNetwork {
 		// Nothing here right now
 	}
 
-	// Message ranking.  Used to implement timeouts.
+	// Message rank.  Used to implement timeouts.
 	// Messages in a particular ranking are processed in arrival order, but
-	// timeouts in particular will be put into the next ranking to ensure
-	// that they are processed after the current ranking. The rank is changed
+	// timeouts in particular will be put into the next rank to ensure
+	// that they are processed after the current rank. The rank is changed
 	// for each node whenever a new view or epoch change is seen.
 	static final class MessageRank implements Comparable<MessageRank> {
 		private static final Comparator<MessageRank> COMPARATOR =
