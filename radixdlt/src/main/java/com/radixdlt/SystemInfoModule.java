@@ -20,7 +20,9 @@ package com.radixdlt;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.google.inject.Scopes;
 import com.google.inject.Singleton;
+import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.systeminfo.InMemorySystemInfoManager;
 import com.radixdlt.systeminfo.InfoRx;
 import com.radixdlt.systeminfo.Timeout;
@@ -41,6 +43,12 @@ public class SystemInfoModule extends AbstractModule {
 
 	public SystemInfoModule(RuntimeProperties runtimeProperties) {
 		this.runtimeProperties = Objects.requireNonNull(runtimeProperties);
+	}
+
+
+	@Override
+	protected void configure() {
+		bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
 	}
 
 	@Provides

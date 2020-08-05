@@ -25,6 +25,7 @@ import com.google.inject.Scopes;
 import com.google.inject.name.Names;
 import com.radixdlt.ConsensusModule;
 import com.radixdlt.DefaultSerialization;
+import com.radixdlt.MessagePasserModule;
 import com.radixdlt.SyncerModule;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.counters.SystemCounters;
@@ -35,7 +36,7 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.middleware2.InfoSupplier;
 import com.radixdlt.SystemInfoModule;
-import com.radixdlt.middleware2.network.NetworkModule;
+import com.radixdlt.NetworkModule;
 import com.radixdlt.network.addressbook.AddressBookModule;
 import com.radixdlt.network.addressbook.PeerManagerConfiguration;
 import com.radixdlt.network.hostip.HostIp;
@@ -65,9 +66,6 @@ public class GlobalInjector {
 				bind(RuntimeProperties.class).toInstance(properties);
 				bind(DatabaseEnvironment.class).toInstance(dbEnv);
 				bind(Universe.class).toInstance(universe);
-
-				bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
-
 				bind(LocalSystem.class).toProvider(LocalSystemProvider.class).in(Scopes.SINGLETON);
 
 				bind(EUID.class).annotatedWith(Names.named("self")).toProvider(SelfNidProvider.class);
@@ -84,17 +82,18 @@ public class GlobalInjector {
 		};
 
 		injector = Guice.createInjector(
+			new MessagePasserModule(),
 			new ConsensusModule(properties),
 			new SyncerModule(properties),
 			new SystemInfoModule(properties),
+			new NetworkModule(),
 
-			// Network modules
+			// Low level network modules
 			new MessageCentralModule(properties),
 			new UDPTransportModule(properties),
 			new TCPTransportModule(properties),
 			new AddressBookModule(dbEnv),
 			new HostIpModule(properties),
-			new NetworkModule(),
 			globalModule
 		);
 	}

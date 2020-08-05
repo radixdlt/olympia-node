@@ -23,7 +23,6 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.name.Named;
-import com.radixdlt.api.SubmissionErrorsRx;
 import com.radixdlt.atommodel.message.MessageParticleConstraintScrypt;
 import com.radixdlt.atommodel.tokens.TokensConstraintScrypt;
 import com.radixdlt.atommodel.unique.UniqueParticleConstraintScrypt;
@@ -53,7 +52,6 @@ import com.radixdlt.mempool.SubmissionControlImpl.SubmissionControlSender;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.ClientAtom.LedgerAtomConversionException;
 import com.radixdlt.middleware2.CommittedAtom;
-import com.radixdlt.middleware2.InternalMessagePasser;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.LedgerAtomChecker;
 import com.radixdlt.middleware2.PowFeeComputer;
@@ -97,13 +95,6 @@ public class SyncerModule extends AbstractModule {
 
 	@Override
 	protected void configure() {
-		// Local messages
-		bind(SubmissionControlSender.class).to(InternalMessagePasser.class);
-		bind(SubmissionErrorsRx.class).to(InternalMessagePasser.class);
-		bind(EpochChangeSender.class).to(InternalMessagePasser.class);
-		bind(SyncedRadixEngineEventSender.class).to(InternalMessagePasser.class);
-		bind(CommittedStateSyncSender.class).to(InternalMessagePasser.class);
-
 		bind(new TypeLiteral<SyncedStateComputer<CommittedAtom>>() { }).to(SyncedRadixEngine.class).in(Scopes.SINGLETON);
 		bind(Mempool.class).to(SharedMempool.class).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EngineStore<CommittedAtom>>() { }).to(CommittedAtomsStore.class).in(Scopes.SINGLETON);

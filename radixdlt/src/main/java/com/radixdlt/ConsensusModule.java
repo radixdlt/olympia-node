@@ -21,8 +21,6 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
-import com.radixdlt.systeminfo.InfoRx;
-import com.radixdlt.api.LedgerRx;
 import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.bft.BFTBuilder;
@@ -59,13 +57,8 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.middleware2.InternalMessagePasser;
-import com.radixdlt.middleware2.network.MessageCentralBFTNetwork;
-import com.radixdlt.middleware2.network.MessageCentralValidatorSync;
 import com.radixdlt.network.TimeSupplier;
-import com.radixdlt.network.addressbook.AddressBook;
-import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.properties.RuntimeProperties;
-import com.radixdlt.universe.Universe;
 import com.radixdlt.utils.ThreadFactories;
 import java.util.Comparator;
 import java.util.Objects;
@@ -92,23 +85,7 @@ public class ConsensusModule extends AbstractModule {
 		// Local messages
 		bind(VertexStoreEventsRx.class).to(InternalMessagePasser.class);
 		bind(VertexStoreEventSender.class).to(InternalMessagePasser.class);
-		bind(CommittedStateSyncRx.class).to(InternalMessagePasser.class);
-		bind(EpochChangeRx.class).to(InternalMessagePasser.class);
-		bind(EpochInfoSender.class).to(InternalMessagePasser.class);
-		bind(InfoRx.class).to(InternalMessagePasser.class);
-		bind(LedgerRx.class).to(InternalMessagePasser.class);
-
-		// Network BFT/Epoch Sync messages
-		bind(SyncEpochsRPCSender.class).to(MessageCentralValidatorSync.class);
-		bind(SyncEpochsRPCRx.class).to(MessageCentralValidatorSync.class);
-		bind(SyncVerticesRPCSender.class).to(MessageCentralValidatorSync.class);
-		bind(SyncVerticesRPCRx.class).to(MessageCentralValidatorSync.class);
-
-		// Network BFT messages
-		bind(BFTEventSender.class).to(MessageCentralBFTNetwork.class);
-		bind(ConsensusEventsRx.class).to(MessageCentralBFTNetwork.class);
 	}
-
 
 	@Provides
 	@Singleton
@@ -117,29 +94,6 @@ public class ConsensusModule extends AbstractModule {
 	) {
 		return selfKey::sign;
 	}
-
-	@Provides
-	@Singleton
-	MessageCentralValidatorSync validatorSync(
-		@Named("self") BFTNode self,
-		Universe universe,
-		AddressBook addressBook,
-		MessageCentral messageCentral
-	) {
-		return new MessageCentralValidatorSync(self, universe, addressBook, messageCentral);
-	}
-
-	@Provides
-	@Singleton
-	MessageCentralBFTNetwork bftNetwork(
-		@Named("self") BFTNode self,
-		Universe universe,
-		AddressBook addressBook,
-		MessageCentral messageCentral
-	) {
-		return new MessageCentralBFTNetwork(self, universe, addressBook, messageCentral);
-	}
-
 
 	@Provides
 	@Singleton
@@ -230,12 +184,6 @@ public class ConsensusModule extends AbstractModule {
 			epochsRPCRx,
 			epochManager
 		);
-	}
-
-	@Provides
-	@Singleton
-	private InternalMessagePasser internalMessagePasser() {
-		return new InternalMessagePasser();
 	}
 
 	@Provides
