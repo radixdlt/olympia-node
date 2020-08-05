@@ -42,7 +42,7 @@ public class CounterCheck implements RemoteBFTCheck {
 	public Single<RemoteBFTCheckResult> check(RemoteBFTNetworkBridge network) {
 		return Completable.mergeDelayError(network.getNodeIds().stream()
 			.map(nodeName -> network.queryEndpointJson(nodeName, "api/system")
-				.map(system -> system.getJSONObject("counters"))
+				.map(system -> system.getJSONObject("info").getJSONObject("counters"))
 				.map(SystemCounters::from)
 				.doOnSuccess(assertion::accept)
 				.ignoreElement())
