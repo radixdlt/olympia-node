@@ -25,6 +25,8 @@ package com.radixdlt.client.application.translate.validators;
 import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.identifiers.RadixAddress;
 
+import java.util.Objects;
+
 /**
  * Registers the given address as a validator. Validator must not be registered already.
  * To unregister a validator, use {@link UnregisterValidatorAction}.
@@ -34,7 +36,7 @@ public class RegisterValidatorAction implements Action {
 	private final String url;
 
 	public RegisterValidatorAction(RadixAddress validator, String url) {
-		this.validator = validator;
+		this.validator = Objects.requireNonNull(validator);
 		this.url = url;
 	}
 
