@@ -116,6 +116,10 @@ task integrationTest(type: Test) {
 
 integrationTest.mustRunAfter test
 
+jacoco {
+    toolVersion = "0.8.5"
+}
+
 jacocoTestReport {
     reports {
         xml.enabled true
