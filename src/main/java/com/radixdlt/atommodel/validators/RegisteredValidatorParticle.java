@@ -23,11 +23,17 @@ import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerId2;
 
+import java.util.List;
+
 @SerializerId2("radix.particles.registered_validator")
 public class RegisteredValidatorParticle extends Particle {
 	@JsonProperty("address")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private RadixAddress address;
+
+	@JsonProperty("allowedDelegators")
+	@DsonOutput(DsonOutput.Output.ALL)
+	private List<RadixAddress> allowedDelegators;
 
 	@JsonProperty("url")
 	@DsonOutput(DsonOutput.Output.ALL)
@@ -41,19 +47,24 @@ public class RegisteredValidatorParticle extends Particle {
 		// for serializer
 	}
 
-	public RegisteredValidatorParticle(RadixAddress address, long nonce) {
-		this(address, null, nonce);
+	public RegisteredValidatorParticle(RadixAddress address, List<RadixAddress> allowedDelegators, long nonce) {
+		this(address, allowedDelegators, null, nonce);
 	}
 
-	public RegisteredValidatorParticle(RadixAddress address, String url, long nonce) {
+	public RegisteredValidatorParticle(RadixAddress address, List<RadixAddress> allowedDelegators, String url, long nonce) {
 		super(address.euid());
 		this.address = address;
+		this.allowedDelegators = allowedDelegators;
 		this.url = url;
 		this.nonce = nonce;
 	}
 
 	public RadixAddress getAddress() {
 		return address;
+	}
+
+	public List<RadixAddress> getAllowedDelegators() {
+		return allowedDelegators;
 	}
 
 	public String getUrl() {
