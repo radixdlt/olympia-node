@@ -26,12 +26,10 @@ import com.google.inject.name.Names;
 import com.radixdlt.ConsensusModule;
 import com.radixdlt.CryptoModule;
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.MessagePasserModule;
+import com.radixdlt.SyncerMessagesModule;
 import com.radixdlt.SyncerModule;
 import com.radixdlt.SystemInfoMessagesModule;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.crypto.ECKeyPair;
@@ -92,7 +90,7 @@ public class GlobalInjector {
 			new NetworkModule(),
 			new SystemInfoMessagesModule(),
 			new SystemInfoModule(properties),
-			new MessagePasserModule(),
+			new SyncerMessagesModule(),
 
 			// Low level network modules
 			new MessageCentralModule(properties),
