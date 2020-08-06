@@ -28,7 +28,10 @@ import com.radixdlt.consensus.Timeout;
 import com.radixdlt.utils.SenderToRx;
 import io.reactivex.rxjava3.core.Observable;
 
-public class SystemInfoMessagesModule extends AbstractModule {
+/**
+ * Module which routes system info related messages
+ */
+public final class SystemInfoMessagesModule extends AbstractModule {
 
 	@Override
 	protected void configure() {

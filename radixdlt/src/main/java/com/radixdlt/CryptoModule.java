@@ -28,7 +28,10 @@ import com.radixdlt.consensus.Hasher;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 
-public class CryptoModule extends AbstractModule {
+/**
+ * Module which maintains crypto primitives for consensus
+ */
+public final class CryptoModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		// Configuration

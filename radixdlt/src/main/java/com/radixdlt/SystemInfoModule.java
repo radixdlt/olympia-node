@@ -36,6 +36,9 @@ import java.util.Objects;
 
 import org.radix.Radix;
 
+/**
+ * Module which manages system info
+ */
 public class SystemInfoModule extends AbstractModule {
 	private static final int DEFAULT_VERTEX_BUFFER_SIZE = 16;
 	private static final long DEFAULT_VERTEX_UPDATE_FREQ = 1_000L;

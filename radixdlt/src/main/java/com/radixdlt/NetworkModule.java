@@ -38,7 +38,10 @@ import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.universe.Universe;
 
-public class NetworkModule extends AbstractModule {
+/**
+ * Network related module
+ */
+public final class NetworkModule extends AbstractModule {
 
 	@Override
 	protected void configure() {

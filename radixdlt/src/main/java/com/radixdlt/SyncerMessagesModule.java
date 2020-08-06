@@ -43,7 +43,10 @@ import com.radixdlt.utils.SenderToRx;
 import com.radixdlt.utils.TwoSenderToRx;
 import io.reactivex.rxjava3.core.Observable;
 
-public class SyncerMessagesModule extends AbstractModule {
+/**
+ * Module which manages messages from Syncer
+ */
+public final class SyncerMessagesModule extends AbstractModule {
 
 	@Override
 	protected void configure() {

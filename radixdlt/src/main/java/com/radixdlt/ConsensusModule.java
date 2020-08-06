@@ -63,7 +63,10 @@ import java.util.Comparator;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
-public class ConsensusModule extends AbstractModule {
+/**
+ * Module responsible for running BFT validator logic
+ */
+public final class ConsensusModule extends AbstractModule {
 	private static final int ROTATING_WEIGHTED_LEADERS_CACHE_SIZE = 10;
 	private final int pacemakerTimeout;
 
