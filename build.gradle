@@ -31,16 +31,17 @@ repositories {
 
 def radixVersion() {
     def details = versionDetails()
-    def version = details.branchName
-    if (version == null) {
-        version = "detached-head-${details.gitHash}"
-    } else if (version.startsWith('release/')) {
-        version = version.substr(8)
+    def version
+    if (details.isCleanTag) {
+        version = details.lastTag
     } else {
-        version = version.replaceAll('/', '~')
-    }
-    if (!details.isCleanTag) {
-        version = "${version}-dirty"
+        version = details.branchName
+        if (version == null) {
+            version = "detached-head-${details.gitHash}"
+        } else {
+            version = version.replaceAll('/', '-')
+        }
+        version = "${version}-SNAPSHOT"
     }
     return version
 }
