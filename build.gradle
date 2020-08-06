@@ -17,7 +17,7 @@
 
 plugins {
     id 'maven-publish'
-    id 'com.adarshr.test-logger' version '2.1.0'
+    id 'com.adarshr.test-logger' version '1.7.1'
     id 'org.sonarqube' version '3.0'
     id 'com.palantir.git-version' version '0.12.3'
 }
@@ -25,7 +25,9 @@ plugins {
 repositories {
     jcenter()
     maven { url "https://plugins.gradle.org/m2/" }
+    mavenCentral()
     maven { url 'https://maven.pkg.github.com/radixdlt/maven-packages' }
+    maven { url 'https://jitpack.io' }
 }
 
 def radixVersion() {
@@ -38,7 +40,7 @@ def radixVersion() {
         if (version == null) {
             version = "detached-head-${details.gitHash}"
         } else {
-            version = version.replaceAll('/', '-')
+            version = version.replaceAll('/', '~')
         }
         version = "${version}-SNAPSHOT"
     }
@@ -56,11 +58,6 @@ apply plugin: 'com.adarshr.test-logger'
 
 sourceCompatibility = 1.8
 
-repositories {
-    mavenCentral()
-    maven { url 'https://jitpack.io' }
-}
-
 sourceSets {
     integrationTest {
         java {
@@ -77,6 +74,18 @@ configurations {
     integrationTestRuntime.extendsFrom testRuntime
 }
 
+compileJava {
+    options.compilerArgs += '-proc:none'
+}
+
+compileTestJava {
+    options.compilerArgs += '-proc:none'
+}
+
+compileIntegrationTestJava {
+    options.compilerArgs += '-proc:none'
+}
+ 
 checkstyle {
     toolVersion '8.10.1'
     showViolations = true
@@ -112,10 +121,6 @@ jacocoTestReport {
         xml.enabled true
         csv.enabled false
     }
-}
-
-compileJava {
-    options.compilerArgs += '-proc:none'
 }
 
 dependencies {
