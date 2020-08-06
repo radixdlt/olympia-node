@@ -99,10 +99,13 @@ public class ValidatorConstraintScryptTest {
 
 	@Test
 	public void when_validating_registered_validator_particle_with_valid_url__result_has_no_error() {
-		RegisteredValidatorParticle validator = mock(RegisteredValidatorParticle.class);
-		when(validator.getAddress()).thenReturn(mock(RadixAddress.class));
-		when(validator.getUrl()).thenReturn("http://www.radixdlt.com/");
-		staticCheck.apply(validator);
+		RadixAddress address = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
+		RegisteredValidatorParticle validator = new RegisteredValidatorParticle(
+			address,
+			"http://www.radixdlt.com/",
+			13
+		);
+		assertThat(staticCheck.apply(validator).isSuccess()).isTrue();
 	}
 
 	@Test
