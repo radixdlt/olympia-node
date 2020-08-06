@@ -18,14 +18,8 @@ jobs:
   include:
     - stage: check
       script: ./gradlew check --info
-      env: 
-        - GPR_USER=radixdlt
-        - GPR_TOKEN=none
     - stage: sonar
       script: ./gradlew jacocoTestReport sonarqube --info
-      env: 
-        - GPR_USER=radixdlt
-        - GPR_TOKEN=none
 
 cache:
   directories:
