@@ -31,13 +31,19 @@ import com.radixdlt.identifiers.RadixAddress;
  */
 public class RegisterValidatorAction implements Action {
 	private final RadixAddress validator;
+	private final String url;
 
-	public RegisterValidatorAction(RadixAddress validator) {
+	public RegisterValidatorAction(RadixAddress validator, String url) {
 		this.validator = validator;
+		this.url = url;
 	}
 
 	public RadixAddress getValidator() {
 		return validator;
+	}
+
+	public String getUrl() {
+		return url;
 	}
 
 	@Override
