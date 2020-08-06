@@ -10,7 +10,6 @@ addons:
 
 jdk:
   - openjdk8
-  - openjdk11
 
 git:
   depth: false
