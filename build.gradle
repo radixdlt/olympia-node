@@ -129,7 +129,13 @@ publishing {
             url = uri('https://maven.pkg.github.com/radixdlt/maven-packages')
             credentials {
                 username = project.findProperty('gpr.user') ?: System.getenv('GPR_USER')
+                if (username == null) {
+                    throw new IllegalStateException('Username must be specified in property gpr.user or environment variable GPR_USER')
+                }
                 password = project.findProperty('gpr.key') ?: System.getenv('GPR_TOKEN')
+                if (password == null) {
+                    throw new IllegalStateException('Token must be specified in property gpr.key or environment variable GPR_TOKEN')
+                }
             }
         }
     }
