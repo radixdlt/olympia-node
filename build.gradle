@@ -45,7 +45,7 @@ def radixVersion() {
     }
     return version
 }
-        
+
 group 'com.radixdlt'
 version radixVersion()
 
@@ -56,6 +56,10 @@ apply plugin: 'org.sonarqube'
 apply plugin: 'com.adarshr.test-logger'
 
 sourceCompatibility = 1.8
+
+compileJava {
+    options.compilerArgs += '-proc:none'
+}
 
 checkstyle {
     toolVersion '8.10.1'
