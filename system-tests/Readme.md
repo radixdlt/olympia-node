@@ -3,7 +3,7 @@ Some of Docker system tests need to manipulate docker network and support execut
 To run docker system tests run below command on root directory
 
 ```shell script
-./run-slow-node-test
+./run-docker-tests.sh
 ``` 
 
 ### Running system tests against cluster

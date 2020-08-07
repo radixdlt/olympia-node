@@ -15,7 +15,6 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 import utils.CmdHelper;
 import utils.SlowNodeSetup;
-import utils.TestnetNodes;
 
 /**
  * BFT tests against network where all nodes are under synchrony bounds and one or more nodes slow.
@@ -52,7 +51,7 @@ public class SlowNodeTest {
 					.network(RemoteBFTNetworkBridge.of(network))
 					.waitUntilResponsive()
 					.startConsensusOnRun().build();
-				test.runBlocking(CmdHelper.getATestDurationInMin(), TimeUnit.MINUTES);
+				test.runBlocking(CmdHelper.getTestDurationInSeconds(), TimeUnit.SECONDS);
 			}
 		}
 	}
@@ -90,7 +89,7 @@ public class SlowNodeTest {
 				.waitUntilResponsive()
 				.startConsensusOnRun() // in case we're the first to access the cluster
 				.build();
-			test.runBlocking(CmdHelper.getATestDurationInMin(), TimeUnit.MINUTES);
+			test.runBlocking(CmdHelper.getTestDurationInSeconds(), TimeUnit.SECONDS);
 		}
 
 		@After

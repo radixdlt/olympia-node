@@ -115,12 +115,14 @@ class CmdHelper {
         return System.getenv("CONTAINER_NAME") ?: "core"
     }
 
-    static int getATestDurationInMin(){
+    static int getTestDurationInSeconds(){
         try{
-           println ("TEST_DURATION system variable is '${System.getenv("TEST_DURATION")}'")
+            logger.info ("TEST_DURATION system variable is '${System.getenv("TEST_DURATION")}'")
            return Integer.parseInt(System.getenv("TEST_DURATION"))
         }catch(Exception ex){
-            throw new IllegalStateException("Exception occurred in parsing the test duration setting it default value. Is TEST_DURATION environment variable set properly?")
+            logger.info("Exception occurred in parsing the test duration setting it default value. Is TEST_DURATION environment variable set properly?" +
+                    "\n Default value 60 seconds for test duration is being used instead ")
+
         }
     }
     static void removeAllDockerContainers() {

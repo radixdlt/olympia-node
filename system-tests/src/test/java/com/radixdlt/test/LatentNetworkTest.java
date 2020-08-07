@@ -5,7 +5,6 @@ import org.junit.experimental.categories.Category;
 
 import java.util.concurrent.TimeUnit;
 import utils.CmdHelper;
-import utils.TestnetNodes;
 
 /**
  * BFT tests against static, non-byzantine networks with random latency.
@@ -22,7 +21,7 @@ public class LatentNetworkTest {
 				.waitUntilResponsive()
 				.startConsensusOnRun()
 				.build();
-			test.runBlocking(CmdHelper.getATestDurationInMin(), TimeUnit.MINUTES);
+			test.runBlocking(CmdHelper.getTestDurationInSeconds(), TimeUnit.SECONDS);
 		}
 	}
 
@@ -36,7 +35,7 @@ public class LatentNetworkTest {
 				.waitUntilResponsive()
 				.startConsensusOnRun()
 				.build();
-			test.runBlocking(CmdHelper.getATestDurationInMin(), TimeUnit.MINUTES);
+			test.runBlocking(CmdHelper.getTestDurationInSeconds(), TimeUnit.SECONDS);
 		}
 	}
 
@@ -49,6 +48,6 @@ public class LatentNetworkTest {
 			.waitUntilResponsive()
 			.startConsensusOnRun() // in case we're the first to access the cluster
 			.build();
-		test.runBlocking(CmdHelper.getATestDurationInMin(), TimeUnit.MINUTES);
+		test.runBlocking(CmdHelper.getTestDurationInSeconds(), TimeUnit.SECONDS);
 	}
 }
