@@ -4,6 +4,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.util.concurrent.TimeUnit;
+import utils.CmdHelper;
 import utils.TestnetNodes;
 
 /**
@@ -21,7 +22,7 @@ public class LatentNetworkTest {
 				.waitUntilResponsive()
 				.startConsensusOnRun()
 				.build();
-			test.runBlocking(1, TimeUnit.MINUTES);
+			test.runBlocking(CmdHelper.getATestDurationInMin(), TimeUnit.MINUTES);
 		}
 	}
 
@@ -35,7 +36,7 @@ public class LatentNetworkTest {
 				.waitUntilResponsive()
 				.startConsensusOnRun()
 				.build();
-			test.runBlocking(1, TimeUnit.MINUTES);
+			test.runBlocking(CmdHelper.getATestDurationInMin(), TimeUnit.MINUTES);
 		}
 	}
 
@@ -48,6 +49,6 @@ public class LatentNetworkTest {
 			.waitUntilResponsive()
 			.startConsensusOnRun() // in case we're the first to access the cluster
 			.build();
-		test.runBlocking(1, TimeUnit.MINUTES);
+		test.runBlocking(CmdHelper.getATestDurationInMin(), TimeUnit.MINUTES);
 	}
 }

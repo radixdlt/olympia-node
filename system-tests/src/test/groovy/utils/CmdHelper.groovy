@@ -115,6 +115,9 @@ class CmdHelper {
         return System.getenv("CONTAINER_NAME") ?: "core"
     }
 
+    static int getATestDurationInMin(){
+        return Integer.parseInt(System.getenv("TEST_DURATION")) ?: 1
+    }
     static void removeAllDockerContainers() {
         def name = getContainerNamePrefix()
         def psOutput, psError
@@ -122,8 +125,11 @@ class CmdHelper {
         psOutput
                 .findAll({ !it.contains("IMAGE") })
                 .findAll({ it.contains(name) })
-                .collect({ return it.split(" ")[0] })
-                .each { runCommand("docker rm -f ${it}") }
+                .collect({
+                    println "container to be removed ${it}"
+                    return it.split(" ")[0] })
+                .each {
+                    runCommand("docker rm -f ${it}") }
     }
 
     static void checkNGenerateKey() {

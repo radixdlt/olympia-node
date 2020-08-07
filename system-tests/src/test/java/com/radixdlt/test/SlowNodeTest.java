@@ -52,7 +52,7 @@ public class SlowNodeTest {
 					.network(RemoteBFTNetworkBridge.of(network))
 					.waitUntilResponsive()
 					.startConsensusOnRun().build();
-				test.runBlocking(1, TimeUnit.MINUTES);
+				test.runBlocking(CmdHelper.getATestDurationInMin(), TimeUnit.MINUTES);
 			}
 		}
 	}
@@ -90,7 +90,7 @@ public class SlowNodeTest {
 				.waitUntilResponsive()
 				.startConsensusOnRun() // in case we're the first to access the cluster
 				.build();
-			test.runBlocking(1, TimeUnit.MINUTES);
+			test.runBlocking(CmdHelper.getATestDurationInMin(), TimeUnit.MINUTES);
 		}
 
 		@After
