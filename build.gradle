@@ -2,7 +2,7 @@
  * (C) Copyright 2020 Radix DLT Ltd
  *
  * Radix DLT Ltd licenses this file to you under the Apache License,
- * Version 2.0 (the "License"); you may not use this file except in
+ * Version 2.0 (the 'License'); you may not use this file except in
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
@@ -10,25 +10,44 @@
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+ * 'AS IS' BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
  * either express or implied.  See the License for the specific
  * language governing permissions and limitations under the License.
  */
 
-// group 'radixdlt-java-common'
-group 'com.radixdlt'
-version '1.0-SNAPSHOT'
-
-buildscript {
-    repositories {
-        jcenter()
-        maven { url "https://plugins.gradle.org/m2/" }
-    }
-    dependencies {
-        classpath 'org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:2.8'
-        classpath 'com.adarshr:gradle-test-logger-plugin:1.6.0'
-    }
+plugins {
+    id 'maven-publish'
+    id 'com.adarshr.test-logger' version '1.7.1'
+    id 'org.sonarqube' version '3.0'
+    id 'com.palantir.git-version' version '0.12.3'
 }
+
+repositories {
+    jcenter()
+    mavenCentral()
+    maven { url 'https://plugins.gradle.org/m2/' }
+    maven { url 'https://maven.pkg.github.com/radixdlt/maven-packages' }
+}
+
+def radixVersion() {
+    def details = versionDetails()
+    def version
+    if (details.isCleanTag) {
+        version = details.lastTag
+    } else {
+        version = details.branchName
+        if (version == null) {
+            version = "detached-head-${details.gitHash}"
+        } else {
+            version = version.replaceAll('/', '~')
+        }
+        version = "${version}-SNAPSHOT"
+    }
+    return version
+}
+
+group 'com.radixdlt'
+version radixVersion()
 
 apply plugin: 'java-library'
 apply plugin: 'jacoco'
@@ -38,8 +57,8 @@ apply plugin: 'com.adarshr.test-logger'
 
 sourceCompatibility = 1.8
 
-repositories {
-    mavenCentral()
+compileJava {
+    options.compilerArgs += '-proc:none'
 }
 
 allprojects {
@@ -63,7 +82,11 @@ checkstyleTest {
 }
 
 test {
-    systemProperty "java.security.egd", "file:/dev/urandom"
+    systemProperty 'java.security.egd', 'file:/dev/urandom'
+}
+
+jacoco {
+    toolVersion = "0.8.5"
 }
 
 jacocoTestReport {
@@ -125,4 +148,22 @@ dependencies {
     }
 
     testCompile group: 'org.apache.logging.log4j', name: 'log4j-slf4j-impl', version: '2.13.3'
+}
+
+publishing {
+    repositories {
+        maven {
+            name = 'GitHubPackages'
+            url = uri('https://maven.pkg.github.com/radixdlt/maven-packages')
+            credentials {
+                username = project.findProperty('gpr.user') ?: System.getenv('GPR_USER')
+                password = project.findProperty('gpr.key') ?: System.getenv('GPR_TOKEN')
+            }
+        }
+    }
+    publications {
+        gpr(MavenPublication) {
+            from(components.java)
+        }
+    }
 }
