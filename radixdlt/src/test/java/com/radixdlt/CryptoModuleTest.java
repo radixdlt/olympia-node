@@ -24,6 +24,8 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.name.Names;
+import com.radixdlt.consensus.HashSigner;
+import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.crypto.ECKeyPair;
 import org.junit.Test;
@@ -42,7 +44,8 @@ public class CryptoModuleTest {
 			new CryptoModule()
 		);
 
-		Hasher hasher = injector.getInstance(Hasher.class);
-		assertThat(hasher).isNotNull();
+		assertThat(injector.getInstance(Hasher.class)).isNotNull();
+		assertThat(injector.getInstance(HashVerifier.class)).isNotNull();
+		assertThat(injector.getInstance(HashSigner.class)).isNotNull();
 	}
 }

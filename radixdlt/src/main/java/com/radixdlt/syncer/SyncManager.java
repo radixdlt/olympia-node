@@ -34,7 +34,7 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.utils.ThreadFactories;
 
-public class SyncManager {
+public final class SyncManager {
 
 	private static final int MAX_REQUESTS_TO_SEND = 20;
 	private final Consumer<CommittedAtom> atomProcessor;
@@ -161,10 +161,12 @@ public class SyncManager {
 		return targetVersion;
 	}
 
+	@VisibleForTesting
 	void setTargetListener(LongConsumer onTarget) {
 		this.onTarget = onTarget;
 	}
 
+	@VisibleForTesting
 	void setVersionListener(LongConsumer onVersion) {
 		this.onVersion = onVersion;
 	}

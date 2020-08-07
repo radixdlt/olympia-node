@@ -17,20 +17,17 @@
 
 package com.radixdlt.utils;
 
-import static org.mockito.Mockito.mock;
-
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.junit.Test;
 
 public class SenderToRxTest {
 	@Test
 	public void when_send__sync_event__then_should_receive_it() {
-		SenderToRx<Object, Object> senderToRx = new SenderToRx<>(o -> o);
-		TestObserver<Object> testObserver = senderToRx.rx().test();
-		Object o = mock(Object.class);
-		senderToRx.send(o);
+		SenderToRx<Integer, Integer> senderToRx = new SenderToRx<>(i -> i + 1);
+		TestObserver<Integer> testObserver = senderToRx.rx().test();
+		senderToRx.send(1);
 		testObserver.awaitCount(1);
-		testObserver.assertValue(o);
+		testObserver.assertValue(2);
 		testObserver.assertNotComplete();
 	}
 }
