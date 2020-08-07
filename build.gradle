@@ -15,19 +15,40 @@
  * language governing permissions and limitations under the License.
  */
 
-group 'radix-engine-library'
-version '1.0-SNAPSHOT'
-
-buildscript {
-    repositories {
-        jcenter()
-        maven { url "https://plugins.gradle.org/m2/" }
-    }
-    dependencies {
-        classpath 'org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:2.8'
-        classpath 'com.adarshr:gradle-test-logger-plugin:1.6.0'
-    }
+plugins {
+    id 'maven-publish'
+    id 'com.adarshr.test-logger' version '1.7.1'
+    id 'org.sonarqube' version '3.0'
+    id 'com.palantir.git-version' version '0.12.3'
 }
+
+repositories {
+    jcenter()
+    maven { url "https://plugins.gradle.org/m2/" }
+    mavenCentral()
+    maven { url 'https://maven.pkg.github.com/radixdlt/maven-packages' }
+    maven { url 'https://jitpack.io' }
+}
+
+def radixVersion() {
+    def details = versionDetails()
+    def version
+    if (details.isCleanTag) {
+        version = details.lastTag
+    } else {
+        version = details.branchName
+        if (version == null) {
+            version = "detached-head-${details.gitHash}"
+        } else {
+            version = version.replaceAll('/', '~')
+        }
+        version = "${version}-SNAPSHOT"
+    }
+    return version
+}
+
+group 'com.radixdlt'
+version radixVersion()
 
 apply plugin: 'java-library'
 apply plugin: 'jacoco'
@@ -36,11 +57,6 @@ apply plugin: 'org.sonarqube'
 apply plugin: 'com.adarshr.test-logger'
 
 sourceCompatibility = 1.8
-
-repositories {
-    mavenCentral()
-    maven { url 'https://jitpack.io' }
-}
 
 sourceSets {
     integrationTest {
@@ -58,6 +74,18 @@ configurations {
     integrationTestRuntime.extendsFrom testRuntime
 }
 
+compileJava {
+    options.compilerArgs += '-proc:none'
+}
+
+compileTestJava {
+    options.compilerArgs += '-proc:none'
+}
+
+compileIntegrationTestJava {
+    options.compilerArgs += '-proc:none'
+}
+ 
 checkstyle {
     toolVersion '8.10.1'
     showViolations = true
@@ -88,6 +116,10 @@ task integrationTest(type: Test) {
 
 integrationTest.mustRunAfter test
 
+jacoco {
+    toolVersion = "0.8.5"
+}
+
 jacocoTestReport {
     reports {
         xml.enabled true
@@ -108,5 +140,23 @@ dependencies {
     testCompile('com.flipkart.zjsonpatch:zjsonpatch:0.4.5') {
         exclude group: 'com.fasterxml.jackson.core', module: 'jackson-core'
         exclude group: 'com.fasterxml.jackson.core', module: 'jackson-databind'
+    }
+}
+
+publishing {
+    repositories {
+        maven {
+            name = 'GitHubPackages'
+            url = uri('https://maven.pkg.github.com/radixdlt/maven-packages')
+            credentials {
+                username = project.findProperty('gpr.user') ?: System.getenv('GPR_USER')
+                password = project.findProperty('gpr.key') ?: System.getenv('GPR_TOKEN')
+            }
+        }
+    }
+    publications {
+        gpr(MavenPublication) {
+            from(components.java)
+        }
     }
 }

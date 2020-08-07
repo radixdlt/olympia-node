@@ -31,6 +31,14 @@ sonarqube {
     skipProject = true
 }
 
+compileJava {
+    options.compilerArgs += '-proc:none'
+}
+
+compileTestJava {
+    options.compilerArgs += '-proc:none'
+}
+
 dependencies {
     compile rootProject //TODO: Hack for now since in code freeze
     testCompile group: 'junit', name: 'junit', version: '4.12'
