@@ -15,34 +15,37 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.api;
+package com.radixdlt.consensus;
+
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.mockito.Mockito.mock;
 
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.epoch.EpochView;
-import java.util.Objects;
+import org.junit.Before;
+import org.junit.Test;
 
-/**
- * A timeout which has occurred in the bft node
- */
-public final class Timeout {
-	private final EpochView epochView;
-	private final BFTNode leader;
+public class TimeoutTest {
+	private EpochView epochView;
+	private BFTNode leader;
+	private Timeout timeout;
 
-	public Timeout(EpochView epochView, BFTNode leader) {
-		this.epochView = Objects.requireNonNull(epochView);
-		this.leader = Objects.requireNonNull(leader);
+	@Before
+	public void setup() {
+		this.epochView = mock(EpochView.class);
+		this.leader = mock(BFTNode.class);
+
+		this.timeout = new Timeout(this.epochView, this.leader);
 	}
 
-	public EpochView getEpochView() {
-		return epochView;
+	@Test
+	public void test_getters() {
+		assertThat(this.timeout.getEpochView()).isEqualTo(epochView);
+		assertThat(this.timeout.getLeader()).isEqualTo(leader);
 	}
 
-	public BFTNode getLeader() {
-		return leader;
-	}
-
-	@Override
-	public String toString() {
-		return String.format("%s{%s leader=%s}", this.getClass().getSimpleName(), epochView, leader);
+	@Test
+	public void test_toString() {
+		assertThat(this.timeout.toString()).isNotNull();
 	}
 }

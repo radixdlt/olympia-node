@@ -15,20 +15,33 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.liveness;
+package com.radixdlt.syncer;
 
-import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.bft.View;
+import com.radixdlt.network.addressbook.Peer;
+import java.util.Objects;
 
 /**
- * Generates a new proposal for a given view
+ * A sync request from a peer
  */
-public interface ProposalGenerator {
+public final class SyncRequest {
+	private final long stateVersion;
+	private final Peer peer;
 
-	/**
-	 * Generates a valid vertex for the given view
-	 * @param view the view to create the vertex for
-	 * @return new vertex to extend with
-	 */
-	Vertex generateProposal(View view);
+	public SyncRequest(Peer peer, long stateVersion) {
+		this.peer = Objects.requireNonNull(peer);
+		this.stateVersion = stateVersion;
+	}
+
+	public Peer getPeer() {
+		return peer;
+	}
+
+	public long getStateVersion() {
+		return stateVersion;
+	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{stateVersion=%s}", this.getClass().getSimpleName(), stateVersion);
+	}
 }

@@ -15,20 +15,24 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.consensus.liveness;
 
-import com.radixdlt.crypto.Hash;
-import io.reactivex.rxjava3.core.Observable;
+import com.radixdlt.consensus.bft.View;
+import com.radixdlt.identifiers.AID;
+import com.radixdlt.middleware2.ClientAtom;
+import java.util.Set;
 
 /**
- * Provider of Rx stream of events coming from Vertex Store
+ * Generates a new proposed command for a given view
  */
-public interface VertexStoreEventsRx {
+public interface NextCommandGenerator {
 
 	/**
-	 * Retrieve rx flow of vertices which have been synced
-	 * @return flow of vertex hashes
+	 * Generates a valid command for the given view
+	 * TODO: Update interface to return an error if already generated a command for a given view
+	 * @param view the view to create the vertex for
+	 * @param prepared the ids of atoms which are currently in the prepared stage
+	 * @return new vertex to extend with
 	 */
-	Observable<Hash> syncedVertices();
-
+	ClientAtom generateNextCommand(View view,  Set<AID> prepared);
 }

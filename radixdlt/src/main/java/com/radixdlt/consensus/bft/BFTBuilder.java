@@ -26,15 +26,13 @@ import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTInfoSender;
 import com.radixdlt.consensus.bft.BFTEventReducer.EndOfEpochSender;
-import com.radixdlt.consensus.liveness.MempoolProposalGenerator;
 import com.radixdlt.consensus.liveness.Pacemaker;
-import com.radixdlt.consensus.liveness.ProposalGenerator;
+import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.safety.SafetyRules;
 import com.radixdlt.consensus.safety.SafetyState;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.mempool.Mempool;
 import com.radixdlt.network.TimeSupplier;
 
 /**
@@ -42,7 +40,7 @@ import com.radixdlt.network.TimeSupplier;
  */
 public final class BFTBuilder {
 	// Connected modules
-	private Mempool mempool;
+	private NextCommandGenerator nextCommandGenerator;
 	private BFTEventSender eventSender;
 	private EndOfEpochSender endOfEpochSender;
 	private SystemCounters counters;
@@ -51,7 +49,6 @@ public final class BFTBuilder {
 	// BFT Configuration objects
 	private BFTValidatorSet validatorSet;
 	private ProposerElection proposerElection;
-	private boolean verifyAuthors = true;
 	private Hasher hasher = new DefaultHasher();
 	private HashSigner signer;
 	private HashVerifier verifier = ECPublicKey::verify;
@@ -77,18 +74,13 @@ public final class BFTBuilder {
 		return this;
 	}
 
-	public BFTBuilder mempool(Mempool mempool) {
-		this.mempool = mempool;
+	public BFTBuilder nextCommandGenerator(NextCommandGenerator nextCommandGenerator) {
+		this.nextCommandGenerator = nextCommandGenerator;
 		return this;
 	}
 
 	public BFTBuilder eventSender(BFTEventSender eventSender) {
 		this.eventSender = eventSender;
-		return this;
-	}
-
-	public BFTBuilder verifyAuthors(boolean verifyAuthors) {
-		this.verifyAuthors = verifyAuthors;
 		return this;
 	}
 
@@ -148,14 +140,12 @@ public final class BFTBuilder {
 	}
 
 	public BFTEventProcessor build() {
-		final ProposalGenerator proposalGenerator = new MempoolProposalGenerator(vertexStore, mempool);
 		final SafetyRules safetyRules = new SafetyRules(self, SafetyState.initialState(), hasher, countingSigner(counters, signer));
 		// PendingVotes needs a hasher that produces unique values, as it indexes by hash
 		final PendingVotes pendingVotes = new PendingVotes(new DefaultHasher());
 
 		BFTEventReducer reducer = new BFTEventReducer(
-			self,
-			proposalGenerator,
+			self, nextCommandGenerator,
 			eventSender,
 			endOfEpochSender,
 			safetyRules,
@@ -179,10 +169,6 @@ public final class BFTBuilder {
 			proposerElection,
 			syncQueues
 		);
-
-		if (!verifyAuthors) {
-			return preprocessor;
-		}
 
 		return new BFTEventVerifier(
 			self,

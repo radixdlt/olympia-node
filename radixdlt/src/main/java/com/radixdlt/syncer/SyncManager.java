@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.sync;
+package com.radixdlt.syncer;
 
 import java.util.Comparator;
 import java.util.Iterator;
@@ -34,7 +34,7 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.utils.ThreadFactories;
 
-public class SyncManager {
+public final class SyncManager {
 
 	private static final int MAX_REQUESTS_TO_SEND = 20;
 	private final Consumer<CommittedAtom> atomProcessor;
@@ -161,10 +161,12 @@ public class SyncManager {
 		return targetVersion;
 	}
 
+	@VisibleForTesting
 	void setTargetListener(LongConsumer onTarget) {
 		this.onTarget = onTarget;
 	}
 
+	@VisibleForTesting
 	void setVersionListener(LongConsumer onVersion) {
 		this.onVersion = onVersion;
 	}

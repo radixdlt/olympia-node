@@ -15,17 +15,18 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.epoch;
+package com.radixdlt.syncer;
 
-import static org.mockito.Mockito.mock;
+import com.radixdlt.consensus.epoch.EpochChange;
 
-import com.radixdlt.consensus.Timeout;
-import org.junit.Test;
+/**
+ * Sends an epoch change message
+ */
+public interface EpochChangeSender {
 
-public class EmptyEpochInfoSenderTest {
-	@Test
-	public void when_send__then_no_exception_occurs() {
-		EmptyEpochInfoSender.INSTANCE.sendCurrentView(mock(EpochView.class));
-		EmptyEpochInfoSender.INSTANCE.sendTimeoutProcessed(mock(Timeout.class));
-	}
+	/**
+	 * Signals that an epoch change has occurred
+	 * @param epochChange the epoch change
+	 */
+	void epochChange(EpochChange epochChange);
 }

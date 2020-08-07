@@ -19,11 +19,11 @@ package org.radix;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.api.InMemoryInfoStateManager;
+import com.radixdlt.systeminfo.InMemorySystemInfoManager;
 import com.radixdlt.api.LedgerRx;
 import com.radixdlt.api.SubmissionErrorsRx;
 import com.radixdlt.consensus.ConsensusRunner;
-import com.radixdlt.consensus.sync.SyncedRadixEngine;
+import com.radixdlt.syncer.SyncedRadixEngine;
 import com.radixdlt.mempool.MempoolReceiver;
 import com.radixdlt.mempool.SubmissionControl;
 import com.radixdlt.middleware2.CommittedAtom;
@@ -192,7 +192,7 @@ public final class Radix
 		SyncedRadixEngine syncedRadixEngine = globalInjector.getInjector().getInstance(SyncedRadixEngine.class);
 		syncedRadixEngine.start();
 
-		InMemoryInfoStateManager infoStateRunner = globalInjector.getInjector().getInstance(InMemoryInfoStateManager.class);
+		InMemorySystemInfoManager infoStateRunner = globalInjector.getInjector().getInstance(InMemorySystemInfoManager.class);
 		infoStateRunner.start();
 
 

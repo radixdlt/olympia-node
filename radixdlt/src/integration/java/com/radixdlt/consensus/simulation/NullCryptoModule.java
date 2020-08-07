@@ -15,18 +15,23 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt;
+package com.radixdlt.consensus.simulation;
 
-import com.radixdlt.consensus.epoch.EpochChange;
+import com.google.inject.AbstractModule;
+import com.radixdlt.consensus.HashSigner;
+import com.radixdlt.consensus.HashVerifier;
+import com.radixdlt.consensus.Hasher;
+import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.Hash;
 
 /**
- * Sends an epoch change message
+ * For testing where verification and signing is skipped
  */
-public interface EpochChangeSender {
-
-	/**
-	 * Signals that an epoch change has occurred
-	 * @param epochChange the epoch change
-	 */
-	void epochChange(EpochChange epochChange);
+public class NullCryptoModule extends AbstractModule {
+	@Override
+	public void configure() {
+		bind(Hasher.class).toInstance(o -> Hash.ZERO_HASH);
+		bind(HashVerifier.class).toInstance((pubKey, hash, sig) -> true);
+		bind(HashSigner.class).toInstance(h -> new ECDSASignature());
+	}
 }

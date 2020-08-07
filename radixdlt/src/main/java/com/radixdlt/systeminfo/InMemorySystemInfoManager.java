@@ -15,12 +15,13 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.api;
+package com.radixdlt.systeminfo;
 
 import com.google.common.collect.EvictingQueue;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
 import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.Timeout;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochView;
@@ -35,7 +36,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * Stores info atomically in memory.
  */
-public final class InMemoryInfoStateManager {
+public final class InMemorySystemInfoManager {
 
 	private static final Logger logger = LogManager.getLogger();
 
@@ -48,7 +49,7 @@ public final class InMemoryInfoStateManager {
 
 	private final long vertexUpdateFrequency;
 
-	public InMemoryInfoStateManager(
+	public InMemorySystemInfoManager(
 		InfoRx infoRx,
 		int vertexBufferSize,
 		long vertexUpdateFrequency

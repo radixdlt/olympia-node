@@ -15,33 +15,27 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.sync;
+package com.radixdlt.utils;
 
-import com.radixdlt.network.addressbook.Peer;
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.subjects.BehaviorSubject;
+import io.reactivex.rxjava3.subjects.Subject;
 import java.util.Objects;
+import java.util.function.Function;
 
-/**
- * A sync request from a peer
- */
-public final class SyncRequest {
-	private final long stateVersion;
-	private final Peer peer;
+public final class SenderToRx<T, U> {
+	private final Subject<U> subject = BehaviorSubject.<U>create().toSerialized();
+	private final Function<T, U> mapper;
 
-	public SyncRequest(Peer peer, long stateVersion) {
-		this.peer = Objects.requireNonNull(peer);
-		this.stateVersion = stateVersion;
+	public SenderToRx(Function<T, U> mapper) {
+		this.mapper = Objects.requireNonNull(mapper);
 	}
 
-	public Peer getPeer() {
-		return peer;
+	public void send(T sendObject) {
+		subject.onNext(mapper.apply(sendObject));
 	}
 
-	public long getStateVersion() {
-		return stateVersion;
-	}
-
-	@Override
-	public String toString() {
-		return String.format("%s{stateVersion=%s}", this.getClass().getSimpleName(), stateVersion);
+	public Observable<U> rx() {
+		return subject;
 	}
 }

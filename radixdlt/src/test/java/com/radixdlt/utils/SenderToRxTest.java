@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,25 +15,19 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.utils;
 
-/**
- * Exception indicating that vertices for a qc was not able to be synced.
- */
-class SyncException extends Exception {
-	private final QuorumCertificate qc;
+import io.reactivex.rxjava3.observers.TestObserver;
+import org.junit.Test;
 
-	SyncException(QuorumCertificate qc) {
-		super("Unable to sync qc " + qc);
-		this.qc = qc;
-	}
-
-	SyncException(QuorumCertificate qc, Exception cause) {
-		super("Unable to sync qc " + qc, cause);
-		this.qc = qc;
-	}
-
-	public QuorumCertificate getQC() {
-		return qc;
+public class SenderToRxTest {
+	@Test
+	public void when_send__sync_event__then_should_receive_it() {
+		SenderToRx<Integer, Integer> senderToRx = new SenderToRx<>(i -> i + 1);
+		TestObserver<Integer> testObserver = senderToRx.rx().test();
+		senderToRx.send(1);
+		testObserver.awaitCount(1);
+		testObserver.assertValue(2);
+		testObserver.assertNotComplete();
 	}
 }
