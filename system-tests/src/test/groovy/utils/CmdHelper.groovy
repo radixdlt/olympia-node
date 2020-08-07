@@ -116,7 +116,12 @@ class CmdHelper {
     }
 
     static int getATestDurationInMin(){
-        return Integer.parseInt(System.getenv("TEST_DURATION")) ?: 1
+        try{
+           println ("TEST_DURATION system variable is '${System.getenv("TEST_DURATION")}'")
+           return Integer.parseInt(System.getenv("TEST_DURATION"))
+        }catch(Exception ex){
+            throw new IllegalStateException("Exception occurred in parsing the test duration setting it default value. Is TEST_DURATION environment variable set properly?")
+        }
     }
     static void removeAllDockerContainers() {
         def name = getContainerNamePrefix()
