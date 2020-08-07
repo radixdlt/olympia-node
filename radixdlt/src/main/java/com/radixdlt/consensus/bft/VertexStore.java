@@ -125,7 +125,8 @@ public final class VertexStore implements VertexStoreEventProcessor {
 			rootQC,
 			Collections.emptyList(),
 			syncedStateComputer,
-			syncVerticesRPCSender, syncedVertexSender,
+			syncVerticesRPCSender,
+			syncedVertexSender,
 			vertexStoreEventSender,
 			counters
 		);

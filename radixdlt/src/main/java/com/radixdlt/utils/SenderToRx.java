@@ -23,6 +23,12 @@ import io.reactivex.rxjava3.subjects.Subject;
 import java.util.Objects;
 import java.util.function.Function;
 
+/**
+ * Converts an object consumer to an rx stream
+ *
+ * @param <T> first object type
+ * @param <U> second object type
+ */
 public final class SenderToRx<T, U> {
 	private final Subject<U> subject = BehaviorSubject.<U>create().toSerialized();
 	private final Function<T, U> mapper;
