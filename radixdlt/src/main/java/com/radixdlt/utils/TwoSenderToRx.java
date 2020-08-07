@@ -23,6 +23,13 @@ import io.reactivex.rxjava3.subjects.Subject;
 import java.util.Objects;
 import java.util.function.BiFunction;
 
+/**
+ * Converts a two object consumer to an rx stream
+ *
+ * @param <T> first object type
+ * @param <U> second object type
+ * @param <V> combined object type
+ */
 public final class TwoSenderToRx<T, U, V> {
 	private final Subject<V> subject = BehaviorSubject.<V>create().toSerialized();
 	private final BiFunction<T, U, V> mapper;
