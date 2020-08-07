@@ -18,6 +18,7 @@
 package com.radixdlt.consensus;
 
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.View;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Before;
 import org.junit.Test;

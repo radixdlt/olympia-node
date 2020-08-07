@@ -24,7 +24,6 @@ import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.VertexStoreEventProcessor;
-import com.radixdlt.consensus.View;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hash;
@@ -57,9 +56,11 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		int getCount();
 	}
 
-	public interface VertexStoreEventSender {
-		// TODO: combine Synced and Committed
+	public interface SyncedVertexSender {
 		void sendSyncedVertex(Vertex vertex);
+	}
+
+	public interface VertexStoreEventSender {
 		void sendCommittedVertex(Vertex vertex);
 		void highQC(QuorumCertificate qc);
 	}
@@ -97,6 +98,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 	}
 
 	private final VertexStoreEventSender vertexStoreEventSender;
+	private final SyncedVertexSender syncedVertexSender;
 	private final SyncVerticesRPCSender syncVerticesRPCSender;
 	private final SyncedStateComputer<CommittedAtom> syncedStateComputer;
 	private final SystemCounters counters;
@@ -114,6 +116,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		QuorumCertificate rootQC,
 		SyncedStateComputer<CommittedAtom> syncedStateComputer,
 		SyncVerticesRPCSender syncVerticesRPCSender,
+		SyncedVertexSender syncedVertexSender,
 		VertexStoreEventSender vertexStoreEventSender,
 		SystemCounters counters
 	) {
@@ -122,7 +125,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 			rootQC,
 			Collections.emptyList(),
 			syncedStateComputer,
-			syncVerticesRPCSender,
+			syncVerticesRPCSender, syncedVertexSender,
 			vertexStoreEventSender,
 			counters
 		);
@@ -134,12 +137,14 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		List<Vertex> vertices,
 		SyncedStateComputer<CommittedAtom> syncedStateComputer,
 		SyncVerticesRPCSender syncVerticesRPCSender,
+		SyncedVertexSender syncedVertexSender,
 		VertexStoreEventSender vertexStoreEventSender,
 		SystemCounters counters
 	) {
 		this.syncedStateComputer = Objects.requireNonNull(syncedStateComputer);
 		this.syncVerticesRPCSender = Objects.requireNonNull(syncVerticesRPCSender);
 		this.vertexStoreEventSender = Objects.requireNonNull(vertexStoreEventSender);
+		this.syncedVertexSender = Objects.requireNonNull(syncedVertexSender);
 		this.counters = Objects.requireNonNull(counters);
 
 		Objects.requireNonNull(rootVertex);
@@ -485,7 +490,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		updateVertexStoreSize();
 
 		if (syncing.containsKey(vertexToUse.getId())) {
-			vertexStoreEventSender.sendSyncedVertex(vertexToUse);
+			this.syncedVertexSender.sendSyncedVertex(vertexToUse);
 		}
 
 		return VertexMetadata.ofVertex(vertexToUse, isEndOfEpoch);
@@ -521,7 +526,8 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		}
 
 		for (Vertex committed : path) {
-			CommittedAtom committedAtom = new CommittedAtom(committed.getAtom(), commitMetadata);
+			long timestamp = committed.getQC().getTimestampedSignatures().weightedTimestamp();
+			CommittedAtom committedAtom = new CommittedAtom(committed.getAtom(), commitMetadata, timestamp);
 			this.counters.increment(CounterType.BFT_PROCESSED);
 			syncedStateComputer.execute(committedAtom);
 

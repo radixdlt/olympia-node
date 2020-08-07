@@ -42,7 +42,7 @@ import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.VertexStoreFactory;
-import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.BFTEventReducer.EndOfEpochSender;
@@ -51,6 +51,7 @@ import com.radixdlt.consensus.bft.GetVerticesErrorResponse;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.bft.GetVerticesResponse;
+import com.radixdlt.consensus.epoch.EpochManager.EpochInfoSender;
 import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
@@ -68,6 +69,7 @@ import org.junit.Test;
 public class EpochManagerTest {
 	private EpochManager epochManager;
 	private EpochManager.SyncEpochsRPCSender syncEpochsRPCSender;
+	private EpochInfoSender epochInfoSender;
 	private VertexStore vertexStore;
 	private BFTFactory bftFactory;
 	private Pacemaker pacemaker;
@@ -96,6 +98,8 @@ public class EpochManagerTest {
 		this.self = mock(BFTNode.class);
 		when(self.getSimpleName()).thenReturn("Test");
 
+		this.epochInfoSender = mock(EpochInfoSender.class);
+
 		this.epochManager = new EpochManager(
 			this.self,
 			this.syncedStateComputer,
@@ -105,7 +109,8 @@ public class EpochManagerTest {
 			vertexStoreFactory,
 			proposers -> proposerElection,
 			this.bftFactory,
-			this.systemCounters
+			this.systemCounters,
+			this.epochInfoSender
 		);
 	}
 
@@ -120,7 +125,7 @@ public class EpochManagerTest {
 		when(epochChange.getAncestor()).thenReturn(vertexMetadata);
 		epochManager.processEpochChange(epochChange);
 
-		verify(bftFactory, never()).create(any(), any(), any(), any(), any());
+		verify(bftFactory, never()).create(any(), any(), any(), any(), any(), any());
 		verify(syncEpochsRPCSender, never()).sendGetEpochRequest(any(), anyLong());
 	}
 
@@ -192,7 +197,7 @@ public class EpochManagerTest {
 		doAnswer(invocation -> {
 			endOfEpochSender.set(invocation.getArgument(0));
 			return eventProcessor;
-		}).when(bftFactory).create(any(), any(), any(), any(), any());
+		}).when(bftFactory).create(any(), any(), any(), any(), any(), any());
 
 		VertexMetadata ancestor = VertexMetadata.ofGenesisAncestor();
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
@@ -225,7 +230,7 @@ public class EpochManagerTest {
 	@Test
 	public void when_epoch_change_and_then_epoch_events__then_should_execute_events() {
 		BFTEventProcessor eventProcessor = mock(BFTEventProcessor.class);
-		when(bftFactory.create(any(), any(), any(), any(), any())).thenReturn(eventProcessor);
+		when(bftFactory.create(any(), any(), any(), any(), any(), any())).thenReturn(eventProcessor);
 
 		VertexMetadata ancestor = VertexMetadata.ofGenesisAncestor();
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
@@ -331,7 +336,7 @@ public class EpochManagerTest {
 		assertThat(systemCounters.get(CounterType.EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS)).isEqualTo(1);
 
 		BFTEventProcessor eventProcessor = mock(BFTEventProcessor.class);
-		when(bftFactory.create(any(), any(), any(), any(), any())).thenReturn(eventProcessor);
+		when(bftFactory.create(any(), any(), any(), any(), any(), any())).thenReturn(eventProcessor);
 
 		BFTValidator validator = mock(BFTValidator.class);
 		when(validator.getNode()).thenReturn(mock(BFTNode.class));
@@ -372,7 +377,7 @@ public class EpochManagerTest {
 		when(vertexStore.getHighestQC()).thenReturn(mock(QuorumCertificate.class));
 
 		BFTEventProcessor eventProcessor = mock(BFTEventProcessor.class);
-		when(bftFactory.create(any(), any(), any(), any(), any())).thenReturn(eventProcessor);
+		when(bftFactory.create(any(), any(), any(), any(), any(), any())).thenReturn(eventProcessor);
 
 		BFTValidator validator = mock(BFTValidator.class);
 		when(validator.getNode()).thenReturn(mock(BFTNode.class));

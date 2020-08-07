@@ -17,11 +17,11 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.consensus.bft.View;
 import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
@@ -37,14 +37,17 @@ public final class QuorumCertificate {
 
 	@JsonProperty("signatures")
 	@DsonOutput(Output.ALL)
-	private final ECDSASignatures signatures;
+	private final TimestampedECDSASignatures signatures;
 
 	@JsonProperty("vote_data")
 	@DsonOutput(Output.ALL)
 	private final VoteData voteData;
 
 	@JsonCreator
-	public QuorumCertificate(@JsonProperty("vote_data") VoteData voteData, @JsonProperty("signatures") ECDSASignatures signatures) {
+	public QuorumCertificate(
+		@JsonProperty("vote_data") VoteData voteData,
+		@JsonProperty("signatures") TimestampedECDSASignatures signatures
+	) {
 		this.voteData = Objects.requireNonNull(voteData);
 		this.signatures = Objects.requireNonNull(signatures);
 	}
@@ -61,7 +64,7 @@ public final class QuorumCertificate {
 
 		VertexMetadata vertexMetadata = VertexMetadata.ofVertex(genesisVertex, false);
 		final VoteData voteData = new VoteData(vertexMetadata, vertexMetadata, vertexMetadata);
-		return new QuorumCertificate(voteData, new ECDSASignatures());
+		return new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 	}
 
 	public View getView() {
@@ -84,7 +87,7 @@ public final class QuorumCertificate {
 		return voteData;
 	}
 
-	public ECDSASignatures getSignatures() {
+	public TimestampedECDSASignatures getTimestampedSignatures() {
 		return signatures;
 	}
 

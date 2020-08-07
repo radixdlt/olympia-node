@@ -18,7 +18,7 @@
 package com.radixdlt.consensus.liveness;
 
 import com.radixdlt.consensus.NewView;
-import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
@@ -45,7 +45,7 @@ public final class FixedTimeoutPacemaker implements Pacemaker {
 		void scheduleTimeout(View view, long milliseconds);
 	}
 
-	private static final Logger log = LogManager.getLogger("PM");
+	private static final Logger log = LogManager.getLogger();
 	private static final long LOGGING_INTERVAL = TimeUnit.SECONDS.toMillis(1);
 
 	private final long timeoutMilliseconds;

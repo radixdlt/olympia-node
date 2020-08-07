@@ -41,7 +41,7 @@ public class PeerPingMessageSerializeTest extends SerializeMessageObject<PeerPin
 
 	private static PeerPingMessage get() {
 		try {
-			PeerPingMessage pingMessage = new PeerPingMessage(17L, getLocalSystem(), 1);
+			PeerPingMessage pingMessage = new PeerPingMessage(1, 17L, 18L, getLocalSystem());
 			ECKeyPair keyPair = new ECKeyPair(Bytes.fromHexString(Strings.repeat("deadbeef", 8)));
 			pingMessage.sign(keyPair, true);
 			return pingMessage;
@@ -54,10 +54,11 @@ public class PeerPingMessageSerializeTest extends SerializeMessageObject<PeerPin
 	public void sensibleToString() {
 		RadixSystem system = mock(RadixSystem.class);
 		when(system.getNID()).thenReturn(EUID.TWO);
-		String s = new PeerPingMessage(1234L, system, 0).toString();
+		String s = new PeerPingMessage(0, 1234L, 5678L, system).toString();
 
 		assertThat(s, containsString(PeerPingMessage.class.getSimpleName()));
 		assertThat(s, containsString(EUID.TWO.toString()));
 		assertThat(s, containsString("1234"));
+		assertThat(s, containsString("5678"));
 	}
 }

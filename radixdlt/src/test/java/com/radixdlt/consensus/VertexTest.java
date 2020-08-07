@@ -17,7 +17,7 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.crypto.ECDSASignatures;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.middleware2.ClientAtom;
 import nl.jqno.equalsverifier.EqualsVerifier;
@@ -44,7 +44,7 @@ public class VertexTest {
 		VertexMetadata parent = new VertexMetadata(0, baseView, Hash.random(), 0, false);
 		VoteData voteData = new VoteData(vertexMetadata, parent, parent);
 
-		this.qc = new QuorumCertificate(voteData, new ECDSASignatures());
+		this.qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 
 		this.atom = mock(ClientAtom.class);
 
@@ -70,7 +70,7 @@ public class VertexTest {
 		VertexMetadata vertexMetadata = new VertexMetadata(0, baseView.next(), id, 1, false);
 		VertexMetadata parent = new VertexMetadata(0, baseView, Hash.random(), 0, false);
 		VoteData voteData = new VoteData(vertexMetadata, parent, null);
-		QuorumCertificate qc2 = new QuorumCertificate(voteData, new ECDSASignatures());
+		QuorumCertificate qc2 = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 
 		Vertex v = Vertex.createVertex(qc2, baseView.next().next().next(), null);
 

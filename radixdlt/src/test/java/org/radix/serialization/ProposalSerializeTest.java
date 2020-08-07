@@ -21,14 +21,14 @@ import com.radixdlt.atommodel.Atom;
 import com.radixdlt.atommodel.message.MessageParticle;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
-import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.identifiers.RadixAddress;
@@ -48,7 +48,7 @@ public class ProposalSerializeTest extends SerializeObject<Proposal> {
 		VertexMetadata parent = new VertexMetadata(0, View.of(1234567890L), Hash.random(), 0, false);
 		VoteData voteData = new VoteData(vertexMetadata, parent, null);
 
-		QuorumCertificate qc = new QuorumCertificate(voteData, new ECDSASignatures());
+		QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 
 		RadixAddress address = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
 		Atom atom = new Atom();
@@ -62,6 +62,6 @@ public class ProposalSerializeTest extends SerializeObject<Proposal> {
 		// add a particle to ensure atom is valid and has at least one shard
 		Vertex vertex = Vertex.createVertex(qc, view, clientAtom);
 		BFTNode author = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
-		return new Proposal(vertex, qc, author, new ECDSASignature());
+		return new Proposal(vertex, qc, author, new ECDSASignature(), 123456L);
 	}
 }

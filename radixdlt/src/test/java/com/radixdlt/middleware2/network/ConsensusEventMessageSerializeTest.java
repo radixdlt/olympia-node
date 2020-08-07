@@ -19,11 +19,11 @@ package com.radixdlt.middleware2.network;
 
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.VertexMetadata;
-import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
 
@@ -38,7 +38,7 @@ public class ConsensusEventMessageSerializeTest extends SerializeMessageObject<C
 		VertexMetadata vertexMetadata = new VertexMetadata(0, View.of(1), Hash.ZERO_HASH, 1, false);
 		VertexMetadata parent = new VertexMetadata(0, View.of(0), Hash.ZERO_HASH, 0, true);
 		VoteData voteData = new VoteData(vertexMetadata, parent, null);
-		QuorumCertificate quorumCertificate = new QuorumCertificate(voteData, new ECDSASignatures());
+		QuorumCertificate quorumCertificate = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 		BFTNode author = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
 		NewView testView = new NewView(author, View.of(1234567890L), quorumCertificate, quorumCertificate, null);
 		return new ConsensusEventMessage(1234, testView);

@@ -18,6 +18,7 @@
 package com.radixdlt.consensus;
 
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hash;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Before;
@@ -31,13 +32,17 @@ public class VoteTest {
 	private BFTNode author;
 	private Vote testObject;
 	private VoteData voteData;
+	private TimestampedVoteData timestampedVoteData;
+	private long payload;
 
 	@Before
 	public void setUp() {
 		VertexMetadata parent = new VertexMetadata(0, View.of(1234567890L), Hash.random(), 1, false);
 		this.voteData = new VoteData(VertexMetadata.ofGenesisAncestor(), parent, null);
+		this.timestampedVoteData = new TimestampedVoteData(this.voteData, 123456L);
 		this.author = mock(BFTNode.class);
-		this.testObject = new Vote(author, voteData, null);
+		this.payload = 123456L;
+		this.testObject = new Vote(author, timestampedVoteData, null, this.payload);
 	}
 
 	@Test
@@ -51,6 +56,7 @@ public class VoteTest {
 		assertEquals(this.testObject.getEpoch(), voteData.getProposed().getEpoch());
 		assertEquals(this.voteData, this.testObject.getVoteData());
 		assertEquals(this.author, this.testObject.getAuthor());
+		assertEquals(this.payload, this.testObject.getPayload());
 	}
 
 

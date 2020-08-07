@@ -24,9 +24,8 @@ import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
-import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.liveness.ProposalGenerator;
+import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.safety.SafetyRules;
@@ -34,8 +33,14 @@ import com.radixdlt.consensus.safety.SafetyViolationException;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hash;
+import com.radixdlt.network.TimeSupplier;
+import com.radixdlt.utils.RTTStatistics;
+import com.radixdlt.identifiers.AID;
+import com.radixdlt.middleware2.ClientAtom;
 
+import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -81,10 +86,29 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		void sendVote(Vote vote, BFTNode leader);
 	}
 
+	/**
+	 * Sender of information regarding the BFT
+	 */
+	public interface BFTInfoSender {
+
+		/**
+		 * Signify that the bft node is on a new view
+		 * @param view the view the bft node has changed to
+		 */
+		void sendCurrentView(View view);
+
+		/**
+		 * Signify that a timeout was processed by this bft node
+		 * @param view the view of the timeout
+		 * @param leader the leader of the view which timed out
+		 */
+		void sendTimeoutProcessed(View view, BFTNode leader);
+	}
+
 	private final BFTNode self;
 	private final VertexStore vertexStore;
 	private final PendingVotes pendingVotes;
-	private final ProposalGenerator proposalGenerator;
+	private final NextCommandGenerator nextCommandGenerator;
 	private final BFTEventSender sender;
 	private final EndOfEpochSender endOfEpochSender;
 	private final Pacemaker pacemaker;
@@ -92,7 +116,10 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	private final SafetyRules safetyRules;
 	private final BFTValidatorSet validatorSet;
 	private final SystemCounters counters;
+	private final TimeSupplier timeSupplier;
 	private final Map<Hash, QuorumCertificate> unsyncedQCs = new HashMap<>();
+	private final BFTInfoSender infoSender;
+	private final RTTStatistics rttStatistics = new RTTStatistics();
 	private boolean synchedLog = false;
 
 	public interface EndOfEpochSender {
@@ -101,7 +128,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 
 	public BFTEventReducer(
 		BFTNode self,
-		ProposalGenerator proposalGenerator,
+		NextCommandGenerator nextCommandGenerator,
 		BFTEventSender sender,
 		EndOfEpochSender endOfEpochSender,
 		SafetyRules safetyRules,
@@ -110,10 +137,12 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		PendingVotes pendingVotes,
 		ProposerElection proposerElection,
 		BFTValidatorSet validatorSet,
-		SystemCounters counters
+		SystemCounters counters,
+		BFTInfoSender infoSender,
+		TimeSupplier timeSupplier
 	) {
 		this.self = Objects.requireNonNull(self);
-		this.proposalGenerator = Objects.requireNonNull(proposalGenerator);
+		this.nextCommandGenerator = Objects.requireNonNull(nextCommandGenerator);
 		this.sender = Objects.requireNonNull(sender);
 		this.endOfEpochSender = Objects.requireNonNull(endOfEpochSender);
 		this.safetyRules = Objects.requireNonNull(safetyRules);
@@ -123,6 +152,8 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		this.proposerElection = Objects.requireNonNull(proposerElection);
 		this.validatorSet = Objects.requireNonNull(validatorSet);
 		this.counters = Objects.requireNonNull(counters);
+		this.infoSender = Objects.requireNonNull(infoSender);
+		this.timeSupplier = Objects.requireNonNull(timeSupplier);
 	}
 
 	// Hotstuff's Event-Driven OnNextSyncView
@@ -131,7 +162,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		BFTNode nextLeader = this.proposerElection.getProposer(nextView);
 		log.trace("{}: Sending NEW_VIEW to {}: {}", this.self::getSimpleName, nextLeader::getSimpleName, () ->  newView);
 		this.sender.sendNewView(newView, nextLeader);
-		this.counters.set(CounterType.BFT_VIEW, nextView.number());
+		this.infoSender.sendCurrentView(nextView);
 	}
 
 	private Optional<VertexMetadata> processQC(QuorumCertificate qc) {
@@ -168,6 +199,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 
 	@Override
 	public void processVote(Vote vote) {
+		updateRttStatistics(vote);
 		log.trace("{}: VOTE: Processing {}", this.self::getSimpleName, () -> vote);
 		// accumulate votes into QCs in store
 		this.pendingVotes.insertVote(vote, this.validatorSet).ifPresent(qc -> {
@@ -199,8 +231,27 @@ public final class BFTEventReducer implements BFTEventProcessor {
 		processQC(newView.getQC());
 		this.pacemaker.processNewView(newView, validatorSet).ifPresent(view -> {
 			// Hotstuff's Event-Driven OnBeat
-			final Vertex proposedVertex = proposalGenerator.generateProposal(view);
-			final Proposal proposal = safetyRules.signProposal(proposedVertex, this.vertexStore.getHighestCommittedQC());
+			final QuorumCertificate highestQC = vertexStore.getHighestQC();
+			final QuorumCertificate highestCommitted = vertexStore.getHighestCommittedQC();
+
+			final ClientAtom nextCommand;
+
+			// Propose null atom in the case that we are at the end of the epoch
+			if (highestQC.getProposed().isEndOfEpoch()) {
+				nextCommand = null;
+			} else {
+				final List<Vertex> preparedVertices = vertexStore.getPathFromRoot(highestQC.getProposed().getId());
+				final Set<AID> preparedAtoms = preparedVertices.stream()
+					.map(Vertex::getAtom)
+					.filter(Objects::nonNull)
+					.map(ClientAtom::getAID)
+					.collect(Collectors.toSet());
+
+				nextCommand = nextCommandGenerator.generateNextCommand(view, preparedAtoms);
+			}
+
+			final Vertex proposedVertex = Vertex.createVertex(highestQC, view, nextCommand);
+			final Proposal proposal = safetyRules.signProposal(proposedVertex, highestCommitted, System.nanoTime());
 			log.trace("{}: Broadcasting PROPOSAL: {}", this.self::getSimpleName, () -> proposal);
 			Set<BFTNode> nodes = validatorSet.getValidators().stream().map(BFTValidator::getNode).collect(Collectors.toSet());
 			this.counters.increment(CounterType.BFT_PROPOSALS_MADE);
@@ -234,7 +285,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 
 		final BFTNode currentLeader = this.proposerElection.getProposer(updatedView);
 		try {
-			final Vote vote = safetyRules.voteFor(proposedVertex, vertexMetadata);
+			final Vote vote = safetyRules.voteFor(proposedVertex, vertexMetadata, this.timeSupplier.currentTime(), proposal.getPayload());
 			log.trace("{}: PROPOSAL: Sending VOTE to {}: {}", this.self::getSimpleName, currentLeader::getSimpleName, () -> vote);
 			sender.sendVote(vote, currentLeader);
 		} catch (SafetyViolationException e) {
@@ -266,7 +317,8 @@ public final class BFTEventReducer implements BFTEventProcessor {
 			);
 
 			this.proceedToView(nextView.get());
-			counters.set(CounterType.BFT_TIMEOUT_VIEW, view.number());
+
+			infoSender.sendTimeoutProcessed(view, this.proposerElection.getProposer(view));
 			counters.increment(CounterType.BFT_TIMEOUT);
 		} else {
 			log.trace("{}: LOCAL_TIMEOUT: Ignoring {}", this.self::getSimpleName, () -> view);
@@ -277,5 +329,20 @@ public final class BFTEventReducer implements BFTEventProcessor {
 	public void start() {
 		this.pacemaker.processQC(this.vertexStore.getHighestQC().getView())
 			.ifPresent(this::proceedToView);
+	}
+
+	private void updateRttStatistics(Vote vote) {
+		long durationNanos = System.nanoTime() - vote.getPayload();
+		if (durationNanos >= 0L) {
+			double durationMicros = durationNanos / 1e3;
+			this.rttStatistics.update(durationMicros);
+			EnumMap<CounterType, Long> values = new EnumMap<>(CounterType.class);
+			values.put(CounterType.BFT_VOTE_RTT_MIN,   Math.round(this.rttStatistics.min()));
+			values.put(CounterType.BFT_VOTE_RTT_MAX,   Math.round(this.rttStatistics.max()));
+			values.put(CounterType.BFT_VOTE_RTT_MEAN,  Math.round(this.rttStatistics.mean()));
+			values.put(CounterType.BFT_VOTE_RTT_SIGMA, Math.round(this.rttStatistics.sigma()));
+			values.put(CounterType.BFT_VOTE_RTT_COUNT, this.rttStatistics.count());
+			this.counters.setAll(values);
+		}
 	}
 }

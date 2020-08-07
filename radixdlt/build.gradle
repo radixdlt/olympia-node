@@ -26,6 +26,7 @@ apply plugin: 'com.moowork.node'
 apply plugin: 'me.champeau.gradle.jmh'
 apply plugin: 'org.sonarqube'
 apply plugin: 'com.adarshr.test-logger'
+apply plugin: 'net.nemerosa.versioning'
 
 node {
     download = true
@@ -53,6 +54,11 @@ configurations {
 checkstyle {
     toolVersion '8.10.1'
     showViolations = true
+}
+
+versionFile {
+    // Path to the file to be written
+    file = new File("$buildDir/resources/main", 'version.properties')
 }
 
 checkstyleMain {
@@ -97,7 +103,7 @@ dependencies {
 
     compile 'commons-cli:commons-cli:1.4'
     compile 'org.xerial.snappy:snappy-java:1.1.7.3'
-    compile 'io.netty:netty-all:4.1.39.Final'
+    compile 'io.netty:netty-all:4.1.51.Final'
     compile('com.google.inject:guice:4.2.2') {
         exclude group: 'com.google.guava', module: 'guava'
     }
@@ -109,6 +115,7 @@ dependencies {
     compile group: 'io.undertow', name: 'undertow-servlet', version: '2.0.6.Final'
     compile group: 'com.stijndewitt.undertow.cors', name: 'undertow-cors-filter', version: '0.4.0'
 
+    testCompile 'org.awaitility:awaitility:4.0.3'
     testCompile('org.objenesis:objenesis:2.4') { force = true } // make powermock 1.7.1 happy
     testCompile('org.javassist:javassist:3.21.0-GA') { force = true } // make powermock 1.7.1 happy
     testCompile 'org.powermock:powermock-module-junit4:1.7.4'
@@ -141,6 +148,7 @@ test {
 
 // More warnings
 tasks.withType(JavaCompile) {
+    dependsOn 'versionFile'
     options.compilerArgs << '-Xlint:deprecation'
     //options.compilerArgs << '-Xlint:unchecked' // Way too many of these at the moment
     options.deprecation = true

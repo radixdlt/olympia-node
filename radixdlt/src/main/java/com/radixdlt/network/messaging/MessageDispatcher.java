@@ -50,7 +50,7 @@ import org.xerial.snappy.Snappy;
  * required, and remove the stuff we don't want to keep.
  */
 class MessageDispatcher {
-	private static final Logger log = LogManager.getLogger("messaging");
+	private static final Logger log = LogManager.getLogger();
 
 	private final long messageTtlMs;
 	private final SystemCounters counters;

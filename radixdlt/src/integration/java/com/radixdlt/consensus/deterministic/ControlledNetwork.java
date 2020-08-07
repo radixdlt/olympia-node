@@ -18,7 +18,8 @@
 package com.radixdlt.consensus.deterministic;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.EpochChangeSender;
+import com.radixdlt.consensus.bft.VertexStore.SyncedVertexSender;
+import com.radixdlt.syncer.EpochChangeSender;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.epoch.EpochChange;
@@ -36,7 +37,7 @@ import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.consensus.Vote;
-import com.radixdlt.consensus.sync.SyncedRadixEngine.CommittedStateSyncSender;
+import com.radixdlt.syncer.SyncedRadixEngine.CommittedStateSyncSender;
 import com.radixdlt.crypto.Hash;
 
 import java.util.Comparator;
@@ -60,10 +61,10 @@ public final class ControlledNetwork {
 		// Nothing here right now
 	}
 
-	// Message ranking.  Used to implement timeouts.
+	// Message rank.  Used to implement timeouts.
 	// Messages in a particular ranking are processed in arrival order, but
-	// timeouts in particular will be put into the next ranking to ensure
-	// that they are processed after the current ranking. The rank is changed
+	// timeouts in particular will be put into the next rank to ensure
+	// that they are processed after the current rank. The rank is changed
 	// for each node whenever a new view or epoch change is seen.
 	static final class MessageRank implements Comparable<MessageRank> {
 		private static final Comparator<MessageRank> COMPARATOR =
@@ -204,8 +205,8 @@ public final class ControlledNetwork {
 		return new ControlledSender(sender);
 	}
 
-	public final class ControlledSender implements BFTEventSender, VertexStoreEventSender, SyncVerticesRPCSender, EpochChangeSender,
-		CommittedStateSyncSender, LocalTimeoutSender {
+	public final class ControlledSender implements BFTEventSender, VertexStoreEventSender, SyncVerticesRPCSender, SyncedVertexSender,
+		EpochChangeSender, CommittedStateSyncSender, LocalTimeoutSender {
 		private final BFTNode sender;
 
 		private ControlledSender(BFTNode sender) {

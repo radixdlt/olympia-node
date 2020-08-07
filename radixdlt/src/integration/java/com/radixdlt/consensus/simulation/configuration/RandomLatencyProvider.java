@@ -27,7 +27,7 @@ import org.apache.logging.log4j.Logger;
  * Latency Provider which uniformly distributes latency across a minimum and maximum
  */
 public final class RandomLatencyProvider implements LatencyProvider {
-	private static final Logger log = LogManager.getLogger("RLP");
+	private static final Logger log = LogManager.getLogger();
 
 	private final int minLatency;
 	private final int maxLatency;

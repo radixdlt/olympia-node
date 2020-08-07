@@ -40,7 +40,7 @@ import com.radixdlt.network.transport.udp.UDPConstants;
  * with the specified peer, and that can handle the specified message.
  */
 public final class FirstMatchTransportManager implements TransportManager {
-	private static final Logger log = LogManager.getLogger("transport");
+	private static final Logger log = LogManager.getLogger();
 
 	private final ImmutableList<Transport> transports;
 	private final Transport defaultTransport;

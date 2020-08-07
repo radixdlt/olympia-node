@@ -18,6 +18,7 @@
 package com.radixdlt.consensus;
 
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.View;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -91,9 +92,6 @@ public final class PendingVotes {
 	 * @return The generated QC, if any
 	 */
 	public Optional<QuorumCertificate> insertVote(Vote vote, BFTValidatorSet validatorSet) {
-		final VoteData voteData = vote.getVoteData();
-		final Hash voteHash = this.hasher.hash(voteData);
-		final ECDSASignature signature = vote.getSignature().orElseThrow(() -> new IllegalArgumentException("vote is missing signature"));
 		final BFTNode node = vote.getAuthor();
 		// Only process for valid validators and signatures
 		if (!validatorSet.containsNode(node)) {
@@ -101,21 +99,25 @@ public final class PendingVotes {
 			return Optional.empty();
 		}
 
+		final TimestampedVoteData timestampedVoteData = vote.getTimestampedVoteData();
+		final VoteData voteData = timestampedVoteData.getVoteData();
+		final Hash voteDataHash = this.hasher.hash(voteData);
 		final View voteView = voteData.getProposed().getView();
-		if (!replacePreviousVote(node, voteView, voteHash)) {
+		if (!replacePreviousVote(node, voteView, voteDataHash)) {
 			return Optional.empty();
 		}
 
 		// If there is no equivocation or duplication, we process the vote.
-		ValidationState validationState = this.voteState.computeIfAbsent(voteHash, k -> validatorSet.newValidationState());
+		ValidationState validationState = this.voteState.computeIfAbsent(voteDataHash, k -> validatorSet.newValidationState());
 
 		// try to form a QC with the added signature according to the requirements
-		if (!(validationState.addSignature(node, signature) && validationState.complete())) {
+		final ECDSASignature signature = vote.getSignature().orElseThrow(() -> new IllegalArgumentException("vote is missing signature"));
+		if (!(validationState.addSignature(node, timestampedVoteData.getNodeTimestamp(), signature) && validationState.complete())) {
 			return Optional.empty();
 		}
 
 		// QC can be formed, so return it
-		QuorumCertificate qc = new QuorumCertificate(vote.getVoteData(), validationState.signatures());
+		QuorumCertificate qc = new QuorumCertificate(voteData, validationState.signatures());
 		return Optional.of(qc);
 	}
 

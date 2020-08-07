@@ -42,7 +42,7 @@ import com.radixdlt.network.addressbook.Peer;
  * methods have returned.
  */
 final class MessageListenerList {
-	private static final Logger log = LogManager.getLogger("messaging");
+	private static final Logger log = LogManager.getLogger();
 
 	/**
 	 * A list of queues of callbacks that we are currently processing.

@@ -28,7 +28,7 @@ import org.apache.logging.log4j.Logger;
  */
 @FunctionalInterface
 interface ManagedHttpExchangeConsumer {
-    Logger logger = LogManager.getLogger("api");
+    Logger logger = LogManager.getLogger();
 
     /**
      * Process a given HTTP exchange safely, return an error if internal processing fails

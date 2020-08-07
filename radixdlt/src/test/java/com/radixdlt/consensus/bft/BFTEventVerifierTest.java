@@ -30,7 +30,6 @@ import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.Hash;
@@ -82,7 +81,7 @@ public class BFTEventVerifierTest {
 		Proposal proposal = mock(Proposal.class);
 		BFTNode author = mock(BFTNode.class);
 		when(proposal.getAuthor()).thenReturn(author);
-		when(proposal.getSignature()).thenReturn(Optional.of(mock(ECDSASignature.class)));
+		when(proposal.getSignature()).thenReturn(mock(ECDSASignature.class));
 		when(validatorSet.containsNode(eq(author))).thenReturn(true);
 		when(verifier.verify(any(), any(), any())).thenReturn(true);
 		eventVerifier.processProposal(proposal);
@@ -94,7 +93,7 @@ public class BFTEventVerifierTest {
 		Proposal proposal = mock(Proposal.class);
 		BFTNode author = mock(BFTNode.class);
 		when(proposal.getAuthor()).thenReturn(author);
-		when(proposal.getSignature()).thenReturn(Optional.of(mock(ECDSASignature.class)));
+		when(proposal.getSignature()).thenReturn(mock(ECDSASignature.class));
 		when(validatorSet.containsNode(eq(author))).thenReturn(false);
 		when(verifier.verify(any(), any(), any())).thenReturn(true);
 		eventVerifier.processProposal(proposal);
@@ -106,7 +105,7 @@ public class BFTEventVerifierTest {
 		Proposal proposal = mock(Proposal.class);
 		BFTNode author = mock(BFTNode.class);
 		when(proposal.getAuthor()).thenReturn(author);
-		when(proposal.getSignature()).thenReturn(Optional.of(mock(ECDSASignature.class)));
+		when(proposal.getSignature()).thenReturn(mock(ECDSASignature.class));
 		when(validatorSet.containsNode(eq(author))).thenReturn(true);
 		when(verifier.verify(any(), any(), any())).thenReturn(false);
 		eventVerifier.processProposal(proposal);

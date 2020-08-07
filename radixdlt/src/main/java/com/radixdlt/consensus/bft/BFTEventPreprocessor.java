@@ -22,7 +22,6 @@ import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.RequiresSyncConsensusEvent;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.bft.SyncQueues.SyncQueue;
 import com.radixdlt.consensus.liveness.PacemakerState;
@@ -202,7 +201,7 @@ public final class BFTEventPreprocessor implements BFTEventProcessor {
 		forwardTo.processLocalTimeout(view);
 		final View nextView = this.pacemakerState.getCurrentView();
 		if (!curView.equals(nextView)) {
-			log.warn("{}: LOCAL_TIMEOUT: Clearing Queues: {}", this.self::getSimpleName, () -> queues);
+			log.debug("{}: LOCAL_TIMEOUT: Clearing Queues: {}", this.self::getSimpleName, () -> queues);
 			queues.clear();
 			vertexStore.clearSyncs();
 		}

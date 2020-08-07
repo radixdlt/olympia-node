@@ -51,7 +51,7 @@ public final class Events
 		return Events.instance;
 	}
 
-	private static final Logger eventLog = LogManager.getLogger("events");
+	private static final Logger eventLog = LogManager.getLogger();
 
 	private class EventListeners
 	{

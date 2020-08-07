@@ -20,7 +20,8 @@ package org.radix.serialization;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.TimestampedVoteData;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.crypto.Hash;
@@ -37,7 +38,8 @@ public class VoteSerializeTest extends SerializeObject<Vote> {
 		VertexMetadata vertexMetadata = new VertexMetadata(0, view, id, 1, false);
 		VertexMetadata parent = new VertexMetadata(0, View.of(1234567890L), Hash.random(), 0, false);
 		VoteData voteData = new VoteData(vertexMetadata, parent, null);
+		TimestampedVoteData timestampedVoteData = new TimestampedVoteData(voteData, 123456L);
 		BFTNode author = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
-		return new Vote(author, voteData, null);
+		return new Vote(author, timestampedVoteData, null, 0L);
 	}
 }

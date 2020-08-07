@@ -21,8 +21,8 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.ValidationState;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.ECDSASignatures;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.utils.UInt256;
 import java.util.Collections;
@@ -35,6 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -95,8 +96,8 @@ public class PendingVotesTest {
 
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		ValidationState validationState = mock(ValidationState.class);
-		ECDSASignatures signatures = mock(ECDSASignatures.class);
-		when(validationState.addSignature(any(), any())).thenReturn(true);
+		TimestampedECDSASignatures signatures = mock(TimestampedECDSASignatures.class);
+		when(validationState.addSignature(any(), anyLong(), any())).thenReturn(true);
 		when(validationState.complete()).thenReturn(true);
 		when(validationState.signatures()).thenReturn(signatures);
 		when(validatorSet.newValidationState()).thenReturn(validationState);
@@ -116,7 +117,7 @@ public class PendingVotesTest {
 
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		ValidationState validationState = mock(ValidationState.class);
-		ECDSASignatures signatures = mock(ECDSASignatures.class);
+		TimestampedECDSASignatures signatures = mock(TimestampedECDSASignatures.class);
 		when(validationState.signatures()).thenReturn(signatures);
 		when(validationState.isEmpty()).thenReturn(true);
 		when(validatorSet.newValidationState()).thenReturn(validationState);
@@ -156,7 +157,9 @@ public class PendingVotesTest {
 		VertexMetadata proposed = new VertexMetadata(0, parentView.next(), vertexId, 1, false);
 		VertexMetadata parent = new VertexMetadata(0, parentView, Hash.random(), 0, false);
 		VoteData voteData = new VoteData(proposed, parent, null);
+		TimestampedVoteData timestampedVoteData = new TimestampedVoteData(voteData, 123456L);
 		when(vote.getVoteData()).thenReturn(voteData);
+		when(vote.getTimestampedVoteData()).thenReturn(timestampedVoteData);
 		when(vote.getAuthor()).thenReturn(author);
 		return vote;
 	}

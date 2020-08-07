@@ -17,12 +17,13 @@
 
 package org.radix;
 
+import com.google.common.collect.ImmutableMap;
 import com.radixdlt.DefaultSerialization;
+import com.radixdlt.systeminfo.InMemorySystemInfoManager;
 import com.radixdlt.api.LedgerRx;
 import com.radixdlt.api.SubmissionErrorsRx;
 import com.radixdlt.consensus.ConsensusRunner;
-import com.radixdlt.consensus.VertexStoreEventsRx;
-import com.radixdlt.consensus.sync.SyncedRadixEngine;
+import com.radixdlt.syncer.SyncedRadixEngine;
 import com.radixdlt.mempool.MempoolReceiver;
 import com.radixdlt.mempool.SubmissionControl;
 import com.radixdlt.middleware2.CommittedAtom;
@@ -56,15 +57,14 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.net.URISyntaxException;
 import java.security.Security;
+import java.util.Properties;
 
 public final class Radix
 {
-	static
-	{
-		System.setProperty("java.net.preferIPv4Stack", "true");
-	}
-
-	private static final Logger log = LogManager.getLogger();
+	private static final String SYSTEM_VERSION_DISPLAY;
+	private static final String SYSTEM_VERSION_BRANCH;
+	private static final String SYSTEM_VERSION_COMMIT;
+	private static final ImmutableMap<String, Object> SYSTEM_VERSION_INFO;
 
 	public static final int 	PROTOCOL_VERSION 		= 100;
 
@@ -72,6 +72,39 @@ public final class Radix
 	public static final int 	MAJOR_AGENT_VERSION 	= 2709999;
 	public static final int 	REFUSE_AGENT_VERSION 	= 2709999;
 	public static final String 	AGENT 					= "/Radix:/"+AGENT_VERSION;
+
+	static {
+		System.setProperty("java.net.preferIPv4Stack", "true");
+
+		String branch  = "unknown-branch";
+		String commit  = "unknown-commit";
+		String display = "unknown-version";
+		try (InputStream is = Radix.class.getResourceAsStream("/version.properties")) {
+			if (is != null) {
+				Properties p = new Properties();
+				p.load(is);
+				branch  = p.getProperty("VERSION_BRANCH",  branch);
+				commit  = p.getProperty("VERSION_COMMIT",  commit);
+				display = p.getProperty("VERSION_DISPLAY", display);
+			}
+		} catch (IOException e) {
+			// Ignore exception
+		}
+		SYSTEM_VERSION_DISPLAY = display;
+		SYSTEM_VERSION_BRANCH  = branch;
+		SYSTEM_VERSION_COMMIT  = commit;
+		SYSTEM_VERSION_INFO = ImmutableMap.of("system_version",
+			ImmutableMap.of(
+				"branch",           SYSTEM_VERSION_BRANCH,
+				"commit",           SYSTEM_VERSION_COMMIT,
+				"display",          SYSTEM_VERSION_DISPLAY,
+				"agent_version",    AGENT_VERSION,
+				"protocol_version", PROTOCOL_VERSION
+			)
+		);
+	}
+
+	private static final Logger log = LogManager.getLogger();
 
 	private static final Object BC_LOCK = new Object();
 	private static boolean bcInitialised;
@@ -108,6 +141,7 @@ public final class Radix
 
 	public static void main(String[] args) {
 		try {
+			logVersion();
 			dumpExecutionLocation();
 			// Bouncy Castle is required for loading the node key, so set it up now.
 			setupBouncyCastle();
@@ -118,6 +152,15 @@ public final class Radix
 			log.fatal("Unable to start", ex);
 			java.lang.System.exit(-1);
 		}
+	}
+
+	private static void logVersion() {
+		log.always().log("Radix distributed ledger '{}' from branch '{}' commit '{}'",
+			SYSTEM_VERSION_DISPLAY, SYSTEM_VERSION_BRANCH, SYSTEM_VERSION_COMMIT);
+	}
+
+	public static ImmutableMap<String, Object> systemVersionInfo() {
+		return SYSTEM_VERSION_INFO;
 	}
 
 	public static void start(RuntimeProperties properties) {
@@ -149,9 +192,12 @@ public final class Radix
 		SyncedRadixEngine syncedRadixEngine = globalInjector.getInjector().getInstance(SyncedRadixEngine.class);
 		syncedRadixEngine.start();
 
-		CommittedAtomsStore engineStore = globalInjector.getInjector().getInstance(CommittedAtomsStore.class);
+		InMemorySystemInfoManager infoStateRunner = globalInjector.getInjector().getInstance(InMemorySystemInfoManager.class);
+		infoStateRunner.start();
+
 
 		// TODO: Move this to a better place
+		CommittedAtomsStore engineStore = globalInjector.getInjector().getInstance(CommittedAtomsStore.class);
 		CommittedAtom genesisAtom = globalInjector.getInjector().getInstance(CommittedAtom.class);
 		if (engineStore.getCommittedAtoms(genesisAtom.getVertexMetadata().getStateVersion() - 1, 1).isEmpty()) {
 			syncedRadixEngine.execute(genesisAtom);
@@ -162,10 +208,10 @@ public final class Radix
 		SubmissionControl submissionControl = globalInjector.getInjector().getInstance(SubmissionControl.class);
 		AtomToBinaryConverter atomToBinaryConverter = globalInjector.getInjector().getInstance(AtomToBinaryConverter.class);
 		LedgerEntryStore store = globalInjector.getInjector().getInstance(LedgerEntryStore.class);
-		VertexStoreEventsRx vertexStoreEventsRx = globalInjector.getInjector().getInstance(VertexStoreEventsRx.class);
 		SubmissionErrorsRx submissionErrorsRx = globalInjector.getInjector().getInstance(SubmissionErrorsRx.class);
 		LedgerRx ledgerRx = globalInjector.getInjector().getInstance(LedgerRx.class);
 		RadixHttpServer httpServer = new RadixHttpServer(
+			infoStateRunner,
 			submissionErrorsRx,
 			ledgerRx,
 			bft,
@@ -176,8 +222,7 @@ public final class Radix
 			serialization,
 			properties,
 			localSystem,
-			addressBook,
-			vertexStoreEventsRx
+			addressBook
 		);
 		httpServer.start(properties);
 
@@ -191,7 +236,7 @@ public final class Radix
 
 	private static void dumpExecutionLocation() {
 		try {
-			String jarFile = ClassLoader.getSystemClassLoader().loadClass(Radix.class.getName()).getProtectionDomain().getCodeSource().getLocation().toURI().getPath();
+			String jarFile = Radix.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath();
 			System.setProperty("radix.jar", jarFile);
 
 			String jarPath = jarFile;
@@ -203,7 +248,7 @@ public final class Radix
 
 			log.debug("Execution file: {}", System.getProperty("radix.jar"));
 			log.debug("Execution path: {}", System.getProperty("radix.jar.path"));
-		} catch (URISyntaxException | ClassNotFoundException e) {
+		} catch (URISyntaxException e) {
 			throw new IllegalStateException("Error while fetching execution location", e);
 		}
 	}

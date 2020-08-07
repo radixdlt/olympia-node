@@ -23,18 +23,20 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.Scopes;
 import com.google.inject.name.Names;
-import com.radixdlt.CerberusModule;
+import com.radixdlt.ConsensusModule;
+import com.radixdlt.CryptoModule;
 import com.radixdlt.DefaultSerialization;
+import com.radixdlt.SyncerMessagesModule;
+import com.radixdlt.SyncerModule;
+import com.radixdlt.SystemInfoMessagesModule;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.mempool.MempoolModule;
-import com.radixdlt.middleware2.MiddlewareModule;
-import com.radixdlt.middleware2.network.NetworkModule;
+import com.radixdlt.middleware2.InfoSupplier;
+import com.radixdlt.SystemInfoModule;
+import com.radixdlt.NetworkModule;
 import com.radixdlt.network.addressbook.AddressBookModule;
 import com.radixdlt.network.addressbook.PeerManagerConfiguration;
 import com.radixdlt.network.hostip.HostIp;
@@ -44,7 +46,6 @@ import com.radixdlt.network.transport.tcp.TCPTransportModule;
 import com.radixdlt.network.transport.udp.UDPTransportModule;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.store.berkeley.BerkeleyStoreModule;
 import com.radixdlt.universe.Universe;
 
 import javax.inject.Inject;
@@ -65,9 +66,6 @@ public class GlobalInjector {
 				bind(RuntimeProperties.class).toInstance(properties);
 				bind(DatabaseEnvironment.class).toInstance(dbEnv);
 				bind(Universe.class).toInstance(universe);
-
-				bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
-
 				bind(LocalSystem.class).toProvider(LocalSystemProvider.class).in(Scopes.SINGLETON);
 
 				bind(EUID.class).annotatedWith(Names.named("self")).toProvider(SelfNidProvider.class);
@@ -83,17 +81,23 @@ public class GlobalInjector {
 			}
 		};
 
+		final int pacemakerTimeout = properties.get("consensus.pacemaker_timeout_millis", 5000);
+
 		injector = Guice.createInjector(
-			new BerkeleyStoreModule(),
-			new CerberusModule(properties),
-			new MiddlewareModule(),
+			new CryptoModule(),
+			new ConsensusModule(pacemakerTimeout),
+			new SyncerModule(properties),
+			new NetworkModule(),
+			new SystemInfoMessagesModule(),
+			new SystemInfoModule(properties),
+			new SyncerMessagesModule(),
+
+			// Low level network modules
 			new MessageCentralModule(properties),
 			new UDPTransportModule(properties),
 			new TCPTransportModule(properties),
 			new AddressBookModule(dbEnv),
 			new HostIpModule(properties),
-			new MempoolModule(),
-			new NetworkModule(),
 			globalModule
 		);
 	}
@@ -175,14 +179,14 @@ public class GlobalInjector {
 	}
 
 	static class LocalSystemProvider implements Provider<LocalSystem> {
-		private final SystemCounters counters;
 		private final RuntimeProperties properties;
 		private final Universe universe;
 		private final HostIp hostIp;
+		private final InfoSupplier infoSupplier;
 
 		@Inject
-		public LocalSystemProvider(SystemCounters counters, RuntimeProperties properties, Universe universe, HostIp hostIp) {
-			this.counters = counters;
+		public LocalSystemProvider(InfoSupplier infoSupplier, RuntimeProperties properties, Universe universe, HostIp hostIp) {
+			this.infoSupplier = infoSupplier;
 			this.properties = properties;
 			this.universe = universe;
 			this.hostIp = hostIp;
@@ -192,7 +196,8 @@ public class GlobalInjector {
 		public LocalSystem get() {
 			String host = this.hostIp.hostIp()
 				.orElseThrow(() -> new IllegalStateException("Unable to determine host IP"));
-			return LocalSystem.create(this.counters, this.properties, this.universe, host);
+
+			return LocalSystem.create(infoSupplier, this.properties, this.universe, host);
 		}
 	}
 }

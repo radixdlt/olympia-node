@@ -18,8 +18,8 @@
 package com.radixdlt.middleware2.network;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.sync.StateSyncNetwork;
-import com.radixdlt.consensus.sync.SyncRequest;
+import com.radixdlt.syncer.StateSyncNetwork;
+import com.radixdlt.syncer.SyncRequest;
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.network.messaging.MessageCentral;
@@ -47,7 +47,7 @@ public final class MessageCentralLedgerSync implements StateSyncNetwork {
 	}
 
 	@Override
-	public Observable<List<CommittedAtom>> syncResponses() {
+	public Observable<ImmutableList<CommittedAtom>> syncResponses() {
 		return Observable.create(emitter -> {
 			MessageListener<SyncResponseMessage> listener = (src, msg) -> emitter.onNext(msg.getAtoms());
 			this.messageCentral.addListener(SyncResponseMessage.class, listener);

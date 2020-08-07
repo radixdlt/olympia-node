@@ -21,7 +21,7 @@ import com.radixdlt.consensus.SyncedStateComputer;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.sync.SyncedRadixEngine.CommittedStateSyncSender;
+import com.radixdlt.syncer.SyncedRadixEngine.CommittedStateSyncSender;
 import com.radixdlt.middleware2.CommittedAtom;
 import java.util.List;
 import java.util.Objects;

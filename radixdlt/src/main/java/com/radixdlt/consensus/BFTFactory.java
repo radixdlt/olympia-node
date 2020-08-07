@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus;
 
+import com.radixdlt.consensus.bft.BFTEventReducer.BFTInfoSender;
 import com.radixdlt.consensus.bft.BFTEventReducer.EndOfEpochSender;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.liveness.Pacemaker;
@@ -37,6 +38,7 @@ public interface BFTFactory {
 		Pacemaker pacemaker,
 		VertexStore vertexStore,
 		ProposerElection proposerElection,
-		BFTValidatorSet validatorSet
+		BFTValidatorSet validatorSet,
+		BFTInfoSender infoSender
 	);
 }

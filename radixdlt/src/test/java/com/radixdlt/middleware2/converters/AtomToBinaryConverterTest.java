@@ -21,7 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.consensus.VertexMetadata;
-import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.atomos.RRIParticle;
@@ -59,7 +59,7 @@ public class AtomToBinaryConverterTest {
 		);
 
 		VertexMetadata vertexMetadata = new VertexMetadata(0, View.of(1), Hash.random(), 0, false);
-		CommittedAtom committedAtom = new CommittedAtom(ClientAtom.convertFromApiAtom(atom), vertexMetadata);
+		CommittedAtom committedAtom = new CommittedAtom(ClientAtom.convertFromApiAtom(atom), vertexMetadata, 0L);
 
 		byte[] serializedAtom = atomToBinaryConverter.toLedgerEntryContent(committedAtom);
 		CommittedAtom deserializedAtom = atomToBinaryConverter.toAtom(serializedAtom);

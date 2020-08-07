@@ -17,7 +17,7 @@
 
 package com.radixdlt.consensus.epoch;
 
-import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.bft.View;
 import java.util.Objects;
 
 /**

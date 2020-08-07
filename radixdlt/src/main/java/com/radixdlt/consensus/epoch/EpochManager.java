@@ -27,11 +27,14 @@ import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.ProposerElectionFactory;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.SyncedStateComputer;
+import com.radixdlt.consensus.Timeout;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.VertexStoreEventProcessor;
 import com.radixdlt.consensus.VertexStoreFactory;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.Vote;
+import com.radixdlt.consensus.bft.BFTEventReducer.BFTInfoSender;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.EmptyBFTEventProcessor;
 import com.radixdlt.consensus.bft.VertexStore;
@@ -65,7 +68,7 @@ import org.apache.logging.log4j.Logger;
  */
 @NotThreadSafe
 public final class EpochManager {
-	private static final Logger log = LogManager.getLogger("EM");
+	private static final Logger log = LogManager.getLogger();
 
 	/**
 	 * A sender of GetEpoch RPC requests/responses
@@ -91,6 +94,20 @@ public final class EpochManager {
 		void sendGetEpochResponse(BFTNode node, VertexMetadata ancestor);
 	}
 
+	public interface EpochInfoSender {
+		/**
+		 * Signify that the bft node is on a new view
+		 * @param epochView the epoch and view the bft node has changed to
+		 */
+		void sendCurrentView(EpochView epochView);
+
+		/**
+		 * Signify that a timeout was processed by this bft node
+		 * @param timeout the timeout
+		 */
+		void sendTimeoutProcessed(Timeout timeout);
+	}
+
 	private final BFTNode self;
 	private final SyncEpochsRPCSender epochsRPCSender;
 	private final PacemakerFactory pacemakerFactory;
@@ -101,6 +118,7 @@ public final class EpochManager {
 	private final SyncedStateComputer<CommittedAtom> syncedStateComputer;
 	private final Map<Long, List<ConsensusEvent>> queuedEvents;
 	private final BFTFactory bftFactory;
+	private final EpochInfoSender epochInfoSender;
 
 	private VertexMetadata lastConstructed = null;
 	private VertexMetadata currentAncestor;
@@ -117,7 +135,8 @@ public final class EpochManager {
 		VertexStoreFactory vertexStoreFactory,
 		ProposerElectionFactory proposerElectionFactory,
 		BFTFactory bftFactory,
-		SystemCounters counters
+		SystemCounters counters,
+		EpochInfoSender epochInfoSender
 	) {
 		this.self = Objects.requireNonNull(self);
 		this.syncedStateComputer = Objects.requireNonNull(syncedStateComputer);
@@ -128,6 +147,7 @@ public final class EpochManager {
 		this.proposerElectionFactory = Objects.requireNonNull(proposerElectionFactory);
 		this.bftFactory = bftFactory;
 		this.counters = Objects.requireNonNull(counters);
+		this.epochInfoSender = Objects.requireNonNull(epochInfoSender);
 		this.queuedEvents = new HashMap<>();
 	}
 
@@ -158,7 +178,6 @@ public final class EpochManager {
 		}
 
 		this.currentAncestor = ancestorMetadata;
-		this.counters.set(CounterType.EPOCH_MANAGER_EPOCH, nextEpoch);
 
 		final BFTEventProcessor bftEventProcessor;
 		final VertexStoreEventProcessor vertexStoreEventProcessor;
@@ -175,12 +194,26 @@ public final class EpochManager {
 			QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(genesisVertex);
 			VertexStore vertexStore = vertexStoreFactory.create(genesisVertex, genesisQC, syncedStateComputer);
 			vertexStoreEventProcessor = vertexStore;
+			BFTInfoSender infoSender = new BFTInfoSender() {
+				@Override
+				public void sendCurrentView(View view) {
+					epochInfoSender.sendCurrentView(EpochView.of(nextEpoch, view));
+				}
+
+				@Override
+				public void sendTimeoutProcessed(View view, BFTNode leader) {
+					Timeout timeout = new Timeout(EpochView.of(nextEpoch, view), leader);
+					epochInfoSender.sendTimeoutProcessed(timeout);
+				}
+			};
+
 			bftEventProcessor = bftFactory.create(
 				this::processEndOfEpoch,
 				pacemaker,
 				vertexStore,
 				proposerElection,
-				validatorSet
+				validatorSet,
+				infoSender
 			);
 		}
 
@@ -207,7 +240,7 @@ public final class EpochManager {
 			// other logs.  Size reduced from circa 6Kib to approx 1Kib over ValidatorSet.toString().
 			StringBuilder epochMessage = new StringBuilder(this.self.getSimpleName());
 			epochMessage.append(": EPOCH_CHANGE: ");
-			epochMessage.append(' ').append(message);
+			epochMessage.append(message);
 			epochMessage.append(" new epoch ").append(epochChange.getAncestor().getEpoch() + 1);
 			epochMessage.append(" with validators: ");
 			Iterator<BFTValidator> i = epochChange.getValidatorSet().getValidators().iterator();
@@ -229,7 +262,7 @@ public final class EpochManager {
 	}
 
 	private void processEndOfEpoch(VertexMetadata vertexMetadata) {
-		log.info("{}: END_OF_EPOCH: {}", this.self::getSimpleName, () -> vertexMetadata);
+		log.trace("{}: END_OF_EPOCH: {}", this.self::getSimpleName, () -> vertexMetadata);
 		if (this.lastConstructed == null || this.lastConstructed.getEpoch() < vertexMetadata.getEpoch()) {
 			this.lastConstructed = vertexMetadata;
 
@@ -240,7 +273,7 @@ public final class EpochManager {
 	}
 
 	public void processGetEpochRequest(GetEpochRequest request) {
-		log.info("{}: GET_EPOCH_REQUEST: {}", this.self::getSimpleName, () -> request);
+		log.trace("{}: GET_EPOCH_REQUEST: {}", this.self::getSimpleName, () -> request);
 
 		if (this.currentEpoch() == request.getEpoch()) {
 			epochsRPCSender.sendGetEpochResponse(request.getAuthor(), this.currentAncestor);
@@ -251,7 +284,7 @@ public final class EpochManager {
 	}
 
 	public void processGetEpochResponse(GetEpochResponse response) {
-		log.info("{}: GET_EPOCH_RESPONSE: {}", this.self::getSimpleName, () -> response);
+		log.trace("{}: GET_EPOCH_RESPONSE: {}", this.self::getSimpleName, () -> response);
 
 		if (response.getEpochAncestor() == null) {
 			log.warn("{}: Received empty GetEpochResponse {}", this.self::getSimpleName, () -> response);
@@ -263,7 +296,7 @@ public final class EpochManager {
 		if (ancestor.getEpoch() >= this.currentEpoch()) {
 			syncedStateComputer.syncTo(ancestor, Collections.singletonList(response.getAuthor()), null);
 		} else {
-			log.warn("{}: Received old epoch {}", this.self::getSimpleName, () -> response);
+			log.info("{}: Ignoring old epoch {}", this.self::getSimpleName, () -> response);
 		}
 	}
 
@@ -297,7 +330,7 @@ public final class EpochManager {
 		}
 
 		if (consensusEvent.getEpoch() < this.currentEpoch()) {
-			log.warn("{}: CONSENSUS_EVENT: Received lower epoch event: {} current epoch: {}",
+			log.info("{}: CONSENSUS_EVENT: Ignoring lower epoch event: {} current epoch: {}",
 				this.self::getSimpleName, () -> consensusEvent, this::currentEpoch
 			);
 			return;

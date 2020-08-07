@@ -19,7 +19,7 @@ package com.radixdlt.consensus.simulation.configuration;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.simulation.network.SimulationNetwork.MessageInTransit;
 import java.util.HashMap;

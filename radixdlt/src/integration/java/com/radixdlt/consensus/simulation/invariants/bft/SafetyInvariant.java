@@ -18,7 +18,7 @@
 package com.radixdlt.consensus.simulation.invariants.bft;
 
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.simulation.TestInvariant;
 import com.radixdlt.consensus.simulation.network.SimulationNodes.RunningNetwork;
@@ -74,7 +74,7 @@ public class SafetyInvariant implements TestInvariant {
 
 		return Observable.merge(
 			network.getNodes().stream().map(
-				node -> network.getVertexStoreEvents(node).committedVertices().map(v -> Pair.of(node, v)))
+				node -> network.getInfo(node).committedVertices().map(v -> Pair.of(node, v)))
 				.collect(Collectors.toList())
 		)
 			.flatMap(nodeAndVertex -> {
