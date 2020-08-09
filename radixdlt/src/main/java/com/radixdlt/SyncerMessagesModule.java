@@ -31,6 +31,7 @@ import com.radixdlt.consensus.CommittedStateSyncRx;
 import com.radixdlt.consensus.EpochChangeRx;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.execution.RadixEngineExecutor.RadixEngineExecutorEventSender;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.mempool.SubmissionControlImpl.SubmissionControlSender;
 import com.radixdlt.middleware2.ClientAtom;
@@ -38,7 +39,6 @@ import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.middleware2.converters.AtomConversionException;
 import com.radixdlt.syncer.EpochChangeSender;
 import com.radixdlt.syncer.SyncedRadixEngine.CommittedStateSyncSender;
-import com.radixdlt.syncer.SyncedRadixEngine.SyncedRadixEngineEventSender;
 import com.radixdlt.utils.SenderToRx;
 import com.radixdlt.utils.TwoSenderToRx;
 import io.reactivex.rxjava3.core.Observable;
@@ -52,7 +52,7 @@ public final class SyncerMessagesModule extends AbstractModule {
 	protected void configure() {
 		TwoSenderToRx<CommittedAtom, ImmutableSet<EUID>, StoredAtom> storedAtoms = new TwoSenderToRx<>(StoredAtom::new);
 		TwoSenderToRx<CommittedAtom, RadixEngineException, StoredFailure> storedFailures = new TwoSenderToRx<>(StoredFailure::new);
-		SyncedRadixEngineEventSender syncedRadixEngineEventSender = new SyncedRadixEngineEventSender() {
+		RadixEngineExecutorEventSender radixEngineExecutorEventSender = new RadixEngineExecutorEventSender() {
 			@Override
 			public void sendStored(CommittedAtom committedAtom, ImmutableSet<EUID> indicies) {
 				storedAtoms.send(committedAtom, indicies);
@@ -74,7 +74,7 @@ public final class SyncerMessagesModule extends AbstractModule {
 				return storedFailures.rx();
 			}
 		};
-		bind(SyncedRadixEngineEventSender.class).toInstance(syncedRadixEngineEventSender);
+		bind(RadixEngineExecutorEventSender.class).toInstance(radixEngineExecutorEventSender);
 		bind(LedgerRx.class).toInstance(ledgerRx);
 
 		TwoSenderToRx<Atom, AtomConversionException, DeserializationFailure> deserializationFailures
