@@ -34,8 +34,6 @@ public class TokenSymbolLength {
 	private static final String NEW_SUPPLY = "newSupply";
 	private static final String GRANULARITY = "granularity";
 
-	private static final long TIMEOUT_MS = 10_000L; // Timeout in milliseconds
-
 	private RadixApplicationAPI api;
 	private RadixIdentity identity;
 	private final SpecificProperties properties = SpecificProperties.of(
@@ -130,7 +128,7 @@ public class TokenSymbolLength {
 			);
 		assertThat(events).last()
 			.isInstanceOf(SubmitAtomStatusAction.class)
-			.<AtomStatus>extracting(o -> SubmitAtomStatusAction.class.cast(o).getStatusNotification().getAtomStatus())
+			.extracting(o -> SubmitAtomStatusAction.class.cast(o).getStatusNotification().getAtomStatus())
 			.isIn(finalStatesSet);
 	}
 

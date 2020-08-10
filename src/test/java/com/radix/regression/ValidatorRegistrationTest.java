@@ -10,7 +10,6 @@ import com.radixdlt.client.application.translate.FeeMapper;
 import com.radixdlt.client.application.translate.PowFeeMapper;
 import com.radixdlt.client.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.client.atommodel.validators.UnregisteredValidatorParticle;
-import com.radixdlt.client.core.Bootstrap;
 import com.radixdlt.client.core.RadixEnv;
 import com.radixdlt.client.core.RadixUniverse;
 import com.radixdlt.client.core.atoms.Atom;

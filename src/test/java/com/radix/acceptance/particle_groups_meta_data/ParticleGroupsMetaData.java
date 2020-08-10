@@ -57,7 +57,7 @@ public class ParticleGroupsMetaData {
     private RadixJsonRpcClient jsonRpcClient;
 
     private TestObserver<AtomStatusEvent> observer;
-	private TestObserver atomPushObserver;
+	private TestObserver<?> atomPushObserver;
     private TestObserver<RadixJsonRpcClient.JsonRpcResponse> observer2;
 
     private FeeMapper feeMapper = new PowFeeMapper(Atom::getHash,
