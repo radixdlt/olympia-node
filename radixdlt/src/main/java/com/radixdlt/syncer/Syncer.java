@@ -17,6 +17,7 @@
 
 package com.radixdlt.syncer;
 
+import com.google.common.collect.Sets;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.SyncedExecutor;
 import com.radixdlt.consensus.Vertex;
@@ -30,16 +31,14 @@ import com.radixdlt.execution.RadixEngineExecutor;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.network.addressbook.AddressBook;
-import io.reactivex.rxjava3.schedulers.Schedulers;
-import io.reactivex.rxjava3.subjects.BehaviorSubject;
-import io.reactivex.rxjava3.subjects.Subject;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 /**
  * A service which synchronizes the radix engine committed state between peers.
@@ -53,7 +52,6 @@ public final class Syncer implements SyncedExecutor<CommittedAtom> {
 		void sendCommittedStateSync(long stateVersion, Object opaque);
 	}
 
-	private static final Logger log = LogManager.getLogger();
 	private final Mempool mempool;
 	private final RadixEngineExecutor executor;
 	private final CommittedStateSyncSender committedStateSyncSender;
@@ -65,11 +63,10 @@ public final class Syncer implements SyncedExecutor<CommittedAtom> {
 	private final SystemCounters counters;
 	private final SyncServiceRunner syncServiceRunner;
 
-	// TODO: Remove the following
 	private final Object lock = new Object();
-	private final Subject<CommittedAtom> lastStoredAtom = BehaviorSubject.create();
 	private final AtomicLong stateVersion = new AtomicLong(0);
 	private VertexMetadata lastEpochChange = null;
+	private final Map<Long, Set<Object>> committedStateSyncers = new HashMap<>();
 
 	public Syncer(
 		Mempool mempool,
@@ -109,27 +106,23 @@ public final class Syncer implements SyncedExecutor<CommittedAtom> {
 
 	@Override
 	public boolean syncTo(VertexMetadata vertexMetadata, List<BFTNode> target, Object opaque) {
-		if (target.isEmpty()) {
-			// TODO: relax this in future when we have non-validator nodes
-			throw new IllegalArgumentException("target must not be empty");
+		synchronized (lock) {
+			if (target.isEmpty()) {
+				// TODO: relax this in future when we have non-validator nodes
+				throw new IllegalArgumentException("target must not be empty");
+			}
+
+			final long targetStateVersion = vertexMetadata.getStateVersion();
+			final long currentStateVersion = this.stateVersion.get();
+			if (targetStateVersion <= currentStateVersion) {
+				return true;
+			}
+
+			this.syncServiceRunner.syncToVersion(targetStateVersion, target);
+			this.committedStateSyncers.merge(targetStateVersion, Collections.singleton(opaque), Sets::union);
+
+			return false;
 		}
-
-		final long targetStateVersion = vertexMetadata.getStateVersion();
-		final long currentStateVersion = this.stateVersion.get();
-		if (targetStateVersion <= currentStateVersion) {
-			return true;
-		}
-
-		this.syncServiceRunner.syncToVersion(targetStateVersion, target);
-		this.lastStoredAtom
-			.observeOn(Schedulers.io())
-			.map(atom -> atom.getVertexMetadata().getStateVersion())
-			.filter(stateVersion -> stateVersion >= targetStateVersion)
-			.firstOrError()
-			.ignoreElement()
-			.subscribe(() -> committedStateSyncSender.sendCommittedStateSync(targetStateVersion, opaque));
-
-		return false;
 	}
 
 	@Override
@@ -143,7 +136,6 @@ public final class Syncer implements SyncedExecutor<CommittedAtom> {
 	 */
 	@Override
 	public void execute(CommittedAtom atom) {
-		// TODO: remove lock
 		synchronized (lock) {
 			this.counters.increment(CounterType.LEDGER_PROCESSED);
 
@@ -157,7 +149,13 @@ public final class Syncer implements SyncedExecutor<CommittedAtom> {
 			this.counters.set(CounterType.LEDGER_STATE_VERSION, stateVersion);
 
 			this.executor.execute(atom);
-			this.lastStoredAtom.onNext(atom);
+
+			Set<Object> opaqueObjects = this.committedStateSyncers.remove(stateVersion);
+			if (opaqueObjects != null) {
+				for (Object opaque : opaqueObjects) {
+					committedStateSyncSender.sendCommittedStateSync(stateVersion, opaque);
+				}
+			}
 
 			if (atom.getClientAtom() != null) {
 				this.mempool.removeCommittedAtom(atom.getAID());
