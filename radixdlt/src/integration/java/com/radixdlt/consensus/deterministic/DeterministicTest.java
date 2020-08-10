@@ -34,7 +34,7 @@ import com.radixdlt.consensus.deterministic.configuration.SingleEpochAlwaysSynce
 import com.radixdlt.consensus.deterministic.configuration.SingleEpochFailOnSyncSyncedExecutor;
 import com.radixdlt.consensus.deterministic.configuration.SingleEpochRandomlySyncedExecutor;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
-import com.radixdlt.syncer.Syncer.CommittedStateSyncSender;
+import com.radixdlt.syncer.SyncedEpochExecutor.CommittedStateSyncSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.EUID;

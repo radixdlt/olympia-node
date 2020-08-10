@@ -45,7 +45,7 @@ import java.util.function.Function;
  *
  * TODO: Most of the logic here should go into RadixEngine itself
  */
-public final class Syncer implements SyncedExecutor<CommittedAtom> {
+public final class SyncedEpochExecutor implements SyncedExecutor<CommittedAtom> {
 	private static final int BATCH_SIZE = 100;
 
 	public interface CommittedStateSyncSender {
@@ -64,11 +64,12 @@ public final class Syncer implements SyncedExecutor<CommittedAtom> {
 	private final SyncServiceRunner syncServiceRunner;
 
 	private final Object lock = new Object();
-	private final AtomicLong stateVersion = new AtomicLong(0);
+	private final AtomicLong stateVersion;
 	private VertexMetadata lastEpochChange = null;
 	private final Map<Long, Set<Object>> committedStateSyncers = new HashMap<>();
 
-	public Syncer(
+	public SyncedEpochExecutor(
+		long initialStateVersion,
 		Mempool mempool,
 		RadixEngineExecutor executor,
 		CommittedStateSyncSender committedStateSyncSender,
@@ -82,6 +83,8 @@ public final class Syncer implements SyncedExecutor<CommittedAtom> {
 		if (epochChangeView.isGenesis()) {
 			throw new IllegalArgumentException("Epoch change view must not be genesis.");
 		}
+
+		this.stateVersion = new AtomicLong(initialStateVersion);
 
 		this.mempool = Objects.requireNonNull(mempool);
 		this.executor = Objects.requireNonNull(executor);
@@ -98,7 +101,6 @@ public final class Syncer implements SyncedExecutor<CommittedAtom> {
 			this.stateSyncNetwork,
 			this.addressBook,
 			this::execute,
-			this.stateVersion::get,
 			BATCH_SIZE,
 			10
 		);
@@ -118,7 +120,7 @@ public final class Syncer implements SyncedExecutor<CommittedAtom> {
 				return true;
 			}
 
-			this.syncServiceRunner.syncToVersion(targetStateVersion, target);
+			this.syncServiceRunner.syncToVersion(targetStateVersion, currentStateVersion, target);
 			this.committedStateSyncers.merge(targetStateVersion, Collections.singleton(opaque), Sets::union);
 
 			return false;
@@ -141,7 +143,7 @@ public final class Syncer implements SyncedExecutor<CommittedAtom> {
 
 			final long stateVersion = atom.getVertexMetadata().getStateVersion();
 
-			if (stateVersion != 0 && stateVersion <= this.stateVersion.get()) {
+			if (stateVersion != 0 && stateVersion != this.stateVersion.get() + 1) {
 				return;
 			}
 

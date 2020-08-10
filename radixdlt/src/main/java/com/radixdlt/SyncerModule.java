@@ -61,8 +61,8 @@ import com.radixdlt.store.berkeley.BerkeleyCursorStore;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.syncer.EpochChangeSender;
 import com.radixdlt.syncer.StateSyncNetwork;
-import com.radixdlt.syncer.Syncer;
-import com.radixdlt.syncer.Syncer.CommittedStateSyncSender;
+import com.radixdlt.syncer.SyncedEpochExecutor;
+import com.radixdlt.syncer.SyncedEpochExecutor.CommittedStateSyncSender;
 import com.radixdlt.universe.Universe;
 import java.util.Objects;
 
@@ -79,7 +79,7 @@ public class SyncerModule extends AbstractModule {
 
 	@Override
 	protected void configure() {
-		bind(new TypeLiteral<SyncedExecutor<CommittedAtom>>() { }).to(Syncer.class).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<SyncedExecutor<CommittedAtom>>() { }).to(SyncedEpochExecutor.class).in(Scopes.SINGLETON);
 		bind(Mempool.class).to(SharedMempool.class).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EngineStore<CommittedAtom>>() { }).to(CommittedAtomsStore.class).in(Scopes.SINGLETON);
 		bind(AtomToBinaryConverter.class).toInstance(new AtomToBinaryConverter(DefaultSerialization.getInstance()));
@@ -151,7 +151,7 @@ public class SyncerModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private Syncer syncedRadixEngine(
+	private SyncedEpochExecutor syncedRadixEngine(
 		Mempool mempool,
 		RadixEngineExecutor executor,
 		CommittedStateSyncSender committedStateSyncSender,
@@ -162,7 +162,8 @@ public class SyncerModule extends AbstractModule {
 		SystemCounters counters
 	) {
 		final long viewsPerEpoch = runtimeProperties.get("epochs.views_per_epoch", 100L);
-		return new Syncer(
+		return new SyncedEpochExecutor(
+			0L,
 			mempool,
 			executor,
 			committedStateSyncSender,

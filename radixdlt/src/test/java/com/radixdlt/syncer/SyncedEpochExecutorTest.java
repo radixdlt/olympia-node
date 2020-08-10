@@ -34,11 +34,10 @@ import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.execution.RadixEngineExecutor;
-import com.radixdlt.syncer.Syncer.CommittedStateSyncSender;
+import com.radixdlt.syncer.SyncedEpochExecutor.CommittedStateSyncSender;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.mempool.Mempool;
@@ -52,11 +51,11 @@ import java.util.function.Function;
 import org.junit.Before;
 import org.junit.Test;
 
-public class SyncerTest {
+public class SyncedEpochExecutorTest {
 
 	private Mempool mempool;
 	private RadixEngineExecutor executor;
-	private Syncer syncer;
+	private SyncedEpochExecutor syncedEpochExecutor;
 	private AddressBook addressBook;
 	private StateSyncNetwork stateSyncNetwork;
 	private CommittedStateSyncSender committedStateSyncSender;
@@ -80,7 +79,8 @@ public class SyncerTest {
 		Function<Long, BFTValidatorSet> vsm = mock(Function.class);
 		this.validatorSetMapping = vsm;
 		this.epochHighView = View.of(100);
-		this.syncer = new Syncer(
+		this.syncedEpochExecutor = new SyncedEpochExecutor(
+			1233,
 			mempool,
 			executor,
 			committedStateSyncSender,
@@ -97,7 +97,7 @@ public class SyncerTest {
 	public void when_compute_vertex_metadata_equal_to_high_view__then_should_return_true() {
 		Vertex vertex = mock(Vertex.class);
 		when(vertex.getView()).thenReturn(epochHighView);
-		assertThat(syncer.compute(vertex)).isTrue();
+		assertThat(syncedEpochExecutor.compute(vertex)).isTrue();
 	}
 
 	@Test
@@ -112,7 +112,7 @@ public class SyncerTest {
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		when(this.validatorSetMapping.apply(eq(genesisEpoch + 1))).thenReturn(validatorSet);
 
-		syncer.execute(committedAtom);
+		syncedEpochExecutor.execute(committedAtom);
 		verify(epochChangeSender, times(1))
 			.epochChange(
 				argThat(e -> e.getAncestor().equals(vertexMetadata) && e.getValidatorSet().equals(validatorSet))
@@ -120,17 +120,17 @@ public class SyncerTest {
 	}
 
 	@Test
-	public void when_insert_and_commit_vertex_with_engine_exception__then_correct_messages_are_sent() throws RadixEngineException {
+	public void when_insert_and_commit_vertex_with_engine_exception__then_correct_messages_are_sent() {
 		CommittedAtom committedAtom = mock(CommittedAtom.class);
 		when(committedAtom.getClientAtom()).thenReturn(mock(ClientAtom.class));
 		AID aid = mock(AID.class);
 		when(committedAtom.getAID()).thenReturn(aid);
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
 		when(vertexMetadata.getView()).then(i -> View.of(50));
-		when(vertexMetadata.getStateVersion()).then(i -> 1L);
+		when(vertexMetadata.getStateVersion()).then(i -> 1234L);
 		when(committedAtom.getVertexMetadata()).thenReturn(vertexMetadata);
 
-		syncer.execute(committedAtom);
+		syncedEpochExecutor.execute(committedAtom);
 		verify(executor, times(1)).execute(eq(committedAtom));
 		verify(mempool, times(1)).removeCommittedAtom(aid);
 	}
@@ -146,21 +146,16 @@ public class SyncerTest {
 		when(node.getKey()).thenReturn(pk);
 		when(addressBook.peer(eq(euid))).thenReturn(Optional.of(peer));
 
-		CommittedAtom atom = mock(CommittedAtom.class);
-		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
-		when(vertexMetadata.getStateVersion()).thenReturn(1233L);
-		when(atom.getVertexMetadata()).thenReturn(vertexMetadata);
-
 		CommittedAtom nextAtom = mock(CommittedAtom.class);
 		VertexMetadata nextVertexMetadata = mock(VertexMetadata.class);
 		when(nextVertexMetadata.getStateVersion()).thenReturn(1234L);
 
-		syncer.syncTo(nextVertexMetadata, Collections.singletonList(node), mock(Object.class));
+		syncedEpochExecutor.syncTo(nextVertexMetadata, Collections.singletonList(node), mock(Object.class));
 		verify(committedStateSyncSender, never()).sendCommittedStateSync(anyLong(), any());
 
 		when(nextAtom.getClientAtom()).thenReturn(mock(ClientAtom.class));
 		when(nextAtom.getVertexMetadata()).thenReturn(nextVertexMetadata);
-		syncer.execute(nextAtom);
+		syncedEpochExecutor.execute(nextAtom);
 
 		verify(committedStateSyncSender, timeout(100).atLeast(1)).sendCommittedStateSync(anyLong(), any());
 	}

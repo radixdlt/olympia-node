@@ -26,13 +26,12 @@ import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
 import io.reactivex.rxjava3.core.Observable;
-import java.util.ArrayList;
+import io.reactivex.rxjava3.subjects.PublishSubject;
+import io.reactivex.rxjava3.subjects.Subject;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.function.LongSupplier;
+import java.util.function.Consumer;
 
 import org.junit.After;
 import org.junit.Before;
@@ -42,22 +41,24 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.middleware2.CommittedAtom;
 
-import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class SyncServiceRunnerTest {
 
-	private LongSupplier versionProvider;
 	private SyncServiceRunner syncServiceRunner;
 	private StateSyncNetwork stateSyncNetwork;
 	private AddressBook addressBook;
 	private RadixEngineExecutor executor;
+	private Consumer<CommittedAtom> consumer;
+	private Subject<ImmutableList<CommittedAtom>> responsesSubject;
 
 	private static CommittedAtom buildWithVersion(long version) {
 		CommittedAtom committedAtom = mock(CommittedAtom.class);
@@ -69,25 +70,23 @@ public class SyncServiceRunnerTest {
 
 	@Before
 	public void setUp() {
-		List<CommittedAtom> store = new ArrayList<>();
-		for (int i = 1; i <= 10; i++) {
-			store.add(buildWithVersion(i));
-		}
 		this.stateSyncNetwork = mock(StateSyncNetwork.class);
+		when(stateSyncNetwork.syncRequests()).thenReturn(Observable.never());
+		responsesSubject = PublishSubject.create();
+		when(stateSyncNetwork.syncResponses()).thenReturn(responsesSubject);
+		when(stateSyncNetwork.syncRequests()).thenReturn(Observable.never());
+
 		this.addressBook = mock(AddressBook.class);
 		this.executor = mock(RadixEngineExecutor.class);
-		versionProvider = () -> store.get(store.size() - 1).getVertexMetadata().getStateVersion();
+		this.consumer = mock(Consumer.class);
 		syncServiceRunner = new SyncServiceRunner(
 			executor,
 			stateSyncNetwork,
 			addressBook,
-			(CommittedAtom atom) -> {
-			if (atom.getVertexMetadata().getStateVersion() == versionProvider.getAsLong() + 1) {
-				store.add(atom);
-			} else {
-				throw new IllegalArgumentException();
-			}
-		}, versionProvider, 2, 1);
+			consumer,
+			2,
+			1
+		);
 	}
 
 	@After
@@ -124,56 +123,49 @@ public class SyncServiceRunnerTest {
 	}
 
 	@Test
-	public void basicSynchronization() throws InterruptedException {
-		CountDownLatch events = new CountDownLatch(1);
-		long targetVersion = 15;
-		syncServiceRunner.setTargetListener(target -> {
-			assertEquals(targetVersion, target);
-			events.countDown();
-		});
-		syncServiceRunner.syncToVersion(targetVersion, Collections.singletonList(mock(BFTNode.class)));
+	public void basicSynchronization() {
+		final long currentVersion = 6;
+		final long targetVersion = 15;
+
+		syncServiceRunner.start();
+
+		syncServiceRunner.syncToVersion(targetVersion, currentVersion, Collections.singletonList(mock(BFTNode.class)));
 		ImmutableList.Builder<CommittedAtom> newAtoms1 = ImmutableList.builder();
 		for (int i = 7; i <= 12; i++) {
 			newAtoms1.add(buildWithVersion(i));
 		}
-		syncServiceRunner.syncAtoms(newAtoms1.build());
+		responsesSubject.onNext(newAtoms1.build());
 		ImmutableList.Builder<CommittedAtom> newAtoms2 = ImmutableList.builder();
 		for (int i = 10; i <= 18; i++) {
 			newAtoms2.add(buildWithVersion(i));
 		}
-		syncServiceRunner.syncAtoms(newAtoms2.build());
-		assertTrue(events.await(5, TimeUnit.SECONDS));
-		assertEquals(18, versionProvider.getAsLong());
+		responsesSubject.onNext(newAtoms2.build());
+
+		verify(consumer, timeout(1000).times(1))
+			.accept(argThat(a -> a.getVertexMetadata().getStateVersion() == 7));
 	}
 
 	@Test
-	public void syncWithLostMessages() throws InterruptedException {
-		CountDownLatch events = new CountDownLatch(1);
-		long targetVersion = 15;
-		syncServiceRunner.setTargetListener(target -> fail("Target shouldn't be reached"));
-		syncServiceRunner.setVersionListener(version -> {
-			if (version == 11) {
-				assertEquals(2, syncServiceRunner.getQueueSize());
-				events.countDown();
-			} else if (version > 11) {
-				fail("Version " + version + " should not be reached!");
-			}
-		});
-		syncServiceRunner.syncToVersion(targetVersion, Collections.singletonList(mock(BFTNode.class)));
+	public void syncWithLostMessages() {
+		final long currentVersion = 6;
+		final long targetVersion = 15;
+		syncServiceRunner.syncToVersion(targetVersion, currentVersion, Collections.singletonList(mock(BFTNode.class)));
 		ImmutableList.Builder<CommittedAtom> newAtoms1 = ImmutableList.builder();
 		for (int i = 7; i <= 11; i++) {
 			newAtoms1.add(buildWithVersion(i));
 		}
 		newAtoms1.add(buildWithVersion(13));
 		newAtoms1.add(buildWithVersion(15));
-		syncServiceRunner.syncAtoms(newAtoms1.build());
-		assertTrue(events.await(5, TimeUnit.SECONDS));
-		assertEquals(11, versionProvider.getAsLong());
+		syncServiceRunner.start();
+		responsesSubject.onNext(newAtoms1.build());
+
+		verify(consumer, never()).accept(argThat(a -> a.getVertexMetadata().getStateVersion() > 11));
 	}
 
 	@Test
-	public void requestSent() throws InterruptedException {
-		long targetVersion = 15;
+	public void requestSent() {
+		final long currentVersion = 10;
+		final long targetVersion = 15;
 		BFTNode node = mock(BFTNode.class);
 		ECPublicKey key = mock(ECPublicKey.class);
 		when(key.euid()).thenReturn(mock(EUID.class));
@@ -181,48 +173,25 @@ public class SyncServiceRunnerTest {
 		Peer peer = mock(Peer.class);
 		when(peer.hasSystem()).thenReturn(true);
 		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(peer));
-		syncServiceRunner.syncToVersion(targetVersion, Collections.singletonList(node));
-		verify(stateSyncNetwork, timeout(5000).times(1)).sendSyncRequest(any(), eq(10L));
-		verify(stateSyncNetwork, timeout(5000).times(1)).sendSyncRequest(any(), eq(12L));
-		verify(stateSyncNetwork, timeout(5000).times(1)).sendSyncRequest(any(), eq(14L));
+		syncServiceRunner.syncToVersion(targetVersion, currentVersion, Collections.singletonList(node));
+		verify(stateSyncNetwork, timeout(1000).times(1)).sendSyncRequest(any(), eq(10L));
+		verify(stateSyncNetwork, timeout(1000).times(1)).sendSyncRequest(any(), eq(12L));
+		verify(stateSyncNetwork, timeout(1000).times(1)).sendSyncRequest(any(), eq(14L));
 	}
 
+	/*
 	@Test
-	public void atomsListPruning() throws InterruptedException {
-		CountDownLatch events = new CountDownLatch(1);
-		syncServiceRunner.setVersionListener(version -> {
-			long mxVersion = 10L + syncServiceRunner.getMaxAtomsQueueSize();
-			if (version == mxVersion) {
-				assertEquals(0, syncServiceRunner.getQueueSize());
-				events.countDown();
-			}
-		});
+	public void atomsListPruning() {
 		ImmutableList.Builder<CommittedAtom> newAtoms = ImmutableList.builder();
 		for (int i = 1000; i >= 1; i--) {
 			newAtoms.add(buildWithVersion(i));
 		}
-		syncServiceRunner.syncAtoms(newAtoms.build());
-		assertTrue(events.await(5, TimeUnit.SECONDS));
-		assertEquals(10L + syncServiceRunner.getMaxAtomsQueueSize(), versionProvider.getAsLong());
+		syncServiceRunner.start();
+		responsesSubject.onNext(newAtoms.build());
+
+		verify(consumer, times(1)).accept(argThat(a -> a.getVertexMetadata().getStateVersion() == 1000));
 	}
 
-	@Test
-	public void applyAtoms() throws InterruptedException {
-		CountDownLatch versions = new CountDownLatch(1);
-		syncServiceRunner.setVersionListener(version -> {
-			assertEquals(20, version);
-			versions.countDown();
-		});
-		ImmutableList.Builder<CommittedAtom> newAtoms = ImmutableList.builder();
-		for (int i = 5; i <= 20; i++) {
-			newAtoms.add(buildWithVersion(i));
-		}
-		syncServiceRunner.syncAtoms(newAtoms.build());
-		assertTrue(versions.await(5, TimeUnit.SECONDS));
-		assertEquals(20, versionProvider.getAsLong());
-	}
-
-	/*
 	@Test
 	public void targetVersion() throws InterruptedException {
 		CountDownLatch versions = new CountDownLatch(1);

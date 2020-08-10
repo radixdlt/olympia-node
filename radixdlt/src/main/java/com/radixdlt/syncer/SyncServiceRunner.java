@@ -23,7 +23,6 @@ import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import java.util.Comparator;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -34,8 +33,6 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import java.util.function.LongConsumer;
-import java.util.function.LongSupplier;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
@@ -51,7 +48,6 @@ public final class SyncServiceRunner {
 	private static final int MAX_REQUESTS_TO_SEND = 20;
 	private final RadixEngineExecutor executor;
 	private final Consumer<CommittedAtom> atomProcessor;
-	private final LongSupplier versionProvider;
 	private final int batchSize;
 	private final int maxAtomsQueueSize;
 	private final long patience;
@@ -60,19 +56,17 @@ public final class SyncServiceRunner {
 	private final TreeSet<CommittedAtom> commitedAtoms = new TreeSet<>(Comparator.comparingLong(a -> a.getVertexMetadata().getStateVersion()));
 	private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads("SyncManager"));
 
-	private long targetVersion = -1;
-	private ScheduledFuture<?> timeoutChecker;
-	private LongConsumer onTarget = target -> { };
-	private LongConsumer onVersion = version -> { };
-	private final AddressBook addressBook;
+	private long syncToTargetVersion = -1;
+	private long syncToCurrentVersion = -1;
 
+	private ScheduledFuture<?> timeoutChecker;
+	private final AddressBook addressBook;
 
 	public SyncServiceRunner(
 		RadixEngineExecutor executor,
 		StateSyncNetwork stateSyncNetwork,
 		AddressBook addressBook,
 		Consumer<CommittedAtom> atomProcessor,
-		LongSupplier versionProvider,
 		int batchSize,
 		long patience
 	) {
@@ -80,7 +74,6 @@ public final class SyncServiceRunner {
 		this.stateSyncNetwork = Objects.requireNonNull(stateSyncNetwork);
 		this.addressBook = Objects.requireNonNull(addressBook);
 		this.atomProcessor = Objects.requireNonNull(atomProcessor);
-		this.versionProvider = Objects.requireNonNull(versionProvider);
 		if (batchSize <= 0) {
 			throw new IllegalArgumentException();
 		}
@@ -106,7 +99,6 @@ public final class SyncServiceRunner {
 				// TODO: This may still return an empty list as we still count state versions for atoms which
 				// TODO: never make it into the radix engine due to state errors. This is because we only check
 				// TODO: validity on commit rather than on proposal/prepare.
-				// TODO: remove 100 hardcode limit
 				List<CommittedAtom> committedAtoms = executor.getCommittedAtoms(stateVersion, batchSize);
 				log.debug("SYNC_REQUEST: SENDING_RESPONSE size: {}", committedAtoms.size());
 				stateSyncNetwork.sendSyncResponse(peer, committedAtoms);
@@ -121,26 +113,26 @@ public final class SyncServiceRunner {
 			});
 	}
 
-	public void syncToVersion(long targetVersion, List<BFTNode> target) {
+	public void syncToVersion(long targetVersion, long currentVersion, List<BFTNode> target) {
 		executorService.execute(() -> {
-			if (targetVersion <= this.targetVersion) {
+			if (currentVersion > this.syncToCurrentVersion) {
+				this.syncToCurrentVersion = currentVersion;
+			}
+
+			if (targetVersion <= this.syncToCurrentVersion) {
 				return;
 			}
-			long crtVersion = versionProvider.getAsLong();
-			if (crtVersion >= targetVersion) {
-				return;
-			}
-			this.targetVersion = targetVersion;
+
+			this.syncToTargetVersion = targetVersion;
 			sendSyncRequests(target);
 		});
 	}
 
-	public void syncAtoms(ImmutableList<CommittedAtom> atoms) {
+	void syncAtoms(ImmutableList<CommittedAtom> atoms) {
 		executorService.execute(() -> {
-			long crtVersion = versionProvider.getAsLong();
 			for (CommittedAtom atom : atoms) {
 				long atomVersion = atom.getVertexMetadata().getStateVersion();
-				if (atomVersion > crtVersion) {
+				if (atomVersion > this.syncToCurrentVersion) {
 					if (commitedAtoms.size() < maxAtomsQueueSize) { // check if there is enough space
 						commitedAtoms.add(atom);
 					} else { // not enough space available
@@ -153,38 +145,16 @@ public final class SyncServiceRunner {
 					}
 				}
 			}
-			applyAtoms();
+
+			for (CommittedAtom crtAtom : commitedAtoms) {
+				this.atomProcessor.accept(crtAtom);
+				this.syncToCurrentVersion = crtAtom.getVertexMetadata().getStateVersion();
+			}
+
+			if (timeoutChecker != null) {
+				timeoutChecker.cancel(false);
+			}
 		});
-	}
-
-	private void applyAtoms() {
-		long initialVersion = versionProvider.getAsLong();
-		Iterator<CommittedAtom> it = commitedAtoms.iterator();
-		while (it.hasNext()) {
-			CommittedAtom crtAtom = it.next();
-			long atomVersion = crtAtom.getVertexMetadata().getStateVersion();
-			if (atomVersion <= versionProvider.getAsLong()) {
-				it.remove();
-			} else if (atomVersion == versionProvider.getAsLong() + 1) {
-				atomProcessor.accept(crtAtom);
-				it.remove();
-			} else {
-				break;
-			}
-		}
-
-		long newVersion = versionProvider.getAsLong();
-		if (newVersion > initialVersion) {
-			onVersion.accept(newVersion);
-			if (versionProvider.getAsLong() >= targetVersion) {
-				if (timeoutChecker != null) {
-					timeoutChecker.cancel(false);
-				}
-				if (initialVersion < targetVersion) {
-					onTarget.accept(targetVersion);
-				}
-			}
-		}
 	}
 
 	private void sendSyncRequest(long version, List<BFTNode> target) {
@@ -203,37 +173,21 @@ public final class SyncServiceRunner {
 	}
 
 	private void sendSyncRequests(List<BFTNode> target) {
-		long crtVersion = versionProvider.getAsLong();
-		if (crtVersion >= targetVersion) {
+		if (syncToCurrentVersion >= syncToTargetVersion) {
 			return;
 		}
-		long size = ((targetVersion - crtVersion) / batchSize);
-		if ((targetVersion - crtVersion) % batchSize > 0) {
+		long size = ((syncToTargetVersion - syncToCurrentVersion) / batchSize);
+		if ((syncToTargetVersion - syncToCurrentVersion) % batchSize > 0) {
 			size += 1;
 		}
 		size = Math.min(size, MAX_REQUESTS_TO_SEND);
 		for (long i = 0; i < size; i++) {
-			sendSyncRequest(crtVersion + batchSize * i, target);
+			sendSyncRequest(syncToCurrentVersion + batchSize * i, target);
 		}
 		if (timeoutChecker != null) {
 			timeoutChecker.cancel(false);
 		}
 		timeoutChecker = executorService.schedule(() -> sendSyncRequests(target), patience, TimeUnit.SECONDS);
-	}
-
-	@VisibleForTesting
-	long getTargetVersion() {
-		return targetVersion;
-	}
-
-	@VisibleForTesting
-	void setTargetListener(LongConsumer onTarget) {
-		this.onTarget = onTarget;
-	}
-
-	@VisibleForTesting
-	void setVersionListener(LongConsumer onVersion) {
-		this.onVersion = onVersion;
 	}
 
 	@VisibleForTesting

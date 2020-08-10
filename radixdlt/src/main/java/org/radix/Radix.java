@@ -24,7 +24,7 @@ import com.radixdlt.systeminfo.InMemorySystemInfoManager;
 import com.radixdlt.api.LedgerRx;
 import com.radixdlt.api.SubmissionErrorsRx;
 import com.radixdlt.consensus.ConsensusRunner;
-import com.radixdlt.syncer.Syncer;
+import com.radixdlt.syncer.SyncedEpochExecutor;
 import com.radixdlt.mempool.MempoolReceiver;
 import com.radixdlt.mempool.SubmissionControl;
 import com.radixdlt.middleware2.CommittedAtom;
@@ -201,8 +201,8 @@ public final class Radix
 		CommittedAtomsStore engineStore = globalInjector.getInjector().getInstance(CommittedAtomsStore.class);
 		CommittedAtom genesisAtom = globalInjector.getInjector().getInstance(CommittedAtom.class);
 		if (engineStore.getCommittedAtoms(genesisAtom.getVertexMetadata().getStateVersion() - 1, 1).isEmpty()) {
-			Syncer syncer = globalInjector.getInjector().getInstance(Syncer.class);
-			syncer.execute(genesisAtom);
+			SyncedEpochExecutor syncedEpochExecutor = globalInjector.getInjector().getInstance(SyncedEpochExecutor.class);
+			syncedEpochExecutor.execute(genesisAtom);
 		}
 
 		final ConsensusRunner bft = globalInjector.getInjector().getInstance(ConsensusRunner.class);
