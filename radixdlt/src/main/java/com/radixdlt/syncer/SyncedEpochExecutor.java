@@ -51,7 +51,7 @@ public final class SyncedEpochExecutor implements SyncedExecutor<CommittedAtom> 
 	}
 
 	public interface SyncService {
-		void sendLocalSyncRequest(long targetVersion, long currentVersion, List<BFTNode> target);
+		void sendLocalSyncRequest(LocalSyncRequest request);
 	}
 
 	private final Mempool mempool;
@@ -108,7 +108,7 @@ public final class SyncedEpochExecutor implements SyncedExecutor<CommittedAtom> 
 				return true;
 			}
 
-			this.syncService.sendLocalSyncRequest(targetStateVersion, currentStateVersion, target);
+			this.syncService.sendLocalSyncRequest(new LocalSyncRequest(targetStateVersion, currentStateVersion, target));
 			this.committedStateSyncers.merge(targetStateVersion, Collections.singleton(opaque), Sets::union);
 
 			return false;

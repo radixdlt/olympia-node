@@ -61,8 +61,10 @@ import com.radixdlt.store.berkeley.BerkeleyCursorStore;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.syncer.EpochChangeSender;
 import com.radixdlt.syncer.StateSyncNetwork;
+import com.radixdlt.syncer.SyncServiceProcessor;
+import com.radixdlt.syncer.SyncServiceProcessor.SyncedAtomSender;
 import com.radixdlt.syncer.SyncServiceRunner;
-import com.radixdlt.syncer.SyncServiceRunner.SyncedAtomSender;
+import com.radixdlt.syncer.SyncServiceRunner.LocalSyncRequestsRx;
 import com.radixdlt.syncer.SyncedEpochExecutor;
 import com.radixdlt.syncer.SyncedEpochExecutor.CommittedStateSyncSender;
 import com.radixdlt.syncer.SyncedEpochExecutor.SyncService;
@@ -156,32 +158,39 @@ public class SyncerModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private SyncService syncService(SyncServiceRunner runner) {
-		return runner::syncToVersion;
-	}
-
-
-	@Provides
-	@Singleton
-	private SyncedAtomSender syncedAtomSender(SyncedEpochExecutor syncedEpochExecutor) {
-		return syncedEpochExecutor::execute;
+	private SyncedAtomSender syncedAtomSender(SyncedEpochExecutor epochExecutor) {
+		return epochExecutor::execute;
 	}
 
 	@Provides
 	@Singleton
-	private SyncServiceRunner syncServiceRunner(
+	private SyncServiceProcessor syncServiceProcessor(
 		RadixEngineExecutor executor,
-		SyncedAtomSender syncedAtomSender,
+		StateSyncNetwork stateSyncNetwork,
 		AddressBook addressBook,
-		StateSyncNetwork stateSyncNetwork
+		SyncedAtomSender syncedAtomSender
 	) {
-		return new SyncServiceRunner(
+		return new SyncServiceProcessor(
 			executor,
 			stateSyncNetwork,
 			addressBook,
 			syncedAtomSender,
 			BATCH_SIZE,
 			10
+		);
+	}
+
+	@Provides
+	@Singleton
+	private SyncServiceRunner syncServiceRunner(
+		LocalSyncRequestsRx localSyncRequestsRx,
+		StateSyncNetwork stateSyncNetwork,
+		SyncServiceProcessor syncServiceProcessor
+	) {
+		return new SyncServiceRunner(
+			localSyncRequestsRx,
+			stateSyncNetwork,
+			syncServiceProcessor
 		);
 	}
 

@@ -31,7 +31,10 @@ import com.radixdlt.mempool.SubmissionControlImpl.SubmissionControlSender;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.converters.AtomConversionException;
 import com.radixdlt.syncer.EpochChangeSender;
+import com.radixdlt.syncer.LocalSyncRequest;
+import com.radixdlt.syncer.SyncServiceRunner.LocalSyncRequestsRx;
 import com.radixdlt.syncer.SyncedEpochExecutor.CommittedStateSyncSender;
+import com.radixdlt.syncer.SyncedEpochExecutor.SyncService;
 import com.radixdlt.utils.SenderToRx;
 import com.radixdlt.utils.TwoSenderToRx;
 import io.reactivex.rxjava3.core.Observable;
@@ -79,5 +82,9 @@ public final class SyncerMessagesModule extends AbstractModule {
 		TwoSenderToRx<Long, Object, CommittedStateSync> committedStateSyncTwoSenderToRx = new TwoSenderToRx<>(CommittedStateSync::new);
 		bind(CommittedStateSyncRx.class).toInstance(committedStateSyncTwoSenderToRx::rx);
 		bind(CommittedStateSyncSender.class).toInstance(committedStateSyncTwoSenderToRx::send);
+
+		SenderToRx<LocalSyncRequest, LocalSyncRequest> localSyncRequests = new SenderToRx<>(r -> r);
+		bind(SyncService.class).toInstance(localSyncRequests::send);
+		bind(LocalSyncRequestsRx.class).toInstance(localSyncRequests::rx);
 	}
 }
