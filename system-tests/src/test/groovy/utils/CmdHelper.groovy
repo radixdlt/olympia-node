@@ -122,6 +122,7 @@ class CmdHelper {
         }catch(Exception ex){
             logger.info("Exception occurred in parsing the test duration setting it default value. Is TEST_DURATION environment variable set properly?" +
                     "\n Default value 60 seconds for test duration is being used instead ")
+            return 60
 
         }
     }
