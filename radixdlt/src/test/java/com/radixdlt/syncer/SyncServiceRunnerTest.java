@@ -25,13 +25,13 @@ import com.radixdlt.identifiers.EUID;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
+import com.radixdlt.syncer.SyncServiceRunner.SyncedAtomSender;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Consumer;
 
 import org.junit.After;
 import org.junit.Before;
@@ -57,7 +57,7 @@ public class SyncServiceRunnerTest {
 	private StateSyncNetwork stateSyncNetwork;
 	private AddressBook addressBook;
 	private RadixEngineExecutor executor;
-	private Consumer<CommittedAtom> consumer;
+	private SyncedAtomSender syncedAtomSender;
 	private Subject<ImmutableList<CommittedAtom>> responsesSubject;
 
 	private static CommittedAtom buildWithVersion(long version) {
@@ -78,12 +78,12 @@ public class SyncServiceRunnerTest {
 
 		this.addressBook = mock(AddressBook.class);
 		this.executor = mock(RadixEngineExecutor.class);
-		this.consumer = mock(Consumer.class);
+		this.syncedAtomSender = mock(SyncedAtomSender.class);
 		syncServiceRunner = new SyncServiceRunner(
 			executor,
 			stateSyncNetwork,
 			addressBook,
-			consumer,
+			syncedAtomSender,
 			2,
 			1
 		);
@@ -141,8 +141,8 @@ public class SyncServiceRunnerTest {
 		}
 		responsesSubject.onNext(newAtoms2.build());
 
-		verify(consumer, timeout(1000).times(1))
-			.accept(argThat(a -> a.getVertexMetadata().getStateVersion() == 7));
+		verify(syncedAtomSender, timeout(1000).times(1))
+			.sendSyncedAtom(argThat(a -> a.getVertexMetadata().getStateVersion() == 7));
 	}
 
 	@Test
@@ -159,7 +159,7 @@ public class SyncServiceRunnerTest {
 		syncServiceRunner.start();
 		responsesSubject.onNext(newAtoms1.build());
 
-		verify(consumer, never()).accept(argThat(a -> a.getVertexMetadata().getStateVersion() > 11));
+		verify(syncedAtomSender, never()).sendSyncedAtom(argThat(a -> a.getVertexMetadata().getStateVersion() > 11));
 	}
 
 	@Test

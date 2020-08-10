@@ -30,7 +30,6 @@ import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.execution.RadixEngineExecutor;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.CommittedAtom;
-import com.radixdlt.network.addressbook.AddressBook;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -46,10 +45,13 @@ import java.util.function.Function;
  * TODO: Most of the logic here should go into RadixEngine itself
  */
 public final class SyncedEpochExecutor implements SyncedExecutor<CommittedAtom> {
-	private static final int BATCH_SIZE = 100;
 
 	public interface CommittedStateSyncSender {
 		void sendCommittedStateSync(long stateVersion, Object opaque);
+	}
+
+	public interface SyncService {
+		void sendLocalSyncRequest(long targetVersion, long currentVersion, List<BFTNode> target);
 	}
 
 	private final Mempool mempool;
@@ -57,11 +59,9 @@ public final class SyncedEpochExecutor implements SyncedExecutor<CommittedAtom> 
 	private final CommittedStateSyncSender committedStateSyncSender;
 	private final EpochChangeSender epochChangeSender;
 	private final Function<Long, BFTValidatorSet> validatorSetMapping;
-	private final AddressBook addressBook;
-	private final StateSyncNetwork stateSyncNetwork;
 	private final View epochChangeView;
 	private final SystemCounters counters;
-	private final SyncServiceRunner syncServiceRunner;
+	private final SyncService syncService;
 
 	private final Object lock = new Object();
 	private final AtomicLong stateVersion;
@@ -76,8 +76,7 @@ public final class SyncedEpochExecutor implements SyncedExecutor<CommittedAtom> 
 		EpochChangeSender epochChangeSender,
 		Function<Long, BFTValidatorSet> validatorSetMapping,
 		View epochChangeView,
-		AddressBook addressBook,
-		StateSyncNetwork stateSyncNetwork,
+		SyncService syncService,
 		SystemCounters counters
 	) {
 		if (epochChangeView.isGenesis()) {
@@ -85,25 +84,14 @@ public final class SyncedEpochExecutor implements SyncedExecutor<CommittedAtom> 
 		}
 
 		this.stateVersion = new AtomicLong(initialStateVersion);
-
 		this.mempool = Objects.requireNonNull(mempool);
 		this.executor = Objects.requireNonNull(executor);
 		this.committedStateSyncSender = Objects.requireNonNull(committedStateSyncSender);
 		this.epochChangeSender = Objects.requireNonNull(epochChangeSender);
 		this.validatorSetMapping = validatorSetMapping;
 		this.epochChangeView = epochChangeView;
-		this.addressBook = Objects.requireNonNull(addressBook);
-		this.stateSyncNetwork = Objects.requireNonNull(stateSyncNetwork);
 		this.counters = Objects.requireNonNull(counters);
-
-		this.syncServiceRunner = new SyncServiceRunner(
-			this.executor,
-			this.stateSyncNetwork,
-			this.addressBook,
-			this::execute,
-			BATCH_SIZE,
-			10
-		);
+		this.syncService = Objects.requireNonNull(syncService);
 	}
 
 	@Override
@@ -120,7 +108,7 @@ public final class SyncedEpochExecutor implements SyncedExecutor<CommittedAtom> 
 				return true;
 			}
 
-			this.syncServiceRunner.syncToVersion(targetStateVersion, currentStateVersion, target);
+			this.syncService.sendLocalSyncRequest(targetStateVersion, currentStateVersion, target);
 			this.committedStateSyncers.merge(targetStateVersion, Collections.singleton(opaque), Sets::union);
 
 			return false;

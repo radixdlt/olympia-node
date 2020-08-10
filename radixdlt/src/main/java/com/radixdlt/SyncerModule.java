@@ -61,8 +61,11 @@ import com.radixdlt.store.berkeley.BerkeleyCursorStore;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.syncer.EpochChangeSender;
 import com.radixdlt.syncer.StateSyncNetwork;
+import com.radixdlt.syncer.SyncServiceRunner;
+import com.radixdlt.syncer.SyncServiceRunner.SyncedAtomSender;
 import com.radixdlt.syncer.SyncedEpochExecutor;
 import com.radixdlt.syncer.SyncedEpochExecutor.CommittedStateSyncSender;
+import com.radixdlt.syncer.SyncedEpochExecutor.SyncService;
 import com.radixdlt.universe.Universe;
 import java.util.Objects;
 
@@ -71,6 +74,8 @@ import java.util.Objects;
  * TODO: Split out Executor (Radix Engine) logic
  */
 public class SyncerModule extends AbstractModule {
+	private static final int BATCH_SIZE = 100;
+
 	private final RuntimeProperties runtimeProperties;
 
 	public SyncerModule(RuntimeProperties runtimeProperties) {
@@ -151,12 +156,44 @@ public class SyncerModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private SyncedEpochExecutor syncedRadixEngine(
+	private SyncService syncService(SyncServiceRunner runner) {
+		return runner::syncToVersion;
+	}
+
+
+	@Provides
+	@Singleton
+	private SyncedAtomSender syncedAtomSender(SyncedEpochExecutor syncedEpochExecutor) {
+		return syncedEpochExecutor::execute;
+	}
+
+	@Provides
+	@Singleton
+	private SyncServiceRunner syncServiceRunner(
+		RadixEngineExecutor executor,
+		SyncedAtomSender syncedAtomSender,
+		AddressBook addressBook,
+		StateSyncNetwork stateSyncNetwork
+	) {
+		return new SyncServiceRunner(
+			executor,
+			stateSyncNetwork,
+			addressBook,
+			syncedAtomSender,
+			BATCH_SIZE,
+			10
+		);
+	}
+
+	@Provides
+	@Singleton
+	private SyncedEpochExecutor syncedEpochExecutor(
 		Mempool mempool,
 		RadixEngineExecutor executor,
 		CommittedStateSyncSender committedStateSyncSender,
 		EpochChangeSender epochChangeSender,
 		AddressBookValidatorSetProvider validatorSetProvider,
+		SyncService syncService,
 		AddressBook addressBook,
 		StateSyncNetwork stateSyncNetwork,
 		SystemCounters counters
@@ -170,8 +207,7 @@ public class SyncerModule extends AbstractModule {
 			epochChangeSender,
 			validatorSetProvider::getValidatorSet,
 			View.of(viewsPerEpoch),
-			addressBook,
-			stateSyncNetwork,
+			syncService,
 			counters
 		);
 	}

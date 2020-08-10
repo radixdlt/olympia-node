@@ -32,7 +32,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
@@ -43,11 +42,14 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 public final class SyncServiceRunner {
+	public interface SyncedAtomSender {
+		void sendSyncedAtom(CommittedAtom committedAtom);
+	}
 
 	private static final Logger log = LogManager.getLogger();
 	private static final int MAX_REQUESTS_TO_SEND = 20;
 	private final RadixEngineExecutor executor;
-	private final Consumer<CommittedAtom> atomProcessor;
+	private final SyncedAtomSender syncedAtomSender;
 	private final int batchSize;
 	private final int maxAtomsQueueSize;
 	private final long patience;
@@ -66,14 +68,14 @@ public final class SyncServiceRunner {
 		RadixEngineExecutor executor,
 		StateSyncNetwork stateSyncNetwork,
 		AddressBook addressBook,
-		Consumer<CommittedAtom> atomProcessor,
+		SyncedAtomSender syncedAtomSender,
 		int batchSize,
 		long patience
 	) {
 		this.executor = Objects.requireNonNull(executor);
 		this.stateSyncNetwork = Objects.requireNonNull(stateSyncNetwork);
 		this.addressBook = Objects.requireNonNull(addressBook);
-		this.atomProcessor = Objects.requireNonNull(atomProcessor);
+		this.syncedAtomSender = Objects.requireNonNull(syncedAtomSender);
 		if (batchSize <= 0) {
 			throw new IllegalArgumentException();
 		}
@@ -147,7 +149,7 @@ public final class SyncServiceRunner {
 			}
 
 			for (CommittedAtom crtAtom : commitedAtoms) {
-				this.atomProcessor.accept(crtAtom);
+				this.syncedAtomSender.sendSyncedAtom(crtAtom);
 				this.syncToCurrentVersion = crtAtom.getVertexMetadata().getStateVersion();
 			}
 

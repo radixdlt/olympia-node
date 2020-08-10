@@ -43,10 +43,9 @@ import com.radixdlt.identifiers.EUID;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.CommittedAtom;
-import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
+import com.radixdlt.syncer.SyncedEpochExecutor.SyncService;
 import java.util.Collections;
-import java.util.Optional;
 import java.util.function.Function;
 import org.junit.Before;
 import org.junit.Test;
@@ -56,21 +55,18 @@ public class SyncedEpochExecutorTest {
 	private Mempool mempool;
 	private RadixEngineExecutor executor;
 	private SyncedEpochExecutor syncedEpochExecutor;
-	private AddressBook addressBook;
-	private StateSyncNetwork stateSyncNetwork;
 	private CommittedStateSyncSender committedStateSyncSender;
 	private EpochChangeSender epochChangeSender;
 	private Function<Long, BFTValidatorSet> validatorSetMapping;
 	private View epochHighView;
 	private SystemCounters counters;
+	private SyncService syncService;
 
 	@Before
 	public void setup() {
 		this.mempool = mock(Mempool.class);
 		// No type check issues with mocking generic here
 		this.executor = mock(RadixEngineExecutor.class);
-		this.addressBook = mock(AddressBook.class);
-		this.stateSyncNetwork = mock(StateSyncNetwork.class);
 		this.committedStateSyncSender = mock(CommittedStateSyncSender.class);
 		this.epochChangeSender = mock(EpochChangeSender.class);
 		this.counters = mock(SystemCounters.class);
@@ -79,6 +75,7 @@ public class SyncedEpochExecutorTest {
 		Function<Long, BFTValidatorSet> vsm = mock(Function.class);
 		this.validatorSetMapping = vsm;
 		this.epochHighView = View.of(100);
+		this.syncService = mock(SyncService.class);
 		this.syncedEpochExecutor = new SyncedEpochExecutor(
 			1233,
 			mempool,
@@ -87,8 +84,7 @@ public class SyncedEpochExecutorTest {
 			epochChangeSender,
 			validatorSetMapping,
 			epochHighView,
-			addressBook,
-			stateSyncNetwork,
+			syncService,
 			counters
 		);
 	}
@@ -144,7 +140,6 @@ public class SyncedEpochExecutorTest {
 		when(pk.euid()).thenReturn(euid);
 		BFTNode node = mock(BFTNode.class);
 		when(node.getKey()).thenReturn(pk);
-		when(addressBook.peer(eq(euid))).thenReturn(Optional.of(peer));
 
 		CommittedAtom nextAtom = mock(CommittedAtom.class);
 		VertexMetadata nextVertexMetadata = mock(VertexMetadata.class);
