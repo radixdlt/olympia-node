@@ -23,8 +23,6 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
-import com.radixdlt.universe.Universe;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -54,7 +52,7 @@ public class AddressBookImplTest {
 	private AddressBookImpl addressbook;
 
 	@Before
-	public void setUp() throws Exception {
+	public void setUp() {
 		this.broadcastEventCount = new AtomicInteger(0);
 		this.savedPeerCount = new AtomicInteger(0);
 		this.deletedPeerCount = new AtomicInteger(0);
@@ -76,9 +74,9 @@ public class AddressBookImplTest {
 			this.broadcastEventCount.addAndGet(abevent.peers().size());
 			return null;
 		}).when(events).broadcast(any());
-		Universe universe = mock(Universe.class);
-		when(universe.getPlanck()).thenReturn(86400L * 1000L);
-		this.addressbook = new AddressBookImpl(persistence, events, universe, mock(RuntimeProperties.class));
+		RuntimeProperties properties = mock(RuntimeProperties.class);
+		doReturn(60_000L).when(properties).get(eq("addressbook.recency_ms"), anyLong());
+		this.addressbook = new AddressBookImpl(persistence, events, properties);
 	}
 
 	@After

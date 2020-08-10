@@ -135,9 +135,9 @@ public final class StandardFilters {
 	}
 
 	/**
-	 * Returns {@code true} if the peer been active within one planck period.
+	 * Returns {@code true} if the peer been active within the specified time period.
 	 *
-	 * @return {@code true} if the peer been active within one planck period, {@code false} otherwise
+	 * @return {@code true} if the peer been active within the specified time period, {@code false} otherwise
 	 * @param recencyThreshold the recency threshold in millis
 	 */
 	public static PeerPredicate recentlyActive(long recencyThreshold) {
