@@ -35,7 +35,6 @@ import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
 import com.radixdlt.utils.Bytes;
-import com.radixdlt.utils.Offset;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Objects;
@@ -53,7 +52,6 @@ public class Universe {
 		private String description;
 		private UniverseType type;
 		private Long timestamp;
-		private Long planck;
 		private ECPublicKey creator;
 		private final ImmutableList.Builder<Atom> genesis = ImmutableList.builder();
 
@@ -125,20 +123,6 @@ public class Universe {
 		}
 
 		/**
-		 * Sets the planck period of the universe.
-		 *
-		 * @param planckPeriod The planck period of the universe.
-		 * @return A reference to {@code this} to allow method chaining.
-		 */
-		public Builder planckPeriod(long planckPeriod) {
-			if (planckPeriod <= 0) {
-				throw new IllegalArgumentException("Invalid planck period: " + planckPeriod);
-			}
-			this.planck = planckPeriod;
-			return this;
-		}
-
-		/**
 		 * Sets the universe creators public key.
 		 *
 		 * @param creator The universe creators public key.
@@ -183,7 +167,6 @@ public class Universe {
 			require(this.description, "Description");
 			require(this.type, "Universe type");
 			require(this.timestamp, "Timestamp");
-			require(this.planck, "Planck");
 			require(this.creator, "Creator");
 			return new Universe(this);
 		}
@@ -211,25 +194,11 @@ public class Universe {
 	 * @param timestamp universe timestamp to use when calculating universe magic
 	 * @param port universe port to use when calculating universe magic
 	 * @param type universe type to use when calculating universe magic
-	 * @param planck universe planck to use when calculating universe magic
 	 * @return The universe magic
 	 */
-	public static int computeMagic(ECPublicKey creator, long timestamp, int port, UniverseType type, long planck) {
-		return 31 * ((int) creator.euid().getLow()) * 13 * (int) timestamp * 7 * port + type.ordinal(); // + planck;
+	public static int computeMagic(ECPublicKey creator, long timestamp, int port, UniverseType type) {
+		return 31 * ((int) creator.euid().getLow()) * 13 * (int) timestamp * 7 * port + type.ordinal();
 	}
-
-	/**
-	 * Computes quantised planck time from specified parameters.
-	 *
-	 * @param timestamp Timestamp in milliseconds since epoch
-	 * @param planck Planck quantum in milliseconds
-	 * @param offset Offset for resultant planck time unit
-	 * @return The possibly offset planck time unit calculated from specified parameters
-	 */
-	public static int computePlanck(long timestamp, long planck, Offset offset) {
-		return (int) (timestamp / planck) + offset.getOffset();
-	}
-
 
 	// Placeholder for the serializer ID
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
@@ -257,10 +226,6 @@ public class Universe {
 	@JsonProperty("timestamp")
 	@DsonOutput(Output.ALL)
 	private long 		timestamp;
-
-	@JsonProperty("planck")
-	@DsonOutput(Output.ALL)
-	private long		planck;
 
 	@JsonProperty("port")
 	@DsonOutput(Output.ALL)
@@ -292,7 +257,6 @@ public class Universe {
 		this.description = builder.description;
 		this.type = builder.type;
 		this.timestamp = builder.timestamp.longValue();
-		this.planck = builder.planck.longValue();
 		this.creator = builder.creator;
 		this.genesis = builder.genesis.build();
 	}
@@ -305,7 +269,7 @@ public class Universe {
 	@JsonProperty("magic")
 	@DsonOutput(value = Output.HASH, include = false)
 	public int getMagic() {
-		return computeMagic(creator, timestamp, port, type, planck);
+		return computeMagic(creator, timestamp, port, type);
 	}
 
 	/**
@@ -342,29 +306,6 @@ public class Universe {
 	 */
 	public long getTimestamp() {
 		return timestamp;
-	}
-
-	/**
-	 * The Planck period of the Universe in milliseconds.<br><br>Used primarily for mass calculations.
-	 *
-	 * @return
-	 */
-	public long getPlanck() {
-		return this.planck;
-	}
-
-	public int toPlanck(long timestamp, Offset offset) {
-		int planck = computePlanck(timestamp, this.planck, offset);
-
-		if (planck < this.timestamp / this.planck) {
-			planck = (int) (this.timestamp / this.planck);
-		}
-
-		return planck;
-	}
-
-	public long fromPlanck(int period, Offset offset) {
-		return (period * this.planck);
 	}
 
 	/**

@@ -49,10 +49,6 @@ public final class TransferrableTokensParticle extends Particle {
 	@DsonOutput(DsonOutput.Output.ALL)
 	private UInt256 granularity;
 
-	@JsonProperty("planck")
-	@DsonOutput(DsonOutput.Output.ALL)
-	private long planck;
-
 	@JsonProperty("nonce")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private long nonce;
@@ -73,7 +69,6 @@ public final class TransferrableTokensParticle extends Particle {
 		UInt256 amount,
 		UInt256 granularity,
 		RRI tokenDefinitionReference,
-		long planck,
 		Map<TokenTransition, TokenPermission> tokenPermissions
 	) {
 		super(address.euid());
@@ -81,7 +76,6 @@ public final class TransferrableTokensParticle extends Particle {
 		this.address = Objects.requireNonNull(address);
 		this.granularity = Objects.requireNonNull(granularity);
 		this.tokenDefinitionReference = Objects.requireNonNull(tokenDefinitionReference);
-		this.planck = planck;
 		this.nonce = System.nanoTime();
 		this.amount = Objects.requireNonNull(amount);
 		this.tokenPermissions = ImmutableMap.copyOf(tokenPermissions);
@@ -131,22 +125,17 @@ public final class TransferrableTokensParticle extends Particle {
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s:%s:%s:%s:%s:%s]",
+		return String.format("%s[%s:%s:%s:%s:%s]",
 			getClass().getSimpleName(),
 			String.valueOf(tokenDefinitionReference),
 			String.valueOf(amount),
 			String.valueOf(granularity),
 			String.valueOf(address),
-			planck,
 			nonce);
 	}
 
 	public UInt256 getAmount() {
 		return this.amount;
-	}
-
-	public long getPlanck() {
-		return this.planck;
 	}
 
 	public long getNonce() {

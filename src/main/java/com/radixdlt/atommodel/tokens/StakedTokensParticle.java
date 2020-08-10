@@ -54,10 +54,6 @@ public final class StakedTokensParticle extends Particle {
 	@DsonOutput(Output.ALL)
 	private UInt256 granularity;
 
-	@JsonProperty("planck")
-	@DsonOutput(Output.ALL)
-	private long planck;
-
 	@JsonProperty("nonce")
 	@DsonOutput(Output.ALL)
 	private long nonce;
@@ -79,7 +75,6 @@ public final class StakedTokensParticle extends Particle {
 		UInt256 amount,
 		UInt256 granularity,
 		RRI tokenDefinitionReference,
-		long planck,
 		Map<TokenTransition, TokenPermission> tokenPermissions
 	) {
 		super(address.euid());
@@ -88,7 +83,6 @@ public final class StakedTokensParticle extends Particle {
 		this.address = Objects.requireNonNull(address);
 		this.granularity = Objects.requireNonNull(granularity);
 		this.tokenDefinitionReference = Objects.requireNonNull(tokenDefinitionReference);
-		this.planck = planck;
 		this.nonce = System.nanoTime();
 		this.amount = Objects.requireNonNull(amount);
 		this.tokenPermissions = ImmutableMap.copyOf(tokenPermissions);
@@ -142,24 +136,19 @@ public final class StakedTokensParticle extends Particle {
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s:%s:%s:%s:%s:%s:%s]",
+		return String.format("%s[%s:%s:%s:%s:%s:%s]",
 			getClass().getSimpleName(),
 			tokenDefinitionReference,
 			amount,
 			granularity,
 			address,
 			delegateAddress,
-			planck,
 			nonce
 		);
 	}
 
 	public UInt256 getAmount() {
 		return this.amount;
-	}
-
-	public long getPlanck() {
-		return this.planck;
 	}
 
 	public long getNonce() {
