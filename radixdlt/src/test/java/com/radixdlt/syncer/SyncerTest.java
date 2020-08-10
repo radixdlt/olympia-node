@@ -19,7 +19,6 @@ package com.radixdlt.syncer;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -30,7 +29,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.View;
@@ -48,9 +46,7 @@ import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
-import io.reactivex.rxjava3.core.Observable;
 import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import org.junit.Before;
@@ -137,34 +133,6 @@ public class SyncerTest {
 		syncer.execute(committedAtom);
 		verify(executor, times(1)).execute(eq(committedAtom));
 		verify(mempool, times(1)).removeCommittedAtom(aid);
-	}
-
-	@Test
-	public void when_sync_request__then_it_is_processed() {
-		when(stateSyncNetwork.syncResponses()).thenReturn(Observable.never());
-		Peer peer = mock(Peer.class);
-		long stateVersion = 1;
-		SyncRequest syncRequest = new SyncRequest(peer, stateVersion);
-		when(stateSyncNetwork.syncRequests()).thenReturn(Observable.just(syncRequest).concatWith(Observable.never()));
-		List<CommittedAtom> committedAtomList = Collections.singletonList(mock(CommittedAtom.class));
-		when(executor.getCommittedAtoms(eq(stateVersion), anyInt())).thenReturn(committedAtomList);
-		syncer.start();
-		verify(stateSyncNetwork, timeout(1000).times(1)).sendSyncResponse(eq(peer), eq(committedAtomList));
-	}
-
-	@Test
-	public void when_sync_response__then_it_is_processed() {
-		when(stateSyncNetwork.syncRequests()).thenReturn(Observable.never());
-		CommittedAtom committedAtom = mock(CommittedAtom.class);
-		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
-		when(vertexMetadata.getStateVersion()).thenReturn(1L);
-		when(vertexMetadata.getView()).thenReturn(View.of(50));
-		when(committedAtom.getVertexMetadata()).thenReturn(vertexMetadata);
-		when(committedAtom.getClientAtom()).thenReturn(mock(ClientAtom.class));
-		ImmutableList<CommittedAtom> committedAtomList = ImmutableList.of(committedAtom);
-		when(stateSyncNetwork.syncResponses()).thenReturn(Observable.just(committedAtomList).concatWith(Observable.never()));
-		syncer.start();
-		verify(executor, timeout(1000).times(1)).execute(eq(committedAtom));
 	}
 
 	@Test

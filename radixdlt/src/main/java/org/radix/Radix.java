@@ -19,6 +19,7 @@ package org.radix;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.DefaultSerialization;
+import com.radixdlt.syncer.SyncServiceRunner;
 import com.radixdlt.systeminfo.InMemorySystemInfoManager;
 import com.radixdlt.api.LedgerRx;
 import com.radixdlt.api.SubmissionErrorsRx;
@@ -189,8 +190,8 @@ public final class Radix
 		// Start mempool receiver
 		globalInjector.getInjector().getInstance(MempoolReceiver.class).start();
 
-		Syncer syncer = globalInjector.getInjector().getInstance(Syncer.class);
-		syncer.start();
+		SyncServiceRunner syncServiceRunner = globalInjector.getInjector().getInstance(SyncServiceRunner.class);
+		syncServiceRunner.start();
 
 		InMemorySystemInfoManager infoStateRunner = globalInjector.getInjector().getInstance(InMemorySystemInfoManager.class);
 		infoStateRunner.start();
@@ -200,6 +201,7 @@ public final class Radix
 		CommittedAtomsStore engineStore = globalInjector.getInjector().getInstance(CommittedAtomsStore.class);
 		CommittedAtom genesisAtom = globalInjector.getInjector().getInstance(CommittedAtom.class);
 		if (engineStore.getCommittedAtoms(genesisAtom.getVertexMetadata().getStateVersion() - 1, 1).isEmpty()) {
+			Syncer syncer = globalInjector.getInjector().getInstance(Syncer.class);
 			syncer.execute(genesisAtom);
 		}
 

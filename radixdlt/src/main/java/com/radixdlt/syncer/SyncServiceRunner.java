@@ -18,8 +18,10 @@
 package com.radixdlt.syncer;
 
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.execution.RadixEngineExecutor;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
@@ -40,10 +42,14 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.utils.ThreadFactories;
 import java.util.stream.Collectors;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-public final class SyncManager {
+public final class SyncServiceRunner {
 
+	private static final Logger log = LogManager.getLogger();
 	private static final int MAX_REQUESTS_TO_SEND = 20;
+	private final RadixEngineExecutor executor;
 	private final Consumer<CommittedAtom> atomProcessor;
 	private final LongSupplier versionProvider;
 	private final int batchSize;
@@ -61,7 +67,8 @@ public final class SyncManager {
 	private final AddressBook addressBook;
 
 
-	public SyncManager(
+	public SyncServiceRunner(
+		RadixEngineExecutor executor,
 		StateSyncNetwork stateSyncNetwork,
 		AddressBook addressBook,
 		Consumer<CommittedAtom> atomProcessor,
@@ -69,6 +76,7 @@ public final class SyncManager {
 		int batchSize,
 		long patience
 	) {
+		this.executor = Objects.requireNonNull(executor);
 		this.stateSyncNetwork = Objects.requireNonNull(stateSyncNetwork);
 		this.addressBook = Objects.requireNonNull(addressBook);
 		this.atomProcessor = Objects.requireNonNull(atomProcessor);
@@ -83,6 +91,34 @@ public final class SyncManager {
 		this.patience = patience;
 		// we limit the size of the queue in order to avoid memory issues
 		this.maxAtomsQueueSize = MAX_REQUESTS_TO_SEND * batchSize * 2;
+	}
+
+	/**
+	 * Start the service
+	 */
+	public void start() {
+		stateSyncNetwork.syncRequests()
+			.observeOn(Schedulers.io())
+			.subscribe(syncRequest -> {
+				log.debug("SYNC_REQUEST: {}", syncRequest);
+				Peer peer = syncRequest.getPeer();
+				long stateVersion = syncRequest.getStateVersion();
+				// TODO: This may still return an empty list as we still count state versions for atoms which
+				// TODO: never make it into the radix engine due to state errors. This is because we only check
+				// TODO: validity on commit rather than on proposal/prepare.
+				// TODO: remove 100 hardcode limit
+				List<CommittedAtom> committedAtoms = executor.getCommittedAtoms(stateVersion, batchSize);
+				log.debug("SYNC_REQUEST: SENDING_RESPONSE size: {}", committedAtoms.size());
+				stateSyncNetwork.sendSyncResponse(peer, committedAtoms);
+			});
+
+		stateSyncNetwork.syncResponses()
+			.observeOn(Schedulers.io())
+			.subscribe(syncResponse -> {
+				// TODO: Check validity of response
+				log.debug("SYNC_RESPONSE: size: {}", syncResponse.size());
+				this.syncAtoms(syncResponse);
+			});
 	}
 
 	public void syncToVersion(long targetVersion, List<BFTNode> target) {

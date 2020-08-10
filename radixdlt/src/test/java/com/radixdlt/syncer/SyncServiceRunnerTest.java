@@ -18,10 +18,14 @@
 package com.radixdlt.syncer;
 
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.execution.RadixEngineExecutor;
 import com.radixdlt.identifiers.EUID;
+import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
+import io.reactivex.rxjava3.core.Observable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -40,19 +44,20 @@ import com.radixdlt.middleware2.CommittedAtom;
 
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class SyncManagerTest {
+public class SyncServiceRunnerTest {
 
 	private LongSupplier versionProvider;
-	private SyncManager syncManager;
+	private SyncServiceRunner syncServiceRunner;
 	private StateSyncNetwork stateSyncNetwork;
 	private AddressBook addressBook;
-
+	private RadixEngineExecutor executor;
 
 	private static CommittedAtom buildWithVersion(long version) {
 		CommittedAtom committedAtom = mock(CommittedAtom.class);
@@ -70,8 +75,10 @@ public class SyncManagerTest {
 		}
 		this.stateSyncNetwork = mock(StateSyncNetwork.class);
 		this.addressBook = mock(AddressBook.class);
+		this.executor = mock(RadixEngineExecutor.class);
 		versionProvider = () -> store.get(store.size() - 1).getVertexMetadata().getStateVersion();
-		syncManager = new SyncManager(
+		syncServiceRunner = new SyncServiceRunner(
+			executor,
 			stateSyncNetwork,
 			addressBook,
 			(CommittedAtom atom) -> {
@@ -85,28 +92,56 @@ public class SyncManagerTest {
 
 	@After
 	public void tearDown() {
-		syncManager.close();
+		syncServiceRunner.close();
+	}
+
+
+	@Test
+	public void when_sync_request__then_it_is_processed() {
+		when(stateSyncNetwork.syncResponses()).thenReturn(Observable.never());
+		Peer peer = mock(Peer.class);
+		long stateVersion = 1;
+		SyncRequest syncRequest = new SyncRequest(peer, stateVersion);
+		when(stateSyncNetwork.syncRequests()).thenReturn(Observable.just(syncRequest).concatWith(Observable.never()));
+		List<CommittedAtom> committedAtomList = Collections.singletonList(mock(CommittedAtom.class));
+		when(executor.getCommittedAtoms(eq(stateVersion), anyInt())).thenReturn(committedAtomList);
+		syncServiceRunner.start();
+		verify(stateSyncNetwork, timeout(1000).times(1)).sendSyncResponse(eq(peer), eq(committedAtomList));
+	}
+
+	@Test
+	public void when_sync_response__then_it_is_processed() {
+		when(stateSyncNetwork.syncRequests()).thenReturn(Observable.never());
+		CommittedAtom committedAtom = mock(CommittedAtom.class);
+		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
+		when(vertexMetadata.getStateVersion()).thenReturn(1L);
+		when(vertexMetadata.getView()).thenReturn(View.of(50));
+		when(committedAtom.getVertexMetadata()).thenReturn(vertexMetadata);
+		when(committedAtom.getClientAtom()).thenReturn(mock(ClientAtom.class));
+		ImmutableList<CommittedAtom> committedAtomList = ImmutableList.of(committedAtom);
+		when(stateSyncNetwork.syncResponses()).thenReturn(Observable.just(committedAtomList).concatWith(Observable.never()));
+		syncServiceRunner.start();
 	}
 
 	@Test
 	public void basicSynchronization() throws InterruptedException {
 		CountDownLatch events = new CountDownLatch(1);
 		long targetVersion = 15;
-		syncManager.setTargetListener(target -> {
+		syncServiceRunner.setTargetListener(target -> {
 			assertEquals(targetVersion, target);
 			events.countDown();
 		});
-		syncManager.syncToVersion(targetVersion, Collections.singletonList(mock(BFTNode.class)));
+		syncServiceRunner.syncToVersion(targetVersion, Collections.singletonList(mock(BFTNode.class)));
 		ImmutableList.Builder<CommittedAtom> newAtoms1 = ImmutableList.builder();
 		for (int i = 7; i <= 12; i++) {
 			newAtoms1.add(buildWithVersion(i));
 		}
-		syncManager.syncAtoms(newAtoms1.build());
+		syncServiceRunner.syncAtoms(newAtoms1.build());
 		ImmutableList.Builder<CommittedAtom> newAtoms2 = ImmutableList.builder();
 		for (int i = 10; i <= 18; i++) {
 			newAtoms2.add(buildWithVersion(i));
 		}
-		syncManager.syncAtoms(newAtoms2.build());
+		syncServiceRunner.syncAtoms(newAtoms2.build());
 		assertTrue(events.await(5, TimeUnit.SECONDS));
 		assertEquals(18, versionProvider.getAsLong());
 	}
@@ -115,23 +150,23 @@ public class SyncManagerTest {
 	public void syncWithLostMessages() throws InterruptedException {
 		CountDownLatch events = new CountDownLatch(1);
 		long targetVersion = 15;
-		syncManager.setTargetListener(target -> fail("Target shouldn't be reached"));
-		syncManager.setVersionListener(version -> {
+		syncServiceRunner.setTargetListener(target -> fail("Target shouldn't be reached"));
+		syncServiceRunner.setVersionListener(version -> {
 			if (version == 11) {
-				assertEquals(2, syncManager.getQueueSize());
+				assertEquals(2, syncServiceRunner.getQueueSize());
 				events.countDown();
 			} else if (version > 11) {
 				fail("Version " + version + " should not be reached!");
 			}
 		});
-		syncManager.syncToVersion(targetVersion, Collections.singletonList(mock(BFTNode.class)));
+		syncServiceRunner.syncToVersion(targetVersion, Collections.singletonList(mock(BFTNode.class)));
 		ImmutableList.Builder<CommittedAtom> newAtoms1 = ImmutableList.builder();
 		for (int i = 7; i <= 11; i++) {
 			newAtoms1.add(buildWithVersion(i));
 		}
 		newAtoms1.add(buildWithVersion(13));
 		newAtoms1.add(buildWithVersion(15));
-		syncManager.syncAtoms(newAtoms1.build());
+		syncServiceRunner.syncAtoms(newAtoms1.build());
 		assertTrue(events.await(5, TimeUnit.SECONDS));
 		assertEquals(11, versionProvider.getAsLong());
 	}
@@ -146,7 +181,7 @@ public class SyncManagerTest {
 		Peer peer = mock(Peer.class);
 		when(peer.hasSystem()).thenReturn(true);
 		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(peer));
-		syncManager.syncToVersion(targetVersion, Collections.singletonList(node));
+		syncServiceRunner.syncToVersion(targetVersion, Collections.singletonList(node));
 		verify(stateSyncNetwork, timeout(5000).times(1)).sendSyncRequest(any(), eq(10L));
 		verify(stateSyncNetwork, timeout(5000).times(1)).sendSyncRequest(any(), eq(12L));
 		verify(stateSyncNetwork, timeout(5000).times(1)).sendSyncRequest(any(), eq(14L));
@@ -155,10 +190,10 @@ public class SyncManagerTest {
 	@Test
 	public void atomsListPruning() throws InterruptedException {
 		CountDownLatch events = new CountDownLatch(1);
-		syncManager.setVersionListener(version -> {
-			long mxVersion = 10L + syncManager.getMaxAtomsQueueSize();
+		syncServiceRunner.setVersionListener(version -> {
+			long mxVersion = 10L + syncServiceRunner.getMaxAtomsQueueSize();
 			if (version == mxVersion) {
-				assertEquals(0, syncManager.getQueueSize());
+				assertEquals(0, syncServiceRunner.getQueueSize());
 				events.countDown();
 			}
 		});
@@ -166,15 +201,15 @@ public class SyncManagerTest {
 		for (int i = 1000; i >= 1; i--) {
 			newAtoms.add(buildWithVersion(i));
 		}
-		syncManager.syncAtoms(newAtoms.build());
+		syncServiceRunner.syncAtoms(newAtoms.build());
 		assertTrue(events.await(5, TimeUnit.SECONDS));
-		assertEquals(10L + syncManager.getMaxAtomsQueueSize(), versionProvider.getAsLong());
+		assertEquals(10L + syncServiceRunner.getMaxAtomsQueueSize(), versionProvider.getAsLong());
 	}
 
 	@Test
 	public void applyAtoms() throws InterruptedException {
 		CountDownLatch versions = new CountDownLatch(1);
-		syncManager.setVersionListener(version -> {
+		syncServiceRunner.setVersionListener(version -> {
 			assertEquals(20, version);
 			versions.countDown();
 		});
@@ -182,7 +217,7 @@ public class SyncManagerTest {
 		for (int i = 5; i <= 20; i++) {
 			newAtoms.add(buildWithVersion(i));
 		}
-		syncManager.syncAtoms(newAtoms.build());
+		syncServiceRunner.syncAtoms(newAtoms.build());
 		assertTrue(versions.await(5, TimeUnit.SECONDS));
 		assertEquals(20, versionProvider.getAsLong());
 	}

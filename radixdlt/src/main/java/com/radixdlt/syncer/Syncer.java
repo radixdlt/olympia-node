@@ -30,7 +30,6 @@ import com.radixdlt.execution.RadixEngineExecutor;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.network.addressbook.AddressBook;
-import com.radixdlt.network.addressbook.Peer;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import io.reactivex.rxjava3.subjects.Subject;
@@ -64,7 +63,7 @@ public final class Syncer implements SyncedExecutor<CommittedAtom> {
 	private final StateSyncNetwork stateSyncNetwork;
 	private final View epochChangeView;
 	private final SystemCounters counters;
-	private final SyncManager syncManager;
+	private final SyncServiceRunner syncServiceRunner;
 
 	// TODO: Remove the following
 	private final Object lock = new Object();
@@ -97,7 +96,8 @@ public final class Syncer implements SyncedExecutor<CommittedAtom> {
 		this.stateSyncNetwork = Objects.requireNonNull(stateSyncNetwork);
 		this.counters = Objects.requireNonNull(counters);
 
-		this.syncManager = new SyncManager(
+		this.syncServiceRunner = new SyncServiceRunner(
+			this.executor,
 			this.stateSyncNetwork,
 			this.addressBook,
 			this::execute,
@@ -105,34 +105,6 @@ public final class Syncer implements SyncedExecutor<CommittedAtom> {
 			BATCH_SIZE,
 			10
 		);
-	}
-
-	/**
-	 * Start the service
-	 */
-	public void start() {
-		stateSyncNetwork.syncRequests()
-			.observeOn(Schedulers.io())
-			.subscribe(syncRequest -> {
-				log.debug("SYNC_REQUEST: {} currentStateVersion={}", syncRequest, this.stateVersion.get());
-				Peer peer = syncRequest.getPeer();
-				long stateVersion = syncRequest.getStateVersion();
-				// TODO: This may still return an empty list as we still count state versions for atoms which
-				// TODO: never make it into the radix engine due to state errors. This is because we only check
-				// TODO: validity on commit rather than on proposal/prepare.
-				// TODO: remove 100 hardcode limit
-				List<CommittedAtom> committedAtoms = executor.getCommittedAtoms(stateVersion, BATCH_SIZE);
-				log.debug("SYNC_REQUEST: SENDING_RESPONSE size: {}", committedAtoms.size());
-				stateSyncNetwork.sendSyncResponse(peer, committedAtoms);
-			});
-
-		stateSyncNetwork.syncResponses()
-			.observeOn(Schedulers.io())
-			.subscribe(syncResponse -> {
-				// TODO: Check validity of response
-				log.debug("SYNC_RESPONSE: size: {}", syncResponse.size());
-				syncManager.syncAtoms(syncResponse);
-			});
 	}
 
 	@Override
@@ -148,7 +120,7 @@ public final class Syncer implements SyncedExecutor<CommittedAtom> {
 			return true;
 		}
 
-		this.syncManager.syncToVersion(targetStateVersion, target);
+		this.syncServiceRunner.syncToVersion(targetStateVersion, target);
 		this.lastStoredAtom
 			.observeOn(Schedulers.io())
 			.map(atom -> atom.getVertexMetadata().getStateVersion())
