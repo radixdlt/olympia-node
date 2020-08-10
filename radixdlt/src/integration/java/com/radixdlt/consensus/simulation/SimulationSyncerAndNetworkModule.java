@@ -26,7 +26,7 @@ import com.radixdlt.consensus.ConsensusEventsRx;
 import com.radixdlt.consensus.EpochChangeRx;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
-import com.radixdlt.consensus.SyncedStateComputer;
+import com.radixdlt.consensus.SyncedExecutor;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRPCSender;
@@ -34,7 +34,7 @@ import com.radixdlt.consensus.epoch.EmptySyncVerticesRPCSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.simulation.network.SimulationNetwork;
-import com.radixdlt.consensus.simulation.network.SimulationNodes.SimulatedStateComputer;
+import com.radixdlt.consensus.simulation.network.SimulationNodes.SimulatedSyncedExecutor;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.middleware2.CommittedAtom;
@@ -45,10 +45,10 @@ public class SimulationSyncerAndNetworkModule extends AbstractModule {
 	private final boolean getVerticesRPCEnabled;
 	private final BFTNode node;
 	private final SimulationNetwork simulationNetwork;
-	private final SimulatedStateComputer simulatedStateComputer;
+	private final SimulatedSyncedExecutor simulatedStateComputer;
 
 	public SimulationSyncerAndNetworkModule(boolean getVerticesRPCEnabled, BFTNode node, SimulationNetwork simulationNetwork,
-		SimulatedStateComputer simulatedStateComputer) {
+		SimulatedSyncedExecutor simulatedStateComputer) {
 		this.getVerticesRPCEnabled = getVerticesRPCEnabled;
 		this.node = node;
 		this.simulationNetwork = simulationNetwork;
@@ -61,7 +61,7 @@ public class SimulationSyncerAndNetworkModule extends AbstractModule {
 		bind(SyncEpochsRPCRx.class).toInstance(simulationNetwork.getNetworkRx(node));
 		bind(SyncVerticesRPCRx.class).toInstance(simulationNetwork.getNetworkRx(node));
 
-		bind(new TypeLiteral<SyncedStateComputer<CommittedAtom>>() { }).toInstance(simulatedStateComputer);
+		bind(new TypeLiteral<SyncedExecutor<CommittedAtom>>() { }).toInstance(simulatedStateComputer);
 		bind(EpochChangeRx.class).toInstance(simulatedStateComputer);
 
 		bind(BFTEventSender.class).toInstance(simulationNetwork.getNetworkSender(node));

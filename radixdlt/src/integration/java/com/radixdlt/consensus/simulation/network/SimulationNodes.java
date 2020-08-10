@@ -30,7 +30,7 @@ import com.radixdlt.consensus.ConsensusRunner;
 import com.radixdlt.consensus.ConsensusRunner.Event;
 import com.radixdlt.consensus.ConsensusRunner.EventType;
 import com.radixdlt.consensus.EpochChangeRx;
-import com.radixdlt.consensus.SyncedStateComputer;
+import com.radixdlt.consensus.SyncedExecutor;
 
 import com.radixdlt.middleware2.CommittedAtom;
 import io.reactivex.rxjava3.core.Completable;
@@ -50,9 +50,9 @@ public class SimulationNodes {
 	private final ImmutableList<Injector> nodeInstances;
 	private final List<BFTNode> nodes;
 	private final boolean getVerticesRPCEnabled;
-	private final Supplier<SimulatedStateComputer> stateComputerSupplier;
+	private final Supplier<SimulatedSyncedExecutor> stateComputerSupplier;
 
-	public interface SimulatedStateComputer extends SyncedStateComputer<CommittedAtom>, EpochChangeRx {
+	public interface SimulatedSyncedExecutor extends SyncedExecutor<CommittedAtom>, EpochChangeRx {
 	}
 
 	/**
@@ -65,7 +65,7 @@ public class SimulationNodes {
 		List<BFTNode> nodes,
 		SimulationNetwork underlyingNetwork,
 		int pacemakerTimeout,
-		Supplier<SimulatedStateComputer> stateComputerSupplier,
+		Supplier<SimulatedSyncedExecutor> stateComputerSupplier,
 		boolean getVerticesRPCEnabled
 	) {
 		this.nodes = nodes;

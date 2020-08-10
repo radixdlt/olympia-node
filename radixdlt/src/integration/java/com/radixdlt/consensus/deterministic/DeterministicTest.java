@@ -22,7 +22,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Streams;
 import com.radixdlt.syncer.EpochChangeSender;
-import com.radixdlt.consensus.SyncedStateComputer;
+import com.radixdlt.consensus.SyncedExecutor;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -30,11 +30,11 @@ import com.radixdlt.consensus.deterministic.ControlledNetwork.ChannelId;
 import com.radixdlt.consensus.deterministic.ControlledNetwork.ControlledMessage;
 import com.radixdlt.consensus.deterministic.ControlledNetwork.ControlledSender;
 import com.radixdlt.consensus.deterministic.ControlledNode.SyncAndTimeout;
-import com.radixdlt.consensus.deterministic.configuration.SingleEpochAlwaysSyncedStateComputer;
-import com.radixdlt.consensus.deterministic.configuration.SingleEpochFailOnSyncStateComputer;
-import com.radixdlt.consensus.deterministic.configuration.SingleEpochRandomlySyncedStateComputer;
+import com.radixdlt.consensus.deterministic.configuration.SingleEpochAlwaysSyncedExecutor;
+import com.radixdlt.consensus.deterministic.configuration.SingleEpochFailOnSyncSyncedExecutor;
+import com.radixdlt.consensus.deterministic.configuration.SingleEpochRandomlySyncedExecutor;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
-import com.radixdlt.syncer.SyncedRadixEngine.CommittedStateSyncSender;
+import com.radixdlt.syncer.Syncer.CommittedStateSyncSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.EUID;
@@ -63,7 +63,7 @@ public final class DeterministicTest {
 	private DeterministicTest(
 		int numNodes,
 		SyncAndTimeout syncAndTimeout,
-		BiFunction<CommittedStateSyncSender, EpochChangeSender, SyncedStateComputer<CommittedAtom>> stateComputerSupplier,
+		BiFunction<CommittedStateSyncSender, EpochChangeSender, SyncedExecutor<CommittedAtom>> stateComputerSupplier,
 		NodeWeighting weight
 	) {
 		ImmutableList<ECKeyPair> keys = Stream.generate(ECKeyPair::generateNew)
@@ -107,7 +107,7 @@ public final class DeterministicTest {
 		return new DeterministicTest(
 			numNodes,
 			SyncAndTimeout.SYNC,
-			(committedSender, epochSender) -> new SingleEpochRandomlySyncedStateComputer(random, committedSender),
+			(committedSender, epochSender) -> new SingleEpochRandomlySyncedExecutor(random, committedSender),
 			NodeWeighting.constant(UInt256.ONE)
 		);
 	}
@@ -122,7 +122,7 @@ public final class DeterministicTest {
 		return new DeterministicTest(
 			numNodes,
 			SyncAndTimeout.SYNC,
-			(committedSender, epochChangeSender) -> SingleEpochAlwaysSyncedStateComputer.INSTANCE,
+			(committedSender, epochChangeSender) -> SingleEpochAlwaysSyncedExecutor.INSTANCE,
 			NodeWeighting.constant(UInt256.ONE)
 		);
 	}
@@ -138,7 +138,7 @@ public final class DeterministicTest {
 		return new DeterministicTest(
 			numNodes,
 			SyncAndTimeout.SYNC,
-			(committedSender, epochChangeSender) -> SingleEpochAlwaysSyncedStateComputer.INSTANCE,
+			(committedSender, epochChangeSender) -> SingleEpochAlwaysSyncedExecutor.INSTANCE,
 			weight
 		);
 	}
@@ -153,7 +153,7 @@ public final class DeterministicTest {
 		return new DeterministicTest(
 			numNodes,
 			SyncAndTimeout.SYNC_AND_TIMEOUT,
-			(committedSender, epochChangeSender) -> SingleEpochAlwaysSyncedStateComputer.INSTANCE,
+			(committedSender, epochChangeSender) -> SingleEpochAlwaysSyncedExecutor.INSTANCE,
 			NodeWeighting.constant(UInt256.ONE)
 		);
 	}
@@ -170,7 +170,7 @@ public final class DeterministicTest {
 		return new DeterministicTest(
 			numNodes,
 			SyncAndTimeout.NONE,
-			(committedSender, epochChangeSender) -> SingleEpochFailOnSyncStateComputer.INSTANCE,
+			(committedSender, epochChangeSender) -> SingleEpochFailOnSyncSyncedExecutor.INSTANCE,
 			NodeWeighting.constant(UInt256.ONE)
 		);
 	}

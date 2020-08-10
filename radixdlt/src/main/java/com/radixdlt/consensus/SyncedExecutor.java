@@ -17,7 +17,7 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.consensus.SyncedStateComputer.CommittedInstruction;
+import com.radixdlt.consensus.SyncedExecutor.CommittedInstruction;
 import com.radixdlt.consensus.bft.BFTNode;
 import java.util.List;
 
@@ -26,7 +26,7 @@ import java.util.List;
  *
  * @param <T> the instruction type
  */
-public interface SyncedStateComputer<T extends CommittedInstruction> {
+public interface SyncedExecutor<T extends CommittedInstruction> {
 
 	/**
 	 * A state computer instruction which has been committed by the BFT

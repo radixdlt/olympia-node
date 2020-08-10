@@ -20,7 +20,7 @@ package com.radixdlt.consensus.bft;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.SyncedStateComputer;
+import com.radixdlt.consensus.SyncedExecutor;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.VertexStoreEventProcessor;
@@ -100,7 +100,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 	private final VertexStoreEventSender vertexStoreEventSender;
 	private final SyncedVertexSender syncedVertexSender;
 	private final SyncVerticesRPCSender syncVerticesRPCSender;
-	private final SyncedStateComputer<CommittedAtom> syncedStateComputer;
+	private final SyncedExecutor<CommittedAtom> syncedExecutor;
 	private final SystemCounters counters;
 
 	// These should never be null
@@ -114,7 +114,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 	public VertexStore(
 		Vertex rootVertex,
 		QuorumCertificate rootQC,
-		SyncedStateComputer<CommittedAtom> syncedStateComputer,
+		SyncedExecutor<CommittedAtom> syncedExecutor,
 		SyncVerticesRPCSender syncVerticesRPCSender,
 		SyncedVertexSender syncedVertexSender,
 		VertexStoreEventSender vertexStoreEventSender,
@@ -123,8 +123,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		this(
 			rootVertex,
 			rootQC,
-			Collections.emptyList(),
-			syncedStateComputer,
+			Collections.emptyList(), syncedExecutor,
 			syncVerticesRPCSender,
 			syncedVertexSender,
 			vertexStoreEventSender,
@@ -136,13 +135,13 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		Vertex rootVertex,
 		QuorumCertificate rootQC,
 		List<Vertex> vertices,
-		SyncedStateComputer<CommittedAtom> syncedStateComputer,
+		SyncedExecutor<CommittedAtom> syncedExecutor,
 		SyncVerticesRPCSender syncVerticesRPCSender,
 		SyncedVertexSender syncedVertexSender,
 		VertexStoreEventSender vertexStoreEventSender,
 		SystemCounters counters
 	) {
-		this.syncedStateComputer = Objects.requireNonNull(syncedStateComputer);
+		this.syncedExecutor = Objects.requireNonNull(syncedExecutor);
 		this.syncVerticesRPCSender = Objects.requireNonNull(syncVerticesRPCSender);
 		this.vertexStoreEventSender = Objects.requireNonNull(vertexStoreEventSender);
 		this.syncedVertexSender = Objects.requireNonNull(syncedVertexSender);
@@ -300,7 +299,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		List<BFTNode> signers = Collections.singletonList(syncState.author);
 		syncState.fetched.addAll(response.getVertices());
 
-		if (syncedStateComputer.syncTo(syncState.committedVertexMetadata, signers, syncTo)) {
+		if (syncedExecutor.syncTo(syncState.committedVertexMetadata, signers, syncTo)) {
 			rebuildAndSyncQC(syncState);
 		} else {
 			syncState.setSyncStage(SyncStage.SYNC_TO_COMMIT);
@@ -480,7 +479,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		} else {
 			vertexToUse = vertex;
 		}
-		boolean isEndOfEpoch = syncedStateComputer.compute(vertexToUse);
+		boolean isEndOfEpoch = syncedExecutor.compute(vertexToUse);
 
 		// TODO: Don't check for state computer errors for now so that we don't
 		// TODO: have to deal with failing leader proposals
@@ -530,7 +529,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 			long timestamp = committed.getQC().getTimestampedSignatures().weightedTimestamp();
 			CommittedAtom committedAtom = new CommittedAtom(committed.getAtom(), commitMetadata, timestamp);
 			this.counters.increment(CounterType.BFT_PROCESSED);
-			syncedStateComputer.execute(committedAtom);
+			syncedExecutor.execute(committedAtom);
 
 			this.vertexStoreEventSender.sendCommittedVertex(committed);
 		}

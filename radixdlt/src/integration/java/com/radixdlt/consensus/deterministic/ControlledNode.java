@@ -35,7 +35,7 @@ import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.HashSigner;
-import com.radixdlt.consensus.SyncedStateComputer;
+import com.radixdlt.consensus.SyncedExecutor;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRPCSender;
 import com.radixdlt.consensus.VertexStoreFactory;
@@ -75,7 +75,7 @@ class ControlledNode {
 		ProposerElectionFactory proposerElectionFactory,
 		BFTValidatorSet initialValidatorSet,
 		SyncAndTimeout syncAndTimeout,
-		SyncedStateComputer<CommittedAtom> stateComputer
+		SyncedExecutor<CommittedAtom> stateComputer
 	) {
 		this.systemCounters = new SystemCountersImpl();
 		this.controlledSender = Objects.requireNonNull(sender);

@@ -17,19 +17,33 @@
 
 package com.radixdlt.consensus.deterministic.configuration;
 
-import com.radixdlt.consensus.SyncedStateComputer;
+import com.radixdlt.consensus.SyncedExecutor;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.syncer.Syncer.CommittedStateSyncSender;
 import com.radixdlt.middleware2.CommittedAtom;
 import java.util.List;
+import java.util.Objects;
+import java.util.Random;
 
-public enum SingleEpochFailOnSyncStateComputer implements SyncedStateComputer<CommittedAtom> {
-	INSTANCE;
+public class SingleEpochRandomlySyncedExecutor implements SyncedExecutor<CommittedAtom> {
+
+	private final Random random;
+	private final CommittedStateSyncSender committedStateSyncSender;
+
+	public SingleEpochRandomlySyncedExecutor(Random random, CommittedStateSyncSender committedStateSyncSender) {
+		this.random = Objects.requireNonNull(random);
+		this.committedStateSyncSender = Objects.requireNonNull(committedStateSyncSender);
+	}
 
 	@Override
 	public boolean syncTo(VertexMetadata vertexMetadata, List<BFTNode> target, Object opaque) {
-		throw new UnsupportedOperationException("Syncing not supported");
+		if (random.nextBoolean()) {
+			return true;
+		}
+		committedStateSyncSender.sendCommittedStateSync(vertexMetadata.getStateVersion(), opaque);
+		return false;
 	}
 
 	@Override

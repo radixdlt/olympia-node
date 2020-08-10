@@ -24,7 +24,7 @@ import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.name.Named;
 import com.radixdlt.consensus.AddressBookValidatorSetProvider;
-import com.radixdlt.consensus.SyncedStateComputer;
+import com.radixdlt.consensus.SyncedExecutor;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.liveness.MempoolNextCommandGenerator;
@@ -61,8 +61,8 @@ import com.radixdlt.store.berkeley.BerkeleyCursorStore;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.syncer.EpochChangeSender;
 import com.radixdlt.syncer.StateSyncNetwork;
-import com.radixdlt.syncer.SyncedRadixEngine;
-import com.radixdlt.syncer.SyncedRadixEngine.CommittedStateSyncSender;
+import com.radixdlt.syncer.Syncer;
+import com.radixdlt.syncer.Syncer.CommittedStateSyncSender;
 import com.radixdlt.universe.Universe;
 import java.util.Objects;
 
@@ -79,7 +79,7 @@ public class SyncerModule extends AbstractModule {
 
 	@Override
 	protected void configure() {
-		bind(new TypeLiteral<SyncedStateComputer<CommittedAtom>>() { }).to(SyncedRadixEngine.class).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<SyncedExecutor<CommittedAtom>>() { }).to(Syncer.class).in(Scopes.SINGLETON);
 		bind(Mempool.class).to(SharedMempool.class).in(Scopes.SINGLETON);
 		bind(new TypeLiteral<EngineStore<CommittedAtom>>() { }).to(CommittedAtomsStore.class).in(Scopes.SINGLETON);
 		bind(AtomToBinaryConverter.class).toInstance(new AtomToBinaryConverter(DefaultSerialization.getInstance()));
@@ -151,7 +151,7 @@ public class SyncerModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private SyncedRadixEngine syncedRadixEngine(
+	private Syncer syncedRadixEngine(
 		Mempool mempool,
 		RadixEngineExecutor executor,
 		CommittedStateSyncSender committedStateSyncSender,
@@ -162,7 +162,7 @@ public class SyncerModule extends AbstractModule {
 		SystemCounters counters
 	) {
 		final long viewsPerEpoch = runtimeProperties.get("epochs.views_per_epoch", 100L);
-		return new SyncedRadixEngine(
+		return new Syncer(
 			mempool,
 			executor,
 			committedStateSyncSender,

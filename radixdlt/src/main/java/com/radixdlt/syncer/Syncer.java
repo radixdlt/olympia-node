@@ -18,7 +18,7 @@
 package com.radixdlt.syncer;
 
 import com.radixdlt.consensus.epoch.EpochChange;
-import com.radixdlt.consensus.SyncedStateComputer;
+import com.radixdlt.consensus.SyncedExecutor;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.View;
@@ -36,11 +36,8 @@ import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -50,7 +47,7 @@ import org.apache.logging.log4j.Logger;
  *
  * TODO: Most of the logic here should go into RadixEngine itself
  */
-public final class SyncedRadixEngine implements SyncedStateComputer<CommittedAtom> {
+public final class Syncer implements SyncedExecutor<CommittedAtom> {
 	private static final int BATCH_SIZE = 100;
 
 	public interface CommittedStateSyncSender {
@@ -75,7 +72,7 @@ public final class SyncedRadixEngine implements SyncedStateComputer<CommittedAto
 	private final AtomicLong stateVersion = new AtomicLong(0);
 	private VertexMetadata lastEpochChange = null;
 
-	public SyncedRadixEngine(
+	public Syncer(
 		Mempool mempool,
 		RadixEngineExecutor executor,
 		CommittedStateSyncSender committedStateSyncSender,
@@ -100,7 +97,14 @@ public final class SyncedRadixEngine implements SyncedStateComputer<CommittedAto
 		this.stateSyncNetwork = Objects.requireNonNull(stateSyncNetwork);
 		this.counters = Objects.requireNonNull(counters);
 
-		this.syncManager = new SyncManager(this::execute, this.stateVersion::get, BATCH_SIZE, 10);
+		this.syncManager = new SyncManager(
+			this.stateSyncNetwork,
+			this.addressBook,
+			this::execute,
+			this.stateVersion::get,
+			BATCH_SIZE,
+			10
+		);
 	}
 
 	/**
@@ -144,21 +148,7 @@ public final class SyncedRadixEngine implements SyncedStateComputer<CommittedAto
 			return true;
 		}
 
-		syncManager.syncToVersion(targetStateVersion, version -> {
-			List<Peer> peers = target.stream()
-					.map(BFTNode::getKey)
-					.map(pk -> addressBook.peer(pk.euid()))
-					.filter(Optional::isPresent)
-					.map(Optional::get)
-					.filter(Peer::hasSystem)
-					.collect(Collectors.toList());
-			if (peers.isEmpty()) {
-				throw new IllegalStateException("Unable to find peer");
-			}
-			Peer peer = peers.get(ThreadLocalRandom.current().nextInt(peers.size()));
-			stateSyncNetwork.sendSyncRequest(peer, version);
-		});
-
+		this.syncManager.syncToVersion(targetStateVersion, target);
 		this.lastStoredAtom
 			.observeOn(Schedulers.io())
 			.map(atom -> atom.getVertexMetadata().getStateVersion())

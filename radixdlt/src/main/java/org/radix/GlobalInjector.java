@@ -26,6 +26,7 @@ import com.google.inject.name.Names;
 import com.radixdlt.ConsensusModule;
 import com.radixdlt.CryptoModule;
 import com.radixdlt.DefaultSerialization;
+import com.radixdlt.ExecutionMessagesModule;
 import com.radixdlt.ExecutionModule;
 import com.radixdlt.SyncerMessagesModule;
 import com.radixdlt.SyncerModule;
@@ -92,6 +93,8 @@ public class GlobalInjector {
 			new NetworkModule(),
 			new SystemInfoModule(properties),
 
+			// Environment modules
+			new ExecutionMessagesModule(),
 			new SystemInfoMessagesModule(),
 			new SyncerMessagesModule(),
 

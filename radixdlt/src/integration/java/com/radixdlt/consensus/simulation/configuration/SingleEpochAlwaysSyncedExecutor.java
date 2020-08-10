@@ -15,20 +15,40 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.deterministic.configuration;
+package com.radixdlt.consensus.simulation.configuration;
 
-import com.radixdlt.consensus.SyncedStateComputer;
+import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.simulation.network.SimulationNodes.SimulatedSyncedExecutor;
+import com.radixdlt.consensus.bft.BFTValidator;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.middleware2.CommittedAtom;
+import com.radixdlt.utils.UInt256;
+import io.reactivex.rxjava3.core.Observable;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * A state computer which never changes epochs
  */
-public enum SingleEpochAlwaysSyncedStateComputer implements SyncedStateComputer<CommittedAtom> {
-	INSTANCE;
+public final class SingleEpochAlwaysSyncedExecutor implements SimulatedSyncedExecutor {
+	private final BFTValidatorSet validatorSet;
+	private final VertexMetadata ancestor;
+
+	public SingleEpochAlwaysSyncedExecutor(VertexMetadata ancestor, List<BFTNode> nodes) {
+		this.ancestor = ancestor;
+		this.validatorSet = BFTValidatorSet.from(
+			nodes.stream()
+				.map(node -> BFTValidator.from(node, UInt256.ONE))
+				.collect(Collectors.toList())
+		);
+	}
+
+	public SingleEpochAlwaysSyncedExecutor(List<BFTNode> nodes) {
+		this(VertexMetadata.ofGenesisAncestor(), nodes);
+	}
 
 	@Override
 	public boolean syncTo(VertexMetadata vertexMetadata, List<BFTNode> target, Object opaque) {
@@ -42,6 +62,11 @@ public enum SingleEpochAlwaysSyncedStateComputer implements SyncedStateComputer<
 
 	@Override
 	public void execute(CommittedAtom instruction) {
-		// No-op Mocked execution
+	}
+
+	@Override
+	public Observable<EpochChange> epochChanges() {
+		return Observable.just(new EpochChange(ancestor, validatorSet))
+			.concatWith(Observable.never());
 	}
 }

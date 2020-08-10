@@ -17,13 +17,19 @@
 
 package com.radixdlt.syncer;
 
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.network.addressbook.AddressBook;
+import com.radixdlt.network.addressbook.Peer;
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.TreeSet;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
@@ -33,6 +39,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.utils.ThreadFactories;
+import java.util.stream.Collectors;
 
 public final class SyncManager {
 
@@ -43,6 +50,7 @@ public final class SyncManager {
 	private final int maxAtomsQueueSize;
 	private final long patience;
 
+	private final StateSyncNetwork stateSyncNetwork;
 	private final TreeSet<CommittedAtom> commitedAtoms = new TreeSet<>(Comparator.comparingLong(a -> a.getVertexMetadata().getStateVersion()));
 	private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads("SyncManager"));
 
@@ -50,13 +58,19 @@ public final class SyncManager {
 	private ScheduledFuture<?> timeoutChecker;
 	private LongConsumer onTarget = target -> { };
 	private LongConsumer onVersion = version -> { };
+	private final AddressBook addressBook;
+
 
 	public SyncManager(
+		StateSyncNetwork stateSyncNetwork,
+		AddressBook addressBook,
 		Consumer<CommittedAtom> atomProcessor,
 		LongSupplier versionProvider,
 		int batchSize,
 		long patience
 	) {
+		this.stateSyncNetwork = Objects.requireNonNull(stateSyncNetwork);
+		this.addressBook = Objects.requireNonNull(addressBook);
 		this.atomProcessor = Objects.requireNonNull(atomProcessor);
 		this.versionProvider = Objects.requireNonNull(versionProvider);
 		if (batchSize <= 0) {
@@ -71,7 +85,7 @@ public final class SyncManager {
 		this.maxAtomsQueueSize = MAX_REQUESTS_TO_SEND * batchSize * 2;
 	}
 
-	public void syncToVersion(long targetVersion, LongConsumer requestSender) {
+	public void syncToVersion(long targetVersion, List<BFTNode> target) {
 		executorService.execute(() -> {
 			if (targetVersion <= this.targetVersion) {
 				return;
@@ -81,7 +95,7 @@ public final class SyncManager {
 				return;
 			}
 			this.targetVersion = targetVersion;
-			sendSyncRequests(requestSender);
+			sendSyncRequests(target);
 		});
 	}
 
@@ -137,7 +151,22 @@ public final class SyncManager {
 		}
 	}
 
-	private void sendSyncRequests(LongConsumer requestSender) {
+	private void sendSyncRequest(long version, List<BFTNode> target) {
+		List<Peer> peers = target.stream()
+			.map(BFTNode::getKey)
+			.map(pk -> addressBook.peer(pk.euid()))
+			.filter(Optional::isPresent)
+			.map(Optional::get)
+			.filter(Peer::hasSystem)
+			.collect(Collectors.toList());
+		if (peers.isEmpty()) {
+			throw new IllegalStateException("Unable to find peer");
+		}
+		Peer peer = peers.get(ThreadLocalRandom.current().nextInt(peers.size()));
+		stateSyncNetwork.sendSyncRequest(peer, version);
+	}
+
+	private void sendSyncRequests(List<BFTNode> target) {
 		long crtVersion = versionProvider.getAsLong();
 		if (crtVersion >= targetVersion) {
 			return;
@@ -148,12 +177,12 @@ public final class SyncManager {
 		}
 		size = Math.min(size, MAX_REQUESTS_TO_SEND);
 		for (long i = 0; i < size; i++) {
-			requestSender.accept(crtVersion + batchSize * i);
+			sendSyncRequest(crtVersion + batchSize * i, target);
 		}
 		if (timeoutChecker != null) {
 			timeoutChecker.cancel(false);
 		}
-		timeoutChecker = executorService.schedule(() -> sendSyncRequests(requestSender), patience, TimeUnit.SECONDS);
+		timeoutChecker = executorService.schedule(() -> sendSyncRequests(target), patience, TimeUnit.SECONDS);
 	}
 
 	@VisibleForTesting

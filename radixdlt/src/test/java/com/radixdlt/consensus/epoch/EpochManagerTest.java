@@ -38,7 +38,7 @@ import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.SyncedStateComputer;
+import com.radixdlt.consensus.SyncedExecutor;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.VertexStoreFactory;
@@ -75,7 +75,7 @@ public class EpochManagerTest {
 	private Pacemaker pacemaker;
 	private SystemCounters systemCounters;
 	private ProposerElection proposerElection;
-	private SyncedStateComputer<CommittedAtom> syncedStateComputer;
+	private SyncedExecutor<CommittedAtom> syncedExecutor;
 	private BFTNode self;
 
 	@Before
@@ -90,9 +90,8 @@ public class EpochManagerTest {
 		this.bftFactory = mock(BFTFactory.class);
 
 		this.systemCounters = new SystemCountersImpl();
-		@SuppressWarnings("unchecked")
-		SyncedStateComputer<CommittedAtom> ssc = mock(SyncedStateComputer.class);
-		this.syncedStateComputer = ssc;
+		@SuppressWarnings("unchecked") SyncedExecutor<CommittedAtom> ssc = mock(SyncedExecutor.class);
+		this.syncedExecutor = ssc;
 
 		this.proposerElection = mock(ProposerElection.class);
 		this.self = mock(BFTNode.class);
@@ -102,7 +101,7 @@ public class EpochManagerTest {
 
 		this.epochManager = new EpochManager(
 			this.self,
-			this.syncedStateComputer,
+			this.syncedExecutor,
 			this.syncEpochsRPCSender,
 			mock(LocalTimeoutSender.class),
 			timeoutSender -> this.pacemaker,
@@ -165,7 +164,7 @@ public class EpochManagerTest {
 		when(response.getEpochAncestor()).thenReturn(VertexMetadata.ofGenesisAncestor());
 		when(response.getAuthor()).thenReturn(mock(BFTNode.class));
 		epochManager.processGetEpochResponse(response);
-		verify(syncedStateComputer, times(1)).syncTo(eq(VertexMetadata.ofGenesisAncestor()), any(), any());
+		verify(syncedExecutor, times(1)).syncTo(eq(VertexMetadata.ofGenesisAncestor()), any(), any());
 	}
 
 	@Test
@@ -173,7 +172,7 @@ public class EpochManagerTest {
 		GetEpochResponse response = mock(GetEpochResponse.class);
 		when(response.getEpochAncestor()).thenReturn(null);
 		epochManager.processGetEpochResponse(response);
-		verify(syncedStateComputer, never()).syncTo(any(), any(), any());
+		verify(syncedExecutor, never()).syncTo(any(), any(), any());
 	}
 
 	@Test
@@ -187,7 +186,7 @@ public class EpochManagerTest {
 		GetEpochResponse response = mock(GetEpochResponse.class);
 		when(response.getEpochAncestor()).thenReturn(ancestor);
 		epochManager.processGetEpochResponse(response);
-		verify(syncedStateComputer, never()).syncTo(any(), any(), any());
+		verify(syncedExecutor, never()).syncTo(any(), any(), any());
 	}
 
 	@Test

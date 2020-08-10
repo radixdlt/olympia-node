@@ -17,12 +17,8 @@
 
 package com.radixdlt;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
 import com.radixdlt.api.DeserializationFailure;
-import com.radixdlt.api.LedgerRx;
-import com.radixdlt.api.StoredAtom;
-import com.radixdlt.api.StoredFailure;
 import com.radixdlt.api.SubmissionErrorsRx;
 import com.radixdlt.api.SubmissionFailure;
 import com.radixdlt.atommodel.Atom;
@@ -31,14 +27,11 @@ import com.radixdlt.consensus.CommittedStateSyncRx;
 import com.radixdlt.consensus.EpochChangeRx;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.execution.RadixEngineExecutor.RadixEngineExecutorEventSender;
-import com.radixdlt.identifiers.EUID;
 import com.radixdlt.mempool.SubmissionControlImpl.SubmissionControlSender;
 import com.radixdlt.middleware2.ClientAtom;
-import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.middleware2.converters.AtomConversionException;
 import com.radixdlt.syncer.EpochChangeSender;
-import com.radixdlt.syncer.SyncedRadixEngine.CommittedStateSyncSender;
+import com.radixdlt.syncer.Syncer.CommittedStateSyncSender;
 import com.radixdlt.utils.SenderToRx;
 import com.radixdlt.utils.TwoSenderToRx;
 import io.reactivex.rxjava3.core.Observable;
@@ -50,33 +43,6 @@ public final class SyncerMessagesModule extends AbstractModule {
 
 	@Override
 	protected void configure() {
-		TwoSenderToRx<CommittedAtom, ImmutableSet<EUID>, StoredAtom> storedAtoms = new TwoSenderToRx<>(StoredAtom::new);
-		TwoSenderToRx<CommittedAtom, RadixEngineException, StoredFailure> storedFailures = new TwoSenderToRx<>(StoredFailure::new);
-		RadixEngineExecutorEventSender radixEngineExecutorEventSender = new RadixEngineExecutorEventSender() {
-			@Override
-			public void sendStored(CommittedAtom committedAtom, ImmutableSet<EUID> indicies) {
-				storedAtoms.send(committedAtom, indicies);
-			}
-
-			@Override
-			public void sendStoredFailure(CommittedAtom committedAtom, RadixEngineException e) {
-				storedFailures.send(committedAtom, e);
-			}
-		};
-		LedgerRx ledgerRx = new LedgerRx() {
-			@Override
-			public Observable<StoredAtom> storedAtoms() {
-				return storedAtoms.rx();
-			}
-
-			@Override
-			public Observable<StoredFailure> storedExceptions() {
-				return storedFailures.rx();
-			}
-		};
-		bind(RadixEngineExecutorEventSender.class).toInstance(radixEngineExecutorEventSender);
-		bind(LedgerRx.class).toInstance(ledgerRx);
-
 		TwoSenderToRx<Atom, AtomConversionException, DeserializationFailure> deserializationFailures
 			= new TwoSenderToRx<>(DeserializationFailure::new);
 		TwoSenderToRx<ClientAtom, RadixEngineException, SubmissionFailure> submissionFailures

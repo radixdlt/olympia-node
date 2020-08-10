@@ -22,7 +22,7 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 import com.radixdlt.consensus.HashVerifier;
-import com.radixdlt.consensus.SyncedStateComputer;
+import com.radixdlt.consensus.SyncedExecutor;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.bft.BFTBuilder;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
@@ -129,7 +129,7 @@ public final class ConsensusModule extends AbstractModule {
 	@Singleton
 	private EpochManager epochManager(
 		@Named("self") BFTNode self,
-		SyncedStateComputer<CommittedAtom> syncer,
+		SyncedExecutor<CommittedAtom> syncer,
 		BFTFactory bftFactory,
 		SyncEpochsRPCSender syncEpochsRPCSender,
 		LocalTimeoutSender scheduledTimeoutSender,

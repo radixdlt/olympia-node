@@ -15,22 +15,33 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.consensus.deterministic.configuration;
 
-import com.radixdlt.consensus.bft.VertexStore;
+import com.radixdlt.consensus.SyncedExecutor;
+import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.middleware2.CommittedAtom;
+import java.util.List;
 
 /**
- * A Vertex Store factory
+ * A state computer which never changes epochs
  */
-public interface VertexStoreFactory {
+public enum SingleEpochAlwaysSyncedExecutor implements SyncedExecutor<CommittedAtom> {
+	INSTANCE;
 
-	/**
-	 * Creates a new VertexStore given initial vertex and QC
-	 * @param genesisVertex the root vertex
-	 * @param genesisQC the root QC
-	 * @param syncedExecutor the underlying state computer
-	 * @return a new VertexStore
-	 */
-	VertexStore create(Vertex genesisVertex, QuorumCertificate genesisQC, SyncedExecutor<CommittedAtom> syncedExecutor);
+	@Override
+	public boolean syncTo(VertexMetadata vertexMetadata, List<BFTNode> target, Object opaque) {
+		return true;
+	}
+
+	@Override
+	public boolean compute(Vertex vertex) {
+		return false;
+	}
+
+	@Override
+	public void execute(CommittedAtom instruction) {
+		// No-op Mocked execution
+	}
 }
