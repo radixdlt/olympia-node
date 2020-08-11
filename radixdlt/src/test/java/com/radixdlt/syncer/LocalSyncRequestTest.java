@@ -17,8 +17,8 @@
 
 package com.radixdlt.syncer;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.powermock.api.mockito.PowerMockito.mock;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.VertexMetadata;
