@@ -62,6 +62,7 @@ import java.util.stream.Stream;
 import static org.assertj.core.data.Offset.offset;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -87,7 +88,6 @@ public class PeerManagerTest extends RadixTest {
 
 	@Before
 	public void setUp() {
-		when(getUniverse().getPlanck()).thenReturn(10000L);
 		RuntimeProperties properties = getProperties();
 
 		when(properties.get(eq("network.peers.heartbeat.delay"), anyInt())).thenReturn(100);
@@ -104,6 +104,8 @@ public class PeerManagerTest extends RadixTest {
 		when(properties.get(eq("network.peers.discover.interval"), anyInt())).thenReturn(200);
 
 		when(properties.get(eq("network.peers.message.batch.size"), anyInt())).thenReturn(2);
+
+		when(properties.get(eq("peermanager.recency_ms"), anyLong())).thenReturn(60_000L);
 
 		PeerManagerConfiguration config = PeerManagerConfiguration.fromRuntimeProperties(properties);
 		peerMessageMultimap = LinkedListMultimap.create();

@@ -76,10 +76,12 @@ public class PeerManager {
 
 	private final int peerMessageBatchSize;
 
+	private final long recencyThreshold;
+	private final int universeMagic;
+
 	private final SecureRandom rng;
 	private final Whitelist whitelist;
 	private final LocalSystem localSystem;
-	private final Universe universe;
 
 	private ScheduledExecutorService executor; // Ideally would be injected at some point
 
@@ -93,11 +95,9 @@ public class PeerManager {
 		@Override
 		public void run() {
 			try {
-				int numProbes = (int) (this.numPeers / TimeUnit.MILLISECONDS.toSeconds(universe.getPlanck()));
+				int numProbes = (int) (this.numPeers / TimeUnit.MILLISECONDS.toSeconds(recencyThreshold));
 
-				if (numProbes == 0) {
-					numProbes = 16;
-				}
+				numProbes = Math.max(numProbes, 16);
 
 				if (peersToProbe.isEmpty()) {
 					addressbook.peers()
@@ -136,8 +136,9 @@ public class PeerManager {
 		this.bootstrapDiscovery = Objects.requireNonNull(bootstrapDiscovery);
 		this.rng = Objects.requireNonNull(rng);
 		this.localSystem = localSystem;
-		this.universe = Objects.requireNonNull(universe);
+		this.recencyThreshold = properties.get("peermanager.recency_ms", 60L * 1000L);
 		this.whitelist = Whitelist.from(properties);
+		this.universeMagic = universe.getMagic();
 
 		this.peersBroadcastIntervalMs = config.networkPeersBroadcastInterval(30000);
 		this.peersBroadcastDelayMs = config.networkPeersBroadcastDelay(60000);
@@ -215,7 +216,7 @@ public class PeerManager {
 
 	private void heartbeatPeers() {
 		// System Heartbeat
-		SystemMessage msg = new SystemMessage(localSystem, this.universe.getMagic());
+		SystemMessage msg = new SystemMessage(localSystem, this.universeMagic);
 		addressbook.recentPeers().forEachOrdered(peer -> {
 			try {
 				messageCentral.send(peer, msg);
@@ -246,11 +247,11 @@ public class PeerManager {
 		try {
 			// Deliver known Peers in its entirety, filtered on whitelist and activity
 			// Chunk the sending of Peers so that UDP can handle it
-			PeersMessage peersMessage = new PeersMessage(this.universe.getMagic());
+			PeersMessage peersMessage = new PeersMessage(this.universeMagic);
 			List<Peer> peers = addressbook.peers()
 				.filter(Peer::hasNID)
 				.filter(StandardFilters.standardFilter(localSystem.getNID(), whitelist))
-				.filter(StandardFilters.recentlyActive(universe.getPlanck()))
+				.filter(StandardFilters.recentlyActive(this.recencyThreshold))
 				.collect(Collectors.toList());
 
 			for (Peer p : peers) {
@@ -262,7 +263,7 @@ public class PeerManager {
 				peersMessage.getPeers().add(p);
 				if (peersMessage.getPeers().size() == peerMessageBatchSize) {
 					messageCentral.send(peer, peersMessage);
-					peersMessage = new PeersMessage(this.universe.getMagic());
+					peersMessage = new PeersMessage(this.universeMagic);
 				}
 			}
 
@@ -280,7 +281,7 @@ public class PeerManager {
 			long nonce = message.getNonce();
 			long payload = message.getPayload();
 			log.debug("peer.ping from {}:{}", () -> peer, () -> formatNonce(nonce));
-			messageCentral.send(peer, new PeerPongMessage(this.universe.getMagic(), nonce, payload, localSystem));
+			messageCentral.send(peer, new PeerPongMessage(this.universeMagic, nonce, payload, localSystem));
 		} catch (Exception ex) {
 			log.error(String.format("peer.ping %s", peer), ex);
 		}
@@ -316,7 +317,7 @@ public class PeerManager {
 				int index = rand.nextInt(peers.size());
 				Peer peer = peers.get(index);
 				try {
-					messageCentral.send(peer, new GetPeersMessage(this.universe.getMagic()));
+					messageCentral.send(peer, new GetPeersMessage(this.universeMagic));
 				} catch (TransportException ioex) {
 					log.info(String.format("Failed to request peer information from %s",  peer), ioex);
 				}
@@ -335,7 +336,7 @@ public class PeerManager {
 				synchronized (this.probes) {
 					if (!this.probes.containsKey(peer)) {
 						long nonce = rng.nextLong();
-						PeerPingMessage ping = new PeerPingMessage(this.universe.getMagic(), nonce, System.nanoTime(), localSystem);
+						PeerPingMessage ping = new PeerPingMessage(this.universeMagic, nonce, System.nanoTime(), localSystem);
 
 						// Only wait for response if peer has a system, otherwise peer will be upgraded by pong message
 						if (peer.hasSystem()) {
@@ -370,7 +371,7 @@ public class PeerManager {
 
 	private void discoverPeers() {
 		// Probe all the bootstrap hosts so that they know about us
-		GetPeersMessage msg = new GetPeersMessage(this.universe.getMagic());
+		GetPeersMessage msg = new GetPeersMessage(this.universeMagic);
 		bootstrapDiscovery.discover(this.addressbook, StandardFilters.standardFilter(localSystem.getNID(), whitelist)).stream()
 			.map(addressbook::peer)
 			.forEachOrdered(peer -> {
