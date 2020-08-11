@@ -28,6 +28,7 @@ import com.radixdlt.CryptoModule;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.ExecutionMessagesModule;
 import com.radixdlt.ExecutionModule;
+import com.radixdlt.SyncServiceModule;
 import com.radixdlt.SyncerMessagesModule;
 import com.radixdlt.SyncerModule;
 import com.radixdlt.SystemInfoMessagesModule;
@@ -89,6 +90,7 @@ public class GlobalInjector {
 			new CryptoModule(),
 			new ConsensusModule(pacemakerTimeout),
 			new SyncerModule(properties),
+			new SyncServiceModule(),
 			new ExecutionModule(),
 			new NetworkModule(),
 			new SystemInfoModule(properties),

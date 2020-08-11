@@ -19,7 +19,9 @@ package com.radixdlt;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.google.inject.Scopes;
 import com.google.inject.Singleton;
+import com.google.inject.TypeLiteral;
 import com.radixdlt.atommodel.message.MessageParticleConstraintScrypt;
 import com.radixdlt.atommodel.tokens.TokensConstraintScrypt;
 import com.radixdlt.atommodel.unique.UniqueParticleConstraintScrypt;
@@ -41,10 +43,19 @@ import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.LedgerAtomChecker;
 import com.radixdlt.middleware2.PowFeeComputer;
+import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
+import com.radixdlt.middleware2.store.CommittedAtomsStore.AtomIndexer;
+import com.radixdlt.middleware2.store.EngineAtomIndices;
 import com.radixdlt.properties.RuntimeProperties;
+import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.CMStore;
+import com.radixdlt.store.CursorStore;
 import com.radixdlt.store.EngineStore;
+import com.radixdlt.store.LedgerEntryStore;
+import com.radixdlt.store.LedgerEntryStoreView;
+import com.radixdlt.store.berkeley.BerkeleyCursorStore;
+import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.universe.Universe;
 import java.time.Instant;
 import java.util.function.Consumer;
@@ -56,6 +67,15 @@ import java.util.function.UnaryOperator;
 public class ExecutionModule extends AbstractModule {
 	private static final long GENESIS_TIMESTAMP = Instant.parse("2020-01-01T00:00:00.000Z").toEpochMilli();
 	private static final Hash DEFAULT_FEE_TARGET = new Hash("0000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
+
+	@Override
+	protected void configure() {
+		bind(new TypeLiteral<EngineStore<CommittedAtom>>() { }).to(CommittedAtomsStore.class).in(Scopes.SINGLETON);
+		bind(AtomToBinaryConverter.class).toInstance(new AtomToBinaryConverter(DefaultSerialization.getInstance()));
+		bind(LedgerEntryStore.class).to(BerkeleyLedgerEntryStore.class);
+		bind(LedgerEntryStoreView.class).to(BerkeleyLedgerEntryStore.class);
+		bind(CursorStore.class).to(BerkeleyCursorStore.class);
+	}
 
 	@Provides
 	@Singleton
@@ -101,7 +121,6 @@ public class ExecutionModule extends AbstractModule {
 	private UnaryOperator<CMStore> buildVirtualLayer(CMAtomOS atomOS) {
 		return atomOS.buildVirtualLayer();
 	}
-
 
 	@Provides
 	@Singleton
@@ -167,5 +186,21 @@ public class ExecutionModule extends AbstractModule {
 		final ClientAtom genesisAtom = ClientAtom.convertFromApiAtom(universe.getGenesis().get(0));
 		final VertexMetadata vertexMetadata = VertexMetadata.ofGenesisAncestor();
 		return new CommittedAtom(genesisAtom, vertexMetadata, GENESIS_TIMESTAMP);
+	}
+
+	@Provides
+	@Singleton
+	private AtomIndexer buildAtomIndexer(Serialization serialization) {
+		return atom -> EngineAtomIndices.from(atom, serialization);
+	}
+
+	@Provides
+	@Singleton
+	private CommittedAtomsStore committedAtomsStore(
+		LedgerEntryStore store,
+		AtomToBinaryConverter atomToBinaryConverter,
+		AtomIndexer atomIndexer
+	) {
+		return new CommittedAtomsStore(store, atomToBinaryConverter, atomIndexer);
 	}
 }

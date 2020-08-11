@@ -43,34 +43,14 @@ import com.radixdlt.middleware2.ClientAtom.LedgerAtomConversionException;
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.converters.AtomConversionException;
-import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.middleware2.converters.AtomToClientAtomConverter;
-import com.radixdlt.middleware2.network.MessageCentralLedgerSync;
-import com.radixdlt.middleware2.store.CommittedAtomsStore;
-import com.radixdlt.middleware2.store.CommittedAtomsStore.AtomIndexer;
-import com.radixdlt.middleware2.store.EngineAtomIndices;
 import com.radixdlt.network.addressbook.AddressBook;
-import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.store.CursorStore;
-import com.radixdlt.store.EngineStore;
-import com.radixdlt.store.LedgerEntryStore;
-import com.radixdlt.store.LedgerEntryStoreView;
-import com.radixdlt.store.berkeley.BerkeleyCursorStore;
-import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.syncer.EpochChangeSender;
-import com.radixdlt.syncer.StateSyncNetwork;
-import com.radixdlt.syncer.SyncServiceProcessor;
-import com.radixdlt.syncer.SyncServiceProcessor.SyncTimeoutScheduler;
-import com.radixdlt.syncer.SyncServiceProcessor.SyncedAtomSender;
-import com.radixdlt.syncer.SyncServiceRunner;
-import com.radixdlt.syncer.SyncServiceRunner.LocalSyncRequestsRx;
-import com.radixdlt.syncer.SyncServiceRunner.SyncTimeoutsRx;
 import com.radixdlt.syncer.SyncedEpochExecutor;
 import com.radixdlt.syncer.SyncedEpochExecutor.CommittedStateSyncSender;
 import com.radixdlt.syncer.SyncedEpochExecutor.SyncService;
-import com.radixdlt.universe.Universe;
 import java.util.Objects;
 
 /**
@@ -78,7 +58,6 @@ import java.util.Objects;
  * TODO: Split out Executor (Radix Engine) logic
  */
 public class SyncerModule extends AbstractModule {
-	private static final int BATCH_SIZE = 100;
 
 	private final RuntimeProperties runtimeProperties;
 
@@ -90,13 +69,6 @@ public class SyncerModule extends AbstractModule {
 	protected void configure() {
 		bind(new TypeLiteral<SyncedExecutor<CommittedAtom>>() { }).to(SyncedEpochExecutor.class).in(Scopes.SINGLETON);
 		bind(Mempool.class).to(SharedMempool.class).in(Scopes.SINGLETON);
-		bind(new TypeLiteral<EngineStore<CommittedAtom>>() { }).to(CommittedAtomsStore.class).in(Scopes.SINGLETON);
-		bind(AtomToBinaryConverter.class).toInstance(new AtomToBinaryConverter(DefaultSerialization.getInstance()));
-
-		// Database
-		bind(LedgerEntryStore.class).to(BerkeleyLedgerEntryStore.class);
-		bind(LedgerEntryStoreView.class).to(BerkeleyLedgerEntryStore.class);
-		bind(CursorStore.class).to(BerkeleyCursorStore.class);
 	}
 
 	@Provides
@@ -160,49 +132,6 @@ public class SyncerModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private SyncedAtomSender syncedAtomSender(SyncedEpochExecutor epochExecutor) {
-		return epochExecutor::execute;
-	}
-
-	@Provides
-	@Singleton
-	private SyncServiceProcessor syncServiceProcessor(
-		RadixEngineExecutor executor,
-		StateSyncNetwork stateSyncNetwork,
-		AddressBook addressBook,
-		SyncedAtomSender syncedAtomSender,
-		SyncTimeoutScheduler syncTimeoutScheduler
-	) {
-		return new SyncServiceProcessor(
-			executor,
-			stateSyncNetwork,
-			addressBook,
-			syncedAtomSender,
-			syncTimeoutScheduler,
-			0,
-			BATCH_SIZE,
-			10
-		);
-	}
-
-	@Provides
-	@Singleton
-	private SyncServiceRunner syncServiceRunner(
-		LocalSyncRequestsRx localSyncRequestsRx,
-		SyncTimeoutsRx syncTimeoutsRx,
-		StateSyncNetwork stateSyncNetwork,
-		SyncServiceProcessor syncServiceProcessor
-	) {
-		return new SyncServiceRunner(
-			localSyncRequestsRx,
-			syncTimeoutsRx,
-			stateSyncNetwork,
-			syncServiceProcessor
-		);
-	}
-
-	@Provides
-	@Singleton
 	private SyncedEpochExecutor syncedEpochExecutor(
 		Mempool mempool,
 		RadixEngineExecutor executor,
@@ -210,8 +139,6 @@ public class SyncerModule extends AbstractModule {
 		EpochChangeSender epochChangeSender,
 		AddressBookValidatorSetProvider validatorSetProvider,
 		SyncService syncService,
-		AddressBook addressBook,
-		StateSyncNetwork stateSyncNetwork,
 		SystemCounters counters
 	) {
 		final long viewsPerEpoch = runtimeProperties.get("epochs.views_per_epoch", 100L);
@@ -244,23 +171,5 @@ public class SyncerModule extends AbstractModule {
 			converter,
 			submissionControlSender
 		);
-	}
-
-	@Provides
-	@Singleton
-	private StateSyncNetwork stateSyncNetwork(
-		Universe universe,
-		MessageCentral messageCentral
-	) {
-		return new MessageCentralLedgerSync(
-			universe,
-			messageCentral
-		);
-	}
-
-	@Provides
-	@Singleton
-	private AtomIndexer buildAtomIndexer(Serialization serialization) {
-		return atom -> EngineAtomIndices.from(atom, serialization);
 	}
 }

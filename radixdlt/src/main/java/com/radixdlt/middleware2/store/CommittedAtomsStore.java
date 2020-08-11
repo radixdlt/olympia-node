@@ -19,8 +19,6 @@ package com.radixdlt.middleware2.store;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.inject.Inject;
-import com.google.inject.Singleton;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.constraintmachine.Particle;
@@ -43,8 +41,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.Optional;
 import java.util.function.Consumer;
 
-@Singleton
-public class CommittedAtomsStore implements EngineStore<CommittedAtom> {
+public final class CommittedAtomsStore implements EngineStore<CommittedAtom> {
 	private static final Logger log = LogManager.getLogger();
 
 	private final AtomIndexer atomIndexer;
@@ -55,7 +52,6 @@ public class CommittedAtomsStore implements EngineStore<CommittedAtom> {
 		EngineAtomIndices getIndices(LedgerAtom atom);
 	}
 
-	@Inject
 	public CommittedAtomsStore(
 		LedgerEntryStore store,
 		AtomToBinaryConverter atomToBinaryConverter,
