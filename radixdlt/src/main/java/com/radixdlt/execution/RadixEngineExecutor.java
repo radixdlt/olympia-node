@@ -32,6 +32,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * Wraps the Radix Engine and emits messages based on success or failure
+ */
 public final class RadixEngineExecutor {
 	public interface RadixEngineExecutorEventSender {
 		void sendStored(CommittedAtom committedAtom, ImmutableSet<EUID> indicies);

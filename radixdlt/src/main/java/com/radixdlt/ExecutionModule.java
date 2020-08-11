@@ -50,6 +50,9 @@ import java.time.Instant;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 
+/**
+ * Module which manages execution of commands
+ */
 public class ExecutionModule extends AbstractModule {
 	private static final long GENESIS_TIMESTAMP = Instant.parse("2020-01-01T00:00:00.000Z").toEpochMilli();
 	private static final Hash DEFAULT_FEE_TARGET = new Hash("0000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");

@@ -296,7 +296,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 	private void processVerticesResponseForCommittedSync(Hash syncTo, SyncState syncState, GetVerticesResponse response) {
 		log.info("SYNC_STATE: Processing vertices {}", syncState);
 
-		List<BFTNode> signers = Collections.singletonList(syncState.author);
+		ImmutableList<BFTNode> signers = ImmutableList.of(syncState.author);
 		syncState.fetched.addAll(response.getVertices());
 
 		if (syncedExecutor.syncTo(syncState.committedVertexMetadata, signers, syncTo)) {

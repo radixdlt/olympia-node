@@ -17,13 +17,13 @@
 
 package com.radixdlt.consensus.deterministic.configuration;
 
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.SyncedExecutor;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.syncer.SyncedEpochExecutor.CommittedStateSyncSender;
 import com.radixdlt.middleware2.CommittedAtom;
-import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 
@@ -38,7 +38,7 @@ public class SingleEpochRandomlySyncedExecutor implements SyncedExecutor<Committ
 	}
 
 	@Override
-	public boolean syncTo(VertexMetadata vertexMetadata, List<BFTNode> target, Object opaque) {
+	public boolean syncTo(VertexMetadata vertexMetadata, ImmutableList<BFTNode> target, Object opaque) {
 		if (random.nextBoolean()) {
 			return true;
 		}

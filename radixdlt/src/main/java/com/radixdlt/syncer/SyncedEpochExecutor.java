@@ -17,6 +17,7 @@
 
 package com.radixdlt.syncer;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.SyncedExecutor;
@@ -32,7 +33,6 @@ import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.CommittedAtom;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -40,9 +40,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
 /**
- * A service which synchronizes the radix engine committed state between peers.
- *
- * TODO: Most of the logic here should go into RadixEngine itself
+ * Synchronizes execution
  */
 public final class SyncedEpochExecutor implements SyncedExecutor<CommittedAtom> {
 
@@ -95,7 +93,7 @@ public final class SyncedEpochExecutor implements SyncedExecutor<CommittedAtom> 
 	}
 
 	@Override
-	public boolean syncTo(VertexMetadata vertexMetadata, List<BFTNode> target, Object opaque) {
+	public boolean syncTo(VertexMetadata vertexMetadata, ImmutableList<BFTNode> target, Object opaque) {
 		synchronized (lock) {
 			if (target.isEmpty()) {
 				// TODO: relax this in future when we have non-validator nodes

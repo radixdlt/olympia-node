@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus.simulation.configuration;
 
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
@@ -29,7 +30,6 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import io.reactivex.rxjava3.subjects.Subject;
-import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 
@@ -60,7 +60,7 @@ public class ChangingEpochSyncedExecutor implements SimulatedSyncedExecutor {
 	}
 
 	@Override
-	public boolean syncTo(VertexMetadata vertexMetadata, List<BFTNode> target, Object opaque) {
+	public boolean syncTo(VertexMetadata vertexMetadata, ImmutableList<BFTNode> target, Object opaque) {
 		if (vertexMetadata.isEndOfEpoch()) {
 			this.nextEpoch(vertexMetadata);
 		}

@@ -37,7 +37,6 @@ import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.syncer.SyncServiceProcessor.SyncTimeoutScheduler;
 import com.radixdlt.syncer.SyncServiceProcessor.SyncedAtomSender;
-import java.util.Collections;
 import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
@@ -89,7 +88,7 @@ public class SyncServiceProcessorTest {
 		Peer peer = mock(Peer.class);
 		when(peer.hasSystem()).thenReturn(true);
 		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(peer));
-		LocalSyncRequest request = new LocalSyncRequest(targetVersion, currentVersion, Collections.singletonList(node));
+		LocalSyncRequest request = new LocalSyncRequest(targetVersion, currentVersion, ImmutableList.of(node));
 		syncServiceProcessor.processLocalSyncRequest(request);
 
 		ImmutableList.Builder<CommittedAtom> newAtoms1 = ImmutableList.builder();
@@ -117,7 +116,7 @@ public class SyncServiceProcessorTest {
 		Peer peer = mock(Peer.class);
 		when(peer.hasSystem()).thenReturn(true);
 		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(peer));
-		LocalSyncRequest request = new LocalSyncRequest(targetVersion, currentVersion, Collections.singletonList(node));
+		LocalSyncRequest request = new LocalSyncRequest(targetVersion, currentVersion, ImmutableList.of(node));
 		syncServiceProcessor.processLocalSyncRequest(request);
 		ImmutableList.Builder<CommittedAtom> newAtoms1 = ImmutableList.builder();
 		for (int i = 7; i <= 11; i++) {
@@ -140,7 +139,7 @@ public class SyncServiceProcessorTest {
 		Peer peer = mock(Peer.class);
 		when(peer.hasSystem()).thenReturn(true);
 		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(peer));
-		LocalSyncRequest request = new LocalSyncRequest(targetVersion, currentVersion, Collections.singletonList(node));
+		LocalSyncRequest request = new LocalSyncRequest(targetVersion, currentVersion, ImmutableList.of(node));
 		syncServiceProcessor.processLocalSyncRequest(request);
 		verify(stateSyncNetwork, times(1)).sendSyncRequest(any(), eq(10L));
 		verify(stateSyncNetwork, times(1)).sendSyncRequest(any(), eq(12L));

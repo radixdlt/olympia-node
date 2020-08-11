@@ -29,6 +29,9 @@ import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.utils.TwoSenderToRx;
 import io.reactivex.rxjava3.core.Observable;
 
+/**
+ * Messages emitted by the executor
+ */
 public final class ExecutionMessagesModule extends AbstractModule {
 	@Override
 	protected void configure() {

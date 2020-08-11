@@ -29,6 +29,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.View;
@@ -45,7 +46,6 @@ import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.syncer.SyncedEpochExecutor.SyncService;
-import java.util.Collections;
 import java.util.function.Function;
 import org.junit.Before;
 import org.junit.Test;
@@ -145,7 +145,7 @@ public class SyncedEpochExecutorTest {
 		VertexMetadata nextVertexMetadata = mock(VertexMetadata.class);
 		when(nextVertexMetadata.getStateVersion()).thenReturn(1234L);
 
-		syncedEpochExecutor.syncTo(nextVertexMetadata, Collections.singletonList(node), mock(Object.class));
+		syncedEpochExecutor.syncTo(nextVertexMetadata, ImmutableList.of(node), mock(Object.class));
 		verify(committedStateSyncSender, never()).sendCommittedStateSync(anyLong(), any());
 
 		when(nextAtom.getClientAtom()).thenReturn(mock(ClientAtom.class));

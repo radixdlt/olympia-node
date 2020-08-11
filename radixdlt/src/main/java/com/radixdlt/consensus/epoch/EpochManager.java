@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus.epoch;
 
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.CommittedStateSync;
@@ -294,7 +295,7 @@ public final class EpochManager {
 
 		final VertexMetadata ancestor = response.getEpochAncestor();
 		if (ancestor.getEpoch() >= this.currentEpoch()) {
-			syncedExecutor.syncTo(ancestor, Collections.singletonList(response.getAuthor()), null);
+			syncedExecutor.syncTo(ancestor, ImmutableList.of(response.getAuthor()), null);
 		} else {
 			log.info("{}: Ignoring old epoch {}", this.self::getSimpleName, () -> response);
 		}

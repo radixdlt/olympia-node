@@ -27,6 +27,9 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import com.radixdlt.utils.ThreadFactories;
 
+/**
+ * Manages thread safety and is the runner for the Sync Service Processor.
+ */
 public final class SyncServiceRunner {
 	public interface LocalSyncRequestsRx {
 		Observable<LocalSyncRequest> localSyncRequests();

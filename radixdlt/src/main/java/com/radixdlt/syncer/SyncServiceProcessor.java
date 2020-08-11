@@ -31,9 +31,15 @@ import java.util.Optional;
 import java.util.TreeSet;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
+import javax.annotation.concurrent.NotThreadSafe;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * Processes sync service messages and manages sync requests and responses.
+ * Thread-safety must be handled by caller.
+ */
+@NotThreadSafe
 public final class SyncServiceProcessor {
 	public interface SyncedAtomSender {
 		void sendSyncedAtom(CommittedAtom committedAtom);
