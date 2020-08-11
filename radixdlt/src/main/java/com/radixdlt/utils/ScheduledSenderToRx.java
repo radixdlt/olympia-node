@@ -15,9 +15,8 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.liveness;
+package com.radixdlt.utils;
 
-import com.radixdlt.consensus.epoch.LocalTimeout;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import io.reactivex.rxjava3.subjects.Subject;
@@ -28,28 +27,20 @@ import java.util.concurrent.TimeUnit;
 /**
  * Schedules timeouts and exposes the events as an rx stream
  */
-public final class ScheduledLocalTimeoutSender implements PacemakerRx, LocalTimeoutSender {
+public final class ScheduledSenderToRx<T> {
 	private final ScheduledExecutorService executorService;
-	private final Subject<LocalTimeout> timeouts;
-	private final Observable<LocalTimeout> timeoutsObservable;
+	private final Subject<T> messages;
 
-
-	public ScheduledLocalTimeoutSender(ScheduledExecutorService executorService) {
+	public ScheduledSenderToRx(ScheduledExecutorService executorService) {
 		this.executorService = Objects.requireNonNull(executorService);
-		// BehaviorSubject so that nextLocalTimeout will complete if timeout already occurred
-		this.timeouts = BehaviorSubject.<LocalTimeout>create().toSerialized();
-		this.timeoutsObservable = this.timeouts
-			.publish()
-			.refCount();
+		this.messages = BehaviorSubject.<T>create().toSerialized();
 	}
 
-	@Override
-	public void scheduleTimeout(LocalTimeout localTimeout, long timeoutMilliseconds) {
-		executorService.schedule(() -> timeouts.onNext(localTimeout), timeoutMilliseconds, TimeUnit.MILLISECONDS);
+	public void scheduleSend(T message, long timeoutMilliseconds) {
+		executorService.schedule(() -> messages.onNext(message), timeoutMilliseconds, TimeUnit.MILLISECONDS);
 	}
 
-	@Override
-	public Observable<LocalTimeout> localTimeouts() {
-		return this.timeoutsObservable;
+	public Observable<T> messages() {
+		return this.messages;
 	}
 }
