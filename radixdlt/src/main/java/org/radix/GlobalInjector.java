@@ -28,9 +28,10 @@ import com.radixdlt.CryptoModule;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.ExecutionMessagesModule;
 import com.radixdlt.ExecutionModule;
-import com.radixdlt.SyncServiceModule;
-import com.radixdlt.SyncerMessagesModule;
-import com.radixdlt.SyncerModule;
+import com.radixdlt.SyncCommittedServiceModule;
+import com.radixdlt.SyncMempoolServiceModule;
+import com.radixdlt.SyncMessagesModule;
+import com.radixdlt.SyncExecutionModule;
 import com.radixdlt.SystemInfoMessagesModule;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.identifiers.RadixAddress;
@@ -89,8 +90,9 @@ public class GlobalInjector {
 		injector = Guice.createInjector(
 			new CryptoModule(),
 			new ConsensusModule(pacemakerTimeout),
-			new SyncerModule(properties),
-			new SyncServiceModule(),
+			new SyncExecutionModule(properties),
+			new SyncCommittedServiceModule(),
+			new SyncMempoolServiceModule(),
 			new ExecutionModule(),
 			new NetworkModule(),
 			new SystemInfoModule(properties),
@@ -98,7 +100,7 @@ public class GlobalInjector {
 			// Environment modules
 			new ExecutionMessagesModule(),
 			new SystemInfoMessagesModule(),
-			new SyncerMessagesModule(),
+			new SyncMessagesModule(),
 
 			// Low level network modules
 			new MessageCentralModule(properties),

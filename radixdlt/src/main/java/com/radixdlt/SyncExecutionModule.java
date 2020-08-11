@@ -27,26 +27,13 @@ import com.radixdlt.consensus.AddressBookValidatorSetProvider;
 import com.radixdlt.consensus.SyncedExecutor;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.liveness.MempoolNextCommandGenerator;
-import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
-import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.execution.RadixEngineExecutor;
 import com.radixdlt.mempool.Mempool;
-import com.radixdlt.mempool.SharedMempool;
-import com.radixdlt.mempool.SubmissionControl;
-import com.radixdlt.mempool.SubmissionControlImpl;
-import com.radixdlt.mempool.SubmissionControlImpl.SubmissionControlSender;
-import com.radixdlt.middleware2.ClientAtom;
-import com.radixdlt.middleware2.ClientAtom.LedgerAtomConversionException;
 import com.radixdlt.middleware2.CommittedAtom;
-import com.radixdlt.middleware2.LedgerAtom;
-import com.radixdlt.middleware2.converters.AtomConversionException;
-import com.radixdlt.middleware2.converters.AtomToClientAtomConverter;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.properties.RuntimeProperties;
-import com.radixdlt.serialization.Serialization;
 import com.radixdlt.syncer.EpochChangeSender;
 import com.radixdlt.syncer.SyncedEpochExecutor;
 import com.radixdlt.syncer.SyncedEpochExecutor.CommittedStateSyncSender;
@@ -54,41 +41,19 @@ import com.radixdlt.syncer.SyncedEpochExecutor.SyncService;
 import java.util.Objects;
 
 /**
- * Module which manages synchronization of state
- * TODO: Split out Executor (Radix Engine) logic
+ * Module which manages synchronized execution
  */
-public class SyncerModule extends AbstractModule {
+public class SyncExecutionModule extends AbstractModule {
 
 	private final RuntimeProperties runtimeProperties;
 
-	public SyncerModule(RuntimeProperties runtimeProperties) {
+	public SyncExecutionModule(RuntimeProperties runtimeProperties) {
 		this.runtimeProperties = Objects.requireNonNull(runtimeProperties);
 	}
 
 	@Override
 	protected void configure() {
 		bind(new TypeLiteral<SyncedExecutor<CommittedAtom>>() { }).to(SyncedEpochExecutor.class).in(Scopes.SINGLETON);
-		bind(Mempool.class).to(SharedMempool.class).in(Scopes.SINGLETON);
-	}
-
-	@Provides
-	@Singleton
-	private AtomToClientAtomConverter converter() {
-		return atom -> {
-			try {
-				return ClientAtom.convertFromApiAtom(atom);
-			} catch (LedgerAtomConversionException e) {
-				throw new AtomConversionException(e.getDataPointer(), e);
-			}
-		};
-	}
-
-	@Provides
-	@Singleton
-	NextCommandGenerator nextCommandGenerator(
-		Mempool mempool
-	) {
-		return new MempoolNextCommandGenerator(mempool);
 	}
 
 	@Provides
@@ -155,21 +120,4 @@ public class SyncerModule extends AbstractModule {
 		);
 	}
 
-	@Provides
-	@Singleton
-	SubmissionControl submissionControl(
-		Mempool mempool,
-		RadixEngine<LedgerAtom> radixEngine,
-		Serialization serialization,
-		AtomToClientAtomConverter converter,
-		SubmissionControlSender submissionControlSender
-	) {
-		return new SubmissionControlImpl(
-			mempool,
-			radixEngine,
-			serialization,
-			converter,
-			submissionControlSender
-		);
-	}
 }

@@ -49,7 +49,7 @@ import java.util.concurrent.ScheduledExecutorService;
 /**
  * Module which manages messages from Syncer
  */
-public final class SyncerMessagesModule extends AbstractModule {
+public final class SyncMessagesModule extends AbstractModule {
 
 	@Override
 	protected void configure() {

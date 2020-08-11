@@ -34,7 +34,10 @@ import com.radixdlt.syncer.SyncServiceRunner.SyncTimeoutsRx;
 import com.radixdlt.syncer.SyncedEpochExecutor;
 import com.radixdlt.universe.Universe;
 
-public class SyncServiceModule extends AbstractModule {
+/**
+ * Module which manages synchronization of committed atoms across of nodes
+ */
+public class SyncCommittedServiceModule extends AbstractModule {
 	private static final int BATCH_SIZE = 100;
 
 	@Provides
