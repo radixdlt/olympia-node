@@ -74,7 +74,6 @@ public class BurnTokensActionMapper implements StatefulActionToParticleGroupsMap
 					burn.getAddress(),
 					System.nanoTime(),
 					token,
-					System.currentTimeMillis() / 60000L + 60000L,
 					permissions
 				),
 			amt ->

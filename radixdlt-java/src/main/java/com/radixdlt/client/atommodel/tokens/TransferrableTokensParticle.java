@@ -59,10 +59,6 @@ public final class TransferrableTokensParticle extends Particle implements Accou
 	@DsonOutput(Output.ALL)
 	private UInt256 granularity;
 
-	@JsonProperty("planck")
-	@DsonOutput(Output.ALL)
-	private long planck;
-
 	@JsonProperty("nonce")
 	@DsonOutput(Output.ALL)
 	private long nonce;
@@ -83,7 +79,6 @@ public final class TransferrableTokensParticle extends Particle implements Accou
 		RadixAddress address,
 		long nonce,
 		RRI tokenDefinitionReference,
-		long planck,
 		Map<TokenTransition, TokenPermission> tokenPermissions
 	) {
 		super(address.euid());
@@ -97,7 +92,6 @@ public final class TransferrableTokensParticle extends Particle implements Accou
 		this.address = address;
 		this.tokenDefinitionReference = tokenDefinitionReference;
 		this.granularity = granularity;
-		this.planck = planck;
 		this.nonce = nonce;
 		this.amount = amount;
 		this.tokenPermissions = ImmutableMap.copyOf(tokenPermissions);
@@ -152,19 +146,15 @@ public final class TransferrableTokensParticle extends Particle implements Accou
 		return this.granularity;
 	}
 
-	public long getPlanck() {
-		return this.planck;
-	}
-
 	@Override
 	public String toString() {
-		return String.format("%s[%s:%s:%s:%s:%s:%s]",
+		return String.format("%s[%s:%s:%s:%s:%s]",
 			getClass().getSimpleName(),
 			String.valueOf(tokenDefinitionReference),
 			String.valueOf(amount),
 			String.valueOf(granularity),
 			String.valueOf(address),
-			planck,
-			nonce);
+			nonce
+		);
 	}
 }

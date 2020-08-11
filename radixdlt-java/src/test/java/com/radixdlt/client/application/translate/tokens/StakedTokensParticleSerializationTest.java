@@ -35,7 +35,6 @@ public class StakedTokensParticleSerializationTest extends SerializeObjectEngine
 	public static final RRI TOKEN = RRI.of(ADDRESS, "COOKIE");
 	public static final UInt256 AMOUNT = UInt256.EIGHT;
 	public static final UInt256 GRANULARITY = UInt256.ONE;
-	public static final int PLANCK = 100;
 	public static final int NONCE = 1;
 	public static final ImmutableMap<MutableSupplyTokenDefinitionParticle.TokenTransition, TokenPermission> TOKEN_PERMISSIONS = ImmutableMap.of();
 
@@ -52,7 +51,6 @@ public class StakedTokensParticleSerializationTest extends SerializeObjectEngine
 		assertEquals(ADDRESS, p.getAddress());
 		assertEquals(NONCE, p.getNonce());
 		assertEquals(TOKEN, p.getTokenDefinitionReference());
-		assertEquals(PLANCK, p.getPlanck());
 		assertEquals(TOKEN_PERMISSIONS, p.getTokenPermissions());
 	}
 
@@ -64,7 +62,6 @@ public class StakedTokensParticleSerializationTest extends SerializeObjectEngine
 			ADDRESS,
 			NONCE,
 			TOKEN,
-			PLANCK,
 			TOKEN_PERMISSIONS
 		);
 	}

@@ -81,7 +81,6 @@ public class StakeTokensMapperTest {
 				address1,
 				0,
 				token,
-				0,
 				ImmutableMap.of()
 			)
 		));

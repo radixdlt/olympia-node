@@ -63,10 +63,6 @@ public final class StakedTokensParticle extends Particle implements Accountable,
 	@DsonOutput(Output.ALL)
 	private UInt256 granularity;
 
-	@JsonProperty("planck")
-	@DsonOutput(Output.ALL)
-	private long planck;
-
 	@JsonProperty("nonce")
 	@DsonOutput(Output.ALL)
 	private long nonce;
@@ -88,7 +84,6 @@ public final class StakedTokensParticle extends Particle implements Accountable,
 		RadixAddress address,
 		long nonce,
 		RRI tokenDefinitionReference,
-		long planck,
 		Map<TokenTransition, TokenPermission> tokenPermissions
 	) {
 		super(address.euid());
@@ -103,7 +98,6 @@ public final class StakedTokensParticle extends Particle implements Accountable,
 		this.address = address;
 		this.tokenDefinitionReference = tokenDefinitionReference;
 		this.granularity = granularity;
-		this.planck = planck;
 		this.nonce = nonce;
 		this.amount = amount;
 		this.tokenPermissions = ImmutableMap.copyOf(tokenPermissions);
@@ -162,13 +156,9 @@ public final class StakedTokensParticle extends Particle implements Accountable,
 		return this.granularity;
 	}
 
-	public long getPlanck() {
-		return this.planck;
-	}
-
 	@Override
 	public String toString() {
-		return String.format("%s[%s:%s:%s:%s:%s:%s:%s]", getClass().getSimpleName(), tokenDefinitionReference, amount,
-			granularity, address, delegateAddress, planck, nonce);
+		return String.format("%s[%s:%s:%s:%s:%s:%s]", getClass().getSimpleName(), tokenDefinitionReference, amount,
+			granularity, address, delegateAddress, nonce);
 	}
 }

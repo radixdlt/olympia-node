@@ -101,7 +101,6 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 			tokenCreation.getRRI().getAddress(),
 			System.nanoTime(),
 			token.getRRI(),
-			System.currentTimeMillis() / 60000L + 60000,
 			token.getTokenPermissions()
 		);
 
@@ -149,7 +148,6 @@ public class CreateTokenToParticleGroupsMapper implements StatelessActionToParti
 			token.getRRI().getAddress(),
 			System.currentTimeMillis(),
 			token.getRRI(),
-			System.currentTimeMillis() / 60000L + 60000L,
 			ImmutableMap.of()
 		);
 
