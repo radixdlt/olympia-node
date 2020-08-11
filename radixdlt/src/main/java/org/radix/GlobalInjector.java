@@ -86,14 +86,16 @@ public class GlobalInjector {
 		};
 
 		final int pacemakerTimeout = properties.get("consensus.pacemaker_timeout_millis", 5000);
+		final int fixedNodeCount = properties.get("consensus.fixed_node_count", 1);
+		final long viewsPerEpoch = properties.get("epochs.views_per_epoch", 100L);
 
 		injector = Guice.createInjector(
 			new CryptoModule(),
 			new ConsensusModule(pacemakerTimeout),
-			new SyncExecutionModule(properties),
+			new SyncExecutionModule(),
 			new SyncCommittedServiceModule(),
 			new SyncMempoolServiceModule(),
-			new ExecutionModule(),
+			new ExecutionModule(fixedNodeCount, viewsPerEpoch),
 			new NetworkModule(),
 			new SystemInfoModule(properties),
 

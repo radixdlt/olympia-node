@@ -23,9 +23,7 @@ import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.SyncedExecutor;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.execution.RadixEngineExecutor;
@@ -37,7 +35,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Function;
 
 /**
  * Synchronizes execution
@@ -56,8 +53,6 @@ public final class SyncedEpochExecutor implements SyncedExecutor<CommittedAtom> 
 	private final RadixEngineExecutor executor;
 	private final CommittedStateSyncSender committedStateSyncSender;
 	private final EpochChangeSender epochChangeSender;
-	private final Function<Long, BFTValidatorSet> validatorSetMapping;
-	private final View epochChangeView;
 	private final SystemCounters counters;
 	private final SyncService syncService;
 
@@ -72,22 +67,14 @@ public final class SyncedEpochExecutor implements SyncedExecutor<CommittedAtom> 
 		RadixEngineExecutor executor,
 		CommittedStateSyncSender committedStateSyncSender,
 		EpochChangeSender epochChangeSender,
-		Function<Long, BFTValidatorSet> validatorSetMapping,
-		View epochChangeView,
 		SyncService syncService,
 		SystemCounters counters
 	) {
-		if (epochChangeView.isGenesis()) {
-			throw new IllegalArgumentException("Epoch change view must not be genesis.");
-		}
-
 		this.stateVersion = new AtomicLong(initialStateVersion);
 		this.mempool = Objects.requireNonNull(mempool);
 		this.executor = Objects.requireNonNull(executor);
 		this.committedStateSyncSender = Objects.requireNonNull(committedStateSyncSender);
 		this.epochChangeSender = Objects.requireNonNull(epochChangeSender);
-		this.validatorSetMapping = validatorSetMapping;
-		this.epochChangeView = epochChangeView;
 		this.counters = Objects.requireNonNull(counters);
 		this.syncService = Objects.requireNonNull(syncService);
 	}
@@ -115,7 +102,7 @@ public final class SyncedEpochExecutor implements SyncedExecutor<CommittedAtom> 
 
 	@Override
 	public boolean compute(Vertex vertex) {
-		return vertex.getView().compareTo(epochChangeView) >= 0;
+		return executor.compute(vertex);
 	}
 
 	/**
@@ -155,7 +142,7 @@ public final class SyncedEpochExecutor implements SyncedExecutor<CommittedAtom> 
 
 				VertexMetadata ancestor = atom.getVertexMetadata();
 				this.lastEpochChange = ancestor;
-				EpochChange epochChange = new EpochChange(ancestor, validatorSetMapping.apply(ancestor.getEpoch() + 1));
+				EpochChange epochChange = new EpochChange(ancestor, executor.getValidatorSet(ancestor.getEpoch() + 1));
 				this.epochChangeSender.epochChange(epochChange);
 			}
 		}

@@ -17,7 +17,6 @@
 
 package com.radixdlt.syncer;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -30,7 +29,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -46,7 +44,6 @@ import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.syncer.SyncedEpochExecutor.SyncService;
-import java.util.function.Function;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -57,8 +54,7 @@ public class SyncedEpochExecutorTest {
 	private SyncedEpochExecutor syncedEpochExecutor;
 	private CommittedStateSyncSender committedStateSyncSender;
 	private EpochChangeSender epochChangeSender;
-	private Function<Long, BFTValidatorSet> validatorSetMapping;
-	private View epochHighView;
+
 	private SystemCounters counters;
 	private SyncService syncService;
 
@@ -70,11 +66,7 @@ public class SyncedEpochExecutorTest {
 		this.committedStateSyncSender = mock(CommittedStateSyncSender.class);
 		this.epochChangeSender = mock(EpochChangeSender.class);
 		this.counters = mock(SystemCounters.class);
-		// No issues with type checking for mock
-		@SuppressWarnings("unchecked")
-		Function<Long, BFTValidatorSet> vsm = mock(Function.class);
-		this.validatorSetMapping = vsm;
-		this.epochHighView = View.of(100);
+
 		this.syncService = mock(SyncService.class);
 		this.syncedEpochExecutor = new SyncedEpochExecutor(
 			1233,
@@ -82,18 +74,9 @@ public class SyncedEpochExecutorTest {
 			executor,
 			committedStateSyncSender,
 			epochChangeSender,
-			validatorSetMapping,
-			epochHighView,
 			syncService,
 			counters
 		);
-	}
-
-	@Test
-	public void when_compute_vertex_metadata_equal_to_high_view__then_should_return_true() {
-		Vertex vertex = mock(Vertex.class);
-		when(vertex.getView()).thenReturn(epochHighView);
-		assertThat(syncedEpochExecutor.compute(vertex)).isTrue();
 	}
 
 	@Test
@@ -106,7 +89,7 @@ public class SyncedEpochExecutorTest {
 		when(committedAtom.getVertexMetadata()).thenReturn(vertexMetadata);
 
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
-		when(this.validatorSetMapping.apply(eq(genesisEpoch + 1))).thenReturn(validatorSet);
+		when(this.executor.getValidatorSet(eq(genesisEpoch + 1))).thenReturn(validatorSet);
 
 		syncedEpochExecutor.execute(committedAtom);
 		verify(epochChangeSender, times(1))

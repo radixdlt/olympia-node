@@ -22,16 +22,21 @@ import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
+import com.google.inject.name.Named;
 import com.radixdlt.atommodel.message.MessageParticleConstraintScrypt;
 import com.radixdlt.atommodel.tokens.TokensConstraintScrypt;
 import com.radixdlt.atommodel.unique.UniqueParticleConstraintScrypt;
 import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.Result;
+import com.radixdlt.consensus.AddressBookValidatorSetProvider;
 import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.execution.RadixEngineExecutor;
@@ -47,6 +52,7 @@ import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.middleware2.store.CommittedAtomsStore.AtomIndexer;
 import com.radixdlt.middleware2.store.EngineAtomIndices;
+import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.CMStore;
@@ -59,6 +65,7 @@ import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.universe.Universe;
 import java.time.Instant;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
 /**
@@ -67,6 +74,13 @@ import java.util.function.UnaryOperator;
 public class ExecutionModule extends AbstractModule {
 	private static final long GENESIS_TIMESTAMP = Instant.parse("2020-01-01T00:00:00.000Z").toEpochMilli();
 	private static final Hash DEFAULT_FEE_TARGET = new Hash("0000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
+	private final int fixedNodeCount;
+	private final long viewsPerEpoch;
+
+	public ExecutionModule(int fixedNodeCount, long viewsPerEpoch) {
+		this.fixedNodeCount = fixedNodeCount;
+		this.viewsPerEpoch = viewsPerEpoch;
+	}
 
 	@Override
 	protected void configure() {
@@ -79,13 +93,55 @@ public class ExecutionModule extends AbstractModule {
 
 	@Provides
 	@Singleton
+	private Function<Long, BFTValidatorSet> addressBookValidatorSetProvider(
+		AddressBook addressBook,
+		@Named("self") ECKeyPair selfKey
+	) {
+		AddressBookValidatorSetProvider addressBookValidatorSetProvider = new AddressBookValidatorSetProvider(
+			selfKey.getPublicKey(),
+			addressBook,
+			fixedNodeCount,
+			(epoch, validators) -> {
+				/*
+				Builder<BFTValidator> validatorSetBuilder = ImmutableList.builder();
+				Random random = new Random(epoch);
+				List<Integer> indices = IntStream.range(0, validators.size()).boxed().collect(Collectors.toList());
+				// Temporary mechanism to get some deterministic random set of validators
+				for (long i = 0; i < epoch; i++) {
+					random.nextInt(validators.size());
+				}
+				int randInt = random.nextInt(validators.size());
+				int validatorSetSize = randInt + 1;
+
+				for (int i = 0; i < validatorSetSize; i++) {
+					int index = indices.remove(random.nextInt(indices.size()));
+					BFTValidator validator = validators.get(index);
+					validatorSetBuilder.add(validator);
+				}
+
+				ImmutableList<BFTValidator> validatorList = validatorSetBuilder.build();
+
+				return BFTValidatorSet.from(validatorList);
+				*/
+				return BFTValidatorSet.from(validators);
+			}
+		);
+
+		return addressBookValidatorSetProvider::getValidatorSet;
+	}
+
+	@Provides
+	@Singleton
 	private RadixEngineExecutor executor(
 		RadixEngine<LedgerAtom> radixEngine,
+		Function<Long, BFTValidatorSet> validatorSetMapping,
 		CommittedAtomsStore committedAtomsStore,
 		RadixEngineExecutorEventSender engineEventSender
 	) {
 		return new RadixEngineExecutor(
 			radixEngine,
+			validatorSetMapping,
+			View.of(viewsPerEpoch),
 			committedAtomsStore,
 			engineEventSender
 		);

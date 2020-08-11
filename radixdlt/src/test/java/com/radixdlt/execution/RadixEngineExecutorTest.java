@@ -23,7 +23,9 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
@@ -33,6 +35,8 @@ import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
+import java.util.function.Function;
+import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -41,17 +45,32 @@ public class RadixEngineExecutorTest {
 	private CommittedAtomsStore committedAtomsStore;
 	private RadixEngine<LedgerAtom> radixEngine;
 	private RadixEngineExecutorEventSender sender;
+	private View epochHighView;
+	private Function<Long, BFTValidatorSet> validatorSetMapping;
 
 	@Before
 	public void setup() {
 		this.radixEngine = mock(RadixEngine.class);
 		this.committedAtomsStore = mock(CommittedAtomsStore.class);
 		this.sender = mock(RadixEngineExecutorEventSender.class);
+		this.epochHighView = View.of(100);
+		// No issues with type checking for mock
+		@SuppressWarnings("unchecked") Function<Long, BFTValidatorSet> vsm = mock(Function.class);
+		this.validatorSetMapping = vsm;
 		this.executor = new RadixEngineExecutor(
 			radixEngine,
+			validatorSetMapping,
+			epochHighView,
 			committedAtomsStore,
 			sender
 		);
+	}
+
+	@Test
+	public void when_compute_vertex_metadata_equal_to_high_view__then_should_return_true() {
+		Vertex vertex = mock(Vertex.class);
+		when(vertex.getView()).thenReturn(epochHighView);
+		AssertionsForClassTypes.assertThat(executor.compute(vertex)).isTrue();
 	}
 
 	@Test
