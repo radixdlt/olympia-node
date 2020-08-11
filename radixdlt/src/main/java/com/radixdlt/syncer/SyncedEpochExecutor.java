@@ -99,7 +99,7 @@ public final class SyncedEpochExecutor implements SyncedExecutor<CommittedAtom> 
 				return true;
 			}
 
-			this.syncService.sendLocalSyncRequest(new LocalSyncRequest(targetStateVersion, currentStateVersion, target));
+			this.syncService.sendLocalSyncRequest(new LocalSyncRequest(vertexMetadata, currentStateVersion, target));
 			this.committedStateSyncers.merge(targetStateVersion, Collections.singleton(opaque), Sets::union);
 
 			return false;

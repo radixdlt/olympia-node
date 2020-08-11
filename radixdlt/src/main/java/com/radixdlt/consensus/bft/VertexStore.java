@@ -526,8 +526,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		}
 
 		for (Vertex committed : path) {
-			long timestamp = committed.getQC().getTimestampedSignatures().weightedTimestamp();
-			CommittedAtom committedAtom = new CommittedAtom(committed.getAtom(), commitMetadata, timestamp);
+			CommittedAtom committedAtom = new CommittedAtom(committed.getAtom(), commitMetadata);
 			this.counters.increment(CounterType.BFT_PROCESSED);
 			syncedExecutor.execute(committedAtom);
 

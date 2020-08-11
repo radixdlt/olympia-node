@@ -154,8 +154,12 @@ public class BFTEventReducerTest {
 	@Test
 	public void when_processing_vote_as_not_proposer__then_nothing_happens() {
 		Vote voteMessage = mock(Vote.class);
-		VertexMetadata proposal = new VertexMetadata(0, View.of(2), Hash.random(), 2, false);
-		VertexMetadata parent = new VertexMetadata(0, View.of(1), Hash.random(), 1, false);
+		VertexMetadata proposal = new VertexMetadata(
+			0, View.of(2), Hash.random(), 2, false, Hash.ZERO_HASH
+		);
+		VertexMetadata parent = new VertexMetadata(
+			0, View.of(1), Hash.random(), 1, false, Hash.ZERO_HASH
+		);
 		VoteData voteData = new VoteData(proposal, parent, null);
 		when(voteMessage.getVoteData()).thenReturn(voteData);
 
@@ -169,8 +173,12 @@ public class BFTEventReducerTest {
 		when(proposerElection.getProposer(any())).thenReturn(this.self);
 
 		Vote vote = mock(Vote.class);
-		VertexMetadata proposal = new VertexMetadata(0, View.of(2), Hash.random(), 2, false);
-		VertexMetadata parent = new VertexMetadata(0, View.of(1), Hash.random(), 1, false);
+		VertexMetadata proposal = new VertexMetadata(
+			0, View.of(2), Hash.random(), 2, false, Hash.ZERO_HASH
+		);
+		VertexMetadata parent = new VertexMetadata(
+			0, View.of(1), Hash.random(), 1, false, Hash.ZERO_HASH
+		);
 		VoteData voteData = new VoteData(proposal, parent, null);
 		when(vote.getVoteData()).thenReturn(voteData);
 		when(vote.getAuthor()).thenReturn(mock(BFTNode.class));

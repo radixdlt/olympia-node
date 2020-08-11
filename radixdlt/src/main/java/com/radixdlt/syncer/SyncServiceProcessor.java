@@ -18,6 +18,7 @@
 package com.radixdlt.syncer;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.execution.RadixEngineExecutor;
 import com.radixdlt.middleware2.CommittedAtom;
@@ -162,12 +163,12 @@ public final class SyncServiceProcessor {
 			this.currentVersion = request.getCurrentVersion();
 		}
 
-		if (request.getTargetVersion() <= this.currentVersion) {
+		final VertexMetadata target = request.getTarget();
+		if (target.getStateVersion() <= this.currentVersion) {
 			return;
 		}
-
-		this.syncToTargetVersion = request.getTargetVersion();
-		sendSyncRequests(request.getTarget());
+		this.syncToTargetVersion = target.getStateVersion();
+		sendSyncRequests(request.getTargetNodes());
 	}
 
 	public void processSyncTimeout(SyncInProgress syncInProgress) {
