@@ -20,6 +20,9 @@ package com.radixdlt.execution;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Streams;
+import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.EUID;
@@ -31,6 +34,7 @@ import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Function;
 
 /**
  * Wraps the Radix Engine and emits messages based on success or failure
@@ -43,6 +47,8 @@ public final class RadixEngineExecutor {
 
 	private final CommittedAtomsStore committedAtomsStore;
 	private final RadixEngine<LedgerAtom> radixEngine;
+	private final Function<Long, BFTValidatorSet> validatorSetMapping;
+	private final View epochChangeView;
 
 	private final Object lock = new Object();
 	private final LinkedList<CommittedAtom> unstoredCommittedAtoms = new LinkedList<>();
@@ -50,10 +56,18 @@ public final class RadixEngineExecutor {
 
 	public RadixEngineExecutor(
 		RadixEngine<LedgerAtom> radixEngine,
+		Function<Long, BFTValidatorSet> validatorSetMapping,
+		View epochChangeView,
 		CommittedAtomsStore committedAtomsStore,
 		RadixEngineExecutorEventSender engineEventSender
 	) {
+		if (epochChangeView.isGenesis()) {
+			throw new IllegalArgumentException("Epoch change view must not be genesis.");
+		}
+
 		this.radixEngine = Objects.requireNonNull(radixEngine);
+		this.validatorSetMapping = validatorSetMapping;
+		this.epochChangeView = epochChangeView;
 		this.committedAtomsStore = Objects.requireNonNull(committedAtomsStore);
 		this.engineEventSender = Objects.requireNonNull(engineEventSender);
 	}
@@ -112,5 +126,13 @@ public final class RadixEngineExecutor {
 			// TODO: Remove and move epoch change logic into RadixEngine
 			this.unstoredCommittedAtoms.add(atom);
 		}
+	}
+
+	public BFTValidatorSet getValidatorSet(long epoch) {
+		return validatorSetMapping.apply(epoch);
+	}
+
+	public boolean compute(Vertex vertex) {
+		return vertex.getView().compareTo(epochChangeView) >= 0;
 	}
 }
