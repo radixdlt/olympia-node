@@ -73,7 +73,6 @@ public class StakeTokensMapper implements StatefulActionToParticleGroupsMapper<S
 					stake.getFrom(),
 					System.nanoTime(),
 					token,
-					System.currentTimeMillis() / 60000L + 60000L,
 					permissions
 				),
 			amt ->
@@ -84,7 +83,6 @@ public class StakeTokensMapper implements StatefulActionToParticleGroupsMapper<S
 					stake.getFrom(),
 					System.nanoTime(),
 					token,
-					System.currentTimeMillis() / 60000L + 60000L,
 					permissions
 				)
 		);

@@ -83,7 +83,6 @@ public class MintTokensActionMapper implements StatefulActionToParticleGroupsMap
 					mint.getAddress(),
 					System.nanoTime(),
 					token,
-					System.currentTimeMillis() / 60000L + 60000L,
 					permissions
 				)
 		);

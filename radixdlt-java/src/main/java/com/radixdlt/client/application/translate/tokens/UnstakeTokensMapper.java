@@ -74,7 +74,6 @@ public class UnstakeTokensMapper implements StatefulActionToParticleGroupsMapper
 					unstake.getFrom(),
 					System.nanoTime(),
 					token,
-					System.currentTimeMillis() / 60000L + 60000L,
 					permissions
 				),
 			amt ->
@@ -84,7 +83,6 @@ public class UnstakeTokensMapper implements StatefulActionToParticleGroupsMapper
 					unstake.getFrom(),
 					System.nanoTime(),
 					token,
-					System.currentTimeMillis() / 60000L + 60000L,
 					permissions
 				)
 		);

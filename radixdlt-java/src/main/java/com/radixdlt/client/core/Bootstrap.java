@@ -26,7 +26,6 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.client.core.address.RadixUniverseConfig;
 import com.radixdlt.client.core.address.RadixUniverseConfigs;
 import com.radixdlt.client.core.network.RadixNetworkEpic;
-import com.radixdlt.client.core.network.bootstrap.NodeFinder;
 import com.radixdlt.client.core.network.RadixNode;
 import com.radixdlt.client.core.network.epics.DiscoverNodesEpic;
 import io.reactivex.Observable;
@@ -55,28 +54,12 @@ public enum Bootstrap implements BootstrapConfig {
 			)
 		)
 	),
-	ALPHANET(
-		RadixUniverseConfigs::getAlphanet,
-		new NodeFinder("https://alphanet.radixdlt.com/node-finder", 443).getSeed().toObservable()
-	),
-	HIGHGARDEN(
-		RadixUniverseConfigs::getHighgarden,
-		new NodeFinder("https://highgarden.radixdlt.com/node-finder", 443).getSeed().toObservable()
-	),
-	SUNSTONE(
-		RadixUniverseConfigs::getSunstone,
-		new NodeFinder("https://sunstone.radixdlt.com/node-finder", 443).getSeed().toObservable()
-	),
 	BETANET(
-		new BootstrapByTrustedNode(new RadixNode("sunstone-emu.radixdlt.com", true, 443))
+		new BootstrapByTrustedNode(new RadixNode("betanet.radixdlt.com", true, 443))
 	),
 	BETANET_STATIC(
 		RadixUniverseConfigs::getBetanet,
-		new RadixNode("sunstone-emu.radixdlt.com", true, 443)
-	),
-	WINTERFELL(
-		RadixUniverseConfigs::getWinterfell,
-		Observable.just(new RadixNode("52.190.0.18", false, 8080))
+		new RadixNode("betanet.radixdlt.com", true, 443)
 	);
 
 	private final Supplier<RadixUniverseConfig> config;
