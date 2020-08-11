@@ -136,7 +136,7 @@ public class PeerManager {
 		this.bootstrapDiscovery = Objects.requireNonNull(bootstrapDiscovery);
 		this.rng = Objects.requireNonNull(rng);
 		this.localSystem = localSystem;
-		this.recencyThreshold = properties.get("peermanager.recency_ms", 60L * 1000L);
+		this.recencyThreshold = properties.get("network.peers.recency_ms", 60L * 1000L);
 		this.whitelist = Whitelist.from(properties);
 		this.universeMagic = universe.getMagic();
 

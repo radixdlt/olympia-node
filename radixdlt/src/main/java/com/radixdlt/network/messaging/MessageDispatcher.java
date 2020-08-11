@@ -67,7 +67,7 @@ class MessageDispatcher {
 		LocalSystem localSystem,
 		AddressBook addressBook
 	) {
-		this.messageTtlMs = config.messagingTimeToLive(30) * 1000L;
+		this.messageTtlMs = config.messagingTimeToLive(30_000L);
 		this.counters = counters;
 		this.serialization = serialization;
 		this.timeSource = timeSource;
