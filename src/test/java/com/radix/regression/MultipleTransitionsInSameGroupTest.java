@@ -174,7 +174,6 @@ public class MultipleTransitionsInSameGroupTest {
 			myAddress,
 			System.nanoTime(),
 			tokenDefinition.getRRI(),
-			System.currentTimeMillis() / 60000L + 60000L,
 			tokenDefinition.getTokenPermissions()
 		);
 	}

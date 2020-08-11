@@ -31,7 +31,6 @@ import cucumber.api.java.en.And;
 import cucumber.api.java.en.Given;
 import cucumber.api.java.en.Then;
 import cucumber.api.java.en.When;
-import io.reactivex.observers.BaseTestConsumer.TestWaitStrategy;
 import io.reactivex.observers.TestObserver;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -54,8 +53,6 @@ public class ParticleGroups {
 	private static final String DESCRIPTION = "description";
 	private static final String TOTAL_SUPPLY = "totalSupply";
 	private static final String GRANULARITY = "granularity";
-
-	private static final long TIMEOUT_MS = 10_000L; // Timeout in milliseconds
 
 	private RadixApplicationAPI api;
 	private RadixIdentity identity;

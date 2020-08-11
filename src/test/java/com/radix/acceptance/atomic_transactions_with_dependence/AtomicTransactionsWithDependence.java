@@ -52,8 +52,6 @@ public class AtomicTransactionsWithDependence {
 	private static final String NEW_SUPPLY = "newSupply";
 	private static final String GRANULARITY = "granularity";
 
-	private static final long TIMEOUT_MS = 10_000L; // Timeout in milliseconds
-
 	private final SpecificProperties properties = SpecificProperties.of(
 		NAME,           "RLAU-40 Test token",
 		SYMBOL,			"RLAU",
@@ -219,7 +217,7 @@ public class AtomicTransactionsWithDependence {
 			.startsWith(SubmitAtomSendAction.class.toString());
 		assertThat(events).last()
 			.isInstanceOf(SubmitAtomStatusAction.class)
-			.<AtomStatus>extracting(o -> SubmitAtomStatusAction.class.cast(o).getStatusNotification().getAtomStatus())
+			.extracting(o -> SubmitAtomStatusAction.class.cast(o).getStatusNotification().getAtomStatus())
 			.isIn(finalStatesSet);
 	}
 

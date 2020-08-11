@@ -21,7 +21,7 @@ import java.util.UUID;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import com.radixdlt.identifiers.AID;;
+import com.radixdlt.identifiers.AID;
 
 public class AtomStatusTest {
 	private RadixJsonRpcClient rpcClient;

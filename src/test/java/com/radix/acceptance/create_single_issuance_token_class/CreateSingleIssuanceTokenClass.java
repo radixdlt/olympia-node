@@ -42,8 +42,6 @@ public class CreateSingleIssuanceTokenClass {
 	private static final String TOTAL_SUPPLY = "totalSupply";
 	private static final String GRANULARITY = "granularity";
 
-	private static final long TIMEOUT_MS = 10_000L; // Timeout in milliseconds
-
 	private RadixApplicationAPI api;
 	private RadixNode nodeConnection;
 	private RadixIdentity identity;
@@ -229,7 +227,7 @@ public class CreateSingleIssuanceTokenClass {
 			.startsWith(SubmitAtomSendAction.class.toString());
 		assertThat(events).last()
 			.isInstanceOf(SubmitAtomStatusAction.class)
-			.<AtomStatus>extracting(o -> SubmitAtomStatusAction.class.cast(o).getStatusNotification().getAtomStatus())
+			.extracting(o -> SubmitAtomStatusAction.class.cast(o).getStatusNotification().getAtomStatus())
 			.isIn(finalStatesSet);
 	}
 }
