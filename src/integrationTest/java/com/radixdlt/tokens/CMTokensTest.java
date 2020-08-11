@@ -74,7 +74,6 @@ public class CMTokensTest {
 			UInt256.ONE,
 			this.granularity,
 			this.token,
-			System.nanoTime(),
 			this.permissions
 		);
 
@@ -83,7 +82,6 @@ public class CMTokensTest {
 			UInt256.ONE,
 			this.granularity,
 			this.token,
-			System.nanoTime(),
 			this.permissions
 		);
 
@@ -118,7 +116,6 @@ public class CMTokensTest {
 			UInt256.ONE,
 			this.granularity,
 			this.token,
-			System.nanoTime(),
 			this.permissions
 		);
 
@@ -127,7 +124,6 @@ public class CMTokensTest {
 			UInt256.TWO,
 			UInt256.ONE,
 			this.token,
-			System.nanoTime(),
 			this.permissions
 		);
 
@@ -136,7 +132,6 @@ public class CMTokensTest {
 			UInt256.THREE,
 			this.granularity,
 			this.token,
-			System.nanoTime(),
 			this.permissions
 		);
 
@@ -175,7 +170,6 @@ public class CMTokensTest {
 			UInt256.ONE,
 			this.granularity,
 			this.token,
-			System.nanoTime(),
 			this.permissions
 		);
 
@@ -184,7 +178,6 @@ public class CMTokensTest {
 			UInt256.TWO,
 			UInt256.ONE,
 			this.token,
-			System.nanoTime(),
 			this.permissions
 		);
 
@@ -193,7 +186,6 @@ public class CMTokensTest {
 			UInt256.THREE,
 			this.granularity,
 			this.token,
-			System.nanoTime(),
 			this.permissions
 		);
 
@@ -231,7 +223,6 @@ public class CMTokensTest {
 			UInt256.THREE,
 			this.granularity,
 			this.token,
-			System.nanoTime(),
 			this.permissions
 		);
 
@@ -240,7 +231,6 @@ public class CMTokensTest {
 			UInt256.TWO,
 			UInt256.ONE,
 			this.token,
-			System.nanoTime(),
 			this.permissions
 		);
 
@@ -249,7 +239,6 @@ public class CMTokensTest {
 			UInt256.ONE,
 			this.granularity,
 			this.token,
-			System.nanoTime(),
 			this.permissions
 		);
 
