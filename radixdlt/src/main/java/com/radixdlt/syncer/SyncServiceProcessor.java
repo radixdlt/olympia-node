@@ -72,9 +72,8 @@ public final class SyncServiceProcessor {
 
 	private long syncInProgressId = 0;
 	private boolean isSyncInProgress = false;
-	private long syncToTargetVersion = -1;
-	private long syncToCurrentVersion = -1;
-
+	private long syncToTargetVersion;
+	private long currentVersion;
 
 	public SyncServiceProcessor(
 		RadixEngineExecutor executor,
@@ -82,15 +81,21 @@ public final class SyncServiceProcessor {
 		AddressBook addressBook,
 		SyncedAtomSender syncedAtomSender,
 		SyncTimeoutScheduler syncTimeoutScheduler,
+		long currentVersion,
 		int batchSize,
 		long patienceMilliseconds
 	) {
+		if (currentVersion < 0) {
+			throw new IllegalArgumentException(String.format("current version must be >= 0 but was %s", currentVersion));
+		}
 		if (patienceMilliseconds <= 0) {
 			throw new IllegalArgumentException();
 		}
 		if (batchSize <= 0) {
 			throw new IllegalArgumentException();
 		}
+		this.currentVersion = currentVersion;
+		this.syncToTargetVersion = currentVersion;
 		this.executor = Objects.requireNonNull(executor);
 		this.stateSyncNetwork = Objects.requireNonNull(stateSyncNetwork);
 		this.addressBook = Objects.requireNonNull(addressBook);
@@ -119,7 +124,7 @@ public final class SyncServiceProcessor {
 		log.debug("SYNC_RESPONSE: size: {}", atoms.size());
 		for (CommittedAtom atom : atoms) {
 			long atomVersion = atom.getVertexMetadata().getStateVersion();
-			if (atomVersion > this.syncToCurrentVersion) {
+			if (atomVersion > this.currentVersion) {
 				if (committedAtoms.size() < maxAtomsQueueSize) { // check if there is enough space
 					committedAtoms.add(atom);
 				} else { // not enough space available
@@ -137,11 +142,11 @@ public final class SyncServiceProcessor {
 		while (it.hasNext()) {
 			CommittedAtom crtAtom = it.next();
 			long atomVersion = crtAtom.getVertexMetadata().getStateVersion();
-			if (atomVersion <= syncToCurrentVersion) {
+			if (atomVersion <= currentVersion) {
 				it.remove();
-			} else if (atomVersion == syncToCurrentVersion + 1) {
+			} else if (atomVersion == currentVersion + 1) {
 				this.syncedAtomSender.sendSyncedAtom(crtAtom);
-				this.syncToCurrentVersion = this.syncToCurrentVersion + 1;
+				this.currentVersion = this.currentVersion + 1;
 				it.remove();
 			} else {
 				break;
@@ -153,11 +158,11 @@ public final class SyncServiceProcessor {
 	}
 
 	public void processLocalSyncRequest(LocalSyncRequest request) {
-		if (request.getCurrentVersion() > this.syncToCurrentVersion) {
-			this.syncToCurrentVersion = request.getCurrentVersion();
+		if (request.getCurrentVersion() > this.currentVersion) {
+			this.currentVersion = request.getCurrentVersion();
 		}
 
-		if (request.getTargetVersion() <= this.syncToCurrentVersion) {
+		if (request.getTargetVersion() <= this.currentVersion) {
 			return;
 		}
 
@@ -172,16 +177,16 @@ public final class SyncServiceProcessor {
 	}
 
 	private void sendSyncRequests(List<BFTNode> target) {
-		if (syncToCurrentVersion >= syncToTargetVersion) {
+		if (currentVersion >= syncToTargetVersion) {
 			return;
 		}
-		long size = ((syncToTargetVersion - syncToCurrentVersion) / batchSize);
-		if ((syncToTargetVersion - syncToCurrentVersion) % batchSize > 0) {
+		long size = ((syncToTargetVersion - currentVersion) / batchSize);
+		if ((syncToTargetVersion - currentVersion) % batchSize > 0) {
 			size += 1;
 		}
 		size = Math.min(size, MAX_REQUESTS_TO_SEND);
 		for (long i = 0; i < size; i++) {
-			sendSyncRequest(syncToCurrentVersion + batchSize * i, target);
+			sendSyncRequest(currentVersion + batchSize * i, target);
 		}
 
 		syncInProgressId++;

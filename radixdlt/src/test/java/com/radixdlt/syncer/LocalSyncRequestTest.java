@@ -17,33 +17,28 @@
 
 package com.radixdlt.syncer;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.powermock.api.mockito.PowerMockito.mock;
+
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.bft.BFTNode;
-import java.util.Objects;
+import org.junit.Before;
+import org.junit.Test;
 
-/**
- * A request to sync to a given version
- */
-public final class LocalSyncRequest {
-	private final long targetVersion;
-	private final long currentVersion;
-	private final ImmutableList<BFTNode> target;
+public class LocalSyncRequestTest {
+	private LocalSyncRequest request;
+	private ImmutableList<BFTNode> target;
 
-	public LocalSyncRequest(long targetVersion, long currentVersion, ImmutableList<BFTNode> target) {
-		this.targetVersion = targetVersion;
-		this.currentVersion = currentVersion;
-		this.target = Objects.requireNonNull(target);
+	@Before
+	public void setup() {
+		this.target = mock(ImmutableList.class);
+		request = new LocalSyncRequest(3, 5, target);
 	}
 
-	public long getTargetVersion() {
-		return targetVersion;
-	}
-
-	public long getCurrentVersion() {
-		return currentVersion;
-	}
-
-	public ImmutableList<BFTNode> getTarget() {
-		return target;
+	@Test
+	public void testGetters() {
+		assertThat(request.getTargetVersion()).isEqualTo(3);
+		assertThat(request.getCurrentVersion()).isEqualTo(5);
+		assertThat(request.getTarget()).isEqualTo(target);
 	}
 }

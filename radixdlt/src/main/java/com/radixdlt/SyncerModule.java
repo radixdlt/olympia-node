@@ -179,6 +179,7 @@ public class SyncerModule extends AbstractModule {
 			addressBook,
 			syncedAtomSender,
 			syncTimeoutScheduler,
+			0,
 			BATCH_SIZE,
 			10
 		);

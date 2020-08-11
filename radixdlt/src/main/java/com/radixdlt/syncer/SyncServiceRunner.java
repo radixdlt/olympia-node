@@ -20,6 +20,8 @@ package com.radixdlt.syncer;
 import com.radixdlt.syncer.SyncServiceProcessor.SyncInProgress;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Scheduler;
+import io.reactivex.rxjava3.disposables.CompositeDisposable;
+import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import java.util.Objects;
 import java.util.concurrent.Executors;
@@ -45,6 +47,8 @@ public final class SyncServiceRunner {
 	private final SyncServiceProcessor syncServiceProcessor;
 	private final SyncTimeoutsRx syncTimeoutsRx;
 	private final LocalSyncRequestsRx localSyncRequestsRx;
+	private final Object lock = new Object();
+	private CompositeDisposable compositeDisposable;
 
 	public SyncServiceRunner(
 		LocalSyncRequestsRx localSyncRequestsRx,
@@ -63,24 +67,40 @@ public final class SyncServiceRunner {
 	 * Start the service
 	 */
 	public void start() {
-		stateSyncNetwork.syncRequests()
-			.observeOn(singleThreadScheduler)
-			.subscribe(syncServiceProcessor::processSyncRequest);
+		synchronized (lock) {
+			if (compositeDisposable != null) {
+				return;
+			}
 
-		stateSyncNetwork.syncResponses()
-			.observeOn(singleThreadScheduler)
-			.subscribe(syncServiceProcessor::processSyncResponse);
+			Disposable d0 = stateSyncNetwork.syncRequests()
+				.observeOn(singleThreadScheduler)
+				.subscribe(syncServiceProcessor::processSyncRequest);
 
-		localSyncRequestsRx.localSyncRequests()
-			.observeOn(singleThreadScheduler)
-			.subscribe(syncServiceProcessor::processLocalSyncRequest);
+			Disposable d1 = stateSyncNetwork.syncResponses()
+				.observeOn(singleThreadScheduler)
+				.subscribe(syncServiceProcessor::processSyncResponse);
 
-		syncTimeoutsRx.timeouts()
-			.observeOn(singleThreadScheduler)
-			.subscribe(syncServiceProcessor::processSyncTimeout);
+			Disposable d2 = localSyncRequestsRx.localSyncRequests()
+				.observeOn(singleThreadScheduler)
+				.subscribe(syncServiceProcessor::processLocalSyncRequest);
+
+			Disposable d3 = syncTimeoutsRx.timeouts()
+				.observeOn(singleThreadScheduler)
+				.subscribe(syncServiceProcessor::processSyncTimeout);
+
+			compositeDisposable = new CompositeDisposable(d0, d1, d2, d3);
+		}
 	}
 
-	public void close() {
-		executorService.shutdown();
+	/**
+	 * Stop the service and cleanup resources
+	 */
+	public void stop() {
+		synchronized (lock) {
+			if (compositeDisposable != null) {
+				compositeDisposable.dispose();
+				compositeDisposable = null;
+			}
+		}
 	}
 }

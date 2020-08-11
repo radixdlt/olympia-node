@@ -60,6 +60,7 @@ public class SyncServiceProcessorTest {
 
 	@Before
 	public void setUp() {
+		final long currentVersion = 0;
 		this.stateSyncNetwork = mock(StateSyncNetwork.class);
 		this.addressBook = mock(AddressBook.class);
 		this.executor = mock(RadixEngineExecutor.class);
@@ -71,6 +72,7 @@ public class SyncServiceProcessorTest {
 			addressBook,
 			syncedAtomSender,
 			syncTimeoutScheduler,
+			currentVersion,
 			2,
 			1
 		);
@@ -146,51 +148,14 @@ public class SyncServiceProcessorTest {
 		verify(stateSyncNetwork, times(1)).sendSyncRequest(any(), eq(14L));
 	}
 
-	/*
 	@Test
 	public void atomsListPruning() {
 		ImmutableList.Builder<CommittedAtom> newAtoms = ImmutableList.builder();
 		for (int i = 1000; i >= 1; i--) {
 			newAtoms.add(buildWithVersion(i));
 		}
-		syncServiceRunner.start();
-		responsesSubject.onNext(newAtoms.build());
+		syncServiceProcessor.processSyncResponse(newAtoms.build());
 
-		verify(consumer, times(1)).accept(argThat(a -> a.getVertexMetadata().getStateVersion() == 1000));
+		verify(syncedAtomSender, times(1)).sendSyncedAtom(argThat(a -> a.getVertexMetadata().getStateVersion() == 1));
 	}
-
-	@Test
-	public void targetVersion() throws InterruptedException {
-		CountDownLatch versions = new CountDownLatch(1);
-		syncManager.setVersionListener(version -> {
-			if (version == 20) {
-				versions.countDown();
-			}
-		});
-		ImmutableList.Builder<CommittedAtom> newAtoms = ImmutableList.builder();
-		for (int i = 10; i <= 20; i++) {
-			newAtoms.add(buildWithVersion(i));
-		}
-		syncManager.syncAtoms(newAtoms.build());
-		assertTrue(versions.await(5, TimeUnit.SECONDS));
-
-		final Semaphore sem = new Semaphore(0);
-
-		assertEquals(-1, syncManager.getTargetVersion());
-		long targetVersion = 15;
-		syncManager.syncToVersion(targetVersion, reqId -> sem.release());
-		// Already synced up to 20, so no request should happen
-		assertFalse(sem.tryAcquire(100, TimeUnit.MILLISECONDS));
-		assertEquals(-1, syncManager.getTargetVersion());
-
-		syncManager.syncToVersion(targetVersion * 2, reqId -> sem.release());
-		assertTrue(sem.tryAcquire(100, TimeUnit.MILLISECONDS));
-		assertEquals(30, syncManager.getTargetVersion());
-
-		syncManager.syncToVersion(targetVersion - 5, reqId -> sem.release());
-		assertTrue(sem.tryAcquire(1, TimeUnit.SECONDS));
-		assertEquals(30, syncManager.getTargetVersion());
-	}
-	 */
-
 }

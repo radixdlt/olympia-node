@@ -17,9 +17,6 @@
 
 package com.radixdlt.syncer;
 
-import com.radixdlt.consensus.bft.View;
-import com.radixdlt.middleware2.ClientAtom;
-import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.syncer.SyncServiceRunner.LocalSyncRequestsRx;
 import com.radixdlt.syncer.SyncServiceRunner.SyncTimeoutsRx;
 import io.reactivex.rxjava3.core.Observable;
@@ -31,7 +28,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.middleware2.CommittedAtom;
 
 import static org.mockito.ArgumentMatchers.eq;
@@ -47,6 +43,7 @@ public class SyncServiceRunnerTest {
 	private SyncTimeoutsRx syncTimeoutsRx;
 	private StateSyncNetwork stateSyncNetwork;
 	private SyncServiceProcessor syncServiceProcessor;
+	private Subject<SyncRequest> requestsSubject;
 	private Subject<ImmutableList<CommittedAtom>> responsesSubject;
 
 	@Before
@@ -60,9 +57,12 @@ public class SyncServiceRunnerTest {
 		this.stateSyncNetwork = mock(StateSyncNetwork.class);
 		when(stateSyncNetwork.syncRequests()).thenReturn(Observable.never());
 
-		responsesSubject = PublishSubject.create();
+		this.responsesSubject = PublishSubject.create();
 		when(stateSyncNetwork.syncResponses()).thenReturn(responsesSubject);
-		when(stateSyncNetwork.syncRequests()).thenReturn(Observable.never());
+
+		this.requestsSubject = PublishSubject.create();
+		when(stateSyncNetwork.syncRequests()).thenReturn(requestsSubject);
+
 		this.syncServiceProcessor = mock(SyncServiceProcessor.class);
 		syncServiceRunner = new SyncServiceRunner(
 			localSyncRequestsRx,
@@ -74,31 +74,22 @@ public class SyncServiceRunnerTest {
 
 	@After
 	public void tearDown() {
-		syncServiceRunner.close();
+		syncServiceRunner.stop();
 	}
 
 	@Test
 	public void when_sync_request__then_it_is_processed() {
-		when(stateSyncNetwork.syncResponses()).thenReturn(Observable.never());
-		Peer peer = mock(Peer.class);
-		long stateVersion = 1;
-		SyncRequest syncRequest = new SyncRequest(peer, stateVersion);
-		when(stateSyncNetwork.syncRequests()).thenReturn(Observable.just(syncRequest).concatWith(Observable.never()));
+		SyncRequest syncRequest = mock(SyncRequest.class);
 		syncServiceRunner.start();
+		requestsSubject.onNext(syncRequest);
 		verify(syncServiceProcessor, timeout(1000).times(1)).processSyncRequest(eq(syncRequest));
 	}
 
 	@Test
 	public void when_sync_response__then_it_is_processed() {
-		when(stateSyncNetwork.syncRequests()).thenReturn(Observable.never());
-		CommittedAtom committedAtom = mock(CommittedAtom.class);
-		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
-		when(vertexMetadata.getStateVersion()).thenReturn(1L);
-		when(vertexMetadata.getView()).thenReturn(View.of(50));
-		when(committedAtom.getVertexMetadata()).thenReturn(vertexMetadata);
-		when(committedAtom.getClientAtom()).thenReturn(mock(ClientAtom.class));
-		ImmutableList<CommittedAtom> committedAtomList = ImmutableList.of(committedAtom);
-		when(stateSyncNetwork.syncResponses()).thenReturn(Observable.just(committedAtomList).concatWith(Observable.never()));
+		ImmutableList<CommittedAtom> committedAtomList = ImmutableList.of(mock(CommittedAtom.class));
 		syncServiceRunner.start();
+		responsesSubject.onNext(committedAtomList);
+		verify(syncServiceProcessor, timeout(1000).times(1)).processSyncResponse(eq(committedAtomList));
 	}
 }
