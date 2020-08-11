@@ -19,6 +19,7 @@ package com.radixdlt.syncer;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.SyncedExecutor;
 import com.radixdlt.consensus.Vertex;
@@ -26,7 +27,6 @@ import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
-import com.radixdlt.execution.RadixEngineExecutor;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.CommittedAtom;
 import java.util.Collections;
@@ -49,8 +49,14 @@ public final class SyncedEpochExecutor implements SyncedExecutor<CommittedAtom> 
 		void sendLocalSyncRequest(LocalSyncRequest request);
 	}
 
+	public interface Executor {
+		void execute(CommittedAtom committedAtom);
+		boolean compute(Vertex vertex);
+		BFTValidatorSet getValidatorSet(long epoch);
+	}
+
 	private final Mempool mempool;
-	private final RadixEngineExecutor executor;
+	private final Executor executor;
 	private final CommittedStateSyncSender committedStateSyncSender;
 	private final EpochChangeSender epochChangeSender;
 	private final SystemCounters counters;
@@ -64,7 +70,7 @@ public final class SyncedEpochExecutor implements SyncedExecutor<CommittedAtom> 
 	public SyncedEpochExecutor(
 		long initialStateVersion,
 		Mempool mempool,
-		RadixEngineExecutor executor,
+		Executor executor,
 		CommittedStateSyncSender committedStateSyncSender,
 		EpochChangeSender epochChangeSender,
 		SyncService syncService,
