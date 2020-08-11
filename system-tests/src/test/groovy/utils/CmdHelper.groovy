@@ -21,6 +21,10 @@ package utils
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 
+import java.nio.file.Files
+import java.nio.file.Paths
+
+import static utils.Generic.extractTestName
 import static utils.Generic.listToDelimitedString
 
 class CmdHelper {
@@ -110,22 +114,23 @@ class CmdHelper {
 
     }
 
-    static String getContainerNamePrefix(){
+    static String getContainerNamePrefix() {
         //CONTAINER_NAME is system env that can used in jenkins and could reference job name + number
         return System.getenv("CONTAINER_NAME") ?: "core"
     }
 
-    static int getTestDurationInSeconds(){
-        try{
-            logger.info ("TEST_DURATION system variable is '${System.getenv("TEST_DURATION")}'")
-           return Integer.parseInt(System.getenv("TEST_DURATION"))
-        }catch(Exception ex){
+    static int getTestDurationInSeconds() {
+        try {
+            logger.info("TEST_DURATION system variable is '${System.getenv("TEST_DURATION")}'")
+            return Integer.parseInt(System.getenv("TEST_DURATION"))
+        } catch (Exception ex) {
             logger.info("Exception occurred in parsing the test duration setting it default value. Is TEST_DURATION environment variable set properly?" +
                     "\n Default value 60 seconds for test duration is being used instead ")
             return 60
 
         }
     }
+
     static void removeAllDockerContainers() {
         def name = getContainerNamePrefix()
         def psOutput, psError
@@ -135,9 +140,11 @@ class CmdHelper {
                 .findAll({ it.contains(name) })
                 .collect({
                     println "container to be removed ${it}"
-                    return it.split(" ")[0] })
+                    return it.split(" ")[0]
+                })
                 .each {
-                    runCommand("docker rm -f ${it}") }
+                    runCommand("docker rm -f ${it}")
+                }
     }
 
     static void checkNGenerateKey() {
@@ -152,6 +159,11 @@ class CmdHelper {
                 }
             }
         }
+    }
+
+    static String runContainer(String dockerCommand, String[] dockerEnv) {
+        def results = CmdHelper.runCommand(dockerCommand, dockerEnv, true);
+        return results[0][0]
     }
 
     static String radixCliCommand(List cmdOptions) {
@@ -190,7 +202,7 @@ class CmdHelper {
                 break;
             }
         }
-        if (veth==null || veth.size() == 0 ){
+        if (veth == null || veth.size() == 0) {
             throw new IllegalStateException("Could not retrieve veth. If you running on Mac, this is not supported. \n  Run the tests inside docker container as shown as example in the script run-slow-node-test.sh ")
         }
         println(veth[0].tokenize("/").find({ it.contains("veth") }))
@@ -217,4 +229,8 @@ class CmdHelper {
     }
 
 
+    static void captureLogs(String containerId,String testName) {
+        Files.createDirectories(Paths.get("${System.getProperty('logs.dir')}/${testName}"));
+        runCommand(['bash', '-c', "docker logs ${containerId} > ${System.getProperty('logs.dir')}/${testName}/test${containerId.substring(0,11)}.log"]);
+    }
 }

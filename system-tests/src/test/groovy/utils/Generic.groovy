@@ -46,4 +46,9 @@ class Generic {
                 ? "${System.getProperty('user.dir')}" + pathToCliJar
                 : "${System.getProperty('user.dir')}/system-tests/" + pathToCliJar
     }
+
+    static String extractTestName(name) {
+        def result = ("${name}" =~ /.*:(.*)]/).findAll()
+        return result.size() > 0 ? (result[0][1]).replace(' ','') : name
+    }
 }

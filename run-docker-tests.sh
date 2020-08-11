@@ -14,3 +14,4 @@ docker create  --pid=host --privileged  \
       --name=${test_executor} radix-system-test \
       ./gradlew clean dockerSystemTests
 docker start -a "${test_executor}"
+docker cp $test_executor:src/system-tests .

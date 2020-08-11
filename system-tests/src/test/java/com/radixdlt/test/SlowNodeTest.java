@@ -7,27 +7,33 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.experimental.runners.Enclosed;
+import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 import utils.CmdHelper;
+import utils.Generic;
 import utils.SlowNodeSetup;
-
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 /**
  * BFT tests against network where all nodes are under synchrony bounds and one or more nodes slow.
  */
 @RunWith(Enclosed.class)
 public class SlowNodeTest {
-
+	private static final Logger logger = LogManager.getLogger();
 
 	@RunWith(Parameterized.class)
 	@Category(Docker.class)
 	public static class DockerTests {
 
 		private int networkSize;
+		@Rule
+		public TestName name = new TestName();
 
 		public DockerTests(int networkSize) {
 			this.networkSize = networkSize;
@@ -40,8 +46,9 @@ public class SlowNodeTest {
 
 		@Test
 		public void tests() {
-			try (DockerNetwork network = DockerNetwork.builder().numNodes(networkSize).build()) {
-
+			String name = Generic.extractTestName(this.name.getMethodName());
+			logger.info("Test name is " + name);
+			try (DockerNetwork network = DockerNetwork.builder().numNodes(networkSize).testName(name).build()) {
 				network.startBlocking();
 				String veth = CmdHelper.getVethByContainerName(network.getNodeIds().stream().findFirst().get());
 				CmdHelper.setupQueueQuality(veth);

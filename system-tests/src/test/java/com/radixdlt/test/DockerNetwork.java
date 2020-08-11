@@ -47,16 +47,17 @@ public class DockerNetwork implements Closeable, RemoteBFTNetwork {
 	private final String name;
 	private final int numNodes;
 	private final boolean startConsensusOnBoot;
-
+	private final String testName;
 	private NetworkState networkState;
 
 	private Map<String, Map<String, Object>> dockerOptionsPerNode;
 
-	private DockerNetwork(String name, int numNodes, boolean startConsensusOnBoot) {
+	private DockerNetwork(String name, int numNodes, boolean startConsensusOnBoot,String testName) {
 		this.name = Objects.requireNonNull(name);
 		this.numNodes = numNodes;
 		this.startConsensusOnBoot = startConsensusOnBoot;
 		this.networkState = NetworkState.READY;
+		this.testName = testName;
 	}
 
 	/**
@@ -99,7 +100,8 @@ public class DockerNetwork implements Closeable, RemoteBFTNetwork {
 			List<Object> dockerSetup = CmdHelper.node(options);
 			String[] dockerEnv = (String[]) dockerSetup.get(0);
 			String dockerCommand = (String) dockerSetup.get(1);
-			CmdHelper.runCommand(dockerCommand, dockerEnv, true);
+			String containerId = CmdHelper.runContainer(dockerCommand, dockerEnv);
+			options.put("containerId",containerId);
 		});
 		CmdHelper.checkNGenerateKey();
 
@@ -109,10 +111,15 @@ public class DockerNetwork implements Closeable, RemoteBFTNetwork {
 	@Override
 	public void close() {
 		this.networkState.assertCanShutdown();
+		this.dockerOptionsPerNode.forEach((nodeId,options)->{
+			String containerId = (String) options.get("containerId");
+			CmdHelper.captureLogs(containerId,testName);
+		});
 		CmdHelper.removeAllDockerContainers();
 		CmdHelper.runCommand("docker network rm " + this.name);
 		this.networkState = NetworkState.SHUTDOWN;
 	}
+
 
 	@Override
 	public HttpUrl getEndpointUrl(String nodeId, String endpoint) {
@@ -156,6 +163,7 @@ public class DockerNetwork implements Closeable, RemoteBFTNetwork {
 			.orElse("test-network-" + networkIdCounter.getAndIncrement());
 		private int numNodes = -1;
 		private boolean startConsensusOnBoot;
+		private String testName;
 
 		/**
 		 * Configures the nodes to automatically start consensus as soon as they boot up.
@@ -194,6 +202,17 @@ public class DockerNetwork implements Closeable, RemoteBFTNetwork {
 		}
 
 		/**
+		 * Sets the name of the test that is running the network
+		 *
+		 * @param name The number of nodes
+		 * @return This builder
+		 */
+		public Builder testName(String name) {
+			this.testName = name;
+			return this;
+		}
+
+		/**
 		 * Builds a {@link DockerNetwork} with the specified configuration without running the underlying network.
 		 *
 		 * @return The created {@link DockerNetwork}
@@ -203,7 +222,7 @@ public class DockerNetwork implements Closeable, RemoteBFTNetwork {
 				throw new IllegalStateException("numNodes was not set");
 			}
 
-			return new DockerNetwork(name, numNodes, startConsensusOnBoot);
+			return new DockerNetwork(name, numNodes, startConsensusOnBoot,testName);
 		}
 	}
 
