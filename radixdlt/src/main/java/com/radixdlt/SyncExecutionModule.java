@@ -24,12 +24,12 @@ import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.SyncedExecutor;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.execution.RadixEngineExecutor;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.syncer.EpochChangeSender;
 import com.radixdlt.syncer.SyncedEpochExecutor;
 import com.radixdlt.syncer.SyncedEpochExecutor.CommittedStateSyncSender;
+import com.radixdlt.syncer.SyncedEpochExecutor.Executor;
 import com.radixdlt.syncer.SyncedEpochExecutor.SyncService;
 
 /**
@@ -45,7 +45,7 @@ public class SyncExecutionModule extends AbstractModule {
 	@Singleton
 	private SyncedEpochExecutor syncedEpochExecutor(
 		Mempool mempool,
-		RadixEngineExecutor executor,
+		Executor executor,
 		CommittedStateSyncSender committedStateSyncSender,
 		EpochChangeSender epochChangeSender,
 		SyncService syncService,

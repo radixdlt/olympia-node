@@ -62,6 +62,7 @@ import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.store.LedgerEntryStoreView;
 import com.radixdlt.store.berkeley.BerkeleyCursorStore;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
+import com.radixdlt.syncer.SyncedEpochExecutor.Executor;
 import com.radixdlt.universe.Universe;
 import java.time.Instant;
 import java.util.function.Consumer;
@@ -89,6 +90,7 @@ public class ExecutionModule extends AbstractModule {
 		bind(LedgerEntryStore.class).to(BerkeleyLedgerEntryStore.class);
 		bind(LedgerEntryStoreView.class).to(BerkeleyLedgerEntryStore.class);
 		bind(CursorStore.class).to(BerkeleyCursorStore.class);
+		bind(Executor.class).to(RadixEngineExecutor.class);
 	}
 
 	@Provides

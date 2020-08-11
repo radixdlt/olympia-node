@@ -29,6 +29,7 @@ import com.radixdlt.identifiers.EUID;
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
+import com.radixdlt.syncer.SyncedEpochExecutor.Executor;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedList;
@@ -39,7 +40,7 @@ import java.util.function.Function;
 /**
  * Wraps the Radix Engine and emits messages based on success or failure
  */
-public final class RadixEngineExecutor {
+public final class RadixEngineExecutor implements Executor {
 	public interface RadixEngineExecutorEventSender {
 		void sendStored(CommittedAtom committedAtom, ImmutableSet<EUID> indicies);
 		void sendStoredFailure(CommittedAtom committedAtom, RadixEngineException e);
@@ -72,6 +73,7 @@ public final class RadixEngineExecutor {
 		this.engineEventSender = Objects.requireNonNull(engineEventSender);
 	}
 
+	// TODO Move this to a different class class when unstored committed atoms is fixed
 	public List<CommittedAtom> getCommittedAtoms(long stateVersion, int batchSize) {
 		// TODO: This may still return an empty list as we still count state versions for atoms which
 		// TODO: never make it into the radix engine due to state errors. This is because we only check
@@ -106,6 +108,7 @@ public final class RadixEngineExecutor {
 	 * Add an atom to the committed store
 	 * @param atom the atom to commit
 	 */
+	@Override
 	public void execute(CommittedAtom atom) {
 		if (atom.getClientAtom() != null) {
 			try {
@@ -128,10 +131,12 @@ public final class RadixEngineExecutor {
 		}
 	}
 
+	@Override
 	public BFTValidatorSet getValidatorSet(long epoch) {
 		return validatorSetMapping.apply(epoch);
 	}
 
+	@Override
 	public boolean compute(Vertex vertex) {
 		return vertex.getView().compareTo(epochChangeView) >= 0;
 	}
