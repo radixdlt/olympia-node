@@ -21,24 +21,27 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.powermock.api.mockito.PowerMockito.mock;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTNode;
 import org.junit.Before;
 import org.junit.Test;
 
 public class LocalSyncRequestTest {
 	private LocalSyncRequest request;
-	private ImmutableList<BFTNode> target;
+	private ImmutableList<BFTNode> targetNodes;
+	private VertexMetadata target;
 
 	@Before
 	public void setup() {
-		this.target = mock(ImmutableList.class);
-		request = new LocalSyncRequest(3, 5, target);
+		this.targetNodes = mock(ImmutableList.class);
+		this.target = mock(VertexMetadata.class);
+		request = new LocalSyncRequest(target, 5, targetNodes);
 	}
 
 	@Test
 	public void testGetters() {
-		assertThat(request.getTargetVersion()).isEqualTo(3);
-		assertThat(request.getCurrentVersion()).isEqualTo(5);
 		assertThat(request.getTarget()).isEqualTo(target);
+		assertThat(request.getCurrentVersion()).isEqualTo(5);
+		assertThat(request.getTargetNodes()).isEqualTo(targetNodes);
 	}
 }
