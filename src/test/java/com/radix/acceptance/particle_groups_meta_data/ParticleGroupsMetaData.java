@@ -53,7 +53,7 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 public class ParticleGroupsMetaData {
-	private RadixUniverse universe = RadixUniverse.create(RadixEnv.getBootstrapConfig());
+    private RadixUniverse universe = RadixUniverse.create(RadixEnv.getBootstrapConfig());
 
 	private RadixIdentity identity;
 

@@ -110,7 +110,6 @@ public class MintAndTransferTokensActionMapper implements StatefulActionToPartic
 			action.getTo(),
 			System.nanoTime(),
 			action.getTokenDefinitionReference(),
-			System.currentTimeMillis() / 60000L + 60000L,
 			permissions
 		);
 	}
@@ -128,7 +127,6 @@ public class MintAndTransferTokensActionMapper implements StatefulActionToPartic
 					tokenDefRef.getAddress(),
 					System.nanoTime(),
 					tokenDefRef,
-					System.currentTimeMillis() / 60000L + 60000L,
 					consumable.getTokenPermissions()
 				),
 				mintedTokens -> mintedTokens,
