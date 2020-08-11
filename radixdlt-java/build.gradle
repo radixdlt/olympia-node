@@ -21,20 +21,37 @@
  */
 
 apply plugin: 'java-library'
-apply plugin: 'maven'
 apply plugin: 'jacoco'
 apply plugin: 'checkstyle'
 apply plugin: 'org.sonarqube'
 apply plugin: 'project-report'
 apply plugin: 'com.adarshr.test-logger'
+apply plugin: 'maven-publish'
 
-repositories {
-    jcenter()
-    maven { url 'https://jitpack.io' }
+compileJava {
+    options.compilerArgs += '-proc:none'
+}
+
+compileTestJava {
+    options.compilerArgs += '-proc:none'
+}
+
+checkstyle {
+    configFile rootProject.file('.checkstyle.xml')
+    toolVersion '8.10.1'
+    showViolations = true
+}
+
+checkstyleTest {
+    configFile rootProject.file('.checkstyle_test.xml')
 }
 
 test {
     systemProperty "java.security.egd", "file:/dev/urandom"
+}
+
+jacoco {
+    toolVersion = "0.8.5"
 }
 
 jacocoTestReport {
@@ -59,18 +76,6 @@ dependencies {
         exclude group: 'com.fasterxml.jackson.core', module: 'jackson-core'
         exclude group: 'com.fasterxml.jackson.core', module: 'jackson-databind'
     }
-}
-
-// TODO: Consider moving to Google Checkstyle format
-// TODO: https://github.com/checkstyle/checkstyle/tree/master/src/main/resources
-checkstyle {
-    configFile rootProject.file('.checkstyle.xml')
-    toolVersion '8.10.1'
-    showViolations = true
-}
-
-checkstyleTest {
-    configFile rootProject.file('.checkstyle_test.xml')
 }
 
 jar {
@@ -114,16 +119,20 @@ artifacts {
     archives javadocJar
 }
 
-install {
-  repositories.mavenInstaller {
-    pom.project {
-      licenses {
-        license {
-            name "The MIT License"
-            url "https://opensource.org/licenses/MIT"
-            distribution "repo"
+publishing {
+    repositories {
+        maven {
+            name = 'GitHubPackages'
+            url = uri('https://maven.pkg.github.com/radixdlt/maven-packages')
+            credentials {
+                username = project.findProperty('gpr.user') ?: System.getenv('GPR_USER')
+                password = project.findProperty('gpr.key') ?: System.getenv('GPR_TOKEN')
+            }
         }
-      }
     }
-  }
+    publications {
+        gpr(MavenPublication) {
+            from(components.java)
+        }
+    }
 }

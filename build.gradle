@@ -20,24 +20,36 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-buildscript {
-    repositories {
-        jcenter()
-        maven { url "https://plugins.gradle.org/m2/" }
-    }
-    dependencies {
-        classpath 'org.eclipse.jgit:org.eclipse.jgit:5.0.1.201806211838-r'
-        classpath 'org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:2.8'
-        classpath 'com.adarshr:gradle-test-logger-plugin:1.6.0'
-    }
+plugins {
+    id 'maven-publish'
+    id 'com.adarshr.test-logger' version '1.7.1'
+    id 'org.sonarqube' version '3.0'
+    id 'com.palantir.git-version' version '0.12.3'
 }
 
-group = 'com.radixdlt'
-// Do NOT override project version from CLI, gradle.properties, etc.
-if (version == 'unspecified') {
-    // Add the -SNAPSHOT suffix so that we do not clash with artifacts published by jitpack
-    version = org.eclipse.jgit.api.Git.open(project.projectDir).describe().call() + '-SNAPSHOT'
+repositories {
+    jcenter()
 }
+
+def radixVersion() {
+    def details = versionDetails()
+    def version
+    if (details.isCleanTag) {
+        version = details.lastTag
+    } else {
+        version = details.branchName
+        if (version == null) {
+            version = "detached-head-${details.gitHash}"
+        } else {
+            version = version.replaceAll('/', '~')
+        }
+        version = "${version}-SNAPSHOT"
+    }
+    return version
+}
+
+group 'com.radixdlt'
+version radixVersion()
 
 allprojects {
     version = rootProject.version
@@ -57,5 +69,9 @@ allprojects {
 
     repositories {
         jcenter()
+        mavenCentral()
+        maven { url 'https://plugins.gradle.org/m2/' }
+        maven { url 'https://maven.pkg.github.com/radixdlt/maven-packages' }
+        maven { url 'https://jitpack.io' }
     }
 }
