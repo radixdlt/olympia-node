@@ -64,7 +64,6 @@ import com.radixdlt.store.berkeley.BerkeleyCursorStore;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.syncer.SyncedEpochExecutor.Executor;
 import com.radixdlt.universe.Universe;
-import java.time.Instant;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
@@ -73,7 +72,6 @@ import java.util.function.UnaryOperator;
  * Module which manages execution of commands
  */
 public class ExecutionModule extends AbstractModule {
-	private static final long GENESIS_TIMESTAMP = Instant.parse("2020-01-01T00:00:00.000Z").toEpochMilli();
 	private static final Hash DEFAULT_FEE_TARGET = new Hash("0000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
 	private final int fixedNodeCount;
 	private final long viewsPerEpoch;
@@ -243,7 +241,7 @@ public class ExecutionModule extends AbstractModule {
 	private CommittedAtom genesisAtom(Universe universe) throws LedgerAtomConversionException {
 		final ClientAtom genesisAtom = ClientAtom.convertFromApiAtom(universe.getGenesis().get(0));
 		final VertexMetadata vertexMetadata = VertexMetadata.ofGenesisAncestor();
-		return new CommittedAtom(genesisAtom, vertexMetadata, GENESIS_TIMESTAMP);
+		return new CommittedAtom(genesisAtom, vertexMetadata);
 	}
 
 	@Provides

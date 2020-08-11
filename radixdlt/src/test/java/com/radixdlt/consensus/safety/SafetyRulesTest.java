@@ -154,14 +154,17 @@ public class SafetyRulesTest {
 
 		Hash toBeCommitted = mock(Hash.class);
 
+		VertexMetadata committed = new VertexMetadata(0, View.of(1), toBeCommitted, 1, false, Hash.ZERO_HASH);
 		VoteData voteData = new VoteData(
-			new VertexMetadata(0, View.of(3), mock(Hash.class), 3, false),
-			new VertexMetadata(0, View.of(2), mock(Hash.class), 2, false),
-			new VertexMetadata(0, View.of(1), toBeCommitted, 1, false)
+			new VertexMetadata(0, View.of(3), mock(Hash.class), 3, false, Hash.ZERO_HASH),
+			new VertexMetadata(0, View.of(2), mock(Hash.class), 2, false, Hash.ZERO_HASH),
+			committed
 		);
 
 		QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 
-		assertThat(safetyRules.process(qc)).hasValue(new VertexMetadata(0, View.of(1), toBeCommitted, 1, false));
+		assertThat(safetyRules.process(qc)).hasValue(
+			committed
+		);
 	}
 }
