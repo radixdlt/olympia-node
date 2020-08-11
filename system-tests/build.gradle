@@ -59,6 +59,7 @@ task dockerSystemTests(type: Test) {
     }
     testLogging.showStandardStreams = true
     systemProperties System.getProperties()
+    systemProperties['logs.dir'] = "${testResultsDir}/dockerSystemTests"
     exclude "Runner.class"
 }
 
