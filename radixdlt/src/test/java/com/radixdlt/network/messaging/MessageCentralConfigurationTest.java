@@ -23,6 +23,7 @@ import com.radixdlt.properties.RuntimeProperties;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -35,7 +36,7 @@ public class MessageCentralConfigurationTest {
 
         when(properties.get(eq("messaging.inbound.queue_max"), anyInt())).thenReturn(100);
         when(properties.get(eq("messaging.outbound.queue_max"), anyInt())).thenReturn(102);
-        when(properties.get(eq("messaging.time_to_live"), anyInt())).thenReturn(104);
+        when(properties.get(eq("messaging.time_to_live"), anyLong())).thenReturn(104L);
 
         MessageCentralConfiguration config = MessageCentralConfiguration.fromRuntimeProperties(properties);
 

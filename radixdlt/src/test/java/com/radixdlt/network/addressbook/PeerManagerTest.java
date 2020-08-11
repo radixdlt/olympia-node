@@ -105,7 +105,7 @@ public class PeerManagerTest extends RadixTest {
 
 		when(properties.get(eq("network.peers.message.batch.size"), anyInt())).thenReturn(2);
 
-		when(properties.get(eq("peermanager.recency_ms"), anyLong())).thenReturn(60_000L);
+		when(properties.get(eq("network.peers.recency_ms"), anyLong())).thenReturn(60_000L);
 
 		PeerManagerConfiguration config = PeerManagerConfiguration.fromRuntimeProperties(properties);
 		peerMessageMultimap = LinkedListMultimap.create();

@@ -95,7 +95,8 @@ public class PeerManager {
 		@Override
 		public void run() {
 			try {
-				int numProbes = (int) (this.numPeers / TimeUnit.MILLISECONDS.toSeconds(recencyThreshold));
+				long recencyInSeconds = TimeUnit.MILLISECONDS.toSeconds(recencyThreshold);
+				int numProbes = (int) (this.numPeers / Math.max(1, recencyInSeconds));
 
 				numProbes = Math.max(numProbes, 16);
 
