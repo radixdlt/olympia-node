@@ -929,7 +929,21 @@ public class RadixApplicationAPI {
 	public Result registerValidator(
 		RadixAddress validator
 	) {
-		final RegisterValidatorAction registerValidatorAction = new RegisterValidatorAction(validator);
+		return registerValidator(validator, null);
+	}
+
+	/**
+	 * Registers the given address as a validator.
+	 *
+	 * @param validator the validator address to be registered
+	 * @param url the optional URL for extra information about the validator
+	 * @return result of the transaction
+	 */
+	public Result registerValidator(
+		RadixAddress validator,
+		String url
+	) {
+		final RegisterValidatorAction registerValidatorAction = new RegisterValidatorAction(validator, url);
 
 		return this.execute(registerValidatorAction);
 	}

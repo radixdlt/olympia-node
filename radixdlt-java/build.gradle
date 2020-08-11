@@ -28,6 +28,14 @@ apply plugin: 'project-report'
 apply plugin: 'com.adarshr.test-logger'
 apply plugin: 'maven-publish'
 
+repositories {
+    jcenter()
+    mavenCentral()
+    maven { url 'https://plugins.gradle.org/m2/' }
+    maven { url 'https://maven.pkg.github.com/radixdlt/maven-packages' }
+    maven { url 'https://jitpack.io' }
+}
+
 compileJava {
     options.compilerArgs += '-proc:none'
 }

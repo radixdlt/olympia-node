@@ -40,6 +40,10 @@ public class RegisteredValidatorParticle extends Particle implements Accountable
 	@DsonOutput(DsonOutput.Output.ALL)
 	private RadixAddress address;
 
+	@JsonProperty("url")
+	@DsonOutput(DsonOutput.Output.ALL)
+	private String url;
+
 	@JsonProperty("nonce")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private long nonce;
@@ -49,14 +53,23 @@ public class RegisteredValidatorParticle extends Particle implements Accountable
 	}
 
 	public RegisteredValidatorParticle(RadixAddress address, long nonce) {
+		this(address, null, nonce);
+	}
+
+	public RegisteredValidatorParticle(RadixAddress address, String url, long nonce) {
 		super(address.euid());
 		this.address = Objects.requireNonNull(address, "address");
+		this.url = url;
 		this.nonce = nonce;
 	}
 
 	@Override
 	public RadixAddress getAddress() {
 		return address;
+	}
+
+	public String getUrl() {
+		return url;
 	}
 
 	public long getNonce() {
