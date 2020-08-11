@@ -17,7 +17,6 @@
 
 package com.radixdlt.syncer;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.execution.RadixEngineExecutor;
@@ -30,7 +29,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.TreeSet;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
@@ -41,43 +39,59 @@ public final class SyncServiceProcessor {
 		void sendSyncedAtom(CommittedAtom committedAtom);
 	}
 
+	public static final class SyncInProgress {
+		private final long id;
+		private final List<BFTNode> target;
+		private SyncInProgress(long id, List<BFTNode> target) {
+			this.id = id;
+			this.target = target;
+		}
+	}
+
+	public interface SyncTimeoutScheduler {
+		void scheduleTimeout(SyncInProgress syncInProgress, long milliseconds);
+	}
+
 	private static final Logger log = LogManager.getLogger();
 	private static final int MAX_REQUESTS_TO_SEND = 20;
 	private final RadixEngineExecutor executor;
 	private final SyncedAtomSender syncedAtomSender;
 	private final int batchSize;
 	private final int maxAtomsQueueSize;
-	private final long patience;
-
+	private final SyncTimeoutScheduler syncTimeoutScheduler;
+	private final long patienceMilliseconds;
+	private final AddressBook addressBook;
 	private final StateSyncNetwork stateSyncNetwork;
-	private final TreeSet<CommittedAtom> commitedAtoms = new TreeSet<>(Comparator.comparingLong(a -> a.getVertexMetadata().getStateVersion()));
+	private final TreeSet<CommittedAtom> committedAtoms = new TreeSet<>(Comparator.comparingLong(a -> a.getVertexMetadata().getStateVersion()));
 
+	private long syncInProgressId = 0;
+	private boolean isSyncInProgress = false;
 	private long syncToTargetVersion = -1;
 	private long syncToCurrentVersion = -1;
 
-	private ScheduledFuture<?> timeoutChecker;
-	private final AddressBook addressBook;
 
 	public SyncServiceProcessor(
 		RadixEngineExecutor executor,
 		StateSyncNetwork stateSyncNetwork,
 		AddressBook addressBook,
 		SyncedAtomSender syncedAtomSender,
+		SyncTimeoutScheduler syncTimeoutScheduler,
 		int batchSize,
-		long patience
+		long patienceMilliseconds
 	) {
+		if (patienceMilliseconds <= 0) {
+			throw new IllegalArgumentException();
+		}
+		if (batchSize <= 0) {
+			throw new IllegalArgumentException();
+		}
 		this.executor = Objects.requireNonNull(executor);
 		this.stateSyncNetwork = Objects.requireNonNull(stateSyncNetwork);
 		this.addressBook = Objects.requireNonNull(addressBook);
 		this.syncedAtomSender = Objects.requireNonNull(syncedAtomSender);
-		if (batchSize <= 0) {
-			throw new IllegalArgumentException();
-		}
+		this.syncTimeoutScheduler = Objects.requireNonNull(syncTimeoutScheduler);
 		this.batchSize = batchSize;
-		if (patience <= 0) {
-			throw new IllegalArgumentException();
-		}
-		this.patience = patience;
+		this.patienceMilliseconds = patienceMilliseconds;
 		// we limit the size of the queue in order to avoid memory issues
 		this.maxAtomsQueueSize = MAX_REQUESTS_TO_SEND * batchSize * 2;
 	}
@@ -100,20 +114,20 @@ public final class SyncServiceProcessor {
 		for (CommittedAtom atom : atoms) {
 			long atomVersion = atom.getVertexMetadata().getStateVersion();
 			if (atomVersion > this.syncToCurrentVersion) {
-				if (commitedAtoms.size() < maxAtomsQueueSize) { // check if there is enough space
-					commitedAtoms.add(atom);
+				if (committedAtoms.size() < maxAtomsQueueSize) { // check if there is enough space
+					committedAtoms.add(atom);
 				} else { // not enough space available
-					CommittedAtom last = commitedAtoms.last();
+					CommittedAtom last = committedAtoms.last();
 					// will added it only if it must be applied BEFORE the most recent atom we have
 					if (last.getVertexMetadata().getStateVersion() > atomVersion) {
-						commitedAtoms.pollLast(); // remove the most recent available
-						commitedAtoms.add(atom);
+						committedAtoms.pollLast(); // remove the most recent available
+						committedAtoms.add(atom);
 					}
 				}
 			}
 		}
 
-		Iterator<CommittedAtom> it = commitedAtoms.iterator();
+		Iterator<CommittedAtom> it = committedAtoms.iterator();
 		while (it.hasNext()) {
 			CommittedAtom crtAtom = it.next();
 			long atomVersion = crtAtom.getVertexMetadata().getStateVersion();
@@ -128,9 +142,8 @@ public final class SyncServiceProcessor {
 			}
 		}
 
-		if (timeoutChecker != null) {
-			timeoutChecker.cancel(false);
-		}
+		// TODO: Need to check if this response actually corresponds to sync-in-progress
+		isSyncInProgress = false;
 	}
 
 	public void processLocalSyncRequest(LocalSyncRequest request) {
@@ -146,19 +159,10 @@ public final class SyncServiceProcessor {
 		sendSyncRequests(request.getTarget());
 	}
 
-	private void sendSyncRequest(long version, List<BFTNode> target) {
-		List<Peer> peers = target.stream()
-			.map(BFTNode::getKey)
-			.map(pk -> addressBook.peer(pk.euid()))
-			.filter(Optional::isPresent)
-			.map(Optional::get)
-			.filter(Peer::hasSystem)
-			.collect(Collectors.toList());
-		if (peers.isEmpty()) {
-			throw new IllegalStateException("Unable to find peer");
+	public void processSyncTimeout(SyncInProgress syncInProgress) {
+		if (syncInProgress.id == syncInProgressId && isSyncInProgress) {
+			this.sendSyncRequests(syncInProgress.target);
 		}
-		Peer peer = peers.get(ThreadLocalRandom.current().nextInt(peers.size()));
-		stateSyncNetwork.sendSyncRequest(peer, version);
 	}
 
 	private void sendSyncRequests(List<BFTNode> target) {
@@ -173,19 +177,26 @@ public final class SyncServiceProcessor {
 		for (long i = 0; i < size; i++) {
 			sendSyncRequest(syncToCurrentVersion + batchSize * i, target);
 		}
-		if (timeoutChecker != null) {
-			timeoutChecker.cancel(false);
+
+		syncInProgressId++;
+		isSyncInProgress = true;
+		SyncInProgress syncInProgress = new SyncInProgress(syncInProgressId, target);
+		syncTimeoutScheduler.scheduleTimeout(syncInProgress, patienceMilliseconds);
+	}
+
+	private void sendSyncRequest(long version, List<BFTNode> target) {
+		List<Peer> peers = target.stream()
+			.map(BFTNode::getKey)
+			.map(pk -> addressBook.peer(pk.euid()))
+			.filter(Optional::isPresent)
+			.map(Optional::get)
+			.filter(Peer::hasSystem)
+			.collect(Collectors.toList());
+		// TODO: Remove this exception
+		if (peers.isEmpty()) {
+			throw new IllegalStateException("Unable to find peer");
 		}
-		//timeoutChecker = executorService.schedule(() -> sendSyncRequests(target), patience, TimeUnit.SECONDS);
-	}
-
-	@VisibleForTesting
-	int getMaxAtomsQueueSize() {
-		return maxAtomsQueueSize;
-	}
-
-	@VisibleForTesting
-	long getQueueSize() {
-		return commitedAtoms.size();
+		Peer peer = peers.get(ThreadLocalRandom.current().nextInt(peers.size()));
+		stateSyncNetwork.sendSyncRequest(peer, version);
 	}
 }

@@ -62,9 +62,11 @@ import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.syncer.EpochChangeSender;
 import com.radixdlt.syncer.StateSyncNetwork;
 import com.radixdlt.syncer.SyncServiceProcessor;
+import com.radixdlt.syncer.SyncServiceProcessor.SyncTimeoutScheduler;
 import com.radixdlt.syncer.SyncServiceProcessor.SyncedAtomSender;
 import com.radixdlt.syncer.SyncServiceRunner;
 import com.radixdlt.syncer.SyncServiceRunner.LocalSyncRequestsRx;
+import com.radixdlt.syncer.SyncServiceRunner.SyncTimeoutsRx;
 import com.radixdlt.syncer.SyncedEpochExecutor;
 import com.radixdlt.syncer.SyncedEpochExecutor.CommittedStateSyncSender;
 import com.radixdlt.syncer.SyncedEpochExecutor.SyncService;
@@ -168,13 +170,15 @@ public class SyncerModule extends AbstractModule {
 		RadixEngineExecutor executor,
 		StateSyncNetwork stateSyncNetwork,
 		AddressBook addressBook,
-		SyncedAtomSender syncedAtomSender
+		SyncedAtomSender syncedAtomSender,
+		SyncTimeoutScheduler syncTimeoutScheduler
 	) {
 		return new SyncServiceProcessor(
 			executor,
 			stateSyncNetwork,
 			addressBook,
 			syncedAtomSender,
+			syncTimeoutScheduler,
 			BATCH_SIZE,
 			10
 		);
@@ -184,11 +188,13 @@ public class SyncerModule extends AbstractModule {
 	@Singleton
 	private SyncServiceRunner syncServiceRunner(
 		LocalSyncRequestsRx localSyncRequestsRx,
+		SyncTimeoutsRx syncTimeoutsRx,
 		StateSyncNetwork stateSyncNetwork,
 		SyncServiceProcessor syncServiceProcessor
 	) {
 		return new SyncServiceRunner(
 			localSyncRequestsRx,
+			syncTimeoutsRx,
 			stateSyncNetwork,
 			syncServiceProcessor
 		);

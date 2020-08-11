@@ -17,6 +17,7 @@
 
 package com.radixdlt.syncer;
 
+import com.radixdlt.syncer.SyncServiceProcessor.SyncInProgress;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.schedulers.Schedulers;
@@ -31,18 +32,25 @@ public final class SyncServiceRunner {
 		Observable<LocalSyncRequest> localSyncRequests();
 	}
 
+	public interface SyncTimeoutsRx {
+		Observable<SyncInProgress> timeouts();
+	}
+
 	private final StateSyncNetwork stateSyncNetwork;
 	private final Scheduler singleThreadScheduler;
 	private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads("SyncManager"));
 	private final SyncServiceProcessor syncServiceProcessor;
+	private final SyncTimeoutsRx syncTimeoutsRx;
 	private final LocalSyncRequestsRx localSyncRequestsRx;
 
 	public SyncServiceRunner(
 		LocalSyncRequestsRx localSyncRequestsRx,
+		SyncTimeoutsRx syncTimeoutsRx,
 		StateSyncNetwork stateSyncNetwork,
 		SyncServiceProcessor syncServiceProcessor
 	) {
 		this.localSyncRequestsRx = Objects.requireNonNull(localSyncRequestsRx);
+		this.syncTimeoutsRx = Objects.requireNonNull(syncTimeoutsRx);
 		this.syncServiceProcessor = Objects.requireNonNull(syncServiceProcessor);
 		this.stateSyncNetwork = Objects.requireNonNull(stateSyncNetwork);
 		this.singleThreadScheduler = Schedulers.from(this.executorService);
@@ -63,6 +71,10 @@ public final class SyncServiceRunner {
 		localSyncRequestsRx.localSyncRequests()
 			.observeOn(singleThreadScheduler)
 			.subscribe(syncServiceProcessor::processLocalSyncRequest);
+
+		syncTimeoutsRx.timeouts()
+			.observeOn(singleThreadScheduler)
+			.subscribe(syncServiceProcessor::processSyncTimeout);
 	}
 
 	public void close() {

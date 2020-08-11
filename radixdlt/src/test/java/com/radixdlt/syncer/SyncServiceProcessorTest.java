@@ -35,6 +35,7 @@ import com.radixdlt.identifiers.EUID;
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
+import com.radixdlt.syncer.SyncServiceProcessor.SyncTimeoutScheduler;
 import com.radixdlt.syncer.SyncServiceProcessor.SyncedAtomSender;
 import java.util.Collections;
 import java.util.Optional;
@@ -48,6 +49,7 @@ public class SyncServiceProcessorTest {
 	private AddressBook addressBook;
 	private RadixEngineExecutor executor;
 	private SyncedAtomSender syncedAtomSender;
+	private SyncTimeoutScheduler syncTimeoutScheduler;
 
 	private static CommittedAtom buildWithVersion(long version) {
 		CommittedAtom committedAtom = mock(CommittedAtom.class);
@@ -63,11 +65,13 @@ public class SyncServiceProcessorTest {
 		this.addressBook = mock(AddressBook.class);
 		this.executor = mock(RadixEngineExecutor.class);
 		this.syncedAtomSender = mock(SyncedAtomSender.class);
+		this.syncTimeoutScheduler = mock(SyncTimeoutScheduler.class);
 		this.syncServiceProcessor = new SyncServiceProcessor(
 			executor,
 			stateSyncNetwork,
 			addressBook,
 			syncedAtomSender,
+			syncTimeoutScheduler,
 			2,
 			1
 		);

@@ -21,6 +21,7 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.syncer.SyncServiceRunner.LocalSyncRequestsRx;
+import com.radixdlt.syncer.SyncServiceRunner.SyncTimeoutsRx;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import io.reactivex.rxjava3.subjects.Subject;
@@ -43,6 +44,7 @@ public class SyncServiceRunnerTest {
 
 	private SyncServiceRunner syncServiceRunner;
 	private LocalSyncRequestsRx localSyncRequestsRx;
+	private SyncTimeoutsRx syncTimeoutsRx;
 	private StateSyncNetwork stateSyncNetwork;
 	private SyncServiceProcessor syncServiceProcessor;
 	private Subject<ImmutableList<CommittedAtom>> responsesSubject;
@@ -51,6 +53,9 @@ public class SyncServiceRunnerTest {
 	public void setUp() {
 		this.localSyncRequestsRx = mock(LocalSyncRequestsRx.class);
 		when(localSyncRequestsRx.localSyncRequests()).thenReturn(Observable.never());
+
+		this.syncTimeoutsRx = mock(SyncTimeoutsRx.class);
+		when(syncTimeoutsRx.timeouts()).thenReturn(Observable.never());
 
 		this.stateSyncNetwork = mock(StateSyncNetwork.class);
 		when(stateSyncNetwork.syncRequests()).thenReturn(Observable.never());
@@ -61,6 +66,7 @@ public class SyncServiceRunnerTest {
 		this.syncServiceProcessor = mock(SyncServiceProcessor.class);
 		syncServiceRunner = new SyncServiceRunner(
 			localSyncRequestsRx,
+			syncTimeoutsRx,
 			stateSyncNetwork,
 			syncServiceProcessor
 		);

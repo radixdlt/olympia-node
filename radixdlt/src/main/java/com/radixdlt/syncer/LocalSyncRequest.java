@@ -20,7 +20,7 @@ package com.radixdlt.syncer;
 import com.radixdlt.consensus.bft.BFTNode;
 import java.util.List;
 
-public class LocalSyncRequest {
+public final class LocalSyncRequest {
 	private final long targetVersion;
 	private final long currentVersion;
 	private List<BFTNode> target;

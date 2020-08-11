@@ -32,12 +32,19 @@ import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.converters.AtomConversionException;
 import com.radixdlt.syncer.EpochChangeSender;
 import com.radixdlt.syncer.LocalSyncRequest;
+import com.radixdlt.syncer.SyncServiceProcessor.SyncInProgress;
+import com.radixdlt.syncer.SyncServiceProcessor.SyncTimeoutScheduler;
 import com.radixdlt.syncer.SyncServiceRunner.LocalSyncRequestsRx;
+import com.radixdlt.syncer.SyncServiceRunner.SyncTimeoutsRx;
 import com.radixdlt.syncer.SyncedEpochExecutor.CommittedStateSyncSender;
 import com.radixdlt.syncer.SyncedEpochExecutor.SyncService;
+import com.radixdlt.utils.ScheduledSenderToRx;
 import com.radixdlt.utils.SenderToRx;
+import com.radixdlt.utils.ThreadFactories;
 import com.radixdlt.utils.TwoSenderToRx;
 import io.reactivex.rxjava3.core.Observable;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * Module which manages messages from Syncer
@@ -86,5 +93,10 @@ public final class SyncerMessagesModule extends AbstractModule {
 		SenderToRx<LocalSyncRequest, LocalSyncRequest> localSyncRequests = new SenderToRx<>(r -> r);
 		bind(SyncService.class).toInstance(localSyncRequests::send);
 		bind(LocalSyncRequestsRx.class).toInstance(localSyncRequests::rx);
+
+		ScheduledExecutorService ses = Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads("SyncTimeoutSender"));
+		ScheduledSenderToRx<SyncInProgress> syncsInProgress = new ScheduledSenderToRx<>(ses);
+		bind(SyncTimeoutScheduler.class).toInstance(syncsInProgress::scheduleSend);
+		bind(SyncTimeoutsRx.class).toInstance(syncsInProgress::messages);
 	}
 }
