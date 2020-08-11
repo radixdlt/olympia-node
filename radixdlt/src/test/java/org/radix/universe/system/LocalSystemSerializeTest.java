@@ -30,8 +30,6 @@ public class LocalSystemSerializeTest extends SerializeMessageObject<LocalSystem
 	}
 
 	private static LocalSystem getSystem() {
-		LocalSystem newSystem = new LocalSystem(ImmutableMap::of);
-		newSystem.setPlanck(101);
-		return newSystem;
+		return new LocalSystem(ImmutableMap::of);
 	}
 }

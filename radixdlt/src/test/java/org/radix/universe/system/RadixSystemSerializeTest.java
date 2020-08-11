@@ -35,9 +35,7 @@ public class RadixSystemSerializeTest extends SerializeMessageObject<RadixSystem
 	}
 
 	private static RadixSystem getSystem() {
-		RadixSystem newSystem = new RadixSystem();
-		newSystem.setPlanck(101);
-		return newSystem;
+		return new RadixSystem();
 	}
 
 	@Test

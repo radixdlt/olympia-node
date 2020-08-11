@@ -152,7 +152,7 @@ public class BootstrapDiscovery
 		// Default retry total time = 30 * 10 = 300 seconds = 5 minutes
 		long retries = properties.get("network.discovery.connection.retries", 30);
 		// NOTE: min is 10 seconds - we don't allow less
-		int cooldown = properties.get("network.discovery.connection.cooldown", 1) * 10000;
+		int cooldown = Math.max(10_000, properties.get("network.discovery.connection.cooldown", 10_000));
 		int connectionTimeout = properties.get("network.discovery.connection.timeout", 60000);
 		int readTimeout = properties.get("network.discovery.read.timeout", 60000);
 
