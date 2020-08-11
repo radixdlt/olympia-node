@@ -17,7 +17,7 @@
 
 package com.radixdlt.execution;
 
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -36,7 +36,6 @@ import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import java.util.function.Function;
-import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -70,7 +69,7 @@ public class RadixEngineExecutorTest {
 	public void when_compute_vertex_metadata_equal_to_high_view__then_should_return_true() {
 		Vertex vertex = mock(Vertex.class);
 		when(vertex.getView()).thenReturn(epochHighView);
-		AssertionsForClassTypes.assertThat(executor.compute(vertex)).isTrue();
+		assertThat(executor.compute(vertex)).isTrue();
 	}
 
 	@Test

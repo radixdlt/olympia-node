@@ -29,7 +29,7 @@ import com.radixdlt.identifiers.EUID;
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
-import com.radixdlt.syncer.SyncedEpochExecutor.Executor;
+import com.radixdlt.syncer.SyncedEpochExecutor.CommittedExecutor;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedList;
@@ -40,7 +40,7 @@ import java.util.function.Function;
 /**
  * Wraps the Radix Engine and emits messages based on success or failure
  */
-public final class RadixEngineExecutor implements Executor {
+public final class RadixEngineExecutor implements CommittedExecutor {
 	public interface RadixEngineExecutorEventSender {
 		void sendStored(CommittedAtom committedAtom, ImmutableSet<EUID> indicies);
 		void sendStoredFailure(CommittedAtom committedAtom, RadixEngineException e);

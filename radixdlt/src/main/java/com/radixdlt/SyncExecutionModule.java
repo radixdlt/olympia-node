@@ -29,7 +29,7 @@ import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.syncer.EpochChangeSender;
 import com.radixdlt.syncer.SyncedEpochExecutor;
 import com.radixdlt.syncer.SyncedEpochExecutor.CommittedStateSyncSender;
-import com.radixdlt.syncer.SyncedEpochExecutor.Executor;
+import com.radixdlt.syncer.SyncedEpochExecutor.CommittedExecutor;
 import com.radixdlt.syncer.SyncedEpochExecutor.SyncService;
 
 /**
@@ -45,7 +45,7 @@ public class SyncExecutionModule extends AbstractModule {
 	@Singleton
 	private SyncedEpochExecutor syncedEpochExecutor(
 		Mempool mempool,
-		Executor executor,
+		CommittedExecutor committedExecutor,
 		CommittedStateSyncSender committedStateSyncSender,
 		EpochChangeSender epochChangeSender,
 		SyncService syncService,
@@ -53,8 +53,7 @@ public class SyncExecutionModule extends AbstractModule {
 	) {
 		return new SyncedEpochExecutor(
 			0L,
-			mempool,
-			executor,
+			mempool, committedExecutor,
 			committedStateSyncSender,
 			epochChangeSender,
 			syncService,
