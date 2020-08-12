@@ -69,6 +69,19 @@ public class RegisteredValidatorParticle extends Particle implements Accountable
 		this.nonce = nonce;
 	}
 
+	public RegisteredValidatorParticle copyWithNonce(long nonce) {
+		return new RegisteredValidatorParticle(
+			this.address,
+			this.allowedDelegators,
+			this.url,
+			nonce
+		);
+	}
+
+	public boolean allowsDelegator(RadixAddress delegator) {
+		return this.allowedDelegators.isEmpty() || this.allowedDelegators.contains(delegator);
+	}
+
 	@Override
 	public RadixAddress getAddress() {
 		return address;

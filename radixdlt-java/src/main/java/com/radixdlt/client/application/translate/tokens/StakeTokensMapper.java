@@ -22,6 +22,7 @@
 
 package com.radixdlt.client.application.translate.tokens;
 
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.client.application.translate.StageActionException;
 import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
@@ -29,6 +30,7 @@ import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle
 import com.radixdlt.client.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.client.atommodel.tokens.TokenPermission;
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.client.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
@@ -92,7 +94,10 @@ public class StakeTokensMapper implements StatefulActionToParticleGroupsMapper<S
 
 	@Override
 	public Set<ShardedParticleStateId> requiredState(StakeTokensAction action) {
-		return Collections.singleton(ShardedParticleStateId.of(TransferrableTokensParticle.class, action.getFrom()));
+		return ImmutableSet.of(
+			ShardedParticleStateId.of(TransferrableTokensParticle.class, action.getFrom()),
+			ShardedParticleStateId.of(RegisteredValidatorParticle.class, action.getDelegate())
+		);
 	}
 
 	@Override
@@ -100,6 +105,7 @@ public class StakeTokensMapper implements StatefulActionToParticleGroupsMapper<S
 		final RRI tokenRef = stake.getRRI();
 
 		List<TransferrableTokensParticle> stakeConsumables = store
+			.filter(TransferrableTokensParticle.class::isInstance)
 			.map(TransferrableTokensParticle.class::cast)
 			.filter(p -> p.getTokenDefinitionReference().equals(tokenRef))
 			.collect(Collectors.toList());
@@ -112,6 +118,18 @@ public class StakeTokensMapper implements StatefulActionToParticleGroupsMapper<S
 				tokenRef, TokenUnitConversions.subunitsToUnits(e.getCurrent()), stake.getAmount()
 			);
 		}
+
+		RegisteredValidatorParticle delegate = store
+			.filter(RegisteredValidatorParticle.class::isInstance)
+			.map(RegisteredValidatorParticle.class::cast)
+			.findFirst()
+			.orElseThrow(() -> StakeNotPossibleException.notRegistered(stake.getDelegate()));
+		if (!delegate.allowsDelegator(stake.getFrom())) {
+			throw StakeNotPossibleException.notAllowed(delegate.getAddress(), stake.getFrom());
+		}
+		RegisteredValidatorParticle newDelegate = delegate.copyWithNonce(delegate.getNonce() + 1);
+		stakeParticles.add(SpunParticle.down(delegate));
+		stakeParticles.add(SpunParticle.up(newDelegate));
 
 		return Collections.singletonList(
 			ParticleGroup.of(stakeParticles)
