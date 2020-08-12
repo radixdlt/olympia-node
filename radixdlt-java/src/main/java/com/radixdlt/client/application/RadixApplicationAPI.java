@@ -924,26 +924,30 @@ public class RadixApplicationAPI {
 	 * Registers the given address as a validator.
 	 *
 	 * @param validator the validator address to be registered
+     * @param allowedDelegators the allowed delegators, or empty if everyone is allowed
 	 * @return result of the transaction
 	 */
 	public Result registerValidator(
-		RadixAddress validator
+		RadixAddress validator,
+		Set<RadixAddress> allowedDelegators
 	) {
-		return registerValidator(validator, null);
+		return registerValidator(validator, allowedDelegators, null);
 	}
 
 	/**
 	 * Registers the given address as a validator.
 	 *
 	 * @param validator the validator address to be registered
+	 * @param allowedDelegators the allowed delegators, or empty if everyone is allowed
 	 * @param url the optional URL for extra information about the validator
 	 * @return result of the transaction
 	 */
 	public Result registerValidator(
 		RadixAddress validator,
+		Set<RadixAddress> allowedDelegators,
 		String url
 	) {
-		final RegisterValidatorAction registerValidatorAction = new RegisterValidatorAction(validator, url);
+		final RegisterValidatorAction registerValidatorAction = new RegisterValidatorAction(validator, allowedDelegators, url);
 
 		return this.execute(registerValidatorAction);
 	}

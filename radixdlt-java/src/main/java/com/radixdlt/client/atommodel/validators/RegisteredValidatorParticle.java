@@ -31,6 +31,7 @@ import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerId2;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -39,6 +40,10 @@ public class RegisteredValidatorParticle extends Particle implements Accountable
 	@JsonProperty("address")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private RadixAddress address;
+
+	@JsonProperty("allowedDelegators")
+	@DsonOutput(DsonOutput.Output.ALL)
+	private Set<RadixAddress> allowedDelegators;
 
 	@JsonProperty("url")
 	@DsonOutput(DsonOutput.Output.ALL)
@@ -53,12 +58,13 @@ public class RegisteredValidatorParticle extends Particle implements Accountable
 	}
 
 	public RegisteredValidatorParticle(RadixAddress address, long nonce) {
-		this(address, null, nonce);
+		this(address, ImmutableSet.of(), null, nonce);
 	}
 
-	public RegisteredValidatorParticle(RadixAddress address, String url, long nonce) {
+	public RegisteredValidatorParticle(RadixAddress address, Set<RadixAddress> allowedDelegators, String url, long nonce) {
 		super(address.euid());
 		this.address = Objects.requireNonNull(address, "address");
+		this.allowedDelegators = Objects.requireNonNull(allowedDelegators, "allowedDelegators");
 		this.url = url;
 		this.nonce = nonce;
 	}
@@ -66,6 +72,10 @@ public class RegisteredValidatorParticle extends Particle implements Accountable
 	@Override
 	public RadixAddress getAddress() {
 		return address;
+	}
+
+	public Set<RadixAddress> getAllowedDelegators() {
+		return allowedDelegators;
 	}
 
 	public String getUrl() {

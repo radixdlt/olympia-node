@@ -54,7 +54,7 @@ public class RegisterValidatorActionMapper implements StatefulActionToParticleGr
 		ValidatorRegistrationState currentState = ValidatorRegistrationState.from(store, action.getValidator());
 		return ImmutableList.of(ParticleGroup.of(
 			SpunParticle.down(currentState.asParticle()),
-			SpunParticle.up(currentState.register(action.getUrl()))
+			SpunParticle.up(currentState.register(action.getUrl(), action.getAllowedDelegators()))
 		));
 	}
 

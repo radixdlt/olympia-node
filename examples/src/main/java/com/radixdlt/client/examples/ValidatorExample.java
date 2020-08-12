@@ -22,6 +22,7 @@
 
 package com.radixdlt.client.examples;
 
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
@@ -37,7 +38,7 @@ public class ValidatorExample {
 
 		// register for the first time
 		System.out.println("registering " + api.getAddress());
-		api.registerValidator(api.getAddress()).blockUntilComplete();
+		api.registerValidator(api.getAddress(), ImmutableSet.of()).blockUntilComplete();
 		System.out.println("registered " + api.getAddress());
 
 		// unregister
@@ -47,7 +48,7 @@ public class ValidatorExample {
 
 		// and re-register
 		System.out.println("registering " + api.getAddress());
-		api.registerValidator(api.getAddress()).blockUntilComplete();
+		api.registerValidator(api.getAddress(), ImmutableSet.of()).blockUntilComplete();
 		System.out.println("registered " + api.getAddress());
 	}
 }

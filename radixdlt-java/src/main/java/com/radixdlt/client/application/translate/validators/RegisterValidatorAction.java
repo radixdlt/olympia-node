@@ -26,6 +26,7 @@ import com.radixdlt.client.application.translate.Action;
 import com.radixdlt.identifiers.RadixAddress;
 
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Registers the given address as a validator. Validator must not be registered already.
@@ -33,15 +34,21 @@ import java.util.Objects;
  */
 public class RegisterValidatorAction implements Action {
 	private final RadixAddress validator;
+	private final Set<RadixAddress> allowedDelegators;
 	private final String url;
 
-	public RegisterValidatorAction(RadixAddress validator, String url) {
+	public RegisterValidatorAction(RadixAddress validator, Set<RadixAddress> allowedDelegators, String url) {
 		this.validator = Objects.requireNonNull(validator);
+		this.allowedDelegators = Objects.requireNonNull(allowedDelegators);
 		this.url = url;
 	}
 
 	public RadixAddress getValidator() {
 		return validator;
+	}
+
+	public Set<RadixAddress> getAllowedDelegators() {
+		return allowedDelegators;
 	}
 
 	public String getUrl() {
