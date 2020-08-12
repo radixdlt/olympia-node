@@ -17,7 +17,7 @@
 
 package com.radixdlt.atommodel.validators;
 
-import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt.ValidatorTransitionProcedure;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.Result;
@@ -103,7 +103,7 @@ public class ValidatorConstraintScryptTest {
 		RadixAddress address = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
 		RegisteredValidatorParticle validator = new RegisteredValidatorParticle(
 			address,
-			ImmutableList.of(),
+			ImmutableSet.of(),
 			"http://www.radixdlt.com/",
 			13
 		);
