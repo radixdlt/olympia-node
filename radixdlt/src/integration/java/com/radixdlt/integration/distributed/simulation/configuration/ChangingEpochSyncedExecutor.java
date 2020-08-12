@@ -45,8 +45,6 @@ public class ChangingEpochSyncedExecutor implements SimulatedSyncedExecutor {
 	public ChangingEpochSyncedExecutor(View epochHighView, Function<Long, BFTValidatorSet> validatorSetMapping) {
 		this.epochHighView = Objects.requireNonNull(epochHighView);
 		this.validatorSetMapping = validatorSetMapping;
-		VertexMetadata ancestor = VertexMetadata.ofGenesisAncestor();
-		this.epochChanges.onNext(new EpochChange(ancestor, validatorSetMapping.apply(ancestor.getEpoch() + 1)));
 	}
 
 	private void nextEpoch(VertexMetadata ancestor) {
@@ -83,5 +81,10 @@ public class ChangingEpochSyncedExecutor implements SimulatedSyncedExecutor {
 	@Override
 	public Observable<EpochChange> epochChanges() {
 		return epochChanges.observeOn(Schedulers.io());
+	}
+
+	@Override
+	public BFTValidatorSet initialValidatorSet() {
+		return validatorSetMapping.apply(1L);
 	}
 }

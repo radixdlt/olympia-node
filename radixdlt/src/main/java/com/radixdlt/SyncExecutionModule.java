@@ -23,6 +23,8 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.SyncedExecutor;
+import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.CommittedAtom;
@@ -58,6 +60,16 @@ public class SyncExecutionModule extends AbstractModule {
 			epochChangeSender,
 			syncService,
 			counters
+		);
+	}
+
+	// TODO: Load from storage
+	@Provides
+	@Singleton
+	private EpochChange initialEpoch(CommittedExecutor committedExecutor) {
+		VertexMetadata ancestor = VertexMetadata.ofGenesisAncestor();
+		return new EpochChange(
+			ancestor, committedExecutor.getValidatorSet(ancestor.getEpoch() + 1)
 		);
 	}
 }

@@ -32,6 +32,7 @@ import com.radixdlt.consensus.CommittedStateSyncRx;
 import com.radixdlt.consensus.ConsensusRunner;
 import com.radixdlt.consensus.EpochChangeRx;
 import com.radixdlt.consensus.bft.VertexStore.SyncedVertexSender;
+import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.ConsensusEventsRx;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
@@ -132,6 +133,7 @@ public final class ConsensusModule extends AbstractModule {
 	@Singleton
 	private EpochManager epochManager(
 		@Named("self") BFTNode self,
+		EpochChange initialEpoch,
 		SyncedExecutor<CommittedAtom> syncer,
 		BFTFactory bftFactory,
 		SyncEpochsRPCSender syncEpochsRPCSender,
@@ -144,6 +146,7 @@ public final class ConsensusModule extends AbstractModule {
 	) {
 		return new EpochManager(
 			self,
+			initialEpoch,
 			syncer,
 			syncEpochsRPCSender,
 			scheduledTimeoutSender,

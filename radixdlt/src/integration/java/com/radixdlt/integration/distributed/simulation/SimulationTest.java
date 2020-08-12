@@ -265,10 +265,9 @@ public class SimulationTest {
 		}
 
 		SimulationNodes bftNetwork =  new SimulationNodes(nodes, network, pacemakerTimeout, stateComputerSupplier, getVerticesRPCEnabled);
+		RunningNetwork runningNetwork = bftNetwork.start();
 
-		return bftNetwork.start()
-			.timeout(10, TimeUnit.SECONDS)
-			.flatMapObservable(runningNetwork -> runChecks(runningNetwork, duration, timeUnit))
+		return runChecks(runningNetwork, duration, timeUnit)
 			.doFinally(bftNetwork::stop)
 			.blockingStream()
 			.collect(Collectors.toMap(Pair::getFirst, Pair::getSecond));

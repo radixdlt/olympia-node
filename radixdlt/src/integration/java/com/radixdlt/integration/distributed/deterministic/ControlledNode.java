@@ -60,7 +60,6 @@ import java.util.Objects;
 class ControlledNode {
 	private final EpochManager epochManager;
 	private final SystemCounters systemCounters;
-	private final BFTValidatorSet initialValidatorSet;
 	private final ControlledSender controlledSender;
 
 	public enum SyncAndTimeout {
@@ -79,7 +78,6 @@ class ControlledNode {
 	) {
 		this.systemCounters = new SystemCountersImpl();
 		this.controlledSender = Objects.requireNonNull(sender);
-		this.initialValidatorSet = Objects.requireNonNull(initialValidatorSet);
 
 		NextCommandGenerator nextCommandGenerator = (view, aids) -> null;
 		Hasher nullHasher = data -> Hash.ZERO_HASH;
@@ -113,6 +111,7 @@ class ControlledNode {
 		EpochInfoSender epochInfoSender = EmptyEpochInfoSender.INSTANCE;
 		this.epochManager = new EpochManager(
 			self,
+			new EpochChange(VertexMetadata.ofGenesisAncestor(), initialValidatorSet),
 			stateComputer,
 			EmptySyncEpochsRPCSender.INSTANCE,
 			localTimeoutSender,
@@ -130,8 +129,7 @@ class ControlledNode {
 	}
 
 	void start() {
-		EpochChange epochChange = new EpochChange(VertexMetadata.ofGenesisAncestor(), this.initialValidatorSet);
-		controlledSender.epochChange(epochChange);
+		this.epochManager.start();
 	}
 
 	void processNext(Object msg) {

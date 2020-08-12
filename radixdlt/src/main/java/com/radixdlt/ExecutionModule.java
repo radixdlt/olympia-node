@@ -253,10 +253,15 @@ public class ExecutionModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private CommittedAtomsStore committedAtomsStore(
+		CommittedAtom genesisAtom,
 		LedgerEntryStore store,
 		AtomToBinaryConverter atomToBinaryConverter,
 		AtomIndexer atomIndexer
 	) {
-		return new CommittedAtomsStore(store, atomToBinaryConverter, atomIndexer);
+		final CommittedAtomsStore engineStore = new CommittedAtomsStore(store, atomToBinaryConverter, atomIndexer);
+		if (engineStore.getCommittedAtoms(genesisAtom.getVertexMetadata().getStateVersion() - 1, 1).isEmpty()) {
+			engineStore.storeAtom(genesisAtom);
+		}
+		return engineStore;
 	}
 }

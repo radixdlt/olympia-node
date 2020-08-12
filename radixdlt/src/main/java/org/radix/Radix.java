@@ -196,16 +196,7 @@ public final class Radix
 		InMemorySystemInfoManager infoStateRunner = globalInjector.getInjector().getInstance(InMemorySystemInfoManager.class);
 		infoStateRunner.start();
 
-
-		// TODO: Move this to a better place
-		CommittedAtomsStore engineStore = globalInjector.getInjector().getInstance(CommittedAtomsStore.class);
-		CommittedAtom genesisAtom = globalInjector.getInjector().getInstance(CommittedAtom.class);
-		if (engineStore.getCommittedAtoms(genesisAtom.getVertexMetadata().getStateVersion() - 1, 1).isEmpty()) {
-			SyncedEpochExecutor syncedEpochExecutor = globalInjector.getInjector().getInstance(SyncedEpochExecutor.class);
-			syncedEpochExecutor.execute(genesisAtom);
-		}
-
-		final ConsensusRunner bft = globalInjector.getInjector().getInstance(ConsensusRunner.class);
+		final ConsensusRunner consensusRunner = globalInjector.getInjector().getInstance(ConsensusRunner.class);
 		// start API services
 		SubmissionControl submissionControl = globalInjector.getInjector().getInstance(SubmissionControl.class);
 		AtomToBinaryConverter atomToBinaryConverter = globalInjector.getInjector().getInstance(AtomToBinaryConverter.class);
@@ -216,7 +207,7 @@ public final class Radix
 			infoStateRunner,
 			submissionErrorsRx,
 			ledgerRx,
-			bft,
+			consensusRunner,
 			store,
 			submissionControl,
 			atomToBinaryConverter,
@@ -229,7 +220,7 @@ public final class Radix
 		httpServer.start(properties);
 
 		if (properties.get("consensus.start_on_boot", true)) {
-			bft.start();
+			consensusRunner.start();
 			log.info("Node '{}' started successfully", localSystem.getNID());
 		} else {
 			log.info("Node '{}' ready, waiting for start signal", localSystem.getNID());

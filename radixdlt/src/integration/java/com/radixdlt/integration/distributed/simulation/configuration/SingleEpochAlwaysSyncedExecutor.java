@@ -67,7 +67,11 @@ public final class SingleEpochAlwaysSyncedExecutor implements SimulatedSyncedExe
 
 	@Override
 	public Observable<EpochChange> epochChanges() {
-		return Observable.just(new EpochChange(ancestor, validatorSet))
-			.concatWith(Observable.never());
+		return Observable.never();
+	}
+
+	@Override
+	public BFTValidatorSet initialValidatorSet() {
+		return validatorSet;
 	}
 }

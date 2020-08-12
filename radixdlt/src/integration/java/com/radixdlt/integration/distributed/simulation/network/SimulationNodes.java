@@ -22,24 +22,19 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.radixdlt.ConsensusModule;
 import com.radixdlt.SystemInfoMessagesModule;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.integration.distributed.simulation.NullCryptoModule;
 import com.radixdlt.integration.distributed.simulation.SimulationSyncerAndNetworkModule;
 import com.radixdlt.systeminfo.InfoRx;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.ConsensusRunner;
-import com.radixdlt.consensus.ConsensusRunner.Event;
-import com.radixdlt.consensus.ConsensusRunner.EventType;
 import com.radixdlt.consensus.EpochChangeRx;
 import com.radixdlt.consensus.SyncedExecutor;
 
 import com.radixdlt.middleware2.CommittedAtom;
-import io.reactivex.rxjava3.core.Completable;
-import io.reactivex.rxjava3.core.Single;
-import io.reactivex.rxjava3.subjects.CompletableSubject;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 /**
  * A multi-node bft test network where the network and latencies of each message is simulated.
@@ -53,6 +48,7 @@ public class SimulationNodes {
 	private final Supplier<SimulatedSyncedExecutor> stateComputerSupplier;
 
 	public interface SimulatedSyncedExecutor extends SyncedExecutor<CommittedAtom>, EpochChangeRx {
+		BFTValidatorSet initialValidatorSet();
 	}
 
 	/**
@@ -94,23 +90,10 @@ public class SimulationNodes {
 		SimulationNetwork getUnderlyingNetwork();
 	}
 
-	public Single<RunningNetwork> start() {
-		// Send start event once all nodes have reached real epoch event
-		final CompletableSubject completableSubject = CompletableSubject.create();
-		List<Completable> startedList = this.nodeInstances.stream()
-			.map(i -> i.getInstance(ConsensusRunner.class))
-			.map(ConsensusRunner::events)
-			.map(o -> o.map(Event::getEventType)
-				.filter(e -> e.equals(EventType.EPOCH_CHANGE))
-				.firstOrError()
-				.ignoreElement()
-			).collect(Collectors.toList());
-
-		Completable.merge(startedList).subscribe(completableSubject::onComplete);
+	public RunningNetwork start() {
 
 		this.nodeInstances.forEach(i -> i.getInstance(ConsensusRunner.class).start());
-
-		return completableSubject.toSingle(() -> new RunningNetwork() {
+		return new RunningNetwork() {
 			@Override
 			public List<BFTNode> getNodes() {
 				return nodes;
@@ -126,7 +109,7 @@ public class SimulationNodes {
 			public SimulationNetwork getUnderlyingNetwork() {
 				return underlyingNetwork;
 			}
-		});
+		};
 	}
 
 	public void stop() {
