@@ -29,7 +29,6 @@ import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.identifiers.RadixAddress;
 
 import java.util.Comparator;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
