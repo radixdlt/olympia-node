@@ -47,10 +47,11 @@ public class StakingTest {
 		result1.toObservable().subscribe(System.out::println);
 		result1.blockUntilComplete();
 
+		// TODO @Incomplete: re-implement or remove staked token delegation
 		// Redelegate staked tokens
-		Result result2 = api.redelegateStakedTokens(BigDecimal.valueOf(5000.0), token, address1, address2);
-		result2.toObservable().subscribe(System.out::println);
-		result2.blockUntilComplete();
+//		Result result2 = api.redelegateStakedTokens(BigDecimal.valueOf(5000.0), token, address1, address2);
+//		result2.toObservable().subscribe(System.out::println);
+//		result2.blockUntilComplete();
 
 		// Unstake tokens
 		Result result3 = api.unstakeTokens(BigDecimal.valueOf(5000.0), token, address1);
