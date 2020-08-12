@@ -23,6 +23,7 @@ import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerId2;
 
+import java.util.Objects;
 import java.util.Set;
 
 @SerializerId2("radix.particles.registered_validator")
@@ -59,6 +60,16 @@ public class RegisteredValidatorParticle extends Particle {
 		this.nonce = nonce;
 	}
 
+	public boolean allowsDelegator(RadixAddress delegator) {
+		return this.allowedDelegators.isEmpty() || this.allowedDelegators.contains(delegator);
+	}
+
+	public boolean equalsIgnoringNonce(RegisteredValidatorParticle other) {
+		return Objects.equals(address, other.address) &&
+			Objects.equals(allowedDelegators, other.allowedDelegators) &&
+			Objects.equals(url, other.url);
+	}
+
 	public RadixAddress getAddress() {
 		return address;
 	}
@@ -77,6 +88,9 @@ public class RegisteredValidatorParticle extends Particle {
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s]", getClass().getSimpleName(), getAddress());
+		return String.format(
+			"%s[%s, %s, %s]",
+			getClass().getSimpleName(), getAddress(), getUrl(), getAllowedDelegators()
+		);
 	}
 }
