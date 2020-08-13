@@ -19,7 +19,7 @@ plugins {
     id 'nebula.ospackage' version '5.3.5'
     id 'com.github.johnrengelman.shadow' version '2.0.3'
     id 'me.champeau.gradle.jmh' version '0.4.7'
-    id 'org.sonarqube' version '3.0'
+    id 'org.sonarqube' version '2.7.1'
     id 'com.adarshr.test-logger' version '1.7.1'
     id 'com.palantir.git-version' version '0.12.3'
     id 'com.moowork.node' version '1.2.0'

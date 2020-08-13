@@ -122,13 +122,14 @@ public final class EpochManager {
 	private final EpochInfoSender epochInfoSender;
 
 	private VertexMetadata lastConstructed = null;
-	private VertexMetadata currentAncestor;
-	private VertexStoreEventProcessor vertexStoreEventProcessor = EmptyVertexStoreEventProcessor.INSTANCE;
-	private BFTEventProcessor bftEventProcessor = EmptyBFTEventProcessor.INSTANCE;
+	private EpochChange currentEpoch;
+	private VertexStoreEventProcessor vertexStoreEventProcessor;
+	private BFTEventProcessor bftEventProcessor;
 	private int numQueuedConsensusEvents = 0;
 
 	public EpochManager(
 		BFTNode self,
+		EpochChange initialEpoch,
 		SyncedExecutor<CommittedAtom> syncedExecutor,
 		SyncEpochsRPCSender epochsRPCSender,
 		LocalTimeoutSender localTimeoutSender,
@@ -139,6 +140,7 @@ public final class EpochManager {
 		SystemCounters counters,
 		EpochInfoSender epochInfoSender
 	) {
+		this.currentEpoch = Objects.requireNonNull(initialEpoch);
 		this.self = Objects.requireNonNull(self);
 		this.syncedExecutor = Objects.requireNonNull(syncedExecutor);
 		this.epochsRPCSender = Objects.requireNonNull(epochsRPCSender);
@@ -152,49 +154,32 @@ public final class EpochManager {
 		this.queuedEvents = new HashMap<>();
 	}
 
-	private long currentEpoch() {
-		return (this.currentAncestor == null) ? 0 : this.currentAncestor.getEpoch() + 1;
-	}
-
-	public void processEpochChange(EpochChange epochChange) {
-		BFTValidatorSet validatorSet = epochChange.getValidatorSet();
-		VertexMetadata ancestorMetadata = epochChange.getAncestor();
-		Vertex genesisVertex = Vertex.createGenesis(ancestorMetadata);
-		final long nextEpoch = genesisVertex.getEpoch();
-
-		// Sanity check
-		if (nextEpoch <= this.currentEpoch()) {
-			throw new IllegalStateException("Epoch change has already occurred: " + epochChange);
-		}
-
-		// If constructed the end of the previous epoch then broadcast new epoch to new validator set
-		// TODO: Move this into when lastConstructed is set
-		if (lastConstructed != null && lastConstructed.getEpoch() == ancestorMetadata.getEpoch()) {
-			log.info("{}: EPOCH_CHANGE: broadcasting next epoch", this.self::getSimpleName);
-			for (BFTValidator validator : validatorSet.getValidators()) {
-				if (!validator.getNode().equals(self)) {
-					epochsRPCSender.sendGetEpochResponse(validator.getNode(), ancestorMetadata);
-				}
-			}
-		}
-
-		this.currentAncestor = ancestorMetadata;
+	private void updateEpochState() {
+		BFTValidatorSet validatorSet = this.currentEpoch.getValidatorSet();
+		VertexMetadata ancestorMetadata = this.currentEpoch.getAncestor();
 
 		final BFTEventProcessor bftEventProcessor;
 		final VertexStoreEventProcessor vertexStoreEventProcessor;
 
 		if (!validatorSet.containsNode(self)) {
-			logEpochChange(epochChange, "excluded from");
+			logEpochChange(this.currentEpoch, "excluded from");
 			bftEventProcessor =  EmptyBFTEventProcessor.INSTANCE;
 			vertexStoreEventProcessor = EmptyVertexStoreEventProcessor.INSTANCE;
 		} else {
-			logEpochChange(epochChange, "included in");
+			logEpochChange(this.currentEpoch, "included in");
+
+			Vertex genesisVertex = Vertex.createGenesis(ancestorMetadata);
+			final long nextEpoch = genesisVertex.getEpoch();
+
 			ProposerElection proposerElection = proposerElectionFactory.create(validatorSet);
 			TimeoutSender sender = (view, ms) -> localTimeoutSender.scheduleTimeout(new LocalTimeout(nextEpoch, view), ms);
 			Pacemaker pacemaker = pacemakerFactory.create(sender);
+
+			// TODO: Recover VertexStore
 			QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(genesisVertex);
 			VertexStore vertexStore = vertexStoreFactory.create(genesisVertex, genesisQC, syncedExecutor);
 			vertexStoreEventProcessor = vertexStore;
+
 			BFTInfoSender infoSender = new BFTInfoSender() {
 				@Override
 				public void sendCurrentView(View view) {
@@ -221,7 +206,41 @@ public final class EpochManager {
 		// Update processors
 		this.bftEventProcessor = bftEventProcessor;
 		this.vertexStoreEventProcessor = vertexStoreEventProcessor;
+	}
 
+	public void start() {
+		this.updateEpochState();
+		this.bftEventProcessor.start();
+	}
+
+	private long currentEpoch() {
+		return this.currentEpoch.getAncestor().getEpoch() + 1;
+	}
+
+	public void processEpochChange(EpochChange epochChange) {
+		BFTValidatorSet validatorSet = epochChange.getValidatorSet();
+		VertexMetadata ancestorMetadata = epochChange.getAncestor();
+		Vertex genesisVertex = Vertex.createGenesis(ancestorMetadata);
+		final long nextEpoch = genesisVertex.getEpoch();
+
+		// Sanity check
+		if (nextEpoch <= this.currentEpoch()) {
+			throw new IllegalStateException("Epoch change has already occurred: " + epochChange);
+		}
+
+		// If constructed the end of the previous epoch then broadcast new epoch to new validator set
+		// TODO: Move this into when lastConstructed is set
+		if (lastConstructed != null && lastConstructed.getEpoch() == ancestorMetadata.getEpoch()) {
+			log.info("{}: EPOCH_CHANGE: broadcasting next epoch", this.self::getSimpleName);
+			for (BFTValidator validator : validatorSet.getValidators()) {
+				if (!validator.getNode().equals(self)) {
+					epochsRPCSender.sendGetEpochResponse(validator.getNode(), ancestorMetadata);
+				}
+			}
+		}
+
+		this.currentEpoch = epochChange;
+		this.updateEpochState();
 		this.bftEventProcessor.start();
 
 		// Execute any queued up consensus events
@@ -276,9 +295,13 @@ public final class EpochManager {
 	public void processGetEpochRequest(GetEpochRequest request) {
 		log.trace("{}: GET_EPOCH_REQUEST: {}", this.self::getSimpleName, () -> request);
 
-		if (this.currentEpoch() == request.getEpoch()) {
-			epochsRPCSender.sendGetEpochResponse(request.getAuthor(), this.currentAncestor);
+		if (this.currentEpoch() > request.getEpoch()) {
+			epochsRPCSender.sendGetEpochResponse(request.getAuthor(), this.currentEpoch.getAncestor());
 		} else {
+			log.warn("{}: GET_EPOCH_REQUEST: {} but currently on epoch: {}",
+				this.self::getSimpleName, () -> request, this::currentEpoch
+			);
+
 			// TODO: Send better error message back
 			epochsRPCSender.sendGetEpochResponse(request.getAuthor(), null);
 		}
@@ -326,7 +349,7 @@ public final class EpochManager {
 			counters.set(CounterType.EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS, numQueuedConsensusEvents);
 
 			// Send request for higher epoch proof
-			epochsRPCSender.sendGetEpochRequest(consensusEvent.getAuthor(), this.currentEpoch() + 1);
+			epochsRPCSender.sendGetEpochRequest(consensusEvent.getAuthor(), this.currentEpoch());
 			return;
 		}
 

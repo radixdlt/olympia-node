@@ -40,6 +40,7 @@ import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRPCSender;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
+import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.epoch.EpochManager.EpochInfoSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
@@ -89,6 +90,7 @@ public class ConsensusModuleTest {
 			bind(Hasher.class).toInstance(mock(Hasher.class));
 			bind(HashVerifier.class).toInstance(mock(HashVerifier.class));
 			bind(HashSigner.class).toInstance(mock(HashSigner.class));
+			bind(EpochChange.class).toInstance(mock(EpochChange.class));
 			bind(BFTNode.class).annotatedWith(Names.named("self")).toInstance(mock(BFTNode.class));
 		}
 	}

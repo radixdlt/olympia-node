@@ -24,12 +24,9 @@ import com.radixdlt.systeminfo.InMemorySystemInfoManager;
 import com.radixdlt.api.LedgerRx;
 import com.radixdlt.api.SubmissionErrorsRx;
 import com.radixdlt.consensus.ConsensusRunner;
-import com.radixdlt.syncer.SyncedEpochExecutor;
 import com.radixdlt.mempool.MempoolReceiver;
 import com.radixdlt.mempool.SubmissionControl;
-import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
-import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.PeerManager;
 import com.radixdlt.properties.RuntimeProperties;
@@ -196,16 +193,7 @@ public final class Radix
 		InMemorySystemInfoManager infoStateRunner = globalInjector.getInjector().getInstance(InMemorySystemInfoManager.class);
 		infoStateRunner.start();
 
-
-		// TODO: Move this to a better place
-		CommittedAtomsStore engineStore = globalInjector.getInjector().getInstance(CommittedAtomsStore.class);
-		CommittedAtom genesisAtom = globalInjector.getInjector().getInstance(CommittedAtom.class);
-		if (engineStore.getCommittedAtoms(genesisAtom.getVertexMetadata().getStateVersion() - 1, 1).isEmpty()) {
-			SyncedEpochExecutor syncedEpochExecutor = globalInjector.getInjector().getInstance(SyncedEpochExecutor.class);
-			syncedEpochExecutor.execute(genesisAtom);
-		}
-
-		final ConsensusRunner bft = globalInjector.getInjector().getInstance(ConsensusRunner.class);
+		final ConsensusRunner consensusRunner = globalInjector.getInjector().getInstance(ConsensusRunner.class);
 		// start API services
 		SubmissionControl submissionControl = globalInjector.getInjector().getInstance(SubmissionControl.class);
 		AtomToBinaryConverter atomToBinaryConverter = globalInjector.getInjector().getInstance(AtomToBinaryConverter.class);
@@ -216,7 +204,7 @@ public final class Radix
 			infoStateRunner,
 			submissionErrorsRx,
 			ledgerRx,
-			bft,
+			consensusRunner,
 			store,
 			submissionControl,
 			atomToBinaryConverter,
@@ -229,7 +217,7 @@ public final class Radix
 		httpServer.start(properties);
 
 		if (properties.get("consensus.start_on_boot", true)) {
-			bft.start();
+			consensusRunner.start();
 			log.info("Node '{}' started successfully", localSystem.getNID());
 		} else {
 			log.info("Node '{}' ready, waiting for start signal", localSystem.getNID());

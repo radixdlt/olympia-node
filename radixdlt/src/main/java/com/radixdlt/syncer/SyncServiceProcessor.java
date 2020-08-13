@@ -20,7 +20,7 @@ package com.radixdlt.syncer;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.execution.RadixEngineExecutor;
+import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
@@ -61,7 +61,7 @@ public final class SyncServiceProcessor {
 
 	private static final Logger log = LogManager.getLogger();
 	private static final int MAX_REQUESTS_TO_SEND = 20;
-	private final RadixEngineExecutor executor;
+	private final RadixEngineStateComputer executor;
 	private final SyncedAtomSender syncedAtomSender;
 	private final int batchSize;
 	private final int maxAtomsQueueSize;
@@ -77,7 +77,7 @@ public final class SyncServiceProcessor {
 	private long currentVersion;
 
 	public SyncServiceProcessor(
-		RadixEngineExecutor executor,
+		RadixEngineStateComputer executor,
 		StateSyncNetwork stateSyncNetwork,
 		AddressBook addressBook,
 		SyncedAtomSender syncedAtomSender,
