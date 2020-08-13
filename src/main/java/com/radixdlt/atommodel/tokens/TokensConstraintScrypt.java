@@ -21,6 +21,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.reflect.TypeToken;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
+import com.radixdlt.atomos.ConstraintRoutine;
 import com.radixdlt.atomos.ParticleDefinition;
 import com.radixdlt.atomos.RoutineCalls;
 import com.radixdlt.atomos.SysCalls;
@@ -38,6 +39,7 @@ import com.radixdlt.constraintmachine.WitnessValidator.WitnessValidatorResult;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.utils.UInt256;
+import com.radixdlt.utils.UIntUtils;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -190,10 +192,46 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 		));
 	}
 
-	private static final class DelegateData implements UsedData {
+	public static final class StakedAmount implements UsedData {
+		private final UInt256 amount;
+
+		StakedAmount(UInt256 usedAmount) {
+			this.amount = Objects.requireNonNull(usedAmount);
+		}
+
+		public UInt256 getAmount() {
+			return this.amount;
+		}
+
+		@Override
+		public TypeToken<? extends UsedData> getTypeToken() {
+			return TypeToken.of(StakedAmount.class);
+		}
+
+		@Override
+		public boolean equals(Object o) {
+			if (!(o instanceof StakedAmount)) {
+				return false;
+			}
+			StakedAmount that = (StakedAmount) o;
+			return Objects.equals(amount, that.amount);
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(amount);
+		}
+
+		@Override
+		public String toString() {
+			return String.valueOf(this.amount);
+		}
+	}
+
+	private static final class ProvidedDelegate implements UsedData {
 		private final RegisteredValidatorParticle delegate;
 
-		private DelegateData(RegisteredValidatorParticle delegate) {
+		private ProvidedDelegate(RegisteredValidatorParticle delegate) {
 			this.delegate = delegate;
 		}
 
@@ -203,7 +241,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 
 		@Override
 		public TypeToken<? extends UsedData> getTypeToken() {
-			return TypeToken.of(DelegateData.class);
+			return TypeToken.of(ProvidedDelegate.class);
 		}
 
 		@Override
@@ -214,7 +252,7 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			if (o == null || getClass() != o.getClass()) {
 				return false;
 			}
-			DelegateData delegate1 = (DelegateData) o;
+			ProvidedDelegate delegate1 = (ProvidedDelegate) o;
 			return Objects.equals(delegate, delegate1.delegate);
 		}
 
@@ -224,26 +262,95 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 		}
 	}
 
-	private static final class CreateStakingTransitionRoutine extends CreateFungibleTransitionRoutine<TransferrableTokensParticle, StakedTokensParticle> {
-		public CreateStakingTransitionRoutine(BiFunction<TransferrableTokensParticle, StakedTokensParticle, Result> transition,
-		                                      WitnessValidator<TransferrableTokensParticle> inputWitnessValidator) {
-			super(
-				TransferrableTokensParticle.class,
-				StakedTokensParticle.class,
-				TransferrableTokensParticle::getAmount,
-				StakedTokensParticle::getAmount,
-				transition,
-				inputWitnessValidator
-			);
+	private static final class CreateStakingTransitionRoutine implements ConstraintRoutine {
+		private final BiFunction<TransferrableTokensParticle, StakedTokensParticle, Result> transition;
+		private final WitnessValidator<TransferrableTokensParticle> inputWitnessValidator;
+		private final WitnessValidator<StakedTokensParticle> outputWitnessValidator;
+
+		private CreateStakingTransitionRoutine(
+			BiFunction<TransferrableTokensParticle, StakedTokensParticle, Result> transition,
+			WitnessValidator<TransferrableTokensParticle> inputWitnessValidator,
+			WitnessValidator<StakedTokensParticle> outputWitnessValidator
+		) {
+			this.transition = Objects.requireNonNull(transition);
+			this.inputWitnessValidator = Objects.requireNonNull(inputWitnessValidator);
+			this.outputWitnessValidator = Objects.requireNonNull(outputWitnessValidator);
 		}
 
 		@Override
 		public void main(RoutineCalls calls) {
+			// The staking transition works as follows (in order)
+			// ---
+			// 1x
+			// RegisteredValidator(nonce), void, void
+			// -> RegisteredValidator(nonce+1), ProvidedDelegate, none
+			// 1x
+			// RegisteredValidator(nonce+1), ProvidedDelegate, void
+			// -> StakedTokens(amount), void, StakedAmount(amount)
+			// nx
+			// TransferrableTokens(transferredAmount),
+			// -> StakedTokens(amount), void,  StakedAmount(amount-transferredAmount)
+			// ---
+			// Format:
+			// Particle(props), input, output
+			// -> Particle(props), next input, next output
+
+			// 1x
+			// RegisteredValidator(nonce), void, void
+			// -> RegisteredValidator(nonce+1), ProvidedDelegate, none
 			calls.createTransition(
-				new TransitionToken<>(getInputClass(), TypeToken.of(DelegateData.class), getOutputClass(), TypeToken.of(VoidUsedData.class)),
-				new TransitionProcedure<TransferrableTokensParticle, DelegateData, StakedTokensParticle, VoidUsedData>() {
+				new TransitionToken<>(RegisteredValidatorParticle.class, TypeToken.of(VoidUsedData.class), RegisteredValidatorParticle.class, TypeToken.of(VoidUsedData.class)),
+				new TransitionProcedure<RegisteredValidatorParticle, VoidUsedData, RegisteredValidatorParticle, VoidUsedData>() {
 					@Override
-					public Result precondition(TransferrableTokensParticle inputParticle, DelegateData inputUsed, StakedTokensParticle outputParticle, VoidUsedData outputUsed) {
+					public Result precondition(RegisteredValidatorParticle inputParticle, VoidUsedData inputUsed, RegisteredValidatorParticle outputParticle, VoidUsedData outputUsed) {
+						// check that the registered validator particle is unmodified
+						if (!inputParticle.equalsIgnoringNonce(outputParticle)) {
+							return Result.error(String.format(
+								"input validator and output validator do not match: %s != %s",
+								inputParticle, outputParticle
+							));
+						}
+						// .. and that the nonce has increased by exactly one
+						if ((inputParticle.getNonce() + 1) != outputParticle.getNonce()) {
+							return Result.error(String.format(
+								"validator nonce must increase by exactly one but: %d + 1 != %d",
+								inputParticle.getNonce(), outputParticle.getNonce()
+							));
+						}
+
+						return Result.success();
+					}
+
+					@Override
+					public UsedCompute<RegisteredValidatorParticle, VoidUsedData, RegisteredValidatorParticle, VoidUsedData> inputUsedCompute() {
+						return (input, inputUsed, output, outputUsed) -> Optional.of(new ProvidedDelegate(output));
+					}
+
+					@Override
+					public UsedCompute<RegisteredValidatorParticle, VoidUsedData, RegisteredValidatorParticle, VoidUsedData> outputUsedCompute() {
+						return (input, inputUsed, output, outputUsed) -> Optional.empty();
+					}
+
+					@Override
+					public WitnessValidator<RegisteredValidatorParticle> inputWitnessValidator() {
+						return (o, witnessData) -> WitnessValidatorResult.success();
+					}
+
+					@Override
+					public WitnessValidator<RegisteredValidatorParticle> outputWitnessValidator() {
+						return (o, witnessData) -> WitnessValidatorResult.success();
+					}
+				}
+			);
+
+			// 1x
+			// RegisteredValidator(nonce+1), ProvidedDelegate, void
+			// -> StakedTokens(amount), void, StakedAmount(amount)
+			calls.createTransition(
+				new TransitionToken<>(RegisteredValidatorParticle.class, TypeToken.of(ProvidedDelegate.class), StakedTokensParticle.class, TypeToken.of(VoidUsedData.class)),
+				new TransitionProcedure<RegisteredValidatorParticle, ProvidedDelegate, StakedTokensParticle, VoidUsedData>() {
+					@Override
+					public Result precondition(RegisteredValidatorParticle inputParticle, ProvidedDelegate inputUsed, StakedTokensParticle outputParticle, VoidUsedData outputUsed) {
 						// check that we're talking about the same validator
 						if (!inputParticle.getAddress().equals(inputUsed.getDelegate().getAddress())) {
 							return Result.error(String.format(
@@ -259,100 +366,81 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 								inputUsed.getDelegate(), inputParticle.getAddress())
 							);
 						}
-						return null;
+
+						return Result.success();
 					}
 
 					@Override
-					public UsedCompute<TransferrableTokensParticle, DelegateData, StakedTokensParticle, VoidUsedData> inputUsedCompute() {
+					public UsedCompute<RegisteredValidatorParticle, ProvidedDelegate, StakedTokensParticle, VoidUsedData> inputUsedCompute() {
 						return (inputParticle, inputUsed, outputParticle, outputUsed) -> Optional.empty();
 					}
 
 					@Override
-					public UsedCompute<TransferrableTokensParticle, DelegateData, StakedTokensParticle, VoidUsedData> outputUsedCompute() {
-						return (inputParticle, inputUsed, outputParticle, outputUsed) -> Optional.empty();
+					public UsedCompute<RegisteredValidatorParticle, ProvidedDelegate, StakedTokensParticle, VoidUsedData> outputUsedCompute() {
+						return (inputParticle, inputUsed, outputParticle, outputUsed)
+							-> Optional.of(new StakedAmount(outputParticle.getAmount()));
 					}
 
 					@Override
-					public WitnessValidator<TransferrableTokensParticle> inputWitnessValidator() {
-						return getInputWitnessValidator();
+					public WitnessValidator<RegisteredValidatorParticle> inputWitnessValidator() {
+						return (p, witnessData) -> WitnessValidatorResult.success();
 					}
 
 					@Override
 					public WitnessValidator<StakedTokensParticle> outputWitnessValidator() {
-						return (o, witnessData) -> WitnessValidatorResult.success();
+						return outputWitnessValidator;
 					}
 				}
 			);
 
-//			calls.createTransition(
-//				new TransitionToken<>(getInputClass(), TypeToken.of(UsedAmount.class), getOutputClass(), TypeToken.of(VoidUsedData.class)),
-//				new FungibleTransitionProcedure<UsedAmount, VoidUsedData>(
-//					UsedAmount::getUsedAmount,
-//					u -> UInt256.ZERO,
-//					(inputParticle, inputUsed, outputParticle, outputUsed) ->
-//						Optional.of(new Delegate(outputParticle.getAmount(), inputParticle.getAddress(), outputParticle.getDelegateAddress()))
-//				)
-//			);
-//
-//			calls.createTransition(
-//				new TransitionToken<>(getInputClass(), TypeToken.of(VoidUsedData.class), getOutputClass(), TypeToken.of(UsedAmount.class)),
-//				new FungibleTransitionProcedure<VoidUsedData, UsedAmount>(
-//					u -> UInt256.ZERO,
-//					UsedAmount::getUsedAmount,
-//					(inputParticle, inputUsed, outputParticle, outputUsed) ->
-//						Optional.of(new Delegate(outputParticle.getAmount(), inputParticle.getAddress(), outputParticle.getDelegateAddress()))
-//				)
-//			);
+			// nx
+			// TransferrableTokens(transferredAmount),
+			// -> StakedTokens(amount), void,  StakedAmount(amount-transferredAmount)
+			calls.createTransition(
+				new TransitionToken<>(TransferrableTokensParticle.class, TypeToken.of(VoidUsedData.class), StakedTokensParticle.class, TypeToken.of(StakedAmount.class)),
+				new TransitionProcedure<TransferrableTokensParticle, VoidUsedData, StakedTokensParticle, StakedAmount>() {
+					@Override
+					public Result precondition(TransferrableTokensParticle inputParticle, VoidUsedData inputUsed, StakedTokensParticle outputParticle, StakedAmount outputUsed) {
+						return transition.apply(inputParticle, outputParticle);
+					}
+
+					@Override
+					public UsedCompute<TransferrableTokensParticle, VoidUsedData, StakedTokensParticle, StakedAmount> inputUsedCompute() {
+						return (inputParticle, inputUsed, outputParticle, outputUsed) -> Optional.empty();
+					}
+
+					@Override
+					public UsedCompute<TransferrableTokensParticle, VoidUsedData, StakedTokensParticle, StakedAmount> outputUsedCompute() {
+						return (inputParticle, inputUsed, outputParticle, outputUsed) -> {
+							final UInt256 inputAmount = inputParticle.getAmount();
+							final UInt256 outputAmount =
+								UIntUtils.subtractWithUnderflow(outputParticle.getAmount(), outputUsed.getAmount());
+							int compare = inputAmount.compareTo(outputAmount);
+							if (compare < 0) {
+								UInt256 alreadyStakedAmount = UIntUtils.addWithOverflow(outputUsed.getAmount(), inputAmount);
+								return Optional.of(new StakedAmount(alreadyStakedAmount));
+							} else {
+								return Optional.empty();
+							}
+						};
+					}
+
+					@Override
+					public WitnessValidator<TransferrableTokensParticle> inputWitnessValidator() {
+						return inputWitnessValidator;
+					}
+
+					@Override
+					public WitnessValidator<StakedTokensParticle> outputWitnessValidator() {
+						return outputWitnessValidator;
+					}
+				}
+			);
 		}
 	}
 
 	private void defineStaking(SysCalls os) {
-		// Staking companion transition checking against the corresponding validator registration
-		os.createTransition(
-			new TransitionToken<>(RegisteredValidatorParticle.class, TypeToken.of(VoidUsedData.class), RegisteredValidatorParticle.class, TypeToken.of(VoidUsedData.class)),
-			new TransitionProcedure<RegisteredValidatorParticle, VoidUsedData, RegisteredValidatorParticle, VoidUsedData>() {
-				@Override
-				public Result precondition(RegisteredValidatorParticle inputParticle, VoidUsedData inputUsed, RegisteredValidatorParticle outputParticle, VoidUsedData outputUsed) {
-					// check that the registered validator particle is unmodified
-					if (!inputParticle.equalsIgnoringNonce(outputParticle)) {
-						return Result.error(String.format(
-							"input validator and output validator do not match: %s != %s",
-							inputParticle, outputParticle
-						));
-					}
-					// .. and that the nonce has increased by exactly one
-					if ((inputParticle.getNonce() + 1) != outputParticle.getNonce()) {
-						return Result.error(String.format(
-							"validator nonce must increase by exactly one but: %d + 1 != %d",
-							inputParticle.getNonce(), outputParticle.getNonce()
-						));
-					}
-
-					return Result.success();
-				}
-
-				@Override
-				public UsedCompute<RegisteredValidatorParticle, VoidUsedData, RegisteredValidatorParticle, VoidUsedData> inputUsedCompute() {
-					return (input, inputUsed, output, outputUsed) -> Optional.empty();
-				}
-
-				@Override
-				public UsedCompute<RegisteredValidatorParticle, VoidUsedData, RegisteredValidatorParticle, VoidUsedData> outputUsedCompute() {
-					return (input, inputUsed, output, outputUsed) -> Optional.of(new DelegateData(output));
-				}
-
-				@Override
-				public WitnessValidator<RegisteredValidatorParticle> inputWitnessValidator() {
-					return (o, witnessData) -> WitnessValidatorResult.success();
-				}
-
-				@Override
-				public WitnessValidator<RegisteredValidatorParticle> outputWitnessValidator() {
-					return (o, witnessData) -> WitnessValidatorResult.success();
-				}
-			}
-		);
-		// Staking main transitions
+		// Staking
 		os.executeRoutine(new CreateStakingTransitionRoutine(
 			checkEquals(
 				TransferrableTokensParticle::getGranularity,
@@ -362,7 +450,8 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 				StakedTokensParticle::getTokenPermissions,
 				"Permissions not equal."
 			),
-			(in, meta) -> checkSignedBy(meta, in.getAddress())
+			(in, meta) -> checkSignedBy(meta, in.getAddress()),
+			(out, meta) -> checkSignedBy(meta, out.getAddress())
 		));
 
 		// Unstaking
