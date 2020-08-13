@@ -19,21 +19,16 @@ package com.radixdlt.integration.distributed.simulation.network;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Guice;
-import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.radixdlt.ConsensusModule;
 import com.radixdlt.SystemInfoMessagesModule;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.integration.distributed.simulation.MockedCryptoModule;
 import com.radixdlt.integration.distributed.simulation.SimulationNetworkModule;
 import com.radixdlt.systeminfo.InfoRx;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.ConsensusRunner;
-import com.radixdlt.consensus.EpochChangeRx;
-import com.radixdlt.consensus.SyncedExecutor;
 
-import com.radixdlt.middleware2.CommittedAtom;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -47,12 +42,7 @@ public class SimulationNodes {
 	private final ImmutableList<Injector> nodeInstances;
 	private final List<BFTNode> nodes;
 	private final boolean getVerticesRPCEnabled;
-
 	private final ImmutableList<Module> syncModules;
-
-	public interface SimulatedSyncedExecutor extends SyncedExecutor<CommittedAtom>, EpochChangeRx {
-		BFTValidatorSet initialValidatorSet();
-	}
 
 	/**
 	 * Create a BFT test network with an underlying simulated network.
