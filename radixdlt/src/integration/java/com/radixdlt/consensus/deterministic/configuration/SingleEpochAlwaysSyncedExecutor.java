@@ -17,19 +17,22 @@
 
 package com.radixdlt.consensus.deterministic.configuration;
 
-import com.radixdlt.consensus.SyncedStateComputer;
+import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.SyncedExecutor;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.middleware2.CommittedAtom;
-import java.util.List;
 
-public enum SingleEpochFailOnSyncStateComputer implements SyncedStateComputer<CommittedAtom> {
+/**
+ * A state computer which never changes epochs
+ */
+public enum SingleEpochAlwaysSyncedExecutor implements SyncedExecutor<CommittedAtom> {
 	INSTANCE;
 
 	@Override
-	public boolean syncTo(VertexMetadata vertexMetadata, List<BFTNode> target, Object opaque) {
-		throw new UnsupportedOperationException("Syncing not supported");
+	public boolean syncTo(VertexMetadata vertexMetadata, ImmutableList<BFTNode> target, Object opaque) {
+		return true;
 	}
 
 	@Override

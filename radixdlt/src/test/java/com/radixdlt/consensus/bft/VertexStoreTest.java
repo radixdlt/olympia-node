@@ -35,7 +35,7 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRPCSender;
-import com.radixdlt.consensus.SyncedStateComputer;
+import com.radixdlt.consensus.SyncedExecutor;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
@@ -63,7 +63,7 @@ public class VertexStoreTest {
 	private VertexMetadata genesisVertexMetadata;
 	private QuorumCertificate rootQC;
 	private VertexStore vertexStore;
-	private SyncedStateComputer<CommittedAtom> syncedStateComputer;
+	private SyncedExecutor<CommittedAtom> syncedExecutor;
 	private VertexStoreEventSender vertexStoreEventSender;
 	private SyncVerticesRPCSender syncVerticesRPCSender;
 	private SyncedVertexSender syncedVertexSender;
@@ -76,17 +76,15 @@ public class VertexStoreTest {
 		VoteData voteData = new VoteData(genesisVertexMetadata, genesisVertexMetadata, genesisVertexMetadata);
 		this.rootQC = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 		// No type check issues with mocking generic here
-		@SuppressWarnings("unchecked")
-		SyncedStateComputer<CommittedAtom> ssc = mock(SyncedStateComputer.class);
-		this.syncedStateComputer = ssc;
+		@SuppressWarnings("unchecked") SyncedExecutor<CommittedAtom> ssc = mock(SyncedExecutor.class);
+		this.syncedExecutor = ssc;
 		this.syncVerticesRPCSender = mock(SyncVerticesRPCSender.class);
 		this.vertexStoreEventSender = mock(VertexStoreEventSender.class);
 		this.counters = mock(SystemCounters.class);
 		this.syncedVertexSender = mock(SyncedVertexSender.class);
 		this.vertexStore = new VertexStore(
 			genesisVertex,
-			rootQC,
-			syncedStateComputer,
+			rootQC, syncedExecutor,
 			syncVerticesRPCSender,
 			syncedVertexSender,
 			vertexStoreEventSender,
@@ -131,8 +129,7 @@ public class VertexStoreTest {
 		assertThatThrownBy(() -> {
 			VertexStore vs = new VertexStore(
 				genesisVertex,
-				badRootQC,
-				syncedStateComputer,
+				badRootQC, syncedExecutor,
 				syncVerticesRPCSender,
 				syncedVertexSender,
 				vertexStoreEventSender,
@@ -148,8 +145,7 @@ public class VertexStoreTest {
 		this.vertexStore = new VertexStore(
 			genesisVertex,
 			rootQC,
-			Collections.singletonList(nextVertex),
-			syncedStateComputer,
+			Collections.singletonList(nextVertex), syncedExecutor,
 			syncVerticesRPCSender,
 			syncedVertexSender,
 			vertexStoreEventSender,
@@ -165,8 +161,7 @@ public class VertexStoreTest {
 			new VertexStore(
 				genesisVertex,
 				rootQC,
-				Collections.singletonList(this.nextVertex.get()),
-				syncedStateComputer,
+				Collections.singletonList(this.nextVertex.get()), syncedExecutor,
 				syncVerticesRPCSender,
 				syncedVertexSender,
 				vertexStoreEventSender,
@@ -233,8 +228,7 @@ public class VertexStoreTest {
 			new VertexStore(
 				genesisVertex,
 				rootQC,
-				Arrays.asList(vertex1, vertex2, vertex3, vertex4, vertex5),
-				syncedStateComputer,
+				Arrays.asList(vertex1, vertex2, vertex3, vertex4, vertex5), syncedExecutor,
 				syncVerticesRPCSender,
 				syncedVertexSender,
 				vertexStoreEventSender,
@@ -256,7 +250,7 @@ public class VertexStoreTest {
 		vertexStore.insertVertex(nextVertex);
 
 		verify(vertexStoreEventSender, never()).sendCommittedVertex(any());
-		verify(syncedStateComputer, times(0)).execute(any()); // not stored
+		verify(syncedExecutor, times(0)).execute(any()); // not stored
 	}
 
 	@Test
@@ -271,7 +265,7 @@ public class VertexStoreTest {
 
 		verify(vertexStoreEventSender, times(1))
 			.sendCommittedVertex(eq(nextVertex));
-		verify(syncedStateComputer, times(1))
+		verify(syncedExecutor, times(1))
 			.execute(argThat(a -> a.getClientAtom().equals(clientAtom))); // next atom stored
 	}
 
@@ -376,8 +370,7 @@ public class VertexStoreTest {
 			new VertexStore(
 				genesisVertex,
 				rootQC,
-				Arrays.asList(vertex1, vertex2),
-				syncedStateComputer,
+				Arrays.asList(vertex1, vertex2), syncedExecutor,
 				syncVerticesRPCSender,
 				syncedVertexSender,
 				vertexStoreEventSender,
@@ -403,8 +396,7 @@ public class VertexStoreTest {
 			new VertexStore(
 				genesisVertex,
 				rootQC,
-				Arrays.asList(vertex1, vertex2, vertex3, vertex4),
-				syncedStateComputer,
+				Arrays.asList(vertex1, vertex2, vertex3, vertex4), syncedExecutor,
 				syncVerticesRPCSender,
 				syncedVertexSender,
 				vertexStoreEventSender,
@@ -430,8 +422,7 @@ public class VertexStoreTest {
 			new VertexStore(
 				genesisVertex,
 				rootQC,
-				Arrays.asList(vertex1, vertex2, vertex3, vertex4),
-				syncedStateComputer,
+				Arrays.asList(vertex1, vertex2, vertex3, vertex4), syncedExecutor,
 				syncVerticesRPCSender,
 				syncedVertexSender,
 				vertexStoreEventSender,
@@ -460,8 +451,7 @@ public class VertexStoreTest {
 			new VertexStore(
 				genesisVertex,
 				rootQC,
-				Arrays.asList(vertex1, vertex2),
-				syncedStateComputer,
+				Arrays.asList(vertex1, vertex2), syncedExecutor,
 				syncVerticesRPCSender,
 				syncedVertexSender,
 				vertexStoreEventSender,
@@ -504,8 +494,7 @@ public class VertexStoreTest {
 			new VertexStore(
 				genesisVertex,
 				rootQC,
-				Arrays.asList(vertex1, vertex2, vertex3, vertex4),
-				syncedStateComputer,
+				Arrays.asList(vertex1, vertex2, vertex3, vertex4), syncedExecutor,
 				syncVerticesRPCSender,
 				syncedVertexSender,
 				vertexStoreEventSender,
@@ -529,7 +518,7 @@ public class VertexStoreTest {
 			vertexMetadataAtomicReference.set(invocation.getArgument(0));
 			stateOpaque.set(invocation.getArgument(2));
 			return false;
-		}).when(syncedStateComputer).syncTo(any(), any(), any());
+		}).when(syncedExecutor).syncTo(any(), any(), any());
 
 		vertexStore.syncToQC(vertex8.getQC(), vertex8.getQC(), mock(BFTNode.class));
 		GetVerticesResponse response = new GetVerticesResponse(vertex7.getId(), Arrays.asList(vertex7, vertex6, vertex5), rpcOpaque.get());

@@ -35,8 +35,8 @@ public class VoteSerializeTest extends SerializeObject<Vote> {
 		View view = View.of(1234567891L);
 		Hash id = Hash.random();
 
-		VertexMetadata vertexMetadata = new VertexMetadata(0, view, id, 1, false);
-		VertexMetadata parent = new VertexMetadata(0, View.of(1234567890L), Hash.random(), 0, false);
+		VertexMetadata vertexMetadata = new VertexMetadata(0, view, id, 1, false, Hash.ZERO_HASH);
+		VertexMetadata parent = new VertexMetadata(0, View.of(1234567890L), Hash.random(), 0, false, Hash.ZERO_HASH);
 		VoteData voteData = new VoteData(vertexMetadata, parent, null);
 		TimestampedVoteData timestampedVoteData = new TimestampedVoteData(voteData, 123456L);
 		BFTNode author = BFTNode.create(ECKeyPair.generateNew().getPublicKey());

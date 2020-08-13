@@ -22,7 +22,7 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 import com.radixdlt.consensus.HashVerifier;
-import com.radixdlt.consensus.SyncedStateComputer;
+import com.radixdlt.consensus.SyncedExecutor;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.bft.BFTBuilder;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
@@ -38,6 +38,7 @@ import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.epoch.EpochManager.EpochInfoSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.VertexSyncRx;
+import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.ProposerElectionFactory;
@@ -51,7 +52,7 @@ import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
 import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.consensus.liveness.PacemakerFactory;
 import com.radixdlt.consensus.liveness.PacemakerRx;
-import com.radixdlt.consensus.liveness.ScheduledLocalTimeoutSender;
+import com.radixdlt.utils.ScheduledSenderToRx;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.Hash;
@@ -76,9 +77,11 @@ public final class ConsensusModule extends AbstractModule {
 
 	@Override
 	protected void configure() {
+		ScheduledExecutorService ses = Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads("TimeoutSender"));
+		ScheduledSenderToRx<LocalTimeout> localTimeouts = new ScheduledSenderToRx<>(ses);
 		// Timed local messages
-		bind(PacemakerRx.class).to(ScheduledLocalTimeoutSender.class);
-		bind(LocalTimeoutSender.class).to(ScheduledLocalTimeoutSender.class);
+		bind(PacemakerRx.class).toInstance(localTimeouts::messages);
+		bind(LocalTimeoutSender.class).toInstance(localTimeouts::scheduleSend);
 
 		// Local messages
 		SenderToRx<Vertex, Hash> syncedVertices = new SenderToRx<>(Vertex::getId);
@@ -129,7 +132,7 @@ public final class ConsensusModule extends AbstractModule {
 	@Singleton
 	private EpochManager epochManager(
 		@Named("self") BFTNode self,
-		SyncedStateComputer<CommittedAtom> syncer,
+		SyncedExecutor<CommittedAtom> syncer,
 		BFTFactory bftFactory,
 		SyncEpochsRPCSender syncEpochsRPCSender,
 		LocalTimeoutSender scheduledTimeoutSender,
@@ -184,13 +187,6 @@ public final class ConsensusModule extends AbstractModule {
 			Comparator.comparing(v -> v.getNode().getKey().euid()),
 			ROTATING_WEIGHTED_LEADERS_CACHE_SIZE
 		);
-	}
-
-	@Provides
-	@Singleton
-	private ScheduledLocalTimeoutSender timeoutSender() {
-		ScheduledExecutorService ses = Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads("TimeoutSender"));
-		return new ScheduledLocalTimeoutSender(ses);
 	}
 
 	@Provides

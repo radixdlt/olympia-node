@@ -17,16 +17,16 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.consensus.SyncedStateComputer.CommittedInstruction;
+import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.SyncedExecutor.CommittedInstruction;
 import com.radixdlt.consensus.bft.BFTNode;
-import java.util.List;
 
 /**
  * A distributed computer which manages the computed state in a BFT.
  *
  * @param <T> the instruction type
  */
-public interface SyncedStateComputer<T extends CommittedInstruction> {
+public interface SyncedExecutor<T extends CommittedInstruction> {
 
 	/**
 	 * A state computer instruction which has been committed by the BFT
@@ -49,7 +49,7 @@ public interface SyncedStateComputer<T extends CommittedInstruction> {
 	 * message if this returns false
 	 * @return true if already synced, otherwise false
 	 */
-	boolean syncTo(VertexMetadata vertexMetadata, List<BFTNode> target, Object opaque);
+	boolean syncTo(VertexMetadata vertexMetadata, ImmutableList<BFTNode> target, Object opaque);
 
 	/**
 	 * Computes whether commit of this vertex will cause an epoch change.

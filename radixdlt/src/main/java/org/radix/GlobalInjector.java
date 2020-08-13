@@ -26,8 +26,12 @@ import com.google.inject.name.Names;
 import com.radixdlt.ConsensusModule;
 import com.radixdlt.CryptoModule;
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.SyncerMessagesModule;
-import com.radixdlt.SyncerModule;
+import com.radixdlt.ExecutionMessagesModule;
+import com.radixdlt.ExecutionModule;
+import com.radixdlt.SyncCommittedServiceModule;
+import com.radixdlt.SyncMempoolServiceModule;
+import com.radixdlt.SyncMessagesModule;
+import com.radixdlt.SyncExecutionModule;
 import com.radixdlt.SystemInfoMessagesModule;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.identifiers.RadixAddress;
@@ -82,15 +86,23 @@ public class GlobalInjector {
 		};
 
 		final int pacemakerTimeout = properties.get("consensus.pacemaker_timeout_millis", 5000);
+		final int fixedNodeCount = properties.get("consensus.fixed_node_count", 1);
+		final long viewsPerEpoch = properties.get("epochs.views_per_epoch", 100L);
 
 		injector = Guice.createInjector(
 			new CryptoModule(),
 			new ConsensusModule(pacemakerTimeout),
-			new SyncerModule(properties),
+			new SyncExecutionModule(),
+			new SyncCommittedServiceModule(),
+			new SyncMempoolServiceModule(),
+			new ExecutionModule(fixedNodeCount, viewsPerEpoch),
 			new NetworkModule(),
-			new SystemInfoMessagesModule(),
 			new SystemInfoModule(properties),
-			new SyncerMessagesModule(),
+
+			// Environment modules
+			new ExecutionMessagesModule(),
+			new SystemInfoMessagesModule(),
+			new SyncMessagesModule(),
 
 			// Low level network modules
 			new MessageCentralModule(properties),

@@ -37,12 +37,11 @@ public class CommittedAtomTest {
 		when(clientAtom.getCMInstruction()).thenReturn(mock(CMInstruction.class));
 		when(clientAtom.getPowFeeHash()).thenReturn(mock(Hash.class));
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
-		CommittedAtom committedAtom = new CommittedAtom(clientAtom, vertexMetadata, 1234567890L);
+		CommittedAtom committedAtom = new CommittedAtom(clientAtom, vertexMetadata);
 		assertThat(committedAtom.getClientAtom()).isEqualTo(clientAtom);
 		assertThat(committedAtom.getAID()).isEqualTo(clientAtom.getAID());
 		assertThat(committedAtom.getCMInstruction()).isEqualTo(clientAtom.getCMInstruction());
 		assertThat(committedAtom.getPowFeeHash()).isEqualTo(clientAtom.getPowFeeHash());
-		assertThat(committedAtom.getTimestamp()).isEqualTo(1234567890L);
 	}
 
 	@Test

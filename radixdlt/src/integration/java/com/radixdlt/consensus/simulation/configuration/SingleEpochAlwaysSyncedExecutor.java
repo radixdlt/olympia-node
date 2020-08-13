@@ -17,11 +17,12 @@
 
 package com.radixdlt.consensus.simulation.configuration;
 
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.simulation.network.SimulationNodes.SimulatedStateComputer;
+import com.radixdlt.consensus.simulation.network.SimulationNodes.SimulatedSyncedExecutor;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.middleware2.CommittedAtom;
@@ -33,11 +34,11 @@ import java.util.stream.Collectors;
 /**
  * A state computer which never changes epochs
  */
-public final class SingleEpochAlwaysSyncedStateComputer implements SimulatedStateComputer {
+public final class SingleEpochAlwaysSyncedExecutor implements SimulatedSyncedExecutor {
 	private final BFTValidatorSet validatorSet;
 	private final VertexMetadata ancestor;
 
-	public SingleEpochAlwaysSyncedStateComputer(VertexMetadata ancestor, List<BFTNode> nodes) {
+	public SingleEpochAlwaysSyncedExecutor(VertexMetadata ancestor, List<BFTNode> nodes) {
 		this.ancestor = ancestor;
 		this.validatorSet = BFTValidatorSet.from(
 			nodes.stream()
@@ -46,12 +47,12 @@ public final class SingleEpochAlwaysSyncedStateComputer implements SimulatedStat
 		);
 	}
 
-	public SingleEpochAlwaysSyncedStateComputer(List<BFTNode> nodes) {
+	public SingleEpochAlwaysSyncedExecutor(List<BFTNode> nodes) {
 		this(VertexMetadata.ofGenesisAncestor(), nodes);
 	}
 
 	@Override
-	public boolean syncTo(VertexMetadata vertexMetadata, List<BFTNode> target, Object opaque) {
+	public boolean syncTo(VertexMetadata vertexMetadata, ImmutableList<BFTNode> target, Object opaque) {
 		return true;
 	}
 

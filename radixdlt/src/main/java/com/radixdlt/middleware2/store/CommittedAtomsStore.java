@@ -19,8 +19,6 @@ package com.radixdlt.middleware2.store;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.inject.Inject;
-import com.google.inject.Singleton;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.constraintmachine.Particle;
@@ -37,27 +35,23 @@ import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStore;
 
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.Optional;
 import java.util.function.Consumer;
 
-@Singleton
-public class CommittedAtomsStore implements EngineStore<CommittedAtom> {
+public final class CommittedAtomsStore implements EngineStore<CommittedAtom> {
 	private static final Logger log = LogManager.getLogger();
 
 	private final AtomIndexer atomIndexer;
 	private final LedgerEntryStore store;
 	private final AtomToBinaryConverter atomToBinaryConverter;
-	private final AtomicLong stateVersion = new AtomicLong(0);
 
 	public interface AtomIndexer {
 		EngineAtomIndices getIndices(LedgerAtom atom);
 	}
 
-	@Inject
 	public CommittedAtomsStore(
 		LedgerEntryStore store,
 		AtomToBinaryConverter atomToBinaryConverter,
@@ -101,11 +95,6 @@ public class CommittedAtomsStore implements EngineStore<CommittedAtom> {
         store.commit(committedAtom.getAID());
     }
 
-	// TODO: Move into storeAtom when epoch change logic moved into RadixEngine
-	public void storeVertexMetadata(VertexMetadata vertexMetadata) {
-		stateVersion.set(vertexMetadata.getStateVersion());
-	}
-
 	// TODO: Move into more approrpriate place
 	public ImmutableSet<EUID> getIndicies(CommittedAtom committedAtom) {
 		EngineAtomIndices engineAtomIndices = atomIndexer.getIndices(committedAtom);
@@ -128,14 +117,6 @@ public class CommittedAtomsStore implements EngineStore<CommittedAtom> {
 				.map(LedgerEntry::getContent)
 				.map(atomToBinaryConverter::toAtom)
 				.collect(ImmutableList.toImmutableList());
-	}
-
-	/**
-	 * Retrieve the current state version of the store
-	 * @return the state version of the store
-	 */
-	public long getStateVersion() {
-		return stateVersion.get();
 	}
 
 	@Override

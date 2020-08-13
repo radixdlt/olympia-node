@@ -17,32 +17,32 @@
 
 package com.radixdlt.consensus.simulation.configuration;
 
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.simulation.network.SimulationNodes.SimulatedStateComputer;
+import com.radixdlt.consensus.simulation.network.SimulationNodes.SimulatedSyncedExecutor;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.middleware2.CommittedAtom;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import io.reactivex.rxjava3.subjects.Subject;
-import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 
 /**
  * State computer which changes epochs after some number of views
  */
-public class ChangingEpochSyncedStateComputer implements SimulatedStateComputer {
+public class ChangingEpochSyncedExecutor implements SimulatedSyncedExecutor {
 	private final Subject<EpochChange> epochChanges = BehaviorSubject.<EpochChange>create().toSerialized();
 	private final View epochHighView;
 	private final Function<Long, BFTValidatorSet> validatorSetMapping;
 	private VertexMetadata currentAncestor = null;
 
-	public ChangingEpochSyncedStateComputer(View epochHighView, Function<Long, BFTValidatorSet> validatorSetMapping) {
+	public ChangingEpochSyncedExecutor(View epochHighView, Function<Long, BFTValidatorSet> validatorSetMapping) {
 		this.epochHighView = Objects.requireNonNull(epochHighView);
 		this.validatorSetMapping = validatorSetMapping;
 		VertexMetadata ancestor = VertexMetadata.ofGenesisAncestor();
@@ -60,7 +60,7 @@ public class ChangingEpochSyncedStateComputer implements SimulatedStateComputer 
 	}
 
 	@Override
-	public boolean syncTo(VertexMetadata vertexMetadata, List<BFTNode> target, Object opaque) {
+	public boolean syncTo(VertexMetadata vertexMetadata, ImmutableList<BFTNode> target, Object opaque) {
 		if (vertexMetadata.isEndOfEpoch()) {
 			this.nextEpoch(vertexMetadata);
 		}

@@ -19,11 +19,12 @@ package org.radix;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.DefaultSerialization;
+import com.radixdlt.syncer.SyncServiceRunner;
 import com.radixdlt.systeminfo.InMemorySystemInfoManager;
 import com.radixdlt.api.LedgerRx;
 import com.radixdlt.api.SubmissionErrorsRx;
 import com.radixdlt.consensus.ConsensusRunner;
-import com.radixdlt.syncer.SyncedRadixEngine;
+import com.radixdlt.syncer.SyncedEpochExecutor;
 import com.radixdlt.mempool.MempoolReceiver;
 import com.radixdlt.mempool.SubmissionControl;
 import com.radixdlt.middleware2.CommittedAtom;
@@ -189,8 +190,8 @@ public final class Radix
 		// Start mempool receiver
 		globalInjector.getInjector().getInstance(MempoolReceiver.class).start();
 
-		SyncedRadixEngine syncedRadixEngine = globalInjector.getInjector().getInstance(SyncedRadixEngine.class);
-		syncedRadixEngine.start();
+		SyncServiceRunner syncServiceRunner = globalInjector.getInjector().getInstance(SyncServiceRunner.class);
+		syncServiceRunner.start();
 
 		InMemorySystemInfoManager infoStateRunner = globalInjector.getInjector().getInstance(InMemorySystemInfoManager.class);
 		infoStateRunner.start();
@@ -200,7 +201,8 @@ public final class Radix
 		CommittedAtomsStore engineStore = globalInjector.getInjector().getInstance(CommittedAtomsStore.class);
 		CommittedAtom genesisAtom = globalInjector.getInjector().getInstance(CommittedAtom.class);
 		if (engineStore.getCommittedAtoms(genesisAtom.getVertexMetadata().getStateVersion() - 1, 1).isEmpty()) {
-			syncedRadixEngine.execute(genesisAtom);
+			SyncedEpochExecutor syncedEpochExecutor = globalInjector.getInjector().getInstance(SyncedEpochExecutor.class);
+			syncedEpochExecutor.execute(genesisAtom);
 		}
 
 		final ConsensusRunner bft = globalInjector.getInjector().getInstance(ConsensusRunner.class);

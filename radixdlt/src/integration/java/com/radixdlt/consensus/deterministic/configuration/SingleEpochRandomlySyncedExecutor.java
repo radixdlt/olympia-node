@@ -17,22 +17,33 @@
 
 package com.radixdlt.consensus.deterministic.configuration;
 
-import com.radixdlt.consensus.SyncedStateComputer;
+import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.SyncedExecutor;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.syncer.SyncedEpochExecutor.CommittedStateSyncSender;
 import com.radixdlt.middleware2.CommittedAtom;
-import java.util.List;
+import java.util.Objects;
+import java.util.Random;
 
-/**
- * A state computer which never changes epochs
- */
-public enum SingleEpochAlwaysSyncedStateComputer implements SyncedStateComputer<CommittedAtom> {
-	INSTANCE;
+public class SingleEpochRandomlySyncedExecutor implements SyncedExecutor<CommittedAtom> {
+
+	private final Random random;
+	private final CommittedStateSyncSender committedStateSyncSender;
+
+	public SingleEpochRandomlySyncedExecutor(Random random, CommittedStateSyncSender committedStateSyncSender) {
+		this.random = Objects.requireNonNull(random);
+		this.committedStateSyncSender = Objects.requireNonNull(committedStateSyncSender);
+	}
 
 	@Override
-	public boolean syncTo(VertexMetadata vertexMetadata, List<BFTNode> target, Object opaque) {
-		return true;
+	public boolean syncTo(VertexMetadata vertexMetadata, ImmutableList<BFTNode> target, Object opaque) {
+		if (random.nextBoolean()) {
+			return true;
+		}
+		committedStateSyncSender.sendCommittedStateSync(vertexMetadata.getStateVersion(), opaque);
+		return false;
 	}
 
 	@Override

@@ -17,6 +17,7 @@
 
 package com.radixdlt.consensus.epoch;
 
+import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.CommittedStateSync;
@@ -26,7 +27,7 @@ import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.ProposerElectionFactory;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.SyncedStateComputer;
+import com.radixdlt.consensus.SyncedExecutor;
 import com.radixdlt.consensus.Timeout;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
@@ -115,7 +116,7 @@ public final class EpochManager {
 	private final ProposerElectionFactory proposerElectionFactory;
 	private final SystemCounters counters;
 	private final LocalTimeoutSender localTimeoutSender;
-	private final SyncedStateComputer<CommittedAtom> syncedStateComputer;
+	private final SyncedExecutor<CommittedAtom> syncedExecutor;
 	private final Map<Long, List<ConsensusEvent>> queuedEvents;
 	private final BFTFactory bftFactory;
 	private final EpochInfoSender epochInfoSender;
@@ -128,7 +129,7 @@ public final class EpochManager {
 
 	public EpochManager(
 		BFTNode self,
-		SyncedStateComputer<CommittedAtom> syncedStateComputer,
+		SyncedExecutor<CommittedAtom> syncedExecutor,
 		SyncEpochsRPCSender epochsRPCSender,
 		LocalTimeoutSender localTimeoutSender,
 		PacemakerFactory pacemakerFactory,
@@ -139,7 +140,7 @@ public final class EpochManager {
 		EpochInfoSender epochInfoSender
 	) {
 		this.self = Objects.requireNonNull(self);
-		this.syncedStateComputer = Objects.requireNonNull(syncedStateComputer);
+		this.syncedExecutor = Objects.requireNonNull(syncedExecutor);
 		this.epochsRPCSender = Objects.requireNonNull(epochsRPCSender);
 		this.localTimeoutSender = Objects.requireNonNull(localTimeoutSender);
 		this.pacemakerFactory = Objects.requireNonNull(pacemakerFactory);
@@ -192,7 +193,7 @@ public final class EpochManager {
 			TimeoutSender sender = (view, ms) -> localTimeoutSender.scheduleTimeout(new LocalTimeout(nextEpoch, view), ms);
 			Pacemaker pacemaker = pacemakerFactory.create(sender);
 			QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(genesisVertex);
-			VertexStore vertexStore = vertexStoreFactory.create(genesisVertex, genesisQC, syncedStateComputer);
+			VertexStore vertexStore = vertexStoreFactory.create(genesisVertex, genesisQC, syncedExecutor);
 			vertexStoreEventProcessor = vertexStore;
 			BFTInfoSender infoSender = new BFTInfoSender() {
 				@Override
@@ -294,7 +295,7 @@ public final class EpochManager {
 
 		final VertexMetadata ancestor = response.getEpochAncestor();
 		if (ancestor.getEpoch() >= this.currentEpoch()) {
-			syncedStateComputer.syncTo(ancestor, Collections.singletonList(response.getAuthor()), null);
+			syncedExecutor.syncTo(ancestor, ImmutableList.of(response.getAuthor()), null);
 		} else {
 			log.info("{}: Ignoring old epoch {}", this.self::getSimpleName, () -> response);
 		}

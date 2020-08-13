@@ -17,12 +17,8 @@
 
 package com.radixdlt;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
 import com.radixdlt.api.DeserializationFailure;
-import com.radixdlt.api.LedgerRx;
-import com.radixdlt.api.StoredAtom;
-import com.radixdlt.api.StoredFailure;
 import com.radixdlt.api.SubmissionErrorsRx;
 import com.radixdlt.api.SubmissionFailure;
 import com.radixdlt.atommodel.Atom;
@@ -31,52 +27,32 @@ import com.radixdlt.consensus.CommittedStateSyncRx;
 import com.radixdlt.consensus.EpochChangeRx;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.identifiers.EUID;
 import com.radixdlt.mempool.SubmissionControlImpl.SubmissionControlSender;
 import com.radixdlt.middleware2.ClientAtom;
-import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.middleware2.converters.AtomConversionException;
 import com.radixdlt.syncer.EpochChangeSender;
-import com.radixdlt.syncer.SyncedRadixEngine.CommittedStateSyncSender;
-import com.radixdlt.syncer.SyncedRadixEngine.SyncedRadixEngineEventSender;
+import com.radixdlt.syncer.LocalSyncRequest;
+import com.radixdlt.syncer.SyncServiceProcessor.SyncInProgress;
+import com.radixdlt.syncer.SyncServiceProcessor.SyncTimeoutScheduler;
+import com.radixdlt.syncer.SyncServiceRunner.LocalSyncRequestsRx;
+import com.radixdlt.syncer.SyncServiceRunner.SyncTimeoutsRx;
+import com.radixdlt.syncer.SyncedEpochExecutor.CommittedStateSyncSender;
+import com.radixdlt.syncer.SyncedEpochExecutor.SyncService;
+import com.radixdlt.utils.ScheduledSenderToRx;
 import com.radixdlt.utils.SenderToRx;
+import com.radixdlt.utils.ThreadFactories;
 import com.radixdlt.utils.TwoSenderToRx;
 import io.reactivex.rxjava3.core.Observable;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * Module which manages messages from Syncer
  */
-public final class SyncerMessagesModule extends AbstractModule {
+public final class SyncMessagesModule extends AbstractModule {
 
 	@Override
 	protected void configure() {
-		TwoSenderToRx<CommittedAtom, ImmutableSet<EUID>, StoredAtom> storedAtoms = new TwoSenderToRx<>(StoredAtom::new);
-		TwoSenderToRx<CommittedAtom, RadixEngineException, StoredFailure> storedFailures = new TwoSenderToRx<>(StoredFailure::new);
-		SyncedRadixEngineEventSender syncedRadixEngineEventSender = new SyncedRadixEngineEventSender() {
-			@Override
-			public void sendStored(CommittedAtom committedAtom, ImmutableSet<EUID> indicies) {
-				storedAtoms.send(committedAtom, indicies);
-			}
-
-			@Override
-			public void sendStoredFailure(CommittedAtom committedAtom, RadixEngineException e) {
-				storedFailures.send(committedAtom, e);
-			}
-		};
-		LedgerRx ledgerRx = new LedgerRx() {
-			@Override
-			public Observable<StoredAtom> storedAtoms() {
-				return storedAtoms.rx();
-			}
-
-			@Override
-			public Observable<StoredFailure> storedExceptions() {
-				return storedFailures.rx();
-			}
-		};
-		bind(SyncedRadixEngineEventSender.class).toInstance(syncedRadixEngineEventSender);
-		bind(LedgerRx.class).toInstance(ledgerRx);
-
 		TwoSenderToRx<Atom, AtomConversionException, DeserializationFailure> deserializationFailures
 			= new TwoSenderToRx<>(DeserializationFailure::new);
 		TwoSenderToRx<ClientAtom, RadixEngineException, SubmissionFailure> submissionFailures
@@ -113,5 +89,14 @@ public final class SyncerMessagesModule extends AbstractModule {
 		TwoSenderToRx<Long, Object, CommittedStateSync> committedStateSyncTwoSenderToRx = new TwoSenderToRx<>(CommittedStateSync::new);
 		bind(CommittedStateSyncRx.class).toInstance(committedStateSyncTwoSenderToRx::rx);
 		bind(CommittedStateSyncSender.class).toInstance(committedStateSyncTwoSenderToRx::send);
+
+		SenderToRx<LocalSyncRequest, LocalSyncRequest> localSyncRequests = new SenderToRx<>(r -> r);
+		bind(SyncService.class).toInstance(localSyncRequests::send);
+		bind(LocalSyncRequestsRx.class).toInstance(localSyncRequests::rx);
+
+		ScheduledExecutorService ses = Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads("SyncTimeoutSender"));
+		ScheduledSenderToRx<SyncInProgress> syncsInProgress = new ScheduledSenderToRx<>(ses);
+		bind(SyncTimeoutScheduler.class).toInstance(syncsInProgress::scheduleSend);
+		bind(SyncTimeoutsRx.class).toInstance(syncsInProgress::messages);
 	}
 }

@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.liveness;
+package com.radixdlt.utils;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -26,7 +26,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.radixdlt.consensus.epoch.LocalTimeout;
-import com.radixdlt.utils.ThreadFactories;
 
 import io.reactivex.rxjava3.observers.TestObserver;
 import java.util.concurrent.Executors;
@@ -37,9 +36,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-public class ScheduledTimeoutSenderTest {
+public class ScheduledSenderToRxTest {
 
-	private ScheduledLocalTimeoutSender scheduledLocalTimeoutSender;
+	private ScheduledSenderToRx<Object> scheduledSenderToRx;
 	private ScheduledExecutorService executorService;
 	private ScheduledExecutorService executorServiceMock;
 
@@ -54,7 +53,7 @@ public class ScheduledTimeoutSenderTest {
 			return null;
 		}).when(this.executorServiceMock).schedule(any(Runnable.class), anyLong(), any());
 
-		this.scheduledLocalTimeoutSender = new ScheduledLocalTimeoutSender(this.executorServiceMock);
+		this.scheduledSenderToRx = new ScheduledSenderToRx<>(this.executorServiceMock);
 	}
 
 	@After
@@ -67,10 +66,10 @@ public class ScheduledTimeoutSenderTest {
 
 	@Test
 	public void when_subscribed_to_local_timeouts_and_schedule_timeout__then_a_timeout_event_with_view_is_emitted() {
-		TestObserver<LocalTimeout> testObserver = scheduledLocalTimeoutSender.localTimeouts().test();
+		TestObserver<Object> testObserver = scheduledSenderToRx.messages().test();
 		LocalTimeout localTimeout = mock(LocalTimeout.class);
 		long timeout = 10;
-		scheduledLocalTimeoutSender.scheduleTimeout(localTimeout, timeout);
+		scheduledSenderToRx.scheduleSend(localTimeout, timeout);
 		testObserver.awaitCount(1);
 		testObserver.assertNotComplete();
 		testObserver.assertValues(localTimeout);
@@ -79,15 +78,15 @@ public class ScheduledTimeoutSenderTest {
 
 	@Test
 	public void when_subscribed_to_local_timeouts_and_schedule_timeout_twice__then_two_timeout_events_are_emitted() {
-		TestObserver<LocalTimeout> testObserver = scheduledLocalTimeoutSender.localTimeouts().test();
-		LocalTimeout timeout1 = mock(LocalTimeout.class);
-		LocalTimeout timeout2 = mock(LocalTimeout.class);
+		TestObserver<Object> testObserver = scheduledSenderToRx.messages().test();
+		Object o1 = mock(Object.class);
+		Object o2 = mock(Object.class);
 		long timeout = 10;
-		scheduledLocalTimeoutSender.scheduleTimeout(timeout1, timeout);
-		scheduledLocalTimeoutSender.scheduleTimeout(timeout2, timeout);
+		scheduledSenderToRx.scheduleSend(o1, timeout);
+		scheduledSenderToRx.scheduleSend(o2, timeout);
 		testObserver.awaitCount(2);
 		testObserver.assertNotComplete();
-		testObserver.assertValues(timeout1, timeout2);
+		testObserver.assertValues(o1, o2);
 		verify(executorServiceMock, times(2)).schedule(any(Runnable.class), eq(timeout), eq(TimeUnit.MILLISECONDS));
 	}
 }
