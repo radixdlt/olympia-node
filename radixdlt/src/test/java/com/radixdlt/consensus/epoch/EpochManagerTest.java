@@ -101,6 +101,7 @@ public class EpochManagerTest {
 
 		this.epochManager = new EpochManager(
 			this.self,
+			new EpochChange(VertexMetadata.ofGenesisAncestor(), BFTValidatorSet.from(ImmutableSet.of())),
 			this.syncedExecutor,
 			this.syncEpochsRPCSender,
 			mock(LocalTimeoutSender.class),
@@ -111,6 +112,7 @@ public class EpochManagerTest {
 			this.systemCounters,
 			this.epochInfoSender
 		);
+		this.epochManager.start();
 	}
 
 	@Test
@@ -120,7 +122,9 @@ public class EpochManagerTest {
 		when(validatorSet.containsNode(eq(self))).thenReturn(false);
 		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of());
 		when(epochChange.getValidatorSet()).thenReturn(validatorSet);
+
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
+		when(vertexMetadata.getEpoch()).thenReturn(1L);
 		when(epochChange.getAncestor()).thenReturn(vertexMetadata);
 		epochManager.processEpochChange(epochChange);
 
@@ -142,12 +146,13 @@ public class EpochManagerTest {
 
 	@Test
 	public void when_receive_next_epoch_then_epoch_request__then_should_return_current_ancestor() {
-		VertexMetadata ancestor = VertexMetadata.ofGenesisAncestor();
+		VertexMetadata ancestor = mock(VertexMetadata.class);
+		when(ancestor.getEpoch()).thenReturn(1L);
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of());
 		epochManager.processEpochChange(new EpochChange(ancestor, validatorSet));
 		BFTNode sender = mock(BFTNode.class);
-		epochManager.processGetEpochRequest(new GetEpochRequest(sender, ancestor.getEpoch() + 1));
+		epochManager.processGetEpochRequest(new GetEpochRequest(sender, 1L));
 		verify(syncEpochsRPCSender, times(1)).sendGetEpochResponse(eq(sender), eq(ancestor));
 	}
 
@@ -160,11 +165,13 @@ public class EpochManagerTest {
 
 	@Test
 	public void when_receive_epoch_response__then_should_sync_state_computer() {
+		VertexMetadata ancestor = mock(VertexMetadata.class);
+		when(ancestor.getEpoch()).thenReturn(1L);
 		GetEpochResponse response = mock(GetEpochResponse.class);
-		when(response.getEpochAncestor()).thenReturn(VertexMetadata.ofGenesisAncestor());
+		when(response.getEpochAncestor()).thenReturn(ancestor);
 		when(response.getAuthor()).thenReturn(mock(BFTNode.class));
 		epochManager.processGetEpochResponse(response);
-		verify(syncedExecutor, times(1)).syncTo(eq(VertexMetadata.ofGenesisAncestor()), any(), any());
+		verify(syncedExecutor, times(1)).syncTo(eq(ancestor), any(), any());
 	}
 
 	@Test
@@ -177,7 +184,8 @@ public class EpochManagerTest {
 
 	@Test
 	public void when_receive_old_epoch_response__then_should_do_nothing() {
-		VertexMetadata ancestor = VertexMetadata.ofGenesisAncestor();
+		VertexMetadata ancestor = mock(VertexMetadata.class);
+		when(ancestor.getEpoch()).thenReturn(1L);
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of());
 		EpochChange epochChange = new EpochChange(ancestor, validatorSet);
@@ -198,7 +206,8 @@ public class EpochManagerTest {
 			return eventProcessor;
 		}).when(bftFactory).create(any(), any(), any(), any(), any(), any());
 
-		VertexMetadata ancestor = VertexMetadata.ofGenesisAncestor();
+		VertexMetadata ancestor = mock(VertexMetadata.class);
+		when(ancestor.getEpoch()).thenReturn(1L);
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		when(validatorSet.containsNode(any())).thenReturn(true);
 
@@ -213,7 +222,7 @@ public class EpochManagerTest {
 		epochManager.processEpochChange(new EpochChange(ancestor, validatorSet));
 
 		VertexMetadata nextAncestor = mock(VertexMetadata.class);
-		when(nextAncestor.getEpoch()).thenReturn(1L);
+		when(nextAncestor.getEpoch()).thenReturn(2L);
 
 		endOfEpochSender.get().sendEndOfEpoch(nextAncestor);
 
@@ -231,7 +240,8 @@ public class EpochManagerTest {
 		BFTEventProcessor eventProcessor = mock(BFTEventProcessor.class);
 		when(bftFactory.create(any(), any(), any(), any(), any(), any())).thenReturn(eventProcessor);
 
-		VertexMetadata ancestor = VertexMetadata.ofGenesisAncestor();
+		VertexMetadata ancestor = mock(VertexMetadata.class);
+		when(ancestor.getEpoch()).thenReturn(1L);
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		when(validatorSet.containsNode(any())).thenReturn(true);
 
@@ -252,7 +262,7 @@ public class EpochManagerTest {
 
 		Proposal proposal = mock(Proposal.class);
 		when(proposal.getAuthor()).thenReturn(node);
-		when(proposal.getEpoch()).thenReturn(ancestor.getEpoch() + 1);
+		when(proposal.getEpoch()).thenReturn(2L);
 		Vertex vertex = mock(Vertex.class);
 		when(vertex.getView()).thenReturn(View.of(1));
 		when(proposal.getVertex()).thenReturn(vertex);
@@ -264,7 +274,7 @@ public class EpochManagerTest {
 		NewView newView = mock(NewView.class);
 		when(newView.getView()).thenReturn(View.of(1));
 		when(newView.getAuthor()).thenReturn(this.self);
-		when(newView.getEpoch()).thenReturn(ancestor.getEpoch() + 1);
+		when(newView.getEpoch()).thenReturn(2L);
 		epochManager.processConsensusEvent(newView);
 		verify(eventProcessor, times(1)).processNewView(eq(newView));
 
@@ -278,13 +288,13 @@ public class EpochManagerTest {
 		when(voteData.getProposed()).thenReturn(proposed);
 		when(vote.getVoteData()).thenReturn(voteData);
 		when(vote.getAuthor()).thenReturn(node);
-		when(vote.getEpoch()).thenReturn(ancestor.getEpoch() + 1);
+		when(vote.getEpoch()).thenReturn(2L);
 		epochManager.processConsensusEvent(vote);
 		verify(eventProcessor, times(1)).processVote(eq(vote));
 
 		ConsensusEvent unknownEvent = mock(ConsensusEvent.class);
 		when(unknownEvent.getAuthor()).thenReturn(mock(BFTNode.class));
-		when(unknownEvent.getEpoch()).thenReturn(ancestor.getEpoch() + 1);
+		when(unknownEvent.getEpoch()).thenReturn(2L);
 		assertThatThrownBy(() -> epochManager.processConsensusEvent(unknownEvent))
 			.isInstanceOf(IllegalStateException.class);
 
@@ -293,19 +303,19 @@ public class EpochManagerTest {
 		verify(eventProcessor, times(1)).processLocalSync(eq(localSync));
 
 		LocalTimeout localTimeout = mock(LocalTimeout.class);
-		when(localTimeout.getEpoch()).thenReturn(ancestor.getEpoch() + 1);
+		when(localTimeout.getEpoch()).thenReturn(2L);
 		when(localTimeout.getView()).thenReturn(View.of(1));
 
 		epochManager.processLocalTimeout(localTimeout);
 		verify(eventProcessor, times(1)).processLocalTimeout(eq(View.of(1)));
 
 		Proposal oldProposal = mock(Proposal.class);
-		when(oldProposal.getEpoch()).thenReturn(ancestor.getEpoch());
+		when(oldProposal.getEpoch()).thenReturn(1L);
 		epochManager.processConsensusEvent(oldProposal);
 		verify(eventProcessor, never()).processProposal(eq(oldProposal));
 
 		LocalTimeout oldTimeout = mock(LocalTimeout.class);
-		when(oldTimeout.getEpoch()).thenReturn(ancestor.getEpoch());
+		when(oldTimeout.getEpoch()).thenReturn(1L);
 		View view = mock(View.class);
 		when(oldTimeout.getView()).thenReturn(view);
 		epochManager.processLocalTimeout(oldTimeout);
@@ -322,12 +332,10 @@ public class EpochManagerTest {
 		when(vertexStore.getHighestQC()).thenReturn(mock(QuorumCertificate.class));
 		when(vertexStore.syncToQC(any(), any(), any())).thenReturn(true);
 
-		VertexMetadata ancestor = VertexMetadata.ofGenesisAncestor();
-
 		Proposal proposal = mock(Proposal.class);
 		Vertex vertex = mock(Vertex.class);
 		when(vertex.getView()).thenReturn(View.of(1));
-		when(proposal.getEpoch()).thenReturn(ancestor.getEpoch() + 1);
+		when(proposal.getEpoch()).thenReturn(2L);
 		when(proposal.getVertex()).thenReturn(vertex);
 		when(proposal.getAuthor()).thenReturn(node);
 		epochManager.processConsensusEvent(proposal);
@@ -342,6 +350,9 @@ public class EpochManagerTest {
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		when(validatorSet.containsNode(any())).thenReturn(true);
 		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of(validator, authorValidator));
+
+		VertexMetadata ancestor = mock(VertexMetadata.class);
+		when(ancestor.getEpoch()).thenReturn(1L);
 		epochManager.processEpochChange(new EpochChange(ancestor, validatorSet));
 
 		assertThat(systemCounters.get(CounterType.EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS)).isEqualTo(0);
@@ -350,22 +361,21 @@ public class EpochManagerTest {
 
 	@Test
 	public void when_receive_next_epoch_events_and_then_epoch_change_and_not_part_of_validator_set__then_queued_events_should_be_cleared() {
-		BFTValidator authorValidator = mock(BFTValidator.class);
-		when(authorValidator.getNode()).thenReturn(mock(BFTNode.class));
-
-		VertexMetadata ancestor = VertexMetadata.ofGenesisAncestor();
-
 		Proposal proposal = mock(Proposal.class);
-		when(proposal.getEpoch()).thenReturn(ancestor.getEpoch() + 1);
+		when(proposal.getEpoch()).thenReturn(2L);
 		when(proposal.getAuthor()).thenReturn(mock(BFTNode.class));
 		epochManager.processConsensusEvent(proposal);
 		assertThat(systemCounters.get(CounterType.EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS)).isEqualTo(1);
+
+		VertexMetadata ancestor = mock(VertexMetadata.class);
+		when(ancestor.getEpoch()).thenReturn(1L);
 
 		BFTValidator validator = mock(BFTValidator.class);
 		when(validator.getNode()).thenReturn(mock(BFTNode.class));
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		when(validatorSet.containsNode(any())).thenReturn(false);
 		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of());
+
 		epochManager.processEpochChange(new EpochChange(ancestor, validatorSet));
 
 		assertThat(systemCounters.get(CounterType.EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS)).isEqualTo(0);
@@ -383,7 +393,10 @@ public class EpochManagerTest {
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		when(validatorSet.containsNode(any())).thenReturn(true);
 		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of(validator));
-		epochManager.processEpochChange(new EpochChange(VertexMetadata.ofGenesisAncestor(), validatorSet));
+
+		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
+		when(vertexMetadata.getEpoch()).thenReturn(1L);
+		epochManager.processEpochChange(new EpochChange(vertexMetadata, validatorSet));
 
 		GetVerticesRequest getVerticesRequest = mock(GetVerticesRequest.class);
 		epochManager.processGetVerticesRequest(getVerticesRequest);

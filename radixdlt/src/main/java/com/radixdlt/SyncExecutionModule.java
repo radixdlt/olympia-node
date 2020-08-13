@@ -23,14 +23,16 @@ import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.SyncedExecutor;
+import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.syncer.EpochChangeSender;
-import com.radixdlt.syncer.SyncedEpochExecutor;
-import com.radixdlt.syncer.SyncedEpochExecutor.CommittedStateSyncSender;
-import com.radixdlt.syncer.SyncedEpochExecutor.CommittedExecutor;
-import com.radixdlt.syncer.SyncedEpochExecutor.SyncService;
+import com.radixdlt.syncer.SyncExecutor;
+import com.radixdlt.syncer.SyncExecutor.CommittedStateSyncSender;
+import com.radixdlt.syncer.SyncExecutor.StateComputer;
+import com.radixdlt.syncer.SyncExecutor.SyncService;
 
 /**
  * Module which manages synchronized execution
@@ -38,26 +40,36 @@ import com.radixdlt.syncer.SyncedEpochExecutor.SyncService;
 public class SyncExecutionModule extends AbstractModule {
 	@Override
 	protected void configure() {
-		bind(new TypeLiteral<SyncedExecutor<CommittedAtom>>() { }).to(SyncedEpochExecutor.class).in(Scopes.SINGLETON);
+		bind(new TypeLiteral<SyncedExecutor<CommittedAtom>>() { }).to(SyncExecutor.class).in(Scopes.SINGLETON);
 	}
 
 	@Provides
 	@Singleton
-	private SyncedEpochExecutor syncedEpochExecutor(
+	private SyncExecutor syncedEpochExecutor(
 		Mempool mempool,
-		CommittedExecutor committedExecutor,
+		StateComputer stateComputer,
 		CommittedStateSyncSender committedStateSyncSender,
 		EpochChangeSender epochChangeSender,
 		SyncService syncService,
 		SystemCounters counters
 	) {
-		return new SyncedEpochExecutor(
+		return new SyncExecutor(
 			0L,
-			mempool, committedExecutor,
+			mempool, stateComputer,
 			committedStateSyncSender,
 			epochChangeSender,
 			syncService,
 			counters
+		);
+	}
+
+	// TODO: Load from storage
+	@Provides
+	@Singleton
+	private EpochChange initialEpoch(StateComputer stateComputer) {
+		VertexMetadata ancestor = VertexMetadata.ofGenesisAncestor();
+		return new EpochChange(
+			ancestor, stateComputer.getValidatorSet(ancestor.getEpoch() + 1)
 		);
 	}
 }

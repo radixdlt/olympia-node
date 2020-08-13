@@ -28,6 +28,7 @@ import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.observables.ConnectableObservable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -78,6 +79,7 @@ public final class ConsensusRunner {
 	private final Object lock = new Object();
 	private final ExecutorService singleThreadExecutor;
 	private final Scheduler singleThreadScheduler;
+	private final EpochManager epochManager;
 	private Disposable disposable;
 
 	public ConsensusRunner(
@@ -90,6 +92,7 @@ public final class ConsensusRunner {
 		SyncEpochsRPCRx epochsRPCRx,
 		EpochManager epochManager
 	) {
+		this.epochManager = Objects.requireNonNull(epochManager);
 		this.singleThreadExecutor = Executors.newSingleThreadExecutor(ThreadFactories.daemonThreads("ConsensusRunner"));
 		this.singleThreadScheduler = Schedulers.from(this.singleThreadExecutor);
 
@@ -177,6 +180,7 @@ public final class ConsensusRunner {
 		boolean started = false;
 		synchronized (lock) {
 			if (disposable == null) {
+				singleThreadExecutor.submit(epochManager::start);
 				disposable = this.events.connect();
 				started = true;
 			}

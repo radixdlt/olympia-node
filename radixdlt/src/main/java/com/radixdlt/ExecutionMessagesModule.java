@@ -23,7 +23,7 @@ import com.radixdlt.api.LedgerRx;
 import com.radixdlt.api.StoredAtom;
 import com.radixdlt.api.StoredFailure;
 import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.execution.RadixEngineExecutor.RadixEngineExecutorEventSender;
+import com.radixdlt.statecomputer.RadixEngineStateComputer.RadixEngineExecutorEventSender;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.utils.TwoSenderToRx;
