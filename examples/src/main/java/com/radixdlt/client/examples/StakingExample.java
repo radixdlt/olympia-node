@@ -89,17 +89,8 @@ public class StakingExample {
 		System.out.println("staking to self");
 		api.stakeTokens(BigDecimal.valueOf(10000.0), tokenRRI, api.getAddress()).blockUntilComplete();
 
-//		System.out.println("staking 1");
-//		api.stakeTokens(BigDecimal.valueOf(10000.0), tokenRRI, delegate1).blockUntilComplete();
-//
-//		// Redelegate staked tokens
-//		System.out.println("redelegating staked 1");
-//		api.redelegateStakedTokens(BigDecimal.valueOf(5000.0), tokenRRI, delegate1, delegate2).blockUntilComplete();
-//
-//		// Unstake tokens
-//		System.out.println("unstaking 1");
-//		api.unstakeTokens(BigDecimal.valueOf(5000.0), tokenRRI, delegate1).blockUntilComplete();
-//		System.out.println("unstaking 2");
-//		api.unstakeTokens(BigDecimal.valueOf(5000.0), tokenRRI, delegate2).blockUntilComplete();
+		// Unstake tokens
+		System.out.println("unstaking from self");
+		api.unstakeTokens(BigDecimal.valueOf(10000.0), tokenRRI, api.getAddress()).blockUntilComplete();
 	}
 }
