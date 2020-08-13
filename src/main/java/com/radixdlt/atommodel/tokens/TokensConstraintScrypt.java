@@ -288,8 +288,8 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			// RegisteredValidator(nonce+1), ProvidedDelegate, void
 			// -> StakedTokens(amount), void, StakedAmount(amount)
 			// nx
-			// TransferrableTokens(transferredAmount),
-			// -> StakedTokens(amount), void,  StakedAmount(amount-transferredAmount)
+			// TransferrableTokens(transferred), void, StakedAmount
+			// -> StakedTokens(remaining), [UsedAmount(remaining)],  [StakedAmount(remaining-transferred)]
 			// ---
 			// Format:
 			// Particle(props), input, output
@@ -394,8 +394,8 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 			);
 
 			// nx
-			// TransferrableTokens(transferredAmount),
-			// -> StakedTokens(amount), void,  StakedAmount(amount-transferredAmount)
+			// TransferrableTokens(transferred), void, StakedAmount
+			// -> StakedTokens(remaining), [UsedAmount(remaining)],  [StakedAmount(remaining-transferred)]
 			calls.createTransition(
 				new TransitionToken<>(TransferrableTokensParticle.class, TypeToken.of(VoidUsedData.class), StakedTokensParticle.class, TypeToken.of(StakedAmount.class)),
 				new TransitionProcedure<TransferrableTokensParticle, VoidUsedData, StakedTokensParticle, StakedAmount>() {
@@ -406,19 +406,27 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 
 					@Override
 					public UsedCompute<TransferrableTokensParticle, VoidUsedData, StakedTokensParticle, StakedAmount> inputUsedCompute() {
-						return (inputParticle, inputUsed, outputParticle, outputUsed) -> Optional.empty();
+						return (inputParticle, inputUsed, outputParticle, outputUsed) -> {
+							final UInt256 inputAmount = inputParticle.getAmount();
+							final UInt256 remainingOutputAmount = outputUsed.getAmount();
+							int compare = inputAmount.compareTo(remainingOutputAmount);
+							if (compare > 0) {
+								return Optional.of(new CreateFungibleTransitionRoutine.UsedAmount(remainingOutputAmount));
+							} else {
+								return Optional.empty();
+							}
+						};
 					}
 
 					@Override
 					public UsedCompute<TransferrableTokensParticle, VoidUsedData, StakedTokensParticle, StakedAmount> outputUsedCompute() {
 						return (inputParticle, inputUsed, outputParticle, outputUsed) -> {
 							final UInt256 inputAmount = inputParticle.getAmount();
-							final UInt256 outputAmount =
-								UIntUtils.subtractWithUnderflow(outputParticle.getAmount(), outputUsed.getAmount());
-							int compare = inputAmount.compareTo(outputAmount);
+							final UInt256 remainingOutputAmount = outputUsed.getAmount();
+							int compare = inputAmount.compareTo(remainingOutputAmount);
 							if (compare < 0) {
-								UInt256 alreadyStakedAmount = UIntUtils.addWithOverflow(outputUsed.getAmount(), inputAmount);
-								return Optional.of(new StakedAmount(alreadyStakedAmount));
+								UInt256 remainingStakedAmount = UIntUtils.subtractWithUnderflow(remainingOutputAmount, inputAmount);
+								return Optional.of(new StakedAmount(remainingStakedAmount));
 							} else {
 								return Optional.empty();
 							}
