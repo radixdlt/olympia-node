@@ -101,7 +101,7 @@ public class RegisteredValidatorParticle extends Particle implements Accountable
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s]", getClass().getSimpleName(), getAddress());
+		return String.format("%s[%s %s %s]", getClass().getSimpleName(), this.address, this.url, this.allowedDelegators);
 	}
 
 	@Override

@@ -22,6 +22,7 @@
 
 package com.radixdlt.client.examples;
 
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.RadixApplicationAPI.Result;
 import com.radixdlt.client.application.RadixApplicationAPI.Transaction;
@@ -41,8 +42,8 @@ import java.math.BigDecimal;
 
 public class StakingExample {
 	public static void main(String[] args) {
-		RadixAddress address1 = RadixAddress.from("JEbhKQzBn4qJzWJFBbaPioA2GTeaQhuUjYWkanTE6N8VvvPpvM8");
-		RadixAddress address2 = RadixAddress.from("23B6fH3FekJeP6e5guhZAk6n9z4fmTo5Tngo3a11Wg5R8gsWTV2x");
+		RadixAddress delegate1 = RadixAddress.from("JEbhKQzBn4qJzWJFBbaPioA2GTeaQhuUjYWkanTE6N8VvvPpvM8");
+		RadixAddress delegate2 = RadixAddress.from("23B6fH3FekJeP6e5guhZAk6n9z4fmTo5Tngo3a11Wg5R8gsWTV2x");
 
 		// Create a new public key identity
 		final RadixIdentity radixIdentity = RadixIdentities.createNew();
@@ -80,21 +81,25 @@ public class StakingExample {
 		Result createTokenAndMint = transaction.commitAndPush();
 		createTokenAndMint.toObservable().blockingSubscribe(System.out::println);
 
-		// Get token definition
-		System.out.println(api.getTokenDef(tokenRRI));
+		// Register yourself as a validator
+		System.out.println("register self as validator");
+		api.registerValidator(api.getAddress(), ImmutableSet.of(api.getAddress())).blockUntilComplete();
 
 		// Stake tokens
-		System.out.println("staking 1");
-		api.stakeTokens(BigDecimal.valueOf(10000.0), tokenRRI, address1).blockUntilComplete();
+		System.out.println("staking to self");
+		api.stakeTokens(BigDecimal.valueOf(10000.0), tokenRRI, api.getAddress()).blockUntilComplete();
 
-		// Redelegate staked tokens
-		System.out.println("redelegating staked 1");
-		api.redelegateStakedTokens(BigDecimal.valueOf(5000.0), tokenRRI, address1, address2).blockUntilComplete();
-
-		// Unstake tokens
-		System.out.println("unstaking 1");
-		api.unstakeTokens(BigDecimal.valueOf(5000.0), tokenRRI, address1).blockUntilComplete();
-		System.out.println("unstaking 2");
-		api.unstakeTokens(BigDecimal.valueOf(5000.0), tokenRRI, address2).blockUntilComplete();
+//		System.out.println("staking 1");
+//		api.stakeTokens(BigDecimal.valueOf(10000.0), tokenRRI, delegate1).blockUntilComplete();
+//
+//		// Redelegate staked tokens
+//		System.out.println("redelegating staked 1");
+//		api.redelegateStakedTokens(BigDecimal.valueOf(5000.0), tokenRRI, delegate1, delegate2).blockUntilComplete();
+//
+//		// Unstake tokens
+//		System.out.println("unstaking 1");
+//		api.unstakeTokens(BigDecimal.valueOf(5000.0), tokenRRI, delegate1).blockUntilComplete();
+//		System.out.println("unstaking 2");
+//		api.unstakeTokens(BigDecimal.valueOf(5000.0), tokenRRI, delegate2).blockUntilComplete();
 	}
 }
