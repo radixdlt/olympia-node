@@ -27,7 +27,7 @@ import com.radixdlt.crypto.Hash;
 /**
  * For testing where verification and signing is skipped
  */
-public class NullCryptoModule extends AbstractModule {
+public class MockedCryptoModule extends AbstractModule {
 	@Override
 	public void configure() {
 		bind(Hasher.class).toInstance(o -> Hash.ZERO_HASH);

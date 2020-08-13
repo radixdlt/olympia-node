@@ -19,46 +19,34 @@ package com.radixdlt.integration.distributed.simulation;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
-import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
-import com.radixdlt.consensus.CommittedStateSyncRx;
 import com.radixdlt.consensus.ConsensusEventsRx;
-import com.radixdlt.consensus.EpochChangeRx;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
-import com.radixdlt.consensus.SyncedExecutor;
-import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRPCSender;
 import com.radixdlt.consensus.epoch.EmptySyncVerticesRPCSender;
-import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork;
-import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.SimulatedSyncedExecutor;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
-import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.network.TimeSupplier;
-import io.reactivex.rxjava3.core.Observable;
 
-public class SimulationSyncerAndNetworkModule extends AbstractModule {
+public class SimulationNetworkModule extends AbstractModule {
 	private final boolean getVerticesRPCEnabled;
 	private final BFTNode node;
 	private final SimulationNetwork simulationNetwork;
-	private final SimulatedSyncedExecutor simulatedStateComputer;
 
-	public SimulationSyncerAndNetworkModule(
+	public SimulationNetworkModule(
 		boolean getVerticesRPCEnabled,
 		BFTNode node,
-		SimulationNetwork simulationNetwork,
-		SimulatedSyncedExecutor simulatedStateComputer
+		SimulationNetwork simulationNetwork
 	) {
 		this.getVerticesRPCEnabled = getVerticesRPCEnabled;
 		this.node = node;
 		this.simulationNetwork = simulationNetwork;
-		this.simulatedStateComputer = simulatedStateComputer;
 	}
 
 	@Override
@@ -66,9 +54,6 @@ public class SimulationSyncerAndNetworkModule extends AbstractModule {
 		bind(ConsensusEventsRx.class).toInstance(simulationNetwork.getNetworkRx(node));
 		bind(SyncEpochsRPCRx.class).toInstance(simulationNetwork.getNetworkRx(node));
 		bind(SyncVerticesRPCRx.class).toInstance(simulationNetwork.getNetworkRx(node));
-
-		bind(new TypeLiteral<SyncedExecutor<CommittedAtom>>() { }).toInstance(simulatedStateComputer);
-		bind(EpochChangeRx.class).toInstance(simulatedStateComputer);
 
 		bind(BFTEventSender.class).toInstance(simulationNetwork.getNetworkSender(node));
 		bind(SyncVerticesRPCSender.class).toInstance(
@@ -78,11 +63,7 @@ public class SimulationSyncerAndNetworkModule extends AbstractModule {
 		bind(SyncEpochsRPCSender.class).toInstance(simulationNetwork.getSyncSender(node));
 		bind(NextCommandGenerator.class).toInstance((view, aids) -> null);
 		bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
-		bind(CommittedStateSyncRx.class).toInstance(Observable::never);
 		bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
-
-		EpochChange initialEpoch = new EpochChange(VertexMetadata.ofGenesisAncestor(), simulatedStateComputer.initialValidatorSet());
-		bind(EpochChange.class).toInstance(initialEpoch);
 
 		bind(BFTNode.class).annotatedWith(Names.named("self")).toInstance(node);
 	}

@@ -19,11 +19,12 @@ package com.radixdlt.integration.distributed.simulation;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.inject.Module;
+import com.radixdlt.SyncExecutionModule;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.integration.distributed.simulation.TestInvariant.TestInvariantError;
 import com.radixdlt.integration.distributed.simulation.invariants.epochs.EpochViewInvariant;
-import com.radixdlt.integration.distributed.simulation.configuration.ChangingEpochSyncedExecutor;
 import com.radixdlt.integration.distributed.simulation.configuration.DroppingLatencyProvider;
 import com.radixdlt.integration.distributed.simulation.configuration.OneProposalPerViewDropper;
 import com.radixdlt.integration.distributed.simulation.configuration.RandomLatencyProvider;
@@ -34,13 +35,12 @@ import com.radixdlt.integration.distributed.simulation.invariants.bft.LivenessIn
 import com.radixdlt.integration.distributed.simulation.invariants.bft.NoTimeoutsInvariant;
 import com.radixdlt.integration.distributed.simulation.invariants.bft.NoneCommittedInvariant;
 import com.radixdlt.integration.distributed.simulation.invariants.bft.SafetyInvariant;
-import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.SimulatedSyncedExecutor;
-import com.radixdlt.integration.distributed.simulation.configuration.SingleEpochAlwaysSyncedExecutor;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.LatencyProvider;
+import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 import io.reactivex.rxjava3.core.Observable;
@@ -50,9 +50,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -257,14 +257,22 @@ public class SimulationTest {
 			.latencyProvider(this.latencyProvider)
 			.build();
 
-		final Supplier<SimulatedSyncedExecutor> stateComputerSupplier;
+		ImmutableList.Builder<Module> syncExecutionModules = ImmutableList.builder();
+
 		if (epochHighView == null) {
-			stateComputerSupplier = () -> new SingleEpochAlwaysSyncedExecutor(nodes);
+			BFTValidatorSet validatorSet = BFTValidatorSet.from(
+				nodes.stream()
+					.map(node -> BFTValidator.from(node, UInt256.ONE))
+					.collect(Collectors.toList())
+			);
+			syncExecutionModules.add(new MockedSyncExecutionModule(validatorSet));
 		} else {
-			stateComputerSupplier = () -> new ChangingEpochSyncedExecutor(epochHighView, validatorSetMapping);
+			ConcurrentHashMap<Long, CommittedAtom> sharedCommittedAtoms = new ConcurrentHashMap<>();
+			syncExecutionModules.add(new SyncExecutionModule());
+			syncExecutionModules.add(new MockedSyncServiceAndExecutionModule(sharedCommittedAtoms, epochHighView, validatorSetMapping));
 		}
 
-		SimulationNodes bftNetwork =  new SimulationNodes(nodes, network, pacemakerTimeout, stateComputerSupplier, getVerticesRPCEnabled);
+		SimulationNodes bftNetwork =  new SimulationNodes(nodes, network, pacemakerTimeout, syncExecutionModules.build(), getVerticesRPCEnabled);
 		RunningNetwork runningNetwork = bftNetwork.start();
 
 		return runChecks(runningNetwork, duration, timeUnit)

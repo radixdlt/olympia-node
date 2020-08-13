@@ -151,7 +151,7 @@ public class EpochManagerTest {
 		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of());
 		epochManager.processEpochChange(new EpochChange(ancestor, validatorSet));
 		BFTNode sender = mock(BFTNode.class);
-		epochManager.processGetEpochRequest(new GetEpochRequest(sender, 2L));
+		epochManager.processGetEpochRequest(new GetEpochRequest(sender, 1L));
 		verify(syncEpochsRPCSender, times(1)).sendGetEpochResponse(eq(sender), eq(ancestor));
 	}
 

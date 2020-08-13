@@ -296,9 +296,13 @@ public final class EpochManager {
 	public void processGetEpochRequest(GetEpochRequest request) {
 		log.trace("{}: GET_EPOCH_REQUEST: {}", this.self::getSimpleName, () -> request);
 
-		if (this.currentEpoch() == request.getEpoch()) {
+		if (this.currentEpoch() > request.getEpoch()) {
 			epochsRPCSender.sendGetEpochResponse(request.getAuthor(), this.currentAncestor);
 		} else {
+			log.warn("{}: GET_EPOCH_REQUEST: {} but currently on epoch: {}",
+				this.self::getSimpleName, () -> request, this::currentEpoch
+			);
+
 			// TODO: Send better error message back
 			epochsRPCSender.sendGetEpochResponse(request.getAuthor(), null);
 		}
@@ -346,7 +350,7 @@ public final class EpochManager {
 			counters.set(CounterType.EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS, numQueuedConsensusEvents);
 
 			// Send request for higher epoch proof
-			epochsRPCSender.sendGetEpochRequest(consensusEvent.getAuthor(), this.currentEpoch() + 1);
+			epochsRPCSender.sendGetEpochRequest(consensusEvent.getAuthor(), this.currentEpoch());
 			return;
 		}
 

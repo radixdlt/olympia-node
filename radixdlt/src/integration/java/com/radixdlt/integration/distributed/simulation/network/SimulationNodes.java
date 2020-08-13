@@ -19,12 +19,14 @@ package com.radixdlt.integration.distributed.simulation.network;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Guice;
+import com.google.inject.Inject;
 import com.google.inject.Injector;
+import com.google.inject.Module;
 import com.radixdlt.ConsensusModule;
 import com.radixdlt.SystemInfoMessagesModule;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.integration.distributed.simulation.NullCryptoModule;
-import com.radixdlt.integration.distributed.simulation.SimulationSyncerAndNetworkModule;
+import com.radixdlt.integration.distributed.simulation.MockedCryptoModule;
+import com.radixdlt.integration.distributed.simulation.SimulationNetworkModule;
 import com.radixdlt.systeminfo.InfoRx;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.ConsensusRunner;
@@ -34,7 +36,7 @@ import com.radixdlt.consensus.SyncedExecutor;
 import com.radixdlt.middleware2.CommittedAtom;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  * A multi-node bft test network where the network and latencies of each message is simulated.
@@ -45,7 +47,8 @@ public class SimulationNodes {
 	private final ImmutableList<Injector> nodeInstances;
 	private final List<BFTNode> nodes;
 	private final boolean getVerticesRPCEnabled;
-	private final Supplier<SimulatedSyncedExecutor> stateComputerSupplier;
+
+	private final ImmutableList<Module> syncModules;
 
 	public interface SimulatedSyncedExecutor extends SyncedExecutor<CommittedAtom>, EpochChangeRx {
 		BFTValidatorSet initialValidatorSet();
@@ -61,11 +64,11 @@ public class SimulationNodes {
 		List<BFTNode> nodes,
 		SimulationNetwork underlyingNetwork,
 		int pacemakerTimeout,
-		Supplier<SimulatedSyncedExecutor> stateComputerSupplier,
+		ImmutableList<Module> syncModules,
 		boolean getVerticesRPCEnabled
 	) {
 		this.nodes = nodes;
-		this.stateComputerSupplier = stateComputerSupplier;
+		this.syncModules = syncModules;
 		this.getVerticesRPCEnabled = getVerticesRPCEnabled;
 		this.underlyingNetwork = Objects.requireNonNull(underlyingNetwork);
 		this.pacemakerTimeout = pacemakerTimeout;
@@ -73,12 +76,16 @@ public class SimulationNodes {
 	}
 
 	private Injector createBFTInstance(BFTNode self) {
-		return Guice.createInjector(
-			new ConsensusModule(pacemakerTimeout),
-			new SystemInfoMessagesModule(),
-			new NullCryptoModule(),
-			new SimulationSyncerAndNetworkModule(getVerticesRPCEnabled, self, underlyingNetwork, stateComputerSupplier.get())
-		);
+		ImmutableList<Module> modules = ImmutableList.<Module>builder()
+			.add(
+				new ConsensusModule(pacemakerTimeout),
+				new SystemInfoMessagesModule(),
+				new MockedCryptoModule(),
+				new SimulationNetworkModule(getVerticesRPCEnabled, self, underlyingNetwork)
+			)
+			.addAll(syncModules)
+			.build();
+		return Guice.createInjector(modules);
 	}
 
 	// TODO: Add support for epoch changes
@@ -92,7 +99,14 @@ public class SimulationNodes {
 
 	public RunningNetwork start() {
 
-		this.nodeInstances.forEach(i -> i.getInstance(ConsensusRunner.class).start());
+		List<ConsensusRunner> consensusRunners = this.nodeInstances.stream()
+			.map(i -> i.getInstance(ConsensusRunner.class))
+			.collect(Collectors.toList());
+
+		for (ConsensusRunner consensusRunner : consensusRunners) {
+			consensusRunner.start();
+		}
+
 		return new RunningNetwork() {
 			@Override
 			public List<BFTNode> getNodes() {
