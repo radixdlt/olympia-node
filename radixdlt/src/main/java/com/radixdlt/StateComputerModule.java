@@ -56,12 +56,8 @@ import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.CMStore;
-import com.radixdlt.store.CursorStore;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.LedgerEntryStore;
-import com.radixdlt.store.LedgerEntryStoreView;
-import com.radixdlt.store.berkeley.BerkeleyCursorStore;
-import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
 import com.radixdlt.syncer.SyncExecutor.StateComputer;
 import com.radixdlt.universe.Universe;
 import java.util.function.Consumer;
@@ -85,9 +81,6 @@ public class StateComputerModule extends AbstractModule {
 	protected void configure() {
 		bind(new TypeLiteral<EngineStore<CommittedAtom>>() { }).to(CommittedAtomsStore.class).in(Scopes.SINGLETON);
 		bind(AtomToBinaryConverter.class).toInstance(new AtomToBinaryConverter(DefaultSerialization.getInstance()));
-		bind(LedgerEntryStore.class).to(BerkeleyLedgerEntryStore.class);
-		bind(LedgerEntryStoreView.class).to(BerkeleyLedgerEntryStore.class);
-		bind(CursorStore.class).to(BerkeleyCursorStore.class);
 		bind(StateComputer.class).to(RadixEngineStateComputer.class);
 	}
 
@@ -259,7 +252,7 @@ public class StateComputerModule extends AbstractModule {
 		AtomIndexer atomIndexer
 	) {
 		final CommittedAtomsStore engineStore = new CommittedAtomsStore(store, atomToBinaryConverter, atomIndexer);
-		if (engineStore.getCommittedAtoms(genesisAtom.getVertexMetadata().getStateVersion() - 1, 1).isEmpty()) {
+		if (store.getNextCommittedLedgerEntries(genesisAtom.getVertexMetadata().getStateVersion() - 1, 1).isEmpty()) {
 			engineStore.storeAtom(genesisAtom);
 		}
 		return engineStore;

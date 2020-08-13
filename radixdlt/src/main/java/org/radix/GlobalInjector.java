@@ -27,6 +27,7 @@ import com.radixdlt.ConsensusModule;
 import com.radixdlt.CryptoModule;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.ExecutionMessagesModule;
+import com.radixdlt.PersistenceModule;
 import com.radixdlt.StateComputerModule;
 import com.radixdlt.SyncCommittedServiceModule;
 import com.radixdlt.SyncMempoolServiceModule;
@@ -96,6 +97,7 @@ public class GlobalInjector {
 			new SyncCommittedServiceModule(),
 			new SyncMempoolServiceModule(),
 			new StateComputerModule(fixedNodeCount, viewsPerEpoch),
+			new PersistenceModule(),
 			new NetworkModule(),
 			new SystemInfoModule(properties),
 
