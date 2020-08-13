@@ -17,7 +17,7 @@
 
 package com.radixdlt.consensus.simulation.invariants.epochs;
 
-import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.simulation.TestInvariant;
 import com.radixdlt.consensus.simulation.network.SimulationNodes.RunningNetwork;
 import io.reactivex.rxjava3.core.Observable;
@@ -37,7 +37,7 @@ public class EpochViewInvariant implements TestInvariant {
 	@Override
 	public Observable<TestInvariantError> check(RunningNetwork network) {
 		return Observable.merge(
-			network.getNodes().stream().map(node -> network.getVertexStoreEvents(node).committedVertices()).collect(Collectors.toList())
+			network.getNodes().stream().map(node -> network.getInfo(node).committedVertices()).collect(Collectors.toList())
 		)
 			.flatMap(vertex -> {
 				final View view = vertex.getView();

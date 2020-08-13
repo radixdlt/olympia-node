@@ -24,9 +24,9 @@ import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
-import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.VoteData;
+import com.radixdlt.consensus.bft.BFTEventReducer.BFTInfoSender;
 import com.radixdlt.consensus.bft.BFTEventReducer.EndOfEpochSender;
 import com.radixdlt.consensus.liveness.ProposalGenerator;
 import com.radixdlt.identifiers.AID;
@@ -66,6 +66,7 @@ public class BFTEventReducerTest {
 	private VertexStore vertexStore;
 	private BFTValidatorSet validatorSet;
 	private SystemCounters counters;
+	private BFTInfoSender infoSender;
 	private BFTNode self;
 
 	@Before
@@ -80,6 +81,7 @@ public class BFTEventReducerTest {
 		this.proposerElection = mock(ProposerElection.class);
 		this.validatorSet = mock(BFTValidatorSet.class);
 		this.counters = mock(SystemCounters.class);
+		this.infoSender = mock(BFTInfoSender.class);
 		this.self = mock(BFTNode.class);
 
 		this.reducer = new BFTEventReducer(
@@ -93,7 +95,8 @@ public class BFTEventReducerTest {
 			pendingVotes,
 			proposerElection,
 			validatorSet,
-			counters
+			counters,
+			infoSender
 		);
 	}
 

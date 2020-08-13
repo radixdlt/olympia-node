@@ -18,7 +18,7 @@
 package com.radixdlt.consensus.liveness;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
 import java.util.Objects;
 

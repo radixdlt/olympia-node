@@ -33,6 +33,7 @@ import com.radixdlt.identifiers.EUID;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.mempool.MempoolModule;
+import com.radixdlt.middleware2.InfoSupplier;
 import com.radixdlt.middleware2.MiddlewareModule;
 import com.radixdlt.middleware2.network.NetworkModule;
 import com.radixdlt.network.addressbook.AddressBookModule;
@@ -175,14 +176,14 @@ public class GlobalInjector {
 	}
 
 	static class LocalSystemProvider implements Provider<LocalSystem> {
-		private final SystemCounters counters;
 		private final RuntimeProperties properties;
 		private final Universe universe;
 		private final HostIp hostIp;
+		private final InfoSupplier infoSupplier;
 
 		@Inject
-		public LocalSystemProvider(SystemCounters counters, RuntimeProperties properties, Universe universe, HostIp hostIp) {
-			this.counters = counters;
+		public LocalSystemProvider(InfoSupplier infoSupplier, RuntimeProperties properties, Universe universe, HostIp hostIp) {
+			this.infoSupplier = infoSupplier;
 			this.properties = properties;
 			this.universe = universe;
 			this.hostIp = hostIp;
@@ -192,7 +193,8 @@ public class GlobalInjector {
 		public LocalSystem get() {
 			String host = this.hostIp.hostIp()
 				.orElseThrow(() -> new IllegalStateException("Unable to determine host IP"));
-			return LocalSystem.create(this.counters, this.properties, this.universe, host);
+
+			return LocalSystem.create(infoSupplier, this.properties, this.universe, host);
 		}
 	}
 }

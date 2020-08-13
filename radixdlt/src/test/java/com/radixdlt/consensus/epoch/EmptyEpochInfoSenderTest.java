@@ -15,28 +15,17 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.consensus.epoch;
 
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
-import com.radixdlt.consensus.bft.View;
-import nl.jqno.equalsverifier.EqualsVerifier;
+import com.radixdlt.consensus.bft.BFTNode;
 import org.junit.Test;
 
-public class QuorumCertificateTest {
+public class EmptyEpochInfoSenderTest {
 	@Test
-	public void when_create_genesis_qc_with_non_genesis_vertex__then_should_throw_exception() {
-		Vertex vertex = mock(Vertex.class);
-		when(vertex.getView()).thenReturn(View.of(1));
-		assertThatThrownBy(() -> QuorumCertificate.ofGenesis(vertex))
-			.isInstanceOf(IllegalArgumentException.class);
-	}
-
-	@Test
-	public void equalsContract() {
-		EqualsVerifier.forClass(QuorumCertificate.class)
-			.verify();
+	public void when_send__then_no_exception_occurs() {
+		EmptyEpochInfoSender.INSTANCE.sendCurrentView(mock(EpochView.class));
+		EmptyEpochInfoSender.INSTANCE.sendTimeoutProcessed(mock(EpochView.class), mock(BFTNode.class));
 	}
 }

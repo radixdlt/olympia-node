@@ -1,5 +1,6 @@
 package com.radixdlt.consensus;
 
+import com.radixdlt.consensus.bft.View;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 
@@ -7,6 +8,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class ViewTest {
+	@Test
+	public void testBadArgument() {
+		assertThatThrownBy(() -> View.of(-1L))
+			.isInstanceOf(IllegalArgumentException.class);
+	}
 	@Test
 	public void testPrevious() {
 		assertThat(View.of(2L).previous()).isEqualTo(View.of(1L));

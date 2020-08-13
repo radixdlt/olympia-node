@@ -18,7 +18,7 @@
 package com.radixdlt.consensus.deterministic.tests.ledger;
 
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.deterministic.DeterministicTest;
 import java.util.HashMap;
 import java.util.Map;

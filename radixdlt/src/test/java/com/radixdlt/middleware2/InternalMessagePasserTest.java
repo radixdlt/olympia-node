@@ -23,10 +23,13 @@ import static org.powermock.api.mockito.PowerMockito.when;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.api.StoredAtom;
 import com.radixdlt.api.StoredFailure;
+import com.radixdlt.api.Timeout;
 import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.epoch.EpochChange;
+import com.radixdlt.consensus.epoch.EpochView;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.RadixEngineException;
 import io.reactivex.rxjava3.observers.TestObserver;
@@ -111,6 +114,30 @@ public class InternalMessagePasserTest {
 		internalMessagePasser.sendStoredFailure(committedAtom, e);
 		testObserver.awaitCount(1);
 		testObserver.assertValueAt(0, s -> s.getAtom().equals(committedAtom) && s.getException().equals(e));
+		testObserver.assertNotComplete();
+	}
+
+	@Test
+	public void when_send_current_view_event__then_should_receive_it() {
+		InternalMessagePasser internalMessagePasser = new InternalMessagePasser();
+		TestObserver<EpochView> testObserver = internalMessagePasser.currentViews().test();
+		EpochView epochView = mock(EpochView.class);
+		internalMessagePasser.sendCurrentView(epochView);
+		testObserver.awaitCount(1);
+		testObserver.assertValueAt(0, epochView);
+		testObserver.assertNotComplete();
+	}
+
+	@Test
+	public void when_send_timeout_event__then_should_receive_it() {
+		InternalMessagePasser internalMessagePasser = new InternalMessagePasser();
+		TestObserver<Timeout> testObserver = internalMessagePasser.timeouts().test();
+
+		EpochView epochView = mock(EpochView.class);
+		BFTNode leader = mock(BFTNode.class);
+		internalMessagePasser.sendTimeoutProcessed(epochView, leader);
+		testObserver.awaitCount(1);
+		testObserver.assertValueAt(0, timeout -> timeout.getEpochView().equals(epochView) && timeout.getLeader().equals(leader));
 		testObserver.assertNotComplete();
 	}
 }

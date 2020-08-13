@@ -19,7 +19,7 @@ package com.radixdlt.consensus.simulation.tests.epochs;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.simulation.SimulationTest;
 import com.radixdlt.consensus.simulation.SimulationTest.Builder;
 import com.radixdlt.consensus.simulation.TestInvariant.TestInvariantError;

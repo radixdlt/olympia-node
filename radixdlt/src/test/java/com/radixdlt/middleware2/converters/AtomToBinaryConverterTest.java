@@ -21,7 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.consensus.VertexMetadata;
-import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.atomos.RRIParticle;

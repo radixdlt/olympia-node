@@ -20,7 +20,6 @@ package com.radixdlt.consensus.bft;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.View;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.crypto.Hash;
 

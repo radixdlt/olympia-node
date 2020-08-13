@@ -27,7 +27,7 @@ import org.junit.Test;
 
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
-import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.deterministic.DeterministicTest;
 import com.radixdlt.counters.SystemCounters;
 

@@ -21,15 +21,22 @@ import com.radixdlt.consensus.bft.View;
 import java.util.Objects;
 
 /**
- * A timeout for a given epoch and view
+ * A bft view with it's corresponding epoch
  */
-public final class LocalTimeout {
+public final class EpochView implements Comparable<EpochView> {
 	private final long epoch;
 	private final View view;
 
-	public LocalTimeout(long epoch, View view) {
+	public EpochView(long epoch, View view) {
+		if (epoch < 0) {
+			throw new IllegalArgumentException("epoch must be >= 0");
+		}
 		this.epoch = epoch;
 		this.view = Objects.requireNonNull(view);
+	}
+
+	public static EpochView of(long epoch, View view) {
+		return new EpochView(epoch, view);
 	}
 
 	public long getEpoch() {
@@ -41,22 +48,31 @@ public final class LocalTimeout {
 	}
 
 	@Override
+	public String toString() {
+		return String.format("%s{epoch=%s view=%s}", this.getClass().getSimpleName(), epoch, view);
+	}
+
+	@Override
 	public int hashCode() {
 		return Objects.hash(epoch, view);
 	}
 
 	@Override
 	public boolean equals(Object o) {
-		if (!(o instanceof LocalTimeout)) {
+		if (!(o instanceof EpochView)) {
 			return false;
 		}
-		LocalTimeout other = (LocalTimeout) o;
-		return other.epoch == this.epoch
-			&& Objects.equals(other.view, this.view);
+
+		EpochView other = (EpochView) o;
+		return other.epoch == this.epoch && Objects.equals(other.view, this.view);
 	}
 
 	@Override
-	public String toString() {
-		return String.format("%s{epoch=%s view=%s}", this.getClass().getSimpleName(), epoch, view);
+	public int compareTo(EpochView o) {
+		if (this.epoch != o.epoch) {
+			return Long.compare(this.epoch, o.epoch);
+		}
+
+		return this.view.compareTo(o.view);
 	}
 }

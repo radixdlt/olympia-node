@@ -18,7 +18,7 @@
 package com.radixdlt.consensus.liveness;
 
 import com.radixdlt.consensus.NewView;
-import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.bft.View;
 
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import java.util.Optional;

@@ -17,7 +17,7 @@
 
 package com.radixdlt.consensus.liveness;
 
-import com.radixdlt.consensus.View;
+import com.radixdlt.consensus.bft.View;
 
 /**
  * State of a pacemaker

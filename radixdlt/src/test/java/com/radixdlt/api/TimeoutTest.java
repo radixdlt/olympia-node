@@ -15,37 +15,37 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus.epoch;
+package com.radixdlt.api;
 
-import static org.junit.Assert.*;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.mock;
 
-import com.radixdlt.consensus.bft.View;
-import nl.jqno.equalsverifier.EqualsVerifier;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.epoch.EpochView;
 import org.junit.Before;
 import org.junit.Test;
 
-public class LocalTimeoutTest {
-	private LocalTimeout localTimeout;
-	private long epoch;
-	private View view;
+public class TimeoutTest {
+	private EpochView epochView;
+	private BFTNode leader;
+	private Timeout timeout;
 
 	@Before
 	public void setup() {
-		epoch = 12345;
-		view = mock(View.class);
-		localTimeout = new LocalTimeout(epoch, view);
+		this.epochView = mock(EpochView.class);
+		this.leader = mock(BFTNode.class);
+
+		this.timeout = new Timeout(this.epochView, this.leader);
 	}
 
 	@Test
-	public void equalsContract() {
-		EqualsVerifier.forClass(LocalTimeout.class)
-			.verify();
+	public void test_getters() {
+		assertThat(this.timeout.getEpochView()).isEqualTo(epochView);
+		assertThat(this.timeout.getLeader()).isEqualTo(leader);
 	}
 
 	@Test
-	public void testGetters() {
-		assertEquals(this.view, this.localTimeout.getView());
-		assertEquals(this.epoch, this.localTimeout.getEpoch());
+	public void test_toString() {
+		assertThat(this.timeout.toString()).isNotNull();
 	}
 }
