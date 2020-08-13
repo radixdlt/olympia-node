@@ -180,8 +180,8 @@ public final class ConsensusRunner {
 		boolean started = false;
 		synchronized (lock) {
 			if (disposable == null) {
+				singleThreadExecutor.submit(epochManager::start);
 				disposable = this.events.connect();
-				epochManager.start();
 				started = true;
 			}
 		}
