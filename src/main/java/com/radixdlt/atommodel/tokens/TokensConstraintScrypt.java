@@ -360,10 +360,10 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 						}
 
 						// check that the validator (i.e. the delegate) allows the delegator to stake against it
-						if (!inputUsed.getDelegate().allowsDelegator(inputParticle.getAddress())) {
+						if (!inputUsed.getDelegate().allowsDelegator(outputParticle.getAddress())) {
 							return Result.error(String.format(
 								"delegate %s does not allow delegator %s",
-								inputUsed.getDelegate(), inputParticle.getAddress())
+								inputUsed.getDelegate(), outputParticle.getAddress())
 							);
 						}
 
