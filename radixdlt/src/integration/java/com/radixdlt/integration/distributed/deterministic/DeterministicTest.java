@@ -31,7 +31,6 @@ import com.radixdlt.integration.distributed.deterministic.ControlledNetwork.Cont
 import com.radixdlt.integration.distributed.deterministic.ControlledNetwork.ControlledSender;
 import com.radixdlt.integration.distributed.deterministic.ControlledNode.SyncAndTimeout;
 import com.radixdlt.integration.distributed.deterministic.configuration.SingleEpochAlwaysSyncedExecutor;
-import com.radixdlt.integration.distributed.deterministic.configuration.SingleEpochFailOnSyncSyncedExecutor;
 import com.radixdlt.integration.distributed.deterministic.configuration.SingleEpochRandomlySyncedExecutor;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.syncer.SyncExecutor.CommittedStateSyncSender;
@@ -154,23 +153,6 @@ public final class DeterministicTest {
 			numNodes,
 			SyncAndTimeout.SYNC_AND_TIMEOUT,
 			(committedSender, epochChangeSender) -> SingleEpochAlwaysSyncedExecutor.INSTANCE,
-			NodeWeighting.constant(UInt256.ONE)
-		);
-	}
-
-	/**
-	 * Creates a new "non syncing BFT" Deterministic test solely on the bft layer,
-	 * "non syncing BFT" implying that the configuration of the network should never
-	 * require a vertex sync nor a state computer sync
-	 *
-	 * @param numNodes number of nodes in the network
-	 * @return a deterministic test
-	 */
-	public static DeterministicTest createSingleEpochFailOnSyncTest(int numNodes) {
-		return new DeterministicTest(
-			numNodes,
-			SyncAndTimeout.NONE,
-			(committedSender, epochChangeSender) -> SingleEpochFailOnSyncSyncedExecutor.INSTANCE,
 			NodeWeighting.constant(UInt256.ONE)
 		);
 	}
