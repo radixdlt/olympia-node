@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed.consensus.simulation_tests.synchronous;
+package com.radixdlt.integration.distributed.simulation.tests.consensus;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
@@ -27,35 +27,45 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 
-public class FPlusOneOutOfBoundsTest {
-	private final int latency = 50;
-	private final int synchronousTimeout = 8 * latency;
-	private final int outOfBoundsLatency = synchronousTimeout;
+/**
+ * Simulation with a communication adversary which drops a random proposal message in every
+ * round.
+ */
+public class OneProposalDropperTest {
+	private final int minLatency = 10;
+	private final int maxLatency = 200;
+	private final int trips = 20;
+	private final int synchronousTimeout = maxLatency * trips;
 	private final Builder bftTestBuilder = SimulationTest.builder()
-		.pacemakerTimeout(2 * synchronousTimeout)
+		.numNodes(4)
+		.randomLatency(minLatency, maxLatency)
+		.pacemakerTimeout(synchronousTimeout)
+		.addProposalDropper()
 		.checkSafety("safety")
-		.checkNoneCommitted("noneCommitted");
+		.checkNoTimeouts("noTimeouts");
 
 	/**
-	 * Tests a configuration of 0 out of 3 nodes out of synchrony bounds
+	 * Tests a configuration of 4 nodes with a dropping proposal adversary
+	 * Test should fail with GetVertices RPC disabled
 	 */
 	@Test
-	public void given_0_out_of_3_nodes_out_of_synchrony_bounds() {
+	public void given_get_vertices_disabled__then_test_should_fail_against_drop_proposal_adversary() {
 		SimulationTest test = bftTestBuilder
-			.numNodesAndLatencies(3, latency, latency, latency)
+			.setGetVerticesRPCEnabled(false)
 			.build();
 
 		Map<String, Optional<TestInvariantError>> results = test.run(1, TimeUnit.MINUTES);
-		assertThat(results).hasEntrySatisfying("noneCommitted", error -> assertThat(error).isPresent());
+		assertThat(results).hasEntrySatisfying("noTimeouts", error -> assertThat(error).isPresent());
 	}
 
 	/**
-	 * Tests a configuration of 1 out of 3 nodes out of synchrony bounds
+	 * Tests a configuration of 4 nodes with a dropping proposal adversary
+	 * Test should fail with GetVertices RPC disabled
 	 */
 	@Test
-	public void given_1_out_of_3_nodes_out_of_synchrony_bounds() {
+	public void given_get_vertices_enabled__then_test_should_succeed_against_drop_proposal_adversary() {
 		SimulationTest test = bftTestBuilder
-			.numNodesAndLatencies(3, latency, latency, outOfBoundsLatency)
+			.setGetVerticesRPCEnabled(true)
 			.build();
 
 		Map<String, Optional<TestInvariantError>> results = test.run(1, TimeUnit.MINUTES);

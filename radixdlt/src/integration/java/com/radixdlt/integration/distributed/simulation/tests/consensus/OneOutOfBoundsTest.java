@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed.consensus.simulation_tests.synchronous;
+package com.radixdlt.integration.distributed.simulation.tests.consensus;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
@@ -28,31 +28,23 @@ import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
-/**
- * Simulation which tests for bft correctness if one node is significantly slower than
- * the others but is still within bounds of synchrony. Correctness depends on whether syncing is
- * enabled or not. Both cases are verified in this test.
- */
-public class OneSlowNodeTest {
-	private final int minLatency = 10;
-	private final int maxLatency = 200;
-	private final int trips = 8;
-	private final int synchronousTimeout = maxLatency * trips;
+public class OneOutOfBoundsTest {
+	private final int latency = 50;
+	private final int synchronousTimeout = 8 * latency;
+	private final int outOfBoundsLatency = synchronousTimeout;
+	// TODO: Add 1 timeout check
 	private final Builder bftTestBuilder = SimulationTest.builder()
-		.numNodesAndLatencies(4, minLatency, minLatency, minLatency, maxLatency)
 		.pacemakerTimeout(synchronousTimeout)
-		.checkSafety("safety")
-		.checkAllProposalsHaveDirectParents("directParents")
-		.checkNoTimeouts("noTimeouts");
+		.checkLiveness("liveness", 2 * synchronousTimeout, TimeUnit.MILLISECONDS)
+		.checkSafety("safety");
 
 	/**
-	 * Tests a static configuration of 3 fast, equal nodes and 1 slow node.
-	 * Test should pass even with GetVertices RPC disabled
+	 * Tests a configuration of 1 out of 4 nodes out of synchrony bounds
 	 */
 	@Test
-	public void given_4_nodes_3_fast_and_1_slow_node_and_sync_disabled__then_a_timeout_wont_occur() {
+	public void given_1_out_of_4_nodes_out_of_synchrony_bounds() {
 		SimulationTest test = bftTestBuilder
-			.setGetVerticesRPCEnabled(false)
+			.numNodesAndLatencies(4, latency, latency, latency, outOfBoundsLatency)
 			.build();
 
 		Map<String, Optional<TestInvariantError>> results = test.run(1, TimeUnit.MINUTES);

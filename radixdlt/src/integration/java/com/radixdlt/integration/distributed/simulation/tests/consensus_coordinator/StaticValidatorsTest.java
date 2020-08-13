@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed.consensus_syncer;
+package com.radixdlt.integration.distributed.simulation.tests.consensus_coordinator;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 

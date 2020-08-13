@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed.consensus.deterministic_tests.synchronous;
+package com.radixdlt.integration.distributed.deterministic.tests.consensus;
 
 import com.radixdlt.integration.distributed.deterministic.DeterministicTest;
 import java.util.Random;

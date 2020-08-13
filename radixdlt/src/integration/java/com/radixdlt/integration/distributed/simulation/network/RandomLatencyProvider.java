@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed.simulation.configuration;
+package com.radixdlt.integration.distributed.simulation.network;
 
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.LatencyProvider;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.MessageInTransit;

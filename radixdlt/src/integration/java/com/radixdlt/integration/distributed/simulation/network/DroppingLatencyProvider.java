@@ -15,11 +15,10 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed.simulation.configuration;
+package com.radixdlt.integration.distributed.simulation.network;
 
 import com.google.common.collect.Sets;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.LatencyProvider;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.MessageInTransit;
 import java.util.Set;
