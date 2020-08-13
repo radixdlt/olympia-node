@@ -58,7 +58,7 @@ public class AtomToBinaryConverterTest {
 			ImmutableMap.of("timestamp", "0")
 		);
 
-		VertexMetadata vertexMetadata = new VertexMetadata(0, View.of(1), Hash.random(), 0, false);
+		VertexMetadata vertexMetadata = new VertexMetadata(0, View.of(1), Hash.random(), 0, false, Hash.ZERO_HASH);
 		CommittedAtom committedAtom = new CommittedAtom(ClientAtom.convertFromApiAtom(atom), vertexMetadata);
 
 		byte[] serializedAtom = atomToBinaryConverter.toLedgerEntryContent(committedAtom);

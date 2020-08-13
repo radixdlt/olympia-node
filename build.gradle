@@ -15,25 +15,47 @@
  * language governing permissions and limitations under the License.
  */
 
-group 'radixdlt-core'
-
-buildscript {
-    repositories {
-        jcenter()
-        maven { url "https://plugins.gradle.org/m2/" }
-    }
-    dependencies {
-        classpath 'com.netflix.nebula:gradle-ospackage-plugin:4.9.3'
-        classpath 'net.sf.proguard:proguard-gradle:6.0.3'
-        classpath 'com.moowork.gradle:gradle-node-plugin:1.2.0'
-        classpath 'com.github.jengelman.gradle.plugins:shadow:2.0.3'
-        classpath 'me.champeau.gradle:jmh-gradle-plugin:0.4.7'
-        classpath 'org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:2.8'
-        classpath 'com.adarshr:gradle-test-logger-plugin:1.6.0'
-    }
+plugins {
+    id 'nebula.ospackage' version '5.3.5'
+    id 'com.github.johnrengelman.shadow' version '2.0.3'
+    id 'me.champeau.gradle.jmh' version '0.4.7'
+    id 'org.sonarqube' version '3.0'
+    id 'com.adarshr.test-logger' version '1.7.1'
+    id 'com.palantir.git-version' version '0.12.3'
+    id 'com.moowork.node' version '1.2.0'
+    id 'net.nemerosa.versioning' version '2.14.0'
 }
 
+repositories {
+    jcenter()
+    maven { url "https://plugins.gradle.org/m2/" }
+}
+
+def radixVersion() {
+    def details = versionDetails()
+    def version
+    if (details.isCleanTag) {
+        version = details.lastTag
+    } else {
+        version = details.branchName
+        if (version == null) {
+            version = "${details.lastTag}-detachedhead-${details.gitHash}"
+        } else {
+            // Prepend last tag so builddeb doesn't choke on non-numeric branch names
+            version = "${details.lastTag}-${version}"
+            version = version.replaceAll('/', '-')
+        }
+        version = "${version}-SNAPSHOT"
+    }
+    return version
+}
+
+group 'com.radixdlt'
+version radixVersion()
+
 subprojects {
+    version = rootProject.version
+
     configurations.all {
         resolutionStrategy {
             // fail eagerly on version conflict (includes transitive dependencies)
@@ -47,6 +69,7 @@ subprojects {
     repositories {
         jcenter()
         mavenCentral()
+        maven { url 'https://maven.pkg.github.com/radixdlt/maven-packages' }
         maven { url 'https://jitpack.io' }
     }
 
@@ -60,4 +83,3 @@ subprojects {
         }
     }
 }
-

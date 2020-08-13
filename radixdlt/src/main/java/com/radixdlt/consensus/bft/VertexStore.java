@@ -20,7 +20,7 @@ package com.radixdlt.consensus.bft;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.SyncedStateComputer;
+import com.radixdlt.consensus.SyncedExecutor;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.VertexStoreEventProcessor;
@@ -56,9 +56,11 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		int getCount();
 	}
 
-	public interface VertexStoreEventSender {
-		// TODO: combine Synced and Committed
+	public interface SyncedVertexSender {
 		void sendSyncedVertex(Vertex vertex);
+	}
+
+	public interface VertexStoreEventSender {
 		void sendCommittedVertex(Vertex vertex);
 		void highQC(QuorumCertificate qc);
 	}
@@ -96,8 +98,9 @@ public final class VertexStore implements VertexStoreEventProcessor {
 	}
 
 	private final VertexStoreEventSender vertexStoreEventSender;
+	private final SyncedVertexSender syncedVertexSender;
 	private final SyncVerticesRPCSender syncVerticesRPCSender;
-	private final SyncedStateComputer<CommittedAtom> syncedStateComputer;
+	private final SyncedExecutor<CommittedAtom> syncedExecutor;
 	private final SystemCounters counters;
 
 	// These should never be null
@@ -111,17 +114,18 @@ public final class VertexStore implements VertexStoreEventProcessor {
 	public VertexStore(
 		Vertex rootVertex,
 		QuorumCertificate rootQC,
-		SyncedStateComputer<CommittedAtom> syncedStateComputer,
+		SyncedExecutor<CommittedAtom> syncedExecutor,
 		SyncVerticesRPCSender syncVerticesRPCSender,
+		SyncedVertexSender syncedVertexSender,
 		VertexStoreEventSender vertexStoreEventSender,
 		SystemCounters counters
 	) {
 		this(
 			rootVertex,
 			rootQC,
-			Collections.emptyList(),
-			syncedStateComputer,
+			Collections.emptyList(), syncedExecutor,
 			syncVerticesRPCSender,
+			syncedVertexSender,
 			vertexStoreEventSender,
 			counters
 		);
@@ -131,14 +135,16 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		Vertex rootVertex,
 		QuorumCertificate rootQC,
 		List<Vertex> vertices,
-		SyncedStateComputer<CommittedAtom> syncedStateComputer,
+		SyncedExecutor<CommittedAtom> syncedExecutor,
 		SyncVerticesRPCSender syncVerticesRPCSender,
+		SyncedVertexSender syncedVertexSender,
 		VertexStoreEventSender vertexStoreEventSender,
 		SystemCounters counters
 	) {
-		this.syncedStateComputer = Objects.requireNonNull(syncedStateComputer);
+		this.syncedExecutor = Objects.requireNonNull(syncedExecutor);
 		this.syncVerticesRPCSender = Objects.requireNonNull(syncVerticesRPCSender);
 		this.vertexStoreEventSender = Objects.requireNonNull(vertexStoreEventSender);
+		this.syncedVertexSender = Objects.requireNonNull(syncedVertexSender);
 		this.counters = Objects.requireNonNull(counters);
 
 		Objects.requireNonNull(rootVertex);
@@ -290,10 +296,10 @@ public final class VertexStore implements VertexStoreEventProcessor {
 	private void processVerticesResponseForCommittedSync(Hash syncTo, SyncState syncState, GetVerticesResponse response) {
 		log.info("SYNC_STATE: Processing vertices {}", syncState);
 
-		List<BFTNode> signers = Collections.singletonList(syncState.author);
+		ImmutableList<BFTNode> signers = ImmutableList.of(syncState.author);
 		syncState.fetched.addAll(response.getVertices());
 
-		if (syncedStateComputer.syncTo(syncState.committedVertexMetadata, signers, syncTo)) {
+		if (syncedExecutor.syncTo(syncState.committedVertexMetadata, signers, syncTo)) {
 			rebuildAndSyncQC(syncState);
 		} else {
 			syncState.setSyncStage(SyncStage.SYNC_TO_COMMIT);
@@ -473,7 +479,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		} else {
 			vertexToUse = vertex;
 		}
-		boolean isEndOfEpoch = syncedStateComputer.compute(vertexToUse);
+		boolean isEndOfEpoch = syncedExecutor.compute(vertexToUse);
 
 		// TODO: Don't check for state computer errors for now so that we don't
 		// TODO: have to deal with failing leader proposals
@@ -484,7 +490,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		updateVertexStoreSize();
 
 		if (syncing.containsKey(vertexToUse.getId())) {
-			vertexStoreEventSender.sendSyncedVertex(vertexToUse);
+			this.syncedVertexSender.sendSyncedVertex(vertexToUse);
 		}
 
 		return VertexMetadata.ofVertex(vertexToUse, isEndOfEpoch);
@@ -522,7 +528,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		for (Vertex committed : path) {
 			CommittedAtom committedAtom = new CommittedAtom(committed.getAtom(), commitMetadata);
 			this.counters.increment(CounterType.BFT_PROCESSED);
-			syncedStateComputer.execute(committedAtom);
+			syncedExecutor.execute(committedAtom);
 
 			this.vertexStoreEventSender.sendCommittedVertex(committed);
 		}

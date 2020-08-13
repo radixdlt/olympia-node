@@ -17,6 +17,7 @@
 
 package com.radixdlt.network.transport.tcp;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 
@@ -32,6 +33,7 @@ import com.radixdlt.network.transport.TransportInfo;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.handler.codec.TooLongFrameException;
 
 // For now we are just going to queue up the messages here.
 // In the longer term, we would dispatch the messages in the netty group as well,
@@ -39,7 +41,7 @@ import io.netty.channel.SimpleChannelInboundHandler;
 // downstream blocking that will happen, and this has the potential to slow down
 // the whole inbound network pipeline.
 final class TCPNettyMessageHandler extends SimpleChannelInboundHandler<ByteBuf> {
-	private static final Logger log = LogManager.getLogger("transport.tcp");
+	private static final Logger log = LogManager.getLogger();
 
 	private final InboundMessageConsumer messageSink;
 
@@ -77,6 +79,26 @@ final class TCPNettyMessageHandler extends SimpleChannelInboundHandler<ByteBuf> 
 
 	@Override
 	public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-		log.error("While receiving TCP packet", cause);
+		String remoteAddress = formatSocketAddress(ctx.channel().remoteAddress());
+		if (cause instanceof TooLongFrameException) {
+			// Frame desynchronisation or possible interloper sending random data
+			log.info("Dropping desynchronised TCP connection from {}: {}", remoteAddress, cause.getMessage());
+			ctx.close();
+		} else if (cause instanceof IOException) {
+			log.info("IOException while receiving TCP data from {}: {}", remoteAddress, cause.getMessage());
+		} else {
+			log.error(() -> String.format("While receiving TCP data from %s", remoteAddress), cause);
+		}
+	}
+
+	private static String formatSocketAddress(SocketAddress addr) {
+		if (addr == null) {
+			return "<none>";
+		}
+		if (addr instanceof InetSocketAddress) {
+			InetSocketAddress isa = (InetSocketAddress) addr;
+			return String.format("%s:%s", isa.getHostString(), isa.getPort());
+		}
+		return addr.toString();
 	}
 }

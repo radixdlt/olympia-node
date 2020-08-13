@@ -42,7 +42,7 @@ import com.radixdlt.serialization.DsonOutput.Output;
 // interfaces can't currently be part of a serialization type hierarchy.
 @SerializerId2("network.peer.base")
 public abstract class Peer extends BasicContainer {
-	protected static final Logger log = LogManager.getLogger("addressbook");
+	protected static final Logger log = LogManager.getLogger();
 
 	public static final int DEFAULT_BANTIME = 60 * 60;
 

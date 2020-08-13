@@ -29,8 +29,8 @@ public interface VertexStoreFactory {
 	 * Creates a new VertexStore given initial vertex and QC
 	 * @param genesisVertex the root vertex
 	 * @param genesisQC the root QC
-	 * @param syncedStateComputer the underlying state computer
+	 * @param syncedExecutor the underlying state computer
 	 * @return a new VertexStore
 	 */
-	VertexStore create(Vertex genesisVertex, QuorumCertificate genesisQC, SyncedStateComputer<CommittedAtom> syncedStateComputer);
+	VertexStore create(Vertex genesisVertex, QuorumCertificate genesisQC, SyncedExecutor<CommittedAtom> syncedExecutor);
 }

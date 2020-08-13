@@ -19,7 +19,7 @@ package com.radixdlt.middleware2;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.consensus.SyncedStateComputer.CommittedInstruction;
+import com.radixdlt.consensus.SyncedExecutor.CommittedInstruction;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.crypto.Hash;
@@ -85,7 +85,7 @@ public final class CommittedAtom implements LedgerAtom, CommittedInstruction {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(clientAtom, vertexMetadata);
+		return Objects.hash(this.clientAtom, this.vertexMetadata);
 	}
 
 	@Override
@@ -111,6 +111,7 @@ public final class CommittedAtom implements LedgerAtom, CommittedInstruction {
 
 	@Override
 	public String toString() {
-		return String.format("%s{atom=%s meta=%s}", getClass().getSimpleName(), clientAtom != null ? clientAtom.getAID() : null, vertexMetadata);
+		return String.format("%s{atom=%s, timestamp=%s, meta=%s}",
+			getClass().getSimpleName(), clientAtom != null ? clientAtom.getAID() : null, this.vertexMetadata);
 	}
 }

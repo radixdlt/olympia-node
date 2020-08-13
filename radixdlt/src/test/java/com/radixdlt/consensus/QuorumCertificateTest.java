@@ -23,6 +23,7 @@ import static org.mockito.Mockito.when;
 
 import com.radixdlt.consensus.bft.View;
 import nl.jqno.equalsverifier.EqualsVerifier;
+
 import org.junit.Test;
 
 public class QuorumCertificateTest {

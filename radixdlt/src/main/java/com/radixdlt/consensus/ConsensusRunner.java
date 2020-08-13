@@ -84,7 +84,7 @@ public final class ConsensusRunner {
 		EpochChangeRx epochChangeRx,
 		ConsensusEventsRx networkRx,
 		PacemakerRx pacemakerRx,
-		VertexStoreEventsRx vertexStoreEventsRx,
+		VertexSyncRx vertexSyncRx,
 		CommittedStateSyncRx committedStateSyncRx,
 		SyncVerticesRPCRx rpcRx,
 		SyncEpochsRPCRx epochsRPCRx,
@@ -144,7 +144,7 @@ public final class ConsensusRunner {
 					epochManager.processGetEpochResponse(e);
 					return new Event(EventType.GET_EPOCH_RESPONSE, e);
 				}),
-			vertexStoreEventsRx.syncedVertices()
+			vertexSyncRx.syncedVertices()
 				.observeOn(singleThreadScheduler)
 				.map(e -> {
 					epochManager.processLocalSync(e);
@@ -162,7 +162,7 @@ public final class ConsensusRunner {
 			.doOnError(e -> {
 				// TODO: Implement better error handling especially against Byzantine nodes.
 				// TODO: Exit process for now.
-				log.error("Unexpected occurred", e);
+				log.error("Unexpected exception occurred", e);
 				System.exit(-1);
 			})
 			.publish();

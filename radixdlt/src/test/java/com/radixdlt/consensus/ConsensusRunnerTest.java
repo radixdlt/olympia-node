@@ -65,9 +65,9 @@ public class ConsensusRunnerTest {
 		when(syncEpochsRPCRx.epochRequests()).thenReturn(Observable.never());
 		when(syncEpochsRPCRx.epochResponses()).thenReturn(Observable.never());
 
-		VertexStoreEventsRx vertexStoreEventsRx = mock(VertexStoreEventsRx.class);
+		VertexSyncRx vertexSyncRx = mock(VertexSyncRx.class);
 		Hash id = mock(Hash.class);
-		when(vertexStoreEventsRx.syncedVertices()).thenReturn(Observable.just(id).concatWith(Observable.never()));
+		when(vertexSyncRx.syncedVertices()).thenReturn(Observable.just(id).concatWith(Observable.never()));
 
 		CommittedStateSyncRx committedStateSyncRx = mock(CommittedStateSyncRx.class);
 		CommittedStateSync stateSync = mock(CommittedStateSync.class);
@@ -76,8 +76,7 @@ public class ConsensusRunnerTest {
 		ConsensusRunner consensusRunner = new ConsensusRunner(
 			epochChangeRx,
 			networkRx,
-			pacemakerRx,
-			vertexStoreEventsRx,
+			pacemakerRx, vertexSyncRx,
 			committedStateSyncRx,
 			syncVerticesRPCRx,
 			syncEpochsRPCRx,

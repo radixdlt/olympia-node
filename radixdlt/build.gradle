@@ -26,6 +26,8 @@ apply plugin: 'com.moowork.node'
 apply plugin: 'me.champeau.gradle.jmh'
 apply plugin: 'org.sonarqube'
 apply plugin: 'com.adarshr.test-logger'
+apply plugin: 'net.nemerosa.versioning'
+apply plugin: 'com.palantir.git-version'
 
 node {
     download = true
@@ -53,6 +55,11 @@ configurations {
 checkstyle {
     toolVersion '8.10.1'
     showViolations = true
+}
+
+versionFile {
+    // Path to the file to be written
+    file = new File("$buildDir/resources/main", 'version.properties')
 }
 
 checkstyleMain {
@@ -97,7 +104,7 @@ dependencies {
 
     compile 'commons-cli:commons-cli:1.4'
     compile 'org.xerial.snappy:snappy-java:1.1.7.3'
-    compile 'io.netty:netty-all:4.1.39.Final'
+    compile 'io.netty:netty-all:4.1.51.Final'
     compile('com.google.inject:guice:4.2.2') {
         exclude group: 'com.google.guava', module: 'guava'
     }
@@ -134,14 +141,10 @@ jmh {
     warmupIterations = 1
 }
 
-test {
-    testLogging {
-        exceptionFormat = 'full'
-    }
-}
-
 // More warnings
 tasks.withType(JavaCompile) {
+    dependsOn 'versionFile'
+    options.compilerArgs << '-proc:none'
     options.compilerArgs << '-Xlint:deprecation'
     //options.compilerArgs << '-Xlint:unchecked' // Way too many of these at the moment
     options.deprecation = true
@@ -177,7 +180,6 @@ tasks.getByName("startScripts").dependsOn createGenerateNodeKeyScripts
 
 
 ospackage {
-    release = build
     os = LINUX
 
     postInstall file('ospackage/postinst.sh')
@@ -220,22 +222,24 @@ task depsize {
 }
 
 /**
- * Manages the *.deb file in the docker directory 
+ * Manages the *.deb file in the docker directory
  */
 task deb4docker(type: Copy, dependsOn: buildDeb) {
+    def ospackageVersion = version.replaceAll('-', '~')
+
     from("$buildDir/distributions") {
-        include "radixdlt_${version}-*_all.deb"
+        include "radixdlt_${ospackageVersion}_all.deb"
     }
     into rootProject.file('docker')
     doFirst {
         def names = [] as Set
-        destinationDir.eachFileMatch(groovy.io.FileType.FILES, ~/radixdlt_[\d\.]+-\d+_all\.deb/) {
+        destinationDir.eachFileMatch(groovy.io.FileType.FILES, ~/radixdlt_.+_all\.deb/) {
             names << it.name
         }
         names.toSorted().each {
             def rip = new File(destinationDir, it)
             rip.delete()
-            println "Deleting conflicting deb package: ${rip.name} ..."
+            println "Deleted conflicting deb package: ${rip.name} ..."
         }
     }
 }

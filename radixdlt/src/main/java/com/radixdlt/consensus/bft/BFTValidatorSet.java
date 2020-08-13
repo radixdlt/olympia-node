@@ -18,6 +18,7 @@
 package com.radixdlt.consensus.bft;
 
 import com.google.common.collect.ImmutableBiMap;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.radixdlt.utils.UInt256;
 import java.util.Collection;
@@ -86,6 +87,10 @@ public final class BFTValidatorSet {
 
 	public ImmutableSet<BFTValidator> getValidators() {
 		return validators.values();
+	}
+
+	public ImmutableMap<BFTNode, BFTValidator> validatorsByKey() {
+		return validators;
 	}
 
 	@Override

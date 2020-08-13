@@ -39,7 +39,7 @@ import io.netty.channel.socket.DatagramPacket;
 // downstream blocking that will happen, and this has the potential to slow down
 // the whole inbound network pipeline.
 final class UDPNettyMessageHandler extends SimpleChannelInboundHandler<DatagramPacket> {
-	private static final Logger log = LogManager.getLogger("transport.udp");
+	private static final Logger log = LogManager.getLogger();
 
 	private final InboundMessageConsumer messageSink;
 	private final NatHandler natHandler;

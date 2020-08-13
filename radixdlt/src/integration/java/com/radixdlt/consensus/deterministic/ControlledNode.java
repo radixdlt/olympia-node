@@ -35,7 +35,7 @@ import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.HashSigner;
-import com.radixdlt.consensus.SyncedStateComputer;
+import com.radixdlt.consensus.SyncedExecutor;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRPCSender;
 import com.radixdlt.consensus.VertexStoreFactory;
@@ -44,13 +44,12 @@ import com.radixdlt.consensus.deterministic.configuration.UnsupportedSyncVertice
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
 import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.mempool.EmptyMempool;
-import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.CommittedAtom;
 import java.util.Objects;
 
@@ -76,13 +75,13 @@ class ControlledNode {
 		ProposerElectionFactory proposerElectionFactory,
 		BFTValidatorSet initialValidatorSet,
 		SyncAndTimeout syncAndTimeout,
-		SyncedStateComputer<CommittedAtom> stateComputer
+		SyncedExecutor<CommittedAtom> stateComputer
 	) {
 		this.systemCounters = new SystemCountersImpl();
 		this.controlledSender = Objects.requireNonNull(sender);
 		this.initialValidatorSet = Objects.requireNonNull(initialValidatorSet);
 
-		Mempool mempool = new EmptyMempool();
+		NextCommandGenerator nextCommandGenerator = (view, aids) -> null;
 		Hasher nullHasher = data -> Hash.ZERO_HASH;
 		HashSigner nullSigner = h -> new ECDSASignature();
 		BFTNode self = BFTNode.create(key.getPublicKey());
@@ -92,16 +91,17 @@ class ControlledNode {
 					.self(self)
 					.endOfEpochSender(endOfEpochSender)
 					.pacemaker(pacemaker)
-					.mempool(mempool)
+					.nextCommandGenerator(nextCommandGenerator)
 					.vertexStore(vertexStore)
 					.proposerElection(proposerElection)
 					.validatorSet(validatorSet)
 					.eventSender(controlledSender)
 					.counters(systemCounters)
 					.infoSender(bftInfoSender)
+					.timeSupplier(System::currentTimeMillis)
 					.hasher(nullHasher)
 					.signer(nullSigner)
-					.verifyAuthors(false)
+					.verifier((k, hash, sig) -> true)
 					.build();
 
 		SyncVerticesRPCSender syncVerticesRPCSender = (syncAndTimeout != SyncAndTimeout.NONE)
@@ -109,7 +109,7 @@ class ControlledNode {
 			: UnsupportedSyncVerticesRPCSender.INSTANCE;
 		LocalTimeoutSender localTimeoutSender = (syncAndTimeout == SyncAndTimeout.SYNC_AND_TIMEOUT) ? sender : (v, t) -> { };
 		VertexStoreFactory vertexStoreFactory = (vertex, qc, syncedStateComputer) ->
-			new VertexStore(vertex, qc, syncedStateComputer, syncVerticesRPCSender, sender, systemCounters);
+			new VertexStore(vertex, qc, syncedStateComputer, syncVerticesRPCSender, sender, sender, systemCounters);
 		EpochInfoSender epochInfoSender = EmptyEpochInfoSender.INSTANCE;
 		this.epochManager = new EpochManager(
 			self,

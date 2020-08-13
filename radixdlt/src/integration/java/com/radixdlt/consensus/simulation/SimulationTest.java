@@ -23,7 +23,7 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.simulation.TestInvariant.TestInvariantError;
 import com.radixdlt.consensus.simulation.invariants.epochs.EpochViewInvariant;
-import com.radixdlt.consensus.simulation.configuration.ChangingEpochSyncedStateComputer;
+import com.radixdlt.consensus.simulation.configuration.ChangingEpochSyncedExecutor;
 import com.radixdlt.consensus.simulation.configuration.DroppingLatencyProvider;
 import com.radixdlt.consensus.simulation.configuration.OneProposalPerViewDropper;
 import com.radixdlt.consensus.simulation.configuration.RandomLatencyProvider;
@@ -34,8 +34,8 @@ import com.radixdlt.consensus.simulation.invariants.bft.LivenessInvariant;
 import com.radixdlt.consensus.simulation.invariants.bft.NoTimeoutsInvariant;
 import com.radixdlt.consensus.simulation.invariants.bft.NoneCommittedInvariant;
 import com.radixdlt.consensus.simulation.invariants.bft.SafetyInvariant;
-import com.radixdlt.consensus.simulation.network.SimulationNodes.SimulatedStateComputer;
-import com.radixdlt.consensus.simulation.configuration.SingleEpochAlwaysSyncedStateComputer;
+import com.radixdlt.consensus.simulation.network.SimulationNodes.SimulatedSyncedExecutor;
+import com.radixdlt.consensus.simulation.configuration.SingleEpochAlwaysSyncedExecutor;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECKeyPair;
@@ -257,11 +257,11 @@ public class SimulationTest {
 			.latencyProvider(this.latencyProvider)
 			.build();
 
-		final Supplier<SimulatedStateComputer> stateComputerSupplier;
+		final Supplier<SimulatedSyncedExecutor> stateComputerSupplier;
 		if (epochHighView == null) {
-			stateComputerSupplier = () -> new SingleEpochAlwaysSyncedStateComputer(nodes);
+			stateComputerSupplier = () -> new SingleEpochAlwaysSyncedExecutor(nodes);
 		} else {
-			stateComputerSupplier = () -> new ChangingEpochSyncedStateComputer(epochHighView, validatorSetMapping);
+			stateComputerSupplier = () -> new ChangingEpochSyncedExecutor(epochHighView, validatorSetMapping);
 		}
 
 		SimulationNodes bftNetwork =  new SimulationNodes(nodes, network, pacemakerTimeout, stateComputerSupplier, getVerticesRPCEnabled);
