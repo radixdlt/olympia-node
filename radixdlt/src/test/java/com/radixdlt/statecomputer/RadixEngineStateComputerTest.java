@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.execution;
+package com.radixdlt.statecomputer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -29,7 +29,7 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.execution.RadixEngineExecutor.RadixEngineExecutorEventSender;
+import com.radixdlt.statecomputer.RadixEngineStateComputer.RadixEngineExecutorEventSender;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.CommittedAtom;
@@ -39,8 +39,8 @@ import java.util.function.Function;
 import org.junit.Before;
 import org.junit.Test;
 
-public class RadixEngineExecutorTest {
-	private RadixEngineExecutor executor;
+public class RadixEngineStateComputerTest {
+	private RadixEngineStateComputer executor;
 	private CommittedAtomsStore committedAtomsStore;
 	private RadixEngine<LedgerAtom> radixEngine;
 	private RadixEngineExecutorEventSender sender;
@@ -56,7 +56,7 @@ public class RadixEngineExecutorTest {
 		// No issues with type checking for mock
 		@SuppressWarnings("unchecked") Function<Long, BFTValidatorSet> vsm = mock(Function.class);
 		this.validatorSetMapping = vsm;
-		this.executor = new RadixEngineExecutor(
+		this.executor = new RadixEngineStateComputer(
 			radixEngine,
 			validatorSetMapping,
 			epochHighView,

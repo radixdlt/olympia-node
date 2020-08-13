@@ -269,7 +269,7 @@ public class SimulationTest {
 		} else {
 			ConcurrentHashMap<Long, CommittedAtom> sharedCommittedAtoms = new ConcurrentHashMap<>();
 			syncExecutionModules.add(new SyncExecutionModule());
-			syncExecutionModules.add(new MockedSyncServiceAndExecutionModule(sharedCommittedAtoms, epochHighView, validatorSetMapping));
+			syncExecutionModules.add(new MockedSyncServiceAndStateComputerModule(sharedCommittedAtoms, epochHighView, validatorSetMapping));
 		}
 
 		SimulationNodes bftNetwork =  new SimulationNodes(nodes, network, pacemakerTimeout, syncExecutionModules.build(), getVerticesRPCEnabled);

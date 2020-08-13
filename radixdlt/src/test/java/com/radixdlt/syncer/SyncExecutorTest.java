@@ -32,8 +32,8 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.execution.RadixEngineExecutor;
-import com.radixdlt.syncer.SyncedEpochExecutor.CommittedStateSyncSender;
+import com.radixdlt.statecomputer.RadixEngineStateComputer;
+import com.radixdlt.syncer.SyncExecutor.CommittedStateSyncSender;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECPublicKey;
@@ -43,15 +43,15 @@ import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.network.addressbook.Peer;
-import com.radixdlt.syncer.SyncedEpochExecutor.SyncService;
+import com.radixdlt.syncer.SyncExecutor.SyncService;
 import org.junit.Before;
 import org.junit.Test;
 
-public class SyncedEpochExecutorTest {
+public class SyncExecutorTest {
 
 	private Mempool mempool;
-	private RadixEngineExecutor executor;
-	private SyncedEpochExecutor syncedEpochExecutor;
+	private RadixEngineStateComputer executor;
+	private SyncExecutor syncExecutor;
 	private CommittedStateSyncSender committedStateSyncSender;
 	private EpochChangeSender epochChangeSender;
 
@@ -62,13 +62,13 @@ public class SyncedEpochExecutorTest {
 	public void setup() {
 		this.mempool = mock(Mempool.class);
 		// No type check issues with mocking generic here
-		this.executor = mock(RadixEngineExecutor.class);
+		this.executor = mock(RadixEngineStateComputer.class);
 		this.committedStateSyncSender = mock(CommittedStateSyncSender.class);
 		this.epochChangeSender = mock(EpochChangeSender.class);
 		this.counters = mock(SystemCounters.class);
 
 		this.syncService = mock(SyncService.class);
-		this.syncedEpochExecutor = new SyncedEpochExecutor(
+		this.syncExecutor = new SyncExecutor(
 			1233,
 			mempool,
 			executor,
@@ -91,7 +91,7 @@ public class SyncedEpochExecutorTest {
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		when(this.executor.getValidatorSet(eq(genesisEpoch + 1))).thenReturn(validatorSet);
 
-		syncedEpochExecutor.execute(committedAtom);
+		syncExecutor.execute(committedAtom);
 		verify(epochChangeSender, times(1))
 			.epochChange(
 				argThat(e -> e.getAncestor().equals(vertexMetadata) && e.getValidatorSet().equals(validatorSet))
@@ -109,7 +109,7 @@ public class SyncedEpochExecutorTest {
 		when(vertexMetadata.getStateVersion()).then(i -> 1234L);
 		when(committedAtom.getVertexMetadata()).thenReturn(vertexMetadata);
 
-		syncedEpochExecutor.execute(committedAtom);
+		syncExecutor.execute(committedAtom);
 		verify(executor, times(1)).execute(eq(committedAtom));
 		verify(mempool, times(1)).removeCommittedAtom(aid);
 	}
@@ -128,12 +128,12 @@ public class SyncedEpochExecutorTest {
 		VertexMetadata nextVertexMetadata = mock(VertexMetadata.class);
 		when(nextVertexMetadata.getStateVersion()).thenReturn(1234L);
 
-		syncedEpochExecutor.syncTo(nextVertexMetadata, ImmutableList.of(node), mock(Object.class));
+		syncExecutor.syncTo(nextVertexMetadata, ImmutableList.of(node), mock(Object.class));
 		verify(committedStateSyncSender, never()).sendCommittedStateSync(anyLong(), any());
 
 		when(nextAtom.getClientAtom()).thenReturn(mock(ClientAtom.class));
 		when(nextAtom.getVertexMetadata()).thenReturn(nextVertexMetadata);
-		syncedEpochExecutor.execute(nextAtom);
+		syncExecutor.execute(nextAtom);
 
 		verify(committedStateSyncSender, timeout(100).atLeast(1)).sendCommittedStateSync(anyLong(), any());
 	}

@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.execution;
+package com.radixdlt.statecomputer;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -29,7 +29,7 @@ import com.radixdlt.identifiers.EUID;
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
-import com.radixdlt.syncer.SyncedEpochExecutor.CommittedExecutor;
+import com.radixdlt.syncer.SyncExecutor.StateComputer;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedList;
@@ -40,7 +40,7 @@ import java.util.function.Function;
 /**
  * Wraps the Radix Engine and emits messages based on success or failure
  */
-public final class RadixEngineExecutor implements CommittedExecutor {
+public final class RadixEngineStateComputer implements StateComputer {
 	public interface RadixEngineExecutorEventSender {
 		void sendStored(CommittedAtom committedAtom, ImmutableSet<EUID> indicies);
 		void sendStoredFailure(CommittedAtom committedAtom, RadixEngineException e);
@@ -55,7 +55,7 @@ public final class RadixEngineExecutor implements CommittedExecutor {
 	private final LinkedList<CommittedAtom> unstoredCommittedAtoms = new LinkedList<>();
 	private final RadixEngineExecutorEventSender engineEventSender;
 
-	public RadixEngineExecutor(
+	public RadixEngineStateComputer(
 		RadixEngine<LedgerAtom> radixEngine,
 		Function<Long, BFTValidatorSet> validatorSetMapping,
 		View epochChangeView,

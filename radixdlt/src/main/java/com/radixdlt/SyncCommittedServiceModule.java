@@ -20,7 +20,7 @@ package com.radixdlt;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.radixdlt.execution.RadixEngineExecutor;
+import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.middleware2.network.MessageCentralLedgerSync;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.messaging.MessageCentral;
@@ -31,7 +31,7 @@ import com.radixdlt.syncer.SyncServiceProcessor.SyncedAtomSender;
 import com.radixdlt.syncer.SyncServiceRunner;
 import com.radixdlt.syncer.SyncServiceRunner.LocalSyncRequestsRx;
 import com.radixdlt.syncer.SyncServiceRunner.SyncTimeoutsRx;
-import com.radixdlt.syncer.SyncedEpochExecutor;
+import com.radixdlt.syncer.SyncExecutor;
 import com.radixdlt.universe.Universe;
 
 /**
@@ -43,7 +43,7 @@ public class SyncCommittedServiceModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private SyncServiceProcessor syncServiceProcessor(
-		RadixEngineExecutor executor,
+		RadixEngineStateComputer executor,
 		StateSyncNetwork stateSyncNetwork,
 		AddressBook addressBook,
 		SyncedAtomSender syncedAtomSender,
@@ -79,7 +79,7 @@ public class SyncCommittedServiceModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private SyncedAtomSender syncedAtomSender(SyncedEpochExecutor epochExecutor) {
+	private SyncedAtomSender syncedAtomSender(SyncExecutor epochExecutor) {
 		return epochExecutor::execute;
 	}
 

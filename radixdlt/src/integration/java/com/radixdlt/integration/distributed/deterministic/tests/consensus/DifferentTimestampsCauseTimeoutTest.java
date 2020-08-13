@@ -17,7 +17,6 @@
 
 package com.radixdlt.integration.distributed.deterministic.tests.consensus;
 
-import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.middleware2.ClientAtom;
@@ -47,11 +46,6 @@ public class DifferentTimestampsCauseTimeoutTest {
 		final DeterministicTest test = DeterministicTest.createSingleEpochAlwaysSyncedWithTimeoutsTest(4);
 
 		test.start();
-
-		test.processNextMsg(0, 0, EpochChange.class);
-		test.processNextMsg(1, 1, EpochChange.class);
-		test.processNextMsg(2, 2, EpochChange.class);
-		test.processNextMsg(3, 3, EpochChange.class);
 
 		test.processNextMsg(1, 0, NewView.class);
 		test.processNextMsg(1, 1, NewView.class);
@@ -85,11 +79,6 @@ public class DifferentTimestampsCauseTimeoutTest {
 		final DeterministicTest test = DeterministicTest.createSingleEpochAlwaysSyncedWithTimeoutsTest(4);
 
 		test.start();
-
-		test.processNextMsg(0, 0, EpochChange.class);
-		test.processNextMsg(1, 1, EpochChange.class);
-		test.processNextMsg(2, 2, EpochChange.class);
-		test.processNextMsg(3, 3, EpochChange.class);
 
 		test.processNextMsg(1, 0, NewView.class);
 		test.processNextMsg(1, 1, NewView.class);

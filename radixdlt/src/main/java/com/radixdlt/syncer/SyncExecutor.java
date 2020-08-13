@@ -39,7 +39,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Synchronizes execution
  */
-public final class SyncedEpochExecutor implements SyncedExecutor<CommittedAtom> {
+public final class SyncExecutor implements SyncedExecutor<CommittedAtom> {
 
 	public interface CommittedStateSyncSender {
 		void sendCommittedStateSync(long stateVersion, Object opaque);
@@ -49,14 +49,14 @@ public final class SyncedEpochExecutor implements SyncedExecutor<CommittedAtom> 
 		void sendLocalSyncRequest(LocalSyncRequest request);
 	}
 
-	public interface CommittedExecutor {
+	public interface StateComputer {
 		void execute(CommittedAtom committedAtom);
 		boolean compute(Vertex vertex);
 		BFTValidatorSet getValidatorSet(long epoch);
 	}
 
 	private final Mempool mempool;
-	private final CommittedExecutor committedExecutor;
+	private final StateComputer stateComputer;
 	private final CommittedStateSyncSender committedStateSyncSender;
 	private final EpochChangeSender epochChangeSender;
 	private final SystemCounters counters;
@@ -67,10 +67,10 @@ public final class SyncedEpochExecutor implements SyncedExecutor<CommittedAtom> 
 	private VertexMetadata lastEpochChange = null;
 	private final Map<Long, Set<Object>> committedStateSyncers = new HashMap<>();
 
-	public SyncedEpochExecutor(
+	public SyncExecutor(
 		long initialStateVersion,
 		Mempool mempool,
-		CommittedExecutor committedExecutor,
+		StateComputer stateComputer,
 		CommittedStateSyncSender committedStateSyncSender,
 		EpochChangeSender epochChangeSender,
 		SyncService syncService,
@@ -78,7 +78,7 @@ public final class SyncedEpochExecutor implements SyncedExecutor<CommittedAtom> 
 	) {
 		this.stateVersion = new AtomicLong(initialStateVersion);
 		this.mempool = Objects.requireNonNull(mempool);
-		this.committedExecutor = Objects.requireNonNull(committedExecutor);
+		this.stateComputer = Objects.requireNonNull(stateComputer);
 		this.committedStateSyncSender = Objects.requireNonNull(committedStateSyncSender);
 		this.epochChangeSender = Objects.requireNonNull(epochChangeSender);
 		this.counters = Objects.requireNonNull(counters);
@@ -108,7 +108,7 @@ public final class SyncedEpochExecutor implements SyncedExecutor<CommittedAtom> 
 
 	@Override
 	public boolean compute(Vertex vertex) {
-		return committedExecutor.compute(vertex);
+		return stateComputer.compute(vertex);
 	}
 
 	/**
@@ -129,7 +129,7 @@ public final class SyncedEpochExecutor implements SyncedExecutor<CommittedAtom> 
 			this.stateVersion.set(stateVersion);
 			this.counters.set(CounterType.LEDGER_STATE_VERSION, stateVersion);
 
-			this.committedExecutor.execute(atom);
+			this.stateComputer.execute(atom);
 
 			Set<Object> opaqueObjects = this.committedStateSyncers.remove(stateVersion);
 			if (opaqueObjects != null) {
@@ -148,7 +148,7 @@ public final class SyncedEpochExecutor implements SyncedExecutor<CommittedAtom> 
 
 				VertexMetadata ancestor = atom.getVertexMetadata();
 				this.lastEpochChange = ancestor;
-				EpochChange epochChange = new EpochChange(ancestor, committedExecutor.getValidatorSet(ancestor.getEpoch() + 1));
+				EpochChange epochChange = new EpochChange(ancestor, stateComputer.getValidatorSet(ancestor.getEpoch() + 1));
 				this.epochChangeSender.epochChange(epochChange);
 			}
 		}

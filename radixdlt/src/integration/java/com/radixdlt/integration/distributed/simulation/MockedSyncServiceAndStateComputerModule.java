@@ -32,20 +32,20 @@ import com.radixdlt.mempool.EmptyMempool;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.syncer.EpochChangeSender;
-import com.radixdlt.syncer.SyncedEpochExecutor.CommittedExecutor;
-import com.radixdlt.syncer.SyncedEpochExecutor.CommittedStateSyncSender;
-import com.radixdlt.syncer.SyncedEpochExecutor.SyncService;
+import com.radixdlt.syncer.SyncExecutor.StateComputer;
+import com.radixdlt.syncer.SyncExecutor.CommittedStateSyncSender;
+import com.radixdlt.syncer.SyncExecutor.SyncService;
 import com.radixdlt.utils.SenderToRx;
 import com.radixdlt.utils.TwoSenderToRx;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
-public class MockedSyncServiceAndExecutionModule extends AbstractModule {
+public class MockedSyncServiceAndStateComputerModule extends AbstractModule {
 	private final Function<Long, BFTValidatorSet> validatorSetMapping;
 	private final View epochHighView;
 	private final ConcurrentHashMap<Long, CommittedAtom> sharedCommittedAtoms;
 
-	public MockedSyncServiceAndExecutionModule(
+	public MockedSyncServiceAndStateComputerModule(
 		ConcurrentHashMap<Long, CommittedAtom> sharedCommittedAtoms,
 		View epochHighView,
 		Function<Long, BFTValidatorSet> validatorSetMapping
@@ -70,8 +70,8 @@ public class MockedSyncServiceAndExecutionModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private CommittedExecutor committedExecutor() {
-		return new CommittedExecutor() {
+	private StateComputer committedExecutor() {
+		return new StateComputer() {
 			@Override
 			public void execute(CommittedAtom committedAtom) {
 				sharedCommittedAtoms.put(committedAtom.getVertexMetadata().getStateVersion(), committedAtom);

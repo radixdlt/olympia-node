@@ -30,7 +30,7 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.execution.RadixEngineExecutor;
+import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.network.addressbook.AddressBook;
@@ -46,7 +46,7 @@ public class SyncServiceProcessorTest {
 	private StateSyncNetwork stateSyncNetwork;
 	private SyncServiceProcessor syncServiceProcessor;
 	private AddressBook addressBook;
-	private RadixEngineExecutor executor;
+	private RadixEngineStateComputer executor;
 	private SyncedAtomSender syncedAtomSender;
 	private SyncTimeoutScheduler syncTimeoutScheduler;
 
@@ -63,7 +63,7 @@ public class SyncServiceProcessorTest {
 		final long currentVersion = 0;
 		this.stateSyncNetwork = mock(StateSyncNetwork.class);
 		this.addressBook = mock(AddressBook.class);
-		this.executor = mock(RadixEngineExecutor.class);
+		this.executor = mock(RadixEngineStateComputer.class);
 		this.syncedAtomSender = mock(SyncedAtomSender.class);
 		this.syncTimeoutScheduler = mock(SyncTimeoutScheduler.class);
 		this.syncServiceProcessor = new SyncServiceProcessor(

@@ -39,8 +39,8 @@ import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.execution.RadixEngineExecutor;
-import com.radixdlt.execution.RadixEngineExecutor.RadixEngineExecutorEventSender;
+import com.radixdlt.statecomputer.RadixEngineStateComputer;
+import com.radixdlt.statecomputer.RadixEngineStateComputer.RadixEngineExecutorEventSender;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.ClientAtom.LedgerAtomConversionException;
@@ -62,7 +62,7 @@ import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.store.LedgerEntryStoreView;
 import com.radixdlt.store.berkeley.BerkeleyCursorStore;
 import com.radixdlt.store.berkeley.BerkeleyLedgerEntryStore;
-import com.radixdlt.syncer.SyncedEpochExecutor.CommittedExecutor;
+import com.radixdlt.syncer.SyncExecutor.StateComputer;
 import com.radixdlt.universe.Universe;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -71,12 +71,12 @@ import java.util.function.UnaryOperator;
 /**
  * Module which manages execution of commands
  */
-public class ExecutionModule extends AbstractModule {
+public class StateComputerModule extends AbstractModule {
 	private static final Hash DEFAULT_FEE_TARGET = new Hash("0000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
 	private final int fixedNodeCount;
 	private final long viewsPerEpoch;
 
-	public ExecutionModule(int fixedNodeCount, long viewsPerEpoch) {
+	public StateComputerModule(int fixedNodeCount, long viewsPerEpoch) {
 		this.fixedNodeCount = fixedNodeCount;
 		this.viewsPerEpoch = viewsPerEpoch;
 	}
@@ -88,7 +88,7 @@ public class ExecutionModule extends AbstractModule {
 		bind(LedgerEntryStore.class).to(BerkeleyLedgerEntryStore.class);
 		bind(LedgerEntryStoreView.class).to(BerkeleyLedgerEntryStore.class);
 		bind(CursorStore.class).to(BerkeleyCursorStore.class);
-		bind(CommittedExecutor.class).to(RadixEngineExecutor.class);
+		bind(StateComputer.class).to(RadixEngineStateComputer.class);
 	}
 
 	@Provides
@@ -132,13 +132,13 @@ public class ExecutionModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private RadixEngineExecutor executor(
+	private RadixEngineStateComputer executor(
 		RadixEngine<LedgerAtom> radixEngine,
 		Function<Long, BFTValidatorSet> validatorSetMapping,
 		CommittedAtomsStore committedAtomsStore,
 		RadixEngineExecutorEventSender engineEventSender
 	) {
-		return new RadixEngineExecutor(
+		return new RadixEngineStateComputer(
 			radixEngine,
 			validatorSetMapping,
 			View.of(viewsPerEpoch),

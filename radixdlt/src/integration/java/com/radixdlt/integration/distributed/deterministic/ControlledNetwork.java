@@ -37,7 +37,7 @@ import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.consensus.Vote;
-import com.radixdlt.syncer.SyncedEpochExecutor.CommittedStateSyncSender;
+import com.radixdlt.syncer.SyncExecutor.CommittedStateSyncSender;
 import com.radixdlt.crypto.Hash;
 
 import java.util.Comparator;

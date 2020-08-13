@@ -22,7 +22,7 @@ import com.radixdlt.consensus.SyncedExecutor;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.syncer.SyncedEpochExecutor.CommittedStateSyncSender;
+import com.radixdlt.syncer.SyncExecutor.CommittedStateSyncSender;
 import com.radixdlt.middleware2.CommittedAtom;
 import java.util.Objects;
 import java.util.Random;

@@ -17,7 +17,6 @@
 
 package com.radixdlt.integration.distributed.deterministic.tests.consensus;
 
-import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
@@ -31,10 +30,6 @@ public class OneSlowNodeTest {
 		final DeterministicTest test = DeterministicTest.createSingleEpochFailOnSyncTest(4);
 
 		test.start();
-
-		test.processNextMsg(1, 1, EpochChange.class);
-		test.processNextMsg(2, 2, EpochChange.class);
-		test.processNextMsg(3, 3, EpochChange.class);
 
 		for (int curLeader = 1; curLeader <= 2; curLeader++) {
 			test.processNextMsg(curLeader, 1, NewView.class);
@@ -62,10 +57,6 @@ public class OneSlowNodeTest {
 		final DeterministicTest test = DeterministicTest.createSingleEpochFailOnSyncTest(4);
 
 		test.start();
-
-		test.processNextMsg(1, 1, EpochChange.class);
-		test.processNextMsg(2, 2, EpochChange.class);
-		test.processNextMsg(3, 3, EpochChange.class);
 
 		for (int curLeader = 1; curLeader <= 3; curLeader++) {
 			test.processNextMsg(curLeader, 1, NewView.class);
