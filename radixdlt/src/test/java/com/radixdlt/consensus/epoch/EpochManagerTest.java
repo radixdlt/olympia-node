@@ -112,6 +112,7 @@ public class EpochManagerTest {
 			this.systemCounters,
 			this.epochInfoSender
 		);
+		this.epochManager.start();
 	}
 
 	@Test

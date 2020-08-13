@@ -18,6 +18,7 @@
 package com.radixdlt.integration.distributed.simulation.network;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
@@ -66,16 +67,13 @@ public class SimulationNodes {
 	}
 
 	private Injector createBFTInstance(BFTNode self) {
-		ImmutableList<Module> modules = ImmutableList.<Module>builder()
-			.add(
-				new ConsensusModule(pacemakerTimeout),
-				new SystemInfoMessagesModule(),
-				new MockedCryptoModule(),
-				new SimulationNetworkModule(getVerticesRPCEnabled, self, underlyingNetwork)
-			)
-			.addAll(syncModules)
-			.build();
-		return Guice.createInjector(modules);
+		List<Module> modules = ImmutableList.of(
+			new ConsensusModule(pacemakerTimeout),
+			new SystemInfoMessagesModule(),
+			new MockedCryptoModule(),
+			new SimulationNetworkModule(getVerticesRPCEnabled, self, underlyingNetwork)
+		);
+		return Guice.createInjector(Iterables.concat(modules, syncModules));
 	}
 
 	// TODO: Add support for epoch changes

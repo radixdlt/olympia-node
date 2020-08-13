@@ -122,7 +122,7 @@ public final class EpochManager {
 	private final EpochInfoSender epochInfoSender;
 
 	private VertexMetadata lastConstructed = null;
-	private VertexMetadata currentAncestor;
+	private EpochChange currentEpoch;
 	private VertexStoreEventProcessor vertexStoreEventProcessor;
 	private BFTEventProcessor bftEventProcessor;
 	private int numQueuedConsensusEvents = 0;
@@ -140,6 +140,7 @@ public final class EpochManager {
 		SystemCounters counters,
 		EpochInfoSender epochInfoSender
 	) {
+		this.currentEpoch = Objects.requireNonNull(initialEpoch);
 		this.self = Objects.requireNonNull(self);
 		this.syncedExecutor = Objects.requireNonNull(syncedExecutor);
 		this.epochsRPCSender = Objects.requireNonNull(epochsRPCSender);
@@ -151,25 +152,21 @@ public final class EpochManager {
 		this.counters = Objects.requireNonNull(counters);
 		this.epochInfoSender = Objects.requireNonNull(epochInfoSender);
 		this.queuedEvents = new HashMap<>();
-
-		this.updateEpochState(initialEpoch);
 	}
 
-	private void updateEpochState(EpochChange epochChange) {
-		BFTValidatorSet validatorSet = epochChange.getValidatorSet();
-		VertexMetadata ancestorMetadata = epochChange.getAncestor();
-
-		this.currentAncestor = ancestorMetadata;
+	private void updateEpochState() {
+		BFTValidatorSet validatorSet = this.currentEpoch.getValidatorSet();
+		VertexMetadata ancestorMetadata = this.currentEpoch.getAncestor();
 
 		final BFTEventProcessor bftEventProcessor;
 		final VertexStoreEventProcessor vertexStoreEventProcessor;
 
 		if (!validatorSet.containsNode(self)) {
-			logEpochChange(epochChange, "excluded from");
+			logEpochChange(this.currentEpoch, "excluded from");
 			bftEventProcessor =  EmptyBFTEventProcessor.INSTANCE;
 			vertexStoreEventProcessor = EmptyVertexStoreEventProcessor.INSTANCE;
 		} else {
-			logEpochChange(epochChange, "included in");
+			logEpochChange(this.currentEpoch, "included in");
 
 			Vertex genesisVertex = Vertex.createGenesis(ancestorMetadata);
 			final long nextEpoch = genesisVertex.getEpoch();
@@ -212,11 +209,12 @@ public final class EpochManager {
 	}
 
 	public void start() {
+		this.updateEpochState();
 		this.bftEventProcessor.start();
 	}
 
 	private long currentEpoch() {
-		return this.currentAncestor.getEpoch() + 1;
+		return this.currentEpoch.getAncestor().getEpoch() + 1;
 	}
 
 	public void processEpochChange(EpochChange epochChange) {
@@ -241,7 +239,8 @@ public final class EpochManager {
 			}
 		}
 
-		this.updateEpochState(epochChange);
+		this.currentEpoch = epochChange;
+		this.updateEpochState();
 		this.bftEventProcessor.start();
 
 		// Execute any queued up consensus events
@@ -259,7 +258,7 @@ public final class EpochManager {
 		if (log.isInfoEnabled()) {
 			// Reduce complexity of epoch change log message, and make it easier to correlate with
 			// other logs.  Size reduced from circa 6Kib to approx 1Kib over ValidatorSet.toString().
-			StringBuilder epochMessage = new StringBuilder(this.self.toString());
+			StringBuilder epochMessage = new StringBuilder(this.self.getSimpleName());
 			epochMessage.append(": EPOCH_CHANGE: ");
 			epochMessage.append(message);
 			epochMessage.append(" new epoch ").append(epochChange.getAncestor().getEpoch() + 1);
@@ -297,7 +296,7 @@ public final class EpochManager {
 		log.trace("{}: GET_EPOCH_REQUEST: {}", this.self::getSimpleName, () -> request);
 
 		if (this.currentEpoch() > request.getEpoch()) {
-			epochsRPCSender.sendGetEpochResponse(request.getAuthor(), this.currentAncestor);
+			epochsRPCSender.sendGetEpochResponse(request.getAuthor(), this.currentEpoch.getAncestor());
 		} else {
 			log.warn("{}: GET_EPOCH_REQUEST: {} but currently on epoch: {}",
 				this.self::getSimpleName, () -> request, this::currentEpoch

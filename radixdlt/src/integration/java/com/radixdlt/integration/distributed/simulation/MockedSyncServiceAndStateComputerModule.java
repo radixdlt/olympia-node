@@ -70,7 +70,7 @@ public class MockedSyncServiceAndStateComputerModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private StateComputer committedExecutor() {
+	private StateComputer stateComputer() {
 		return new StateComputer() {
 			@Override
 			public void execute(CommittedAtom committedAtom) {

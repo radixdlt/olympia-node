@@ -21,7 +21,6 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -37,10 +36,8 @@ import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
 import com.radixdlt.consensus.SyncedExecutor;
-import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRPCSender;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.epoch.EpochChange;
@@ -93,13 +90,7 @@ public class ConsensusModuleTest {
 			bind(Hasher.class).toInstance(mock(Hasher.class));
 			bind(HashVerifier.class).toInstance(mock(HashVerifier.class));
 			bind(HashSigner.class).toInstance(mock(HashSigner.class));
-
-			// TODO: is the following required mocking a code smell?
-			EpochChange epochChange = mock(EpochChange.class);
-			when(epochChange.getAncestor()).thenReturn(mock(VertexMetadata.class));
-			when(epochChange.getValidatorSet()).thenReturn(BFTValidatorSet.from(ImmutableSet.of()));
-			bind(EpochChange.class).toInstance(epochChange);
-
+			bind(EpochChange.class).toInstance(mock(EpochChange.class));
 			bind(BFTNode.class).annotatedWith(Names.named("self")).toInstance(mock(BFTNode.class));
 		}
 	}
