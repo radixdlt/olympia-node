@@ -40,10 +40,12 @@ import com.radixdlt.consensus.Vote;
 import com.radixdlt.syncer.SyncExecutor.CommittedStateSyncSender;
 import com.radixdlt.crypto.Hash;
 
+import java.io.PrintStream;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 
 /**
  * A BFT network supporting the EventCoordinatorNetworkSender interface which
@@ -306,5 +308,9 @@ public final class ControlledNetwork {
 		private MessageRank messageRank(LocalTimeout localTimeout) {
 			return new MessageRank(localTimeout.getEpoch(), localTimeout.getView().number() + 2);
 		}
+	}
+
+	void dumpMessages(PrintStream out, Function<BFTNode, Object> namer) {
+		messageQueue.dump(out, namer);
 	}
 }

@@ -19,6 +19,7 @@ package com.radixdlt.syncer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static com.radixdlt.utils.TypedMocks.rmock;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.VertexMetadata;
@@ -33,7 +34,7 @@ public class LocalSyncRequestTest {
 
 	@Before
 	public void setup() {
-		this.targetNodes = mock(ImmutableList.class);
+		this.targetNodes = rmock(ImmutableList.class);
 		this.target = mock(VertexMetadata.class);
 		request = new LocalSyncRequest(target, 5, targetNodes);
 	}

@@ -157,9 +157,9 @@ final class MessageQueue {
 		if (eavs.isEmpty()) {
 			return null;
 		}
-		List<MessageRank> views = Lists.newArrayList(eavs);
-		Collections.sort(views);
-		return views.get(0);
+		List<MessageRank> ranks = Lists.newArrayList(eavs);
+		Collections.sort(ranks);
+		return ranks.get(0);
 	}
 
 	void dump(PrintStream out, Function<BFTNode, Object> namer) {

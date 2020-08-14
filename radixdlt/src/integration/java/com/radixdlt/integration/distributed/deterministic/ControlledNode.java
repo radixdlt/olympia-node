@@ -37,10 +37,8 @@ import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.HashSigner;
 import com.radixdlt.consensus.SyncedExecutor;
 import com.radixdlt.consensus.bft.VertexStore;
-import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRPCSender;
 import com.radixdlt.consensus.VertexStoreFactory;
 import com.radixdlt.integration.distributed.deterministic.ControlledNetwork.ControlledSender;
-import com.radixdlt.integration.distributed.deterministic.configuration.UnsupportedSyncVerticesRPCSender;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
 import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -48,7 +46,7 @@ import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 import java.util.Objects;
 
@@ -68,11 +66,12 @@ class ControlledNode {
 	}
 
 	ControlledNode(
-		ECKeyPair key,
+		ECPublicKey key,
+		ControlledNetwork underlyingNetwork,
 		ControlledSender sender,
 		ProposerElectionFactory proposerElectionFactory,
 		BFTValidatorSet initialValidatorSet,
-		SyncAndTimeout syncAndTimeout,
+		boolean timeoutEnabled,
 		SyncedExecutor stateComputer
 	) {
 		this.systemCounters = new SystemCountersImpl();
@@ -81,7 +80,7 @@ class ControlledNode {
 		NextCommandGenerator nextCommandGenerator = (view, aids) -> null;
 		Hasher nullHasher = data -> Hash.ZERO_HASH;
 		HashSigner nullSigner = h -> new ECDSASignature();
-		BFTNode self = BFTNode.create(key.getPublicKey());
+		BFTNode self = BFTNode.create(key);
 		BFTFactory bftFactory =
 			(endOfEpochSender, pacemaker, vertexStore, proposerElection, validatorSet, bftInfoSender) ->
 				BFTBuilder.create()
@@ -101,12 +100,9 @@ class ControlledNode {
 					.verifier((k, hash, sig) -> true)
 					.build();
 
-		SyncVerticesRPCSender syncVerticesRPCSender = (syncAndTimeout != SyncAndTimeout.NONE)
-			? sender
-			: UnsupportedSyncVerticesRPCSender.INSTANCE;
-		LocalTimeoutSender localTimeoutSender = (syncAndTimeout == SyncAndTimeout.SYNC_AND_TIMEOUT) ? sender : (v, t) -> { };
+		LocalTimeoutSender localTimeoutSender = timeoutEnabled ? sender : (v, t) -> { };
 		VertexStoreFactory vertexStoreFactory = (vertex, qc, syncedStateComputer) ->
-			new VertexStore(vertex, qc, syncedStateComputer, syncVerticesRPCSender, sender, sender, systemCounters);
+			new VertexStore(vertex, qc, syncedStateComputer, sender, sender, sender, systemCounters);
 		EpochInfoSender epochInfoSender = EmptyEpochInfoSender.INSTANCE;
 		this.epochManager = new EpochManager(
 			self,

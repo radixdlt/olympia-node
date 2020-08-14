@@ -91,7 +91,6 @@ public class OneProposalTimeoutResponsiveTest {
 
 	@Test
 	public void when_run_100_correct_nodes_with_1_timeout__then_bft_should_be_responsive() {
-		// FIXME: Could increase frequency once sync issues resolved.
-		this.run(100, 30_000, 1000);
+		this.run(100, 10_000, 100);
 	}
 }
