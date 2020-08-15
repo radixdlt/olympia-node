@@ -209,8 +209,8 @@ public final class BFTEventReducer implements BFTEventProcessor {
 					log.debug("{}: VOTE: QC Synced: {}", this.self::getSimpleName, () -> qc);
 					synchedLog = true;
 				}
+				// TODO: Remove isEndOfEpoch knowledge from consensus
 				processQC(qc).ifPresent(commitMetaData -> {
-					// TODO: should this be sent by everyone and not just the constructor of the proof?
 					if (commitMetaData.isEndOfEpoch()) {
 						this.endOfEpochSender.sendEndOfEpoch(commitMetaData);
 					}
@@ -237,6 +237,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 			final ClientAtom nextCommand;
 
 			// Propose null atom in the case that we are at the end of the epoch
+			// TODO: Remove isEndOfEpoch knowledge from consensus
 			if (highestQC.getProposed().isEndOfEpoch()) {
 				nextCommand = null;
 			} else {

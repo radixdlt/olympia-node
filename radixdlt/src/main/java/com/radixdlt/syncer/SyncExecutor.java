@@ -125,13 +125,23 @@ public final class SyncExecutor implements SyncedExecutor<CommittedAtom> {
 		final VertexMetadata parent = vertex.getQC().getProposed();
 		final long parentStateVersion = parent.getStateVersion();
 
-		final boolean isLastToBeCommitted = !parent.isEndOfEpoch() && stateComputer.compute(vertex);
+		final boolean isEndOfEpoch;
+		final int versionIncrement;
+		if (parent.isEndOfEpoch()) {
+			versionIncrement = 0; // Don't execute atom if in process of epoch change
+			isEndOfEpoch = true;
+		} else if (stateComputer.compute(vertex)) {
+			versionIncrement = 1;
+			isEndOfEpoch = true;
+		} else {
+			versionIncrement = vertex.getAtom() != null ? 1 : 0;
+			isEndOfEpoch = false;
+		}
 
-		final int versionIncrement = vertex.getAtom() != null || isLastToBeCommitted ? 1 : 0;
 		final long stateVersion = parentStateVersion + versionIncrement;
 		final Hash timestampedSignaturesHash = vertex.getQC().getTimestampedSignatures().getId();
 
-		return ExecutionResult.create(stateVersion, timestampedSignaturesHash, isLastToBeCommitted);
+		return ExecutionResult.create(stateVersion, timestampedSignaturesHash, isEndOfEpoch);
 	}
 
 	/**

@@ -473,28 +473,21 @@ public final class VertexStore implements VertexStoreEventProcessor {
 			counters.increment(CounterType.BFT_INDIRECT_PARENT);
 		}
 
-		final Vertex vertexToUse;
-		if (vertex.getParentMetadata().isEndOfEpoch()) {
-			// TODO: Check if current proposal is actually an empty client atom
-			vertexToUse = new Vertex(vertex.getEpoch(), vertex.getQC(), vertex.getView(), null);
-		} else {
-			vertexToUse = vertex;
-		}
-		ExecutionResult executionResult = syncedExecutor.execute(vertexToUse);
+		ExecutionResult executionResult = syncedExecutor.execute(vertex);
 
 		// TODO: Don't check for state computer errors for now so that we don't
 		// TODO: have to deal with failing leader proposals
 		// TODO: Reinstate this when ProposalGenerator + Mempool can guarantee correct proposals
 		// TODO: (also see commitVertex->storeAtom)
 
-		vertices.put(vertexToUse.getId(), vertexToUse);
+		vertices.put(vertex.getId(), vertex);
 		updateVertexStoreSize();
 
-		if (syncing.containsKey(vertexToUse.getId())) {
-			this.syncedVertexSender.sendSyncedVertex(vertexToUse);
+		if (syncing.containsKey(vertex.getId())) {
+			this.syncedVertexSender.sendSyncedVertex(vertex);
 		}
 
-		return VertexMetadata.ofVertex(vertexToUse, executionResult);
+		return VertexMetadata.ofVertex(vertex, executionResult);
 	}
 
 	public VertexMetadata insertVertex(Vertex vertex) throws VertexInsertionException {
