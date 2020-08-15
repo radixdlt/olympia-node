@@ -29,7 +29,9 @@ import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.epoch.EpochChange;
+import com.radixdlt.crypto.Hash;
 import com.radixdlt.middleware2.CommittedAtom;
+import com.radixdlt.syncer.ExecutionResult;
 import io.reactivex.rxjava3.core.Observable;
 
 public class MockedSyncExecutionModule extends AbstractModule {
@@ -57,8 +59,8 @@ public class MockedSyncExecutionModule extends AbstractModule {
 			}
 
 			@Override
-			public boolean execute(Vertex vertex) {
-				return false;
+			public ExecutionResult execute(Vertex vertex) {
+				return ExecutionResult.create(0, Hash.ZERO_HASH, false);
 			}
 
 			@Override

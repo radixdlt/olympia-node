@@ -20,6 +20,7 @@ package com.radixdlt.consensus;
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.SyncedExecutor.CommittedInstruction;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.syncer.ExecutionResult;
 
 /**
  * A distributed computer which manages the computed state in a BFT.
@@ -60,7 +61,7 @@ public interface SyncedExecutor<T extends CommittedInstruction> {
 	 * @param vertex the vertex to compute
 	 * @return true, if commit of this vertex will cause an epoch change, false otherwise
 	 */
-	boolean execute(Vertex vertex);
+	ExecutionResult execute(Vertex vertex);
 
 	/**
 	 * Execute a committed instruction

@@ -22,7 +22,9 @@ import com.radixdlt.consensus.SyncedExecutor;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.crypto.Hash;
 import com.radixdlt.middleware2.CommittedAtom;
+import com.radixdlt.syncer.ExecutionResult;
 
 /**
  * A state computer which never changes epochs
@@ -36,8 +38,8 @@ public enum SingleEpochAlwaysSyncedExecutor implements SyncedExecutor<CommittedA
 	}
 
 	@Override
-	public boolean execute(Vertex vertex) {
-		return false;
+	public ExecutionResult execute(Vertex vertex) {
+		return ExecutionResult.create(0, Hash.ZERO_HASH, false);
 	}
 
 	@Override

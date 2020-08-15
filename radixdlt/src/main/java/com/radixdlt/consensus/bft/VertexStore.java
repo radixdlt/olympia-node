@@ -29,6 +29,7 @@ import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hash;
 
 import com.radixdlt.middleware2.CommittedAtom;
+import com.radixdlt.syncer.ExecutionResult;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -479,7 +480,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		} else {
 			vertexToUse = vertex;
 		}
-		boolean isEndOfEpoch = syncedExecutor.execute(vertexToUse);
+		ExecutionResult executionResult = syncedExecutor.execute(vertexToUse);
 
 		// TODO: Don't check for state computer errors for now so that we don't
 		// TODO: have to deal with failing leader proposals
@@ -493,7 +494,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 			this.syncedVertexSender.sendSyncedVertex(vertexToUse);
 		}
 
-		return VertexMetadata.ofVertex(vertexToUse, isEndOfEpoch);
+		return VertexMetadata.ofVertex(vertexToUse, executionResult);
 	}
 
 	public VertexMetadata insertVertex(Vertex vertex) throws VertexInsertionException {

@@ -27,6 +27,7 @@ import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
+import com.radixdlt.crypto.Hash;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.CommittedAtom;
 import java.util.Collections;
@@ -120,8 +121,17 @@ public final class SyncExecutor implements SyncedExecutor<CommittedAtom> {
 	}
 
 	@Override
-	public boolean execute(Vertex vertex) {
-		return stateComputer.compute(vertex);
+	public ExecutionResult execute(Vertex vertex) {
+		final VertexMetadata parent = vertex.getQC().getProposed();
+		final long parentStateVersion = parent.getStateVersion();
+
+		final boolean isLastToBeCommitted = !parent.isEndOfEpoch() && stateComputer.compute(vertex);
+
+		final int versionIncrement = vertex.getAtom() != null || isLastToBeCommitted ? 1 : 0;
+		final long stateVersion = parentStateVersion + versionIncrement;
+		final Hash timestampedSignaturesHash = vertex.getQC().getTimestampedSignatures().getId();
+
+		return ExecutionResult.create(stateVersion, timestampedSignaturesHash, isLastToBeCommitted);
 	}
 
 	/**

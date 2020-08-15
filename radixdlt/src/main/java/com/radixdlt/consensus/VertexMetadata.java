@@ -19,6 +19,7 @@ package com.radixdlt.consensus;
 
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hash;
+import com.radixdlt.syncer.ExecutionResult;
 import java.util.Objects;
 
 import javax.annotation.concurrent.Immutable;
@@ -90,23 +91,40 @@ public final class VertexMetadata {
 		this.view = view;
 		this.id = id;
 		this.isEndOfEpoch = isEndOfEpoch;
-		this.timestampedSignaturesHash = Objects.requireNonNull(timestampedSignaturesHash);
+		this.timestampedSignaturesHash = timestampedSignaturesHash;
 	}
 
 	public static VertexMetadata ofGenesisAncestor() {
-		return new VertexMetadata(0, View.genesis(), Hash.ZERO_HASH, 0, true, Hash.ZERO_HASH);
+		return new VertexMetadata(
+			0,
+			View.genesis(),
+			Hash.ZERO_HASH,
+			0,
+			true,
+			Hash.ZERO_HASH
+		);
 	}
 
-	public static VertexMetadata ofVertex(Vertex vertex, boolean isEndOfEpoch) {
-		final VertexMetadata parent = vertex.getQC().getProposed();
-		final long parentStateVersion = parent.getStateVersion();
+	public static VertexMetadata ofGenesisVertex(Vertex vertex) {
+		return new VertexMetadata(
+			vertex.getEpoch(),
+			vertex.getView(),
+			vertex.getId(),
+			vertex.getQC().getProposed().stateVersion,
+			false,
+			Hash.ZERO_HASH
+		);
+	}
 
-		final boolean isLastToBeCommitted = !parent.isEndOfEpoch && isEndOfEpoch;
-
-		final int versionIncrement = vertex.getAtom() != null || isLastToBeCommitted ? 1 : 0;
-		final long newStateVersion = parentStateVersion + versionIncrement;
-		final Hash timestampedSignaturesHash = vertex.getQC().getTimestampedSignatures().getId();
-		return new VertexMetadata(vertex.getEpoch(), vertex.getView(), vertex.getId(), newStateVersion, isEndOfEpoch, timestampedSignaturesHash);
+	public static VertexMetadata ofVertex(Vertex vertex, ExecutionResult executionResult) {
+		return new VertexMetadata(
+			vertex.getEpoch(),
+			vertex.getView(),
+			vertex.getId(),
+			executionResult.getStateVersion(),
+			executionResult.isEndOfEpoch(),
+			executionResult.getTimestampedSignaturesHash()
+		);
 	}
 
 	public boolean isEndOfEpoch() {

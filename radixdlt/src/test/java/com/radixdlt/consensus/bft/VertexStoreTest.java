@@ -47,6 +47,7 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.CommittedAtom;
+import com.radixdlt.syncer.ExecutionResult;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicReference;
@@ -72,12 +73,13 @@ public class VertexStoreTest {
 	@Before
 	public void setUp() {
 		this.genesisVertex = Vertex.createGenesis();
-		this.genesisVertexMetadata = VertexMetadata.ofVertex(genesisVertex, false);
+		this.genesisVertexMetadata = VertexMetadata.ofGenesisVertex(genesisVertex);
 		VoteData voteData = new VoteData(genesisVertexMetadata, genesisVertexMetadata, genesisVertexMetadata);
 		this.rootQC = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 		// No type check issues with mocking generic here
 		@SuppressWarnings("unchecked") SyncedExecutor<CommittedAtom> ssc = mock(SyncedExecutor.class);
 		this.syncedExecutor = ssc;
+		when(this.syncedExecutor.execute(any())).thenReturn(mock(ExecutionResult.class));
 		this.syncVerticesRPCSender = mock(SyncVerticesRPCSender.class);
 		this.vertexStoreEventSender = mock(VertexStoreEventSender.class);
 		this.counters = mock(SystemCounters.class);
@@ -97,7 +99,7 @@ public class VertexStoreTest {
 			Vertex parentVertex = lastVertex.get();
 			final QuorumCertificate qc;
 			if (!parentVertex.getView().equals(View.genesis())) {
-				VertexMetadata parent = VertexMetadata.ofVertex(parentVertex, false);
+				VertexMetadata parent = VertexMetadata.ofVertex(parentVertex, mock(ExecutionResult.class));
 				VoteData data = new VoteData(parent, parentVertex.getQC().getProposed(), skipOne ? null : parentVertex.getQC().getParent());
 				qc = new QuorumCertificate(data, new TimestampedECDSASignatures());
 			} else {
@@ -122,7 +124,7 @@ public class VertexStoreTest {
 	@Test
 	public void when_vertex_store_created_with_incorrect_roots__then_exception_is_thrown() {
 		Vertex nextVertex = this.nextVertex.get();
-		VertexMetadata nextVertexMetadata = VertexMetadata.ofVertex(nextVertex, false);
+		VertexMetadata nextVertexMetadata = VertexMetadata.ofVertex(nextVertex, mock(ExecutionResult.class));
 
 		VoteData voteData = new VoteData(nextVertexMetadata, genesisVertexMetadata, null);
 		QuorumCertificate badRootQC = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
@@ -173,7 +175,7 @@ public class VertexStoreTest {
 	@Test
 	public void when_vertex_retriever_succeeds__then_vertex_is_inserted() {
 		Vertex vertex = this.nextVertex.get();
-		VoteData voteData = new VoteData(VertexMetadata.ofVertex(vertex, false), genesisVertexMetadata, null);
+		VoteData voteData = new VoteData(VertexMetadata.ofVertex(vertex, mock(ExecutionResult.class)), genesisVertexMetadata, null);
 		QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
 		when(vertexMetadata.getId()).thenReturn(vertex.getId());
@@ -235,11 +237,11 @@ public class VertexStoreTest {
 				counters
 			);
 
-		VertexMetadata vertexMetadata2 = VertexMetadata.ofVertex(vertex2, false);
+		VertexMetadata vertexMetadata2 = VertexMetadata.ofVertex(vertex2, mock(ExecutionResult.class));
 		vertexStore.commitVertex(vertexMetadata2);
 		assertThat(vertexStore.commitVertex(vertexMetadata2)).isPresent();
 
-		VertexMetadata vertexMetadata1 = VertexMetadata.ofVertex(vertex1, false);
+		VertexMetadata vertexMetadata1 = VertexMetadata.ofVertex(vertex1, mock(ExecutionResult.class));
 		assertThat(vertexStore.commitVertex(vertexMetadata1)).isNotPresent();
 	}
 
@@ -260,7 +262,7 @@ public class VertexStoreTest {
 		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), clientAtom);
 		vertexStore.insertVertex(nextVertex);
 
-		VertexMetadata vertexMetadata = VertexMetadata.ofVertex(nextVertex, false);
+		VertexMetadata vertexMetadata = VertexMetadata.ofVertex(nextVertex, mock(ExecutionResult.class));
 		assertThat(vertexStore.commitVertex(vertexMetadata)).hasValue(nextVertex);
 
 		verify(vertexStoreEventSender, times(1))
@@ -285,7 +287,7 @@ public class VertexStoreTest {
 		Vertex vertex = nextVertex.get();
 		vertexStore.insertVertex(vertex);
 
-		VertexMetadata vertexMetadata = VertexMetadata.ofVertex(vertex, false);
+		VertexMetadata vertexMetadata = VertexMetadata.ofVertex(vertex, mock(ExecutionResult.class));
 		assertThat(vertexStore.commitVertex(vertexMetadata)).hasValue(vertex);
 		verify(vertexStoreEventSender, times(1)).sendCommittedVertex(eq(vertex));
 		assertThat(vertexStore.getSize()).isEqualTo(1);
@@ -297,12 +299,12 @@ public class VertexStoreTest {
 
 		Vertex nextVertex1 = nextVertex.get();
 		vertexStore.insertVertex(nextVertex1);
-		VertexMetadata vertexMetadata = VertexMetadata.ofVertex(nextVertex1, false);
+		VertexMetadata vertexMetadata = VertexMetadata.ofVertex(nextVertex1, mock(ExecutionResult.class));
 		vertexStore.commitVertex(vertexMetadata);
 
 		Vertex nextVertex2 = nextVertex.get();
 		vertexStore.insertVertex(nextVertex2);
-		VertexMetadata vertexMetadata2 = VertexMetadata.ofVertex(nextVertex2, false);
+		VertexMetadata vertexMetadata2 = VertexMetadata.ofVertex(nextVertex2, mock(ExecutionResult.class));
 		vertexStore.commitVertex(vertexMetadata2);
 
 		verify(vertexStoreEventSender, times(1)).sendCommittedVertex(eq(nextVertex1));
@@ -318,11 +320,16 @@ public class VertexStoreTest {
 		vertexStore.insertVertex(nextVertex1);
 
 		QuorumCertificate qc = mock(QuorumCertificate.class);
-		when(qc.getProposed()).thenReturn(VertexMetadata.ofVertex(nextVertex1, false));
+		VertexMetadata vertexMetadata1 = mock(VertexMetadata.class);
+		when(vertexMetadata1.getId()).thenReturn(nextVertex1.getId());
+		when(vertexMetadata1.getView()).thenReturn(nextVertex1.getView());
+		when(qc.getProposed()).thenReturn(vertexMetadata1);
+
 		Vertex nextVertex2 = nextVertex.get();
 		vertexStore.insertVertex(nextVertex2);
-
-		VertexMetadata vertexMetadata2 = VertexMetadata.ofVertex(nextVertex2, false);
+		VertexMetadata vertexMetadata2 = mock(VertexMetadata.class);
+		when(vertexMetadata2.getId()).thenReturn(nextVertex2.getId());
+		when(vertexMetadata2.getView()).thenReturn(nextVertex2.getView());
 		vertexStore.commitVertex(vertexMetadata2);
 		verify(vertexStoreEventSender, times(1)).sendCommittedVertex(eq(nextVertex1));
 		verify(vertexStoreEventSender, times(1)).sendCommittedVertex(eq(nextVertex2));
@@ -333,7 +340,10 @@ public class VertexStoreTest {
 	public void when_sync_to_qc_which_doesnt_exist_and_vertex_is_inserted_later__then_sync_should_be_emitted() throws Exception {
 		Vertex vertex = nextVertex.get();
 		QuorumCertificate qc = mock(QuorumCertificate.class);
-		when(qc.getProposed()).thenReturn(VertexMetadata.ofVertex(vertex, false));
+		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
+		when(vertexMetadata.getId()).thenReturn(vertex.getId());
+		when(vertexMetadata.getView()).thenReturn(vertex.getView());
+		when(qc.getProposed()).thenReturn(vertexMetadata);
 
 		assertThat(vertexStore.syncToQC(qc, vertexStore.getHighestCommittedQC(), mock(BFTNode.class))).isFalse();
 		vertexStore.insertVertex(vertex);
@@ -347,7 +357,12 @@ public class VertexStoreTest {
 
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		when(qc.getView()).thenReturn(View.of(1));
-		when(qc.getProposed()).thenReturn(VertexMetadata.ofVertex(vertex, false));
+
+		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
+		when(vertexMetadata.getId()).thenReturn(vertex.getId());
+		when(vertexMetadata.getView()).thenReturn(vertex.getView());
+
+		when(qc.getProposed()).thenReturn(vertexMetadata);
 		assertThat(vertexStore.syncToQC(qc, vertexStore.getHighestCommittedQC(), null)).isTrue();
 	}
 
@@ -355,7 +370,10 @@ public class VertexStoreTest {
 	public void when_sync_to_qc_with_no_author_and_not_synced__then_should_throw_illegal_state_exception() {
 		Vertex vertex = nextVertex.get();
 		QuorumCertificate qc = mock(QuorumCertificate.class);
-		when(qc.getProposed()).thenReturn(VertexMetadata.ofVertex(vertex, false));
+		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
+		when(vertexMetadata.getId()).thenReturn(vertex.getId());
+		when(vertexMetadata.getView()).thenReturn(vertex.getView());
+		when(qc.getProposed()).thenReturn(vertexMetadata);
 
 		assertThatThrownBy(() -> vertexStore.syncToQC(qc, vertexStore.getHighestCommittedQC(), null))
 			.isInstanceOf(IllegalStateException.class);
