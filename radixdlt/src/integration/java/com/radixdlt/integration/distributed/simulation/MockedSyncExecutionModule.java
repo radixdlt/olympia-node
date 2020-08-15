@@ -57,12 +57,12 @@ public class MockedSyncExecutionModule extends AbstractModule {
 			}
 
 			@Override
-			public boolean compute(Vertex vertex) {
+			public boolean execute(Vertex vertex) {
 				return false;
 			}
 
 			@Override
-			public void execute(CommittedAtom instruction) {
+			public void commit(CommittedAtom instruction) {
 			}
 		};
 	}

@@ -479,7 +479,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		} else {
 			vertexToUse = vertex;
 		}
-		boolean isEndOfEpoch = syncedExecutor.compute(vertexToUse);
+		boolean isEndOfEpoch = syncedExecutor.execute(vertexToUse);
 
 		// TODO: Don't check for state computer errors for now so that we don't
 		// TODO: have to deal with failing leader proposals
@@ -528,7 +528,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		for (Vertex committed : path) {
 			CommittedAtom committedAtom = new CommittedAtom(committed.getAtom(), commitMetadata);
 			this.counters.increment(CounterType.BFT_PROCESSED);
-			syncedExecutor.execute(committedAtom);
+			syncedExecutor.commit(committedAtom);
 
 			this.vertexStoreEventSender.sendCommittedVertex(committed);
 		}

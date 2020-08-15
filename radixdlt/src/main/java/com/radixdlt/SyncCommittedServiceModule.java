@@ -80,7 +80,7 @@ public class SyncCommittedServiceModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private SyncedAtomSender syncedAtomSender(SyncExecutor epochExecutor) {
-		return epochExecutor::execute;
+		return epochExecutor::commit;
 	}
 
 

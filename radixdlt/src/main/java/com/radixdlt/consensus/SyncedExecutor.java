@@ -60,11 +60,11 @@ public interface SyncedExecutor<T extends CommittedInstruction> {
 	 * @param vertex the vertex to compute
 	 * @return true, if commit of this vertex will cause an epoch change, false otherwise
 	 */
-	boolean compute(Vertex vertex);
+	boolean execute(Vertex vertex);
 
 	/**
 	 * Execute a committed instruction
 	 * @param instruction the instruction to execute
 	 */
-	void execute(T instruction);
+	void commit(T instruction);
 }

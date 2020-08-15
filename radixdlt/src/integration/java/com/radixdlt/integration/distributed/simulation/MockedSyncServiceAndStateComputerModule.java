@@ -69,8 +69,7 @@ public class MockedSyncServiceAndStateComputerModule extends AbstractModule {
 		TwoSenderToRx<Long, Object, CommittedStateSync> committedStateSyncTwoSenderToRx = new TwoSenderToRx<>(CommittedStateSync::new);
 		bind(CommittedStateSyncRx.class).toInstance(committedStateSyncTwoSenderToRx::rx);
 		bind(CommittedStateSyncSender.class).toInstance(committedStateSyncTwoSenderToRx::send);
-
-		bind(CommittedSender.class).toInstance(committed -> {});
+		bind(CommittedSender.class).toInstance(committed -> { });
 	}
 
 	@Provides
@@ -105,7 +104,7 @@ public class MockedSyncServiceAndStateComputerModule extends AbstractModule {
 			final long initVersion = request.getCurrentVersion() + 1;
 			for (long version = initVersion; version <= targetVersion; version++) {
 				CommittedAtom atom = sharedCommittedAtoms.get(version);
-				syncedExecutor.execute(atom);
+				syncedExecutor.commit(atom);
 			}
 		};
 	}

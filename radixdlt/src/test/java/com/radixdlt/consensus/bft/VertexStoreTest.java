@@ -250,7 +250,7 @@ public class VertexStoreTest {
 		vertexStore.insertVertex(nextVertex);
 
 		verify(vertexStoreEventSender, never()).sendCommittedVertex(any());
-		verify(syncedExecutor, times(0)).execute(any()); // not stored
+		verify(syncedExecutor, times(0)).commit(any()); // not stored
 	}
 
 	@Test
@@ -266,7 +266,7 @@ public class VertexStoreTest {
 		verify(vertexStoreEventSender, times(1))
 			.sendCommittedVertex(eq(nextVertex));
 		verify(syncedExecutor, times(1))
-			.execute(argThat(a -> a.getClientAtom().equals(clientAtom))); // next atom stored
+			.commit(argThat(a -> a.getClientAtom().equals(clientAtom))); // next atom stored
 	}
 
 	@Test

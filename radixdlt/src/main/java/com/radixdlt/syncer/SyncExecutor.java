@@ -120,7 +120,7 @@ public final class SyncExecutor implements SyncedExecutor<CommittedAtom> {
 	}
 
 	@Override
-	public boolean compute(Vertex vertex) {
+	public boolean execute(Vertex vertex) {
 		return stateComputer.compute(vertex);
 	}
 
@@ -129,7 +129,7 @@ public final class SyncExecutor implements SyncedExecutor<CommittedAtom> {
 	 * @param atom the atom to commit
 	 */
 	@Override
-	public void execute(CommittedAtom atom) {
+	public void commit(CommittedAtom atom) {
 		synchronized (lock) {
 			this.counters.increment(CounterType.LEDGER_PROCESSED);
 

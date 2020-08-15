@@ -96,7 +96,7 @@ public class SyncExecutorTest {
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		when(this.executor.getValidatorSet(eq(genesisEpoch + 1))).thenReturn(validatorSet);
 
-		syncExecutor.execute(committedAtom);
+		syncExecutor.commit(committedAtom);
 		verify(epochChangeSender, times(1))
 			.epochChange(
 				argThat(e -> e.getAncestor().equals(vertexMetadata) && e.getValidatorSet().equals(validatorSet))
@@ -114,7 +114,7 @@ public class SyncExecutorTest {
 		when(vertexMetadata.getStateVersion()).then(i -> 1234L);
 		when(committedAtom.getVertexMetadata()).thenReturn(vertexMetadata);
 
-		syncExecutor.execute(committedAtom);
+		syncExecutor.commit(committedAtom);
 		verify(executor, times(1)).execute(eq(committedAtom));
 		verify(mempool, times(1)).removeCommittedAtom(aid);
 	}
@@ -138,7 +138,7 @@ public class SyncExecutorTest {
 
 		when(nextAtom.getClientAtom()).thenReturn(mock(ClientAtom.class));
 		when(nextAtom.getVertexMetadata()).thenReturn(nextVertexMetadata);
-		syncExecutor.execute(nextAtom);
+		syncExecutor.commit(nextAtom);
 
 		verify(committedStateSyncSender, timeout(5000).atLeast(1)).sendCommittedStateSync(anyLong(), any());
 	}
