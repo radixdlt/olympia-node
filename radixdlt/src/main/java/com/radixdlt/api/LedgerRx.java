@@ -17,6 +17,7 @@
 
 package com.radixdlt.api;
 
+import com.radixdlt.syncer.SyncExecutor.StateComputerExecutedCommand;
 import io.reactivex.rxjava3.core.Observable;
 
 /**
@@ -24,17 +25,9 @@ import io.reactivex.rxjava3.core.Observable;
  */
 public interface LedgerRx {
 	/**
-	 * Retrieve a never ending stream of stored atoms
+	 * Retrieve a never ending stream of committed State Computer commands
 	 *
-	 * @return hot observable of stored atoms
+	 * @return hot observable of committed commands and it's result
 	 */
-	Observable<StoredAtom> storedAtoms();
-
-	/**
-	 * Retrieve a never ending stream of conflict
-	 * exceptions
-	 *
-	 * @return hot observable of conflict exceptions
-	 */
-	Observable<StoredFailure> storedExceptions();
+	Observable<StateComputerExecutedCommand> committed();
 }

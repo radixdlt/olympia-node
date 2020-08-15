@@ -17,7 +17,6 @@
 
 package org.radix.api.jsonrpc;
 
-import com.radixdlt.api.StoredFailure;
 import com.radixdlt.engine.RadixEngineException;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -94,8 +93,7 @@ public class SubmitAtomAndSubscribeEpic {
 			}
 
 			@Override
-			public void onStoredFailure(StoredFailure e) {
-				RadixEngineException exception = e.getException();
+			public void onStoredFailure(RadixEngineException exception) {
 				JSONObject data = new JSONObject();
 				data.put("pointerToIssue", exception.getDataPointer().toString());
 				if (exception.getRelated() != null) {

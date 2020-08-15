@@ -36,7 +36,7 @@ import com.radixdlt.properties.RuntimeProperties;
  * Performs no validation and does not share contents with
  * network.  Threadsafe.
  */
-final class LocalMempool implements Mempool {
+public final class LocalMempool implements Mempool {
 	private final Object lock = new Object();
 	@GuardedBy("lock")
 	private final LinkedHashMap<AID, ClientAtom> data = Maps.newLinkedHashMap();
@@ -44,11 +44,11 @@ final class LocalMempool implements Mempool {
 	private final int maxSize;
 
 	@Inject
-	LocalMempool(RuntimeProperties config) {
+	public LocalMempool(RuntimeProperties config) {
 		this(config.get("mempool.maxSize", 1000));
 	}
 
-	LocalMempool(int maxSize) {
+	public LocalMempool(int maxSize) {
 		if (maxSize <= 0) {
 			throw new IllegalArgumentException("mempool.maxSize must be positive: " + maxSize);
 		}

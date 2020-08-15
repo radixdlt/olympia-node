@@ -30,6 +30,7 @@ import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.syncer.EpochChangeSender;
 import com.radixdlt.syncer.SyncExecutor;
+import com.radixdlt.syncer.SyncExecutor.CommittedSender;
 import com.radixdlt.syncer.SyncExecutor.CommittedStateSyncSender;
 import com.radixdlt.syncer.SyncExecutor.StateComputer;
 import com.radixdlt.syncer.SyncExecutor.SyncService;
@@ -49,14 +50,17 @@ public class SyncExecutionModule extends AbstractModule {
 		Mempool mempool,
 		StateComputer stateComputer,
 		CommittedStateSyncSender committedStateSyncSender,
+		CommittedSender committedSender,
 		EpochChangeSender epochChangeSender,
 		SyncService syncService,
 		SystemCounters counters
 	) {
 		return new SyncExecutor(
 			0L,
-			mempool, stateComputer,
+			mempool,
+			stateComputer,
 			committedStateSyncSender,
+			committedSender,
 			epochChangeSender,
 			syncService,
 			counters

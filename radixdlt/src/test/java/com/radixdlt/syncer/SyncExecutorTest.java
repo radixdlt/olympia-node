@@ -33,6 +33,7 @@ import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
+import com.radixdlt.syncer.SyncExecutor.CommittedSender;
 import com.radixdlt.syncer.SyncExecutor.CommittedStateSyncSender;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.counters.SystemCounters;
@@ -54,6 +55,7 @@ public class SyncExecutorTest {
 	private SyncExecutor syncExecutor;
 	private CommittedStateSyncSender committedStateSyncSender;
 	private EpochChangeSender epochChangeSender;
+	private CommittedSender committedSender;
 
 	private SystemCounters counters;
 	private SyncService syncService;
@@ -66,6 +68,7 @@ public class SyncExecutorTest {
 		this.committedStateSyncSender = mock(CommittedStateSyncSender.class);
 		this.epochChangeSender = mock(EpochChangeSender.class);
 		this.counters = mock(SystemCounters.class);
+		this.committedSender = mock(CommittedSender.class);
 
 		this.syncService = mock(SyncService.class);
 		this.syncExecutor = new SyncExecutor(
@@ -73,6 +76,7 @@ public class SyncExecutorTest {
 			mempool,
 			executor,
 			committedStateSyncSender,
+			committedSender,
 			epochChangeSender,
 			syncService,
 			counters
@@ -86,6 +90,7 @@ public class SyncExecutorTest {
 		long genesisEpoch = 123;
 		when(vertexMetadata.getEpoch()).thenReturn(genesisEpoch);
 		when(vertexMetadata.isEndOfEpoch()).thenReturn(true);
+		when(vertexMetadata.getStateVersion()).thenReturn(1234L);
 		when(committedAtom.getVertexMetadata()).thenReturn(vertexMetadata);
 
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);

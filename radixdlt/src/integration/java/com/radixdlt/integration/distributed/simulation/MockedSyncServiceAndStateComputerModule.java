@@ -32,8 +32,11 @@ import com.radixdlt.mempool.EmptyMempool;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.syncer.EpochChangeSender;
+import com.radixdlt.syncer.StateComputerExecutedCommands;
+import com.radixdlt.syncer.SyncExecutor.CommittedSender;
 import com.radixdlt.syncer.SyncExecutor.StateComputer;
 import com.radixdlt.syncer.SyncExecutor.CommittedStateSyncSender;
+import com.radixdlt.syncer.SyncExecutor.StateComputerExecutedCommand;
 import com.radixdlt.syncer.SyncExecutor.SyncService;
 import com.radixdlt.utils.SenderToRx;
 import com.radixdlt.utils.TwoSenderToRx;
@@ -66,6 +69,8 @@ public class MockedSyncServiceAndStateComputerModule extends AbstractModule {
 		TwoSenderToRx<Long, Object, CommittedStateSync> committedStateSyncTwoSenderToRx = new TwoSenderToRx<>(CommittedStateSync::new);
 		bind(CommittedStateSyncRx.class).toInstance(committedStateSyncTwoSenderToRx::rx);
 		bind(CommittedStateSyncSender.class).toInstance(committedStateSyncTwoSenderToRx::send);
+
+		bind(CommittedSender.class).toInstance(committed -> {});
 	}
 
 	@Provides
@@ -73,8 +78,9 @@ public class MockedSyncServiceAndStateComputerModule extends AbstractModule {
 	private StateComputer stateComputer() {
 		return new StateComputer() {
 			@Override
-			public void execute(CommittedAtom committedAtom) {
+			public StateComputerExecutedCommand execute(CommittedAtom committedAtom) {
 				sharedCommittedAtoms.put(committedAtom.getVertexMetadata().getStateVersion(), committedAtom);
+				return StateComputerExecutedCommands.success(committedAtom, null);
 			}
 
 			@Override

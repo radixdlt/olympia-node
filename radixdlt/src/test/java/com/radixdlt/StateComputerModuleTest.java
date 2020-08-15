@@ -34,7 +34,6 @@ import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
-import com.radixdlt.statecomputer.RadixEngineStateComputer.RadixEngineExecutorEventSender;
 import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.universe.Universe;
@@ -49,7 +48,6 @@ public class StateComputerModuleTest {
 			Universe universe = mock(Universe.class);
 			when(universe.getGenesis()).thenReturn(ImmutableList.of(new Atom()));
 			bind(Universe.class).toInstance(universe);
-			bind(RadixEngineExecutorEventSender.class).toInstance(mock(RadixEngineExecutorEventSender.class));
 			bind(RuntimeProperties.class).toInstance(mock(RuntimeProperties.class));
 			bind(AddressBook.class).toInstance(mock(AddressBook.class));
 			LedgerEntryStore ledgerEntryStore = mock(LedgerEntryStore.class);

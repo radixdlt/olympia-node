@@ -19,6 +19,7 @@ package com.radixdlt;
 
 import com.google.inject.AbstractModule;
 import com.radixdlt.api.DeserializationFailure;
+import com.radixdlt.api.LedgerRx;
 import com.radixdlt.api.SubmissionErrorsRx;
 import com.radixdlt.api.SubmissionFailure;
 import com.radixdlt.atommodel.Atom;
@@ -32,6 +33,8 @@ import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.converters.AtomConversionException;
 import com.radixdlt.syncer.EpochChangeSender;
 import com.radixdlt.syncer.LocalSyncRequest;
+import com.radixdlt.syncer.SyncExecutor.CommittedSender;
+import com.radixdlt.syncer.SyncExecutor.StateComputerExecutedCommand;
 import com.radixdlt.syncer.SyncServiceProcessor.SyncInProgress;
 import com.radixdlt.syncer.SyncServiceProcessor.SyncTimeoutScheduler;
 import com.radixdlt.syncer.SyncServiceRunner.LocalSyncRequestsRx;
@@ -53,6 +56,10 @@ public final class SyncMessagesModule extends AbstractModule {
 
 	@Override
 	protected void configure() {
+		SenderToRx<StateComputerExecutedCommand, StateComputerExecutedCommand> executedCommands = new SenderToRx<>(c -> c);
+		bind(CommittedSender.class).toInstance(executedCommands::send);
+		bind(LedgerRx.class).toInstance(executedCommands::rx);
+
 		TwoSenderToRx<Atom, AtomConversionException, DeserializationFailure> deserializationFailures
 			= new TwoSenderToRx<>(DeserializationFailure::new);
 		TwoSenderToRx<ClientAtom, RadixEngineException, SubmissionFailure> submissionFailures

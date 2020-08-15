@@ -20,7 +20,6 @@ package org.radix.api.jsonrpc;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.engine.AtomStatus;
 import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.api.StoredFailure;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.identifiers.AID;
@@ -102,11 +101,9 @@ public class AtomStatusEpic {
 			}
 
 			@Override
-			public void onStoredFailure(StoredFailure e) {
-				final RadixEngineException exception = e.getException();
-
+			public void onStoredFailure(CommittedAtom committedAtom, RadixEngineException exception) {
 				JSONObject data = new JSONObject();
-				data.put("aid", e.getAtom().getAID());
+				data.put("aid", committedAtom.getAID());
 				data.put("pointerToIssue", exception.getDataPointer());
 				if (exception.getRelated() != null) {
 					data.put("conflictingWith", exception.getRelated().getAID().toString());
@@ -116,7 +113,7 @@ public class AtomStatusEpic {
 				}
 
 				// TODO: serialize vertexMetadata
-				VertexMetadata vertexMetadata = e.getAtom().getVertexMetadata();
+				VertexMetadata vertexMetadata = committedAtom.getVertexMetadata();
 				data.put("stateVersion", vertexMetadata.getStateVersion());
 				data.put("epoch", vertexMetadata.getEpoch());
 				data.put("view", vertexMetadata.getView().number());

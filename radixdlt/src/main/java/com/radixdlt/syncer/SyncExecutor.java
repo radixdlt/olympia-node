@@ -34,37 +34,49 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BiConsumer;
 
 /**
  * Synchronizes execution
  */
 public final class SyncExecutor implements SyncedExecutor<CommittedAtom> {
+	public interface SyncService {
+		void sendLocalSyncRequest(LocalSyncRequest request);
+	}
+
+	public interface StateComputerExecutedCommand {
+		interface StateComputerExecutedCommandMaybeError {
+			void elseIfError(BiConsumer<CommittedAtom, Exception> errorConsumer);
+		}
+
+		CommittedAtom getCommand();
+		StateComputerExecutedCommandMaybeError ifSuccess(BiConsumer<CommittedAtom, Object> successConsumer);
+	}
+
+	public interface StateComputer {
+		StateComputerExecutedCommand execute(CommittedAtom committedAtom);
+		boolean compute(Vertex vertex);
+		BFTValidatorSet getValidatorSet(long epoch);
+	}
+
+	public interface CommittedSender {
+		void sendCommitted(StateComputerExecutedCommand stateComputerExecutedCommand);
+	}
 
 	public interface CommittedStateSyncSender {
 		void sendCommittedStateSync(long stateVersion, Object opaque);
 	}
 
-	public interface SyncService {
-		void sendLocalSyncRequest(LocalSyncRequest request);
-	}
-
-	public interface StateComputer {
-		void execute(CommittedAtom committedAtom);
-		boolean compute(Vertex vertex);
-		BFTValidatorSet getValidatorSet(long epoch);
-	}
-
 	private final Mempool mempool;
 	private final StateComputer stateComputer;
 	private final CommittedStateSyncSender committedStateSyncSender;
+	private final CommittedSender committedSender;
 	private final EpochChangeSender epochChangeSender;
 	private final SystemCounters counters;
 	private final SyncService syncService;
 
 	private final Object lock = new Object();
-	private final AtomicLong stateVersion;
-	private VertexMetadata lastEpochChange = null;
+	private long currentStateVersion;
 	private final Map<Long, Set<Object>> committedStateSyncers = new HashMap<>();
 
 	public SyncExecutor(
@@ -72,14 +84,16 @@ public final class SyncExecutor implements SyncedExecutor<CommittedAtom> {
 		Mempool mempool,
 		StateComputer stateComputer,
 		CommittedStateSyncSender committedStateSyncSender,
+		CommittedSender committedSender,
 		EpochChangeSender epochChangeSender,
 		SyncService syncService,
 		SystemCounters counters
 	) {
-		this.stateVersion = new AtomicLong(initialStateVersion);
+		this.currentStateVersion = initialStateVersion;
 		this.mempool = Objects.requireNonNull(mempool);
 		this.stateComputer = Objects.requireNonNull(stateComputer);
 		this.committedStateSyncSender = Objects.requireNonNull(committedStateSyncSender);
+		this.committedSender = Objects.requireNonNull(committedSender);
 		this.epochChangeSender = Objects.requireNonNull(epochChangeSender);
 		this.counters = Objects.requireNonNull(counters);
 		this.syncService = Objects.requireNonNull(syncService);
@@ -94,8 +108,7 @@ public final class SyncExecutor implements SyncedExecutor<CommittedAtom> {
 			}
 
 			final long targetStateVersion = vertexMetadata.getStateVersion();
-			final long currentStateVersion = this.stateVersion.get();
-			if (targetStateVersion <= currentStateVersion) {
+			if (targetStateVersion <= this.currentStateVersion) {
 				return true;
 			}
 
@@ -121,33 +134,30 @@ public final class SyncExecutor implements SyncedExecutor<CommittedAtom> {
 			this.counters.increment(CounterType.LEDGER_PROCESSED);
 
 			final long stateVersion = atom.getVertexMetadata().getStateVersion();
-
-			if (stateVersion != 0 && stateVersion != this.stateVersion.get() + 1) {
+			if (stateVersion != this.currentStateVersion + 1) {
 				return;
 			}
 
-			this.stateVersion.set(stateVersion);
-			this.counters.set(CounterType.LEDGER_STATE_VERSION, stateVersion);
+			this.currentStateVersion = stateVersion;
+			this.counters.set(CounterType.LEDGER_STATE_VERSION, this.currentStateVersion);
 
-			this.stateComputer.execute(atom);
-
-			Set<Object> opaqueObjects = this.committedStateSyncers.remove(stateVersion);
-			if (opaqueObjects != null) {
-				for (Object opaque : opaqueObjects) {
-					committedStateSyncSender.sendCommittedStateSync(stateVersion, opaque);
-				}
-			}
-
+			StateComputerExecutedCommand result = this.stateComputer.execute(atom);
 			if (atom.getClientAtom() != null) {
 				this.mempool.removeCommittedAtom(atom.getAID());
 			}
 
-			// TODO: Move outside of syncedRadixEngine to a more generic syncing layer
-			if (atom.getVertexMetadata().isEndOfEpoch()
-				&& (lastEpochChange == null || lastEpochChange.getEpoch() != atom.getVertexMetadata().getEpoch())) {
+			committedSender.sendCommitted(result);
 
+			Set<Object> opaqueObjects = this.committedStateSyncers.remove(this.currentStateVersion);
+			if (opaqueObjects != null) {
+				for (Object opaque : opaqueObjects) {
+					committedStateSyncSender.sendCommittedStateSync(this.currentStateVersion, opaque);
+				}
+			}
+
+			// TODO: Move outside of syncedRadixEngine to a more generic syncing layer
+			if (atom.getVertexMetadata().isEndOfEpoch()) {
 				VertexMetadata ancestor = atom.getVertexMetadata();
-				this.lastEpochChange = ancestor;
 				EpochChange epochChange = new EpochChange(ancestor, stateComputer.getValidatorSet(ancestor.getEpoch() + 1));
 				this.epochChangeSender.epochChange(epochChange);
 			}

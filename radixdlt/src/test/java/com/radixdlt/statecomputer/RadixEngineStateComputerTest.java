@@ -29,7 +29,6 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.statecomputer.RadixEngineStateComputer.RadixEngineExecutorEventSender;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.CommittedAtom;
@@ -43,7 +42,6 @@ public class RadixEngineStateComputerTest {
 	private RadixEngineStateComputer executor;
 	private CommittedAtomsStore committedAtomsStore;
 	private RadixEngine<LedgerAtom> radixEngine;
-	private RadixEngineExecutorEventSender sender;
 	private View epochHighView;
 	private Function<Long, BFTValidatorSet> validatorSetMapping;
 
@@ -51,7 +49,6 @@ public class RadixEngineStateComputerTest {
 	public void setup() {
 		this.radixEngine = mock(RadixEngine.class);
 		this.committedAtomsStore = mock(CommittedAtomsStore.class);
-		this.sender = mock(RadixEngineExecutorEventSender.class);
 		this.epochHighView = View.of(100);
 		// No issues with type checking for mock
 		@SuppressWarnings("unchecked") Function<Long, BFTValidatorSet> vsm = mock(Function.class);
@@ -60,8 +57,7 @@ public class RadixEngineStateComputerTest {
 			radixEngine,
 			validatorSetMapping,
 			epochHighView,
-			committedAtomsStore,
-			sender
+			committedAtomsStore
 		);
 	}
 

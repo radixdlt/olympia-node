@@ -29,7 +29,9 @@ import com.radixdlt.identifiers.EUID;
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
+import com.radixdlt.syncer.StateComputerExecutedCommands;
 import com.radixdlt.syncer.SyncExecutor.StateComputer;
+import com.radixdlt.syncer.SyncExecutor.StateComputerExecutedCommand;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedList;
@@ -41,11 +43,6 @@ import java.util.function.Function;
  * Wraps the Radix Engine and emits messages based on success or failure
  */
 public final class RadixEngineStateComputer implements StateComputer {
-	public interface RadixEngineExecutorEventSender {
-		void sendStored(CommittedAtom committedAtom, ImmutableSet<EUID> indicies);
-		void sendStoredFailure(CommittedAtom committedAtom, RadixEngineException e);
-	}
-
 	private final CommittedAtomsStore committedAtomsStore;
 	private final RadixEngine<LedgerAtom> radixEngine;
 	private final Function<Long, BFTValidatorSet> validatorSetMapping;
@@ -53,14 +50,12 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 	private final Object lock = new Object();
 	private final LinkedList<CommittedAtom> unstoredCommittedAtoms = new LinkedList<>();
-	private final RadixEngineExecutorEventSender engineEventSender;
 
 	public RadixEngineStateComputer(
 		RadixEngine<LedgerAtom> radixEngine,
 		Function<Long, BFTValidatorSet> validatorSetMapping,
 		View epochChangeView,
-		CommittedAtomsStore committedAtomsStore,
-		RadixEngineExecutorEventSender engineEventSender
+		CommittedAtomsStore committedAtomsStore
 	) {
 		if (epochChangeView.isGenesis()) {
 			throw new IllegalArgumentException("Epoch change view must not be genesis.");
@@ -70,7 +65,6 @@ public final class RadixEngineStateComputer implements StateComputer {
 		this.validatorSetMapping = validatorSetMapping;
 		this.epochChangeView = epochChangeView;
 		this.committedAtomsStore = Objects.requireNonNull(committedAtomsStore);
-		this.engineEventSender = Objects.requireNonNull(engineEventSender);
 	}
 
 	// TODO Move this to a different class class when unstored committed atoms is fixed
@@ -95,21 +89,12 @@ public final class RadixEngineStateComputer implements StateComputer {
 			.collect(ImmutableList.toImmutableList());
 	}
 
-	private void handleRadixEngineException(CommittedAtom atom, RadixEngineException e) {
-		// TODO: Don't check for state computer errors for now so that we don't
-		// TODO: have to deal with failing leader proposals
-		// TODO: Reinstate this when ProposalGenerator + Mempool can guarantee correct proposals
-
-		// TODO: move VIRTUAL_STATE_CONFLICT to static check
-		engineEventSender.sendStoredFailure(atom, e);
-	}
-
 	/**
 	 * Add an atom to the committed store
 	 * @param atom the atom to commit
 	 */
 	@Override
-	public void execute(CommittedAtom atom) {
+	public StateComputerExecutedCommand execute(CommittedAtom atom) {
 		if (atom.getClientAtom() != null) {
 			try {
 				// TODO: execute list of commands instead
@@ -117,17 +102,28 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 				// TODO: cleanup and move this logic to a better spot
 				final ImmutableSet<EUID> indicies = committedAtomsStore.getIndicies(atom);
-				this.engineEventSender.sendStored(atom, indicies);
-
+				return StateComputerExecutedCommands.success(atom, indicies);
 			} catch (RadixEngineException e) {
-				handleRadixEngineException(atom, e);
+				// TODO: Don't check for state computer errors for now so that we don't
+				// TODO: have to deal with failing leader proposals
+				// TODO: Reinstate this when ProposalGenerator + Mempool can guarantee correct proposals
+
+				// TODO: move VIRTUAL_STATE_CONFLICT to static check
 				this.unstoredCommittedAtoms.add(atom);
+
+				return StateComputerExecutedCommands.error(atom, e);
 			}
 
 		} else if (atom.getVertexMetadata().isEndOfEpoch()) {
 			// TODO: HACK
 			// TODO: Remove and move epoch change logic into RadixEngine
 			this.unstoredCommittedAtoms.add(atom);
+
+			return StateComputerExecutedCommands.success(atom, ImmutableSet.of());
+		} else {
+			// TODO: HACK
+			// TODO: Refactor to remove such illegal states
+			throw new IllegalStateException("Should never get here " + atom.getVertexMetadata());
 		}
 	}
 
