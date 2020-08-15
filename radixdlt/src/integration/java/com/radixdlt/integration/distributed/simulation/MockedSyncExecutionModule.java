@@ -45,7 +45,7 @@ public class MockedSyncExecutionModule extends AbstractModule {
 	public void configure() {
 		bind(CommittedStateSyncRx.class).toInstance(Observable::never);
 		bind(EpochChangeRx.class).toInstance(Observable::never);
-		EpochChange initialEpoch = new EpochChange(VertexMetadata.ofGenesisAncestor(), validatorSet);
+		EpochChange initialEpoch = new EpochChange(VertexMetadata.ofGenesisAncestor(validatorSet));
 		bind(EpochChange.class).toInstance(initialEpoch);
 	}
 
@@ -60,7 +60,7 @@ public class MockedSyncExecutionModule extends AbstractModule {
 
 			@Override
 			public ExecutionResult execute(Vertex vertex) {
-				return ExecutionResult.create(0, Hash.ZERO_HASH, false);
+				return ExecutionResult.create(0, Hash.ZERO_HASH);
 			}
 
 			@Override

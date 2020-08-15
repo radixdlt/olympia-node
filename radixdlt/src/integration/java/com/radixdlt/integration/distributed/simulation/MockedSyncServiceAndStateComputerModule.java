@@ -25,6 +25,7 @@ import com.radixdlt.consensus.CommittedStateSyncRx;
 import com.radixdlt.consensus.EpochChangeRx;
 import com.radixdlt.consensus.SyncedExecutor;
 import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.EpochChange;
@@ -40,6 +41,7 @@ import com.radixdlt.syncer.SyncExecutor.StateComputerExecutedCommand;
 import com.radixdlt.syncer.SyncExecutor.SyncService;
 import com.radixdlt.utils.SenderToRx;
 import com.radixdlt.utils.TwoSenderToRx;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
@@ -74,22 +76,27 @@ public class MockedSyncServiceAndStateComputerModule extends AbstractModule {
 
 	@Provides
 	@Singleton
+	private VertexMetadata genesisMetadata() {
+		return VertexMetadata.ofGenesisAncestor(validatorSetMapping.apply(1L));
+	}
+
+	@Provides
+	@Singleton
 	private StateComputer stateComputer() {
 		return new StateComputer() {
 			@Override
-			public StateComputerExecutedCommand execute(CommittedAtom committedAtom) {
+			public StateComputerExecutedCommand commit(CommittedAtom committedAtom) {
 				sharedCommittedAtoms.put(committedAtom.getVertexMetadata().getStateVersion(), committedAtom);
 				return StateComputerExecutedCommands.success(committedAtom, null);
 			}
 
 			@Override
-			public boolean compute(Vertex vertex) {
-				return vertex.getView().compareTo(epochHighView) >= 0;
-			}
-
-			@Override
-			public BFTValidatorSet getValidatorSet(long epoch) {
-				return validatorSetMapping.apply(epoch);
+			public Optional<BFTValidatorSet> execute(Vertex vertex) {
+				if (vertex.getView().compareTo(epochHighView) >= 0) {
+					return Optional.of(validatorSetMapping.apply(vertex.getEpoch() + 1));
+				} else {
+					return Optional.empty();
+				}
 			}
 		};
 	}

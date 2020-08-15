@@ -36,7 +36,7 @@ public enum SingleEpochFailOnSyncSyncedExecutor implements SyncedExecutor<Commit
 
 	@Override
 	public ExecutionResult execute(Vertex vertex) {
-		return ExecutionResult.create(0, Hash.ZERO_HASH, false);
+		return ExecutionResult.create(0, Hash.ZERO_HASH);
 	}
 
 	@Override

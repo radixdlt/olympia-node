@@ -46,7 +46,7 @@ public class SyncExecutionModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private SyncExecutor syncedEpochExecutor(
+	private SyncExecutor syncExecutor(
 		Mempool mempool,
 		StateComputer stateComputer,
 		CommittedStateSyncSender committedStateSyncSender,
@@ -70,10 +70,7 @@ public class SyncExecutionModule extends AbstractModule {
 	// TODO: Load from storage
 	@Provides
 	@Singleton
-	private EpochChange initialEpoch(StateComputer stateComputer) {
-		VertexMetadata ancestor = VertexMetadata.ofGenesisAncestor();
-		return new EpochChange(
-			ancestor, stateComputer.getValidatorSet(ancestor.getEpoch() + 1)
-		);
+	private EpochChange initialEpoch(VertexMetadata ancestor) {
+		return new EpochChange(ancestor);
 	}
 }

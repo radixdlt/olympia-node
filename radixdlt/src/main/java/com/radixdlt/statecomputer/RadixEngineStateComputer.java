@@ -37,6 +37,7 @@ import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Function;
 
 /**
@@ -94,7 +95,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 	 * @param atom the atom to commit
 	 */
 	@Override
-	public StateComputerExecutedCommand execute(CommittedAtom atom) {
+	public StateComputerExecutedCommand commit(CommittedAtom atom) {
 		if (atom.getClientAtom() != null) {
 			try {
 				// TODO: execute list of commands instead
@@ -128,12 +129,11 @@ public final class RadixEngineStateComputer implements StateComputer {
 	}
 
 	@Override
-	public BFTValidatorSet getValidatorSet(long epoch) {
-		return validatorSetMapping.apply(epoch);
-	}
-
-	@Override
-	public boolean compute(Vertex vertex) {
-		return vertex.getView().compareTo(epochChangeView) >= 0;
+	public Optional<BFTValidatorSet> execute(Vertex vertex) {
+		if (vertex.getView().compareTo(epochChangeView) >= 0) {
+			return Optional.of(validatorSetMapping.apply(vertex.getEpoch() + 1));
+		} else {
+			return Optional.empty();
+		}
 	}
 }

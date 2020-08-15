@@ -36,25 +36,27 @@ import java.util.stream.Collectors;
 public class LivenessInvariant implements TestInvariant {
 	private final long duration;
 	private final TimeUnit timeUnit;
+	private final Comparator<VertexMetadata> vertexMetadataComparator =
+		Comparator.comparingLong(VertexMetadata::getEpoch).thenComparing(VertexMetadata::getView);
 
 	public LivenessInvariant(long duration, TimeUnit timeUnit) {
 		this.duration = duration;
 		this.timeUnit = timeUnit;
 	}
 
-	private Comparator<VertexMetadata> vertexMetadataComparator =
-		Comparator.comparingLong(VertexMetadata::getEpoch).thenComparing(VertexMetadata::getView);
-
 	@Override
 	public Observable<TestInvariantError> check(RunningNetwork network) {
-		AtomicReference<Pair<VertexMetadata, Long>> highestVertexMetadata = new AtomicReference<>(Pair.of(VertexMetadata.ofGenesisAncestor(), 0L));
+		final VertexMetadata genesisAncestor = network.initialEpoch().getAncestor();
+		AtomicReference<Pair<VertexMetadata, Long>> highestVertexMetadata = new AtomicReference<>(
+			Pair.of(genesisAncestor, 0L)
+		);
 
 		Observable<VertexMetadata> highest = Observable.merge(
 			network.getNodes().stream()
 				.map(network::getInfo)
 				.map(eventsRx -> eventsRx.highQCs().map(QuorumCertificate::getProposed))
 				.collect(Collectors.toList())
-		).scan(VertexMetadata.ofGenesisAncestor(), Ordering.from(vertexMetadataComparator)::max);
+		).scan(genesisAncestor, Ordering.from(vertexMetadataComparator)::max);
 
 		return Observable.combineLatest(
 			highest,

@@ -17,9 +17,16 @@
 
 package com.radixdlt.middleware2.network;
 
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidator;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
+import com.radixdlt.utils.UInt256;
 import org.radix.serialization.SerializeMessageObject;
 
 public class GetVerticesErrorResponseMessageSerializeTest extends SerializeMessageObject<GetVerticesErrorResponseMessage> {
@@ -28,11 +35,15 @@ public class GetVerticesErrorResponseMessageSerializeTest extends SerializeMessa
 	}
 
 	private static GetVerticesErrorResponseMessage get() {
+		ECKeyPair keyPair = ECKeyPair.generateNew();
+		BFTValidatorSet bftValidatorSet = BFTValidatorSet.from(ImmutableSet.of(
+			BFTValidator.from(BFTNode.create(keyPair.getPublicKey()), UInt256.ONE)
+		));
 		return new GetVerticesErrorResponseMessage(
 			12345,
 			Hash.random(),
-			QuorumCertificate.ofGenesis(Vertex.createGenesis()),
-			QuorumCertificate.ofGenesis(Vertex.createGenesis())
+			QuorumCertificate.ofGenesis(Vertex.createGenesis(VertexMetadata.ofGenesisAncestor(bftValidatorSet))),
+			QuorumCertificate.ofGenesis(Vertex.createGenesis(VertexMetadata.ofGenesisAncestor(bftValidatorSet)))
 		);
 	}
 }

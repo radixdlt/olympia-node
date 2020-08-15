@@ -26,11 +26,9 @@ import java.util.Objects;
  */
 public final class EpochChange {
 	private final VertexMetadata ancestor;
-	private final BFTValidatorSet validatorSet;
 
-	public EpochChange(VertexMetadata ancestor, BFTValidatorSet validatorSet) {
+	public EpochChange(VertexMetadata ancestor) {
 		this.ancestor = Objects.requireNonNull(ancestor);
-		this.validatorSet = Objects.requireNonNull(validatorSet);
 	}
 
 	public VertexMetadata getAncestor() {
@@ -38,11 +36,13 @@ public final class EpochChange {
 	}
 
 	public BFTValidatorSet getValidatorSet() {
-		return validatorSet;
+		return ancestor.getValidatorSet().orElseThrow(() -> new IllegalStateException("Bad Epoch Change"));
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{ancestor=%s validatorSet=%s}", this.getClass().getSimpleName(), ancestor, validatorSet);
+		return String.format(
+			"%s{ancestor=%s validatorSet=%s}", this.getClass().getSimpleName(), ancestor, getValidatorSet()
+		);
 	}
 }

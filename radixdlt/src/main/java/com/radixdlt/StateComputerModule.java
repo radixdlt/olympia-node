@@ -228,10 +228,21 @@ public class StateComputerModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private CommittedAtom genesisAtom(Universe universe) throws LedgerAtomConversionException {
+	private CommittedAtom genesisAtom(
+		Universe universe,
+		VertexMetadata genesisVertexMetadata
+	) throws LedgerAtomConversionException {
 		final ClientAtom genesisAtom = ClientAtom.convertFromApiAtom(universe.getGenesis().get(0));
-		final VertexMetadata vertexMetadata = VertexMetadata.ofGenesisAncestor();
-		return new CommittedAtom(genesisAtom, vertexMetadata);
+		return new CommittedAtom(genesisAtom, genesisVertexMetadata);
+	}
+
+	@Provides
+	@Singleton
+	private VertexMetadata genesisVertexMetadata(
+		Function<Long, BFTValidatorSet> validatorSetMapping
+	) {
+		BFTValidatorSet validatorSet = validatorSetMapping.apply(1L);
+		return VertexMetadata.ofGenesisAncestor(validatorSet);
 	}
 
 	@Provides

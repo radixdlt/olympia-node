@@ -39,7 +39,7 @@ public enum SingleEpochAlwaysSyncedExecutor implements SyncedExecutor<CommittedA
 
 	@Override
 	public ExecutionResult execute(Vertex vertex) {
-		return ExecutionResult.create(0, Hash.ZERO_HASH, false);
+		return ExecutionResult.create(0, Hash.ZERO_HASH);
 	}
 
 	@Override

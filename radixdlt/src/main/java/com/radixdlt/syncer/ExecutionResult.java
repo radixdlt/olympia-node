@@ -17,33 +17,42 @@
 
 package com.radixdlt.syncer;
 
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.Hash;
+import java.util.Optional;
 
 public final class ExecutionResult {
 	private final long stateVersion;
-	private final boolean isEndOfEpoch;
 	private final Hash timestampedSignaturesHash;
+	private final BFTValidatorSet nextValidatorSet;
 
-	private ExecutionResult(long stateVersion, Hash timestampedSignaturesHash, boolean isEndOfEpoch) {
+	private ExecutionResult(long stateVersion, Hash timestampedSignaturesHash, BFTValidatorSet nextValidatorSet) {
 		this.stateVersion = stateVersion;
-		this.isEndOfEpoch = isEndOfEpoch;
+		this.nextValidatorSet = nextValidatorSet;
 		this.timestampedSignaturesHash = timestampedSignaturesHash;
 	}
 
 	public static ExecutionResult create(
 		long stateVersion,
-		Hash timestampedSignaturesHash,
-		boolean isEndOfEpoch
+		Hash timestampedSignaturesHash
 	) {
-		return new ExecutionResult(stateVersion, timestampedSignaturesHash, isEndOfEpoch);
+		return new ExecutionResult(stateVersion, timestampedSignaturesHash, null);
+	}
+
+	public static ExecutionResult create(
+		long stateVersion,
+		Hash timestampedSignaturesHash,
+		BFTValidatorSet nextValidatorSet
+	) {
+		return new ExecutionResult(stateVersion, timestampedSignaturesHash, nextValidatorSet);
 	}
 
 	public long getStateVersion() {
 		return stateVersion;
 	}
 
-	public boolean isEndOfEpoch() {
-		return isEndOfEpoch;
+	public Optional<BFTValidatorSet> getNextValidatorSet() {
+		return Optional.ofNullable(nextValidatorSet);
 	}
 
 	public Hash getTimestampedSignaturesHash() {

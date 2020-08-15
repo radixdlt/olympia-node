@@ -17,10 +17,13 @@
 
 package com.radixdlt.consensus.safety;
 
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.DefaultHasher;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.BFTValidator;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.safety.SafetyState.Builder;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.consensus.QuorumCertificate;
@@ -30,6 +33,7 @@ import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.syncer.ExecutionResult;
+import com.radixdlt.utils.UInt256;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -42,7 +46,11 @@ import static org.mockito.Mockito.when;
  * This tests that the {@link SafetyRules} implementation obeys HotStuff's safety and commit rules.
  */
 public class SafetyRulesTest {
-	private static final VertexMetadata genesisAncestor = VertexMetadata.ofGenesisAncestor();
+	private static final VertexMetadata genesisAncestor = VertexMetadata.ofGenesisAncestor(
+		BFTValidatorSet.from(
+			ImmutableSet.of(BFTValidator.from(BFTNode.create(ECKeyPair.generateNew().getPublicKey()), UInt256.ONE))
+		)
+	);
 	private static final VoteData GENESIS_DATA = new VoteData(genesisAncestor, genesisAncestor, null);
 	private static final QuorumCertificate GENESIS_QC = new QuorumCertificate(GENESIS_DATA, new TimestampedECDSASignatures());
 
@@ -155,10 +163,10 @@ public class SafetyRulesTest {
 
 		Hash toBeCommitted = mock(Hash.class);
 
-		VertexMetadata committed = new VertexMetadata(0, View.of(1), toBeCommitted, 1, false, Hash.ZERO_HASH);
+		VertexMetadata committed = new VertexMetadata(0, View.of(1), toBeCommitted, 1, null, Hash.ZERO_HASH);
 		VoteData voteData = new VoteData(
-			new VertexMetadata(0, View.of(3), mock(Hash.class), 3, false, Hash.ZERO_HASH),
-			new VertexMetadata(0, View.of(2), mock(Hash.class), 2, false, Hash.ZERO_HASH),
+			new VertexMetadata(0, View.of(3), mock(Hash.class), 3, null, Hash.ZERO_HASH),
+			new VertexMetadata(0, View.of(2), mock(Hash.class), 2, null, Hash.ZERO_HASH),
 			committed
 		);
 

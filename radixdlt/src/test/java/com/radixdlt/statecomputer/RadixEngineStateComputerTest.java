@@ -18,6 +18,7 @@
 package com.radixdlt.statecomputer;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -65,7 +66,9 @@ public class RadixEngineStateComputerTest {
 	public void when_compute_vertex_metadata_equal_to_high_view__then_should_return_true() {
 		Vertex vertex = mock(Vertex.class);
 		when(vertex.getView()).thenReturn(epochHighView);
-		assertThat(executor.compute(vertex)).isTrue();
+		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
+		when(validatorSetMapping.apply(any())).thenReturn(validatorSet);
+		assertThat(executor.execute(vertex)).contains(validatorSet);
 	}
 
 	@Test
@@ -82,7 +85,7 @@ public class RadixEngineStateComputerTest {
 
 		RadixEngineException e = mock(RadixEngineException.class);
 		doThrow(e).when(radixEngine).checkAndStore(eq(committedAtom));
-		executor.execute(committedAtom);
+		executor.commit(committedAtom);
 
 		assertThat(executor.getCommittedAtoms(0, 1)).contains(
 			committedAtom

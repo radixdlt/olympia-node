@@ -54,7 +54,7 @@ public class StateComputerModuleTest {
 			when(ledgerEntryStore.getNextCommittedLedgerEntries(anyLong(), anyInt()))
 				.thenReturn(ImmutableList.of(mock(LedgerEntry.class)));
 			bind(LedgerEntryStore.class).toInstance(ledgerEntryStore);
-			bind(ECKeyPair.class).annotatedWith(Names.named("self")).toInstance(mock(ECKeyPair.class));
+			bind(ECKeyPair.class).annotatedWith(Names.named("self")).toInstance(ECKeyPair.generateNew());
 		}
 	}
 

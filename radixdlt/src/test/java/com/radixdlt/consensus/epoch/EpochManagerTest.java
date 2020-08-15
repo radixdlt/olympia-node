@@ -101,7 +101,7 @@ public class EpochManagerTest {
 
 		this.epochManager = new EpochManager(
 			this.self,
-			new EpochChange(VertexMetadata.ofGenesisAncestor(), BFTValidatorSet.from(ImmutableSet.of())),
+			new EpochChange(VertexMetadata.ofGenesisAncestor(BFTValidatorSet.from(ImmutableSet.of()))),
 			this.syncedExecutor,
 			this.syncEpochsRPCSender,
 			mock(LocalTimeoutSender.class),
@@ -150,7 +150,10 @@ public class EpochManagerTest {
 		when(ancestor.getEpoch()).thenReturn(1L);
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of());
-		epochManager.processEpochChange(new EpochChange(ancestor, validatorSet));
+		EpochChange epochChange = mock(EpochChange.class);
+		when(epochChange.getAncestor()).thenReturn(ancestor);
+		when(epochChange.getValidatorSet()).thenReturn(validatorSet);
+		epochManager.processEpochChange(epochChange);
 		BFTNode sender = mock(BFTNode.class);
 		epochManager.processGetEpochRequest(new GetEpochRequest(sender, 1L));
 		verify(syncEpochsRPCSender, times(1)).sendGetEpochResponse(eq(sender), eq(ancestor));
@@ -188,7 +191,9 @@ public class EpochManagerTest {
 		when(ancestor.getEpoch()).thenReturn(1L);
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of());
-		EpochChange epochChange = new EpochChange(ancestor, validatorSet);
+		EpochChange epochChange = mock(EpochChange.class);
+		when(epochChange.getAncestor()).thenReturn(ancestor);
+		when(epochChange.getValidatorSet()).thenReturn(validatorSet);
 		epochManager.processEpochChange(epochChange);
 
 		GetEpochResponse response = mock(GetEpochResponse.class);
@@ -219,7 +224,10 @@ public class EpochManagerTest {
 		when(selfValidator.getNode()).thenReturn(this.self);
 
 		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of(selfValidator, validator));
-		epochManager.processEpochChange(new EpochChange(ancestor, validatorSet));
+		EpochChange epochChange0 = mock(EpochChange.class);
+		when(epochChange0.getValidatorSet()).thenReturn(validatorSet);
+		when(epochChange0.getAncestor()).thenReturn(ancestor);
+		epochManager.processEpochChange(epochChange0);
 
 		VertexMetadata nextAncestor = mock(VertexMetadata.class);
 		when(nextAncestor.getEpoch()).thenReturn(2L);
@@ -253,7 +261,10 @@ public class EpochManagerTest {
 		when(selfValidator.getNode()).thenReturn(this.self);
 
 		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of(selfValidator, validator));
-		epochManager.processEpochChange(new EpochChange(ancestor, validatorSet));
+		EpochChange epochChange = mock(EpochChange.class);
+		when(epochChange.getAncestor()).thenReturn(ancestor);
+		when(epochChange.getValidatorSet()).thenReturn(validatorSet);
+		epochManager.processEpochChange(epochChange);
 
 		verify(eventProcessor, times(1)).start();
 
@@ -353,7 +364,12 @@ public class EpochManagerTest {
 
 		VertexMetadata ancestor = mock(VertexMetadata.class);
 		when(ancestor.getEpoch()).thenReturn(1L);
-		epochManager.processEpochChange(new EpochChange(ancestor, validatorSet));
+
+		EpochChange epochChange = mock(EpochChange.class);
+		when(epochChange.getAncestor()).thenReturn(ancestor);
+		when(epochChange.getValidatorSet()).thenReturn(validatorSet);
+
+		epochManager.processEpochChange(epochChange);
 
 		assertThat(systemCounters.get(CounterType.EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS)).isEqualTo(0);
 		verify(eventProcessor, times(1)).processProposal(eq(proposal));
@@ -376,7 +392,11 @@ public class EpochManagerTest {
 		when(validatorSet.containsNode(any())).thenReturn(false);
 		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of());
 
-		epochManager.processEpochChange(new EpochChange(ancestor, validatorSet));
+		EpochChange epochChange = mock(EpochChange.class);
+		when(epochChange.getAncestor()).thenReturn(ancestor);
+		when(epochChange.getValidatorSet()).thenReturn(validatorSet);
+
+		epochManager.processEpochChange(epochChange);
 
 		assertThat(systemCounters.get(CounterType.EPOCH_MANAGER_QUEUED_CONSENSUS_EVENTS)).isEqualTo(0);
 	}
@@ -396,7 +416,11 @@ public class EpochManagerTest {
 
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
 		when(vertexMetadata.getEpoch()).thenReturn(1L);
-		epochManager.processEpochChange(new EpochChange(vertexMetadata, validatorSet));
+
+		EpochChange epochChange = mock(EpochChange.class);
+		when(epochChange.getAncestor()).thenReturn(vertexMetadata);
+		when(epochChange.getValidatorSet()).thenReturn(validatorSet);
+		epochManager.processEpochChange(epochChange);
 
 		GetVerticesRequest getVerticesRequest = mock(GetVerticesRequest.class);
 		epochManager.processGetVerticesRequest(getVerticesRequest);

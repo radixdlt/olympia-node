@@ -32,6 +32,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRPCSender;
@@ -44,10 +45,12 @@ import com.radixdlt.consensus.bft.VertexStore.GetVerticesRequest;
 import com.radixdlt.consensus.bft.VertexStore.SyncedVertexSender;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.counters.SystemCounters;
+import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.syncer.ExecutionResult;
+import com.radixdlt.utils.UInt256;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.concurrent.atomic.AtomicReference;
@@ -72,7 +75,11 @@ public class VertexStoreTest {
 
 	@Before
 	public void setUp() {
-		this.genesisVertex = Vertex.createGenesis();
+		ECKeyPair keyPair = ECKeyPair.generateNew();
+		BFTValidatorSet bftValidatorSet = BFTValidatorSet.from(ImmutableSet.of(
+			BFTValidator.from(BFTNode.create(keyPair.getPublicKey()), UInt256.ONE)
+		));
+		this.genesisVertex = Vertex.createGenesis(VertexMetadata.ofGenesisAncestor(bftValidatorSet));
 		this.genesisVertexMetadata = VertexMetadata.ofGenesisVertex(genesisVertex);
 		VoteData voteData = new VoteData(genesisVertexMetadata, genesisVertexMetadata, genesisVertexMetadata);
 		this.rootQC = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
@@ -201,12 +208,14 @@ public class VertexStoreTest {
 	@Test
 	@Ignore("Need to catch this at verification of object")
 	public void when_inserting_vertex_with_missing_parent__then_missing_parent_exception_is_thrown() {
+		/*
 		VertexMetadata vertexMetadata = VertexMetadata.ofGenesisAncestor();
 		VoteData voteData = new VoteData(vertexMetadata, null, null);
 		QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 		Vertex nextVertex = Vertex.createVertex(qc, View.of(1), mock(ClientAtom.class));
 		assertThatThrownBy(() -> vertexStore.insertVertex(nextVertex))
 			.isInstanceOf(MissingParentException.class);
+		 */
 	}
 
 	@Test
@@ -330,6 +339,7 @@ public class VertexStoreTest {
 		VertexMetadata vertexMetadata2 = mock(VertexMetadata.class);
 		when(vertexMetadata2.getId()).thenReturn(nextVertex2.getId());
 		when(vertexMetadata2.getView()).thenReturn(nextVertex2.getView());
+
 		vertexStore.commitVertex(vertexMetadata2);
 		verify(vertexStoreEventSender, times(1)).sendCommittedVertex(eq(nextVertex1));
 		verify(vertexStoreEventSender, times(1)).sendCommittedVertex(eq(nextVertex2));
@@ -340,6 +350,7 @@ public class VertexStoreTest {
 	public void when_sync_to_qc_which_doesnt_exist_and_vertex_is_inserted_later__then_sync_should_be_emitted() throws Exception {
 		Vertex vertex = nextVertex.get();
 		QuorumCertificate qc = mock(QuorumCertificate.class);
+
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
 		when(vertexMetadata.getId()).thenReturn(vertex.getId());
 		when(vertexMetadata.getView()).thenReturn(vertex.getView());
@@ -363,6 +374,7 @@ public class VertexStoreTest {
 		when(vertexMetadata.getView()).thenReturn(vertex.getView());
 
 		when(qc.getProposed()).thenReturn(vertexMetadata);
+
 		assertThat(vertexStore.syncToQC(qc, vertexStore.getHighestCommittedQC(), null)).isTrue();
 	}
 
@@ -370,6 +382,7 @@ public class VertexStoreTest {
 	public void when_sync_to_qc_with_no_author_and_not_synced__then_should_throw_illegal_state_exception() {
 		Vertex vertex = nextVertex.get();
 		QuorumCertificate qc = mock(QuorumCertificate.class);
+
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
 		when(vertexMetadata.getId()).thenReturn(vertex.getId());
 		when(vertexMetadata.getView()).thenReturn(vertex.getView());

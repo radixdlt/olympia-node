@@ -45,6 +45,7 @@ import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.syncer.SyncExecutor.SyncService;
+import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -91,10 +92,9 @@ public class SyncExecutorTest {
 		when(vertexMetadata.getEpoch()).thenReturn(genesisEpoch);
 		when(vertexMetadata.isEndOfEpoch()).thenReturn(true);
 		when(vertexMetadata.getStateVersion()).thenReturn(1234L);
-		when(committedAtom.getVertexMetadata()).thenReturn(vertexMetadata);
-
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
-		when(this.executor.getValidatorSet(eq(genesisEpoch + 1))).thenReturn(validatorSet);
+		when(vertexMetadata.getValidatorSet()).thenReturn(Optional.of(validatorSet));
+		when(committedAtom.getVertexMetadata()).thenReturn(vertexMetadata);
 
 		syncExecutor.commit(committedAtom);
 		verify(epochChangeSender, times(1))
@@ -115,7 +115,7 @@ public class SyncExecutorTest {
 		when(committedAtom.getVertexMetadata()).thenReturn(vertexMetadata);
 
 		syncExecutor.commit(committedAtom);
-		verify(executor, times(1)).execute(eq(committedAtom));
+		verify(executor, times(1)).commit(eq(committedAtom));
 		verify(mempool, times(1)).removeCommittedAtom(aid);
 	}
 

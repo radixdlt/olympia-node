@@ -34,6 +34,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
@@ -55,9 +56,9 @@ public final class SyncExecutor implements SyncedExecutor<CommittedAtom> {
 	}
 
 	public interface StateComputer {
-		StateComputerExecutedCommand execute(CommittedAtom committedAtom);
-		boolean compute(Vertex vertex);
-		BFTValidatorSet getValidatorSet(long epoch);
+		// TODO: Remove commit and move functionality into execute
+		StateComputerExecutedCommand commit(CommittedAtom committedAtom);
+		Optional<BFTValidatorSet> execute(Vertex vertex);
 	}
 
 	public interface CommittedSender {
@@ -125,23 +126,23 @@ public final class SyncExecutor implements SyncedExecutor<CommittedAtom> {
 		final VertexMetadata parent = vertex.getQC().getProposed();
 		final long parentStateVersion = parent.getStateVersion();
 
-		final boolean isEndOfEpoch;
+		Optional<BFTValidatorSet> validatorSet = stateComputer.execute(vertex);
+
 		final int versionIncrement;
 		if (parent.isEndOfEpoch()) {
 			versionIncrement = 0; // Don't execute atom if in process of epoch change
-			isEndOfEpoch = true;
-		} else if (stateComputer.compute(vertex)) {
+		} else if (validatorSet.isPresent()) {
 			versionIncrement = 1;
-			isEndOfEpoch = true;
 		} else {
 			versionIncrement = vertex.getAtom() != null ? 1 : 0;
-			isEndOfEpoch = false;
 		}
 
 		final long stateVersion = parentStateVersion + versionIncrement;
 		final Hash timestampedSignaturesHash = vertex.getQC().getTimestampedSignatures().getId();
 
-		return ExecutionResult.create(stateVersion, timestampedSignaturesHash, isEndOfEpoch);
+		return validatorSet
+			.map(vset -> ExecutionResult.create(stateVersion, timestampedSignaturesHash, vset))
+			.orElseGet(() -> ExecutionResult.create(stateVersion, timestampedSignaturesHash));
 	}
 
 	/**
@@ -161,7 +162,7 @@ public final class SyncExecutor implements SyncedExecutor<CommittedAtom> {
 			this.currentStateVersion = stateVersion;
 			this.counters.set(CounterType.LEDGER_STATE_VERSION, this.currentStateVersion);
 
-			StateComputerExecutedCommand result = this.stateComputer.execute(atom);
+			StateComputerExecutedCommand result = this.stateComputer.commit(atom);
 			if (atom.getClientAtom() != null) {
 				this.mempool.removeCommittedAtom(atom.getAID());
 			}
@@ -178,7 +179,7 @@ public final class SyncExecutor implements SyncedExecutor<CommittedAtom> {
 			// TODO: Move outside of syncedRadixEngine to a more generic syncing layer
 			if (atom.getVertexMetadata().isEndOfEpoch()) {
 				VertexMetadata ancestor = atom.getVertexMetadata();
-				EpochChange epochChange = new EpochChange(ancestor, stateComputer.getValidatorSet(ancestor.getEpoch() + 1));
+				EpochChange epochChange = new EpochChange(ancestor);
 				this.epochChangeSender.epochChange(epochChange);
 			}
 		}

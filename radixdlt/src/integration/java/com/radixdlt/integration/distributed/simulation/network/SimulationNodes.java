@@ -24,6 +24,7 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.radixdlt.ConsensusModule;
 import com.radixdlt.SystemInfoMessagesModule;
+import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.integration.distributed.simulation.MockedCryptoModule;
 import com.radixdlt.integration.distributed.simulation.SimulationNetworkModule;
 import com.radixdlt.systeminfo.InfoRx;
@@ -78,6 +79,8 @@ public class SimulationNodes {
 
 	// TODO: Add support for epoch changes
 	public interface RunningNetwork {
+		EpochChange initialEpoch();
+
 		List<BFTNode> getNodes();
 
 		InfoRx getInfo(BFTNode node);
@@ -96,6 +99,11 @@ public class SimulationNodes {
 		}
 
 		return new RunningNetwork() {
+			public EpochChange initialEpoch() {
+				// Just do first instance for now
+				return nodeInstances.get(0).getInstance(EpochChange.class);
+			}
+
 			@Override
 			public List<BFTNode> getNodes() {
 				return nodes;
