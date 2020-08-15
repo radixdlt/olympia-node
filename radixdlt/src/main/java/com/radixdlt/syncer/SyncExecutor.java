@@ -20,7 +20,6 @@ package com.radixdlt.syncer;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.SyncedExecutor;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
@@ -62,6 +61,7 @@ public final class SyncExecutor implements SyncedExecutor<CommittedAtom> {
 	}
 
 	public interface CommittedSender {
+		// TODO: batch these
 		void sendCommitted(StateComputerExecutedCommand stateComputerExecutedCommand);
 	}
 
@@ -73,7 +73,6 @@ public final class SyncExecutor implements SyncedExecutor<CommittedAtom> {
 	private final StateComputer stateComputer;
 	private final CommittedStateSyncSender committedStateSyncSender;
 	private final CommittedSender committedSender;
-	private final EpochChangeSender epochChangeSender;
 	private final SystemCounters counters;
 	private final SyncService syncService;
 
@@ -87,7 +86,6 @@ public final class SyncExecutor implements SyncedExecutor<CommittedAtom> {
 		StateComputer stateComputer,
 		CommittedStateSyncSender committedStateSyncSender,
 		CommittedSender committedSender,
-		EpochChangeSender epochChangeSender,
 		SyncService syncService,
 		SystemCounters counters
 	) {
@@ -96,7 +94,6 @@ public final class SyncExecutor implements SyncedExecutor<CommittedAtom> {
 		this.stateComputer = Objects.requireNonNull(stateComputer);
 		this.committedStateSyncSender = Objects.requireNonNull(committedStateSyncSender);
 		this.committedSender = Objects.requireNonNull(committedSender);
-		this.epochChangeSender = Objects.requireNonNull(epochChangeSender);
 		this.counters = Objects.requireNonNull(counters);
 		this.syncService = Objects.requireNonNull(syncService);
 	}
@@ -174,13 +171,6 @@ public final class SyncExecutor implements SyncedExecutor<CommittedAtom> {
 				for (Object opaque : opaqueObjects) {
 					committedStateSyncSender.sendCommittedStateSync(this.currentStateVersion, opaque);
 				}
-			}
-
-			// TODO: Move outside of syncedRadixEngine to a more generic syncing layer
-			if (atom.getVertexMetadata().isEndOfEpoch()) {
-				VertexMetadata ancestor = atom.getVertexMetadata();
-				EpochChange epochChange = new EpochChange(ancestor);
-				this.epochChangeSender.epochChange(epochChange);
 			}
 		}
 	}

@@ -45,7 +45,7 @@ public class MockedSyncExecutionModule extends AbstractModule {
 	public void configure() {
 		bind(CommittedStateSyncRx.class).toInstance(Observable::never);
 		bind(EpochChangeRx.class).toInstance(Observable::never);
-		EpochChange initialEpoch = new EpochChange(VertexMetadata.ofGenesisAncestor(validatorSet));
+		EpochChange initialEpoch = new EpochChange(VertexMetadata.ofGenesisAncestor(validatorSet), validatorSet);
 		bind(EpochChange.class).toInstance(initialEpoch);
 	}
 

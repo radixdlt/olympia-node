@@ -101,7 +101,9 @@ public class EpochManagerTest {
 
 		this.epochManager = new EpochManager(
 			this.self,
-			new EpochChange(VertexMetadata.ofGenesisAncestor(BFTValidatorSet.from(ImmutableSet.of()))),
+			new EpochChange(VertexMetadata.ofGenesisAncestor(
+				BFTValidatorSet.from(ImmutableSet.of())), BFTValidatorSet.from(ImmutableSet.of())
+			),
 			this.syncedExecutor,
 			this.syncEpochsRPCSender,
 			mock(LocalTimeoutSender.class),

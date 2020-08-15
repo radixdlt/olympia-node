@@ -32,6 +32,7 @@ import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.mempool.EmptyMempool;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.CommittedAtom;
+import com.radixdlt.syncer.EpochChangeManager;
 import com.radixdlt.syncer.EpochChangeSender;
 import com.radixdlt.syncer.StateComputerExecutedCommands;
 import com.radixdlt.syncer.SyncExecutor.CommittedSender;
@@ -71,7 +72,7 @@ public class MockedSyncServiceAndStateComputerModule extends AbstractModule {
 		TwoSenderToRx<Long, Object, CommittedStateSync> committedStateSyncTwoSenderToRx = new TwoSenderToRx<>(CommittedStateSync::new);
 		bind(CommittedStateSyncRx.class).toInstance(committedStateSyncTwoSenderToRx::rx);
 		bind(CommittedStateSyncSender.class).toInstance(committedStateSyncTwoSenderToRx::send);
-		bind(CommittedSender.class).toInstance(committed -> { });
+		bind(CommittedSender.class).to(EpochChangeManager.class);
 	}
 
 	@Provides

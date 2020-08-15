@@ -28,6 +28,7 @@ import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.CommittedAtom;
+import com.radixdlt.syncer.EpochChangeManager;
 import com.radixdlt.syncer.EpochChangeSender;
 import com.radixdlt.syncer.SyncExecutor;
 import com.radixdlt.syncer.SyncExecutor.CommittedSender;
@@ -51,7 +52,6 @@ public class SyncExecutionModule extends AbstractModule {
 		StateComputer stateComputer,
 		CommittedStateSyncSender committedStateSyncSender,
 		CommittedSender committedSender,
-		EpochChangeSender epochChangeSender,
 		SyncService syncService,
 		SystemCounters counters
 	) {
@@ -61,16 +61,23 @@ public class SyncExecutionModule extends AbstractModule {
 			stateComputer,
 			committedStateSyncSender,
 			committedSender,
-			epochChangeSender,
 			syncService,
 			counters
 		);
+	}
+
+	@Provides
+	@Singleton
+	private EpochChangeManager epochChangeManager(EpochChangeSender sender) {
+		return new EpochChangeManager(sender);
 	}
 
 	// TODO: Load from storage
 	@Provides
 	@Singleton
 	private EpochChange initialEpoch(VertexMetadata ancestor) {
-		return new EpochChange(ancestor);
+		return new EpochChange(ancestor, ancestor.getValidatorSet()
+			.orElseThrow(() -> new IllegalStateException("initial epoch must have validator set"))
+		);
 	}
 }

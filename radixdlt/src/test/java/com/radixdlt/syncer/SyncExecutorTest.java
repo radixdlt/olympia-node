@@ -19,7 +19,6 @@ package com.radixdlt.syncer;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -35,7 +34,6 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.syncer.SyncExecutor.CommittedSender;
 import com.radixdlt.syncer.SyncExecutor.CommittedStateSyncSender;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.AID;
@@ -45,7 +43,6 @@ import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.syncer.SyncExecutor.SyncService;
-import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -55,7 +52,6 @@ public class SyncExecutorTest {
 	private RadixEngineStateComputer executor;
 	private SyncExecutor syncExecutor;
 	private CommittedStateSyncSender committedStateSyncSender;
-	private EpochChangeSender epochChangeSender;
 	private CommittedSender committedSender;
 
 	private SystemCounters counters;
@@ -67,7 +63,6 @@ public class SyncExecutorTest {
 		// No type check issues with mocking generic here
 		this.executor = mock(RadixEngineStateComputer.class);
 		this.committedStateSyncSender = mock(CommittedStateSyncSender.class);
-		this.epochChangeSender = mock(EpochChangeSender.class);
 		this.counters = mock(SystemCounters.class);
 		this.committedSender = mock(CommittedSender.class);
 
@@ -78,29 +73,9 @@ public class SyncExecutorTest {
 			executor,
 			committedStateSyncSender,
 			committedSender,
-			epochChangeSender,
 			syncService,
 			counters
 		);
-	}
-
-	@Test
-	public void when_execute_end_of_epoch_atom__then_should_send_epoch_change() {
-		CommittedAtom committedAtom = mock(CommittedAtom.class);
-		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
-		long genesisEpoch = 123;
-		when(vertexMetadata.getEpoch()).thenReturn(genesisEpoch);
-		when(vertexMetadata.isEndOfEpoch()).thenReturn(true);
-		when(vertexMetadata.getStateVersion()).thenReturn(1234L);
-		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
-		when(vertexMetadata.getValidatorSet()).thenReturn(Optional.of(validatorSet));
-		when(committedAtom.getVertexMetadata()).thenReturn(vertexMetadata);
-
-		syncExecutor.commit(committedAtom);
-		verify(epochChangeSender, times(1))
-			.epochChange(
-				argThat(e -> e.getAncestor().equals(vertexMetadata) && e.getValidatorSet().equals(validatorSet))
-			);
 	}
 
 	@Test
@@ -117,6 +92,7 @@ public class SyncExecutorTest {
 		syncExecutor.commit(committedAtom);
 		verify(executor, times(1)).commit(eq(committedAtom));
 		verify(mempool, times(1)).removeCommittedAtom(aid);
+		verify(committedSender, times(1)).sendCommitted(any());
 	}
 
 	@Test

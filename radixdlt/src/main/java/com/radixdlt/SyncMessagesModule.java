@@ -18,6 +18,9 @@
 package com.radixdlt;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.google.inject.Singleton;
+import com.google.inject.TypeLiteral;
 import com.radixdlt.api.DeserializationFailure;
 import com.radixdlt.api.LedgerRx;
 import com.radixdlt.api.SubmissionErrorsRx;
@@ -31,6 +34,7 @@ import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.mempool.SubmissionControlImpl.SubmissionControlSender;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.converters.AtomConversionException;
+import com.radixdlt.syncer.EpochChangeManager;
 import com.radixdlt.syncer.EpochChangeSender;
 import com.radixdlt.syncer.LocalSyncRequest;
 import com.radixdlt.syncer.SyncExecutor.CommittedSender;
@@ -48,6 +52,7 @@ import com.radixdlt.utils.TwoSenderToRx;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.Consumer;
 
 /**
  * Module which manages messages from Syncer
@@ -56,9 +61,10 @@ public final class SyncMessagesModule extends AbstractModule {
 
 	@Override
 	protected void configure() {
-		SenderToRx<StateComputerExecutedCommand, StateComputerExecutedCommand> executedCommands = new SenderToRx<>(c -> c);
-		bind(CommittedSender.class).toInstance(executedCommands::send);
-		bind(LedgerRx.class).toInstance(executedCommands::rx);
+		SenderToRx<StateComputerExecutedCommand, StateComputerExecutedCommand> committed = new SenderToRx<>(c -> c);
+		bind(new TypeLiteral<Consumer<StateComputerExecutedCommand>>() { })
+			.toInstance(committed::send);
+		bind(LedgerRx.class).toInstance(committed::rx);
 
 		TwoSenderToRx<Atom, AtomConversionException, DeserializationFailure> deserializationFailures
 			= new TwoSenderToRx<>(DeserializationFailure::new);
@@ -105,5 +111,18 @@ public final class SyncMessagesModule extends AbstractModule {
 		ScheduledSenderToRx<SyncInProgress> syncsInProgress = new ScheduledSenderToRx<>(ses);
 		bind(SyncTimeoutScheduler.class).toInstance(syncsInProgress::scheduleSend);
 		bind(SyncTimeoutsRx.class).toInstance(syncsInProgress::messages);
+	}
+
+	@Provides
+	@Singleton
+	CommittedSender committedSender(
+		EpochChangeManager epochChangeManager,
+		Consumer<StateComputerExecutedCommand> consumer
+	) {
+		Consumer<StateComputerExecutedCommand> sender = epochChangeManager::sendCommitted;
+		return cmd -> {
+			epochChangeManager.sendCommitted(cmd);
+			consumer.accept(cmd);
+		};
 	}
 }
