@@ -32,8 +32,6 @@ import com.google.inject.Inject;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.network.transport.TransportInfo;
 import com.radixdlt.properties.RuntimeProperties;
-import com.radixdlt.universe.Universe;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.radix.events.Events;
@@ -59,11 +57,11 @@ public class AddressBookImpl implements AddressBook {
 	private final Whitelist whitelist;
 
 	@Inject
-	AddressBookImpl(PeerPersistence persistence, Events events, Universe universe, RuntimeProperties properties) {
+	AddressBookImpl(PeerPersistence persistence, Events events, RuntimeProperties properties) {
 		super();
 		this.persistence = Objects.requireNonNull(persistence);
 		this.events = Objects.requireNonNull(events);
-		this.recencyThreshold = Objects.requireNonNull(universe).getPlanck();
+		this.recencyThreshold = properties.get("addressbook.recency_ms", 60L * 1000L);
 		this.whitelist = Whitelist.from(properties);
 
 		this.persistence.forEachPersistedPeer(peer -> {

@@ -33,7 +33,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.radix.utils.IOUtils;
 import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.utils.Offset;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.keys.Keys;
@@ -94,19 +93,12 @@ public final class GenerateUniverses {
 
 		List<Universe> universes = new ArrayList<>();
 
-		// FIXME: Planck concept to be removed
-		int devPlanckPeriodSeconds = this.properties.get("dev.planck", 60);
-		long devPlanckPeriodMillis = TimeUnit.SECONDS.toMillis(devPlanckPeriodSeconds);
-
-		int prodPlanckPeriodSeconds = this.properties.get("prod.planck", 3600);
-		long prodPlanckPeriodMillis = TimeUnit.SECONDS.toMillis(prodPlanckPeriodSeconds);
-
 		long universeTimestampSeconds = this.properties.get("universe.timestamp", 1551225600);
 		long universeTimestampMillis = TimeUnit.SECONDS.toMillis(universeTimestampSeconds);
 
-		universes.add(buildUniverse(10000, "Radix Mainnet", "The Radix public Universe", UniverseType.PRODUCTION, universeTimestampMillis, prodPlanckPeriodMillis));
-		universes.add(buildUniverse(20000, "Radix Testnet", "The Radix test Universe", UniverseType.TEST, universeTimestampMillis, devPlanckPeriodMillis));
-		universes.add(buildUniverse(30000, "Radix Devnet",  "The Radix development Universe", UniverseType.DEVELOPMENT, universeTimestampMillis, devPlanckPeriodMillis));
+		universes.add(buildUniverse(10000, "Radix Mainnet", "The Radix public Universe", UniverseType.PRODUCTION, universeTimestampMillis));
+		universes.add(buildUniverse(20000, "Radix Testnet", "The Radix test Universe", UniverseType.TEST, universeTimestampMillis));
+		universes.add(buildUniverse(30000, "Radix Devnet",  "The Radix development Universe", UniverseType.DEVELOPMENT, universeTimestampMillis));
 
 		return universes;
 	}
@@ -116,12 +108,11 @@ public final class GenerateUniverses {
 		String name,
 		String description,
 		UniverseType type,
-		long timestamp,
-		long planckPeriod
+		long timestamp
 	) throws SerializationException, CryptoException {
 		LOGGER.info("------------------ Start of Universe: {} ------------------", type);
-		byte universeMagic = (byte) (Universe.computeMagic(universeKey.getPublicKey(), timestamp, port, type, planckPeriod) & 0xFF);
-		Atom universeAtom = createGenesisAtom(universeMagic, timestamp, planckPeriod);
+		byte universeMagic = (byte) (Universe.computeMagic(universeKey.getPublicKey(), timestamp, port, type) & 0xFF);
+		Atom universeAtom = createGenesisAtom(universeMagic);
 
 		Universe universe = Universe.newBuilder()
 			.port(port)
@@ -129,7 +120,6 @@ public final class GenerateUniverses {
 			.description(description)
 			.type(type)
 			.timestamp(timestamp)
-			.planckPeriod(planckPeriod)
 			.creator(universeKey.getPublicKey())
 			.addAtom(universeAtom)
 			.build();
@@ -147,13 +137,13 @@ public final class GenerateUniverses {
 		return universe;
 	}
 
-	private Atom createGenesisAtom(byte magic, long timestamp, long planck) throws CryptoException, SerializationException {
+	private Atom createGenesisAtom(byte magic) throws CryptoException, SerializationException {
 		RadixAddress universeAddress = new RadixAddress(magic, universeKey.getPublicKey());
 		UInt256 genesisAmount = UInt256.TEN.pow(TokenDefinitionUtils.SUB_UNITS_POW_10 + 9); // 10^9 = 1,000,000,000 pieces of eight, please
 		FixedSupplyTokenDefinitionParticle xrdDefinition = createTokenDefinition(magic, "XRD", "Rads", "Radix Native Tokens", genesisAmount);
 		MessageParticle helloUniverseMessage = createHelloMessage(universeAddress);
 		RRIParticle rriParticle = new RRIParticle(xrdDefinition.getRRI());
-		TransferrableTokensParticle mintXrdTokens = createGenesisXRDMint(universeAddress, "XRD", genesisAmount, timestamp, planck);
+		TransferrableTokensParticle mintXrdTokens = createGenesisXRDMint(universeAddress, "XRD", genesisAmount);
 
 		Atom genesisAtom = new Atom();
 		genesisAtom.addParticleGroupWith(helloUniverseMessage, Spin.UP);
@@ -189,16 +179,13 @@ public final class GenerateUniverses {
 	private static TransferrableTokensParticle createGenesisXRDMint(
 		RadixAddress address,
 		String symbol,
-		UInt256 amount,
-		long timestamp,
-		long planck
+		UInt256 amount
 	) {
 		return new TransferrableTokensParticle(
 			address,
 			amount,
 			UInt256.ONE,
 			RRI.of(address, symbol),
-			Universe.computePlanck(timestamp, planck, Offset.NONE),
 			ImmutableMap.of()
 		);
 	}

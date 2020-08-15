@@ -50,8 +50,8 @@ public class MessagingDummyConfigurations {
 		}
 
 		@Override
-		public int messagingTimeToLive(int defaultValue) {
-			return 10;
+		public long messagingTimeToLive(long defaultValue) {
+			return 10_000L;
 		}
 	}
 

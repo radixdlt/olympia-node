@@ -23,7 +23,6 @@ import com.radixdlt.identifiers.EUID;
 import com.radixdlt.network.transport.StaticTransportMetadata;
 import com.radixdlt.network.transport.TransportInfo;
 import com.radixdlt.network.transport.udp.UDPConstants;
-import com.radixdlt.universe.Universe;
 import org.junit.Before;
 import org.junit.Test;
 import org.radix.Radix;
@@ -63,9 +62,6 @@ public class StandardFiltersTest {
 		this.pwn = new PeerWithNid(this.nidPwn);
 		this.pws = new PeerWithSystem(system);
 		this.pwt = new PeerWithTransport(transportInfo);
-
-		Universe universe = mock(Universe.class);
-		when(universe.getPlanck()).thenReturn(86400L * 1000L); // 1 day
 	}
 
 	@Test

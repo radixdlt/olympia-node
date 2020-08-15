@@ -46,10 +46,6 @@ public class RadixSystem extends BasicContainer
 	private int  			agentVersion;
 	private int  			protocolVersion;
 
-	@JsonProperty("planck")
-	@DsonOutput(Output.ALL)
-	private int				planck;
-
 	private String 			agent;
 
 	@JsonProperty("timestamp")
@@ -68,7 +64,6 @@ public class RadixSystem extends BasicContainer
 
 		this.agent = "unknown";
 		this.agentVersion = 0;
-		this.planck = 0;
 		this.protocolVersion = 0;
 		this.timestamp = 0;
 		this.transports = ImmutableList.of();
@@ -102,24 +97,9 @@ public class RadixSystem extends BasicContainer
 		return this.protocolVersion;
 	}
 
-	public int getPlanck()
-	{
-		return this.planck;
-	}
-
-	void setPlanck(int planck)
-	{
-		this.planck = planck;
-	}
-
 	public long getTimestamp()
 	{
 		return this.timestamp;
-	}
-
-	public void setTimestamp(long timestamp)
-	{
-		this.timestamp = timestamp;
 	}
 
 	public Stream<TransportInfo> supportedTransports() {
@@ -129,11 +109,6 @@ public class RadixSystem extends BasicContainer
 	public ECPublicKey getKey()
 	{
 		return key;
-	}
-
-	void setKey(ECPublicKey key)
-	{
-		this.key = key;
 	}
 
 	public EUID getNID()

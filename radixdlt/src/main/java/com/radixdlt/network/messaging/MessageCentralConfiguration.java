@@ -43,14 +43,14 @@ public interface MessageCentralConfiguration {
 	int messagingOutboundQueueMax(int defaultValue);
 
 	/**
-	 * Retrieves the maximum time-to-live for inbound and outbound messages in seconds.
+	 * Retrieves the maximum time-to-live for inbound and outbound messages in milliseconds.
 	 * If messages are not processed and dispatched within this time, they will be
 	 * dropped.
 	 *
 	 * @param defaultValue a default value if no special configuration value is set
-	 * @return Message time-to-live in seconds
+	 * @return Message time-to-live in milliseconds
 	 */
-	int messagingTimeToLive(int defaultValue);
+	long messagingTimeToLive(long defaultValue);
 
 	/**
 	 * Create a configuration from specified {@link RuntimeProperties}.
@@ -71,7 +71,7 @@ public interface MessageCentralConfiguration {
 			}
 
 			@Override
-			public int messagingTimeToLive(int defaultValue) {
+			public long messagingTimeToLive(long defaultValue) {
 				return properties.get("messaging.time_to_live", defaultValue);
 			}
 		};

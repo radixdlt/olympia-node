@@ -111,20 +111,6 @@
 		"has_arg":false
 	},
 	
-	"dev.planck":{
-		"short":"dp",
-		"long":"dev.planck",
-		"desc":"Planck time for development and test networks, in seconds",
-		"has_arg":true
-	},
-
-	"prod.planck":{
-		"short":"pp",
-		"long":"prod.planck",
-		"desc":"Planck time for production networks, in seconds",
-		"has_arg":true
-	},
-
 	"universe.timestamp":{
 		"short":"ut",
 		"long":"universe.timestamp",
