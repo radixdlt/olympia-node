@@ -18,38 +18,20 @@
 package com.radixdlt.integration.distributed.simulation;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.SyncedExecutor;
-import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.VertexMetadata;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.mempool.EmptyMempool;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.CommittedAtom;
-import com.radixdlt.syncer.StateComputerExecutedCommands;
-import com.radixdlt.syncer.SyncExecutor.StateComputer;
-import com.radixdlt.syncer.SyncExecutor.StateComputerExecutedCommand;
+import com.radixdlt.syncer.SyncExecutor.CommittedSender;
 import com.radixdlt.syncer.SyncExecutor.SyncService;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
 
-public class MockedSyncServiceAndStateComputerModule extends AbstractModule {
-	private final Function<Long, BFTValidatorSet> validatorSetMapping;
-	private final View epochHighView;
+public class MockedSyncServiceModule extends AbstractModule {
 	private final ConcurrentHashMap<Long, CommittedAtom> sharedCommittedAtoms;
 
-	public MockedSyncServiceAndStateComputerModule(
-		ConcurrentHashMap<Long, CommittedAtom> sharedCommittedAtoms,
-		View epochHighView,
-		Function<Long, BFTValidatorSet> validatorSetMapping
-	) {
+	public MockedSyncServiceModule(ConcurrentHashMap<Long, CommittedAtom> sharedCommittedAtoms) {
 		this.sharedCommittedAtoms = sharedCommittedAtoms;
-		this.validatorSetMapping = validatorSetMapping;
-		this.epochHighView = epochHighView;
 	}
 
 	@Override
@@ -57,30 +39,11 @@ public class MockedSyncServiceAndStateComputerModule extends AbstractModule {
 		bind(Mempool.class).to(EmptyMempool.class);
 	}
 
-	@Provides
-	@Singleton
-	private VertexMetadata genesisMetadata() {
-		return VertexMetadata.ofGenesisAncestor(validatorSetMapping.apply(1L));
-	}
-
-	@Provides
-	@Singleton
-	private StateComputer stateComputer() {
-		return new StateComputer() {
-			@Override
-			public Optional<BFTValidatorSet> execute(Vertex vertex) {
-				if (vertex.getView().compareTo(epochHighView) >= 0) {
-					return Optional.of(validatorSetMapping.apply(vertex.getEpoch() + 1));
-				} else {
-					return Optional.empty();
-				}
-			}
-
-			@Override
-			public StateComputerExecutedCommand commit(CommittedAtom committedAtom) {
-				sharedCommittedAtoms.put(committedAtom.getVertexMetadata().getStateVersion(), committedAtom);
-				return StateComputerExecutedCommands.success(committedAtom, null);
-			}
+	@ProvidesIntoSet
+	private CommittedSender sync() {
+		return cmd -> {
+			CommittedAtom committedAtom = cmd.getCommand();
+			sharedCommittedAtoms.put(committedAtom.getVertexMetadata().getStateVersion(), committedAtom);
 		};
 	}
 

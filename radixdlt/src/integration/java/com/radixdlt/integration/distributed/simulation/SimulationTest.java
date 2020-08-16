@@ -211,11 +211,8 @@ public class SimulationTest {
 				syncExecutionModules.add(new ExecutionRxModule());
 				syncExecutionModules.add(new ExecutionEpochChangeModule());
 				syncExecutionModules.add(new ExecutionEpochChangeRxModule());
-				syncExecutionModules.add(
-					new MockedSyncServiceAndStateComputerModule(
-						sharedCommittedAtoms, epochHighView, epochToValidatorSetMapping
-					)
-				);
+				syncExecutionModules.add(new MockedSyncServiceModule(sharedCommittedAtoms));
+				syncExecutionModules.add(new MockedEpochStateComputerModule(epochHighView, epochToValidatorSetMapping));
 			}
 
 			return new SimulationTest(
