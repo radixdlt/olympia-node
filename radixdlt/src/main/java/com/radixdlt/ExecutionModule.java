@@ -25,6 +25,7 @@ import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.SyncedExecutor;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.epoch.EpochChange;
+import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.CommittedAtom;
@@ -42,6 +43,7 @@ public class ExecutionModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		bind(new TypeLiteral<SyncedExecutor<CommittedAtom>>() { }).to(SyncExecutor.class).in(Scopes.SINGLETON);
+		bind(NextCommandGenerator.class).to(SyncExecutor.class);
 	}
 
 	@Provides

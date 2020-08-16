@@ -87,7 +87,12 @@ public class SimulationTest {
 		this.getVerticesRPCEnabled = getVerticesRPCEnabled;
 	}
 
+
 	public static class Builder {
+		private enum ExecutorType {
+			MOCKED, EPOCH_EXECUTOR;
+		}
+
 		private final DroppingLatencyProvider latencyProvider = new DroppingLatencyProvider();
 		private final ImmutableMap.Builder<String, TestInvariant> checksBuilder = ImmutableMap.builder();
 		private List<BFTNode> nodes = Collections.singletonList(BFTNode.create(ECKeyPair.generateNew().getPublicKey()));
@@ -95,6 +100,7 @@ public class SimulationTest {
 		private boolean getVerticesRPCEnabled = true;
 		private View epochHighView = null;
 		private Function<Long, IntStream> epochToNodeIndexMapper;
+		private ExecutorType executorType = ExecutorType.MOCKED;
 
 		private Builder() {
 		}
@@ -133,6 +139,7 @@ public class SimulationTest {
 		}
 
 		public Builder epochExecutor(View epochHighView, Function<Long, IntStream> epochToNodeIndexMapper) {
+			this.executorType = ExecutorType.EPOCH_EXECUTOR;
 			this.epochHighView = epochHighView;
 			this.epochToNodeIndexMapper = epochToNodeIndexMapper;
 			return this;
@@ -185,14 +192,14 @@ public class SimulationTest {
 
 		public SimulationTest build() {
 			ImmutableList.Builder<Module> syncExecutionModules = ImmutableList.builder();
-			if (epochHighView == null) {
+			if (executorType == ExecutorType.MOCKED) {
 				BFTValidatorSet validatorSet = BFTValidatorSet.from(
 					nodes.stream()
 						.map(node -> BFTValidator.from(node, UInt256.ONE))
 						.collect(Collectors.toList())
 				);
 				syncExecutionModules.add(new MockedExecutionModule(validatorSet));
-			} else {
+			} else if (executorType == ExecutorType.EPOCH_EXECUTOR) {
 				Function<Long, BFTValidatorSet> epochToValidatorSetMapping =
 					epochToNodeIndexMapper.andThen(indices -> BFTValidatorSet.from(
 							indices.mapToObj(nodes::get)

@@ -28,7 +28,6 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRPCSender;
 import com.radixdlt.consensus.epoch.EmptySyncVerticesRPCSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
-import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
@@ -54,17 +53,15 @@ public class SimulationNetworkModule extends AbstractModule {
 		bind(ConsensusEventsRx.class).toInstance(simulationNetwork.getNetworkRx(node));
 		bind(SyncEpochsRPCRx.class).toInstance(simulationNetwork.getNetworkRx(node));
 		bind(SyncVerticesRPCRx.class).toInstance(simulationNetwork.getNetworkRx(node));
-
 		bind(BFTEventSender.class).toInstance(simulationNetwork.getNetworkSender(node));
 		bind(SyncVerticesRPCSender.class).toInstance(
 			getVerticesRPCEnabled ? simulationNetwork.getSyncSender(node) : EmptySyncVerticesRPCSender.INSTANCE
 		);
-
 		bind(SyncEpochsRPCSender.class).toInstance(simulationNetwork.getSyncSender(node));
-		bind(NextCommandGenerator.class).toInstance((view, aids) -> null);
+
+		// TODO: Move these out
 		bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
 		bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
-
 		bind(BFTNode.class).annotatedWith(Names.named("self")).toInstance(node);
 	}
 }

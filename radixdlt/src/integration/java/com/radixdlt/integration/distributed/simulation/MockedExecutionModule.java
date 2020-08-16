@@ -29,6 +29,7 @@ import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.epoch.EpochChange;
+import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.syncer.ExecutionResult;
@@ -47,6 +48,7 @@ public class MockedExecutionModule extends AbstractModule {
 		bind(EpochChangeRx.class).toInstance(Observable::never);
 		EpochChange initialEpoch = new EpochChange(VertexMetadata.ofGenesisAncestor(validatorSet), validatorSet);
 		bind(EpochChange.class).toInstance(initialEpoch);
+		bind(NextCommandGenerator.class).toInstance((view, aids) -> null);
 	}
 
 	@Provides

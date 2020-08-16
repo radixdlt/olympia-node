@@ -24,13 +24,18 @@ import com.radixdlt.consensus.SyncedExecutor;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hash;
+import com.radixdlt.identifiers.AID;
 import com.radixdlt.mempool.Mempool;
+import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.CommittedAtom;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -40,7 +45,9 @@ import java.util.function.BiConsumer;
 /**
  * Synchronizes execution
  */
-public final class SyncExecutor implements SyncedExecutor<CommittedAtom> {
+public final class SyncExecutor implements SyncedExecutor<CommittedAtom>, NextCommandGenerator {
+
+
 	public interface SyncService {
 		void sendLocalSyncRequest(LocalSyncRequest request);
 	}
@@ -99,23 +106,9 @@ public final class SyncExecutor implements SyncedExecutor<CommittedAtom> {
 	}
 
 	@Override
-	public boolean syncTo(VertexMetadata vertexMetadata, ImmutableList<BFTNode> target, Object opaque) {
-		synchronized (lock) {
-			if (target.isEmpty()) {
-				// TODO: relax this in future when we have non-validator nodes
-				throw new IllegalArgumentException("target must not be empty");
-			}
-
-			final long targetStateVersion = vertexMetadata.getStateVersion();
-			if (targetStateVersion <= this.currentStateVersion) {
-				return true;
-			}
-
-			this.syncService.sendLocalSyncRequest(new LocalSyncRequest(vertexMetadata, currentStateVersion, target));
-			this.committedStateSyncers.merge(targetStateVersion, Collections.singleton(opaque), Sets::union);
-
-			return false;
-		}
+	public ClientAtom generateNextCommand(View view, Set<AID> prepared) {
+		final List<ClientAtom> atoms = mempool.getAtoms(1, prepared);
+		return !atoms.isEmpty() ? atoms.get(0) : null;
 	}
 
 	@Override
@@ -140,6 +133,26 @@ public final class SyncExecutor implements SyncedExecutor<CommittedAtom> {
 		return validatorSet
 			.map(vset -> ExecutionResult.create(stateVersion, timestampedSignaturesHash, vset))
 			.orElseGet(() -> ExecutionResult.create(stateVersion, timestampedSignaturesHash));
+	}
+
+	@Override
+	public boolean syncTo(VertexMetadata vertexMetadata, ImmutableList<BFTNode> target, Object opaque) {
+		synchronized (lock) {
+			if (target.isEmpty()) {
+				// TODO: relax this in future when we have non-validator nodes
+				throw new IllegalArgumentException("target must not be empty");
+			}
+
+			final long targetStateVersion = vertexMetadata.getStateVersion();
+			if (targetStateVersion <= this.currentStateVersion) {
+				return true;
+			}
+
+			this.syncService.sendLocalSyncRequest(new LocalSyncRequest(vertexMetadata, currentStateVersion, target));
+			this.committedStateSyncers.merge(targetStateVersion, Collections.singleton(opaque), Sets::union);
+
+			return false;
+		}
 	}
 
 	/**
