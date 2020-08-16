@@ -20,6 +20,7 @@ package com.radixdlt.integration.distributed.simulation;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.syncer.StateComputerExecutedCommands;
@@ -28,6 +29,17 @@ import com.radixdlt.syncer.SyncExecutor.StateComputerExecutedCommand;
 import java.util.Optional;
 
 public class MockedStateComputerModule extends AbstractModule {
+	private final BFTValidatorSet validatorSet;
+
+	public MockedStateComputerModule(BFTValidatorSet validatorSet) {
+		this.validatorSet = validatorSet;
+	}
+
+	@Provides
+	private VertexMetadata genesisMetadata() {
+		return VertexMetadata.ofGenesisAncestor(validatorSet);
+	}
+
 	@Provides
 	private StateComputer stateComputer() {
 		return new StateComputer() {

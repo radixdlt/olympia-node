@@ -19,6 +19,7 @@ package com.radixdlt.integration.distributed.simulation;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.radixdlt.ExecutionEpochChangeModule;
 import com.radixdlt.ExecutionEpochChangeRxModule;
@@ -29,6 +30,7 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.integration.distributed.simulation.TestInvariant.TestInvariantError;
 import com.radixdlt.integration.distributed.simulation.invariants.epochs.EpochViewInvariant;
+import com.radixdlt.integration.distributed.simulation.invariants.mempool.SubmittedAndExecutedInvariant;
 import com.radixdlt.integration.distributed.simulation.network.DroppingLatencyProvider;
 import com.radixdlt.integration.distributed.simulation.network.OneProposalPerViewDropper;
 import com.radixdlt.integration.distributed.simulation.network.RandomLatencyProvider;
@@ -44,6 +46,8 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.LatencyProvider;
+import com.radixdlt.mempool.LocalMempool;
+import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
@@ -90,7 +94,7 @@ public class SimulationTest {
 
 	public static class Builder {
 		private enum ExecutorType {
-			MOCKED, EPOCH_EXECUTOR, MEMPOOL_EXECUTOR;
+			MOCKED, EXECUTOR, EPOCH_EXECUTOR, MEMPOOL_EXECUTOR;
 		}
 
 		private final DroppingLatencyProvider latencyProvider = new DroppingLatencyProvider();
@@ -138,10 +142,20 @@ public class SimulationTest {
 			return this;
 		}
 
-		public Builder epochExecutor(View epochHighView, Function<Long, IntStream> epochToNodeIndexMapper) {
+		public Builder executorAndEpochs(View epochHighView, Function<Long, IntStream> epochToNodeIndexMapper) {
 			this.executorType = ExecutorType.EPOCH_EXECUTOR;
 			this.epochHighView = epochHighView;
 			this.epochToNodeIndexMapper = epochToNodeIndexMapper;
+			return this;
+		}
+
+		public Builder executor() {
+			this.executorType = ExecutorType.EXECUTOR;
+			return this;
+		}
+
+		public Builder executorAndMempool() {
+			this.executorType = ExecutorType.MEMPOOL_EXECUTOR;
 			return this;
 		}
 
@@ -152,6 +166,11 @@ public class SimulationTest {
 
 		public Builder randomLatency(int minLatency, int maxLatency) {
 			this.latencyProvider.setBase(new RandomLatencyProvider(minLatency, maxLatency));
+			return this;
+		}
+
+		public Builder checkMempool(String invariantName) {
+			this.checksBuilder.put(invariantName, new SubmittedAndExecutedInvariant());
 			return this;
 		}
 
@@ -199,29 +218,42 @@ public class SimulationTest {
 						.collect(Collectors.toList())
 				);
 				syncExecutionModules.add(new MockedExecutionModule(validatorSet));
-			} else if (executorType == ExecutorType.EPOCH_EXECUTOR) {
-				Function<Long, BFTValidatorSet> epochToValidatorSetMapping =
-					epochToNodeIndexMapper.andThen(indices -> BFTValidatorSet.from(
+			} else {
+				BFTValidatorSet validatorSet = BFTValidatorSet.from(
+					nodes.stream()
+						.map(node -> BFTValidator.from(node, UInt256.ONE))
+						.collect(Collectors.toList())
+				);
+				ConcurrentHashMap<Long, CommittedAtom> sharedCommittedAtoms = new ConcurrentHashMap<>();
+				syncExecutionModules.add(new ExecutionModule());
+				syncExecutionModules.add(new ExecutionRxModule());
+				syncExecutionModules.add(new ExecutionEpochChangeRxModule());
+				syncExecutionModules.add(new MockedSyncServiceModule(sharedCommittedAtoms));
+
+				if (executorType == ExecutorType.EXECUTOR) {
+					syncExecutionModules.add(new MockedMempoolModule());
+					syncExecutionModules.add(new MockedStateComputerModule(validatorSet));
+				} else if (executorType == ExecutorType.EPOCH_EXECUTOR) {
+					syncExecutionModules.add(new ExecutionEpochChangeModule());
+
+					Function<Long, BFTValidatorSet> epochToValidatorSetMapping =
+						epochToNodeIndexMapper.andThen(indices -> BFTValidatorSet.from(
 							indices.mapToObj(nodes::get)
 								.map(node -> BFTValidator.from(node, UInt256.ONE))
 								.collect(Collectors.toList())));
+					syncExecutionModules.add(new MockedMempoolModule());
+					syncExecutionModules.add(new MockedEpochStateComputerModule(epochHighView, epochToValidatorSetMapping));
+				} else if (executorType == ExecutorType.MEMPOOL_EXECUTOR) {
+					syncExecutionModules.add(new ExecutionLocalMempoolModule(10));
 
-				ConcurrentHashMap<Long, CommittedAtom> sharedCommittedAtoms = new ConcurrentHashMap<>();
-				syncExecutionModules.add(new ExecutionModule());
-				syncExecutionModules.add(new ExecutionRxModule());
-				syncExecutionModules.add(new ExecutionEpochChangeModule());
-				syncExecutionModules.add(new ExecutionEpochChangeRxModule());
-				syncExecutionModules.add(new MockedMempoolModule());
-				syncExecutionModules.add(new MockedSyncServiceModule(sharedCommittedAtoms));
-				syncExecutionModules.add(new MockedEpochStateComputerModule(epochHighView, epochToValidatorSetMapping));
-			} else if (executorType == ExecutorType.MEMPOOL_EXECUTOR) {
-				ConcurrentHashMap<Long, CommittedAtom> sharedCommittedAtoms = new ConcurrentHashMap<>();
-				syncExecutionModules.add(new ExecutionModule());
-				syncExecutionModules.add(new ExecutionRxModule());
-				syncExecutionModules.add(new ExecutionEpochChangeRxModule());
-				syncExecutionModules.add(new ExecutionLocalMempoolModule(10));
-				syncExecutionModules.add(new MockedSyncServiceModule(sharedCommittedAtoms));
-				syncExecutionModules.add(new MockedStateComputerModule());
+					syncExecutionModules.add(new MockedStateComputerModule(validatorSet));
+					syncExecutionModules.add(new AbstractModule() {
+						@Override
+						protected void configure() {
+							bind(Mempool.class).to(LocalMempool.class);
+						}
+					});
+				}
 			}
 
 			return new SimulationTest(

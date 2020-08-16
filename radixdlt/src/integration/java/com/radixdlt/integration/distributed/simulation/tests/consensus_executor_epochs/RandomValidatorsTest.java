@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed.simulation.tests.consensus_epochexecutor;
+package com.radixdlt.integration.distributed.simulation.tests.consensus_executor_epochs;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
@@ -72,7 +72,7 @@ public class RandomValidatorsTest {
 	@Test
 	public void given_deterministic_randomized_validator_sets__then_should_pass_bft_and_epoch_invariants() {
 		SimulationTest bftTest = bftTestBuilder
-			.epochExecutor(View.of(100), goodRandomEpochToNodesMapper())
+			.executorAndEpochs(View.of(100), goodRandomEpochToNodesMapper())
 			.build();
 		Map<String, Optional<TestInvariantError>> results = bftTest.run(1, TimeUnit.MINUTES);
 		assertThat(results).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
@@ -81,7 +81,7 @@ public class RandomValidatorsTest {
 	@Test
 	public void given_nondeterministic_randomized_validator_sets__then_should_fail() {
 		SimulationTest bftTest = bftTestBuilder
-			.epochExecutor(View.of(100), badRandomEpochToNodesMapper())
+			.executorAndEpochs(View.of(100), badRandomEpochToNodesMapper())
 			.build();
 		Map<String, Optional<TestInvariantError>> results = bftTest.run(1, TimeUnit.MINUTES);
 		assertThat(results).hasValueSatisfying(new Condition<>(Optional::isPresent, "Has error"));

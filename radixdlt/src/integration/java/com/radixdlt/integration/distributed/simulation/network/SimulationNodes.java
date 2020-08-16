@@ -24,9 +24,11 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.radixdlt.ConsensusModule;
 import com.radixdlt.SystemInfoRxModule;
+import com.radixdlt.api.LedgerRx;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.integration.distributed.simulation.MockedCryptoModule;
 import com.radixdlt.integration.distributed.simulation.SimulationNetworkModule;
+import com.radixdlt.mempool.Mempool;
 import com.radixdlt.systeminfo.InfoRx;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.ConsensusRunner;
@@ -85,6 +87,10 @@ public class SimulationNodes {
 
 		InfoRx getInfo(BFTNode node);
 
+		LedgerRx getLedger(BFTNode node);
+
+		Mempool getMempool(BFTNode node);
+
 		SimulationNetwork getUnderlyingNetwork();
 	}
 
@@ -113,6 +119,18 @@ public class SimulationNodes {
 			public InfoRx getInfo(BFTNode node) {
 				int index = nodes.indexOf(node);
 				return nodeInstances.get(index).getInstance(InfoRx.class);
+			}
+
+			@Override
+			public LedgerRx getLedger(BFTNode node) {
+				int index = nodes.indexOf(node);
+				return nodeInstances.get(index).getInstance(LedgerRx.class);
+			}
+
+			@Override
+			public Mempool getMempool(BFTNode node) {
+				int index = nodes.indexOf(node);
+				return nodeInstances.get(index).getInstance(Mempool.class);
 			}
 
 			@Override

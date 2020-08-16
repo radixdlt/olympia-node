@@ -90,6 +90,7 @@ public final class ConsensusModule extends AbstractModule {
 		bind(SyncedVertexSender.class).toInstance(syncedVertices::send);
 	}
 
+	// TODO: Change Factory -> Provider
 	@Provides
 	@Singleton
 	private BFTFactory bftFactory(
