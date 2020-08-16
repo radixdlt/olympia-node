@@ -87,10 +87,9 @@ public class SimulationTest {
 		this.getVerticesRPCEnabled = getVerticesRPCEnabled;
 	}
 
-
 	public static class Builder {
 		private enum ExecutorType {
-			MOCKED, EPOCH_EXECUTOR;
+			MOCKED, EPOCH_EXECUTOR, MEMPOOL_EXECUTOR;
 		}
 
 		private final DroppingLatencyProvider latencyProvider = new DroppingLatencyProvider();
@@ -211,8 +210,16 @@ public class SimulationTest {
 				syncExecutionModules.add(new ExecutionRxModule());
 				syncExecutionModules.add(new ExecutionEpochChangeModule());
 				syncExecutionModules.add(new ExecutionEpochChangeRxModule());
+				syncExecutionModules.add(new MockedMempoolModule());
 				syncExecutionModules.add(new MockedSyncServiceModule(sharedCommittedAtoms));
 				syncExecutionModules.add(new MockedEpochStateComputerModule(epochHighView, epochToValidatorSetMapping));
+			} else if (executorType == ExecutorType.MEMPOOL_EXECUTOR) {
+				ConcurrentHashMap<Long, CommittedAtom> sharedCommittedAtoms = new ConcurrentHashMap<>();
+				syncExecutionModules.add(new ExecutionModule());
+				syncExecutionModules.add(new ExecutionRxModule());
+				syncExecutionModules.add(new ExecutionEpochChangeRxModule());
+				syncExecutionModules.add(new MockedSyncServiceModule(sharedCommittedAtoms));
+				syncExecutionModules.add(new MockedStateComputerModule());
 			}
 
 			return new SimulationTest(

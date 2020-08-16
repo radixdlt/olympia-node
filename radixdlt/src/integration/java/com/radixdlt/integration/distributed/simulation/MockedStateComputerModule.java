@@ -19,45 +19,21 @@ package com.radixdlt.integration.distributed.simulation;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.google.inject.Singleton;
 import com.radixdlt.consensus.Vertex;
-import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.bft.View;
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.syncer.StateComputerExecutedCommands;
 import com.radixdlt.syncer.SyncExecutor.StateComputer;
 import com.radixdlt.syncer.SyncExecutor.StateComputerExecutedCommand;
 import java.util.Optional;
-import java.util.function.Function;
 
-public class MockedEpochStateComputerModule extends AbstractModule {
-	private final Function<Long, BFTValidatorSet> validatorSetMapping;
-	private final View epochHighView;
-
-	public MockedEpochStateComputerModule(
-		View epochHighView,
-		Function<Long, BFTValidatorSet> validatorSetMapping
-	) {
-		this.validatorSetMapping = validatorSetMapping;
-		this.epochHighView = epochHighView;
-	}
-
-	@Provides
-	private VertexMetadata genesisMetadata() {
-		return VertexMetadata.ofGenesisAncestor(validatorSetMapping.apply(1L));
-	}
-
+public class MockedStateComputerModule extends AbstractModule {
 	@Provides
 	private StateComputer stateComputer() {
 		return new StateComputer() {
 			@Override
 			public Optional<BFTValidatorSet> execute(Vertex vertex) {
-				if (vertex.getView().compareTo(epochHighView) >= 0) {
-					return Optional.of(validatorSetMapping.apply(vertex.getEpoch() + 1));
-				} else {
-					return Optional.empty();
-				}
+				return Optional.empty();
 			}
 
 			@Override

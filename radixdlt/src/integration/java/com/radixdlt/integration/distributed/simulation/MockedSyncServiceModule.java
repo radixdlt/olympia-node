@@ -20,8 +20,6 @@ package com.radixdlt.integration.distributed.simulation;
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.SyncedExecutor;
-import com.radixdlt.mempool.EmptyMempool;
-import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.syncer.SyncExecutor.CommittedSender;
 import com.radixdlt.syncer.SyncExecutor.SyncService;
@@ -32,11 +30,6 @@ public class MockedSyncServiceModule extends AbstractModule {
 
 	public MockedSyncServiceModule(ConcurrentHashMap<Long, CommittedAtom> sharedCommittedAtoms) {
 		this.sharedCommittedAtoms = sharedCommittedAtoms;
-	}
-
-	@Override
-	public void configure() {
-		bind(Mempool.class).to(EmptyMempool.class);
 	}
 
 	@ProvidesIntoSet
