@@ -65,25 +65,22 @@ public class SimulationTest {
 	private final LatencyProvider latencyProvider;
 	private final ImmutableMap<String, TestInvariant> checks;
 	private final int pacemakerTimeout;
-	private final Function<Long, BFTValidatorSet> validatorSetMapping;
 	private final boolean getVerticesRPCEnabled;
-	private final View epochHighView;
+	private final ImmutableList<Module> modules;
 
 	private SimulationTest(
 		ImmutableList<BFTNode> nodes,
 		LatencyProvider latencyProvider,
 		int pacemakerTimeout,
-		View epochHighView,
-		Function<Long, BFTValidatorSet> validatorSetMapping,
 		boolean getVerticesRPCEnabled,
+		ImmutableList<Module> modules,
 		ImmutableMap<String, TestInvariant> checks
 	) {
 		this.nodes = nodes;
 		this.latencyProvider = latencyProvider;
+		this.modules = modules;
 		this.checks = checks;
 		this.pacemakerTimeout = pacemakerTimeout;
-		this.epochHighView = epochHighView;
-		this.validatorSetMapping = validatorSetMapping;
 		this.getVerticesRPCEnabled = getVerticesRPCEnabled;
 	}
 
@@ -132,12 +129,8 @@ public class SimulationTest {
 			return this;
 		}
 
-		public Builder epochHighView(View epochHighView) {
+		public Builder epochExecutor(View epochHighView, Function<Long, IntStream> epochToNodeIndexMapper) {
 			this.epochHighView = epochHighView;
-			return this;
-		}
-
-		public Builder epochToNodesMapper(Function<Long, IntStream> epochToNodeIndexMapper) {
 			this.epochToNodeIndexMapper = epochToNodeIndexMapper;
 			return this;
 		}
@@ -188,23 +181,36 @@ public class SimulationTest {
 		}
 
 		public SimulationTest build() {
-			Function<Long, BFTValidatorSet> epochToValidatorSetMapping =
-				epochToNodeIndexMapper == null
-					? epoch -> BFTValidatorSet.from(
-						nodes.stream()
-							.map(node -> BFTValidator.from(node, UInt256.ONE))
-							.collect(Collectors.toList()))
-					: epochToNodeIndexMapper.andThen(indices -> BFTValidatorSet.from(
-						indices.mapToObj(nodes::get)
-							.map(node -> BFTValidator.from(node, UInt256.ONE))
-							.collect(Collectors.toList())));
+			ImmutableList.Builder<Module> syncExecutionModules = ImmutableList.builder();
+			if (epochHighView == null) {
+				BFTValidatorSet validatorSet = BFTValidatorSet.from(
+					nodes.stream()
+						.map(node -> BFTValidator.from(node, UInt256.ONE))
+						.collect(Collectors.toList())
+				);
+				syncExecutionModules.add(new MockedSyncExecutionModule(validatorSet));
+			} else {
+				Function<Long, BFTValidatorSet> epochToValidatorSetMapping =
+					epochToNodeIndexMapper.andThen(indices -> BFTValidatorSet.from(
+							indices.mapToObj(nodes::get)
+								.map(node -> BFTValidator.from(node, UInt256.ONE))
+								.collect(Collectors.toList())));
+
+				ConcurrentHashMap<Long, CommittedAtom> sharedCommittedAtoms = new ConcurrentHashMap<>();
+				syncExecutionModules.add(new SyncExecutionModule());
+				syncExecutionModules.add(
+					new MockedSyncServiceAndStateComputerModule(
+						sharedCommittedAtoms, epochHighView, epochToValidatorSetMapping
+					)
+				);
+			}
+
 			return new SimulationTest(
 				ImmutableList.copyOf(nodes),
 				latencyProvider.copyOf(),
 				pacemakerTimeout,
-				epochHighView,
-				epochToValidatorSetMapping,
 				getVerticesRPCEnabled,
+				syncExecutionModules.build(),
 				this.checksBuilder.build()
 			);
 		}
@@ -257,22 +263,13 @@ public class SimulationTest {
 			.latencyProvider(this.latencyProvider)
 			.build();
 
-		ImmutableList.Builder<Module> syncExecutionModules = ImmutableList.builder();
-
-		if (epochHighView == null) {
-			BFTValidatorSet validatorSet = BFTValidatorSet.from(
-				nodes.stream()
-					.map(node -> BFTValidator.from(node, UInt256.ONE))
-					.collect(Collectors.toList())
-			);
-			syncExecutionModules.add(new MockedSyncExecutionModule(validatorSet));
-		} else {
-			ConcurrentHashMap<Long, CommittedAtom> sharedCommittedAtoms = new ConcurrentHashMap<>();
-			syncExecutionModules.add(new SyncExecutionModule());
-			syncExecutionModules.add(new MockedSyncServiceAndStateComputerModule(sharedCommittedAtoms, epochHighView, validatorSetMapping));
-		}
-
-		SimulationNodes bftNetwork =  new SimulationNodes(nodes, network, pacemakerTimeout, syncExecutionModules.build(), getVerticesRPCEnabled);
+		SimulationNodes bftNetwork = new SimulationNodes(
+			nodes,
+			network,
+			pacemakerTimeout,
+			modules,
+			getVerticesRPCEnabled
+		);
 		RunningNetwork runningNetwork = bftNetwork.start();
 
 		return runChecks(runningNetwork, duration, timeUnit)
