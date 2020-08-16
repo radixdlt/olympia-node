@@ -28,6 +28,7 @@ import com.radixdlt.CryptoModule;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.ExecutionEpochChangeModule;
 import com.radixdlt.ExecutionEpochChangeRxModule;
+import com.radixdlt.ExecutionLocalMempoolModule;
 import com.radixdlt.PersistenceModule;
 import com.radixdlt.StateComputerModule;
 import com.radixdlt.SyncCommittedServiceModule;
@@ -90,6 +91,7 @@ public class GlobalInjector {
 		final int pacemakerTimeout = properties.get("consensus.pacemaker_timeout_millis", 5000);
 		final int fixedNodeCount = properties.get("consensus.fixed_node_count", 1);
 		final long viewsPerEpoch = properties.get("epochs.views_per_epoch", 100L);
+		final int mempoolMaxSize = properties.get("mempool.maxSize", 1000);
 
 		injector = Guice.createInjector(
 			// Consensus
@@ -101,6 +103,7 @@ public class GlobalInjector {
 			new ExecutionRxModule(),
 			new ExecutionEpochChangeModule(),
 			new ExecutionEpochChangeRxModule(),
+			new ExecutionLocalMempoolModule(mempoolMaxSize),
 
 			new PersistenceModule(),
 

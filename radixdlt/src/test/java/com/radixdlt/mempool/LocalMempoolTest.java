@@ -24,12 +24,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.google.common.collect.Sets;
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.google.inject.Module;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.utils.Ints;
 
 import static org.junit.Assert.*;
@@ -37,25 +32,11 @@ import static org.mockito.Mockito.*;
 import static org.hamcrest.Matchers.*;
 
 public class LocalMempoolTest {
-
-	private RuntimeProperties config;
 	private LocalMempool mempool;
 
 	@Before
 	public void setUp() {
-		this.config = mock(RuntimeProperties.class);
-		when(this.config.get(eq("mempool.maxSize"), anyInt())).thenReturn(2);
-
-		// test module to hook up dependencies
-		Module testModule = new AbstractModule() {
-			@Override
-			protected void configure() {
-				bind(RuntimeProperties.class).toInstance(config);
-			}
-		};
-
-		Injector injector = Guice.createInjector(testModule);
-		this.mempool = injector.getInstance(LocalMempool.class);
+		this.mempool = new LocalMempool(2);
 	}
 
 	@Test(expected = IllegalArgumentException.class)

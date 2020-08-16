@@ -24,6 +24,7 @@ import com.radixdlt.ExecutionEpochChangeModule;
 import com.radixdlt.ExecutionEpochChangeRxModule;
 import com.radixdlt.ExecutionModule;
 import com.radixdlt.ExecutionRxModule;
+import com.radixdlt.ExecutionLocalMempoolModule;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.integration.distributed.simulation.TestInvariant.TestInvariantError;
@@ -218,6 +219,7 @@ public class SimulationTest {
 				syncExecutionModules.add(new ExecutionModule());
 				syncExecutionModules.add(new ExecutionRxModule());
 				syncExecutionModules.add(new ExecutionEpochChangeRxModule());
+				syncExecutionModules.add(new ExecutionLocalMempoolModule(10));
 				syncExecutionModules.add(new MockedSyncServiceModule(sharedCommittedAtoms));
 				syncExecutionModules.add(new MockedStateComputerModule());
 			}
