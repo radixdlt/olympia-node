@@ -28,18 +28,17 @@ import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.CommittedAtom;
-import com.radixdlt.syncer.EpochChangeManager;
-import com.radixdlt.syncer.EpochChangeSender;
 import com.radixdlt.syncer.SyncExecutor;
 import com.radixdlt.syncer.SyncExecutor.CommittedSender;
 import com.radixdlt.syncer.SyncExecutor.CommittedStateSyncSender;
 import com.radixdlt.syncer.SyncExecutor.StateComputer;
 import com.radixdlt.syncer.SyncExecutor.SyncService;
+import java.util.Set;
 
 /**
  * Module which manages synchronized execution
  */
-public class SyncExecutionModule extends AbstractModule {
+public class ExecutionModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		bind(new TypeLiteral<SyncedExecutor<CommittedAtom>>() { }).to(SyncExecutor.class).in(Scopes.SINGLETON);
@@ -51,10 +50,13 @@ public class SyncExecutionModule extends AbstractModule {
 		Mempool mempool,
 		StateComputer stateComputer,
 		CommittedStateSyncSender committedStateSyncSender,
-		CommittedSender committedSender,
-		SyncService syncService,
+		Set<CommittedSender> committedSenders,
+		Set<SyncService> syncServices,
 		SystemCounters counters
 	) {
+		CommittedSender committedSender = cmd -> committedSenders.forEach(s -> s.sendCommitted(cmd));
+		SyncService syncService = request -> syncServices.forEach(s -> s.sendLocalSyncRequest(request));
+
 		return new SyncExecutor(
 			0L,
 			mempool,
@@ -64,12 +66,6 @@ public class SyncExecutionModule extends AbstractModule {
 			syncService,
 			counters
 		);
-	}
-
-	@Provides
-	@Singleton
-	private EpochChangeManager epochChangeManager(EpochChangeSender sender) {
-		return new EpochChangeManager(sender);
 	}
 
 	// TODO: Load from storage

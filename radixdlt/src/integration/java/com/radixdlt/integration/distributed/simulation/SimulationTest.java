@@ -20,7 +20,10 @@ package com.radixdlt.integration.distributed.simulation;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Module;
-import com.radixdlt.SyncExecutionModule;
+import com.radixdlt.ExecutionEpochChangeModule;
+import com.radixdlt.ExecutionEpochChangeRxModule;
+import com.radixdlt.ExecutionModule;
+import com.radixdlt.ExecutionRxModule;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.integration.distributed.simulation.TestInvariant.TestInvariantError;
@@ -188,7 +191,7 @@ public class SimulationTest {
 						.map(node -> BFTValidator.from(node, UInt256.ONE))
 						.collect(Collectors.toList())
 				);
-				syncExecutionModules.add(new MockedSyncExecutionModule(validatorSet));
+				syncExecutionModules.add(new MockedExecutionModule(validatorSet));
 			} else {
 				Function<Long, BFTValidatorSet> epochToValidatorSetMapping =
 					epochToNodeIndexMapper.andThen(indices -> BFTValidatorSet.from(
@@ -197,7 +200,10 @@ public class SimulationTest {
 								.collect(Collectors.toList())));
 
 				ConcurrentHashMap<Long, CommittedAtom> sharedCommittedAtoms = new ConcurrentHashMap<>();
-				syncExecutionModules.add(new SyncExecutionModule());
+				syncExecutionModules.add(new ExecutionModule());
+				syncExecutionModules.add(new ExecutionRxModule());
+				syncExecutionModules.add(new ExecutionEpochChangeModule());
+				syncExecutionModules.add(new ExecutionEpochChangeRxModule());
 				syncExecutionModules.add(
 					new MockedSyncServiceAndStateComputerModule(
 						sharedCommittedAtoms, epochHighView, epochToValidatorSetMapping

@@ -23,7 +23,7 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.radixdlt.ConsensusModule;
-import com.radixdlt.SystemInfoMessagesModule;
+import com.radixdlt.SystemInfoRxModule;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.integration.distributed.simulation.MockedCryptoModule;
 import com.radixdlt.integration.distributed.simulation.SimulationNetworkModule;
@@ -70,7 +70,7 @@ public class SimulationNodes {
 	private Injector createBFTInstance(BFTNode self) {
 		List<Module> modules = ImmutableList.of(
 			new ConsensusModule(pacemakerTimeout),
-			new SystemInfoMessagesModule(),
+			new SystemInfoRxModule(),
 			new MockedCryptoModule(),
 			new SimulationNetworkModule(getVerticesRPCEnabled, self, underlyingNetwork)
 		);

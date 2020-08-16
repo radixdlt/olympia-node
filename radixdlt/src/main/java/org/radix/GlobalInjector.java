@@ -26,13 +26,15 @@ import com.google.inject.name.Names;
 import com.radixdlt.ConsensusModule;
 import com.radixdlt.CryptoModule;
 import com.radixdlt.DefaultSerialization;
+import com.radixdlt.ExecutionEpochChangeModule;
+import com.radixdlt.ExecutionEpochChangeRxModule;
 import com.radixdlt.PersistenceModule;
 import com.radixdlt.StateComputerModule;
 import com.radixdlt.SyncCommittedServiceModule;
 import com.radixdlt.SyncMempoolServiceModule;
-import com.radixdlt.SyncMessagesModule;
-import com.radixdlt.SyncExecutionModule;
-import com.radixdlt.SystemInfoMessagesModule;
+import com.radixdlt.ExecutionRxModule;
+import com.radixdlt.ExecutionModule;
+import com.radixdlt.SystemInfoRxModule;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.identifiers.EUID;
@@ -90,26 +92,37 @@ public class GlobalInjector {
 		final long viewsPerEpoch = properties.get("epochs.views_per_epoch", 100L);
 
 		injector = Guice.createInjector(
+			// Consensus
 			new CryptoModule(),
 			new ConsensusModule(pacemakerTimeout),
-			new SyncExecutionModule(),
+
+			// Execution
+			new ExecutionModule(),
+			new ExecutionRxModule(),
+			new ExecutionEpochChangeModule(),
+			new ExecutionEpochChangeRxModule(),
+
+			new PersistenceModule(),
+
+			// State Computer
+			new StateComputerModule(fixedNodeCount, viewsPerEpoch),
+
+			// Synchronization
 			new SyncCommittedServiceModule(),
 			new SyncMempoolServiceModule(),
-			new StateComputerModule(fixedNodeCount, viewsPerEpoch),
-			new PersistenceModule(),
-			new NetworkModule(),
+
+			// System Info
 			new SystemInfoModule(properties),
+			new SystemInfoRxModule(),
 
-			// Environment modules
-			new SystemInfoMessagesModule(),
-			new SyncMessagesModule(),
-
-			// Low level network modules
+			// Network
+			new NetworkModule(),
 			new MessageCentralModule(properties),
 			new UDPTransportModule(properties),
 			new TCPTransportModule(properties),
 			new AddressBookModule(dbEnv),
 			new HostIpModule(properties),
+
 			globalModule
 		);
 	}

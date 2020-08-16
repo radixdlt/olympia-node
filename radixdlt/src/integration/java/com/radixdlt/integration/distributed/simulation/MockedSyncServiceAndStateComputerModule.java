@@ -20,28 +20,19 @@ package com.radixdlt.integration.distributed.simulation;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.radixdlt.consensus.CommittedStateSync;
-import com.radixdlt.consensus.CommittedStateSyncRx;
-import com.radixdlt.consensus.EpochChangeRx;
+import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.SyncedExecutor;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.mempool.EmptyMempool;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.CommittedAtom;
-import com.radixdlt.syncer.EpochChangeManager;
-import com.radixdlt.syncer.EpochChangeSender;
 import com.radixdlt.syncer.StateComputerExecutedCommands;
-import com.radixdlt.syncer.SyncExecutor.CommittedSender;
 import com.radixdlt.syncer.SyncExecutor.StateComputer;
-import com.radixdlt.syncer.SyncExecutor.CommittedStateSyncSender;
 import com.radixdlt.syncer.SyncExecutor.StateComputerExecutedCommand;
 import com.radixdlt.syncer.SyncExecutor.SyncService;
-import com.radixdlt.utils.SenderToRx;
-import com.radixdlt.utils.TwoSenderToRx;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
@@ -64,15 +55,6 @@ public class MockedSyncServiceAndStateComputerModule extends AbstractModule {
 	@Override
 	public void configure() {
 		bind(Mempool.class).to(EmptyMempool.class);
-
-		SenderToRx<EpochChange, EpochChange> epochChangeSenderToRx = new SenderToRx<>(e -> e);
-		bind(EpochChangeRx.class).toInstance(epochChangeSenderToRx::rx);
-		bind(EpochChangeSender.class).toInstance(epochChangeSenderToRx::send);
-
-		TwoSenderToRx<Long, Object, CommittedStateSync> committedStateSyncTwoSenderToRx = new TwoSenderToRx<>(CommittedStateSync::new);
-		bind(CommittedStateSyncRx.class).toInstance(committedStateSyncTwoSenderToRx::rx);
-		bind(CommittedStateSyncSender.class).toInstance(committedStateSyncTwoSenderToRx::send);
-		bind(CommittedSender.class).to(EpochChangeManager.class);
 	}
 
 	@Provides
@@ -86,12 +68,6 @@ public class MockedSyncServiceAndStateComputerModule extends AbstractModule {
 	private StateComputer stateComputer() {
 		return new StateComputer() {
 			@Override
-			public StateComputerExecutedCommand commit(CommittedAtom committedAtom) {
-				sharedCommittedAtoms.put(committedAtom.getVertexMetadata().getStateVersion(), committedAtom);
-				return StateComputerExecutedCommands.success(committedAtom, null);
-			}
-
-			@Override
 			public Optional<BFTValidatorSet> execute(Vertex vertex) {
 				if (vertex.getView().compareTo(epochHighView) >= 0) {
 					return Optional.of(validatorSetMapping.apply(vertex.getEpoch() + 1));
@@ -99,11 +75,17 @@ public class MockedSyncServiceAndStateComputerModule extends AbstractModule {
 					return Optional.empty();
 				}
 			}
+
+			@Override
+			public StateComputerExecutedCommand commit(CommittedAtom committedAtom) {
+				sharedCommittedAtoms.put(committedAtom.getVertexMetadata().getStateVersion(), committedAtom);
+				return StateComputerExecutedCommands.success(committedAtom, null);
+			}
 		};
 	}
 
-	@Provides
-	@Singleton
+	// TODO: change this to a service
+	@ProvidesIntoSet
 	SyncService syncService(
 		SyncedExecutor<CommittedAtom> syncedExecutor
 	) {

@@ -34,10 +34,10 @@ import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.syncer.ExecutionResult;
 import io.reactivex.rxjava3.core.Observable;
 
-public class MockedSyncExecutionModule extends AbstractModule {
+public class MockedExecutionModule extends AbstractModule {
 	private final BFTValidatorSet validatorSet;
 
-	public MockedSyncExecutionModule(BFTValidatorSet validatorSet) {
+	public MockedExecutionModule(BFTValidatorSet validatorSet) {
 		this.validatorSet = validatorSet;
 	}
 

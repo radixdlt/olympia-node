@@ -22,7 +22,7 @@ import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.syncer.SyncExecutor.CommittedSender;
 import com.radixdlt.syncer.SyncExecutor.StateComputerExecutedCommand;
 
-public class EpochChangeManager implements CommittedSender {
+public final class EpochChangeManager implements CommittedSender {
 	private final EpochChangeSender epochChangeSender;
 
 	public EpochChangeManager(EpochChangeSender epochChangeSender) {
