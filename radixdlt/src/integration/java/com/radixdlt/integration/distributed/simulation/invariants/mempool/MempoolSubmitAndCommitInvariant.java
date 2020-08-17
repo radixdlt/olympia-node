@@ -35,7 +35,11 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-public class SubmittedAndExecutedInvariant implements TestInvariant {
+/**
+ * Contributes to steady state by submitting client atoms every few seconds and
+ * validates that they have all been committed by all nodes.
+ */
+public class MempoolSubmitAndCommitInvariant implements TestInvariant {
 
 	private Maybe<TestInvariantError> submitAndCheckForCommit(Mempool mempool, Set<Observable<CommittedCommand>> allLedgers) {
 		ClientAtom clientAtom = mock(ClientAtom.class);

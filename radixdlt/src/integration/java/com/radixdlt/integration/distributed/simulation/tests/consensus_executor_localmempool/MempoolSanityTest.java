@@ -28,7 +28,10 @@ import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Test;
 
-public class SanityTest {
+/**
+ * Simple mempool sanity test which runs the mempool submit and commit invariant.
+ */
+public class MempoolSanityTest {
 	private final Builder bftTestBuilder = SimulationTest.builder()
 		.numNodes(4)
 		.checkSafety("safety")

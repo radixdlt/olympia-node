@@ -23,6 +23,9 @@ import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.syncer.EpochChangeSender;
 import com.radixdlt.utils.SenderToRx;
 
+/**
+ * Epoch change messages
+ */
 public class ExecutionEpochChangeRxModule extends AbstractModule {
 	@Override
 	protected void configure() {

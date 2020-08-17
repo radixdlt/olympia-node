@@ -22,6 +22,10 @@ import com.radixdlt.syncer.SyncExecutor.CommittedCommand;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+/**
+ * Temporary class to hold committed results
+ * TODO: Remove class
+ */
 public class CommittedCommands {
 	private static class CommittedCommandSuccess implements CommittedCommand {
 		private final CommittedAtom command;

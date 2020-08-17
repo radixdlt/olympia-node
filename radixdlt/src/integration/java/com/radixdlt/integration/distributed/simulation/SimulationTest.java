@@ -30,7 +30,7 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.integration.distributed.simulation.TestInvariant.TestInvariantError;
 import com.radixdlt.integration.distributed.simulation.invariants.epochs.EpochViewInvariant;
-import com.radixdlt.integration.distributed.simulation.invariants.mempool.SubmittedAndExecutedInvariant;
+import com.radixdlt.integration.distributed.simulation.invariants.mempool.MempoolSubmitAndCommitInvariant;
 import com.radixdlt.integration.distributed.simulation.network.DroppingLatencyProvider;
 import com.radixdlt.integration.distributed.simulation.network.OneProposalPerViewDropper;
 import com.radixdlt.integration.distributed.simulation.network.RandomLatencyProvider;
@@ -170,7 +170,7 @@ public class SimulationTest {
 		}
 
 		public Builder checkMempool(String invariantName) {
-			this.checksBuilder.put(invariantName, new SubmittedAndExecutedInvariant());
+			this.checksBuilder.put(invariantName, new MempoolSubmitAndCommitInvariant());
 			return this;
 		}
 

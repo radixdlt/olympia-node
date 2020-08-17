@@ -177,6 +177,7 @@ public final class SyncExecutor implements SyncedExecutor<CommittedAtom>, NextCo
 
 			// persist
 			CommittedCommand result = this.stateComputer.commit(atom);
+			// TODO: move all of the following to post-persist event handling
 			if (atom.getClientAtom() != null) {
 				this.mempool.removeCommittedAtom(atom.getAID());
 			}

@@ -21,6 +21,9 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.Hash;
 import java.util.Optional;
 
+/**
+ * Results from a prepared stage execution. All fields should be persisted on ledger.
+ */
 public final class PreparedCommand {
 	private final long stateVersion;
 	private final Hash timestampedSignaturesHash;

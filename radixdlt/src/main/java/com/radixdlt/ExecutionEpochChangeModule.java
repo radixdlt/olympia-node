@@ -23,6 +23,9 @@ import com.radixdlt.syncer.EpochChangeManager;
 import com.radixdlt.syncer.EpochChangeSender;
 import com.radixdlt.syncer.SyncExecutor.CommittedSender;
 
+/**
+ * Adds epoch change functionality to the ledger
+ */
 public class ExecutionEpochChangeModule extends AbstractModule {
 	@ProvidesIntoSet
 	private CommittedSender epochChangeManager(EpochChangeSender sender) {
