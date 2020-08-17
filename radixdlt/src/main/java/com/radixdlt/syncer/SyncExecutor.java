@@ -47,18 +47,18 @@ import java.util.function.Function;
  * Synchronizes execution
  */
 public final class SyncExecutor implements SyncedExecutor<CommittedAtom>, NextCommandGenerator {
-
-
 	public interface SyncService {
 		void sendLocalSyncRequest(LocalSyncRequest request);
 	}
 
+	// TODO: Refactor committed command when commit logic is re-written
+	// TODO: as currently it's mostly loosely coupled logic
 	public interface CommittedCommand {
+		CommittedAtom getCommand();
 		interface MaybeSuccessMapped<T> {
 			T elseIfError(Function<Exception, T> errorMapper);
 		}
 
-		CommittedAtom getCommand();
 		<T> MaybeSuccessMapped<T> map(Function<Object, T> successMapper);
 
 		CommittedCommand ifSuccess(Consumer<Object> successConsumer);
@@ -175,6 +175,7 @@ public final class SyncExecutor implements SyncedExecutor<CommittedAtom>, NextCo
 			this.currentStateVersion = stateVersion;
 			this.counters.set(CounterType.LEDGER_STATE_VERSION, this.currentStateVersion);
 
+			// persist
 			CommittedCommand result = this.stateComputer.commit(atom);
 			if (atom.getClientAtom() != null) {
 				this.mempool.removeCommittedAtom(atom.getAID());
