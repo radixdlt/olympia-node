@@ -29,7 +29,7 @@ import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hash;
 
 import com.radixdlt.middleware2.CommittedAtom;
-import com.radixdlt.syncer.ExecutionResult;
+import com.radixdlt.syncer.PreparedCommand;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -473,7 +473,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 			counters.increment(CounterType.BFT_INDIRECT_PARENT);
 		}
 
-		ExecutionResult executionResult = syncedExecutor.execute(vertex);
+		PreparedCommand preparedCommand = syncedExecutor.prepare(vertex);
 
 		// TODO: Don't check for state computer errors for now so that we don't
 		// TODO: have to deal with failing leader proposals
@@ -487,7 +487,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 			this.syncedVertexSender.sendSyncedVertex(vertex);
 		}
 
-		return VertexMetadata.ofVertex(vertex, executionResult);
+		return VertexMetadata.ofVertex(vertex, preparedCommand);
 	}
 
 	public VertexMetadata insertVertex(Vertex vertex) throws VertexInsertionException {

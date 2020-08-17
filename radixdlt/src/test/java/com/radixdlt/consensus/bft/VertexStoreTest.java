@@ -49,7 +49,7 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.CommittedAtom;
-import com.radixdlt.syncer.ExecutionResult;
+import com.radixdlt.syncer.PreparedCommand;
 import com.radixdlt.utils.UInt256;
 import java.util.Arrays;
 import java.util.Collections;
@@ -86,7 +86,7 @@ public class VertexStoreTest {
 		// No type check issues with mocking generic here
 		@SuppressWarnings("unchecked") SyncedExecutor<CommittedAtom> ssc = mock(SyncedExecutor.class);
 		this.syncedExecutor = ssc;
-		when(this.syncedExecutor.execute(any())).thenReturn(mock(ExecutionResult.class));
+		when(this.syncedExecutor.prepare(any())).thenReturn(mock(PreparedCommand.class));
 		this.syncVerticesRPCSender = mock(SyncVerticesRPCSender.class);
 		this.vertexStoreEventSender = mock(VertexStoreEventSender.class);
 		this.counters = mock(SystemCounters.class);
@@ -106,7 +106,7 @@ public class VertexStoreTest {
 			Vertex parentVertex = lastVertex.get();
 			final QuorumCertificate qc;
 			if (!parentVertex.getView().equals(View.genesis())) {
-				VertexMetadata parent = VertexMetadata.ofVertex(parentVertex, mock(ExecutionResult.class));
+				VertexMetadata parent = VertexMetadata.ofVertex(parentVertex, mock(PreparedCommand.class));
 				VoteData data = new VoteData(parent, parentVertex.getQC().getProposed(), skipOne ? null : parentVertex.getQC().getParent());
 				qc = new QuorumCertificate(data, new TimestampedECDSASignatures());
 			} else {
@@ -131,7 +131,7 @@ public class VertexStoreTest {
 	@Test
 	public void when_vertex_store_created_with_incorrect_roots__then_exception_is_thrown() {
 		Vertex nextVertex = this.nextVertex.get();
-		VertexMetadata nextVertexMetadata = VertexMetadata.ofVertex(nextVertex, mock(ExecutionResult.class));
+		VertexMetadata nextVertexMetadata = VertexMetadata.ofVertex(nextVertex, mock(PreparedCommand.class));
 
 		VoteData voteData = new VoteData(nextVertexMetadata, genesisVertexMetadata, null);
 		QuorumCertificate badRootQC = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
@@ -182,7 +182,7 @@ public class VertexStoreTest {
 	@Test
 	public void when_vertex_retriever_succeeds__then_vertex_is_inserted() {
 		Vertex vertex = this.nextVertex.get();
-		VoteData voteData = new VoteData(VertexMetadata.ofVertex(vertex, mock(ExecutionResult.class)), genesisVertexMetadata, null);
+		VoteData voteData = new VoteData(VertexMetadata.ofVertex(vertex, mock(PreparedCommand.class)), genesisVertexMetadata, null);
 		QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
 		when(vertexMetadata.getId()).thenReturn(vertex.getId());
@@ -246,11 +246,11 @@ public class VertexStoreTest {
 				counters
 			);
 
-		VertexMetadata vertexMetadata2 = VertexMetadata.ofVertex(vertex2, mock(ExecutionResult.class));
+		VertexMetadata vertexMetadata2 = VertexMetadata.ofVertex(vertex2, mock(PreparedCommand.class));
 		vertexStore.commitVertex(vertexMetadata2);
 		assertThat(vertexStore.commitVertex(vertexMetadata2)).isPresent();
 
-		VertexMetadata vertexMetadata1 = VertexMetadata.ofVertex(vertex1, mock(ExecutionResult.class));
+		VertexMetadata vertexMetadata1 = VertexMetadata.ofVertex(vertex1, mock(PreparedCommand.class));
 		assertThat(vertexStore.commitVertex(vertexMetadata1)).isNotPresent();
 	}
 
@@ -271,7 +271,7 @@ public class VertexStoreTest {
 		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), clientAtom);
 		vertexStore.insertVertex(nextVertex);
 
-		VertexMetadata vertexMetadata = VertexMetadata.ofVertex(nextVertex, mock(ExecutionResult.class));
+		VertexMetadata vertexMetadata = VertexMetadata.ofVertex(nextVertex, mock(PreparedCommand.class));
 		assertThat(vertexStore.commitVertex(vertexMetadata)).hasValue(nextVertex);
 
 		verify(vertexStoreEventSender, times(1))
@@ -296,7 +296,7 @@ public class VertexStoreTest {
 		Vertex vertex = nextVertex.get();
 		vertexStore.insertVertex(vertex);
 
-		VertexMetadata vertexMetadata = VertexMetadata.ofVertex(vertex, mock(ExecutionResult.class));
+		VertexMetadata vertexMetadata = VertexMetadata.ofVertex(vertex, mock(PreparedCommand.class));
 		assertThat(vertexStore.commitVertex(vertexMetadata)).hasValue(vertex);
 		verify(vertexStoreEventSender, times(1)).sendCommittedVertex(eq(vertex));
 		assertThat(vertexStore.getSize()).isEqualTo(1);
@@ -308,12 +308,12 @@ public class VertexStoreTest {
 
 		Vertex nextVertex1 = nextVertex.get();
 		vertexStore.insertVertex(nextVertex1);
-		VertexMetadata vertexMetadata = VertexMetadata.ofVertex(nextVertex1, mock(ExecutionResult.class));
+		VertexMetadata vertexMetadata = VertexMetadata.ofVertex(nextVertex1, mock(PreparedCommand.class));
 		vertexStore.commitVertex(vertexMetadata);
 
 		Vertex nextVertex2 = nextVertex.get();
 		vertexStore.insertVertex(nextVertex2);
-		VertexMetadata vertexMetadata2 = VertexMetadata.ofVertex(nextVertex2, mock(ExecutionResult.class));
+		VertexMetadata vertexMetadata2 = VertexMetadata.ofVertex(nextVertex2, mock(PreparedCommand.class));
 		vertexStore.commitVertex(vertexMetadata2);
 
 		verify(vertexStoreEventSender, times(1)).sendCommittedVertex(eq(nextVertex1));

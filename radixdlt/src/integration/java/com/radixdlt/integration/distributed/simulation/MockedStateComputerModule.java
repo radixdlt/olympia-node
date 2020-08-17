@@ -44,7 +44,7 @@ public class MockedStateComputerModule extends AbstractModule {
 	private StateComputer stateComputer() {
 		return new StateComputer() {
 			@Override
-			public Optional<BFTValidatorSet> execute(Vertex vertex) {
+			public Optional<BFTValidatorSet> prepare(Vertex vertex) {
 				return Optional.empty();
 			}
 

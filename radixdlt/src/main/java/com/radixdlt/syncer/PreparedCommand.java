@@ -21,30 +21,30 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.Hash;
 import java.util.Optional;
 
-public final class ExecutionResult {
+public final class PreparedCommand {
 	private final long stateVersion;
 	private final Hash timestampedSignaturesHash;
 	private final BFTValidatorSet nextValidatorSet;
 
-	private ExecutionResult(long stateVersion, Hash timestampedSignaturesHash, BFTValidatorSet nextValidatorSet) {
+	private PreparedCommand(long stateVersion, Hash timestampedSignaturesHash, BFTValidatorSet nextValidatorSet) {
 		this.stateVersion = stateVersion;
 		this.nextValidatorSet = nextValidatorSet;
 		this.timestampedSignaturesHash = timestampedSignaturesHash;
 	}
 
-	public static ExecutionResult create(
+	public static PreparedCommand create(
 		long stateVersion,
 		Hash timestampedSignaturesHash
 	) {
-		return new ExecutionResult(stateVersion, timestampedSignaturesHash, null);
+		return new PreparedCommand(stateVersion, timestampedSignaturesHash, null);
 	}
 
-	public static ExecutionResult create(
+	public static PreparedCommand create(
 		long stateVersion,
 		Hash timestampedSignaturesHash,
 		BFTValidatorSet nextValidatorSet
 	) {
-		return new ExecutionResult(stateVersion, timestampedSignaturesHash, nextValidatorSet);
+		return new PreparedCommand(stateVersion, timestampedSignaturesHash, nextValidatorSet);
 	}
 
 	public long getStateVersion() {

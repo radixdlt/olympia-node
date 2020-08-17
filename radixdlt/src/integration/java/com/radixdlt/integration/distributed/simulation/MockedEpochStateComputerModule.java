@@ -51,7 +51,7 @@ public class MockedEpochStateComputerModule extends AbstractModule {
 	private StateComputer stateComputer() {
 		return new StateComputer() {
 			@Override
-			public Optional<BFTValidatorSet> execute(Vertex vertex) {
+			public Optional<BFTValidatorSet> prepare(Vertex vertex) {
 				if (vertex.getView().compareTo(epochHighView) >= 0) {
 					return Optional.of(validatorSetMapping.apply(vertex.getEpoch() + 1));
 				} else {

@@ -64,7 +64,7 @@ public final class SyncExecutor implements SyncedExecutor<CommittedAtom>, NextCo
 	public interface StateComputer {
 		// TODO: Remove commit and move functionality into execute
 		StateComputerExecutedCommand commit(CommittedAtom committedAtom);
-		Optional<BFTValidatorSet> execute(Vertex vertex);
+		Optional<BFTValidatorSet> prepare(Vertex vertex);
 	}
 
 	public interface CommittedSender {
@@ -112,11 +112,11 @@ public final class SyncExecutor implements SyncedExecutor<CommittedAtom>, NextCo
 	}
 
 	@Override
-	public ExecutionResult execute(Vertex vertex) {
+	public PreparedCommand prepare(Vertex vertex) {
 		final VertexMetadata parent = vertex.getQC().getProposed();
 		final long parentStateVersion = parent.getStateVersion();
 
-		Optional<BFTValidatorSet> validatorSet = stateComputer.execute(vertex);
+		Optional<BFTValidatorSet> validatorSet = stateComputer.prepare(vertex);
 
 		final int versionIncrement;
 		if (parent.isEndOfEpoch()) {
@@ -131,8 +131,8 @@ public final class SyncExecutor implements SyncedExecutor<CommittedAtom>, NextCo
 		final Hash timestampedSignaturesHash = vertex.getQC().getTimestampedSignatures().getId();
 
 		return validatorSet
-			.map(vset -> ExecutionResult.create(stateVersion, timestampedSignaturesHash, vset))
-			.orElseGet(() -> ExecutionResult.create(stateVersion, timestampedSignaturesHash));
+			.map(vset -> PreparedCommand.create(stateVersion, timestampedSignaturesHash, vset))
+			.orElseGet(() -> PreparedCommand.create(stateVersion, timestampedSignaturesHash));
 	}
 
 	@Override

@@ -37,7 +37,7 @@ import java.util.stream.Collectors;
 
 public class SubmittedAndExecutedInvariant implements TestInvariant {
 
-	private Maybe<TestInvariantError> submitAndExecuted(Mempool mempool, Set<Observable<StateComputerExecutedCommand>> allLedgers) {
+	private Maybe<TestInvariantError> submitAndCheckForCommit(Mempool mempool, Set<Observable<StateComputerExecutedCommand>> allLedgers) {
 		ClientAtom clientAtom = mock(ClientAtom.class);
 
 		List<Maybe<TestInvariantError>> errors = allLedgers.stream()
@@ -47,7 +47,7 @@ public class SubmittedAndExecutedInvariant implements TestInvariant {
 					.timeout(10, TimeUnit.SECONDS)
 					.firstOrError()
 					.ignoreElement()
-					.doOnComplete(() -> System.out.println("Executed " + clientAtom))
+					.doOnComplete(() -> System.out.println("Committed " + clientAtom))
 					.onErrorReturn(e -> new TestInvariantError(e.getMessage() + " " + clientAtom))
 			)
 			.collect(Collectors.toList());
@@ -71,7 +71,7 @@ public class SubmittedAndExecutedInvariant implements TestInvariant {
 			.flatMapMaybe(node -> {
 				Set<Observable<StateComputerExecutedCommand>> allLedgers
 					= network.getNodes().stream().map(network::getLedger).map(LedgerRx::committed).collect(Collectors.toSet());
-				return submitAndExecuted(network.getMempool(node), allLedgers);
+				return submitAndCheckForCommit(network.getMempool(node), allLedgers);
 			});
 	}
 }

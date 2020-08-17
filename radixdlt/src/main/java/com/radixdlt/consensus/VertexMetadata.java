@@ -25,7 +25,7 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.syncer.ExecutionResult;
+import com.radixdlt.syncer.PreparedCommand;
 import com.radixdlt.utils.UInt256;
 import java.util.List;
 import java.util.Map;
@@ -126,14 +126,14 @@ public final class VertexMetadata {
 		);
 	}
 
-	public static VertexMetadata ofVertex(Vertex vertex, ExecutionResult executionResult) {
+	public static VertexMetadata ofVertex(Vertex vertex, PreparedCommand preparedCommand) {
 		return new VertexMetadata(
 			vertex.getEpoch(),
 			vertex.getView(),
 			vertex.getId(),
-			executionResult.getStateVersion(),
-			executionResult.getNextValidatorSet().orElse(null),
-			executionResult.getTimestampedSignaturesHash()
+			preparedCommand.getStateVersion(),
+			preparedCommand.getNextValidatorSet().orElse(null),
+			preparedCommand.getTimestampedSignaturesHash()
 		);
 	}
 

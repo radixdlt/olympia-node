@@ -68,7 +68,7 @@ public class RadixEngineStateComputerTest {
 		when(vertex.getView()).thenReturn(epochHighView);
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		when(validatorSetMapping.apply(any())).thenReturn(validatorSet);
-		assertThat(executor.execute(vertex)).contains(validatorSet);
+		assertThat(executor.prepare(vertex)).contains(validatorSet);
 	}
 
 	@Test

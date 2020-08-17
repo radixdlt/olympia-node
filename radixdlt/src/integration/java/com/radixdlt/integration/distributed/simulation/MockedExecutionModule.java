@@ -32,7 +32,7 @@ import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.middleware2.CommittedAtom;
-import com.radixdlt.syncer.ExecutionResult;
+import com.radixdlt.syncer.PreparedCommand;
 import io.reactivex.rxjava3.core.Observable;
 
 public class MockedExecutionModule extends AbstractModule {
@@ -61,8 +61,8 @@ public class MockedExecutionModule extends AbstractModule {
 			}
 
 			@Override
-			public ExecutionResult execute(Vertex vertex) {
-				return ExecutionResult.create(0, Hash.ZERO_HASH);
+			public PreparedCommand prepare(Vertex vertex) {
+				return PreparedCommand.create(0, Hash.ZERO_HASH);
 			}
 
 			@Override

@@ -24,7 +24,7 @@ import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.middleware2.CommittedAtom;
-import com.radixdlt.syncer.ExecutionResult;
+import com.radixdlt.syncer.PreparedCommand;
 
 public enum SingleEpochFailOnSyncSyncedExecutor implements SyncedExecutor<CommittedAtom> {
 	INSTANCE;
@@ -35,8 +35,8 @@ public enum SingleEpochFailOnSyncSyncedExecutor implements SyncedExecutor<Commit
 	}
 
 	@Override
-	public ExecutionResult execute(Vertex vertex) {
-		return ExecutionResult.create(0, Hash.ZERO_HASH);
+	public PreparedCommand prepare(Vertex vertex) {
+		return PreparedCommand.create(0, Hash.ZERO_HASH);
 	}
 
 	@Override

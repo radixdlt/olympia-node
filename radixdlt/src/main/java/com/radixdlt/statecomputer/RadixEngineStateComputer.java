@@ -129,7 +129,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 	}
 
 	@Override
-	public Optional<BFTValidatorSet> execute(Vertex vertex) {
+	public Optional<BFTValidatorSet> prepare(Vertex vertex) {
 		if (vertex.getView().compareTo(epochChangeView) >= 0) {
 			return Optional.of(validatorSetMapping.apply(vertex.getEpoch() + 1));
 		} else {
