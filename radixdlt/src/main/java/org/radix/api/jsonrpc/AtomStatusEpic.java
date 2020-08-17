@@ -23,7 +23,7 @@ import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.middleware2.CommittedAtom;
+import com.radixdlt.syncer.CommittedAtom;
 import com.radixdlt.middleware2.converters.AtomConversionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;

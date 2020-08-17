@@ -48,7 +48,7 @@ import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.LatencyProvider;
 import com.radixdlt.mempool.LocalMempool;
 import com.radixdlt.mempool.Mempool;
-import com.radixdlt.middleware2.CommittedAtom;
+import com.radixdlt.syncer.CommittedAtom;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 import io.reactivex.rxjava3.core.Observable;

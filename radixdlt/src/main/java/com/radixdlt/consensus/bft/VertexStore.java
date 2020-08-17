@@ -28,7 +28,6 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hash;
 
-import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.syncer.PreparedCommand;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -101,7 +100,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 	private final VertexStoreEventSender vertexStoreEventSender;
 	private final SyncedVertexSender syncedVertexSender;
 	private final SyncVerticesRPCSender syncVerticesRPCSender;
-	private final SyncedExecutor<CommittedAtom> syncedExecutor;
+	private final SyncedExecutor syncedExecutor;
 	private final SystemCounters counters;
 
 	// These should never be null
@@ -115,7 +114,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 	public VertexStore(
 		Vertex rootVertex,
 		QuorumCertificate rootQC,
-		SyncedExecutor<CommittedAtom> syncedExecutor,
+		SyncedExecutor syncedExecutor,
 		SyncVerticesRPCSender syncVerticesRPCSender,
 		SyncedVertexSender syncedVertexSender,
 		VertexStoreEventSender vertexStoreEventSender,
@@ -136,7 +135,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		Vertex rootVertex,
 		QuorumCertificate rootQC,
 		List<Vertex> vertices,
-		SyncedExecutor<CommittedAtom> syncedExecutor,
+		SyncedExecutor syncedExecutor,
 		SyncVerticesRPCSender syncVerticesRPCSender,
 		SyncedVertexSender syncedVertexSender,
 		VertexStoreEventSender vertexStoreEventSender,
@@ -520,9 +519,8 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		}
 
 		for (Vertex committed : path) {
-			CommittedAtom committedAtom = new CommittedAtom(committed.getAtom(), commitMetadata);
 			this.counters.increment(CounterType.BFT_PROCESSED);
-			syncedExecutor.commit(committedAtom);
+			syncedExecutor.commit(committed.getAtom(), commitMetadata);
 
 			this.vertexStoreEventSender.sendCommittedVertex(committed);
 		}

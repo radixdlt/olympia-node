@@ -18,7 +18,6 @@
 package com.radixdlt.syncer;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.network.addressbook.Peer;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.List;

@@ -19,7 +19,6 @@ package com.radixdlt.statecomputer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -32,7 +31,6 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.middleware2.ClientAtom;
-import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import java.util.function.Function;
@@ -73,23 +71,22 @@ public class RadixEngineStateComputerTest {
 
 	@Test
 	public void when_execute_vertex_with_engine_exception__then_is_available_on_query() throws RadixEngineException {
-		CommittedAtom committedAtom = mock(CommittedAtom.class);
-		when(committedAtom.getClientAtom()).thenReturn(mock(ClientAtom.class));
+		ClientAtom committedAtom = mock(ClientAtom.class);
 		AID aid = mock(AID.class);
 		when(committedAtom.getAID()).thenReturn(aid);
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
 		when(vertexMetadata.getView()).then(i -> View.of(50));
 		when(vertexMetadata.getStateVersion()).then(i -> 1L);
-		when(committedAtom.getVertexMetadata()).thenReturn(vertexMetadata);
-
 
 		RadixEngineException e = mock(RadixEngineException.class);
-		doThrow(e).when(radixEngine).checkAndStore(eq(committedAtom));
-		executor.commit(committedAtom);
+		doThrow(e).when(radixEngine).checkAndStore(any());
+		executor.commit(committedAtom, vertexMetadata);
 
-		assertThat(executor.getCommittedAtoms(0, 1)).contains(
-			committedAtom
-		);
+		assertThat(executor.getCommittedAtoms(0, 1))
+			.hasOnlyOneElementSatisfying(c -> {
+				assertThat(c.getClientAtom()).isEqualTo(committedAtom);
+				assertThat(c.getVertexMetadata()).isEqualTo(vertexMetadata);
+			});
 	}
 
 }

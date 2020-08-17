@@ -17,7 +17,6 @@
 
 package com.radixdlt.syncer;
 
-import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.syncer.SyncExecutor.CommittedCommand;
 import java.util.function.Consumer;
 import java.util.function.Function;

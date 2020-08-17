@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
-import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
 import java.util.Comparator;

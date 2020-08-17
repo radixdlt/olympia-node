@@ -15,15 +15,16 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.middleware2;
+package com.radixdlt.syncer;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
-import com.radixdlt.consensus.SyncedExecutor.CommittedInstruction;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.identifiers.AID;
+import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
@@ -39,7 +40,7 @@ import javax.annotation.concurrent.Immutable;
  */
 @Immutable
 @SerializerId2("consensus.committed_atom")
-public final class CommittedAtom implements LedgerAtom, CommittedInstruction {
+public final class CommittedAtom implements LedgerAtom {
 	@JsonProperty(SerializerConstants.SERIALIZER_NAME)
 	@DsonOutput(value = {Output.API, Output.WIRE, Output.PERSIST})
 	SerializerDummy serializer = SerializerDummy.DUMMY;
@@ -68,7 +69,6 @@ public final class CommittedAtom implements LedgerAtom, CommittedInstruction {
 		return clientAtom;
 	}
 
-	@Override
 	public VertexMetadata getVertexMetadata() {
 		return vertexMetadata;
 	}

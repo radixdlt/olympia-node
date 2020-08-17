@@ -24,7 +24,7 @@ import com.radixdlt.identifiers.AID;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.EUID;
-import com.radixdlt.middleware2.CommittedAtom;
+import com.radixdlt.syncer.CommittedAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.store.SearchCursor;
 import com.radixdlt.store.StoreIndex;

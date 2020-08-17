@@ -18,7 +18,7 @@
 package org.radix.api.services;
 
 import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.middleware2.CommittedAtom;
+import com.radixdlt.syncer.CommittedAtom;
 
 /**
  * Interface for listening to the status of an Atom.

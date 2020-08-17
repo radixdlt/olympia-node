@@ -31,7 +31,7 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.middleware2.CommittedAtom;
+import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.syncer.PreparedCommand;
 import io.reactivex.rxjava3.core.Observable;
 
@@ -53,20 +53,20 @@ public class MockedExecutionModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	SyncedExecutor<CommittedAtom> syncedExecutor() {
-		return new SyncedExecutor<CommittedAtom>() {
+	SyncedExecutor syncedExecutor() {
+		return new SyncedExecutor() {
 			@Override
 			public boolean syncTo(VertexMetadata vertexMetadata, ImmutableList<BFTNode> target, Object opaque) {
 				return true;
 			}
 
 			@Override
-			public PreparedCommand prepare(Vertex vertex) {
-				return PreparedCommand.create(0, Hash.ZERO_HASH);
+			public void commit(ClientAtom command, VertexMetadata vertexMetadata) {
 			}
 
 			@Override
-			public void commit(CommittedAtom instruction) {
+			public PreparedCommand prepare(Vertex vertex) {
+				return PreparedCommand.create(0, Hash.ZERO_HASH);
 			}
 		};
 	}

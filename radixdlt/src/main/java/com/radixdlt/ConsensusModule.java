@@ -57,7 +57,6 @@ import com.radixdlt.utils.ScheduledSenderToRx;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.utils.SenderToRx;
 import com.radixdlt.utils.ThreadFactories;
@@ -135,7 +134,7 @@ public final class ConsensusModule extends AbstractModule {
 	private EpochManager epochManager(
 		@Named("self") BFTNode self,
 		EpochChange initialEpoch,
-		SyncedExecutor<CommittedAtom> syncer,
+		SyncedExecutor syncer,
 		BFTFactory bftFactory,
 		SyncEpochsRPCSender syncEpochsRPCSender,
 		LocalTimeoutSender scheduledTimeoutSender,

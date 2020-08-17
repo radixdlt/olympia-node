@@ -23,13 +23,13 @@ import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.middleware2.CommittedAtom;
+import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.syncer.PreparedCommand;
 
 /**
  * A state computer which never changes epochs
  */
-public enum SingleEpochAlwaysSyncedExecutor implements SyncedExecutor<CommittedAtom> {
+public enum SingleEpochAlwaysSyncedExecutor implements SyncedExecutor {
 	INSTANCE;
 
 	@Override
@@ -38,12 +38,12 @@ public enum SingleEpochAlwaysSyncedExecutor implements SyncedExecutor<CommittedA
 	}
 
 	@Override
-	public PreparedCommand prepare(Vertex vertex) {
-		return PreparedCommand.create(0, Hash.ZERO_HASH);
+	public void commit(ClientAtom command, VertexMetadata vertexMetadata) {
+		// No-op Mocked execution
 	}
 
 	@Override
-	public void commit(CommittedAtom instruction) {
-		// No-op Mocked execution
+	public PreparedCommand prepare(Vertex vertex) {
+		return PreparedCommand.create(0, Hash.ZERO_HASH);
 	}
 }

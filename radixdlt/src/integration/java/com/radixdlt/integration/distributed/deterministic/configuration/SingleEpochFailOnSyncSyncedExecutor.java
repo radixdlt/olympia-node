@@ -23,10 +23,10 @@ import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.middleware2.CommittedAtom;
+import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.syncer.PreparedCommand;
 
-public enum SingleEpochFailOnSyncSyncedExecutor implements SyncedExecutor<CommittedAtom> {
+public enum SingleEpochFailOnSyncSyncedExecutor implements SyncedExecutor {
 	INSTANCE;
 
 	@Override
@@ -35,12 +35,13 @@ public enum SingleEpochFailOnSyncSyncedExecutor implements SyncedExecutor<Commit
 	}
 
 	@Override
+	public void commit(ClientAtom command, VertexMetadata vertexMetadata) {
+		// No-op Mocked execution
+	}
+
+	@Override
 	public PreparedCommand prepare(Vertex vertex) {
 		return PreparedCommand.create(0, Hash.ZERO_HASH);
 	}
 
-	@Override
-	public void commit(CommittedAtom instruction) {
-		// No-op Mocked execution
-	}
 }

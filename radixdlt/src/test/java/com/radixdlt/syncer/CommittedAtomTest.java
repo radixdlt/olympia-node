@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.middleware2;
+package com.radixdlt.syncer;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.mock;
@@ -25,6 +25,7 @@ import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.identifiers.AID;
+import com.radixdlt.middleware2.ClientAtom;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Test;
 

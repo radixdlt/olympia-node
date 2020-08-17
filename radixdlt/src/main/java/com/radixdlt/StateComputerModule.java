@@ -43,7 +43,7 @@ import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.ClientAtom.LedgerAtomConversionException;
-import com.radixdlt.middleware2.CommittedAtom;
+import com.radixdlt.syncer.CommittedAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.LedgerAtomChecker;
 import com.radixdlt.middleware2.PowFeeComputer;

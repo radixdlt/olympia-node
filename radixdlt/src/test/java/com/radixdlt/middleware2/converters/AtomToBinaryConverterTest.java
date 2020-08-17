@@ -33,7 +33,7 @@ import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.middleware.ParticleGroup;
 import com.radixdlt.middleware.SpunParticle;
 import com.radixdlt.middleware2.ClientAtom;
-import com.radixdlt.middleware2.CommittedAtom;
+import com.radixdlt.syncer.CommittedAtom;
 import org.junit.Test;
 
 import java.math.BigInteger;

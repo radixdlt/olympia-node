@@ -32,7 +32,6 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.identifiers.EUID;
-import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.syncer.SyncServiceProcessor.SyncTimeoutScheduler;

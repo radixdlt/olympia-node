@@ -18,7 +18,6 @@
 package com.radixdlt.syncer;
 
 import com.radixdlt.consensus.epoch.EpochChange;
-import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.syncer.SyncExecutor.CommittedSender;
 import com.radixdlt.syncer.SyncExecutor.CommittedCommand;
 import java.util.Objects;

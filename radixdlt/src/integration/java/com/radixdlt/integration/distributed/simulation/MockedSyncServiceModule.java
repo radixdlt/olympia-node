@@ -20,7 +20,7 @@ package com.radixdlt.integration.distributed.simulation;
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.SyncedExecutor;
-import com.radixdlt.middleware2.CommittedAtom;
+import com.radixdlt.syncer.CommittedAtom;
 import com.radixdlt.syncer.SyncExecutor.CommittedSender;
 import com.radixdlt.syncer.SyncExecutor.SyncService;
 import java.util.concurrent.ConcurrentHashMap;
@@ -43,14 +43,14 @@ public class MockedSyncServiceModule extends AbstractModule {
 	// TODO: change this to a service
 	@ProvidesIntoSet
 	SyncService syncService(
-		SyncedExecutor<CommittedAtom> syncedExecutor
+		SyncedExecutor syncedExecutor
 	) {
 		return request -> {
 			final long targetVersion = request.getTarget().getStateVersion();
 			final long initVersion = request.getCurrentVersion() + 1;
 			for (long version = initVersion; version <= targetVersion; version++) {
 				CommittedAtom atom = sharedCommittedAtoms.get(version);
-				syncedExecutor.commit(atom);
+				syncedExecutor.commit(atom.getClientAtom(), atom.getVertexMetadata());
 			}
 		};
 	}

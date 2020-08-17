@@ -46,7 +46,6 @@ import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.middleware2.ClientAtom;
-import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.syncer.SyncExecutor.SyncService;
 import java.util.Collections;
@@ -113,17 +112,15 @@ public class SyncExecutorTest {
 
 	@Test
 	public void when_commit_vertex_with_engine_exception__then_correct_messages_are_sent() {
-		CommittedAtom committedAtom = mock(CommittedAtom.class);
-		when(committedAtom.getClientAtom()).thenReturn(mock(ClientAtom.class));
+		ClientAtom committedAtom = mock(ClientAtom.class);
 		AID aid = mock(AID.class);
 		when(committedAtom.getAID()).thenReturn(aid);
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
 		when(vertexMetadata.getView()).then(i -> View.of(50));
 		when(vertexMetadata.getStateVersion()).then(i -> 1234L);
-		when(committedAtom.getVertexMetadata()).thenReturn(vertexMetadata);
 
-		syncExecutor.commit(committedAtom);
-		verify(executor, times(1)).commit(eq(committedAtom));
+		syncExecutor.commit(committedAtom, vertexMetadata);
+		verify(executor, times(1)).commit(eq(committedAtom), eq(vertexMetadata));
 		verify(mempool, times(1)).removeCommittedAtom(aid);
 		verify(committedSender, times(1)).sendCommitted(any());
 	}
@@ -138,16 +135,13 @@ public class SyncExecutorTest {
 		BFTNode node = mock(BFTNode.class);
 		when(node.getKey()).thenReturn(pk);
 
-		CommittedAtom nextAtom = mock(CommittedAtom.class);
 		VertexMetadata nextVertexMetadata = mock(VertexMetadata.class);
 		when(nextVertexMetadata.getStateVersion()).thenReturn(1234L);
 
 		syncExecutor.syncTo(nextVertexMetadata, ImmutableList.of(node), mock(Object.class));
 		verify(committedStateSyncSender, never()).sendCommittedStateSync(anyLong(), any());
 
-		when(nextAtom.getClientAtom()).thenReturn(mock(ClientAtom.class));
-		when(nextAtom.getVertexMetadata()).thenReturn(nextVertexMetadata);
-		syncExecutor.commit(nextAtom);
+		syncExecutor.commit(mock(ClientAtom.class), nextVertexMetadata);
 
 		verify(committedStateSyncSender, timeout(5000).atLeast(1)).sendCommittedStateSync(anyLong(), any());
 	}

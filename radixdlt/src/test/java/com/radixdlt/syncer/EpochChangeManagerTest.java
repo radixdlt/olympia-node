@@ -25,7 +25,6 @@ import static org.mockito.Mockito.when;
 
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.syncer.SyncExecutor.CommittedCommand;
 import java.util.Optional;
 import org.junit.Before;

@@ -22,7 +22,6 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.junit.Assert.assertNull;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -48,7 +47,6 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.middleware2.ClientAtom;
-import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.syncer.PreparedCommand;
 import com.radixdlt.utils.UInt256;
 import java.util.Arrays;
@@ -67,7 +65,7 @@ public class VertexStoreTest {
 	private VertexMetadata genesisVertexMetadata;
 	private QuorumCertificate rootQC;
 	private VertexStore vertexStore;
-	private SyncedExecutor<CommittedAtom> syncedExecutor;
+	private SyncedExecutor syncedExecutor;
 	private VertexStoreEventSender vertexStoreEventSender;
 	private SyncVerticesRPCSender syncVerticesRPCSender;
 	private SyncedVertexSender syncedVertexSender;
@@ -84,7 +82,7 @@ public class VertexStoreTest {
 		VoteData voteData = new VoteData(genesisVertexMetadata, genesisVertexMetadata, genesisVertexMetadata);
 		this.rootQC = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 		// No type check issues with mocking generic here
-		@SuppressWarnings("unchecked") SyncedExecutor<CommittedAtom> ssc = mock(SyncedExecutor.class);
+		SyncedExecutor ssc = mock(SyncedExecutor.class);
 		this.syncedExecutor = ssc;
 		when(this.syncedExecutor.prepare(any())).thenReturn(mock(PreparedCommand.class));
 		this.syncVerticesRPCSender = mock(SyncVerticesRPCSender.class);
@@ -261,7 +259,7 @@ public class VertexStoreTest {
 		vertexStore.insertVertex(nextVertex);
 
 		verify(vertexStoreEventSender, never()).sendCommittedVertex(any());
-		verify(syncedExecutor, times(0)).commit(any()); // not stored
+		verify(syncedExecutor, times(0)).commit(any(), any()); // not stored
 	}
 
 	@Test
@@ -277,7 +275,7 @@ public class VertexStoreTest {
 		verify(vertexStoreEventSender, times(1))
 			.sendCommittedVertex(eq(nextVertex));
 		verify(syncedExecutor, times(1))
-			.commit(argThat(a -> a.getClientAtom().equals(clientAtom))); // next atom stored
+			.commit(eq(clientAtom), eq(vertexMetadata)); // next atom stored
 	}
 
 	@Test
