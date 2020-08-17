@@ -42,7 +42,6 @@ import org.junit.Test;
 public class StateComputerModuleTest {
 	private static class ExternalStateComputerModule extends AbstractModule {
 		@Override
-		@SuppressWarnings("unchecked")
 		protected void configure() {
 			bind(Serialization.class).toInstance(mock(Serialization.class));
 			Universe universe = mock(Universe.class);

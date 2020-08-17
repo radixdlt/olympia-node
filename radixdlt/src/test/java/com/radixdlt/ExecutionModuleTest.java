@@ -41,7 +41,6 @@ import org.junit.Test;
 public class ExecutionModuleTest {
 	private static class ExternalExecutionModule extends AbstractModule {
 		@Override
-		@SuppressWarnings("unchecked")
 		protected void configure() {
 			bind(Mempool.class).toInstance(mock(Mempool.class));
 			bind(StateComputer.class).toInstance(mock(StateComputer.class));

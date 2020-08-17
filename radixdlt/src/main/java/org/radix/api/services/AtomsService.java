@@ -120,6 +120,7 @@ public class AtomsService {
 	}
 
 	private void processStoredEvent(CommittedAtom committedAtom, Object result) {
+		// FIXME: Fix this once the api modules are sorted out
 		ImmutableSet<EUID> indicies = (ImmutableSet<EUID>) result;
 
 		this.atomEventObservers.forEach(observer -> observer.tryNext(committedAtom, indicies));

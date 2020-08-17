@@ -105,6 +105,7 @@ public class SimulationNodes {
 		}
 
 		return new RunningNetwork() {
+			@Override
 			public EpochChange initialEpoch() {
 				// Just do first instance for now
 				return nodeInstances.get(0).getInstance(EpochChange.class);

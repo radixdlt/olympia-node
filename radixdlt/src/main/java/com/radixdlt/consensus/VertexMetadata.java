@@ -26,6 +26,7 @@ import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.syncer.PreparedCommand;
+import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.UInt256;
 import java.util.List;
 import java.util.Map;
@@ -168,12 +169,17 @@ public final class VertexMetadata {
 			return null;
 		}
 		return validatorSet.getValidators().stream()
-			.collect(ImmutableMap.toImmutableMap(v -> v.getNode().getKey().toBase64(), BFTValidator::getPower));
+			.collect(ImmutableMap.toImmutableMap(v -> encodePublicKey(v.getNode()), BFTValidator::getPower));
+	}
+
+	// TODO: Use base64 over hex
+	private static String encodePublicKey(BFTNode key) {
+		return Bytes.toHexString(key.getKey().getBytes());
 	}
 
 	private static BFTNode toBFTNode(String str) {
 		try {
-			return BFTNode.create(ECPublicKey.fromBase64(str));
+			return BFTNode.create(new ECPublicKey(Bytes.fromHexString(str)));
 		} catch (CryptoException e) {
 			throw new IllegalStateException("Error decoding public key", e);
 		}

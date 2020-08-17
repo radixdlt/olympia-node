@@ -26,7 +26,7 @@ import java.util.function.Function;
  * Temporary class to hold committed results
  * TODO: Remove class
  */
-public class CommittedCommands {
+public final class CommittedCommands {
 	private static class CommittedCommandSuccess implements CommittedCommand {
 		private final CommittedAtom command;
 		private final Object result;

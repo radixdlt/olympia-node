@@ -45,14 +45,13 @@ public class MempoolSubmitAndCommitInvariant implements TestInvariant {
 		ClientAtom clientAtom = mock(ClientAtom.class);
 
 		List<Maybe<TestInvariantError>> errors = allLedgers.stream()
-			.map(cmds ->
-				cmds
-					.filter(cmd -> Objects.equals(cmd.getCommand().getClientAtom(), clientAtom))
-					.timeout(10, TimeUnit.SECONDS)
-					.firstOrError()
-					.ignoreElement()
-					.doOnComplete(() -> System.out.println("Committed " + clientAtom))
-					.onErrorReturn(e -> new TestInvariantError(e.getMessage() + " " + clientAtom))
+			.map(cmds -> cmds
+				.filter(cmd -> Objects.equals(cmd.getCommand().getClientAtom(), clientAtom))
+				.timeout(10, TimeUnit.SECONDS)
+				.firstOrError()
+				.ignoreElement()
+				.doOnComplete(() -> System.out.println("Committed " + clientAtom))
+				.onErrorReturn(e -> new TestInvariantError(e.getMessage() + " " + clientAtom))
 			)
 			.collect(Collectors.toList());
 
@@ -60,6 +59,7 @@ public class MempoolSubmitAndCommitInvariant implements TestInvariant {
 			try {
 				mempool.addAtom(clientAtom);
 			} catch (MempoolDuplicateException | MempoolFullException e) {
+				// TODO: Cleanup
 				e.printStackTrace();
 				return;
 			}
