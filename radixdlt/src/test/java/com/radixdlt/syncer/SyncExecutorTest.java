@@ -17,8 +17,11 @@
 
 package com.radixdlt.syncer;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -28,6 +31,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.QuorumCertificate;
+import com.radixdlt.consensus.TimestampedECDSASignatures;
+import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
@@ -43,6 +49,8 @@ import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.syncer.SyncExecutor.SyncService;
+import java.util.Collections;
+import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -79,7 +87,32 @@ public class SyncExecutorTest {
 	}
 
 	@Test
-	public void when_insert_and_commit_vertex_with_engine_exception__then_correct_messages_are_sent() {
+	public void when_generate_proposal_with_empty_prepared__then_generate_proposal_should_return_atom() {
+		ClientAtom reAtom = mock(ClientAtom.class);
+		when(mempool.getAtoms(anyInt(), anySet())).thenReturn(Collections.singletonList(reAtom));
+		ClientAtom atom = syncExecutor.generateNextCommand(View.of(1), Collections.emptySet());
+		AssertionsForClassTypes.assertThat(atom).isEqualTo(reAtom);
+	}
+
+	@Test
+	public void when_prepare_with_atom_and_not_end_of_epoch__then_should_return_next_state_version() {
+		Vertex vertex = mock(Vertex.class);
+		QuorumCertificate qc = mock(QuorumCertificate.class);
+		when(vertex.getQC()).thenReturn(qc);
+		VertexMetadata parent = mock(VertexMetadata.class);
+		when(parent.isEndOfEpoch()).thenReturn(false);
+		when(parent.getStateVersion()).thenReturn(12345L);
+		when(qc.getProposed()).thenReturn(parent);
+		when(qc.getTimestampedSignatures()).thenReturn(new TimestampedECDSASignatures());
+		when(vertex.getAtom()).thenReturn(mock(ClientAtom.class));
+
+		PreparedCommand preparedCommand = syncExecutor.prepare(vertex);
+		assertThat(preparedCommand.getNextValidatorSet()).isEmpty();
+		assertThat(preparedCommand.getStateVersion()).isEqualTo(12346L);
+	}
+
+	@Test
+	public void when_commit_vertex_with_engine_exception__then_correct_messages_are_sent() {
 		CommittedAtom committedAtom = mock(CommittedAtom.class);
 		when(committedAtom.getClientAtom()).thenReturn(mock(ClientAtom.class));
 		AID aid = mock(AID.class);

@@ -26,7 +26,7 @@ import static org.mockito.Mockito.when;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.middleware2.CommittedAtom;
-import com.radixdlt.syncer.SyncExecutor.StateComputerExecutedCommand;
+import com.radixdlt.syncer.SyncExecutor.CommittedCommand;
 import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
@@ -53,9 +53,9 @@ public class EpochChangeManagerTest {
 		when(vertexMetadata.getValidatorSet()).thenReturn(Optional.of(validatorSet));
 		when(committedAtom.getVertexMetadata()).thenReturn(vertexMetadata);
 
-		StateComputerExecutedCommand stateComputerExecutedCommand = mock(StateComputerExecutedCommand.class);
-		when(stateComputerExecutedCommand.getCommand()).thenReturn(committedAtom);
-		epochChangeManager.sendCommitted(stateComputerExecutedCommand);
+		CommittedCommand committedCommand = mock(CommittedCommand.class);
+		when(committedCommand.getCommand()).thenReturn(committedAtom);
+		epochChangeManager.sendCommitted(committedCommand);
 
 		verify(sender, times(1))
 			.epochChange(

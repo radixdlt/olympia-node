@@ -17,7 +17,6 @@
 
 package org.radix.api.observable;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -35,7 +34,6 @@ import com.radixdlt.middleware2.store.EngineAtomIndices;
 import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStore;
 
-import com.radixdlt.syncer.SyncExecutor.StateComputerExecutedCommand;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

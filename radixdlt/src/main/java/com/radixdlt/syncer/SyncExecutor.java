@@ -40,7 +40,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * Synchronizes execution
@@ -52,24 +53,26 @@ public final class SyncExecutor implements SyncedExecutor<CommittedAtom>, NextCo
 		void sendLocalSyncRequest(LocalSyncRequest request);
 	}
 
-	public interface StateComputerExecutedCommand {
-		interface StateComputerExecutedCommandMaybeError {
-			void elseIfError(BiConsumer<CommittedAtom, Exception> errorConsumer);
+	public interface CommittedCommand {
+		interface MaybeSuccessMapped<T> {
+			T elseIfError(Function<Exception, T> errorMapper);
 		}
 
 		CommittedAtom getCommand();
-		StateComputerExecutedCommandMaybeError ifSuccess(BiConsumer<CommittedAtom, Object> successConsumer);
+		<T> MaybeSuccessMapped<T> map(Function<Object, T> successMapper);
+
+		CommittedCommand ifSuccess(Consumer<Object> successConsumer);
+		CommittedCommand ifError(Consumer<Exception> errorConsumer);
 	}
 
 	public interface StateComputer {
-		// TODO: Remove commit and move functionality into execute
-		StateComputerExecutedCommand commit(CommittedAtom committedAtom);
+		CommittedCommand commit(CommittedAtom committedAtom);
 		Optional<BFTValidatorSet> prepare(Vertex vertex);
 	}
 
 	public interface CommittedSender {
 		// TODO: batch these
-		void sendCommitted(StateComputerExecutedCommand stateComputerExecutedCommand);
+		void sendCommitted(CommittedCommand committedCommand);
 	}
 
 	public interface CommittedStateSyncSender {
@@ -156,8 +159,8 @@ public final class SyncExecutor implements SyncedExecutor<CommittedAtom>, NextCo
 	}
 
 	/**
-	 * Add an atom to the committed store
-	 * @param atom the atom to commit
+	 * Persists a committed command, then updates listeners
+	 * @param atom the command to commit
 	 */
 	@Override
 	public void commit(CommittedAtom atom) {
@@ -172,11 +175,10 @@ public final class SyncExecutor implements SyncedExecutor<CommittedAtom>, NextCo
 			this.currentStateVersion = stateVersion;
 			this.counters.set(CounterType.LEDGER_STATE_VERSION, this.currentStateVersion);
 
-			StateComputerExecutedCommand result = this.stateComputer.commit(atom);
+			CommittedCommand result = this.stateComputer.commit(atom);
 			if (atom.getClientAtom() != null) {
 				this.mempool.removeCommittedAtom(atom.getAID());
 			}
-
 			committedSender.sendCommitted(result);
 
 			Set<Object> opaqueObjects = this.committedStateSyncers.remove(this.currentStateVersion);

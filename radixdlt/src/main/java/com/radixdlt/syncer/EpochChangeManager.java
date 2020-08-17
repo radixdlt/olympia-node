@@ -20,7 +20,7 @@ package com.radixdlt.syncer;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.syncer.SyncExecutor.CommittedSender;
-import com.radixdlt.syncer.SyncExecutor.StateComputerExecutedCommand;
+import com.radixdlt.syncer.SyncExecutor.CommittedCommand;
 
 public final class EpochChangeManager implements CommittedSender {
 	private final EpochChangeSender epochChangeSender;
@@ -30,8 +30,8 @@ public final class EpochChangeManager implements CommittedSender {
 	}
 
 	@Override
-	public void sendCommitted(StateComputerExecutedCommand stateComputerExecutedCommand) {
-		CommittedAtom atom = stateComputerExecutedCommand.getCommand();
+	public void sendCommitted(CommittedCommand committedCommand) {
+		CommittedAtom atom = committedCommand.getCommand();
 		atom.getVertexMetadata().getValidatorSet().ifPresent(validatorSet -> {
 			EpochChange epochChange = new EpochChange(atom.getVertexMetadata(), validatorSet);
 			this.epochChangeSender.epochChange(epochChange);

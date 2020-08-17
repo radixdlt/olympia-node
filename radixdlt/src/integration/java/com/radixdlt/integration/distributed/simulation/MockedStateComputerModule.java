@@ -23,9 +23,9 @@ import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.middleware2.CommittedAtom;
-import com.radixdlt.syncer.StateComputerExecutedCommands;
+import com.radixdlt.syncer.CommittedCommands;
 import com.radixdlt.syncer.SyncExecutor.StateComputer;
-import com.radixdlt.syncer.SyncExecutor.StateComputerExecutedCommand;
+import com.radixdlt.syncer.SyncExecutor.CommittedCommand;
 import java.util.Optional;
 
 public class MockedStateComputerModule extends AbstractModule {
@@ -49,8 +49,8 @@ public class MockedStateComputerModule extends AbstractModule {
 			}
 
 			@Override
-			public StateComputerExecutedCommand commit(CommittedAtom committedAtom) {
-				return StateComputerExecutedCommands.success(committedAtom, null);
+			public CommittedCommand commit(CommittedAtom committedAtom) {
+				return CommittedCommands.success(committedAtom, null);
 			}
 		};
 	}

@@ -29,9 +29,9 @@ import com.radixdlt.identifiers.EUID;
 import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
-import com.radixdlt.syncer.StateComputerExecutedCommands;
+import com.radixdlt.syncer.CommittedCommands;
 import com.radixdlt.syncer.SyncExecutor.StateComputer;
-import com.radixdlt.syncer.SyncExecutor.StateComputerExecutedCommand;
+import com.radixdlt.syncer.SyncExecutor.CommittedCommand;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedList;
@@ -95,7 +95,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 	 * @param atom the atom to commit
 	 */
 	@Override
-	public StateComputerExecutedCommand commit(CommittedAtom atom) {
+	public CommittedCommand commit(CommittedAtom atom) {
 		if (atom.getClientAtom() != null) {
 			try {
 				// TODO: execute list of commands instead
@@ -103,7 +103,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 				// TODO: cleanup and move this logic to a better spot
 				final ImmutableSet<EUID> indicies = committedAtomsStore.getIndicies(atom);
-				return StateComputerExecutedCommands.success(atom, indicies);
+				return CommittedCommands.success(atom, indicies);
 			} catch (RadixEngineException e) {
 				// TODO: Don't check for state computer errors for now so that we don't
 				// TODO: have to deal with failing leader proposals
@@ -112,7 +112,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 				// TODO: move VIRTUAL_STATE_CONFLICT to static check
 				this.unstoredCommittedAtoms.add(atom);
 
-				return StateComputerExecutedCommands.error(atom, e);
+				return CommittedCommands.error(atom, e);
 			}
 
 		} else if (atom.getVertexMetadata().isEndOfEpoch()) {
@@ -120,7 +120,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 			// TODO: Remove and move epoch change logic into RadixEngine
 			this.unstoredCommittedAtoms.add(atom);
 
-			return StateComputerExecutedCommands.success(atom, ImmutableSet.of());
+			return CommittedCommands.success(atom, ImmutableSet.of());
 		} else {
 			// TODO: HACK
 			// TODO: Refactor to remove such illegal states

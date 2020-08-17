@@ -17,7 +17,7 @@
 
 package com.radixdlt.api;
 
-import com.radixdlt.syncer.SyncExecutor.StateComputerExecutedCommand;
+import com.radixdlt.syncer.SyncExecutor.CommittedCommand;
 import io.reactivex.rxjava3.core.Observable;
 
 /**
@@ -29,5 +29,5 @@ public interface LedgerRx {
 	 *
 	 * @return hot observable of committed commands and it's result
 	 */
-	Observable<StateComputerExecutedCommand> committed();
+	Observable<CommittedCommand> committed();
 }

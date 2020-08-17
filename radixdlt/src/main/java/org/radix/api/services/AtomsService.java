@@ -31,7 +31,7 @@ import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.mempool.SubmissionControl;
 
 import com.radixdlt.middleware2.CommittedAtom;
-import com.radixdlt.syncer.SyncExecutor.StateComputerExecutedCommand;
+import com.radixdlt.syncer.SyncExecutor.CommittedCommand;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import com.radixdlt.middleware2.ClientAtom;
@@ -109,19 +109,17 @@ public class AtomsService {
 		this.ledgerRx = ledgerRx;
 	}
 
-	private void processExecutedCommand(StateComputerExecutedCommand executedCommand) {
-		executedCommand
-			.ifSuccess(this::processedStoredEvent)
-			.elseIfError(this::processException);
-	}
-
-	private void processedStoredEvent(CommittedAtom committedAtom, Object result) {
-		System.out.println("STORED_EVENT " + committedAtom.getClientAtom());
-
-		if (committedAtom.getClientAtom() == null) {
+	private void processExecutedCommand(CommittedCommand executedCommand) {
+		if (executedCommand.getCommand().getClientAtom() == null) {
 			return;
 		}
 
+		executedCommand
+			.ifSuccess(result -> this.processStoredEvent(executedCommand.getCommand(), result))
+			.ifError(e -> this.processException(executedCommand.getCommand(), e));
+	}
+
+	private void processStoredEvent(CommittedAtom committedAtom, Object result) {
 		ImmutableSet<EUID> indicies = (ImmutableSet<EUID>) result;
 
 		this.atomEventObservers.forEach(observer -> observer.tryNext(committedAtom, indicies));
@@ -149,8 +147,6 @@ public class AtomsService {
 	}
 
 	private void processException(CommittedAtom committedAtom, Exception exception) {
-		System.out.println("STORED_EXCEPTION " + committedAtom.getClientAtom());
-
 		RadixEngineException e = (RadixEngineException) exception;
 
 		for (AtomStatusListener singleAtomListener : this.singleAtomObservers.getOrDefault(committedAtom.getAID(), Collections.emptyList())) {

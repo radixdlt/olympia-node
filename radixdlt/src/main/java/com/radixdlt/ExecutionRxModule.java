@@ -32,7 +32,7 @@ import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.converters.AtomConversionException;
 import com.radixdlt.syncer.LocalSyncRequest;
 import com.radixdlt.syncer.SyncExecutor.CommittedSender;
-import com.radixdlt.syncer.SyncExecutor.StateComputerExecutedCommand;
+import com.radixdlt.syncer.SyncExecutor.CommittedCommand;
 import com.radixdlt.syncer.SyncServiceProcessor.SyncInProgress;
 import com.radixdlt.syncer.SyncServiceProcessor.SyncTimeoutScheduler;
 import com.radixdlt.syncer.SyncServiceRunner.LocalSyncRequestsRx;
@@ -55,7 +55,7 @@ public final class ExecutionRxModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		Multibinder<CommittedSender> committedSenderBinder = Multibinder.newSetBinder(binder(), CommittedSender.class);
-		SenderToRx<StateComputerExecutedCommand, StateComputerExecutedCommand> committed = new SenderToRx<>(c -> c);
+		SenderToRx<CommittedCommand, CommittedCommand> committed = new SenderToRx<>(c -> c);
 		committedSenderBinder.addBinding().toInstance(committed::send);
 		bind(LedgerRx.class).toInstance(committed::rx);
 
