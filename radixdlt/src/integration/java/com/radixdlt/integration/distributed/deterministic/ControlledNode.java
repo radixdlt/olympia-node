@@ -111,7 +111,7 @@ class ControlledNode {
 		EpochInfoSender epochInfoSender = EmptyEpochInfoSender.INSTANCE;
 		this.epochManager = new EpochManager(
 			self,
-			new EpochChange(VertexMetadata.ofGenesisAncestor(), initialValidatorSet),
+			new EpochChange(VertexMetadata.ofGenesisAncestor(initialValidatorSet), initialValidatorSet),
 			stateComputer,
 			EmptySyncEpochsRPCSender.INSTANCE,
 			localTimeoutSender,

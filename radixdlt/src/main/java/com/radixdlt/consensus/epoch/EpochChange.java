@@ -43,6 +43,8 @@ public final class EpochChange {
 
 	@Override
 	public String toString() {
-		return String.format("%s{ancestor=%s validatorSet=%s}", this.getClass().getSimpleName(), ancestor, validatorSet);
+		return String.format(
+			"%s{ancestor=%s validatorSet=%s}", this.getClass().getSimpleName(), ancestor, validatorSet
+		);
 	}
 }

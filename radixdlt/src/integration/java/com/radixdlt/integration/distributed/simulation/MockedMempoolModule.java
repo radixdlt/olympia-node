@@ -15,30 +15,15 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.api;
+package com.radixdlt.integration.distributed.simulation;
 
-import com.google.common.collect.ImmutableSet;
-import com.radixdlt.identifiers.EUID;
-import com.radixdlt.middleware2.CommittedAtom;
-import java.util.Objects;
+import com.google.inject.AbstractModule;
+import com.radixdlt.mempool.EmptyMempool;
+import com.radixdlt.mempool.Mempool;
 
-/**
- * A stored atom event
- */
-public final class StoredAtom {
-	private final CommittedAtom atom;
-	private final ImmutableSet<EUID> destinations;
-
-	public StoredAtom(CommittedAtom atom, ImmutableSet<EUID> destinations) {
-		this.atom = Objects.requireNonNull(atom);
-		this.destinations = Objects.requireNonNull(destinations);
-	}
-
-	public CommittedAtom getAtom() {
-		return atom;
-	}
-
-	public ImmutableSet<EUID> getDestinations() {
-		return destinations;
+public class MockedMempoolModule extends AbstractModule {
+	@Override
+	public void configure() {
+		bind(Mempool.class).to(EmptyMempool.class);
 	}
 }

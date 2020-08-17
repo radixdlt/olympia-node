@@ -23,12 +23,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
 import javax.annotation.concurrent.GuardedBy;
-import javax.inject.Inject;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.properties.RuntimeProperties;
 
 /**
  * Local-only mempool.
@@ -36,19 +34,14 @@ import com.radixdlt.properties.RuntimeProperties;
  * Performs no validation and does not share contents with
  * network.  Threadsafe.
  */
-final class LocalMempool implements Mempool {
+public final class LocalMempool implements Mempool {
 	private final Object lock = new Object();
 	@GuardedBy("lock")
 	private final LinkedHashMap<AID, ClientAtom> data = Maps.newLinkedHashMap();
 
 	private final int maxSize;
 
-	@Inject
-	LocalMempool(RuntimeProperties config) {
-		this(config.get("mempool.maxSize", 1000));
-	}
-
-	LocalMempool(int maxSize) {
+	public LocalMempool(int maxSize) {
 		if (maxSize <= 0) {
 			throw new IllegalArgumentException("mempool.maxSize must be positive: " + maxSize);
 		}

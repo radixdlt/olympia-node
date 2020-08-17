@@ -62,7 +62,7 @@ public final class QuorumCertificate {
 			throw new IllegalArgumentException(String.format("Vertex is not genesis: %s", genesisVertex));
 		}
 
-		VertexMetadata vertexMetadata = VertexMetadata.ofVertex(genesisVertex, false);
+		VertexMetadata vertexMetadata = VertexMetadata.ofGenesisVertex(genesisVertex);
 		final VoteData voteData = new VoteData(vertexMetadata, vertexMetadata, vertexMetadata);
 		return new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 	}

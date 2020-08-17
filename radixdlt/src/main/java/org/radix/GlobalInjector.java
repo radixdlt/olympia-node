@@ -26,14 +26,16 @@ import com.google.inject.name.Names;
 import com.radixdlt.ConsensusModule;
 import com.radixdlt.CryptoModule;
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.ExecutionMessagesModule;
+import com.radixdlt.ExecutionEpochChangeModule;
+import com.radixdlt.ExecutionEpochChangeRxModule;
+import com.radixdlt.ExecutionLocalMempoolModule;
 import com.radixdlt.PersistenceModule;
 import com.radixdlt.StateComputerModule;
 import com.radixdlt.SyncCommittedServiceModule;
 import com.radixdlt.SyncMempoolServiceModule;
-import com.radixdlt.SyncMessagesModule;
-import com.radixdlt.SyncExecutionModule;
-import com.radixdlt.SystemInfoMessagesModule;
+import com.radixdlt.ExecutionRxModule;
+import com.radixdlt.ExecutionModule;
+import com.radixdlt.SystemInfoRxModule;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.identifiers.EUID;
@@ -89,29 +91,41 @@ public class GlobalInjector {
 		final int pacemakerTimeout = properties.get("consensus.pacemaker_timeout_millis", 5000);
 		final int fixedNodeCount = properties.get("consensus.fixed_node_count", 1);
 		final long viewsPerEpoch = properties.get("epochs.views_per_epoch", 100L);
+		final int mempoolMaxSize = properties.get("mempool.maxSize", 1000);
 
 		injector = Guice.createInjector(
+			// Consensus
 			new CryptoModule(),
 			new ConsensusModule(pacemakerTimeout),
-			new SyncExecutionModule(),
+
+			// Execution
+			new ExecutionModule(),
+			new ExecutionRxModule(),
+			new ExecutionEpochChangeModule(),
+			new ExecutionEpochChangeRxModule(),
+			new ExecutionLocalMempoolModule(mempoolMaxSize),
+
+			new PersistenceModule(),
+
+			// State Computer
+			new StateComputerModule(fixedNodeCount, viewsPerEpoch),
+
+			// Synchronization
 			new SyncCommittedServiceModule(),
 			new SyncMempoolServiceModule(),
-			new StateComputerModule(fixedNodeCount, viewsPerEpoch),
-			new PersistenceModule(),
-			new NetworkModule(),
+
+			// System Info
 			new SystemInfoModule(properties),
+			new SystemInfoRxModule(),
 
-			// Environment modules
-			new ExecutionMessagesModule(),
-			new SystemInfoMessagesModule(),
-			new SyncMessagesModule(),
-
-			// Low level network modules
+			// Network
+			new NetworkModule(),
 			new MessageCentralModule(properties),
 			new UDPTransportModule(properties),
 			new TCPTransportModule(properties),
 			new AddressBookModule(dbEnv),
 			new HostIpModule(properties),
+
 			globalModule
 		);
 	}

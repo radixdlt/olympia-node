@@ -82,10 +82,6 @@ public final class Vertex {
 		this.atom = atom;
 	}
 
-	public static Vertex createGenesis() {
-		return createGenesis(VertexMetadata.ofGenesisAncestor());
-	}
-
 	public static Vertex createGenesis(VertexMetadata ancestorMetadata) {
 		Objects.requireNonNull(ancestorMetadata);
 		final VoteData voteData = new VoteData(ancestorMetadata, ancestorMetadata, ancestorMetadata);

@@ -23,9 +23,12 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.radixdlt.ConsensusModule;
-import com.radixdlt.SystemInfoMessagesModule;
+import com.radixdlt.SystemInfoRxModule;
+import com.radixdlt.api.LedgerRx;
+import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.integration.distributed.simulation.MockedCryptoModule;
 import com.radixdlt.integration.distributed.simulation.SimulationNetworkModule;
+import com.radixdlt.mempool.Mempool;
 import com.radixdlt.systeminfo.InfoRx;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.ConsensusRunner;
@@ -69,7 +72,7 @@ public class SimulationNodes {
 	private Injector createBFTInstance(BFTNode self) {
 		List<Module> modules = ImmutableList.of(
 			new ConsensusModule(pacemakerTimeout),
-			new SystemInfoMessagesModule(),
+			new SystemInfoRxModule(),
 			new MockedCryptoModule(),
 			new SimulationNetworkModule(getVerticesRPCEnabled, self, underlyingNetwork)
 		);
@@ -78,9 +81,15 @@ public class SimulationNodes {
 
 	// TODO: Add support for epoch changes
 	public interface RunningNetwork {
+		EpochChange initialEpoch();
+
 		List<BFTNode> getNodes();
 
 		InfoRx getInfo(BFTNode node);
+
+		LedgerRx getLedger(BFTNode node);
+
+		Mempool getMempool(BFTNode node);
 
 		SimulationNetwork getUnderlyingNetwork();
 	}
@@ -97,6 +106,12 @@ public class SimulationNodes {
 
 		return new RunningNetwork() {
 			@Override
+			public EpochChange initialEpoch() {
+				// Just do first instance for now
+				return nodeInstances.get(0).getInstance(EpochChange.class);
+			}
+
+			@Override
 			public List<BFTNode> getNodes() {
 				return nodes;
 			}
@@ -105,6 +120,18 @@ public class SimulationNodes {
 			public InfoRx getInfo(BFTNode node) {
 				int index = nodes.indexOf(node);
 				return nodeInstances.get(index).getInstance(InfoRx.class);
+			}
+
+			@Override
+			public LedgerRx getLedger(BFTNode node) {
+				int index = nodes.indexOf(node);
+				return nodeInstances.get(index).getInstance(LedgerRx.class);
+			}
+
+			@Override
+			public Mempool getMempool(BFTNode node) {
+				int index = nodes.indexOf(node);
+				return nodeInstances.get(index).getInstance(Mempool.class);
 			}
 
 			@Override

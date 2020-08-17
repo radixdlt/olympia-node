@@ -18,20 +18,21 @@
 package com.radixdlt;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.api.DeserializationFailure;
+import com.radixdlt.api.LedgerRx;
 import com.radixdlt.api.SubmissionErrorsRx;
 import com.radixdlt.api.SubmissionFailure;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.CommittedStateSyncRx;
-import com.radixdlt.consensus.EpochChangeRx;
-import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.mempool.SubmissionControlImpl.SubmissionControlSender;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.converters.AtomConversionException;
-import com.radixdlt.syncer.EpochChangeSender;
 import com.radixdlt.syncer.LocalSyncRequest;
+import com.radixdlt.syncer.SyncExecutor.CommittedSender;
+import com.radixdlt.syncer.SyncExecutor.CommittedCommand;
 import com.radixdlt.syncer.SyncServiceProcessor.SyncInProgress;
 import com.radixdlt.syncer.SyncServiceProcessor.SyncTimeoutScheduler;
 import com.radixdlt.syncer.SyncServiceRunner.LocalSyncRequestsRx;
@@ -49,10 +50,15 @@ import java.util.concurrent.ScheduledExecutorService;
 /**
  * Module which manages messages from Syncer
  */
-public final class SyncMessagesModule extends AbstractModule {
+public final class ExecutionRxModule extends AbstractModule {
 
 	@Override
 	protected void configure() {
+		Multibinder<CommittedSender> committedSenderBinder = Multibinder.newSetBinder(binder(), CommittedSender.class);
+		SenderToRx<CommittedCommand, CommittedCommand> committed = new SenderToRx<>(c -> c);
+		committedSenderBinder.addBinding().toInstance(committed::send);
+		bind(LedgerRx.class).toInstance(committed::rx);
+
 		TwoSenderToRx<Atom, AtomConversionException, DeserializationFailure> deserializationFailures
 			= new TwoSenderToRx<>(DeserializationFailure::new);
 		TwoSenderToRx<ClientAtom, RadixEngineException, SubmissionFailure> submissionFailures
@@ -82,16 +88,13 @@ public final class SyncMessagesModule extends AbstractModule {
 		bind(SubmissionControlSender.class).toInstance(submissionControlSender);
 		bind(SubmissionErrorsRx.class).toInstance(submissionErrorsRx);
 
-		SenderToRx<EpochChange, EpochChange> epochChangeSenderToRx = new SenderToRx<>(e -> e);
-		bind(EpochChangeRx.class).toInstance(epochChangeSenderToRx::rx);
-		bind(EpochChangeSender.class).toInstance(epochChangeSenderToRx::send);
-
 		TwoSenderToRx<Long, Object, CommittedStateSync> committedStateSyncTwoSenderToRx = new TwoSenderToRx<>(CommittedStateSync::new);
 		bind(CommittedStateSyncRx.class).toInstance(committedStateSyncTwoSenderToRx::rx);
 		bind(CommittedStateSyncSender.class).toInstance(committedStateSyncTwoSenderToRx::send);
 
+		Multibinder<SyncService> syncServiceMultibinder = Multibinder.newSetBinder(binder(), SyncService.class);
 		SenderToRx<LocalSyncRequest, LocalSyncRequest> localSyncRequests = new SenderToRx<>(r -> r);
-		bind(SyncService.class).toInstance(localSyncRequests::send);
+		syncServiceMultibinder.addBinding().toInstance(localSyncRequests::send);
 		bind(LocalSyncRequestsRx.class).toInstance(localSyncRequests::rx);
 
 		ScheduledExecutorService ses = Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads("SyncTimeoutSender"));

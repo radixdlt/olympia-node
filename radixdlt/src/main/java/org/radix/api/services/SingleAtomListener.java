@@ -17,11 +17,11 @@
 
 package org.radix.api.services;
 
+import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.AID;
-import com.radixdlt.api.StoredFailure;
 
 public interface SingleAtomListener {
 	void onStored(boolean first);
-	void onStoredFailure(StoredFailure e);
+	void onStoredFailure(RadixEngineException e);
 	void onError(AID atomId, Throwable e);
 }

@@ -18,6 +18,7 @@
 package com.radixdlt.statecomputer;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -29,7 +30,6 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.statecomputer.RadixEngineStateComputer.RadixEngineExecutorEventSender;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.CommittedAtom;
@@ -43,7 +43,6 @@ public class RadixEngineStateComputerTest {
 	private RadixEngineStateComputer executor;
 	private CommittedAtomsStore committedAtomsStore;
 	private RadixEngine<LedgerAtom> radixEngine;
-	private RadixEngineExecutorEventSender sender;
 	private View epochHighView;
 	private Function<Long, BFTValidatorSet> validatorSetMapping;
 
@@ -51,7 +50,6 @@ public class RadixEngineStateComputerTest {
 	public void setup() {
 		this.radixEngine = mock(RadixEngine.class);
 		this.committedAtomsStore = mock(CommittedAtomsStore.class);
-		this.sender = mock(RadixEngineExecutorEventSender.class);
 		this.epochHighView = View.of(100);
 		// No issues with type checking for mock
 		@SuppressWarnings("unchecked") Function<Long, BFTValidatorSet> vsm = mock(Function.class);
@@ -60,8 +58,7 @@ public class RadixEngineStateComputerTest {
 			radixEngine,
 			validatorSetMapping,
 			epochHighView,
-			committedAtomsStore,
-			sender
+			committedAtomsStore
 		);
 	}
 
@@ -69,7 +66,9 @@ public class RadixEngineStateComputerTest {
 	public void when_compute_vertex_metadata_equal_to_high_view__then_should_return_true() {
 		Vertex vertex = mock(Vertex.class);
 		when(vertex.getView()).thenReturn(epochHighView);
-		assertThat(executor.compute(vertex)).isTrue();
+		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
+		when(validatorSetMapping.apply(any())).thenReturn(validatorSet);
+		assertThat(executor.prepare(vertex)).contains(validatorSet);
 	}
 
 	@Test
@@ -86,7 +85,7 @@ public class RadixEngineStateComputerTest {
 
 		RadixEngineException e = mock(RadixEngineException.class);
 		doThrow(e).when(radixEngine).checkAndStore(eq(committedAtom));
-		executor.execute(committedAtom);
+		executor.commit(committedAtom);
 
 		assertThat(executor.getCommittedAtoms(0, 1)).contains(
 			committedAtom

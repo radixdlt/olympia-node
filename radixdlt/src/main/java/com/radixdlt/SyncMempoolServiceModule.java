@@ -21,8 +21,6 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
-import com.radixdlt.consensus.liveness.MempoolNextCommandGenerator;
-import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.SharedMempool;
@@ -44,14 +42,6 @@ public class SyncMempoolServiceModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		bind(Mempool.class).to(SharedMempool.class).in(Scopes.SINGLETON);
-	}
-
-	@Provides
-	@Singleton
-	NextCommandGenerator nextCommandGenerator(
-		Mempool mempool
-	) {
-		return new MempoolNextCommandGenerator(mempool);
 	}
 
 	@Provides

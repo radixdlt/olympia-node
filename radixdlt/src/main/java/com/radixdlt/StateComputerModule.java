@@ -40,7 +40,6 @@ import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
-import com.radixdlt.statecomputer.RadixEngineStateComputer.RadixEngineExecutorEventSender;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.ClientAtom.LedgerAtomConversionException;
@@ -128,15 +127,13 @@ public class StateComputerModule extends AbstractModule {
 	private RadixEngineStateComputer executor(
 		RadixEngine<LedgerAtom> radixEngine,
 		Function<Long, BFTValidatorSet> validatorSetMapping,
-		CommittedAtomsStore committedAtomsStore,
-		RadixEngineExecutorEventSender engineEventSender
+		CommittedAtomsStore committedAtomsStore
 	) {
 		return new RadixEngineStateComputer(
 			radixEngine,
 			validatorSetMapping,
 			View.of(viewsPerEpoch),
-			committedAtomsStore,
-			engineEventSender
+			committedAtomsStore
 		);
 	}
 
@@ -231,10 +228,21 @@ public class StateComputerModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private CommittedAtom genesisAtom(Universe universe) throws LedgerAtomConversionException {
+	private CommittedAtom genesisAtom(
+		Universe universe,
+		VertexMetadata genesisVertexMetadata
+	) throws LedgerAtomConversionException {
 		final ClientAtom genesisAtom = ClientAtom.convertFromApiAtom(universe.getGenesis().get(0));
-		final VertexMetadata vertexMetadata = VertexMetadata.ofGenesisAncestor();
-		return new CommittedAtom(genesisAtom, vertexMetadata);
+		return new CommittedAtom(genesisAtom, genesisVertexMetadata);
+	}
+
+	@Provides
+	@Singleton
+	private VertexMetadata genesisVertexMetadata(
+		Function<Long, BFTValidatorSet> validatorSetMapping
+	) {
+		BFTValidatorSet validatorSet = validatorSetMapping.apply(1L);
+		return VertexMetadata.ofGenesisAncestor(validatorSet);
 	}
 
 	@Provides

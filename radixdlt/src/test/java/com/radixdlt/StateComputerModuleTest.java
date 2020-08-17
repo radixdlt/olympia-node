@@ -34,7 +34,6 @@ import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
-import com.radixdlt.statecomputer.RadixEngineStateComputer.RadixEngineExecutorEventSender;
 import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.universe.Universe;
@@ -43,20 +42,18 @@ import org.junit.Test;
 public class StateComputerModuleTest {
 	private static class ExternalStateComputerModule extends AbstractModule {
 		@Override
-		@SuppressWarnings("unchecked")
 		protected void configure() {
 			bind(Serialization.class).toInstance(mock(Serialization.class));
 			Universe universe = mock(Universe.class);
 			when(universe.getGenesis()).thenReturn(ImmutableList.of(new Atom()));
 			bind(Universe.class).toInstance(universe);
-			bind(RadixEngineExecutorEventSender.class).toInstance(mock(RadixEngineExecutorEventSender.class));
 			bind(RuntimeProperties.class).toInstance(mock(RuntimeProperties.class));
 			bind(AddressBook.class).toInstance(mock(AddressBook.class));
 			LedgerEntryStore ledgerEntryStore = mock(LedgerEntryStore.class);
 			when(ledgerEntryStore.getNextCommittedLedgerEntries(anyLong(), anyInt()))
 				.thenReturn(ImmutableList.of(mock(LedgerEntry.class)));
 			bind(LedgerEntryStore.class).toInstance(ledgerEntryStore);
-			bind(ECKeyPair.class).annotatedWith(Names.named("self")).toInstance(mock(ECKeyPair.class));
+			bind(ECKeyPair.class).annotatedWith(Names.named("self")).toInstance(ECKeyPair.generateNew());
 		}
 	}
 

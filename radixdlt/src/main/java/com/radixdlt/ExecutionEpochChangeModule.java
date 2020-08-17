@@ -15,19 +15,20 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.api;
+package com.radixdlt;
 
-import com.radixdlt.syncer.SyncExecutor.CommittedCommand;
-import io.reactivex.rxjava3.core.Observable;
+import com.google.inject.AbstractModule;
+import com.google.inject.multibindings.ProvidesIntoSet;
+import com.radixdlt.syncer.EpochChangeManager;
+import com.radixdlt.syncer.EpochChangeSender;
+import com.radixdlt.syncer.SyncExecutor.CommittedSender;
 
 /**
- * Events related to the ledger
+ * Adds epoch change functionality to the ledger
  */
-public interface LedgerRx {
-	/**
-	 * Retrieve a never ending stream of committed State Computer commands
-	 *
-	 * @return hot observable of committed commands and it's result
-	 */
-	Observable<CommittedCommand> committed();
+public class ExecutionEpochChangeModule extends AbstractModule {
+	@ProvidesIntoSet
+	private CommittedSender epochChangeManager(EpochChangeSender sender) {
+		return new EpochChangeManager(sender);
+	}
 }

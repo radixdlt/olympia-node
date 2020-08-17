@@ -18,18 +18,20 @@
 package org.radix.api.services;
 
 import com.google.common.collect.EvictingQueue;
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.api.DeserializationFailure;
 import com.radixdlt.api.LedgerRx;
-import com.radixdlt.api.StoredAtom;
 import com.radixdlt.api.SubmissionErrorsRx;
 import com.radixdlt.api.SubmissionFailure;
 import com.radixdlt.atommodel.Atom;
-import com.radixdlt.api.StoredFailure;
+import com.radixdlt.engine.RadixEngineException;
+import com.radixdlt.identifiers.EUID;
 import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.mempool.SubmissionControl;
 
 import com.radixdlt.middleware2.CommittedAtom;
+import com.radixdlt.syncer.SyncExecutor.CommittedCommand;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import com.radixdlt.middleware2.ClientAtom;
@@ -107,10 +109,21 @@ public class AtomsService {
 		this.ledgerRx = ledgerRx;
 	}
 
-	private void processedStoredEvent(StoredAtom storedAtom) {
-		final CommittedAtom committedAtom = storedAtom.getAtom();
+	private void processExecutedCommand(CommittedCommand executedCommand) {
+		if (executedCommand.getCommand().getClientAtom() == null) {
+			return;
+		}
 
-		this.atomEventObservers.forEach(observer -> observer.tryNext(storedAtom));
+		executedCommand
+			.ifSuccess(result -> this.processStoredEvent(executedCommand.getCommand(), result))
+			.ifError(e -> this.processException(executedCommand.getCommand(), e));
+	}
+
+	private void processStoredEvent(CommittedAtom committedAtom, Object result) {
+		// FIXME: Fix this once the api modules are sorted out
+		ImmutableSet<EUID> indicies = (ImmutableSet<EUID>) result;
+
+		this.atomEventObservers.forEach(observer -> observer.tryNext(committedAtom, indicies));
 
 		List<SingleAtomListener> subscribers = this.deleteOnEventSingleAtomObservers.remove(committedAtom.getAID());
 		if (subscribers != null) {
@@ -134,19 +147,21 @@ public class AtomsService {
 		}
 	}
 
-	private void processException(StoredFailure e) {
-		synchronized (lock) {
-			eventRingBuffer.add(
-				System.currentTimeMillis() + " EXCEPTION " + e.getAtom().getAID() + " " + e.getException().getErrorCode());
+	private void processException(CommittedAtom committedAtom, Exception exception) {
+		RadixEngineException e = (RadixEngineException) exception;
+
+		for (AtomStatusListener singleAtomListener : this.singleAtomObservers.getOrDefault(committedAtom.getAID(), Collections.emptyList())) {
+			singleAtomListener.onStoredFailure(committedAtom, e);
 		}
 
-		List<SingleAtomListener> subscribers = this.deleteOnEventSingleAtomObservers.remove(e.getAtom().getAID());
+		List<SingleAtomListener> subscribers = this.deleteOnEventSingleAtomObservers.remove(committedAtom.getAID());
 		if (subscribers != null) {
 			subscribers.forEach(subscriber -> subscriber.onStoredFailure(e));
 		}
 
-		for (AtomStatusListener singleAtomListener : this.singleAtomObservers.getOrDefault(e.getAtom().getAID(), Collections.emptyList())) {
-			singleAtomListener.onStoredFailure(e);
+		synchronized (lock) {
+			eventRingBuffer.add(
+				System.currentTimeMillis() + " EXCEPTION " + committedAtom.getAID() + " " + e.getErrorCode());
 		}
 	}
 
@@ -184,15 +199,10 @@ public class AtomsService {
 
 
 	public void start() {
-		io.reactivex.rxjava3.disposables.Disposable lastStoredAtomDisposable = ledgerRx.storedAtoms()
+		io.reactivex.rxjava3.disposables.Disposable lastStoredAtomDisposable = ledgerRx.committed()
 			.observeOn(Schedulers.io())
-			.subscribe(this::processedStoredEvent);
+			.subscribe(this::processExecutedCommand);
 		this.disposable.add(lastStoredAtomDisposable);
-
-		io.reactivex.rxjava3.disposables.Disposable exceptionsDisposable = ledgerRx.storedExceptions()
-			.observeOn(Schedulers.io())
-			.subscribe(this::processException);
-		this.disposable.add(exceptionsDisposable);
 
 		io.reactivex.rxjava3.disposables.Disposable submissionFailuresDisposable = submissionErrorsRx.submissionFailures()
 			.observeOn(Schedulers.io())

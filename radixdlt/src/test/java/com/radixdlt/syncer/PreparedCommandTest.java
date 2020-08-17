@@ -15,32 +15,29 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.api;
+package com.radixdlt.syncer;
 
-import static org.junit.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
-import com.google.common.collect.ImmutableSet;
-import com.radixdlt.identifiers.EUID;
-import com.radixdlt.middleware2.CommittedAtom;
+import com.radixdlt.crypto.Hash;
 import org.junit.Before;
 import org.junit.Test;
 
-public class StoredAtomTest {
-	private CommittedAtom committedAtom;
-	private ImmutableSet<EUID> destinations;
-	private StoredAtom storedAtom;
+public class PreparedCommandTest {
+	private PreparedCommand preparedCommand;
+	private Hash timestampedSignatureHash;
 
 	@Before
-	public void setUp() {
-		this.committedAtom = mock(CommittedAtom.class);
-		this.destinations = ImmutableSet.of(mock(EUID.class));
-		this.storedAtom = new StoredAtom(committedAtom, destinations);
+	public void setup() {
+		this.timestampedSignatureHash = mock(Hash.class);
+		this.preparedCommand = PreparedCommand.create(12345, timestampedSignatureHash);
 	}
 
 	@Test
 	public void testGetters() {
-		assertEquals(this.committedAtom, this.storedAtom.getAtom());
-		assertEquals(this.destinations, this.storedAtom.getDestinations());
+		assertThat(preparedCommand.getStateVersion()).isEqualTo(12345);
+		assertThat(preparedCommand.getTimestampedSignaturesHash()).isEqualTo(timestampedSignatureHash);
+		assertThat(preparedCommand.getNextValidatorSet()).isEmpty();
 	}
 }

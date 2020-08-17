@@ -15,19 +15,23 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.api;
+package com.radixdlt;
 
-import com.radixdlt.syncer.SyncExecutor.CommittedCommand;
-import io.reactivex.rxjava3.core.Observable;
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.google.inject.Singleton;
+import com.radixdlt.mempool.LocalMempool;
 
-/**
- * Events related to the ledger
- */
-public interface LedgerRx {
-	/**
-	 * Retrieve a never ending stream of committed State Computer commands
-	 *
-	 * @return hot observable of committed commands and it's result
-	 */
-	Observable<CommittedCommand> committed();
+public class ExecutionLocalMempoolModule extends AbstractModule {
+	private final int maxSize;
+
+	public ExecutionLocalMempoolModule(int maxSize) {
+		this.maxSize = maxSize;
+	}
+
+	@Provides
+	@Singleton
+	LocalMempool localMempool() {
+		return new LocalMempool(maxSize);
+	}
 }

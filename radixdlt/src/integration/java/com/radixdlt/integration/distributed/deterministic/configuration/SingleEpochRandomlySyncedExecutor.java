@@ -22,6 +22,8 @@ import com.radixdlt.consensus.SyncedExecutor;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.crypto.Hash;
+import com.radixdlt.syncer.PreparedCommand;
 import com.radixdlt.syncer.SyncExecutor.CommittedStateSyncSender;
 import com.radixdlt.middleware2.CommittedAtom;
 import java.util.Objects;
@@ -47,12 +49,12 @@ public class SingleEpochRandomlySyncedExecutor implements SyncedExecutor<Committ
 	}
 
 	@Override
-	public boolean compute(Vertex vertex) {
-		return false;
+	public PreparedCommand prepare(Vertex vertex) {
+		return PreparedCommand.create(0, Hash.ZERO_HASH);
 	}
 
 	@Override
-	public void execute(CommittedAtom instruction) {
+	public void commit(CommittedAtom instruction) {
 		// No-op Mocked execution
 	}
 }

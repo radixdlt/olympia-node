@@ -35,8 +35,8 @@ public class ConsensusEventMessageSerializeTest extends SerializeMessageObject<C
 	}
 
 	private static ConsensusEventMessage get() {
-		VertexMetadata vertexMetadata = new VertexMetadata(0, View.of(1), Hash.ZERO_HASH, 1, false, Hash.ZERO_HASH);
-		VertexMetadata parent = new VertexMetadata(0, View.of(0), Hash.ZERO_HASH, 0, true, Hash.ZERO_HASH);
+		VertexMetadata vertexMetadata = new VertexMetadata(0, View.of(1), Hash.ZERO_HASH, 1, null, Hash.ZERO_HASH);
+		VertexMetadata parent = new VertexMetadata(0, View.of(0), Hash.ZERO_HASH, 0, null, Hash.ZERO_HASH);
 		VoteData voteData = new VoteData(vertexMetadata, parent, null);
 		QuorumCertificate quorumCertificate = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 		BFTNode author = BFTNode.create(ECKeyPair.generateNew().getPublicKey());

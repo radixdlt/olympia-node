@@ -29,13 +29,16 @@ import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.epoch.EpochChange;
+import com.radixdlt.consensus.liveness.NextCommandGenerator;
+import com.radixdlt.crypto.Hash;
 import com.radixdlt.middleware2.CommittedAtom;
+import com.radixdlt.syncer.PreparedCommand;
 import io.reactivex.rxjava3.core.Observable;
 
-public class MockedSyncExecutionModule extends AbstractModule {
+public class MockedExecutionModule extends AbstractModule {
 	private final BFTValidatorSet validatorSet;
 
-	public MockedSyncExecutionModule(BFTValidatorSet validatorSet) {
+	public MockedExecutionModule(BFTValidatorSet validatorSet) {
 		this.validatorSet = validatorSet;
 	}
 
@@ -43,8 +46,9 @@ public class MockedSyncExecutionModule extends AbstractModule {
 	public void configure() {
 		bind(CommittedStateSyncRx.class).toInstance(Observable::never);
 		bind(EpochChangeRx.class).toInstance(Observable::never);
-		EpochChange initialEpoch = new EpochChange(VertexMetadata.ofGenesisAncestor(), validatorSet);
+		EpochChange initialEpoch = new EpochChange(VertexMetadata.ofGenesisAncestor(validatorSet), validatorSet);
 		bind(EpochChange.class).toInstance(initialEpoch);
+		bind(NextCommandGenerator.class).toInstance((view, aids) -> null);
 	}
 
 	@Provides
@@ -57,12 +61,12 @@ public class MockedSyncExecutionModule extends AbstractModule {
 			}
 
 			@Override
-			public boolean compute(Vertex vertex) {
-				return false;
+			public PreparedCommand prepare(Vertex vertex) {
+				return PreparedCommand.create(0, Hash.ZERO_HASH);
 			}
 
 			@Override
-			public void execute(CommittedAtom instruction) {
+			public void commit(CommittedAtom instruction) {
 			}
 		};
 	}

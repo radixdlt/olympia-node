@@ -15,7 +15,7 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed.simulation.tests.consensus_executor;
+package com.radixdlt.integration.distributed.simulation.tests.consensus_executor_epochs;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
@@ -26,6 +26,7 @@ import com.radixdlt.integration.distributed.simulation.SimulationTest;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 import org.junit.Test;
 
 public class StaticValidatorsTest {
@@ -40,7 +41,7 @@ public class StaticValidatorsTest {
 	public void given_correct_bft_with_changing_epochs_every_view__then_should_pass_bft_and_epoch_invariants() {
 		SimulationTest bftTest = bftTestBuilder
 			.pacemakerTimeout(1000)
-			.epochHighView(View.of(1))
+			.executorAndEpochs(View.of(1), e -> IntStream.range(0, 4))
 			.checkEpochHighView("epochHighView", View.of(1))
 			.build();
 		Map<String, Optional<TestInvariantError>> results = bftTest.run(1, TimeUnit.MINUTES);
@@ -50,7 +51,7 @@ public class StaticValidatorsTest {
 	@Test
 	public void given_correct_bft_with_changing_epochs_per_100_views__then_should_fail_incorrect_epoch_invariant() {
 		SimulationTest bftTest = bftTestBuilder
-			.epochHighView(View.of(100))
+			.executorAndEpochs(View.of(100), e -> IntStream.range(0, 4))
 			.checkEpochHighView("epochHighView", View.of(99))
 			.build();
 		Map<String, Optional<TestInvariantError>> results = bftTest.run(1, TimeUnit.MINUTES);
@@ -60,7 +61,7 @@ public class StaticValidatorsTest {
 	@Test
 	public void given_correct_bft_with_changing_epochs_per_100_views__then_should_pass_bft_and_epoch_invariants() {
 		SimulationTest bftTest = bftTestBuilder
-			.epochHighView(View.of(100))
+			.executorAndEpochs(View.of(100), e -> IntStream.range(0, 4))
 			.checkEpochHighView("epochHighView", View.of(100))
 			.build();
 		Map<String, Optional<TestInvariantError>> results = bftTest.run(1, TimeUnit.MINUTES);

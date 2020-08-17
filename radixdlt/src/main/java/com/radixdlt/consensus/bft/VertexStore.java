@@ -29,6 +29,7 @@ import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hash;
 
 import com.radixdlt.middleware2.CommittedAtom;
+import com.radixdlt.syncer.PreparedCommand;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -472,28 +473,21 @@ public final class VertexStore implements VertexStoreEventProcessor {
 			counters.increment(CounterType.BFT_INDIRECT_PARENT);
 		}
 
-		final Vertex vertexToUse;
-		if (vertex.getParentMetadata().isEndOfEpoch()) {
-			// TODO: Check if current proposal is actually an empty client atom
-			vertexToUse = new Vertex(vertex.getEpoch(), vertex.getQC(), vertex.getView(), null);
-		} else {
-			vertexToUse = vertex;
-		}
-		boolean isEndOfEpoch = syncedExecutor.compute(vertexToUse);
+		PreparedCommand preparedCommand = syncedExecutor.prepare(vertex);
 
 		// TODO: Don't check for state computer errors for now so that we don't
 		// TODO: have to deal with failing leader proposals
 		// TODO: Reinstate this when ProposalGenerator + Mempool can guarantee correct proposals
 		// TODO: (also see commitVertex->storeAtom)
 
-		vertices.put(vertexToUse.getId(), vertexToUse);
+		vertices.put(vertex.getId(), vertex);
 		updateVertexStoreSize();
 
-		if (syncing.containsKey(vertexToUse.getId())) {
-			this.syncedVertexSender.sendSyncedVertex(vertexToUse);
+		if (syncing.containsKey(vertex.getId())) {
+			this.syncedVertexSender.sendSyncedVertex(vertex);
 		}
 
-		return VertexMetadata.ofVertex(vertexToUse, isEndOfEpoch);
+		return VertexMetadata.ofVertex(vertex, preparedCommand);
 	}
 
 	public VertexMetadata insertVertex(Vertex vertex) throws VertexInsertionException {
@@ -528,7 +522,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		for (Vertex committed : path) {
 			CommittedAtom committedAtom = new CommittedAtom(committed.getAtom(), commitMetadata);
 			this.counters.increment(CounterType.BFT_PROCESSED);
-			syncedExecutor.execute(committedAtom);
+			syncedExecutor.commit(committedAtom);
 
 			this.vertexStoreEventSender.sendCommittedVertex(committed);
 		}

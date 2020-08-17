@@ -31,7 +31,7 @@ import io.reactivex.rxjava3.core.Observable;
 /**
  * Module which routes system info related messages
  */
-public final class SystemInfoMessagesModule extends AbstractModule {
+public final class SystemInfoRxModule extends AbstractModule {
 
 	@Override
 	protected void configure() {
