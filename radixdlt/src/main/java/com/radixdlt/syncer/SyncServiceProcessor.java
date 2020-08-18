@@ -42,6 +42,7 @@ import org.apache.logging.log4j.Logger;
 @NotThreadSafe
 public final class SyncServiceProcessor {
 	public interface SyncedAtomSender {
+		// TODO: Sync commands rather than atoms
 		void sendSyncedAtom(CommittedAtom committedAtom);
 	}
 

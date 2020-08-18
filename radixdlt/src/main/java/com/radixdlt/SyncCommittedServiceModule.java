@@ -85,8 +85,13 @@ public class SyncCommittedServiceModule extends AbstractModule {
 	private SyncedAtomSender syncedAtomSender(SyncExecutor syncExecutor) {
 		return syncAtom -> {
 			try {
-				byte[] payload = DefaultSerialization.getInstance().toDson(syncAtom.getClientAtom(), Output.ALL);
-				Command command = new Command(payload);
+				final Command command;
+				if (syncAtom.getClientAtom() == null) {
+					command = null;
+				} else {
+					byte[] payload = DefaultSerialization.getInstance().toDson(syncAtom.getClientAtom(), Output.ALL);
+					command = new Command(payload);
+				}
 				syncExecutor.commit(command, syncAtom.getVertexMetadata());
 			} catch (SerializationException e) {
 			}
