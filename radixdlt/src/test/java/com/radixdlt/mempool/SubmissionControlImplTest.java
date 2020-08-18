@@ -65,6 +65,18 @@ public class SubmissionControlImplTest {
 	}
 
 	@Test
+	public void when_command_deserialization_succeeds__then_command_submitted() throws Exception {
+		Command command = new Command(new byte[] {});
+		ClientAtom clientAtom = mock(ClientAtom.class);
+		when(serialization.fromDson(any(), eq(ClientAtom.class))).thenReturn(clientAtom);
+		when(serialization.toDson(eq(clientAtom), any())).thenReturn(new byte[] {});
+		doNothing().when(mempool).add(any());
+		doNothing().when(radixEngine).staticCheck(any());
+		submissionControl.submitCommand(command);
+		verify(radixEngine, times(1)).staticCheck(eq(clientAtom));
+	}
+
+	@Test
 	public void when_command_deserialization_fails__then_throw_exception() throws Exception {
 		Command command = new Command(new byte[] {});
 		when(serialization.fromDson(any(), eq(ClientAtom.class))).thenThrow(new SerializationException(""));
