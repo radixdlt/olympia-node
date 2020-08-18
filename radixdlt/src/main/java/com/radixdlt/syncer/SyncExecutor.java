@@ -52,7 +52,7 @@ public final class SyncExecutor implements SyncedExecutor, NextCommandGenerator 
 
 	// TODO: Refactor committed command when commit logic is re-written
 	// TODO: as currently it's mostly loosely coupled logic
-	public interface CommittedCommand {
+	public interface CommittedCommandWithResult {
 		Command getCommand();
 		VertexMetadata getVertexMetadata();
 
@@ -62,18 +62,18 @@ public final class SyncExecutor implements SyncedExecutor, NextCommandGenerator 
 
 		<T> MaybeSuccessMapped<T> map(Function<Object, T> successMapper);
 
-		CommittedCommand ifSuccess(Consumer<Object> successConsumer);
-		CommittedCommand ifError(Consumer<Exception> errorConsumer);
+		CommittedCommandWithResult ifSuccess(Consumer<Object> successConsumer);
+		CommittedCommandWithResult ifError(Consumer<Exception> errorConsumer);
 	}
 
 	public interface StateComputer {
 		Optional<BFTValidatorSet> prepare(Vertex vertex);
-		CommittedCommand commit(Command command, VertexMetadata vertexMetadata);
+		CommittedCommandWithResult commit(Command command, VertexMetadata vertexMetadata);
 	}
 
 	public interface CommittedSender {
 		// TODO: batch these
-		void sendCommitted(CommittedCommand committedCommand);
+		void sendCommitted(CommittedCommandWithResult committedCommandWithResult);
 	}
 
 	public interface CommittedStateSyncSender {
@@ -174,7 +174,7 @@ public final class SyncExecutor implements SyncedExecutor, NextCommandGenerator 
 			this.counters.set(CounterType.LEDGER_STATE_VERSION, this.currentStateVersion);
 
 			// persist
-			CommittedCommand result = this.stateComputer.commit(command, vertexMetadata);
+			CommittedCommandWithResult result = this.stateComputer.commit(command, vertexMetadata);
 			// TODO: move all of the following to post-persist event handling
 			if (command != null) {
 				this.mempool.removeCommitted(command.getHash());

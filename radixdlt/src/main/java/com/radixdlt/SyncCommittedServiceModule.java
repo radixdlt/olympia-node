@@ -20,9 +20,6 @@ package com.radixdlt;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.radixdlt.consensus.Command;
-import com.radixdlt.serialization.DsonOutput.Output;
-import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.middleware2.network.MessageCentralLedgerSync;
 import com.radixdlt.network.addressbook.AddressBook;
@@ -30,7 +27,7 @@ import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.syncer.StateSyncNetwork;
 import com.radixdlt.syncer.SyncServiceProcessor;
 import com.radixdlt.syncer.SyncServiceProcessor.SyncTimeoutScheduler;
-import com.radixdlt.syncer.SyncServiceProcessor.SyncedAtomSender;
+import com.radixdlt.syncer.SyncServiceProcessor.SyncedCommandSender;
 import com.radixdlt.syncer.SyncServiceRunner;
 import com.radixdlt.syncer.SyncServiceRunner.LocalSyncRequestsRx;
 import com.radixdlt.syncer.SyncServiceRunner.SyncTimeoutsRx;
@@ -49,14 +46,13 @@ public class SyncCommittedServiceModule extends AbstractModule {
 		RadixEngineStateComputer executor,
 		StateSyncNetwork stateSyncNetwork,
 		AddressBook addressBook,
-		SyncedAtomSender syncedAtomSender,
+		SyncedCommandSender syncedCommandSender,
 		SyncTimeoutScheduler syncTimeoutScheduler
 	) {
 		return new SyncServiceProcessor(
 			executor,
 			stateSyncNetwork,
-			addressBook,
-			syncedAtomSender,
+			addressBook, syncedCommandSender,
 			syncTimeoutScheduler,
 			0,
 			BATCH_SIZE,
@@ -82,22 +78,9 @@ public class SyncCommittedServiceModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private SyncedAtomSender syncedAtomSender(SyncExecutor syncExecutor) {
-		return syncAtom -> {
-			try {
-				final Command command;
-				if (syncAtom.getClientAtom() == null) {
-					command = null;
-				} else {
-					byte[] payload = DefaultSerialization.getInstance().toDson(syncAtom.getClientAtom(), Output.ALL);
-					command = new Command(payload);
-				}
-				syncExecutor.commit(command, syncAtom.getVertexMetadata());
-			} catch (SerializationException e) {
-			}
-		};
+	private SyncedCommandSender syncedAtomSender(SyncExecutor syncExecutor) {
+		return syncCmd -> syncExecutor.commit(syncCmd.getCommand(), syncCmd.getVertexMetadata());
 	}
-
 
 	@Provides
 	@Singleton

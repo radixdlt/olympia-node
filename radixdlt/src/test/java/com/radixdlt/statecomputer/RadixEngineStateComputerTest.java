@@ -83,9 +83,9 @@ public class RadixEngineStateComputerTest {
 		doThrow(e).when(radixEngine).checkAndStore(any());
 		stateComputer.commit(null, vertexMetadata);
 
-		assertThat(stateComputer.getCommittedAtoms(0, 1))
+		assertThat(stateComputer.getCommittedCommands(0, 1))
 			.hasOnlyOneElementSatisfying(c -> {
-				assertThat(c.getClientAtom()).isNull();
+				assertThat(c.getCommand()).isNull();
 				assertThat(c.getVertexMetadata()).isEqualTo(vertexMetadata);
 			});
 	}

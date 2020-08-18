@@ -26,7 +26,7 @@ import static org.mockito.Mockito.when;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.syncer.SyncExecutor.CommittedCommand;
+import com.radixdlt.syncer.SyncExecutor.CommittedCommandWithResult;
 import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
@@ -51,11 +51,11 @@ public class EpochChangeManagerTest {
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		when(vertexMetadata.getValidatorSet()).thenReturn(Optional.of(validatorSet));
 
-		CommittedCommand committedCommand = mock(CommittedCommand.class);
-		when(committedCommand.getCommand()).thenReturn(mock(Command.class));
-		when(committedCommand.getVertexMetadata()).thenReturn(vertexMetadata);
+		CommittedCommandWithResult committedCommandWithResult = mock(CommittedCommandWithResult.class);
+		when(committedCommandWithResult.getCommand()).thenReturn(mock(Command.class));
+		when(committedCommandWithResult.getVertexMetadata()).thenReturn(vertexMetadata);
 
-		epochChangeManager.sendCommitted(committedCommand);
+		epochChangeManager.sendCommitted(committedCommandWithResult);
 
 		verify(sender, times(1))
 			.epochChange(

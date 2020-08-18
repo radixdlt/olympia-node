@@ -35,7 +35,7 @@ import com.radixdlt.identifiers.EUID;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.syncer.SyncServiceProcessor.SyncTimeoutScheduler;
-import com.radixdlt.syncer.SyncServiceProcessor.SyncedAtomSender;
+import com.radixdlt.syncer.SyncServiceProcessor.SyncedCommandSender;
 import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
@@ -46,15 +46,15 @@ public class SyncServiceProcessorTest {
 	private SyncServiceProcessor syncServiceProcessor;
 	private AddressBook addressBook;
 	private RadixEngineStateComputer executor;
-	private SyncedAtomSender syncedAtomSender;
+	private SyncedCommandSender syncedCommandSender;
 	private SyncTimeoutScheduler syncTimeoutScheduler;
 
-	private static CommittedAtom buildWithVersion(long version) {
-		CommittedAtom committedAtom = mock(CommittedAtom.class);
+	private static CommittedCommand buildWithVersion(long version) {
+		CommittedCommand committedCommand = mock(CommittedCommand.class);
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
 		when(vertexMetadata.getStateVersion()).thenReturn(version);
-		when(committedAtom.getVertexMetadata()).thenReturn(vertexMetadata);
-		return committedAtom;
+		when(committedCommand.getVertexMetadata()).thenReturn(vertexMetadata);
+		return committedCommand;
 	}
 
 	@Before
@@ -63,13 +63,12 @@ public class SyncServiceProcessorTest {
 		this.stateSyncNetwork = mock(StateSyncNetwork.class);
 		this.addressBook = mock(AddressBook.class);
 		this.executor = mock(RadixEngineStateComputer.class);
-		this.syncedAtomSender = mock(SyncedAtomSender.class);
+		this.syncedCommandSender = mock(SyncedCommandSender.class);
 		this.syncTimeoutScheduler = mock(SyncTimeoutScheduler.class);
 		this.syncServiceProcessor = new SyncServiceProcessor(
 			executor,
 			stateSyncNetwork,
-			addressBook,
-			syncedAtomSender,
+			addressBook, syncedCommandSender,
 			syncTimeoutScheduler,
 			currentVersion,
 			2,
@@ -94,18 +93,18 @@ public class SyncServiceProcessorTest {
 		LocalSyncRequest request = new LocalSyncRequest(target, currentVersion, ImmutableList.of(node));
 		syncServiceProcessor.processLocalSyncRequest(request);
 
-		ImmutableList.Builder<CommittedAtom> newAtoms1 = ImmutableList.builder();
+		ImmutableList.Builder<CommittedCommand> newCommands1 = ImmutableList.builder();
 		for (int i = 7; i <= 12; i++) {
-			newAtoms1.add(buildWithVersion(i));
+			newCommands1.add(buildWithVersion(i));
 		}
-		syncServiceProcessor.processSyncResponse(newAtoms1.build());
-		ImmutableList.Builder<CommittedAtom> newAtoms2 = ImmutableList.builder();
+		syncServiceProcessor.processSyncResponse(newCommands1.build());
+		ImmutableList.Builder<CommittedCommand> newAtoms2 = ImmutableList.builder();
 		for (int i = 10; i <= 18; i++) {
 			newAtoms2.add(buildWithVersion(i));
 		}
 		syncServiceProcessor.processSyncResponse(newAtoms2.build());
 
-		verify(syncedAtomSender, times((int) (18 - currentVersion))).sendSyncedAtom(any());
+		verify(syncedCommandSender, times((int) (18 - currentVersion))).sendSyncedCommand(any());
 	}
 
 	@Test
@@ -123,14 +122,14 @@ public class SyncServiceProcessorTest {
 		when(target.getStateVersion()).thenReturn(targetVersion);
 		LocalSyncRequest request = new LocalSyncRequest(target, currentVersion, ImmutableList.of(node));
 		syncServiceProcessor.processLocalSyncRequest(request);
-		ImmutableList.Builder<CommittedAtom> newAtoms1 = ImmutableList.builder();
+		ImmutableList.Builder<CommittedCommand> newCommands1 = ImmutableList.builder();
 		for (int i = 7; i <= 11; i++) {
-			newAtoms1.add(buildWithVersion(i));
+			newCommands1.add(buildWithVersion(i));
 		}
-		newAtoms1.add(buildWithVersion(13));
-		newAtoms1.add(buildWithVersion(15));
-		syncServiceProcessor.processSyncResponse(newAtoms1.build());
-		verify(syncedAtomSender, never()).sendSyncedAtom(argThat(a -> a.getVertexMetadata().getStateVersion() > 11));
+		newCommands1.add(buildWithVersion(13));
+		newCommands1.add(buildWithVersion(15));
+		syncServiceProcessor.processSyncResponse(newCommands1.build());
+		verify(syncedCommandSender, never()).sendSyncedCommand(argThat(a -> a.getVertexMetadata().getStateVersion() > 11));
 	}
 
 	@Test
@@ -155,12 +154,12 @@ public class SyncServiceProcessorTest {
 
 	@Test
 	public void atomsListPruning() {
-		ImmutableList.Builder<CommittedAtom> newAtoms = ImmutableList.builder();
+		ImmutableList.Builder<CommittedCommand> newCommands = ImmutableList.builder();
 		for (int i = 1000; i >= 1; i--) {
-			newAtoms.add(buildWithVersion(i));
+			newCommands.add(buildWithVersion(i));
 		}
-		syncServiceProcessor.processSyncResponse(newAtoms.build());
+		syncServiceProcessor.processSyncResponse(newCommands.build());
 
-		verify(syncedAtomSender, times(1)).sendSyncedAtom(argThat(a -> a.getVertexMetadata().getStateVersion() == 1));
+		verify(syncedCommandSender, times(1)).sendSyncedCommand(argThat(a -> a.getVertexMetadata().getStateVersion() == 1));
 	}
 }

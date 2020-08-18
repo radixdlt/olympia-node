@@ -25,7 +25,7 @@ import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.R
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
-import com.radixdlt.syncer.SyncExecutor.CommittedCommand;
+import com.radixdlt.syncer.SyncExecutor.CommittedCommandWithResult;
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.List;
@@ -42,7 +42,7 @@ public class MempoolSubmitAndCommitInvariant implements TestInvariant {
 
 	private long commandId = 0;
 
-	private Maybe<TestInvariantError> submitAndCheckForCommit(Mempool mempool, Set<Observable<CommittedCommand>> allLedgers) {
+	private Maybe<TestInvariantError> submitAndCheckForCommit(Mempool mempool, Set<Observable<CommittedCommandWithResult>> allLedgers) {
 		Command command = new Command(Longs.toByteArray(commandId++));
 		List<Maybe<TestInvariantError>> errors = allLedgers.stream()
 			.map(cmds -> cmds
@@ -73,7 +73,7 @@ public class MempoolSubmitAndCommitInvariant implements TestInvariant {
 			.scan(0, (a, b) -> a + 1)
 			.map(i -> network.getNodes().get(i % network.getNodes().size()))
 			.flatMapMaybe(node -> {
-				Set<Observable<CommittedCommand>> allLedgers
+				Set<Observable<CommittedCommandWithResult>> allLedgers
 					= network.getNodes().stream().map(network::getLedger).map(LedgerRx::committed).collect(Collectors.toSet());
 				return submitAndCheckForCommit(network.getMempool(node), allLedgers);
 			});

@@ -17,6 +17,7 @@
 
 package org.radix.api.http;
 
+import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
 import com.radixdlt.systeminfo.InMemorySystemInfoManager;
 import com.radixdlt.api.LedgerRx;
 import com.radixdlt.api.SubmissionErrorsRx;
@@ -24,7 +25,7 @@ import com.radixdlt.consensus.ConsensusRunner;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.mempool.SubmissionControl;
-import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
+import com.radixdlt.statecomputer.CommandToBinaryConverter;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.DsonOutput;
@@ -94,7 +95,8 @@ public final class RadixHttpServer {
 		ConsensusRunner consensusRunner,
 		LedgerEntryStore store,
 		SubmissionControl submissionControl,
-		AtomToBinaryConverter atomToBinaryConverter,
+		CommandToBinaryConverter commandToBinaryConverter,
+		ClientAtomToBinaryConverter clientAtomToBinaryConverter,
 		Universe universe,
 		Serialization serialization,
 		RuntimeProperties properties,
@@ -112,7 +114,8 @@ public final class RadixHttpServer {
 			ledgerRx,
 			store,
 			submissionControl,
-			atomToBinaryConverter
+			commandToBinaryConverter,
+			clientAtomToBinaryConverter
 		);
 		this.jsonRpcServer = new RadixJsonRpcServer(
 			consensusRunner,

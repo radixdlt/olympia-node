@@ -30,9 +30,11 @@ import com.radixdlt.identifiers.EUID;
 import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.mempool.SubmissionControl;
 
+import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
 import com.radixdlt.serialization.SerializationException;
-import com.radixdlt.syncer.CommittedAtom;
-import com.radixdlt.syncer.SyncExecutor.CommittedCommand;
+import com.radixdlt.statecomputer.CommittedAtom;
+import com.radixdlt.syncer.CommittedCommand;
+import com.radixdlt.syncer.SyncExecutor.CommittedCommandWithResult;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import com.radixdlt.middleware2.ClientAtom;
@@ -48,7 +50,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
+import com.radixdlt.statecomputer.CommandToBinaryConverter;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.store.LedgerEntry;
@@ -88,7 +90,8 @@ public class AtomsService {
 	private final Object lock = new Object();
 	private final EvictingQueue<String> eventRingBuffer = EvictingQueue.create(64);
 	private final SubmissionControl submissionControl;
-	private final AtomToBinaryConverter atomToBinaryConverter;
+	private final CommandToBinaryConverter commandToBinaryConverter;
+	private final ClientAtomToBinaryConverter clientAtomToBinaryConverter;
 	private final LedgerEntryStore store;
 	private final CompositeDisposable disposable;
 
@@ -100,30 +103,32 @@ public class AtomsService {
 		LedgerRx ledgerRx,
 		LedgerEntryStore store,
 		SubmissionControl submissionControl,
-		AtomToBinaryConverter atomToBinaryConverter
+		CommandToBinaryConverter commandToBinaryConverter,
+		ClientAtomToBinaryConverter clientAtomToBinaryConverter
 	) {
 		this.submissionErrorsRx = Objects.requireNonNull(submissionErrorsRx);
 		this.submissionControl = Objects.requireNonNull(submissionControl);
 		this.store = Objects.requireNonNull(store);
-		this.atomToBinaryConverter = Objects.requireNonNull(atomToBinaryConverter);
+		this.commandToBinaryConverter = Objects.requireNonNull(commandToBinaryConverter);
+		this.clientAtomToBinaryConverter = Objects.requireNonNull(clientAtomToBinaryConverter);
 		this.disposable = new CompositeDisposable();
 		this.ledgerRx = ledgerRx;
 	}
 
-	private void processExecutedCommand(CommittedCommand committedCommand) {
-		if (committedCommand.getCommand() == null) {
+	private void processExecutedCommand(CommittedCommandWithResult committedCommandWithResult) {
+		if (committedCommandWithResult.getCommand() == null) {
 			return;
 		}
-		byte[] payload = committedCommand.getCommand().getPayload();
+		byte[] payload = committedCommandWithResult.getCommand().getPayload();
 		ClientAtom clientAtom;
 		try {
 			clientAtom = DefaultSerialization.getInstance().fromDson(payload, ClientAtom.class);
 		} catch (SerializationException e) {
 			return;
 		}
-		CommittedAtom committedAtom = new CommittedAtom(clientAtom, committedCommand.getVertexMetadata());
+		CommittedAtom committedAtom = new CommittedAtom(clientAtom, committedCommandWithResult.getVertexMetadata());
 
-		committedCommand
+		committedCommandWithResult
 			.ifSuccess(result -> this.processStoredEvent(committedAtom, result))
 			.ifError(e -> this.processException(committedAtom, e));
 	}
@@ -285,7 +290,7 @@ public class AtomsService {
 
 	public Observable<ObservedAtomEvents> getAtomEvents(AtomQuery atomQuery) {
 		return observer -> {
-			final AtomEventObserver atomEventObserver = new AtomEventObserver(atomQuery, observer, executorService, store, atomToBinaryConverter);
+			final AtomEventObserver atomEventObserver = new AtomEventObserver(atomQuery, observer, executorService, store, commandToBinaryConverter, clientAtomToBinaryConverter);
 			atomEventObserver.start();
 			this.atomEventObservers.add(atomEventObserver);
 
@@ -304,8 +309,9 @@ public class AtomsService {
 		Optional<LedgerEntry> ledgerEntryOptional = store.get(atomId);
 		if (ledgerEntryOptional.isPresent()) {
 			LedgerEntry ledgerEntry = ledgerEntryOptional.get();
-			ClientAtom atom = atomToBinaryConverter.toAtom(ledgerEntry.getContent()).getClientAtom();
-			Atom apiAtom = ClientAtom.convertToApiAtom(atom);
+			CommittedCommand committedCommand = commandToBinaryConverter.toCommand(ledgerEntry.getContent());
+			ClientAtom clientAtom = committedCommand.getCommand().map(clientAtomToBinaryConverter::toAtom);
+			Atom apiAtom = ClientAtom.convertToApiAtom(clientAtom);
 			return serialization.toJsonObject(apiAtom, DsonOutput.Output.API);
 		}
 		throw new RuntimeException("Atom not found");

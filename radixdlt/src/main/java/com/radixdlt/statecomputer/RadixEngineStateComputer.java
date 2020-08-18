@@ -31,12 +31,12 @@ import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.serialization.SerializationException;
-import com.radixdlt.syncer.CommittedAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
+import com.radixdlt.syncer.CommittedCommand;
 import com.radixdlt.syncer.CommittedCommands;
 import com.radixdlt.syncer.SyncExecutor.StateComputer;
-import com.radixdlt.syncer.SyncExecutor.CommittedCommand;
+import com.radixdlt.syncer.SyncExecutor.CommittedCommandWithResult;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedList;
@@ -55,7 +55,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 	private final View epochChangeView;
 
 	private final Object lock = new Object();
-	private final LinkedList<CommittedAtom> unstoredCommittedAtoms = new LinkedList<>();
+	private final LinkedList<CommittedCommand> unstoredCommittedAtoms = new LinkedList<>();
 
 	public RadixEngineStateComputer(
 		RadixEngine<LedgerAtom> radixEngine,
@@ -74,15 +74,15 @@ public final class RadixEngineStateComputer implements StateComputer {
 	}
 
 	// TODO Move this to a different class class when unstored committed atoms is fixed
-	public List<CommittedAtom> getCommittedAtoms(long stateVersion, int batchSize) {
+	public List<CommittedCommand> getCommittedCommands(long stateVersion, int batchSize) {
 		// TODO: This may still return an empty list as we still count state versions for atoms which
 		// TODO: never make it into the radix engine due to state errors. This is because we only check
 		// TODO: validity on commit rather than on proposal/prepare.
 		// TODO: remove 100 hardcode limit
-		List<CommittedAtom> storedCommittedAtoms = committedAtomsStore.getCommittedAtoms(stateVersion, batchSize);
+		List<CommittedCommand> storedCommittedAtoms = committedAtomsStore.getCommittedCommands(stateVersion, batchSize);
 
 		// TODO: Remove
-		final List<CommittedAtom> copy;
+		final List<CommittedCommand> copy;
 		synchronized (lock) {
 			copy = new ArrayList<>(unstoredCommittedAtoms);
 		}
@@ -96,14 +96,14 @@ public final class RadixEngineStateComputer implements StateComputer {
 	}
 
 	@Override
-	public CommittedCommand commit(Command command, VertexMetadata vertexMetadata) {
+	public CommittedCommandWithResult commit(Command command, VertexMetadata vertexMetadata) {
 		if (command != null) {
 			final ClientAtom clientAtom;
 			try {
 				clientAtom = DefaultSerialization.getInstance().fromDson(command.getPayload(), ClientAtom.class);
 			} catch (SerializationException e) {
-				// TODO: Fix this
-				throw new IllegalStateException("Dead.");
+				this.unstoredCommittedAtoms.add(new CommittedCommand(null, vertexMetadata));
+				return CommittedCommands.error(command, vertexMetadata, e);
 			}
 
 			CommittedAtom committedAtom = new CommittedAtom(clientAtom, vertexMetadata);
@@ -121,7 +121,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 				// TODO: Reinstate this when ProposalGenerator + Mempool can guarantee correct proposals
 
 				// TODO: move VIRTUAL_STATE_CONFLICT to static check
-				this.unstoredCommittedAtoms.add(committedAtom);
+				this.unstoredCommittedAtoms.add(new CommittedCommand(command, vertexMetadata));
 
 				return CommittedCommands.error(command, vertexMetadata, e);
 			}
@@ -129,7 +129,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		} else if (vertexMetadata.isEndOfEpoch()) {
 			// TODO: HACK
 			// TODO: Remove and move epoch change logic into RadixEngine
-			this.unstoredCommittedAtoms.add(new CommittedAtom(null, vertexMetadata));
+			this.unstoredCommittedAtoms.add(new CommittedCommand(null, vertexMetadata));
 
 			return CommittedCommands.success(null, vertexMetadata, ImmutableSet.of());
 		} else {

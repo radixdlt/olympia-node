@@ -26,7 +26,7 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.syncer.CommittedCommands;
 import com.radixdlt.syncer.SyncExecutor.StateComputer;
-import com.radixdlt.syncer.SyncExecutor.CommittedCommand;
+import com.radixdlt.syncer.SyncExecutor.CommittedCommandWithResult;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -60,7 +60,7 @@ public class MockedEpochStateComputerModule extends AbstractModule {
 			}
 
 			@Override
-			public CommittedCommand commit(Command command, VertexMetadata vertexMetadata) {
+			public CommittedCommandWithResult commit(Command command, VertexMetadata vertexMetadata) {
 				return CommittedCommands.success(command, vertexMetadata, null);
 			}
 		};

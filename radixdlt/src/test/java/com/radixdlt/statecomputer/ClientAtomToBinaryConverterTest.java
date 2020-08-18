@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,33 +15,34 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.middleware2.converters;
+package com.radixdlt.statecomputer;
+
+import static org.junit.Assert.*;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.consensus.VertexMetadata;
-import com.radixdlt.consensus.bft.View;
-import com.radixdlt.crypto.Hash;
-import com.radixdlt.identifiers.RRI;
-import com.radixdlt.atomos.RRIParticle;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.atommodel.Atom;
-import com.radixdlt.identifiers.EUID;
-import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.atomos.RRIParticle;
 import com.radixdlt.crypto.ECDSASignature;
+import com.radixdlt.crypto.ECKeyPair;
+import com.radixdlt.identifiers.EUID;
+import com.radixdlt.identifiers.RRI;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.middleware.ParticleGroup;
 import com.radixdlt.middleware.SpunParticle;
 import com.radixdlt.middleware2.ClientAtom;
-import com.radixdlt.syncer.CommittedAtom;
+import java.math.BigInteger;
+import org.junit.Before;
 import org.junit.Test;
 
-import java.math.BigInteger;
+public class ClientAtomToBinaryConverterTest {
+	private ClientAtomToBinaryConverter clientAtomToBinaryConverter;
 
-import static org.junit.Assert.assertEquals;
-
-public class AtomToBinaryConverterTest {
-	private AtomToBinaryConverter atomToBinaryConverter = new AtomToBinaryConverter(DefaultSerialization.getInstance());
+	@Before
+	public void setUp() {
+		clientAtomToBinaryConverter = new ClientAtomToBinaryConverter(DefaultSerialization.getInstance());
+	}
 
 	@Test
 	public void test_atom_content_transformation_to_byte_array_and_back() throws Exception {
@@ -58,12 +59,11 @@ public class AtomToBinaryConverterTest {
 			ImmutableMap.of("timestamp", "0")
 		);
 
-		VertexMetadata vertexMetadata = new VertexMetadata(0, View.of(1), Hash.random(), 0, null, Hash.ZERO_HASH);
-		CommittedAtom committedAtom = new CommittedAtom(ClientAtom.convertFromApiAtom(atom), vertexMetadata);
+		ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom);
 
-		byte[] serializedAtom = atomToBinaryConverter.toLedgerEntryContent(committedAtom);
-		CommittedAtom deserializedAtom = atomToBinaryConverter.toAtom(serializedAtom);
-		assertEquals(committedAtom, deserializedAtom);
+		byte[] serializedAtom = clientAtomToBinaryConverter.toLedgerEntryContent(clientAtom);
+		ClientAtom deserializedAtom = clientAtomToBinaryConverter.toAtom(serializedAtom);
+		assertEquals(clientAtom, deserializedAtom);
 	}
 
 }

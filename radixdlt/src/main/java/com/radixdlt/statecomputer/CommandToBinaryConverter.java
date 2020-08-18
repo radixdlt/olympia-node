@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,33 +15,33 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.middleware2.converters;
+package com.radixdlt.statecomputer;
 
-import com.radixdlt.syncer.CommittedAtom;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
+import com.radixdlt.syncer.CommittedCommand;
 
-public final class AtomToBinaryConverter {
+public final class CommandToBinaryConverter {
 	private final Serialization serializer;
 
-	public AtomToBinaryConverter(Serialization serializer) {
+	public CommandToBinaryConverter(Serialization serializer) {
 		this.serializer = serializer;
 	}
 
-	public byte[] toLedgerEntryContent(CommittedAtom atom) {
+	public byte[] toLedgerEntryContent(CommittedCommand command) {
 		try {
-			return serializer.toDson(atom, DsonOutput.Output.PERSIST);
+			return serializer.toDson(command, DsonOutput.Output.PERSIST);
 		} catch (SerializationException e) {
-			throw new RuntimeException(String.format("Serialization for Atom with ID: %s failed", atom.getAID()));
+			throw new RuntimeException(String.format("Serialization for Command %s failed", command));
 		}
 	}
 
-	public CommittedAtom toAtom(byte[] ledgerEntryContent) {
+	public CommittedCommand toCommand(byte[] ledgerEntryContent) {
 		try {
-			return serializer.fromDson(ledgerEntryContent, CommittedAtom.class);
+			return serializer.fromDson(ledgerEntryContent, CommittedCommand.class);
 		} catch (SerializationException e) {
-			throw new IllegalStateException("Deserialization of Atom failed", e);
+			throw new IllegalStateException("Deserialization of Command failed", e);
 		}
 	}
 }

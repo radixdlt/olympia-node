@@ -24,16 +24,22 @@ import static org.mockito.Mockito.*;
 import static org.powermock.api.mockito.PowerMockito.when;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
-import com.radixdlt.syncer.CommittedAtom;
-import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
+import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
+import com.radixdlt.statecomputer.CommittedAtom;
+import com.radixdlt.statecomputer.CommandToBinaryConverter;
 import com.radixdlt.middleware2.store.CommittedAtomsStore.AtomIndexer;
 import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.store.SearchCursor;
+import com.radixdlt.syncer.CommittedCommand;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -43,16 +49,18 @@ import org.junit.Test;
 public class CommittedAtomsStoreTest {
 	private CommittedAtomsStore committedAtomsStore;
 	private LedgerEntryStore store;
-	private AtomToBinaryConverter atomToBinaryConverter;
+	private CommandToBinaryConverter commandToBinaryConverter;
+	private ClientAtomToBinaryConverter clientAtomToBinaryConverter;
 	private AtomIndexer atomIndexer;
 
 	@Before
 	public void setUp() {
 		this.store = mock(LedgerEntryStore.class);
-		this.atomToBinaryConverter = mock(AtomToBinaryConverter.class);
+		this.commandToBinaryConverter = mock(CommandToBinaryConverter.class);
+		this.clientAtomToBinaryConverter = mock(ClientAtomToBinaryConverter.class);
 		this.atomIndexer = mock(AtomIndexer.class);
 
-		this.committedAtomsStore = new CommittedAtomsStore(store, atomToBinaryConverter, atomIndexer);
+		this.committedAtomsStore = new CommittedAtomsStore(store, commandToBinaryConverter, clientAtomToBinaryConverter, atomIndexer);
 	}
 
 	@Test
@@ -68,12 +76,18 @@ public class CommittedAtomsStoreTest {
 		when(store.search(any(), any(), any())).thenReturn(searchCursor);
 		LedgerEntry ledgerEntry = mock(LedgerEntry.class);
 		when(ledgerEntry.getContent()).thenReturn(new byte[0]);
-		CommittedAtom committedAtom = mock(CommittedAtom.class);
-		when(atomToBinaryConverter.toAtom(any())).thenReturn(committedAtom);
+
+		VertexMetadata vertexMetadata = mock((VertexMetadata.class));
+		Command command = mock(Command.class);
+		ClientAtom clientAtom = mock(ClientAtom.class);
+		when(command.map(any())).thenReturn(clientAtom);
+		CommittedCommand committedCommand = new CommittedCommand(command, vertexMetadata);
+		when(commandToBinaryConverter.toCommand(any())).thenReturn(committedCommand);
 		when(store.get(eq(aid))).thenReturn(Optional.of(ledgerEntry));
 
 		committedAtomsStore.getAtomContaining(particle, true, callback);
-		verify(callback, times(1)).accept(eq(committedAtom));
+		verify(callback, times(1))
+			.accept(argThat(a -> Objects.equals(a.getClientAtom(), clientAtom) && a.getVertexMetadata().equals(vertexMetadata)));
 	}
 
 
@@ -87,8 +101,10 @@ public class CommittedAtomsStoreTest {
 		when(store.search(any(), any(), any())).thenReturn(searchCursor);
 		LedgerEntry ledgerEntry = mock(LedgerEntry.class);
 		when(ledgerEntry.getContent()).thenReturn(new byte[0]);
-		CommittedAtom committedAtom = mock(CommittedAtom.class);
-		when(atomToBinaryConverter.toAtom(any())).thenReturn(committedAtom);
+		CommittedCommand committedCommand = mock(CommittedCommand.class);
+		when(committedCommand.getCommand()).thenReturn(mock(Command.class));
+		when(committedCommand.getVertexMetadata()).thenReturn(mock(VertexMetadata.class));
+		when(commandToBinaryConverter.toCommand(any())).thenReturn(committedCommand);
 		when(store.get(eq(aid))).thenReturn(Optional.of(ledgerEntry));
 
 		assertThat(committedAtomsStore.getSpin(particle)).isEqualTo(Spin.DOWN);
@@ -105,9 +121,9 @@ public class CommittedAtomsStoreTest {
 		for (int i = 0; i < aids.size(); i++) {
 			when(this.store.get(eq(aids.get(i)))).thenReturn(Optional.of(entries.get(i)));
 			when(entries.get(i).getContent()).thenReturn(new byte[i]);
-			when(this.atomToBinaryConverter.toAtom(any())).thenReturn(mock(CommittedAtom.class));
+			when(this.commandToBinaryConverter.toCommand(any())).thenReturn(mock(CommittedCommand.class));
 		}
 
-		assertThat(this.committedAtomsStore.getCommittedAtoms(3, 4)).hasSize(4);
+		assertThat(this.committedAtomsStore.getCommittedCommands(3, 4)).hasSize(4);
 	}
 }

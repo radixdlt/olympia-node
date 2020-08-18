@@ -19,7 +19,7 @@ package com.radixdlt.syncer;
 
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VertexMetadata;
-import com.radixdlt.syncer.SyncExecutor.CommittedCommand;
+import com.radixdlt.syncer.SyncExecutor.CommittedCommandWithResult;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -28,12 +28,12 @@ import java.util.function.Function;
  * TODO: Remove class
  */
 public final class CommittedCommands {
-	private static class CommittedCommandSuccess implements CommittedCommand {
+	private static class CommittedCommandWithResultSuccess implements CommittedCommandWithResult {
 		private final Command command;
 		private final VertexMetadata vertexMetadata;
 		private final Object result;
 
-		private CommittedCommandSuccess(Command command, VertexMetadata vertexMetadata, Object result) {
+		private CommittedCommandWithResultSuccess(Command command, VertexMetadata vertexMetadata, Object result) {
 			this.command = command;
 			this.vertexMetadata = vertexMetadata;
 			this.result = result;
@@ -55,23 +55,23 @@ public final class CommittedCommands {
 		}
 
 		@Override
-		public CommittedCommand ifSuccess(Consumer<Object> successConsumer) {
+		public CommittedCommandWithResult ifSuccess(Consumer<Object> successConsumer) {
 			successConsumer.accept(result);
 			return this;
 		}
 
 		@Override
-		public CommittedCommand ifError(Consumer<Exception> errorConsumer) {
+		public CommittedCommandWithResult ifError(Consumer<Exception> errorConsumer) {
 			return this;
 		}
 	}
 
-	private static class CommittedCommandException implements CommittedCommand {
+	private static class CommittedCommandWithResultException implements CommittedCommandWithResult {
 		private final Command command;
 		private final VertexMetadata vertexMetadata;
 		private final Exception exception;
 
-		private CommittedCommandException(Command command, VertexMetadata vertexMetadata, Exception exception) {
+		private CommittedCommandWithResultException(Command command, VertexMetadata vertexMetadata, Exception exception) {
 			this.command = command;
 			this.vertexMetadata = vertexMetadata;
 			this.exception = exception;
@@ -93,23 +93,23 @@ public final class CommittedCommands {
 		}
 
 		@Override
-		public CommittedCommand ifSuccess(Consumer<Object> successConsumer) {
+		public CommittedCommandWithResult ifSuccess(Consumer<Object> successConsumer) {
 			return this;
 		}
 
 		@Override
-		public CommittedCommand ifError(Consumer<Exception> errorConsumer) {
+		public CommittedCommandWithResult ifError(Consumer<Exception> errorConsumer) {
 			errorConsumer.accept(exception);
 			return this;
 		}
 	}
 
-	public static CommittedCommand success(Command command, VertexMetadata vertexMetadata, Object result) {
-		return new CommittedCommandSuccess(command, vertexMetadata, result);
+	public static CommittedCommandWithResult success(Command command, VertexMetadata vertexMetadata, Object result) {
+		return new CommittedCommandWithResultSuccess(command, vertexMetadata, result);
 	}
 
-	public static CommittedCommand error(Command command, VertexMetadata vertexMetadata, Exception exception) {
-		return new CommittedCommandException(command, vertexMetadata, exception);
+	public static CommittedCommandWithResult error(Command command, VertexMetadata vertexMetadata, Exception exception) {
+		return new CommittedCommandWithResultException(command, vertexMetadata, exception);
 	}
 
 	private CommittedCommands() {

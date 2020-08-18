@@ -18,9 +18,9 @@
 package com.radixdlt.middleware2.network;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.syncer.CommittedCommand;
 import com.radixdlt.syncer.StateSyncNetwork;
 import com.radixdlt.syncer.SyncRequest;
-import com.radixdlt.syncer.CommittedAtom;
 import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.messaging.MessageListener;
@@ -47,9 +47,9 @@ public final class MessageCentralLedgerSync implements StateSyncNetwork {
 	}
 
 	@Override
-	public Observable<ImmutableList<CommittedAtom>> syncResponses() {
+	public Observable<ImmutableList<CommittedCommand>> syncResponses() {
 		return Observable.create(emitter -> {
-			MessageListener<SyncResponseMessage> listener = (src, msg) -> emitter.onNext(msg.getAtoms());
+			MessageListener<SyncResponseMessage> listener = (src, msg) -> emitter.onNext(msg.getCommands());
 			this.messageCentral.addListener(SyncResponseMessage.class, listener);
 			emitter.setCancellable(() -> this.messageCentral.removeListener(listener));
 		});
@@ -71,8 +71,8 @@ public final class MessageCentralLedgerSync implements StateSyncNetwork {
 	}
 
 	@Override
-	public void sendSyncResponse(Peer peer, List<CommittedAtom> atoms) {
-		final SyncResponseMessage syncResponseMessage = new SyncResponseMessage(this.magic, ImmutableList.copyOf(atoms));
+	public void sendSyncResponse(Peer peer, List<CommittedCommand> commands) {
+		final SyncResponseMessage syncResponseMessage = new SyncResponseMessage(this.magic, ImmutableList.copyOf(commands));
 		this.messageCentral.send(peer, syncResponseMessage);
 	}
 }
