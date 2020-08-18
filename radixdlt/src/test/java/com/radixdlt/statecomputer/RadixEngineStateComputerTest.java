@@ -19,10 +19,14 @@ package com.radixdlt.statecomputer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -33,11 +37,15 @@ import com.radixdlt.identifiers.AID;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
+import com.radixdlt.serialization.Serialization;
+import com.radixdlt.serialization.SerializationException;
+import com.radixdlt.syncer.SyncExecutor.CommittedCommandWithResult;
 import java.util.function.Function;
 import org.junit.Before;
 import org.junit.Test;
 
 public class RadixEngineStateComputerTest {
+	private Serialization serialization;
 	private RadixEngineStateComputer stateComputer;
 	private CommittedAtomsStore committedAtomsStore;
 	private RadixEngine<LedgerAtom> radixEngine;
@@ -46,6 +54,7 @@ public class RadixEngineStateComputerTest {
 
 	@Before
 	public void setup() {
+		this.serialization = mock(Serialization.class);
 		this.radixEngine = mock(RadixEngine.class);
 		this.committedAtomsStore = mock(CommittedAtomsStore.class);
 		this.epochHighView = View.of(100);
@@ -53,6 +62,7 @@ public class RadixEngineStateComputerTest {
 		@SuppressWarnings("unchecked") Function<Long, BFTValidatorSet> vsm = mock(Function.class);
 		this.validatorSetMapping = vsm;
 		this.stateComputer = new RadixEngineStateComputer(
+			serialization,
 			radixEngine,
 			validatorSetMapping,
 			epochHighView,
@@ -61,7 +71,7 @@ public class RadixEngineStateComputerTest {
 	}
 
 	@Test
-	public void when_compute_vertex_metadata_equal_to_high_view__then_should_return_true() {
+	public void when_prepare_vertex_metadata_equal_to_high_view__then_should_return_validator_set() {
 		Vertex vertex = mock(Vertex.class);
 		when(vertex.getView()).thenReturn(epochHighView);
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
@@ -70,7 +80,50 @@ public class RadixEngineStateComputerTest {
 	}
 
 	@Test
-	public void when_execute_vertex_with_null_command__then_is_available_on_query() throws RadixEngineException {
+	public void when_execute_vertex_with_command__then_is_stored_in_engine() throws Exception {
+		ClientAtom clientAtom = mock(ClientAtom.class);
+		AID aid = mock(AID.class);
+		when(clientAtom.getAID()).thenReturn(aid);
+		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
+		when(vertexMetadata.getView()).then(i -> View.of(50));
+		when(vertexMetadata.getStateVersion()).then(i -> 1L);
+		when(vertexMetadata.isEndOfEpoch()).thenReturn(true);
+
+		when(serialization.fromDson(any(), eq(ClientAtom.class))).thenReturn(clientAtom);
+
+		Command command = mock(Command.class);
+		CommittedCommandWithResult result = stateComputer.commit(command, vertexMetadata);
+		verify(radixEngine, times(1)).checkAndStore(any());
+		assertThat(result.getVertexMetadata()).isEqualTo(vertexMetadata);
+		assertThat(result.getCommand()).isEqualTo(command);
+	}
+
+	@Test
+	public void when_execute_vertex_with_exception__then_is_available_for_query() throws Exception {
+		ClientAtom clientAtom = mock(ClientAtom.class);
+		AID aid = mock(AID.class);
+		when(clientAtom.getAID()).thenReturn(aid);
+		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
+		when(vertexMetadata.getView()).then(i -> View.of(50));
+		when(vertexMetadata.getStateVersion()).then(i -> 1L);
+		when(vertexMetadata.isEndOfEpoch()).thenReturn(true);
+
+		when(serialization.fromDson(any(), eq(ClientAtom.class))).thenReturn(clientAtom);
+		RadixEngineException e = mock(RadixEngineException.class);
+		doThrow(e).when(radixEngine).checkAndStore(any());
+
+		Command command = mock(Command.class);
+		stateComputer.commit(command, vertexMetadata);
+
+		assertThat(stateComputer.getCommittedCommands(0, 1))
+			.hasOnlyOneElementSatisfying(c -> {
+				assertThat(c.getCommand()).isEqualTo(command);
+				assertThat(c.getVertexMetadata()).isEqualTo(vertexMetadata);
+			});
+	}
+
+	@Test
+	public void when_execute_vertex_is_end_of_epoch_with_null_command__then_is_available_on_query() throws RadixEngineException {
 		ClientAtom committedAtom = mock(ClientAtom.class);
 		AID aid = mock(AID.class);
 		when(committedAtom.getAID()).thenReturn(aid);
@@ -79,8 +132,6 @@ public class RadixEngineStateComputerTest {
 		when(vertexMetadata.getStateVersion()).then(i -> 1L);
 		when(vertexMetadata.isEndOfEpoch()).thenReturn(true);
 
-		RadixEngineException e = mock(RadixEngineException.class);
-		doThrow(e).when(radixEngine).checkAndStore(any());
 		stateComputer.commit(null, vertexMetadata);
 
 		assertThat(stateComputer.getCommittedCommands(0, 1))
@@ -89,5 +140,24 @@ public class RadixEngineStateComputerTest {
 				assertThat(c.getVertexMetadata()).isEqualTo(vertexMetadata);
 			});
 	}
+
+	@Test
+	public void when_execute_vertex_with_malformed_command__then_is_available_on_query() throws Exception {
+		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
+		when(vertexMetadata.getView()).then(i -> View.of(50));
+		when(vertexMetadata.getStateVersion()).then(i -> 1L);
+		when(vertexMetadata.isEndOfEpoch()).thenReturn(true);
+
+		when(serialization.fromDson(any(), eq(ClientAtom.class))).thenThrow(new SerializationException(""));
+
+		stateComputer.commit(new Command(new byte[] {0, 1}), vertexMetadata);
+
+		assertThat(stateComputer.getCommittedCommands(0, 1))
+			.hasOnlyOneElementSatisfying(c -> {
+				assertThat(c.getCommand()).isNull();
+				assertThat(c.getVertexMetadata()).isEqualTo(vertexMetadata);
+			});
+	}
+
 
 }

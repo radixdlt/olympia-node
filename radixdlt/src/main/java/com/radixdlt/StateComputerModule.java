@@ -135,11 +135,13 @@ public class StateComputerModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private RadixEngineStateComputer executor(
+		Serialization serialization,
 		RadixEngine<LedgerAtom> radixEngine,
 		Function<Long, BFTValidatorSet> validatorSetMapping,
 		CommittedAtomsStore committedAtomsStore
 	) {
 		return new RadixEngineStateComputer(
+			serialization,
 			radixEngine,
 			validatorSetMapping,
 			View.of(viewsPerEpoch),

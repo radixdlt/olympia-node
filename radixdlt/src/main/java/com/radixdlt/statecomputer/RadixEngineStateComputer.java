@@ -20,7 +20,6 @@ package com.radixdlt.statecomputer;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Streams;
-import com.radixdlt.DefaultSerialization;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
@@ -30,6 +29,7 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
@@ -49,6 +49,7 @@ import java.util.function.Function;
  * Wraps the Radix Engine and emits messages based on success or failure
  */
 public final class RadixEngineStateComputer implements StateComputer {
+	private final Serialization serialization;
 	private final CommittedAtomsStore committedAtomsStore;
 	private final RadixEngine<LedgerAtom> radixEngine;
 	private final Function<Long, BFTValidatorSet> validatorSetMapping;
@@ -58,6 +59,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 	private final LinkedList<CommittedCommand> unstoredCommittedAtoms = new LinkedList<>();
 
 	public RadixEngineStateComputer(
+		Serialization serialization,
 		RadixEngine<LedgerAtom> radixEngine,
 		Function<Long, BFTValidatorSet> validatorSetMapping,
 		View epochChangeView,
@@ -67,6 +69,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 			throw new IllegalArgumentException("Epoch change view must not be genesis.");
 		}
 
+		this.serialization = Objects.requireNonNull(serialization);
 		this.radixEngine = Objects.requireNonNull(radixEngine);
 		this.validatorSetMapping = validatorSetMapping;
 		this.epochChangeView = epochChangeView;
@@ -100,7 +103,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		if (command != null) {
 			final ClientAtom clientAtom;
 			try {
-				clientAtom = DefaultSerialization.getInstance().fromDson(command.getPayload(), ClientAtom.class);
+				clientAtom = serialization.fromDson(command.getPayload(), ClientAtom.class);
 			} catch (SerializationException e) {
 				this.unstoredCommittedAtoms.add(new CommittedCommand(null, vertexMetadata));
 				return CommittedCommands.error(command, vertexMetadata, e);
