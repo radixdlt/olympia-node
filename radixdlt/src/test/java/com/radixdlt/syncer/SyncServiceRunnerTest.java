@@ -69,6 +69,9 @@ public class SyncServiceRunnerTest {
 			stateSyncNetwork,
 			syncServiceProcessor
 		);
+
+		// Clear interrupted status
+		Thread.interrupted();
 	}
 
 	@After

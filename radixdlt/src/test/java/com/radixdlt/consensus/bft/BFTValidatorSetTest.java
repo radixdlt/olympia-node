@@ -46,7 +46,6 @@ public class BFTValidatorSetTest {
 		String s = BFTValidatorSet.from(ImmutableList.of(BFTValidator.from(node, UInt256.ONE))).toString();
 		assertThat(s, containsString(BFTValidatorSet.class.getSimpleName()));
 		assertThat(s, containsString(node.getSimpleName()));
-		System.out.println(s);
 	}
 
 	@Test

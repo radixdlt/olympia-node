@@ -158,7 +158,7 @@ public final class SafetyRules {
 		// ensure vertex does not violate earlier votes
 		if (proposedVertex.getView().compareTo(this.state.getLastVotedView()) <= 0) {
 			throw new SafetyViolationException(proposedVertex, this.state, String.format(
-				"violates earlier vote at %s", this.state.getLastVotedView()));
+				"violates earlier vote at view %s", this.state.getLastVotedView()));
 		}
 
 		// ensure vertex respects locked QC

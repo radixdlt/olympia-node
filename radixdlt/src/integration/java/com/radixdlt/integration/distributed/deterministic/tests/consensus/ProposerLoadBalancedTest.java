@@ -19,18 +19,16 @@ package com.radixdlt.integration.distributed.deterministic.tests.consensus;
 
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.LongFunction;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
-import java.util.stream.Stream;
-
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.NewView;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.integration.distributed.deterministic.DeterministicTest;
-import com.radixdlt.integration.distributed.deterministic.NodeIndexAndWeight;
+import com.radixdlt.integration.distributed.deterministic.configuration.EpochNodeWeightMapping;
+import com.radixdlt.integration.distributed.deterministic.network.MessageMutator;
+import com.radixdlt.integration.distributed.deterministic.network.MessageSelector;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.utils.UInt256;
 
@@ -38,23 +36,16 @@ import static org.assertj.core.api.Assertions.*;
 
 public class ProposerLoadBalancedTest {
 
-	private ImmutableList<Long> run(int numNodes, long numViews, LongFunction<Stream<NodeIndexAndWeight>> weighting) {
-		final DeterministicTest test = DeterministicTest.createSingleEpochAlwaysSyncedTest(numNodes, weighting);
-		test.start();
-
-		final AtomicBoolean running = new AtomicBoolean(true);
+	private ImmutableList<Long> run(int numNodes, long numViews, EpochNodeWeightMapping mapping) {
 		final Random random = new Random(123456);
-		while (running.get()) {
-			test.processNextMsg(random, msg -> {
-				if (msg instanceof NewView) {
-					NewView nv = (NewView) msg;
-					if (nv.getView().number() > numViews) {
-						running.set(false);
-					}
-				}
-				return running.get();
-			});
-		}
+
+		DeterministicTest test = DeterministicTest.builder()
+			.numNodes(numNodes)
+			.messageSelector(MessageSelector.randomSelector(random))
+			.messageMutator(MessageMutator.alwaysAddUntilView(View.of(numViews)))
+			.epochNodeWeightMapping(mapping)
+			.build()
+			.run();
 
 		return IntStream.range(0, numNodes)
 			.mapToObj(test::getSystemCounters)
@@ -69,7 +60,7 @@ public class ProposerLoadBalancedTest {
 		ImmutableList<Long> proposals = this.run(
 			numNodes,
 			proposalChunk + 1,
-			epoch -> NodeIndexAndWeight.repeatingSequence(numNodes, 1, proposalChunk)
+			EpochNodeWeightMapping.repeatingSequence(numNodes, 1, proposalChunk)
 		);
 		assertThat(proposals).containsExactly(1L, proposalChunk);
 	}
@@ -81,7 +72,7 @@ public class ProposerLoadBalancedTest {
 		ImmutableList<Long> proposals = this.run(
 			numNodes,
 			numNodes * proposalsPerNode,
-			epoch -> NodeIndexAndWeight.constant(numNodes, UInt256.ONE)
+			EpochNodeWeightMapping.constant(numNodes, 1L)
 		);
 		assertThat(proposals).allMatch(l -> l == proposalsPerNode);
 	}
@@ -93,18 +84,18 @@ public class ProposerLoadBalancedTest {
 		ImmutableList<Long> proposals = this.run(
 			numNodes,
 			numNodes * proposalsPerNode,
-			epoch -> NodeIndexAndWeight.constant(100, UInt256.ONE)
+			EpochNodeWeightMapping.constant(100, 1L)
 		);
 		assertThat(proposals).allMatch(l -> l == proposalsPerNode);
 	}
 
 	@Test
 	public void when_run_3_nodes_with_linear_weights__then_proposals_should_match() {
-		final long proposalChunk = 5_000L; // Actually 3! * proposalChunk proposals run
+		final long proposalChunk = 50_000L; // Actually 3! * proposalChunk proposals run
 		List<Long> proposals = this.run(
 			3,
 			1 * 2 * 3 * proposalChunk,
-			epoch -> NodeIndexAndWeight.repeatingSequence(3, 1, 2, 3)
+			EpochNodeWeightMapping.repeatingSequence(3, 1, 2, 3)
 		);
 		assertThat(proposals).containsExactly(proposalChunk, 2 * proposalChunk, 3 * proposalChunk);
 	}
@@ -117,7 +108,7 @@ public class ProposerLoadBalancedTest {
 		ImmutableList<Long> proposals = this.run(
 			100,
 			150 * proposalChunk,
-			epoch -> NodeIndexAndWeight.computed(numNodes, index -> UInt256.from(index / 50 + 1)) // Weights 1, 1, ..., 2, 2
+			EpochNodeWeightMapping.computed(numNodes, index -> UInt256.from(index / 50 + 1)) // Weights 1, 1, ..., 2, 2
 		);
 		assertThat(proposals.subList(0, 50)).allMatch(Long.valueOf(proposalChunk)::equals);
 		assertThat(proposals.subList(50, 100)).allMatch(Long.valueOf(2 * proposalChunk)::equals);
@@ -142,7 +133,7 @@ public class ProposerLoadBalancedTest {
 		ImmutableList<Long> proposals = this.run(
 			numNodes,
 			numProposals,
-			epoch -> NodeIndexAndWeight.computed(numNodes, weights::get)
+			EpochNodeWeightMapping.computed(numNodes, weights::get)
 		);
 		// Correct number of total proposals
 		assertThat(proposals.stream().mapToLong(Long::longValue).sum()).isEqualTo(numProposals);
@@ -168,7 +159,7 @@ public class ProposerLoadBalancedTest {
 		ImmutableList<Long> proposals = this.run(
 			numNodes,
 			numProposals,
-			epoch -> NodeIndexAndWeight.computed(numNodes, weights::get)
+			EpochNodeWeightMapping.computed(numNodes, weights::get)
 		);
 		// Correct number of total proposals
 		assertThat(proposals.stream().mapToLong(Long::longValue).sum()).isEqualTo(numProposals);

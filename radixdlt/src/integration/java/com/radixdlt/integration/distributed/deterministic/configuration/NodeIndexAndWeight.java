@@ -15,13 +15,9 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed.deterministic;
+package com.radixdlt.integration.distributed.deterministic.configuration;
 
 import java.util.Objects;
-import java.util.function.IntFunction;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
-
 import com.radixdlt.utils.UInt256;
 
 /**
@@ -41,36 +37,6 @@ public final class NodeIndexAndWeight {
 	 */
 	public static NodeIndexAndWeight from(int index, UInt256 weight) {
 		return new NodeIndexAndWeight(index, weight);
-	}
-
-	/**
-	 * Returns a stream of {@code NodeIndexAndWeight} of the specified size
-	 * and all with the specified weight.
-	 */
-	public static Stream<NodeIndexAndWeight> constant(int numNodes, UInt256 weight) {
-		return IntStream.range(0, numNodes)
-			.mapToObj(index -> from(index, weight));
-	}
-
-	/**
-	 * Returns a stream of {@code NodeIndexAndWeight} of the specified size
-	 * and with the specified weights.  If the length of {@code weights} is
-	 * less than {@code numNodes}, then the weights are cycled starting from
-	 * the zeroth weight.
-	 */
-	public static Stream<NodeIndexAndWeight> repeatingSequence(int numNodes, long... weights) {
-		int length = weights.length;
-		return IntStream.range(0, numNodes)
-			.mapToObj(index -> from(index, UInt256.from(weights[index % length])));
-	}
-
-	/**
-	 * Returns a stream of {@code NodeIndexAndWeight} of the specified size
-	 * and with each weight computed using the specified function.
-	 */
-	public static Stream<NodeIndexAndWeight> computed(int numNodes, IntFunction<UInt256> function) {
-		return IntStream.range(0, numNodes)
-			.mapToObj(index -> from(index, function.apply(index)));
 	}
 
 	public int index() {

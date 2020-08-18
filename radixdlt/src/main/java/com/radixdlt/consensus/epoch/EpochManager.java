@@ -18,6 +18,7 @@
 package com.radixdlt.consensus.epoch;
 
 import com.google.common.collect.ImmutableList;
+import com.google.inject.name.Named;
 import com.radixdlt.consensus.BFTEventProcessor;
 import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.CommittedStateSync;
@@ -60,6 +61,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import javax.annotation.concurrent.NotThreadSafe;
+import javax.inject.Inject;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -126,8 +129,9 @@ public final class EpochManager {
 	private BFTEventProcessor bftEventProcessor;
 	private int numQueuedConsensusEvents = 0;
 
+	@Inject
 	public EpochManager(
-		BFTNode self,
+		@Named("self") BFTNode self,
 		EpochChange initialEpoch,
 		SyncedExecutor syncedExecutor,
 		SyncEpochsRPCSender epochsRPCSender,

@@ -17,32 +17,64 @@
 
 package com.radixdlt.integration.distributed.deterministic.tests.consensus;
 
+import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.bft.View;
+import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.integration.distributed.deterministic.DeterministicTest;
+import com.radixdlt.integration.distributed.deterministic.configuration.SyncedExecutorFactories;
+import com.radixdlt.integration.distributed.deterministic.network.MessageMutator;
+import com.radixdlt.integration.distributed.deterministic.network.MessageSelector;
+
+import java.util.List;
 import java.util.Random;
+import java.util.stream.IntStream;
+
 import org.junit.Test;
 
-public class RandomChannelOrderResponsiveTest {
-	private static final int NUM_STEPS = 30000;
+import static org.assertj.core.api.Assertions.*;
 
+public class RandomChannelOrderResponsiveTest {
 	@Test
 	public void when_run_4_correct_nodes_with_channel_order_random_and_timeouts_disabled__then_bft_should_be_responsive() {
+		final int numNodes = 4;
+		final int viewsToRun = 2500 * numNodes; // numNodes should be a factor of this number
 		final Random random = new Random(12345);
-		final DeterministicTest test = DeterministicTest.createSingleEpochAlwaysSyncedTest(4);
 
-		test.start();
-		for (int step = 0; step < NUM_STEPS; step++) {
-			test.processNextMsg(random);
-		}
+		DeterministicTest test = DeterministicTest.builder()
+			.numNodes(numNodes)
+			.syncedExecutorFactory(SyncedExecutorFactories.alwaysSynced())
+			.messageSelector(MessageSelector.randomSelector(random))
+			.messageMutator(MessageMutator.alwaysAddUntilView(View.of(viewsToRun)))
+			.build()
+			.run();
+
+		List<Long> proposalsMade = IntStream.range(0, numNodes)
+			.mapToObj(test::getSystemCounters)
+			.map(counters -> counters.get(CounterType.BFT_PROPOSALS_MADE))
+			.collect(ImmutableList.toImmutableList());
+
+		assertThat(proposalsMade).allMatch(l -> l == viewsToRun / numNodes);
 	}
 
 	@Test
 	public void when_run_100_correct_nodes_with_channel_order_random_and_timeouts_disabled__then_bft_should_be_responsive() {
+		final int numNodes = 100;
+		final int viewsToRun = 50 * numNodes; // numNodes should be a factor of this number
 		final Random random = new Random(12345);
-		final DeterministicTest test = DeterministicTest.createSingleEpochAlwaysSyncedTest(100);
 
-		test.start();
-		for (int step = 0; step < NUM_STEPS; step++) {
-			test.processNextMsg(random);
-		}
+		DeterministicTest test = DeterministicTest.builder()
+			.numNodes(numNodes)
+			.syncedExecutorFactory(SyncedExecutorFactories.alwaysSynced())
+			.messageSelector(MessageSelector.randomSelector(random))
+			.messageMutator(MessageMutator.alwaysAddUntilView(View.of(viewsToRun)))
+			.build()
+			.run();
+
+		List<Long> proposalsMade = IntStream.range(0, numNodes)
+			.mapToObj(test::getSystemCounters)
+			.map(counters -> counters.get(CounterType.BFT_PROPOSALS_MADE))
+			.collect(ImmutableList.toImmutableList());
+
+		assertThat(proposalsMade).allMatch(l -> l == viewsToRun / numNodes);
 	}
 }

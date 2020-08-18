@@ -18,33 +18,29 @@
 package com.radixdlt.integration.distributed.deterministic.tests.consensus;
 
 import java.util.Random;
-import java.util.Set;
-
-import org.assertj.core.util.Sets;
 import org.junit.Test;
 
-import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.integration.distributed.deterministic.DeterministicTest;
+import com.radixdlt.integration.distributed.deterministic.configuration.SyncedExecutorFactories;
+import com.radixdlt.integration.distributed.deterministic.network.MessageMutator;
+import com.radixdlt.integration.distributed.deterministic.network.MessageSelector;
 import com.radixdlt.counters.SystemCounters;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class OneProposalTimeoutResponsiveTest {
 	private final Random random = new Random(123456);
-	private final Set<Integer> nodesCompleted = Sets.newHashSet();
 
 	private void run(int numNodes, long numViews, long dropPeriod) {
-		final DeterministicTest test = DeterministicTest.createSingleEpochAlwaysSyncedWithTimeoutsTest(numNodes);
-		test.start();
-
-		nodesCompleted.clear();
-		while (nodesCompleted.size() < numNodes) {
-			test.processNextMsgWithSenderAndReceiver(
-				random,
-				(senderId, receiverId, msg) -> processMessage(senderId, msg, numViews, dropPeriod));
-		}
+		DeterministicTest test = DeterministicTest.builder()
+			.numNodes(numNodes)
+			.syncedExecutorFactory(SyncedExecutorFactories.alwaysSynced())
+			.messageSelector(MessageSelector.randomSelector(random))
+			.messageMutator(MessageMutator.stopAt(View.of(numViews)).otherwise(dropSomeProposals(dropPeriod)))
+			.build()
+			.run();
 
 		long requiredIndirectParents = (numViews - 1) / dropPeriod; // Edge case if dropPeriod a factor of numViews
 		long requiredTimeouts = numViews / dropPeriod;
@@ -61,22 +57,21 @@ public class OneProposalTimeoutResponsiveTest {
 		}
 	}
 
-	private boolean processMessage(int senderId, Object msg, long numViews, long dropPeriod) {
-		if (msg instanceof NewView) {
-			NewView nv = (NewView) msg;
-			if (nv.getView().number() > numViews) {
-				this.nodesCompleted.add(senderId);
-				return false;
-			}
-		}
-		if (msg instanceof Proposal) {
-			final Proposal proposal = (Proposal) msg;
-			final View view = proposal.getVertex().getView();
-			final long viewNumber = view.number();
+	private MessageMutator dropSomeProposals(long dropPeriod) {
+		return (rank, message, queue) -> {
+			Object msg = message.message();
+			if (msg instanceof Proposal) {
+				final Proposal proposal = (Proposal) msg;
+				final View view = proposal.getVertex().getView();
+				final long viewNumber = view.number();
 
-			return viewNumber % dropPeriod != 0;
-		}
-		return true;
+				if (viewNumber % dropPeriod == 0) {
+					return true;
+				}
+			}
+			queue.add(rank, message);
+			return true;
+		};
 	}
 
 	@Test

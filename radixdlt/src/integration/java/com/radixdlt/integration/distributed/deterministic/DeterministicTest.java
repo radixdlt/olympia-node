@@ -17,22 +17,18 @@
 
 package com.radixdlt.integration.distributed.deterministic;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Streams;
-import com.radixdlt.syncer.EpochChangeSender;
-import com.radixdlt.consensus.SyncedExecutor;
+import com.google.inject.Module;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
-import com.radixdlt.integration.distributed.deterministic.ControlledNetwork.ChannelId;
-import com.radixdlt.integration.distributed.deterministic.ControlledNetwork.ControlledMessage;
-import com.radixdlt.integration.distributed.deterministic.ControlledNetwork.ControlledSender;
-import com.radixdlt.integration.distributed.deterministic.configuration.SingleEpochAlwaysSyncedExecutor;
-import com.radixdlt.integration.distributed.deterministic.configuration.SingleEpochRandomlySyncedExecutor;
-import com.radixdlt.syncer.SyncExecutor.CommittedStateSyncSender;
+import com.radixdlt.integration.distributed.deterministic.configuration.EpochNodeWeightMapping;
+import com.radixdlt.integration.distributed.deterministic.configuration.NodeIndexAndWeight;
+import com.radixdlt.integration.distributed.deterministic.configuration.SyncedExecutorFactories;
+import com.radixdlt.integration.distributed.deterministic.configuration.SyncedExecutorFactory;
+import com.radixdlt.integration.distributed.deterministic.network.DeterministicNetwork;
+import com.radixdlt.integration.distributed.deterministic.network.MessageMutator;
+import com.radixdlt.integration.distributed.deterministic.network.MessageSelector;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.EUID;
@@ -40,14 +36,8 @@ import com.radixdlt.utils.UInt256;
 
 import java.io.PrintStream;
 import java.util.Comparator;
-import java.util.List;
 import java.util.Objects;
-import java.util.Random;
-import java.util.function.BiFunction;
-import java.util.function.BiPredicate;
-import java.util.function.Function;
 import java.util.function.LongFunction;
-import java.util.function.Predicate;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -56,37 +46,41 @@ import java.util.stream.Stream;
  * is emitted and processed synchronously by the caller.
  */
 public final class DeterministicTest {
-	private static final String LOST_RESPONSIVENESS = "No messages available (Lost Responsiveness)";
 
-	private final ImmutableList<BFTNode> bftNodes;
-	private final LongFunction<BFTValidatorSet> validatorSetMapping;
-	private final boolean timeoutEnabled;
-	private final BiFunction<CommittedStateSyncSender, EpochChangeSender, SyncedExecutor> stateComputerFactory;
-
-	private final ControlledNetwork network;
-
-	private ImmutableList<ControlledNode> nodes;
+	private final ImmutableList<BFTNode> nodes;
+	private final MessageSelector messageSelector;
+	private final MessageMutator messageMutator;
+	private final DeterministicNetwork network;
 
 	private DeterministicTest(
 		ImmutableList<BFTNode> nodes,
 		LongFunction<BFTValidatorSet> validatorSetMapping,
-		boolean timeoutEnabled,
-		BiFunction<CommittedStateSyncSender, EpochChangeSender, SyncedExecutor> stateComputerFactory
+		MessageSelector messageSelector,
+		MessageMutator messageMutator,
+		SyncedExecutorFactory syncedExecutorFactory
 	) {
-		this.bftNodes = Objects.requireNonNull(nodes);
-		this.validatorSetMapping = Objects.requireNonNull(validatorSetMapping);
-		this.timeoutEnabled = timeoutEnabled;
-		this.stateComputerFactory = Objects.requireNonNull(stateComputerFactory);
+		this.nodes = Objects.requireNonNull(nodes);
+		this.messageSelector = Objects.requireNonNull(messageSelector);
+		this.messageMutator = Objects.requireNonNull(messageMutator);
 
-		this.network = new ControlledNetwork();
+		// TODO only one epoch supported right now
+		BFTValidatorSet validatorSet = validatorSetMapping.apply(1L);
+		ImmutableList.Builder<Module> syncExecutionModules = ImmutableList.builder();
+		syncExecutionModules.add(new DeterministicSyncExecutionModule(validatorSet, syncedExecutorFactory));
+		this.network = new DeterministicNetwork(
+			this.nodes,
+			this.messageSelector,
+			this.messageMutator,
+			syncExecutionModules.build()
+		);
 	}
 
 	public static class Builder {
 		private ImmutableList<BFTNode> nodes = ImmutableList.of(BFTNode.create(ECKeyPair.generateNew().getPublicKey()));
-		private boolean timeoutEnabled = true;
-		private LongFunction<Stream<NodeIndexAndWeight>> epochToNodesMapper;
-		BiFunction<CommittedStateSyncSender, EpochChangeSender, SyncedExecutor> stateComputerFactory =
-			(committedSender, epochChangeSender) -> SingleEpochAlwaysSyncedExecutor.INSTANCE;
+		private MessageSelector messageSelector = MessageSelector.firstSelector();
+		private MessageMutator messageMutator = MessageMutator.alwaysAdd(30_000L);
+		private EpochNodeWeightMapping epochNodeWeightMapping;
+		private SyncedExecutorFactory syncedExecutorFactory = SyncedExecutorFactories.alwaysSynced();
 
 		private Builder() {
 			// Nothing to do here
@@ -101,33 +95,43 @@ public final class DeterministicTest {
 			return this;
 		}
 
-		public Builder epochToNodeIndexesMapper(LongFunction<IntStream> epochToNodeMapper) {
-			this.epochToNodesMapper = epoch -> equalWeight(epochToNodeMapper.apply(epoch));
+		public Builder epochNodeIndexesMapping(LongFunction<IntStream> epochToNodeIndexesMapping) {
+			Objects.requireNonNull(epochToNodeIndexesMapping);
+			this.epochNodeWeightMapping = epoch -> equalWeight(epochToNodeIndexesMapping.apply(epoch));
 			return this;
 		}
 
-		public Builder epochToNodesMapper(LongFunction<Stream<NodeIndexAndWeight>> epochToNodeMapper) {
-			this.epochToNodesMapper = epochToNodeMapper;
+		public Builder epochNodeWeightMapping(EpochNodeWeightMapping epochNodeWeightMapping) {
+			this.epochNodeWeightMapping = Objects.requireNonNull(epochNodeWeightMapping);
 			return this;
 		}
 
-		public Builder timeoutEnabled(boolean timeoutEnabled) {
-			this.timeoutEnabled = timeoutEnabled;
+		public Builder messageSelector(MessageSelector messageSelector) {
+			this.messageSelector = Objects.requireNonNull(messageSelector);
 			return this;
 		}
 
-		public Builder stateComputerFactory(
-			BiFunction<CommittedStateSyncSender, EpochChangeSender, SyncedExecutor> stateComputerFactory
-		) {
-			this.stateComputerFactory = stateComputerFactory;
+		public Builder messageMutator(MessageMutator messageMutator) {
+			this.messageMutator = Objects.requireNonNull(messageMutator);
+			return this;
+		}
+
+		public Builder syncedExecutorFactory(SyncedExecutorFactory syncedExecutorFactory) {
+			this.syncedExecutorFactory = Objects.requireNonNull(syncedExecutorFactory);
 			return this;
 		}
 
 		public DeterministicTest build() {
-			LongFunction<BFTValidatorSet> validatorSetMapping = epochToNodesMapper == null
+			LongFunction<BFTValidatorSet> validatorSetMapping = epochNodeWeightMapping == null
 				? epoch -> completeEqualWeightValidatorSet(this.nodes)
-				: epoch -> partialMixedWeightValidatorSet(epoch, this.nodes, this.epochToNodesMapper);
-			return new DeterministicTest(this.nodes, validatorSetMapping, this.timeoutEnabled, this.stateComputerFactory);
+				: epoch -> partialMixedWeightValidatorSet(epoch, this.nodes, this.epochNodeWeightMapping);
+			return new DeterministicTest(
+				this.nodes,
+				validatorSetMapping,
+				this.messageSelector,
+				this.messageMutator,
+				this.syncedExecutorFactory
+			);
 		}
 
 		private static BFTValidatorSet completeEqualWeightValidatorSet(ImmutableList<BFTNode> nodes) {
@@ -140,10 +144,10 @@ public final class DeterministicTest {
 		private static BFTValidatorSet partialMixedWeightValidatorSet(
 			long epoch,
 			ImmutableList<BFTNode> nodes,
-			LongFunction<Stream<NodeIndexAndWeight>> mapper
+			EpochNodeWeightMapping mapper
 		) {
 			return BFTValidatorSet.from(
-				mapper.apply(epoch)
+				mapper.nodesAndWeightFor(epoch)
 					.map(niw -> BFTValidator.from(nodes.get(niw.index()), niw.weight()))
 			);
 		}
@@ -157,143 +161,17 @@ public final class DeterministicTest {
 		return new Builder();
 	}
 
-	/**
-	 * Creates a new randomly synced BFT/SyncedStateComputer test
-	 * @param numNodes number of nodes in the network
-	 * @param random the randomizer
-	 * @return a deterministic test
-	 */
-	public static DeterministicTest createSingleEpochRandomlySyncedTest(int numNodes, Random random) {
-		return builder()
-			.numNodes(numNodes)
-			.timeoutEnabled(false)
-			.stateComputerFactory((committedSender, epochSender) -> new SingleEpochRandomlySyncedExecutor(random, committedSender))
-			.build();
-	}
-
-	/**
-	 * Creates a new "always synced BFT" Deterministic test solely on the bft layer,
-	 *
-	 * @param numNodes number of nodes in the network
-	 * @return a deterministic test
-	 */
-	public static DeterministicTest createSingleEpochAlwaysSyncedTest(int numNodes) {
-		return builder()
-			.numNodes(numNodes)
-			.timeoutEnabled(false)
-			.stateComputerFactory((committedSender, epochSender) -> SingleEpochAlwaysSyncedExecutor.INSTANCE)
-			.build();
-	}
-
-	/**
-	 * Creates a new "always synced BFT" Deterministic test solely on the BFT layer,
-	 *
-	 * @param numNodes number of nodes in the network
-	 * @param weight a mapping from node index to node weight
-	 * @return a deterministic test
-	 */
-	public static DeterministicTest createSingleEpochAlwaysSyncedTest(int numNodes, LongFunction<Stream<NodeIndexAndWeight>> weight) {
-		return builder()
-			.numNodes(numNodes)
-			.timeoutEnabled(false)
-			.stateComputerFactory((committedSender, epochSender) -> SingleEpochAlwaysSyncedExecutor.INSTANCE)
-			.epochToNodesMapper(weight)
-			.build();
-	}
-
-	/**
-	 * Creates a new "always synced BFT with timeouts" Deterministic test solely on the bft layer,
-	 *
-	 * @param numNodes number of nodes in the network
-	 * @return a deterministic test
-	 */
-	public static DeterministicTest createSingleEpochAlwaysSyncedWithTimeoutsTest(int numNodes) {
-		return builder()
-			.numNodes(numNodes)
-			.timeoutEnabled(true)
-			.stateComputerFactory((committedSender, epochSender) -> SingleEpochAlwaysSyncedExecutor.INSTANCE)
-			.build();
-	}
-
-	public void start() {
-		BFTValidatorSet initialValidatorSet = this.validatorSetMapping.apply(1L);
-		this.nodes = Streams.mapWithIndex(this.bftNodes.stream().map(BFTNode::getKey), (key, index) -> {
-				ControlledSender sender = network.createSender(bftNodes.get((int) index));
-				return new ControlledNode(
-					key,
-					this.network,
-					sender,
-					vset -> new WeightedRotatingLeaders(vset, Comparator.comparing(v -> v.getNode().getKey().euid()), 5),
-					initialValidatorSet,
-					this.timeoutEnabled,
-					this.stateComputerFactory.apply(sender, sender)
-				);
-			})
-			.collect(ImmutableList.toImmutableList());
-		nodes.forEach(ControlledNode::start);
+	public DeterministicTest run() {
+		this.network.run();
+		return this;
 	}
 
 	public SystemCounters getSystemCounters(int nodeIndex) {
-		return nodes.get(nodeIndex).getSystemCounters();
+		return this.network.getSystemCounters(nodeIndex);
 	}
 
-	public void processNextMsg(int toIndex, int fromIndex, Class<?> expectedClass) {
-		processNextMsg(toIndex, fromIndex, expectedClass, Function.identity());
-	}
-
-	public <T, U> void processNextMsg(int toIndex, int fromIndex, Class<T> expectedClass, Function<T, U> mutator) {
-		ChannelId channelId = new ChannelId(bftNodes.get(fromIndex), bftNodes.get(toIndex));
-		Object msg = network.popNextMessage(channelId);
-		assertThat(msg).isInstanceOf(expectedClass);
-		U msgToUse = mutator.apply(expectedClass.cast(msg));
-		if (msgToUse != null) {
-			nodes.get(toIndex).processNext(msgToUse);
-		}
-	}
-
-	// TODO: This collection of interfaces will need a rethink once we have
-	// more complicated adversaries that need access to the whole message queue.
-
-	public void processNextMsg(Random random) {
-		processNextMsgWithReceiver(random, (c, m) -> true);
-	}
-
-	public void processNextMsg(Random random, Predicate<Object> filter) {
-		processNextMsgWithReceiver(random, (receiverIndex, msg) -> filter.test(msg));
-	}
-
-	public void processNextMsgWithReceiver(Random random, BiPredicate<Integer, Object> filter) {
-		List<ControlledMessage> possibleMsgs = network.peekNextMessages();
-		if (possibleMsgs.isEmpty()) {
-			throw new IllegalStateException(LOST_RESPONSIVENESS);
-		}
-
-		int nextIndex =  random.nextInt(possibleMsgs.size());
-		ChannelId channelId = possibleMsgs.get(nextIndex).getChannelId();
-		Object msg = network.popNextMessage(channelId);
-		int receiverIndex = bftNodes.indexOf(channelId.getReceiver());
-		if (filter.test(receiverIndex, msg)) {
-			nodes.get(receiverIndex).processNext(msg);
-		}
-	}
-
-	public void processNextMsgWithSenderAndReceiver(Random random, TriPredicate<Integer, Integer, Object> filter) {
-		List<ControlledMessage> possibleMsgs = network.peekNextMessages();
-		if (possibleMsgs.isEmpty()) {
-			throw new IllegalStateException(LOST_RESPONSIVENESS);
-		}
-
-		int nextIndex =  random.nextInt(possibleMsgs.size());
-		ChannelId channelId = possibleMsgs.get(nextIndex).getChannelId();
-		Object msg = network.popNextMessage(channelId);
-		int receiverIndex = bftNodes.indexOf(channelId.getReceiver());
-		int senderIndex = bftNodes.indexOf(channelId.getSender());
-		if (filter.test(senderIndex, receiverIndex, msg)) {
-			nodes.get(receiverIndex).processNext(msg);
-		}
-	}
-
+	// Debugging aid for messages
 	public void dumpMessages(PrintStream out) {
-		network.dumpMessages(out, bftNodes::indexOf);
+		this.network.dumpMessages(out);
 	}
 }
