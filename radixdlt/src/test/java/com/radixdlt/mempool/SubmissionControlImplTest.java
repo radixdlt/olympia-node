@@ -17,12 +17,14 @@
 
 package com.radixdlt.mempool;
 
+import com.radixdlt.consensus.Command;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.mempool.SubmissionControlImpl.SubmissionControlSender;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.converters.AtomToClientAtomConverter;
 import com.radixdlt.middleware2.converters.AtomConversionException;
+import com.radixdlt.serialization.SerializationException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import org.json.JSONObject;
@@ -35,6 +37,7 @@ import com.radixdlt.constraintmachine.DataPointer;
 import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.serialization.Serialization;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 import static org.hamcrest.Matchers.*;
@@ -59,6 +62,14 @@ public class SubmissionControlImplTest {
 		this.converter = mock(AtomToClientAtomConverter.class);
 		this.sender = mock(SubmissionControlSender.class);
 		this.submissionControl = new SubmissionControlImpl(this.mempool, this.radixEngine, this.serialization, this.converter, this.sender);
+	}
+
+	@Test
+	public void when_command_deserialization_fails__then_throw_exception() throws Exception {
+		Command command = new Command(new byte[] {});
+		when(serialization.fromDson(any(), eq(ClientAtom.class))).thenThrow(new SerializationException(""));
+		assertThatThrownBy(() -> submissionControl.submitCommand(command))
+			.isInstanceOf(MempoolRejectedException.class);
 	}
 
 	@Test

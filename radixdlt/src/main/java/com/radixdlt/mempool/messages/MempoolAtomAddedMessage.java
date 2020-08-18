@@ -50,7 +50,6 @@ public class MempoolAtomAddedMessage extends Message {
 
 	@Override
 	public String toString() {
-		String cmdString = this.command == null ? "null" : this.command.getHash().toString();
-		return String.format("%s[%s]", getClass().getSimpleName(), cmdString);
+		return String.format("%s[%s]", getClass().getSimpleName(), command);
 	}
 }
