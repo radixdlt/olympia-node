@@ -37,7 +37,6 @@ public class CommandTest {
 		assertThat(this.command.getPayload()).isEqualTo(new byte[] {1, 2, 3});
 	}
 
-
 	@Test
 	public void equalsContract() {
 		EqualsVerifier.forClass(Command.class)

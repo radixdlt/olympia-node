@@ -27,6 +27,7 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -50,7 +51,7 @@ public final class Command {
 
 	@JsonCreator
 	public Command(@JsonProperty("bytes") byte[] payload) {
-		this.payload = payload;
+		this.payload = Objects.requireNonNull(payload);
 	}
 
 	public <T> T map(Function<byte[], T> mapper) {
@@ -76,7 +77,7 @@ public final class Command {
 
 	@Override
 	public int hashCode() {
-		return this.getHash().hashCode();
+		return Arrays.hashCode(payload);
 	}
 
 	@Override
@@ -86,6 +87,6 @@ public final class Command {
 		}
 
 		Command other = (Command) o;
-		return Objects.equals(this.getHash(), other.getHash());
+		return Arrays.equals(this.payload, other.payload);
 	}
 }
