@@ -17,11 +17,7 @@
 
 package org.radix.serialization;
 
-import com.radixdlt.atommodel.Atom;
-import com.radixdlt.atommodel.message.MessageParticle;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.mempool.messages.MempoolAtomAddedMessage;
 
 public class MempoolAtomAddedMessageSerializeTest extends SerializeMessageObject<MempoolAtomAddedMessage> {
@@ -30,9 +26,6 @@ public class MempoolAtomAddedMessageSerializeTest extends SerializeMessageObject
 	}
 
 	private static MempoolAtomAddedMessage get() {
-		Atom atom = new Atom();
-		RadixAddress address = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
-		atom.addParticleGroupWith(new MessageParticle(address, address, "Hello".getBytes()), Spin.UP);
 		final Command command = new Command(new byte[] {0, 1});
 		return new MempoolAtomAddedMessage(1, command);
 	}

@@ -50,7 +50,7 @@ public final class Command {
 	private final transient Supplier<Hash> cachedHash = Suppliers.memoize(this::doGetHash);
 
 	@JsonCreator
-	public Command(@JsonProperty("bytes") byte[] payload) {
+	public Command(@JsonProperty("payload") byte[] payload) {
 		this.payload = Objects.requireNonNull(payload);
 	}
 

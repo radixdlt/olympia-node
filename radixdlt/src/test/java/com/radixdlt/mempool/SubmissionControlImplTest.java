@@ -134,6 +134,7 @@ public class SubmissionControlImplTest {
 		ClientAtom clientAtom = mock(ClientAtom.class);
 		when(clientAtom.getAID()).thenReturn(AID.ZERO);
 		when(converter.convert(eq(atomMock))).thenReturn(clientAtom);
+		when(serialization.toDson(eq(clientAtom), any())).thenReturn(new byte[] {0, 1, 2, 3});
 		// No type check issues with mocking generic here
 		@SuppressWarnings("unchecked")
 		Consumer<ClientAtom> callback = mock(Consumer.class);
