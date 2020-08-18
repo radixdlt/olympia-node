@@ -18,13 +18,13 @@
 package com.radixdlt.integration.distributed.deterministic.configuration;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.SyncedExecutor;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.middleware2.ClientAtom;
-import com.radixdlt.syncer.PreparedCommand;
+import com.radixdlt.consensus.PreparedCommand;
 
 /**
  * A state computer which never changes epochs
@@ -38,7 +38,7 @@ public enum SingleEpochAlwaysSyncedExecutor implements SyncedExecutor {
 	}
 
 	@Override
-	public void commit(ClientAtom command, VertexMetadata vertexMetadata) {
+	public void commit(Command command, VertexMetadata vertexMetadata) {
 		// No-op Mocked execution
 	}
 

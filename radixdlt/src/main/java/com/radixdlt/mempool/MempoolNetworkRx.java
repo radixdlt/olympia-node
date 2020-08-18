@@ -17,7 +17,7 @@
 
 package com.radixdlt.mempool;
 
-import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.consensus.Command;
 import io.reactivex.rxjava3.core.Observable;
 
 /**
@@ -31,5 +31,5 @@ public interface MempoolNetworkRx {
 	 *
 	 * @return hot observable of atom messages
 	 */
-	Observable<ClientAtom> atomMessages();
+	Observable<Command> commands();
 }

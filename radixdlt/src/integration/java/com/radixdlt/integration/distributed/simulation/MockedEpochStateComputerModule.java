@@ -19,12 +19,11 @@ package com.radixdlt.integration.distributed.simulation;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.middleware2.ClientAtom;
-import com.radixdlt.syncer.CommittedAtom;
 import com.radixdlt.syncer.CommittedCommands;
 import com.radixdlt.syncer.SyncExecutor.StateComputer;
 import com.radixdlt.syncer.SyncExecutor.CommittedCommand;
@@ -61,8 +60,8 @@ public class MockedEpochStateComputerModule extends AbstractModule {
 			}
 
 			@Override
-			public CommittedCommand commit(ClientAtom command, VertexMetadata vertexMetadata) {
-				return CommittedCommands.success(new CommittedAtom(command, vertexMetadata), null);
+			public CommittedCommand commit(Command command, VertexMetadata vertexMetadata) {
+				return CommittedCommands.success(command, vertexMetadata, null);
 			}
 		};
 	}

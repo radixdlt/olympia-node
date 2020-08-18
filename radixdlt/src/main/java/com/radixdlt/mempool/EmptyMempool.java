@@ -17,8 +17,8 @@
 
 package com.radixdlt.mempool;
 
-import com.radixdlt.identifiers.AID;
-import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.consensus.Command;
+import com.radixdlt.crypto.Hash;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -27,29 +27,28 @@ import java.util.Set;
  * Mempool which is always empty
  */
 public class EmptyMempool implements Mempool {
-
 	@Override
-	public void addAtom(ClientAtom atom) {
+	public void add(Command command) throws MempoolFullException, MempoolDuplicateException {
 		// No-op
 	}
 
 	@Override
-	public void removeCommittedAtom(AID aid) {
+	public void removeCommitted(Hash cmdHash) {
 		// No-op
 	}
 
 	@Override
-	public void removeRejectedAtom(AID aid) {
+	public void removeRejected(Hash cmdHash) {
 		// No-op
 	}
 
 	@Override
-	public List<ClientAtom> getAtoms(int count, Set<AID> seen) {
+	public List<Command> getCommands(int count, Set<Hash> seen) {
 		return Collections.emptyList();
 	}
 
 	@Override
-	public int atomCount() {
+	public int count() {
 		return 0;
 	}
 }

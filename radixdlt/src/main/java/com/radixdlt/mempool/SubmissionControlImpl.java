@@ -17,11 +17,14 @@
 
 package com.radixdlt.mempool;
 
+import com.radixdlt.consensus.Command;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.converters.AtomConversionException;
 import com.radixdlt.middleware2.converters.AtomToClientAtomConverter;
+import com.radixdlt.serialization.DsonOutput.Output;
+import com.radixdlt.serialization.SerializationException;
 import java.util.Objects;
 import java.util.function.Consumer;
 
@@ -62,10 +65,27 @@ public class SubmissionControlImpl implements SubmissionControl {
 	}
 
 	@Override
+	public void submitCommand(Command command) throws MempoolRejectedException, MempoolFullException, MempoolDuplicateException {
+		ClientAtom clientAtom = command.map(payload -> {
+			try {
+				return serialization.fromDson(payload, ClientAtom.class);
+			} catch (SerializationException e) {
+				return null;
+			}
+		});
+		if (clientAtom == null) {
+			throw new MempoolRejectedException(command, "Bad atom");
+		}
+		submitAtom(clientAtom);
+	}
+
+	@Override
 	public void submitAtom(ClientAtom atom) throws MempoolFullException, MempoolDuplicateException {
 		try {
 			this.radixEngine.staticCheck(atom);
-			this.mempool.addAtom(atom);
+			byte[] payload = serialization.toDson(atom, Output.ALL);
+			Command command = new Command(payload);
+			this.mempool.add(command);
 		} catch (RadixEngineException e) {
 			log.info(
 				"Rejecting atom {} with error '{}' at '{}' with message '{}'.",
@@ -75,6 +95,8 @@ public class SubmissionControlImpl implements SubmissionControl {
 				e.getMessage()
 			);
 			this.submissionControlSender.sendRadixEngineFailure(atom, e);
+		} catch (SerializationException e) {
+			throw new IllegalStateException("Should not ever get here if atom was already deserialized properly");
 		}
 	}
 

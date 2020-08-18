@@ -20,6 +20,9 @@ package com.radixdlt;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.radixdlt.consensus.Command;
+import com.radixdlt.serialization.DsonOutput.Output;
+import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.middleware2.network.MessageCentralLedgerSync;
 import com.radixdlt.network.addressbook.AddressBook;
@@ -79,8 +82,15 @@ public class SyncCommittedServiceModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private SyncedAtomSender syncedAtomSender(SyncExecutor epochExecutor) {
-		return syncAtom -> epochExecutor.commit(syncAtom.getClientAtom(), syncAtom.getVertexMetadata());
+	private SyncedAtomSender syncedAtomSender(SyncExecutor syncExecutor) {
+		return syncAtom -> {
+			try {
+				byte[] payload = DefaultSerialization.getInstance().toDson(syncAtom.getClientAtom(), Output.ALL);
+				Command command = new Command(payload);
+				syncExecutor.commit(command, syncAtom.getVertexMetadata());
+			} catch (SerializationException e) {
+			}
+		};
 	}
 
 

@@ -17,6 +17,8 @@
 
 package com.radixdlt.syncer;
 
+import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.syncer.SyncExecutor.CommittedCommand;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -27,17 +29,24 @@ import java.util.function.Function;
  */
 public final class CommittedCommands {
 	private static class CommittedCommandSuccess implements CommittedCommand {
-		private final CommittedAtom command;
+		private final Command command;
+		private final VertexMetadata vertexMetadata;
 		private final Object result;
 
-		private CommittedCommandSuccess(CommittedAtom command, Object result) {
+		private CommittedCommandSuccess(Command command, VertexMetadata vertexMetadata, Object result) {
 			this.command = command;
+			this.vertexMetadata = vertexMetadata;
 			this.result = result;
 		}
 
 		@Override
-		public CommittedAtom getCommand() {
+		public Command getCommand() {
 			return command;
+		}
+
+		@Override
+		public VertexMetadata getVertexMetadata() {
+			return vertexMetadata;
 		}
 
 		@Override
@@ -58,17 +67,24 @@ public final class CommittedCommands {
 	}
 
 	private static class CommittedCommandException implements CommittedCommand {
-		private final CommittedAtom command;
+		private final Command command;
+		private final VertexMetadata vertexMetadata;
 		private final Exception exception;
 
-		private CommittedCommandException(CommittedAtom command, Exception exception) {
+		private CommittedCommandException(Command command, VertexMetadata vertexMetadata, Exception exception) {
 			this.command = command;
+			this.vertexMetadata = vertexMetadata;
 			this.exception = exception;
 		}
 
 		@Override
-		public CommittedAtom getCommand() {
+		public Command getCommand() {
 			return command;
+		}
+
+		@Override
+		public VertexMetadata getVertexMetadata() {
+			return vertexMetadata;
 		}
 
 		@Override
@@ -88,12 +104,12 @@ public final class CommittedCommands {
 		}
 	}
 
-	public static CommittedCommand success(CommittedAtom command, Object result) {
-		return new CommittedCommandSuccess(command, result);
+	public static CommittedCommand success(Command command, VertexMetadata vertexMetadata, Object result) {
+		return new CommittedCommandSuccess(command, vertexMetadata, result);
 	}
 
-	public static CommittedCommand error(CommittedAtom command, Exception exception) {
-		return new CommittedCommandException(command, exception);
+	public static CommittedCommand error(Command command, VertexMetadata vertexMetadata, Exception exception) {
+		return new CommittedCommandException(command, vertexMetadata, exception);
 	}
 
 	private CommittedCommands() {

@@ -19,8 +19,6 @@ package com.radixdlt.consensus;
 
 import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.middleware2.ClientAtom;
-import com.radixdlt.syncer.PreparedCommand;
 
 /**
  * A distributed computer which manages the computed state in a BFT.
@@ -52,5 +50,5 @@ public interface SyncedExecutor {
 	 * @param command the command to commit
 	 * @param vertexMetadata ledger metadata regarding command
 	 */
-	void commit(ClientAtom command, VertexMetadata vertexMetadata);
+	void commit(Command command, VertexMetadata vertexMetadata);
 }

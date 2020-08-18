@@ -34,9 +34,8 @@ public final class EpochChangeManager implements CommittedSender {
 
 	@Override
 	public void sendCommitted(CommittedCommand committedCommand) {
-		CommittedAtom atom = committedCommand.getCommand();
-		atom.getVertexMetadata().getValidatorSet().ifPresent(validatorSet -> {
-			EpochChange epochChange = new EpochChange(atom.getVertexMetadata(), validatorSet);
+		committedCommand.getVertexMetadata().getValidatorSet().ifPresent(validatorSet -> {
+			EpochChange epochChange = new EpochChange(committedCommand.getVertexMetadata(), validatorSet);
 			this.epochChangeSender.epochChange(epochChange);
 		});
 	}

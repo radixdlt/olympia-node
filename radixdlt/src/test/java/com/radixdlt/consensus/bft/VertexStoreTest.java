@@ -32,6 +32,7 @@ import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRPCSender;
@@ -46,8 +47,7 @@ import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.middleware2.ClientAtom;
-import com.radixdlt.syncer.PreparedCommand;
+import com.radixdlt.consensus.PreparedCommand;
 import com.radixdlt.utils.UInt256;
 import java.util.Arrays;
 import java.util.Collections;
@@ -265,8 +265,8 @@ public class VertexStoreTest {
 	@Test
 	public void when_insert_and_commit_vertex__then_it_should_be_committed_and_stored_in_engine()
 		throws VertexInsertionException {
-		ClientAtom clientAtom = mock(ClientAtom.class);
-		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), clientAtom);
+		Command command = mock(Command.class);
+		Vertex nextVertex = Vertex.createVertex(rootQC, View.of(1), command);
 		vertexStore.insertVertex(nextVertex);
 
 		VertexMetadata vertexMetadata = VertexMetadata.ofVertex(nextVertex, mock(PreparedCommand.class));
@@ -275,7 +275,7 @@ public class VertexStoreTest {
 		verify(vertexStoreEventSender, times(1))
 			.sendCommittedVertex(eq(nextVertex));
 		verify(syncedExecutor, times(1))
-			.commit(eq(clientAtom), eq(vertexMetadata)); // next atom stored
+			.commit(eq(command), eq(vertexMetadata)); // next atom stored
 	}
 
 	@Test

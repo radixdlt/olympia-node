@@ -19,7 +19,6 @@ package com.radixdlt.consensus;
 
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.middleware2.ClientAtom;
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Before;
 import org.junit.Test;
@@ -33,7 +32,7 @@ public class VertexTest {
 
 	private Vertex testObject;
 	private QuorumCertificate qc;
-	private ClientAtom atom;
+	private Command command;
 
 	@Before
 	public void setUp() {
@@ -45,10 +44,8 @@ public class VertexTest {
 		VoteData voteData = new VoteData(vertexMetadata, parent, parent);
 
 		this.qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
-
-		this.atom = mock(ClientAtom.class);
-
-		this.testObject = Vertex.createVertex(this.qc, baseView.next().next(), this.atom);
+		this.command = mock(Command.class);
+		this.testObject = Vertex.createVertex(this.qc, baseView.next().next(), this.command);
 	}
 
 	@Test
@@ -79,7 +76,7 @@ public class VertexTest {
 
 	@Test
 	public void testGetters() {
-		assertEquals(this.atom, this.testObject.getAtom());
+		assertEquals(this.command, this.testObject.getCommand());
 		assertEquals(this.qc, this.testObject.getQC());
 		assertEquals(View.of(1234567892L), this.testObject.getView());
 	}

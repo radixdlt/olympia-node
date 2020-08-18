@@ -23,7 +23,6 @@ import com.google.common.base.Suppliers;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
@@ -55,9 +54,9 @@ public final class Vertex {
 
 	private final View view;
 
-	@JsonProperty("atom")
+	@JsonProperty("command")
 	@DsonOutput(Output.ALL)
-	private final ClientAtom atom;
+	private final Command command;
 
 	private final transient Supplier<Hash> cachedHash = Suppliers.memoize(this::doGetHash);
 
@@ -66,12 +65,12 @@ public final class Vertex {
 		@JsonProperty("qc") QuorumCertificate qc,
 		@JsonProperty("epoch") long epoch,
 		@JsonProperty("view") Long viewId,
-		@JsonProperty("atom") ClientAtom atom
+		@JsonProperty("command") Command command
 	) {
-		this(epoch, qc, viewId != null ? View.of(viewId) : null, atom);
+		this(epoch, qc, viewId != null ? View.of(viewId) : null, command);
 	}
 
-	public Vertex(long epoch, QuorumCertificate qc, View view, ClientAtom atom) {
+	public Vertex(long epoch, QuorumCertificate qc, View view, Command command) {
 		if (epoch < 0) {
 			throw new IllegalArgumentException("epoch must be >= 0");
 		}
@@ -79,7 +78,7 @@ public final class Vertex {
 		this.epoch = epoch;
 		this.qc = Objects.requireNonNull(qc);
 		this.view = Objects.requireNonNull(view);
-		this.atom = atom;
+		this.command = command;
 	}
 
 	public static Vertex createGenesis(VertexMetadata ancestorMetadata) {
@@ -89,14 +88,14 @@ public final class Vertex {
 		return new Vertex(ancestorMetadata.getEpoch() + 1, qc, View.genesis(), null);
 	}
 
-	public static Vertex createVertex(QuorumCertificate qc, View view, ClientAtom reAtom) {
+	public static Vertex createVertex(QuorumCertificate qc, View view, Command command) {
 		Objects.requireNonNull(qc);
 
 		if (view.number() == 0) {
 			throw new IllegalArgumentException("Only genesis can have view 0.");
 		}
 
-		return new Vertex(qc.getProposed().getEpoch(), qc, view, reAtom);
+		return new Vertex(qc.getProposed().getEpoch(), qc, view, command);
 	}
 
 	private Hash doGetHash() {
@@ -139,8 +138,8 @@ public final class Vertex {
 		return view;
 	}
 
-	public ClientAtom getAtom() {
-		return atom;
+	public Command getCommand() {
+		return command;
 	}
 
 	public boolean isGenesis() {
@@ -161,12 +160,12 @@ public final class Vertex {
 
 	@Override
 	public String toString() {
-		return String.format("Vertex{epoch=%s view=%s, qc=%s, atom=%s}", epoch, view, qc, atom == null ? null : atom.getAID());
+		return String.format("Vertex{epoch=%s view=%s, qc=%s, cmd=%s}", epoch, view, qc, command);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(qc, view, atom, epoch);
+		return Objects.hash(qc, view, command, epoch);
 	}
 
 	@Override
@@ -177,7 +176,7 @@ public final class Vertex {
 
 		Vertex v = (Vertex) o;
 		return Objects.equals(v.view, this.view)
-			&& Objects.equals(v.atom, this.atom)
+			&& Objects.equals(v.command, this.command)
 			&& Objects.equals(v.qc, this.qc)
 			&& v.epoch == this.epoch;
 	}

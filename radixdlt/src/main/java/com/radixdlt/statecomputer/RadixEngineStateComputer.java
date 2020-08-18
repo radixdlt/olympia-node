@@ -20,6 +20,8 @@ package com.radixdlt.statecomputer;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Streams;
+import com.radixdlt.DefaultSerialization;
+import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -28,6 +30,7 @@ import com.radixdlt.engine.RadixEngine;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.syncer.CommittedAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
@@ -93,16 +96,25 @@ public final class RadixEngineStateComputer implements StateComputer {
 	}
 
 	@Override
-	public CommittedCommand commit(ClientAtom command, VertexMetadata vertexMetadata) {
-		CommittedAtom committedAtom = new CommittedAtom(command, vertexMetadata);
+	public CommittedCommand commit(Command command, VertexMetadata vertexMetadata) {
 		if (command != null) {
+			final ClientAtom clientAtom;
+			try {
+				clientAtom = DefaultSerialization.getInstance().fromDson(command.getPayload(), ClientAtom.class);
+			} catch (SerializationException e) {
+				// TODO: Fix this
+				throw new IllegalStateException("Dead.");
+			}
+
+			CommittedAtom committedAtom = new CommittedAtom(clientAtom, vertexMetadata);
+
 			try {
 				// TODO: execute list of commands instead
 				this.radixEngine.checkAndStore(committedAtom);
 
 				// TODO: cleanup and move this logic to a better spot
 				final ImmutableSet<EUID> indicies = committedAtomsStore.getIndicies(committedAtom);
-				return CommittedCommands.success(committedAtom, indicies);
+				return CommittedCommands.success(command, vertexMetadata, indicies);
 			} catch (RadixEngineException e) {
 				// TODO: Don't check for state computer errors for now so that we don't
 				// TODO: have to deal with failing leader proposals
@@ -111,19 +123,19 @@ public final class RadixEngineStateComputer implements StateComputer {
 				// TODO: move VIRTUAL_STATE_CONFLICT to static check
 				this.unstoredCommittedAtoms.add(committedAtom);
 
-				return CommittedCommands.error(committedAtom, e);
+				return CommittedCommands.error(command, vertexMetadata, e);
 			}
 
 		} else if (vertexMetadata.isEndOfEpoch()) {
 			// TODO: HACK
 			// TODO: Remove and move epoch change logic into RadixEngine
-			this.unstoredCommittedAtoms.add(committedAtom);
+			this.unstoredCommittedAtoms.add(new CommittedAtom(null, vertexMetadata));
 
-			return CommittedCommands.success(committedAtom, ImmutableSet.of());
+			return CommittedCommands.success(null, vertexMetadata, ImmutableSet.of());
 		} else {
 			// TODO: HACK
 			// TODO: Refactor to remove such illegal states
-			throw new IllegalStateException("Should never get here " + committedAtom);
+			throw new IllegalStateException("Should never get here " + command);
 		}
 	}
 

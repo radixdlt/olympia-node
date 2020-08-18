@@ -19,6 +19,8 @@ package com.radixdlt.syncer;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
+import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.PreparedCommand;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.SyncedExecutor;
 import com.radixdlt.consensus.Vertex;
@@ -29,9 +31,7 @@ import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.identifiers.AID;
 import com.radixdlt.mempool.Mempool;
-import com.radixdlt.middleware2.ClientAtom;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -53,7 +53,9 @@ public final class SyncExecutor implements SyncedExecutor, NextCommandGenerator 
 	// TODO: Refactor committed command when commit logic is re-written
 	// TODO: as currently it's mostly loosely coupled logic
 	public interface CommittedCommand {
-		CommittedAtom getCommand();
+		Command getCommand();
+		VertexMetadata getVertexMetadata();
+
 		interface MaybeSuccessMapped<T> {
 			T elseIfError(Function<Exception, T> errorMapper);
 		}
@@ -66,7 +68,7 @@ public final class SyncExecutor implements SyncedExecutor, NextCommandGenerator 
 
 	public interface StateComputer {
 		Optional<BFTValidatorSet> prepare(Vertex vertex);
-		CommittedCommand commit(ClientAtom command, VertexMetadata vertexMetadata);
+		CommittedCommand commit(Command command, VertexMetadata vertexMetadata);
 	}
 
 	public interface CommittedSender {
@@ -108,9 +110,9 @@ public final class SyncExecutor implements SyncedExecutor, NextCommandGenerator 
 	}
 
 	@Override
-	public ClientAtom generateNextCommand(View view, Set<AID> prepared) {
-		final List<ClientAtom> atoms = mempool.getAtoms(1, prepared);
-		return !atoms.isEmpty() ? atoms.get(0) : null;
+	public Command generateNextCommand(View view, Set<Hash> prepared) {
+		final List<Command> commands = mempool.getCommands(1, prepared);
+		return !commands.isEmpty() ? commands.get(0) : null;
 	}
 
 	@Override
@@ -126,7 +128,7 @@ public final class SyncExecutor implements SyncedExecutor, NextCommandGenerator 
 		} else if (validatorSet.isPresent()) {
 			versionIncrement = 1;
 		} else {
-			versionIncrement = vertex.getAtom() != null ? 1 : 0;
+			versionIncrement = vertex.getCommand() != null ? 1 : 0;
 		}
 
 		final long stateVersion = parentStateVersion + versionIncrement;
@@ -158,12 +160,11 @@ public final class SyncExecutor implements SyncedExecutor, NextCommandGenerator 
 	}
 
 	@Override
-	public void commit(ClientAtom command, VertexMetadata vertexMetadata) {
-		CommittedAtom committedAtom = new CommittedAtom(command, vertexMetadata);
+	public void commit(Command command, VertexMetadata vertexMetadata) {
 		this.counters.increment(CounterType.LEDGER_PROCESSED);
 
 		synchronized (lock) {
-			final long stateVersion = committedAtom.getVertexMetadata().getStateVersion();
+			final long stateVersion = vertexMetadata.getStateVersion();
 			// TODO: get this invariant to as low level as possible
 			if (stateVersion != this.currentStateVersion + 1) {
 				return;
@@ -175,8 +176,8 @@ public final class SyncExecutor implements SyncedExecutor, NextCommandGenerator 
 			// persist
 			CommittedCommand result = this.stateComputer.commit(command, vertexMetadata);
 			// TODO: move all of the following to post-persist event handling
-			if (committedAtom.getClientAtom() != null) {
-				this.mempool.removeCommittedAtom(committedAtom.getAID());
+			if (command != null) {
+				this.mempool.removeCommitted(command.getHash());
 			}
 			committedSender.sendCommitted(result);
 

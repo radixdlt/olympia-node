@@ -38,7 +38,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class RadixEngineStateComputerTest {
-	private RadixEngineStateComputer executor;
+	private RadixEngineStateComputer stateComputer;
 	private CommittedAtomsStore committedAtomsStore;
 	private RadixEngine<LedgerAtom> radixEngine;
 	private View epochHighView;
@@ -52,7 +52,7 @@ public class RadixEngineStateComputerTest {
 		// No issues with type checking for mock
 		@SuppressWarnings("unchecked") Function<Long, BFTValidatorSet> vsm = mock(Function.class);
 		this.validatorSetMapping = vsm;
-		this.executor = new RadixEngineStateComputer(
+		this.stateComputer = new RadixEngineStateComputer(
 			radixEngine,
 			validatorSetMapping,
 			epochHighView,
@@ -66,25 +66,26 @@ public class RadixEngineStateComputerTest {
 		when(vertex.getView()).thenReturn(epochHighView);
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		when(validatorSetMapping.apply(any())).thenReturn(validatorSet);
-		assertThat(executor.prepare(vertex)).contains(validatorSet);
+		assertThat(stateComputer.prepare(vertex)).contains(validatorSet);
 	}
 
 	@Test
-	public void when_execute_vertex_with_engine_exception__then_is_available_on_query() throws RadixEngineException {
+	public void when_execute_vertex_with_null_command__then_is_available_on_query() throws RadixEngineException {
 		ClientAtom committedAtom = mock(ClientAtom.class);
 		AID aid = mock(AID.class);
 		when(committedAtom.getAID()).thenReturn(aid);
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
 		when(vertexMetadata.getView()).then(i -> View.of(50));
 		when(vertexMetadata.getStateVersion()).then(i -> 1L);
+		when(vertexMetadata.isEndOfEpoch()).thenReturn(true);
 
 		RadixEngineException e = mock(RadixEngineException.class);
 		doThrow(e).when(radixEngine).checkAndStore(any());
-		executor.commit(committedAtom, vertexMetadata);
+		stateComputer.commit(null, vertexMetadata);
 
-		assertThat(executor.getCommittedAtoms(0, 1))
+		assertThat(stateComputer.getCommittedAtoms(0, 1))
 			.hasOnlyOneElementSatisfying(c -> {
-				assertThat(c.getClientAtom()).isEqualTo(committedAtom);
+				assertThat(c.getClientAtom()).isNull();
 				assertThat(c.getVertexMetadata()).isEqualTo(vertexMetadata);
 			});
 	}

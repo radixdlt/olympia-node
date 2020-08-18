@@ -17,7 +17,8 @@
 
 package com.radixdlt.mempool;
 
-import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.consensus.Command;
+import com.radixdlt.crypto.Hash;
 import java.util.List;
 
 import org.junit.Before;
@@ -48,93 +49,93 @@ public class LocalMempoolTest {
 	@Test(expected = MempoolDuplicateException.class)
 	public void when_adding_atom_with_same_aid__then_exception_is_thrown()
 		throws MempoolFullException, MempoolDuplicateException {
-		ClientAtom atom = mock(ClientAtom.class);
-		when(atom.getAID()).thenReturn(AID.ZERO);
+		Command command = mock(Command.class);
+		when(command.getHash()).thenReturn(Hash.ZERO_HASH);
 
-		this.mempool.addAtom(atom);
-		this.mempool.addAtom(atom);
+		this.mempool.add(command);
+		this.mempool.add(command);
 		fail();
 	}
 
 	@Test
 	public void when_adding_too_many_atoms__then_exception_is_thrown()
 		throws MempoolFullException, MempoolDuplicateException {
-		this.mempool.addAtom(makeAtom(1));
-		this.mempool.addAtom(makeAtom(2));
-		ClientAtom badAtom = makeAtom(3);
+		this.mempool.add(makeCommand(1));
+		this.mempool.add(makeCommand(2));
+		Command badCommand = makeCommand(3);
 		try {
-			this.mempool.addAtom(badAtom);
+			this.mempool.add(badCommand);
 			fail();
 		} catch (MempoolFullException e) {
-			assertSame(badAtom, e.atom());
+			assertSame(badCommand, e.command());
 		}
 	}
 
 	@Test
 	public void when_committed_atom_is_removed__then_mempool_size_decreases()
 		throws MempoolFullException, MempoolDuplicateException {
-		ClientAtom atom = makeAtom(1234);
-		this.mempool.addAtom(atom);
-		assertEquals(1, this.mempool.atomCount());
-		this.mempool.removeCommittedAtom(atom.getAID());
-		assertEquals(0, this.mempool.atomCount());
+		Command command = makeCommand(1234);
+		this.mempool.add(command);
+		assertEquals(1, this.mempool.count());
+		this.mempool.removeCommitted(command.getHash());
+		assertEquals(0, this.mempool.count());
 	}
 
 	@Test
 	public void when_rejected_atom_is_removed__then_mempool_size_decreases()
 		throws MempoolFullException, MempoolDuplicateException {
-		ClientAtom atom = makeAtom(1234);
-		this.mempool.addAtom(atom);
-		assertEquals(1, this.mempool.atomCount());
-		this.mempool.removeRejectedAtom(atom.getAID());
-		assertEquals(0, this.mempool.atomCount());
+		Command command = makeCommand(1234);
+		this.mempool.add(command);
+		assertEquals(1, this.mempool.count());
+		this.mempool.removeRejected(command.getHash());
+		assertEquals(0, this.mempool.count());
 	}
 
 	@Test
 	public void when_an_atom_is_requested__then_mempool_returns_and_retains_atoms()
 		throws MempoolFullException, MempoolDuplicateException {
-		ClientAtom atom = makeAtom(1234);
-		this.mempool.addAtom(atom);
-		assertEquals(1, this.mempool.atomCount()); // precondition
+		Command command = makeCommand(1234);
+		this.mempool.add(command);
+		assertEquals(1, this.mempool.count()); // precondition
 
-		List<ClientAtom> atoms = this.mempool.getAtoms(1, Sets.newHashSet());
-		assertEquals(1, atoms.size());
-		assertSame(atom, atoms.get(0));
-		assertEquals(1, this.mempool.atomCount()); // postcondition
+		List<Command> commands = this.mempool.getCommands(1, Sets.newHashSet());
+		assertEquals(1, commands.size());
+		assertSame(command, commands.get(0));
+		assertEquals(1, this.mempool.count()); // postcondition
 	}
 
 	@Test
 	public void when_too_many_atoms_requested__then_mempool_returns_fewer_atoms()
 		throws MempoolFullException, MempoolDuplicateException {
-		ClientAtom atom = makeAtom(1234);
-		this.mempool.addAtom(atom);
-		assertEquals(1, this.mempool.atomCount()); // precondition
+		Command command = makeCommand(1234);
+		this.mempool.add(command);
+		assertEquals(1, this.mempool.count()); // precondition
 
-		List<ClientAtom> atoms = this.mempool.getAtoms(2, Sets.newHashSet());
-		assertEquals(1, atoms.size());
-		assertSame(atom, atoms.get(0));
-		assertEquals(1, this.mempool.atomCount()); // postcondition
+		List<Command> commands = this.mempool.getCommands(2, Sets.newHashSet());
+		assertEquals(1, commands.size());
+		assertSame(command, commands.get(0));
+		assertEquals(1, this.mempool.count()); // postcondition
 	}
 
 	@Test
 	public void when_atoms_requested_from_empty_mempool__then_mempool_returns_empty_list() {
-		assertEquals(0, this.mempool.atomCount()); // precondition
+		assertEquals(0, this.mempool.count()); // precondition
 
-		List<ClientAtom> atoms = this.mempool.getAtoms(1, Sets.newHashSet());
-		assertTrue(atoms.isEmpty());
-		assertEquals(0, this.mempool.atomCount()); // postcondition
+		List<Command> commands = this.mempool.getCommands(1, Sets.newHashSet());
+		assertTrue(commands.isEmpty());
+		assertEquals(0, this.mempool.count()); // postcondition
 	}
 
 	@Test
 	public void when_an_atom_is_requested__then_mempool_excludes_atoms()
 		throws MempoolFullException, MempoolDuplicateException {
-		ClientAtom atom = makeAtom(1234);
-		this.mempool.addAtom(atom);
-		assertEquals(1, this.mempool.atomCount()); // precondition
+		Command command = makeCommand(1234);
+		this.mempool.add(command);
+		assertEquals(1, this.mempool.count()); // precondition
 
-		List<ClientAtom> atoms = this.mempool.getAtoms(1, Sets.newHashSet(atom.getAID()));
-		assertTrue(atoms.isEmpty());
-		assertEquals(1, this.mempool.atomCount()); // postcondition
+		List<Command> commands = this.mempool.getCommands(1, Sets.newHashSet(command.getHash()));
+		assertTrue(commands.isEmpty());
+		assertEquals(1, this.mempool.count()); // postcondition
 	}
 
 	@Test
@@ -145,8 +146,8 @@ public class LocalMempoolTest {
 	@Test
 	public void well_formatted_tostring()
 		throws MempoolFullException, MempoolDuplicateException {
-		this.mempool.addAtom(makeAtom(1234));
-		assertEquals(1, this.mempool.atomCount()); // precondition
+		this.mempool.add(makeCommand(1234));
+		assertEquals(1, this.mempool.count()); // precondition
 
 		String tostring = this.mempool.toString();
 
@@ -154,15 +155,9 @@ public class LocalMempoolTest {
 		assertThat(tostring, containsString(LocalMempool.class.getSimpleName()));
 	}
 
-	private static AID makeAID(int n) {
+	private static Command makeCommand(int n) {
 		byte[] temp = new byte[AID.BYTES];
 		Ints.copyTo(n, temp, AID.BYTES - Integer.BYTES);
-		return AID.from(temp);
-	}
-
-	private static ClientAtom makeAtom(int n) {
-		ClientAtom atom = mock(ClientAtom.class);
-		when(atom.getAID()).thenReturn(makeAID(n));
-		return atom;
+		return new Command(temp);
 	}
 }

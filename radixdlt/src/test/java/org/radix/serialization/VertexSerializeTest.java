@@ -17,19 +17,14 @@
 
 package org.radix.serialization;
 
-import com.radixdlt.atommodel.message.MessageParticle;
+import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VoteData;
-import com.radixdlt.identifiers.RadixAddress;
-import com.radixdlt.atommodel.Atom;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
-import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.middleware2.ClientAtom;
-import com.radixdlt.middleware2.ClientAtom.LedgerAtomConversionException;
 
 public class VertexSerializeTest extends SerializeObject<Vertex> {
 	public VertexSerializeTest() {
@@ -46,17 +41,8 @@ public class VertexSerializeTest extends SerializeObject<Vertex> {
 
 		QuorumCertificate qc = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
 
-		RadixAddress address = RadixAddress.from("JH1P8f3znbyrDj8F4RWpix7hRkgxqHjdW2fNnKpR3v6ufXnknor");
-		Atom atom = new Atom();
-		// add a particle to ensure atom is valid and has at least one shard
-		atom.addParticleGroupWith(new MessageParticle(address, address, "Hello".getBytes()), Spin.UP);
-		final ClientAtom clientAtom;
-		try {
-			clientAtom = ClientAtom.convertFromApiAtom(atom);
-		} catch (LedgerAtomConversionException e) {
-			throw new IllegalStateException();
-		}
+		final Command command = new Command(new byte[] {0, 1, 2, 3});
 
-		return Vertex.createVertex(qc, view, clientAtom);
+		return Vertex.createVertex(qc, view, command);
 	}
 }

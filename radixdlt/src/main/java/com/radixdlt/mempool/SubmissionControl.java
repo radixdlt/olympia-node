@@ -16,6 +16,7 @@
  */
 package com.radixdlt.mempool;
 
+import com.radixdlt.consensus.Command;
 import com.radixdlt.middleware2.ClientAtom;
 import java.util.function.Consumer;
 
@@ -25,6 +26,12 @@ import org.json.JSONObject;
  * Handle atom submission.
  */
 public interface SubmissionControl {
+
+	/**
+	 * TODO: This needs to be reworked and refactored
+	 */
+	void submitCommand(Command command) throws MempoolRejectedException;
+
 	/**
 	 * Handle atom submission from API or network as an {@link ClientAtom}.
 	 *

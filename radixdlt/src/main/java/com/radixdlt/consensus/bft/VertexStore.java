@@ -17,18 +17,18 @@
 
 package com.radixdlt.consensus.bft;
 
-import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.SyncedExecutor;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.VertexStoreEventProcessor;
+import com.radixdlt.consensus.PreparedCommand;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hash;
 
-import com.radixdlt.syncer.PreparedCommand;
+import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -520,7 +520,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 
 		for (Vertex committed : path) {
 			this.counters.increment(CounterType.BFT_PROCESSED);
-			syncedExecutor.commit(committed.getAtom(), commitMetadata);
+			syncedExecutor.commit(committed.getCommand(), commitMetadata);
 
 			this.vertexStoreEventSender.sendCommittedVertex(committed);
 		}

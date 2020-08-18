@@ -17,14 +17,14 @@
 
 package com.radixdlt.mempool;
 
-import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.consensus.Command;
+import com.radixdlt.crypto.Hash;
 import java.util.Set;
 
 import org.junit.Before;
 import org.junit.Test;
 
 import com.google.common.collect.Sets;
-import com.radixdlt.identifiers.AID;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.utils.Ints;
 
@@ -33,7 +33,7 @@ import static org.mockito.Mockito.*;
 import static org.hamcrest.Matchers.*;
 
 public class SharedMempoolTest {
-	private static final AID TEST_AID = makeAID(1234);
+	private static final Hash TEST_HASH = makeHash(1234);
 
 	private LocalMempool localMempool;
 	private MempoolNetworkTx mempoolNetworkTx;
@@ -51,41 +51,41 @@ public class SharedMempoolTest {
 	@Test
 	public void when_adding_atom__then_atom_is_added_and_sent()
 		throws MempoolFullException, MempoolDuplicateException {
-		ClientAtom mockAtom = mock(ClientAtom.class);
-		when(mockAtom.getAID()).thenReturn(TEST_AID);
-		this.sharedMempool.addAtom(mockAtom);
-		verify(this.localMempool, times(1)).addAtom(any());
+		Command mockCommand = mock(Command.class);
+		when(mockCommand.getHash()).thenReturn(TEST_HASH);
+		this.sharedMempool.add(mockCommand);
+		verify(this.localMempool, times(1)).add(any());
 		verify(this.mempoolNetworkTx, times(1)).sendMempoolSubmission(any());
 	}
 
 	@Test
 	public void when_committed_atom_is_removed__then_local_mempool_removed() {
-		this.sharedMempool.removeCommittedAtom(TEST_AID);
-		verify(this.localMempool, times(1)).removeCommittedAtom(TEST_AID);
+		this.sharedMempool.removeCommitted(TEST_HASH);
+		verify(this.localMempool, times(1)).removeCommitted(TEST_HASH);
 	}
 
 	@Test
 	public void when_rejected_atom_is_removed__then_local_mempool_removed() {
-		this.sharedMempool.removeRejectedAtom(TEST_AID);
-		verify(this.localMempool, times(1)).removeRejectedAtom(TEST_AID);
+		this.sharedMempool.removeRejected(TEST_HASH);
+		verify(this.localMempool, times(1)).removeRejected(TEST_HASH);
 	}
 
 	@Test
 	public void when_atoms_requested__then_local_mempool_called() {
-		Set<AID> seen = Sets.newHashSet();
-		this.sharedMempool.getAtoms(1, seen);
-		verify(this.localMempool, times(1)).getAtoms(eq(1), same(seen));
+		Set<Hash> seen = Sets.newHashSet();
+		this.sharedMempool.getCommands(1, seen);
+		verify(this.localMempool, times(1)).getCommands(eq(1), same(seen));
 	}
 
 	@Test
 	public void when_an_atom__count_is_requested__then_local_mempool_called() {
-		this.sharedMempool.atomCount();
-		verify(this.localMempool, times(1)).atomCount();
+		this.sharedMempool.count();
+		verify(this.localMempool, times(1)).count();
 	}
 
 	@Test
 	public void well_formatted_tostring() {
-		when(this.localMempool.atomCount()).thenReturn(1);
+		when(this.localMempool.count()).thenReturn(1);
 		when(this.localMempool.maxCount()).thenReturn(2);
 
 		String tostring = this.sharedMempool.toString();
@@ -94,9 +94,9 @@ public class SharedMempoolTest {
 		assertThat(tostring, containsString(SharedMempool.class.getSimpleName()));
 	}
 
-	private static AID makeAID(int n) {
-		byte[] temp = new byte[AID.BYTES];
-		Ints.copyTo(n, temp, AID.BYTES - Integer.BYTES);
-		return AID.from(temp);
+	private static Hash makeHash(int n) {
+		byte[] temp = new byte[256];
+		Ints.copyTo(n, temp, 256 - Integer.BYTES);
+		return Hash.of(temp);
 	}
 }

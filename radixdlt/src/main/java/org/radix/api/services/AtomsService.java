@@ -30,6 +30,7 @@ import com.radixdlt.identifiers.EUID;
 import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.mempool.SubmissionControl;
 
+import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.syncer.CommittedAtom;
 import com.radixdlt.syncer.SyncExecutor.CommittedCommand;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
@@ -109,14 +110,22 @@ public class AtomsService {
 		this.ledgerRx = ledgerRx;
 	}
 
-	private void processExecutedCommand(CommittedCommand executedCommand) {
-		if (executedCommand.getCommand().getClientAtom() == null) {
+	private void processExecutedCommand(CommittedCommand committedCommand) {
+		if (committedCommand.getCommand() == null) {
 			return;
 		}
+		byte[] payload = committedCommand.getCommand().getPayload();
+		ClientAtom clientAtom;
+		try {
+			clientAtom = DefaultSerialization.getInstance().fromDson(payload, ClientAtom.class);
+		} catch (SerializationException e) {
+			return;
+		}
+		CommittedAtom committedAtom = new CommittedAtom(clientAtom, committedCommand.getVertexMetadata());
 
-		executedCommand
-			.ifSuccess(result -> this.processStoredEvent(executedCommand.getCommand(), result))
-			.ifError(e -> this.processException(executedCommand.getCommand(), e));
+		committedCommand
+			.ifSuccess(result -> this.processStoredEvent(committedAtom, result))
+			.ifError(e -> this.processException(committedAtom, e));
 	}
 
 	private void processStoredEvent(CommittedAtom committedAtom, Object result) {
@@ -234,8 +243,8 @@ public class AtomsService {
 	}
 
 	public AID submitAtom(JSONObject jsonAtom, SingleAtomListener subscriber) {
+		AtomicReference<AID> aid = new AtomicReference<>();
 		try {
-			AtomicReference<AID> aid = new AtomicReference<>();
 			this.submissionControl.submitAtom(jsonAtom, atom -> {
 				aid.set(atom.getAID());
 				subscribeToSubmission(subscriber, atom);
@@ -243,8 +252,8 @@ public class AtomsService {
 			return aid.get();
 		} catch (MempoolRejectedException e) {
 			if (subscriber != null) {
-				AID atomId = e.atom().getAID();
-				this.deleteOnEventSingleAtomObservers.computeIfPresent(atomId, (aid, subscribers) -> {
+				AID atomId = aid.get();
+				this.deleteOnEventSingleAtomObservers.computeIfPresent(atomId, (id, subscribers) -> {
 					subscribers.remove(subscriber);
 					return subscribers;
 				});

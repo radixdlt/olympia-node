@@ -48,7 +48,7 @@ import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.LatencyProvider;
 import com.radixdlt.mempool.LocalMempool;
 import com.radixdlt.mempool.Mempool;
-import com.radixdlt.syncer.CommittedAtom;
+import com.radixdlt.syncer.SyncExecutor.CommittedCommand;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 import io.reactivex.rxjava3.core.Observable;
@@ -224,7 +224,7 @@ public class SimulationTest {
 						.map(node -> BFTValidator.from(node, UInt256.ONE))
 						.collect(Collectors.toList())
 				);
-				ConcurrentHashMap<Long, CommittedAtom> sharedCommittedAtoms = new ConcurrentHashMap<>();
+				ConcurrentHashMap<Long, CommittedCommand> sharedCommittedAtoms = new ConcurrentHashMap<>();
 				syncExecutionModules.add(new ExecutionModule());
 				syncExecutionModules.add(new ExecutionRxModule());
 				syncExecutionModules.add(new ExecutionEpochChangeRxModule());

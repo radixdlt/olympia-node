@@ -55,7 +55,7 @@ public class SubmissionControlImplTest {
 		@SuppressWarnings("unchecked")
 		RadixEngine<LedgerAtom> re = throwingMock(RadixEngine.class);
 		this.radixEngine = re;
-		this.serialization = throwingMock(Serialization.class);
+		this.serialization = mock(Serialization.class);
 		this.converter = mock(AtomToClientAtomConverter.class);
 		this.sender = mock(SubmissionControlSender.class);
 		this.submissionControl = new SubmissionControlImpl(this.mempool, this.radixEngine, this.serialization, this.converter, this.sender);
@@ -71,20 +71,21 @@ public class SubmissionControlImplTest {
 		this.submissionControl.submitAtom(atom);
 
 		verify(this.sender, times(1)).sendRadixEngineFailure(any(), any());
-		verify(this.mempool, never()).addAtom(any());
+		verify(this.mempool, never()).add(any());
 	}
 
 	@Test
 	public void when_radix_engine_returns_ok__then_atom_is_added_to_mempool() throws Exception {
 		doNothing().when(this.radixEngine).staticCheck(any());
-		doNothing().when(this.mempool).addAtom(any());
+		doNothing().when(this.mempool).add(any());
 
 		ClientAtom atom = mock(ClientAtom.class);
+		when(this.serialization.toDson(eq(atom), any())).thenReturn(new byte[] {});
 		this.submissionControl.submitAtom(atom);
 
 		verify(this.sender, never()).sendRadixEngineFailure(any(), any());
 		verify(this.sender, never()).sendDeserializeFailure(any(), any());
-		verify(this.mempool, times(1)).addAtom(eq(atom));
+		verify(this.mempool, times(1)).add(any());
 	}
 
 	@Test
@@ -100,7 +101,7 @@ public class SubmissionControlImplTest {
 		Consumer<ClientAtom> callback = mock(Consumer.class);
 		this.submissionControl.submitAtom(atomJson, callback);
 		verify(this.sender, times(1)).sendDeserializeFailure(eq(atom), any());
-		verify(this.mempool, never()).addAtom(any());
+		verify(this.mempool, never()).add(any());
 	}
 
 	@Test
@@ -116,7 +117,7 @@ public class SubmissionControlImplTest {
 			assertThat(called.get(), is(false));
 			verify(this.sender, never()).sendDeserializeFailure(any(), any());
 			verify(this.sender, never()).sendRadixEngineFailure(any(), any());
-			verify(this.mempool, never()).addAtom(any());
+			verify(this.mempool, never()).add(any());
 		}
 	}
 
@@ -127,7 +128,7 @@ public class SubmissionControlImplTest {
 		Atom atomMock = throwingMock(Atom.class);
 		doReturn(AID.ZERO).when(atomMock).getAID();
 		doReturn(atomMock).when(this.serialization).fromJsonObject(any(), any());
-		doNothing().when(this.mempool).addAtom(any());
+		doNothing().when(this.mempool).add(any());
 
 
 		ClientAtom clientAtom = mock(ClientAtom.class);
@@ -141,7 +142,7 @@ public class SubmissionControlImplTest {
 		verify(callback, times(1)).accept(argThat(a -> a.getAID().equals(AID.ZERO)));
 		verify(this.sender, never()).sendRadixEngineFailure(any(), any());
 		verify(this.sender, never()).sendDeserializeFailure(any(), any());
-		verify(this.mempool, times(1)).addAtom(any());
+		verify(this.mempool, times(1)).add(any());
 	}
 
 	@Test

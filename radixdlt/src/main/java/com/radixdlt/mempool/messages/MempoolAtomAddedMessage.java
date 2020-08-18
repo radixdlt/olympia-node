@@ -17,7 +17,7 @@
 
 package com.radixdlt.mempool.messages;
 
-import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.consensus.Command;
 import java.util.Objects;
 
 import org.radix.network.messaging.Message;
@@ -29,28 +29,28 @@ import com.radixdlt.serialization.SerializerId2;
 
 @SerializerId2("message.mempool.atomadded")
 public class MempoolAtomAddedMessage extends Message {
-	@JsonProperty("atom")
+	@JsonProperty("command")
 	@DsonOutput(Output.ALL)
-	private final ClientAtom atom;
+	private final Command command;
 
 	MempoolAtomAddedMessage() {
 		// Serializer only
 		super(0);
-		this.atom = null;
+		this.command = null;
 	}
 
-	public MempoolAtomAddedMessage(int magic, ClientAtom vertex) {
+	public MempoolAtomAddedMessage(int magic, Command command) {
 		super(magic);
-		this.atom = Objects.requireNonNull(vertex);
+		this.command = Objects.requireNonNull(command);
 	}
 
-	public ClientAtom atom() {
-		return this.atom;
+	public Command command() {
+		return this.command;
 	}
 
 	@Override
 	public String toString() {
-		String aidString = this.atom == null ? "null" : this.atom.getAID().toString();
-		return String.format("%s[%s]", getClass().getSimpleName(), aidString);
+		String cmdString = this.command == null ? "null" : this.command.getHash().toString();
+		return String.format("%s[%s]", getClass().getSimpleName(), cmdString);
 	}
 }

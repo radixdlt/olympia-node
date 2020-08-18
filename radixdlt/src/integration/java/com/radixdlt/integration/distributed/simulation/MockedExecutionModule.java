@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.CommittedStateSyncRx;
 import com.radixdlt.consensus.EpochChangeRx;
 import com.radixdlt.consensus.SyncedExecutor;
@@ -31,8 +32,7 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.middleware2.ClientAtom;
-import com.radixdlt.syncer.PreparedCommand;
+import com.radixdlt.consensus.PreparedCommand;
 import io.reactivex.rxjava3.core.Observable;
 
 public class MockedExecutionModule extends AbstractModule {
@@ -61,7 +61,7 @@ public class MockedExecutionModule extends AbstractModule {
 			}
 
 			@Override
-			public void commit(ClientAtom command, VertexMetadata vertexMetadata) {
+			public void commit(Command command, VertexMetadata vertexMetadata) {
 			}
 
 			@Override
