@@ -31,7 +31,6 @@ import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerId2;
 
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
