@@ -1350,5 +1350,14 @@ public class RadixApplicationAPI {
 			final Single<Atom> atom = identity.addSignature(unsignedAtom);
 			return createAtomSubmission(atom, false, originNode).connect();
 		}
+
+		/**
+		 * Gets the unique identifier of this transaction
+		 *
+		 * @return the unique identifier of this transaction
+		 */
+		public String getUuid() {
+			return uuid;
+		}
 	}
 }
