@@ -115,7 +115,6 @@ public class AtomsService {
 			committedAtomWithResult
 				.ifSuccess(indicies -> atomStatusListener.onStored(committedAtom))
 				.ifError(e -> atomStatusListener.onStoredFailure(committedAtom, e));
-			atomStatusListener.onStored(committedAtom);
 		}
 	}
 
