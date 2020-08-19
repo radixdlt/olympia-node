@@ -37,6 +37,7 @@ import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.crypto.Hash;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.syncer.SyncExecutor.CommittedSender;
 import com.radixdlt.syncer.SyncExecutor.CommittedStateSyncSender;
@@ -111,13 +112,15 @@ public class SyncExecutorTest {
 	@Test
 	public void when_commit__then_correct_messages_are_sent() {
 		Command command = mock(Command.class);
+		Hash hash = mock(Hash.class);
+		when(command.getHash()).thenReturn(hash);
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
 		when(vertexMetadata.getView()).then(i -> View.of(50));
 		when(vertexMetadata.getStateVersion()).then(i -> 1234L);
 
 		syncExecutor.commit(command, vertexMetadata);
 		verify(executor, times(1)).commit(eq(command), eq(vertexMetadata));
-		//verify(mempool, times(1)).removeCommittedAtom(aid);
+		verify(mempool, times(1)).removeCommitted(eq(hash));
 		verify(committedSender, times(1)).sendCommitted(any(), any());
 	}
 

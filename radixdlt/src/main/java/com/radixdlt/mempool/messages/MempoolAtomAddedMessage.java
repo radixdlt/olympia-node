@@ -50,6 +50,6 @@ public class MempoolAtomAddedMessage extends Message {
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s]", getClass().getSimpleName(), command);
+		return String.format("%s{command=%s}", getClass().getSimpleName(), command);
 	}
 }

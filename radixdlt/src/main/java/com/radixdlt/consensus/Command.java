@@ -20,7 +20,6 @@ package com.radixdlt.consensus;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Suppliers;
-import com.radixdlt.DefaultSerialization;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
@@ -64,7 +63,7 @@ public final class Command {
 
 	private Hash doGetHash() {
 		try {
-			return Hash.of(DefaultSerialization.getInstance().toDson(this, Output.HASH));
+			return Hash.of(payload);
 		} catch (Exception e) {
 			throw new IllegalStateException("Error generating hash: " + e, e);
 		}
@@ -88,5 +87,10 @@ public final class Command {
 
 		Command other = (Command) o;
 		return Arrays.equals(this.payload, other.payload);
+	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{payload=%s}", this.getClass().getSimpleName(), this.getHash());
 	}
 }

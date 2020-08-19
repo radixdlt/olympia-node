@@ -79,4 +79,9 @@ public final class CommittedCommand {
 		return Objects.equals(this.command, other.command)
 			&& Objects.equals(this.vertexMetadata, other.vertexMetadata);
 	}
+
+	@Override
+	public String toString() {
+		return String.format("%s{cmd=%s meta=%s}", this.getClass().getSimpleName(), command, vertexMetadata);
+	}
 }

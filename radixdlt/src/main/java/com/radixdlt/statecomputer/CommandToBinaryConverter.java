@@ -17,16 +17,19 @@
 
 package com.radixdlt.statecomputer;
 
+import com.google.inject.Inject;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.syncer.CommittedCommand;
+import java.util.Objects;
 
 public final class CommandToBinaryConverter {
 	private final Serialization serializer;
 
+	@Inject
 	public CommandToBinaryConverter(Serialization serializer) {
-		this.serializer = serializer;
+		this.serializer = Objects.requireNonNull(serializer);
 	}
 
 	public byte[] toLedgerEntryContent(CommittedCommand command) {

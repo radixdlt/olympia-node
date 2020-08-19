@@ -64,10 +64,10 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom> {
 		ClientAtomToBinaryConverter clientAtomToBinaryConverter,
 		AtomIndexer atomIndexer
 	) {
-		this.store = store;
-		this.commandToBinaryConverter = commandToBinaryConverter;
+		this.store = Objects.requireNonNull(store);
+		this.commandToBinaryConverter = Objects.requireNonNull(commandToBinaryConverter);
 		this.clientAtomToBinaryConverter = Objects.requireNonNull(clientAtomToBinaryConverter);
-		this.atomIndexer = atomIndexer;
+		this.atomIndexer = Objects.requireNonNull(atomIndexer);
 	}
 
 	@Override

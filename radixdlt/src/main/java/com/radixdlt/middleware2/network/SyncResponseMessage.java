@@ -51,6 +51,6 @@ public final class SyncResponseMessage extends Message {
 
 	@Override
 	public String toString() {
-		return String.format("%s{atoms=%s}", getClass().getSimpleName(), commands);
+		return String.format("%s{commands=%s}", getClass().getSimpleName(), commands);
 	}
 }

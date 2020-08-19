@@ -85,16 +85,6 @@ public class StateComputerModule extends AbstractModule {
 	}
 
 	@Provides
-	private CommandToBinaryConverter commandToBinaryConverter(Serialization serialization) {
-		return new CommandToBinaryConverter(serialization);
-	}
-
-	@Provides
-	private ClientAtomToBinaryConverter clientAtomToBinaryConverter(Serialization serialization) {
-		return new ClientAtomToBinaryConverter(serialization);
-	}
-
-	@Provides
 	@Singleton
 	private Function<Long, BFTValidatorSet> addressBookValidatorSetProvider(
 		AddressBook addressBook,
