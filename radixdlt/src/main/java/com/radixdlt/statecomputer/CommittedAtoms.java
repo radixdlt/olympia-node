@@ -22,7 +22,6 @@ import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomWithResult;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 /**
  * Temporary class to hold committed results
@@ -41,11 +40,6 @@ public final class CommittedAtoms {
 		@Override
 		public CommittedAtom getCommittedAtom() {
 			return committedAtom;
-		}
-
-		@Override
-		public <T> MaybeSuccessMapped<T> map(Function<ImmutableSet<EUID>, T> successMapper) {
-			return errorMapper -> successMapper.apply(indicies);
 		}
 
 		@Override
@@ -72,11 +66,6 @@ public final class CommittedAtoms {
 		@Override
 		public CommittedAtom getCommittedAtom() {
 			return committedAtom;
-		}
-
-		@Override
-		public <T> MaybeSuccessMapped<T> map(Function<ImmutableSet<EUID>, T> successMapper) {
-			return errorMapper -> errorMapper.apply(exception);
 		}
 
 		@Override

@@ -53,13 +53,6 @@ public final class RadixEngineStateComputer implements StateComputer {
 	// TODO: as currently it's mostly loosely coupled logic
 	public interface CommittedAtomWithResult {
 		CommittedAtom getCommittedAtom();
-
-		interface MaybeSuccessMapped<T> {
-			T elseIfError(Function<RadixEngineException, T> errorMapper);
-		}
-
-		<T> MaybeSuccessMapped<T> map(Function<ImmutableSet<EUID>, T> successMapper);
-
 		CommittedAtomWithResult ifSuccess(Consumer<ImmutableSet<EUID>> successConsumer);
 		CommittedAtomWithResult ifError(Consumer<RadixEngineException> errorConsumer);
 	}
