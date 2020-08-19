@@ -94,7 +94,7 @@ jacocoTestReport {
 }
 
 dependencies {
-    compile 'com.github.radixdlt:radix-engine-library:feature~rpnv1-499-remove-planck-SNAPSHOT'
+    compile 'com.github.radixdlt:radix-engine-library:feature~rpnv1-438-whitelist-SNAPSHOT'
 
     compile 'io.reactivex.rxjava3:rxjava:3.0.0'
     compile 'com.sleepycat:je:18.3.12'

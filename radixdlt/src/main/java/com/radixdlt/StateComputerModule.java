@@ -147,10 +147,10 @@ public class StateComputerModule extends AbstractModule {
 			}
 			return Result.success();
 		});
+		os.load(new ValidatorConstraintScrypt()); // load before TokensConstraintScrypt due to dependency
 		os.load(new TokensConstraintScrypt());
 		os.load(new UniqueParticleConstraintScrypt());
 		os.load(new MessageParticleConstraintScrypt());
-		os.load(new ValidatorConstraintScrypt());
 		return os;
 	}
 
