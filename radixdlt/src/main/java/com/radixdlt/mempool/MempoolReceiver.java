@@ -17,7 +17,7 @@
 
 package com.radixdlt.mempool;
 
-import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.consensus.Command;
 import java.util.Objects;
 
 import com.google.inject.Inject;
@@ -51,8 +51,8 @@ public final class MempoolReceiver {
 	public void start() {
 		synchronized (this.startLock) {
 			if (this.disposable == null) {
-				this.disposable = this.mempoolRx.atomMessages()
-					.subscribe(this::processAtom);
+				this.disposable = this.mempoolRx.commands()
+					.subscribe(this::processCommand);
 			}
 		}
 	}
@@ -74,11 +74,11 @@ public final class MempoolReceiver {
 		}
 	}
 
-	private void processAtom(ClientAtom atom) {
+	private void processCommand(Command command) {
 		try {
-			this.submissionControl.submitAtom(atom);
+			this.submissionControl.submitCommand(command);
 		} catch (MempoolRejectedException ex) {
-			log.info(String.format("Mempool rejected atom %s: %s", atom.getAID(), ex.getMessage()));
+			log.info(String.format("Mempool rejected command %s: %s", command.getHash(), ex.getMessage()));
 		}
 	}
 }

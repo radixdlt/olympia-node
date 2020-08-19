@@ -17,16 +17,15 @@
 
 package com.radixdlt.integration.distributed.simulation.invariants.mempool;
 
-import static org.mockito.Mockito.mock;
-
-import com.radixdlt.api.LedgerRx;
+import com.google.common.primitives.Longs;
+import com.radixdlt.consensus.Command;
 import com.radixdlt.integration.distributed.simulation.TestInvariant;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
-import com.radixdlt.middleware2.ClientAtom;
-import com.radixdlt.syncer.SyncExecutor.CommittedCommand;
+import com.radixdlt.syncer.CommittedCommand;
+import com.radixdlt.systeminfo.InfoRx;
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.List;
@@ -41,29 +40,30 @@ import java.util.stream.Collectors;
  */
 public class MempoolSubmitAndCommitInvariant implements TestInvariant {
 
-	private Maybe<TestInvariantError> submitAndCheckForCommit(Mempool mempool, Set<Observable<CommittedCommand>> allLedgers) {
-		ClientAtom clientAtom = mock(ClientAtom.class);
+	private long commandId = 0;
 
+	private Maybe<TestInvariantError> submitAndCheckForCommit(Mempool mempool, Set<Observable<CommittedCommand>> allLedgers) {
+		Command command = new Command(Longs.toByteArray(commandId++));
 		List<Maybe<TestInvariantError>> errors = allLedgers.stream()
 			.map(cmds -> cmds
-				.filter(cmd -> Objects.equals(cmd.getCommand().getClientAtom(), clientAtom))
+				.filter(cmd -> Objects.equals(cmd.getCommand(), command))
 				.timeout(10, TimeUnit.SECONDS)
 				.firstOrError()
 				.ignoreElement()
-				.doOnComplete(() -> System.out.println("Committed " + clientAtom))
-				.onErrorReturn(e -> new TestInvariantError(e.getMessage() + " " + clientAtom))
+				.doOnComplete(() -> System.out.println("Committed " + command))
+				.onErrorReturn(e -> new TestInvariantError(e.getMessage() + " " + command))
 			)
 			.collect(Collectors.toList());
 
 		return Maybe.merge(errors).firstElement().doOnSubscribe(d -> {
 			try {
-				mempool.addAtom(clientAtom);
+				mempool.add(command);
 			} catch (MempoolDuplicateException | MempoolFullException e) {
 				// TODO: Cleanup
 				e.printStackTrace();
 				return;
 			}
-			System.out.println("Submitted " + clientAtom);
+			System.out.println("Submitted " + command);
 		});
 	}
 
@@ -74,7 +74,7 @@ public class MempoolSubmitAndCommitInvariant implements TestInvariant {
 			.map(i -> network.getNodes().get(i % network.getNodes().size()))
 			.flatMapMaybe(node -> {
 				Set<Observable<CommittedCommand>> allLedgers
-					= network.getNodes().stream().map(network::getLedger).map(LedgerRx::committed).collect(Collectors.toSet());
+					= network.getNodes().stream().map(network::getInfo).map(InfoRx::committedCommands).collect(Collectors.toSet());
 				return submitAndCheckForCommit(network.getMempool(node), allLedgers);
 			});
 	}

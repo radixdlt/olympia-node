@@ -20,7 +20,6 @@ package com.radixdlt;
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.api.DeserializationFailure;
-import com.radixdlt.api.LedgerRx;
 import com.radixdlt.api.SubmissionErrorsRx;
 import com.radixdlt.api.SubmissionFailure;
 import com.radixdlt.atommodel.Atom;
@@ -31,8 +30,6 @@ import com.radixdlt.mempool.SubmissionControlImpl.SubmissionControlSender;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.converters.AtomConversionException;
 import com.radixdlt.syncer.LocalSyncRequest;
-import com.radixdlt.syncer.SyncExecutor.CommittedSender;
-import com.radixdlt.syncer.SyncExecutor.CommittedCommand;
 import com.radixdlt.syncer.SyncServiceProcessor.SyncInProgress;
 import com.radixdlt.syncer.SyncServiceProcessor.SyncTimeoutScheduler;
 import com.radixdlt.syncer.SyncServiceRunner.LocalSyncRequestsRx;
@@ -54,10 +51,7 @@ public final class ExecutionRxModule extends AbstractModule {
 
 	@Override
 	protected void configure() {
-		Multibinder<CommittedSender> committedSenderBinder = Multibinder.newSetBinder(binder(), CommittedSender.class);
-		SenderToRx<CommittedCommand, CommittedCommand> committed = new SenderToRx<>(c -> c);
-		committedSenderBinder.addBinding().toInstance(committed::send);
-		bind(LedgerRx.class).toInstance(committed::rx);
+
 
 		TwoSenderToRx<Atom, AtomConversionException, DeserializationFailure> deserializationFailures
 			= new TwoSenderToRx<>(DeserializationFailure::new);

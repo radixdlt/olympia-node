@@ -17,7 +17,7 @@
 
 package com.radixdlt.mempool;
 
-import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.consensus.Command;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
@@ -32,16 +32,16 @@ import io.reactivex.rxjava3.subjects.PublishSubject;
 
 public class MempoolReceiverTest {
 
-	private PublishSubject<ClientAtom> atoms;
+	private PublishSubject<Command> commands;
 
 	private SubmissionControl submissionControl;
 	private MempoolReceiver mempoolReceiver;
 
 	@Before
 	public void setUp() {
-		this.atoms = PublishSubject.create();
+		this.commands = PublishSubject.create();
 		MempoolNetworkRx mempoolRx = mock(MempoolNetworkRx.class);
-		doReturn(this.atoms).when(mempoolRx).atomMessages();
+		doReturn(this.commands).when(mempoolRx).commands();
 		this.submissionControl = mock(SubmissionControl.class);
 		this.mempoolReceiver = new MempoolReceiver(mempoolRx, this.submissionControl);
 	}
@@ -75,17 +75,17 @@ public class MempoolReceiverTest {
 		doAnswer(inv -> {
 			completed.release();
 			return null;
-		}).when(this.submissionControl).submitAtom(any());
+		}).when(this.submissionControl).submitCommand(any());
 
 		this.mempoolReceiver.start();
 		assertTrue(this.mempoolReceiver.running());
 
-		ClientAtom atom = mock(ClientAtom.class);
-		atoms.onNext(atom);
+		Command command = mock(Command.class);
+		commands.onNext(command);
 
 		// Wait for everything to get pushed through the pipeline
 		assertTrue(completed.tryAcquire(10, TimeUnit.SECONDS));
 
-		verify(this.submissionControl, times(1)).submitAtom(any());
+		verify(this.submissionControl, times(1)).submitCommand(any());
 	}
 }

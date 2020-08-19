@@ -39,21 +39,23 @@ import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.ClientAtom.LedgerAtomConversionException;
-import com.radixdlt.middleware2.CommittedAtom;
+import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.LedgerAtomChecker;
 import com.radixdlt.middleware2.PowFeeComputer;
-import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
+import com.radixdlt.statecomputer.CommandToBinaryConverter;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.middleware2.store.CommittedAtomsStore.AtomIndexer;
 import com.radixdlt.middleware2.store.EngineAtomIndices;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.LedgerEntryStore;
@@ -79,7 +81,6 @@ public class StateComputerModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		bind(new TypeLiteral<EngineStore<CommittedAtom>>() { }).to(CommittedAtomsStore.class).in(Scopes.SINGLETON);
-		bind(AtomToBinaryConverter.class).toInstance(new AtomToBinaryConverter(DefaultSerialization.getInstance()));
 		bind(StateComputer.class).to(RadixEngineStateComputer.class);
 	}
 
@@ -125,15 +126,19 @@ public class StateComputerModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private RadixEngineStateComputer executor(
+		Serialization serialization,
 		RadixEngine<LedgerAtom> radixEngine,
 		Function<Long, BFTValidatorSet> validatorSetMapping,
-		CommittedAtomsStore committedAtomsStore
+		CommittedAtomsStore committedAtomsStore,
+		CommittedAtomSender committedAtomSender
 	) {
 		return new RadixEngineStateComputer(
+			serialization,
 			radixEngine,
 			validatorSetMapping,
 			View.of(viewsPerEpoch),
-			committedAtomsStore
+			committedAtomsStore,
+			committedAtomSender
 		);
 	}
 
@@ -256,10 +261,16 @@ public class StateComputerModule extends AbstractModule {
 	private CommittedAtomsStore committedAtomsStore(
 		CommittedAtom genesisAtom,
 		LedgerEntryStore store,
-		AtomToBinaryConverter atomToBinaryConverter,
+		CommandToBinaryConverter commandToBinaryConverter,
+		ClientAtomToBinaryConverter clientAtomToBinaryConverter,
 		AtomIndexer atomIndexer
 	) {
-		final CommittedAtomsStore engineStore = new CommittedAtomsStore(store, atomToBinaryConverter, atomIndexer);
+		final CommittedAtomsStore engineStore = new CommittedAtomsStore(
+			store,
+			commandToBinaryConverter,
+			clientAtomToBinaryConverter,
+			atomIndexer
+		);
 		if (store.getNextCommittedLedgerEntries(genesisAtom.getVertexMetadata().getStateVersion() - 1, 1).isEmpty()) {
 			engineStore.storeAtom(genesisAtom);
 		}

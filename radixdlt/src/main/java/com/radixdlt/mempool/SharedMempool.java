@@ -17,14 +17,14 @@
 
 package com.radixdlt.mempool;
 
-import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.consensus.Command;
+import com.radixdlt.crypto.Hash;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
 import javax.inject.Inject;
 
-import com.radixdlt.identifiers.AID;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 
@@ -47,42 +47,42 @@ public class SharedMempool implements Mempool {
 	}
 
 	@Override
-	public void addAtom(ClientAtom atom) throws MempoolFullException, MempoolDuplicateException {
-		this.localMempool.addAtom(atom);
+	public void add(Command command) throws MempoolFullException, MempoolDuplicateException {
+		this.localMempool.add(command);
 		updateCounts();
-		this.networkSender.sendMempoolSubmission(atom);
+		this.networkSender.sendMempoolSubmission(command);
 	}
 
 	@Override
-	public void removeCommittedAtom(AID aid) {
-		this.localMempool.removeCommittedAtom(aid);
-		updateCounts();
-	}
-
-	@Override
-	public void removeRejectedAtom(AID aid) {
-		this.localMempool.removeRejectedAtom(aid);
+	public void removeCommitted(Hash cmdHash) {
+		this.localMempool.removeCommitted(cmdHash);
 		updateCounts();
 	}
 
 	@Override
-	public List<ClientAtom> getAtoms(int count, Set<AID> seen) {
-		return this.localMempool.getAtoms(count, seen);
+	public void removeRejected(Hash cmdHash) {
+		this.localMempool.removeRejected(cmdHash);
+		updateCounts();
 	}
 
 	@Override
-	public int atomCount() {
-		return this.localMempool.atomCount();
+	public List<Command> getCommands(int count, Set<Hash> seen) {
+		return this.localMempool.getCommands(count, seen);
+	}
+
+	@Override
+	public int count() {
+		return this.localMempool.count();
 	}
 
 	private void updateCounts() {
-		this.counters.set(CounterType.MEMPOOL_COUNT, atomCount());
+		this.counters.set(CounterType.MEMPOOL_COUNT, count());
 		this.counters.set(CounterType.MEMPOOL_MAXCOUNT, this.localMempool.maxCount());
 	}
 
 	@Override
 	public String toString() {
 		return String.format("%s[%x:%s/%s]",
-			getClass().getSimpleName(), System.identityHashCode(this), atomCount(), this.localMempool.maxCount());
+			getClass().getSimpleName(), System.identityHashCode(this), count(), this.localMempool.maxCount());
 	}
 }

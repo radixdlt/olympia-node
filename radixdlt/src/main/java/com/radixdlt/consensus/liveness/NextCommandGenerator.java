@@ -17,9 +17,9 @@
 
 package com.radixdlt.consensus.liveness;
 
+import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.identifiers.AID;
-import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.crypto.Hash;
 import java.util.Set;
 
 /**
@@ -34,5 +34,5 @@ public interface NextCommandGenerator {
 	 * @param prepared the ids of atoms which are currently in the prepared stage
 	 * @return new vertex to extend with
 	 */
-	ClientAtom generateNextCommand(View view,  Set<AID> prepared);
+	Command generateNextCommand(View view,  Set<Hash> prepared);
 }

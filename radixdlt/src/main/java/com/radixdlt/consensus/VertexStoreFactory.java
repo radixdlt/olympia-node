@@ -18,7 +18,6 @@
 package com.radixdlt.consensus;
 
 import com.radixdlt.consensus.bft.VertexStore;
-import com.radixdlt.middleware2.CommittedAtom;
 
 /**
  * A Vertex Store factory
@@ -32,5 +31,5 @@ public interface VertexStoreFactory {
 	 * @param syncedExecutor the underlying state computer
 	 * @return a new VertexStore
 	 */
-	VertexStore create(Vertex genesisVertex, QuorumCertificate genesisQC, SyncedExecutor<CommittedAtom> syncedExecutor);
+	VertexStore create(Vertex genesisVertex, QuorumCertificate genesisQC, SyncedExecutor syncedExecutor);
 }

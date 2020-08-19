@@ -19,22 +19,27 @@ package com.radixdlt.middleware2.store;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.identifiers.EUID;
-import com.radixdlt.middleware2.CommittedAtom;
+import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
+import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.store.SearchCursor;
 import com.radixdlt.store.StoreIndex;
 import com.radixdlt.store.LedgerSearchMode;
-import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
+import com.radixdlt.statecomputer.CommandToBinaryConverter;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStore;
 
+import com.radixdlt.syncer.CommittedCommand;
 import java.util.List;
+import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -46,7 +51,8 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom> {
 
 	private final AtomIndexer atomIndexer;
 	private final LedgerEntryStore store;
-	private final AtomToBinaryConverter atomToBinaryConverter;
+	private final CommandToBinaryConverter commandToBinaryConverter;
+	private final ClientAtomToBinaryConverter clientAtomToBinaryConverter;
 
 	public interface AtomIndexer {
 		EngineAtomIndices getIndices(LedgerAtom atom);
@@ -54,12 +60,14 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom> {
 
 	public CommittedAtomsStore(
 		LedgerEntryStore store,
-		AtomToBinaryConverter atomToBinaryConverter,
+		CommandToBinaryConverter commandToBinaryConverter,
+		ClientAtomToBinaryConverter clientAtomToBinaryConverter,
 		AtomIndexer atomIndexer
 	) {
-		this.store = store;
-		this.atomToBinaryConverter = atomToBinaryConverter;
-		this.atomIndexer = atomIndexer;
+		this.store = Objects.requireNonNull(store);
+		this.commandToBinaryConverter = Objects.requireNonNull(commandToBinaryConverter);
+		this.clientAtomToBinaryConverter = Objects.requireNonNull(clientAtomToBinaryConverter);
+		this.atomIndexer = Objects.requireNonNull(atomIndexer);
 	}
 
 	@Override
@@ -75,7 +83,13 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom> {
 		);
 		SearchCursor cursor = store.search(StoreIndex.LedgerIndexType.UNIQUE, new StoreIndex(indexableBytes), LedgerSearchMode.EXACT);
 		if (cursor != null) {
-			return store.get(cursor.get()).flatMap(ledgerEntry ->  Optional.of(atomToBinaryConverter.toAtom(ledgerEntry.getContent())));
+			return store.get(cursor.get())
+				.flatMap(ledgerEntry ->  {
+					// TODO: Remove serialization/deserialization
+					CommittedCommand committedCommand = commandToBinaryConverter.toCommand(ledgerEntry.getContent());
+					ClientAtom clientAtom = committedCommand.getCommand().map(clientAtomToBinaryConverter::toAtom);
+					return Optional.of(new CommittedAtom(clientAtom, committedCommand.getVertexMetadata()));
+				});
 		} else {
 			log.debug("getAtomByParticle returned empty result");
 			return Optional.empty();
@@ -84,7 +98,11 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom> {
 
 	@Override
 	public void storeAtom(CommittedAtom committedAtom) {
-		byte[] binaryAtom = atomToBinaryConverter.toLedgerEntryContent(committedAtom);
+		// TODO: Remove serialization/deserialization
+		byte[] payload = clientAtomToBinaryConverter.toLedgerEntryContent(committedAtom.getClientAtom());
+		Command command = new Command(payload);
+		CommittedCommand committedCommand = new CommittedCommand(command, committedAtom.getVertexMetadata());
+		byte[] binaryAtom = commandToBinaryConverter.toLedgerEntryContent(committedCommand);
 		VertexMetadata vertexMetadata = committedAtom.getVertexMetadata();
 		LedgerEntry ledgerEntry = new LedgerEntry(binaryAtom, vertexMetadata.getStateVersion(), committedAtom.getAID());
 		EngineAtomIndices engineAtomIndices = atomIndexer.getIndices(committedAtom);
@@ -105,17 +123,17 @@ public final class CommittedAtomsStore implements EngineStore<CommittedAtom> {
 	}
 
 	/**
-	 * Retrieve the committed atoms in the store starting at a given state version (exclusively)
+	 * Retrieve the committed commands in the store starting at a given state version (exclusively)
 	 * @param stateVersion the state version to start on (exclusively)
 	 * @param limit limit to number of atoms to return
-	 * @return list of committed atoms
+	 * @return list of committed commands
 	 */
-	public List<CommittedAtom> getCommittedAtoms(long stateVersion, int limit) {
+	public List<CommittedCommand> getCommittedCommands(long stateVersion, int limit) {
 		ImmutableList<LedgerEntry> entries = store.getNextCommittedLedgerEntries(stateVersion, limit);
 		return entries
 				.stream()
 				.map(LedgerEntry::getContent)
-				.map(atomToBinaryConverter::toAtom)
+				.map(commandToBinaryConverter::toCommand)
 				.collect(ImmutableList.toImmutableList());
 	}
 

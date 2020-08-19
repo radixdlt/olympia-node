@@ -24,7 +24,6 @@ import static org.mockito.Mockito.when;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
 import com.radixdlt.consensus.CommittedStateSyncRx;
 import com.radixdlt.consensus.ConsensusEventsRx;
@@ -45,7 +44,6 @@ import com.radixdlt.consensus.epoch.EpochManager.EpochInfoSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.counters.SystemCounters;
-import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.network.TimeSupplier;
 import io.reactivex.rxjava3.core.Observable;
 import org.junit.Test;
@@ -78,7 +76,7 @@ public class ConsensusModuleTest {
 			when(syncVerticesRPCRx.responses()).thenReturn(Observable.never());
 			bind(SyncVerticesRPCRx.class).toInstance(syncVerticesRPCRx);
 
-			bind(new TypeLiteral<SyncedExecutor<CommittedAtom>>() { }).toInstance(mock(SyncedExecutor.class));
+			bind(SyncedExecutor.class).toInstance(mock(SyncedExecutor.class));
 			bind(BFTEventSender.class).toInstance(mock(BFTEventSender.class));
 			bind(SyncVerticesRPCSender.class).toInstance(mock(SyncVerticesRPCSender.class));
 			bind(VertexStoreEventSender.class).toInstance(mock(VertexStoreEventSender.class));

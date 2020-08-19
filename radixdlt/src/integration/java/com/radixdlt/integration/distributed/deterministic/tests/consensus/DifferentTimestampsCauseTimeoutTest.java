@@ -17,9 +17,9 @@
 
 package com.radixdlt.integration.distributed.deterministic.tests.consensus;
 
+import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 import com.google.common.collect.ImmutableMap;
@@ -120,9 +120,9 @@ public class DifferentTimestampsCauseTimeoutTest {
 		long epoch = v.getEpoch();
 		QuorumCertificate qc = v.getQC();
 		View view = v.getView();
-		ClientAtom atom = v.getAtom();
+		Command command = v.getCommand();
 
-		return new Vertex(epoch, mutateQC(qc,  destination), view, atom);
+		return new Vertex(epoch, mutateQC(qc,  destination), view, command);
 	}
 
 	private QuorumCertificate mutateQC(QuorumCertificate qc, int destination) {

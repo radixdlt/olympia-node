@@ -21,14 +21,12 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
-import com.google.inject.TypeLiteral;
 import com.radixdlt.consensus.SyncedExecutor;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.mempool.Mempool;
-import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.syncer.SyncExecutor;
 import com.radixdlt.syncer.SyncExecutor.CommittedSender;
 import com.radixdlt.syncer.SyncExecutor.CommittedStateSyncSender;
@@ -42,7 +40,7 @@ import java.util.Set;
 public class ExecutionModule extends AbstractModule {
 	@Override
 	protected void configure() {
-		bind(new TypeLiteral<SyncedExecutor<CommittedAtom>>() { }).to(SyncExecutor.class).in(Scopes.SINGLETON);
+		bind(SyncedExecutor.class).to(SyncExecutor.class).in(Scopes.SINGLETON);
 		bind(NextCommandGenerator.class).to(SyncExecutor.class);
 	}
 
@@ -56,7 +54,7 @@ public class ExecutionModule extends AbstractModule {
 		Set<SyncService> syncServices,
 		SystemCounters counters
 	) {
-		CommittedSender committedSender = cmd -> committedSenders.forEach(s -> s.sendCommitted(cmd));
+		CommittedSender committedSender = (cmd, meta) -> committedSenders.forEach(s -> s.sendCommitted(cmd, meta));
 		SyncService syncService = request -> syncServices.forEach(s -> s.sendLocalSyncRequest(request));
 
 		return new SyncExecutor(

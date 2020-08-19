@@ -19,10 +19,10 @@ package com.radixdlt.middleware2.network;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerId2;
+import com.radixdlt.syncer.CommittedCommand;
 import org.radix.network.messaging.Message;
 
 /**
@@ -30,27 +30,27 @@ import org.radix.network.messaging.Message;
  */
 @SerializerId2("message.sync.response")
 public final class SyncResponseMessage extends Message {
-	@JsonProperty("atoms")
+	@JsonProperty("commands")
 	@DsonOutput(Output.ALL)
-	private final ImmutableList<CommittedAtom> atoms;
+	private final ImmutableList<CommittedCommand> commands;
 
 	SyncResponseMessage() {
 		// Serializer only
 		super(0);
-		this.atoms = null;
+		this.commands = null;
 	}
 
-	public SyncResponseMessage(int magic, ImmutableList<CommittedAtom> atoms) {
+	public SyncResponseMessage(int magic, ImmutableList<CommittedCommand> commands) {
 		super(magic);
-		this.atoms = atoms;
+		this.commands = commands;
 	}
 
-	public ImmutableList<CommittedAtom> getAtoms() {
-		return atoms == null ? ImmutableList.of() : atoms;
+	public ImmutableList<CommittedCommand> getCommands() {
+		return commands == null ? ImmutableList.of() : commands;
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%s{atoms=%s}", getClass().getSimpleName(), atoms);
+		return String.format("%s{commands=%s}", getClass().getSimpleName(), commands);
 	}
 }

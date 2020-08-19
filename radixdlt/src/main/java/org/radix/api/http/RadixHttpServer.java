@@ -17,14 +17,15 @@
 
 package org.radix.api.http;
 
+import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
 import com.radixdlt.systeminfo.InMemorySystemInfoManager;
-import com.radixdlt.api.LedgerRx;
+import com.radixdlt.api.CommittedAtomsRx;
 import com.radixdlt.api.SubmissionErrorsRx;
 import com.radixdlt.consensus.ConsensusRunner;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.mempool.SubmissionControl;
-import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
+import com.radixdlt.statecomputer.CommandToBinaryConverter;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.DsonOutput;
@@ -90,11 +91,12 @@ public final class RadixHttpServer {
 	public RadixHttpServer(
 		InMemorySystemInfoManager infoStateRunner,
 		SubmissionErrorsRx submissionErrorsRx,
-		LedgerRx ledgerRx,
+		CommittedAtomsRx committedAtomsRx,
 		ConsensusRunner consensusRunner,
 		LedgerEntryStore store,
 		SubmissionControl submissionControl,
-		AtomToBinaryConverter atomToBinaryConverter,
+		CommandToBinaryConverter commandToBinaryConverter,
+		ClientAtomToBinaryConverter clientAtomToBinaryConverter,
 		Universe universe,
 		Serialization serialization,
 		RuntimeProperties properties,
@@ -108,11 +110,11 @@ public final class RadixHttpServer {
 		this.localSystem = Objects.requireNonNull(localSystem);
 		this.peers = new ConcurrentHashMap<>();
 		this.atomsService = new AtomsService(
-			submissionErrorsRx,
-			ledgerRx,
+			submissionErrorsRx, committedAtomsRx,
 			store,
 			submissionControl,
-			atomToBinaryConverter
+			commandToBinaryConverter,
+			clientAtomToBinaryConverter
 		);
 		this.jsonRpcServer = new RadixJsonRpcServer(
 			consensusRunner,
@@ -258,12 +260,6 @@ public final class RadixHttpServer {
 		// Network routes
 		addRestNetworkRoutesTo(handler);
 
-		addGetRoute("/api/events", exchange -> {
-			JSONObject eventCount = new JSONObject();
-			atomsService.getAtomEventCount().forEach((k, v) -> eventCount.put(k.name(), v));
-			respond(eventCount, exchange);
-		}, handler);
-
 		addGetRoute("/api/universe", exchange
 			-> respond(this.apiSerializedUniverse, exchange), handler);
 
@@ -284,12 +280,6 @@ public final class RadixHttpServer {
 		addRoute("/api/system/modules/api/websockets", Methods.DELETE_STRING, exchange -> {
 			JSONObject result = this.disconnectAllPeers();
 			respond(result, exchange);
-		}, handler);
-
-		addGetRoute("/api/latest-events", exchange -> {
-			JSONArray events = new JSONArray();
-			atomsService.getEvents().forEach(events::put);
-			respond(events, exchange);
 		}, handler);
 
 		// keep-alive

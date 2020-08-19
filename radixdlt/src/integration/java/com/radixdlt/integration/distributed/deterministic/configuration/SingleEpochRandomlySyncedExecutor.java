@@ -18,18 +18,18 @@
 package com.radixdlt.integration.distributed.deterministic.configuration;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.SyncedExecutor;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.syncer.PreparedCommand;
+import com.radixdlt.consensus.PreparedCommand;
 import com.radixdlt.syncer.SyncExecutor.CommittedStateSyncSender;
-import com.radixdlt.middleware2.CommittedAtom;
 import java.util.Objects;
 import java.util.Random;
 
-public class SingleEpochRandomlySyncedExecutor implements SyncedExecutor<CommittedAtom> {
+public class SingleEpochRandomlySyncedExecutor implements SyncedExecutor {
 
 	private final Random random;
 	private final CommittedStateSyncSender committedStateSyncSender;
@@ -49,12 +49,12 @@ public class SingleEpochRandomlySyncedExecutor implements SyncedExecutor<Committ
 	}
 
 	@Override
-	public PreparedCommand prepare(Vertex vertex) {
-		return PreparedCommand.create(0, Hash.ZERO_HASH);
+	public void commit(Command command, VertexMetadata vertexMetadata) {
+		// No-op Mocked execution
 	}
 
 	@Override
-	public void commit(CommittedAtom instruction) {
-		// No-op Mocked execution
+	public PreparedCommand prepare(Vertex vertex) {
+		return PreparedCommand.create(0, Hash.ZERO_HASH);
 	}
 }

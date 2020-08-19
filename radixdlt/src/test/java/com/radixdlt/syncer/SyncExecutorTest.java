@@ -19,9 +19,7 @@ package com.radixdlt.syncer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -31,26 +29,24 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.PreparedCommand;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.TimestampedECDSASignatures;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.crypto.Hash;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.syncer.SyncExecutor.CommittedSender;
 import com.radixdlt.syncer.SyncExecutor.CommittedStateSyncSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.mempool.Mempool;
-import com.radixdlt.middleware2.ClientAtom;
-import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.syncer.SyncExecutor.SyncService;
-import java.util.Collections;
-import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -86,16 +82,18 @@ public class SyncExecutorTest {
 		);
 	}
 
+	/*
 	@Test
 	public void when_generate_proposal_with_empty_prepared__then_generate_proposal_should_return_atom() {
-		ClientAtom reAtom = mock(ClientAtom.class);
+		ClientAtom atom = mock(ClientAtom.class);
 		when(mempool.getAtoms(anyInt(), anySet())).thenReturn(Collections.singletonList(reAtom));
-		ClientAtom atom = syncExecutor.generateNextCommand(View.of(1), Collections.emptySet());
+		Command command = syncExecutor.generateNextCommand(View.of(1), Collections.emptySet());
 		AssertionsForClassTypes.assertThat(atom).isEqualTo(reAtom);
 	}
+	 */
 
 	@Test
-	public void when_prepare_with_atom_and_not_end_of_epoch__then_should_return_next_state_version() {
+	public void when_prepare_with_command_and_not_end_of_epoch__then_should_return_next_state_version() {
 		Vertex vertex = mock(Vertex.class);
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		when(vertex.getQC()).thenReturn(qc);
@@ -104,7 +102,7 @@ public class SyncExecutorTest {
 		when(parent.getStateVersion()).thenReturn(12345L);
 		when(qc.getProposed()).thenReturn(parent);
 		when(qc.getTimestampedSignatures()).thenReturn(new TimestampedECDSASignatures());
-		when(vertex.getAtom()).thenReturn(mock(ClientAtom.class));
+		when(vertex.getCommand()).thenReturn(mock(Command.class));
 
 		PreparedCommand preparedCommand = syncExecutor.prepare(vertex);
 		assertThat(preparedCommand.getNextValidatorSet()).isEmpty();
@@ -112,20 +110,18 @@ public class SyncExecutorTest {
 	}
 
 	@Test
-	public void when_commit_vertex_with_engine_exception__then_correct_messages_are_sent() {
-		CommittedAtom committedAtom = mock(CommittedAtom.class);
-		when(committedAtom.getClientAtom()).thenReturn(mock(ClientAtom.class));
-		AID aid = mock(AID.class);
-		when(committedAtom.getAID()).thenReturn(aid);
+	public void when_commit__then_correct_messages_are_sent() {
+		Command command = mock(Command.class);
+		Hash hash = mock(Hash.class);
+		when(command.getHash()).thenReturn(hash);
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
 		when(vertexMetadata.getView()).then(i -> View.of(50));
 		when(vertexMetadata.getStateVersion()).then(i -> 1234L);
-		when(committedAtom.getVertexMetadata()).thenReturn(vertexMetadata);
 
-		syncExecutor.commit(committedAtom);
-		verify(executor, times(1)).commit(eq(committedAtom));
-		verify(mempool, times(1)).removeCommittedAtom(aid);
-		verify(committedSender, times(1)).sendCommitted(any());
+		syncExecutor.commit(command, vertexMetadata);
+		verify(executor, times(1)).commit(eq(command), eq(vertexMetadata));
+		verify(mempool, times(1)).removeCommitted(eq(hash));
+		verify(committedSender, times(1)).sendCommitted(any(), any());
 	}
 
 	@Test
@@ -138,16 +134,13 @@ public class SyncExecutorTest {
 		BFTNode node = mock(BFTNode.class);
 		when(node.getKey()).thenReturn(pk);
 
-		CommittedAtom nextAtom = mock(CommittedAtom.class);
 		VertexMetadata nextVertexMetadata = mock(VertexMetadata.class);
 		when(nextVertexMetadata.getStateVersion()).thenReturn(1234L);
 
 		syncExecutor.syncTo(nextVertexMetadata, ImmutableList.of(node), mock(Object.class));
 		verify(committedStateSyncSender, never()).sendCommittedStateSync(anyLong(), any());
 
-		when(nextAtom.getClientAtom()).thenReturn(mock(ClientAtom.class));
-		when(nextAtom.getVertexMetadata()).thenReturn(nextVertexMetadata);
-		syncExecutor.commit(nextAtom);
+		syncExecutor.commit(mock(Command.class), nextVertexMetadata);
 
 		verify(committedStateSyncSender, timeout(5000).atLeast(1)).sendCommittedStateSync(anyLong(), any());
 	}

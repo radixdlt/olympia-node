@@ -17,14 +17,14 @@
 
 package com.radixdlt.mempool;
 
-import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.consensus.Command;
 
 /**
  * Exception thrown when an attempt to add an item which
  * already exists in the mempool
  */
 public class MempoolDuplicateException extends MempoolRejectedException {
-	public MempoolDuplicateException(ClientAtom atom, String message) {
-		super(atom, message);
+	public MempoolDuplicateException(Command command, String message) {
+		super(command, message);
 	}
 }

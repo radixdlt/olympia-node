@@ -31,6 +31,7 @@ import com.radixdlt.ExecutionEpochChangeRxModule;
 import com.radixdlt.ExecutionLocalMempoolModule;
 import com.radixdlt.PersistenceModule;
 import com.radixdlt.StateComputerModule;
+import com.radixdlt.StateComputerRxModule;
 import com.radixdlt.SyncCommittedServiceModule;
 import com.radixdlt.SyncMempoolServiceModule;
 import com.radixdlt.ExecutionRxModule;
@@ -109,6 +110,7 @@ public class GlobalInjector {
 
 			// State Computer
 			new StateComputerModule(fixedNodeCount, viewsPerEpoch),
+			new StateComputerRxModule(),
 
 			// Synchronization
 			new SyncCommittedServiceModule(),

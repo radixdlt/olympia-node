@@ -15,19 +15,31 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.api;
+package com.radixdlt.consensus;
 
-import com.radixdlt.syncer.SyncExecutor.CommittedCommand;
-import io.reactivex.rxjava3.core.Observable;
+import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Events related to the ledger
- */
-public interface LedgerRx {
-	/**
-	 * Retrieve a never ending stream of committed State Computer commands
-	 *
-	 * @return hot observable of committed commands and it's result
-	 */
-	Observable<CommittedCommand> committed();
+import nl.jqno.equalsverifier.EqualsVerifier;
+import org.junit.Before;
+import org.junit.Test;
+
+public class CommandTest {
+	private Command command;
+
+	@Before
+	public void setUp() {
+		this.command = new Command(new byte[] {1, 2, 3});
+	}
+
+	@Test
+	public void testGetters() {
+		assertThat(this.command.getHash()).isNotNull();
+		assertThat(this.command.getPayload()).isEqualTo(new byte[] {1, 2, 3});
+	}
+
+	@Test
+	public void equalsContract() {
+		EqualsVerifier.forClass(Command.class)
+			.verify();
+	}
 }

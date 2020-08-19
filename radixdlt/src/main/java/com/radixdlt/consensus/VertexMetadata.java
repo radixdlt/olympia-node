@@ -25,7 +25,6 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.syncer.PreparedCommand;
 import com.radixdlt.utils.Bytes;
 import com.radixdlt.utils.UInt256;
 import java.util.List;

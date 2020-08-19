@@ -16,7 +16,8 @@
  */
 package com.radixdlt.mempool;
 
-import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.consensus.Command;
+import com.radixdlt.crypto.Hash;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -26,7 +27,6 @@ import javax.annotation.concurrent.GuardedBy;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.radixdlt.identifiers.AID;
 
 /**
  * Local-only mempool.
@@ -37,7 +37,7 @@ import com.radixdlt.identifiers.AID;
 public final class LocalMempool implements Mempool {
 	private final Object lock = new Object();
 	@GuardedBy("lock")
-	private final LinkedHashMap<AID, ClientAtom> data = Maps.newLinkedHashMap();
+	private final LinkedHashMap<Hash, Command> data = Maps.newLinkedHashMap();
 
 	private final int maxSize;
 
@@ -49,46 +49,46 @@ public final class LocalMempool implements Mempool {
 	}
 
 	@Override
-	public void addAtom(ClientAtom atom) throws MempoolFullException, MempoolDuplicateException {
+	public void add(Command command) throws MempoolFullException, MempoolDuplicateException {
 		synchronized (this.lock) {
 			if (this.data.size() >= this.maxSize) {
-				throw new MempoolFullException(atom, String.format("Mempool full: %s of %s items", this.data.size(), this.maxSize));
+				throw new MempoolFullException(command, String.format("Mempool full: %s of %s items", this.data.size(), this.maxSize));
 			}
-			if (null != this.data.put(atom.getAID(), atom)) {
-				throw new MempoolDuplicateException(atom, String.format("Mempool already has atom %s", atom.getAID()));
+			if (null != this.data.put(command.getHash(), command)) {
+				throw new MempoolDuplicateException(command, String.format("Mempool already has command %s", command.getHash()));
 			}
 		}
 	}
 
 	@Override
-	public void removeCommittedAtom(AID aid) {
+	public void removeCommitted(Hash cmdHash) {
 		synchronized (this.lock) {
-			this.data.remove(aid);
+			this.data.remove(cmdHash);
 		}
 	}
 
 	@Override
-	public void removeRejectedAtom(AID aid) {
+	public void removeRejected(Hash cmdHash) {
 		// For now we just treat this the same as committed atoms.
 		// Once we have a more complete mempool implementation, we
 		// can use this to remove dependent atoms too.
-		removeCommittedAtom(aid);
+		removeCommitted(cmdHash);
 	}
 
 	@Override
-	public List<ClientAtom> getAtoms(int count, Set<AID> seen) {
+	public List<Command> getCommands(int count, Set<Hash> seen) {
 		synchronized (this.lock) {
 			int size = Math.min(count, this.data.size());
 			if (size > 0) {
-				List<ClientAtom> atoms = Lists.newArrayList();
-				Iterator<ClientAtom> i = this.data.values().iterator();
-				while (atoms.size() < size && i.hasNext()) {
-					ClientAtom a = i.next();
-					if (seen.add(a.getAID())) {
-						atoms.add(a);
+				List<Command> commands = Lists.newArrayList();
+				Iterator<Command> i = this.data.values().iterator();
+				while (commands.size() < size && i.hasNext()) {
+					Command a = i.next();
+					if (seen.add(a.getHash())) {
+						commands.add(a);
 					}
 				}
-				return atoms;
+				return commands;
 			} else {
 				return Collections.emptyList();
 			}
@@ -96,7 +96,7 @@ public final class LocalMempool implements Mempool {
 	}
 
 	@Override
-	public int atomCount() {
+	public int count() {
 		synchronized (this.lock) {
 			return this.data.size();
 		}
@@ -110,6 +110,6 @@ public final class LocalMempool implements Mempool {
 	@Override
 	public String toString() {
 		return String.format("%s[%x:%s/%s]",
-			getClass().getSimpleName(), System.identityHashCode(this), atomCount(), this.maxSize);
+			getClass().getSimpleName(), System.identityHashCode(this), count(), this.maxSize);
 	}
 }

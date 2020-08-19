@@ -17,9 +17,9 @@
 
 package com.radixdlt.middleware2.network;
 
+import com.radixdlt.consensus.Command;
 import com.radixdlt.mempool.MempoolNetworkRx;
 import com.radixdlt.mempool.MempoolNetworkTx;
-import com.radixdlt.middleware2.ClientAtom;
 import java.util.Objects;
 
 import javax.inject.Inject;
@@ -46,7 +46,7 @@ public class SimpleMempoolNetwork implements MempoolNetworkRx, MempoolNetworkTx 
 	private final AddressBook addressBook;
 	private final MessageCentral messageCentral;
 
-	private final PublishSubject<ClientAtom> atoms;
+	private final PublishSubject<Command> commands;
 
 	@Inject
 	public SimpleMempoolNetwork(
@@ -60,7 +60,7 @@ public class SimpleMempoolNetwork implements MempoolNetworkRx, MempoolNetworkTx 
 		this.messageCentral = Objects.requireNonNull(messageCentral);
 		this.localPeer = new PeerWithSystem(system);
 
-		this.atoms = PublishSubject.create();
+		this.commands = PublishSubject.create();
 
 		// TODO: Should be handled in start()/stop() once we have lifetimes sorted out
 		this.messageCentral.addListener(MempoolAtomAddedMessage.class, this::handleMempoolAtomMessage);
@@ -68,8 +68,8 @@ public class SimpleMempoolNetwork implements MempoolNetworkRx, MempoolNetworkTx 
 
 
 	@Override
-	public void sendMempoolSubmission(ClientAtom atom) {
-		MempoolAtomAddedMessage message = new MempoolAtomAddedMessage(this.magic, atom);
+	public void sendMempoolSubmission(Command command) {
+		MempoolAtomAddedMessage message = new MempoolAtomAddedMessage(this.magic, command);
 		final EUID self = this.localPeer.getNID();
 		this.addressBook.peers()
 			.filter(Peer::hasSystem) // Only peers with systems (and therefore transports)
@@ -78,11 +78,11 @@ public class SimpleMempoolNetwork implements MempoolNetworkRx, MempoolNetworkTx 
 	}
 
 	@Override
-	public Observable<ClientAtom> atomMessages() {
-		return this.atoms;
+	public Observable<Command> commands() {
+		return this.commands;
 	}
 
 	private void handleMempoolAtomMessage(Peer source, MempoolAtomAddedMessage message) {
-		this.atoms.onNext(message.atom());
+		this.commands.onNext(message.command());
 	}
 }

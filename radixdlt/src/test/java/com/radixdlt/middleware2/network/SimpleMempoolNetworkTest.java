@@ -17,7 +17,7 @@
 
 package com.radixdlt.middleware2.network;
 
-import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.consensus.Command;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
@@ -55,14 +55,14 @@ public class SimpleMempoolNetworkTest {
 		MessageCentral messageCentral = mock(MessageCentral.class);
 		SimpleMempoolNetwork smn = new SimpleMempoolNetwork(system, universe, addressBook, messageCentral);
 
-		ClientAtom atom = mock(ClientAtom.class);
-		smn.sendMempoolSubmission(atom);
+		Command command = mock(Command.class);
+		smn.sendMempoolSubmission(command);
 
 		verify(messageCentral, times(1)).send(any(), any());
 	}
 
 	@Test
-	public void testAtomMessages() {
+	public void testCommandMessages() {
 		LocalSystem system = mock(LocalSystem.class);
 		when(system.getNID()).thenReturn(EUID.TWO);
 		Universe universe = mock(Universe.class);
@@ -79,18 +79,16 @@ public class SimpleMempoolNetworkTest {
 		assertNotNull(callbackRef.get());
 		MessageListener<MempoolAtomAddedMessage> callback = callbackRef.get();
 
-		TestObserver<ClientAtom> obs = TestObserver.create();
-		smn.atomMessages()
-			.subscribe(obs);
+		TestObserver<Command> obs = smn.commands().test();
 
 		Peer peer = mock(Peer.class);
-		ClientAtom atom = mock(ClientAtom.class);
+		Command command = mock(Command.class);
 		MempoolAtomAddedMessage message = mock(MempoolAtomAddedMessage.class);
-		when(message.atom()).thenReturn(atom);
+		when(message.command()).thenReturn(command);
 		callback.handleMessage(peer, message);
 
 		obs.awaitCount(1);
 		obs.assertNoErrors();
-		obs.assertValue(a -> a == atom);
+		obs.assertValue(a -> a == command);
 	}
 }

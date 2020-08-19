@@ -18,6 +18,7 @@
 package com.radixdlt.consensus.bft;
 
 import com.radixdlt.consensus.BFTEventProcessor;
+import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.Proposal;
@@ -35,8 +36,6 @@ import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.network.TimeSupplier;
 import com.radixdlt.utils.RTTStatistics;
-import com.radixdlt.identifiers.AID;
-import com.radixdlt.middleware2.ClientAtom;
 
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -234,7 +233,7 @@ public final class BFTEventReducer implements BFTEventProcessor {
 			final QuorumCertificate highestQC = vertexStore.getHighestQC();
 			final QuorumCertificate highestCommitted = vertexStore.getHighestCommittedQC();
 
-			final ClientAtom nextCommand;
+			final Command nextCommand;
 
 			// Propose null atom in the case that we are at the end of the epoch
 			// TODO: Remove isEndOfEpoch knowledge from consensus
@@ -242,13 +241,13 @@ public final class BFTEventReducer implements BFTEventProcessor {
 				nextCommand = null;
 			} else {
 				final List<Vertex> preparedVertices = vertexStore.getPathFromRoot(highestQC.getProposed().getId());
-				final Set<AID> preparedAtoms = preparedVertices.stream()
-					.map(Vertex::getAtom)
+				final Set<Hash> prepared = preparedVertices.stream()
+					.map(Vertex::getCommand)
 					.filter(Objects::nonNull)
-					.map(ClientAtom::getAID)
+					.map(Command::getHash)
 					.collect(Collectors.toSet());
 
-				nextCommand = nextCommandGenerator.generateNextCommand(view, preparedAtoms);
+				nextCommand = nextCommandGenerator.generateNextCommand(view, prepared);
 			}
 
 			final Vertex proposedVertex = Vertex.createVertex(highestQC, view, nextCommand);

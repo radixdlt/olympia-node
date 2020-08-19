@@ -17,14 +17,14 @@
 
 package com.radixdlt.mempool;
 
-import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.consensus.Command;
 
 /**
  * Exception thrown when an attempt to add new items would
  * exceed the mempool's maximum capacity.
  */
 public class MempoolFullException extends MempoolRejectedException {
-	public MempoolFullException(ClientAtom atom, String message) {
-		super(atom, message);
+	public MempoolFullException(Command command, String message) {
+		super(command, message);
 	}
 }

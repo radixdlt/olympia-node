@@ -17,7 +17,7 @@
 
 package com.radixdlt.mempool;
 
-import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.consensus.Command;
 
 /**
  * Interface for Mempool to send things through a network
@@ -26,7 +26,7 @@ public interface MempoolNetworkTx {
 	/**
 	 * Broadcast locally-received mempool submission to validators.
 	 *
-	 * @param atom the submission to send
+	 * @param command the submission to send
 	 */
-	void sendMempoolSubmission(ClientAtom atom);
+	void sendMempoolSubmission(Command command);
 }

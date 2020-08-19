@@ -52,7 +52,6 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.middleware2.CommittedAtom;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -116,7 +115,7 @@ public final class EpochManager {
 	private final ProposerElectionFactory proposerElectionFactory;
 	private final SystemCounters counters;
 	private final LocalTimeoutSender localTimeoutSender;
-	private final SyncedExecutor<CommittedAtom> syncedExecutor;
+	private final SyncedExecutor syncedExecutor;
 	private final Map<Long, List<ConsensusEvent>> queuedEvents;
 	private final BFTFactory bftFactory;
 	private final EpochInfoSender epochInfoSender;
@@ -130,7 +129,7 @@ public final class EpochManager {
 	public EpochManager(
 		BFTNode self,
 		EpochChange initialEpoch,
-		SyncedExecutor<CommittedAtom> syncedExecutor,
+		SyncedExecutor syncedExecutor,
 		SyncEpochsRPCSender epochsRPCSender,
 		LocalTimeoutSender localTimeoutSender,
 		PacemakerFactory pacemakerFactory,

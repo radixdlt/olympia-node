@@ -24,16 +24,18 @@ import com.radixdlt.atommodel.Atom;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.middleware2.ClientAtom;
-import com.radixdlt.middleware2.CommittedAtom;
+import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
+import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.store.SearchCursor;
 import com.radixdlt.store.StoreIndex;
 import com.radixdlt.store.LedgerSearchMode;
-import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
+import com.radixdlt.statecomputer.CommandToBinaryConverter;
 import com.radixdlt.middleware2.store.EngineAtomIndices;
 
 import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStore;
 
+import com.radixdlt.syncer.CommittedCommand;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -64,7 +66,8 @@ public class AtomEventObserver {
 	private CompletableFuture<?> firstRunnable;
 	private final ExecutorService executorService;
 	private final LedgerEntryStore store;
-	private final AtomToBinaryConverter atomToBinaryConverter;
+	private final CommandToBinaryConverter commandToBinaryConverter;
+	private final ClientAtomToBinaryConverter clientAtomToBinaryConverter;
 
 	private final Object syncLock = new Object();
 	private boolean synced = false;
@@ -75,13 +78,15 @@ public class AtomEventObserver {
 		Consumer<ObservedAtomEvents> onNext,
 		ExecutorService executorService,
 		LedgerEntryStore store,
-		AtomToBinaryConverter atomToBinaryConverter
+		CommandToBinaryConverter commandToBinaryConverter,
+		ClientAtomToBinaryConverter clientAtomToBinaryConverter
 	) {
 		this.atomQuery = atomQuery;
 		this.onNext = onNext;
 		this.executorService = executorService;
 		this.store = store;
-		this.atomToBinaryConverter = atomToBinaryConverter;
+		this.commandToBinaryConverter = commandToBinaryConverter;
+		this.clientAtomToBinaryConverter = clientAtomToBinaryConverter;
 	}
 
 	public boolean isDone() {
@@ -161,8 +166,9 @@ public class AtomEventObserver {
 					Optional<LedgerEntry> ledgerEntry = store.get(aid);
 					ledgerEntry.ifPresent(
 						entry -> {
-							CommittedAtom committedAtom = atomToBinaryConverter.toAtom(entry.getContent());
-							atoms.add(committedAtom.getClientAtom());
+							CommittedCommand committedCommand = commandToBinaryConverter.toCommand(entry.getContent());
+							ClientAtom clientAtom = committedCommand.getCommand().map(clientAtomToBinaryConverter::toAtom);
+							atoms.add(clientAtom);
 						}
 					);
 					cursor = cursor.next();

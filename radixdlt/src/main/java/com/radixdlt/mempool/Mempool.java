@@ -16,45 +16,44 @@
  */
 package com.radixdlt.mempool;
 
-import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.consensus.Command;
+import com.radixdlt.crypto.Hash;
 import java.util.List;
 import java.util.Set;
-
-import com.radixdlt.identifiers.AID;
 
 /**
  * Basic mempool functionality.
  * Implementations are expected to be thread safe.
  * <p>
  * Note that conceptually, a mempoolcan be thought of as a list indexable
- * by {@link AID} and ordered FIFO by {@link #addAtom(ClientAtom)} call order.
+ * by hash and ordered FIFO by {@link #add(Command)} call order.
  */
 public interface Mempool {
 	/**
-	 * Add an atom to the local mempool.
+	 * Add a command to the local mempool.
 	 * Should be called after atom has been validated.
 	 *
-	 * @param atom The atom to add.
+	 * @param command The command to add.
 	 * @throws MempoolFullException if the mempool cannot accept new submissions.
 	 * @throws MempoolDuplicateException if the mempool already has the specified atom
 	 */
-	void addAtom(ClientAtom atom) throws MempoolFullException, MempoolDuplicateException;
+	void add(Command command) throws MempoolFullException, MempoolDuplicateException;
 
 	/**
 	 * Remove the referenced atom from the local mempool after it has
 	 * been committed by consensus.
 	 *
-	 * @param aid The ID of the atom to remove
+	 * @param cmdHash The hash of the command to remove
 	 */
-	void removeCommittedAtom(AID aid);
+	void removeCommitted(Hash cmdHash);
 
 	/**
 	 * Remove the referenced atom from the local mempool after it has
 	 * been rejected by consensus.
 	 *
-	 * @param aid The ID of the atom to remove
+	 * @param cmdHash The hash of the command to remove
 	 */
-	void removeRejectedAtom(AID aid);
+	void removeRejected(Hash cmdHash);
 
 	/**
 	 * Retrieve a list of atoms from the local mempool for processing by
@@ -64,15 +63,15 @@ public interface Mempool {
 	 * of atoms that are "in-flight" but not yet committed to the ledger.
 	 *
 	 * @param count the number of atoms to retrieve
-	 * @param seen IDs of atoms seen by consensus, but not yet committed to the ledger
-	 * @return A list of atoms for processing by consensus
+	 * @param seen hashes of commands seen by consensus, but not yet committed to the ledger
+	 * @return A list of commands for processing by consensus
 	 */
-	List<ClientAtom> getAtoms(int count, Set<AID> seen);
+	List<Command> getCommands(int count, Set<Hash> seen);
 
 	/**
-	 * Return approximate count of atoms in the mempool.
+	 * Return approximate count of commands in the mempool.
 	 * Note that this value will be approximate, and will change dynamically
 	 * as atoms are added and removed.
 	 */
-	int atomCount();
+	int count();
 }

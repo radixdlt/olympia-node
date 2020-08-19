@@ -18,28 +18,12 @@
 package com.radixdlt.consensus;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.SyncedExecutor.CommittedInstruction;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.syncer.PreparedCommand;
 
 /**
  * A distributed computer which manages the computed state in a BFT.
- *
- * @param <T> the instruction type
  */
-public interface SyncedExecutor<T extends CommittedInstruction> {
-
-	/**
-	 * A state computer instruction which has been committed by the BFT
-	 */
-	interface CommittedInstruction {
-		/**
-		 * Retrieve the BFT data for the instruction
-		 * @return the BFT data for the instruction
-		 */
-		VertexMetadata getVertexMetadata();
-	}
-
+public interface SyncedExecutor {
 	/**
 	 * Given a proposed vertex, executes prepare stage on
 	 * the state computer, the result of which gets persisted on ledger.
@@ -62,8 +46,9 @@ public interface SyncedExecutor<T extends CommittedInstruction> {
 	boolean syncTo(VertexMetadata vertexMetadata, ImmutableList<BFTNode> target, Object opaque);
 
 	/**
-	 * Execute a committed instruction
-	 * @param instruction the instruction to execute
+	 * Commit a command
+	 * @param command the command to commit
+	 * @param vertexMetadata ledger metadata regarding command
 	 */
-	void commit(T instruction);
+	void commit(Command command, VertexMetadata vertexMetadata);
 }

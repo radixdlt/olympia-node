@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
-import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
 import java.util.Comparator;
@@ -42,8 +41,8 @@ import org.apache.logging.log4j.Logger;
  */
 @NotThreadSafe
 public final class SyncServiceProcessor {
-	public interface SyncedAtomSender {
-		void sendSyncedAtom(CommittedAtom committedAtom);
+	public interface SyncedCommandSender {
+		void sendSyncedCommand(CommittedCommand committedCommand);
 	}
 
 	public static final class SyncInProgress {
@@ -61,15 +60,15 @@ public final class SyncServiceProcessor {
 
 	private static final Logger log = LogManager.getLogger();
 	private static final int MAX_REQUESTS_TO_SEND = 20;
-	private final RadixEngineStateComputer executor;
-	private final SyncedAtomSender syncedAtomSender;
+	private final RadixEngineStateComputer stateComputer;
+	private final SyncedCommandSender syncedCommandSender;
 	private final int batchSize;
 	private final int maxAtomsQueueSize;
 	private final SyncTimeoutScheduler syncTimeoutScheduler;
 	private final long patienceMilliseconds;
 	private final AddressBook addressBook;
 	private final StateSyncNetwork stateSyncNetwork;
-	private final TreeSet<CommittedAtom> committedAtoms = new TreeSet<>(Comparator.comparingLong(a -> a.getVertexMetadata().getStateVersion()));
+	private final TreeSet<CommittedCommand> committedCommands = new TreeSet<>(Comparator.comparingLong(a -> a.getVertexMetadata().getStateVersion()));
 
 	private long syncInProgressId = 0;
 	private boolean isSyncInProgress = false;
@@ -77,10 +76,10 @@ public final class SyncServiceProcessor {
 	private long currentVersion;
 
 	public SyncServiceProcessor(
-		RadixEngineStateComputer executor,
+		RadixEngineStateComputer stateComputer,
 		StateSyncNetwork stateSyncNetwork,
 		AddressBook addressBook,
-		SyncedAtomSender syncedAtomSender,
+		SyncedCommandSender syncedCommandSender,
 		SyncTimeoutScheduler syncTimeoutScheduler,
 		long currentVersion,
 		int batchSize,
@@ -97,10 +96,10 @@ public final class SyncServiceProcessor {
 		}
 		this.currentVersion = currentVersion;
 		this.syncToTargetVersion = currentVersion;
-		this.executor = Objects.requireNonNull(executor);
+		this.stateComputer = Objects.requireNonNull(stateComputer);
 		this.stateSyncNetwork = Objects.requireNonNull(stateSyncNetwork);
 		this.addressBook = Objects.requireNonNull(addressBook);
-		this.syncedAtomSender = Objects.requireNonNull(syncedAtomSender);
+		this.syncedCommandSender = Objects.requireNonNull(syncedCommandSender);
 		this.syncTimeoutScheduler = Objects.requireNonNull(syncTimeoutScheduler);
 		this.batchSize = batchSize;
 		this.patienceMilliseconds = patienceMilliseconds;
@@ -115,38 +114,38 @@ public final class SyncServiceProcessor {
 		// TODO: This may still return an empty list as we still count state versions for atoms which
 		// TODO: never make it into the radix engine due to state errors. This is because we only check
 		// TODO: validity on commit rather than on proposal/prepare.
-		List<CommittedAtom> committedAtoms = executor.getCommittedAtoms(stateVersion, batchSize);
-		log.debug("SYNC_REQUEST: SENDING_RESPONSE size: {}", committedAtoms.size());
-		stateSyncNetwork.sendSyncResponse(peer, committedAtoms);
+		List<CommittedCommand> committedCommands = stateComputer.getCommittedCommands(stateVersion, batchSize);
+		log.debug("SYNC_REQUEST: SENDING_RESPONSE size: {}", committedCommands.size());
+		stateSyncNetwork.sendSyncResponse(peer, committedCommands);
 	}
 
-	public void processSyncResponse(ImmutableList<CommittedAtom> atoms) {
+	public void processSyncResponse(ImmutableList<CommittedCommand> commands) {
 		// TODO: Check validity of response
-		log.debug("SYNC_RESPONSE: size: {}", atoms.size());
-		for (CommittedAtom atom : atoms) {
-			long atomVersion = atom.getVertexMetadata().getStateVersion();
-			if (atomVersion > this.currentVersion) {
-				if (committedAtoms.size() < maxAtomsQueueSize) { // check if there is enough space
-					committedAtoms.add(atom);
+		log.debug("SYNC_RESPONSE: size: {}", commands.size());
+		for (CommittedCommand command : commands) {
+			long stateVersion = command.getVertexMetadata().getStateVersion();
+			if (stateVersion > this.currentVersion) {
+				if (committedCommands.size() < maxAtomsQueueSize) { // check if there is enough space
+					committedCommands.add(command);
 				} else { // not enough space available
-					CommittedAtom last = committedAtoms.last();
+					CommittedCommand last = committedCommands.last();
 					// will added it only if it must be applied BEFORE the most recent atom we have
-					if (last.getVertexMetadata().getStateVersion() > atomVersion) {
-						committedAtoms.pollLast(); // remove the most recent available
-						committedAtoms.add(atom);
+					if (last.getVertexMetadata().getStateVersion() > stateVersion) {
+						committedCommands.pollLast(); // remove the most recent available
+						committedCommands.add(command);
 					}
 				}
 			}
 		}
 
-		Iterator<CommittedAtom> it = committedAtoms.iterator();
+		Iterator<CommittedCommand> it = committedCommands.iterator();
 		while (it.hasNext()) {
-			CommittedAtom crtAtom = it.next();
-			long atomVersion = crtAtom.getVertexMetadata().getStateVersion();
-			if (atomVersion <= currentVersion) {
+			CommittedCommand command = it.next();
+			long stateVersion = command.getVertexMetadata().getStateVersion();
+			if (stateVersion <= currentVersion) {
 				it.remove();
-			} else if (atomVersion == currentVersion + 1) {
-				this.syncedAtomSender.sendSyncedAtom(crtAtom);
+			} else if (stateVersion == currentVersion + 1) {
+				this.syncedCommandSender.sendSyncedCommand(command);
 				this.currentVersion = this.currentVersion + 1;
 				it.remove();
 			} else {

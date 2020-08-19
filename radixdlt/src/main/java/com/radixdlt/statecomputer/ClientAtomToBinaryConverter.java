@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,31 +15,36 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.middleware2.converters;
+package com.radixdlt.statecomputer;
 
-import com.radixdlt.middleware2.CommittedAtom;
+import com.google.inject.Inject;
+import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
 
-public final class AtomToBinaryConverter {
+/**
+ * Serializes/deserializes a client atom
+ */
+public class ClientAtomToBinaryConverter {
 	private final Serialization serializer;
 
-	public AtomToBinaryConverter(Serialization serializer) {
+	@Inject
+	public ClientAtomToBinaryConverter(Serialization serializer) {
 		this.serializer = serializer;
 	}
 
-	public byte[] toLedgerEntryContent(CommittedAtom atom) {
+	public byte[] toLedgerEntryContent(ClientAtom clientAtom) {
 		try {
-			return serializer.toDson(atom, DsonOutput.Output.PERSIST);
+			return serializer.toDson(clientAtom, DsonOutput.Output.PERSIST);
 		} catch (SerializationException e) {
-			throw new RuntimeException(String.format("Serialization for Atom with ID: %s failed", atom.getAID()));
+			throw new RuntimeException(String.format("Serialization for Command %s failed", clientAtom));
 		}
 	}
 
-	public CommittedAtom toAtom(byte[] ledgerEntryContent) {
+	public ClientAtom toAtom(byte[] ledgerEntryContent) {
 		try {
-			return serializer.fromDson(ledgerEntryContent, CommittedAtom.class);
+			return serializer.fromDson(ledgerEntryContent, ClientAtom.class);
 		} catch (SerializationException e) {
 			throw new IllegalStateException("Deserialization of Atom failed", e);
 		}

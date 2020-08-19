@@ -19,14 +19,15 @@ package org.radix;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.DefaultSerialization;
+import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
 import com.radixdlt.syncer.SyncServiceRunner;
 import com.radixdlt.systeminfo.InMemorySystemInfoManager;
-import com.radixdlt.api.LedgerRx;
+import com.radixdlt.api.CommittedAtomsRx;
 import com.radixdlt.api.SubmissionErrorsRx;
 import com.radixdlt.consensus.ConsensusRunner;
 import com.radixdlt.mempool.MempoolReceiver;
 import com.radixdlt.mempool.SubmissionControl;
-import com.radixdlt.middleware2.converters.AtomToBinaryConverter;
+import com.radixdlt.statecomputer.CommandToBinaryConverter;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.PeerManager;
 import com.radixdlt.properties.RuntimeProperties;
@@ -196,18 +197,19 @@ public final class Radix
 		final ConsensusRunner consensusRunner = globalInjector.getInjector().getInstance(ConsensusRunner.class);
 		// start API services
 		SubmissionControl submissionControl = globalInjector.getInjector().getInstance(SubmissionControl.class);
-		AtomToBinaryConverter atomToBinaryConverter = globalInjector.getInjector().getInstance(AtomToBinaryConverter.class);
+		CommandToBinaryConverter commandToBinaryConverter = globalInjector.getInjector().getInstance(CommandToBinaryConverter.class);
+		ClientAtomToBinaryConverter clientAtomToBinaryConverter = globalInjector.getInjector().getInstance(ClientAtomToBinaryConverter.class);
 		LedgerEntryStore store = globalInjector.getInjector().getInstance(LedgerEntryStore.class);
 		SubmissionErrorsRx submissionErrorsRx = globalInjector.getInjector().getInstance(SubmissionErrorsRx.class);
-		LedgerRx ledgerRx = globalInjector.getInjector().getInstance(LedgerRx.class);
+		CommittedAtomsRx committedAtomsRx = globalInjector.getInjector().getInstance(CommittedAtomsRx.class);
 		RadixHttpServer httpServer = new RadixHttpServer(
 			infoStateRunner,
-			submissionErrorsRx,
-			ledgerRx,
+			submissionErrorsRx, committedAtomsRx,
 			consensusRunner,
 			store,
 			submissionControl,
-			atomToBinaryConverter,
+			commandToBinaryConverter,
+			clientAtomToBinaryConverter,
 			universe,
 			serialization,
 			properties,

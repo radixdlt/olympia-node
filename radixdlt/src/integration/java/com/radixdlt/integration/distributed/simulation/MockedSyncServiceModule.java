@@ -20,37 +20,35 @@ package com.radixdlt.integration.distributed.simulation;
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.SyncedExecutor;
-import com.radixdlt.middleware2.CommittedAtom;
+import com.radixdlt.syncer.CommittedCommand;
 import com.radixdlt.syncer.SyncExecutor.CommittedSender;
 import com.radixdlt.syncer.SyncExecutor.SyncService;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class MockedSyncServiceModule extends AbstractModule {
-	private final ConcurrentHashMap<Long, CommittedAtom> sharedCommittedAtoms;
+	private final ConcurrentHashMap<Long, CommittedCommand> sharedCommittedAtoms;
 
-	public MockedSyncServiceModule(ConcurrentHashMap<Long, CommittedAtom> sharedCommittedAtoms) {
+	public MockedSyncServiceModule(ConcurrentHashMap<Long, CommittedCommand> sharedCommittedAtoms) {
 		this.sharedCommittedAtoms = sharedCommittedAtoms;
 	}
 
 	@ProvidesIntoSet
 	private CommittedSender sync() {
-		return cmd -> {
-			CommittedAtom committedAtom = cmd.getCommand();
-			sharedCommittedAtoms.put(committedAtom.getVertexMetadata().getStateVersion(), committedAtom);
-		};
+		return (cmd, vertexMetadata) ->
+			sharedCommittedAtoms.put(vertexMetadata.getStateVersion(), new CommittedCommand(cmd, vertexMetadata));
 	}
 
 	// TODO: change this to a service
 	@ProvidesIntoSet
 	SyncService syncService(
-		SyncedExecutor<CommittedAtom> syncedExecutor
+		SyncedExecutor syncedExecutor
 	) {
 		return request -> {
 			final long targetVersion = request.getTarget().getStateVersion();
 			final long initVersion = request.getCurrentVersion() + 1;
 			for (long version = initVersion; version <= targetVersion; version++) {
-				CommittedAtom atom = sharedCommittedAtoms.get(version);
-				syncedExecutor.commit(atom);
+				CommittedCommand committedCommand = sharedCommittedAtoms.get(version);
+				syncedExecutor.commit(committedCommand.getCommand(), committedCommand.getVertexMetadata());
 			}
 		};
 	}

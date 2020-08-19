@@ -28,7 +28,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.middleware2.CommittedAtom;
 
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -44,7 +43,7 @@ public class SyncServiceRunnerTest {
 	private StateSyncNetwork stateSyncNetwork;
 	private SyncServiceProcessor syncServiceProcessor;
 	private Subject<SyncRequest> requestsSubject;
-	private Subject<ImmutableList<CommittedAtom>> responsesSubject;
+	private Subject<ImmutableList<CommittedCommand>> responsesSubject;
 
 	@Before
 	public void setUp() {
@@ -87,9 +86,9 @@ public class SyncServiceRunnerTest {
 
 	@Test
 	public void when_sync_response__then_it_is_processed() {
-		ImmutableList<CommittedAtom> committedAtomList = ImmutableList.of(mock(CommittedAtom.class));
+		ImmutableList<CommittedCommand> committedCommands = ImmutableList.of(mock(CommittedCommand.class));
 		syncServiceRunner.start();
-		responsesSubject.onNext(committedAtomList);
-		verify(syncServiceProcessor, timeout(1000).times(1)).processSyncResponse(eq(committedAtomList));
+		responsesSubject.onNext(committedCommands);
+		verify(syncServiceProcessor, timeout(1000).times(1)).processSyncResponse(eq(committedCommands));
 	}
 }

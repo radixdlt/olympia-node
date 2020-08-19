@@ -61,7 +61,6 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.middleware2.CommittedAtom;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Before;
 import org.junit.Test;
@@ -75,7 +74,7 @@ public class EpochManagerTest {
 	private Pacemaker pacemaker;
 	private SystemCounters systemCounters;
 	private ProposerElection proposerElection;
-	private SyncedExecutor<CommittedAtom> syncedExecutor;
+	private SyncedExecutor syncedExecutor;
 	private BFTNode self;
 
 	@Before
@@ -90,7 +89,7 @@ public class EpochManagerTest {
 		this.bftFactory = mock(BFTFactory.class);
 
 		this.systemCounters = new SystemCountersImpl();
-		@SuppressWarnings("unchecked") SyncedExecutor<CommittedAtom> ssc = mock(SyncedExecutor.class);
+		SyncedExecutor ssc = mock(SyncedExecutor.class);
 		this.syncedExecutor = ssc;
 
 		this.proposerElection = mock(ProposerElection.class);

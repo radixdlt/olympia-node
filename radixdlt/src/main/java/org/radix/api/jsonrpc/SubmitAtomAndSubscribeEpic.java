@@ -85,10 +85,8 @@ public class SubmitAtomAndSubscribeEpic {
 
 		SingleAtomListener subscriber = new SingleAtomListener() {
 			@Override
-			public void onStored(boolean first) {
+			public void onStored() {
 				JSONObject data = new JSONObject();
-				data.put("justStored", first);
-
 				sendAtomSubmissionState.accept(AtomSubmissionState.STORED, data);
 			}
 

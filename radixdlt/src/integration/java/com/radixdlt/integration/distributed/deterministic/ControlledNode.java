@@ -50,7 +50,6 @@ import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.middleware2.CommittedAtom;
 import java.util.Objects;
 
 /**
@@ -74,7 +73,7 @@ class ControlledNode {
 		ProposerElectionFactory proposerElectionFactory,
 		BFTValidatorSet initialValidatorSet,
 		SyncAndTimeout syncAndTimeout,
-		SyncedExecutor<CommittedAtom> stateComputer
+		SyncedExecutor stateComputer
 	) {
 		this.systemCounters = new SystemCountersImpl();
 		this.controlledSender = Objects.requireNonNull(sender);

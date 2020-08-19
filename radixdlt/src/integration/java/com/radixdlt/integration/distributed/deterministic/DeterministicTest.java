@@ -37,7 +37,6 @@ import com.radixdlt.syncer.SyncExecutor.CommittedStateSyncSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.EUID;
-import com.radixdlt.middleware2.CommittedAtom;
 import com.radixdlt.utils.UInt256;
 import java.util.Comparator;
 import java.util.List;
@@ -62,7 +61,7 @@ public final class DeterministicTest {
 	private DeterministicTest(
 		int numNodes,
 		SyncAndTimeout syncAndTimeout,
-		BiFunction<CommittedStateSyncSender, EpochChangeSender, SyncedExecutor<CommittedAtom>> stateComputerSupplier,
+		BiFunction<CommittedStateSyncSender, EpochChangeSender, SyncedExecutor> stateComputerSupplier,
 		NodeWeighting weight
 	) {
 		ImmutableList<ECKeyPair> keys = Stream.generate(ECKeyPair::generateNew)

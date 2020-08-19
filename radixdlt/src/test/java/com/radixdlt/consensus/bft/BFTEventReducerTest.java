@@ -18,6 +18,7 @@
 package com.radixdlt.consensus.bft;
 
 import com.google.common.collect.ImmutableSet;
+import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.PendingVotes;
 import com.radixdlt.consensus.Proposal;
@@ -29,7 +30,6 @@ import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTInfoSender;
 import com.radixdlt.consensus.bft.BFTEventReducer.EndOfEpochSender;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
-import com.radixdlt.identifiers.AID;
 import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.safety.SafetyRules;
@@ -37,9 +37,6 @@ import com.radixdlt.consensus.safety.SafetyViolationException;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.middleware2.ClientAtom;
-import com.radixdlt.utils.Ints;
 import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
@@ -99,12 +96,6 @@ public class BFTEventReducerTest {
 			infoSender,
 			System::currentTimeMillis
 		);
-	}
-
-	private static AID makeAID(int n) {
-		byte[] temp = new byte[AID.BYTES];
-		Ints.copyTo(n, temp, AID.BYTES - Integer.BYTES);
-		return AID.from(temp);
 	}
 
 	@Test
@@ -228,7 +219,7 @@ public class BFTEventReducerTest {
 		QuorumCertificate highQC = mock(QuorumCertificate.class);
 		when(highQC.getProposed()).thenReturn(mock(VertexMetadata.class));
 		when(vertexStore.getHighestQC()).thenReturn(highQC);
-		when(nextCommandGenerator.generateNextCommand(eq(View.of(1L)), any())).thenReturn(mock(ClientAtom.class));
+		when(nextCommandGenerator.generateNextCommand(eq(View.of(1L)), any())).thenReturn(mock(Command.class));
 		when(validatorSet.getValidators()).thenReturn(ImmutableSet.of());
 		reducer.processNewView(newView);
 		verify(pacemaker, times(1)).processNewView(any(), any());
@@ -240,10 +231,7 @@ public class BFTEventReducerTest {
 		View currentView = View.of(123);
 
 		Vertex proposedVertex = mock(Vertex.class);
-		ClientAtom proposedAtom = mock(ClientAtom.class);
-		AID aid = makeAID(7); // no special significance
-		when(proposedAtom.getAID()).thenReturn(aid);
-		when(proposedVertex.getAtom()).thenReturn(proposedAtom);
+		when(proposedVertex.getCommand()).thenReturn(mock(Command.class));
 		when(proposedVertex.getQC()).thenReturn(mock(QuorumCertificate.class));
 		VertexMetadata parent = mock(VertexMetadata.class);
 		when(proposedVertex.getParentMetadata()).thenReturn(parent);
@@ -252,8 +240,7 @@ public class BFTEventReducerTest {
 		Proposal proposal = mock(Proposal.class);
 		when(proposal.getVertex()).thenReturn(proposedVertex);
 
-		RadixEngineException e = mock(RadixEngineException.class);
-		Mockito.doThrow(new VertexInsertionException("Test", e))
+		Mockito.doThrow(new VertexInsertionException("Test", mock(Exception.class)))
 			.when(vertexStore).insertVertex(any());
 		when(pacemaker.processQC(any())).thenReturn(Optional.empty());
 		when(pacemaker.getCurrentView()).thenReturn(currentView);
@@ -267,10 +254,7 @@ public class BFTEventReducerTest {
 		when(proposerElection.getProposer(any())).thenReturn(mock(BFTNode.class));
 
 		Vertex proposedVertex = mock(Vertex.class);
-		ClientAtom proposedAtom = mock(ClientAtom.class);
-		AID aid = makeAID(7); // no special significance
-		when(proposedAtom.getAID()).thenReturn(aid);
-		when(proposedVertex.getAtom()).thenReturn(proposedAtom);
+		when(proposedVertex.getCommand()).thenReturn(mock(Command.class));
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		View qcView = mock(View.class);
 		when(qc.getView()).thenReturn(qcView);
@@ -303,10 +287,7 @@ public class BFTEventReducerTest {
 		when(proposerElection.getProposer(eq(currentView.next()))).thenReturn(self);
 
 		Vertex proposedVertex = mock(Vertex.class);
-		ClientAtom proposedAtom = mock(ClientAtom.class);
-		AID aid = makeAID(7); // no special significance
-		when(proposedAtom.getAID()).thenReturn(aid);
-		when(proposedVertex.getAtom()).thenReturn(proposedAtom);
+		when(proposedVertex.getCommand()).thenReturn(mock(Command.class));
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		View qcView = mock(View.class);
 		when(qc.getView()).thenReturn(qcView);
@@ -337,10 +318,7 @@ public class BFTEventReducerTest {
 		when(proposerElection.getProposer(eq(currentView))).thenReturn(self);
 
 		Vertex proposedVertex = mock(Vertex.class);
-		ClientAtom proposedAtom = mock(ClientAtom.class);
-		AID aid = makeAID(7); // no special significance
-		when(proposedAtom.getAID()).thenReturn(aid);
-		when(proposedVertex.getAtom()).thenReturn(proposedAtom);
+		when(proposedVertex.getCommand()).thenReturn(mock(Command.class));
 		QuorumCertificate qc = mock(QuorumCertificate.class);
 		View qcView = mock(View.class);
 		when(qc.getView()).thenReturn(qcView);
@@ -389,10 +367,7 @@ public class BFTEventReducerTest {
 		Hash committedVertexId = mock(Hash.class);
 		when(committedVertexMetadata.getId()).thenReturn(committedVertexId);
 		Vertex committedVertex = mock(Vertex.class);
-		ClientAtom atom = mock(ClientAtom.class);
-		AID aid = mock(AID.class);
-		when(atom.getAID()).thenReturn(aid);
-		when(committedVertex.getAtom()).thenReturn(atom);
+		when(committedVertex.getCommand()).thenReturn(mock(Command.class));
 
 		when(safetyRules.process(eq(qc))).thenReturn(Optional.of(committedVertexMetadata));
 		when(vertexStore.commitVertex(eq(committedVertexMetadata))).thenReturn(Optional.of(committedVertex));

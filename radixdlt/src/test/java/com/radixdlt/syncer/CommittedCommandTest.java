@@ -20,24 +20,34 @@ package com.radixdlt.syncer;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
-import com.radixdlt.crypto.Hash;
+import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.VertexMetadata;
+import nl.jqno.equalsverifier.EqualsVerifier;
 import org.junit.Before;
 import org.junit.Test;
 
-public class PreparedCommandTest {
-	private PreparedCommand preparedCommand;
-	private Hash timestampedSignatureHash;
+public class CommittedCommandTest {
+	private Command command;
+	private VertexMetadata vertexMetadata;
+	private CommittedCommand committedCommand;
 
 	@Before
-	public void setup() {
-		this.timestampedSignatureHash = mock(Hash.class);
-		this.preparedCommand = PreparedCommand.create(12345, timestampedSignatureHash);
+	public void setUp() {
+		this.command = mock(Command.class);
+		this.vertexMetadata = mock(VertexMetadata.class);
+		this.committedCommand = new CommittedCommand(command, vertexMetadata);
 	}
 
 	@Test
 	public void testGetters() {
-		assertThat(preparedCommand.getStateVersion()).isEqualTo(12345);
-		assertThat(preparedCommand.getTimestampedSignaturesHash()).isEqualTo(timestampedSignatureHash);
-		assertThat(preparedCommand.getNextValidatorSet()).isEmpty();
+		assertThat(this.committedCommand.getCommand()).isEqualTo(command);
+		assertThat(this.committedCommand.getVertexMetadata()).isEqualTo(vertexMetadata);
 	}
+
+	@Test
+	public void equalsContract() {
+		EqualsVerifier.forClass(CommittedCommand.class)
+			.verify();
+	}
+
 }
