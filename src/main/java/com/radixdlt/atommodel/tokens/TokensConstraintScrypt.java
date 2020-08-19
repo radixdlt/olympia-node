@@ -280,29 +280,35 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 		@Override
 		public void main(RoutineCalls calls) {
 			// The staking transition works as follows (in order)
-			// ---
+			// --- Format ---
+			// Particle(props), input, output
+			// -> Particle(props), next input, next output
+			// --- ------ ---
 			// 1x
 			// RegisteredValidator(nonce), void, void
 			// -> RegisteredValidator(nonce+1), ProvidedDelegate, none
+			createCompanionTransition(calls);
 			// 1x
 			// RegisteredValidator(nonce+1), ProvidedDelegate, void
 			// -> StakedTokens(amount), void, StakedAmount(amount)
+			createStakeCheckTransition(calls);
 			// nx
 			// TransferrableTokens(transferred), void, StakedAmount
 			// -> StakedTokens(remaining), [UsedAmount(remaining)],  [StakedAmount(remaining-transferred)]
-			// ---
-			// Format:
-			// Particle(props), input, output
-			// -> Particle(props), next input, next output
+			createStakeFundTransition(calls);
+		}
 
+		private void createCompanionTransition(RoutineCalls calls) {
 			// 1x
 			// RegisteredValidator(nonce), void, void
 			// -> RegisteredValidator(nonce+1), ProvidedDelegate, none
 			calls.createTransition(
-				new TransitionToken<>(RegisteredValidatorParticle.class, TypeToken.of(VoidUsedData.class), RegisteredValidatorParticle.class, TypeToken.of(VoidUsedData.class)),
+				new TransitionToken<>(RegisteredValidatorParticle.class, TypeToken.of(VoidUsedData.class),
+					RegisteredValidatorParticle.class, TypeToken.of(VoidUsedData.class)),
 				new TransitionProcedure<RegisteredValidatorParticle, VoidUsedData, RegisteredValidatorParticle, VoidUsedData>() {
 					@Override
-					public Result precondition(RegisteredValidatorParticle inputParticle, VoidUsedData inputUsed, RegisteredValidatorParticle outputParticle, VoidUsedData outputUsed) {
+					public Result precondition(RegisteredValidatorParticle inputParticle, VoidUsedData inputUsed,
+					                           RegisteredValidatorParticle outputParticle, VoidUsedData outputUsed) {
 						// check that the registered validator particle is unmodified
 						if (!inputParticle.equalsIgnoringNonce(outputParticle)) {
 							return Result.error(String.format(
@@ -342,15 +348,19 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 					}
 				}
 			);
+		}
 
+		private void createStakeCheckTransition(RoutineCalls calls) {
 			// 1x
 			// RegisteredValidator(nonce+1), ProvidedDelegate, void
 			// -> StakedTokens(amount), void, StakedAmount(amount)
 			calls.createTransition(
-				new TransitionToken<>(RegisteredValidatorParticle.class, TypeToken.of(ProvidedDelegate.class), StakedTokensParticle.class, TypeToken.of(VoidUsedData.class)),
+				new TransitionToken<>(RegisteredValidatorParticle.class, TypeToken.of(ProvidedDelegate.class),
+					StakedTokensParticle.class, TypeToken.of(VoidUsedData.class)),
 				new TransitionProcedure<RegisteredValidatorParticle, ProvidedDelegate, StakedTokensParticle, VoidUsedData>() {
 					@Override
-					public Result precondition(RegisteredValidatorParticle inputParticle, ProvidedDelegate inputUsed, StakedTokensParticle outputParticle, VoidUsedData outputUsed) {
+					public Result precondition(RegisteredValidatorParticle inputParticle, ProvidedDelegate inputUsed,
+					                           StakedTokensParticle outputParticle, VoidUsedData outputUsed) {
 						// check that we're talking about the same validator
 						if (!inputParticle.getAddress().equals(inputUsed.getDelegate().getAddress())) {
 							return Result.error(String.format(
@@ -392,15 +402,19 @@ public class TokensConstraintScrypt implements ConstraintScrypt {
 					}
 				}
 			);
+		}
 
+		private void createStakeFundTransition(RoutineCalls calls) {
 			// nx
 			// TransferrableTokens(transferred), void, StakedAmount
 			// -> StakedTokens(remaining), [UsedAmount(remaining)],  [StakedAmount(remaining-transferred)]
 			calls.createTransition(
-				new TransitionToken<>(TransferrableTokensParticle.class, TypeToken.of(VoidUsedData.class), StakedTokensParticle.class, TypeToken.of(StakedAmount.class)),
+				new TransitionToken<>(TransferrableTokensParticle.class, TypeToken.of(VoidUsedData.class),
+					StakedTokensParticle.class, TypeToken.of(StakedAmount.class)),
 				new TransitionProcedure<TransferrableTokensParticle, VoidUsedData, StakedTokensParticle, StakedAmount>() {
 					@Override
-					public Result precondition(TransferrableTokensParticle inputParticle, VoidUsedData inputUsed, StakedTokensParticle outputParticle, StakedAmount outputUsed) {
+					public Result precondition(TransferrableTokensParticle inputParticle, VoidUsedData inputUsed,
+					                           StakedTokensParticle outputParticle, StakedAmount outputUsed) {
 						return transition.apply(inputParticle, outputParticle);
 					}
 

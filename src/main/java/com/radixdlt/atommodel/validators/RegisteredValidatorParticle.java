@@ -65,9 +65,9 @@ public class RegisteredValidatorParticle extends Particle {
 	}
 
 	public boolean equalsIgnoringNonce(RegisteredValidatorParticle other) {
-		return Objects.equals(address, other.address) &&
-			Objects.equals(allowedDelegators, other.allowedDelegators) &&
-			Objects.equals(url, other.url);
+		return Objects.equals(address, other.address)
+			&& Objects.equals(allowedDelegators, other.allowedDelegators)
+			&& Objects.equals(url, other.url);
 	}
 
 	public RadixAddress getAddress() {
