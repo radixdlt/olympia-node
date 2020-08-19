@@ -27,6 +27,7 @@ import com.radixdlt.client.core.pow.ProofOfWorkBuilder;
 import com.radixdlt.identifiers.RadixAddress;
 import io.reactivex.observers.BaseTestConsumer.TestWaitStrategy;
 import io.reactivex.observers.TestObserver;
+import org.assertj.core.api.Assertions;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -77,16 +78,29 @@ public class ValidatorRegistrationTest {
 		final RadixIdentity radixIdentity = RadixIdentities.createNew();
 
 		// initialize api layer
-		RadixApplicationAPI api = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), radixIdentity);
+		RadixApplicationAPI api1 = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), radixIdentity);
 
 		// register for the first time
-		api.registerValidator(api.getAddress(), ImmutableSet.of()).blockUntilComplete();
+		ImmutableSet<RadixAddress> allowedDelegators = ImmutableSet.of(api1.getAddress());
+		String url = "https://www.radixdlt.com";
+		api1.registerValidator(api1.getAddress(), allowedDelegators, url).blockUntilComplete();
+
+		// check the validator state was stored properly
+		RadixApplicationAPI api2 = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), radixIdentity);
+		api2.pullOnce(api1.getAddress()).blockingAwait();
+		RegisteredValidatorParticle storedParticle = api2.getAtomStore().getUpParticles(api1.getAddress(), null)
+			.filter(RegisteredValidatorParticle.class::isInstance)
+			.map(RegisteredValidatorParticle.class::cast)
+			.findFirst()
+			.orElseThrow(() -> new IllegalStateException("no RegisteredValidatorParticle found"));
+		Assertions.assertThat(storedParticle.getUrl()).isEqualTo(url);
+		Assertions.assertThat(storedParticle.getAllowedDelegators()).isEqualTo(allowedDelegators);
 
 		// unregister
-		api.unregisterValidator(api.getAddress()).blockUntilComplete();
+		api1.unregisterValidator(api1.getAddress()).blockUntilComplete();
 
 		// and re-register
-		api.registerValidator(api.getAddress(), ImmutableSet.of()).blockUntilComplete();
+		api1.registerValidator(api1.getAddress(), ImmutableSet.of()).blockUntilComplete();
 	}
 
 	@Test
