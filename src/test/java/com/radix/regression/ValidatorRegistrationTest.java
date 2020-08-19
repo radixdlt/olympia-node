@@ -3,6 +3,7 @@ package com.radix.regression;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.client.application.RadixApplicationAPI;
 import com.radixdlt.client.application.identity.RadixIdentities;
 import com.radixdlt.client.application.identity.RadixIdentity;
@@ -79,13 +80,13 @@ public class ValidatorRegistrationTest {
 		RadixApplicationAPI api = RadixApplicationAPI.create(RadixEnv.getBootstrapConfig(), radixIdentity);
 
 		// register for the first time
-		api.registerValidator(api.getAddress()).blockUntilComplete();
+		api.registerValidator(api.getAddress(), ImmutableSet.of()).blockUntilComplete();
 
 		// unregister
 		api.unregisterValidator(api.getAddress()).blockUntilComplete();
 
 		// and re-register
-		api.registerValidator(api.getAddress()).blockUntilComplete();
+		api.registerValidator(api.getAddress(), ImmutableSet.of()).blockUntilComplete();
 	}
 
 	@Test
