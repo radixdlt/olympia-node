@@ -36,6 +36,7 @@ import io.reactivex.annotations.Nullable;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -53,7 +54,7 @@ import com.radixdlt.identifiers.RadixAddress;
  */
 public class InMemoryAtomStore implements AtomStore {
 	private final Map<Atom, AtomObservation> atoms = new ConcurrentHashMap<>();
-	private final Map<Particle, Map<Spin, Set<Atom>>> particleIndex = new ConcurrentHashMap<>();
+	private final Map<Particle, Map<Spin, Set<Atom>>> particleIndex = Collections.synchronizedMap(new LinkedHashMap<>());
 
 	private final Map<RadixAddress, CopyOnWriteArrayList<ObservableEmitter<AtomObservation>>> allObservers = new ConcurrentHashMap<>();
 	private final Map<RadixAddress, CopyOnWriteArrayList<ObservableEmitter<Long>>> allSyncers = new ConcurrentHashMap<>();
@@ -101,7 +102,7 @@ public class InMemoryAtomStore implements AtomStore {
 			stagedAtoms.put(uuid, stagedAtom);
 
 			for (SpunParticle sp : particleGroup.getSpunParticles()) {
-				Map<Particle, Spin> index = stagedParticleIndex.getOrDefault(uuid, new HashMap<>());
+				Map<Particle, Spin> index = stagedParticleIndex.getOrDefault(uuid, new LinkedHashMap<>());
 				index.put(sp.getParticle(), sp.getSpin());
 				stagedParticleIndex.put(uuid, index);
 			}
@@ -246,7 +247,7 @@ public class InMemoryAtomStore implements AtomStore {
 	@Override
 	public Stream<Particle> getUpParticles(RadixAddress address, @Nullable String stagedUuid) {
 		synchronized (lock) {
-			Set<Particle> upParticles = particleIndex.entrySet().stream()
+			List<Particle> upParticles = particleIndex.entrySet().stream()
 				.filter(e -> {
 					if (!e.getKey().getShardables().contains(address)) {
 						return false;
@@ -267,7 +268,7 @@ public class InMemoryAtomStore implements AtomStore {
 					return uppingAtoms.stream().anyMatch(a -> atoms.get(a).isStore());
 				})
 				.map(Map.Entry::getKey)
-				.collect(Collectors.toSet());
+				.collect(Collectors.toList());
 
 			if (stagedUuid != null) {
 				stagedParticleIndex.getOrDefault(stagedUuid, Collections.emptyMap()).entrySet().stream()
