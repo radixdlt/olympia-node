@@ -33,6 +33,7 @@ import com.radixdlt.client.core.atoms.particles.SpunParticle;
 import com.radixdlt.identifiers.RRI;
 import com.radixdlt.identifiers.RadixAddress;
 import org.assertj.core.api.SoftAssertions;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.math.BigDecimal;
@@ -43,6 +44,7 @@ import java.util.stream.Collectors;
 
 public class DeterministicMappingTest {
 	@Test
+	@Ignore("Run locally only.")
 	public void when_building_multiple_identical_transactions__then_their_output_should_match() {
 		int numIterations = 20;
 		RadixIdentity identity1 = RadixIdentities.createNew();
@@ -69,6 +71,7 @@ public class DeterministicMappingTest {
 	}
 
 	@Test
+	@Ignore("Run locally only.")
 	public void when_building_multiple_atoms_from_the_same_transaction__then_their_output_should_match() {
 		int numIterations = 20;
 		RadixIdentity identity1 = RadixIdentities.createNew();
