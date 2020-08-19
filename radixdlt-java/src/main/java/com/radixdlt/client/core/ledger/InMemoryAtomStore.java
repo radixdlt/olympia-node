@@ -51,6 +51,7 @@ import com.radixdlt.identifiers.RadixAddress;
 
 /**
  * An in memory storage of atoms and particles
+ * TODO @Performance: revisit the use of ordered, deterministic data structures (e.g. synchronized linked maps)
  */
 public class InMemoryAtomStore implements AtomStore {
 	private final Map<Atom, AtomObservation> atoms = new ConcurrentHashMap<>();
