@@ -118,7 +118,7 @@ public class SyncExecutorTest {
 		syncExecutor.commit(command, vertexMetadata);
 		verify(executor, times(1)).commit(eq(command), eq(vertexMetadata));
 		//verify(mempool, times(1)).removeCommittedAtom(aid);
-		verify(committedSender, times(1)).sendCommitted(any());
+		verify(committedSender, times(1)).sendCommitted(any(), any());
 	}
 
 	@Test

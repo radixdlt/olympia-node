@@ -17,32 +17,25 @@
 
 package org.radix.api.services;
 
-import com.google.common.collect.EvictingQueue;
-import com.google.common.collect.ImmutableSet;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.api.DeserializationFailure;
-import com.radixdlt.api.LedgerRx;
+import com.radixdlt.api.CommittedAtomsRx;
 import com.radixdlt.api.SubmissionErrorsRx;
 import com.radixdlt.api.SubmissionFailure;
 import com.radixdlt.atommodel.Atom;
-import com.radixdlt.engine.RadixEngineException;
-import com.radixdlt.identifiers.EUID;
 import com.radixdlt.mempool.MempoolRejectedException;
 import com.radixdlt.mempool.SubmissionControl;
 
 import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
-import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.statecomputer.CommittedAtom;
+import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomWithResult;
 import com.radixdlt.syncer.CommittedCommand;
-import com.radixdlt.syncer.SyncExecutor.CommittedCommandWithResult;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import com.radixdlt.middleware2.ClientAtom;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -60,8 +53,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.json.JSONException;
 import org.json.JSONObject;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import org.radix.api.observable.AtomEventDto;
-import org.radix.api.observable.AtomEventDto.AtomEventType;
 import org.radix.api.AtomQuery;
 import org.radix.api.observable.AtomEventObserver;
 import org.radix.api.observable.Disposable;
@@ -84,11 +75,8 @@ public class AtomsService {
 	private final ConcurrentHashMap<AID, List<AtomStatusListener>> singleAtomObservers = new ConcurrentHashMap<>();
 	private final ConcurrentHashMap<AID, List<SingleAtomListener>> deleteOnEventSingleAtomObservers = new ConcurrentHashMap<>();
 
-	private final ConcurrentHashMap<AtomEventDto.AtomEventType, Long> atomEventCount = new ConcurrentHashMap<>();
 	private final Serialization serialization = DefaultSerialization.getInstance();
 
-	private final Object lock = new Object();
-	private final EvictingQueue<String> eventRingBuffer = EvictingQueue.create(64);
 	private final SubmissionControl submissionControl;
 	private final CommandToBinaryConverter commandToBinaryConverter;
 	private final ClientAtomToBinaryConverter clientAtomToBinaryConverter;
@@ -96,11 +84,11 @@ public class AtomsService {
 	private final CompositeDisposable disposable;
 
 	private final SubmissionErrorsRx submissionErrorsRx;
-	private final LedgerRx ledgerRx;
+	private final CommittedAtomsRx committedAtomsRx;
 
 	public AtomsService(
 		SubmissionErrorsRx submissionErrorsRx,
-		LedgerRx ledgerRx,
+		CommittedAtomsRx committedAtomsRx,
 		LedgerEntryStore store,
 		SubmissionControl submissionControl,
 		CommandToBinaryConverter commandToBinaryConverter,
@@ -112,79 +100,27 @@ public class AtomsService {
 		this.commandToBinaryConverter = Objects.requireNonNull(commandToBinaryConverter);
 		this.clientAtomToBinaryConverter = Objects.requireNonNull(clientAtomToBinaryConverter);
 		this.disposable = new CompositeDisposable();
-		this.ledgerRx = ledgerRx;
+		this.committedAtomsRx = committedAtomsRx;
 	}
 
-	private void processExecutedCommand(CommittedCommandWithResult committedCommandWithResult) {
-		if (committedCommandWithResult.getCommand() == null) {
-			return;
+	private void processExecutedCommand(CommittedAtomWithResult committedAtomWithResult) {
+		CommittedAtom committedAtom = committedAtomWithResult.getCommittedAtom();
+		committedAtomWithResult.ifSuccess(indicies -> this.atomEventObservers.forEach(observer -> observer.tryNext(committedAtom, indicies)));
+		for (SingleAtomListener subscriber : this.deleteOnEventSingleAtomObservers.getOrDefault(committedAtom.getAID(), Collections.emptyList())) {
+			committedAtomWithResult
+				.ifSuccess(indicies -> subscriber.onStored())
+				.ifError(subscriber::onStoredFailure);
 		}
-		byte[] payload = committedCommandWithResult.getCommand().getPayload();
-		ClientAtom clientAtom;
-		try {
-			clientAtom = DefaultSerialization.getInstance().fromDson(payload, ClientAtom.class);
-		} catch (SerializationException e) {
-			return;
-		}
-		CommittedAtom committedAtom = new CommittedAtom(clientAtom, committedCommandWithResult.getVertexMetadata());
-
-		committedCommandWithResult
-			.ifSuccess(result -> this.processStoredEvent(committedAtom, result))
-			.ifError(e -> this.processException(committedAtom, e));
-	}
-
-	private void processStoredEvent(CommittedAtom committedAtom, Object result) {
-		// FIXME: Fix this once the api modules are sorted out
-		ImmutableSet<EUID> indicies = (ImmutableSet<EUID>) result;
-
-		this.atomEventObservers.forEach(observer -> observer.tryNext(committedAtom, indicies));
-
-		List<SingleAtomListener> subscribers = this.deleteOnEventSingleAtomObservers.remove(committedAtom.getAID());
-		if (subscribers != null) {
-			Iterator<SingleAtomListener> i = subscribers.iterator();
-			if (i.hasNext()) {
-				i.next().onStored(true);
-				while (i.hasNext()) {
-					i.next().onStored(false);
-				}
-			}
-		}
-
 		for (AtomStatusListener atomStatusListener : this.singleAtomObservers.getOrDefault(committedAtom.getAID(), Collections.emptyList())) {
+			committedAtomWithResult
+				.ifSuccess(indicies -> atomStatusListener.onStored(committedAtom))
+				.ifError(e -> atomStatusListener.onStoredFailure(committedAtom, e));
 			atomStatusListener.onStored(committedAtom);
 		}
-
-		this.atomEventCount.merge(AtomEventType.STORE, 1L, Long::sum);
-
-		synchronized (lock) {
-			eventRingBuffer.add(System.currentTimeMillis() + " STORED " + committedAtom.getAID());
-		}
 	}
 
-	private void processException(CommittedAtom committedAtom, Exception exception) {
-		RadixEngineException e = (RadixEngineException) exception;
-
-		for (AtomStatusListener singleAtomListener : this.singleAtomObservers.getOrDefault(committedAtom.getAID(), Collections.emptyList())) {
-			singleAtomListener.onStoredFailure(committedAtom, e);
-		}
-
-		List<SingleAtomListener> subscribers = this.deleteOnEventSingleAtomObservers.remove(committedAtom.getAID());
-		if (subscribers != null) {
-			subscribers.forEach(subscriber -> subscriber.onStoredFailure(e));
-		}
-
-		synchronized (lock) {
-			eventRingBuffer.add(
-				System.currentTimeMillis() + " EXCEPTION " + committedAtom.getAID() + " " + e.getErrorCode());
-		}
-	}
 
 	private void processSubmissionFailure(SubmissionFailure e) {
-		synchronized (lock) {
-			eventRingBuffer.add(
-				System.currentTimeMillis() + " EXCEPTION " + e.getClientAtom().getAID() + " " + e.getException().getErrorCode());
-		}
-
 		List<SingleAtomListener> subscribers = this.deleteOnEventSingleAtomObservers.remove(e.getClientAtom().getAID());
 		if (subscribers != null) {
 			subscribers.forEach(subscriber -> subscriber.onError(e.getClientAtom().getAID(), e.getException()));
@@ -196,11 +132,6 @@ public class AtomsService {
 	}
 
 	private void processDeserializationFailure(DeserializationFailure e) {
-		synchronized (lock) {
-			eventRingBuffer.add(
-				System.currentTimeMillis() + " EXCEPTION " + e.getAtom().getAID() + " " + e.getException().getMessage());
-		}
-
 		List<SingleAtomListener> subscribers = this.deleteOnEventSingleAtomObservers.remove(e.getAtom().getAID());
 		if (subscribers != null) {
 			subscribers.forEach(subscriber -> subscriber.onError(e.getAtom().getAID(), e.getException()));
@@ -211,9 +142,8 @@ public class AtomsService {
 		}
 	}
 
-
 	public void start() {
-		io.reactivex.rxjava3.disposables.Disposable lastStoredAtomDisposable = ledgerRx.committed()
+		io.reactivex.rxjava3.disposables.Disposable lastStoredAtomDisposable = committedAtomsRx.committedAtoms()
 			.observeOn(Schedulers.io())
 			.subscribe(this::processExecutedCommand);
 		this.disposable.add(lastStoredAtomDisposable);
@@ -231,20 +161,6 @@ public class AtomsService {
 
 	public void stop() {
 		this.disposable.dispose();
-	}
-
-	/**
-	 * Get a list of the most recent events
-	 * @return list of event strings
-	 */
-	public List<String> getEvents() {
-		synchronized (lock) {
-			return new ArrayList<>(eventRingBuffer);
-		}
-	}
-
-	public Map<AtomEventType, Long> getAtomEventCount() {
-		return Collections.unmodifiableMap(atomEventCount);
 	}
 
 	public AID submitAtom(JSONObject jsonAtom, SingleAtomListener subscriber) {

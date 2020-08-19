@@ -17,17 +17,17 @@
 
 package com.radixdlt.api;
 
-import com.radixdlt.syncer.SyncExecutor.CommittedCommandWithResult;
+import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomWithResult;
 import io.reactivex.rxjava3.core.Observable;
 
 /**
  * Events related to the ledger
  */
-public interface LedgerRx {
+public interface CommittedAtomsRx {
 	/**
-	 * Retrieve a never ending stream of committed State Computer commands
+	 * Retrieve a never ending stream of committed atoms
 	 *
 	 * @return hot observable of committed commands and it's result
 	 */
-	Observable<CommittedCommandWithResult> committed();
+	Observable<CommittedAtomWithResult> committedAtoms();
 }

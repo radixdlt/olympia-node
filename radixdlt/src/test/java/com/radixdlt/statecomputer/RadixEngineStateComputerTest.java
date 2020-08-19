@@ -39,7 +39,7 @@ import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
-import com.radixdlt.syncer.SyncExecutor.CommittedCommandWithResult;
+import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
 import java.util.function.Function;
 import org.junit.Before;
 import org.junit.Test;
@@ -51,6 +51,7 @@ public class RadixEngineStateComputerTest {
 	private RadixEngine<LedgerAtom> radixEngine;
 	private View epochHighView;
 	private Function<Long, BFTValidatorSet> validatorSetMapping;
+	private CommittedAtomSender committedAtomSender;
 
 	@Before
 	public void setup() {
@@ -60,13 +61,15 @@ public class RadixEngineStateComputerTest {
 		this.epochHighView = View.of(100);
 		// No issues with type checking for mock
 		@SuppressWarnings("unchecked") Function<Long, BFTValidatorSet> vsm = mock(Function.class);
+		this.committedAtomSender = mock(CommittedAtomSender.class);
 		this.validatorSetMapping = vsm;
 		this.stateComputer = new RadixEngineStateComputer(
 			serialization,
 			radixEngine,
 			validatorSetMapping,
 			epochHighView,
-			committedAtomsStore
+			committedAtomsStore,
+			committedAtomSender
 		);
 	}
 
@@ -92,10 +95,9 @@ public class RadixEngineStateComputerTest {
 		when(serialization.fromDson(any(), eq(ClientAtom.class))).thenReturn(clientAtom);
 
 		Command command = mock(Command.class);
-		CommittedCommandWithResult result = stateComputer.commit(command, vertexMetadata);
+		stateComputer.commit(command, vertexMetadata);
 		verify(radixEngine, times(1)).checkAndStore(any());
-		assertThat(result.getVertexMetadata()).isEqualTo(vertexMetadata);
-		assertThat(result.getCommand()).isEqualTo(command);
+		verify(committedAtomSender, times(1)).sendCommittedAtom(any());
 	}
 
 	@Test

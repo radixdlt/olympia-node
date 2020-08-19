@@ -39,8 +39,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Consumer;
-import java.util.function.Function;
 
 /**
  * Synchronizes execution
@@ -50,30 +48,15 @@ public final class SyncExecutor implements SyncedExecutor, NextCommandGenerator 
 		void sendLocalSyncRequest(LocalSyncRequest request);
 	}
 
-	// TODO: Refactor committed command when commit logic is re-written
-	// TODO: as currently it's mostly loosely coupled logic
-	public interface CommittedCommandWithResult {
-		Command getCommand();
-		VertexMetadata getVertexMetadata();
-
-		interface MaybeSuccessMapped<T> {
-			T elseIfError(Function<Exception, T> errorMapper);
-		}
-
-		<T> MaybeSuccessMapped<T> map(Function<Object, T> successMapper);
-
-		CommittedCommandWithResult ifSuccess(Consumer<Object> successConsumer);
-		CommittedCommandWithResult ifError(Consumer<Exception> errorConsumer);
-	}
 
 	public interface StateComputer {
 		Optional<BFTValidatorSet> prepare(Vertex vertex);
-		CommittedCommandWithResult commit(Command command, VertexMetadata vertexMetadata);
+		void commit(Command command, VertexMetadata vertexMetadata);
 	}
 
 	public interface CommittedSender {
 		// TODO: batch these
-		void sendCommitted(CommittedCommandWithResult committedCommandWithResult);
+		void sendCommitted(Command command, VertexMetadata vertexMetadata);
 	}
 
 	public interface CommittedStateSyncSender {
@@ -174,12 +157,12 @@ public final class SyncExecutor implements SyncedExecutor, NextCommandGenerator 
 			this.counters.set(CounterType.LEDGER_STATE_VERSION, this.currentStateVersion);
 
 			// persist
-			CommittedCommandWithResult result = this.stateComputer.commit(command, vertexMetadata);
+			this.stateComputer.commit(command, vertexMetadata);
 			// TODO: move all of the following to post-persist event handling
 			if (command != null) {
 				this.mempool.removeCommitted(command.getHash());
 			}
-			committedSender.sendCommitted(result);
+			committedSender.sendCommitted(command, vertexMetadata);
 
 			Set<Object> opaqueObjects = this.committedStateSyncers.remove(this.currentStateVersion);
 			if (opaqueObjects != null) {

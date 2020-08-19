@@ -18,14 +18,20 @@
 package com.radixdlt;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.multibindings.Multibinder;
+import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
+import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
 import com.radixdlt.consensus.epoch.EpochManager.EpochInfoSender;
 import com.radixdlt.consensus.epoch.EpochView;
+import com.radixdlt.syncer.CommittedCommand;
+import com.radixdlt.syncer.SyncExecutor.CommittedSender;
 import com.radixdlt.systeminfo.InfoRx;
 import com.radixdlt.consensus.Timeout;
 import com.radixdlt.utils.SenderToRx;
+import com.radixdlt.utils.TwoSenderToRx;
 import io.reactivex.rxjava3.core.Observable;
 
 /**
@@ -39,6 +45,10 @@ public final class SystemInfoRxModule extends AbstractModule {
 		SenderToRx<QuorumCertificate, QuorumCertificate> highQCs = new SenderToRx<>(i -> i);
 		SenderToRx<Timeout, Timeout> timeouts = new SenderToRx<>(i -> i);
 		SenderToRx<EpochView, EpochView> currentViews = new SenderToRx<>(i -> i);
+
+		TwoSenderToRx<Command, VertexMetadata, CommittedCommand> committedCommands = new TwoSenderToRx<>(CommittedCommand::new);
+		Multibinder<CommittedSender> committedSenderBinder = Multibinder.newSetBinder(binder(), CommittedSender.class);
+		committedSenderBinder.addBinding().toInstance(committedCommands::send);
 
 		EpochInfoSender epochInfoSender = new EpochInfoSender() {
 			@Override
@@ -83,6 +93,11 @@ public final class SystemInfoRxModule extends AbstractModule {
 			@Override
 			public Observable<Vertex> committedVertices() {
 				return committedVertices.rx();
+			}
+
+			@Override
+			public Observable<CommittedCommand> committedCommands() {
+				return committedCommands.rx();
 			}
 		};
 

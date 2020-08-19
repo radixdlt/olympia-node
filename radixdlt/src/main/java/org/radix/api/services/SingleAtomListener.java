@@ -21,7 +21,7 @@ import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.AID;
 
 public interface SingleAtomListener {
-	void onStored(boolean first);
+	void onStored();
 	void onStoredFailure(RadixEngineException e);
 	void onError(AID atomId, Throwable e);
 }

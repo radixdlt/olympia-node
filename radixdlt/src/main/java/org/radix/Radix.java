@@ -22,7 +22,7 @@ import com.radixdlt.DefaultSerialization;
 import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
 import com.radixdlt.syncer.SyncServiceRunner;
 import com.radixdlt.systeminfo.InMemorySystemInfoManager;
-import com.radixdlt.api.LedgerRx;
+import com.radixdlt.api.CommittedAtomsRx;
 import com.radixdlt.api.SubmissionErrorsRx;
 import com.radixdlt.consensus.ConsensusRunner;
 import com.radixdlt.mempool.MempoolReceiver;
@@ -201,11 +201,10 @@ public final class Radix
 		ClientAtomToBinaryConverter clientAtomToBinaryConverter = globalInjector.getInjector().getInstance(ClientAtomToBinaryConverter.class);
 		LedgerEntryStore store = globalInjector.getInjector().getInstance(LedgerEntryStore.class);
 		SubmissionErrorsRx submissionErrorsRx = globalInjector.getInjector().getInstance(SubmissionErrorsRx.class);
-		LedgerRx ledgerRx = globalInjector.getInjector().getInstance(LedgerRx.class);
+		CommittedAtomsRx committedAtomsRx = globalInjector.getInjector().getInstance(CommittedAtomsRx.class);
 		RadixHttpServer httpServer = new RadixHttpServer(
 			infoStateRunner,
-			submissionErrorsRx,
-			ledgerRx,
+			submissionErrorsRx, committedAtomsRx,
 			consensusRunner,
 			store,
 			submissionControl,

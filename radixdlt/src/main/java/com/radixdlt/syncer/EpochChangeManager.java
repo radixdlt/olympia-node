@@ -17,9 +17,10 @@
 
 package com.radixdlt.syncer;
 
+import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.syncer.SyncExecutor.CommittedSender;
-import com.radixdlt.syncer.SyncExecutor.CommittedCommandWithResult;
 import java.util.Objects;
 
 /**
@@ -33,9 +34,9 @@ public final class EpochChangeManager implements CommittedSender {
 	}
 
 	@Override
-	public void sendCommitted(CommittedCommandWithResult committedCommandWithResult) {
-		committedCommandWithResult.getVertexMetadata().getValidatorSet().ifPresent(validatorSet -> {
-			EpochChange epochChange = new EpochChange(committedCommandWithResult.getVertexMetadata(), validatorSet);
+	public void sendCommitted(Command command, VertexMetadata vertexMetadata) {
+		vertexMetadata.getValidatorSet().ifPresent(validatorSet -> {
+			EpochChange epochChange = new EpochChange(vertexMetadata, validatorSet);
 			this.epochChangeSender.epochChange(epochChange);
 		});
 	}

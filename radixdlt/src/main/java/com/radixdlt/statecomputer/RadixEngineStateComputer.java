@@ -34,27 +34,48 @@ import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.syncer.CommittedCommand;
-import com.radixdlt.syncer.CommittedCommands;
 import com.radixdlt.syncer.SyncExecutor.StateComputer;
-import com.radixdlt.syncer.SyncExecutor.CommittedCommandWithResult;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
  * Wraps the Radix Engine and emits messages based on success or failure
  */
 public final class RadixEngineStateComputer implements StateComputer {
+
+	// TODO: Refactor committed command when commit logic is re-written
+	// TODO: as currently it's mostly loosely coupled logic
+	public interface CommittedAtomWithResult {
+		CommittedAtom getCommittedAtom();
+
+		interface MaybeSuccessMapped<T> {
+			T elseIfError(Function<RadixEngineException, T> errorMapper);
+		}
+
+		<T> MaybeSuccessMapped<T> map(Function<ImmutableSet<EUID>, T> successMapper);
+
+		CommittedAtomWithResult ifSuccess(Consumer<ImmutableSet<EUID>> successConsumer);
+		CommittedAtomWithResult ifError(Consumer<RadixEngineException> errorConsumer);
+	}
+
+	// TODO: Remove this temporary interface
+	public interface CommittedAtomSender {
+		void sendCommittedAtom(CommittedAtomWithResult committedAtomWithResult);
+	}
+
 	private final Serialization serialization;
 	private final CommittedAtomsStore committedAtomsStore;
 	private final RadixEngine<LedgerAtom> radixEngine;
 	private final Function<Long, BFTValidatorSet> validatorSetMapping;
 	private final View epochChangeView;
 
+	private final CommittedAtomSender committedAtomSender;
 	private final Object lock = new Object();
 	private final LinkedList<CommittedCommand> unstoredCommittedAtoms = new LinkedList<>();
 
@@ -63,7 +84,8 @@ public final class RadixEngineStateComputer implements StateComputer {
 		RadixEngine<LedgerAtom> radixEngine,
 		Function<Long, BFTValidatorSet> validatorSetMapping,
 		View epochChangeView,
-		CommittedAtomsStore committedAtomsStore
+		CommittedAtomsStore committedAtomsStore,
+		CommittedAtomSender committedAtomSender
 	) {
 		if (epochChangeView.isGenesis()) {
 			throw new IllegalArgumentException("Epoch change view must not be genesis.");
@@ -74,6 +96,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		this.validatorSetMapping = validatorSetMapping;
 		this.epochChangeView = epochChangeView;
 		this.committedAtomsStore = Objects.requireNonNull(committedAtomsStore);
+		this.committedAtomSender = Objects.requireNonNull(committedAtomSender);
 	}
 
 	// TODO Move this to a different class class when unstored committed atoms is fixed
@@ -99,14 +122,14 @@ public final class RadixEngineStateComputer implements StateComputer {
 	}
 
 	@Override
-	public CommittedCommandWithResult commit(Command command, VertexMetadata vertexMetadata) {
+	public void commit(Command command, VertexMetadata vertexMetadata) {
 		if (command != null) {
 			final ClientAtom clientAtom;
 			try {
 				clientAtom = serialization.fromDson(command.getPayload(), ClientAtom.class);
 			} catch (SerializationException e) {
 				this.unstoredCommittedAtoms.add(new CommittedCommand(null, vertexMetadata));
-				return CommittedCommands.error(command, vertexMetadata, e);
+				return;
 			}
 
 			CommittedAtom committedAtom = new CommittedAtom(clientAtom, vertexMetadata);
@@ -117,7 +140,8 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 				// TODO: cleanup and move this logic to a better spot
 				final ImmutableSet<EUID> indicies = committedAtomsStore.getIndicies(committedAtom);
-				return CommittedCommands.success(command, vertexMetadata, indicies);
+
+				committedAtomSender.sendCommittedAtom(CommittedAtoms.success(committedAtom, indicies));
 			} catch (RadixEngineException e) {
 				// TODO: Don't check for state computer errors for now so that we don't
 				// TODO: have to deal with failing leader proposals
@@ -126,15 +150,12 @@ public final class RadixEngineStateComputer implements StateComputer {
 				// TODO: move VIRTUAL_STATE_CONFLICT to static check
 				this.unstoredCommittedAtoms.add(new CommittedCommand(command, vertexMetadata));
 
-				return CommittedCommands.error(command, vertexMetadata, e);
+				committedAtomSender.sendCommittedAtom(CommittedAtoms.error(committedAtom, e));
 			}
-
 		} else if (vertexMetadata.isEndOfEpoch()) {
 			// TODO: HACK
 			// TODO: Remove and move epoch change logic into RadixEngine
 			this.unstoredCommittedAtoms.add(new CommittedCommand(null, vertexMetadata));
-
-			return CommittedCommands.success(null, vertexMetadata, ImmutableSet.of());
 		} else {
 			// TODO: HACK
 			// TODO: Refactor to remove such illegal states

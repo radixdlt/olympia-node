@@ -55,6 +55,7 @@ import com.radixdlt.middleware2.store.EngineAtomIndices;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.LedgerEntryStore;
@@ -138,14 +139,16 @@ public class StateComputerModule extends AbstractModule {
 		Serialization serialization,
 		RadixEngine<LedgerAtom> radixEngine,
 		Function<Long, BFTValidatorSet> validatorSetMapping,
-		CommittedAtomsStore committedAtomsStore
+		CommittedAtomsStore committedAtomsStore,
+		CommittedAtomSender committedAtomSender
 	) {
 		return new RadixEngineStateComputer(
 			serialization,
 			radixEngine,
 			validatorSetMapping,
 			View.of(viewsPerEpoch),
-			committedAtomsStore
+			committedAtomsStore,
+			committedAtomSender
 		);
 	}
 

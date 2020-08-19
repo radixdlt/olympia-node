@@ -54,7 +54,7 @@ public class ExecutionModule extends AbstractModule {
 		Set<SyncService> syncServices,
 		SystemCounters counters
 	) {
-		CommittedSender committedSender = cmd -> committedSenders.forEach(s -> s.sendCommitted(cmd));
+		CommittedSender committedSender = (cmd, meta) -> committedSenders.forEach(s -> s.sendCommitted(cmd, meta));
 		SyncService syncService = request -> syncServices.forEach(s -> s.sendLocalSyncRequest(request));
 
 		return new SyncExecutor(
