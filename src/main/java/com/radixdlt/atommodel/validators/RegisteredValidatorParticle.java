@@ -23,11 +23,18 @@ import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.SerializerId2;
 
+import java.util.Objects;
+import java.util.Set;
+
 @SerializerId2("radix.particles.registered_validator")
 public class RegisteredValidatorParticle extends Particle {
 	@JsonProperty("address")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private RadixAddress address;
+
+	@JsonProperty("allowedDelegators")
+	@DsonOutput(DsonOutput.Output.ALL)
+	private Set<RadixAddress> allowedDelegators;
 
 	@JsonProperty("url")
 	@DsonOutput(DsonOutput.Output.ALL)
@@ -41,19 +48,34 @@ public class RegisteredValidatorParticle extends Particle {
 		// for serializer
 	}
 
-	public RegisteredValidatorParticle(RadixAddress address, long nonce) {
-		this(address, null, nonce);
+	public RegisteredValidatorParticle(RadixAddress address, Set<RadixAddress> allowedDelegators, long nonce) {
+		this(address, allowedDelegators, null, nonce);
 	}
 
-	public RegisteredValidatorParticle(RadixAddress address, String url, long nonce) {
+	public RegisteredValidatorParticle(RadixAddress address, Set<RadixAddress> allowedDelegators, String url, long nonce) {
 		super(address.euid());
 		this.address = address;
+		this.allowedDelegators = allowedDelegators;
 		this.url = url;
 		this.nonce = nonce;
 	}
 
+	public boolean allowsDelegator(RadixAddress delegator) {
+		return this.allowedDelegators.isEmpty() || this.allowedDelegators.contains(delegator);
+	}
+
+	public boolean equalsIgnoringNonce(RegisteredValidatorParticle other) {
+		return Objects.equals(address, other.address)
+			&& Objects.equals(allowedDelegators, other.allowedDelegators)
+			&& Objects.equals(url, other.url);
+	}
+
 	public RadixAddress getAddress() {
 		return address;
+	}
+
+	public Set<RadixAddress> getAllowedDelegators() {
+		return allowedDelegators;
 	}
 
 	public String getUrl() {
@@ -66,6 +88,9 @@ public class RegisteredValidatorParticle extends Particle {
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s]", getClass().getSimpleName(), getAddress());
+		return String.format(
+			"%s[%s, %s, %s]",
+			getClass().getSimpleName(), getAddress(), getUrl(), getAllowedDelegators()
+		);
 	}
 }

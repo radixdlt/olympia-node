@@ -99,7 +99,7 @@ final class ConstraintScryptEnv implements SysCalls {
 
 		// TODO Cleanup: This redefinition illustrates that there's some abstraction issues here, but
 		// TODO Cleanup: will leave for now since it's not critical and we anticipate a bigger refactor.
-		ParticleDefinition<Particle> particleRedefinition = ParticleDefinition.<T>builder()
+		ParticleDefinition.Builder<T> particleRedefinition = ParticleDefinition.<T>builder()
 			.addressMapper(particleDefinition.getAddressMapper())
 			.rriMapper(particleDefinition.getRriMapper())
 			.virtualizeSpin(particleDefinition.getVirtualizeSpin())
@@ -129,9 +129,11 @@ final class ConstraintScryptEnv implements SysCalls {
 				}
 
 				return particleDefinition.getStaticValidation().apply(p);
-			})
-			.build();
-		scryptParticleDefinitions.put(particleClass, particleRedefinition);
+			});
+		if (particleDefinition.allowsTransitionsFromOutsideScrypts()) {
+			particleRedefinition.allowTransitionsFromOutsideScrypts();
+		}
+		scryptParticleDefinitions.put(particleClass, particleRedefinition.build());
 	}
 
 	@Override

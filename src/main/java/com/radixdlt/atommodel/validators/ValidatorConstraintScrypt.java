@@ -62,6 +62,7 @@ public class ValidatorConstraintScrypt implements ConstraintScrypt {
 			.singleAddressMapper(RegisteredValidatorParticle::getAddress)
 			.staticValidation(checkAddressAndUrl(RegisteredValidatorParticle::getAddress,
 				RegisteredValidatorParticle::getUrl))
+			.allowTransitionsFromOutsideScrypts() // to enable staking in TokensConstraintScrypt
 			.build()
 		);
 

@@ -24,6 +24,7 @@ import static org.powermock.api.mockito.PowerMockito.when;
 
 import com.google.common.collect.ImmutableMap;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
+import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.constraintmachine.WitnessData;
 import com.radixdlt.identifiers.RRI;
@@ -44,9 +45,9 @@ public class TokensConstraintScryptTest {
 
 	@BeforeClass
 	public static void initializeConstraintScrypt() {
-		TokensConstraintScrypt tokensConstraintScrypt = new TokensConstraintScrypt();
 		CMAtomOS cmAtomOS = new CMAtomOS();
-		cmAtomOS.load(tokensConstraintScrypt);
+		cmAtomOS.load(new ValidatorConstraintScrypt());
+		cmAtomOS.load(new TokensConstraintScrypt());
 		staticCheck = cmAtomOS.buildParticleStaticCheck();
 	}
 

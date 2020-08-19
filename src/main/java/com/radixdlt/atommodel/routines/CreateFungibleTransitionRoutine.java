@@ -40,11 +40,11 @@ import java.util.function.Function;
 /**
  * Transition Procedure for one to one fungible types
  */
-public final class CreateFungibleTransitionRoutine<I extends Particle, O extends Particle> implements ConstraintRoutine {
+public class CreateFungibleTransitionRoutine<I extends Particle, O extends Particle> implements ConstraintRoutine {
 	public static final class UsedAmount implements UsedData {
 		private final UInt256 amount;
 
-		UsedAmount(UInt256 usedAmount) {
+		public UsedAmount(UInt256 usedAmount) {
 			this.amount = Objects.requireNonNull(usedAmount);
 		}
 
@@ -123,16 +123,29 @@ public final class CreateFungibleTransitionRoutine<I extends Particle, O extends
 		);
 	}
 
-	private class FungibleTransitionProcedure<N extends UsedData, U extends UsedData> implements TransitionProcedure<I, N, O, U> {
+	protected class FungibleTransitionProcedure<N extends UsedData, U extends UsedData> implements TransitionProcedure<I, N, O, U> {
 		private final Function<N, UInt256> inputUsedMapper;
 		private final Function<U, UInt256> outputUsedMapper;
+		private final UsedCompute<I, N, O, U> additionalOutputUsedCompute;
 
-		private FungibleTransitionProcedure(
+		public FungibleTransitionProcedure(
 			Function<N, UInt256> inputUsedMapper,
 			Function<U, UInt256> outputUsedMapper
 		) {
+			this(inputUsedMapper,
+				outputUsedMapper,
+				(ip, iu, op, ou) -> Optional.empty()
+			);
+		}
+
+		public FungibleTransitionProcedure(
+			Function<N, UInt256> inputUsedMapper,
+			Function<U, UInt256> outputUsedMapper,
+			UsedCompute<I, N, O, U> additionalOutputUsedCompute
+		) {
 			this.inputUsedMapper = inputUsedMapper;
 			this.outputUsedMapper = outputUsedMapper;
+			this.additionalOutputUsedCompute = additionalOutputUsedCompute;
 		}
 
 		@Override
@@ -202,7 +215,7 @@ public final class CreateFungibleTransitionRoutine<I extends Particle, O extends
 				int compare = inputAmount.compareTo(outputAmount);
 				return compare < 0
 					? Optional.of(new UsedAmount(UIntUtils.addWithOverflow(outputUsedAmount, inputAmount)))
-					: Optional.empty();
+					: this.additionalOutputUsedCompute.compute(inputParticle, inputUsed, outputParticle, outputUsed);
 			};
 		}
 
@@ -227,5 +240,17 @@ public final class CreateFungibleTransitionRoutine<I extends Particle, O extends
 
 	public TransitionProcedure<I, VoidUsedData, O, UsedAmount> getProcedure2() {
 		return new FungibleTransitionProcedure<>(u -> UInt256.ZERO, UsedAmount::getUsedAmount);
+	}
+
+	public Class<I> getInputClass() {
+		return inputClass;
+	}
+
+	public Class<O> getOutputClass() {
+		return outputClass;
+	}
+
+	public WitnessValidator<I> getInputWitnessValidator() {
+		return inputWitnessValidator;
 	}
 }
