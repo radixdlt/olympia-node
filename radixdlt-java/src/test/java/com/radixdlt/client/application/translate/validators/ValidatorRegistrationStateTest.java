@@ -22,6 +22,7 @@
 
 package com.radixdlt.client.application.translate.validators;
 
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.client.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.client.atommodel.validators.UnregisteredValidatorParticle;
 import com.radixdlt.client.core.atoms.particles.Particle;
@@ -67,7 +68,7 @@ public class ValidatorRegistrationStateTest {
 			ADDRESS_1,
 			1
 		);
-		RegisteredValidatorParticle output = ValidatorRegistrationState.from(input).register("url");
+		RegisteredValidatorParticle output = ValidatorRegistrationState.from(input).register("url", ImmutableSet.of());
 		assertThat(output.getAddress()).isEqualTo(input.getAddress());
 		assertThat(output.getUrl()).isEqualTo("url");
 		assertThat(output.getNonce()).isEqualTo(2);

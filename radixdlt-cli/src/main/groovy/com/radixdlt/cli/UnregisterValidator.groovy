@@ -20,43 +20,24 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-package com.radixdlt.client.application.translate.validators;
+package com.radixdlt.cli
 
-import com.radixdlt.client.application.translate.Action;
-import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.client.application.RadixApplicationAPI
+import com.radixdlt.identifiers.RadixAddress
+import picocli.CommandLine
 
-import java.util.Objects;
-import java.util.Set;
+import java.util.stream.Collectors
 
-/**
- * Registers the given address as a validator. Validator must not be registered already.
- * To unregister a validator, use {@link UnregisterValidatorAction}.
- */
-public class RegisterValidatorAction implements Action {
-	private final RadixAddress validator;
-	private final Set<RadixAddress> allowedDelegators;
-	private final String url;
+@CommandLine.Command(name = "unregister-validator", mixinStandardHelpOptions = true,
+		description = "Unregister as a Validator")
+class UnregisterValidator implements Runnable {
 
-	public RegisterValidatorAction(RadixAddress validator, Set<RadixAddress> allowedDelegators, String url) {
-		this.validator = Objects.requireNonNull(validator);
-		this.allowedDelegators = Objects.requireNonNull(allowedDelegators);
-		this.url = url;
-	}
+	@CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
+	Composite.IdentityInfo identityInfo
 
-	public RadixAddress getValidator() {
-		return validator;
-	}
-
-	public Set<RadixAddress> getAllowedDelegators() {
-		return allowedDelegators;
-	}
-
-	public String getUrl() {
-		return url;
-	}
-
-	@Override
-	public String toString() {
-		return String.format("REGISTER VALIDATOR %s", validator);
+	void run() {
+		RadixApplicationAPI api = Utils.getAPI(identityInfo)
+		api.unregisterValidator(api.getAddress()).blockUntilComplete()
+		println("unregistered ${api.getAddress()} as a validator")
 	}
 }

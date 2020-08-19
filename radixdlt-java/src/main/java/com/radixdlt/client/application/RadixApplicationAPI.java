@@ -53,8 +53,6 @@ import com.radixdlt.client.application.translate.tokens.CreateTokenAction.TokenS
 import com.radixdlt.client.application.translate.tokens.CreateTokenToParticleGroupsMapper;
 import com.radixdlt.client.application.translate.tokens.MintTokensAction;
 import com.radixdlt.client.application.translate.tokens.MintTokensActionMapper;
-import com.radixdlt.client.application.translate.tokens.RedelegateStakedTokensAction;
-import com.radixdlt.client.application.translate.tokens.RedelegateStakedTokensMapper;
 import com.radixdlt.client.application.translate.tokens.StakeTokensAction;
 import com.radixdlt.client.application.translate.tokens.StakeTokensMapper;
 import com.radixdlt.client.application.translate.tokens.TokenBalanceReducer;
@@ -162,7 +160,6 @@ public class RadixApplicationAPI {
 			.addStatefulParticlesMapper(BurnTokensAction.class, new BurnTokensActionMapper())
 			.addStatefulParticlesMapper(TransferTokensAction.class, new TransferTokensToParticleGroupsMapper())
 			.addStatefulParticlesMapper(StakeTokensAction.class, new StakeTokensMapper())
-			.addStatefulParticlesMapper(RedelegateStakedTokensAction.class, new RedelegateStakedTokensMapper())
 			.addStatefulParticlesMapper(UnstakeTokensAction.class, new UnstakeTokensMapper())
 			.addStatefulParticlesMapper(RegisterValidatorAction.class, new RegisterValidatorActionMapper())
 			.addStatefulParticlesMapper(UnregisterValidatorAction.class, new UnregisterValidatorActionMapper())
@@ -838,50 +835,6 @@ public class RadixApplicationAPI {
 	}
 
 	/**
-	 * Redelegate a certain amount of a staked tokens of this address to another delegate.
-	 *
-	 * @param amount        the amount of the token type
-	 * @param token         the token type
-	 * @param oldDelegate   the address the staked tokens are currently delegated to
-	 * @param newDelegate   the address the staked tokens will be delegated to
-	 * @return result of the transaction
-	 */
-	public Result redelegateStakedTokens(
-		BigDecimal amount,
-		RRI token,
-		RadixAddress oldDelegate,
-		RadixAddress newDelegate
-	) {
-		return redelegateStakedTokens(amount, token, getAddress(), oldDelegate, newDelegate);
-	}
-
-	/**
-	 * Redelegate a certain amount of a staked tokens of an address to another delegate.
-	 *
-	 * @param from          the address to stake tokens from
-	 * @param oldDelegate   the address the staked tokens are currently delegated to
-	 * @param newDelegate   the address the staked tokens will be delegated to
-	 * @param amount        the amount of the token type
-	 * @param token         the token type
-	 * @return result of the transaction
-	 */
-	public Result redelegateStakedTokens(
-		BigDecimal amount,
-		RRI token,
-		RadixAddress from,
-		RadixAddress oldDelegate,
-		RadixAddress newDelegate
-	) {
-		Objects.requireNonNull(amount);
-		Objects.requireNonNull(token);
-		Objects.requireNonNull(from);
-		Objects.requireNonNull(oldDelegate);
-		Objects.requireNonNull(newDelegate);
-
-		return this.execute(RedelegateStakedTokensAction.create(amount, token, from, oldDelegate, newDelegate));
-	}
-
-	/**
 	 * Unstakes a certain amount of a token from this address to a delegate.
 	 *
 	 * @param amount     the amount of the token type
@@ -924,26 +877,30 @@ public class RadixApplicationAPI {
 	 * Registers the given address as a validator.
 	 *
 	 * @param validator the validator address to be registered
+     * @param allowedDelegators the allowed delegators, or empty if everyone is allowed
 	 * @return result of the transaction
 	 */
 	public Result registerValidator(
-		RadixAddress validator
+		RadixAddress validator,
+		Set<RadixAddress> allowedDelegators
 	) {
-		return registerValidator(validator, null);
+		return registerValidator(validator, allowedDelegators, null);
 	}
 
 	/**
 	 * Registers the given address as a validator.
 	 *
 	 * @param validator the validator address to be registered
+	 * @param allowedDelegators the allowed delegators, or empty if everyone is allowed
 	 * @param url the optional URL for extra information about the validator
 	 * @return result of the transaction
 	 */
 	public Result registerValidator(
 		RadixAddress validator,
+		Set<RadixAddress> allowedDelegators,
 		String url
 	) {
-		final RegisterValidatorAction registerValidatorAction = new RegisterValidatorAction(validator, url);
+		final RegisterValidatorAction registerValidatorAction = new RegisterValidatorAction(validator, allowedDelegators, url);
 
 		return this.execute(registerValidatorAction);
 	}

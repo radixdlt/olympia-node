@@ -40,6 +40,10 @@ public class RegisteredValidatorParticle extends Particle implements Accountable
 	@DsonOutput(DsonOutput.Output.ALL)
 	private RadixAddress address;
 
+	@JsonProperty("allowedDelegators")
+	@DsonOutput(DsonOutput.Output.ALL)
+	private Set<RadixAddress> allowedDelegators;
+
 	@JsonProperty("url")
 	@DsonOutput(DsonOutput.Output.ALL)
 	private String url;
@@ -53,19 +57,37 @@ public class RegisteredValidatorParticle extends Particle implements Accountable
 	}
 
 	public RegisteredValidatorParticle(RadixAddress address, long nonce) {
-		this(address, null, nonce);
+		this(address, ImmutableSet.of(), null, nonce);
 	}
 
-	public RegisteredValidatorParticle(RadixAddress address, String url, long nonce) {
+	public RegisteredValidatorParticle(RadixAddress address, Set<RadixAddress> allowedDelegators, String url, long nonce) {
 		super(address.euid());
 		this.address = Objects.requireNonNull(address, "address");
+		this.allowedDelegators = Objects.requireNonNull(allowedDelegators, "allowedDelegators");
 		this.url = url;
 		this.nonce = nonce;
+	}
+
+	public RegisteredValidatorParticle copyWithNonce(long nonce) {
+		return new RegisteredValidatorParticle(
+			this.address,
+			this.allowedDelegators,
+			this.url,
+			nonce
+		);
+	}
+
+	public boolean allowsDelegator(RadixAddress delegator) {
+		return this.allowedDelegators.isEmpty() || this.allowedDelegators.contains(delegator);
 	}
 
 	@Override
 	public RadixAddress getAddress() {
 		return address;
+	}
+
+	public Set<RadixAddress> getAllowedDelegators() {
+		return allowedDelegators;
 	}
 
 	public String getUrl() {
@@ -78,7 +100,7 @@ public class RegisteredValidatorParticle extends Particle implements Accountable
 
 	@Override
 	public String toString() {
-		return String.format("%s[%s]", getClass().getSimpleName(), getAddress());
+		return String.format("%s[%s %s %s]", getClass().getSimpleName(), this.address, this.url, this.allowedDelegators);
 	}
 
 	@Override

@@ -20,43 +20,31 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-package com.radixdlt.client.application.translate.validators;
+package com.radixdlt.cli
 
-import com.radixdlt.client.application.translate.Action;
-import com.radixdlt.identifiers.RadixAddress;
+import com.radixdlt.client.application.RadixApplicationAPI
+import com.radixdlt.client.atommodel.validators.RegisteredValidatorParticle
+import picocli.CommandLine
 
-import java.util.Objects;
-import java.util.Set;
+@CommandLine.Command(name = "show-validator-config", mixinStandardHelpOptions = true,
+		description = "Show Current Validator Configuration")
+class ShowValidatorConfig implements Runnable {
 
-/**
- * Registers the given address as a validator. Validator must not be registered already.
- * To unregister a validator, use {@link UnregisterValidatorAction}.
- */
-public class RegisterValidatorAction implements Action {
-	private final RadixAddress validator;
-	private final Set<RadixAddress> allowedDelegators;
-	private final String url;
+	@CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
+	Composite.IdentityInfo identityInfo
 
-	public RegisterValidatorAction(RadixAddress validator, Set<RadixAddress> allowedDelegators, String url) {
-		this.validator = Objects.requireNonNull(validator);
-		this.allowedDelegators = Objects.requireNonNull(allowedDelegators);
-		this.url = url;
-	}
+	void run() {
 
-	public RadixAddress getValidator() {
-		return validator;
-	}
-
-	public Set<RadixAddress> getAllowedDelegators() {
-		return allowedDelegators;
-	}
-
-	public String getUrl() {
-		return url;
-	}
-
-	@Override
-	public String toString() {
-		return String.format("REGISTER VALIDATOR %s", validator);
+		RadixApplicationAPI api = Utils.getAPI(identityInfo)
+		api.pullOnce(api.getAddress())
+		def latestValidatorRegistration = api.getAtomStore().getUpParticles(api.getAddress(), null)
+				.filter({ particle -> particle instanceof RegisteredValidatorParticle })
+				.findFirst()
+		if (latestValidatorRegistration.isPresent()) {
+			println "current validator configuration at ${api.getAddress()}:"
+			println(latestValidatorRegistration.get())
+		} else {
+			println "no active validator configuration at ${api.getAddress()}"
+		}
 	}
 }

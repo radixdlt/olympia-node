@@ -22,6 +22,8 @@
 
 package com.radixdlt.client.application.translate.tokens;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.client.application.translate.ShardedParticleStateId;
 import com.radixdlt.client.application.translate.StageActionException;
 import com.radixdlt.client.application.translate.StatefulActionToParticleGroupsMapper;
@@ -29,6 +31,7 @@ import com.radixdlt.client.atommodel.tokens.MutableSupplyTokenDefinitionParticle
 import com.radixdlt.client.atommodel.tokens.StakedTokensParticle;
 import com.radixdlt.client.atommodel.tokens.TokenPermission;
 import com.radixdlt.client.atommodel.tokens.TransferrableTokensParticle;
+import com.radixdlt.client.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.client.core.atoms.ParticleGroup;
 import com.radixdlt.client.core.atoms.particles.Particle;
 import com.radixdlt.client.core.atoms.particles.SpunParticle;
@@ -37,6 +40,8 @@ import com.radixdlt.client.core.fungible.NotEnoughFungiblesException;
 import com.radixdlt.identifiers.RRI;
 
 import com.radixdlt.utils.UInt256;
+
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -92,29 +97,54 @@ public class StakeTokensMapper implements StatefulActionToParticleGroupsMapper<S
 
 	@Override
 	public Set<ShardedParticleStateId> requiredState(StakeTokensAction action) {
-		return Collections.singleton(ShardedParticleStateId.of(TransferrableTokensParticle.class, action.getFrom()));
+		return ImmutableSet.of(
+			ShardedParticleStateId.of(TransferrableTokensParticle.class, action.getFrom()),
+			ShardedParticleStateId.of(RegisteredValidatorParticle.class, action.getDelegate())
+		);
 	}
 
 	@Override
 	public List<ParticleGroup> mapToParticleGroups(StakeTokensAction stake, Stream<Particle> store) throws StageActionException {
 		final RRI tokenRef = stake.getRRI();
 
-		List<TransferrableTokensParticle> stakeConsumables = store
+		List<SpunParticle> particles = new ArrayList<>();
+		Map<? extends Class<? extends Particle>, List<Particle>> inputParticlesByClass = store
+			.collect(Collectors.groupingBy(Particle::getClass));
+
+		RegisteredValidatorParticle delegate = inputParticlesByClass
+			.getOrDefault(RegisteredValidatorParticle.class, ImmutableList.of())
+			.stream()
+			.map(RegisteredValidatorParticle.class::cast)
+			.findFirst()
+			.orElseThrow(() -> StakeNotPossibleException.notRegistered(stake.getDelegate()));
+		if (!delegate.allowsDelegator(stake.getFrom())) {
+			throw StakeNotPossibleException.notAllowed(delegate.getAddress(), stake.getFrom());
+		}
+		RegisteredValidatorParticle newDelegate = delegate.copyWithNonce(delegate.getNonce() + 1);
+		particles.add(SpunParticle.down(delegate));
+		particles.add(SpunParticle.up(newDelegate));
+
+		List<TransferrableTokensParticle> stakeConsumables = inputParticlesByClass
+			.getOrDefault(TransferrableTokensParticle.class, ImmutableList.of())
+			.stream()
 			.map(TransferrableTokensParticle.class::cast)
 			.filter(p -> p.getTokenDefinitionReference().equals(tokenRef))
 			.collect(Collectors.toList());
 
-		final List<SpunParticle> stakeParticles;
 		try {
-			stakeParticles = mapToParticles(stake, stakeConsumables);
+			particles.addAll(mapToParticles(stake, stakeConsumables));
 		} catch (NotEnoughFungiblesException e) {
 			throw new InsufficientFundsException(
 				tokenRef, TokenUnitConversions.subunitsToUnits(e.getCurrent()), stake.getAmount()
 			);
 		}
 
+		// TODO @Incomplete: remove debug statements
+		System.out.println(stake);
+		particles.forEach(sp -> System.out.println(sp.getSpin() + " " + sp.getParticle()));
+
 		return Collections.singletonList(
-			ParticleGroup.of(stakeParticles)
+			ParticleGroup.of(particles)
 		);
 	}
 }

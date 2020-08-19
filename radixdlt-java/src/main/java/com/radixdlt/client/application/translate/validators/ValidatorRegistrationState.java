@@ -22,6 +22,7 @@
 
 package com.radixdlt.client.application.translate.validators;
 
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.client.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.client.atommodel.validators.UnregisteredValidatorParticle;
 import com.radixdlt.client.core.atoms.particles.Particle;
@@ -29,6 +30,7 @@ import com.radixdlt.identifiers.RadixAddress;
 
 import java.util.Comparator;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Stream;
 
 /**
@@ -49,11 +51,13 @@ final class ValidatorRegistrationState {
 
 	/**
 	 * Creates a {@link RegisteredValidatorParticle} to register this validator, if possible.
+	 * Note that by default
+	 *
 	 * @throws IllegalStateException if validator is already registered
 	 * @return the well-formed {@link RegisteredValidatorParticle} to register this validator
 	 */
 	RegisteredValidatorParticle register() {
-		return register(null);
+		return register(null, ImmutableSet.of());
 	}
 
 	/**
@@ -61,8 +65,9 @@ final class ValidatorRegistrationState {
 	 * @throws IllegalStateException if validator is already registered
 	 * @return the well-formed {@link RegisteredValidatorParticle} to register this validator
 	 * @param url the optional URL for extra information about this validator
+	 * @param allowedDelegators the allowed delegators, or empty if everyone is allowed
 	 */
-	RegisteredValidatorParticle register(String url) {
+	RegisteredValidatorParticle register(String url, Set<RadixAddress> allowedDelegators) {
 		if (this.registered) {
 			throw new IllegalStateException(String.format(
 				"cannot register validator %s, already registered as of %s",
@@ -70,7 +75,7 @@ final class ValidatorRegistrationState {
 			);
 		}
 
-		return new RegisteredValidatorParticle(this.address, url, this.nonce + 1);
+		return new RegisteredValidatorParticle(this.address, allowedDelegators, url, this.nonce + 1);
 	}
 
 	/**

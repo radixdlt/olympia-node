@@ -31,7 +31,10 @@ import picocli.CommandLine.Command
         description = "Radix CLI", subcommands = [
                 KeyGenerator.class, GetMessage.class,
                 SendMessage.class, GetDetails.class,
-                GetStoredAtoms.class, CreateAndMintToken.class])
+                GetStoredAtoms.class, CreateAndMintToken.class,
+                RegisterValidator.class, UnregisterValidator.class,
+                ShowValidatorConfig.class
+        ])
 class RadixCLI implements Runnable {
 
     void run() {
