@@ -42,7 +42,7 @@ class RegisterValidator implements Runnable {
 	String[] allowedDelegators
 
 	void run() {
-		def allowedDelegators = Arrays.stream(allowedDelegators)
+		def allowedDelegators = allowedDelegators == null ? null : Arrays.stream(allowedDelegators)
 				.map(RadixAddress.&from)
 				.collect(Collectors.<RadixAddress>toSet())
 		RadixApplicationAPI api = Utils.getAPI(identityInfo)
