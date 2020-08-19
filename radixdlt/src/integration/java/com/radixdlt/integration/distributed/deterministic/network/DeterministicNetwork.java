@@ -17,8 +17,8 @@
 
 package com.radixdlt.integration.distributed.deterministic.network;
 
-import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Streams;
 import com.google.inject.Guice;
@@ -69,7 +69,7 @@ public final class DeterministicNetwork {
 	private final MessageSelector messageSelector;
 	private final MessageMutator messageMutator;
 
-	private final ImmutableBiMap<BFTNode, Integer> nodeLookup;
+	private final ImmutableMap<BFTNode, Integer> nodeLookup;
 	private final ImmutableList<Injector> nodeInstances;
 	private final AtomicBoolean running = new AtomicBoolean(false);
 
@@ -89,19 +89,18 @@ public final class DeterministicNetwork {
 		this.messageSelector = Objects.requireNonNull(messageSelector);
 		this.messageMutator = Objects.requireNonNull(messageMutator);
 		this.nodeLookup = Streams.mapWithIndex(nodes.stream(), (node, index) -> Pair.of(node, (int) index))
-			.collect(ImmutableBiMap.toImmutableBiMap(Pair::getFirst, Pair::getSecond));
-		this.nodeInstances = nodes.stream()
-			.map(node -> createBFTInstance(node, syncExecutionModules))
+			.collect(ImmutableMap.toImmutableMap(Pair::getFirst, Pair::getSecond));
+		this.nodeInstances = Streams.mapWithIndex(nodes.stream(), (node, index) -> createBFTInstance(node, (int) index, syncExecutionModules))
 			.collect(ImmutableList.toImmutableList());
 	}
 
 	/**
-	 * Create the network se
-	 * @param node
-	 * @return
+	 * Create the network sender for the specified node.
+	 * @param nodeIndex The node index/id that this sender is for
+	 * @return A newly created {@link DeterministicSender} for the specified node
 	 */
-	public DeterministicSender createSender(BFTNode node) {
-		return new ControlledSender(this, lookup(node));
+	public DeterministicSender createSender(int nodeIndex) {
+		return new ControlledSender(this, nodeIndex);
 	}
 
 	public void run() {
@@ -123,14 +122,6 @@ public final class DeterministicNetwork {
 		}
 	}
 
-	public void stop() {
-		this.running.set(false);
-	}
-
-	public int lookup(BFTNode node) {
-		return this.nodeLookup.get(node);
-	}
-
 	public SystemCounters getSystemCounters(int nodeIndex) {
 		return this.nodeInstances.get(nodeIndex).getInstance(SystemCounters.class);
 	}
@@ -139,17 +130,21 @@ public final class DeterministicNetwork {
 		this.messageQueue.dump(out);
 	}
 
+	int lookup(BFTNode node) {
+		return this.nodeLookup.get(node);
+	}
+
 	void handleMessage(MessageRank eav, ControlledMessage controlledMessage) {
 		if (!this.messageMutator.mutate(eav, controlledMessage, this.messageQueue)) {
-			stop();
+			this.running.set(false);
 		}
 	}
 
-	private Injector createBFTInstance(BFTNode self, Collection<Module> syncExecutionModules) {
+	private Injector createBFTInstance(BFTNode self, int index, Collection<Module> syncExecutionModules) {
 		List<Module> modules = ImmutableList.of(
 			new DeterministicConsensusModule(),
 			new MockedCryptoModule(),
-			new DeterministicNetworkModule(self, createSender(self))
+			new DeterministicNetworkModule(self, createSender(index))
 		);
 		return Guice.createInjector(Iterables.concat(modules, syncExecutionModules));
 	}

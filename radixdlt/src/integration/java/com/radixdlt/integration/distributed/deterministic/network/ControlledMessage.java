@@ -27,8 +27,7 @@ public final class ControlledMessage {
 	private final Object message;
 
 	public ControlledMessage(int senderIndex, int receiverIndex, Object message) {
-		this.channelId = ChannelId.of(senderIndex, receiverIndex);
-		this.message = message;
+		this(ChannelId.of(senderIndex, receiverIndex), message);
 	}
 
 	public ControlledMessage(ChannelId channelId, Object message) {

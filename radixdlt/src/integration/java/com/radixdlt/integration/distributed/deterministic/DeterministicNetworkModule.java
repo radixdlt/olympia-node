@@ -35,7 +35,8 @@ import com.radixdlt.syncer.EpochChangeSender;
 import com.radixdlt.syncer.SyncExecutor.CommittedStateSyncSender;
 
 /**
- *
+ * Module that supplies network senders, as well as some other assorted
+ * objects used to connect modules in the system.
  */
 public class DeterministicNetworkModule extends AbstractModule {
 	private final BFTNode node;

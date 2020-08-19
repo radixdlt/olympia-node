@@ -20,8 +20,6 @@ package com.radixdlt.integration.distributed.deterministic;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import com.radixdlt.consensus.CommittedStateSyncRx;
-import com.radixdlt.consensus.EpochChangeRx;
 import com.radixdlt.consensus.SyncedExecutor;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -29,8 +27,6 @@ import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.integration.distributed.deterministic.configuration.SyncedExecutorFactory;
 import com.radixdlt.syncer.EpochChangeSender;
 import com.radixdlt.syncer.SyncExecutor.CommittedStateSyncSender;
-
-import io.reactivex.rxjava3.core.Observable;
 
 public class DeterministicSyncExecutionModule extends AbstractModule {
 	private final BFTValidatorSet validatorSet;
@@ -43,8 +39,6 @@ public class DeterministicSyncExecutionModule extends AbstractModule {
 
 	@Override
 	public void configure() {
-		bind(CommittedStateSyncRx.class).toInstance(Observable::never);
-		bind(EpochChangeRx.class).toInstance(Observable::never);
 		EpochChange initialEpoch = new EpochChange(VertexMetadata.ofGenesisAncestor(this.validatorSet), validatorSet);
 		bind(EpochChange.class).toInstance(initialEpoch);
 	}

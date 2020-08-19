@@ -17,6 +17,7 @@
 
 package com.radixdlt.integration.distributed.deterministic.configuration;
 
+import java.util.Arrays;
 import java.util.function.IntFunction;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -35,7 +36,7 @@ public interface EpochNodeWeightMapping {
 	 * and all with the specified weight.
 	 */
 	static EpochNodeWeightMapping constant(int numNodes, long weight) {
-		return repeatingSequence(numNodes, weight);
+		return repeatingSequence(numNodes, UInt256.from(weight));
 	}
 
 	/**
@@ -53,9 +54,10 @@ public interface EpochNodeWeightMapping {
 	 * the zeroth weight.
 	 */
 	static EpochNodeWeightMapping repeatingSequence(int numNodes, long... weights) {
-		int length = weights.length;
-		return epoch -> IntStream.range(0, numNodes)
-			.mapToObj(index -> NodeIndexAndWeight.from(index, UInt256.from(weights[index % length])));
+		UInt256[] weights256 = Arrays.stream(weights)
+			.mapToObj(UInt256::from)
+			.toArray(UInt256[]::new);
+		return repeatingSequence(numNodes, weights256);
 	}
 
 	/**

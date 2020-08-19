@@ -134,7 +134,7 @@ public final class ControlledSender implements DeterministicSender {
 		throw new UnsupportedOperationException();
 	}
 
-	public static class ControlledGetVerticesRequest implements GetVerticesRequest {
+	private static class ControlledGetVerticesRequest implements GetVerticesRequest {
 		private final Hash id;
 		private final int count;
 		private final Object opaque;
