@@ -32,7 +32,6 @@ import com.radixdlt.utils.Pair;
 
 import static org.junit.Assert.fail;
 
-import java.util.Collection;
 import java.util.LinkedList;
 import org.junit.Test;
 
@@ -68,13 +67,17 @@ public class OneSlowNodeTest {
 			.numNodes(numNodes)
 			.syncedExecutorFactory(SyncedExecutorFactories.alwaysSynced())
 			.messageSelector(sequenceSelector(expectedSequence))
-			.messageMutator(stopWhenEmpty(expectedSequence).otherwise(delayMessagesForNode(0)))
+			.messageMutator(delayMessagesForNode(0))
 			.build()
 			.run();
 	}
 
 	private MessageSelector sequenceSelector(LinkedList<Pair<ChannelId, Class<?>>> expectedSequence) {
 		return messages -> {
+			if (expectedSequence.isEmpty()) {
+				// We are finished.
+				return null;
+			}
 			final Pair<ChannelId, Class<?>> messageDetails = expectedSequence.pop();
 			final ChannelId expectedChannel = messageDetails.getFirst();
 			final Class<?> expectedMsgClass = messageDetails.getSecond();
@@ -89,10 +92,6 @@ public class OneSlowNodeTest {
 			fail(String.format("Can't find %s message %s: %s", expectedMsgClass.getSimpleName(), expectedChannel, messages));
 			return null; // Not required, but compiler can't tell that fail throws exception
 		};
-	}
-
-	private MessageMutator stopWhenEmpty(Collection<?> expectedSequence) {
-		return (rank, message, queue) -> !expectedSequence.isEmpty();
 	}
 
 	private MessageMutator delayMessagesForNode(int index) {

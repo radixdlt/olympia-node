@@ -39,8 +39,8 @@ public class OneProposalDropperRandomSyncResponsiveTest {
 		DeterministicTest.builder()
 			.numNodes(numNodes)
 			.syncedExecutorFactory(SyncedExecutorFactories.randomlySynced(random))
-			.messageSelector(MessageSelector.randomSelector(random))
-			.messageMutator(MessageMutator.stopAt(NUM_STEPS).otherwise(dropNode(numNodes, nodeToDropFunction)))
+			.messageSelector(MessageSelector.selectAndStopAfter(MessageSelector.randomSelector(random), NUM_STEPS))
+			.messageMutator(MessageMutator.dropTimeouts().andThen(dropNode(numNodes, nodeToDropFunction)))
 			.build()
 			.run();
 	}
@@ -58,12 +58,9 @@ public class OneProposalDropperRandomSyncResponsiveTest {
 					proposalToDrop.remove(view);
 					proposalCount.remove(view);
 				}
-				if (message.channelId().receiverIndex() == nodeToDrop) {
-					return true;
-				}
+				return message.channelId().receiverIndex() == nodeToDrop;
 			}
-			queue.add(rank, message);
-			return true;
+			return false;
 		};
 	}
 

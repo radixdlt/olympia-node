@@ -62,6 +62,7 @@ public class MockedExecutionModule extends AbstractModule {
 
 			@Override
 			public void commit(Command command, VertexMetadata vertexMetadata) {
+				// Nothing to do here
 			}
 
 			@Override

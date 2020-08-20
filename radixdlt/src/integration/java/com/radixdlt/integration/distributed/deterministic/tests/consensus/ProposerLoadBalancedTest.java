@@ -27,7 +27,7 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.integration.distributed.deterministic.DeterministicTest;
 import com.radixdlt.integration.distributed.deterministic.configuration.EpochNodeWeightMapping;
-import com.radixdlt.integration.distributed.deterministic.network.MessageMutator;
+import com.radixdlt.integration.distributed.deterministic.configuration.SyncedExecutorFactories;
 import com.radixdlt.integration.distributed.deterministic.network.MessageSelector;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.utils.UInt256;
@@ -41,8 +41,8 @@ public class ProposerLoadBalancedTest {
 
 		DeterministicTest test = DeterministicTest.builder()
 			.numNodes(numNodes)
-			.messageSelector(MessageSelector.randomSelector(random))
-			.messageMutator(MessageMutator.alwaysAddUntilView(View.of(numViews)))
+			.messageSelector(MessageSelector.selectAndStopAt(MessageSelector.randomSelector(random), View.of(numViews)))
+			.syncedExecutorFactory(SyncedExecutorFactories.alwaysSynced())
 			.epochNodeWeightMapping(mapping)
 			.build()
 			.run();
@@ -56,7 +56,7 @@ public class ProposerLoadBalancedTest {
 	@Test
 	public void when_run_2_nodes_with_very_different_weights__then_proposals_should_match() {
 		final int numNodes = 2;
-		final long proposalChunk = 100_000L; // Actually proposalChunk + 1 proposals run
+		final long proposalChunk = 200_000L; // Actually proposalChunk + 1 proposals run
 		ImmutableList<Long> proposals = this.run(
 			numNodes,
 			proposalChunk + 1,
@@ -80,7 +80,7 @@ public class ProposerLoadBalancedTest {
 	@Test
 	public void when_run_100_nodes_with_equal_weight__then_proposals_should_be_equal() {
 		final int numNodes = 100;
-		final long proposalsPerNode = 100L;
+		final long proposalsPerNode = 10L;
 		ImmutableList<Long> proposals = this.run(
 			numNodes,
 			numNodes * proposalsPerNode,
@@ -91,7 +91,7 @@ public class ProposerLoadBalancedTest {
 
 	@Test
 	public void when_run_3_nodes_with_linear_weights__then_proposals_should_match() {
-		final long proposalChunk = 50_000L; // Actually 3! * proposalChunk proposals run
+		final long proposalChunk = 20_000L; // Actually 3! * proposalChunk proposals run
 		List<Long> proposals = this.run(
 			3,
 			1 * 2 * 3 * proposalChunk,
@@ -104,7 +104,7 @@ public class ProposerLoadBalancedTest {
 	public void when_run_100_nodes_with_two_different_weights__then_proposals_should_match() {
 		final int numNodes = 100;
 		// Nodes 0..49 have weight 1; nodes 50..99 have weight 2
-		final long proposalChunk = 67L; // Actually 150 * proposalChunk proposals run = ~10,000
+		final long proposalChunk = 10L; // Actually 150 * proposalChunk proposals run
 		ImmutableList<Long> proposals = this.run(
 			100,
 			150 * proposalChunk,
@@ -117,7 +117,7 @@ public class ProposerLoadBalancedTest {
 	@Test
 	public void when_run_3_nodes_with_large_lcm_weighting__then_proposals_should_be_proportional() {
 		final int numNodes = 3;
-		final long numProposals = 200_000L;
+		final long numProposals = 100_000L;
 		ImmutableList<UInt256> weights = ImmutableList.of(
 			// Some large primes with product/LCM > 2^64 but < 2^256
 			UInt256.from("941083981"),
@@ -146,7 +146,7 @@ public class ProposerLoadBalancedTest {
 	@Test
 	public void when_run_100_nodes_with_very_large_period__then_proposals_should_be_proportional() {
 		final int numNodes = 100;
-		final long numProposals = 10_000L;
+		final long numProposals = 1_000L;
 		ImmutableList<UInt256> weights = generatePrimes(100)
 			.mapToObj(UInt256::from)
 			.collect(ImmutableList.toImmutableList());

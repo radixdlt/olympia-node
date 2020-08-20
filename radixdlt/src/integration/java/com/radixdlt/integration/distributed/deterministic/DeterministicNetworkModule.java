@@ -20,13 +20,16 @@ package com.radixdlt.integration.distributed.deterministic;
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 import com.google.inject.name.Names;
+import com.radixdlt.consensus.Timeout;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRPCSender;
 import com.radixdlt.consensus.bft.VertexStore.SyncedVertexSender;
+import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
+import com.radixdlt.consensus.epoch.EpochView;
+import com.radixdlt.consensus.epoch.EpochManager.EpochInfoSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.liveness.LocalTimeoutSender;
-import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.integration.distributed.deterministic.network.DeterministicNetwork.DeterministicSender;
@@ -49,15 +52,32 @@ public class DeterministicNetworkModule extends AbstractModule {
 
 	@Override
 	protected void configure() {
-		bind(BFTEventSender.class).toInstance(this.sender);
-		bind(SyncVerticesRPCSender.class).toInstance(this.sender);
-		bind(SyncedVertexSender.class).toInstance(this.sender);
-		bind(EpochChangeSender.class).toInstance(this.sender);
-		bind(CommittedStateSyncSender.class).toInstance(this.sender);
-		bind(LocalTimeoutSender.class).toInstance(this.sender);
-		bind(SyncEpochsRPCSender.class).toInstance(this.sender);
+		EpochInfoSender emptyInfoSender = new EpochInfoSender() {
 
-		bind(NextCommandGenerator.class).toInstance((view, aids) -> null);
+			@Override
+			public void sendTimeoutProcessed(Timeout timeout) {
+				// Ignore
+			}
+
+			@Override
+			public void sendCurrentView(EpochView epochView) {
+				// Ignore
+			}
+		};
+
+		bind(DeterministicSender.class).toInstance(this.sender);
+
+		bind(BFTEventSender.class).to(DeterministicSender.class);
+		bind(SyncVerticesRPCSender.class).to(DeterministicSender.class);
+		bind(SyncedVertexSender.class).to(DeterministicSender.class);
+		bind(LocalTimeoutSender.class).to(DeterministicSender.class);
+		bind(SyncEpochsRPCSender.class).to(DeterministicSender.class);
+		bind(VertexStoreEventSender.class).to(DeterministicSender.class);
+		bind(EpochChangeSender.class).to(DeterministicSender.class);
+		bind(CommittedStateSyncSender.class).to(DeterministicSender.class);
+
+		bind(EpochInfoSender.class).toInstance(emptyInfoSender);
+
 		bind(SystemCounters.class).to(SystemCountersImpl.class).in(Scopes.SINGLETON);
 		bind(TimeSupplier.class).toInstance(System::currentTimeMillis);
 

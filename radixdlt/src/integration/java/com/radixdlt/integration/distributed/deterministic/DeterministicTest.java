@@ -19,24 +19,35 @@ package com.radixdlt.integration.distributed.deterministic;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Module;
+import com.radixdlt.ExecutionEpochChangeModule;
+import com.radixdlt.ExecutionLocalMempoolModule;
+import com.radixdlt.ExecutionModule;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.integration.distributed.deterministic.configuration.EpochNodeWeightMapping;
 import com.radixdlt.integration.distributed.deterministic.configuration.NodeIndexAndWeight;
-import com.radixdlt.integration.distributed.deterministic.configuration.SyncedExecutorFactories;
 import com.radixdlt.integration.distributed.deterministic.configuration.SyncedExecutorFactory;
 import com.radixdlt.integration.distributed.deterministic.network.DeterministicNetwork;
 import com.radixdlt.integration.distributed.deterministic.network.MessageMutator;
 import com.radixdlt.integration.distributed.deterministic.network.MessageSelector;
+import com.radixdlt.integration.distributed.simulation.MockedEpochStateComputerModule;
+import com.radixdlt.integration.distributed.simulation.MockedStateComputerModule;
+import com.radixdlt.integration.distributed.simulation.MockedSyncServiceModule;
+import com.radixdlt.syncer.CommittedCommand;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.utils.UInt256;
 
 import java.io.PrintStream;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.function.Function;
 import java.util.function.LongFunction;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -46,41 +57,32 @@ import java.util.stream.Stream;
  * is emitted and processed synchronously by the caller.
  */
 public final class DeterministicTest {
-
-	private final ImmutableList<BFTNode> nodes;
-	private final MessageSelector messageSelector;
-	private final MessageMutator messageMutator;
 	private final DeterministicNetwork network;
 
 	private DeterministicTest(
 		ImmutableList<BFTNode> nodes,
-		LongFunction<BFTValidatorSet> validatorSetMapping,
 		MessageSelector messageSelector,
 		MessageMutator messageMutator,
-		SyncedExecutorFactory syncedExecutorFactory
+		Collection<Module> modules
+//		LongFunction<BFTValidatorSet> validatorSetMapping,
+//		SyncedExecutorFactory syncedExecutorFactory,
+//		View epochHighView
 	) {
-		this.nodes = Objects.requireNonNull(nodes);
-		this.messageSelector = Objects.requireNonNull(messageSelector);
-		this.messageMutator = Objects.requireNonNull(messageMutator);
-
-		// TODO only one epoch supported right now
-		BFTValidatorSet validatorSet = validatorSetMapping.apply(1L);
-		ImmutableList.Builder<Module> syncExecutionModules = ImmutableList.builder();
-		syncExecutionModules.add(new DeterministicSyncExecutionModule(validatorSet, syncedExecutorFactory));
 		this.network = new DeterministicNetwork(
-			this.nodes,
-			this.messageSelector,
-			this.messageMutator,
-			syncExecutionModules.build()
+			nodes,
+			messageSelector,
+			messageMutator,
+			modules
 		);
 	}
 
 	public static class Builder {
 		private ImmutableList<BFTNode> nodes = ImmutableList.of(BFTNode.create(ECKeyPair.generateNew().getPublicKey()));
-		private MessageSelector messageSelector = MessageSelector.firstSelector();
-		private MessageMutator messageMutator = MessageMutator.alwaysAdd(30_000L);
-		private EpochNodeWeightMapping epochNodeWeightMapping;
-		private SyncedExecutorFactory syncedExecutorFactory = SyncedExecutorFactories.alwaysSynced();
+		private MessageSelector messageSelector = MessageSelector.selectAndStopAfter(MessageSelector.firstSelector(), 30_000L);
+		private MessageMutator messageMutator = MessageMutator.nothing();
+		private EpochNodeWeightMapping epochNodeWeightMapping = null;
+		private SyncedExecutorFactory syncedExecutorFactory = null;
+		private View epochHighView = null;
 
 		private Builder() {
 			// Nothing to do here
@@ -121,16 +123,45 @@ public final class DeterministicTest {
 			return this;
 		}
 
+		public Builder epochHighView(View epochHighView) {
+			this.epochHighView = epochHighView;
+			return this;
+		}
+
 		public DeterministicTest build() {
+			if (this.syncedExecutorFactory == null && epochHighView == null) {
+				throw new IllegalArgumentException("Must specify one (and only one) of syncedExecutorFactory or epochHighView");
+			}
+			if (this.syncedExecutorFactory != null && epochHighView != null) {
+				throw new IllegalArgumentException("Can only specify one of syncedExecutorFactory or epochHighView");
+			}
 			LongFunction<BFTValidatorSet> validatorSetMapping = epochNodeWeightMapping == null
 				? epoch -> completeEqualWeightValidatorSet(this.nodes)
 				: epoch -> partialMixedWeightValidatorSet(epoch, this.nodes, this.epochNodeWeightMapping);
+
+			ConcurrentMap<Long, CommittedCommand> sharedCommittedAtoms = new ConcurrentHashMap<>();
+			ImmutableList.Builder<Module> modules = ImmutableList.builder();
+			modules.add(new ExecutionModule());
+			modules.add(new MockedSyncServiceModule(sharedCommittedAtoms));
+			modules.add(new ExecutionLocalMempoolModule(10));
+			modules.add(new DeterministicMempoolModule());
+
+			if (epochHighView == null) {
+				BFTValidatorSet validatorSet = validatorSetMapping.apply(1L);
+				modules.add(new MockedStateComputerModule(validatorSet));
+//				this.syncedExecutorFactory == null ? SyncedExecutorFactories.alwaysSynced() : this.syncedExecutorFactory,
+				// FIXME: syncExecutionModules.add(new DeterministicSyncExecutionModule(syncedExecutorFactory));
+			} else {
+				// FIXME: adapter from LongFunction<BFTValidatorSet> to Function<Long, BFTValidatorSet> shouldn't be needed
+				Function<Long, BFTValidatorSet> epochToValidatorSetMapping = validatorSetMapping::apply;
+				modules.add(new ExecutionEpochChangeModule());
+				modules.add(new MockedEpochStateComputerModule(epochHighView, epochToValidatorSetMapping));
+			}
 			return new DeterministicTest(
 				this.nodes,
-				validatorSetMapping,
 				this.messageSelector,
 				this.messageMutator,
-				this.syncedExecutorFactory
+				modules.build()
 			);
 		}
 
@@ -168,6 +199,10 @@ public final class DeterministicTest {
 
 	public SystemCounters getSystemCounters(int nodeIndex) {
 		return this.network.getSystemCounters(nodeIndex);
+	}
+
+	public int numNodes() {
+		return this.network.numNodes();
 	}
 
 	// Debugging aid for messages

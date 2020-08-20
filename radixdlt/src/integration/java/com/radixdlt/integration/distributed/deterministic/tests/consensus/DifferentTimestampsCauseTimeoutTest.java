@@ -17,7 +17,6 @@
 
 package com.radixdlt.integration.distributed.deterministic.tests.consensus;
 
-import java.util.Collection;
 import java.util.LinkedList;
 import java.util.Map;
 
@@ -102,7 +101,7 @@ public class DifferentTimestampsCauseTimeoutTest {
 			.numNodes(numNodes)
 			.syncedExecutorFactory(SyncedExecutorFactories.alwaysSynced())
 			.messageSelector(sequenceSelector(expectedSequence))
-			.messageMutator(stopWhenEmpty(expectedSequence).otherwise(mutateProposalsBy(0)))
+			.messageMutator(mutateProposalsBy(0))
 			.build()
 			.run();
 	}
@@ -155,7 +154,7 @@ public class DifferentTimestampsCauseTimeoutTest {
 			.numNodes(numNodes)
 			.syncedExecutorFactory(SyncedExecutorFactories.alwaysSynced())
 			.messageSelector(sequenceSelector(expectedSequence))
-			.messageMutator(stopWhenEmpty(expectedSequence).otherwise(mutateProposalsBy(1)))
+			.messageMutator(mutateProposalsBy(1))
 			.build()
 			.run();
 	}
@@ -217,7 +216,8 @@ public class DifferentTimestampsCauseTimeoutTest {
 	private MessageSelector sequenceSelector(LinkedList<Pair<ChannelId, Class<?>>> expectedSequence) {
 		return messages -> {
 			if (expectedSequence.isEmpty()) {
-				return messages.get(0);
+				// We have finished
+				return null;
 			}
 			final Pair<ChannelId, Class<?>> messageDetails = expectedSequence.pop();
 			final ChannelId expectedChannel = messageDetails.getFirst();
@@ -233,9 +233,5 @@ public class DifferentTimestampsCauseTimeoutTest {
 			fail(String.format("Can't find %s message %s: %s", expectedMsgClass.getSimpleName(), expectedChannel, messages));
 			return null; // Not required, but compiler can't tell that fail throws exception
 		};
-	}
-
-	private MessageMutator stopWhenEmpty(Collection<?> expectedSequence) {
-		return (rank, message, queue) -> !expectedSequence.isEmpty();
 	}
 }

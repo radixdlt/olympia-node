@@ -33,6 +33,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import javax.inject.Inject;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -82,6 +84,7 @@ public final class ConsensusRunner {
 	private final EpochManager epochManager;
 	private Disposable disposable;
 
+	@Inject
 	public ConsensusRunner(
 		EpochChangeRx epochChangeRx,
 		ConsensusEventsRx networkRx,

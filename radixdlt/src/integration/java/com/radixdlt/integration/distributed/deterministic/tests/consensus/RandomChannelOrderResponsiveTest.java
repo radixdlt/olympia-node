@@ -43,8 +43,8 @@ public class RandomChannelOrderResponsiveTest {
 		DeterministicTest test = DeterministicTest.builder()
 			.numNodes(numNodes)
 			.syncedExecutorFactory(SyncedExecutorFactories.alwaysSynced())
-			.messageSelector(MessageSelector.randomSelector(random))
-			.messageMutator(MessageMutator.alwaysAddUntilView(View.of(viewsToRun)))
+			.messageSelector(MessageSelector.selectAndStopAt(MessageSelector.randomSelector(random), View.of(viewsToRun)))
+			.messageMutator(MessageMutator.dropTimeouts())
 			.build()
 			.run();
 
@@ -65,8 +65,7 @@ public class RandomChannelOrderResponsiveTest {
 		DeterministicTest test = DeterministicTest.builder()
 			.numNodes(numNodes)
 			.syncedExecutorFactory(SyncedExecutorFactories.alwaysSynced())
-			.messageSelector(MessageSelector.randomSelector(random))
-			.messageMutator(MessageMutator.alwaysAddUntilView(View.of(viewsToRun)))
+			.messageSelector(MessageSelector.selectAndStopAt(MessageSelector.randomSelector(random), View.of(viewsToRun)))
 			.build()
 			.run();
 

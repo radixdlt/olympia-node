@@ -17,70 +17,56 @@
 
 package com.radixdlt.integration.distributed.deterministic.network;
 
-import java.util.concurrent.atomic.AtomicLong;
-
-import com.radixdlt.consensus.NewView;
-import com.radixdlt.consensus.bft.View;
-import com.radixdlt.consensus.epoch.EpochView;
+import com.radixdlt.consensus.epoch.LocalTimeout;
 
 /**
- * A mutator called on new messages that can mutate the message, or the queue.
- * TODO: Could be broken up into a pipeline of filters and a single mutator.
+ * A mutator called on new messages that can mutate the message rank,
+ * the message itself, or the message queue.
  */
 @FunctionalInterface
 public interface MessageMutator {
-	boolean mutate(MessageRank rank, ControlledMessage message, MessageQueue queue);
+	/**
+	 * Mutates the message queue.  The simplest form of mutation is
+	 * to add the supplied message to the queue at the specified rank, but
+	 * other mutations are possible; the rank can be changed, and the message
+	 * can be substituted for a different message.
+	 *
+	 * @param rank the proposed rank of the message
+	 * @param message the message
+	 * @param queue the queue to me mutated
+	 * @return {@code true} if the message was processed, {@code false} otherwise.
+	 */
+	boolean mutatex(MessageRank rank, ControlledMessage message, MessageQueue queue);
 
-	default MessageMutator otherwise(MessageMutator next) {
-		return (rank, message, queue) -> this.mutate(rank, message, queue) && next.mutate(rank, message, queue);
+	/**
+	 * Chains this mutator with another.  If this mutator does not
+	 * handle the message, then the next mutator is called.
+	 *
+	 * @param next the next mutator in the chain to call if this
+	 * 		mutator does not handle the message
+	 * @return This mutator chained with the specified mutator
+	 */
+	default MessageMutator andThen(MessageMutator next) {
+		return (rank, message, queue) -> mutatex(rank, message, queue) || next.mutatex(rank, message, queue);
 	}
 
-	static MessageMutator addMessage() {
-		return (rank, message, queue) -> queue.add(rank, message);
+	/**
+	 * Returns default mutator that does not handle messages.
+	 * By default, the underlying network code will add the message to the
+	 * message queue.
+	 *
+	 * @return A {@code MessageMutator} that does nothing.
+	 */
+	static MessageMutator nothing() {
+		return (rank, message, queue) -> false;
 	}
 
-	static MessageMutator stopAt(long messageCount) {
-		AtomicLong counter = new AtomicLong(0L);
-		return (rank, message, queue) -> counter.incrementAndGet() <= messageCount;
+	/**
+	 * Returns a mutator that drops {@link LocalTimeout} messages.
+	 * @return A {@code MessageMutator} that drops {@code LocalTimeout} messages.
+	 */
+	static MessageMutator dropTimeouts() {
+		return (rank, message, queue) -> message.message() instanceof LocalTimeout;
 	}
 
-	static MessageMutator stopAt(View view) {
-		final long maxViewNumber = view.number();
-		return (rank, message, queue) -> {
-			Object m = message.message();
-			if (m instanceof NewView) {
-				NewView nv = (NewView) m;
-				if (nv.getView().number() > maxViewNumber) {
-					return false;
-				}
-			}
-			return true;
-		};
-	}
-
-	static MessageMutator stopAt(EpochView maxEpochView) {
-		return (rank, message, queue) -> {
-			Object m = message.message();
-			if (m instanceof NewView) {
-				NewView nv = (NewView) m;
-				EpochView nev = EpochView.of(nv.getEpoch(), nv.getView());
-				if (nev.compareTo(maxEpochView) > 0) {
-					return false;
-				}
-			}
-			return true;
-		};
-	}
-
-	static MessageMutator alwaysAdd(long messageCount) {
-		return stopAt(messageCount).otherwise(addMessage());
-	}
-
-	static MessageMutator alwaysAddUntilView(View maxView) {
-		return stopAt(maxView).otherwise(addMessage());
-	}
-
-	static MessageMutator alwaysAddUntilEpochView(EpochView maxEpochView) {
-		return stopAt(maxEpochView).otherwise(addMessage());
-	}
 }

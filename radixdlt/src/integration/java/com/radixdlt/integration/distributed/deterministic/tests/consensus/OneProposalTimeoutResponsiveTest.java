@@ -37,8 +37,8 @@ public class OneProposalTimeoutResponsiveTest {
 		DeterministicTest test = DeterministicTest.builder()
 			.numNodes(numNodes)
 			.syncedExecutorFactory(SyncedExecutorFactories.alwaysSynced())
-			.messageSelector(MessageSelector.randomSelector(random))
-			.messageMutator(MessageMutator.stopAt(View.of(numViews)).otherwise(dropSomeProposals(dropPeriod)))
+			.messageSelector(MessageSelector.selectAndStopAt(MessageSelector.randomSelector(random), View.of(numViews)))
+			.messageMutator(dropSomeProposals(dropPeriod))
 			.build()
 			.run();
 
@@ -51,13 +51,13 @@ public class OneProposalTimeoutResponsiveTest {
 			long numberOfTimeouts = counters.get(SystemCounters.CounterType.BFT_TIMEOUT);
 			assertThat(numberOfIndirectParents).isEqualTo(requiredIndirectParents);
 			// Not every node will timeout on a dropped proposal, as 2f+1 nodes will timeout and then continue.
-			// The remaining f nodes will sync rather than timing out.
+			// The remaining f nodes may sync rather than timing out.
 			// The lower bound of the following test is likely to pass, but not guaranteed by anything here.
 			assertThat(numberOfTimeouts).isBetween(1L, requiredTimeouts);
 		}
 	}
 
-	private MessageMutator dropSomeProposals(long dropPeriod) {
+	private static MessageMutator dropSomeProposals(long dropPeriod) {
 		return (rank, message, queue) -> {
 			Object msg = message.message();
 			if (msg instanceof Proposal) {
@@ -65,27 +65,24 @@ public class OneProposalTimeoutResponsiveTest {
 				final View view = proposal.getVertex().getView();
 				final long viewNumber = view.number();
 
-				if (viewNumber % dropPeriod == 0) {
-					return true;
-				}
+				return viewNumber % dropPeriod == 0;
 			}
-			queue.add(rank, message);
-			return true;
+			return false;
 		};
 	}
 
 	@Test
 	public void when_run_3_correct_nodes_with_1_timeout__then_bft_should_be_responsive() {
-		this.run(3, 300_000, 100);
+		this.run(3, 100_000, 100);
 	}
 
 	@Test
 	public void when_run_4_correct_nodes_with_1_timeout__then_bft_should_be_responsive() {
-		this.run(4, 300_000, 100);
+		this.run(4, 100_000, 100);
 	}
 
 	@Test
 	public void when_run_100_correct_nodes_with_1_timeout__then_bft_should_be_responsive() {
-		this.run(100, 10_000, 100);
+		this.run(100, 1_000, 100);
 	}
 }

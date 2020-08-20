@@ -221,6 +221,7 @@ public final class EpochManager {
 	}
 
 	public void processEpochChange(EpochChange epochChange) {
+		log.trace("{}: EPOCH_CHANGE: {}", this.self, epochChange);
 		BFTValidatorSet validatorSet = epochChange.getValidatorSet();
 		VertexMetadata ancestorMetadata = epochChange.getAncestor();
 		Vertex genesisVertex = Vertex.createGenesis(ancestorMetadata);
@@ -234,7 +235,7 @@ public final class EpochManager {
 		// If constructed the end of the previous epoch then broadcast new epoch to new validator set
 		// TODO: Move this into when lastConstructed is set
 		if (lastConstructed != null && lastConstructed.getEpoch() == ancestorMetadata.getEpoch()) {
-			log.info("{}: EPOCH_CHANGE: broadcasting next epoch", this.self::getSimpleName);
+			log.info("{}: EPOCH_CHANGE: broadcasting next epoch", this.self);
 			for (BFTValidator validator : validatorSet.getValidators()) {
 				if (!validator.getNode().equals(self)) {
 					epochsRPCSender.sendGetEpochResponse(validator.getNode(), ancestorMetadata);
@@ -285,7 +286,7 @@ public final class EpochManager {
 	}
 
 	private void processEndOfEpoch(VertexMetadata vertexMetadata) {
-		log.trace("{}: END_OF_EPOCH: {}", this.self::getSimpleName, () -> vertexMetadata);
+		log.trace("{}: END_OF_EPOCH: {}", this.self, vertexMetadata);
 		if (this.lastConstructed == null || this.lastConstructed.getEpoch() < vertexMetadata.getEpoch()) {
 			this.lastConstructed = vertexMetadata;
 
@@ -296,7 +297,7 @@ public final class EpochManager {
 	}
 
 	public void processGetEpochRequest(GetEpochRequest request) {
-		log.trace("{}: GET_EPOCH_REQUEST: {}", this.self::getSimpleName, () -> request);
+		log.trace("{}: GET_EPOCH_REQUEST: {}", this.self, request);
 
 		if (this.currentEpoch() > request.getEpoch()) {
 			epochsRPCSender.sendGetEpochResponse(request.getAuthor(), this.currentEpoch.getAncestor());
@@ -311,10 +312,10 @@ public final class EpochManager {
 	}
 
 	public void processGetEpochResponse(GetEpochResponse response) {
-		log.trace("{}: GET_EPOCH_RESPONSE: {}", this.self::getSimpleName, () -> response);
+		log.trace("{}: GET_EPOCH_RESPONSE: {}", this.self, response);
 
 		if (response.getEpochAncestor() == null) {
-			log.warn("{}: Received empty GetEpochResponse {}", this.self::getSimpleName, () -> response);
+			log.warn("{}: Received empty GetEpochResponse {}", this.self, response);
 			// TODO: retry
 			return;
 		}
@@ -323,7 +324,7 @@ public final class EpochManager {
 		if (ancestor.getEpoch() >= this.currentEpoch()) {
 			syncedExecutor.syncTo(ancestor, ImmutableList.of(response.getAuthor()), null);
 		} else {
-			log.info("{}: Ignoring old epoch {}", this.self::getSimpleName, () -> response);
+			log.info("{}: Ignoring old epoch {}", this.self, response);
 		}
 	}
 
@@ -357,7 +358,7 @@ public final class EpochManager {
 		}
 
 		if (consensusEvent.getEpoch() < this.currentEpoch()) {
-			log.info("{}: CONSENSUS_EVENT: Ignoring lower epoch event: {} current epoch: {}",
+			log.debug("{}: CONSENSUS_EVENT: Ignoring lower epoch event: {} current epoch: {}",
 				this.self::getSimpleName, () -> consensusEvent, this::currentEpoch
 			);
 			return;

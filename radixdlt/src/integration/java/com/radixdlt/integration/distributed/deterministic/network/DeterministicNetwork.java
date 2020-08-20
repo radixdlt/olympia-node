@@ -44,14 +44,17 @@ import java.io.PrintStream;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * A BFT network supporting the EventCoordinatorNetworkSender interface which
  * stores each message in a queue until they are synchronously popped.
  */
 public final class DeterministicNetwork {
+	private static final Logger log = LogManager.getLogger();
 
 	public interface DeterministicSender extends
 		BFTEventSender,
@@ -71,7 +74,6 @@ public final class DeterministicNetwork {
 
 	private final ImmutableMap<BFTNode, Integer> nodeLookup;
 	private final ImmutableList<Injector> nodeInstances;
-	private final AtomicBoolean running = new AtomicBoolean(false);
 
 	/**
 	 * Create a BFT test network for deterministic tests.
@@ -92,6 +94,8 @@ public final class DeterministicNetwork {
 			.collect(ImmutableMap.toImmutableMap(Pair::getFirst, Pair::getSecond));
 		this.nodeInstances = Streams.mapWithIndex(nodes.stream(), (node, index) -> createBFTInstance(node, (int) index, syncExecutionModules))
 			.collect(ImmutableList.toImmutableList());
+
+		log.debug("Nodes {}", this.nodeLookup);
 	}
 
 	/**
@@ -110,16 +114,25 @@ public final class DeterministicNetwork {
 
 		consensusRunners.forEach(DeterministicConsensusRunner::start);
 
-		this.running.set(true);
-		while (this.running.get()) {
+
+		while (true) {
 			List<ControlledMessage> controlledMessages = this.messageQueue.lowestRankMessages();
 			if (controlledMessages.isEmpty()) {
 				throw new IllegalStateException("No messages available (Lost Responsiveness)");
 			}
 			ControlledMessage controlledMessage = this.messageSelector.select(controlledMessages);
+			if (controlledMessage == null) {
+				// We are done
+				break;
+			}
 			this.messageQueue.remove(controlledMessage);
+			log.debug("Output message {}", controlledMessage);
 			consensusRunners.get(controlledMessage.channelId().receiverIndex()).handleMessage(controlledMessage.message());
 		}
+	}
+
+	public int numNodes() {
+		return this.nodeInstances.size();
 	}
 
 	public SystemCounters getSystemCounters(int nodeIndex) {
@@ -134,9 +147,11 @@ public final class DeterministicNetwork {
 		return this.nodeLookup.get(node);
 	}
 
-	void handleMessage(MessageRank eav, ControlledMessage controlledMessage) {
-		if (!this.messageMutator.mutate(eav, controlledMessage, this.messageQueue)) {
-			this.running.set(false);
+	void handleMessage(MessageRank rank, ControlledMessage controlledMessage) {
+		log.debug("Input message {}", controlledMessage);
+		if (!this.messageMutator.mutatex(rank, controlledMessage, this.messageQueue)) {
+			// If nothing processes this message, we just add it to the queue
+			this.messageQueue.add(rank, controlledMessage);
 		}
 	}
 

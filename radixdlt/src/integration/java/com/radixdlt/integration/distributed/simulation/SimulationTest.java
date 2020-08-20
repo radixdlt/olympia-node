@@ -19,7 +19,6 @@ package com.radixdlt.integration.distributed.simulation;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.radixdlt.ExecutionEpochChangeModule;
 import com.radixdlt.ExecutionEpochChangeRxModule;
@@ -46,8 +45,6 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.LatencyProvider;
-import com.radixdlt.mempool.LocalMempool;
-import com.radixdlt.mempool.Mempool;
 import com.radixdlt.syncer.CommittedCommand;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
@@ -246,12 +243,6 @@ public class SimulationTest {
 					syncExecutionModules.add(new ExecutionLocalMempoolModule(10));
 
 					syncExecutionModules.add(new MockedStateComputerModule(validatorSet));
-					syncExecutionModules.add(new AbstractModule() {
-						@Override
-						protected void configure() {
-							bind(Mempool.class).to(LocalMempool.class);
-						}
-					});
 				}
 			}
 

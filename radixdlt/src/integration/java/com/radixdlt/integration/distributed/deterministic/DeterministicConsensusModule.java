@@ -19,6 +19,7 @@ package com.radixdlt.integration.distributed.deterministic;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.google.inject.Scopes;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 import com.radixdlt.consensus.HashVerifier;
@@ -33,6 +34,7 @@ import com.radixdlt.consensus.ProposerElectionFactory;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.bft.VertexStore;
 import com.radixdlt.consensus.bft.VertexStore.VertexStoreEventSender;
+import com.radixdlt.consensus.epoch.EpochManager;
 import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRPCSender;
 import com.radixdlt.consensus.VertexStoreFactory;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
@@ -58,7 +60,7 @@ public final class DeterministicConsensusModule extends AbstractModule {
 
 	@Override
 	protected void configure() {
-		// Nothing right now
+		bind(EpochManager.class).in(Scopes.SINGLETON);
 	}
 
 	@Provides

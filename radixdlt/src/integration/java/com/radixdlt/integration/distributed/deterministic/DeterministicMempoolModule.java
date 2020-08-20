@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *  http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -18,14 +18,15 @@
 package com.radixdlt.integration.distributed.deterministic;
 
 import com.google.inject.AbstractModule;
+import com.radixdlt.mempool.LocalMempool;
+import com.radixdlt.mempool.Mempool;
 
-public class DeterministicSyncExecutionModule extends AbstractModule {
-	public DeterministicSyncExecutionModule() {
-		// Nothing right now
-	}
-
+/**
+ * Just binds Mempool to LocalMempool for now.
+ */
+public class DeterministicMempoolModule extends AbstractModule {
 	@Override
-	public void configure() {
-		// Nothing right now
+	protected void configure() {
+		bind(Mempool.class).to(LocalMempool.class);
 	}
 }
