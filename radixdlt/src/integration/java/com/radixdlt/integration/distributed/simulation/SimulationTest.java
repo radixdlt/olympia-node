@@ -19,6 +19,7 @@ package com.radixdlt.integration.distributed.simulation;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.radixdlt.ExecutionEpochChangeModule;
 import com.radixdlt.ExecutionEpochChangeRxModule;
@@ -35,6 +36,8 @@ import com.radixdlt.integration.distributed.simulation.network.OneProposalPerVie
 import com.radixdlt.integration.distributed.simulation.network.RandomLatencyProvider;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
+import com.radixdlt.mempool.LocalMempool;
+import com.radixdlt.mempool.Mempool;
 import com.radixdlt.integration.distributed.simulation.invariants.bft.AllProposalsHaveDirectParentsInvariant;
 import com.radixdlt.integration.distributed.simulation.invariants.bft.LivenessInvariant;
 import com.radixdlt.integration.distributed.simulation.invariants.bft.NoTimeoutsInvariant;
@@ -243,6 +246,12 @@ public class SimulationTest {
 					syncExecutionModules.add(new ExecutionLocalMempoolModule(10));
 
 					syncExecutionModules.add(new MockedStateComputerModule(validatorSet));
+					syncExecutionModules.add(new AbstractModule() {
+						@Override
+						protected void configure() {
+							bind(Mempool.class).to(LocalMempool.class);
+						}
+					});
 				}
 			}
 
