@@ -19,6 +19,7 @@ package com.radixdlt.atommodel.tokens;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.radixdlt.atommodel.tokens.MutableSupplyTokenDefinitionParticle.TokenTransition;
 import com.radixdlt.constraintmachine.Particle;
 import com.radixdlt.identifiers.RRI;
@@ -77,7 +78,7 @@ public final class StakedTokensParticle extends Particle {
 		RRI tokenDefinitionReference,
 		Map<TokenTransition, TokenPermission> tokenPermissions
 	) {
-		super(address.euid());
+		super(ImmutableSet.of(address.euid(), delegateAddress.euid()));
 
 		this.delegateAddress = Objects.requireNonNull(delegateAddress);
 		this.address = Objects.requireNonNull(address);
