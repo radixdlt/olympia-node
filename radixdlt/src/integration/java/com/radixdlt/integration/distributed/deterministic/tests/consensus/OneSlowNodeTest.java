@@ -43,52 +43,50 @@ public class OneSlowNodeTest {
 	public void when_three_fast_nodes_and_one_slow_node_two_cycles__then_missing_parent_should_not_cause_sync_exception() {
 		final int numNodes = 4;
 
-		LinkedList<Pair<ChannelId, Class<?>>> expectedSequence = Lists.newLinkedList();
+		LinkedList<Pair<ChannelId, Class<?>>> processingSequence = Lists.newLinkedList();
 		for (int curLeader = 1; curLeader <= 2; curLeader++) {
-			expectedSequence.add(Pair.of(ChannelId.of(1, curLeader), NewView.class));
-			expectedSequence.add(Pair.of(ChannelId.of(2, curLeader), NewView.class));
-			expectedSequence.add(Pair.of(ChannelId.of(3, curLeader), NewView.class));
+			processingSequence.add(Pair.of(ChannelId.of(1, curLeader), NewView.class));
+			processingSequence.add(Pair.of(ChannelId.of(2, curLeader), NewView.class));
+			processingSequence.add(Pair.of(ChannelId.of(3, curLeader), NewView.class));
 
-			expectedSequence.add(Pair.of(ChannelId.of(curLeader, 1), Proposal.class));
-			expectedSequence.add(Pair.of(ChannelId.of(curLeader, 2), Proposal.class));
-			expectedSequence.add(Pair.of(ChannelId.of(curLeader, 3), Proposal.class));
+			processingSequence.add(Pair.of(ChannelId.of(curLeader, 1), Proposal.class));
+			processingSequence.add(Pair.of(ChannelId.of(curLeader, 2), Proposal.class));
+			processingSequence.add(Pair.of(ChannelId.of(curLeader, 3), Proposal.class));
 
-			expectedSequence.add(Pair.of(ChannelId.of(1, curLeader), Vote.class));
-			expectedSequence.add(Pair.of(ChannelId.of(2, curLeader), Vote.class));
-			expectedSequence.add(Pair.of(ChannelId.of(3, curLeader), Vote.class));
+			processingSequence.add(Pair.of(ChannelId.of(1, curLeader), Vote.class));
+			processingSequence.add(Pair.of(ChannelId.of(2, curLeader), Vote.class));
+			processingSequence.add(Pair.of(ChannelId.of(3, curLeader), Vote.class));
 		}
 		// Delayed initial NewView from node 0 to (then) leader 1
-		expectedSequence.add(Pair.of(ChannelId.of(0, 1), NewView.class));
+		processingSequence.add(Pair.of(ChannelId.of(0, 1), NewView.class));
 		// Delayed initial Proposal from (then) leader 1 to node 0
-		expectedSequence.add(Pair.of(ChannelId.of(1, 0), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(1, 0), Proposal.class));
 
 		DeterministicTest.builder()
 			.numNodes(numNodes)
 			.alwaysSynced()
-			.messageSelector(sequenceSelector(expectedSequence))
+			.messageSelector(sequenceSelector(processingSequence))
 			.messageMutator(delayMessagesForNode(0))
 			.build()
 			.run();
 	}
 
-	private static MessageSelector sequenceSelector(LinkedList<Pair<ChannelId, Class<?>>> expectedSequence) {
+	private static MessageSelector sequenceSelector(LinkedList<Pair<ChannelId, Class<?>>> processingSequence) {
 		return messages -> {
-			if (expectedSequence.isEmpty()) {
+			if (processingSequence.isEmpty()) {
 				// We are finished.
 				return null;
 			}
-			final Pair<ChannelId, Class<?>> messageDetails = expectedSequence.pop();
-			final ChannelId expectedChannel = messageDetails.getFirst();
-			final Class<?> expectedMsgClass = messageDetails.getSecond();
+			final Pair<ChannelId, Class<?>> messageDetails = processingSequence.pop();
+			final ChannelId channel = messageDetails.getFirst();
+			final Class<?> msgClass = messageDetails.getSecond();
 			for (ControlledMessage message : messages) {
-				if (expectedChannel.equals(message.channelId())) {
-					Class<?> msgClass = message.message().getClass();
-					if (expectedMsgClass.isAssignableFrom(msgClass)) {
+				if (channel.equals(message.channelId())
+					&& msgClass.isAssignableFrom(message.message().getClass())) {
 						return message;
-					}
 				}
 			}
-			fail(String.format("Can't find %s message %s: %s", expectedMsgClass.getSimpleName(), expectedChannel, messages));
+			fail(String.format("Can't find %s message %s: %s", msgClass.getSimpleName(), channel, messages));
 			return null; // Not required, but compiler can't tell that fail throws exception
 		};
 	}

@@ -52,54 +52,54 @@ public class DifferentTimestampsCauseTimeoutTest {
 	public void when_four_nodes_receive_qcs_with_same_timestamps__quorum_is_achieved() {
 		final int numNodes = 4;
 
-		LinkedList<Pair<ChannelId, Class<?>>> expectedSequence = Lists.newLinkedList();
-		expectedSequence.add(Pair.of(ChannelId.of(0, 1), NewView.class));
-		expectedSequence.add(Pair.of(ChannelId.of(1, 1), NewView.class));
-		expectedSequence.add(Pair.of(ChannelId.of(2, 1), NewView.class));
-		expectedSequence.add(Pair.of(ChannelId.of(3, 1), NewView.class));
+		LinkedList<Pair<ChannelId, Class<?>>> processingSequence = Lists.newLinkedList();
+		processingSequence.add(Pair.of(ChannelId.of(0, 1), NewView.class));
+		processingSequence.add(Pair.of(ChannelId.of(1, 1), NewView.class));
+		processingSequence.add(Pair.of(ChannelId.of(2, 1), NewView.class));
+		processingSequence.add(Pair.of(ChannelId.of(3, 1), NewView.class));
 
 		// Proposal here has genesis qc, which has no timestamps
-		expectedSequence.add(Pair.of(ChannelId.of(1, 0), Proposal.class));
-		expectedSequence.add(Pair.of(ChannelId.of(1, 1), Proposal.class));
-		expectedSequence.add(Pair.of(ChannelId.of(1, 2), Proposal.class));
-		expectedSequence.add(Pair.of(ChannelId.of(1, 3), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(1, 0), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(1, 1), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(1, 2), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(1, 3), Proposal.class));
 
-		expectedSequence.add(Pair.of(ChannelId.of(0, 1), Vote.class));
-		expectedSequence.add(Pair.of(ChannelId.of(1, 1), Vote.class));
-		expectedSequence.add(Pair.of(ChannelId.of(2, 1), Vote.class));
-		expectedSequence.add(Pair.of(ChannelId.of(3, 1), Vote.class));
+		processingSequence.add(Pair.of(ChannelId.of(0, 1), Vote.class));
+		processingSequence.add(Pair.of(ChannelId.of(1, 1), Vote.class));
+		processingSequence.add(Pair.of(ChannelId.of(2, 1), Vote.class));
+		processingSequence.add(Pair.of(ChannelId.of(3, 1), Vote.class));
 
-		expectedSequence.add(Pair.of(ChannelId.of(0, 2), NewView.class));
-		expectedSequence.add(Pair.of(ChannelId.of(1, 2), NewView.class));
-		expectedSequence.add(Pair.of(ChannelId.of(2, 2), NewView.class));
-		expectedSequence.add(Pair.of(ChannelId.of(3, 2), NewView.class));
+		processingSequence.add(Pair.of(ChannelId.of(0, 2), NewView.class));
+		processingSequence.add(Pair.of(ChannelId.of(1, 2), NewView.class));
+		processingSequence.add(Pair.of(ChannelId.of(2, 2), NewView.class));
+		processingSequence.add(Pair.of(ChannelId.of(3, 2), NewView.class));
 
 		// Proposal here should have timestamps from previous view
 		// They are not mutated in this test
-		expectedSequence.add(Pair.of(ChannelId.of(2, 0), Proposal.class));
-		expectedSequence.add(Pair.of(ChannelId.of(2, 1), Proposal.class));
-		expectedSequence.add(Pair.of(ChannelId.of(2, 2), Proposal.class));
-		expectedSequence.add(Pair.of(ChannelId.of(2, 3), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(2, 0), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(2, 1), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(2, 2), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(2, 3), Proposal.class));
 
-		expectedSequence.add(Pair.of(ChannelId.of(0, 2), Vote.class));
-		expectedSequence.add(Pair.of(ChannelId.of(1, 2), Vote.class));
-		expectedSequence.add(Pair.of(ChannelId.of(2, 2), Vote.class));
-		expectedSequence.add(Pair.of(ChannelId.of(3, 2), Vote.class));
+		processingSequence.add(Pair.of(ChannelId.of(0, 2), Vote.class));
+		processingSequence.add(Pair.of(ChannelId.of(1, 2), Vote.class));
+		processingSequence.add(Pair.of(ChannelId.of(2, 2), Vote.class));
+		processingSequence.add(Pair.of(ChannelId.of(3, 2), Vote.class));
 
-		expectedSequence.add(Pair.of(ChannelId.of(0, 3), NewView.class));
-		expectedSequence.add(Pair.of(ChannelId.of(1, 3), NewView.class));
-		expectedSequence.add(Pair.of(ChannelId.of(2, 3), NewView.class));
-		expectedSequence.add(Pair.of(ChannelId.of(3, 3), NewView.class));
+		processingSequence.add(Pair.of(ChannelId.of(0, 3), NewView.class));
+		processingSequence.add(Pair.of(ChannelId.of(1, 3), NewView.class));
+		processingSequence.add(Pair.of(ChannelId.of(2, 3), NewView.class));
+		processingSequence.add(Pair.of(ChannelId.of(3, 3), NewView.class));
 
-		expectedSequence.add(Pair.of(ChannelId.of(3, 0), Proposal.class));
-		expectedSequence.add(Pair.of(ChannelId.of(3, 1), Proposal.class));
-		expectedSequence.add(Pair.of(ChannelId.of(3, 2), Proposal.class));
-		expectedSequence.add(Pair.of(ChannelId.of(3, 3), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(3, 0), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(3, 1), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(3, 2), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(3, 3), Proposal.class));
 
 		DeterministicTest.builder()
 			.numNodes(numNodes)
 			.alwaysSynced()
-			.messageSelector(sequenceSelector(expectedSequence))
+			.messageSelector(sequenceSelector(processingSequence))
 			.messageMutator(mutateProposalsBy(0))
 			.build()
 			.run();
@@ -109,50 +109,50 @@ public class DifferentTimestampsCauseTimeoutTest {
 	public void when_four_nodes_receive_qcs_with_different_timestamps__quorum_is_not_achieved() {
 		final int numNodes = 4;
 
-		LinkedList<Pair<ChannelId, Class<?>>> expectedSequence = Lists.newLinkedList();
-		expectedSequence.add(Pair.of(ChannelId.of(0, 1), NewView.class));
-		expectedSequence.add(Pair.of(ChannelId.of(1, 1), NewView.class));
-		expectedSequence.add(Pair.of(ChannelId.of(2, 1), NewView.class));
-		expectedSequence.add(Pair.of(ChannelId.of(3, 1), NewView.class));
+		LinkedList<Pair<ChannelId, Class<?>>> processingSequence = Lists.newLinkedList();
+		processingSequence.add(Pair.of(ChannelId.of(0, 1), NewView.class));
+		processingSequence.add(Pair.of(ChannelId.of(1, 1), NewView.class));
+		processingSequence.add(Pair.of(ChannelId.of(2, 1), NewView.class));
+		processingSequence.add(Pair.of(ChannelId.of(3, 1), NewView.class));
 
 		// Proposal here has genesis qc, which has no timestamps
-		expectedSequence.add(Pair.of(ChannelId.of(1, 0), Proposal.class));
-		expectedSequence.add(Pair.of(ChannelId.of(1, 1), Proposal.class));
-		expectedSequence.add(Pair.of(ChannelId.of(1, 2), Proposal.class));
-		expectedSequence.add(Pair.of(ChannelId.of(1, 3), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(1, 0), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(1, 1), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(1, 2), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(1, 3), Proposal.class));
 
-		expectedSequence.add(Pair.of(ChannelId.of(0, 1), Vote.class));
-		expectedSequence.add(Pair.of(ChannelId.of(1, 1), Vote.class));
-		expectedSequence.add(Pair.of(ChannelId.of(2, 1), Vote.class));
-		expectedSequence.add(Pair.of(ChannelId.of(3, 1), Vote.class));
+		processingSequence.add(Pair.of(ChannelId.of(0, 1), Vote.class));
+		processingSequence.add(Pair.of(ChannelId.of(1, 1), Vote.class));
+		processingSequence.add(Pair.of(ChannelId.of(2, 1), Vote.class));
+		processingSequence.add(Pair.of(ChannelId.of(3, 1), Vote.class));
 
-		expectedSequence.add(Pair.of(ChannelId.of(0, 2), NewView.class));
-		expectedSequence.add(Pair.of(ChannelId.of(1, 2), NewView.class));
-		expectedSequence.add(Pair.of(ChannelId.of(2, 2), NewView.class));
-		expectedSequence.add(Pair.of(ChannelId.of(3, 2), NewView.class));
+		processingSequence.add(Pair.of(ChannelId.of(0, 2), NewView.class));
+		processingSequence.add(Pair.of(ChannelId.of(1, 2), NewView.class));
+		processingSequence.add(Pair.of(ChannelId.of(2, 2), NewView.class));
+		processingSequence.add(Pair.of(ChannelId.of(3, 2), NewView.class));
 
 		// Proposal here should have timestamps from previous view
 		// They are mutated in this test
-		expectedSequence.add(Pair.of(ChannelId.of(2, 0), Proposal.class));
-		expectedSequence.add(Pair.of(ChannelId.of(2, 1), Proposal.class));
-		expectedSequence.add(Pair.of(ChannelId.of(2, 2), Proposal.class));
-		expectedSequence.add(Pair.of(ChannelId.of(2, 3), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(2, 0), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(2, 1), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(2, 2), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(2, 3), Proposal.class));
 
-		expectedSequence.add(Pair.of(ChannelId.of(0, 2), Vote.class));
-		expectedSequence.add(Pair.of(ChannelId.of(1, 2), Vote.class));
-		expectedSequence.add(Pair.of(ChannelId.of(2, 2), Vote.class));
-		expectedSequence.add(Pair.of(ChannelId.of(3, 2), Vote.class));
+		processingSequence.add(Pair.of(ChannelId.of(0, 2), Vote.class));
+		processingSequence.add(Pair.of(ChannelId.of(1, 2), Vote.class));
+		processingSequence.add(Pair.of(ChannelId.of(2, 2), Vote.class));
+		processingSequence.add(Pair.of(ChannelId.of(3, 2), Vote.class));
 
 		// Timeouts from nodes
-		expectedSequence.add(Pair.of(ChannelId.of(0, 0), LocalTimeout.class));
-		expectedSequence.add(Pair.of(ChannelId.of(1, 1), LocalTimeout.class));
+		processingSequence.add(Pair.of(ChannelId.of(0, 0), LocalTimeout.class));
+		processingSequence.add(Pair.of(ChannelId.of(1, 1), LocalTimeout.class));
 		// 2 (leader) will have already moved on to next view from the NewView messages
-		expectedSequence.add(Pair.of(ChannelId.of(3, 3), LocalTimeout.class));
+		processingSequence.add(Pair.of(ChannelId.of(3, 3), LocalTimeout.class));
 
 		DeterministicTest.builder()
 			.numNodes(numNodes)
 			.alwaysSynced()
-			.messageSelector(sequenceSelector(expectedSequence))
+			.messageSelector(sequenceSelector(processingSequence))
 			.messageMutator(mutateProposalsBy(1))
 			.build()
 			.run();
@@ -212,24 +212,22 @@ public class DifferentTimestampsCauseTimeoutTest {
 		return TimestampedECDSASignature.from(timestamp + destination, weight, sig);
 	}
 
-	private MessageSelector sequenceSelector(LinkedList<Pair<ChannelId, Class<?>>> expectedSequence) {
+	private MessageSelector sequenceSelector(LinkedList<Pair<ChannelId, Class<?>>> processingSequence) {
 		return messages -> {
-			if (expectedSequence.isEmpty()) {
+			if (processingSequence.isEmpty()) {
 				// We have finished
 				return null;
 			}
-			final Pair<ChannelId, Class<?>> messageDetails = expectedSequence.pop();
-			final ChannelId expectedChannel = messageDetails.getFirst();
-			final Class<?> expectedMsgClass = messageDetails.getSecond();
+			final Pair<ChannelId, Class<?>> messageDetails = processingSequence.pop();
+			final ChannelId channel = messageDetails.getFirst();
+			final Class<?> msgClass = messageDetails.getSecond();
 			for (ControlledMessage message : messages) {
-				if (expectedChannel.equals(message.channelId())) {
-					Class<?> msgClass = message.message().getClass();
-					if (expectedMsgClass.isAssignableFrom(msgClass)) {
-						return message;
-					}
+				if (channel.equals(message.channelId())
+					&& msgClass.isAssignableFrom(message.message().getClass())) {
+					return message;
 				}
 			}
-			fail(String.format("Can't find %s message %s: %s", expectedMsgClass.getSimpleName(), expectedChannel, messages));
+			fail(String.format("Can't find %s message %s: %s", msgClass.getSimpleName(), channel, messages));
 			return null; // Not required, but compiler can't tell that fail throws exception
 		};
 	}
