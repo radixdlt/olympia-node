@@ -53,7 +53,6 @@ public class DeterministicNetworkModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		EpochInfoSender emptyInfoSender = new EpochInfoSender() {
-
 			@Override
 			public void sendTimeoutProcessed(Timeout timeout) {
 				// Ignore

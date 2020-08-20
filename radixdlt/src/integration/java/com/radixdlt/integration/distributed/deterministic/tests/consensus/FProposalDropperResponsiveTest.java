@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.integration.distributed.deterministic.DeterministicTest;
-import com.radixdlt.integration.distributed.deterministic.configuration.SyncedExecutorFactories;
 import com.radixdlt.integration.distributed.deterministic.network.MessageMutator;
 import com.radixdlt.integration.distributed.deterministic.network.MessageSelector;
 
@@ -47,7 +46,7 @@ public class FProposalDropperResponsiveTest {
 	private void runFProposalDropperResponsiveTest(int numNodes, Function<View, Set<Integer>> nodesToDropFunction) {
 		DeterministicTest.builder()
 			.numNodes(numNodes)
-			.syncedExecutorFactory(SyncedExecutorFactories.alwaysSynced())
+			.alwaysSynced()
 			.messageSelector(MessageSelector.selectAndStopAfter(MessageSelector.randomSelector(random), NUM_STEPS))
 			.messageMutator(MessageMutator.dropTimeouts().andThen(dropNodes(numNodes, nodesToDropFunction)))
 			.build()

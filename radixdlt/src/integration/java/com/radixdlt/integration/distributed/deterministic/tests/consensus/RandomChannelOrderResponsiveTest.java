@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.integration.distributed.deterministic.DeterministicTest;
-import com.radixdlt.integration.distributed.deterministic.configuration.SyncedExecutorFactories;
 import com.radixdlt.integration.distributed.deterministic.network.MessageMutator;
 import com.radixdlt.integration.distributed.deterministic.network.MessageSelector;
 
@@ -43,7 +42,7 @@ public class RandomChannelOrderResponsiveTest {
 
 		DeterministicTest test = DeterministicTest.builder()
 			.numNodes(numNodes)
-			.syncedExecutorFactory(SyncedExecutorFactories.alwaysSynced())
+			.alwaysSynced()
 			.messageSelector(MessageSelector.selectAndStopAt(MessageSelector.randomSelector(random), View.of(viewsToRun)))
 			.messageMutator(MessageMutator.dropTimeouts())
 			.build()

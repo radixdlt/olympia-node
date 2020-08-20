@@ -23,7 +23,6 @@ import org.junit.Test;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.integration.distributed.deterministic.DeterministicTest;
-import com.radixdlt.integration.distributed.deterministic.configuration.SyncedExecutorFactories;
 import com.radixdlt.integration.distributed.deterministic.network.MessageMutator;
 import com.radixdlt.integration.distributed.deterministic.network.MessageSelector;
 import com.radixdlt.counters.SystemCounters;
@@ -36,7 +35,7 @@ public class OneProposalTimeoutResponsiveTest {
 	private void run(int numNodes, long numViews, long dropPeriod) {
 		DeterministicTest test = DeterministicTest.builder()
 			.numNodes(numNodes)
-			.syncedExecutorFactory(SyncedExecutorFactories.alwaysSynced())
+			.alwaysSynced()
 			.messageSelector(MessageSelector.selectAndStopAt(MessageSelector.randomSelector(random), View.of(numViews)))
 			.messageMutator(dropSomeProposals(dropPeriod))
 			.build()

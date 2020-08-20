@@ -20,7 +20,6 @@ package com.radixdlt.integration.distributed.deterministic.tests.consensus;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.integration.distributed.deterministic.DeterministicTest;
-import com.radixdlt.integration.distributed.deterministic.configuration.SyncedExecutorFactories;
 import com.radixdlt.integration.distributed.deterministic.network.MessageMutator;
 import com.radixdlt.integration.distributed.deterministic.network.MessageSelector;
 
@@ -38,7 +37,7 @@ public class OneProposalDropperResponsiveTest {
 	private void runOneProposalDropperResponsiveTest(int numNodes, Function<View, Integer> nodeToDropFunction) {
 		DeterministicTest.builder()
 			.numNodes(numNodes)
-			.syncedExecutorFactory(SyncedExecutorFactories.alwaysSynced())
+			.alwaysSynced()
 			.messageSelector(MessageSelector.selectAndStopAfter(MessageSelector.randomSelector(random), NUM_STEPS))
 			.messageMutator(MessageMutator.dropTimeouts().andThen(dropNode(numNodes, nodeToDropFunction)))
 			.build()

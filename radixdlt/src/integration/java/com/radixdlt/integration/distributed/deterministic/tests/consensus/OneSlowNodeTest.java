@@ -22,7 +22,6 @@ import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
 import com.radixdlt.integration.distributed.deterministic.DeterministicTest;
-import com.radixdlt.integration.distributed.deterministic.configuration.SyncedExecutorFactories;
 import com.radixdlt.integration.distributed.deterministic.network.ChannelId;
 import com.radixdlt.integration.distributed.deterministic.network.ControlledMessage;
 import com.radixdlt.integration.distributed.deterministic.network.MessageMutator;
@@ -65,7 +64,7 @@ public class OneSlowNodeTest {
 
 		DeterministicTest.builder()
 			.numNodes(numNodes)
-			.syncedExecutorFactory(SyncedExecutorFactories.alwaysSynced())
+			.alwaysSynced()
 			.messageSelector(sequenceSelector(expectedSequence))
 			.messageMutator(delayMessagesForNode(0))
 			.build()

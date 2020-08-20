@@ -38,7 +38,6 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.epoch.LocalTimeout;
 import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.integration.distributed.deterministic.DeterministicTest;
-import com.radixdlt.integration.distributed.deterministic.configuration.SyncedExecutorFactories;
 import com.radixdlt.integration.distributed.deterministic.network.ChannelId;
 import com.radixdlt.integration.distributed.deterministic.network.ControlledMessage;
 import com.radixdlt.integration.distributed.deterministic.network.MessageMutator;
@@ -99,7 +98,7 @@ public class DifferentTimestampsCauseTimeoutTest {
 
 		DeterministicTest.builder()
 			.numNodes(numNodes)
-			.syncedExecutorFactory(SyncedExecutorFactories.alwaysSynced())
+			.alwaysSynced()
 			.messageSelector(sequenceSelector(expectedSequence))
 			.messageMutator(mutateProposalsBy(0))
 			.build()
@@ -152,7 +151,7 @@ public class DifferentTimestampsCauseTimeoutTest {
 
 		DeterministicTest.builder()
 			.numNodes(numNodes)
-			.syncedExecutorFactory(SyncedExecutorFactories.alwaysSynced())
+			.alwaysSynced()
 			.messageSelector(sequenceSelector(expectedSequence))
 			.messageMutator(mutateProposalsBy(1))
 			.build()
