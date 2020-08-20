@@ -49,6 +49,13 @@ public class BFTValidatorSetTest {
 	}
 
 	@Test
+	public void testStreamConstructor() {
+		BFTNode node = BFTNode.create(ECKeyPair.generateNew().getPublicKey());
+		String s = BFTValidatorSet.from(ImmutableList.of(BFTValidator.from(node, UInt256.ONE)).stream()).toString();
+		assertThat(s, containsString(node.getSimpleName()));
+	}
+
+	@Test
 	public void testValidate() {
 		ECKeyPair k1 = ECKeyPair.generateNew();
 		ECKeyPair k2 = ECKeyPair.generateNew();
