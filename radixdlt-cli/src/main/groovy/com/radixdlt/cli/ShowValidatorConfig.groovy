@@ -34,24 +34,23 @@ class ShowValidatorConfig implements Runnable {
 	@CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
 	Composite.IdentityInfo identityInfo
 
-	@CommandLine.Option(names = ["-d", "--address"], paramLabel = "ADDRESS", description = "Address to which message is sent", required = true)
+	@CommandLine.Option(names = ["-d", "--address"], paramLabel = "ADDRESS", description = "Address to which message is sent", required = false)
 	String addressString
 
 	void run() {
 		RadixApplicationAPI api = Utils.getAPI(identityInfo)
 		RadixAddress address = addressString == null ? api.getAddress() : RadixAddress.from(addressString)
-		api.pullOnce(api.getAddress())
+		api.pullOnce(api.getAddress()).blockingAwait()
 		def latestValidatorRegistration = api.getAtomStore().getUpParticles(api.getAddress(), null)
 				.filter({ particle -> particle instanceof RegisteredValidatorParticle })
-				.map(RegisteredValidatorParticle.class.&cast)
 				.findFirst()
 		if (latestValidatorRegistration.isPresent()) {
 			println "current validator configuration at ${address}:"
 			def validator = latestValidatorRegistration.get()
 			def url = validator.getUrl()
 			def allowedDelegators = validator.getAllowedDelegators()
-			printf("url: %s", url == null ? "<not set>" : url)
-			printf("allowedDelegators: %s", allowedDelegators == null ? "<not set, allows any>" : allowedDelegators)
+			printf("url: %s%n", url == null ? "<not set>" : url)
+			printf("allowedDelegators: %s%n", allowedDelegators == null ? "<not set, allows any>" : allowedDelegators)
 		} else {
 			println "no active validator configuration at ${address}"
 		}
