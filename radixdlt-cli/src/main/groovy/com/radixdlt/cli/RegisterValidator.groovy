@@ -22,6 +22,7 @@
 
 package com.radixdlt.cli
 
+import com.google.common.collect.ImmutableSet
 import com.radixdlt.client.application.RadixApplicationAPI
 import com.radixdlt.identifiers.RadixAddress
 import picocli.CommandLine
@@ -42,11 +43,15 @@ class RegisterValidator implements Runnable {
 	String[] allowedDelegators
 
 	void run() {
-		def allowedDelegators = Arrays.stream(allowedDelegators)
+		def allowedDelegators = allowedDelegators == null ? ImmutableSet.of() : Arrays.stream(allowedDelegators)
 				.map(RadixAddress.&from)
 				.collect(Collectors.<RadixAddress>toSet())
 		RadixApplicationAPI api = Utils.getAPI(identityInfo)
+		api.pullOnce(api.getAddress()).blockingAwait()
 		api.registerValidator(api.getAddress(), allowedDelegators, infoUrl).blockUntilComplete()
-		println("registered ${api.getAddress()} as a validator")
+		println("registered ${api.getAddress()} as a validator:")
+		printf("url: %s%n", infoUrl == null ? "<not set>" : infoUrl)
+		printf("allowedDelegators: %s%n", allowedDelegators.isEmpty() ? "<not set, allows any>" : allowedDelegators)
+
 	}
 }

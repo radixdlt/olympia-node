@@ -30,12 +30,14 @@ buildscript {
 apply plugin: 'java'
 apply plugin: 'com.github.johnrengelman.shadow'
 apply plugin: 'groovy'
+apply plugin: 'application'
 repositories {
     jcenter()
     maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
     maven { url 'https://jitpack.io' }
 }
 
+mainClassName = 'com.radixdlt.cli.RadixCLI'
 compileJava {
     options.compilerArgs += ["-Aproject=${project.group}/${project.name}"]
 }
