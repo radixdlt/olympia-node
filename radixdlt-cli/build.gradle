@@ -32,14 +32,14 @@ apply plugin: 'com.github.johnrengelman.shadow'
 apply plugin: 'groovy'
 apply plugin: 'application'
 repositories {
-	jcenter()
-	maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
-	maven { url 'https://jitpack.io' }
+    jcenter()
+    maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
+    maven { url 'https://jitpack.io' }
 }
 
 mainClassName = 'com.radixdlt.cli.RadixCLI'
 compileJava {
-	options.compilerArgs += ["-Aproject=${project.group}/${project.name}"]
+    options.compilerArgs += ["-Aproject=${project.group}/${project.name}"]
 }
 dependencies {
     compile 'org.codehaus.groovy:groovy-all:2.4.15'
@@ -49,6 +49,7 @@ dependencies {
     annotationProcessor 'info.picocli:picocli-codegen:4.2.0'
     compile project(":radixdlt-java")
 }
+
 
 shadowJar {
     manifest {
