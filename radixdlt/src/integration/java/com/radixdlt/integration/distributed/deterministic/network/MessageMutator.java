@@ -36,7 +36,7 @@ public interface MessageMutator {
 	 * @param queue the queue to me mutated
 	 * @return {@code true} if the message was processed, {@code false} otherwise.
 	 */
-	boolean mutatex(MessageRank rank, ControlledMessage message, MessageQueue queue);
+	boolean mutate(MessageRank rank, ControlledMessage message, MessageQueue queue);
 
 	/**
 	 * Chains this mutator with another.  If this mutator does not
@@ -47,7 +47,7 @@ public interface MessageMutator {
 	 * @return This mutator chained with the specified mutator
 	 */
 	default MessageMutator andThen(MessageMutator next) {
-		return (rank, message, queue) -> mutatex(rank, message, queue) || next.mutatex(rank, message, queue);
+		return (rank, message, queue) -> mutate(rank, message, queue) || next.mutate(rank, message, queue);
 	}
 
 	/**

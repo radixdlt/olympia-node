@@ -114,7 +114,6 @@ public final class DeterministicNetwork {
 
 		consensusRunners.forEach(DeterministicConsensusRunner::start);
 
-
 		while (true) {
 			List<ControlledMessage> controlledMessages = this.messageQueue.lowestRankMessages();
 			if (controlledMessages.isEmpty()) {
@@ -149,7 +148,7 @@ public final class DeterministicNetwork {
 
 	void handleMessage(MessageRank rank, ControlledMessage controlledMessage) {
 		log.debug("Input message {}", controlledMessage);
-		if (!this.messageMutator.mutatex(rank, controlledMessage, this.messageQueue)) {
+		if (!this.messageMutator.mutate(rank, controlledMessage, this.messageQueue)) {
 			// If nothing processes this message, we just add it to the queue
 			this.messageQueue.add(rank, controlledMessage);
 		}
