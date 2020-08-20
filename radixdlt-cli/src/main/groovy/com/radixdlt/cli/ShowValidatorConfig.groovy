@@ -34,7 +34,7 @@ class ShowValidatorConfig implements Runnable {
 	@CommandLine.ArgGroup(exclusive = true, multiplicity = "0..1")
 	Composite.IdentityInfo identityInfo
 
-	@CommandLine.Option(names = ["-d", "--address"], paramLabel = "ADDRESS", description = "Address to which message is sent", required = false)
+	@CommandLine.Option(names = ["-d", "--address"], paramLabel = "ADDRESS", description = "Validator address to show config of", required = false)
 	String addressString
 
 	void run() {
