@@ -32,12 +32,13 @@ import java.util.stream.IntStream;
 import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.junit.Assert.assertTrue;
 
 public class RandomChannelOrderResponsiveTest {
-	@Test
-	public void when_run_4_correct_nodes_with_channel_order_random_and_timeouts_disabled__then_bft_should_be_responsive() {
-		final int numNodes = 4;
-		final int viewsToRun = 2500 * numNodes; // numNodes should be a factor of this number
+
+	private void run(int numNodes, long viewsToRun) {
+		assertTrue(viewsToRun % numNodes == 0);
+
 		final Random random = new Random(12345);
 
 		DeterministicTest test = DeterministicTest.builder()
@@ -57,23 +58,12 @@ public class RandomChannelOrderResponsiveTest {
 	}
 
 	@Test
+	public void when_run_4_correct_nodes_with_channel_order_random_and_timeouts_disabled__then_bft_should_be_responsive() {
+		run(4, 4 * 2500L);
+	}
+
+	@Test
 	public void when_run_100_correct_nodes_with_channel_order_random_and_timeouts_disabled__then_bft_should_be_responsive() {
-		final int numNodes = 100;
-		final int viewsToRun = 50 * numNodes; // numNodes should be a factor of this number
-		final Random random = new Random(12345);
-
-		DeterministicTest test = DeterministicTest.builder()
-			.numNodes(numNodes)
-			.syncedExecutorFactory(SyncedExecutorFactories.alwaysSynced())
-			.messageSelector(MessageSelector.selectAndStopAt(MessageSelector.randomSelector(random), View.of(viewsToRun)))
-			.build()
-			.run();
-
-		List<Long> proposalsMade = IntStream.range(0, numNodes)
-			.mapToObj(test::getSystemCounters)
-			.map(counters -> counters.get(CounterType.BFT_PROPOSALS_MADE))
-			.collect(ImmutableList.toImmutableList());
-
-		assertThat(proposalsMade).allMatch(l -> l == viewsToRun / numNodes);
+		run(100, 100 * 50L);
 	}
 }

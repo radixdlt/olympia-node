@@ -54,7 +54,7 @@ public class FProposalDropperResponsiveTest {
 			.run();
 	}
 
-	private MessageMutator dropNodes(int numNodes, Function<View, Set<Integer>> nodesToDropFunction) {
+	private static MessageMutator dropNodes(int numNodes, Function<View, Set<Integer>> nodesToDropFunction) {
 		final Map<View, Set<Integer>> proposalsToDrop = new HashMap<>();
 		final Map<View, Integer> proposalCount = new HashMap<>();
 		return (rank, message, queue) -> {
@@ -74,7 +74,7 @@ public class FProposalDropperResponsiveTest {
 	}
 
 	private void runRandomMaliciousNodesTest(int numNodes) {
-		this.runFProposalDropperResponsiveTest(
+		runFProposalDropperResponsiveTest(
 			numNodes,
 			v -> {
 				List<Integer> nodes = IntStream.range(0, numNodes).boxed().collect(Collectors.toList());

@@ -72,7 +72,7 @@ public class OneSlowNodeTest {
 			.run();
 	}
 
-	private MessageSelector sequenceSelector(LinkedList<Pair<ChannelId, Class<?>>> expectedSequence) {
+	private static MessageSelector sequenceSelector(LinkedList<Pair<ChannelId, Class<?>>> expectedSequence) {
 		return messages -> {
 			if (expectedSequence.isEmpty()) {
 				// We are finished.
@@ -94,7 +94,7 @@ public class OneSlowNodeTest {
 		};
 	}
 
-	private MessageMutator delayMessagesForNode(int index) {
+	private static MessageMutator delayMessagesForNode(int index) {
 		return (rank, message, queue) -> {
 			final int receiverIndex = message.channelId().receiverIndex();
 			final int senderIndex = message.channelId().senderIndex();
