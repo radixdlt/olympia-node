@@ -21,6 +21,10 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.integration.distributed.deterministic.DeterministicTest;
+import com.radixdlt.integration.distributed.deterministic.network.MessageMutator;
+import com.radixdlt.integration.distributed.deterministic.network.MessageSelector;
+
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,56 +32,56 @@ import java.util.Random;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
+
+import org.assertj.core.util.Sets;
 import org.junit.Test;
 
 public class FProposalDropperRandomSyncResponsiveTest {
-	private static final int NUM_STEPS = 30000;
+	private static final long NUM_STEPS = 30000;
 
 	private final Random random = new Random(123456789);
 
 	private void runFProposalDropperResponsiveTest(int numNodes, Function<View, Set<Integer>> nodesToDropFunction) {
+		DeterministicTest.builder()
+			.numNodes(numNodes)
+			.randomlySynced(random)
+			.messageSelector(MessageSelector.selectAndStopAfter(MessageSelector.randomSelector(random), NUM_STEPS))
+			.messageMutator(MessageMutator.dropTimeouts().andThen(dropNodes(numNodes, nodesToDropFunction)))
+			.build()
+			.run();
+	}
+
+	private static MessageMutator dropNodes(int numNodes, Function<View, Set<Integer>> nodesToDropFunction) {
 		final Map<View, Set<Integer>> proposalsToDrop = new HashMap<>();
 		final Map<View, Integer> proposalCount = new HashMap<>();
-
-		final DeterministicTest test = DeterministicTest.createSingleEpochRandomlySyncedTest(numNodes, random);
-		test.start();
-		for (int step = 0; step < NUM_STEPS; step++) {
-			test.processNextMsgWithReceiver(random, (receiverId, msg) -> {
-				if (msg instanceof Proposal) {
-					final Proposal proposal = (Proposal) msg;
-					final View view = proposal.getVertex().getView();
-					final Set<Integer> nodesToDrop = proposalsToDrop.computeIfAbsent(view, nodesToDropFunction);
-
-					if (proposalCount.merge(view, 1, Integer::sum).equals(numNodes)) {
-						proposalsToDrop.remove(view);
-						proposalCount.remove(view);
-					}
-
-					return !nodesToDrop.contains(receiverId);
+		return (rank, message, queue) -> {
+			Object msg = message.message();
+			if (msg instanceof Proposal) {
+				final Proposal proposal = (Proposal) msg;
+				final View view = proposal.getVertex().getView();
+				final Set<Integer> nodesToDrop = proposalsToDrop.computeIfAbsent(view, nodesToDropFunction);
+				if (proposalCount.merge(view, 1, Integer::sum).equals(numNodes)) {
+					proposalsToDrop.remove(view);
+					proposalCount.remove(view);
 				}
-
-				return true;
-			});
-		}
+				return nodesToDrop.contains(message.channelId().receiverIndex());
+			}
+			return false;
+		};
 	}
 
 	private void runRandomMaliciousNodesTest(int numNodes) {
-		this.runFProposalDropperResponsiveTest(
+		runFProposalDropperResponsiveTest(
 			numNodes,
 			v -> {
-				List<Integer> nodes = Stream.iterate(0, a -> a + 1).limit(numNodes).collect(Collectors.toList());
-				return Stream.iterate(0, a -> a + 1)
-					.limit((numNodes - 1) / 3)
-					.map(i -> {
-						int index = random.nextInt(nodes.size());
-						return nodes.remove(index);
-					})
-					.collect(Collectors.toSet());
+				List<Integer> nodes = IntStream.range(0, numNodes).boxed().collect(Collectors.toList());
+				Collections.shuffle(nodes, random);
+				return Sets.newHashSet(nodes.subList(0, (numNodes - 1) / 3));
 			}
 		);
 	}
-
 
 	@Test
 	public void when_run_4_correct_nodes_with_random_proposal_dropper_and_timeouts_disabled__then_bft_should_be_responsive() {

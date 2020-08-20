@@ -25,7 +25,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
@@ -40,6 +39,8 @@ import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
+import com.radixdlt.utils.TypedMocks;
+
 import java.util.function.Function;
 import org.junit.Before;
 import org.junit.Test;
@@ -56,7 +57,7 @@ public class RadixEngineStateComputerTest {
 	@Before
 	public void setup() {
 		this.serialization = mock(Serialization.class);
-		this.radixEngine = mock(RadixEngine.class);
+		this.radixEngine = TypedMocks.rmock(RadixEngine.class);
 		this.committedAtomsStore = mock(CommittedAtomsStore.class);
 		this.epochHighView = View.of(100);
 		// No issues with type checking for mock
@@ -125,7 +126,7 @@ public class RadixEngineStateComputerTest {
 	}
 
 	@Test
-	public void when_execute_vertex_is_end_of_epoch_with_null_command__then_is_available_on_query() throws RadixEngineException {
+	public void when_execute_vertex_is_end_of_epoch_with_null_command__then_is_available_on_query() {
 		ClientAtom committedAtom = mock(ClientAtom.class);
 		AID aid = mock(AID.class);
 		when(committedAtom.getAID()).thenReturn(aid);
@@ -144,7 +145,7 @@ public class RadixEngineStateComputerTest {
 	}
 
 	@Test
-	public void when_execute_vertex_with_malformed_command__then_is_available_on_query() throws Exception {
+	public void when_execute_vertex_with_malformed_command__then_is_available_on_query() throws SerializationException {
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
 		when(vertexMetadata.getView()).then(i -> View.of(50));
 		when(vertexMetadata.getStateVersion()).then(i -> 1L);

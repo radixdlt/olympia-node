@@ -29,6 +29,8 @@ import com.google.common.collect.ImmutableSet;
 import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomWithResult;
+import com.radixdlt.utils.TypedMocks;
+
 import java.util.function.Consumer;
 import org.junit.Test;
 
@@ -38,8 +40,8 @@ public class CommittedAtomsTest {
 		CommittedAtom committedAtom = mock(CommittedAtom.class);
 		CommittedAtomWithResult r = CommittedAtoms.success(committedAtom, ImmutableSet.of());
 		assertThat(r.getCommittedAtom()).isEqualTo(committedAtom);
-		Consumer<ImmutableSet<EUID>> successConsumer = mock(Consumer.class);
-		Consumer<RadixEngineException> errorConsumer = mock(Consumer.class);
+		Consumer<ImmutableSet<EUID>> successConsumer = TypedMocks.rmock(Consumer.class);
+		Consumer<RadixEngineException> errorConsumer = TypedMocks.rmock(Consumer.class);
 		r.ifSuccess(successConsumer);
 		verify(successConsumer, times(1)).accept(any());
 		r.ifError(errorConsumer);
@@ -52,8 +54,8 @@ public class CommittedAtomsTest {
 		RadixEngineException e = mock(RadixEngineException.class);
 		CommittedAtomWithResult r = CommittedAtoms.error(committedAtom, e);
 		assertThat(r.getCommittedAtom()).isEqualTo(committedAtom);
-		Consumer<ImmutableSet<EUID>> successConsumer = mock(Consumer.class);
-		Consumer<RadixEngineException> errorConsumer = mock(Consumer.class);
+		Consumer<ImmutableSet<EUID>> successConsumer = TypedMocks.rmock(Consumer.class);
+		Consumer<RadixEngineException> errorConsumer = TypedMocks.rmock(Consumer.class);
 		r.ifSuccess(successConsumer);
 		verify(successConsumer, never()).accept(any());
 		r.ifError(errorConsumer);

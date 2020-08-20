@@ -36,6 +36,8 @@ import com.radixdlt.integration.distributed.simulation.network.OneProposalPerVie
 import com.radixdlt.integration.distributed.simulation.network.RandomLatencyProvider;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
+import com.radixdlt.mempool.LocalMempool;
+import com.radixdlt.mempool.Mempool;
 import com.radixdlt.integration.distributed.simulation.invariants.bft.AllProposalsHaveDirectParentsInvariant;
 import com.radixdlt.integration.distributed.simulation.invariants.bft.LivenessInvariant;
 import com.radixdlt.integration.distributed.simulation.invariants.bft.NoTimeoutsInvariant;
@@ -46,14 +48,11 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.LatencyProvider;
-import com.radixdlt.mempool.LocalMempool;
-import com.radixdlt.mempool.Mempool;
 import com.radixdlt.syncer.CommittedCommand;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -99,7 +98,7 @@ public class SimulationTest {
 
 		private final DroppingLatencyProvider latencyProvider = new DroppingLatencyProvider();
 		private final ImmutableMap.Builder<String, TestInvariant> checksBuilder = ImmutableMap.builder();
-		private List<BFTNode> nodes = Collections.singletonList(BFTNode.create(ECKeyPair.generateNew().getPublicKey()));
+		private ImmutableList<BFTNode> nodes = ImmutableList.of(BFTNode.create(ECKeyPair.generateNew().getPublicKey()));
 		private int pacemakerTimeout = 12 * SimulationNetwork.DEFAULT_LATENCY;
 		private boolean getVerticesRPCEnabled = true;
 		private View epochHighView = null;
@@ -123,7 +122,7 @@ public class SimulationTest {
 			this.nodes = Stream.generate(ECKeyPair::generateNew)
 				.limit(numNodes)
 				.map(kp -> BFTNode.create(kp.getPublicKey()))
-				.collect(Collectors.toList());
+				.collect(ImmutableList.toImmutableList());
 			return this;
 		}
 
@@ -134,7 +133,7 @@ public class SimulationTest {
 			this.nodes = Stream.generate(ECKeyPair::generateNew)
 				.limit(numNodes)
 				.map(kp -> BFTNode.create(kp.getPublicKey()))
-				.collect(Collectors.toList());
+				.collect(ImmutableList.toImmutableList());
 			Map<BFTNode, Integer> nodeLatencies = IntStream.range(0, numNodes)
 				.boxed()
 				.collect(Collectors.toMap(i -> this.nodes.get(i), i -> latencies[i]));
@@ -257,7 +256,7 @@ public class SimulationTest {
 			}
 
 			return new SimulationTest(
-				ImmutableList.copyOf(nodes),
+				nodes,
 				latencyProvider.copyOf(),
 				pacemakerTimeout,
 				getVerticesRPCEnabled,

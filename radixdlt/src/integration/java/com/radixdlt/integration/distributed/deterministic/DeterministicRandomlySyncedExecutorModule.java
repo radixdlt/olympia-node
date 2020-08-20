@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *  http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,54 +15,49 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed.simulation;
+package com.radixdlt.integration.distributed.deterministic;
+
+import java.util.Random;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.CommittedStateSyncRx;
-import com.radixdlt.consensus.EpochChangeRx;
+import com.radixdlt.consensus.PreparedCommand;
 import com.radixdlt.consensus.SyncedExecutor;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.consensus.epoch.EpochChange;
-import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.consensus.PreparedCommand;
-import io.reactivex.rxjava3.core.Observable;
+import com.radixdlt.syncer.SyncExecutor.CommittedStateSyncSender;
 
-public class MockedExecutionModule extends AbstractModule {
-	private final BFTValidatorSet validatorSet;
+/**
+ * Module that appears to be synced at random.
+ */
+public class DeterministicRandomlySyncedExecutorModule extends AbstractModule {
+	private final Random random;
 
-	public MockedExecutionModule(BFTValidatorSet validatorSet) {
-		this.validatorSet = validatorSet;
+	public DeterministicRandomlySyncedExecutorModule(Random random) {
+		this.random = random;
 	}
 
-	@Override
-	public void configure() {
-		bind(CommittedStateSyncRx.class).toInstance(Observable::never);
-		bind(EpochChangeRx.class).toInstance(Observable::never);
-		EpochChange initialEpoch = new EpochChange(VertexMetadata.ofGenesisAncestor(validatorSet), validatorSet);
-		bind(EpochChange.class).toInstance(initialEpoch);
-		bind(NextCommandGenerator.class).toInstance((view, aids) -> null);
-	}
-
-	@Provides
 	@Singleton
-	SyncedExecutor syncedExecutor() {
+	@ProvidesIntoSet
+	SyncedExecutor syncedExecutor(CommittedStateSyncSender committedStateSyncSender) {
 		return new SyncedExecutor() {
 			@Override
 			public boolean syncTo(VertexMetadata vertexMetadata, ImmutableList<BFTNode> target, Object opaque) {
-				return true;
+				if (random.nextBoolean()) {
+					return true;
+				}
+				committedStateSyncSender.sendCommittedStateSync(vertexMetadata.getStateVersion(), opaque);
+				return false;
 			}
 
 			@Override
 			public void commit(Command command, VertexMetadata vertexMetadata) {
-				// Nothing to do here
+				// No-op Mocked execution
 			}
 
 			@Override

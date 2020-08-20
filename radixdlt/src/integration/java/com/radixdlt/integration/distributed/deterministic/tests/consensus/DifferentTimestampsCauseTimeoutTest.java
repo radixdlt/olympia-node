@@ -17,12 +17,14 @@
 
 package com.radixdlt.integration.distributed.deterministic.tests.consensus;
 
-import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.epoch.LocalTimeout;
-import com.radixdlt.crypto.ECDSASignature;
-import com.radixdlt.utils.Pair;
-import com.radixdlt.utils.UInt256;
+import java.util.LinkedList;
+import java.util.Map;
+
+import org.junit.Test;
+
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
+import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
@@ -33,78 +35,141 @@ import com.radixdlt.consensus.Vote;
 import com.radixdlt.consensus.VoteData;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.View;
+import com.radixdlt.consensus.epoch.LocalTimeout;
+import com.radixdlt.crypto.ECDSASignature;
 import com.radixdlt.integration.distributed.deterministic.DeterministicTest;
+import com.radixdlt.integration.distributed.deterministic.network.ChannelId;
+import com.radixdlt.integration.distributed.deterministic.network.ControlledMessage;
+import com.radixdlt.integration.distributed.deterministic.network.MessageMutator;
+import com.radixdlt.integration.distributed.deterministic.network.MessageSelector;
+import com.radixdlt.utils.Pair;
+import com.radixdlt.utils.UInt256;
 
-import java.util.Map;
-
-import org.junit.Test;
+import static org.junit.Assert.fail;
 
 public class DifferentTimestampsCauseTimeoutTest {
-
 	@Test
 	public void when_four_nodes_receive_qcs_with_same_timestamps__quorum_is_achieved() {
-		final DeterministicTest test = DeterministicTest.createSingleEpochAlwaysSyncedWithTimeoutsTest(4);
+		final int numNodes = 4;
 
-		test.start();
+		LinkedList<Pair<ChannelId, Class<?>>> processingSequence = Lists.newLinkedList();
+		processingSequence.add(Pair.of(ChannelId.of(0, 1), NewView.class));
+		processingSequence.add(Pair.of(ChannelId.of(1, 1), NewView.class));
+		processingSequence.add(Pair.of(ChannelId.of(2, 1), NewView.class));
+		processingSequence.add(Pair.of(ChannelId.of(3, 1), NewView.class));
 
-		test.processNextMsg(1, 0, NewView.class);
-		test.processNextMsg(1, 1, NewView.class);
-		test.processNextMsg(1, 2, NewView.class);
-		test.processNextMsg(1, 3, NewView.class);
+		// Proposal here has genesis qc, which has no timestamps
+		processingSequence.add(Pair.of(ChannelId.of(1, 0), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(1, 1), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(1, 2), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(1, 3), Proposal.class));
 
-		test.processNextMsg(0, 1, Proposal.class, p -> mutateProposal(p, 0));
-		test.processNextMsg(1, 1, Proposal.class, p -> mutateProposal(p, 0));
-		test.processNextMsg(2, 1, Proposal.class, p -> mutateProposal(p, 0));
-		test.processNextMsg(3, 1, Proposal.class, p -> mutateProposal(p, 0));
+		processingSequence.add(Pair.of(ChannelId.of(0, 1), Vote.class));
+		processingSequence.add(Pair.of(ChannelId.of(1, 1), Vote.class));
+		processingSequence.add(Pair.of(ChannelId.of(2, 1), Vote.class));
+		processingSequence.add(Pair.of(ChannelId.of(3, 1), Vote.class));
 
-		test.processNextMsg(1, 0, Vote.class);
-		test.processNextMsg(1, 1, Vote.class);
-		test.processNextMsg(1, 2, Vote.class);
-		test.processNextMsg(1, 3, Vote.class);
+		processingSequence.add(Pair.of(ChannelId.of(0, 2), NewView.class));
+		processingSequence.add(Pair.of(ChannelId.of(1, 2), NewView.class));
+		processingSequence.add(Pair.of(ChannelId.of(2, 2), NewView.class));
+		processingSequence.add(Pair.of(ChannelId.of(3, 2), NewView.class));
 
-		test.processNextMsg(2, 0, NewView.class);
-		test.processNextMsg(2, 1, NewView.class);
-		test.processNextMsg(2, 2, NewView.class);
-		test.processNextMsg(2, 3, NewView.class);
+		// Proposal here should have timestamps from previous view
+		// They are not mutated in this test
+		processingSequence.add(Pair.of(ChannelId.of(2, 0), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(2, 1), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(2, 2), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(2, 3), Proposal.class));
 
-		// Would be timeouts here if proposals were different
-		test.processNextMsg(0, 2, Proposal.class);
-		test.processNextMsg(1, 2, Proposal.class);
-		test.processNextMsg(2, 2, Proposal.class);
-		test.processNextMsg(3, 2, Proposal.class);
+		processingSequence.add(Pair.of(ChannelId.of(0, 2), Vote.class));
+		processingSequence.add(Pair.of(ChannelId.of(1, 2), Vote.class));
+		processingSequence.add(Pair.of(ChannelId.of(2, 2), Vote.class));
+		processingSequence.add(Pair.of(ChannelId.of(3, 2), Vote.class));
+
+		processingSequence.add(Pair.of(ChannelId.of(0, 3), NewView.class));
+		processingSequence.add(Pair.of(ChannelId.of(1, 3), NewView.class));
+		processingSequence.add(Pair.of(ChannelId.of(2, 3), NewView.class));
+		processingSequence.add(Pair.of(ChannelId.of(3, 3), NewView.class));
+
+		processingSequence.add(Pair.of(ChannelId.of(3, 0), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(3, 1), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(3, 2), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(3, 3), Proposal.class));
+
+		DeterministicTest.builder()
+			.numNodes(numNodes)
+			.alwaysSynced()
+			.messageSelector(sequenceSelector(processingSequence))
+			.messageMutator(mutateProposalsBy(0))
+			.build()
+			.run();
 	}
 
 	@Test
 	public void when_four_nodes_receive_qcs_with_different_timestamps__quorum_is_not_achieved() {
-		final DeterministicTest test = DeterministicTest.createSingleEpochAlwaysSyncedWithTimeoutsTest(4);
+		final int numNodes = 4;
 
-		test.start();
+		LinkedList<Pair<ChannelId, Class<?>>> processingSequence = Lists.newLinkedList();
+		processingSequence.add(Pair.of(ChannelId.of(0, 1), NewView.class));
+		processingSequence.add(Pair.of(ChannelId.of(1, 1), NewView.class));
+		processingSequence.add(Pair.of(ChannelId.of(2, 1), NewView.class));
+		processingSequence.add(Pair.of(ChannelId.of(3, 1), NewView.class));
 
-		test.processNextMsg(1, 0, NewView.class);
-		test.processNextMsg(1, 1, NewView.class);
-		test.processNextMsg(1, 2, NewView.class);
-		test.processNextMsg(1, 3, NewView.class);
+		// Proposal here has genesis qc, which has no timestamps
+		processingSequence.add(Pair.of(ChannelId.of(1, 0), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(1, 1), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(1, 2), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(1, 3), Proposal.class));
 
-		test.processNextMsg(0, 1, Proposal.class, p -> mutateProposal(p, 0));
-		test.processNextMsg(1, 1, Proposal.class, p -> mutateProposal(p, 1));
-		test.processNextMsg(2, 1, Proposal.class, p -> mutateProposal(p, 2));
-		test.processNextMsg(3, 1, Proposal.class, p -> mutateProposal(p, 3));
+		processingSequence.add(Pair.of(ChannelId.of(0, 1), Vote.class));
+		processingSequence.add(Pair.of(ChannelId.of(1, 1), Vote.class));
+		processingSequence.add(Pair.of(ChannelId.of(2, 1), Vote.class));
+		processingSequence.add(Pair.of(ChannelId.of(3, 1), Vote.class));
 
-		test.processNextMsg(1, 0, Vote.class);
-		test.processNextMsg(1, 1, Vote.class);
-		test.processNextMsg(1, 2, Vote.class);
-		test.processNextMsg(1, 3, Vote.class);
+		processingSequence.add(Pair.of(ChannelId.of(0, 2), NewView.class));
+		processingSequence.add(Pair.of(ChannelId.of(1, 2), NewView.class));
+		processingSequence.add(Pair.of(ChannelId.of(2, 2), NewView.class));
+		processingSequence.add(Pair.of(ChannelId.of(3, 2), NewView.class));
 
-		test.processNextMsg(2, 0, NewView.class);
-		test.processNextMsg(2, 1, NewView.class);
-		test.processNextMsg(2, 2, NewView.class);
-		test.processNextMsg(2, 3, NewView.class);
+		// Proposal here should have timestamps from previous view
+		// They are mutated in this test
+		processingSequence.add(Pair.of(ChannelId.of(2, 0), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(2, 1), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(2, 2), Proposal.class));
+		processingSequence.add(Pair.of(ChannelId.of(2, 3), Proposal.class));
+
+		processingSequence.add(Pair.of(ChannelId.of(0, 2), Vote.class));
+		processingSequence.add(Pair.of(ChannelId.of(1, 2), Vote.class));
+		processingSequence.add(Pair.of(ChannelId.of(2, 2), Vote.class));
+		processingSequence.add(Pair.of(ChannelId.of(3, 2), Vote.class));
 
 		// Timeouts from nodes
-		test.processNextMsg(0, 0, LocalTimeout.class);
-		test.processNextMsg(1, 1, LocalTimeout.class);
+		processingSequence.add(Pair.of(ChannelId.of(0, 0), LocalTimeout.class));
+		processingSequence.add(Pair.of(ChannelId.of(1, 1), LocalTimeout.class));
 		// 2 (leader) will have already moved on to next view from the NewView messages
-		test.processNextMsg(3, 3, LocalTimeout.class);
+		processingSequence.add(Pair.of(ChannelId.of(3, 3), LocalTimeout.class));
+
+		DeterministicTest.builder()
+			.numNodes(numNodes)
+			.alwaysSynced()
+			.messageSelector(sequenceSelector(processingSequence))
+			.messageMutator(mutateProposalsBy(1))
+			.build()
+			.run();
+	}
+
+	private MessageMutator mutateProposalsBy(int factor) {
+		return (rank, message, queue) -> {
+			ControlledMessage messageToUse = message;
+			Object msg = message.message();
+			if (msg instanceof Proposal) {
+				Proposal p = (Proposal) msg;
+				int receiverIndex = message.channelId().receiverIndex();
+				messageToUse = new ControlledMessage(message.channelId(), mutateProposal(p, receiverIndex * factor));
+			}
+			queue.add(rank, messageToUse);
+			return true;
+		};
 	}
 
 	private Proposal mutateProposal(Proposal p, int destination) {
@@ -145,5 +210,25 @@ public class DifferentTimestampsCauseTimeoutTest {
 		ECDSASignature sig = signature.signature();
 
 		return TimestampedECDSASignature.from(timestamp + destination, weight, sig);
+	}
+
+	private MessageSelector sequenceSelector(LinkedList<Pair<ChannelId, Class<?>>> processingSequence) {
+		return messages -> {
+			if (processingSequence.isEmpty()) {
+				// We have finished
+				return null;
+			}
+			final Pair<ChannelId, Class<?>> messageDetails = processingSequence.pop();
+			final ChannelId channel = messageDetails.getFirst();
+			final Class<?> msgClass = messageDetails.getSecond();
+			for (ControlledMessage message : messages) {
+				if (channel.equals(message.channelId())
+					&& msgClass.isAssignableFrom(message.message().getClass())) {
+					return message;
+				}
+			}
+			fail(String.format("Can't find %s message %s: %s", msgClass.getSimpleName(), channel, messages));
+			return null; // Not required, but compiler can't tell that fail throws exception
+		};
 	}
 }

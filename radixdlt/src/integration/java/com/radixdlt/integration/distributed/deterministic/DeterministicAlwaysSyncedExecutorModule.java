@@ -6,7 +6,7 @@
  * compliance with the License.  You may obtain a copy of the
  * License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *  http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -15,35 +15,42 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed.deterministic.configuration;
+package com.radixdlt.integration.distributed.deterministic;
 
 import com.google.common.collect.ImmutableList;
+import com.google.inject.AbstractModule;
+import com.google.inject.Singleton;
+import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.PreparedCommand;
 import com.radixdlt.consensus.SyncedExecutor;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.consensus.PreparedCommand;
 
 /**
- * A state computer which never changes epochs
+ * A synced executor that is always synced.
  */
-public enum SingleEpochAlwaysSyncedExecutor implements SyncedExecutor {
-	INSTANCE;
+public class DeterministicAlwaysSyncedExecutorModule extends AbstractModule {
+	@Singleton
+	@ProvidesIntoSet
+	SyncedExecutor syncedExecutor() {
+		return new SyncedExecutor() {
+			@Override
+			public boolean syncTo(VertexMetadata vertexMetadata, ImmutableList<BFTNode> target, Object opaque) {
+				return true;
+			}
 
-	@Override
-	public boolean syncTo(VertexMetadata vertexMetadata, ImmutableList<BFTNode> target, Object opaque) {
-		return true;
-	}
+			@Override
+			public void commit(Command command, VertexMetadata vertexMetadata) {
+				// Nothing to do here
+			}
 
-	@Override
-	public void commit(Command command, VertexMetadata vertexMetadata) {
-		// No-op Mocked execution
-	}
-
-	@Override
-	public PreparedCommand prepare(Vertex vertex) {
-		return PreparedCommand.create(0, Hash.ZERO_HASH);
+			@Override
+			public PreparedCommand prepare(Vertex vertex) {
+				return PreparedCommand.create(0, Hash.ZERO_HASH);
+			}
+		};
 	}
 }

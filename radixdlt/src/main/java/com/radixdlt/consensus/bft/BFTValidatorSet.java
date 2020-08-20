@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 /**
  * Set of validators for consensus. Only validators with power >= 1 will
@@ -41,10 +42,14 @@ public final class BFTValidatorSet {
 	private final transient UInt256 totalPower;
 
 	private BFTValidatorSet(Collection<BFTValidator> validators) {
-		this.validators = validators.stream()
+		this(validators.stream());
+	}
+
+	private BFTValidatorSet(Stream<BFTValidator> validators) {
+		this.validators = validators
 			.filter(v -> !v.getPower().isZero())
 			.collect(ImmutableBiMap.toImmutableBiMap(BFTValidator::getNode, Function.identity()));
-		this.totalPower = validators.stream()
+		this.totalPower = this.validators.values().stream()
 			.map(BFTValidator::getPower)
 			.reduce(UInt256::add)
 			.orElse(UInt256.ZERO);
@@ -61,6 +66,20 @@ public final class BFTValidatorSet {
 	 * @return The new {@code ValidatorSet}.
 	 */
 	public static BFTValidatorSet from(Collection<BFTValidator> validators) {
+		return new BFTValidatorSet(validators);
+	}
+
+	/**
+	 * Create a validator set from a stream of validators. The sum
+	 * of power of all validator should not exceed UInt256.MAX_VALUE otherwise
+	 * the resulting ValidatorSet will perform in an undefined way.
+	 * This invariant should be upheld within the system due to max number of
+	 * tokens being constrained to UInt256.MAX_VALUE.
+	 *
+	 * @param validators the stream of validators
+	 * @return The new {@code ValidatorSet}.
+	 */
+	public static BFTValidatorSet from(Stream<BFTValidator> validators) {
 		return new BFTValidatorSet(validators);
 	}
 

@@ -18,33 +18,28 @@
 package com.radixdlt.integration.distributed.deterministic.tests.consensus;
 
 import java.util.Random;
-import java.util.Set;
-
-import org.assertj.core.util.Sets;
 import org.junit.Test;
 
-import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.integration.distributed.deterministic.DeterministicTest;
+import com.radixdlt.integration.distributed.deterministic.network.MessageMutator;
+import com.radixdlt.integration.distributed.deterministic.network.MessageSelector;
 import com.radixdlt.counters.SystemCounters;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class OneProposalTimeoutResponsiveTest {
 	private final Random random = new Random(123456);
-	private final Set<Integer> nodesCompleted = Sets.newHashSet();
 
 	private void run(int numNodes, long numViews, long dropPeriod) {
-		final DeterministicTest test = DeterministicTest.createSingleEpochAlwaysSyncedWithTimeoutsTest(numNodes);
-		test.start();
-
-		nodesCompleted.clear();
-		while (nodesCompleted.size() < numNodes) {
-			test.processNextMsgWithSenderAndReceiver(
-				random,
-				(senderId, receiverId, msg) -> processMessage(senderId, msg, numViews, dropPeriod));
-		}
+		DeterministicTest test = DeterministicTest.builder()
+			.numNodes(numNodes)
+			.alwaysSynced()
+			.messageSelector(MessageSelector.selectAndStopAt(MessageSelector.randomSelector(random), View.of(numViews)))
+			.messageMutator(dropSomeProposals(dropPeriod))
+			.build()
+			.run();
 
 		long requiredIndirectParents = (numViews - 1) / dropPeriod; // Edge case if dropPeriod a factor of numViews
 		long requiredTimeouts = numViews / dropPeriod;
@@ -55,43 +50,38 @@ public class OneProposalTimeoutResponsiveTest {
 			long numberOfTimeouts = counters.get(SystemCounters.CounterType.BFT_TIMEOUT);
 			assertThat(numberOfIndirectParents).isEqualTo(requiredIndirectParents);
 			// Not every node will timeout on a dropped proposal, as 2f+1 nodes will timeout and then continue.
-			// The remaining f nodes will sync rather than timing out.
+			// The remaining f nodes may sync rather than timing out.
 			// The lower bound of the following test is likely to pass, but not guaranteed by anything here.
 			assertThat(numberOfTimeouts).isBetween(1L, requiredTimeouts);
 		}
 	}
 
-	private boolean processMessage(int senderId, Object msg, long numViews, long dropPeriod) {
-		if (msg instanceof NewView) {
-			NewView nv = (NewView) msg;
-			if (nv.getView().number() > numViews) {
-				this.nodesCompleted.add(senderId);
-				return false;
-			}
-		}
-		if (msg instanceof Proposal) {
-			final Proposal proposal = (Proposal) msg;
-			final View view = proposal.getVertex().getView();
-			final long viewNumber = view.number();
+	private static MessageMutator dropSomeProposals(long dropPeriod) {
+		return (rank, message, queue) -> {
+			Object msg = message.message();
+			if (msg instanceof Proposal) {
+				final Proposal proposal = (Proposal) msg;
+				final View view = proposal.getVertex().getView();
+				final long viewNumber = view.number();
 
-			return viewNumber % dropPeriod != 0;
-		}
-		return true;
+				return viewNumber % dropPeriod == 0;
+			}
+			return false;
+		};
 	}
 
 	@Test
 	public void when_run_3_correct_nodes_with_1_timeout__then_bft_should_be_responsive() {
-		this.run(3, 300_000, 100);
+		this.run(3, 100_000, 100);
 	}
 
 	@Test
 	public void when_run_4_correct_nodes_with_1_timeout__then_bft_should_be_responsive() {
-		this.run(4, 300_000, 100);
+		this.run(4, 100_000, 100);
 	}
 
 	@Test
 	public void when_run_100_correct_nodes_with_1_timeout__then_bft_should_be_responsive() {
-		// FIXME: Could increase frequency once sync issues resolved.
-		this.run(100, 30_000, 1000);
+		this.run(100, 1_000, 100);
 	}
 }

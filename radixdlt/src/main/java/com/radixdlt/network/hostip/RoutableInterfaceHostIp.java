@@ -81,7 +81,7 @@ public class RoutableInterfaceHostIp implements HostIp {
 				return Optional.of(hap.getHost());
 			}
 		} catch (IllegalArgumentException e) {
-			log.warn("Exception while retrieving interface address", e);
+			log.warn("Exception while retrieving interface address: {}", e.getMessage());
 		}
 		return Optional.empty();
 	}

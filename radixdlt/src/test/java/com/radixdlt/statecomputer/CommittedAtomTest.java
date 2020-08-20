@@ -27,6 +27,8 @@ import com.radixdlt.constraintmachine.CMInstruction;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.identifiers.AID;
 import com.radixdlt.middleware2.ClientAtom;
+import com.radixdlt.utils.TypedMocks;
+
 import nl.jqno.equalsverifier.EqualsVerifier;
 import org.assertj.core.api.Assertions;
 import org.junit.Before;
@@ -43,7 +45,7 @@ public class CommittedAtomTest {
 		when(clientAtom.getAID()).thenReturn(mock(AID.class));
 		when(clientAtom.getCMInstruction()).thenReturn(mock(CMInstruction.class));
 		when(clientAtom.getPowFeeHash()).thenReturn(mock(Hash.class));
-		when(clientAtom.getMetaData()).thenReturn(mock(ImmutableMap.class));
+		when(clientAtom.getMetaData()).thenReturn(TypedMocks.rmock(ImmutableMap.class));
 		this.vertexMetadata = mock(VertexMetadata.class);
 		this.committedAtom = new CommittedAtom(clientAtom, vertexMetadata);
 	}

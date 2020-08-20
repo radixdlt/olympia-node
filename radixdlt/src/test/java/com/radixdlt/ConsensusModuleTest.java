@@ -51,7 +51,6 @@ import org.junit.Test;
 public class ConsensusModuleTest {
 	private static class ExternalConsensusModule extends AbstractModule {
 		@Override
-		@SuppressWarnings("unchecked")
 		protected void configure() {
 			CommittedStateSyncRx committedStateSyncRx = mock(CommittedStateSyncRx.class);
 			when(committedStateSyncRx.committedStateSyncs()).thenReturn(Observable.never());

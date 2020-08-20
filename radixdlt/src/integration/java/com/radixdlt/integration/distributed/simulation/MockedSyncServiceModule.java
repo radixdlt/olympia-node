@@ -23,12 +23,12 @@ import com.radixdlt.consensus.SyncedExecutor;
 import com.radixdlt.syncer.CommittedCommand;
 import com.radixdlt.syncer.SyncExecutor.CommittedSender;
 import com.radixdlt.syncer.SyncExecutor.SyncService;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 public class MockedSyncServiceModule extends AbstractModule {
-	private final ConcurrentHashMap<Long, CommittedCommand> sharedCommittedAtoms;
+	private final ConcurrentMap<Long, CommittedCommand> sharedCommittedAtoms;
 
-	public MockedSyncServiceModule(ConcurrentHashMap<Long, CommittedCommand> sharedCommittedAtoms) {
+	public MockedSyncServiceModule(ConcurrentMap<Long, CommittedCommand> sharedCommittedAtoms) {
 		this.sharedCommittedAtoms = sharedCommittedAtoms;
 	}
 

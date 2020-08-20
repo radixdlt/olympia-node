@@ -50,7 +50,6 @@ public class MempoolSubmitAndCommitInvariant implements TestInvariant {
 				.timeout(10, TimeUnit.SECONDS)
 				.firstOrError()
 				.ignoreElement()
-				.doOnComplete(() -> System.out.println("Committed " + command))
 				.onErrorReturn(e -> new TestInvariantError(e.getMessage() + " " + command))
 			)
 			.collect(Collectors.toList());
@@ -63,7 +62,6 @@ public class MempoolSubmitAndCommitInvariant implements TestInvariant {
 				e.printStackTrace();
 				return;
 			}
-			System.out.println("Submitted " + command);
 		});
 	}
 

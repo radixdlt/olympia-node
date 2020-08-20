@@ -48,6 +48,7 @@ public class MockedStateComputerModule extends AbstractModule {
 
 			@Override
 			public void commit(Command command, VertexMetadata vertexMetadata) {
+				// Nothing to do here
 			}
 		};
 	}

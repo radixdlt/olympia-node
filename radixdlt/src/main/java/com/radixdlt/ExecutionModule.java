@@ -21,6 +21,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Scopes;
 import com.google.inject.Singleton;
+import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.consensus.SyncedExecutor;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.epoch.EpochChange;
@@ -42,6 +43,10 @@ public class ExecutionModule extends AbstractModule {
 	protected void configure() {
 		bind(SyncedExecutor.class).to(SyncExecutor.class).in(Scopes.SINGLETON);
 		bind(NextCommandGenerator.class).to(SyncExecutor.class);
+
+		// These multibindings are part of our dependency graph, so create the modules here
+		Multibinder.newSetBinder(binder(), SyncService.class);
+		Multibinder.newSetBinder(binder(), CommittedSender.class);
 	}
 
 	@Provides

@@ -31,7 +31,6 @@ import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.ClientAtom.LedgerAtomConversionException;
 import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.utils.UInt256;
-import java.util.Collections;
 
 public class CommittedAtomSerializeTest extends SerializeObject<CommittedAtom> {
 	public CommittedAtomSerializeTest() {
