@@ -24,7 +24,7 @@ import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.R
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
-import com.radixdlt.syncer.CommittedCommand;
+import com.radixdlt.ledger.CommittedCommand;
 import com.radixdlt.systeminfo.InfoRx;
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Observable;

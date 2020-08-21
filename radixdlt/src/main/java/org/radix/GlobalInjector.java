@@ -26,16 +26,16 @@ import com.google.inject.name.Names;
 import com.radixdlt.ConsensusModule;
 import com.radixdlt.CryptoModule;
 import com.radixdlt.DefaultSerialization;
-import com.radixdlt.ExecutionEpochChangeModule;
-import com.radixdlt.ExecutionEpochChangeRxModule;
-import com.radixdlt.ExecutionLocalMempoolModule;
+import com.radixdlt.LedgerEpochChangeModule;
+import com.radixdlt.LedgerEpochChangeRxModule;
+import com.radixdlt.LedgerLocalMempoolModule;
 import com.radixdlt.PersistenceModule;
 import com.radixdlt.StateComputerModule;
 import com.radixdlt.StateComputerRxModule;
 import com.radixdlt.SyncCommittedServiceModule;
 import com.radixdlt.SyncMempoolServiceModule;
-import com.radixdlt.ExecutionRxModule;
-import com.radixdlt.ExecutionModule;
+import com.radixdlt.LedgerRxModule;
+import com.radixdlt.LedgerModule;
 import com.radixdlt.SystemInfoRxModule;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.identifiers.RadixAddress;
@@ -100,11 +100,11 @@ public class GlobalInjector {
 			new ConsensusModule(pacemakerTimeout),
 
 			// Execution
-			new ExecutionModule(),
-			new ExecutionRxModule(),
-			new ExecutionEpochChangeModule(),
-			new ExecutionEpochChangeRxModule(),
-			new ExecutionLocalMempoolModule(mempoolMaxSize),
+			new LedgerModule(),
+			new LedgerRxModule(),
+			new LedgerEpochChangeModule(),
+			new LedgerEpochChangeRxModule(),
+			new LedgerLocalMempoolModule(mempoolMaxSize),
 
 			new PersistenceModule(),
 

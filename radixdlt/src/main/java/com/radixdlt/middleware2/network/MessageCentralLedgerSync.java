@@ -18,9 +18,9 @@
 package com.radixdlt.middleware2.network;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.syncer.CommittedCommand;
-import com.radixdlt.syncer.StateSyncNetwork;
-import com.radixdlt.syncer.SyncRequest;
+import com.radixdlt.ledger.CommittedCommand;
+import com.radixdlt.sync.StateSyncNetwork;
+import com.radixdlt.sync.SyncRequest;
 import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.messaging.MessageListener;

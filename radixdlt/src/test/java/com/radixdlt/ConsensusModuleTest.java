@@ -34,7 +34,7 @@ import com.radixdlt.consensus.HashVerifier;
 import com.radixdlt.consensus.Hasher;
 import com.radixdlt.consensus.SyncEpochsRPCRx;
 import com.radixdlt.consensus.SyncVerticesRPCRx;
-import com.radixdlt.consensus.SyncedExecutor;
+import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.VertexStore.SyncVerticesRPCSender;
@@ -75,7 +75,7 @@ public class ConsensusModuleTest {
 			when(syncVerticesRPCRx.responses()).thenReturn(Observable.never());
 			bind(SyncVerticesRPCRx.class).toInstance(syncVerticesRPCRx);
 
-			bind(SyncedExecutor.class).toInstance(mock(SyncedExecutor.class));
+			bind(Ledger.class).toInstance(mock(Ledger.class));
 			bind(BFTEventSender.class).toInstance(mock(BFTEventSender.class));
 			bind(SyncVerticesRPCSender.class).toInstance(mock(SyncVerticesRPCSender.class));
 			bind(VertexStoreEventSender.class).toInstance(mock(VertexStoreEventSender.class));

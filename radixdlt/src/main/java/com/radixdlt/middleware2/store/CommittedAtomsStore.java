@@ -37,7 +37,7 @@ import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStore;
 
-import com.radixdlt.syncer.CommittedCommand;
+import com.radixdlt.ledger.CommittedCommand;
 import java.util.List;
 import java.util.Objects;
 import org.apache.logging.log4j.LogManager;

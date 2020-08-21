@@ -19,9 +19,9 @@ package com.radixdlt.integration.distributed.deterministic;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Module;
-import com.radixdlt.ExecutionEpochChangeModule;
-import com.radixdlt.ExecutionLocalMempoolModule;
-import com.radixdlt.ExecutionModule;
+import com.radixdlt.LedgerEpochChangeModule;
+import com.radixdlt.LedgerLocalMempoolModule;
+import com.radixdlt.LedgerModule;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -34,7 +34,7 @@ import com.radixdlt.integration.distributed.deterministic.network.MessageSelecto
 import com.radixdlt.integration.distributed.simulation.MockedEpochStateComputerModule;
 import com.radixdlt.integration.distributed.simulation.MockedStateComputerModule;
 import com.radixdlt.integration.distributed.simulation.MockedSyncServiceModule;
-import com.radixdlt.syncer.CommittedCommand;
+import com.radixdlt.ledger.CommittedCommand;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.identifiers.EUID;
@@ -116,13 +116,13 @@ public final class DeterministicTest {
 		}
 
 		public Builder alwaysSynced() {
-			this.syncedExecutorModule = new DeterministicAlwaysSyncedExecutorModule();
+			this.syncedExecutorModule = new DeterministicAlwaysSyncedLedgerModule();
 			return this;
 		}
 
 		public Builder randomlySynced(Random random) {
 			Objects.requireNonNull(random);
-			this.syncedExecutorModule = new DeterministicRandomlySyncedExecutorModule(random);
+			this.syncedExecutorModule = new DeterministicRandomlySyncedLedgerModule(random);
 			return this;
 		}
 
@@ -145,8 +145,8 @@ public final class DeterministicTest {
 
 			ConcurrentMap<Long, CommittedCommand> sharedCommittedAtoms = new ConcurrentHashMap<>();
 			ImmutableList.Builder<Module> modules = ImmutableList.builder();
-			modules.add(new ExecutionModule());
-			modules.add(new ExecutionLocalMempoolModule(10));
+			modules.add(new LedgerModule());
+			modules.add(new LedgerLocalMempoolModule(10));
 			modules.add(new DeterministicMempoolModule());
 
 			if (epochHighView == null) {
@@ -156,7 +156,7 @@ public final class DeterministicTest {
 			} else {
 				// TODO: adapter from LongFunction<BFTValidatorSet> to Function<Long, BFTValidatorSet> shouldn't be needed
 				Function<Long, BFTValidatorSet> epochToValidatorSetMapping = validatorSetMapping::apply;
-				modules.add(new ExecutionEpochChangeModule());
+				modules.add(new LedgerEpochChangeModule());
 				modules.add(new MockedSyncServiceModule(sharedCommittedAtoms));
 				modules.add(new MockedEpochStateComputerModule(epochHighView, epochToValidatorSetMapping));
 			}

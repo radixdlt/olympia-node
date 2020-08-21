@@ -36,8 +36,8 @@ import com.radixdlt.integration.distributed.deterministic.DeterministicConsensus
 import com.radixdlt.integration.distributed.deterministic.DeterministicConsensusRunner;
 import com.radixdlt.integration.distributed.deterministic.DeterministicNetworkModule;
 import com.radixdlt.integration.distributed.simulation.MockedCryptoModule;
-import com.radixdlt.syncer.EpochChangeSender;
-import com.radixdlt.syncer.SyncExecutor.CommittedStateSyncSender;
+import com.radixdlt.ledger.EpochChangeSender;
+import com.radixdlt.ledger.StateComputerLedger.CommittedStateSyncSender;
 import com.radixdlt.utils.Pair;
 
 import java.io.PrintStream;

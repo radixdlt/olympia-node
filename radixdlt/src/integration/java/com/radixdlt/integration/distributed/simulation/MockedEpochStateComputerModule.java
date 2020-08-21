@@ -24,7 +24,7 @@ import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
-import com.radixdlt.syncer.SyncExecutor.StateComputer;
+import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import java.util.Optional;
 import java.util.function.Function;
 

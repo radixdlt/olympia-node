@@ -22,7 +22,7 @@ import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.syncer.CommittedCommand;
+import com.radixdlt.ledger.CommittedCommand;
 import org.junit.Before;
 import org.junit.Test;
 

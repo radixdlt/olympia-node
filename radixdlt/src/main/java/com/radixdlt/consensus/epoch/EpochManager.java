@@ -28,7 +28,7 @@ import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.ProposerElectionFactory;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.SyncedExecutor;
+import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.Timeout;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
@@ -118,7 +118,7 @@ public final class EpochManager {
 	private final ProposerElectionFactory proposerElectionFactory;
 	private final SystemCounters counters;
 	private final LocalTimeoutSender localTimeoutSender;
-	private final SyncedExecutor syncedExecutor;
+	private final Ledger ledger;
 	private final Map<Long, List<ConsensusEvent>> queuedEvents;
 	private final BFTFactory bftFactory;
 	private final EpochInfoSender epochInfoSender;
@@ -133,7 +133,7 @@ public final class EpochManager {
 	public EpochManager(
 		@Named("self") BFTNode self,
 		EpochChange initialEpoch,
-		SyncedExecutor syncedExecutor,
+		Ledger ledger,
 		SyncEpochsRPCSender epochsRPCSender,
 		LocalTimeoutSender localTimeoutSender,
 		PacemakerFactory pacemakerFactory,
@@ -145,7 +145,7 @@ public final class EpochManager {
 	) {
 		this.currentEpoch = Objects.requireNonNull(initialEpoch);
 		this.self = Objects.requireNonNull(self);
-		this.syncedExecutor = Objects.requireNonNull(syncedExecutor);
+		this.ledger = Objects.requireNonNull(ledger);
 		this.epochsRPCSender = Objects.requireNonNull(epochsRPCSender);
 		this.localTimeoutSender = Objects.requireNonNull(localTimeoutSender);
 		this.pacemakerFactory = Objects.requireNonNull(pacemakerFactory);
@@ -180,7 +180,7 @@ public final class EpochManager {
 
 			// TODO: Recover VertexStore
 			QuorumCertificate genesisQC = QuorumCertificate.ofGenesis(genesisVertex);
-			VertexStore vertexStore = vertexStoreFactory.create(genesisVertex, genesisQC, syncedExecutor);
+			VertexStore vertexStore = vertexStoreFactory.create(genesisVertex, genesisQC, ledger);
 			vertexStoreEventProcessor = vertexStore;
 
 			BFTInfoSender infoSender = new BFTInfoSender() {
@@ -322,7 +322,7 @@ public final class EpochManager {
 
 		final VertexMetadata ancestor = response.getEpochAncestor();
 		if (ancestor.getEpoch() >= this.currentEpoch()) {
-			syncedExecutor.syncTo(ancestor, ImmutableList.of(response.getAuthor()), null);
+			ledger.syncTo(ancestor, ImmutableList.of(response.getAuthor()), null);
 		} else {
 			log.info("{}: Ignoring old epoch {}", this.self, response);
 		}

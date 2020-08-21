@@ -19,10 +19,10 @@ package com.radixdlt.integration.distributed.simulation;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.consensus.SyncedExecutor;
-import com.radixdlt.syncer.CommittedCommand;
-import com.radixdlt.syncer.SyncExecutor.CommittedSender;
-import com.radixdlt.syncer.SyncExecutor.SyncService;
+import com.radixdlt.consensus.Ledger;
+import com.radixdlt.ledger.CommittedCommand;
+import com.radixdlt.ledger.StateComputerLedger.CommittedSender;
+import com.radixdlt.ledger.StateComputerLedger.SyncService;
 import java.util.concurrent.ConcurrentMap;
 
 public class MockedSyncServiceModule extends AbstractModule {
@@ -41,14 +41,14 @@ public class MockedSyncServiceModule extends AbstractModule {
 	// TODO: change this to a service
 	@ProvidesIntoSet
 	SyncService syncService(
-		SyncedExecutor syncedExecutor
+		Ledger ledger
 	) {
 		return request -> {
 			final long targetVersion = request.getTarget().getStateVersion();
 			final long initVersion = request.getCurrentVersion() + 1;
 			for (long version = initVersion; version <= targetVersion; version++) {
 				CommittedCommand committedCommand = sharedCommittedAtoms.get(version);
-				syncedExecutor.commit(committedCommand.getCommand(), committedCommand.getVertexMetadata());
+				ledger.commit(committedCommand.getCommand(), committedCommand.getVertexMetadata());
 			}
 		};
 	}

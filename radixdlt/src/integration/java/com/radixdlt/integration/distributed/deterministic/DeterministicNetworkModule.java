@@ -34,8 +34,8 @@ import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCountersImpl;
 import com.radixdlt.integration.distributed.deterministic.network.DeterministicNetwork.DeterministicSender;
 import com.radixdlt.network.TimeSupplier;
-import com.radixdlt.syncer.EpochChangeSender;
-import com.radixdlt.syncer.SyncExecutor.CommittedStateSyncSender;
+import com.radixdlt.ledger.EpochChangeSender;
+import com.radixdlt.ledger.StateComputerLedger.CommittedStateSyncSender;
 
 /**
  * Module that supplies network senders, as well as some other assorted

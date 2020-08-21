@@ -21,11 +21,11 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
-import com.radixdlt.ExecutionEpochChangeModule;
-import com.radixdlt.ExecutionEpochChangeRxModule;
-import com.radixdlt.ExecutionModule;
-import com.radixdlt.ExecutionRxModule;
-import com.radixdlt.ExecutionLocalMempoolModule;
+import com.radixdlt.LedgerEpochChangeModule;
+import com.radixdlt.LedgerEpochChangeRxModule;
+import com.radixdlt.LedgerModule;
+import com.radixdlt.LedgerRxModule;
+import com.radixdlt.LedgerLocalMempoolModule;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.integration.distributed.simulation.TestInvariant.TestInvariantError;
@@ -48,7 +48,7 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.LatencyProvider;
-import com.radixdlt.syncer.CommittedCommand;
+import com.radixdlt.ledger.CommittedCommand;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 import io.reactivex.rxjava3.core.Observable;
@@ -216,7 +216,7 @@ public class SimulationTest {
 						.map(node -> BFTValidator.from(node, UInt256.ONE))
 						.collect(Collectors.toList())
 				);
-				syncExecutionModules.add(new MockedExecutionModule(validatorSet));
+				syncExecutionModules.add(new MockedLedgerModule(validatorSet));
 			} else {
 				BFTValidatorSet validatorSet = BFTValidatorSet.from(
 					nodes.stream()
@@ -224,16 +224,16 @@ public class SimulationTest {
 						.collect(Collectors.toList())
 				);
 				ConcurrentHashMap<Long, CommittedCommand> sharedCommittedAtoms = new ConcurrentHashMap<>();
-				syncExecutionModules.add(new ExecutionModule());
-				syncExecutionModules.add(new ExecutionRxModule());
-				syncExecutionModules.add(new ExecutionEpochChangeRxModule());
+				syncExecutionModules.add(new LedgerModule());
+				syncExecutionModules.add(new LedgerRxModule());
+				syncExecutionModules.add(new LedgerEpochChangeRxModule());
 				syncExecutionModules.add(new MockedSyncServiceModule(sharedCommittedAtoms));
 
 				if (executorType == ExecutorType.EXECUTOR) {
 					syncExecutionModules.add(new MockedMempoolModule());
 					syncExecutionModules.add(new MockedStateComputerModule(validatorSet));
 				} else if (executorType == ExecutorType.EPOCH_EXECUTOR) {
-					syncExecutionModules.add(new ExecutionEpochChangeModule());
+					syncExecutionModules.add(new LedgerEpochChangeModule());
 
 					Function<Long, BFTValidatorSet> epochToValidatorSetMapping =
 						epochToNodeIndexMapper.andThen(indices -> BFTValidatorSet.from(
@@ -243,7 +243,7 @@ public class SimulationTest {
 					syncExecutionModules.add(new MockedMempoolModule());
 					syncExecutionModules.add(new MockedEpochStateComputerModule(epochHighView, epochToValidatorSetMapping));
 				} else if (executorType == ExecutorType.MEMPOOL_EXECUTOR) {
-					syncExecutionModules.add(new ExecutionLocalMempoolModule(10));
+					syncExecutionModules.add(new LedgerLocalMempoolModule(10));
 
 					syncExecutionModules.add(new MockedStateComputerModule(validatorSet));
 					syncExecutionModules.add(new AbstractModule() {

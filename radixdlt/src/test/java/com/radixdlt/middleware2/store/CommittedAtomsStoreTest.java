@@ -38,7 +38,7 @@ import com.radixdlt.middleware2.store.CommittedAtomsStore.AtomIndexer;
 import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.store.SearchCursor;
-import com.radixdlt.syncer.CommittedCommand;
+import com.radixdlt.ledger.CommittedCommand;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;

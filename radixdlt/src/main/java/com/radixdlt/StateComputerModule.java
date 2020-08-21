@@ -59,7 +59,7 @@ import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.LedgerEntryStore;
-import com.radixdlt.syncer.SyncExecutor.StateComputer;
+import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.universe.Universe;
 import java.util.function.Consumer;
 import java.util.function.Function;
