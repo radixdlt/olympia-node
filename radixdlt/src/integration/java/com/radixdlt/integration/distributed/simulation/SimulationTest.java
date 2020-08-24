@@ -26,6 +26,8 @@ import com.radixdlt.LedgerEpochChangeRxModule;
 import com.radixdlt.LedgerModule;
 import com.radixdlt.LedgerRxModule;
 import com.radixdlt.LedgerLocalMempoolModule;
+import com.radixdlt.RadixEngineModule;
+import com.radixdlt.RadixEngineRxModule;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.integration.distributed.simulation.TestInvariant.TestInvariantError;
@@ -93,7 +95,7 @@ public class SimulationTest {
 
 	public static class Builder {
 		private enum LedgerType {
-			MOCKED_LEDGER, LEDGER, LEDGER_AND_EPOCHS, LEDGER_AND_LOCALMEMPOOL
+			MOCKED_LEDGER, LEDGER, LEDGER_AND_EPOCHS, LEDGER_AND_LOCALMEMPOOL, LEDGER_AND_RADIXENGINE
 		}
 
 		private final DroppingLatencyProvider latencyProvider = new DroppingLatencyProvider();
@@ -155,6 +157,12 @@ public class SimulationTest {
 
 		public Builder ledgerAndMempool() {
 			this.ledgerType = LedgerType.LEDGER_AND_LOCALMEMPOOL;
+			return this;
+		}
+
+		public Builder ledgerAndRadixEngine(View epochHighView) {
+			this.ledgerType = LedgerType.LEDGER_AND_RADIXENGINE;
+			this.epochHighView = epochHighView;
 			return this;
 		}
 
@@ -250,6 +258,18 @@ public class SimulationTest {
 						}
 					});
 					ledgerModules.add(new MockedStateComputerModule(validatorSet));
+				} else if (ledgerType == LedgerType.LEDGER_AND_RADIXENGINE) {
+					ledgerModules.add(new LedgerLocalMempoolModule(10));
+					ledgerModules.add(new AbstractModule() {
+						@Override
+						protected void configure() {
+							bind(Mempool.class).to(LocalMempool.class);
+						}
+					});
+					ledgerModules.add(new LedgerEpochChangeModule());
+					ledgerModules.add(new RadixEngineModule(epochHighView));
+					ledgerModules.add(new RadixEngineRxModule());
+					ledgerModules.add(new MockedRadixEngineStoreModule(validatorSet));
 				}
 			}
 

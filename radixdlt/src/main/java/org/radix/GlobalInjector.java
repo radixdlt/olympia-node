@@ -40,6 +40,7 @@ import com.radixdlt.LedgerModule;
 import com.radixdlt.SyncRxModule;
 import com.radixdlt.SystemInfoRxModule;
 import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.crypto.ECKeyPair;
@@ -93,7 +94,7 @@ public class GlobalInjector {
 
 		final int pacemakerTimeout = properties.get("consensus.pacemaker_timeout_millis", 5000);
 		final int fixedNodeCount = properties.get("consensus.fixed_node_count", 1);
-		final long viewsPerEpoch = properties.get("epochs.views_per_epoch", 100L);
+		final View epochHighView = View.of(properties.get("epochs.views_per_epoch", 100L));
 		final int mempoolMaxSize = properties.get("mempool.maxSize", 1000);
 
 		injector = Guice.createInjector(
@@ -109,7 +110,7 @@ public class GlobalInjector {
 			new LedgerLocalMempoolModule(mempoolMaxSize),
 
 			// State Computer
-			new RadixEngineModule(viewsPerEpoch),
+			new RadixEngineModule(epochHighView),
 			new RadixEngineRxModule(),
 			new RadixEngineStoreModule(fixedNodeCount),
 

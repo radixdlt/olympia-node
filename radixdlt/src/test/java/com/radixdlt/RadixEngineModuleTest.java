@@ -25,6 +25,7 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
+import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.serialization.Serialization;
@@ -49,7 +50,7 @@ public class RadixEngineModuleTest {
 	@Test
 	public void when_configured_with_correct_interfaces__then_state_computer_should_be_created() {
 		Injector injector = Guice.createInjector(
-			new RadixEngineModule(1),
+			new RadixEngineModule(View.of(1)),
 			new ExternalRadixEngineModule()
 		);
 

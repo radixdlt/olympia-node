@@ -51,10 +51,10 @@ import java.util.function.UnaryOperator;
  */
 public class RadixEngineModule extends AbstractModule {
 	private static final Hash DEFAULT_FEE_TARGET = new Hash("0000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
-	private final long viewsPerEpoch;
+	private final View epochHighView;
 
-	public RadixEngineModule(long viewsPerEpoch) {
-		this.viewsPerEpoch = viewsPerEpoch;
+	public RadixEngineModule(View epochHighView) {
+		this.epochHighView = epochHighView;
 	}
 
 	@Override
@@ -108,7 +108,8 @@ public class RadixEngineModule extends AbstractModule {
 			serialization,
 			radixEngine,
 			validatorSetMapping,
-			View.of(viewsPerEpoch), committedCommandsReader,
+			epochHighView,
+			committedCommandsReader,
 			committedAtomSender
 		);
 	}
