@@ -17,8 +17,6 @@
 
 package com.radixdlt.consensus;
 
-import java.util.function.Consumer;
-
 /**
  * A distributed computer which manages the computed state in a BFT.
  */
@@ -40,11 +38,11 @@ public interface Ledger {
 	OnSynced ifCommitSynced(VertexMetadata vertexMetadata);
 
 	interface OnSynced {
-		OnNotSynced then(Runnable runnable);
+		OnNotSynced then(Runnable onSynced);
 	}
 
 	interface OnNotSynced {
-		void elseExecuteAndSendMessageOnSync(Consumer<Long> currentStateConsumer, Object opaque);
+		void elseExecuteAndSendMessageOnSync(Runnable onNotSynced, Object opaque);
 	}
 
 	/**

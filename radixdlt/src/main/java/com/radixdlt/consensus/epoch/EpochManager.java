@@ -327,7 +327,7 @@ public final class EpochManager {
 
 		final VertexMetadata ancestor = response.getEpochAncestor();
 		if (ancestor.getEpoch() >= this.currentEpoch()) {
-			syncRequestSender.sendLocalSyncRequest(new LocalSyncRequest(ancestor, 0, ImmutableList.of(response.getAuthor())));
+			syncRequestSender.sendLocalSyncRequest(new LocalSyncRequest(ancestor, ImmutableList.of(response.getAuthor())));
 		} else {
 			log.info("{}: Ignoring old epoch {}", this.self, response);
 		}

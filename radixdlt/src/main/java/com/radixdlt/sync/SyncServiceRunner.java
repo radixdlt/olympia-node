@@ -41,23 +41,30 @@ public final class SyncServiceRunner {
 		Observable<SyncInProgress> timeouts();
 	}
 
+	public interface VersionUpdatesRx {
+		Observable<Long> versionUpdates();
+	}
+
 	private final StateSyncNetwork stateSyncNetwork;
 	private final Scheduler singleThreadScheduler;
 	private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads("SyncManager"));
 	private final SyncServiceProcessor syncServiceProcessor;
 	private final SyncTimeoutsRx syncTimeoutsRx;
 	private final LocalSyncRequestsRx localSyncRequestsRx;
+	private final VersionUpdatesRx versionUpdatesRx;
 	private final Object lock = new Object();
 	private CompositeDisposable compositeDisposable;
 
 	public SyncServiceRunner(
 		LocalSyncRequestsRx localSyncRequestsRx,
 		SyncTimeoutsRx syncTimeoutsRx,
+		VersionUpdatesRx versionUpdatesRx,
 		StateSyncNetwork stateSyncNetwork,
 		SyncServiceProcessor syncServiceProcessor
 	) {
 		this.localSyncRequestsRx = Objects.requireNonNull(localSyncRequestsRx);
 		this.syncTimeoutsRx = Objects.requireNonNull(syncTimeoutsRx);
+		this.versionUpdatesRx = Objects.requireNonNull(versionUpdatesRx);
 		this.syncServiceProcessor = Objects.requireNonNull(syncServiceProcessor);
 		this.stateSyncNetwork = Objects.requireNonNull(stateSyncNetwork);
 		this.singleThreadScheduler = Schedulers.from(this.executorService);
@@ -88,7 +95,11 @@ public final class SyncServiceRunner {
 				.observeOn(singleThreadScheduler)
 				.subscribe(syncServiceProcessor::processSyncTimeout);
 
-			compositeDisposable = new CompositeDisposable(d0, d1, d2, d3);
+			Disposable d4 = versionUpdatesRx.versionUpdates()
+				.observeOn(singleThreadScheduler)
+				.subscribe(syncServiceProcessor::processVersionUpdate);
+
+			compositeDisposable = new CompositeDisposable(d0, d1, d2, d3, d4);
 		}
 	}
 

@@ -66,7 +66,7 @@ public class DeterministicRandomlySyncedLedgerModule extends AbstractModule {
 
 					return (notSynced, opaque) -> {
 						if (!synced) {
-							notSynced.accept(0L);
+							notSynced.run();
 							committedStateSyncSender.sendCommittedStateSync(vertexMetadata.getStateVersion(), opaque);
 						}
 					};

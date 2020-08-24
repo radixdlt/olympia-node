@@ -119,12 +119,12 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 			if (targetStateVersion <= this.currentStateVersion) {
 				return onSync -> {
 					onSync.run();
-					return (onError, opaque) -> { };
+					return (onNotSynced, opaque) -> { };
 				};
 			} else {
-				return onSync -> (onError, opaque) -> {
+				return onSync -> (onNotSynced, opaque) -> {
 					this.committedStateSyncers.merge(targetStateVersion, Collections.singleton(opaque), Sets::union);
-					onError.accept(this.currentStateVersion);
+					onNotSynced.run();
 				};
 			}
 		}

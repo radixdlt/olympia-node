@@ -32,6 +32,7 @@ import com.radixdlt.sync.SyncServiceRunner;
 import com.radixdlt.sync.SyncServiceRunner.LocalSyncRequestsRx;
 import com.radixdlt.sync.SyncServiceRunner.SyncTimeoutsRx;
 import com.radixdlt.ledger.StateComputerLedger;
+import com.radixdlt.sync.SyncServiceRunner.VersionUpdatesRx;
 import com.radixdlt.universe.Universe;
 
 /**
@@ -65,12 +66,14 @@ public class SyncCommittedServiceModule extends AbstractModule {
 	private SyncServiceRunner syncServiceRunner(
 		LocalSyncRequestsRx localSyncRequestsRx,
 		SyncTimeoutsRx syncTimeoutsRx,
+		VersionUpdatesRx versionUpdatesRx,
 		StateSyncNetwork stateSyncNetwork,
 		SyncServiceProcessor syncServiceProcessor
 	) {
 		return new SyncServiceRunner(
 			localSyncRequestsRx,
 			syncTimeoutsRx,
+			versionUpdatesRx,
 			stateSyncNetwork,
 			syncServiceProcessor
 		);

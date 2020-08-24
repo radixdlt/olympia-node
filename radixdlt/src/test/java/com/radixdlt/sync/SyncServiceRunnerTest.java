@@ -20,6 +20,7 @@ package com.radixdlt.sync;
 import com.radixdlt.ledger.CommittedCommand;
 import com.radixdlt.sync.SyncServiceRunner.LocalSyncRequestsRx;
 import com.radixdlt.sync.SyncServiceRunner.SyncTimeoutsRx;
+import com.radixdlt.sync.SyncServiceRunner.VersionUpdatesRx;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import io.reactivex.rxjava3.subjects.Subject;
@@ -43,6 +44,8 @@ public class SyncServiceRunnerTest {
 	private SyncTimeoutsRx syncTimeoutsRx;
 	private StateSyncNetwork stateSyncNetwork;
 	private SyncServiceProcessor syncServiceProcessor;
+	private VersionUpdatesRx versionUpdatesRx;
+	private Subject<Long> versionUpdatesSubject;
 	private Subject<SyncRequest> requestsSubject;
 	private Subject<ImmutableList<CommittedCommand>> responsesSubject;
 
@@ -64,9 +67,14 @@ public class SyncServiceRunnerTest {
 		when(stateSyncNetwork.syncRequests()).thenReturn(requestsSubject);
 
 		this.syncServiceProcessor = mock(SyncServiceProcessor.class);
+
+		this.versionUpdatesSubject = PublishSubject.create();
+		this.versionUpdatesRx = () -> this.versionUpdatesSubject;
+
 		syncServiceRunner = new SyncServiceRunner(
 			localSyncRequestsRx,
 			syncTimeoutsRx,
+			versionUpdatesRx,
 			stateSyncNetwork,
 			syncServiceProcessor
 		);

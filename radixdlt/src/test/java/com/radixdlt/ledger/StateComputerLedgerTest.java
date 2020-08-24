@@ -45,7 +45,6 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.network.addressbook.Peer;
-import java.util.function.Consumer;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -134,14 +133,14 @@ public class StateComputerLedgerTest {
 		when(nextVertexMetadata.getStateVersion()).thenReturn(1234L);
 
 		Runnable onSynced = mock(Runnable.class);
-		Consumer<Long> onNotSynced = mock(Consumer.class);
+		Runnable onNotSynced = mock(Runnable.class);
 		stateComputerLedger
 			.ifCommitSynced(nextVertexMetadata)
 			.then(onSynced)
 			.elseExecuteAndSendMessageOnSync(onNotSynced, mock(Object.class));
 		verify(committedStateSyncSender, never()).sendCommittedStateSync(anyLong(), any());
 		verify(onSynced, never()).run();
-		verify(onNotSynced, times(1)).accept(eq(1233L));
+		verify(onNotSynced, times(1)).run();
 
 		stateComputerLedger.commit(mock(Command.class), nextVertexMetadata);
 

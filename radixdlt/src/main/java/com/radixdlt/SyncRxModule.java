@@ -18,10 +18,16 @@
 package com.radixdlt;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.multibindings.Multibinder;
+import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.sync.SyncRequestSender;
+import com.radixdlt.ledger.StateComputerLedger.CommittedSender;
 import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.sync.SyncServiceRunner.LocalSyncRequestsRx;
+import com.radixdlt.sync.SyncServiceRunner.VersionUpdatesRx;
 import com.radixdlt.utils.SenderToRx;
+import com.radixdlt.utils.TwoSenderToRx;
 
 /**
  * Module which handles message passing to the sync services
@@ -32,5 +38,10 @@ public class SyncRxModule extends AbstractModule {
 		SenderToRx<LocalSyncRequest, LocalSyncRequest> syncRequests = new SenderToRx<>(c -> c);
 		bind(SyncRequestSender.class).toInstance(syncRequests::send);
 		bind(LocalSyncRequestsRx.class).toInstance(syncRequests::rx);
+
+		TwoSenderToRx<Command, VertexMetadata, Long> committedCommands = new TwoSenderToRx<>((cmd, meta) -> meta.getStateVersion());
+		Multibinder<CommittedSender> committedSenderBinder = Multibinder.newSetBinder(binder(), CommittedSender.class);
+		committedSenderBinder.addBinding().toInstance(committedCommands::send);
+		bind(VersionUpdatesRx.class).toInstance(committedCommands::rx);
 	}
 }

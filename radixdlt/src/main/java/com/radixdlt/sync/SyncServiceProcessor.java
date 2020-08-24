@@ -158,11 +158,13 @@ public final class SyncServiceProcessor {
 		isSyncInProgress = false;
 	}
 
-	public void processLocalSyncRequest(LocalSyncRequest request) {
-		if (request.getCurrentVersion() > this.currentVersion) {
-			this.currentVersion = request.getCurrentVersion();
+	public void processVersionUpdate(long updatedCurrentVersion) {
+		if (updatedCurrentVersion > this.currentVersion) {
+			this.currentVersion = updatedCurrentVersion;
 		}
+	}
 
+	public void processLocalSyncRequest(LocalSyncRequest request) {
 		final VertexMetadata target = request.getTarget();
 		if (target.getStateVersion() <= this.currentVersion) {
 			return;

@@ -309,11 +309,10 @@ public final class VertexStore implements VertexStoreEventProcessor {
 
 		ledger.ifCommitSynced(syncState.committedVertexMetadata)
 			.then(() -> rebuildAndSyncQC(syncState))
-			.elseExecuteAndSendMessageOnSync(currentStateVersion -> {
+			.elseExecuteAndSendMessageOnSync(() -> {
 				syncState.setSyncStage(SyncStage.SYNC_TO_COMMIT);
 				LocalSyncRequest localSyncRequest = new LocalSyncRequest(
 					syncState.committedVertexMetadata,
-					currentStateVersion,
 					signers
 				);
 				syncRequestSender.sendLocalSyncRequest(localSyncRequest);

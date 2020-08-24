@@ -46,8 +46,6 @@ public final class LedgerRxModule extends AbstractModule {
 
 	@Override
 	protected void configure() {
-
-
 		TwoSenderToRx<Atom, AtomConversionException, DeserializationFailure> deserializationFailures
 			= new TwoSenderToRx<>(DeserializationFailure::new);
 		TwoSenderToRx<ClientAtom, RadixEngineException, SubmissionFailure> submissionFailures

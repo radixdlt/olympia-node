@@ -27,21 +27,15 @@ import java.util.Objects;
  */
 public final class LocalSyncRequest {
 	private final VertexMetadata target;
-	private final long currentVersion;
 	private final ImmutableList<BFTNode> targetNodes;
 
-	public LocalSyncRequest(VertexMetadata target, long currentVersion, ImmutableList<BFTNode> targetNodes) {
+	public LocalSyncRequest(VertexMetadata target, ImmutableList<BFTNode> targetNodes) {
 		this.target = Objects.requireNonNull(target);
-		this.currentVersion = currentVersion;
 		this.targetNodes = Objects.requireNonNull(targetNodes);
 	}
 
 	public VertexMetadata getTarget() {
 		return target;
-	}
-
-	public long getCurrentVersion() {
-		return currentVersion;
 	}
 
 	public ImmutableList<BFTNode> getTargetNodes() {

@@ -91,7 +91,8 @@ public class SyncServiceProcessorTest {
 		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(peer));
 		VertexMetadata target = mock(VertexMetadata.class);
 		when(target.getStateVersion()).thenReturn(targetVersion);
-		LocalSyncRequest request = new LocalSyncRequest(target, currentVersion, ImmutableList.of(node));
+		syncServiceProcessor.processVersionUpdate(currentVersion);
+		LocalSyncRequest request = new LocalSyncRequest(target, ImmutableList.of(node));
 		syncServiceProcessor.processLocalSyncRequest(request);
 
 		ImmutableList.Builder<CommittedCommand> newCommands1 = ImmutableList.builder();
@@ -121,7 +122,8 @@ public class SyncServiceProcessorTest {
 		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(peer));
 		VertexMetadata target = mock(VertexMetadata.class);
 		when(target.getStateVersion()).thenReturn(targetVersion);
-		LocalSyncRequest request = new LocalSyncRequest(target, currentVersion, ImmutableList.of(node));
+		syncServiceProcessor.processVersionUpdate(currentVersion);
+		LocalSyncRequest request = new LocalSyncRequest(target, ImmutableList.of(node));
 		syncServiceProcessor.processLocalSyncRequest(request);
 		ImmutableList.Builder<CommittedCommand> newCommands1 = ImmutableList.builder();
 		for (int i = 7; i <= 11; i++) {
@@ -146,7 +148,8 @@ public class SyncServiceProcessorTest {
 		when(addressBook.peer(any(EUID.class))).thenReturn(Optional.of(peer));
 		VertexMetadata target = mock(VertexMetadata.class);
 		when(target.getStateVersion()).thenReturn(targetVersion);
-		LocalSyncRequest request = new LocalSyncRequest(target, currentVersion, ImmutableList.of(node));
+		syncServiceProcessor.processVersionUpdate(currentVersion);
+		LocalSyncRequest request = new LocalSyncRequest(target, ImmutableList.of(node));
 		syncServiceProcessor.processLocalSyncRequest(request);
 		verify(stateSyncNetwork, times(1)).sendSyncRequest(any(), eq(10L));
 		verify(stateSyncNetwork, times(1)).sendSyncRequest(any(), eq(12L));
