@@ -241,7 +241,7 @@ public class SimulationTest {
 								.map(node -> BFTValidator.from(node, UInt256.ONE))
 								.collect(Collectors.toList())));
 					syncExecutionModules.add(new MockedMempoolModule());
-					syncExecutionModules.add(new MockedEpochStateComputerModule(epochHighView, epochToValidatorSetMapping));
+					syncExecutionModules.add(new MockedStateComputerWithEpochsModule(epochHighView, epochToValidatorSetMapping));
 				} else if (executorType == ExecutorType.MEMPOOL_EXECUTOR) {
 					syncExecutionModules.add(new LedgerLocalMempoolModule(10));
 

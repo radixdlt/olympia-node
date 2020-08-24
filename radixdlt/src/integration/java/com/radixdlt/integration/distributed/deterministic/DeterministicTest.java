@@ -31,7 +31,7 @@ import com.radixdlt.integration.distributed.deterministic.configuration.NodeInde
 import com.radixdlt.integration.distributed.deterministic.network.DeterministicNetwork;
 import com.radixdlt.integration.distributed.deterministic.network.MessageMutator;
 import com.radixdlt.integration.distributed.deterministic.network.MessageSelector;
-import com.radixdlt.integration.distributed.simulation.MockedEpochStateComputerModule;
+import com.radixdlt.integration.distributed.simulation.MockedStateComputerWithEpochsModule;
 import com.radixdlt.integration.distributed.simulation.MockedStateComputerModule;
 import com.radixdlt.integration.distributed.simulation.MockedSyncServiceModule;
 import com.radixdlt.ledger.CommittedCommand;
@@ -158,7 +158,7 @@ public final class DeterministicTest {
 				Function<Long, BFTValidatorSet> epochToValidatorSetMapping = validatorSetMapping::apply;
 				modules.add(new LedgerEpochChangeModule());
 				modules.add(new MockedSyncServiceModule(sharedCommittedAtoms));
-				modules.add(new MockedEpochStateComputerModule(epochHighView, epochToValidatorSetMapping));
+				modules.add(new MockedStateComputerWithEpochsModule(epochHighView, epochToValidatorSetMapping));
 			}
 			return new DeterministicTest(
 				this.nodes,

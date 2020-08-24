@@ -28,11 +28,11 @@ import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import java.util.Optional;
 import java.util.function.Function;
 
-public class MockedEpochStateComputerModule extends AbstractModule {
+public class MockedStateComputerWithEpochsModule extends AbstractModule {
 	private final Function<Long, BFTValidatorSet> validatorSetMapping;
 	private final View epochHighView;
 
-	public MockedEpochStateComputerModule(
+	public MockedStateComputerWithEpochsModule(
 		View epochHighView,
 		Function<Long, BFTValidatorSet> validatorSetMapping
 	) {

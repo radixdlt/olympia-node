@@ -48,6 +48,7 @@ import org.apache.logging.log4j.Logger;
 
 /**
  * Manages the BFT Vertex chain.
+ * TODO: Move this logic into ledger package.
  */
 @NotThreadSafe
 public final class VertexStore implements VertexStoreEventProcessor {
