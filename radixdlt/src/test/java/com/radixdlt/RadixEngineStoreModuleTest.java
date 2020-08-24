@@ -18,6 +18,7 @@
 package com.radixdlt;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
@@ -27,21 +28,24 @@ import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.inject.Key;
+import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
 import com.radixdlt.atommodel.Atom;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
-import com.radixdlt.statecomputer.RadixEngineStateComputer;
+import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
+import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.universe.Universe;
 import org.junit.Test;
 
-public class StateComputerModuleTest {
-	private static class ExternalStateComputerModule extends AbstractModule {
+public class RadixEngineStoreModuleTest {
+	private static class ExternalRadixEngineStoreModule extends AbstractModule {
 		@Override
 		protected void configure() {
 			bind(Serialization.class).toInstance(mock(Serialization.class));
@@ -62,11 +66,11 @@ public class StateComputerModuleTest {
 	@Test
 	public void when_configured_with_correct_interfaces__then_state_computer_should_be_created() {
 		Injector injector = Guice.createInjector(
-			new StateComputerModule(1, 1),
-			new ExternalStateComputerModule()
+			new RadixEngineStoreModule(1),
+			new ExternalRadixEngineStoreModule()
 		);
 
-		RadixEngineStateComputer computer = injector.getInstance(RadixEngineStateComputer.class);
-		assertThat(computer).isNotNull();
+		EngineStore<CommittedAtom> store = injector.getInstance(Key.get(new TypeLiteral<EngineStore<CommittedAtom>>() { }));
+		assertThat(store).isNotNull();
 	}
 }

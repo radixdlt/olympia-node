@@ -23,12 +23,11 @@ import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
 import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomWithResult;
 import com.radixdlt.utils.SenderToRx;
 
-public class StateComputerRxModule extends AbstractModule {
+public class RadixEngineRxModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		SenderToRx<CommittedAtomWithResult, CommittedAtomWithResult> committedAtoms = new SenderToRx<>(c -> c);
 		bind(CommittedAtomSender.class).toInstance(committedAtoms::send);
 		bind(CommittedAtomsRx.class).toInstance(committedAtoms::rx);
 	}
-
 }

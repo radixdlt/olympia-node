@@ -19,68 +19,46 @@ package com.radixdlt;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.google.inject.Scopes;
 import com.google.inject.Singleton;
-import com.google.inject.TypeLiteral;
-import com.google.inject.name.Named;
 import com.radixdlt.atommodel.message.MessageParticleConstraintScrypt;
 import com.radixdlt.atommodel.tokens.TokensConstraintScrypt;
 import com.radixdlt.atommodel.unique.UniqueParticleConstraintScrypt;
 import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.Result;
-import com.radixdlt.consensus.AddressBookGenesisVertexMetadataProvider;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachine;
-import com.radixdlt.constraintmachine.Particle;
-import com.radixdlt.constraintmachine.Spin;
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.RadixEngine;
-import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
-import com.radixdlt.identifiers.AID;
-import com.radixdlt.middleware2.ClientAtom;
-import com.radixdlt.middleware2.ClientAtom.LedgerAtomConversionException;
-import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.LedgerAtomChecker;
 import com.radixdlt.middleware2.PowFeeComputer;
-import com.radixdlt.statecomputer.CommandToBinaryConverter;
 import com.radixdlt.middleware2.store.CommittedAtomsStore;
-import com.radixdlt.middleware2.store.CommittedAtomsStore.AtomIndexer;
-import com.radixdlt.middleware2.store.EngineAtomIndices;
-import com.radixdlt.network.addressbook.AddressBook;
-import com.radixdlt.properties.RuntimeProperties;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
 import com.radixdlt.store.CMStore;
 import com.radixdlt.store.EngineStore;
-import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import com.radixdlt.universe.Universe;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
 /**
  * Module which manages execution of commands
  */
-public class StateComputerModule extends AbstractModule {
+public class RadixEngineModule extends AbstractModule {
 	private static final Hash DEFAULT_FEE_TARGET = new Hash("0000FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF");
-	private final int fixedNodeCount;
 	private final long viewsPerEpoch;
 
-	public StateComputerModule(int fixedNodeCount, long viewsPerEpoch) {
-		this.fixedNodeCount = fixedNodeCount;
+	public RadixEngineModule(long viewsPerEpoch) {
 		this.viewsPerEpoch = viewsPerEpoch;
 	}
 
 	@Override
 	protected void configure() {
-		bind(new TypeLiteral<EngineStore<CommittedAtom>>() { }).to(CommittedAtomsStore.class).in(Scopes.SINGLETON);
 		bind(StateComputer.class).to(RadixEngineStateComputer.class);
 	}
 
@@ -119,7 +97,7 @@ public class StateComputerModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private RadixEngineStateComputer executor(
+	private RadixEngineStateComputer radixEngineStateComputer(
 		Serialization serialization,
 		RadixEngine<LedgerAtom> radixEngine,
 		Function<Long, BFTValidatorSet> validatorSetMapping,
@@ -169,52 +147,19 @@ public class StateComputerModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private EngineStore<LedgerAtom> engineStore(CommittedAtomsStore committedAtomsStore) {
-		return new EngineStore<LedgerAtom>() {
-			@Override
-			public void getAtomContaining(Particle particle, boolean b, Consumer<LedgerAtom> consumer) {
-				committedAtomsStore.getAtomContaining(particle, b, consumer::accept);
-			}
-
-			@Override
-			public void storeAtom(LedgerAtom ledgerAtom) {
-				if (!(ledgerAtom instanceof CommittedAtom)) {
-					throw new IllegalStateException("Should not be storing atoms which aren't committed");
-				}
-
-				CommittedAtom committedAtom = (CommittedAtom) ledgerAtom;
-				committedAtomsStore.storeAtom(committedAtom);
-			}
-
-			@Override
-			public void deleteAtom(AID aid) {
-				committedAtomsStore.deleteAtom(aid);
-			}
-
-			@Override
-			public Spin getSpin(Particle particle) {
-				return committedAtomsStore.getSpin(particle);
-			}
-		};
-	}
-
-	@Provides
-	@Singleton
 	private RadixEngine<LedgerAtom> getRadixEngine(
 		ConstraintMachine constraintMachine,
 		UnaryOperator<CMStore> virtualStoreLayer,
 		EngineStore<LedgerAtom> engineStore,
-		RuntimeProperties properties,
 		Universe universe
 	) {
-		final boolean skipAtomFeeCheck = properties.get("debug.nopow", false);
 		final PowFeeComputer powFeeComputer = new PowFeeComputer(() -> universe);
 		final LedgerAtomChecker ledgerAtomChecker =
 			new LedgerAtomChecker(
 				() -> universe,
 				powFeeComputer,
 				DEFAULT_FEE_TARGET,
-				skipAtomFeeCheck
+				false
 			);
 
 		return new RadixEngine<>(
@@ -223,58 +168,5 @@ public class StateComputerModule extends AbstractModule {
 			engineStore,
 			ledgerAtomChecker
 		);
-	}
-
-	@Provides
-	@Singleton
-	private CommittedAtom genesisAtom(
-		Universe universe,
-		VertexMetadata genesisVertexMetadata
-	) throws LedgerAtomConversionException {
-		final ClientAtom genesisAtom = ClientAtom.convertFromApiAtom(universe.getGenesis().get(0));
-		return new CommittedAtom(genesisAtom, genesisVertexMetadata);
-	}
-
-	@Provides
-	@Singleton
-	private VertexMetadata genesisVertexMetadata(
-		AddressBook addressBook,
-		@Named("self") ECKeyPair selfKey
-	) {
-		AddressBookGenesisVertexMetadataProvider metadataProvider
-			= new AddressBookGenesisVertexMetadataProvider(
-				selfKey.getPublicKey(),
-				addressBook,
-				fixedNodeCount
-			);
-
-		return metadataProvider.getGenesisVertexMetadata();
-	}
-
-	@Provides
-	@Singleton
-	private AtomIndexer buildAtomIndexer(Serialization serialization) {
-		return atom -> EngineAtomIndices.from(atom, serialization);
-	}
-
-	@Provides
-	@Singleton
-	private CommittedAtomsStore committedAtomsStore(
-		CommittedAtom genesisAtom,
-		LedgerEntryStore store,
-		CommandToBinaryConverter commandToBinaryConverter,
-		ClientAtomToBinaryConverter clientAtomToBinaryConverter,
-		AtomIndexer atomIndexer
-	) {
-		final CommittedAtomsStore engineStore = new CommittedAtomsStore(
-			store,
-			commandToBinaryConverter,
-			clientAtomToBinaryConverter,
-			atomIndexer
-		);
-		if (store.getNextCommittedLedgerEntries(genesisAtom.getVertexMetadata().getStateVersion() - 1, 1).isEmpty()) {
-			engineStore.storeAtom(genesisAtom);
-		}
-		return engineStore;
 	}
 }

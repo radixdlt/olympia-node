@@ -30,8 +30,9 @@ import com.radixdlt.LedgerEpochChangeModule;
 import com.radixdlt.LedgerEpochChangeRxModule;
 import com.radixdlt.LedgerLocalMempoolModule;
 import com.radixdlt.PersistenceModule;
-import com.radixdlt.StateComputerModule;
-import com.radixdlt.StateComputerRxModule;
+import com.radixdlt.RadixEngineModule;
+import com.radixdlt.RadixEngineRxModule;
+import com.radixdlt.RadixEngineStoreModule;
 import com.radixdlt.SyncCommittedServiceModule;
 import com.radixdlt.SyncMempoolServiceModule;
 import com.radixdlt.LedgerRxModule;
@@ -100,18 +101,19 @@ public class GlobalInjector {
 			new CryptoModule(),
 			new ConsensusModule(pacemakerTimeout),
 
-			// Execution
+			// Ledger
 			new LedgerModule(),
 			new LedgerRxModule(),
 			new LedgerEpochChangeModule(),
 			new LedgerEpochChangeRxModule(),
 			new LedgerLocalMempoolModule(mempoolMaxSize),
 
-			new PersistenceModule(),
-
 			// State Computer
-			new StateComputerModule(fixedNodeCount, viewsPerEpoch),
-			new StateComputerRxModule(),
+			new RadixEngineModule(viewsPerEpoch),
+			new RadixEngineRxModule(),
+			new RadixEngineStoreModule(fixedNodeCount),
+
+			new PersistenceModule(),
 
 			// Synchronization
 			new SyncRxModule(),
