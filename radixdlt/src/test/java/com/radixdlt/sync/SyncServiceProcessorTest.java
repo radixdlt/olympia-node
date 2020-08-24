@@ -18,6 +18,8 @@
 package com.radixdlt.sync;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -46,7 +48,7 @@ public class SyncServiceProcessorTest {
 	private StateSyncNetwork stateSyncNetwork;
 	private SyncServiceProcessor syncServiceProcessor;
 	private AddressBook addressBook;
-	private RadixEngineStateComputer executor;
+	private RadixEngineStateComputer stateComputer;
 	private SyncedCommandSender syncedCommandSender;
 	private SyncTimeoutScheduler syncTimeoutScheduler;
 
@@ -63,18 +65,29 @@ public class SyncServiceProcessorTest {
 		final long currentVersion = 0;
 		this.stateSyncNetwork = mock(StateSyncNetwork.class);
 		this.addressBook = mock(AddressBook.class);
-		this.executor = mock(RadixEngineStateComputer.class);
+		this.stateComputer = mock(RadixEngineStateComputer.class);
 		this.syncedCommandSender = mock(SyncedCommandSender.class);
 		this.syncTimeoutScheduler = mock(SyncTimeoutScheduler.class);
 		this.syncServiceProcessor = new SyncServiceProcessor(
-			executor,
+			stateComputer,
 			stateSyncNetwork,
-			addressBook, syncedCommandSender,
+			addressBook,
+			syncedCommandSender,
 			syncTimeoutScheduler,
 			currentVersion,
 			2,
 			1
 		);
+	}
+
+	@Test
+	public void when_remote_sync_request__then_process_it() {
+		SyncRequest syncRequest = mock(SyncRequest.class);
+		Peer peer = mock(Peer.class);
+		when(syncRequest.getPeer()).thenReturn(peer);
+		when(stateComputer.getCommittedCommands(anyLong(), anyInt())).thenReturn(ImmutableList.of());
+		syncServiceProcessor.processSyncRequest(syncRequest);
+		verify(stateSyncNetwork, times(1)).sendSyncResponse(eq(peer), any());
 	}
 
 	@Test
