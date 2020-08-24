@@ -27,8 +27,8 @@ import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.middleware2.LedgerAtom;
-import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.statecomputer.CommittedCommandsReader;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
 import com.radixdlt.store.EngineStore;
@@ -42,7 +42,7 @@ public class RadixEngineModuleTest {
 			bind(CommittedAtomSender.class).toInstance(mock(CommittedAtomSender.class));
 			bind(ECKeyPair.class).annotatedWith(Names.named("self")).toInstance(ECKeyPair.generateNew());
 			bind(new TypeLiteral<EngineStore<LedgerAtom>>() { }).toInstance(mock(EngineStore.class));
-			bind(CommittedAtomsStore.class).toInstance(mock(CommittedAtomsStore.class));
+			bind(CommittedCommandsReader.class).toInstance(mock(CommittedCommandsReader.class));
 		}
 	}
 

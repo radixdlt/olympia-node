@@ -32,11 +32,11 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.constraintmachine.ConstraintMachine;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.engine.RadixEngine;
+import com.radixdlt.statecomputer.CommittedCommandsReader;
 import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.middleware2.LedgerAtom;
 import com.radixdlt.middleware2.LedgerAtomChecker;
 import com.radixdlt.middleware2.PowFeeComputer;
-import com.radixdlt.middleware2.store.CommittedAtomsStore;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
 import com.radixdlt.store.CMStore;
@@ -101,15 +101,14 @@ public class RadixEngineModule extends AbstractModule {
 		Serialization serialization,
 		RadixEngine<LedgerAtom> radixEngine,
 		Function<Long, BFTValidatorSet> validatorSetMapping,
-		CommittedAtomsStore committedAtomsStore,
+		CommittedCommandsReader committedCommandsReader,
 		CommittedAtomSender committedAtomSender
 	) {
 		return new RadixEngineStateComputer(
 			serialization,
 			radixEngine,
 			validatorSetMapping,
-			View.of(viewsPerEpoch),
-			committedAtomsStore,
+			View.of(viewsPerEpoch), committedCommandsReader,
 			committedAtomSender
 		);
 	}

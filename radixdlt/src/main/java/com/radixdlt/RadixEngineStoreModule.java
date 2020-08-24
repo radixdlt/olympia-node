@@ -40,6 +40,8 @@ import com.radixdlt.serialization.Serialization;
 import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
 import com.radixdlt.statecomputer.CommandToBinaryConverter;
 import com.radixdlt.statecomputer.CommittedAtom;
+import com.radixdlt.statecomputer.CommittedCommandsReader;
+import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.universe.Universe;
@@ -55,6 +57,7 @@ public class RadixEngineStoreModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		bind(new TypeLiteral<EngineStore<CommittedAtom>>() { }).to(CommittedAtomsStore.class).in(Scopes.SINGLETON);
+		bind(CommittedCommandsReader.class).to(CommittedAtomsStore.class);
 	}
 
 	@Provides
@@ -125,6 +128,7 @@ public class RadixEngineStoreModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private CommittedAtomsStore committedAtomsStore(
+		CommittedAtomSender committedAtomSender,
 		CommittedAtom genesisAtom,
 		LedgerEntryStore store,
 		CommandToBinaryConverter commandToBinaryConverter,
@@ -132,6 +136,7 @@ public class RadixEngineStoreModule extends AbstractModule {
 		AtomIndexer atomIndexer
 	) {
 		final CommittedAtomsStore engineStore = new CommittedAtomsStore(
+			committedAtomSender,
 			store,
 			commandToBinaryConverter,
 			clientAtomToBinaryConverter,

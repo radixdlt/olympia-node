@@ -22,6 +22,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -98,7 +99,7 @@ public class RadixEngineStateComputerTest {
 		Command command = mock(Command.class);
 		stateComputer.commit(command, vertexMetadata);
 		verify(radixEngine, times(1)).checkAndStore(any());
-		verify(committedAtomSender, times(1)).sendCommittedAtom(any());
+		verify(committedAtomSender, never()).sendCommittedAtom(any());
 	}
 
 	@Test
