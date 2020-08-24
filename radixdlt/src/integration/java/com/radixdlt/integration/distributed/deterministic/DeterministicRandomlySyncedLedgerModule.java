@@ -17,9 +17,10 @@
 
 package com.radixdlt.integration.distributed.deterministic;
 
+import com.google.inject.Provides;
+import com.radixdlt.consensus.sync.SyncRequestSender;
 import java.util.Random;
 
-import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
@@ -28,7 +29,6 @@ import com.radixdlt.consensus.PreparedCommand;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.StateComputerLedger.CommittedStateSyncSender;
 
@@ -42,27 +42,40 @@ public class DeterministicRandomlySyncedLedgerModule extends AbstractModule {
 		this.random = random;
 	}
 
+	@Provides
+	private SyncRequestSender syncRequestSender() {
+		return request -> { };
+	}
+
 	@Singleton
 	@ProvidesIntoSet
 	Ledger syncedExecutor(CommittedStateSyncSender committedStateSyncSender) {
 		return new Ledger() {
 			@Override
-			public boolean syncTo(VertexMetadata vertexMetadata, ImmutableList<BFTNode> target, Object opaque) {
-				if (random.nextBoolean()) {
-					return true;
-				}
-				committedStateSyncSender.sendCommittedStateSync(vertexMetadata.getStateVersion(), opaque);
-				return false;
+			public PreparedCommand prepare(Vertex vertex) {
+				return PreparedCommand.create(0, Hash.ZERO_HASH);
+			}
+
+			@Override
+			public OnSynced ifCommitSynced(VertexMetadata vertexMetadata) {
+				return onSynced -> {
+					boolean synced = random.nextBoolean();
+					if (synced) {
+						onSynced.run();
+					}
+
+					return (notSynced, opaque) -> {
+						if (!synced) {
+							notSynced.accept(0L);
+							committedStateSyncSender.sendCommittedStateSync(vertexMetadata.getStateVersion(), opaque);
+						}
+					};
+				};
 			}
 
 			@Override
 			public void commit(Command command, VertexMetadata vertexMetadata) {
-				// No-op Mocked execution
-			}
-
-			@Override
-			public PreparedCommand prepare(Vertex vertex) {
-				return PreparedCommand.create(0, Hash.ZERO_HASH);
+				// Nothing to do here
 			}
 		};
 	}

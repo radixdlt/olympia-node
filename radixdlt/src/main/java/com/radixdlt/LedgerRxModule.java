@@ -18,7 +18,6 @@
 package com.radixdlt;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.multibindings.Multibinder;
 import com.radixdlt.api.DeserializationFailure;
 import com.radixdlt.api.SubmissionErrorsRx;
 import com.radixdlt.api.SubmissionFailure;
@@ -29,15 +28,11 @@ import com.radixdlt.engine.RadixEngineException;
 import com.radixdlt.mempool.SubmissionControlImpl.SubmissionControlSender;
 import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.converters.AtomConversionException;
-import com.radixdlt.sync.LocalSyncRequest;
 import com.radixdlt.sync.SyncServiceProcessor.SyncInProgress;
 import com.radixdlt.sync.SyncServiceProcessor.SyncTimeoutScheduler;
-import com.radixdlt.sync.SyncServiceRunner.LocalSyncRequestsRx;
 import com.radixdlt.sync.SyncServiceRunner.SyncTimeoutsRx;
 import com.radixdlt.ledger.StateComputerLedger.CommittedStateSyncSender;
-import com.radixdlt.ledger.StateComputerLedger.SyncService;
 import com.radixdlt.utils.ScheduledSenderToRx;
-import com.radixdlt.utils.SenderToRx;
 import com.radixdlt.utils.ThreadFactories;
 import com.radixdlt.utils.TwoSenderToRx;
 import io.reactivex.rxjava3.core.Observable;
@@ -85,11 +80,6 @@ public final class LedgerRxModule extends AbstractModule {
 		TwoSenderToRx<Long, Object, CommittedStateSync> committedStateSyncTwoSenderToRx = new TwoSenderToRx<>(CommittedStateSync::new);
 		bind(CommittedStateSyncRx.class).toInstance(committedStateSyncTwoSenderToRx::rx);
 		bind(CommittedStateSyncSender.class).toInstance(committedStateSyncTwoSenderToRx::send);
-
-		Multibinder<SyncService> syncServiceMultibinder = Multibinder.newSetBinder(binder(), SyncService.class);
-		SenderToRx<LocalSyncRequest, LocalSyncRequest> localSyncRequests = new SenderToRx<>(r -> r);
-		syncServiceMultibinder.addBinding().toInstance(localSyncRequests::send);
-		bind(LocalSyncRequestsRx.class).toInstance(localSyncRequests::rx);
 
 		ScheduledExecutorService ses = Executors.newSingleThreadScheduledExecutor(ThreadFactories.daemonThreads("SyncTimeoutSender"));
 		ScheduledSenderToRx<SyncInProgress> syncsInProgress = new ScheduledSenderToRx<>(ses);

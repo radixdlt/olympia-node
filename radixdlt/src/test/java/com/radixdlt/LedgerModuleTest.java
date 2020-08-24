@@ -34,12 +34,11 @@ import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.ledger.StateComputerLedger.CommittedSender;
 import com.radixdlt.ledger.StateComputerLedger.CommittedStateSyncSender;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
-import com.radixdlt.ledger.StateComputerLedger.SyncService;
 import java.util.Optional;
 import org.junit.Test;
 
 public class LedgerModuleTest {
-	private static class ExternalExecutionModule extends AbstractModule {
+	private static class ExternalLedgerModule extends AbstractModule {
 		@Override
 		protected void configure() {
 			bind(Mempool.class).toInstance(mock(Mempool.class));
@@ -50,7 +49,6 @@ public class LedgerModuleTest {
 			when(vertexMetadata.getValidatorSet()).thenReturn(Optional.of(mock(BFTValidatorSet.class)));
 			bind(VertexMetadata.class).toInstance(vertexMetadata);
 			Multibinder.newSetBinder(binder(), CommittedSender.class);
-			Multibinder.newSetBinder(binder(), SyncService.class);
 		}
 	}
 
@@ -58,7 +56,7 @@ public class LedgerModuleTest {
 	public void when_configured_with_correct_interfaces__then_state_computer_should_be_created() {
 		Injector injector = Guice.createInjector(
 			new LedgerModule(),
-			new ExternalExecutionModule()
+			new ExternalLedgerModule()
 		);
 
 		StateComputerLedger stateComputerLedger = injector.getInstance(StateComputerLedger.class);

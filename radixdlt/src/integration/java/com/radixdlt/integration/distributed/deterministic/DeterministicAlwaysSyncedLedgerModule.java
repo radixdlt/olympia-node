@@ -17,8 +17,8 @@
 
 package com.radixdlt.integration.distributed.deterministic;
 
-import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.Command;
@@ -26,30 +26,38 @@ import com.radixdlt.consensus.PreparedCommand;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
-import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.sync.SyncRequestSender;
 import com.radixdlt.crypto.Hash;
 
 /**
  * A synced executor that is always synced.
  */
 public class DeterministicAlwaysSyncedLedgerModule extends AbstractModule {
+	@Provides
+	private SyncRequestSender syncRequestSender() {
+		return request -> { };
+	}
+
 	@Singleton
 	@ProvidesIntoSet
 	Ledger syncedExecutor() {
 		return new Ledger() {
 			@Override
-			public boolean syncTo(VertexMetadata vertexMetadata, ImmutableList<BFTNode> target, Object opaque) {
-				return true;
+			public PreparedCommand prepare(Vertex vertex) {
+				return PreparedCommand.create(0, Hash.ZERO_HASH);
+			}
+
+			@Override
+			public OnSynced ifCommitSynced(VertexMetadata vertexMetadata) {
+				return onSynced -> {
+					onSynced.run();
+					return (notSynced, opaque) -> { };
+				};
 			}
 
 			@Override
 			public void commit(Command command, VertexMetadata vertexMetadata) {
 				// Nothing to do here
-			}
-
-			@Override
-			public PreparedCommand prepare(Vertex vertex) {
-				return PreparedCommand.create(0, Hash.ZERO_HASH);
 			}
 		};
 	}

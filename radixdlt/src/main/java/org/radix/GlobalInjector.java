@@ -36,6 +36,7 @@ import com.radixdlt.SyncCommittedServiceModule;
 import com.radixdlt.SyncMempoolServiceModule;
 import com.radixdlt.LedgerRxModule;
 import com.radixdlt.LedgerModule;
+import com.radixdlt.SyncRxModule;
 import com.radixdlt.SystemInfoRxModule;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.identifiers.RadixAddress;
@@ -113,6 +114,7 @@ public class GlobalInjector {
 			new StateComputerRxModule(),
 
 			// Synchronization
+			new SyncRxModule(),
 			new SyncCommittedServiceModule(),
 			new SyncMempoolServiceModule(),
 

@@ -45,6 +45,7 @@ import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
 import com.radixdlt.consensus.liveness.LocalTimeoutSender;
 import com.radixdlt.consensus.liveness.PacemakerFactory;
 import com.radixdlt.consensus.liveness.PacemakerRx;
+import com.radixdlt.consensus.sync.SyncRequestSender;
 import com.radixdlt.utils.ScheduledSenderToRx;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
 import com.radixdlt.counters.SystemCounters;
@@ -145,14 +146,17 @@ public final class ConsensusModule extends AbstractModule {
 		SyncVerticesRPCSender syncVerticesRPCSender,
 		VertexStoreEventSender vertexStoreEventSender,
 		SyncedVertexSender syncedVertexSender,
+		SyncRequestSender syncRequestSender,
 		SystemCounters counters
 	) {
 		return (genesisVertex, genesisQC, syncedRadixEngine) -> new VertexStore(
 			genesisVertex,
 			genesisQC,
 			syncedRadixEngine,
-			syncVerticesRPCSender, syncedVertexSender,
+			syncVerticesRPCSender,
+			syncedVertexSender,
 			vertexStoreEventSender,
+			syncRequestSender,
 			counters
 		);
 	}

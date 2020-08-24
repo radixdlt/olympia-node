@@ -32,7 +32,6 @@ import com.radixdlt.ledger.StateComputerLedger;
 import com.radixdlt.ledger.StateComputerLedger.CommittedSender;
 import com.radixdlt.ledger.StateComputerLedger.CommittedStateSyncSender;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
-import com.radixdlt.ledger.StateComputerLedger.SyncService;
 import java.util.Set;
 
 /**
@@ -45,7 +44,6 @@ public class LedgerModule extends AbstractModule {
 		bind(NextCommandGenerator.class).to(StateComputerLedger.class);
 
 		// These multibindings are part of our dependency graph, so create the modules here
-		Multibinder.newSetBinder(binder(), SyncService.class);
 		Multibinder.newSetBinder(binder(), CommittedSender.class);
 	}
 
@@ -56,11 +54,9 @@ public class LedgerModule extends AbstractModule {
 		StateComputer stateComputer,
 		CommittedStateSyncSender committedStateSyncSender,
 		Set<CommittedSender> committedSenders,
-		Set<SyncService> syncServices,
 		SystemCounters counters
 	) {
 		CommittedSender committedSender = (cmd, meta) -> committedSenders.forEach(s -> s.sendCommitted(cmd, meta));
-		SyncService syncService = request -> syncServices.forEach(s -> s.sendLocalSyncRequest(request));
 
 		return new StateComputerLedger(
 			0L,
@@ -68,7 +64,6 @@ public class LedgerModule extends AbstractModule {
 			stateComputer,
 			committedStateSyncSender,
 			committedSender,
-			syncService,
 			counters
 		);
 	}

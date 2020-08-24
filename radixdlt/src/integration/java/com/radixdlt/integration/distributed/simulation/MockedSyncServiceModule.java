@@ -18,11 +18,13 @@
 package com.radixdlt.integration.distributed.simulation;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
 import com.radixdlt.consensus.Ledger;
+import com.radixdlt.consensus.sync.SyncRequestSender;
 import com.radixdlt.ledger.CommittedCommand;
 import com.radixdlt.ledger.StateComputerLedger.CommittedSender;
-import com.radixdlt.ledger.StateComputerLedger.SyncService;
 import java.util.concurrent.ConcurrentMap;
 
 public class MockedSyncServiceModule extends AbstractModule {
@@ -38,9 +40,9 @@ public class MockedSyncServiceModule extends AbstractModule {
 			sharedCommittedAtoms.put(vertexMetadata.getStateVersion(), new CommittedCommand(cmd, vertexMetadata));
 	}
 
-	// TODO: change this to a service
-	@ProvidesIntoSet
-	SyncService syncService(
+	@Provides
+	@Singleton
+	SyncRequestSender syncRequestSender(
 		Ledger ledger
 	) {
 		return request -> {

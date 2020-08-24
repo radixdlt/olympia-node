@@ -24,11 +24,13 @@ import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.VertexStoreEventProcessor;
 import com.radixdlt.consensus.PreparedCommand;
+import com.radixdlt.consensus.sync.SyncRequestSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hash;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.sync.LocalSyncRequest;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -102,6 +104,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 	private final SyncVerticesRPCSender syncVerticesRPCSender;
 	private final Ledger ledger;
 	private final SystemCounters counters;
+	private final SyncRequestSender syncRequestSender;
 
 	// These should never be null
 	private Hash rootId;
@@ -118,15 +121,18 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		SyncVerticesRPCSender syncVerticesRPCSender,
 		SyncedVertexSender syncedVertexSender,
 		VertexStoreEventSender vertexStoreEventSender,
+		SyncRequestSender syncRequestSender,
 		SystemCounters counters
 	) {
 		this(
 			rootVertex,
 			rootQC,
-			Collections.emptyList(), ledger,
+			Collections.emptyList(),
+			ledger,
 			syncVerticesRPCSender,
 			syncedVertexSender,
 			vertexStoreEventSender,
+			syncRequestSender,
 			counters
 		);
 	}
@@ -139,12 +145,14 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		SyncVerticesRPCSender syncVerticesRPCSender,
 		SyncedVertexSender syncedVertexSender,
 		VertexStoreEventSender vertexStoreEventSender,
+		SyncRequestSender syncRequestSender,
 		SystemCounters counters
 	) {
 		this.ledger = Objects.requireNonNull(ledger);
 		this.syncVerticesRPCSender = Objects.requireNonNull(syncVerticesRPCSender);
 		this.vertexStoreEventSender = Objects.requireNonNull(vertexStoreEventSender);
 		this.syncedVertexSender = Objects.requireNonNull(syncedVertexSender);
+		this.syncRequestSender = syncRequestSender;
 		this.counters = Objects.requireNonNull(counters);
 
 		Objects.requireNonNull(rootVertex);
@@ -299,11 +307,17 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		ImmutableList<BFTNode> signers = ImmutableList.of(syncState.author);
 		syncState.fetched.addAll(response.getVertices());
 
-		if (ledger.syncTo(syncState.committedVertexMetadata, signers, syncTo)) {
-			rebuildAndSyncQC(syncState);
-		} else {
-			syncState.setSyncStage(SyncStage.SYNC_TO_COMMIT);
-		}
+		ledger.ifCommitSynced(syncState.committedVertexMetadata)
+			.then(() -> rebuildAndSyncQC(syncState))
+			.elseExecuteAndSendMessageOnSync(currentStateVersion -> {
+				syncState.setSyncStage(SyncStage.SYNC_TO_COMMIT);
+				LocalSyncRequest localSyncRequest = new LocalSyncRequest(
+					syncState.committedVertexMetadata,
+					currentStateVersion,
+					signers
+				);
+				syncRequestSender.sendLocalSyncRequest(localSyncRequest);
+			}, syncTo);
 	}
 
 	private void processVerticesResponseForQCSync(Hash syncTo, SyncState syncState, GetVerticesResponse response) {

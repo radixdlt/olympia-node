@@ -43,6 +43,7 @@ import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.epoch.EpochManager.EpochInfoSender;
 import com.radixdlt.consensus.epoch.EpochManager.SyncEpochsRPCSender;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
+import com.radixdlt.consensus.sync.SyncRequestSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.network.TimeSupplier;
 import io.reactivex.rxjava3.core.Observable;
@@ -88,6 +89,7 @@ public class ConsensusModuleTest {
 			bind(HashVerifier.class).toInstance(mock(HashVerifier.class));
 			bind(HashSigner.class).toInstance(mock(HashSigner.class));
 			bind(EpochChange.class).toInstance(mock(EpochChange.class));
+			bind(SyncRequestSender.class).toInstance(mock(SyncRequestSender.class));
 			bind(BFTNode.class).annotatedWith(Names.named("self")).toInstance(mock(BFTNode.class));
 		}
 	}

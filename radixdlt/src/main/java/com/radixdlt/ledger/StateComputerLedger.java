@@ -17,7 +17,6 @@
 
 package com.radixdlt.ledger;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.PreparedCommand;
@@ -25,14 +24,12 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.mempool.Mempool;
-import com.radixdlt.sync.LocalSyncRequest;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -45,10 +42,6 @@ import java.util.Set;
  * Synchronizes execution
  */
 public final class StateComputerLedger implements Ledger, NextCommandGenerator {
-	public interface SyncService {
-		void sendLocalSyncRequest(LocalSyncRequest request);
-	}
-
 	public interface StateComputer {
 		Optional<BFTValidatorSet> prepare(Vertex vertex);
 		void commit(Command command, VertexMetadata vertexMetadata);
@@ -68,7 +61,6 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	private final CommittedStateSyncSender committedStateSyncSender;
 	private final CommittedSender committedSender;
 	private final SystemCounters counters;
-	private final SyncService syncService;
 
 	private final Object lock = new Object();
 	private long currentStateVersion;
@@ -80,7 +72,6 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		StateComputer stateComputer,
 		CommittedStateSyncSender committedStateSyncSender,
 		CommittedSender committedSender,
-		SyncService syncService,
 		SystemCounters counters
 	) {
 		this.currentStateVersion = initialStateVersion;
@@ -89,7 +80,6 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		this.committedStateSyncSender = Objects.requireNonNull(committedStateSyncSender);
 		this.committedSender = Objects.requireNonNull(committedSender);
 		this.counters = Objects.requireNonNull(counters);
-		this.syncService = Objects.requireNonNull(syncService);
 	}
 
 	@Override
@@ -123,22 +113,20 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	}
 
 	@Override
-	public boolean syncTo(VertexMetadata vertexMetadata, ImmutableList<BFTNode> target, Object opaque) {
+	public OnSynced ifCommitSynced(VertexMetadata vertexMetadata) {
+		final long targetStateVersion = vertexMetadata.getStateVersion();
 		synchronized (lock) {
-			if (target.isEmpty()) {
-				// TODO: relax this in future when we have non-validator nodes
-				throw new IllegalArgumentException("target must not be empty");
-			}
-
-			final long targetStateVersion = vertexMetadata.getStateVersion();
 			if (targetStateVersion <= this.currentStateVersion) {
-				return true;
+				return onSync -> {
+					onSync.run();
+					return (onError, opaque) -> { };
+				};
+			} else {
+				return onSync -> (onError, opaque) -> {
+					this.committedStateSyncers.merge(targetStateVersion, Collections.singleton(opaque), Sets::union);
+					onError.accept(this.currentStateVersion);
+				};
 			}
-
-			this.syncService.sendLocalSyncRequest(new LocalSyncRequest(vertexMetadata, currentStateVersion, target));
-			this.committedStateSyncers.merge(targetStateVersion, Collections.singleton(opaque), Sets::union);
-
-			return false;
 		}
 	}
 

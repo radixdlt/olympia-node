@@ -17,8 +17,7 @@
 
 package com.radixdlt.consensus;
 
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.bft.BFTNode;
+import java.util.function.Consumer;
 
 /**
  * A distributed computer which manages the computed state in a BFT.
@@ -34,16 +33,19 @@ public interface Ledger {
 	PreparedCommand prepare(Vertex vertex);
 
 	/**
-	 * Syncs the computer to a target version given the target version
-	 * and a list of peer targets
-	 *
-	 * @param vertexMetadata the target vertexMetadata
-	 * @param target list of targets as hint of which peer has the state
-	 * @param opaque some opaque client object which will be passed in a sync
-	 * message if this returns false
-	 * @return true if already synced, otherwise false
+	 * Check if the ledger is commit synced at a particular state
+	 * @param vertexMetadata the metadata to sync to
+	 * @return Synced handler
 	 */
-	boolean syncTo(VertexMetadata vertexMetadata, ImmutableList<BFTNode> target, Object opaque);
+	OnSynced ifCommitSynced(VertexMetadata vertexMetadata);
+
+	interface OnSynced {
+		OnNotSynced then(Runnable runnable);
+	}
+
+	interface OnNotSynced {
+		void elseExecuteAndSendMessageOnSync(Consumer<Long> currentStateConsumer, Object opaque);
+	}
 
 	/**
 	 * Commit a command

@@ -15,21 +15,22 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt;
 
-import com.radixdlt.consensus.bft.VertexStore;
+import com.google.inject.AbstractModule;
+import com.radixdlt.consensus.sync.SyncRequestSender;
+import com.radixdlt.sync.LocalSyncRequest;
+import com.radixdlt.sync.SyncServiceRunner.LocalSyncRequestsRx;
+import com.radixdlt.utils.SenderToRx;
 
 /**
- * A Vertex Store factory
+ * Module which handles message passing to the sync services
  */
-public interface VertexStoreFactory {
-
-	/**
-	 * Creates a new VertexStore given initial vertex and QC
-	 * @param genesisVertex the root vertex
-	 * @param genesisQC the root QC
-	 * @param ledger the underlying ledger
-	 * @return a new VertexStore
-	 */
-	VertexStore create(Vertex genesisVertex, QuorumCertificate genesisQC, Ledger ledger);
+public class SyncRxModule extends AbstractModule {
+	@Override
+	protected void configure() {
+		SenderToRx<LocalSyncRequest, LocalSyncRequest> syncRequests = new SenderToRx<>(c -> c);
+		bind(SyncRequestSender.class).toInstance(syncRequests::send);
+		bind(LocalSyncRequestsRx.class).toInstance(syncRequests::rx);
+	}
 }

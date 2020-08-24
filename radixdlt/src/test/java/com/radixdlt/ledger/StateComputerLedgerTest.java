@@ -28,7 +28,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.google.common.collect.ImmutableList;
 import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.PreparedCommand;
 import com.radixdlt.consensus.QuorumCertificate;
@@ -46,7 +45,7 @@ import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.network.addressbook.Peer;
-import com.radixdlt.ledger.StateComputerLedger.SyncService;
+import java.util.function.Consumer;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -59,7 +58,6 @@ public class StateComputerLedgerTest {
 	private CommittedSender committedSender;
 
 	private SystemCounters counters;
-	private SyncService syncService;
 
 	@Before
 	public void setup() {
@@ -70,14 +68,12 @@ public class StateComputerLedgerTest {
 		this.counters = mock(SystemCounters.class);
 		this.committedSender = mock(CommittedSender.class);
 
-		this.syncService = mock(SyncService.class);
 		this.stateComputerLedger = new StateComputerLedger(
 			1233,
 			mempool,
 			executor,
 			committedStateSyncSender,
 			committedSender,
-			syncService,
 			counters
 		);
 	}
@@ -137,8 +133,15 @@ public class StateComputerLedgerTest {
 		VertexMetadata nextVertexMetadata = mock(VertexMetadata.class);
 		when(nextVertexMetadata.getStateVersion()).thenReturn(1234L);
 
-		stateComputerLedger.syncTo(nextVertexMetadata, ImmutableList.of(node), mock(Object.class));
+		Runnable onSynced = mock(Runnable.class);
+		Consumer<Long> onNotSynced = mock(Consumer.class);
+		stateComputerLedger
+			.ifCommitSynced(nextVertexMetadata)
+			.then(onSynced)
+			.elseExecuteAndSendMessageOnSync(onNotSynced, mock(Object.class));
 		verify(committedStateSyncSender, never()).sendCommittedStateSync(anyLong(), any());
+		verify(onSynced, never()).run();
+		verify(onNotSynced, times(1)).accept(eq(1233L));
 
 		stateComputerLedger.commit(mock(Command.class), nextVertexMetadata);
 

@@ -21,6 +21,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doAnswer;
@@ -57,6 +58,7 @@ import com.radixdlt.consensus.liveness.Pacemaker;
 import com.radixdlt.consensus.liveness.ProposerElection;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.consensus.sync.SyncRequestSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.counters.SystemCountersImpl;
@@ -69,6 +71,7 @@ public class EpochManagerTest {
 	private EpochManager epochManager;
 	private EpochManager.SyncEpochsRPCSender syncEpochsRPCSender;
 	private EpochInfoSender epochInfoSender;
+	private SyncRequestSender syncRequestSender;
 	private VertexStore vertexStore;
 	private BFTFactory bftFactory;
 	private Pacemaker pacemaker;
@@ -97,6 +100,7 @@ public class EpochManagerTest {
 		when(self.getSimpleName()).thenReturn("Test");
 
 		this.epochInfoSender = mock(EpochInfoSender.class);
+		this.syncRequestSender = mock(SyncRequestSender.class);
 
 		this.epochManager = new EpochManager(
 			this.self,
@@ -106,6 +110,7 @@ public class EpochManagerTest {
 			this.ledger,
 			this.syncEpochsRPCSender,
 			mock(LocalTimeoutSender.class),
+			syncRequestSender,
 			timeoutSender -> this.pacemaker,
 			vertexStoreFactory,
 			proposers -> proposerElection,
@@ -175,7 +180,8 @@ public class EpochManagerTest {
 		when(response.getEpochAncestor()).thenReturn(ancestor);
 		when(response.getAuthor()).thenReturn(mock(BFTNode.class));
 		epochManager.processGetEpochResponse(response);
-		verify(ledger, times(1)).syncTo(eq(ancestor), any(), any());
+		verify(syncRequestSender, times(1))
+			.sendLocalSyncRequest(argThat(req -> req.getTarget().equals(ancestor)));
 	}
 
 	@Test
@@ -183,7 +189,7 @@ public class EpochManagerTest {
 		GetEpochResponse response = mock(GetEpochResponse.class);
 		when(response.getEpochAncestor()).thenReturn(null);
 		epochManager.processGetEpochResponse(response);
-		verify(ledger, never()).syncTo(any(), any(), any());
+		verify(syncRequestSender, never()).sendLocalSyncRequest(any());
 	}
 
 	@Test
@@ -200,7 +206,7 @@ public class EpochManagerTest {
 		GetEpochResponse response = mock(GetEpochResponse.class);
 		when(response.getEpochAncestor()).thenReturn(ancestor);
 		epochManager.processGetEpochResponse(response);
-		verify(ledger, never()).syncTo(any(), any(), any());
+		verify(syncRequestSender, never()).sendLocalSyncRequest(any());
 	}
 
 	@Test

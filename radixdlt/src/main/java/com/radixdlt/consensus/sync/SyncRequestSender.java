@@ -15,21 +15,13 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.consensus;
+package com.radixdlt.consensus.sync;
 
-import com.radixdlt.consensus.bft.VertexStore;
+import com.radixdlt.sync.LocalSyncRequest;
 
 /**
- * A Vertex Store factory
+ * Sends a sync request
  */
-public interface VertexStoreFactory {
-
-	/**
-	 * Creates a new VertexStore given initial vertex and QC
-	 * @param genesisVertex the root vertex
-	 * @param genesisQC the root QC
-	 * @param ledger the underlying ledger
-	 * @return a new VertexStore
-	 */
-	VertexStore create(Vertex genesisVertex, QuorumCertificate genesisQC, Ledger ledger);
+public interface SyncRequestSender {
+	void sendLocalSyncRequest(LocalSyncRequest request);
 }

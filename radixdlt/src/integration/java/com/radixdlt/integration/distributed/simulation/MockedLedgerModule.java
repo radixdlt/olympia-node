@@ -17,7 +17,6 @@
 
 package com.radixdlt.integration.distributed.simulation;
 
-import com.google.common.collect.ImmutableList;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
@@ -27,10 +26,10 @@ import com.radixdlt.consensus.EpochChangeRx;
 import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
-import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.consensus.liveness.NextCommandGenerator;
+import com.radixdlt.consensus.sync.SyncRequestSender;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.consensus.PreparedCommand;
 import io.reactivex.rxjava3.core.Observable;
@@ -49,25 +48,29 @@ public class MockedLedgerModule extends AbstractModule {
 		EpochChange initialEpoch = new EpochChange(VertexMetadata.ofGenesisAncestor(validatorSet), validatorSet);
 		bind(EpochChange.class).toInstance(initialEpoch);
 		bind(NextCommandGenerator.class).toInstance((view, aids) -> null);
+		bind(SyncRequestSender.class).toInstance(req -> { });
 	}
 
 	@Provides
 	@Singleton
-	Ledger syncedExecutor() {
+	Ledger syncedLedger() {
 		return new Ledger() {
 			@Override
-			public boolean syncTo(VertexMetadata vertexMetadata, ImmutableList<BFTNode> target, Object opaque) {
-				return true;
+			public PreparedCommand prepare(Vertex vertex) {
+				return PreparedCommand.create(0, Hash.ZERO_HASH);
+			}
+
+			@Override
+			public OnSynced ifCommitSynced(VertexMetadata vertexMetadata) {
+				return onSynced -> {
+					onSynced.run();
+					return (notSynced, opaque) -> { };
+				};
 			}
 
 			@Override
 			public void commit(Command command, VertexMetadata vertexMetadata) {
 				// Nothing to do here
-			}
-
-			@Override
-			public PreparedCommand prepare(Vertex vertex) {
-				return PreparedCommand.create(0, Hash.ZERO_HASH);
 			}
 		};
 	}
