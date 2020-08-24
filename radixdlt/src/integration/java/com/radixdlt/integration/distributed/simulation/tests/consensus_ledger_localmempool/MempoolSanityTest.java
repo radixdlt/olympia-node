@@ -43,7 +43,7 @@ public class MempoolSanityTest {
 	@Test
 	public void when_submitting_items_to_null_mempool__then_test_should_fail() {
 		SimulationTest simulationTest = bftTestBuilder
-			.executor()
+			.ledger()
 			.build();
 		Map<String, Optional<TestInvariantError>> results = simulationTest.run(1, TimeUnit.MINUTES);
 		assertThat(results).hasEntrySatisfying("mempool", error -> assertThat(error).isPresent());
@@ -52,7 +52,7 @@ public class MempoolSanityTest {
 	@Test
 	public void when_submitting_items_to_mempool__then_they_should_get_executed() {
 		SimulationTest simulationTest = bftTestBuilder
-			.executorAndMempool()
+			.ledgerAndMempool()
 			.build();
 		Map<String, Optional<TestInvariantError>> results = simulationTest.run(1, TimeUnit.MINUTES);
 		assertThat(results).allSatisfy((name, err) -> AssertionsForClassTypes.assertThat(err).isEmpty());
