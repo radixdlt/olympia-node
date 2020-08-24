@@ -29,7 +29,7 @@ import com.radixdlt.atommodel.unique.UniqueParticleConstraintScrypt;
 import com.radixdlt.atommodel.validators.ValidatorConstraintScrypt;
 import com.radixdlt.atomos.CMAtomOS;
 import com.radixdlt.atomos.Result;
-import com.radixdlt.consensus.AddressBookValidatorSetProvider;
+import com.radixdlt.consensus.AddressBookGenesisVertexMetadataProvider;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
@@ -86,16 +86,11 @@ public class StateComputerModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private Function<Long, BFTValidatorSet> addressBookValidatorSetProvider(
-		AddressBook addressBook,
-		@Named("self") ECKeyPair selfKey
+	private Function<Long, BFTValidatorSet> validatorMapping(
+		VertexMetadata genesisVertexMetadata
 	) {
-		AddressBookValidatorSetProvider addressBookValidatorSetProvider = new AddressBookValidatorSetProvider(
-			selfKey.getPublicKey(),
-			addressBook,
-			fixedNodeCount,
-			(epoch, validators) -> {
-				/*
+		/*
+		return (epoch, validators) -> {
 				Builder<BFTValidator> validatorSetBuilder = ImmutableList.builder();
 				Random random = new Random(epoch);
 				List<Integer> indices = IntStream.range(0, validators.size()).boxed().collect(Collectors.toList());
@@ -115,12 +110,11 @@ public class StateComputerModule extends AbstractModule {
 				ImmutableList<BFTValidator> validatorList = validatorSetBuilder.build();
 
 				return BFTValidatorSet.from(validatorList);
-				*/
-				return BFTValidatorSet.from(validators);
-			}
-		);
+		}
+		*/
 
-		return addressBookValidatorSetProvider::getValidatorSet;
+		return epoch -> genesisVertexMetadata.getValidatorSet()
+			.orElseThrow(() -> new IllegalStateException("genesis has no validator set!"));
 	}
 
 	@Provides
@@ -244,10 +238,17 @@ public class StateComputerModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private VertexMetadata genesisVertexMetadata(
-		Function<Long, BFTValidatorSet> validatorSetMapping
+		AddressBook addressBook,
+		@Named("self") ECKeyPair selfKey
 	) {
-		BFTValidatorSet validatorSet = validatorSetMapping.apply(1L);
-		return VertexMetadata.ofGenesisAncestor(validatorSet);
+		AddressBookGenesisVertexMetadataProvider metadataProvider
+			= new AddressBookGenesisVertexMetadataProvider(
+				selfKey.getPublicKey(),
+				addressBook,
+				fixedNodeCount
+			);
+
+		return metadataProvider.getGenesisVertexMetadata();
 	}
 
 	@Provides

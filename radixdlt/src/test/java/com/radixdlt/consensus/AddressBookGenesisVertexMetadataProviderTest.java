@@ -18,26 +18,19 @@
 package com.radixdlt.consensus;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.google.common.collect.ImmutableList;
-import com.radixdlt.consensus.bft.BFTValidator;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.identifiers.EUID;
 import com.radixdlt.network.addressbook.AddressBook;
 
 import com.radixdlt.network.addressbook.Peer;
-import java.util.function.BiFunction;
 import java.util.stream.Stream;
 import org.junit.Test;
 import org.radix.universe.system.RadixSystem;
 
-public class AddressBookValidatorSetProviderTest {
+public class AddressBookGenesisVertexMetadataProviderTest {
 	@Test
 	public void when_quorum_size_is_one__then_should_emit_self() {
 		ECPublicKey self = mock(ECPublicKey.class);
@@ -45,12 +38,10 @@ public class AddressBookValidatorSetProviderTest {
 		AddressBook addressBook = mock(AddressBook.class);
 		// Type safety OK with mock
 		@SuppressWarnings("unchecked")
-		BiFunction<Long, ImmutableList<BFTValidator>, BFTValidatorSet> selector = mock(BiFunction.class);
-		AddressBookValidatorSetProvider validatorSetProvider = new AddressBookValidatorSetProvider(
+		AddressBookGenesisVertexMetadataProvider validatorSetProvider = new AddressBookGenesisVertexMetadataProvider(
 			self,
 			addressBook,
-			1,
-			selector
+			1
 		);
 		Peer peer = mock(Peer.class);
 		RadixSystem system = mock(RadixSystem.class);
@@ -59,13 +50,7 @@ public class AddressBookValidatorSetProviderTest {
 		when(peer.getSystem()).thenReturn(system);
 		when(addressBook.peers()).thenAnswer(inv -> Stream.of(peer));
 
-		doAnswer(invocation -> {
-			ImmutableList<BFTValidator> validators = invocation.getArgument(1);
-			return BFTValidatorSet.from(validators);
-		}).when(selector).apply(anyLong(), any());
-
-		BFTValidatorSet validatorSet = validatorSetProvider.getValidatorSet(0);
-		assertThat(validatorSet.getValidators()).hasSize(1);
-		assertThat(validatorSet.getValidators()).allMatch(v -> v.getNode().getKey().equals(self));
+		VertexMetadata vertexMetadata = validatorSetProvider.getGenesisVertexMetadata();
+		assertThat(vertexMetadata.getValidatorSet()).isNotEmpty();
 	}
 }

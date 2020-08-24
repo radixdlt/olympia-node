@@ -32,8 +32,6 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Objects;
-import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
@@ -46,22 +44,19 @@ import org.radix.universe.system.RadixSystem;
  * Temporary epoch management which given a fixed quorum size retrieves the first set of peers which
  * matches the size and used as the validator set.
  */
-public class AddressBookValidatorSetProvider {
+public class AddressBookGenesisVertexMetadataProvider {
 	private static final Logger log = LogManager.getLogger();
 	private final Single<ImmutableList<BFTValidator>> validatorList;
-	private final BiFunction<Long, ImmutableList<BFTValidator>, BFTValidatorSet> nextValidatorSetFunction;
 
-	public AddressBookValidatorSetProvider(
+	public AddressBookGenesisVertexMetadataProvider(
 		ECPublicKey selfKey,
 		AddressBook addressBook,
-		int fixedNodeCount,
-		BiFunction<Long, ImmutableList<BFTValidator>, BFTValidatorSet> nextValidatorSetFunction
+		int fixedNodeCount
 	) {
 		if (fixedNodeCount <= 0) {
 			throw new IllegalArgumentException("Quorum size must be > 0 but was " + fixedNodeCount);
 		}
 
-		this.nextValidatorSetFunction = Objects.requireNonNull(nextValidatorSetFunction);
 		this.validatorList = Observable.<List<Peer>>create(emitter -> {
 			emitter.onNext(addressBook.peers().collect(Collectors.toList()));
 			// Race condition here but ignore as this is a temporary class
@@ -86,10 +81,9 @@ public class AddressBookValidatorSetProvider {
 			.cache();
 	}
 
-	public BFTValidatorSet getValidatorSet(long epoch) {
+	public VertexMetadata getGenesisVertexMetadata() {
 		ImmutableList<BFTValidator> validators = validatorList.blockingGet();
-
-		return this.nextValidatorSetFunction.apply(epoch, validators);
-
+		BFTValidatorSet validatorSet = BFTValidatorSet.from(validators);
+		return VertexMetadata.ofGenesisAncestor(validatorSet);
 	}
 }
