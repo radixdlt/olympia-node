@@ -31,8 +31,11 @@ import com.radixdlt.RadixEngineRxModule;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.integration.distributed.simulation.TestInvariant.TestInvariantError;
+import com.radixdlt.integration.distributed.simulation.application.IncrementalBytesCommandSupplier;
+import com.radixdlt.integration.distributed.simulation.application.MempoolSubmitAndCommit;
+import com.radixdlt.integration.distributed.simulation.application.RadixEngineValidatorRegistrator;
 import com.radixdlt.integration.distributed.simulation.invariants.epochs.EpochViewInvariant;
-import com.radixdlt.integration.distributed.simulation.invariants.mempool.MempoolSubmitAndCommitInvariant;
+import com.radixdlt.integration.distributed.simulation.application.PeriodicActions;
 import com.radixdlt.integration.distributed.simulation.network.DroppingLatencyProvider;
 import com.radixdlt.integration.distributed.simulation.network.OneProposalPerViewDropper;
 import com.radixdlt.integration.distributed.simulation.network.RandomLatencyProvider;
@@ -57,6 +60,7 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
@@ -99,8 +103,8 @@ public class SimulationTest {
 		}
 
 		private final DroppingLatencyProvider latencyProvider = new DroppingLatencyProvider();
-		private final ImmutableMap.Builder<String, TestInvariant> checksBuilder = ImmutableMap.builder();
-		private ImmutableList<BFTNode> nodes = ImmutableList.of(BFTNode.create(ECKeyPair.generateNew().getPublicKey()));
+		private final ImmutableMap.Builder<String, Function<List<ECKeyPair>, TestInvariant>> checksBuilder = ImmutableMap.builder();
+		private ImmutableList<ECKeyPair> nodes = ImmutableList.of(ECKeyPair.generateNew());
 		private int pacemakerTimeout = 12 * SimulationNetwork.DEFAULT_LATENCY;
 		private boolean getVerticesRPCEnabled = true;
 		private View epochHighView = null;
@@ -111,7 +115,9 @@ public class SimulationTest {
 		}
 
 		public Builder addProposalDropper() {
-			this.latencyProvider.addDropper(new OneProposalPerViewDropper(ImmutableList.copyOf(nodes), new Random()));
+			ImmutableList<BFTNode> bftNodes = nodes.stream().map(kp -> BFTNode.create(kp.getPublicKey()))
+				.collect(ImmutableList.toImmutableList());
+			this.latencyProvider.addDropper(new OneProposalPerViewDropper(bftNodes, new Random()));
 			return this;
 		}
 
@@ -123,7 +129,6 @@ public class SimulationTest {
 		public Builder numNodes(int numNodes) {
 			this.nodes = Stream.generate(ECKeyPair::generateNew)
 				.limit(numNodes)
-				.map(kp -> BFTNode.create(kp.getPublicKey()))
 				.collect(ImmutableList.toImmutableList());
 			return this;
 		}
@@ -134,11 +139,10 @@ public class SimulationTest {
 			}
 			this.nodes = Stream.generate(ECKeyPair::generateNew)
 				.limit(numNodes)
-				.map(kp -> BFTNode.create(kp.getPublicKey()))
 				.collect(ImmutableList.toImmutableList());
 			Map<BFTNode, Integer> nodeLatencies = IntStream.range(0, numNodes)
 				.boxed()
-				.collect(Collectors.toMap(i -> this.nodes.get(i), i -> latencies[i]));
+				.collect(Collectors.toMap(i -> BFTNode.create(this.nodes.get(i).getPublicKey()), i -> latencies[i]));
 			this.latencyProvider.setBase(msg -> Math.max(nodeLatencies.get(msg.getSender()), nodeLatencies.get(msg.getReceiver())));
 			return this;
 		}
@@ -176,43 +180,55 @@ public class SimulationTest {
 			return this;
 		}
 
-		public Builder checkMempool(String invariantName) {
-			this.checksBuilder.put(invariantName, new MempoolSubmitAndCommitInvariant());
+		public Builder addMempoolSubmissionsSteadyState(String invariantName) {
+			this.checksBuilder.put(invariantName, nodes -> {
+				MempoolSubmitAndCommit mempoolSubmitAndCommit = new MempoolSubmitAndCommit(new IncrementalBytesCommandSupplier());
+				return new PeriodicActions(mempoolSubmitAndCommit);
+			});
 			return this;
 		}
 
+		public Builder addRadixEngineMempoolSubmissionsSteadyState(String invariantName) {
+			this.checksBuilder.put(invariantName, nodes -> {
+				MempoolSubmitAndCommit mempoolSubmitAndCommit = new MempoolSubmitAndCommit(new RadixEngineValidatorRegistrator(nodes));
+				return new PeriodicActions(mempoolSubmitAndCommit);
+			});
+			return this;
+		}
+
+
 		public Builder checkLiveness(String invariantName) {
-			this.checksBuilder.put(invariantName, new LivenessInvariant(8 * SimulationNetwork.DEFAULT_LATENCY, TimeUnit.MILLISECONDS));
+			this.checksBuilder.put(invariantName, nodes -> new LivenessInvariant(8 * SimulationNetwork.DEFAULT_LATENCY, TimeUnit.MILLISECONDS));
 			return this;
 		}
 
 		public Builder checkLiveness(String invariantName, long duration, TimeUnit timeUnit) {
-			this.checksBuilder.put(invariantName, new LivenessInvariant(duration, timeUnit));
+			this.checksBuilder.put(invariantName, nodes -> new LivenessInvariant(duration, timeUnit));
 			return this;
 		}
 
 		public Builder checkSafety(String invariantName) {
-			this.checksBuilder.put(invariantName, new SafetyInvariant());
+			this.checksBuilder.put(invariantName, nodes -> new SafetyInvariant());
 			return this;
 		}
 
 		public Builder checkNoTimeouts(String invariantName) {
-			this.checksBuilder.put(invariantName, new NoTimeoutsInvariant());
+			this.checksBuilder.put(invariantName, nodes -> new NoTimeoutsInvariant());
 			return this;
 		}
 
 		public Builder checkAllProposalsHaveDirectParents(String invariantName) {
-			this.checksBuilder.put(invariantName, new AllProposalsHaveDirectParentsInvariant());
+			this.checksBuilder.put(invariantName, nodes -> new AllProposalsHaveDirectParentsInvariant());
 			return this;
 		}
 
 		public Builder checkNoneCommitted(String invariantName) {
-			this.checksBuilder.put(invariantName, new NoneCommittedInvariant());
+			this.checksBuilder.put(invariantName, nodes -> new NoneCommittedInvariant());
 			return this;
 		}
 
 		public Builder checkEpochHighView(String invariantName, View epochHighView) {
-			this.checksBuilder.put(invariantName, new EpochViewInvariant(epochHighView));
+			this.checksBuilder.put(invariantName, nodes -> new EpochViewInvariant(epochHighView));
 			return this;
 		}
 
@@ -221,6 +237,7 @@ public class SimulationTest {
 			if (ledgerType == LedgerType.MOCKED_LEDGER) {
 				BFTValidatorSet validatorSet = BFTValidatorSet.from(
 					nodes.stream()
+						.map(node -> BFTNode.create(node.getPublicKey()))
 						.map(node -> BFTValidator.from(node, UInt256.ONE))
 						.collect(Collectors.toList())
 				);
@@ -228,6 +245,7 @@ public class SimulationTest {
 			} else {
 				BFTValidatorSet validatorSet = BFTValidatorSet.from(
 					nodes.stream()
+						.map(node -> BFTNode.create(node.getPublicKey()))
 						.map(node -> BFTValidator.from(node, UInt256.ONE))
 						.collect(Collectors.toList())
 				);
@@ -246,6 +264,7 @@ public class SimulationTest {
 					Function<Long, BFTValidatorSet> epochToValidatorSetMapping =
 						epochToNodeIndexMapper.andThen(indices -> BFTValidatorSet.from(
 							indices.mapToObj(nodes::get)
+								.map(node -> BFTNode.create(node.getPublicKey()))
 								.map(node -> BFTValidator.from(node, UInt256.ONE))
 								.collect(Collectors.toList())));
 					ledgerModules.add(new MockedStateComputerWithEpochsModule(epochHighView, epochToValidatorSetMapping));
@@ -273,13 +292,23 @@ public class SimulationTest {
 				}
 			}
 
+			ImmutableMap<String, TestInvariant> checks = this.checksBuilder.build().entrySet()
+				.stream()
+				.collect(
+					ImmutableMap.toImmutableMap(
+						Entry::getKey,
+						e -> e.getValue().apply(nodes)
+					)
+				);
+
+
 			return new SimulationTest(
-				nodes,
+				nodes.stream().map(node -> BFTNode.create(node.getPublicKey())).collect(ImmutableList.toImmutableList()),
 				latencyProvider.copyOf(),
 				pacemakerTimeout,
 				getVerticesRPCEnabled,
 				ledgerModules.build(),
-				this.checksBuilder.build()
+				checks
 			);
 		}
 	}

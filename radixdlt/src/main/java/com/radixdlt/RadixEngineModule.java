@@ -20,6 +20,7 @@ package com.radixdlt;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.google.inject.name.Named;
 import com.radixdlt.atommodel.message.MessageParticleConstraintScrypt;
 import com.radixdlt.atommodel.tokens.TokensConstraintScrypt;
 import com.radixdlt.atommodel.unique.UniqueParticleConstraintScrypt;
@@ -116,9 +117,9 @@ public class RadixEngineModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private CMAtomOS buildCMAtomOS(Universe universe) {
+	private CMAtomOS buildCMAtomOS(@Named("magic") int magic) {
 		final CMAtomOS os = new CMAtomOS(addr -> {
-			final int universeMagic = universe.getMagic() & 0xff;
+			final int universeMagic = magic & 0xff;
 			if (addr.getMagic() != universeMagic) {
 				return Result.error("Address magic " + addr.getMagic() + " does not match universe " + universeMagic);
 			}
@@ -159,7 +160,7 @@ public class RadixEngineModule extends AbstractModule {
 				() -> universe,
 				powFeeComputer,
 				DEFAULT_FEE_TARGET,
-				false
+				true
 			);
 
 		return new RadixEngine<>(

@@ -20,6 +20,7 @@ package com.radixdlt.integration.distributed.simulation;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.google.inject.name.Named;
 import com.radixdlt.DefaultSerialization;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
@@ -41,6 +42,13 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 			throw new UnsupportedOperationException();
 		});
 		bind(Serialization.class).toInstance(DefaultSerialization.getInstance());
+
+	}
+
+	@Provides
+	@Named("magic")
+	private int magic() {
+		return 1;
 	}
 
 	@Provides

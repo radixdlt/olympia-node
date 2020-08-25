@@ -44,6 +44,7 @@ public class RadixEngineModuleTest {
 			bind(ECKeyPair.class).annotatedWith(Names.named("self")).toInstance(ECKeyPair.generateNew());
 			bind(new TypeLiteral<EngineStore<LedgerAtom>>() { }).toInstance(mock(EngineStore.class));
 			bind(CommittedCommandsReader.class).toInstance(mock(CommittedCommandsReader.class));
+			bind(Integer.class).annotatedWith(Names.named("magic")).toInstance(1);
 		}
 	}
 

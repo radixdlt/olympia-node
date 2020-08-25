@@ -15,16 +15,16 @@
  * language governing permissions and limitations under the License.
  */
 
-package com.radixdlt.integration.distributed.simulation.invariants.mempool;
+package com.radixdlt.integration.distributed.simulation.application;
 
-import com.google.common.primitives.Longs;
 import com.radixdlt.consensus.Command;
-import com.radixdlt.integration.distributed.simulation.TestInvariant;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.integration.distributed.simulation.TestInvariant.TestInvariantError;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
+import com.radixdlt.ledger.CommittedCommand;
 import com.radixdlt.mempool.Mempool;
 import com.radixdlt.mempool.MempoolDuplicateException;
 import com.radixdlt.mempool.MempoolFullException;
-import com.radixdlt.ledger.CommittedCommand;
 import com.radixdlt.systeminfo.InfoRx;
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Observable;
@@ -32,18 +32,26 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-/**
- * Contributes to steady state by submitting client atoms every few seconds and
- * validates that they have all been committed by all nodes.
- */
-public class MempoolSubmitAndCommitInvariant implements TestInvariant {
+public class MempoolSubmitAndCommit implements SimulationActor {
+	private final Supplier<Command> commandSupplier;
+	private int count = 0;
 
-	private long commandId = 0;
+	public MempoolSubmitAndCommit(Supplier<Command> commandSupplier) {
+		this.commandSupplier = Objects.requireNonNull(commandSupplier);
+	}
 
-	private Maybe<TestInvariantError> submitAndCheckForCommit(Mempool mempool, Set<Observable<CommittedCommand>> allLedgers) {
-		Command command = new Command(Longs.toByteArray(commandId++));
+	@Override
+	public Maybe<TestInvariantError> act(RunningNetwork network) {
+		BFTNode node = network.getNodes().get(count % network.getNodes().size());
+		count++;
+		Mempool mempool = network.getMempool(node);
+		Set<Observable<CommittedCommand>> allLedgers
+			= network.getNodes().stream().map(network::getInfo).map(InfoRx::committedCommands).collect(Collectors.toSet());
+
+		Command command = commandSupplier.get();
 		List<Maybe<TestInvariantError>> errors = allLedgers.stream()
 			.map(cmds -> cmds
 				.filter(cmd -> Objects.equals(cmd.getCommand(), command))
@@ -60,20 +68,7 @@ public class MempoolSubmitAndCommitInvariant implements TestInvariant {
 			} catch (MempoolDuplicateException | MempoolFullException e) {
 				// TODO: Cleanup
 				e.printStackTrace();
-				return;
 			}
 		});
-	}
-
-	@Override
-	public Observable<TestInvariantError> check(RunningNetwork network) {
-		return Observable.interval(1, 4, TimeUnit.SECONDS)
-			.scan(0, (a, b) -> a + 1)
-			.map(i -> network.getNodes().get(i % network.getNodes().size()))
-			.flatMapMaybe(node -> {
-				Set<Observable<CommittedCommand>> allLedgers
-					= network.getNodes().stream().map(network::getInfo).map(InfoRx::committedCommands).collect(Collectors.toSet());
-				return submitAndCheckForCommit(network.getMempool(node), allLedgers);
-			});
 	}
 }

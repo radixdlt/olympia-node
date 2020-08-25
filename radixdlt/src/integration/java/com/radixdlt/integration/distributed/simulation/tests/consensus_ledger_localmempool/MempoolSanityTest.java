@@ -38,7 +38,7 @@ public class MempoolSanityTest {
 		.checkLiveness("liveness", 1000, TimeUnit.MILLISECONDS)
 		.checkNoTimeouts("noTimeouts")
 		.checkAllProposalsHaveDirectParents("directParents")
-		.checkMempool("mempool");
+		.addMempoolSubmissionsSteadyState("mempool");
 
 	@Test
 	public void when_submitting_items_to_null_mempool__then_test_should_fail() {

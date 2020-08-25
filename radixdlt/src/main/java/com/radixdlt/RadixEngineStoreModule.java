@@ -147,4 +147,10 @@ public class RadixEngineStoreModule extends AbstractModule {
 		}
 		return engineStore;
 	}
+
+	@Provides
+	@Named("magic")
+	private int magic(Universe universe) {
+		return universe.getMagic();
+	}
 }

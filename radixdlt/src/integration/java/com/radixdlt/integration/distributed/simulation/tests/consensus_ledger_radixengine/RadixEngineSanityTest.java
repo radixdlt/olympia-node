@@ -36,7 +36,7 @@ public class RadixEngineSanityTest {
 		.checkLiveness("liveness", 1000, TimeUnit.MILLISECONDS)
 		.checkNoTimeouts("noTimeouts")
 		.checkAllProposalsHaveDirectParents("directParents")
-		.checkMempool("mempool");
+		.addRadixEngineMempoolSubmissionsSteadyState("mempool");
 
 	@Test
 	public void when_submitting_items_to_mempool__then_they_should_get_executed() {
