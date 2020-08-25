@@ -24,6 +24,7 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.radixdlt.ConsensusModule;
 import com.radixdlt.SystemInfoRxModule;
+import com.radixdlt.consensus.EpochChangeRx;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.integration.distributed.simulation.MockedCryptoModule;
 import com.radixdlt.integration.distributed.simulation.SimulationNetworkModule;
@@ -84,6 +85,8 @@ public class SimulationNodes {
 
 		List<BFTNode> getNodes();
 
+		EpochChangeRx getEpochChanges(BFTNode node);
+
 		InfoRx getInfo(BFTNode node);
 
 		Mempool getMempool(BFTNode node);
@@ -111,6 +114,12 @@ public class SimulationNodes {
 			@Override
 			public List<BFTNode> getNodes() {
 				return nodes;
+			}
+
+			@Override
+			public EpochChangeRx getEpochChanges(BFTNode node) {
+				int index = nodes.indexOf(node);
+				return nodeInstances.get(index).getInstance(EpochChangeRx.class);
 			}
 
 			@Override

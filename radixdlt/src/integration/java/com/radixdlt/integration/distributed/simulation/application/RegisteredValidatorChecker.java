@@ -18,7 +18,12 @@
 package com.radixdlt.integration.distributed.simulation.application;
 
 import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.EpochChangeRx;
+import com.radixdlt.consensus.bft.BFTNode;
+import com.radixdlt.consensus.epoch.EpochChange;
+import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.integration.distributed.simulation.TestInvariant;
+import com.radixdlt.integration.distributed.simulation.TestInvariant.TestInvariantError;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
 import com.radixdlt.ledger.CommittedCommand;
 import com.radixdlt.systeminfo.InfoRx;
@@ -30,27 +35,27 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-public class MempoolSubmittedAndCommittedChecker implements TestInvariant {
-	private final Observable<Command> submittedCommands;
+public class RegisteredValidatorChecker implements TestInvariant {
+	private final Observable<BFTNode> registeringValidators;
 
-	public MempoolSubmittedAndCommittedChecker(Observable<Command> submittedCommands) {
-		this.submittedCommands = Objects.requireNonNull(submittedCommands);
+	public RegisteredValidatorChecker(Observable<BFTNode> registeringValidators) {
+		this.registeringValidators = Objects.requireNonNull(registeringValidators);
 	}
 
 	@Override
 	public Observable<TestInvariantError> check(RunningNetwork network) {
-		Set<Observable<CommittedCommand>> allLedgers
-			= network.getNodes().stream().map(network::getInfo).map(InfoRx::committedCommands).collect(Collectors.toSet());
+		Set<Observable<EpochChange>> allEpochChanges
+			= network.getNodes().stream().map(network::getEpochChanges).map(EpochChangeRx::epochChanges).collect(Collectors.toSet());
 
-		return submittedCommands
-			.flatMapMaybe(command -> {
-				List<Maybe<TestInvariantError>> errors = allLedgers.stream()
-					.map(cmds -> cmds
-						.filter(cmd -> Objects.equals(cmd.getCommand(), command))
+		return registeringValidators
+			.flatMapMaybe(validator -> {
+				List<Maybe<TestInvariantError>> errors = allEpochChanges.stream()
+					.map(epochChanges -> epochChanges
+						.filter(epochChange -> epochChange.getValidatorSet().containsNode(validator))
 						.timeout(10, TimeUnit.SECONDS)
 						.firstOrError()
 						.ignoreElement()
-						.onErrorReturn(e -> new TestInvariantError(e.getMessage() + " " + command))
+						.onErrorReturn(e -> new TestInvariantError(e.getMessage() + " " + validator))
 					)
 					.collect(Collectors.toList());
 				return Maybe.merge(errors).firstElement();

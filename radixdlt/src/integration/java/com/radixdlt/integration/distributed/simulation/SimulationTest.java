@@ -33,8 +33,9 @@ import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.integration.distributed.simulation.TestInvariant.TestInvariantError;
 import com.radixdlt.integration.distributed.simulation.application.IncrementalBytesSubmitter;
-import com.radixdlt.integration.distributed.simulation.application.MempoolSubmittedAndCommittedChecker;
-import com.radixdlt.integration.distributed.simulation.application.RadixEngineValidatorCommandSubmitter;
+import com.radixdlt.integration.distributed.simulation.application.MempoolCommittedChecker;
+import com.radixdlt.integration.distributed.simulation.application.RadixEngineValidatorRegistrator;
+import com.radixdlt.integration.distributed.simulation.application.RegisteredValidatorChecker;
 import com.radixdlt.integration.distributed.simulation.invariants.epochs.EpochViewInvariant;
 import com.radixdlt.integration.distributed.simulation.application.PeriodicMempoolSubmitter;
 import com.radixdlt.integration.distributed.simulation.network.DroppingLatencyProvider;
@@ -188,20 +189,27 @@ public class SimulationTest {
 
 		public Builder addMempoolSubmissionsSteadyState(String invariantName) {
 			PeriodicMempoolSubmitter mempoolSubmission = new IncrementalBytesSubmitter();
-			MempoolSubmittedAndCommittedChecker mempoolSubmittedAndCommittedChecker
-				= new MempoolSubmittedAndCommittedChecker(mempoolSubmission.issuedCommands());
+			MempoolCommittedChecker mempoolCommittedChecker
+				= new MempoolCommittedChecker(mempoolSubmission.issuedCommands());
 			this.runnableBuilder.add(nodes -> mempoolSubmission::run);
-			this.checksBuilder.put(invariantName, nodes -> mempoolSubmittedAndCommittedChecker);
+			this.checksBuilder.put(invariantName, nodes -> mempoolCommittedChecker);
 
 			return this;
 		}
 
-		public Builder addRadixEngineMempoolSubmissionsSteadyState(String invariantName) {
+		public Builder addRadixEngineValidatorRegisterMempoolSubmissions(String submittedInvariantName, String registeredInvariantName) {
 			this.runnableBuilder.add(nodes -> {
-				PeriodicMempoolSubmitter mempoolSubmission = new RadixEngineValidatorCommandSubmitter(nodes);
+				RadixEngineValidatorRegistrator validatorRegistrator = new RadixEngineValidatorRegistrator(nodes);
 				// TODO: Fix hack, hack required due to lack of Guice
-				this.checksBuilder.put(invariantName, nodes2 -> new MempoolSubmittedAndCommittedChecker(mempoolSubmission.issuedCommands()));
-				return mempoolSubmission::run;
+				this.checksBuilder.put(
+					submittedInvariantName,
+					nodes2 -> new MempoolCommittedChecker(validatorRegistrator.issuedCommands())
+				);
+				this.checksBuilder.put(
+					registeredInvariantName,
+					nodes2 -> new RegisteredValidatorChecker(validatorRegistrator.validatorRegistrationSubmissions())
+				);
+				return validatorRegistrator::run;
 			});
 			return this;
 		}

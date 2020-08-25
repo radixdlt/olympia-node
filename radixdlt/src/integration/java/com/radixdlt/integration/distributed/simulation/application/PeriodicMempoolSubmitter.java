@@ -44,7 +44,6 @@ public abstract class PeriodicMempoolSubmitter {
 		BFTNode node = network.getNodes().get(count % network.getNodes().size());
 		count++;
 		Mempool mempool = network.getMempool(node);
-
 		Command command = nextCommand();
 		try {
 			mempool.add(command);

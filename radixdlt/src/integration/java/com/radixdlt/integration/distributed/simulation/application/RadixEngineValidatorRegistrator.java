@@ -23,6 +23,7 @@ import com.radixdlt.atommodel.Atom;
 import com.radixdlt.atommodel.validators.RegisteredValidatorParticle;
 import com.radixdlt.atommodel.validators.UnregisteredValidatorParticle;
 import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.constraintmachine.Spin;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECKeyPair;
@@ -32,23 +33,27 @@ import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.middleware2.ClientAtom.LedgerAtomConversionException;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializationException;
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.subjects.PublishSubject;
 import java.util.List;
 import java.util.Objects;
 
-public class RadixEngineValidatorCommandSubmitter extends PeriodicMempoolSubmitter {
+public final class RadixEngineValidatorRegistrator extends PeriodicMempoolSubmitter {
 	private final List<ECKeyPair> nodes;
+	private final PublishSubject<BFTNode> validatorRegistrationSubmissions;
 	private int current = 0;
-	public RadixEngineValidatorCommandSubmitter(List<ECKeyPair> nodes) {
+
+	public RadixEngineValidatorRegistrator(List<ECKeyPair> nodes) {
 		this.nodes = Objects.requireNonNull(nodes);
+		this.validatorRegistrationSubmissions = PublishSubject.create();
 	}
 
 	@Override
 	Command nextCommand() {
 		byte magic = 1;
-		ECKeyPair node = nodes.get(current % nodes.size());
+		ECKeyPair keyPair = nodes.get(current % nodes.size());
 		current++;
-		RadixAddress address = new RadixAddress(magic, node.getPublicKey());
-
+		RadixAddress address = new RadixAddress(magic, keyPair.getPublicKey());
 		RegisteredValidatorParticle registeredValidatorParticle = new RegisteredValidatorParticle(
 			address, ImmutableSet.of(), 1
 		);
@@ -61,13 +66,22 @@ public class RadixEngineValidatorCommandSubmitter extends PeriodicMempoolSubmitt
 			.build();
 		Atom atom = new Atom();
 		atom.addParticleGroup(particleGroup);
+		final Command command;
 		try {
-			atom.sign(node);
+			atom.sign(keyPair);
 			ClientAtom clientAtom = ClientAtom.convertFromApiAtom(atom);
 			final byte[] payload = DefaultSerialization.getInstance().toDson(clientAtom, Output.ALL);
-			return new Command(payload);
+			command = new Command(payload);
 		} catch (CryptoException | LedgerAtomConversionException | SerializationException e) {
 			throw new RuntimeException();
 		}
+
+		BFTNode node = BFTNode.create(keyPair.getPublicKey());
+		validatorRegistrationSubmissions.onNext(node);
+		return command;
+	}
+
+	public Observable<BFTNode> validatorRegistrationSubmissions() {
+		return validatorRegistrationSubmissions;
 	}
 }
