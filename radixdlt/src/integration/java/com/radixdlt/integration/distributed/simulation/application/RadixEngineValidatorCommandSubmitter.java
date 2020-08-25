@@ -34,17 +34,16 @@ import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializationException;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Supplier;
 
-public class RadixEngineValidatorRegistrator implements Supplier<Command> {
+public class RadixEngineValidatorCommandSubmitter extends PeriodicMempoolSubmitter {
 	private final List<ECKeyPair> nodes;
 	private int current = 0;
-	public RadixEngineValidatorRegistrator(List<ECKeyPair> nodes) {
+	public RadixEngineValidatorCommandSubmitter(List<ECKeyPair> nodes) {
 		this.nodes = Objects.requireNonNull(nodes);
 	}
 
 	@Override
-	public Command get() {
+	Command nextCommand() {
 		byte magic = 1;
 		ECKeyPair node = nodes.get(current % nodes.size());
 		current++;

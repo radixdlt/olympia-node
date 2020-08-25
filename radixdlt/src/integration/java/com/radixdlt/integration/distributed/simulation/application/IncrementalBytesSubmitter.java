@@ -19,13 +19,12 @@ package com.radixdlt.integration.distributed.simulation.application;
 
 import com.google.common.primitives.Longs;
 import com.radixdlt.consensus.Command;
-import java.util.function.Supplier;
 
-public class IncrementalBytesCommandSupplier implements Supplier<Command> {
+public class IncrementalBytesSubmitter extends PeriodicMempoolSubmitter {
 	private long commandId = 0;
 
 	@Override
-	public Command get() {
+	Command nextCommand() {
 		return new Command(Longs.toByteArray(commandId++));
 	}
 }

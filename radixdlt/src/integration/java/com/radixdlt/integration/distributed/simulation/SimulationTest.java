@@ -19,6 +19,7 @@ package com.radixdlt.integration.distributed.simulation;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
 import com.radixdlt.LedgerEpochChangeModule;
@@ -31,11 +32,11 @@ import com.radixdlt.RadixEngineRxModule;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.integration.distributed.simulation.TestInvariant.TestInvariantError;
-import com.radixdlt.integration.distributed.simulation.application.IncrementalBytesCommandSupplier;
-import com.radixdlt.integration.distributed.simulation.application.MempoolSubmitAndCommit;
-import com.radixdlt.integration.distributed.simulation.application.RadixEngineValidatorRegistrator;
+import com.radixdlt.integration.distributed.simulation.application.IncrementalBytesSubmitter;
+import com.radixdlt.integration.distributed.simulation.application.MempoolSubmittedAndCommittedChecker;
+import com.radixdlt.integration.distributed.simulation.application.RadixEngineValidatorCommandSubmitter;
 import com.radixdlt.integration.distributed.simulation.invariants.epochs.EpochViewInvariant;
-import com.radixdlt.integration.distributed.simulation.application.PeriodicActions;
+import com.radixdlt.integration.distributed.simulation.application.PeriodicMempoolSubmitter;
 import com.radixdlt.integration.distributed.simulation.network.DroppingLatencyProvider;
 import com.radixdlt.integration.distributed.simulation.network.OneProposalPerViewDropper;
 import com.radixdlt.integration.distributed.simulation.network.RandomLatencyProvider;
@@ -65,6 +66,7 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -76,6 +78,7 @@ import java.util.stream.Stream;
 public class SimulationTest {
 	private final ImmutableList<BFTNode> nodes;
 	private final LatencyProvider latencyProvider;
+	private final ImmutableSet<Consumer<RunningNetwork>> runners;
 	private final ImmutableMap<String, TestInvariant> checks;
 	private final int pacemakerTimeout;
 	private final boolean getVerticesRPCEnabled;
@@ -87,14 +90,16 @@ public class SimulationTest {
 		int pacemakerTimeout,
 		boolean getVerticesRPCEnabled,
 		ImmutableList<Module> modules,
-		ImmutableMap<String, TestInvariant> checks
+		ImmutableMap<String, TestInvariant> checks,
+		ImmutableSet<Consumer<RunningNetwork>> runners
 	) {
 		this.nodes = nodes;
 		this.latencyProvider = latencyProvider;
 		this.modules = modules;
-		this.checks = checks;
 		this.pacemakerTimeout = pacemakerTimeout;
 		this.getVerticesRPCEnabled = getVerticesRPCEnabled;
+		this.checks = checks;
+		this.runners = runners;
 	}
 
 	public static class Builder {
@@ -104,6 +109,7 @@ public class SimulationTest {
 
 		private final DroppingLatencyProvider latencyProvider = new DroppingLatencyProvider();
 		private final ImmutableMap.Builder<String, Function<List<ECKeyPair>, TestInvariant>> checksBuilder = ImmutableMap.builder();
+		private final ImmutableList.Builder<Function<List<ECKeyPair>, Consumer<RunningNetwork>>> runnableBuilder = ImmutableList.builder();
 		private ImmutableList<ECKeyPair> nodes = ImmutableList.of(ECKeyPair.generateNew());
 		private int pacemakerTimeout = 12 * SimulationNetwork.DEFAULT_LATENCY;
 		private boolean getVerticesRPCEnabled = true;
@@ -181,21 +187,24 @@ public class SimulationTest {
 		}
 
 		public Builder addMempoolSubmissionsSteadyState(String invariantName) {
-			this.checksBuilder.put(invariantName, nodes -> {
-				MempoolSubmitAndCommit mempoolSubmitAndCommit = new MempoolSubmitAndCommit(new IncrementalBytesCommandSupplier());
-				return new PeriodicActions(mempoolSubmitAndCommit);
-			});
+			PeriodicMempoolSubmitter mempoolSubmission = new IncrementalBytesSubmitter();
+			MempoolSubmittedAndCommittedChecker mempoolSubmittedAndCommittedChecker
+				= new MempoolSubmittedAndCommittedChecker(mempoolSubmission.issuedCommands());
+			this.runnableBuilder.add(nodes -> mempoolSubmission::run);
+			this.checksBuilder.put(invariantName, nodes -> mempoolSubmittedAndCommittedChecker);
+
 			return this;
 		}
 
 		public Builder addRadixEngineMempoolSubmissionsSteadyState(String invariantName) {
-			this.checksBuilder.put(invariantName, nodes -> {
-				MempoolSubmitAndCommit mempoolSubmitAndCommit = new MempoolSubmitAndCommit(new RadixEngineValidatorRegistrator(nodes));
-				return new PeriodicActions(mempoolSubmitAndCommit);
+			this.runnableBuilder.add(nodes -> {
+				PeriodicMempoolSubmitter mempoolSubmission = new RadixEngineValidatorCommandSubmitter(nodes);
+				// TODO: Fix hack, hack required due to lack of Guice
+				this.checksBuilder.put(invariantName, nodes2 -> new MempoolSubmittedAndCommittedChecker(mempoolSubmission.issuedCommands()));
+				return mempoolSubmission::run;
 			});
 			return this;
 		}
-
 
 		public Builder checkLiveness(String invariantName) {
 			this.checksBuilder.put(invariantName, nodes -> new LivenessInvariant(8 * SimulationNetwork.DEFAULT_LATENCY, TimeUnit.MILLISECONDS));
@@ -292,6 +301,10 @@ public class SimulationTest {
 				}
 			}
 
+			ImmutableSet<Consumer<RunningNetwork>> runners = this.runnableBuilder.build().stream()
+				.map(f -> f.apply(nodes))
+				.collect(ImmutableSet.toImmutableSet());
+
 			ImmutableMap<String, TestInvariant> checks = this.checksBuilder.build().entrySet()
 				.stream()
 				.collect(
@@ -308,7 +321,8 @@ public class SimulationTest {
 				pacemakerTimeout,
 				getVerticesRPCEnabled,
 				ledgerModules.build(),
-				checks
+				checks,
+				runners
 			);
 		}
 	}
@@ -344,7 +358,8 @@ public class SimulationTest {
 			)
 			.collect(Collectors.toList());
 
-		return Single.merge(results).toObservable();
+		return Single.merge(results).toObservable()
+			.doOnSubscribe(d -> runners.forEach(c -> c.accept(runningNetwork)));
 	}
 
 	/**
