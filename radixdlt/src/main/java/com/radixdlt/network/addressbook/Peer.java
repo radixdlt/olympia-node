@@ -17,6 +17,7 @@
 
 package com.radixdlt.network.addressbook;
 
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -51,24 +52,30 @@ public abstract class Peer extends BasicContainer {
 
 	@JsonProperty("ban_reason")
 	@DsonOutput(Output.PERSIST)
-	private String banReason;
+	private volatile String banReason;
 
-	private EnumMap<Timestamps, AtomicLong> timestamps;
+	// Note that this map is fully populated on construction, and the
+	// structure (keys and values) cannot be changed during the object's
+	// lifetime.  Note that the contents of the values are changes, but
+	// not the values themselves.
+	private final Map<Timestamps, AtomicLong> timestamps;
 
 	protected Peer() {
 		banReason = null;
-		this.timestamps = new EnumMap<>(Timestamps.class);
+		EnumMap<Timestamps, AtomicLong> newTimestamps = new EnumMap<>(Timestamps.class);
 		for (Timestamps t : Timestamps.values()) {
-			this.timestamps.put(t, new AtomicLong(DEFAULT_TIMESTAMP));
+			newTimestamps.put(t, new AtomicLong(DEFAULT_TIMESTAMP));
 		}
+		this.timestamps = Collections.unmodifiableMap(newTimestamps);
 	}
 
 	protected Peer(Peer toCopy) {
 		this.banReason = toCopy.banReason;
-		this.timestamps = new EnumMap<>(Timestamps.class);
+		EnumMap<Timestamps, AtomicLong> newTimestamps = new EnumMap<>(Timestamps.class);
 		for (Timestamps t : Timestamps.values()) {
-			this.timestamps.put(t, new AtomicLong(toCopy.getTimestamp(t)));
+			newTimestamps.put(t, new AtomicLong(toCopy.getTimestamp(t)));
 		}
+		this.timestamps = Collections.unmodifiableMap(newTimestamps);
 	}
 
 	/**
