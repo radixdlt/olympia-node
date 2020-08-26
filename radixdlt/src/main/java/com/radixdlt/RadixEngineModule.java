@@ -108,7 +108,8 @@ public class RadixEngineModule extends AbstractModule {
 			serialization,
 			radixEngine,
 			validatorSetMapping,
-			View.of(viewsPerEpoch), committedCommandsReader,
+			View.of(viewsPerEpoch),
+			committedCommandsReader,
 			committedAtomSender
 		);
 	}
