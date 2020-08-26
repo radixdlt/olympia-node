@@ -23,6 +23,7 @@ import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECPublicKey;
+import com.radixdlt.crypto.Hash;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.network.addressbook.PeersAddedEvent;
@@ -83,13 +84,11 @@ public class AddressBookGenesisVertexMetadataProvider {
 
 	public BFTValidatorSet getGenesisValidatorSet() {
 		ImmutableList<BFTValidator> validators = validatorList.blockingGet();
-		BFTValidatorSet validatorSet = BFTValidatorSet.from(validators);
-		return validatorSet;
+		return BFTValidatorSet.from(validators);
 	}
 
 	public VertexMetadata getGenesisVertexMetadata() {
-		ImmutableList<BFTValidator> validators = validatorList.blockingGet();
-		BFTValidatorSet validatorSet = BFTValidatorSet.from(validators);
-		return VertexMetadata.ofGenesisAncestor(validatorSet);
+		PreparedCommand preparedCommand = PreparedCommand.create(0, Hash.ZERO_HASH, true);
+		return VertexMetadata.ofGenesisAncestor(preparedCommand);
 	}
 }

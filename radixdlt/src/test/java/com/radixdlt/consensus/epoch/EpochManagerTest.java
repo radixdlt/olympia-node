@@ -37,6 +37,7 @@ import com.radixdlt.consensus.BFTFactory;
 import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.ConsensusEvent;
 import com.radixdlt.consensus.NewView;
+import com.radixdlt.consensus.PreparedCommand;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Ledger;
@@ -104,9 +105,7 @@ public class EpochManagerTest {
 
 		this.epochManager = new EpochManager(
 			this.self,
-			new EpochChange(VertexMetadata.ofGenesisAncestor(
-				BFTValidatorSet.from(ImmutableSet.of())), BFTValidatorSet.from(ImmutableSet.of())
-			),
+			new EpochChange(VertexMetadata.ofGenesisAncestor(mock(PreparedCommand.class)), BFTValidatorSet.from(ImmutableSet.of())),
 			this.ledger,
 			this.syncEpochsRPCSender,
 			mock(LocalTimeoutSender.class),
@@ -220,6 +219,8 @@ public class EpochManagerTest {
 
 		VertexMetadata ancestor = mock(VertexMetadata.class);
 		when(ancestor.getEpoch()).thenReturn(1L);
+		when(ancestor.getPreparedCommand()).thenReturn(mock(PreparedCommand.class));
+
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		when(validatorSet.containsNode(any())).thenReturn(true);
 
@@ -257,6 +258,8 @@ public class EpochManagerTest {
 
 		VertexMetadata ancestor = mock(VertexMetadata.class);
 		when(ancestor.getEpoch()).thenReturn(1L);
+		PreparedCommand preparedCommand = mock(PreparedCommand.class);
+		when(ancestor.getPreparedCommand()).thenReturn(preparedCommand);
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		when(validatorSet.containsNode(any())).thenReturn(true);
 
@@ -371,6 +374,7 @@ public class EpochManagerTest {
 
 		VertexMetadata ancestor = mock(VertexMetadata.class);
 		when(ancestor.getEpoch()).thenReturn(1L);
+		when(ancestor.getPreparedCommand()).thenReturn(mock(PreparedCommand.class));
 
 		EpochChange epochChange = mock(EpochChange.class);
 		when(epochChange.getAncestor()).thenReturn(ancestor);
@@ -423,6 +427,7 @@ public class EpochManagerTest {
 
 		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
 		when(vertexMetadata.getEpoch()).thenReturn(1L);
+		when(vertexMetadata.getPreparedCommand()).thenReturn(mock(PreparedCommand.class));
 
 		EpochChange epochChange = mock(EpochChange.class);
 		when(epochChange.getAncestor()).thenReturn(vertexMetadata);

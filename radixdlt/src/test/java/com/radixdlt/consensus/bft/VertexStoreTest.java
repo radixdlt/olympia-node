@@ -81,7 +81,7 @@ public class VertexStoreTest {
 		BFTValidatorSet bftValidatorSet = BFTValidatorSet.from(ImmutableSet.of(
 			BFTValidator.from(BFTNode.create(keyPair.getPublicKey()), UInt256.ONE)
 		));
-		this.genesisVertex = Vertex.createGenesis(VertexMetadata.ofGenesisAncestor(bftValidatorSet));
+		this.genesisVertex = Vertex.createGenesis(VertexMetadata.ofGenesisAncestor(mock(PreparedCommand.class)));
 		this.genesisVertexMetadata = VertexMetadata.ofGenesisVertex(genesisVertex);
 		VoteData voteData = new VoteData(genesisVertexMetadata, genesisVertexMetadata, genesisVertexMetadata);
 		this.rootQC = new QuorumCertificate(voteData, new TimestampedECDSASignatures());
@@ -587,7 +587,9 @@ public class VertexStoreTest {
 		assertThat(vertexStore.getHighestQC()).isEqualTo(vertex4.getQC());
 		assertThat(vertexStore.getHighestCommittedQC()).isEqualTo(vertex4.getQC());
 
-		CommittedStateSync committedStateSync = new CommittedStateSync(vertexMetadataAtomicReference.get().getStateVersion(), stateOpaque.get());
+		CommittedStateSync committedStateSync = new CommittedStateSync(
+			vertexMetadataAtomicReference.get().getPreparedCommand().getStateVersion(), stateOpaque.get()
+		);
 		vertexStore.processCommittedStateSync(committedStateSync);
 
 		assertThat(vertexStore.getHighestQC()).isEqualTo(vertex8.getQC());

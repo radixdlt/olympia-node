@@ -19,28 +19,20 @@ package com.radixdlt.middleware2.network;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.mockito.Mockito.mock;
 
-import com.google.common.collect.ImmutableSet;
+import com.radixdlt.consensus.PreparedCommand;
 import com.radixdlt.consensus.QuorumCertificate;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
-import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTValidator;
-import com.radixdlt.consensus.bft.BFTValidatorSet;
-import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.crypto.Hash;
-import com.radixdlt.utils.UInt256;
 import org.junit.Test;
 
 public class GetVerticesErrorResponseMessageTest {
 	@Test
 	public void sensibleToString() {
-		ECKeyPair keyPair = ECKeyPair.generateNew();
-		BFTValidatorSet bftValidatorSet = BFTValidatorSet.from(ImmutableSet.of(
-			BFTValidator.from(BFTNode.create(keyPair.getPublicKey()), UInt256.ONE)
-		));
 		Hash vertexId = Hash.random();
-		QuorumCertificate qc = QuorumCertificate.ofGenesis(Vertex.createGenesis(VertexMetadata.ofGenesisAncestor(bftValidatorSet)));
+		QuorumCertificate qc = QuorumCertificate.ofGenesis(Vertex.createGenesis(VertexMetadata.ofGenesisAncestor(mock(PreparedCommand.class))));
 		GetVerticesErrorResponseMessage msg1 = new GetVerticesErrorResponseMessage(0, vertexId, qc, qc);
 		String s1 = msg1.toString();
 		assertThat(s1, containsString(GetVerticesErrorResponseMessage.class.getSimpleName()));

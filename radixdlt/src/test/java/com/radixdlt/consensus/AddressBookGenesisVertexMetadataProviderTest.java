@@ -51,7 +51,7 @@ public class AddressBookGenesisVertexMetadataProviderTest {
 		when(addressBook.peers()).thenAnswer(inv -> Stream.of(peer));
 
 		VertexMetadata vertexMetadata = validatorSetProvider.getGenesisVertexMetadata();
-		assertThat(vertexMetadata.isEndOfEpoch()).isTrue();
+		assertThat(vertexMetadata.getPreparedCommand().isEndOfEpoch()).isTrue();
 		//assertThat(vertexMetadata.getValidatorSet()).isNotEmpty();
 	}
 }

@@ -93,7 +93,7 @@ public class AtomStatusEpic {
 				data.put("aid", committedAtom.getAID());
 				// TODO: serialize vertexMetadata
 				VertexMetadata vertexMetadata = committedAtom.getVertexMetadata();
-				data.put("stateVersion", vertexMetadata.getStateVersion());
+				data.put("stateVersion", vertexMetadata.getPreparedCommand().getStateVersion());
 				data.put("epoch",vertexMetadata.getEpoch());
 				data.put("view", vertexMetadata.getView().number());
 
@@ -114,7 +114,7 @@ public class AtomStatusEpic {
 
 				// TODO: serialize vertexMetadata
 				VertexMetadata vertexMetadata = committedAtom.getVertexMetadata();
-				data.put("stateVersion", vertexMetadata.getStateVersion());
+				data.put("stateVersion", vertexMetadata.getPreparedCommand().getStateVersion());
 				data.put("epoch", vertexMetadata.getEpoch());
 				data.put("view", vertexMetadata.getView().number());
 

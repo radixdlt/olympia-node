@@ -40,7 +40,7 @@ public class SyncRxModule extends AbstractModule {
 		bind(LocalSyncRequestsRx.class).toInstance(syncRequests::rx);
 
 		TwoSenderToRx<CommittedCommand, BFTValidatorSet, Long> committedCommands
-			= new TwoSenderToRx<>((cmd, vset) -> cmd.getVertexMetadata().getStateVersion());
+			= new TwoSenderToRx<>((cmd, vset) -> cmd.getVertexMetadata().getPreparedCommand().getStateVersion());
 		Multibinder<CommittedSender> committedSenderBinder = Multibinder.newSetBinder(binder(), CommittedSender.class);
 		committedSenderBinder.addBinding().toInstance(committedCommands::send);
 		bind(VersionUpdatesRx.class).toInstance(committedCommands::rx);

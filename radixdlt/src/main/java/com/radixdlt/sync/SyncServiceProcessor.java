@@ -69,7 +69,9 @@ public final class SyncServiceProcessor {
 	private final long patienceMilliseconds;
 	private final AddressBook addressBook;
 	private final StateSyncNetwork stateSyncNetwork;
-	private final TreeSet<CommittedCommand> committedCommands = new TreeSet<>(Comparator.comparingLong(a -> a.getVertexMetadata().getStateVersion()));
+	private final TreeSet<CommittedCommand> committedCommands = new TreeSet<>(
+		Comparator.comparingLong(a -> a.getVertexMetadata().getPreparedCommand().getStateVersion())
+	);
 
 	private long syncInProgressId = 0;
 	private boolean isSyncInProgress = false;
@@ -124,14 +126,14 @@ public final class SyncServiceProcessor {
 		// TODO: Check validity of response
 		log.debug("SYNC_RESPONSE: size: {}", commands.size());
 		for (CommittedCommand command : commands) {
-			long stateVersion = command.getVertexMetadata().getStateVersion();
+			long stateVersion = command.getVertexMetadata().getPreparedCommand().getStateVersion();
 			if (stateVersion > this.currentVersion) {
 				if (committedCommands.size() < maxAtomsQueueSize) { // check if there is enough space
 					committedCommands.add(command);
 				} else { // not enough space available
 					CommittedCommand last = committedCommands.last();
 					// will added it only if it must be applied BEFORE the most recent atom we have
-					if (last.getVertexMetadata().getStateVersion() > stateVersion) {
+					if (last.getVertexMetadata().getPreparedCommand().getStateVersion() > stateVersion) {
 						committedCommands.pollLast(); // remove the most recent available
 						committedCommands.add(command);
 					}
@@ -142,7 +144,7 @@ public final class SyncServiceProcessor {
 		Iterator<CommittedCommand> it = committedCommands.iterator();
 		while (it.hasNext()) {
 			CommittedCommand command = it.next();
-			long stateVersion = command.getVertexMetadata().getStateVersion();
+			long stateVersion = command.getVertexMetadata().getPreparedCommand().getStateVersion();
 			if (stateVersion <= currentVersion) {
 				it.remove();
 			} else if (stateVersion == currentVersion + 1) {
@@ -166,10 +168,10 @@ public final class SyncServiceProcessor {
 
 	public void processLocalSyncRequest(LocalSyncRequest request) {
 		final VertexMetadata target = request.getTarget();
-		if (target.getStateVersion() <= this.currentVersion) {
+		if (target.getPreparedCommand().getStateVersion() <= this.currentVersion) {
 			return;
 		}
-		this.syncToTargetVersion = target.getStateVersion();
+		this.syncToTargetVersion = target.getPreparedCommand().getStateVersion();
 		sendSyncRequests(request.getTargetNodes());
 	}
 

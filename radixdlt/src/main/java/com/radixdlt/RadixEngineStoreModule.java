@@ -156,7 +156,9 @@ public class RadixEngineStoreModule extends AbstractModule {
 			clientAtomToBinaryConverter,
 			atomIndexer
 		);
-		if (store.getNextCommittedLedgerEntries(genesisAtom.getVertexMetadata().getStateVersion() - 1, 1).isEmpty()) {
+		if (store.getNextCommittedLedgerEntries(genesisAtom.getVertexMetadata()
+			.getPreparedCommand().getStateVersion() - 1, 1).isEmpty()
+		) {
 			engineStore.storeAtom(genesisAtom);
 		}
 		return engineStore;

@@ -91,7 +91,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 
 	@Override
 	public PreparedCommand prepare(Vertex vertex) {
-		final VertexMetadata parent = vertex.getQC().getProposed();
+		final PreparedCommand parent = vertex.getQC().getProposed().getPreparedCommand();
 		final long parentStateVersion = parent.getStateVersion();
 
 		//Optional<BFTValidatorSet> validatorSet = stateComputer.prepare(vertex);
@@ -119,7 +119,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 
 	@Override
 	public OnSynced ifCommitSynced(VertexMetadata vertexMetadata) {
-		final long targetStateVersion = vertexMetadata.getStateVersion();
+		final long targetStateVersion = vertexMetadata.getPreparedCommand().getStateVersion();
 		synchronized (lock) {
 			if (targetStateVersion <= this.currentStateVersion) {
 				return onSync -> {
@@ -140,7 +140,7 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		this.counters.increment(CounterType.LEDGER_PROCESSED);
 
 		synchronized (lock) {
-			final long stateVersion = vertexMetadata.getStateVersion();
+			final long stateVersion = vertexMetadata.getPreparedCommand().getStateVersion();
 			// TODO: get this invariant to as low level as possible
 			if (stateVersion != this.currentStateVersion + 1) {
 				return;

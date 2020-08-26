@@ -45,7 +45,8 @@ public class MockedLedgerModule extends AbstractModule {
 	public void configure() {
 		bind(CommittedStateSyncRx.class).toInstance(Observable::never);
 		bind(EpochChangeRx.class).toInstance(Observable::never);
-		EpochChange initialEpoch = new EpochChange(VertexMetadata.ofGenesisAncestor(validatorSet), validatorSet);
+		PreparedCommand preparedCommand = PreparedCommand.create(0, Hash.ZERO_HASH, true);
+		EpochChange initialEpoch = new EpochChange(VertexMetadata.ofGenesisAncestor(preparedCommand), validatorSet);
 		bind(EpochChange.class).toInstance(initialEpoch);
 		bind(NextCommandGenerator.class).toInstance((view, aids) -> null);
 		bind(SyncRequestSender.class).toInstance(req -> { });

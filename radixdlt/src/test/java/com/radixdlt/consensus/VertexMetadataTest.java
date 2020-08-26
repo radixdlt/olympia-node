@@ -23,19 +23,22 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
+import static org.mockito.Mockito.mock;
+
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class VertexMetadataTest {
 
 	private VertexMetadata testObject;
 	private Hash id;
+	private PreparedCommand preparedCommand;
 
 	@Before
 	public void setUp() {
 		View view = View.of(1234567890L);
 		this.id = Hash.random();
-
-		this.testObject = new VertexMetadata(0, view, id, 0, false, Hash.ZERO_HASH);
+		this.preparedCommand = mock(PreparedCommand.class);
+		this.testObject = new VertexMetadata(0, view, id, preparedCommand);
 	}
 
 	@Test
@@ -49,6 +52,7 @@ public class VertexMetadataTest {
 		assertEquals(View.of(1234567890L), this.testObject.getView());
 
 		assertEquals(id, this.testObject.getId());
+		assertEquals(preparedCommand, this.testObject.getPreparedCommand());
 	}
 
 	@Test

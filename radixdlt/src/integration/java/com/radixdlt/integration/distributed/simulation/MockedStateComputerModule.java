@@ -20,9 +20,11 @@ package com.radixdlt.integration.distributed.simulation;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.radixdlt.consensus.Command;
+import com.radixdlt.consensus.PreparedCommand;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
+import com.radixdlt.crypto.Hash;
 import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import java.util.Optional;
 
@@ -41,7 +43,8 @@ public class MockedStateComputerModule extends AbstractModule {
 
 	@Provides
 	private VertexMetadata genesisMetadata() {
-		return VertexMetadata.ofGenesisAncestor(validatorSet);
+		final PreparedCommand preparedCommand = PreparedCommand.create(0, Hash.ZERO_HASH, true);
+		return VertexMetadata.ofGenesisAncestor(preparedCommand);
 	}
 
 	@Provides

@@ -107,9 +107,9 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 		return Streams.concat(
 			storedCommittedAtoms.stream(),
-			copy.stream().filter(a -> a.getVertexMetadata().getStateVersion() > stateVersion)
+			copy.stream().filter(a -> a.getVertexMetadata().getPreparedCommand().getStateVersion() > stateVersion)
 		)
-			.sorted(Comparator.comparingLong(a -> a.getVertexMetadata().getStateVersion()))
+			.sorted(Comparator.comparingLong(a -> a.getVertexMetadata().getPreparedCommand().getStateVersion()))
 			.collect(ImmutableList.toImmutableList());
 	}
 
@@ -134,7 +134,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 				clientAtom = serialization.fromDson(command.getPayload(), ClientAtom.class);
 			} catch (SerializationException e) {
 				this.unstoredCommittedAtoms.add(new CommittedCommand(null, vertexMetadata));
-				return vertexMetadata.isEndOfEpoch()
+				return vertexMetadata.getPreparedCommand().isEndOfEpoch()
 					? Optional.of(validatorSetMapping.apply(vertexMetadata.getEpoch() + 1))
 					: Optional.empty();
 			}
@@ -153,7 +153,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 				this.unstoredCommittedAtoms.add(new CommittedCommand(command, vertexMetadata));
 				committedAtomSender.sendCommittedAtom(CommittedAtoms.error(committedAtom, e));
 			}
-		} else if (vertexMetadata.isEndOfEpoch()) {
+		} else if (vertexMetadata.getPreparedCommand().isEndOfEpoch()) {
 			// TODO: HACK
 			// TODO: Remove and move epoch change logic into RadixEngine
 			this.unstoredCommittedAtoms.add(new CommittedCommand(null, vertexMetadata));
@@ -163,7 +163,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 			throw new IllegalStateException("Should never get here " + command);
 		}
 
-		return vertexMetadata.isEndOfEpoch()
+		return vertexMetadata.getPreparedCommand().isEndOfEpoch()
 			? Optional.of(validatorSetMapping.apply(vertexMetadata.getEpoch() + 1))
 			: Optional.empty();
 	}
