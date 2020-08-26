@@ -92,8 +92,7 @@ public class EpochManagerTest {
 		this.bftFactory = mock(BFTFactory.class);
 
 		this.systemCounters = new SystemCountersImpl();
-		Ledger ssc = mock(Ledger.class);
-		this.ledger = ssc;
+		this.ledger = mock(Ledger.class);
 
 		this.proposerElection = mock(ProposerElection.class);
 		this.self = mock(BFTNode.class);
