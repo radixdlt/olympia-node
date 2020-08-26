@@ -21,15 +21,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.radixdlt.serialization.DsonOutput;
 import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.Serialization;
+import com.radixdlt.utils.Ints;
+
 import org.radix.containers.BasicContainer;
 import org.radix.time.Time;
-import org.radix.time.Timestamps;
 import org.xerial.snappy.Snappy;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 public abstract class Message extends BasicContainer
@@ -46,58 +44,40 @@ public abstract class Message extends BasicContainer
 	@DsonOutput(value = Output.HASH, include = false)
 	private int magic;
 
-	@JsonProperty("timestamps")
+	@JsonProperty("timestamp")
 	@DsonOutput(value = {Output.API, Output.PERSIST})
-	private final HashMap<String, Long> timestamps = new HashMap<>();
+	private final long timestamp;
 
-	private transient int size = 0;
+	protected Message(int magic) {
+		this(magic, Time.currentTimestamp());
+	}
 
-	protected Message(int magic)
-	{
-		setTimestamp(Timestamps.DEFAULT, Time.currentTimestamp());
+	protected Message(int magic, long timestamp) {
 		this.magic = magic;
+		this.timestamp = timestamp;
 	}
 
 	public final int getMagic() {
 		return this.magic;
 	}
 
-	public final int getSize()
-	{
-		return this.size;
+	public long getTimestamp() {
+		return this.timestamp;
 	}
 
-	public long getTimestamp()
-	{
-		return this.timestamps.getOrDefault(Timestamps.DEFAULT, 0l);
-	}
-
-	public long getTimestamp(String type)
-	{
-		return this.timestamps.getOrDefault(type, 0l);
-	}
-
-	public void setTimestamp(String type, long timestamp)
-	{
-		this.timestamps.put(type, timestamp);
-	}
-
-	public byte[] toByteArray(Serialization serialization) throws IOException
-	{
+	public byte[] toByteArray(Serialization serialization) throws IOException {
 		byte[] bytes = serialization.toDson(this, Output.WIRE);
 		byte[] data = Snappy.compress(bytes);
 
-		ByteArrayOutputStream baos = new ByteArrayOutputStream(data.length+4);
-		DataOutputStream dos = new DataOutputStream(baos);
-		dos.writeInt(data.length);
-		dos.write(data);
+		byte[] byteArray = new byte[data.length + Integer.BYTES];
+		Ints.copyTo(data.length, byteArray, 0);
+		System.arraycopy(data, 0, byteArray, Integer.BYTES, data.length);
 
-		return baos.toByteArray();
+		return byteArray;
 	}
 
 	@Override
-	public String toString()
-	{
+	public String toString() {
 		return this.instance+" -> "+this.getClass().getSimpleName()+":"+this.euid()+" @ "+this.getTimestamp();
 	}
 }

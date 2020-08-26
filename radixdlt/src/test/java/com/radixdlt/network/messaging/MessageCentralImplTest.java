@@ -36,7 +36,6 @@ import org.junit.Test;
 import org.radix.events.Events;
 import org.radix.network.messages.TestMessage;
 import org.radix.network.messaging.Message;
-import org.radix.time.Timestamps;
 import org.radix.universe.system.LocalSystem;
 import org.radix.universe.system.events.QueueFullEvent;
 import org.xerial.snappy.Snappy;
@@ -186,8 +185,7 @@ public class MessageCentralImplTest {
 
 	@Test
 	public void testInjectMessageDeliveredToListeners() throws InterruptedException {
-		Message msg = new TestMessage(1);
-		msg.setTimestamp(Timestamps.DEFAULT, System.currentTimeMillis());
+		Message msg = new TestMessage(1, System.currentTimeMillis());
 		Peer peer = mock(Peer.class);
 
 		int numberOfRequests = 6;
