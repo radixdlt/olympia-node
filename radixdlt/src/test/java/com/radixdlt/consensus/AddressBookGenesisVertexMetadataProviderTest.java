@@ -36,8 +36,6 @@ public class AddressBookGenesisVertexMetadataProviderTest {
 		ECPublicKey self = mock(ECPublicKey.class);
 		when(self.euid()).thenReturn(EUID.ONE);
 		AddressBook addressBook = mock(AddressBook.class);
-		// Type safety OK with mock
-		@SuppressWarnings("unchecked")
 		AddressBookGenesisVertexMetadataProvider validatorSetProvider = new AddressBookGenesisVertexMetadataProvider(
 			self,
 			addressBook,
@@ -50,7 +48,8 @@ public class AddressBookGenesisVertexMetadataProviderTest {
 		when(peer.getSystem()).thenReturn(system);
 		when(addressBook.peers()).thenAnswer(inv -> Stream.of(peer));
 
-		VertexMetadata vertexMetadata = validatorSetProvider.getGenesisVertexMetadata();
+		VertexMetadata vertexMetadata = validatorSetProvider.getGenesisVertexMetadata(123456789L);
 		assertThat(vertexMetadata.getValidatorSet()).isNotEmpty();
+		assertThat(vertexMetadata.timestamp()).isEqualTo(123456789L);
 	}
 }

@@ -45,9 +45,12 @@ import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
 import com.radixdlt.store.EngineStore;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.universe.Universe;
+
+import java.time.Instant;
 import java.util.function.Consumer;
 
 public class RadixEngineStoreModule extends AbstractModule {
+	private static final long GENESIS_TIMESTAMP = Instant.parse("2020-01-01T00:00:00Z").toEpochMilli();
 	private final int fixedNodeCount;
 
 	public RadixEngineStoreModule(int fixedNodeCount) {
@@ -115,7 +118,7 @@ public class RadixEngineStoreModule extends AbstractModule {
 			fixedNodeCount
 		);
 
-		return metadataProvider.getGenesisVertexMetadata();
+		return metadataProvider.getGenesisVertexMetadata(GENESIS_TIMESTAMP);
 	}
 
 	@Provides

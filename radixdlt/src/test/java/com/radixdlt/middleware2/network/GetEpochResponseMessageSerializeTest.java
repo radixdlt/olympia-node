@@ -37,6 +37,6 @@ public class GetEpochResponseMessageSerializeTest extends SerializeMessageObject
 		BFTValidatorSet bftValidatorSet = BFTValidatorSet.from(ImmutableSet.of(
 			BFTValidator.from(BFTNode.create(keyPair.getPublicKey()), UInt256.ONE)
 		));
-		return new GetEpochResponseMessage(author, 12345, VertexMetadata.ofGenesisAncestor(bftValidatorSet));
+		return new GetEpochResponseMessage(author, 12345, VertexMetadata.ofGenesisAncestor(bftValidatorSet, 123456789L));
 	}
 }

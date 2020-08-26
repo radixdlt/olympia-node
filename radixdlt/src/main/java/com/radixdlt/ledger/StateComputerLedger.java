@@ -105,11 +105,11 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		}
 
 		final long stateVersion = parentStateVersion + versionIncrement;
-		final Hash timestampedSignaturesHash = vertex.getQC().getTimestampedSignatures().getId();
+		final long timestamp = vertex.getQC().getTimestampedSignatures().weightedTimestamp();
 
 		return validatorSet
-			.map(vset -> PreparedCommand.create(stateVersion, timestampedSignaturesHash, vset))
-			.orElseGet(() -> PreparedCommand.create(stateVersion, timestampedSignaturesHash));
+			.map(vset -> PreparedCommand.create(stateVersion, timestamp, vset))
+			.orElseGet(() -> PreparedCommand.create(stateVersion, timestamp));
 	}
 
 	@Override

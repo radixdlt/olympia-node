@@ -19,16 +19,12 @@ package com.radixdlt.consensus;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import com.radixdlt.DefaultSerialization;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECPublicKey;
-import com.radixdlt.crypto.Hash;
 import com.radixdlt.serialization.DsonOutput;
-import com.radixdlt.serialization.DsonOutput.Output;
 import com.radixdlt.serialization.SerializerConstants;
 import com.radixdlt.serialization.SerializerDummy;
 import com.radixdlt.serialization.SerializerId2;
@@ -40,7 +36,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import javax.annotation.concurrent.Immutable;
@@ -63,8 +58,6 @@ public final class TimestampedECDSASignatures {
 	private SerializerDummy serializer = SerializerDummy.DUMMY;
 
 	private ImmutableMap<BFTNode, TimestampedECDSASignature> nodeToTimestampedSignature;
-
-	private final transient Supplier<Hash> cachedHash = Suppliers.memoize(this::doGetHash);
 
 	@JsonCreator
 	public static TimestampedECDSASignatures from(@JsonProperty("signatures") Map<String, TimestampedECDSASignature> signatures) {
@@ -89,18 +82,6 @@ public final class TimestampedECDSASignatures {
 	 */
 	public TimestampedECDSASignatures(ImmutableMap<BFTNode, TimestampedECDSASignature> nodeToTimestampAndSignature) {
 		this.nodeToTimestampedSignature = nodeToTimestampAndSignature;
-	}
-
-	private Hash doGetHash() {
-		try {
-			return Hash.of(DefaultSerialization.getInstance().toDson(this, Output.HASH));
-		} catch (Exception e) {
-			throw new IllegalStateException("Error generating hash: " + e, e);
-		}
-	}
-
-	public Hash getId() {
-		return this.cachedHash.get();
 	}
 
 	/**
