@@ -115,7 +115,7 @@ public final class MessageCentralBFTNetwork implements BFTEventSender, Consensus
 		Optional<Peer> peer = this.addressBook.peer(recipient.euid());
 
 		if (!peer.isPresent()) {
-			log.error("Peer with pubkey {} not present", recipient);
+			log.error("{}: Peer with pubkey {} not present", this.self, recipient);
 			return false;
 		} else {
 			this.messageCentral.send(peer.get(), message);
