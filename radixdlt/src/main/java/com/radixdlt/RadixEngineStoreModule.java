@@ -109,8 +109,7 @@ public class RadixEngineStoreModule extends AbstractModule {
 		AddressBook addressBook,
 		@Named("self") ECKeyPair selfKey
 	) {
-		AddressBookGenesisVertexMetadataProvider metadataProvider
-			= new AddressBookGenesisVertexMetadataProvider(
+		AddressBookGenesisVertexMetadataProvider metadataProvider = new AddressBookGenesisVertexMetadataProvider(
 			selfKey.getPublicKey(),
 			addressBook,
 			fixedNodeCount
