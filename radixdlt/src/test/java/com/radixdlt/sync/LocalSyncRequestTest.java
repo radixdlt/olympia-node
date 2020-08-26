@@ -28,7 +28,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class LocalSyncRequestTest {
-	private LocalSyncRequest request0;
+	private LocalSyncRequest request;
 	private ImmutableList<BFTNode> targetNodes;
 	private VertexMetadata target;
 
@@ -36,12 +36,13 @@ public class LocalSyncRequestTest {
 	public void setup() {
 		this.targetNodes = rmock(ImmutableList.class);
 		this.target = mock(VertexMetadata.class);
-		request0 = new LocalSyncRequest(target, targetNodes);
+		request = new LocalSyncRequest(target, targetNodes);
 	}
 
 	@Test
 	public void testGetters() {
-		assertThat(request0.getTarget()).isEqualTo(target);
-		assertThat(request0.getTargetNodes()).isEqualTo(targetNodes);
+		assertThat(request.getTarget()).isEqualTo(target);
+		assertThat(request.getTargetNodes()).isEqualTo(targetNodes);
 	}
+
 }
