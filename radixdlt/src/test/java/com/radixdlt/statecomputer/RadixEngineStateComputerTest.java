@@ -81,7 +81,8 @@ public class RadixEngineStateComputerTest {
 		when(vertex.getView()).thenReturn(epochHighView);
 		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
 		when(validatorSetMapping.apply(any())).thenReturn(validatorSet);
-		assertThat(stateComputer.prepare(vertex)).contains(validatorSet);
+		//assertThat(stateComputer.prepare(vertex)).contains(validatorSet);
+		assertThat(stateComputer.prepare(vertex)).isTrue();
 	}
 
 	@Test
@@ -95,6 +96,9 @@ public class RadixEngineStateComputerTest {
 		when(vertexMetadata.isEndOfEpoch()).thenReturn(true);
 
 		when(serialization.fromDson(any(), eq(ClientAtom.class))).thenReturn(clientAtom);
+
+		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
+		when(validatorSetMapping.apply(any())).thenReturn(validatorSet);
 
 		Command command = mock(Command.class);
 		stateComputer.commit(command, vertexMetadata);
@@ -111,6 +115,9 @@ public class RadixEngineStateComputerTest {
 		when(vertexMetadata.getView()).then(i -> View.of(50));
 		when(vertexMetadata.getStateVersion()).then(i -> 1L);
 		when(vertexMetadata.isEndOfEpoch()).thenReturn(true);
+
+		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
+		when(validatorSetMapping.apply(any())).thenReturn(validatorSet);
 
 		when(serialization.fromDson(any(), eq(ClientAtom.class))).thenReturn(clientAtom);
 		RadixEngineException e = mock(RadixEngineException.class);
@@ -135,6 +142,8 @@ public class RadixEngineStateComputerTest {
 		when(vertexMetadata.getView()).then(i -> View.of(50));
 		when(vertexMetadata.getStateVersion()).then(i -> 1L);
 		when(vertexMetadata.isEndOfEpoch()).thenReturn(true);
+		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
+		when(validatorSetMapping.apply(any())).thenReturn(validatorSet);
 
 		stateComputer.commit(null, vertexMetadata);
 
@@ -151,6 +160,8 @@ public class RadixEngineStateComputerTest {
 		when(vertexMetadata.getView()).then(i -> View.of(50));
 		when(vertexMetadata.getStateVersion()).then(i -> 1L);
 		when(vertexMetadata.isEndOfEpoch()).thenReturn(true);
+		BFTValidatorSet validatorSet = mock(BFTValidatorSet.class);
+		when(validatorSetMapping.apply(any())).thenReturn(validatorSet);
 
 		when(serialization.fromDson(any(), eq(ClientAtom.class))).thenThrow(new SerializationException(""));
 

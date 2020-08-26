@@ -43,13 +43,14 @@ import java.util.Set;
  */
 public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 	public interface StateComputer {
-		Optional<BFTValidatorSet> prepare(Vertex vertex);
-		void commit(Command command, VertexMetadata vertexMetadata);
+		//Optional<BFTValidatorSet> prepare(Vertex vertex);
+		boolean prepare(Vertex vertex);
+		Optional<BFTValidatorSet> commit(Command command, VertexMetadata vertexMetadata);
 	}
 
 	public interface CommittedSender {
 		// TODO: batch these
-		void sendCommitted(Command command, VertexMetadata vertexMetadata);
+		void sendCommitted(CommittedCommand committedCommand, BFTValidatorSet validatorSet);
 	}
 
 	public interface CommittedStateSyncSender {
@@ -93,12 +94,14 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		final VertexMetadata parent = vertex.getQC().getProposed();
 		final long parentStateVersion = parent.getStateVersion();
 
-		Optional<BFTValidatorSet> validatorSet = stateComputer.prepare(vertex);
+		//Optional<BFTValidatorSet> validatorSet = stateComputer.prepare(vertex);
+		boolean isEndOfEpoch = stateComputer.prepare(vertex);
 
 		final int versionIncrement;
 		if (parent.isEndOfEpoch()) {
 			versionIncrement = 0; // Don't execute atom if in process of epoch change
-		} else if (validatorSet.isPresent()) {
+		//} else if (validatorSet.isPresent()) {
+		} else if (isEndOfEpoch) {
 			versionIncrement = 1;
 		} else {
 			versionIncrement = vertex.getCommand() != null ? 1 : 0;
@@ -107,9 +110,11 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 		final long stateVersion = parentStateVersion + versionIncrement;
 		final Hash timestampedSignaturesHash = vertex.getQC().getTimestampedSignatures().getId();
 
-		return validatorSet
+		return PreparedCommand.create(stateVersion, timestampedSignaturesHash, isEndOfEpoch);
+		/*
 			.map(vset -> PreparedCommand.create(stateVersion, timestampedSignaturesHash, vset))
 			.orElseGet(() -> PreparedCommand.create(stateVersion, timestampedSignaturesHash));
+		 */
 	}
 
 	@Override
@@ -145,12 +150,13 @@ public final class StateComputerLedger implements Ledger, NextCommandGenerator {
 			this.counters.set(CounterType.LEDGER_STATE_VERSION, this.currentStateVersion);
 
 			// persist
-			this.stateComputer.commit(command, vertexMetadata);
+			Optional<BFTValidatorSet> validatorSet = this.stateComputer.commit(command, vertexMetadata);
 			// TODO: move all of the following to post-persist event handling
 			if (command != null) {
 				this.mempool.removeCommitted(command.getHash());
 			}
-			committedSender.sendCommitted(command, vertexMetadata);
+			CommittedCommand committedCommand = new CommittedCommand(command, vertexMetadata);
+			committedSender.sendCommitted(committedCommand, validatorSet.orElse(null));
 
 			Set<Object> opaqueObjects = this.committedStateSyncers.remove(this.currentStateVersion);
 			if (opaqueObjects != null) {

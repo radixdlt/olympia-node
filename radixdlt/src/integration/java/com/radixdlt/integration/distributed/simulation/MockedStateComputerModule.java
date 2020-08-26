@@ -33,6 +33,12 @@ public class MockedStateComputerModule extends AbstractModule {
 		this.validatorSet = validatorSet;
 	}
 
+
+	@Provides
+	private BFTValidatorSet genesisValidatorSet() {
+		return validatorSet;
+	}
+
 	@Provides
 	private VertexMetadata genesisMetadata() {
 		return VertexMetadata.ofGenesisAncestor(validatorSet);
@@ -42,13 +48,13 @@ public class MockedStateComputerModule extends AbstractModule {
 	private StateComputer stateComputer() {
 		return new StateComputer() {
 			@Override
-			public Optional<BFTValidatorSet> prepare(Vertex vertex) {
-				return Optional.empty();
+			public boolean prepare(Vertex vertex) {
+				return false;
 			}
 
 			@Override
-			public void commit(Command command, VertexMetadata vertexMetadata) {
-				// Nothing to do here
+			public Optional<BFTValidatorSet> commit(Command command, VertexMetadata vertexMetadata) {
+				return Optional.empty();
 			}
 		};
 	}

@@ -31,13 +31,14 @@ public class PreparedCommandTest {
 	@Before
 	public void setup() {
 		this.timestampedSignatureHash = mock(Hash.class);
-		this.preparedCommand = PreparedCommand.create(12345, timestampedSignatureHash);
+		this.preparedCommand = PreparedCommand.create(12345, timestampedSignatureHash, false);
 	}
 
 	@Test
 	public void testGetters() {
 		assertThat(preparedCommand.getStateVersion()).isEqualTo(12345);
 		assertThat(preparedCommand.getTimestampedSignaturesHash()).isEqualTo(timestampedSignatureHash);
-		assertThat(preparedCommand.getNextValidatorSet()).isEmpty();
+		//assertThat(preparedCommand.getNextValidatorSet()).isEmpty();
+		assertThat(preparedCommand.isEndOfEpoch()).isFalse();
 	}
 }

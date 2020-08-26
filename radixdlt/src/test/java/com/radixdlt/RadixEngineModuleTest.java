@@ -25,6 +25,7 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.middleware2.LedgerAtom;
@@ -45,6 +46,7 @@ public class RadixEngineModuleTest {
 			bind(new TypeLiteral<EngineStore<LedgerAtom>>() { }).toInstance(mock(EngineStore.class));
 			bind(CommittedCommandsReader.class).toInstance(mock(CommittedCommandsReader.class));
 			bind(Integer.class).annotatedWith(Names.named("magic")).toInstance(1);
+			bind(BFTValidatorSet.class).toInstance(mock(BFTValidatorSet.class));
 		}
 	}
 

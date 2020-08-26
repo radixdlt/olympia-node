@@ -37,8 +37,7 @@ public class MockedSyncServiceModule extends AbstractModule {
 
 	@ProvidesIntoSet
 	private CommittedSender sync() {
-		return (cmd, vertexMetadata) ->
-			sharedCommittedAtoms.put(vertexMetadata.getStateVersion(), new CommittedCommand(cmd, vertexMetadata));
+		return (cmd, vset) -> sharedCommittedAtoms.put(cmd.getVertexMetadata().getStateVersion(), cmd);
 	}
 
 	@Provides

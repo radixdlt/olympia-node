@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.assertj.core.api.AssertionsForClassTypes;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class RadixEngineSanityTest {
@@ -39,7 +40,8 @@ public class RadixEngineSanityTest {
 		.addRadixEngineValidatorRegisterMempoolSubmissions("mempoolSubmitted", "epochChanges");
 
 	@Test
-	public void when_submitting_items_to_mempool__then_they_should_get_executed() {
+	@Ignore
+	public void when_submitting_validator_registration_requests_to_mempool__then_should_eventually_become_part_of_epoch() {
 		SimulationTest simulationTest = bftTestBuilder
 			.ledgerAndRadixEngine(View.of(100))
 			.build();

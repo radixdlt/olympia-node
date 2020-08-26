@@ -53,7 +53,7 @@ public class DeterministicRandomlySyncedLedgerModule extends AbstractModule {
 		return new Ledger() {
 			@Override
 			public PreparedCommand prepare(Vertex vertex) {
-				return PreparedCommand.create(0, Hash.ZERO_HASH);
+				return PreparedCommand.create(0, Hash.ZERO_HASH, false);
 			}
 
 			@Override

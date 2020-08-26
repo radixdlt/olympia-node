@@ -57,6 +57,12 @@ public class MockedRadixEngineStoreModule extends AbstractModule {
 		return new InMemoryEngineStore<>();
 	}
 
+
+	@Provides
+	private BFTValidatorSet genesisValidatorSet() {
+		return validatorSet;
+	}
+
 	@Provides
 	public VertexMetadata genesisVertexMetadata() {
 		return VertexMetadata.ofGenesisAncestor(validatorSet);

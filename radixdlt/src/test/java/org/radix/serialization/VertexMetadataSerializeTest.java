@@ -36,10 +36,12 @@ public class VertexMetadataSerializeTest extends SerializeObject<VertexMetadata>
 		View view = View.of(1234567890L);
 		Hash id = Hash.random();
 		ECKeyPair keyPair = ECKeyPair.generateNew();
+		/*
 		BFTValidatorSet bftValidatorSet = BFTValidatorSet.from(ImmutableSet.of(
 			BFTValidator.from(BFTNode.create(keyPair.getPublicKey()), UInt256.ONE)
 		));
+		*/
 
-		return new VertexMetadata(0, view, id, 0, bftValidatorSet, Hash.ZERO_HASH);
+		return new VertexMetadata(0, view, id, 0, true, Hash.ZERO_HASH);
 	}
 }

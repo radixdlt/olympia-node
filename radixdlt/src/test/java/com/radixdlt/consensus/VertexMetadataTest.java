@@ -35,7 +35,7 @@ public class VertexMetadataTest {
 		View view = View.of(1234567890L);
 		this.id = Hash.random();
 
-		this.testObject = new VertexMetadata(0, view, id, 0, null, Hash.ZERO_HASH);
+		this.testObject = new VertexMetadata(0, view, id, 0, false, Hash.ZERO_HASH);
 	}
 
 	@Test

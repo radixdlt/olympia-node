@@ -17,9 +17,7 @@
 
 package com.radixdlt.consensus;
 
-import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.Hash;
-import java.util.Optional;
 
 /**
  * Results from a prepared stage execution. All fields should be persisted on ledger.
@@ -27,35 +25,46 @@ import java.util.Optional;
 public final class PreparedCommand {
 	private final long stateVersion;
 	private final Hash timestampedSignaturesHash;
-	private final BFTValidatorSet nextValidatorSet;
+	private final boolean isEndOfEpoch;
+	//private final BFTValidatorSet nextValidatorSet;
 
-	private PreparedCommand(long stateVersion, Hash timestampedSignaturesHash, BFTValidatorSet nextValidatorSet) {
+	//private PreparedCommand(long stateVersion, Hash timestampedSignaturesHash, BFTValidatorSet nextValidatorSet) {
+	private PreparedCommand(long stateVersion, Hash timestampedSignaturesHash, boolean isEndOfEpoch) {
 		this.stateVersion = stateVersion;
-		this.nextValidatorSet = nextValidatorSet;
+		this.isEndOfEpoch = isEndOfEpoch;
 		this.timestampedSignaturesHash = timestampedSignaturesHash;
 	}
 
+	/*
 	public static PreparedCommand create(
 		long stateVersion,
 		Hash timestampedSignaturesHash
 	) {
 		return new PreparedCommand(stateVersion, timestampedSignaturesHash, null);
 	}
+	 */
 
 	public static PreparedCommand create(
 		long stateVersion,
 		Hash timestampedSignaturesHash,
-		BFTValidatorSet nextValidatorSet
+		boolean isEndOfEpoch
+		//BFTValidatorSet nextValidatorSet
 	) {
-		return new PreparedCommand(stateVersion, timestampedSignaturesHash, nextValidatorSet);
+		return new PreparedCommand(stateVersion, timestampedSignaturesHash, isEndOfEpoch);
 	}
 
 	public long getStateVersion() {
 		return stateVersion;
 	}
 
+	/*
 	public Optional<BFTValidatorSet> getNextValidatorSet() {
 		return Optional.ofNullable(nextValidatorSet);
+	}
+	 */
+
+	public boolean isEndOfEpoch() {
+		return isEndOfEpoch;
 	}
 
 	public Hash getTimestampedSignaturesHash() {

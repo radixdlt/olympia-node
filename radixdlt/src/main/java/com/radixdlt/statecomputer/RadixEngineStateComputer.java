@@ -114,14 +114,29 @@ public final class RadixEngineStateComputer implements StateComputer {
 	}
 
 	@Override
-	public void commit(Command command, VertexMetadata vertexMetadata) {
+	//public Optional<BFTValidatorSet> prepare(Vertex vertex) {
+	public boolean prepare(Vertex vertex) {
+		return vertex.getView().compareTo(epochChangeView) >= 0;
+		/*
+		if (vertex.getView().compareTo(epochChangeView) >= 0) {
+			return Optional.of(validatorSetMapping.apply(vertex.getEpoch() + 1));
+		} else {
+			return Optional.empty();
+		}
+		 */
+	}
+
+	@Override
+	public Optional<BFTValidatorSet> commit(Command command, VertexMetadata vertexMetadata) {
 		if (command != null) {
 			final ClientAtom clientAtom;
 			try {
 				clientAtom = serialization.fromDson(command.getPayload(), ClientAtom.class);
 			} catch (SerializationException e) {
 				this.unstoredCommittedAtoms.add(new CommittedCommand(null, vertexMetadata));
-				return;
+				return vertexMetadata.isEndOfEpoch()
+					? Optional.of(validatorSetMapping.apply(vertexMetadata.getEpoch() + 1))
+					: Optional.empty();
 			}
 
 			CommittedAtom committedAtom = new CommittedAtom(clientAtom, vertexMetadata);
@@ -147,14 +162,9 @@ public final class RadixEngineStateComputer implements StateComputer {
 			// TODO: Refactor to remove such illegal states
 			throw new IllegalStateException("Should never get here " + command);
 		}
-	}
 
-	@Override
-	public Optional<BFTValidatorSet> prepare(Vertex vertex) {
-		if (vertex.getView().compareTo(epochChangeView) >= 0) {
-			return Optional.of(validatorSetMapping.apply(vertex.getEpoch() + 1));
-		} else {
-			return Optional.empty();
-		}
+		return vertexMetadata.isEndOfEpoch()
+			? Optional.of(validatorSetMapping.apply(vertexMetadata.getEpoch() + 1))
+			: Optional.empty();
 	}
 }

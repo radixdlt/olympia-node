@@ -38,7 +38,7 @@ public class CommandToBinaryConverterTest {
 
 	@Test
 	public void test_atom_content_transformation_to_byte_array_and_back() {
-		VertexMetadata vertexMetadata = new VertexMetadata(0, View.of(1), Hash.random(), 0, null, Hash.ZERO_HASH);
+		VertexMetadata vertexMetadata = new VertexMetadata(0, View.of(1), Hash.random(), 0, false, Hash.ZERO_HASH);
 		CommittedCommand committedCommand = new CommittedCommand(new Command(new byte[] {0, 1, 2, 3}), vertexMetadata);
 
 		byte[] serializedCommand = commandToBinaryConverter.toLedgerEntryContent(committedCommand);

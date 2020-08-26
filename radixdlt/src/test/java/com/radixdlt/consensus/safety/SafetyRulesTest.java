@@ -163,10 +163,10 @@ public class SafetyRulesTest {
 
 		Hash toBeCommitted = mock(Hash.class);
 
-		VertexMetadata committed = new VertexMetadata(0, View.of(1), toBeCommitted, 1, null, Hash.ZERO_HASH);
+		VertexMetadata committed = new VertexMetadata(0, View.of(1), toBeCommitted, 1, false, Hash.ZERO_HASH);
 		VoteData voteData = new VoteData(
-			new VertexMetadata(0, View.of(3), mock(Hash.class), 3, null, Hash.ZERO_HASH),
-			new VertexMetadata(0, View.of(2), mock(Hash.class), 2, null, Hash.ZERO_HASH),
+			new VertexMetadata(0, View.of(3), mock(Hash.class), 3, false, Hash.ZERO_HASH),
+			new VertexMetadata(0, View.of(2), mock(Hash.class), 2, false, Hash.ZERO_HASH),
 			committed
 		);
 

@@ -66,7 +66,8 @@ public class RadixEngineModule extends AbstractModule {
 	@Provides
 	@Singleton
 	private Function<Long, BFTValidatorSet> validatorMapping(
-		VertexMetadata genesisVertexMetadata
+		VertexMetadata genesisVertexMetadata,
+		BFTValidatorSet initialValidatorSet
 	) {
 		/*
 		return (epoch, validators) -> {
@@ -92,8 +93,8 @@ public class RadixEngineModule extends AbstractModule {
 		}
 		*/
 
-		return epoch -> genesisVertexMetadata.getValidatorSet()
-			.orElseThrow(() -> new IllegalStateException("genesis has no validator set!"));
+		return epoch -> initialValidatorSet;
+		//genesisVertexMetadata.getValidatorSet().orElseThrow(() -> new IllegalStateException("genesis has no validator set!"));
 	}
 
 	@Provides

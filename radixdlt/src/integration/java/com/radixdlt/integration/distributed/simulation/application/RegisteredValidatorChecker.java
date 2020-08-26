@@ -17,16 +17,11 @@
 
 package com.radixdlt.integration.distributed.simulation.application;
 
-import com.radixdlt.consensus.Command;
 import com.radixdlt.consensus.EpochChangeRx;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.consensus.epoch.EpochChange;
-import com.radixdlt.identifiers.RadixAddress;
 import com.radixdlt.integration.distributed.simulation.TestInvariant;
-import com.radixdlt.integration.distributed.simulation.TestInvariant.TestInvariantError;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNodes.RunningNetwork;
-import com.radixdlt.ledger.CommittedCommand;
-import com.radixdlt.systeminfo.InfoRx;
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.core.Observable;
 import java.util.List;

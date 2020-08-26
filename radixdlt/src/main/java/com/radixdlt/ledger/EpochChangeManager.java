@@ -17,8 +17,7 @@
 
 package com.radixdlt.ledger;
 
-import com.radixdlt.consensus.Command;
-import com.radixdlt.consensus.VertexMetadata;
+import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.epoch.EpochChange;
 import com.radixdlt.ledger.StateComputerLedger.CommittedSender;
 import java.util.Objects;
@@ -34,10 +33,12 @@ public final class EpochChangeManager implements CommittedSender {
 	}
 
 	@Override
-	public void sendCommitted(Command command, VertexMetadata vertexMetadata) {
-		vertexMetadata.getValidatorSet().ifPresent(validatorSet -> {
-			EpochChange epochChange = new EpochChange(vertexMetadata, validatorSet);
+	public void sendCommitted(CommittedCommand committedCommand, BFTValidatorSet validatorSet) {
+		if (validatorSet != null) {
+			//vertexMetadata.getValidatorSet().ifPresent(validatorSet -> {
+			EpochChange epochChange = new EpochChange(committedCommand.getVertexMetadata(), validatorSet);
 			this.epochChangeSender.epochChange(epochChange);
-		});
+			//});
+		}
 	}
 }

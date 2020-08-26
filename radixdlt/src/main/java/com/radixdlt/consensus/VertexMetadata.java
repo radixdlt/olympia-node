@@ -17,22 +17,15 @@
 
 package com.radixdlt.consensus;
 
-import com.google.common.collect.ImmutableMap;
 import com.radixdlt.consensus.bft.BFTNode;
-import com.radixdlt.consensus.bft.BFTValidator;
 import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.crypto.CryptoException;
 import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.crypto.Hash;
 import com.radixdlt.utils.Bytes;
-import com.radixdlt.utils.UInt256;
-import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
-import java.util.Optional;
-import java.util.stream.Collectors;
 import javax.annotation.concurrent.Immutable;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -63,7 +56,10 @@ public final class VertexMetadata {
 	@DsonOutput(Output.ALL)
 	private final long stateVersion;
 
-	private BFTValidatorSet validatorSet;
+	@JsonProperty("isEndOfEpoch")
+	@DsonOutput(Output.ALL)
+	private final boolean isEndOfEpoch;
+	//private BFTValidatorSet validatorSet;
 
 	@JsonProperty("timestamped_signatures_hash")
 	@DsonOutput(Output.ALL)
@@ -75,7 +71,7 @@ public final class VertexMetadata {
 		this.id = null;
 		this.stateVersion = 0L;
 		this.epoch = 0L;
-		this.validatorSet = null;
+		this.isEndOfEpoch = false;
 		this.timestampedSignaturesHash = null;
 	}
 
@@ -85,7 +81,8 @@ public final class VertexMetadata {
 		View view, // consensus data
 		Hash id, // consensus data
 		long stateVersion, // executor data
-		BFTValidatorSet validatorSet, // executor data
+		//BFTValidatorSet validatorSet, // executor data
+		boolean isEndOfEpoch,
 		Hash timestampedSignaturesHash // executor data
 	) {
 		if (epoch < 0) {
@@ -100,7 +97,8 @@ public final class VertexMetadata {
 		this.stateVersion = stateVersion;
 		this.view = view;
 		this.id = id;
-		this.validatorSet = validatorSet;
+		//this.validatorSet = validatorSet;
+		this.isEndOfEpoch = isEndOfEpoch;
 		this.timestampedSignaturesHash = timestampedSignaturesHash;
 	}
 
@@ -110,7 +108,8 @@ public final class VertexMetadata {
 			View.genesis(),
 			Hash.ZERO_HASH,
 			0,
-			initialValidatorSet,
+			//initialValidatorSet,
+			true,
 			Hash.ZERO_HASH
 		);
 	}
@@ -121,7 +120,8 @@ public final class VertexMetadata {
 			vertex.getView(),
 			vertex.getId(),
 			vertex.getQC().getParent().getStateVersion(),
-			null,
+			//null,
+			false,
 			Hash.ZERO_HASH
 		);
 	}
@@ -132,17 +132,20 @@ public final class VertexMetadata {
 			vertex.getView(),
 			vertex.getId(),
 			preparedCommand.getStateVersion(),
-			preparedCommand.getNextValidatorSet().orElse(null),
+			preparedCommand.isEndOfEpoch(),
+			//preparedCommand.getNextValidatorSet().orElse(null),
 			preparedCommand.getTimestampedSignaturesHash()
 		);
 	}
 
-	public Optional<BFTValidatorSet> getValidatorSet() {
+	/*public Optional<BFTValidatorSet> getValidatorSet() {
 		return Optional.ofNullable(validatorSet);
 	}
+	 */
 
 	public boolean isEndOfEpoch() {
-		return this.validatorSet != null;
+		return isEndOfEpoch;
+		//return this.validatorSet != null;
 	}
 
 	public long getEpoch() {
@@ -161,6 +164,7 @@ public final class VertexMetadata {
 		return id;
 	}
 
+	/*
 	@JsonProperty("validator_set")
 	@DsonOutput(Output.ALL)
 	private Map<String, UInt256> getValidatorSetJson() {
@@ -170,6 +174,7 @@ public final class VertexMetadata {
 		return validatorSet.getValidators().stream()
 			.collect(ImmutableMap.toImmutableMap(v -> encodePublicKey(v.getNode()), BFTValidator::getPower));
 	}
+	*/
 
 	// TODO: Use base64 over hex
 	private static String encodePublicKey(BFTNode key) {
@@ -184,6 +189,7 @@ public final class VertexMetadata {
 		}
 	}
 
+	/*
 	@JsonProperty("validator_set")
 	private void setValidatorSetJson(Map<String, UInt256> vset) {
 		List<BFTValidator> validators = vset.entrySet().stream()
@@ -191,6 +197,7 @@ public final class VertexMetadata {
 			.collect(Collectors.toList());
 		this.validatorSet = BFTValidatorSet.from(validators);
 	}
+	*/
 
 	@JsonProperty("view")
 	@DsonOutput(Output.ALL)
@@ -205,7 +212,7 @@ public final class VertexMetadata {
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.view, this.id, this.stateVersion, this.validatorSet, this.epoch, this.timestampedSignaturesHash);
+		return Objects.hash(this.view, this.id, this.stateVersion, this.isEndOfEpoch, this.epoch, this.timestampedSignaturesHash);
 	}
 
 	@Override
@@ -219,7 +226,7 @@ public final class VertexMetadata {
 				Objects.equals(this.view, other.view)
 				&& Objects.equals(this.id, other.id)
 				&& Objects.equals(this.timestampedSignaturesHash, other.timestampedSignaturesHash)
-				&& Objects.equals(this.validatorSet, other.validatorSet)
+				&& Objects.equals(this.isEndOfEpoch, other.isEndOfEpoch)
 				&& this.stateVersion == other.stateVersion
 				&& this.epoch == other.epoch;
 		}
@@ -228,8 +235,8 @@ public final class VertexMetadata {
 
 	@Override
 	public String toString() {
-		return String.format("%s{epoch=%s view=%s stateVersion=%s validatorSet=%s}",
-			getClass().getSimpleName(), this.epoch, this.view, this.stateVersion, this.validatorSet
+		return String.format("%s{epoch=%s view=%s stateVersion=%s isEndOfEpoch=%s}",
+			getClass().getSimpleName(), this.epoch, this.view, this.stateVersion, this.isEndOfEpoch
 		);
 	}
 }

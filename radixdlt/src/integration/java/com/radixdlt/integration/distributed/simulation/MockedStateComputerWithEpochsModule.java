@@ -41,6 +41,11 @@ public class MockedStateComputerWithEpochsModule extends AbstractModule {
 	}
 
 	@Provides
+	private BFTValidatorSet genesisValidatorSet() {
+		return validatorSetMapping.apply(1L);
+	}
+
+	@Provides
 	private VertexMetadata genesisMetadata() {
 		return VertexMetadata.ofGenesisAncestor(validatorSetMapping.apply(1L));
 	}
@@ -49,17 +54,17 @@ public class MockedStateComputerWithEpochsModule extends AbstractModule {
 	private StateComputer stateComputer() {
 		return new StateComputer() {
 			@Override
-			public Optional<BFTValidatorSet> prepare(Vertex vertex) {
-				if (vertex.getView().compareTo(epochHighView) >= 0) {
-					return Optional.of(validatorSetMapping.apply(vertex.getEpoch() + 1));
-				} else {
-					return Optional.empty();
-				}
+			public boolean prepare(Vertex vertex) {
+				return vertex.getView().compareTo(epochHighView) >= 0;
 			}
 
 			@Override
-			public void commit(Command command, VertexMetadata vertexMetadata) {
-				// Nothing to do here
+			public Optional<BFTValidatorSet> commit(Command command, VertexMetadata vertexMetadata) {
+				if (vertexMetadata.isEndOfEpoch()) {
+					return Optional.of(validatorSetMapping.apply(vertexMetadata.getEpoch() + 1));
+				} else {
+					return Optional.empty();
+				}
 			}
 		};
 	}
