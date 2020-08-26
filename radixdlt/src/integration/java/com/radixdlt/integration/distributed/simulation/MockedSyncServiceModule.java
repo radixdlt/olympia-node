@@ -18,11 +18,14 @@
 package com.radixdlt.integration.distributed.simulation;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.google.inject.Singleton;
 import com.google.inject.multibindings.ProvidesIntoSet;
-import com.radixdlt.consensus.SyncedExecutor;
-import com.radixdlt.syncer.CommittedCommand;
-import com.radixdlt.syncer.SyncExecutor.CommittedSender;
-import com.radixdlt.syncer.SyncExecutor.SyncService;
+import com.radixdlt.consensus.Ledger;
+import com.radixdlt.consensus.sync.SyncRequestSender;
+import com.radixdlt.ledger.CommittedCommand;
+import com.radixdlt.ledger.StateComputerLedger.CommittedSender;
+import com.radixdlt.sync.LocalSyncRequest;
 import java.util.concurrent.ConcurrentMap;
 
 public class MockedSyncServiceModule extends AbstractModule {
@@ -38,17 +41,22 @@ public class MockedSyncServiceModule extends AbstractModule {
 			sharedCommittedAtoms.put(vertexMetadata.getStateVersion(), new CommittedCommand(cmd, vertexMetadata));
 	}
 
-	// TODO: change this to a service
-	@ProvidesIntoSet
-	SyncService syncService(
-		SyncedExecutor syncedExecutor
+	@Provides
+	@Singleton
+	SyncRequestSender syncRequestSender(
+		Ledger ledger
 	) {
-		return request -> {
-			final long targetVersion = request.getTarget().getStateVersion();
-			final long initVersion = request.getCurrentVersion() + 1;
-			for (long version = initVersion; version <= targetVersion; version++) {
-				CommittedCommand committedCommand = sharedCommittedAtoms.get(version);
-				syncedExecutor.commit(committedCommand.getCommand(), committedCommand.getVertexMetadata());
+		return new SyncRequestSender() {
+			long currentVersion = 1;
+
+			@Override
+			public void sendLocalSyncRequest(LocalSyncRequest request) {
+				final long targetVersion = request.getTarget().getStateVersion();
+				for (long version = currentVersion; version <= targetVersion; version++) {
+					CommittedCommand committedCommand = sharedCommittedAtoms.get(version);
+					ledger.commit(committedCommand.getCommand(), committedCommand.getVertexMetadata());
+				}
+				currentVersion = targetVersion;
 			}
 		};
 	}

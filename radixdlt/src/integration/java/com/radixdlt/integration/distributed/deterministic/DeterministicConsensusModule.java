@@ -40,6 +40,7 @@ import com.radixdlt.consensus.VertexStoreFactory;
 import com.radixdlt.consensus.liveness.FixedTimeoutPacemaker;
 import com.radixdlt.consensus.liveness.PacemakerFactory;
 import com.radixdlt.consensus.liveness.WeightedRotatingLeaders;
+import com.radixdlt.consensus.sync.SyncRequestSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.network.TimeSupplier;
 import java.util.Comparator;
@@ -101,7 +102,6 @@ public final class DeterministicConsensusModule extends AbstractModule {
 				.build();
 	}
 
-
 	@Provides
 	@Singleton
 	private ProposerElectionFactory proposerElectionFactory() {
@@ -124,14 +124,17 @@ public final class DeterministicConsensusModule extends AbstractModule {
 		SyncVerticesRPCSender syncVerticesRPCSender,
 		VertexStoreEventSender vertexStoreEventSender,
 		SyncedVertexSender syncedVertexSender,
+		SyncRequestSender syncRequestSender,
 		SystemCounters counters
 	) {
-		return (genesisVertex, genesisQC, syncedRadixEngine) -> new VertexStore(
+		return (genesisVertex, genesisQC, ledger) -> new VertexStore(
 			genesisVertex,
 			genesisQC,
-			syncedRadixEngine,
-			syncVerticesRPCSender, syncedVertexSender,
+			ledger,
+			syncVerticesRPCSender,
+			syncedVertexSender,
 			vertexStoreEventSender,
+			syncRequestSender,
 			counters
 		);
 	}

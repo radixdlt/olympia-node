@@ -32,9 +32,8 @@ import com.radixdlt.middleware2.ClientAtom;
 import com.radixdlt.serialization.Serialization;
 import com.radixdlt.serialization.SerializationException;
 import com.radixdlt.middleware2.LedgerAtom;
-import com.radixdlt.middleware2.store.CommittedAtomsStore;
-import com.radixdlt.syncer.CommittedCommand;
-import com.radixdlt.syncer.SyncExecutor.StateComputer;
+import com.radixdlt.ledger.CommittedCommand;
+import com.radixdlt.ledger.StateComputerLedger.StateComputer;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedList;
@@ -63,11 +62,11 @@ public final class RadixEngineStateComputer implements StateComputer {
 	}
 
 	private final Serialization serialization;
-	private final CommittedAtomsStore committedAtomsStore;
 	private final RadixEngine<LedgerAtom> radixEngine;
 	private final Function<Long, BFTValidatorSet> validatorSetMapping;
 	private final View epochChangeView;
 
+	private final CommittedCommandsReader committedCommandsReader;
 	private final CommittedAtomSender committedAtomSender;
 	private final Object lock = new Object();
 	private final LinkedList<CommittedCommand> unstoredCommittedAtoms = new LinkedList<>();
@@ -77,7 +76,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		RadixEngine<LedgerAtom> radixEngine,
 		Function<Long, BFTValidatorSet> validatorSetMapping,
 		View epochChangeView,
-		CommittedAtomsStore committedAtomsStore,
+		CommittedCommandsReader committedCommandsReader,
 		CommittedAtomSender committedAtomSender
 	) {
 		if (epochChangeView.isGenesis()) {
@@ -88,7 +87,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		this.radixEngine = Objects.requireNonNull(radixEngine);
 		this.validatorSetMapping = validatorSetMapping;
 		this.epochChangeView = epochChangeView;
-		this.committedAtomsStore = Objects.requireNonNull(committedAtomsStore);
+		this.committedCommandsReader = Objects.requireNonNull(committedCommandsReader);
 		this.committedAtomSender = Objects.requireNonNull(committedAtomSender);
 	}
 
@@ -98,7 +97,7 @@ public final class RadixEngineStateComputer implements StateComputer {
 		// TODO: never make it into the radix engine due to state errors. This is because we only check
 		// TODO: validity on commit rather than on proposal/prepare.
 		// TODO: remove 100 hardcode limit
-		List<CommittedCommand> storedCommittedAtoms = committedAtomsStore.getCommittedCommands(stateVersion, batchSize);
+		List<CommittedCommand> storedCommittedAtoms = committedCommandsReader.getCommittedCommands(stateVersion, batchSize);
 
 		// TODO: Remove
 		final List<CommittedCommand> copy;
@@ -130,11 +129,6 @@ public final class RadixEngineStateComputer implements StateComputer {
 			try {
 				// TODO: execute list of commands instead
 				this.radixEngine.checkAndStore(committedAtom);
-
-				// TODO: cleanup and move this logic to a better spot
-				final ImmutableSet<EUID> indicies = committedAtomsStore.getIndicies(committedAtom);
-
-				committedAtomSender.sendCommittedAtom(CommittedAtoms.success(committedAtom, indicies));
 			} catch (RadixEngineException e) {
 				// TODO: Don't check for state computer errors for now so that we don't
 				// TODO: have to deal with failing leader proposals
@@ -142,7 +136,6 @@ public final class RadixEngineStateComputer implements StateComputer {
 
 				// TODO: move VIRTUAL_STATE_CONFLICT to static check
 				this.unstoredCommittedAtoms.add(new CommittedCommand(command, vertexMetadata));
-
 				committedAtomSender.sendCommittedAtom(CommittedAtoms.error(committedAtom, e));
 			}
 		} else if (vertexMetadata.isEndOfEpoch()) {

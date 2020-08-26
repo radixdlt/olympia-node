@@ -35,10 +35,11 @@ import com.radixdlt.statecomputer.ClientAtomToBinaryConverter;
 import com.radixdlt.statecomputer.CommittedAtom;
 import com.radixdlt.statecomputer.CommandToBinaryConverter;
 import com.radixdlt.middleware2.store.CommittedAtomsStore.AtomIndexer;
+import com.radixdlt.statecomputer.RadixEngineStateComputer.CommittedAtomSender;
 import com.radixdlt.store.LedgerEntry;
 import com.radixdlt.store.LedgerEntryStore;
 import com.radixdlt.store.SearchCursor;
-import com.radixdlt.syncer.CommittedCommand;
+import com.radixdlt.ledger.CommittedCommand;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -51,16 +52,24 @@ public class CommittedAtomsStoreTest {
 	private LedgerEntryStore store;
 	private CommandToBinaryConverter commandToBinaryConverter;
 	private ClientAtomToBinaryConverter clientAtomToBinaryConverter;
+	private CommittedAtomSender committedAtomSender;
 	private AtomIndexer atomIndexer;
 
 	@Before
 	public void setUp() {
+		this.committedAtomSender = mock(CommittedAtomSender.class);
 		this.store = mock(LedgerEntryStore.class);
 		this.commandToBinaryConverter = mock(CommandToBinaryConverter.class);
 		this.clientAtomToBinaryConverter = mock(ClientAtomToBinaryConverter.class);
 		this.atomIndexer = mock(AtomIndexer.class);
 
-		this.committedAtomsStore = new CommittedAtomsStore(store, commandToBinaryConverter, clientAtomToBinaryConverter, atomIndexer);
+		this.committedAtomsStore = new CommittedAtomsStore(
+			committedAtomSender,
+			store,
+			commandToBinaryConverter,
+			clientAtomToBinaryConverter,
+			atomIndexer
+		);
 	}
 
 	@Test

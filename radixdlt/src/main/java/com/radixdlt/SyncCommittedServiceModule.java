@@ -24,14 +24,15 @@ import com.radixdlt.statecomputer.RadixEngineStateComputer;
 import com.radixdlt.middleware2.network.MessageCentralLedgerSync;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.messaging.MessageCentral;
-import com.radixdlt.syncer.StateSyncNetwork;
-import com.radixdlt.syncer.SyncServiceProcessor;
-import com.radixdlt.syncer.SyncServiceProcessor.SyncTimeoutScheduler;
-import com.radixdlt.syncer.SyncServiceProcessor.SyncedCommandSender;
-import com.radixdlt.syncer.SyncServiceRunner;
-import com.radixdlt.syncer.SyncServiceRunner.LocalSyncRequestsRx;
-import com.radixdlt.syncer.SyncServiceRunner.SyncTimeoutsRx;
-import com.radixdlt.syncer.SyncExecutor;
+import com.radixdlt.sync.StateSyncNetwork;
+import com.radixdlt.sync.SyncServiceProcessor;
+import com.radixdlt.sync.SyncServiceProcessor.SyncTimeoutScheduler;
+import com.radixdlt.sync.SyncServiceProcessor.SyncedCommandSender;
+import com.radixdlt.sync.SyncServiceRunner;
+import com.radixdlt.sync.SyncServiceRunner.LocalSyncRequestsRx;
+import com.radixdlt.sync.SyncServiceRunner.SyncTimeoutsRx;
+import com.radixdlt.ledger.StateComputerLedger;
+import com.radixdlt.sync.SyncServiceRunner.VersionUpdatesRx;
 import com.radixdlt.universe.Universe;
 
 /**
@@ -65,12 +66,14 @@ public class SyncCommittedServiceModule extends AbstractModule {
 	private SyncServiceRunner syncServiceRunner(
 		LocalSyncRequestsRx localSyncRequestsRx,
 		SyncTimeoutsRx syncTimeoutsRx,
+		VersionUpdatesRx versionUpdatesRx,
 		StateSyncNetwork stateSyncNetwork,
 		SyncServiceProcessor syncServiceProcessor
 	) {
 		return new SyncServiceRunner(
 			localSyncRequestsRx,
 			syncTimeoutsRx,
+			versionUpdatesRx,
 			stateSyncNetwork,
 			syncServiceProcessor
 		);
@@ -78,8 +81,8 @@ public class SyncCommittedServiceModule extends AbstractModule {
 
 	@Provides
 	@Singleton
-	private SyncedCommandSender syncedAtomSender(SyncExecutor syncExecutor) {
-		return syncCmd -> syncExecutor.commit(syncCmd.getCommand(), syncCmd.getVertexMetadata());
+	private SyncedCommandSender syncedAtomSender(StateComputerLedger stateComputerLedger) {
+		return syncCmd -> stateComputerLedger.commit(syncCmd.getCommand(), syncCmd.getVertexMetadata());
 	}
 
 	@Provides

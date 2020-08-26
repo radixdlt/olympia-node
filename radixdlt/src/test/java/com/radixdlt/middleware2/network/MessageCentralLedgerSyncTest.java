@@ -27,8 +27,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
-import com.radixdlt.syncer.CommittedCommand;
-import com.radixdlt.syncer.SyncRequest;
+import com.radixdlt.ledger.CommittedCommand;
+import com.radixdlt.sync.SyncRequest;
 import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.network.messaging.MessageCentral;
 import com.radixdlt.network.messaging.MessageListener;

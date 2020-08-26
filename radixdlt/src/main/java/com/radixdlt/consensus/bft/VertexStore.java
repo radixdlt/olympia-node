@@ -19,16 +19,18 @@ package com.radixdlt.consensus.bft;
 
 import com.radixdlt.consensus.CommittedStateSync;
 import com.radixdlt.consensus.QuorumCertificate;
-import com.radixdlt.consensus.SyncedExecutor;
+import com.radixdlt.consensus.Ledger;
 import com.radixdlt.consensus.Vertex;
 import com.radixdlt.consensus.VertexMetadata;
 import com.radixdlt.consensus.VertexStoreEventProcessor;
 import com.radixdlt.consensus.PreparedCommand;
+import com.radixdlt.consensus.sync.SyncRequestSender;
 import com.radixdlt.counters.SystemCounters;
 import com.radixdlt.counters.SystemCounters.CounterType;
 import com.radixdlt.crypto.Hash;
 
 import com.google.common.collect.ImmutableList;
+import com.radixdlt.sync.LocalSyncRequest;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -46,6 +48,7 @@ import org.apache.logging.log4j.Logger;
 
 /**
  * Manages the BFT Vertex chain.
+ * TODO: Move this logic into ledger package.
  */
 @NotThreadSafe
 public final class VertexStore implements VertexStoreEventProcessor {
@@ -100,8 +103,9 @@ public final class VertexStore implements VertexStoreEventProcessor {
 	private final VertexStoreEventSender vertexStoreEventSender;
 	private final SyncedVertexSender syncedVertexSender;
 	private final SyncVerticesRPCSender syncVerticesRPCSender;
-	private final SyncedExecutor syncedExecutor;
+	private final Ledger ledger;
 	private final SystemCounters counters;
+	private final SyncRequestSender syncRequestSender;
 
 	// These should never be null
 	private Hash rootId;
@@ -114,19 +118,22 @@ public final class VertexStore implements VertexStoreEventProcessor {
 	public VertexStore(
 		Vertex rootVertex,
 		QuorumCertificate rootQC,
-		SyncedExecutor syncedExecutor,
+		Ledger ledger,
 		SyncVerticesRPCSender syncVerticesRPCSender,
 		SyncedVertexSender syncedVertexSender,
 		VertexStoreEventSender vertexStoreEventSender,
+		SyncRequestSender syncRequestSender,
 		SystemCounters counters
 	) {
 		this(
 			rootVertex,
 			rootQC,
-			Collections.emptyList(), syncedExecutor,
+			Collections.emptyList(),
+			ledger,
 			syncVerticesRPCSender,
 			syncedVertexSender,
 			vertexStoreEventSender,
+			syncRequestSender,
 			counters
 		);
 	}
@@ -135,16 +142,18 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		Vertex rootVertex,
 		QuorumCertificate rootQC,
 		List<Vertex> vertices,
-		SyncedExecutor syncedExecutor,
+		Ledger ledger,
 		SyncVerticesRPCSender syncVerticesRPCSender,
 		SyncedVertexSender syncedVertexSender,
 		VertexStoreEventSender vertexStoreEventSender,
+		SyncRequestSender syncRequestSender,
 		SystemCounters counters
 	) {
-		this.syncedExecutor = Objects.requireNonNull(syncedExecutor);
+		this.ledger = Objects.requireNonNull(ledger);
 		this.syncVerticesRPCSender = Objects.requireNonNull(syncVerticesRPCSender);
 		this.vertexStoreEventSender = Objects.requireNonNull(vertexStoreEventSender);
 		this.syncedVertexSender = Objects.requireNonNull(syncedVertexSender);
+		this.syncRequestSender = syncRequestSender;
 		this.counters = Objects.requireNonNull(counters);
 
 		Objects.requireNonNull(rootVertex);
@@ -299,11 +308,16 @@ public final class VertexStore implements VertexStoreEventProcessor {
 		ImmutableList<BFTNode> signers = ImmutableList.of(syncState.author);
 		syncState.fetched.addAll(response.getVertices());
 
-		if (syncedExecutor.syncTo(syncState.committedVertexMetadata, signers, syncTo)) {
-			rebuildAndSyncQC(syncState);
-		} else {
-			syncState.setSyncStage(SyncStage.SYNC_TO_COMMIT);
-		}
+		ledger.ifCommitSynced(syncState.committedVertexMetadata)
+			.then(() -> rebuildAndSyncQC(syncState))
+			.elseExecuteAndSendMessageOnSync(() -> {
+				syncState.setSyncStage(SyncStage.SYNC_TO_COMMIT);
+				LocalSyncRequest localSyncRequest = new LocalSyncRequest(
+					syncState.committedVertexMetadata,
+					signers
+				);
+				syncRequestSender.sendLocalSyncRequest(localSyncRequest);
+			}, syncTo);
 	}
 
 	private void processVerticesResponseForQCSync(Hash syncTo, SyncState syncState, GetVerticesResponse response) {
@@ -472,7 +486,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 			counters.increment(CounterType.BFT_INDIRECT_PARENT);
 		}
 
-		PreparedCommand preparedCommand = syncedExecutor.prepare(vertex);
+		PreparedCommand preparedCommand = ledger.prepare(vertex);
 
 		// TODO: Don't check for state computer errors for now so that we don't
 		// TODO: have to deal with failing leader proposals
@@ -520,7 +534,7 @@ public final class VertexStore implements VertexStoreEventProcessor {
 
 		for (Vertex committed : path) {
 			this.counters.increment(CounterType.BFT_PROCESSED);
-			syncedExecutor.commit(committed.getCommand(), commitMetadata);
+			ledger.commit(committed.getCommand(), commitMetadata);
 
 			this.vertexStoreEventSender.sendCommittedVertex(committed);
 		}

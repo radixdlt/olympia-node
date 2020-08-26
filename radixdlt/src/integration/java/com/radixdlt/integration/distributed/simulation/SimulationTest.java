@@ -21,11 +21,11 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.AbstractModule;
 import com.google.inject.Module;
-import com.radixdlt.ExecutionEpochChangeModule;
-import com.radixdlt.ExecutionEpochChangeRxModule;
-import com.radixdlt.ExecutionModule;
-import com.radixdlt.ExecutionRxModule;
-import com.radixdlt.ExecutionLocalMempoolModule;
+import com.radixdlt.LedgerEpochChangeModule;
+import com.radixdlt.LedgerEpochChangeRxModule;
+import com.radixdlt.LedgerModule;
+import com.radixdlt.LedgerRxModule;
+import com.radixdlt.LedgerLocalMempoolModule;
 import com.radixdlt.consensus.bft.View;
 import com.radixdlt.consensus.bft.BFTNode;
 import com.radixdlt.integration.distributed.simulation.TestInvariant.TestInvariantError;
@@ -48,7 +48,7 @@ import com.radixdlt.consensus.bft.BFTValidatorSet;
 import com.radixdlt.crypto.ECKeyPair;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork;
 import com.radixdlt.integration.distributed.simulation.network.SimulationNetwork.LatencyProvider;
-import com.radixdlt.syncer.CommittedCommand;
+import com.radixdlt.ledger.CommittedCommand;
 import com.radixdlt.utils.Pair;
 import com.radixdlt.utils.UInt256;
 import io.reactivex.rxjava3.core.Observable;
@@ -92,8 +92,8 @@ public class SimulationTest {
 	}
 
 	public static class Builder {
-		private enum ExecutorType {
-			MOCKED, EXECUTOR, EPOCH_EXECUTOR, MEMPOOL_EXECUTOR;
+		private enum LedgerType {
+			MOCKED_LEDGER, LEDGER, LEDGER_AND_EPOCHS, LEDGER_AND_LOCALMEMPOOL
 		}
 
 		private final DroppingLatencyProvider latencyProvider = new DroppingLatencyProvider();
@@ -103,7 +103,7 @@ public class SimulationTest {
 		private boolean getVerticesRPCEnabled = true;
 		private View epochHighView = null;
 		private Function<Long, IntStream> epochToNodeIndexMapper;
-		private ExecutorType executorType = ExecutorType.MOCKED;
+		private LedgerType ledgerType = LedgerType.MOCKED_LEDGER;
 
 		private Builder() {
 		}
@@ -141,20 +141,20 @@ public class SimulationTest {
 			return this;
 		}
 
-		public Builder executorAndEpochs(View epochHighView, Function<Long, IntStream> epochToNodeIndexMapper) {
-			this.executorType = ExecutorType.EPOCH_EXECUTOR;
+		public Builder ledgerAndEpochs(View epochHighView, Function<Long, IntStream> epochToNodeIndexMapper) {
+			this.ledgerType = LedgerType.LEDGER_AND_EPOCHS;
 			this.epochHighView = epochHighView;
 			this.epochToNodeIndexMapper = epochToNodeIndexMapper;
 			return this;
 		}
 
-		public Builder executor() {
-			this.executorType = ExecutorType.EXECUTOR;
+		public Builder ledger() {
+			this.ledgerType = LedgerType.LEDGER;
 			return this;
 		}
 
-		public Builder executorAndMempool() {
-			this.executorType = ExecutorType.MEMPOOL_EXECUTOR;
+		public Builder ledgerAndMempool() {
+			this.ledgerType = LedgerType.LEDGER_AND_LOCALMEMPOOL;
 			return this;
 		}
 
@@ -209,49 +209,47 @@ public class SimulationTest {
 		}
 
 		public SimulationTest build() {
-			ImmutableList.Builder<Module> syncExecutionModules = ImmutableList.builder();
-			if (executorType == ExecutorType.MOCKED) {
+			ImmutableList.Builder<Module> ledgerModules = ImmutableList.builder();
+			if (ledgerType == LedgerType.MOCKED_LEDGER) {
 				BFTValidatorSet validatorSet = BFTValidatorSet.from(
 					nodes.stream()
 						.map(node -> BFTValidator.from(node, UInt256.ONE))
 						.collect(Collectors.toList())
 				);
-				syncExecutionModules.add(new MockedExecutionModule(validatorSet));
+				ledgerModules.add(new MockedLedgerModule(validatorSet));
 			} else {
 				BFTValidatorSet validatorSet = BFTValidatorSet.from(
 					nodes.stream()
 						.map(node -> BFTValidator.from(node, UInt256.ONE))
 						.collect(Collectors.toList())
 				);
-				ConcurrentHashMap<Long, CommittedCommand> sharedCommittedAtoms = new ConcurrentHashMap<>();
-				syncExecutionModules.add(new ExecutionModule());
-				syncExecutionModules.add(new ExecutionRxModule());
-				syncExecutionModules.add(new ExecutionEpochChangeRxModule());
-				syncExecutionModules.add(new MockedSyncServiceModule(sharedCommittedAtoms));
+				ConcurrentHashMap<Long, CommittedCommand> sharedCommittedCmds = new ConcurrentHashMap<>();
+				ledgerModules.add(new LedgerModule());
+				ledgerModules.add(new LedgerRxModule());
+				ledgerModules.add(new LedgerEpochChangeRxModule());
+				ledgerModules.add(new MockedSyncServiceModule(sharedCommittedCmds));
 
-				if (executorType == ExecutorType.EXECUTOR) {
-					syncExecutionModules.add(new MockedMempoolModule());
-					syncExecutionModules.add(new MockedStateComputerModule(validatorSet));
-				} else if (executorType == ExecutorType.EPOCH_EXECUTOR) {
-					syncExecutionModules.add(new ExecutionEpochChangeModule());
-
+				if (ledgerType == LedgerType.LEDGER) {
+					ledgerModules.add(new MockedMempoolModule());
+					ledgerModules.add(new MockedStateComputerModule(validatorSet));
+				} else if (ledgerType == LedgerType.LEDGER_AND_EPOCHS) {
+					ledgerModules.add(new MockedMempoolModule());
+					ledgerModules.add(new LedgerEpochChangeModule());
 					Function<Long, BFTValidatorSet> epochToValidatorSetMapping =
 						epochToNodeIndexMapper.andThen(indices -> BFTValidatorSet.from(
 							indices.mapToObj(nodes::get)
 								.map(node -> BFTValidator.from(node, UInt256.ONE))
 								.collect(Collectors.toList())));
-					syncExecutionModules.add(new MockedMempoolModule());
-					syncExecutionModules.add(new MockedEpochStateComputerModule(epochHighView, epochToValidatorSetMapping));
-				} else if (executorType == ExecutorType.MEMPOOL_EXECUTOR) {
-					syncExecutionModules.add(new ExecutionLocalMempoolModule(10));
-
-					syncExecutionModules.add(new MockedStateComputerModule(validatorSet));
-					syncExecutionModules.add(new AbstractModule() {
+					ledgerModules.add(new MockedStateComputerWithEpochsModule(epochHighView, epochToValidatorSetMapping));
+				} else if (ledgerType == LedgerType.LEDGER_AND_LOCALMEMPOOL) {
+					ledgerModules.add(new LedgerLocalMempoolModule(10));
+					ledgerModules.add(new AbstractModule() {
 						@Override
 						protected void configure() {
 							bind(Mempool.class).to(LocalMempool.class);
 						}
 					});
+					ledgerModules.add(new MockedStateComputerModule(validatorSet));
 				}
 			}
 
@@ -260,7 +258,7 @@ public class SimulationTest {
 				latencyProvider.copyOf(),
 				pacemakerTimeout,
 				getVerticesRPCEnabled,
-				syncExecutionModules.build(),
+				ledgerModules.build(),
 				this.checksBuilder.build()
 			);
 		}

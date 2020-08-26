@@ -20,7 +20,6 @@ package com.radixdlt.store.berkeley;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.radixdlt.identifiers.EUID;
-import com.radixdlt.consensus.tempo.TempoException;
 import com.radixdlt.store.CursorStore;
 import com.radixdlt.utils.Longs;
 import com.sleepycat.je.Database;
@@ -57,12 +56,12 @@ public final class BerkeleyCursorStore implements CursorStore {
 
 	private void fail(String message) {
 		logger.error(message);
-		throw new TempoException(message);
+		throw new BerkeleyStoreException(message);
 	}
 
 	private void fail(String message, Exception cause) {
 		logger.error(message, cause);
-		throw new TempoException(message, cause);
+		throw new BerkeleyStoreException(message, cause);
 	}
 
 	private void open() {
@@ -77,7 +76,7 @@ public final class BerkeleyCursorStore implements CursorStore {
 			Environment env = this.dbEnv.getEnvironment();
 			this.cursors = env.openDatabase(null, LC_CURSOR_STORE_NAME, primaryConfig);
 		} catch (Exception e) {
-			throw new TempoException("Error while opening database", e);
+			throw new BerkeleyStoreException("Error while opening database", e);
 		}
 
 		if (System.getProperty("db.check_integrity", "1").equals("1")) {
@@ -106,7 +105,7 @@ public final class BerkeleyCursorStore implements CursorStore {
 				if (transaction != null) {
 					transaction.abort();
 				}
-				throw new TempoException("Error while resetting databases", e);
+				throw new BerkeleyStoreException("Error while resetting databases", e);
 			}
 		});
 	}
