@@ -213,11 +213,39 @@ public class RadixEngineStateComputerTest {
 		when(clientAtom.getCMInstruction()).thenReturn(cmInstruction);
 		when(serialization.fromDson(any(), eq(ClientAtom.class))).thenReturn(clientAtom);
 
-		Command cmd = new Command(new byte[] {0, 1});
-		Optional<BFTValidatorSet> validatorSet = stateComputer.commit(cmd, vertexMetadata);
+		Optional<BFTValidatorSet> validatorSet = stateComputer.commit(mock(Command.class), vertexMetadata);
 		assertThat(validatorSet).hasValueSatisfying(vset ->
 			assertThat(vset.getValidators())
 				.hasOnlyOneElementSatisfying(v -> assertThat(v.getNode().getKey()).isEqualTo(key))
+		);
+	}
+
+	@Test
+	public void when_commit_command_with_unregistered_particle__then_should_not_be_in_next_validator_set() throws SerializationException {
+		VertexMetadata vertexMetadata = mock(VertexMetadata.class);
+		when(vertexMetadata.getView()).then(i -> View.of(100));
+		PreparedCommand preparedCommand = mock(PreparedCommand.class);
+		when(preparedCommand.getStateVersion()).thenReturn(1L);
+		when(preparedCommand.isEndOfEpoch()).thenReturn(true);
+		when(vertexMetadata.getPreparedCommand()).thenReturn(preparedCommand);
+
+		ClientAtom clientAtom = mock(ClientAtom.class);
+		CMInstruction cmInstruction = mock(CMInstruction.class);
+		RegisteredValidatorParticle registeredValidatorParticle = mock(RegisteredValidatorParticle.class);
+		RadixAddress address = mock(RadixAddress.class);
+		ECPublicKey key = mock(ECPublicKey.class);
+		when(key.euid()).thenReturn(EUID.ONE);
+		when(address.getPublicKey()).thenReturn(key);
+		when(registeredValidatorParticle.getAddress()).thenReturn(address);
+		when(cmInstruction.getMicroInstructions()).thenReturn(
+			ImmutableList.of(CMMicroInstruction.checkSpin(registeredValidatorParticle, Spin.UP))
+		);
+		when(clientAtom.getCMInstruction()).thenReturn(cmInstruction);
+		when(serialization.fromDson(any(), eq(ClientAtom.class))).thenReturn(clientAtom);
+
+		Optional<BFTValidatorSet> validatorSet = stateComputer.commit(mock(Command.class), vertexMetadata);
+		assertThat(validatorSet).hasValueSatisfying(vset ->
+			assertThat(vset.getValidators()).isEmpty()
 		);
 	}
 }
