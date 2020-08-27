@@ -34,7 +34,6 @@ import com.radixdlt.consensus.bft.BFTEventReducer.BFTEventSender;
 import com.radixdlt.consensus.NewView;
 import com.radixdlt.consensus.Proposal;
 import com.radixdlt.consensus.Vote;
-import com.radixdlt.crypto.ECPublicKey;
 import com.radixdlt.network.addressbook.AddressBook;
 import com.radixdlt.network.addressbook.Peer;
 import com.radixdlt.network.messaging.MessageCentral;
@@ -86,7 +85,7 @@ public final class MessageCentralBFTNetwork implements BFTEventSender, Consensus
 				this.localMessages.onNext(proposal);
 			} else {
 				ConsensusEventMessage message = new ConsensusEventMessage(this.magic, proposal);
-				send(message, node.getKey());
+				send(message, node);
 			}
 		}
 	}
@@ -97,7 +96,7 @@ public final class MessageCentralBFTNetwork implements BFTEventSender, Consensus
 			this.localMessages.onNext(newView);
 		} else {
 			ConsensusEventMessage message = new ConsensusEventMessage(this.magic, newView);
-			send(message, newViewLeader.getKey());
+			send(message, newViewLeader);
 		}
 	}
 
@@ -107,15 +106,15 @@ public final class MessageCentralBFTNetwork implements BFTEventSender, Consensus
 			this.localMessages.onNext(vote);
 		} else {
 			ConsensusEventMessage message = new ConsensusEventMessage(this.magic, vote);
-			send(message, leader.getKey());
+			send(message, leader);
 		}
 	}
 
-	private boolean send(Message message, ECPublicKey recipient) {
-		Optional<Peer> peer = this.addressBook.peer(recipient.euid());
+	private boolean send(Message message, BFTNode recipient) {
+		Optional<Peer> peer = this.addressBook.peer(recipient.getKey().euid());
 
 		if (!peer.isPresent()) {
-			log.error("Peer with pubkey {} not present", recipient);
+			log.error("{}: Peer {} not present", this.self, recipient);
 			return false;
 		} else {
 			this.messageCentral.send(peer.get(), message);
