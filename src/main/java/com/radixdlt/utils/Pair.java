@@ -1,6 +1,7 @@
 package com.radixdlt.utils;
 
 import java.util.Objects;
+import java.util.function.Function;
 
 /**
  * An immutable pair of elements.
@@ -57,6 +58,68 @@ public final class Pair<F, S> {
 	 */
 	public S getSecond() {
 		return this.second;
+	}
+
+	/**
+	 * Maps the first element, returning a new pair with the mapped first
+	 * element, and the original second element.
+	 *
+	 * @param mapper the mapper to apply to the first element
+	 * @return the new pair
+	 */
+	public <R> Pair<R, S> mapFirst(Function<? super F, ? extends R> mapper) {
+		return Pair.of(mapper.apply(this.first), this.second);
+	}
+
+	/**
+	 * Maps the second element, returning a new pair with the original first
+	 * element, and the mapped second element.
+	 *
+	 * @param mapper the mapper to apply to the second element
+	 * @return the new pair
+	 */
+	public <R> Pair<F, R> mapSecond(Function<? super S, ? extends R> mapper) {
+		return Pair.of(this.first, mapper.apply(this.second));
+	}
+
+	/**
+	 * Returns {@code true} if the first element is non-null, {@code false}
+	 * otherwise.
+	 *
+	 * @return {@code true} if the first element is non-null, else {@code false}
+	 */
+	public boolean firstNonNull() {
+		return this.first != null;
+	}
+
+	/**
+	 * Returns {@code true} if the first element is null, {@code false}
+	 * otherwise.
+	 *
+	 * @return {@code true} if the first element is null, else {@code false}
+	 */
+	public boolean firstIsNull() {
+		return this.first == null;
+	}
+
+	/**
+	 * Returns {@code true} if the second element is non-null, {@code false}
+	 * otherwise.
+	 *
+	 * @return {@code true} if the second element is non-null, else {@code false}
+	 */
+	public boolean secondNonNull() {
+		return this.second != null;
+	}
+
+	/**
+	 * Returns {@code true} if the second element is null, {@code false}
+	 * otherwise.
+	 *
+	 * @return {@code true} if the second element is null, else {@code false}
+	 */
+	public boolean secondIsNull() {
+		return this.second == null;
 	}
 
 	@Override
